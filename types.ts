@@ -11,7 +11,8 @@ export enum TransformMode {
 }
 
 export enum ActionType {
-  AI_FIX = 'AI_FIX'
+  AI_FIX = 'AI_FIX',
+  SAVE = 'SAVE'
 }
 
 export interface ValidationResult {

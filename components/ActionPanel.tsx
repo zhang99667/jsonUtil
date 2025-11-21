@@ -94,8 +94,17 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
       <div className="flex-1"></div>
 
-      {/* AI Fix Button */}
+      {/* Save Button */}
       <div className="pt-4 mt-2 border-t border-[#333]">
+        <button
+          onClick={() => onAction(ActionType.SAVE)}
+          className="w-full bg-[#252526] hover:bg-[#333] border border-gray-700 text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3"
+        >
+          <svg className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+          保存为 JSON
+        </button>
+
+        {/* AI Fix Button */}
         <button
           onClick={() => onAction(ActionType.AI_FIX)}
           disabled={isProcessing}

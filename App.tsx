@@ -104,6 +104,16 @@ const App: React.FC = () => {
       } finally {
         setIsProcessing(false);
       }
+    } else if (action === ActionType.SAVE) {
+      const blob = new Blob([output], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'result.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
   };
 
