@@ -52,7 +52,15 @@ export const detectLanguage = (input: string): string => {
 // Core Transformations
 const formatJson = (input: string): string => {
   try {
-    // Use deepParseJson to handle nested JSON strings automatically
+    const parsed = JSON.parse(input);
+    return JSON.stringify(parsed, null, 2);
+  } catch (e) {
+    return input;
+  }
+};
+
+const deepFormatJson = (input: string): string => {
+  try {
     return deepParseJson(input);
   } catch (e) {
     return input;
@@ -230,6 +238,7 @@ export const performTransform = (input: string, mode: TransformMode): string => 
     switch (mode) {
       case TransformMode.NONE: return input;
       case TransformMode.FORMAT: return formatJson(input);
+      case TransformMode.DEEP_FORMAT: return deepFormatJson(input);
       case TransformMode.MINIFY: return minifyJson(input);
       case TransformMode.ESCAPE: return escapeString(input);
       case TransformMode.UNESCAPE: return unescapeString(input);
@@ -249,7 +258,8 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
   try {
     switch (mode) {
       case TransformMode.NONE: return output;
-      case TransformMode.FORMAT:
+      case TransformMode.FORMAT: return minifyJson(output);
+      case TransformMode.DEEP_FORMAT:
         if (originalInput) {
           return smartInverse(output, originalInput);
         }

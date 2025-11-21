@@ -2,6 +2,7 @@
 export enum TransformMode {
   NONE = 'NONE',
   FORMAT = 'FORMAT',
+  DEEP_FORMAT = 'DEEP_FORMAT',
   MINIFY = 'MINIFY',
   ESCAPE = 'ESCAPE',
   UNESCAPE = 'UNESCAPE',
