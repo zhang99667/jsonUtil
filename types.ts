@@ -20,12 +20,24 @@ export interface ValidationResult {
   error?: string;
 }
 
+export interface ShortcutKey {
+  key: string;
+  meta: boolean; // Cmd on Mac, Win on Windows
+  ctrl: boolean;
+  shift: boolean;
+  alt: boolean;
+}
+
+export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY';
+
+export type ShortcutConfig = Record<ShortcutAction, ShortcutKey>;
+
 export interface EditorProps {
   value: string;
   onChange: (value: string) => void;
   readOnly?: boolean;
-  canToggleReadOnly?: boolean;
+  language?: string;
   placeholder?: string;
   label: string;
-  error?: string;
+  error?: ValidationResult;
 }

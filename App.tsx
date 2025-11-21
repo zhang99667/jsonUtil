@@ -1,14 +1,22 @@
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { CodeEditor } from './components/Editor';
 import { ActionPanel } from './components/ActionPanel';
+import { CodeEditor } from './components/Editor';
 import {
   validateJson,
   performTransform,
   performInverseTransform
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/geminiService';
-import { TransformMode, ActionType, ValidationResult } from './types';
+import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction } from './types';
+import { ShortcutModal } from './components/ShortcutModal';
+
+const DEFAULT_SHORTCUTS: ShortcutConfig = {
+  SAVE: { key: 's', meta: true, ctrl: false, shift: false, alt: false },
+  FORMAT: { key: 'f', meta: true, ctrl: false, shift: true, alt: false },
+  DEEP_FORMAT: { key: 'Enter', meta: true, ctrl: false, shift: false, alt: false },
+  MINIFY: { key: 'm', meta: true, ctrl: false, shift: true, alt: false },
+};
 
 const App: React.FC = () => {
   // The Source of Truth
@@ -23,11 +31,22 @@ const App: React.FC = () => {
   }, [input, mode]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
-  const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
+
+  const [isShortcutModalOpen, setIsShortcutModalOpen] = useState(false);
+  const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
+    const saved = localStorage.getItem('json-helper-shortcuts');
+    return saved ? JSON.parse(saved) : DEFAULT_SHORTCUTS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('json-helper-shortcuts', JSON.stringify(shortcuts));
+  }, [shortcuts]);
 
   // Layout State
   const [sidebarWidth, setSidebarWidth] = useState(220);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [leftPaneWidthPercent, setLeftPaneWidthPercent] = useState(50);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isResizingPane, setIsResizingPane] = useState(false);
@@ -149,27 +168,96 @@ const App: React.FC = () => {
     };
   }, [handleMouseMove]);
 
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Helper to check if event matches shortcut
+      const matches = (shortcut: ShortcutKey) => {
+        if (!shortcut.key) return false;
+        return (
+          e.key.toLowerCase() === shortcut.key.toLowerCase() &&
+          e.metaKey === shortcut.meta &&
+          e.ctrlKey === shortcut.ctrl &&
+          e.shiftKey === shortcut.shift &&
+          e.altKey === shortcut.alt
+        );
+      };
+
+      // Save
+      if (matches(shortcuts.SAVE)) {
+        e.preventDefault();
+        handleAction(ActionType.SAVE);
+        return;
+      }
+
+      // Format
+      if (matches(shortcuts.FORMAT)) {
+        e.preventDefault();
+        setMode(TransformMode.FORMAT);
+        return;
+      }
+
+      // Deep Format
+      if (matches(shortcuts.DEEP_FORMAT)) {
+        e.preventDefault();
+        setMode(TransformMode.DEEP_FORMAT);
+        return;
+      }
+
+      // Minify
+      if (matches(shortcuts.MINIFY)) {
+        e.preventDefault();
+        setMode(TransformMode.MINIFY);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleAction, shortcuts]);
+
+  const updateShortcut = (action: ShortcutAction, key: ShortcutKey) => {
+    setShortcuts(prev => ({ ...prev, [action]: key }));
+  };
+
+  const resetShortcuts = () => {
+    setShortcuts(DEFAULT_SHORTCUTS);
+  };
+
   return (
     <div ref={appRef} className="flex flex-col h-screen bg-[#1e1e1e] text-[#cccccc] font-sans overflow-hidden select-none">
+
+      <ShortcutModal
+        isOpen={isShortcutModalOpen}
+        onClose={() => setIsShortcutModalOpen(false)}
+        shortcuts={shortcuts}
+        onUpdateShortcut={updateShortcut}
+        onResetDefaults={resetShortcuts}
+      />
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden relative">
 
         {/* Sidebar (Mode Selector) */}
-        <div style={{ width: sidebarWidth }} className="flex-shrink-0 z-10 border-r border-[#1e1e1e]">
+        <div style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-[#1e1e1e] transition-all duration-300 ease-in-out">
           <ActionPanel
             activeMode={mode}
             onModeChange={setMode}
             onAction={handleAction}
             isProcessing={isProcessing}
+            onOpenShortcuts={() => setIsShortcutModalOpen(true)}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
         </div>
 
         {/* Sidebar Resizer */}
-        <div
-          className={`w-1 hover:bg-[#007acc] cursor-col-resize z-20 flex-shrink-0 ${isResizingSidebar ? 'bg-[#007acc]' : 'bg-[#252526]'}`}
-          onMouseDown={startResizingSidebar}
-        ></div>
+        {!isSidebarCollapsed && (
+          <div
+            className={`w-1 hover:bg-[#007acc] cursor-col-resize z-20 flex-shrink-0 ${isResizingSidebar ? 'bg-[#007acc]' : 'bg-[#252526]'}`}
+            onMouseDown={startResizingSidebar}
+          ></div>
+        )}
 
         {/* Editors Area */}
         <div className="flex-1 flex min-w-0 bg-[#1e1e1e]">
