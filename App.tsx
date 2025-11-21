@@ -45,6 +45,11 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
 
+  // File System Access API State
+  const [fileHandle, setFileHandle] = useState<any>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState<boolean>(false);
+
   const [isShortcutModalOpen, setIsShortcutModalOpen] = useState(false);
   const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
     const saved = localStorage.getItem('json-helper-shortcuts');
@@ -119,6 +124,24 @@ const App: React.FC = () => {
     setInput(newSource);
   };
 
+  // Auto Save Effect
+  useEffect(() => {
+    if (!isAutoSaveEnabled || !fileHandle) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const writable = await fileHandle.createWritable();
+        await writable.write(input);
+        await writable.close();
+        console.log('Auto-saved');
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+      }
+    }, 1000); // 1 second debounce
+
+    return () => clearTimeout(timer);
+  }, [input, fileHandle, isAutoSaveEnabled]);
+
   const handleAction = async (action: ActionType) => {
     if (action === ActionType.AI_FIX) {
       if (!input.trim()) return;
@@ -135,15 +158,56 @@ const App: React.FC = () => {
         setIsProcessing(false);
       }
     } else if (action === ActionType.SAVE) {
-      const blob = new Blob([output], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'result.json';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (fileHandle) {
+        try {
+          // Native Save
+          const writable = await fileHandle.createWritable();
+          await writable.write(output);
+          await writable.close();
+          // Optional: Show a toast or indicator here
+          console.log('File saved successfully');
+        } catch (err) {
+          console.error('Failed to save file:', err);
+          alert('保存文件失败，请重试');
+        }
+      } else {
+        // Fallback Download
+        const blob = new Blob([output], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'result.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } else if (action === ActionType.OPEN) {
+      try {
+        // @ts-ignore - File System Access API
+        const [handle] = await window.showOpenFilePicker({
+          types: [
+            {
+              description: 'Text Files',
+              accept: {
+                'text/plain': ['.txt', '.json', '.js', '.ts', '.md'],
+              },
+            },
+          ],
+          excludeAcceptAllOption: false,
+          multiple: false,
+        });
+
+        const file = await handle.getFile();
+        const contents = await file.text();
+
+        setFileHandle(handle);
+        setFileName(file.name);
+        handleInputChange(contents);
+      } catch (err) {
+        // User cancelled or API not supported
+        console.log('File open cancelled or failed', err);
+      }
     }
   };
 
@@ -276,11 +340,38 @@ const App: React.FC = () => {
           {/* Left Pane: Source Input */}
           <div style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
             <CodeEditor
-              label="SOURCE"
               value={input}
               onChange={handleInputChange}
+              label="SOURCE"
               placeholder="// 在此输入 JSON 或文本..."
-              error={!validation.isValid ? (validation.error || "Error") : undefined}
+              error={validation.isValid ? undefined : validation.error}
+              headerActions={
+                <button
+                  onClick={() => fileHandle && setIsAutoSaveEnabled(!isAutoSaveEnabled)}
+                  disabled={!fileHandle}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!fileHandle
+                    ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
+                    : isAutoSaveEnabled
+                      ? 'bg-green-900/30 text-green-300 border-green-900/50'
+                      : 'text-gray-400 border-transparent hover:bg-[#333]'
+                    }`}
+                  title={
+                    !fileHandle
+                      ? "请先打开文件以启用自动保存"
+                      : isAutoSaveEnabled
+                        ? "自动保存已开启"
+                        : "点击开启自动保存"
+                  }
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${!fileHandle
+                    ? 'bg-gray-700'
+                    : isAutoSaveEnabled
+                      ? 'bg-green-500 animate-pulse'
+                      : 'bg-gray-500'
+                    }`}></div>
+                  <span>自动保存</span>
+                </button>
+              }
             />
           </div>
 
@@ -315,6 +406,12 @@ const App: React.FC = () => {
         <div className="flex gap-4">
           <span className="flex items-center gap-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg> UTF-8</span>
           <span>Length: {input.length}</span>
+          {fileName && (
+            <span className="flex items-center gap-1 text-blue-200">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              {fileName}
+            </span>
+          )}
         </div>
         <div className="flex gap-2 items-center">
           <span className="opacity-80">当前视图:</span>

@@ -1,3 +1,4 @@
+import React from 'react';
 
 export enum TransformMode {
   NONE = 'NONE',
@@ -12,7 +13,8 @@ export enum TransformMode {
 
 export enum ActionType {
   AI_FIX = 'AI_FIX',
-  SAVE = 'SAVE'
+  SAVE = 'SAVE',
+  OPEN = 'OPEN'
 }
 
 export interface ValidationResult {
@@ -40,4 +42,5 @@ export interface EditorProps {
   placeholder?: string;
   label: string;
   error?: ValidationResult;
+  headerActions?: React.ReactNode;
 }
