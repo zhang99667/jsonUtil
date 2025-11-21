@@ -147,6 +147,21 @@ const deepParseJson = (input: string): string => {
   }
 };
 
+const detectIndentation = (jsonString: string): number | string => {
+  const lines = jsonString.split('\n');
+  if (lines.length <= 1) return 0; // Minified or empty
+
+  for (const line of lines) {
+    if (line.trim() !== '') {
+      const match = line.match(/^(\s+)/);
+      if (match) {
+        return match[1]; // Return the actual whitespace string (e.g., "  " or "\t")
+      }
+    }
+  }
+  return 2; // Default to 2 spaces if no indentation found but multi-line
+};
+
 const smartInverse = (output: string, originalInput: string): string => {
   try {
     const outputObj = JSON.parse(output);
@@ -185,7 +200,13 @@ const smartInverse = (output: string, originalInput: string): string => {
     };
 
     const result = deepMerge(outputObj, originalObj);
-    return JSON.stringify(result, null, 2);
+    const indentation = detectIndentation(originalInput);
+
+    // If indentation is 0 (minified), use JSON.stringify without space argument
+    if (indentation === 0) {
+      return JSON.stringify(result);
+    }
+    return JSON.stringify(result, null, indentation);
   } catch (e) {
     // Fallback: if we can't smartly merge, just return the minified version or whatever makes sense.
     // But user asked to keep format, so maybe just return output as is if it's valid JSON?
