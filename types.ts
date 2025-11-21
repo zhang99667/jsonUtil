@@ -3,7 +3,6 @@ export enum TransformMode {
   NONE = 'NONE',
   FORMAT = 'FORMAT',
   MINIFY = 'MINIFY',
-  SMART_FORMAT = 'SMART_FORMAT', // New mode for Unescape + Format
   ESCAPE = 'ESCAPE',
   UNESCAPE = 'UNESCAPE',
   UNICODE_TO_CN = 'UNICODE_TO_CN',

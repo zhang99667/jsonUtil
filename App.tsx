@@ -23,6 +23,7 @@ const App: React.FC = () => {
   }, [input, mode]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
+  const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // Layout State
@@ -70,8 +71,21 @@ const App: React.FC = () => {
   // Handle Right Pane Changes (Update Source via Inverse Transform)
   // This is only called when the user edits the right pane (after unlocking read-only)
   const handleOutputChange = (newVal: string) => {
+    // Independent Validation for Preview Pane
+    if (newVal && newVal.trim()) {
+      const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
+      if (cleanVal.trim().startsWith('{') || cleanVal.trim().startsWith('[')) {
+        setPreviewValidation(validateJson(cleanVal));
+      } else {
+        setPreviewValidation({ isValid: true });
+      }
+    } else {
+      setPreviewValidation({ isValid: true });
+    }
+
     // Guard: If we are in NONE mode, it's a direct mirror, but logic flows through performInverseTransform correctly anyway.
-    const newSource = performInverseTransform(newVal, mode);
+    // Pass 'input' (current source) as originalInput for smart inverse
+    const newSource = performInverseTransform(newVal, mode, input);
     setInput(newSource);
   };
 
@@ -176,7 +190,7 @@ const App: React.FC = () => {
               readOnly={true} // Default to read-only
               canToggleReadOnly={true} // User can click lock icon to edit
               placeholder="// 结果显示区..."
-              error={!validation.isValid ? (validation.error || "Error") : undefined}
+              error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
             />
           </div>
         </div>

@@ -147,6 +147,59 @@ const deepParseJson = (input: string): string => {
   }
 };
 
+const smartInverse = (output: string, originalInput: string): string => {
+  try {
+    const outputObj = JSON.parse(output);
+    const originalObj = JSON.parse(originalInput);
+
+    const deepMerge = (out: any, orig: any): any => {
+      // If original was a string but output is an object, it means it was expanded.
+      // We need to stringify the output object back to a string.
+      if (typeof orig === 'string' && typeof out === 'object' && out !== null) {
+        return JSON.stringify(out);
+      }
+
+      if (Array.isArray(out) && Array.isArray(orig)) {
+        return out.map((item, index) => {
+          // Try to match with original item if possible, otherwise just return item
+          if (index < orig.length) {
+            return deepMerge(item, orig[index]);
+          }
+          return item;
+        });
+      }
+
+      if (typeof out === 'object' && out !== null && typeof orig === 'object' && orig !== null) {
+        const newObj: any = {};
+        for (const key in out) {
+          if (key in orig) {
+            newObj[key] = deepMerge(out[key], orig[key]);
+          } else {
+            newObj[key] = out[key];
+          }
+        }
+        return newObj;
+      }
+
+      return out;
+    };
+
+    const result = deepMerge(outputObj, originalObj);
+    return JSON.stringify(result, null, 2);
+  } catch (e) {
+    // Fallback: if we can't smartly merge, just return the minified version or whatever makes sense.
+    // But user asked to keep format, so maybe just return output as is if it's valid JSON?
+    // Or better, try to minify if it was minified? 
+    // For now let's just return standard format as a safe fallback.
+    try {
+      const parsed = JSON.parse(output);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return output;
+    }
+  }
+};
+
 // --- Bi-directional Logic ---
 
 // Left -> Right
@@ -160,12 +213,6 @@ export const performTransform = (input: string, mode: TransformMode): string => 
       case TransformMode.ESCAPE: return escapeString(input);
       case TransformMode.UNESCAPE: return unescapeString(input);
 
-      // New Smart Logic: Unescape first, then Format
-      case TransformMode.SMART_FORMAT: {
-        const unescaped = unescapeString(input);
-        return formatJson(unescaped);
-      }
-
       case TransformMode.UNICODE_TO_CN: return unicodeToCn(input);
       case TransformMode.CN_TO_UNICODE: return cnToUnicode(input);
       default: return input;
@@ -176,22 +223,20 @@ export const performTransform = (input: string, mode: TransformMode): string => 
 };
 
 // Right -> Left (When user edits the preview)
-export const performInverseTransform = (output: string, mode: TransformMode): string => {
+export const performInverseTransform = (output: string, mode: TransformMode, originalInput?: string): string => {
   if (!output) return '';
   try {
     switch (mode) {
       case TransformMode.NONE: return output;
-      case TransformMode.FORMAT: return minifyJson(output);
+      case TransformMode.FORMAT:
+        if (originalInput) {
+          return smartInverse(output, originalInput);
+        }
+        return minifyJson(output);
       case TransformMode.MINIFY: return output;
 
       case TransformMode.ESCAPE: return unescapeString(output);
       case TransformMode.UNESCAPE: return escapeString(output);
-
-      // New Smart Logic Inverse: Minify first, then Escape
-      case TransformMode.SMART_FORMAT: {
-        const minified = minifyJson(output);
-        return escapeString(minified);
-      }
 
       case TransformMode.UNICODE_TO_CN: return cnToUnicode(output);
       case TransformMode.CN_TO_UNICODE: return unicodeToCn(output);
