@@ -1,5 +1,6 @@
 
-import React from 'react';
+
+import React, { useRef, useState, useEffect } from 'react';
 import { TransformMode, ActionType } from '../types';
 
 interface ActionPanelProps {
@@ -22,6 +23,90 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onToggleCollapse
 }) => {
 
+  // Custom Scrollbar State
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [scrollHeight, setScrollHeight] = useState(0);
+  const [clientHeight, setClientHeight] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [startScrollTop, setStartScrollTop] = useState(0);
+
+  // Update scroll dimensions
+  const updateScrollDimensions = () => {
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      setScrollTop(scrollTop);
+      setScrollHeight(scrollHeight);
+      setClientHeight(clientHeight);
+    }
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollDimensions();
+    });
+
+    resizeObserver.observe(container);
+    // Also observe children to detect content changes
+    Array.from(container.children).forEach(child => resizeObserver.observe(child as Element));
+
+    return () => resizeObserver.disconnect();
+  }, [isCollapsed]); // Re-attach when collapse state changes
+
+  // Handle scroll event
+  const handleScroll = () => {
+    updateScrollDimensions();
+  };
+
+  // Handle drag start
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartY(e.pageY);
+    setStartScrollTop(scrollTop);
+    e.preventDefault();
+  };
+
+  // Handle drag move and end
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !scrollContainerRef.current) return;
+
+      const delta = e.pageY - startY;
+      const scrollRatio = scrollHeight / clientHeight;
+      const newScrollTop = startScrollTop + delta * scrollRatio;
+
+      scrollContainerRef.current.scrollTop = newScrollTop;
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, startY, startScrollTop, scrollHeight, clientHeight]);
+
+  // Calculate thumb styles
+  const rawThumbHeight = (clientHeight / scrollHeight) * 100;
+  const thumbHeight = Math.max(rawThumbHeight, 5); // Min 5% height
+
+  const effectiveThumbHeight = Math.max(rawThumbHeight, 5);
+  const thumbTop = (scrollTop / (scrollHeight - clientHeight)) * (100 - effectiveThumbHeight);
+
+  // Show scrollbar if content overflows
+  const showScrollbar = scrollHeight > clientHeight + 1;
+
   const renderToolBtn = (mode: TransformMode, label: string, icon: React.ReactNode, colorClass: string) => {
     return (
       <button
@@ -38,7 +123,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   };
 
   return (
-    <div className="h-full bg-[#1e1e1e] flex flex-col overflow-y-auto p-3 border-r border-[#1e1e1e]">
+    <div className={`h-full bg-[#1e1e1e] flex flex-col p-3 border-r border-[#1e1e1e] group/sidebar ${isCollapsed ? 'overflow-y-auto [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar]:opacity-0 hover:[&::-webkit-scrollbar]:opacity-100 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#424242] [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#4f4f4f] [&::-webkit-scrollbar]:transition-opacity [&::-webkit-scrollbar]:duration-200' : 'overflow-y-auto [&::-webkit-scrollbar]:w-[8px] [&::-webkit-scrollbar-track]:bg-[#1e1e1e] [&::-webkit-scrollbar-thumb]:bg-[#424242] [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#1e1e1e] hover:[&::-webkit-scrollbar-thumb]:bg-[#4f4f4f]'}`}>
       {/* Sidebar Header */}
       <div className={`px-2 mb-6 mt-1 pb-4 border-b border-[#333] flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
         {!isCollapsed && (
