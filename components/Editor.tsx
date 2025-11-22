@@ -11,7 +11,9 @@ export const CodeEditor: React.FC<EditorProps> = ({
   canToggleReadOnly = false,
   label,
   error,
-  headerActions
+  headerActions,
+  fileName,
+  onCloseFile
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
@@ -69,14 +71,31 @@ export const CodeEditor: React.FC<EditorProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e] border-r border-[#1e1e1e] group">
       {/* Header */}
-      <div className="flex justify-between items-center bg-[#252526] px-4 py-2 border-t border-[#454545] select-none h-9 min-h-[36px]">
-        <div className="flex items-center gap-3">
+      <div className="flex justify-between items-center bg-[#252526] px-4 border-t border-[#454545] select-none h-9 min-h-[36px]">
+        <div className="flex items-center gap-3 h-full">
           <span className={`text-xs font-bold font-mono uppercase ${getLanguageColor(language)}`}>
             {language === 'plaintext' ? 'TXT' : language}
           </span>
           <label className="text-xs font-sans text-gray-300 tracking-wide cursor-default opacity-80 italic">
             {label}
           </label>
+
+          {fileName && (
+            <div className="flex items-center gap-2 px-3 h-full bg-[#1e1e1e] border-t-2 border-t-[#0078d4] border-r border-r-[#252526] text-[13px] text-white relative top-[1px] select-none group/tab">
+              <svg className="w-3.5 h-3.5 text-[#e8b05f]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <span className="truncate max-w-[150px]">{fileName}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCloseFile?.();
+                }}
+                className="opacity-0 group-hover/tab:opacity-100 hover:bg-[#333] rounded p-0.5 transition-all ml-1"
+                title="Close"
+              >
+                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          )}
 
           {readOnly && !canToggleReadOnly && (
             <span className="text-[10px] text-gray-500 bg-[#333] px-1.5 rounded border border-[#454545]">READ ONLY</span>

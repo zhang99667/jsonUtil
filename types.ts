@@ -41,6 +41,9 @@ export interface EditorProps {
   language?: string;
   placeholder?: string;
   label: string;
-  error?: ValidationResult;
+  error?: string;
+  canToggleReadOnly?: boolean;
   headerActions?: React.ReactNode;
+  fileName?: string | null;
+  onCloseFile?: () => void;
 }

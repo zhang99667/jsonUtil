@@ -299,6 +299,13 @@ const App: React.FC = () => {
     setShortcuts(DEFAULT_SHORTCUTS);
   };
 
+  const closeFile = () => {
+    setFileHandle(null);
+    setFileName(null);
+    setIsAutoSaveEnabled(false);
+    setInput('');
+  };
+
   return (
     <div ref={appRef} className="flex flex-col h-screen bg-[#1e1e1e] text-[#cccccc] font-sans overflow-hidden select-none">
 
@@ -343,6 +350,8 @@ const App: React.FC = () => {
               value={input}
               onChange={handleInputChange}
               label="SOURCE"
+              fileName={fileName}
+              onCloseFile={closeFile}
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               headerActions={
