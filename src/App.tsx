@@ -44,6 +44,9 @@ const App: React.FC = () => {
   // Use ref to store the pending output value being edited
   const pendingOutputValue = useRef<string>('');
 
+  // Use ref to store the debounce timer for output changes
+  const outputChangeTimer = useRef<NodeJS.Timeout | null>(null);
+
   // The View Mode
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
 
@@ -149,13 +152,14 @@ const App: React.FC = () => {
   // Handle Right Pane Changes (Update Source via Inverse Transform)
   // This is only called when the user edits the right pane (after unlocking read-only)
   const handleOutputChange = (newVal: string) => {
-    // Store the value being edited to prevent it from being overwritten
+    // IMMEDIATE: Store the value being edited to prevent it from being overwritten
+    // This keeps the editor responsive and prevents content from being replaced
     pendingOutputValue.current = newVal;
 
     // Set flag to prevent feedback loop
     isUpdatingFromOutput.current = true;
 
-    // Independent Validation for Preview Pane
+    // IMMEDIATE: Independent Validation for Preview Pane (fast, no heavy computation)
     if (newVal && newVal.trim()) {
       const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
       if (cleanVal.trim().startsWith('{') || cleanVal.trim().startsWith('[')) {
@@ -167,28 +171,36 @@ const App: React.FC = () => {
       setPreviewValidation({ isValid: true });
     }
 
-    // CRITICAL FIX: Use inputRef.current instead of input state to avoid race conditions
-    // When typing rapidly, the 'input' state might be stale, but inputRef.current is always fresh
-    // This prevents the inverse transform from using outdated originalInput and losing structure
-    const newSource = performInverseTransform(newVal, mode, inputRef.current);
-    setInput(newSource);
-
-    // CRITICAL: Update ref immediately to keep it in sync
-    inputRef.current = newSource;
-
-    // Update active file content as well
-    if (activeFileId) {
-      setFiles(prev => prev.map(f =>
-        f.id === activeFileId ? { ...f, content: newSource, isDirty: true } : f
-      ));
+    // DEBOUNCED: Clear any existing timer to restart the countdown
+    if (outputChangeTimer.current) {
+      clearTimeout(outputChangeTimer.current);
     }
 
-    // Reset flags after state updates have been processed
-    // Use setTimeout to ensure this happens after React's render cycle
-    setTimeout(() => {
-      isUpdatingFromOutput.current = false;
-      pendingOutputValue.current = '';
-    }, 100); // Small delay to allow React to complete the update
+    // DEBOUNCED: Schedule the heavy computation (performInverseTransform) and state updates
+    // Only execute after user stops typing for 150ms
+    outputChangeTimer.current = setTimeout(() => {
+      // CRITICAL FIX: Use inputRef.current instead of input state to avoid race conditions
+      // When typing rapidly, the 'input' state might be stale, but inputRef.current is always fresh
+      // This prevents the inverse transform from using outdated originalInput and losing structure
+      const newSource = performInverseTransform(newVal, mode, inputRef.current);
+      setInput(newSource);
+
+      // CRITICAL: Update ref immediately to keep it in sync
+      inputRef.current = newSource;
+
+      // Update active file content as well
+      if (activeFileId) {
+        setFiles(prev => prev.map(f =>
+          f.id === activeFileId ? { ...f, content: newSource, isDirty: true } : f
+        ));
+      }
+
+      // Reset flags after processing is complete
+      setTimeout(() => {
+        isUpdatingFromOutput.current = false;
+        pendingOutputValue.current = '';
+      }, 100);
+    }, 150); // Debounce delay: wait 150ms after user stops typing
   };
 
   // Auto Save Effect
