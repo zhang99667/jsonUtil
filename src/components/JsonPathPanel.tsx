@@ -207,14 +207,28 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                         </div>
                         <div className="max-h-[150px] overflow-y-auto space-y-1">
                             {history.map((item, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setQuery(item)}
-                                    className="w-full text-left text-xs px-2 py-1.5 bg-[#1e1e1e] text-gray-300 rounded hover:bg-[#333] transition-colors font-mono truncate"
-                                    title={item}
-                                >
-                                    {item}
-                                </button>
+                                <div key={idx} className="relative group">
+                                    <button
+                                        onClick={() => setQuery(item)}
+                                        className="w-full text-left text-xs px-2 py-1.5 bg-[#1e1e1e] text-gray-300 rounded hover:bg-[#333] transition-colors font-mono truncate pr-7"
+                                        title={item}
+                                    >
+                                        {item}
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const newHistory = history.filter((_, i) => i !== idx);
+                                            setHistory(newHistory);
+                                        }}
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-[#444] opacity-0 group-hover:opacity-100 transition-all"
+                                        title="删除此记录"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
                             ))}
                         </div>
                     </div>

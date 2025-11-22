@@ -611,7 +611,10 @@ const App: React.FC = () => {
         <JsonPathPanel
           jsonData={deepFormattedOutput} // Always use deep formatted data for querying
           isOpen={isJsonPathPanelOpen}
-          onClose={() => setIsJsonPathPanelOpen(false)}
+          onClose={() => {
+            setIsJsonPathPanelOpen(false);
+            setHighlightRange(null); // Clear highlight when panel closes
+          }}
           onQueryResult={handleJsonPathQuery}
         />
 
