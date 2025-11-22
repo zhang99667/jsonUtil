@@ -34,6 +34,14 @@ export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY';
 
 export type ShortcutConfig = Record<ShortcutAction, ShortcutKey>;
 
+export interface FileTab {
+  id: string;
+  name: string;
+  content: string;
+  handle?: any; // FileSystemFileHandle
+  isDirty?: boolean;
+}
+
 export interface EditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -44,6 +52,8 @@ export interface EditorProps {
   error?: string;
   canToggleReadOnly?: boolean;
   headerActions?: React.ReactNode;
-  fileName?: string | null;
-  onCloseFile?: () => void;
+  files?: FileTab[];
+  activeFileId?: string | null;
+  onTabClick?: (id: string) => void;
+  onCloseFile?: (id: string) => void;
 }

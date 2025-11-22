@@ -8,7 +8,7 @@ import {
   performInverseTransform
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/geminiService';
-import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction } from './types';
+import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction, FileTab } from './types';
 import { ShortcutModal } from './components/ShortcutModal';
 
 const DEFAULT_SHORTCUTS: ShortcutConfig = {
@@ -46,8 +46,8 @@ const App: React.FC = () => {
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
 
   // File System Access API State
-  const [fileHandle, setFileHandle] = useState<any>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [files, setFiles] = useState<FileTab[]>([]);
+  const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState<boolean>(false);
 
   const [isShortcutModalOpen, setIsShortcutModalOpen] = useState(false);
@@ -94,6 +94,13 @@ const App: React.FC = () => {
     const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
     setInput(cleanVal);
 
+    // Update the content of the active file in the files list
+    if (activeFileId) {
+      setFiles(prev => prev.map(f =>
+        f.id === activeFileId ? { ...f, content: cleanVal, isDirty: true } : f
+      ));
+    }
+
     // CRITICAL CHANGE: 
     // When user types or pastes in the source, RESET the mode to NONE (Raw).
     // This prevents previous modes (like Escape/Format) from automatically applying
@@ -122,15 +129,23 @@ const App: React.FC = () => {
     // Pass 'input' (current source) as originalInput for smart inverse
     const newSource = performInverseTransform(newVal, mode, input);
     setInput(newSource);
+
+    // Update active file content as well
+    if (activeFileId) {
+      setFiles(prev => prev.map(f =>
+        f.id === activeFileId ? { ...f, content: newSource, isDirty: true } : f
+      ));
+    }
   };
 
   // Auto Save Effect
   useEffect(() => {
-    if (!isAutoSaveEnabled || !fileHandle) return;
+    const activeFile = files.find(f => f.id === activeFileId);
+    if (!isAutoSaveEnabled || !activeFile?.handle) return;
 
     const timer = setTimeout(async () => {
       try {
-        const writable = await fileHandle.createWritable();
+        const writable = await activeFile.handle.createWritable();
         await writable.write(input);
         await writable.close();
         console.log('Auto-saved');
@@ -140,7 +155,7 @@ const App: React.FC = () => {
     }, 1000); // 1 second debounce
 
     return () => clearTimeout(timer);
-  }, [input, fileHandle, isAutoSaveEnabled]);
+  }, [input, activeFileId, files, isAutoSaveEnabled]);
 
   const handleAction = async (action: ActionType) => {
     if (action === ActionType.AI_FIX) {
@@ -158,10 +173,11 @@ const App: React.FC = () => {
         setIsProcessing(false);
       }
     } else if (action === ActionType.SAVE) {
-      if (fileHandle) {
+      const activeFile = files.find(f => f.id === activeFileId);
+      if (activeFile?.handle) {
         try {
           // Native Save
-          const writable = await fileHandle.createWritable();
+          const writable = await activeFile.handle.createWritable();
           await writable.write(output);
           await writable.close();
           // Optional: Show a toast or indicator here
@@ -200,10 +216,22 @@ const App: React.FC = () => {
 
         const file = await handle.getFile();
         const contents = await file.text();
+        const newFileId = crypto.randomUUID();
 
-        setFileHandle(handle);
-        setFileName(file.name);
-        handleInputChange(contents);
+        const newFile: FileTab = {
+          id: newFileId,
+          name: file.name,
+          content: contents,
+          handle: handle,
+          isDirty: false
+        };
+
+        setFiles(prev => [...prev, newFile]);
+        setActiveFileId(newFileId);
+        setInput(contents);
+
+        // Reset mode for new file
+        setMode(TransformMode.NONE);
       } catch (err) {
         // User cancelled or API not supported
         console.log('File open cancelled or failed', err);
@@ -299,11 +327,33 @@ const App: React.FC = () => {
     setShortcuts(DEFAULT_SHORTCUTS);
   };
 
-  const closeFile = () => {
-    setFileHandle(null);
-    setFileName(null);
-    setIsAutoSaveEnabled(false);
-    setInput('');
+  const closeFile = (id: string) => {
+    const newFiles = files.filter(f => f.id !== id);
+    setFiles(newFiles);
+
+    if (id === activeFileId) {
+      if (newFiles.length > 0) {
+        // Switch to the last file
+        const nextFile = newFiles[newFiles.length - 1];
+        setActiveFileId(nextFile.id);
+        setInput(nextFile.content);
+        setMode(TransformMode.NONE);
+      } else {
+        // No files left
+        setActiveFileId(null);
+        setInput('');
+        setMode(TransformMode.NONE);
+      }
+    }
+  };
+
+  const switchTab = (id: string) => {
+    const file = files.find(f => f.id === id);
+    if (file) {
+      setActiveFileId(id);
+      setInput(file.content);
+      setMode(TransformMode.NONE);
+    }
   };
 
   return (
@@ -350,29 +400,31 @@ const App: React.FC = () => {
               value={input}
               onChange={handleInputChange}
               label="SOURCE"
-              fileName={fileName}
+              files={files}
+              activeFileId={activeFileId}
+              onTabClick={switchTab}
               onCloseFile={closeFile}
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               headerActions={
                 <button
-                  onClick={() => fileHandle && setIsAutoSaveEnabled(!isAutoSaveEnabled)}
-                  disabled={!fileHandle}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!fileHandle
+                  onClick={() => activeFileId && setIsAutoSaveEnabled(!isAutoSaveEnabled)}
+                  disabled={!activeFileId}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
                     ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
                     : isAutoSaveEnabled
                       ? 'bg-green-900/30 text-green-300 border-green-900/50'
                       : 'text-gray-400 border-transparent hover:bg-[#333]'
                     }`}
                   title={
-                    !fileHandle
+                    !activeFileId
                       ? "请先打开文件以启用自动保存"
                       : isAutoSaveEnabled
                         ? "自动保存已开启"
                         : "点击开启自动保存"
                   }
                 >
-                  <div className={`w-1.5 h-1.5 rounded-full ${!fileHandle
+                  <div className={`w-1.5 h-1.5 rounded-full ${!activeFileId
                     ? 'bg-gray-700'
                     : isAutoSaveEnabled
                       ? 'bg-green-500 animate-pulse'
@@ -415,10 +467,10 @@ const App: React.FC = () => {
         <div className="flex gap-4">
           <span className="flex items-center gap-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg> UTF-8</span>
           <span>Length: {input.length}</span>
-          {fileName && (
+          {activeFileId && (
             <span className="flex items-center gap-1 text-blue-200">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              {fileName}
+              {files.find(f => f.id === activeFileId)?.name}
             </span>
           )}
         </div>

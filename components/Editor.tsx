@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
 import { EditorProps } from '../types';
 import { detectLanguage } from '../utils/transformations';
@@ -12,13 +12,101 @@ export const CodeEditor: React.FC<EditorProps> = ({
   label,
   error,
   headerActions,
-  fileName,
+  files,
+  activeFileId,
+  onTabClick,
   onCloseFile
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
   const [isLocked, setIsLocked] = useState<boolean>(true);
   const monaco = useMonaco();
+
+  // Custom Scrollbar State
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollWidth, setScrollWidth] = useState(0);
+  const [clientWidth, setClientWidth] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startScrollLeft, setStartScrollLeft] = useState(0);
+
+  // Update scroll dimensions
+  const updateScrollDimensions = () => {
+    if (tabsContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
+      setScrollLeft(scrollLeft);
+      setScrollWidth(scrollWidth);
+      setClientWidth(clientWidth);
+    }
+  };
+
+  useEffect(() => {
+    const container = tabsContainerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollDimensions();
+    });
+
+    resizeObserver.observe(container);
+    // Also observe children to detect content changes
+    Array.from(container.children).forEach(child => resizeObserver.observe(child as Element));
+
+    return () => resizeObserver.disconnect();
+  }, [files]);
+
+  // Handle scroll event
+  const handleScroll = () => {
+    updateScrollDimensions();
+  };
+
+  // Handle drag start
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartX(e.pageX);
+    setStartScrollLeft(scrollLeft);
+    e.preventDefault();
+  };
+
+  // Handle drag move and end
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !tabsContainerRef.current) return;
+
+      const delta = e.pageX - startX;
+      const scrollRatio = scrollWidth / clientWidth;
+      const newScrollLeft = startScrollLeft + delta * scrollRatio;
+
+      tabsContainerRef.current.scrollLeft = newScrollLeft;
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, startX, startScrollLeft, scrollWidth, clientWidth]);
+
+  // Calculate thumb styles
+  // Ensure thumb is at least 20px wide so it's always clickable
+  const rawThumbWidth = (clientWidth / scrollWidth) * 100;
+  const thumbWidth = Math.max(rawThumbWidth, (20 / clientWidth) * 100 * (scrollWidth / clientWidth)); // Approximate min width logic
+
+  // Adjust left position to account for min-width
+  const effectiveThumbWidth = Math.max(rawThumbWidth, 5); // Min 5% width
+  const thumbLeft = (scrollLeft / (scrollWidth - clientWidth)) * (100 - effectiveThumbWidth);
+
+  // Show scrollbar if content overflows
+  const showScrollbar = scrollWidth > clientWidth + 1; // +1 for subpixel safety
 
   useEffect(() => {
     const detected = detectLanguage(value);
@@ -71,38 +159,72 @@ export const CodeEditor: React.FC<EditorProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e] border-r border-[#1e1e1e] group">
       {/* Header */}
-      <div className="flex justify-between items-center bg-[#252526] px-4 border-t border-[#454545] select-none h-9 min-h-[36px]">
-        <div className="flex items-center gap-3 h-full">
-          <span className={`text-xs font-bold font-mono uppercase ${getLanguageColor(language)}`}>
+      {/* Header */}
+      {/* Header */}
+      <div className="flex items-center bg-[#252526] pl-4 pr-2 border-t border-[#454545] select-none h-9 min-h-[36px] group/header">
+        <div className="flex items-center gap-3 h-full flex-1 min-w-0 overflow-hidden">
+          <span className={`text-xs font-bold font-mono uppercase flex-shrink-0 ${getLanguageColor(language)}`}>
             {language === 'plaintext' ? 'TXT' : language}
           </span>
-          <label className="text-xs font-sans text-gray-300 tracking-wide cursor-default opacity-80 italic">
+          <label className="text-xs font-sans text-gray-300 tracking-wide cursor-default opacity-80 italic flex-shrink-0">
             {label}
           </label>
 
-          {fileName && (
-            <div className="flex items-center gap-2 px-3 h-full bg-[#1e1e1e] border-t-2 border-t-[#0078d4] border-r border-r-[#252526] text-[13px] text-white relative top-[1px] select-none group/tab">
-              <svg className="w-3.5 h-3.5 text-[#e8b05f]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              <span className="truncate max-w-[150px]">{fileName}</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCloseFile?.();
-                }}
-                className="opacity-0 group-hover/tab:opacity-100 hover:bg-[#333] rounded p-0.5 transition-all ml-1"
-                title="Close"
+          {files && files.length > 0 && (
+            <div className="flex-1 h-full relative min-w-0 ml-2 flex flex-col justify-end">
+              <div
+                ref={tabsContainerRef}
+                onScroll={handleScroll}
+                className="flex items-center h-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden scrollbar-hide"
               >
-                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+                {files.map(file => (
+                  <div
+                    key={file.id}
+                    onClick={() => onTabClick?.(file.id)}
+                    className={`flex items-center gap-2 px-3 h-full border-r border-r-[#252526] text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
+                      ? 'bg-[#1e1e1e] text-white border-t-2 border-t-[#0078d4] relative top-[1px]'
+                      : 'bg-[#2d2d2d] text-[#969696] border-t border-t-transparent hover:bg-[#2a2d2e] mb-[1px]'
+                      }`}
+                    title={file.name}
+                  >
+                    <svg className={`w-3.5 h-3.5 flex-shrink-0 ${file.id === activeFileId ? 'text-[#e8b05f]' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <span className="truncate flex-1">{file.name}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCloseFile?.(file.id);
+                      }}
+                      className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 ${file.id === activeFileId ? 'opacity-0 group-hover/tab:opacity-100 hover:bg-[#333]' : 'opacity-0 group-hover/tab:opacity-100 hover:bg-[#444]'}`}
+                      title="Close"
+                    >
+                      <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Custom Overlay Scrollbar */}
+              {showScrollbar && (
+                <div className="absolute bottom-0 left-0 w-full h-[3px] z-10 opacity-0 group-hover/header:opacity-100 transition-opacity duration-200">
+                  <div
+                    className="h-full bg-[#424242] hover:bg-[#4f4f4f] rounded-full cursor-pointer relative"
+                    style={{
+                      width: `${thumbWidth}%`,
+                      left: `${thumbLeft}%`
+                    }}
+                    onMouseDown={handleMouseDown}
+                  />
+                </div>
+              )}
             </div>
           )}
 
           {readOnly && !canToggleReadOnly && (
-            <span className="text-[10px] text-gray-500 bg-[#333] px-1.5 rounded border border-[#454545]">READ ONLY</span>
+            <span className="text-[10px] text-gray-500 bg-[#333] px-1.5 rounded border border-[#454545] flex-shrink-0">READ ONLY</span>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0 ml-2">
           {/* Custom Header Actions */}
           {headerActions}
 
