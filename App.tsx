@@ -8,14 +8,15 @@ import {
   performInverseTransform
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/geminiService';
-import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction, FileTab } from './types';
-import { ShortcutModal } from './components/ShortcutModal';
+import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
+import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction, FileTab, AIConfig, AIProvider } from './types';
 
 const DEFAULT_SHORTCUTS: ShortcutConfig = {
   SAVE: { key: 's', meta: true, ctrl: false, shift: false, alt: false },
   FORMAT: { key: 'f', meta: true, ctrl: false, shift: true, alt: false },
   DEEP_FORMAT: { key: 'Enter', meta: true, ctrl: false, shift: false, alt: false },
   MINIFY: { key: 'm', meta: true, ctrl: false, shift: true, alt: false },
+  CLOSE_TAB: { key: 'w', meta: true, ctrl: false, shift: false, alt: false },
 };
 
 const MODE_LABELS: Record<TransformMode, string> = {
@@ -50,11 +51,23 @@ const App: React.FC = () => {
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState<boolean>(false);
 
-  const [isShortcutModalOpen, setIsShortcutModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
     const saved = localStorage.getItem('json-helper-shortcuts');
     return saved ? JSON.parse(saved) : DEFAULT_SHORTCUTS;
   });
+  const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
+    const saved = localStorage.getItem('json-helper-ai-config');
+    return saved ? JSON.parse(saved) : {
+      provider: AIProvider.GEMINI,
+      apiKey: '',
+      model: 'gemini-2.0-flash'
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('json-helper-ai-config', JSON.stringify(aiConfig));
+  }, [aiConfig]);
 
   useEffect(() => {
     localStorage.setItem('json-helper-shortcuts', JSON.stringify(shortcuts));
@@ -163,7 +176,7 @@ const App: React.FC = () => {
       setIsProcessing(true);
       try {
         // AI Fix logic operates on Input directly
-        const fixed = await fixJsonWithAI(input);
+        const fixed = await fixJsonWithAI(input, aiConfig);
         setInput(fixed);
         // Automatically switch to Format mode to show the result nicely
         setMode(TransformMode.FORMAT);
@@ -313,6 +326,15 @@ const App: React.FC = () => {
         setMode(TransformMode.MINIFY);
         return;
       }
+
+      // Close Tab
+      if (matches(shortcuts.CLOSE_TAB)) {
+        e.preventDefault();
+        if (activeFileId) {
+          closeFile(activeFileId);
+        }
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -359,12 +381,14 @@ const App: React.FC = () => {
   return (
     <div ref={appRef} className="flex flex-col h-screen bg-[#1e1e1e] text-[#cccccc] font-sans overflow-hidden select-none">
 
-      <ShortcutModal
-        isOpen={isShortcutModalOpen}
-        onClose={() => setIsShortcutModalOpen(false)}
+      <UnifiedSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
         shortcuts={shortcuts}
         onUpdateShortcut={updateShortcut}
-        onResetDefaults={resetShortcuts}
+        onResetShortcuts={resetShortcuts}
+        aiConfig={aiConfig}
+        onSaveAIConfig={setAiConfig}
       />
 
       {/* Main Workspace */}
@@ -377,7 +401,7 @@ const App: React.FC = () => {
             onModeChange={setMode}
             onAction={handleAction}
             isProcessing={isProcessing}
-            onOpenShortcuts={() => setIsShortcutModalOpen(true)}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />

@@ -17,6 +17,23 @@ export enum ActionType {
   OPEN = 'OPEN'
 }
 
+export enum AIProvider {
+  GEMINI = 'gemini',
+  OPENAI = 'openai',
+  QWEN = 'qwen',
+  ERNIE = 'ernie',
+  GLM = 'glm',
+  DEEPSEEK = 'deepseek',
+  CUSTOM = 'custom'
+}
+
+export interface AIConfig {
+  provider: AIProvider;
+  apiKey: string;
+  model: string;
+  baseUrl?: string;
+}
+
 export interface ValidationResult {
   isValid: boolean;
   error?: string;
@@ -30,7 +47,7 @@ export interface ShortcutKey {
   alt: boolean;
 }
 
-export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY';
+export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY' | 'CLOSE_TAB';
 
 export type ShortcutConfig = Record<ShortcutAction, ShortcutKey>;
 

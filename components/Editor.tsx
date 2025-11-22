@@ -54,7 +54,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
     Array.from(container.children).forEach(child => resizeObserver.observe(child as Element));
 
     return () => resizeObserver.disconnect();
-  }, [files]);
+  }, [files?.length]); // Only re-attach when number of files changes, not content
 
   // Handle scroll event
   const handleScroll = () => {
@@ -156,10 +156,46 @@ export const CodeEditor: React.FC<EditorProps> = ({
     setWordWrap(prev => prev === 'on' ? 'off' : 'on');
   };
 
+  // Auto-scroll to end when a new file is opened
+  useEffect(() => {
+    if (tabsContainerRef.current && files && files.length > 0) {
+      // We only want to scroll to end if a *new* file was added (length increased).
+      // For now, let's just scroll to the active file if it's not visible? 
+      // The requirement is "newly opened file... automatically scroll to end".
+      // Simple heuristic: if activeFile is the last one, scroll to end.
+      const activeIndex = files.findIndex(f => f.id === activeFileId);
+      if (activeIndex === files.length - 1) {
+        tabsContainerRef.current.scrollTo({ left: tabsContainerRef.current.scrollWidth, behavior: 'smooth' });
+      }
+    }
+  }, [files, activeFileId]); // Corrected dependencies
+
+  const getFileIcon = (filename: string) => {
+    if (!filename) return <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
+
+    const ext = filename.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'json':
+        return <span className="text-yellow-400 font-bold text-[10px] w-3.5 text-center flex-shrink-0">J</span>;
+      case 'js':
+      case 'jsx':
+        return <span className="text-yellow-300 font-bold text-[10px] w-3.5 text-center flex-shrink-0">JS</span>;
+      case 'ts':
+      case 'tsx':
+        return <span className="text-blue-400 font-bold text-[10px] w-3.5 text-center flex-shrink-0">TS</span>;
+      case 'css':
+        return <span className="text-blue-300 font-bold text-[10px] w-3.5 text-center flex-shrink-0">#</span>;
+      case 'html':
+        return <span className="text-orange-400 font-bold text-[10px] w-3.5 text-center flex-shrink-0">&lt;&gt;</span>;
+      case 'md':
+        return <span className="text-gray-300 font-bold text-[10px] w-3.5 text-center flex-shrink-0">M↓</span>;
+      default:
+        return <svg className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e] border-r border-[#1e1e1e] group">
-      {/* Header */}
-      {/* Header */}
       {/* Header */}
       <div className="flex items-center bg-[#252526] pl-4 pr-2 border-t border-[#454545] select-none h-9 min-h-[36px] group/header">
         <div className="flex items-center gap-3 h-full flex-1 min-w-0 overflow-hidden">
@@ -187,7 +223,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
                       }`}
                     title={file.name}
                   >
-                    <svg className={`w-3.5 h-3.5 flex-shrink-0 ${file.id === activeFileId ? 'text-[#e8b05f]' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    {getFileIcon(file.name)}
                     <span className="truncate flex-1">{file.name}</span>
                     <button
                       onClick={(e) => {

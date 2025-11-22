@@ -14,6 +14,7 @@ const ACTION_LABELS: Record<ShortcutAction, string> = {
     FORMAT: '格式化 (Format)',
     DEEP_FORMAT: '深度格式化 (Deep Format)',
     MINIFY: '压缩 (Minify)',
+    CLOSE_TAB: '关闭标签 (Close Tab)',
 };
 
 export const ShortcutModal: React.FC<ShortcutModalProps> = ({
@@ -76,64 +77,93 @@ export const ShortcutModal: React.FC<ShortcutModalProps> = ({
 
         window.addEventListener('keydown', handleKeyDown, { capture: true });
         return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
-    }, [recordingAction, onUpdateShortcut, shortcuts]); // Added shortcuts to dependency array
+    }, [recordingAction, onUpdateShortcut, shortcuts]);
 
     if (!isOpen) return null;
 
+    const renderKey = (label: string) => (
+        <kbd className="px-2 py-1 bg-[#333] border border-[#454545] border-b-[3px] rounded text-xs font-mono text-gray-200 min-w-[24px] text-center inline-block mx-0.5 shadow-sm">
+            {label}
+        </kbd>
+    );
+
     const formatShortcut = (shortcut: ShortcutKey) => {
-        if (!shortcut.key) return '未设置';
+        if (!shortcut.key) return <span className="text-gray-500 italic text-xs">未设置</span>;
 
         const parts = [];
-        if (shortcut.meta) parts.push('Cmd');
-        if (shortcut.ctrl) parts.push('Ctrl');
-        if (shortcut.alt) parts.push('Alt');
-        if (shortcut.shift) parts.push('Shift');
+        if (shortcut.meta) parts.push(renderKey('Cmd'));
+        if (shortcut.ctrl) parts.push(renderKey('Ctrl'));
+        if (shortcut.alt) parts.push(renderKey('Alt'));
+        if (shortcut.shift) parts.push(renderKey('Shift'));
 
         let key = shortcut.key;
         if (key === ' ') key = 'Space';
         if (key.length === 1) key = key.toUpperCase();
-        parts.push(key);
+        parts.push(renderKey(key));
 
-        return parts.join(' + ');
+        return <div className="flex items-center flex-wrap justify-end">{parts}</div>;
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-            <div className="bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl w-full max-w-md p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold text-white">快捷键设置</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]">
+                <div className="flex justify-between items-center p-5 border-b border-[#333] bg-[#252526]">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                            <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                        </div>
+                        <h2 className="text-lg font-semibold text-white">快捷键设置</h2>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-[#333] rounded-md">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
 
-                <div className="space-y-4">
-                    {(Object.keys(shortcuts) as ShortcutAction[]).map((action) => (
-                        <div key={action} className="flex justify-between items-center bg-[#252526] p-3 rounded-lg border border-[#333]">
-                            <span className="text-gray-300">{ACTION_LABELS[action]}</span>
-                            <button
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(Object.keys(shortcuts) as ShortcutAction[]).map((action) => (
+                            <div
+                                key={action}
                                 onClick={() => setRecordingAction(action)}
-                                className={`px-3 py-1.5 rounded text-sm font-mono transition-colors border ${recordingAction === action
-                                    ? 'bg-blue-500/20 border-blue-500 text-blue-300 animate-pulse'
-                                    : 'bg-[#1e1e1e] border-[#444] text-gray-400 hover:border-gray-300 hover:text-gray-200'
+                                className={`flex justify-between items-center bg-[#252526] p-4 rounded-lg border transition-all cursor-pointer group ${recordingAction === action
+                                        ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/50'
+                                        : 'border-[#333] hover:border-[#555] hover:bg-[#2a2d2e]'
                                     }`}
                             >
-                                {recordingAction === action ? '按下按键...' : formatShortcut(shortcuts[action])}
-                            </button>
-                        </div>
-                    ))}
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
+                                        {ACTION_LABELS[action].split(' (')[0]}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                        {ACTION_LABELS[action].split(' (')[1]?.replace(')', '')}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center">
+                                    {recordingAction === action ? (
+                                        <span className="text-xs text-blue-400 animate-pulse font-medium px-2 py-1 bg-blue-500/10 rounded">
+                                            按下按键...
+                                        </span>
+                                    ) : (
+                                        formatShortcut(shortcuts[action])
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="mt-6 flex justify-between pt-4 border-t border-[#333]">
+                <div className="p-4 border-t border-[#333] bg-[#252526] flex justify-between items-center">
                     <button
                         onClick={onResetDefaults}
-                        className="text-sm text-gray-500 hover:text-red-400 transition-colors"
+                        className="text-xs text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1.5 px-3 py-2 rounded hover:bg-[#333]"
                     >
-                        恢复默认
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        恢复默认设置
                     </button>
                     <button
                         onClick={onClose}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        className="bg-[#007acc] hover:bg-[#0062a3] text-white px-6 py-2 rounded-md text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
                     >
                         完成
                     </button>
