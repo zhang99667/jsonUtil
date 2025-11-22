@@ -1,6 +1,6 @@
 
-import { performTransform } from './utils/transformations.ts';
-import { TransformMode } from './types.ts';
+import { performTransform } from '../src/utils/transformations.ts';
+import { TransformMode } from '../src/types.ts';
 
 const nestedJson = `
 {
@@ -12,14 +12,14 @@ const nestedJson = `
 
 console.log("--- Deep Parse Verification ---");
 // Use FORMAT mode, which should now use deepParseJson
-const result = performTransform(nestedJson, TransformMode.FORMAT);
+const result = performTransform(nestedJson, TransformMode.DEEP_FORMAT);
 console.log(result);
 
 if (result.includes('"theme": "dark"') && !result.includes('\\"theme\\"')) {
-    console.log("SUCCESS: Nested JSON parsed correctly in FORMAT mode.");
+  console.log("SUCCESS: Nested JSON parsed correctly in FORMAT mode.");
 } else {
-    console.log("FAILURE: Nested JSON not parsed correctly in FORMAT mode.");
-    process.exit(1);
+  console.log("FAILURE: Nested JSON not parsed correctly in FORMAT mode.");
+  process.exit(1);
 }
 
 const complexNested = `
@@ -28,12 +28,12 @@ const complexNested = `
 }
 `;
 console.log("\n--- Complex Nested Verification ---");
-const complexResult = performTransform(complexNested, TransformMode.FORMAT);
+const complexResult = performTransform(complexNested, TransformMode.DEEP_FORMAT);
 console.log(complexResult);
 
 if (complexResult.includes('"level3": "value"')) {
-    console.log("SUCCESS: Complex nested JSON parsed correctly.");
+  console.log("SUCCESS: Complex nested JSON parsed correctly.");
 } else {
-    console.log("FAILURE: Complex nested JSON not parsed correctly.");
-    process.exit(1);
+  console.log("FAILURE: Complex nested JSON not parsed correctly.");
+  process.exit(1);
 }

@@ -1,6 +1,6 @@
 
-import { performTransform } from './utils/transformations.ts';
-import { TransformMode } from './types.ts';
+import { performTransform } from '../src/utils/transformations.ts';
+import { TransformMode } from '../src/types.ts';
 
 const nestedJson = `
 {

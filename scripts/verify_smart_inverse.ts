@@ -1,6 +1,6 @@
 
-import { performInverseTransform } from './utils/transformations.ts';
-import { TransformMode } from './types.ts';
+import { performInverseTransform } from '../src/utils/transformations.ts';
+import { TransformMode } from '../src/types.ts';
 
 const originalSource = `
 {
@@ -26,8 +26,8 @@ const result = performInverseTransform(expandedPreview, TransformMode.FORMAT, or
 console.log(result);
 
 if (result.includes('"config": "{\\"theme\\":\\"light\\"}"') || result.includes('"config": "{\\"theme\\": \\"light\\"}"')) {
-    console.log("SUCCESS: Smart inverse preserved nested string structure and updated value.");
+  console.log("SUCCESS: Smart inverse preserved nested string structure and updated value.");
 } else {
-    console.log("FAILURE: Smart inverse did not preserve nested string structure.");
-    process.exit(1);
+  console.log("FAILURE: Smart inverse did not preserve nested string structure.");
+  process.exit(1);
 }

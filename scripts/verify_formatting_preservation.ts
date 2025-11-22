@@ -1,6 +1,6 @@
 
-import { performInverseTransform } from './utils/transformations.ts';
-import { TransformMode } from './types.ts';
+import { performInverseTransform } from '../src/utils/transformations.ts';
+import { TransformMode } from '../src/types.ts';
 
 const minifiedSource = `{"id":1,"config":"{\\"theme\\":\\"dark\\"}"}`;
 const formattedSource = `{

@@ -7,7 +7,7 @@ import {
   performTransform,
   performInverseTransform
 } from './utils/transformations';
-import { fixJsonWithAI } from './services/geminiService';
+import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
 import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction, FileTab, AIConfig, AIProvider } from './types';
 
@@ -34,12 +34,32 @@ const App: React.FC = () => {
   // The Source of Truth
   const [input, setInput] = useState<string>('');
 
+  // Use ref to always have the latest input value for inverse transforms
+  // This prevents race conditions when rapidly typing in the preview pane
+  const inputRef = useRef<string>('');
+
+  // Use ref to prevent feedback loops when updating from output pane
+  const isUpdatingFromOutput = useRef<boolean>(false);
+
+  // Use ref to store the pending output value being edited
+  const pendingOutputValue = useRef<string>('');
+
   // The View Mode
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
 
   // Derived Output (The Projection)
   const output = useMemo(() => {
-    return performTransform(input, mode);
+    // If we're currently processing an output change and have a pending value, return it
+    // This prevents the output from being recalculated and overwriting what the user is typing
+    if (isUpdatingFromOutput.current && pendingOutputValue.current) {
+      return pendingOutputValue.current;
+    }
+    const result = performTransform(input, mode);
+    // Clear pending value when we do a fresh transform
+    if (!isUpdatingFromOutput.current) {
+      pendingOutputValue.current = '';
+    }
+    return result;
   }, [input, mode]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
@@ -107,6 +127,9 @@ const App: React.FC = () => {
     const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
     setInput(cleanVal);
 
+    // CRITICAL: Update ref to always have the latest value for inverse transforms
+    inputRef.current = cleanVal;
+
     // Update the content of the active file in the files list
     if (activeFileId) {
       setFiles(prev => prev.map(f =>
@@ -126,6 +149,12 @@ const App: React.FC = () => {
   // Handle Right Pane Changes (Update Source via Inverse Transform)
   // This is only called when the user edits the right pane (after unlocking read-only)
   const handleOutputChange = (newVal: string) => {
+    // Store the value being edited to prevent it from being overwritten
+    pendingOutputValue.current = newVal;
+
+    // Set flag to prevent feedback loop
+    isUpdatingFromOutput.current = true;
+
     // Independent Validation for Preview Pane
     if (newVal && newVal.trim()) {
       const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
@@ -138,10 +167,14 @@ const App: React.FC = () => {
       setPreviewValidation({ isValid: true });
     }
 
-    // Guard: If we are in NONE mode, it's a direct mirror, but logic flows through performInverseTransform correctly anyway.
-    // Pass 'input' (current source) as originalInput for smart inverse
-    const newSource = performInverseTransform(newVal, mode, input);
+    // CRITICAL FIX: Use inputRef.current instead of input state to avoid race conditions
+    // When typing rapidly, the 'input' state might be stale, but inputRef.current is always fresh
+    // This prevents the inverse transform from using outdated originalInput and losing structure
+    const newSource = performInverseTransform(newVal, mode, inputRef.current);
     setInput(newSource);
+
+    // CRITICAL: Update ref immediately to keep it in sync
+    inputRef.current = newSource;
 
     // Update active file content as well
     if (activeFileId) {
@@ -149,6 +182,13 @@ const App: React.FC = () => {
         f.id === activeFileId ? { ...f, content: newSource, isDirty: true } : f
       ));
     }
+
+    // Reset flags after state updates have been processed
+    // Use setTimeout to ensure this happens after React's render cycle
+    setTimeout(() => {
+      isUpdatingFromOutput.current = false;
+      pendingOutputValue.current = '';
+    }, 100); // Small delay to allow React to complete the update
   };
 
   // Auto Save Effect
@@ -178,6 +218,7 @@ const App: React.FC = () => {
         // AI Fix logic operates on Input directly
         const fixed = await fixJsonWithAI(input, aiConfig);
         setInput(fixed);
+        inputRef.current = fixed; // Keep ref in sync
         // Automatically switch to Format mode to show the result nicely
         setMode(TransformMode.FORMAT);
       } catch (e: any) {
@@ -242,6 +283,7 @@ const App: React.FC = () => {
         setFiles(prev => [...prev, newFile]);
         setActiveFileId(newFileId);
         setInput(contents);
+        inputRef.current = contents; // Keep ref in sync
 
         // Reset mode for new file
         setMode(TransformMode.NONE);
@@ -359,11 +401,13 @@ const App: React.FC = () => {
         const nextFile = newFiles[newFiles.length - 1];
         setActiveFileId(nextFile.id);
         setInput(nextFile.content);
+        inputRef.current = nextFile.content; // Keep ref in sync
         setMode(TransformMode.NONE);
       } else {
         // No files left
         setActiveFileId(null);
         setInput('');
+        inputRef.current = ''; // Keep ref in sync
         setMode(TransformMode.NONE);
       }
     }
@@ -374,6 +418,7 @@ const App: React.FC = () => {
     if (file) {
       setActiveFileId(id);
       setInput(file.content);
+      inputRef.current = file.content; // Keep ref in sync
       setMode(TransformMode.NONE);
     }
   };
