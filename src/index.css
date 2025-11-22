@@ -1,1 +1,4 @@
 /* Moved to src */
+.jsonpath-highlight {
+    background-color: rgba(234, 179, 8, 0.2) !important;
+}

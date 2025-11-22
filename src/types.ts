@@ -59,6 +59,13 @@ export interface FileTab {
   isDirty?: boolean;
 }
 
+export interface HighlightRange {
+  startLine: number;
+  startColumn: number;
+  endLine: number;
+  endColumn: number;
+}
+
 export interface EditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -73,4 +80,5 @@ export interface EditorProps {
   activeFileId?: string | null;
   onTabClick?: (id: string) => void;
   onCloseFile?: (id: string) => void;
+  highlightRange?: HighlightRange | null;
 }

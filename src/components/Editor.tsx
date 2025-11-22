@@ -15,12 +15,15 @@ export const CodeEditor: React.FC<EditorProps> = ({
   files,
   activeFileId,
   onTabClick,
-  onCloseFile
+  onCloseFile,
+  highlightRange
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
   const [isLocked, setIsLocked] = useState<boolean>(true);
   const monaco = useMonaco();
+  const editorRef = useRef<any>(null);
+  const decorationsCollectionRef = useRef<any>(null);
 
   // Custom Scrollbar State
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -155,6 +158,54 @@ export const CodeEditor: React.FC<EditorProps> = ({
   const toggleWordWrap = () => {
     setWordWrap(prev => prev === 'on' ? 'off' : 'on');
   };
+
+
+
+  // Handle Highlight Range
+  useEffect(() => {
+    if (!editorRef.current || !monaco) return;
+
+    if (highlightRange) {
+      // Create decoration
+      const newDecorations = [
+        {
+          range: new monaco.Range(
+            highlightRange.startLine,
+            highlightRange.startColumn,
+            highlightRange.endLine,
+            highlightRange.endColumn
+          ),
+          options: {
+            isWholeLine: false,
+            className: 'jsonpath-highlight', // 使用自定义 CSS 类
+            stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+          }
+        }
+      ];
+
+      // Apply decorations
+      if (decorationsCollectionRef.current) {
+        decorationsCollectionRef.current.clear();
+      }
+      decorationsCollectionRef.current = editorRef.current.createDecorationsCollection(newDecorations);
+
+      // Reveal range
+      editorRef.current.revealRangeInCenter(
+        new monaco.Range(
+          highlightRange.startLine,
+          highlightRange.startColumn,
+          highlightRange.endLine,
+          highlightRange.endColumn
+        ),
+        monaco.editor.ScrollType.Smooth
+      );
+    } else {
+      // Clear decorations if highlightRange is null
+      if (decorationsCollectionRef.current) {
+        decorationsCollectionRef.current.clear();
+      }
+    }
+  }, [highlightRange, monaco]);
 
   // Auto-scroll to end when a new file is opened
   useEffect(() => {
@@ -315,6 +366,9 @@ export const CodeEditor: React.FC<EditorProps> = ({
           language={language}
           theme="vs-dark"
           value={value}
+          onMount={(editor) => {
+            editorRef.current = editor;
+          }}
           onChange={handleEditorChange}
           options={{
             readOnly: effectiveReadOnly,

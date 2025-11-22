@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
+import { JsonPathPanel } from './components/JsonPathPanel';
 import {
   validateJson,
   performTransform,
@@ -9,7 +10,9 @@ import {
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
-import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction, FileTab, AIConfig, AIProvider } from './types';
+import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction, FileTab, AIConfig, AIProvider, HighlightRange } from './types';
+import { parse } from 'json-source-map';
+import { JSONPath } from 'jsonpath-plus';
 
 const DEFAULT_SHORTCUTS: ShortcutConfig = {
   SAVE: { key: 's', meta: true, ctrl: false, shift: false, alt: false },
@@ -65,6 +68,17 @@ const App: React.FC = () => {
     return result;
   }, [input, mode]);
 
+  // Dedicated output for JSONPath querying (always deep formatted)
+  // This ensures that even if the user is in NONE or FORMAT mode,
+  // the query panel can still search through expanded nested JSON.
+  const deepFormattedOutput = useMemo(() => {
+    // Optimization: if mode is already DEEP_FORMAT, reuse output
+    if (mode === TransformMode.DEEP_FORMAT && !isUpdatingFromOutput.current) {
+      return output;
+    }
+    return performTransform(input, TransformMode.DEEP_FORMAT);
+  }, [input, mode, output]);
+
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
@@ -73,8 +87,10 @@ const App: React.FC = () => {
   const [files, setFiles] = useState<FileTab[]>([]);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState<boolean>(false);
+  const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
     const saved = localStorage.getItem('json-helper-shortcuts');
     return saved ? JSON.parse(saved) : DEFAULT_SHORTCUTS;
@@ -435,6 +451,58 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle JSONPath Query Result
+  const handleJsonPathQuery = (resultString: string) => {
+    // 1. 确保在 DEEP_FORMAT 模式下，以便处理嵌套 JSON
+    if (mode !== TransformMode.DEEP_FORMAT) {
+      setMode(TransformMode.DEEP_FORMAT);
+    }
+
+    // 2. 解析当前的 output (PREVIEW 内容) 以获取 source map
+    // 注意：我们需要使用最新的 output，但由于 React 状态更新是异步的，
+    // 如果刚刚切换模式，output 可能还没更新。
+    // 这里我们假设 output 已经是最新的，或者我们基于 input 重新计算一次
+    // 为了稳健性，我们直接基于当前的 input 和 DEEP_FORMAT 重新计算 output
+    const currentOutput = performTransform(input, TransformMode.DEEP_FORMAT);
+
+    try {
+      // 3. 解析 JSON 并获取 source map
+      const { pointers } = parse(currentOutput);
+
+      // 4. 获取查询结果的路径
+      // 我们需要再次执行查询，但这次是为了获取路径 (pointers)
+      // jsonpath-plus 的 resultType: 'pointer' 返回 JSON Pointer 格式 (e.g. /users/0/name)
+      const paths = JSONPath({
+        path: resultString, // 这里 resultString 其实是 query 表达式，我们需要修改 JsonPathPanel 传回 query
+        json: JSON.parse(currentOutput),
+        resultType: 'pointer'
+      });
+
+      if (paths && paths.length > 0) {
+        // 取第一个匹配项
+        const pointer = paths[0];
+
+        // 5. 在 source map 中查找位置
+        if (pointers[pointer]) {
+          const { value, key, valueEnd, keyEnd } = pointers[pointer];
+          // 优先高亮 value，如果是对象/数组，高亮整个块
+          const loc = value || key;
+
+          if (loc) {
+            setHighlightRange({
+              startLine: loc.line + 1, // json-source-map 是 0-indexed，Monaco 是 1-indexed
+              startColumn: loc.column + 1,
+              endLine: valueEnd ? valueEnd.line + 1 : loc.line + 1,
+              endColumn: valueEnd ? valueEnd.column + 1 : loc.column + 1 + (resultString.length) // 估算
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to locate JSON path:", e);
+    }
+  };
+
   return (
     <div ref={appRef} className="flex flex-col h-screen bg-[#1e1e1e] text-[#cccccc] font-sans overflow-hidden select-none">
 
@@ -461,6 +529,7 @@ const App: React.FC = () => {
             onOpenSettings={() => setIsSettingsModalOpen(true)}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            onToggleJsonPath={() => setIsJsonPathPanelOpen(!isJsonPathPanelOpen)}
           />
         </div>
 
@@ -533,9 +602,18 @@ const App: React.FC = () => {
               canToggleReadOnly={true} // User can click lock icon to edit
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
+              highlightRange={highlightRange}
             />
           </div>
         </div>
+
+        {/* JSONPath Panel */}
+        <JsonPathPanel
+          jsonData={deepFormattedOutput} // Always use deep formatted data for querying
+          isOpen={isJsonPathPanelOpen}
+          onClose={() => setIsJsonPathPanelOpen(false)}
+          onQueryResult={handleJsonPathQuery}
+        />
 
         {/* Drag Overlay */}
         {(isResizingSidebar || isResizingPane) && (
