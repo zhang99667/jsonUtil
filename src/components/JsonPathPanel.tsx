@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { JSONPath } from 'jsonpath-plus';
+import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 
 interface JsonPathPanelProps {
     jsonData: string;
@@ -25,9 +26,22 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     const [size, setSize] = useState({ width: 600, height: 400 });
     const [isResizing, setIsResizing] = useState(false);
     const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
+
+
     const [startSize, setStartSize] = useState({ width: 0, height: 0 });
 
     const panelRef = useRef<HTMLDivElement>(null);
+
+    // 自定义滚动条 Hook
+    const {
+        scrollContainerRef: historyListRef,
+        handleScroll,
+        handleMouseDown: handleScrollbarMouseDown,
+        thumbSize: thumbHeight,
+        thumbOffset: thumbTop,
+        showScrollbar,
+        isDragging: isScrollbarDragging
+    } = useCustomScrollbar('vertical', history.length);
 
     // 保存历史记录到 localStorage
     useEffect(() => {
@@ -141,7 +155,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     return (
         <div
             ref={panelRef}
-            className="fixed bg-[#252526] border border-[#454545] rounded-lg shadow-2xl z-50 flex flex-col"
+            className="fixed bg-[#252526] border border-[#454545] rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden"
             style={{
                 left: `${position.x}px`,
                 top: `${position.y}px`,
@@ -223,8 +237,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
                 {/* 查询历史 */}
                 {history.length > 0 && (
-                    <div className="border-t border-[#454545] pt-3 mt-3">
-                        <div className="flex items-center justify-between mb-2">
+                    <div className="border-t border-[#454545] pt-3 mt-3 flex-1 flex flex-col min-h-0 relative group/history">
+                        <div className="flex items-center justify-between mb-2 flex-shrink-0">
                             <div className="text-xs text-gray-500">查询历史:</div>
                             <button
                                 onClick={clearHistory}
@@ -233,7 +247,11 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                                 清空
                             </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+                        <div
+                            ref={historyListRef}
+                            onScroll={handleScroll}
+                            className="flex-1 overflow-y-auto space-y-1 min-h-0 [&::-webkit-scrollbar]:hidden"
+                        >
                             {history.map((item, idx) => (
                                 <div key={idx} className="relative group">
                                     <button
@@ -259,6 +277,20 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                                 </div>
                             ))}
                         </div>
+
+                        {/* 自定义滚动条 */}
+                        {showScrollbar && (
+                            <div className="absolute right-0 top-[36px] bottom-0 w-[3px] z-10 opacity-0 group-hover/history:opacity-100 transition-opacity duration-200">
+                                <div
+                                    className="w-full bg-[#424242] hover:bg-[#4f4f4f] rounded-full cursor-pointer relative"
+                                    style={{
+                                        height: `${thumbHeight}%`,
+                                        top: `${thumbTop}%`
+                                    }}
+                                    onMouseDown={handleScrollbarMouseDown}
+                                />
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -271,10 +303,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
             {/* 调整大小手柄 */}
             <div
-                className="absolute bottom-0 right-0 w-4 h-full cursor-ew-resize z-10 flex items-center justify-end p-0.5"
+                className="absolute bottom-0 right-0 w-4 h-full cursor-ew-resize z-10 flex items-center justify-end p-0.5 group/resize"
                 onMouseDown={handleResizeMouseDown}
             >
-                <div className="w-1 h-8 bg-gray-600 rounded-full opacity-50 hover:opacity-100 transition-opacity"></div>
+                <div className="w-1 h-8 bg-gray-600 rounded-full opacity-0 group-hover/resize:opacity-50 transition-opacity"></div>
             </div>
         </div >
     );
