@@ -47,7 +47,7 @@ export interface ShortcutKey {
   alt: boolean;
 }
 
-export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY' | 'CLOSE_TAB';
+export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY' | 'CLOSE_TAB' | 'TOGGLE_JSONPATH';
 
 export type ShortcutConfig = Record<ShortcutAction, ShortcutKey>;
 

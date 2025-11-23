@@ -19,7 +19,8 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
   FORMAT: { key: 'f', meta: true, ctrl: false, shift: true, alt: false },
   DEEP_FORMAT: { key: 'Enter', meta: true, ctrl: false, shift: false, alt: false },
   MINIFY: { key: 'm', meta: true, ctrl: false, shift: true, alt: false },
-  CLOSE_TAB: { key: 'w', meta: true, ctrl: false, shift: false, alt: false },
+  CLOSE_TAB: { key: 'w', meta: true, ctrl: false, shift: false, alt: true },
+  TOGGLE_JSONPATH: { key: 'f', meta: false, ctrl: true, shift: true, alt: false },
 };
 
 const MODE_LABELS: Record<TransformMode, string> = {
@@ -93,7 +94,7 @@ const App: React.FC = () => {
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
     const saved = localStorage.getItem('json-helper-shortcuts');
-    return saved ? JSON.parse(saved) : DEFAULT_SHORTCUTS;
+    return saved ? { ...DEFAULT_SHORTCUTS, ...JSON.parse(saved) } : DEFAULT_SHORTCUTS;
   });
   const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
     const saved = localStorage.getItem('json-helper-ai-config');
@@ -403,6 +404,13 @@ const App: React.FC = () => {
         if (activeFileId) {
           closeFile(activeFileId);
         }
+        return;
+      }
+
+      // Toggle JSONPath Panel
+      if (matches(shortcuts.TOGGLE_JSONPATH)) {
+        e.preventDefault();
+        setIsJsonPathPanelOpen(prev => !prev);
         return;
       }
     };

@@ -17,6 +17,7 @@ const ACTION_LABELS: Record<ShortcutAction, string> = {
     DEEP_FORMAT: '深度格式化 (Deep Format)',
     MINIFY: '压缩 (Minify)',
     CLOSE_TAB: '关闭标签 (Close Tab)',
+    TOGGLE_JSONPATH: '切换查询面板 (Toggle Query Panel)',
 };
 
 type TabType = 'shortcuts' | 'ai';
