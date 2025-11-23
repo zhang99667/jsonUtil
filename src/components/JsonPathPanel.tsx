@@ -20,6 +20,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     const [position, setPosition] = useState({ x: 100, y: 100 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+    // 调整大小相关状态
+    const [size, setSize] = useState({ width: 600, height: 400 });
+    const [isResizing, setIsResizing] = useState(false);
+    const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
+    const [startSize, setStartSize] = useState({ width: 0, height: 0 });
+
     const panelRef = useRef<HTMLDivElement>(null);
 
     // 保存历史记录到 localStorage
@@ -27,21 +34,30 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         localStorage.setItem('jsonpath-query-history', JSON.stringify(history));
     }, [history]);
 
-    // 处理拖动
+    // 处理拖动和调整大小
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            if (!isDragging) return;
-            setPosition({
-                x: e.clientX - dragStart.x,
-                y: e.clientY - dragStart.y
-            });
+            if (isDragging) {
+                setPosition({
+                    x: e.clientX - dragStart.x,
+                    y: e.clientY - dragStart.y
+                });
+            } else if (isResizing) {
+                const deltaX = e.clientX - resizeStart.x;
+
+                setSize(prev => ({
+                    ...prev,
+                    width: Math.max(400, startSize.width + deltaX) // 最小宽度 400
+                }));
+            }
         };
 
         const handleMouseUp = () => {
             setIsDragging(false);
+            setIsResizing(false);
         };
 
-        if (isDragging) {
+        if (isDragging || isResizing) {
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
         }
@@ -50,9 +66,12 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDragging, dragStart]);
+    }, [isDragging, dragStart, isResizing, resizeStart, startSize]);
 
     const handleMouseDown = (e: React.MouseEvent) => {
+        // 防止在调整大小时触发拖动
+        if (isResizing) return;
+
         if (panelRef.current) {
             const rect = panelRef.current.getBoundingClientRect();
             setDragStart({
@@ -61,6 +80,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
             });
             setIsDragging(true);
         }
+    };
+
+    const handleResizeMouseDown = (e: React.MouseEvent) => {
+        e.stopPropagation(); // 防止冒泡触发拖动
+        setResizeStart({ x: e.clientX, y: e.clientY });
+        setStartSize({ width: size.width, height: size.height });
+        setIsResizing(true);
     };
 
     const handleQuery = () => {
@@ -115,10 +141,12 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     return (
         <div
             ref={panelRef}
-            className="fixed bg-[#252526] border border-[#454545] rounded-lg shadow-2xl z-50 w-[600px]"
+            className="fixed bg-[#252526] border border-[#454545] rounded-lg shadow-2xl z-50 flex flex-col"
             style={{
                 left: `${position.x}px`,
                 top: `${position.y}px`,
+                width: `${size.width}px`,
+                height: `${size.height}px`,
                 cursor: isDragging ? 'grabbing' : 'default'
             }}
         >
@@ -145,7 +173,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
             </div>
 
             {/* 面板内容 */}
-            <div className="p-4">
+            <div className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden">
                 {/* 查询输入框 */}
                 <div className="mb-3">
                     <div className="flex gap-2">
@@ -205,7 +233,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                                 清空
                             </button>
                         </div>
-                        <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
                             {history.map((item, idx) => (
                                 <div key={idx} className="relative group">
                                     <button
@@ -239,6 +267,15 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                     查询结果将显示在右侧 PREVIEW 编辑器中
                 </div>
             </div>
-        </div>
+
+
+            {/* 调整大小手柄 */}
+            <div
+                className="absolute bottom-0 right-0 w-4 h-full cursor-ew-resize z-10 flex items-center justify-end p-0.5"
+                onMouseDown={handleResizeMouseDown}
+            >
+                <div className="w-1 h-8 bg-gray-600 rounded-full opacity-50 hover:opacity-100 transition-opacity"></div>
+            </div>
+        </div >
     );
 };
