@@ -15,6 +15,7 @@ const ACTION_LABELS: Record<ShortcutAction, string> = {
     DEEP_FORMAT: '深度格式化 (Deep Format)',
     MINIFY: '压缩 (Minify)',
     CLOSE_TAB: '关闭标签 (Close Tab)',
+    TOGGLE_JSONPATH: '切换查询面板 (Toggle Query Panel)',
 };
 
 export const ShortcutModal: React.FC<ShortcutModalProps> = ({
@@ -33,7 +34,7 @@ export const ShortcutModal: React.FC<ShortcutModalProps> = ({
             e.preventDefault();
             e.stopPropagation();
 
-            // Handle Backspace to clear shortcut
+            // Backspace 键清除快捷键
             if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
                 const emptyShortcut: ShortcutKey = { key: '', meta: false, ctrl: false, shift: false, alt: false };
                 onUpdateShortcut(recordingAction, emptyShortcut);
@@ -41,7 +42,7 @@ export const ShortcutModal: React.FC<ShortcutModalProps> = ({
                 return;
             }
 
-            // Ignore modifier-only keydowns
+            // 忽略单独的修饰键按压
             if (['Meta', 'Control', 'Shift', 'Alt'].includes(e.key)) return;
 
             const newShortcut: ShortcutKey = {
@@ -52,7 +53,7 @@ export const ShortcutModal: React.FC<ShortcutModalProps> = ({
                 alt: e.altKey,
             };
 
-            // Check for conflicts
+            // 检测快捷键冲突
             const conflictingAction = (Object.keys(shortcuts) as ShortcutAction[]).find(action => {
                 if (action === recordingAction) return false;
                 const s = shortcuts[action];
@@ -66,7 +67,7 @@ export const ShortcutModal: React.FC<ShortcutModalProps> = ({
             });
 
             if (conflictingAction) {
-                // Unbind the conflicting action
+                // 解除冲突绑定
                 const emptyShortcut: ShortcutKey = { key: '', meta: false, ctrl: false, shift: false, alt: false };
                 onUpdateShortcut(conflictingAction, emptyShortcut);
             }
@@ -126,8 +127,8 @@ export const ShortcutModal: React.FC<ShortcutModalProps> = ({
                                 key={action}
                                 onClick={() => setRecordingAction(action)}
                                 className={`flex justify-between items-center bg-[#252526] p-4 rounded-lg border transition-all cursor-pointer group ${recordingAction === action
-                                        ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/50'
-                                        : 'border-[#333] hover:border-[#555] hover:bg-[#2a2d2e]'
+                                    ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/50'
+                                    : 'border-[#333] hover:border-[#555] hover:bg-[#2a2d2e]'
                                     }`}
                             >
                                 <div className="flex flex-col">

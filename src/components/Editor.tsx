@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
 import { EditorProps } from '../types';
 import { detectLanguage } from '../utils/transformations';
+import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 
 export const CodeEditor: React.FC<EditorProps> = ({
   value,
@@ -25,98 +26,25 @@ export const CodeEditor: React.FC<EditorProps> = ({
   const editorRef = useRef<any>(null);
   const decorationsCollectionRef = useRef<any>(null);
 
-  // Custom Scrollbar State
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [scrollWidth, setScrollWidth] = useState(0);
-  const [clientWidth, setClientWidth] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [startScrollLeft, setStartScrollLeft] = useState(0);
 
-  // Update scroll dimensions
-  const updateScrollDimensions = () => {
-    if (tabsContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
-      setScrollLeft(scrollLeft);
-      setScrollWidth(scrollWidth);
-      setClientWidth(clientWidth);
-    }
-  };
 
-  useEffect(() => {
-    const container = tabsContainerRef.current;
-    if (!container) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateScrollDimensions();
-    });
-
-    resizeObserver.observe(container);
-    // Also observe children to detect content changes
-    Array.from(container.children).forEach(child => resizeObserver.observe(child as Element));
-
-    return () => resizeObserver.disconnect();
-  }, [files?.length]); // Only re-attach when number of files changes, not content
-
-  // Handle scroll event
-  const handleScroll = () => {
-    updateScrollDimensions();
-  };
-
-  // Handle drag start
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartX(e.pageX);
-    setStartScrollLeft(scrollLeft);
-    e.preventDefault();
-  };
-
-  // Handle drag move and end
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !tabsContainerRef.current) return;
-
-      const delta = e.pageX - startX;
-      const scrollRatio = scrollWidth / clientWidth;
-      const newScrollLeft = startScrollLeft + delta * scrollRatio;
-
-      tabsContainerRef.current.scrollLeft = newScrollLeft;
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, startX, startScrollLeft, scrollWidth, clientWidth]);
-
-  // Calculate thumb styles
-  // Ensure thumb is at least 20px wide so it's always clickable
-  const rawThumbWidth = (clientWidth / scrollWidth) * 100;
-  const thumbWidth = Math.max(rawThumbWidth, (20 / clientWidth) * 100 * (scrollWidth / clientWidth)); // Approximate min width logic
-
-  // Adjust left position to account for min-width
-  const effectiveThumbWidth = Math.max(rawThumbWidth, 5); // Min 5% width
-  const thumbLeft = (scrollLeft / (scrollWidth - clientWidth)) * (100 - effectiveThumbWidth);
-
-  // Show scrollbar if content overflows
-  const showScrollbar = scrollWidth > clientWidth + 1; // +1 for subpixel safety
+  // 滚动条状态 (Hook)
+  const {
+    scrollContainerRef: tabsContainerRef,
+    handleScroll,
+    handleMouseDown,
+    thumbSize: thumbWidth,
+    thumbOffset: thumbLeft,
+    showScrollbar,
+    isDragging
+  } = useCustomScrollbar('horizontal', files?.length);
 
   useEffect(() => {
     const detected = detectLanguage(value);
     setLanguage(detected);
   }, [value]);
 
-  // Reset lock state if the prop changes
+  // 只读属性变更时重置锁定状态
   useEffect(() => {
     if (readOnly) {
       setIsLocked(true);
@@ -125,10 +53,10 @@ export const CodeEditor: React.FC<EditorProps> = ({
 
   const effectiveReadOnly = readOnly && (!canToggleReadOnly || isLocked);
 
-  // Handle change with strict guard
+  // 变更处理（含只读保护）
   const handleEditorChange = (val: string | undefined) => {
-    // CRITICAL: Do not fire onChange if we are effectively in read-only mode.
-    // This prevents loops where the formatted preview might try to update the source.
+    // 注意：只读模式下拦截变更事件
+    // 防止预览更新触发源文件死循环
     if (effectiveReadOnly) return;
     onChange(val || '');
   };
@@ -161,12 +89,12 @@ export const CodeEditor: React.FC<EditorProps> = ({
 
 
 
-  // Handle Highlight Range
+  // 高亮区域渲染
   useEffect(() => {
     if (!editorRef.current || !monaco) return;
 
     if (highlightRange) {
-      // Create decoration
+      // 构造高亮装饰器
       const newDecorations = [
         {
           range: new monaco.Range(
@@ -183,13 +111,13 @@ export const CodeEditor: React.FC<EditorProps> = ({
         }
       ];
 
-      // Apply decorations
+      // 应用高亮样式
       if (decorationsCollectionRef.current) {
         decorationsCollectionRef.current.clear();
       }
       decorationsCollectionRef.current = editorRef.current.createDecorationsCollection(newDecorations);
 
-      // Reveal range
+      // 滚动至高亮区域
       editorRef.current.revealRangeInCenter(
         new monaco.Range(
           highlightRange.startLine,
@@ -200,26 +128,26 @@ export const CodeEditor: React.FC<EditorProps> = ({
         monaco.editor.ScrollType.Smooth
       );
     } else {
-      // Clear decorations if highlightRange is null
+      // 清除高亮
       if (decorationsCollectionRef.current) {
         decorationsCollectionRef.current.clear();
       }
     }
   }, [highlightRange, monaco]);
 
-  // Auto-scroll to end when a new file is opened
+  // 新文件打开时自动滚动标签栏
   useEffect(() => {
     if (tabsContainerRef.current && files && files.length > 0) {
-      // We only want to scroll to end if a *new* file was added (length increased).
-      // For now, let's just scroll to the active file if it's not visible? 
-      // The requirement is "newly opened file... automatically scroll to end".
-      // Simple heuristic: if activeFile is the last one, scroll to end.
+      // 仅在新增文件时触发滚动
+
+
+      // 若当前文件为列表末项，则滚动至最右侧
       const activeIndex = files.findIndex(f => f.id === activeFileId);
       if (activeIndex === files.length - 1) {
         tabsContainerRef.current.scrollTo({ left: tabsContainerRef.current.scrollWidth, behavior: 'smooth' });
       }
     }
-  }, [files, activeFileId]); // Corrected dependencies
+  }, [files, activeFileId]);
 
   const getFileIcon = (filename: string) => {
     if (!filename) return <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
@@ -247,7 +175,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e] border-r border-[#1e1e1e] group">
-      {/* Header */}
+      {/* 编辑器头部 */}
       <div className="flex items-center bg-[#252526] pl-4 pr-2 border-t border-[#454545] select-none h-9 min-h-[36px] group/header">
         <div className="flex items-center gap-3 h-full flex-1 min-w-0 overflow-hidden">
           <span className={`text-xs font-bold font-mono uppercase flex-shrink-0 ${getLanguageColor(language)}`}>
@@ -290,7 +218,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
                 ))}
               </div>
 
-              {/* Custom Overlay Scrollbar */}
+              {/* 自定义滚动条 */}
               {showScrollbar && (
                 <div className="absolute bottom-0 left-0 w-full h-[3px] z-10 opacity-0 group-hover/header:opacity-100 transition-opacity duration-200">
                   <div
@@ -312,10 +240,10 @@ export const CodeEditor: React.FC<EditorProps> = ({
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0 ml-2">
-          {/* Custom Header Actions */}
+          {/* 自定义操作栏 */}
           {headerActions}
 
-          {/* Lock Toggle */}
+          {/* 只读锁定开关 */}
           {canToggleReadOnly && (
             <button
               onClick={() => setIsLocked(!isLocked)}
@@ -336,7 +264,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
             </button>
           )}
 
-          {/* Word Wrap Toggle */}
+          {/* 自动换行开关 */}
           <button
             onClick={toggleWordWrap}
             className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${wordWrap === 'on' ? 'bg-[#094771] text-white border-[#007acc]' : 'text-gray-400 border-transparent hover:bg-[#333]'}`}
@@ -359,7 +287,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
         </div>
       </div>
 
-      {/* Monaco Editor Container */}
+      {/* Monaco 编辑器实例 */}
       <div className="flex-1 relative overflow-hidden">
         <Editor
           height="100%"

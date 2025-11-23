@@ -25,89 +25,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onToggleJsonPath
 }) => {
 
-  // Custom Scrollbar State
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [scrollHeight, setScrollHeight] = useState(0);
-  const [clientHeight, setClientHeight] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [startScrollTop, setStartScrollTop] = useState(0);
 
-  // Update scroll dimensions
-  const updateScrollDimensions = () => {
-    if (scrollContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      setScrollTop(scrollTop);
-      setScrollHeight(scrollHeight);
-      setClientHeight(clientHeight);
-    }
-  };
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateScrollDimensions();
-    });
-
-    resizeObserver.observe(container);
-    // Also observe children to detect content changes
-    Array.from(container.children).forEach(child => resizeObserver.observe(child as Element));
-
-    return () => resizeObserver.disconnect();
-  }, [isCollapsed]); // Re-attach when collapse state changes
-
-  // Handle scroll event
-  const handleScroll = () => {
-    updateScrollDimensions();
-  };
-
-  // Handle drag start
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartY(e.pageY);
-    setStartScrollTop(scrollTop);
-    e.preventDefault();
-  };
-
-  // Handle drag move and end
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !scrollContainerRef.current) return;
-
-      const delta = e.pageY - startY;
-      const scrollRatio = scrollHeight / clientHeight;
-      const newScrollTop = startScrollTop + delta * scrollRatio;
-
-      scrollContainerRef.current.scrollTop = newScrollTop;
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, startY, startScrollTop, scrollHeight, clientHeight]);
-
-  // Calculate thumb styles
-  const rawThumbHeight = (clientHeight / scrollHeight) * 100;
-  const thumbHeight = Math.max(rawThumbHeight, 5); // Min 5% height
-
-  const effectiveThumbHeight = Math.max(rawThumbHeight, 5);
-  const thumbTop = (scrollTop / (scrollHeight - clientHeight)) * (100 - effectiveThumbHeight);
-
-  // Show scrollbar if content overflows
-  const showScrollbar = scrollHeight > clientHeight + 1;
 
   const renderToolBtn = (mode: TransformMode, label: string, icon: React.ReactNode, colorClass: string) => {
     return (
@@ -126,7 +44,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   return (
     <div className={`h-full bg-[#1e1e1e] flex flex-col p-3 border-r border-[#1e1e1e] group/sidebar ${isCollapsed ? 'overflow-y-auto [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar]:opacity-0 hover:[&::-webkit-scrollbar]:opacity-100 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#424242] [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#4f4f4f] [&::-webkit-scrollbar]:transition-opacity [&::-webkit-scrollbar]:duration-200' : 'overflow-y-auto [&::-webkit-scrollbar]:w-[8px] [&::-webkit-scrollbar-track]:bg-[#1e1e1e] [&::-webkit-scrollbar-thumb]:bg-[#424242] [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#1e1e1e] hover:[&::-webkit-scrollbar-thumb]:bg-[#4f4f4f]'}`}>
-      {/* Sidebar Header */}
+      {/* 侧边栏顶部栏 */}
       <div className={`px-2 mb-6 mt-1 pb-4 border-b border-[#333] flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
         {!isCollapsed && (
           <div className="text-sm font-bold text-gray-200 tracking-wide flex items-center gap-2">
@@ -149,7 +67,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         </button>
       </div>
 
-      {/* Group 1: Preview / Output */}
+      {/* 工具组：视图与格式化 */}
       {!isCollapsed && (
         <div className="px-2 text-[10px] font-bold text-[#555] uppercase tracking-wider mb-2 mt-2">
           预览 / 输出
@@ -173,7 +91,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         ), 'text-cyan-400')}
       </div>
 
-      {/* Group 2: Escape */}
+      {/* 工具组：转义操作 */}
       {!isCollapsed && (
         <div className="px-2 text-[10px] font-bold text-[#555] uppercase tracking-wider mb-2">
           转义处理
@@ -189,7 +107,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         ), 'text-yellow-400')}
       </div>
 
-      {/* Group 3: Encoding */}
+      {/* 工具组：编码转换 */}
       {!isCollapsed && (
         <div className="px-2 text-[10px] font-bold text-[#555] uppercase tracking-wider mb-2">
           编码转换
@@ -207,7 +125,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
       <div className="flex-1"></div>
 
-      {/* JSONPath Tool */}
+      {/* 工具组：JSONPath 查询 */}
       {!isCollapsed && (
         <div className="px-2 text-[10px] font-bold text-[#555] uppercase tracking-wider mb-2">
           查询工具
@@ -228,7 +146,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         </button>
       </div>
 
-      {/* File Operations */}
+      {/* 文件管理 */}
       <div className="pt-4 mt-2 border-t border-[#333]">
         <button
           onClick={() => onAction(ActionType.OPEN)}
@@ -248,7 +166,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           {!isCollapsed && "保存为 JSON"}
         </button>
 
-        {/* AI Fix Button */}
+        {/* AI 智能修复 */}
         <button
           onClick={() => onAction(ActionType.AI_FIX)}
           disabled={isProcessing}
@@ -272,7 +190,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         </button>
       </div>
 
-      {/* Settings */}
+      {/* 设置入口 */}
       <div className="pt-4 mt-auto">
         <button
           onClick={onOpenSettings}

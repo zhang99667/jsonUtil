@@ -13,15 +13,11 @@ import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
 import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction, FileTab, AIConfig, AIProvider, HighlightRange } from './types';
 import { parse } from 'json-source-map';
 import { JSONPath } from 'jsonpath-plus';
+import { useShortcuts } from './hooks/useShortcuts';
+import { useFileSystem } from './hooks/useFileSystem';
+import { useLayout } from './hooks/useLayout';
 
-const DEFAULT_SHORTCUTS: ShortcutConfig = {
-  SAVE: { key: 's', meta: true, ctrl: false, shift: false, alt: false },
-  FORMAT: { key: 'f', meta: true, ctrl: false, shift: true, alt: false },
-  DEEP_FORMAT: { key: 'Enter', meta: true, ctrl: false, shift: false, alt: false },
-  MINIFY: { key: 'm', meta: true, ctrl: false, shift: true, alt: false },
-  CLOSE_TAB: { key: 'w', meta: true, ctrl: false, shift: false, alt: true },
-  TOGGLE_JSONPATH: { key: 'f', meta: false, ctrl: true, shift: true, alt: false },
-};
+
 
 const MODE_LABELS: Record<TransformMode, string> = {
   [TransformMode.NONE]: '原始视图',
@@ -35,45 +31,42 @@ const MODE_LABELS: Record<TransformMode, string> = {
 };
 
 const App: React.FC = () => {
-  // The Source of Truth
+  // 核心状态：输入源
   const [input, setInput] = useState<string>('');
 
-  // Use ref to always have the latest input value for inverse transforms
-  // This prevents race conditions when rapidly typing in the preview pane
+  // 使用 Ref 存储最新输入值，避免预览编辑时的竞态条件
   const inputRef = useRef<string>('');
 
-  // Use ref to prevent feedback loops when updating from output pane
+  // 使用 Ref 阻断输出更新引发的循环更新
   const isUpdatingFromOutput = useRef<boolean>(false);
 
-  // Use ref to store the pending output value being edited
+  // 使用 Ref 暂存待处理的输出值
   const pendingOutputValue = useRef<string>('');
 
-  // Use ref to store the debounce timer for output changes
+  // 输出变更防抖定时器
   const outputChangeTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // The View Mode
+  // 当前转换模式
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
 
-  // Derived Output (The Projection)
+  // 计算派生输出
   const output = useMemo(() => {
-    // If we're currently processing an output change and have a pending value, return it
-    // This prevents the output from being recalculated and overwriting what the user is typing
+    // 若处于输出编辑状态，优先返回暂存值以避免覆盖用户输入
     if (isUpdatingFromOutput.current && pendingOutputValue.current) {
       return pendingOutputValue.current;
     }
     const result = performTransform(input, mode);
-    // Clear pending value when we do a fresh transform
+    // 模式切换或新转换时清除暂存值
     if (!isUpdatingFromOutput.current) {
       pendingOutputValue.current = '';
     }
     return result;
   }, [input, mode]);
 
-  // Dedicated output for JSONPath querying (always deep formatted)
-  // This ensures that even if the user is in NONE or FORMAT mode,
-  // the query panel can still search through expanded nested JSON.
+  // JSONPath 查询专用数据源（强制深度格式化）
+  // 确保查询功能支持嵌套 JSON 搜索
   const deepFormattedOutput = useMemo(() => {
-    // Optimization: if mode is already DEEP_FORMAT, reuse output
+    // 性能优化：复用现有深度格式化结果
     if (mode === TransformMode.DEEP_FORMAT && !isUpdatingFromOutput.current) {
       return output;
     }
@@ -84,18 +77,11 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
 
-  // File System Access API State
-  const [files, setFiles] = useState<FileTab[]>([]);
-  const [activeFileId, setActiveFileId] = useState<string | null>(null);
-  const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState<boolean>(false);
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
-  const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
-    const saved = localStorage.getItem('json-helper-shortcuts');
-    return saved ? { ...DEFAULT_SHORTCUTS, ...JSON.parse(saved) } : DEFAULT_SHORTCUTS;
-  });
+
   const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
     const saved = localStorage.getItem('json-helper-ai-config');
     return saved ? JSON.parse(saved) : {
@@ -109,24 +95,39 @@ const App: React.FC = () => {
     localStorage.setItem('json-helper-ai-config', JSON.stringify(aiConfig));
   }, [aiConfig]);
 
-  useEffect(() => {
-    localStorage.setItem('json-helper-shortcuts', JSON.stringify(shortcuts));
-  }, [shortcuts]);
-
-  // Layout State
-  const [sidebarWidth, setSidebarWidth] = useState(220);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [leftPaneWidthPercent, setLeftPaneWidthPercent] = useState(50);
-  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
-  const [isResizingPane, setIsResizingPane] = useState(false);
+  // 界面布局状态 (Hook)
   const appRef = useRef<HTMLDivElement>(null);
+  const {
+    sidebarWidth, setSidebarWidth,
+    isSidebarCollapsed, setIsSidebarCollapsed,
+    leftPaneWidthPercent, setLeftPaneWidthPercent,
+    isResizingSidebar, isResizingPane,
+    startResizingSidebar, startResizingPane
+  } = useLayout(appRef);
 
-  // Validate input on change
+  // 文件系统状态 (Hook)
+  const {
+    files, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
+    openFile, saveFile, closeFile, switchTab, updateActiveFileContent
+  } = useFileSystem({
+    input, setInput, inputRef, setMode, output
+  });
+
+  // 快捷键状态 (Hook)
+  const { shortcuts, updateShortcut, resetShortcuts } = useShortcuts({
+    onSave: saveFile,
+    onFormat: () => setMode(TransformMode.FORMAT),
+    onDeepFormat: () => setMode(TransformMode.DEEP_FORMAT),
+    onMinify: () => setMode(TransformMode.MINIFY),
+    onCloseTab: () => activeFileId && closeFile(activeFileId),
+    onToggleJsonPath: () => setIsJsonPathPanelOpen(prev => !prev)
+  });
+
+  // 输入变更验证（防抖）
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (input && input.trim()) {
-        // Clean input before validation checks (remove zero-width spaces, BOM, etc)
-        // This helps prevent false positives on "copy-paste" errors
+        // 预处理：移除零宽空格等不可见字符，避免误报
         const cleanInput = input.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
         if (cleanInput.trim().startsWith('{') || cleanInput.trim().startsWith('[')) {
@@ -141,42 +142,34 @@ const App: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [input]);
 
-  // Handle Left Pane Changes (Update Source directly)
+  // 左侧编辑器变更处理
   const handleInputChange = (newVal: string) => {
-    // Remove invisible characters immediately on input to prevent "ghost" errors
+    // 实时清理不可见字符
     const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
     setInput(cleanVal);
 
-    // CRITICAL: Update ref to always have the latest value for inverse transforms
+    // 同步更新 Ref 状态
     inputRef.current = cleanVal;
 
-    // Update the content of the active file in the files list
-    if (activeFileId) {
-      setFiles(prev => prev.map(f =>
-        f.id === activeFileId ? { ...f, content: cleanVal, isDirty: true } : f
-      ));
-    }
+    // 更新活动文件内容缓存
+    updateActiveFileContent(cleanVal);
 
-    // CRITICAL CHANGE: 
-    // When user types or pastes in the source, RESET the mode to NONE (Raw).
-    // This prevents previous modes (like Escape/Format) from automatically applying
-    // to new, potentially incompatible content.
+    // 模式重置：用户编辑源文件时自动重置为原始视图
     if (mode !== TransformMode.NONE) {
       setMode(TransformMode.NONE);
     }
   };
 
-  // Handle Right Pane Changes (Update Source via Inverse Transform)
-  // This is only called when the user edits the right pane (after unlocking read-only)
+  // 右侧预览编辑处理（反向转换）
+  // 仅在解除只读锁定后触发
   const handleOutputChange = (newVal: string) => {
-    // IMMEDIATE: Store the value being edited to prevent it from being overwritten
-    // This keeps the editor responsive and prevents content from being replaced
+    // 暂存编辑值，保持编辑器响应
     pendingOutputValue.current = newVal;
 
-    // Set flag to prevent feedback loop
+    // 标记输出更新状态
     isUpdatingFromOutput.current = true;
 
-    // IMMEDIATE: Independent Validation for Preview Pane (fast, no heavy computation)
+    // 预览内容快速验证
     if (newVal && newVal.trim()) {
       const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
       if (cleanVal.trim().startsWith('{') || cleanVal.trim().startsWith('[')) {
@@ -188,67 +181,43 @@ const App: React.FC = () => {
       setPreviewValidation({ isValid: true });
     }
 
-    // DEBOUNCED: Clear any existing timer to restart the countdown
+    // 重置防抖定时器
     if (outputChangeTimer.current) {
       clearTimeout(outputChangeTimer.current);
     }
 
-    // DEBOUNCED: Schedule the heavy computation (performInverseTransform) and state updates
-    // Only execute after user stops typing for 150ms
+    // 执行反向转换（防抖 150ms）
     outputChangeTimer.current = setTimeout(() => {
-      // CRITICAL FIX: Use inputRef.current instead of input state to avoid race conditions
-      // When typing rapidly, the 'input' state might be stale, but inputRef.current is always fresh
-      // This prevents the inverse transform from using outdated originalInput and losing structure
+      // 使用 Ref 获取最新输入源，避免闭包陷阱
       const newSource = performInverseTransform(newVal, mode, inputRef.current);
       setInput(newSource);
 
-      // CRITICAL: Update ref immediately to keep it in sync
+      // 同步更新 Ref
       inputRef.current = newSource;
 
-      // Update active file content as well
-      if (activeFileId) {
-        setFiles(prev => prev.map(f =>
-          f.id === activeFileId ? { ...f, content: newSource, isDirty: true } : f
-        ));
-      }
+      // 同步更新文件缓存
+      updateActiveFileContent(newSource);
 
-      // Reset flags after processing is complete
+      // 重置更新标志
       setTimeout(() => {
         isUpdatingFromOutput.current = false;
         pendingOutputValue.current = '';
       }, 100);
-    }, 150); // Debounce delay: wait 150ms after user stops typing
+    }, 150); // 防抖延迟 150ms
   };
 
-  // Auto Save Effect
-  useEffect(() => {
-    const activeFile = files.find(f => f.id === activeFileId);
-    if (!isAutoSaveEnabled || !activeFile?.handle) return;
 
-    const timer = setTimeout(async () => {
-      try {
-        const writable = await activeFile.handle.createWritable();
-        await writable.write(input);
-        await writable.close();
-        console.log('Auto-saved');
-      } catch (err) {
-        console.error('Auto-save failed:', err);
-      }
-    }, 1000); // 1 second debounce
-
-    return () => clearTimeout(timer);
-  }, [input, activeFileId, files, isAutoSaveEnabled]);
 
   const handleAction = async (action: ActionType) => {
     if (action === ActionType.AI_FIX) {
       if (!input.trim()) return;
       setIsProcessing(true);
       try {
-        // AI Fix logic operates on Input directly
+        // AI 修复针对源输入进行
         const fixed = await fixJsonWithAI(input, aiConfig);
         setInput(fixed);
-        inputRef.current = fixed; // Keep ref in sync
-        // Automatically switch to Format mode to show the result nicely
+        inputRef.current = fixed; // 同步 Ref 状态
+        // 修复后自动切换至格式化视图
         setMode(TransformMode.FORMAT);
       } catch (e: any) {
         setValidation({ isValid: false, error: e.message });
@@ -256,229 +225,32 @@ const App: React.FC = () => {
         setIsProcessing(false);
       }
     } else if (action === ActionType.SAVE) {
-      const activeFile = files.find(f => f.id === activeFileId);
-      if (activeFile?.handle) {
-        try {
-          // Native Save
-          const writable = await activeFile.handle.createWritable();
-          await writable.write(output);
-          await writable.close();
-          // Optional: Show a toast or indicator here
-          console.log('File saved successfully');
-        } catch (err) {
-          console.error('Failed to save file:', err);
-          alert('保存文件失败，请重试');
-        }
-      } else {
-        // Fallback Download
-        const blob = new Blob([output], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'result.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
+      await saveFile();
     } else if (action === ActionType.OPEN) {
-      try {
-        // @ts-ignore - File System Access API
-        const [handle] = await window.showOpenFilePicker({
-          types: [
-            {
-              description: 'Text Files',
-              accept: {
-                'text/plain': ['.txt', '.json', '.js', '.ts', '.md'],
-              },
-            },
-          ],
-          excludeAcceptAllOption: false,
-          multiple: false,
-        });
-
-        const file = await handle.getFile();
-        const contents = await file.text();
-        const newFileId = crypto.randomUUID();
-
-        const newFile: FileTab = {
-          id: newFileId,
-          name: file.name,
-          content: contents,
-          handle: handle,
-          isDirty: false
-        };
-
-        setFiles(prev => [...prev, newFile]);
-        setActiveFileId(newFileId);
-        setInput(contents);
-        inputRef.current = contents; // Keep ref in sync
-
-        // Reset mode for new file
-        setMode(TransformMode.NONE);
-      } catch (err) {
-        // User cancelled or API not supported
-        console.log('File open cancelled or failed', err);
-      }
+      await openFile();
     }
   };
 
-  // Drag Logic
-  const startResizingSidebar = () => setIsResizingSidebar(true);
-  const startResizingPane = () => setIsResizingPane(true);
-  const stopResizing = () => {
-    setIsResizingSidebar(false);
-    setIsResizingPane(false);
-  };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isResizingSidebar) {
-      const newWidth = Math.max(180, Math.min(400, e.clientX));
-      setSidebarWidth(newWidth);
-    }
-    if (isResizingPane && appRef.current) {
-      const appRect = appRef.current.getBoundingClientRect();
-      const editorAreaLeft = appRect.left + sidebarWidth;
-      const editorAreaWidth = appRect.width - sidebarWidth;
-      const relativeX = e.clientX - editorAreaLeft;
-      const newPercent = (relativeX / editorAreaWidth) * 100;
-      setLeftPaneWidthPercent(Math.max(20, Math.min(80, newPercent)));
-    }
-  }, [isResizingSidebar, isResizingPane, sidebarWidth]);
 
-  useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', stopResizing);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', stopResizing);
-    };
-  }, [handleMouseMove]);
 
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Helper to check if event matches shortcut
-      const matches = (shortcut: ShortcutKey) => {
-        if (!shortcut.key) return false;
-        return (
-          e.key.toLowerCase() === shortcut.key.toLowerCase() &&
-          e.metaKey === shortcut.meta &&
-          e.ctrlKey === shortcut.ctrl &&
-          e.shiftKey === shortcut.shift &&
-          e.altKey === shortcut.alt
-        );
-      };
 
-      // Save
-      if (matches(shortcuts.SAVE)) {
-        e.preventDefault();
-        handleAction(ActionType.SAVE);
-        return;
-      }
-
-      // Format
-      if (matches(shortcuts.FORMAT)) {
-        e.preventDefault();
-        setMode(TransformMode.FORMAT);
-        return;
-      }
-
-      // Deep Format
-      if (matches(shortcuts.DEEP_FORMAT)) {
-        e.preventDefault();
-        setMode(TransformMode.DEEP_FORMAT);
-        return;
-      }
-
-      // Minify
-      if (matches(shortcuts.MINIFY)) {
-        e.preventDefault();
-        setMode(TransformMode.MINIFY);
-        return;
-      }
-
-      // Close Tab
-      if (matches(shortcuts.CLOSE_TAB)) {
-        e.preventDefault();
-        if (activeFileId) {
-          closeFile(activeFileId);
-        }
-        return;
-      }
-
-      // Toggle JSONPath Panel
-      if (matches(shortcuts.TOGGLE_JSONPATH)) {
-        e.preventDefault();
-        setIsJsonPathPanelOpen(prev => !prev);
-        return;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleAction, shortcuts]);
-
-  const updateShortcut = (action: ShortcutAction, key: ShortcutKey) => {
-    setShortcuts(prev => ({ ...prev, [action]: key }));
-  };
-
-  const resetShortcuts = () => {
-    setShortcuts(DEFAULT_SHORTCUTS);
-  };
-
-  const closeFile = (id: string) => {
-    const newFiles = files.filter(f => f.id !== id);
-    setFiles(newFiles);
-
-    if (id === activeFileId) {
-      if (newFiles.length > 0) {
-        // Switch to the last file
-        const nextFile = newFiles[newFiles.length - 1];
-        setActiveFileId(nextFile.id);
-        setInput(nextFile.content);
-        inputRef.current = nextFile.content; // Keep ref in sync
-        setMode(TransformMode.NONE);
-      } else {
-        // No files left
-        setActiveFileId(null);
-        setInput('');
-        inputRef.current = ''; // Keep ref in sync
-        setMode(TransformMode.NONE);
-      }
-    }
-  };
-
-  const switchTab = (id: string) => {
-    const file = files.find(f => f.id === id);
-    if (file) {
-      setActiveFileId(id);
-      setInput(file.content);
-      inputRef.current = file.content; // Keep ref in sync
-      setMode(TransformMode.NONE);
-    }
-  };
-
-  // Handle JSONPath Query Result
+  // 处理 JSONPath 查询定位
   const handleJsonPathQuery = (resultString: string) => {
-    // 1. 确保在 DEEP_FORMAT 模式下，以便处理嵌套 JSON
+    // 1. 强制切换至深度格式化模式以支持嵌套查询
     if (mode !== TransformMode.DEEP_FORMAT) {
       setMode(TransformMode.DEEP_FORMAT);
     }
 
-    // 2. 解析当前的 output (PREVIEW 内容) 以获取 source map
-    // 注意：我们需要使用最新的 output，但由于 React 状态更新是异步的，
-    // 如果刚刚切换模式，output 可能还没更新。
-    // 这里我们假设 output 已经是最新的，或者我们基于 input 重新计算一次
-    // 为了稳健性，我们直接基于当前的 input 和 DEEP_FORMAT 重新计算 output
+    // 2. 解析当前输出以生成 Source Map
+    // 基于当前输入重新计算深度格式化结果以确保准确性
     const currentOutput = performTransform(input, TransformMode.DEEP_FORMAT);
 
     try {
-      // 3. 解析 JSON 并获取 source map
+      // 3. 生成 Source Map
       const { pointers } = parse(currentOutput);
 
-      // 4. 获取查询结果的路径
-      // 我们需要再次执行查询，但这次是为了获取路径 (pointers)
+      // 4. 获取查询结果的 JSON Pointer 路径
       // jsonpath-plus 的 resultType: 'pointer' 返回 JSON Pointer 格式 (e.g. /users/0/name)
       const paths = JSONPath({
         path: resultString, // 这里 resultString 其实是 query 表达式，我们需要修改 JsonPathPanel 传回 query
@@ -490,15 +262,15 @@ const App: React.FC = () => {
         // 取第一个匹配项
         const pointer = paths[0];
 
-        // 5. 在 source map 中查找位置
+        // 5. 映射路径至代码位置
         if (pointers[pointer]) {
           const { value, key, valueEnd, keyEnd } = pointers[pointer];
-          // 优先高亮 value，如果是对象/数组，高亮整个块
+          // 优先高亮值区域，如果是对象/数组，高亮整个块
           const loc = value || key;
 
           if (loc) {
             setHighlightRange({
-              startLine: loc.line + 1, // json-source-map 是 0-indexed，Monaco 是 1-indexed
+              startLine: loc.line + 1, // 坐标转换：0-based 转 1-based
               startColumn: loc.column + 1,
               endLine: valueEnd ? valueEnd.line + 1 : loc.line + 1,
               endColumn: valueEnd ? valueEnd.column + 1 : loc.column + 1 + (resultString.length) // 估算
@@ -524,10 +296,10 @@ const App: React.FC = () => {
         onSaveAIConfig={setAiConfig}
       />
 
-      {/* Main Workspace */}
+      {/* 主工作区容器 */}
       <div className="flex-1 flex overflow-hidden relative">
 
-        {/* Sidebar (Mode Selector) */}
+        {/* 左侧工具栏 */}
         <div style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-[#1e1e1e] transition-all duration-300 ease-in-out">
           <ActionPanel
             activeMode={mode}
@@ -541,7 +313,7 @@ const App: React.FC = () => {
           />
         </div>
 
-        {/* Sidebar Resizer */}
+        {/* 侧边栏调整手柄 */}
         {!isSidebarCollapsed && (
           <div
             className={`w-1 hover:bg-[#007acc] cursor-col-resize z-20 flex-shrink-0 ${isResizingSidebar ? 'bg-[#007acc]' : 'bg-[#252526]'}`}
@@ -549,10 +321,10 @@ const App: React.FC = () => {
           ></div>
         )}
 
-        {/* Editors Area */}
+        {/* 双栏编辑器区域 */}
         <div className="flex-1 flex min-w-0 bg-[#1e1e1e]">
 
-          {/* Left Pane: Source Input */}
+          {/* 左栏：源文件编辑 */}
           <div style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
             <CodeEditor
               value={input}
@@ -594,20 +366,20 @@ const App: React.FC = () => {
             />
           </div>
 
-          {/* Pane Resizer */}
+          {/* 分栏调整手柄 */}
           <div
             className={`w-1 hover:bg-[#007acc] cursor-col-resize z-20 flex-shrink-0 ${isResizingPane ? 'bg-[#007acc]' : 'bg-[#252526]'}`}
             onMouseDown={startResizingPane}
           ></div>
 
-          {/* Right Pane: Preview Output */}
+          {/* 右栏：预览与结果 */}
           <div className="flex-1 flex flex-col min-w-[100px] h-full relative">
             <CodeEditor
               label="PREVIEW"
               value={output}
               onChange={handleOutputChange}
-              readOnly={true} // Default to read-only
-              canToggleReadOnly={true} // User can click lock icon to edit
+              readOnly={true} // 默认只读状态
+              canToggleReadOnly={true} // 允许解锁编辑
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
               highlightRange={highlightRange}
@@ -615,24 +387,24 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* JSONPath Panel */}
+        {/* JSONPath 查询面板 */}
         <JsonPathPanel
-          jsonData={deepFormattedOutput} // Always use deep formatted data for querying
+          jsonData={deepFormattedOutput} // 使用深度格式化数据源
           isOpen={isJsonPathPanelOpen}
           onClose={() => {
             setIsJsonPathPanelOpen(false);
-            setHighlightRange(null); // Clear highlight when panel closes
+            setHighlightRange(null); // 关闭时清除高亮
           }}
           onQueryResult={handleJsonPathQuery}
         />
 
-        {/* Drag Overlay */}
+        {/* 拖拽遮罩层（防止 iframe/webview 捕获事件） */}
         {(isResizingSidebar || isResizingPane) && (
           <div className="absolute inset-0 z-50 cursor-col-resize"></div>
         )}
       </div>
 
-      {/* Minimal Status Bar */}
+      {/* 底部状态栏 */}
       <div className="h-6 bg-[#007acc] flex items-center justify-between px-3 text-[11px] text-white select-none z-20 flex-shrink-0">
         <div className="flex gap-4">
           <span className="flex items-center gap-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg> UTF-8</span>

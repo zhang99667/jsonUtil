@@ -41,7 +41,7 @@ export interface ValidationResult {
 
 export interface ShortcutKey {
   key: string;
-  meta: boolean; // Cmd on Mac, Win on Windows
+  meta: boolean; // Meta 键 (Mac: Cmd, Win: Win)
   ctrl: boolean;
   shift: boolean;
   alt: boolean;

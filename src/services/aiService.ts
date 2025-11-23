@@ -12,7 +12,7 @@ const getGenAI = () => {
 
 export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promise<string> => {
   try {
-    // Handle Gemini provider
+    // Gemini 接口调用
     if (config.provider === AIProvider.GEMINI) {
       const ai = new GoogleGenAI({ apiKey: config.apiKey });
 
@@ -35,7 +35,7 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
       return text ? text.trim() : '{}';
     }
 
-    // Handle OpenAI-compatible providers (OpenAI, Qwen, GLM, DeepSeek, Custom)
+    // OpenAI 兼容接口调用 (OpenAI, Qwen, GLM, DeepSeek, Custom)
     const baseUrl = config.baseUrl || getDefaultBaseUrl(config.provider);
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -68,7 +68,7 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content || '{}';
 
-    // Clean up potential markdown formatting
+    // 移除 Markdown 代码块标记
     return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   } catch (error: any) {
     console.error("Error calling AI API:", error);

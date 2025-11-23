@@ -49,7 +49,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
             e.preventDefault();
             e.stopPropagation();
 
-            // Handle Backspace to clear shortcut
+            // Backspace 键清除快捷键
             if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
                 const emptyShortcut: ShortcutKey = { key: '', meta: false, ctrl: false, shift: false, alt: false };
                 onUpdateShortcut(recordingAction, emptyShortcut);
@@ -57,7 +57,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                 return;
             }
 
-            // Ignore modifier-only keydowns
+            // 忽略单独的修饰键按压
             if (['Meta', 'Control', 'Shift', 'Alt'].includes(e.key)) return;
 
             const newShortcut: ShortcutKey = {
@@ -68,7 +68,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                 alt: e.altKey,
             };
 
-            // Check for conflicts
+            // 检测快捷键冲突
             const conflictingAction = (Object.keys(shortcuts) as ShortcutAction[]).find(action => {
                 if (action === recordingAction) return false;
                 const s = shortcuts[action];
@@ -82,7 +82,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
             });
 
             if (conflictingAction) {
-                // Unbind the conflicting action
+                // 解除冲突绑定
                 const emptyShortcut: ShortcutKey = { key: '', meta: false, ctrl: false, shift: false, alt: false };
                 onUpdateShortcut(conflictingAction, emptyShortcut);
             }
@@ -128,7 +128,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm animate-fade-in">
             <div className="bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]">
-                {/* Header */}
+                {/* 模态框头部 */}
                 <div className="flex justify-between items-center p-5 border-b border-[#333] bg-[#252526]">
                     <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-blue-500/10 rounded-lg">
@@ -141,7 +141,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     </button>
                 </div>
 
-                {/* Tabs */}
+                {/* 选项卡切换 */}
                 <div className="flex border-b border-[#333] bg-[#252526]">
                     <button
                         onClick={() => setActiveTab('shortcuts')}
@@ -169,9 +169,9 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     </button>
                 </div>
 
-                {/* Content - Keep both tabs mounted to prevent flicker */}
+                {/* 内容区域（保留挂载以维持状态） */}
                 <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                    {/* Shortcuts Tab */}
+                    {/* 快捷键设置 */}
                     <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${activeTab === 'shortcuts' ? '' : 'hidden'}`}>
                         {(Object.keys(shortcuts) as ShortcutAction[]).map((action) => (
                             <div
@@ -204,9 +204,9 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         ))}
                     </div>
 
-                    {/* AI Config Tab */}
+                    {/* AI 参数配置 */}
                     <div className={`space-y-4 ${activeTab === 'ai' ? '' : 'hidden'}`}>
-                        {/* Provider Selection */}
+                        {/* AI 提供商选择 */}
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">AI 提供商</label>
                             <select
@@ -224,7 +224,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </select>
                         </div>
 
-                        {/* API Key */}
+                        {/* API Key 配置 */}
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">API Key</label>
                             <input
@@ -236,7 +236,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             />
                         </div>
 
-                        {/* Model Name */}
+                        {/* 模型名称配置 */}
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">模型名称 (Model Name)</label>
                             <input
@@ -255,7 +255,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             />
                         </div>
 
-                        {/* Base URL (Conditional) */}
+                        {/* Base URL 配置（可选） */}
                         {localAIConfig.provider !== AIProvider.GEMINI && (
                             <div>
                                 <label className="block text-xs font-medium text-gray-400 mb-1.5">
@@ -278,7 +278,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </div>
                         )}
 
-                        {/* Helper text for different providers */}
+                        {/* 提供商配置说明 */}
                         {localAIConfig.provider !== AIProvider.GEMINI && localAIConfig.provider !== AIProvider.OPENAI && localAIConfig.provider !== AIProvider.CUSTOM && (
                             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                                 <p className="text-xs text-blue-300 leading-relaxed">
@@ -292,7 +292,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     </div>
                 </div>
 
-                {/* Footer */}
+                {/* 底部操作栏 */}
                 <div className="p-4 border-t border-[#333] bg-[#252526] flex justify-between items-center">
                     {activeTab === 'shortcuts' ? (
                         <>

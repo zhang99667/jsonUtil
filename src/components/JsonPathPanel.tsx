@@ -66,7 +66,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     const handleQuery = () => {
         setError('');
 
-        // Validate JSON data
+        // 校验 JSON 数据有效性
         if (!jsonData || !jsonData.trim()) {
             setError('请先在左侧输入 JSON 数据');
             return;
@@ -144,9 +144,9 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                 </button>
             </div>
 
-            {/* Content */}
+            {/* 面板内容 */}
             <div className="p-4">
-                {/* Query Input */}
+                {/* 查询输入框 */}
                 <div className="mb-3">
                     <div className="flex gap-2">
                         <input
@@ -166,7 +166,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                     </div>
                 </div>
 
-                {/* Examples */}
+                {/* 常用示例 */}
                 <div className="mb-3">
                     <div className="text-xs text-gray-500 mb-2">常用示例:</div>
                     <div className="flex flex-wrap gap-2">
@@ -183,7 +183,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                     </div>
                 </div>
 
-                {/* Error Display */}
+                {/* 错误提示 */}
                 {error && (
                     <div className="mb-3 p-3 bg-[#3c1515] border border-red-900/50 rounded text-sm text-red-300 flex items-start gap-2">
                         <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,7 +193,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                     </div>
                 )}
 
-                {/* History */}
+                {/* 查询历史 */}
                 {history.length > 0 && (
                     <div className="border-t border-[#454545] pt-3 mt-3">
                         <div className="flex items-center justify-between mb-2">
@@ -234,7 +234,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                     </div>
                 )}
 
-                {/* Hint */}
+                {/* 操作提示 */}
                 <div className="mt-3 text-xs text-gray-500 italic">
                     查询结果将显示在右侧 PREVIEW 编辑器中
                 </div>

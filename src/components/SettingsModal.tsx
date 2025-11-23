@@ -45,7 +45,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 <div className="p-6 space-y-4">
-                    {/* Provider Selection */}
+                    {/* AI 提供商选择 */}
                     <div>
                         <label className="block text-xs font-medium text-gray-400 mb-1.5">AI 提供商</label>
                         <select
@@ -59,7 +59,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </select>
                     </div>
 
-                    {/* API Key */}
+                    {/* API Key 配置 */}
                     <div>
                         <label className="block text-xs font-medium text-gray-400 mb-1.5">API Key</label>
                         <input
@@ -71,7 +71,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         />
                     </div>
 
-                    {/* Model Name */}
+                    {/* 模型名称配置 */}
                     <div>
                         <label className="block text-xs font-medium text-gray-400 mb-1.5">模型名称 (Model Name)</label>
                         <input
@@ -83,7 +83,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         />
                     </div>
 
-                    {/* Base URL (Conditional) */}
+                    {/* Base URL 配置（可选） */}
                     {(localConfig.provider === AIProvider.OPENAI || localConfig.provider === AIProvider.CUSTOM) && (
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">Base URL (Optional)</label>

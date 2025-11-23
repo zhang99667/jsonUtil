@@ -49,7 +49,7 @@ export const detectLanguage = (input: string): string => {
   return 'plaintext';
 };
 
-// Core Transformations
+// 核心转换逻辑
 const formatJson = (input: string): string => {
   try {
     const parsed = JSON.parse(input);
@@ -82,11 +82,11 @@ const escapeString = (input: string): string => {
 
 const unescapeString = (input: string): string => {
   try {
-    // Handle simple double quotes wrapping
+    // 处理双引号包裹的字符串
     if (input.startsWith('"') && input.endsWith('"')) {
       return JSON.parse(input);
     }
-    // Handle escaped string
+    // 处理转义字符
     return JSON.parse(`"${input}"`);
   } catch (e) {
     try {
@@ -121,9 +121,9 @@ const deepParseJson = (input: string): string => {
     const deepParse = (obj: any): any => {
       if (typeof obj === 'string') {
         try {
-          // Try to parse the string value
+          // 尝试解析嵌套 JSON 字符串
           const innerParsed = JSON.parse(obj);
-          // If successful and it's an object or array, recurse
+          // 若解析结果为对象或数组，则递归处理
           if (typeof innerParsed === 'object' && innerParsed !== null) {
             return deepParse(innerParsed);
           }
@@ -157,17 +157,17 @@ const deepParseJson = (input: string): string => {
 
 const detectIndentation = (jsonString: string): number | string => {
   const lines = jsonString.split('\n');
-  if (lines.length <= 1) return 0; // Minified or empty
+  if (lines.length <= 1) return 0; // 空内容或单行压缩内容
 
   for (const line of lines) {
     if (line.trim() !== '') {
       const match = line.match(/^(\s+)/);
       if (match) {
-        return match[1]; // Return the actual whitespace string (e.g., "  " or "\t")
+        return match[1]; // 提取缩进字符
       }
     }
   }
-  return 2; // Default to 2 spaces if no indentation found but multi-line
+  return 2; // 默认缩进（2空格）
 };
 
 const smartInverse = (output: string, originalInput: string): string => {
@@ -176,15 +176,14 @@ const smartInverse = (output: string, originalInput: string): string => {
     const originalObj = JSON.parse(originalInput);
 
     const deepMerge = (out: any, orig: any): any => {
-      // If original was a string but output is an object, it means it was expanded.
-      // We need to stringify the output object back to a string.
+      // 检测到字符串被展开为对象，需重新序列化
       if (typeof orig === 'string' && typeof out === 'object' && out !== null) {
         return JSON.stringify(out);
       }
 
       if (Array.isArray(out) && Array.isArray(orig)) {
         return out.map((item, index) => {
-          // Try to match with original item if possible, otherwise just return item
+          // 尝试与原始数组项匹配合并
           if (index < orig.length) {
             return deepMerge(item, orig[index]);
           }
@@ -210,16 +209,13 @@ const smartInverse = (output: string, originalInput: string): string => {
     const result = deepMerge(outputObj, originalObj);
     const indentation = detectIndentation(originalInput);
 
-    // If indentation is 0 (minified), use JSON.stringify without space argument
+    // 若原内容为压缩格式，则保持压缩输出
     if (indentation === 0) {
       return JSON.stringify(result);
     }
     return JSON.stringify(result, null, indentation);
   } catch (e) {
-    // Fallback: if we can't smartly merge, just return the minified version or whatever makes sense.
-    // But user asked to keep format, so maybe just return output as is if it's valid JSON?
-    // Or better, try to minify if it was minified? 
-    // For now let's just return standard format as a safe fallback.
+    // 合并失败回退策略：优先返回标准格式化 JSON
     try {
       const parsed = JSON.parse(output);
       return JSON.stringify(parsed, null, 2);
@@ -229,9 +225,9 @@ const smartInverse = (output: string, originalInput: string): string => {
   }
 };
 
-// --- Bi-directional Logic ---
+// --- 双向转换逻辑 ---
 
-// Left -> Right
+// 正向转换 (Input -> Output)
 export const performTransform = (input: string, mode: TransformMode): string => {
   if (!input) return '';
   try {
@@ -252,7 +248,7 @@ export const performTransform = (input: string, mode: TransformMode): string => 
   }
 };
 
-// Right -> Left (When user edits the preview)
+// 反向转换 (Output -> Input)
 export const performInverseTransform = (output: string, mode: TransformMode, originalInput?: string): string => {
   if (!output) return '';
   try {
