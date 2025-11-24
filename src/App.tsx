@@ -190,7 +190,7 @@ const App: React.FC = () => {
     outputChangeTimer.current = setTimeout(() => {
       // 修复：在格式化模式下，如果右侧内容不是有效的 JSON，则不进行同步
       // 避免因语法错误导致反向转换失败，从而将错误内容覆盖到左侧源文件
-      if ((mode === TransformMode.FORMAT || mode === TransformMode.DEEP_FORMAT)) {
+      if ((mode === TransformMode.FORMAT || mode === TransformMode.DEEP_FORMAT || mode === TransformMode.MINIFY)) {
         const validation = validateJson(newVal);
         if (!validation.isValid) {
           // 验证失败，仅重置更新标志（允许用户继续编辑），但不同步回左侧
