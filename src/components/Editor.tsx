@@ -17,7 +17,8 @@ export const CodeEditor: React.FC<EditorProps> = ({
   activeFileId,
   onTabClick,
   onCloseFile,
-  highlightRange
+  highlightRange,
+  onFocus
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
@@ -296,6 +297,9 @@ export const CodeEditor: React.FC<EditorProps> = ({
           value={value}
           onMount={(editor) => {
             editorRef.current = editor;
+            editor.onDidFocusEditorText(() => {
+              onFocus?.();
+            });
           }}
           onChange={handleEditorChange}
           options={{

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileTab, TransformMode } from '../types';
 
 interface UseFileSystemProps {
@@ -89,31 +89,57 @@ export const useFileSystem = ({
         }
     };
 
-    const saveFile = async () => {
+    const saveFile = async (content?: string) => {
         const activeFile = files.find(f => f.id === activeFileId);
         if (activeFile?.handle) {
             try {
                 // 调用原生保存 API
+                // 如果传入 content 则保存 content (如 Preview)，否则保存 input (Source)
                 const writable = await activeFile.handle.createWritable();
-                await writable.write(output);
+                await writable.write(content ?? input);
                 await writable.close();
 
                 console.log('File saved successfully');
+                return true;
             } catch (err) {
                 console.error('Failed to save file:', err);
                 alert('保存文件失败，请重试');
+                return false;
             }
-        } else {
-            // 不支持原生 API 时的下载回退
-            const blob = new Blob([output], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'result.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+        }
+        return false;
+    };
+
+    const saveSourceAs = async () => {
+        try {
+            // @ts-ignore
+            if (window.showSaveFilePicker) {
+                // @ts-ignore
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'untitled.json',
+                    types: [{
+                        description: 'Text Files',
+                        accept: { 'text/plain': ['.txt', '.json', '.js', '.ts', '.md'] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(input);
+                await writable.close();
+                return true;
+            } else {
+                // Fallback
+                const blob = new Blob([input], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'untitled.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                return true;
+            }
+        } catch (err) {
+            console.error('Failed to save source as:', err);
+            return false;
         }
     };
 
@@ -156,6 +182,7 @@ export const useFileSystem = ({
         setIsAutoSaveEnabled,
         openFile,
         saveFile,
+        saveSourceAs,
         closeFile,
         switchTab,
         updateActiveFileContent

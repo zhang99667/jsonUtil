@@ -81,6 +81,13 @@ const App: React.FC = () => {
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
+  const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+
+  const showToast = (message: string) => {
+    setToast({ message, visible: true });
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 2000);
+  };
 
   const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
     const saved = localStorage.getItem('json-helper-ai-config');
@@ -108,14 +115,38 @@ const App: React.FC = () => {
   // 文件系统状态 (Hook)
   const {
     files, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
-    openFile, saveFile, closeFile, switchTab, updateActiveFileContent
+    openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent
   } = useFileSystem({
     input, setInput, inputRef, setMode, output
   });
 
+  // 统一的保存处理逻辑
+  const handleSaveShortcut = useCallback(async () => {
+    if (activeFileId) {
+      // 如果已打开文件，根据焦点保存不同内容到该文件
+      if (activeEditor === 'PREVIEW') {
+        // Preview 聚焦：保存 Preview 内容到文件
+        const success = await saveFile(output);
+        if (success) showToast("已将预览结果保存到文件");
+      } else {
+        // Source 聚焦：保存 Source 内容到文件
+        const success = await saveFile(); // 默认保存 input
+        if (success) showToast("已保存源文件");
+      }
+    } else {
+      // 未打开文件：另存为
+      if (activeEditor === 'PREVIEW') {
+        await savePreview(); // 另存为 Preview
+      } else {
+        const success = await saveSourceAs(); // 另存为 Source
+        if (success) showToast("已另存为源文件");
+      }
+    }
+  }, [activeFileId, activeEditor, output, saveFile, saveSourceAs]);
+
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts } = useShortcuts({
-    onSave: saveFile,
+    onSave: handleSaveShortcut,
     onFormat: () => setMode(TransformMode.FORMAT),
     onDeepFormat: () => setMode(TransformMode.DEEP_FORMAT),
     onMinify: () => setMode(TransformMode.MINIFY),
@@ -154,10 +185,10 @@ const App: React.FC = () => {
     // 更新活动文件内容缓存
     updateActiveFileContent(cleanVal);
 
-    // 模式重置：用户编辑源文件时自动重置为原始视图
-    if (mode !== TransformMode.NONE) {
-      setMode(TransformMode.NONE);
-    }
+    // 移除模式重置逻辑，保持当前视图模式
+    // if (mode !== TransformMode.NONE) {
+    //   setMode(TransformMode.NONE);
+    // }
   };
 
   // 右侧预览编辑处理（反向转换）
@@ -220,6 +251,36 @@ const App: React.FC = () => {
 
 
 
+  const savePreview = async () => {
+    try {
+      // @ts-ignore - Window interface extension
+      if (window.showSaveFilePicker) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: 'preview_result.json',
+          types: [{
+            description: 'JSON File',
+            accept: { 'application/json': ['.json'] },
+          }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(output);
+        await writable.close();
+      } else {
+        // Fallback for browsers without File System Access API
+        const blob = new Blob([output], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'preview_result.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      showToast("已保存预览结果");
+    } catch (err) {
+      console.error('Failed to save preview:', err);
+    }
+  };
+
   const handleAction = async (action: ActionType) => {
     if (action === ActionType.AI_FIX) {
       if (!input.trim()) return;
@@ -237,7 +298,20 @@ const App: React.FC = () => {
         setIsProcessing(false);
       }
     } else if (action === ActionType.SAVE) {
-      await saveFile();
+      if (activeEditor === 'PREVIEW') {
+        await savePreview();
+      } else {
+        // Source Save Logic
+        if (activeFileId) {
+          // If file is open, save to it
+          const success = await saveFile();
+          if (success) showToast("已保存源文件");
+        } else {
+          // If no file open, Save As
+          const success = await saveSourceAs();
+          if (success) showToast("已另存为源文件");
+        }
+      }
     } else if (action === ActionType.OPEN) {
       await openFile();
     }
@@ -341,6 +415,7 @@ const App: React.FC = () => {
             <CodeEditor
               value={input}
               onChange={handleInputChange}
+              onFocus={() => setActiveEditor('SOURCE')}
               label="SOURCE"
               files={files}
               activeFileId={activeFileId}
@@ -390,6 +465,7 @@ const App: React.FC = () => {
               label="PREVIEW"
               value={output}
               onChange={handleOutputChange}
+              onFocus={() => setActiveEditor('PREVIEW')}
               readOnly={true} // 默认只读状态
               canToggleReadOnly={true} // 允许解锁编辑
               placeholder="// 结果显示区..."
@@ -414,6 +490,14 @@ const App: React.FC = () => {
         {(isResizingSidebar || isResizingPane) && (
           <div className="absolute inset-0 z-50 cursor-col-resize"></div>
         )}
+
+        {/* Toast Notification */}
+        <div className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 ${toast.visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+          <div className="bg-[#007acc] text-white px-4 py-2 rounded shadow-lg text-sm font-medium flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            {toast.message}
+          </div>
+        </div>
       </div>
 
       {/* 底部状态栏 */}

@@ -81,4 +81,5 @@ export interface EditorProps {
   onTabClick?: (id: string) => void;
   onCloseFile?: (id: string) => void;
   highlightRange?: HighlightRange | null;
+  onFocus?: () => void;
 }
