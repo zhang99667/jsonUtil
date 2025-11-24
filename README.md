@@ -18,3 +18,19 @@ View your app in AI Studio: https://ai.studio/apps/drive/1uOkLB8NL9TshPvlt3UcfbG
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Desktop App (Electron)
+
+This application can be packaged as a standalone desktop app for macOS, Windows, or Linux using Electron.
+
+### Development
+Run the desktop app in development mode (with hot reload):
+```bash
+npm run electron:dev
+```
+
+### Packaging
+Build the production application (creates `.dmg` and `.zip` in `dist/`):
+```bash
+npm run electron:build
+```
