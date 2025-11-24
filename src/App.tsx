@@ -188,6 +188,18 @@ const App: React.FC = () => {
 
     // 执行反向转换（防抖 150ms）
     outputChangeTimer.current = setTimeout(() => {
+      // 修复：在格式化模式下，如果右侧内容不是有效的 JSON，则不进行同步
+      // 避免因语法错误导致反向转换失败，从而将错误内容覆盖到左侧源文件
+      if ((mode === TransformMode.FORMAT || mode === TransformMode.DEEP_FORMAT)) {
+        const validation = validateJson(newVal);
+        if (!validation.isValid) {
+          // 验证失败，仅重置更新标志（允许用户继续编辑），但不同步回左侧
+          isUpdatingFromOutput.current = false;
+          pendingOutputValue.current = '';
+          return;
+        }
+      }
+
       // 使用 Ref 获取最新输入源，避免闭包陷阱
       const newSource = performInverseTransform(newVal, mode, inputRef.current);
       setInput(newSource);
