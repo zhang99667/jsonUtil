@@ -152,26 +152,26 @@ export const CodeEditor: React.FC<EditorProps> = ({
   }, [files, activeFileId]);
 
   const getFileIcon = (filename: string) => {
-    if (!filename) return <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
+    if (!filename) return <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
 
     const ext = filename.split('.').pop()?.toLowerCase();
     switch (ext) {
       case 'json':
-        return <span className="text-yellow-400 font-bold text-[10px] w-3.5 text-center flex-shrink-0">J</span>;
+        return <span className="text-yellow-400 font-bold text-[11px] w-4 text-center flex-shrink-0">J</span>;
       case 'js':
       case 'jsx':
-        return <span className="text-yellow-300 font-bold text-[10px] w-3.5 text-center flex-shrink-0">JS</span>;
+        return <span className="text-yellow-300 font-bold text-[11px] w-4 text-center flex-shrink-0">JS</span>;
       case 'ts':
       case 'tsx':
-        return <span className="text-blue-400 font-bold text-[10px] w-3.5 text-center flex-shrink-0">TS</span>;
+        return <span className="text-blue-400 font-bold text-[11px] w-4 text-center flex-shrink-0">TS</span>;
       case 'css':
-        return <span className="text-blue-300 font-bold text-[10px] w-3.5 text-center flex-shrink-0">#</span>;
+        return <span className="text-blue-300 font-bold text-[11px] w-4 text-center flex-shrink-0">#</span>;
       case 'html':
-        return <span className="text-orange-400 font-bold text-[10px] w-3.5 text-center flex-shrink-0">&lt;&gt;</span>;
+        return <span className="text-orange-400 font-bold text-[11px] w-4 text-center flex-shrink-0">&lt;&gt;</span>;
       case 'md':
-        return <span className="text-gray-300 font-bold text-[10px] w-3.5 text-center flex-shrink-0">M↓</span>;
+        return <span className="text-gray-300 font-bold text-[11px] w-4 text-center flex-shrink-0">M↓</span>;
       default:
-        return <svg className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
+        return <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
     }
   };
 
@@ -199,8 +199,8 @@ export const CodeEditor: React.FC<EditorProps> = ({
                     key={file.id}
                     onClick={() => onTabClick?.(file.id)}
                     className={`flex items-center gap-2 px-3 h-full border-r border-r-[#252526] text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
-                      ? 'bg-[#1e1e1e] text-white border-t-2 border-t-[#0078d4] relative top-[1px]'
-                      : 'bg-[#2d2d2d] text-[#969696] border-t border-t-transparent hover:bg-[#2a2d2e] mb-[1px]'
+                      ? 'bg-[#1e1e1e] text-white border-t-2 border-t-[#0078d4]'
+                      : 'bg-[#2d2d2d] text-[#969696] border-t-2 border-t-transparent hover:bg-[#2a2d2e]'
                       }`}
                     title={file.name}
                   >
@@ -220,13 +220,15 @@ export const CodeEditor: React.FC<EditorProps> = ({
                 ))}
 
                 {/* 新建标签按钮 */}
-                <button
-                  onClick={() => onNewTab?.()}
-                  className="flex items-center justify-center px-3 h-full bg-[#2d2d2d] hover:bg-[#2a2d2e] text-[#969696] hover:text-white border-t border-t-transparent transition-all cursor-pointer flex-shrink-0 mb-[1px]"
-                  title="新建标签 (Cmd+N)"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                </button>
+                <div className="flex items-center justify-center h-full px-1">
+                  <button
+                    onClick={() => onNewTab?.()}
+                    className="flex items-center justify-center w-6 h-6 rounded-md text-[#969696] hover:text-white hover:bg-[#444] transition-all cursor-pointer flex-shrink-0"
+                    title="新建标签 (Cmd+N)"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
+                  </button>
+                </div>
               </div>
 
               {/* 自定义滚动条 */}
