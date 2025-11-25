@@ -115,7 +115,7 @@ const App: React.FC = () => {
   // 文件系统状态 (Hook)
   const {
     files, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
-    openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent
+    createNewTab, openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent
   } = useFileSystem({
     input, setInput, inputRef, setMode, output
   });
@@ -151,7 +151,8 @@ const App: React.FC = () => {
     onDeepFormat: () => setMode(TransformMode.DEEP_FORMAT),
     onMinify: () => setMode(TransformMode.MINIFY),
     onCloseTab: () => activeFileId && closeFile(activeFileId),
-    onToggleJsonPath: () => setIsJsonPathPanelOpen(prev => !prev)
+    onToggleJsonPath: () => setIsJsonPathPanelOpen(prev => !prev),
+    onNewTab: createNewTab
   });
 
   // 输入变更验证（防抖）
@@ -314,6 +315,8 @@ const App: React.FC = () => {
       }
     } else if (action === ActionType.OPEN) {
       await openFile();
+    } else if (action === ActionType.NEW_TAB) {
+      createNewTab();
     }
   };
 
@@ -421,6 +424,7 @@ const App: React.FC = () => {
               activeFileId={activeFileId}
               onTabClick={switchTab}
               onCloseFile={closeFile}
+              onNewTab={createNewTab}
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               headerActions={

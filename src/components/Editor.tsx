@@ -17,6 +17,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
   activeFileId,
   onTabClick,
   onCloseFile,
+  onNewTab,
   highlightRange,
   onFocus
 }) => {
@@ -217,6 +218,15 @@ export const CodeEditor: React.FC<EditorProps> = ({
                     </button>
                   </div>
                 ))}
+
+                {/* 新建标签按钮 */}
+                <button
+                  onClick={() => onNewTab?.()}
+                  className="flex items-center justify-center px-3 h-full bg-[#2d2d2d] hover:bg-[#2a2d2e] text-[#969696] hover:text-white border-t border-t-transparent transition-all cursor-pointer flex-shrink-0 mb-[1px]"
+                  title="新建标签 (Cmd+N)"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                </button>
               </div>
 
               {/* 自定义滚动条 */}

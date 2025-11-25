@@ -14,7 +14,8 @@ export enum TransformMode {
 export enum ActionType {
   AI_FIX = 'AI_FIX',
   SAVE = 'SAVE',
-  OPEN = 'OPEN'
+  OPEN = 'OPEN',
+  NEW_TAB = 'NEW_TAB'
 }
 
 export enum AIProvider {
@@ -47,7 +48,7 @@ export interface ShortcutKey {
   alt: boolean;
 }
 
-export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY' | 'CLOSE_TAB' | 'TOGGLE_JSONPATH';
+export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY' | 'CLOSE_TAB' | 'TOGGLE_JSONPATH' | 'NEW_TAB';
 
 export type ShortcutConfig = Record<ShortcutAction, ShortcutKey>;
 
@@ -80,6 +81,7 @@ export interface EditorProps {
   activeFileId?: string | null;
   onTabClick?: (id: string) => void;
   onCloseFile?: (id: string) => void;
+  onNewTab?: () => void;
   highlightRange?: HighlightRange | null;
   onFocus?: () => void;
 }

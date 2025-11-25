@@ -48,6 +48,42 @@ export const useFileSystem = ({
         return () => clearTimeout(timer);
     }, [input, activeFileId, files, isAutoSaveEnabled]);
 
+    const createNewTab = () => {
+        const newFileId = crypto.randomUUID();
+
+        // VSCode 风格命名:找到最小的未使用编号
+        const existingNumbers = files
+            .map(f => {
+                const match = f.name.match(/^Untitled-(\d+)$/);
+                return match ? parseInt(match[1], 10) : null;
+            })
+            .filter((n): n is number => n !== null);
+
+        // 找到最小的可用编号
+        let newNumber = 1;
+        while (existingNumbers.includes(newNumber)) {
+            newNumber++;
+        }
+
+        const newFileName = `Untitled-${newNumber}`;
+
+        const newFile: FileTab = {
+            id: newFileId,
+            name: newFileName,
+            content: '',
+            handle: undefined, // 无文件句柄,表示未保存的新标签
+            isDirty: false
+        };
+
+        setFiles(prev => [...prev, newFile]);
+        setActiveFileId(newFileId);
+        setInput('');
+        inputRef.current = '';
+
+        // 重置视图模式
+        setMode(TransformMode.NONE);
+    };
+
     const openFile = async () => {
         try {
             // @ts-ignore - 忽略 File System Access API 类型检查
@@ -180,6 +216,7 @@ export const useFileSystem = ({
         activeFileId,
         isAutoSaveEnabled,
         setIsAutoSaveEnabled,
+        createNewTab,
         openFile,
         saveFile,
         saveSourceAs,

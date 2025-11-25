@@ -8,6 +8,7 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
     MINIFY: { key: 'm', meta: true, ctrl: false, shift: true, alt: false },
     CLOSE_TAB: { key: 'w', meta: true, ctrl: false, shift: false, alt: true },
     TOGGLE_JSONPATH: { key: 'f', meta: false, ctrl: true, shift: true, alt: false },
+    NEW_TAB: { key: 'n', meta: true, ctrl: false, shift: false, alt: false },
 };
 
 interface UseShortcutsProps {
@@ -17,6 +18,7 @@ interface UseShortcutsProps {
     onMinify: () => void;
     onCloseTab: () => void;
     onToggleJsonPath: () => void;
+    onNewTab: () => void;
 }
 
 export const useShortcuts = ({
@@ -26,6 +28,7 @@ export const useShortcuts = ({
     onMinify,
     onCloseTab,
     onToggleJsonPath,
+    onNewTab,
 }: UseShortcutsProps) => {
     const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
         const saved = localStorage.getItem('json-helper-shortcuts');
@@ -99,11 +102,18 @@ export const useShortcuts = ({
                 onToggleJsonPath();
                 return;
             }
+
+            // 新建标签操作
+            if (matches(shortcuts.NEW_TAB)) {
+                e.preventDefault();
+                onNewTab();
+                return;
+            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [shortcuts, onSave, onFormat, onDeepFormat, onMinify, onCloseTab, onToggleJsonPath]);
+    }, [shortcuts, onSave, onFormat, onDeepFormat, onMinify, onCloseTab, onToggleJsonPath, onNewTab]);
 
     return {
         shortcuts,
