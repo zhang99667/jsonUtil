@@ -18,6 +18,7 @@ const ACTION_LABELS: Record<ShortcutAction, string> = {
     MINIFY: '压缩 (Minify)',
     CLOSE_TAB: '关闭标签 (Close Tab)',
     TOGGLE_JSONPATH: '切换查询面板 (Toggle Query Panel)',
+    NEW_TAB: '新建标签 (New Tab)',
 };
 
 type TabType = 'shortcuts' | 'ai';
@@ -126,28 +127,26 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
+            <div className="bg-[#252526] border border-[#454545] rounded-lg shadow-2xl w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]">
                 {/* 模态框头部 */}
-                <div className="flex justify-between items-center p-5 border-b border-[#333] bg-[#252526]">
+                <div className="flex justify-between items-center px-4 py-2 border-b border-[#454545] bg-[#2d2d2d] rounded-t-lg">
                     <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-500/10 rounded-lg">
-                            <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        </div>
-                        <h2 className="text-lg font-semibold text-white">设置</h2>
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <span className="text-sm font-semibold text-gray-200">设置</span>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-[#333] rounded-md">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-[#333]">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
 
                 {/* 选项卡切换 */}
-                <div className="flex border-b border-[#333] bg-[#252526]">
+                <div className="flex border-b border-[#454545] bg-[#2d2d2d]">
                     <button
                         onClick={() => setActiveTab('shortcuts')}
                         className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'shortcuts'
-                            ? 'text-white border-b-2 border-blue-500 bg-[#1e1e1e]'
-                            : 'text-gray-400 hover:text-gray-200 hover:bg-[#2a2d2e]'
+                            ? 'text-white border-b-2 border-emerald-500 bg-[#252526]'
+                            : 'text-gray-400 hover:text-gray-200 hover:bg-[#333]'
                             }`}
                     >
                         <div className="flex items-center justify-center gap-2">
@@ -158,8 +157,8 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     <button
                         onClick={() => setActiveTab('ai')}
                         className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'ai'
-                            ? 'text-white border-b-2 border-blue-500 bg-[#1e1e1e]'
-                            : 'text-gray-400 hover:text-gray-200 hover:bg-[#2a2d2e]'
+                            ? 'text-white border-b-2 border-emerald-500 bg-[#252526]'
+                            : 'text-gray-400 hover:text-gray-200 hover:bg-[#333]'
                             }`}
                     >
                         <div className="flex items-center justify-center gap-2">
@@ -177,9 +176,9 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             <div
                                 key={action}
                                 onClick={() => setRecordingAction(action)}
-                                className={`flex justify-between items-center bg-[#252526] p-4 rounded-lg border transition-all cursor-pointer group ${recordingAction === action
-                                    ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/50'
-                                    : 'border-[#333] hover:border-[#555] hover:bg-[#2a2d2e]'
+                                className={`flex justify-between items-center bg-[#1e1e1e] p-4 rounded border transition-all cursor-pointer group ${recordingAction === action
+                                    ? 'border-emerald-500 bg-emerald-500/5 ring-1 ring-emerald-500/50'
+                                    : 'border-[#454545] hover:border-[#555] hover:bg-[#333]'
                                     }`}
                             >
                                 <div className="flex flex-col">
@@ -193,7 +192,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
                                 <div className="flex items-center">
                                     {recordingAction === action ? (
-                                        <span className="text-xs text-blue-400 animate-pulse font-medium px-2 py-1 bg-blue-500/10 rounded">
+                                        <span className="text-xs text-emerald-400 animate-pulse font-medium px-2 py-1 bg-emerald-500/10 rounded">
                                             按下按键...
                                         </span>
                                     ) : (
@@ -212,7 +211,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             <select
                                 value={localAIConfig.provider}
                                 onChange={(e) => setLocalAIConfig({ ...localAIConfig, provider: e.target.value as AIProvider })}
-                                className="w-full bg-[#252526] border border-[#333] text-gray-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none"
+                                className="w-full bg-[#1e1e1e] border border-[#454545] text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5"
                             >
                                 <option value={AIProvider.GEMINI}>Google Gemini</option>
                                 <option value={AIProvider.OPENAI}>OpenAI</option>
@@ -232,7 +231,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                 value={localAIConfig.apiKey}
                                 onChange={(e) => setLocalAIConfig({ ...localAIConfig, apiKey: e.target.value })}
                                 placeholder="sk-..."
-                                className="w-full bg-[#252526] border border-[#333] text-gray-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder-gray-600"
+                                className="w-full bg-[#1e1e1e] border border-[#454545] text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5 placeholder-gray-600"
                             />
                         </div>
 
@@ -251,7 +250,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                                     localAIConfig.provider === AIProvider.DEEPSEEK ? "deepseek-chat" :
                                                         "gpt-4o-mini"
                                 }
-                                className="w-full bg-[#252526] border border-[#333] text-gray-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder-gray-600"
+                                className="w-full bg-[#1e1e1e] border border-[#454545] text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5 placeholder-gray-600"
                             />
                         </div>
 
@@ -273,15 +272,15 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                                         localAIConfig.provider === AIProvider.DEEPSEEK ? "https://api.deepseek.com/v1" :
                                                             "https://your-api-endpoint.com/v1"
                                     }
-                                    className="w-full bg-[#252526] border border-[#333] text-gray-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder-gray-600"
+                                    className="w-full bg-[#1e1e1e] border border-[#454545] text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5 placeholder-gray-600"
                                 />
                             </div>
                         )}
 
                         {/* 提供商配置说明 */}
                         {localAIConfig.provider !== AIProvider.GEMINI && localAIConfig.provider !== AIProvider.OPENAI && localAIConfig.provider !== AIProvider.CUSTOM && (
-                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                                <p className="text-xs text-blue-300 leading-relaxed">
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded p-3">
+                                <p className="text-xs text-emerald-300 leading-relaxed">
                                     {localAIConfig.provider === AIProvider.QWEN && '💡 通义千问支持 OpenAI 兼容接口，请确保使用正确的 API Key 和 Base URL'}
                                     {localAIConfig.provider === AIProvider.ERNIE && '💡 文心一言需要使用百度智能云的 API Key 和 Secret Key'}
                                     {localAIConfig.provider === AIProvider.GLM && '💡 智谱AI 支持 OpenAI 兼容接口，请使用您的 API Key'}
@@ -293,7 +292,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                 </div>
 
                 {/* 底部操作栏 */}
-                <div className="p-4 border-t border-[#333] bg-[#252526] flex justify-between items-center">
+                <div className="p-4 border-t border-[#454545] bg-[#2d2d2d] flex justify-between items-center">
                     {activeTab === 'shortcuts' ? (
                         <>
                             <button
@@ -305,7 +304,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </button>
                             <button
                                 onClick={onClose}
-                                className="bg-[#007acc] hover:bg-[#0062a3] text-white px-6 py-2 rounded-md text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
                             >
                                 完成
                             </button>
@@ -320,7 +319,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </button>
                             <button
                                 onClick={handleSaveAI}
-                                className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors shadow-lg shadow-violet-900/20"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
                             >
                                 保存设置
                             </button>
