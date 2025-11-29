@@ -85,4 +85,5 @@ export interface EditorProps {
   onNewTab?: () => void;
   highlightRange?: HighlightRange | null;
   onFocus?: () => void;
+  onCursorPositionChange?: (line: number, column: number) => void;
 }

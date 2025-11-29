@@ -164,6 +164,15 @@ const App: React.FC = () => {
     }
   }, [mode, activeFileId]);
 
+  // 计算文档统计信息（根据当前焦点区域）
+  const documentStats = useMemo(() => {
+    const content = activeEditor === 'PREVIEW' ? output : input;
+    const lines = content.split('\n');
+    const totalLines = lines.length;
+    const maxColumns = Math.max(...lines.map(line => line.length), 0);
+    return { totalLines, maxColumns };
+  }, [input, output, activeEditor]);
+
 
   // 输入变更验证（防抖）
   useEffect(() => {
@@ -264,7 +273,6 @@ const App: React.FC = () => {
 
   const savePreview = async () => {
     try {
-      // @ts-ignore - Window interface extension
       if (window.showSaveFilePicker) {
         const handle = await window.showSaveFilePicker({
           suggestedName: 'preview_result.json',
@@ -519,6 +527,9 @@ const App: React.FC = () => {
         <div className="flex gap-4">
           <span className="flex items-center gap-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg> UTF-8</span>
           <span>Length: {input.length}</span>
+          <span className="font-mono">
+            {documentStats.totalLines} 行, {documentStats.maxColumns} 列
+          </span>
           {activeFileId && (
             <span className="flex items-center gap-1 text-blue-200">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>

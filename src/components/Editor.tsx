@@ -19,7 +19,8 @@ export const CodeEditor: React.FC<EditorProps> = ({
   onCloseFile,
   onNewTab,
   highlightRange,
-  onFocus
+  onFocus,
+  onCursorPositionChange
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
@@ -309,6 +310,14 @@ export const CodeEditor: React.FC<EditorProps> = ({
           value={value}
           onMount={(editor) => {
             editorRef.current = editor;
+
+            // 监听光标位置变化
+            editor.onDidChangeCursorPosition((e) => {
+              const line = e.position.lineNumber;
+              const column = e.position.column;
+              onCursorPositionChange?.(line, column);
+            });
+
             editor.onDidFocusEditorText(() => {
               onFocus?.();
             });
