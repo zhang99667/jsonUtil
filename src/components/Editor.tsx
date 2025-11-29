@@ -198,7 +198,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
                   <div
                     key={file.id}
                     onClick={() => onTabClick?.(file.id)}
-                    className={`flex items-center gap-2 px-3 h-full border-r border-r-[#252526] text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
+                    className={`flex items-center gap-1.5 px-1.5 h-full border-r border-r-[#252526] text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
                       ? 'bg-[#1e1e1e] text-white border-t-2 border-t-[#0078d4]'
                       : 'bg-[#2d2d2d] text-[#969696] border-t-2 border-t-transparent hover:bg-[#2a2d2e]'
                       }`}
