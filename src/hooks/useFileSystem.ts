@@ -182,13 +182,22 @@ export const useFileSystem = ({
     };
 
     const closeFile = (id: string) => {
+        // 找到被关闭标签的索引
+        const closedIndex = files.findIndex(f => f.id === id);
         const newFiles = files.filter(f => f.id !== id);
         setFiles(newFiles);
 
         if (id === activeFileId) {
             if (newFiles.length > 0) {
-                // 自动切换至最后一个文件
-                const nextFile = newFiles[newFiles.length - 1];
+                // VS Code 行为：优先切换到右侧的下一个标签，如果没有则切换到左侧的前一个标签
+                let nextFile;
+                if (closedIndex < newFiles.length) {
+                    // 右侧还有标签，切换到右侧的下一个（索引保持不变，因为当前标签被移除）
+                    nextFile = newFiles[closedIndex];
+                } else {
+                    // 右侧没有标签了，切换到左侧的最后一个
+                    nextFile = newFiles[newFiles.length - 1];
+                }
                 setActiveFileId(nextFile.id);
                 setInput(nextFile.content);
                 inputRef.current = nextFile.content; // 同步 Ref 状态
