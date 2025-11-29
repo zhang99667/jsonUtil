@@ -114,7 +114,7 @@ const App: React.FC = () => {
 
   // 文件系统状态 (Hook)
   const {
-    files, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
+    files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
     createNewTab, openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent
   } = useFileSystem({
     input, setInput, inputRef, setMode, output
@@ -154,6 +154,16 @@ const App: React.FC = () => {
     onToggleJsonPath: () => setIsJsonPathPanelOpen(prev => !prev),
     onNewTab: createNewTab
   });
+
+  // 同步模式变更到活动文件
+  useEffect(() => {
+    if (activeFileId) {
+      setFiles(prev => prev.map(f =>
+        f.id === activeFileId ? { ...f, mode } : f
+      ));
+    }
+  }, [mode, activeFileId]);
+
 
   // 输入变更验证（防抖）
   useEffect(() => {

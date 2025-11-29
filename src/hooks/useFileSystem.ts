@@ -72,7 +72,8 @@ export const useFileSystem = ({
             name: newFileName,
             content: '',
             handle: undefined, // 无文件句柄,表示未保存的新标签
-            isDirty: false
+            isDirty: false,
+            mode: TransformMode.NONE // 新标签默认无转换模式
         };
 
         setFiles(prev => [...prev, newFile]);
@@ -109,7 +110,8 @@ export const useFileSystem = ({
                 name: file.name,
                 content: contents,
                 handle: handle,
-                isDirty: false
+                isDirty: false,
+                mode: TransformMode.NONE // 新打开的文件默认无转换模式
             };
 
             setFiles(prev => [...prev, newFile]);
@@ -190,7 +192,7 @@ export const useFileSystem = ({
                 setActiveFileId(nextFile.id);
                 setInput(nextFile.content);
                 inputRef.current = nextFile.content; // 同步 Ref 状态
-                setMode(TransformMode.NONE);
+                setMode(nextFile.mode ?? TransformMode.NONE); // 恢复该标签的模式
             } else {
                 // 无打开文件
                 setActiveFileId(null);
@@ -207,12 +209,13 @@ export const useFileSystem = ({
             setActiveFileId(id);
             setInput(file.content);
             inputRef.current = file.content; // 同步 Ref 状态
-            setMode(TransformMode.NONE);
+            setMode(file.mode ?? TransformMode.NONE); // 恢复该标签保存的模式
         }
     };
 
     return {
         files,
+        setFiles,
         activeFileId,
         isAutoSaveEnabled,
         setIsAutoSaveEnabled,

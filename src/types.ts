@@ -58,6 +58,7 @@ export interface FileTab {
   content: string;
   handle?: any; // FileSystemFileHandle
   isDirty?: boolean;
+  mode?: TransformMode; // 保存每个标签的转换模式
 }
 
 export interface HighlightRange {
