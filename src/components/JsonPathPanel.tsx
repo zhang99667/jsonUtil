@@ -6,7 +6,7 @@ interface JsonPathPanelProps {
     jsonData: string;
     isOpen: boolean;
     onClose: () => void;
-    onQueryResult: (result: string) => void; // 新增：回调函数将结果传递给父组件
+    onQueryResult: (query: string, resultIndex: number) => void; // 修改：添加 resultIndex 参数
 }
 
 export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, onClose, onQueryResult }) => {
@@ -16,6 +16,11 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         const saved = localStorage.getItem('jsonpath-query-history');
         return saved ? JSON.parse(saved) : [];
     });
+
+    // 新增：查询结果状态
+    const [queryResults, setQueryResults] = useState<any[]>([]);
+    const [currentResultIndex, setCurrentResultIndex] = useState<number>(0);
+    const [totalResults, setTotalResults] = useState<number>(0);
 
     // 拖动相关状态
     const [position, setPosition] = useState({ x: 100, y: 100 });
@@ -120,9 +125,18 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
                 if (queryResult === undefined || (Array.isArray(queryResult) && queryResult.length === 0)) {
                     setError('未找到匹配项');
+                    setQueryResults([]);
+                    setTotalResults(0);
+                    setCurrentResultIndex(0);
                 } else {
-                    // 传递原始查询表达式给父组件，以便在右侧编辑器中高亮显示
-                    onQueryResult(query);
+                    // 存储所有查询结果
+                    const results = Array.isArray(queryResult) ? queryResult : [queryResult];
+                    setQueryResults(results);
+                    setTotalResults(results.length);
+                    setCurrentResultIndex(0);
+
+                    // 触发第一个结果的高亮
+                    onQueryResult(query, 0);
 
                     // 添加到历史记录（去重）
                     if (!history.includes(query)) {
@@ -131,9 +145,15 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                 }
             } catch (e: any) {
                 setError(`JSONPath 查询错误: ${e.message}`);
+                setQueryResults([]);
+                setTotalResults(0);
+                setCurrentResultIndex(0);
             }
         } catch (e: any) {
             setError(`JSON 解析错误: ${e.message}`);
+            setQueryResults([]);
+            setTotalResults(0);
+            setCurrentResultIndex(0);
         }
     };
 
@@ -144,6 +164,37 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         { label: '递归搜索', query: '$..name' },
         { label: '过滤条件', query: '$[?(@.age > 18)]' },
     ];
+
+    // 导航到上一个结果
+    const goToPrevious = () => {
+        if (totalResults === 0) return;
+        const newIndex = currentResultIndex === 0 ? totalResults - 1 : currentResultIndex - 1;
+        setCurrentResultIndex(newIndex);
+        onQueryResult(query, newIndex);
+    };
+
+    // 导航到下一个结果
+    const goToNext = () => {
+        if (totalResults === 0) return;
+        const newIndex = currentResultIndex === totalResults - 1 ? 0 : currentResultIndex + 1;
+        setCurrentResultIndex(newIndex);
+        onQueryResult(query, newIndex);
+    };
+
+    // 处理键盘快捷键
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            if (e.shiftKey) {
+                e.preventDefault();
+                goToPrevious();
+            } else if (totalResults > 0) {
+                e.preventDefault();
+                goToNext();
+            } else {
+                handleQuery();
+            }
+        }
+    };
 
     const clearHistory = () => {
         setHistory([]);
@@ -195,7 +246,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleQuery()}
+                            onKeyDown={handleKeyDown}
                             placeholder="输入 JSONPath 表达式"
                             className="flex-1 bg-[#1e1e1e] text-gray-200 text-sm px-3 py-2 rounded border border-[#454545] focus:border-emerald-500 focus:outline-none font-mono"
                         />
@@ -232,6 +283,38 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>{error}</span>
+                    </div>
+                )}
+
+                {/* 结果计数器和导航控件 (VS Code 风格) */}
+                {totalResults > 0 && (
+                    <div className="mb-3 p-2 bg-[#2d2d2d] border border-[#454545] rounded flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400">结果:</span>
+                            <span className="text-sm font-mono text-emerald-400 font-semibold">
+                                {currentResultIndex + 1} / {totalResults}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={goToPrevious}
+                                className="p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
+                                title="上一个 (Shift+Enter)"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={goToNext}
+                                className="p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
+                                title="下一个 (Enter)"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 )}
 

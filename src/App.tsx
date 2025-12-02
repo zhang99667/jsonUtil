@@ -343,7 +343,7 @@ const App: React.FC = () => {
 
 
   // 处理 JSONPath 查询定位
-  const handleJsonPathQuery = (resultString: string) => {
+  const handleJsonPathQuery = (queryString: string, resultIndex: number) => {
     // 1. 强制切换至深度格式化模式以支持嵌套查询
     if (mode !== TransformMode.DEEP_FORMAT) {
       setMode(TransformMode.DEEP_FORMAT);
@@ -360,14 +360,14 @@ const App: React.FC = () => {
       // 4. 获取查询结果的 JSON Pointer 路径
       // jsonpath-plus 的 resultType: 'pointer' 返回 JSON Pointer 格式 (e.g. /users/0/name)
       const paths = JSONPath({
-        path: resultString, // 这里 resultString 其实是 query 表达式，我们需要修改 JsonPathPanel 传回 query
+        path: queryString,
         json: JSON.parse(currentOutput),
         resultType: 'pointer'
       });
 
       if (paths && paths.length > 0) {
-        // 取第一个匹配项
-        const pointer = paths[0];
+        // 使用传入的 resultIndex 定位到特定结果
+        const pointer = paths[resultIndex] || paths[0]; // 如果索引越界，回退到第一个
 
         // 5. 映射路径至代码位置
         if (pointers[pointer]) {
@@ -380,7 +380,7 @@ const App: React.FC = () => {
               startLine: loc.line + 1, // 坐标转换：0-based 转 1-based
               startColumn: loc.column + 1,
               endLine: valueEnd ? valueEnd.line + 1 : loc.line + 1,
-              endColumn: valueEnd ? valueEnd.column + 1 : loc.column + 1 + (resultString.length) // 估算
+              endColumn: valueEnd ? valueEnd.column + 1 : loc.column + 1 + (queryString.length) // 估算
             });
           }
         }
