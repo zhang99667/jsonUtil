@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
 import { JsonPathPanel } from './components/JsonPathPanel';
@@ -82,11 +83,22 @@ const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
-  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
 
+  // 使用 react-hot-toast 替代自定义 toast
   const showToast = (message: string) => {
-    setToast({ message, visible: true });
-    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 2000);
+    toast.success(message, {
+      duration: 2000,
+      style: {
+        background: '#007acc',
+        color: '#fff',
+        fontSize: '14px',
+        fontWeight: '500',
+      },
+      iconTheme: {
+        primary: '#fff',
+        secondary: '#007acc',
+      },
+    });
   };
 
   const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
@@ -127,11 +139,11 @@ const App: React.FC = () => {
       if (activeEditor === 'PREVIEW') {
         // Preview 聚焦：保存 Preview 内容到文件
         const success = await saveFile(output);
-        if (success) showToast("已将预览结果保存到文件");
+        if (success) showToast("已将 PREVIEW 内容保存到文件");
       } else {
         // Source 聚焦：保存 Source 内容到文件
         const success = await saveFile(); // 默认保存 input
-        if (success) showToast("已保存源文件");
+        if (success) showToast("已将 SOURCE 内容保存到文件");
       }
     } else {
       // 未打开文件：另存为
@@ -513,13 +525,16 @@ const App: React.FC = () => {
           <div className="absolute inset-0 z-50 cursor-col-resize"></div>
         )}
 
-        {/* Toast Notification */}
-        <div className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 ${toast.visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
-          <div className="bg-[#007acc] text-white px-4 py-2 rounded shadow-lg text-sm font-medium flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-            {toast.message}
-          </div>
-        </div>
+        {/* Toast Notifications - react-hot-toast */}
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            className: '',
+            style: {
+              marginTop: '16px',
+            },
+          }}
+        />
       </div>
 
       {/* 底部状态栏 */}
