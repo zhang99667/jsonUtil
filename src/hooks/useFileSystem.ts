@@ -111,7 +111,8 @@ export const useFileSystem = ({
                 content: contents,
                 handle: handle,
                 isDirty: false,
-                mode: TransformMode.NONE // 新打开的文件默认无转换模式
+                mode: TransformMode.NONE, // 新打开的文件默认无转换模式
+                path: (file as any).path // Electron 环境下 File 对象包含 path 属性
             };
 
             setFiles(prev => [...prev, newFile]);
