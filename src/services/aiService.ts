@@ -11,6 +11,11 @@ const getGenAI = () => {
 };
 
 export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promise<string> => {
+  // 检查 API Key
+  if (!config.apiKey || config.apiKey.trim() === '') {
+    throw new Error('API Key 未配置，请先在设置中配置 API Key');
+  }
+
   try {
     // Gemini 接口调用
     if (config.provider === AIProvider.GEMINI) {
@@ -62,7 +67,17 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`API Error (${response.status}): ${errorText}`);
+
+      // 根据 HTTP 状态码提供更友好的错误信息
+      if (response.status === 401) {
+        throw new Error('API Key 无效，请检查配置');
+      } else if (response.status === 429) {
+        throw new Error('API 调用频率超限，请稍后重试');
+      } else if (response.status >= 500) {
+        throw new Error('AI 服务暂时不可用，请稍后重试');
+      }
+
+      throw new Error(`API 错误 (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
@@ -72,7 +87,19 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
     return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   } catch (error: any) {
     console.error("Error calling AI API:", error);
-    throw new Error(error.message || "AI 服务暂时无法修复该 JSON。请检查 API Key 或稍后重试。");
+
+    // 如果已经是我们自定义的错误信息，直接抛出
+    if (error.message.includes('API Key') || error.message.includes('API 错误') || error.message.includes('服务')) {
+      throw error;
+    }
+
+    // 网络错误
+    if (error.message.includes('fetch') || error.message.includes('network')) {
+      throw new Error('网络连接失败，请检查网络后重试');
+    }
+
+    // 其他未知错误
+    throw new Error('AI 修复失败: ' + error.message);
   }
 };
 

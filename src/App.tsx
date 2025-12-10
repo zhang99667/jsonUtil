@@ -323,8 +323,18 @@ const App: React.FC = () => {
         inputRef.current = fixed; // 同步 Ref 状态
         // 修复后自动切换至格式化视图
         setMode(TransformMode.FORMAT);
+        showToast("AI 修复成功");
       } catch (e: any) {
-        setValidation({ isValid: false, error: e.message });
+        // 业务逻辑错误（API Key 缺失、网络错误等）使用 Toast 提示
+        toast.error(e.message || "AI 修复失败", {
+          duration: 3000,
+          style: {
+            background: '#dc2626',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+        });
       } finally {
         setIsProcessing(false);
       }
