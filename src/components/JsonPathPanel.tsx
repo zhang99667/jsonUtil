@@ -288,7 +288,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
                 {/* 结果计数器和导航控件 (VS Code 风格) */}
                 {totalResults > 0 && (
-                    <div className="mb-3 p-2 bg-[#2d2d2d] border border-[#454545] rounded flex items-center justify-between">
+                    <div className="mb-1 p-1 bg-[#2d2d2d] border border-[#454545] rounded flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-400">结果:</span>
                             <span className="text-sm font-mono text-emerald-400 font-semibold">
@@ -298,7 +298,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={goToPrevious}
-                                className="p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
+                                className="p-1 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
                                 title="上一个 (Shift+Enter)"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,7 +307,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                             </button>
                             <button
                                 onClick={goToNext}
-                                className="p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
+                                className="p-1 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
                                 title="下一个 (Enter)"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +320,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
                 {/* 查询历史 */}
                 {history.length > 0 && (
-                    <div className="border-t border-[#454545] pt-3 mt-3 flex-1 flex flex-col min-h-0 relative group/history">
+                    <div className="border-t border-[#454545] pt-2 mt-1 flex-1 flex flex-col min-h-0 relative group/history">
                         <div className="flex items-center justify-between mb-2 flex-shrink-0">
                             <div className="text-xs text-gray-500">查询历史:</div>
                             <button
