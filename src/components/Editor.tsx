@@ -194,6 +194,17 @@ export const CodeEditor: React.FC<EditorProps> = ({
                 data-tour="editor-tabs"
                 ref={tabsContainerRef}
                 onScroll={handleScroll}
+                onWheel={(e) => {
+                  if (tabsContainerRef.current) {
+                    // 将垂直滚动转换为水平滚动
+                    const delta = e.deltaY || e.deltaX;
+                    if (delta !== 0) {
+                      tabsContainerRef.current.scrollLeft += delta;
+                      // 阻止可能的页面滚动 (虽然 overflow-hidden 应该已经处理了)
+                      // e.preventDefault(); // React synthetic event doesn't support passive preventDefault well here, but browser native might
+                    }
+                  }
+                }}
                 className="flex items-center h-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden scrollbar-hide"
               >
                 {files.length > 0 && files.map(file => (
