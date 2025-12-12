@@ -220,6 +220,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         )}
         <div className="mb-4">
           <button
+            data-tour="jsonpath-button"
             onClick={onToggleJsonPath}
             className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-[#252526] border-transparent text-gray-400 hover:bg-[#333] hover:text-gray-200 hover:border-[#444] active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
             title={isCollapsed ? "JSONPath 查询" : undefined}
@@ -234,7 +235,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         </div>
 
         {/* 文件管理 */}
-        <div className="pt-4 mt-2 border-t border-[#333]">
+        <div data-tour="file-operations" className="pt-4 mt-2 border-t border-[#333]">
           <button
             onClick={() => onAction(ActionType.OPEN)}
             className={`w-full bg-[#252526] hover:bg-[#333] border border-gray-700 text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
@@ -255,6 +256,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
           {/* AI 智能修复 */}
           <button
+            data-tour="ai-fix"
             onClick={() => onAction(ActionType.AI_FIX)}
             disabled={isProcessing}
             className={`w-full bg-gradient-to-r from-violet-900/20 to-indigo-900/20 hover:from-violet-900/40 hover:to-indigo-900/40 border border-violet-500/20 hover:border-violet-500/40 text-violet-200 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 shadow-lg shadow-violet-900/5 ${isCollapsed ? 'px-2' : ''}`}
@@ -280,6 +282,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         {/* 设置入口 */}
         <div className="pt-4 mt-auto">
           <button
+            data-tour="settings"
             onClick={onOpenSettings}
             className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-gray-300 transition-colors p-2 rounded-lg hover:bg-[#252526]"
             title="设置"

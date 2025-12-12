@@ -17,6 +17,7 @@ import { JSONPath } from 'jsonpath-plus';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useLayout } from './hooks/useLayout';
+import { useOnboardingTour } from './hooks/useOnboardingTour';
 
 
 
@@ -166,6 +167,9 @@ const App: React.FC = () => {
     onToggleJsonPath: () => setIsJsonPathPanelOpen(prev => !prev),
     onNewTab: createNewTab
   });
+
+  // 用户引导 (Hook)
+  useOnboardingTour();
 
   // 同步模式变更到活动文件
   useEffect(() => {
@@ -429,7 +433,7 @@ const App: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
 
         {/* 左侧工具栏 */}
-        <div style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-[#1e1e1e] transition-all duration-300 ease-in-out">
+        <div data-tour="toolbar" style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-[#1e1e1e] transition-all duration-300 ease-in-out">
           <ActionPanel
             activeMode={mode}
             onModeChange={setMode}
@@ -454,7 +458,7 @@ const App: React.FC = () => {
         <div className="flex-1 flex min-w-0 bg-[#1e1e1e]">
 
           {/* 左栏：源文件编辑 */}
-          <div style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
+          <div data-tour="source-editor" style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
             <CodeEditor
               value={input}
               onChange={handleInputChange}
@@ -504,7 +508,7 @@ const App: React.FC = () => {
           ></div>
 
           {/* 右栏：预览与结果 */}
-          <div className="flex-1 flex flex-col min-w-[100px] h-full relative">
+          <div data-tour="preview-editor" className="flex-1 flex flex-col min-w-[100px] h-full relative">
             <CodeEditor
               label="PREVIEW"
               value={output}
