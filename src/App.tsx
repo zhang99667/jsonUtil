@@ -440,7 +440,7 @@ const App: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
 
         {/* 左侧工具栏 */}
-        <div data-tour="toolbar" style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-[#1e1e1e] transition-all duration-300 ease-in-out h-full overflow-hidden">
+        <div data-tour="toolbar" style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-[#333] transition-all duration-300 ease-in-out h-full overflow-hidden">
           <ActionPanel
             activeMode={mode}
             onModeChange={setMode}
@@ -456,7 +456,8 @@ const App: React.FC = () => {
         {/* 侧边栏调整手柄 */}
         {!isSidebarCollapsed && (
           <div
-            className={`w-1 hover:bg-[#007acc] cursor-col-resize z-20 flex-shrink-0 ${isResizingSidebar ? 'bg-[#007acc]' : 'bg-[#252526]'}`}
+            className={`absolute top-0 bottom-0 w-1 hover:bg-[#007acc] cursor-col-resize z-20 transition-colors delay-100 ${isResizingSidebar ? 'bg-[#007acc]' : 'bg-transparent'}`}
+            style={{ left: sidebarWidth - 2 }}
             onMouseDown={startResizingSidebar}
           ></div>
         )}
@@ -511,7 +512,7 @@ const App: React.FC = () => {
 
           {/* 分栏调整手柄 */}
           <div
-            className={`w-1 hover:bg-[#007acc] cursor-col-resize z-20 flex-shrink-0 ${isResizingPane ? 'bg-[#007acc]' : 'bg-[#252526]'}`}
+            className={`w-1 hover:bg-[#007acc] cursor-col-resize z-20 flex-shrink-0 transition-colors delay-100 ${isResizingPane ? 'bg-[#007acc]' : 'bg-[#252526]'}`}
             onMouseDown={startResizingPane}
           ></div>
 
