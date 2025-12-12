@@ -1,12 +1,14 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
-import { EditorProps } from '../types';
+import { EditorProps, HighlightRange } from '../types';
 import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
+import { computeLineDiff } from '../utils/diffUtils';
 
 export const CodeEditor: React.FC<EditorProps> = ({
   value,
+  originalValue,
   onChange,
   readOnly = false,
   canToggleReadOnly = false,
@@ -137,6 +139,51 @@ export const CodeEditor: React.FC<EditorProps> = ({
       }
     }
   }, [highlightRange, monaco]);
+
+  // 版本控制脏检查 (Dirty Diff) 装饰器
+  const diffDecorationsRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!editorRef.current || !monaco || originalValue === undefined) return;
+
+    // 如果没有任何变更（内容一致），或者是新建的空文件，清除装饰器
+    if (value === originalValue) {
+      if (diffDecorationsRef.current) {
+        diffDecorationsRef.current.clear();
+      }
+      return;
+    }
+
+    // 防抖计算 Diff
+    const timer = setTimeout(() => {
+      const diffs = computeLineDiff(originalValue, value);
+      const decorations: any[] = [];
+
+      diffs.forEach(diff => {
+        let className = '';
+        if (diff.type === 'add') className = 'dirty-diff-added';
+        else if (diff.type === 'modify') className = 'dirty-diff-modified';
+
+        if (className) decorations.push({
+          range: new monaco.Range(diff.startLine, 1, diff.endLine, 1),
+          options: {
+            isWholeLine: true,
+            linesDecorationsClassName: className // Render in the gutter
+          }
+        });
+      });
+
+      if (diffDecorationsRef.current) {
+        diffDecorationsRef.current.clear();
+      }
+      diffDecorationsRef.current = editorRef.current.createDecorationsCollection(decorations);
+
+    }, 200); // 200ms delay
+
+    return () => clearTimeout(timer);
+
+  }, [value, originalValue, monaco]);
+
 
   // 新文件打开时自动滚动标签栏
   useEffect(() => {

@@ -71,6 +71,7 @@ export const useFileSystem = ({
             id: newFileId,
             name: newFileName,
             content: '',
+            savedContent: '', // 新建文件，保存内容为空
             handle: undefined, // 无文件句柄,表示未保存的新标签
             isDirty: false,
             mode: TransformMode.NONE // 新标签默认无转换模式
@@ -109,6 +110,7 @@ export const useFileSystem = ({
                 id: newFileId,
                 name: file.name,
                 content: contents,
+                savedContent: contents, // 打开时保存内容等于当前内容
                 handle: handle,
                 isDirty: false,
                 mode: TransformMode.NONE, // 新打开的文件默认无转换模式
@@ -137,6 +139,14 @@ export const useFileSystem = ({
                 const writable = await activeFile.handle.createWritable();
                 await writable.write(content ?? input);
                 await writable.close();
+
+                // 保存成功后，更新 savedContent 并清除 Dirty 标记
+                if (content === undefined) {
+                    // 仅当保存的是 Source (Input) 内容时更新 savedContent
+                    setFiles(prev => prev.map(f =>
+                        f.id === activeFileId ? { ...f, savedContent: input, isDirty: false } : f
+                    ));
+                }
 
                 console.log('File saved successfully');
                 return true;
@@ -174,8 +184,12 @@ export const useFileSystem = ({
                 a.download = 'untitled.json';
                 a.click();
                 URL.revokeObjectURL(url);
+                URL.revokeObjectURL(url);
                 return true;
             }
+            // TODO: Web Save As 比较难追踪 handle 和路径，暂时无法完美更新 savedContent
+            // 如果是 Electron 环境或支持 File System Access 的环境，通常会在此之后调用 openFile 重新加载
+            // 这里暂不处理 savedContent 更新，依赖用户操作
         } catch (err) {
             console.error('Failed to save source as:', err);
             return false;

@@ -56,6 +56,7 @@ export interface FileTab {
   id: string;
   name: string;
   content: string;
+  savedContent?: string; // 磁盘上的已保存内容（用于 Diff 对比）
   handle?: any; // FileSystemFileHandle
   isDirty?: boolean;
   mode?: TransformMode; // 保存每个标签的转换模式
@@ -71,6 +72,7 @@ export interface HighlightRange {
 
 export interface EditorProps {
   value: string;
+  originalValue?: string; // 原始值（用于 Diff 对比）
   onChange: (value: string) => void;
   readOnly?: boolean;
   language?: string;

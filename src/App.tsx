@@ -469,6 +469,7 @@ const App: React.FC = () => {
           <div data-tour="source-editor" style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
             <CodeEditor
               value={input}
+              originalValue={activeFileId ? files.find(f => f.id === activeFileId)?.savedContent : undefined}
               onChange={handleInputChange}
               onFocus={() => setActiveEditor('SOURCE')}
               label="SOURCE"

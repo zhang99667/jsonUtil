@@ -1,4 +1,42 @@
 /* Moved to src */
 .jsonpath-highlight {
-    background-color: rgba(234, 179, 8, 0.2) !important;
+  background-color: rgba(234, 179, 8, 0.2) !important;
+}
+
+
+/* 光标动画 */
+.monaco-editor .cursor {
+  transition: all 0.1s ease-out;
+}
+
+/* 脏 Diff 边缘指示器 - Sublime 风格 */
+.dirty-diff-added {
+  border-left: 3px solid #9AC794 !important;
+  /* Sublime 绿色 (用户指定) */
+  width: 3px !important;
+  /* 设置固定宽度，确保位置 */
+  margin-left: 0px !important;
+  /* 最左侧 */
+  left: 3px !important;
+  /* 微调绝对定位 */
+}
+
+.dirty-diff-modified {
+  border-left: 3px solid #F8AF59 !important;
+  /* Sublime 橙色 (用户指定) */
+  width: 3px !important;
+  margin-left: 0px !important;
+  /* 最左侧 */
+  left: 3px !important;
+}
+
+.dirty-diff-deleted::after {
+  content: '◢';
+  /* 使用 Unicode 三角形或纯 CSS 形状 */
+  color: #f92672;
+  /* Sublime 红色 */
+  font-size: 8px;
+  position: absolute;
+  left: 0px;
+  top: -6px;
 }
