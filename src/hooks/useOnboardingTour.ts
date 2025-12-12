@@ -16,18 +16,10 @@ export const useOnboardingTour = () => {
             const driverObj = driver({
                 showProgress: true,
                 showButtons: ['next', 'previous', 'close'],
-                // 禁用自动滚动，我们手动控制
-                smoothScroll: false,
+                // 使用驱动器自带的平滑滚动，避免手动滚动导致的高亮错位
+                smoothScroll: true,
                 // 自定义样式类
                 popoverClass: 'json-helper-tour-popover',
-                // 在显示提示框前手动滚动元素
-                onPopoverRender: (popover, { config, state }) => {
-                    const element = state.activeElement;
-                    if (element) {
-                        // 立即滚动到元素位置
-                        element.scrollIntoView({ behavior: 'auto', block: 'center' });
-                    }
-                },
                 steps: [
                     {
                         element: 'body',
@@ -42,63 +34,82 @@ export const useOnboardingTour = () => {
                         element: '[data-tour="source-editor"]',
                         popover: {
                             title: '源编辑器 📝',
-                            description: '在这里输入或粘贴您的 JSON 数据。支持语法高亮、自动补全和错误提示。',
+                            title: '源文件编辑器',
+                            description: '在此输入或粘贴需要处理的 JSON 数据。支持语法高亮和错误提示。',
                             side: 'right',
-                            align: 'start'
-                        }
-                    },
-                    {
-                        element: '[data-tour="toolbar"]',
-                        popover: {
-                            title: '工具栏 🛠️',
-                            description: '提供多种转换模式：格式化、压缩、转义、Unicode 转换等。点击图标即可切换视图。',
-                            side: 'right',
-                            align: 'start'
+                            align: 'center'
                         }
                     },
                     {
                         element: '[data-tour="preview-editor"]',
                         popover: {
-                            title: '预览编辑器 👁️',
-                            description: '实时显示转换后的结果。您可以解锁编辑模式，直接修改预览内容。',
+                            title: '预览与结果',
+                            description: '实时显示处理后的结果。支持只读预览和编辑模式。',
                             side: 'left',
-                            align: 'start'
+                            align: 'center'
                         }
                     },
                     {
-                        element: '[data-tour="jsonpath-button"]',
+                        element: '[data-tour="toolbar"]',
                         popover: {
-                            title: 'JSONPath 查询 🔍',
-                            description: '使用 JSONPath 表达式快速查询和定位 JSON 数据中的特定内容。',
+                            title: '功能工具栏',
+                            description: '集成了格式化、转义、编码转换、AI 修复等核心工具。点击对应按钮即可使用。',
                             side: 'right',
                             align: 'start'
                         }
                     },
                     {
-                        element: '[data-tour="file-operations"]',
+                        element: '[data-tour="statusbar"]',
                         popover: {
-                            title: '文件操作 📁',
-                            description: '支持打开本地文件、保存文件、创建新标签页等操作。',
-                            side: 'right',
+                            title: '状态信息栏',
+                            description: '显示文件编码、长度、行列信息及当前文件路径。',
+                            side: 'top',
+                            align: 'center'
+                        }
+                    },
+                    {
+                        element: '[data-tour="source-editor"] [data-tour="auto-save"]',
+                        popover: {
+                            title: '自动保存',
+                            description: '打开文件后可启用自动保存功能，确保您的修改不会丢失。',
+                            side: 'bottom',
                             align: 'start'
                         }
                     },
                     {
-                        element: '[data-tour="ai-fix"]',
+                        element: '[data-tour="source-editor"] [data-tour="editor-tabs"]',
                         popover: {
-                            title: 'AI 智能修复 🤖',
-                            description: '遇到格式错误的 JSON？使用 AI 功能自动修复语法问题。需要在设置中配置 API Key。',
-                            side: 'right',
+                            title: '多标签页管理',
+                            description: '支持同时打开多个文件进行处理。点击标签切换，点击 + 号新建。',
+                            side: 'bottom',
                             align: 'start'
                         }
                     },
                     {
-                        element: '[data-tour="settings"]',
+                        element: '[data-tour="preview-editor"] [data-tour="editor-lock"]',
                         popover: {
-                            title: '设置 ⚙️',
-                            description: '自定义快捷键、配置 AI 服务等。您可以随时在这里调整应用设置。',
-                            side: 'right',
-                            align: 'start'
+                            title: '编辑锁定',
+                            description: '锁定编辑器以防止意外修改，点击可切换锁定/编辑状态。',
+                            side: 'bottom',
+                            align: 'end'
+                        }
+                    },
+                    {
+                        element: '[data-tour="source-editor"] [data-tour="editor-wrap"]',
+                        popover: {
+                            title: '自动换行',
+                            description: '切换代码的自动换行显示模式，方便查看长文本。',
+                            side: 'bottom',
+                            align: 'end'
+                        }
+                    },
+                    {
+                        element: '[data-tour="statusbar-view"]',
+                        popover: {
+                            title: '当前视图模式',
+                            description: '显示当前的数据转换视图，例如：格式化、压缩、转义等。',
+                            side: 'top',
+                            align: 'end'
                         }
                     }
                 ],

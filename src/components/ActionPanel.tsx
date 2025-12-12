@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { TransformMode, ActionType } from '../types';
+import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 
 interface ActionPanelProps {
   activeMode: TransformMode;
@@ -31,6 +32,24 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const [startY, setStartY] = useState(0);
   const [startScrollTop, setStartScrollTop] = useState(0);
 
+  // 功能级引导
+  const { triggerFeatureFirstUse, refreshTour } = useFeatureTour();
+
+  // 处理模式切换并触发功能引导
+  const handleModeChange = (mode: TransformMode) => {
+    // 触发相应的功能引导
+    if (mode === TransformMode.DEEP_FORMAT) {
+      triggerFeatureFirstUse(FeatureId.DEEP_FORMAT);
+    } else if (mode === TransformMode.ESCAPE || mode === TransformMode.UNESCAPE) {
+      triggerFeatureFirstUse(FeatureId.ESCAPE);
+    } else if (mode === TransformMode.UNICODE_TO_CN || mode === TransformMode.CN_TO_UNICODE) {
+      triggerFeatureFirstUse(FeatureId.UNICODE_CONVERT);
+    }
+
+    // 调用原始的 onModeChange
+    onModeChange(mode);
+  };
+
   // 检测是否需要滚动条
   useEffect(() => {
     const container = containerRef.current;
@@ -58,6 +77,11 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const handleScroll = () => {
     const container = containerRef.current;
     if (!container) return;
+
+    // 实时刷新引导位置，确保高亮区域跟随滚动
+    requestAnimationFrame(() => {
+      refreshTour();
+    });
 
     setScrollState({
       scrollTop: container.scrollTop,
@@ -109,10 +133,15 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     };
   }, [isDragging, startY, startScrollTop, scrollState.scrollHeight, scrollState.clientHeight]);
 
-  const renderToolBtn = (mode: TransformMode, label: string, icon: React.ReactNode, colorClass: string) => {
+  // 自动触发发现式引导 - 已移除 (根据用户反馈，仅在点击时触发或在主引导中介绍)
+  // 之前的 IntersectionObserver 逻辑已删除，恢复为被动触发模式
+
+
+  const renderToolBtn = (mode: TransformMode, label: string, icon: React.ReactNode, colorClass: string, dataTour?: string) => {
     return (
       <button
-        onClick={() => onModeChange(mode)}
+        data-tour={dataTour}
+        onClick={() => handleModeChange(mode)}
         className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-[#252526] border-transparent text-gray-400 hover:bg-[#333] hover:text-gray-200 hover:border-[#444] active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
         title={isCollapsed ? label : undefined}
       >
@@ -126,6 +155,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   return (
     <div className="h-full bg-[#1e1e1e] border-r border-[#1e1e1e] relative group/sidebar">
+      {/* ... (container and top bar unchanged) ... */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -171,7 +201,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
           {renderToolBtn(TransformMode.DEEP_FORMAT, '嵌套解析', (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-          ), 'text-purple-400')}
+          ), 'text-purple-400', 'deep-format-btn')}
 
           {renderToolBtn(TransformMode.MINIFY, '压缩 / 去空格', (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
@@ -187,7 +217,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         <div className="mb-4">
           {renderToolBtn(TransformMode.ESCAPE, '转义', (
             <span className="font-mono font-bold text-sm">\n</span>
-          ), 'text-amber-400')}
+          ), 'text-amber-400', 'escape-btn')}
 
           {renderToolBtn(TransformMode.UNESCAPE, '反转义', (
             <span className="font-mono font-bold text-sm">"</span>

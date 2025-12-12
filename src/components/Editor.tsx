@@ -188,14 +188,15 @@ export const CodeEditor: React.FC<EditorProps> = ({
             {label}
           </label>
 
-          {files && files.length > 0 && (
+          {files && (
             <div className="flex-1 h-full relative min-w-0 ml-2 flex flex-col justify-end">
               <div
+                data-tour="editor-tabs"
                 ref={tabsContainerRef}
                 onScroll={handleScroll}
                 className="flex items-center h-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden scrollbar-hide"
               >
-                {files.map(file => (
+                {files.length > 0 && files.map(file => (
                   <div
                     key={file.id}
                     onClick={() => onTabClick?.(file.id)}
@@ -260,6 +261,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
           {/* 只读锁定开关 */}
           {canToggleReadOnly && (
             <button
+              data-tour="editor-lock"
               onClick={() => setIsLocked(!isLocked)}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-[#333]'}`}
               title={isLocked ? "Click to Edit" : "Unlocked"}
@@ -280,6 +282,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
 
           {/* 自动换行开关 */}
           <button
+            data-tour="editor-wrap"
             onClick={toggleWordWrap}
             className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${wordWrap === 'on' ? 'bg-[#094771] text-white border-[#007acc]' : 'text-gray-400 border-transparent hover:bg-[#333]'}`}
             title="Toggle Word Wrap"

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { JSONPath } from 'jsonpath-plus';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
+import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 
 interface JsonPathPanelProps {
     jsonData: string;
@@ -47,6 +48,25 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         showScrollbar,
         isDragging: isScrollbarDragging
     } = useCustomScrollbar('vertical', history.length);
+
+    // 功能级引导
+    const { triggerFeatureFirstUse, refreshTour } = useFeatureTour();
+    const hasTriggeredTour = useRef(false);
+
+    // 首次打开时触发引导(仅触发一次)
+    useEffect(() => {
+        if (isOpen && !hasTriggeredTour.current) {
+            hasTriggeredTour.current = true;
+            triggerFeatureFirstUse(FeatureId.JSONPATH);
+        }
+    }, [isOpen, triggerFeatureFirstUse]);
+
+    // 监听位置和大小变化，同步刷新引导位置
+    useEffect(() => {
+        if (isOpen) {
+            refreshTour();
+        }
+    }, [position, size, isOpen, refreshTour]);
 
     // 保存历史记录到 localStorage
     useEffect(() => {
@@ -206,6 +226,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     return (
         <div
             ref={panelRef}
+            data-tour="jsonpath-panel"
             className="fixed bg-[#252526] border border-[#454545] rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden"
             style={{
                 left: `${position.x}px`,
@@ -243,6 +264,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                 <div className="mb-3">
                     <div className="flex gap-2">
                         <input
+                            data-tour="jsonpath-input"
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
@@ -260,7 +282,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                 </div>
 
                 {/* 常用示例 */}
-                <div className="mb-3">
+                <div className="mb-3" data-tour="jsonpath-examples">
                     <div className="text-xs text-gray-500 mb-2">常用示例:</div>
                     <div className="flex flex-wrap gap-2">
                         {examples.map((example, idx) => (
@@ -320,7 +342,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
                 {/* 查询历史 */}
                 {history.length > 0 && (
-                    <div className="border-t border-[#454545] pt-2 mt-1 flex-1 flex flex-col min-h-0 relative group/history">
+                    <div data-tour="jsonpath-history" className="border-t border-[#454545] pt-2 mt-1 flex-1 flex flex-col min-h-0 relative group/history">
                         <div className="flex items-center justify-between mb-2 flex-shrink-0">
                             <div className="text-xs text-gray-500">查询历史:</div>
                             <button
