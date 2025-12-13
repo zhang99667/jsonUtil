@@ -259,6 +259,9 @@ const App: React.FC = () => {
 
     // 执行反向转换（防抖 150ms）
     outputChangeTimer.current = setTimeout(() => {
+      // Timer fired, clear the ref so we know it's not pending anymore
+      outputChangeTimer.current = null;
+
       // 修复：在格式化模式下，如果右侧内容不是有效的 JSON，则不进行同步
       // 避免因语法错误导致反向转换失败，从而将错误内容覆盖到左侧源文件
       if ((mode === TransformMode.FORMAT || mode === TransformMode.DEEP_FORMAT || mode === TransformMode.MINIFY)) {
@@ -281,12 +284,17 @@ const App: React.FC = () => {
       // 同步更新文件缓存
       updateActiveFileContent(newSource);
 
-      // 重置更新标志
+      // 重置更新标志 - 延长锁定时间以防止连续删除时的竞态条件
       setTimeout(() => {
-        isUpdatingFromOutput.current = false;
-        pendingOutputValue.current = '';
-      }, 100);
-    }, 150); // 防抖延迟 150ms
+        // 只有在没有新的定时器运行时（即用户停止输入 1000ms + 500ms 后），才释放锁定
+        if (!outputChangeTimer.current) {
+          isUpdatingFromOutput.current = false;
+          pendingOutputValue.current = '';
+          // 可选：在此处触发一次强制刷新以应用最终的格式化结果？
+          // 目前保持静默，直到下一次输入或模式切换，避免光标跳动
+        }
+      }, 600); // 增加延迟至 500ms
+    }, 400); // 防抖延迟增加到 1000ms
   };
 
 
