@@ -24,12 +24,26 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     const [totalResults, setTotalResults] = useState<number>(0);
 
     // 拖动相关状态
-    const [position, setPosition] = useState({ x: 100, y: 100 });
+    const [position, setPosition] = useState(() => {
+        try {
+            const saved = localStorage.getItem('jsonpath-panel-position');
+            return saved ? JSON.parse(saved) : { x: 100, y: 100 };
+        } catch (e) {
+            return { x: 100, y: 100 };
+        }
+    });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
     // 调整大小相关状态
-    const [size, setSize] = useState({ width: 600, height: 400 });
+    const [size, setSize] = useState(() => {
+        try {
+            const saved = localStorage.getItem('jsonpath-panel-size');
+            return saved ? JSON.parse(saved) : { width: 600, height: 400 };
+        } catch (e) {
+            return { width: 600, height: 400 };
+        }
+    });
     const [isResizing, setIsResizing] = useState(false);
     const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
 
@@ -72,6 +86,16 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     useEffect(() => {
         localStorage.setItem('jsonpath-query-history', JSON.stringify(history));
     }, [history]);
+
+    // 保存位置到 localStorage
+    useEffect(() => {
+        localStorage.setItem('jsonpath-panel-position', JSON.stringify(position));
+    }, [position]);
+
+    // 保存大小到 localStorage
+    useEffect(() => {
+        localStorage.setItem('jsonpath-panel-size', JSON.stringify(size));
+    }, [size]);
 
     // 处理拖动和调整大小
     useEffect(() => {
