@@ -24,7 +24,7 @@ export const useFileSystem = ({
     const updateActiveFileContent = useCallback((newContent: string) => {
         if (activeFileId) {
             setFiles(prev => prev.map(f =>
-                f.id === activeFileId ? { ...f, content: newContent, isDirty: true } : f
+                f.id === activeFileId ? { ...f, content: newContent, isDirty: newContent !== (f.savedContent || '') } : f
             ));
         }
     }, [activeFileId]);
@@ -197,6 +197,13 @@ export const useFileSystem = ({
     };
 
     const closeFile = (id: string) => {
+        const fileToClose = files.find(f => f.id === id);
+        if (fileToClose?.isDirty) {
+            // 简单确认，后续可升级为自定义 Modal
+            const confirmClose = window.confirm(`文件 "${fileToClose.name}" 有未保存的修改，确定要关闭吗？\n\n关闭后修改将丢失。`);
+            if (!confirmClose) return;
+        }
+
         // 找到被关闭标签的索引
         const closedIndex = files.findIndex(f => f.id === id);
         const newFiles = files.filter(f => f.id !== id);

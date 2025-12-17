@@ -279,10 +279,17 @@ export const CodeEditor: React.FC<EditorProps> = ({
                         e.stopPropagation();
                         onCloseFile?.(file.id);
                       }}
-                      className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 ${file.id === activeFileId ? 'opacity-0 group-hover/tab:opacity-100 hover:bg-[#333]' : 'opacity-0 group-hover/tab:opacity-100 hover:bg-[#444]'}`}
-                      title="Close"
+                      className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 group/close flex items-center justify-center w-5 h-5 ${file.id === activeFileId ? 'hover:bg-[#333]' : 'hover:bg-[#444]'}`}
+                      title={file.isDirty ? "未保存" : "关闭"}
                     >
-                      <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      {file.isDirty ? (
+                        <>
+                          <div className="w-2 h-2 bg-green-400 rounded-full group-hover/close:hidden"></div>
+                          <svg className="w-3.5 h-3.5 text-gray-400 hidden group-hover/close:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      )}
                     </button>
                   </div>
                 ))}
