@@ -9,6 +9,7 @@ import { computeLineDiff } from '../utils/diffUtils';
 export const CodeEditor: React.FC<EditorProps> = ({
   value,
   originalValue,
+  path,
   onChange,
   readOnly = false,
   canToggleReadOnly = false,
@@ -381,6 +382,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
       <div className="flex-1 relative overflow-hidden">
         <Editor
           height="100%"
+          path={path}
           language={language}
           theme="vs-dark"
           value={value}

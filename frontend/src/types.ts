@@ -73,6 +73,7 @@ export interface HighlightRange {
 export interface EditorProps {
   value: string;
   originalValue?: string; // 原始值（用于 Diff 对比）
+  path?: string; // 文件的唯一路径（用于隔离 Monaco Model 和撤销栈）
   onChange: (value: string) => void;
   readOnly?: boolean;
   language?: string;

@@ -478,6 +478,7 @@ const App: React.FC = () => {
             <CodeEditor
               value={input}
               originalValue={activeFileId ? files.find(f => f.id === activeFileId)?.savedContent : undefined}
+              path={activeFileId || undefined}
               onChange={handleInputChange}
               onFocus={() => setActiveEditor('SOURCE')}
               label="SOURCE"
