@@ -130,8 +130,76 @@ export const useFileSystem = ({
         }
     };
 
+    const saveSourceAs = async () => {
+        try {
+            // @ts-ignore
+            if (window.showSaveFilePicker) {
+                // @ts-ignore
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: activeFileId ? files.find(f => f.id === activeFileId)?.name : 'untitled.json',
+                    types: [{
+                        description: 'Text Files',
+                        accept: { 'text/plain': ['.txt', '.json', '.js', '.ts', '.md'] },
+                    }],
+                });
+                
+                // 写入文件
+                const writable = await handle.createWritable();
+                await writable.write(input);
+                await writable.close();
+
+                // 关键修复：另存为成功后，更新当前文件的元数据（Handle, Name, SavedContent, Dirty）
+                if (activeFileId) {
+                    const newName = handle.name;
+                    setFiles(prev => prev.map(f =>
+                        f.id === activeFileId ? {
+                            ...f,
+                            name: newName,
+                            handle: handle, // 绑定新句柄，下次直接 save
+                            savedContent: input,
+                            isDirty: false,
+                            path: (handle as any).path // Electron 环境下可能可用
+                        } : f
+                    ));
+                }
+                
+                return true;
+            } else {
+                // Fallback (传统下载模式，无法更新 Handle)
+                const blob = new Blob([input], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = activeFileId ? (files.find(f => f.id === activeFileId)?.name || 'untitled.json') : 'untitled.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                // 传统下载模式下，我们至少可以重置 Dirty 状态，假定用户已保存
+                if (activeFileId) {
+                    setFiles(prev => prev.map(f =>
+                        f.id === activeFileId ? { ...f, savedContent: input, isDirty: false } : f
+                    ));
+                }
+                return true;
+            }
+        } catch (err) {
+            // 用户取消保存不应视为错误
+            if ((err as Error).name === 'AbortError') {
+                return false;
+            }
+            console.error('Failed to save source as:', err);
+            return false;
+        }
+    };
+
     const saveFile = async (content?: string) => {
         const activeFile = files.find(f => f.id === activeFileId);
+        
+        // 如果是 Untitled 文件（无 handle），且正在保存 Source 内容，则转为“另存为”逻辑
+        if (!activeFile?.handle && content === undefined) {
+            return await saveSourceAs();
+        }
+
         if (activeFile?.handle) {
             try {
                 // 调用原生保存 API
@@ -157,43 +225,6 @@ export const useFileSystem = ({
             }
         }
         return false;
-    };
-
-    const saveSourceAs = async () => {
-        try {
-            // @ts-ignore
-            if (window.showSaveFilePicker) {
-                // @ts-ignore
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: 'untitled.json',
-                    types: [{
-                        description: 'Text Files',
-                        accept: { 'text/plain': ['.txt', '.json', '.js', '.ts', '.md'] },
-                    }],
-                });
-                const writable = await handle.createWritable();
-                await writable.write(input);
-                await writable.close();
-                return true;
-            } else {
-                // Fallback
-                const blob = new Blob([input], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'untitled.json';
-                a.click();
-                URL.revokeObjectURL(url);
-                URL.revokeObjectURL(url);
-                return true;
-            }
-            // TODO: Web Save As 比较难追踪 handle 和路径，暂时无法完美更新 savedContent
-            // 如果是 Electron 环境或支持 File System Access 的环境，通常会在此之后调用 openFile 重新加载
-            // 这里暂不处理 savedContent 更新，依赖用户操作
-        } catch (err) {
-            console.error('Failed to save source as:', err);
-            return false;
-        }
     };
 
     const closeFile = (id: string) => {
