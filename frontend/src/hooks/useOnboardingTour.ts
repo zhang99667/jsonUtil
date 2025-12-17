@@ -34,7 +34,6 @@ export const useOnboardingTour = () => {
                         element: '[data-tour="source-editor"]',
                         popover: {
                             title: '源编辑器 📝',
-                            title: '源文件编辑器',
                             description: '在此输入或粘贴需要处理的 JSON 数据。支持语法高亮和错误提示。',
                             side: 'right',
                             align: 'center'
