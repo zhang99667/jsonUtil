@@ -10,19 +10,72 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:linux": "npm run build && electron-builder --linux",
+    "build:all": "./deploy-ci.sh -p all",
+    "build:web": "./deploy-ci.sh -p web",
+    "build:electron": "./deploy-ci.sh -p electron",
+    "deploy:web": "./deploy-web.sh",
+    "ci:test": "./deploy-ci.sh -p web -v \"ci-$(date +%Y%m%d)\"",
+    "ci:release": "./deploy-ci.sh -p all -v \"$(git describe --tags --abbrev=0 2>/dev/null || echo '0.0.0')\""
   },
   "build": {
     "appId": "com.example.jsonhelper",
+    "productName": "JSONUtils - 专业版",
+    "copyright": "Copyright © 2025",
     "mac": {
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ]
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "node_modules/**/*"
     ],
     "directories": {
-      "buildResources": "assets"
+      "buildResources": "assets",
+      "output": "build"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
+    "extraMetadata": {
+      "main": "electron/main.js"
     }
   },
   "dependencies": {
