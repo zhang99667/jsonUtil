@@ -31,12 +31,15 @@
 }
 
 .dirty-diff-deleted::after {
-  content: '◢';
-  /* 使用 Unicode 三角形或纯 CSS 形状 */
-  color: #f92672;
-  /* Sublime 红色 */
-  font-size: 8px;
+  content: '';
   position: absolute;
-  left: 0px;
-  top: -6px;
+  left: 1px;
+  top: -5px;
+  /* 位于行间隙，表示此处有内容被删除 */
+  width: 0;
+  height: 0;
+  border-left: 5px solid #f92672;
+  /* Sublime 红色箭头 */
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
 }

@@ -68,71 +68,71 @@ export const computeLineDiff = (original: string, modified: string): DiffRange[]
 
     // 将变更处理为 DiffRanges (连续块)
     // 我们只关心装饰 *modified* (当前) 编辑器。
-    // 新增行是存在于 modified 但不存在于 original 的行。
-    // 修改行：这个简单的 LCS 将修改视为移除 + 新增。
-    // 我们可以尝试将相邻的移除+新增合并为 'modify'。
 
-    let currentRange: DiffRange | null = null;
-
-    for (let k = 0; k < changes.length; k++) {
-        const change = changes[k];
-
-        // 检查 "modify" 模式：紧接着新增的移除（或顺序相反）
-        // 实际上，对于边缘指示器，区分新增和移除块是可以的。
-        // Sublime 用绿色表示新增，黄色/蓝色表示修改。
-        // 具体检测 "Modify" 需要检查新增行是否替换了移除行。
-
-        // 简化：
-        // 如果有一块移除紧接着一块新增，则将新增视为 "Modify"。
-
-        // 首先，我们只发出 add 和 remove。
-        // 注意：'Remove' 装饰需要放置在移除发生位置的 *前* 或 *后* 一行，
-        // 或者作为专门的边缘标记。标准的 Monaco 'diff' 视图可以处理这个，但在行内模式下，
-        // 我们通常在删除发生的 *后* 一行用小箭头标记，
-        // 或者如果我们将 "Modify" 视为 "行内容已更改"。
-
-        if (change.type === 'add') {
-            // Check if this Add was preceded by a Remove (implying modification)
-            // Look back
-            let isModify = false;
-            let checkIdx = k - 1;
-            while (checkIdx >= 0 && changes[checkIdx].type === 'remove') {
-                isModify = true;
-                // 如果我们在之前立即找到了一个移除分组，则可以称之为修改
-                break;
-            }
-
-            const type = isModify ? 'modify' : 'add';
-
-            if (currentRange && currentRange.type === type && currentRange.endLine === change.line - 1) {
-                currentRange.endLine = change.line;
-            } else {
-                if (currentRange) diffs.push(currentRange);
-                currentRange = { type, startLine: change.line, endLine: change.line };
-            }
-        } else if (change.type === 'remove') {
-            // 对于删除，我们需要决定在哪里显示指示器。
-            // 通常显示在删除 *之后* 的行，或者如果是文件末尾，则显示在最后一行。
-            // 但是我们很难高亮显示不存在的“已删除行”。
-            // Sublime 会绘制一个小箭头。
-            // 对于 MVP，我们可能会跳过删除标记或将其附加到最近的现有行。
-
-            // 让我们附加到 Modified 中的 *下一* 逻辑行。
-            // 找到下一个 'keep' 或 'add' 来锚定删除标记。
-            // 如果我们需要本质上处于 "Modify" 块（移除 + 新增），则新增处理视觉效果。
-
-            // 如果是纯删除（没有新增的移除），我们需要一个红色指示器。
-            // 在此迭代中，让我们推迟纯删除标记以保持健壮性。
-            // 专注于新增（绿色）和修改（蓝色/黄色）。
-        } else { // Keep
-            if (currentRange) {
-                diffs.push(currentRange);
-                currentRange = null;
+    // 辅助函数：获取变更索引对应的 modified 行号
+    // 用于将删除操作锚定到后续的行
+    const getModifiedLine = (index: number): number => {
+        for (let k = index; k < changes.length; k++) {
+            if (changes[k].type !== 'remove') {
+                return changes[k].line;
             }
         }
-    }
+        // 如果剩余全是删除（文件末尾删除），锚定到最后一行
+        return M > 0 ? M : 1;
+    };
 
-    if (currentRange) diffs.push(currentRange);
+    let k = 0;
+    while (k < changes.length) {
+        const change = changes[k];
+
+        if (change.type === 'keep') {
+            k++;
+            continue;
+        }
+
+        // 检查 Modify 模式 (Remove block + Add block)
+        // 我们的 LCS 回溯通常会产生 Remove 然后 Add 的顺序
+        if (change.type === 'remove') {
+            // 向前查看是否有紧邻的 Add
+            let next = k + 1;
+            while (next < changes.length && changes[next].type === 'remove') next++;
+
+            if (next < changes.length && changes[next].type === 'add') {
+                // 这是一个 Modify (修改)
+                // 消费掉所有的 Add，将其合并为一个 Modify 块
+                const startLine = changes[next].line;
+                let endAdd = next;
+                while (endAdd < changes.length && changes[endAdd].type === 'add') endAdd++;
+                const endLine = changes[endAdd - 1].line;
+
+                diffs.push({ type: 'modify', startLine, endLine });
+                k = endAdd; // 跳过处理过的 remove 和 add
+            } else {
+                // 这是一个纯 Delete (删除)
+                // 锚定到下一个可见行
+                const anchorLine = getModifiedLine(k);
+                
+                // 避免对同一行重复添加删除标记
+                // (如果有多个不连续的删除块锚定到同一行，可能会重叠，这里简化处理)
+                const lastDiff = diffs.length > 0 ? diffs[diffs.length - 1] : null;
+                if (!lastDiff || lastDiff.type !== 'delete' || lastDiff.startLine !== anchorLine) {
+                    diffs.push({ type: 'delete', startLine: anchorLine, endLine: anchorLine });
+                }
+
+                // 跳过这些 remove
+                k = next;
+            }
+        } else if (change.type === 'add') {
+            // 这是一个纯 Add (新增)
+            const startLine = change.line;
+            let next = k + 1;
+            while (next < changes.length && changes[next].type === 'add') next++;
+            const endLine = changes[next - 1].line;
+
+            diffs.push({ type: 'add', startLine, endLine });
+            k = next;
+        }
+    }
 
     return diffs;
 };

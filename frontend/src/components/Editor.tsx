@@ -164,6 +164,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
         let className = '';
         if (diff.type === 'add') className = 'dirty-diff-added';
         else if (diff.type === 'modify') className = 'dirty-diff-modified';
+        else if (diff.type === 'delete') className = 'dirty-diff-deleted';
 
         if (className) decorations.push({
           range: new monaco.Range(diff.startLine, 1, diff.endLine, 1),
