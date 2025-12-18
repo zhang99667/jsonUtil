@@ -13,7 +13,7 @@ BRANCH="main"
 WEB_USER="www"
 
 # 是否自动重装依赖？设为 false 可避免 electron 等卡住（推荐 false）
-INSTALL_DEPS=true
+INSTALL_DEPS=false
 # ============================================
 
 echo "🚀 开始部署前端项目..."

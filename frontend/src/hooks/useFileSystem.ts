@@ -9,6 +9,19 @@ interface UseFileSystemProps {
     output: string;
 }
 
+// UUID 生成器 polyfill
+const generateUUID = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // Fallback implementation (RFC4122 version 4 compliant)
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
 export const useFileSystem = ({
     input,
     setInput,
@@ -49,7 +62,7 @@ export const useFileSystem = ({
     }, [input, activeFileId, files, isAutoSaveEnabled]);
 
     const createNewTab = () => {
-        const newFileId = crypto.randomUUID();
+        const newFileId = generateUUID();
 
         // VSCode 风格命名:找到最小的未使用编号
         const existingNumbers = files
@@ -87,6 +100,42 @@ export const useFileSystem = ({
     };
 
     const openFile = async () => {
+        // Fallback for environments without File System Access API
+        // @ts-ignore
+        if (typeof window.showOpenFilePicker !== 'function') {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.txt,.json,.js,.ts,.md';
+            
+            input.onchange = async (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (!file) return;
+
+                const contents = await file.text();
+                const newFileId = generateUUID();
+
+                const newFile: FileTab = {
+                    id: newFileId,
+                    name: file.name,
+                    content: contents,
+                    savedContent: contents,
+                    handle: undefined, // No handle in fallback mode
+                    isDirty: false,
+                    mode: TransformMode.NONE,
+                    path: (file as any).path
+                };
+
+                setFiles(prev => [...prev, newFile]);
+                setActiveFileId(newFileId);
+                setInput(contents);
+                inputRef.current = contents;
+                setMode(TransformMode.NONE);
+            };
+
+            input.click();
+            return;
+        }
+
         try {
             // @ts-ignore - 忽略 File System Access API 类型检查
             const [handle] = await window.showOpenFilePicker({
@@ -104,7 +153,7 @@ export const useFileSystem = ({
 
             const file = await handle.getFile();
             const contents = await file.text();
-            const newFileId = crypto.randomUUID();
+            const newFileId = generateUUID();
 
             const newFile: FileTab = {
                 id: newFileId,
