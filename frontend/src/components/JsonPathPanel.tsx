@@ -251,7 +251,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         <div
             ref={panelRef}
             data-tour="jsonpath-panel"
-            className="fixed bg-[#252526] border border-[#454545] rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden"
+            className="fixed bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden"
             style={{
                 left: `${position.x}px`,
                 top: `${position.y}px`,
@@ -262,7 +262,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         >
             {/* Header - 可拖动 */}
             <div
-                className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#454545] rounded-t-lg cursor-grab active:cursor-grabbing"
+                className="flex items-center justify-between px-4 py-2 bg-editor-sidebar border-b border-editor-border rounded-t-lg cursor-grab active:cursor-grabbing"
                 onMouseDown={handleMouseDown}
             >
                 <div className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                 </div>
                 <button
                     onClick={onClose}
-                    className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-[#333]"
+                    className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-editor-hover"
                     title="关闭"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -294,7 +294,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="输入 JSONPath 表达式"
-                            className="flex-1 bg-[#1e1e1e] text-gray-200 text-sm px-3 py-2 rounded border border-[#454545] focus:border-emerald-500 focus:outline-none font-mono"
+                            className="flex-1 bg-editor-bg text-gray-200 text-sm px-3 py-2 rounded border border-editor-border focus:border-emerald-500 focus:outline-none font-mono"
                         />
                         <button
                             onClick={handleQuery}
@@ -313,7 +313,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                             <button
                                 key={idx}
                                 onClick={() => setQuery(example.query)}
-                                className="text-xs px-2 py-1 bg-[#333] text-gray-300 rounded hover:bg-[#444] transition-colors"
+                                className="text-xs px-2 py-1 bg-editor-border text-gray-300 rounded hover:bg-editor-active transition-colors"
                                 title={example.query}
                             >
                                 {example.label}
@@ -324,7 +324,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
                 {/* 错误提示 */}
                 {error && (
-                    <div className="mb-3 p-3 bg-[#3c1515] border border-red-900/50 rounded text-sm text-red-300 flex items-start gap-2">
+                    <div className="mb-3 p-3 bg-status-error-bg border border-status-error-border rounded text-sm text-status-error-text flex items-start gap-2">
                         <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -334,7 +334,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
                 {/* 结果计数器和导航控件 (VS Code 风格) */}
                 {totalResults > 0 && (
-                    <div className="mb-1 p-1 bg-[#2d2d2d] border border-[#454545] rounded flex items-center justify-between">
+                    <div className="mb-1 p-1 bg-editor-sidebar border border-editor-border rounded flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-400">结果:</span>
                             <span className="text-sm font-mono text-emerald-400 font-semibold">
@@ -344,7 +344,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={goToPrevious}
-                                className="p-1 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
+                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors"
                                 title="上一个 (Shift+Enter)"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,7 +353,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                             </button>
                             <button
                                 onClick={goToNext}
-                                className="p-1 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
+                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors"
                                 title="下一个 (Enter)"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,7 +366,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
                 {/* 查询历史 */}
                 {history.length > 0 && (
-                    <div data-tour="jsonpath-history" className="border-t border-[#454545] pt-2 mt-1 flex-1 flex flex-col min-h-0 relative group/history">
+                    <div data-tour="jsonpath-history" className="border-t border-editor-border pt-2 mt-1 flex-1 flex flex-col min-h-0 relative group/history">
                         <div className="flex items-center justify-between mb-2 flex-shrink-0">
                             <div className="text-xs text-gray-500">查询历史:</div>
                             <button
@@ -385,7 +385,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                                 <div key={idx} className="relative group">
                                     <button
                                         onClick={() => setQuery(item)}
-                                        className="w-full text-left text-xs px-2 py-1.5 bg-[#1e1e1e] text-gray-300 rounded hover:bg-[#333] transition-colors font-mono truncate pr-7"
+                                        className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-gray-300 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7"
                                         title={item}
                                     >
                                         {item}
@@ -396,7 +396,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                                             const newHistory = history.filter((_, i) => i !== idx);
                                             setHistory(newHistory);
                                         }}
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-[#444] opacity-0 group-hover:opacity-100 transition-all"
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 transition-all"
                                         title="删除此记录"
                                     >
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -411,7 +411,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                         {showScrollbar && (
                             <div className="absolute right-0 top-[36px] bottom-0 w-[3px] z-10 opacity-0 group-hover/history:opacity-100 transition-opacity duration-200">
                                 <div
-                                    className="w-full bg-[#424242] hover:bg-[#4f4f4f] rounded-full cursor-pointer relative"
+                                    className="w-full bg-scrollbar-bg hover:bg-scrollbar-hover rounded-full cursor-pointer relative"
                                     style={{
                                         height: `${thumbHeight}%`,
                                         top: `${thumbTop}%`

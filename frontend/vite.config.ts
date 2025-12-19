@@ -5,10 +5,11 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    base: './',
+    base: '/',
     server: {
       port: 3000,
       host: '0.0.0.0',
+      open: true
     },
     plugins: [react()],
     define: {
@@ -19,6 +20,9 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       }
+    },
+    css: {
+      postcss: './postcss.config.js'
     }
   };
 });

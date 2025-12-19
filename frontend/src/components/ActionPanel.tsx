@@ -142,7 +142,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       <button
         data-tour={dataTour}
         onClick={() => handleModeChange(mode)}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-[#252526] border-transparent text-gray-400 hover:bg-[#333] hover:text-gray-200 hover:border-[#444] active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
+        className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
         title={isCollapsed ? label : undefined}
       >
         <div className={`transition-colors text-gray-500 group-hover:${colorClass.replace('text-', 'text-')}`}>
@@ -154,7 +154,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   };
 
   return (
-    <div className="h-full bg-[#1e1e1e] border-r border-[#1e1e1e] relative group/sidebar">
+    <div className="h-full bg-editor-bg border-r border-editor-bg relative group/sidebar">
       {/* ... (container and top bar unchanged) ... */}
       <div
         ref={containerRef}
@@ -162,7 +162,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         className="h-full flex flex-col p-3 overflow-y-auto [&::-webkit-scrollbar]:hidden scrollbar-hide"
       >
         {/* 侧边栏顶部栏 */}
-        <div className={`px-2 mb-6 mt-1 pb-4 border-b border-[#333] flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
+        <div className={`px-2 mb-6 mt-1 pb-4 border-b border-editor-border flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
           {!isCollapsed && (
             <div className="text-sm font-bold text-gray-200 tracking-wide flex items-center gap-2">
               <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
@@ -173,7 +173,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           )}
           <button
             onClick={onToggleCollapse}
-            className="text-gray-500 hover:text-gray-300 p-1 rounded hover:bg-[#333] transition-colors"
+            className="text-gray-500 hover:text-gray-300 p-1 rounded hover:bg-editor-border transition-colors"
             title={isCollapsed ? "展开" : "折叠"}
           >
             {isCollapsed ? (
@@ -186,7 +186,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
         {/* 工具组：视图与格式化 */}
         {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-[#555] uppercase tracking-wider mb-2 mt-2">
+          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2 mt-2">
             预览 / 输出
           </div>
         )}
@@ -210,7 +210,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
         {/* 工具组：转义操作 */}
         {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-[#555] uppercase tracking-wider mb-2">
+          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
             转义处理
           </div>
         )}
@@ -226,7 +226,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
         {/* 工具组：编码转换 */}
         {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-[#555] uppercase tracking-wider mb-2">
+          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
             编码转换
           </div>
         )}
@@ -244,7 +244,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
         {/* 工具组：JSONPath 查询 */}
         {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-[#555] uppercase tracking-wider mb-2">
+          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
             查询工具
           </div>
         )}
@@ -252,7 +252,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           <button
             data-tour="jsonpath-button"
             onClick={onToggleJsonPath}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-[#252526] border-transparent text-gray-400 hover:bg-[#333] hover:text-gray-200 hover:border-[#444] active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
             title={isCollapsed ? "JSONPath 查询" : undefined}
           >
             <div className="transition-colors text-gray-500 group-hover:text-emerald-400">
@@ -265,10 +265,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         </div>
 
         {/* 文件管理 */}
-        <div data-tour="file-operations" className="pt-4 mt-2 border-t border-[#333]">
+        <div data-tour="file-operations" className="pt-4 mt-2 border-t border-editor-border">
           <button
             onClick={() => onAction(ActionType.OPEN)}
-            className={`w-full bg-[#252526] hover:bg-[#333] border border-gray-700 text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
+            className={`w-full bg-editor-sidebar hover:bg-editor-hover border border-gray-700 text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
             title={isCollapsed ? "打开文件" : undefined}
           >
             <svg className="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>
@@ -277,7 +277,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
           <button
             onClick={() => onAction(ActionType.SAVE)}
-            className={`w-full bg-[#252526] hover:bg-[#333] border border-gray-700 text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
+            className={`w-full bg-editor-sidebar hover:bg-editor-hover border border-gray-700 text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
             title={isCollapsed ? "保存为 JSON" : undefined}
           >
             <svg className="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
@@ -314,7 +314,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           <button
             data-tour="settings"
             onClick={onOpenSettings}
-            className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-gray-300 transition-colors p-2 rounded-lg hover:bg-[#252526]"
+            className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-gray-300 transition-colors p-2 rounded-lg hover:bg-editor-sidebar"
             title="设置"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -327,7 +327,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       {showScrollbar && (
         <div className="absolute right-0 top-0 bottom-0 w-[10px] opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
           <div
-            className="absolute right-[2px] w-[6px] bg-[#424242] hover:bg-[#4f4f4f] rounded-full cursor-pointer"
+            className="absolute right-[2px] w-[6px] bg-scrollbar-bg hover:bg-scrollbar-hover rounded-full cursor-pointer"
             style={{
               height: `${thumbHeight}%`,
               top: `${thumbTop}%`

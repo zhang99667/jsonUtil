@@ -7,63 +7,197 @@ export interface DiffRange {
 }
 
 /**
- * 计算原始文本和修改后文本之间基于行的简单差异。
- * 这是一个适用于实时编辑器装饰的轻量级实现。
- * 它主要检测新增和修改的块。由于没有幽灵文本，删除块很难在边缘（gutter）中可视化，
- * 所以我们目前专注于新增和修改，或者将删除表示为前一行的标记。
+ * 使用 Myers Diff 算法计算行级差异。
+ * 时间复杂度 O(ND)，比标准 LCS 的 O(NM) 更适合大文件。
  */
 export const computeLineDiff = (original: string, modified: string): DiffRange[] => {
+    // 预处理：统一换行符并分割
     const originalLines = original.split(/\r\n|\r|\n/);
     const modifiedLines = modified.split(/\r\n|\r|\n/);
-
-    const diffs: DiffRange[] = [];
-
-    // 最小化的 Myers Diff 或类似的 LCS (最长公共子序列) 实现最为理想。
-    // 为了简单起见并避免引入沉重的外部依赖，我们可以使用基本的启发式算法
-    // 或简单的 LCS 实现。
-    // 鉴于“像 Sublime”这样的要求，我们需要知道 *modified* 中的哪些行
-    // 与 *original* 相比是新增或不同的。
-
-    // Let's use a simple LCS-based diff for lines.
-    const matrix: number[][] = [];
     const N = originalLines.length;
     const M = modifiedLines.length;
+    
+    // 如果没有变更，直接返回
+    if (original === modified) return [];
 
-    // Initialize matrix
-    for (let i = 0; i <= N; i++) {
-        matrix[i] = new Int32Array(M + 1) as any;
-    }
+    const MAX = N + M;
+    const v = new Int32Array(2 * MAX + 1);
+    v[MAX + 1] = 0;
+    
+    // 存储每一步的状态以便回溯
+    const trace: Int32Array[] = [];
 
-    // Compute LCS
-    for (let i = 1; i <= N; i++) {
-        for (let j = 1; j <= M; j++) {
-            if (originalLines[i - 1] === modifiedLines[j - 1]) {
-                matrix[i][j] = matrix[i - 1][j - 1] + 1;
+    // Myers Diff 主循环
+    let d: number;
+    for (d = 0; d <= MAX; d++) {
+        // 每一轮都需要保存 v 的快照用于回溯
+        // 为了性能，我们只在确实需要路径时才完整保存，
+        // 但 Myers 算法需要完整的 trace 来重建路径。
+        // 对于大文件，这可能消耗内存，但在前端 JS 环境下，文本编辑通常在可控范围内。
+        const vCopy = new Int32Array(v);
+        trace.push(vCopy);
+
+        let found = false;
+        for (let k = -d; k <= d; k += 2) {
+            let x: number;
+            // 决定向下还是向右
+            if (k === -d || (k !== d && v[MAX + k - 1] < v[MAX + k + 1])) {
+                x = v[MAX + k + 1]; // 向下 (Insertion in Myers graph -> Add in diff)
             } else {
-                matrix[i][j] = Math.max(matrix[i - 1][j], matrix[i][j - 1]);
+                x = v[MAX + k - 1] + 1; // 向右 (Deletion in Myers graph -> Remove in diff)
+            }
+            
+            let y = x - k;
+            
+            // 沿对角线移动 (Matching lines)
+            while (x < N && y < M && originalLines[x] === modifiedLines[y]) {
+                x++;
+                y++;
+            }
+            
+            v[MAX + k] = x;
+            
+            if (x >= N && y >= M) {
+                found = true;
+                break;
             }
         }
+        
+        if (found) break;
     }
 
-    // Backtrack to find diff
-    let i = N;
-    let j = M;
+    // 回溯生成 Diff
     const changes: { type: 'add' | 'remove' | 'keep', line: number, oldLine: number }[] = [];
-
-    while (i > 0 || j > 0) {
-        if (i > 0 && j > 0 && originalLines[i - 1] === modifiedLines[j - 1]) {
-            changes.push({ type: 'keep', line: j, oldLine: i });
-            i--;
-            j--;
-        } else if (j > 0 && (i === 0 || matrix[i][j - 1] >= matrix[i - 1][j])) {
-            changes.push({ type: 'add', line: j, oldLine: -1 }); // 在 modified 的第 j 行新增
-            j--;
-        } else if (i > 0 && (j === 0 || matrix[i][j - 1] < matrix[i - 1][j])) {
-            changes.push({ type: 'remove', line: -1, oldLine: i }); // 从 original 的第 i 行移除
-            i--;
+    let x = N;
+    let y = M;
+    
+    for (let k = d; k > 0; k--) {
+        const vPrev = trace[k];
+        const vCurr = trace[k+1]; // Current state is actually not needed if we look back correctly, 
+                                  // but Myers standard backtrack uses current k/x/y to determine step.
+        
+        // Inverse logic of forward pass
+        // k_diag = x - y
+        const diag = x - y;
+        
+        // Find previous step that led to (x, y)
+        // Possibilities: from k-1 (down/add) or k+1 (right/remove) in the V array indices
+        // Wait, standard backtrack logic:
+        
+        // Look at V array from step k-1
+        const kLow = - (k - 1);
+        const kHigh = (k - 1);
+        
+        // We are at diagonal 'diag'. We could have come from 'diag - 1' (x came from x, y came from y-1 -> Add)
+        // or 'diag + 1' (x came from x-1, y came from y -> Remove)
+        
+        // Boundary checks are implicit in V array values
+        // Correct logic:
+        // if (diag == -k || (diag != k && V[MAX + diag - 1] < V[MAX + diag + 1])) -> This was the decision logic.
+        // But here we work backwards.
+        
+        let prevK: number;
+        if (diag === -k || (diag !== k && vPrev[MAX + diag - 1] < vPrev[MAX + diag + 1])) {
+             prevK = diag + 1; // It came from k+1 in the loop logic (down/add was favored if V[k+1] was greater)
+             // Wait, let's re-align with the forward loop:
+             // if k==-d or (k!=d and v[k-1] < v[k+1]): x = v[k+1] -> This is Move Down (y increases, x same before diagonal). 
+             // Move Down in grid (x, y) -> (x, y+1). Wait, Myers paper: x is horizontal (original), y is vertical (modified).
+             // Let's stick to the variables used: x (original index), y (modified index).
+             // Forward: 
+             // if ... x = v[k+1] -> we picked x from k+1. k+1 means diagonal (x) - (y-1) = x-y+1 = k+1. 
+             // We moved from y-1 to y. x stayed same. This is y++ -> Modified++ -> ADD.
+             // else x = v[k-1] + 1 -> we picked x from k-1. k-1 means diagonal (x-1) - y = x-y-1 = k-1.
+             // We moved from x-1 to x. y stayed same. This is x++ -> Original++ -> REMOVE.
+             
+             // So, back to backtrack:
+             // We need to decide if we came from (diag+1) [Add] or (diag-1) [Remove].
+             // The condition `v[MAX + k - 1] < v[MAX + k + 1]` decided which one was "better" (reached further).
+             // We simply check which one yields the current x (before snake).
+             
+        }
+        
+        // Actually simpler: just re-evaluate the decision at step (k-1) to know which direction we TOOK.
+        // We need the V array at step (k-1).
+        const vLast = trace[k-1]; // V at step d-1
+        
+        let prevX: number;
+        let prevY: number;
+        let direction: 'add' | 'remove'; // relative to output
+        
+        // Re-check the decision logic used in forward pass for the current diagonal 'diag'
+        // CAREFUL: The 'k' loop variable in forward pass is the diagonal index.
+        // Here 'k' is the step count (depth). The diagonal is fixed as 'diag'.
+        // We need to know which 'prev_diag' led to 'diag'.
+        // prev_diag is either diag-1 (from Remove/Right) or diag+1 (from Add/Down).
+        
+        // Rule: 
+        // if (diag == -k || (diag != k && vLast[MAX + diag - 1] < vLast[MAX + diag + 1]))
+        // This checks if we came from diag+1.
+        
+        const k_step = k; // current depth
+        // The effective range of diagonals at step (k-1) is [-(k-1), k-1].
+        // The current diagonal 'diag' must be reachable from one of them.
+        
+        // Note: The condition `diag === -k` is impossible if we are strictly following valid paths, 
+        // but `diag === -k` corresponds to the lower boundary in forward loop `k = -d`.
+        
+        // Check if we could have come from diag+1 (Add)
+        // Validity: diag+1 must be within bounds of step k-1? 
+        // Actually, Myers logic is:
+        // if (k == -d || (k != d && V[k-1] < V[k+1])) -> x = V[k+1]
+        // Here k is 'diag'. d is 'k_step'.
+        
+        const isFromDiagPlus1 = (diag === -k_step) || (diag !== k_step && vLast[MAX + diag - 1] < vLast[MAX + diag + 1]);
+        
+        if (isFromDiagPlus1) {
+            // Came from diag+1 (Add in modified)
+            // x unchanged (before snake), y decremented
+            // Forward: x = v[k+1], y = x - k = x - (diag)
+            // Previous: diag_prev = diag + 1
+            // prevX = vLast[MAX + diag + 1]
+            prevX = vLast[MAX + diag + 1];
+            // prevY = prevX - (diag + 1)
+            direction = 'add';
+        } else {
+            // Came from diag-1 (Remove in original)
+            // x decremented, y unchanged
+            // Forward: x = v[k-1] + 1
+            // Previous: diag_prev = diag - 1
+            // prevX = vLast[MAX + diag - 1]
+            prevX = vLast[MAX + diag - 1];
+            direction = 'remove';
+        }
+        
+        prevY = prevX - (diag + (direction === 'add' ? 1 : -1));
+        
+        // Snake (diagonal moves)
+        while (x > prevX && y > prevY) {
+            changes.push({ type: 'keep', line: y, oldLine: x });
+            x--;
+            y--;
+        }
+        
+        // The single step
+        if (direction === 'add') {
+            // y decreased from y to prevY (y-1)
+            // This was an insertion in Modified at line y
+            changes.push({ type: 'add', line: y, oldLine: -1 });
+            y--;
+        } else {
+            // x decreased from x to prevX (x-1)
+            // This was a deletion from Original at line x
+            changes.push({ type: 'remove', line: -1, oldLine: x });
+            x--;
         }
     }
 
+    // Flush remaining snakes (if d=0 or start)
+    while (x > 0 && y > 0) {
+        changes.push({ type: 'keep', line: y, oldLine: x });
+        x--;
+        y--;
+    }
+    
     changes.reverse();
 
     // 将变更处理为 DiffRanges (连续块)

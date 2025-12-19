@@ -91,14 +91,14 @@ const App: React.FC = () => {
     toast.success(message, {
       duration: 2000,
       style: {
-        background: '#007acc',
+        background: 'var(--brand-primary)',
         color: '#fff',
         fontSize: '14px',
         fontWeight: '500',
       },
       iconTheme: {
         primary: '#fff',
-        secondary: '#007acc',
+        secondary: 'var(--brand-primary)',
       },
     });
   };
@@ -348,7 +348,7 @@ const App: React.FC = () => {
         toast.error(e.message || "AI 修复失败", {
           duration: 3000,
           style: {
-            background: '#dc2626',
+            background: 'var(--brand-danger)',
             color: '#fff',
             fontSize: '14px',
             fontWeight: '500',
@@ -432,7 +432,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div ref={appRef} className="flex flex-col h-screen bg-[#1e1e1e] text-[#cccccc] font-sans overflow-hidden select-none">
+    <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
 
       <UnifiedSettingsModal
         isOpen={isSettingsModalOpen}
@@ -448,7 +448,7 @@ const App: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
 
         {/* 左侧工具栏 */}
-        <div data-tour="toolbar" style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-[#333] transition-all duration-300 ease-in-out h-full overflow-hidden">
+        <div data-tour="toolbar" style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-editor-border transition-all duration-300 ease-in-out h-full overflow-hidden">
           <ActionPanel
             activeMode={mode}
             onModeChange={setMode}
@@ -464,14 +464,14 @@ const App: React.FC = () => {
         {/* 侧边栏调整手柄 */}
         {!isSidebarCollapsed && (
           <div
-            className={`absolute top-0 bottom-0 w-1 hover:bg-[#007acc] cursor-col-resize z-20 transition-colors delay-100 ${isResizingSidebar ? 'bg-[#007acc]' : 'bg-transparent'}`}
+            className={`absolute top-0 bottom-0 w-1 hover:bg-brand-primary cursor-col-resize z-20 transition-colors delay-100 ${isResizingSidebar ? 'bg-brand-primary' : 'bg-transparent'}`}
             style={{ left: sidebarWidth - 2 }}
             onMouseDown={startResizingSidebar}
           ></div>
         )}
 
         {/* 双栏编辑器区域 */}
-        <div className="flex-1 flex min-w-0 bg-[#1e1e1e]">
+        <div className="flex-1 flex min-w-0 bg-editor-bg">
 
           {/* 左栏：源文件编辑 */}
           <div data-tour="source-editor" style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
@@ -497,8 +497,8 @@ const App: React.FC = () => {
                   className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
                     ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
                     : isAutoSaveEnabled
-                      ? 'bg-green-900/30 text-green-300 border-green-900/50'
-                      : 'text-gray-400 border-transparent hover:bg-[#333]'
+                      ? 'bg-status-success-bg text-status-success-text border-status-success-border'
+                      : 'text-gray-400 border-transparent hover:bg-editor-active'
                     }`}
                   title={
                     !activeFileId
@@ -522,7 +522,7 @@ const App: React.FC = () => {
 
           {/* 分栏调整手柄 */}
           <div
-            className={`w-1 hover:bg-[#007acc] cursor-col-resize z-20 flex-shrink-0 transition-colors delay-100 ${isResizingPane ? 'bg-[#007acc]' : 'bg-[#252526]'}`}
+            className={`w-1 hover:bg-brand-primary cursor-col-resize z-20 flex-shrink-0 transition-colors delay-100 ${isResizingPane ? 'bg-brand-primary' : 'bg-editor-sidebar'}`}
             onMouseDown={startResizingPane}
           ></div>
 
@@ -571,7 +571,7 @@ const App: React.FC = () => {
       </div>
 
       {/* 底部状态栏 */}
-      <div data-tour="statusbar" className="h-6 bg-[#007acc] flex items-center justify-between px-3 text-[11px] text-white select-none z-20 flex-shrink-0">
+      <div data-tour="statusbar" className="h-6 bg-brand-primary flex items-center justify-between px-3 text-[11px] text-white select-none z-20 flex-shrink-0">
         <div className="flex gap-4">
           <span className="flex items-center gap-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg> UTF-8</span>
           <span>Length: {input.length}</span>
@@ -590,7 +590,7 @@ const App: React.FC = () => {
         </div>
         <div data-tour="statusbar-view" className="flex gap-2 items-center">
           <span className="opacity-80">当前视图:</span>
-          <span className="bg-white text-[#007acc] px-1.5 py-0.5 rounded font-bold text-[11px] shadow-sm leading-none">
+          <span className="bg-white text-brand-primary px-1.5 py-0.5 rounded font-bold text-[11px] shadow-sm leading-none">
             {MODE_LABELS[mode]}
           </span>
         </div>

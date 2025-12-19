@@ -226,9 +226,9 @@ export const CodeEditor: React.FC<EditorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#1e1e1e] border-r border-[#1e1e1e] group">
+    <div className="flex flex-col h-full bg-editor-bg border-r border-editor-bg group">
       {/* 编辑器头部 */}
-      <div className="flex items-center bg-[#252526] pl-4 pr-2 border-t border-[#454545] select-none h-9 min-h-[36px] group/header">
+      <div className="flex items-center bg-editor-sidebar pl-4 pr-2 border-t border-editor-border select-none h-9 min-h-[36px] group/header">
         <div className="flex items-center gap-3 h-full flex-1 min-w-0 overflow-hidden">
           <span className={`text-xs font-bold font-mono uppercase flex-shrink-0 ${getLanguageColor(language)}`}>
             {language === 'plaintext' ? 'TXT' : language}
@@ -268,9 +268,9 @@ export const CodeEditor: React.FC<EditorProps> = ({
                         onCloseFile?.(file.id);
                       }
                     }}
-                    className={`flex items-center gap-1.5 px-1.5 h-full border-r border-r-[#252526] text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
-                      ? 'bg-[#1e1e1e] text-white border-t-2 border-t-[#0078d4]'
-                      : 'bg-[#2d2d2d] text-[#969696] border-t-2 border-t-transparent hover:bg-[#2a2d2e]'
+                    className={`flex items-center gap-1.5 px-1.5 h-full border-r border-r-editor-sidebar text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
+                      ? 'bg-editor-bg text-white border-t-2 border-t-brand-primary'
+                      : 'bg-editor-header text-editor-fg-sub border-t-2 border-t-transparent hover:bg-editor-hover'
                       }`}
                     title={file.name}
                   >
@@ -281,7 +281,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
                         e.stopPropagation();
                         onCloseFile?.(file.id);
                       }}
-                      className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 group/close flex items-center justify-center w-5 h-5 ${file.id === activeFileId ? 'hover:bg-[#333]' : 'hover:bg-[#444]'}`}
+                      className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 group/close flex items-center justify-center w-5 h-5 ${file.id === activeFileId ? 'hover:bg-editor-border' : 'hover:bg-editor-active'}`}
                       title={file.isDirty ? "未保存" : "关闭"}
                     >
                       {file.isDirty ? (
@@ -300,7 +300,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
                 <div className="flex items-center justify-center h-full px-1">
                   <button
                     onClick={() => onNewTab?.()}
-                    className="flex items-center justify-center w-6 h-6 rounded-md text-[#969696] hover:text-white hover:bg-[#444] transition-all cursor-pointer flex-shrink-0"
+                    className="flex items-center justify-center w-6 h-6 rounded-md text-editor-fg-sub hover:text-white hover:bg-editor-active transition-all cursor-pointer flex-shrink-0"
                     title="新建标签 (Cmd+N)"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
@@ -312,7 +312,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
               {showScrollbar && (
                 <div className="absolute bottom-0 left-0 w-full h-[3px] z-10 opacity-0 group-hover/header:opacity-100 transition-opacity duration-200">
                   <div
-                    className="h-full bg-[#424242] hover:bg-[#4f4f4f] rounded-full cursor-pointer relative"
+                    className="h-full bg-scrollbar-bg hover:bg-scrollbar-hover rounded-full cursor-pointer relative"
                     style={{
                       width: `${thumbWidth}%`,
                       left: `${thumbLeft}%`
@@ -325,7 +325,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
           )}
 
           {readOnly && !canToggleReadOnly && (
-            <span className="text-[10px] text-gray-500 bg-[#333] px-1.5 rounded border border-[#454545] flex-shrink-0">READ ONLY</span>
+            <span className="text-[10px] text-gray-500 bg-editor-border px-1.5 rounded border border-editor-active flex-shrink-0">READ ONLY</span>
           )}
         </div>
 
@@ -338,7 +338,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
             <button
               data-tour="editor-lock"
               onClick={() => setIsLocked(!isLocked)}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-[#333]'}`}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
               title={isLocked ? "Click to Edit" : "Unlocked"}
             >
               {isLocked ? (
@@ -359,7 +359,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
           <button
             data-tour="editor-wrap"
             onClick={toggleWordWrap}
-            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${wordWrap === 'on' ? 'bg-[#094771] text-white border-[#007acc]' : 'text-gray-400 border-transparent hover:bg-[#333]'}`}
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${wordWrap === 'on' ? 'bg-brand-primary text-white border-brand-primary' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
             title="Toggle Word Wrap"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
@@ -367,12 +367,12 @@ export const CodeEditor: React.FC<EditorProps> = ({
           </button>
 
           {error ? (
-            <div className="flex items-center text-[10px] text-red-400 bg-[#3c1515] px-2 py-0.5 rounded border border-red-900/50 shadow-sm">
+            <div className="flex items-center text-[10px] text-status-error-text bg-status-error-bg px-2 py-0.5 rounded border border-status-error-border shadow-sm">
               <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5 animate-pulse"></span>
               {error}
             </div>
           ) : value && language === 'json' ? (
-            <div className="flex items-center text-[10px] text-green-400 bg-[#1e3a2a] px-2 py-0.5 rounded border border-green-900/50">
+            <div className="flex items-center text-[10px] text-status-success-text bg-status-success-bg px-2 py-0.5 rounded border border-status-success-border">
               Valid JSON
             </div>
           ) : null}
@@ -427,7 +427,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
             renderLineHighlight: 'all',
           }}
           loading={
-            <div className="h-full w-full flex items-center justify-center text-[#666] text-xs">
+            <div className="h-full w-full flex items-center justify-center text-editor-fg-dim text-xs">
               加载编辑器...
             </div>
           }
