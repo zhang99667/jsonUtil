@@ -15,7 +15,8 @@ export enum ActionType {
   AI_FIX = 'AI_FIX',
   SAVE = 'SAVE',
   OPEN = 'OPEN',
-  NEW_TAB = 'NEW_TAB'
+  NEW_TAB = 'NEW_TAB',
+  STATISTICS = 'STATISTICS'
 }
 
 export enum AIProvider {
