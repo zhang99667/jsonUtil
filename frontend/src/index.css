@@ -5,16 +5,24 @@
 :root {
   /* VS Code Dark Theme Colors */
   --editor-bg: #1e1e1e;
-  --editor-sidebar: #252526; /* Side bar background */
-  --editor-header: #2d2d2d; /* Tab header background */
-  --editor-border: #333333; /* Borders */
-  --editor-hover: #2a2d2e; /* List hover */
-  --editor-active: #37373d; /* List active / selection */
+  --editor-sidebar: #252526;
+  /* Side bar background */
+  --editor-header: #2d2d2d;
+  /* Tab header background */
+  --editor-border: #333333;
+  /* Borders */
+  --editor-hover: #2a2d2e;
+  /* List hover */
+  --editor-active: #37373d;
+  /* List active / selection */
 
   /* Text Colors */
-  --editor-fg: #cccccc;       /* Primary text */
-  --editor-fg-sub: #969696;   /* Secondary text/icons */
-  --editor-fg-dim: #666666;   /* Dimmed text/placeholders */
+  --editor-fg: #cccccc;
+  /* Primary text */
+  --editor-fg-sub: #969696;
+  /* Secondary text/icons */
+  --editor-fg-dim: #666666;
+  /* Dimmed text/placeholders */
 
   /* Scrollbar */
   --scrollbar-bg: #424242;
@@ -24,15 +32,48 @@
   --status-error-bg: #3c1515;
   --status-error-border: rgba(127, 29, 29, 0.5);
   --status-error-text: #fca5a5;
-  
+
   --status-success-bg: #1e3a2a;
   --status-success-border: rgba(20, 83, 45, 0.5);
   --status-success-text: #4ade80;
 
-  --brand-primary: #007acc; /* VS Code Blue */
+  --brand-primary: #007acc;
+  /* VS Code Blue */
   --brand-hover: #0062a3;
-  --brand-danger: #dc2626; /* Error Red */
+  --brand-danger: #dc2626;
+  /* Error Red */
 }
+
+/* Monaco Editor Tooltip - 彻底隐藏（包含箭头和所有子元素） */
+.monaco-hover,
+.monaco-editor-hover,
+.monaco-hover-content,
+.monaco-hover-arrow,
+.workbench-hover,
+.workbench-hover-container,
+.workbench-hover-pointer,
+.monaco-resizable-hover,
+[class*="monaco-hover"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 隐藏所有相关的伪元素（通常用于绘制箭头） */
+.monaco-hover::before,
+.monaco-hover::after,
+.monaco-editor-hover::before,
+.monaco-editor-hover::after,
+.workbench-hover-pointer::before,
+.workbench-hover-pointer::after,
+[class*="monaco-hover"]::before,
+[class*="monaco-hover"]::after {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
 
 /* Moved to src */
 .jsonpath-highlight {
