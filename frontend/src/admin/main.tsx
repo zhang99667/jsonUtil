@@ -1,19 +1,10 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { StatisticsPanel } from '../components/StatisticsPanel';
-import '../index.css';
-
-const AdminApp = () => {
-    return (
-        <div className="min-h-screen bg-editor-bg text-gray-200">
-            {/* Force the modal to remain open and act as the main view */}
-            <StatisticsPanel isOpen={true} onClose={() => { }} />
-        </div>
-    );
-};
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+// Ensure shared styles are loaded if needed, or valid ant setup
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <AdminApp />
-    </React.StrictMode>
-);
+        <App />
+    </React.StrictMode>,
+)
