@@ -14,10 +14,12 @@ public class User {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String email;
+    private String username;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    private String email; // Legacy column, not used for auth
 
     private String role; // USER, ADMIN
 
