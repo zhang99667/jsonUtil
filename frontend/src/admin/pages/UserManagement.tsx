@@ -10,7 +10,7 @@ const UserManagement: React.FC = () => {
     const onFinish = async (values: any) => {
         try {
             await addUser(values);
-            message.success('User added successfully');
+            message.success('用户添加成功');
             form.resetFields();
         } catch (error) {
             // Error handled by interceptor
@@ -18,7 +18,7 @@ const UserManagement: React.FC = () => {
     };
 
     return (
-        <Card title="Add New User">
+        <Card title="添加新用户">
             <Form
                 form={form}
                 layout="vertical"
@@ -27,25 +27,25 @@ const UserManagement: React.FC = () => {
             >
                 <Form.Item
                     name="email"
-                    label="Email"
+                    label="电子邮件"
                     rules={[
-                        { required: true, message: 'Please input email!' },
-                        { type: 'email', message: 'Please enter a valid email!' }
+                        { required: true, message: '请输入电子邮件！' },
+                        { type: 'email', message: '请输入有效的电子邮件！' }
                     ]}
                 >
                     <Input />
                 </Form.Item>
                 <Form.Item
                     name="password"
-                    label="Password"
-                    rules={[{ required: true, message: 'Please input password!' }]}
+                    label="密码"
+                    rules={[{ required: true, message: '请输入密码！' }]}
                 >
                     <Input.Password />
                 </Form.Item>
                 <Form.Item
                     name="role"
-                    label="Role"
-                    rules={[{ required: true, message: 'Please select a role!' }]}
+                    label="角色"
+                    rules={[{ required: true, message: '请选择角色！' }]}
                 >
                     <Select>
                         <Option value="USER">User</Option>
@@ -54,7 +54,7 @@ const UserManagement: React.FC = () => {
                 </Form.Item>
                 <Form.Item>
                     <Button type="primary" htmlType="submit">
-                        Add User
+                        添加用户
                     </Button>
                 </Form.Item>
             </Form>

@@ -116,6 +116,13 @@ const App: React.FC = () => {
     localStorage.setItem('json-helper-ai-config', JSON.stringify(aiConfig));
   }, [aiConfig]);
 
+  // 访客统计打点 (仅统计前台页面访问)
+  useEffect(() => {
+    fetch('/api/visitor/ping').catch(() => {
+      // 静默失败，不影响用户体验
+    });
+  }, []);
+
   // 界面布局状态 (Hook)
   const appRef = useRef<HTMLDivElement>(null);
   const {

@@ -21,7 +21,17 @@ request.interceptors.request.use(
 
 request.interceptors.response.use(
     (response) => {
-        return response.data;
+        const res = response.data;
+        // If it's a standard Result object
+        if (res && typeof res === 'object' && 'code' in res) {
+            if (res.code === 200) {
+                return res.data;
+            } else {
+                message.error(res.message || '业务逻辑错误');
+                return Promise.reject(new Error(res.message || 'Error'));
+            }
+        }
+        return res;
     },
     (error) => {
         if (error.response) {
@@ -31,9 +41,9 @@ request.interceptors.response.use(
                 // Optional: Redirect to login or dispatch clearer action
                 window.location.href = '/admin.html';
             }
-            message.error(data.message || 'Request Error');
+            message.error(data.message || '请求错误');
         } else {
-            message.error('Network Error');
+            message.error('网络错误，请检查网络连接');
         }
         return Promise.reject(error);
     }

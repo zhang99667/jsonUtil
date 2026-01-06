@@ -11,4 +11,6 @@ public class StatisticsDTO {
     private long totalUsers;
     private long activeSubscriptions;
     private BigDecimal totalRevenue;
+    private long todayPv;
+    private long todayUv;
 }

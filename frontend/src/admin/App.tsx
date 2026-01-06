@@ -11,6 +11,7 @@ import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme, Button } from 'antd';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
+import Dashboard from './pages/Dashboard';
 import { logout } from './services/auth';
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -32,9 +33,9 @@ function getItem(
 }
 
 const items: MenuItem[] = [
-    getItem('Dashboard', '1', <PieChartOutlined />),
-    getItem('User Management', '2', <TeamOutlined />),
-    getItem('Files', '9', <FileOutlined />),
+    getItem('仪表盘与统计', '1', <PieChartOutlined />),
+    getItem('用户管理', '2', <TeamOutlined />),
+    getItem('文件管理', '9', <FileOutlined />),
 ];
 
 const App: React.FC = () => {
@@ -65,11 +66,11 @@ const App: React.FC = () => {
     const renderContent = () => {
         switch (selectedKey) {
             case '1':
-                return <div>Welcome to JSON Utils Admin Dashboard.</div>;
+                return <Dashboard />;
             case '2':
                 return <UserManagement />;
             default:
-                return <div>Select a menu item.</div>;
+                return <div>请选择功能菜单。</div>;
         }
     };
 
@@ -91,12 +92,12 @@ const App: React.FC = () => {
             </Sider>
             <Layout>
                 <Header style={{ padding: '0 16px', background: colorBgContainer, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                    <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>Logout</Button>
+                    <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>退出登录</Button>
                 </Header>
                 <Content style={{ margin: '0 16px' }}>
                     <Breadcrumb style={{ margin: '16px 0' }}>
-                        <Breadcrumb.Item>Admin</Breadcrumb.Item>
-                        <Breadcrumb.Item>{selectedKey === '2' ? 'User Management' : 'Dashboard'}</Breadcrumb.Item>
+                        <Breadcrumb.Item>管理后台</Breadcrumb.Item>
+                        <Breadcrumb.Item>{selectedKey === '2' ? '用户管理' : '仪表盘与统计'}</Breadcrumb.Item>
                     </Breadcrumb>
                     <div
                         style={{
@@ -110,7 +111,7 @@ const App: React.FC = () => {
                     </div>
                 </Content>
                 <Footer style={{ textAlign: 'center' }}>
-                    JSON Utils Admin ©{new Date().getFullYear()} Created with Ant Design
+                    JSON 助手管理系统 ©{new Date().getFullYear()} 由 Ant Design 构建
                 </Footer>
             </Layout>
         </Layout>
