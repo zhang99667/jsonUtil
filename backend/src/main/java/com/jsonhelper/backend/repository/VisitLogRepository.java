@@ -35,21 +35,21 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
     long countTotalUv(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 按日期统计每日PV趋势
-     * 返回: [日期字符串, PV数量]
+     * 按日期统计每日PV趋势（使用原生SQL，兼容PostgreSQL）
+     * 返回: [日期, PV数量]
      */
-    @Query("SELECT FUNCTION('DATE', v.createdAt) as date, COUNT(v) as pv " +
-           "FROM VisitLog v WHERE v.createdAt >= :start AND v.createdAt < :end " +
-           "GROUP BY FUNCTION('DATE', v.createdAt) ORDER BY date")
+    @Query(value = "SELECT DATE(created_at) as date, COUNT(*) as pv " +
+           "FROM visit_logs WHERE created_at >= :start AND created_at < :end " +
+           "GROUP BY DATE(created_at) ORDER BY date", nativeQuery = true)
     List<Object[]> countDailyPv(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 按日期统计每日UV趋势
-     * 返回: [日期字符串, UV数量]
+     * 按日期统计每日UV趋势（使用原生SQL，兼容PostgreSQL）
+     * 返回: [日期, UV数量]
      */
-    @Query("SELECT FUNCTION('DATE', v.createdAt) as date, COUNT(DISTINCT v.ip) as uv " +
-           "FROM VisitLog v WHERE v.createdAt >= :start AND v.createdAt < :end " +
-           "GROUP BY FUNCTION('DATE', v.createdAt) ORDER BY date")
+    @Query(value = "SELECT DATE(created_at) as date, COUNT(DISTINCT ip) as uv " +
+           "FROM visit_logs WHERE created_at >= :start AND created_at < :end " +
+           "GROUP BY DATE(created_at) ORDER BY date", nativeQuery = true)
     List<Object[]> countDailyUv(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
@@ -71,11 +71,16 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
     List<Object[]> countByPathTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 按小时统计访问分布（24小时）
+     * 按小时统计访问分布（24小时，使用原生SQL，兼容PostgreSQL）
      * 返回: [小时(0-23), 访问次数]
      */
-    @Query("SELECT FUNCTION('HOUR', v.createdAt) as hour, COUNT(v) as cnt " +
-           "FROM VisitLog v WHERE v.createdAt >= :start AND v.createdAt < :end " +
-           "GROUP BY FUNCTION('HOUR', v.createdAt) ORDER BY hour")
+    @Query(value = "SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as cnt " +
+           "FROM visit_logs WHERE created_at >= :start AND created_at < :end " +
+           "GROUP BY EXTRACT(HOUR FROM created_at) ORDER BY hour", nativeQuery = true)
     List<Object[]> countByHour(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
+     * 查询指定时间范围内的访问记录（用于地理位置统计）
+     */
+    List<VisitLog> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 }

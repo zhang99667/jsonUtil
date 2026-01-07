@@ -1,6 +1,7 @@
 package com.jsonhelper.backend.service;
 
 import com.jsonhelper.backend.dto.response.*;
+import com.jsonhelper.backend.entity.VisitLog;
 import com.jsonhelper.backend.repository.VisitLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 public class TrafficService {
 
     private final VisitLogRepository visitLogRepository;
+    private final GeoService geoService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     /**
@@ -162,6 +164,45 @@ public class TrafficService {
         }
 
         return result;
+    }
+
+    /**
+     * 获取地理位置分布统计
+     * @param days 统计天数
+     * @param limit 返回条数
+     */
+    public List<GeoStatsDTO> getGeoDistribution(int days, int limit) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+
+        // 获取指定时间范围内的所有访问记录
+        List<VisitLog> logs = visitLogRepository.findByCreatedAtBetween(start, now);
+        
+        if (logs.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 按地区统计访问次数
+        Map<String, Long> regionCountMap = new HashMap<>();
+        for (VisitLog log : logs) {
+            GeoService.GeoInfo geoInfo = geoService.parseIp(log.getIp());
+            String region = geoInfo.getRegionForStats();
+            regionCountMap.merge(region, 1L, Long::sum);
+        }
+
+        // 计算总数用于百分比
+        long total = logs.size();
+
+        // 转换为DTO并排序
+        return regionCountMap.entrySet().stream()
+                .map(entry -> GeoStatsDTO.builder()
+                        .region(entry.getKey())
+                        .count(entry.getValue())
+                        .percentage(Math.round(entry.getValue() * 10000.0 / total) / 100.0)
+                        .build())
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .limit(limit)
+                .collect(Collectors.toList());
     }
 
     /**

@@ -72,4 +72,17 @@ public class TrafficController {
         List<HourlyStatsDTO> hourly = trafficService.getHourlyDistribution(days);
         return Result.success(hourly);
     }
+
+    /**
+     * 获取地理位置分布统计
+     * @param days 统计天数，默认7天
+     * @param limit 返回条数，默认15条
+     */
+    @GetMapping("/geo-distribution")
+    public Result<List<GeoStatsDTO>> getGeoDistribution(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(defaultValue = "15") int limit) {
+        List<GeoStatsDTO> geoStats = trafficService.getGeoDistribution(days, limit);
+        return Result.success(geoStats);
+    }
 }

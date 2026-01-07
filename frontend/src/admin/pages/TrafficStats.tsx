@@ -6,7 +6,8 @@ import {
     RiseOutlined,
     GlobalOutlined,
     LinkOutlined,
-    ClockCircleOutlined 
+    ClockCircleOutlined,
+    EnvironmentOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -15,11 +16,13 @@ import {
     getTopIps,
     getTopPaths,
     getHourlyStats,
+    getGeoDistribution,
     TrafficOverview,
     TrendItem,
     TopIpItem,
     TopPathItem,
     HourlyItem,
+    GeoStatsItem,
 } from '../services/traffic';
 
 const TrafficStats: React.FC = () => {
@@ -30,22 +33,25 @@ const TrafficStats: React.FC = () => {
     const [topIps, setTopIps] = useState<TopIpItem[]>([]);
     const [topPaths, setTopPaths] = useState<TopPathItem[]>([]);
     const [hourlyStats, setHourlyStats] = useState<HourlyItem[]>([]);
+    const [geoStats, setGeoStats] = useState<GeoStatsItem[]>([]);
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
         try {
-            const [overviewData, trendData, ipsData, pathsData, hourlyData] = await Promise.all([
+            const [overviewData, trendData, ipsData, pathsData, hourlyData, geoData] = await Promise.all([
                 getTrafficOverview(days),
                 getTrafficTrend(days),
                 getTopIps(days, 10),
                 getTopPaths(days, 10),
                 getHourlyStats(days),
+                getGeoDistribution(days, 15),
             ]);
             setOverview(overviewData);
             setTrend(trendData);
             setTopIps(ipsData);
             setTopPaths(pathsData);
             setHourlyStats(hourlyData);
+            setGeoStats(geoData);
         } catch (error) {
             console.error('Failed to fetch traffic data:', error);
         } finally {
@@ -128,6 +134,61 @@ const TrafficStats: React.FC = () => {
     const maxPv = Math.max(...trend.map(t => t.pv), 1);
     const maxUv = Math.max(...trend.map(t => t.uv), 1);
     const maxHourly = Math.max(...hourlyStats.map(h => h.count), 1);
+    const maxGeoCount = Math.max(...geoStats.map(g => g.count), 1);
+
+    // 地区分布表格列配置
+    const geoColumns: ColumnsType<GeoStatsItem> = [
+        {
+            title: '排名',
+            key: 'rank',
+            width: 60,
+            render: (_, __, index) => (
+                <span style={{ 
+                    fontWeight: index < 3 ? 'bold' : 'normal',
+                    color: index === 0 ? '#f5222d' : index === 1 ? '#fa8c16' : index === 2 ? '#faad14' : 'inherit'
+                }}>
+                    {index + 1}
+                </span>
+            ),
+        },
+        {
+            title: '地区',
+            dataIndex: 'region',
+            key: 'region',
+            render: (region: string) => (
+                <span>
+                    <EnvironmentOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                    {region}
+                </span>
+            ),
+        },
+        {
+            title: '访问量',
+            dataIndex: 'count',
+            key: 'count',
+            width: 100,
+            align: 'right',
+            render: (count: number) => count.toLocaleString(),
+        },
+        {
+            title: '占比',
+            dataIndex: 'percentage',
+            key: 'percentage',
+            width: 150,
+            render: (percentage: number, record: GeoStatsItem) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Progress 
+                        percent={Math.round((record.count / maxGeoCount) * 100)} 
+                        size="small" 
+                        showInfo={false}
+                        strokeColor="#1890ff"
+                        style={{ flex: 1, minWidth: 60 }}
+                    />
+                    <span style={{ minWidth: 45, textAlign: 'right' }}>{percentage}%</span>
+                </div>
+            ),
+        },
+    ];
 
     if (loading) {
         return (
@@ -264,6 +325,71 @@ const TrafficStats: React.FC = () => {
                         ))}
                     </div>
                 </div>
+            </Card>
+
+            {/* 地区分布 */}
+            <Card 
+                title={<><EnvironmentOutlined style={{ marginRight: 8 }} />访客地区分布</>}
+                bordered={false} 
+                style={{ marginTop: 16 }}
+            >
+                <Row gutter={24}>
+                    <Col xs={24} lg={12}>
+                        <Table
+                            columns={geoColumns}
+                            dataSource={geoStats}
+                            rowKey="region"
+                            pagination={false}
+                            size="small"
+                        />
+                    </Col>
+                    <Col xs={24} lg={12}>
+                        {/* 简单条形图 */}
+                        <div style={{ padding: '0 16px' }}>
+                            {geoStats.slice(0, 10).map((item, index) => (
+                                <Tooltip key={item.region} title={`${item.region}: ${item.count.toLocaleString()}次 (${item.percentage}%)`}>
+                                    <div style={{ marginBottom: 12 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                            <span style={{ 
+                                                fontSize: 13,
+                                                fontWeight: index < 3 ? 'bold' : 'normal',
+                                                color: index === 0 ? '#f5222d' : index === 1 ? '#fa8c16' : index === 2 ? '#faad14' : 'inherit'
+                                            }}>
+                                                {item.region}
+                                            </span>
+                                            <span style={{ fontSize: 12, color: '#666' }}>
+                                                {item.count.toLocaleString()}
+                                            </span>
+                                        </div>
+                                        <div 
+                                            style={{ 
+                                                height: 8, 
+                                                backgroundColor: '#f0f0f0', 
+                                                borderRadius: 4,
+                                                overflow: 'hidden'
+                                            }}
+                                        >
+                                            <div 
+                                                style={{ 
+                                                    width: `${(item.count / maxGeoCount) * 100}%`,
+                                                    height: '100%',
+                                                    backgroundColor: index === 0 ? '#f5222d' : index === 1 ? '#fa8c16' : index === 2 ? '#faad14' : '#1890ff',
+                                                    borderRadius: 4,
+                                                    transition: 'width 0.3s'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </Tooltip>
+                            ))}
+                            {geoStats.length === 0 && (
+                                <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
+                                    暂无地区数据
+                                </div>
+                            )}
+                        </div>
+                    </Col>
+                </Row>
             </Card>
 
             {/* IP和路径排行榜 */}

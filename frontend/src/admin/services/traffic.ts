@@ -36,6 +36,13 @@ export interface HourlyItem {
     count: number;
 }
 
+// 地区分布接口
+export interface GeoStatsItem {
+    region: string;
+    count: number;
+    percentage: number;
+}
+
 // 获取流量概览
 export const getTrafficOverview = async (days: number): Promise<TrafficOverview> => {
     return request.get('/admin/traffic/overview', { params: { days } });
@@ -59,4 +66,9 @@ export const getTopPaths = async (days: number, limit: number): Promise<TopPathI
 // 获取24小时分布
 export const getHourlyStats = async (days: number): Promise<HourlyItem[]> => {
     return request.get('/admin/traffic/hourly', { params: { days } });
+};
+
+// 获取地区分布
+export const getGeoDistribution = async (days: number, limit: number = 15): Promise<GeoStatsItem[]> => {
+    return request.get('/admin/traffic/geo-distribution', { params: { days, limit } });
 };
