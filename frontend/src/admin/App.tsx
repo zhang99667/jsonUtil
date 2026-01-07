@@ -6,6 +6,7 @@ import {
     TeamOutlined,
     UserOutlined,
     LogoutOutlined,
+    BarChartOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme, Button } from 'antd';
@@ -13,6 +14,7 @@ import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
 import Dashboard from './pages/Dashboard';
 import { logout } from './services/auth';
+import TrafficStats from './pages/TrafficStats';
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -34,6 +36,7 @@ function getItem(
 
 const items: MenuItem[] = [
     getItem('仪表盘与统计', '1', <PieChartOutlined />),
+    getItem('流量统计', '3', <BarChartOutlined />),
     getItem('用户管理', '2', <TeamOutlined />),
     getItem('文件管理', '9', <FileOutlined />),
 ];
@@ -69,8 +72,19 @@ const App: React.FC = () => {
                 return <Dashboard />;
             case '2':
                 return <UserManagement />;
+            case '3':
+                return <TrafficStats />;
             default:
                 return <div>请选择功能菜单。</div>;
+        }
+    };
+
+    const getBreadcrumbTitle = () => {
+        switch (selectedKey) {
+            case '1': return '仪表盘与统计';
+            case '2': return '用户管理';
+            case '3': return '流量统计';
+            default: return '管理后台';
         }
     };
 
@@ -97,7 +111,7 @@ const App: React.FC = () => {
                 <Content style={{ margin: '0 16px' }}>
                     <Breadcrumb style={{ margin: '16px 0' }}>
                         <Breadcrumb.Item>管理后台</Breadcrumb.Item>
-                        <Breadcrumb.Item>{selectedKey === '2' ? '用户管理' : '仪表盘与统计'}</Breadcrumb.Item>
+                        <Breadcrumb.Item>{getBreadcrumbTitle()}</Breadcrumb.Item>
                     </Breadcrumb>
                     <div
                         style={{
