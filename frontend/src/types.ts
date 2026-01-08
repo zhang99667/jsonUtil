@@ -53,6 +53,52 @@ export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY' | 'CLO
 
 export type ShortcutConfig = Record<ShortcutAction, ShortcutKey>;
 
+// ============ 转换路径记录机制 ============
+
+// 单步转换操作类型
+export type TransformStepType =
+  | 'json_parse'      // JSON.parse
+  | 'json_stringify'  // JSON.stringify
+  | 'unicode_decode'  // \uXXXX → 中文
+  | 'unicode_encode'  // 中文 → \uXXXX
+  | 'url_decode'      // URL 解码
+  | 'url_encode'      // URL 编码
+  | 'base64_decode'   // Base64 解码
+  | 'base64_encode'   // Base64 编码
+  | 'unescape'        // 反转义
+  | 'escape';         // 转义
+
+// 单步转换操作
+export interface TransformStep {
+  type: TransformStepType;
+  // 可选：保存原始细节用于精确还原
+  originalEncoding?: string;  // 如 'utf-8'
+  originalPadding?: boolean;  // Base64 是否有 padding
+}
+
+// 单个路径的转换记录
+export interface PathTransformRecord {
+  path: string;              // JSON Path, 如 "$.data" 或 "$.users[0].config"
+  steps: TransformStep[];    // 该路径上发生的转换序列（正向顺序）
+  originalValue: string;     // 原始字符串值（用于校验）
+}
+
+// 整个转换的上下文
+export interface TransformContext {
+  mode: TransformMode;
+  records: Map<string, PathTransformRecord>;  // path -> record
+  timestamp: number;
+  originalIndentation: number | string;  // 原始缩进（用于还原格式）
+}
+
+// 转换结果（带上下文）
+export interface TransformResult {
+  output: string;            // 转换后的 JSON 字符串
+  context: TransformContext; // 转换上下文（用于反向还原）
+}
+
+// ============ 文件标签 ============
+
 export interface FileTab {
   id: string;
   name: string;
@@ -62,6 +108,7 @@ export interface FileTab {
   isDirty?: boolean;
   mode?: TransformMode; // 保存每个标签的转换模式
   path?: string; // 文件完整路径
+  transformContext?: TransformContext; // 该 Tab 的转换上下文（避免窜台）
 }
 
 export interface HighlightRange {

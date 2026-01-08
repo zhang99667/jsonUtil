@@ -7,7 +7,9 @@ import { JsonPathPanel } from './components/JsonPathPanel';
 import {
   validateJson,
   performTransform,
-  performInverseTransform
+  performInverseTransform,
+  deepParseWithContext,
+  inverseWithContext
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
@@ -52,19 +54,67 @@ const App: React.FC = () => {
   // 当前转换模式
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
 
+  // 当没有打开文件时，使用 Ref 存储转换上下文（避免无 Tab 场景下丢失 context）
+  const fallbackContextRef = useRef<import('./types').TransformContext | null>(null);
+
+  // 界面布局状态 (Hook) - 移到前面避免依赖问题
+  const appRef = useRef<HTMLDivElement>(null);
+  const {
+    sidebarWidth, setSidebarWidth,
+    isSidebarCollapsed, setIsSidebarCollapsed,
+    leftPaneWidthPercent, setLeftPaneWidthPercent,
+    isResizingSidebar, isResizingPane,
+    startResizingSidebar, startResizingPane
+  } = useLayout(appRef);
+
+  // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
+  const {
+    files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
+    createNewTab, openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent
+  } = useFileSystem({
+    input, setInput, inputRef, setMode, output: '' // 初始为空，后面会更新
+  });
+
   // 计算派生输出
   const output = useMemo(() => {
     // 若处于输出编辑状态，优先返回暂存值以避免覆盖用户输入
     if (isUpdatingFromOutput.current && pendingOutputValue.current) {
       return pendingOutputValue.current;
     }
+
+    // 深度格式化模式：使用带上下文的转换，保存 context 到当前 Tab
+    if (mode === TransformMode.DEEP_FORMAT) {
+      const transformResult = deepParseWithContext(input);
+      
+      // 保存 context 到当前活动 Tab（避免窜台）
+      if (activeFileId) {
+        // 使用 setTimeout 避免在 useMemo 中直接 setState
+        setTimeout(() => {
+          setFiles(prev => prev.map(f =>
+            f.id === activeFileId
+              ? { ...f, transformContext: transformResult.context }
+              : f
+          ));
+        }, 0);
+      } else {
+        // 没有打开文件时，保存到 fallback Ref
+        fallbackContextRef.current = transformResult.context;
+      }
+
+      // 模式切换或新转换时清除暂存值
+      if (!isUpdatingFromOutput.current) {
+        pendingOutputValue.current = '';
+      }
+      return transformResult.output;
+    }
+
     const result = performTransform(input, mode);
     // 模式切换或新转换时清除暂存值
     if (!isUpdatingFromOutput.current) {
       pendingOutputValue.current = '';
     }
     return result;
-  }, [input, mode]);
+  }, [input, mode, activeFileId]);
 
   // JSONPath 查询专用数据源（强制深度格式化）
   // 确保查询功能支持嵌套 JSON 搜索
@@ -122,24 +172,6 @@ const App: React.FC = () => {
       // 静默失败，不影响用户体验
     });
   }, []);
-
-  // 界面布局状态 (Hook)
-  const appRef = useRef<HTMLDivElement>(null);
-  const {
-    sidebarWidth, setSidebarWidth,
-    isSidebarCollapsed, setIsSidebarCollapsed,
-    leftPaneWidthPercent, setLeftPaneWidthPercent,
-    isResizingSidebar, isResizingPane,
-    startResizingSidebar, startResizingPane
-  } = useLayout(appRef);
-
-  // 文件系统状态 (Hook)
-  const {
-    files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
-    createNewTab, openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent
-  } = useFileSystem({
-    input, setInput, inputRef, setMode, output
-  });
 
   // 统一的保存处理逻辑
   const handleSaveShortcut = useCallback(async () => {
@@ -281,8 +313,23 @@ const App: React.FC = () => {
         }
       }
 
-      // 使用 Ref 获取最新输入源，避免闭包陷阱
-      const newSource = performInverseTransform(newVal, mode, inputRef.current);
+      // 深度格式化模式：使用当前 Tab 的 context 进行精确还原
+      let newSource: string;
+      if (mode === TransformMode.DEEP_FORMAT) {
+        const currentFile = files.find(f => f.id === activeFileId);
+        const context = currentFile?.transformContext || fallbackContextRef.current;
+        if (context) {
+          // 使用精确的上下文还原
+          newSource = inverseWithContext(newVal, context);
+        } else {
+          // 无上下文时回退到旧方法
+          newSource = performInverseTransform(newVal, mode, inputRef.current);
+        }
+      } else {
+        // 其他模式使用旧方法
+        newSource = performInverseTransform(newVal, mode, inputRef.current);
+      }
+      
       setInput(newSource);
 
       // 同步更新 Ref
