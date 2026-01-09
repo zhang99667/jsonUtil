@@ -1,12 +1,20 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
 import { EditorProps, HighlightRange } from '../types';
 import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { computeLineDiff } from '../utils/diffUtils';
+import { findSchemesInJson, SchemeLocation } from '../utils/schemeUtils';
+import { SchemeViewerModal } from './SchemeViewerModal';
 
-export const CodeEditor: React.FC<EditorProps> = ({
+// 扩展 EditorProps 以支持 scheme 修改回调
+interface ExtendedEditorProps extends EditorProps {
+  onSchemeEdit?: (path: string, newValue: string) => void;
+}
+
+export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   value,
   originalValue,
   path,
@@ -23,7 +31,8 @@ export const CodeEditor: React.FC<EditorProps> = ({
   onNewTab,
   highlightRange,
   onFocus,
-  onCursorPositionChange
+  onCursorPositionChange,
+  onSchemeEdit
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
@@ -31,6 +40,16 @@ export const CodeEditor: React.FC<EditorProps> = ({
   const monaco = useMonaco();
   const editorRef = useRef<any>(null);
   const decorationsCollectionRef = useRef<any>(null);
+
+  // Scheme 检测状态
+  const [schemeLocations, setSchemeLocations] = useState<SchemeLocation[]>([]);
+  const schemeLocationsRef = useRef<SchemeLocation[]>([]); // 用于 onMount 闭包访问最新值
+  const schemeDecorationsRef = useRef<any>(null);
+  const [schemeModal, setSchemeModal] = useState<{
+    isOpen: boolean;
+    path: string;
+    value: string;
+  }>({ isOpen: false, path: '', value: '' });
 
 
 
@@ -49,6 +68,67 @@ export const CodeEditor: React.FC<EditorProps> = ({
     const detected = detectLanguage(value);
     setLanguage(detected);
   }, [value]);
+
+  // 检测 JSON 中的 scheme 字符串（仅在 PREVIEW 面板启用）
+  useEffect(() => {
+    // 只有当 onSchemeEdit 存在时（即 PREVIEW 面板）才检测 scheme
+    if (onSchemeEdit && language === 'json' && value) {
+      // 防抖检测
+      const timer = setTimeout(() => {
+        const locations = findSchemesInJson(value);
+        setSchemeLocations(locations);
+        schemeLocationsRef.current = locations; // 同步到 ref
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setSchemeLocations([]);
+      schemeLocationsRef.current = [];
+    }
+  }, [value, language, onSchemeEdit]);
+
+  // 渲染 scheme 图标装饰器
+  useEffect(() => {
+    if (!editorRef.current || !monaco || schemeLocations.length === 0) {
+      // 清除旧装饰器
+      if (schemeDecorationsRef.current) {
+        schemeDecorationsRef.current.clear();
+      }
+      return;
+    }
+
+    const decorations = schemeLocations.map(loc => ({
+      range: new monaco.Range(loc.line, 1, loc.line, 1),
+      options: {
+        glyphMarginClassName: 'scheme-glyph-icon',
+        glyphMarginHoverMessage: { value: `🔗 点击解析 Scheme (${loc.schemeType})` },
+      }
+    }));
+
+    if (schemeDecorationsRef.current) {
+      schemeDecorationsRef.current.clear();
+    }
+    schemeDecorationsRef.current = editorRef.current.createDecorationsCollection(decorations);
+  }, [schemeLocations, monaco]);
+
+  // 处理 scheme 图标点击
+  const handleSchemeClick = useCallback((lineNumber: number) => {
+    const location = schemeLocations.find(loc => loc.line === lineNumber);
+    if (location) {
+      setSchemeModal({
+        isOpen: true,
+        path: location.path,
+        value: location.value,
+      });
+    }
+  }, [schemeLocations]);
+
+  // 处理 scheme 编辑应用
+  const handleSchemeApply = useCallback((newValue: string) => {
+    if (onSchemeEdit && schemeModal.path) {
+      onSchemeEdit(schemeModal.path, newValue);
+    }
+    setSchemeModal({ isOpen: false, path: '', value: '' });
+  }, [onSchemeEdit, schemeModal.path]);
 
   // 只读属性变更时重置锁定状态
   useEffect(() => {
@@ -400,6 +480,25 @@ export const CodeEditor: React.FC<EditorProps> = ({
             editor.onDidFocusEditorText(() => {
               onFocus?.();
             });
+
+            // 监听 glyph margin 点击事件（scheme 图标）
+            // 使用 ref 访问最新的 schemeLocations，避免闭包捕获旧值
+            editor.onMouseDown((e: any) => {
+              if (e.target.type === 2) { // GLYPH_MARGIN
+                const lineNumber = e.target.position?.lineNumber;
+                if (lineNumber) {
+                  // 直接使用 ref 获取最新的 locations
+                  const location = schemeLocationsRef.current.find(loc => loc.line === lineNumber);
+                  if (location) {
+                    setSchemeModal({
+                      isOpen: true,
+                      path: location.path,
+                      value: location.value,
+                    });
+                  }
+                }
+              }
+            });
           }}
           onChange={handleEditorChange}
           options={{
@@ -425,6 +524,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
             overviewRulerBorder: false,
             hideCursorInOverviewRuler: true,
             renderLineHighlight: 'all',
+            glyphMargin: schemeLocations.length > 0, // 有 scheme 时显示 glyph margin
           }}
           loading={
             <div className="h-full w-full flex items-center justify-center text-editor-fg-dim text-xs">
@@ -433,6 +533,15 @@ export const CodeEditor: React.FC<EditorProps> = ({
           }
         />
       </div>
+
+      {/* Scheme 解析弹窗 */}
+      <SchemeViewerModal
+        isOpen={schemeModal.isOpen}
+        onClose={() => setSchemeModal({ isOpen: false, path: '', value: '' })}
+        path={schemeModal.path}
+        value={schemeModal.value}
+        onApply={onSchemeEdit ? handleSchemeApply : undefined}
+      />
     </div>
   );
 };

@@ -593,6 +593,56 @@ const App: React.FC = () => {
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
               highlightRange={highlightRange}
+              onSchemeEdit={(jsonPath, newValue) => {
+                // 处理 Scheme 编辑：将修改后的值应用到 JSON 对应路径
+                try {
+                  const parsed = JSON.parse(output);
+                  
+                  // 解析 JSON Path (如 $.action_cmd 或 $.data.items[0].url)
+                  const pathParts = jsonPath
+                    .replace(/^\$\.?/, '') // 移除开头的 $. 或 $
+                    .split(/\.|\[|\]/)
+                    .filter(p => p !== '');
+                  
+                  // 遍历到目标位置并设置新值
+                  let current = parsed;
+                  for (let i = 0; i < pathParts.length - 1; i++) {
+                    const part = pathParts[i];
+                    const index = parseInt(part, 10);
+                    current = isNaN(index) ? current[part] : current[index];
+                  }
+                  
+                  // 设置最后一个键的值
+                  const lastPart = pathParts[pathParts.length - 1];
+                  const lastIndex = parseInt(lastPart, 10);
+                  if (isNaN(lastIndex)) {
+                    current[lastPart] = newValue;
+                  } else {
+                    current[lastIndex] = newValue;
+                  }
+                  
+                  // 格式化并触发更新
+                  const updatedOutput = JSON.stringify(parsed, null, 2);
+                  handleOutputChange(updatedOutput);
+                  
+                  toast.success('Scheme 修改已应用', {
+                    duration: 2000,
+                    style: {
+                      background: 'var(--brand-primary)',
+                      color: '#fff',
+                    },
+                  });
+                } catch (err) {
+                  console.error('Failed to apply scheme edit:', err);
+                  toast.error('应用修改失败', {
+                    duration: 3000,
+                    style: {
+                      background: 'var(--brand-danger)',
+                      color: '#fff',
+                    },
+                  });
+                }
+              }}
             />
           </div>
         </div>
