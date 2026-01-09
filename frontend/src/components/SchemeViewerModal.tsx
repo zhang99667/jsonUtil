@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SimpleEditor } from './SimpleEditor';
 import { 
   deepDecodeScheme, 
@@ -24,6 +24,11 @@ const schemeTypeLabels: Record<SchemeType, string> = {
   'plain': '纯文本',
 };
 
+// 最小宽度，防止内容折叠
+const MIN_WIDTH = 450;
+const DEFAULT_WIDTH = 600;
+const DEFAULT_HEIGHT = 500;
+
 export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   isOpen,
   onClose,
@@ -33,6 +38,33 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 }) => {
   const [editedContent, setEditedContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
+  
+  // 面板位置和大小（持久化）
+  const [position, setPosition] = useState(() => {
+    try {
+      const saved = localStorage.getItem('scheme-panel-position');
+      return saved ? JSON.parse(saved) : { x: 150, y: 80 };
+    } catch {
+      return { x: 150, y: 80 };
+    }
+  });
+  const [size, setSize] = useState(() => {
+    try {
+      const saved = localStorage.getItem('scheme-panel-size');
+      return saved ? JSON.parse(saved) : { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
+    } catch {
+      return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
+    }
+  });
+  
+  // 拖拽和调整大小状态
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
+  const [startSize, setStartSize] = useState({ width: 0, height: 0 });
+  
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // 解析 scheme（添加空值保护）
   const decodeResult = useMemo<SchemeDecodeResult>(() => {
@@ -85,21 +117,90 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     return 'plaintext';
   }, [decodeResult.isJson, editedContent]);
 
+  // 保存位置到 localStorage
+  useEffect(() => {
+    localStorage.setItem('scheme-panel-position', JSON.stringify(position));
+  }, [position]);
+
+  // 保存大小到 localStorage
+  useEffect(() => {
+    localStorage.setItem('scheme-panel-size', JSON.stringify(size));
+  }, [size]);
+
+  // 处理拖动和调整大小
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragStart.x,
+          y: e.clientY - dragStart.y
+        });
+      } else if (isResizing) {
+        const deltaX = e.clientX - resizeStart.x;
+        setSize(prev => ({
+          ...prev,
+          width: Math.max(MIN_WIDTH, startSize.width + deltaX)
+        }));
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setIsResizing(false);
+    };
+
+    if (isDragging || isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart, isResizing, resizeStart, startSize]);
+
+  // 拖动面板
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isResizing) return;
+    if (panelRef.current) {
+      const rect = panelRef.current.getBoundingClientRect();
+      setDragStart({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+      setIsDragging(true);
+    }
+  };
+
+  // 调整大小
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setResizeStart({ x: e.clientX, y: e.clientY });
+    setStartSize({ width: size.width, height: size.height });
+    setIsResizing(true);
+  };
+
   // 早期返回必须在所有 hooks 之后
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 背景遮罩 */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* 弹窗内容 */}
-      <div className="relative bg-editor-bg border border-editor-border rounded-lg shadow-2xl w-[600px] max-w-[90vw] max-h-[80vh] flex flex-col">
-        {/* 头部 */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-editor-border">
+    <div
+      ref={panelRef}
+      className="fixed bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden"
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        cursor: isDragging ? 'grabbing' : 'default'
+      }}
+    >
+      {/* 头部 - 可拖动 */}
+      <div
+        className="flex items-center justify-between px-4 py-2 bg-editor-sidebar border-b border-editor-border rounded-t-lg cursor-grab active:cursor-grabbing flex-shrink-0"
+        onMouseDown={handleMouseDown}
+      >
           <div className="flex items-center gap-2">
             <span className="text-lg">🔗</span>
             <span className="text-white font-medium">Scheme 解析</span>
@@ -118,20 +219,25 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         </div>
 
         {/* 内容区域 */}
-        <div className="flex-1 overflow-auto p-4 space-y-4">
+        <div className="flex-1 overflow-auto p-3 space-y-3 bg-editor-bg">
           {/* Scheme 信息 */}
           {decodeResult.schemeInfo && (
-            <div className="bg-editor-sidebar rounded-lg p-3">
-              <div className="text-xs text-gray-400 mb-2">Scheme 信息</div>
+            <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border">
+              <div className="text-xs text-blue-400 mb-2 font-medium flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Scheme 信息
+              </div>
               <div className="flex flex-wrap gap-2 text-sm">
-                <span className="bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded">
+                <span className="bg-blue-900/50 text-blue-300 px-2.5 py-1 rounded font-mono text-xs">
                   {decodeResult.schemeInfo.protocol}
                 </span>
                 {decodeResult.schemeInfo.host && (
-                  <span className="text-gray-300">{decodeResult.schemeInfo.host}</span>
+                  <span className="bg-editor-bg text-gray-300 px-2.5 py-1 rounded text-xs">{decodeResult.schemeInfo.host}</span>
                 )}
                 {decodeResult.schemeInfo.path && (
-                  <span className="text-gray-400">{decodeResult.schemeInfo.path}</span>
+                  <span className="bg-editor-bg text-gray-400 px-2.5 py-1 rounded text-xs">{decodeResult.schemeInfo.path}</span>
                 )}
               </div>
             </div>
@@ -139,24 +245,29 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
           {/* 解码层级 */}
           {decodeResult.layers.length > 0 && (
-            <div className="bg-editor-sidebar rounded-lg p-3">
-              <div className="text-xs text-gray-400 mb-2">解码层级</div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-gray-500">原始</span>
+            <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border">
+              <div className="text-xs text-emerald-400 mb-2 font-medium flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                解码层级
+              </div>
+              <div className="flex flex-wrap items-center gap-2 bg-editor-bg rounded p-2">
+                <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">原始</span>
                 {decodeResult.layers.map((layer, index) => (
                   <React.Fragment key={index}>
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                    <span className="bg-editor-active text-gray-200 px-2 py-0.5 rounded text-xs">
+                    <span className="bg-emerald-900/40 text-emerald-300 px-2 py-0.5 rounded text-xs font-medium">
                       {layer.description}
                     </span>
                   </React.Fragment>
                 ))}
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-                <span className="text-xs text-green-400">
+                <span className="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded font-medium">
                   {decodeResult.isJson ? 'JSON' : '文本'}
                 </span>
               </div>
@@ -164,28 +275,35 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 原始值预览（折叠） */}
-          <details className="bg-editor-sidebar rounded-lg">
-            <summary className="px-3 py-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300">
-              原始值 ({value?.length || 0} 字符)
+          <details className="bg-editor-sidebar rounded-lg border border-editor-border">
+            <summary className="px-3 py-2 text-xs text-orange-400 cursor-pointer hover:text-orange-300 font-medium flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              原始值 <span className="text-gray-500 font-normal">({value?.length || 0} 字符)</span>
             </summary>
             <div className="px-3 pb-3">
-              <div className="bg-editor-bg rounded p-2 text-xs font-mono text-gray-400 break-all max-h-20 overflow-auto">
+              <div className="bg-editor-bg rounded p-2.5 text-xs font-mono text-gray-400 break-all max-h-24 overflow-auto border border-editor-border">
                 {value || '(空)'}
               </div>
             </div>
           </details>
 
           {/* 解码结果（可编辑，使用 SimpleEditor） */}
-          <div className="bg-editor-sidebar rounded-lg p-3">
+          <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-purple-400 font-medium flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
                 解码结果 
-                {isEditing && <span className="text-yellow-400 ml-2">· 已修改</span>}
+                {isEditing && <span className="text-yellow-400 ml-2 font-normal">· 已修改</span>}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-mono uppercase">{editorLanguage}</span>
+                <span className="text-xs text-gray-500 font-mono uppercase bg-editor-bg px-1.5 py-0.5 rounded">{editorLanguage}</span>
                 {decodeResult.isJson && (
-                  <span className="text-xs bg-green-900/40 text-green-300 px-2 py-0.5 rounded">
+                  <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded font-medium">
                     Valid JSON
                   </span>
                 )}
@@ -195,8 +313,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
               value={editedContent}
               onChange={handleContentChange}
               language={editorLanguage}
-              height={256}
-              className="border border-editor-border rounded"
+              height={200}
+              className="border border-editor-border rounded flex-1"
             />
           </div>
         </div>
@@ -237,7 +355,14 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             )}
           </div>
         </div>
-      </div>
+
+        {/* 调整大小手柄 */}
+        <div
+          className="absolute bottom-0 right-0 w-4 h-full cursor-ew-resize z-10 flex items-center justify-end p-0.5 group/resize"
+          onMouseDown={handleResizeMouseDown}
+        >
+          <div className="w-1 h-8 bg-gray-600 rounded-full opacity-0 group-hover/resize:opacity-50 transition-opacity"></div>
+        </div>
     </div>
   );
 };
