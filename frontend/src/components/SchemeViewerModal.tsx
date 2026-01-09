@@ -24,10 +24,11 @@ const schemeTypeLabels: Record<SchemeType, string> = {
   'plain': '纯文本',
 };
 
-// 最小宽度，防止内容折叠
+// 最小尺寸，防止内容折叠
 const MIN_WIDTH = 450;
+const MIN_HEIGHT = 300;
 const DEFAULT_WIDTH = 600;
-const DEFAULT_HEIGHT = 500;
+const DEFAULT_HEIGHT = 600;
 
 export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   isOpen,
@@ -59,7 +60,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   
   // 拖拽和调整大小状态
   const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
+  const [isResizing, setIsResizing] = useState<'width' | 'height' | 'both' | false>(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
   const [startSize, setStartSize] = useState({ width: 0, height: 0 });
@@ -137,10 +138,24 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         });
       } else if (isResizing) {
         const deltaX = e.clientX - resizeStart.x;
-        setSize(prev => ({
-          ...prev,
-          width: Math.max(MIN_WIDTH, startSize.width + deltaX)
-        }));
+        const deltaY = e.clientY - resizeStart.y;
+        
+        if (isResizing === 'width') {
+          setSize(prev => ({
+            ...prev,
+            width: Math.max(MIN_WIDTH, startSize.width + deltaX)
+          }));
+        } else if (isResizing === 'height') {
+          setSize(prev => ({
+            ...prev,
+            height: Math.max(MIN_HEIGHT, startSize.height + deltaY)
+          }));
+        } else if (isResizing === 'both') {
+          setSize({
+            width: Math.max(MIN_WIDTH, startSize.width + deltaX),
+            height: Math.max(MIN_HEIGHT, startSize.height + deltaY)
+          });
+        }
       }
     };
 
@@ -174,11 +189,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   };
 
   // 调整大小
-  const handleResizeMouseDown = (e: React.MouseEvent) => {
+  const handleResizeMouseDown = (e: React.MouseEvent, direction: 'width' | 'height' | 'both') => {
     e.stopPropagation();
     setResizeStart({ x: e.clientX, y: e.clientY });
     setStartSize({ width: size.width, height: size.height });
-    setIsResizing(true);
+    setIsResizing(direction);
   };
 
   // 早期返回必须在所有 hooks 之后
@@ -219,11 +234,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         </div>
 
         {/* 内容区域 */}
-        <div className="flex-1 overflow-auto p-3 space-y-3 bg-editor-bg">
+        <div className="flex-1 flex flex-col p-2 gap-2 bg-editor-bg min-h-0 overflow-hidden">
           {/* Scheme 信息 */}
           {decodeResult.schemeInfo && (
             <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border">
-              <div className="text-xs text-blue-400 mb-2 font-medium flex items-center gap-1.5">
+              <div className="text-xs text-gray-400 mb-2 font-medium flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
@@ -246,7 +261,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           {/* 解码层级 */}
           {decodeResult.layers.length > 0 && (
             <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border">
-              <div className="text-xs text-emerald-400 mb-2 font-medium flex items-center gap-1.5">
+              <div className="text-xs text-gray-400 mb-2 font-medium flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -276,7 +291,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
           {/* 原始值预览（折叠） */}
           <details className="bg-editor-sidebar rounded-lg border border-editor-border">
-            <summary className="px-3 py-2 text-xs text-orange-400 cursor-pointer hover:text-orange-300 font-medium flex items-center gap-1.5">
+            <summary className="px-3 py-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300 font-medium flex items-center gap-1.5">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -290,10 +305,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             </div>
           </details>
 
-          {/* 解码结果（可编辑，使用 SimpleEditor） */}
+          {/* 解码结果（可编辑，使用 SimpleEditor） - 自适应剩余高度 */}
           <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border flex-1 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-purple-400 font-medium flex items-center gap-1.5">
+            <div className="flex items-center justify-between mb-2 flex-shrink-0">
+              <div className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -303,24 +318,26 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500 font-mono uppercase bg-editor-bg px-1.5 py-0.5 rounded">{editorLanguage}</span>
                 {decodeResult.isJson && (
-                  <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded font-medium">
+                  <span className="text-[10px] text-status-success-text bg-status-success-bg px-2 py-0.5 rounded border border-status-success-border">
                     Valid JSON
                   </span>
                 )}
               </div>
             </div>
-            <SimpleEditor
-              value={editedContent}
-              onChange={handleContentChange}
-              language={editorLanguage}
-              height={200}
-              className="border border-editor-border rounded flex-1"
-            />
+            <div className="flex-1 min-h-[120px]">
+              <SimpleEditor
+                value={editedContent}
+                onChange={handleContentChange}
+                language={editorLanguage}
+                height="100%"
+                className="border border-editor-border rounded h-full"
+              />
+            </div>
           </div>
         </div>
 
         {/* 底部操作栏 */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-editor-border bg-editor-sidebar">
+        <div className="flex items-center justify-between px-4 py-2 border-t border-editor-border bg-editor-sidebar flex-shrink-0">
           <div className="text-xs text-gray-500">
             {decodeResult.layers.length > 0 
               ? `${decodeResult.layers.length} 层解码` 
@@ -356,12 +373,34 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           </div>
         </div>
 
-        {/* 调整大小手柄 */}
+        {/* 右侧调整宽度手柄 */}
         <div
-          className="absolute bottom-0 right-0 w-4 h-full cursor-ew-resize z-10 flex items-center justify-end p-0.5 group/resize"
-          onMouseDown={handleResizeMouseDown}
+          className="absolute top-0 right-0 w-2 h-full cursor-ew-resize z-10 group/resize-w"
+          onMouseDown={(e) => handleResizeMouseDown(e, 'width')}
         >
-          <div className="w-1 h-8 bg-gray-600 rounded-full opacity-0 group-hover/resize:opacity-50 transition-opacity"></div>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-gray-600 rounded-full opacity-0 group-hover/resize-w:opacity-50 transition-opacity"></div>
+        </div>
+
+        {/* 底部调整高度手柄 */}
+        <div
+          className="absolute bottom-0 left-0 w-full h-2 cursor-ns-resize z-10 group/resize-h"
+          onMouseDown={(e) => handleResizeMouseDown(e, 'height')}
+        >
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 bg-gray-600 rounded-full opacity-0 group-hover/resize-h:opacity-50 transition-opacity"></div>
+        </div>
+
+        {/* 右下角同时调整宽高手柄 */}
+        <div
+          className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-20 group/resize-both"
+          onMouseDown={(e) => handleResizeMouseDown(e, 'both')}
+        >
+          <svg 
+            className="w-3 h-3 text-gray-600 opacity-0 group-hover/resize-both:opacity-70 transition-opacity absolute bottom-0.5 right-0.5" 
+            viewBox="0 0 24 24" 
+            fill="currentColor"
+          >
+            <path d="M22 22H20V20H22V22ZM22 18H20V16H22V18ZM18 22H16V20H18V22ZM22 14H20V12H22V14ZM18 18H16V16H18V18ZM14 22H12V20H14V22Z" />
+          </svg>
         </div>
     </div>
   );
