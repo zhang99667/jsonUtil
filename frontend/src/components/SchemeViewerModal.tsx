@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { SimpleEditor } from './SimpleEditor';
 import { 
   deepDecodeScheme, 
   encodeWithLayers, 
@@ -33,8 +34,16 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const [editedContent, setEditedContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
 
-  // 解析 scheme
+  // 解析 scheme（添加空值保护）
   const decodeResult = useMemo<SchemeDecodeResult>(() => {
+    if (!value) {
+      return {
+        original: '',
+        decoded: '',
+        layers: [],
+        isJson: false,
+      };
+    }
     return deepDecodeScheme(value);
   }, [value]);
 
@@ -43,8 +52,6 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     setEditedContent(decodeResult.decoded);
     setIsEditing(false);
   }, [decodeResult.decoded]);
-
-  if (!isOpen) return null;
 
   const handleCopy = async () => {
     try {
@@ -64,10 +71,22 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     onClose();
   };
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditedContent(e.target.value);
+  const handleContentChange = (value: string) => {
+    setEditedContent(value);
     setIsEditing(true);
   };
+  
+  // 自动检测语言
+  const editorLanguage = useMemo(() => {
+    if (decodeResult.isJson) return 'json';
+    // 尝试检测其他格式
+    const trimmed = editedContent.trim();
+    if (trimmed.startsWith('<')) return 'xml';
+    return 'plaintext';
+  }, [decodeResult.isJson, editedContent]);
+
+  // 早期返回必须在所有 hooks 之后
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -147,33 +166,37 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           {/* 原始值预览（折叠） */}
           <details className="bg-editor-sidebar rounded-lg">
             <summary className="px-3 py-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300">
-              原始值 ({value.length} 字符)
+              原始值 ({value?.length || 0} 字符)
             </summary>
             <div className="px-3 pb-3">
               <div className="bg-editor-bg rounded p-2 text-xs font-mono text-gray-400 break-all max-h-20 overflow-auto">
-                {value}
+                {value || '(空)'}
               </div>
             </div>
           </details>
 
-          {/* 解码结果（可编辑） */}
+          {/* 解码结果（可编辑，使用 SimpleEditor） */}
           <div className="bg-editor-sidebar rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-gray-400">
                 解码结果 
                 {isEditing && <span className="text-yellow-400 ml-2">· 已修改</span>}
               </div>
-              {decodeResult.isJson && (
-                <span className="text-xs bg-green-900/40 text-green-300 px-2 py-0.5 rounded">
-                  Valid JSON
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 font-mono uppercase">{editorLanguage}</span>
+                {decodeResult.isJson && (
+                  <span className="text-xs bg-green-900/40 text-green-300 px-2 py-0.5 rounded">
+                    Valid JSON
+                  </span>
+                )}
+              </div>
             </div>
-            <textarea
+            <SimpleEditor
               value={editedContent}
               onChange={handleContentChange}
-              className="w-full h-48 bg-editor-bg border border-editor-border rounded p-3 text-sm font-mono text-gray-200 resize-none focus:outline-none focus:border-brand-primary"
-              spellCheck={false}
+              language={editorLanguage}
+              height={256}
+              className="border border-editor-border rounded"
             />
           </div>
         </div>
