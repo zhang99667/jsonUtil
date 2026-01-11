@@ -24,6 +24,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
+      - "443:443"
+      - "443:443/udp"  # QUIC/HTTP3 需要 UDP
+    volumes:
+      - /www/server/panel/vhost/cert/39.97.237.248:/etc/nginx/ssl:ro
     depends_on:
       - app-backend
     networks:
