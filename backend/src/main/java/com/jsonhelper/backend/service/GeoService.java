@@ -19,8 +19,8 @@ public class GeoService {
     @PostConstruct
     public void init() {
         try {
-            // 从 classpath 加载 ip2region.xdb 数据文件
-            ClassPathResource resource = new ClassPathResource("ip2region.xdb");
+            // 从 classpath 加载 ip2region_v4.xdb 数据文件
+            ClassPathResource resource = new ClassPathResource("ip2region_v4.xdb");
             try (InputStream is = resource.getInputStream()) {
                 cBuff = is.readAllBytes();
                 searcher = Searcher.newWithBuffer(cBuff);

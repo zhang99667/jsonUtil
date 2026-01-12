@@ -22,9 +22,9 @@ ip2region 是一个离线IP地址定位库，需要下载 `ip2region.xdb` 数据
 
 ### 配置步骤
 
-1. 下载 `ip2region.xdb` 文件后，将其放置到以下目录：
+1. 下载 `ip2region.xdb` 文件后，将其**重命名为 `ip2region_v4.xdb`** 并放置到以下目录：
    ```
-   backend/src/main/resources/ip2region.xdb
+   backend/src/main/resources/ip2region_v4.xdb
    ```
 
 2. 重启后端服务，在日志中会看到：
