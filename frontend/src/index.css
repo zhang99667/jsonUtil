@@ -122,18 +122,40 @@
   left: 3px !important;
 }
 
+.dirty-diff-deleted {
+  /* Sublime 风格：半三角形指示删除位置 */
+  position: relative !important;
+  border-left: none !important;
+  width: 6px !important;
+  margin-left: 0px !important;
+  left: 3px !important;
+  overflow: visible !important;
+}
+
+/* 上半三角 - 位于行顶部 */
+.dirty-diff-deleted::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 6px solid #f92672;
+  border-top: 0 solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+/* 下半三角 - 位于行顶部，与上半三角组成完整箭头 */
 .dirty-diff-deleted::after {
   content: '';
   position: absolute;
-  left: 1px;
-  top: -5px;
-  /* 位于行间隙，表示此处有内容被删除 */
+  top: -6px;
+  left: 0;
   width: 0;
   height: 0;
-  border-left: 5px solid #f92672;
-  /* Sublime 红色箭头 */
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
+  border-left: 6px solid #f92672;
+  border-top: 6px solid transparent;
+  border-bottom: 0 solid transparent;
 }
 
 body {
