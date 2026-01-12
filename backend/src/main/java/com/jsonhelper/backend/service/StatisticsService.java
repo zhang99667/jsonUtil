@@ -32,9 +32,10 @@ public class StatisticsService {
         }
 
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        String trackingPath = "/api/visitor/ping";
-        long todayPv = visitLogRepository.countPvByPathSince(todayStart, trackingPath);
-        long todayUv = visitLogRepository.countUvByPathSince(todayStart, trackingPath);
+        LocalDateTime now = LocalDateTime.now();
+        // 统计全站流量，与TrafficService保持一致
+        long todayPv = visitLogRepository.countTotalPv(todayStart, now);
+        long todayUv = visitLogRepository.countTotalUv(todayStart, now);
 
         return StatisticsDTO.builder()
                 .totalUsers(totalUsers)
