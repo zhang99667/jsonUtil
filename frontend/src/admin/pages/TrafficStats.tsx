@@ -9,6 +9,7 @@ import {
     ClockCircleOutlined,
     EnvironmentOutlined
 } from '@ant-design/icons';
+import { Column, Bar } from '@ant-design/charts';
 import type { ColumnsType } from 'antd/es/table';
 import {
     getTrafficOverview,
@@ -130,11 +131,26 @@ const TrafficStats: React.FC = () => {
         },
     ];
 
-    // 计算趋势图的最大值
-    const maxPv = Math.max(...trend.map(t => t.pv), 1);
-    const maxUv = Math.max(...trend.map(t => t.uv), 1);
-    const maxHourly = Math.max(...hourlyStats.map(h => h.count), 1);
+    // 计算地区分布最大值（用于 Progress 百分比）
     const maxGeoCount = Math.max(...geoStats.map(g => g.count), 1);
+
+    // 每日趋势图数据转换（分组柱状图需要）
+    const trendChartData = trend.flatMap(item => [
+        { date: item.date.slice(5), type: 'PV', value: item.pv },
+        { date: item.date.slice(5), type: 'UV', value: item.uv },
+    ]);
+
+    // 24小时分布数据
+    const hourlyChartData = Array.from({ length: 24 }, (_, hour) => {
+        const item = hourlyStats.find(h => h.hour === hour);
+        return { hour: `${hour}:00`, count: item?.count || 0 };
+    });
+
+    // 地区分布条形图数据（取前10）
+    const geoBarData = geoStats.slice(0, 10).map(item => ({
+        region: item.region,
+        count: item.count,
+    })).reverse(); // 反转让最高的在上面
 
     // 地区分布表格列配置
     const geoColumns: ColumnsType<GeoStatsItem> = [
@@ -283,48 +299,26 @@ const TrafficStats: React.FC = () => {
                 title="每日访问趋势" 
                 bordered={false} 
                 style={{ marginTop: 16 }}
-                extra={
-                    <span>
-                        <span style={{ marginRight: 16 }}><span style={{ color: '#1890ff' }}>●</span> PV</span>
-                        <span><span style={{ color: '#52c41a' }}>●</span> UV</span>
-                    </span>
-                }
             >
-                <div style={{ overflowX: 'auto' }}>
-                    <div style={{ minWidth: trend.length * 80, display: 'flex', alignItems: 'flex-end', height: 200, gap: 8 }}>
-                        {trend.map((item, index) => (
-                            <div key={index} style={{ flex: 1, minWidth: 60, textAlign: 'center' }}>
-                                <Tooltip title={`PV: ${item.pv.toLocaleString()} | UV: ${item.uv.toLocaleString()}`}>
-                                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center', alignItems: 'flex-end', height: 160 }}>
-                                        <div
-                                            style={{
-                                                width: 20,
-                                                height: `${(item.pv / maxPv) * 100}%`,
-                                                minHeight: 4,
-                                                backgroundColor: '#1890ff',
-                                                borderRadius: '4px 4px 0 0',
-                                                transition: 'height 0.3s',
-                                            }}
-                                        />
-                                        <div
-                                            style={{
-                                                width: 20,
-                                                height: `${(item.uv / maxUv) * 100}%`,
-                                                minHeight: 4,
-                                                backgroundColor: '#52c41a',
-                                                borderRadius: '4px 4px 0 0',
-                                                transition: 'height 0.3s',
-                                            }}
-                                        />
-                                    </div>
-                                </Tooltip>
-                                <div style={{ fontSize: 12, color: '#666', marginTop: 8, transform: 'rotate(-45deg)', whiteSpace: 'nowrap' }}>
-                                    {item.date.slice(5)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <Column
+                    data={trendChartData}
+                    xField="date"
+                    yField="value"
+                    colorField="type"
+                    group={true}
+                    height={250}
+                    style={{ maxWidth: 4 }}
+                    scale={{ color: { range: ['#1890ff', '#52c41a'] } }}
+                    axis={{
+                        x: { title: false },
+                        y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
+                    }}
+                    legend={{ position: 'top-right' }}
+                    tooltip={{
+                        title: (d: { date: string }) => d.date,
+                        items: [{ channel: 'y', valueFormatter: (v: number) => v.toLocaleString() }],
+                    }}
+                />
             </Card>
 
             {/* 地区分布 */}
@@ -344,50 +338,33 @@ const TrafficStats: React.FC = () => {
                         />
                     </Col>
                     <Col xs={24} lg={12}>
-                        {/* 简单条形图 */}
-                        <div style={{ padding: '0 16px' }}>
-                            {geoStats.slice(0, 10).map((item, index) => (
-                                <Tooltip key={item.region} title={`${item.region}: ${item.count.toLocaleString()}次 (${item.percentage}%)`}>
-                                    <div style={{ marginBottom: 12 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                            <span style={{ 
-                                                fontSize: 13,
-                                                fontWeight: index < 3 ? 'bold' : 'normal',
-                                                color: index === 0 ? '#f5222d' : index === 1 ? '#fa8c16' : index === 2 ? '#faad14' : 'inherit'
-                                            }}>
-                                                {item.region}
-                                            </span>
-                                            <span style={{ fontSize: 12, color: '#666' }}>
-                                                {item.count.toLocaleString()}
-                                            </span>
-                                        </div>
-                                        <div 
-                                            style={{ 
-                                                height: 8, 
-                                                backgroundColor: '#f0f0f0', 
-                                                borderRadius: 4,
-                                                overflow: 'hidden'
-                                            }}
-                                        >
-                                            <div 
-                                                style={{ 
-                                                    width: `${(item.count / maxGeoCount) * 100}%`,
-                                                    height: '100%',
-                                                    backgroundColor: index === 0 ? '#f5222d' : index === 1 ? '#fa8c16' : index === 2 ? '#faad14' : '#1890ff',
-                                                    borderRadius: 4,
-                                                    transition: 'width 0.3s'
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </Tooltip>
-                            ))}
-                            {geoStats.length === 0 && (
-                                <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
-                                    暂无地区数据
-                                </div>
-                            )}
-                        </div>
+                        {geoBarData.length > 0 ? (
+                            <Bar
+                                data={geoBarData}
+                                xField="count"
+                                yField="region"
+                                height={300}
+                                colorField="region"
+                                legend={false}
+                                axis={{
+                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
+                                    y: { title: false },
+                                }}
+                                label={{
+                                    text: (d: { count: number }) => d.count.toLocaleString(),
+                                    position: 'right',
+                                    style: { fill: '#666' },
+                                }}
+                                tooltip={{
+                                    title: (d: { region: string }) => d.region,
+                                    items: [{ channel: 'x', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
+                                }}
+                            />
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
+                                暂无地区数据
+                            </div>
+                        )}
                     </Col>
                 </Row>
             </Card>
@@ -430,33 +407,21 @@ const TrafficStats: React.FC = () => {
                 bordered={false} 
                 style={{ marginTop: 16 }}
             >
-                <div style={{ display: 'flex', alignItems: 'flex-end', height: 120, gap: 4 }}>
-                    {Array.from({ length: 24 }, (_, hour) => {
-                        const item = hourlyStats.find(h => h.hour === hour);
-                        const count = item?.count || 0;
-                        const percentage = (count / maxHourly) * 100;
-                        return (
-                            <Tooltip key={hour} title={`${hour}:00 - ${hour + 1}:00: ${count.toLocaleString()}次`}>
-                                <div style={{ flex: 1, textAlign: 'center' }}>
-                                    <div
-                                        style={{
-                                            height: `${Math.max(percentage, 4)}%`,
-                                            minHeight: 4,
-                                            backgroundColor: '#1890ff',
-                                            borderRadius: '2px 2px 0 0',
-                                            transition: 'height 0.3s',
-                                            margin: '0 auto',
-                                            width: '80%',
-                                        }}
-                                    />
-                                    <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>
-                                        {hour}
-                                    </div>
-                                </div>
-                            </Tooltip>
-                        );
-                    })}
-                </div>
+                <Column
+                    data={hourlyChartData}
+                    xField="hour"
+                    yField="count"
+                    height={180}
+                    color="#1890ff"
+                    axis={{
+                        x: { title: false, labelAutoRotate: false },
+                        y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
+                    }}
+                    tooltip={{
+                        title: (d: { hour: string }) => `${d.hour} - ${parseInt(d.hour) + 1}:00`,
+                        items: [{ channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
+                    }}
+                />
             </Card>
         </div>
     );
