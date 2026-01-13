@@ -36,10 +36,12 @@ request.interceptors.response.use(
     (error) => {
         if (error.response) {
             const { status, data } = error.response;
-            if (status === 401) {
+            // 401 未认证 或 403 禁止访问（token 过期/无效也会返回 403）
+            if (status === 401 || status === 403) {
                 localStorage.removeItem('token');
-                // Optional: Redirect to login or dispatch clearer action
+                message.error('登录已过期，请重新登录');
                 window.location.href = '/admin.html';
+                return Promise.reject(error);
             }
             message.error(data.message || '请求错误');
         } else {
