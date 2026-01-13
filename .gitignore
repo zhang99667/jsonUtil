@@ -35,3 +35,5 @@ target/
 .env.local
 .env.*.local
 
+# Docker 本地覆盖配置（如有）
+docker-compose.override.yml
