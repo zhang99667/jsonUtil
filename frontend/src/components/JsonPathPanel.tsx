@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { JSONPath } from 'jsonpath-plus';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
+import { DraggablePanel, PanelIcons } from './DraggablePanel';
 
 interface JsonPathPanelProps {
     jsonData: string;
     isOpen: boolean;
     onClose: () => void;
-    onQueryResult: (query: string, resultIndex: number) => void; // 修改：添加 resultIndex 参数
+    onQueryResult: (query: string, resultIndex: number) => void;
 }
 
 export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, onClose, onQueryResult }) => {
@@ -18,39 +19,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         return saved ? JSON.parse(saved) : [];
     });
 
-    // 新增：查询结果状态
+    // 查询结果状态
     const [queryResults, setQueryResults] = useState<any[]>([]);
     const [currentResultIndex, setCurrentResultIndex] = useState<number>(0);
     const [totalResults, setTotalResults] = useState<number>(0);
-
-    // 拖动相关状态
-    const [position, setPosition] = useState(() => {
-        try {
-            const saved = localStorage.getItem('jsonpath-panel-position');
-            return saved ? JSON.parse(saved) : { x: 100, y: 100 };
-        } catch (e) {
-            return { x: 100, y: 100 };
-        }
-    });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-
-    // 调整大小相关状态
-    const [size, setSize] = useState(() => {
-        try {
-            const saved = localStorage.getItem('jsonpath-panel-size');
-            return saved ? JSON.parse(saved) : { width: 600, height: 400 };
-        } catch (e) {
-            return { width: 600, height: 400 };
-        }
-    });
-    const [isResizing, setIsResizing] = useState(false);
-    const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
-
-
-    const [startSize, setStartSize] = useState({ width: 0, height: 0 });
-
-    const panelRef = useRef<HTMLDivElement>(null);
 
     // 自定义滚动条 Hook
     const {
@@ -60,7 +32,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         thumbSize: thumbHeight,
         thumbOffset: thumbTop,
         showScrollbar,
-        isDragging: isScrollbarDragging
     } = useCustomScrollbar('vertical', history.length);
 
     // 功能级引导
@@ -75,82 +46,17 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         }
     }, [isOpen, triggerFeatureFirstUse]);
 
-    // 监听位置和大小变化，同步刷新引导位置
+    // 监听面板打开时刷新引导位置
     useEffect(() => {
         if (isOpen) {
             refreshTour();
         }
-    }, [position, size, isOpen, refreshTour]);
+    }, [isOpen, refreshTour]);
 
     // 保存历史记录到 localStorage
     useEffect(() => {
         localStorage.setItem('jsonpath-query-history', JSON.stringify(history));
     }, [history]);
-
-    // 保存位置到 localStorage
-    useEffect(() => {
-        localStorage.setItem('jsonpath-panel-position', JSON.stringify(position));
-    }, [position]);
-
-    // 保存大小到 localStorage
-    useEffect(() => {
-        localStorage.setItem('jsonpath-panel-size', JSON.stringify(size));
-    }, [size]);
-
-    // 处理拖动和调整大小
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isDragging) {
-                setPosition({
-                    x: e.clientX - dragStart.x,
-                    y: e.clientY - dragStart.y
-                });
-            } else if (isResizing) {
-                const deltaX = e.clientX - resizeStart.x;
-
-                setSize(prev => ({
-                    ...prev,
-                    width: Math.max(400, startSize.width + deltaX) // 最小宽度 400
-                }));
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsDragging(false);
-            setIsResizing(false);
-        };
-
-        if (isDragging || isResizing) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, dragStart, isResizing, resizeStart, startSize]);
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        // 防止在调整大小时触发拖动
-        if (isResizing) return;
-
-        if (panelRef.current) {
-            const rect = panelRef.current.getBoundingClientRect();
-            setDragStart({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            });
-            setIsDragging(true);
-        }
-    };
-
-    const handleResizeMouseDown = (e: React.MouseEvent) => {
-        e.stopPropagation(); // 防止冒泡触发拖动
-        setResizeStart({ x: e.clientX, y: e.clientY });
-        setStartSize({ width: size.width, height: size.height });
-        setIsResizing(true);
-    };
 
     const handleQuery = () => {
         setError('');
@@ -245,43 +151,19 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         localStorage.removeItem('jsonpath-query-history');
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div
-            ref={panelRef}
-            data-tour="jsonpath-panel"
-            className="fixed bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden"
-            style={{
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                width: `${size.width}px`,
-                height: `${size.height}px`,
-                cursor: isDragging ? 'grabbing' : 'default'
-            }}
+        <DraggablePanel
+            isOpen={isOpen}
+            onClose={onClose}
+            title="JSONPath 查询"
+            icon={PanelIcons.Search}
+            storageKey="jsonpath-panel"
+            defaultPosition={{ x: 100, y: 100 }}
+            defaultSize={{ width: 600, height: 400 }}
+            minSize={{ width: 400, height: 300 }}
+            resizeDirections={['width']}
+            dataTour="jsonpath-panel"
         >
-            {/* Header - 可拖动 */}
-            <div
-                className="flex items-center justify-between px-4 py-2 bg-editor-sidebar border-b border-editor-border rounded-t-lg cursor-grab active:cursor-grabbing"
-                onMouseDown={handleMouseDown}
-            >
-                <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <span className="text-sm font-semibold text-gray-200">JSONPath 查询</span>
-                </div>
-                <button
-                    onClick={onClose}
-                    className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-editor-hover"
-                    title="关闭"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
             {/* 面板内容 */}
             <div className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden">
                 {/* 查询输入框 */}
@@ -428,15 +310,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                     查询结果将显示在右侧 PREVIEW 编辑器中
                 </div>
             </div>
-
-
-            {/* 调整大小手柄 */}
-            <div
-                className="absolute bottom-0 right-0 w-4 h-full cursor-ew-resize z-10 flex items-center justify-end p-0.5 group/resize"
-                onMouseDown={handleResizeMouseDown}
-            >
-                <div className="w-1 h-8 bg-gray-600 rounded-full opacity-0 group-hover/resize:opacity-50 transition-opacity"></div>
-            </div>
-        </div >
+        </DraggablePanel>
     );
 };
