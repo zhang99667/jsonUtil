@@ -84,6 +84,20 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
 
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // ESC 键关闭面板
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // 保存位置到 localStorage
   useEffect(() => {
     localStorage.setItem(`${storageKey}-position`, JSON.stringify(position));
