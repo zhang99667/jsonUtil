@@ -13,6 +13,7 @@ interface ActionPanelProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onToggleJsonPath: () => void;
+  onToggleSchemeDecode: () => void;
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
@@ -23,7 +24,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onOpenSettings,
   isCollapsed,
   onToggleCollapse,
-  onToggleJsonPath
+  onToggleJsonPath,
+  onToggleSchemeDecode
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollState, setScrollState] = useState({ scrollTop: 0, scrollHeight: 0, clientHeight: 0 });
@@ -242,10 +244,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
         <div className="flex-1"></div>
 
-        {/* 工具组：JSONPath 查询 */}
+        {/* 工具组：查询与解析工具 */}
         {!isCollapsed && (
           <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
-            查询工具
+            查询 / 解析
           </div>
         )}
         <div className="mb-4">
@@ -261,6 +263,19 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               </svg>
             </div>
             {!isCollapsed && <span>JSONPath 查询</span>}
+          </button>
+          
+          <button
+            onClick={onToggleSchemeDecode}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
+            title={isCollapsed ? "Scheme 解析" : undefined}
+          >
+            <div className="transition-colors text-gray-500 group-hover:text-emerald-400">
+              <svg className="w-5 h-5 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </div>
+            {!isCollapsed && <span>Scheme 解析</span>}
           </button>
         </div>
 

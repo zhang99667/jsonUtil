@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { SimpleEditor } from './SimpleEditor';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
+import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { 
   deepDecodeScheme, 
   encodeWithLayers, 
@@ -11,9 +12,10 @@ import {
 interface SchemeViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  path: string;           // JSON Path，如 "$.action_cmd"
-  value: string;          // 原始 scheme 字符串
+  path?: string;           // JSON Path，如 "$.action_cmd"（独立模式下可选）
+  value?: string;          // 原始 scheme 字符串（独立模式下可选）
   onApply?: (newValue: string) => void;  // 应用修改后的值
+  standalone?: boolean;    // 是否为独立模式（侧边栏打开，可手动输入）
 }
 
 const schemeTypeLabels: Record<SchemeType, string> = {
@@ -31,13 +33,30 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   path,
   value,
   onApply,
+  standalone = false,
 }) => {
   const [editedContent, setEditedContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
+  
+  // 独立模式下的输入值
+  const [standaloneInput, setStandaloneInput] = useState<string>('');
+  
+  // 实际使用的原始值：独立模式用输入值，否则用 prop 传入的值
+  const actualValue = standalone ? standaloneInput : (value || '');
+
+  // 自定义滚动条 Hook
+  const {
+    scrollContainerRef,
+    handleScroll,
+    handleMouseDown: handleScrollbarMouseDown,
+    thumbSize: thumbHeight,
+    thumbOffset: thumbTop,
+    showScrollbar,
+  } = useCustomScrollbar('vertical', actualValue);
 
   // 解析 scheme（添加空值保护）
   const decodeResult = useMemo<SchemeDecodeResult>(() => {
-    if (!value) {
+    if (!actualValue) {
       return {
         original: '',
         decoded: '',
@@ -45,14 +64,22 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         isJson: false,
       };
     }
-    return deepDecodeScheme(value);
-  }, [value]);
+    return deepDecodeScheme(actualValue);
+  }, [actualValue]);
 
   // 初始化编辑内容
   useEffect(() => {
     setEditedContent(decodeResult.decoded);
     setIsEditing(false);
   }, [decodeResult.decoded]);
+
+  // 独立模式打开时清空之前的输入
+  useEffect(() => {
+    if (isOpen && standalone) {
+      // 可以选择保留上次输入或清空
+      // setStandaloneInput('');
+    }
+  }, [isOpen, standalone]);
 
   const handleCopy = async () => {
     try {
@@ -86,15 +113,15 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     return 'plaintext';
   }, [decodeResult.isJson, editedContent]);
 
-  // 头部额外内容：path 标签
-  const headerExtra = (
+  // 头部额外内容：非独立模式显示 path 标签
+  const headerExtra = !standalone && path ? (
     <span 
       className="text-xs text-gray-400 font-mono bg-editor-active px-2 py-0.5 rounded truncate max-w-[200px]" 
       title={path}
     >
       {path}
     </span>
-  );
+  ) : null;
 
   // 底部操作栏
   const footer = (
@@ -102,23 +129,24 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       <div className="text-xs text-gray-500">
         {decodeResult.layers.length > 0 
           ? `${decodeResult.layers.length} 层解码` 
-          : '无需解码'}
+          : actualValue ? '无需解码' : '请输入待解码内容'}
       </div>
       <div className="flex items-center gap-2">
         <button
           onClick={onClose}
           className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
         >
-          取消
+          关闭
         </button>
         <button
           onClick={handleCopy}
-          className="px-3 py-1.5 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1"
+          disabled={!editedContent}
+          className="px-3 py-1.5 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
-          复制
+          复制解码结果
         </button>
         {onApply && isEditing && (
           <button
@@ -149,7 +177,40 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       footer={footer}
     >
       {/* 内容区域 */}
-      <div className="flex-1 flex flex-col p-2 gap-2 bg-editor-bg min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 relative group/content">
+        <div 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 flex flex-col p-2 gap-2 bg-editor-bg min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden"
+        >
+          {/* 独立模式：输入区域 */}
+          {standalone && (
+            <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border">
+              <div className="text-xs text-gray-400 mb-2 font-medium flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                输入原始值
+              </div>
+              <textarea
+                value={standaloneInput}
+                onChange={(e) => setStandaloneInput(e.target.value)}
+                placeholder="粘贴需要解码的 Scheme、URL、Base64、JWT 等内容..."
+                className="w-full h-24 bg-editor-bg text-gray-200 text-sm px-3 py-2 rounded border border-editor-border focus:border-emerald-500 focus:outline-none font-mono resize-none"
+              />
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-gray-500">{standaloneInput.length} 字符</span>
+                <button
+                  onClick={() => setStandaloneInput('')}
+                  disabled={!standaloneInput}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  清空
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Scheme 信息 */}
           {decodeResult.schemeInfo && (
             <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border">
@@ -204,24 +265,27 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             </div>
           )}
 
-          {/* 原始值预览（折叠） */}
-          <details className="bg-editor-sidebar rounded-lg border border-editor-border">
-            <summary className="px-3 py-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300 font-medium flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              原始值 <span className="text-gray-500 font-normal">({value?.length || 0} 字符)</span>
-            </summary>
-            <div className="px-3 pb-3">
-              <div className="bg-editor-bg rounded p-2.5 text-xs font-mono text-gray-400 break-all max-h-24 overflow-auto border border-editor-border">
-                {value || '(空)'}
+          {/* 原始值预览（非独立模式下折叠显示） */}
+          {!standalone && (
+            <details className="bg-editor-sidebar rounded-lg border border-editor-border">
+              <summary className="px-3 py-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300 font-medium flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                原始值 <span className="text-gray-500 font-normal">({actualValue?.length || 0} 字符)</span>
+              </summary>
+              <div className="px-3 pb-3">
+                <div className="bg-editor-bg rounded p-2.5 text-xs font-mono text-gray-400 break-all max-h-24 overflow-auto border border-editor-border">
+                  {actualValue || '(空)'}
+                </div>
               </div>
-            </div>
-          </details>
+            </details>
+          )}
 
           {/* 解码结果（可编辑，使用 SimpleEditor） - 自适应剩余高度 */}
-          <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border flex-1 flex flex-col min-h-0">
+          {/* 外层最小高度 = 编辑器80px + 标题栏约28px + padding 24px ≈ 132px，取140px */}
+          <div className="bg-editor-sidebar rounded-lg p-3 border border-editor-border flex-1 flex flex-col min-h-[140px]">
             <div className="flex items-center justify-between mb-2 flex-shrink-0">
               <div className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,17 +303,38 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 )}
               </div>
             </div>
-            <div className="flex-1 min-h-[120px]">
-              <SimpleEditor
-                value={editedContent}
-                onChange={handleContentChange}
-                language={editorLanguage}
-                height="100%"
-                className="border border-editor-border rounded h-full"
-              />
+            <div className="flex-1 min-h-[80px]">
+              {actualValue ? (
+                <SimpleEditor
+                  value={editedContent}
+                  onChange={handleContentChange}
+                  language={editorLanguage}
+                  height="100%"
+                  className="border border-editor-border rounded h-full"
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500 text-sm border border-editor-border rounded bg-editor-bg">
+                  {standalone ? '请在上方输入待解码的内容' : '无内容'}
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* 自定义滚动条 */}
+        {showScrollbar && (
+          <div className="absolute right-0 top-0 bottom-0 w-[6px] z-10 opacity-0 group-hover/content:opacity-100 transition-opacity duration-200">
+            <div
+              className="w-full bg-scrollbar-bg hover:bg-scrollbar-hover rounded-full cursor-pointer relative"
+              style={{
+                height: `${thumbHeight}%`,
+                top: `${thumbTop}%`
+              }}
+              onMouseDown={handleScrollbarMouseDown}
+            />
+          </div>
+        )}
+      </div>
     </DraggablePanel>
   );
 };

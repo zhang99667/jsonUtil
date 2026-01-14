@@ -4,6 +4,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
 import { JsonPathPanel } from './components/JsonPathPanel';
+import { SchemeViewerModal } from './components/SchemeViewerModal';
 import {
   validateJson,
   performTransform,
@@ -134,6 +135,7 @@ const App: React.FC = () => {
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
+  const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
 
   // 使用 react-hot-toast 替代自定义 toast
@@ -513,6 +515,7 @@ const App: React.FC = () => {
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             onToggleJsonPath={() => setIsJsonPathPanelOpen(!isJsonPathPanelOpen)}
+            onToggleSchemeDecode={() => setIsSchemeDecodeOpen(!isSchemeDecodeOpen)}
           />
         </div>
 
@@ -656,6 +659,13 @@ const App: React.FC = () => {
             setHighlightRange(null); // 关闭时清除高亮
           }}
           onQueryResult={handleJsonPathQuery}
+        />
+
+        {/* Scheme 解析面板（独立模式） */}
+        <SchemeViewerModal
+          isOpen={isSchemeDecodeOpen}
+          onClose={() => setIsSchemeDecodeOpen(false)}
+          standalone={true}
         />
 
         {/* 拖拽遮罩层（防止 iframe/webview 捕获事件） */}
