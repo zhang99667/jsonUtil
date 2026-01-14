@@ -216,16 +216,18 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         className="flex items-center justify-between px-4 py-2 bg-editor-sidebar border-b border-editor-border rounded-t-lg cursor-grab active:cursor-grabbing flex-shrink-0"
         onMouseDown={handleMouseDown}
       >
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🔗</span>
-            <span className="text-white font-medium">Scheme 解析</span>
-            <span className="text-xs text-gray-400 font-mono bg-editor-active px-2 py-0.5 rounded">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span className="text-white font-medium flex-shrink-0">Scheme 解析</span>
+            <span className="text-xs text-gray-400 font-mono bg-editor-active px-2 py-0.5 rounded truncate max-w-[200px]" title={path}>
               {path}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-editor-active"
+            className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-editor-active flex-shrink-0 ml-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
