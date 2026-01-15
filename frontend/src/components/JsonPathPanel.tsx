@@ -53,6 +53,25 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         }
     }, [isOpen, refreshTour]);
 
+    // ESC 关闭面板（仅当焦点在面板内时）
+    useEffect(() => {
+        const handleEscKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                // 查找面板 DOM 元素
+                const panelElement = document.querySelector('[data-tour="jsonpath-panel"]');
+                // 检查焦点是否在面板内部
+                if (panelElement && panelElement.contains(document.activeElement)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClose();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleEscKey);
+        return () => document.removeEventListener('keydown', handleEscKey);
+    }, [isOpen, onClose]);
+
     // 保存历史记录到 localStorage
     useEffect(() => {
         localStorage.setItem('jsonpath-query-history', JSON.stringify(history));
