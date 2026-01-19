@@ -33,6 +33,7 @@ public class TrafficFilter extends OncePerRequestFilter {
                 log.setPath(path);
                 log.setMethod(request.getMethod());
                 log.setUserAgent(getUserAgent(request));
+                log.setReferer(getReferer(request));
                 visitLogRepository.save(log);
             } catch (Exception e) {
                 // Log and swallow to prevent request failure
@@ -67,5 +68,13 @@ public class TrafficFilter extends OncePerRequestFilter {
             ua = ua.substring(0, 512);
         }
         return ua;
+    }
+
+    private String getReferer(HttpServletRequest request) {
+        String referer = request.getHeader("Referer");
+        if (referer != null && referer.length() > 1024) {
+            referer = referer.substring(0, 1024);
+        }
+        return referer;
     }
 }

@@ -51,6 +51,21 @@ export interface DeviceStatsItem {
     percentage: number;
 }
 
+// 来源统计接口
+export interface RefererStatsItem {
+    source: string;
+    domain: string | null;
+    count: number;
+    percentage: number;
+}
+
+// 会话时长统计接口
+export interface SessionStatsItem {
+    durationRange: string;
+    count: number;
+    percentage: number;
+}
+
 // 获取流量概览
 export const getTrafficOverview = async (days: number): Promise<TrafficOverview> => {
     return request.get('/admin/traffic/overview', { params: { days } });
@@ -89,4 +104,14 @@ export const getDeviceDistribution = async (days: number, limit: number = 10): P
 // 获取浏览器分布
 export const getBrowserDistribution = async (days: number, limit: number = 10): Promise<DeviceStatsItem[]> => {
     return request.get('/admin/traffic/browser-distribution', { params: { days, limit } });
+};
+
+// 获取来源分布
+export const getRefererDistribution = async (days: number, limit: number = 10): Promise<RefererStatsItem[]> => {
+    return request.get('/admin/traffic/referer-distribution', { params: { days, limit } });
+};
+
+// 获取停留时长分布
+export const getSessionDuration = async (days: number): Promise<SessionStatsItem[]> => {
+    return request.get('/admin/traffic/session-duration', { params: { days } });
 };

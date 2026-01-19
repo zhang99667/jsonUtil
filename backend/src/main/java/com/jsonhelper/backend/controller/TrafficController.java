@@ -111,4 +111,28 @@ public class TrafficController {
         List<DeviceStatsDTO> browserStats = trafficService.getBrowserDistribution(days, limit);
         return Result.success(browserStats);
     }
+
+    /**
+     * 获取来源分布统计
+     * @param days 统计天数，默认7天
+     * @param limit 返回条数，默认10条
+     */
+    @GetMapping("/referer-distribution")
+    public Result<List<RefererStatsDTO>> getRefererDistribution(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(defaultValue = "10") int limit) {
+        List<RefererStatsDTO> refererStats = trafficService.getRefererDistribution(days, limit);
+        return Result.success(refererStats);
+    }
+
+    /**
+     * 获取停留时长分布统计
+     * @param days 统计天数，默认7天
+     */
+    @GetMapping("/session-duration")
+    public Result<List<SessionStatsDTO>> getSessionDuration(
+            @RequestParam(defaultValue = "7") int days) {
+        List<SessionStatsDTO> sessionStats = trafficService.getSessionDurationStats(days);
+        return Result.success(sessionStats);
+    }
 }
