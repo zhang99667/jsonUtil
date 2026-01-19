@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Row, Col, Card, Statistic, Spin, Table, Segmented, Progress, Tooltip } from 'antd';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Row, Col, Card, Statistic, Spin, Table, Segmented, Progress, Tooltip, Typography, Tag } from 'antd';
 import { 
     EyeOutlined, 
     TeamOutlined, 
@@ -7,8 +7,11 @@ import {
     GlobalOutlined,
     LinkOutlined,
     ClockCircleOutlined,
-    EnvironmentOutlined
+    EnvironmentOutlined,
+    BarChartOutlined
 } from '@ant-design/icons';
+
+const { Title } = Typography;
 import { Column, Bar } from '@ant-design/charts';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -27,7 +30,7 @@ import {
 } from '../services/traffic';
 
 const TrafficStats: React.FC = () => {
-    const [days, setDays] = useState<number>(7);
+    const [days, setDays] = useState<number>(1); // 默认今日
     const [loading, setLoading] = useState(true);
     const [overview, setOverview] = useState<TrafficOverview | null>(null);
     const [trend, setTrend] = useState<TrendItem[]>([]);
@@ -35,6 +38,9 @@ const TrafficStats: React.FC = () => {
     const [topPaths, setTopPaths] = useState<TopPathItem[]>([]);
     const [hourlyStats, setHourlyStats] = useState<HourlyItem[]>([]);
     const [geoStats, setGeoStats] = useState<GeoStatsItem[]>([]);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const isToday = days === 1;
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
@@ -62,7 +68,16 @@ const TrafficStats: React.FC = () => {
 
     useEffect(() => {
         fetchAllData();
-    }, [fetchAllData]);
+        // 今日模式：每5分钟自动刷新
+        if (isToday) {
+            intervalRef.current = setInterval(fetchAllData, 5 * 60 * 1000);
+        }
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, [fetchAllData, isToday]);
 
     // IP排行表格列配置
     const ipColumns: ColumnsType<TopIpItem> = [
@@ -214,12 +229,39 @@ const TrafficStats: React.FC = () => {
         );
     }
 
+    // 获取当前时间
+    const currentHour = new Date().getHours();
+    const todayStr = new Date().toLocaleDateString('zh-CN', {
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short'
+    });
+
+    // 今日模式下高亮当前时段
+    const hourlyChartDataWithHighlight = hourlyChartData.map(item => ({
+        ...item,
+        isCurrent: isToday && parseInt(item.hour) === currentHour
+    }));
+
     return (
         <div>
-            {/* 时间范围切换 */}
-            <div style={{ marginBottom: 24 }}>
+            {/* 页面标题 */}
+            <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <BarChartOutlined />
+                        流量统计
+                    </Title>
+                    {isToday && (
+                        <>
+                            <span style={{ color: '#666', fontSize: 14 }}>{todayStr}</span>
+                            <Tag color="blue">实时 · 5分钟刷新</Tag>
+                        </>
+                    )}
+                </div>
                 <Segmented
                     options={[
+                        { label: '今日', value: 1 },
                         { label: '近7天', value: 7 },
                         { label: '近30天', value: 30 },
                     ]}
@@ -228,67 +270,51 @@ const TrafficStats: React.FC = () => {
                 />
             </div>
 
-            {/* 概览数据卡片 */}
+            {/* 概览数据卡片 - 根据时间范围显示不同指标 */}
             <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12} md={8} lg={4}>
-                    <Card bordered={false} size="small">
+                <Col xs={24} sm={12} md={6}>
+                    <Card bordered={false}>
                         <Statistic
-                            title="总浏览量(PV)"
-                            value={overview?.totalPv || 0}
+                            title={isToday ? '今日浏览量 (PV)' : `${days}天总浏览量`}
+                            value={isToday ? (overview?.todayPv || 0) : (overview?.totalPv || 0)}
                             prefix={<EyeOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
+                            valueStyle={{ color: '#1890ff', fontSize: 28 }}
                         />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} md={8} lg={4}>
-                    <Card bordered={false} size="small">
+                <Col xs={24} sm={12} md={6}>
+                    <Card bordered={false}>
                         <Statistic
-                            title="总访客数(UV)"
-                            value={overview?.totalUv || 0}
+                            title={isToday ? '今日访客数 (UV)' : `${days}天总访客数`}
+                            value={isToday ? (overview?.todayUv || 0) : (overview?.totalUv || 0)}
                             prefix={<TeamOutlined />}
-                            valueStyle={{ color: '#52c41a' }}
+                            valueStyle={{ color: '#52c41a', fontSize: 28 }}
                         />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} md={8} lg={4}>
-                    <Card bordered={false} size="small">
+                <Col xs={24} sm={12} md={6}>
+                    <Card bordered={false}>
                         <Statistic
-                            title="今日PV"
-                            value={overview?.todayPv || 0}
-                            prefix={<EyeOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={8} lg={4}>
-                    <Card bordered={false} size="small">
-                        <Statistic
-                            title="今日UV"
-                            value={overview?.todayUv || 0}
-                            prefix={<TeamOutlined />}
-                            valueStyle={{ color: '#52c41a' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={8} lg={4}>
-                    <Card bordered={false} size="small">
-                        <Statistic
-                            title="日均PV"
-                            value={overview?.avgDailyPv || 0}
+                            title={isToday ? '人均浏览页数' : '日均PV'}
+                            value={isToday 
+                                ? (overview?.todayUv ? (overview.todayPv / overview.todayUv).toFixed(1) : 0)
+                                : (overview?.avgDailyPv || 0)
+                            }
                             prefix={<RiseOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
-                            precision={0}
+                            valueStyle={{ color: '#722ed1', fontSize: 28 }}
+                            suffix={isToday ? '页' : undefined}
+                            precision={isToday ? undefined : 0}
                         />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} md={8} lg={4}>
-                    <Card bordered={false} size="small">
+                <Col xs={24} sm={12} md={6}>
+                    <Card bordered={false}>
                         <Statistic
-                            title="日均UV"
-                            value={overview?.avgDailyUv || 0}
-                            prefix={<RiseOutlined />}
-                            valueStyle={{ color: '#52c41a' }}
-                            precision={0}
+                            title={isToday ? '独立IP数' : '日均UV'}
+                            value={isToday ? topIps.length : (overview?.avgDailyUv || 0)}
+                            prefix={<GlobalOutlined />}
+                            valueStyle={{ color: '#fa8c16', fontSize: 28 }}
+                            precision={isToday ? undefined : 0}
                         />
                     </Card>
                 </Col>
@@ -404,17 +430,27 @@ const TrafficStats: React.FC = () => {
 
             {/* 24小时访问分布 */}
             <Card 
-                title={<><ClockCircleOutlined style={{ marginRight: 8 }} />24小时访问分布</>}
+                title={
+                    <span>
+                        <ClockCircleOutlined style={{ marginRight: 8 }} />
+                        24小时访问分布
+                        {isToday && (
+                            <span style={{ fontWeight: 'normal', fontSize: 12, color: '#999', marginLeft: 12 }}>
+                                当前时段: {currentHour}:00 - {currentHour + 1}:00
+                            </span>
+                        )}
+                    </span>
+                }
                 bordered={false} 
                 style={{ marginTop: 16 }}
             >
                 <Column
-                    data={hourlyChartData}
+                    data={hourlyChartDataWithHighlight}
                     xField="hour"
                     yField="count"
                     height={180}
-                    color="#1890ff"
                     style={{ maxWidth: 24, minWidth: 8 }}
+                    color={(datum: { isCurrent: boolean }) => datum.isCurrent ? '#f5222d' : '#1890ff'}
                     axis={{
                         x: { title: false, labelAutoRotate: false },
                         y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
