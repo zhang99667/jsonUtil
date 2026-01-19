@@ -15,6 +15,9 @@ public class VisitLog {
     private String ip;
     private String path;
     private String method;
+    
+    @Column(name = "user_agent", length = 512)
+    private String userAgent;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

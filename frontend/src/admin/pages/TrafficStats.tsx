@@ -8,7 +8,9 @@ import {
     LinkOutlined,
     ClockCircleOutlined,
     EnvironmentOutlined,
-    BarChartOutlined
+    BarChartOutlined,
+    LaptopOutlined,
+    ChromeOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -21,12 +23,15 @@ import {
     getTopPaths,
     getHourlyStats,
     getGeoDistribution,
+    getDeviceDistribution,
+    getBrowserDistribution,
     TrafficOverview,
     TrendItem,
     TopIpItem,
     TopPathItem,
     HourlyItem,
     GeoStatsItem,
+    DeviceStatsItem,
 } from '../services/traffic';
 
 const TrafficStats: React.FC = () => {
@@ -38,6 +43,8 @@ const TrafficStats: React.FC = () => {
     const [topPaths, setTopPaths] = useState<TopPathItem[]>([]);
     const [hourlyStats, setHourlyStats] = useState<HourlyItem[]>([]);
     const [geoStats, setGeoStats] = useState<GeoStatsItem[]>([]);
+    const [deviceStats, setDeviceStats] = useState<DeviceStatsItem[]>([]);
+    const [browserStats, setBrowserStats] = useState<DeviceStatsItem[]>([]);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const isToday = days === 1;
@@ -45,13 +52,15 @@ const TrafficStats: React.FC = () => {
     const fetchAllData = useCallback(async () => {
         setLoading(true);
         try {
-            const [overviewData, trendData, ipsData, pathsData, hourlyData, geoData] = await Promise.all([
+            const [overviewData, trendData, ipsData, pathsData, hourlyData, geoData, deviceData, browserData] = await Promise.all([
                 getTrafficOverview(days),
                 getTrafficTrend(days),
                 getTopIps(days, 10),
                 getTopPaths(days, 10),
                 getHourlyStats(days),
                 getGeoDistribution(days, 15),
+                getDeviceDistribution(days, 10),
+                getBrowserDistribution(days, 10),
             ]);
             setOverview(overviewData);
             setTrend(trendData);
@@ -59,6 +68,8 @@ const TrafficStats: React.FC = () => {
             setTopPaths(pathsData);
             setHourlyStats(hourlyData);
             setGeoStats(geoData);
+            setDeviceStats(deviceData);
+            setBrowserStats(browserData);
         } catch (error) {
             console.error('Failed to fetch traffic data:', error);
         } finally {
@@ -462,6 +473,82 @@ const TrafficStats: React.FC = () => {
                     interaction={{ elementHighlight: { background: true } }}
                 />
             </Card>
+
+            {/* 设备和浏览器分布 */}
+            <Row gutter={16} style={{ marginTop: 16 }}>
+                <Col xs={24} lg={12}>
+                    <Card 
+                        title={<><LaptopOutlined style={{ marginRight: 8 }} />设备类型分布</>} 
+                        bordered={false}
+                    >
+                        {deviceStats.length > 0 ? (
+                            <Bar
+                                data={[...deviceStats].reverse()}
+                                xField="count"
+                                yField="device"
+                                height={200}
+                                colorField="device"
+                                legend={false}
+                                style={{ maxWidth: 32 }}
+                                axis={{
+                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
+                                    y: { title: false },
+                                }}
+                                label={{
+                                    text: (d: DeviceStatsItem) => `${d.count.toLocaleString()} (${d.percentage}%)`,
+                                    position: 'right',
+                                    style: { fill: '#666' },
+                                }}
+                                tooltip={{
+                                    title: (d: DeviceStatsItem) => d.device || '未知',
+                                    items: [{ channel: 'x', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
+                                }}
+                                interaction={{ elementHighlight: { background: true } }}
+                            />
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
+                                暂无设备数据
+                            </div>
+                        )}
+                    </Card>
+                </Col>
+                <Col xs={24} lg={12}>
+                    <Card 
+                        title={<><ChromeOutlined style={{ marginRight: 8 }} />浏览器分布</>} 
+                        bordered={false}
+                    >
+                        {browserStats.length > 0 ? (
+                            <Bar
+                                data={[...browserStats].reverse()}
+                                xField="count"
+                                yField="browser"
+                                height={200}
+                                colorField="browser"
+                                legend={false}
+                                style={{ maxWidth: 32 }}
+                                axis={{
+                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
+                                    y: { title: false },
+                                }}
+                                label={{
+                                    text: (d: DeviceStatsItem) => `${d.count.toLocaleString()} (${d.percentage}%)`,
+                                    position: 'right',
+                                    style: { fill: '#666' },
+                                }}
+                                tooltip={{
+                                    title: (d: DeviceStatsItem) => d.browser || '未知',
+                                    items: [{ channel: 'x', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
+                                }}
+                                interaction={{ elementHighlight: { background: true } }}
+                            />
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
+                                暂无浏览器数据
+                            </div>
+                        )}
+                    </Card>
+                </Col>
+            </Row>
         </div>
     );
 };

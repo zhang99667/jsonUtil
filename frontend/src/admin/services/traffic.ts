@@ -43,6 +43,14 @@ export interface GeoStatsItem {
     percentage: number;
 }
 
+// 设备/浏览器统计接口
+export interface DeviceStatsItem {
+    device: string | null;
+    browser: string | null;
+    count: number;
+    percentage: number;
+}
+
 // 获取流量概览
 export const getTrafficOverview = async (days: number): Promise<TrafficOverview> => {
     return request.get('/admin/traffic/overview', { params: { days } });
@@ -71,4 +79,14 @@ export const getHourlyStats = async (days: number): Promise<HourlyItem[]> => {
 // 获取地区分布
 export const getGeoDistribution = async (days: number, limit: number = 15): Promise<GeoStatsItem[]> => {
     return request.get('/admin/traffic/geo-distribution', { params: { days, limit } });
+};
+
+// 获取设备分布
+export const getDeviceDistribution = async (days: number, limit: number = 10): Promise<DeviceStatsItem[]> => {
+    return request.get('/admin/traffic/device-distribution', { params: { days, limit } });
+};
+
+// 获取浏览器分布
+export const getBrowserDistribution = async (days: number, limit: number = 10): Promise<DeviceStatsItem[]> => {
+    return request.get('/admin/traffic/browser-distribution', { params: { days, limit } });
 };
