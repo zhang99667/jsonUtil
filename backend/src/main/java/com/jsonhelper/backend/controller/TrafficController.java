@@ -85,4 +85,30 @@ public class TrafficController {
         List<GeoStatsDTO> geoStats = trafficService.getGeoDistribution(days, limit);
         return Result.success(geoStats);
     }
+
+    /**
+     * 获取设备类型分布统计
+     * @param days 统计天数，默认7天
+     * @param limit 返回条数，默认10条
+     */
+    @GetMapping("/device-distribution")
+    public Result<List<DeviceStatsDTO>> getDeviceDistribution(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(defaultValue = "10") int limit) {
+        List<DeviceStatsDTO> deviceStats = trafficService.getDeviceDistribution(days, limit);
+        return Result.success(deviceStats);
+    }
+
+    /**
+     * 获取浏览器分布统计
+     * @param days 统计天数，默认7天
+     * @param limit 返回条数，默认10条
+     */
+    @GetMapping("/browser-distribution")
+    public Result<List<DeviceStatsDTO>> getBrowserDistribution(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(defaultValue = "10") int limit) {
+        List<DeviceStatsDTO> browserStats = trafficService.getBrowserDistribution(days, limit);
+        return Result.success(browserStats);
+    }
 }

@@ -32,6 +32,7 @@ public class TrafficFilter extends OncePerRequestFilter {
                 log.setIp(getClientIp(request));
                 log.setPath(path);
                 log.setMethod(request.getMethod());
+                log.setUserAgent(getUserAgent(request));
                 visitLogRepository.save(log);
             } catch (Exception e) {
                 // Log and swallow to prevent request failure
@@ -58,5 +59,13 @@ public class TrafficFilter extends OncePerRequestFilter {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    private String getUserAgent(HttpServletRequest request) {
+        String ua = request.getHeader("User-Agent");
+        if (ua != null && ua.length() > 512) {
+            ua = ua.substring(0, 512);
+        }
+        return ua;
     }
 }

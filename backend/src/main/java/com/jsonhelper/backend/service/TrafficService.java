@@ -206,6 +206,149 @@ public class TrafficService {
     }
 
     /**
+     * 获取设备类型分布统计
+     * @param days 统计天数
+     * @param limit 返回条数
+     */
+    public List<DeviceStatsDTO> getDeviceDistribution(int days, int limit) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+
+        List<VisitLog> logs = visitLogRepository.findByCreatedAtBetween(start, now);
+        
+        if (logs.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 按设备类型统计
+        Map<String, Long> deviceCountMap = new HashMap<>();
+        for (VisitLog log : logs) {
+            String device = parseDeviceType(log.getUserAgent());
+            deviceCountMap.merge(device, 1L, Long::sum);
+        }
+
+        long total = logs.size();
+
+        return deviceCountMap.entrySet().stream()
+                .map(entry -> DeviceStatsDTO.builder()
+                        .device(entry.getKey())
+                        .browser(null)
+                        .count(entry.getValue())
+                        .percentage(Math.round(entry.getValue() * 10000.0 / total) / 100.0)
+                        .build())
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取浏览器分布统计
+     * @param days 统计天数
+     * @param limit 返回条数
+     */
+    public List<DeviceStatsDTO> getBrowserDistribution(int days, int limit) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+
+        List<VisitLog> logs = visitLogRepository.findByCreatedAtBetween(start, now);
+        
+        if (logs.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 按浏览器统计
+        Map<String, Long> browserCountMap = new HashMap<>();
+        for (VisitLog log : logs) {
+            String browser = parseBrowser(log.getUserAgent());
+            browserCountMap.merge(browser, 1L, Long::sum);
+        }
+
+        long total = logs.size();
+
+        return browserCountMap.entrySet().stream()
+                .map(entry -> DeviceStatsDTO.builder()
+                        .device(null)
+                        .browser(entry.getKey())
+                        .count(entry.getValue())
+                        .percentage(Math.round(entry.getValue() * 10000.0 / total) / 100.0)
+                        .build())
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 解析设备类型
+     */
+    private String parseDeviceType(String ua) {
+        if (ua == null || ua.isEmpty()) {
+            return "未知";
+        }
+        String lowerUa = ua.toLowerCase();
+        
+        // 检测爬虫/机器人
+        if (lowerUa.contains("bot") || lowerUa.contains("spider") || lowerUa.contains("crawler") 
+            || lowerUa.contains("slurp") || lowerUa.contains("googlebot") || lowerUa.contains("bingbot")) {
+            return "爬虫";
+        }
+        // 检测移动设备
+        if (lowerUa.contains("mobile") || lowerUa.contains("android") && !lowerUa.contains("tablet")
+            || lowerUa.contains("iphone") || lowerUa.contains("ipod")) {
+            return "手机";
+        }
+        // 检测平板
+        if (lowerUa.contains("tablet") || lowerUa.contains("ipad")) {
+            return "平板";
+        }
+        // 默认为PC
+        if (lowerUa.contains("windows") || lowerUa.contains("macintosh") || lowerUa.contains("linux")) {
+            return "电脑";
+        }
+        return "其他";
+    }
+
+    /**
+     * 解析浏览器类型
+     */
+    private String parseBrowser(String ua) {
+        if (ua == null || ua.isEmpty()) {
+            return "未知";
+        }
+        String lowerUa = ua.toLowerCase();
+        
+        // 按检测优先级排序（有些UA包含多个浏览器标识）
+        if (lowerUa.contains("edg/") || lowerUa.contains("edge/")) {
+            return "Edge";
+        }
+        if (lowerUa.contains("opr/") || lowerUa.contains("opera")) {
+            return "Opera";
+        }
+        if (lowerUa.contains("chrome") && !lowerUa.contains("chromium")) {
+            return "Chrome";
+        }
+        if (lowerUa.contains("firefox")) {
+            return "Firefox";
+        }
+        if (lowerUa.contains("safari") && !lowerUa.contains("chrome")) {
+            return "Safari";
+        }
+        if (lowerUa.contains("msie") || lowerUa.contains("trident")) {
+            return "IE";
+        }
+        // 检测常见爬虫
+        if (lowerUa.contains("googlebot")) {
+            return "Googlebot";
+        }
+        if (lowerUa.contains("bingbot")) {
+            return "Bingbot";
+        }
+        if (lowerUa.contains("bot") || lowerUa.contains("spider")) {
+            return "其他爬虫";
+        }
+        return "其他";
+    }
+
+    /**
      * 格式化日期对象为字符串
      */
     private String formatDate(Object dateObj) {
