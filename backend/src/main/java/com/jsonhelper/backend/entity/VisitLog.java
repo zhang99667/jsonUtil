@@ -18,6 +18,9 @@ public class VisitLog {
     
     @Column(name = "user_agent", length = 512)
     private String userAgent;
+    
+    @Column(name = "referer", length = 1024)
+    private String referer;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

@@ -10,7 +10,9 @@ import {
     EnvironmentOutlined,
     BarChartOutlined,
     LaptopOutlined,
-    ChromeOutlined
+    ChromeOutlined,
+    ShareAltOutlined,
+    FieldTimeOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -25,6 +27,8 @@ import {
     getGeoDistribution,
     getDeviceDistribution,
     getBrowserDistribution,
+    getRefererDistribution,
+    getSessionDuration,
     TrafficOverview,
     TrendItem,
     TopIpItem,
@@ -32,6 +36,8 @@ import {
     HourlyItem,
     GeoStatsItem,
     DeviceStatsItem,
+    RefererStatsItem,
+    SessionStatsItem,
 } from '../services/traffic';
 
 const TrafficStats: React.FC = () => {
@@ -45,6 +51,8 @@ const TrafficStats: React.FC = () => {
     const [geoStats, setGeoStats] = useState<GeoStatsItem[]>([]);
     const [deviceStats, setDeviceStats] = useState<DeviceStatsItem[]>([]);
     const [browserStats, setBrowserStats] = useState<DeviceStatsItem[]>([]);
+    const [refererStats, setRefererStats] = useState<RefererStatsItem[]>([]);
+    const [sessionStats, setSessionStats] = useState<SessionStatsItem[]>([]);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const isToday = days === 1;
@@ -52,7 +60,7 @@ const TrafficStats: React.FC = () => {
     const fetchAllData = useCallback(async () => {
         setLoading(true);
         try {
-            const [overviewData, trendData, ipsData, pathsData, hourlyData, geoData, deviceData, browserData] = await Promise.all([
+            const [overviewData, trendData, ipsData, pathsData, hourlyData, geoData, deviceData, browserData, refererData, sessionData] = await Promise.all([
                 getTrafficOverview(days),
                 getTrafficTrend(days),
                 getTopIps(days, 10),
@@ -61,6 +69,8 @@ const TrafficStats: React.FC = () => {
                 getGeoDistribution(days, 15),
                 getDeviceDistribution(days, 10),
                 getBrowserDistribution(days, 10),
+                getRefererDistribution(days, 10),
+                getSessionDuration(days),
             ]);
             setOverview(overviewData);
             setTrend(trendData);
@@ -70,6 +80,8 @@ const TrafficStats: React.FC = () => {
             setGeoStats(geoData);
             setDeviceStats(deviceData);
             setBrowserStats(browserData);
+            setRefererStats(refererData);
+            setSessionStats(sessionData);
         } catch (error) {
             console.error('Failed to fetch traffic data:', error);
         } finally {
@@ -544,6 +556,82 @@ const TrafficStats: React.FC = () => {
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
                                 暂无浏览器数据
+                            </div>
+                        )}
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* 来源统计和停留时长 */}
+            <Row gutter={16} style={{ marginTop: 16 }}>
+                <Col xs={24} lg={12}>
+                    <Card 
+                        title={<><ShareAltOutlined style={{ marginRight: 8 }} />访问来源分布</>} 
+                        bordered={false}
+                    >
+                        {refererStats.length > 0 ? (
+                            <Bar
+                                data={[...refererStats].reverse()}
+                                xField="count"
+                                yField="source"
+                                height={200}
+                                colorField="source"
+                                legend={false}
+                                style={{ maxWidth: 32 }}
+                                axis={{
+                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
+                                    y: { title: false },
+                                }}
+                                label={{
+                                    text: (d: RefererStatsItem) => `${d.count.toLocaleString()} (${d.percentage}%)`,
+                                    position: 'right',
+                                    style: { fill: '#666' },
+                                }}
+                                tooltip={{
+                                    title: (d: RefererStatsItem) => d.source,
+                                    items: [{ channel: 'x', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
+                                }}
+                                interaction={{ elementHighlight: { background: true } }}
+                            />
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
+                                暂无来源数据
+                            </div>
+                        )}
+                    </Card>
+                </Col>
+                <Col xs={24} lg={12}>
+                    <Card 
+                        title={<><FieldTimeOutlined style={{ marginRight: 8 }} />停留时长分布</>} 
+                        bordered={false}
+                    >
+                        {sessionStats.length > 0 ? (
+                            <Bar
+                                data={[...sessionStats].reverse()}
+                                xField="count"
+                                yField="durationRange"
+                                height={200}
+                                colorField="durationRange"
+                                legend={false}
+                                style={{ maxWidth: 32 }}
+                                axis={{
+                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
+                                    y: { title: false },
+                                }}
+                                label={{
+                                    text: (d: SessionStatsItem) => `${d.count.toLocaleString()} (${d.percentage}%)`,
+                                    position: 'right',
+                                    style: { fill: '#666' },
+                                }}
+                                tooltip={{
+                                    title: (d: SessionStatsItem) => d.durationRange,
+                                    items: [{ channel: 'x', name: '会话数', valueFormatter: (v: number) => v.toLocaleString() }],
+                                }}
+                                interaction={{ elementHighlight: { background: true } }}
+                            />
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
+                                暂无停留数据
                             </div>
                         )}
                     </Card>
