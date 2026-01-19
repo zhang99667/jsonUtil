@@ -307,7 +307,7 @@ const TrafficStats: React.FC = () => {
                     colorField="type"
                     group={true}
                     height={250}
-                    style={{ maxWidth: 4 }}
+                    style={{ maxWidth: 32, minWidth: 12 }}
                     scale={{ color: { range: ['#1890ff', '#52c41a'] } }}
                     axis={{
                         x: { title: false },
@@ -318,6 +318,7 @@ const TrafficStats: React.FC = () => {
                         title: (d: { date: string }) => d.date,
                         items: [{ channel: 'y', valueFormatter: (v: number) => v.toLocaleString() }],
                     }}
+                    interaction={{ elementHighlight: { background: true } }}
                 />
             </Card>
 
@@ -413,6 +414,7 @@ const TrafficStats: React.FC = () => {
                     yField="count"
                     height={180}
                     color="#1890ff"
+                    style={{ maxWidth: 24, minWidth: 8 }}
                     axis={{
                         x: { title: false, labelAutoRotate: false },
                         y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
@@ -421,6 +423,7 @@ const TrafficStats: React.FC = () => {
                         title: (d: { hour: string }) => `${d.hour} - ${parseInt(d.hour) + 1}:00`,
                         items: [{ channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
                     }}
+                    interaction={{ elementHighlight: { background: true } }}
                 />
             </Card>
         </div>
