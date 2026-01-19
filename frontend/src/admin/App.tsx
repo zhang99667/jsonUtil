@@ -7,12 +7,14 @@ import {
     UserOutlined,
     LogoutOutlined,
     BarChartOutlined,
+    CalendarOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme, Button } from 'antd';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
 import Dashboard from './pages/Dashboard';
+import TodayView from './pages/TodayView';
 import { logout } from './services/auth';
 import TrafficStats from './pages/TrafficStats';
 
@@ -36,6 +38,7 @@ function getItem(
 
 const items: MenuItem[] = [
     getItem('仪表盘与统计', '1', <PieChartOutlined />),
+    getItem('今日视图', '4', <CalendarOutlined />),
     getItem('流量统计', '3', <BarChartOutlined />),
     getItem('用户管理', '2', <TeamOutlined />),
     getItem('文件管理', '9', <FileOutlined />),
@@ -74,6 +77,8 @@ const App: React.FC = () => {
                 return <UserManagement />;
             case '3':
                 return <TrafficStats />;
+            case '4':
+                return <TodayView />;
             default:
                 return <div>请选择功能菜单。</div>;
         }
@@ -84,6 +89,7 @@ const App: React.FC = () => {
             case '1': return '仪表盘与统计';
             case '2': return '用户管理';
             case '3': return '流量统计';
+            case '4': return '今日视图';
             default: return '管理后台';
         }
     };
