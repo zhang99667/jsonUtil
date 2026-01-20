@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Row, Col, Card, Statistic, Spin, Table, Segmented, Progress, Tooltip, Typography, Tag } from 'antd';
 import { 
     EyeOutlined, 
@@ -121,7 +121,7 @@ const TrafficStats: React.FC = () => {
             key: 'rank',
             width: 60,
             render: (_, __, index) => (
-                <span style={{ 
+                <span style={{
                     fontWeight: index < 3 ? 'bold' : 'normal',
                     color: index === 0 ? '#f5222d' : index === 1 ? '#fa8c16' : index === 2 ? '#faad14' : 'inherit'
                 }}>
@@ -134,6 +134,18 @@ const TrafficStats: React.FC = () => {
             dataIndex: 'ip',
             key: 'ip',
             ellipsis: true,
+        },
+        {
+            title: '地区',
+            dataIndex: 'region',
+            key: 'region',
+            width: 100,
+            render: (region: string) => (
+                <span>
+                    <EnvironmentOutlined style={{ marginRight: 4, color: '#1890ff' }} />
+                    {region || '未知'}
+                </span>
+            ),
         },
         {
             title: '访问次数',
@@ -182,25 +194,38 @@ const TrafficStats: React.FC = () => {
     ];
 
     // 计算地区分布最大值（用于 Progress 百分比）
-    const maxGeoCount = Math.max(...geoStats.map(g => g.count), 1);
+    const maxGeoCount = useMemo(() => Math.max(...geoStats.map(g => g.count), 1), [geoStats]);
 
     // 每日趋势图数据转换（分组柱状图需要）
-    const trendChartData = trend.flatMap(item => [
+    const trendChartData = useMemo(() => trend.flatMap(item => [
         { date: item.date.slice(5), type: 'PV', value: item.pv },
         { date: item.date.slice(5), type: 'UV', value: item.uv },
-    ]);
+    ]), [trend]);
 
     // 24小时分布数据
-    const hourlyChartData = Array.from({ length: 24 }, (_, hour) => {
+    const hourlyChartData = useMemo(() => Array.from({ length: 24 }, (_, hour) => {
         const item = hourlyStats.find(h => h.hour === hour);
         return { hour: `${hour}:00`, count: item?.count || 0 };
-    });
+    }), [hourlyStats]);
 
     // 地区分布条形图数据（取前10）
-    const geoBarData = geoStats.slice(0, 10).map(item => ({
+    const geoBarData = useMemo(() => geoStats.slice(0, 10).map(item => ({
         region: item.region,
         count: item.count,
-    })).reverse(); // 反转让最高的在上面
+    })).reverse(), [geoStats]); // 反转让最高的在上面
+
+    // 今日模式下高亮当前时段（移到 useMemo 之后，loading 检查之前）
+    const currentHour = new Date().getHours();
+    const todayStr = new Date().toLocaleDateString('zh-CN', {
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short'
+    });
+
+    const hourlyChartDataWithHighlight = useMemo(() => hourlyChartData.map(item => ({
+        ...item,
+        isCurrent: isToday && parseInt(item.hour) === currentHour
+    })), [hourlyChartData, isToday, currentHour]);
 
     // 地区分布表格列配置
     const geoColumns: ColumnsType<GeoStatsItem> = [
@@ -263,20 +288,6 @@ const TrafficStats: React.FC = () => {
             </div>
         );
     }
-
-    // 获取当前时间
-    const currentHour = new Date().getHours();
-    const todayStr = new Date().toLocaleDateString('zh-CN', {
-        month: 'long',
-        day: 'numeric',
-        weekday: 'short'
-    });
-
-    // 今日模式下高亮当前时段
-    const hourlyChartDataWithHighlight = hourlyChartData.map(item => ({
-        ...item,
-        isCurrent: isToday && parseInt(item.hour) === currentHour
-    }));
 
     return (
         <div>
@@ -594,30 +605,31 @@ const TrafficStats: React.FC = () => {
                         style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
                     >
                         {refererStats.length > 0 ? (
-                            <Bar
-                                data={[...refererStats].reverse()}
-                                xField="count"
-                                yField="source"
-                                height={Math.max(refererStats.length * 50, 180)}
+                            <Column
+                                data={refererStats}
+                                xField="source"
+                                yField="count"
+                                height={260}
+                                columnWidthRatio={0.6}
                                 colorField="source"
                                 legend={false}
                                 axis={{
-                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                                    y: { title: false },
+                                    x: { title: false },
+                                    y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
                                 }}
                                 label={{
-                                    text: (d: RefererStatsItem) => `${d.count.toLocaleString()} (${d.percentage}%)`,
-                                    position: 'right',
+                                    text: (d: RefererStatsItem) => `${d.percentage}%`,
+                                    position: 'top',
                                     style: { fill: '#666', fontSize: 12 },
                                 }}
                                 tooltip={{
                                     title: (d: RefererStatsItem) => d.source,
-                                    items: [{ channel: 'x', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
+                                    items: [
+                                        { channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() },
+                                        { name: '占比', value: (d: RefererStatsItem) => `${d.percentage}%` }
+                                    ],
                                 }}
                                 interaction={{ elementHighlight: { background: true } }}
-                                style={{
-                                    maxHeight: 300,
-                                }}
                             />
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
@@ -633,30 +645,31 @@ const TrafficStats: React.FC = () => {
                         style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
                     >
                         {sessionStats.length > 0 ? (
-                            <Bar
-                                data={[...sessionStats].reverse()}
-                                xField="count"
-                                yField="durationRange"
-                                height={Math.max(sessionStats.length * 50, 180)}
+                            <Column
+                                data={sessionStats}
+                                xField="durationRange"
+                                yField="count"
+                                height={260}
+                                columnWidthRatio={0.6}
                                 colorField="durationRange"
                                 legend={false}
                                 axis={{
-                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                                    y: { title: false },
+                                    x: { title: false },
+                                    y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
                                 }}
                                 label={{
-                                    text: (d: SessionStatsItem) => `${d.count.toLocaleString()} (${d.percentage}%)`,
-                                    position: 'right',
+                                    text: (d: SessionStatsItem) => `${d.percentage}%`,
+                                    position: 'top',
                                     style: { fill: '#666', fontSize: 12 },
                                 }}
                                 tooltip={{
                                     title: (d: SessionStatsItem) => d.durationRange,
-                                    items: [{ channel: 'x', name: '会话数', valueFormatter: (v: number) => v.toLocaleString() }],
+                                    items: [
+                                        { channel: 'y', name: '会话数', valueFormatter: (v: number) => v.toLocaleString() },
+                                        { name: '占比', value: (d: SessionStatsItem) => `${d.percentage}%` }
+                                    ],
                                 }}
                                 interaction={{ elementHighlight: { background: true } }}
-                                style={{
-                                    maxHeight: 300,
-                                }}
                             />
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>

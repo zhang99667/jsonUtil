@@ -22,6 +22,7 @@ export interface TrendItem {
 export interface TopIpItem {
     ip: string;
     count: number;
+    region: string;
 }
 
 // 路径排行接口

@@ -110,10 +110,16 @@ public class TrafficService {
 
         return data.stream()
                 .limit(limit)
-                .map(row -> IpStatsDTO.builder()
-                        .ip((String) row[0])
-                        .count(((Number) row[1]).longValue())
-                        .build())
+                .map(row -> {
+                    String ip = (String) row[0];
+                    GeoService.GeoInfo geoInfo = geoService.parseIp(ip);
+
+                    return IpStatsDTO.builder()
+                            .ip(ip)
+                            .count(((Number) row[1]).longValue())
+                            .region(geoInfo.getRegionForStats())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
