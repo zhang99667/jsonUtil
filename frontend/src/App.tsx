@@ -76,56 +76,60 @@ const App: React.FC = () => {
     input, setInput, inputRef, setMode, output: '' // 初始为空，后面会更新
   });
 
-  // 计算派生输出
+  // 深度格式化结果和上下文（避免在 output 计算中产生副作用）
+  const deepFormatResult = useMemo(() => {
+    if (mode === TransformMode.DEEP_FORMAT) {
+      return deepParseWithContext(input);
+    }
+    return null;
+  }, [input, mode]);
+
+  // 保存深度格式化上下文到文件（副作用独立处理）
+  useEffect(() => {
+    if (deepFormatResult) {
+      if (activeFileId) {
+        setFiles(prev => prev.map(f =>
+          f.id === activeFileId
+            ? { ...f, transformContext: deepFormatResult.context }
+            : f
+        ));
+      } else {
+        fallbackContextRef.current = deepFormatResult.context;
+      }
+    }
+  }, [deepFormatResult, activeFileId, setFiles]);
+
+  // 计算派生输出（纯计算，无副作用）
   const output = useMemo(() => {
     // 若处于输出编辑状态，优先返回暂存值以避免覆盖用户输入
     if (isUpdatingFromOutput.current && pendingOutputValue.current) {
       return pendingOutputValue.current;
     }
 
-    // 深度格式化模式：使用带上下文的转换，保存 context 到当前 Tab
-    if (mode === TransformMode.DEEP_FORMAT) {
-      const transformResult = deepParseWithContext(input);
-      
-      // 保存 context 到当前活动 Tab（避免窜台）
-      if (activeFileId) {
-        // 使用 setTimeout 避免在 useMemo 中直接 setState
-        setTimeout(() => {
-          setFiles(prev => prev.map(f =>
-            f.id === activeFileId
-              ? { ...f, transformContext: transformResult.context }
-              : f
-          ));
-        }, 0);
-      } else {
-        // 没有打开文件时，保存到 fallback Ref
-        fallbackContextRef.current = transformResult.context;
-      }
-
-      // 模式切换或新转换时清除暂存值
+    // 深度格式化模式：使用预计算的结果
+    if (mode === TransformMode.DEEP_FORMAT && deepFormatResult) {
       if (!isUpdatingFromOutput.current) {
         pendingOutputValue.current = '';
       }
-      return transformResult.output;
+      return deepFormatResult.output;
     }
 
     const result = performTransform(input, mode);
-    // 模式切换或新转换时清除暂存值
     if (!isUpdatingFromOutput.current) {
       pendingOutputValue.current = '';
     }
     return result;
-  }, [input, mode, activeFileId]);
+  }, [input, mode, deepFormatResult]);
 
   // JSONPath 查询专用数据源（强制深度格式化）
   // 确保查询功能支持嵌套 JSON 搜索
   const deepFormattedOutput = useMemo(() => {
     // 性能优化：复用现有深度格式化结果
-    if (mode === TransformMode.DEEP_FORMAT && !isUpdatingFromOutput.current) {
-      return output;
+    if (mode === TransformMode.DEEP_FORMAT && deepFormatResult) {
+      return deepFormatResult.output;
     }
     return performTransform(input, TransformMode.DEEP_FORMAT);
-  }, [input, mode, output]);
+  }, [input, mode, deepFormatResult]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -255,7 +259,7 @@ const App: React.FC = () => {
   }, [input]);
 
   // 左侧编辑器变更处理
-  const handleInputChange = (newVal: string) => {
+  const handleInputChange = useCallback((newVal: string) => {
     // 实时清理不可见字符
     const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
     setInput(cleanVal);
@@ -270,11 +274,11 @@ const App: React.FC = () => {
     // if (mode !== TransformMode.NONE) {
     //   setMode(TransformMode.NONE);
     // }
-  };
+  }, [updateActiveFileContent]);
 
   // 右侧预览编辑处理（反向转换）
   // 仅在解除只读锁定后触发
-  const handleOutputChange = (newVal: string) => {
+  const handleOutputChange = useCallback((newVal: string) => {
     // 暂存编辑值，保持编辑器响应
     pendingOutputValue.current = newVal;
 
@@ -331,7 +335,7 @@ const App: React.FC = () => {
         // 其他模式使用旧方法
         newSource = performInverseTransform(newVal, mode, inputRef.current);
       }
-      
+
       setInput(newSource);
 
       // 同步更新 Ref
@@ -351,7 +355,7 @@ const App: React.FC = () => {
         }
       }, 600); // 增加延迟至 500ms
     }, 400); // 防抖延迟增加到 1000ms
-  };
+  }, [mode, files, activeFileId, updateActiveFileContent]);
 
 
 

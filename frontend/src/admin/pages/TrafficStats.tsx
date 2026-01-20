@@ -379,7 +379,7 @@ const TrafficStats: React.FC = () => {
                     colorField="type"
                     group={true}
                     height={280}
-                    columnWidthRatio={0.6}
+                    columnWidthRatio={0.4}
                     scale={{ color: { range: [chartColors.primary, chartColors.success] } }}
                     axis={{
                         x: { title: false },
@@ -391,6 +391,7 @@ const TrafficStats: React.FC = () => {
                         items: [{ channel: 'y', valueFormatter: (v: number) => v.toLocaleString() }],
                     }}
                     interaction={{ elementHighlight: { background: true } }}
+                    style={{ marginTop: 8 }}
                 />
             </Card>
 
@@ -416,12 +417,15 @@ const TrafficStats: React.FC = () => {
                                 data={geoBarData}
                                 xField="count"
                                 yField="region"
-                                height={geoBarData.length * 36}
+                                height={Math.min(geoBarData.length * 40, 400)}
                                 colorField="region"
                                 legend={false}
                                 axis={{
                                     x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                                    y: { title: false },
+                                    y: {
+                                        title: false,
+                                        labelFormatter: (text: string) => text.length > 8 ? text.slice(0, 8) + '...' : text,
+                                    },
                                 }}
                                 label={{
                                     text: (d: { count: number }) => d.count.toLocaleString(),
@@ -499,8 +503,8 @@ const TrafficStats: React.FC = () => {
                     data={hourlyChartDataWithHighlight}
                     xField="hour"
                     yField="count"
-                    height={220}
-                    columnWidthRatio={0.5}
+                    height={240}
+                    columnWidthRatio={0.4}
                     color={(datum: { isCurrent: boolean }) => datum.isCurrent ? chartColors.error : chartColors.primary}
                     axis={{
                         x: { title: false, labelAutoRotate: false },
@@ -511,6 +515,7 @@ const TrafficStats: React.FC = () => {
                         items: [{ channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
                     }}
                     interaction={{ elementHighlight: { background: true } }}
+                    style={{ marginTop: 8 }}
                 />
             </Card>
 
@@ -609,18 +614,21 @@ const TrafficStats: React.FC = () => {
                                 data={refererStats}
                                 xField="source"
                                 yField="count"
-                                height={260}
-                                columnWidthRatio={0.6}
+                                height={280}
+                                columnWidthRatio={0.5}
                                 colorField="source"
                                 legend={false}
                                 axis={{
-                                    x: { title: false },
+                                    x: {
+                                        title: false,
+                                        labelFormatter: (text: string) => text.length > 6 ? text.slice(0, 6) + '...' : text,
+                                    },
                                     y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
                                 }}
                                 label={{
                                     text: (d: RefererStatsItem) => `${d.percentage}%`,
                                     position: 'top',
-                                    style: { fill: '#666', fontSize: 12 },
+                                    style: { fill: '#666', fontSize: 11 },
                                 }}
                                 tooltip={{
                                     title: (d: RefererStatsItem) => d.source,
@@ -630,6 +638,7 @@ const TrafficStats: React.FC = () => {
                                     ],
                                 }}
                                 interaction={{ elementHighlight: { background: true } }}
+                                style={{ marginTop: 8 }}
                             />
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
@@ -649,18 +658,21 @@ const TrafficStats: React.FC = () => {
                                 data={sessionStats}
                                 xField="durationRange"
                                 yField="count"
-                                height={260}
-                                columnWidthRatio={0.6}
+                                height={280}
+                                columnWidthRatio={0.5}
                                 colorField="durationRange"
                                 legend={false}
                                 axis={{
-                                    x: { title: false },
+                                    x: {
+                                        title: false,
+                                        labelFormatter: (text: string) => text.length > 8 ? text.slice(0, 8) + '...' : text,
+                                    },
                                     y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
                                 }}
                                 label={{
                                     text: (d: SessionStatsItem) => `${d.percentage}%`,
                                     position: 'top',
-                                    style: { fill: '#666', fontSize: 12 },
+                                    style: { fill: '#666', fontSize: 11 },
                                 }}
                                 tooltip={{
                                     title: (d: SessionStatsItem) => d.durationRange,
@@ -670,6 +682,7 @@ const TrafficStats: React.FC = () => {
                                     ],
                                 }}
                                 interaction={{ elementHighlight: { background: true } }}
+                                style={{ marginTop: 8 }}
                             />
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>

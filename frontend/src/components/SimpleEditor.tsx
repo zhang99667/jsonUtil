@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 
 export interface SimpleEditorProps {
@@ -15,7 +15,7 @@ export interface SimpleEditorProps {
  * 轻量级编辑器组件
  * 封装 Monaco Editor 的基础配置，用于简单的代码展示和编辑场景
  */
-export const SimpleEditor: React.FC<SimpleEditorProps> = ({
+export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
   value,
   onChange,
   language,
@@ -28,7 +28,7 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const detectedLanguage = useMemo(() => {
     if (language) return language;
     if (!value) return 'plaintext';
-    
+
     const trimmed = value.trim();
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
       try {
@@ -40,13 +40,13 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
     if (trimmed.startsWith('<')) return 'xml';
     if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) return 'html';
-    
+
     return 'plaintext';
   }, [value, language]);
 
-  const handleChange = (val: string | undefined) => {
+  const handleChange = useCallback((val: string | undefined) => {
     onChange?.(val || '');
-  };
+  }, [onChange]);
 
   return (
     <div className={`overflow-hidden ${className}`} style={{ height }}>
@@ -84,4 +84,4 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = ({
       />
     </div>
   );
-};
+});
