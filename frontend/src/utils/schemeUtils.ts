@@ -143,16 +143,16 @@ export function isJsonString(str: string): boolean {
  */
 export function detectSchemeType(str: string): SchemeType {
   if (!str || typeof str !== 'string') return 'plain';
-  
+
   const trimmed = str.trim();
-  
+
   // 优先级顺序很重要
   if (isJwt(trimmed)) return 'jwt';
   if (isUrl(trimmed)) return 'url';
   if (hasUrlEncoding(trimmed)) return 'url-encoded';
   if (isBase64(trimmed)) return 'base64';
   if (isJsonString(trimmed)) return 'json';
-  
+
   return 'plain';
 }
 
@@ -273,8 +273,11 @@ export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDec
         // 解析 URL，提取参数并尝试解码参数值
         const urlInfo = parseUrl(current);
         if (urlInfo) {
-          schemeInfo = urlInfo;
-          
+          // 只在第一次遇到 URL 时保存 schemeInfo（保留最外层的 scheme）
+          if (!schemeInfo) {
+            schemeInfo = urlInfo;
+          }
+
           // 如果有参数，尝试找到可能包含编码数据的参数
           if (urlInfo.params) {
             // 常见的数据参数名
@@ -290,7 +293,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDec
                 break;
               }
             }
-            
+
             // 如果没找到特定参数，取第一个看起来像编码数据的参数
             if (current === before) {
               for (const [key, value] of Object.entries(urlInfo.params)) {
@@ -307,7 +310,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDec
             }
           }
         }
-        
+
         // 如果 URL 没有可解析的参数，停止
         if (current === before) {
           depth = maxDepth; // 退出循环
