@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class IpStatsDTO {
     private String ip;      // IP地址
     private long count;     // 访问次数
+    private String region;  // 地区信息（省份/国家）
 }
