@@ -73,12 +73,12 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   useEffect(() => {
     // 只有当 onSchemeEdit 存在时（即 PREVIEW 面板）才检测 scheme
     if (onSchemeEdit && language === 'json' && value) {
-      // 防抖检测
+      // 防抖检测 - 增加延迟避免频繁计算
       const timer = setTimeout(() => {
         const locations = findSchemesInJson(value);
         setSchemeLocations(locations);
         schemeLocationsRef.current = locations; // 同步到 ref
-      }, 300);
+      }, 500); // 从 300ms 增加到 500ms
       return () => clearTimeout(timer);
     } else {
       setSchemeLocations([]);
