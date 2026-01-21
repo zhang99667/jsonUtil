@@ -57,16 +57,22 @@ const TrafficStats: React.FC = () => {
 
     const isToday = days === 1;
 
-    // 颜色主题
+    // 颜色主题 - 专业低调配色
     const chartColors = {
-        primary: '#1890ff',
-        success: '#52c41a',
-        warning: '#faad14',
-        error: '#f5222d',
-        purple: '#722ed1',
-        orange: '#fa8c16',
-        cyan: '#13c2c2',
-        gradient: ['#1890ff', '#36cfc9', '#73d13d', '#ffec3d', '#ff9c6e', '#ff7a45'],
+        primary: '#4a7c9b',      // 沉稳的蓝灰色
+        secondary: '#6b9b7a',    // 淡绿灰
+        accent: '#e8a87c',       // 暖橙色，用于高亮
+        muted: '#8b9dc3',        // 柔和蓝紫
+        text: '#5a6c7d',         // 文字灰
+        border: '#e8eef3',       // 边框色
+    };
+
+    // 统计卡片装饰色
+    const statCardColors = {
+        pv: '#4a7c9b',
+        uv: '#6b9b7a', 
+        avg: '#8b9dc3',
+        ip: '#e8a87c',
     };
 
     const fetchAllData = useCallback(async () => {
@@ -316,146 +322,136 @@ const TrafficStats: React.FC = () => {
                 />
             </div>
 
-            {/* 概览数据卡片 - 根据时间范围显示不同指标 */}
+            {/* 概览数据卡片 - 简洁专业设计 */}
             <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} md={6}>
-                    <Card bordered={false} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 8 }}>
+                    <Card 
+                        bordered={false} 
+                        style={{ 
+                            borderRadius: 6,
+                            borderLeft: `3px solid ${statCardColors.pv}`,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                        }}
+                    >
                         <Statistic
-                            title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{isToday ? '今日浏览量 (PV)' : `${days}天总浏览量`}</span>}
+                            title={<span style={{ color: '#8c8c8c', fontSize: 13 }}>{isToday ? '今日浏览量 (PV)' : `${days}天总浏览量`}</span>}
                             value={isToday ? (overview?.todayPv || 0) : (overview?.totalPv || 0)}
-                            prefix={<EyeOutlined />}
-                            valueStyle={{ color: '#fff', fontSize: 28, fontWeight: 600 }}
+                            prefix={<EyeOutlined style={{ color: statCardColors.pv, marginRight: 4 }} />}
+                            valueStyle={{ color: '#2c3e50', fontSize: 26, fontWeight: 500 }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                    <Card bordered={false} style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', borderRadius: 8 }}>
+                    <Card 
+                        bordered={false} 
+                        style={{ 
+                            borderRadius: 6,
+                            borderLeft: `3px solid ${statCardColors.uv}`,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                        }}
+                    >
                         <Statistic
-                            title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{isToday ? '今日访客数 (UV)' : `${days}天总访客数`}</span>}
+                            title={<span style={{ color: '#8c8c8c', fontSize: 13 }}>{isToday ? '今日访客数 (UV)' : `${days}天总访客数`}</span>}
                             value={isToday ? (overview?.todayUv || 0) : (overview?.totalUv || 0)}
-                            prefix={<TeamOutlined />}
-                            valueStyle={{ color: '#fff', fontSize: 28, fontWeight: 600 }}
+                            prefix={<TeamOutlined style={{ color: statCardColors.uv, marginRight: 4 }} />}
+                            valueStyle={{ color: '#2c3e50', fontSize: 26, fontWeight: 500 }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                    <Card bordered={false} style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', borderRadius: 8 }}>
+                    <Card 
+                        bordered={false} 
+                        style={{ 
+                            borderRadius: 6,
+                            borderLeft: `3px solid ${statCardColors.avg}`,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                        }}
+                    >
                         <Statistic
-                            title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{isToday ? '人均浏览页数' : '日均PV'}</span>}
+                            title={<span style={{ color: '#8c8c8c', fontSize: 13 }}>{isToday ? '人均浏览页数' : '日均PV'}</span>}
                             value={isToday
                                 ? (overview?.todayUv ? (overview.todayPv / overview.todayUv).toFixed(1) : 0)
                                 : (overview?.avgDailyPv || 0)
                             }
-                            prefix={<RiseOutlined />}
-                            valueStyle={{ color: '#fff', fontSize: 28, fontWeight: 600 }}
-                            suffix={isToday ? <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16 }}>页</span> : undefined}
+                            prefix={<RiseOutlined style={{ color: statCardColors.avg, marginRight: 4 }} />}
+                            valueStyle={{ color: '#2c3e50', fontSize: 26, fontWeight: 500 }}
+                            suffix={isToday ? <span style={{ color: '#8c8c8c', fontSize: 14 }}>页</span> : undefined}
                             precision={isToday ? undefined : 0}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                    <Card bordered={false} style={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', borderRadius: 8 }}>
+                    <Card 
+                        bordered={false} 
+                        style={{ 
+                            borderRadius: 6,
+                            borderLeft: `3px solid ${statCardColors.ip}`,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                        }}
+                    >
                         <Statistic
-                            title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{isToday ? '独立IP数' : '日均UV'}</span>}
+                            title={<span style={{ color: '#8c8c8c', fontSize: 13 }}>{isToday ? '独立IP数' : '日均UV'}</span>}
                             value={isToday ? topIps.length : (overview?.avgDailyUv || 0)}
-                            prefix={<GlobalOutlined />}
-                            valueStyle={{ color: '#fff', fontSize: 28, fontWeight: 600 }}
+                            prefix={<GlobalOutlined style={{ color: statCardColors.ip, marginRight: 4 }} />}
+                            valueStyle={{ color: '#2c3e50', fontSize: 26, fontWeight: 500 }}
                             precision={isToday ? undefined : 0}
                         />
                     </Card>
                 </Col>
             </Row>
 
-            {/* 每日趋势图 */}
-            <Card
-                title={<span style={{ fontSize: 16, fontWeight: 600 }}>每日访问趋势</span>}
-                bordered={false}
-                style={{ marginTop: 16, boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
-            >
-                <Column
-                    data={trendChartData}
-                    xField="date"
-                    yField="value"
-                    colorField="type"
-                    group={true}
-                    height={280}
-                    columnWidthRatio={0.4}
-                    scale={{ color: { range: [chartColors.primary, chartColors.success] } }}
-                    axis={{
-                        x: { title: false },
-                        y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                    }}
-                    legend={{ position: 'top-right' }}
-                    tooltip={{
-                        title: (d: { date: string }) => d.date,
-                        items: [{ channel: 'y', valueFormatter: (v: number) => v.toLocaleString() }],
-                    }}
-                    interaction={{ elementHighlight: { background: true } }}
-                    style={{ marginTop: 8 }}
-                />
-            </Card>
+            {/* 每日趋势图 - 仅在多天视图显示 */}
+            {!isToday && (
+                <Card
+                    title={<span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}>每日访问趋势</span>}
+                    bordered={false}
+                    style={{ marginTop: 16, borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
+                >
+                    <Column
+                        data={trendChartData}
+                        xField="date"
+                        yField="value"
+                        colorField="type"
+                        group={true}
+                        height={260}
+                        columnWidthRatio={0.5}
+                        scale={{ color: { range: [chartColors.primary, chartColors.secondary] } }}
+                        axis={{
+                            x: { title: false, line: { style: { stroke: '#e8eef3' } }, tick: { style: { stroke: '#e8eef3' } } },
+                            y: { title: false, labelFormatter: (v: number) => v.toLocaleString(), grid: { line: { style: { stroke: '#f0f0f0', lineDash: [3, 3] } } } },
+                        }}
+                        legend={{ position: 'top-right', itemName: { style: { fill: '#666' } } }}
+                        tooltip={{
+                            title: (d: { date: string }) => d.date,
+                            items: [{ channel: 'y', valueFormatter: (v: number) => v.toLocaleString() }],
+                        }}
+                        interaction={{ elementHighlight: { background: true } }}
+                    />
+                </Card>
+            )}
 
-            {/* 地区分布 */}
+            {/* 地区分布 - 只保留表格 */}
             <Card
-                title={<span style={{ fontSize: 16, fontWeight: 600 }}><EnvironmentOutlined style={{ marginRight: 8 }} />访客地区分布</span>}
+                title={<span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}><EnvironmentOutlined style={{ marginRight: 8, color: chartColors.primary }} />访客地区分布</span>}
                 bordered={false}
-                style={{ marginTop: 16, boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
+                style={{ marginTop: 16, borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
             >
-                <Row gutter={24}>
-                    <Col xs={24} lg={12}>
-                        <Table
-                            columns={geoColumns}
-                            dataSource={geoStats}
-                            rowKey="region"
-                            pagination={false}
-                            size="small"
-                        />
-                    </Col>
-                    <Col xs={24} lg={12}>
-                        {geoBarData.length > 0 ? (
-                            <Bar
-                                data={geoBarData}
-                                xField="count"
-                                yField="region"
-                                height={Math.min(geoBarData.length * 40, 400)}
-                                colorField="region"
-                                legend={false}
-                                axis={{
-                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                                    y: {
-                                        title: false,
-                                        labelFormatter: (text: string) => text.length > 8 ? text.slice(0, 8) + '...' : text,
-                                    },
-                                }}
-                                label={{
-                                    text: (d: { count: number }) => d.count.toLocaleString(),
-                                    position: 'right',
-                                    style: { fill: '#666', fontSize: 12 },
-                                }}
-                                tooltip={{
-                                    title: (d: { region: string }) => d.region,
-                                    items: [{ channel: 'x', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
-                                }}
-                                style={{
-                                    maxHeight: 400,
-                                }}
-                            />
-                        ) : (
-                            <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
-                                暂无地区数据
-                            </div>
-                        )}
-                    </Col>
-                </Row>
+                <Table
+                    columns={geoColumns}
+                    dataSource={geoStats}
+                    rowKey="region"
+                    pagination={false}
+                    size="small"
+                />
             </Card>
 
             {/* IP和路径排行榜 */}
             <Row gutter={16} style={{ marginTop: 16 }}>
                 <Col xs={24} lg={12}>
                     <Card
-                        title={<span style={{ fontSize: 16, fontWeight: 600 }}><GlobalOutlined style={{ marginRight: 8 }} />IP访问排行</span>}
+                        title={<span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}><GlobalOutlined style={{ marginRight: 8, color: chartColors.primary }} />IP访问排行</span>}
                         bordered={false}
-                        style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
+                        style={{ borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
                     >
                         <Table
                             columns={ipColumns}
@@ -468,9 +464,9 @@ const TrafficStats: React.FC = () => {
                 </Col>
                 <Col xs={24} lg={12} style={{ marginTop: 16 }} className="lg:mt-0">
                     <Card
-                        title={<span style={{ fontSize: 16, fontWeight: 600 }}><LinkOutlined style={{ marginRight: 8 }} />路径访问排行</span>}
+                        title={<span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}><LinkOutlined style={{ marginRight: 8, color: chartColors.secondary }} />路径访问排行</span>}
                         bordered={false}
-                        style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
+                        style={{ borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
                     >
                         <Table
                             columns={pathColumns}
@@ -486,8 +482,8 @@ const TrafficStats: React.FC = () => {
             {/* 24小时访问分布 */}
             <Card
                 title={
-                    <span style={{ fontSize: 16, fontWeight: 600 }}>
-                        <ClockCircleOutlined style={{ marginRight: 8 }} />
+                    <span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}>
+                        <ClockCircleOutlined style={{ marginRight: 8, color: chartColors.muted }} />
                         24小时访问分布
                         {isToday && (
                             <span style={{ fontWeight: 'normal', fontSize: 12, color: '#999', marginLeft: 12 }}>
@@ -497,62 +493,53 @@ const TrafficStats: React.FC = () => {
                     </span>
                 }
                 bordered={false}
-                style={{ marginTop: 16, boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
+                style={{ marginTop: 16, borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
             >
                 <Column
                     data={hourlyChartDataWithHighlight}
                     xField="hour"
                     yField="count"
-                    height={240}
-                    columnWidthRatio={0.4}
-                    color={(datum: { isCurrent: boolean }) => datum.isCurrent ? chartColors.error : chartColors.primary}
+                    height={220}
+                    columnWidthRatio={0.5}
+                    color={(datum: { isCurrent: boolean }) => datum.isCurrent ? chartColors.accent : chartColors.muted}
                     axis={{
-                        x: { title: false, labelAutoRotate: false },
-                        y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
+                        x: { title: false, labelAutoRotate: false, line: { style: { stroke: '#e8eef3' } } },
+                        y: { title: false, labelFormatter: (v: number) => v.toLocaleString(), grid: { line: { style: { stroke: '#f0f0f0', lineDash: [3, 3] } } } },
                     }}
                     tooltip={{
                         title: (d: { hour: string }) => `${d.hour} - ${parseInt(d.hour) + 1}:00`,
                         items: [{ channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
                     }}
                     interaction={{ elementHighlight: { background: true } }}
-                    style={{ marginTop: 8 }}
                 />
             </Card>
 
-            {/* 设备和浏览器分布 */}
+            {/* 设备和浏览器分布 - 使用进度条列表，数据少时更清晰 */}
             <Row gutter={16} style={{ marginTop: 16 }}>
                 <Col xs={24} lg={12}>
                     <Card
-                        title={<span style={{ fontSize: 16, fontWeight: 600 }}><LaptopOutlined style={{ marginRight: 8 }} />设备类型分布</span>}
+                        title={<span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}><LaptopOutlined style={{ marginRight: 8, color: chartColors.primary }} />设备类型分布</span>}
                         bordered={false}
-                        style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
+                        style={{ borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
                     >
                         {deviceStats.length > 0 ? (
-                            <Bar
-                                data={[...deviceStats].reverse()}
-                                xField="count"
-                                yField="device"
-                                height={Math.max(deviceStats.length * 50, 180)}
-                                colorField="device"
-                                legend={false}
-                                axis={{
-                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                                    y: { title: false },
-                                }}
-                                label={{
-                                    text: (d: DeviceStatsItem) => `${d.count.toLocaleString()} (${d.percentage}%)`,
-                                    position: 'right',
-                                    style: { fill: '#666', fontSize: 12 },
-                                }}
-                                tooltip={{
-                                    title: (d: DeviceStatsItem) => d.device || '未知',
-                                    items: [{ channel: 'x', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
-                                }}
-                                interaction={{ elementHighlight: { background: true } }}
-                                style={{
-                                    maxHeight: 300,
-                                }}
-                            />
+                            <div style={{ padding: '8px 0' }}>
+                                {deviceStats.map((item, index) => (
+                                    <div key={item.device} style={{ marginBottom: index < deviceStats.length - 1 ? 16 : 0 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                            <span style={{ color: '#2c3e50', fontSize: 13 }}>{item.device || '未知'}</span>
+                                            <span style={{ color: '#8c8c8c', fontSize: 13 }}>{item.count.toLocaleString()} ({item.percentage}%)</span>
+                                        </div>
+                                        <Progress 
+                                            percent={item.percentage} 
+                                            showInfo={false}
+                                            strokeColor={chartColors.primary}
+                                            trailColor="#f0f0f0"
+                                            size="small"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
                                 暂无设备数据
@@ -562,36 +549,28 @@ const TrafficStats: React.FC = () => {
                 </Col>
                 <Col xs={24} lg={12} style={{ marginTop: 16 }} className="lg:mt-0">
                     <Card
-                        title={<span style={{ fontSize: 16, fontWeight: 600 }}><ChromeOutlined style={{ marginRight: 8 }} />浏览器分布</span>}
+                        title={<span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}><ChromeOutlined style={{ marginRight: 8, color: chartColors.secondary }} />浏览器分布</span>}
                         bordered={false}
-                        style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
+                        style={{ borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
                     >
                         {browserStats.length > 0 ? (
-                            <Bar
-                                data={[...browserStats].reverse()}
-                                xField="count"
-                                yField="browser"
-                                height={Math.max(browserStats.length * 50, 180)}
-                                colorField="browser"
-                                legend={false}
-                                axis={{
-                                    x: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                                    y: { title: false },
-                                }}
-                                label={{
-                                    text: (d: DeviceStatsItem) => `${d.count.toLocaleString()} (${d.percentage}%)`,
-                                    position: 'right',
-                                    style: { fill: '#666', fontSize: 12 },
-                                }}
-                                tooltip={{
-                                    title: (d: DeviceStatsItem) => d.browser || '未知',
-                                    items: [{ channel: 'x', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
-                                }}
-                                interaction={{ elementHighlight: { background: true } }}
-                                style={{
-                                    maxHeight: 300,
-                                }}
-                            />
+                            <div style={{ padding: '8px 0' }}>
+                                {browserStats.map((item, index) => (
+                                    <div key={item.browser} style={{ marginBottom: index < browserStats.length - 1 ? 16 : 0 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                            <span style={{ color: '#2c3e50', fontSize: 13 }}>{item.browser || '未知'}</span>
+                                            <span style={{ color: '#8c8c8c', fontSize: 13 }}>{item.count.toLocaleString()} ({item.percentage}%)</span>
+                                        </div>
+                                        <Progress 
+                                            percent={item.percentage} 
+                                            showInfo={false}
+                                            strokeColor={chartColors.secondary}
+                                            trailColor="#f0f0f0"
+                                            size="small"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
                                 暂无浏览器数据
@@ -601,45 +580,32 @@ const TrafficStats: React.FC = () => {
                 </Col>
             </Row>
 
-            {/* 来源统计和停留时长 */}
+            {/* 来源统计和停留时长 - 使用进度条列表 */}
             <Row gutter={16} style={{ marginTop: 16 }}>
                 <Col xs={24} lg={12}>
                     <Card
-                        title={<span style={{ fontSize: 16, fontWeight: 600 }}><ShareAltOutlined style={{ marginRight: 8 }} />访问来源分布</span>}
+                        title={<span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}><ShareAltOutlined style={{ marginRight: 8, color: chartColors.muted }} />访问来源分布</span>}
                         bordered={false}
-                        style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
+                        style={{ borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
                     >
                         {refererStats.length > 0 ? (
-                            <Column
-                                data={refererStats}
-                                xField="source"
-                                yField="count"
-                                height={280}
-                                columnWidthRatio={0.5}
-                                colorField="source"
-                                legend={false}
-                                axis={{
-                                    x: {
-                                        title: false,
-                                        labelFormatter: (text: string) => text.length > 6 ? text.slice(0, 6) + '...' : text,
-                                    },
-                                    y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                                }}
-                                label={{
-                                    text: (d: RefererStatsItem) => `${d.percentage}%`,
-                                    position: 'top',
-                                    style: { fill: '#666', fontSize: 11 },
-                                }}
-                                tooltip={{
-                                    title: (d: RefererStatsItem) => d.source,
-                                    items: [
-                                        { channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() },
-                                        { name: '占比', value: (d: RefererStatsItem) => `${d.percentage}%` }
-                                    ],
-                                }}
-                                interaction={{ elementHighlight: { background: true } }}
-                                style={{ marginTop: 8 }}
-                            />
+                            <div style={{ padding: '8px 0' }}>
+                                {refererStats.map((item, index) => (
+                                    <div key={item.source} style={{ marginBottom: index < refererStats.length - 1 ? 16 : 0 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                            <span style={{ color: '#2c3e50', fontSize: 13 }}>{item.source}</span>
+                                            <span style={{ color: '#8c8c8c', fontSize: 13 }}>{item.count.toLocaleString()} ({item.percentage}%)</span>
+                                        </div>
+                                        <Progress 
+                                            percent={item.percentage} 
+                                            showInfo={false}
+                                            strokeColor={chartColors.muted}
+                                            trailColor="#f0f0f0"
+                                            size="small"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
                                 暂无来源数据
@@ -649,41 +615,28 @@ const TrafficStats: React.FC = () => {
                 </Col>
                 <Col xs={24} lg={12} style={{ marginTop: 16 }} className="lg:mt-0">
                     <Card
-                        title={<span style={{ fontSize: 16, fontWeight: 600 }}><FieldTimeOutlined style={{ marginRight: 8 }} />停留时长分布</span>}
+                        title={<span style={{ fontSize: 15, fontWeight: 500, color: '#2c3e50' }}><FieldTimeOutlined style={{ marginRight: 8, color: chartColors.accent }} />停留时长分布</span>}
                         bordered={false}
-                        style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)' }}
+                        style={{ borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
                     >
                         {sessionStats.length > 0 ? (
-                            <Column
-                                data={sessionStats}
-                                xField="durationRange"
-                                yField="count"
-                                height={280}
-                                columnWidthRatio={0.5}
-                                colorField="durationRange"
-                                legend={false}
-                                axis={{
-                                    x: {
-                                        title: false,
-                                        labelFormatter: (text: string) => text.length > 8 ? text.slice(0, 8) + '...' : text,
-                                    },
-                                    y: { title: false, labelFormatter: (v: number) => v.toLocaleString() },
-                                }}
-                                label={{
-                                    text: (d: SessionStatsItem) => `${d.percentage}%`,
-                                    position: 'top',
-                                    style: { fill: '#666', fontSize: 11 },
-                                }}
-                                tooltip={{
-                                    title: (d: SessionStatsItem) => d.durationRange,
-                                    items: [
-                                        { channel: 'y', name: '会话数', valueFormatter: (v: number) => v.toLocaleString() },
-                                        { name: '占比', value: (d: SessionStatsItem) => `${d.percentage}%` }
-                                    ],
-                                }}
-                                interaction={{ elementHighlight: { background: true } }}
-                                style={{ marginTop: 8 }}
-                            />
+                            <div style={{ padding: '8px 0' }}>
+                                {sessionStats.map((item, index) => (
+                                    <div key={item.durationRange} style={{ marginBottom: index < sessionStats.length - 1 ? 16 : 0 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                            <span style={{ color: '#2c3e50', fontSize: 13 }}>{item.durationRange}</span>
+                                            <span style={{ color: '#8c8c8c', fontSize: 13 }}>{item.count.toLocaleString()} ({item.percentage}%)</span>
+                                        </div>
+                                        <Progress 
+                                            percent={item.percentage} 
+                                            showInfo={false}
+                                            strokeColor={chartColors.accent}
+                                            trailColor="#f0f0f0"
+                                            size="small"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
                                 暂无停留数据
