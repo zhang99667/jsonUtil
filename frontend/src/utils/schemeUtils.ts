@@ -270,51 +270,32 @@ export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDec
 
     switch (type) {
       case 'url': {
-        // 解析 URL，提取参数并尝试解码参数值
+        // 解析 URL，提取 scheme 信息
         const urlInfo = parseUrl(current);
         if (urlInfo) {
-          // 只在第一次遇到 URL 时保存 schemeInfo（保留最外层的 scheme）
-          if (!schemeInfo) {
-            schemeInfo = urlInfo;
-          }
-
-          // 如果有参数，尝试找到可能包含编码数据的参数
-          if (urlInfo.params) {
-            // 常见的数据参数名
-            const dataParams = ['data', 'params', 'payload', 'body', 'json', 'config'];
-            for (const paramName of dataParams) {
-              if (urlInfo.params[paramName]) {
-                current = urlInfo.params[paramName];
-                layers.push({
-                  type: 'url',
-                  before,
-                  description: `URL 参数提取 (${paramName})`,
-                });
-                break;
+          schemeInfo = urlInfo;
+          
+          // 如果有参数，将参数展开为 JSON（每个值只做一次 URL 解码，不递归）
+          if (urlInfo.params && Object.keys(urlInfo.params).length > 0) {
+            const decodedParams: Record<string, string> = {};
+            for (const [key, value] of Object.entries(urlInfo.params)) {
+              // 只做一次 URL 解码，不继续递归解析
+              try {
+                decodedParams[key] = decodeURIComponent(value);
+              } catch {
+                decodedParams[key] = value;
               }
             }
-
-            // 如果没找到特定参数，取第一个看起来像编码数据的参数
-            if (current === before) {
-              for (const [key, value] of Object.entries(urlInfo.params)) {
-                if (hasUrlEncoding(value) || isBase64(value) || isJsonString(value)) {
-                  current = value;
-                  layers.push({
-                    type: 'url',
-                    before,
-                    description: `URL 参数提取 (${key})`,
-                  });
-                  break;
-                }
-              }
-            }
+            current = JSON.stringify(decodedParams, null, 2);
+            layers.push({
+              type: 'url',
+              before,
+              description: 'URL 参数提取',
+            });
           }
         }
-
-        // 如果 URL 没有可解析的参数，停止
-        if (current === before) {
-          depth = maxDepth; // 退出循环
-        }
+        // URL 解析完成后停止，不继续嵌套解码
+        depth = maxDepth;
         break;
       }
       
