@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SimpleEditor } from './SimpleEditor';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
@@ -8,6 +8,7 @@ import {
   SchemeDecodeResult,
   SchemeType 
 } from '../utils/schemeUtils';
+import { QRCodeCanvas } from 'qrcode.react';
 
 interface SchemeViewerModalProps {
   isOpen: boolean;
@@ -40,6 +41,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   
   // 独立模式下的输入值
   const [standaloneInput, setStandaloneInput] = useState<string>('');
+  
+  // 二维码状态
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrCodeType, setQRCodeType] = useState<'original' | 'decoded'>('original');
+  const qrCodeRef = useRef<HTMLCanvasElement>(null);
   
   // 实际使用的原始值：独立模式用输入值，否则用 prop 传入的值
   const actualValue = standalone ? standaloneInput : (value || '');
@@ -112,6 +118,28 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     setEditedContent(value);
     setIsEditing(true);
   };
+
+  // 下载二维码
+  const handleDownloadQRCode = () => {
+    const canvas = qrCodeRef.current;
+    if (!canvas) return;
+    
+    const url = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `scheme-qrcode-${qrCodeType}.png`;
+    link.href = url;
+    link.click();
+  };
+
+  // 获取二维码内容
+  const qrCodeContent = useMemo(() => {
+    return qrCodeType === 'original' ? actualValue : editedContent;
+  }, [qrCodeType, actualValue, editedContent]);
+
+  // 检查内容是否适合生成二维码（不超过约2953字符）
+  const isQRCodeValid = useMemo(() => {
+    return qrCodeContent && qrCodeContent.length > 0 && qrCodeContent.length <= 2953;
+  }, [qrCodeContent]);
   
   // 自动检测语言
   const editorLanguage = useMemo(() => {
@@ -146,6 +174,21 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           className="px-2.5 py-1 text-sm text-gray-400 hover:text-white transition-colors"
         >
           关闭
+        </button>
+        <button
+          onClick={() => setShowQRCode(!showQRCode)}
+          disabled={!actualValue}
+          className={`px-2.5 py-1 text-sm rounded transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+            showQRCode 
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+              : 'bg-editor-active text-gray-200 hover:bg-editor-border'
+          }`}
+          title="生成二维码"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+          </svg>
+          二维码
         </button>
         <button
           onClick={handleCopyOriginal}
@@ -303,6 +346,94 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 </div>
               </div>
             </details>
+          )}
+
+          {/* 二维码区域 */}
+          {showQRCode && (
+            <div className="bg-editor-sidebar rounded p-3 border border-editor-border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
+                  二维码
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* 类型切换 */}
+                  <div className="flex items-center bg-editor-bg rounded p-0.5 text-xs">
+                    <button
+                      onClick={() => setQRCodeType('original')}
+                      className={`px-2 py-1 rounded transition-colors ${
+                        qrCodeType === 'original' 
+                          ? 'bg-editor-active text-white' 
+                          : 'text-gray-400 hover:text-gray-200'
+                      }`}
+                    >
+                      原始值
+                    </button>
+                    <button
+                      onClick={() => setQRCodeType('decoded')}
+                      className={`px-2 py-1 rounded transition-colors ${
+                        qrCodeType === 'decoded' 
+                          ? 'bg-editor-active text-white' 
+                          : 'text-gray-400 hover:text-gray-200'
+                      }`}
+                    >
+                      解码结果
+                    </button>
+                  </div>
+                  {/* 下载按钮 */}
+                  <button
+                    onClick={handleDownloadQRCode}
+                    disabled={!isQRCodeValid}
+                    className="px-2 py-1 text-xs bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="下载二维码"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    下载
+                  </button>
+                </div>
+              </div>
+              
+              {/* 二维码显示 */}
+              <div className="flex flex-col items-center justify-center py-4 bg-white rounded">
+                {isQRCodeValid ? (
+                  <QRCodeCanvas
+                    ref={qrCodeRef}
+                    value={qrCodeContent}
+                    size={200}
+                    level="M"
+                    includeMargin={true}
+                    bgColor="#ffffff"
+                    fgColor="#000000"
+                  />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="text-sm">
+                      {!qrCodeContent 
+                        ? '无内容可生成二维码' 
+                        : '内容过长，无法生成二维码（最大约 2953 字符）'
+                      }
+                    </p>
+                    {qrCodeContent && (
+                      <p className="text-xs mt-1">当前长度: {qrCodeContent.length} 字符</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* 内容长度提示 */}
+              {isQRCodeValid && (
+                <div className="text-xs text-gray-500 text-center mt-2">
+                  {qrCodeType === 'original' ? '原始值' : '解码结果'}: {qrCodeContent.length} 字符
+                </div>
+              )}
+            </div>
           )}
 
           {/* 解码结果（可编辑，使用 SimpleEditor） */}
