@@ -99,6 +99,7 @@
     "driver.js": "^1.4.0",
     "json-source-map": "^0.6.1",
     "jsonpath-plus": "^10.3.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0"
