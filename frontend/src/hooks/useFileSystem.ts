@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { FileTab, TransformMode } from '../types';
 
 interface UseFileSystemProps {
@@ -55,6 +56,7 @@ export const useFileSystem = ({
                 console.log('Auto-saved');
             } catch (err) {
                 console.error('Auto-save failed:', err);
+                toast.error('自动保存失败', { duration: 2000 });
             }
         }, 1000); // 防抖延迟 1s
 
@@ -237,6 +239,7 @@ export const useFileSystem = ({
                 return false;
             }
             console.error('Failed to save source as:', err);
+            toast.error('另存为失败', { duration: 2000 });
             return false;
         }
     };
@@ -276,7 +279,9 @@ export const useFileSystem = ({
                 return true;
             } catch (err) {
                 console.error('Failed to save file:', err);
-                alert('保存文件失败，请重试');
+                toast.error('保存文件失败，请重试', {
+                    duration: 3000,
+                });
                 return false;
             }
         }

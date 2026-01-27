@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { SimpleEditor } from './SimpleEditor';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
@@ -90,18 +91,20 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(editedContent);
-      // 可以添加 toast 提示
+      toast.success('已复制解码结果', { duration: 2000 });
     } catch (err) {
       console.error('Failed to copy:', err);
+      toast.error('复制失败', { duration: 2000 });
     }
   };
 
   const handleCopyOriginal = async () => {
     try {
       await navigator.clipboard.writeText(actualValue);
-      // 可以添加 toast 提示
+      toast.success('已复制原始值', { duration: 2000 });
     } catch (err) {
       console.error('Failed to copy original:', err);
+      toast.error('复制失败', { duration: 2000 });
     }
   };
 
