@@ -385,6 +385,7 @@ const App: React.FC = () => {
       showToast("已保存预览结果");
     } catch (err) {
       console.error('Failed to save preview:', err);
+      toast.error('保存预览结果失败', { duration: 2000 });
     }
   };
 
