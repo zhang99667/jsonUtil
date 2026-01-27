@@ -263,6 +263,13 @@ export const useFileSystem = ({
                     setFiles(prev => prev.map(f =>
                         f.id === activeFileId ? { ...f, savedContent: input, isDirty: false } : f
                     ));
+                } else {
+                    // 当保存的是 Preview 内容时，同步更新 Source 内容和状态
+                    setInput(content);
+                    inputRef.current = content;
+                    setFiles(prev => prev.map(f =>
+                        f.id === activeFileId ? { ...f, content: content, savedContent: content, isDirty: false } : f
+                    ));
                 }
 
                 console.log('File saved successfully');
