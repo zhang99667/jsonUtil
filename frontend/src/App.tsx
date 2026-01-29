@@ -713,6 +713,11 @@ const App: React.FC = () => {
           <span className="bg-white text-brand-primary px-1.5 py-0.5 rounded font-bold text-[11px] shadow-sm leading-none">
             {MODE_LABELS[mode]}
           </span>
+          {mode === TransformMode.DEEP_FORMAT && (
+            <span className="opacity-70 text-[10px] ml-1">
+              · 自动展开多层嵌套的 JSON 字符串
+            </span>
+          )}
         </div>
       </div>
     </div>
