@@ -1,0 +1,13 @@
+# .gitignore for Claude Code / Ducc
+
+# User-specific Claude Code settings
+.claude/settings.json
+.claude/session-history/
+
+# Temporary files
+.claude/tmp/
+.claude/*.log
+
+# Keep the following:
+# .claude/memory/ - AI memory files (committed)
+# .claude/*.md - Documentation files

@@ -37,3 +37,13 @@ target/
 
 # Docker 本地覆盖配置（如有）
 docker-compose.override.yml
+
+# AI Tools - Claude Code / Ducc
+.claude/settings.json
+.claude/session-history/
+.claude/tmp/
+.claude/*.log
+
+# Keep committed:
+# .claude/memory/ - AI memory across sessions
+# .claude/*.md - Documentation files
