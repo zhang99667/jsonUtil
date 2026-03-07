@@ -2,15 +2,21 @@ import React from 'react';
 import { Form, Input, Button, Card, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { login } from '../services/auth';
+import { LoginFormValues } from '../../types';
 
 interface LoginProps {
     onLogin: () => void;
 }
 
+/** 登录接口响应数据 */
+interface LoginResponse {
+    token?: string;
+}
+
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-    const onFinish = async (values: any) => {
+    const onFinish = async (values: LoginFormValues) => {
         try {
-            const res = await login(values);
+            const res = await login(values) as LoginResponse;
             if (res.token) {
                 localStorage.setItem('token', res.token);
                 message.success('登录成功');

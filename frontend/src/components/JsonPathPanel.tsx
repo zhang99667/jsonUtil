@@ -20,7 +20,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     });
 
     // 查询结果状态
-    const [queryResults, setQueryResults] = useState<any[]>([]);
+    const [queryResults, setQueryResults] = useState<unknown[]>([]);
     const [currentResultIndex, setCurrentResultIndex] = useState<number>(0);
     const [totalResults, setTotalResults] = useState<number>(0);
 
@@ -112,14 +112,16 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                         setHistory(prev => [query, ...prev].slice(0, 10)); // 保留最近10条
                     }
                 }
-            } catch (e: any) {
-                setError(`JSONPath 查询错误: ${e.message}`);
+            } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : String(e);
+                setError(`JSONPath 查询错误: ${message}`);
                 setQueryResults([]);
                 setTotalResults(0);
                 setCurrentResultIndex(0);
             }
-        } catch (e: any) {
-            setError(`JSON 解析错误: ${e.message}`);
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            setError(`JSON 解析错误: ${message}`);
             setQueryResults([]);
             setTotalResults(0);
             setCurrentResultIndex(0);

@@ -1,5 +1,45 @@
 import React from 'react';
 
+// ============ JSON 值类型 ============
+
+/**
+ * JSON 基本值类型（递归定义）
+ * 用于替代 JSON.parse 返回值中的 any
+ */
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
+/**
+ * JSON 对象类型
+ */
+export type JsonObject = { [key: string]: JsonValue };
+
+/**
+ * JSON 数组类型
+ */
+export type JsonArray = JsonValue[];
+
+// ============ 管理后台表单类型 ============
+
+/** 登录表单字段 */
+export interface LoginFormValues {
+  username: string;
+  password: string;
+}
+
+/** 添加用户表单字段 */
+export interface AddUserFormValues {
+  email: string;
+  password: string;
+  role: 'USER' | 'ADMIN';
+}
+
+/** JWT 解码结果 */
+export interface JwtDecodeResult {
+  header: JsonObject;
+  payload: JsonObject;
+  signature: string;
+}
+
 export enum TransformMode {
   NONE = 'NONE',
   FORMAT = 'FORMAT',
@@ -104,7 +144,7 @@ export interface FileTab {
   name: string;
   content: string;
   savedContent?: string; // 磁盘上的已保存内容（用于 Diff 对比）
-  handle?: any; // FileSystemFileHandle
+  handle?: FileSystemFileHandle; // File System Access API 的文件句柄
   isDirty?: boolean;
   mode?: TransformMode; // 保存每个标签的转换模式
   path?: string; // 文件完整路径

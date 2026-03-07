@@ -1,6 +1,7 @@
 import request from './request';
+import { LoginFormValues } from '../../types';
 
-export const login = async (data: any) => {
+export const login = async (data: LoginFormValues) => {
     return request.post('/auth/login', data);
 };
 

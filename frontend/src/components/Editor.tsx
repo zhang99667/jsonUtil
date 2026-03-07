@@ -2,12 +2,14 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
+import type { editor } from 'monaco-editor';
 import { EditorProps, HighlightRange } from '../types';
 import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { computeLineDiff } from '../utils/diffUtils';
 import { findSchemesInJson, SchemeLocation } from '../utils/schemeUtils';
 import { SchemeViewerModal } from './SchemeViewerModal';
+import { TabBar } from './TabBar';
 
 // 扩展 EditorProps 以支持 scheme 修改回调
 interface ExtendedEditorProps extends EditorProps {
@@ -38,13 +40,13 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
   const [isLocked, setIsLocked] = useState<boolean>(true);
   const monaco = useMonaco();
-  const editorRef = useRef<any>(null);
-  const decorationsCollectionRef = useRef<any>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const decorationsCollectionRef = useRef<editor.IEditorDecorationsCollection | null>(null);
 
   // Scheme 检测状态
   const [schemeLocations, setSchemeLocations] = useState<SchemeLocation[]>([]);
   const schemeLocationsRef = useRef<SchemeLocation[]>([]); // 用于 onMount 闭包访问最新值
-  const schemeDecorationsRef = useRef<any>(null);
+  const schemeDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const [schemeModal, setSchemeModal] = useState<{
     isOpen: boolean;
     path: string;
@@ -222,7 +224,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   }, [highlightRange, monaco]);
 
   // 版本控制脏检查 (Dirty Diff) 装饰器
-  const diffDecorationsRef = useRef<any>(null);
+  const diffDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
 
   useEffect(() => {
     if (!editorRef.current || !monaco || originalValue === undefined) return;
@@ -238,7 +240,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     // 防抖计算 Diff
     const timer = setTimeout(() => {
       const diffs = computeLineDiff(originalValue, value);
-      const decorations: any[] = [];
+      const decorations: editor.IModelDeltaDecoration[] = [];
 
       diffs.forEach(diff => {
         let className = '';
@@ -281,30 +283,6 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
   }, [files, activeFileId]);
 
-  const getFileIcon = (filename: string) => {
-    if (!filename) return <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
-
-    const ext = filename.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'json':
-        return <span className="text-yellow-400 font-bold text-[11px] w-4 text-center flex-shrink-0">J</span>;
-      case 'js':
-      case 'jsx':
-        return <span className="text-yellow-300 font-bold text-[11px] w-4 text-center flex-shrink-0">JS</span>;
-      case 'ts':
-      case 'tsx':
-        return <span className="text-blue-400 font-bold text-[11px] w-4 text-center flex-shrink-0">TS</span>;
-      case 'css':
-        return <span className="text-blue-300 font-bold text-[11px] w-4 text-center flex-shrink-0">#</span>;
-      case 'html':
-        return <span className="text-orange-400 font-bold text-[11px] w-4 text-center flex-shrink-0">&lt;&gt;</span>;
-      case 'md':
-        return <span className="text-gray-300 font-bold text-[11px] w-4 text-center flex-shrink-0">M↓</span>;
-      default:
-        return <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
-    }
-  };
-
   return (
     <div className="flex flex-col h-full bg-editor-bg border-r border-editor-bg group">
       {/* 编辑器头部 */}
@@ -317,91 +295,20 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             {label}
           </label>
 
-          {files && (
-            <div className="flex-1 h-full relative min-w-0 ml-2 flex flex-col justify-end">
-              <div
-                data-tour="editor-tabs"
-                ref={tabsContainerRef}
-                onScroll={handleScroll}
-                onWheel={(e) => {
-                  if (tabsContainerRef.current) {
-                    // 将垂直滚动转换为水平滚动
-                    const delta = e.deltaY || e.deltaX;
-                    if (delta !== 0) {
-                      tabsContainerRef.current.scrollLeft += delta;
-                      // 阻止可能的页面滚动 (虽然 overflow-hidden 应该已经处理了)
-                      // e.preventDefault(); // React synthetic event doesn't support passive preventDefault well here, but browser native might
-                    }
-                  }
-                }}
-                className="flex items-center h-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden scrollbar-hide"
-              >
-                {files.length > 0 && files.map(file => (
-                  <div
-                    key={file.id}
-                    onClick={() => onTabClick?.(file.id)}
-                    onAuxClick={(e) => {
-                      // 鼠标中键 (button 1) 关闭标签
-                      if (e.button === 1) {
-                        e.stopPropagation();
-                        e.preventDefault(); // 阻止部分浏览器的自动滚动行为
-                        onCloseFile?.(file.id);
-                      }
-                    }}
-                    className={`flex items-center gap-1.5 px-1.5 h-full border-r border-r-editor-sidebar text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
-                      ? 'bg-editor-bg text-white border-t-2 border-t-brand-primary'
-                      : 'bg-editor-header text-editor-fg-sub border-t-2 border-t-transparent hover:bg-editor-hover'
-                      }`}
-                    title={file.name}
-                  >
-                    {getFileIcon(file.name)}
-                    <span className="truncate flex-1">{file.name}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCloseFile?.(file.id);
-                      }}
-                      className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 group/close flex items-center justify-center w-5 h-5 ${file.id === activeFileId ? 'hover:bg-editor-border' : 'hover:bg-editor-active'}`}
-                      title={file.isDirty ? "未保存" : "关闭"}
-                    >
-                      {file.isDirty ? (
-                        <>
-                          <div className="w-2 h-2 bg-green-400 rounded-full group-hover/close:hidden"></div>
-                          <svg className="w-3.5 h-3.5 text-gray-400 hidden group-hover/close:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                        </>
-                      ) : (
-                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      )}
-                    </button>
-                  </div>
-                ))}
-
-                {/* 新建标签按钮 */}
-                <div className="flex items-center justify-center h-full px-1">
-                  <button
-                    onClick={() => onNewTab?.()}
-                    className="flex items-center justify-center w-6 h-6 rounded-md text-editor-fg-sub hover:text-white hover:bg-editor-active transition-all cursor-pointer flex-shrink-0"
-                    title="新建标签 (Cmd+N)"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* 自定义滚动条 */}
-              {showScrollbar && (
-                <div className="absolute bottom-0 left-0 w-full h-[3px] z-10 opacity-0 group-hover/header:opacity-100 transition-opacity duration-200">
-                  <div
-                    className="h-full bg-scrollbar-bg hover:bg-scrollbar-hover rounded-full cursor-pointer relative"
-                    style={{
-                      width: `${thumbWidth}%`,
-                      left: `${thumbLeft}%`
-                    }}
-                    onMouseDown={handleMouseDown}
-                  />
-                </div>
-              )}
-            </div>
+          {files && onTabClick && onCloseFile && onNewTab && (
+            <TabBar
+              files={files}
+              activeFileId={activeFileId || null}
+              onTabClick={onTabClick}
+              onCloseFile={onCloseFile}
+              onNewTab={onNewTab}
+              tabsContainerRef={tabsContainerRef}
+              onScroll={handleScroll}
+              showScrollbar={showScrollbar}
+              thumbWidth={thumbWidth}
+              thumbLeft={thumbLeft}
+              onScrollbarMouseDown={handleMouseDown}
+            />
           )}
 
           {readOnly && !canToggleReadOnly && (
@@ -483,8 +390,9 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
             // 监听 glyph margin 点击事件（scheme 图标）
             // 使用 ref 访问最新的 schemeLocations，避免闭包捕获旧值
-            editor.onMouseDown((e: any) => {
-              if (e.target.type === 2) { // GLYPH_MARGIN
+            editor.onMouseDown((e) => {
+              // MouseTargetType.GUTTER_GLYPH_MARGIN = 2
+              if (e.target.type === 2) {
                 const lineNumber = e.target.position?.lineNumber;
                 if (lineNumber) {
                   // 直接使用 ref 获取最新的 locations

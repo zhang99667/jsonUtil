@@ -211,13 +211,13 @@ export function base64Encode(str: string): string {
 /**
  * 解析 JWT Token
  */
-export function decodeJwt(token: string): { header: any; payload: any; signature: string } | null {
+export function decodeJwt(token: string): { header: Record<string, unknown>; payload: Record<string, unknown>; signature: string } | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     
-    const header = JSON.parse(base64Decode(parts[0]));
-    const payload = JSON.parse(base64Decode(parts[1]));
+    const header = JSON.parse(base64Decode(parts[0])) as Record<string, unknown>;
+    const payload = JSON.parse(base64Decode(parts[1])) as Record<string, unknown>;
     
     return { header, payload, signature: parts[2] };
   } catch {
@@ -453,10 +453,10 @@ export function findSchemesInJson(jsonString: string): SchemeLocation[] {
   const results: SchemeLocation[] = [];
   
   try {
-    const parsed = JSON.parse(jsonString);
+    const parsed: unknown = JSON.parse(jsonString);
     const lines = jsonString.split('\n');
     
-    const traverse = (obj: any, currentPath: string) => {
+    const traverse = (obj: unknown, currentPath: string) => {
       if (typeof obj === 'string') {
         const schemeType = detectSchemeType(obj);
         if (schemeType !== 'plain' && schemeType !== 'json') {
@@ -494,8 +494,8 @@ export function findSchemesInJson(jsonString: string): SchemeLocation[] {
           traverse(item, `${currentPath}[${index}]`);
         });
       } else if (typeof obj === 'object' && obj !== null) {
-        for (const key in obj) {
-          traverse(obj[key], `${currentPath}.${key}`);
+        for (const key in (obj as Record<string, unknown>)) {
+          traverse((obj as Record<string, unknown>)[key], `${currentPath}.${key}`);
         }
       }
     };
