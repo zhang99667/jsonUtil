@@ -15,6 +15,8 @@ import UserManagement from './pages/UserManagement';
 import Dashboard from './pages/Dashboard';
 import { logout } from './services/auth';
 import TrafficStats from './pages/TrafficStats';
+import FileManagement from './pages/FileManagement';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -74,6 +76,8 @@ const App: React.FC = () => {
                 return <UserManagement />;
             case '3':
                 return <TrafficStats />;
+            case '9':
+                return <FileManagement />;
             default:
                 return <div>请选择功能菜单。</div>;
         }
@@ -84,6 +88,7 @@ const App: React.FC = () => {
             case '1': return '仪表盘';
             case '2': return '用户管理';
             case '3': return '流量统计';
+            case '9': return '文件管理';
             default: return '管理后台';
         }
     };
@@ -93,6 +98,7 @@ const App: React.FC = () => {
     }
 
     return (
+        <ErrorBoundary>
         <Layout style={{ minHeight: '100vh' }}>
             <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
                 <div style={{ 
@@ -166,6 +172,7 @@ const App: React.FC = () => {
                 </Footer>
             </Layout>
         </Layout>
+        </ErrorBoundary>
     );
 };
 
