@@ -1,15 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { AIConfig, AIProvider } from "../types";
 
-let genAI: GoogleGenAI | null = null;
-
-const getGenAI = () => {
-  if (!genAI) {
-    genAI = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  }
-  return genAI;
-};
-
 export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promise<string> => {
   // 检查 API Key
   if (!config.apiKey || config.apiKey.trim() === '') {
@@ -85,21 +76,23 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
 
     // 移除 Markdown 代码块标记
     return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error calling AI API:", error);
 
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
     // 如果已经是我们自定义的错误信息，直接抛出
-    if (error.message.includes('API Key') || error.message.includes('API 错误') || error.message.includes('服务')) {
+    if (errorMessage.includes('API Key') || errorMessage.includes('API 错误') || errorMessage.includes('服务')) {
       throw error;
     }
 
     // 网络错误
-    if (error.message.includes('fetch') || error.message.includes('network')) {
+    if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
       throw new Error('网络连接失败，请检查网络后重试');
     }
 
     // 其他未知错误
-    throw new Error('AI 修复失败: ' + error.message);
+    throw new Error('AI 修复失败: ' + errorMessage);
   }
 };
 

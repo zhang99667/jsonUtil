@@ -14,7 +14,7 @@ import {
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
-import { TransformMode, ActionType, ValidationResult, ShortcutConfig, ShortcutKey, ShortcutAction, FileTab, AIConfig, AIProvider, HighlightRange } from './types';
+import { TransformMode, ActionType, ValidationResult, AIConfig, AIProvider, HighlightRange } from './types';
 import { parse } from 'json-source-map';
 import { JSONPath } from 'jsonpath-plus';
 import { useShortcuts } from './hooks/useShortcuts';
@@ -22,19 +22,8 @@ import { useFileSystem } from './hooks/useFileSystem';
 import { useLayout } from './hooks/useLayout';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
-
-
-
-const MODE_LABELS: Record<TransformMode, string> = {
-  [TransformMode.NONE]: '原始视图',
-  [TransformMode.FORMAT]: '格式化',
-  [TransformMode.DEEP_FORMAT]: '深度格式化',
-  [TransformMode.MINIFY]: '压缩',
-  [TransformMode.ESCAPE]: '转义',
-  [TransformMode.UNESCAPE]: '反转义',
-  [TransformMode.UNICODE_TO_CN]: 'Unicode 转中文',
-  [TransformMode.CN_TO_UNICODE]: '中文 转 Unicode',
-};
+import ErrorBoundary from './components/ErrorBoundary';
+import { StatusBar } from './components/StatusBar';
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -270,10 +259,6 @@ const App: React.FC = () => {
     // 更新活动文件内容缓存
     updateActiveFileContent(cleanVal);
 
-    // 移除模式重置逻辑，保持当前视图模式
-    // if (mode !== TransformMode.NONE) {
-    //   setMode(TransformMode.NONE);
-    // }
   }, [updateActiveFileContent]);
 
   // 右侧预览编辑处理（反向转换）
@@ -357,8 +342,6 @@ const App: React.FC = () => {
     }, 400); // 防抖延迟增加到 1000ms
   }, [mode, files, activeFileId, updateActiveFileContent]);
 
-
-
   const savePreview = async () => {
     try {
       if (window.showSaveFilePicker) {
@@ -404,9 +387,10 @@ const App: React.FC = () => {
         // 修复后自动切换至格式化视图
         setMode(TransformMode.FORMAT);
         showToast("AI 修复成功");
-      } catch (e: any) {
+      } catch (e: unknown) {
         // 业务逻辑错误（API Key 缺失、网络错误等）使用 Toast 提示
-        toast.error(e.message || "AI 修复失败", {
+        const errorMessage = e instanceof Error ? e.message : "AI 修复失败";
+        toast.error(errorMessage, {
           duration: 3000,
           style: {
             background: 'var(--brand-danger)',
@@ -440,9 +424,56 @@ const App: React.FC = () => {
     }
   };
 
+  // 处理 Scheme 编辑：将修改后的值应用到 JSON 对应路径
+  const handleSchemeEdit = useCallback((jsonPath: string, newValue: string) => {
+    try {
+      const parsed = JSON.parse(output);
 
+      // 解析 JSON Path (如 $.action_cmd 或 $.data.items[0].url)
+      const pathParts = jsonPath
+        .replace(/^\$\.?/, '') // 移除开头的 $. 或 $
+        .split(/\.|\[|\]/)
+        .filter(p => p !== '');
 
+      // 遍历到目标位置并设置新值
+      let current = parsed;
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const part = pathParts[i];
+        const index = parseInt(part, 10);
+        current = isNaN(index) ? current[part] : current[index];
+      }
 
+      // 设置最后一个键的值
+      const lastPart = pathParts[pathParts.length - 1];
+      const lastIndex = parseInt(lastPart, 10);
+      if (isNaN(lastIndex)) {
+        current[lastPart] = newValue;
+      } else {
+        current[lastIndex] = newValue;
+      }
+
+      // 格式化并触发更新
+      const updatedOutput = JSON.stringify(parsed, null, 2);
+      handleOutputChange(updatedOutput);
+
+      toast.success('Scheme 修改已应用', {
+        duration: 2000,
+        style: {
+          background: 'var(--brand-primary)',
+          color: '#fff',
+        },
+      });
+    } catch (err) {
+      console.error('Failed to apply scheme edit:', err);
+      toast.error('应用修改失败', {
+        duration: 3000,
+        style: {
+          background: 'var(--brand-danger)',
+          color: '#fff',
+        },
+      });
+    }
+  }, [output, handleOutputChange]);
 
   // 处理 JSONPath 查询定位
   const handleJsonPathQuery = (queryString: string, resultIndex: number) => {
@@ -493,6 +524,7 @@ const App: React.FC = () => {
   };
 
   return (
+    <ErrorBoundary>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
 
       <UnifiedSettingsModal
@@ -601,56 +633,7 @@ const App: React.FC = () => {
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
               highlightRange={highlightRange}
-              onSchemeEdit={(jsonPath, newValue) => {
-                // 处理 Scheme 编辑：将修改后的值应用到 JSON 对应路径
-                try {
-                  const parsed = JSON.parse(output);
-                  
-                  // 解析 JSON Path (如 $.action_cmd 或 $.data.items[0].url)
-                  const pathParts = jsonPath
-                    .replace(/^\$\.?/, '') // 移除开头的 $. 或 $
-                    .split(/\.|\[|\]/)
-                    .filter(p => p !== '');
-                  
-                  // 遍历到目标位置并设置新值
-                  let current = parsed;
-                  for (let i = 0; i < pathParts.length - 1; i++) {
-                    const part = pathParts[i];
-                    const index = parseInt(part, 10);
-                    current = isNaN(index) ? current[part] : current[index];
-                  }
-                  
-                  // 设置最后一个键的值
-                  const lastPart = pathParts[pathParts.length - 1];
-                  const lastIndex = parseInt(lastPart, 10);
-                  if (isNaN(lastIndex)) {
-                    current[lastPart] = newValue;
-                  } else {
-                    current[lastIndex] = newValue;
-                  }
-                  
-                  // 格式化并触发更新
-                  const updatedOutput = JSON.stringify(parsed, null, 2);
-                  handleOutputChange(updatedOutput);
-                  
-                  toast.success('Scheme 修改已应用', {
-                    duration: 2000,
-                    style: {
-                      background: 'var(--brand-primary)',
-                      color: '#fff',
-                    },
-                  });
-                } catch (err) {
-                  console.error('Failed to apply scheme edit:', err);
-                  toast.error('应用修改失败', {
-                    duration: 3000,
-                    style: {
-                      background: 'var(--brand-danger)',
-                      color: '#fff',
-                    },
-                  });
-                }
-              }}
+              onSchemeEdit={handleSchemeEdit}
             />
           </div>
         </div>
@@ -691,36 +674,16 @@ const App: React.FC = () => {
       </div>
 
       {/* 底部状态栏 */}
-      <div data-tour="statusbar" className="h-6 bg-brand-primary flex items-center justify-between px-3 text-[11px] text-white select-none z-20 flex-shrink-0">
-        <div className="flex gap-4">
-          <span className="flex items-center gap-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg> UTF-8</span>
-          <span>Length: {input.length}</span>
-          <span className="font-mono">
-            {documentStats.totalLines} 行, {documentStats.maxColumns} 列
-          </span>
-          {activeFileId && (
-            <span
-              className="flex items-center gap-1 text-blue-200"
-              title={files.find(f => f.id === activeFileId)?.path || files.find(f => f.id === activeFileId)?.name}
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              {files.find(f => f.id === activeFileId)?.name}
-            </span>
-          )}
-        </div>
-        <div data-tour="statusbar-view" className="flex gap-2 items-center">
-          <span className="opacity-80">当前视图:</span>
-          <span className="bg-white text-brand-primary px-1.5 py-0.5 rounded font-bold text-[11px] shadow-sm leading-none">
-            {MODE_LABELS[mode]}
-          </span>
-          {mode === TransformMode.DEEP_FORMAT && (
-            <span className="opacity-70 text-[10px] ml-1">
-              · 自动展开多层嵌套的 JSON 字符串
-            </span>
-          )}
-        </div>
-      </div>
+      <StatusBar
+        inputLength={input.length}
+        totalLines={documentStats.totalLines}
+        maxColumns={documentStats.maxColumns}
+        mode={mode}
+        activeFileId={activeFileId}
+        files={files}
+      />
     </div>
+    </ErrorBoundary>
   );
 };
 
