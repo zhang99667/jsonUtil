@@ -1,12 +1,14 @@
 
 
-import { 
-  TransformMode, 
-  ValidationResult, 
-  TransformStep, 
-  PathTransformRecord, 
-  TransformContext, 
-  TransformResult 
+import {
+  TransformMode,
+  ValidationResult,
+  TransformStep,
+  PathTransformRecord,
+  TransformContext,
+  TransformResult,
+  JsonValue,
+  JsonObject
 } from '../types.ts';
 
 export const validateJson = (input: string): ValidationResult => {
@@ -14,8 +16,9 @@ export const validateJson = (input: string): ValidationResult => {
   try {
     JSON.parse(input);
     return { isValid: true };
-  } catch (e: any) {
-    return { isValid: false, error: e.message };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    return { isValid: false, error: message };
   }
 };
 
@@ -60,7 +63,7 @@ export const detectLanguage = (input: string): string => {
 // 核心转换逻辑
 const formatJson = (input: string): string => {
   try {
-    const parsed = JSON.parse(input);
+    const parsed: JsonValue = JSON.parse(input);
     return JSON.stringify(parsed, null, 2);
   } catch (e) {
     return input;
@@ -77,7 +80,7 @@ const deepFormatJson = (input: string): string => {
 
 const minifyJson = (input: string): string => {
   try {
-    const parsed = JSON.parse(input);
+    const parsed: JsonValue = JSON.parse(input);
     return JSON.stringify(parsed);
   } catch (e) {
     return input;
@@ -92,13 +95,13 @@ const unescapeString = (input: string): string => {
   try {
     // 处理双引号包裹的字符串
     if (input.startsWith('"') && input.endsWith('"')) {
-      return JSON.parse(input);
+      return JSON.parse(input) as string;
     }
     // 处理转义字符
-    return JSON.parse(`"${input}"`);
+    return JSON.parse(`"${input}"`) as string;
   } catch (e) {
     try {
-      const parsed = JSON.parse(input);
+      const parsed: JsonValue = JSON.parse(input);
       if (typeof parsed !== 'string') {
         return JSON.stringify(parsed);
       }
@@ -163,9 +166,9 @@ export function deepParseWithContext(
   };
 
   try {
-    const parsed = JSON.parse(input);
+    const parsed: JsonValue = JSON.parse(input);
 
-    const processValue = (value: any, currentPath: string, depth: number = 0): any => {
+    const processValue = (value: JsonValue, currentPath: string, depth: number = 0): JsonValue => {
       const maxDepth = options?.maxDepth ?? 10;
       if (depth > maxDepth) return value;
 
@@ -192,7 +195,7 @@ export function deepParseWithContext(
             const trimmed = current.trim();
             if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
                 (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-              const jsonParsed = JSON.parse(current);
+              const jsonParsed: JsonValue = JSON.parse(current);
               if (typeof jsonParsed === 'object' && jsonParsed !== null) {
                 steps.push({ type: 'json_parse' });
                 
@@ -211,9 +214,10 @@ export function deepParseWithContext(
                     processValue(item, `${currentPath}[${index}]`, depth + 1)
                   );
                 } else {
-                  const result: any = {};
-                  for (const key in jsonParsed) {
-                    result[key] = processValue(jsonParsed[key], `${currentPath}.${key}`, depth + 1);
+                  const jsonObj = jsonParsed as JsonObject;
+                  const result: JsonObject = {};
+                  for (const key in jsonObj) {
+                    result[key] = processValue(jsonObj[key], `${currentPath}.${key}`, depth + 1);
                   }
                   return result;
                 }
@@ -245,10 +249,11 @@ export function deepParseWithContext(
         );
       }
 
-      if (typeof value === 'object' && value !== null) {
-        const result: any = {};
-        for (const key in value) {
-          result[key] = processValue(value[key], `${currentPath}.${key}`, depth);
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        const objValue = value as JsonObject;
+        const result: JsonObject = {};
+        for (const key in objValue) {
+          result[key] = processValue(objValue[key], `${currentPath}.${key}`, depth);
         }
         return result;
       }
@@ -281,9 +286,9 @@ export function inverseWithContext(
   context: TransformContext
 ): string {
   try {
-    const editedParsed = JSON.parse(editedOutput);
+    const editedParsed: JsonValue = JSON.parse(editedOutput);
 
-    const restoreValue = (value: any, currentPath: string): any => {
+    const restoreValue = (value: JsonValue, currentPath: string): JsonValue => {
       const record = context.records.get(currentPath);
 
       if (record && record.steps.length > 0) {
@@ -297,9 +302,10 @@ export function inverseWithContext(
               restoreValue(item, `${currentPath}[${index}]`)
             );
           } else {
-            const restored: any = {};
-            for (const key in current) {
-              restored[key] = restoreValue(current[key], `${currentPath}.${key}`);
+            const currentObj = current as JsonObject;
+            const restored: JsonObject = {};
+            for (const key in currentObj) {
+              restored[key] = restoreValue(currentObj[key], `${currentPath}.${key}`);
             }
             current = restored;
           }
@@ -321,10 +327,11 @@ export function inverseWithContext(
         );
       }
 
-      if (typeof value === 'object' && value !== null) {
-        const result: any = {};
-        for (const key in value) {
-          result[key] = restoreValue(value[key], `${currentPath}.${key}`);
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        const objValue = value as JsonObject;
+        const result: JsonObject = {};
+        for (const key in objValue) {
+          result[key] = restoreValue(objValue[key], `${currentPath}.${key}`);
         }
         return result;
       }
@@ -349,7 +356,7 @@ export function inverseWithContext(
 /**
  * 应用单步逆向转换
  */
-function applyInverseStep(value: any, step: TransformStep): any {
+function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
   switch (step.type) {
     case 'json_parse':
       // 逆操作：stringify（不带缩进，保持紧凑）
@@ -412,10 +419,10 @@ const detectIndentation = (jsonString: string): number | string => {
 
 const smartInverse = (output: string, originalInput: string): string => {
   try {
-    const outputObj = JSON.parse(output);
-    const originalObj = JSON.parse(originalInput);
+    const outputObj: JsonValue = JSON.parse(output);
+    const originalObj: JsonValue = JSON.parse(originalInput);
 
-    const deepMerge = (out: any, orig: any): any => {
+    const deepMerge = (out: JsonValue, orig: JsonValue): JsonValue => {
       // 检测到字符串被展开为对象，需重新序列化
       if (typeof orig === 'string' && typeof out === 'object' && out !== null) {
         return JSON.stringify(out);
@@ -431,13 +438,16 @@ const smartInverse = (output: string, originalInput: string): string => {
         });
       }
 
-      if (typeof out === 'object' && out !== null && typeof orig === 'object' && orig !== null) {
-        const newObj: any = {};
-        for (const key in out) {
-          if (key in orig) {
-            newObj[key] = deepMerge(out[key], orig[key]);
+      if (typeof out === 'object' && out !== null && !Array.isArray(out) &&
+          typeof orig === 'object' && orig !== null && !Array.isArray(orig)) {
+        const outObj = out as JsonObject;
+        const origObj = orig as JsonObject;
+        const newObj: JsonObject = {};
+        for (const key in outObj) {
+          if (key in origObj) {
+            newObj[key] = deepMerge(outObj[key], origObj[key]);
           } else {
-            newObj[key] = out[key];
+            newObj[key] = outObj[key];
           }
         }
         return newObj;
@@ -457,7 +467,7 @@ const smartInverse = (output: string, originalInput: string): string => {
   } catch (e) {
     // 合并失败回退策略：优先返回标准格式化 JSON
     try {
-      const parsed = JSON.parse(output);
+      const parsed: JsonValue = JSON.parse(output);
       return JSON.stringify(parsed, null, 2);
     } catch {
       return output;

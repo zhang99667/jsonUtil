@@ -124,7 +124,8 @@ export const useFileSystem = ({
                     handle: undefined, // No handle in fallback mode
                     isDirty: false,
                     mode: TransformMode.NONE,
-                    path: (file as any).path
+                    // Electron 环境下 File 对象包含 path 属性（非标准 Web API）
+                    path: (file as File & { path?: string }).path
                 };
 
                 setFiles(prev => [...prev, newFile]);
@@ -165,7 +166,7 @@ export const useFileSystem = ({
                 handle: handle,
                 isDirty: false,
                 mode: TransformMode.NONE, // 新打开的文件默认无转换模式
-                path: (file as any).path // Electron 环境下 File 对象包含 path 属性
+                path: (file as File & { path?: string }).path // Electron 环境下 File 对象包含 path 属性
             };
 
             setFiles(prev => [...prev, newFile]);
@@ -209,7 +210,8 @@ export const useFileSystem = ({
                             handle: handle, // 绑定新句柄，下次直接 save
                             savedContent: input,
                             isDirty: false,
-                            path: (handle as any).path // Electron 环境下可能可用
+                            // Electron 环境下 FileSystemFileHandle 可能包含 path 属性（非标准）
+                            path: (handle as FileSystemFileHandle & { path?: string }).path
                         } : f
                     ));
                 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 type Orientation = 'vertical' | 'horizontal';
 
-export const useCustomScrollbar = (orientation: Orientation = 'vertical', dependency?: any) => {
+export const useCustomScrollbar = (orientation: Orientation = 'vertical', dependency?: unknown) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [scrollPos, setScrollPos] = useState(0);
     const [scrollSize, setScrollSize] = useState(0);
