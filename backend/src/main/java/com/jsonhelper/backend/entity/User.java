@@ -23,6 +23,9 @@ public class User {
 
     private String role; // USER, ADMIN
 
+    @Column(nullable = false)
+    private Boolean enabled = true; // 账号启用状态
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
