@@ -2,6 +2,21 @@
 
 这是一个现代化的 JSON 处理工具项目，集成了 AI 智能修复功能。本文档为 Claude Code/Ducc 等 AI 编程助手提供项目上下文和开发指引。
 
+## 📖 重要：完整编码规范
+
+**项目的详细编码规范请参考**: `rules/code-style.md` ⭐
+
+该文件包含：
+- 详细的代码风格规范
+- Git 提交格式要求
+- CHANGELOG 更新规范
+- 中文注释要求
+- 文件组织规范
+
+本文档 (CLAUDE.md) 侧重于项目整体理解和开发指引。
+
+---
+
 ## 项目概览
 
 **项目类型**: 前后端分离的 Web 应用 + Electron 桌面应用
@@ -84,37 +99,34 @@ json-助手-&-ai-修复/
 
 ## 开发规范
 
-### 代码风格
+⚠️ **重要提示**: 详细的编码规范请查看 `rules/code-style.md`
 
-1. **TypeScript 优先**
-   - 前端代码必须使用 TypeScript
-   - 避免使用 `any` 类型，优先使用明确的类型定义
-   - 复杂类型抽取到独立的 `.d.ts` 文件
+以下是快速参考：
 
-2. **React 最佳实践**
+### 代码风格要点
+
+1. **TypeScript/React**
    - 使用函数组件 + Hooks
-   - 合理使用 `useMemo`/`useCallback` 避免不必要的重渲染
-   - 自定义 Hooks 提取复用逻辑
-   - 组件拆分遵循单一职责原则
+   - 避免使用 `any` 类型
+   - 组件文件: PascalCase，工具文件: camelCase
+   - **注释必须使用中文** (详见 `rules/code-style.md`)
 
-3. **样式规范**
-   - 主应用: Tailwind CSS utility classes
-   - 管理后台: Ant Design 组件 + 自定义样式
-   - 避免内联样式，使用 className
+2. **Java/Spring Boot**
+   - 分层架构: Controller → Service → Repository
+   - RESTful API 设计
+   - 使用 Lombok 简化代码
 
-4. **文件命名**
+3. **文件命名**
    - 组件文件: PascalCase (e.g., `Editor.tsx`)
    - 工具函数: camelCase (e.g., `transformations.ts`)
    - 常量文件: UPPER_CASE (e.g., `CONSTANTS.ts`)
 
 ### Git 提交规范
 
-使用约定式提交格式:
+使用约定式提交格式 (详见 `rules/code-style.md`):
 
 ```
 [类型]简短描述
-
-详细说明（可选）
 ```
 
 **类型标签**:
@@ -123,17 +135,15 @@ json-助手-&-ai-修复/
 - `[Refactor]`: 重构
 - `[Docs]`: 文档更新
 - `[Style]`: 代码格式调整
-- `[Test]`: 测试相关
 - `[Chore]`: 构建/工具链更新
+- `[LOG]`: 更新日志
+
+**重要**: 每次代码修改必须同步更新 `CHANGELOG.md`
 
 **示例**:
-```
-[Feature]添加深度格式化模式
-
-增加对嵌套JSON的深度格式化支持，包括:
-- 自定义缩进级别
-- 数组元素对齐
-- 对象键排序
+```bash
+git commit -m "[Feature]添加流量统计页面"
+git commit -m "[FIXBUG]修复预览同步问题"
 ```
 
 ### API 设计规范

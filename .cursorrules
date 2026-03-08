@@ -1,8 +1,16 @@
 # JSONUtils 专业版 - Cursor AI 规则
 
+## 📖 完整规范文档
+
+**详细的编码规范请参考**: `rules/code-style.md`
+
+本文件提供快速参考和 Cursor AI 特定的配置。
+
+---
+
 ## 项目上下文
 
-这是一个 JSON 处理工具，包含前后端分离架构和 Electron 桌面应用。
+JSON 处理工具，包含前后端分离架构和 Electron 桌面应用。
 
 ### 技术栈
 - **前端**: React 19 + TypeScript + Vite 6 + Tailwind CSS + Monaco Editor
@@ -10,158 +18,161 @@
 - **桌面**: Electron
 - **AI**: Google Gemini API
 
-### 项目结构
-- `frontend/`: React 应用 (双入口: 主应用 + 管理后台)
-- `backend/`: Spring Boot API 服务
-- `ARCHITECTURE.md`: 详细架构文档
+### 关键文档
+- `rules/code-style.md` - **完整编码规范** ⭐
+- `CLAUDE.md` - Claude Code/Ducc 项目指引
+- `ARCHITECTURE.md` - 详细架构说明
 
-## 代码规范
+---
 
-### TypeScript/React
+## 快速规范参考
 
-1. **类型安全**
-   - 避免使用 `any`，优先使用具体类型
-   - 复杂类型定义抽取到 `.d.ts` 文件
-   - Props 使用 interface 定义
+### 代码风格要点
 
-2. **React 组件**
-   - 使用函数组件 + Hooks
-   - 大组件拆分为小组件 (单一职责)
-   - 使用 `useMemo`/`useCallback` 优化性能
-   - 状态管理: 优先使用 Hooks，复杂状态考虑 Context
+**TypeScript/React**:
+- 函数组件 + Hooks
+- 避免 `any`，使用明确类型
+- 文件命名: 组件 PascalCase，工具 camelCase
+- 导入顺序: React → 第三方库 → 项目模块 → 样式
 
-3. **文件命名**
-   - 组件: PascalCase (e.g., `Editor.tsx`)
-   - 工具/服务: camelCase (e.g., `aiService.ts`)
-   - 类型定义: PascalCase (e.g., `types.d.ts`)
+**Java/Spring Boot**:
+- 分层架构: Controller → Service → Repository
+- RESTful API 设计
+- 统一响应格式
 
-4. **导入顺序**
-   ```typescript
-   // 1. React 相关
-   import React, { useState, useEffect } from 'react';
+**注释规范**:
+⚠️ **所有注释必须使用中文** (参考 `rules/code-style.md`)
 
-   // 2. 第三方库
-   import axios from 'axios';
-   import { Button } from 'antd';
+### Git 提交规范
 
-   // 3. 项目内部模块
-   import { transformJSON } from '@/utils/transformations';
-   import Editor from '@/components/Editor';
+格式: `[类型]简短描述`
 
-   // 4. 样式
-   import './styles.css';
-   ```
-
-### 样式规范
-
-- **主应用**: Tailwind CSS utility classes
-- **管理后台**: Ant Design 组件 + 自定义样式
-- 避免内联样式，使用 `className`
-- 响应式设计优先
-
-### Java/Spring Boot
-
-1. **分层架构**
-   - Controller: 只处理 HTTP 请求/响应
-   - Service: 业务逻辑
-   - Repository: 数据访问
-   - DTO: 数据传输对象
-
-2. **命名规范**
-   - Controller: `*Controller`
-   - Service: `*Service` (接口) + `*ServiceImpl` (实现)
-   - Repository: `*Repository`
-   - Entity: 实体名 (e.g., `User`, `VisitLog`)
-
-3. **注解使用**
-   - `@RestController` + `@RequestMapping` 定义 API
-   - `@Service` 标记服务层
-   - `@Repository` 标记数据访问层
-   - `@Transactional` 处理事务
-
-## Git 提交规范
-
-使用约定式提交格式:
-
+类型标签:
 ```
-[类型]简短描述
-
-详细说明（可选）
+[Feature]  - 新功能
+[FIXBUG]   - Bug 修复
+[Refactor] - 重构
+[Docs]     - 文档更新
+[Style]    - 样式/格式调整
+[Chore]    - 构建/工具/配置
+[LOG]      - 更新日志
 ```
 
-### 类型标签
-- `[Feature]`: 新功能
-- `[FIXBUG]`: Bug 修复
-- `[Refactor]`: 重构
-- `[Docs]`: 文档更新
-- `[Style]`: 代码格式
-- `[Test]`: 测试相关
-- `[Chore]`: 构建/配置更新
-
-### 示例
-```
-[Feature]添加 JSONPath 查询高亮功能
-
-实现查询结果在编辑器中的高亮显示:
-- 支持多个匹配结果高亮
-- 添加结果导航按钮
-- 优化性能避免大文件卡顿
+示例:
+```bash
+git commit -m "[Feature]添加流量统计页面"
+git commit -m "[FIXBUG]修复预览同步问题"
 ```
 
-## 开发约定
+⚠️ **重要**: 代码修改时必须同步更新 `CHANGELOG.md` (详见 `rules/code-style.md`)
 
-### API 设计
+---
 
-1. **RESTful 规范**
-   - GET: 查询
-   - POST: 创建
-   - PUT: 更新
-   - DELETE: 删除
+## 文件组织
 
-2. **响应格式**
-   ```json
-   {
-     "code": 200,
-     "message": "success",
-     "data": {...}
-   }
-   ```
+新增功能时的文件位置:
+```
+frontend/src/admin/pages/XxxPage.tsx        # 前端页面
+frontend/src/admin/services/xxx.ts          # API 服务
+backend/.../controller/XxxController.java   # 后端控制器
+backend/.../service/XxxService.java         # 业务逻辑
+backend/.../dto/response/XxxDTO.java        # 数据对象
+```
 
-3. **错误处理**
-   - 前端: 使用 `react-hot-toast` 统一提示
-   - 后端: 全局异常处理器统一处理
+Admin 路由配置位置: `frontend/src/admin/App.tsx` 中的 `items` 数组和 `renderContent` 函数
 
-### 状态管理
+---
 
-- **局部状态**: `useState`
-- **共享状态**: `useContext` + Context Provider
-- **表单状态**: Ant Design Form 或 `useState`
-- **异步状态**: 自定义 Hook + `useEffect`
+## 错误处理
 
-### 性能优化
+**前端**: try-catch + Toast/Message 提示 + 控制台日志
+**后端**: 自定义异常 + 全局异常处理器 + 日志记录
 
-1. **React 优化**
-   - 合理使用 `React.memo()`
-   - 列表使用 `key` 属性
-   - 大列表考虑虚拟滚动
-   - 懒加载: `React.lazy()` + `Suspense`
+---
 
-2. **打包优化**
-   - 代码分割
-   - 按需引入第三方库
-   - 图片资源压缩
+## 性能优化
 
-3. **数据库优化**
-   - 添加索引
-   - 分页查询
-   - 避免 N+1 查询
+- React: `useMemo`/`useCallback`、代码分割、虚拟滚动
+- 数据库: 索引、分页、避免 N+1 查询
+- 打包: Tree-shaking、按需加载、资源压缩
+
+---
+
+## 安全注意事项
+
+- API Key 使用环境变量，不提交到 Git
+- 用户输入进行转义，防止 XSS
+- 使用参数化查询，防止 SQL 注入
+- Spring Security + JWT 认证
+
+---
+
+## 常用命令
+
+```bash
+# 前端开发
+cd frontend
+npm install
+npm run dev              # 启动开发服务器
+npm run build            # 生产构建
+npm run electron:dev     # Electron 开发模式
+
+# 后端开发
+cd backend
+mvn spring-boot:run      # 启动服务
+mvn clean package        # 打包
+
+# Docker
+docker-compose up -d               # 启动
+docker-compose down                # 停止
+docker-compose logs -f [service]   # 查看日志
+```
+
+---
+
+## Cursor AI 特定配置
+
+### 代码补全优先级
+1. 遵循项目现有代码模式
+2. 参考 `rules/code-style.md` 中的规范
+3. 保持与周围代码风格一致
+
+### 重构建议
+- 优先建议符合项目架构的重构方案
+- 保持向后兼容性
+- 考虑性能影响
+
+### 注释生成
+- 自动生成中文注释
+- 包含参数和返回值说明
+- 解释复杂逻辑和边界条件
+
+---
 
 ## 最佳实践
 
-### 错误处理
-
-**前端**:
+### 组件设计
 ```typescript
+// ✅ 好的做法
+function Editor() {
+  return (
+    <div>
+      <Toolbar />
+      <CodeEditor />
+      <StatusBar />
+    </div>
+  );
+}
+
+// ❌ 不好的做法 - 单个组件过于复杂
+function MegaComponent() {
+  // 100+ 行代码...
+}
+```
+
+### API 调用
+```typescript
+// ✅ 好的做法
 try {
   const result = await apiCall();
   toast.success('操作成功');
@@ -172,192 +183,59 @@ try {
 }
 ```
 
-**后端**:
+### Java 控制器
 ```java
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(Exception e) {
-        return ResponseEntity.status(500)
-            .body(new ErrorResponse(500, e.getMessage()));
+// ✅ 好的做法
+@RestController
+@RequestMapping("/api/admin/xxx")
+@RequiredArgsConstructor
+public class XxxController {
+    private final XxxService xxxService;
+
+    @GetMapping
+    public ResponseEntity<?> getList() {
+        // 简洁的控制器逻辑
+        return ResponseEntity.ok(xxxService.getList());
     }
 }
-```
-
-### 组件设计
-
-**原则**:
-- 单一职责: 一个组件做一件事
-- 可复用: 抽取通用组件
-- 可测试: 逻辑与 UI 分离
-
-**示例**:
-```typescript
-// ❌ 不好的做法: 组件过于复杂
-function MegaComponent() {
-  // 100+ 行代码...
-}
-
-// ✅ 好的做法: 拆分为小组件
-function Editor() {
-  return (
-    <div>
-      <Toolbar />
-      <CodeEditor />
-      <StatusBar />
-    </div>
-  );
-}
-```
-
-### Hooks 设计
-
-**自定义 Hook 命名**: `use` 前缀
-
-```typescript
-// ✅ 好的 Hook 设计
-function useFileSystem() {
-  const [files, setFiles] = useState([]);
-
-  const openFile = useCallback(async (path: string) => {
-    // ...
-  }, []);
-
-  return { files, openFile };
-}
-```
-
-## 测试指南
-
-### 单元测试
-
-**前端** (推荐使用 Vitest):
-```typescript
-import { describe, it, expect } from 'vitest';
-import { transformJSON } from './transformations';
-
-describe('transformJSON', () => {
-  it('应该正确格式化 JSON', () => {
-    const input = '{"a":1}';
-    const output = transformJSON(input, 'format');
-    expect(output).toBe('{\n  "a": 1\n}');
-  });
-});
-```
-
-**后端** (JUnit 5):
-```java
-@SpringBootTest
-class UserServiceTest {
-    @Autowired
-    private UserService userService;
-
-    @Test
-    void shouldCreateUser() {
-        User user = new User("test@example.com");
-        User saved = userService.create(user);
-        assertNotNull(saved.getId());
-    }
-}
-```
-
-### 集成测试
-
-- 前端: 使用 Cypress 或 Playwright
-- 后端: `@SpringBootTest` + `MockMvc`
-
-## 常见问题
-
-### Monaco Editor 相关
-
-**问题**: Editor 加载慢
-**解决**: 使用 CDN + 按需加载语言支持
-
-**问题**: 大文件卡顿
-**解决**: 限制文件大小或使用虚拟滚动
-
-### AI 服务相关
-
-**问题**: Gemini API 调用失败
-**检查清单**:
-1. API Key 是否正确配置
-2. 网络连接是否正常
-3. API 配额是否用尽
-4. 请求格式是否正确
-
-### Electron 打包相关
-
-**问题**: 打包失败
-**常见原因**:
-- Node 版本不兼容
-- 依赖安装不完整
-- 平台特定依赖缺失
-
-**解决步骤**:
-```bash
-# 1. 清理并重装依赖
-rm -rf node_modules package-lock.json
-npm install
-
-# 2. 检查 electron-builder 配置
-cat package.json | grep -A 20 '"build"'
-
-# 3. 尝试平台特定打包
-npm run electron:build:mac  # macOS
-npm run electron:build:win  # Windows
-npm run electron:build:linux  # Linux
-```
-
-## 安全注意事项
-
-1. **API Key 保护**
-   - 不要提交 `.env` 文件到 Git
-   - 使用环境变量存储敏感信息
-   - 生产环境使用密钥管理服务
-
-2. **XSS 防护**
-   - 用户输入进行转义
-   - 使用 `dangerouslySetInnerHTML` 时要谨慎
-
-3. **CSRF 防护**
-   - Spring Security 启用 CSRF 保护
-   - API 使用 JWT token 认证
-
-4. **SQL 注入防护**
-   - 使用 JPA/Hibernate 参数化查询
-   - 避免字符串拼接 SQL
-
-## 资源链接
-
-- [React 官方文档](https://react.dev/)
-- [TypeScript 手册](https://www.typescriptlang.org/docs/)
-- [Vite 文档](https://vitejs.dev/)
-- [Spring Boot 指南](https://spring.io/guides)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Ant Design](https://ant.design/)
-- [Monaco Editor](https://microsoft.github.io/monaco-editor/)
-
-## 命令速查
-
-```bash
-# 前端开发
-cd frontend
-npm install          # 安装依赖
-npm run dev          # 启动开发服务器
-npm run build        # 生产构建
-npm run electron:dev # Electron 开发模式
-
-# 后端开发
-cd backend
-mvn spring-boot:run  # 启动服务
-mvn clean package    # 打包
-
-# Docker 部署
-docker-compose up -d               # 启动服务
-docker-compose down                # 停止服务
-docker-compose logs -f [service]   # 查看日志
 ```
 
 ---
 
-💡 **提示**: 详细架构说明请参阅 [ARCHITECTURE.md](./ARCHITECTURE.md)
+## 测试指南
+
+- 新功能添加测试用例
+- 修改功能确保现有测试通过
+- API 修改更新文档
+
+---
+
+## 故障排查
+
+### Monaco Editor 问题
+- 加载慢: 使用 CDN + 按需加载
+- 大文件卡顿: 限制文件大小或虚拟滚动
+
+### AI 服务问题
+- API 调用失败: 检查 API Key、网络、配额
+
+### Electron 打包问题
+- 清理并重装依赖: `rm -rf node_modules && npm install`
+- 检查 Node.js 版本兼容性
+
+---
+
+## 参考资源
+
+- [React 文档](https://react.dev/)
+- [TypeScript 手册](https://www.typescriptlang.org/docs/)
+- [Spring Boot 指南](https://spring.io/guides)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Ant Design](https://ant.design/)
+
+---
+
+💡 **提示**:
+- 完整的编码规范请查看 `rules/code-style.md`
+- 项目架构详情请查看 `ARCHITECTURE.md`
+- AI 助手使用指引请查看 `CLAUDE.md`
