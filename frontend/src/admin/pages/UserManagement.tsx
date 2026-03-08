@@ -197,7 +197,7 @@ const UserManagement: React.FC = () => {
             width: 160,
             render: (text: string) => (
                 <span>
-                    <UserOutlined style={{ marginRight: 6, color: '#1890ff' }} />
+                    <UserOutlined style={{ marginRight: 6, color: '#5B6EF5' }} />
                     {text}
                 </span>
             ),
@@ -207,7 +207,7 @@ const UserManagement: React.FC = () => {
             dataIndex: 'email',
             key: 'email',
             width: 200,
-            render: (text: string | null) => text || <span style={{ color: '#bfbfbf' }}>未设置</span>,
+            render: (text: string | null) => text || <span style={{ color: '#9CA3BE' }}>未设置</span>,
         },
         {
             title: '角色',
@@ -218,7 +218,7 @@ const UserManagement: React.FC = () => {
             render: (role: string) => {
                 const isAdmin = role === 'ADMIN';
                 return (
-                    <Tag color={isAdmin ? 'red' : 'blue'}>
+                    <Tag color={isAdmin ? 'purple' : 'blue'}>
                         {isAdmin ? '管理员' : '普通用户'}
                     </Tag>
                 );
@@ -301,52 +301,49 @@ const UserManagement: React.FC = () => {
             {/* 页面标题 */}
             <div style={{ marginBottom: 24 }}>
                 <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <TeamOutlined />
+                    <TeamOutlined style={{ color: '#5B6EF5' }} />
                     用户管理
                 </Title>
             </div>
 
-            {/* 搜索栏和操作按钮 */}
-            <Card bordered={false} style={{ marginBottom: 16 }}>
-                <Row gutter={[16, 16]} align="middle">
-                    <Col xs={24} sm={12} md={8}>
-                        <Input.Search
-                            placeholder="搜索用户名"
-                            allowClear
-                            enterButton={<><SearchOutlined /> 搜索</>}
-                            onSearch={handleSearch}
-                            onChange={(e) => {
-                                // 清空输入框时自动重新加载
-                                if (!e.target.value) {
-                                    handleSearch('');
-                                }
-                            }}
-                        />
-                    </Col>
-                    <Col xs={24} sm={12} md={16} style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                        <Button
-                            icon={<ReloadOutlined />}
-                            onClick={() => fetchUserList(pagination.current, pagination.pageSize)}
-                        >
-                            刷新
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<UserAddOutlined />}
-                            onClick={() => setShowAddForm(!showAddForm)}
-                        >
-                            {showAddForm ? '收起' : '添加用户'}
-                        </Button>
-                    </Col>
-                </Row>
-            </Card>
+            {/* 搜索栏和操作按钮 — flex 行布局，无 Card 包裹 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+                <Input.Search
+                    placeholder="搜索用户名"
+                    allowClear
+                    enterButton={<><SearchOutlined /> 搜索</>}
+                    onSearch={handleSearch}
+                    onChange={(e) => {
+                        // 清空输入框时自动重新加载
+                        if (!e.target.value) {
+                            handleSearch('');
+                        }
+                    }}
+                    style={{ maxWidth: 320 }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <Button
+                        icon={<ReloadOutlined />}
+                        onClick={() => fetchUserList(pagination.current, pagination.pageSize)}
+                    >
+                        刷新
+                    </Button>
+                    <Button
+                        type="primary"
+                        icon={<UserAddOutlined />}
+                        onClick={() => setShowAddForm(!showAddForm)}
+                    >
+                        {showAddForm ? '收起' : '添加用户'}
+                    </Button>
+                </div>
+            </div>
 
             {/* 添加用户表单（可折叠） */}
             {showAddForm && (
                 <Card
                     title={<><UserAddOutlined style={{ marginRight: 8 }} />添加新用户</>}
                     bordered={false}
-                    style={{ marginBottom: 16 }}
+                    style={{ marginBottom: 16, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                 >
                     <Form
                         form={addForm}
@@ -360,7 +357,7 @@ const UserManagement: React.FC = () => {
                             rules={[{ required: true, message: '请输入用户名' }]}
                         >
                             <Input
-                                prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
+                                prefix={<UserOutlined style={{ color: '#9CA3BE' }} />}
                                 placeholder="用户名"
                                 style={{ width: 180 }}
                             />
@@ -370,7 +367,7 @@ const UserManagement: React.FC = () => {
                             rules={[{ required: true, message: '请输入密码' }]}
                         >
                             <Input.Password
-                                prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
+                                prefix={<LockOutlined style={{ color: '#9CA3BE' }} />}
                                 placeholder="密码"
                                 style={{ width: 180 }}
                             />
@@ -394,7 +391,7 @@ const UserManagement: React.FC = () => {
             )}
 
             {/* 用户列表表格 */}
-            <Card bordered={false}>
+            <Card bordered={false} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <Table<UserRecord>
                     columns={columns}
                     dataSource={userList}
@@ -442,7 +439,7 @@ const UserManagement: React.FC = () => {
                         rules={[{ required: true, message: '请输入用户名' }]}
                     >
                         <Input
-                            prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
+                            prefix={<UserOutlined style={{ color: '#9CA3BE' }} />}
                             placeholder="请输入用户名"
                         />
                     </Form.Item>
@@ -454,7 +451,7 @@ const UserManagement: React.FC = () => {
                         ]}
                     >
                         <Input
-                            prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
+                            prefix={<MailOutlined style={{ color: '#9CA3BE' }} />}
                             placeholder="请输入邮箱地址（选填）"
                         />
                     </Form.Item>
@@ -464,7 +461,7 @@ const UserManagement: React.FC = () => {
                         extra="留空则不修改密码"
                     >
                         <Input.Password
-                            prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
+                            prefix={<LockOutlined style={{ color: '#9CA3BE' }} />}
                             placeholder="输入新密码（留空不修改）"
                         />
                     </Form.Item>

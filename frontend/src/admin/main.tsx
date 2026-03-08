@@ -1,10 +1,15 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { ConfigProvider } from 'antd'
+import zhCN from 'antd/locale/zh_CN'
+import { adminTheme } from './styles/theme'
+import './styles/admin.css'
 import App from './App'
-// Ensure shared styles are loaded if needed, or valid ant setup
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <App />
+        <ConfigProvider theme={adminTheme} locale={zhCN}>
+            <App />
+        </ConfigProvider>
     </React.StrictMode>,
 )

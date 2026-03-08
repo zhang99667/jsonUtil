@@ -1,9 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Statistic, Spin, Typography } from 'antd';
+import { Row, Col, Statistic, Spin, Typography } from 'antd';
 import { UserOutlined, PayCircleOutlined, ThunderboltOutlined, EyeOutlined, TeamOutlined, DashboardOutlined } from '@ant-design/icons';
 import { getStatistics, Statistics } from '../services/stats';
 
 const { Title } = Typography;
+
+/** 英雄卡片通用样式 */
+const heroCardBase: React.CSSProperties = {
+    borderRadius: 16,
+    padding: 28,
+    position: 'relative',
+    overflow: 'hidden',
+    color: '#fff',
+};
+
+/** 英雄卡片右上角装饰图标样式 */
+const heroIconStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    fontSize: 40,
+    opacity: 0.2,
+    color: '#fff',
+};
+
+/** 今日流量内嵌白色卡片样式 */
+const trafficCardBase: React.CSSProperties = {
+    background: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+};
 
 const Dashboard: React.FC = () => {
     const [stats, setStats] = useState<Statistics | null>(null);
@@ -15,7 +42,7 @@ const Dashboard: React.FC = () => {
                 const data = await getStatistics();
                 setStats(data);
             } catch (error) {
-                console.error('Failed to fetch statistics:', error);
+                console.error('获取统计数据失败:', error);
             } finally {
                 setLoading(false);
             }
@@ -23,6 +50,7 @@ const Dashboard: React.FC = () => {
         fetchStats();
     }, []);
 
+    /* 加载态居中显示 */
     if (loading) {
         return (
             <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -41,70 +69,100 @@ const Dashboard: React.FC = () => {
                 </Title>
             </div>
 
-            {/* 核心指标 */}
-            <Row gutter={[16, 16]}>
+            {/* 核心指标 — 三张渐变英雄卡片 */}
+            <Row gutter={[20, 20]}>
+                {/* 总用户数 — 蓝色渐变 */}
                 <Col xs={24} sm={12} md={8}>
-                    <Card bordered={false} hoverable>
+                    <div
+                        style={{
+                            ...heroCardBase,
+                            background: 'linear-gradient(135deg, #5B6EF5 0%, #8B9CF7 100%)',
+                        }}
+                    >
+                        <UserOutlined style={heroIconStyle} />
+                        <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 8 }}>总用户数</div>
                         <Statistic
-                            title="总用户数"
                             value={stats?.totalUsers || 0}
-                            prefix={<UserOutlined />}
-                            valueStyle={{ color: '#1890ff', fontSize: 28 }}
+                            valueStyle={{ color: '#fff', fontSize: 32, fontWeight: 700 }}
                         />
-                    </Card>
+                    </div>
                 </Col>
+
+                {/* 活跃订阅 — 紫色渐变 */}
                 <Col xs={24} sm={12} md={8}>
-                    <Card bordered={false} hoverable>
+                    <div
+                        style={{
+                            ...heroCardBase,
+                            background: 'linear-gradient(135deg, #7C5BF5 0%, #A78BFA 100%)',
+                        }}
+                    >
+                        <ThunderboltOutlined style={heroIconStyle} />
+                        <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 8 }}>活跃订阅</div>
                         <Statistic
-                            title="活跃订阅"
                             value={stats?.activeSubscriptions || 0}
-                            prefix={<ThunderboltOutlined />}
-                            valueStyle={{ color: '#f5222d', fontSize: 28 }}
+                            valueStyle={{ color: '#fff', fontSize: 32, fontWeight: 700 }}
                         />
-                    </Card>
+                    </div>
                 </Col>
+
+                {/* 总收入 — 绿色渐变 */}
                 <Col xs={24} sm={12} md={8}>
-                    <Card bordered={false} hoverable>
+                    <div
+                        style={{
+                            ...heroCardBase,
+                            background: 'linear-gradient(135deg, #10B981 0%, #6EE7B7 100%)',
+                        }}
+                    >
+                        <PayCircleOutlined style={heroIconStyle} />
+                        <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 8 }}>总收入</div>
                         <Statistic
-                            title="总收入"
                             value={stats?.totalRevenue || 0}
-                            prefix={<PayCircleOutlined />}
                             precision={2}
-                            valueStyle={{ color: '#52c41a', fontSize: 28 }}
+                            valueStyle={{ color: '#fff', fontSize: 32, fontWeight: 700 }}
                         />
-                    </Card>
+                    </div>
                 </Col>
             </Row>
 
-            {/* 今日流量 */}
-            <Card 
-                title={<><EyeOutlined style={{ marginRight: 8 }} />今日流量</>}
-                bordered={false} 
-                style={{ marginTop: 16 }}
+            {/* 今日流量区域 */}
+            <div
+                style={{
+                    marginTop: 28,
+                    borderLeft: '3px solid #5B6EF5',
+                    paddingLeft: 12,
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: '#1A1D2E',
+                }}
             >
-                <Row gutter={[16, 16]}>
-                    <Col xs={24} sm={12}>
-                        <Card bordered={false} style={{ background: '#f0f5ff' }}>
-                            <Statistic
-                                title="浏览量 (PV)"
-                                value={stats?.todayPv || 0}
-                                prefix={<EyeOutlined />}
-                                valueStyle={{ color: '#1890ff', fontSize: 28 }}
-                            />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                        <Card bordered={false} style={{ background: '#f6ffed' }}>
-                            <Statistic
-                                title="访客数 (UV)"
-                                value={stats?.todayUv || 0}
-                                prefix={<TeamOutlined />}
-                                valueStyle={{ color: '#52c41a', fontSize: 28 }}
-                            />
-                        </Card>
-                    </Col>
-                </Row>
-            </Card>
+                今日流量
+            </div>
+
+            <Row gutter={[20, 20]} style={{ marginTop: 16 }}>
+                {/* 浏览量 (PV) */}
+                <Col xs={24} sm={12}>
+                    <div style={trafficCardBase}>
+                        <Statistic
+                            title="浏览量 (PV)"
+                            value={stats?.todayPv || 0}
+                            prefix={<EyeOutlined style={{ color: '#5B6EF5' }} />}
+                            valueStyle={{ fontSize: 28 }}
+                        />
+                    </div>
+                </Col>
+
+                {/* 访客数 (UV) */}
+                <Col xs={24} sm={12}>
+                    <div style={trafficCardBase}>
+                        <Statistic
+                            title="访客数 (UV)"
+                            value={stats?.todayUv || 0}
+                            prefix={<TeamOutlined style={{ color: '#10B981' }} />}
+                            valueStyle={{ fontSize: 28 }}
+                        />
+                    </div>
+                </Col>
+            </Row>
         </div>
     );
 };

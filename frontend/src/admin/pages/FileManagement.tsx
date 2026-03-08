@@ -171,7 +171,7 @@ const FileManagement: React.FC = () => {
             render: (fileName: string) => (
                 <Tooltip title={fileName}>
                     <span>
-                        <FileOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                        <FileOutlined style={{ marginRight: 8, color: '#5B6EF5' }} />
                         {fileName}
                     </span>
                 </Tooltip>
@@ -259,7 +259,7 @@ const FileManagement: React.FC = () => {
             {/* 页面标题 */}
             <div style={{ marginBottom: 24 }}>
                 <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FileOutlined />
+                    <FileOutlined style={{ color: '#5B6EF5' }} />
                     文件管理
                 </Title>
             </div>
@@ -271,7 +271,7 @@ const FileManagement: React.FC = () => {
                     allowClear
                     onSearch={handleSearch}
                     style={{ maxWidth: 320 }}
-                    prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                    prefix={<SearchOutlined style={{ color: '#9CA3BE' }} />}
                 />
                 <Button
                     icon={<ReloadOutlined />}
@@ -281,25 +281,34 @@ const FileManagement: React.FC = () => {
                 </Button>
             </div>
 
-            {/* 文件列表表格 */}
-            <Table
-                columns={columns}
-                dataSource={fileList}
-                rowKey="id"
-                loading={loading}
-                pagination={{
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                    total: pagination.total,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    showTotal: (total) => `共 ${total} 个文件`,
-                    pageSizeOptions: ['10', '20', '50'],
+            {/* 文件列表表格 — 白底圆角容器 */}
+            <div
+                style={{
+                    background: '#fff',
+                    borderRadius: 12,
+                    padding: 4,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 }}
-                onChange={handleTableChange}
-                size="middle"
-                bordered={false}
-            />
+            >
+                <Table
+                    columns={columns}
+                    dataSource={fileList}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{
+                        current: pagination.current,
+                        pageSize: pagination.pageSize,
+                        total: pagination.total,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total) => `共 ${total} 个文件`,
+                        pageSizeOptions: ['10', '20', '50'],
+                    }}
+                    onChange={handleTableChange}
+                    size="middle"
+                    bordered={false}
+                />
+            </div>
 
             {/* 文件预览弹窗 */}
             <Modal
@@ -324,9 +333,10 @@ const FileManagement: React.FC = () => {
                 ) : (
                     <pre
                         style={{
-                            background: '#f5f5f5',
+                            background: '#F7F8FC',
+                            border: '1px solid #E8EAF2',
                             padding: 16,
-                            borderRadius: 6,
+                            borderRadius: 10,
                             fontSize: 13,
                             lineHeight: 1.6,
                             whiteSpace: 'pre-wrap',
@@ -334,6 +344,7 @@ const FileManagement: React.FC = () => {
                             margin: 0,
                             maxHeight: '55vh',
                             overflow: 'auto',
+                            fontFamily: "'SF Mono', 'Menlo', 'Monaco', monospace",
                         }}
                     >
                         {previewContent}

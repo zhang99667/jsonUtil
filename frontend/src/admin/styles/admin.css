@@ -1,0 +1,246 @@
+/* ============================================
+ * 管理后台全局样式
+ * 包含：设计 Token 变量、动画、工具类、Ant Design 覆写
+ * ============================================ */
+
+/* ------------------------------------------
+ * CSS 变量定义（设计 Token）
+ * ------------------------------------------ */
+:root {
+  /* 主色系 */
+  --admin-color-primary: #5B6EF5;
+  --admin-color-primary-hover: #4A5CE3;
+  --admin-color-primary-active: #3D4FD1;
+
+  /* 渐变色 */
+  --admin-gradient-blue: linear-gradient(135deg, #5B6EF5 0%, #8B9CF7 100%);
+  --admin-gradient-violet: linear-gradient(135deg, #7C5BF5 0%, #A78BFA 100%);
+  --admin-gradient-emerald: linear-gradient(135deg, #10B981 0%, #6EE7B7 100%);
+  --admin-gradient-amber: linear-gradient(135deg, #F59E0B 0%, #FCD34D 100%);
+
+  /* 背景色 */
+  --admin-bg-page: #F7F8FC;
+  --admin-bg-card: #FFFFFF;
+  --admin-bg-sidebar: #1E2235;
+
+  /* 文字颜色 */
+  --admin-text-primary: #1A1D2E;
+  --admin-text-secondary: #5A607F;
+  --admin-text-muted: #9CA3BE;
+
+  /* 边框与分割线 */
+  --admin-border-color: #E8EAF2;
+  --admin-divider-color: #F0F1F5;
+
+  /* 阴影 */
+  --admin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --admin-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  /* 圆角 */
+  --admin-radius-sm: 8px;
+  --admin-radius-md: 12px;
+  --admin-radius-lg: 16px;
+  --admin-radius-xl: 20px;
+
+  /* 字体 */
+  --admin-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Noto Sans SC', sans-serif;
+}
+
+/* ------------------------------------------
+ * 动画关键帧
+ * ------------------------------------------ */
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 从下方滑入 */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 从左侧滑入 */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 缩放弹入 */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ------------------------------------------
+ * 全局工具类
+ * ------------------------------------------ */
+
+/* 页面入场动画 */
+.admin-page-enter {
+  animation: fadeIn 0.3s ease-out, slideUp 0.4s ease-out;
+}
+
+/* 统一卡片样式：白底 + 圆角12 + 阴影md + hover提升 */
+.admin-card {
+  background: var(--admin-bg-card);
+  border-radius: var(--admin-radius-md);
+  box-shadow: var(--admin-shadow-md);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.admin-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* 渐变背景工具类 */
+.admin-gradient-blue {
+  background: var(--admin-gradient-blue);
+}
+
+.admin-gradient-violet {
+  background: var(--admin-gradient-violet);
+}
+
+.admin-gradient-emerald {
+  background: var(--admin-gradient-emerald);
+}
+
+.admin-gradient-amber {
+  background: var(--admin-gradient-amber);
+}
+
+/* 统计卡片样式：白底 + 圆角16 + 阴影 */
+.admin-stat-card {
+  background: var(--admin-bg-card);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.admin-stat-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* 毛玻璃效果 */
+.admin-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ------------------------------------------
+ * Ant Design 组件覆写
+ * ------------------------------------------ */
+
+/* 侧边栏：深色背景，无边框 */
+.ant-layout-sider {
+  background: #1E2235 !important;
+  border-right: none !important;
+}
+
+/* 深色菜单：透明背景，菜单项圆角，选中项渐变 */
+.ant-menu-dark {
+  background: transparent !important;
+}
+
+.ant-menu-dark .ant-menu-item {
+  border-radius: 8px !important;
+  margin: 4px 8px !important;
+}
+
+.ant-menu-dark .ant-menu-item-selected {
+  background: var(--admin-gradient-blue) !important;
+}
+
+/* 表格：表头背景，行 hover 淡蓝色 */
+.ant-table .ant-table-thead > tr > th {
+  background: #F7F8FC !important;
+  color: #5A607F !important;
+}
+
+.ant-table .ant-table-tbody > tr:hover > td {
+  background: rgba(91, 110, 245, 0.04) !important;
+}
+
+/* 卡片：圆角12，边框颜色 */
+.ant-card {
+  border-radius: 12px !important;
+  border-color: #E8EAF2 !important;
+}
+
+/* 主按钮：渐变背景，圆角8 */
+.ant-btn-primary {
+  background: var(--admin-gradient-blue) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(91, 110, 245, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 14px rgba(91, 110, 245, 0.4) !important;
+}
+
+/* 模态框：圆角16 */
+.ant-modal .ant-modal-content {
+  border-radius: 16px !important;
+}
+
+/* 输入框：圆角8，边框颜色 */
+.ant-input {
+  border-radius: 8px !important;
+  border-color: #E8EAF2 !important;
+}
+
+/* 下拉选择器：圆角8，边框颜色 */
+.ant-select-selector {
+  border-radius: 8px !important;
+  border-color: #E8EAF2 !important;
+}
+
+/* 面包屑：文字次色 */
+.ant-breadcrumb {
+  color: #5A607F !important;
+}
+
+.ant-breadcrumb a {
+  color: #5A607F !important;
+}
+
+.ant-breadcrumb .ant-breadcrumb-separator {
+  color: #9CA3BE !important;
+}
+
+/* 标签：圆角6 */
+.ant-tag {
+  border-radius: 6px !important;
+}
