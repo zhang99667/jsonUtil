@@ -27,22 +27,18 @@ public class DataInitializer implements CommandLineRunner {
 
         userRepository.findByUsername(defaultUsername).ifPresentOrElse(
                 user -> {
-                    // Update password every restart to ensure it's always "1234"
-                    user.setPasswordHash(passwordEncoder.encode(defaultPassword));
-                    user.setEmail("markz@example.com");
-                    user.setRole("ADMIN");
-                    userRepository.save(user);
-                    logger.info("Default user '{}' password has been reset to '{}'", defaultUsername, defaultPassword);
+                    // 用户已存在，不重置密码，直接跳过
+                    logger.info("Default user already exists");
                 },
                 () -> {
-                    // Create new user if not exists
+                    // 用户不存在时，创建默认用户
                     User user = new User();
                     user.setUsername(defaultUsername);
                     user.setPasswordHash(passwordEncoder.encode(defaultPassword));
                     user.setEmail("markz@example.com");
                     user.setRole("ADMIN");
                     userRepository.save(user);
-                    logger.info("Default user '{}' created with password '{}'", defaultUsername, defaultPassword);
+                    logger.info("Default user created");
                 });
     }
 }

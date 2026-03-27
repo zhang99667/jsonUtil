@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Input, Button, Modal, Popconfirm, message, Space, Tag, Typography, Tooltip } from 'antd';
+import { Table, Input, Button, Modal, Popconfirm, message, Space, Tag, Typography, Tooltip, Upload } from 'antd';
 import {
     FileOutlined,
     EyeOutlined,
@@ -7,13 +7,16 @@ import {
     DeleteOutlined,
     SearchOutlined,
     ReloadOutlined,
+    UploadOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { UploadProps } from 'antd';
 import {
     getFileList,
     getFileContent,
     downloadFile,
     deleteFile,
+    uploadFile,
     FileItem,
 } from '../services/file';
 
@@ -63,6 +66,37 @@ const FileManagement: React.FC = () => {
     const [previewFileName, setPreviewFileName] = useState('');
     // 预览内容加载状态
     const [previewLoading, setPreviewLoading] = useState(false);
+    // 文件上传中状态
+    const [uploading, setUploading] = useState(false);
+
+    /** 允许上传的文件类型 */
+    const ACCEPTED_FILE_TYPES = '.json,.xml,.csv,.txt,.yaml,.yml';
+
+    /**
+     * 自定义上传处理
+     */
+    const uploadProps: UploadProps = {
+        accept: ACCEPTED_FILE_TYPES,
+        showUploadList: false,
+        beforeUpload: () => false, // 阻止自动上传，使用自定义逻辑
+        onChange: async (info) => {
+            const file = info.file as unknown as File;
+            if (!file) return;
+
+            setUploading(true);
+            try {
+                await uploadFile(file);
+                message.success(`${file.name} 上传成功`);
+                // 上传成功后刷新列表，回到第一页
+                fetchFiles(1, pagination.pageSize, keyword);
+            } catch (error) {
+                message.error('文件上传失败');
+                console.error('上传文件失败:', error);
+            } finally {
+                setUploading(false);
+            }
+        },
+    };
 
     /**
      * 获取文件列表
@@ -273,12 +307,23 @@ const FileManagement: React.FC = () => {
                     style={{ maxWidth: 320 }}
                     prefix={<SearchOutlined style={{ color: '#9CA3BE' }} />}
                 />
-                <Button
-                    icon={<ReloadOutlined />}
-                    onClick={handleRefresh}
-                >
-                    刷新
-                </Button>
+                <Space>
+                    <Upload {...uploadProps}>
+                        <Button
+                            type="primary"
+                            icon={<UploadOutlined />}
+                            loading={uploading}
+                        >
+                            上传文件
+                        </Button>
+                    </Upload>
+                    <Button
+                        icon={<ReloadOutlined />}
+                        onClick={handleRefresh}
+                    >
+                        刷新
+                    </Button>
+                </Space>
             </div>
 
             {/* 文件列表表格 — 白底圆角容器 */}
