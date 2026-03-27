@@ -43,6 +43,16 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- 数据库迁移管理 -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
         <!-- Utils -->
         <dependency>
             <groupId>org.projectlombok</groupId>
