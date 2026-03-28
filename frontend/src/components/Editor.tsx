@@ -34,6 +34,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   highlightRange,
   onFocus,
   onCursorPositionChange,
+  onSaveViewState,
+  restoreViewState,
   onSchemeEdit
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
@@ -267,6 +269,35 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     return () => clearTimeout(timer);
 
   }, [value, originalValue, monaco]);
+
+  // 记录上一个 activeFileId，用于切换标签时保存旧标签的视图状态
+  const prevActiveFileIdRef = useRef<string | null | undefined>(activeFileId);
+
+  // 标签切换时保存旧标签的 viewState，恢复新标签的 viewState
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || !onSaveViewState) return;
+
+    const prevId = prevActiveFileIdRef.current;
+
+    // 保存旧标签的视图状态（光标位置、滚动位置等）
+    if (prevId && prevId !== activeFileId) {
+      const viewState = editor.saveViewState();
+      if (viewState) {
+        onSaveViewState(prevId, viewState);
+      }
+    }
+
+    // 恢复新标签的视图状态
+    if (activeFileId && activeFileId !== prevId && restoreViewState) {
+      // 延迟恢复，确保 Monaco 已完成 model 切换
+      requestAnimationFrame(() => {
+        editor.restoreViewState(restoreViewState as import('monaco-editor').editor.ICodeEditorViewState);
+      });
+    }
+
+    prevActiveFileIdRef.current = activeFileId;
+  }, [activeFileId, onSaveViewState, restoreViewState]);
 
 
   // 新文件打开时自动滚动标签栏

@@ -5,12 +5,14 @@ import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
 import { JsonPathPanel } from './components/JsonPathPanel';
 import { SchemeViewerModal } from './components/SchemeViewerModal';
+import { TemplateFillPanel } from './components/TemplateFillPanel';
 import {
   validateJson,
   performTransform,
   performInverseTransform,
   deepParseWithContext,
-  inverseWithContext
+  inverseWithContext,
+  applyTemplate
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
@@ -60,7 +62,8 @@ const App: React.FC = () => {
   // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
-    createNewTab, openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent
+    createNewTab, openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
+    saveViewState
   } = useFileSystem({
     input, setInput, inputRef, setMode, output: '' // 初始为空，后面会更新
   });
@@ -129,6 +132,7 @@ const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
+  const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
 
   // 使用 react-hot-toast 替代自定义 toast
@@ -372,6 +376,36 @@ const App: React.FC = () => {
     }
   };
 
+  // 模板填充处理
+  const handleApplyTemplate = useCallback((templateJson: string) => {
+    try {
+      const merged = applyTemplate(input, templateJson);
+      setInput(merged);
+      inputRef.current = merged;
+      updateActiveFileContent(merged);
+      toast.success('模板已应用', {
+        duration: 2000,
+        style: {
+          background: 'var(--brand-primary)',
+          color: '#fff',
+          fontSize: '14px',
+          fontWeight: '500',
+        },
+      });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '模板应用失败';
+      toast.error(message, {
+        duration: 3000,
+        style: {
+          background: 'var(--brand-danger)',
+          color: '#fff',
+          fontSize: '14px',
+          fontWeight: '500',
+        },
+      });
+    }
+  }, [input, updateActiveFileContent]);
+
   const handleAction = async (action: ActionType) => {
     if (action === ActionType.AI_FIX) {
       // 触发 AI 修复功能首次使用引导
@@ -553,6 +587,7 @@ const App: React.FC = () => {
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             onToggleJsonPath={() => setIsJsonPathPanelOpen(!isJsonPathPanelOpen)}
             onToggleSchemeDecode={() => setIsSchemeDecodeOpen(!isSchemeDecodeOpen)}
+            onToggleTemplateFill={() => setIsTemplatePanelOpen(!isTemplatePanelOpen)}
           />
         </div>
 
@@ -582,6 +617,8 @@ const App: React.FC = () => {
               onTabClick={switchTab}
               onCloseFile={closeFile}
               onNewTab={createNewTab}
+              onSaveViewState={saveViewState}
+              restoreViewState={activeFileId ? files.find(f => f.id === activeFileId)?.viewState : undefined}
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               headerActions={
@@ -654,6 +691,13 @@ const App: React.FC = () => {
           isOpen={isSchemeDecodeOpen}
           onClose={() => setIsSchemeDecodeOpen(false)}
           standalone={true}
+        />
+
+        {/* 模板填充面板 */}
+        <TemplateFillPanel
+          isOpen={isTemplatePanelOpen}
+          onClose={() => setIsTemplatePanelOpen(false)}
+          onApplyTemplate={handleApplyTemplate}
         />
 
         {/* 拖拽遮罩层（防止 iframe/webview 捕获事件） */}

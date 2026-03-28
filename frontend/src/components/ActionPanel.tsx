@@ -14,6 +14,7 @@ interface ActionPanelProps {
   onToggleCollapse: () => void;
   onToggleJsonPath: () => void;
   onToggleSchemeDecode: () => void;
+  onToggleTemplateFill: () => void;
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
@@ -25,7 +26,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   isCollapsed,
   onToggleCollapse,
   onToggleJsonPath,
-  onToggleSchemeDecode
+  onToggleSchemeDecode,
+  onToggleTemplateFill
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollState, setScrollState] = useState({ scrollTop: 0, scrollHeight: 0, clientHeight: 0 });
@@ -276,6 +278,19 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               </svg>
             </div>
             {!isCollapsed && <span>Scheme 解析</span>}
+          </button>
+
+          <button
+            onClick={onToggleTemplateFill}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
+            title={isCollapsed ? "模板填充" : undefined}
+          >
+            <div className="transition-colors text-gray-500 group-hover:text-orange-400">
+              <svg className="w-5 h-5 flex-shrink-0 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </div>
+            {!isCollapsed && <span>模板填充</span>}
           </button>
         </div>
 

@@ -498,6 +498,77 @@ export const performTransform = (input: string, mode: TransformMode): string => 
   }
 };
 
+// ============ 模板填充（深度合并） ============
+
+/**
+ * 深度合并模板到目标 JSON 对象
+ * - 两边都是对象 → 递归合并
+ * - 模板中的标量值覆盖目标同名字段
+ * - 目标独有字段保留，模板独有字段添加
+ * - 数组不逐项合并，模板数组直接覆盖
+ */
+export const deepMergeTemplate = (target: JsonValue, template: JsonValue): JsonValue => {
+  // 模板为 null 或非对象类型 → 直接用模板值覆盖
+  if (template === null || typeof template !== 'object') {
+    return template;
+  }
+
+  // 模板是数组 → 直接覆盖（不逐项合并）
+  if (Array.isArray(template)) {
+    return template;
+  }
+
+  // 目标不是普通对象 → 直接用模板覆盖
+  if (target === null || typeof target !== 'object' || Array.isArray(target)) {
+    return template;
+  }
+
+  // 两边都是普通对象 → 递归合并
+  const result: JsonObject = { ...target as JsonObject };
+  const tmpl = template as JsonObject;
+  for (const key of Object.keys(tmpl)) {
+    if (key in result) {
+      result[key] = deepMergeTemplate(result[key], tmpl[key]);
+    } else {
+      result[key] = tmpl[key];
+    }
+  }
+  return result;
+};
+
+/**
+ * 字符串级封装：解析输入 JSON + 模板 JSON，深度合并后格式化输出
+ * @param inputJson - 当前编辑器中的 JSON 字符串
+ * @param templateJson - 模板 JSON 字符串
+ * @returns 合并后的格式化 JSON 字符串
+ * @throws 输入或模板不是合法 JSON 时抛出错误
+ */
+export const applyTemplate = (inputJson: string, templateJson: string): string => {
+  if (!inputJson.trim()) {
+    throw new Error('当前编辑器内容为空');
+  }
+  if (!templateJson.trim()) {
+    throw new Error('模板内容为空');
+  }
+
+  let target: JsonValue;
+  try {
+    target = JSON.parse(inputJson);
+  } catch {
+    throw new Error('当前编辑器内容不是合法的 JSON');
+  }
+
+  let template: JsonValue;
+  try {
+    template = JSON.parse(templateJson);
+  } catch {
+    throw new Error('模板内容不是合法的 JSON');
+  }
+
+  const merged = deepMergeTemplate(target, template);
+  return JSON.stringify(merged, null, 2);
+};
+
 // 反向转换 (Output -> Input)
 export const performInverseTransform = (output: string, mode: TransformMode, originalInput?: string): string => {
   if (!output) return '';
