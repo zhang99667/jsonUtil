@@ -48,7 +48,8 @@ export enum TransformMode {
   ESCAPE = 'ESCAPE',
   UNESCAPE = 'UNESCAPE',
   UNICODE_TO_CN = 'UNICODE_TO_CN',
-  CN_TO_UNICODE = 'CN_TO_UNICODE'
+  CN_TO_UNICODE = 'CN_TO_UNICODE',
+  SORT_KEYS = 'SORT_KEYS'
 }
 
 export enum ActionType {

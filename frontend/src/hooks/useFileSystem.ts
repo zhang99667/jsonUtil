@@ -290,6 +290,34 @@ export const useFileSystem = ({
         return false;
     };
 
+    // 打开拖拽进来的文件（无 Handle，仅读取内容）
+    const openDroppedFile = async (file: File) => {
+        try {
+            const contents = await file.text();
+            const newFileId = generateUUID();
+
+            const newFile: FileTab = {
+                id: newFileId,
+                name: file.name,
+                content: contents,
+                savedContent: contents,
+                handle: undefined,
+                isDirty: false,
+                mode: TransformMode.NONE,
+                path: (file as File & { path?: string }).path
+            };
+
+            setFiles(prev => [...prev, newFile]);
+            setActiveFileId(newFileId);
+            setInput(contents);
+            inputRef.current = contents;
+            setMode(TransformMode.NONE);
+        } catch (err) {
+            console.error('Failed to read dropped file:', err);
+            toast.error('读取文件失败', { duration: 2000 });
+        }
+    };
+
     const closeFile = (id: string) => {
         const fileToClose = files.find(f => f.id === id);
         if (fileToClose?.isDirty) {
@@ -353,6 +381,7 @@ export const useFileSystem = ({
         setIsAutoSaveEnabled,
         createNewTab,
         openFile,
+        openDroppedFile,
         saveFile,
         saveSourceAs,
         closeFile,

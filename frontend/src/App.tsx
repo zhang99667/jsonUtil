@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
+import { showSuccess, showError } from './utils/toast';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
 import { JsonPathPanel } from './components/JsonPathPanel';
@@ -62,7 +63,7 @@ const App: React.FC = () => {
   // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
-    createNewTab, openFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
+    createNewTab, openFile, openDroppedFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
     saveViewState
   } = useFileSystem({
     input, setInput, inputRef, setMode, output: '' // 初始为空，后面会更新
@@ -135,22 +136,12 @@ const App: React.FC = () => {
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
 
-  // 使用 react-hot-toast 替代自定义 toast
-  const showToast = (message: string) => {
-    toast.success(message, {
-      duration: 2000,
-      style: {
-        background: 'var(--brand-primary)',
-        color: '#fff',
-        fontSize: '14px',
-        fontWeight: '500',
-      },
-      iconTheme: {
-        primary: '#fff',
-        secondary: 'var(--brand-primary)',
-      },
-    });
-  };
+  // 光标位置状态（用于状态栏显示）
+  const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
+
+  // 拖拽文件状态
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const dragCounter = useRef(0);
 
   const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
     const saved = localStorage.getItem('json-helper-ai-config');
@@ -179,11 +170,11 @@ const App: React.FC = () => {
       if (activeEditor === 'PREVIEW') {
         // Preview 聚焦：保存 Preview 内容到文件
         const success = await saveFile(output);
-        if (success) showToast("已将 PREVIEW 内容保存到文件");
+        if (success) showSuccess("已将 PREVIEW 内容保存到文件");
       } else {
         // Source 聚焦：保存 Source 内容到文件
         const success = await saveFile(); // 默认保存 input
-        if (success) showToast("已将 SOURCE 内容保存到文件");
+        if (success) showSuccess("已将 SOURCE 内容保存到文件");
       }
     } else {
       // 未打开文件：另存为
@@ -191,7 +182,7 @@ const App: React.FC = () => {
         await savePreview(); // 另存为 Preview
       } else {
         const success = await saveSourceAs(); // 另存为 Source
-        if (success) showToast("已另存为源文件");
+        if (success) showSuccess("已另存为源文件");
       }
     }
   }, [activeFileId, activeEditor, output, saveFile, saveSourceAs]);
@@ -227,7 +218,8 @@ const App: React.FC = () => {
     const content = activeEditor === 'PREVIEW' ? output : input;
     const lines = content.split('\n');
     const totalLines = lines.length;
-    const maxColumns = Math.max(...lines.map(line => line.length), 0);
+    // 使用 reduce 循环替代 Math.max(...spread)，避免大文件时栈溢出
+    const maxColumns = lines.reduce((max, line) => Math.max(max, line.length), 0);
     return { totalLines, maxColumns };
   }, [input, output, activeEditor]);
 
@@ -369,12 +361,48 @@ const App: React.FC = () => {
         a.click();
         URL.revokeObjectURL(url);
       }
-      showToast("已保存预览结果");
+      showSuccess("已保存预览结果");
     } catch (err) {
       console.error('Failed to save preview:', err);
-      toast.error('保存预览结果失败', { duration: 2000 });
+      showError('保存预览结果失败');
     }
   };
+
+  // 拖拽文件事件处理
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDraggingFile(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDraggingFile(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+    dragCounter.current = 0;
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      openDroppedFile(file);
+    }
+  }, [openDroppedFile]);
 
   // 模板填充处理
   const handleApplyTemplate = useCallback((templateJson: string) => {
@@ -383,26 +411,10 @@ const App: React.FC = () => {
       setInput(merged);
       inputRef.current = merged;
       updateActiveFileContent(merged);
-      toast.success('模板已应用', {
-        duration: 2000,
-        style: {
-          background: 'var(--brand-primary)',
-          color: '#fff',
-          fontSize: '14px',
-          fontWeight: '500',
-        },
-      });
+      showSuccess('模板已应用');
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : '模板应用失败';
-      toast.error(message, {
-        duration: 3000,
-        style: {
-          background: 'var(--brand-danger)',
-          color: '#fff',
-          fontSize: '14px',
-          fontWeight: '500',
-        },
-      });
+      showError(message);
     }
   }, [input, updateActiveFileContent]);
 
@@ -420,19 +432,11 @@ const App: React.FC = () => {
         inputRef.current = fixed; // 同步 Ref 状态
         // 修复后自动切换至格式化视图
         setMode(TransformMode.FORMAT);
-        showToast("AI 修复成功");
+        showSuccess("AI 修复成功");
       } catch (e: unknown) {
         // 业务逻辑错误（API Key 缺失、网络错误等）使用 Toast 提示
         const errorMessage = e instanceof Error ? e.message : "AI 修复失败";
-        toast.error(errorMessage, {
-          duration: 3000,
-          style: {
-            background: 'var(--brand-danger)',
-            color: '#fff',
-            fontSize: '14px',
-            fontWeight: '500',
-          },
-        });
+        showError(errorMessage);
       } finally {
         setIsProcessing(false);
       }
@@ -444,11 +448,11 @@ const App: React.FC = () => {
         if (activeFileId) {
           // If file is open, save to it
           const success = await saveFile();
-          if (success) showToast("已保存源文件");
+          if (success) showSuccess("已保存源文件");
         } else {
           // If no file open, Save As
           const success = await saveSourceAs();
-          if (success) showToast("已另存为源文件");
+          if (success) showSuccess("已另存为源文件");
         }
       }
     } else if (action === ActionType.OPEN) {
@@ -490,22 +494,10 @@ const App: React.FC = () => {
       const updatedOutput = JSON.stringify(parsed, null, 2);
       handleOutputChange(updatedOutput);
 
-      toast.success('Scheme 修改已应用', {
-        duration: 2000,
-        style: {
-          background: 'var(--brand-primary)',
-          color: '#fff',
-        },
-      });
+      showSuccess('Scheme 修改已应用');
     } catch (err) {
       console.error('Failed to apply scheme edit:', err);
-      toast.error('应用修改失败', {
-        duration: 3000,
-        style: {
-          background: 'var(--brand-danger)',
-          color: '#fff',
-        },
-      });
+      showError('应用修改失败');
     }
   }, [output, handleOutputChange]);
 
@@ -573,7 +565,13 @@ const App: React.FC = () => {
 
 
       {/* 主工作区容器 */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div
+        className="flex-1 flex overflow-hidden relative"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
 
         {/* 左侧工具栏 */}
         <div data-tour="toolbar" style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-editor-border transition-all duration-300 ease-in-out h-full overflow-hidden">
@@ -611,6 +609,7 @@ const App: React.FC = () => {
               path={activeFileId || undefined}
               onChange={handleInputChange}
               onFocus={() => setActiveEditor('SOURCE')}
+              onCursorPositionChange={(line, column) => setCursorPosition({ line, column })}
               label="SOURCE"
               files={files}
               activeFileId={activeFileId}
@@ -665,12 +664,34 @@ const App: React.FC = () => {
               value={output}
               onChange={handleOutputChange}
               onFocus={() => setActiveEditor('PREVIEW')}
+              onCursorPositionChange={(line, column) => setCursorPosition({ line, column })}
               readOnly={true} // 默认只读状态
               canToggleReadOnly={true} // 允许解锁编辑
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
               highlightRange={highlightRange}
               onSchemeEdit={handleSchemeEdit}
+              headerActions={
+                <button
+                  onClick={async () => {
+                    if (!output.trim()) return;
+                    try {
+                      await navigator.clipboard.writeText(output);
+                      showSuccess('已复制预览内容');
+                    } catch {
+                      showError('复制失败');
+                    }
+                  }}
+                  disabled={!output.trim()}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="复制预览内容到剪贴板"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>复制</span>
+                </button>
+              }
             />
           </div>
         </div>
@@ -705,6 +726,19 @@ const App: React.FC = () => {
           <div className="absolute inset-0 z-50 cursor-col-resize"></div>
         )}
 
+        {/* 文件拖拽放置遮罩层 */}
+        {isDraggingFile && (
+          <div className="absolute inset-0 z-50 bg-brand-primary/10 border-2 border-dashed border-brand-primary rounded-lg flex items-center justify-center pointer-events-none">
+            <div className="bg-editor-bg/90 px-6 py-4 rounded-xl border border-brand-primary shadow-lg text-center">
+              <svg className="w-10 h-10 mx-auto mb-2 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-sm font-medium text-white">释放以打开文件</p>
+              <p className="text-xs text-gray-400 mt-1">支持 JSON、TXT、JS、TS 等文本文件</p>
+            </div>
+          </div>
+        )}
+
         {/* Toast Notifications - react-hot-toast */}
         <Toaster
           position="top-center"
@@ -725,6 +759,8 @@ const App: React.FC = () => {
         mode={mode}
         activeFileId={activeFileId}
         files={files}
+        cursorLine={cursorPosition.line}
+        cursorColumn={cursorPosition.column}
       />
     </div>
     </ErrorBoundary>

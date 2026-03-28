@@ -7,6 +7,8 @@ import {
   performInverseTransform,
   deepParseWithContext,
   inverseWithContext,
+  deepMergeTemplate,
+  applyTemplate,
 } from './transformations';
 
 // ============ validateJson 测试 ============
@@ -229,5 +231,100 @@ describe('inverseWithContext 精确还原', () => {
 
     const restored = inverseWithContext(output, context);
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+});
+
+// ============ deepMergeTemplate 测试 ============
+
+describe('deepMergeTemplate', () => {
+  it('标量覆盖：模板的标量值覆盖目标同名字段', () => {
+    const target = { name: '旧值', age: 20 };
+    const template = { name: '新值' };
+    const result = deepMergeTemplate(target, template);
+    expect(result).toEqual({ name: '新值', age: 20 });
+  });
+
+  it('嵌套递归合并：深层对象递归合并', () => {
+    const target = {
+      user: {
+        name: '张三',
+        address: {
+          city: '北京',
+          zip: '100000',
+        },
+      },
+    };
+    const template = {
+      user: {
+        address: {
+          city: '上海',
+        },
+      },
+    };
+    const result = deepMergeTemplate(target, template);
+    // 深层字段被覆盖，同层级其他字段保留
+    expect(result).toEqual({
+      user: {
+        name: '张三',
+        address: {
+          city: '上海',
+          zip: '100000',
+        },
+      },
+    });
+  });
+
+  it('数组整体替换：模板数组替换目标数组', () => {
+    const target = { tags: [1, 2, 3] };
+    const template = { tags: ['a', 'b'] };
+    const result = deepMergeTemplate(target, template);
+    // 数组不逐项合并，直接用模板数组覆盖
+    expect(result).toEqual({ tags: ['a', 'b'] });
+  });
+
+  it('目标独有字段保留', () => {
+    const target = { a: 1, b: 2, c: 3 };
+    const template = { a: 10 };
+    const result = deepMergeTemplate(target, template);
+    // 模板未涉及的字段 b、c 保留不变
+    expect(result).toEqual({ a: 10, b: 2, c: 3 });
+  });
+
+  it('模板独有字段添加', () => {
+    const target = { a: 1 };
+    const template = { b: 2, c: 3 };
+    const result = deepMergeTemplate(target, template);
+    // 模板中独有的 b、c 被添加到结果中
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+});
+
+// ============ applyTemplate 测试 ============
+
+describe('applyTemplate', () => {
+  it('正常流程：合并后返回格式化 JSON', () => {
+    const input = JSON.stringify({ name: '旧值', keep: true });
+    const template = JSON.stringify({ name: '新值', extra: 42 });
+    const result = applyTemplate(input, template);
+    const parsed = JSON.parse(result);
+    expect(parsed).toEqual({ name: '新值', keep: true, extra: 42 });
+    // 输出应为格式化的 JSON（包含换行缩进）
+    expect(result).toContain('\n');
+  });
+
+  it('空输入抛错', () => {
+    expect(() => applyTemplate('   ', '{"a":1}')).toThrow('当前编辑器内容为空');
+  });
+
+  it('空模板抛错', () => {
+    expect(() => applyTemplate('{"a":1}', '   ')).toThrow('模板内容为空');
+  });
+
+  it('非法 JSON 输入抛错', () => {
+    expect(() => applyTemplate('{invalid}', '{"a":1}')).toThrow('当前编辑器内容不是合法的 JSON');
+  });
+
+  it('非法 JSON 模板抛错', () => {
+    expect(() => applyTemplate('{"a":1}', '{invalid}')).toThrow('模板内容不是合法的 JSON');
   });
 });
