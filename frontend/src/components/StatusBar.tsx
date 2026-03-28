@@ -11,6 +11,7 @@ const MODE_LABELS: Record<TransformMode, string> = {
   [TransformMode.UNESCAPE]: '反转义',
   [TransformMode.UNICODE_TO_CN]: 'Unicode 转中文',
   [TransformMode.CN_TO_UNICODE]: '中文 转 Unicode',
+  [TransformMode.SORT_KEYS]: 'Key 排序',
 };
 
 /** StatusBar 组件 Props 定义 */
@@ -27,6 +28,10 @@ interface StatusBarProps {
   activeFileId: string | null;
   /** 文件标签列表（用于获取文件名） */
   files: FileTab[];
+  /** 光标所在行号 */
+  cursorLine?: number;
+  /** 光标所在列号 */
+  cursorColumn?: number;
 }
 
 /**
@@ -40,6 +45,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   mode,
   activeFileId,
   files,
+  cursorLine,
+  cursorColumn,
 }) => {
   // 查找当前激活的文件
   const activeFile = activeFileId ? files.find(f => f.id === activeFileId) : null;
@@ -58,6 +65,11 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           {' '}UTF-8
         </span>
         <span>Length: {inputLength}</span>
+        {cursorLine != null && cursorColumn != null && (
+          <span className="font-mono">
+            Ln {cursorLine}, Col {cursorColumn}
+          </span>
+        )}
         <span className="font-mono">
           {totalLines} 行, {maxColumns} 列
         </span>

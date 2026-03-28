@@ -413,66 +413,25 @@ const detectIndentation = (jsonString: string): number | string => {
   return 2; // 默认缩进（2空格）
 };
 
-// ============ 旧版智能还原（向后兼容，已废弃） ============
-// 注意：此函数已被 inverseWithContext 取代
-// 保留仅为向后兼容，不推荐使用
+// ============ JSON Key 排序 ============
 
-const smartInverse = (output: string, originalInput: string): string => {
-  try {
-    const outputObj: JsonValue = JSON.parse(output);
-    const originalObj: JsonValue = JSON.parse(originalInput);
-
-    const deepMerge = (out: JsonValue, orig: JsonValue): JsonValue => {
-      // 检测到字符串被展开为对象，需重新序列化
-      if (typeof orig === 'string' && typeof out === 'object' && out !== null) {
-        return JSON.stringify(out);
-      }
-
-      if (Array.isArray(out) && Array.isArray(orig)) {
-        return out.map((item, index) => {
-          // 尝试与原始数组项匹配合并
-          if (index < orig.length) {
-            return deepMerge(item, orig[index]);
-          }
-          return item;
-        });
-      }
-
-      if (typeof out === 'object' && out !== null && !Array.isArray(out) &&
-          typeof orig === 'object' && orig !== null && !Array.isArray(orig)) {
-        const outObj = out as JsonObject;
-        const origObj = orig as JsonObject;
-        const newObj: JsonObject = {};
-        for (const key in outObj) {
-          if (key in origObj) {
-            newObj[key] = deepMerge(outObj[key], origObj[key]);
-          } else {
-            newObj[key] = outObj[key];
-          }
-        }
-        return newObj;
-      }
-
-      return out;
-    };
-
-    const result = deepMerge(outputObj, originalObj);
-    const indentation = detectIndentation(originalInput);
-
-    // 若原内容为压缩格式，则保持压缩输出
-    if (indentation === 0) {
-      return JSON.stringify(result);
-    }
-    return JSON.stringify(result, null, indentation);
-  } catch (e) {
-    // 合并失败回退策略：优先返回标准格式化 JSON
-    try {
-      const parsed: JsonValue = JSON.parse(output);
-      return JSON.stringify(parsed, null, 2);
-    } catch {
-      return output;
-    }
+/**
+ * 递归按字母序排列 JSON 对象的键
+ * 数组中的每个元素也会递归排序键
+ */
+const sortJsonKeys = (value: JsonValue): JsonValue => {
+  if (value === null || typeof value !== 'object') {
+    return value;
   }
+  if (Array.isArray(value)) {
+    return value.map(sortJsonKeys);
+  }
+  const sorted: JsonObject = {};
+  const keys = Object.keys(value as JsonObject).sort();
+  for (const key of keys) {
+    sorted[key] = sortJsonKeys((value as JsonObject)[key]);
+  }
+  return sorted;
 };
 
 // --- 双向转换逻辑 ---
@@ -491,6 +450,10 @@ export const performTransform = (input: string, mode: TransformMode): string => 
 
       case TransformMode.UNICODE_TO_CN: return unicodeToCn(input);
       case TransformMode.CN_TO_UNICODE: return cnToUnicode(input);
+      case TransformMode.SORT_KEYS: {
+        const parsed: JsonValue = JSON.parse(input);
+        return JSON.stringify(sortJsonKeys(parsed), null, 2);
+      }
       default: return input;
     }
   } catch (e) {
@@ -577,9 +540,7 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
       case TransformMode.NONE: return output;
       case TransformMode.FORMAT: return minifyJson(output);
       case TransformMode.DEEP_FORMAT:
-        if (originalInput) {
-          return smartInverse(output, originalInput);
-        }
+        // 无上下文时统一回退到压缩格式（精确还原已由 inverseWithContext 在上层处理）
         return minifyJson(output);
       case TransformMode.MINIFY: return output;
 
@@ -588,6 +549,7 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
 
       case TransformMode.UNICODE_TO_CN: return cnToUnicode(output);
       case TransformMode.CN_TO_UNICODE: return unicodeToCn(output);
+      case TransformMode.SORT_KEYS: return output;
       default: return output;
     }
   } catch (e) {

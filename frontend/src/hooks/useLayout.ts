@@ -29,14 +29,17 @@ export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
         }
     }, [isResizingSidebar, isResizingPane, sidebarWidth, appRef]);
 
+    // 仅在拖拽状态下挂载全局鼠标事件监听器，避免非拖拽时的无效监听开销
     useEffect(() => {
+        if (!isResizingSidebar && !isResizingPane) return;
+
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', stopResizing);
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', stopResizing);
         };
-    }, [handleMouseMove]);
+    }, [isResizingSidebar, isResizingPane, handleMouseMove]);
 
     return {
         sidebarWidth,

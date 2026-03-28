@@ -84,16 +84,23 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
 
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // ESC 键关闭面板
+  // ESC 键关闭面板（仅在焦点位于面板内时生效）
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        // 只有焦点在面板内部或面板本身时才关闭
+        const panel = panelRef.current;
+        if (
+          panel &&
+          (panel.contains(document.activeElement) || panel === document.activeElement)
+        ) {
+          onClose();
+        }
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
@@ -112,9 +119,12 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
+        // 计算新位置，并 clamp 到视口边界，确保面板始终至少有 80px 可见区域
+        const newX = e.clientX - dragStart.x;
+        const newY = e.clientY - dragStart.y;
         setPosition({
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
+          x: Math.min(Math.max(newX, -size.width + 80), window.innerWidth - 80),
+          y: Math.min(Math.max(newY, 0), window.innerHeight - 80),
         });
       } else if (isResizing) {
         const deltaX = e.clientX - resizeStart.x;
@@ -153,7 +163,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragStart, isResizing, resizeStart, startSize, minSize]);
+  }, [isDragging, dragStart, isResizing, resizeStart, startSize, minSize, size]);
 
   // 拖动面板头部
   const handleHeaderMouseDown = (e: React.MouseEvent) => {
@@ -186,6 +196,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   return (
     <div
       ref={panelRef}
+      tabIndex={-1}
       data-tour={dataTour}
       className={`fixed bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden ${className}`}
       style={{
