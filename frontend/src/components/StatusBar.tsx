@@ -11,6 +11,8 @@ const MODE_LABELS: Record<TransformMode, string> = {
   [TransformMode.UNESCAPE]: '反转义',
   [TransformMode.UNICODE_TO_CN]: 'Unicode 转中文',
   [TransformMode.CN_TO_UNICODE]: '中文 转 Unicode',
+  [TransformMode.URL_ENCODE]: 'URL 编码',
+  [TransformMode.URL_DECODE]: 'URL 解码',
   [TransformMode.SORT_KEYS]: 'Key 排序',
 };
 

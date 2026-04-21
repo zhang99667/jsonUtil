@@ -11,6 +11,8 @@ import {
   JsonObject
 } from '../types.ts';
 
+import { hasUrlEncoding } from './schemeUtils.ts';
+
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };
   try {
@@ -155,7 +157,7 @@ const unicodeEncode = (str: string): string => {
  */
 export function deepParseWithContext(
   input: string,
-  options?: { maxDepth?: number }
+  options?: { maxDepth?: number; autoExpandScheme?: boolean }
 ): TransformResult {
   const originalIndentation = detectIndentation(input);
   const context: TransformContext = {
@@ -185,6 +187,16 @@ export function deepParseWithContext(
             const decoded = tryUnicodeDecode(current);
             if (decoded !== current) {
               steps.push({ type: 'unicode_decode' });
+              current = decoded;
+              changed = true;
+            }
+          }
+
+          // 当 autoExpandScheme 启用时，尝试 URL 解码
+          if (options?.autoExpandScheme && hasUrlEncoding(current)) {
+            const decoded = decodeURIComponent(current);
+            if (decoded !== current) {
+              steps.push({ type: 'url_decode' });
               current = decoded;
               changed = true;
             }
@@ -450,6 +462,10 @@ export const performTransform = (input: string, mode: TransformMode): string => 
 
       case TransformMode.UNICODE_TO_CN: return unicodeToCn(input);
       case TransformMode.CN_TO_UNICODE: return cnToUnicode(input);
+      case TransformMode.URL_ENCODE: return encodeURIComponent(input);
+      case TransformMode.URL_DECODE: {
+        try { return decodeURIComponent(input); } catch { return input; }
+      }
       case TransformMode.SORT_KEYS: {
         const parsed: JsonValue = JSON.parse(input);
         return JSON.stringify(sortJsonKeys(parsed), null, 2);
@@ -549,6 +565,10 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
 
       case TransformMode.UNICODE_TO_CN: return cnToUnicode(output);
       case TransformMode.CN_TO_UNICODE: return unicodeToCn(output);
+      case TransformMode.URL_ENCODE: {
+        try { return decodeURIComponent(output); } catch { return output; }
+      }
+      case TransformMode.URL_DECODE: return encodeURIComponent(output);
       case TransformMode.SORT_KEYS: return output;
       default: return output;
     }

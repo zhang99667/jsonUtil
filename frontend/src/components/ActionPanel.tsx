@@ -212,10 +212,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           ), 'text-cyan-400')}
         </div>
 
-        {/* 工具组：转义操作 */}
+        {/* 工具组：编码 / 转义 */}
         {!isCollapsed && (
           <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
-            转义处理
+            编码 / 转义
           </div>
         )}
         <div className="mb-4">
@@ -226,15 +226,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           {renderToolBtn(TransformMode.UNESCAPE, '反转义', (
             <span className="font-mono font-bold text-sm">"</span>
           ), 'text-yellow-400')}
-        </div>
 
-        {/* 工具组：编码转换 */}
-        {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
-            编码转换
-          </div>
-        )}
-        <div className="mb-4">
           {renderToolBtn(TransformMode.UNICODE_TO_CN, 'Unicode 转中文', (
             <span className="font-mono font-bold text-sm">\u</span>
           ), 'text-fuchsia-400')}
@@ -242,6 +234,14 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           {renderToolBtn(TransformMode.CN_TO_UNICODE, '中文 转 Unicode', (
             <span className="font-mono font-bold text-sm">cn</span>
           ), 'text-pink-400')}
+
+          {renderToolBtn(TransformMode.URL_ENCODE, 'URL 编码', (
+            <span className="font-mono font-bold text-sm">%</span>
+          ), 'text-rose-400')}
+
+          {renderToolBtn(TransformMode.URL_DECODE, 'URL 解码', (
+            <span className="font-mono font-bold text-sm">Ur</span>
+          ), 'text-red-400')}
         </div>
 
         {/* 工具组：排序 */}
