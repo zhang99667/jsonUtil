@@ -17,7 +17,7 @@ import {
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
-import { TransformMode, ActionType, ValidationResult, AIConfig, AIProvider, HighlightRange } from './types';
+import { TransformMode, ActionType, ValidationResult, AIConfig, AIProvider, HighlightRange, GeneralSettings, DEFAULT_GENERAL_SETTINGS } from './types';
 import { parse } from 'json-source-map';
 import { JSONPath } from 'jsonpath-plus';
 import { useShortcuts } from './hooks/useShortcuts';
@@ -69,13 +69,25 @@ const App: React.FC = () => {
     input, setInput, inputRef, setMode, output: '' // 初始为空，后面会更新
   });
 
+  // 通用设置状态 + localStorage 持久化（需在 deepFormatResult 之前声明）
+  const [generalSettings, setGeneralSettings] = useState<GeneralSettings>(() => {
+    const saved = localStorage.getItem('json-helper-general-settings');
+    return saved ? JSON.parse(saved) : DEFAULT_GENERAL_SETTINGS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('json-helper-general-settings', JSON.stringify(generalSettings));
+  }, [generalSettings]);
+
   // 深度格式化结果和上下文（避免在 output 计算中产生副作用）
   const deepFormatResult = useMemo(() => {
     if (mode === TransformMode.DEEP_FORMAT) {
-      return deepParseWithContext(input);
+      return deepParseWithContext(input, {
+        autoExpandScheme: generalSettings.autoExpandSchemeInDeepFormat,
+      });
     }
     return null;
-  }, [input, mode]);
+  }, [input, mode, generalSettings.autoExpandSchemeInDeepFormat]);
 
   // 保存深度格式化上下文到文件（副作用独立处理）
   useEffect(() => {
@@ -561,6 +573,8 @@ const App: React.FC = () => {
         onResetShortcuts={resetShortcuts}
         aiConfig={aiConfig}
         onSaveAIConfig={setAiConfig}
+        generalSettings={generalSettings}
+        onSaveGeneralSettings={setGeneralSettings}
       />
 
 
@@ -712,6 +726,11 @@ const App: React.FC = () => {
           isOpen={isSchemeDecodeOpen}
           onClose={() => setIsSchemeDecodeOpen(false)}
           standalone={true}
+          onApply={(encodedValue: string) => {
+            setInput(encodedValue);
+            inputRef.current = encodedValue;
+            updateActiveFileContent(encodedValue);
+          }}
         />
 
         {/* 模板填充面板 */}

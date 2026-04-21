@@ -49,6 +49,8 @@ export enum TransformMode {
   UNESCAPE = 'UNESCAPE',
   UNICODE_TO_CN = 'UNICODE_TO_CN',
   CN_TO_UNICODE = 'CN_TO_UNICODE',
+  URL_ENCODE = 'URL_ENCODE',
+  URL_DECODE = 'URL_DECODE',
   SORT_KEYS = 'SORT_KEYS'
 }
 
@@ -76,6 +78,14 @@ export interface AIConfig {
   model: string;
   baseUrl?: string;
 }
+
+export interface GeneralSettings {
+  autoExpandSchemeInDeepFormat: boolean;
+}
+
+export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
+  autoExpandSchemeInDeepFormat: false,
+};
 
 export interface ValidationResult {
   isValid: boolean;

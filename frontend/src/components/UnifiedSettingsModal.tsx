@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider } from '../types';
+import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider, GeneralSettings } from '../types';
 
 interface UnifiedSettingsModalProps {
     isOpen: boolean;
@@ -9,6 +9,8 @@ interface UnifiedSettingsModalProps {
     onResetShortcuts: () => void;
     aiConfig: AIConfig;
     onSaveAIConfig: (config: AIConfig) => void;
+    generalSettings: GeneralSettings;
+    onSaveGeneralSettings: (s: GeneralSettings) => void;
 }
 
 const ACTION_LABELS: Record<ShortcutAction, string> = {
@@ -21,7 +23,7 @@ const ACTION_LABELS: Record<ShortcutAction, string> = {
     NEW_TAB: '新建标签 (New Tab)',
 };
 
-type TabType = 'shortcuts' | 'ai';
+type TabType = 'shortcuts' | 'ai' | 'general';
 
 export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     isOpen,
@@ -31,17 +33,21 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     onResetShortcuts,
     aiConfig,
     onSaveAIConfig,
+    generalSettings,
+    onSaveGeneralSettings,
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('shortcuts');
     const [recordingAction, setRecordingAction] = useState<ShortcutAction | null>(null);
     const [localAIConfig, setLocalAIConfig] = useState<AIConfig>(aiConfig);
+    const [localGeneralSettings, setLocalGeneralSettings] = useState<GeneralSettings>(generalSettings);
 
     useEffect(() => {
         if (isOpen) {
             setLocalAIConfig(aiConfig);
+            setLocalGeneralSettings(generalSettings);
             setActiveTab('shortcuts');
         }
-    }, [isOpen, aiConfig]);
+    }, [isOpen, aiConfig, generalSettings]);
 
     useEffect(() => {
         if (!recordingAction) return;
@@ -100,6 +106,11 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
     const handleSaveAI = () => {
         onSaveAIConfig(localAIConfig);
+        onClose();
+    };
+
+    const handleSaveGeneral = () => {
+        onSaveGeneralSettings(localGeneralSettings);
         onClose();
     };
 
@@ -164,6 +175,18 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         <div className="flex items-center justify-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                             AI 配置
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('general')}
+                        className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'general'
+                            ? 'text-white border-b-2 border-emerald-500 bg-editor-sidebar'
+                            : 'text-gray-400 hover:text-gray-200 hover:bg-editor-hover'
+                            }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                            通用设置
                         </div>
                     </button>
                 </div>
@@ -289,6 +312,37 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </div>
                         )}
                     </div>
+
+                    {/* 通用设置 */}
+                    <div className={`space-y-4 ${activeTab === 'general' ? '' : 'hidden'}`}>
+                        <div className="bg-editor-bg p-4 rounded border border-editor-border">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1 pr-4">
+                                    <div className="text-sm font-medium text-gray-200">
+                                        嵌套解析时自动展开 CMD/Scheme 字符串
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        启用后，深度格式化将自动检测并展开 URL 编码的 Scheme 值
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setLocalGeneralSettings({
+                                        ...localGeneralSettings,
+                                        autoExpandSchemeInDeepFormat: !localGeneralSettings.autoExpandSchemeInDeepFormat,
+                                    })}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                        localGeneralSettings.autoExpandSchemeInDeepFormat ? 'bg-emerald-500' : 'bg-gray-600'
+                                    }`}
+                                >
+                                    <span
+                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                            localGeneralSettings.autoExpandSchemeInDeepFormat ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* 底部操作栏 */}
@@ -309,7 +363,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                 完成
                             </button>
                         </>
-                    ) : (
+                    ) : activeTab === 'ai' ? (
                         <>
                             <button
                                 onClick={onClose}
@@ -319,6 +373,21 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </button>
                             <button
                                 onClick={handleSaveAI}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
+                            >
+                                保存设置
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                onClick={onClose}
+                                className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2 rounded hover:bg-editor-hover"
+                            >
+                                取消
+                            </button>
+                            <button
+                                onClick={handleSaveGeneral}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
                             >
                                 保存设置
