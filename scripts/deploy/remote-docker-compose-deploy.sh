@@ -71,6 +71,11 @@ if grep -Eq '^(POSTGRES_PASSWORD|SPRING_DATASOURCE_PASSWORD|JWT_SECRET)=change-m
   exit 1
 fi
 
+if grep -Eq '^ADMIN_BOOTSTRAP_ENABLED=true$' .env && grep -Eq '^ADMIN_BOOTSTRAP_PASSWORD=change-me' .env; then
+  printf '.env 已启用管理员初始化，但 ADMIN_BOOTSTRAP_PASSWORD 仍为示例值\n' >&2
+  exit 1
+fi
+
 log "校验 Docker Compose 配置"
 compose config >/dev/null
 

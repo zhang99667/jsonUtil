@@ -96,6 +96,15 @@ vim .env
 
 如果上述值仍以 `change-me` 开头，发布脚本会拒绝继续执行。
 
+如果首次部署需要自动创建管理员，可以临时配置：
+
+- `ADMIN_BOOTSTRAP_ENABLED=true`
+- `ADMIN_BOOTSTRAP_USERNAME`
+- `ADMIN_BOOTSTRAP_PASSWORD`
+- `ADMIN_BOOTSTRAP_EMAIL`
+
+管理员创建完成后，建议将 `ADMIN_BOOTSTRAP_ENABLED` 改回 `false`，避免后续误操作。
+
 后续同步会保留远程 `.env` / `.env.*`，避免覆盖生产密钥。
 
 ## 回滚建议

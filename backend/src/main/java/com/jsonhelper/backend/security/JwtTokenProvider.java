@@ -10,6 +10,7 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
@@ -29,16 +30,41 @@ public class JwtTokenProvider {
 
     @PostConstruct
     public void init() {
-        try {
-            // Attempt to decode as Base64 first (as it is in application.yml)
-            byte[] keyBytes = Base64.getDecoder().decode(jwtSecret);
+        if (jwtSecret == null || jwtSecret.isBlank() || jwtSecret.startsWith("change-me")) {
+            throw new IllegalStateException("JWT_SECRET 未配置或仍为示例值，请配置至少 64 字节的随机密钥");
+        }
+
+        byte[] keyBytes = tryDecodeBase64Secret(jwtSecret);
+        if (keyBytes != null) {
             this.key = Keys.hmacShaKeyFor(keyBytes);
             logger.info("JWT Key initialized successfully from Base64 secret (Size: {} bits)", keyBytes.length * 8);
+            return;
+        }
+
+        byte[] literalKeyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        validateKeyLength(literalKeyBytes);
+        this.key = Keys.hmacShaKeyFor(literalKeyBytes);
+        logger.warn("JWT Secret is not valid Base64, using literal bytes (Size: {} bits)", literalKeyBytes.length * 8);
+    }
+
+    /**
+     * 仅当 Base64 解码后满足 HS512 长度要求时采用解码结果，否则交给明文密钥兜底
+     */
+    private byte[] tryDecodeBase64Secret(String secret) {
+        try {
+            byte[] decoded = Base64.getDecoder().decode(secret);
+            return decoded.length >= 64 ? decoded : null;
         } catch (IllegalArgumentException e) {
-            // Fallback to literal bytes if not valid Base64
-            byte[] keyBytes = jwtSecret.getBytes();
-            this.key = Keys.hmacShaKeyFor(keyBytes);
-            logger.warn("JWT Secret is not valid Base64, using literal bytes (Size: {} bits)", keyBytes.length * 8);
+            return null;
+        }
+    }
+
+    /**
+     * HS512 签名至少需要 512 bit 密钥，提前给出可读错误信息
+     */
+    private void validateKeyLength(byte[] keyBytes) {
+        if (keyBytes.length < 64) {
+            throw new IllegalStateException("JWT_SECRET 长度不足，HS512 至少需要 64 字节随机密钥");
         }
     }
 
