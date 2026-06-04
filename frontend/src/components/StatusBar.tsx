@@ -13,6 +13,8 @@ const MODE_LABELS: Record<TransformMode, string> = {
   [TransformMode.CN_TO_UNICODE]: '中文 转 Unicode',
   [TransformMode.URL_ENCODE]: 'URL 编码',
   [TransformMode.URL_DECODE]: 'URL 解码',
+  [TransformMode.BASE64_ENCODE]: 'Base64 编码',
+  [TransformMode.BASE64_DECODE]: 'Base64 解码',
   [TransformMode.SORT_KEYS]: 'Key 排序',
 };
 

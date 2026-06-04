@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Form, Input, Button, Select, message, Card, Row, Col, Typography,
+    Form, Input, Button, Select, message, Card as AntCard, Row, Col, Typography,
     Table, Modal, Popconfirm, Switch, Tag, Space
 } from 'antd';
 import {
@@ -8,14 +8,20 @@ import {
     IdcardOutlined, SearchOutlined, EditOutlined, DeleteOutlined,
     ReloadOutlined, UserOutlined
 } from '@ant-design/icons';
+import type { CardProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
     addUser, getUserList, updateUser, deleteUser, toggleUserEnabled,
     UserRecord, AddUserParams, UpdateUserParams
 } from '../services/user';
 
-const { Option } = Select;
+const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
 const { Title } = Typography;
+
+const ROLE_OPTIONS = [
+    { value: 'USER', label: '普通用户' },
+    { value: 'ADMIN', label: '管理员' },
+];
 
 /** 默认每页条数 */
 const DEFAULT_PAGE_SIZE = 10;
@@ -376,10 +382,7 @@ const UserManagement: React.FC = () => {
                             name="role"
                             rules={[{ required: true, message: '请选择角色' }]}
                         >
-                            <Select suffixIcon={<IdcardOutlined />} style={{ width: 130 }}>
-                                <Option value="USER">普通用户</Option>
-                                <Option value="ADMIN">管理员</Option>
-                            </Select>
+                            <Select suffixIcon={<IdcardOutlined />} style={{ width: 130 }} options={ROLE_OPTIONS} />
                         </Form.Item>
                         <Form.Item>
                             <Button type="primary" htmlType="submit" icon={<UserAddOutlined />}>
@@ -470,10 +473,7 @@ const UserManagement: React.FC = () => {
                         label="角色"
                         rules={[{ required: true, message: '请选择角色' }]}
                     >
-                        <Select suffixIcon={<IdcardOutlined />}>
-                            <Option value="USER">普通用户</Option>
-                            <Option value="ADMIN">管理员</Option>
-                        </Select>
+                        <Select suffixIcon={<IdcardOutlined />} options={ROLE_OPTIONS} />
                     </Form.Item>
                 </Form>
             </Modal>

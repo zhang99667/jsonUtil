@@ -1,4 +1,4 @@
-import React from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 /**
  * 错误边界组件
@@ -6,7 +6,7 @@ import React from 'react';
  */
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -14,7 +14,9 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -24,7 +26,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // 输出错误信息到控制台
     console.error('ErrorBoundary 捕获到错误:', error);
     console.error('组件栈:', errorInfo.componentStack);
@@ -32,10 +34,13 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   /** 重置错误状态，重新渲染子组件 */
   handleReset = (): void => {
-    this.setState({ hasError: false, error: null });
+    (this as unknown as { setState: (state: ErrorBoundaryState) => void }).setState({
+      hasError: false,
+      error: null,
+    });
   };
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-gray-900">
@@ -61,7 +66,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       );
     }
 
-    return this.props.children;
+    return (this as unknown as { props: ErrorBoundaryProps }).props.children;
   }
 }
 

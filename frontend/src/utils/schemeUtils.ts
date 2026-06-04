@@ -7,6 +7,7 @@
 
 export type SchemeType = 
   | 'url'           // 带协议的 URL (https://, myapp://, etc.)
+  | 'query-string'  // 查询参数串 (key=value&key=value...)
   | 'url-encoded'   // URL 编码的内容
   | 'base64'        // Base64 编码
   | 'jwt'           // JWT Token
@@ -28,9 +29,38 @@ export interface SchemeDecodeResult {
     protocol: string;         // 协议，如 "https:", "myapp:"
     host?: string;            // 主机
     path?: string;            // 路径
-    params?: Record<string, string>; // 查询参数
+    params?: Record<string, string>; // 原始查询参数（URLSearchParams 已做一层解码）
   };
 }
+
+type StructuredValue =
+  | string
+  | number
+  | boolean
+  | null
+  | StructuredValue[]
+  | { [key: string]: StructuredValue };
+
+const COMMON_CMD_PARAM_NAMES = new Set([
+  'cmd',
+  'action_cmd',
+  'command',
+  'schema',
+  'scheme',
+  'url',
+  'uri',
+  'link',
+  'target',
+  'params',
+  'param',
+  'data',
+  'payload',
+  'ext',
+  'extra',
+  'callback',
+  'callback_url',
+  'open_url',
+]);
 
 // ============ 检测函数 ============
 
@@ -62,6 +92,31 @@ export function isQueryStringFormat(str: string): boolean {
   }
   
   return false;
+}
+
+/**
+ * 检测字符串是否像需要解析的 CMD 参数串
+ * 单个 key=value 只有在 key 常见且 value 可继续解析时才命中，避免普通文本误判
+ */
+export function isDecodableQueryString(str: string): boolean {
+  const trimmed = str.trim();
+  const source = trimmed.startsWith('?') ? trimmed.slice(1) : trimmed;
+
+  if (!source || /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(source)) return false;
+  if (!/^[a-zA-Z_][a-zA-Z0-9_-]*=/.test(source)) return false;
+
+  if (source.includes('&')) return true;
+
+  const equalIndex = source.indexOf('=');
+  const key = source.slice(0, equalIndex).toLowerCase();
+  const value = source.slice(equalIndex + 1);
+  return COMMON_CMD_PARAM_NAMES.has(key) && (
+    hasUrlEncoding(value) ||
+    isUrl(value) ||
+    isJwt(value) ||
+    isBase64(value) ||
+    isJsonString(value)
+  );
 }
 
 /**
@@ -98,18 +153,8 @@ export function isBase64(str: string): boolean {
     }
   }
   
-  // Base64 字符集 + padding
-  if (!/^[A-Za-z0-9+/]+=*$/.test(trimmed) && !/^[A-Za-z0-9_-]+=*$/.test(trimmed)) {
-    return false;
-  }
-  // 尝试解码验证
-  try {
-    const decoded = atob(trimmed.replace(/-/g, '+').replace(/_/g, '/'));
-    // 解码后应该是可打印字符或有效 UTF-8
-    return decoded.length > 0 && /^[\x20-\x7E\u4e00-\u9fa5\s{}[\]":,]+$/.test(decoded);
-  } catch {
-    return false;
-  }
+  const decoded = base64Decode(trimmed);
+  return decoded !== trimmed && decoded.length > 0 && isReadableDecodedText(decoded);
 }
 
 /**
@@ -149,6 +194,7 @@ export function detectSchemeType(str: string): SchemeType {
   // 优先级顺序很重要
   if (isJwt(trimmed)) return 'jwt';
   if (isUrl(trimmed)) return 'url';
+  if (isDecodableQueryString(trimmed)) return 'query-string';
   if (hasUrlEncoding(trimmed)) return 'url-encoded';
   if (isBase64(trimmed)) return 'base64';
   if (isJsonString(trimmed)) return 'json';
@@ -184,14 +230,54 @@ export function urlEncode(str: string): string {
   return encodeURIComponent(str);
 }
 
+// ============ UTF-8 安全 Base64 工具 ============
+
+const bytesToBinaryString = (bytes: Uint8Array): string => {
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return binary;
+};
+
+const binaryStringToBytes = (binary: string): Uint8Array => {
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const normalizeBase64Input = (input: string): string | null => {
+  const compact = input.trim().replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  if (!compact || compact.length % 4 === 1 || !/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) {
+    return null;
+  }
+  const firstPaddingIndex = compact.indexOf('=');
+  if (firstPaddingIndex !== -1 && /[^=]/.test(compact.slice(firstPaddingIndex))) {
+    return null;
+  }
+  const paddingLength = (4 - (compact.length % 4)) % 4;
+  return compact + '='.repeat(paddingLength);
+};
+
+const isReadableDecodedText = (decoded: string): boolean => {
+  if (!decoded.trim()) return false;
+  const controlChars = decoded.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g);
+  return !controlChars || controlChars.length / decoded.length < 0.05;
+};
+
 /**
  * Base64 解码
  */
 export function base64Decode(str: string): string {
+  const normalized = normalizeBase64Input(str);
+  if (!normalized) return str;
+
   try {
-    // 处理 Base64URL 格式
-    const normalized = str.replace(/-/g, '+').replace(/_/g, '/');
-    return atob(normalized);
+    const bytes = binaryStringToBytes(atob(normalized));
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
     return str;
   }
@@ -202,7 +288,8 @@ export function base64Decode(str: string): string {
  */
 export function base64Encode(str: string): string {
   try {
-    return btoa(str);
+    const bytes = new TextEncoder().encode(str);
+    return btoa(bytesToBinaryString(bytes));
   } catch {
     return str;
   }
@@ -248,6 +335,84 @@ export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | 
   }
 }
 
+const tryParseJson = (value: string): StructuredValue | null => {
+  if (!isJsonString(value)) return null;
+  try {
+    return JSON.parse(value) as StructuredValue;
+  } catch {
+    return null;
+  }
+};
+
+const decodeStructuredValue = (value: StructuredValue, maxDepth: number): StructuredValue => {
+  if (maxDepth <= 0) return value;
+
+  if (typeof value === 'string') {
+    return decodeNestedParamValue(value, maxDepth - 1);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => decodeStructuredValue(item, maxDepth - 1));
+  }
+
+  if (value && typeof value === 'object') {
+    const result: { [key: string]: StructuredValue } = {};
+    for (const [key, item] of Object.entries(value)) {
+      result[key] = decodeStructuredValue(item, maxDepth - 1);
+    }
+    return result;
+  }
+
+  return value;
+};
+
+const assignQueryParam = (
+  result: { [key: string]: StructuredValue | StructuredValue[] },
+  key: string,
+  value: StructuredValue
+) => {
+  const existing = result[key];
+  if (existing === undefined) {
+    result[key] = value;
+  } else if (Array.isArray(existing)) {
+    existing.push(value);
+  } else {
+    result[key] = [existing, value];
+  }
+};
+
+const parseQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
+  const source = queryString.trim().replace(/^\?/, '');
+  if (!source || !isDecodableQueryString(source)) return null;
+
+  return parseSearchParamsDeep(new URLSearchParams(source), maxDepth);
+};
+
+const parseSearchParamsDeep = (params: URLSearchParams, maxDepth: number): StructuredValue => {
+  const result: { [key: string]: StructuredValue | StructuredValue[] } = {};
+  params.forEach((value, key) => {
+    assignQueryParam(result, key, decodeNestedParamValue(value, maxDepth - 1));
+  });
+  return result as StructuredValue;
+};
+
+const decodeNestedParamValue = (value: string, maxDepth: number): StructuredValue => {
+  if (maxDepth <= 0) return value;
+
+  const jsonValue = tryParseJson(value);
+  if (jsonValue !== null) {
+    return decodeStructuredValue(jsonValue, maxDepth - 1);
+  }
+
+  const nested = deepDecodeScheme(value, maxDepth);
+  if (nested.isJson) {
+    const parsed = tryParseJson(nested.decoded);
+    return parsed === null ? nested.decoded : decodeStructuredValue(parsed, maxDepth - 1);
+  }
+
+  return nested.layers.length > 0 ? nested.decoded : value;
+};
+
 // ============ 递归解码 ============
 
 /**
@@ -275,27 +440,34 @@ export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDec
         if (urlInfo) {
           schemeInfo = urlInfo;
           
-          // 如果有参数，将参数展开为 JSON（每个值只做一次 URL 解码，不递归）
+          // 如果有参数，将参数按 CMD 习惯逐项递归展开
           if (urlInfo.params && Object.keys(urlInfo.params).length > 0) {
-            const decodedParams: Record<string, string> = {};
-            for (const [key, value] of Object.entries(urlInfo.params)) {
-              // 只做一次 URL 解码，不继续递归解析
-              try {
-                decodedParams[key] = decodeURIComponent(value);
-              } catch {
-                decodedParams[key] = value;
-              }
-            }
+            const decodedParams = parseSearchParamsDeep(new URL(current).searchParams, maxDepth - depth);
             current = JSON.stringify(decodedParams, null, 2);
             layers.push({
               type: 'url',
               before,
-              description: 'URL 参数提取',
+              description: 'URL 参数递归解析',
             });
           }
         }
-        // URL 解析完成后停止，不继续嵌套解码
+        // URL 解析完成后停止；参数值已在 parseQueryStringDeep 中递归处理
         depth = maxDepth;
+        break;
+      }
+
+      case 'query-string': {
+        const decodedParams = parseQueryStringDeep(current, maxDepth - depth);
+        if (decodedParams) {
+          layers.push({
+            type: 'query-string',
+            before,
+            description: 'CMD 参数递归解析',
+          });
+          current = JSON.stringify(decodedParams, null, 2);
+        } else {
+          depth = maxDepth;
+        }
         break;
       }
       
@@ -414,6 +586,19 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
           } catch {
             // 保持原样
           }
+        }
+        break;
+      case 'query-string':
+        try {
+          const parsed = JSON.parse(result) as Record<string, unknown>;
+          result = new URLSearchParams(
+            Object.entries(parsed).reduce<Record<string, string>>((acc, [key, value]) => {
+              acc[key] = typeof value === 'string' ? value : JSON.stringify(value);
+              return acc;
+            }, {})
+          ).toString();
+        } catch {
+          // 保持原样
         }
         break;
     }

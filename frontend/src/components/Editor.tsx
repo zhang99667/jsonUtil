@@ -11,6 +11,18 @@ import { findSchemesInJson, SchemeLocation } from '../utils/schemeUtils';
 import { SchemeViewerModal } from './SchemeViewerModal';
 import { TabBar } from './TabBar';
 
+type MonacoJsonDefaults = {
+  json?: {
+    jsonDefaults?: {
+      setDiagnosticsOptions: (options: {
+        validate: boolean;
+        allowComments: boolean;
+        enableSchemaRequest: boolean;
+      }) => void;
+    };
+  };
+};
+
 // 扩展 EditorProps 以支持 scheme 修改回调
 interface ExtendedEditorProps extends EditorProps {
   onSchemeEdit?: (path: string, newValue: string) => void;
@@ -153,7 +165,9 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
   useEffect(() => {
     if (monaco) {
-      monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+      // Monaco 新版本类型未直接暴露 jsonDefaults，这里只收窄到实际使用的诊断配置 API
+      const jsonDefaults = (monaco.languages as unknown as MonacoJsonDefaults).json?.jsonDefaults;
+      jsonDefaults?.setDiagnosticsOptions({
         validate: true,
         allowComments: true,
         enableSchemaRequest: false

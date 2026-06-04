@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Row, Col, Card, Spin, Table, Segmented, Progress, Tooltip, Typography, Tag } from 'antd';
+import { Row, Col, Card as AntCard, Spin, Table, Segmented, Progress, Tooltip, Typography, Tag } from 'antd';
 import {
     EyeOutlined,
     TeamOutlined,
@@ -17,6 +17,7 @@ import {
 
 const { Title } = Typography;
 import { Column, Bar } from '@ant-design/charts';
+import type { CardProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
     getTrafficOverview,
@@ -39,6 +40,8 @@ import {
     RefererStatsItem,
     SessionStatsItem,
 } from '../services/traffic';
+
+const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
 
 const TrafficStats: React.FC = () => {
     const [days, setDays] = useState<number>(1); // 默认今日

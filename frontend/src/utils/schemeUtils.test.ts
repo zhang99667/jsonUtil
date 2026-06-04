@@ -15,6 +15,7 @@ import {
   deepDecodeScheme,
   findSchemesInJson,
   isQueryStringFormat,
+  isDecodableQueryString,
 } from './schemeUtils';
 
 // ============ 检测函数测试 ============
@@ -62,6 +63,20 @@ describe('isQueryStringFormat', () => {
 
   it('URL 不是查询参数格式', () => {
     expect(isQueryStringFormat('https://example.com')).toBe(false);
+  });
+});
+
+describe('isDecodableQueryString', () => {
+  it('检测多参数 CMD 参数串', () => {
+    expect(isDecodableQueryString('url=https%3A%2F%2Fexample.com&from=test')).toBe(true);
+  });
+
+  it('检测常见单参数 CMD 字段', () => {
+    expect(isDecodableQueryString('url=https%3A%2F%2Fexample.com')).toBe(true);
+  });
+
+  it('普通单键值对不误判', () => {
+    expect(isDecodableQueryString('name=test')).toBe(false);
   });
 });
 
@@ -158,6 +173,13 @@ describe('base64Decode / base64Encode', () => {
     expect(encoded).toBe('aGVsbG8gd29ybGQ=');
     expect(base64Decode(encoded)).toBe(original);
   });
+
+  it('Base64 支持中文 UTF-8 内容', () => {
+    const original = '你好，世界';
+    const encoded = base64Encode(original);
+    expect(encoded).toBe('5L2g5aW977yM5LiW55WM');
+    expect(base64Decode(encoded)).toBe(original);
+  });
 });
 
 describe('decodeJwt', () => {
@@ -221,6 +243,39 @@ describe('deepDecodeScheme', () => {
     expect(result.schemeInfo).toBeDefined();
     expect(result.schemeInfo!.protocol).toBe('https:');
   });
+
+  it('URL 参数中的 JSON 被递归解析为对象', () => {
+    const payload = encodeURIComponent(JSON.stringify({ name: '张三', page: 1 }));
+    const result = deepDecodeScheme(`baiduboxapp://v1/easybrowse/open?params=${payload}&source=test`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      params: { name: '张三', page: 1 },
+      source: 'test',
+    });
+    expect(result.layers[0].description).toBe('URL 参数递归解析');
+  });
+
+  it('URL 参数中的二级 URL 被继续解析', () => {
+    const nestedUrl = encodeURIComponent('https://m.baidu.com/s?word=%25E4%25BD%25A0%25E5%25A5%25BD');
+    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?url=${nestedUrl}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      url: {
+        word: '你好',
+      },
+    });
+  });
+
+  it('CMD 参数串被解析并递归展开参数值', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const result = deepDecodeScheme(`cmd=${payload}&url=${encodeURIComponent('https://example.com/path?from=box')}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      url: { from: 'box' },
+    });
+    expect(result.layers[0].type).toBe('query-string');
+  });
 });
 
 // ============ findSchemesInJson 测试 ============
@@ -237,6 +292,16 @@ describe('findSchemesInJson', () => {
   it('无 scheme 返回空数组', () => {
     const json = JSON.stringify({ name: 'test', value: 123 }, null, 2);
     expect(findSchemesInJson(json)).toEqual([]);
+  });
+
+  it('找到 JSON 中的 CMD 参数串', () => {
+    const json = JSON.stringify({
+      action_cmd: `cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}&from=test`,
+    }, null, 2);
+    const results = findSchemesInJson(json);
+    expect(results.length).toBe(1);
+    expect(results[0].schemeType).toBe('query-string');
+    expect(results[0].path).toBe('$.action_cmd');
   });
 
   it('非法 JSON 返回空数组', () => {
