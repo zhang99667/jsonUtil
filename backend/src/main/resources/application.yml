@@ -2,14 +2,14 @@ spring:
   application:
     name: json-helper-backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/jsonhelper
-    username: postgres
-    password: password
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jsonhelper}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: true
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true
@@ -31,9 +31,9 @@ server:
 
 # 文件上传目录配置
 file:
-  upload-dir: ./uploads
+  upload-dir: ${FILE_UPLOAD_DIR:./uploads}
 
 # JWT Configuration
 jwt:
-  secret: D+d8lKHErzwkqdz29GvxwV/O3SEw6uMvdNk181jFfP8NQDSN4R0iWNAjI5h/Lazf9SnPULCNU83s73yfMxbTZg==
-  expiration: 86400000 # 1 day
+  secret: ${JWT_SECRET:D+d8lKHErzwkqdz29GvxwV/O3SEw6uMvdNk181jFfP8NQDSN4R0iWNAjI5h/Lazf9SnPULCNU83s73yfMxbTZg==}
+  expiration: ${JWT_EXPIRATION:86400000} # 1 day

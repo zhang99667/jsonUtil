@@ -1,22 +1,23 @@
-version: '3.8'
-
 services:
   app-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/jsonhelper
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/jsonhelper}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:?请在 .env 中配置 SPRING_DATASOURCE_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO:-validate}
+      - JWT_SECRET=${JWT_SECRET:?请在 .env 中配置 JWT_SECRET}
+      - FILE_UPLOAD_DIR=/app/uploads
+    volumes:
+      - upload-data:/app/uploads
     depends_on:
       db:
         condition: service_healthy
     networks:
       - app-network
+    restart: unless-stopped
 
   app-frontend:
     build:
@@ -32,25 +33,25 @@ services:
       - app-backend
     networks:
       - app-network
+    restart: unless-stopped
 
   db:
     image: postgres:16
     container_name: db
     environment:
-      - POSTGRES_DB=jsonhelper
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
+      - POSTGRES_DB=${POSTGRES_DB:-jsonhelper}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?请在 .env 中配置 POSTGRES_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: [ "CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER:-postgres}\" -d \"$${POSTGRES_DB:-jsonhelper}\"" ]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
 networks:
   app-network:
@@ -58,3 +59,4 @@ networks:
 
 volumes:
   db-data:
+  upload-data:

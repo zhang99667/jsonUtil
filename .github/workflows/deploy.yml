@@ -1,0 +1,73 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: 'SSH host'
+        required: true
+        default: '39.97.237.248'
+      user:
+        description: 'SSH user'
+        required: true
+        default: 'markz'
+      port:
+        description: 'SSH port'
+        required: true
+        default: '22'
+      app_dir:
+        description: 'Remote application directory'
+        required: true
+        default: '/home/markz/apps/jsonUtil'
+      health_check_urls:
+        description: 'Space separated health check URLs on remote host'
+        required: false
+        default: 'http://127.0.0.1 http://127.0.0.1/api/visitor/ping'
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy over SSH
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${{ inputs.port }}" "${{ inputs.host }}" >> ~/.ssh/known_hosts
+
+      - name: Prepare remote directory
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" "${{ inputs.user }}@${{ inputs.host }}" \
+            "command -v rsync >/dev/null && command -v docker >/dev/null && command -v curl >/dev/null && (docker compose version >/dev/null 2>&1 || command -v docker-compose >/dev/null) && mkdir -p '${{ inputs.app_dir }}'"
+
+      - name: Sync source to remote
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ inputs.port }}" \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.claude/' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='frontend/node_modules/' \
+            --exclude='frontend/dist/' \
+            --exclude='frontend/build/' \
+            --exclude='frontend/releases/' \
+            --exclude='backend/target/' \
+            --exclude='node_modules/' \
+            --exclude='*.log' \
+            ./ "${{ inputs.user }}@${{ inputs.host }}:${{ inputs.app_dir }}/"
+
+      - name: Deploy docker compose
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" "${{ inputs.user }}@${{ inputs.host }}" \
+            "cd '${{ inputs.app_dir }}' && HEALTH_CHECK_URLS='${{ inputs.health_check_urls }}' bash scripts/deploy/remote-docker-compose-deploy.sh"
