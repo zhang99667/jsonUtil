@@ -1,6 +1,31 @@
 import { GoogleGenAI } from "@google/genai";
 import { AIConfig, AIProvider } from "../types";
 
+/**
+ * 将 AI 返回内容规范化为有效的压缩 JSON，避免解释文本或 Markdown 写回编辑器
+ */
+export const normalizeAiJsonResponse = (rawText: string): string => {
+  const trimmed = rawText.trim();
+  if (!trimmed) return '{}';
+
+  const direct = tryNormalizeJson(trimmed);
+  if (direct) return direct;
+
+  const fenced = extractMarkdownFence(trimmed);
+  if (fenced) {
+    const normalized = tryNormalizeJson(fenced);
+    if (normalized) return normalized;
+  }
+
+  const snippet = extractBalancedJsonSnippet(trimmed);
+  if (snippet) {
+    const normalized = tryNormalizeJson(snippet);
+    if (normalized) return normalized;
+  }
+
+  throw new Error('AI 返回内容不是有效 JSON，请重试或调整模型配置');
+};
+
 export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promise<string> => {
   // 检查 API Key
   if (!config.apiKey || config.apiKey.trim() === '') {
@@ -28,7 +53,7 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
       });
 
       const text = response.text;
-      return text ? text.trim() : '{}';
+      return normalizeAiJsonResponse(text || '{}');
     }
 
     // OpenAI 兼容接口调用 (OpenAI, Qwen, GLM, DeepSeek, Custom)
@@ -74,15 +99,19 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content || '{}';
 
-    // 移除 Markdown 代码块标记
-    return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    return normalizeAiJsonResponse(text);
   } catch (error: unknown) {
     console.error("Error calling AI API:", error);
 
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     // 如果已经是我们自定义的错误信息，直接抛出
-    if (errorMessage.includes('API Key') || errorMessage.includes('API 错误') || errorMessage.includes('服务')) {
+    if (
+      errorMessage.includes('API Key') ||
+      errorMessage.includes('API 错误') ||
+      errorMessage.includes('服务') ||
+      errorMessage.includes('AI 返回内容')
+    ) {
       throw error;
     }
 
@@ -94,6 +123,64 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
     // 其他未知错误
     throw new Error('AI 修复失败: ' + errorMessage);
   }
+};
+
+const tryNormalizeJson = (candidate: string): string | null => {
+  try {
+    return JSON.stringify(JSON.parse(candidate));
+  } catch {
+    return null;
+  }
+};
+
+const extractMarkdownFence = (text: string): string | null => {
+  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return match ? match[1].trim() : null;
+};
+
+const extractBalancedJsonSnippet = (text: string): string | null => {
+  for (let i = 0; i < text.length; i++) {
+    const start = text[i];
+    if (start !== '{' && start !== '[') continue;
+
+    const endStack = [start === '{' ? '}' : ']'];
+    let inString = false;
+    let escaped = false;
+
+    for (let j = i + 1; j < text.length; j++) {
+      const char = text[j];
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (inString) continue;
+
+      if (char === '{') {
+        endStack.push('}');
+      } else if (char === '[') {
+        endStack.push(']');
+      } else if (char === endStack[endStack.length - 1]) {
+        endStack.pop();
+        if (endStack.length === 0) {
+          return text.slice(i, j + 1);
+        }
+      }
+    }
+  }
+
+  return null;
 };
 
 function getDefaultBaseUrl(provider: AIProvider): string {

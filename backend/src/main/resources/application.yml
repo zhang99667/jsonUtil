@@ -4,7 +4,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jsonhelper}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:password}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -23,8 +23,8 @@ spring:
   # 文件上传大小限制
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:50MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:50MB}
 
 server:
   port: 8080
@@ -32,8 +32,19 @@ server:
 # 文件上传目录配置
 file:
   upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+  max-upload-size: ${FILE_MAX_UPLOAD_SIZE_BYTES:52428800}
+  max-preview-size: ${FILE_MAX_PREVIEW_SIZE_BYTES:2097152}
+  allowed-extensions: ${FILE_ALLOWED_EXTENSIONS:.json,.txt,.js,.ts,.md,.log,.yaml,.yml}
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:D+d8lKHErzwkqdz29GvxwV/O3SEw6uMvdNk181jFfP8NQDSN4R0iWNAjI5h/Lazf9SnPULCNU83s73yfMxbTZg==}
+  secret: ${JWT_SECRET:}
   expiration: ${JWT_EXPIRATION:86400000} # 1 day
+
+# 管理员初始化默认关闭，避免生产环境出现固定默认账号
+admin:
+  bootstrap:
+    enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+    username: ${ADMIN_BOOTSTRAP_USERNAME:}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+    email: ${ADMIN_BOOTSTRAP_EMAIL:admin@example.com}

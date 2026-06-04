@@ -19,6 +19,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 /**
@@ -36,6 +40,18 @@ public class FileService {
     /** 文件上传目录，可通过配置文件修改 */
     @Value("${file.upload-dir:./uploads}")
     private String uploadDir;
+
+    /** 单文件上传大小上限，默认与 Spring Multipart 限制保持一致 */
+    @Value("${file.max-upload-size:52428800}")
+    private long maxUploadSize;
+
+    /** 预览读取大小上限，避免大文件一次性读入内存 */
+    @Value("${file.max-preview-size:2097152}")
+    private long maxPreviewSize;
+
+    /** 允许上传的文本类文件扩展名 */
+    @Value("${file.allowed-extensions:.json,.txt,.js,.ts,.md,.log,.yaml,.yml}")
+    private String allowedExtensions;
 
     /**
      * 初始化上传目录，确保目录存在
@@ -57,7 +73,9 @@ public class FileService {
      * 分页查询文件列表，支持按文件名模糊搜索
      */
     public Page<UploadFile> listFiles(int page, int pageSize, String keyword) {
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        int safePage = Math.max(page, 0);
+        int safePageSize = Math.min(Math.max(pageSize, 1), 100);
+        Pageable pageable = PageRequest.of(safePage, safePageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
         if (keyword != null && !keyword.trim().isEmpty()) {
             return uploadFileRepository.findByFileNameContainingIgnoreCase(keyword.trim(), pageable);
         }
@@ -84,6 +102,9 @@ public class FileService {
         }
 
         try {
+            if (Files.size(filePath) > maxPreviewSize) {
+                throw new IllegalArgumentException("文件过大，暂不支持在线预览，请下载后查看");
+            }
             return Files.readString(filePath, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException("读取文件内容失败: " + e.getMessage(), e);
@@ -99,14 +120,21 @@ public class FileService {
             throw new RuntimeException("上传文件不能为空");
         }
 
-        String originalFileName = file.getOriginalFilename();
-        if (originalFileName == null || originalFileName.isBlank()) {
-            originalFileName = "unnamed";
+        if (file.getSize() > maxUploadSize) {
+            throw new IllegalArgumentException("上传文件超过大小限制");
         }
+
+        String originalFileName = sanitizeFileName(file.getOriginalFilename());
+        validateExtension(originalFileName);
 
         // 生成唯一文件名，避免重名覆盖
         String uniqueFileName = UUID.randomUUID() + "_" + originalFileName;
-        Path targetPath = Paths.get(uploadDir, uniqueFileName);
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path targetPath = uploadPath.resolve(uniqueFileName).normalize();
+
+        if (!targetPath.startsWith(uploadPath)) {
+            throw new IllegalArgumentException("非法文件名");
+        }
 
         try {
             Files.copy(file.getInputStream(), targetPath);
@@ -150,5 +178,39 @@ public class FileService {
         // 删除数据库记录
         uploadFileRepository.deleteById(id);
         logger.info("已删除文件记录，ID: {}", id);
+    }
+
+    /**
+     * 清理原始文件名，避免路径片段或控制字符进入存储路径
+     */
+    private String sanitizeFileName(String originalFileName) {
+        if (originalFileName == null || originalFileName.isBlank()) {
+            return "unnamed.json";
+        }
+
+        String fileName = Paths.get(originalFileName).getFileName().toString()
+                .replace('\\', '_')
+                .replace('/', '_')
+                .replaceAll("[\\p{Cntrl}]", "")
+                .trim();
+
+        return fileName.isEmpty() ? "unnamed.json" : fileName;
+    }
+
+    /**
+     * 校验上传文件扩展名，只允许文本和配置类文件进入管理后台
+     */
+    private void validateExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        String extension = dotIndex >= 0 ? fileName.substring(dotIndex).toLowerCase(Locale.ROOT) : "";
+
+        Set<String> allowed = Arrays.stream(allowedExtensions.split(","))
+                .map(item -> item.trim().toLowerCase(Locale.ROOT))
+                .filter(item -> !item.isEmpty())
+                .collect(Collectors.toSet());
+
+        if (allowed.isEmpty() || !allowed.contains(extension)) {
+            throw new IllegalArgumentException("不支持的文件类型: " + extension);
+        }
     }
 }

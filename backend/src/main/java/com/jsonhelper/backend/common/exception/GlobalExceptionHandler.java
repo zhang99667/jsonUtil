@@ -19,6 +19,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(401).body(Result.error(401, "用户名或密码错误"));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Result<String>> handleIllegalArgumentException(IllegalArgumentException e) {
+        logger.warn("Bad Request: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(Result.error(400, e.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Result<String>> handleException(Exception e) {
         logger.error("System Error", e);
