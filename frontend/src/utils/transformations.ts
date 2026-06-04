@@ -149,6 +149,55 @@ const unicodeEncode = (str: string): string => {
   }).join('');
 };
 
+// ============ Base64 编解码工具函数 ============
+
+const bytesToBinaryString = (bytes: Uint8Array): string => {
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return binary;
+};
+
+const binaryStringToBytes = (binary: string): Uint8Array => {
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const normalizeBase64Input = (input: string): string | null => {
+  const compact = input.trim().replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  if (!compact || compact.length % 4 === 1 || !/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) {
+    return null;
+  }
+  const firstPaddingIndex = compact.indexOf('=');
+  if (firstPaddingIndex !== -1 && /[^=]/.test(compact.slice(firstPaddingIndex))) {
+    return null;
+  }
+  const paddingLength = (4 - (compact.length % 4)) % 4;
+  return compact + '='.repeat(paddingLength);
+};
+
+const base64Encode = (input: string): string => {
+  const bytes = new TextEncoder().encode(input);
+  return btoa(bytesToBinaryString(bytes));
+};
+
+const base64Decode = (input: string): string => {
+  const normalized = normalizeBase64Input(input);
+  if (!normalized) return input;
+
+  try {
+    const bytes = binaryStringToBytes(atob(normalized));
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return input;
+  }
+};
+
 // ============ 带路径记录的深度解析 ============
 
 /**
@@ -466,6 +515,8 @@ export const performTransform = (input: string, mode: TransformMode): string => 
       case TransformMode.URL_DECODE: {
         try { return decodeURIComponent(input); } catch { return input; }
       }
+      case TransformMode.BASE64_ENCODE: return base64Encode(input);
+      case TransformMode.BASE64_DECODE: return base64Decode(input);
       case TransformMode.SORT_KEYS: {
         const parsed: JsonValue = JSON.parse(input);
         return JSON.stringify(sortJsonKeys(parsed), null, 2);
@@ -569,6 +620,8 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
         try { return decodeURIComponent(output); } catch { return output; }
       }
       case TransformMode.URL_DECODE: return encodeURIComponent(output);
+      case TransformMode.BASE64_ENCODE: return base64Decode(output);
+      case TransformMode.BASE64_DECODE: return base64Encode(output);
       case TransformMode.SORT_KEYS: return output;
       default: return output;
     }

@@ -2,7 +2,7 @@
   "name": "json-helper-ai-fix",
   "productName": "JSONUtils - 专业版",
   "private": true,
-  "version": "1.7.0",
+  "version": "1.8.0",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -10,6 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "test:watch": "vitest",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "npm run build && electron-builder",

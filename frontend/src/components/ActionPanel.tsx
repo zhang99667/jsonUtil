@@ -242,6 +242,14 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           {renderToolBtn(TransformMode.URL_DECODE, 'URL 解码', (
             <span className="font-mono font-bold text-sm">Ur</span>
           ), 'text-red-400')}
+
+          {renderToolBtn(TransformMode.BASE64_ENCODE, 'Base64 编码', (
+            <span className="font-mono font-bold text-sm">B64</span>
+          ), 'text-indigo-400')}
+
+          {renderToolBtn(TransformMode.BASE64_DECODE, 'Base64 解码', (
+            <span className="font-mono font-bold text-sm">64</span>
+          ), 'text-sky-400')}
         </div>
 
         {/* 工具组：排序 */}

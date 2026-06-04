@@ -77,6 +77,7 @@ const FileManagement: React.FC = () => {
      */
     const uploadProps: UploadProps = {
         accept: ACCEPTED_FILE_TYPES,
+        capture: undefined,
         showUploadList: false,
         beforeUpload: () => false, // 阻止自动上传，使用自定义逻辑
         onChange: async (info) => {

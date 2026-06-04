@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.0 (2026-04-21) - URL 编解码、侧边栏整理与通用设置
 ### ✨ 新特性
+- **CMD/Scheme 参数递归解析**: Scheme 解析增强为参数级递归展开，支持 URL 内参数、独立 CMD 参数串、二级 URL、URL 编码 JSON 与 Base64/JWT 的组合解析
+- **Base64 编解码**: 新增 Base64 编码 / Base64 解码转换模式，支持 UTF-8 中文内容、URL-safe Base64 与预览编辑器反向同步
 - **URL 编解码**: 新增 URL 编码 / URL 解码 转换模式，支持对输入内容进行 `encodeURIComponent` / `decodeURIComponent`，预览编辑器支持反向同步
 - **嵌套解析自动展开 Scheme**: 深度格式化（嵌套解析）新增 `autoExpandScheme` 选项，启用后自动检测并展开 URL 编码的 CMD/Scheme 字符串值
 - **通用设置面板**: 设置弹窗新增「通用设置」Tab，包含「嵌套解析时自动展开 CMD/Scheme 字符串」toggle 开关，设置自动持久化到 localStorage
@@ -8,6 +10,12 @@
 
 ### 🎨 界面优化
 - **侧边栏分组合并**: 将「转义处理」和「编码转换」两个工具组合并为「编码 / 转义」，侧边栏由 5 组缩减为 4 组，布局更紧凑
+
+### 🏗️ 工程化
+- **版本号同步**: 同步 `frontend/package.json` 与 `package-lock.json` 的项目版本号至 v1.8.0
+- **类型检查修复**: 修复 Ant Design、Monaco 与 ErrorBoundary 的既有 TypeScript 类型检查问题
+- **类型检查脚本**: 新增 `npm run typecheck`，便于本地和 CI 复用完整类型检查
+- **测试覆盖**: 补充 URL 编解码、Base64 编解码、Key 排序、CMD 参数递归解析和反向转换单元测试
 
 ## v1.7.0 (2026-03-28) - 模板填充、拖拽开文件与多项体验优化
 ### ✨ 新特性

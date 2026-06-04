@@ -155,6 +155,57 @@ describe('performTransform', () => {
     });
   });
 
+  describe('URL_ENCODE / URL_DECODE 模式', () => {
+    it('URL 编码中文和特殊字符', () => {
+      expect(performTransform('https://example.com?q=你好&x=1', TransformMode.URL_ENCODE))
+        .toBe('https%3A%2F%2Fexample.com%3Fq%3D%E4%BD%A0%E5%A5%BD%26x%3D1');
+    });
+
+    it('URL 解码合法内容', () => {
+      expect(performTransform('%E4%BD%A0%E5%A5%BD%20world', TransformMode.URL_DECODE))
+        .toBe('你好 world');
+    });
+
+    it('URL 解码非法内容返回原文', () => {
+      expect(performTransform('%E4%ZZ', TransformMode.URL_DECODE)).toBe('%E4%ZZ');
+    });
+  });
+
+  describe('BASE64_ENCODE / BASE64_DECODE 模式', () => {
+    it('Base64 编码 ASCII 字符串', () => {
+      expect(performTransform('hello world', TransformMode.BASE64_ENCODE)).toBe('aGVsbG8gd29ybGQ=');
+    });
+
+    it('Base64 编码中文字符串', () => {
+      expect(performTransform('你好，世界', TransformMode.BASE64_ENCODE)).toBe('5L2g5aW977yM5LiW55WM');
+    });
+
+    it('Base64 解码标准格式', () => {
+      expect(performTransform('5L2g5aW977yM5LiW55WM', TransformMode.BASE64_DECODE)).toBe('你好，世界');
+    });
+
+    it('Base64 解码 URL-safe 格式并自动补齐 padding', () => {
+      expect(performTransform('SGVsbG8td29ybGQ', TransformMode.BASE64_DECODE)).toBe('Hello-world');
+    });
+
+    it('Base64 解码非法内容返回原文', () => {
+      expect(performTransform('not base64!', TransformMode.BASE64_DECODE)).toBe('not base64!');
+    });
+  });
+
+  describe('SORT_KEYS 模式', () => {
+    it('递归按字母序排列对象键', () => {
+      const input = '{"b":2,"a":{"d":4,"c":3},"list":[{"z":1,"y":2}]}';
+      const result = performTransform(input, TransformMode.SORT_KEYS);
+      expect(JSON.parse(result)).toEqual({
+        a: { c: 3, d: 4 },
+        b: 2,
+        list: [{ y: 2, z: 1 }],
+      });
+      expect(result.indexOf('"a"')).toBeLessThan(result.indexOf('"b"'));
+    });
+  });
+
   describe('NONE 模式', () => {
     it('原样返回', () => {
       const input = '任何内容';
@@ -186,6 +237,20 @@ describe('performInverseTransform', () => {
     const original = '你好世界';
     const encoded = performTransform(original, TransformMode.CN_TO_UNICODE);
     const decoded = performInverseTransform(encoded, TransformMode.CN_TO_UNICODE);
+    expect(decoded).toBe(original);
+  });
+
+  it('URL 编解码互逆', () => {
+    const original = 'https://example.com?q=你好&x=1';
+    const encoded = performTransform(original, TransformMode.URL_ENCODE);
+    const decoded = performInverseTransform(encoded, TransformMode.URL_ENCODE);
+    expect(decoded).toBe(original);
+  });
+
+  it('Base64 编解码互逆', () => {
+    const original = 'hello 你好';
+    const encoded = performTransform(original, TransformMode.BASE64_ENCODE);
+    const decoded = performInverseTransform(encoded, TransformMode.BASE64_ENCODE);
     expect(decoded).toBe(original);
   });
 });

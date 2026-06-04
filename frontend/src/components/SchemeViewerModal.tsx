@@ -22,6 +22,7 @@ interface SchemeViewerModalProps {
 
 const schemeTypeLabels: Record<SchemeType, string> = {
   'url': 'URL',
+  'query-string': 'CMD 参数',
   'url-encoded': 'URL 编码',
   'base64': 'Base64',
   'jwt': 'JWT Token',
