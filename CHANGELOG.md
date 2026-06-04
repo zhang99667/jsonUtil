@@ -15,6 +15,7 @@
 - **CI/CD 流水线建设**: 新增根目录 GitHub Actions CI/CD，覆盖前端检查、后端 Maven、Docker 构建和 SSH/rsync 远程部署
 - **部署脚本**: 新增本机 SSH 部署脚本与远程 Docker Compose 发布脚本，支持不依赖远端 git pull 的服务器发布
 - **Docker 部署优化**: Docker Compose 参数化数据库/JWT 配置，生产部署强制配置关键密钥，增加后端上传目录持久化和服务重启策略
+- **Actions Runtime 预适配**: GitHub Actions 提前启用 Node 24 action runtime，规避 Node 20 runtime 即将下线的兼容风险
 - **版本号同步**: 同步 `frontend/package.json` 与 `package-lock.json` 的项目版本号至 v1.8.0
 - **类型检查修复**: 修复 Ant Design、Monaco 与 ErrorBoundary 的既有 TypeScript 类型检查问题
 - **类型检查脚本**: 新增 `npm run typecheck`，便于本地和 CI 复用完整类型检查
