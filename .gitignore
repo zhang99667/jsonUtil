@@ -32,6 +32,10 @@ target/
 
 # Frontend / Vite
 .vite/
+.env
+.env.*
+!.env.example
+!deploy.env.example
 .env.local
 .env.*.local
 
