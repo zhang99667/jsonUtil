@@ -172,6 +172,26 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
     localStorage.setItem(`${storageKey}-size`, JSON.stringify(size));
   }, [size, storageKey]);
 
+  // 窗口尺寸变化时重新夹取面板，避免分屏/外接屏切换后面板不可见
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleResize = () => {
+      const viewport = getViewportSize();
+
+      setSize((prevSize) => {
+        const nextSize = normalizePanelSize(prevSize, minSize, viewport);
+        setPosition((prevPosition) => normalizePanelPosition(prevPosition, nextSize, viewport));
+        return nextSize;
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isOpen, minSize.width, minSize.height]);
+
   // 处理拖动和调整大小
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {

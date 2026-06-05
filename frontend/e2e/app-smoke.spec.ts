@@ -116,6 +116,20 @@ test('离屏面板缓存会被拉回可见区域', async ({ page }) => {
   expect(box!.y).toBeGreaterThanOrEqual(0);
   expect(box!.width).toBeLessThanOrEqual(viewport!.width);
   expect(box!.height).toBeLessThanOrEqual(viewport!.height);
+
+  await page.setViewportSize({ width: 900, height: 600 });
+  await expect.poll(async () => {
+    const resizedBox = await panel.boundingBox();
+    return Boolean(
+      resizedBox &&
+      resizedBox.x <= 900 - 80 &&
+      resizedBox.x + resizedBox.width >= 80 &&
+      resizedBox.y <= 600 - 80 &&
+      resizedBox.y >= 0 &&
+      resizedBox.width <= 900 &&
+      resizedBox.height <= 600
+    );
+  }).toBe(true);
 });
 
 test('JSONPath 面板可查询预览数据', async ({ page }) => {
