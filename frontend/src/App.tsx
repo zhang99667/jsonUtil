@@ -101,12 +101,39 @@ const App: React.FC = () => {
   const [isOutputTransforming, setIsOutputTransforming] = useState(false);
   const transformRequestIdRef = useRef(0);
   const sourceValidationRequestIdRef = useRef(0);
+  const previewValidationRequestIdRef = useRef(0);
+  const outputSyncRequestIdRef = useRef(0);
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
   const shouldUseAsyncTransform = (
     input.length >= ASYNC_TRANSFORM_THRESHOLD &&
     ASYNC_TRANSFORM_MODES.has(mode) &&
     !isUpdatingFromOutput.current
   );
+
+  const validateJsonMaybeAsync = useCallback((value: string): Promise<ValidationResult> => {
+    if (value.length < ASYNC_VALIDATION_THRESHOLD) {
+      return Promise.resolve(validateJson(value));
+    }
+
+    return new Promise(resolve => {
+      const worker = new Worker(new URL('./workers/validation.worker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (event: MessageEvent<{
+        id: number;
+        validation: ValidationResult;
+      }>) => {
+        worker.terminate();
+        resolve(event.data.validation);
+      };
+      worker.onerror = (event) => {
+        worker.terminate();
+        resolve({
+          isValid: false,
+          error: `JSON 校验失败: ${event.message}`,
+        });
+      };
+      worker.postMessage({ id: 1, input: value });
+    });
+  }, []);
 
   // 深度格式化结果和上下文（避免在 output 计算中产生副作用）
   const syncDeepFormatResult = useMemo(() => {
@@ -445,11 +472,23 @@ const App: React.FC = () => {
     if (newVal && newVal.trim()) {
       const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
       if (cleanVal.trim().startsWith('{') || cleanVal.trim().startsWith('[')) {
-        setPreviewValidation(validateJson(cleanVal));
+        const requestId = ++previewValidationRequestIdRef.current;
+        if (cleanVal.length >= ASYNC_VALIDATION_THRESHOLD) {
+          setPreviewValidation({ isValid: true });
+          validateJsonMaybeAsync(cleanVal).then(result => {
+            if (requestId === previewValidationRequestIdRef.current) {
+              setPreviewValidation(result);
+            }
+          });
+        } else {
+          setPreviewValidation(validateJson(cleanVal));
+        }
       } else {
+        previewValidationRequestIdRef.current++;
         setPreviewValidation({ isValid: true });
       }
     } else {
+      previewValidationRequestIdRef.current++;
       setPreviewValidation({ isValid: true });
     }
 
@@ -458,60 +497,74 @@ const App: React.FC = () => {
       clearTimeout(outputChangeTimer.current);
     }
 
-    // 执行反向转换（防抖 150ms）
+    const outputSyncRequestId = ++outputSyncRequestIdRef.current;
+
+    // 执行反向转换（防抖 400ms）
     outputChangeTimer.current = setTimeout(() => {
       // Timer fired, clear the ref so we know it's not pending anymore
       outputChangeTimer.current = null;
 
-      // 修复：在格式化模式下，如果右侧内容不是有效的 JSON，则不进行同步
-      // 避免因语法错误导致反向转换失败，从而将错误内容覆盖到左侧源文件
-      if ((mode === TransformMode.FORMAT || mode === TransformMode.DEEP_FORMAT || mode === TransformMode.MINIFY)) {
-        const validation = validateJson(newVal);
-        if (!validation.isValid) {
-          // 验证失败，仅重置更新标志（允许用户继续编辑），但不同步回左侧
-          isUpdatingFromOutput.current = false;
-          pendingOutputValue.current = '';
+      const syncOutputToSource = async () => {
+        // 修复：在格式化模式下，如果右侧内容不是有效的 JSON，则不进行同步
+        // 避免因语法错误导致反向转换失败，从而将错误内容覆盖到左侧源文件
+        if ((mode === TransformMode.FORMAT || mode === TransformMode.DEEP_FORMAT || mode === TransformMode.MINIFY)) {
+          const validation = await validateJsonMaybeAsync(newVal);
+          if (outputSyncRequestId !== outputSyncRequestIdRef.current) {
+            return;
+          }
+          if (!validation.isValid) {
+            // 验证失败，仅重置更新标志（允许用户继续编辑），但不同步回左侧
+            setPreviewValidation(validation);
+            isUpdatingFromOutput.current = false;
+            pendingOutputValue.current = '';
+            return;
+          }
+        }
+
+        if (outputSyncRequestId !== outputSyncRequestIdRef.current) {
           return;
         }
-      }
 
-      // 深度格式化模式：使用当前 Tab 的 context 进行精确还原
-      let newSource: string;
-      if (mode === TransformMode.DEEP_FORMAT) {
-        const currentFile = files.find(f => f.id === activeFileId);
-        const context = currentFile?.transformContext || fallbackContextRef.current;
-        if (context) {
-          // 使用精确的上下文还原
-          newSource = inverseWithContext(newVal, context);
+        // 深度格式化模式：使用当前 Tab 的 context 进行精确还原
+        let newSource: string;
+        if (mode === TransformMode.DEEP_FORMAT) {
+          const currentFile = files.find(f => f.id === activeFileId);
+          const context = currentFile?.transformContext || fallbackContextRef.current;
+          if (context) {
+            // 使用精确的上下文还原
+            newSource = inverseWithContext(newVal, context);
+          } else {
+            // 无上下文时回退到旧方法
+            newSource = performInverseTransform(newVal, mode, inputRef.current);
+          }
         } else {
-          // 无上下文时回退到旧方法
+          // 其他模式使用旧方法
           newSource = performInverseTransform(newVal, mode, inputRef.current);
         }
-      } else {
-        // 其他模式使用旧方法
-        newSource = performInverseTransform(newVal, mode, inputRef.current);
-      }
 
-      setInput(newSource);
+        setInput(newSource);
 
-      // 同步更新 Ref
-      inputRef.current = newSource;
+        // 同步更新 Ref
+        inputRef.current = newSource;
 
-      // 同步更新文件缓存
-      updateActiveFileContent(newSource);
+        // 同步更新文件缓存
+        updateActiveFileContent(newSource);
 
-      // 重置更新标志 - 延长锁定时间以防止连续删除时的竞态条件
-      setTimeout(() => {
-        // 只有在没有新的定时器运行时（即用户停止输入 1000ms + 500ms 后），才释放锁定
-        if (!outputChangeTimer.current) {
-          isUpdatingFromOutput.current = false;
-          pendingOutputValue.current = '';
-          // 可选：在此处触发一次强制刷新以应用最终的格式化结果？
-          // 目前保持静默，直到下一次输入或模式切换，避免光标跳动
-        }
-      }, 600); // 增加延迟至 500ms
-    }, 400); // 防抖延迟增加到 1000ms
-  }, [mode, files, activeFileId, updateActiveFileContent]);
+        // 重置更新标志 - 延长锁定时间以防止连续删除时的竞态条件
+        setTimeout(() => {
+          // 只有在没有新的定时器运行时（即用户停止输入 1000ms + 500ms 后），才释放锁定
+          if (!outputChangeTimer.current && outputSyncRequestId === outputSyncRequestIdRef.current) {
+            isUpdatingFromOutput.current = false;
+            pendingOutputValue.current = '';
+            // 可选：在此处触发一次强制刷新以应用最终的格式化结果？
+            // 目前保持静默，直到下一次输入或模式切换，避免光标跳动
+          }
+        }, 600);
+      };
+
+      void syncOutputToSource();
+    }, 400);
+  }, [mode, files, activeFileId, updateActiveFileContent, validateJsonMaybeAsync]);
 
   const savePreview = async () => {
     if (isOutputTransforming) {
