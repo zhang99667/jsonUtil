@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { driver, DriveStep, Driver } from 'driver.js';
+import { safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import 'driver.js/dist/driver.css';
 
 // 定义所有支持引导的功能
@@ -204,13 +205,13 @@ export const useFeatureTour = () => {
     // 标记功能引导为已完成
     const markTourCompleted = useCallback((featureId: FeatureId) => {
         const key = `${STORAGE_KEY_PREFIX}${featureId}`;
-        localStorage.setItem(key, 'completed');
+        safeSetStorageItem(key, 'completed');
     }, []);
 
     // 重置功能引导状态
     const resetTour = useCallback((featureId: FeatureId) => {
         const key = `${STORAGE_KEY_PREFIX}${featureId}`;
-        localStorage.removeItem(key);
+        safeRemoveStorageItem(key);
     }, []);
 
     // 重置所有功能引导

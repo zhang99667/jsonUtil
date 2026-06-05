@@ -29,6 +29,7 @@ import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 import { buildAiRepairSummary } from './utils/aiRepairSummary';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
+import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
 import {
   applyAppBackupContent,
@@ -101,7 +102,7 @@ const App: React.FC = () => {
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>(loadGeneralSettings);
 
   useEffect(() => {
-    localStorage.setItem(GENERAL_SETTINGS_STORAGE_KEY, JSON.stringify(generalSettings));
+    safeSetStorageItem(GENERAL_SETTINGS_STORAGE_KEY, JSON.stringify(generalSettings));
   }, [generalSettings]);
 
   const hasUnsavedChanges = useMemo(() => {
@@ -335,7 +336,7 @@ const App: React.FC = () => {
   const [aiConfig, setAiConfig] = useState<AIConfig>(loadAIConfig);
 
   useEffect(() => {
-    localStorage.setItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
+    safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
   }, [aiConfig]);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction } from '../types';
-import { parseJsonWithFallback } from '../utils/storage';
+import { parseJsonWithFallback, safeSetStorageItem } from '../utils/storage';
 import { DEFAULT_SHORTCUTS, SHORTCUTS_STORAGE_KEY, normalizeShortcutConfig } from '../utils/shortcuts';
 
 export { DEFAULT_SHORTCUTS, normalizeShortcutConfig } from '../utils/shortcuts';
@@ -33,7 +33,7 @@ export const useShortcuts = ({
     });
 
     useEffect(() => {
-        localStorage.setItem(SHORTCUTS_STORAGE_KEY, JSON.stringify(shortcuts));
+        safeSetStorageItem(SHORTCUTS_STORAGE_KEY, JSON.stringify(shortcuts));
     }, [shortcuts]);
 
     const updateShortcut = (action: ShortcutAction, key: ShortcutKey) => {

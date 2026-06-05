@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { driver } from 'driver.js';
+import { safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import 'driver.js/dist/driver.css';
 
 export const useOnboardingTour = () => {
@@ -114,7 +115,7 @@ export const useOnboardingTour = () => {
                 ],
                 onDestroyStarted: () => {
                     // 用户完成或跳过引导时，标记为已完成
-                    localStorage.setItem('json-helper-onboarding-completed', 'true');
+                    safeSetStorageItem('json-helper-onboarding-completed', 'true');
                     driverObj.destroy();
                 }
             });
@@ -127,7 +128,7 @@ export const useOnboardingTour = () => {
 
     // 提供手动重启引导的方法
     const restartTour = () => {
-        localStorage.removeItem('json-helper-onboarding-completed');
+        safeRemoveStorageItem('json-helper-onboarding-completed');
         window.location.reload();
     };
 

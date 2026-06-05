@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
-import { isFiniteNumber, isRecord, parseJsonWithFallback } from '../utils/storage';
+import { isFiniteNumber, isRecord, parseJsonWithFallback, safeSetStorageItem } from '../utils/storage';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { PANEL_LAYOUT_RESET_EVENT } from '../utils/panelLayout';
 
@@ -166,12 +166,12 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
 
   // 保存位置到 localStorage
   useEffect(() => {
-    localStorage.setItem(`${storageKey}-position`, JSON.stringify(position));
+    safeSetStorageItem(`${storageKey}-position`, JSON.stringify(position));
   }, [position, storageKey]);
 
   // 保存大小到 localStorage
   useEffect(() => {
-    localStorage.setItem(`${storageKey}-size`, JSON.stringify(size));
+    safeSetStorageItem(`${storageKey}-size`, JSON.stringify(size));
   }, [size, storageKey]);
 
   // 全局恢复布局时，同步重置当前已挂载的面板状态

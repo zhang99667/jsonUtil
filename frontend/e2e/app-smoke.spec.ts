@@ -101,6 +101,40 @@ test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   await expect(page.getByText('AI 提供商')).toBeVisible();
 });
 
+test('本地存储写入异常不会打断主路径', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(Storage.prototype, 'setItem', {
+      value: () => {
+        throw new Error('storage blocked');
+      },
+      configurable: true,
+    });
+    Object.defineProperty(Storage.prototype, 'removeItem', {
+      value: () => {
+        throw new Error('storage blocked');
+      },
+      configurable: true,
+    });
+  });
+
+  await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('button', { name: '通用设置' }).click();
+  const generalSettingCard = page
+    .getByText('嵌套解析时自动展开 CMD/Scheme 字符串')
+    .locator('xpath=ancestor::div[contains(@class, "bg-editor-bg")][1]');
+  await generalSettingCard.locator('button').click();
+  await page.getByRole('button', { name: '保存设置' }).click();
+  await expect(page.getByText('JSON 工具箱')).toBeVisible();
+
+  await fillSourceEditor(page, '{"users":[{"name":"Ada"}]}');
+  await page.getByRole('button', { name: 'JSONPath 查询' }).click();
+  await page.locator('[data-tour="jsonpath-input"]').fill('$.users[*].name');
+  await page.getByRole('button', { name: '查询', exact: true }).click();
+
+  await expect(page.getByText('1 / 1')).toBeVisible();
+  await expectPreviewText(page, '"name": "Ada"');
+});
+
 test('离屏面板缓存会被拉回可见区域', async ({ page }) => {
   await page.evaluate(() => {
     window.localStorage.setItem('jsonpath-panel-position', JSON.stringify({ x: 99999, y: 99999 }));
