@@ -28,6 +28,7 @@ import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
+const ASYNC_VALIDATION_THRESHOLD = 200_000;
 const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理大文件，请稍候...';
 const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.FORMAT,
@@ -99,6 +100,7 @@ const App: React.FC = () => {
   const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
   const [isOutputTransforming, setIsOutputTransforming] = useState(false);
   const transformRequestIdRef = useRef(0);
+  const sourceValidationRequestIdRef = useRef(0);
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
   const shouldUseAsyncTransform = (
     input.length >= ASYNC_TRANSFORM_THRESHOLD &&
@@ -365,21 +367,55 @@ const App: React.FC = () => {
 
   // 输入变更验证（防抖）
   useEffect(() => {
+    let worker: Worker | null = null;
     const timeoutId = setTimeout(() => {
       if (input && input.trim()) {
         // 预处理：移除零宽空格等不可见字符，避免误报
         const cleanInput = input.replace(/[\u200B-\u200D\uFEFF]/g, '');
+        const trimmedInput = cleanInput.trim();
 
-        if (cleanInput.trim().startsWith('{') || cleanInput.trim().startsWith('[')) {
+        if (trimmedInput.startsWith('{') || trimmedInput.startsWith('[')) {
+          const requestId = ++sourceValidationRequestIdRef.current;
+          if (cleanInput.length >= ASYNC_VALIDATION_THRESHOLD) {
+            worker = new Worker(new URL('./workers/validation.worker.ts', import.meta.url), { type: 'module' });
+            worker.onmessage = (event: MessageEvent<{
+              id: number;
+              validation: ValidationResult;
+            }>) => {
+              if (event.data.id === sourceValidationRequestIdRef.current) {
+                setValidation(event.data.validation);
+              }
+              worker?.terminate();
+              worker = null;
+            };
+            worker.onerror = (event) => {
+              if (requestId === sourceValidationRequestIdRef.current) {
+                setValidation({
+                  isValid: false,
+                  error: `JSON 校验失败: ${event.message}`,
+                });
+              }
+              worker?.terminate();
+              worker = null;
+            };
+            worker.postMessage({ id: requestId, input: cleanInput });
+            return;
+          }
+
           setValidation(validateJson(cleanInput));
         } else {
+          sourceValidationRequestIdRef.current++;
           setValidation({ isValid: true });
         }
       } else {
+        sourceValidationRequestIdRef.current++;
         setValidation({ isValid: true });
       }
     }, 500);
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      worker?.terminate();
+    };
   }, [input]);
 
   // 左侧编辑器变更处理
