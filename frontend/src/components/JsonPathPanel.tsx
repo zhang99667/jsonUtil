@@ -3,6 +3,13 @@ import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { HighlightRange } from '../types';
+import {
+    addJsonPathListItem,
+    JSONPATH_FAVORITES_STORAGE_KEY,
+    JSONPATH_HISTORY_STORAGE_KEY,
+    parseStoredJsonPathList,
+    removeJsonPathListItem
+} from '../utils/jsonPathLists';
 
 interface JsonPathPanelProps {
     jsonData: string;
@@ -26,8 +33,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const [query, setQuery] = useState<string>('$');
     const [error, setError] = useState<string>('');
     const [history, setHistory] = useState<string[]>(() => {
-        const saved = localStorage.getItem('jsonpath-query-history');
-        return saved ? JSON.parse(saved) : [];
+        return parseStoredJsonPathList(localStorage.getItem(JSONPATH_HISTORY_STORAGE_KEY));
+    });
+    const [favorites, setFavorites] = useState<string[]>(() => {
+        return parseStoredJsonPathList(localStorage.getItem(JSONPATH_FAVORITES_STORAGE_KEY));
     });
 
     // 查询结果状态
@@ -88,8 +97,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     // 保存历史记录到 localStorage
     useEffect(() => {
-        localStorage.setItem('jsonpath-query-history', JSON.stringify(history));
+        localStorage.setItem(JSONPATH_HISTORY_STORAGE_KEY, JSON.stringify(history));
     }, [history]);
+
+    // 保存收藏查询到 localStorage
+    useEffect(() => {
+        localStorage.setItem(JSONPATH_FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+    }, [favorites]);
 
     useEffect(() => {
         return () => {
@@ -167,9 +181,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             onHighlightRange(event.data.ranges[0] || null);
 
             // 添加到历史记录（去重）
-            setHistory(prev => (
-                prev.includes(query) ? prev : [query, ...prev].slice(0, 10)
-            ));
+            setHistory(prev => addJsonPathListItem(prev, query));
         };
 
         worker.onerror = (event) => {
@@ -240,7 +252,20 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const clearHistory = () => {
         setHistory([]);
-        localStorage.removeItem('jsonpath-query-history');
+        localStorage.removeItem(JSONPATH_HISTORY_STORAGE_KEY);
+    };
+
+    const normalizedQuery = query.trim();
+    const isCurrentQueryFavorite = normalizedQuery ? favorites.includes(normalizedQuery) : false;
+
+    const toggleFavorite = () => {
+        if (!normalizedQuery) return;
+
+        setFavorites(prev => (
+            isCurrentQueryFavorite
+                ? removeJsonPathListItem(prev, normalizedQuery)
+                : addJsonPathListItem(prev, normalizedQuery)
+        ));
     };
 
     return (
@@ -284,6 +309,22 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             className="flex-1 bg-editor-bg text-gray-200 text-sm px-3 py-2 rounded border border-editor-border focus:border-emerald-500 focus:outline-none font-mono"
                         />
                         <button
+                            data-tour="jsonpath-favorite-toggle"
+                            onClick={toggleFavorite}
+                            disabled={!normalizedQuery}
+                            className={`px-2.5 py-2 rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                isCurrentQueryFavorite
+                                    ? 'bg-amber-500/15 border-amber-400 text-amber-300 hover:bg-amber-500/25'
+                                    : 'bg-editor-bg border-editor-border text-gray-400 hover:text-amber-300 hover:border-amber-400'
+                            }`}
+                            title={isCurrentQueryFavorite ? '取消收藏当前查询' : '收藏当前查询'}
+                            aria-label={isCurrentQueryFavorite ? '取消收藏当前查询' : '收藏当前查询'}
+                        >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill={isCurrentQueryFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m11.48 3.5 2.47 5.02 5.54.8-4.01 3.91.95 5.52-4.95-2.6-4.95 2.6.95-5.52-4.01-3.91 5.54-.8 2.47-5.02Z" />
+                            </svg>
+                        </button>
+                        <button
                             onClick={handleQuery}
                             disabled={isQuerying || isDataPreparing}
                             className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -292,6 +333,40 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         </button>
                     </div>
                 </div>
+
+                {/* 收藏查询 */}
+                {favorites.length > 0 && (
+                    <div data-tour="jsonpath-favorites" className="mb-3 flex-shrink-0">
+                        <div className="text-xs text-gray-500 mb-2">常用收藏:</div>
+                        <div className="space-y-1 max-h-24 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+                            {favorites.map(item => (
+                                <div key={item} className="relative group">
+                                    <button
+                                        data-tour="jsonpath-favorite-item"
+                                        onClick={() => setQuery(item)}
+                                        className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-amber-100 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7 border border-amber-500/20"
+                                        title={item}
+                                    >
+                                        {item}
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setFavorites(prev => removeJsonPathListItem(prev, item));
+                                        }}
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 transition-all"
+                                        title="移除收藏"
+                                        aria-label="移除收藏"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* 常用示例 */}
                 <div className="mb-3" data-tour="jsonpath-examples">
@@ -383,8 +458,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            const newHistory = history.filter((_, i) => i !== idx);
-                                            setHistory(newHistory);
+                                            setHistory(prev => prev.filter((_, i) => i !== idx));
                                         }}
                                         className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 transition-all"
                                         title="删除此记录"

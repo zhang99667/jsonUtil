@@ -82,6 +82,13 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await page.getByRole('button', { name: '查询', exact: true }).click();
 
   await expect(page.getByText('1 / 2')).toBeVisible();
+
+  await page.locator('[data-tour="jsonpath-favorite-toggle"]').click();
+  await expect(page.locator('[data-tour="jsonpath-favorites"]')).toContainText('$.users[*].name');
+
+  await page.locator('[data-tour="jsonpath-input"]').fill('$.users[0].age');
+  await page.locator('[data-tour="jsonpath-favorite-item"]').filter({ hasText: '$.users[*].name' }).click();
+  await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.users[*].name');
 });
 
 test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
