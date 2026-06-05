@@ -1,6 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 import { AIConfig, AIProvider } from "../types";
 
+export const AI_REPAIR_TIMEOUT_MS = 30_000;
+export const AI_REPAIR_TIMEOUT_MESSAGE = 'AI 修复超时，请稍后重试或检查网络/模型配置';
+
+interface FixJsonWithAIOptions {
+  timeoutMs?: number;
+  fetchImpl?: typeof fetch;
+}
+
 /**
  * 将 AI 返回内容规范化为有效的压缩 JSON，避免解释文本或 Markdown 写回编辑器
  */
@@ -26,18 +34,25 @@ export const normalizeAiJsonResponse = (rawText: string): string => {
   throw new Error('AI 返回内容不是有效 JSON，请重试或调整模型配置');
 };
 
-export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promise<string> => {
+export const fixJsonWithAI = async (
+  brokenJson: string,
+  config: AIConfig,
+  options: FixJsonWithAIOptions = {}
+): Promise<string> => {
   // 检查 API Key
   if (!config.apiKey || config.apiKey.trim() === '') {
     throw new Error('API Key 未配置，请先在设置中配置 API Key');
   }
+
+  const timeoutMs = options.timeoutMs ?? AI_REPAIR_TIMEOUT_MS;
+  const fetchImpl = options.fetchImpl ?? fetch;
 
   try {
     // Gemini 接口调用
     if (config.provider === AIProvider.GEMINI) {
       const ai = new GoogleGenAI({ apiKey: config.apiKey });
 
-      const response = await ai.models.generateContent({
+      const response = await withTimeout(ai.models.generateContent({
         model: config.model || 'gemini-2.0-flash',
         contents: `You are a JSON repair tool. 
         I have a malformed JSON string. Please repair it.
@@ -50,7 +65,7 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
 
         Input:
         ${brokenJson}`,
-      });
+      }), timeoutMs);
 
       const text = response.text;
       return normalizeAiJsonResponse(text || '{}');
@@ -58,9 +73,11 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
 
     // OpenAI 兼容接口调用 (OpenAI, Qwen, GLM, DeepSeek, Custom)
     const baseUrl = config.baseUrl || getDefaultBaseUrl(config.provider);
+    const abortController = new AbortController();
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await withTimeout(fetchImpl(`${baseUrl}/chat/completions`, {
       method: 'POST',
+      signal: abortController.signal,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.apiKey}`,
@@ -79,7 +96,7 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
         ],
         temperature: 0.1,
       }),
-    });
+    }), timeoutMs, () => abortController.abort());
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -110,9 +127,14 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
       errorMessage.includes('API Key') ||
       errorMessage.includes('API 错误') ||
       errorMessage.includes('服务') ||
-      errorMessage.includes('AI 返回内容')
+      errorMessage.includes('AI 返回内容') ||
+      errorMessage.includes('超时')
     ) {
       throw error;
+    }
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(AI_REPAIR_TIMEOUT_MESSAGE);
     }
 
     // 网络错误
@@ -123,6 +145,38 @@ export const fixJsonWithAI = async (brokenJson: string, config: AIConfig): Promi
     // 其他未知错误
     throw new Error('AI 修复失败: ' + errorMessage);
   }
+};
+
+const withTimeout = <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  onTimeout?: () => void
+): Promise<T> => {
+  if (timeoutMs <= 0) return promise;
+
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timer = globalThis.setTimeout(() => {
+      settled = true;
+      onTimeout?.();
+      reject(new Error(AI_REPAIR_TIMEOUT_MESSAGE));
+    }, timeoutMs);
+
+    promise.then(
+      value => {
+        if (settled) return;
+        settled = true;
+        globalThis.clearTimeout(timer);
+        resolve(value);
+      },
+      error => {
+        if (settled) return;
+        settled = true;
+        globalThis.clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
 };
 
 const tryNormalizeJson = (candidate: string): string | null => {
