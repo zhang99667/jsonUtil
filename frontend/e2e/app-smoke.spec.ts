@@ -24,6 +24,23 @@ test.beforeEach(async ({ page }) => {
     };
     const userPrompt = body.messages?.find(message => message.content?.includes('Repair this malformed JSON'))?.content || '';
 
+    if (userPrompt.includes('{connection:true}')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: '{"connection":true}',
+              },
+            },
+          ],
+        }),
+      });
+      return;
+    }
+
     await expect(userPrompt).toContain('{items:[1,2], ok:true}');
     await route.fulfill({
       status: 200,
@@ -336,6 +353,15 @@ test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
   await expect(page.getByText('AI 修复摘要')).toBeVisible();
   await expectPreviewText(page, '"items": [');
   await expectPreviewText(page, '"ok": true');
+});
+
+test('AI 配置可测试连接', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('button', { name: 'AI 配置' }).click();
+
+  await page.getByRole('button', { name: '测试连接' }).click();
+
+  await expect(page.getByText('连接测试通过')).toBeVisible();
 });
 
 test('文件打开后可修改并保存下载', async ({ page }) => {

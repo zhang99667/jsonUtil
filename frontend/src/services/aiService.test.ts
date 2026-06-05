@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AIProvider } from '../types';
 import {
+  AI_CONNECTION_TEST_TIMEOUT_MESSAGE,
   AI_REPAIR_TIMEOUT_MESSAGE,
   fixJsonWithAI,
   normalizeAiJsonResponse,
+  testAIConnection,
 } from './aiService';
 
 describe('normalizeAiJsonResponse', () => {
@@ -92,5 +94,44 @@ describe('fixJsonWithAI', () => {
 
     await expectation;
     expect(signal?.aborted).toBe(true);
+  });
+
+  it('连接测试会调用 OpenAI 兼容接口', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: '{"connection":true}',
+          },
+        },
+      ],
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    await expect(testAIConnection(customConfig, { fetchImpl })).resolves.toBeUndefined();
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://mock-ai.test/v1/chat/completions',
+      expect.objectContaining({
+        method: 'POST',
+        signal: expect.any(AbortSignal),
+      })
+    );
+  });
+
+  it('连接测试超时时返回连接测试提示', async () => {
+    vi.useFakeTimers();
+    const fetchImpl = vi.fn(() => new Promise<Response>(() => undefined));
+
+    const promise = testAIConnection(customConfig, {
+      fetchImpl,
+      timeoutMs: 1000,
+    });
+    const expectation = expect(promise).rejects.toThrow(AI_CONNECTION_TEST_TIMEOUT_MESSAGE);
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    await expectation;
   });
 });
