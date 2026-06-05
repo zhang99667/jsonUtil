@@ -340,6 +340,21 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('参数内 JSON 字符串字面量被递归展开', () => {
+    const payload = encodeURIComponent(JSON.stringify(JSON.stringify({
+      title: '标题',
+      url: 'https://example.com/path?from=box',
+    })));
+    const result = deepDecodeScheme(`cmd=${payload}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: {
+        title: '标题',
+        url: { from: 'box' },
+      },
+    });
+  });
+
   it('URL hash route 参数被递归解析', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
     const result = deepDecodeScheme(`baiduboxapp://v1/browser/open#/detail?cmd=${payload}&from=hash`);
