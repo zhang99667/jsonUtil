@@ -280,6 +280,13 @@ export function urlDecode(str: string): string {
 }
 
 /**
+ * 查询参数解码，兼容表单编码中的 + 空格写法
+ */
+const decodeQueryComponent = (str: string): string => (
+  urlDecode(str.replace(/\+/g, ' '))
+);
+
+/**
  * URL 编码
  */
 export function urlEncode(str: string): string {
@@ -394,8 +401,8 @@ const parseFlatQueryParams = (queryString: string): Record<string, string | stri
     const equalIndex = pair.indexOf('=');
     if (equalIndex <= 0) return;
 
-    const key = urlDecode(pair.slice(0, equalIndex));
-    const value = urlDecode(pair.slice(equalIndex + 1));
+    const key = decodeQueryComponent(pair.slice(0, equalIndex));
+    const value = decodeQueryComponent(pair.slice(equalIndex + 1));
     if (key) {
       assignFlatQueryParam(params, key, value);
     }
@@ -644,8 +651,8 @@ const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredV
     const equalIndex = pair.indexOf('=');
     if (equalIndex <= 0) return;
 
-    const key = urlDecode(pair.slice(0, equalIndex));
-    const value = urlDecode(pair.slice(equalIndex + 1));
+    const key = decodeQueryComponent(pair.slice(0, equalIndex));
+    const value = decodeQueryComponent(pair.slice(equalIndex + 1));
     if (!key) return;
 
     assignQueryParam(result, key, decodeNestedParamValue(value, maxDepth - 1));
