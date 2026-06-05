@@ -19,7 +19,7 @@ import {
 } from './jsonPathLists';
 import { FLOATING_PANEL_STORAGE_KEYS } from './panelLayout';
 import { DEFAULT_SHORTCUTS, SHORTCUTS_STORAGE_KEY, normalizeShortcutConfig } from './shortcuts';
-import { isFiniteNumber, isRecord, parseJsonWithFallback } from './storage';
+import { isFiniteNumber, isRecord, parseJsonWithFallback, safeGetStorageItem } from './storage';
 
 export const APP_BACKUP_APP_ID = 'jsonutils-pro';
 export const APP_BACKUP_VERSION = 1;
@@ -83,11 +83,11 @@ const readPanelLayout = (storage: Storage): Record<string, PanelLayoutBackupItem
 
   for (const key of FLOATING_PANEL_STORAGE_KEYS) {
     const position = parseJsonWithFallback<unknown>(
-      storage.getItem(`${key}-position`),
+      safeGetStorageItem(`${key}-position`, storage),
       null
     );
     const size = parseJsonWithFallback<unknown>(
-      storage.getItem(`${key}-size`),
+      safeGetStorageItem(`${key}-size`, storage),
       null
     );
     const item: PanelLayoutBackupItem = {};
@@ -123,13 +123,13 @@ export const buildAppBackup = ({
       general: normalizeGeneralSettings(generalSettings ?? loadGeneralSettings(storage)),
       ai: sanitizeAIConfigForBackup(aiConfig ?? loadAIConfig(storage)),
       shortcuts: normalizeShortcutConfig(shortcuts ?? parseJsonWithFallback<unknown>(
-        storage.getItem(SHORTCUTS_STORAGE_KEY),
+        safeGetStorageItem(SHORTCUTS_STORAGE_KEY, storage),
         DEFAULT_SHORTCUTS
       )),
     },
     jsonPath: {
-      history: parseStoredJsonPathList(storage.getItem(JSONPATH_HISTORY_STORAGE_KEY)),
-      favorites: parseStoredJsonPathList(storage.getItem(JSONPATH_FAVORITES_STORAGE_KEY)),
+      history: parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY, storage)),
+      favorites: parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY, storage)),
     },
     templateFill,
     panelLayout: readPanelLayout(storage),

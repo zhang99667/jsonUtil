@@ -1,6 +1,6 @@
 import { AIProvider, DEFAULT_GENERAL_SETTINGS } from '../types';
 import type { AIConfig, GeneralSettings, TemplateFillConfig } from '../types';
-import { isRecord, parseJsonWithFallback } from './storage';
+import { isRecord, parseJsonWithFallback, safeGetStorageItem } from './storage';
 
 export const GENERAL_SETTINGS_STORAGE_KEY = 'json-helper-general-settings';
 export const AI_CONFIG_STORAGE_KEY = 'json-helper-ai-config';
@@ -29,7 +29,7 @@ export const normalizeGeneralSettings = (value: unknown): GeneralSettings => {
 export const loadGeneralSettings = (storage: Storage = localStorage): GeneralSettings => {
   return normalizeGeneralSettings(
     parseJsonWithFallback<unknown>(
-      storage.getItem(GENERAL_SETTINGS_STORAGE_KEY),
+      safeGetStorageItem(GENERAL_SETTINGS_STORAGE_KEY, storage),
       {}
     )
   );
@@ -60,7 +60,7 @@ export const normalizeAIConfig = (
 export const loadAIConfig = (storage: Storage = localStorage): AIConfig => {
   return normalizeAIConfig(
     parseJsonWithFallback<unknown>(
-      storage.getItem(AI_CONFIG_STORAGE_KEY),
+      safeGetStorageItem(AI_CONFIG_STORAGE_KEY, storage),
       {}
     )
   );
@@ -82,7 +82,7 @@ export const normalizeTemplateFillConfig = (value: unknown): TemplateFillConfig 
 export const loadTemplateFillConfig = (storage: Storage = localStorage): TemplateFillConfig => {
   return normalizeTemplateFillConfig(
     parseJsonWithFallback<unknown>(
-      storage.getItem(TEMPLATE_FILL_STORAGE_KEY),
+      safeGetStorageItem(TEMPLATE_FILL_STORAGE_KEY, storage),
       {}
     )
   );

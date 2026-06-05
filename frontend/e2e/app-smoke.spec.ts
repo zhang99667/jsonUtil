@@ -118,6 +118,25 @@ test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   await expect(page.getByText('AI 提供商')).toBeVisible();
 });
 
+test('本地存储读取异常不会阻止应用启动', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(Storage.prototype, 'getItem', {
+      value: () => {
+        throw new Error('storage read blocked');
+      },
+      configurable: true,
+    });
+  });
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByText('JSON 工具箱')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+
+  await fillSourceEditor(page, '{"read":"safe"}');
+  await page.getByRole('button', { name: '格式化' }).click();
+  await expectPreviewText(page, '"read": "safe"');
+});
+
 test('本地存储写入异常不会打断主路径', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(Storage.prototype, 'setItem', {

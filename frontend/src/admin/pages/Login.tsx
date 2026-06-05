@@ -3,6 +3,7 @@ import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { login } from '../services/auth';
 import { LoginFormValues } from '../../types';
+import { safeSetStorageItem } from '../../utils/storage';
 
 interface LoginProps {
     onLogin: () => void;
@@ -45,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         try {
             const res = await login(values) as LoginResponse;
             if (res.token) {
-                localStorage.setItem('token', res.token);
+                safeSetStorageItem('token', res.token);
                 message.success('登录成功');
                 onLogin();
             }

@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { driver } from 'driver.js';
-import { safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import 'driver.js/dist/driver.css';
 
 export const useOnboardingTour = () => {
     useEffect(() => {
         // 检查用户是否已完成引导
-        const hasCompletedOnboarding = localStorage.getItem('json-helper-onboarding-completed');
+        const hasCompletedOnboarding = safeGetStorageItem('json-helper-onboarding-completed');
 
         if (hasCompletedOnboarding) {
             return;

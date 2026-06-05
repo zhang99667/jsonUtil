@@ -5,7 +5,7 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { HighlightRange } from '../types';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { showError, showSuccess } from '../utils/toast';
-import { safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import {
     addJsonPathListItem,
     JSONPATH_FAVORITES_STORAGE_KEY,
@@ -45,10 +45,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const [query, setQuery] = useState<string>('$');
     const [error, setError] = useState<string>('');
     const [history, setHistory] = useState<string[]>(() => {
-        return parseStoredJsonPathList(localStorage.getItem(JSONPATH_HISTORY_STORAGE_KEY));
+        return parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY));
     });
     const [favorites, setFavorites] = useState<string[]>(() => {
-        return parseStoredJsonPathList(localStorage.getItem(JSONPATH_FAVORITES_STORAGE_KEY));
+        return parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY));
     });
 
     // 查询结果状态
@@ -121,8 +121,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     // 配置备份导入后同步刷新已挂载面板中的收藏和历史
     useEffect(() => {
         const handleBackupImported = () => {
-            setHistory(parseStoredJsonPathList(localStorage.getItem(JSONPATH_HISTORY_STORAGE_KEY)));
-            setFavorites(parseStoredJsonPathList(localStorage.getItem(JSONPATH_FAVORITES_STORAGE_KEY)));
+            setHistory(parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY)));
+            setFavorites(parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY)));
         };
 
         window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);

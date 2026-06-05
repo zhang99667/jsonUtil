@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction } from '../types';
-import { parseJsonWithFallback, safeSetStorageItem } from '../utils/storage';
+import { parseJsonWithFallback, safeGetStorageItem, safeSetStorageItem } from '../utils/storage';
 import { DEFAULT_SHORTCUTS, SHORTCUTS_STORAGE_KEY, normalizeShortcutConfig } from '../utils/shortcuts';
 
 export { DEFAULT_SHORTCUTS, normalizeShortcutConfig } from '../utils/shortcuts';
@@ -26,7 +26,7 @@ export const useShortcuts = ({
 }: UseShortcutsProps) => {
     const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
         const saved = parseJsonWithFallback<unknown>(
-            localStorage.getItem(SHORTCUTS_STORAGE_KEY),
+            safeGetStorageItem(SHORTCUTS_STORAGE_KEY),
             null
         );
         return normalizeShortcutConfig(saved);
