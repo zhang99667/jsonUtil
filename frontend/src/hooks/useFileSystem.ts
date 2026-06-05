@@ -81,6 +81,25 @@ export const useFileSystem = ({
         inputRef.current = content;
     };
 
+    const getFilesWithStandaloneDraft = (baseFiles: FileTab[]): FileTab[] => {
+        if (activeFileId || input.length === 0) {
+            return baseFiles;
+        }
+
+        // 无文件输入在切换到新内容前先转成未保存标签，避免用户草稿被覆盖
+        const draftFile: FileTab = {
+            id: generateUUID(),
+            name: getNextUntitledName(baseFiles),
+            content: input,
+            savedContent: '',
+            handle: undefined,
+            isDirty: true,
+            mode: TransformMode.NONE,
+        };
+
+        return [...baseFiles, draftFile];
+    };
+
     // 同步输入变更到活动文件
     const updateActiveFileContent = useCallback((newContent: string) => {
         if (activeFileId) {
@@ -114,21 +133,7 @@ export const useFileSystem = ({
     }, [input, activeFileId, files, isAutoSaveEnabled]);
 
     const createNewTab = () => {
-        const nextFiles = [...files];
-
-        // 无文件草稿也属于用户资产，新建标签前先转成未保存标签，避免被空白页覆盖
-        if (!activeFileId && input.length > 0) {
-            nextFiles.push({
-                id: generateUUID(),
-                name: getNextUntitledName(nextFiles),
-                content: input,
-                savedContent: '',
-                handle: undefined,
-                isDirty: true,
-                mode: TransformMode.NONE,
-            });
-        }
-
+        const nextFiles = getFilesWithStandaloneDraft(files);
         const newFileId = generateUUID();
         const newFileName = getNextUntitledName(nextFiles);
 
@@ -155,11 +160,11 @@ export const useFileSystem = ({
         // Fallback for environments without File System Access API
         // @ts-ignore
         if (typeof window.showOpenFilePicker !== 'function') {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.txt,.json,.js,.ts,.md';
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.txt,.json,.js,.ts,.md';
             
-            input.onchange = async (e) => {
+            fileInput.onchange = async (e) => {
                 const file = (e.target as HTMLInputElement).files?.[0];
                 if (!file) return;
 
@@ -179,14 +184,14 @@ export const useFileSystem = ({
                     path: (file as File & { path?: string }).path
                 };
 
-                setFiles(prev => [...prev, newFile]);
+                setFiles([...getFilesWithStandaloneDraft(files), newFile]);
                 setActiveFileId(newFileId);
                 setInput(contents);
                 inputRef.current = contents;
                 setMode(TransformMode.NONE);
             };
 
-            input.click();
+            fileInput.click();
             return;
         }
 
@@ -221,7 +226,7 @@ export const useFileSystem = ({
                 path: (file as File & { path?: string }).path // Electron 环境下 File 对象包含 path 属性
             };
 
-            setFiles(prev => [...prev, newFile]);
+            setFiles([...getFilesWithStandaloneDraft(files), newFile]);
             setActiveFileId(newFileId);
             setInput(contents);
             inputRef.current = contents; // 同步 Ref 状态
@@ -370,7 +375,7 @@ export const useFileSystem = ({
                 path: (file as File & { path?: string }).path
             };
 
-            setFiles(prev => [...prev, newFile]);
+            setFiles([...getFilesWithStandaloneDraft(files), newFile]);
             setActiveFileId(newFileId);
             setInput(contents);
             inputRef.current = contents;
