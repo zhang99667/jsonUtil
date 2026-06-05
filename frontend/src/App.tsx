@@ -29,10 +29,18 @@ import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 import { buildAiRepairSummary } from './utils/aiRepairSummary';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
+import { isRecord, parseJsonWithFallback } from './utils/storage';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
 const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理大文件，请稍候...';
+const GENERAL_SETTINGS_STORAGE_KEY = 'json-helper-general-settings';
+const AI_CONFIG_STORAGE_KEY = 'json-helper-ai-config';
+const DEFAULT_AI_CONFIG: AIConfig = {
+  provider: AIProvider.GEMINI,
+  apiKey: '',
+  model: 'gemini-2.0-flash',
+};
 const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.FORMAT,
   TransformMode.DEEP_FORMAT,
@@ -47,6 +55,42 @@ interface AsyncTransformResult {
   output: string;
   context?: TransformContext;
 }
+
+const loadGeneralSettings = (): GeneralSettings => {
+  const saved = parseJsonWithFallback<Record<string, unknown>>(
+    localStorage.getItem(GENERAL_SETTINGS_STORAGE_KEY),
+    {},
+    isRecord
+  );
+
+  return {
+    ...DEFAULT_GENERAL_SETTINGS,
+    autoExpandSchemeInDeepFormat:
+      typeof saved.autoExpandSchemeInDeepFormat === 'boolean'
+        ? saved.autoExpandSchemeInDeepFormat
+        : DEFAULT_GENERAL_SETTINGS.autoExpandSchemeInDeepFormat,
+  };
+};
+
+const loadAIConfig = (): AIConfig => {
+  const saved = parseJsonWithFallback<Record<string, unknown>>(
+    localStorage.getItem(AI_CONFIG_STORAGE_KEY),
+    {},
+    isRecord
+  );
+  const provider = Object.values(AIProvider).includes(saved.provider as AIProvider)
+    ? saved.provider as AIProvider
+    : DEFAULT_AI_CONFIG.provider;
+
+  return {
+    provider,
+    apiKey: typeof saved.apiKey === 'string' ? saved.apiKey : DEFAULT_AI_CONFIG.apiKey,
+    model: typeof saved.model === 'string' && saved.model.trim()
+      ? saved.model
+      : DEFAULT_AI_CONFIG.model,
+    baseUrl: typeof saved.baseUrl === 'string' ? saved.baseUrl : undefined,
+  };
+};
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -90,13 +134,10 @@ const App: React.FC = () => {
   });
 
   // 通用设置状态 + localStorage 持久化（需在 deepFormatResult 之前声明）
-  const [generalSettings, setGeneralSettings] = useState<GeneralSettings>(() => {
-    const saved = localStorage.getItem('json-helper-general-settings');
-    return saved ? JSON.parse(saved) : DEFAULT_GENERAL_SETTINGS;
-  });
+  const [generalSettings, setGeneralSettings] = useState<GeneralSettings>(loadGeneralSettings);
 
   useEffect(() => {
-    localStorage.setItem('json-helper-general-settings', JSON.stringify(generalSettings));
+    localStorage.setItem(GENERAL_SETTINGS_STORAGE_KEY, JSON.stringify(generalSettings));
   }, [generalSettings]);
 
   const hasUnsavedChanges = useMemo(() => {
@@ -327,17 +368,10 @@ const App: React.FC = () => {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const dragCounter = useRef(0);
 
-  const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
-    const saved = localStorage.getItem('json-helper-ai-config');
-    return saved ? JSON.parse(saved) : {
-      provider: AIProvider.GEMINI,
-      apiKey: '',
-      model: 'gemini-2.0-flash'
-    };
-  });
+  const [aiConfig, setAiConfig] = useState<AIConfig>(loadAIConfig);
 
   useEffect(() => {
-    localStorage.setItem('json-helper-ai-config', JSON.stringify(aiConfig));
+    localStorage.setItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
   }, [aiConfig]);
 
   useEffect(() => {

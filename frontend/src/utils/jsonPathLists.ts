@@ -1,3 +1,5 @@
+import { parseJsonWithFallback } from './storage';
+
 export const JSONPATH_LIST_LIMIT = 10;
 export const JSONPATH_HISTORY_STORAGE_KEY = 'jsonpath-query-history';
 export const JSONPATH_FAVORITES_STORAGE_KEY = 'jsonpath-query-favorites';
@@ -23,13 +25,7 @@ export const normalizeJsonPathList = (
 };
 
 export const parseStoredJsonPathList = (stored: string | null): string[] => {
-  if (!stored) return [];
-
-  try {
-    return normalizeJsonPathList(JSON.parse(stored));
-  } catch {
-    return [];
-  }
+  return normalizeJsonPathList(parseJsonWithFallback<unknown>(stored, []));
 };
 
 export const addJsonPathListItem = (

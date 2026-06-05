@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { SimpleEditor } from './SimpleEditor';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { validateJson } from '../utils/transformations';
+import { isRecord, parseJsonWithFallback } from '../utils/storage';
 
 interface TemplateFillPanelProps {
   isOpen: boolean;
@@ -18,16 +19,13 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
 }) => {
   // 从 localStorage 恢复模板内容
   const [template, setTemplate] = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const config = JSON.parse(saved);
-        return config.template || '';
-      }
-    } catch {
-      // 忽略解析失败
-    }
-    return '';
+    const config = parseJsonWithFallback<Record<string, unknown>>(
+      localStorage.getItem(STORAGE_KEY),
+      {},
+      isRecord
+    );
+
+    return typeof config.template === 'string' ? config.template : '';
   });
 
   // 实时 JSON 校验

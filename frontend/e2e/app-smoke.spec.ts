@@ -74,6 +74,25 @@ test('格式化与压缩主路径可用', async ({ page }) => {
   await expectPreviewText(page, '{"b":2,"a":1}');
 });
 
+test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('json-helper-general-settings', '{bad');
+    window.localStorage.setItem('json-helper-ai-config', 'null');
+    window.localStorage.setItem('json-helper-shortcuts', '{"SAVE":null}');
+    window.localStorage.setItem('json-helper-template-fill', '{"template":123}');
+    window.localStorage.setItem('jsonpath-panel-position', '"bad"');
+    window.localStorage.setItem('jsonpath-panel-size', '{"width":"bad"}');
+  });
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByText('JSON 工具箱')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+
+  await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('button', { name: 'AI 配置' }).click();
+  await expect(page.getByText('AI 提供商')).toBeVisible();
+});
+
 test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await fillSourceEditor(page, '{"users":[{"name":"Ada","age":20},{"name":"Bob","age":17}]}');
 
