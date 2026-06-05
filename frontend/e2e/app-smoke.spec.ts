@@ -17,8 +17,37 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({ status: 204, body: '' });
   });
 
+  await page.route('**/mock-ai/chat/completions', async route => {
+    const body = route.request().postDataJSON() as {
+      messages?: Array<{ content?: string }>;
+    };
+    const userPrompt = body.messages?.find(message => message.content?.includes('Repair this malformed JSON'))?.content || '';
+
+    await expect(userPrompt).toContain('{items:[1,2], ok:true}');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        choices: [
+          {
+            message: {
+              content: '{"items":[1,2],"ok":true}',
+            },
+          },
+        ],
+      }),
+    });
+  });
+
   await page.addInitScript((featureTourIds: string[]) => {
     window.localStorage.setItem('json-helper-onboarding-completed', 'true');
+    window.localStorage.setItem('json-helper-ai-config', JSON.stringify({
+      provider: 'custom',
+      apiKey: 'mock-api-key',
+      model: 'mock-json-repair',
+      baseUrl: '/mock-ai',
+    }));
+
     featureTourIds.forEach(featureId => {
       window.localStorage.setItem(`json-helper-feature-tour-${featureId}`, 'completed');
     });
@@ -63,6 +92,16 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(schemeResult).toContainText('"nid": 123');
   await expect(schemeResult).toContainText('"title": "标题"');
   await expect(schemeResult).toContainText('"from": "feed"');
+});
+
+test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
+  await fillSourceEditor(page, '{items:[1,2], ok:true}');
+
+  await page.locator('[data-tour="ai-fix"]').click();
+
+  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expectPreviewText(page, '"items": [');
+  await expectPreviewText(page, '"ok": true');
 });
 
 const fillSourceEditor = async (page: Page, value: string) => {
