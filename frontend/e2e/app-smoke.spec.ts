@@ -362,6 +362,9 @@ test('AI 配置可测试连接', async ({ page }) => {
   await page.getByRole('button', { name: '测试连接' }).click();
 
   await expect(page.getByText('连接测试通过')).toBeVisible();
+
+  await page.locator('input[type="password"]').fill('changed-key');
+  await expect(page.getByText('连接测试通过')).toHaveCount(0);
 });
 
 test('文件打开后可修改并保存下载', async ({ page }) => {
