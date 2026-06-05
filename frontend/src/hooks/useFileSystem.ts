@@ -57,13 +57,16 @@ export const useFileSystem = ({
     // 自动保存逻辑
     useEffect(() => {
         const activeFile = files.find(f => f.id === activeFileId);
-        if (!isAutoSaveEnabled || !activeFile?.handle) return;
+        if (!isAutoSaveEnabled || !activeFile?.handle || input === (activeFile.savedContent || '')) return;
 
         const timer = setTimeout(async () => {
             try {
                 const writable = await activeFile.handle.createWritable();
                 await writable.write(input);
                 await writable.close();
+                setFiles(prev => prev.map(f =>
+                    f.id === activeFileId ? { ...f, content: input, savedContent: input, isDirty: false } : f
+                ));
                 console.log('Auto-saved');
             } catch (err) {
                 console.error('Auto-save failed:', err);
