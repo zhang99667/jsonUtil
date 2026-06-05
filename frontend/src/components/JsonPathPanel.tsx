@@ -3,6 +3,7 @@ import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { HighlightRange } from '../types';
+import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
     addJsonPathListItem,
     JSONPATH_FAVORITES_STORAGE_KEY,
@@ -104,6 +105,17 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     useEffect(() => {
         localStorage.setItem(JSONPATH_FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
     }, [favorites]);
+
+    // 配置备份导入后同步刷新已挂载面板中的收藏和历史
+    useEffect(() => {
+        const handleBackupImported = () => {
+            setHistory(parseStoredJsonPathList(localStorage.getItem(JSONPATH_HISTORY_STORAGE_KEY)));
+            setFavorites(parseStoredJsonPathList(localStorage.getItem(JSONPATH_FAVORITES_STORAGE_KEY)));
+        };
+
+        window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+        return () => window.removeEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+    }, []);
 
     useEffect(() => {
         return () => {

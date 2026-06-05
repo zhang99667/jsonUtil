@@ -18,7 +18,7 @@ import {
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
-import { TransformMode, ActionType, ValidationResult, AIConfig, AIProvider, HighlightRange, GeneralSettings, DEFAULT_GENERAL_SETTINGS, TransformContext, TransformResult } from './types';
+import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useLayout } from './hooks/useLayout';
@@ -29,19 +29,18 @@ import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 import { buildAiRepairSummary } from './utils/aiRepairSummary';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
-import { isRecord, parseJsonWithFallback } from './utils/storage';
+import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
+import {
+  applyAppBackupContent,
+  buildAppBackup,
+  notifyAppBackupImported,
+  serializeAppBackup,
+} from './utils/appBackup';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
 const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理大文件，请稍候...';
-const GENERAL_SETTINGS_STORAGE_KEY = 'json-helper-general-settings';
-const AI_CONFIG_STORAGE_KEY = 'json-helper-ai-config';
-const DEFAULT_AI_CONFIG: AIConfig = {
-  provider: AIProvider.GEMINI,
-  apiKey: '',
-  model: 'gemini-2.0-flash',
-};
 const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.FORMAT,
   TransformMode.DEEP_FORMAT,
@@ -56,42 +55,6 @@ interface AsyncTransformResult {
   output: string;
   context?: TransformContext;
 }
-
-const loadGeneralSettings = (): GeneralSettings => {
-  const saved = parseJsonWithFallback<Record<string, unknown>>(
-    localStorage.getItem(GENERAL_SETTINGS_STORAGE_KEY),
-    {},
-    isRecord
-  );
-
-  return {
-    ...DEFAULT_GENERAL_SETTINGS,
-    autoExpandSchemeInDeepFormat:
-      typeof saved.autoExpandSchemeInDeepFormat === 'boolean'
-        ? saved.autoExpandSchemeInDeepFormat
-        : DEFAULT_GENERAL_SETTINGS.autoExpandSchemeInDeepFormat,
-  };
-};
-
-const loadAIConfig = (): AIConfig => {
-  const saved = parseJsonWithFallback<Record<string, unknown>>(
-    localStorage.getItem(AI_CONFIG_STORAGE_KEY),
-    {},
-    isRecord
-  );
-  const provider = Object.values(AIProvider).includes(saved.provider as AIProvider)
-    ? saved.provider as AIProvider
-    : DEFAULT_AI_CONFIG.provider;
-
-  return {
-    provider,
-    apiKey: typeof saved.apiKey === 'string' ? saved.apiKey : DEFAULT_AI_CONFIG.apiKey,
-    model: typeof saved.model === 'string' && saved.model.trim()
-      ? saved.model
-      : DEFAULT_AI_CONFIG.model,
-    baseUrl: typeof saved.baseUrl === 'string' ? saved.baseUrl : undefined,
-  };
-};
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -428,7 +391,7 @@ const App: React.FC = () => {
   }, [isJsonPathPanelOpen, mode]);
 
   // 快捷键状态 (Hook)
-  const { shortcuts, updateShortcut, resetShortcuts } = useShortcuts({
+  const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({
     onSave: handleSaveShortcut,
     onFormat: () => setMode(TransformMode.FORMAT),
     onDeepFormat: () => setMode(TransformMode.DEEP_FORMAT),
@@ -818,6 +781,41 @@ const App: React.FC = () => {
     showSuccess('浮动面板布局已恢复默认');
   }, []);
 
+  const handleExportSettingsBackup = useCallback(() => {
+    const backup = buildAppBackup({
+      generalSettings,
+      aiConfig,
+      shortcuts,
+    });
+    const blob = new Blob([serializeAppBackup(backup)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const timestamp = backup.exportedAt.replace(/[:.]/g, '-');
+
+    link.href = url;
+    link.download = `jsonutils-backup-${timestamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showSuccess('配置备份已导出，未包含 AI Key');
+  }, [aiConfig, generalSettings, shortcuts]);
+
+  const handleImportSettingsBackup = useCallback(async (file: File) => {
+    try {
+      const content = await file.text();
+      const result = applyAppBackupContent(content, localStorage, aiConfig);
+
+      setGeneralSettings(result.generalSettings);
+      setAiConfig(result.aiConfig);
+      replaceShortcuts(result.shortcuts);
+      notifyAppBackupImported();
+      showSuccess('配置备份已导入，AI Key 已保留');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : '导入配置备份失败');
+    }
+  }, [aiConfig, replaceShortcuts]);
+
   return (
     <ErrorBoundary>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
@@ -833,6 +831,8 @@ const App: React.FC = () => {
         generalSettings={generalSettings}
         onSaveGeneralSettings={setGeneralSettings}
         onResetPanelLayout={handleResetPanelLayout}
+        onExportSettingsBackup={handleExportSettingsBackup}
+        onImportSettingsBackup={handleImportSettingsBackup}
       />
 
 
