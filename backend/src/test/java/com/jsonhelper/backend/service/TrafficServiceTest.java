@@ -1,6 +1,7 @@
 package com.jsonhelper.backend.service;
 
 import com.jsonhelper.backend.dto.response.IpStatsDTO;
+import com.jsonhelper.backend.dto.response.GeoStatsDTO;
 import com.jsonhelper.backend.dto.response.PathStatsDTO;
 import com.jsonhelper.backend.repository.VisitLogRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,5 +81,31 @@ class TrafficServiceTest {
         assertTrue(trafficService.getTopPaths(7, -1).isEmpty());
 
         verifyNoInteractions(visitLogRepository, geoService);
+    }
+
+    @Test
+    void getGeoDistributionAggregatesByIpCountBeforeParsingRegion() {
+        when(visitLogRepository.countByIpInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.<Object[]>of(
+                        new Object[] { "10.0.0.1", 3L },
+                        new Object[] { "8.8.8.8", 2L }
+                ));
+        when(geoService.parseIp("10.0.0.1"))
+                .thenReturn(new GeoService.GeoInfo("本地/内网", "本地/内网", "本地/内网"));
+        when(geoService.parseIp("8.8.8.8"))
+                .thenReturn(new GeoService.GeoInfo("美国", "美国", "美国"));
+
+        List<GeoStatsDTO> result = trafficService.getGeoDistribution(7, 10);
+
+        assertEquals(2, result.size());
+        assertEquals("本地/内网", result.get(0).getRegion());
+        assertEquals(3L, result.get(0).getCount());
+        assertEquals(60.0, result.get(0).getPercentage());
+        assertEquals("美国", result.get(1).getRegion());
+        assertEquals(2L, result.get(1).getCount());
+        assertEquals(40.0, result.get(1).getPercentage());
+
+        verify(geoService, times(1)).parseIp("10.0.0.1");
+        verify(geoService, times(1)).parseIp("8.8.8.8");
     }
 }

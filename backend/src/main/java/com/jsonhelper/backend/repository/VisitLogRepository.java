@@ -63,6 +63,15 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
     List<Object[]> countByIpTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
 
     /**
+     * 按IP聚合访问次数（用于地理位置统计，避免逐条访问记录解析IP）
+     * 返回: [IP, 访问次数]
+     */
+    @Query("SELECT v.ip, COUNT(v) as cnt FROM VisitLog v " +
+           "WHERE v.createdAt >= :start AND v.createdAt < :end " +
+           "GROUP BY v.ip")
+    List<Object[]> countByIpInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
      * 按路径统计访问次数排行
      * 返回: [路径, 访问次数]
      */
