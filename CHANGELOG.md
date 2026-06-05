@@ -5,6 +5,7 @@
 - **CMD/Scheme 兼容性增强**: 补充 hash route 参数、分号分隔参数、camelCase command 字段和短 Base64 JSON 参数解析，提升对常见客户端 schema 的识别覆盖
 - **CMD/Scheme 结构化参数名解析**: 支持 `items[]=a&items[]=b`、`items[0].id=1` 和 `user.name=xx` 等点号/括号参数名展开，提升复杂 CMD 可读性
 - **CMD/Scheme 表单编码兼容**: 查询参数、hash 参数和 CMD 参数中的 `+` 会按表单编码语义还原为空格，同时保留 `%2B` 表示的字面加号
+- **CMD/Scheme HTML 转义分隔符兼容**: 支持解析从 HTML 或日志页面复制出的 `&amp;` / `&#38;` 参数分隔符
 - **CMD/Scheme 字符串化 JSON 解析**: 参数值如果是 `JSON.stringify` 后的 JSON/URL/CMD 字符串，会自动拆掉字符串字面量并继续递归解析
 - **Base64 编解码**: 新增 Base64 编码 / Base64 解码转换模式，支持 UTF-8 中文内容、URL-safe Base64 与预览编辑器反向同步
 - **URL 编解码**: 新增 URL 编码 / URL 解码 转换模式，支持对输入内容进行 `encodeURIComponent` / `decodeURIComponent`，预览编辑器支持反向同步
