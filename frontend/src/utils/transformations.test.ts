@@ -60,6 +60,10 @@ describe('detectLanguage', () => {
     expect(detectLanguage('[1, 2, 3]')).toBe('json');
   });
 
+  it('JSON 对象带大量尾部空白时仍按前缀识别', () => {
+    expect(detectLanguage(`{"key":"value"}${' '.repeat(300_000)}`)).toBe('json');
+  });
+
   it('HTML 检测', () => {
     expect(detectLanguage('<!DOCTYPE html>')).toBe('html');
     expect(detectLanguage('<html><body></body></html>')).toBe('html');
