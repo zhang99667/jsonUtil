@@ -17,6 +17,7 @@
 - **大文件转换 Worker 化**: 大输入下的格式化、压缩、深度格式化和 Key 排序改为 Web Worker 异步执行，降低主线程卡顿风险并保护处理中预览不被复制或保存
 - **JSONPath 查询 Worker 化**: JSONPath 查询、深度格式化和高亮范围映射迁移到 Worker，避免大 JSON 查询时主线程重复解析和卡顿
 - **大文件校验 Worker 化**: Source 与 PREVIEW 大 JSON 校验改为防抖后异步执行，减少 `JSON.parse` 校验造成的主线程阻塞
+- **大文件 Scheme 扫描 Worker 化**: PREVIEW 区大 JSON 的 Scheme 图标检测迁移到 Worker，避免旁路扫描抢占主线程
 
 ### 🏗️ 工程化
 - **生产安全收口**: 移除固定默认管理员账号，改为显式 `ADMIN_BOOTSTRAP_*` 初始化，并强制校验 JWT 密钥配置

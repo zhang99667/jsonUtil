@@ -11,6 +11,8 @@ import { findSchemesInJson, SchemeLocation } from '../utils/schemeUtils';
 import { SchemeViewerModal } from './SchemeViewerModal';
 import { TabBar } from './TabBar';
 
+const ASYNC_SCHEME_SCAN_THRESHOLD = 200_000;
+
 type MonacoJsonDefaults = {
   json?: {
     jsonDefaults?: {
@@ -26,6 +28,12 @@ type MonacoJsonDefaults = {
 // 扩展 EditorProps 以支持 scheme 修改回调
 interface ExtendedEditorProps extends EditorProps {
   onSchemeEdit?: (path: string, newValue: string) => void;
+}
+
+interface SchemeScanWorkerResponse {
+  id: number;
+  locations: SchemeLocation[];
+  error?: string;
 }
 
 export const CodeEditor: React.FC<ExtendedEditorProps> = ({
@@ -89,13 +97,44 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   useEffect(() => {
     // 只有当 onSchemeEdit 存在时（即 PREVIEW 面板）才检测 scheme
     if (onSchemeEdit && language === 'json' && value) {
-      // 防抖检测 - 增加延迟避免频繁计算
-      const timer = setTimeout(() => {
-        const locations = findSchemesInJson(value);
+      let worker: Worker | null = null;
+      let isCancelled = false;
+
+      const applyLocations = (locations: SchemeLocation[]) => {
+        if (isCancelled) return;
         setSchemeLocations(locations);
         schemeLocationsRef.current = locations; // 同步到 ref
+      };
+
+      // 防抖检测 - 增加延迟避免频繁计算
+      const timer = setTimeout(() => {
+        if (value.length >= ASYNC_SCHEME_SCAN_THRESHOLD) {
+          worker = new Worker(new URL('../workers/schemeScan.worker.ts', import.meta.url), { type: 'module' });
+          worker.onmessage = (event: MessageEvent<SchemeScanWorkerResponse>) => {
+            worker?.terminate();
+            worker = null;
+            if (event.data.error) {
+              console.warn('大文件 Scheme 扫描 Worker 处理失败:', event.data.error);
+            }
+            applyLocations(event.data.locations);
+          };
+          worker.onerror = (event) => {
+            worker?.terminate();
+            worker = null;
+            console.warn('大文件 Scheme 扫描 Worker 运行失败:', event.message);
+            applyLocations([]);
+          };
+          worker.postMessage({ id: 1, jsonString: value });
+          return;
+        }
+
+        applyLocations(findSchemesInJson(value));
       }, 500); // 从 300ms 增加到 500ms
-      return () => clearTimeout(timer);
+      return () => {
+        isCancelled = true;
+        clearTimeout(timer);
+        worker?.terminate();
+      };
     } else {
       setSchemeLocations([]);
       schemeLocationsRef.current = [];
