@@ -99,6 +99,26 @@ const App: React.FC = () => {
     localStorage.setItem('json-helper-general-settings', JSON.stringify(generalSettings));
   }, [generalSettings]);
 
+  const hasUnsavedChanges = useMemo(() => {
+    if (files.some(file => file.isDirty)) {
+      return true;
+    }
+
+    return !activeFileId && input.trim().length > 0;
+  }, [files, activeFileId, input]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
   const [isOutputTransforming, setIsOutputTransforming] = useState(false);
