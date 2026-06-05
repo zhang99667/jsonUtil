@@ -20,6 +20,7 @@
 - **大文件校验 Worker 化**: Source 与 PREVIEW 大 JSON 校验改为防抖后异步执行，减少 `JSON.parse` 校验造成的主线程阻塞
 - **大文件 Scheme 扫描 Worker 化**: PREVIEW 区大 JSON 的 Scheme 图标检测迁移到 Worker，避免旁路扫描抢占主线程
 - **未保存退出保护**: 存在脏标签或无文件草稿时，刷新/关闭页面会触发浏览器离开确认，降低误丢数据风险
+- **无文件另存状态同步**: 无活动标签的 Source 草稿另存成功后自动生成已保存标签，避免保存后仍触发未保存退出保护
 
 ### 🏗️ 工程化
 - **生产安全收口**: 移除固定默认管理员账号，改为显式 `ADMIN_BOOTSTRAP_*` 初始化，并强制校验 JWT 密钥配置
@@ -34,7 +35,7 @@
 - **类型检查修复**: 修复 Ant Design、Monaco 与 ErrorBoundary 的既有 TypeScript 类型检查问题
 - **类型检查脚本**: 新增 `npm run typecheck`，便于本地和 CI 复用完整类型检查
 - **E2E 冒烟测试**: 新增 Playwright 浏览器冒烟测试，覆盖主应用加载、格式化、压缩、JSONPath 查询、CMD/Scheme 参数解析、AI 修复写回和文件打开保存关键路径，并接入 GitHub Actions
-- **E2E 稳定性**: 固定 Playwright 串行 worker，并补充自动保存状态一致性和未保存退出保护回归用例
+- **E2E 稳定性**: 固定 Playwright 串行 worker，收敛页面加载等待，并补充自动保存状态一致性和未保存退出保护回归用例
 - **依赖安全收口**: 升级 Axios、Vite、Vitest、Rollup、DOMPurify 等前端依赖解析版本，清零 `npm audit` 全量漏洞，并收敛 Ant Design 运行时分包循环
 - **测试覆盖**: 补充 URL 编解码、Base64 编解码、Key 排序、CMD 参数递归解析和反向转换单元测试
 

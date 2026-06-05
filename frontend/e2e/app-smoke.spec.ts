@@ -57,10 +57,10 @@ test.beforeEach(async ({ page }) => {
     });
   }, FEATURE_TOUR_IDS);
 
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.getByText('JSON 工具箱')).toBeVisible();
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible();
-  await expect(page.locator('[data-tour="preview-editor"] .monaco-editor')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-tour="preview-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
 });
 
 test('格式化与压缩主路径可用', async ({ page }) => {

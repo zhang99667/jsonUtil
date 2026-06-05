@@ -45,6 +45,25 @@ export const useFileSystem = ({
         return file.text();
     };
 
+    const createSavedTab = (name: string, content: string, handle?: FileSystemFileHandle, path?: string) => {
+        const newFileId = generateUUID();
+        const newFile: FileTab = {
+            id: newFileId,
+            name,
+            content,
+            savedContent: content,
+            handle,
+            isDirty: false,
+            mode: TransformMode.NONE,
+            path
+        };
+
+        setFiles(prev => [...prev, newFile]);
+        setActiveFileId(newFileId);
+        setInput(content);
+        inputRef.current = content;
+    };
+
     // 同步输入变更到活动文件
     const updateActiveFileContent = useCallback((newContent: string) => {
         if (activeFileId) {
@@ -230,6 +249,13 @@ export const useFileSystem = ({
                             path: (handle as FileSystemFileHandle & { path?: string }).path
                         } : f
                     ));
+                } else {
+                    createSavedTab(
+                        handle.name || 'untitled.json',
+                        input,
+                        handle,
+                        (handle as FileSystemFileHandle & { path?: string }).path
+                    );
                 }
                 
                 return true;
@@ -239,15 +265,18 @@ export const useFileSystem = ({
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = activeFileId ? (files.find(f => f.id === activeFileId)?.name || 'untitled.json') : 'untitled.json';
+                const downloadName = activeFileId ? (files.find(f => f.id === activeFileId)?.name || 'untitled.json') : 'untitled.json';
+                a.download = downloadName;
                 a.click();
-                URL.revokeObjectURL(url);
+                window.setTimeout(() => URL.revokeObjectURL(url), 0);
                 
                 // 传统下载模式下，我们至少可以重置 Dirty 状态，假定用户已保存
                 if (activeFileId) {
                     setFiles(prev => prev.map(f =>
                         f.id === activeFileId ? { ...f, savedContent: input, isDirty: false } : f
                     ));
+                } else {
+                    createSavedTab(downloadName, input);
                 }
                 return true;
             }

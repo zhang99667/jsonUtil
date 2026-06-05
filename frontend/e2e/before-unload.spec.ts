@@ -24,9 +24,9 @@ test.beforeEach(async ({ page }) => {
     });
   }, FEATURE_TOUR_IDS);
 
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.getByText('JSON 工具箱')).toBeVisible();
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
 });
 
 test('未保存草稿会阻止页面卸载', async ({ page }) => {
@@ -38,10 +38,48 @@ test('未保存草稿会阻止页面卸载', async ({ page }) => {
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
+test('无文件草稿另存后不再阻止页面卸载', async ({ page }) => {
+  await installSavePickerMock(page);
+  await fillSourceEditor(page, '{"draft":false}');
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+
+  await page.locator('[data-tour="save-file-button"]').click();
+
+  await expect(page.getByText('draft.json').first()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    return writes.at(-1) ?? null;
+  })).toBe('{"draft":false}');
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(false);
+});
+
 const isBeforeUnloadPrevented = async (page: Page) => page.evaluate(() => {
   const event = new Event('beforeunload', { cancelable: true });
   return !window.dispatchEvent(event);
 });
+
+const installSavePickerMock = async (page: Page) => {
+  await page.evaluate(() => {
+    const savedWrites: string[] = [];
+    Object.defineProperty(window, '__jsonHelperSavedWrites', {
+      value: savedWrites,
+      configurable: true,
+    });
+
+    Object.defineProperty(window, 'showSaveFilePicker', {
+      configurable: true,
+      value: async () => ({
+        name: 'draft.json',
+        createWritable: async () => ({
+          write: async (content: string) => {
+            savedWrites.push(String(content));
+          },
+          close: async () => undefined,
+        }),
+      }),
+    });
+  });
+};
 
 const fillSourceEditor = async (page: Page, value: string) => {
   const sourceEditor = page.locator('[data-tour="source-editor"] .monaco-editor').first();
