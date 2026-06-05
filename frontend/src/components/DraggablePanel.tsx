@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import { isFiniteNumber, isRecord, parseJsonWithFallback } from '../utils/storage';
 
 export type ResizeDirection = 'width' | 'height' | 'both';
 
@@ -37,6 +38,17 @@ const DEFAULT_POSITION = { x: 100, y: 100 };
 const DEFAULT_SIZE = { width: 600, height: 400 };
 const DEFAULT_MIN_SIZE = { width: 300, height: 200 };
 
+type PanelPosition = { x: number; y: number };
+type PanelSize = { width: number; height: number };
+
+const isPanelPosition = (value: unknown): value is PanelPosition => {
+  return isRecord(value) && isFiniteNumber(value.x) && isFiniteNumber(value.y);
+};
+
+const isPanelSize = (value: unknown): value is PanelSize => {
+  return isRecord(value) && isFiniteNumber(value.width) && isFiniteNumber(value.height);
+};
+
 export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   isOpen,
   onClose,
@@ -55,22 +67,20 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
 }) => {
   // 面板位置（持久化）
   const [position, setPosition] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${storageKey}-position`);
-      return saved ? JSON.parse(saved) : defaultPosition;
-    } catch {
-      return defaultPosition;
-    }
+    return parseJsonWithFallback(
+      localStorage.getItem(`${storageKey}-position`),
+      defaultPosition,
+      isPanelPosition
+    );
   });
 
   // 面板大小（持久化）
   const [size, setSize] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${storageKey}-size`);
-      return saved ? JSON.parse(saved) : defaultSize;
-    } catch {
-      return defaultSize;
-    }
+    return parseJsonWithFallback(
+      localStorage.getItem(`${storageKey}-size`),
+      defaultSize,
+      isPanelSize
+    );
   });
 
   // 拖拽状态
