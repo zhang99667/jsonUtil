@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { message } from 'antd';
+import { safeGetStorageItem, safeRemoveStorageItem } from '../../utils/storage';
 
 const request = axios.create({
     baseURL: '/api', // Vite proxy should handle this
@@ -8,7 +9,7 @@ const request = axios.create({
 
 request.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = safeGetStorageItem('token');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
@@ -38,7 +39,7 @@ request.interceptors.response.use(
             const { status, data } = error.response;
             // 401 未认证 或 403 禁止访问（token 过期/无效也会返回 403）
             if (status === 401 || status === 403) {
-                localStorage.removeItem('token');
+                safeRemoveStorageItem('token');
                 message.error('登录已过期，请重新登录');
                 window.location.href = '/admin.html';
                 return Promise.reject(error);

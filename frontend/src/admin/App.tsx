@@ -14,6 +14,7 @@ import { Breadcrumb, Layout, Menu, Avatar, Dropdown, Spin } from 'antd';
 import Login from './pages/Login';
 import { logout } from './services/auth';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { safeGetStorageItem } from '../utils/storage';
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -73,7 +74,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         // 检查本地存储中的认证令牌
-        const token = localStorage.getItem('token');
+        const token = safeGetStorageItem('token');
         if (token) {
             setIsAuthenticated(true);
         }

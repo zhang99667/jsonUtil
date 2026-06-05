@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
-import { isFiniteNumber, isRecord, parseJsonWithFallback, safeSetStorageItem } from '../utils/storage';
+import { isFiniteNumber, isRecord, parseJsonWithFallback, safeGetStorageItem, safeSetStorageItem } from '../utils/storage';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { PANEL_LAYOUT_RESET_EVENT } from '../utils/panelLayout';
 
@@ -108,7 +108,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
 }) => {
   const loadSize = () => normalizePanelSize(
     parseJsonWithFallback(
-      localStorage.getItem(`${storageKey}-size`),
+      safeGetStorageItem(`${storageKey}-size`),
       defaultSize,
       isPanelSize
     ),
@@ -118,7 +118,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
 
   const loadPosition = (currentSize: PanelSize) => normalizePanelPosition(
     parseJsonWithFallback(
-      localStorage.getItem(`${storageKey}-position`),
+      safeGetStorageItem(`${storageKey}-position`),
       defaultPosition,
       isPanelPosition
     ),

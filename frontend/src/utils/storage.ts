@@ -24,6 +24,18 @@ export const parseJsonWithFallback = <T>(
   }
 };
 
+export const safeGetStorageItem = (
+  key: string,
+  storage: Storage = localStorage
+): string | null => {
+  try {
+    return storage.getItem(key);
+  } catch (error) {
+    console.warn(`读取本地存储失败: ${key}`, error);
+    return null;
+  }
+};
+
 export const safeSetStorageItem = (
   key: string,
   value: string,

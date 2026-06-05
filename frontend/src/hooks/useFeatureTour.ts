@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { driver, DriveStep, Driver } from 'driver.js';
-import { safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import 'driver.js/dist/driver.css';
 
 // 定义所有支持引导的功能
@@ -199,7 +199,7 @@ export const useFeatureTour = () => {
     // 检查功能是否已完成引导
     const hasCompletedTour = useCallback((featureId: FeatureId): boolean => {
         const key = `${STORAGE_KEY_PREFIX}${featureId}`;
-        return localStorage.getItem(key) === 'completed';
+        return safeGetStorageItem(key) === 'completed';
     }, []);
 
     // 标记功能引导为已完成

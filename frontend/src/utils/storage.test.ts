@@ -3,6 +3,7 @@ import {
   isFiniteNumber,
   isRecord,
   parseJsonWithFallback,
+  safeGetStorageItem,
   safeRemoveStorageItem,
   safeSetStorageItem,
 } from './storage';
@@ -77,6 +78,31 @@ describe('safe storage writes', () => {
     expect(safeSetStorageItem('key', 'value', blockedStorage)).toBe(false);
     expect(safeRemoveStorageItem('key', blockedStorage)).toBe(false);
     expect(warnSpy).toHaveBeenCalledTimes(2);
+
+    warnSpy.mockRestore();
+  });
+});
+
+describe('safe storage reads', () => {
+  it('读取成功时返回存储内容', () => {
+    const storage = {
+      getItem: (key: string) => key === 'key' ? 'value' : null,
+    } as unknown as Storage;
+
+    expect(safeGetStorageItem('key', storage)).toBe('value');
+    expect(safeGetStorageItem('missing', storage)).toBeNull();
+  });
+
+  it('浏览器禁止读取本地存储时吞掉异常并返回 null', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const blockedStorage = {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+    } as unknown as Storage;
+
+    expect(safeGetStorageItem('key', blockedStorage)).toBeNull();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
 
     warnSpy.mockRestore();
   });
