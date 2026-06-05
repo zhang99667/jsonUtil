@@ -87,9 +87,12 @@ const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
 
 const normalizeQueryString = (source: string): string => (
-  source.trim().replace(SEMICOLON_QUERY_DELIMITER_RE, '&')
+  source.trim()
+    .replace(HTML_QUERY_DELIMITER_RE, '&')
+    .replace(SEMICOLON_QUERY_DELIMITER_RE, '&')
 );
 
 const stripQueryPrefix = (source: string): string => (

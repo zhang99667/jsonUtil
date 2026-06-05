@@ -234,6 +234,15 @@ describe('parseUrl', () => {
     });
   });
 
+  it('解析 HTML 转义的查询参数分隔符', () => {
+    const result = parseUrl('https://example.com/path?cmd=%7B%22a%22%3A1%7D&amp;from=html');
+    expect(result).not.toBeNull();
+    expect(result!.params).toEqual({
+      cmd: '{"a":1}',
+      from: 'html',
+    });
+  });
+
   it('无参数的 URL', () => {
     const result = parseUrl('https://example.com/path');
     expect(result).not.toBeNull();
@@ -320,6 +329,16 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       cmd: { nid: 123 },
       url: { from: 'box' },
+    });
+  });
+
+  it('HTML 转义分隔符的 CMD 参数串被解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`cmd=${payload}&#38;from=html`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      from: 'html',
     });
   });
 
