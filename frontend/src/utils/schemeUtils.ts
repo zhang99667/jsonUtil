@@ -466,6 +466,18 @@ const tryParseJson = (value: string): StructuredValue | null => {
   }
 };
 
+const tryParseJsonStringPayload = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    return typeof parsed === 'string' && looksLikeStructuredPayload(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
 const decodeStructuredValue = (value: StructuredValue, maxDepth: number): StructuredValue => {
   if (maxDepth <= 0) return value;
 
@@ -693,6 +705,11 @@ const decodeNestedParamValue = (value: string, maxDepth: number): StructuredValu
   const jsonValue = tryParseJson(value);
   if (jsonValue !== null) {
     return decodeStructuredValue(jsonValue, maxDepth - 1);
+  }
+
+  const jsonStringPayload = tryParseJsonStringPayload(value);
+  if (jsonStringPayload !== null) {
+    return decodeNestedParamValue(jsonStringPayload, maxDepth);
   }
 
   const base64Value = decodeBase64StructuredParam(value, maxDepth - 1);
