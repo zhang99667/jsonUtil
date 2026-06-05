@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import {
     FileOutlined,
     PieChartOutlined,
@@ -10,16 +10,17 @@ import {
     MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Breadcrumb, Layout, Menu, Avatar, Dropdown } from 'antd';
+import { Breadcrumb, Layout, Menu, Avatar, Dropdown, Spin } from 'antd';
 import Login from './pages/Login';
-import UserManagement from './pages/UserManagement';
-import Dashboard from './pages/Dashboard';
 import { logout } from './services/auth';
-import TrafficStats from './pages/TrafficStats';
-import FileManagement from './pages/FileManagement';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const { Header, Content, Footer, Sider } = Layout;
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
+const TrafficStats = lazy(() => import('./pages/TrafficStats'));
+const FileManagement = lazy(() => import('./pages/FileManagement'));
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -50,6 +51,20 @@ const menuItems: MenuItem[] = [
 const SIDER_WIDTH = 240;
 /** 侧边栏收起宽度 */
 const SIDER_COLLAPSED_WIDTH = 72;
+
+/** 后台页面懒加载占位，避免切换时出现空白区域 */
+const AdminPageFallback: React.FC = () => (
+    <div
+        style={{
+            minHeight: 360,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        }}
+    >
+        <Spin tip="加载中..." />
+    </div>
+);
 
 const App: React.FC = () => {
     const [collapsed, setCollapsed] = useState(false);
@@ -335,7 +350,9 @@ const App: React.FC = () => {
                                 animation: 'adminFadeIn 0.3s ease-in-out',
                             }}
                         >
-                            {renderContent()}
+                            <Suspense fallback={<AdminPageFallback />}>
+                                {renderContent()}
+                            </Suspense>
                         </div>
                         {/* 淡入动画关键帧定义 */}
                         <style>{`
