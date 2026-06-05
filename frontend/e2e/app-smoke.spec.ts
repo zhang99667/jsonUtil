@@ -138,8 +138,11 @@ test('文件打开后可修改并保存下载', async ({ page }) => {
 
 const fillSourceEditor = async (page: Page, value: string) => {
   const sourceEditor = page.locator('[data-tour="source-editor"] .monaco-editor').first();
+  const selectAllShortcut = `${process.platform === 'darwin' ? 'Meta' : 'Control'}+A`;
   await sourceEditor.click();
-  await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+A`);
+  await page.keyboard.press(selectAllShortcut);
+  await page.keyboard.press(selectAllShortcut);
+  await page.keyboard.press('Backspace');
   await page.keyboard.insertText(value);
 };
 
