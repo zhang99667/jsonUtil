@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Form, Input, Button, Select, message, Card as AntCard, Row, Col, Typography,
     Table, Modal, Popconfirm, Switch, Tag, Space
@@ -54,6 +54,7 @@ const UserManagement: React.FC = () => {
     const [editLoading, setEditLoading] = useState(false);
     /** 添加用户折叠状态 */
     const [showAddForm, setShowAddForm] = useState(false);
+    const userListRequestIdRef = useRef(0);
 
     // ==================== 数据获取 ====================
 
@@ -61,10 +62,15 @@ const UserManagement: React.FC = () => {
      * 获取用户列表
      */
     const fetchUserList = useCallback(async (page = 1, size = DEFAULT_PAGE_SIZE, keyword = searchKeyword) => {
+        const requestId = ++userListRequestIdRef.current;
         setLoading(true);
         try {
             // 后端分页从 0 开始，前端从 1 开始
             const result = await getUserList(page - 1, size, keyword || undefined);
+            // 只允许最新一次列表请求更新页面，避免快速搜索/翻页时旧响应回写。
+            if (requestId !== userListRequestIdRef.current) {
+                return;
+            }
             setUserList(result.content);
             setPagination({
                 current: result.number + 1,
@@ -72,15 +78,23 @@ const UserManagement: React.FC = () => {
                 total: result.totalElements,
             });
         } catch {
+            if (requestId !== userListRequestIdRef.current) {
+                return;
+            }
             // 错误已由 request 拦截器统一处理
         } finally {
-            setLoading(false);
+            if (requestId === userListRequestIdRef.current) {
+                setLoading(false);
+            }
         }
     }, [searchKeyword]);
 
     /** 组件挂载时加载数据 */
     useEffect(() => {
         fetchUserList();
+        return () => {
+            userListRequestIdRef.current += 1;
+        };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ==================== 事件处理 ====================
