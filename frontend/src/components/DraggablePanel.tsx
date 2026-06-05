@@ -37,9 +37,12 @@ export interface DraggablePanelProps {
 const DEFAULT_POSITION = { x: 100, y: 100 };
 const DEFAULT_SIZE = { width: 600, height: 400 };
 const DEFAULT_MIN_SIZE = { width: 300, height: 200 };
+const MIN_VISIBLE_PANEL_EDGE = 80;
+const VIEWPORT_PADDING = 24;
 
-type PanelPosition = { x: number; y: number };
-type PanelSize = { width: number; height: number };
+export type PanelPosition = { x: number; y: number };
+export type PanelSize = { width: number; height: number };
+export type ViewportSize = { width: number; height: number };
 
 const isPanelPosition = (value: unknown): value is PanelPosition => {
   return isRecord(value) && isFiniteNumber(value.x) && isFiniteNumber(value.y);
@@ -48,6 +51,42 @@ const isPanelPosition = (value: unknown): value is PanelPosition => {
 const isPanelSize = (value: unknown): value is PanelSize => {
   return isRecord(value) && isFiniteNumber(value.width) && isFiniteNumber(value.height);
 };
+
+export const normalizePanelSize = (
+  size: PanelSize,
+  minSize: PanelSize,
+  viewport: ViewportSize
+): PanelSize => {
+  const maxWidth = Math.max(minSize.width, viewport.width - VIEWPORT_PADDING);
+  const maxHeight = Math.max(minSize.height, viewport.height - VIEWPORT_PADDING);
+
+  return {
+    width: Math.min(Math.max(size.width, minSize.width), maxWidth),
+    height: Math.min(Math.max(size.height, minSize.height), maxHeight),
+  };
+};
+
+export const normalizePanelPosition = (
+  position: PanelPosition,
+  size: PanelSize,
+  viewport: ViewportSize
+): PanelPosition => {
+  return {
+    x: Math.min(
+      Math.max(position.x, -size.width + MIN_VISIBLE_PANEL_EDGE),
+      viewport.width - MIN_VISIBLE_PANEL_EDGE
+    ),
+    y: Math.min(
+      Math.max(position.y, 0),
+      viewport.height - MIN_VISIBLE_PANEL_EDGE
+    ),
+  };
+};
+
+const getViewportSize = (): ViewportSize => ({
+  width: window.innerWidth,
+  height: window.innerHeight,
+});
 
 export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   isOpen,
@@ -65,23 +104,31 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   className = '',
   dataTour,
 }) => {
-  // 面板位置（持久化）
-  const [position, setPosition] = useState(() => {
-    return parseJsonWithFallback(
-      localStorage.getItem(`${storageKey}-position`),
-      defaultPosition,
-      isPanelPosition
-    );
-  });
-
-  // 面板大小（持久化）
-  const [size, setSize] = useState(() => {
-    return parseJsonWithFallback(
+  const loadSize = () => normalizePanelSize(
+    parseJsonWithFallback(
       localStorage.getItem(`${storageKey}-size`),
       defaultSize,
       isPanelSize
-    );
-  });
+    ),
+    minSize,
+    getViewportSize()
+  );
+
+  const loadPosition = (currentSize: PanelSize) => normalizePanelPosition(
+    parseJsonWithFallback(
+      localStorage.getItem(`${storageKey}-position`),
+      defaultPosition,
+      isPanelPosition
+    ),
+    currentSize,
+    getViewportSize()
+  );
+
+  // 面板位置（持久化）
+  const [position, setPosition] = useState<PanelPosition>(() => loadPosition(loadSize()));
+
+  // 面板大小（持久化）
+  const [size, setSize] = useState<PanelSize>(loadSize);
 
   // 拖拽状态
   const [isDragging, setIsDragging] = useState(false);
@@ -132,10 +179,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
         // 计算新位置，并 clamp 到视口边界，确保面板始终至少有 80px 可见区域
         const newX = e.clientX - dragStart.x;
         const newY = e.clientY - dragStart.y;
-        setPosition({
-          x: Math.min(Math.max(newX, -size.width + 80), window.innerWidth - 80),
-          y: Math.min(Math.max(newY, 0), window.innerHeight - 80),
-        });
+        setPosition(normalizePanelPosition({ x: newX, y: newY }, size, getViewportSize()));
       } else if (isResizing) {
         const deltaX = e.clientX - resizeStart.x;
         const deltaY = e.clientY - resizeStart.y;

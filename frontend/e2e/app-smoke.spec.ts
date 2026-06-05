@@ -93,6 +93,31 @@ test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   await expect(page.getByText('AI 提供商')).toBeVisible();
 });
 
+test('离屏面板缓存会被拉回可见区域', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('jsonpath-panel-position', JSON.stringify({ x: 99999, y: 99999 }));
+    window.localStorage.setItem('jsonpath-panel-size', JSON.stringify({ width: 5000, height: 4000 }));
+  });
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'JSONPath 查询' }).click();
+
+  const panel = page.locator('[data-tour="jsonpath-panel"]');
+  await expect(panel).toBeVisible();
+
+  const box = await panel.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+
+  expect(box!.x).toBeLessThanOrEqual(viewport!.width - 80);
+  expect(box!.x + box!.width).toBeGreaterThanOrEqual(80);
+  expect(box!.y).toBeLessThanOrEqual(viewport!.height - 80);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(box!.height).toBeLessThanOrEqual(viewport!.height);
+});
+
 test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await fillSourceEditor(page, '{"users":[{"name":"Ada","age":20},{"name":"Bob","age":17}]}');
 
