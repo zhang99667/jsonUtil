@@ -51,6 +51,20 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(page.getByText('1 / 2')).toBeVisible();
 });
 
+test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
+  const cmdPayload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(`cmd=${cmdPayload}&from=feed`);
+
+  const schemeResult = page.locator('[data-tour="scheme-result"] .view-lines');
+  await expect(page.getByText('CMD 参数递归解析')).toBeVisible();
+  await expect(schemeResult).toContainText('"cmd"');
+  await expect(schemeResult).toContainText('"nid": 123');
+  await expect(schemeResult).toContainText('"title": "标题"');
+  await expect(schemeResult).toContainText('"from": "feed"');
+});
+
 const fillSourceEditor = async (page: Page, value: string) => {
   const sourceEditor = page.locator('[data-tour="source-editor"] .monaco-editor').first();
   await sourceEditor.click();

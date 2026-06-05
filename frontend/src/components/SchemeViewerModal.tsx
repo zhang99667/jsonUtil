@@ -259,6 +259,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 输入原始值
               </div>
               <textarea
+                data-tour="scheme-standalone-input"
                 value={standaloneInput}
                 onChange={(e) => setStandaloneInput(e.target.value)}
                 placeholder="粘贴需要解码的内容..."
@@ -441,7 +442,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 解码结果（可编辑，使用 SimpleEditor） */}
-          <div className="bg-editor-sidebar rounded p-3 border border-editor-border flex-1 flex flex-col min-h-[200px]">
+          <div data-tour="scheme-result" className="bg-editor-sidebar rounded p-3 border border-editor-border flex-1 flex flex-col min-h-[200px]">
             <div className="flex items-center justify-between mb-2 flex-shrink-0">
               <div className="text-xs text-gray-500 font-medium flex items-center gap-1">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
