@@ -53,6 +53,23 @@ test('无文件草稿另存后不再阻止页面卸载', async ({ page }) => {
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(false);
 });
 
+test('无文件草稿新建标签时保留原草稿', async ({ page }) => {
+  await fillSourceEditor(page, '{"draft":"keep"}');
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+
+  await page.getByTitle('新建标签 (Cmd+N)').click();
+
+  const editorTabs = page.locator('[data-tour="editor-tabs"]');
+  await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
+  await expect(editorTabs.getByText('Untitled-2')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).not.toContainText('"draft":"keep"');
+
+  await editorTabs.getByText('Untitled-1').click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"keep"');
+  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(1);
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+});
+
 const isBeforeUnloadPrevented = async (page: Page) => page.evaluate(() => {
   const event = new Event('beforeunload', { cancelable: true });
   return !window.dispatchEvent(event);
