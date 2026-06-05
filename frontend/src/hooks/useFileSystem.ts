@@ -24,6 +24,23 @@ const generateUUID = () => {
     });
 };
 
+const getNextUntitledName = (files: FileTab[]): string => {
+    // VSCode 风格命名: 找到最小的未使用编号
+    const existingNumbers = files
+        .map(f => {
+            const match = f.name.match(/^Untitled-(\d+)$/);
+            return match ? parseInt(match[1], 10) : null;
+        })
+        .filter((n): n is number => n !== null);
+
+    let newNumber = 1;
+    while (existingNumbers.includes(newNumber)) {
+        newNumber++;
+    }
+
+    return `Untitled-${newNumber}`;
+};
+
 export const useFileSystem = ({
     input,
     setInput,
@@ -97,23 +114,23 @@ export const useFileSystem = ({
     }, [input, activeFileId, files, isAutoSaveEnabled]);
 
     const createNewTab = () => {
-        const newFileId = generateUUID();
+        const nextFiles = [...files];
 
-        // VSCode 风格命名:找到最小的未使用编号
-        const existingNumbers = files
-            .map(f => {
-                const match = f.name.match(/^Untitled-(\d+)$/);
-                return match ? parseInt(match[1], 10) : null;
-            })
-            .filter((n): n is number => n !== null);
-
-        // 找到最小的可用编号
-        let newNumber = 1;
-        while (existingNumbers.includes(newNumber)) {
-            newNumber++;
+        // 无文件草稿也属于用户资产，新建标签前先转成未保存标签，避免被空白页覆盖
+        if (!activeFileId && input.length > 0) {
+            nextFiles.push({
+                id: generateUUID(),
+                name: getNextUntitledName(nextFiles),
+                content: input,
+                savedContent: '',
+                handle: undefined,
+                isDirty: true,
+                mode: TransformMode.NONE,
+            });
         }
 
-        const newFileName = `Untitled-${newNumber}`;
+        const newFileId = generateUUID();
+        const newFileName = getNextUntitledName(nextFiles);
 
         const newFile: FileTab = {
             id: newFileId,
@@ -125,7 +142,7 @@ export const useFileSystem = ({
             mode: TransformMode.NONE // 新标签默认无转换模式
         };
 
-        setFiles(prev => [...prev, newFile]);
+        setFiles([...nextFiles, newFile]);
         setActiveFileId(newFileId);
         setInput('');
         inputRef.current = '';

@@ -59,6 +59,7 @@
 
 ### 🐛 Bug 修复
 - 修复自动保存成功后标签仍显示未保存、关闭时仍提示丢失修改的问题
+- 修复无文件草稿状态下新建标签会覆盖当前草稿的问题，现在会先保留为未保存 Untitled 标签
 - 修复 `documentStats` 在大文件时因 `Math.max(...spread)` 导致的栈溢出，改用 `reduce` 循环
 - 修复 DraggablePanel 可被拖出屏幕的问题，添加视口边界检查（保证至少 80px 可见）
 - 修复 DraggablePanel ESC 全局关闭问题，现在仅在面板内聚焦时响应 ESC
