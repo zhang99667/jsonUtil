@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
 const FEATURE_TOUR_IDS = [
@@ -40,6 +41,9 @@ test.beforeEach(async ({ page }) => {
   });
 
   await page.addInitScript((featureTourIds: string[]) => {
+    Object.defineProperty(window, 'showOpenFilePicker', { value: undefined, configurable: true });
+    Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true });
+
     window.localStorage.setItem('json-helper-onboarding-completed', 'true');
     window.localStorage.setItem('json-helper-ai-config', JSON.stringify({
       provider: 'custom',
@@ -102,6 +106,34 @@ test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
   await expect(page.getByText('AI 修复摘要')).toBeVisible();
   await expectPreviewText(page, '"items": [');
   await expectPreviewText(page, '"ok": true');
+});
+
+test('文件打开后可修改并保存下载', async ({ page }) => {
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.locator('[data-tour="open-file-button"]').click();
+  const fileChooser = await fileChooserPromise;
+
+  await fileChooser.setFiles({
+    name: 'sample.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{"opened":true,"count":2}'),
+  });
+
+  await expect(page.getByText('sample.json').first()).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"opened":true');
+
+  const savedContent = '{"opened":true,"count":3,"saved":true}';
+  await fillSourceEditor(page, savedContent);
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"saved":true');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('[data-tour="save-file-button"]').click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toBe('sample.json');
+  const downloadPath = await download.path();
+  expect(downloadPath).not.toBeNull();
+  await expect(readFile(downloadPath!, 'utf-8')).resolves.toBe(savedContent);
 });
 
 const fillSourceEditor = async (page: Page, value: string) => {

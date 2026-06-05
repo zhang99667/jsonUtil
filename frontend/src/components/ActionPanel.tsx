@@ -320,6 +320,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         {/* 文件管理 */}
         <div data-tour="file-operations" className="pt-4 mt-2 border-t border-editor-border">
           <button
+            data-tour="open-file-button"
             onClick={() => onAction(ActionType.OPEN)}
             className={`w-full bg-editor-sidebar hover:bg-editor-hover border border-editor-border text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
             title={isCollapsed ? "打开文件" : undefined}
@@ -329,6 +330,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           </button>
 
           <button
+            data-tour="save-file-button"
             onClick={() => onAction(ActionType.SAVE)}
             className={`w-full bg-editor-sidebar hover:bg-editor-hover border border-editor-border text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
             title={isCollapsed ? "保存为 JSON" : undefined}
