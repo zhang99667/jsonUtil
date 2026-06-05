@@ -6,7 +6,7 @@ import type { editor } from 'monaco-editor';
 import { EditorProps, HighlightRange } from '../types';
 import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
-import { computeLineDiff } from '../utils/diffUtils';
+import { computeLineDiff, shouldSkipLineDiff } from '../utils/diffUtils';
 import { findSchemesInJson, SchemeLocation } from '../utils/schemeUtils';
 import { SchemeViewerModal } from './SchemeViewerModal';
 import { TabBar } from './TabBar';
@@ -292,6 +292,14 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       return;
     }
 
+    // 大文件跳过行级脏 Diff，避免主线程长时间比较。
+    if (shouldSkipLineDiff(originalValue, value)) {
+      if (diffDecorationsRef.current) {
+        diffDecorationsRef.current.clear();
+      }
+      return;
+    }
+
     // 防抖计算 Diff
     const timer = setTimeout(() => {
       const diffs = computeLineDiff(originalValue, value);
@@ -307,7 +315,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           range: new monaco.Range(diff.startLine, 1, diff.endLine, 1),
           options: {
             isWholeLine: true,
-            linesDecorationsClassName: className // Render in the gutter
+            linesDecorationsClassName: className // 渲染在编辑器行号槽
           }
         });
       });
@@ -317,7 +325,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       }
       diffDecorationsRef.current = editorRef.current.createDecorationsCollection(decorations);
 
-    }, 200); // 200ms delay
+    }, 200); // 200ms 防抖
 
     return () => clearTimeout(timer);
 
