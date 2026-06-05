@@ -29,7 +29,9 @@ export interface SchemeDecodeResult {
     protocol: string;         // 协议，如 "https:", "myapp:"
     host?: string;            // 主机
     path?: string;            // 路径
-    params?: Record<string, string>; // 原始查询参数（URLSearchParams 已做一层解码）
+    hash?: string;            // URL hash 片段
+    params?: Record<string, string | string[]>; // 原始查询参数
+    hashParams?: Record<string, string | string[]>; // hash 内的参数
   };
 }
 
@@ -44,13 +46,29 @@ type StructuredValue =
 const COMMON_CMD_PARAM_NAMES = new Set([
   'cmd',
   'action_cmd',
+  'actioncmd',
+  'actioncommand',
+  'action-command',
   'command',
+  'cmd_param',
+  'cmd_params',
+  'command_param',
+  'command_params',
   'schema',
+  'schema_url',
+  'schemaurl',
   'scheme',
+  'scheme_url',
+  'schemeurl',
   'url',
   'uri',
   'link',
   'target',
+  'target_url',
+  'jump_url',
+  'landing_url',
+  'h5_url',
+  'page_url',
   'params',
   'param',
   'data',
@@ -61,6 +79,46 @@ const COMMON_CMD_PARAM_NAMES = new Set([
   'callback_url',
   'open_url',
 ]);
+
+const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]]+';
+const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
+const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
+const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
+
+const normalizeQueryString = (source: string): string => (
+  source.trim().replace(SEMICOLON_QUERY_DELIMITER_RE, '&')
+);
+
+const stripQueryPrefix = (source: string): string => (
+  source.trim().replace(/^\?/, '')
+);
+
+const looksLikeQueryString = (source: string): boolean => {
+  const normalized = normalizeQueryString(stripQueryPrefix(source));
+  return QUERY_PAIR_START_RE.test(normalized);
+};
+
+const looksLikeStructuredPayload = (value: string): boolean => (
+  isJsonString(value) ||
+  isUrl(value) ||
+  hasUrlEncoding(value) ||
+  isJwt(value) ||
+  looksLikeQueryString(value)
+);
+
+const isStructuredBase64Value = (value: string): boolean => {
+  const decoded = base64Decode(value);
+  return decoded !== value && looksLikeStructuredPayload(decoded);
+};
+
+const isDecodableParamValue = (value: string): boolean => (
+  hasUrlEncoding(value) ||
+  isUrl(value) ||
+  isJwt(value) ||
+  isBase64(value) ||
+  isJsonString(value) ||
+  isStructuredBase64Value(value)
+);
 
 // ============ 检测函数 ============
 
@@ -78,16 +136,17 @@ export function isUrl(str: string): boolean {
  */
 export function isQueryStringFormat(str: string): boolean {
   const trimmed = str.trim();
+  const source = normalizeQueryString(trimmed.startsWith('?') ? trimmed.slice(1) : trimmed);
   
   // 排除 URL 格式（真正的 scheme:// 不应被视为查询参数）
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return false;
   
   // 必须以 key= 开头（key 是有效的参数名格式）
-  if (!/^[a-zA-Z_][a-zA-Z0-9_-]*=/.test(trimmed)) return false;
+  if (!QUERY_PAIR_START_RE.test(source)) return false;
   
-  // 如果以 key= 开头且包含 & 分隔符，认定为查询参数格式
+  // 如果以 key= 开头且包含参数分隔符，认定为查询参数格式
   // 不再严格检查每部分的格式，因为部分值可能包含 URL 编码
-  if (trimmed.includes('&')) {
+  if (QUERY_PAIR_DELIMITER_RE.test(source)) {
     return true;
   }
   
@@ -100,23 +159,17 @@ export function isQueryStringFormat(str: string): boolean {
  */
 export function isDecodableQueryString(str: string): boolean {
   const trimmed = str.trim();
-  const source = trimmed.startsWith('?') ? trimmed.slice(1) : trimmed;
+  const source = normalizeQueryString(trimmed.startsWith('?') ? trimmed.slice(1) : trimmed);
 
   if (!source || /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(source)) return false;
-  if (!/^[a-zA-Z_][a-zA-Z0-9_-]*=/.test(source)) return false;
+  if (!QUERY_PAIR_START_RE.test(source)) return false;
 
-  if (source.includes('&')) return true;
+  if (QUERY_PAIR_DELIMITER_RE.test(source)) return true;
 
   const equalIndex = source.indexOf('=');
   const key = source.slice(0, equalIndex).toLowerCase();
   const value = source.slice(equalIndex + 1);
-  return COMMON_CMD_PARAM_NAMES.has(key) && (
-    hasUrlEncoding(value) ||
-    isUrl(value) ||
-    isJwt(value) ||
-    isBase64(value) ||
-    isJsonString(value)
-  );
+  return COMMON_CMD_PARAM_NAMES.has(key) && isDecodableParamValue(value);
 }
 
 /**
@@ -312,6 +365,64 @@ export function decodeJwt(token: string): { header: Record<string, unknown>; pay
   }
 }
 
+const assignFlatQueryParam = (
+  result: Record<string, string | string[]>,
+  key: string,
+  value: string
+) => {
+  const existing = result[key];
+  if (existing === undefined) {
+    result[key] = value;
+  } else if (Array.isArray(existing)) {
+    existing.push(value);
+  } else {
+    result[key] = [existing, value];
+  }
+};
+
+const splitQueryPairs = (queryString: string): string[] => (
+  normalizeQueryString(stripQueryPrefix(queryString)).split('&').filter(Boolean)
+);
+
+const parseFlatQueryParams = (queryString: string): Record<string, string | string[]> | undefined => {
+  const params: Record<string, string | string[]> = {};
+
+  splitQueryPairs(queryString).forEach(pair => {
+    const equalIndex = pair.indexOf('=');
+    if (equalIndex <= 0) return;
+
+    const key = urlDecode(pair.slice(0, equalIndex));
+    const value = urlDecode(pair.slice(equalIndex + 1));
+    if (key) {
+      assignFlatQueryParam(params, key, value);
+    }
+  });
+
+  return Object.keys(params).length > 0 ? params : undefined;
+};
+
+const getFragmentParamSource = (hash: string): string | null => {
+  const rawFragment = hash.replace(/^#/, '').trim();
+  if (!rawFragment) return null;
+
+  const candidates = [rawFragment];
+  const decodedFragment = urlDecode(rawFragment);
+  if (decodedFragment !== rawFragment) {
+    candidates.push(decodedFragment);
+  }
+
+  for (const candidate of candidates) {
+    const queryStart = candidate.startsWith('?') ? 1 : candidate.indexOf('?') + 1;
+    const source = queryStart > 0 ? candidate.slice(queryStart) : candidate;
+    const normalized = normalizeQueryString(source.replace(/^&/, ''));
+    if (QUERY_PAIR_START_RE.test(normalized)) {
+      return source;
+    }
+  }
+
+  return null;
+};
+
 /**
  * 解析 URL，提取参数
  */
@@ -319,16 +430,17 @@ export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | 
   try {
     // 处理自定义 scheme（如 myapp://）
     const url = new URL(urlString);
-    const params: Record<string, string> = {};
-    url.searchParams.forEach((value, key) => {
-      params[key] = value;
-    });
+    const params = parseFlatQueryParams(url.search);
+    const fragmentParamSource = getFragmentParamSource(url.hash);
+    const hashParams = fragmentParamSource ? parseFlatQueryParams(fragmentParamSource) : undefined;
     
     return {
       protocol: url.protocol,
       host: url.host || undefined,
       path: url.pathname || undefined,
-      params: Object.keys(params).length > 0 ? params : undefined,
+      hash: url.hash ? url.hash.slice(1) : undefined,
+      params,
+      hashParams,
     };
   } catch {
     return null;
@@ -382,18 +494,59 @@ const assignQueryParam = (
 };
 
 const parseQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
-  const source = queryString.trim().replace(/^\?/, '');
+  const source = normalizeQueryString(stripQueryPrefix(queryString));
   if (!source || !isDecodableQueryString(source)) return null;
 
-  return parseSearchParamsDeep(new URLSearchParams(source), maxDepth);
+  return parseQueryPairsDeep(source, maxDepth);
 };
 
-const parseSearchParamsDeep = (params: URLSearchParams, maxDepth: number): StructuredValue => {
+const parseUrlQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
+  const source = normalizeQueryString(stripQueryPrefix(queryString));
+  if (!source || !QUERY_PAIR_START_RE.test(source)) return null;
+
+  return parseQueryPairsDeep(source, maxDepth);
+};
+
+const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredValue => {
   const result: { [key: string]: StructuredValue | StructuredValue[] } = {};
-  params.forEach((value, key) => {
+  splitQueryPairs(queryString).forEach(pair => {
+    const equalIndex = pair.indexOf('=');
+    if (equalIndex <= 0) return;
+
+    const key = urlDecode(pair.slice(0, equalIndex));
+    const value = urlDecode(pair.slice(equalIndex + 1));
+    if (!key) return;
+
     assignQueryParam(result, key, decodeNestedParamValue(value, maxDepth - 1));
   });
   return result as StructuredValue;
+};
+
+const mergeUrlDecodedParams = (
+  queryParams: StructuredValue | null,
+  hashParams: StructuredValue | null
+): StructuredValue | null => {
+  if (queryParams && hashParams && !Array.isArray(queryParams) && typeof queryParams === 'object') {
+    return {
+      ...queryParams,
+      _hash: hashParams,
+    } as StructuredValue;
+  }
+
+  return queryParams || hashParams;
+};
+
+const parseUrlParamsDeep = (urlString: string, maxDepth: number): StructuredValue | null => {
+  try {
+    const url = new URL(urlString);
+    const queryParams = url.search ? parseUrlQueryStringDeep(url.search, maxDepth) : null;
+    const fragmentParamSource = getFragmentParamSource(url.hash);
+    const hashParams = fragmentParamSource ? parseUrlQueryStringDeep(fragmentParamSource, maxDepth) : null;
+
+    return mergeUrlDecodedParams(queryParams, hashParams);
+  } catch {
+    return null;
+  }
 };
 
 const decodeNestedParamValue = (value: string, maxDepth: number): StructuredValue => {
@@ -404,6 +557,11 @@ const decodeNestedParamValue = (value: string, maxDepth: number): StructuredValu
     return decodeStructuredValue(jsonValue, maxDepth - 1);
   }
 
+  const base64Value = decodeBase64StructuredParam(value, maxDepth - 1);
+  if (base64Value !== null) {
+    return base64Value;
+  }
+
   const nested = deepDecodeScheme(value, maxDepth);
   if (nested.isJson) {
     const parsed = tryParseJson(nested.decoded);
@@ -411,6 +569,13 @@ const decodeNestedParamValue = (value: string, maxDepth: number): StructuredValu
   }
 
   return nested.layers.length > 0 ? nested.decoded : value;
+};
+
+const decodeBase64StructuredParam = (value: string, maxDepth: number): StructuredValue | null => {
+  const decoded = base64Decode(value);
+  if (decoded === value || !looksLikeStructuredPayload(decoded)) return null;
+
+  return decodeNestedParamValue(decoded, maxDepth);
 };
 
 // ============ 递归解码 ============
@@ -440,9 +605,9 @@ export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDec
         if (urlInfo) {
           schemeInfo = urlInfo;
           
-          // 如果有参数，将参数按 CMD 习惯逐项递归展开
-          if (urlInfo.params && Object.keys(urlInfo.params).length > 0) {
-            const decodedParams = parseSearchParamsDeep(new URL(current).searchParams, maxDepth - depth);
+          // 如果有参数，将 query/hash 参数按 CMD 习惯逐项递归展开
+          const decodedParams = parseUrlParamsDeep(current, maxDepth - depth);
+          if (decodedParams) {
             current = JSON.stringify(decodedParams, null, 2);
             layers.push({
               type: 'url',
@@ -451,7 +616,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDec
             });
           }
         }
-        // URL 解析完成后停止；参数值已在 parseQueryStringDeep 中递归处理
+        // URL 解析完成后停止；参数值已在 parseUrlParamsDeep 中递归处理
         depth = maxDepth;
         break;
       }

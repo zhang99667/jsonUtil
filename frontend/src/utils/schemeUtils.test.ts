@@ -71,8 +71,16 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('url=https%3A%2F%2Fexample.com&from=test')).toBe(true);
   });
 
+  it('检测分号分隔的 CMD 参数串', () => {
+    expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D;from=test')).toBe(true);
+  });
+
   it('检测常见单参数 CMD 字段', () => {
     expect(isDecodableQueryString('url=https%3A%2F%2Fexample.com')).toBe(true);
+  });
+
+  it('检测 camelCase 的单参数 CMD 字段', () => {
+    expect(isDecodableQueryString('actionCommand=%7B%22a%22%3A1%7D')).toBe(true);
   });
 
   it('普通单键值对不误判', () => {
@@ -210,6 +218,13 @@ describe('parseUrl', () => {
     expect(result!.params).toEqual({ key: 'value', name: 'test' });
   });
 
+  it('解析 URL hash route 中的参数', () => {
+    const result = parseUrl('https://example.com/app#/detail?cmd=%7B%22a%22%3A1%7D&from=hash');
+    expect(result).not.toBeNull();
+    expect(result!.hash).toBe('/detail?cmd=%7B%22a%22%3A1%7D&from=hash');
+    expect(result!.hashParams).toEqual({ cmd: '{"a":1}', from: 'hash' });
+  });
+
   it('无参数的 URL', () => {
     const result = parseUrl('https://example.com/path');
     expect(result).not.toBeNull();
@@ -275,6 +290,55 @@ describe('deepDecodeScheme', () => {
       url: { from: 'box' },
     });
     expect(result.layers[0].type).toBe('query-string');
+  });
+
+  it('分号分隔的 CMD 参数串被解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`cmd=${payload};url=${encodeURIComponent('https://example.com/path?from=box')}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      url: { from: 'box' },
+    });
+  });
+
+  it('常见 camelCase command 字段可作为单参数解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const result = deepDecodeScheme(`actionCommand=${payload}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      actionCommand: { nid: 123, title: '标题' },
+    });
+  });
+
+  it('参数内短 Base64 JSON 被递归解析', () => {
+    const result = deepDecodeScheme(`cmd=${base64Encode('{"a":1}')}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { a: 1 },
+    });
+  });
+
+  it('URL hash route 参数被递归解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open#/detail?cmd=${payload}&from=hash`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      from: 'hash',
+    });
+  });
+
+  it('URL query 与 hash route 参数同时保留', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`https://example.com/page?url=${encodeURIComponent('https://m.baidu.com/s?word=%E4%BD%A0')}#/detail?cmd=${payload}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      url: { word: '你' },
+      _hash: {
+        cmd: { nid: 123 },
+      },
+    });
   });
 });
 
