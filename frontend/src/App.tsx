@@ -18,8 +18,6 @@ import {
 import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
 import { TransformMode, ActionType, ValidationResult, AIConfig, AIProvider, HighlightRange, GeneralSettings, DEFAULT_GENERAL_SETTINGS, TransformContext, TransformResult } from './types';
-import { parse } from 'json-source-map';
-import { JSONPath } from 'jsonpath-plus';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useLayout } from './hooks/useLayout';
@@ -248,18 +246,14 @@ const App: React.FC = () => {
     return result;
   }, [input, mode, activeDeepFormatResult, shouldUseAsyncTransform, currentAsyncTransformResult]);
 
-  // JSONPath 查询专用数据源仅在面板打开时计算，避免大文件输入时隐藏面板仍反复深解析
+  // JSONPath 查询当前 PREVIEW 文本，确保 Worker 返回的高亮范围与右侧编辑器坐标一致
   const jsonPathDataSource = useMemo(() => {
     if (!isJsonPathPanelOpen) {
       return '';
     }
 
-    // 性能优化：复用现有深度格式化结果
-    if (mode === TransformMode.DEEP_FORMAT) {
-      return activeDeepFormatResult?.output ?? '';
-    }
-    return performTransform(input, TransformMode.DEEP_FORMAT);
-  }, [input, mode, activeDeepFormatResult, isJsonPathPanelOpen]);
+    return output;
+  }, [output, isJsonPathPanelOpen]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -328,6 +322,14 @@ const App: React.FC = () => {
     }
   }, [activeFileId, activeEditor, output, saveFile, saveSourceAs, isOutputTransforming]);
 
+  const handleToggleJsonPath = useCallback(() => {
+    const nextOpen = !isJsonPathPanelOpen;
+    if (nextOpen && mode !== TransformMode.DEEP_FORMAT) {
+      setMode(TransformMode.DEEP_FORMAT);
+    }
+    setIsJsonPathPanelOpen(nextOpen);
+  }, [isJsonPathPanelOpen, mode]);
+
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts } = useShortcuts({
     onSave: handleSaveShortcut,
@@ -335,7 +337,7 @@ const App: React.FC = () => {
     onDeepFormat: () => setMode(TransformMode.DEEP_FORMAT),
     onMinify: () => setMode(TransformMode.MINIFY),
     onCloseTab: () => activeFileId && closeFile(activeFileId),
-    onToggleJsonPath: () => setIsJsonPathPanelOpen(prev => !prev),
+    onToggleJsonPath: handleToggleJsonPath,
     onNewTab: createNewTab
   });
 
@@ -643,57 +645,9 @@ const App: React.FC = () => {
     }
   }, [output, handleOutputChange]);
 
-  // 处理 JSONPath 查询定位
-  const handleJsonPathQuery = (queryString: string, resultIndex: number) => {
-    if (mode === TransformMode.DEEP_FORMAT && isOutputTransforming) {
-      showError('深度格式化仍在处理，请稍后查询');
-      return;
-    }
-
-    // 1. 强制切换至深度格式化模式以支持嵌套查询
-    if (mode !== TransformMode.DEEP_FORMAT) {
-      setMode(TransformMode.DEEP_FORMAT);
-    }
-
-    // 2. 解析当前输出以生成 Source Map，优先复用面板打开时已计算的数据源
-    const currentOutput = jsonPathDataSource || performTransform(input, TransformMode.DEEP_FORMAT);
-
-    try {
-      // 3. 生成 Source Map
-      const { pointers } = parse(currentOutput);
-
-      // 4. 获取查询结果的 JSON Pointer 路径
-      // jsonpath-plus 的 resultType: 'pointer' 返回 JSON Pointer 格式 (e.g. /users/0/name)
-      const paths = JSONPath({
-        path: queryString,
-        json: JSON.parse(currentOutput),
-        resultType: 'pointer'
-      });
-
-      if (paths && paths.length > 0) {
-        // 使用传入的 resultIndex 定位到特定结果
-        const pointer = paths[resultIndex] || paths[0]; // 如果索引越界，回退到第一个
-
-        // 5. 映射路径至代码位置
-        if (pointers[pointer]) {
-          const { value, key, valueEnd, keyEnd } = pointers[pointer];
-          // 优先高亮值区域，如果是对象/数组，高亮整个块
-          const loc = value || key;
-
-          if (loc) {
-            setHighlightRange({
-              startLine: loc.line + 1, // 坐标转换：0-based 转 1-based
-              startColumn: loc.column + 1,
-              endLine: valueEnd ? valueEnd.line + 1 : loc.line + 1,
-              endColumn: valueEnd ? valueEnd.column + 1 : loc.column + 1 + (queryString.length) // 估算
-            });
-          }
-        }
-      }
-    } catch (e) {
-      console.error("Failed to locate JSON path:", e);
-    }
-  };
+  const handleJsonPathHighlight = useCallback((range: HighlightRange | null) => {
+    setHighlightRange(range);
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -731,7 +685,7 @@ const App: React.FC = () => {
             onOpenSettings={() => setIsSettingsModalOpen(true)}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            onToggleJsonPath={() => setIsJsonPathPanelOpen(!isJsonPathPanelOpen)}
+            onToggleJsonPath={handleToggleJsonPath}
             onToggleSchemeDecode={() => setIsSchemeDecodeOpen(!isSchemeDecodeOpen)}
             onToggleTemplateFill={() => setIsTemplatePanelOpen(!isTemplatePanelOpen)}
           />
@@ -846,13 +800,14 @@ const App: React.FC = () => {
 
         {/* JSONPath 查询面板 */}
         <JsonPathPanel
-          jsonData={jsonPathDataSource} // 使用深度格式化数据源
+          jsonData={jsonPathDataSource}
+          isDataPreparing={mode === TransformMode.DEEP_FORMAT && isOutputTransforming}
           isOpen={isJsonPathPanelOpen}
           onClose={() => {
             setIsJsonPathPanelOpen(false);
             setHighlightRange(null); // 关闭时清除高亮
           }}
-          onQueryResult={handleJsonPathQuery}
+          onHighlightRange={handleJsonPathHighlight}
         />
 
         {/* Scheme 解析面板（独立模式） */}
