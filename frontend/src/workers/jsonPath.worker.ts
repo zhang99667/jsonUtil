@@ -14,6 +14,7 @@ interface JsonPathWorkerRequest {
 interface JsonPathWorkerResponse {
   id: number;
   ranges: HighlightRange[];
+  values: unknown[];
   totalResults: number;
   error?: string;
 }
@@ -26,6 +27,7 @@ self.onmessage = (event: MessageEvent<JsonPathWorkerRequest>) => {
     const response: JsonPathWorkerResponse = {
       id,
       ranges: result.ranges,
+      values: result.values,
       totalResults: result.totalResults,
     };
     self.postMessage(response);
@@ -33,6 +35,7 @@ self.onmessage = (event: MessageEvent<JsonPathWorkerRequest>) => {
     const response: JsonPathWorkerResponse = {
       id,
       ranges: [],
+      values: [],
       totalResults: 0,
       error: error instanceof Error ? error.message : String(error),
     };

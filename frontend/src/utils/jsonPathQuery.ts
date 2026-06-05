@@ -10,10 +10,16 @@ export interface JsonPathQueryOptions {
 
 export interface JsonPathQueryResult {
   ranges: HighlightRange[];
+  values: unknown[];
   totalResults: number;
 }
 
 type JsonPathJson = null | boolean | number | string | object | unknown[];
+
+interface JsonPathMatch {
+  pointer: string;
+  value: unknown;
+}
 
 const toHighlightRange = (
   pointer: string,
@@ -57,29 +63,33 @@ export const queryJsonPathRanges = (
     throw new Error(`JSON 解析错误: ${message}`);
   }
 
-  let pointers: string[];
+  let matches: JsonPathMatch[];
   try {
-    pointers = JSONPath<string[]>({
+    matches = JSONPath<JsonPathMatch[]>({
       path: query,
       json: parsedData,
-      resultType: 'pointer',
+      resultType: 'all',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`JSONPath 查询错误: ${message}`);
   }
 
-  if (!pointers || pointers.length === 0) {
-    return { ranges: [], totalResults: 0 };
+  if (!matches || matches.length === 0) {
+    return { ranges: [], values: [], totalResults: 0 };
   }
 
   const sourceMap = parseJsonSourceMap(source);
-  const ranges = pointers
-    .map(pointer => toHighlightRange(pointer, sourceMap.pointers))
-    .filter((range): range is HighlightRange => range !== null);
+  const results = matches
+    .map(match => ({
+      range: toHighlightRange(match.pointer, sourceMap.pointers),
+      value: match.value,
+    }))
+    .filter((result): result is { range: HighlightRange; value: unknown } => result.range !== null);
 
   return {
-    ranges,
-    totalResults: ranges.length,
+    ranges: results.map(result => result.range),
+    values: results.map(result => result.value),
+    totalResults: results.length,
   };
 };
