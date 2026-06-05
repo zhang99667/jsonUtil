@@ -25,36 +25,40 @@ export const validateJson = (input: string): ValidationResult => {
 };
 
 export const detectLanguage = (input: string): string => {
-  if (typeof input !== 'string' || !input || !input.trim()) return 'plaintext';
-  const trimmed = input.trim();
+  if (typeof input !== 'string' || !input) return 'plaintext';
 
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) return 'json';
+  // 高频编辑路径先只裁剪开头，大 JSON 可直接通过前缀识别，避免完整 trim 扫描。
+  const trimmedStart = input.trimStart();
+  if (!trimmedStart) return 'plaintext';
 
-  if (trimmed.startsWith('<') && trimmed.includes('>')) {
-    return trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html') ? 'html' : 'xml';
+  if (trimmedStart.startsWith('{') || trimmedStart.startsWith('[')) return 'json';
+
+  if (trimmedStart.startsWith('<') && trimmedStart.includes('>')) {
+    return trimmedStart.startsWith('<!DOCTYPE') || trimmedStart.startsWith('<html') ? 'html' : 'xml';
   }
 
-  if (trimmed.includes('{') && trimmed.includes(':') && trimmed.includes(';') && !trimmed.startsWith('{')) {
+  if (trimmedStart.includes('{') && trimmedStart.includes(':') && trimmedStart.includes(';') && !trimmedStart.startsWith('{')) {
     return 'css';
   }
 
-  if (/^(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP)\s/i.test(trimmed)) {
+  if (/^(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP)\s/i.test(trimmedStart)) {
     return 'sql';
   }
 
   if (
-    trimmed.startsWith('export') ||
-    trimmed.startsWith('import') ||
-    trimmed.startsWith('const') ||
-    trimmed.startsWith('let') ||
-    trimmed.startsWith('var') ||
-    trimmed.startsWith('function') ||
-    trimmed.includes('=>') ||
-    (trimmed.startsWith('{') && !trimmed.includes('"'))
+    trimmedStart.startsWith('export') ||
+    trimmedStart.startsWith('import') ||
+    trimmedStart.startsWith('const') ||
+    trimmedStart.startsWith('let') ||
+    trimmedStart.startsWith('var') ||
+    trimmedStart.startsWith('function') ||
+    trimmedStart.includes('=>') ||
+    (trimmedStart.startsWith('{') && !trimmedStart.includes('"'))
   ) {
     return 'javascript';
   }
 
+  const trimmed = trimmedStart.trimEnd();
   if (trimmed === 'true' || trimmed === 'false' || trimmed === 'null') return 'json';
   if (!isNaN(Number(trimmed))) return 'json';
   if (trimmed.startsWith('"') && trimmed.endsWith('"')) return 'json';
