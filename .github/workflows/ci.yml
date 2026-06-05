@@ -2,6 +2,7 @@ name: CI
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  DOCKER_BUILD_RETRIES: '3'
 
 on:
   push:
@@ -103,10 +104,10 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Build backend image
-        run: docker build -t json-utils-backend:ci ./backend
+        run: bash .github/scripts/docker-build-with-retry.sh json-utils-backend:ci ./backend
 
       - name: Build frontend image
-        run: docker build -t json-utils-frontend:ci ./frontend
+        run: bash .github/scripts/docker-build-with-retry.sh json-utils-frontend:ci ./frontend
 
       - name: Validate compose config
         env:

@@ -48,6 +48,7 @@
 - **AI 修复可信度**: AI 返回结果写回编辑器前强制提取并校验有效 JSON，避免解释文本或无效内容覆盖源数据
 - **AI 修复超时保护**: AI 修复请求新增 30 秒超时，OpenAI 兼容接口会主动终止请求，避免服务无响应时界面一直处于处理中
 - **CI/CD 流水线建设**: 新增根目录 GitHub Actions CI/CD，覆盖前端检查、后端 Maven、Docker 构建和 SSH/rsync 远程部署
+- **CI Docker 构建抗抖**: Docker 镜像构建新增自动重试，降低 Docker Hub 临时 5xx 或元数据拉取失败导致的 CI 偶发失败
 - **部署脚本**: 新增本机 SSH 部署脚本与远程 Docker Compose 发布脚本，支持不依赖远端 git pull 的服务器发布
 - **Docker 部署优化**: Docker Compose 参数化数据库/JWT 配置，生产部署强制配置关键密钥，增加后端上传目录持久化和服务重启策略
 - **Actions Runtime 预适配**: GitHub Actions 提前启用 Node 24 action runtime，并升级官方 Actions 主版本，规避 Node 20 runtime 即将下线的兼容风险
