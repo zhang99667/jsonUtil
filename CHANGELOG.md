@@ -30,7 +30,7 @@
 - **Browserslist 数据更新**: 更新 `caniuse-lite` 与 baseline browser mapping 数据，消除生产构建中的 Browserslist 过期提示
 - **类型检查修复**: 修复 Ant Design、Monaco 与 ErrorBoundary 的既有 TypeScript 类型检查问题
 - **类型检查脚本**: 新增 `npm run typecheck`，便于本地和 CI 复用完整类型检查
-- **E2E 冒烟测试**: 新增 Playwright 浏览器冒烟测试，覆盖主应用加载、格式化、压缩、JSONPath 查询和 CMD/Scheme 参数解析关键路径，并接入 GitHub Actions
+- **E2E 冒烟测试**: 新增 Playwright 浏览器冒烟测试，覆盖主应用加载、格式化、压缩、JSONPath 查询、CMD/Scheme 参数解析和 AI 修复写回关键路径，并接入 GitHub Actions
 - **依赖安全收口**: 升级 Axios、Vite、Vitest、Rollup、DOMPurify 等前端依赖解析版本，清零 `npm audit` 全量漏洞，并收敛 Ant Design 运行时分包循环
 - **测试覆盖**: 补充 URL 编解码、Base64 编解码、Key 排序、CMD 参数递归解析和反向转换单元测试
 
