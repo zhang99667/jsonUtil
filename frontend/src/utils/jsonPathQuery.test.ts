@@ -14,6 +14,7 @@ describe('queryJsonPathRanges', () => {
 
     expect(result.totalResults).toBe(2);
     expect(result.ranges).toHaveLength(2);
+    expect(result.values).toEqual(['Alice', 'Bob']);
     expect(result.ranges[0].startLine).toBeGreaterThan(0);
     expect(result.ranges[0].startColumn).toBeGreaterThan(0);
   });
@@ -21,7 +22,7 @@ describe('queryJsonPathRanges', () => {
   it('无匹配时返回空范围', () => {
     const result = queryJsonPathRanges('{"name":"Alice"}', '$.missing');
 
-    expect(result).toEqual({ ranges: [], totalResults: 0 });
+    expect(result).toEqual({ ranges: [], values: [], totalResults: 0 });
   });
 
   it('支持先深度格式化再查询嵌套 JSON 字符串', () => {
@@ -35,6 +36,7 @@ describe('queryJsonPathRanges', () => {
 
     expect(result.totalResults).toBe(1);
     expect(result.ranges[0]).toBeDefined();
+    expect(result.values).toEqual(['Alice']);
   });
 
   it('非法 JSON 抛出可展示错误', () => {

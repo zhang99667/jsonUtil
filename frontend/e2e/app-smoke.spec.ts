@@ -43,6 +43,14 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript((featureTourIds: string[]) => {
     Object.defineProperty(window, 'showOpenFilePicker', { value: undefined, configurable: true });
     Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
+        writeText: async (text: string) => {
+          window.localStorage.setItem('mock-clipboard', text);
+        },
+      },
+      configurable: true,
+    });
 
     window.localStorage.setItem('json-helper-onboarding-completed', 'true');
     window.localStorage.setItem('json-helper-ai-config', JSON.stringify({
@@ -259,6 +267,10 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await page.getByRole('button', { name: '查询', exact: true }).click();
 
   await expect(page.getByText('1 / 2')).toBeVisible();
+  await page.getByRole('button', { name: '复制全部结果' }).click();
+  await expect(page.getByText('查询结果已复制')).toBeVisible();
+  const copiedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
+  expect(copiedResult).toBe(JSON.stringify(['Ada', 'Bob'], null, 2));
 
   await page.locator('[data-tour="jsonpath-favorite-toggle"]').click();
   await expect(page.locator('[data-tour="jsonpath-favorites"]')).toContainText('$.users[*].name');

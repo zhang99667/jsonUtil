@@ -4,6 +4,7 @@ import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { HighlightRange } from '../types';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
+import { showError, showSuccess } from '../utils/toast';
 import {
     addJsonPathListItem,
     JSONPATH_FAVORITES_STORAGE_KEY,
@@ -11,6 +12,15 @@ import {
     parseStoredJsonPathList,
     removeJsonPathListItem
 } from '../utils/jsonPathLists';
+
+const formatJsonPathValuesForCopy = (values: unknown[]): string => {
+    if (values.length === 1) {
+        const [value] = values;
+        return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+    }
+
+    return JSON.stringify(values, null, 2);
+};
 
 interface JsonPathPanelProps {
     jsonData: string;
@@ -42,6 +52,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     // 查询结果状态
     const [queryRanges, setQueryRanges] = useState<HighlightRange[]>([]);
+    const [queryValues, setQueryValues] = useState<unknown[]>([]);
     const [currentResultIndex, setCurrentResultIndex] = useState<number>(0);
     const [totalResults, setTotalResults] = useState<number>(0);
     const [isQuerying, setIsQuerying] = useState<boolean>(false);
@@ -131,6 +142,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         requestIdRef.current++;
         setIsQuerying(false);
         setQueryRanges([]);
+        setQueryValues([]);
         setTotalResults(0);
         setCurrentResultIndex(0);
         onHighlightRange(null);
@@ -159,6 +171,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         worker.onmessage = (event: MessageEvent<{
             id: number;
             ranges: HighlightRange[];
+            values: unknown[];
             totalResults: number;
             error?: string;
         }>) => {
@@ -172,6 +185,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             if (event.data.error) {
                 setError(event.data.error);
                 setQueryRanges([]);
+                setQueryValues([]);
                 setTotalResults(0);
                 setCurrentResultIndex(0);
                 onHighlightRange(null);
@@ -181,6 +195,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             if (event.data.totalResults === 0) {
                 setError('未找到匹配项');
                 setQueryRanges([]);
+                setQueryValues([]);
                 setTotalResults(0);
                 setCurrentResultIndex(0);
                 onHighlightRange(null);
@@ -188,6 +203,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             }
 
             setQueryRanges(event.data.ranges);
+            setQueryValues(event.data.values);
             setTotalResults(event.data.totalResults);
             setCurrentResultIndex(0);
             onHighlightRange(event.data.ranges[0] || null);
@@ -205,6 +221,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             setIsQuerying(false);
             setError(`JSONPath 查询错误: ${event.message}`);
             setQueryRanges([]);
+            setQueryValues([]);
             setTotalResults(0);
             setCurrentResultIndex(0);
             onHighlightRange(null);
@@ -278,6 +295,18 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 ? removeJsonPathListItem(prev, normalizedQuery)
                 : addJsonPathListItem(prev, normalizedQuery)
         ));
+    };
+
+    const copyQueryResults = async () => {
+        if (queryValues.length === 0) return;
+
+        try {
+            await navigator.clipboard.writeText(formatJsonPathValuesForCopy(queryValues));
+            showSuccess('查询结果已复制');
+        } catch (error) {
+            console.warn('复制 JSONPath 查询结果失败:', error);
+            showError('复制查询结果失败');
+        }
     };
 
     return (
@@ -417,6 +446,17 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             </span>
                         </div>
                         <div className="flex items-center gap-1">
+                            <button
+                                onClick={copyQueryResults}
+                                disabled={isQuerying || queryValues.length === 0}
+                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="复制全部结果"
+                                aria-label="复制全部结果"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </button>
                             <button
                                 onClick={goToPrevious}
                                 disabled={isQuerying}
