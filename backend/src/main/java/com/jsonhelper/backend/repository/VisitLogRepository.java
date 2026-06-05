@@ -1,6 +1,7 @@
 package com.jsonhelper.backend.repository;
 
 import com.jsonhelper.backend.entity.VisitLog;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -59,7 +60,7 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
     @Query("SELECT v.ip, COUNT(v) as cnt FROM VisitLog v " +
            "WHERE v.createdAt >= :start AND v.createdAt < :end " +
            "GROUP BY v.ip ORDER BY cnt DESC")
-    List<Object[]> countByIpTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<Object[]> countByIpTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
 
     /**
      * 按路径统计访问次数排行
@@ -68,7 +69,7 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
     @Query("SELECT v.path, COUNT(v) as cnt FROM VisitLog v " +
            "WHERE v.createdAt >= :start AND v.createdAt < :end " +
            "GROUP BY v.path ORDER BY cnt DESC")
-    List<Object[]> countByPathTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<Object[]> countByPathTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
 
     /**
      * 按小时统计访问分布（24小时，使用原生SQL，兼容PostgreSQL）

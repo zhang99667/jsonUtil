@@ -4,6 +4,7 @@ import com.jsonhelper.backend.dto.response.*;
 import com.jsonhelper.backend.entity.VisitLog;
 import com.jsonhelper.backend.repository.VisitLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -103,13 +104,16 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<IpStatsDTO> getTopIps(int days, int limit) {
+        if (limit <= 0) {
+            return Collections.emptyList();
+        }
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
 
-        List<Object[]> data = visitLogRepository.countByIpTopN(start, now);
+        List<Object[]> data = visitLogRepository.countByIpTopN(start, now, PageRequest.of(0, limit));
 
         return data.stream()
-                .limit(limit)
                 .map(row -> {
                     String ip = (String) row[0];
                     GeoService.GeoInfo geoInfo = geoService.parseIp(ip);
@@ -129,13 +133,16 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<PathStatsDTO> getTopPaths(int days, int limit) {
+        if (limit <= 0) {
+            return Collections.emptyList();
+        }
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
 
-        List<Object[]> data = visitLogRepository.countByPathTopN(start, now);
+        List<Object[]> data = visitLogRepository.countByPathTopN(start, now, PageRequest.of(0, limit));
 
         return data.stream()
-                .limit(limit)
                 .map(row -> PathStatsDTO.builder()
                         .path((String) row[0])
                         .count(((Number) row[1]).longValue())
