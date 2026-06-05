@@ -75,6 +75,7 @@ const TrafficStats: React.FC = () => {
     const [refererStats, setRefererStats] = useState<RefererStatsItem[]>([]);
     const [sessionStats, setSessionStats] = useState<SessionStatsItem[]>([]);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const requestIdRef = useRef(0);
 
     const isToday = days === 1;
 
@@ -89,6 +90,7 @@ const TrafficStats: React.FC = () => {
     };
 
     const fetchAllData = useCallback(async () => {
+        const requestId = ++requestIdRef.current;
         setLoading(true);
         try {
             const [overviewData, trendData, ipsData, pathsData, hourlyData, geoData, deviceData, browserData, refererData, sessionData] = await Promise.all([
@@ -103,6 +105,10 @@ const TrafficStats: React.FC = () => {
                 getRefererDistribution(days, 10),
                 getSessionDuration(days),
             ]);
+            // 只允许最新一次请求更新页面，避免快速切换统计范围时旧响应回写。
+            if (requestId !== requestIdRef.current) {
+                return;
+            }
             setOverview(overviewData);
             setTrend(trendData);
             setTopIps(ipsData);
@@ -114,9 +120,14 @@ const TrafficStats: React.FC = () => {
             setRefererStats(refererData);
             setSessionStats(sessionData);
         } catch (error) {
+            if (requestId !== requestIdRef.current) {
+                return;
+            }
             console.error('Failed to fetch traffic data:', error);
         } finally {
-            setLoading(false);
+            if (requestId === requestIdRef.current) {
+                setLoading(false);
+            }
         }
     }, [days]);
 
@@ -127,8 +138,10 @@ const TrafficStats: React.FC = () => {
             intervalRef.current = setInterval(fetchAllData, 5 * 60 * 1000);
         }
         return () => {
+            requestIdRef.current += 1;
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
+                intervalRef.current = null;
             }
         };
     }, [fetchAllData, isToday]);
