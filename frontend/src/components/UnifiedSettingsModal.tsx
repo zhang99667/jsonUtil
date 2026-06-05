@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider, GeneralSettings } from '../types';
+import { testAIConnection } from '../services/aiService';
 
 interface UnifiedSettingsModalProps {
     isOpen: boolean;
@@ -46,12 +47,15 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     const [recordingAction, setRecordingAction] = useState<ShortcutAction | null>(null);
     const [localAIConfig, setLocalAIConfig] = useState<AIConfig>(aiConfig);
     const [localGeneralSettings, setLocalGeneralSettings] = useState<GeneralSettings>(generalSettings);
+    const [isTestingAI, setIsTestingAI] = useState(false);
+    const [aiTestResult, setAiTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const importBackupInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             setLocalAIConfig(aiConfig);
             setLocalGeneralSettings(generalSettings);
+            setAiTestResult(null);
         }
     }, [isOpen, aiConfig, generalSettings]);
 
@@ -119,6 +123,21 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     const handleSaveAI = () => {
         onSaveAIConfig(localAIConfig);
         onClose();
+    };
+
+    const handleTestAIConnection = async () => {
+        setIsTestingAI(true);
+        setAiTestResult(null);
+
+        try {
+            await testAIConnection(localAIConfig);
+            setAiTestResult({ type: 'success', message: '连接测试通过' });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '连接测试失败';
+            setAiTestResult({ type: 'error', message });
+        } finally {
+            setIsTestingAI(false);
+        }
     };
 
     const handleSaveGeneral = () => {
@@ -331,6 +350,19 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                 </p>
                             </div>
                         )}
+
+                        {aiTestResult && (
+                            <div
+                                role={aiTestResult.type === 'success' ? 'status' : 'alert'}
+                                className={`text-xs rounded p-3 border ${
+                                    aiTestResult.type === 'success'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                                        : 'bg-red-500/10 border-red-500/20 text-red-300'
+                                }`}
+                            >
+                                {aiTestResult.message}
+                            </div>
+                        )}
                     </div>
 
                     {/* 通用设置 */}
@@ -442,12 +474,21 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             >
                                 取消
                             </button>
-                            <button
-                                onClick={handleSaveAI}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
-                            >
-                                保存设置
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleTestAIConnection}
+                                    disabled={isTestingAI}
+                                    className="text-sm text-gray-300 border border-editor-border px-4 py-2 rounded hover:text-white hover:border-emerald-500 hover:bg-editor-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isTestingAI ? '测试中...' : '测试连接'}
+                                </button>
+                                <button
+                                    onClick={handleSaveAI}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
+                                >
+                                    保存设置
+                                </button>
+                            </div>
                         </>
                     ) : (
                         <>

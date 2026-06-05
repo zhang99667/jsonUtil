@@ -3,6 +3,8 @@ import { AIConfig, AIProvider } from "../types";
 
 export const AI_REPAIR_TIMEOUT_MS = 30_000;
 export const AI_REPAIR_TIMEOUT_MESSAGE = 'AI 修复超时，请稍后重试或检查网络/模型配置';
+export const AI_CONNECTION_TEST_TIMEOUT_MS = 10_000;
+export const AI_CONNECTION_TEST_TIMEOUT_MESSAGE = 'AI 连接测试超时，请检查网络/模型配置';
 
 interface FixJsonWithAIOptions {
   timeoutMs?: number;
@@ -144,6 +146,24 @@ export const fixJsonWithAI = async (
 
     // 其他未知错误
     throw new Error('AI 修复失败: ' + errorMessage);
+  }
+};
+
+export const testAIConnection = async (
+  config: AIConfig,
+  options: FixJsonWithAIOptions = {}
+): Promise<void> => {
+  try {
+    await fixJsonWithAI('{connection:true}', config, {
+      ...options,
+      timeoutMs: options.timeoutMs ?? AI_CONNECTION_TEST_TIMEOUT_MS,
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage === AI_REPAIR_TIMEOUT_MESSAGE) {
+      throw new Error(AI_CONNECTION_TEST_TIMEOUT_MESSAGE);
+    }
+    throw error;
   }
 };
 
