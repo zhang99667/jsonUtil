@@ -50,9 +50,11 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     const [isTestingAI, setIsTestingAI] = useState(false);
     const [aiTestResult, setAiTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const importBackupInputRef = useRef<HTMLInputElement | null>(null);
+    const aiConfigVersionRef = useRef(0);
 
     useEffect(() => {
         if (isOpen) {
+            aiConfigVersionRef.current++;
             setLocalAIConfig(aiConfig);
             setLocalGeneralSettings(generalSettings);
             setAiTestResult(null);
@@ -125,16 +127,27 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         onClose();
     };
 
+    const updateLocalAIConfig = (patch: Partial<AIConfig>) => {
+        aiConfigVersionRef.current++;
+        setAiTestResult(null);
+        setLocalAIConfig(prev => ({ ...prev, ...patch }));
+    };
+
     const handleTestAIConnection = async () => {
+        const testVersion = aiConfigVersionRef.current;
         setIsTestingAI(true);
         setAiTestResult(null);
 
         try {
             await testAIConnection(localAIConfig);
-            setAiTestResult({ type: 'success', message: '连接测试通过' });
+            if (testVersion === aiConfigVersionRef.current) {
+                setAiTestResult({ type: 'success', message: '连接测试通过' });
+            }
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '连接测试失败';
-            setAiTestResult({ type: 'error', message });
+            if (testVersion === aiConfigVersionRef.current) {
+                setAiTestResult({ type: 'error', message });
+            }
         } finally {
             setIsTestingAI(false);
         }
@@ -272,7 +285,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">AI 提供商</label>
                             <select
                                 value={localAIConfig.provider}
-                                onChange={(e) => setLocalAIConfig({ ...localAIConfig, provider: e.target.value as AIProvider })}
+                                onChange={(e) => updateLocalAIConfig({ provider: e.target.value as AIProvider })}
                                 className="w-full bg-editor-bg border border-editor-border text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5"
                             >
                                 <option value={AIProvider.GEMINI}>Google Gemini</option>
@@ -291,7 +304,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             <input
                                 type="password"
                                 value={localAIConfig.apiKey}
-                                onChange={(e) => setLocalAIConfig({ ...localAIConfig, apiKey: e.target.value })}
+                                onChange={(e) => updateLocalAIConfig({ apiKey: e.target.value })}
                                 placeholder="sk-..."
                                 className="w-full bg-editor-bg border border-editor-border text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5 placeholder-gray-600"
                             />
@@ -303,7 +316,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             <input
                                 type="text"
                                 value={localAIConfig.model}
-                                onChange={(e) => setLocalAIConfig({ ...localAIConfig, model: e.target.value })}
+                                onChange={(e) => updateLocalAIConfig({ model: e.target.value })}
                                 placeholder={
                                     localAIConfig.provider === AIProvider.GEMINI ? "gemini-2.0-flash" :
                                         localAIConfig.provider === AIProvider.QWEN ? "qwen-max" :
@@ -325,7 +338,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                 <input
                                     type="text"
                                     value={localAIConfig.baseUrl || ''}
-                                    onChange={(e) => setLocalAIConfig({ ...localAIConfig, baseUrl: e.target.value })}
+                                    onChange={(e) => updateLocalAIConfig({ baseUrl: e.target.value })}
                                     placeholder={
                                         localAIConfig.provider === AIProvider.OPENAI ? "https://api.openai.com/v1" :
                                             localAIConfig.provider === AIProvider.QWEN ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
