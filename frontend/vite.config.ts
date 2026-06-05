@@ -69,8 +69,13 @@ export default defineConfig(({ mode }) => {
 
             if (!packageName) return 'vendor';
 
-            if (packageName.startsWith('rc-') || packageName.startsWith('@rc-component/')) return 'vendor-rc';
-            if (packageName.startsWith('@ant-design/')) return 'vendor-antd-deps';
+            if (
+              packageName.startsWith('rc-') ||
+              packageName.startsWith('@rc-component/') ||
+              packageName.startsWith('@ant-design/')
+            ) {
+              return 'vendor-antd-deps';
+            }
             if (packageName.startsWith('@babel/') || packageName === 'tslib') return 'vendor-runtime';
             if (packageName === 'axios') return 'vendor-http';
             if (packageName === 'html2canvas') return 'vendor-html2canvas';
