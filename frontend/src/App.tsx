@@ -7,6 +7,7 @@ import { CodeEditor } from './components/Editor';
 import { JsonPathPanel } from './components/JsonPathPanel';
 import { SchemeViewerModal } from './components/SchemeViewerModal';
 import { TemplateFillPanel } from './components/TemplateFillPanel';
+import { AiRepairSummaryBanner } from './components/AiRepairSummaryBanner';
 import {
   validateJson,
   performTransform,
@@ -26,6 +27,8 @@ import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import ErrorBoundary from './components/ErrorBoundary';
 import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
+import { buildAiRepairSummary } from './utils/aiRepairSummary';
+import type { AiRepairSummary } from './utils/aiRepairSummary';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -103,6 +106,7 @@ const App: React.FC = () => {
   const sourceValidationRequestIdRef = useRef(0);
   const previewValidationRequestIdRef = useRef(0);
   const outputSyncRequestIdRef = useRef(0);
+  const aiRepairSnapshotRef = useRef<string | null>(null);
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
   const shouldUseAsyncTransform = (
     input.length >= ASYNC_TRANSFORM_THRESHOLD &&
@@ -287,6 +291,7 @@ const App: React.FC = () => {
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
+  const [aiRepairSummary, setAiRepairSummary] = useState<AiRepairSummary | null>(null);
 
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
 
@@ -314,6 +319,14 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('json-helper-ai-config', JSON.stringify(aiConfig));
   }, [aiConfig]);
+
+  useEffect(() => {
+    if (!aiRepairSummary) return;
+    if (aiRepairSnapshotRef.current !== input) {
+      aiRepairSnapshotRef.current = null;
+      setAiRepairSummary(null);
+    }
+  }, [input, aiRepairSummary]);
 
   // 访客统计打点 (仅统计前台页面访问)
   useEffect(() => {
@@ -449,6 +462,10 @@ const App: React.FC = () => {
   const handleInputChange = useCallback((newVal: string) => {
     // 实时清理不可见字符
     const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
+    if (aiRepairSnapshotRef.current !== cleanVal) {
+      aiRepairSnapshotRef.current = null;
+      setAiRepairSummary(null);
+    }
     setInput(cleanVal);
 
     // 同步更新 Ref 状态
@@ -661,6 +678,8 @@ const App: React.FC = () => {
       try {
         // AI 修复针对源输入进行
         const fixed = await fixJsonWithAI(input, aiConfig);
+        aiRepairSnapshotRef.current = fixed;
+        setAiRepairSummary(buildAiRepairSummary(input, fixed));
         setInput(fixed);
         inputRef.current = fixed; // 同步 Ref 状态
         // 修复后自动切换至格式化视图
@@ -790,7 +809,20 @@ const App: React.FC = () => {
         )}
 
         {/* 双栏编辑器区域 */}
-        <div className="flex-1 flex min-w-0 bg-editor-bg">
+        <div className="flex-1 flex flex-col min-w-0 bg-editor-bg">
+          {aiRepairSummary && (
+            <AiRepairSummaryBanner
+              summary={aiRepairSummary}
+              onClose={() => {
+                aiRepairSnapshotRef.current = null;
+                setAiRepairSummary(null);
+              }}
+              onCopySuccess={() => showSuccess('已复制 AI 修复摘要')}
+              onCopyError={() => showError('复制 AI 修复摘要失败')}
+            />
+          )}
+
+          <div className="flex-1 flex min-h-0">
 
           {/* 左栏：源文件编辑 */}
           <div data-tour="source-editor" style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
@@ -884,6 +916,7 @@ const App: React.FC = () => {
                 </button>
               }
             />
+          </div>
           </div>
         </div>
 
