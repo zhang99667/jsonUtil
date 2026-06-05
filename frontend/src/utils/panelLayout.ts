@@ -1,3 +1,5 @@
+import { safeRemoveStorageItem } from './storage';
+
 export const PANEL_LAYOUT_RESET_EVENT = 'json-helper-panel-layout-reset';
 
 export const FLOATING_PANEL_STORAGE_KEYS = [
@@ -11,8 +13,8 @@ export const resetFloatingPanelLayoutStorage = (
   keys: readonly string[] = FLOATING_PANEL_STORAGE_KEYS
 ) => {
   keys.forEach(key => {
-    storage.removeItem(`${key}-position`);
-    storage.removeItem(`${key}-size`);
+    safeRemoveStorageItem(`${key}-position`, storage);
+    safeRemoveStorageItem(`${key}-size`, storage);
   });
 };
 

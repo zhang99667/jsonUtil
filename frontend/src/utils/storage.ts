@@ -23,3 +23,30 @@ export const parseJsonWithFallback = <T>(
     return fallback;
   }
 };
+
+export const safeSetStorageItem = (
+  key: string,
+  value: string,
+  storage: Storage = localStorage
+): boolean => {
+  try {
+    storage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.warn(`写入本地存储失败: ${key}`, error);
+    return false;
+  }
+};
+
+export const safeRemoveStorageItem = (
+  key: string,
+  storage: Storage = localStorage
+): boolean => {
+  try {
+    storage.removeItem(key);
+    return true;
+  } catch (error) {
+    console.warn(`删除本地存储失败: ${key}`, error);
+    return false;
+  }
+};

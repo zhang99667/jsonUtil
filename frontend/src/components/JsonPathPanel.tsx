@@ -5,6 +5,7 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { HighlightRange } from '../types';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { showError, showSuccess } from '../utils/toast';
+import { safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import {
     addJsonPathListItem,
     JSONPATH_FAVORITES_STORAGE_KEY,
@@ -109,12 +110,12 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     // 保存历史记录到 localStorage
     useEffect(() => {
-        localStorage.setItem(JSONPATH_HISTORY_STORAGE_KEY, JSON.stringify(history));
+        safeSetStorageItem(JSONPATH_HISTORY_STORAGE_KEY, JSON.stringify(history));
     }, [history]);
 
     // 保存收藏查询到 localStorage
     useEffect(() => {
-        localStorage.setItem(JSONPATH_FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+        safeSetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
     }, [favorites]);
 
     // 配置备份导入后同步刷新已挂载面板中的收藏和历史
@@ -281,7 +282,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const clearHistory = () => {
         setHistory([]);
-        localStorage.removeItem(JSONPATH_HISTORY_STORAGE_KEY);
+        safeRemoveStorageItem(JSONPATH_HISTORY_STORAGE_KEY);
     };
 
     const normalizedQuery = query.trim();

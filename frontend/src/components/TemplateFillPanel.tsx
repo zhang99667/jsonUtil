@@ -4,6 +4,7 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { validateJson } from '../utils/transformations';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { TEMPLATE_FILL_STORAGE_KEY, loadTemplateFillConfig } from '../utils/appSettings';
+import { safeSetStorageItem } from '../utils/storage';
 
 interface TemplateFillPanelProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
 
   // 自动保存到 localStorage
   useEffect(() => {
-    localStorage.setItem(TEMPLATE_FILL_STORAGE_KEY, JSON.stringify({
+    safeSetStorageItem(TEMPLATE_FILL_STORAGE_KEY, JSON.stringify({
       template,
       lastUpdated: Date.now(),
     }));
