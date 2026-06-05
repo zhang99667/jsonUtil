@@ -1,8 +1,10 @@
 package com.jsonhelper.backend.service;
 
+import com.jsonhelper.backend.dto.response.DeviceStatsDTO;
 import com.jsonhelper.backend.dto.response.IpStatsDTO;
 import com.jsonhelper.backend.dto.response.GeoStatsDTO;
 import com.jsonhelper.backend.dto.response.PathStatsDTO;
+import com.jsonhelper.backend.dto.response.RefererStatsDTO;
 import com.jsonhelper.backend.repository.VisitLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,5 +109,79 @@ class TrafficServiceTest {
 
         verify(geoService, times(1)).parseIp("10.0.0.1");
         verify(geoService, times(1)).parseIp("8.8.8.8");
+    }
+
+    @Test
+    void nonPositiveDistributionLimitReturnsEmptyWithoutQueryingRepository() {
+        assertTrue(trafficService.getDeviceDistribution(7, 0).isEmpty());
+        assertTrue(trafficService.getBrowserDistribution(7, -1).isEmpty());
+        assertTrue(trafficService.getRefererDistribution(7, 0).isEmpty());
+
+        verifyNoInteractions(visitLogRepository, geoService);
+    }
+
+    @Test
+    void getDeviceDistributionAggregatesByUserAgentCountBeforeParsingDevice() {
+        when(visitLogRepository.countByUserAgentInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.<Object[]>of(
+                        new Object[] { "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", 3L },
+                        new Object[] { "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148", 2L }
+                ));
+
+        List<DeviceStatsDTO> result = trafficService.getDeviceDistribution(7, 10);
+
+        assertEquals(2, result.size());
+        assertEquals("电脑", result.get(0).getDevice());
+        assertEquals(3L, result.get(0).getCount());
+        assertEquals(60.0, result.get(0).getPercentage());
+        assertEquals("手机", result.get(1).getDevice());
+        assertEquals(2L, result.get(1).getCount());
+        assertEquals(40.0, result.get(1).getPercentage());
+    }
+
+    @Test
+    void getBrowserDistributionAggregatesByUserAgentCountBeforeParsingBrowser() {
+        when(visitLogRepository.countByUserAgentInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.<Object[]>of(
+                        new Object[] {
+                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                                        + "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                                4L
+                        },
+                        new Object[] {
+                                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) "
+                                        + "Gecko/20100101 Firefox/125.0",
+                                1L
+                        }
+                ));
+
+        List<DeviceStatsDTO> result = trafficService.getBrowserDistribution(7, 10);
+
+        assertEquals(2, result.size());
+        assertEquals("Chrome", result.get(0).getBrowser());
+        assertEquals(4L, result.get(0).getCount());
+        assertEquals(80.0, result.get(0).getPercentage());
+        assertEquals("Firefox", result.get(1).getBrowser());
+        assertEquals(1L, result.get(1).getCount());
+        assertEquals(20.0, result.get(1).getPercentage());
+    }
+
+    @Test
+    void getRefererDistributionAggregatesByRefererCountBeforeParsingSource() {
+        when(visitLogRepository.countByRefererInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.<Object[]>of(
+                        new Object[] { null, 3L },
+                        new Object[] { "https://github.com/example", 2L }
+                ));
+
+        List<RefererStatsDTO> result = trafficService.getRefererDistribution(7, 10);
+
+        assertEquals(2, result.size());
+        assertEquals("直接访问", result.get(0).getSource());
+        assertEquals(3L, result.get(0).getCount());
+        assertEquals(60.0, result.get(0).getPercentage());
+        assertEquals("技术社区", result.get(1).getSource());
+        assertEquals(2L, result.get(1).getCount());
+        assertEquals(40.0, result.get(1).getPercentage());
     }
 }

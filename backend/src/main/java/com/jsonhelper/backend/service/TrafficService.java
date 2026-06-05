@@ -230,30 +230,38 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<DeviceStatsDTO> getDeviceDistribution(int days, int limit) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
-
-        List<VisitLog> logs = visitLogRepository.findByCreatedAtBetween(start, now);
-        
-        if (logs.isEmpty()) {
+        if (limit <= 0) {
             return Collections.emptyList();
         }
 
-        // 按设备类型统计
-        Map<String, Long> deviceCountMap = new HashMap<>();
-        for (VisitLog log : logs) {
-            String device = parseDeviceType(log.getUserAgent());
-            deviceCountMap.merge(device, 1L, Long::sum);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+
+        List<Object[]> userAgentCounts = visitLogRepository.countByUserAgentInRange(start, now);
+
+        if (userAgentCounts.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        long total = logs.size();
+        // 先按UA在数据库聚合，再按访问次数累加设备类型
+        Map<String, Long> deviceCountMap = new HashMap<>();
+        long total = 0;
+        for (Object[] row : userAgentCounts) {
+            String userAgent = (String) row[0];
+            long count = ((Number) row[1]).longValue();
+            String device = parseDeviceType(userAgent);
+            deviceCountMap.merge(device, count, Long::sum);
+            total += count;
+        }
+
+        final long finalTotal = Math.max(total, 1);
 
         return deviceCountMap.entrySet().stream()
                 .map(entry -> DeviceStatsDTO.builder()
                         .device(entry.getKey())
                         .browser(null)
                         .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / total) / 100.0)
+                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
                         .build())
                 .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
                 .limit(limit)
@@ -266,30 +274,38 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<DeviceStatsDTO> getBrowserDistribution(int days, int limit) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
-
-        List<VisitLog> logs = visitLogRepository.findByCreatedAtBetween(start, now);
-        
-        if (logs.isEmpty()) {
+        if (limit <= 0) {
             return Collections.emptyList();
         }
 
-        // 按浏览器统计
-        Map<String, Long> browserCountMap = new HashMap<>();
-        for (VisitLog log : logs) {
-            String browser = parseBrowser(log.getUserAgent());
-            browserCountMap.merge(browser, 1L, Long::sum);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+
+        List<Object[]> userAgentCounts = visitLogRepository.countByUserAgentInRange(start, now);
+
+        if (userAgentCounts.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        long total = logs.size();
+        // 先按UA在数据库聚合，再按访问次数累加浏览器类型
+        Map<String, Long> browserCountMap = new HashMap<>();
+        long total = 0;
+        for (Object[] row : userAgentCounts) {
+            String userAgent = (String) row[0];
+            long count = ((Number) row[1]).longValue();
+            String browser = parseBrowser(userAgent);
+            browserCountMap.merge(browser, count, Long::sum);
+            total += count;
+        }
+
+        final long finalTotal = Math.max(total, 1);
 
         return browserCountMap.entrySet().stream()
                 .map(entry -> DeviceStatsDTO.builder()
                         .device(null)
                         .browser(entry.getKey())
                         .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / total) / 100.0)
+                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
                         .build())
                 .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
                 .limit(limit)
@@ -302,30 +318,38 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<RefererStatsDTO> getRefererDistribution(int days, int limit) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
-
-        List<VisitLog> logs = visitLogRepository.findByCreatedAtBetween(start, now);
-        
-        if (logs.isEmpty()) {
+        if (limit <= 0) {
             return Collections.emptyList();
         }
 
-        // 按来源分类统计
-        Map<String, Long> sourceCountMap = new HashMap<>();
-        for (VisitLog log : logs) {
-            String source = parseRefererSource(log.getReferer());
-            sourceCountMap.merge(source, 1L, Long::sum);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+
+        List<Object[]> refererCounts = visitLogRepository.countByRefererInRange(start, now);
+
+        if (refererCounts.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        long total = logs.size();
+        // 先按Referer在数据库聚合，再按访问次数累加来源分类
+        Map<String, Long> sourceCountMap = new HashMap<>();
+        long total = 0;
+        for (Object[] row : refererCounts) {
+            String referer = (String) row[0];
+            long count = ((Number) row[1]).longValue();
+            String source = parseRefererSource(referer);
+            sourceCountMap.merge(source, count, Long::sum);
+            total += count;
+        }
+
+        final long finalTotal = Math.max(total, 1);
 
         return sourceCountMap.entrySet().stream()
                 .map(entry -> RefererStatsDTO.builder()
                         .source(entry.getKey())
                         .domain(null)
                         .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / total) / 100.0)
+                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
                         .build())
                 .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
                 .limit(limit)
