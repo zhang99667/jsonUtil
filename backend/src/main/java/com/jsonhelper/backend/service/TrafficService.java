@@ -185,33 +185,39 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<GeoStatsDTO> getGeoDistribution(int days, int limit) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
-
-        // 获取指定时间范围内的所有访问记录
-        List<VisitLog> logs = visitLogRepository.findByCreatedAtBetween(start, now);
-        
-        if (logs.isEmpty()) {
+        if (limit <= 0) {
             return Collections.emptyList();
         }
 
-        // 按地区统计访问次数
-        Map<String, Long> regionCountMap = new HashMap<>();
-        for (VisitLog log : logs) {
-            GeoService.GeoInfo geoInfo = geoService.parseIp(log.getIp());
-            String region = geoInfo.getRegionForStats();
-            regionCountMap.merge(region, 1L, Long::sum);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+
+        List<Object[]> ipCounts = visitLogRepository.countByIpInRange(start, now);
+
+        if (ipCounts.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        // 计算总数用于百分比
-        long total = logs.size();
+        // 先按IP在数据库聚合，再按访问次数累加地区，避免重复解析相同IP
+        Map<String, Long> regionCountMap = new HashMap<>();
+        long total = 0;
+        for (Object[] row : ipCounts) {
+            String ip = (String) row[0];
+            long count = ((Number) row[1]).longValue();
+            GeoService.GeoInfo geoInfo = geoService.parseIp(ip);
+            String region = geoInfo.getRegionForStats();
+            regionCountMap.merge(region, count, Long::sum);
+            total += count;
+        }
+
+        final long finalTotal = Math.max(total, 1);
 
         // 转换为DTO并排序
         return regionCountMap.entrySet().stream()
                 .map(entry -> GeoStatsDTO.builder()
                         .region(entry.getKey())
                         .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / total) / 100.0)
+                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
                         .build())
                 .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
                 .limit(limit)
