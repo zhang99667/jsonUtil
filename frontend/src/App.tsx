@@ -30,6 +30,7 @@ import { getDocumentStats } from './utils/documentStats';
 import { buildAiRepairSummary } from './utils/aiRepairSummary';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
 import { isRecord, parseJsonWithFallback } from './utils/storage';
+import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -811,6 +812,12 @@ const App: React.FC = () => {
     setHighlightRange(range);
   }, []);
 
+  const handleResetPanelLayout = useCallback(() => {
+    resetFloatingPanelLayoutStorage();
+    notifyFloatingPanelLayoutReset();
+    showSuccess('浮动面板布局已恢复默认');
+  }, []);
+
   return (
     <ErrorBoundary>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
@@ -825,6 +832,7 @@ const App: React.FC = () => {
         onSaveAIConfig={setAiConfig}
         generalSettings={generalSettings}
         onSaveGeneralSettings={setGeneralSettings}
+        onResetPanelLayout={handleResetPanelLayout}
       />
 
 
