@@ -40,7 +40,7 @@ class TrafficServiceTest {
     @Test
     void getTopIpsPassesLimitToRepositoryPageable() {
         when(visitLogRepository.countByIpTopN(any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class)))
-                .thenReturn(List.of(new Object[] { "127.0.0.1", 3L }));
+                .thenReturn(List.<Object[]>of(new Object[] { "127.0.0.1", 3L }));
         when(geoService.parseIp("127.0.0.1"))
                 .thenReturn(new GeoService.GeoInfo("本地/内网", "本地/内网", "本地/内网"));
 
@@ -59,7 +59,7 @@ class TrafficServiceTest {
     @Test
     void getTopPathsPassesLimitToRepositoryPageable() {
         when(visitLogRepository.countByPathTopN(any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class)))
-                .thenReturn(List.of(new Object[] { "/admin.html", 8L }));
+                .thenReturn(List.<Object[]>of(new Object[] { "/admin.html", 8L }));
 
         List<PathStatsDTO> result = trafficService.getTopPaths(30, 3);
 
