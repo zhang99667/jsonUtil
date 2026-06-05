@@ -26,6 +26,7 @@
 - **Docker 部署优化**: Docker Compose 参数化数据库/JWT 配置，生产部署强制配置关键密钥，增加后端上传目录持久化和服务重启策略
 - **Actions Runtime 预适配**: GitHub Actions 提前启用 Node 24 action runtime，并升级官方 Actions 主版本，规避 Node 20 runtime 即将下线的兼容风险
 - **版本号同步**: 同步 `frontend/package.json` 与 `package-lock.json` 的项目版本号至 v1.8.0
+- **Browserslist 数据更新**: 更新 `caniuse-lite` 与 baseline browser mapping 数据，消除生产构建中的 Browserslist 过期提示
 - **类型检查修复**: 修复 Ant Design、Monaco 与 ErrorBoundary 的既有 TypeScript 类型检查问题
 - **类型检查脚本**: 新增 `npm run typecheck`，便于本地和 CI 复用完整类型检查
 - **测试覆盖**: 补充 URL 编解码、Base64 编解码、Key 排序、CMD 参数递归解析和反向转换单元测试
