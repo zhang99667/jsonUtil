@@ -1,17 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { JSONPath } from 'jsonpath-plus';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
+import type { HighlightRange } from '../types';
 
 interface JsonPathPanelProps {
     jsonData: string;
+    deepFormat?: boolean;
+    autoExpandScheme?: boolean;
+    isDataPreparing?: boolean;
     isOpen: boolean;
     onClose: () => void;
-    onQueryResult: (query: string, resultIndex: number) => void;
+    onHighlightRange: (range: HighlightRange | null) => void;
 }
 
-export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, onClose, onQueryResult }) => {
+export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
+    jsonData,
+    deepFormat = false,
+    autoExpandScheme = false,
+    isDataPreparing = false,
+    isOpen,
+    onClose,
+    onHighlightRange
+}) => {
     const [query, setQuery] = useState<string>('$');
     const [error, setError] = useState<string>('');
     const [history, setHistory] = useState<string[]>(() => {
@@ -20,9 +31,12 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
     });
 
     // 查询结果状态
-    const [queryResults, setQueryResults] = useState<unknown[]>([]);
+    const [queryRanges, setQueryRanges] = useState<HighlightRange[]>([]);
     const [currentResultIndex, setCurrentResultIndex] = useState<number>(0);
     const [totalResults, setTotalResults] = useState<number>(0);
+    const [isQuerying, setIsQuerying] = useState<boolean>(false);
+    const workerRef = useRef<Worker | null>(null);
+    const requestIdRef = useRef(0);
 
     // 自定义滚动条 Hook
     const {
@@ -77,8 +91,32 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
         localStorage.setItem('jsonpath-query-history', JSON.stringify(history));
     }, [history]);
 
+    useEffect(() => {
+        return () => {
+            workerRef.current?.terminate();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        workerRef.current?.terminate();
+        workerRef.current = null;
+        requestIdRef.current++;
+        setIsQuerying(false);
+        setQueryRanges([]);
+        setTotalResults(0);
+        setCurrentResultIndex(0);
+        onHighlightRange(null);
+    }, [jsonData, deepFormat, autoExpandScheme, isOpen, onHighlightRange]);
+
     const handleQuery = () => {
         setError('');
+
+        if (isDataPreparing) {
+            setError('深度格式化仍在处理，请稍后查询');
+            return;
+        }
 
         // 校验 JSON 数据有效性
         if (!jsonData || !jsonData.trim()) {
@@ -86,46 +124,77 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
             return;
         }
 
-        try {
-            const parsedData = JSON.parse(jsonData);
+        workerRef.current?.terminate();
+        const requestId = ++requestIdRef.current;
+        const worker = new Worker(new URL('../workers/jsonPath.worker.ts', import.meta.url), { type: 'module' });
+        workerRef.current = worker;
+        setIsQuerying(true);
 
-            try {
-                const queryResult = JSONPath({ path: query, json: parsedData });
+        worker.onmessage = (event: MessageEvent<{
+            id: number;
+            ranges: HighlightRange[];
+            totalResults: number;
+            error?: string;
+        }>) => {
+            if (event.data.id !== requestId) return;
+            worker.terminate();
+            if (workerRef.current === worker) {
+                workerRef.current = null;
+            }
+            setIsQuerying(false);
 
-                if (queryResult === undefined || (Array.isArray(queryResult) && queryResult.length === 0)) {
-                    setError('未找到匹配项');
-                    setQueryResults([]);
-                    setTotalResults(0);
-                    setCurrentResultIndex(0);
-                } else {
-                    // 存储所有查询结果
-                    const results = Array.isArray(queryResult) ? queryResult : [queryResult];
-                    setQueryResults(results);
-                    setTotalResults(results.length);
-                    setCurrentResultIndex(0);
-
-                    // 触发第一个结果的高亮
-                    onQueryResult(query, 0);
-
-                    // 添加到历史记录（去重）
-                    if (!history.includes(query)) {
-                        setHistory(prev => [query, ...prev].slice(0, 10)); // 保留最近10条
-                    }
-                }
-            } catch (e: unknown) {
-                const message = e instanceof Error ? e.message : String(e);
-                setError(`JSONPath 查询错误: ${message}`);
-                setQueryResults([]);
+            if (event.data.error) {
+                setError(event.data.error);
+                setQueryRanges([]);
                 setTotalResults(0);
                 setCurrentResultIndex(0);
+                onHighlightRange(null);
+                return;
             }
-        } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : String(e);
-            setError(`JSON 解析错误: ${message}`);
-            setQueryResults([]);
+
+            if (event.data.totalResults === 0) {
+                setError('未找到匹配项');
+                setQueryRanges([]);
+                setTotalResults(0);
+                setCurrentResultIndex(0);
+                onHighlightRange(null);
+                return;
+            }
+
+            setQueryRanges(event.data.ranges);
+            setTotalResults(event.data.totalResults);
+            setCurrentResultIndex(0);
+            onHighlightRange(event.data.ranges[0] || null);
+
+            // 添加到历史记录（去重）
+            setHistory(prev => (
+                prev.includes(query) ? prev : [query, ...prev].slice(0, 10)
+            ));
+        };
+
+        worker.onerror = (event) => {
+            if (requestIdRef.current !== requestId) return;
+            worker.terminate();
+            if (workerRef.current === worker) {
+                workerRef.current = null;
+            }
+            setIsQuerying(false);
+            setError(`JSONPath 查询错误: ${event.message}`);
+            setQueryRanges([]);
             setTotalResults(0);
             setCurrentResultIndex(0);
-        }
+            onHighlightRange(null);
+        };
+
+        worker.postMessage({
+            id: requestId,
+            jsonData,
+            query,
+            options: {
+                deepFormat,
+                autoExpandScheme,
+            },
+        });
     };
 
     const examples = [
@@ -138,22 +207,24 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
 
     // 导航到上一个结果
     const goToPrevious = () => {
-        if (totalResults === 0) return;
+        if (totalResults === 0 || isQuerying) return;
         const newIndex = currentResultIndex === 0 ? totalResults - 1 : currentResultIndex - 1;
         setCurrentResultIndex(newIndex);
-        onQueryResult(query, newIndex);
+        onHighlightRange(queryRanges[newIndex] || null);
     };
 
     // 导航到下一个结果
     const goToNext = () => {
-        if (totalResults === 0) return;
+        if (totalResults === 0 || isQuerying) return;
         const newIndex = currentResultIndex === totalResults - 1 ? 0 : currentResultIndex + 1;
         setCurrentResultIndex(newIndex);
-        onQueryResult(query, newIndex);
+        onHighlightRange(queryRanges[newIndex] || null);
     };
 
     // 处理键盘快捷键
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (isQuerying) return;
+
         if (e.key === 'Enter') {
             if (e.shiftKey) {
                 e.preventDefault();
@@ -214,9 +285,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                         />
                         <button
                             onClick={handleQuery}
-                            className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium"
+                            disabled={isQuerying || isDataPreparing}
+                            className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            查询
+                            {isQuerying ? '查询中...' : '查询'}
                         </button>
                     </div>
                 </div>
@@ -260,7 +332,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={goToPrevious}
-                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors"
+                                disabled={isQuerying}
+                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="上一个 (Shift+Enter)"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,7 +342,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({ jsonData, isOpen, 
                             </button>
                             <button
                                 onClick={goToNext}
-                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors"
+                                disabled={isQuerying}
+                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="下一个 (Enter)"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
