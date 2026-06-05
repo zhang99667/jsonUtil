@@ -132,6 +132,28 @@ test('离屏面板缓存会被拉回可见区域', async ({ page }) => {
   }).toBe(true);
 });
 
+test('设置中可恢复浮动面板默认布局', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('jsonpath-panel-position', JSON.stringify({ x: 420, y: 260 }));
+    window.localStorage.setItem('jsonpath-panel-size', JSON.stringify({ width: 820, height: 520 }));
+  });
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('button', { name: '通用设置' }).click();
+  await page.getByRole('button', { name: '恢复默认布局' }).click();
+  await expect(page.getByText('浮动面板布局已恢复默认')).toBeVisible();
+  await page.getByRole('button', { name: '取消' }).click();
+
+  await page.getByRole('button', { name: 'JSONPath 查询' }).click();
+  const box = await page.locator('[data-tour="jsonpath-panel"]').boundingBox();
+  expect(box).not.toBeNull();
+  expect(Math.round(box!.x)).toBe(100);
+  expect(Math.round(box!.y)).toBe(100);
+  expect(Math.round(box!.width)).toBe(600);
+  expect(Math.round(box!.height)).toBe(400);
+});
+
 test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await fillSourceEditor(page, '{"users":[{"name":"Ada","age":20},{"name":"Bob","age":17}]}');
 

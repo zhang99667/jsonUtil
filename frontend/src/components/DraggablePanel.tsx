@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import { isFiniteNumber, isRecord, parseJsonWithFallback } from '../utils/storage';
+import { PANEL_LAYOUT_RESET_EVENT } from '../utils/panelLayout';
 
 export type ResizeDirection = 'width' | 'height' | 'both';
 
@@ -171,6 +172,26 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   useEffect(() => {
     localStorage.setItem(`${storageKey}-size`, JSON.stringify(size));
   }, [size, storageKey]);
+
+  // 全局恢复布局时，同步重置当前已挂载的面板状态
+  useEffect(() => {
+    const handleLayoutReset = () => {
+      const viewport = getViewportSize();
+      const nextSize = normalizePanelSize(defaultSize, minSize, viewport);
+      setSize(nextSize);
+      setPosition(normalizePanelPosition(defaultPosition, nextSize, viewport));
+    };
+
+    window.addEventListener(PANEL_LAYOUT_RESET_EVENT, handleLayoutReset);
+    return () => window.removeEventListener(PANEL_LAYOUT_RESET_EVENT, handleLayoutReset);
+  }, [
+    defaultPosition.x,
+    defaultPosition.y,
+    defaultSize.width,
+    defaultSize.height,
+    minSize.width,
+    minSize.height,
+  ]);
 
   // 窗口尺寸变化时重新夹取面板，避免分屏/外接屏切换后面板不可见
   useEffect(() => {

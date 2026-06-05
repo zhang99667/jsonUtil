@@ -11,6 +11,7 @@ interface UnifiedSettingsModalProps {
     onSaveAIConfig: (config: AIConfig) => void;
     generalSettings: GeneralSettings;
     onSaveGeneralSettings: (s: GeneralSettings) => void;
+    onResetPanelLayout: () => void;
 }
 
 const ACTION_LABELS: Record<ShortcutAction, string> = {
@@ -35,6 +36,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     onSaveAIConfig,
     generalSettings,
     onSaveGeneralSettings,
+    onResetPanelLayout,
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('shortcuts');
     const [recordingAction, setRecordingAction] = useState<ShortcutAction | null>(null);
@@ -339,6 +341,24 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                             localGeneralSettings.autoExpandSchemeInDeepFormat ? 'translate-x-5' : 'translate-x-0'
                                         }`}
                                     />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="bg-editor-bg p-4 rounded border border-editor-border">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="text-sm font-medium text-gray-200">
+                                        浮动面板布局
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        恢复 JSONPath、Scheme 和模板面板的位置与尺寸
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={onResetPanelLayout}
+                                    className="px-3 py-1.5 text-xs text-gray-300 border border-editor-border rounded hover:text-white hover:border-emerald-500 hover:bg-editor-hover transition-colors"
+                                >
+                                    恢复默认布局
                                 </button>
                             </div>
                         </div>
