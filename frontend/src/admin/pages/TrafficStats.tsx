@@ -243,8 +243,8 @@ const TrafficStats: React.FC = () => {
         },
     ];
 
-    // 计算地区分布最大值（用于 Progress 百分比）
-    const maxGeoCount = useMemo(() => Math.max(...geoStats.map(g => g.count), 1), [geoStats]);
+    // 计算地区分布最大值（用于 Progress 百分比），避免大数组展开造成调用栈溢出
+    const maxGeoCount = useMemo(() => geoStats.reduce((max, item) => Math.max(max, item.count), 1), [geoStats]);
 
     // 每日趋势图数据转换（分组柱状图需要）
     const trendChartData = useMemo(() => trend.flatMap(item => [
