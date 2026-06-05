@@ -154,6 +154,103 @@ test('设置中可恢复浮动面板默认布局', async ({ page }) => {
   expect(Math.round(box!.height)).toBe(400);
 });
 
+test('设置中可导出并导入配置备份', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('jsonpath-query-favorites', JSON.stringify(['$.exported']));
+    window.localStorage.setItem('json-helper-template-fill', JSON.stringify({
+      template: '{"before":1}',
+      lastUpdated: 1,
+    }));
+    window.localStorage.setItem('jsonpath-panel-position', JSON.stringify({ x: 220, y: 160 }));
+  });
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('button', { name: '通用设置' }).click();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: '导出配置备份' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^jsonutils-backup-.*\.json$/);
+
+  const downloadPath = await download.path();
+  expect(downloadPath).not.toBeNull();
+  const exportedBackup = JSON.parse(await readFile(downloadPath!, 'utf-8')) as {
+    settings: { ai: { apiKey: string } };
+    jsonPath: { favorites: string[] };
+    templateFill: { template: string };
+  };
+  expect(exportedBackup.settings.ai.apiKey).toBe('');
+  expect(exportedBackup.jsonPath.favorites).toEqual(['$.exported']);
+  expect(exportedBackup.templateFill.template).toBe('{"before":1}');
+
+  const importedBackup = {
+    app: 'jsonutils-pro',
+    version: 1,
+    exportedAt: '2026-06-05T00:00:00.000Z',
+    settings: {
+      general: { autoExpandSchemeInDeepFormat: true },
+      ai: {
+        provider: 'custom',
+        apiKey: 'file-secret-key',
+        model: 'imported-json-model',
+        baseUrl: '/imported-ai',
+      },
+      shortcuts: {},
+    },
+    jsonPath: {
+      history: ['$.imported'],
+      favorites: ['$.importedFavorite'],
+    },
+    templateFill: {
+      template: '{"after":2}',
+      lastUpdated: 2,
+    },
+    panelLayout: {
+      'jsonpath-panel': {
+        position: { x: 300, y: 180 },
+        size: { width: 650, height: 410 },
+      },
+    },
+  };
+
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: '导入配置备份' }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles({
+    name: 'jsonutils-backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(importedBackup)),
+  });
+
+  await expect(page.getByText('配置备份已导入，AI Key 已保留')).toBeVisible();
+  const importedAIConfig = await page.evaluate(() => {
+    return JSON.parse(window.localStorage.getItem('json-helper-ai-config') || '{}') as {
+      apiKey?: string;
+      model?: string;
+    };
+  });
+  expect(importedAIConfig.apiKey).toBe('mock-api-key');
+  expect(importedAIConfig.model).toBe('imported-json-model');
+  const importedTemplate = await page.evaluate(() => {
+    return JSON.parse(window.localStorage.getItem('json-helper-template-fill') || '{}') as {
+      template?: string;
+    };
+  });
+  expect(importedTemplate.template).toBe('{"after":2}');
+
+  await page.getByRole('button', { name: '取消' }).click();
+  await page.getByRole('button', { name: 'JSONPath 查询' }).click();
+  await expect(page.locator('[data-tour="jsonpath-favorites"]')).toContainText('$.importedFavorite');
+
+  const box = await page.locator('[data-tour="jsonpath-panel"]').boundingBox();
+  expect(box).not.toBeNull();
+  expect(Math.round(box!.x)).toBe(300);
+  expect(Math.round(box!.y)).toBe(180);
+  expect(Math.round(box!.width)).toBe(650);
+  expect(Math.round(box!.height)).toBe(410);
+});
+
 test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await fillSourceEditor(page, '{"users":[{"name":"Ada","age":20},{"name":"Bob","age":17}]}');
 

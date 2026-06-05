@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import { isFiniteNumber, isRecord, parseJsonWithFallback } from '../utils/storage';
+import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { PANEL_LAYOUT_RESET_EVENT } from '../utils/panelLayout';
 
 export type ResizeDirection = 'width' | 'height' | 'both';
@@ -185,6 +186,26 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
     window.addEventListener(PANEL_LAYOUT_RESET_EVENT, handleLayoutReset);
     return () => window.removeEventListener(PANEL_LAYOUT_RESET_EVENT, handleLayoutReset);
   }, [
+    defaultPosition.x,
+    defaultPosition.y,
+    defaultSize.width,
+    defaultSize.height,
+    minSize.width,
+    minSize.height,
+  ]);
+
+  // 配置备份导入后，从 localStorage 重新读取布局并夹取到当前视口
+  useEffect(() => {
+    const handleBackupImported = () => {
+      const nextSize = loadSize();
+      setSize(nextSize);
+      setPosition(loadPosition(nextSize));
+    };
+
+    window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+    return () => window.removeEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+  }, [
+    storageKey,
     defaultPosition.x,
     defaultPosition.y,
     defaultSize.width,

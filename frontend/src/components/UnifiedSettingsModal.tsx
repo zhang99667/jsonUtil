@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider, GeneralSettings } from '../types';
 
 interface UnifiedSettingsModalProps {
@@ -12,6 +12,8 @@ interface UnifiedSettingsModalProps {
     generalSettings: GeneralSettings;
     onSaveGeneralSettings: (s: GeneralSettings) => void;
     onResetPanelLayout: () => void;
+    onExportSettingsBackup: () => void;
+    onImportSettingsBackup: (file: File) => void;
 }
 
 const ACTION_LABELS: Record<ShortcutAction, string> = {
@@ -37,19 +39,27 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     generalSettings,
     onSaveGeneralSettings,
     onResetPanelLayout,
+    onExportSettingsBackup,
+    onImportSettingsBackup,
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('shortcuts');
     const [recordingAction, setRecordingAction] = useState<ShortcutAction | null>(null);
     const [localAIConfig, setLocalAIConfig] = useState<AIConfig>(aiConfig);
     const [localGeneralSettings, setLocalGeneralSettings] = useState<GeneralSettings>(generalSettings);
+    const importBackupInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             setLocalAIConfig(aiConfig);
             setLocalGeneralSettings(generalSettings);
-            setActiveTab('shortcuts');
         }
     }, [isOpen, aiConfig, generalSettings]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setActiveTab('shortcuts');
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (!recordingAction) return;
@@ -114,6 +124,14 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     const handleSaveGeneral = () => {
         onSaveGeneralSettings(localGeneralSettings);
         onClose();
+    };
+
+    const handleImportBackupFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (file) {
+            onImportSettingsBackup(file);
+        }
     };
 
     const renderKey = (label: string) => (
@@ -360,6 +378,39 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                 >
                                     恢复默认布局
                                 </button>
+                            </div>
+                        </div>
+                        <div className="bg-editor-bg p-4 rounded border border-editor-border">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="text-sm font-medium text-gray-200">
+                                        配置备份
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        导出/导入快捷键、收藏、模板和布局；AI Key 不会写入备份文件
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={onExportSettingsBackup}
+                                        className="px-3 py-1.5 text-xs text-gray-300 border border-editor-border rounded hover:text-white hover:border-emerald-500 hover:bg-editor-hover transition-colors"
+                                    >
+                                        导出配置备份
+                                    </button>
+                                    <button
+                                        onClick={() => importBackupInputRef.current?.click()}
+                                        className="px-3 py-1.5 text-xs text-gray-300 border border-editor-border rounded hover:text-white hover:border-emerald-500 hover:bg-editor-hover transition-colors"
+                                    >
+                                        导入配置备份
+                                    </button>
+                                </div>
+                                <input
+                                    ref={importBackupInputRef}
+                                    type="file"
+                                    accept="application/json,.json"
+                                    className="hidden"
+                                    onChange={handleImportBackupFileChange}
+                                />
                             </div>
                         </div>
                     </div>

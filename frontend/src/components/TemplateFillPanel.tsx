@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { SimpleEditor } from './SimpleEditor';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { validateJson } from '../utils/transformations';
-import { isRecord, parseJsonWithFallback } from '../utils/storage';
+import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
+import { TEMPLATE_FILL_STORAGE_KEY, loadTemplateFillConfig } from '../utils/appSettings';
 
 interface TemplateFillPanelProps {
   isOpen: boolean;
@@ -10,23 +11,13 @@ interface TemplateFillPanelProps {
   onApplyTemplate: (templateJson: string) => void;
 }
 
-const STORAGE_KEY = 'json-helper-template-fill';
-
 export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   isOpen,
   onClose,
   onApplyTemplate,
 }) => {
   // 从 localStorage 恢复模板内容
-  const [template, setTemplate] = useState<string>(() => {
-    const config = parseJsonWithFallback<Record<string, unknown>>(
-      localStorage.getItem(STORAGE_KEY),
-      {},
-      isRecord
-    );
-
-    return typeof config.template === 'string' ? config.template : '';
-  });
+  const [template, setTemplate] = useState<string>(() => loadTemplateFillConfig().template);
 
   // 实时 JSON 校验
   const validation = useMemo(() => {
@@ -36,11 +27,21 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
 
   // 自动保存到 localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(TEMPLATE_FILL_STORAGE_KEY, JSON.stringify({
       template,
       lastUpdated: Date.now(),
     }));
   }, [template]);
+
+  // 配置备份导入后同步刷新已挂载面板中的模板内容
+  useEffect(() => {
+    const handleBackupImported = () => {
+      setTemplate(loadTemplateFillConfig().template);
+    };
+
+    window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+    return () => window.removeEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+  }, []);
 
   const handleApply = () => {
     onApplyTemplate(template);

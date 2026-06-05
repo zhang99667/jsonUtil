@@ -1,19 +1,9 @@
 import { useState, useEffect } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction } from '../types';
-import { isRecord, parseJsonWithFallback } from '../utils/storage';
+import { parseJsonWithFallback } from '../utils/storage';
+import { DEFAULT_SHORTCUTS, SHORTCUTS_STORAGE_KEY, normalizeShortcutConfig } from '../utils/shortcuts';
 
-export const DEFAULT_SHORTCUTS: ShortcutConfig = {
-    SAVE: { key: 's', meta: true, ctrl: false, shift: false, alt: false },
-    FORMAT: { key: 'f', meta: true, ctrl: false, shift: true, alt: false },
-    DEEP_FORMAT: { key: 'Enter', meta: true, ctrl: false, shift: false, alt: false },
-    MINIFY: { key: 'm', meta: true, ctrl: false, shift: true, alt: false },
-    CLOSE_TAB: { key: 'w', meta: true, ctrl: false, shift: false, alt: true },
-    TOGGLE_JSONPATH: { key: 'f', meta: false, ctrl: true, shift: true, alt: false },
-    NEW_TAB: { key: 'n', meta: true, ctrl: false, shift: false, alt: false },
-};
-
-const SHORTCUTS_STORAGE_KEY = 'json-helper-shortcuts';
-const SHORTCUT_ACTIONS = Object.keys(DEFAULT_SHORTCUTS) as ShortcutAction[];
+export { DEFAULT_SHORTCUTS, normalizeShortcutConfig } from '../utils/shortcuts';
 
 interface UseShortcutsProps {
     onSave: () => void;
@@ -24,32 +14,6 @@ interface UseShortcutsProps {
     onToggleJsonPath: () => void;
     onNewTab: () => void;
 }
-
-const isShortcutKey = (value: unknown): value is ShortcutKey => {
-    if (!isRecord(value)) return false;
-
-    return (
-        typeof value.key === 'string' &&
-        typeof value.meta === 'boolean' &&
-        typeof value.ctrl === 'boolean' &&
-        typeof value.shift === 'boolean' &&
-        typeof value.alt === 'boolean'
-    );
-};
-
-export const normalizeShortcutConfig = (value: unknown): ShortcutConfig => {
-    if (!isRecord(value)) return DEFAULT_SHORTCUTS;
-
-    const next: ShortcutConfig = { ...DEFAULT_SHORTCUTS };
-    for (const action of SHORTCUT_ACTIONS) {
-        const shortcut = value[action];
-        if (isShortcutKey(shortcut)) {
-            next[action] = shortcut;
-        }
-    }
-
-    return next;
-};
 
 export const useShortcuts = ({
     onSave,
@@ -78,6 +42,10 @@ export const useShortcuts = ({
 
     const resetShortcuts = () => {
         setShortcuts(DEFAULT_SHORTCUTS);
+    };
+
+    const replaceShortcuts = (nextShortcuts: ShortcutConfig) => {
+        setShortcuts(normalizeShortcutConfig(nextShortcuts));
     };
 
     useEffect(() => {
@@ -151,6 +119,7 @@ export const useShortcuts = ({
     return {
         shortcuts,
         updateShortcut,
-        resetShortcuts
+        resetShortcuts,
+        replaceShortcuts,
     };
 };
