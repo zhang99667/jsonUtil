@@ -340,6 +340,40 @@ describe('deepDecodeScheme', () => {
       },
     });
   });
+
+  it('CMD 参数串支持点号和空括号展开对象与数组', () => {
+    const result = deepDecodeScheme('user.name=%E5%BC%A0%E4%B8%89&user.city=beijing&tags[]=feed&tags[]=news');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      user: {
+        name: '张三',
+        city: 'beijing',
+      },
+      tags: ['feed', 'news'],
+    });
+  });
+
+  it('CMD 参数串支持带索引数组对象', () => {
+    const result = deepDecodeScheme('items[0].id=1&items[0].title=feed&items[1].id=2');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      items: [
+        { id: '1', title: 'feed' },
+        { id: '2' },
+      ],
+    });
+  });
+
+  it('URL 参数名支持括号对象展开', () => {
+    const result = deepDecodeScheme('baiduboxapp://v1/open?ext%5Bscene%5D=feed&ext%5Bsource%5D=box');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      ext: {
+        scene: 'feed',
+        source: 'box',
+      },
+    });
+  });
 });
 
 // ============ findSchemesInJson 测试 ============

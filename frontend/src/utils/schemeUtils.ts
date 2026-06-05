@@ -43,6 +43,9 @@ type StructuredValue =
   | StructuredValue[]
   | { [key: string]: StructuredValue };
 
+type QueryKeySegment = string | number | null;
+type QueryParamContainer = { [key: string]: StructuredValue };
+
 const COMMON_CMD_PARAM_NAMES = new Set([
   'cmd',
   'action_cmd',
@@ -80,7 +83,7 @@ const COMMON_CMD_PARAM_NAMES = new Set([
   'open_url',
 ]);
 
-const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]]+';
+const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
@@ -478,19 +481,147 @@ const decodeStructuredValue = (value: StructuredValue, maxDepth: number): Struct
   return value;
 };
 
+const parseStructuredQueryKey = (key: string): QueryKeySegment[] => {
+  const segments: QueryKeySegment[] = [];
+  let buffer = '';
+
+  const pushBuffer = () => {
+    if (buffer) {
+      segments.push(buffer);
+      buffer = '';
+    }
+  };
+
+  for (let i = 0; i < key.length; i++) {
+    const char = key[i];
+
+    if (char === '.') {
+      pushBuffer();
+      continue;
+    }
+
+    if (char === '[') {
+      const endIndex = key.indexOf(']', i + 1);
+      if (endIndex === -1) {
+        buffer += char;
+        continue;
+      }
+
+      pushBuffer();
+      const content = key.slice(i + 1, endIndex);
+      if (content === '') {
+        segments.push(null);
+      } else if (/^\d+$/.test(content)) {
+        segments.push(Number(content));
+      } else {
+        segments.push(content);
+      }
+      i = endIndex;
+      continue;
+    }
+
+    buffer += char;
+  }
+
+  pushBuffer();
+  return segments;
+};
+
+const createNestedContainer = (nextSegment: QueryKeySegment): StructuredValue => (
+  typeof nextSegment === 'number' || nextSegment === null ? [] : {}
+);
+
+const mergeQueryValue = (existing: StructuredValue | undefined, value: StructuredValue): StructuredValue => {
+  if (existing === undefined) {
+    return value;
+  } else if (Array.isArray(existing)) {
+    return [...existing, value];
+  }
+
+  return [existing, value];
+};
+
+const assignQueryLeaf = (
+  container: QueryParamContainer | StructuredValue[],
+  segment: QueryKeySegment,
+  value: StructuredValue
+) => {
+  if (segment === null) {
+    if (Array.isArray(container)) {
+      container.push(value);
+    }
+    return;
+  }
+
+  if (typeof segment === 'number') {
+    if (Array.isArray(container)) {
+      container[segment] = mergeQueryValue(container[segment], value);
+    }
+    return;
+  }
+
+  if (!Array.isArray(container)) {
+    container[segment] = mergeQueryValue(container[segment], value);
+  }
+};
+
+const assignStructuredQueryParam = (
+  result: QueryParamContainer,
+  segments: QueryKeySegment[],
+  value: StructuredValue
+) => {
+  let current: QueryParamContainer | StructuredValue[] = result;
+
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    const isLast = i === segments.length - 1;
+    if (isLast) {
+      assignQueryLeaf(current, segment, value);
+      return;
+    }
+
+    const nextSegment = segments[i + 1];
+    const nextContainer = createNestedContainer(nextSegment);
+
+    if (segment === null) {
+      if (!Array.isArray(current)) return;
+      current.push(nextContainer);
+      current = nextContainer as QueryParamContainer | StructuredValue[];
+      continue;
+    }
+
+    if (typeof segment === 'number') {
+      if (!Array.isArray(current)) return;
+      const existing = current[segment];
+      if (!existing || typeof existing !== 'object') {
+        current[segment] = nextContainer;
+      }
+      current = current[segment] as QueryParamContainer | StructuredValue[];
+      continue;
+    }
+
+    if (Array.isArray(current)) return;
+    const existing = current[segment];
+    if (!existing || typeof existing !== 'object') {
+      current[segment] = nextContainer;
+    }
+    current = current[segment] as QueryParamContainer | StructuredValue[];
+  }
+};
+
 const assignQueryParam = (
-  result: { [key: string]: StructuredValue | StructuredValue[] },
+  result: QueryParamContainer,
   key: string,
   value: StructuredValue
 ) => {
-  const existing = result[key];
-  if (existing === undefined) {
-    result[key] = value;
-  } else if (Array.isArray(existing)) {
-    existing.push(value);
-  } else {
-    result[key] = [existing, value];
+  const shouldNestKey = key.includes('.') || key.includes('[');
+  const segments = shouldNestKey ? parseStructuredQueryKey(key) : [];
+  if (segments.length > 1) {
+    assignStructuredQueryParam(result, segments, value);
+    return;
   }
+
+  result[key] = mergeQueryValue(result[key], value);
 };
 
 const parseQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
@@ -508,7 +639,7 @@ const parseUrlQueryStringDeep = (queryString: string, maxDepth: number): Structu
 };
 
 const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredValue => {
-  const result: { [key: string]: StructuredValue | StructuredValue[] } = {};
+  const result: QueryParamContainer = {};
   splitQueryPairs(queryString).forEach(pair => {
     const equalIndex = pair.indexOf('=');
     if (equalIndex <= 0) return;
