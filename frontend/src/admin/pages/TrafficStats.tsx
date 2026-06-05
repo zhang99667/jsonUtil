@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { Suspense, lazy, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Row, Col, Card as AntCard, Spin, Table, Segmented, Progress, Tooltip, Typography, Tag } from 'antd';
 import {
     EyeOutlined,
@@ -16,7 +16,6 @@ import {
 } from '@ant-design/icons';
 
 const { Title } = Typography;
-import { Column, Bar } from '@ant-design/charts';
 import type { CardProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -42,6 +41,25 @@ import {
 } from '../services/traffic';
 
 const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
+
+const LazyColumn = lazy(async () => {
+    const { Column } = await import('@ant-design/charts');
+    return { default: Column as React.ComponentType<Record<string, unknown>> };
+});
+
+/** 图表库按需加载占位，避免页面切换时整页闪空 */
+const ChartFallback: React.FC<{ height: number }> = ({ height }) => (
+    <div
+        style={{
+            height,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        }}
+    >
+        <Spin size="small" />
+    </div>
+);
 
 const TrafficStats: React.FC = () => {
     const [days, setDays] = useState<number>(1); // 默认今日
@@ -473,27 +491,29 @@ const TrafficStats: React.FC = () => {
                     bordered={false}
                     style={{ marginTop: 16, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                 >
-                    <Column
-                        data={trendChartData}
-                        xField="date"
-                        yField="value"
-                        colorField="type"
-                        group={true}
-                        height={260}
-                        columnWidthRatio={0.5}
-                        scale={{ color: { range: [themeColors.primary, themeColors.success] } }}
-                        style={{ radiusTopLeft: 4, radiusTopRight: 4 }}
-                        axis={{
-                            x: { title: false, line: { style: { stroke: '#E8EAF2' } }, tick: { style: { stroke: '#E8EAF2' } } },
-                            y: { title: false, labelFormatter: (v: number) => v.toLocaleString(), grid: { line: { style: { stroke: '#F0F1F5', lineDash: [3, 3] } } } },
-                        }}
-                        legend={{ position: 'top-right', itemName: { style: { fill: '#5A607F' } } }}
-                        tooltip={{
-                            title: (d: { date: string }) => d.date,
-                            items: [{ channel: 'y', valueFormatter: (v: number) => v.toLocaleString() }],
-                        }}
-                        interaction={{ elementHighlight: { background: true } }}
-                    />
+                    <Suspense fallback={<ChartFallback height={260} />}>
+                        <LazyColumn
+                            data={trendChartData}
+                            xField="date"
+                            yField="value"
+                            colorField="type"
+                            group={true}
+                            height={260}
+                            columnWidthRatio={0.5}
+                            scale={{ color: { range: [themeColors.primary, themeColors.success] } }}
+                            style={{ radiusTopLeft: 4, radiusTopRight: 4 }}
+                            axis={{
+                                x: { title: false, line: { style: { stroke: '#E8EAF2' } }, tick: { style: { stroke: '#E8EAF2' } } },
+                                y: { title: false, labelFormatter: (v: number) => v.toLocaleString(), grid: { line: { style: { stroke: '#F0F1F5', lineDash: [3, 3] } } } },
+                            }}
+                            legend={{ position: 'top-right', itemName: { style: { fill: '#5A607F' } } }}
+                            tooltip={{
+                                title: (d: { date: string }) => d.date,
+                                items: [{ channel: 'y', valueFormatter: (v: number) => v.toLocaleString() }],
+                            }}
+                            interaction={{ elementHighlight: { background: true } }}
+                        />
+                    </Suspense>
                 </Card>
             )}
 
@@ -562,24 +582,26 @@ const TrafficStats: React.FC = () => {
                 bordered={false}
                 style={{ marginTop: 16, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
             >
-                <Column
-                    data={hourlyChartDataWithHighlight}
-                    xField="hour"
-                    yField="count"
-                    height={220}
-                    columnWidthRatio={0.5}
-                    color={(datum: { isCurrent: boolean }) => datum.isCurrent ? themeColors.primary : themeColors.info}
-                    style={{ radiusTopLeft: 4, radiusTopRight: 4 }}
-                    axis={{
-                        x: { title: false, labelAutoRotate: false, line: { style: { stroke: '#E8EAF2' } } },
-                        y: { title: false, labelFormatter: (v: number) => v.toLocaleString(), grid: { line: { style: { stroke: '#F0F1F5', lineDash: [3, 3] } } } },
-                    }}
-                    tooltip={{
-                        title: (d: { hour: string }) => `${d.hour} - ${parseInt(d.hour) + 1}:00`,
-                        items: [{ channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
-                    }}
-                    interaction={{ elementHighlight: { background: true } }}
-                />
+                <Suspense fallback={<ChartFallback height={220} />}>
+                    <LazyColumn
+                        data={hourlyChartDataWithHighlight}
+                        xField="hour"
+                        yField="count"
+                        height={220}
+                        columnWidthRatio={0.5}
+                        color={(datum: { isCurrent: boolean }) => datum.isCurrent ? themeColors.primary : themeColors.info}
+                        style={{ radiusTopLeft: 4, radiusTopRight: 4 }}
+                        axis={{
+                            x: { title: false, labelAutoRotate: false, line: { style: { stroke: '#E8EAF2' } } },
+                            y: { title: false, labelFormatter: (v: number) => v.toLocaleString(), grid: { line: { style: { stroke: '#F0F1F5', lineDash: [3, 3] } } } },
+                        }}
+                        tooltip={{
+                            title: (d: { hour: string }) => `${d.hour} - ${parseInt(d.hour) + 1}:00`,
+                            items: [{ channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
+                        }}
+                        interaction={{ elementHighlight: { background: true } }}
+                    />
+                </Suspense>
             </Card>
 
             {/* 设备和浏览器分布 - 使用进度条列表，数据少时更清晰 */}
