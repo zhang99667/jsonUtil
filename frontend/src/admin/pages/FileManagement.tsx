@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Table, Input, Button, Modal, Popconfirm, message, Space, Tag, Typography, Tooltip, Upload } from 'antd';
 import {
     FileOutlined,
@@ -22,6 +22,9 @@ import {
 
 const { Title } = Typography;
 const { Search } = Input;
+
+/** 默认每页条数 */
+const DEFAULT_PAGE_SIZE = 10;
 
 /**
  * 格式化文件大小（字节 -> 可读字符串）
@@ -55,7 +58,7 @@ const FileManagement: React.FC = () => {
     // 加载状态
     const [loading, setLoading] = useState(false);
     // 分页信息
-    const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+    const [pagination, setPagination] = useState({ current: 1, pageSize: DEFAULT_PAGE_SIZE, total: 0 });
     // 搜索关键词
     const [keyword, setKeyword] = useState('');
     // 预览弹窗是否显示
@@ -68,6 +71,8 @@ const FileManagement: React.FC = () => {
     const [previewLoading, setPreviewLoading] = useState(false);
     // 文件上传中状态
     const [uploading, setUploading] = useState(false);
+    const fileListRequestIdRef = useRef(0);
+    const previewRequestIdRef = useRef(0);
 
     /** 允许上传的文件类型 */
     const ACCEPTED_FILE_TYPES = '.json,.xml,.csv,.txt,.yaml,.yml';
@@ -103,9 +108,14 @@ const FileManagement: React.FC = () => {
      * 获取文件列表
      */
     const fetchFiles = useCallback(async (page: number, pageSize: number, search?: string) => {
+        const requestId = ++fileListRequestIdRef.current;
         setLoading(true);
         try {
             const result = await getFileList(page, pageSize, search);
+            // 只允许最新一次列表请求更新表格，避免快速搜索/翻页时旧响应回写。
+            if (requestId !== fileListRequestIdRef.current) {
+                return;
+            }
             setFileList(result.list);
             setPagination((prev) => ({
                 ...prev,
@@ -114,16 +124,25 @@ const FileManagement: React.FC = () => {
                 total: result.total,
             }));
         } catch (error) {
+            if (requestId !== fileListRequestIdRef.current) {
+                return;
+            }
             console.error('获取文件列表失败:', error);
         } finally {
-            setLoading(false);
+            if (requestId === fileListRequestIdRef.current) {
+                setLoading(false);
+            }
         }
     }, []);
 
     // 初次加载
     useEffect(() => {
-        fetchFiles(1, pagination.pageSize);
-    }, [fetchFiles, pagination.pageSize]);
+        fetchFiles(1, DEFAULT_PAGE_SIZE);
+        return () => {
+            fileListRequestIdRef.current += 1;
+            previewRequestIdRef.current += 1;
+        };
+    }, [fetchFiles]);
 
     /**
      * 搜索文件
@@ -151,18 +170,38 @@ const FileManagement: React.FC = () => {
      * 预览文件内容
      */
     const handlePreview = async (record: FileItem) => {
+        const requestId = ++previewRequestIdRef.current;
         setPreviewFileName(record.fileName);
+        setPreviewContent('');
         setPreviewVisible(true);
         setPreviewLoading(true);
         try {
             const content = await getFileContent(record.id);
+            // 只允许当前预览请求回写内容，避免连续点击不同文件时内容串台。
+            if (requestId !== previewRequestIdRef.current) {
+                return;
+            }
             setPreviewContent(content);
         } catch (error) {
+            if (requestId !== previewRequestIdRef.current) {
+                return;
+            }
             setPreviewContent('文件内容加载失败');
             console.error('预览文件失败:', error);
         } finally {
-            setPreviewLoading(false);
+            if (requestId === previewRequestIdRef.current) {
+                setPreviewLoading(false);
+            }
         }
+    };
+
+    /**
+     * 关闭预览弹窗
+     */
+    const handleClosePreview = () => {
+        previewRequestIdRef.current += 1;
+        setPreviewVisible(false);
+        setPreviewLoading(false);
     };
 
     /**
@@ -365,9 +404,9 @@ const FileManagement: React.FC = () => {
                     </span>
                 }
                 open={previewVisible}
-                onCancel={() => setPreviewVisible(false)}
+                onCancel={handleClosePreview}
                 footer={[
-                    <Button key="close" onClick={() => setPreviewVisible(false)}>
+                    <Button key="close" onClick={handleClosePreview}>
                         关闭
                     </Button>,
                 ]}
