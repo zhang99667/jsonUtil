@@ -225,6 +225,15 @@ describe('parseUrl', () => {
     expect(result!.hashParams).toEqual({ cmd: '{"a":1}', from: 'hash' });
   });
 
+  it('查询参数中的加号按表单编码还原为空格', () => {
+    const result = parseUrl('https://example.com/search?word=json+schema&redirect=https%3A%2F%2Fexample.com%2Fa%2Bb');
+    expect(result).not.toBeNull();
+    expect(result!.params).toEqual({
+      word: 'json schema',
+      redirect: 'https://example.com/a+b',
+    });
+  });
+
   it('无参数的 URL', () => {
     const result = parseUrl('https://example.com/path');
     expect(result).not.toBeNull();
@@ -277,6 +286,18 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       url: {
         word: '你好',
+      },
+    });
+  });
+
+  it('CMD 参数和嵌套 URL 中的加号按查询参数语义解析为空格', () => {
+    const nestedUrl = 'https%3A%2F%2Fexample.com%2Fsearch%3Fword%3Djson%2Bschema';
+    const result = deepDecodeScheme(`title=json+schema&url=${nestedUrl}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      title: 'json schema',
+      url: {
+        word: 'json schema',
       },
     });
   });

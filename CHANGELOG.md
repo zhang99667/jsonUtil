@@ -4,6 +4,7 @@
 - **CMD/Scheme 参数递归解析**: Scheme 解析增强为参数级递归展开，支持 URL 内参数、独立 CMD 参数串、二级 URL、URL 编码 JSON 与 Base64/JWT 的组合解析
 - **CMD/Scheme 兼容性增强**: 补充 hash route 参数、分号分隔参数、camelCase command 字段和短 Base64 JSON 参数解析，提升对常见客户端 schema 的识别覆盖
 - **CMD/Scheme 结构化参数名解析**: 支持 `items[]=a&items[]=b`、`items[0].id=1` 和 `user.name=xx` 等点号/括号参数名展开，提升复杂 CMD 可读性
+- **CMD/Scheme 表单编码兼容**: 查询参数、hash 参数和 CMD 参数中的 `+` 会按表单编码语义还原为空格，同时保留 `%2B` 表示的字面加号
 - **Base64 编解码**: 新增 Base64 编码 / Base64 解码转换模式，支持 UTF-8 中文内容、URL-safe Base64 与预览编辑器反向同步
 - **URL 编解码**: 新增 URL 编码 / URL 解码 转换模式，支持对输入内容进行 `encodeURIComponent` / `decodeURIComponent`，预览编辑器支持反向同步
 - **嵌套解析自动展开 Scheme**: 深度格式化（嵌套解析）新增 `autoExpandScheme` 选项，启用后自动检测并展开 URL 编码的 CMD/Scheme 字符串值
