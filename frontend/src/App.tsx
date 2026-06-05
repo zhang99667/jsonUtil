@@ -27,6 +27,7 @@ import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import ErrorBoundary from './components/ErrorBoundary';
 import { StatusBar } from './components/StatusBar';
+import { getDocumentStats } from './utils/documentStats';
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -79,6 +80,8 @@ const App: React.FC = () => {
     localStorage.setItem('json-helper-general-settings', JSON.stringify(generalSettings));
   }, [generalSettings]);
 
+  const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
+
   // 深度格式化结果和上下文（避免在 output 计算中产生副作用）
   const deepFormatResult = useMemo(() => {
     if (mode === TransformMode.DEEP_FORMAT) {
@@ -126,15 +129,18 @@ const App: React.FC = () => {
     return result;
   }, [input, mode, deepFormatResult]);
 
-  // JSONPath 查询专用数据源（强制深度格式化）
-  // 确保查询功能支持嵌套 JSON 搜索
-  const deepFormattedOutput = useMemo(() => {
+  // JSONPath 查询专用数据源仅在面板打开时计算，避免大文件输入时隐藏面板仍反复深解析
+  const jsonPathDataSource = useMemo(() => {
+    if (!isJsonPathPanelOpen) {
+      return '';
+    }
+
     // 性能优化：复用现有深度格式化结果
     if (mode === TransformMode.DEEP_FORMAT && deepFormatResult) {
       return deepFormatResult.output;
     }
     return performTransform(input, TransformMode.DEEP_FORMAT);
-  }, [input, mode, deepFormatResult]);
+  }, [input, mode, deepFormatResult, isJsonPathPanelOpen]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -143,7 +149,6 @@ const App: React.FC = () => {
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
@@ -228,11 +233,7 @@ const App: React.FC = () => {
   // 计算文档统计信息（根据当前焦点区域）
   const documentStats = useMemo(() => {
     const content = activeEditor === 'PREVIEW' ? output : input;
-    const lines = content.split('\n');
-    const totalLines = lines.length;
-    // 使用 reduce 循环替代 Math.max(...spread)，避免大文件时栈溢出
-    const maxColumns = lines.reduce((max, line) => Math.max(max, line.length), 0);
-    return { totalLines, maxColumns };
+    return getDocumentStats(content);
   }, [input, output, activeEditor]);
 
 
@@ -520,9 +521,8 @@ const App: React.FC = () => {
       setMode(TransformMode.DEEP_FORMAT);
     }
 
-    // 2. 解析当前输出以生成 Source Map
-    // 基于当前输入重新计算深度格式化结果以确保准确性
-    const currentOutput = performTransform(input, TransformMode.DEEP_FORMAT);
+    // 2. 解析当前输出以生成 Source Map，优先复用面板打开时已计算的数据源
+    const currentOutput = jsonPathDataSource || performTransform(input, TransformMode.DEEP_FORMAT);
 
     try {
       // 3. 生成 Source Map
@@ -712,7 +712,7 @@ const App: React.FC = () => {
 
         {/* JSONPath 查询面板 */}
         <JsonPathPanel
-          jsonData={deepFormattedOutput} // 使用深度格式化数据源
+          jsonData={jsonPathDataSource} // 使用深度格式化数据源
           isOpen={isJsonPathPanelOpen}
           onClose={() => {
             setIsJsonPathPanelOpen(false);
