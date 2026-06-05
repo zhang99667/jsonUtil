@@ -1,5 +1,6 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { loadEnv } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 const getScopedPackageName = (id: string, scope: string) => {
@@ -51,24 +52,26 @@ export default defineConfig(({ mode }) => {
         },
         output: {
           manualChunks(id) {
+            if (id.includes('commonjsHelpers')) return 'vendor-runtime';
             if (!id.includes('node_modules')) return undefined;
 
-            if (id.includes('monaco-editor')) return 'vendor-monaco';
-            if (id.includes('@google/genai')) return 'vendor-ai';
-            if (id.includes('react') || id.includes('react-dom')) return 'vendor-react';
-            if (id.includes('@ant-design/icons')) return 'vendor-antd-icons';
-            if (id.includes('antd/')) return 'vendor-antd';
-            if (id.includes('@ant-design/charts')) return 'vendor-ant-design-charts';
+            const packageName = getNodeModulePackageName(id);
+
+            if (packageName === 'monaco-editor') return 'vendor-monaco';
+            if (packageName === '@google/genai') return 'vendor-ai';
+            if (['react', 'react-dom', 'scheduler'].includes(packageName || '')) return 'vendor-react';
+            if (packageName === '@ant-design/icons') return 'vendor-antd-icons';
+            if (packageName === 'antd') return 'vendor-antd';
+            if (packageName === '@ant-design/charts') return 'vendor-ant-design-charts';
 
             const antvPackage = getScopedPackageName(id, '@antv');
             if (antvPackage) return `vendor-antv-${antvPackage}`;
 
-            const packageName = getNodeModulePackageName(id);
             if (!packageName) return 'vendor';
 
             if (packageName.startsWith('rc-') || packageName.startsWith('@rc-component/')) return 'vendor-rc';
             if (packageName.startsWith('@ant-design/')) return 'vendor-antd-deps';
-            if (packageName.startsWith('@babel/')) return 'vendor-runtime';
+            if (packageName.startsWith('@babel/') || packageName === 'tslib') return 'vendor-runtime';
             if (packageName === 'axios') return 'vendor-http';
             if (packageName === 'html2canvas') return 'vendor-html2canvas';
             if (packageName.startsWith('d3-')) return 'vendor-d3';
@@ -122,6 +125,13 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
+    },
+    test: {
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/e2e/**',
+      ],
     }
   };
 });

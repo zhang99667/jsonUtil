@@ -22,6 +22,9 @@ npm test
 log "Frontend: production build"
 npm run build
 
+log "Frontend: E2E smoke tests"
+PLAYWRIGHT_PREBUILT=1 npm run test:e2e
+
 log "Backend: Maven test"
 cd "$ROOT_DIR/backend"
 if command -v mvn >/dev/null 2>&1; then
