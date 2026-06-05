@@ -17,7 +17,7 @@ import {
 } from './utils/transformations';
 import { fixJsonWithAI } from './services/aiService';
 import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
-import { TransformMode, ActionType, ValidationResult, AIConfig, AIProvider, HighlightRange, GeneralSettings, DEFAULT_GENERAL_SETTINGS } from './types';
+import { TransformMode, ActionType, ValidationResult, AIConfig, AIProvider, HighlightRange, GeneralSettings, DEFAULT_GENERAL_SETTINGS, TransformContext, TransformResult } from './types';
 import { parse } from 'json-source-map';
 import { JSONPath } from 'jsonpath-plus';
 import { useShortcuts } from './hooks/useShortcuts';
@@ -28,6 +28,23 @@ import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import ErrorBoundary from './components/ErrorBoundary';
 import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
+
+const ASYNC_TRANSFORM_THRESHOLD = 200_000;
+const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理大文件，请稍候...';
+const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
+  TransformMode.FORMAT,
+  TransformMode.DEEP_FORMAT,
+  TransformMode.MINIFY,
+  TransformMode.SORT_KEYS,
+]);
+
+interface AsyncTransformResult {
+  input: string;
+  mode: TransformMode;
+  autoExpandScheme: boolean;
+  output: string;
+  context?: TransformContext;
+}
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -49,7 +66,7 @@ const App: React.FC = () => {
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
 
   // 当没有打开文件时，使用 Ref 存储转换上下文（避免无 Tab 场景下丢失 context）
-  const fallbackContextRef = useRef<import('./types').TransformContext | null>(null);
+  const fallbackContextRef = useRef<TransformContext | null>(null);
 
   // 界面布局状态 (Hook) - 移到前面避免依赖问题
   const appRef = useRef<HTMLDivElement>(null);
@@ -81,31 +98,123 @@ const App: React.FC = () => {
   }, [generalSettings]);
 
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
+  const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
+  const [isOutputTransforming, setIsOutputTransforming] = useState(false);
+  const transformRequestIdRef = useRef(0);
+  const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
+  const shouldUseAsyncTransform = (
+    input.length >= ASYNC_TRANSFORM_THRESHOLD &&
+    ASYNC_TRANSFORM_MODES.has(mode) &&
+    !isUpdatingFromOutput.current
+  );
 
   // 深度格式化结果和上下文（避免在 output 计算中产生副作用）
-  const deepFormatResult = useMemo(() => {
-    if (mode === TransformMode.DEEP_FORMAT) {
+  const syncDeepFormatResult = useMemo(() => {
+    if (mode === TransformMode.DEEP_FORMAT && !shouldUseAsyncTransform) {
       return deepParseWithContext(input, {
-        autoExpandScheme: generalSettings.autoExpandSchemeInDeepFormat,
+        autoExpandScheme,
       });
     }
     return null;
-  }, [input, mode, generalSettings.autoExpandSchemeInDeepFormat]);
+  }, [input, mode, autoExpandScheme, shouldUseAsyncTransform]);
+
+  useEffect(() => {
+    if (!shouldUseAsyncTransform) {
+      setIsOutputTransforming(false);
+      setAsyncTransformResult(null);
+      return;
+    }
+
+    const requestId = ++transformRequestIdRef.current;
+    const worker = new Worker(new URL('./workers/transform.worker.ts', import.meta.url), { type: 'module' });
+
+    setIsOutputTransforming(true);
+    setAsyncTransformResult(null);
+
+    worker.onmessage = (event: MessageEvent<{
+      id: number;
+      output: string;
+      context?: TransformContext;
+      error?: string;
+    }>) => {
+      if (event.data.id !== requestId) return;
+      if (event.data.error) {
+        console.warn('大文件转换 Worker 处理失败:', event.data.error);
+      }
+
+      setAsyncTransformResult({
+        input,
+        mode,
+        autoExpandScheme,
+        output: event.data.output,
+        context: event.data.context,
+      });
+      setIsOutputTransforming(false);
+    };
+
+    worker.onerror = (event) => {
+      if (transformRequestIdRef.current !== requestId) return;
+      console.warn('大文件转换 Worker 运行失败:', event.message);
+      setAsyncTransformResult({
+        input,
+        mode,
+        autoExpandScheme,
+        output: input,
+      });
+      setIsOutputTransforming(false);
+    };
+
+    worker.postMessage({
+      id: requestId,
+      input,
+      mode,
+      options: { autoExpandScheme },
+    });
+
+    return () => {
+      worker.terminate();
+    };
+  }, [input, mode, autoExpandScheme, shouldUseAsyncTransform]);
+
+  const currentAsyncTransformResult = useMemo(() => {
+    if (
+      asyncTransformResult &&
+      asyncTransformResult.input === input &&
+      asyncTransformResult.mode === mode &&
+      asyncTransformResult.autoExpandScheme === autoExpandScheme
+    ) {
+      return asyncTransformResult;
+    }
+    return null;
+  }, [asyncTransformResult, input, mode, autoExpandScheme]);
+
+  const activeDeepFormatResult = useMemo<TransformResult | null>(() => {
+    if (syncDeepFormatResult) {
+      return syncDeepFormatResult;
+    }
+    if (mode === TransformMode.DEEP_FORMAT && currentAsyncTransformResult?.context) {
+      return {
+        output: currentAsyncTransformResult.output,
+        context: currentAsyncTransformResult.context,
+      };
+    }
+    return null;
+  }, [syncDeepFormatResult, mode, currentAsyncTransformResult]);
 
   // 保存深度格式化上下文到文件（副作用独立处理）
   useEffect(() => {
-    if (deepFormatResult) {
+    if (activeDeepFormatResult) {
       if (activeFileId) {
         setFiles(prev => prev.map(f =>
           f.id === activeFileId
-            ? { ...f, transformContext: deepFormatResult.context }
+            ? { ...f, transformContext: activeDeepFormatResult.context }
             : f
         ));
       } else {
-        fallbackContextRef.current = deepFormatResult.context;
+        fallbackContextRef.current = activeDeepFormatResult.context;
       }
     }
-  }, [deepFormatResult, activeFileId, setFiles]);
+  }, [activeDeepFormatResult, activeFileId, setFiles]);
 
   // 计算派生输出（纯计算，无副作用）
   const output = useMemo(() => {
@@ -115,11 +224,21 @@ const App: React.FC = () => {
     }
 
     // 深度格式化模式：使用预计算的结果
-    if (mode === TransformMode.DEEP_FORMAT && deepFormatResult) {
+    if (mode === TransformMode.DEEP_FORMAT && activeDeepFormatResult) {
       if (!isUpdatingFromOutput.current) {
         pendingOutputValue.current = '';
       }
-      return deepFormatResult.output;
+      return activeDeepFormatResult.output;
+    }
+
+    if (shouldUseAsyncTransform) {
+      if (currentAsyncTransformResult) {
+        if (!isUpdatingFromOutput.current) {
+          pendingOutputValue.current = '';
+        }
+        return currentAsyncTransformResult.output;
+      }
+      return ASYNC_TRANSFORM_PLACEHOLDER;
     }
 
     const result = performTransform(input, mode);
@@ -127,7 +246,7 @@ const App: React.FC = () => {
       pendingOutputValue.current = '';
     }
     return result;
-  }, [input, mode, deepFormatResult]);
+  }, [input, mode, activeDeepFormatResult, shouldUseAsyncTransform, currentAsyncTransformResult]);
 
   // JSONPath 查询专用数据源仅在面板打开时计算，避免大文件输入时隐藏面板仍反复深解析
   const jsonPathDataSource = useMemo(() => {
@@ -136,11 +255,11 @@ const App: React.FC = () => {
     }
 
     // 性能优化：复用现有深度格式化结果
-    if (mode === TransformMode.DEEP_FORMAT && deepFormatResult) {
-      return deepFormatResult.output;
+    if (mode === TransformMode.DEEP_FORMAT) {
+      return activeDeepFormatResult?.output ?? '';
     }
     return performTransform(input, TransformMode.DEEP_FORMAT);
-  }, [input, mode, deepFormatResult, isJsonPathPanelOpen]);
+  }, [input, mode, activeDeepFormatResult, isJsonPathPanelOpen]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -182,6 +301,11 @@ const App: React.FC = () => {
 
   // 统一的保存处理逻辑
   const handleSaveShortcut = useCallback(async () => {
+    if (activeEditor === 'PREVIEW' && isOutputTransforming) {
+      showError('预览仍在处理，请稍后再保存');
+      return;
+    }
+
     if (activeFileId) {
       // 如果已打开文件，根据焦点保存不同内容到该文件
       if (activeEditor === 'PREVIEW') {
@@ -202,7 +326,7 @@ const App: React.FC = () => {
         if (success) showSuccess("已另存为源文件");
       }
     }
-  }, [activeFileId, activeEditor, output, saveFile, saveSourceAs]);
+  }, [activeFileId, activeEditor, output, saveFile, saveSourceAs, isOutputTransforming]);
 
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts } = useShortcuts({
@@ -352,6 +476,11 @@ const App: React.FC = () => {
   }, [mode, files, activeFileId, updateActiveFileContent]);
 
   const savePreview = async () => {
+    if (isOutputTransforming) {
+      showError('预览仍在处理，请稍后再保存');
+      return;
+    }
+
     try {
       if (window.showSaveFilePicker) {
         const handle = await window.showSaveFilePicker({
@@ -516,6 +645,11 @@ const App: React.FC = () => {
 
   // 处理 JSONPath 查询定位
   const handleJsonPathQuery = (queryString: string, resultIndex: number) => {
+    if (mode === TransformMode.DEEP_FORMAT && isOutputTransforming) {
+      showError('深度格式化仍在处理，请稍后查询');
+      return;
+    }
+
     // 1. 强制切换至深度格式化模式以支持嵌套查询
     if (mode !== TransformMode.DEEP_FORMAT) {
       setMode(TransformMode.DEEP_FORMAT);
@@ -680,7 +814,7 @@ const App: React.FC = () => {
               onFocus={() => setActiveEditor('PREVIEW')}
               onCursorPositionChange={(line, column) => setCursorPosition({ line, column })}
               readOnly={true} // 默认只读状态
-              canToggleReadOnly={true} // 允许解锁编辑
+              canToggleReadOnly={!isOutputTransforming} // 转换完成后允许解锁编辑
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
               highlightRange={highlightRange}
@@ -688,7 +822,7 @@ const App: React.FC = () => {
               headerActions={
                 <button
                   onClick={async () => {
-                    if (!output.trim()) return;
+                    if (!output.trim() || isOutputTransforming) return;
                     try {
                       await navigator.clipboard.writeText(output);
                       showSuccess('已复制预览内容');
@@ -696,9 +830,9 @@ const App: React.FC = () => {
                       showError('复制失败');
                     }
                   }}
-                  disabled={!output.trim()}
+                  disabled={!output.trim() || isOutputTransforming}
                   className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="复制预览内容到剪贴板"
+                  title={isOutputTransforming ? "预览仍在处理，请稍后复制" : "复制预览内容到剪贴板"}
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
