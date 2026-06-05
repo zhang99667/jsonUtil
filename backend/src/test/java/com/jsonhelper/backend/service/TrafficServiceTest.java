@@ -5,6 +5,7 @@ import com.jsonhelper.backend.dto.response.IpStatsDTO;
 import com.jsonhelper.backend.dto.response.GeoStatsDTO;
 import com.jsonhelper.backend.dto.response.PathStatsDTO;
 import com.jsonhelper.backend.dto.response.RefererStatsDTO;
+import com.jsonhelper.backend.dto.response.SessionStatsDTO;
 import com.jsonhelper.backend.repository.VisitLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,10 @@ class TrafficServiceTest {
     private GeoService geoService;
 
     private TrafficService trafficService;
+
+    private static VisitLogRepository.SessionVisitEvent sessionEvent(String ip, LocalDateTime createdAt) {
+        return new TestSessionVisitEvent(ip, createdAt);
+    }
 
     @BeforeEach
     void setUp() {
@@ -183,5 +188,51 @@ class TrafficServiceTest {
         assertEquals("技术社区", result.get(1).getSource());
         assertEquals(2L, result.get(1).getCount());
         assertEquals(40.0, result.get(1).getPercentage());
+    }
+
+    @Test
+    void getSessionDurationStatsUsesOrderedLightweightEvents() {
+        LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
+        when(visitLogRepository.findSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(
+                        sessionEvent("10.0.0.1", base),
+                        sessionEvent("10.0.0.1", base.plusSeconds(5)),
+                        sessionEvent("10.0.0.1", base.plusMinutes(40)),
+                        sessionEvent("10.0.0.2", base.plusMinutes(1)),
+                        sessionEvent("10.0.0.2", base.plusMinutes(4))
+                ));
+
+        List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
+
+        assertEquals(6, result.size());
+        assertEquals("0-10秒", result.get(0).getDurationRange());
+        assertEquals(1L, result.get(0).getCount());
+        assertEquals(33.33, result.get(0).getPercentage());
+        assertEquals("10-30秒", result.get(1).getDurationRange());
+        assertEquals(1L, result.get(1).getCount());
+        assertEquals(33.33, result.get(1).getPercentage());
+        assertEquals("3-10分钟", result.get(4).getDurationRange());
+        assertEquals(1L, result.get(4).getCount());
+        assertEquals(33.33, result.get(4).getPercentage());
+    }
+
+    private static class TestSessionVisitEvent implements VisitLogRepository.SessionVisitEvent {
+        private final String ip;
+        private final LocalDateTime createdAt;
+
+        private TestSessionVisitEvent(String ip, LocalDateTime createdAt) {
+            this.ip = ip;
+            this.createdAt = createdAt;
+        }
+
+        @Override
+        public String getIp() {
+            return ip;
+        }
+
+        @Override
+        public LocalDateTime getCreatedAt() {
+            return createdAt;
+        }
     }
 }

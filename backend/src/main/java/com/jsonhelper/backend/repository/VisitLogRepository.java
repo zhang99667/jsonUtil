@@ -13,6 +13,12 @@ import java.util.List;
 @Repository
 public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
 
+    interface SessionVisitEvent {
+        String getIp();
+
+        LocalDateTime getCreatedAt();
+    }
+
     @Query("SELECT COUNT(v) FROM VisitLog v WHERE v.createdAt >= :start AND v.path = :path")
     long countPvByPathSince(@Param("start") LocalDateTime start, @Param("path") String path);
 
@@ -108,7 +114,10 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
     List<Object[]> countByHour(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 查询指定时间范围内的访问记录（用于地理位置统计）
+     * 查询指定时间范围内的会话计算事件（仅取必要字段，避免加载完整访问记录）
      */
-    List<VisitLog> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+    @Query("SELECT v.ip AS ip, v.createdAt AS createdAt FROM VisitLog v " +
+           "WHERE v.createdAt >= :start AND v.createdAt < :end AND v.ip IS NOT NULL " +
+           "ORDER BY v.ip ASC, v.createdAt ASC")
+    List<SessionVisitEvent> findSessionVisitEvents(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

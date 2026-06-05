@@ -1,7 +1,6 @@
 package com.jsonhelper.backend.service;
 
 import com.jsonhelper.backend.dto.response.*;
-import com.jsonhelper.backend.entity.VisitLog;
 import com.jsonhelper.backend.repository.VisitLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -10,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -365,16 +365,11 @@ public class TrafficService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
 
-        List<VisitLog> logs = visitLogRepository.findByCreatedAtBetween(start, now);
-        
-        if (logs.isEmpty()) {
+        List<VisitLogRepository.SessionVisitEvent> events = visitLogRepository.findSessionVisitEvents(start, now);
+
+        if (events.isEmpty()) {
             return getEmptyDurationStats();
         }
-
-        // 按IP分组，计算每个用户的会话时长
-        Map<String, List<VisitLog>> logsByIp = logs.stream()
-                .filter(log -> log.getIp() != null)
-                .collect(Collectors.groupingBy(VisitLog::getIp));
 
         // 时长统计桶
         Map<String, Long> durationBuckets = new LinkedHashMap<>();
@@ -387,30 +382,39 @@ public class TrafficService {
 
         int totalSessions = 0;
 
-        for (List<VisitLog> userLogs : logsByIp.values()) {
-            // 按时间排序
-            userLogs.sort((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()));
-            
-            // 会话切分：超过30分钟无活动视为新会话
-            List<List<VisitLog>> sessions = splitIntoSessions(userLogs, 30);
-            
-            for (List<VisitLog> session : sessions) {
-                if (session.size() < 1) continue;
-                
-                long durationSeconds;
-                if (session.size() == 1) {
-                    // 只有一次访问，假设停留10秒
-                    durationSeconds = 10;
-                } else {
-                    LocalDateTime firstTime = session.get(0).getCreatedAt();
-                    LocalDateTime lastTime = session.get(session.size() - 1).getCreatedAt();
-                    durationSeconds = java.time.Duration.between(firstTime, lastTime).getSeconds();
-                }
-                
-                String bucket = getDurationBucket(durationSeconds);
-                durationBuckets.merge(bucket, 1L, Long::sum);
+        String currentIp = null;
+        LocalDateTime sessionStartTime = null;
+        LocalDateTime lastVisitTime = null;
+        int sessionVisitCount = 0;
+
+        for (VisitLogRepository.SessionVisitEvent event : events) {
+            String ip = event.getIp();
+            LocalDateTime visitTime = event.getCreatedAt();
+            if (ip == null || visitTime == null) {
+                continue;
+            }
+
+            boolean isNewIp = currentIp == null || !currentIp.equals(ip);
+            boolean isNewSession = isNewIp || Duration.between(lastVisitTime, visitTime).toMinutes() > 30;
+
+            if (isNewSession && sessionStartTime != null && lastVisitTime != null) {
+                addSessionDuration(durationBuckets, sessionStartTime, lastVisitTime, sessionVisitCount);
                 totalSessions++;
             }
+
+            if (isNewSession) {
+                currentIp = ip;
+                sessionStartTime = visitTime;
+                sessionVisitCount = 0;
+            }
+
+            lastVisitTime = visitTime;
+            sessionVisitCount++;
+        }
+
+        if (sessionStartTime != null && lastVisitTime != null) {
+            addSessionDuration(durationBuckets, sessionStartTime, lastVisitTime, sessionVisitCount);
+            totalSessions++;
         }
 
         final int finalTotal = Math.max(totalSessions, 1);
@@ -425,31 +429,19 @@ public class TrafficService {
     }
 
     /**
-     * 将访问记录切分为会话
+     * 累加一个会话的停留时长
      */
-    private List<List<VisitLog>> splitIntoSessions(List<VisitLog> logs, int gapMinutes) {
-        List<List<VisitLog>> sessions = new ArrayList<>();
-        if (logs.isEmpty()) return sessions;
-        
-        List<VisitLog> currentSession = new ArrayList<>();
-        currentSession.add(logs.get(0));
-        
-        for (int i = 1; i < logs.size(); i++) {
-            VisitLog prev = logs.get(i - 1);
-            VisitLog curr = logs.get(i);
-            
-            long minutesBetween = java.time.Duration.between(
-                    prev.getCreatedAt(), curr.getCreatedAt()).toMinutes();
-            
-            if (minutesBetween > gapMinutes) {
-                sessions.add(currentSession);
-                currentSession = new ArrayList<>();
-            }
-            currentSession.add(curr);
-        }
-        sessions.add(currentSession);
-        
-        return sessions;
+    private void addSessionDuration(
+            Map<String, Long> durationBuckets,
+            LocalDateTime sessionStartTime,
+            LocalDateTime lastVisitTime,
+            int sessionVisitCount
+    ) {
+        long durationSeconds = sessionVisitCount <= 1
+                ? 10
+                : Duration.between(sessionStartTime, lastVisitTime).getSeconds();
+        String bucket = getDurationBucket(durationSeconds);
+        durationBuckets.merge(bucket, 1L, Long::sum);
     }
 
     /**
