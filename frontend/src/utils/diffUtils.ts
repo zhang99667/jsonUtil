@@ -8,6 +8,12 @@ export interface DiffRange {
     endLine: number;
 }
 
+export const DIRTY_DIFF_MAX_TOTAL_LENGTH = 400_000;
+
+export const shouldSkipLineDiff = (original: string, modified: string): boolean => {
+    return original.length + modified.length > DIRTY_DIFF_MAX_TOTAL_LENGTH;
+};
+
 /**
  * 使用 diff 库计算行级差异。
  * 成熟可靠的实现，正确处理各种边界情况。
