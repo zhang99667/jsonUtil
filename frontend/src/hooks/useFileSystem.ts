@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { FileTab, TransformMode } from '../types';
+import { getTextFileOpenError } from '../utils/fileGuards';
 
 interface UseFileSystemProps {
     input: string;
@@ -33,6 +34,16 @@ export const useFileSystem = ({
     const [files, setFiles] = useState<FileTab[]>([]);
     const [activeFileId, setActiveFileId] = useState<string | null>(null);
     const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState<boolean>(false);
+
+    const readTextFileSafely = async (file: File): Promise<string | null> => {
+        const sizeError = getTextFileOpenError(file);
+        if (sizeError) {
+            toast.error(sizeError, { duration: 4000 });
+            return null;
+        }
+
+        return file.text();
+    };
 
     // 同步输入变更到活动文件
     const updateActiveFileContent = useCallback((newContent: string) => {
@@ -113,7 +124,8 @@ export const useFileSystem = ({
                 const file = (e.target as HTMLInputElement).files?.[0];
                 if (!file) return;
 
-                const contents = await file.text();
+                const contents = await readTextFileSafely(file);
+                if (contents === null) return;
                 const newFileId = generateUUID();
 
                 const newFile: FileTab = {
@@ -155,7 +167,8 @@ export const useFileSystem = ({
             });
 
             const file = await handle.getFile();
-            const contents = await file.text();
+            const contents = await readTextFileSafely(file);
+            if (contents === null) return;
             const newFileId = generateUUID();
 
             const newFile: FileTab = {
@@ -293,7 +306,8 @@ export const useFileSystem = ({
     // 打开拖拽进来的文件（无 Handle，仅读取内容）
     const openDroppedFile = async (file: File) => {
         try {
-            const contents = await file.text();
+            const contents = await readTextFileSafely(file);
+            if (contents === null) return;
             const newFileId = generateUUID();
 
             const newFile: FileTab = {
