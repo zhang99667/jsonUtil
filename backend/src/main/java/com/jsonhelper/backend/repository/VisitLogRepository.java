@@ -72,6 +72,24 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
     List<Object[]> countByIpInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
+     * 按User-Agent聚合访问次数（用于设备/浏览器统计，避免逐条解析重复UA）
+     * 返回: [User-Agent, 访问次数]
+     */
+    @Query("SELECT v.userAgent, COUNT(v) as cnt FROM VisitLog v " +
+           "WHERE v.createdAt >= :start AND v.createdAt < :end " +
+           "GROUP BY v.userAgent")
+    List<Object[]> countByUserAgentInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
+     * 按Referer聚合访问次数（用于来源统计，避免逐条解析重复来源）
+     * 返回: [Referer, 访问次数]
+     */
+    @Query("SELECT v.referer, COUNT(v) as cnt FROM VisitLog v " +
+           "WHERE v.createdAt >= :start AND v.createdAt < :end " +
+           "GROUP BY v.referer")
+    List<Object[]> countByRefererInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
      * 按路径统计访问次数排行
      * 返回: [路径, 访问次数]
      */
