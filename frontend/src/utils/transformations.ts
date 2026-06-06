@@ -264,8 +264,9 @@ export function deepParseWithContext(
             }
           }
 
-          // 当 autoExpandScheme 启用时，优先展开独立 CMD 参数串
-          if (options?.autoExpandScheme && detectSchemeType(current) === 'query-string') {
+          // 当 autoExpandScheme 启用时，优先展开独立 CMD 参数串或 URL Scheme
+          const schemeType = detectSchemeType(current);
+          if (options?.autoExpandScheme && (schemeType === 'query-string' || schemeType === 'url')) {
             const decodedScheme = deepDecodeScheme(current, maxDepth - depth);
             if (decodedScheme.isJson) {
               try {
@@ -275,7 +276,7 @@ export function deepParseWithContext(
                   steps.push({
                     type: 'scheme_decode',
                     originalScheme: current,
-                    originalSchemeType: 'query-string',
+                    originalSchemeType: schemeType,
                     decodedSchemeValue: processedSchemeValue,
                   });
 
@@ -499,6 +500,9 @@ function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
       }
       if (step.originalSchemeType === 'query-string') {
         return encodeQueryStringValue(value);
+      }
+      if (step.originalSchemeType === 'url') {
+        return stringifyQueryParamValue(value);
       }
       return value;
     case 'unicode_decode':
