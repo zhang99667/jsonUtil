@@ -74,10 +74,10 @@ export const fixJsonWithAI = async (
     }
 
     // OpenAI 兼容接口调用 (OpenAI, Qwen, GLM, DeepSeek, Custom)
-    const baseUrl = config.baseUrl || getDefaultBaseUrl(config.provider);
+    const baseUrl = getOpenAICompatibleBaseUrl(config);
     const abortController = new AbortController();
 
-    const response = await withTimeout(fetchImpl(`${baseUrl}/chat/completions`, {
+    const response = await withTimeout(fetchImpl(buildChatCompletionsUrl(baseUrl), {
       method: 'POST',
       signal: abortController.signal,
       headers: {
@@ -197,6 +197,16 @@ const withTimeout = <T>(
       }
     );
   });
+};
+
+const getOpenAICompatibleBaseUrl = (config: AIConfig): string => {
+  const configuredBaseUrl = config.baseUrl?.trim();
+  return configuredBaseUrl || getDefaultBaseUrl(config.provider);
+};
+
+const buildChatCompletionsUrl = (baseUrl: string): string => {
+  // 兼容用户从平台复制 Base URL 时带尾部斜杠的情况，避免拼出 //chat/completions。
+  return `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
 };
 
 const tryNormalizeJson = (candidate: string): string | null => {
