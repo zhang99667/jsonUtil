@@ -870,6 +870,98 @@ export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDec
 /**
  * 根据解码层级，逆向编码回原始格式
  */
+const isPlainObject = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const stringifyParamValue = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  if (value === null) return 'null';
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return JSON.stringify(value);
+};
+
+const buildQueryStringFromObject = (value: Record<string, unknown>): string => {
+  const params = new URLSearchParams();
+
+  for (const [key, item] of Object.entries(value)) {
+    if (item === undefined) continue;
+
+    if (Array.isArray(item)) {
+      item.forEach(child => params.append(key, stringifyParamValue(child)));
+    } else {
+      params.append(key, stringifyParamValue(item));
+    }
+  }
+
+  return params.toString();
+};
+
+const parseEditedQueryObject = (content: string): Record<string, unknown> | null => {
+  try {
+    const parsed: unknown = JSON.parse(content);
+    return isPlainObject(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+// 保留 hash route 的路径前缀，只替换其中的查询参数部分。
+const replaceHashParams = (hash: string, queryString: string): string => {
+  const fragment = hash.replace(/^#/, '');
+
+  if (!fragment) {
+    return queryString ? `?${queryString}` : '';
+  }
+
+  if (fragment.startsWith('?')) {
+    return queryString ? `?${queryString}` : '';
+  }
+
+  const queryStart = fragment.indexOf('?');
+  if (queryStart >= 0) {
+    return queryString ? `${fragment.slice(0, queryStart + 1)}${queryString}` : fragment.slice(0, queryStart);
+  }
+
+  if (QUERY_PAIR_START_RE.test(normalizeQueryString(fragment))) {
+    return queryString;
+  }
+
+  return queryString ? `${fragment}?${queryString}` : fragment;
+};
+
+const encodeUrlLayerContent = (content: string, originalUrl: string): string => {
+  const editedParams = parseEditedQueryObject(content);
+  if (!editedParams) return content;
+
+  try {
+    const url = new URL(originalUrl);
+    const hasQueryParams = Boolean(url.search);
+    const hasHashParams = Boolean(getFragmentParamSource(url.hash));
+
+    if (hasQueryParams && hasHashParams) {
+      // query 与 hash 同时存在时，解析结果用 _hash 承载 hash route 参数。
+      const { _hash: hashParams, ...queryParams } = editedParams;
+      url.search = buildQueryStringFromObject(queryParams);
+      url.hash = replaceHashParams(
+        url.hash,
+        buildQueryStringFromObject(isPlainObject(hashParams) ? hashParams : {})
+      );
+      return url.toString();
+    }
+
+    if (hasHashParams) {
+      url.hash = replaceHashParams(url.hash, buildQueryStringFromObject(editedParams));
+      return url.toString();
+    }
+
+    url.search = buildQueryStringFromObject(editedParams);
+    return url.toString();
+  } catch {
+    return content;
+  }
+};
+
 export function encodeWithLayers(content: string, layers: DecodeLayer[]): string {
   let result = content;
   
@@ -894,32 +986,12 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
         // 只返回修改后的 payload 部分
         break;
       case 'url':
-        // URL 参数需要特殊处理
-        // 这里假设原始 URL 结构保存在 layer.before 中
-        if (layer.before) {
-          try {
-            const url = new URL(layer.before);
-            // 提取参数名（从 description 中）
-            const paramMatch = layer.description.match(/\(([^)]+)\)/);
-            if (paramMatch) {
-              const paramName = paramMatch[1];
-              url.searchParams.set(paramName, result);
-              result = url.toString();
-            }
-          } catch {
-            // 保持原样
-          }
-        }
+        result = layer.before ? encodeUrlLayerContent(result, layer.before) : result;
         break;
       case 'query-string':
         try {
-          const parsed = JSON.parse(result) as Record<string, unknown>;
-          result = new URLSearchParams(
-            Object.entries(parsed).reduce<Record<string, string>>((acc, [key, value]) => {
-              acc[key] = typeof value === 'string' ? value : JSON.stringify(value);
-              return acc;
-            }, {})
-          ).toString();
+          const parsed = JSON.parse(result) as unknown;
+          result = isPlainObject(parsed) ? buildQueryStringFromObject(parsed) : result;
         } catch {
           // 保持原样
         }
