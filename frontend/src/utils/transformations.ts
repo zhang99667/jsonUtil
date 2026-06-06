@@ -395,6 +395,14 @@ export function inverseWithContext(
       const record = context.records.get(currentPath);
 
       if (record && record.steps.length > 0) {
+        const schemeDecodeStep = record.steps.find(step => step.type === 'scheme_decode');
+        if (
+          schemeDecodeStep?.decodedSchemeValue !== undefined &&
+          isSameJsonValue(value, schemeDecodeStep.decodedSchemeValue)
+        ) {
+          return record.originalValue;
+        }
+
         // 有转换记录，需要逆向还原
         let current = value;
 

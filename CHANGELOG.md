@@ -8,6 +8,7 @@
 - **CMD/Scheme HTML 转义分隔符兼容**: 支持解析从 HTML 或日志页面复制出的 `&amp;` / `&#38;` 参数分隔符
 - **CMD/Scheme 字符串化 JSON 解析**: 参数值如果是 `JSON.stringify` 后的 JSON/URL/CMD 字符串，会自动拆掉字符串字面量并继续递归解析
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
+- **深度格式化 Scheme 还原增强**: 修复 URL Scheme 内含二级 URL 时，未编辑预览回写无法优先还原父级原始字符串的问题
 - **Base64 编解码**: 新增 Base64 编码 / Base64 解码转换模式，支持 UTF-8 中文内容、URL-safe Base64 与预览编辑器反向同步
 - **URL 编解码**: 新增 URL 编码 / URL 解码 转换模式，支持对输入内容进行 `encodeURIComponent` / `decodeURIComponent`，预览编辑器支持反向同步
 - **嵌套解析自动展开 Scheme**: 深度格式化（嵌套解析）新增 `autoExpandScheme` 选项，启用后自动检测并展开 URL 编码的 CMD/Scheme 字符串值
