@@ -11,7 +11,7 @@ import {
   JsonObject
 } from '../types.ts';
 
-import { hasUrlEncoding } from './schemeUtils.ts';
+import { deepDecodeScheme, detectSchemeType, hasUrlEncoding } from './schemeUtils.ts';
 
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };
@@ -232,6 +232,25 @@ export function deepParseWithContext(
         let current = value;
         let iterDepth = 0;
 
+        const processParsedValue = (jsonParsed: JsonValue): JsonValue => {
+          if (Array.isArray(jsonParsed)) {
+            return jsonParsed.map((item, index) =>
+              processValue(item, `${currentPath}[${index}]`, depth + 1)
+            );
+          }
+
+          if (typeof jsonParsed === 'object' && jsonParsed !== null) {
+            const jsonObj = jsonParsed as JsonObject;
+            const result: JsonObject = {};
+            for (const key in jsonObj) {
+              result[key] = processValue(jsonObj[key], `${currentPath}.${key}`, depth + 1);
+            }
+            return result;
+          }
+
+          return jsonParsed;
+        };
+
         while (iterDepth < maxDepth) {
           let changed = false;
 
@@ -242,6 +261,35 @@ export function deepParseWithContext(
               steps.push({ type: 'unicode_decode' });
               current = decoded;
               changed = true;
+            }
+          }
+
+          // 当 autoExpandScheme 启用时，优先展开独立 CMD 参数串
+          if (options?.autoExpandScheme && detectSchemeType(current) === 'query-string') {
+            const decodedScheme = deepDecodeScheme(current, maxDepth - depth);
+            if (decodedScheme.isJson) {
+              try {
+                const schemeParsed = JSON.parse(decodedScheme.decoded) as JsonValue;
+                if (typeof schemeParsed === 'object' && schemeParsed !== null) {
+                  const processedSchemeValue = processParsedValue(schemeParsed);
+                  steps.push({
+                    type: 'scheme_decode',
+                    originalScheme: current,
+                    originalSchemeType: 'query-string',
+                    decodedSchemeValue: processedSchemeValue,
+                  });
+
+                  context.records.set(currentPath, {
+                    path: currentPath,
+                    steps: [...steps],
+                    originalValue: value,
+                  });
+
+                  return processedSchemeValue;
+                }
+              } catch {
+                // CMD 参数串解析失败，继续走后续普通解析逻辑
+              }
             }
           }
 
@@ -274,18 +322,7 @@ export function deepParseWithContext(
                 }
 
                 // 递归处理解析后的对象
-                if (Array.isArray(jsonParsed)) {
-                  return jsonParsed.map((item, index) =>
-                    processValue(item, `${currentPath}[${index}]`, depth + 1)
-                  );
-                } else {
-                  const jsonObj = jsonParsed as JsonObject;
-                  const result: JsonObject = {};
-                  for (const key in jsonObj) {
-                    result[key] = processValue(jsonObj[key], `${currentPath}.${key}`, depth + 1);
-                  }
-                  return result;
-                }
+                return processParsedValue(jsonParsed);
               }
             }
           } catch {
@@ -421,11 +458,49 @@ export function inverseWithContext(
 /**
  * 应用单步逆向转换
  */
+const stringifyQueryParamValue = (value: JsonValue): string => {
+  if (typeof value === 'string') return value;
+  if (value === null) return 'null';
+  return JSON.stringify(value);
+};
+
+const encodeQueryStringValue = (value: JsonValue): string => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const params = new URLSearchParams();
+    for (const [key, item] of Object.entries(value)) {
+      params.append(key, stringifyQueryParamValue(item));
+    }
+    return params.toString();
+  }
+
+  return stringifyQueryParamValue(value);
+};
+
+const isSameJsonValue = (left: JsonValue, right: JsonValue): boolean => {
+  try {
+    return JSON.stringify(left) === JSON.stringify(right);
+  } catch {
+    return false;
+  }
+};
+
 function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
   switch (step.type) {
     case 'json_parse':
       // 逆操作：stringify（不带缩进，保持紧凑）
       return JSON.stringify(value);
+    case 'scheme_decode':
+      if (
+        step.originalScheme &&
+        step.decodedSchemeValue !== undefined &&
+        isSameJsonValue(value, step.decodedSchemeValue)
+      ) {
+        return step.originalScheme;
+      }
+      if (step.originalSchemeType === 'query-string') {
+        return encodeQueryStringValue(value);
+      }
+      return value;
     case 'unicode_decode':
       // 逆操作：encode
       if (typeof value === 'string') {
