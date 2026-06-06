@@ -285,6 +285,34 @@ describe('deepParseWithContext', () => {
     expect(parsed.text).toBe('你好');
   });
 
+  it('自动展开 CMD 参数串', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const input = JSON.stringify({
+      action_cmd: `cmd=${payload}&from=feed`,
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      from: 'feed',
+    });
+    expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
+  });
+
+  it('未启用自动展开时保留 CMD 参数串', () => {
+    const input = JSON.stringify({
+      action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',
+    });
+
+    const result = deepParseWithContext(input);
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd).toBe('cmd=%7B%22nid%22%3A123%7D&from=feed');
+    expect(result.context.records.has('$.action_cmd')).toBe(false);
+  });
+
   it('无效 JSON 返回原始输入', () => {
     const input = '{invalid json}';
     const result = deepParseWithContext(input);
@@ -297,6 +325,17 @@ describe('inverseWithContext 精确还原', () => {
     const inner = JSON.stringify({ nested: true });
     const input = JSON.stringify({ data: inner });
     const { output, context } = deepParseWithContext(input);
+
+    const restored = inverseWithContext(output, context);
+    expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('未编辑的 CMD 参数串自动展开后可精确还原', () => {
+    const nestedUrl = encodeURIComponent('https://example.com/path?from=box');
+    const input = JSON.stringify({
+      action_cmd: `cmd=%7B%22nid%22%3A123%7D&url=${nestedUrl}`,
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
 
     const restored = inverseWithContext(output, context);
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));

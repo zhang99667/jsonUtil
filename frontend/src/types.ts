@@ -112,6 +112,7 @@ export type ShortcutConfig = Record<ShortcutAction, ShortcutKey>;
 export type TransformStepType =
   | 'json_parse'      // JSON.parse
   | 'json_stringify'  // JSON.stringify
+  | 'scheme_decode'   // CMD/Scheme 参数串展开
   | 'unicode_decode'  // \uXXXX → 中文
   | 'unicode_encode'  // 中文 → \uXXXX
   | 'url_decode'      // URL 解码
@@ -127,6 +128,9 @@ export interface TransformStep {
   // 可选：保存原始细节用于精确还原
   originalEncoding?: string;  // 如 'utf-8'
   originalPadding?: boolean;  // Base64 是否有 padding
+  originalScheme?: string;    // 原始 CMD/Scheme 字符串
+  originalSchemeType?: 'query-string'; // 当前仅对独立 CMD 参数串做可逆展开
+  decodedSchemeValue?: JsonValue; // 原始串对应的展开结果，用于无编辑时精确还原
 }
 
 // 单个路径的转换记录
