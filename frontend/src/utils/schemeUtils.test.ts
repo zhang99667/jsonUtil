@@ -13,6 +13,7 @@ import {
   decodeJwt,
   parseUrl,
   deepDecodeScheme,
+  encodeWithLayers,
   findSchemesInJson,
   isQueryStringFormat,
   isDecodableQueryString,
@@ -428,6 +429,58 @@ describe('deepDecodeScheme', () => {
         source: 'box',
       },
     });
+  });
+});
+
+// ============ encodeWithLayers 测试 ============
+
+describe('encodeWithLayers', () => {
+  it('完整 URL Scheme 编辑后重建 query 参数', () => {
+    const original = 'baiduboxapp://v1/browser/open?cmd=%7B%22a%22%3A1%7D&from=feed';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      cmd: { a: 2 },
+      from: 'card',
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('baiduboxapp://v1/browser/open?cmd=%7B%22a%22%3A2%7D&from=card');
+  });
+
+  it('hash route 参数编辑后保留 route 前缀', () => {
+    const original = 'https://example.com/app#/detail?cmd=%7B%22a%22%3A1%7D&from=hash';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      cmd: { a: 3 },
+      from: 'panel',
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('https://example.com/app#/detail?cmd=%7B%22a%22%3A3%7D&from=panel');
+  });
+
+  it('URL query 与 hash route 同时存在时按 _hash 分区重建', () => {
+    const original = 'https://example.com/page?from=feed#/detail?cmd=%7B%22a%22%3A1%7D&tab=old';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      from: 'card',
+      _hash: {
+        cmd: { a: 4 },
+        tab: 'new',
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('https://example.com/page?from=card#/detail?cmd=%7B%22a%22%3A4%7D&tab=new');
+  });
+
+  it('独立 CMD 参数串编辑后支持数组恢复为重复参数', () => {
+    const decoded = deepDecodeScheme('tag=feed&tag=news');
+    const edited = JSON.stringify({
+      tag: ['feed', 'sports'],
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers)).toBe('tag=feed&tag=sports');
   });
 });
 
