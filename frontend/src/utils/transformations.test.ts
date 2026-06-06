@@ -378,6 +378,22 @@ describe('inverseWithContext 精确还原', () => {
     const restored = inverseWithContext(output, context);
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));
   });
+
+  it('未编辑的嵌套 URL Scheme 自动展开后可精确还原父级字符串', () => {
+    const nestedUrl = encodeURIComponent('https://example.com/path?from=box');
+    const input = JSON.stringify({
+      schema: `baiduboxapp://v1/browser/open?url=${nestedUrl}&from=feed`,
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    expect(parsed.schema).toEqual({
+      url: { from: 'box' },
+      from: 'feed',
+    });
+
+    const restored = inverseWithContext(output, context);
+    expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
 });
 
 // ============ deepMergeTemplate 测试 ============
