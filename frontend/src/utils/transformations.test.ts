@@ -301,6 +301,22 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
   });
 
+  it('自动展开 URL Scheme 参数', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const input = JSON.stringify({
+      schema: `baiduboxapp://v1/browser/open?cmd=${payload}&from=feed`,
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.schema).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      from: 'feed',
+    });
+    expect(result.context.records.get('$.schema')?.steps[0].originalSchemeType).toBe('url');
+  });
+
   it('未启用自动展开时保留 CMD 参数串', () => {
     const input = JSON.stringify({
       action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',
@@ -311,6 +327,18 @@ describe('deepParseWithContext', () => {
 
     expect(parsed.action_cmd).toBe('cmd=%7B%22nid%22%3A123%7D&from=feed');
     expect(result.context.records.has('$.action_cmd')).toBe(false);
+  });
+
+  it('未启用自动展开时保留 URL Scheme', () => {
+    const input = JSON.stringify({
+      schema: 'baiduboxapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed',
+    });
+
+    const result = deepParseWithContext(input);
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.schema).toBe('baiduboxapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed');
+    expect(result.context.records.has('$.schema')).toBe(false);
   });
 
   it('无效 JSON 返回原始输入', () => {
@@ -334,6 +362,16 @@ describe('inverseWithContext 精确还原', () => {
     const nestedUrl = encodeURIComponent('https://example.com/path?from=box');
     const input = JSON.stringify({
       action_cmd: `cmd=%7B%22nid%22%3A123%7D&url=${nestedUrl}`,
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+
+    const restored = inverseWithContext(output, context);
+    expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('未编辑的 URL Scheme 自动展开后可精确还原', () => {
+    const input = JSON.stringify({
+      schema: 'baiduboxapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed',
     });
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
 
