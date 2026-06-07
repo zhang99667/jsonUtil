@@ -92,6 +92,11 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('actionCommand=%7B%22a%22%3A1%7D')).toBe(true);
   });
 
+  it('检测 camelCase 的单参数 URL 字段', () => {
+    expect(isDecodableQueryString('h5Url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
+    expect(isDecodableQueryString('jumpUrl=//m.baidu.com/s?word=json')).toBe(true);
+  });
+
   it('普通单键值对不误判', () => {
     expect(isDecodableQueryString('name=test')).toBe(false);
   });
@@ -473,6 +478,26 @@ describe('deepDecodeScheme', () => {
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       actionCommand: { nid: 123, title: '标题' },
+    });
+  });
+
+  it('常见 camelCase URL 字段可作为单参数解析', () => {
+    const result = deepDecodeScheme('h5Url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson%2Bschema');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      h5Url: {
+        word: 'json schema',
+      },
+    });
+  });
+
+  it('常见 camelCase 协议相对 URL 字段可作为单参数解析', () => {
+    const result = deepDecodeScheme('jumpUrl=//m.baidu.com/s?word=json+schema');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      jumpUrl: {
+        word: 'json schema',
+      },
     });
   });
 
