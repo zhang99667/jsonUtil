@@ -109,7 +109,27 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     }
   };
 
+  // JSON 解码结果被编辑后需要重新校验，避免非法内容写回原始字段。
+  const editedJsonError = useMemo(() => {
+    if (!decodeResult.isJson) return '';
+    if (!editedContent.trim()) return 'JSON 内容不能为空';
+
+    try {
+      JSON.parse(editedContent);
+      return '';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return `JSON 内容格式有误: ${message}`;
+    }
+  }, [decodeResult.isJson, editedContent]);
+  const canApplyEdit = Boolean(onApply && isEditing && !editedJsonError);
+
   const handleApply = () => {
+    if (editedJsonError) {
+      toast.error('请先修正解码结果中的 JSON 错误', { duration: 2000 });
+      return;
+    }
+
     if (onApply) {
       // 将编辑后的内容按原编码层级重新编码
       const encoded = encodeWithLayers(editedContent, decodeResult.layers);
@@ -217,7 +237,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         {onApply && isEditing && (
           <button
             onClick={handleApply}
-            className="px-2.5 py-1 text-sm bg-brand-primary text-white rounded hover:bg-brand-primary/90 transition-colors flex items-center gap-1"
+            disabled={!canApplyEdit}
+            className="px-2.5 py-1 text-sm bg-brand-primary text-white rounded hover:bg-brand-primary/90 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -454,8 +475,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500 font-mono uppercase bg-editor-bg px-1.5 py-0.5 rounded">{editorLanguage}</span>
                 {decodeResult.isJson && (
-                  <span className="text-xs text-status-success-text bg-status-success-bg px-2 py-0.5 rounded border border-status-success-border">
-                    Valid JSON
+                  <span className={`text-xs px-2 py-0.5 rounded border ${
+                    editedJsonError
+                      ? 'text-status-error-text bg-status-error-bg border-status-error-border'
+                      : 'text-status-success-text bg-status-success-bg border-status-success-border'
+                  }`}>
+                    {editedJsonError ? 'Invalid JSON' : 'Valid JSON'}
                   </span>
                 )}
               </div>
@@ -475,6 +500,14 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 </div>
               )}
             </div>
+            {editedJsonError && (
+              <div
+                data-tour="scheme-json-edit-error"
+                className="mt-2 text-xs text-status-error-text bg-status-error-bg border border-status-error-border rounded px-2.5 py-1.5"
+              >
+                {editedJsonError}
+              </div>
+            )}
           </div>
         </div>
 
