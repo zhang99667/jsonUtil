@@ -13,12 +13,39 @@ import {
 
 import { deepDecodeScheme, detectSchemeType, hasUrlEncoding } from './schemeUtils.ts';
 
+const JSON_LINE_PREFIX_RE = /^[{\["tfn\-\d]/;
+
+const parseJsonLines = (input: string): JsonValue[] | null => {
+  if (!input.includes('\n')) return null;
+
+  const records: JsonValue[] = [];
+  for (const line of input.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (!JSON_LINE_PREFIX_RE.test(trimmed)) return null;
+
+    try {
+      records.push(JSON.parse(trimmed) as JsonValue);
+    } catch {
+      return null;
+    }
+  }
+
+  return records.length >= 2 ? records : null;
+};
+
+const stringifyJsonLines = (records: JsonValue[]): string => (
+  records.map(record => JSON.stringify(record)).join('\n')
+);
+
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };
   try {
     JSON.parse(input);
     return { isValid: true };
   } catch (e: unknown) {
+    if (parseJsonLines(input)) return { isValid: true };
+
     const message = e instanceof Error ? e.message : String(e);
     return { isValid: false, error: message };
   }
@@ -89,6 +116,9 @@ const minifyJson = (input: string): string => {
     const parsed: JsonValue = JSON.parse(input);
     return JSON.stringify(parsed);
   } catch (e) {
+    const jsonLines = parseJsonLines(input);
+    if (jsonLines) return stringifyJsonLines(jsonLines);
+
     return input;
   }
 };
@@ -609,8 +639,13 @@ export const performTransform = (input: string, mode: TransformMode): string => 
       case TransformMode.BASE64_ENCODE: return base64Encode(input);
       case TransformMode.BASE64_DECODE: return base64Decode(input);
       case TransformMode.SORT_KEYS: {
-        const parsed: JsonValue = JSON.parse(input);
-        return JSON.stringify(sortJsonKeys(parsed), null, 2);
+        try {
+          const parsed: JsonValue = JSON.parse(input);
+          return JSON.stringify(sortJsonKeys(parsed), null, 2);
+        } catch {
+          const jsonLines = parseJsonLines(input);
+          return jsonLines ? stringifyJsonLines(jsonLines.map(sortJsonKeys)) : input;
+        }
       }
       default: return input;
     }
