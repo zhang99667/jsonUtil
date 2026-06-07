@@ -7,7 +7,7 @@ import { EditorProps, HighlightRange } from '../types';
 import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { computeLineDiff, shouldSkipLineDiff } from '../utils/diffUtils';
-import { findSchemesInJson, SchemeLocation } from '../utils/schemeUtils';
+import { findSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
 import { SchemeViewerModal } from './SchemeViewerModal';
 import { TabBar } from './TabBar';
 

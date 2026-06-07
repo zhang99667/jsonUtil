@@ -14,10 +14,10 @@ import {
   parseUrl,
   deepDecodeScheme,
   encodeWithLayers,
-  findSchemesInJson,
   isQueryStringFormat,
   isDecodableQueryString,
 } from './schemeUtils';
+import { findSchemesInJson } from './schemeScanner';
 
 // ============ 检测函数测试 ============
 

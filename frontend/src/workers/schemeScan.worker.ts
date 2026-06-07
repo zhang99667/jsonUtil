@@ -1,4 +1,4 @@
-import { findSchemesInJson, type SchemeLocation } from '../utils/schemeUtils';
+import { findSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
 
 interface SchemeScanWorkerRequest {
   id: number;
