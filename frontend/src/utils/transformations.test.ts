@@ -30,8 +30,18 @@ describe('validateJson', () => {
     expect(validateJson('[1, 2, 3]')).toEqual({ isValid: true });
   });
 
+  it('有效的 JSON Lines', () => {
+    expect(validateJson('{"a":1}\n{"b":[2]}')).toEqual({ isValid: true });
+  });
+
   it('无效的 JSON 返回错误信息', () => {
     const result = validateJson('{invalid}');
+    expect(result.isValid).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+
+  it('无效的 JSON Lines 返回错误信息', () => {
+    const result = validateJson('{"a":1}\n{invalid}');
     expect(result.isValid).toBe(false);
     expect(result.error).toBeDefined();
   });
@@ -110,6 +120,11 @@ describe('performTransform', () => {
     it('压缩格式化的 JSON', () => {
       const input = '{\n  "name": "test",\n  "value": 123\n}';
       expect(performTransform(input, TransformMode.MINIFY)).toBe('{"name":"test","value":123}');
+    });
+
+    it('逐行压缩 JSON Lines', () => {
+      const input = '{"a": 1}\n\n{"b": [2, 3]}';
+      expect(performTransform(input, TransformMode.MINIFY)).toBe('{"a":1}\n{"b":[2,3]}');
     });
   });
 
@@ -207,6 +222,11 @@ describe('performTransform', () => {
         list: [{ y: 2, z: 1 }],
       });
       expect(result.indexOf('"a"')).toBeLessThan(result.indexOf('"b"'));
+    });
+
+    it('逐行排序 JSON Lines 对象键', () => {
+      const input = '{"b":2,"a":1}\n{"d":4,"c":3}';
+      expect(performTransform(input, TransformMode.SORT_KEYS)).toBe('{"a":1,"b":2}\n{"c":3,"d":4}');
     });
   });
 
