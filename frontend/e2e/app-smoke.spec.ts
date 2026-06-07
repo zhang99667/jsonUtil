@@ -389,6 +389,26 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(page.locator('.jsonpath-highlight')).toHaveCount(0);
 });
 
+test('JSONPath 面板可查询 JSON Lines 输入', async ({ page }) => {
+  await fillSourceEditor(page, '{"level":"info","user":{"id":1}}\n  {"level":"error","user":{"id":2}}');
+
+  await page.getByRole('button', { name: 'JSONPath 查询' }).click();
+  await page.getByRole('button', { name: '查询', exact: true }).click();
+
+  await expect(page.getByText('1 / 1')).toBeVisible();
+  await expect(page.locator('.jsonpath-highlight').first()).toBeVisible();
+  const resultPreview = page.locator('[data-tour="jsonpath-results"]');
+  await expect(resultPreview).toContainText('"level": "info"');
+  await expect(resultPreview).toContainText('"level": "error"');
+
+  await page.locator('[data-tour="jsonpath-input"]').fill('$[*].user.id');
+  await page.getByRole('button', { name: '查询', exact: true }).click();
+
+  await expect(page.getByText('1 / 2')).toBeVisible();
+  await expect(resultPreview).toContainText('1');
+  await expect(resultPreview).toContainText('2');
+});
+
 test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   const cmdPayload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
 
