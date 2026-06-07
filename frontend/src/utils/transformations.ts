@@ -12,31 +12,7 @@ import {
 } from '../types.ts';
 
 import { deepDecodeScheme, detectSchemeType, hasUrlEncoding } from './schemeUtils.ts';
-
-const JSON_LINE_PREFIX_RE = /^[{\["tfn\-\d]/;
-
-const parseJsonLines = (input: string): JsonValue[] | null => {
-  if (!input.includes('\n')) return null;
-
-  const records: JsonValue[] = [];
-  for (const line of input.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (!JSON_LINE_PREFIX_RE.test(trimmed)) return null;
-
-    try {
-      records.push(JSON.parse(trimmed) as JsonValue);
-    } catch {
-      return null;
-    }
-  }
-
-  return records.length >= 2 ? records : null;
-};
-
-const stringifyJsonLines = (records: JsonValue[]): string => (
-  records.map(record => JSON.stringify(record)).join('\n')
-);
+import { parseJsonLines, stringifyJsonLines } from './jsonLines.ts';
 
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };

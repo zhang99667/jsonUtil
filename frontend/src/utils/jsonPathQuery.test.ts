@@ -39,6 +39,53 @@ describe('queryJsonPathRanges', () => {
     expect(result.values).toEqual(['Alice']);
   });
 
+  it('支持将 JSON Lines 作为虚拟数组查询', () => {
+    const jsonData = [
+      '{"level":"info","user":{"id":1}}',
+      '  {"level":"error","user":{"id":2}}',
+    ].join('\n');
+
+    const result = queryJsonPathRanges(jsonData, '$[*].user.id');
+
+    expect(result.totalResults).toBe(2);
+    expect(result.values).toEqual([1, 2]);
+    expect(result.ranges[0].startLine).toBe(1);
+    expect(result.ranges[1].startLine).toBe(2);
+    expect(result.ranges[1].startColumn).toBeGreaterThan(2);
+  });
+
+  it('支持高亮 JSON Lines 中被筛选出的整行对象', () => {
+    const jsonData = [
+      '{"level":"info","msg":"ok"}',
+      '{"level":"error","msg":"failed"}',
+    ].join('\n');
+
+    const result = queryJsonPathRanges(jsonData, '$[?(@.level=="error")]');
+
+    expect(result.totalResults).toBe(1);
+    expect(result.values).toEqual([{ level: 'error', msg: 'failed' }]);
+    expect(result.ranges[0].startLine).toBe(2);
+    expect(result.ranges[0].startColumn).toBe(1);
+  });
+
+  it('JSON Lines 默认根查询高亮虚拟数组覆盖的原始行范围', () => {
+    const jsonData = [
+      '  {"id":1}',
+      '{"id":2}',
+    ].join('\n');
+
+    const result = queryJsonPathRanges(jsonData, '$');
+
+    expect(result.totalResults).toBe(1);
+    expect(result.values).toEqual([[{ id: 1 }, { id: 2 }]]);
+    expect(result.ranges[0]).toEqual({
+      startLine: 1,
+      startColumn: 3,
+      endLine: 2,
+      endColumn: 9,
+    });
+  });
+
   it('非法 JSON 抛出可展示错误', () => {
     expect(() => queryJsonPathRanges('{invalid}', '$'))
       .toThrow('JSON 解析错误');
