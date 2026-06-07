@@ -161,6 +161,10 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType('%E4%BD%A0%E5%A5%BD')).toBe('url-encoded');
   });
 
+  it('检测独立 hash route 参数串', () => {
+    expect(detectSchemeType('#/detail?cmd=%7B%22a%22%3A1%7D&from=hash')).toBe('query-string');
+  });
+
   it('普通字符串返回 plain', () => {
     expect(detectSchemeType('hello world')).toBe('plain');
   });
@@ -427,6 +431,17 @@ describe('deepDecodeScheme', () => {
       cmd: { nid: 123, title: '标题' },
       from: 'hash',
     });
+  });
+
+  it('独立 hash route 参数串被递归解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const result = deepDecodeScheme(`#/detail?cmd=${payload}&from=hash`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      from: 'hash',
+    });
+    expect(result.layers[0].description).toBe('CMD 参数递归解析');
   });
 
   it('CMD 参数值中的 hash route 片段被递归解析', () => {
