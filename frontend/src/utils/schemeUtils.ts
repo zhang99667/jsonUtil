@@ -98,6 +98,7 @@ const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const PROTOCOL_RELATIVE_URL_BASE = 'https:';
+const BARE_HOST_URL_BASE = 'https://';
 
 const normalizeQueryString = (source: string): string => (
   source.trim()
@@ -138,22 +139,49 @@ const isDecodableParamValue = (value: string): boolean => (
 
 // ============ 检测函数 ============
 
+const isDomainLikeHost = (host: string): boolean => {
+  const hostWithoutPort = host.toLowerCase().replace(/:\d+$/, '');
+  if (hostWithoutPort === 'localhost') return true;
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostWithoutPort)) return true;
+
+  const labels = hostWithoutPort.split('.');
+  const topLevelDomain = labels[labels.length - 1] || '';
+  return labels.length >= 2 && /^[a-z]{2,}$/.test(topLevelDomain);
+};
+
 const isProtocolRelativeUrl = (str: string): boolean => {
   const match = str.trim().match(/^\/\/([^/?#\s]+)(?:[/?#].*)?$/);
   if (!match) return false;
 
   const host = match[1];
-  return /^[A-Za-z0-9.-]+(?::\d+)?$/.test(host) &&
-    (host.includes('.') || host.startsWith('localhost') || host.includes(':'));
+  return /^[A-Za-z0-9.-]+(?::\d+)?$/.test(host) && isDomainLikeHost(host);
+};
+
+const isBareHostUrl = (str: string): boolean => {
+  const trimmed = str.trim();
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed) || trimmed.startsWith('//')) return false;
+
+  const match = trimmed.match(/^([^/?#\s]+)([/?#].*)$/);
+  if (!match) return false;
+
+  const host = match[1];
+  return /^[A-Za-z0-9.-]+(?::\d+)?$/.test(host) && isDomainLikeHost(host);
 };
 
 const createUrl = (urlString: string): URL => {
   const trimmed = urlString.trim();
+  if (isBareHostUrl(trimmed)) {
+    return new URL(`${BARE_HOST_URL_BASE}${trimmed}`);
+  }
   return new URL(isProtocolRelativeUrl(trimmed) ? `${PROTOCOL_RELATIVE_URL_BASE}${trimmed}` : trimmed);
 };
 
 const stringifyUrlForOriginalShape = (url: URL, originalUrl: string): string => {
   const serialized = url.toString();
+  if (isBareHostUrl(originalUrl)) {
+    return serialized.slice(BARE_HOST_URL_BASE.length);
+  }
+
   return isProtocolRelativeUrl(originalUrl)
     ? serialized.slice(PROTOCOL_RELATIVE_URL_BASE.length)
     : serialized;
@@ -164,8 +192,10 @@ const stringifyUrlForOriginalShape = (url: URL, originalUrl: string): string => 
  */
 export function isUrl(str: string): boolean {
   const trimmed = str.trim();
-  // 匹配 scheme://... 和 //host/path 这两类常见链接格式
-  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(trimmed) || isProtocolRelativeUrl(trimmed);
+  // 匹配 scheme://...、//host/path 和 host/path 这几类常见链接格式
+  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(trimmed) ||
+    isProtocolRelativeUrl(trimmed) ||
+    isBareHostUrl(trimmed);
 }
 
 /**
@@ -511,12 +541,14 @@ export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | 
   try {
     // 处理自定义 scheme（如 myapp://）
     const url = createUrl(urlString);
+    const isBareUrl = isBareHostUrl(urlString);
+    const isProtocolRelative = isProtocolRelativeUrl(urlString);
     const params = parseFlatQueryParams(url.search);
     const fragmentParamSource = getFragmentParamSource(url.hash);
     const hashParams = fragmentParamSource ? parseFlatQueryParams(fragmentParamSource) : undefined;
     
     return {
-      protocol: isProtocolRelativeUrl(urlString) ? '//' : url.protocol,
+      protocol: isBareUrl ? '无协议' : isProtocolRelative ? '//' : url.protocol,
       host: url.host || undefined,
       path: url.pathname || undefined,
       hash: url.hash ? url.hash.slice(1) : undefined,
