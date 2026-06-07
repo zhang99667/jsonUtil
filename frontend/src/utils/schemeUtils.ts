@@ -83,6 +83,15 @@ const COMMON_CMD_PARAM_NAMES = new Set([
   'open_url',
 ]);
 
+const normalizeCmdParamName = (key: string): string => (
+  key.toLowerCase().replace(/[_-]/g, '')
+);
+
+const COMMON_CMD_PARAM_NAME_ALIASES = new Set([
+  ...COMMON_CMD_PARAM_NAMES,
+  ...Array.from(COMMON_CMD_PARAM_NAMES, normalizeCmdParamName),
+]);
+
 const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
@@ -198,7 +207,7 @@ export function isDecodableQueryString(str: string): boolean {
   const equalIndex = source.indexOf('=');
   const key = source.slice(0, equalIndex).toLowerCase();
   const value = source.slice(equalIndex + 1);
-  return COMMON_CMD_PARAM_NAMES.has(key) && isDecodableParamValue(value);
+  return COMMON_CMD_PARAM_NAME_ALIASES.has(key) && isDecodableParamValue(value);
 }
 
 /**
@@ -715,11 +724,15 @@ const assignQueryParam = (
 };
 
 const parseQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
-  const fragmentParamSource = getFragmentParamSource(queryString);
-  const source = normalizeQueryString(fragmentParamSource ?? stripQueryPrefix(queryString));
-  if (!source || !isDecodableQueryString(source)) return null;
+  const source = normalizeQueryString(stripQueryPrefix(queryString));
+  if (source && isDecodableQueryString(source)) {
+    return parseQueryPairsDeep(source, maxDepth);
+  }
 
-  return parseQueryPairsDeep(source, maxDepth);
+  const fragmentParamSource = getFragmentParamSource(queryString);
+  if (!fragmentParamSource || !isDecodableQueryString(fragmentParamSource)) return null;
+
+  return parseQueryPairsDeep(fragmentParamSource, maxDepth);
 };
 
 const parseUrlQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
