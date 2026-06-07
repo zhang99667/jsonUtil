@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const FEATURE_TOUR_IDS = [
   'jsonpath',
@@ -377,6 +377,10 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(schemeResult).toContainText('"nid": 123');
   await expect(schemeResult).toContainText('"title": "标题"');
   await expect(schemeResult).toContainText('"from": "feed"');
+
+  await fillMonacoEditor(page, page.locator('[data-tour="scheme-result"] .monaco-editor').first(), '{"cmd":');
+  await expect(page.getByText('Invalid JSON')).toBeVisible();
+  await expect(page.locator('[data-tour="scheme-json-edit-error"]')).toContainText('JSON 内容格式有误');
 });
 
 test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
@@ -431,8 +435,12 @@ test('文件打开后可修改并保存下载', async ({ page }) => {
 
 const fillSourceEditor = async (page: Page, value: string) => {
   const sourceEditor = page.locator('[data-tour="source-editor"] .monaco-editor').first();
+  await fillMonacoEditor(page, sourceEditor, value);
+};
+
+const fillMonacoEditor = async (page: Page, editor: Locator, value: string) => {
   const selectAllShortcut = `${process.platform === 'darwin' ? 'Meta' : 'Control'}+A`;
-  await sourceEditor.click();
+  await editor.click();
   await page.keyboard.press(selectAllShortcut);
   await page.keyboard.press(selectAllShortcut);
   await page.keyboard.press('Backspace');
