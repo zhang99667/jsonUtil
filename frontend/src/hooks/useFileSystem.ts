@@ -122,7 +122,6 @@ export const useFileSystem = ({
                 setFiles(prev => prev.map(f =>
                     f.id === activeFileId ? { ...f, content: input, savedContent: input, isDirty: false } : f
                 ));
-                console.log('Auto-saved');
             } catch (err) {
                 console.error('Auto-save failed:', err);
                 toast.error('自动保存失败', { duration: 2000 });
@@ -158,7 +157,6 @@ export const useFileSystem = ({
 
     const openFile = async () => {
         // Fallback for environments without File System Access API
-        // @ts-ignore
         if (typeof window.showOpenFilePicker !== 'function') {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
@@ -196,7 +194,6 @@ export const useFileSystem = ({
         }
 
         try {
-            // @ts-ignore - 忽略 File System Access API 类型检查
             const [handle] = await window.showOpenFilePicker({
                 types: [
                     {
@@ -234,16 +231,16 @@ export const useFileSystem = ({
             // 重置视图模式
             setMode(TransformMode.NONE);
         } catch (err) {
-            // 处理取消或不支持的情况
-            console.log('File open cancelled or failed', err);
+            if ((err as Error).name === 'AbortError') {
+                return;
+            }
+            console.error('Failed to open file:', err);
         }
     };
 
     const saveSourceAs = async () => {
         try {
-            // @ts-ignore
             if (window.showSaveFilePicker) {
-                // @ts-ignore
                 const handle = await window.showSaveFilePicker({
                     suggestedName: activeFileId ? files.find(f => f.id === activeFileId)?.name : 'untitled.json',
                     types: [{
@@ -344,7 +341,6 @@ export const useFileSystem = ({
                     ));
                 }
 
-                console.log('File saved successfully');
                 return true;
             } catch (err) {
                 console.error('Failed to save file:', err);
