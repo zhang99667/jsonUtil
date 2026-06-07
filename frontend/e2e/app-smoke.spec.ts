@@ -337,6 +337,7 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await page.getByRole('button', { name: '查询', exact: true }).click();
 
   await expect(page.getByText('1 / 2')).toBeVisible();
+  await expect(page.locator('.jsonpath-highlight').first()).toBeVisible();
   await page.getByRole('button', { name: '复制全部结果' }).click();
   await expect(page.getByText('查询结果已复制')).toBeVisible();
   const copiedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
@@ -348,6 +349,10 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await page.locator('[data-tour="jsonpath-input"]').fill('$.users[0].age');
   await page.locator('[data-tour="jsonpath-favorite-item"]').filter({ hasText: '$.users[*].name' }).click();
   await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.users[*].name');
+
+  await page.locator('[data-tour="jsonpath-panel"] button[title="关闭"]').click();
+  await expect(page.locator('[data-tour="jsonpath-panel"]')).toBeHidden();
+  await expect(page.locator('.jsonpath-highlight')).toHaveCount(0);
 });
 
 test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
