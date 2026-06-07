@@ -526,6 +526,33 @@ describe('findSchemesInJson', () => {
     expect(results[0].path).toBe('$.action_cmd');
   });
 
+  it('数组中的 Scheme 使用真实值行号定位', () => {
+    const json = JSON.stringify({
+      items: [
+        { name: 'first' },
+        { url: 'https://example.com/path?from=list' },
+      ],
+    }, null, 2);
+
+    const results = findSchemesInJson(json);
+    expect(results.length).toBe(1);
+    expect(results[0].path).toBe('$.items[1].url');
+    expect(results[0].line).toBe(7);
+  });
+
+  it('包含斜杠的 key 也能通过 JSON Pointer 定位', () => {
+    const json = JSON.stringify({
+      'a/b': {
+        schema: 'baiduboxapp://v1/browser/open?from=key',
+      },
+    }, null, 2);
+
+    const results = findSchemesInJson(json);
+    expect(results.length).toBe(1);
+    expect(results[0].path).toBe('$.a/b.schema');
+    expect(results[0].line).toBe(3);
+  });
+
   it('非法 JSON 返回空数组', () => {
     expect(findSchemesInJson('{invalid}')).toEqual([]);
   });
