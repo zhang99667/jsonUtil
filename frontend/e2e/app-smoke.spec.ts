@@ -106,7 +106,9 @@ test('JSON Lines 格式化预览编辑后可同步回逐行 JSON', async ({ page
   await expectPreviewText(page, '"id": 1');
   await expectPreviewText(page, '"id": 2');
 
-  await page.locator('[data-tour="preview-editor"] [data-tour="editor-lock"]').click();
+  const previewLock = page.locator('[data-tour="preview-editor"] [data-tour="editor-lock"]');
+  await previewLock.click();
+  await expect(previewLock).toContainText('编辑');
   await fillMonacoEditor(
     page,
     page.locator('[data-tour="preview-editor"] .monaco-editor').first(),
