@@ -99,6 +99,26 @@ test('格式化与压缩主路径可用', async ({ page }) => {
   await expectPreviewText(page, '{"b":2,"a":1}');
 });
 
+test('JSON Lines 格式化预览编辑后可同步回逐行 JSON', async ({ page }) => {
+  await fillSourceEditor(page, '{"id":1}\n{"id":2}');
+
+  await page.getByRole('button', { name: '格式化' }).click();
+  await expectPreviewText(page, '"id": 1');
+  await expectPreviewText(page, '"id": 2');
+
+  await page.locator('[data-tour="preview-editor"] [data-tour="editor-lock"]').click();
+  await fillMonacoEditor(
+    page,
+    page.locator('[data-tour="preview-editor"] .monaco-editor').first(),
+    '[\n  {"id":1},\n  {"id":3},\n  {"id":4}\n]'
+  );
+
+  const sourceLines = page.locator('[data-tour="source-editor"] .view-lines');
+  await expect(sourceLines).toContainText('{"id":1}');
+  await expect(sourceLines).toContainText('{"id":3}');
+  await expect(sourceLines).toContainText('{"id":4}');
+});
+
 test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {

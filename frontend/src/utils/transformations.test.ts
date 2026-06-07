@@ -111,6 +111,16 @@ describe('performTransform', () => {
       expect(result).toBe(JSON.stringify({ name: 'test', value: 123 }, null, 2));
     });
 
+    it('格式化 JSON Lines 为可读数组', () => {
+      const input = '{"level":"info","id":1}\n{"level":"error","id":2}';
+      const result = performTransform(input, TransformMode.FORMAT);
+
+      expect(result).toBe(JSON.stringify([
+        { level: 'info', id: 1 },
+        { level: 'error', id: 2 },
+      ], null, 2));
+    });
+
     it('非法 JSON 返回原文', () => {
       expect(performTransform('{invalid}', TransformMode.FORMAT)).toBe('{invalid}');
     });
@@ -248,6 +258,14 @@ describe('performInverseTransform', () => {
   it('FORMAT 反向 → MINIFY', () => {
     const formatted = '{\n  "a": 1\n}';
     expect(performInverseTransform(formatted, TransformMode.FORMAT)).toBe('{"a":1}');
+  });
+
+  it('FORMAT 反向在原始输入为 JSON Lines 时恢复为逐行 JSON', () => {
+    const original = '{"id":1}\n{"id":2}';
+    const editedOutput = JSON.stringify([{ id: 1 }, { id: 3 }, { id: 4 }], null, 2);
+
+    expect(performInverseTransform(editedOutput, TransformMode.FORMAT, original))
+      .toBe('{"id":1}\n{"id":3}\n{"id":4}');
   });
 
   it('ESCAPE/UNESCAPE 互逆', () => {

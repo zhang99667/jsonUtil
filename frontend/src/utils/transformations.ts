@@ -75,8 +75,27 @@ const formatJson = (input: string): string => {
     const parsed: JsonValue = JSON.parse(input);
     return JSON.stringify(parsed, null, 2);
   } catch (e) {
+    const jsonLines = parseJsonLines(input);
+    if (jsonLines) return JSON.stringify(jsonLines, null, 2);
+
     return input;
   }
+};
+
+const inverseFormattedJson = (output: string, originalInput?: string): string => {
+  const originalJsonLines = originalInput ? parseJsonLines(originalInput) : null;
+  if (originalJsonLines) {
+    try {
+      const parsed = JSON.parse(output) as JsonValue;
+      if (Array.isArray(parsed)) {
+        return stringifyJsonLines(parsed);
+      }
+    } catch {
+      return output;
+    }
+  }
+
+  return minifyJson(output);
 };
 
 const deepFormatJson = (input: string): string => {
@@ -707,7 +726,7 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
   try {
     switch (mode) {
       case TransformMode.NONE: return output;
-      case TransformMode.FORMAT: return minifyJson(output);
+      case TransformMode.FORMAT: return inverseFormattedJson(output, originalInput);
       case TransformMode.DEEP_FORMAT:
         // 无上下文时统一回退到压缩格式（精确还原已由 inverseWithContext 在上层处理）
         return minifyJson(output);
