@@ -460,6 +460,23 @@ test('AI 配置可测试连接', async ({ page }) => {
   await expect(page.getByText('连接测试通过')).toHaveCount(0);
 });
 
+test('自定义 AI 配置缺少 Base URL 时阻止保存', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('button', { name: 'AI 配置' }).click();
+
+  await page.locator('select').selectOption('custom');
+  await page.locator('input[type="text"]').nth(1).fill('');
+  await page.getByRole('button', { name: '保存设置' }).click();
+
+  await expect(page.getByText('自定义 AI 提供商需要填写 Base URL')).toBeVisible();
+  await expect(page.getByRole('button', { name: '保存设置' })).toBeVisible();
+
+  const aiConfig = await page.evaluate(() => JSON.parse(window.localStorage.getItem('json-helper-ai-config') || '{}') as {
+    baseUrl?: string;
+  });
+  expect(aiConfig.baseUrl).toBe('/mock-ai');
+});
+
 test('模板填充会提前提示 SOURCE 前置条件', async ({ page }) => {
   await page.locator('[data-tour="template-fill-button"]').click();
   await fillMonacoEditor(

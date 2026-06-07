@@ -124,7 +124,21 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
     if (!isOpen) return null;
 
+    const getAIConfigValidationError = (config: AIConfig): string => {
+        if (config.provider === AIProvider.CUSTOM && !config.baseUrl?.trim()) {
+            return '自定义 AI 提供商需要填写 Base URL';
+        }
+
+        return '';
+    };
+
     const handleSaveAI = () => {
+        const validationError = getAIConfigValidationError(localAIConfig);
+        if (validationError) {
+            setAiTestResult({ type: 'error', message: validationError });
+            return;
+        }
+
         onSaveAIConfig(localAIConfig);
         onClose();
     };
@@ -136,6 +150,12 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     };
 
     const handleTestAIConnection = async () => {
+        const validationError = getAIConfigValidationError(localAIConfig);
+        if (validationError) {
+            setAiTestResult({ type: 'error', message: validationError });
+            return;
+        }
+
         const testVersion = aiConfigVersionRef.current;
         setIsTestingAI(true);
         setAiTestResult(null);
