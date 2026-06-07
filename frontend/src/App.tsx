@@ -1,11 +1,10 @@
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { showSuccess, showError } from './utils/toast';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
 import { JsonPathPanel } from './components/JsonPathPanel';
-import { SchemeViewerModal } from './components/SchemeViewerModal';
 import { TemplateFillPanel } from './components/TemplateFillPanel';
 import { AiRepairSummaryBanner } from './components/AiRepairSummaryBanner';
 import {
@@ -51,6 +50,11 @@ const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.MINIFY,
   TransformMode.SORT_KEYS,
 ]);
+
+const LazySchemeViewerModal = lazy(() => import('./components/SchemeViewerModal').then(module => ({
+  default: module.SchemeViewerModal,
+})));
+
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
 
 interface AsyncTransformResult {
@@ -359,6 +363,7 @@ const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
+  const [hasLoadedSchemePanel, setHasLoadedSchemePanel] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
 
@@ -370,6 +375,12 @@ const App: React.FC = () => {
   const dragCounter = useRef(0);
 
   const [aiConfig, setAiConfig] = useState<AIConfig>(loadAIConfig);
+
+  useEffect(() => {
+    if (isSchemeDecodeOpen) {
+      setHasLoadedSchemePanel(true);
+    }
+  }, [isSchemeDecodeOpen]);
 
   useEffect(() => {
     safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
@@ -1070,16 +1081,20 @@ const App: React.FC = () => {
         />
 
         {/* Scheme 解析面板（独立模式） */}
-        <SchemeViewerModal
-          isOpen={isSchemeDecodeOpen}
-          onClose={() => setIsSchemeDecodeOpen(false)}
-          standalone={true}
-          onApply={(encodedValue: string) => {
-            setInput(encodedValue);
-            inputRef.current = encodedValue;
-            updateActiveFileContent(encodedValue);
-          }}
-        />
+        {hasLoadedSchemePanel && (
+          <Suspense fallback={null}>
+            <LazySchemeViewerModal
+              isOpen={isSchemeDecodeOpen}
+              onClose={() => setIsSchemeDecodeOpen(false)}
+              standalone={true}
+              onApply={(encodedValue: string) => {
+                setInput(encodedValue);
+                inputRef.current = encodedValue;
+                updateActiveFileContent(encodedValue);
+              }}
+            />
+          </Suspense>
+        )}
 
         {/* 模板填充面板 */}
         <TemplateFillPanel
