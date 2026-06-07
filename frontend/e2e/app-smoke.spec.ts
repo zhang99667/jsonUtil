@@ -399,6 +399,20 @@ test('AI 修复空输入会提示用户', async ({ page }) => {
   await expect(page.getByText('请先输入需要修复的 JSON 内容')).toBeVisible();
 });
 
+test('AI 修复缺少 Key 会引导到配置页', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('button', { name: 'AI 配置' }).click();
+  await page.locator('input[type="password"]').fill('');
+  await page.getByRole('button', { name: '保存设置' }).click();
+
+  await fillSourceEditor(page, '{items:[1,2], ok:true}');
+  await page.locator('[data-tour="ai-fix"]').click();
+
+  await expect(page.getByText('请先配置 AI API Key')).toBeVisible();
+  await expect(page.getByText('AI 提供商')).toBeVisible();
+  await expect(page.getByRole('button', { name: '保存设置' })).toBeVisible();
+});
+
 test('AI 配置可测试连接', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('button', { name: 'AI 配置' }).click();
