@@ -89,6 +89,7 @@
 - **E2E 冒烟测试**: 新增 Playwright 浏览器冒烟测试，覆盖主应用加载、格式化、压缩、JSONPath 查询、CMD/Scheme 参数解析、AI 修复写回和文件打开保存关键路径，并接入 GitHub Actions
 - **E2E 稳定性**: 固定 Playwright 串行 worker，收敛页面加载等待，并补充自动保存状态一致性和未保存退出保护回归用例
 - **E2E 慢环境容错**: 提高单条端到端用例超时时间，避免包含二次刷新和 Monaco 初始化的容错用例在慢环境下误报失败
+- **首屏性能优化**: Scheme 解析面板改为首次打开时按需加载，减少主应用初始包对二维码与解析面板代码的依赖
 - **依赖安全收口**: 升级 Axios、Vite、Vitest、Rollup、DOMPurify 等前端依赖解析版本，清零 `npm audit` 全量漏洞，并收敛 Ant Design 运行时分包循环
 - **测试覆盖**: 补充 URL 编解码、Base64 编解码、Key 排序、CMD 参数递归解析和反向转换单元测试
 

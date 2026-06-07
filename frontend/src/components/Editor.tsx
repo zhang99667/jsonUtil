@@ -1,6 +1,6 @@
 
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { lazy, Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
 import type { editor } from 'monaco-editor';
 import { EditorProps, HighlightRange } from '../types';
@@ -8,10 +8,12 @@ import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { computeLineDiff, shouldSkipLineDiff } from '../utils/diffUtils';
 import { findSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
-import { SchemeViewerModal } from './SchemeViewerModal';
 import { TabBar } from './TabBar';
 
 const ASYNC_SCHEME_SCAN_THRESHOLD = 200_000;
+const LazySchemeViewerModal = lazy(() => import('./SchemeViewerModal').then(module => ({
+  default: module.SchemeViewerModal,
+})));
 
 type MonacoJsonDefaults = {
   json?: {
@@ -75,6 +77,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     pointer: string;
     value: string;
   }>({ isOpen: false, path: '', pointer: '', value: '' });
+  const [hasLoadedSchemeModal, setHasLoadedSchemeModal] = useState(false);
 
 
 
@@ -93,6 +96,12 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     const detected = detectLanguage(value);
     setLanguage(detected);
   }, [value]);
+
+  useEffect(() => {
+    if (schemeModal.isOpen) {
+      setHasLoadedSchemeModal(true);
+    }
+  }, [schemeModal.isOpen]);
 
   // 检测 JSON 中的 scheme 字符串（仅在 PREVIEW 面板启用）
   useEffect(() => {
@@ -538,13 +547,17 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       </div>
 
       {/* Scheme 解析弹窗 */}
-      <SchemeViewerModal
-        isOpen={schemeModal.isOpen}
-        onClose={() => setSchemeModal({ isOpen: false, path: '', pointer: '', value: '' })}
-        path={schemeModal.path}
-        value={schemeModal.value}
-        onApply={onSchemeEdit ? handleSchemeApply : undefined}
-      />
+      {hasLoadedSchemeModal && (
+        <Suspense fallback={null}>
+          <LazySchemeViewerModal
+            isOpen={schemeModal.isOpen}
+            onClose={() => setSchemeModal({ isOpen: false, path: '', pointer: '', value: '' })}
+            path={schemeModal.path}
+            value={schemeModal.value}
+            onApply={onSchemeEdit ? handleSchemeApply : undefined}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
