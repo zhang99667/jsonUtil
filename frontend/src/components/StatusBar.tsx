@@ -26,6 +26,8 @@ interface StatusBarProps {
   totalLines: number;
   /** 文档最大列数 */
   maxColumns: number;
+  /** 行列统计是否为大文件采样结果 */
+  isStatsLimited: boolean;
   /** 当前转换模式 */
   mode: TransformMode;
   /** 当前激活的文件 ID */
@@ -48,6 +50,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   inputLength,
   totalLines,
   maxColumns,
+  isStatsLimited,
   mode,
   activeFileId,
   files,
@@ -102,7 +105,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           </span>
         )}
         <span className="font-mono">
-          {totalLines} 行, {maxColumns} 列
+          {isStatsLimited ? (
+            <span title={`大文件只统计前半段，已扫描到 ${totalLines} 行、${maxColumns} 列`}>
+              行列统计已简化
+            </span>
+          ) : (
+            `${totalLines} 行, ${maxColumns} 列`
+          )}
         </span>
         {activeFile && (
           <span
