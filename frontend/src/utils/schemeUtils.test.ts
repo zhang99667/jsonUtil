@@ -76,6 +76,10 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D;from=test')).toBe(true);
   });
 
+  it('检测前导 & 的 CMD 参数串', () => {
+    expect(isDecodableQueryString('&cmd=%7B%22a%22%3A1%7D&from=test')).toBe(true);
+  });
+
   it('检测常见单参数 CMD 字段', () => {
     expect(isDecodableQueryString('url=https%3A%2F%2Fexample.com')).toBe(true);
   });
@@ -282,6 +286,15 @@ describe('parseUrl', () => {
     });
   });
 
+  it('解析 ?& 开头的查询参数', () => {
+    const result = parseUrl('https://example.com/path?&cmd=%7B%22a%22%3A1%7D&from=joined');
+    expect(result).not.toBeNull();
+    expect(result!.params).toEqual({
+      cmd: '{"a":1}',
+      from: 'joined',
+    });
+  });
+
   it('无参数的 URL', () => {
     const result = parseUrl('https://example.com/path');
     expect(result).not.toBeNull();
@@ -395,6 +408,26 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       cmd: { nid: 123 },
       from: 'html',
+    });
+  });
+
+  it('前导 & 的 CMD 参数串被解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`&cmd=${payload}&from=joined`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      from: 'joined',
+    });
+  });
+
+  it('URL 中 ?& 开头的 CMD 参数被递归解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`baiduboxapp://v1/open?&cmd=${payload}&from=joined`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      from: 'joined',
     });
   });
 
