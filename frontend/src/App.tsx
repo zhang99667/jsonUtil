@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { showSuccess, showError } from './utils/toast';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
-import { JsonPathPanel } from './components/JsonPathPanel';
 import { TemplateFillPanel } from './components/TemplateFillPanel';
 import { AiRepairSummaryBanner } from './components/AiRepairSummaryBanner';
 import {
@@ -53,6 +52,10 @@ const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
 
 const LazySchemeViewerModal = lazy(() => import('./components/SchemeViewerModal').then(module => ({
   default: module.SchemeViewerModal,
+})));
+
+const LazyJsonPathPanel = lazy(() => import('./components/JsonPathPanel').then(module => ({
+  default: module.JsonPathPanel,
 })));
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
@@ -165,6 +168,7 @@ const App: React.FC = () => {
   }, [hasUnsavedChanges]);
 
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
+  const [hasLoadedJsonPathPanel, setHasLoadedJsonPathPanel] = useState(false);
   const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
   const [isOutputTransforming, setIsOutputTransforming] = useState(false);
   const transformRequestIdRef = useRef(0);
@@ -375,6 +379,12 @@ const App: React.FC = () => {
   const dragCounter = useRef(0);
 
   const [aiConfig, setAiConfig] = useState<AIConfig>(loadAIConfig);
+
+  useEffect(() => {
+    if (isJsonPathPanelOpen) {
+      setHasLoadedJsonPathPanel(true);
+    }
+  }, [isJsonPathPanelOpen]);
 
   useEffect(() => {
     if (isSchemeDecodeOpen) {
@@ -1069,16 +1079,20 @@ const App: React.FC = () => {
         </div>
 
         {/* JSONPath 查询面板 */}
-        <JsonPathPanel
-          jsonData={jsonPathDataSource}
-          isDataPreparing={mode === TransformMode.DEEP_FORMAT && isOutputTransforming}
-          isOpen={isJsonPathPanelOpen}
-          onClose={() => {
-            setIsJsonPathPanelOpen(false);
-            setHighlightRange(null); // 关闭时清除高亮
-          }}
-          onHighlightRange={handleJsonPathHighlight}
-        />
+        {hasLoadedJsonPathPanel && (
+          <Suspense fallback={null}>
+            <LazyJsonPathPanel
+              jsonData={jsonPathDataSource}
+              isDataPreparing={mode === TransformMode.DEEP_FORMAT && isOutputTransforming}
+              isOpen={isJsonPathPanelOpen}
+              onClose={() => {
+                setIsJsonPathPanelOpen(false);
+                setHighlightRange(null); // 关闭时清除高亮
+              }}
+              onHighlightRange={handleJsonPathHighlight}
+            />
+          </Suspense>
+        )}
 
         {/* Scheme 解析面板（独立模式） */}
         {hasLoadedSchemePanel && (
