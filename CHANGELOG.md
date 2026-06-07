@@ -16,6 +16,7 @@
 - **CMD/Scheme 未编码 URL 字段容错**: `url=https://m.baidu.com/s?word=json&from=feed` 这类未编码 URL 字段会把 `&from` 保留为内层 URL query，并在编辑回写时保持 raw URL 形态
 - **CMD/Scheme 未编码分隔符容错**: 参数拆分只在后续片段符合 `key=` 形态时生效，避免 `title=R&D Center&from=feed` 等日志值被误切分
 - **CMD/Scheme hash 参数值解析**: 支持 `_hash=%2Fdetail%3Fcmd%3D...`、`next=%23/detail%3F...` 等参数值中的 hash route 片段递归展开
+- **CMD/Scheme 跳转字段识别**: `redirectUrl`、`fallbackUrl`、`next`、`deepLink` 等常见单参数跳转字段会按 URL/CMD 字段解析，减少只复制单个字段时漏展开
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
 - **深度格式化 Scheme 还原增强**: 修复 URL Scheme 内含二级 URL 时，未编辑预览回写无法优先还原父级原始字符串的问题
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串
