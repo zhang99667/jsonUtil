@@ -27,6 +27,10 @@ describe('isUrl', () => {
     expect(isUrl('http://localhost:3000/api')).toBe(true);
   });
 
+  it('检测协议相对 URL', () => {
+    expect(isUrl('//m.baidu.com/s?word=json')).toBe(true);
+  });
+
   it('检测自定义 scheme URL', () => {
     expect(isUrl('myapp://path/to/page')).toBe(true);
   });
@@ -174,6 +178,10 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType('https://example.com')).toBe('url');
   });
 
+  it('检测协议相对 URL', () => {
+    expect(detectSchemeType('//m.baidu.com/s?word=json')).toBe('url');
+  });
+
   it('检测 URL 编码', () => {
     expect(detectSchemeType('%E4%BD%A0%E5%A5%BD')).toBe('url-encoded');
   });
@@ -259,6 +267,15 @@ describe('parseUrl', () => {
     expect(result!.host).toBe('example.com');
     expect(result!.path).toBe('/path');
     expect(result!.params).toEqual({ key: 'value', name: 'test' });
+  });
+
+  it('解析协议相对 URL', () => {
+    const result = parseUrl('//m.baidu.com/s?word=json+schema');
+    expect(result).not.toBeNull();
+    expect(result!.protocol).toBe('//');
+    expect(result!.host).toBe('m.baidu.com');
+    expect(result!.path).toBe('/s');
+    expect(result!.params).toEqual({ word: 'json schema' });
   });
 
   it('解析 URL hash route 中的参数', () => {
@@ -356,6 +373,25 @@ describe('deepDecodeScheme', () => {
       url: {
         word: '你好',
       },
+    });
+  });
+
+  it('URL 参数中的协议相对 URL 被继续解析', () => {
+    const nestedUrl = encodeURIComponent('//m.baidu.com/s?word=json+schema');
+    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?url=${nestedUrl}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      url: {
+        word: 'json schema',
+      },
+    });
+  });
+
+  it('协议相对 URL 可直接解析 query 参数', () => {
+    const result = deepDecodeScheme('//m.baidu.com/s?word=json+schema');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      word: 'json schema',
     });
   });
 
@@ -653,6 +689,14 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe('baiduboxapp://v1/open?ext%5Bscene%5D=detail&ext%5Bsource%5D=box');
+  });
+
+  it('协议相对 URL 编辑后保留双斜杠形态', () => {
+    const original = '//m.baidu.com/s?word=json';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({ word: 'schema' }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers)).toBe('//m.baidu.com/s?word=schema');
   });
 });
 
