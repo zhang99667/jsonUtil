@@ -115,6 +115,16 @@ describe('isJwt', () => {
     expect(isJwt(jwt)).toBe(true);
   });
 
+  it('版本号不误判为 JWT', () => {
+    expect(isJwt('1.2.3')).toBe(false);
+    expect(detectSchemeType('1.2.3')).toBe('plain');
+  });
+
+  it('三段普通字符串不误判为 JWT', () => {
+    expect(isJwt('foo.bar.baz')).toBe(false);
+    expect(detectSchemeType('foo.bar.baz')).toBe('plain');
+  });
+
   it('非三段结构返回 false', () => {
     expect(isJwt('not.a.jwt.token')).toBe(false);
     expect(isJwt('hello')).toBe(false);
@@ -206,6 +216,12 @@ describe('decodeJwt', () => {
 
   it('无效 JWT 返回 null', () => {
     expect(decodeJwt('not-a-jwt')).toBeNull();
+  });
+
+  it('header 或 payload 不是 JSON 对象时返回 null', () => {
+    const header = btoa(JSON.stringify(123)).replace(/=/g, '');
+    const payload = btoa(JSON.stringify({ sub: '123' })).replace(/=/g, '');
+    expect(decodeJwt(`${header}.${payload}.signature`)).toBeNull();
   });
 });
 

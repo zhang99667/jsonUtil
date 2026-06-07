@@ -10,6 +10,7 @@
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
 - **深度格式化 Scheme 还原增强**: 修复 URL Scheme 内含二级 URL 时，未编辑预览回写无法优先还原父级原始字符串的问题
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串
+- **JWT 识别准确性**: JWT 检测改为校验 header/payload JSON 对象，避免 `1.2.3` 等版本号或普通三段字符串误触发 Scheme 解析
 - **Base64 编解码**: 新增 Base64 编码 / Base64 解码转换模式，支持 UTF-8 中文内容、URL-safe Base64 与预览编辑器反向同步
 - **URL 编解码**: 新增 URL 编码 / URL 解码 转换模式，支持对输入内容进行 `encodeURIComponent` / `decodeURIComponent`，预览编辑器支持反向同步
 - **嵌套解析自动展开 Scheme**: 深度格式化（嵌套解析）新增 `autoExpandScheme` 选项，启用后自动检测并展开 URL 编码的 CMD/Scheme 字符串值
