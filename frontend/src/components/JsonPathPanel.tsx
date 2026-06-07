@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
@@ -14,6 +14,9 @@ import {
     removeJsonPathListItem
 } from '../utils/jsonPathLists';
 
+const MAX_VISIBLE_QUERY_RESULTS = 100;
+const MAX_RESULT_PREVIEW_LENGTH = 240;
+
 const formatJsonPathValuesForCopy = (values: unknown[]): string => {
     if (values.length === 1) {
         const [value] = values;
@@ -21,6 +24,16 @@ const formatJsonPathValuesForCopy = (values: unknown[]): string => {
     }
 
     return JSON.stringify(values, null, 2);
+};
+
+const formatJsonPathValueForPreview = (value: unknown): string => {
+    const text = typeof value === 'string'
+        ? value
+        : JSON.stringify(value, null, 2) ?? String(value);
+
+    return text.length > MAX_RESULT_PREVIEW_LENGTH
+        ? `${text.slice(0, MAX_RESULT_PREVIEW_LENGTH)}...`
+        : text;
 };
 
 interface JsonPathPanelProps {
@@ -301,6 +314,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const normalizedQuery = query.trim();
     const isCurrentQueryFavorite = normalizedQuery ? favorites.includes(normalizedQuery) : false;
+    const queryResultPreviewItems = useMemo(() => {
+        return queryValues.slice(0, MAX_VISIBLE_QUERY_RESULTS).map((value, index) => ({
+            index,
+            text: formatJsonPathValueForPreview(value),
+        }));
+    }, [queryValues]);
+    const hiddenResultCount = Math.max(queryValues.length - queryResultPreviewItems.length, 0);
 
     const toggleFavorite = () => {
         if (!normalizedQuery) return;
@@ -322,6 +342,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             console.warn('复制 JSONPath 查询结果失败:', error);
             showError('复制查询结果失败');
         }
+    };
+
+    const focusQueryResult = (index: number) => {
+        if (isQuerying || totalResults === 0 || index < 0 || index >= totalResults) return;
+
+        setCurrentResultIndex(index);
+        onHighlightRange(queryRanges[index] || null);
     };
 
     return (
@@ -493,6 +520,35 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 </svg>
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {/* 查询结果预览 */}
+                {queryResultPreviewItems.length > 0 && (
+                    <div
+                        data-tour="jsonpath-results"
+                        className="mb-3 max-h-28 flex-shrink-0 overflow-y-auto rounded border border-editor-border bg-editor-bg/60 p-1 space-y-1 [&::-webkit-scrollbar]:hidden"
+                    >
+                        {queryResultPreviewItems.map(item => (
+                            <button
+                                key={item.index}
+                                onClick={() => focusQueryResult(item.index)}
+                                className={`w-full text-left text-xs rounded border px-2 py-1.5 transition-colors ${
+                                    item.index === currentResultIndex
+                                        ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-100'
+                                        : 'border-transparent bg-editor-sidebar text-gray-300 hover:bg-editor-hover hover:text-gray-100'
+                                }`}
+                                title={item.text}
+                            >
+                                <span className="mr-2 text-[10px] text-gray-500">{item.index + 1}</span>
+                                <span className="font-mono whitespace-pre-wrap break-words align-top">{item.text}</span>
+                            </button>
+                        ))}
+                        {hiddenResultCount > 0 && (
+                            <div className="px-2 py-1 text-[11px] text-gray-500">
+                                仅显示前 {MAX_VISIBLE_QUERY_RESULTS} 项，复制按钮可导出全部 {totalResults} 项
+                            </div>
+                        )}
                     </div>
                 )}
 
