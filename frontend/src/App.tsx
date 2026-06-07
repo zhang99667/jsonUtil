@@ -420,6 +420,17 @@ const App: React.FC = () => {
     setIsJsonPathPanelOpen(nextOpen);
   }, [isJsonPathPanelOpen, mode]);
 
+  const handleToggleAutoSave = useCallback(() => {
+    if (!activeFileId) {
+      showError('请先打开或保存文件后再启用自动保存');
+      return;
+    }
+
+    const nextEnabled = !isAutoSaveEnabled;
+    setIsAutoSaveEnabled(nextEnabled);
+    showSuccess(nextEnabled ? '自动保存已开启' : '自动保存已关闭');
+  }, [activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled]);
+
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({
     onSave: handleSaveShortcut,
@@ -936,8 +947,7 @@ const App: React.FC = () => {
               headerActions={
                 <button
                   data-tour="auto-save"
-                  onClick={() => activeFileId && setIsAutoSaveEnabled(!isAutoSaveEnabled)}
-                  disabled={!activeFileId}
+                  onClick={handleToggleAutoSave}
                   className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
                     ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
                     : isAutoSaveEnabled
