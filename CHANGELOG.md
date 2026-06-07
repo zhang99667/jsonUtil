@@ -78,6 +78,7 @@
 - **隐私模式引导容错**: 本地存储读取被浏览器阻止时自动跳过新手引导，避免无法记住完成状态时反复弹窗干扰编辑器加载
 - **AI 自定义配置校验**: 选择自定义 OpenAI 兼容服务时，缺少 Base URL 会在设置页阻止保存和连接测试，避免保存不可用配置后才失败
 - **Hash Route CMD 解析**: Scheme 面板支持直接解析 `#/detail?cmd=...&from=...` 这类独立 hash route 参数串，贴入线上跳转片段也能展开内部 CMD
+- **Scheme 参数来源展示**: Scheme 面板会按 Query 参数和 Hash 参数分区展示来源与参数预览，便于快速判断复杂 URL/CMD 的外层和内层参数
 
 ### 🏗️ 工程化
 - **CMD/Scheme 样本回归覆盖**: 新增真实 CMD/Scheme 粘贴样本测试集，覆盖编码 URL、未编码 URL、裸域名 URL、JSON-like 参数、hash route、HTML 分隔符和短 Base64 参数，降低后续解析优化回归风险

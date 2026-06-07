@@ -431,6 +431,19 @@ test('Scheme 面板可解析独立 hash route CMD 参数', async ({ page }) => {
   await expect(schemeResult).toContainText('"from": "hash"');
 });
 
+test('Scheme 面板展示 URL 参数来源', async ({ page }) => {
+  const cmdPayload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(`https://example.com/page?from=feed#/detail?cmd=${cmdPayload}`);
+
+  const paramSections = page.locator('[data-tour="scheme-param-sections"]');
+  await expect(paramSections).toContainText('Query 参数 · 1');
+  await expect(paramSections).toContainText('from=feed');
+  await expect(paramSections).toContainText('Hash 参数 · 1');
+  await expect(paramSections).toContainText('cmd={"nid":123}');
+});
+
 test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
   await fillSourceEditor(page, '{items:[1,2], ok:true}');
 

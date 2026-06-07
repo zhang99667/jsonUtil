@@ -31,6 +31,41 @@ const schemeTypeLabels: Record<SchemeType, string> = {
   'plain': '纯文本',
 };
 
+type SchemeParams = NonNullable<SchemeDecodeResult['schemeInfo']>['params'];
+
+interface SchemeParamSection {
+  title: string;
+  params: SchemeParams;
+}
+
+const getParamCount = (params: SchemeParams): number => {
+  if (!params) return 0;
+
+  return Object.values(params).reduce((count, value) => (
+    count + (Array.isArray(value) ? value.length : 1)
+  ), 0);
+};
+
+const formatParamValue = (value: string | string[]): string => {
+  const text = Array.isArray(value) ? value.join(', ') : value;
+  return text.length > 48 ? `${text.slice(0, 48)}...` : text;
+};
+
+const buildParamSections = (
+  schemeInfo: SchemeDecodeResult['schemeInfo']
+): SchemeParamSection[] => {
+  if (!schemeInfo) return [];
+
+  return [
+    { title: 'Query 参数', params: schemeInfo.params },
+    { title: 'Hash 参数', params: schemeInfo.hashParams },
+  ].filter(section => getParamCount(section.params) > 0);
+};
+
+const getParamEntries = (params: SchemeParams): Array<[string, string | string[]]> => (
+  Object.entries(params || {}) as Array<[string, string | string[]]>
+);
+
 export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   isOpen,
   onClose,
@@ -174,6 +209,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     if (trimmed.startsWith('<')) return 'xml';
     return 'plaintext';
   }, [decodeResult.isJson, editedContent]);
+
+  const paramSections = useMemo(() => (
+    buildParamSections(decodeResult.schemeInfo)
+  ), [decodeResult.schemeInfo]);
 
   // 头部额外内容：非独立模式显示 path 标签
   const headerExtra = !standalone && path ? (
@@ -323,6 +362,35 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       {decodeResult.schemeInfo.path}
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* 参数来源 */}
+              {paramSections.length > 0 && (
+                <div data-tour="scheme-param-sections" className="flex flex-col gap-1.5">
+                  {paramSections.map(section => (
+                    <div key={section.title} className="flex items-start gap-2 text-xs">
+                      <span className="shrink-0 text-gray-500 bg-editor-bg px-2 py-0.5 rounded">
+                        {section.title} · {getParamCount(section.params)}
+                      </span>
+                      <div className="flex flex-wrap gap-1 min-w-0">
+                        {getParamEntries(section.params).slice(0, 6).map(([key, paramValue]) => (
+                          <span
+                            key={key}
+                            className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                            title={`${key}=${Array.isArray(paramValue) ? paramValue.join(', ') : paramValue}`}
+                          >
+                            {key}={formatParamValue(paramValue)}
+                          </span>
+                        ))}
+                        {getParamEntries(section.params).length > 6 && (
+                          <span className="text-gray-500 px-1 py-0.5">
+                            +{getParamEntries(section.params).length - 6}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
