@@ -107,6 +107,14 @@ test('JSON Lines 可格式化为可读数组预览', async ({ page }) => {
   await expectPreviewText(page, '"id": 2');
 });
 
+test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
+  await fillSourceEditor(page, '{"payload":"{\\"nested\\":true}"}\n{"payload":"{\\"nested\\":false}"}');
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await expectPreviewText(page, '"nested": true');
+  await expectPreviewText(page, '"nested": false');
+});
+
 test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {
