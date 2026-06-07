@@ -267,6 +267,7 @@ export function detectSchemeType(str: string): SchemeType {
   // 优先级顺序很重要
   if (isJwt(trimmed)) return 'jwt';
   if (isUrl(trimmed)) return 'url';
+  if (isDecodableFragmentParamString(trimmed)) return 'query-string';
   if (isDecodableQueryString(trimmed)) return 'query-string';
   if (hasUrlEncoding(trimmed)) return 'url-encoded';
   if (isBase64(trimmed)) return 'base64';
@@ -453,6 +454,16 @@ const getFragmentParamSource = (hash: string): string | null => {
   }
 
   return null;
+};
+
+const isDecodableFragmentParamString = (source: string): boolean => {
+  const trimmed = source.trim();
+  if (!trimmed.startsWith('#') && !trimmed.startsWith('/') && !trimmed.startsWith('?')) {
+    return false;
+  }
+
+  const fragmentParamSource = getFragmentParamSource(trimmed);
+  return fragmentParamSource !== null && isDecodableQueryString(fragmentParamSource);
 };
 
 /**
@@ -675,7 +686,8 @@ const assignQueryParam = (
 };
 
 const parseQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
-  const source = normalizeQueryString(stripQueryPrefix(queryString));
+  const fragmentParamSource = getFragmentParamSource(queryString);
+  const source = normalizeQueryString(fragmentParamSource ?? stripQueryPrefix(queryString));
   if (!source || !isDecodableQueryString(source)) return null;
 
   return parseQueryPairsDeep(source, maxDepth);
