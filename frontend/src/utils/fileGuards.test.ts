@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatFileSize, getTextFileOpenError, MAX_TEXT_FILE_SIZE_BYTES } from './fileGuards';
+import {
+  formatFileSize,
+  getTextFileOpenError,
+  MAX_TEXT_FILE_SIZE_BYTES,
+  TEXT_FILE_ACCEPT_EXTENSIONS,
+} from './fileGuards';
 
 describe('formatFileSize', () => {
   it('格式化字节大小', () => {
@@ -65,5 +70,19 @@ describe('getTextFileOpenError', () => {
       size: 1024,
       type: 'application/octet-stream',
     })).toBeNull();
+  });
+});
+
+describe('TEXT_FILE_ACCEPT_EXTENSIONS', () => {
+  it('文件选择器包含常见开发文本类型', () => {
+    expect(TEXT_FILE_ACCEPT_EXTENSIONS).toEqual(expect.arrayContaining([
+      '.json',
+      '.jsonl',
+      '.log',
+      '.sql',
+      '.yaml',
+      '.xml',
+      '.csv',
+    ]));
   });
 });

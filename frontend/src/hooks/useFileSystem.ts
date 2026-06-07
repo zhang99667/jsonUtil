@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { FileTab, TransformMode } from '../types';
-import { getTextFileOpenError } from '../utils/fileGuards';
+import { getTextFileOpenError, TEXT_FILE_ACCEPT_EXTENSIONS } from '../utils/fileGuards';
 
 interface UseFileSystemProps {
     input: string;
@@ -209,7 +209,7 @@ export const useFileSystem = ({
         if (typeof window.showOpenFilePicker !== 'function') {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = '.txt,.json,.js,.ts,.md';
+            fileInput.accept = TEXT_FILE_ACCEPT_EXTENSIONS.join(',');
             fileInput.multiple = true;
             
             fileInput.onchange = async (e) => {
@@ -227,7 +227,7 @@ export const useFileSystem = ({
                     {
                         description: 'Text Files',
                         accept: {
-                            'text/plain': ['.txt', '.json', '.js', '.ts', '.md'],
+                            'text/plain': TEXT_FILE_ACCEPT_EXTENSIONS,
                         },
                     },
                 ],
@@ -256,7 +256,7 @@ export const useFileSystem = ({
                     suggestedName: activeFileId ? files.find(f => f.id === activeFileId)?.name : 'untitled.json',
                     types: [{
                         description: 'Text Files',
-                        accept: { 'text/plain': ['.txt', '.json', '.js', '.ts', '.md'] },
+                        accept: { 'text/plain': TEXT_FILE_ACCEPT_EXTENSIONS },
                     }],
                 });
                 
