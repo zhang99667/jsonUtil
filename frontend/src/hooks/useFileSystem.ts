@@ -354,32 +354,52 @@ export const useFileSystem = ({
     };
 
     // 打开拖拽进来的文件（无 Handle，仅读取内容）
-    const openDroppedFile = async (file: File) => {
-        try {
-            const contents = await readTextFileSafely(file);
-            if (contents === null) return;
-            const newFileId = generateUUID();
+    const openDroppedFiles = async (droppedFiles: FileList | File[]) => {
+        const fileList = Array.from(droppedFiles);
+        if (fileList.length === 0) return;
 
-            const newFile: FileTab = {
-                id: newFileId,
-                name: file.name,
-                content: contents,
-                savedContent: contents,
-                handle: undefined,
-                isDirty: false,
-                mode: TransformMode.NONE,
-                path: (file as File & { path?: string }).path
-            };
+        const openedFiles: FileTab[] = [];
 
-            setFiles([...getFilesWithStandaloneDraft(files), newFile]);
-            setActiveFileId(newFileId);
-            setInput(contents);
-            inputRef.current = contents;
-            setMode(TransformMode.NONE);
-        } catch (err) {
-            console.error('Failed to read dropped file:', err);
-            toast.error('读取文件失败', { duration: 2000 });
+        for (const file of fileList) {
+            try {
+                const contents = await readTextFileSafely(file);
+                if (contents === null) continue;
+                const newFileId = generateUUID();
+
+                openedFiles.push({
+                    id: newFileId,
+                    name: file.name,
+                    content: contents,
+                    savedContent: contents,
+                    handle: undefined,
+                    isDirty: false,
+                    mode: TransformMode.NONE,
+                    path: (file as File & { path?: string }).path
+                });
+            } catch (err) {
+                console.error('Failed to read dropped file:', err);
+                toast.error(`读取文件「${file.name || '未命名文件'}」失败`, { duration: 2000 });
+            }
         }
+
+        if (openedFiles.length === 0) return;
+
+        const nextFiles = [...getFilesWithStandaloneDraft(files), ...openedFiles];
+        const activeFile = openedFiles[openedFiles.length - 1];
+
+        setFiles(nextFiles);
+        setActiveFileId(activeFile.id);
+        setInput(activeFile.content);
+        inputRef.current = activeFile.content;
+        setMode(TransformMode.NONE);
+
+        if (openedFiles.length > 1) {
+            toast.success(`已打开 ${openedFiles.length} 个文件`, { duration: 2000 });
+        }
+    };
+
+    const openDroppedFile = async (file: File) => {
+        await openDroppedFiles([file]);
     };
 
     const closeFile = (id: string) => {
@@ -446,6 +466,7 @@ export const useFileSystem = ({
         createNewTab,
         openFile,
         openDroppedFile,
+        openDroppedFiles,
         saveFile,
         saveSourceAs,
         closeFile,

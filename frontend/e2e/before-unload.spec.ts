@@ -105,6 +105,31 @@ test('无文件草稿拖入文件时保留原草稿', async ({ page }) => {
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
+test('拖入多个文件时批量打开并保留原草稿', async ({ page }) => {
+  await fillSourceEditor(page, '{"draft":"multi-drop"}');
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+
+  await dropFiles(page, [
+    { name: 'first.json', content: '{"first":1}' },
+    { name: 'second.json', content: '{"second":2}' },
+  ]);
+
+  const editorTabs = page.locator('[data-tour="editor-tabs"]');
+  await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
+  await expect(editorTabs.getByText('first.json')).toBeVisible();
+  await expect(editorTabs.getByText('second.json')).toBeVisible();
+  await expect(page.getByText('已打开 2 个文件')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"second":2');
+
+  await editorTabs.getByText('first.json').click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"first":1');
+
+  await editorTabs.getByText('Untitled-1').click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"multi-drop"');
+  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(1);
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+});
+
 const isBeforeUnloadPrevented = async (page: Page) => page.evaluate(() => {
   const event = new Event('beforeunload', { cancelable: true });
   return !window.dispatchEvent(event);
@@ -148,15 +173,21 @@ const installSavePickerMock = async (page: Page) => {
 };
 
 const dropFile = async (page: Page, name: string, content: string) => {
-  await page.locator('[data-tour="source-editor"]').evaluate((target, { name, content }) => {
+  await dropFiles(page, [{ name, content }]);
+};
+
+const dropFiles = async (page: Page, files: Array<{ name: string; content: string }>) => {
+  await page.locator('[data-tour="source-editor"]').evaluate((target, filesToDrop) => {
     const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(new File([content], name, { type: 'application/json' }));
+    filesToDrop.forEach(file => {
+      dataTransfer.items.add(new File([file.content], file.name, { type: 'application/json' }));
+    });
     target.dispatchEvent(new DragEvent('drop', {
       bubbles: true,
       cancelable: true,
       dataTransfer,
     }));
-  }, { name, content });
+  }, files);
 };
 
 const fillSourceEditor = async (page: Page, value: string) => {

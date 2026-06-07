@@ -137,7 +137,7 @@ const App: React.FC = () => {
   // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
-    createNewTab, openFile, openDroppedFile, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
+    createNewTab, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
     saveViewState
   } = useFileSystem({
     input, setInput, inputRef, setMode, output: '' // 初始为空，后面会更新
@@ -738,11 +738,10 @@ const App: React.FC = () => {
     setIsDraggingFile(false);
     dragCounter.current = 0;
 
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      openDroppedFile(file);
+    if (e.dataTransfer.files?.length) {
+      openDroppedFiles(e.dataTransfer.files);
     }
-  }, [openDroppedFile]);
+  }, [openDroppedFiles]);
 
   // 模板填充处理
   const handleApplyTemplate = useCallback((templateJson: string) => {
