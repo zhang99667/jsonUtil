@@ -1,0 +1,87 @@
+import { describe, expect, it } from 'vitest';
+import { base64Encode, deepDecodeScheme, encodeWithLayers } from './schemeUtils';
+
+const parseDecodedJson = (input: string): unknown => {
+  const result = deepDecodeScheme(input);
+  expect(result.isJson).toBe(true);
+  return JSON.parse(result.decoded) as unknown;
+};
+
+describe('CMD/Scheme 真实样本回归', () => {
+  it('解析编码 URL 字段并保留外层来源参数', () => {
+    expect(parseDecodedJson(
+      'baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson%2Bschema&from=feed'
+    )).toEqual({
+      url: {
+        word: 'json schema',
+      },
+      from: 'feed',
+    });
+  });
+
+  it('解析未编码 URL 字段中的内层 query 参数', () => {
+    expect(parseDecodedJson(
+      'url=https://m.baidu.com/s?word=json&from=feed'
+    )).toEqual({
+      url: {
+        word: 'json',
+        from: 'feed',
+      },
+    });
+  });
+
+  it('解析裸域名 URL 字段', () => {
+    expect(parseDecodedJson('h5Url=m.baidu.com/s?word=json+schema')).toEqual({
+      h5Url: {
+        word: 'json schema',
+      },
+    });
+  });
+
+  it('解析 JSON-like CMD 对象参数', () => {
+    expect(parseDecodedJson("cmd={nid:123,title:'标题'}&from=feed")).toEqual({
+      cmd: {
+        nid: 123,
+        title: '标题',
+      },
+      from: 'feed',
+    });
+  });
+
+  it('解析 hash route 里的 CMD 参数', () => {
+    expect(parseDecodedJson(
+      '#/detail?cmd=%7B%22nid%22%3A123%7D&from=hash'
+    )).toEqual({
+      cmd: {
+        nid: 123,
+      },
+      from: 'hash',
+    });
+  });
+
+  it('解析 HTML 转义分隔符', () => {
+    expect(parseDecodedJson(
+      'cmd=%7B%22nid%22%3A123%7D&amp;from=html'
+    )).toEqual({
+      cmd: {
+        nid: 123,
+      },
+      from: 'html',
+    });
+  });
+
+  it('解析短 Base64 JSON 参数', () => {
+    expect(parseDecodedJson(`cmd=${base64Encode('{"a":1}')}`)).toEqual({
+      cmd: {
+        a: 1,
+      },
+    });
+  });
+
+  it('未编辑 raw URL 字段可按原形态回写', () => {
+    const original = 'url=https://m.baidu.com/s?word=json&from=feed';
+    const decoded = deepDecodeScheme(original);
+
+    expect(encodeWithLayers(decoded.decoded, decoded.layers)).toBe(original);
+  });
+});
