@@ -1,6 +1,7 @@
 import React from 'react';
 import type { AiRepairSummary } from '../utils/aiRepairSummary';
 import { formatAiRepairSummary } from '../utils/aiRepairSummary';
+import { copyText } from '../utils/clipboard';
 
 interface AiRepairSummaryBannerProps {
   summary: AiRepairSummary;
@@ -17,7 +18,7 @@ export const AiRepairSummaryBanner: React.FC<AiRepairSummaryBannerProps> = ({
 }) => {
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(formatAiRepairSummary(summary));
+      await copyText(formatAiRepairSummary(summary));
       onCopySuccess();
     } catch {
       onCopyError();

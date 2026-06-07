@@ -99,6 +99,30 @@ test('格式化与压缩主路径可用', async ({ page }) => {
   await expectPreviewText(page, '{"b":2,"a":1}');
 });
 
+test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+    document.execCommand = (command: string) => {
+      if (command !== 'copy') return false;
+      const activeElement = document.activeElement as HTMLTextAreaElement | null;
+      window.localStorage.setItem('mock-clipboard', activeElement?.value || '');
+      return true;
+    };
+  });
+
+  await fillSourceEditor(page, '{"copy":true}');
+  await page.getByRole('button', { name: '格式化' }).click();
+  await expectPreviewText(page, '"copy": true');
+
+  await page.getByRole('button', { name: '复制' }).click();
+  await expect(page.getByText('已复制预览内容')).toBeVisible();
+  const copiedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
+  expect(copiedResult).toContain('"copy": true');
+});
+
 test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   await page.evaluate(() => {
     window.localStorage.setItem('json-helper-general-settings', '{bad');
