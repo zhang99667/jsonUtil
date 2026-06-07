@@ -88,6 +88,7 @@ const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 
 const normalizeQueryString = (source: string): string => (
   source.trim()
@@ -128,12 +129,34 @@ const isDecodableParamValue = (value: string): boolean => (
 
 // ============ 检测函数 ============
 
+const isProtocolRelativeUrl = (str: string): boolean => {
+  const match = str.trim().match(/^\/\/([^/?#\s]+)(?:[/?#].*)?$/);
+  if (!match) return false;
+
+  const host = match[1];
+  return /^[A-Za-z0-9.-]+(?::\d+)?$/.test(host) &&
+    (host.includes('.') || host.startsWith('localhost') || host.includes(':'));
+};
+
+const createUrl = (urlString: string): URL => {
+  const trimmed = urlString.trim();
+  return new URL(isProtocolRelativeUrl(trimmed) ? `${PROTOCOL_RELATIVE_URL_BASE}${trimmed}` : trimmed);
+};
+
+const stringifyUrlForOriginalShape = (url: URL, originalUrl: string): string => {
+  const serialized = url.toString();
+  return isProtocolRelativeUrl(originalUrl)
+    ? serialized.slice(PROTOCOL_RELATIVE_URL_BASE.length)
+    : serialized;
+};
+
 /**
  * 检测字符串是否为 URL（包含协议）
  */
 export function isUrl(str: string): boolean {
-  // 匹配 scheme://... 格式
-  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(str.trim());
+  const trimmed = str.trim();
+  // 匹配 scheme://... 和 //host/path 这两类常见链接格式
+  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(trimmed) || isProtocolRelativeUrl(trimmed);
 }
 
 /**
@@ -478,13 +501,13 @@ const isDecodableFragmentParamString = (source: string): boolean => {
 export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | null {
   try {
     // 处理自定义 scheme（如 myapp://）
-    const url = new URL(urlString);
+    const url = createUrl(urlString);
     const params = parseFlatQueryParams(url.search);
     const fragmentParamSource = getFragmentParamSource(url.hash);
     const hashParams = fragmentParamSource ? parseFlatQueryParams(fragmentParamSource) : undefined;
     
     return {
-      protocol: url.protocol,
+      protocol: isProtocolRelativeUrl(urlString) ? '//' : url.protocol,
       host: url.host || undefined,
       path: url.pathname || undefined,
       hash: url.hash ? url.hash.slice(1) : undefined,
@@ -747,7 +770,7 @@ const mergeUrlDecodedParams = (
 
 const parseUrlParamsDeep = (urlString: string, maxDepth: number): StructuredValue | null => {
   try {
-    const url = new URL(urlString);
+    const url = createUrl(urlString);
     const queryParams = url.search ? parseUrlQueryStringDeep(url.search, maxDepth) : null;
     const fragmentParamSource = getFragmentParamSource(url.hash);
     const hashParams = fragmentParamSource ? parseUrlQueryStringDeep(fragmentParamSource, maxDepth) : null;
@@ -1062,7 +1085,7 @@ const encodeUrlLayerContent = (content: string, originalUrl: string): string => 
   if (!editedParams) return content;
 
   try {
-    const url = new URL(originalUrl);
+    const url = createUrl(originalUrl);
     const hasQueryParams = Boolean(url.search);
     const hashParamSource = getFragmentParamSource(url.hash) || '';
     const hasHashParams = Boolean(hashParamSource);
@@ -1075,16 +1098,16 @@ const encodeUrlLayerContent = (content: string, originalUrl: string): string => 
         url.hash,
         buildQueryStringFromObject(isPlainObject(hashParams) ? hashParams : {}, hashParamSource)
       );
-      return url.toString();
+      return stringifyUrlForOriginalShape(url, originalUrl);
     }
 
     if (hasHashParams) {
       url.hash = replaceHashParams(url.hash, buildQueryStringFromObject(editedParams, hashParamSource));
-      return url.toString();
+      return stringifyUrlForOriginalShape(url, originalUrl);
     }
 
     url.search = buildQueryStringFromObject(editedParams, url.search);
-    return url.toString();
+    return stringifyUrlForOriginalShape(url, originalUrl);
   } catch {
     return content;
   }
