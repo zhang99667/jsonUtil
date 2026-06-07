@@ -328,6 +328,15 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('CMD 参数值中的未编码 & 不会被误切分', () => {
+    const result = deepDecodeScheme('title=R&D Center&from=feed');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      title: 'R&D Center',
+      from: 'feed',
+    });
+  });
+
   it('CMD 参数串被解析并递归展开参数值', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
     const result = deepDecodeScheme(`cmd=${payload}&url=${encodeURIComponent('https://example.com/path?from=box')}`);
