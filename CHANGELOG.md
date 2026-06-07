@@ -13,6 +13,7 @@
 - **CMD/Scheme 协议相对 URL 解析**: 支持识别和展开 `//m.baidu.com/path?...` 这类协议相对 URL，嵌套在 CMD 参数中也会继续解析内部 query
 - **CMD/Scheme 裸域名 URL 解析**: 支持识别和展开 `m.baidu.com/path?...` 这类省略协议的 URL，嵌套在常见 URL 字段中也会继续解析内部 query
 - **CMD/Scheme 单参数 camelCase 字段识别**: `h5Url`、`jumpUrl`、`landingUrl` 等常见单参数 URL/CMD 字段会按已有下划线字段同等识别，减少日志片段漏解析
+- **CMD/Scheme 未编码 URL 字段容错**: `url=https://m.baidu.com/s?word=json&from=feed` 这类未编码 URL 字段会把 `&from` 保留为内层 URL query，并在编辑回写时保持 raw URL 形态
 - **CMD/Scheme 未编码分隔符容错**: 参数拆分只在后续片段符合 `key=` 形态时生效，避免 `title=R&D Center&from=feed` 等日志值被误切分
 - **CMD/Scheme hash 参数值解析**: 支持 `_hash=%2Fdetail%3Fcmd%3D...`、`next=%23/detail%3F...` 等参数值中的 hash route 片段递归展开
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串

@@ -540,6 +540,39 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('未编码 URL 字段中的 & 保留为内层 query 参数', () => {
+    const result = deepDecodeScheme('url=https://m.baidu.com/s?word=json&from=feed');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      url: {
+        word: 'json',
+        from: 'feed',
+      },
+    });
+  });
+
+  it('已编码 URL 字段后的 & 仍作为外层参数拆分', () => {
+    const result = deepDecodeScheme('url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson&from=feed');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      url: {
+        word: 'json',
+      },
+      from: 'feed',
+    });
+  });
+
+  it('未编码裸域名 URL 字段中的 & 保留为内层 query 参数', () => {
+    const result = deepDecodeScheme('h5Url=m.baidu.com/s?word=json&from=feed');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      h5Url: {
+        word: 'json',
+        from: 'feed',
+      },
+    });
+  });
+
   it('参数内短 Base64 JSON 被递归解析', () => {
     const result = deepDecodeScheme(`cmd=${base64Encode('{"a":1}')}`);
     const parsed = JSON.parse(result.decoded);
@@ -769,6 +802,20 @@ describe('encodeWithLayers', () => {
     const edited = JSON.stringify({ word: 'schema' }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers)).toBe('m.baidu.com/s?word=schema');
+  });
+
+  it('未编码 URL 字段编辑后保留 raw URL 形态', () => {
+    const original = 'url=https://m.baidu.com/s?word=json&from=feed';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      url: {
+        word: 'schema',
+        from: 'feed',
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('url=https://m.baidu.com/s?word=schema&from=feed');
   });
 });
 

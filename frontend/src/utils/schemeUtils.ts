@@ -485,6 +485,30 @@ const splitQueryPairs = (queryString: string): string[] => (
   normalizeQueryString(stripQueryPrefix(queryString)).split(QUERY_PAIR_DELIMITER_RE).filter(Boolean)
 );
 
+interface SingleRawUrlParam {
+  rawKey: string;
+  key: string;
+  value: string;
+}
+
+const getSingleRawUrlParam = (queryString: string): SingleRawUrlParam | null => {
+  const source = normalizeQueryString(stripQueryPrefix(queryString));
+  if (!QUERY_PAIR_DELIMITER_RE.test(source)) return null;
+
+  const equalIndex = source.indexOf('=');
+  if (equalIndex <= 0) return null;
+
+  const rawKey = source.slice(0, equalIndex);
+  const key = decodeQueryComponent(rawKey);
+  if (!key || !COMMON_CMD_PARAM_NAME_ALIASES.has(normalizeCmdParamName(key))) return null;
+
+  const rawValue = source.slice(equalIndex + 1);
+  if (!isUrl(rawValue)) return null;
+
+  const value = decodeQueryComponent(rawValue);
+  return isUrl(value) ? { rawKey, key, value } : null;
+};
+
 const parseFlatQueryParams = (queryString: string): Record<string, string | string[]> | undefined => {
   const params: Record<string, string | string[]> = {};
 
@@ -785,6 +809,13 @@ const parseFragmentValueDeep = (value: string, maxDepth: number): StructuredValu
 };
 
 const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredValue => {
+  const singleRawUrlParam = getSingleRawUrlParam(queryString);
+  if (singleRawUrlParam) {
+    return {
+      [singleRawUrlParam.key]: decodeNestedParamValue(singleRawUrlParam.value, maxDepth - 1),
+    };
+  }
+
   const result: QueryParamContainer = {};
   splitQueryPairs(queryString).forEach(pair => {
     const equalIndex = pair.indexOf('=');
@@ -1158,6 +1189,25 @@ const encodeUrlLayerContent = (content: string, originalUrl: string): string => 
   }
 };
 
+const encodeSingleRawUrlParamContent = (
+  editedParams: Record<string, unknown>,
+  originalQueryString: string
+): string | null => {
+  const singleRawUrlParam = getSingleRawUrlParam(originalQueryString);
+  if (!singleRawUrlParam) return null;
+
+  const keys = Object.keys(editedParams);
+  if (keys.length !== 1 || !Object.prototype.hasOwnProperty.call(editedParams, singleRawUrlParam.key)) {
+    return null;
+  }
+
+  const editedUrlParams = editedParams[singleRawUrlParam.key];
+  if (!isPlainObject(editedUrlParams)) return null;
+
+  const rebuiltUrl = encodeUrlLayerContent(JSON.stringify(editedUrlParams), singleRawUrlParam.value);
+  return `${singleRawUrlParam.rawKey}=${rebuiltUrl}`;
+};
+
 export function encodeWithLayers(content: string, layers: DecodeLayer[]): string {
   let result = content;
   
@@ -1187,7 +1237,10 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
       case 'query-string':
         try {
           const parsed = JSON.parse(result) as unknown;
-          result = isPlainObject(parsed) ? buildQueryStringFromObject(parsed, layer.before) : result;
+          if (isPlainObject(parsed)) {
+            result = encodeSingleRawUrlParamContent(parsed, layer.before) ||
+              buildQueryStringFromObject(parsed, layer.before);
+          }
         } catch {
           // 保持原样
         }
