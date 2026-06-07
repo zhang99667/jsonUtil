@@ -224,8 +224,10 @@ export function isJwt(str: string): boolean {
   // JWT 格式: header.payload.signature
   const parts = trimmed.split('.');
   if (parts.length !== 3) return false;
-  // 每部分都应该是 Base64URL
-  return parts.every(part => /^[A-Za-z0-9_-]+$/.test(part));
+  if (!parts.every(part => part && /^[A-Za-z0-9_-]+$/.test(part))) return false;
+
+  // header/payload 必须能解成 JSON 对象，避免把版本号 1.2.3 误判成 JWT。
+  return decodeJwt(trimmed) !== null;
 }
 
 /**
@@ -369,14 +371,19 @@ export function decodeJwt(token: string): { header: Record<string, unknown>; pay
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     
-    const header = JSON.parse(base64Decode(parts[0])) as Record<string, unknown>;
-    const payload = JSON.parse(base64Decode(parts[1])) as Record<string, unknown>;
+    const header: unknown = JSON.parse(base64Decode(parts[0]));
+    const payload: unknown = JSON.parse(base64Decode(parts[1]));
+    if (!isRecord(header) || !isRecord(payload)) return null;
     
     return { header, payload, signature: parts[2] };
   } catch {
     return null;
   }
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
 
 const assignFlatQueryParam = (
   result: Record<string, string | string[]>,
