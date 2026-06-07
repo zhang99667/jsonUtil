@@ -154,9 +154,20 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const handleQuery = () => {
         setError('');
+        const queryPath = query.trim();
 
         if (isDataPreparing) {
             setError('深度格式化仍在处理，请稍后查询');
+            return;
+        }
+
+        if (!queryPath) {
+            setError('请输入 JSONPath 表达式');
+            setQueryRanges([]);
+            setQueryValues([]);
+            setTotalResults(0);
+            setCurrentResultIndex(0);
+            onHighlightRange(null);
             return;
         }
 
@@ -213,7 +224,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             onHighlightRange(event.data.ranges[0] || null);
 
             // 添加到历史记录（去重）
-            setHistory(prev => addJsonPathListItem(prev, query));
+            setHistory(prev => addJsonPathListItem(prev, queryPath));
         };
 
         worker.onerror = (event) => {
@@ -234,7 +245,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         worker.postMessage({
             id: requestId,
             jsonData,
-            query,
+            query: queryPath,
             options: {
                 deepFormat,
                 autoExpandScheme,

@@ -333,6 +333,10 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await fillSourceEditor(page, '{"users":[{"name":"Ada","age":20},{"name":"Bob","age":17}]}');
 
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
+  await page.locator('[data-tour="jsonpath-input"]').fill('   ');
+  await page.getByRole('button', { name: '查询', exact: true }).click();
+  await expect(page.getByText('请输入 JSONPath 表达式')).toBeVisible();
+
   await page.locator('[data-tour="jsonpath-input"]').fill('$.users[*].name');
   await page.getByRole('button', { name: '查询', exact: true }).click();
 

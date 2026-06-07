@@ -37,6 +37,7 @@
 - **大文件转换 Worker 化**: 大输入下的格式化、压缩、深度格式化和 Key 排序改为 Web Worker 异步执行，降低主线程卡顿风险并保护处理中预览不被复制或保存
 - **JSONPath 查询 Worker 化**: JSONPath 查询、深度格式化和高亮范围映射迁移到 Worker，避免大 JSON 查询时主线程重复解析和卡顿
 - **JSONPath 关闭清理**: 关闭 JSONPath 面板时会终止未完成查询并清除 PREVIEW 高亮，避免面板关闭后残留查询状态
+- **JSONPath 输入容错**: 查询前自动裁剪表达式，空表达式给出中文提示，避免复制表达式带空格或误清空时暴露底层错误
 - **大文件校验 Worker 化**: Source 与 PREVIEW 大 JSON 校验改为防抖后异步执行，减少 `JSON.parse` 校验造成的主线程阻塞
 - **大文件 Scheme 扫描 Worker 化**: PREVIEW 区大 JSON 的 Scheme 图标检测迁移到 Worker，避免旁路扫描抢占主线程
 - **Scheme 图标定位准确性**: JSON 内 Scheme 扫描改用 source map 定位，修复数组项或特殊 key 下解析图标可能落到错误行的问题
