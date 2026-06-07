@@ -393,6 +393,12 @@ test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
   await expectPreviewText(page, '"ok": true');
 });
 
+test('AI 修复空输入会提示用户', async ({ page }) => {
+  await page.locator('[data-tour="ai-fix"]').click();
+
+  await expect(page.getByText('请先输入需要修复的 JSON 内容')).toBeVisible();
+});
+
 test('AI 配置可测试连接', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('button', { name: 'AI 配置' }).click();
