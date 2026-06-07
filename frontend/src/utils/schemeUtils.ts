@@ -96,7 +96,7 @@ const normalizeQueryString = (source: string): string => (
 );
 
 const stripQueryPrefix = (source: string): string => (
-  source.trim().replace(/^\?/, '')
+  source.trim().replace(/^\?/, '').replace(/^&+/, '')
 );
 
 const looksLikeQueryString = (source: string): boolean => {
@@ -142,7 +142,7 @@ export function isUrl(str: string): boolean {
  */
 export function isQueryStringFormat(str: string): boolean {
   const trimmed = str.trim();
-  const source = normalizeQueryString(trimmed.startsWith('?') ? trimmed.slice(1) : trimmed);
+  const source = normalizeQueryString(stripQueryPrefix(trimmed));
   
   // 排除 URL 格式（真正的 scheme:// 不应被视为查询参数）
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return false;
@@ -165,7 +165,7 @@ export function isQueryStringFormat(str: string): boolean {
  */
 export function isDecodableQueryString(str: string): boolean {
   const trimmed = str.trim();
-  const source = normalizeQueryString(trimmed.startsWith('?') ? trimmed.slice(1) : trimmed);
+  const source = normalizeQueryString(stripQueryPrefix(trimmed));
 
   if (!source || /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(source)) return false;
   if (!QUERY_PAIR_START_RE.test(source)) return false;
