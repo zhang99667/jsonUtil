@@ -245,8 +245,23 @@ export function deepParseWithContext(
     originalIndentation,
   };
 
+  let parsed: JsonValue;
   try {
-    const parsed: JsonValue = JSON.parse(input);
+    parsed = JSON.parse(input) as JsonValue;
+    context.sourceFormat = 'json';
+  } catch {
+    const jsonLines = parseJsonLines(input);
+    if (!jsonLines) {
+      // JSON 解析失败，返回原始输入
+      return {
+        output: input,
+        context,
+      };
+    }
+
+    parsed = jsonLines;
+    context.sourceFormat = 'jsonl';
+  }
 
     const processValue = (value: JsonValue, currentPath: string, depth: number = 0): JsonValue => {
       const maxDepth = options?.maxDepth ?? 10;
@@ -395,13 +410,6 @@ export function deepParseWithContext(
       output: JSON.stringify(output, null, 2),
       context,
     };
-  } catch (e) {
-    // JSON 解析失败，返回原始输入
-    return {
-      output: input,
-      context,
-    };
-  }
 }
 
 // ============ 基于上下文的精确还原 ============
@@ -476,6 +484,10 @@ export function inverseWithContext(
     };
 
     const result = restoreValue(editedParsed, '$');
+
+    if (context.sourceFormat === 'jsonl' && Array.isArray(result)) {
+      return stringifyJsonLines(result);
+    }
 
     // 使用原始缩进格式
     const indentation = context.originalIndentation;

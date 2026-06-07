@@ -146,6 +146,7 @@ export interface TransformContext {
   records: Map<string, PathTransformRecord>;  // path -> record
   timestamp: number;
   originalIndentation: number | string;  // 原始缩进（用于还原格式）
+  sourceFormat?: 'json' | 'jsonl';  // 根输入格式，用于 JSONL 深度格式化后回写
 }
 
 // 转换结果（带上下文）

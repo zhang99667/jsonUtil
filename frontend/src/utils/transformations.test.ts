@@ -398,6 +398,38 @@ describe('deepParseWithContext', () => {
     const result = deepParseWithContext(input);
     expect(result.output).toBe(input);
   });
+
+  it('JSON Lines 中的嵌套 JSON 和 CMD 参数可展开为数组预览', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const input = [
+      JSON.stringify({
+        payload: JSON.stringify({ nested: true }),
+        action_cmd: `cmd=${payload}&from=feed`,
+      }),
+      JSON.stringify({
+        payload: JSON.stringify({ nested: false }),
+      }),
+    ].join('\n');
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(result.context.sourceFormat).toBe('jsonl');
+    expect(parsed).toEqual([
+      {
+        payload: { nested: true },
+        action_cmd: {
+          cmd: { nid: 123, title: '标题' },
+          from: 'feed',
+        },
+      },
+      {
+        payload: { nested: false },
+      },
+    ]);
+    expect(result.context.records.get('$[0].payload')?.steps[0].type).toBe('json_parse');
+    expect(result.context.records.get('$[0].action_cmd')?.steps[0].type).toBe('scheme_decode');
+  });
 });
 
 describe('inverseWithContext 精确还原', () => {
@@ -445,6 +477,23 @@ describe('inverseWithContext 精确还原', () => {
 
     const restored = inverseWithContext(output, context);
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('JSON Lines 深度格式化后可精确还原为逐行 JSON', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const input = [
+      JSON.stringify({
+        payload: JSON.stringify({ nested: true }),
+        action_cmd: `cmd=${payload}&from=feed`,
+      }),
+      JSON.stringify({
+        payload: JSON.stringify({ nested: false }),
+      }),
+    ].join('\n');
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+
+    const restored = inverseWithContext(output, context);
+    expect(restored).toBe(input);
   });
 });
 
