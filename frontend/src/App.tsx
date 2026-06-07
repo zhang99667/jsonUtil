@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { showSuccess, showError } from './utils/toast';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
-import { TemplateFillPanel } from './components/TemplateFillPanel';
 import { AiRepairSummaryBanner } from './components/AiRepairSummaryBanner';
 import {
   validateJson,
@@ -56,6 +55,10 @@ const LazySchemeViewerModal = lazy(() => import('./components/SchemeViewerModal'
 
 const LazyJsonPathPanel = lazy(() => import('./components/JsonPathPanel').then(module => ({
   default: module.JsonPathPanel,
+})));
+
+const LazyTemplateFillPanel = lazy(() => import('./components/TemplateFillPanel').then(module => ({
+  default: module.TemplateFillPanel,
 })));
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
@@ -369,6 +372,7 @@ const App: React.FC = () => {
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
   const [hasLoadedSchemePanel, setHasLoadedSchemePanel] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
+  const [hasLoadedTemplatePanel, setHasLoadedTemplatePanel] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
 
   // 光标位置状态（用于状态栏显示）
@@ -385,6 +389,12 @@ const App: React.FC = () => {
       setHasLoadedJsonPathPanel(true);
     }
   }, [isJsonPathPanelOpen]);
+
+  useEffect(() => {
+    if (isTemplatePanelOpen) {
+      setHasLoadedTemplatePanel(true);
+    }
+  }, [isTemplatePanelOpen]);
 
   useEffect(() => {
     if (isSchemeDecodeOpen) {
@@ -1111,12 +1121,16 @@ const App: React.FC = () => {
         )}
 
         {/* 模板填充面板 */}
-        <TemplateFillPanel
-          isOpen={isTemplatePanelOpen}
-          onClose={() => setIsTemplatePanelOpen(false)}
-          onApplyTemplate={handleApplyTemplate}
-          targetError={templateTargetError}
-        />
+        {hasLoadedTemplatePanel && (
+          <Suspense fallback={null}>
+            <LazyTemplateFillPanel
+              isOpen={isTemplatePanelOpen}
+              onClose={() => setIsTemplatePanelOpen(false)}
+              onApplyTemplate={handleApplyTemplate}
+              targetError={templateTargetError}
+            />
+          </Suspense>
+        )}
 
         {/* 拖拽遮罩层（防止 iframe/webview 捕获事件） */}
         {(isResizingSidebar || isResizingPane) && (
