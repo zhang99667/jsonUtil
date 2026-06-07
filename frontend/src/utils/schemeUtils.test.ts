@@ -536,6 +536,7 @@ describe('findSchemesInJson', () => {
     expect(results.length).toBe(1);
     expect(results[0].schemeType).toBe('url');
     expect(results[0].path).toBe('$.link');
+    expect(results[0].pointer).toBe('/link');
   });
 
   it('无 scheme 返回空数组', () => {
@@ -577,7 +578,23 @@ describe('findSchemesInJson', () => {
     const results = findSchemesInJson(json);
     expect(results.length).toBe(1);
     expect(results[0].path).toBe('$.a/b.schema');
+    expect(results[0].pointer).toBe('/a~1b/schema');
     expect(results[0].line).toBe(3);
+  });
+
+  it('特殊 key 的 Scheme 携带可精确回写的 JSON Pointer', () => {
+    const json = JSON.stringify({
+      'a.b': {
+        'x/y': {
+          'tilde~key': 'https://example.com/path?from=key',
+        },
+      },
+    }, null, 2);
+
+    const results = findSchemesInJson(json);
+    expect(results.length).toBe(1);
+    expect(results[0].path).toBe('$.a.b.x/y.tilde~key');
+    expect(results[0].pointer).toBe('/a.b/x~1y/tilde~0key');
   });
 
   it('非法 JSON 返回空数组', () => {

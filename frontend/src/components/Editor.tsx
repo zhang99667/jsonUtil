@@ -27,7 +27,7 @@ type MonacoJsonDefaults = {
 
 // 扩展 EditorProps 以支持 scheme 修改回调
 interface ExtendedEditorProps extends EditorProps {
-  onSchemeEdit?: (path: string, newValue: string) => void;
+  onSchemeEdit?: (path: string, newValue: string, pointer?: string) => void;
 }
 
 interface SchemeScanWorkerResponse {
@@ -72,8 +72,9 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const [schemeModal, setSchemeModal] = useState<{
     isOpen: boolean;
     path: string;
+    pointer: string;
     value: string;
-  }>({ isOpen: false, path: '', value: '' });
+  }>({ isOpen: false, path: '', pointer: '', value: '' });
 
 
 
@@ -172,6 +173,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       setSchemeModal({
         isOpen: true,
         path: location.path,
+        pointer: location.pointer,
         value: location.value,
       });
     }
@@ -180,10 +182,10 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   // 处理 scheme 编辑应用
   const handleSchemeApply = useCallback((newValue: string) => {
     if (onSchemeEdit && schemeModal.path) {
-      onSchemeEdit(schemeModal.path, newValue);
+      onSchemeEdit(schemeModal.path, newValue, schemeModal.pointer);
     }
-    setSchemeModal({ isOpen: false, path: '', value: '' });
-  }, [onSchemeEdit, schemeModal.path]);
+    setSchemeModal({ isOpen: false, path: '', pointer: '', value: '' });
+  }, [onSchemeEdit, schemeModal.path, schemeModal.pointer]);
 
   // 只读属性变更时重置锁定状态
   useEffect(() => {
@@ -493,6 +495,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
                     setSchemeModal({
                       isOpen: true,
                       path: location.path,
+                      pointer: location.pointer,
                       value: location.value,
                     });
                   }
@@ -537,7 +540,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       {/* Scheme 解析弹窗 */}
       <SchemeViewerModal
         isOpen={schemeModal.isOpen}
-        onClose={() => setSchemeModal({ isOpen: false, path: '', value: '' })}
+        onClose={() => setSchemeModal({ isOpen: false, path: '', pointer: '', value: '' })}
         path={schemeModal.path}
         value={schemeModal.value}
         onApply={onSchemeEdit ? handleSchemeApply : undefined}
