@@ -19,6 +19,7 @@ import {
     uploadFile,
     FileItem,
 } from '../services/file';
+import { TEXT_FILE_ACCEPT_EXTENSIONS } from '../../utils/fileGuards';
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -75,7 +76,7 @@ const FileManagement: React.FC = () => {
     const previewRequestIdRef = useRef(0);
 
     /** 允许上传的文件类型 */
-    const ACCEPTED_FILE_TYPES = '.json,.xml,.csv,.txt,.yaml,.yml';
+    const ACCEPTED_FILE_TYPES = TEXT_FILE_ACCEPT_EXTENSIONS.join(',');
 
     /**
      * 自定义上传处理
