@@ -484,6 +484,27 @@ test('文件打开后可修改并保存下载', async ({ page }) => {
   await expect(readFile(downloadPath!, 'utf-8')).resolves.toBe(savedContent);
 });
 
+test('取消打开文件不会输出失败日志', async ({ page }) => {
+  const consoleMessages: string[] = [];
+  page.on('console', message => {
+    consoleMessages.push(`${message.type()}: ${message.text()}`);
+  });
+
+  await page.evaluate(() => {
+    Object.defineProperty(window, 'showOpenFilePicker', {
+      configurable: true,
+      value: async () => {
+        throw new DOMException('cancelled', 'AbortError');
+      },
+    });
+  });
+
+  await page.locator('[data-tour="open-file-button"]').click();
+
+  await expect(page.getByText('读取文件失败')).toHaveCount(0);
+  expect(consoleMessages.filter(message => message.includes('File open') || message.includes('Failed to open file'))).toEqual([]);
+});
+
 test('取消保存预览不会提示失败', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(window, 'showSaveFilePicker', {
