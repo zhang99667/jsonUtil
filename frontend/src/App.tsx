@@ -719,7 +719,11 @@ const App: React.FC = () => {
       // 触发 AI 修复功能首次使用引导
       triggerFeatureFirstUse(FeatureId.AI_FIX);
 
-      if (!input.trim()) return;
+      if (!input.trim()) {
+        showError('请先输入需要修复的 JSON 内容');
+        return;
+      }
+
       setIsProcessing(true);
       try {
         // AI 修复针对源输入进行
