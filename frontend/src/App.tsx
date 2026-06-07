@@ -10,6 +10,7 @@ import { TemplateFillPanel } from './components/TemplateFillPanel';
 import { AiRepairSummaryBanner } from './components/AiRepairSummaryBanner';
 import {
   validateJson,
+  detectLanguage,
   performTransform,
   performInverseTransform,
   deepParseWithContext,
@@ -473,6 +474,27 @@ const App: React.FC = () => {
     const content = activeEditor === 'PREVIEW' ? output : input;
     return getDocumentStats(content);
   }, [input, output, activeEditor]);
+
+  const templateTargetError = useMemo(() => {
+    if (!isTemplatePanelOpen) return '';
+
+    const trimmedInput = input.trim();
+    if (!trimmedInput) {
+      return '请先在 SOURCE 输入合法 JSON';
+    }
+
+    if (detectLanguage(trimmedInput) !== 'json') {
+      return '当前 SOURCE 不是合法 JSON，无法应用模板';
+    }
+
+    if (!validation.isValid) {
+      return validation.error
+        ? `当前 SOURCE JSON 无效: ${validation.error}`
+        : '当前 SOURCE JSON 无效';
+    }
+
+    return '';
+  }, [input, isTemplatePanelOpen, validation]);
 
 
   // 输入变更验证（防抖）
@@ -1064,6 +1086,7 @@ const App: React.FC = () => {
           isOpen={isTemplatePanelOpen}
           onClose={() => setIsTemplatePanelOpen(false)}
           onApplyTemplate={handleApplyTemplate}
+          targetError={templateTargetError}
         />
 
         {/* 拖拽遮罩层（防止 iframe/webview 捕获事件） */}

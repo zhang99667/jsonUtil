@@ -10,12 +10,14 @@ interface TemplateFillPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onApplyTemplate: (templateJson: string) => void;
+  targetError?: string;
 }
 
 export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   isOpen,
   onClose,
   onApplyTemplate,
+  targetError,
 }) => {
   // 从 localStorage 恢复模板内容
   const [template, setTemplate] = useState<string>(() => loadTemplateFillConfig().template);
@@ -45,6 +47,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   }, []);
 
   const handleApply = () => {
+    if (targetError) return;
     onApplyTemplate(template);
   };
 
@@ -78,7 +81,8 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
       </button>
       <button
         onClick={handleApply}
-        disabled={!template.trim() || !validation.isValid}
+        disabled={!template.trim() || !validation.isValid || Boolean(targetError)}
+        title={targetError || undefined}
         className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,6 +130,15 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             {validation.error}
+          </div>
+        )}
+
+        {targetError && (
+          <div className="text-xs text-amber-300 bg-amber-900/20 border border-amber-700/30 rounded px-2.5 py-1.5 flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20.5a8.5 8.5 0 100-17 8.5 8.5 0 000 17z" />
+            </svg>
+            {targetError}
           </div>
         )}
 

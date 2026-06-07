@@ -4,6 +4,7 @@ import {
   isRecord,
   parseJsonWithFallback,
   safeGetStorageItem,
+  safeReadStorageItem,
   safeRemoveStorageItem,
   safeSetStorageItem,
 } from './storage';
@@ -89,6 +90,8 @@ describe('safe storage reads', () => {
       getItem: (key: string) => key === 'key' ? 'value' : null,
     } as unknown as Storage;
 
+    expect(safeReadStorageItem('key', storage)).toEqual({ value: 'value', ok: true });
+    expect(safeReadStorageItem('missing', storage)).toEqual({ value: null, ok: true });
     expect(safeGetStorageItem('key', storage)).toBe('value');
     expect(safeGetStorageItem('missing', storage)).toBeNull();
   });
@@ -101,8 +104,9 @@ describe('safe storage reads', () => {
       },
     } as unknown as Storage;
 
+    expect(safeReadStorageItem('key', blockedStorage)).toEqual({ value: null, ok: false });
     expect(safeGetStorageItem('key', blockedStorage)).toBeNull();
-    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledTimes(2);
 
     warnSpy.mockRestore();
   });

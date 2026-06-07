@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
 import { driver } from 'driver.js';
-import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import { safeReadStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import 'driver.js/dist/driver.css';
 
 export const useOnboardingTour = () => {
     useEffect(() => {
         // 检查用户是否已完成引导
-        const hasCompletedOnboarding = safeGetStorageItem('json-helper-onboarding-completed');
+        const onboardingStatus = safeReadStorageItem('json-helper-onboarding-completed');
 
-        if (hasCompletedOnboarding) {
+        // 本地存储被浏览器阻止时跳过自动引导，避免每次启动都弹出且无法记住关闭状态。
+        if (!onboardingStatus.ok || onboardingStatus.value) {
             return;
         }
 
