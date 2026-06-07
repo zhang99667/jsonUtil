@@ -96,8 +96,21 @@ describe('isBase64', () => {
     expect(isBase64(encoded)).toBe(true);
   });
 
+  it('短 JSON Base64 也可识别', () => {
+    expect(isBase64(base64Encode('{"a":1}'))).toBe(true);
+  });
+
+  it('URL-safe 且省略 padding 的短 JSON Base64 也可识别', () => {
+    const encoded = base64Encode('{"a":1}').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    expect(isBase64(encoded)).toBe(true);
+  });
+
   it('太短的字符串返回 false', () => {
     expect(isBase64('abc')).toBe(false);
+  });
+
+  it('普通短文本 Base64 不误判', () => {
+    expect(isBase64(base64Encode('hello'))).toBe(false);
   });
 
   it('key=value 格式返回 false', () => {
@@ -159,6 +172,11 @@ describe('detectSchemeType', () => {
 
   it('检测 URL 编码', () => {
     expect(detectSchemeType('%E4%BD%A0%E5%A5%BD')).toBe('url-encoded');
+  });
+
+  it('检测短 JSON Base64', () => {
+    const encoded = base64Encode('{"a":1}').replace(/=+$/g, '');
+    expect(detectSchemeType(encoded)).toBe('base64');
   });
 
   it('检测独立 hash route 参数串', () => {
@@ -290,6 +308,14 @@ describe('deepDecodeScheme', () => {
     const result = deepDecodeScheme('hello world');
     expect(result.decoded).toBe('hello world');
     expect(result.layers.length).toBe(0);
+  });
+
+  it('短 JSON Base64 被解码', () => {
+    const encoded = base64Encode('{"a":1}').replace(/=+$/g, '');
+    const result = deepDecodeScheme(encoded);
+    expect(result.isJson).toBe(true);
+    expect(JSON.parse(result.decoded)).toEqual({ a: 1 });
+    expect(result.layers[0].type).toBe('base64');
   });
 
   it('URL 被解析', () => {

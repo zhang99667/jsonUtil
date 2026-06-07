@@ -198,9 +198,7 @@ export function hasUrlEncoding(str: string): boolean {
  */
 export function isBase64(str: string): boolean {
   const trimmed = str.trim();
-  // 长度至少 20，避免误判短字符串
-  if (trimmed.length < 20) return false;
-  
+
   // 排除 key=value 格式：Base64 的 = 只能作为末尾 padding
   // 如果 = 后面还有非 = 的字符，说明是 key=value 格式而非 Base64
   const equalSignIndex = trimmed.indexOf('=');
@@ -213,7 +211,15 @@ export function isBase64(str: string): boolean {
   }
   
   const decoded = base64Decode(trimmed);
-  return decoded !== trimmed && decoded.length > 0 && isReadableDecodedText(decoded);
+  if (decoded === trimmed || decoded.length === 0) return false;
+
+  // 短 Base64 只有在能明确解出 JSON、URL、CMD 等结构化内容时才识别，避免普通短文本误判。
+  if (looksLikeStructuredPayload(decoded)) return true;
+
+  // 普通文本 Base64 保持较高长度门槛，避免把短 token 当成可解析 Scheme。
+  if (trimmed.length < 20) return false;
+
+  return isReadableDecodedText(decoded);
 }
 
 /**
