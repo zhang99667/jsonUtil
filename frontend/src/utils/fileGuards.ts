@@ -1,6 +1,6 @@
 export const MAX_TEXT_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
-const TEXT_FILE_EXTENSIONS = new Set([
+export const TEXT_FILE_EXTENSIONS = [
   'conf',
   'config',
   'css',
@@ -24,7 +24,11 @@ const TEXT_FILE_EXTENSIONS = new Set([
   'xml',
   'yaml',
   'yml',
-]);
+];
+
+export const TEXT_FILE_ACCEPT_EXTENSIONS = TEXT_FILE_EXTENSIONS.map(extension => `.${extension}`);
+
+const TEXT_FILE_EXTENSION_SET = new Set(TEXT_FILE_EXTENSIONS);
 
 const BINARY_FILE_EXTENSIONS = new Set([
   '7z',
@@ -122,11 +126,11 @@ const isLikelyTextFile = (file: Pick<File, 'name'> & { type?: string }): boolean
     return false;
   }
 
-  if (BINARY_MIME_TYPES.has(mimeType) && !TEXT_FILE_EXTENSIONS.has(extension)) {
+  if (BINARY_MIME_TYPES.has(mimeType) && !TEXT_FILE_EXTENSION_SET.has(extension)) {
     return false;
   }
 
-  if (TEXT_FILE_EXTENSIONS.has(extension)) {
+  if (TEXT_FILE_EXTENSION_SET.has(extension)) {
     return true;
   }
 
