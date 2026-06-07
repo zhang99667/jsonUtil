@@ -31,6 +31,11 @@ describe('isUrl', () => {
     expect(isUrl('//m.baidu.com/s?word=json')).toBe(true);
   });
 
+  it('检测裸域名 URL', () => {
+    expect(isUrl('m.baidu.com/s?word=json')).toBe(true);
+    expect(isUrl('localhost:5173/app?tab=scheme')).toBe(true);
+  });
+
   it('检测自定义 scheme URL', () => {
     expect(isUrl('myapp://path/to/page')).toBe(true);
   });
@@ -39,6 +44,8 @@ describe('isUrl', () => {
     expect(isUrl('just a string')).toBe(false);
     expect(isUrl('')).toBe(false);
     expect(isUrl('key=value')).toBe(false);
+    expect(isUrl('foo.bar')).toBe(false);
+    expect(isUrl('1.2.3/path')).toBe(false);
   });
 });
 
@@ -95,6 +102,7 @@ describe('isDecodableQueryString', () => {
   it('检测 camelCase 的单参数 URL 字段', () => {
     expect(isDecodableQueryString('h5Url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
     expect(isDecodableQueryString('jumpUrl=//m.baidu.com/s?word=json')).toBe(true);
+    expect(isDecodableQueryString('landingUrl=m.baidu.com/s?word=json')).toBe(true);
   });
 
   it('普通单键值对不误判', () => {
@@ -185,6 +193,10 @@ describe('detectSchemeType', () => {
 
   it('检测协议相对 URL', () => {
     expect(detectSchemeType('//m.baidu.com/s?word=json')).toBe('url');
+  });
+
+  it('检测裸域名 URL', () => {
+    expect(detectSchemeType('m.baidu.com/s?word=json')).toBe('url');
   });
 
   it('检测 URL 编码', () => {
@@ -278,6 +290,15 @@ describe('parseUrl', () => {
     const result = parseUrl('//m.baidu.com/s?word=json+schema');
     expect(result).not.toBeNull();
     expect(result!.protocol).toBe('//');
+    expect(result!.host).toBe('m.baidu.com');
+    expect(result!.path).toBe('/s');
+    expect(result!.params).toEqual({ word: 'json schema' });
+  });
+
+  it('解析裸域名 URL', () => {
+    const result = parseUrl('m.baidu.com/s?word=json+schema');
+    expect(result).not.toBeNull();
+    expect(result!.protocol).toBe('无协议');
     expect(result!.host).toBe('m.baidu.com');
     expect(result!.path).toBe('/s');
     expect(result!.params).toEqual({ word: 'json schema' });
@@ -400,6 +421,14 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('裸域名 URL 可直接解析 query 参数', () => {
+    const result = deepDecodeScheme('m.baidu.com/s?word=json+schema');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      word: 'json schema',
+    });
+  });
+
   it('CMD 参数和嵌套 URL 中的加号按查询参数语义解析为空格', () => {
     const nestedUrl = 'https%3A%2F%2Fexample.com%2Fsearch%3Fword%3Djson%2Bschema';
     const result = deepDecodeScheme(`title=json+schema&url=${nestedUrl}`);
@@ -496,6 +525,16 @@ describe('deepDecodeScheme', () => {
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       jumpUrl: {
+        word: 'json schema',
+      },
+    });
+  });
+
+  it('常见 camelCase 裸域名 URL 字段可作为单参数解析', () => {
+    const result = deepDecodeScheme('h5Url=m.baidu.com/s?word=json+schema');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      h5Url: {
         word: 'json schema',
       },
     });
@@ -722,6 +761,14 @@ describe('encodeWithLayers', () => {
     const edited = JSON.stringify({ word: 'schema' }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers)).toBe('//m.baidu.com/s?word=schema');
+  });
+
+  it('裸域名 URL 编辑后保留无协议形态', () => {
+    const original = 'm.baidu.com/s?word=json';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({ word: 'schema' }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers)).toBe('m.baidu.com/s?word=schema');
   });
 });
 
