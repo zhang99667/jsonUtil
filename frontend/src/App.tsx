@@ -14,8 +14,6 @@ import {
   inverseWithContext,
   applyTemplate
 } from './utils/transformations';
-import { fixJsonWithAI } from './services/aiService';
-import { UnifiedSettingsModal } from './components/UnifiedSettingsModal';
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
@@ -59,6 +57,10 @@ const LazyJsonPathPanel = lazy(() => import('./components/JsonPathPanel').then(m
 
 const LazyTemplateFillPanel = lazy(() => import('./components/TemplateFillPanel').then(module => ({
   default: module.TemplateFillPanel,
+})));
+
+const LazyUnifiedSettingsModal = lazy(() => import('./components/UnifiedSettingsModal').then(module => ({
+  default: module.UnifiedSettingsModal,
 })));
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
@@ -368,6 +370,7 @@ const App: React.FC = () => {
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [hasLoadedSettingsModal, setHasLoadedSettingsModal] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
   const [hasLoadedSchemePanel, setHasLoadedSchemePanel] = useState(false);
@@ -383,6 +386,12 @@ const App: React.FC = () => {
   const dragCounter = useRef(0);
 
   const [aiConfig, setAiConfig] = useState<AIConfig>(loadAIConfig);
+
+  useEffect(() => {
+    if (isSettingsModalOpen) {
+      setHasLoadedSettingsModal(true);
+    }
+  }, [isSettingsModalOpen]);
 
   useEffect(() => {
     if (isJsonPathPanelOpen) {
@@ -814,6 +823,7 @@ const App: React.FC = () => {
       setIsProcessing(true);
       try {
         // AI 修复针对源输入进行
+        const { fixJsonWithAI } = await import('./services/aiService');
         const fixed = await fixJsonWithAI(input, aiConfig);
         aiRepairSnapshotRef.current = fixed;
         setAiRepairSummary(buildAiRepairSummary(input, fixed));
@@ -919,21 +929,25 @@ const App: React.FC = () => {
     <ErrorBoundary>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
 
-      <UnifiedSettingsModal
-        isOpen={isSettingsModalOpen}
-        initialTab={settingsInitialTab}
-        onClose={() => setIsSettingsModalOpen(false)}
-        shortcuts={shortcuts}
-        onUpdateShortcut={updateShortcut}
-        onResetShortcuts={resetShortcuts}
-        aiConfig={aiConfig}
-        onSaveAIConfig={setAiConfig}
-        generalSettings={generalSettings}
-        onSaveGeneralSettings={setGeneralSettings}
-        onResetPanelLayout={handleResetPanelLayout}
-        onExportSettingsBackup={handleExportSettingsBackup}
-        onImportSettingsBackup={handleImportSettingsBackup}
-      />
+      {hasLoadedSettingsModal && (
+        <Suspense fallback={null}>
+          <LazyUnifiedSettingsModal
+            isOpen={isSettingsModalOpen}
+            initialTab={settingsInitialTab}
+            onClose={() => setIsSettingsModalOpen(false)}
+            shortcuts={shortcuts}
+            onUpdateShortcut={updateShortcut}
+            onResetShortcuts={resetShortcuts}
+            aiConfig={aiConfig}
+            onSaveAIConfig={setAiConfig}
+            generalSettings={generalSettings}
+            onSaveGeneralSettings={setGeneralSettings}
+            onResetPanelLayout={handleResetPanelLayout}
+            onExportSettingsBackup={handleExportSettingsBackup}
+            onImportSettingsBackup={handleImportSettingsBackup}
+          />
+        </Suspense>
+      )}
 
 
       {/* 主工作区容器 */}
