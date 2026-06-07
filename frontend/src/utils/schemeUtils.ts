@@ -401,7 +401,7 @@ const assignFlatQueryParam = (
 };
 
 const splitQueryPairs = (queryString: string): string[] => (
-  normalizeQueryString(stripQueryPrefix(queryString)).split('&').filter(Boolean)
+  normalizeQueryString(stripQueryPrefix(queryString)).split(QUERY_PAIR_DELIMITER_RE).filter(Boolean)
 );
 
 const parseFlatQueryParams = (queryString: string): Record<string, string | string[]> | undefined => {
