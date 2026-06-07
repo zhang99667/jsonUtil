@@ -141,6 +141,11 @@ const App: React.FC = () => {
     return !activeFileId && input.trim().length > 0;
   }, [files, activeFileId, input]);
 
+  const activeFile = useMemo(
+    () => activeFileId ? files.find(file => file.id === activeFileId) || null : null,
+    [activeFileId, files]
+  );
+
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges) return;
@@ -426,10 +431,15 @@ const App: React.FC = () => {
       return;
     }
 
+    if (!activeFile?.handle) {
+      showError('请先保存当前标签后再启用自动保存');
+      return;
+    }
+
     const nextEnabled = !isAutoSaveEnabled;
     setIsAutoSaveEnabled(nextEnabled);
     showSuccess(nextEnabled ? '自动保存已开启' : '自动保存已关闭');
-  }, [activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled]);
+  }, [activeFileId, activeFile, isAutoSaveEnabled, setIsAutoSaveEnabled]);
 
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({
@@ -929,7 +939,7 @@ const App: React.FC = () => {
           <div data-tour="source-editor" style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
             <CodeEditor
               value={input}
-              originalValue={activeFileId ? files.find(f => f.id === activeFileId)?.savedContent : undefined}
+              originalValue={activeFile?.savedContent}
               path={activeFileId || undefined}
               onChange={handleInputChange}
               onFocus={() => setActiveEditor('SOURCE')}
@@ -941,7 +951,7 @@ const App: React.FC = () => {
               onCloseFile={closeFile}
               onNewTab={createNewTab}
               onSaveViewState={saveViewState}
-              restoreViewState={activeFileId ? files.find(f => f.id === activeFileId)?.viewState : undefined}
+              restoreViewState={activeFile?.viewState}
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               headerActions={
@@ -950,21 +960,25 @@ const App: React.FC = () => {
                   onClick={handleToggleAutoSave}
                   className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
                     ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
-                    : isAutoSaveEnabled
+                    : activeFile?.handle && isAutoSaveEnabled
                       ? 'bg-status-success-bg text-status-success-text border-status-success-border'
-                      : 'text-gray-400 border-transparent hover:bg-editor-active'
+                      : activeFile?.handle
+                        ? 'text-gray-400 border-transparent hover:bg-editor-active'
+                        : 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
                     }`}
                   title={
                     !activeFileId
                       ? "请先打开文件以启用自动保存"
-                      : isAutoSaveEnabled
+                      : !activeFile?.handle
+                        ? "请先保存当前标签以启用自动保存"
+                        : isAutoSaveEnabled
                         ? "自动保存已开启"
                         : "点击开启自动保存"
                   }
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${!activeFileId
                     ? 'bg-gray-700'
-                    : isAutoSaveEnabled
+                    : activeFile?.handle && isAutoSaveEnabled
                       ? 'bg-green-500 animate-pulse'
                       : 'bg-gray-500'
                     }`}></div>
@@ -1089,6 +1103,7 @@ const App: React.FC = () => {
         mode={mode}
         activeFileId={activeFileId}
         files={files}
+        isAutoSaveEnabled={isAutoSaveEnabled}
         cursorLine={cursorPosition.line}
         cursorColumn={cursorPosition.column}
       />
