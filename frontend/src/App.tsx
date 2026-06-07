@@ -657,10 +657,13 @@ const App: React.FC = () => {
         a.href = url;
         a.download = 'preview_result.json';
         a.click();
-        URL.revokeObjectURL(url);
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
       }
       showSuccess("已保存预览结果");
     } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        return;
+      }
       console.error('Failed to save preview:', err);
       showError('保存预览结果失败');
     }
