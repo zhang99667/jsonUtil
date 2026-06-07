@@ -342,6 +342,12 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
 
   await expect(page.getByText('1 / 2')).toBeVisible();
   await expect(page.locator('.jsonpath-highlight').first()).toBeVisible();
+  const resultPreview = page.locator('[data-tour="jsonpath-results"]');
+  await expect(resultPreview).toContainText('Ada');
+  await expect(resultPreview).toContainText('Bob');
+  await resultPreview.locator('button').nth(1).click();
+  await expect(page.getByText('2 / 2')).toBeVisible();
+
   await page.getByRole('button', { name: '复制全部结果' }).click();
   await expect(page.getByText('查询结果已复制')).toBeVisible();
   const copiedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
