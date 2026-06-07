@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { showSuccess, showError } from './utils/toast';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
-import { AiRepairSummaryBanner } from './components/AiRepairSummaryBanner';
 import {
   validateJson,
   detectLanguage,
@@ -23,7 +22,6 @@ import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import ErrorBoundary from './components/ErrorBoundary';
 import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
-import { buildAiRepairSummary } from './utils/aiRepairSummary';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
 import { copyText } from './utils/clipboard';
 import { safeSetStorageItem } from './utils/storage';
@@ -61,6 +59,10 @@ const LazyTemplateFillPanel = lazy(() => import('./components/TemplateFillPanel'
 
 const LazyUnifiedSettingsModal = lazy(() => import('./components/UnifiedSettingsModal').then(module => ({
   default: module.UnifiedSettingsModal,
+})));
+
+const LazyAiRepairSummaryBanner = lazy(() => import('./components/AiRepairSummaryBanner').then(module => ({
+  default: module.AiRepairSummaryBanner,
 })));
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
@@ -825,6 +827,7 @@ const App: React.FC = () => {
         // AI 修复针对源输入进行
         const { fixJsonWithAI } = await import('./services/aiService');
         const fixed = await fixJsonWithAI(input, aiConfig);
+        const { buildAiRepairSummary } = await import('./utils/aiRepairSummary');
         aiRepairSnapshotRef.current = fixed;
         setAiRepairSummary(buildAiRepairSummary(input, fixed));
         setInput(fixed);
@@ -990,15 +993,17 @@ const App: React.FC = () => {
         {/* 双栏编辑器区域 */}
         <div className="flex-1 flex flex-col min-w-0 bg-editor-bg">
           {aiRepairSummary && (
-            <AiRepairSummaryBanner
-              summary={aiRepairSummary}
-              onClose={() => {
-                aiRepairSnapshotRef.current = null;
-                setAiRepairSummary(null);
-              }}
-              onCopySuccess={() => showSuccess('已复制 AI 修复摘要')}
-              onCopyError={() => showError('复制 AI 修复摘要失败')}
-            />
+            <Suspense fallback={null}>
+              <LazyAiRepairSummaryBanner
+                summary={aiRepairSummary}
+                onClose={() => {
+                  aiRepairSnapshotRef.current = null;
+                  setAiRepairSummary(null);
+                }}
+                onCopySuccess={() => showSuccess('已复制 AI 修复摘要')}
+                onCopyError={() => showError('复制 AI 修复摘要失败')}
+              />
+            </Suspense>
           )}
 
           <div className="flex-1 flex min-h-0">
