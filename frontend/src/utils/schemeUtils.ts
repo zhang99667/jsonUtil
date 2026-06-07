@@ -1,3 +1,5 @@
+import { parse as parseJsonSourceMap } from 'json-source-map';
+
 /**
  * Scheme 字符串检测和编解码工具
  * 支持 URL、Base64、JWT 等常见 scheme 的识别和解析
@@ -1019,21 +1021,6 @@ export interface SchemeLocation {
 }
 
 /**
- * 将字符串转换为可能的 JSON 转义形式（用于行内匹配）
- * 例如 "https://example.com" 可能在 JSON 中被写成 "https:\/\/example.com"
- */
-function getJsonEscapeVariants(str: string): string[] {
-  const variants = [str];
-  
-  // JSON 中 / 可能被转义为 \/
-  if (str.includes('/')) {
-    variants.push(str.replace(/\//g, '\\/'));
-  }
-  
-  return variants;
-}
-
-/**
  * 扫描 JSON 字符串，找出所有包含 scheme 的字符串值及其位置
  */
 export function findSchemesInJson(jsonString: string): SchemeLocation[] {
@@ -1041,53 +1028,44 @@ export function findSchemesInJson(jsonString: string): SchemeLocation[] {
   
   try {
     const parsed: unknown = JSON.parse(jsonString);
-    const lines = jsonString.split('\n');
+    const sourceMap = parseJsonSourceMap(jsonString);
     
-    const traverse = (obj: unknown, currentPath: string) => {
+    const getValueLine = (pointer: string): number => {
+      const pointerInfo = sourceMap.pointers[pointer];
+      return (pointerInfo?.value?.line ?? pointerInfo?.key?.line ?? 0) + 1;
+    };
+
+    const escapePointerSegment = (segment: string): string => (
+      segment.replace(/~/g, '~0').replace(/\//g, '~1')
+    );
+
+    const traverse = (obj: unknown, currentPath: string, currentPointer: string) => {
       if (typeof obj === 'string') {
         const schemeType = detectSchemeType(obj);
         if (schemeType !== 'plain' && schemeType !== 'json') {
-          // 找到该值在 JSON 中的行号
-          const pathParts = currentPath.split('.');
-          const key = pathParts[pathParts.length - 1];
-          
-          // 获取值前缀的多种可能形式（处理 JSON 转义）
-          const valuePrefix = obj.substring(0, Math.min(30, obj.length));
-          const prefixVariants = getJsonEscapeVariants(valuePrefix);
-          
-          let lineNumber = 1;
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            // 检查该行是否包含这个 key
-            if (line.includes(`"${key}"`)) {
-              // 检查是否包含值的任意一种转义形式
-              const hasValue = prefixVariants.some(variant => line.includes(variant));
-              if (hasValue) {
-                lineNumber = i + 1;
-                break;
-              }
-            }
-          }
-          
           results.push({
             path: currentPath,
-            line: lineNumber,
+            line: getValueLine(currentPointer),
             value: obj,
             schemeType,
           });
         }
       } else if (Array.isArray(obj)) {
         obj.forEach((item, index) => {
-          traverse(item, `${currentPath}[${index}]`);
+          traverse(item, `${currentPath}[${index}]`, `${currentPointer}/${index}`);
         });
       } else if (typeof obj === 'object' && obj !== null) {
         for (const key in (obj as Record<string, unknown>)) {
-          traverse((obj as Record<string, unknown>)[key], `${currentPath}.${key}`);
+          traverse(
+            (obj as Record<string, unknown>)[key],
+            `${currentPath}.${key}`,
+            `${currentPointer}/${escapePointerSegment(key)}`
+          );
         }
       }
     };
     
-    traverse(parsed, '$');
+    traverse(parsed, '$', '');
   } catch {
     // JSON 解析失败，返回空数组
   }

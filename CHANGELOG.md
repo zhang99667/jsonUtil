@@ -34,6 +34,7 @@
 - **JSONPath 查询 Worker 化**: JSONPath 查询、深度格式化和高亮范围映射迁移到 Worker，避免大 JSON 查询时主线程重复解析和卡顿
 - **大文件校验 Worker 化**: Source 与 PREVIEW 大 JSON 校验改为防抖后异步执行，减少 `JSON.parse` 校验造成的主线程阻塞
 - **大文件 Scheme 扫描 Worker 化**: PREVIEW 区大 JSON 的 Scheme 图标检测迁移到 Worker，避免旁路扫描抢占主线程
+- **Scheme 图标定位准确性**: JSON 内 Scheme 扫描改用 source map 定位，修复数组项或特殊 key 下解析图标可能落到错误行的问题
 - **大文件脏 Diff 防护**: 超大文件编辑时跳过行级脏 Diff 装饰计算，避免辅助视觉效果长时间占用主线程
 - **语言识别高频路径优化**: 编辑器语言识别优先通过前缀判断大 JSON，减少每次输入时的完整字符串裁剪开销
 - **浮动面板可见性防护**: 读取历史位置、尺寸和窗口缩放时自动拉回可见范围，避免 JSONPath、Scheme 和模板面板打开到屏幕外
