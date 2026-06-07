@@ -11,6 +11,11 @@ interface UseFileSystemProps {
     output: string;
 }
 
+interface OpenTextFileEntry {
+    file: File;
+    handle?: FileSystemFileHandle;
+}
+
 // UUID 生成器 polyfill
 const generateUUID = () => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -79,6 +84,50 @@ export const useFileSystem = ({
         setActiveFileId(newFileId);
         setInput(content);
         inputRef.current = content;
+    };
+
+    const openTextFileEntries = async (entries: OpenTextFileEntry[]) => {
+        if (entries.length === 0) return;
+
+        const openedFiles: FileTab[] = [];
+
+        for (const entry of entries) {
+            try {
+                const contents = await readTextFileSafely(entry.file);
+                if (contents === null) continue;
+                const newFileId = generateUUID();
+
+                openedFiles.push({
+                    id: newFileId,
+                    name: entry.file.name,
+                    content: contents,
+                    savedContent: contents,
+                    handle: entry.handle,
+                    isDirty: false,
+                    mode: TransformMode.NONE,
+                    path: (entry.file as File & { path?: string }).path ||
+                        (entry.handle as FileSystemFileHandle & { path?: string } | undefined)?.path
+                });
+            } catch (err) {
+                console.error('Failed to read file:', err);
+                toast.error(`读取文件「${entry.file.name || '未命名文件'}」失败`, { duration: 2000 });
+            }
+        }
+
+        if (openedFiles.length === 0) return;
+
+        const nextFiles = [...getFilesWithStandaloneDraft(files), ...openedFiles];
+        const activeFile = openedFiles[openedFiles.length - 1];
+
+        setFiles(nextFiles);
+        setActiveFileId(activeFile.id);
+        setInput(activeFile.content);
+        inputRef.current = activeFile.content;
+        setMode(TransformMode.NONE);
+
+        if (openedFiles.length > 1) {
+            toast.success(`已打开 ${openedFiles.length} 个文件`, { duration: 2000 });
+        }
     };
 
     const getFilesWithStandaloneDraft = (baseFiles: FileTab[]): FileTab[] => {
@@ -161,32 +210,11 @@ export const useFileSystem = ({
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = '.txt,.json,.js,.ts,.md';
+            fileInput.multiple = true;
             
             fileInput.onchange = async (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (!file) return;
-
-                const contents = await readTextFileSafely(file);
-                if (contents === null) return;
-                const newFileId = generateUUID();
-
-                const newFile: FileTab = {
-                    id: newFileId,
-                    name: file.name,
-                    content: contents,
-                    savedContent: contents,
-                    handle: undefined, // No handle in fallback mode
-                    isDirty: false,
-                    mode: TransformMode.NONE,
-                    // Electron 环境下 File 对象包含 path 属性（非标准 Web API）
-                    path: (file as File & { path?: string }).path
-                };
-
-                setFiles([...getFilesWithStandaloneDraft(files), newFile]);
-                setActiveFileId(newFileId);
-                setInput(contents);
-                inputRef.current = contents;
-                setMode(TransformMode.NONE);
+                const selectedFiles = Array.from((e.target as HTMLInputElement).files || []);
+                await openTextFileEntries(selectedFiles.map(file => ({ file })));
             };
 
             fileInput.click();
@@ -194,7 +222,7 @@ export const useFileSystem = ({
         }
 
         try {
-            const [handle] = await window.showOpenFilePicker({
+            const handles = await window.showOpenFilePicker({
                 types: [
                     {
                         description: 'Text Files',
@@ -204,32 +232,15 @@ export const useFileSystem = ({
                     },
                 ],
                 excludeAcceptAllOption: false,
-                multiple: false,
+                multiple: true,
             });
 
-            const file = await handle.getFile();
-            const contents = await readTextFileSafely(file);
-            if (contents === null) return;
-            const newFileId = generateUUID();
+            const entries = await Promise.all(handles.map(async handle => ({
+                file: await handle.getFile(),
+                handle,
+            })));
 
-            const newFile: FileTab = {
-                id: newFileId,
-                name: file.name,
-                content: contents,
-                savedContent: contents, // 打开时保存内容等于当前内容
-                handle: handle,
-                isDirty: false,
-                mode: TransformMode.NONE, // 新打开的文件默认无转换模式
-                path: (file as File & { path?: string }).path // Electron 环境下 File 对象包含 path 属性
-            };
-
-            setFiles([...getFilesWithStandaloneDraft(files), newFile]);
-            setActiveFileId(newFileId);
-            setInput(contents);
-            inputRef.current = contents; // 同步 Ref 状态
-
-            // 重置视图模式
-            setMode(TransformMode.NONE);
+            await openTextFileEntries(entries);
         } catch (err) {
             if ((err as Error).name === 'AbortError') {
                 return;
@@ -356,46 +367,7 @@ export const useFileSystem = ({
     // 打开拖拽进来的文件（无 Handle，仅读取内容）
     const openDroppedFiles = async (droppedFiles: FileList | File[]) => {
         const fileList = Array.from(droppedFiles);
-        if (fileList.length === 0) return;
-
-        const openedFiles: FileTab[] = [];
-
-        for (const file of fileList) {
-            try {
-                const contents = await readTextFileSafely(file);
-                if (contents === null) continue;
-                const newFileId = generateUUID();
-
-                openedFiles.push({
-                    id: newFileId,
-                    name: file.name,
-                    content: contents,
-                    savedContent: contents,
-                    handle: undefined,
-                    isDirty: false,
-                    mode: TransformMode.NONE,
-                    path: (file as File & { path?: string }).path
-                });
-            } catch (err) {
-                console.error('Failed to read dropped file:', err);
-                toast.error(`读取文件「${file.name || '未命名文件'}」失败`, { duration: 2000 });
-            }
-        }
-
-        if (openedFiles.length === 0) return;
-
-        const nextFiles = [...getFilesWithStandaloneDraft(files), ...openedFiles];
-        const activeFile = openedFiles[openedFiles.length - 1];
-
-        setFiles(nextFiles);
-        setActiveFileId(activeFile.id);
-        setInput(activeFile.content);
-        inputRef.current = activeFile.content;
-        setMode(TransformMode.NONE);
-
-        if (openedFiles.length > 1) {
-            toast.success(`已打开 ${openedFiles.length} 个文件`, { duration: 2000 });
-        }
+        await openTextFileEntries(fileList.map(file => ({ file })));
     };
 
     const openDroppedFile = async (file: File) => {

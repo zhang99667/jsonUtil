@@ -88,6 +88,32 @@ test('无文件草稿打开文件时保留原草稿', async ({ page }) => {
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
+test('无文件草稿批量打开文件时保留原草稿', async ({ page }) => {
+  await installOpenPickerMockForFiles(page, [
+    { name: 'first-open.json', content: '{"firstOpen":1}' },
+    { name: 'second-open.json', content: '{"secondOpen":2}' },
+  ]);
+  await fillSourceEditor(page, '{"draft":"multi-open"}');
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+
+  await page.locator('[data-tour="open-file-button"]').click();
+
+  const editorTabs = page.locator('[data-tour="editor-tabs"]');
+  await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
+  await expect(editorTabs.getByText('first-open.json')).toBeVisible();
+  await expect(editorTabs.getByText('second-open.json')).toBeVisible();
+  await expect(page.getByText('已打开 2 个文件')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"secondOpen":2');
+
+  await editorTabs.getByText('first-open.json').click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"firstOpen":1');
+
+  await editorTabs.getByText('Untitled-1').click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"multi-open"');
+  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(1);
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+});
+
 test('无文件草稿拖入文件时保留原草稿', async ({ page }) => {
   await fillSourceEditor(page, '{"draft":"drop"}');
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
@@ -136,17 +162,19 @@ const isBeforeUnloadPrevented = async (page: Page) => page.evaluate(() => {
 });
 
 const installOpenPickerMock = async (page: Page, name: string, content: string) => {
-  await page.evaluate(({ name, content }) => {
+  await installOpenPickerMockForFiles(page, [{ name, content }]);
+};
+
+const installOpenPickerMockForFiles = async (page: Page, files: Array<{ name: string; content: string }>) => {
+  await page.evaluate((mockFiles) => {
     Object.defineProperty(window, 'showOpenFilePicker', {
       configurable: true,
-      value: async () => [
-        {
-          name,
-          getFile: async () => new File([content], name, { type: 'application/json' }),
-        },
-      ],
+      value: async () => mockFiles.map(file => ({
+        name: file.name,
+        getFile: async () => new File([file.content], file.name, { type: 'application/json' }),
+      })),
     });
-  }, { name, content });
+  }, files);
 };
 
 const installSavePickerMock = async (page: Page) => {
