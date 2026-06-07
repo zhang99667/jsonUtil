@@ -56,6 +56,7 @@ test('自动保存成功后清除标签未保存状态', async ({ page }) => {
   await expect(page.getByText('autosave.json').first()).toBeVisible();
 
   await page.locator('[data-tour="auto-save"]').click();
+  await expect(page.getByText('自动保存已开启')).toBeVisible();
   await fillSourceEditor(page, '{"saved":2}');
 
   await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toBeVisible();
@@ -66,6 +67,20 @@ test('自动保存成功后清除标签未保存状态', async ({ page }) => {
 
   await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(0);
   await expect(page.locator('[data-tour="editor-tabs"] button[title="关闭"]')).toHaveCount(1);
+});
+
+test('自动保存开关提供明确反馈', async ({ page }) => {
+  await page.locator('[data-tour="auto-save"]').click();
+  await expect(page.getByText('请先打开或保存文件后再启用自动保存')).toBeVisible();
+
+  await page.locator('[data-tour="open-file-button"]').click();
+  await expect(page.getByText('autosave.json').first()).toBeVisible();
+
+  await page.locator('[data-tour="auto-save"]').click();
+  await expect(page.getByText('自动保存已开启')).toBeVisible();
+
+  await page.locator('[data-tour="auto-save"]').click();
+  await expect(page.getByText('自动保存已关闭')).toBeVisible();
 });
 
 const fillSourceEditor = async (page: Page, value: string) => {
