@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
@@ -135,19 +135,22 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         };
     }, []);
 
-    useEffect(() => {
-        if (!isOpen) return;
-
+    const resetQueryState = useCallback(() => {
         workerRef.current?.terminate();
         workerRef.current = null;
         requestIdRef.current++;
+        setError('');
         setIsQuerying(false);
         setQueryRanges([]);
         setQueryValues([]);
         setTotalResults(0);
         setCurrentResultIndex(0);
         onHighlightRange(null);
-    }, [jsonData, deepFormat, autoExpandScheme, isOpen, onHighlightRange]);
+    }, [onHighlightRange]);
+
+    useEffect(() => {
+        resetQueryState();
+    }, [jsonData, deepFormat, autoExpandScheme, isOpen, resetQueryState]);
 
     const handleQuery = () => {
         setError('');
