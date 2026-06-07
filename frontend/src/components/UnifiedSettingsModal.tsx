@@ -4,6 +4,7 @@ import { testAIConnection } from '../services/aiService';
 
 interface UnifiedSettingsModalProps {
     isOpen: boolean;
+    initialTab?: TabType;
     onClose: () => void;
     shortcuts: ShortcutConfig;
     onUpdateShortcut: (action: ShortcutAction, key: ShortcutKey) => void;
@@ -31,6 +32,7 @@ type TabType = 'shortcuts' | 'ai' | 'general';
 
 export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     isOpen,
+    initialTab = 'shortcuts',
     onClose,
     shortcuts,
     onUpdateShortcut,
@@ -63,9 +65,9 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-            setActiveTab('shortcuts');
+            setActiveTab(initialTab);
         }
-    }, [isOpen]);
+    }, [isOpen, initialTab]);
 
     useEffect(() => {
         if (!recordingAction) return;

@@ -49,6 +49,7 @@ const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.MINIFY,
   TransformMode.SORT_KEYS,
 ]);
+type SettingsTab = 'shortcuts' | 'ai' | 'general';
 
 interface AsyncTransformResult {
   input: string;
@@ -349,6 +350,7 @@ const App: React.FC = () => {
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
@@ -724,6 +726,13 @@ const App: React.FC = () => {
         return;
       }
 
+      if (!aiConfig.apiKey.trim()) {
+        showError('请先配置 AI API Key');
+        setSettingsInitialTab('ai');
+        setIsSettingsModalOpen(true);
+        return;
+      }
+
       setIsProcessing(true);
       try {
         // AI 修复针对源输入进行
@@ -834,6 +843,7 @@ const App: React.FC = () => {
 
       <UnifiedSettingsModal
         isOpen={isSettingsModalOpen}
+        initialTab={settingsInitialTab}
         onClose={() => setIsSettingsModalOpen(false)}
         shortcuts={shortcuts}
         onUpdateShortcut={updateShortcut}
@@ -864,7 +874,10 @@ const App: React.FC = () => {
             onModeChange={setMode}
             onAction={handleAction}
             isProcessing={isProcessing}
-            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onOpenSettings={() => {
+              setSettingsInitialTab('shortcuts');
+              setIsSettingsModalOpen(true);
+            }}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             onToggleJsonPath={handleToggleJsonPath}
