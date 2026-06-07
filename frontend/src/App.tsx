@@ -37,6 +37,7 @@ import { cleanJsonInput, startJsonValidation, validateJsonForEditor } from './ut
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
+const DOCUMENT_STATS_SCAN_LIMIT = 300_000;
 const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理大文件，请稍候...';
 const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.FORMAT,
@@ -496,7 +497,7 @@ const App: React.FC = () => {
   // 计算文档统计信息（根据当前焦点区域）
   const documentStats = useMemo(() => {
     const content = activeEditor === 'PREVIEW' ? output : input;
-    return getDocumentStats(content);
+    return getDocumentStats(content, { maxScanLength: DOCUMENT_STATS_SCAN_LIMIT });
   }, [input, output, activeEditor]);
 
   const templateTargetError = useMemo(() => {
@@ -1138,6 +1139,7 @@ const App: React.FC = () => {
         inputLength={input.length}
         totalLines={documentStats.totalLines}
         maxColumns={documentStats.maxColumns}
+        isStatsLimited={documentStats.isLimited}
         mode={mode}
         activeFileId={activeFileId}
         files={files}
