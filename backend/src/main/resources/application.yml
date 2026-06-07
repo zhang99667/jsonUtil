@@ -34,7 +34,7 @@ file:
   upload-dir: ${FILE_UPLOAD_DIR:./uploads}
   max-upload-size: ${FILE_MAX_UPLOAD_SIZE_BYTES:52428800}
   max-preview-size: ${FILE_MAX_PREVIEW_SIZE_BYTES:2097152}
-  allowed-extensions: ${FILE_ALLOWED_EXTENSIONS:.json,.txt,.js,.ts,.md,.log,.yaml,.yml}
+  allowed-extensions: ${FILE_ALLOWED_EXTENSIONS:.conf,.config,.css,.csv,.env,.html,.ini,.java,.js,.json,.jsonl,.jsx,.log,.md,.properties,.sql,.toml,.ts,.tsx,.txt,.xml,.yaml,.yml}
 
 # JWT Configuration
 jwt:

@@ -80,4 +80,20 @@ class FileServiceTest {
         assertTrue(saved.getStoragePath().startsWith(uploadDir.toString()));
         assertTrue(Files.exists(Path.of(saved.getStoragePath())));
     }
+
+    @Test
+    void saveFileAcceptsExtensionConfigWithoutLeadingDot() {
+        ReflectionTestUtils.setField(fileService, "allowedExtensions", "json,sql");
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "query.sql",
+                "text/plain",
+                "select 1".getBytes()
+        );
+
+        UploadFile saved = fileService.saveFile(file, "admin");
+
+        assertTrue(saved.getStoragePath().startsWith(uploadDir.toString()));
+        assertTrue(Files.exists(Path.of(saved.getStoragePath())));
+    }
 }

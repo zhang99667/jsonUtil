@@ -16,7 +16,7 @@ services:
       - FILE_UPLOAD_DIR=/app/uploads
       - FILE_MAX_UPLOAD_SIZE_BYTES=${FILE_MAX_UPLOAD_SIZE_BYTES:-52428800}
       - FILE_MAX_PREVIEW_SIZE_BYTES=${FILE_MAX_PREVIEW_SIZE_BYTES:-2097152}
-      - FILE_ALLOWED_EXTENSIONS=${FILE_ALLOWED_EXTENSIONS:-.json,.txt,.js,.ts,.md,.log,.yaml,.yml}
+      - FILE_ALLOWED_EXTENSIONS=${FILE_ALLOWED_EXTENSIONS:-.conf,.config,.css,.csv,.env,.html,.ini,.java,.js,.json,.jsonl,.jsx,.log,.md,.properties,.sql,.toml,.ts,.tsx,.txt,.xml,.yaml,.yml}
     volumes:
       - upload-data:/app/uploads
     depends_on:

@@ -33,6 +33,7 @@ import java.util.UUID;
 public class FileService {
 
     private static final Logger logger = LoggerFactory.getLogger(FileService.class);
+    private static final String DEFAULT_ALLOWED_EXTENSIONS = ".conf,.config,.css,.csv,.env,.html,.ini,.java,.js,.json,.jsonl,.jsx,.log,.md,.properties,.sql,.toml,.ts,.tsx,.txt,.xml,.yaml,.yml";
 
     @Autowired
     private UploadFileRepository uploadFileRepository;
@@ -50,7 +51,7 @@ public class FileService {
     private long maxPreviewSize;
 
     /** 允许上传的文本类文件扩展名 */
-    @Value("${file.allowed-extensions:.json,.txt,.js,.ts,.md,.log,.yaml,.yml}")
+    @Value("${file.allowed-extensions:" + DEFAULT_ALLOWED_EXTENSIONS + "}")
     private String allowedExtensions;
 
     /**
@@ -205,12 +206,23 @@ public class FileService {
         String extension = dotIndex >= 0 ? fileName.substring(dotIndex).toLowerCase(Locale.ROOT) : "";
 
         Set<String> allowed = Arrays.stream(allowedExtensions.split(","))
-                .map(item -> item.trim().toLowerCase(Locale.ROOT))
+                .map(this::normalizeExtension)
                 .filter(item -> !item.isEmpty())
                 .collect(Collectors.toSet());
 
         if (allowed.isEmpty() || !allowed.contains(extension)) {
             throw new IllegalArgumentException("不支持的文件类型: " + extension);
         }
+    }
+
+    /**
+     * 兼容 ".json" 和 "json" 两种配置写法，降低环境变量配置出错概率
+     */
+    private String normalizeExtension(String extension) {
+        String normalized = extension.trim().toLowerCase(Locale.ROOT);
+        if (normalized.isEmpty() || normalized.startsWith(".")) {
+            return normalized;
+        }
+        return "." + normalized;
     }
 }
