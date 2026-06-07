@@ -3,6 +3,7 @@ import { detectSchemeType, type SchemeType } from './schemeUtils';
 
 export interface SchemeLocation {
   path: string;           // JSON Path，如 "$.action_cmd"
+  pointer: string;        // JSON Pointer，用于特殊 key 场景下精确回写
   line: number;           // 行号（1-based）
   value: string;          // 原始值
   schemeType: SchemeType; // scheme 类型
@@ -33,6 +34,7 @@ export function findSchemesInJson(jsonString: string): SchemeLocation[] {
         if (schemeType !== 'plain' && schemeType !== 'json') {
           results.push({
             path: currentPath,
+            pointer: currentPointer,
             line: getValueLine(currentPointer),
             value: obj,
             schemeType,

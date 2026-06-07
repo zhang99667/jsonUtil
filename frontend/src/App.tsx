@@ -38,6 +38,7 @@ import {
   serializeAppBackup,
 } from './utils/appBackup';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
+import { setJsonPointerValue } from './utils/jsonPointer';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -56,6 +57,32 @@ interface AsyncTransformResult {
   output: string;
   context?: TransformContext;
 }
+
+const setLegacyJsonPathValue = (root: unknown, jsonPath: string, value: string): unknown => {
+  const pathParts = jsonPath
+    .replace(/^\$\.?/, '')
+    .split(/\.|\[|\]/)
+    .filter(p => p !== '');
+
+  let current = root as Record<string, unknown> | unknown[];
+  for (let i = 0; i < pathParts.length - 1; i++) {
+    const part = pathParts[i];
+    const index = parseInt(part, 10);
+    current = (isNaN(index)
+      ? (current as Record<string, unknown>)[part]
+      : (current as unknown[])[index]) as Record<string, unknown> | unknown[];
+  }
+
+  const lastPart = pathParts[pathParts.length - 1];
+  const lastIndex = parseInt(lastPart, 10);
+  if (isNaN(lastIndex)) {
+    (current as Record<string, unknown>)[lastPart] = value;
+  } else {
+    (current as unknown[])[lastIndex] = value;
+  }
+
+  return root;
+};
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -734,35 +761,15 @@ const App: React.FC = () => {
   };
 
   // 处理 Scheme 编辑：将修改后的值应用到 JSON 对应路径
-  const handleSchemeEdit = useCallback((jsonPath: string, newValue: string) => {
+  const handleSchemeEdit = useCallback((jsonPath: string, newValue: string, pointer?: string) => {
     try {
-      const parsed = JSON.parse(output);
-
-      // 解析 JSON Path (如 $.action_cmd 或 $.data.items[0].url)
-      const pathParts = jsonPath
-        .replace(/^\$\.?/, '') // 移除开头的 $. 或 $
-        .split(/\.|\[|\]/)
-        .filter(p => p !== '');
-
-      // 遍历到目标位置并设置新值
-      let current = parsed;
-      for (let i = 0; i < pathParts.length - 1; i++) {
-        const part = pathParts[i];
-        const index = parseInt(part, 10);
-        current = isNaN(index) ? current[part] : current[index];
-      }
-
-      // 设置最后一个键的值
-      const lastPart = pathParts[pathParts.length - 1];
-      const lastIndex = parseInt(lastPart, 10);
-      if (isNaN(lastIndex)) {
-        current[lastPart] = newValue;
-      } else {
-        current[lastIndex] = newValue;
-      }
+      const parsed: unknown = JSON.parse(output);
+      const updatedRoot = pointer !== undefined
+        ? setJsonPointerValue(parsed, pointer, newValue)
+        : setLegacyJsonPathValue(parsed, jsonPath, newValue);
 
       // 格式化并触发更新
-      const updatedOutput = JSON.stringify(parsed, null, 2);
+      const updatedOutput = JSON.stringify(updatedRoot, null, 2);
       handleOutputChange(updatedOutput);
 
       showSuccess('Scheme 修改已应用');
