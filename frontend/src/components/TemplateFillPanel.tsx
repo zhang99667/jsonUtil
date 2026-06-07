@@ -52,6 +52,12 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
     setTemplate('');
   };
 
+  const handleFormatTemplate = () => {
+    if (!template.trim() || !validation.isValid) return;
+
+    setTemplate(JSON.stringify(JSON.parse(template), null, 2));
+  };
+
   // 底部操作栏
   const footer = (
     <>
@@ -61,6 +67,14 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
         className="px-2.5 py-1 text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         清空模板
+      </button>
+      <button
+        data-tour="template-format-button"
+        onClick={handleFormatTemplate}
+        disabled={!template.trim() || !validation.isValid}
+        className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        格式化模板
       </button>
       <button
         onClick={handleApply}
@@ -86,6 +100,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
       defaultSize={{ width: 520, height: 500 }}
       minSize={{ width: 380, height: 300 }}
       footer={footer}
+      dataTour="template-fill-panel"
     >
       <div className="flex-1 flex flex-col min-h-0 p-2 gap-2 bg-editor-bg">
         {/* 提示文字 */}

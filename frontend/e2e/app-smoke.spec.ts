@@ -405,6 +405,26 @@ test('AI 配置可测试连接', async ({ page }) => {
   await expect(page.getByText('连接测试通过')).toHaveCount(0);
 });
 
+test('模板填充可格式化模板并应用', async ({ page }) => {
+  await fillSourceEditor(page, '{"name":"old","keep":true}');
+
+  await page.locator('[data-tour="template-fill-button"]').click();
+  await fillMonacoEditor(
+    page,
+    page.locator('[data-tour="template-fill-panel"] .monaco-editor').first(),
+    '{"name":"new","extra":{"enabled":true}}'
+  );
+
+  await page.locator('[data-tour="template-format-button"]').click();
+  await expect(page.locator('[data-tour="template-fill-panel"] .view-lines')).toContainText('"extra": {');
+
+  await page.getByRole('button', { name: '应用模板到当前 JSON' }).click();
+  await expect(page.getByText('模板已应用')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"name": "new"');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"keep": true');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"enabled": true');
+});
+
 test('文件打开后可修改并保存下载', async ({ page }) => {
   const fileChooserPromise = page.waitForEvent('filechooser');
   await page.locator('[data-tour="open-file-button"]').click();

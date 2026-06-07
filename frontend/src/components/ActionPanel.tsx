@@ -304,6 +304,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           </button>
 
           <button
+            data-tour="template-fill-button"
             onClick={onToggleTemplateFill}
             className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
             title={isCollapsed ? "模板填充" : undefined}
