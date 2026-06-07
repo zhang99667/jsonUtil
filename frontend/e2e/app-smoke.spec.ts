@@ -460,6 +460,18 @@ test('AI 配置可测试连接', async ({ page }) => {
   await expect(page.getByText('连接测试通过')).toHaveCount(0);
 });
 
+test('模板填充会提前提示 SOURCE 前置条件', async ({ page }) => {
+  await page.locator('[data-tour="template-fill-button"]').click();
+  await fillMonacoEditor(
+    page,
+    page.locator('[data-tour="template-fill-panel"] .monaco-editor').first(),
+    '{"name":"new"}'
+  );
+
+  await expect(page.getByText('请先在 SOURCE 输入合法 JSON')).toBeVisible();
+  await expect(page.getByRole('button', { name: '应用模板到当前 JSON' })).toBeDisabled();
+});
+
 test('模板填充可格式化模板并应用', async ({ page }) => {
   await fillSourceEditor(page, '{"name":"old","keep":true}');
 

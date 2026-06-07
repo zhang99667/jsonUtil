@@ -24,16 +24,28 @@ export const parseJsonWithFallback = <T>(
   }
 };
 
+export interface SafeStorageReadResult {
+  value: string | null;
+  ok: boolean;
+}
+
+export const safeReadStorageItem = (
+  key: string,
+  storage: Storage = localStorage
+): SafeStorageReadResult => {
+  try {
+    return { value: storage.getItem(key), ok: true };
+  } catch (error) {
+    console.warn(`读取本地存储失败: ${key}`, error);
+    return { value: null, ok: false };
+  }
+};
+
 export const safeGetStorageItem = (
   key: string,
   storage: Storage = localStorage
 ): string | null => {
-  try {
-    return storage.getItem(key);
-  } catch (error) {
-    console.warn(`读取本地存储失败: ${key}`, error);
-    return null;
-  }
+  return safeReadStorageItem(key, storage).value;
 };
 
 export const safeSetStorageItem = (
