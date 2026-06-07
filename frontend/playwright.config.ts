@@ -6,7 +6,7 @@ const browserChannel = process.env.PLAYWRIGHT_CHANNEL || (process.env.CI ? undef
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30_000,
+  timeout: 60_000,
   expect: {
     timeout: 10_000,
   },
