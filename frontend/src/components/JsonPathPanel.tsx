@@ -4,6 +4,7 @@ import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { HighlightRange } from '../types';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
+import { copyText } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import {
@@ -336,7 +337,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         if (queryValues.length === 0) return;
 
         try {
-            await navigator.clipboard.writeText(formatJsonPathValuesForCopy(queryValues));
+            await copyText(formatJsonPathValuesForCopy(queryValues));
             showSuccess('查询结果已复制');
         } catch (error) {
             console.warn('复制 JSONPath 查询结果失败:', error);

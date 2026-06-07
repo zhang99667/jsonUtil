@@ -29,6 +29,7 @@ import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 import { buildAiRepairSummary } from './utils/aiRepairSummary';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
+import { copyText } from './utils/clipboard';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
 import {
@@ -1013,7 +1014,7 @@ const App: React.FC = () => {
                   onClick={async () => {
                     if (!output.trim() || isOutputTransforming) return;
                     try {
-                      await navigator.clipboard.writeText(output);
+                      await copyText(output);
                       showSuccess('已复制预览内容');
                     } catch {
                       showError('复制失败');
