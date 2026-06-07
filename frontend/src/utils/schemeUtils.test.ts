@@ -400,6 +400,25 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('参数内 JSON-like 对象被保守解析', () => {
+    const payload = encodeURIComponent("{nid:123,title:'标题',ok:true,}");
+    const result = deepDecodeScheme(`cmd=${payload}&from=feed`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123, title: '标题', ok: true },
+      from: 'feed',
+    });
+  });
+
+  it('URL 参数内 JSON-like 对象被递归解析', () => {
+    const payload = encodeURIComponent("{nid:123,title:'标题'}");
+    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?cmd=${payload}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123, title: '标题' },
+    });
+  });
+
   it('URL hash route 参数被递归解析', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
     const result = deepDecodeScheme(`baiduboxapp://v1/browser/open#/detail?cmd=${payload}&from=hash`);

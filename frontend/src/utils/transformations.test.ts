@@ -301,6 +301,20 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
   });
 
+  it('自动展开 JSON-like CMD 参数值', () => {
+    const input = JSON.stringify({
+      action_cmd: `cmd=${encodeURIComponent("{nid:123,title:'标题'}")}&from=feed`,
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      from: 'feed',
+    });
+  });
+
   it('自动展开 URL Scheme 参数', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
     const input = JSON.stringify({

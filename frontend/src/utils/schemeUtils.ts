@@ -244,6 +244,18 @@ export function isJsonString(str: string): boolean {
   }
 }
 
+const normalizeLooseJsonCandidate = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
+
+  return trimmed
+    .replace(/([{,]\s*)([A-Za-z_$][\w$]*)(\s*:)/g, '$1"$2"$3')
+    .replace(/'((?:\\.|[^'\\])*)'/g, (_, content: string) => (
+      JSON.stringify(content.replace(/\\'/g, "'"))
+    ))
+    .replace(/,\s*([}\]])/g, '$1');
+};
+
 /**
  * 检测字符串的 scheme 类型
  */
@@ -468,11 +480,20 @@ export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | 
 }
 
 const tryParseJson = (value: string): StructuredValue | null => {
-  if (!isJsonString(value)) return null;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
+
   try {
-    return JSON.parse(value) as StructuredValue;
+    return JSON.parse(trimmed) as StructuredValue;
   } catch {
-    return null;
+    const looseJson = normalizeLooseJsonCandidate(trimmed);
+    if (!looseJson) return null;
+
+    try {
+      return JSON.parse(looseJson) as StructuredValue;
+    } catch {
+      return null;
+    }
   }
 };
 
