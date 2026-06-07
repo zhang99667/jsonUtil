@@ -667,6 +667,16 @@ const parseUrlQueryStringDeep = (queryString: string, maxDepth: number): Structu
   return parseQueryPairsDeep(source, maxDepth);
 };
 
+const parseFragmentValueDeep = (value: string, maxDepth: number): StructuredValue | null => {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('#') && !trimmed.startsWith('/') && !trimmed.startsWith('?')) {
+    return null;
+  }
+
+  const fragmentParamSource = getFragmentParamSource(trimmed);
+  return fragmentParamSource ? parseUrlQueryStringDeep(fragmentParamSource, maxDepth) : null;
+};
+
 const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredValue => {
   const result: QueryParamContainer = {};
   splitQueryPairs(queryString).forEach(pair => {
@@ -720,6 +730,11 @@ const decodeNestedParamValue = (value: string, maxDepth: number): StructuredValu
   const jsonStringPayload = tryParseJsonStringPayload(value);
   if (jsonStringPayload !== null) {
     return decodeNestedParamValue(jsonStringPayload, maxDepth);
+  }
+
+  const fragmentValue = parseFragmentValueDeep(value, maxDepth - 1);
+  if (fragmentValue !== null) {
+    return fragmentValue;
   }
 
   const base64Value = decodeBase64StructuredParam(value, maxDepth - 1);
