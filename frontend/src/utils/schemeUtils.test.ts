@@ -525,6 +525,33 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers)).toBe('tag=feed&tag=sports');
   });
+
+  it('独立 CMD 结构化参数编辑后保留括号路径', () => {
+    const decoded = deepDecodeScheme('items[0].id=1&items[0].title=feed&items[1].id=2');
+    const edited = JSON.stringify({
+      items: [
+        { id: '10', title: 'feed' },
+        { id: '2', title: 'news' },
+      ],
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('items%5B0%5D.id=10&items%5B0%5D.title=feed&items%5B1%5D.id=2&items%5B1%5D.title=news');
+  });
+
+  it('URL 结构化参数编辑后保留括号对象路径', () => {
+    const original = 'baiduboxapp://v1/open?ext%5Bscene%5D=feed&ext%5Bsource%5D=box';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      ext: {
+        scene: 'detail',
+        source: 'box',
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('baiduboxapp://v1/open?ext%5Bscene%5D=detail&ext%5Bsource%5D=box');
+  });
 });
 
 // ============ findSchemesInJson 测试 ============

@@ -903,13 +903,79 @@ const stringifyParamValue = (value: unknown): string => {
   return JSON.stringify(value);
 };
 
-const buildQueryStringFromObject = (value: Record<string, unknown>): string => {
+interface StructuredQueryRootStyle {
+  objectStyle: 'dot' | 'bracket';
+  useEmptyArray: boolean;
+}
+
+const getStructuredQueryRootStyles = (queryString: string): Map<string, StructuredQueryRootStyle> => {
+  const styles = new Map<string, StructuredQueryRootStyle>();
+
+  splitQueryPairs(queryString).forEach(pair => {
+    const equalIndex = pair.indexOf('=');
+    if (equalIndex <= 0) return;
+
+    const key = decodeQueryComponent(pair.slice(0, equalIndex));
+    if (!key.includes('.') && !key.includes('[')) return;
+
+    const segments = parseStructuredQueryKey(key);
+    const root = segments[0];
+    if (typeof root !== 'string') return;
+
+    const existing = styles.get(root);
+    const hasDotStyle = key.includes('.');
+    styles.set(root, {
+      objectStyle: existing?.objectStyle === 'dot' || hasDotStyle ? 'dot' : 'bracket',
+      useEmptyArray: Boolean(existing?.useEmptyArray || key.includes('[]')),
+    });
+  });
+
+  return styles;
+};
+
+const appendStructuredQueryValue = (
+  params: URLSearchParams,
+  key: string,
+  value: unknown,
+  style: StructuredQueryRootStyle
+) => {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      const childKey = style.useEmptyArray && !isPlainObject(item) && !Array.isArray(item)
+        ? `${key}[]`
+        : `${key}[${index}]`;
+      appendStructuredQueryValue(params, childKey, item, style);
+    });
+    return;
+  }
+
+  if (isPlainObject(value)) {
+    Object.entries(value).forEach(([childKey, childValue]) => {
+      const nextKey = style.objectStyle === 'dot'
+        ? `${key}.${childKey}`
+        : `${key}[${childKey}]`;
+      appendStructuredQueryValue(params, nextKey, childValue, style);
+    });
+    return;
+  }
+
+  params.append(key, stringifyParamValue(value));
+};
+
+const buildQueryStringFromObject = (
+  value: Record<string, unknown>,
+  originalQueryString: string = ''
+): string => {
   const params = new URLSearchParams();
+  const structuredRootStyles = getStructuredQueryRootStyles(originalQueryString);
 
   for (const [key, item] of Object.entries(value)) {
     if (item === undefined) continue;
 
-    if (Array.isArray(item)) {
+    const structuredStyle = structuredRootStyles.get(key);
+    if (structuredStyle && (Array.isArray(item) || isPlainObject(item))) {
+      appendStructuredQueryValue(params, key, item, structuredStyle);
+    } else if (Array.isArray(item)) {
       item.forEach(child => params.append(key, stringifyParamValue(child)));
     } else {
       params.append(key, stringifyParamValue(item));
@@ -959,25 +1025,26 @@ const encodeUrlLayerContent = (content: string, originalUrl: string): string => 
   try {
     const url = new URL(originalUrl);
     const hasQueryParams = Boolean(url.search);
-    const hasHashParams = Boolean(getFragmentParamSource(url.hash));
+    const hashParamSource = getFragmentParamSource(url.hash) || '';
+    const hasHashParams = Boolean(hashParamSource);
 
     if (hasQueryParams && hasHashParams) {
       // query 与 hash 同时存在时，解析结果用 _hash 承载 hash route 参数。
       const { _hash: hashParams, ...queryParams } = editedParams;
-      url.search = buildQueryStringFromObject(queryParams);
+      url.search = buildQueryStringFromObject(queryParams, url.search);
       url.hash = replaceHashParams(
         url.hash,
-        buildQueryStringFromObject(isPlainObject(hashParams) ? hashParams : {})
+        buildQueryStringFromObject(isPlainObject(hashParams) ? hashParams : {}, hashParamSource)
       );
       return url.toString();
     }
 
     if (hasHashParams) {
-      url.hash = replaceHashParams(url.hash, buildQueryStringFromObject(editedParams));
+      url.hash = replaceHashParams(url.hash, buildQueryStringFromObject(editedParams, hashParamSource));
       return url.toString();
     }
 
-    url.search = buildQueryStringFromObject(editedParams);
+    url.search = buildQueryStringFromObject(editedParams, url.search);
     return url.toString();
   } catch {
     return content;
@@ -1013,7 +1080,7 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
       case 'query-string':
         try {
           const parsed = JSON.parse(result) as unknown;
-          result = isPlainObject(parsed) ? buildQueryStringFromObject(parsed) : result;
+          result = isPlainObject(parsed) ? buildQueryStringFromObject(parsed, layer.before) : result;
         } catch {
           // 保持原样
         }
