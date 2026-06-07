@@ -7,6 +7,7 @@
 - **CMD/Scheme 表单编码兼容**: 查询参数、hash 参数和 CMD 参数中的 `+` 会按表单编码语义还原为空格，同时保留 `%2B` 表示的字面加号
 - **CMD/Scheme HTML 转义分隔符兼容**: 支持解析从 HTML 或日志页面复制出的 `&amp;` / `&#38;` 参数分隔符
 - **CMD/Scheme 字符串化 JSON 解析**: 参数值如果是 `JSON.stringify` 后的 JSON/URL/CMD 字符串，会自动拆掉字符串字面量并继续递归解析
+- **CMD/Scheme hash 参数值解析**: 支持 `_hash=%2Fdetail%3Fcmd%3D...`、`next=%23/detail%3F...` 等参数值中的 hash route 片段递归展开
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
 - **深度格式化 Scheme 还原增强**: 修复 URL Scheme 内含二级 URL 时，未编辑预览回写无法优先还原父级原始字符串的问题
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串

@@ -401,6 +401,33 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('CMD 参数值中的 hash route 片段被递归解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const hashRoute = encodeURIComponent(`/detail?cmd=${payload}&from=hash`);
+    const result = deepDecodeScheme(`_hash=${hashRoute}&source=feed`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      _hash: {
+        cmd: { nid: 123, title: '标题' },
+        from: 'hash',
+      },
+      source: 'feed',
+    });
+  });
+
+  it('URL 查询参数中的 hash route 片段被递归解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const hashRoute = encodeURIComponent(`#/detail?cmd=${payload}&from=hash`);
+    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?next=${hashRoute}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      next: {
+        cmd: { nid: 123 },
+        from: 'hash',
+      },
+    });
+  });
+
   it('URL query 与 hash route 参数同时保留', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
     const result = deepDecodeScheme(`https://example.com/page?url=${encodeURIComponent('https://m.baidu.com/s?word=%E4%BD%A0')}#/detail?cmd=${payload}`);
