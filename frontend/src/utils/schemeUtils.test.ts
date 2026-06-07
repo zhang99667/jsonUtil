@@ -105,8 +105,15 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('landingUrl=m.baidu.com/s?word=json')).toBe(true);
   });
 
+  it('检测常见跳转兜底单参数字段', () => {
+    expect(isDecodableQueryString('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
+    expect(isDecodableQueryString('fallbackUrl=//m.baidu.com/s?word=json')).toBe(true);
+    expect(isDecodableQueryString('next=%23/detail%3Fcmd%3D%257B%2522a%2522%253A1%257D')).toBe(true);
+  });
+
   it('普通单键值对不误判', () => {
     expect(isDecodableQueryString('name=test')).toBe(false);
+    expect(isDecodableQueryString('next=1')).toBe(false);
   });
 });
 
@@ -536,6 +543,30 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       h5Url: {
         word: 'json schema',
+      },
+    });
+  });
+
+  it('常见跳转 URL 字段可作为单参数解析', () => {
+    const result = deepDecodeScheme('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson%2Bschema');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      redirectUrl: {
+        word: 'json schema',
+      },
+    });
+  });
+
+  it('常见 hash route 字段可作为单参数解析', () => {
+    const hashRoute = encodeURIComponent('#/detail?cmd=%7B%22a%22%3A1%7D&from=next');
+    const result = deepDecodeScheme(`next=${hashRoute}`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      next: {
+        cmd: {
+          a: 1,
+        },
+        from: 'next',
       },
     });
   });

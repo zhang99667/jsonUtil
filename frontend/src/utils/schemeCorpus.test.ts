@@ -38,6 +38,25 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
   });
 
+  it('解析跳转兜底 URL 字段', () => {
+    expect(parseDecodedJson('fallbackUrl=//m.baidu.com/s?word=json+schema')).toEqual({
+      fallbackUrl: {
+        word: 'json schema',
+      },
+    });
+  });
+
+  it('解析 next 字段中的 hash route', () => {
+    expect(parseDecodedJson('next=%23/detail%3Fcmd%3D%257B%2522nid%2522%253A123%257D%26from%3Dnext')).toEqual({
+      next: {
+        cmd: {
+          nid: 123,
+        },
+        from: 'next',
+      },
+    });
+  });
+
   it('解析 JSON-like CMD 对象参数', () => {
     expect(parseDecodedJson("cmd={nid:123,title:'标题'}&from=feed")).toEqual({
       cmd: {
