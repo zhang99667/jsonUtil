@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Row, Col, Statistic, Spin, Typography } from 'antd';
 import { UserOutlined, PayCircleOutlined, ThunderboltOutlined, EyeOutlined, TeamOutlined, DashboardOutlined } from '@ant-design/icons';
 import { getStatistics, Statistics } from '../services/stats';
@@ -35,19 +35,35 @@ const trafficCardBase: React.CSSProperties = {
 const Dashboard: React.FC = () => {
     const [stats, setStats] = useState<Statistics | null>(null);
     const [loading, setLoading] = useState(true);
+    const statsRequestIdRef = useRef(0);
 
     useEffect(() => {
+        const requestId = ++statsRequestIdRef.current;
+
         const fetchStats = async () => {
             try {
                 const data = await getStatistics();
+                // 页面切走或重新请求后，旧响应不再回写概览数据。
+                if (requestId !== statsRequestIdRef.current) {
+                    return;
+                }
                 setStats(data);
             } catch (error) {
+                if (requestId !== statsRequestIdRef.current) {
+                    return;
+                }
                 console.error('获取统计数据失败:', error);
             } finally {
-                setLoading(false);
+                if (requestId === statsRequestIdRef.current) {
+                    setLoading(false);
+                }
             }
         };
         fetchStats();
+
+        return () => {
+            statsRequestIdRef.current += 1;
+        };
     }, []);
 
     /* 加载态居中显示 */
