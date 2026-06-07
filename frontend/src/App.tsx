@@ -5,7 +5,6 @@ import { showSuccess, showError } from './utils/toast';
 import { ActionPanel } from './components/ActionPanel';
 import { CodeEditor } from './components/Editor';
 import {
-  validateJson,
   detectLanguage,
   performTransform,
   performInverseTransform,
@@ -34,6 +33,7 @@ import {
 } from './utils/appBackup';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 import { setJsonPointerValue } from './utils/jsonPointer';
+import { cleanJsonInput, startJsonValidation, validateJsonForEditor } from './utils/jsonValidation';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -190,29 +190,11 @@ const App: React.FC = () => {
     !isUpdatingFromOutput.current
   );
 
-  const validateJsonMaybeAsync = useCallback((value: string): Promise<ValidationResult> => {
-    if (value.length < ASYNC_VALIDATION_THRESHOLD) {
-      return Promise.resolve(validateJson(value));
-    }
-
-    return new Promise(resolve => {
-      const worker = new Worker(new URL('./workers/validation.worker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = (event: MessageEvent<{
-        id: number;
-        validation: ValidationResult;
-      }>) => {
-        worker.terminate();
-        resolve(event.data.validation);
-      };
-      worker.onerror = (event) => {
-        worker.terminate();
-        resolve({
-          isValid: false,
-          error: `JSON 校验失败: ${event.message}`,
-        });
-      };
-      worker.postMessage({ id: 1, input: value });
-    });
+  const validateJsonMaybeAsync = useCallback((
+    value: string,
+    options?: { requireContainer?: boolean }
+  ): Promise<ValidationResult> => {
+    return startJsonValidation(value, ASYNC_VALIDATION_THRESHOLD, options).promise;
   }, []);
 
   // 深度格式化结果和上下文（避免在 output 计算中产生副作用）
@@ -541,46 +523,18 @@ const App: React.FC = () => {
 
   // 输入变更验证（防抖）
   useEffect(() => {
-    let worker: Worker | null = null;
+    let validationTask: ReturnType<typeof startJsonValidation> | null = null;
     const timeoutId = setTimeout(() => {
       if (input && input.trim()) {
         // 预处理：移除零宽空格等不可见字符，避免误报
-        const cleanInput = input.replace(/[\u200B-\u200D\uFEFF]/g, '');
-        const trimmedInput = cleanInput.trim();
-
-        if (trimmedInput.startsWith('{') || trimmedInput.startsWith('[')) {
-          const requestId = ++sourceValidationRequestIdRef.current;
-          if (cleanInput.length >= ASYNC_VALIDATION_THRESHOLD) {
-            worker = new Worker(new URL('./workers/validation.worker.ts', import.meta.url), { type: 'module' });
-            worker.onmessage = (event: MessageEvent<{
-              id: number;
-              validation: ValidationResult;
-            }>) => {
-              if (event.data.id === sourceValidationRequestIdRef.current) {
-                setValidation(event.data.validation);
-              }
-              worker?.terminate();
-              worker = null;
-            };
-            worker.onerror = (event) => {
-              if (requestId === sourceValidationRequestIdRef.current) {
-                setValidation({
-                  isValid: false,
-                  error: `JSON 校验失败: ${event.message}`,
-                });
-              }
-              worker?.terminate();
-              worker = null;
-            };
-            worker.postMessage({ id: requestId, input: cleanInput });
-            return;
+        const cleanInput = cleanJsonInput(input);
+        const requestId = ++sourceValidationRequestIdRef.current;
+        validationTask = startJsonValidation(cleanInput, ASYNC_VALIDATION_THRESHOLD, { requireContainer: true });
+        validationTask.promise.then(result => {
+          if (requestId === sourceValidationRequestIdRef.current) {
+            setValidation(result);
           }
-
-          setValidation(validateJson(cleanInput));
-        } else {
-          sourceValidationRequestIdRef.current++;
-          setValidation({ isValid: true });
-        }
+        });
       } else {
         sourceValidationRequestIdRef.current++;
         setValidation({ isValid: true });
@@ -588,14 +542,14 @@ const App: React.FC = () => {
     }, 500);
     return () => {
       clearTimeout(timeoutId);
-      worker?.terminate();
+      validationTask?.cancel();
     };
   }, [input]);
 
   // 左侧编辑器变更处理
   const handleInputChange = useCallback((newVal: string) => {
     // 实时清理不可见字符
-    const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
+    const cleanVal = cleanJsonInput(newVal);
     if (aiRepairSnapshotRef.current !== cleanVal) {
       aiRepairSnapshotRef.current = null;
       setAiRepairSummary(null);
@@ -621,22 +575,20 @@ const App: React.FC = () => {
 
     // 预览内容快速验证
     if (newVal && newVal.trim()) {
-      const cleanVal = newVal.replace(/[\u200B-\u200D\uFEFF]/g, '');
-      if (cleanVal.trim().startsWith('{') || cleanVal.trim().startsWith('[')) {
-        const requestId = ++previewValidationRequestIdRef.current;
-        if (cleanVal.length >= ASYNC_VALIDATION_THRESHOLD) {
-          setPreviewValidation({ isValid: true });
-          validateJsonMaybeAsync(cleanVal).then(result => {
-            if (requestId === previewValidationRequestIdRef.current) {
-              setPreviewValidation(result);
-            }
-          });
-        } else {
-          setPreviewValidation(validateJson(cleanVal));
-        }
-      } else {
-        previewValidationRequestIdRef.current++;
+      const cleanVal = cleanJsonInput(newVal);
+      const requestId = ++previewValidationRequestIdRef.current;
+      if (cleanVal.length >= ASYNC_VALIDATION_THRESHOLD) {
         setPreviewValidation({ isValid: true });
+        validateJsonMaybeAsync(cleanVal, { requireContainer: true }).then(result => {
+          if (requestId === previewValidationRequestIdRef.current) {
+            setPreviewValidation(result);
+          }
+        });
+      } else {
+        const result = validateJsonForEditor(cleanVal, { requireContainer: true });
+        if (requestId === previewValidationRequestIdRef.current) {
+          setPreviewValidation(result);
+        }
       }
     } else {
       previewValidationRequestIdRef.current++;
