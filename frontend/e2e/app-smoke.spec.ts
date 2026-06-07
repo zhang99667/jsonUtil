@@ -484,6 +484,24 @@ test('文件打开后可修改并保存下载', async ({ page }) => {
   await expect(readFile(downloadPath!, 'utf-8')).resolves.toBe(savedContent);
 });
 
+test('取消保存预览不会提示失败', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(window, 'showSaveFilePicker', {
+      configurable: true,
+      value: async () => {
+        throw new DOMException('cancelled', 'AbortError');
+      },
+    });
+  });
+
+  await fillSourceEditor(page, '{"preview":true}');
+  await page.getByRole('button', { name: '格式化' }).click();
+  await page.locator('[data-tour="preview-editor"] .monaco-editor').click();
+  await page.locator('[data-tour="save-file-button"]').click();
+
+  await expect(page.getByText('保存预览结果失败')).toHaveCount(0);
+});
+
 const fillSourceEditor = async (page: Page, value: string) => {
   const sourceEditor = page.locator('[data-tour="source-editor"] .monaco-editor').first();
   await fillMonacoEditor(page, sourceEditor, value);
