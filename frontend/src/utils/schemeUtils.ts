@@ -106,6 +106,7 @@ const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const LINE_QUERY_DELIMITER_RE = new RegExp(`\\r?\\n[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 const BARE_HOST_URL_BASE = 'https://';
 
@@ -113,6 +114,7 @@ const normalizeQueryString = (source: string): string => (
   source.trim()
     .replace(HTML_QUERY_DELIMITER_RE, '&')
     .replace(SEMICOLON_QUERY_DELIMITER_RE, '&')
+    .replace(LINE_QUERY_DELIMITER_RE, '&')
 );
 
 const stripQueryPrefix = (source: string): string => (

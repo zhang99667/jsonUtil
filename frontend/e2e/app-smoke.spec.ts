@@ -460,6 +460,18 @@ test('Scheme 面板可解析 JSON-like CMD 参数', async ({ page }) => {
   await expect(schemeResult).toContainText('"from": "feed"');
 });
 
+test('Scheme 面板可解析多行 CMD 参数串', async ({ page }) => {
+  const cmdPayload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(`cmd=${cmdPayload}\n  from=line`);
+
+  const schemeResult = page.locator('[data-tour="scheme-result"] .view-lines');
+  await expect(schemeResult).toContainText('"cmd"');
+  await expect(schemeResult).toContainText('"nid": 123');
+  await expect(schemeResult).toContainText('"from": "line"');
+});
+
 test('Scheme 面板可解析独立 hash route CMD 参数', async ({ page }) => {
   const cmdPayload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
 
