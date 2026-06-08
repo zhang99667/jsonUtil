@@ -12,7 +12,7 @@ import {
 } from '../types.ts';
 
 import { deepDecodeScheme, detectSchemeType, hasUrlEncoding } from './schemeUtils.ts';
-import { parseJsonLines, stringifyJsonLines } from './jsonLines.ts';
+import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };
@@ -20,7 +20,9 @@ export const validateJson = (input: string): ValidationResult => {
     JSON.parse(input);
     return { isValid: true };
   } catch (e: unknown) {
-    if (parseJsonLines(input)) return { isValid: true };
+    const jsonLines = parseJsonLinesDetailed(input);
+    if (jsonLines.records) return { isValid: true };
+    if (jsonLines.error) return { isValid: false, error: jsonLines.error };
 
     const message = e instanceof Error ? e.message : String(e);
     return { isValid: false, error: message };
