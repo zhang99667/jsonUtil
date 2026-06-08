@@ -106,13 +106,16 @@ const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const LINE_QUERY_DELIMITER_RE = new RegExp(`\\r?\\n[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 const BARE_HOST_URL_BASE = 'https://';
+const DEFAULT_SCHEME_DECODE_MAX_DEPTH = 15;
 
 const normalizeQueryString = (source: string): string => (
   source.trim()
     .replace(HTML_QUERY_DELIMITER_RE, '&')
+    .replace(UNICODE_AMP_QUERY_DELIMITER_RE, '&')
     .replace(SEMICOLON_QUERY_DELIMITER_RE, '&')
     .replace(LINE_QUERY_DELIMITER_RE, '&')
 );
@@ -912,7 +915,7 @@ const decodeBase64StructuredParam = (value: string, maxDepth: number): Structure
 /**
  * 递归解码 scheme 字符串，直到无法继续解码
  */
-export function deepDecodeScheme(input: string, maxDepth: number = 5): SchemeDecodeResult {
+export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEME_DECODE_MAX_DEPTH): SchemeDecodeResult {
   const layers: DecodeLayer[] = [];
   let current = input;
   let depth = 0;
