@@ -89,6 +89,17 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
   });
 
+  it('解析日志复制出的多行 CMD 参数串', () => {
+    expect(parseDecodedJson(
+      'cmd=%7B%22nid%22%3A123%7D\n  from=line'
+    )).toEqual({
+      cmd: {
+        nid: 123,
+      },
+      from: 'line',
+    });
+  });
+
   it('解析短 Base64 JSON 参数', () => {
     expect(parseDecodedJson(`cmd=${base64Encode('{"a":1}')}`)).toEqual({
       cmd: {
