@@ -21,6 +21,7 @@
 - **CMD/Scheme 跳转字段识别**: `redirectUrl`、`fallbackUrl`、`next`、`deepLink` 等常见单参数跳转字段会按 URL/CMD 字段解析，减少只复制单个字段时漏展开
 - **CMD/Scheme 多行参数解析**: 支持解析日志复制出的 `cmd=...\nfrom=...` 多行参数串，减少换行粘贴时漏展开
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
+- **深度格式化真实广告链路展开**: 嵌套解析复用 Scheme 面板的 15 层默认深度，整段广告 response 也能展开多层跳转字段到最终落地页参数
 - **深度格式化 Scheme 还原增强**: 修复 URL Scheme 内含二级 URL 时，未编辑预览回写无法优先还原父级原始字符串的问题
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串
 - **Scheme 面板精确回写**: Scheme 图标弹窗应用修改时改用 JSON Pointer 定位，修复 key 包含点号、斜杠或波浪线时可能写错字段的问题

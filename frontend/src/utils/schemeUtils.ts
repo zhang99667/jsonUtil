@@ -110,7 +110,7 @@ const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTE
 const LINE_QUERY_DELIMITER_RE = new RegExp(`\\r?\\n[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 const BARE_HOST_URL_BASE = 'https://';
-const DEFAULT_SCHEME_DECODE_MAX_DEPTH = 15;
+export const DEFAULT_SCHEME_DECODE_MAX_DEPTH = 15;
 
 const normalizeQueryString = (source: string): string => (
   source.trim()
