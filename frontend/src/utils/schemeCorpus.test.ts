@@ -89,6 +89,58 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
   });
 
+  it('解析日志里的 Unicode 转义参数分隔符', () => {
+    expect(parseDecodedJson(
+      'cmd=%7B%22nid%22%3A123%7D\\u0026from=unicode'
+    )).toEqual({
+      cmd: {
+        nid: 123,
+      },
+      from: 'unicode',
+    });
+  });
+
+  it('默认深度可展开真实广告 response 的多层跳转链路', () => {
+    const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101&bd_vid=abc';
+    const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: landingUrl,
+    }))}`;
+    const convertCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+      appUrl,
+      source: 'feedna',
+    }))}`;
+    const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
+    const responseScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      reward: {
+        stay_cmd: rewardDialog,
+      },
+    }))}`;
+
+    expect(parseDecodedJson(responseScheme)).toEqual({
+      video_info: {
+        reward: {
+          stay_cmd: {
+            convert_cmd: {
+              params: {
+                appUrl: {
+                  params: {
+                    category: 'jump',
+                    url: {
+                      sku: '101',
+                      bd_vid: 'abc',
+                    },
+                  },
+                },
+                source: 'feedna',
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
   it('解析日志复制出的多行 CMD 参数串', () => {
     expect(parseDecodedJson(
       'cmd=%7B%22nid%22%3A123%7D\n  from=line'
