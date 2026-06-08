@@ -115,6 +115,12 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expectPreviewText(page, '"nested": false');
 });
 
+test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
+  await fillSourceEditor(page, '{"ok":1}\n{"broken":}\n{"ok":3}');
+
+  await expect(page.getByText('JSON Lines 第 2 行解析错误')).toBeVisible();
+});
+
 test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {

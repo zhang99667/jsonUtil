@@ -46,6 +46,12 @@ describe('validateJson', () => {
     expect(result.error).toBeDefined();
   });
 
+  it('无效的 JSON Lines 返回行号错误信息', () => {
+    const result = validateJson('{"a":1}\n{"b":}\n{"c":3}');
+    expect(result.isValid).toBe(false);
+    expect(result.error).toContain('JSON Lines 第 2 行解析错误');
+  });
+
   it('JSON 基本类型也有效', () => {
     expect(validateJson('"hello"')).toEqual({ isValid: true });
     expect(validateJson('123')).toEqual({ isValid: true });

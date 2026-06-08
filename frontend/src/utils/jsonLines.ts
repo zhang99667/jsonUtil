@@ -9,11 +9,16 @@ export interface JsonLineRecord {
   columnOffset: number;
 }
 
+export interface JsonLinesDiagnostic {
+  records: JsonLineRecord[] | null;
+  error?: string;
+}
+
 /**
  * 解析一行一个 JSON 的 JSON Lines 内容，并保留原始行位置用于高亮回填。
  */
-export const parseJsonLinesWithMetadata = (input: string): JsonLineRecord[] | null => {
-  if (!input.includes('\n')) return null;
+export const parseJsonLinesDetailed = (input: string): JsonLinesDiagnostic => {
+  if (!input.includes('\n')) return { records: null };
 
   const records: JsonLineRecord[] = [];
   const lines = input.split(/\r?\n/);
@@ -22,7 +27,7 @@ export const parseJsonLinesWithMetadata = (input: string): JsonLineRecord[] | nu
     const line = lines[lineIndex];
     const trimmed = line.trim();
     if (!trimmed) continue;
-    if (!JSON_LINE_PREFIX_RE.test(trimmed)) return null;
+    if (!JSON_LINE_PREFIX_RE.test(trimmed)) return { records: null };
 
     try {
       records.push({
@@ -31,12 +36,20 @@ export const parseJsonLinesWithMetadata = (input: string): JsonLineRecord[] | nu
         lineIndex,
         columnOffset: line.search(/\S/),
       });
-    } catch {
-      return null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        records: null,
+        error: `JSON Lines 第 ${lineIndex + 1} 行解析错误: ${message}`,
+      };
     }
   }
 
-  return records.length >= 2 ? records : null;
+  return { records: records.length >= 2 ? records : null };
+};
+
+export const parseJsonLinesWithMetadata = (input: string): JsonLineRecord[] | null => {
+  return parseJsonLinesDetailed(input).records;
 };
 
 export const parseJsonLines = (input: string): JsonValue[] | null => {
