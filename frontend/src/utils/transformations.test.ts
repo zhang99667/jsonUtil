@@ -375,6 +375,38 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.schema')?.steps[0].originalSchemeType).toBe('url');
   });
 
+  it('自动展开真实广告 response 中的深层跳转链路', () => {
+    const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101&bd_vid=abc';
+    const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: landingUrl,
+    }))}`;
+    const convertCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+      appUrl,
+      source: 'feedna',
+    }))}`;
+    const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
+    const input = JSON.stringify({
+      ad_common: {
+        scheme: `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+          reward: {
+            stay_cmd: rewardDialog,
+          },
+        }))}`,
+      },
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.ad_common.scheme.video_info.reward.stay_cmd.convert_cmd.params.appUrl.params.url).toEqual({
+      sku: '101',
+      bd_vid: 'abc',
+    });
+    expect(parsed.ad_common.scheme.video_info.reward.stay_cmd.convert_cmd.params.source).toBe('feedna');
+    expect(result.context.records.get('$.ad_common.scheme')?.steps[0].type).toBe('scheme_decode');
+  });
+
   it('未启用自动展开时保留 CMD 参数串', () => {
     const input = JSON.stringify({
       action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',

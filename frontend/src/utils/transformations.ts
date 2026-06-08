@@ -11,7 +11,12 @@ import {
   JsonObject
 } from '../types.ts';
 
-import { deepDecodeScheme, detectSchemeType, hasUrlEncoding } from './schemeUtils.ts';
+import {
+  DEFAULT_SCHEME_DECODE_MAX_DEPTH,
+  deepDecodeScheme,
+  detectSchemeType,
+  hasUrlEncoding,
+} from './schemeUtils.ts';
 import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
 export const validateJson = (input: string): ValidationResult => {
@@ -266,7 +271,7 @@ export function deepParseWithContext(
   }
 
     const processValue = (value: JsonValue, currentPath: string, depth: number = 0): JsonValue => {
-      const maxDepth = options?.maxDepth ?? 10;
+      const maxDepth = options?.maxDepth ?? DEFAULT_SCHEME_DECODE_MAX_DEPTH;
       if (depth > maxDepth) return value;
 
       if (typeof value === 'string') {
