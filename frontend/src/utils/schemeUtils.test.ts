@@ -16,6 +16,7 @@ import {
   encodeWithLayers,
   isQueryStringFormat,
   isDecodableQueryString,
+  isRuntimePlaceholder,
 } from './schemeUtils';
 import { findSchemesInJson } from './schemeScanner';
 
@@ -103,6 +104,10 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('url=https%3A%2F%2Fexample.com')).toBe(true);
   });
 
+  it('检测常见单参数运行时占位符字段', () => {
+    expect(isDecodableQueryString('cmd=__CONVERT_CMD__')).toBe(true);
+  });
+
   it('检测 camelCase 的单参数 CMD 字段', () => {
     expect(isDecodableQueryString('actionCommand=%7B%22a%22%3A1%7D')).toBe(true);
   });
@@ -122,6 +127,18 @@ describe('isDecodableQueryString', () => {
   it('普通单键值对不误判', () => {
     expect(isDecodableQueryString('name=test')).toBe(false);
     expect(isDecodableQueryString('next=1')).toBe(false);
+  });
+});
+
+describe('isRuntimePlaceholder', () => {
+  it('识别运行时占位符', () => {
+    expect(isRuntimePlaceholder('__CONVERT_CMD__')).toBe(true);
+    expect(isRuntimePlaceholder('__WEBPANEL_CMD__')).toBe(true);
+  });
+
+  it('普通文本不误判为占位符', () => {
+    expect(isRuntimePlaceholder('__lower_case__')).toBe(false);
+    expect(isRuntimePlaceholder('CONVERT_CMD')).toBe(false);
   });
 });
 
@@ -474,6 +491,29 @@ describe('deepDecodeScheme', () => {
       url: { from: 'box' },
     });
     expect(result.layers[0].type).toBe('query-string');
+  });
+
+  it('运行时占位符会保留并标记路径', () => {
+    const result = deepDecodeScheme('cmd=__CONVERT_CMD__&webpanel=__WEBPANEL_CMD__&from=feed');
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      cmd: '__CONVERT_CMD__',
+      webpanel: '__WEBPANEL_CMD__',
+      from: 'feed',
+    });
+    expect(result.placeholders).toEqual([
+      {
+        path: '$.cmd',
+        value: '__CONVERT_CMD__',
+        description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+      },
+      {
+        path: '$.webpanel',
+        value: '__WEBPANEL_CMD__',
+        description: '运行时 WebPanel CMD 占位符，当前文本未包含实际 CMD 内容',
+      },
+    ]);
   });
 
   it('分号分隔的 CMD 参数串被解析', () => {

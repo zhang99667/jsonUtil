@@ -20,11 +20,18 @@ export interface DecodeLayer {
   description: string; // 描述，如 "URL Decode", "Base64 Decode"
 }
 
+export interface SchemePlaceholder {
+  path: string;        // 占位符所在路径
+  value: string;       // 占位符原值
+  description: string; // 占位符说明
+}
+
 export interface SchemeDecodeResult {
   original: string;           // 原始字符串
   decoded: string;            // 最终解码结果
   layers: DecodeLayer[];      // 解码层级
   isJson: boolean;            // 最终结果是否为有效 JSON
+  placeholders?: SchemePlaceholder[]; // 运行时占位符
   schemeInfo?: {              // Scheme 信息（如果是 URL）
     protocol: string;         // 协议，如 "https:", "myapp:"
     host?: string;            // 主机
@@ -142,7 +149,23 @@ const isStructuredBase64Value = (value: string): boolean => {
   return decoded !== value && looksLikeStructuredPayload(decoded);
 };
 
+const RUNTIME_PLACEHOLDER_RE = /^__[A-Z][A-Z0-9_]*__$/;
+const RUNTIME_PLACEHOLDER_DESCRIPTIONS: Record<string, string> = {
+  __CONVERT_CMD__: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+  __WEBPANEL_CMD__: '运行时 WebPanel CMD 占位符，当前文本未包含实际 CMD 内容',
+};
+
+export const isRuntimePlaceholder = (value: string): boolean => (
+  RUNTIME_PLACEHOLDER_RE.test(value.trim())
+);
+
+const getRuntimePlaceholderDescription = (value: string): string => (
+  RUNTIME_PLACEHOLDER_DESCRIPTIONS[value.trim()] ||
+  '运行时占位符，当前文本未包含可继续展开的实际内容'
+);
+
 const isDecodableParamValue = (value: string): boolean => (
+  isRuntimePlaceholder(value) ||
   hasUrlEncoding(value) ||
   isUrl(value) ||
   isJwt(value) ||
@@ -479,6 +502,33 @@ export function decodeJwt(token: string): { header: Record<string, unknown>; pay
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
+
+const formatPlaceholderPathSegment = (key: string): string => (
+  /^[A-Za-z_$][\w$]*$/.test(key) ? `.${key}` : `[${JSON.stringify(key)}]`
+);
+
+const collectRuntimePlaceholders = (
+  value: StructuredValue,
+  path: string = '$'
+): SchemePlaceholder[] => {
+  if (typeof value === 'string') {
+    return isRuntimePlaceholder(value)
+      ? [{ path, value, description: getRuntimePlaceholderDescription(value) }]
+      : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => collectRuntimePlaceholders(item, `${path}[${index}]`));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, item]) => (
+      collectRuntimePlaceholders(item, `${path}${formatPlaceholderPathSegment(key)}`)
+    ));
+  }
+
+  return [];
+};
 
 const assignFlatQueryParam = (
   result: Record<string, string | string[]>,
@@ -920,6 +970,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
   let current = input;
   let depth = 0;
   let schemeInfo: SchemeDecodeResult['schemeInfo'];
+  let placeholders: SchemePlaceholder[] = [];
 
   while (depth < maxDepth) {
     const type = detectSchemeType(current);
@@ -1024,10 +1075,18 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
   if (isJsonString(current)) {
     isJson = true;
     try {
-      finalDecoded = JSON.stringify(JSON.parse(current), null, 2);
+      const parsed = JSON.parse(current) as StructuredValue;
+      finalDecoded = JSON.stringify(parsed, null, 2);
+      placeholders = collectRuntimePlaceholders(parsed);
     } catch {
       // 保持原样
     }
+  } else if (isRuntimePlaceholder(current)) {
+    placeholders = [{
+      path: '$',
+      value: current.trim(),
+      description: getRuntimePlaceholderDescription(current),
+    }];
   }
 
   return {
@@ -1035,6 +1094,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
     decoded: finalDecoded,
     layers,
     isJson,
+    placeholders,
     schemeInfo,
   };
 }
