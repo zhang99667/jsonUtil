@@ -215,6 +215,47 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
   });
 
+  it('解析真实广告局部按钮和监测字段', () => {
+    const buttonCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
+    const convertBtn = encodeURIComponent(JSON.stringify({
+      button_cmd: buttonCmd,
+      button_text: '打开应用',
+    }));
+    const monitor = encodeURIComponent(JSON.stringify([{
+      click_url: {
+        url: 'https://example.com/track?mid=1&from=ad',
+      },
+    }]));
+
+    expect(parseDecodedJson(`button_cmd=${buttonCmd}`)).toEqual({
+      button_cmd: {
+        cmd: {
+          nid: 123,
+        },
+      },
+    });
+    expect(parseDecodedJson(`convert_btn=${convertBtn}`)).toEqual({
+      convert_btn: {
+        button_cmd: {
+          cmd: {
+            nid: 123,
+          },
+        },
+        button_text: '打开应用',
+      },
+    });
+    expect(parseDecodedJson(`ad_monitor_url=${monitor}`)).toEqual({
+      ad_monitor_url: [{
+        click_url: {
+          url: {
+            mid: '1',
+            from: 'ad',
+          },
+        },
+      }],
+    });
+  });
+
   it('未编辑 raw URL 字段可按原形态回写', () => {
     const original = 'url=https://m.baidu.com/s?word=json&from=feed';
     const decoded = deepDecodeScheme(original);
