@@ -31,7 +31,7 @@ describe('queryJsonPathRanges', () => {
     });
   });
 
-  it('大量命中时仅返回前 N 项并保留总命中数', () => {
+  it('大量命中时提前停止并仅返回前 N 项', () => {
     const jsonData = JSON.stringify({
       items: [
         { id: 1 },
@@ -44,11 +44,25 @@ describe('queryJsonPathRanges', () => {
       resultLimit: 2,
     });
 
-    expect(result.totalResults).toBe(3);
+    expect(result.totalResults).toBe(2);
     expect(result.values).toEqual([1, 2]);
     expect(result.ranges).toHaveLength(2);
     expect(result.isLimited).toBe(true);
     expect(result.resultLimit).toBe(2);
+  });
+
+  it('命中数等于上限时不标记为截断', () => {
+    const jsonData = JSON.stringify({
+      items: [{ id: 1 }, { id: 2 }],
+    }, null, 2);
+
+    const result = queryJsonPathRanges(jsonData, '$.items[*].id', {
+      resultLimit: 2,
+    });
+
+    expect(result.totalResults).toBe(2);
+    expect(result.values).toEqual([1, 2]);
+    expect(result.isLimited).toBe(false);
   });
 
   it('支持先深度格式化再查询嵌套 JSON 字符串', () => {

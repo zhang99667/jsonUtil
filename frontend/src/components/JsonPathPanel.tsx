@@ -506,7 +506,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             </span>
                             {isResultLimited && (
                                 <span className="text-[11px] text-amber-300">
-                                    共 {totalResults}，已返回前 {resultLimit}
+                                    命中超过 {resultLimit}，已提前停止
                                 </span>
                             )}
                         </div>
@@ -574,7 +574,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         )}
                         {isResultLimited && (
                             <div className="px-2 py-1 text-[11px] text-amber-300">
-                                命中 {totalResults} 项，为保护性能仅返回前 {resultLimit} 项
+                                为保护性能，命中超过 {resultLimit} 项后已提前停止
                             </div>
                         )}
                     </div>
