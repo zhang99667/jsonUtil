@@ -726,6 +726,38 @@ describe('inverseWithContext 精确还原', () => {
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));
   });
 
+  it('未编辑的包装 JSON 深度格式化后保留外壳并精确还原', () => {
+    const input = 'const response = {"action_cmd":"cmd=%7B%22nid%22%3A123%7D&from=feed"};';
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+
+    const restored = inverseWithContext(output, context);
+    expect(restored).toBe(input);
+  });
+
+  it('未编辑的 JSONP 和 Markdown 包装深度格式化后保留外壳', () => {
+    const innerJson = JSON.stringify({ ok: true });
+    const cases = [
+      `callback(${JSON.stringify({ data: innerJson })});`,
+      `\`\`\`json\n${JSON.stringify({ data: innerJson })}\n\`\`\``,
+    ];
+
+    cases.forEach(input => {
+      const { output, context } = deepParseWithContext(input);
+
+      expect(inverseWithContext(output, context)).toBe(input);
+    });
+  });
+
+  it('已编辑的包装 JSON 深度格式化后保留外壳并回写内部 JSON', () => {
+    const input = 'const response = {"action_cmd":"cmd=%7B%22nid%22%3A123%7D&from=feed"};';
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    parsed.action_cmd.cmd.nid = 456;
+
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), context);
+    expect(restored).toBe('const response = {"action_cmd":"cmd=%7B%22nid%22%3A456%7D&from=feed"};');
+  });
+
   it('未编辑的 JSON 字符串字面量 CMD 自动展开后可精确还原', () => {
     const input = JSON.stringify({
       action_cmd: JSON.stringify('cmd=%7B%22nid%22%3A123%7D&from=literal'),
