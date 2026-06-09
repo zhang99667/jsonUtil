@@ -188,6 +188,13 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await expect(placeholderSection).toContainText('运行时转换 CMD 占位符');
   await placeholderSection.getByRole('button', { name: '复制路径' }).click();
   await expect(page.getByText('已复制路径')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$.action_cmd.cmd.button_cmd');
+
+  await placeholderSection.getByRole('button', { name: '复制来源' }).click();
+  await expect(page.getByText('已复制来源路径')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$.action_cmd');
 });
 
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {

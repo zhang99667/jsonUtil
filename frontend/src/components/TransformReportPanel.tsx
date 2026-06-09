@@ -40,10 +40,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
-  const handleCopyPath = async (path: string) => {
+  const handleCopyPath = async (path: string, successMessage = '已复制路径') => {
     try {
       await copyText(path);
-      toast.success('已复制路径', { duration: 1600 });
+      toast.success(successMessage, { duration: 1600 });
     } catch (error) {
       console.warn('复制深度解析路径失败:', error);
       toast.error('复制失败', { duration: 2000 });
@@ -51,8 +51,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const footer = (
-    <>
-      <div className="text-xs text-gray-500">
+    <div className="flex w-full flex-wrap items-center justify-between gap-2">
+      <div className="min-w-[220px] flex-1 text-xs text-gray-500">
         {report
           ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredPlaceholderCount || 0}/${reportView?.totalPlaceholderCount || 0} 个占位符 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
           : '暂无解析上下文'}
@@ -60,11 +60,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       <button
         onClick={handleCopyReport}
         disabled={!context}
-        className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         复制报告
       </button>
-    </>
+    </div>
   );
 
   return (
@@ -300,6 +300,13 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
                         >
                           复制路径
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPath(placeholder.sourcePath, '已复制来源路径')}
+                          className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        >
+                          复制来源
                         </button>
                       </div>
                     </div>
