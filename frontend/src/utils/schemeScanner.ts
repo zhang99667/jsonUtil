@@ -5,6 +5,9 @@ export interface SchemeLocation {
   path: string;           // JSON Path，如 "$.action_cmd"
   pointer: string;        // JSON Pointer，用于特殊 key 场景下精确回写
   line: number;           // 行号（1-based）
+  column: number;         // 起始列号（1-based）
+  endLine: number;        // 结束行号（1-based）
+  endColumn: number;      // 结束列号（1-based，Monaco Range 右开）
   value: string;          // 原始值
   schemeType: SchemeType; // scheme 类型
 }
@@ -32,9 +35,17 @@ export function scanSchemesInJson(
     const parsed: unknown = JSON.parse(jsonString);
     const sourceMap = parseJsonSourceMap(jsonString);
 
-    const getValueLine = (pointer: string): number => {
+    const getValueRange = (pointer: string) => {
       const pointerInfo = sourceMap.pointers[pointer];
-      return (pointerInfo?.value?.line ?? pointerInfo?.key?.line ?? 0) + 1;
+      const start = pointerInfo?.value ?? pointerInfo?.key ?? { line: 0, column: 0 };
+      const end = pointerInfo?.valueEnd ?? pointerInfo?.keyEnd ?? start;
+
+      return {
+        line: start.line + 1,
+        column: start.column + 1,
+        endLine: end.line + 1,
+        endColumn: end.column + 1,
+      };
     };
 
     const escapePointerSegment = (segment: string): string => (
@@ -54,10 +65,11 @@ export function scanSchemesInJson(
             return markLimited();
           }
 
+          const range = getValueRange(currentPointer);
           results.push({
             path: currentPath,
             pointer: currentPointer,
-            line: getValueLine(currentPointer),
+            ...range,
             value: obj,
             schemeType,
           });

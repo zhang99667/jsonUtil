@@ -95,6 +95,12 @@
   opacity: 1;
 }
 
+.scheme-inline-highlight {
+  text-decoration: underline dotted rgba(96, 165, 250, 0.8);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
 
 /* 光标动画 */
 .monaco-editor .cursor {
