@@ -11,6 +11,10 @@ import {
 } from '../utils/schemeUtils';
 import { QRCodeCanvas } from 'qrcode.react';
 import { copyText } from '../utils/clipboard';
+import {
+  extractBase64MetaInfo,
+  formatBase64MetaDisplayValue,
+} from '../utils/schemeMetadata';
 
 interface SchemeViewerModalProps {
   isOpen: boolean;
@@ -226,6 +230,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     buildParamSections(decodeResult.schemeInfo)
   ), [decodeResult.schemeInfo]);
   const placeholders = decodeResult.placeholders || [];
+  const base64MetaInfo = useMemo(() => (
+    extractBase64MetaInfo(decodeResult.decoded, decodeResult.isJson)
+  ), [decodeResult.decoded, decodeResult.isJson]);
 
   // 头部额外内容：非独立模式显示 path 标签
   const headerExtra = !standalone && path ? (
@@ -353,7 +360,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 上方信息卡片区域 */}
-          {(decodeResult.schemeInfo || decodeResult.layers.length > 0 || placeholders.length > 0) && (
+          {(decodeResult.schemeInfo || decodeResult.layers.length > 0 || placeholders.length > 0 || base64MetaInfo) && (
             <div className="bg-editor-sidebar rounded p-3 border border-editor-border flex flex-col gap-2">
               {/* Scheme 信息 */}
               {decodeResult.schemeInfo && (
@@ -429,6 +436,60 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* 内部 Base64 元信息 */}
+              {base64MetaInfo && (
+                <div data-tour="scheme-base64-meta" className="flex items-start gap-2 text-xs">
+                  <span className="shrink-0 text-cyan-300 bg-cyan-900/30 border border-cyan-700/50 px-2 py-0.5 rounded">
+                    内部 Base64
+                  </span>
+                  <div className="flex flex-wrap gap-1 min-w-0">
+                    {base64MetaInfo.prefix && (
+                      <span
+                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                        title={base64MetaInfo.prefix}
+                      >
+                        头部={formatBase64MetaDisplayValue(base64MetaInfo.prefix, 24)}
+                      </span>
+                    )}
+                    {base64MetaInfo.suffix && (
+                      <span
+                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                        title={base64MetaInfo.suffix}
+                      >
+                        后缀={formatBase64MetaDisplayValue(base64MetaInfo.suffix, 32)}
+                      </span>
+                    )}
+                    {base64MetaInfo.suffixDecodePrefix && (
+                      <span
+                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                        title={base64MetaInfo.suffixDecodePrefix}
+                      >
+                        跳过={formatBase64MetaDisplayValue(base64MetaInfo.suffixDecodePrefix, 16)}
+                      </span>
+                    )}
+                    {base64MetaInfo.suffixDecodedEntries.slice(0, 6).map(entry => (
+                      <span
+                        key={entry.key}
+                        className="bg-editor-bg text-emerald-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                        title={`${entry.key}=${entry.displayValue}`}
+                      >
+                        {entry.key}={entry.displayValue}
+                      </span>
+                    ))}
+                    {base64MetaInfo.suffixDecodedCount > 6 && (
+                      <span className="text-gray-500 px-1 py-0.5">
+                        +{base64MetaInfo.suffixDecodedCount - 6}
+                      </span>
+                    )}
+                    {base64MetaInfo.suffix && (
+                      <span className="text-gray-500 px-1 py-0.5">
+                        {base64MetaInfo.suffixLength} 字符
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 
