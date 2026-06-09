@@ -22,12 +22,66 @@ import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './js
 export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 
+interface ParsedJsonInput {
+  value: JsonValue;
+}
+
+const parseJsonCandidate = (candidate: string): ParsedJsonInput | null => {
+  try {
+    return { value: JSON.parse(candidate) as JsonValue };
+  } catch {
+    return null;
+  }
+};
+
+const extractMarkdownJsonFence = (input: string): string | null => {
+  const match = input.trim().match(/^```(?:json|jsonc)?[^\n]*\n?([\s\S]*?)```$/i);
+  return match ? match[1].trim() : null;
+};
+
+const extractAssignmentJsonPayload = (input: string): string | null => {
+  const trimmed = input.trim();
+  const exportDefaultMatch = trimmed.match(/^export\s+default\s+([\s\S]*?);?\s*$/);
+  if (exportDefaultMatch) return exportDefaultMatch[1].trim();
+
+  const assignmentMatch = trimmed.match(/^(?:(?:const|let|var)\s+[A-Za-z_$][\w$]*(?:\s*:\s*[^=]+)?|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*=\s*([\s\S]*?);?\s*$/);
+  return assignmentMatch ? assignmentMatch[1].trim() : null;
+};
+
+const extractJsonpPayload = (input: string): string | null => {
+  const match = input.trim().match(/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\(\s*([\s\S]*?)\s*\);?\s*$/);
+  return match ? match[1].trim() : null;
+};
+
+// 只接受明确的复制外壳，避免把普通说明文字里的 JSON 片段误判为完整输入。
+const parseWrappedJsonInput = (input: string): ParsedJsonInput | null => {
+  const candidates = [
+    extractMarkdownJsonFence(input),
+    extractAssignmentJsonPayload(input),
+    extractJsonpPayload(input),
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const parsed = parseJsonCandidate(candidate);
+    if (parsed) return parsed;
+  }
+
+  return null;
+};
+
+const parseJsonInput = (input: string): ParsedJsonInput | null => (
+  parseJsonCandidate(input) || parseWrappedJsonInput(input)
+);
+
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };
   try {
     JSON.parse(input);
     return { isValid: true };
   } catch (e: unknown) {
+    if (parseWrappedJsonInput(input)) return { isValid: true };
+
     const jsonLines = parseJsonLinesDetailed(input);
     if (jsonLines.records) return { isValid: true };
     if (jsonLines.error) return { isValid: false, error: jsonLines.error };
@@ -82,8 +136,10 @@ export const detectLanguage = (input: string): string => {
 // 核心转换逻辑
 const formatJson = (input: string): string => {
   try {
-    const parsed: JsonValue = JSON.parse(input);
-    return JSON.stringify(parsed, null, 2);
+    const parsed = parseJsonInput(input);
+    if (parsed) return JSON.stringify(parsed.value, null, 2);
+
+    throw new Error('未找到可格式化的 JSON 内容');
   } catch (e) {
     const jsonLines = parseJsonLines(input);
     if (jsonLines) return JSON.stringify(jsonLines, null, 2);
@@ -118,8 +174,10 @@ const deepFormatJson = (input: string): string => {
 
 const minifyJson = (input: string): string => {
   try {
-    const parsed: JsonValue = JSON.parse(input);
-    return JSON.stringify(parsed);
+    const parsed = parseJsonInput(input);
+    if (parsed) return JSON.stringify(parsed.value);
+
+    throw new Error('未找到可压缩的 JSON 内容');
   } catch (e) {
     const jsonLines = parseJsonLines(input);
     if (jsonLines) return stringifyJsonLines(jsonLines);
@@ -262,7 +320,10 @@ export function deepParseWithContext(
 
   let parsed: JsonValue;
   try {
-    parsed = JSON.parse(input) as JsonValue;
+    const parsedInput = parseJsonInput(input);
+    if (!parsedInput) throw new Error('未找到可深度格式化的 JSON 内容');
+
+    parsed = parsedInput.value;
     context.sourceFormat = 'json';
   } catch {
     const jsonLines = parseJsonLines(input);
@@ -709,8 +770,10 @@ export const performTransform = (input: string, mode: TransformMode): string => 
       case TransformMode.BASE64_DECODE: return base64Decode(input);
       case TransformMode.SORT_KEYS: {
         try {
-          const parsed: JsonValue = JSON.parse(input);
-          return JSON.stringify(sortJsonKeys(parsed), null, 2);
+          const parsed = parseJsonInput(input);
+          if (!parsed) throw new Error('未找到可排序的 JSON 内容');
+
+          return JSON.stringify(sortJsonKeys(parsed.value), null, 2);
         } catch {
           const jsonLines = parseJsonLines(input);
           return jsonLines ? stringifyJsonLines(jsonLines.map(sortJsonKeys)) : input;
