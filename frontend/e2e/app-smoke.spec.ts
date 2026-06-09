@@ -549,6 +549,28 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(page.locator('[data-tour="scheme-json-edit-error"]')).toContainText('JSON 内容格式有误');
 });
 
+test('Scheme 面板可复制特殊 key 来源路径', async ({ page }) => {
+  await fillSourceEditor(page, JSON.stringify({
+    'a.b': {
+      'x/y': {
+        'tilde~key': 'https://example.com/path?from=key',
+      },
+    },
+  }));
+  await page.getByRole('button', { name: '格式化' }).click();
+  await expectPreviewText(page, '"tilde~key": "https://example.com/path?from=key"');
+
+  await page.locator('[data-tour="preview-editor"] .scheme-inline-highlight').first().click();
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel).toContainText('Scheme 解析');
+  await expect(page.locator('[data-tour="scheme-source-path"]')).toContainText('$["a.b"]["x/y"]["tilde~key"]');
+
+  await page.locator('[data-tour="scheme-copy-path"]').click();
+  await expect(page.getByText('已复制路径')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$["a.b"]["x/y"]["tilde~key"]');
+});
+
 test('Scheme 面板可解析 JSON-like CMD 参数', async ({ page }) => {
   await page.locator('[data-tour="scheme-button"]').click();
   await page.locator('[data-tour="scheme-standalone-input"]').fill("cmd=%7Bnid%3A123%2Ctitle%3A'标题'%7D&from=feed");
