@@ -474,6 +474,18 @@ const decodeNormalizedBase64 = (normalized: string): string | null => {
   }
 };
 
+const decodeNormalizedBase64ReadablePrefix = (normalized: string): string | null => {
+  try {
+    const bytes = binaryStringToBytes(atob(normalized));
+    const decoded = new TextDecoder('utf-8').decode(bytes);
+    const stopIndex = decoded.search(/[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]/);
+    const readablePrefix = (stopIndex >= 0 ? decoded.slice(0, stopIndex) : decoded).trim();
+    return readablePrefix || null;
+  } catch {
+    return null;
+  }
+};
+
 const normalizeBase64JsonFragment = (decoded: string): string | null => {
   const trimmed = decoded.trim();
   const candidates = [
@@ -503,14 +515,50 @@ const appendPrefixedBase64Meta = (
       return jsonFragment;
     }
 
+    const suffixMeta = parsePrefixedBase64Suffix(suffix);
+
     return JSON.stringify({
       ...parsed,
       _base64_prefix: prefix,
       _base64_suffix: suffix,
+      ...(suffixMeta ? {
+        _base64_suffix_decode_prefix: suffixMeta.prefix,
+        _base64_suffix_decoded: suffixMeta.value,
+      } : {}),
     });
   } catch {
     return jsonFragment;
   }
+};
+
+const parsePrefixedBase64Suffix = (
+  suffix: string
+): { prefix: string; value: StructuredValue } | null => {
+  const compact = suffix.trim().replace(/\s+/g, '');
+  if (!compact) return null;
+
+  // 真实 extraParam 后缀常带少量内部头字符，跳过后可解出 query-string。
+  for (let offset = 0; offset <= 12 && offset < compact.length; offset++) {
+    const candidate = compact.slice(offset);
+    const normalized = normalizeBase64Input(candidate);
+    if (!normalized) continue;
+
+    const strictDecoded = decodeNormalizedBase64(normalized);
+    const decoded = strictDecoded && isReadableDecodedText(strictDecoded)
+      ? strictDecoded
+      : decodeNormalizedBase64ReadablePrefix(normalized);
+    if (!decoded || !looksLikeStructuredPayload(decoded)) continue;
+
+    const parsed = decodeNestedParamValue(decoded, DEFAULT_SCHEME_DECODE_MAX_DEPTH);
+    if (parsed && typeof parsed === 'object') {
+      return {
+        prefix: compact.slice(0, offset),
+        value: parsed,
+      };
+    }
+  }
+
+  return null;
 };
 
 const decodePrefixedBase64JsonFragment = (input: string): string | null => {
