@@ -158,6 +158,13 @@ export interface TransformUnresolvedCandidate {
   detectedType?: string;
 }
 
+export interface TransformRuntimePlaceholder {
+  path: string;
+  sourcePath: string;
+  value: string;
+  description: string;
+}
+
 export interface JsonInputWrapper {
   prefix: string;
   suffix: string;
@@ -173,6 +180,7 @@ export interface TransformContext {
   sourceWrapper?: JsonInputWrapper; // 根输入的复制外壳，用于深度格式化回写保真
   warnings?: TransformWarning[]; // 本次转换中为保护性能而跳过的内容
   unresolvedCandidates?: TransformUnresolvedCandidate[]; // 疑似可解析但未展开成结构化对象的字符串
+  runtimePlaceholders?: TransformRuntimePlaceholder[]; // 展开后仍需运行时替换的占位符
 }
 
 // 转换结果（带上下文）

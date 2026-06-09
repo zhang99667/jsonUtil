@@ -166,6 +166,26 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect(unresolvedSection).toContainText('URL 编码内容已解码，但未展开为结构化对象');
 });
 
+test('深度解析报告展示运行时占位符', async ({ page }) => {
+  const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
+    button_cmd: '__CONVERT_CMD__',
+  }))}&from=feed`;
+  await fillSourceEditor(page, JSON.stringify({ action_cmd: actionCmd }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await expect(page.locator('[data-tour="preview-editor"]')).toContainText('占位符 1');
+  await expectPreviewText(page, '"button_cmd": "__CONVERT_CMD__"');
+
+  await page.locator('[data-tour="transform-report-button"]').click();
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  const placeholderSection = reportPanel.locator('[data-tour="transform-report-placeholders"]');
+
+  await expect(placeholderSection).toContainText('运行时占位符 · 1');
+  await expect(placeholderSection).toContainText('$.action_cmd.cmd.button_cmd');
+  await expect(placeholderSection).toContainText('__CONVERT_CMD__');
+  await expect(placeholderSection).toContainText('运行时转换 CMD 占位符');
+});
+
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
   await fillSourceEditor(page, '{"ok":1}\n{"broken":}\n{"ok":3}');
 

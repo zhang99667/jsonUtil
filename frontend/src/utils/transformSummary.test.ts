@@ -140,6 +140,35 @@ describe('transformSummary', () => {
     expect(unresolvedView.filteredUnresolvedCount).toBe(1);
   });
 
+  it('展示运行时占位符路径和来源', () => {
+    const result = deepParseWithContext(JSON.stringify({
+      action_cmd: `cmd=${encodeURIComponent(JSON.stringify({
+        button_cmd: '__CONVERT_CMD__',
+      }))}&from=feed`,
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.summary.placeholderCount).toBe(1);
+    expect(formatTransformContextSummary(result.context)).toBe(
+      '深度解析: 展开 1 处，Scheme 1 (CMD 1)，占位符 1'
+    );
+    expect(report.runtimePlaceholders).toEqual([
+      {
+        path: '$.action_cmd.cmd.button_cmd',
+        sourcePath: '$.action_cmd',
+        value: '__CONVERT_CMD__',
+        description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+      },
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain('运行时占位符:');
+
+    const placeholderView = buildTransformReportView(report, '__CONVERT_CMD__');
+    expect(placeholderView.runtimePlaceholders.map(placeholder => placeholder.path)).toEqual([
+      '$.action_cmd.cmd.button_cmd',
+    ]);
+    expect(placeholderView.filteredPlaceholderCount).toBe(1);
+  });
+
   it('统计性能保护跳过信息', () => {
     const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
     const result = deepParseWithContext(JSON.stringify({ action_cmd: actionCmd }), {

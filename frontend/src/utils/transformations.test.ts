@@ -616,6 +616,27 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.ad_common.scheme')?.steps[0].type).toBe('scheme_decode');
   });
 
+  it('记录展开结果中的运行时占位符', () => {
+    const input = JSON.stringify({
+      action_cmd: `cmd=${encodeURIComponent(JSON.stringify({
+        button_cmd: '__CONVERT_CMD__',
+      }))}&from=feed`,
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd.cmd.button_cmd).toBe('__CONVERT_CMD__');
+    expect(result.context.runtimePlaceholders).toEqual([
+      {
+        path: '$.action_cmd.cmd.button_cmd',
+        sourcePath: '$.action_cmd',
+        value: '__CONVERT_CMD__',
+        description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+      },
+    ]);
+  });
+
   it('超长字符串会跳过递归展开并记录 warning', () => {
     const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
     const input = JSON.stringify({ action_cmd: actionCmd });
