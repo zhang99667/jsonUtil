@@ -22,7 +22,33 @@ describe('queryJsonPathRanges', () => {
   it('无匹配时返回空范围', () => {
     const result = queryJsonPathRanges('{"name":"Alice"}', '$.missing');
 
-    expect(result).toEqual({ ranges: [], values: [], totalResults: 0 });
+    expect(result).toEqual({
+      ranges: [],
+      values: [],
+      totalResults: 0,
+      isLimited: false,
+      resultLimit: 1000,
+    });
+  });
+
+  it('大量命中时仅返回前 N 项并保留总命中数', () => {
+    const jsonData = JSON.stringify({
+      items: [
+        { id: 1 },
+        { id: 2 },
+        { id: 3 },
+      ],
+    }, null, 2);
+
+    const result = queryJsonPathRanges(jsonData, '$.items[*].id', {
+      resultLimit: 2,
+    });
+
+    expect(result.totalResults).toBe(3);
+    expect(result.values).toEqual([1, 2]);
+    expect(result.ranges).toHaveLength(2);
+    expect(result.isLimited).toBe(true);
+    expect(result.resultLimit).toBe(2);
   });
 
   it('支持先深度格式化再查询嵌套 JSON 字符串', () => {

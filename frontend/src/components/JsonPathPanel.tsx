@@ -70,6 +70,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const [queryValues, setQueryValues] = useState<unknown[]>([]);
     const [currentResultIndex, setCurrentResultIndex] = useState<number>(0);
     const [totalResults, setTotalResults] = useState<number>(0);
+    const [isResultLimited, setIsResultLimited] = useState<boolean>(false);
+    const [resultLimit, setResultLimit] = useState<number>(0);
     const [isQuerying, setIsQuerying] = useState<boolean>(false);
     const workerRef = useRef<Worker | null>(null);
     const requestIdRef = useRef(0);
@@ -158,6 +160,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         setQueryRanges([]);
         setQueryValues([]);
         setTotalResults(0);
+        setIsResultLimited(false);
+        setResultLimit(0);
         setCurrentResultIndex(0);
         onHighlightRange(null);
     }, [onHighlightRange]);
@@ -202,6 +206,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             ranges: HighlightRange[];
             values: unknown[];
             totalResults: number;
+            isLimited: boolean;
+            resultLimit: number;
             error?: string;
         }>) => {
             if (event.data.id !== requestId) return;
@@ -216,6 +222,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 setQueryRanges([]);
                 setQueryValues([]);
                 setTotalResults(0);
+                setIsResultLimited(false);
+                setResultLimit(0);
                 setCurrentResultIndex(0);
                 onHighlightRange(null);
                 return;
@@ -226,6 +234,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 setQueryRanges([]);
                 setQueryValues([]);
                 setTotalResults(0);
+                setIsResultLimited(false);
+                setResultLimit(0);
                 setCurrentResultIndex(0);
                 onHighlightRange(null);
                 return;
@@ -234,6 +244,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             setQueryRanges(event.data.ranges);
             setQueryValues(event.data.values);
             setTotalResults(event.data.totalResults);
+            setIsResultLimited(event.data.isLimited);
+            setResultLimit(event.data.resultLimit);
             setCurrentResultIndex(0);
             onHighlightRange(event.data.ranges[0] || null);
 
@@ -252,6 +264,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             setQueryRanges([]);
             setQueryValues([]);
             setTotalResults(0);
+            setIsResultLimited(false);
+            setResultLimit(0);
             setCurrentResultIndex(0);
             onHighlightRange(null);
         };
@@ -277,16 +291,18 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     // 导航到上一个结果
     const goToPrevious = () => {
-        if (totalResults === 0 || isQuerying) return;
-        const newIndex = currentResultIndex === 0 ? totalResults - 1 : currentResultIndex - 1;
+        const navigableResultCount = queryRanges.length;
+        if (navigableResultCount === 0 || isQuerying) return;
+        const newIndex = currentResultIndex === 0 ? navigableResultCount - 1 : currentResultIndex - 1;
         setCurrentResultIndex(newIndex);
         onHighlightRange(queryRanges[newIndex] || null);
     };
 
     // 导航到下一个结果
     const goToNext = () => {
-        if (totalResults === 0 || isQuerying) return;
-        const newIndex = currentResultIndex === totalResults - 1 ? 0 : currentResultIndex + 1;
+        const navigableResultCount = queryRanges.length;
+        if (navigableResultCount === 0 || isQuerying) return;
+        const newIndex = currentResultIndex === navigableResultCount - 1 ? 0 : currentResultIndex + 1;
         setCurrentResultIndex(newIndex);
         onHighlightRange(queryRanges[newIndex] || null);
     };
@@ -299,7 +315,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             if (e.shiftKey) {
                 e.preventDefault();
                 goToPrevious();
-            } else if (totalResults > 0) {
+            } else if (queryRanges.length > 0) {
                 e.preventDefault();
                 goToNext();
             } else {
@@ -322,6 +338,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         }));
     }, [queryValues]);
     const hiddenResultCount = Math.max(queryValues.length - queryResultPreviewItems.length, 0);
+    const copyButtonLabel = isResultLimited ? '复制已返回结果' : '复制全部结果';
 
     const toggleFavorite = () => {
         if (!normalizedQuery) return;
@@ -346,7 +363,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     };
 
     const focusQueryResult = (index: number) => {
-        if (isQuerying || totalResults === 0 || index < 0 || index >= totalResults) return;
+        if (isQuerying || queryRanges.length === 0 || index < 0 || index >= queryRanges.length) return;
 
         setCurrentResultIndex(index);
         onHighlightRange(queryRanges[index] || null);
@@ -480,21 +497,26 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 )}
 
                 {/* 结果计数器和导航控件 (VS Code 风格) */}
-                {totalResults > 0 && (
+                {totalResults > 0 && queryRanges.length > 0 && (
                     <div className="mb-1 p-1 bg-editor-sidebar border border-editor-border rounded flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-400">结果:</span>
                             <span className="text-sm font-mono text-emerald-400 font-semibold">
-                                {currentResultIndex + 1} / {totalResults}
+                                {currentResultIndex + 1} / {queryRanges.length}
                             </span>
+                            {isResultLimited && (
+                                <span className="text-[11px] text-amber-300">
+                                    共 {totalResults}，已返回前 {resultLimit}
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={copyQueryResults}
                                 disabled={isQuerying || queryValues.length === 0}
                                 className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="复制全部结果"
-                                aria-label="复制全部结果"
+                                title={copyButtonLabel}
+                                aria-label={copyButtonLabel}
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -547,7 +569,12 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         ))}
                         {hiddenResultCount > 0 && (
                             <div className="px-2 py-1 text-[11px] text-gray-500">
-                                仅显示前 {MAX_VISIBLE_QUERY_RESULTS} 项，复制按钮可导出全部 {totalResults} 项
+                                仅显示前 {MAX_VISIBLE_QUERY_RESULTS} 项，复制按钮可导出已返回的 {queryValues.length} 项
+                            </div>
+                        )}
+                        {isResultLimited && (
+                            <div className="px-2 py-1 text-[11px] text-amber-300">
+                                命中 {totalResults} 项，为保护性能仅返回前 {resultLimit} 项
                             </div>
                         )}
                     </div>
