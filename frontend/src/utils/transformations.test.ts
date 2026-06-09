@@ -35,6 +35,24 @@ describe('validateJson', () => {
     expect(validateJson('{"a":1}\n{"b":[2]}')).toEqual({ isValid: true });
   });
 
+  it('常见 JS 赋值包装中的 JSON 也视为有效', () => {
+    expect(validateJson('const response = {"code":0,"data":{"ok":true}};')).toEqual({ isValid: true });
+  });
+
+  it('JSONP 回调包装中的 JSON 也视为有效', () => {
+    expect(validateJson('callback({"code":0,"items":[1,2]});')).toEqual({ isValid: true });
+  });
+
+  it('Markdown JSON 代码块也视为有效', () => {
+    expect(validateJson('```json\n{"code":0}\n```')).toEqual({ isValid: true });
+  });
+
+  it('普通说明文字中夹带 JSON 片段不会被误判为有效', () => {
+    const result = validateJson('response 示例: {"code":0}');
+
+    expect(result.isValid).toBe(false);
+  });
+
   it('无效的 JSON 返回错误信息', () => {
     const result = validateJson('{invalid}');
     expect(result.isValid).toBe(false);
@@ -118,6 +136,36 @@ describe('performTransform', () => {
       expect(result).toBe(JSON.stringify({ name: 'test', value: 123 }, null, 2));
     });
 
+    it('格式化 JS 赋值包装中的 JSON', () => {
+      const input = 'const response = {"code":0,"data":{"ok":true}};';
+      const result = performTransform(input, TransformMode.FORMAT);
+
+      expect(result).toBe(JSON.stringify({
+        code: 0,
+        data: { ok: true },
+      }, null, 2));
+    });
+
+    it('格式化 JSONP 回调包装中的 JSON', () => {
+      const input = 'callback({"code":0,"items":[1,2]});';
+      const result = performTransform(input, TransformMode.FORMAT);
+
+      expect(result).toBe(JSON.stringify({
+        code: 0,
+        items: [1, 2],
+      }, null, 2));
+    });
+
+    it('格式化 Markdown JSON 代码块', () => {
+      const input = '```json\n{"code":0,"message":"ok"}\n```';
+      const result = performTransform(input, TransformMode.FORMAT);
+
+      expect(result).toBe(JSON.stringify({
+        code: 0,
+        message: 'ok',
+      }, null, 2));
+    });
+
     it('格式化 JSON Lines 为可读数组', () => {
       const input = '{"level":"info","id":1}\n{"level":"error","id":2}';
       const result = performTransform(input, TransformMode.FORMAT);
@@ -136,6 +184,11 @@ describe('performTransform', () => {
   describe('MINIFY 模式', () => {
     it('压缩格式化的 JSON', () => {
       const input = '{\n  "name": "test",\n  "value": 123\n}';
+      expect(performTransform(input, TransformMode.MINIFY)).toBe('{"name":"test","value":123}');
+    });
+
+    it('压缩 export default 包装中的 JSON', () => {
+      const input = 'export default {"name":"test","value":123};';
       expect(performTransform(input, TransformMode.MINIFY)).toBe('{"name":"test","value":123}');
     });
 
@@ -241,6 +294,13 @@ describe('performTransform', () => {
       expect(result.indexOf('"a"')).toBeLessThan(result.indexOf('"b"'));
     });
 
+    it('递归排序 var 赋值包装中的 JSON', () => {
+      const input = 'var payload = {"b":2,"a":1};';
+      const result = performTransform(input, TransformMode.SORT_KEYS);
+
+      expect(result).toBe(JSON.stringify({ a: 1, b: 2 }, null, 2));
+    });
+
     it('逐行排序 JSON Lines 对象键', () => {
       const input = '{"b":2,"a":1}\n{"d":4,"c":3}';
       expect(performTransform(input, TransformMode.SORT_KEYS)).toBe('{"a":1,"b":2}\n{"c":3,"d":4}');
@@ -343,6 +403,23 @@ describe('deepParseWithContext', () => {
       cmd: { nid: 123, title: '标题' },
       from: 'feed',
     });
+    expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
+  });
+
+  it('深度格式化可提取 JS 赋值包装并继续展开 CMD 参数', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const input = `const response = ${JSON.stringify({
+      action_cmd: `cmd=${payload}&from=feed`,
+    })};`;
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      from: 'feed',
+    });
+    expect(result.context.sourceFormat).toBe('json');
     expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
   });
 
