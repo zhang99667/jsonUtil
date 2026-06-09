@@ -118,6 +118,12 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expectPreviewText(page, '"nested": true');
   await expectPreviewText(page, '"nested": false');
   await expect(page.locator('[data-tour="preview-editor"]')).toContainText('深度解析: 展开 2 处');
+
+  await page.locator('[data-tour="transform-report-button"]').click();
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await expect(reportPanel).toContainText('深度解析报告');
+  await expect(reportPanel).toContainText('$[0].payload');
+  await expect(reportPanel).toContainText('嵌套 JSON');
 });
 
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {

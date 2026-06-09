@@ -67,6 +67,10 @@ const LazyAiRepairSummaryBanner = lazy(() => import('./components/AiRepairSummar
   default: module.AiRepairSummaryBanner,
 })));
 
+const LazyTransformReportPanel = lazy(() => import('./components/TransformReportPanel').then(module => ({
+  default: module.TransformReportPanel,
+})));
+
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
 
 interface AsyncTransformResult {
@@ -307,6 +311,9 @@ const App: React.FC = () => {
     if (mode !== TransformMode.DEEP_FORMAT || !activeDeepFormatResult) return undefined;
     return formatTransformContextSummary(activeDeepFormatResult.context);
   }, [activeDeepFormatResult, mode]);
+  const transformReportContext = mode === TransformMode.DEEP_FORMAT
+    ? activeDeepFormatResult?.context || null
+    : null;
 
   // 保存深度格式化上下文到文件（副作用独立处理）
   useEffect(() => {
@@ -378,6 +385,8 @@ const App: React.FC = () => {
   const [hasLoadedSchemePanel, setHasLoadedSchemePanel] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [hasLoadedTemplatePanel, setHasLoadedTemplatePanel] = useState(false);
+  const [isTransformReportOpen, setIsTransformReportOpen] = useState(false);
+  const [hasLoadedTransformReportPanel, setHasLoadedTransformReportPanel] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
 
   // 光标位置状态（用于状态栏显示）
@@ -412,6 +421,12 @@ const App: React.FC = () => {
       setHasLoadedSchemePanel(true);
     }
   }, [isSchemeDecodeOpen]);
+
+  useEffect(() => {
+    if (isTransformReportOpen) {
+      setHasLoadedTransformReportPanel(true);
+    }
+  }, [isTransformReportOpen]);
 
   useEffect(() => {
     safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
@@ -1053,25 +1068,41 @@ const App: React.FC = () => {
               highlightRange={highlightRange}
               onSchemeEdit={handleSchemeEdit}
               headerActions={
-                <button
-                  onClick={async () => {
-                    if (!output.trim() || isOutputTransforming) return;
-                    try {
-                      await copyText(output);
-                      showSuccess('已复制预览内容');
-                    } catch {
-                      showError('复制失败');
-                    }
-                  }}
-                  disabled={!output.trim() || isOutputTransforming}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={isOutputTransforming ? "预览仍在处理，请稍后复制" : "复制预览内容到剪贴板"}
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <span>复制</span>
-                </button>
+                <>
+                  {deepFormatInfo && (
+                    <button
+                      data-tour="transform-report-button"
+                      onClick={() => setIsTransformReportOpen(true)}
+                      disabled={!transformReportContext || isOutputTransforming}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={isOutputTransforming ? "预览仍在处理，请稍后查看报告" : "查看深度解析报告"}
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>报告</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={async () => {
+                      if (!output.trim() || isOutputTransforming) return;
+                      try {
+                        await copyText(output);
+                        showSuccess('已复制预览内容');
+                      } catch {
+                        showError('复制失败');
+                      }
+                    }}
+                    disabled={!output.trim() || isOutputTransforming}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isOutputTransforming ? "预览仍在处理，请稍后复制" : "复制预览内容到剪贴板"}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>复制</span>
+                  </button>
+                </>
               }
             />
           </div>
@@ -1090,6 +1121,17 @@ const App: React.FC = () => {
                 setHighlightRange(null); // 关闭时清除高亮
               }}
               onHighlightRange={handleJsonPathHighlight}
+            />
+          </Suspense>
+        )}
+
+        {/* 深度解析报告面板 */}
+        {hasLoadedTransformReportPanel && (
+          <Suspense fallback={null}>
+            <LazyTransformReportPanel
+              isOpen={isTransformReportOpen}
+              onClose={() => setIsTransformReportOpen(false)}
+              context={transformReportContext}
             />
           </Suspense>
         )}

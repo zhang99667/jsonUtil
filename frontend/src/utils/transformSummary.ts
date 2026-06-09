@@ -1,4 +1,4 @@
-import type { TransformContext, TransformStepType } from '../types';
+import type { TransformContext, TransformStep, TransformStepType } from '../types';
 
 export interface TransformContextSummary {
   recordCount: number;
@@ -12,11 +12,65 @@ export interface TransformContextSummary {
   warningCount: number;
 }
 
+export interface TransformReportRecord {
+  path: string;
+  labels: string[];
+  originalPreview: string;
+  stepCount: number;
+  hasNonReversibleScheme: boolean;
+}
+
+export interface TransformReportWarning {
+  path: string;
+  message: string;
+  length: number;
+  limit: number;
+}
+
+export interface TransformContextReport {
+  summary: TransformContextSummary;
+  summaryText?: string;
+  records: TransformReportRecord[];
+  warnings: TransformReportWarning[];
+}
+
+const STEP_LABELS: Record<TransformStepType, string> = {
+  json_parse: '嵌套 JSON',
+  json_stringify: 'JSON 字符串化',
+  scheme_decode: 'Scheme',
+  unicode_decode: 'Unicode 解码',
+  unicode_encode: 'Unicode 编码',
+  url_decode: 'URL 解码',
+  url_encode: 'URL 编码',
+  base64_decode: 'Base64 解码',
+  base64_encode: 'Base64 编码',
+  unescape: '反转义',
+  escape: '转义',
+};
+
 const incrementCount = <T extends string>(
   counts: Partial<Record<T, number>>,
   key: T
 ) => {
   counts[key] = (counts[key] || 0) + 1;
+};
+
+const formatOriginalPreview = (value: string, maxLength = 96): string => (
+  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
+);
+
+const getSchemeTypeLabel = (step: TransformStep): string => {
+  if (step.originalSchemeType === 'query-string') return 'CMD 参数';
+  if (step.originalSchemeType === 'url') return 'URL Scheme';
+  if (step.originalSchemeType === 'base64') return 'Base64';
+  return 'Scheme';
+};
+
+const getStepLabel = (step: TransformStep): string => {
+  if (step.type !== 'scheme_decode') return STEP_LABELS[step.type];
+
+  const reversibleLabel = step.originalSchemeReversible === false ? '不可逆' : '可回写';
+  return `${getSchemeTypeLabel(step)} · ${reversibleLabel}`;
 };
 
 export const summarizeTransformContext = (
@@ -84,4 +138,58 @@ export const formatTransformContextSummary = (
   if (summary.warningCount > 0) parts.push(`跳过 ${summary.warningCount}`);
 
   return `深度解析: ${parts.join('，')}`;
+};
+
+export const buildTransformContextReport = (
+  context: TransformContext
+): TransformContextReport => {
+  const records: TransformReportRecord[] = Array.from(context.records.values()).map(record => ({
+    path: record.path,
+    labels: record.steps.map(getStepLabel),
+    originalPreview: formatOriginalPreview(record.originalValue),
+    stepCount: record.steps.length,
+    hasNonReversibleScheme: record.steps.some(
+      step => step.type === 'scheme_decode' && step.originalSchemeReversible === false
+    ),
+  }));
+
+  return {
+    summary: summarizeTransformContext(context),
+    summaryText: formatTransformContextSummary(context),
+    records,
+    warnings: (context.warnings || []).map(warning => ({
+      path: warning.path,
+      message: warning.message,
+      length: warning.length,
+      limit: warning.limit,
+    })),
+  };
+};
+
+export const formatTransformContextReportText = (
+  context: TransformContext
+): string => {
+  const report = buildTransformContextReport(context);
+  const lines = [
+    report.summaryText || '深度解析: 无展开记录',
+    '',
+    '展开记录:',
+  ];
+
+  if (report.records.length === 0) {
+    lines.push('- 无');
+  } else {
+    report.records.forEach(record => {
+      lines.push(`- ${record.path}: ${record.labels.join(' -> ')}`);
+    });
+  }
+
+  if (report.warnings.length > 0) {
+    lines.push('', '跳过记录:');
+    report.warnings.forEach(warning => {
+      lines.push(`- ${warning.path}: ${warning.message} (${warning.length}/${warning.limit})`);
+    });
+  }
+
+  return lines.join('\n');
 };
