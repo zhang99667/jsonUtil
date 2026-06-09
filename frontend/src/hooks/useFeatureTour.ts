@@ -285,13 +285,10 @@ export const useFeatureTour = () => {
     const refreshTour = useCallback(() => {
         if (driverInstance) {
             // driver.js v1 使用 refresh() 重新计算位置
-            // @ts-ignore - 避免类型定义可能缺失的问题
             if (typeof driverInstance.refresh === 'function') {
-                // @ts-ignore
                 driverInstance.refresh();
             } else {
                 // 尝试重新驱动当前步骤
-                // @ts-ignore
                 driverInstance.drive();
             }
         }

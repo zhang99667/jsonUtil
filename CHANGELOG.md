@@ -110,6 +110,7 @@
 - **深度解析报告筛选**: 解析报告支持按路径、类型和原始值筛选，并限制首屏渲染条数，避免真实大 response 的海量展开记录拖慢面板
 
 ### 🏗️ 工程化
+- **功能引导类型收口**: 移除 `useFeatureTour` 中对 driver.js 的 `@ts-ignore`，改为直接复用当前依赖提供的 `Driver` 类型，降低后续升级时的类型盲区
 - **CMD/Scheme 样本回归覆盖**: 新增真实 CMD/Scheme 粘贴样本测试集，覆盖编码 URL、未编码 URL、裸域名 URL、JSON-like 参数、hash route、HTML 分隔符和短 Base64 参数，降低后续解析优化回归风险
 - **真实 Response 脱敏回归**: 新增脱敏广告 response 结构样本，覆盖多层跳转链路、extraParam 内部 Base64 JSON、后缀 query 解析和未编辑精确回写，降低真实粘贴场景回归风险
 - **本地配置容错**: 启动时安全读取设置、AI 配置、快捷键、模板和面板布局缓存，避免 localStorage 损坏导致页面崩溃
