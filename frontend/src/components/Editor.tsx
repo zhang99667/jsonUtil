@@ -180,10 +180,12 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
 
     const decorations = schemeLocations.map(loc => ({
-      range: new monaco.Range(loc.line, 1, loc.line, 1),
+      range: new monaco.Range(loc.line, loc.column, loc.endLine, loc.endColumn),
       options: {
         glyphMarginClassName: 'scheme-glyph-icon',
         glyphMarginHoverMessage: { value: `🔗 点击解析 Scheme (${loc.schemeType})` },
+        inlineClassName: 'scheme-inline-highlight',
+        hoverMessage: { value: `点击解析 Scheme (${loc.schemeType})` },
       }
     }));
 
@@ -193,18 +195,23 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     schemeDecorationsRef.current = editorRef.current.createDecorationsCollection(decorations);
   }, [schemeLocations, monaco]);
 
-  // 处理 scheme 图标点击
-  const handleSchemeClick = useCallback((lineNumber: number) => {
-    const location = schemeLocations.find(loc => loc.line === lineNumber);
-    if (location) {
-      setSchemeModal({
-        isOpen: true,
-        path: location.path,
-        pointer: location.pointer,
-        value: location.value,
-      });
-    }
-  }, [schemeLocations]);
+  const openSchemeLocation = useCallback((location: SchemeLocation) => {
+    setSchemeModal({
+      isOpen: true,
+      path: location.path,
+      pointer: location.pointer,
+      value: location.value,
+    });
+  }, []);
+
+  const findSchemeLocationAtPosition = useCallback((lineNumber: number, column: number) => (
+    schemeLocationsRef.current.find(loc => {
+      if (lineNumber < loc.line || lineNumber > loc.endLine) return false;
+      if (lineNumber === loc.line && column < loc.column) return false;
+      if (lineNumber === loc.endLine && column > loc.endColumn) return false;
+      return true;
+    })
+  ), []);
 
   // 处理 scheme 编辑应用
   const handleSchemeApply = useCallback((newValue: string) => {
@@ -519,19 +526,23 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             // 监听 glyph margin 点击事件（scheme 图标）
             // 使用 ref 访问最新的 schemeLocations，避免闭包捕获旧值
             editor.onMouseDown((e) => {
+              const position = e.target.position;
+              if (position) {
+                const location = findSchemeLocationAtPosition(position.lineNumber, position.column);
+                if (location) {
+                  openSchemeLocation(location);
+                  return;
+                }
+              }
+
               // MouseTargetType.GUTTER_GLYPH_MARGIN = 2
               if (e.target.type === 2) {
-                const lineNumber = e.target.position?.lineNumber;
+                const lineNumber = position?.lineNumber;
                 if (lineNumber) {
                   // 直接使用 ref 获取最新的 locations
                   const location = schemeLocationsRef.current.find(loc => loc.line === lineNumber);
                   if (location) {
-                    setSchemeModal({
-                      isOpen: true,
-                      path: location.path,
-                      pointer: location.pointer,
-                      value: location.value,
-                    });
+                    openSchemeLocation(location);
                   }
                 }
               }

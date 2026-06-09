@@ -1023,4 +1023,17 @@ describe('scanSchemesInJson', () => {
     expect(result.isLimited).toBe(false);
     expect(result.limit).toBe(2);
   });
+
+  it('单行 JSON 中多个 Scheme 返回可区分的列范围', () => {
+    const json = '{"first":"https://example.com/first","second":"https://example.com/second"}';
+
+    const result = scanSchemesInJson(json);
+
+    expect(result.locations).toHaveLength(2);
+    expect(result.locations[0].line).toBe(1);
+    expect(result.locations[1].line).toBe(1);
+    expect(result.locations[0].column).toBeLessThan(result.locations[1].column);
+    expect(result.locations[0].endColumn).toBeGreaterThan(result.locations[0].column);
+    expect(result.locations[1].endColumn).toBeGreaterThan(result.locations[1].column);
+  });
 });
