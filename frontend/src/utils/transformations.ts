@@ -327,19 +327,24 @@ export function deepParseWithContext(
             }
           }
 
-          // 当 autoExpandScheme 启用时，优先展开独立 CMD 参数串或 URL Scheme
+          // 当 autoExpandScheme 启用时，优先展开独立 CMD、URL Scheme 或 Base64 JSON 片段
           const schemeType = detectSchemeType(current);
-          if (options?.autoExpandScheme && (schemeType === 'query-string' || schemeType === 'url')) {
+          if (
+            options?.autoExpandScheme &&
+            (schemeType === 'query-string' || schemeType === 'url' || schemeType === 'base64')
+          ) {
             const decodedScheme = deepDecodeScheme(current, maxDepth - depth);
             if (decodedScheme.isJson) {
               try {
                 const schemeParsed = JSON.parse(decodedScheme.decoded) as JsonValue;
                 if (typeof schemeParsed === 'object' && schemeParsed !== null) {
                   const processedSchemeValue = processParsedValue(schemeParsed);
+                  const isSchemeReversible = decodedScheme.layers.every(layer => layer.reversible !== false);
                   steps.push({
                     type: 'scheme_decode',
                     originalScheme: current,
                     originalSchemeType: schemeType,
+                    originalSchemeReversible: isSchemeReversible,
                     decodedSchemeValue: processedSchemeValue,
                   });
 
@@ -571,6 +576,10 @@ function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
       }
       if (step.originalSchemeType === 'url') {
         return stringifyQueryParamValue(value);
+      }
+      if (step.originalSchemeType === 'base64') {
+        if (step.originalSchemeReversible === false) return value;
+        return base64Encode(stringifyQueryParamValue(value));
       }
       return value;
     case 'unicode_decode':
