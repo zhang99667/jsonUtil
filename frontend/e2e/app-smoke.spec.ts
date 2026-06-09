@@ -164,6 +164,8 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect(unresolvedSection).toContainText('$.tracking');
   await expect(unresolvedSection).toContainText('url-encoded');
   await expect(unresolvedSection).toContainText('URL 编码内容已解码，但未展开为结构化对象');
+  await unresolvedSection.getByRole('button', { name: '复制路径' }).click();
+  await expect(page.getByText('已复制路径')).toBeVisible();
 });
 
 test('深度解析报告展示运行时占位符', async ({ page }) => {
@@ -184,6 +186,8 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await expect(placeholderSection).toContainText('$.action_cmd.cmd.button_cmd');
   await expect(placeholderSection).toContainText('__CONVERT_CMD__');
   await expect(placeholderSection).toContainText('运行时转换 CMD 占位符');
+  await placeholderSection.getByRole('button', { name: '复制路径' }).click();
+  await expect(page.getByText('已复制路径')).toBeVisible();
 });
 
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
