@@ -118,6 +118,13 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('landingUrl=m.baidu.com/s?word=json')).toBe(true);
   });
 
+  it('检测常见 App 与下载单参数 URL 字段', () => {
+    expect(isDecodableQueryString('openAppUrl=https%3A%2F%2Fm.baidu.com%2Fapp%3Ffrom%3Dfeed')).toBe(true);
+    expect(isDecodableQueryString('downloadUrl=https%3A%2F%2Fexample.com%2Fapk%3Fpkg%3Ddemo')).toBe(true);
+    expect(isDecodableQueryString('apkUrl=//example.com/app.apk?pkg=demo')).toBe(true);
+    expect(isDecodableQueryString('downloadUrl=123')).toBe(false);
+  });
+
   it('检测常见跳转兜底单参数字段', () => {
     expect(isDecodableQueryString('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
     expect(isDecodableQueryString('fallbackUrl=//m.baidu.com/s?word=json')).toBe(true);
@@ -741,6 +748,23 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       redirectUrl: {
         word: 'json schema',
+      },
+    });
+  });
+
+  it('常见 App 与下载 URL 字段可作为单参数解析', () => {
+    const result = deepDecodeScheme('openAppUrl=https%3A%2F%2Fm.baidu.com%2Fapp%3Ffrom%3Dfeed');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      openAppUrl: {
+        from: 'feed',
+      },
+    });
+
+    const downloadResult = deepDecodeScheme('downloadUrl=https%3A%2F%2Fexample.com%2Fapk%3Fpkg%3Ddemo');
+    expect(JSON.parse(downloadResult.decoded)).toEqual({
+      downloadUrl: {
+        pkg: 'demo',
       },
     });
   });
