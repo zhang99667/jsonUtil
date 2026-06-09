@@ -7,6 +7,7 @@ import {
   PathTransformRecord,
   TransformContext,
   TransformResult,
+  JsonInputWrapper,
   JsonValue,
   JsonObject
 } from '../types.ts';
@@ -24,12 +25,8 @@ export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 
 interface ParsedJsonInput {
   value: JsonValue;
+  source: string;
   wrapper?: JsonInputWrapper;
-}
-
-interface JsonInputWrapper {
-  prefix: string;
-  suffix: string;
 }
 
 interface WrappedJsonCandidate {
@@ -39,7 +36,7 @@ interface WrappedJsonCandidate {
 
 const parseJsonCandidate = (candidate: string): ParsedJsonInput | null => {
   try {
-    return { value: JSON.parse(candidate) as JsonValue };
+    return { value: JSON.parse(candidate) as JsonValue, source: candidate };
   } catch {
     return null;
   }
@@ -367,7 +364,9 @@ export function deepParseWithContext(
     if (!parsedInput) throw new Error('未找到可深度格式化的 JSON 内容');
 
     parsed = parsedInput.value;
+    context.originalIndentation = detectIndentation(parsedInput.source);
     context.sourceFormat = 'json';
+    context.sourceWrapper = parsedInput.wrapper;
   } catch {
     const jsonLines = parseJsonLines(input);
     if (!jsonLines) {
@@ -649,10 +648,13 @@ export function inverseWithContext(
 
     // 使用原始缩进格式
     const indentation = context.originalIndentation;
-    if (indentation === 0) {
-      return JSON.stringify(result);
-    }
-    return JSON.stringify(result, null, indentation);
+    const restoredJson = indentation === 0
+      ? JSON.stringify(result)
+      : JSON.stringify(result, null, indentation);
+
+    return context.sourceWrapper
+      ? wrapJsonContent(restoredJson, context.sourceWrapper)
+      : restoredJson;
   } catch (e) {
     // 还原失败，返回原始编辑内容
     return editedOutput;
