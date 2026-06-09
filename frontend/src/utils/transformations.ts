@@ -24,6 +24,17 @@ export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 
 interface ParsedJsonInput {
   value: JsonValue;
+  wrapper?: JsonInputWrapper;
+}
+
+interface JsonInputWrapper {
+  prefix: string;
+  suffix: string;
+}
+
+interface WrappedJsonCandidate {
+  payload: string;
+  wrapper: JsonInputWrapper;
 }
 
 const parseJsonCandidate = (candidate: string): ParsedJsonInput | null => {
@@ -34,37 +45,57 @@ const parseJsonCandidate = (candidate: string): ParsedJsonInput | null => {
   }
 };
 
-const extractMarkdownJsonFence = (input: string): string | null => {
-  const match = input.trim().match(/^```(?:json|jsonc)?[^\n]*\n?([\s\S]*?)```$/i);
-  return match ? match[1].trim() : null;
+const extractMarkdownJsonFenceCandidate = (input: string): WrappedJsonCandidate | null => {
+  const match = input.trim().match(/^(```(?:json|jsonc)?[^\n]*\n?)([\s\S]*?)(\n?```)$/i);
+  return match
+    ? {
+        payload: match[2].trim(),
+        wrapper: { prefix: match[1], suffix: match[3] },
+      }
+    : null;
 };
 
-const extractAssignmentJsonPayload = (input: string): string | null => {
+const extractAssignmentJsonCandidate = (input: string): WrappedJsonCandidate | null => {
   const trimmed = input.trim();
-  const exportDefaultMatch = trimmed.match(/^export\s+default\s+([\s\S]*?);?\s*$/);
-  if (exportDefaultMatch) return exportDefaultMatch[1].trim();
+  const exportDefaultMatch = trimmed.match(/^(export\s+default\s+)([\s\S]*?)(;?)$/);
+  if (exportDefaultMatch) {
+    return {
+      payload: exportDefaultMatch[2].trim(),
+      wrapper: { prefix: exportDefaultMatch[1], suffix: exportDefaultMatch[3] },
+    };
+  }
 
-  const assignmentMatch = trimmed.match(/^(?:(?:const|let|var)\s+[A-Za-z_$][\w$]*(?:\s*:\s*[^=]+)?|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*=\s*([\s\S]*?);?\s*$/);
-  return assignmentMatch ? assignmentMatch[1].trim() : null;
+  const assignmentMatch = trimmed.match(/^((?:(?:const|let|var)\s+[A-Za-z_$][\w$]*(?:\s*:\s*[^=]+)?|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*=\s*)([\s\S]*?)(;?)$/);
+  return assignmentMatch
+    ? {
+        payload: assignmentMatch[2].trim(),
+        wrapper: { prefix: assignmentMatch[1], suffix: assignmentMatch[3] },
+      }
+    : null;
 };
 
-const extractJsonpPayload = (input: string): string | null => {
-  const match = input.trim().match(/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\(\s*([\s\S]*?)\s*\);?\s*$/);
-  return match ? match[1].trim() : null;
+const extractJsonpCandidate = (input: string): WrappedJsonCandidate | null => {
+  const match = input.trim().match(/^([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\(\s*)([\s\S]*?)(\s*\);?)$/);
+  return match
+    ? {
+        payload: match[2].trim(),
+        wrapper: { prefix: match[1], suffix: match[3] },
+      }
+    : null;
 };
 
 // 只接受明确的复制外壳，避免把普通说明文字里的 JSON 片段误判为完整输入。
 const parseWrappedJsonInput = (input: string): ParsedJsonInput | null => {
   const candidates = [
-    extractMarkdownJsonFence(input),
-    extractAssignmentJsonPayload(input),
-    extractJsonpPayload(input),
+    extractMarkdownJsonFenceCandidate(input),
+    extractAssignmentJsonCandidate(input),
+    extractJsonpCandidate(input),
   ];
 
   for (const candidate of candidates) {
     if (!candidate) continue;
-    const parsed = parseJsonCandidate(candidate);
-    if (parsed) return parsed;
+    const parsed = parseJsonCandidate(candidate.payload);
+    if (parsed) return { ...parsed, wrapper: candidate.wrapper };
   }
 
   return null;
@@ -72,6 +103,10 @@ const parseWrappedJsonInput = (input: string): ParsedJsonInput | null => {
 
 const parseJsonInput = (input: string): ParsedJsonInput | null => (
   parseJsonCandidate(input) || parseWrappedJsonInput(input)
+);
+
+const wrapJsonContent = (content: string, wrapper: JsonInputWrapper): string => (
+  `${wrapper.prefix}${content}${wrapper.suffix}`
 );
 
 export const validateJson = (input: string): ValidationResult => {
@@ -149,6 +184,14 @@ const formatJson = (input: string): string => {
 };
 
 const inverseFormattedJson = (output: string, originalInput?: string): string => {
+  const originalWrappedJson = originalInput ? parseWrappedJsonInput(originalInput) : null;
+  if (originalWrappedJson?.wrapper) {
+    const parsedOutput = parseJsonCandidate(output);
+    return parsedOutput
+      ? wrapJsonContent(JSON.stringify(parsedOutput.value), originalWrappedJson.wrapper)
+      : output;
+  }
+
   const originalJsonLines = originalInput ? parseJsonLines(originalInput) : null;
   if (originalJsonLines) {
     try {
