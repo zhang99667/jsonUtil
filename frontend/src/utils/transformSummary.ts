@@ -19,6 +19,7 @@ export interface TransformReportRecord {
   labels: string[];
   originalPreview: string;
   decodedPreview?: string;
+  decodedSearchText?: string;
   decodedPaths: TransformReportDecodedPath[];
   hasMoreDecodedPaths: boolean;
   stepCount: number;
@@ -92,6 +93,7 @@ export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT = 100;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
+const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 
 const STEP_LABELS: Record<TransformStepType, string> = {
   json_parse: '嵌套 JSON',
@@ -201,6 +203,11 @@ interface DecodedPathCollectState {
   hasMore: boolean;
 }
 
+interface DecodedSearchTextCollectState {
+  parts: string[];
+  remainingLength: number;
+}
+
 const pushDecodedPath = (
   state: DecodedPathCollectState,
   row: TransformReportDecodedPath
@@ -278,6 +285,76 @@ const buildDecodedPaths = (
   };
 };
 
+const pushDecodedSearchText = (
+  state: DecodedSearchTextCollectState,
+  path: string,
+  preview: string
+) => {
+  if (state.remainingLength <= 0) return;
+
+  const part = `${path} ${preview}`;
+  const nextPart = part.length > state.remainingLength
+    ? part.slice(0, state.remainingLength)
+    : part;
+  state.parts.push(nextPart);
+  state.remainingLength -= nextPart.length + 1;
+};
+
+const collectDecodedSearchText = (
+  value: JsonValue,
+  currentPath: string,
+  state: DecodedSearchTextCollectState
+) => {
+  if (state.remainingLength <= 0) return;
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      pushDecodedSearchText(state, currentPath, '数组 0 项');
+      return;
+    }
+
+    for (let index = 0; index < value.length; index++) {
+      collectDecodedSearchText(value[index], appendJsonPathIndex(currentPath, index), state);
+      if (state.remainingLength <= 0) return;
+    }
+    return;
+  }
+
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+      pushDecodedSearchText(state, currentPath, '对象: 空');
+      return;
+    }
+
+    for (const [key, item] of entries) {
+      collectDecodedSearchText(item, appendJsonPathKey(currentPath, key), state);
+      if (state.remainingLength <= 0) return;
+    }
+    return;
+  }
+
+  pushDecodedSearchText(state, currentPath, formatJsonValuePreview(value, 80));
+};
+
+const buildDecodedSearchText = (
+  record: PathTransformRecord,
+  limit = DEFAULT_DECODED_SEARCH_TEXT_LIMIT
+): string | undefined => {
+  const decodedValue = getDecodedValue(record);
+  if (decodedValue === undefined || decodedValue === null || typeof decodedValue !== 'object') {
+    return undefined;
+  }
+
+  const state: DecodedSearchTextCollectState = {
+    parts: [],
+    remainingLength: limit,
+  };
+  collectDecodedSearchText(decodedValue, record.path, state);
+
+  return state.parts.length > 0 ? state.parts.join('\n') : undefined;
+};
+
 const getSchemeTypeLabel = (step: TransformStep): string => {
   if (step.originalSchemeType === 'query-string') return 'CMD 参数';
   if (step.originalSchemeType === 'url') return 'URL Scheme';
@@ -305,6 +382,7 @@ const matchesReportRecord = (
   includesQuery(record.labels.join(' '), normalizedQuery) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
+  (record.decodedSearchText ? includesQuery(record.decodedSearchText, normalizedQuery) : false) ||
   record.decodedPaths.some(row => (
     includesQuery(row.path, normalizedQuery) ||
     includesQuery(row.preview, normalizedQuery)
@@ -431,6 +509,7 @@ export const buildTransformContextReport = (
       labels: record.steps.map(getStepLabel),
       originalPreview: formatOriginalPreview(record.originalValue),
       decodedPreview: getDecodedPreview(record),
+      decodedSearchText: buildDecodedSearchText(record),
       decodedPaths,
       hasMoreDecodedPaths,
       stepCount: record.steps.length,
