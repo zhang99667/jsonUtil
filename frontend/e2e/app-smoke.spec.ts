@@ -124,6 +124,10 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expect(reportPanel).toContainText('深度解析报告');
   await expect(reportPanel).toContainText('$[0].payload');
   await expect(reportPanel).toContainText('嵌套 JSON');
+
+  await page.locator('[data-tour="transform-report-filter"]').fill('$[1]');
+  await expect(reportPanel).toContainText('$[1].payload');
+  await expect(reportPanel).not.toContainText('$[0].payload');
 });
 
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
