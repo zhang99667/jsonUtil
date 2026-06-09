@@ -71,6 +71,7 @@
 - **大文件校验 Worker 化**: Source 与 PREVIEW 大 JSON 校验改为防抖后异步执行，减少 `JSON.parse` 校验造成的主线程阻塞
 - **JSON 校验链路收敛**: Source、PREVIEW 与预览回写前校验统一复用同一套清理和异步校验逻辑，降低大 JSON 编辑时的重复 Worker 管理和竞态风险
 - **大文件 Scheme 扫描 Worker 化**: PREVIEW 区大 JSON 的 Scheme 图标检测迁移到 Worker，避免旁路扫描抢占主线程
+- **Scheme 图标扫描保护**: PREVIEW 中 Scheme 图标默认最多标出前 1000 个，超过上限时提示已跳过后续结果，避免海量 URL/CMD 装饰拖慢编辑器
 - **Scheme 图标定位准确性**: JSON 内 Scheme 扫描改用 source map 定位，修复数组项或特殊 key 下解析图标可能落到错误行的问题
 - **Scheme 扫描依赖瘦身**: 将 JSON source map 定位逻辑从通用 Scheme 编解码工具拆出，避免格式化和校验 Worker 被动打包扫描依赖
 - **大文件脏 Diff 防护**: 超大文件编辑时跳过行级脏 Diff 装饰计算，避免辅助视觉效果长时间占用主线程

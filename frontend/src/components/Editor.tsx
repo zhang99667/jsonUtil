@@ -7,7 +7,7 @@ import { EditorProps, HighlightRange } from '../types';
 import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { computeLineDiff, shouldSkipLineDiff } from '../utils/diffUtils';
-import { findSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
+import { scanSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
 import { TabBar } from './TabBar';
 
 const ASYNC_SCHEME_SCAN_THRESHOLD = 200_000;
@@ -35,6 +35,8 @@ interface ExtendedEditorProps extends EditorProps {
 interface SchemeScanWorkerResponse {
   id: number;
   locations: SchemeLocation[];
+  isLimited: boolean;
+  limit: number;
   error?: string;
 }
 
@@ -70,6 +72,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
   // Scheme 检测状态
   const [schemeLocations, setSchemeLocations] = useState<SchemeLocation[]>([]);
+  const [schemeScanWarning, setSchemeScanWarning] = useState<string>('');
   const schemeLocationsRef = useRef<SchemeLocation[]>([]); // 用于 onMount 闭包访问最新值
   const schemeDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const [schemeModal, setSchemeModal] = useState<{
@@ -114,7 +117,19 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       const applyLocations = (locations: SchemeLocation[]) => {
         if (isCancelled) return;
         setSchemeLocations(locations);
+        setSchemeScanWarning('');
         schemeLocationsRef.current = locations; // 同步到 ref
+      };
+
+      const applyScanResult = (
+        locations: SchemeLocation[],
+        isLimited: boolean,
+        limit: number
+      ) => {
+        if (isCancelled) return;
+        setSchemeLocations(locations);
+        setSchemeScanWarning(isLimited ? `Scheme 图标已显示前 ${limit} 个，后续结果已跳过` : '');
+        schemeLocationsRef.current = locations;
       };
 
       // 防抖检测 - 增加延迟避免频繁计算
@@ -127,7 +142,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             if (event.data.error) {
               console.warn('大文件 Scheme 扫描 Worker 处理失败:', event.data.error);
             }
-            applyLocations(event.data.locations);
+            applyScanResult(event.data.locations, event.data.isLimited, event.data.limit);
           };
           worker.onerror = (event) => {
             worker?.terminate();
@@ -139,7 +154,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           return;
         }
 
-        applyLocations(findSchemesInJson(value));
+        const result = scanSchemesInJson(value);
+        applyScanResult(result.locations, result.isLimited, result.limit);
       }, 500); // 从 300ms 增加到 500ms
       return () => {
         isCancelled = true;
@@ -148,6 +164,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       };
     } else {
       setSchemeLocations([]);
+      setSchemeScanWarning('');
       schemeLocationsRef.current = [];
     }
   }, [value, language, onSchemeEdit]);
@@ -196,6 +213,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
     setSchemeModal({ isOpen: false, path: '', pointer: '', value: '' });
   }, [onSchemeEdit, schemeModal.path, schemeModal.pointer]);
+
+  const editorWarning = [warning, schemeScanWarning].filter(Boolean).join('；');
 
   // 只读属性变更时重置锁定状态
   useEffect(() => {
@@ -462,10 +481,10 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
               <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5 animate-pulse"></span>
               {error}
             </div>
-          ) : warning ? (
+          ) : editorWarning ? (
             <div className="flex items-center text-[10px] text-amber-200 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-700/50 shadow-sm">
               <span className="w-1.5 h-1.5 bg-amber-400 rounded-full mr-1.5"></span>
-              {warning}
+              {editorWarning}
             </div>
           ) : value && language === 'json' ? (
             <div className="flex items-center text-[10px] text-status-success-text bg-status-success-bg px-2 py-0.5 rounded border border-status-success-border">
