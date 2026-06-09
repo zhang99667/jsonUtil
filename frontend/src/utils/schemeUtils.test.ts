@@ -228,6 +228,10 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType('https://example.com')).toBe('url');
   });
 
+  it('检测日志中 JSON 斜杠转义的 URL', () => {
+    expect(detectSchemeType('baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22a%22%3A1%7D')).toBe('url');
+  });
+
   it('检测协议相对 URL', () => {
     expect(detectSchemeType('//m.baidu.com/s?word=json')).toBe('url');
   });
@@ -479,6 +483,30 @@ describe('deepDecodeScheme', () => {
     const result = deepDecodeScheme('https://example.com/path?key=value');
     expect(result.schemeInfo).toBeDefined();
     expect(result.schemeInfo!.protocol).toBe('https:');
+  });
+
+  it('JSON 斜杠转义的 URL 被还原后继续解析参数', () => {
+    const params = encodeURIComponent(JSON.stringify({
+      url: 'https://m.baidu.com/s?word=json',
+      ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+    }));
+    const result = deepDecodeScheme(`baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      params: {
+        url: { word: 'json' },
+        ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+      },
+    });
+    expect(result.layers.map(layer => layer.type)).toEqual(['json-escaped-slash', 'url']);
+    expect(result.placeholders).toEqual([
+      {
+        path: '$.params.ext',
+        value: '__AD_EXTRA_PARAM_ENCODE_1__',
+        description: '运行时占位符，当前文本未包含可继续展开的实际内容',
+      },
+    ]);
   });
 
   it('URL 参数中的 JSON 被递归解析为对象', () => {
@@ -1029,6 +1057,19 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe(JSON.stringify('https://example.com/path?from=edited'));
+  });
+
+  it('JSON 斜杠转义的 URL 编辑后保留斜杠转义形态', () => {
+    const original = 'baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22url%22%3A%22https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson%22%7D';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      params: {
+        url: { word: 'schema' },
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22url%22%3A%7B%22word%22%3A%22schema%22%7D%7D');
   });
 
   it('不可逆编码层编辑时保留原始值', () => {

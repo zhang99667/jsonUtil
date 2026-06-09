@@ -132,6 +132,7 @@ export interface TransformStep {
   originalSchemeType?: 'query-string' | 'url' | 'base64'; // 当前支持独立 CMD、URL Scheme 和 Base64 JSON 展开
   originalSchemeReversible?: boolean; // 当前编码层是否支持安全反向还原
   originalSchemeStringLiteral?: boolean; // 原始 Scheme 外层是否为 JSON 字符串字面量
+  originalSchemeEscapedSlash?: boolean; // 原始 Scheme 是否包含 JSON 风格的斜杠转义
   decodedSchemeValue?: JsonValue; // 原始串对应的展开结果，用于无编辑时精确还原
 }
 

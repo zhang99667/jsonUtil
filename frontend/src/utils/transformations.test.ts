@@ -514,6 +514,40 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.schema')?.steps[0].originalSchemeType).toBe('url');
   });
 
+  it('自动展开 JSON 斜杠转义的 URL Scheme 参数', () => {
+    const params = encodeURIComponent(JSON.stringify({
+      url: 'https://m.baidu.com/s?word=json',
+      ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+    }));
+    const input = JSON.stringify({
+      schema: `baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+    const step = result.context.records.get('$.schema')?.steps[0];
+
+    expect(parsed.schema).toEqual({
+      params: {
+        url: { word: 'json' },
+        ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+      },
+    });
+    expect(step).toMatchObject({
+      type: 'scheme_decode',
+      originalSchemeType: 'url',
+      originalSchemeEscapedSlash: true,
+    });
+    expect(result.context.runtimePlaceholders).toEqual([
+      {
+        path: '$.schema.params.ext',
+        sourcePath: '$.schema',
+        value: '__AD_EXTRA_PARAM_ENCODE_1__',
+        description: '运行时占位符，当前文本未包含可继续展开的实际内容',
+      },
+    ]);
+  });
+
   it('自动展开 Base64 JSON 参数', () => {
     const input = JSON.stringify({
       extra: base64Encode('{"feature":"reward","enabled":true}'),
@@ -876,6 +910,39 @@ describe('inverseWithContext 精确还原', () => {
 
     const restored = inverseWithContext(output, context);
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('未编辑的 JSON 斜杠转义 URL Scheme 自动展开后可精确还原', () => {
+    const params = encodeURIComponent(JSON.stringify({
+      url: 'https://m.baidu.com/s?word=json',
+      ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+    }));
+    const input = JSON.stringify({
+      schema: `baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+
+    const restored = inverseWithContext(output, context);
+    expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('已编辑的 JSON 斜杠转义 URL Scheme 保留斜杠转义形态', () => {
+    const params = encodeURIComponent(JSON.stringify({
+      url: 'https://m.baidu.com/s?word=json',
+      ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+    }));
+    const input = JSON.stringify({
+      schema: `baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    parsed.schema.params.url.word = 'schema';
+
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), context);
+    const restoredSchema = JSON.parse(restored).schema;
+
+    expect(restoredSchema).toMatch(/^baiduboxapp:\\\/\\\/v7\\\/vendor\\\/ad\\\/webPanel\?/);
+    expect(restoredSchema).toContain('%22word%22%3A%22schema%22');
   });
 
   it('未编辑的内部 Base64 JSON 片段自动展开后可精确还原', () => {
