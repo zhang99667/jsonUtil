@@ -162,11 +162,19 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       return `JSON 内容格式有误: ${message}`;
     }
   }, [decodeResult.isJson, editedContent]);
-  const canApplyEdit = Boolean(onApply && isEditing && !editedJsonError);
+  const hasNonReversibleLayer = useMemo(() => (
+    decodeResult.layers.some(layer => layer.reversible === false)
+  ), [decodeResult.layers]);
+  const canApplyEdit = Boolean(onApply && isEditing && !editedJsonError && !hasNonReversibleLayer);
 
   const handleApply = () => {
     if (editedJsonError) {
       toast.error('请先修正解码结果中的 JSON 错误', { duration: 2000 });
+      return;
+    }
+
+    if (hasNonReversibleLayer) {
+      toast.error('当前编码层不可逆，仅支持查看和复制', { duration: 2000 });
       return;
     }
 
@@ -605,6 +613,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 className="mt-2 text-xs text-status-error-text bg-status-error-bg border border-status-error-border rounded px-2.5 py-1.5"
               >
                 {editedJsonError}
+              </div>
+            )}
+            {isEditing && hasNonReversibleLayer && (
+              <div className="mt-2 text-xs text-amber-200 bg-amber-900/30 border border-amber-700/50 rounded px-2.5 py-1.5">
+                当前编码层不可逆，仅支持查看和复制，不能应用修改
               </div>
             )}
           </div>

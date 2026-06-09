@@ -11,6 +11,7 @@
 - **CMD/Scheme JSON-like 参数解析**: 参数值支持保守解析 `{nid:123,title:'标题'}` 等常见日志对象写法，提升与内部 schema 调试工具的兼容性
 - **CMD/Scheme 运行时占位符识别**: 支持识别 `__CONVERT_CMD__`、`__WEBPANEL_CMD__` 等运行时占位符并展示所在路径，避免真实广告链路中未替换字段被误认为解析失败
 - **CMD/Scheme 短 Base64 识别**: Scheme 面板支持直接识别短 JSON Base64 和 URL-safe 省略 padding 的短 JSON Base64，减少独立粘贴参数时漏解析
+- **CMD/Scheme 内部 Base64 片段解析**: 支持只读解析带内部头的 Base64 JSON 片段，提升真实广告 response 中 extraParam 等扩展字段的可读性
 - **CMD/Scheme 前导分隔符兼容**: 支持解析 `&cmd=...`、`?&cmd=...` 等日志拼接常见形态，避免前导 `&` 导致整段 CMD 漏解析
 - **CMD/Scheme 协议相对 URL 解析**: 支持识别和展开 `//m.baidu.com/path?...` 这类协议相对 URL，嵌套在 CMD 参数中也会继续解析内部 query
 - **CMD/Scheme 裸域名 URL 解析**: 支持识别和展开 `m.baidu.com/path?...` 这类省略协议的 URL，嵌套在常见 URL 字段中也会继续解析内部 query

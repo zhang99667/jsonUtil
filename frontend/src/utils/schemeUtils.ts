@@ -18,6 +18,7 @@ export interface DecodeLayer {
   type: SchemeType;
   before: string;     // 解码前的内容
   description: string; // 描述，如 "URL Decode", "Base64 Decode"
+  reversible?: boolean; // 是否可按原格式重新编码
 }
 
 export interface SchemePlaceholder {
@@ -297,6 +298,8 @@ export function hasUrlEncoding(str: string): boolean {
  */
 export function isBase64(str: string): boolean {
   const trimmed = str.trim();
+  const decodedResult = decodeBase64WithMeta(trimmed);
+  if (decodedResult && looksLikeStructuredPayload(decodedResult.decoded)) return true;
 
   // 排除 key=value 格式：Base64 的 = 只能作为末尾 padding
   // 如果 = 后面还有非 = 的字符，说明是 key=value 格式而非 Base64
@@ -309,16 +312,15 @@ export function isBase64(str: string): boolean {
     }
   }
   
-  const decoded = base64Decode(trimmed);
-  if (decoded === trimmed || decoded.length === 0) return false;
+  if (!decodedResult || decodedResult.decoded === trimmed || decodedResult.decoded.length === 0) return false;
 
   // 短 Base64 只有在能明确解出 JSON、URL、CMD 等结构化内容时才识别，避免普通短文本误判。
-  if (looksLikeStructuredPayload(decoded)) return true;
+  if (looksLikeStructuredPayload(decodedResult.decoded)) return true;
 
   // 普通文本 Base64 保持较高长度门槛，避免把短 token 当成可解析 Scheme。
   if (trimmed.length < 20) return false;
 
-  return isReadableDecodedText(decoded);
+  return isReadableDecodedText(decodedResult.decoded);
 }
 
 /**
@@ -454,19 +456,79 @@ const isReadableDecodedText = (decoded: string): boolean => {
   return !controlChars || controlChars.length / decoded.length < 0.05;
 };
 
-/**
- * Base64 解码
- */
-export function base64Decode(str: string): string {
-  const normalized = normalizeBase64Input(str);
-  if (!normalized) return str;
+interface Base64DecodeResult {
+  decoded: string;
+  reversible: boolean;
+}
 
+const decodeNormalizedBase64 = (normalized: string): string | null => {
   try {
     const bytes = binaryStringToBytes(atob(normalized));
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
-    return str;
+    return null;
   }
+};
+
+const normalizeBase64JsonFragment = (decoded: string): string | null => {
+  const trimmed = decoded.trim();
+  const candidates = [
+    trimmed,
+    trimmed.startsWith('"') ? `{${trimmed}` : '',
+    /^[A-Za-z_$][\w$]*":/.test(trimmed) ? `{"${trimmed}` : '',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (!isJsonString(candidate)) continue;
+    return candidate;
+  }
+
+  return null;
+};
+
+const decodePrefixedBase64JsonFragment = (input: string): string | null => {
+  const compact = input.trim().replace(/\s+/g, '');
+  const firstPaddingIndex = compact.indexOf('=');
+  const payloadEnd = firstPaddingIndex >= 0
+    ? firstPaddingIndex + (compact[firstPaddingIndex + 1] === '=' ? 2 : 1)
+    : compact.length;
+
+  // 兼容真实广告 extraParam 中带内部头的 Base64 JSON 片段，保持解析保守，避免普通文本误判。
+  for (let offset = 1; offset <= 12 && offset < payloadEnd; offset++) {
+    const candidate = compact.slice(offset, payloadEnd);
+    const normalized = normalizeBase64Input(candidate);
+    if (!normalized) continue;
+
+    const decoded = decodeNormalizedBase64(normalized);
+    if (!decoded) continue;
+
+    const jsonFragment = normalizeBase64JsonFragment(decoded);
+    if (jsonFragment) {
+      return jsonFragment;
+    }
+  }
+
+  return null;
+};
+
+const decodeBase64WithMeta = (input: string): Base64DecodeResult | null => {
+  const normalized = normalizeBase64Input(input);
+  if (normalized) {
+    const decoded = decodeNormalizedBase64(normalized);
+    if (decoded !== null) {
+      return { decoded, reversible: true };
+    }
+  }
+
+  const prefixedJson = decodePrefixedBase64JsonFragment(input);
+  return prefixedJson ? { decoded: prefixedJson, reversible: false } : null;
+};
+
+/**
+ * Base64 解码
+ */
+export function base64Decode(str: string): string {
+  return decodeBase64WithMeta(str)?.decoded ?? str;
 }
 
 /**
@@ -1035,14 +1097,15 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
       }
       
       case 'base64': {
-        const decoded = base64Decode(current);
-        if (decoded !== current && decoded.length > 0) {
+        const decodedResult = decodeBase64WithMeta(current);
+        if (decodedResult && decodedResult.decoded !== current && decodedResult.decoded.length > 0) {
           layers.push({
             type: 'base64',
             before,
-            description: 'Base64 Decode',
+            description: decodedResult.reversible ? 'Base64 Decode' : 'Base64 JSON 片段解析',
+            reversible: decodedResult.reversible,
           });
-          current = decoded;
+          current = decodedResult.decoded;
         } else {
           depth = maxDepth;
         }
@@ -1056,6 +1119,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
             type: 'jwt',
             before,
             description: 'JWT Decode (Payload)',
+            reversible: false,
           });
           current = JSON.stringify(decoded.payload, null, 2);
         } else {
@@ -1293,6 +1357,10 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
   // 逆序遍历解码层，依次重新编码
   for (let i = layers.length - 1; i >= 0; i--) {
     const layer = layers[i];
+
+    if (layer.reversible === false) {
+      return layer.before;
+    }
     
     switch (layer.type) {
       case 'url-encoded':
