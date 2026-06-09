@@ -3,6 +3,7 @@ import { base64Encode } from './schemeUtils';
 import { deepParseWithContext } from './transformations';
 import {
   buildTransformContextReport,
+  buildTransformReportView,
   formatTransformContextReportText,
   formatTransformContextSummary,
   summarizeTransformContext,
@@ -62,6 +63,15 @@ describe('transformSummary', () => {
       },
     ]);
     expect(formatTransformContextReportText(result.context)).toContain('$.extra: Base64 · 不可逆');
+
+    const base64View = buildTransformReportView(report, 'base64');
+    expect(base64View.records.map(record => record.path)).toEqual(['$.extra']);
+    expect(base64View.filteredRecordCount).toBe(1);
+
+    const limitedView = buildTransformReportView(report, '', { recordLimit: 2 });
+    expect(limitedView.records.map(record => record.path)).toEqual(['$.cmd', '$.payload']);
+    expect(limitedView.filteredRecordCount).toBe(3);
+    expect(limitedView.isRecordTruncated).toBe(true);
   });
 
   it('无转换记录时不展示摘要', () => {

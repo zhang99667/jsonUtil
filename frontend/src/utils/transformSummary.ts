@@ -34,6 +34,25 @@ export interface TransformContextReport {
   warnings: TransformReportWarning[];
 }
 
+export interface TransformReportView {
+  records: TransformReportRecord[];
+  warnings: TransformReportWarning[];
+  filteredRecordCount: number;
+  filteredWarningCount: number;
+  totalRecordCount: number;
+  totalWarningCount: number;
+  isRecordTruncated: boolean;
+  isWarningTruncated: boolean;
+}
+
+export interface TransformReportViewOptions {
+  recordLimit?: number;
+  warningLimit?: number;
+}
+
+export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
+export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
+
 const STEP_LABELS: Record<TransformStepType, string> = {
   json_parse: '嵌套 JSON',
   json_stringify: 'JSON 字符串化',
@@ -72,6 +91,29 @@ const getStepLabel = (step: TransformStep): string => {
   const reversibleLabel = step.originalSchemeReversible === false ? '不可逆' : '可回写';
   return `${getSchemeTypeLabel(step)} · ${reversibleLabel}`;
 };
+
+const includesQuery = (value: string, normalizedQuery: string): boolean => (
+  value.toLowerCase().includes(normalizedQuery)
+);
+
+const matchesReportRecord = (
+  record: TransformReportRecord,
+  normalizedQuery: string
+): boolean => (
+  !normalizedQuery ||
+  includesQuery(record.path, normalizedQuery) ||
+  includesQuery(record.labels.join(' '), normalizedQuery) ||
+  includesQuery(record.originalPreview, normalizedQuery)
+);
+
+const matchesReportWarning = (
+  warning: TransformReportWarning,
+  normalizedQuery: string
+): boolean => (
+  !normalizedQuery ||
+  includesQuery(warning.path, normalizedQuery) ||
+  includesQuery(warning.message, normalizedQuery)
+);
 
 export const summarizeTransformContext = (
   context: TransformContext
@@ -192,4 +234,27 @@ export const formatTransformContextReportText = (
   }
 
   return lines.join('\n');
+};
+
+export const buildTransformReportView = (
+  report: TransformContextReport,
+  query: string,
+  options?: TransformReportViewOptions
+): TransformReportView => {
+  const normalizedQuery = query.trim().toLowerCase();
+  const recordLimit = options?.recordLimit ?? DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT;
+  const warningLimit = options?.warningLimit ?? DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT;
+  const filteredRecords = report.records.filter(record => matchesReportRecord(record, normalizedQuery));
+  const filteredWarnings = report.warnings.filter(warning => matchesReportWarning(warning, normalizedQuery));
+
+  return {
+    records: filteredRecords.slice(0, recordLimit),
+    warnings: filteredWarnings.slice(0, warningLimit),
+    filteredRecordCount: filteredRecords.length,
+    filteredWarningCount: filteredWarnings.length,
+    totalRecordCount: report.records.length,
+    totalWarningCount: report.warnings.length,
+    isRecordTruncated: filteredRecords.length > recordLimit,
+    isWarningTruncated: filteredWarnings.length > warningLimit,
+  };
 };

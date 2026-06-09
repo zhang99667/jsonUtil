@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { TransformContext } from '../types';
 import { copyText } from '../utils/clipboard';
 import {
   buildTransformContextReport,
+  buildTransformReportView,
   formatTransformContextReportText,
 } from '../utils/transformSummary';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
@@ -19,9 +20,13 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   onClose,
   context,
 }) => {
+  const [query, setQuery] = useState('');
   const report = useMemo(() => (
     context ? buildTransformContextReport(context) : null
   ), [context]);
+  const reportView = useMemo(() => (
+    report ? buildTransformReportView(report, query) : null
+  ), [report, query]);
 
   const handleCopyReport = async () => {
     if (!context) return;
@@ -39,7 +44,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     <>
       <div className="text-xs text-gray-500">
         {report
-          ? `${report.records.length} 条展开记录 · ${report.warnings.length} 条跳过记录`
+          ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
           : '暂无解析上下文'}
       </div>
       <button
@@ -95,10 +100,33 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               </div>
             </div>
 
-            {report.records.length > 0 && (
+            <div className="flex items-center gap-2">
+              <input
+                data-tour="transform-report-filter"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="筛选路径、类型或原始值..."
+                className="flex-1 min-w-0 bg-editor-sidebar text-gray-200 text-xs px-3 py-1.5 rounded border border-editor-border focus:border-cyan-600 focus:outline-none"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery('')}
+                  className="shrink-0 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  清空
+                </button>
+              )}
+            </div>
+
+            {reportView && reportView.filteredRecordCount > 0 && (
               <div data-tour="transform-report-records" className="flex flex-col gap-1.5">
-                <div className="text-xs text-gray-500 font-medium">展开记录</div>
-                {report.records.map(record => (
+                <div className="text-xs text-gray-500 font-medium">
+                  展开记录 · {reportView.filteredRecordCount}
+                  {reportView.isRecordTruncated && (
+                    <span className="text-amber-300 ml-2">仅显示前 {reportView.records.length} 条</span>
+                  )}
+                </div>
+                {reportView.records.map(record => (
                   <div
                     key={record.path}
                     data-tour="transform-report-row"
@@ -132,10 +160,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               </div>
             )}
 
-            {report.warnings.length > 0 && (
+            {reportView && reportView.filteredWarningCount > 0 && (
               <div data-tour="transform-report-warnings" className="flex flex-col gap-1.5">
-                <div className="text-xs text-gray-500 font-medium">跳过记录</div>
-                {report.warnings.map(warning => (
+                <div className="text-xs text-gray-500 font-medium">
+                  跳过记录 · {reportView.filteredWarningCount}
+                  {reportView.isWarningTruncated && (
+                    <span className="text-amber-300 ml-2">仅显示前 {reportView.warnings.length} 条</span>
+                  )}
+                </div>
+                {reportView.warnings.map(warning => (
                   <div
                     key={`${warning.path}:${warning.length}:${warning.limit}`}
                     className="rounded border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs"
@@ -152,9 +185,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               </div>
             )}
 
-            {report.records.length === 0 && report.warnings.length === 0 && (
+            {reportView && reportView.filteredRecordCount === 0 && reportView.filteredWarningCount === 0 && (
               <div className="rounded border border-editor-border bg-editor-sidebar p-4 text-center text-xs text-gray-500">
-                本次深度格式化没有展开嵌套字符串
+                {query ? '没有匹配的解析记录' : '本次深度格式化没有展开嵌套字符串'}
               </div>
             )}
           </div>
