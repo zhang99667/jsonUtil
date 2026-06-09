@@ -24,6 +24,7 @@
 - **CMD/Scheme 未编码分隔符容错**: 参数拆分只在后续片段符合 `key=` 形态时生效，避免 `title=R&D Center&from=feed` 等日志值被误切分
 - **CMD/Scheme hash 参数值解析**: 支持 `_hash=%2Fdetail%3Fcmd%3D...`、`next=%23/detail%3F...` 等参数值中的 hash route 片段递归展开
 - **CMD/Scheme 跳转字段识别**: `redirectUrl`、`fallbackUrl`、`next`、`deepLink` 等常见单参数跳转字段会按 URL/CMD 字段解析，减少只复制单个字段时漏展开
+- **CMD/Scheme 广告按钮字段识别**: `button_cmd`、`convert_btn`、`main_btn`、`ad_monitor_url` 等真实广告局部字段支持单独粘贴解析，减少从完整 response 中只复制按钮或监测配置时漏展开
 - **CMD/Scheme 多行参数解析**: 支持解析日志复制出的 `cmd=...\nfrom=...` 多行参数串，减少换行粘贴时漏展开
 - **CMD/Scheme 字符串字面量兼容**: 独立 Scheme 面板和深度格式化支持解析 `"cmd=..."`、`"https://..."` 等 JSON 字符串字面量包裹的链路，并在回写时保留外层字面量
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
