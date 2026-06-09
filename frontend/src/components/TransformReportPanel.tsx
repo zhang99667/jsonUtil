@@ -105,7 +105,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                 data-tour="transform-report-filter"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="筛选路径、类型或原始值..."
+                placeholder="筛选路径、类型、原始值或解析结果..."
                 className="flex-1 min-w-0 bg-editor-sidebar text-gray-200 text-xs px-3 py-1.5 rounded border border-editor-border focus:border-cyan-600 focus:outline-none"
               />
               {query && (
@@ -152,6 +152,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         </span>
                       ))}
                     </div>
+                    {record.decodedPreview && (
+                      <div className="mt-1 font-mono text-cyan-200 truncate" title={record.decodedPreview}>
+                        解析结果: {record.decodedPreview}
+                      </div>
+                    )}
                     <div className="mt-1 font-mono text-gray-500 truncate" title={record.originalPreview}>
                       原始值: {record.originalPreview}
                     </div>

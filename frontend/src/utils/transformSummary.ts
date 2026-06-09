@@ -1,4 +1,4 @@
-import type { TransformContext, TransformStep, TransformStepType } from '../types';
+import type { JsonValue, PathTransformRecord, TransformContext, TransformStep, TransformStepType } from '../types';
 
 export interface TransformContextSummary {
   recordCount: number;
@@ -16,6 +16,7 @@ export interface TransformReportRecord {
   path: string;
   labels: string[];
   originalPreview: string;
+  decodedPreview?: string;
   stepCount: number;
   hasNonReversibleScheme: boolean;
 }
@@ -78,6 +79,49 @@ const formatOriginalPreview = (value: string, maxLength = 96): string => (
   value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
 );
 
+const formatJsonValuePreview = (value: JsonValue, maxLength = 120): string => {
+  if (Array.isArray(value)) {
+    return `数组 ${value.length} 项`;
+  }
+
+  if (value && typeof value === 'object') {
+    const keys = Object.keys(value);
+    if (keys.length === 0) return '对象: 空';
+
+    const visibleKeys = keys.slice(0, 8).join(', ');
+    return keys.length > 8
+      ? `对象: ${visibleKeys} ... +${keys.length - 8}`
+      : `对象: ${visibleKeys}`;
+  }
+
+  if (typeof value === 'string') return formatOriginalPreview(value, maxLength);
+  return String(value);
+};
+
+const getSchemeDecodedPreview = (steps: TransformStep[]): string | undefined => {
+  const schemeStep = [...steps].reverse().find(step => (
+    step.type === 'scheme_decode' && step.decodedSchemeValue !== undefined
+  ));
+
+  return schemeStep?.decodedSchemeValue === undefined
+    ? undefined
+    : formatJsonValuePreview(schemeStep.decodedSchemeValue);
+};
+
+const getJsonParseDecodedPreview = (record: PathTransformRecord): string | undefined => {
+  if (!record.steps.some(step => step.type === 'json_parse')) return undefined;
+
+  try {
+    return formatJsonValuePreview(JSON.parse(record.originalValue) as JsonValue);
+  } catch {
+    return undefined;
+  }
+};
+
+const getDecodedPreview = (record: PathTransformRecord): string | undefined => (
+  getSchemeDecodedPreview(record.steps) || getJsonParseDecodedPreview(record)
+);
+
 const getSchemeTypeLabel = (step: TransformStep): string => {
   if (step.originalSchemeType === 'query-string') return 'CMD 参数';
   if (step.originalSchemeType === 'url') return 'URL Scheme';
@@ -103,7 +147,8 @@ const matchesReportRecord = (
   !normalizedQuery ||
   includesQuery(record.path, normalizedQuery) ||
   includesQuery(record.labels.join(' '), normalizedQuery) ||
-  includesQuery(record.originalPreview, normalizedQuery)
+  includesQuery(record.originalPreview, normalizedQuery) ||
+  (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false)
 );
 
 const matchesReportWarning = (
@@ -189,6 +234,7 @@ export const buildTransformContextReport = (
     path: record.path,
     labels: record.steps.map(getStepLabel),
     originalPreview: formatOriginalPreview(record.originalValue),
+    decodedPreview: getDecodedPreview(record),
     stepCount: record.steps.length,
     hasNonReversibleScheme: record.steps.some(
       step => step.type === 'scheme_decode' && step.originalSchemeReversible === false
@@ -223,6 +269,9 @@ export const formatTransformContextReportText = (
   } else {
     report.records.forEach(record => {
       lines.push(`- ${record.path}: ${record.labels.join(' -> ')}`);
+      if (record.decodedPreview) {
+        lines.push(`  解析结果: ${record.decodedPreview}`);
+      }
     });
   }
 
