@@ -44,29 +44,38 @@ describe('transformSummary', () => {
     expect(report.records.map(record => ({
       path: record.path,
       labels: record.labels,
+      decodedPreview: record.decodedPreview,
       hasNonReversibleScheme: record.hasNonReversibleScheme,
     }))).toEqual([
       {
         path: '$.cmd',
         labels: ['CMD 参数 · 可回写'],
+        decodedPreview: '对象: cmd, from',
         hasNonReversibleScheme: false,
       },
       {
         path: '$.payload',
         labels: ['嵌套 JSON'],
+        decodedPreview: '对象: nested',
         hasNonReversibleScheme: false,
       },
       {
         path: '$.extra',
         labels: ['Base64 · 不可逆'],
+        decodedPreview: '对象: meg_name, flag',
         hasNonReversibleScheme: true,
       },
     ]);
     expect(formatTransformContextReportText(result.context)).toContain('$.extra: Base64 · 不可逆');
+    expect(formatTransformContextReportText(result.context)).toContain('解析结果: 对象: meg_name, flag');
 
     const base64View = buildTransformReportView(report, 'base64');
     expect(base64View.records.map(record => record.path)).toEqual(['$.extra']);
     expect(base64View.filteredRecordCount).toBe(1);
+
+    const decodedValueView = buildTransformReportView(report, 'nested');
+    expect(decodedValueView.records.map(record => record.path)).toEqual(['$.payload']);
+    expect(decodedValueView.filteredRecordCount).toBe(1);
 
     const limitedView = buildTransformReportView(report, '', { recordLimit: 2 });
     expect(limitedView.records.map(record => record.path)).toEqual(['$.cmd', '$.payload']);
