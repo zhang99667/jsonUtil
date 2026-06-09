@@ -2,7 +2,7 @@ import { parse as parseJsonSourceMap } from 'json-source-map';
 import { detectSchemeType, type SchemeType } from './schemeUtils';
 
 export interface SchemeLocation {
-  path: string;           // JSON Path，如 "$.action_cmd"
+  path: string;           // JSON Path，如 "$.action_cmd" 或 `$["a.b"]`
   pointer: string;        // JSON Pointer，用于特殊 key 场景下精确回写
   line: number;           // 行号（1-based）
   column: number;         // 起始列号（1-based）
@@ -19,6 +19,12 @@ export interface SchemeScanResult {
 }
 
 export const DEFAULT_SCHEME_SCAN_RESULT_LIMIT = 1000;
+
+const appendJsonPathKey = (path: string, key: string): string => (
+  /^[A-Za-z_$][\w$]*$/.test(key)
+    ? `${path}.${key}`
+    : `${path}[${JSON.stringify(key)}]`
+);
 
 /**
  * 扫描 JSON 字符串，找出所有包含 scheme 的字符串值及其位置
@@ -84,7 +90,7 @@ export function scanSchemesInJson(
         for (const key in (obj as Record<string, unknown>)) {
           if (!traverse(
             (obj as Record<string, unknown>)[key],
-            `${currentPath}.${key}`,
+            appendJsonPathKey(currentPath, key),
             `${currentPointer}/${escapePointerSegment(key)}`
           )) {
             return false;
