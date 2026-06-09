@@ -129,7 +129,8 @@ export interface TransformStep {
   originalEncoding?: string;  // 如 'utf-8'
   originalPadding?: boolean;  // Base64 是否有 padding
   originalScheme?: string;    // 原始 CMD/Scheme 字符串
-  originalSchemeType?: 'query-string' | 'url'; // 当前支持独立 CMD 参数串和 URL Scheme 可逆展开
+  originalSchemeType?: 'query-string' | 'url' | 'base64'; // 当前支持独立 CMD、URL Scheme 和 Base64 JSON 展开
+  originalSchemeReversible?: boolean; // 当前编码层是否支持安全反向还原
   decodedSchemeValue?: JsonValue; // 原始串对应的展开结果，用于无编辑时精确还原
 }
 
