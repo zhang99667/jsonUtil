@@ -19,6 +19,7 @@
 - **CMD/Scheme 裸域名 URL 解析**: 支持识别和展开 `m.baidu.com/path?...` 这类省略协议的 URL，嵌套在常见 URL 字段中也会继续解析内部 query
 - **CMD/Scheme 深层链路解析**: 默认递归深度提升到 15 层，可展开真实广告 response 中 `rewardImpl -> rewardDialog -> deeplink -> openapp -> landing URL` 等多层跳转链路
 - **CMD/Scheme 单参数 camelCase 字段识别**: `h5Url`、`jumpUrl`、`landingUrl` 等常见单参数 URL/CMD 字段会按已有下划线字段同等识别，减少日志片段漏解析
+- **CMD/Scheme 广告单字段参数识别**: `task_params`、`convert_cmd`、`panel_cmd`、`ext_policy`、`video_info` 等真实广告 response 高频字段支持单独粘贴解析，减少只复制局部 CMD 时漏展开
 - **CMD/Scheme 未编码 URL 字段容错**: `url=https://m.baidu.com/s?word=json&from=feed` 这类未编码 URL 字段会把 `&from` 保留为内层 URL query，并在编辑回写时保持 raw URL 形态
 - **CMD/Scheme 未编码分隔符容错**: 参数拆分只在后续片段符合 `key=` 形态时生效，避免 `title=R&D Center&from=feed` 等日志值被误切分
 - **CMD/Scheme hash 参数值解析**: 支持 `_hash=%2Fdetail%3Fcmd%3D...`、`next=%23/detail%3F...` 等参数值中的 hash route 片段递归展开

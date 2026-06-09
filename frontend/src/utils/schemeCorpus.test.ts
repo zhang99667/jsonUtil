@@ -165,6 +165,56 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
   });
 
+  it('解析真实广告单字段 task_params 参数', () => {
+    const taskParams = encodeURIComponent(JSON.stringify({
+      android_pid: '1683310188080',
+      task_id: '602',
+      ext_policy: JSON.stringify({
+        sdk_switch: '1',
+        invoke_task_id: '',
+      }),
+    }));
+
+    expect(parseDecodedJson(`task_params=${taskParams}`)).toEqual({
+      task_params: {
+        android_pid: '1683310188080',
+        task_id: '602',
+        ext_policy: {
+          sdk_switch: '1',
+          invoke_task_id: '',
+        },
+      },
+    });
+  });
+
+  it('解析真实广告单字段 convert_cmd 链路', () => {
+    const appUrl = `openapp.demo://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: 'https://example.com/landing?sku=101&bd_vid=abc',
+    }))}`;
+    const convertCmd = encodeURIComponent(`baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+      appUrl,
+      source: 'feedna',
+    }))}`);
+
+    expect(parseDecodedJson(`convert_cmd=${convertCmd}`)).toEqual({
+      convert_cmd: {
+        params: {
+          appUrl: {
+            params: {
+              category: 'jump',
+              url: {
+                sku: '101',
+                bd_vid: 'abc',
+              },
+            },
+          },
+          source: 'feedna',
+        },
+      },
+    });
+  });
+
   it('未编辑 raw URL 字段可按原形态回写', () => {
     const original = 'url=https://m.baidu.com/s?word=json&from=feed';
     const decoded = deepDecodeScheme(original);
