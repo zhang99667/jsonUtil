@@ -335,6 +335,30 @@ describe('performInverseTransform', () => {
       .toBe('{"id":1}\n{"id":3}\n{"id":4}');
   });
 
+  it('FORMAT 反向在原始输入为 JS 赋值包装时保留外壳', () => {
+    const original = 'const response = {"id":1};';
+    const editedOutput = JSON.stringify({ id: 2, ok: true }, null, 2);
+
+    expect(performInverseTransform(editedOutput, TransformMode.FORMAT, original))
+      .toBe('const response = {"id":2,"ok":true};');
+  });
+
+  it('FORMAT 反向在原始输入为 JSONP 回调时保留回调外壳', () => {
+    const original = 'callback({"id":1});';
+    const editedOutput = JSON.stringify({ id: 3 }, null, 2);
+
+    expect(performInverseTransform(editedOutput, TransformMode.FORMAT, original))
+      .toBe('callback({"id":3});');
+  });
+
+  it('FORMAT 反向在原始输入为 Markdown JSON 代码块时保留代码块外壳', () => {
+    const original = '```json\n{"id":1}\n```';
+    const editedOutput = JSON.stringify({ id: 4 }, null, 2);
+
+    expect(performInverseTransform(editedOutput, TransformMode.FORMAT, original))
+      .toBe('```json\n{"id":4}\n```');
+  });
+
   it('ESCAPE/UNESCAPE 互逆', () => {
     const original = 'hello "world"';
     const escaped = performTransform(original, TransformMode.ESCAPE);
