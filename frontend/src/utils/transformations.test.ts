@@ -472,6 +472,54 @@ describe('deepParseWithContext', () => {
     ]);
   });
 
+  it('累计字符串解析预算用尽后跳过后续递归展开', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=feed`;
+    const input = JSON.stringify({
+      title: 'x'.repeat(16),
+      action_cmd: actionCmd,
+      next_cmd: actionCmd,
+    });
+
+    const result = deepParseWithContext(input, {
+      autoExpandScheme: true,
+      maxTotalStringDecodeLength: 20,
+    });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd).toBe(actionCmd);
+    expect(parsed.next_cmd).toBe(actionCmd);
+    expect(result.context.records.has('$.action_cmd')).toBe(false);
+    expect(result.context.records.has('$.next_cmd')).toBe(false);
+    expect(result.context.warnings).toEqual([
+      {
+        type: 'string_decode_budget_exceeded',
+        path: '$.action_cmd',
+        message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
+        length: actionCmd.length,
+        limit: 20,
+      },
+    ]);
+  });
+
+  it('累计字符串解析预算内仍会展开 CMD 参数', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=feed`;
+    const input = JSON.stringify({
+      action_cmd: actionCmd,
+    });
+
+    const result = deepParseWithContext(input, {
+      autoExpandScheme: true,
+      maxTotalStringDecodeLength: 200,
+    });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd).toEqual({
+      cmd: { nid: 123 },
+      from: 'feed',
+    });
+    expect(result.context.warnings).toBeUndefined();
+  });
+
   it('未启用自动展开时保留 CMD 参数串', () => {
     const input = JSON.stringify({
       action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',

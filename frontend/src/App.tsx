@@ -298,8 +298,8 @@ const App: React.FC = () => {
 
     const firstWarning = warnings[0];
     return warnings.length === 1
-      ? `已跳过 ${firstWarning.path} 的超长字符串递归展开 (${firstWarning.length} 字符，阈值 ${firstWarning.limit})`
-      : `已跳过 ${warnings.length} 个超长字符串递归展开，首个位置 ${firstWarning.path}`;
+      ? `${firstWarning.message}: ${firstWarning.path} (${firstWarning.length} 字符，阈值 ${firstWarning.limit})`
+      : `已跳过 ${warnings.length} 个字符串递归展开，首个位置 ${firstWarning.path}: ${firstWarning.message}`;
   }, [activeDeepFormatResult, mode]);
 
   // 保存深度格式化上下文到文件（副作用独立处理）

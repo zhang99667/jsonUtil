@@ -25,6 +25,7 @@
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
 - **深度格式化默认展开体验**: 新用户默认开启「自动展开 CMD/Scheme 字符串」，粘贴真实 response 后无需先进设置即可看到深层 CMD、URL 与 Base64 结构
 - **深度格式化 Base64 Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化会同步展开 Base64 JSON 和带内部头的 Base64 JSON 片段，整段真实广告 response 可直接看到 extraParam 结构
+- **深度格式化累计解析保护**: 自动展开 CMD/Scheme 时增加累计字符串解析预算，避免大量中长字符串叠加导致深度格式化耗时过高，并在预览中提示跳过位置
 - **深度格式化真实广告链路展开**: 嵌套解析复用 Scheme 面板的 15 层默认深度，整段广告 response 也能展开多层跳转字段到最终落地页参数
 - **深度格式化 Scheme 还原增强**: 修复 URL Scheme 内含二级 URL 时，未编辑预览回写无法优先还原父级原始字符串的问题
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串
