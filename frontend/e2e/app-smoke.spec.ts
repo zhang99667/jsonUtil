@@ -13,6 +13,10 @@ const FEATURE_TOUR_IDS = [
   'discovery-settings',
 ];
 
+const encodeBase64 = (value: string): string => (
+  Buffer.from(value, 'utf8').toString('base64')
+);
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/visitor/ping', async route => {
     await route.fulfill({ status: 204, body: '' });
@@ -508,6 +512,21 @@ test('Scheme 面板展示 URL 参数来源', async ({ page }) => {
   await expect(paramSections).toContainText('from=feed');
   await expect(paramSections).toContainText('Hash 参数 · 1');
   await expect(paramSections).toContainText('cmd={"nid":123}');
+});
+
+test('Scheme 面板展示内部 Base64 后缀摘要', async ({ page }) => {
+  const suffix = 'UxMJm9zPTImaXA9MTI3LjAuMC4x';
+  const encoded = `AFD8f${encodeBase64('{"meg_name":"AI","flag":true}')}${suffix}`;
+
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(encoded);
+
+  const base64Meta = page.locator('[data-tour="scheme-base64-meta"]');
+  await expect(base64Meta).toContainText('内部 Base64');
+  await expect(base64Meta).toContainText('头部=AFD8f');
+  await expect(base64Meta).toContainText('跳过=UxM');
+  await expect(base64Meta).toContainText('os=2');
+  await expect(base64Meta).toContainText('ip=127.0.0.1');
 });
 
 test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
