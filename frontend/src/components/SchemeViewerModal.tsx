@@ -84,10 +84,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 }) => {
   const [editedContent, setEditedContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // 独立模式下的输入值
   const [standaloneInput, setStandaloneInput] = useState<string>('');
-  
+
   // 二维码状态
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeType, setQRCodeType] = useState<'original' | 'decoded'>('original');
@@ -170,6 +170,25 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     decodeResult.layers.some(layer => layer.reversible === false)
   ), [decodeResult.layers]);
   const canApplyEdit = Boolean(onApply && isEditing && !editedJsonError && !hasNonReversibleLayer);
+  const serializedContent = useMemo(() => {
+    if (!actualValue || !editedContent || editedJsonError || hasNonReversibleLayer || decodeResult.layers.length === 0) {
+      return '';
+    }
+
+    return encodeWithLayers(editedContent, decodeResult.layers);
+  }, [actualValue, decodeResult.layers, editedContent, editedJsonError, hasNonReversibleLayer]);
+
+  const handleCopySerialized = async () => {
+    if (!serializedContent) return;
+
+    try {
+      await copyText(serializedContent);
+      toast.success('已复制序列化结果', { duration: 2000 });
+    } catch (err) {
+      console.warn('复制 Scheme 序列化结果失败:', err);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
 
   const handleApply = () => {
     if (editedJsonError) {
@@ -294,6 +313,20 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           </svg>
           复制解码结果
         </button>
+        {standalone && decodeResult.layers.length > 0 && (
+          <button
+            data-tour="scheme-copy-serialized"
+            onClick={handleCopySerialized}
+            disabled={!serializedContent}
+            className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={serializedContent ? '复制当前编辑内容重新编码后的结果' : '请先确保解码结果合法且编码层可逆'}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h10m0 0l-3-3m3 3l-3 3m9 7H10m0 0l3 3m-3-3l3-3" />
+            </svg>
+            复制序列化结果
+          </button>
+        )}
         {onApply && isEditing && (
           <button
             onClick={handleApply}

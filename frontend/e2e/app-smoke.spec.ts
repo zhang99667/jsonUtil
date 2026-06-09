@@ -519,6 +519,17 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(schemeResult).toContainText('"title": "标题"');
   await expect(schemeResult).toContainText('"from": "feed"');
 
+  await fillMonacoEditor(
+    page,
+    page.locator('[data-tour="scheme-result"] .monaco-editor').first(),
+    '{"cmd":{"nid":456,"title":"标题"},"from":"feed"}'
+  );
+  await page.locator('[data-tour="scheme-copy-serialized"]').click();
+  await expect(page.getByText('已复制序列化结果')).toBeVisible();
+  const serializedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
+  expect(serializedResult).toContain('cmd=%7B%22nid%22%3A456');
+  expect(serializedResult).toContain('from=feed');
+
   await fillMonacoEditor(page, page.locator('[data-tour="scheme-result"] .monaco-editor').first(), '{"cmd":');
   await expect(page.getByText('Invalid JSON')).toBeVisible();
   await expect(page.locator('[data-tour="scheme-json-edit-error"]')).toContainText('JSON 内容格式有误');
