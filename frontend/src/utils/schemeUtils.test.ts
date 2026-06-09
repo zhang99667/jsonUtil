@@ -1131,7 +1131,7 @@ describe('findSchemesInJson', () => {
 
     const results = findSchemesInJson(json);
     expect(results.length).toBe(1);
-    expect(results[0].path).toBe('$.a/b.schema');
+    expect(results[0].path).toBe('$["a/b"].schema');
     expect(results[0].pointer).toBe('/a~1b/schema');
     expect(results[0].line).toBe(3);
   });
@@ -1147,7 +1147,7 @@ describe('findSchemesInJson', () => {
 
     const results = findSchemesInJson(json);
     expect(results.length).toBe(1);
-    expect(results[0].path).toBe('$.a.b.x/y.tilde~key');
+    expect(results[0].path).toBe('$["a.b"]["x/y"]["tilde~key"]');
     expect(results[0].pointer).toBe('/a.b/x~1y/tilde~0key');
   });
 
