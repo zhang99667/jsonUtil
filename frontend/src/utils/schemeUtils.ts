@@ -370,6 +370,10 @@ export function detectSchemeType(str: string): SchemeType {
   if (!str || typeof str !== 'string') return 'plain';
 
   const trimmed = str.trim();
+  const jsonStringPayload = tryParseJsonStringPayload(trimmed);
+  if (jsonStringPayload !== null) {
+    return detectSchemeType(jsonStringPayload);
+  }
 
   // 优先级顺序很重要
   if (isJwt(trimmed)) return 'jwt';
@@ -1035,6 +1039,18 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
   let placeholders: SchemePlaceholder[] = [];
 
   while (depth < maxDepth) {
+    const jsonStringPayload = tryParseJsonStringPayload(current);
+    if (jsonStringPayload !== null) {
+      layers.push({
+        type: 'json',
+        before: current,
+        description: 'JSON 字符串字面量解析',
+      });
+      current = jsonStringPayload;
+      depth++;
+      continue;
+    }
+
     const type = detectSchemeType(current);
     
     if (type === 'plain' || type === 'json') {
@@ -1386,6 +1402,9 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
         } catch {
           // 保持原样
         }
+        break;
+      case 'json':
+        result = JSON.stringify(result);
         break;
     }
   }

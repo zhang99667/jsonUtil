@@ -346,6 +346,27 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
   });
 
+  it('自动展开 JSON 字符串字面量包裹的 CMD 参数串', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+    const input = JSON.stringify({
+      action_cmd: JSON.stringify(`cmd=${payload}&from=literal`),
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+    const step = result.context.records.get('$.action_cmd')?.steps[0];
+
+    expect(parsed.action_cmd).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      from: 'literal',
+    });
+    expect(step).toMatchObject({
+      type: 'scheme_decode',
+      originalSchemeType: 'query-string',
+      originalSchemeStringLiteral: true,
+    });
+  });
+
   it('自动展开 JSON-like CMD 参数值', () => {
     const input = JSON.stringify({
       action_cmd: `cmd=${encodeURIComponent("{nid:123,title:'标题'}")}&from=feed`,
@@ -602,6 +623,28 @@ describe('inverseWithContext 精确还原', () => {
 
     const restored = inverseWithContext(output, context);
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('未编辑的 JSON 字符串字面量 CMD 自动展开后可精确还原', () => {
+    const input = JSON.stringify({
+      action_cmd: JSON.stringify('cmd=%7B%22nid%22%3A123%7D&from=literal'),
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+
+    const restored = inverseWithContext(output, context);
+    expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('已编辑的 JSON 字符串字面量 CMD 自动展开后保留外层字面量', () => {
+    const input = JSON.stringify({
+      action_cmd: JSON.stringify('cmd=%7B%22nid%22%3A123%7D&from=literal'),
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    parsed.action_cmd.cmd.nid = 456;
+
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), context);
+    expect(JSON.parse(restored).action_cmd).toBe(JSON.stringify('cmd=%7B%22nid%22%3A456%7D&from=literal'));
   });
 
   it('未编辑的 URL Scheme 自动展开后可精确还原', () => {

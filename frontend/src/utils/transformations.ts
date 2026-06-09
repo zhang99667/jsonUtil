@@ -370,6 +370,7 @@ export function deepParseWithContext(
                     originalScheme: current,
                     originalSchemeType: schemeType,
                     originalSchemeReversible: isSchemeReversible,
+                    originalSchemeStringLiteral: decodedScheme.layers.some(layer => layer.type === 'json'),
                     decodedSchemeValue: processedSchemeValue,
                   });
 
@@ -596,17 +597,21 @@ function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
       ) {
         return step.originalScheme;
       }
-      if (step.originalSchemeType === 'query-string') {
-        return encodeQueryStringValue(value);
+      {
+        let encodedValue: JsonValue = value;
+        if (step.originalSchemeType === 'query-string') {
+          encodedValue = encodeQueryStringValue(value);
+        } else if (step.originalSchemeType === 'url') {
+          encodedValue = stringifyQueryParamValue(value);
+        } else if (step.originalSchemeType === 'base64') {
+          if (step.originalSchemeReversible === false) return value;
+          encodedValue = base64Encode(stringifyQueryParamValue(value));
+        }
+
+        return step.originalSchemeStringLiteral && typeof encodedValue === 'string'
+          ? JSON.stringify(encodedValue)
+          : encodedValue;
       }
-      if (step.originalSchemeType === 'url') {
-        return stringifyQueryParamValue(value);
-      }
-      if (step.originalSchemeType === 'base64') {
-        if (step.originalSchemeReversible === false) return value;
-        return base64Encode(stringifyQueryParamValue(value));
-      }
-      return value;
     case 'unicode_decode':
       // 逆操作：encode
       if (typeof value === 'string') {
