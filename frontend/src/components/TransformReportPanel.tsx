@@ -54,7 +54,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     <>
       <div className="text-xs text-gray-500">
         {report
-          ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
+          ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredPlaceholderCount || 0}/${reportView?.totalPlaceholderCount || 0} 个占位符 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
           : '暂无解析上下文'}
       </div>
       <button
@@ -110,6 +110,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                 {report.summary.unresolvedCount > 0 && (
                   <span className="bg-sky-900/30 text-sky-200 border border-sky-700/50 px-2 py-0.5 rounded">
                     待检查 {report.summary.unresolvedCount}
+                  </span>
+                )}
+                {report.summary.placeholderCount > 0 && (
+                  <span className="bg-violet-900/30 text-violet-200 border border-violet-700/50 px-2 py-0.5 rounded">
+                    占位符 {report.summary.placeholderCount}
                   </span>
                 )}
               </div>
@@ -259,6 +264,36 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               </div>
             )}
 
+            {reportView && reportView.filteredPlaceholderCount > 0 && (
+              <div data-tour="transform-report-placeholders" className="flex flex-col gap-1.5">
+                <div className="text-xs text-gray-500 font-medium">
+                  运行时占位符 · {reportView.filteredPlaceholderCount}
+                  {reportView.isPlaceholderTruncated && (
+                    <span className="text-amber-300 ml-2">仅显示前 {reportView.runtimePlaceholders.length} 条</span>
+                  )}
+                </div>
+                {reportView.runtimePlaceholders.map(placeholder => (
+                  <div
+                    key={`${placeholder.path}:${placeholder.value}`}
+                    className="rounded border border-violet-700/50 bg-violet-900/20 px-3 py-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 font-mono text-violet-200 truncate" title={placeholder.path}>
+                        {placeholder.path}
+                      </div>
+                      <span className="shrink-0 bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
+                        {placeholder.value}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-gray-300">{placeholder.description}</div>
+                    <div className="mt-1 font-mono text-gray-500 truncate" title={placeholder.sourcePath}>
+                      来源: {placeholder.sourcePath}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {reportView && reportView.filteredWarningCount > 0 && (
               <div data-tour="transform-report-warnings" className="flex flex-col gap-1.5">
                 <div className="text-xs text-gray-500 font-medium">
@@ -286,6 +321,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
             {reportView &&
               reportView.filteredRecordCount === 0 &&
+              reportView.filteredPlaceholderCount === 0 &&
               reportView.filteredUnresolvedCount === 0 &&
               reportView.filteredWarningCount === 0 && (
               <div className="rounded border border-editor-border bg-editor-sidebar p-4 text-center text-xs text-gray-500">

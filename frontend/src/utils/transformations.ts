@@ -11,18 +11,21 @@ import {
   JsonValue,
   JsonObject
 } from '../types.ts';
+import type { SchemePlaceholder } from './schemeUtils.ts';
 
 import {
   DEFAULT_SCHEME_DECODE_MAX_DEPTH,
   deepDecodeScheme,
   detectSchemeType,
   hasUrlEncoding,
+  isRuntimePlaceholder,
 } from './schemeUtils.ts';
 import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
 export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
+const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
 
 interface ParsedJsonInput {
   value: JsonValue;
@@ -350,6 +353,12 @@ const formatStringPreview = (value: string, maxLength = 120): string => (
   value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
 );
 
+const joinDecodedJsonPath = (basePath: string, relativePath: string): string => (
+  relativePath === '$'
+    ? basePath
+    : `${basePath}${relativePath.slice(1)}`
+);
+
 // ============ 带路径记录的深度解析 ============
 
 /**
@@ -421,6 +430,39 @@ export function deepParseWithContext(
     });
   };
 
+  const addRuntimePlaceholder = (
+    path: string,
+    sourcePath: string,
+    value: string,
+    description: string
+  ) => {
+    const placeholders = context.runtimePlaceholders || [];
+    if (placeholders.some(item => item.path === path && item.value === value)) return;
+    if (placeholders.length >= MAX_RUNTIME_PLACEHOLDER_COUNT) return;
+
+    context.runtimePlaceholders = placeholders;
+    context.runtimePlaceholders.push({
+      path,
+      sourcePath,
+      value,
+      description,
+    });
+  };
+
+  const addSchemeRuntimePlaceholders = (
+    sourcePath: string,
+    placeholders?: SchemePlaceholder[]
+  ) => {
+    placeholders?.forEach(placeholder => {
+      addRuntimePlaceholder(
+        joinDecodedJsonPath(sourcePath, placeholder.path),
+        sourcePath,
+        placeholder.value,
+        placeholder.description
+      );
+    });
+  };
+
     const processValue = (value: JsonValue, currentPath: string, depth: number = 0): JsonValue => {
       if (depth > maxDepth) return value;
 
@@ -457,6 +499,10 @@ export function deepParseWithContext(
         let current = value;
         let iterDepth = 0;
         let unresolvedCandidate: { detectedType: string; message: string } | null = null;
+
+        if (options?.autoExpandScheme && isRuntimePlaceholder(current)) {
+          addSchemeRuntimePlaceholders(currentPath, deepDecodeScheme(current).placeholders);
+        }
 
         const processParsedValue = (jsonParsed: JsonValue): JsonValue => {
           if (Array.isArray(jsonParsed)) {
@@ -501,6 +547,7 @@ export function deepParseWithContext(
               try {
                 const schemeParsed = JSON.parse(decodedScheme.decoded) as JsonValue;
                 if (typeof schemeParsed === 'object' && schemeParsed !== null) {
+                  addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders);
                   const processedSchemeValue = processParsedValue(schemeParsed);
                   const isSchemeReversible = decodedScheme.layers.every(layer => layer.reversible !== false);
                   steps.push({

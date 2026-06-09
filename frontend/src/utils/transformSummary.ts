@@ -11,6 +11,7 @@ export interface TransformContextSummary {
   };
   warningCount: number;
   unresolvedCount: number;
+  placeholderCount: number;
 }
 
 export interface TransformReportRecord {
@@ -44,38 +45,52 @@ export interface TransformReportUnresolvedCandidate {
   detectedType?: string;
 }
 
+export interface TransformReportRuntimePlaceholder {
+  path: string;
+  sourcePath: string;
+  value: string;
+  description: string;
+}
+
 export interface TransformContextReport {
   summary: TransformContextSummary;
   summaryText?: string;
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
+  runtimePlaceholders: TransformReportRuntimePlaceholder[];
 }
 
 export interface TransformReportView {
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
+  runtimePlaceholders: TransformReportRuntimePlaceholder[];
   filteredRecordCount: number;
   filteredWarningCount: number;
   filteredUnresolvedCount: number;
+  filteredPlaceholderCount: number;
   totalRecordCount: number;
   totalWarningCount: number;
   totalUnresolvedCount: number;
+  totalPlaceholderCount: number;
   isRecordTruncated: boolean;
   isWarningTruncated: boolean;
   isUnresolvedTruncated: boolean;
+  isPlaceholderTruncated: boolean;
 }
 
 export interface TransformReportViewOptions {
   recordLimit?: number;
   warningLimit?: number;
   unresolvedLimit?: number;
+  placeholderLimit?: number;
 }
 
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
+export const DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT = 100;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
 
 const STEP_LABELS: Record<TransformStepType, string> = {
@@ -316,6 +331,17 @@ const matchesUnresolvedCandidate = (
   (candidate.detectedType ? includesQuery(candidate.detectedType, normalizedQuery) : false)
 );
 
+const matchesRuntimePlaceholder = (
+  placeholder: TransformReportRuntimePlaceholder,
+  normalizedQuery: string
+): boolean => (
+  !normalizedQuery ||
+  includesQuery(placeholder.path, normalizedQuery) ||
+  includesQuery(placeholder.sourcePath, normalizedQuery) ||
+  includesQuery(placeholder.value, normalizedQuery) ||
+  includesQuery(placeholder.description, normalizedQuery)
+);
+
 export const summarizeTransformContext = (
   context: TransformContext
 ): TransformContextSummary => {
@@ -330,6 +356,7 @@ export const summarizeTransformContext = (
     },
     warningCount: context.warnings?.length || 0,
     unresolvedCount: context.unresolvedCandidates?.length || 0,
+    placeholderCount: context.runtimePlaceholders?.length || 0,
   };
 
   context.records.forEach(record => {
@@ -359,7 +386,14 @@ export const formatTransformContextSummary = (
   context: TransformContext
 ): string | undefined => {
   const summary = summarizeTransformContext(context);
-  if (summary.recordCount === 0 && summary.warningCount === 0) return undefined;
+  if (
+    summary.recordCount === 0 &&
+    summary.warningCount === 0 &&
+    summary.unresolvedCount === 0 &&
+    summary.placeholderCount === 0
+  ) {
+    return undefined;
+  }
 
   const parts = [`展开 ${summary.recordCount} 处`];
   const jsonParseCount = summary.stepCounts.json_parse || 0;
@@ -381,6 +415,7 @@ export const formatTransformContextSummary = (
   if (summary.schemeCounts.nonReversible > 0) parts.push(`不可逆 ${summary.schemeCounts.nonReversible}`);
   if (summary.warningCount > 0) parts.push(`跳过 ${summary.warningCount}`);
   if (summary.unresolvedCount > 0) parts.push(`待检查 ${summary.unresolvedCount}`);
+  if (summary.placeholderCount > 0) parts.push(`占位符 ${summary.placeholderCount}`);
 
   return `深度解析: ${parts.join('，')}`;
 };
@@ -421,6 +456,12 @@ export const buildTransformContextReport = (
       length: candidate.length,
       preview: candidate.preview,
       detectedType: candidate.detectedType,
+    })),
+    runtimePlaceholders: (context.runtimePlaceholders || []).map(placeholder => ({
+      path: placeholder.path,
+      sourcePath: placeholder.sourcePath,
+      value: placeholder.value,
+      description: placeholder.description,
     })),
   };
 };
@@ -468,6 +509,15 @@ export const formatTransformContextReportText = (
     });
   }
 
+  if (report.runtimePlaceholders.length > 0) {
+    lines.push('', '运行时占位符:');
+    report.runtimePlaceholders.forEach(placeholder => {
+      lines.push(`- ${placeholder.path}: ${placeholder.value}`);
+      lines.push(`  来源: ${placeholder.sourcePath}`);
+      lines.push(`  说明: ${placeholder.description}`);
+    });
+  }
+
   return lines.join('\n');
 };
 
@@ -480,24 +530,32 @@ export const buildTransformReportView = (
   const recordLimit = options?.recordLimit ?? DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT;
   const warningLimit = options?.warningLimit ?? DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT;
   const unresolvedLimit = options?.unresolvedLimit ?? DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT;
+  const placeholderLimit = options?.placeholderLimit ?? DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT;
   const filteredRecords = report.records.filter(record => matchesReportRecord(record, normalizedQuery));
   const filteredWarnings = report.warnings.filter(warning => matchesReportWarning(warning, normalizedQuery));
   const filteredUnresolved = report.unresolvedCandidates.filter(
     candidate => matchesUnresolvedCandidate(candidate, normalizedQuery)
+  );
+  const filteredPlaceholders = report.runtimePlaceholders.filter(
+    placeholder => matchesRuntimePlaceholder(placeholder, normalizedQuery)
   );
 
   return {
     records: filteredRecords.slice(0, recordLimit),
     warnings: filteredWarnings.slice(0, warningLimit),
     unresolvedCandidates: filteredUnresolved.slice(0, unresolvedLimit),
+    runtimePlaceholders: filteredPlaceholders.slice(0, placeholderLimit),
     filteredRecordCount: filteredRecords.length,
     filteredWarningCount: filteredWarnings.length,
     filteredUnresolvedCount: filteredUnresolved.length,
+    filteredPlaceholderCount: filteredPlaceholders.length,
     totalRecordCount: report.records.length,
     totalWarningCount: report.warnings.length,
     totalUnresolvedCount: report.unresolvedCandidates.length,
+    totalPlaceholderCount: report.runtimePlaceholders.length,
     isRecordTruncated: filteredRecords.length > recordLimit,
     isWarningTruncated: filteredWarnings.length > warningLimit,
     isUnresolvedTruncated: filteredUnresolved.length > unresolvedLimit,
+    isPlaceholderTruncated: filteredPlaceholders.length > placeholderLimit,
   };
 };
