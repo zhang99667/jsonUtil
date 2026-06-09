@@ -17,8 +17,15 @@ export interface TransformReportRecord {
   labels: string[];
   originalPreview: string;
   decodedPreview?: string;
+  decodedPaths: TransformReportDecodedPath[];
+  hasMoreDecodedPaths: boolean;
   stepCount: number;
   hasNonReversibleScheme: boolean;
+}
+
+export interface TransformReportDecodedPath {
+  path: string;
+  preview: string;
 }
 
 export interface TransformReportWarning {
@@ -53,6 +60,7 @@ export interface TransformReportViewOptions {
 
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
+const DEFAULT_DECODED_PATH_LIMIT = 12;
 
 const STEP_LABELS: Record<TransformStepType, string> = {
   json_parse: '嵌套 JSON',
@@ -98,14 +106,36 @@ const formatJsonValuePreview = (value: JsonValue, maxLength = 120): string => {
   return String(value);
 };
 
-const getSchemeDecodedPreview = (steps: TransformStep[]): string | undefined => {
+const appendJsonPathKey = (path: string, key: string): string => (
+  /^[A-Za-z_$][\w$]*$/.test(key)
+    ? `${path}.${key}`
+    : `${path}[${JSON.stringify(key)}]`
+);
+
+const appendJsonPathIndex = (path: string, index: number): string => (
+  `${path}[${index}]`
+);
+
+const joinJsonPath = (basePath: string, relativePath: string): string => (
+  relativePath === '$'
+    ? basePath
+    : `${basePath}${relativePath.slice(1)}`
+);
+
+const getSchemeDecodedValue = (steps: TransformStep[]): JsonValue | undefined => {
   const schemeStep = [...steps].reverse().find(step => (
     step.type === 'scheme_decode' && step.decodedSchemeValue !== undefined
   ));
 
-  return schemeStep?.decodedSchemeValue === undefined
+  return schemeStep?.decodedSchemeValue;
+};
+
+const getSchemeDecodedPreview = (steps: TransformStep[]): string | undefined => {
+  const decodedValue = getSchemeDecodedValue(steps);
+
+  return decodedValue === undefined
     ? undefined
-    : formatJsonValuePreview(schemeStep.decodedSchemeValue);
+    : formatJsonValuePreview(decodedValue);
 };
 
 const getJsonParseDecodedPreview = (record: PathTransformRecord): string | undefined => {
@@ -121,6 +151,101 @@ const getJsonParseDecodedPreview = (record: PathTransformRecord): string | undef
 const getDecodedPreview = (record: PathTransformRecord): string | undefined => (
   getSchemeDecodedPreview(record.steps) || getJsonParseDecodedPreview(record)
 );
+
+const getDecodedValue = (record: PathTransformRecord): JsonValue | undefined => {
+  const schemeDecodedValue = getSchemeDecodedValue(record.steps);
+  if (schemeDecodedValue !== undefined) return schemeDecodedValue;
+  if (!record.steps.some(step => step.type === 'json_parse')) return undefined;
+
+  try {
+    return JSON.parse(record.originalValue) as JsonValue;
+  } catch {
+    return undefined;
+  }
+};
+
+interface DecodedPathCollectState {
+  rows: TransformReportDecodedPath[];
+  limit: number;
+  hasMore: boolean;
+}
+
+const pushDecodedPath = (
+  state: DecodedPathCollectState,
+  row: TransformReportDecodedPath
+) => {
+  if (state.rows.length < state.limit) {
+    state.rows.push(row);
+    return;
+  }
+
+  state.hasMore = true;
+};
+
+const collectDecodedLeafPaths = (
+  value: JsonValue,
+  currentPath: string,
+  state: DecodedPathCollectState
+) => {
+  if (state.hasMore) return;
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      pushDecodedPath(state, { path: currentPath, preview: '数组 0 项' });
+      return;
+    }
+
+    for (let index = 0; index < value.length; index++) {
+      collectDecodedLeafPaths(value[index], appendJsonPathIndex(currentPath, index), state);
+      if (state.hasMore) return;
+    }
+    return;
+  }
+
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+      pushDecodedPath(state, { path: currentPath, preview: '对象: 空' });
+      return;
+    }
+
+    for (const [key, item] of entries) {
+      collectDecodedLeafPaths(item, appendJsonPathKey(currentPath, key), state);
+      if (state.hasMore) return;
+    }
+    return;
+  }
+
+  pushDecodedPath(state, {
+    path: currentPath,
+    preview: formatJsonValuePreview(value, 80),
+  });
+};
+
+const buildDecodedPaths = (
+  record: PathTransformRecord,
+  limit = DEFAULT_DECODED_PATH_LIMIT
+): { decodedPaths: TransformReportDecodedPath[]; hasMoreDecodedPaths: boolean } => {
+  const decodedValue = getDecodedValue(record);
+  if (decodedValue === undefined || decodedValue === null || typeof decodedValue !== 'object') {
+    return { decodedPaths: [], hasMoreDecodedPaths: false };
+  }
+
+  const state: DecodedPathCollectState = {
+    rows: [],
+    limit,
+    hasMore: false,
+  };
+  collectDecodedLeafPaths(decodedValue, '$', state);
+
+  return {
+    decodedPaths: state.rows.map(row => ({
+      path: joinJsonPath(record.path, row.path),
+      preview: row.preview,
+    })),
+    hasMoreDecodedPaths: state.hasMore,
+  };
+};
 
 const getSchemeTypeLabel = (step: TransformStep): string => {
   if (step.originalSchemeType === 'query-string') return 'CMD 参数';
@@ -148,7 +273,11 @@ const matchesReportRecord = (
   includesQuery(record.path, normalizedQuery) ||
   includesQuery(record.labels.join(' '), normalizedQuery) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
-  (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false)
+  (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
+  record.decodedPaths.some(row => (
+    includesQuery(row.path, normalizedQuery) ||
+    includesQuery(row.preview, normalizedQuery)
+  ))
 );
 
 const matchesReportWarning = (
@@ -230,16 +359,22 @@ export const formatTransformContextSummary = (
 export const buildTransformContextReport = (
   context: TransformContext
 ): TransformContextReport => {
-  const records: TransformReportRecord[] = Array.from(context.records.values()).map(record => ({
-    path: record.path,
-    labels: record.steps.map(getStepLabel),
-    originalPreview: formatOriginalPreview(record.originalValue),
-    decodedPreview: getDecodedPreview(record),
-    stepCount: record.steps.length,
-    hasNonReversibleScheme: record.steps.some(
-      step => step.type === 'scheme_decode' && step.originalSchemeReversible === false
-    ),
-  }));
+  const records: TransformReportRecord[] = Array.from(context.records.values()).map(record => {
+    const { decodedPaths, hasMoreDecodedPaths } = buildDecodedPaths(record);
+
+    return {
+      path: record.path,
+      labels: record.steps.map(getStepLabel),
+      originalPreview: formatOriginalPreview(record.originalValue),
+      decodedPreview: getDecodedPreview(record),
+      decodedPaths,
+      hasMoreDecodedPaths,
+      stepCount: record.steps.length,
+      hasNonReversibleScheme: record.steps.some(
+        step => step.type === 'scheme_decode' && step.originalSchemeReversible === false
+      ),
+    };
+  });
 
   return {
     summary: summarizeTransformContext(context),
@@ -271,6 +406,12 @@ export const formatTransformContextReportText = (
       lines.push(`- ${record.path}: ${record.labels.join(' -> ')}`);
       if (record.decodedPreview) {
         lines.push(`  解析结果: ${record.decodedPreview}`);
+      }
+      if (record.decodedPaths.length > 0) {
+        lines.push(`  内部路径: ${record.decodedPaths.map(row => `${row.path}=${row.preview}`).join('；')}`);
+      }
+      if (record.hasMoreDecodedPaths) {
+        lines.push('  内部路径: 还有更多未展示');
       }
     });
   }

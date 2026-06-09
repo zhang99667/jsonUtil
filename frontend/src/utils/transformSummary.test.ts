@@ -68,6 +68,11 @@ describe('transformSummary', () => {
     ]);
     expect(formatTransformContextReportText(result.context)).toContain('$.extra: Base64 · 不可逆');
     expect(formatTransformContextReportText(result.context)).toContain('解析结果: 对象: meg_name, flag');
+    expect(formatTransformContextReportText(result.context)).toContain('内部路径: $.cmd.cmd.nid=123');
+    expect(report.records[0].decodedPaths).toEqual([
+      { path: '$.cmd.cmd.nid', preview: '123' },
+      { path: '$.cmd.from', preview: 'feed' },
+    ]);
 
     const base64View = buildTransformReportView(report, 'base64');
     expect(base64View.records.map(record => record.path)).toEqual(['$.extra']);
@@ -76,6 +81,10 @@ describe('transformSummary', () => {
     const decodedValueView = buildTransformReportView(report, 'nested');
     expect(decodedValueView.records.map(record => record.path)).toEqual(['$.payload']);
     expect(decodedValueView.filteredRecordCount).toBe(1);
+
+    const decodedPathView = buildTransformReportView(report, 'cmd.nid');
+    expect(decodedPathView.records.map(record => record.path)).toEqual(['$.cmd']);
+    expect(decodedPathView.filteredRecordCount).toBe(1);
 
     const limitedView = buildTransformReportView(report, '', { recordLimit: 2 });
     expect(limitedView.records.map(record => record.path)).toEqual(['$.cmd', '$.payload']);
@@ -87,6 +96,21 @@ describe('transformSummary', () => {
     const result = deepParseWithContext(JSON.stringify({ ok: true }), { autoExpandScheme: true });
 
     expect(formatTransformContextSummary(result.context)).toBeUndefined();
+  });
+
+  it('内部路径展示会限制条数避免大对象刷屏', () => {
+    const widePayload = Object.fromEntries(
+      Array.from({ length: 14 }, (_, index) => [`k${index}`, index])
+    );
+    const result = deepParseWithContext(JSON.stringify({
+      payload: JSON.stringify(widePayload),
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.records[0].decodedPaths).toHaveLength(12);
+    expect(report.records[0].decodedPaths[0]).toEqual({ path: '$.payload.k0', preview: '0' });
+    expect(report.records[0].hasMoreDecodedPaths).toBe(true);
+    expect(formatTransformContextReportText(result.context)).toContain('内部路径: 还有更多未展示');
   });
 
   it('统计性能保护跳过信息', () => {
