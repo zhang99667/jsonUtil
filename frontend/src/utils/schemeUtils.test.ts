@@ -249,6 +249,14 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType('#/detail?cmd=%7B%22a%22%3A1%7D&from=hash')).toBe('query-string');
   });
 
+  it('检测 JSON 字符串字面量包裹的 CMD 参数串', () => {
+    expect(detectSchemeType(JSON.stringify('cmd=%7B%22a%22%3A1%7D&from=literal'))).toBe('query-string');
+  });
+
+  it('检测 JSON 字符串字面量包裹的 URL', () => {
+    expect(detectSchemeType(JSON.stringify('https://example.com/path?from=literal'))).toBe('url');
+  });
+
   it('普通字符串返回 plain', () => {
     expect(detectSchemeType('hello world')).toBe('plain');
   });
@@ -509,6 +517,29 @@ describe('deepDecodeScheme', () => {
       url: { from: 'box' },
     });
     expect(result.layers[0].type).toBe('query-string');
+  });
+
+  it('JSON 字符串字面量包裹的 CMD 参数串被解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const original = JSON.stringify(`cmd=${payload}&from=literal`);
+    const result = deepDecodeScheme(original);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      from: 'literal',
+    });
+    expect(result.layers.map(layer => layer.type)).toEqual(['json', 'query-string']);
+    expect(result.layers[0].description).toBe('JSON 字符串字面量解析');
+  });
+
+  it('JSON 字符串字面量包裹的 URL 被解析', () => {
+    const original = JSON.stringify('https://example.com/path?from=literal');
+    const result = deepDecodeScheme(original);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({ from: 'literal' });
+    expect(result.layers.map(layer => layer.type)).toEqual(['json', 'url']);
   });
 
   it('运行时占位符会保留并标记路径', () => {
@@ -933,6 +964,28 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe('url=https://m.baidu.com/s?word=schema&from=feed');
+  });
+
+  it('JSON 字符串字面量包裹的 CMD 编辑后保留外层字面量', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const original = JSON.stringify(`cmd=${payload}&from=literal`);
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      cmd: { nid: 456 },
+      from: 'literal',
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe(JSON.stringify('cmd=%7B%22nid%22%3A456%7D&from=literal'));
+  });
+
+  it('JSON 字符串字面量包裹的 URL 编辑后保留外层字面量', () => {
+    const original = JSON.stringify('https://example.com/path?from=literal');
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({ from: 'edited' }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe(JSON.stringify('https://example.com/path?from=edited'));
   });
 
   it('不可逆编码层编辑时保留原始值', () => {

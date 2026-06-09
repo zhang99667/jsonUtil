@@ -22,6 +22,7 @@
 - **CMD/Scheme hash 参数值解析**: 支持 `_hash=%2Fdetail%3Fcmd%3D...`、`next=%23/detail%3F...` 等参数值中的 hash route 片段递归展开
 - **CMD/Scheme 跳转字段识别**: `redirectUrl`、`fallbackUrl`、`next`、`deepLink` 等常见单参数跳转字段会按 URL/CMD 字段解析，减少只复制单个字段时漏展开
 - **CMD/Scheme 多行参数解析**: 支持解析日志复制出的 `cmd=...\nfrom=...` 多行参数串，减少换行粘贴时漏展开
+- **CMD/Scheme 字符串字面量兼容**: 独立 Scheme 面板和深度格式化支持解析 `"cmd=..."`、`"https://..."` 等 JSON 字符串字面量包裹的链路，并在回写时保留外层字面量
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
 - **深度格式化默认展开体验**: 新用户默认开启「自动展开 CMD/Scheme 字符串」，粘贴真实 response 后无需先进设置即可看到深层 CMD、URL 与 Base64 结构
 - **深度格式化 Base64 Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化会同步展开 Base64 JSON 和带内部头的 Base64 JSON 片段，整段真实广告 response 可直接看到 extraParam 结构
