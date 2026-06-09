@@ -153,6 +153,18 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     }
   };
 
+  const handleCopyPath = async () => {
+    if (!path) return;
+
+    try {
+      await copyText(path);
+      toast.success('已复制路径', { duration: 2000 });
+    } catch (err) {
+      console.warn('复制 Scheme 来源路径失败:', err);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
   // JSON 解码结果被编辑后需要重新校验，避免非法内容写回原始字段。
   const editedJsonError = useMemo(() => {
     if (!decodeResult.isJson) return '';
@@ -253,14 +265,26 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     extractBase64MetaInfo(decodeResult.decoded, decodeResult.isJson)
   ), [decodeResult.decoded, decodeResult.isJson]);
 
-  // 头部额外内容：非独立模式显示 path 标签
+  // 头部额外内容：非独立模式显示 path 标签，并支持复制到 JSONPath 面板继续定位
   const headerExtra = !standalone && path ? (
-    <span 
-      className="text-xs text-gray-400 font-mono bg-editor-active px-2 py-0.5 rounded truncate max-w-[200px]" 
-      title={path}
-    >
-      {path}
-    </span>
+    <div className="flex min-w-0 items-center gap-1.5">
+      <span
+        data-tour="scheme-source-path"
+        className="min-w-0 max-w-[200px] truncate rounded bg-editor-active px-2 py-0.5 font-mono text-xs text-gray-400"
+        title={path}
+      >
+        {path}
+      </span>
+      <button
+        data-tour="scheme-copy-path"
+        type="button"
+        onClick={handleCopyPath}
+        className="shrink-0 rounded bg-editor-active px-2 py-0.5 text-xs text-gray-300 transition-colors hover:bg-editor-border hover:text-white"
+        title="复制路径"
+      >
+        复制路径
+      </button>
+    </div>
   ) : null;
 
   // 底部操作栏

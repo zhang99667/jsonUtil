@@ -19,6 +19,22 @@ describe('queryJsonPathRanges', () => {
     expect(result.ranges[0].startColumn).toBeGreaterThan(0);
   });
 
+  it('支持查询特殊 key 的 bracket JSONPath', () => {
+    const jsonData = JSON.stringify({
+      'a.b': {
+        'x/y': {
+          'tilde~key': 'https://example.com/path?from=key',
+        },
+      },
+    }, null, 2);
+
+    const result = queryJsonPathRanges(jsonData, '$["a.b"]["x/y"]["tilde~key"]');
+
+    expect(result.totalResults).toBe(1);
+    expect(result.values).toEqual(['https://example.com/path?from=key']);
+    expect(result.ranges[0].startLine).toBe(4);
+  });
+
   it('无匹配时返回空范围', () => {
     const result = queryJsonPathRanges('{"name":"Alice"}', '$.missing');
 
