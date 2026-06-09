@@ -335,6 +335,16 @@ const base64Decode = (input: string): string => {
   }
 };
 
+const appendJsonPathKey = (path: string, key: string): string => (
+  /^[A-Za-z_$][\w$]*$/.test(key)
+    ? `${path}.${key}`
+    : `${path}[${JSON.stringify(key)}]`
+);
+
+const appendJsonPathIndex = (path: string, index: number): string => (
+  `${path}[${index}]`
+);
+
 // ============ 带路径记录的深度解析 ============
 
 /**
@@ -426,7 +436,7 @@ export function deepParseWithContext(
         const processParsedValue = (jsonParsed: JsonValue): JsonValue => {
           if (Array.isArray(jsonParsed)) {
             return jsonParsed.map((item, index) =>
-              processValue(item, `${currentPath}[${index}]`, depth + 1)
+              processValue(item, appendJsonPathIndex(currentPath, index), depth + 1)
             );
           }
 
@@ -434,7 +444,7 @@ export function deepParseWithContext(
             const jsonObj = jsonParsed as JsonObject;
             const result: JsonObject = {};
             for (const key in jsonObj) {
-              result[key] = processValue(jsonObj[key], `${currentPath}.${key}`, depth + 1);
+              result[key] = processValue(jsonObj[key], appendJsonPathKey(currentPath, key), depth + 1);
             }
             return result;
           }
@@ -545,7 +555,7 @@ export function deepParseWithContext(
 
       if (Array.isArray(value)) {
         return value.map((item, index) =>
-          processValue(item, `${currentPath}[${index}]`, depth)
+          processValue(item, appendJsonPathIndex(currentPath, index), depth)
         );
       }
 
@@ -553,7 +563,7 @@ export function deepParseWithContext(
         const objValue = value as JsonObject;
         const result: JsonObject = {};
         for (const key in objValue) {
-          result[key] = processValue(objValue[key], `${currentPath}.${key}`, depth);
+          result[key] = processValue(objValue[key], appendJsonPathKey(currentPath, key), depth);
         }
         return result;
       }
@@ -600,13 +610,13 @@ export function inverseWithContext(
         if (typeof current === 'object' && current !== null) {
           if (Array.isArray(current)) {
             current = current.map((item, index) =>
-              restoreValue(item, `${currentPath}[${index}]`)
+              restoreValue(item, appendJsonPathIndex(currentPath, index))
             );
           } else {
             const currentObj = current as JsonObject;
             const restored: JsonObject = {};
             for (const key in currentObj) {
-              restored[key] = restoreValue(currentObj[key], `${currentPath}.${key}`);
+              restored[key] = restoreValue(currentObj[key], appendJsonPathKey(currentPath, key));
             }
             current = restored;
           }
@@ -624,7 +634,7 @@ export function inverseWithContext(
       // 无转换记录，递归处理子节点
       if (Array.isArray(value)) {
         return value.map((item, index) =>
-          restoreValue(item, `${currentPath}[${index}]`)
+          restoreValue(item, appendJsonPathIndex(currentPath, index))
         );
       }
 
@@ -632,7 +642,7 @@ export function inverseWithContext(
         const objValue = value as JsonObject;
         const result: JsonObject = {};
         for (const key in objValue) {
-          result[key] = restoreValue(objValue[key], `${currentPath}.${key}`);
+          result[key] = restoreValue(objValue[key], appendJsonPathKey(currentPath, key));
         }
         return result;
       }

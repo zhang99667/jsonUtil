@@ -430,6 +430,22 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
   });
 
+  it('特殊 key 的转换路径使用 JSONPath 安全写法', () => {
+    const input = JSON.stringify({
+      'user.name': JSON.stringify({ nested: true }),
+      'dash-key': `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`,
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed['user.name']).toEqual({ nested: true });
+    expect(parsed['dash-key']).toEqual({ cmd: { nid: 123 } });
+    expect(result.context.records.get('$["user.name"]')?.steps[0].type).toBe('json_parse');
+    expect(result.context.records.get('$["dash-key"]')?.steps[0].type).toBe('scheme_decode');
+    expect(JSON.parse(inverseWithContext(result.output, result.context))).toEqual(JSON.parse(input));
+  });
+
   it('深度格式化可提取 JS 赋值包装并继续展开 CMD 参数', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
     const input = `const response = ${JSON.stringify({
