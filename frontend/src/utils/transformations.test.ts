@@ -539,6 +539,30 @@ describe('deepParseWithContext', () => {
     });
   });
 
+  it('自动展开拼接后缀的内部 Base64 JSON 片段并保留后缀可见', () => {
+    const suffix = 'UxMJm9zPTImaXA9MTI3LjAuMC4x';
+    const encoded = `AFD8f${base64Encode('{"meg_name":"AI","flag":true}')}${suffix}`;
+    const input = JSON.stringify({
+      extra: [{ k: 'extraParam', v: encoded }],
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+    const step = result.context.records.get('$.extra[0].v')?.steps[0];
+
+    expect(parsed.extra[0].v).toEqual({
+      meg_name: 'AI',
+      flag: true,
+      _base64_prefix: 'AFD8f',
+      _base64_suffix: suffix,
+    });
+    expect(step).toMatchObject({
+      type: 'scheme_decode',
+      originalSchemeType: 'base64',
+      originalSchemeReversible: false,
+    });
+  });
+
   it('自动展开真实广告 response 中的深层跳转链路', () => {
     const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101&bd_vid=abc';
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
@@ -794,6 +818,17 @@ describe('inverseWithContext 精确还原', () => {
     const encoded = `AFD8f${base64Encode('meg_name":"AI","flag":true}')}`;
     const input = JSON.stringify({
       extra: [{ v: encoded }],
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+
+    const restored = inverseWithContext(output, context);
+    expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('未编辑的拼接后缀内部 Base64 JSON 片段自动展开后可精确还原', () => {
+    const encoded = `AFD8f${base64Encode('{"meg_name":"AI","flag":true}')}UxMJm9zPTImaXA9MTI3LjAuMC4x`;
+    const input = JSON.stringify({
+      extra: [{ k: 'extraParam', v: encoded }],
     });
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
 

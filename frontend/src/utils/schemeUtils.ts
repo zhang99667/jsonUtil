@@ -490,6 +490,29 @@ const normalizeBase64JsonFragment = (decoded: string): string | null => {
   return null;
 };
 
+const appendPrefixedBase64Meta = (
+  jsonFragment: string,
+  prefix: string,
+  suffix: string
+): string => {
+  if (!suffix) return jsonFragment;
+
+  try {
+    const parsed = JSON.parse(jsonFragment) as StructuredValue;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return jsonFragment;
+    }
+
+    return JSON.stringify({
+      ...parsed,
+      _base64_prefix: prefix,
+      _base64_suffix: suffix,
+    });
+  } catch {
+    return jsonFragment;
+  }
+};
+
 const decodePrefixedBase64JsonFragment = (input: string): string | null => {
   const compact = input.trim().replace(/\s+/g, '');
   const firstPaddingIndex = compact.indexOf('=');
@@ -508,7 +531,9 @@ const decodePrefixedBase64JsonFragment = (input: string): string | null => {
 
     const jsonFragment = normalizeBase64JsonFragment(decoded);
     if (jsonFragment) {
-      return jsonFragment;
+      const prefix = compact.slice(0, offset);
+      const suffix = compact.slice(payloadEnd);
+      return appendPrefixedBase64Meta(jsonFragment, prefix, suffix);
     }
   }
 

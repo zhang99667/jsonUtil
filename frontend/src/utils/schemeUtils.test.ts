@@ -432,6 +432,25 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('带内部头的 Base64 JSON 片段存在拼接后缀时保留元信息', () => {
+    const suffix = 'UxMJm9zPTImaXA9MTI3LjAuMC4x';
+    const encoded = `AFD8f${base64Encode('{"meg_name":"AI","flag":true}')}${suffix}`;
+    const result = deepDecodeScheme(encoded);
+
+    expect(result.isJson).toBe(true);
+    expect(JSON.parse(result.decoded)).toEqual({
+      meg_name: 'AI',
+      flag: true,
+      _base64_prefix: 'AFD8f',
+      _base64_suffix: suffix,
+    });
+    expect(result.layers[0]).toMatchObject({
+      type: 'base64',
+      description: 'Base64 JSON 片段解析',
+      reversible: false,
+    });
+  });
+
   it('URL 被解析', () => {
     const result = deepDecodeScheme('https://example.com/path?key=value');
     expect(result.schemeInfo).toBeDefined();
