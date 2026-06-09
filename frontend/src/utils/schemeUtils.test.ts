@@ -18,7 +18,7 @@ import {
   isDecodableQueryString,
   isRuntimePlaceholder,
 } from './schemeUtils';
-import { findSchemesInJson } from './schemeScanner';
+import { findSchemesInJson, scanSchemesInJson } from './schemeScanner';
 
 // ============ 检测函数测试 ============
 
@@ -990,5 +990,37 @@ describe('findSchemesInJson', () => {
 
   it('非法 JSON 返回空数组', () => {
     expect(findSchemesInJson('{invalid}')).toEqual([]);
+  });
+});
+
+// ============ scanSchemesInJson 测试 ============
+
+describe('scanSchemesInJson', () => {
+  it('超过结果上限时提前停止并标记截断', () => {
+    const json = JSON.stringify({
+      first: 'https://example.com/first',
+      second: 'https://example.com/second',
+      third: 'https://example.com/third',
+    }, null, 2);
+
+    const result = scanSchemesInJson(json, { resultLimit: 2 });
+
+    expect(result.locations).toHaveLength(2);
+    expect(result.locations.map(item => item.path)).toEqual(['$.first', '$.second']);
+    expect(result.isLimited).toBe(true);
+    expect(result.limit).toBe(2);
+  });
+
+  it('结果数量等于上限时不标记截断', () => {
+    const json = JSON.stringify({
+      first: 'https://example.com/first',
+      second: 'https://example.com/second',
+    }, null, 2);
+
+    const result = scanSchemesInJson(json, { resultLimit: 2 });
+
+    expect(result.locations).toHaveLength(2);
+    expect(result.isLimited).toBe(false);
+    expect(result.limit).toBe(2);
   });
 });

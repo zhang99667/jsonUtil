@@ -9,11 +9,24 @@ export interface SchemeLocation {
   schemeType: SchemeType; // scheme 类型
 }
 
+export interface SchemeScanResult {
+  locations: SchemeLocation[];
+  isLimited: boolean;
+  limit: number;
+}
+
+export const DEFAULT_SCHEME_SCAN_RESULT_LIMIT = 1000;
+
 /**
  * 扫描 JSON 字符串，找出所有包含 scheme 的字符串值及其位置
  */
-export function findSchemesInJson(jsonString: string): SchemeLocation[] {
+export function scanSchemesInJson(
+  jsonString: string,
+  options?: { resultLimit?: number }
+): SchemeScanResult {
   const results: SchemeLocation[] = [];
+  const limit = Math.max(1, options?.resultLimit ?? DEFAULT_SCHEME_SCAN_RESULT_LIMIT);
+  let isLimited = false;
 
   try {
     const parsed: unknown = JSON.parse(jsonString);
@@ -28,10 +41,19 @@ export function findSchemesInJson(jsonString: string): SchemeLocation[] {
       segment.replace(/~/g, '~0').replace(/\//g, '~1')
     );
 
-    const traverse = (obj: unknown, currentPath: string, currentPointer: string) => {
+    const markLimited = (): false => {
+      isLimited = true;
+      return false;
+    };
+
+    const traverse = (obj: unknown, currentPath: string, currentPointer: string): boolean => {
       if (typeof obj === 'string') {
         const schemeType = detectSchemeType(obj);
         if (schemeType !== 'plain' && schemeType !== 'json') {
+          if (results.length >= limit) {
+            return markLimited();
+          }
+
           results.push({
             path: currentPath,
             pointer: currentPointer,
@@ -41,18 +63,24 @@ export function findSchemesInJson(jsonString: string): SchemeLocation[] {
           });
         }
       } else if (Array.isArray(obj)) {
-        obj.forEach((item, index) => {
-          traverse(item, `${currentPath}[${index}]`, `${currentPointer}/${index}`);
-        });
+        for (let index = 0; index < obj.length; index++) {
+          if (!traverse(obj[index], `${currentPath}[${index}]`, `${currentPointer}/${index}`)) {
+            return false;
+          }
+        }
       } else if (typeof obj === 'object' && obj !== null) {
         for (const key in (obj as Record<string, unknown>)) {
-          traverse(
+          if (!traverse(
             (obj as Record<string, unknown>)[key],
             `${currentPath}.${key}`,
             `${currentPointer}/${escapePointerSegment(key)}`
-          );
+          )) {
+            return false;
+          }
         }
       }
+
+      return true;
     };
 
     traverse(parsed, '$', '');
@@ -60,5 +88,13 @@ export function findSchemesInJson(jsonString: string): SchemeLocation[] {
     // JSON 解析失败，返回空数组
   }
 
-  return results;
+  return {
+    locations: results,
+    isLimited,
+    limit,
+  };
+}
+
+export function findSchemesInJson(jsonString: string): SchemeLocation[] {
+  return scanSchemesInJson(jsonString).locations;
 }
