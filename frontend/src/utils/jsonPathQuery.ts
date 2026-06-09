@@ -25,6 +25,13 @@ interface JsonPathMatch {
 
 export const DEFAULT_JSONPATH_RESULT_LIMIT = 1000;
 
+class JsonPathResultLimitReached extends Error {
+  constructor() {
+    super('JSONPath result limit reached');
+    this.name = 'JsonPathResultLimitReached';
+  }
+}
+
 interface ParsedJsonPathSource {
   source: string;
   parsedData: JsonValue;
@@ -137,6 +144,14 @@ const toJsonLineHighlightRange = (
   return lineRange ? offsetLineRange(lineRange, record) : null;
 };
 
+const isJsonPathMatch = (value: unknown): value is JsonPathMatch => (
+  Boolean(value) &&
+  typeof value === 'object' &&
+  'pointer' in value &&
+  typeof (value as { pointer?: unknown }).pointer === 'string' &&
+  'value' in value
+);
+
 /**
  * 查询 JSONPath 并返回可直接用于 Monaco 高亮的范围
  */
@@ -148,16 +163,31 @@ export const queryJsonPathRanges = (
   const parsedSource = parseJsonPathSource(jsonData, options);
   const resultLimit = Math.max(1, options.resultLimit ?? DEFAULT_JSONPATH_RESULT_LIMIT);
 
-  let matches: JsonPathMatch[];
+  const matches: JsonPathMatch[] = [];
+  let isLimited = false;
   try {
-    matches = JSONPath<JsonPathMatch[]>({
+    JSONPath({
       path: query,
       json: parsedSource.parsedData,
       resultType: 'all',
+      callback: (payload: unknown) => {
+        if (matches.length >= resultLimit) {
+          isLimited = true;
+          throw new JsonPathResultLimitReached();
+        }
+
+        if (isJsonPathMatch(payload)) {
+          matches.push(payload);
+        }
+      },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`JSONPath 查询错误: ${message}`);
+    if (error instanceof JsonPathResultLimitReached) {
+      isLimited = true;
+    } else {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`JSONPath 查询错误: ${message}`);
+    }
   }
 
   if (!matches || matches.length === 0) {
@@ -170,10 +200,9 @@ export const queryJsonPathRanges = (
     };
   }
 
-  const limitedMatches = matches.slice(0, resultLimit);
   const sourceMap = parsedSource.jsonLines ? null : parseJsonSourceMap(parsedSource.source);
   const jsonLineSourceMapCache = new Map<number, ReturnType<typeof parseJsonSourceMap>['pointers']>();
-  const results = limitedMatches
+  const results = matches
     .map(match => ({
       range: parsedSource.jsonLines
         ? toJsonLineHighlightRange(match.pointer, parsedSource.jsonLines, jsonLineSourceMapCache)
@@ -186,7 +215,7 @@ export const queryJsonPathRanges = (
     ranges: results.map(result => result.range),
     values: results.map(result => result.value),
     totalResults: matches.length,
-    isLimited: matches.length > limitedMatches.length,
+    isLimited,
     resultLimit,
   };
 };
