@@ -99,9 +99,12 @@ describe('transformSummary', () => {
   });
 
   it('内部路径展示会限制条数避免大对象刷屏', () => {
-    const widePayload = Object.fromEntries(
-      Array.from({ length: 14 }, (_, index) => [`k${index}`, index])
-    );
+    const widePayload = {
+      ...Object.fromEntries(
+        Array.from({ length: 20 }, (_, index) => [`k${index}`, index])
+      ),
+      target_after_display_limit: 'needle_after_display_limit',
+    };
     const result = deepParseWithContext(JSON.stringify({
       payload: JSON.stringify(widePayload),
     }), { autoExpandScheme: true });
@@ -109,8 +112,13 @@ describe('transformSummary', () => {
 
     expect(report.records[0].decodedPaths).toHaveLength(12);
     expect(report.records[0].decodedPaths[0]).toEqual({ path: '$.payload.k0', preview: '0' });
+    expect(report.records[0].decodedPaths.some(row => row.path.includes('target_after_display_limit'))).toBe(false);
     expect(report.records[0].hasMoreDecodedPaths).toBe(true);
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: 还有更多未展示');
+
+    const hiddenPathView = buildTransformReportView(report, 'target_after_display_limit');
+    expect(hiddenPathView.records.map(record => record.path)).toEqual(['$.payload']);
+    expect(hiddenPathView.filteredRecordCount).toBe(1);
   });
 
   it('展示疑似未展开的结构化字符串线索', () => {
