@@ -124,6 +124,16 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expect(reportPanel).toContainText('深度解析报告');
   await expect(reportPanel).toContainText('$[0].payload');
   await expect(reportPanel).toContainText('嵌套 JSON');
+  await expect(reportPanel).toContainText('解析结果: 对象: nested');
+
+  await page
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$[0].payload' })
+    .locator('[data-tour="transform-report-copy-path"]')
+    .click();
+  await expect(page.getByText('已复制路径')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$[0].payload');
 
   await page.locator('[data-tour="transform-report-filter"]').fill('$[1]');
   await expect(reportPanel).toContainText('$[1].payload');
