@@ -40,6 +40,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
+  const handleCopyPath = async (path: string) => {
+    try {
+      await copyText(path);
+      toast.success('已复制路径', { duration: 1600 });
+    } catch (error) {
+      console.warn('复制深度解析路径失败:', error);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
   const footer = (
     <>
       <div className="text-xs text-gray-500">
@@ -136,11 +146,21 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                       <span className="font-mono text-emerald-300 truncate" title={record.path}>
                         {record.path}
                       </span>
-                      {record.hasNonReversibleScheme && (
-                        <span className="shrink-0 text-amber-200 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
-                          不可逆
-                        </span>
-                      )}
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        {record.hasNonReversibleScheme && (
+                          <span className="text-amber-200 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
+                            不可逆
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          data-tour="transform-report-copy-path"
+                          onClick={() => handleCopyPath(record.path)}
+                          className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        >
+                          复制路径
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {record.labels.map((label, index) => (
