@@ -177,6 +177,40 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         解析结果: {record.decodedPreview}
                       </div>
                     )}
+                    {record.decodedPaths.length > 0 && (
+                      <div className="mt-1.5 flex flex-col gap-1">
+                        <div className="text-gray-500">内部路径</div>
+                        {record.decodedPaths.map(row => (
+                          <div
+                            key={`${record.path}:${row.path}`}
+                            data-tour="transform-report-decoded-path"
+                            className="flex items-center justify-between gap-2 rounded bg-editor-bg px-2 py-1"
+                          >
+                            <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                              <span className="min-w-0 flex-1 text-emerald-200 truncate" title={row.path}>
+                                {row.path}
+                              </span>
+                              <span className="shrink-0 text-gray-500">=</span>
+                              <span className="min-w-0 flex-1 text-cyan-200 truncate" title={row.preview}>
+                                {row.preview}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyPath(row.path)}
+                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            >
+                              复制
+                            </button>
+                          </div>
+                        ))}
+                        {record.hasMoreDecodedPaths && (
+                          <div className="text-gray-500">
+                            还有更多内部路径未展示
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-1 font-mono text-gray-500 truncate" title={record.originalPreview}>
                       原始值: {record.originalPreview}
                     </div>
