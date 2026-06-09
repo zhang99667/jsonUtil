@@ -325,8 +325,18 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     key={`${warning.path}:${warning.length}:${warning.limit}`}
                     className="rounded border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs"
                   >
-                    <div className="font-mono text-amber-200 truncate" title={warning.path}>
-                      {warning.path}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 font-mono text-amber-200 truncate" title={warning.path}>
+                        {warning.path}
+                      </div>
+                      <button
+                        type="button"
+                        data-tour="transform-report-warning-copy-path"
+                        onClick={() => handleCopyPath(warning.path)}
+                        className="shrink-0 text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                      >
+                        复制路径
+                      </button>
                     </div>
                     <div className="mt-1 text-gray-300">{warning.message}</div>
                     <div className="mt-1 text-gray-500">

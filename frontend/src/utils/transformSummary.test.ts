@@ -180,5 +180,17 @@ describe('transformSummary', () => {
     expect(formatTransformContextReportText(result.context)).toContain(
       '$.action_cmd: 字符串过长，已跳过递归展开以保护性能'
     );
+
+    const report = buildTransformContextReport(result.context);
+    const warningView = buildTransformReportView(report, 'action_cmd');
+    expect(warningView.warnings).toEqual([
+      {
+        path: '$.action_cmd',
+        message: '字符串过长，已跳过递归展开以保护性能',
+        length: actionCmd.length,
+        limit: 20,
+      },
+    ]);
+    expect(warningView.filteredWarningCount).toBe(1);
   });
 });
