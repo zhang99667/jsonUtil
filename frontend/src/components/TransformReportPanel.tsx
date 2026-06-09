@@ -1,0 +1,165 @@
+import React, { useMemo } from 'react';
+import toast from 'react-hot-toast';
+import type { TransformContext } from '../types';
+import { copyText } from '../utils/clipboard';
+import {
+  buildTransformContextReport,
+  formatTransformContextReportText,
+} from '../utils/transformSummary';
+import { DraggablePanel, PanelIcons } from './DraggablePanel';
+
+interface TransformReportPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  context: TransformContext | null;
+}
+
+export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
+  isOpen,
+  onClose,
+  context,
+}) => {
+  const report = useMemo(() => (
+    context ? buildTransformContextReport(context) : null
+  ), [context]);
+
+  const handleCopyReport = async () => {
+    if (!context) return;
+
+    try {
+      await copyText(formatTransformContextReportText(context));
+      toast.success('已复制解析报告', { duration: 2000 });
+    } catch (error) {
+      console.warn('复制深度解析报告失败:', error);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
+  const footer = (
+    <>
+      <div className="text-xs text-gray-500">
+        {report
+          ? `${report.records.length} 条展开记录 · ${report.warnings.length} 条跳过记录`
+          : '暂无解析上下文'}
+      </div>
+      <button
+        onClick={handleCopyReport}
+        disabled={!context}
+        className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        复制报告
+      </button>
+    </>
+  );
+
+  return (
+    <DraggablePanel
+      isOpen={isOpen}
+      onClose={onClose}
+      title="深度解析报告"
+      icon={PanelIcons.Code}
+      storageKey="transform-report-panel"
+      defaultPosition={{ x: 220, y: 120 }}
+      defaultSize={{ width: 680, height: 520 }}
+      minSize={{ width: 480, height: 320 }}
+      footer={footer}
+      dataTour="transform-report-panel"
+    >
+      <div className="flex-1 min-h-0 overflow-y-auto bg-editor-bg p-3">
+        {!report ? (
+          <div className="h-full flex items-center justify-center text-xs text-gray-500">
+            暂无深度解析上下文
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="rounded border border-editor-border bg-editor-sidebar px-3 py-2">
+              <div className="text-xs text-cyan-200">{report.summaryText || '深度解析: 无展开记录'}</div>
+              <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
+                  展开 {report.summary.recordCount}
+                </span>
+                <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
+                  CMD {report.summary.schemeCounts.queryString}
+                </span>
+                <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
+                  URL {report.summary.schemeCounts.url}
+                </span>
+                <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
+                  Base64 {report.summary.schemeCounts.base64}
+                </span>
+                {report.summary.schemeCounts.nonReversible > 0 && (
+                  <span className="bg-amber-900/30 text-amber-200 border border-amber-700/50 px-2 py-0.5 rounded">
+                    不可逆 {report.summary.schemeCounts.nonReversible}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {report.records.length > 0 && (
+              <div data-tour="transform-report-records" className="flex flex-col gap-1.5">
+                <div className="text-xs text-gray-500 font-medium">展开记录</div>
+                {report.records.map(record => (
+                  <div
+                    key={record.path}
+                    data-tour="transform-report-row"
+                    className="rounded border border-editor-border bg-editor-sidebar px-3 py-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-emerald-300 truncate" title={record.path}>
+                        {record.path}
+                      </span>
+                      {record.hasNonReversibleScheme && (
+                        <span className="shrink-0 text-amber-200 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
+                          不可逆
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {record.labels.map((label, index) => (
+                        <span
+                          key={`${record.path}:${index}:${label}`}
+                          className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-1 font-mono text-gray-500 truncate" title={record.originalPreview}>
+                      原始值: {record.originalPreview}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {report.warnings.length > 0 && (
+              <div data-tour="transform-report-warnings" className="flex flex-col gap-1.5">
+                <div className="text-xs text-gray-500 font-medium">跳过记录</div>
+                {report.warnings.map(warning => (
+                  <div
+                    key={`${warning.path}:${warning.length}:${warning.limit}`}
+                    className="rounded border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs"
+                  >
+                    <div className="font-mono text-amber-200 truncate" title={warning.path}>
+                      {warning.path}
+                    </div>
+                    <div className="mt-1 text-gray-300">{warning.message}</div>
+                    <div className="mt-1 text-gray-500">
+                      {warning.length} 字符，阈值 {warning.limit}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {report.records.length === 0 && report.warnings.length === 0 && (
+              <div className="rounded border border-editor-border bg-editor-sidebar p-4 text-center text-xs text-gray-500">
+                本次深度格式化没有展开嵌套字符串
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </DraggablePanel>
+  );
+};

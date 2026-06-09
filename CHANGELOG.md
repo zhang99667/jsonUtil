@@ -106,6 +106,7 @@
 - **Scheme 参数来源展示**: Scheme 面板会按 Query 参数和 Hash 参数分区展示来源与参数预览，便于快速判断复杂 URL/CMD 的外层和内层参数
 - **Scheme 内部 Base64 提示**: Scheme 面板会把 `_base64_*` 元信息提升为可扫读提示，直接展示内部头、拼接后缀和后缀解析出的 os/ip/ua 等参数摘要
 - **深度格式化解析摘要**: PREVIEW 顶部新增深度解析摘要，展示本次展开的路径数量、CMD/URL/Base64/嵌套 JSON 数量和不可逆片段数量，便于快速判断真实 response 的展开覆盖度
+- **深度解析报告面板**: PREVIEW 新增「报告」入口，可查看每个展开路径的转换类型、原始值预览、不可逆标记和性能跳过记录，便于复盘真实 response 的解析覆盖情况
 
 ### 🏗️ 工程化
 - **CMD/Scheme 样本回归覆盖**: 新增真实 CMD/Scheme 粘贴样本测试集，覆盖编码 URL、未编码 URL、裸域名 URL、JSON-like 参数、hash route、HTML 分隔符和短 Base64 参数，降低后续解析优化回归风险

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { base64Encode } from './schemeUtils';
 import { deepParseWithContext } from './transformations';
 import {
+  buildTransformContextReport,
+  formatTransformContextReportText,
   formatTransformContextSummary,
   summarizeTransformContext,
 } from './transformSummary';
@@ -36,6 +38,30 @@ describe('transformSummary', () => {
     expect(formatTransformContextSummary(result.context)).toBe(
       '深度解析: 展开 3 处，Scheme 2 (CMD 1 / Base64 1)，嵌套 JSON 1，不可逆 1'
     );
+
+    const report = buildTransformContextReport(result.context);
+    expect(report.records.map(record => ({
+      path: record.path,
+      labels: record.labels,
+      hasNonReversibleScheme: record.hasNonReversibleScheme,
+    }))).toEqual([
+      {
+        path: '$.cmd',
+        labels: ['CMD 参数 · 可回写'],
+        hasNonReversibleScheme: false,
+      },
+      {
+        path: '$.payload',
+        labels: ['嵌套 JSON'],
+        hasNonReversibleScheme: false,
+      },
+      {
+        path: '$.extra',
+        labels: ['Base64 · 不可逆'],
+        hasNonReversibleScheme: true,
+      },
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain('$.extra: Base64 · 不可逆');
   });
 
   it('无转换记录时不展示摘要', () => {
@@ -52,5 +78,8 @@ describe('transformSummary', () => {
     });
 
     expect(formatTransformContextSummary(result.context)).toBe('深度解析: 展开 0 处，跳过 1');
+    expect(formatTransformContextReportText(result.context)).toContain(
+      '$.action_cmd: 字符串过长，已跳过递归展开以保护性能'
+    );
   });
 });
