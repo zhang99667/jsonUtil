@@ -166,6 +166,11 @@ describe('isBase64', () => {
     expect(isBase64(base64Encode('hello'))).toBe(false);
   });
 
+  it('识别带内部头的 Base64 JSON 片段', () => {
+    const encoded = `AFD8f${base64Encode('meg_name":"AI","flag":true}')}`;
+    expect(isBase64(encoded)).toBe(true);
+  });
+
   it('key=value 格式返回 false', () => {
     expect(isBase64('someKey=someValue123')).toBe(false);
   });
@@ -404,6 +409,19 @@ describe('deepDecodeScheme', () => {
     expect(result.isJson).toBe(true);
     expect(JSON.parse(result.decoded)).toEqual({ a: 1 });
     expect(result.layers[0].type).toBe('base64');
+  });
+
+  it('带内部头的 Base64 JSON 片段被只读解析', () => {
+    const encoded = `AFD8f${base64Encode('meg_name":"AI","flag":true}')}`;
+    const result = deepDecodeScheme(encoded);
+
+    expect(result.isJson).toBe(true);
+    expect(JSON.parse(result.decoded)).toEqual({ meg_name: 'AI', flag: true });
+    expect(result.layers[0]).toMatchObject({
+      type: 'base64',
+      description: 'Base64 JSON 片段解析',
+      reversible: false,
+    });
   });
 
   it('URL 被解析', () => {
@@ -915,6 +933,14 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe('url=https://m.baidu.com/s?word=schema&from=feed');
+  });
+
+  it('不可逆编码层编辑时保留原始值', () => {
+    const original = `AFD8f${base64Encode('meg_name":"AI","flag":true}')}`;
+    const decoded = deepDecodeScheme(original);
+
+    expect(encodeWithLayers('{"meg_name":"AI","flag":false}', decoded.layers))
+      .toBe(original);
   });
 });
 
