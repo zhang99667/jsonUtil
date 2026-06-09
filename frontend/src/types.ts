@@ -142,7 +142,7 @@ export interface PathTransformRecord {
 }
 
 export interface TransformWarning {
-  type: 'string_decode_skipped';
+  type: 'string_decode_skipped' | 'string_decode_budget_exceeded';
   path: string;
   message: string;
   length: number;

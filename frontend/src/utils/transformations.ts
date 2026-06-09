@@ -20,6 +20,7 @@ import {
 import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
 export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
+export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };
@@ -244,7 +245,12 @@ const base64Decode = (input: string): string => {
  */
 export function deepParseWithContext(
   input: string,
-  options?: { maxDepth?: number; autoExpandScheme?: boolean; maxStringDecodeLength?: number }
+  options?: {
+    maxDepth?: number;
+    autoExpandScheme?: boolean;
+    maxStringDecodeLength?: number;
+    maxTotalStringDecodeLength?: number;
+  }
 ): TransformResult {
   const originalIndentation = detectIndentation(input);
   const context: TransformContext = {
@@ -274,6 +280,9 @@ export function deepParseWithContext(
 
   const maxDepth = options?.maxDepth ?? DEFAULT_SCHEME_DECODE_MAX_DEPTH;
   const maxStringDecodeLength = options?.maxStringDecodeLength ?? DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT;
+  const maxTotalStringDecodeLength = options?.maxTotalStringDecodeLength ?? DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT;
+  let totalStringDecodeLength = 0;
+  let hasTotalStringDecodeBudgetWarning = false;
 
     const processValue = (value: JsonValue, currentPath: string, depth: number = 0): JsonValue => {
       if (depth > maxDepth) return value;
@@ -288,6 +297,22 @@ export function deepParseWithContext(
             length: value.length,
             limit: maxStringDecodeLength,
           });
+          return value;
+        }
+
+        totalStringDecodeLength += value.length;
+        if (totalStringDecodeLength > maxTotalStringDecodeLength) {
+          if (!hasTotalStringDecodeBudgetWarning) {
+            context.warnings = context.warnings || [];
+            context.warnings.push({
+              type: 'string_decode_budget_exceeded',
+              path: currentPath,
+              message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
+              length: value.length,
+              limit: maxTotalStringDecodeLength,
+            });
+            hasTotalStringDecodeBudgetWarning = true;
+          }
           return value;
         }
 
