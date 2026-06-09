@@ -51,6 +51,10 @@ const formatParamValue = (value: string | string[]): string => {
   return text.length > 48 ? `${text.slice(0, 48)}...` : text;
 };
 
+const formatPlaceholderValue = (value: string): string => (
+  value.length > 32 ? `${value.slice(0, 32)}...` : value
+);
+
 const buildParamSections = (
   schemeInfo: SchemeDecodeResult['schemeInfo']
 ): SchemeParamSection[] => {
@@ -213,6 +217,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const paramSections = useMemo(() => (
     buildParamSections(decodeResult.schemeInfo)
   ), [decodeResult.schemeInfo]);
+  const placeholders = decodeResult.placeholders || [];
 
   // 头部额外内容：非独立模式显示 path 标签
   const headerExtra = !standalone && path ? (
@@ -340,7 +345,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 上方信息卡片区域 */}
-          {(decodeResult.schemeInfo || decodeResult.layers.length > 0) && (
+          {(decodeResult.schemeInfo || decodeResult.layers.length > 0 || placeholders.length > 0) && (
             <div className="bg-editor-sidebar rounded p-3 border border-editor-border flex flex-col gap-2">
               {/* Scheme 信息 */}
               {decodeResult.schemeInfo && (
@@ -362,6 +367,31 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       {decodeResult.schemeInfo.path}
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* 运行时占位符 */}
+              {placeholders.length > 0 && (
+                <div data-tour="scheme-runtime-placeholders" className="flex items-start gap-2 text-xs">
+                  <span className="shrink-0 text-amber-300 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
+                    运行时占位符 · {placeholders.length}
+                  </span>
+                  <div className="flex flex-wrap gap-1 min-w-0">
+                    {placeholders.slice(0, 6).map(placeholder => (
+                      <span
+                        key={`${placeholder.path}:${placeholder.value}`}
+                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                        title={`${placeholder.path} = ${placeholder.value}\n${placeholder.description}`}
+                      >
+                        {placeholder.path}={formatPlaceholderValue(placeholder.value)}
+                      </span>
+                    ))}
+                    {placeholders.length > 6 && (
+                      <span className="text-gray-500 px-1 py-0.5">
+                        +{placeholders.length - 6}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 

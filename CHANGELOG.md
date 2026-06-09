@@ -9,6 +9,7 @@
 - **CMD/Scheme Unicode 转义分隔符兼容**: 支持解析日志中以 `\u0026` 表示 `&` 的 CMD 参数串，减少复制 JSON 日志时漏拆参数
 - **CMD/Scheme 字符串化 JSON 解析**: 参数值如果是 `JSON.stringify` 后的 JSON/URL/CMD 字符串，会自动拆掉字符串字面量并继续递归解析
 - **CMD/Scheme JSON-like 参数解析**: 参数值支持保守解析 `{nid:123,title:'标题'}` 等常见日志对象写法，提升与内部 schema 调试工具的兼容性
+- **CMD/Scheme 运行时占位符识别**: 支持识别 `__CONVERT_CMD__`、`__WEBPANEL_CMD__` 等运行时占位符并展示所在路径，避免真实广告链路中未替换字段被误认为解析失败
 - **CMD/Scheme 短 Base64 识别**: Scheme 面板支持直接识别短 JSON Base64 和 URL-safe 省略 padding 的短 JSON Base64，减少独立粘贴参数时漏解析
 - **CMD/Scheme 前导分隔符兼容**: 支持解析 `&cmd=...`、`?&cmd=...` 等日志拼接常见形态，避免前导 `&` 导致整段 CMD 漏解析
 - **CMD/Scheme 协议相对 URL 解析**: 支持识别和展开 `//m.baidu.com/path?...` 这类协议相对 URL，嵌套在 CMD 参数中也会继续解析内部 query
