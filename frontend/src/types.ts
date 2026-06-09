@@ -86,7 +86,7 @@ export interface GeneralSettings {
 }
 
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
-  autoExpandSchemeInDeepFormat: false,
+  autoExpandSchemeInDeepFormat: true,
 };
 
 export interface ValidationResult {

@@ -409,7 +409,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                         嵌套解析时自动展开 CMD/Scheme 字符串
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                        启用后，深度格式化将自动检测并展开 URL 编码的 Scheme 值
+                                        启用后，深度格式化将自动展开 CMD、URL Scheme 和 Base64 JSON 片段
                                     </div>
                                 </div>
                                 <button
