@@ -19,6 +19,8 @@ import {
 } from './schemeUtils.ts';
 import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
+export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
+
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };
   try {
@@ -242,7 +244,7 @@ const base64Decode = (input: string): string => {
  */
 export function deepParseWithContext(
   input: string,
-  options?: { maxDepth?: number; autoExpandScheme?: boolean }
+  options?: { maxDepth?: number; autoExpandScheme?: boolean; maxStringDecodeLength?: number }
 ): TransformResult {
   const originalIndentation = detectIndentation(input);
   const context: TransformContext = {
@@ -270,11 +272,25 @@ export function deepParseWithContext(
     context.sourceFormat = 'jsonl';
   }
 
+  const maxDepth = options?.maxDepth ?? DEFAULT_SCHEME_DECODE_MAX_DEPTH;
+  const maxStringDecodeLength = options?.maxStringDecodeLength ?? DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT;
+
     const processValue = (value: JsonValue, currentPath: string, depth: number = 0): JsonValue => {
-      const maxDepth = options?.maxDepth ?? DEFAULT_SCHEME_DECODE_MAX_DEPTH;
       if (depth > maxDepth) return value;
 
       if (typeof value === 'string') {
+        if (value.length > maxStringDecodeLength) {
+          context.warnings = context.warnings || [];
+          context.warnings.push({
+            type: 'string_decode_skipped',
+            path: currentPath,
+            message: '字符串过长，已跳过递归展开以保护性能',
+            length: value.length,
+            limit: maxStringDecodeLength,
+          });
+          return value;
+        }
+
         const steps: TransformStep[] = [];
         let current = value;
         let iterDepth = 0;

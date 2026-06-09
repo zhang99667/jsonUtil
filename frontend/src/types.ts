@@ -140,6 +140,14 @@ export interface PathTransformRecord {
   originalValue: string;     // 原始字符串值（用于校验）
 }
 
+export interface TransformWarning {
+  type: 'string_decode_skipped';
+  path: string;
+  message: string;
+  length: number;
+  limit: number;
+}
+
 // 整个转换的上下文
 export interface TransformContext {
   mode: TransformMode;
@@ -147,6 +155,7 @@ export interface TransformContext {
   timestamp: number;
   originalIndentation: number | string;  // 原始缩进（用于还原格式）
   sourceFormat?: 'json' | 'jsonl';  // 根输入格式，用于 JSONL 深度格式化后回写
+  warnings?: TransformWarning[]; // 本次转换中为保护性能而跳过的内容
 }
 
 // 转换结果（带上下文）
@@ -194,6 +203,7 @@ export interface EditorProps {
   placeholder?: string;
   label: string;
   error?: string;
+  warning?: string;
   canToggleReadOnly?: boolean;
   headerActions?: React.ReactNode;
   files?: FileTab[];

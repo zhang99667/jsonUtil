@@ -407,6 +407,29 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.ad_common.scheme')?.steps[0].type).toBe('scheme_decode');
   });
 
+  it('超长字符串会跳过递归展开并记录 warning', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
+    const input = JSON.stringify({ action_cmd: actionCmd });
+
+    const result = deepParseWithContext(input, {
+      autoExpandScheme: true,
+      maxStringDecodeLength: 20,
+    });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd).toBe(actionCmd);
+    expect(result.context.records.has('$.action_cmd')).toBe(false);
+    expect(result.context.warnings).toEqual([
+      {
+        type: 'string_decode_skipped',
+        path: '$.action_cmd',
+        message: '字符串过长，已跳过递归展开以保护性能',
+        length: actionCmd.length,
+        limit: 20,
+      },
+    ]);
+  });
+
   it('未启用自动展开时保留 CMD 参数串', () => {
     const input = JSON.stringify({
       action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',
