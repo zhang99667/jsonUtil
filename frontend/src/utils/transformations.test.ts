@@ -555,6 +555,11 @@ describe('deepParseWithContext', () => {
       flag: true,
       _base64_prefix: 'AFD8f',
       _base64_suffix: suffix,
+      _base64_suffix_decode_prefix: 'UxM',
+      _base64_suffix_decoded: {
+        os: '2',
+        ip: '127.0.0.1',
+      },
     });
     expect(step).toMatchObject({
       type: 'scheme_decode',

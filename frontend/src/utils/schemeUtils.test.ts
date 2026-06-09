@@ -443,11 +443,35 @@ describe('deepDecodeScheme', () => {
       flag: true,
       _base64_prefix: 'AFD8f',
       _base64_suffix: suffix,
+      _base64_suffix_decode_prefix: 'UxM',
+      _base64_suffix_decoded: {
+        os: '2',
+        ip: '127.0.0.1',
+      },
     });
     expect(result.layers[0]).toMatchObject({
       type: 'base64',
       description: 'Base64 JSON 片段解析',
       reversible: false,
+    });
+  });
+
+  it('内部 Base64 后缀严格解码失败时解析可读 query 前缀', () => {
+    const suffixBytes = [
+      ...new TextEncoder().encode('&os=2&ip=127.0.0.1'),
+      0xff,
+    ];
+    const suffix = `UxM${btoa(String.fromCharCode(...suffixBytes))}`;
+    const encoded = `AFD8f${base64Encode('{"meg_name":"AI","flag":true}')}${suffix}`;
+    const result = deepDecodeScheme(encoded);
+
+    expect(result.isJson).toBe(true);
+    expect(JSON.parse(result.decoded)).toMatchObject({
+      _base64_suffix_decode_prefix: 'UxM',
+      _base64_suffix_decoded: {
+        os: '2',
+        ip: '127.0.0.1',
+      },
     });
   });
 
