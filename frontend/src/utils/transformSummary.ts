@@ -10,6 +10,7 @@ export interface TransformContextSummary {
     nonReversible: number;
   };
   warningCount: number;
+  unresolvedCount: number;
 }
 
 export interface TransformReportRecord {
@@ -35,31 +36,46 @@ export interface TransformReportWarning {
   limit: number;
 }
 
+export interface TransformReportUnresolvedCandidate {
+  path: string;
+  message: string;
+  length: number;
+  preview: string;
+  detectedType?: string;
+}
+
 export interface TransformContextReport {
   summary: TransformContextSummary;
   summaryText?: string;
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
+  unresolvedCandidates: TransformReportUnresolvedCandidate[];
 }
 
 export interface TransformReportView {
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
+  unresolvedCandidates: TransformReportUnresolvedCandidate[];
   filteredRecordCount: number;
   filteredWarningCount: number;
+  filteredUnresolvedCount: number;
   totalRecordCount: number;
   totalWarningCount: number;
+  totalUnresolvedCount: number;
   isRecordTruncated: boolean;
   isWarningTruncated: boolean;
+  isUnresolvedTruncated: boolean;
 }
 
 export interface TransformReportViewOptions {
   recordLimit?: number;
   warningLimit?: number;
+  unresolvedLimit?: number;
 }
 
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
+export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
 
 const STEP_LABELS: Record<TransformStepType, string> = {
@@ -289,6 +305,17 @@ const matchesReportWarning = (
   includesQuery(warning.message, normalizedQuery)
 );
 
+const matchesUnresolvedCandidate = (
+  candidate: TransformReportUnresolvedCandidate,
+  normalizedQuery: string
+): boolean => (
+  !normalizedQuery ||
+  includesQuery(candidate.path, normalizedQuery) ||
+  includesQuery(candidate.message, normalizedQuery) ||
+  includesQuery(candidate.preview, normalizedQuery) ||
+  (candidate.detectedType ? includesQuery(candidate.detectedType, normalizedQuery) : false)
+);
+
 export const summarizeTransformContext = (
   context: TransformContext
 ): TransformContextSummary => {
@@ -302,6 +329,7 @@ export const summarizeTransformContext = (
       nonReversible: 0,
     },
     warningCount: context.warnings?.length || 0,
+    unresolvedCount: context.unresolvedCandidates?.length || 0,
   };
 
   context.records.forEach(record => {
@@ -352,6 +380,7 @@ export const formatTransformContextSummary = (
   if (unicodeDecodeCount > 0) parts.push(`Unicode ${unicodeDecodeCount}`);
   if (summary.schemeCounts.nonReversible > 0) parts.push(`不可逆 ${summary.schemeCounts.nonReversible}`);
   if (summary.warningCount > 0) parts.push(`跳过 ${summary.warningCount}`);
+  if (summary.unresolvedCount > 0) parts.push(`待检查 ${summary.unresolvedCount}`);
 
   return `深度解析: ${parts.join('，')}`;
 };
@@ -385,6 +414,13 @@ export const buildTransformContextReport = (
       message: warning.message,
       length: warning.length,
       limit: warning.limit,
+    })),
+    unresolvedCandidates: (context.unresolvedCandidates || []).map(candidate => ({
+      path: candidate.path,
+      message: candidate.message,
+      length: candidate.length,
+      preview: candidate.preview,
+      detectedType: candidate.detectedType,
     })),
   };
 };
@@ -423,6 +459,15 @@ export const formatTransformContextReportText = (
     });
   }
 
+  if (report.unresolvedCandidates.length > 0) {
+    lines.push('', '未展开线索:');
+    report.unresolvedCandidates.forEach(candidate => {
+      const typeText = candidate.detectedType ? ` · ${candidate.detectedType}` : '';
+      lines.push(`- ${candidate.path}${typeText}: ${candidate.message} (${candidate.length} 字符)`);
+      lines.push(`  预览: ${candidate.preview}`);
+    });
+  }
+
   return lines.join('\n');
 };
 
@@ -434,17 +479,25 @@ export const buildTransformReportView = (
   const normalizedQuery = query.trim().toLowerCase();
   const recordLimit = options?.recordLimit ?? DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT;
   const warningLimit = options?.warningLimit ?? DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT;
+  const unresolvedLimit = options?.unresolvedLimit ?? DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT;
   const filteredRecords = report.records.filter(record => matchesReportRecord(record, normalizedQuery));
   const filteredWarnings = report.warnings.filter(warning => matchesReportWarning(warning, normalizedQuery));
+  const filteredUnresolved = report.unresolvedCandidates.filter(
+    candidate => matchesUnresolvedCandidate(candidate, normalizedQuery)
+  );
 
   return {
     records: filteredRecords.slice(0, recordLimit),
     warnings: filteredWarnings.slice(0, warningLimit),
+    unresolvedCandidates: filteredUnresolved.slice(0, unresolvedLimit),
     filteredRecordCount: filteredRecords.length,
     filteredWarningCount: filteredWarnings.length,
+    filteredUnresolvedCount: filteredUnresolved.length,
     totalRecordCount: report.records.length,
     totalWarningCount: report.warnings.length,
+    totalUnresolvedCount: report.unresolvedCandidates.length,
     isRecordTruncated: filteredRecords.length > recordLimit,
     isWarningTruncated: filteredWarnings.length > warningLimit,
+    isUnresolvedTruncated: filteredUnresolved.length > unresolvedLimit,
   };
 };

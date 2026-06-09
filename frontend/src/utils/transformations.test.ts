@@ -687,6 +687,28 @@ describe('deepParseWithContext', () => {
     expect(result.context.warnings).toBeUndefined();
   });
 
+  it('疑似可解析但未结构化展开的字符串会记录线索', () => {
+    const rawValue = `raw=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
+    const input = JSON.stringify({
+      tracking: rawValue,
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.tracking).toBe('raw={"nid":123}');
+    expect(result.context.records.get('$.tracking')?.steps[0].type).toBe('url_decode');
+    expect(result.context.unresolvedCandidates).toEqual([
+      {
+        path: '$.tracking',
+        message: 'URL 编码内容已解码，但未展开为结构化对象',
+        length: rawValue.length,
+        preview: rawValue,
+        detectedType: 'url-encoded',
+      },
+    ]);
+  });
+
   it('未启用自动展开时保留 CMD 参数串', () => {
     const input = JSON.stringify({
       action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',

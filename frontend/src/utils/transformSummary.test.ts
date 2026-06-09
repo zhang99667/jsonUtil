@@ -113,6 +113,33 @@ describe('transformSummary', () => {
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: 还有更多未展示');
   });
 
+  it('展示疑似未展开的结构化字符串线索', () => {
+    const rawValue = `raw=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
+    const result = deepParseWithContext(JSON.stringify({
+      tracking: rawValue,
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.summary.unresolvedCount).toBe(1);
+    expect(formatTransformContextSummary(result.context)).toBe(
+      '深度解析: 展开 1 处，URL 解码 1，待检查 1'
+    );
+    expect(report.unresolvedCandidates).toEqual([
+      {
+        path: '$.tracking',
+        message: 'URL 编码内容已解码，但未展开为结构化对象',
+        length: rawValue.length,
+        preview: rawValue,
+        detectedType: 'url-encoded',
+      },
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain('未展开线索:');
+
+    const unresolvedView = buildTransformReportView(report, 'tracking');
+    expect(unresolvedView.unresolvedCandidates.map(candidate => candidate.path)).toEqual(['$.tracking']);
+    expect(unresolvedView.filteredUnresolvedCount).toBe(1);
+  });
+
   it('统计性能保护跳过信息', () => {
     const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
     const result = deepParseWithContext(JSON.stringify({ action_cmd: actionCmd }), {
