@@ -34,6 +34,7 @@ import {
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 import { setJsonPointerValue } from './utils/jsonPointer';
 import { cleanJsonInput, startJsonValidation, validateJsonForEditor } from './utils/jsonValidation';
+import { formatTransformContextSummary } from './utils/transformSummary';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -300,6 +301,11 @@ const App: React.FC = () => {
     return warnings.length === 1
       ? `${firstWarning.message}: ${firstWarning.path} (${firstWarning.length} 字符，阈值 ${firstWarning.limit})`
       : `已跳过 ${warnings.length} 个字符串递归展开，首个位置 ${firstWarning.path}: ${firstWarning.message}`;
+  }, [activeDeepFormatResult, mode]);
+
+  const deepFormatInfo = useMemo(() => {
+    if (mode !== TransformMode.DEEP_FORMAT || !activeDeepFormatResult) return undefined;
+    return formatTransformContextSummary(activeDeepFormatResult.context);
   }, [activeDeepFormatResult, mode]);
 
   // 保存深度格式化上下文到文件（副作用独立处理）
@@ -1043,6 +1049,7 @@ const App: React.FC = () => {
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
               warning={deepFormatWarning}
+              info={deepFormatInfo}
               highlightRange={highlightRange}
               onSchemeEdit={handleSchemeEdit}
               headerActions={

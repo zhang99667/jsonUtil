@@ -50,6 +50,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   label,
   error,
   warning,
+  info,
   headerActions,
   files,
   activeFileId,
@@ -492,6 +493,11 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             <div className="flex items-center text-[10px] text-amber-200 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-700/50 shadow-sm">
               <span className="w-1.5 h-1.5 bg-amber-400 rounded-full mr-1.5"></span>
               {editorWarning}
+            </div>
+          ) : info ? (
+            <div className="flex items-center text-[10px] text-cyan-200 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-700/50 shadow-sm">
+              <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full mr-1.5"></span>
+              {info}
             </div>
           ) : value && language === 'json' ? (
             <div className="flex items-center text-[10px] text-status-success-text bg-status-success-bg px-2 py-0.5 rounded border border-status-success-border">

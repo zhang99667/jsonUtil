@@ -117,6 +117,7 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await page.getByRole('button', { name: '嵌套解析' }).click();
   await expectPreviewText(page, '"nested": true');
   await expectPreviewText(page, '"nested": false');
+  await expect(page.locator('[data-tour="preview-editor"]')).toContainText('深度解析: 展开 2 处');
 });
 
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {

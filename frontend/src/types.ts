@@ -212,6 +212,7 @@ export interface EditorProps {
   label: string;
   error?: string;
   warning?: string;
+  info?: string;
   canToggleReadOnly?: boolean;
   headerActions?: React.ReactNode;
   files?: FileTab[];
