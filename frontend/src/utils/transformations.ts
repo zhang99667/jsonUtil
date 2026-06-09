@@ -11,12 +11,13 @@ import {
   JsonValue,
   JsonObject
 } from '../types.ts';
-import type { SchemePlaceholder } from './schemeUtils.ts';
+import type { DecodeLayer, SchemePlaceholder } from './schemeUtils.ts';
 
 import {
   DEFAULT_SCHEME_DECODE_MAX_DEPTH,
   deepDecodeScheme,
   detectSchemeType,
+  encodeWithLayers,
   hasUrlEncoding,
   isRuntimePlaceholder,
 } from './schemeUtils.ts';
@@ -556,6 +557,7 @@ export function deepParseWithContext(
                     originalSchemeType: schemeType,
                     originalSchemeReversible: isSchemeReversible,
                     originalSchemeStringLiteral: decodedScheme.layers.some(layer => layer.type === 'json'),
+                    originalSchemeEscapedSlash: decodedScheme.layers.some(layer => layer.type === 'json-escaped-slash'),
                     decodedSchemeValue: processedSchemeValue,
                   });
 
@@ -774,16 +776,37 @@ const stringifyQueryParamValue = (value: JsonValue): string => {
   return JSON.stringify(value);
 };
 
-const encodeQueryStringValue = (value: JsonValue): string => {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const params = new URLSearchParams();
-    for (const [key, item] of Object.entries(value)) {
-      params.append(key, stringifyQueryParamValue(item));
-    }
-    return params.toString();
-  }
+const normalizeJsonEscapedSlashes = (source: string): string => (
+  source.replace(/\\\//g, '/')
+);
 
-  return stringifyQueryParamValue(value);
+const encodeSchemeStringValue = (
+  value: JsonValue,
+  step: TransformStep,
+  layerType: 'query-string' | 'url'
+): string => {
+  const content = stringifyQueryParamValue(value);
+  if (!step.originalScheme) return content;
+
+  const schemeBefore = step.originalSchemeEscapedSlash
+    ? normalizeJsonEscapedSlashes(step.originalScheme)
+    : step.originalScheme;
+  const layers: DecodeLayer[] = [
+    ...(step.originalSchemeEscapedSlash
+      ? [{
+          type: 'json-escaped-slash' as const,
+          before: step.originalScheme,
+          description: 'JSON 斜杠转义还原',
+        }]
+      : []),
+    {
+      type: layerType,
+      before: schemeBefore,
+      description: layerType === 'url' ? 'URL 参数递归解析' : 'CMD 参数递归解析',
+    },
+  ];
+
+  return encodeWithLayers(content, layers);
 };
 
 const isSameJsonValue = (left: JsonValue, right: JsonValue): boolean => {
@@ -810,12 +833,15 @@ function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
       {
         let encodedValue: JsonValue = value;
         if (step.originalSchemeType === 'query-string') {
-          encodedValue = encodeQueryStringValue(value);
+          encodedValue = encodeSchemeStringValue(value, step, 'query-string');
         } else if (step.originalSchemeType === 'url') {
-          encodedValue = stringifyQueryParamValue(value);
+          encodedValue = encodeSchemeStringValue(value, step, 'url');
         } else if (step.originalSchemeType === 'base64') {
           if (step.originalSchemeReversible === false) return value;
           encodedValue = base64Encode(stringifyQueryParamValue(value));
+          if (step.originalSchemeEscapedSlash) {
+            encodedValue = encodedValue.replace(/\//g, '\\/');
+          }
         }
 
         return step.originalSchemeStringLiteral && typeof encodedValue === 'string'

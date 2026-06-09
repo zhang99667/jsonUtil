@@ -14,8 +14,10 @@ export type SchemeType =
   | 'json'          // JSON 字符串
   | 'plain';        // 普通字符串
 
+type DecodeLayerType = SchemeType | 'json-escaped-slash';
+
 export interface DecodeLayer {
-  type: SchemeType;
+  type: DecodeLayerType;
   before: string;     // 解码前的内容
   description: string; // 描述，如 "URL Decode", "Base64 Decode"
   reversible?: boolean; // 是否可按原格式重新编码
@@ -149,6 +151,10 @@ const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 const BARE_HOST_URL_BASE = 'https://';
 export const DEFAULT_SCHEME_DECODE_MAX_DEPTH = 15;
 
+const normalizeJsonEscapedSlashes = (source: string): string => (
+  source.replace(/\\\//g, '/')
+);
+
 const normalizeQueryString = (source: string): string => (
   source.trim()
     .replace(HTML_QUERY_DELIMITER_RE, '&')
@@ -166,13 +172,27 @@ const looksLikeQueryString = (source: string): boolean => {
   return QUERY_PAIR_START_RE.test(normalized);
 };
 
-const looksLikeStructuredPayload = (value: string): boolean => (
-  isJsonString(value) ||
-  isUrl(value) ||
-  hasUrlEncoding(value) ||
-  isJwt(value) ||
-  looksLikeQueryString(value)
-);
+const looksLikeStructuredPayload = (value: string): boolean => {
+  const trimmed = value.trim();
+  const slashNormalized = normalizeJsonEscapedSlashes(trimmed);
+  if (slashNormalized !== trimmed) {
+    return looksLikeStructuredPayload(slashNormalized);
+  }
+
+  return isJsonString(trimmed) ||
+    isUrl(trimmed) ||
+    hasUrlEncoding(trimmed) ||
+    isJwt(trimmed) ||
+    looksLikeQueryString(trimmed);
+};
+
+const tryNormalizeJsonEscapedSlashPayload = (value: string): string | null => {
+  const trimmed = value.trim();
+  const normalized = normalizeJsonEscapedSlashes(trimmed);
+  if (normalized === trimmed) return null;
+
+  return looksLikeStructuredPayload(normalized) ? normalized : null;
+};
 
 const isStructuredBase64Value = (value: string): boolean => {
   const decoded = base64Decode(value);
@@ -196,6 +216,7 @@ const getRuntimePlaceholderDescription = (value: string): string => (
 
 const isDecodableParamValue = (value: string): boolean => (
   isRuntimePlaceholder(value) ||
+  tryNormalizeJsonEscapedSlashPayload(value) !== null ||
   hasUrlEncoding(value) ||
   isUrl(value) ||
   isJwt(value) ||
@@ -236,7 +257,7 @@ const isBareHostUrl = (str: string): boolean => {
 };
 
 const createUrl = (urlString: string): URL => {
-  const trimmed = urlString.trim();
+  const trimmed = normalizeJsonEscapedSlashes(urlString.trim());
   if (isBareHostUrl(trimmed)) {
     return new URL(`${BARE_HOST_URL_BASE}${trimmed}`);
   }
@@ -258,7 +279,7 @@ const stringifyUrlForOriginalShape = (url: URL, originalUrl: string): string => 
  * 检测字符串是否为 URL（包含协议）
  */
 export function isUrl(str: string): boolean {
-  const trimmed = str.trim();
+  const trimmed = normalizeJsonEscapedSlashes(str.trim());
   // 匹配 scheme://...、//host/path 和 host/path 这几类常见链接格式
   return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(trimmed) ||
     isProtocolRelativeUrl(trimmed) ||
@@ -402,6 +423,11 @@ export function detectSchemeType(str: string): SchemeType {
   const jsonStringPayload = tryParseJsonStringPayload(trimmed);
   if (jsonStringPayload !== null) {
     return detectSchemeType(jsonStringPayload);
+  }
+
+  const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(trimmed);
+  if (escapedSlashPayload !== null) {
+    return detectSchemeType(escapedSlashPayload);
   }
 
   // 优先级顺序很重要
@@ -1153,6 +1179,18 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
       continue;
     }
 
+    const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(current);
+    if (escapedSlashPayload !== null) {
+      layers.push({
+        type: 'json-escaped-slash',
+        before: current,
+        description: 'JSON 斜杠转义还原',
+      });
+      current = escapedSlashPayload;
+      depth++;
+      continue;
+    }
+
     const type = detectSchemeType(current);
     
     if (type === 'plain' || type === 'json') {
@@ -1507,6 +1545,9 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
         break;
       case 'json':
         result = JSON.stringify(result);
+        break;
+      case 'json-escaped-slash':
+        result = result.replace(/\//g, '\\/');
         break;
     }
   }

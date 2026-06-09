@@ -27,6 +27,7 @@
 - **CMD/Scheme 广告按钮字段识别**: `button_cmd`、`convert_btn`、`main_btn`、`ad_monitor_url` 等真实广告局部字段支持单独粘贴解析，减少从完整 response 中只复制按钮或监测配置时漏展开
 - **CMD/Scheme 多行参数解析**: 支持解析日志复制出的 `cmd=...\nfrom=...` 多行参数串，减少换行粘贴时漏展开
 - **CMD/Scheme 字符串字面量兼容**: 独立 Scheme 面板和深度格式化支持解析 `"cmd=..."`、`"https://..."` 等 JSON 字符串字面量包裹的链路，并在回写时保留外层字面量
+- **CMD/Scheme JSON 斜杠转义兼容**: 支持解析日志中 `baiduboxapp:\/\/...` 这类 JSON 斜杠转义 URL，并在编辑回写时保留原转义形态
 - **深度格式化 CMD/Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化可直接展开 JSON 字段中的 `cmd=...&from=...` 参数串和 `baiduboxapp://...?...` URL Scheme，并在未编辑时精确还原原始字符串
 - **深度格式化默认展开体验**: 新用户默认开启「自动展开 CMD/Scheme 字符串」，粘贴真实 response 后无需先进设置即可看到深层 CMD、URL 与 Base64 结构
 - **深度格式化 Base64 Scheme 展开**: 「自动展开 CMD/Scheme 字符串」开启后，深度格式化会同步展开 Base64 JSON 和带内部头的 Base64 JSON 片段，整段真实广告 response 可直接看到 extraParam 结构
