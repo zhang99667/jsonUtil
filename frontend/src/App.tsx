@@ -291,6 +291,17 @@ const App: React.FC = () => {
     return null;
   }, [syncDeepFormatResult, mode, currentAsyncTransformResult]);
 
+  const deepFormatWarning = useMemo(() => {
+    if (mode !== TransformMode.DEEP_FORMAT) return undefined;
+    const warnings = activeDeepFormatResult?.context.warnings || [];
+    if (warnings.length === 0) return undefined;
+
+    const firstWarning = warnings[0];
+    return warnings.length === 1
+      ? `已跳过 ${firstWarning.path} 的超长字符串递归展开 (${firstWarning.length} 字符，阈值 ${firstWarning.limit})`
+      : `已跳过 ${warnings.length} 个超长字符串递归展开，首个位置 ${firstWarning.path}`;
+  }, [activeDeepFormatResult, mode]);
+
   // 保存深度格式化上下文到文件（副作用独立处理）
   useEffect(() => {
     if (activeDeepFormatResult) {
@@ -1031,6 +1042,7 @@ const App: React.FC = () => {
               canToggleReadOnly={!isOutputTransforming} // 转换完成后允许解锁编辑
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
+              warning={deepFormatWarning}
               highlightRange={highlightRange}
               onSchemeEdit={handleSchemeEdit}
               headerActions={
