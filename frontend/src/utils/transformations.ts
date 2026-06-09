@@ -22,6 +22,7 @@ import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './js
 
 export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
+const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
 
 interface ParsedJsonInput {
   value: JsonValue;
@@ -345,6 +346,10 @@ const appendJsonPathIndex = (path: string, index: number): string => (
   `${path}[${index}]`
 );
 
+const formatStringPreview = (value: string, maxLength = 120): string => (
+  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
+);
+
 // ============ 带路径记录的深度解析 ============
 
 /**
@@ -397,6 +402,25 @@ export function deepParseWithContext(
   let totalStringDecodeLength = 0;
   let hasTotalStringDecodeBudgetWarning = false;
 
+  const addUnresolvedCandidate = (
+    path: string,
+    value: string,
+    detectedType: string,
+    message: string
+  ) => {
+    const candidates = context.unresolvedCandidates || [];
+    if (candidates.length >= MAX_UNRESOLVED_CANDIDATE_COUNT) return;
+
+    context.unresolvedCandidates = candidates;
+    context.unresolvedCandidates.push({
+      path,
+      message,
+      length: value.length,
+      preview: formatStringPreview(value),
+      detectedType,
+    });
+  };
+
     const processValue = (value: JsonValue, currentPath: string, depth: number = 0): JsonValue => {
       if (depth > maxDepth) return value;
 
@@ -432,6 +456,7 @@ export function deepParseWithContext(
         const steps: TransformStep[] = [];
         let current = value;
         let iterDepth = 0;
+        let unresolvedCandidate: { detectedType: string; message: string } | null = null;
 
         const processParsedValue = (jsonParsed: JsonValue): JsonValue => {
           if (Array.isArray(jsonParsed)) {
@@ -496,8 +521,17 @@ export function deepParseWithContext(
                   return processedSchemeValue;
                 }
               } catch {
+                unresolvedCandidate = unresolvedCandidate || {
+                  detectedType: schemeType,
+                  message: '疑似 CMD/Scheme 字符串解析结果不是有效 JSON',
+                };
                 // CMD 参数串解析失败，继续走后续普通解析逻辑
               }
+            } else if (decodedScheme.layers.length > 0) {
+              unresolvedCandidate = unresolvedCandidate || {
+                detectedType: schemeType,
+                message: '疑似 CMD/Scheme 字符串未展开为结构化对象',
+              };
             }
           }
 
@@ -505,6 +539,10 @@ export function deepParseWithContext(
           if (options?.autoExpandScheme && hasUrlEncoding(current)) {
             const decoded = decodeURIComponent(current);
             if (decoded !== current) {
+              unresolvedCandidate = unresolvedCandidate || {
+                detectedType: 'url-encoded',
+                message: 'URL 编码内容已解码，但未展开为结构化对象',
+              };
               steps.push({ type: 'url_decode' });
               current = decoded;
               changed = true;
@@ -519,7 +557,7 @@ export function deepParseWithContext(
               const jsonParsed: JsonValue = JSON.parse(current);
               if (typeof jsonParsed === 'object' && jsonParsed !== null) {
                 steps.push({ type: 'json_parse' });
-                
+
                 // 记录该路径的转换
                 if (steps.length > 0) {
                   context.records.set(currentPath, {
@@ -548,6 +586,15 @@ export function deepParseWithContext(
             steps,
             originalValue: value,
           });
+        }
+
+        if (options?.autoExpandScheme && unresolvedCandidate) {
+          addUnresolvedCandidate(
+            currentPath,
+            value,
+            unresolvedCandidate.detectedType,
+            unresolvedCandidate.message
+          );
         }
 
         return steps.length > 0 ? current : value;

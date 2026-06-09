@@ -149,6 +149,23 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expect(reportPanel).not.toContainText('$[0].payload');
 });
 
+test('深度解析报告展示未展开线索', async ({ page }) => {
+  await fillSourceEditor(page, '{"tracking":"raw=%7B%22nid%22%3A123%7D"}');
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await expect(page.locator('[data-tour="preview-editor"]')).toContainText('待检查 1');
+  await expectPreviewText(page, '"tracking": "raw={\\"nid\\":123}"');
+
+  await page.locator('[data-tour="transform-report-button"]').click();
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  const unresolvedSection = reportPanel.locator('[data-tour="transform-report-unresolved"]');
+
+  await expect(unresolvedSection).toContainText('未展开线索 · 1');
+  await expect(unresolvedSection).toContainText('$.tracking');
+  await expect(unresolvedSection).toContainText('url-encoded');
+  await expect(unresolvedSection).toContainText('URL 编码内容已解码，但未展开为结构化对象');
+});
+
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
   await fillSourceEditor(page, '{"ok":1}\n{"broken":}\n{"ok":3}');
 
