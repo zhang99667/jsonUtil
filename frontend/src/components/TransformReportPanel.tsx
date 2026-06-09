@@ -125,7 +125,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                 data-tour="transform-report-filter"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="筛选路径、类型、原始值或解析结果..."
+                placeholder="筛选路径、类型、原始值、解析结果或占位符..."
                 className="flex-1 min-w-0 bg-editor-sidebar text-gray-200 text-xs px-3 py-1.5 rounded border border-editor-border focus:border-cyan-600 focus:outline-none"
               />
               {query && (
@@ -246,11 +246,20 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                       <div className="min-w-0 font-mono text-sky-200 truncate" title={candidate.path}>
                         {candidate.path}
                       </div>
-                      {candidate.detectedType && (
-                        <span className="shrink-0 bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
-                          {candidate.detectedType}
-                        </span>
-                      )}
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        {candidate.detectedType && (
+                          <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
+                            {candidate.detectedType}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPath(candidate.path)}
+                          className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        >
+                          复制路径
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-1 text-gray-300">{candidate.message}</div>
                     <div className="mt-1 font-mono text-gray-500 truncate" title={candidate.preview}>
@@ -281,9 +290,18 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                       <div className="min-w-0 font-mono text-violet-200 truncate" title={placeholder.path}>
                         {placeholder.path}
                       </div>
-                      <span className="shrink-0 bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
-                        {placeholder.value}
-                      </span>
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
+                          {placeholder.value}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPath(placeholder.path)}
+                          className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        >
+                          复制路径
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-1 text-gray-300">{placeholder.description}</div>
                     <div className="mt-1 font-mono text-gray-500 truncate" title={placeholder.sourcePath}>
