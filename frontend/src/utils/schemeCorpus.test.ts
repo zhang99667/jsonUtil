@@ -274,9 +274,23 @@ describe('CMD/Scheme 真实样本回归', () => {
       source: 'feedna',
     }))}`;
     const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
+    const bottomButtonScheme = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+      android_pid: '1683310188080',
+      task_id: '602',
+      ext_params: {
+        reward_num: '__REWARD_NUM__',
+      },
+      ext_policy: JSON.stringify({
+        sdk_switch: '1',
+        back_cmd: '',
+      }),
+    }))}`;
     const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       reward: {
         stay_cmd: rewardDialog,
+      },
+      tail_frame: {
+        bottom_button_scheme: bottomButtonScheme,
       },
       panel: {
         panel_cmd: convertCmd,
@@ -331,6 +345,9 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
     expect(decodedScheme.video_info.panel.panel_cmd.params.source).toBe('feedna');
     expect(decodedScheme.video_info.rotation_component.click_event_cmd).toBe('__CONVERT_CMD__');
+    expect(decodedScheme.video_info.tail_frame.bottom_button_scheme.task_params.task_id).toBe('602');
+    expect(decodedScheme.video_info.tail_frame.bottom_button_scheme.task_params.ext_params.reward_num).toBe('__REWARD_NUM__');
+    expect(decodedScheme.video_info.tail_frame.bottom_button_scheme.task_params.ext_policy.sdk_switch).toBe('1');
     expect(decodedExtra.ad_extend).toEqual({
       ad_info: {
         h_ecpm: 207000,

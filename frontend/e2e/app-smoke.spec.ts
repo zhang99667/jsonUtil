@@ -509,6 +509,10 @@ test('JSONPath 面板可查询 JSON Lines 输入', async ({ page }) => {
 test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   const cmdPayload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
 
+  await page.evaluate(() => {
+    window.localStorage.setItem('scheme-panel-position', JSON.stringify({ x: 80, y: 80 }));
+    window.localStorage.setItem('scheme-panel-size', JSON.stringify({ width: 450, height: 520 }));
+  });
   await page.locator('[data-tour="scheme-button"]').click();
   await page.locator('[data-tour="scheme-standalone-input"]').fill(`cmd=${cmdPayload}&from=feed`);
 
@@ -524,6 +528,9 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
     page.locator('[data-tour="scheme-result"] .monaco-editor').first(),
     '{"cmd":{"nid":456,"title":"标题"},"from":"feed"}'
   );
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expectElementInside(page.locator('[data-tour="scheme-copy-serialized"]'), schemePanel);
+  await expectElementInside(page.getByRole('button', { name: '应用修改' }), schemePanel);
   await page.locator('[data-tour="scheme-copy-serialized"]').click();
   await expect(page.getByText('已复制序列化结果')).toBeVisible();
   const serializedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
@@ -785,4 +792,19 @@ const fillMonacoEditor = async (page: Page, editor: Locator, value: string) => {
 
 const expectPreviewText = async (page: Page, text: string) => {
   await expect(page.locator('[data-tour="preview-editor"] .view-lines')).toContainText(text);
+};
+
+const expectElementInside = async (element: Locator, container: Locator) => {
+  await expect(element).toBeVisible();
+  const [elementBox, containerBox] = await Promise.all([
+    element.boundingBox(),
+    container.boundingBox(),
+  ]);
+
+  expect(elementBox).not.toBeNull();
+  expect(containerBox).not.toBeNull();
+  expect(elementBox!.x).toBeGreaterThanOrEqual(containerBox!.x - 1);
+  expect(elementBox!.y).toBeGreaterThanOrEqual(containerBox!.y - 1);
+  expect(elementBox!.x + elementBox!.width).toBeLessThanOrEqual(containerBox!.x + containerBox!.width + 1);
+  expect(elementBox!.y + elementBox!.height).toBeLessThanOrEqual(containerBox!.y + containerBox!.height + 1);
 };

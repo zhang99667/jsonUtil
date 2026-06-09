@@ -265,23 +265,23 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
   // 底部操作栏
   const footer = (
-    <>
-      <div className="text-xs text-gray-500">
+    <div className="flex w-full flex-wrap items-center justify-between gap-2">
+      <div className="shrink-0 text-xs text-gray-500">
         {decodeResult.layers.length > 0
           ? `${decodeResult.layers.length} 层解码`
           : actualValue ? '无需解码' : '请输入待解码内容'}
       </div>
-      <div className="flex items-center gap-1.5">
+      <div data-tour="scheme-footer-actions" className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
         <button
           onClick={onClose}
-          className="px-2.5 py-1 text-sm text-gray-400 hover:text-white transition-colors"
+          className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm text-gray-400 hover:text-white transition-colors"
         >
           关闭
         </button>
         <button
           onClick={() => setShowQRCode(!showQRCode)}
           disabled={!actualValue}
-          className={`px-2.5 py-1 text-sm rounded transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`shrink-0 whitespace-nowrap px-2.5 py-1 text-sm rounded transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${
             showQRCode 
               ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
               : 'bg-editor-active text-gray-200 hover:bg-editor-border'
@@ -296,7 +296,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         <button
           onClick={handleCopyOriginal}
           disabled={!actualValue}
-          className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -306,7 +306,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         <button
           onClick={handleCopy}
           disabled={!editedContent}
-          className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -318,7 +318,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             data-tour="scheme-copy-serialized"
             onClick={handleCopySerialized}
             disabled={!serializedContent}
-            className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             title={serializedContent ? '复制当前编辑内容重新编码后的结果' : '请先确保解码结果合法且编码层可逆'}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,7 +331,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           <button
             onClick={handleApply}
             disabled={!canApplyEdit}
-            className="px-2.5 py-1 text-sm bg-brand-primary text-white rounded hover:bg-brand-primary/90 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-brand-primary text-white rounded hover:bg-brand-primary/90 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -340,7 +340,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           </button>
         )}
       </div>
-    </>
+    </div>
   );
 
   return (
@@ -355,6 +355,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       defaultSize={{ width: 600, height: 600 }}
       minSize={{ width: 450, height: 300 }}
       footer={footer}
+      dataTour="scheme-panel"
     >
       {/* 内容区域 */}
       <div className="flex-1 flex flex-col min-h-0 relative group/content">
