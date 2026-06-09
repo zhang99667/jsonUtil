@@ -7,18 +7,23 @@ import { deepParseWithContext } from './transformations';
 export interface JsonPathQueryOptions {
   deepFormat?: boolean;
   autoExpandScheme?: boolean;
+  resultLimit?: number;
 }
 
 export interface JsonPathQueryResult {
   ranges: HighlightRange[];
   values: unknown[];
   totalResults: number;
+  isLimited: boolean;
+  resultLimit: number;
 }
 
 interface JsonPathMatch {
   pointer: string;
   value: unknown;
 }
+
+export const DEFAULT_JSONPATH_RESULT_LIMIT = 1000;
 
 interface ParsedJsonPathSource {
   source: string;
@@ -141,6 +146,7 @@ export const queryJsonPathRanges = (
   options: JsonPathQueryOptions = {}
 ): JsonPathQueryResult => {
   const parsedSource = parseJsonPathSource(jsonData, options);
+  const resultLimit = Math.max(1, options.resultLimit ?? DEFAULT_JSONPATH_RESULT_LIMIT);
 
   let matches: JsonPathMatch[];
   try {
@@ -155,12 +161,19 @@ export const queryJsonPathRanges = (
   }
 
   if (!matches || matches.length === 0) {
-    return { ranges: [], values: [], totalResults: 0 };
+    return {
+      ranges: [],
+      values: [],
+      totalResults: 0,
+      isLimited: false,
+      resultLimit,
+    };
   }
 
+  const limitedMatches = matches.slice(0, resultLimit);
   const sourceMap = parsedSource.jsonLines ? null : parseJsonSourceMap(parsedSource.source);
   const jsonLineSourceMapCache = new Map<number, ReturnType<typeof parseJsonSourceMap>['pointers']>();
-  const results = matches
+  const results = limitedMatches
     .map(match => ({
       range: parsedSource.jsonLines
         ? toJsonLineHighlightRange(match.pointer, parsedSource.jsonLines, jsonLineSourceMapCache)
@@ -172,6 +185,8 @@ export const queryJsonPathRanges = (
   return {
     ranges: results.map(result => result.range),
     values: results.map(result => result.value),
-    totalResults: results.length,
+    totalResults: matches.length,
+    isLimited: matches.length > limitedMatches.length,
+    resultLimit,
   };
 };
