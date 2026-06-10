@@ -27,6 +27,12 @@ const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => (
   ) : null
 );
 
+const getCoverageClassName = (level: 'success' | 'info' | 'warning'): string => {
+  if (level === 'success') return 'border-emerald-700/50 bg-emerald-900/20 text-emerald-100';
+  if (level === 'warning') return 'border-amber-700/50 bg-amber-900/20 text-amber-100';
+  return 'border-sky-700/50 bg-sky-900/20 text-sky-100';
+};
+
 export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   isOpen,
   onClose,
@@ -136,6 +142,27 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   <span className="bg-violet-900/30 text-violet-200 border border-violet-700/50 px-2 py-0.5 rounded">
                     占位符 {report.summary.placeholderCount}
                   </span>
+                )}
+              </div>
+              <div
+                data-tour="transform-report-coverage"
+                className={`mt-2 rounded border px-2 py-1.5 text-xs ${getCoverageClassName(report.coverage.level)}`}
+              >
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium">{report.coverage.label}</span>
+                  <span className="text-current/80">{report.coverage.description}</span>
+                </div>
+                {report.coverage.items.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {report.coverage.items.map(item => (
+                      <span
+                        key={item}
+                        className="rounded bg-editor-bg/70 px-2 py-0.5 text-current/80"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
@@ -330,7 +357,21 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         )}
                       </div>
                     </div>
-                    <div className="mt-1 text-gray-300">{candidate.message}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <span
+                        className={`rounded border px-2 py-0.5 ${
+                          candidate.reasonLevel === 'warning'
+                            ? 'border-amber-700/50 bg-amber-900/30 text-amber-200'
+                            : 'border-sky-700/50 bg-sky-950/40 text-sky-200'
+                        }`}
+                      >
+                        {candidate.reasonLabel}
+                      </span>
+                      <span className="text-gray-300">{candidate.message}</span>
+                    </div>
+                    <div className="mt-1 text-gray-400">
+                      下一步: {candidate.nextAction}
+                    </div>
                     <div className="mt-1 font-mono text-gray-500 truncate" title={candidate.preview}>
                       预览: {candidate.preview}
                     </div>

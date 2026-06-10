@@ -53,6 +53,9 @@ export interface TransformReportUnresolvedCandidate {
   length: number;
   preview: string;
   detectedType?: string;
+  reasonLabel: string;
+  reasonLevel: 'info' | 'warning';
+  nextAction: string;
 }
 
 export interface TransformReportRuntimePlaceholder {
@@ -66,10 +69,19 @@ export interface TransformReportRuntimePlaceholder {
 export interface TransformContextReport {
   summary: TransformContextSummary;
   summaryText?: string;
+  coverage: TransformReportCoverage;
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
   runtimePlaceholders: TransformReportRuntimePlaceholder[];
+}
+
+export interface TransformReportCoverage {
+  score: number;
+  label: string;
+  level: 'success' | 'info' | 'warning';
+  description: string;
+  items: string[];
 }
 
 export interface TransformReportView {
@@ -245,6 +257,48 @@ const buildRecordInsights = (record: PathTransformRecord): string[] => {
   ];
 };
 
+const classifyUnresolvedCandidate = (
+  candidate: Pick<TransformReportUnresolvedCandidate, 'detectedType' | 'message'>
+): Pick<TransformReportUnresolvedCandidate, 'reasonLabel' | 'reasonLevel' | 'nextAction'> => {
+  if (candidate.detectedType === 'url-encoded') {
+    return {
+      reasonLabel: '已解码但未结构化',
+      reasonLevel: 'info',
+      nextAction: '定位该字段确认是否只是普通埋点参数；如果它应继续拆成对象，可把原始值加入 CMD 解析样本。',
+    };
+  }
+
+  if (candidate.detectedType === 'query-string') {
+    return {
+      reasonLabel: '疑似 CMD 规则缺口',
+      reasonLevel: 'warning',
+      nextAction: '检查分隔符、嵌套编码或参数名形态，必要时补充单字段 CMD 解析规则。',
+    };
+  }
+
+  if (candidate.detectedType === 'url') {
+    return {
+      reasonLabel: '疑似 URL/Scheme 规则缺口',
+      reasonLevel: 'warning',
+      nextAction: '定位源字段确认协议、hash route 或内层 query 形态，必要时补充 Scheme 解析样本。',
+    };
+  }
+
+  if (candidate.detectedType === 'base64') {
+    return {
+      reasonLabel: '疑似 Base64 非 JSON',
+      reasonLevel: 'info',
+      nextAction: '确认该值是否为二进制或拼接载荷；如果业务上应是 JSON，可保留样本补充 Base64 规则。',
+    };
+  }
+
+  return {
+    reasonLabel: '待补充解析规则',
+    reasonLevel: candidate.message.includes('不是有效 JSON') ? 'warning' : 'info',
+    nextAction: '定位该字段并保留原始值，用作后续解析规则或样本回归补充。',
+  };
+};
+
 interface DecodedPathCollectState {
   rows: TransformReportDecodedPath[];
   limit: number;
@@ -403,6 +457,64 @@ const buildDecodedSearchText = (
   return state.parts.length > 0 ? state.parts.join('\n') : undefined;
 };
 
+const buildTransformReportCoverage = (
+  summary: TransformContextSummary
+): TransformReportCoverage => {
+  const attentionCount = summary.unresolvedCount + summary.warningCount;
+  const totalCount = summary.recordCount + attentionCount;
+  const score = totalCount === 0
+    ? 100
+    : Math.round((summary.recordCount / totalCount) * 100);
+
+  if (summary.warningCount > 0) {
+    return {
+      score,
+      label: `解析覆盖 ${score}%`,
+      level: 'warning',
+      description: `有 ${summary.warningCount} 条内容被性能保护跳过，真实 response 可能仍有未展开字段。`,
+      items: [
+        '优先查看跳过记录，必要时复制路径定位源字段',
+        '超长字段可单独粘贴到 Scheme 面板继续拆解',
+      ],
+    };
+  }
+
+  if (summary.unresolvedCount > 0) {
+    return {
+      score,
+      label: `解析覆盖 ${score}%`,
+      level: 'info',
+      description: `还有 ${summary.unresolvedCount} 条疑似结构化内容未完全展开，需要判断是普通文本还是规则缺口。`,
+      items: [
+        '优先看未展开线索的原因标签和下一步建议',
+        '如果字段应继续拆解，可保留原始值补充解析样本',
+      ],
+    };
+  }
+
+  if (summary.placeholderCount > 0) {
+    return {
+      score,
+      label: `解析覆盖 ${score}%`,
+      level: 'info',
+      description: `结构解析已完成，但仍有 ${summary.placeholderCount} 个运行时占位符需要服务端或客户端运行时替换。`,
+      items: [
+        '占位符不是解析失败，可复制来源路径回到原始字段排查',
+      ],
+    };
+  }
+
+  return {
+    score,
+    label: `解析覆盖 ${score}%`,
+    level: 'success',
+    description: summary.recordCount > 0
+      ? '本次未发现待检查线索、性能跳过或运行时占位符。'
+      : '本次没有需要展开的嵌套字符串。',
+    items: [],
+  };
+};
+
 const getSchemeTypeLabel = (step: TransformStep): string => {
   if (step.originalSchemeType === 'query-string') return 'CMD 参数';
   if (step.originalSchemeType === 'url') return 'URL Scheme';
@@ -458,6 +570,8 @@ const matchesUnresolvedCandidate = (
   (candidate.sourceLabel ? includesQuery(candidate.sourceLabel, normalizedQuery) : false) ||
   includesQuery(candidate.message, normalizedQuery) ||
   includesQuery(candidate.preview, normalizedQuery) ||
+  includesQuery(candidate.reasonLabel, normalizedQuery) ||
+  includesQuery(candidate.nextAction, normalizedQuery) ||
   (candidate.detectedType ? includesQuery(candidate.detectedType, normalizedQuery) : false)
 );
 
@@ -573,10 +687,12 @@ export const buildTransformContextReport = (
       ),
     };
   });
+  const summary = summarizeTransformContext(context);
 
   return {
-    summary: summarizeTransformContext(context),
+    summary,
     summaryText: formatTransformContextSummary(context),
+    coverage: buildTransformReportCoverage(summary),
     records,
     warnings: (context.warnings || []).map(warning => ({
       path: warning.path,
@@ -592,6 +708,7 @@ export const buildTransformContextReport = (
       length: candidate.length,
       preview: candidate.preview,
       detectedType: candidate.detectedType,
+      ...classifyUnresolvedCandidate(candidate),
     })),
     runtimePlaceholders: (context.runtimePlaceholders || []).map(placeholder => ({
       path: placeholder.path,
@@ -609,6 +726,9 @@ export const formatTransformContextReportText = (
   const report = buildTransformContextReport(context);
   const lines = [
     report.summaryText || '深度解析: 无展开记录',
+    report.coverage.label,
+    `覆盖说明: ${report.coverage.description}`,
+    ...report.coverage.items.map(item => `- ${item}`),
     '',
     '展开记录:',
   ];
@@ -654,6 +774,8 @@ export const formatTransformContextReportText = (
       if (candidate.sourceLabel) {
         lines.push(`  业务字段: ${candidate.sourceLabel}`);
       }
+      lines.push(`  原因: ${candidate.reasonLabel}`);
+      lines.push(`  下一步: ${candidate.nextAction}`);
       lines.push(`  预览: ${candidate.preview}`);
     });
   }
