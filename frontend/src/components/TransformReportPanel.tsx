@@ -486,6 +486,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     <div className="mt-1 font-mono text-gray-500 truncate" title={placeholder.sourcePath}>
                       来源: {placeholder.sourcePath}
                     </div>
+                    {placeholder.sourceOriginalPreview && (
+                      <div
+                        className="mt-1 font-mono text-gray-500 truncate"
+                        title={placeholder.sourceOriginalValue}
+                      >
+                        来源原始值: {placeholder.sourceOriginalPreview}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
