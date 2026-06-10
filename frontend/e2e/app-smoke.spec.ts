@@ -617,6 +617,10 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(schemeResult).toContainText('"nid": 123');
   await expect(schemeResult).toContainText('"title": "标题"');
   await expect(schemeResult).toContainText('"from": "feed"');
+  await page.locator('[data-tour="scheme-copy-path-values"]').click();
+  await expect(page.getByText('已复制路径和值')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$.cmd.nid = 123\n$.cmd.title = "标题"\n$.from = "feed"');
 
   await fillMonacoEditor(
     page,
