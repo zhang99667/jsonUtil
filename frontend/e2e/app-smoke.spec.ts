@@ -136,6 +136,15 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$[0].payload');
 
+  await page
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$[0].payload' })
+    .locator('[data-tour="transform-report-copy-original-value"]')
+    .click();
+  await expect(page.getByText('已复制原始值')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('{"nested":true}');
+
   await reportPanel
     .locator('[data-tour="transform-report-decoded-path"]')
     .filter({ hasText: '$[0].payload.nested' })
@@ -223,6 +232,10 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect(unresolvedSection).toContainText('URL 编码内容已解码，但未展开为结构化对象');
   await unresolvedSection.getByRole('button', { name: '复制路径' }).click();
   await expect(page.getByText('已复制路径')).toBeVisible();
+  await unresolvedSection.locator('[data-tour="transform-report-copy-unresolved-value"]').click();
+  await expect(page.getByText('已复制原始值')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('raw=%7B%22nid%22%3A123%7D');
 
   await unresolvedSection.locator('[data-tour="transform-report-open-unresolved-scheme"]').click();
   await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
@@ -272,10 +285,15 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$.action_cmd.cmd.button_cmd');
 
-  await placeholderSection.getByRole('button', { name: '复制来源' }).click();
+  await placeholderSection.locator('[data-tour="transform-report-copy-placeholder-source-path"]').click();
   await expect(page.getByText('已复制来源路径')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$.action_cmd');
+
+  await placeholderSection.locator('[data-tour="transform-report-copy-placeholder-source-value"]').click();
+  await expect(page.getByText('已复制来源值')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe(actionCmd);
 
   await placeholderSection.locator('[data-tour="transform-report-open-placeholder-source-scheme"]').click();
   await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();

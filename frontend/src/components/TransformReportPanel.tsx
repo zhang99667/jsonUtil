@@ -113,6 +113,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
+  const handleCopyOriginalValue = async (value: string, successMessage = '已复制原始值') => {
+    try {
+      await copyText(value);
+      toast.success(successMessage, { duration: 1600 });
+    } catch (error) {
+      console.warn('复制深度解析原始值失败:', error);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
   const handleCopyDecodedPathValue = async (value: string) => {
     try {
       await copyText(value);
@@ -287,7 +297,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           {record.path}
                         </span>
                       </div>
-                      <div className="shrink-0 flex items-center gap-1.5">
+                      <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
                         {record.hasNonReversibleScheme && (
                           <span className="text-amber-200 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
                             不可逆
@@ -300,6 +310,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
                         >
                           复制路径
+                        </button>
+                        <button
+                          type="button"
+                          data-tour="transform-report-copy-original-value"
+                          onClick={() => handleCopyOriginalValue(record.originalValue)}
+                          className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        >
+                          复制原始值
                         </button>
                         {onLocatePath && (
                           <button
@@ -432,7 +450,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           {candidate.path}
                         </span>
                       </div>
-                      <div className="shrink-0 flex items-center gap-1.5">
+                      <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
                         {candidate.detectedType && (
                           <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
                             {candidate.detectedType}
@@ -444,6 +462,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
                         >
                           复制路径
+                        </button>
+                        <button
+                          type="button"
+                          data-tour="transform-report-copy-unresolved-value"
+                          onClick={() => handleCopyOriginalValue(candidate.originalValue)}
+                          className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        >
+                          复制原始值
                         </button>
                         {onLocatePath && (
                           <button
@@ -558,7 +584,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           {placeholder.path}
                         </span>
                       </div>
-                      <div className="shrink-0 flex items-center gap-1.5">
+                      <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
                         <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
                           {placeholder.value}
                         </span>
@@ -581,6 +607,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         )}
                         <button
                           type="button"
+                          data-tour="transform-report-copy-placeholder-source-path"
                           onClick={() => handleCopyPath(placeholder.sourcePath, '已复制来源路径')}
                           className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
                         >
@@ -594,6 +621,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
                           >
                             定位来源
+                          </button>
+                        )}
+                        {placeholder.sourceOriginalValue && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-copy-placeholder-source-value"
+                            onClick={() => handleCopyOriginalValue(placeholder.sourceOriginalValue || '', '已复制来源值')}
+                            className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            复制来源值
                           </button>
                         )}
                         {onOpenSchemeValue && placeholder.sourceOriginalValue && (
@@ -645,7 +682,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           {warning.path}
                         </span>
                       </div>
-                      <div className="shrink-0 flex items-center gap-1.5">
+                      <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
                         <button
                           type="button"
                           data-tour="transform-report-warning-copy-path"
@@ -653,6 +690,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
                         >
                           复制路径
+                        </button>
+                        <button
+                          type="button"
+                          data-tour="transform-report-warning-copy-value"
+                          onClick={() => handleCopyOriginalValue(warning.originalValue)}
+                          className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        >
+                          复制原始值
                         </button>
                         {onLocatePath && (
                           <button
