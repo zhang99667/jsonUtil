@@ -558,6 +558,11 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   const copiedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
   expect(copiedResult).toBe(JSON.stringify(['Ada', 'Bob'], null, 2));
 
+  await page.locator('[data-tour="jsonpath-copy-path-values"]').click();
+  await expect(page.getByText('查询路径和值已复制')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$.users[0].name = "Ada"\n$.users[1].name = "Bob"');
+
   await page.locator('[data-tour="jsonpath-favorite-toggle"]').click();
   await expect(page.locator('[data-tour="jsonpath-favorites"]')).toContainText('$.users[*].name');
 
