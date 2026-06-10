@@ -374,6 +374,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             定位
                           </button>
                         )}
+                        {onOpenSchemeValue && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-open-unresolved-scheme"
+                            onClick={() => handleOpenSchemeValue(candidate.originalValue)}
+                            className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            Scheme 打开
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -491,24 +501,36 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           {warning.path}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        data-tour="transform-report-warning-copy-path"
-                        onClick={() => handleCopyPath(warning.path)}
-                        className="shrink-0 text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
-                      >
-                        复制路径
-                      </button>
-                      {onLocatePath && (
+                      <div className="shrink-0 flex items-center gap-1.5">
                         <button
                           type="button"
-                          data-tour="transform-report-locate-warning-path"
-                          onClick={() => handleLocatePath(warning.path)}
-                          className="shrink-0 text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          data-tour="transform-report-warning-copy-path"
+                          onClick={() => handleCopyPath(warning.path)}
+                          className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
                         >
-                          定位
+                          复制路径
                         </button>
-                      )}
+                        {onLocatePath && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-locate-warning-path"
+                            onClick={() => handleLocatePath(warning.path)}
+                            className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            定位
+                          </button>
+                        )}
+                        {onOpenSchemeValue && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-open-warning-scheme"
+                            onClick={() => handleOpenSchemeValue(warning.originalValue)}
+                            className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            Scheme 打开
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       <span className="rounded border border-amber-700/50 bg-amber-900/30 px-2 py-0.5 text-amber-200">

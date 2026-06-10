@@ -185,11 +185,7 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await unresolvedSection.getByRole('button', { name: '复制路径' }).click();
   await expect(page.getByText('已复制路径')).toBeVisible();
 
-  await reportPanel
-    .locator('[data-tour="transform-report-row"]')
-    .filter({ hasText: '$.tracking' })
-    .locator('[data-tour="transform-report-open-scheme"]')
-    .click();
+  await unresolvedSection.locator('[data-tour="transform-report-open-unresolved-scheme"]').click();
   await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
   await expect(reportPanel).toBeHidden();
   const schemePanel = page.locator('[data-tour="scheme-panel"]');

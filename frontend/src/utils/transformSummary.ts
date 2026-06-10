@@ -50,6 +50,7 @@ export interface TransformReportWarning {
   type: TransformWarning['type'];
   path: string;
   sourceLabel?: string;
+  originalValue: string;
   message: string;
   length: number;
   limit: number;
@@ -60,6 +61,7 @@ export interface TransformReportWarning {
 export interface TransformReportUnresolvedCandidate {
   path: string;
   sourceLabel?: string;
+  originalValue: string;
   message: string;
   length: number;
   preview: string;
@@ -585,6 +587,7 @@ const matchesReportWarning = (
   !normalizedQuery ||
   includesQuery(warning.path, normalizedQuery) ||
   (warning.sourceLabel ? includesQuery(warning.sourceLabel, normalizedQuery) : false) ||
+  includesQuery(warning.originalValue, normalizedQuery) ||
   includesQuery(warning.message, normalizedQuery) ||
   includesQuery(warning.reasonLabel, normalizedQuery) ||
   includesQuery(warning.nextAction, normalizedQuery)
@@ -597,6 +600,7 @@ const matchesUnresolvedCandidate = (
   !normalizedQuery ||
   includesQuery(candidate.path, normalizedQuery) ||
   (candidate.sourceLabel ? includesQuery(candidate.sourceLabel, normalizedQuery) : false) ||
+  includesQuery(candidate.originalValue, normalizedQuery) ||
   includesQuery(candidate.message, normalizedQuery) ||
   includesQuery(candidate.preview, normalizedQuery) ||
   includesQuery(candidate.reasonLabel, normalizedQuery) ||
@@ -728,6 +732,7 @@ export const buildTransformContextReport = (
       type: warning.type,
       path: warning.path,
       ...(warning.sourceLabel ? { sourceLabel: warning.sourceLabel } : {}),
+      originalValue: warning.originalValue,
       message: warning.message,
       length: warning.length,
       limit: warning.limit,
@@ -736,6 +741,7 @@ export const buildTransformContextReport = (
     unresolvedCandidates: (context.unresolvedCandidates || []).map(candidate => ({
       path: candidate.path,
       ...(candidate.sourceLabel ? { sourceLabel: candidate.sourceLabel } : {}),
+      originalValue: candidate.originalValue,
       message: candidate.message,
       length: candidate.length,
       preview: candidate.preview,
