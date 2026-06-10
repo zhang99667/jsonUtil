@@ -1,6 +1,7 @@
 import { JSONPath } from 'jsonpath-plus';
 import { parse as parseJsonSourceMap } from 'json-source-map';
 import type { HighlightRange, JsonValue } from '../types';
+import { getBusinessLabelForField } from './businessLabels';
 import { parseJsonLinesWithMetadata, type JsonLineRecord } from './jsonLines';
 import { deepParseWithContext } from './transformations';
 
@@ -10,9 +11,17 @@ export interface JsonPathQueryOptions {
   resultLimit?: number;
 }
 
+export interface JsonPathQueryItem {
+  range: HighlightRange;
+  value: unknown;
+  path: string;
+  sourceLabel?: string;
+}
+
 export interface JsonPathQueryResult {
   ranges: HighlightRange[];
   values: unknown[];
+  items: JsonPathQueryItem[];
   totalResults: number;
   isLimited: boolean;
   resultLimit: number;
@@ -80,6 +89,50 @@ const decodeJsonPointerToken = (token: string): string => (
 const encodeJsonPointerToken = (token: string): string => (
   token.replace(/~/g, '~0').replace(/\//g, '~1')
 );
+
+const appendJsonPathKey = (path: string, key: string): string => (
+  /^[A-Za-z_$][\w$]*$/.test(key)
+    ? `${path}.${key}`
+    : `${path}[${JSON.stringify(key)}]`
+);
+
+const getMatchMeta = (
+  root: JsonValue,
+  pointer: string
+): { path: string; sourceLabel?: string } => {
+  if (!pointer) return { path: '$' };
+
+  const tokens = pointer.slice(1).split('/').map(decodeJsonPointerToken);
+  let current: unknown = root;
+  let path = '$';
+  let sourceLabel: string | undefined;
+
+  for (let index = 0; index < tokens.length; index++) {
+    const token = tokens[index];
+    const isLast = index === tokens.length - 1;
+
+    if (Array.isArray(current)) {
+      path = `${path}[${token}]`;
+      current = current[Number(token)];
+      continue;
+    }
+
+    if (current && typeof current === 'object') {
+      const record = current as Record<string, unknown>;
+      if (isLast) {
+        sourceLabel = getBusinessLabelForField(record, token);
+      }
+      path = appendJsonPathKey(path, token);
+      current = record[token];
+      continue;
+    }
+
+    path = appendJsonPathKey(path, token);
+    current = undefined;
+  }
+
+  return sourceLabel ? { path, sourceLabel } : { path };
+};
 
 const toHighlightRange = (
   pointer: string,
@@ -199,6 +252,7 @@ export const queryJsonPathRanges = (
     return {
       ranges: [],
       values: [],
+      items: [],
       totalResults: 0,
       isLimited: false,
       resultLimit,
@@ -207,17 +261,22 @@ export const queryJsonPathRanges = (
 
   const jsonLineSourceMapCache = new Map<number, JsonSourceMapPointers>();
   const results = matches
-    .map(match => ({
-      range: parsedSource.jsonLines
+    .map(match => {
+      const meta = getMatchMeta(parsedSource.parsedData, match.pointer);
+      return {
+        range: parsedSource.jsonLines
         ? toJsonLineHighlightRange(match.pointer, parsedSource.jsonLines, jsonLineSourceMapCache)
         : parsedSource.pointers ? toHighlightRange(match.pointer, parsedSource.pointers) : null,
-      value: match.value,
-    }))
-    .filter((result): result is { range: HighlightRange; value: unknown } => result.range !== null);
+        value: match.value,
+        ...meta,
+      };
+    })
+    .filter((result): result is JsonPathQueryItem => result.range !== null);
 
   return {
     ranges: results.map(result => result.range),
     values: results.map(result => result.value),
+    items: results,
     totalResults: matches.length,
     isLimited,
     resultLimit,

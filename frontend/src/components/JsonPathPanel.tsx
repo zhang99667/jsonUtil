@@ -7,6 +7,7 @@ import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { copyText } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
 import {
     addJsonPathListItem,
     JSONPATH_FAVORITES_STORAGE_KEY,
@@ -68,6 +69,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     // 查询结果状态
     const [queryRanges, setQueryRanges] = useState<HighlightRange[]>([]);
     const [queryValues, setQueryValues] = useState<unknown[]>([]);
+    const [queryItems, setQueryItems] = useState<JsonPathQueryItem[]>([]);
     const [currentResultIndex, setCurrentResultIndex] = useState<number>(0);
     const [totalResults, setTotalResults] = useState<number>(0);
     const [isResultLimited, setIsResultLimited] = useState<boolean>(false);
@@ -159,6 +161,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         setIsQuerying(false);
         setQueryRanges([]);
         setQueryValues([]);
+        setQueryItems([]);
         setTotalResults(0);
         setIsResultLimited(false);
         setResultLimit(0);
@@ -183,6 +186,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             setError('请输入 JSONPath 表达式');
             setQueryRanges([]);
             setQueryValues([]);
+            setQueryItems([]);
             setTotalResults(0);
             setCurrentResultIndex(0);
             onHighlightRange(null);
@@ -205,6 +209,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             id: number;
             ranges: HighlightRange[];
             values: unknown[];
+            items: JsonPathQueryItem[];
             totalResults: number;
             isLimited: boolean;
             resultLimit: number;
@@ -221,6 +226,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 setError(event.data.error);
                 setQueryRanges([]);
                 setQueryValues([]);
+                setQueryItems([]);
                 setTotalResults(0);
                 setIsResultLimited(false);
                 setResultLimit(0);
@@ -233,6 +239,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 setError('未找到匹配项');
                 setQueryRanges([]);
                 setQueryValues([]);
+                setQueryItems([]);
                 setTotalResults(0);
                 setIsResultLimited(false);
                 setResultLimit(0);
@@ -243,6 +250,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
             setQueryRanges(event.data.ranges);
             setQueryValues(event.data.values);
+            setQueryItems(event.data.items || []);
             setTotalResults(event.data.totalResults);
             setIsResultLimited(event.data.isLimited);
             setResultLimit(event.data.resultLimit);
@@ -263,6 +271,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             setError(`JSONPath 查询错误: ${event.message}`);
             setQueryRanges([]);
             setQueryValues([]);
+            setQueryItems([]);
             setTotalResults(0);
             setIsResultLimited(false);
             setResultLimit(0);
@@ -332,12 +341,14 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const normalizedQuery = query.trim();
     const isCurrentQueryFavorite = normalizedQuery ? favorites.includes(normalizedQuery) : false;
     const queryResultPreviewItems = useMemo(() => {
-        return queryValues.slice(0, MAX_VISIBLE_QUERY_RESULTS).map((value, index) => ({
+        return queryItems.slice(0, MAX_VISIBLE_QUERY_RESULTS).map((item, index) => ({
             index,
-            text: formatJsonPathValueForPreview(value),
+            path: item.path,
+            sourceLabel: item.sourceLabel,
+            text: formatJsonPathValueForPreview(item.value),
         }));
-    }, [queryValues]);
-    const hiddenResultCount = Math.max(queryValues.length - queryResultPreviewItems.length, 0);
+    }, [queryItems]);
+    const hiddenResultCount = Math.max(queryItems.length - queryResultPreviewItems.length, 0);
     const copyButtonLabel = isResultLimited ? '复制已返回结果' : '复制全部结果';
 
     const toggleFavorite = () => {
@@ -561,9 +572,22 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                         ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-100'
                                         : 'border-transparent bg-editor-sidebar text-gray-300 hover:bg-editor-hover hover:text-gray-100'
                                 }`}
-                                title={item.text}
+                                title={`${item.sourceLabel ? `${item.sourceLabel} ` : ''}${item.path}\n${item.text}`}
                             >
-                                <span className="mr-2 text-[10px] text-gray-500">{item.index + 1}</span>
+                                <div className="mb-1 flex min-w-0 items-center gap-1.5">
+                                    <span className="shrink-0 text-[10px] text-gray-500">{item.index + 1}</span>
+                                    {item.sourceLabel && (
+                                        <span
+                                            className="max-w-[120px] shrink-0 truncate rounded bg-cyan-900/40 px-1.5 py-0.5 text-[10px] text-cyan-200"
+                                            title={item.sourceLabel}
+                                        >
+                                            {item.sourceLabel}
+                                        </span>
+                                    )}
+                                    <span className="min-w-0 truncate font-mono text-[10px] text-emerald-300" title={item.path}>
+                                        {item.path}
+                                    </span>
+                                </div>
                                 <span className="font-mono whitespace-pre-wrap break-words align-top">{item.text}</span>
                             </button>
                         ))}

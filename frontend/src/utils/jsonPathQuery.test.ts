@@ -15,6 +15,10 @@ describe('queryJsonPathRanges', () => {
     expect(result.totalResults).toBe(2);
     expect(result.ranges).toHaveLength(2);
     expect(result.values).toEqual(['Alice', 'Bob']);
+    expect(result.items.map(item => ({ path: item.path, value: item.value }))).toEqual([
+      { path: '$.users[0].name', value: 'Alice' },
+      { path: '$.users[1].name', value: 'Bob' },
+    ]);
     expect(result.ranges[0].startLine).toBeGreaterThan(0);
     expect(result.ranges[0].startColumn).toBeGreaterThan(0);
   });
@@ -50,7 +54,28 @@ describe('queryJsonPathRanges', () => {
 
     expect(result.totalResults).toBe(1);
     expect(result.values).toEqual(['https://example.com/path?from=key']);
+    expect(result.items[0].path).toBe('$["a.b"]["x/y"]["tilde~key"]');
     expect(result.ranges[0].startLine).toBe(4);
+  });
+
+  it('查询 k/v 形态值时返回业务标签', () => {
+    const jsonData = JSON.stringify({
+      extra: [
+        {
+          k: 'extraParam',
+          v: 'https://example.com/path?from=extra',
+        },
+      ],
+    }, null, 2);
+
+    const result = queryJsonPathRanges(jsonData, '$.extra[0].v');
+
+    expect(result.totalResults).toBe(1);
+    expect(result.items[0]).toMatchObject({
+      path: '$.extra[0].v',
+      value: 'https://example.com/path?from=extra',
+      sourceLabel: 'extraParam',
+    });
   });
 
   it('无匹配时返回空范围', () => {
@@ -59,6 +84,7 @@ describe('queryJsonPathRanges', () => {
     expect(result).toEqual({
       ranges: [],
       values: [],
+      items: [],
       totalResults: 0,
       isLimited: false,
       resultLimit: 1000,
