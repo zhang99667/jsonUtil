@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  extractSchemeCommandSummaryInfo,
   extractBase64MetaInfo,
   formatBase64MetaDisplayValue,
 } from './schemeMetadata';
@@ -40,5 +41,56 @@ describe('schemeMetadata', () => {
 
   it('长值会被裁剪成适合徽标展示的预览', () => {
     expect(formatBase64MetaDisplayValue('x'.repeat(70))).toBe(`${'x'.repeat(64)}...`);
+  });
+
+  it('提取 URL Scheme 的 cmdSchema、cmdParams 和嵌套解析线索', () => {
+    const decoded = JSON.stringify({
+      video_info: {
+        tail_frame: {
+          panel_scheme: {
+            ext_info: {
+              user_id: 'u1',
+            },
+          },
+        },
+        ext_log: {
+          ad_extra_param: {
+            cmatch: '1501',
+          },
+        },
+      },
+    });
+
+    expect(extractSchemeCommandSummaryInfo(decoded, true, {
+      protocol: 'nadcorevendor:',
+      host: 'vendor',
+      path: '/ad/rewardImpl',
+    })).toEqual({
+      commandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      paramCount: 1,
+      paramKeys: ['video_info'],
+      commandFields: ['panel_scheme'],
+      extFields: ['ext_info', 'ad_extra_param'],
+      base64SuffixFields: [],
+    });
+  });
+
+  it('提取 Base64 后缀解析线索', () => {
+    const decoded = JSON.stringify({
+      meg_name: 'AI',
+      _base64_suffix_decoded: {
+        os: '2',
+        ip: '127.0.0.1',
+      },
+    });
+
+    expect(extractSchemeCommandSummaryInfo(decoded, true)).toEqual({
+      commandSchema: undefined,
+      paramCount: 2,
+      paramKeys: ['meg_name', '_base64_suffix_decoded'],
+      commandFields: [],
+      extFields: [],
+      base64SuffixFields: ['os', 'ip'],
+    });
   });
 });
