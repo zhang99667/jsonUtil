@@ -685,10 +685,10 @@ const matchesReportWarning = (
   !normalizedQuery ||
   includesQuery(warning.path, normalizedQuery) ||
   (warning.sourceLabel ? includesQuery(warning.sourceLabel, normalizedQuery) : false) ||
-  includesQuery(warning.originalValue, normalizedQuery) ||
   includesQuery(warning.message, normalizedQuery) ||
   includesQuery(warning.reasonLabel, normalizedQuery) ||
-  includesQuery(warning.nextAction, normalizedQuery)
+  includesQuery(warning.nextAction, normalizedQuery) ||
+  includesQuery(warning.originalValue, normalizedQuery)
 );
 
 const matchesUnresolvedCandidate = (
@@ -698,12 +698,12 @@ const matchesUnresolvedCandidate = (
   !normalizedQuery ||
   includesQuery(candidate.path, normalizedQuery) ||
   (candidate.sourceLabel ? includesQuery(candidate.sourceLabel, normalizedQuery) : false) ||
-  includesQuery(candidate.originalValue, normalizedQuery) ||
   includesQuery(candidate.message, normalizedQuery) ||
   includesQuery(candidate.preview, normalizedQuery) ||
   includesQuery(candidate.reasonLabel, normalizedQuery) ||
   includesQuery(candidate.nextAction, normalizedQuery) ||
-  (candidate.detectedType ? includesQuery(candidate.detectedType, normalizedQuery) : false)
+  (candidate.detectedType ? includesQuery(candidate.detectedType, normalizedQuery) : false) ||
+  includesQuery(candidate.originalValue, normalizedQuery)
 );
 
 const matchesRuntimePlaceholder = (
@@ -714,9 +714,9 @@ const matchesRuntimePlaceholder = (
   includesQuery(placeholder.path, normalizedQuery) ||
   includesQuery(placeholder.sourcePath, normalizedQuery) ||
   (placeholder.sourceLabel ? includesQuery(placeholder.sourceLabel, normalizedQuery) : false) ||
-  (placeholder.sourceOriginalValue ? includesQuery(placeholder.sourceOriginalValue, normalizedQuery) : false) ||
   includesQuery(placeholder.value, normalizedQuery) ||
-  includesQuery(placeholder.description, normalizedQuery)
+  includesQuery(placeholder.description, normalizedQuery) ||
+  (placeholder.sourceOriginalValue ? includesQuery(placeholder.sourceOriginalValue, normalizedQuery) : false)
 );
 
 const buildRuntimePlaceholderGroups = (

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { TransformContextReport } from './transformSummary';
 import { base64Encode } from './schemeUtils';
 import { deepParseWithContext } from './transformations';
 import {
@@ -458,6 +459,52 @@ describe('transformSummary', () => {
     expect(filteredText).toContain('业务字段: extraParam');
     expect(filteredText).toContain('$.extra[0].v.cmd.third');
     expect(filteredText).not.toContain('$.action_cmd.cmd.first');
+  });
+
+  it('占位符筛选先匹配结构化字段并保留长原文兜底', () => {
+    const longSourceValue = `${'x'.repeat(8_000)}&tail_token=source_tail_needle`;
+    const report: TransformContextReport = {
+      summary: {
+        recordCount: 0,
+        stepCounts: {},
+        schemeCounts: {
+          queryString: 0,
+          url: 0,
+          base64: 0,
+          nonReversible: 0,
+        },
+        warningCount: 0,
+        unresolvedCount: 0,
+        placeholderCount: 1,
+      },
+      summaryText: '深度解析: 展开 0 处，占位符 1',
+      coverage: {
+        score: 100,
+        label: '解析覆盖 100%',
+        level: 'info',
+        description: '结构解析已完成，但仍有 1 个运行时占位符需要服务端或客户端运行时替换。',
+        items: [],
+      },
+      records: [],
+      warnings: [],
+      unresolvedCandidates: [],
+      runtimePlaceholderGroups: [],
+      runtimePlaceholders: [
+        {
+          path: '$.button_cmd.cmd',
+          sourcePath: '$.button_cmd',
+          sourceLabel: 'buttonParam',
+          sourceOriginalValue: longSourceValue,
+          sourceOriginalPreview: `${longSourceValue.slice(0, 96)}...`,
+          value: '__CONVERT_CMD__',
+          description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+        },
+      ],
+    };
+
+    expect(buildTransformReportView(report, '__CONVERT_CMD__').filteredPlaceholderCount).toBe(1);
+    expect(buildTransformReportView(report, 'buttonParam').filteredPlaceholderCount).toBe(1);
+    expect(buildTransformReportView(report, 'source_tail_needle').filteredPlaceholderCount).toBe(1);
   });
 
   it('统计性能保护跳过信息', () => {
