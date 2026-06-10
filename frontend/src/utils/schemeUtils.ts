@@ -29,6 +29,13 @@ export interface SchemePlaceholder {
   description: string; // 占位符说明
 }
 
+export interface SchemePlaceholderGroup {
+  value: string;       // 占位符原值
+  description: string; // 占位符说明
+  count: number;       // 出现次数
+  paths: string[];     // 出现路径
+}
+
 export interface SchemeDecodeResult {
   original: string;           // 原始字符串
   decoded: string;            // 最终解码结果
@@ -737,6 +744,32 @@ const collectRuntimePlaceholders = (
   }
 
   return [];
+};
+
+export const buildSchemePlaceholderGroups = (
+  placeholders: SchemePlaceholder[]
+): SchemePlaceholderGroup[] => {
+  const groups = new Map<string, SchemePlaceholderGroup>();
+
+  placeholders.forEach(placeholder => {
+    const group = groups.get(placeholder.value);
+    if (group) {
+      group.count += 1;
+      group.paths.push(placeholder.path);
+      return;
+    }
+
+    groups.set(placeholder.value, {
+      value: placeholder.value,
+      description: placeholder.description,
+      count: 1,
+      paths: [placeholder.path],
+    });
+  });
+
+  return Array.from(groups.values()).sort((left, right) => (
+    right.count - left.count || left.value.localeCompare(right.value)
+  ));
 };
 
 const assignFlatQueryParam = (

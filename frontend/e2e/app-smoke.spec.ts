@@ -587,6 +587,29 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(page.locator('[data-tour="scheme-json-edit-error"]')).toContainText('JSON 内容格式有误');
 });
 
+test('Scheme 面板展示运行时占位符聚合摘要', async ({ page }) => {
+  const cmdPayload = encodeURIComponent(JSON.stringify({
+    first_cmd: '__CONVERT_CMD__',
+    second_cmd: '__CONVERT_CMD__',
+    webpanel_cmd: '__WEBPANEL_CMD__',
+  }));
+
+  await page.evaluate(() => {
+    window.localStorage.setItem('scheme-panel-position', JSON.stringify({ x: 80, y: 80 }));
+    window.localStorage.setItem('scheme-panel-size', JSON.stringify({ width: 500, height: 520 }));
+  });
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(`cmd=${cmdPayload}&from=feed`);
+
+  const placeholderSection = page.locator('[data-tour="scheme-runtime-placeholders"]');
+  await expect(placeholderSection).toContainText('运行时占位符 · 3');
+  const placeholderGroups = placeholderSection.locator('[data-tour="scheme-runtime-placeholder-groups"]');
+  await expect(placeholderGroups).toContainText('__CONVERT_CMD__ ×2');
+  await expect(placeholderGroups).toContainText('__WEBPANEL_CMD__ ×1');
+  await expect(placeholderSection).toContainText('路径明细');
+  await expect(placeholderSection).toContainText('$.cmd.first_cmd=__CONVERT_CMD__');
+});
+
 test('Scheme 面板可复制特殊 key 来源路径', async ({ page }) => {
   await fillSourceEditor(page, JSON.stringify({
     'a.b': {
