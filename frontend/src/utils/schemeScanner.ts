@@ -4,6 +4,7 @@ import { detectSchemeType, type SchemeType } from './schemeUtils';
 export interface SchemeLocation {
   path: string;           // JSON Path，如 "$.action_cmd" 或 `$["a.b"]`
   pointer: string;        // JSON Pointer，用于特殊 key 场景下精确回写
+  label?: string;         // 业务标签，如 extra 数组里的 k/v 字段名
   line: number;           // 行号（1-based）
   column: number;         // 起始列号（1-based）
   endLine: number;        // 结束行号（1-based）
@@ -25,6 +26,22 @@ const appendJsonPathKey = (path: string, key: string): string => (
     ? `${path}.${key}`
     : `${path}[${JSON.stringify(key)}]`
 );
+
+const trimBusinessLabel = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
+const getBusinessLabelForField = (
+  container: Record<string, unknown>,
+  key: string
+): string | undefined => {
+  if (key === 'v') return trimBusinessLabel(container.k);
+  if (key === 'value') return trimBusinessLabel(container.key) || trimBusinessLabel(container.name);
+  return undefined;
+};
 
 /**
  * 扫描 JSON 字符串，找出所有包含 scheme 的字符串值及其位置
@@ -63,7 +80,12 @@ export function scanSchemesInJson(
       return false;
     };
 
-    const traverse = (obj: unknown, currentPath: string, currentPointer: string): boolean => {
+    const traverse = (
+      obj: unknown,
+      currentPath: string,
+      currentPointer: string,
+      label?: string
+    ): boolean => {
       if (typeof obj === 'string') {
         const schemeType = detectSchemeType(obj);
         if (schemeType !== 'plain' && schemeType !== 'json') {
@@ -75,6 +97,7 @@ export function scanSchemesInJson(
           results.push({
             path: currentPath,
             pointer: currentPointer,
+            label,
             ...range,
             value: obj,
             schemeType,
@@ -87,11 +110,13 @@ export function scanSchemesInJson(
           }
         }
       } else if (typeof obj === 'object' && obj !== null) {
-        for (const key in (obj as Record<string, unknown>)) {
+        const record = obj as Record<string, unknown>;
+        for (const key in record) {
           if (!traverse(
-            (obj as Record<string, unknown>)[key],
+            record[key],
             appendJsonPathKey(currentPath, key),
-            `${currentPointer}/${escapePointerSegment(key)}`
+            `${currentPointer}/${escapePointerSegment(key)}`,
+            getBusinessLabelForField(record, key)
           )) {
             return false;
           }

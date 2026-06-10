@@ -1132,6 +1132,24 @@ describe('findSchemesInJson', () => {
     expect(results[0].path).toBe('$.action_cmd');
   });
 
+  it('k/v 形态的 Scheme 携带业务标签且不影响路径定位', () => {
+    const json = JSON.stringify({
+      extra: [
+        {
+          k: 'extraParam',
+          v: 'https://example.com/path?from=extra',
+        },
+      ],
+    }, null, 2);
+
+    const results = findSchemesInJson(json);
+
+    expect(results.length).toBe(1);
+    expect(results[0].path).toBe('$.extra[0].v');
+    expect(results[0].pointer).toBe('/extra/0/v');
+    expect(results[0].label).toBe('extraParam');
+  });
+
   it('数组中的 Scheme 使用真实值行号定位', () => {
     const json = JSON.stringify({
       items: [
