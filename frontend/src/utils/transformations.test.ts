@@ -651,10 +651,11 @@ describe('deepParseWithContext', () => {
   });
 
   it('记录展开结果中的运行时占位符', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
+      button_cmd: '__CONVERT_CMD__',
+    }))}&from=feed`;
     const input = JSON.stringify({
-      action_cmd: `cmd=${encodeURIComponent(JSON.stringify({
-        button_cmd: '__CONVERT_CMD__',
-      }))}&from=feed`,
+      action_cmd: actionCmd,
     });
 
     const result = deepParseWithContext(input, { autoExpandScheme: true });
@@ -665,6 +666,7 @@ describe('deepParseWithContext', () => {
       {
         path: '$.action_cmd.cmd.button_cmd',
         sourcePath: '$.action_cmd',
+        sourceOriginalValue: actionCmd,
         value: '__CONVERT_CMD__',
         description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
       },

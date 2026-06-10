@@ -75,6 +75,7 @@ export interface TransformReportRuntimePlaceholder {
   path: string;
   sourcePath: string;
   sourceLabel?: string;
+  sourceOriginalValue?: string;
   value: string;
   description: string;
 }
@@ -616,6 +617,7 @@ const matchesRuntimePlaceholder = (
   includesQuery(placeholder.path, normalizedQuery) ||
   includesQuery(placeholder.sourcePath, normalizedQuery) ||
   (placeholder.sourceLabel ? includesQuery(placeholder.sourceLabel, normalizedQuery) : false) ||
+  (placeholder.sourceOriginalValue ? includesQuery(placeholder.sourceOriginalValue, normalizedQuery) : false) ||
   includesQuery(placeholder.value, normalizedQuery) ||
   includesQuery(placeholder.description, normalizedQuery)
 );
@@ -752,6 +754,7 @@ export const buildTransformContextReport = (
       path: placeholder.path,
       sourcePath: placeholder.sourcePath,
       ...(placeholder.sourceLabel ? { sourceLabel: placeholder.sourceLabel } : {}),
+      ...(placeholder.sourceOriginalValue ? { sourceOriginalValue: placeholder.sourceOriginalValue } : {}),
       value: placeholder.value,
       description: placeholder.description,
     })),

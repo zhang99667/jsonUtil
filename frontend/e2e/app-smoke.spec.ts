@@ -220,6 +220,13 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await expect(page.getByText('已复制来源路径')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$.action_cmd');
+
+  await placeholderSection.locator('[data-tour="transform-report-open-placeholder-source-scheme"]').click();
+  await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
+  await expect(reportPanel).toBeHidden();
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel).toBeVisible();
+  await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue(actionCmd);
 });
 
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {

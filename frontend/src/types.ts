@@ -168,6 +168,7 @@ export interface TransformRuntimePlaceholder {
   path: string;
   sourcePath: string;
   sourceLabel?: string;
+  sourceOriginalValue?: string;
   value: string;
   description: string;
 }
