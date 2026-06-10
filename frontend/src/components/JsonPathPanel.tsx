@@ -8,6 +8,7 @@ import { copyText } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
+import { formatJsonPathValueForPreview } from '../utils/jsonPathPreview';
 import {
     addJsonPathListItem,
     JSONPATH_FAVORITES_STORAGE_KEY,
@@ -17,7 +18,6 @@ import {
 } from '../utils/jsonPathLists';
 
 const MAX_VISIBLE_QUERY_RESULTS = 100;
-const MAX_RESULT_PREVIEW_LENGTH = 240;
 
 const formatJsonPathValuesForCopy = (values: unknown[]): string => {
     if (values.length === 1) {
@@ -35,16 +35,6 @@ const formatJsonPathValueForLineCopy = (value: unknown): string => (
 const formatJsonPathItemsForCopy = (items: JsonPathQueryItem[]): string => (
     items.map(item => `${item.path} = ${formatJsonPathValueForLineCopy(item.value)}`).join('\n')
 );
-
-const formatJsonPathValueForPreview = (value: unknown): string => {
-    const text = typeof value === 'string'
-        ? value
-        : JSON.stringify(value, null, 2) ?? String(value);
-
-    return text.length > MAX_RESULT_PREVIEW_LENGTH
-        ? `${text.slice(0, MAX_RESULT_PREVIEW_LENGTH)}...`
-        : text;
-};
 
 interface JsonPathPanelProps {
     jsonData: string;
