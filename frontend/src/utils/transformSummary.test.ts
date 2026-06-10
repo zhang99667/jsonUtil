@@ -144,6 +144,52 @@ describe('transformSummary', () => {
     expect(labelView.filteredRecordCount).toBe(1);
   });
 
+  it('诊断项展示 k/v 形态字段的业务标签并支持筛选', () => {
+    const rawValue = `raw=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
+    const unresolvedResult = deepParseWithContext(JSON.stringify({
+      extra: [{ k: 'trackingParam', v: rawValue }],
+    }), { autoExpandScheme: true });
+    const unresolvedReport = buildTransformContextReport(unresolvedResult.context);
+
+    expect(unresolvedReport.unresolvedCandidates[0]).toMatchObject({
+      path: '$.extra[0].v',
+      sourceLabel: 'trackingParam',
+    });
+    expect(formatTransformContextReportText(unresolvedResult.context)).toContain('业务字段: trackingParam');
+    expect(buildTransformReportView(unresolvedReport, 'trackingParam').filteredUnresolvedCount).toBe(1);
+
+    const placeholderResult = deepParseWithContext(JSON.stringify({
+      extra: [{
+        k: 'buttonParam',
+        v: `cmd=${encodeURIComponent(JSON.stringify({ button_cmd: '__CONVERT_CMD__' }))}`,
+      }],
+    }), { autoExpandScheme: true });
+    const placeholderReport = buildTransformContextReport(placeholderResult.context);
+
+    expect(placeholderReport.runtimePlaceholders[0]).toMatchObject({
+      path: '$.extra[0].v.cmd.button_cmd',
+      sourceLabel: 'buttonParam',
+    });
+    expect(formatTransformContextReportText(placeholderResult.context)).toContain('业务字段: buttonParam');
+    expect(buildTransformReportView(placeholderReport, 'buttonParam').filteredPlaceholderCount).toBe(1);
+
+    const skippedValue = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
+    const warningResult = deepParseWithContext(JSON.stringify({
+      extra: [{ k: 'longParam', v: skippedValue }],
+    }), {
+      autoExpandScheme: true,
+      maxStringDecodeLength: 20,
+    });
+    const warningReport = buildTransformContextReport(warningResult.context);
+
+    expect(warningReport.warnings[0]).toMatchObject({
+      path: '$.extra[0].v',
+      sourceLabel: 'longParam',
+    });
+    expect(formatTransformContextReportText(warningResult.context)).toContain('业务字段: longParam');
+    expect(buildTransformReportView(warningReport, 'longParam').filteredWarningCount).toBe(1);
+  });
+
   it('展示疑似未展开的结构化字符串线索', () => {
     const rawValue = `raw=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
     const result = deepParseWithContext(JSON.stringify({

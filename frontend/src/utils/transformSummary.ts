@@ -34,6 +34,7 @@ export interface TransformReportDecodedPath {
 
 export interface TransformReportWarning {
   path: string;
+  sourceLabel?: string;
   message: string;
   length: number;
   limit: number;
@@ -41,6 +42,7 @@ export interface TransformReportWarning {
 
 export interface TransformReportUnresolvedCandidate {
   path: string;
+  sourceLabel?: string;
   message: string;
   length: number;
   preview: string;
@@ -50,6 +52,7 @@ export interface TransformReportUnresolvedCandidate {
 export interface TransformReportRuntimePlaceholder {
   path: string;
   sourcePath: string;
+  sourceLabel?: string;
   value: string;
   description: string;
 }
@@ -397,6 +400,7 @@ const matchesReportWarning = (
 ): boolean => (
   !normalizedQuery ||
   includesQuery(warning.path, normalizedQuery) ||
+  (warning.sourceLabel ? includesQuery(warning.sourceLabel, normalizedQuery) : false) ||
   includesQuery(warning.message, normalizedQuery)
 );
 
@@ -406,6 +410,7 @@ const matchesUnresolvedCandidate = (
 ): boolean => (
   !normalizedQuery ||
   includesQuery(candidate.path, normalizedQuery) ||
+  (candidate.sourceLabel ? includesQuery(candidate.sourceLabel, normalizedQuery) : false) ||
   includesQuery(candidate.message, normalizedQuery) ||
   includesQuery(candidate.preview, normalizedQuery) ||
   (candidate.detectedType ? includesQuery(candidate.detectedType, normalizedQuery) : false)
@@ -418,6 +423,7 @@ const matchesRuntimePlaceholder = (
   !normalizedQuery ||
   includesQuery(placeholder.path, normalizedQuery) ||
   includesQuery(placeholder.sourcePath, normalizedQuery) ||
+  (placeholder.sourceLabel ? includesQuery(placeholder.sourceLabel, normalizedQuery) : false) ||
   includesQuery(placeholder.value, normalizedQuery) ||
   includesQuery(placeholder.description, normalizedQuery)
 );
@@ -528,12 +534,14 @@ export const buildTransformContextReport = (
     records,
     warnings: (context.warnings || []).map(warning => ({
       path: warning.path,
+      ...(warning.sourceLabel ? { sourceLabel: warning.sourceLabel } : {}),
       message: warning.message,
       length: warning.length,
       limit: warning.limit,
     })),
     unresolvedCandidates: (context.unresolvedCandidates || []).map(candidate => ({
       path: candidate.path,
+      ...(candidate.sourceLabel ? { sourceLabel: candidate.sourceLabel } : {}),
       message: candidate.message,
       length: candidate.length,
       preview: candidate.preview,
@@ -542,6 +550,7 @@ export const buildTransformContextReport = (
     runtimePlaceholders: (context.runtimePlaceholders || []).map(placeholder => ({
       path: placeholder.path,
       sourcePath: placeholder.sourcePath,
+      ...(placeholder.sourceLabel ? { sourceLabel: placeholder.sourceLabel } : {}),
       value: placeholder.value,
       description: placeholder.description,
     })),
@@ -582,6 +591,9 @@ export const formatTransformContextReportText = (
     lines.push('', '跳过记录:');
     report.warnings.forEach(warning => {
       lines.push(`- ${warning.path}: ${warning.message} (${warning.length}/${warning.limit})`);
+      if (warning.sourceLabel) {
+        lines.push(`  业务字段: ${warning.sourceLabel}`);
+      }
     });
   }
 
@@ -590,6 +602,9 @@ export const formatTransformContextReportText = (
     report.unresolvedCandidates.forEach(candidate => {
       const typeText = candidate.detectedType ? ` · ${candidate.detectedType}` : '';
       lines.push(`- ${candidate.path}${typeText}: ${candidate.message} (${candidate.length} 字符)`);
+      if (candidate.sourceLabel) {
+        lines.push(`  业务字段: ${candidate.sourceLabel}`);
+      }
       lines.push(`  预览: ${candidate.preview}`);
     });
   }
@@ -599,6 +614,9 @@ export const formatTransformContextReportText = (
     report.runtimePlaceholders.forEach(placeholder => {
       lines.push(`- ${placeholder.path}: ${placeholder.value}`);
       lines.push(`  来源: ${placeholder.sourcePath}`);
+      if (placeholder.sourceLabel) {
+        lines.push(`  业务字段: ${placeholder.sourceLabel}`);
+      }
       lines.push(`  说明: ${placeholder.description}`);
     });
   }
