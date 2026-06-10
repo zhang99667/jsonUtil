@@ -1,4 +1,11 @@
-import type { JsonValue, PathTransformRecord, TransformContext, TransformStep, TransformStepType } from '../types';
+import type {
+  JsonValue,
+  PathTransformRecord,
+  TransformContext,
+  TransformStep,
+  TransformStepType,
+  TransformWarning,
+} from '../types';
 import {
   collectSchemeInsightFields,
   formatSchemeInsightItems,
@@ -39,11 +46,14 @@ export interface TransformReportDecodedPath {
 }
 
 export interface TransformReportWarning {
+  type: TransformWarning['type'];
   path: string;
   sourceLabel?: string;
   message: string;
   length: number;
   limit: number;
+  reasonLabel: string;
+  nextAction: string;
 }
 
 export interface TransformReportUnresolvedCandidate {
@@ -296,6 +306,22 @@ const classifyUnresolvedCandidate = (
     reasonLabel: '待补充解析规则',
     reasonLevel: candidate.message.includes('不是有效 JSON') ? 'warning' : 'info',
     nextAction: '定位该字段并保留原始值，用作后续解析规则或样本回归补充。',
+  };
+};
+
+const classifyWarning = (
+  warning: Pick<TransformWarning, 'type'>
+): Pick<TransformReportWarning, 'reasonLabel' | 'nextAction'> => {
+  if (warning.type === 'string_decode_budget_exceeded') {
+    return {
+      reasonLabel: '累计预算保护',
+      nextAction: '优先用 JSONPath 定位目标字段，或只复制该字段到 Scheme 面板单独解析，避免整段 response 的其它长字符串消耗预算。',
+    };
+  }
+
+  return {
+    reasonLabel: '单字段长度保护',
+    nextAction: '该字段本身超过自动解析阈值，可复制路径定位后单独粘贴到 Scheme 面板，或缩小 response 后再深度解析。',
   };
 };
 
@@ -558,7 +584,9 @@ const matchesReportWarning = (
   !normalizedQuery ||
   includesQuery(warning.path, normalizedQuery) ||
   (warning.sourceLabel ? includesQuery(warning.sourceLabel, normalizedQuery) : false) ||
-  includesQuery(warning.message, normalizedQuery)
+  includesQuery(warning.message, normalizedQuery) ||
+  includesQuery(warning.reasonLabel, normalizedQuery) ||
+  includesQuery(warning.nextAction, normalizedQuery)
 );
 
 const matchesUnresolvedCandidate = (
@@ -695,11 +723,13 @@ export const buildTransformContextReport = (
     coverage: buildTransformReportCoverage(summary),
     records,
     warnings: (context.warnings || []).map(warning => ({
+      type: warning.type,
       path: warning.path,
       ...(warning.sourceLabel ? { sourceLabel: warning.sourceLabel } : {}),
       message: warning.message,
       length: warning.length,
       limit: warning.limit,
+      ...classifyWarning(warning),
     })),
     unresolvedCandidates: (context.unresolvedCandidates || []).map(candidate => ({
       path: candidate.path,
@@ -763,6 +793,8 @@ export const formatTransformContextReportText = (
       if (warning.sourceLabel) {
         lines.push(`  业务字段: ${warning.sourceLabel}`);
       }
+      lines.push(`  原因: ${warning.reasonLabel}`);
+      lines.push(`  下一步: ${warning.nextAction}`);
     });
   }
 

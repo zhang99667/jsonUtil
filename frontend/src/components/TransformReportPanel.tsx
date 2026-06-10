@@ -491,7 +491,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         </button>
                       )}
                     </div>
-                    <div className="mt-1 text-gray-300">{warning.message}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <span className="rounded border border-amber-700/50 bg-amber-900/30 px-2 py-0.5 text-amber-200">
+                        {warning.reasonLabel}
+                      </span>
+                      <span className="text-gray-300">{warning.message}</span>
+                    </div>
+                    <div className="mt-1 text-gray-400">
+                      下一步: {warning.nextAction}
+                    </div>
                     <div className="mt-1 text-gray-500">
                       {warning.length} 字符，阈值 {warning.limit}
                     </div>
