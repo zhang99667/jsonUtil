@@ -69,6 +69,14 @@ const formatSummaryValue = (value: string, maxLength = 56): string => (
   value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
 );
 
+const formatTooltipValue = (value: string, maxLength = 160): string => (
+  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
+);
+
+const formatParamTooltipValue = (value: string | string[]): string => (
+  formatTooltipValue(Array.isArray(value) ? value.join(', ') : value)
+);
+
 const MAX_SCHEME_PATH_VALUE_COPY_ROWS = 500;
 
 interface SchemePathValueCollectState {
@@ -596,7 +604,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded text-xs">{decodeResult.schemeInfo.host}</span>
                   )}
                   {decodeResult.schemeInfo.path && (
-                    <span className="bg-editor-bg text-gray-400 px-2 py-0.5 rounded text-xs truncate max-w-[200px]" title={decodeResult.schemeInfo.path}>
+                    <span className="bg-editor-bg text-gray-400 px-2 py-0.5 rounded text-xs truncate max-w-[200px]" title={formatTooltipValue(decodeResult.schemeInfo.path)}>
                       {decodeResult.schemeInfo.path}
                     </span>
                   )}
@@ -613,7 +621,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     {commandSummaryInfo.commandSchema && (
                       <span
                         className="bg-editor-bg text-cyan-200 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={commandSummaryInfo.commandSchema}
+                        title={formatTooltipValue(commandSummaryInfo.commandSchema)}
                       >
                         cmdSchema={formatSummaryValue(commandSummaryInfo.commandSchema)}
                       </span>
@@ -627,7 +635,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       <span
                         key={key}
                         className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={key}
+                        title={formatTooltipValue(key, 80)}
                       >
                         {formatSummaryValue(key, 24)}
                       </span>
@@ -684,7 +692,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                         <span
                           key={`${placeholder.path}:${placeholder.value}`}
                           className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                          title={`${placeholder.path} = ${placeholder.value}\n${placeholder.description}`}
+                          title={`${placeholder.path} = ${formatTooltipValue(placeholder.value)}\n${placeholder.description}`}
                         >
                           {placeholder.path}={formatPlaceholderValue(placeholder.value)}
                         </span>
@@ -712,7 +720,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                           <span
                             key={key}
                             className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                            title={`${key}=${Array.isArray(paramValue) ? paramValue.join(', ') : paramValue}`}
+                            title={`${key}=${formatParamTooltipValue(paramValue)}`}
                           >
                             {key}={formatParamValue(paramValue)}
                           </span>
@@ -738,7 +746,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     {base64MetaInfo.prefix && (
                       <span
                         className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={base64MetaInfo.prefix}
+                        title={formatTooltipValue(base64MetaInfo.prefix)}
                       >
                         头部={formatBase64MetaDisplayValue(base64MetaInfo.prefix, 24)}
                       </span>
@@ -746,7 +754,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     {base64MetaInfo.suffix && (
                       <span
                         className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={base64MetaInfo.suffix}
+                        title={formatTooltipValue(base64MetaInfo.suffix)}
                       >
                         后缀={formatBase64MetaDisplayValue(base64MetaInfo.suffix, 32)}
                       </span>
@@ -754,7 +762,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     {base64MetaInfo.suffixDecodePrefix && (
                       <span
                         className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={base64MetaInfo.suffixDecodePrefix}
+                        title={formatTooltipValue(base64MetaInfo.suffixDecodePrefix)}
                       >
                         跳过={formatBase64MetaDisplayValue(base64MetaInfo.suffixDecodePrefix, 16)}
                       </span>
@@ -763,7 +771,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       <span
                         key={entry.key}
                         className="bg-editor-bg text-emerald-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={`${entry.key}=${entry.displayValue}`}
+                        title={`${entry.key}=${formatTooltipValue(entry.displayValue)}`}
                       >
                         {entry.key}={entry.displayValue}
                       </span>
