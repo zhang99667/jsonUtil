@@ -305,11 +305,13 @@ describe('transformSummary', () => {
         path: '$.action_cmd.cmd.button_cmd',
         sourcePath: '$.action_cmd',
         sourceOriginalValue: actionCmd,
+        sourceOriginalPreview: actionCmd,
         value: '__CONVERT_CMD__',
         description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
       },
     ]);
     expect(formatTransformContextReportText(result.context)).toContain('运行时占位符:');
+    expect(formatTransformContextReportText(result.context)).toContain(`来源预览: ${actionCmd}`);
 
     const placeholderView = buildTransformReportView(report, '__CONVERT_CMD__');
     expect(placeholderView.runtimePlaceholders.map(placeholder => placeholder.path)).toEqual([

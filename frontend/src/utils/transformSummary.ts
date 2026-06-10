@@ -76,6 +76,7 @@ export interface TransformReportRuntimePlaceholder {
   sourcePath: string;
   sourceLabel?: string;
   sourceOriginalValue?: string;
+  sourceOriginalPreview?: string;
   value: string;
   description: string;
 }
@@ -755,6 +756,9 @@ export const buildTransformContextReport = (
       sourcePath: placeholder.sourcePath,
       ...(placeholder.sourceLabel ? { sourceLabel: placeholder.sourceLabel } : {}),
       ...(placeholder.sourceOriginalValue ? { sourceOriginalValue: placeholder.sourceOriginalValue } : {}),
+      ...(placeholder.sourceOriginalValue
+        ? { sourceOriginalPreview: formatOriginalPreview(placeholder.sourceOriginalValue) }
+        : {}),
       value: placeholder.value,
       description: placeholder.description,
     })),
@@ -830,6 +834,9 @@ export const formatTransformContextReportText = (
       lines.push(`  来源: ${placeholder.sourcePath}`);
       if (placeholder.sourceLabel) {
         lines.push(`  业务字段: ${placeholder.sourceLabel}`);
+      }
+      if (placeholder.sourceOriginalPreview) {
+        lines.push(`  来源预览: ${placeholder.sourceOriginalPreview}`);
       }
       lines.push(`  说明: ${placeholder.description}`);
     });
