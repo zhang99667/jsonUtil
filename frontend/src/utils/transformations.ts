@@ -440,7 +440,8 @@ export function deepParseWithContext(
     sourcePath: string,
     value: string,
     description: string,
-    sourceLabel?: string
+    sourceLabel?: string,
+    sourceOriginalValue?: string
   ) => {
     const placeholders = context.runtimePlaceholders || [];
     if (placeholders.some(item => item.path === path && item.value === value)) return;
@@ -451,6 +452,7 @@ export function deepParseWithContext(
       path,
       sourcePath,
       sourceLabel,
+      sourceOriginalValue,
       value,
       description,
     });
@@ -459,7 +461,8 @@ export function deepParseWithContext(
   const addSchemeRuntimePlaceholders = (
     sourcePath: string,
     placeholders?: SchemePlaceholder[],
-    sourceLabel?: string
+    sourceLabel?: string,
+    sourceOriginalValue?: string
   ) => {
     placeholders?.forEach(placeholder => {
       addRuntimePlaceholder(
@@ -467,7 +470,8 @@ export function deepParseWithContext(
         sourcePath,
         placeholder.value,
         placeholder.description,
-        sourceLabel
+        sourceLabel,
+        sourceOriginalValue
       );
     });
   };
@@ -519,7 +523,7 @@ export function deepParseWithContext(
         let unresolvedCandidate: { detectedType: string; message: string } | null = null;
 
         if (options?.autoExpandScheme && isRuntimePlaceholder(current)) {
-          addSchemeRuntimePlaceholders(currentPath, deepDecodeScheme(current).placeholders, sourceLabel);
+          addSchemeRuntimePlaceholders(currentPath, deepDecodeScheme(current).placeholders, sourceLabel, value);
         }
 
         const processParsedValue = (jsonParsed: JsonValue): JsonValue => {
@@ -570,7 +574,7 @@ export function deepParseWithContext(
               try {
                 const schemeParsed = JSON.parse(decodedScheme.decoded) as JsonValue;
                 if (typeof schemeParsed === 'object' && schemeParsed !== null) {
-                  addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders, sourceLabel);
+                  addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders, sourceLabel, value);
                   const processedSchemeValue = processParsedValue(schemeParsed);
                   const isSchemeReversible = decodedScheme.layers.every(layer => layer.reversible !== false);
                   steps.push({

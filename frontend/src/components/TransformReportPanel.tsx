@@ -470,6 +470,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             定位来源
                           </button>
                         )}
+                        {onOpenSchemeValue && placeholder.sourceOriginalValue && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-open-placeholder-source-scheme"
+                            onClick={() => handleOpenSchemeValue(placeholder.sourceOriginalValue || '')}
+                            className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            Scheme 打开来源
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="mt-1 text-gray-300">{placeholder.description}</div>
