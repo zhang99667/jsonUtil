@@ -25,6 +25,8 @@ interface JsonPathMatch {
 
 export const DEFAULT_JSONPATH_RESULT_LIMIT = 1000;
 
+type JsonSourceMapPointers = ReturnType<typeof parseJsonSourceMap>['pointers'];
+
 class JsonPathResultLimitReached extends Error {
   constructor() {
     super('JSONPath result limit reached');
@@ -36,6 +38,7 @@ interface ParsedJsonPathSource {
   source: string;
   parsedData: JsonValue;
   jsonLines?: JsonLineRecord[];
+  pointers?: JsonSourceMapPointers;
 }
 
 const parseJsonPathSource = (
@@ -49,9 +52,11 @@ const parseJsonPathSource = (
     : jsonData;
 
   try {
+    const sourceMap = parseJsonSourceMap(source);
     return {
       source,
-      parsedData: JSON.parse(source) as JsonValue,
+      parsedData: sourceMap.data as JsonValue,
+      pointers: sourceMap.pointers,
     };
   } catch (error) {
     const jsonLines = parseJsonLinesWithMetadata(source);
@@ -78,7 +83,7 @@ const encodeJsonPointerToken = (token: string): string => (
 
 const toHighlightRange = (
   pointer: string,
-  pointers: ReturnType<typeof parseJsonSourceMap>['pointers']
+  pointers: JsonSourceMapPointers
 ): HighlightRange | null => {
   const pointerInfo = pointers[pointer];
   if (!pointerInfo) return null;
@@ -109,7 +114,7 @@ const offsetLineRange = (
 const toJsonLineHighlightRange = (
   pointer: string,
   jsonLines: JsonLineRecord[],
-  sourceMapCache: Map<number, ReturnType<typeof parseJsonSourceMap>['pointers']>
+  sourceMapCache: Map<number, JsonSourceMapPointers>
 ): HighlightRange | null => {
   if (!pointer) {
     const firstRecord = jsonLines[0];
@@ -200,13 +205,12 @@ export const queryJsonPathRanges = (
     };
   }
 
-  const sourceMap = parsedSource.jsonLines ? null : parseJsonSourceMap(parsedSource.source);
-  const jsonLineSourceMapCache = new Map<number, ReturnType<typeof parseJsonSourceMap>['pointers']>();
+  const jsonLineSourceMapCache = new Map<number, JsonSourceMapPointers>();
   const results = matches
     .map(match => ({
       range: parsedSource.jsonLines
         ? toJsonLineHighlightRange(match.pointer, parsedSource.jsonLines, jsonLineSourceMapCache)
-        : toHighlightRange(match.pointer, sourceMap!.pointers),
+        : parsedSource.pointers ? toHighlightRange(match.pointer, parsedSource.pointers) : null,
       value: match.value,
     }))
     .filter((result): result is { range: HighlightRange; value: unknown } => result.range !== null);

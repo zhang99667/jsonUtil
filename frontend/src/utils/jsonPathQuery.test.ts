@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { queryJsonPathRanges } from './jsonPathQuery';
 
 describe('queryJsonPathRanges', () => {
@@ -17,6 +17,24 @@ describe('queryJsonPathRanges', () => {
     expect(result.values).toEqual(['Alice', 'Bob']);
     expect(result.ranges[0].startLine).toBeGreaterThan(0);
     expect(result.ranges[0].startColumn).toBeGreaterThan(0);
+  });
+
+  it('标准 JSON 查询复用 source map 解析结果，避免重复 JSON.parse', () => {
+    const jsonData = JSON.stringify({
+      users: [{ name: 'Alice' }],
+    }, null, 2);
+    const parseSpy = vi.spyOn(JSON, 'parse').mockImplementation(() => {
+      throw new Error('不应调用额外 JSON.parse');
+    });
+
+    try {
+      const result = queryJsonPathRanges(jsonData, '$.users[0].name');
+      expect(result.totalResults).toBe(1);
+      expect(result.values).toEqual(['Alice']);
+      expect(result.ranges[0].startLine).toBeGreaterThan(0);
+    } finally {
+      parseSpy.mockRestore();
+    }
   });
 
   it('支持查询特殊 key 的 bracket JSONPath', () => {
