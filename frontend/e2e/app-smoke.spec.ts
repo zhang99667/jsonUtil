@@ -171,6 +171,31 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('true');
 });
 
+test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => {
+  const widePayload = {
+    ...Object.fromEntries(Array.from({ length: 20 }, (_, index) => [`k${index}`, index])),
+    target_after_display_limit: 'needle_after_display_limit',
+  };
+  await fillSourceEditor(page, JSON.stringify({
+    payload: JSON.stringify(widePayload),
+  }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await page.locator('[data-tour="transform-report-filter"]').fill('target_after_display_limit');
+  const hiddenDecodedPath = reportPanel
+    .locator('[data-tour="transform-report-decoded-path"]')
+    .filter({ hasText: '$.payload.target_after_display_limit' });
+
+  await expect(hiddenDecodedPath).toContainText('needle_after_display_limit');
+  await hiddenDecodedPath.locator('[data-tour="transform-report-copy-decoded-value"]').click();
+  await expect(page.getByText('已复制路径和值')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$.payload.target_after_display_limit = "needle_after_display_limit"');
+});
+
 test('深度解析报告展示未展开线索', async ({ page }) => {
   await fillSourceEditor(page, '{"tracking":"raw=%7B%22nid%22%3A123%7D"}');
 
