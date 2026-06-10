@@ -544,7 +544,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                       className="rounded border border-violet-700/50 bg-violet-950/30 px-3 py-2 text-xs"
                     >
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono text-violet-100">{group.value}</span>
+                        <button
+                          type="button"
+                          data-tour="transform-report-filter-placeholder-group"
+                          onClick={() => setQuery(group.value)}
+                          className="font-mono text-violet-100 hover:text-violet-50 underline decoration-violet-500/50 underline-offset-2 transition-colors"
+                          title="按该占位符筛选报告"
+                        >
+                          {group.value}
+                        </button>
                         <span className="rounded bg-editor-bg px-2 py-0.5 text-violet-200">
                           {group.count} 处
                         </span>
