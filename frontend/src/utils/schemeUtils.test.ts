@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   isUrl,
   hasUrlEncoding,
@@ -1183,6 +1183,21 @@ describe('findSchemesInJson', () => {
 // ============ scanSchemesInJson 测试 ============
 
 describe('scanSchemesInJson', () => {
+  it('扫描时复用 source map 的解析结果，避免重复 JSON.parse', () => {
+    const json = JSON.stringify({ link: 'https://example.com/path?from=scan' });
+    const parseSpy = vi.spyOn(JSON, 'parse').mockImplementation(() => {
+      throw new Error('不应调用额外 JSON.parse');
+    });
+
+    try {
+      const result = scanSchemesInJson(json);
+      expect(result.locations).toHaveLength(1);
+      expect(result.locations[0].path).toBe('$.link');
+    } finally {
+      parseSpy.mockRestore();
+    }
+  });
+
   it('超过结果上限时提前停止并标记截断', () => {
     const json = JSON.stringify({
       first: 'https://example.com/first',
