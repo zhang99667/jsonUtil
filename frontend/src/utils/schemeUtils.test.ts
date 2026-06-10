@@ -17,6 +17,7 @@ import {
   isQueryStringFormat,
   isDecodableQueryString,
   isRuntimePlaceholder,
+  buildSchemePlaceholderGroups,
 } from './schemeUtils';
 import { findSchemesInJson, scanSchemesInJson } from './schemeScanner';
 
@@ -160,6 +161,43 @@ describe('isRuntimePlaceholder', () => {
   it('普通文本不误判为占位符', () => {
     expect(isRuntimePlaceholder('__lower_case__')).toBe(false);
     expect(isRuntimePlaceholder('CONVERT_CMD')).toBe(false);
+  });
+});
+
+describe('buildSchemePlaceholderGroups', () => {
+  it('按占位符值聚合并按出现次数排序', () => {
+    const groups = buildSchemePlaceholderGroups([
+      {
+        path: '$.button_cmd',
+        value: '__CONVERT_CMD__',
+        description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+      },
+      {
+        path: '$.tail_frame.button_scheme',
+        value: '__CONVERT_CMD__',
+        description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+      },
+      {
+        path: '$.webpanel_event_cmd',
+        value: '__WEBPANEL_CMD__',
+        description: '运行时 WebPanel CMD 占位符，当前文本未包含实际 CMD 内容',
+      },
+    ]);
+
+    expect(groups).toEqual([
+      {
+        value: '__CONVERT_CMD__',
+        description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+        count: 2,
+        paths: ['$.button_cmd', '$.tail_frame.button_scheme'],
+      },
+      {
+        value: '__WEBPANEL_CMD__',
+        description: '运行时 WebPanel CMD 占位符，当前文本未包含实际 CMD 内容',
+        count: 1,
+        paths: ['$.webpanel_event_cmd'],
+      },
+    ]);
   });
 });
 
