@@ -854,10 +854,22 @@ export const formatTransformContextReportText = (
     '展开记录:',
   ];
 
-  if (report.records.length === 0) {
+  appendReportRecordLines(lines, report.records);
+  appendReportWarningSection(lines, report.warnings);
+  appendReportUnresolvedSection(lines, report.unresolvedCandidates);
+  appendReportPlaceholderSection(lines, report.runtimePlaceholderGroups, report.runtimePlaceholders);
+
+  return lines.join('\n');
+};
+
+const appendReportRecordLines = (
+  lines: string[],
+  records: TransformReportRecord[]
+) => {
+  if (records.length === 0) {
     lines.push('- 无');
   } else {
-    report.records.forEach(record => {
+    records.forEach(record => {
       lines.push(`- ${record.path}: ${record.labels.join(' -> ')}`);
       if (record.sourceLabel) {
         lines.push(`  业务字段: ${record.sourceLabel}`);
@@ -876,10 +888,15 @@ export const formatTransformContextReportText = (
       }
     });
   }
+};
 
-  if (report.warnings.length > 0) {
+const appendReportWarningSection = (
+  lines: string[],
+  warnings: TransformReportWarning[]
+) => {
+  if (warnings.length > 0) {
     lines.push('', '跳过记录:');
-    report.warnings.forEach(warning => {
+    warnings.forEach(warning => {
       lines.push(`- ${warning.path}: ${warning.message} (${warning.length}/${warning.limit})`);
       if (warning.sourceLabel) {
         lines.push(`  业务字段: ${warning.sourceLabel}`);
@@ -888,10 +905,15 @@ export const formatTransformContextReportText = (
       lines.push(`  下一步: ${warning.nextAction}`);
     });
   }
+};
 
-  if (report.unresolvedCandidates.length > 0) {
+const appendReportUnresolvedSection = (
+  lines: string[],
+  unresolvedCandidates: TransformReportUnresolvedCandidate[]
+) => {
+  if (unresolvedCandidates.length > 0) {
     lines.push('', '未展开线索:');
-    report.unresolvedCandidates.forEach(candidate => {
+    unresolvedCandidates.forEach(candidate => {
       const typeText = candidate.detectedType ? ` · ${candidate.detectedType}` : '';
       lines.push(`- ${candidate.path}${typeText}: ${candidate.message} (${candidate.length} 字符)`);
       if (candidate.sourceLabel) {
@@ -902,10 +924,16 @@ export const formatTransformContextReportText = (
       lines.push(`  预览: ${candidate.preview}`);
     });
   }
+};
 
-  if (report.runtimePlaceholders.length > 0) {
+const appendReportPlaceholderSection = (
+  lines: string[],
+  placeholderGroups: TransformReportRuntimePlaceholderGroup[],
+  runtimePlaceholders: TransformReportRuntimePlaceholder[]
+) => {
+  if (runtimePlaceholders.length > 0) {
     lines.push('', '运行时占位符汇总:');
-    report.runtimePlaceholderGroups.forEach(group => {
+    placeholderGroups.forEach(group => {
       lines.push(`- ${group.value} ×${group.count}: ${group.description}`);
       lines.push(`  来源数: ${group.sourceCount}`);
       lines.push(`  主要来源: ${group.sources.map(source => (
@@ -914,7 +942,7 @@ export const formatTransformContextReportText = (
     });
 
     lines.push('', '运行时占位符明细:');
-    report.runtimePlaceholders.forEach(placeholder => {
+    runtimePlaceholders.forEach(placeholder => {
       lines.push(`- ${placeholder.path}: ${placeholder.value}`);
       lines.push(`  来源: ${placeholder.sourcePath}`);
       if (placeholder.sourceLabel) {
@@ -926,8 +954,6 @@ export const formatTransformContextReportText = (
       lines.push(`  说明: ${placeholder.description}`);
     });
   }
-
-  return lines.join('\n');
 };
 
 export const buildTransformReportView = (
@@ -968,4 +994,52 @@ export const buildTransformReportView = (
     isUnresolvedTruncated: filteredUnresolved.length > unresolvedLimit,
     isPlaceholderTruncated: filteredPlaceholders.length > placeholderLimit,
   };
+};
+
+export const formatTransformReportViewText = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string
+): string => {
+  const normalizedQuery = query.trim();
+  const lines = [
+    report.summaryText || '深度解析: 无展开记录',
+    `筛选: ${normalizedQuery || '全部'}`,
+    `筛选结果: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
+  ];
+
+  if (
+    reportView.filteredRecordCount === 0 &&
+    reportView.filteredPlaceholderCount === 0 &&
+    reportView.filteredUnresolvedCount === 0 &&
+    reportView.filteredWarningCount === 0
+  ) {
+    lines.push('', '筛选结果:', '- 无匹配记录');
+    return lines.join('\n');
+  }
+
+  if (reportView.filteredRecordCount > 0) {
+    lines.push('', '展开记录:');
+    appendReportRecordLines(lines, reportView.records);
+    if (reportView.isRecordTruncated) {
+      lines.push(`- 还有 ${reportView.filteredRecordCount - reportView.records.length} 条展开记录未复制`);
+    }
+  }
+
+  appendReportUnresolvedSection(lines, reportView.unresolvedCandidates);
+  if (reportView.isUnresolvedTruncated) {
+    lines.push(`- 还有 ${reportView.filteredUnresolvedCount - reportView.unresolvedCandidates.length} 条未展开线索未复制`);
+  }
+
+  appendReportPlaceholderSection(lines, reportView.runtimePlaceholderGroups, reportView.runtimePlaceholders);
+  if (reportView.isPlaceholderTruncated) {
+    lines.push(`- 还有 ${reportView.filteredPlaceholderCount - reportView.runtimePlaceholders.length} 个运行时占位符未复制`);
+  }
+
+  appendReportWarningSection(lines, reportView.warnings);
+  if (reportView.isWarningTruncated) {
+    lines.push(`- 还有 ${reportView.filteredWarningCount - reportView.warnings.length} 条跳过记录未复制`);
+  }
+
+  return lines.join('\n');
 };
