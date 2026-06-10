@@ -6,6 +6,7 @@ import {
   buildTransformReportView,
   formatTransformContextReportText,
   formatTransformContextSummary,
+  formatTransformReportViewText,
   summarizeTransformContext,
 } from './transformSummary';
 
@@ -421,6 +422,15 @@ describe('transformSummary', () => {
         sourceCount: 1,
       },
     ]);
+
+    const filteredText = formatTransformReportViewText(report, extraView, 'extraParam');
+    expect(filteredText).toContain('筛选: extraParam');
+    expect(filteredText).toContain('筛选结果: 展开 1/2，占位符 1/4，待检查 0/0，跳过 0/0');
+    expect(filteredText).toContain('- $.extra[0].v: CMD 参数 · 可回写');
+    expect(filteredText).toContain('- __CONVERT_CMD__ ×1:');
+    expect(filteredText).toContain('业务字段: extraParam');
+    expect(filteredText).toContain('$.extra[0].v.cmd.third');
+    expect(filteredText).not.toContain('$.action_cmd.cmd.first');
   });
 
   it('统计性能保护跳过信息', () => {

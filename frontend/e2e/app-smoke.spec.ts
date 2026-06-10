@@ -217,6 +217,11 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await expect(placeholderSection).toContainText('运行时转换 CMD 占位符');
   await expect(placeholderSection).toContainText('来源原始值:');
   await expect(placeholderSection).toContainText('cmd=%7B%22button_cmd');
+  await reportPanel.locator('[data-tour="transform-report-filter"]').fill('__CONVERT_CMD__');
+  await reportPanel.getByRole('button', { name: '复制筛选结果' }).click();
+  await expect(page.getByText('已复制筛选结果')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('筛选: __CONVERT_CMD__');
   await placeholderSection.getByRole('button', { name: '复制路径' }).click();
   await expect(page.getByText('已复制路径')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))

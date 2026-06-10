@@ -6,6 +6,7 @@ import {
   buildTransformContextReport,
   buildTransformReportView,
   formatTransformContextReportText,
+  formatTransformReportViewText,
 } from '../utils/transformSummary';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 
@@ -61,6 +62,18 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
+  const handleCopyFilteredReport = async () => {
+    if (!report || !reportView) return;
+
+    try {
+      await copyText(formatTransformReportViewText(report, reportView, query));
+      toast.success('已复制筛选结果', { duration: 2000 });
+    } catch (error) {
+      console.warn('复制深度解析筛选结果失败:', error);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
   const handleCopyPath = async (path: string, successMessage = '已复制路径') => {
     try {
       await copyText(path);
@@ -92,13 +105,24 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredPlaceholderCount || 0}/${reportView?.totalPlaceholderCount || 0} 个占位符 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
           : '暂无解析上下文'}
       </div>
-      <button
-        onClick={handleCopyReport}
-        disabled={!context}
-        className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        复制报告
-      </button>
+      <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
+        {query.trim() && (
+          <button
+            onClick={handleCopyFilteredReport}
+            disabled={!reportView}
+            className="whitespace-nowrap px-2.5 py-1 text-sm bg-cyan-900/40 text-cyan-100 rounded hover:bg-cyan-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            复制筛选结果
+          </button>
+        )}
+        <button
+          onClick={handleCopyReport}
+          disabled={!context}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          复制报告
+        </button>
+      </div>
     </div>
   );
 
