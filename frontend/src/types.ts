@@ -141,6 +141,7 @@ export interface PathTransformRecord {
   path: string;              // JSON Path, 如 "$.data" 或 "$.users[0].config"
   steps: TransformStep[];    // 该路径上发生的转换序列（正向顺序）
   originalValue: string;     // 原始字符串值（用于校验）
+  sourceLabel?: string;      // 来源业务标签，如 k/v 结构中的 extraParam
 }
 
 export interface TransformWarning {
