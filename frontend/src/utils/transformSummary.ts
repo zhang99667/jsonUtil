@@ -1124,3 +1124,28 @@ export const formatTransformReportViewText = (
 
   return lines.join('\n');
 };
+
+export const formatTransformPlaceholderReportText = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string
+): string => {
+  const normalizedQuery = query.trim();
+  const lines = [
+    report.summaryText || '深度解析: 无展开记录',
+    ...(normalizedQuery ? [`筛选: ${normalizedQuery}`] : []),
+    `占位符: ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}`,
+  ];
+
+  if (reportView.filteredPlaceholderCount === 0) {
+    lines.push('', '运行时占位符:', '- 无匹配占位符');
+    return lines.join('\n');
+  }
+
+  appendReportPlaceholderSection(lines, reportView.runtimePlaceholderGroups, reportView.runtimePlaceholders);
+  if (reportView.isPlaceholderTruncated) {
+    lines.push(`- 还有 ${reportView.filteredPlaceholderCount - reportView.runtimePlaceholders.length} 个运行时占位符未复制`);
+  }
+
+  return lines.join('\n');
+};

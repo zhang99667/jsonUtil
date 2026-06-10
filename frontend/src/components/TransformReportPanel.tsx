@@ -6,6 +6,7 @@ import {
   buildTransformContextReport,
   buildTransformReportView,
   formatTransformContextReportText,
+  formatTransformPlaceholderReportText,
   formatTransformReportViewText,
 } from '../utils/transformSummary';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
@@ -70,6 +71,18 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success('已复制筛选结果', { duration: 2000 });
     } catch (error) {
       console.warn('复制深度解析筛选结果失败:', error);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
+  const handleCopyPlaceholderReport = async () => {
+    if (!report || !reportView) return;
+
+    try {
+      await copyText(formatTransformPlaceholderReportText(report, reportView, query));
+      toast.success(query.trim() ? '已复制筛选占位符' : '已复制占位符摘要', { duration: 2000 });
+    } catch (error) {
+      console.warn('复制深度解析占位符失败:', error);
       toast.error('复制失败', { duration: 2000 });
     }
   };
@@ -457,11 +470,21 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
             {reportView && reportView.filteredPlaceholderCount > 0 && (
               <div data-tour="transform-report-placeholders" className="flex flex-col gap-1.5">
-                <div className="text-xs text-gray-500 font-medium">
-                  运行时占位符 · {reportView.filteredPlaceholderCount}
-                  {reportView.isPlaceholderTruncated && (
-                    <span className="text-amber-300 ml-2">仅显示前 {reportView.runtimePlaceholders.length} 条</span>
-                  )}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-xs text-gray-500 font-medium">
+                    运行时占位符 · {reportView.filteredPlaceholderCount}
+                    {reportView.isPlaceholderTruncated && (
+                      <span className="text-amber-300 ml-2">仅显示前 {reportView.runtimePlaceholders.length} 条</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    data-tour="transform-report-copy-placeholders"
+                    onClick={handleCopyPlaceholderReport}
+                    className="shrink-0 text-xs text-gray-400 hover:text-violet-200 bg-editor-sidebar border border-editor-border px-2 py-0.5 rounded transition-colors"
+                  >
+                    复制占位符
+                  </button>
                 </div>
                 <div data-tour="transform-report-placeholder-groups" className="grid gap-1.5">
                   {reportView.runtimePlaceholderGroups.map(group => (

@@ -6,6 +6,7 @@ import {
   buildTransformReportView,
   formatTransformContextReportText,
   formatTransformContextSummary,
+  formatTransformPlaceholderReportText,
   formatTransformReportViewText,
   summarizeTransformContext,
 } from './transformSummary';
@@ -363,6 +364,14 @@ describe('transformSummary', () => {
     ]);
     expect(placeholderView.filteredPlaceholderCount).toBe(1);
     expect(buildTransformReportView(report, '%7B%22button_cmd').filteredPlaceholderCount).toBe(1);
+
+    const placeholderText = formatTransformPlaceholderReportText(report, placeholderView, '__CONVERT_CMD__');
+    expect(placeholderText).toContain('筛选: __CONVERT_CMD__');
+    expect(placeholderText).toContain('占位符: 1/1');
+    expect(placeholderText).toContain('- __CONVERT_CMD__ ×1:');
+    expect(placeholderText).toContain('来源数: 1');
+    expect(placeholderText).toContain('$.action_cmd.cmd.button_cmd: __CONVERT_CMD__');
+    expect(placeholderText).toContain(`来源预览: ${actionCmd}`);
   });
 
   it('按值和来源汇总重复运行时占位符', () => {

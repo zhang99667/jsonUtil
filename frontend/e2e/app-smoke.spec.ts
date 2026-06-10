@@ -256,6 +256,12 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await expect(page.getByText('已复制筛选结果')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('筛选: __CONVERT_CMD__');
+  await placeholderSection.locator('[data-tour="transform-report-copy-placeholders"]').click();
+  await expect(page.getByText('已复制筛选占位符')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('占位符: 1/1');
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('$.action_cmd.cmd.button_cmd: __CONVERT_CMD__');
   await placeholderSection.getByRole('button', { name: '复制路径' }).click();
   await expect(page.getByText('已复制路径')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
