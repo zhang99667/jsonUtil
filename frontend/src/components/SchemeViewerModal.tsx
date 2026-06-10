@@ -13,6 +13,8 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { copyText } from '../utils/clipboard';
 import {
   extractBase64MetaInfo,
+  extractSchemeCommandSummaryInfo,
+  formatSchemeInsightItems,
   formatBase64MetaDisplayValue,
 } from '../utils/schemeMetadata';
 
@@ -58,6 +60,10 @@ const formatParamValue = (value: string | string[]): string => {
 
 const formatPlaceholderValue = (value: string): string => (
   value.length > 32 ? `${value.slice(0, 32)}...` : value
+);
+
+const formatSummaryValue = (value: string, maxLength = 56): string => (
+  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
 );
 
 const buildParamSections = (
@@ -266,6 +272,22 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const base64MetaInfo = useMemo(() => (
     extractBase64MetaInfo(decodeResult.decoded, decodeResult.isJson)
   ), [decodeResult.decoded, decodeResult.isJson]);
+  const commandSummaryInfo = useMemo(() => (
+    extractSchemeCommandSummaryInfo(
+      decodeResult.decoded,
+      decodeResult.isJson,
+      decodeResult.schemeInfo
+    )
+  ), [decodeResult.decoded, decodeResult.isJson, decodeResult.schemeInfo]);
+  const nestedCommandInsight = commandSummaryInfo
+    ? formatSchemeInsightItems('cmd解析', commandSummaryInfo.commandFields)
+    : undefined;
+  const extInsight = commandSummaryInfo
+    ? formatSchemeInsightItems('ext解析', commandSummaryInfo.extFields)
+    : undefined;
+  const base64SuffixInsight = commandSummaryInfo
+    ? formatSchemeInsightItems('Base64 后缀', commandSummaryInfo.base64SuffixFields, 6)
+    : undefined;
 
   // 头部额外内容：非独立模式显示 path 标签，并支持复制到 JSONPath 面板继续定位
   const headerExtra = !standalone && path ? (
@@ -429,7 +451,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 上方信息卡片区域 */}
-          {(decodeResult.schemeInfo || decodeResult.layers.length > 0 || placeholders.length > 0 || base64MetaInfo) && (
+          {(decodeResult.schemeInfo || commandSummaryInfo || decodeResult.layers.length > 0 || placeholders.length > 0 || base64MetaInfo) && (
             <div className="bg-editor-sidebar rounded p-3 border border-editor-border flex flex-col gap-2">
               {/* Scheme 信息 */}
               {decodeResult.schemeInfo && (
@@ -451,6 +473,59 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       {decodeResult.schemeInfo.path}
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* CMD 结构摘要 */}
+              {commandSummaryInfo && (
+                <div data-tour="scheme-command-summary" className="flex items-start gap-2 text-xs">
+                  <span className="shrink-0 text-cyan-300 bg-cyan-900/30 border border-cyan-700/50 px-2 py-0.5 rounded">
+                    CMD 结构
+                  </span>
+                  <div className="flex flex-wrap gap-1 min-w-0">
+                    {commandSummaryInfo.commandSchema && (
+                      <span
+                        className="bg-editor-bg text-cyan-200 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                        title={commandSummaryInfo.commandSchema}
+                      >
+                        cmdSchema={formatSummaryValue(commandSummaryInfo.commandSchema)}
+                      </span>
+                    )}
+                    {commandSummaryInfo.paramCount > 0 && (
+                      <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono">
+                        cmdParams · {commandSummaryInfo.paramCount}
+                      </span>
+                    )}
+                    {commandSummaryInfo.paramKeys.slice(0, 6).map(key => (
+                      <span
+                        key={key}
+                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                        title={key}
+                      >
+                        {formatSummaryValue(key, 24)}
+                      </span>
+                    ))}
+                    {commandSummaryInfo.paramKeys.length > 6 && (
+                      <span className="text-gray-500 px-1 py-0.5">
+                        +{commandSummaryInfo.paramKeys.length - 6}
+                      </span>
+                    )}
+                    {nestedCommandInsight && (
+                      <span className="bg-editor-bg text-emerald-300 px-2 py-0.5 rounded font-mono max-w-full truncate" title={nestedCommandInsight}>
+                        {nestedCommandInsight}
+                      </span>
+                    )}
+                    {extInsight && (
+                      <span className="bg-editor-bg text-amber-200 px-2 py-0.5 rounded font-mono max-w-full truncate" title={extInsight}>
+                        {extInsight}
+                      </span>
+                    )}
+                    {base64SuffixInsight && (
+                      <span className="bg-editor-bg text-emerald-300 px-2 py-0.5 rounded font-mono max-w-full truncate" title={base64SuffixInsight}>
+                        {base64SuffixInsight}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 

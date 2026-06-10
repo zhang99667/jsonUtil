@@ -630,6 +630,12 @@ test('Scheme 面板展示 URL 参数来源', async ({ page }) => {
   await expect(paramSections).toContainText('from=feed');
   await expect(paramSections).toContainText('Hash 参数 · 1');
   await expect(paramSections).toContainText('cmd={"nid":123}');
+
+  const commandSummary = page.locator('[data-tour="scheme-command-summary"]');
+  await expect(commandSummary).toContainText('CMD 结构');
+  await expect(commandSummary).toContainText('cmdSchema=https://example.com/page');
+  await expect(commandSummary).toContainText('cmdParams · 2');
+  await expect(commandSummary).toContainText('cmd解析: cmd');
 });
 
 test('Scheme 面板展示内部 Base64 后缀摘要', async ({ page }) => {

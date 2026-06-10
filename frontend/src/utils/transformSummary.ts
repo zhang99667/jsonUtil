@@ -1,4 +1,9 @@
 import type { JsonValue, PathTransformRecord, TransformContext, TransformStep, TransformStepType } from '../types';
+import {
+  collectSchemeInsightFields,
+  formatSchemeInsightItems,
+  getSchemeCommandSchemaFromUrl,
+} from './schemeMetadata';
 
 export interface TransformContextSummary {
   recordCount: number;
@@ -202,102 +207,12 @@ const getDecodedValue = (record: PathTransformRecord): JsonValue | undefined => 
   }
 };
 
-const isPlainRecord = (value: JsonValue | undefined): value is Record<string, JsonValue> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-const CMD_FIELD_NAMES = new Set([
-  'cmd',
-  'scheme',
-  'convert_cmd',
-  'panel_cmd',
-  'webpanel_cmd',
-  'stay_cmd',
-  'reward_cmd',
-  'strong_guide_cmd',
-  'button_cmd',
-  'button_scheme',
-  'bottom_button_scheme',
-  'panel_scheme',
-  'click_event_cmd',
-  'webpanel_event_cmd',
-]);
-const CMD_FIELD_SUFFIXES = ['_cmd', 'cmd', '_scheme', 'scheme'];
-const EXT_FIELD_NAMES = new Set([
-  'ad_extra_param',
-  'extInfo',
-  'ext_info',
-  'adFlag',
-]);
-
-const isCmdInsightField = (key: string): boolean => {
-  const normalizedKey = key.trim();
-  const lowerKey = normalizedKey.toLowerCase();
-  return CMD_FIELD_NAMES.has(normalizedKey) ||
-    CMD_FIELD_NAMES.has(lowerKey) ||
-    CMD_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
-};
-
-const getUrlCommandSchema = (value: string): string | undefined => {
-  const trimmed = value.trim().replace(/\\\//g, '/');
-  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return undefined;
-
-  try {
-    const url = new URL(trimmed);
-    return `${url.protocol}//${url.host}${url.pathname}`;
-  } catch {
-    return trimmed.split(/[?#]/)[0] || undefined;
-  }
-};
-
 const getRecordCommandSchema = (record: PathTransformRecord): string | undefined => {
   const schemeStep = [...record.steps].reverse().find(step => (
     step.type === 'scheme_decode' && step.originalSchemeType === 'url' && step.originalScheme
   ));
 
-  return schemeStep?.originalScheme ? getUrlCommandSchema(schemeStep.originalScheme) : undefined;
-};
-
-const formatInsightItems = (title: string, items: string[], limit = 4): string | undefined => {
-  const uniqueItems = Array.from(new Set(items)).filter(Boolean);
-  if (uniqueItems.length === 0) return undefined;
-
-  const visibleItems = uniqueItems.slice(0, limit).join(', ');
-  return uniqueItems.length > limit
-    ? `${title}: ${visibleItems} +${uniqueItems.length - limit}`
-    : `${title}: ${visibleItems}`;
-};
-
-const collectDecodedInsightFields = (
-  value: JsonValue,
-  cmdFields: string[],
-  extFields: string[],
-  base64SuffixFields: string[]
-) => {
-  if (Array.isArray(value)) {
-    value.forEach(item => collectDecodedInsightFields(item, cmdFields, extFields, base64SuffixFields));
-    return;
-  }
-
-  if (!isPlainRecord(value)) return;
-
-  Object.entries(value).forEach(([key, item]) => {
-    if (isPlainRecord(item)) {
-      if (isCmdInsightField(key)) {
-        cmdFields.push(key);
-      }
-      if (EXT_FIELD_NAMES.has(key)) {
-        extFields.push(key);
-      }
-      if (key === '_base64_suffix_decoded') {
-        base64SuffixFields.push(...Object.keys(item));
-      }
-    }
-
-    if (item && typeof item === 'object') {
-      collectDecodedInsightFields(item, cmdFields, extFields, base64SuffixFields);
-    }
-  });
+  return schemeStep?.originalScheme ? getSchemeCommandSchemaFromUrl(schemeStep.originalScheme) : undefined;
 };
 
 const buildRecordInsights = (record: PathTransformRecord): string[] => {
@@ -312,14 +227,15 @@ const buildRecordInsights = (record: PathTransformRecord): string[] => {
     return insights;
   }
 
-  const cmdFields: string[] = [];
-  const extFields: string[] = [];
-  const base64SuffixFields: string[] = [];
-  collectDecodedInsightFields(decodedValue, cmdFields, extFields, base64SuffixFields);
+  const {
+    commandFields,
+    extFields,
+    base64SuffixFields,
+  } = collectSchemeInsightFields(decodedValue);
 
-  const nestedCmdInsight = formatInsightItems('cmd解析', cmdFields);
-  const extInsight = formatInsightItems('ext解析', extFields);
-  const suffixInsight = formatInsightItems('Base64 后缀', base64SuffixFields, 6);
+  const nestedCmdInsight = formatSchemeInsightItems('cmd解析', commandFields);
+  const extInsight = formatSchemeInsightItems('ext解析', extFields);
+  const suffixInsight = formatSchemeInsightItems('Base64 后缀', base64SuffixFields, 6);
 
   return [
     ...insights,
