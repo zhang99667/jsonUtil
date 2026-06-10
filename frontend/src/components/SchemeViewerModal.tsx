@@ -69,6 +69,94 @@ const formatSummaryValue = (value: string, maxLength = 56): string => (
   value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
 );
 
+const MAX_SCHEME_PATH_VALUE_COPY_ROWS = 500;
+
+interface SchemePathValueCollectState {
+  rows: string[];
+  limit: number;
+  isTruncated: boolean;
+}
+
+const formatJsonPathKey = (path: string, key: string): string => (
+  /^[A-Za-z_$][\w$]*$/.test(key)
+    ? `${path}.${key}`
+    : `${path}[${JSON.stringify(key)}]`
+);
+
+const formatJsonPathValue = (value: unknown): string => {
+  if (typeof value === 'string') return JSON.stringify(value);
+  return JSON.stringify(value) ?? String(value);
+};
+
+const pushSchemePathValueRow = (
+  state: SchemePathValueCollectState,
+  path: string,
+  value: unknown
+) => {
+  if (state.rows.length >= state.limit) {
+    state.isTruncated = true;
+    return;
+  }
+
+  state.rows.push(`${path} = ${formatJsonPathValue(value)}`);
+};
+
+const collectSchemePathValues = (
+  value: unknown,
+  path: string,
+  state: SchemePathValueCollectState
+) => {
+  if (state.isTruncated) return;
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      pushSchemePathValueRow(state, path, value);
+      return;
+    }
+
+    for (let index = 0; index < value.length; index++) {
+      collectSchemePathValues(value[index], `${path}[${index}]`, state);
+      if (state.isTruncated) return;
+    }
+    return;
+  }
+
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) {
+      pushSchemePathValueRow(state, path, value);
+      return;
+    }
+
+    for (const [key, item] of entries) {
+      collectSchemePathValues(item, formatJsonPathKey(path, key), state);
+      if (state.isTruncated) return;
+    }
+    return;
+  }
+
+  pushSchemePathValueRow(state, path, value);
+};
+
+const formatSchemePathValuesForCopy = (content: string): string => {
+  try {
+    const parsed: unknown = JSON.parse(content);
+    const state: SchemePathValueCollectState = {
+      rows: [],
+      limit: MAX_SCHEME_PATH_VALUE_COPY_ROWS,
+      isTruncated: false,
+    };
+
+    collectSchemePathValues(parsed, '$', state);
+    return [
+      ...state.rows,
+      ...(state.isTruncated ? ['... 还有更多路径未复制'] : []),
+    ].join('\n');
+  } catch {
+    return '';
+  }
+};
+
 const buildParamSections = (
   schemeInfo: SchemeDecodeResult['schemeInfo']
 ): SchemeParamSection[] => {
@@ -155,6 +243,18 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     }
   };
 
+  const handleCopyPathValues = async () => {
+    if (!decodedPathValueCopyText) return;
+
+    try {
+      await copyText(decodedPathValueCopyText);
+      toast.success('已复制路径和值', { duration: 2000 });
+    } catch (err) {
+      console.warn('复制 Scheme 路径和值失败:', err);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
   const handleCopyOriginal = async () => {
     try {
       await copyText(actualValue);
@@ -201,6 +301,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
     return encodeWithLayers(editedContent, decodeResult.layers);
   }, [actualValue, decodeResult.layers, editedContent, editedJsonError, hasNonReversibleLayer]);
+  const decodedPathValueCopyText = useMemo(() => (
+    decodeResult.isJson && !editedJsonError
+      ? formatSchemePathValuesForCopy(editedContent)
+      : ''
+  ), [decodeResult.isJson, editedContent, editedJsonError]);
 
   const handleCopySerialized = async () => {
     if (!serializedContent) return;
@@ -377,6 +482,21 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           </svg>
           复制解码结果
         </button>
+        {decodeResult.isJson && (
+          <button
+            data-tour="scheme-copy-path-values"
+            onClick={handleCopyPathValues}
+            disabled={!decodedPathValueCopyText}
+            className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="复制解码 JSON 中的路径和值"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M8 4h8l4 4v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 4v4h4" />
+            </svg>
+            复制路径和值
+          </button>
+        )}
         {standalone && decodeResult.layers.length > 0 && (
           <button
             data-tour="scheme-copy-serialized"
