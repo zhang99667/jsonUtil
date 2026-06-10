@@ -687,6 +687,7 @@ describe('deepParseWithContext', () => {
       {
         type: 'string_decode_skipped',
         path: '$.action_cmd',
+        originalValue: actionCmd,
         message: '字符串过长，已跳过递归展开以保护性能',
         length: actionCmd.length,
         limit: 20,
@@ -716,6 +717,7 @@ describe('deepParseWithContext', () => {
       {
         type: 'string_decode_budget_exceeded',
         path: '$.action_cmd',
+        originalValue: actionCmd,
         message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
         length: actionCmd.length,
         limit: 20,
@@ -756,6 +758,7 @@ describe('deepParseWithContext', () => {
     expect(result.context.unresolvedCandidates).toEqual([
       {
         path: '$.tracking',
+        originalValue: rawValue,
         message: 'URL 编码内容已解码，但未展开为结构化对象',
         length: rawValue.length,
         preview: rawValue,

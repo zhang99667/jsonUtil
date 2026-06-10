@@ -265,6 +265,7 @@ describe('transformSummary', () => {
     expect(report.unresolvedCandidates).toEqual([
       {
         path: '$.tracking',
+        originalValue: rawValue,
         message: 'URL 编码内容已解码，但未展开为结构化对象',
         length: rawValue.length,
         preview: rawValue,
@@ -282,6 +283,7 @@ describe('transformSummary', () => {
     const unresolvedView = buildTransformReportView(report, 'tracking');
     expect(unresolvedView.unresolvedCandidates.map(candidate => candidate.path)).toEqual(['$.tracking']);
     expect(unresolvedView.filteredUnresolvedCount).toBe(1);
+    expect(buildTransformReportView(report, '%7B%22nid').filteredUnresolvedCount).toBe(1);
     expect(buildTransformReportView(report, '普通埋点参数').filteredUnresolvedCount).toBe(1);
   });
 
@@ -337,6 +339,7 @@ describe('transformSummary', () => {
       {
         type: 'string_decode_skipped',
         path: '$.action_cmd',
+        originalValue: actionCmd,
         message: '字符串过长，已跳过递归展开以保护性能',
         length: actionCmd.length,
         limit: 20,
@@ -347,6 +350,7 @@ describe('transformSummary', () => {
     expect(warningView.filteredWarningCount).toBe(1);
     expect(formatTransformContextReportText(result.context)).toContain('原因: 单字段长度保护');
     expect(formatTransformContextReportText(result.context)).toContain('下一步: 该字段本身超过自动解析阈值');
+    expect(buildTransformReportView(report, 'padding=').filteredWarningCount).toBe(1);
     expect(buildTransformReportView(report, '单独粘贴到 Scheme 面板').filteredWarningCount).toBe(1);
   });
 
@@ -366,6 +370,7 @@ describe('transformSummary', () => {
       {
         type: 'string_decode_budget_exceeded',
         path: '$.action_cmd',
+        originalValue: actionCmd,
         message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
         length: actionCmd.length,
         limit: 20,

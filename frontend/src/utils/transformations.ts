@@ -427,6 +427,7 @@ export function deepParseWithContext(
     context.unresolvedCandidates.push({
       path,
       sourceLabel,
+      originalValue: value,
       message,
       length: value.length,
       preview: formatStringPreview(value),
@@ -486,6 +487,7 @@ export function deepParseWithContext(
             type: 'string_decode_skipped',
             path: currentPath,
             sourceLabel,
+            originalValue: value,
             message: '字符串过长，已跳过递归展开以保护性能',
             length: value.length,
             limit: maxStringDecodeLength,
@@ -501,6 +503,7 @@ export function deepParseWithContext(
               type: 'string_decode_budget_exceeded',
               path: currentPath,
               sourceLabel,
+              originalValue: value,
               message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
               length: value.length,
               limit: maxTotalStringDecodeLength,

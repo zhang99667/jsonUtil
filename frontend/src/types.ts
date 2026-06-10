@@ -148,6 +148,7 @@ export interface TransformWarning {
   type: 'string_decode_skipped' | 'string_decode_budget_exceeded';
   path: string;
   sourceLabel?: string;
+  originalValue: string;
   message: string;
   length: number;
   limit: number;
@@ -156,6 +157,7 @@ export interface TransformWarning {
 export interface TransformUnresolvedCandidate {
   path: string;
   sourceLabel?: string;
+  originalValue: string;
   message: string;
   length: number;
   preview: string;
