@@ -139,10 +139,19 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await reportPanel
     .locator('[data-tour="transform-report-decoded-path"]')
     .filter({ hasText: '$[0].payload.nested' })
-    .getByRole('button', { name: '复制' })
+    .locator('[data-tour="transform-report-copy-decoded-path"]')
     .click();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$[0].payload.nested');
+
+  await reportPanel
+    .locator('[data-tour="transform-report-decoded-path"]')
+    .filter({ hasText: '$[0].payload.nested' })
+    .locator('[data-tour="transform-report-copy-decoded-value"]')
+    .click();
+  await expect(page.getByText('已复制路径和值')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$[0].payload.nested = true');
 
   await page.locator('[data-tour="transform-report-filter"]').fill('$[1]');
   await expect(reportPanel).toContainText('$[1].payload');

@@ -44,6 +44,7 @@ export interface TransformReportRecord {
 export interface TransformReportDecodedPath {
   path: string;
   preview: string;
+  copyText: string;
 }
 
 export interface TransformReportWarning {
@@ -192,6 +193,37 @@ const formatJsonValuePreview = (value: JsonValue, maxLength = 120): string => {
 
   if (typeof value === 'string') return formatOriginalPreview(value, maxLength);
   return String(value);
+};
+
+const formatDecodedPathCopyValue = (value: JsonValue, maxLength = 8_000): string => {
+  const text = typeof value === 'string'
+    ? JSON.stringify(value)
+    : JSON.stringify(value) ?? String(value);
+
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+};
+
+const createDecodedPathRow = (
+  path: string,
+  value: JsonValue,
+  preview = formatJsonValuePreview(value, 80)
+): DecodedPathCollectRow => ({
+  path,
+  preview,
+  valueText: formatDecodedPathCopyValue(value),
+});
+
+const rebaseDecodedPathRow = (
+  basePath: string,
+  row: DecodedPathCollectRow
+): TransformReportDecodedPath => {
+  const path = joinJsonPath(basePath, row.path);
+
+  return {
+    path,
+    preview: row.preview,
+    copyText: `${path} = ${row.valueText}`,
+  };
 };
 
 const appendJsonPathKey = (path: string, key: string): string => (
@@ -349,9 +381,15 @@ const classifyWarning = (
 };
 
 interface DecodedPathCollectState {
-  rows: TransformReportDecodedPath[];
+  rows: DecodedPathCollectRow[];
   limit: number;
   hasMore: boolean;
+}
+
+interface DecodedPathCollectRow {
+  path: string;
+  preview: string;
+  valueText: string;
 }
 
 interface DecodedSearchTextCollectState {
@@ -361,7 +399,7 @@ interface DecodedSearchTextCollectState {
 
 const pushDecodedPath = (
   state: DecodedPathCollectState,
-  row: TransformReportDecodedPath
+  row: DecodedPathCollectRow
 ) => {
   if (state.rows.length < state.limit) {
     state.rows.push(row);
@@ -380,7 +418,7 @@ const collectDecodedLeafPaths = (
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      pushDecodedPath(state, { path: currentPath, preview: '数组 0 项' });
+      pushDecodedPath(state, createDecodedPathRow(currentPath, value, '数组 0 项'));
       return;
     }
 
@@ -394,7 +432,7 @@ const collectDecodedLeafPaths = (
   if (value && typeof value === 'object') {
     const entries = Object.entries(value);
     if (entries.length === 0) {
-      pushDecodedPath(state, { path: currentPath, preview: '对象: 空' });
+      pushDecodedPath(state, createDecodedPathRow(currentPath, value, '对象: 空'));
       return;
     }
 
@@ -405,10 +443,7 @@ const collectDecodedLeafPaths = (
     return;
   }
 
-  pushDecodedPath(state, {
-    path: currentPath,
-    preview: formatJsonValuePreview(value, 80),
-  });
+  pushDecodedPath(state, createDecodedPathRow(currentPath, value));
 };
 
 const buildDecodedPaths = (
@@ -428,10 +463,7 @@ const buildDecodedPaths = (
   collectDecodedLeafPaths(decodedValue, '$', state);
 
   return {
-    decodedPaths: state.rows.map(row => ({
-      path: joinJsonPath(record.path, row.path),
-      preview: row.preview,
-    })),
+    decodedPaths: state.rows.map(row => rebaseDecodedPathRow(record.path, row)),
     hasMoreDecodedPaths: state.hasMore,
   };
 };
