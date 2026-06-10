@@ -6,6 +6,7 @@ import {
   buildTransformContextReport,
   buildTransformReportView,
   formatTransformContextReportText,
+  formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
 } from '../utils/transformSummary';
@@ -50,6 +51,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const reportView = useMemo(() => (
     report ? buildTransformReportView(report, query) : null
   ), [report, query]);
+  const pathValueCopyText = useMemo(() => (
+    reportView ? formatTransformPathValueReportText(reportView) : ''
+  ), [reportView]);
 
   const handleCopyReport = async () => {
     if (!context) return;
@@ -71,6 +75,18 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success('已复制筛选结果', { duration: 2000 });
     } catch (error) {
       console.warn('复制深度解析筛选结果失败:', error);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
+  const handleCopyPathValueReport = async () => {
+    if (!pathValueCopyText) return;
+
+    try {
+      await copyText(pathValueCopyText);
+      toast.success('已复制路径和值', { duration: 2000 });
+    } catch (error) {
+      console.warn('复制深度解析路径和值失败:', error);
       toast.error('复制失败', { duration: 2000 });
     }
   };
@@ -138,6 +154,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
             复制筛选结果
           </button>
         )}
+        <button
+          data-tour="transform-report-copy-path-values"
+          onClick={handleCopyPathValueReport}
+          disabled={!pathValueCopyText}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="复制当前展示的内部路径和值"
+        >
+          复制路径值
+        </button>
         <button
           onClick={handleCopyReport}
           disabled={!context}

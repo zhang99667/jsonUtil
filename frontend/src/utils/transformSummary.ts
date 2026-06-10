@@ -674,7 +674,7 @@ const buildFilteredRecordView = (
   return {
     ...record,
     decodedPaths: matchedDecodedPaths.slice(0, DEFAULT_DECODED_PATH_LIMIT),
-    hasMoreDecodedPaths: record.hasMoreDecodedPaths || matchedDecodedPaths.length > DEFAULT_DECODED_PATH_LIMIT,
+    hasMoreDecodedPaths: matchedDecodedPaths.length > DEFAULT_DECODED_PATH_LIMIT,
   };
 };
 
@@ -1120,6 +1120,28 @@ export const formatTransformReportViewText = (
   appendReportWarningSection(lines, reportView.warnings);
   if (reportView.isWarningTruncated) {
     lines.push(`- 还有 ${reportView.filteredWarningCount - reportView.warnings.length} 条跳过记录未复制`);
+  }
+
+  return lines.join('\n');
+};
+
+export const formatTransformPathValueReportText = (
+  reportView: TransformReportView
+): string => {
+  const lines: string[] = [];
+
+  reportView.records.forEach(record => {
+    record.decodedPaths.forEach(row => {
+      lines.push(row.copyText);
+    });
+
+    if (record.hasMoreDecodedPaths) {
+      lines.push(`... ${record.path} 还有更多内部路径未复制`);
+    }
+  });
+
+  if (reportView.isRecordTruncated) {
+    lines.push(`... 还有 ${reportView.filteredRecordCount - reportView.records.length} 条展开记录未复制`);
   }
 
   return lines.join('\n');
