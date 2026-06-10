@@ -184,6 +184,17 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect(unresolvedSection).toContainText('URL 编码内容已解码，但未展开为结构化对象');
   await unresolvedSection.getByRole('button', { name: '复制路径' }).click();
   await expect(page.getByText('已复制路径')).toBeVisible();
+
+  await reportPanel
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$.tracking' })
+    .locator('[data-tour="transform-report-open-scheme"]')
+    .click();
+  await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
+  await expect(reportPanel).toBeHidden();
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel).toBeVisible();
+  await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue('raw=%7B%22nid%22%3A123%7D');
 });
 
 test('深度解析报告展示运行时占位符', async ({ page }) => {

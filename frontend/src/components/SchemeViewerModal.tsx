@@ -26,6 +26,8 @@ interface SchemeViewerModalProps {
   sourceLabel?: string;    // 来源业务标签，如 extraParam
   onApply?: (newValue: string) => void;  // 应用修改后的值
   standalone?: boolean;    // 是否为独立模式（侧边栏打开，可手动输入）
+  initialStandaloneInput?: string; // 独立模式下从外部入口预填的内容
+  initialStandaloneInputKey?: number; // 用于同一内容重复打开时触发重新预填
 }
 
 const schemeTypeLabels: Record<SchemeType, string> = {
@@ -89,6 +91,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   sourceLabel,
   onApply,
   standalone = false,
+  initialStandaloneInput,
+  initialStandaloneInputKey,
 }) => {
   const [editedContent, setEditedContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
@@ -133,13 +137,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     setIsEditing(false);
   }, [decodeResult.decoded]);
 
-  // 独立模式打开时清空之前的输入
+  // 独立模式从外部入口打开时，预填待排查内容。
   useEffect(() => {
-    if (isOpen && standalone) {
-      // 可以选择保留上次输入或清空
-      // setStandaloneInput('');
+    if (isOpen && standalone && initialStandaloneInput !== undefined) {
+      setStandaloneInput(initialStandaloneInput);
     }
-  }, [isOpen, standalone]);
+  }, [initialStandaloneInput, initialStandaloneInputKey, isOpen, standalone]);
 
   const handleCopy = async () => {
     try {

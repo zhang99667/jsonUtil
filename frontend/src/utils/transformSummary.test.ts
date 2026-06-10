@@ -78,6 +78,7 @@ describe('transformSummary', () => {
     expect(formatTransformContextReportText(result.context)).toContain('$.extra: Base64 · 不可逆');
     expect(formatTransformContextReportText(result.context)).toContain('解析结果: 对象: meg_name, flag');
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: $.cmd.cmd.nid=123');
+    expect(report.records[0].originalValue).toBe(`cmd=${cmdPayload}&from=feed`);
     expect(report.records[0].decodedPaths).toEqual([
       { path: '$.cmd.cmd.nid', preview: '123' },
       { path: '$.cmd.from', preview: 'feed' },

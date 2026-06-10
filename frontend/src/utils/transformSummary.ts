@@ -31,6 +31,7 @@ export interface TransformReportRecord {
   sourceLabel?: string;
   labels: string[];
   insights: string[];
+  originalValue: string;
   originalPreview: string;
   decodedPreview?: string;
   decodedSearchText?: string;
@@ -704,6 +705,7 @@ export const buildTransformContextReport = (
       sourceLabel: record.sourceLabel,
       labels: record.steps.map(getStepLabel),
       insights: buildRecordInsights(record),
+      originalValue: record.originalValue,
       originalPreview: formatOriginalPreview(record.originalValue),
       decodedPreview: getDecodedPreview(record),
       decodedSearchText: buildDecodedSearchText(record),
