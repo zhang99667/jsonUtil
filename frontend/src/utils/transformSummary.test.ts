@@ -334,12 +334,45 @@ describe('transformSummary', () => {
     const warningView = buildTransformReportView(report, 'action_cmd');
     expect(warningView.warnings).toEqual([
       {
+        type: 'string_decode_skipped',
         path: '$.action_cmd',
         message: '字符串过长，已跳过递归展开以保护性能',
         length: actionCmd.length,
         limit: 20,
+        reasonLabel: '单字段长度保护',
+        nextAction: '该字段本身超过自动解析阈值，可复制路径定位后单独粘贴到 Scheme 面板，或缩小 response 后再深度解析。',
       },
     ]);
     expect(warningView.filteredWarningCount).toBe(1);
+    expect(formatTransformContextReportText(result.context)).toContain('原因: 单字段长度保护');
+    expect(formatTransformContextReportText(result.context)).toContain('下一步: 该字段本身超过自动解析阈值');
+    expect(buildTransformReportView(report, '单独粘贴到 Scheme 面板').filteredWarningCount).toBe(1);
+  });
+
+  it('统计累计解析预算耗尽的跳过建议', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=feed`;
+    const result = deepParseWithContext(JSON.stringify({
+      title: 'x'.repeat(16),
+      action_cmd: actionCmd,
+      next_cmd: actionCmd,
+    }), {
+      autoExpandScheme: true,
+      maxTotalStringDecodeLength: 20,
+    });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.warnings).toEqual([
+      {
+        type: 'string_decode_budget_exceeded',
+        path: '$.action_cmd',
+        message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
+        length: actionCmd.length,
+        limit: 20,
+        reasonLabel: '累计预算保护',
+        nextAction: '优先用 JSONPath 定位目标字段，或只复制该字段到 Scheme 面板单独解析，避免整段 response 的其它长字符串消耗预算。',
+      },
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain('原因: 累计预算保护');
+    expect(buildTransformReportView(report, '其它长字符串消耗预算').filteredWarningCount).toBe(1);
   });
 });
