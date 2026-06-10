@@ -35,6 +35,7 @@ export interface TransformReportRecord {
   originalPreview: string;
   decodedPreview?: string;
   decodedSearchText?: string;
+  decodedSearchPaths?: TransformReportDecodedPath[];
   decodedPaths: TransformReportDecodedPath[];
   hasMoreDecodedPaths: boolean;
   stepCount: number;
@@ -150,6 +151,7 @@ export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT = 100;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
+const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 200;
 
 const STEP_LABELS: Record<TransformStepType, string> = {
   json_parse: '嵌套 JSON',
@@ -394,7 +396,9 @@ interface DecodedPathCollectRow {
 
 interface DecodedSearchTextCollectState {
   parts: string[];
+  rows: TransformReportDecodedPath[];
   remainingLength: number;
+  rowLimit: number;
 }
 
 const pushDecodedPath = (
@@ -471,16 +475,25 @@ const buildDecodedPaths = (
 const pushDecodedSearchText = (
   state: DecodedSearchTextCollectState,
   path: string,
-  preview: string
+  value: JsonValue,
+  preview = formatJsonValuePreview(value, 80)
 ) => {
-  if (state.remainingLength <= 0) return;
+  if (state.rows.length < state.rowLimit) {
+    state.rows.push({
+      path,
+      preview,
+      copyText: `${path} = ${formatDecodedPathCopyValue(value)}`,
+    });
+  }
 
-  const part = `${path} ${preview}`;
-  const nextPart = part.length > state.remainingLength
-    ? part.slice(0, state.remainingLength)
-    : part;
-  state.parts.push(nextPart);
-  state.remainingLength -= nextPart.length + 1;
+  if (state.remainingLength > 0) {
+    const part = `${path} ${preview}`;
+    const nextPart = part.length > state.remainingLength
+      ? part.slice(0, state.remainingLength)
+      : part;
+    state.parts.push(nextPart);
+    state.remainingLength -= nextPart.length + 1;
+  }
 };
 
 const collectDecodedSearchText = (
@@ -488,17 +501,17 @@ const collectDecodedSearchText = (
   currentPath: string,
   state: DecodedSearchTextCollectState
 ) => {
-  if (state.remainingLength <= 0) return;
+  if (state.remainingLength <= 0 && state.rows.length >= state.rowLimit) return;
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      pushDecodedSearchText(state, currentPath, '数组 0 项');
+      pushDecodedSearchText(state, currentPath, value, '数组 0 项');
       return;
     }
 
     for (let index = 0; index < value.length; index++) {
       collectDecodedSearchText(value[index], appendJsonPathIndex(currentPath, index), state);
-      if (state.remainingLength <= 0) return;
+      if (state.remainingLength <= 0 && state.rows.length >= state.rowLimit) return;
     }
     return;
   }
@@ -506,36 +519,42 @@ const collectDecodedSearchText = (
   if (value && typeof value === 'object') {
     const entries = Object.entries(value);
     if (entries.length === 0) {
-      pushDecodedSearchText(state, currentPath, '对象: 空');
+      pushDecodedSearchText(state, currentPath, value, '对象: 空');
       return;
     }
 
     for (const [key, item] of entries) {
       collectDecodedSearchText(item, appendJsonPathKey(currentPath, key), state);
-      if (state.remainingLength <= 0) return;
+      if (state.remainingLength <= 0 && state.rows.length >= state.rowLimit) return;
     }
     return;
   }
 
-  pushDecodedSearchText(state, currentPath, formatJsonValuePreview(value, 80));
+  pushDecodedSearchText(state, currentPath, value);
 };
 
-const buildDecodedSearchText = (
+const buildDecodedSearchData = (
   record: PathTransformRecord,
-  limit = DEFAULT_DECODED_SEARCH_TEXT_LIMIT
-): string | undefined => {
+  textLimit = DEFAULT_DECODED_SEARCH_TEXT_LIMIT,
+  pathLimit = DEFAULT_DECODED_SEARCH_PATH_LIMIT
+): Pick<TransformReportRecord, 'decodedSearchText' | 'decodedSearchPaths'> => {
   const decodedValue = getDecodedValue(record);
   if (decodedValue === undefined || decodedValue === null || typeof decodedValue !== 'object') {
-    return undefined;
+    return {};
   }
 
   const state: DecodedSearchTextCollectState = {
     parts: [],
-    remainingLength: limit,
+    rows: [],
+    remainingLength: textLimit,
+    rowLimit: pathLimit,
   };
   collectDecodedSearchText(decodedValue, record.path, state);
 
-  return state.parts.length > 0 ? state.parts.join('\n') : undefined;
+  return {
+    ...(state.parts.length > 0 ? { decodedSearchText: state.parts.join('\n') } : {}),
+    ...(state.rows.length > 0 ? { decodedSearchPaths: state.rows } : {}),
+  };
 };
 
 const buildTransformReportCoverage = (
@@ -626,11 +645,38 @@ const matchesReportRecord = (
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
   (record.decodedSearchText ? includesQuery(record.decodedSearchText, normalizedQuery) : false) ||
+  (record.decodedSearchPaths ? record.decodedSearchPaths.some(row => matchesDecodedPath(row, normalizedQuery)) : false) ||
   record.decodedPaths.some(row => (
     includesQuery(row.path, normalizedQuery) ||
     includesQuery(row.preview, normalizedQuery)
   ))
 );
+
+const matchesDecodedPath = (
+  row: TransformReportDecodedPath,
+  normalizedQuery: string
+): boolean => (
+  includesQuery(row.path, normalizedQuery) ||
+  includesQuery(row.preview, normalizedQuery)
+);
+
+const buildFilteredRecordView = (
+  record: TransformReportRecord,
+  normalizedQuery: string
+): TransformReportRecord => {
+  if (!normalizedQuery || !record.decodedSearchPaths) return record;
+
+  const matchedDecodedPaths = record.decodedSearchPaths.filter(row => (
+    matchesDecodedPath(row, normalizedQuery)
+  ));
+  if (matchedDecodedPaths.length === 0) return record;
+
+  return {
+    ...record,
+    decodedPaths: matchedDecodedPaths.slice(0, DEFAULT_DECODED_PATH_LIMIT),
+    hasMoreDecodedPaths: record.hasMoreDecodedPaths || matchedDecodedPaths.length > DEFAULT_DECODED_PATH_LIMIT,
+  };
+};
 
 const matchesReportWarning = (
   warning: TransformReportWarning,
@@ -812,6 +858,7 @@ export const buildTransformContextReport = (
 ): TransformContextReport => {
   const records: TransformReportRecord[] = Array.from(context.records.values()).map(record => {
     const { decodedPaths, hasMoreDecodedPaths } = buildDecodedPaths(record);
+    const decodedSearchData = buildDecodedSearchData(record);
 
     return {
       path: record.path,
@@ -821,7 +868,7 @@ export const buildTransformContextReport = (
       originalValue: record.originalValue,
       originalPreview: formatOriginalPreview(record.originalValue),
       decodedPreview: getDecodedPreview(record),
-      decodedSearchText: buildDecodedSearchText(record),
+      ...decodedSearchData,
       decodedPaths,
       hasMoreDecodedPaths,
       stepCount: record.steps.length,
@@ -1008,7 +1055,9 @@ export const buildTransformReportView = (
   );
 
   return {
-    records: filteredRecords.slice(0, recordLimit),
+    records: filteredRecords.map(record => (
+      buildFilteredRecordView(record, normalizedQuery)
+    )).slice(0, recordLimit),
     warnings: filteredWarnings.slice(0, warningLimit),
     unresolvedCandidates: filteredUnresolved.slice(0, unresolvedLimit),
     runtimePlaceholderGroups: buildRuntimePlaceholderGroups(filteredPlaceholders),

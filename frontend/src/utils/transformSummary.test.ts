@@ -178,6 +178,16 @@ describe('transformSummary', () => {
     const hiddenPathView = buildTransformReportView(report, 'target_after_display_limit');
     expect(hiddenPathView.records.map(record => record.path)).toEqual(['$.payload']);
     expect(hiddenPathView.filteredRecordCount).toBe(1);
+    expect(hiddenPathView.records[0].decodedPaths).toEqual([
+      {
+        path: '$.payload.target_after_display_limit',
+        preview: 'needle_after_display_limit',
+        copyText: '$.payload.target_after_display_limit = "needle_after_display_limit"',
+      },
+    ]);
+    expect(formatTransformReportViewText(report, hiddenPathView, 'target_after_display_limit')).toContain(
+      '内部路径: $.payload.target_after_display_limit=needle_after_display_limit'
+    );
   });
 
   it('报告展示 k/v 形态字段的业务标签并支持筛选', () => {
