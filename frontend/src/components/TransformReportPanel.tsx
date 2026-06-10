@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useDeferredValue, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { TransformContext } from '../types';
 import { copyText } from '../utils/clipboard';
@@ -45,12 +45,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   onOpenSchemeValue,
 }) => {
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+  const isFilterPending = query !== deferredQuery;
   const report = useMemo(() => (
     context ? buildTransformContextReport(context) : null
   ), [context]);
   const reportView = useMemo(() => (
-    report ? buildTransformReportView(report, query) : null
-  ), [report, query]);
+    report ? buildTransformReportView(report, deferredQuery) : null
+  ), [report, deferredQuery]);
   const pathValueCopyText = useMemo(() => (
     reportView ? formatTransformPathValueReportText(reportView) : ''
   ), [reportView]);
@@ -68,10 +70,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const handleCopyFilteredReport = async () => {
-    if (!report || !reportView) return;
+    if (!report || !reportView || isFilterPending) return;
 
     try {
-      await copyText(formatTransformReportViewText(report, reportView, query));
+      await copyText(formatTransformReportViewText(report, reportView, deferredQuery));
       toast.success('已复制筛选结果', { duration: 2000 });
     } catch (error) {
       console.warn('复制深度解析筛选结果失败:', error);
@@ -80,7 +82,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const handleCopyPathValueReport = async () => {
-    if (!pathValueCopyText) return;
+    if (!pathValueCopyText || isFilterPending) return;
 
     try {
       await copyText(pathValueCopyText);
@@ -92,11 +94,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const handleCopyPlaceholderReport = async () => {
-    if (!report || !reportView) return;
+    if (!report || !reportView || isFilterPending) return;
 
     try {
-      await copyText(formatTransformPlaceholderReportText(report, reportView, query));
-      toast.success(query.trim() ? '已复制筛选占位符' : '已复制占位符摘要', { duration: 2000 });
+      await copyText(formatTransformPlaceholderReportText(report, reportView, deferredQuery));
+      toast.success(deferredQuery.trim() ? '已复制筛选占位符' : '已复制占位符摘要', { duration: 2000 });
     } catch (error) {
       console.warn('复制深度解析占位符失败:', error);
       toast.error('复制失败', { duration: 2000 });
@@ -158,7 +160,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         {query.trim() && (
           <button
             onClick={handleCopyFilteredReport}
-            disabled={!reportView}
+            disabled={!reportView || isFilterPending}
             className="whitespace-nowrap px-2.5 py-1 text-sm bg-cyan-900/40 text-cyan-100 rounded hover:bg-cyan-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             复制筛选结果
@@ -167,7 +169,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         <button
           data-tour="transform-report-copy-path-values"
           onClick={handleCopyPathValueReport}
-          disabled={!pathValueCopyText}
+          disabled={!pathValueCopyText || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="复制当前展示的内部路径和值"
         >
@@ -273,6 +275,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                 >
                   清空
                 </button>
+              )}
+              {isFilterPending && (
+                <span className="shrink-0 text-xs text-cyan-400">
+                  更新中...
+                </span>
               )}
             </div>
 
@@ -532,7 +539,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     type="button"
                     data-tour="transform-report-copy-placeholders"
                     onClick={handleCopyPlaceholderReport}
-                    className="shrink-0 text-xs text-gray-400 hover:text-violet-200 bg-editor-sidebar border border-editor-border px-2 py-0.5 rounded transition-colors"
+                    disabled={isFilterPending}
+                    className="shrink-0 text-xs text-gray-400 hover:text-violet-200 bg-editor-sidebar border border-editor-border px-2 py-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     复制占位符
                   </button>
