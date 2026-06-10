@@ -16,6 +16,7 @@ export interface TransformContextSummary {
 
 export interface TransformReportRecord {
   path: string;
+  sourceLabel?: string;
   labels: string[];
   originalPreview: string;
   decodedPreview?: string;
@@ -379,6 +380,7 @@ const matchesReportRecord = (
 ): boolean => (
   !normalizedQuery ||
   includesQuery(record.path, normalizedQuery) ||
+  (record.sourceLabel ? includesQuery(record.sourceLabel, normalizedQuery) : false) ||
   includesQuery(record.labels.join(' '), normalizedQuery) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
@@ -506,6 +508,7 @@ export const buildTransformContextReport = (
 
     return {
       path: record.path,
+      sourceLabel: record.sourceLabel,
       labels: record.steps.map(getStepLabel),
       originalPreview: formatOriginalPreview(record.originalValue),
       decodedPreview: getDecodedPreview(record),
@@ -560,6 +563,9 @@ export const formatTransformContextReportText = (
   } else {
     report.records.forEach(record => {
       lines.push(`- ${record.path}: ${record.labels.join(' -> ')}`);
+      if (record.sourceLabel) {
+        lines.push(`  业务字段: ${record.sourceLabel}`);
+      }
       if (record.decodedPreview) {
         lines.push(`  解析结果: ${record.decodedPreview}`);
       }

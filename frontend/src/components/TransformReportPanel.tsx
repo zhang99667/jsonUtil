@@ -153,9 +153,19 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     className="rounded border border-editor-border bg-editor-sidebar px-3 py-2 text-xs"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-emerald-300 truncate" title={record.path}>
-                        {record.path}
-                      </span>
+                      <div className="min-w-0 flex items-center gap-1.5">
+                        {record.sourceLabel && (
+                          <span
+                            className="max-w-[120px] shrink-0 truncate rounded bg-cyan-900/40 px-2 py-0.5 text-cyan-200"
+                            title={record.sourceLabel}
+                          >
+                            {record.sourceLabel}
+                          </span>
+                        )}
+                        <span className="font-mono text-emerald-300 truncate" title={record.path}>
+                          {record.path}
+                        </span>
+                      </div>
                       <div className="shrink-0 flex items-center gap-1.5">
                         {record.hasNonReversibleScheme && (
                           <span className="text-amber-200 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">

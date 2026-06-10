@@ -12,6 +12,7 @@ import {
   JsonObject
 } from '../types.ts';
 import type { DecodeLayer, SchemePlaceholder } from './schemeUtils.ts';
+import { getBusinessLabelForField } from './businessLabels.ts';
 
 import {
   DEFAULT_SCHEME_DECODE_MAX_DEPTH,
@@ -464,7 +465,12 @@ export function deepParseWithContext(
     });
   };
 
-    const processValue = (value: JsonValue, currentPath: string, depth: number = 0): JsonValue => {
+    const processValue = (
+      value: JsonValue,
+      currentPath: string,
+      depth: number = 0,
+      sourceLabel?: string
+    ): JsonValue => {
       if (depth > maxDepth) return value;
 
       if (typeof value === 'string') {
@@ -516,7 +522,12 @@ export function deepParseWithContext(
             const jsonObj = jsonParsed as JsonObject;
             const result: JsonObject = {};
             for (const key in jsonObj) {
-              result[key] = processValue(jsonObj[key], appendJsonPathKey(currentPath, key), depth + 1);
+              result[key] = processValue(
+                jsonObj[key],
+                appendJsonPathKey(currentPath, key),
+                depth + 1,
+                getBusinessLabelForField(jsonObj, key)
+              );
             }
             return result;
           }
@@ -565,6 +576,7 @@ export function deepParseWithContext(
                     path: currentPath,
                     steps: [...steps],
                     originalValue: value,
+                    sourceLabel,
                   });
 
                   return processedSchemeValue;
@@ -613,6 +625,7 @@ export function deepParseWithContext(
                     path: currentPath,
                     steps: [...steps],
                     originalValue: value,
+                    sourceLabel,
                   });
                 }
 
@@ -634,6 +647,7 @@ export function deepParseWithContext(
             path: currentPath,
             steps,
             originalValue: value,
+            sourceLabel,
           });
         }
 
@@ -659,7 +673,12 @@ export function deepParseWithContext(
         const objValue = value as JsonObject;
         const result: JsonObject = {};
         for (const key in objValue) {
-          result[key] = processValue(objValue[key], appendJsonPathKey(currentPath, key), depth);
+          result[key] = processValue(
+            objValue[key],
+            appendJsonPathKey(currentPath, key),
+            depth,
+            getBusinessLabelForField(objValue, key)
+          );
         }
         return result;
       }

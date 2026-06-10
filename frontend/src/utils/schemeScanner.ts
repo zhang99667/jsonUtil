@@ -1,4 +1,5 @@
 import { parse as parseJsonSourceMap } from 'json-source-map';
+import { getBusinessLabelForField } from './businessLabels';
 import { detectSchemeType, type SchemeType } from './schemeUtils';
 
 export interface SchemeLocation {
@@ -26,22 +27,6 @@ const appendJsonPathKey = (path: string, key: string): string => (
     ? `${path}.${key}`
     : `${path}[${JSON.stringify(key)}]`
 );
-
-const trimBusinessLabel = (value: unknown): string | undefined => {
-  if (typeof value !== 'string') return undefined;
-
-  const trimmed = value.trim();
-  return trimmed || undefined;
-};
-
-const getBusinessLabelForField = (
-  container: Record<string, unknown>,
-  key: string
-): string | undefined => {
-  if (key === 'v') return trimBusinessLabel(container.k);
-  if (key === 'value') return trimBusinessLabel(container.key) || trimBusinessLabel(container.name);
-  return undefined;
-};
 
 /**
  * 扫描 JSON 字符串，找出所有包含 scheme 的字符串值及其位置

@@ -121,6 +121,29 @@ describe('transformSummary', () => {
     expect(hiddenPathView.filteredRecordCount).toBe(1);
   });
 
+  it('报告展示 k/v 形态字段的业务标签并支持筛选', () => {
+    const result = deepParseWithContext(JSON.stringify({
+      extra: [
+        {
+          k: 'extraParam',
+          v: `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=feed`,
+        },
+      ],
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.records[0]).toMatchObject({
+      path: '$.extra[0].v',
+      sourceLabel: 'extraParam',
+      labels: ['CMD 参数 · 可回写'],
+    });
+    expect(formatTransformContextReportText(result.context)).toContain('业务字段: extraParam');
+
+    const labelView = buildTransformReportView(report, 'extraParam');
+    expect(labelView.records.map(record => record.path)).toEqual(['$.extra[0].v']);
+    expect(labelView.filteredRecordCount).toBe(1);
+  });
+
   it('展示疑似未展开的结构化字符串线索', () => {
     const rawValue = `raw=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
     const result = deepParseWithContext(JSON.stringify({
