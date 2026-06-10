@@ -81,6 +81,22 @@ export interface TransformReportRuntimePlaceholder {
   description: string;
 }
 
+export interface TransformReportRuntimePlaceholderSourceGroup {
+  sourcePath: string;
+  sourceLabel?: string;
+  sourceOriginalValue?: string;
+  sourceOriginalPreview?: string;
+  count: number;
+}
+
+export interface TransformReportRuntimePlaceholderGroup {
+  value: string;
+  description: string;
+  count: number;
+  sourceCount: number;
+  sources: TransformReportRuntimePlaceholderSourceGroup[];
+}
+
 export interface TransformContextReport {
   summary: TransformContextSummary;
   summaryText?: string;
@@ -88,6 +104,7 @@ export interface TransformContextReport {
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
+  runtimePlaceholderGroups: TransformReportRuntimePlaceholderGroup[];
   runtimePlaceholders: TransformReportRuntimePlaceholder[];
 }
 
@@ -103,6 +120,7 @@ export interface TransformReportView {
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
+  runtimePlaceholderGroups: TransformReportRuntimePlaceholderGroup[];
   runtimePlaceholders: TransformReportRuntimePlaceholder[];
   filteredRecordCount: number;
   filteredWarningCount: number;
@@ -623,6 +641,62 @@ const matchesRuntimePlaceholder = (
   includesQuery(placeholder.description, normalizedQuery)
 );
 
+const buildRuntimePlaceholderGroups = (
+  placeholders: TransformReportRuntimePlaceholder[]
+): TransformReportRuntimePlaceholderGroup[] => {
+  const groups = new Map<string, {
+    value: string;
+    description: string;
+    count: number;
+    sources: Map<string, TransformReportRuntimePlaceholderSourceGroup>;
+  }>();
+
+  placeholders.forEach(placeholder => {
+    let group = groups.get(placeholder.value);
+    if (!group) {
+      group = {
+        value: placeholder.value,
+        description: placeholder.description,
+        count: 0,
+        sources: new Map(),
+      };
+      groups.set(placeholder.value, group);
+    }
+
+    group.count += 1;
+
+    let source = group.sources.get(placeholder.sourcePath);
+    if (!source) {
+      source = {
+        sourcePath: placeholder.sourcePath,
+        ...(placeholder.sourceLabel ? { sourceLabel: placeholder.sourceLabel } : {}),
+        ...(placeholder.sourceOriginalValue ? { sourceOriginalValue: placeholder.sourceOriginalValue } : {}),
+        ...(placeholder.sourceOriginalPreview ? { sourceOriginalPreview: placeholder.sourceOriginalPreview } : {}),
+        count: 0,
+      };
+      group.sources.set(placeholder.sourcePath, source);
+    }
+
+    source.count += 1;
+  });
+
+  return Array.from(groups.values()).map(group => {
+    const sources = Array.from(group.sources.values()).sort((left, right) => (
+      right.count - left.count || left.sourcePath.localeCompare(right.sourcePath)
+    ));
+
+    return {
+      value: group.value,
+      description: group.description,
+      count: group.count,
+      sourceCount: sources.length,
+      sources,
+    };
+  }).sort((left, right) => (
+    right.count - left.count || left.value.localeCompare(right.value)
+  ));
+};
+
 export const summarizeTransformContext = (
   context: TransformContext
 ): TransformContextSummary => {
@@ -725,6 +799,17 @@ export const buildTransformContextReport = (
     };
   });
   const summary = summarizeTransformContext(context);
+  const runtimePlaceholders: TransformReportRuntimePlaceholder[] = (context.runtimePlaceholders || []).map(placeholder => ({
+    path: placeholder.path,
+    sourcePath: placeholder.sourcePath,
+    ...(placeholder.sourceLabel ? { sourceLabel: placeholder.sourceLabel } : {}),
+    ...(placeholder.sourceOriginalValue ? { sourceOriginalValue: placeholder.sourceOriginalValue } : {}),
+    ...(placeholder.sourceOriginalValue
+      ? { sourceOriginalPreview: formatOriginalPreview(placeholder.sourceOriginalValue) }
+      : {}),
+    value: placeholder.value,
+    description: placeholder.description,
+  }));
 
   return {
     summary,
@@ -751,17 +836,8 @@ export const buildTransformContextReport = (
       detectedType: candidate.detectedType,
       ...classifyUnresolvedCandidate(candidate),
     })),
-    runtimePlaceholders: (context.runtimePlaceholders || []).map(placeholder => ({
-      path: placeholder.path,
-      sourcePath: placeholder.sourcePath,
-      ...(placeholder.sourceLabel ? { sourceLabel: placeholder.sourceLabel } : {}),
-      ...(placeholder.sourceOriginalValue ? { sourceOriginalValue: placeholder.sourceOriginalValue } : {}),
-      ...(placeholder.sourceOriginalValue
-        ? { sourceOriginalPreview: formatOriginalPreview(placeholder.sourceOriginalValue) }
-        : {}),
-      value: placeholder.value,
-      description: placeholder.description,
-    })),
+    runtimePlaceholderGroups: buildRuntimePlaceholderGroups(runtimePlaceholders),
+    runtimePlaceholders,
   };
 };
 
@@ -828,7 +904,16 @@ export const formatTransformContextReportText = (
   }
 
   if (report.runtimePlaceholders.length > 0) {
-    lines.push('', '运行时占位符:');
+    lines.push('', '运行时占位符汇总:');
+    report.runtimePlaceholderGroups.forEach(group => {
+      lines.push(`- ${group.value} ×${group.count}: ${group.description}`);
+      lines.push(`  来源数: ${group.sourceCount}`);
+      lines.push(`  主要来源: ${group.sources.map(source => (
+        `${source.sourceLabel ? `${source.sourceLabel} ` : ''}${source.sourcePath} ×${source.count}`
+      )).join('；')}`);
+    });
+
+    lines.push('', '运行时占位符明细:');
     report.runtimePlaceholders.forEach(placeholder => {
       lines.push(`- ${placeholder.path}: ${placeholder.value}`);
       lines.push(`  来源: ${placeholder.sourcePath}`);
@@ -868,6 +953,7 @@ export const buildTransformReportView = (
     records: filteredRecords.slice(0, recordLimit),
     warnings: filteredWarnings.slice(0, warningLimit),
     unresolvedCandidates: filteredUnresolved.slice(0, unresolvedLimit),
+    runtimePlaceholderGroups: buildRuntimePlaceholderGroups(filteredPlaceholders),
     runtimePlaceholders: filteredPlaceholders.slice(0, placeholderLimit),
     filteredRecordCount: filteredRecords.length,
     filteredWarningCount: filteredWarnings.length,

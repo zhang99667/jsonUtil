@@ -310,15 +310,117 @@ describe('transformSummary', () => {
         description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
       },
     ]);
-    expect(formatTransformContextReportText(result.context)).toContain('运行时占位符:');
+    expect(report.runtimePlaceholderGroups).toEqual([
+      {
+        value: '__CONVERT_CMD__',
+        description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+        count: 1,
+        sourceCount: 1,
+        sources: [
+          {
+            sourcePath: '$.action_cmd',
+            sourceOriginalValue: actionCmd,
+            sourceOriginalPreview: actionCmd,
+            count: 1,
+          },
+        ],
+      },
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain('运行时占位符汇总:');
+    expect(formatTransformContextReportText(result.context)).toContain('- __CONVERT_CMD__ ×1:');
+    expect(formatTransformContextReportText(result.context)).toContain('运行时占位符明细:');
     expect(formatTransformContextReportText(result.context)).toContain(`来源预览: ${actionCmd}`);
 
     const placeholderView = buildTransformReportView(report, '__CONVERT_CMD__');
     expect(placeholderView.runtimePlaceholders.map(placeholder => placeholder.path)).toEqual([
       '$.action_cmd.cmd.button_cmd',
     ]);
+    expect(placeholderView.runtimePlaceholderGroups.map(group => ({
+      value: group.value,
+      count: group.count,
+      sourceCount: group.sourceCount,
+    }))).toEqual([
+      {
+        value: '__CONVERT_CMD__',
+        count: 1,
+        sourceCount: 1,
+      },
+    ]);
     expect(placeholderView.filteredPlaceholderCount).toBe(1);
     expect(buildTransformReportView(report, '%7B%22button_cmd').filteredPlaceholderCount).toBe(1);
+  });
+
+  it('按值和来源汇总重复运行时占位符', () => {
+    const primaryCmd = `cmd=${encodeURIComponent(JSON.stringify({
+      first: '__CONVERT_CMD__',
+      second: '__CONVERT_CMD__',
+      webpanel: '__WEBPANEL_CMD__',
+    }))}`;
+    const extraCmd = `cmd=${encodeURIComponent(JSON.stringify({
+      third: '__CONVERT_CMD__',
+    }))}`;
+    const result = deepParseWithContext(JSON.stringify({
+      action_cmd: primaryCmd,
+      extra: [{ k: 'extraParam', v: extraCmd }],
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.runtimePlaceholderGroups.map(group => ({
+      value: group.value,
+      count: group.count,
+      sourceCount: group.sourceCount,
+      sources: group.sources.map(source => ({
+        sourcePath: source.sourcePath,
+        sourceLabel: source.sourceLabel,
+        count: source.count,
+      })),
+    }))).toEqual([
+      {
+        value: '__CONVERT_CMD__',
+        count: 3,
+        sourceCount: 2,
+        sources: [
+          {
+            sourcePath: '$.action_cmd',
+            sourceLabel: undefined,
+            count: 2,
+          },
+          {
+            sourcePath: '$.extra[0].v',
+            sourceLabel: 'extraParam',
+            count: 1,
+          },
+        ],
+      },
+      {
+        value: '__WEBPANEL_CMD__',
+        count: 1,
+        sourceCount: 1,
+        sources: [
+          {
+            sourcePath: '$.action_cmd',
+            sourceLabel: undefined,
+            count: 1,
+          },
+        ],
+      },
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain('- __CONVERT_CMD__ ×3:');
+    expect(formatTransformContextReportText(result.context)).toContain('来源数: 2');
+    expect(formatTransformContextReportText(result.context)).toContain('extraParam $.extra[0].v ×1');
+
+    const extraView = buildTransformReportView(report, 'extraParam');
+    expect(extraView.runtimePlaceholderGroups.map(group => ({
+      value: group.value,
+      count: group.count,
+      sourceCount: group.sourceCount,
+    }))).toEqual([
+      {
+        value: '__CONVERT_CMD__',
+        count: 1,
+        sourceCount: 1,
+      },
+    ]);
   });
 
   it('统计性能保护跳过信息', () => {

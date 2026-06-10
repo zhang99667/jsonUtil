@@ -208,6 +208,10 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   const placeholderSection = reportPanel.locator('[data-tour="transform-report-placeholders"]');
 
   await expect(placeholderSection).toContainText('运行时占位符 · 1');
+  const placeholderGroups = placeholderSection.locator('[data-tour="transform-report-placeholder-groups"]');
+  await expect(placeholderGroups).toContainText('__CONVERT_CMD__');
+  await expect(placeholderGroups).toContainText('1 处');
+  await expect(placeholderGroups).toContainText('1 个来源');
   await expect(placeholderSection).toContainText('$.action_cmd.cmd.button_cmd');
   await expect(placeholderSection).toContainText('__CONVERT_CMD__');
   await expect(placeholderSection).toContainText('运行时转换 CMD 占位符');

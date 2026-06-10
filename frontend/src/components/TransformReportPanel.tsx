@@ -420,6 +420,41 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     <span className="text-amber-300 ml-2">仅显示前 {reportView.runtimePlaceholders.length} 条</span>
                   )}
                 </div>
+                <div data-tour="transform-report-placeholder-groups" className="grid gap-1.5">
+                  {reportView.runtimePlaceholderGroups.map(group => (
+                    <div
+                      key={group.value}
+                      className="rounded border border-violet-700/50 bg-violet-950/30 px-3 py-2 text-xs"
+                    >
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-mono text-violet-100">{group.value}</span>
+                        <span className="rounded bg-editor-bg px-2 py-0.5 text-violet-200">
+                          {group.count} 处
+                        </span>
+                        <span className="rounded bg-editor-bg px-2 py-0.5 text-gray-300">
+                          {group.sourceCount} 个来源
+                        </span>
+                      </div>
+                      <div className="mt-1 text-gray-300">{group.description}</div>
+                      <div className="mt-1 flex flex-col gap-1">
+                        {group.sources.slice(0, 3).map(source => (
+                          <div
+                            key={`${group.value}:${source.sourcePath}`}
+                            className="min-w-0 font-mono text-gray-500 truncate"
+                            title={source.sourceOriginalValue || source.sourcePath}
+                          >
+                            来源{source.sourceLabel ? ` ${source.sourceLabel}` : ''} ×{source.count}: {source.sourcePath}
+                          </div>
+                        ))}
+                        {group.sources.length > 3 && (
+                          <div className="text-gray-500">
+                            还有 {group.sources.length - 3} 个来源
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 {reportView.runtimePlaceholders.map(placeholder => (
                   <div
                     key={`${placeholder.path}:${placeholder.value}`}
