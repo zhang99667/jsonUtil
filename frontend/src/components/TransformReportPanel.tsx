@@ -566,7 +566,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           <div
                             key={`${group.value}:${source.sourcePath}`}
                             className="min-w-0 font-mono text-gray-500 truncate"
-                            title={source.sourceOriginalValue || source.sourcePath}
+                            title={source.sourceOriginalPreview || source.sourcePath}
                           >
                             来源{source.sourceLabel ? ` ${source.sourceLabel}` : ''} ×{source.count}: {source.sourcePath}
                           </div>
@@ -660,7 +660,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     {placeholder.sourceOriginalPreview && (
                       <div
                         className="mt-1 font-mono text-gray-500 truncate"
-                        title={placeholder.sourceOriginalValue}
+                        title={placeholder.sourceOriginalPreview}
                       >
                         来源原始值: {placeholder.sourceOriginalPreview}
                       </div>
