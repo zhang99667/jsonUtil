@@ -10,6 +10,7 @@
 - **CMD/Scheme 字符串化 JSON 解析**: 参数值如果是 `JSON.stringify` 后的 JSON/URL/CMD 字符串，会自动拆掉字符串字面量并继续递归解析
 - **CMD/Scheme JSON-like 参数解析**: 参数值支持保守解析 `{nid:123,title:'标题'}` 等常见日志对象写法，提升与内部 schema 调试工具的兼容性
 - **CMD/Scheme 运行时占位符识别**: 支持识别 `__CONVERT_CMD__`、`__WEBPANEL_CMD__` 等运行时占位符并展示所在路径，避免真实广告链路中未替换字段被误认为解析失败
+- **CMD/Scheme 业务占位符说明**: 补充 `__AD_EXTRA_PARAM_ENCODE_1__`、`__EXT_RENDER_AFD__`、`__REWARD_NUM__`、`__CLICK_ID__` 等真实广告 response 常见占位符说明，便于区分运行时替换字段和解析失败
 - **CMD/Scheme 短 Base64 识别**: Scheme 面板支持直接识别短 JSON Base64 和 URL-safe 省略 padding 的短 JSON Base64，减少独立粘贴参数时漏解析
 - **CMD/Scheme 内部 Base64 片段解析**: 支持只读解析带内部头的 Base64 JSON 片段，提升真实广告 response 中 extraParam 等扩展字段的可读性
 - **CMD/Scheme 内部 Base64 后缀保留**: 带内部头的 Base64 JSON 片段如果在 padding 后继续拼接后缀，会在解析结果中展示 `_base64_prefix` / `_base64_suffix`，避免真实 extraParam 后缀信息被隐藏
@@ -36,6 +37,7 @@
 - **深度格式化真实广告链路展开**: 嵌套解析复用 Scheme 面板的 15 层默认深度，整段广告 response 也能展开多层跳转字段到最终落地页参数
 - **深度格式化 Scheme 还原增强**: 修复 URL Scheme 内含二级 URL 时，未编辑预览回写无法优先还原父级原始字符串的问题
 - **深度解析跳过记录定位**: 深度解析报告中的性能保护跳过记录支持一键复制路径，便于在真实 response 中快速回到源字段排查
+- **深度解析 cmdHandler 式线索**: 深度解析报告会展示 `cmdSchema`、嵌套 `cmd解析` 字段和 `ad_extra_param` / `extInfo` 等 `ext解析` 线索，贴入真实广告 response 后更容易对齐内部 CMD 调试工具的阅读方式
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串
 - **Scheme 面板序列化复制**: 独立 Scheme 解析面板支持将当前编辑后的解码结果重新编码并复制，补齐解析后快速回写 CMD/URL 的工作流
 - **Scheme 面板精确回写**: Scheme 图标弹窗应用修改时改用 JSON Pointer 定位，修复 key 包含点号、斜杠或波浪线时可能写错字段的问题

@@ -18,6 +18,7 @@ export interface TransformReportRecord {
   path: string;
   sourceLabel?: string;
   labels: string[];
+  insights: string[];
   originalPreview: string;
   decodedPreview?: string;
   decodedSearchText?: string;
@@ -199,6 +200,133 @@ const getDecodedValue = (record: PathTransformRecord): JsonValue | undefined => 
   } catch {
     return undefined;
   }
+};
+
+const isPlainRecord = (value: JsonValue | undefined): value is Record<string, JsonValue> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const CMD_FIELD_NAMES = new Set([
+  'cmd',
+  'scheme',
+  'convert_cmd',
+  'panel_cmd',
+  'webpanel_cmd',
+  'stay_cmd',
+  'reward_cmd',
+  'strong_guide_cmd',
+  'button_cmd',
+  'button_scheme',
+  'bottom_button_scheme',
+  'panel_scheme',
+  'click_event_cmd',
+  'webpanel_event_cmd',
+]);
+const CMD_FIELD_SUFFIXES = ['_cmd', 'cmd', '_scheme', 'scheme'];
+const EXT_FIELD_NAMES = new Set([
+  'ad_extra_param',
+  'extInfo',
+  'ext_info',
+  'adFlag',
+]);
+
+const isCmdInsightField = (key: string): boolean => {
+  const normalizedKey = key.trim();
+  const lowerKey = normalizedKey.toLowerCase();
+  return CMD_FIELD_NAMES.has(normalizedKey) ||
+    CMD_FIELD_NAMES.has(lowerKey) ||
+    CMD_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
+};
+
+const getUrlCommandSchema = (value: string): string | undefined => {
+  const trimmed = value.trim().replace(/\\\//g, '/');
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return undefined;
+
+  try {
+    const url = new URL(trimmed);
+    return `${url.protocol}//${url.host}${url.pathname}`;
+  } catch {
+    return trimmed.split(/[?#]/)[0] || undefined;
+  }
+};
+
+const getRecordCommandSchema = (record: PathTransformRecord): string | undefined => {
+  const schemeStep = [...record.steps].reverse().find(step => (
+    step.type === 'scheme_decode' && step.originalSchemeType === 'url' && step.originalScheme
+  ));
+
+  return schemeStep?.originalScheme ? getUrlCommandSchema(schemeStep.originalScheme) : undefined;
+};
+
+const formatInsightItems = (title: string, items: string[], limit = 4): string | undefined => {
+  const uniqueItems = Array.from(new Set(items)).filter(Boolean);
+  if (uniqueItems.length === 0) return undefined;
+
+  const visibleItems = uniqueItems.slice(0, limit).join(', ');
+  return uniqueItems.length > limit
+    ? `${title}: ${visibleItems} +${uniqueItems.length - limit}`
+    : `${title}: ${visibleItems}`;
+};
+
+const collectDecodedInsightFields = (
+  value: JsonValue,
+  cmdFields: string[],
+  extFields: string[],
+  base64SuffixFields: string[]
+) => {
+  if (Array.isArray(value)) {
+    value.forEach(item => collectDecodedInsightFields(item, cmdFields, extFields, base64SuffixFields));
+    return;
+  }
+
+  if (!isPlainRecord(value)) return;
+
+  Object.entries(value).forEach(([key, item]) => {
+    if (isPlainRecord(item)) {
+      if (isCmdInsightField(key)) {
+        cmdFields.push(key);
+      }
+      if (EXT_FIELD_NAMES.has(key)) {
+        extFields.push(key);
+      }
+      if (key === '_base64_suffix_decoded') {
+        base64SuffixFields.push(...Object.keys(item));
+      }
+    }
+
+    if (item && typeof item === 'object') {
+      collectDecodedInsightFields(item, cmdFields, extFields, base64SuffixFields);
+    }
+  });
+};
+
+const buildRecordInsights = (record: PathTransformRecord): string[] => {
+  const insights: string[] = [];
+  const commandSchema = getRecordCommandSchema(record);
+  if (commandSchema) {
+    insights.push(`cmdSchema: ${commandSchema}`);
+  }
+
+  const decodedValue = getDecodedValue(record);
+  if (decodedValue === undefined || decodedValue === null || typeof decodedValue !== 'object') {
+    return insights;
+  }
+
+  const cmdFields: string[] = [];
+  const extFields: string[] = [];
+  const base64SuffixFields: string[] = [];
+  collectDecodedInsightFields(decodedValue, cmdFields, extFields, base64SuffixFields);
+
+  const nestedCmdInsight = formatInsightItems('cmd解析', cmdFields);
+  const extInsight = formatInsightItems('ext解析', extFields);
+  const suffixInsight = formatInsightItems('Base64 后缀', base64SuffixFields, 6);
+
+  return [
+    ...insights,
+    ...(nestedCmdInsight ? [nestedCmdInsight] : []),
+    ...(extInsight ? [extInsight] : []),
+    ...(suffixInsight ? [suffixInsight] : []),
+  ];
 };
 
 interface DecodedPathCollectState {
@@ -385,6 +513,7 @@ const matchesReportRecord = (
   includesQuery(record.path, normalizedQuery) ||
   (record.sourceLabel ? includesQuery(record.sourceLabel, normalizedQuery) : false) ||
   includesQuery(record.labels.join(' '), normalizedQuery) ||
+  includesQuery(record.insights.join(' '), normalizedQuery) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
   (record.decodedSearchText ? includesQuery(record.decodedSearchText, normalizedQuery) : false) ||
@@ -516,6 +645,7 @@ export const buildTransformContextReport = (
       path: record.path,
       sourceLabel: record.sourceLabel,
       labels: record.steps.map(getStepLabel),
+      insights: buildRecordInsights(record),
       originalPreview: formatOriginalPreview(record.originalValue),
       decodedPreview: getDecodedPreview(record),
       decodedSearchText: buildDecodedSearchText(record),
@@ -577,6 +707,9 @@ export const formatTransformContextReportText = (
       }
       if (record.decodedPreview) {
         lines.push(`  解析结果: ${record.decodedPreview}`);
+      }
+      if (record.insights.length > 0) {
+        lines.push(`  解析线索: ${record.insights.join('；')}`);
       }
       if (record.decodedPaths.length > 0) {
         lines.push(`  内部路径: ${record.decodedPaths.map(row => `${row.path}=${row.preview}`).join('；')}`);

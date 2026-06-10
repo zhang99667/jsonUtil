@@ -143,6 +143,20 @@ describe('isRuntimePlaceholder', () => {
     expect(isRuntimePlaceholder('__WEBPANEL_CMD__')).toBe(true);
   });
 
+  it('展示常见广告占位符的业务说明', () => {
+    expect(deepDecodeScheme('__AD_EXTRA_PARAM_ENCODE_1__').placeholders?.[0]).toMatchObject({
+      value: '__AD_EXTRA_PARAM_ENCODE_1__',
+      description: '广告 extraParam 编码占位符，通常由渲染或投放链路在运行时替换',
+    });
+    expect(deepDecodeScheme('__EXT_RENDER_AFD__').placeholders?.[0]).toMatchObject({
+      value: '__EXT_RENDER_AFD__',
+      description: 'AFD 渲染扩展信息占位符，当前 response 未携带实际扩展内容',
+    });
+    expect(deepDecodeScheme('__CALLBACK_URL__').placeholders?.[0]?.description).toBe(
+      '回调 URL 占位符，监测链路会在运行时替换'
+    );
+  });
+
   it('普通文本不误判为占位符', () => {
     expect(isRuntimePlaceholder('__lower_case__')).toBe(false);
     expect(isRuntimePlaceholder('CONVERT_CMD')).toBe(false);
@@ -511,7 +525,7 @@ describe('deepDecodeScheme', () => {
       {
         path: '$.params.ext',
         value: '__AD_EXTRA_PARAM_ENCODE_1__',
-        description: '运行时占位符，当前文本未包含可继续展开的实际内容',
+        description: '广告 extraParam 编码占位符，通常由渲染或投放链路在运行时替换',
       },
     ]);
   });
