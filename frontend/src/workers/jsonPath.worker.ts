@@ -1,5 +1,5 @@
 import type { HighlightRange } from '../types';
-import { queryJsonPathRanges } from '../utils/jsonPathQuery';
+import { queryJsonPathRanges, type JsonPathQueryItem } from '../utils/jsonPathQuery';
 
 interface JsonPathWorkerRequest {
   id: number;
@@ -15,6 +15,7 @@ interface JsonPathWorkerResponse {
   id: number;
   ranges: HighlightRange[];
   values: unknown[];
+  items: JsonPathQueryItem[];
   totalResults: number;
   isLimited: boolean;
   resultLimit: number;
@@ -30,6 +31,7 @@ self.onmessage = (event: MessageEvent<JsonPathWorkerRequest>) => {
       id,
       ranges: result.ranges,
       values: result.values,
+      items: result.items,
       totalResults: result.totalResults,
       isLimited: result.isLimited,
       resultLimit: result.resultLimit,
@@ -40,6 +42,7 @@ self.onmessage = (event: MessageEvent<JsonPathWorkerRequest>) => {
       id,
       ranges: [],
       values: [],
+      items: [],
       totalResults: 0,
       isLimited: false,
       resultLimit: 0,
