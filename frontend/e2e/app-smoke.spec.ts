@@ -147,6 +147,19 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await page.locator('[data-tour="transform-report-filter"]').fill('$[1]');
   await expect(reportPanel).toContainText('$[1].payload');
   await expect(reportPanel).not.toContainText('$[0].payload');
+
+  await page.locator('[data-tour="transform-report-filter"]').fill('$[0].payload.nested');
+  await reportPanel
+    .locator('[data-tour="transform-report-decoded-path"]')
+    .filter({ hasText: '$[0].payload.nested' })
+    .locator('[data-tour="transform-report-locate-decoded-path"]')
+    .click();
+  await expect(page.getByText('已填入 JSONPath 查询')).toBeVisible();
+  await expect(reportPanel).toBeHidden();
+  const jsonPathPanel = page.locator('[data-tour="jsonpath-panel"]');
+  await expect(jsonPathPanel).toBeVisible();
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$[0].payload.nested');
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('true');
 });
 
 test('深度解析报告展示未展开线索', async ({ page }) => {

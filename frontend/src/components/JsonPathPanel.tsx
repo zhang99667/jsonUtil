@@ -43,6 +43,10 @@ interface JsonPathPanelProps {
     deepFormat?: boolean;
     autoExpandScheme?: boolean;
     isDataPreparing?: boolean;
+    externalQueryRequest?: {
+        id: number;
+        query: string;
+    } | null;
     isOpen: boolean;
     onClose: () => void;
     onHighlightRange: (range: HighlightRange | null) => void;
@@ -53,6 +57,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     deepFormat = false,
     autoExpandScheme = false,
     isDataPreparing = false,
+    externalQueryRequest = null,
     isOpen,
     onClose,
     onHighlightRange
@@ -77,6 +82,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const [isQuerying, setIsQuerying] = useState<boolean>(false);
     const workerRef = useRef<Worker | null>(null);
     const requestIdRef = useRef(0);
+    const externalQueryIdRef = useRef<number | null>(null);
 
     // 自定义滚动条 Hook
     const {
@@ -173,9 +179,9 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         resetQueryState();
     }, [jsonData, deepFormat, autoExpandScheme, isOpen, resetQueryState]);
 
-    const handleQuery = () => {
+    const handleQuery = useCallback((overrideQuery?: string) => {
         setError('');
-        const queryPath = query.trim();
+        const queryPath = (overrideQuery ?? query).trim();
 
         if (isDataPreparing) {
             setError('深度格式化仍在处理，请稍后查询');
@@ -288,7 +294,17 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 autoExpandScheme,
             },
         });
-    };
+    }, [autoExpandScheme, deepFormat, isDataPreparing, jsonData, onHighlightRange, query]);
+
+    // 从解析报告等外部入口进入时，自动填入路径并触发一次查询。
+    useEffect(() => {
+        if (!externalQueryRequest || !isOpen || isDataPreparing) return;
+        if (externalQueryIdRef.current === externalQueryRequest.id) return;
+
+        externalQueryIdRef.current = externalQueryRequest.id;
+        setQuery(externalQueryRequest.query);
+        handleQuery(externalQueryRequest.query);
+    }, [externalQueryRequest, handleQuery, isDataPreparing, isOpen]);
 
     const examples = [
         { label: '根节点', query: '$' },
@@ -437,7 +453,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             </svg>
                         </button>
                         <button
-                            onClick={handleQuery}
+                            onClick={() => handleQuery()}
                             disabled={isQuerying || isDataPreparing}
                             className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >

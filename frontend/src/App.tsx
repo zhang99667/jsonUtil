@@ -73,6 +73,11 @@ const LazyTransformReportPanel = lazy(() => import('./components/TransformReport
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
 
+interface JsonPathQueryRequest {
+  id: number;
+  query: string;
+}
+
 interface AsyncTransformResult {
   input: string;
   mode: TransformMode;
@@ -182,9 +187,11 @@ const App: React.FC = () => {
 
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [hasLoadedJsonPathPanel, setHasLoadedJsonPathPanel] = useState(false);
+  const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
   const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
   const [isOutputTransforming, setIsOutputTransforming] = useState(false);
   const transformRequestIdRef = useRef(0);
+  const jsonPathQueryRequestIdRef = useRef(0);
   const sourceValidationRequestIdRef = useRef(0);
   const previewValidationRequestIdRef = useRef(0);
   const outputSyncRequestIdRef = useRef(0);
@@ -483,6 +490,23 @@ const App: React.FC = () => {
     }
     setIsJsonPathPanelOpen(nextOpen);
   }, [isJsonPathPanelOpen, mode]);
+
+  const handleLocateJsonPath = useCallback((query: string) => {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return;
+
+    if (mode !== TransformMode.DEEP_FORMAT) {
+      setMode(TransformMode.DEEP_FORMAT);
+    }
+
+    setHighlightRange(null);
+    setJsonPathQueryRequest({
+      id: ++jsonPathQueryRequestIdRef.current,
+      query: normalizedQuery,
+    });
+    setIsJsonPathPanelOpen(true);
+    setIsTransformReportOpen(false);
+  }, [mode]);
 
   const handleToggleAutoSave = useCallback(() => {
     if (!activeFileId) {
@@ -1115,6 +1139,7 @@ const App: React.FC = () => {
             <LazyJsonPathPanel
               jsonData={jsonPathDataSource}
               isDataPreparing={mode === TransformMode.DEEP_FORMAT && isOutputTransforming}
+              externalQueryRequest={jsonPathQueryRequest}
               isOpen={isJsonPathPanelOpen}
               onClose={() => {
                 setIsJsonPathPanelOpen(false);
@@ -1132,6 +1157,7 @@ const App: React.FC = () => {
               isOpen={isTransformReportOpen}
               onClose={() => setIsTransformReportOpen(false)}
               context={transformReportContext}
+              onLocatePath={handleLocateJsonPath}
             />
           </Suspense>
         )}

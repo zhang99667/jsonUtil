@@ -13,6 +13,7 @@ interface TransformReportPanelProps {
   isOpen: boolean;
   onClose: () => void;
   context: TransformContext | null;
+  onLocatePath?: (path: string) => void;
 }
 
 const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => (
@@ -30,6 +31,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   isOpen,
   onClose,
   context,
+  onLocatePath,
 }) => {
   const [query, setQuery] = useState('');
   const report = useMemo(() => (
@@ -59,6 +61,13 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       console.warn('复制深度解析路径失败:', error);
       toast.error('复制失败', { duration: 2000 });
     }
+  };
+
+  const handleLocatePath = (path: string) => {
+    if (!onLocatePath) return;
+
+    onLocatePath(path);
+    toast.success('已填入 JSONPath 查询', { duration: 1600 });
   };
 
   const footer = (
@@ -184,6 +193,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         >
                           复制路径
                         </button>
+                        {onLocatePath && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-locate-path"
+                            onClick={() => handleLocatePath(record.path)}
+                            className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            定位
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="mt-1 flex flex-wrap gap-1">
@@ -239,6 +258,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             >
                               复制
                             </button>
+                            {onLocatePath && (
+                              <button
+                                type="button"
+                                data-tour="transform-report-locate-decoded-path"
+                                onClick={() => handleLocatePath(row.path)}
+                                className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              >
+                                定位
+                              </button>
+                            )}
                           </div>
                         ))}
                         {record.hasMoreDecodedPaths && (
@@ -289,6 +318,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         >
                           复制路径
                         </button>
+                        {onLocatePath && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-locate-unresolved-path"
+                            onClick={() => handleLocatePath(candidate.path)}
+                            className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            定位
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="mt-1 text-gray-300">{candidate.message}</div>
@@ -334,6 +373,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         >
                           复制路径
                         </button>
+                        {onLocatePath && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-locate-placeholder-path"
+                            onClick={() => handleLocatePath(placeholder.path)}
+                            className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            定位
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleCopyPath(placeholder.sourcePath, '已复制来源路径')}
@@ -341,6 +390,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         >
                           复制来源
                         </button>
+                        {onLocatePath && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-locate-placeholder-source"
+                            onClick={() => handleLocatePath(placeholder.sourcePath)}
+                            className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            定位来源
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="mt-1 text-gray-300">{placeholder.description}</div>
@@ -380,6 +439,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                       >
                         复制路径
                       </button>
+                      {onLocatePath && (
+                        <button
+                          type="button"
+                          data-tour="transform-report-locate-warning-path"
+                          onClick={() => handleLocatePath(warning.path)}
+                          className="shrink-0 text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        >
+                          定位
+                        </button>
+                      )}
                     </div>
                     <div className="mt-1 text-gray-300">{warning.message}</div>
                     <div className="mt-1 text-gray-500">
