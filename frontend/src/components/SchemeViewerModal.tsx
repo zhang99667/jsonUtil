@@ -56,25 +56,46 @@ const getParamCount = (params: SchemeParams): number => {
   ), 0);
 };
 
-const formatParamValue = (value: string | string[]): string => {
-  const text = Array.isArray(value) ? value.join(', ') : value;
-  return text.length > 48 ? `${text.slice(0, 48)}...` : text;
+const formatTextPreview = (value: string, maxLength: number): string => (
+  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
+);
+
+const formatJoinedValuePreview = (values: string[], maxLength: number): string => {
+  let preview = '';
+
+  for (const value of values) {
+    const nextPreview = preview ? `${preview}, ${value}` : value;
+    if (nextPreview.length > maxLength) {
+      return `${nextPreview.slice(0, maxLength)}...`;
+    }
+    preview = nextPreview;
+  }
+
+  return preview;
 };
 
+const formatParamValue = (value: string | string[]): string => (
+  Array.isArray(value)
+    ? formatJoinedValuePreview(value, 48)
+    : formatTextPreview(value, 48)
+);
+
 const formatPlaceholderValue = (value: string): string => (
-  value.length > 32 ? `${value.slice(0, 32)}...` : value
+  formatTextPreview(value, 32)
 );
 
 const formatSummaryValue = (value: string, maxLength = 56): string => (
-  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
+  formatTextPreview(value, maxLength)
 );
 
 const formatTooltipValue = (value: string, maxLength = 160): string => (
-  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
+  formatTextPreview(value, maxLength)
 );
 
 const formatParamTooltipValue = (value: string | string[]): string => (
-  formatTooltipValue(Array.isArray(value) ? value.join(', ') : value)
+  Array.isArray(value)
+    ? formatJoinedValuePreview(value, 160)
+    : formatTooltipValue(value)
 );
 
 const MAX_SCHEME_PATH_VALUE_COPY_ROWS = 500;
