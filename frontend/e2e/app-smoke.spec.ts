@@ -171,11 +171,16 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
 
   await page.locator('[data-tour="transform-report-button"]').click();
   const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  const coverage = reportPanel.locator('[data-tour="transform-report-coverage"]');
   const unresolvedSection = reportPanel.locator('[data-tour="transform-report-unresolved"]');
 
+  await expect(coverage).toContainText('解析覆盖 50%');
+  await expect(coverage).toContainText('还有 1 条疑似结构化内容未完全展开');
   await expect(unresolvedSection).toContainText('未展开线索 · 1');
   await expect(unresolvedSection).toContainText('$.tracking');
   await expect(unresolvedSection).toContainText('url-encoded');
+  await expect(unresolvedSection).toContainText('已解码但未结构化');
+  await expect(unresolvedSection).toContainText('下一步: 定位该字段确认是否只是普通埋点参数');
   await expect(unresolvedSection).toContainText('URL 编码内容已解码，但未展开为结构化对象');
   await unresolvedSection.getByRole('button', { name: '复制路径' }).click();
   await expect(page.getByText('已复制路径')).toBeVisible();

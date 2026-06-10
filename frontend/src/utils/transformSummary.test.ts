@@ -41,6 +41,11 @@ describe('transformSummary', () => {
     );
 
     const report = buildTransformContextReport(result.context);
+    expect(report.coverage).toMatchObject({
+      score: 100,
+      label: '解析覆盖 100%',
+      level: 'success',
+    });
     expect(report.records.map(record => ({
       path: record.path,
       labels: record.labels,
@@ -246,6 +251,13 @@ describe('transformSummary', () => {
     const report = buildTransformContextReport(result.context);
 
     expect(report.summary.unresolvedCount).toBe(1);
+    expect(report.coverage).toMatchObject({
+      score: 50,
+      label: '解析覆盖 50%',
+      level: 'info',
+      description: '还有 1 条疑似结构化内容未完全展开，需要判断是普通文本还是规则缺口。',
+    });
+    expect(report.coverage.items).toContain('优先看未展开线索的原因标签和下一步建议');
     expect(formatTransformContextSummary(result.context)).toBe(
       '深度解析: 展开 1 处，URL 解码 1，待检查 1'
     );
@@ -256,13 +268,20 @@ describe('transformSummary', () => {
         length: rawValue.length,
         preview: rawValue,
         detectedType: 'url-encoded',
+        reasonLabel: '已解码但未结构化',
+        reasonLevel: 'info',
+        nextAction: '定位该字段确认是否只是普通埋点参数；如果它应继续拆成对象，可把原始值加入 CMD 解析样本。',
       },
     ]);
     expect(formatTransformContextReportText(result.context)).toContain('未展开线索:');
+    expect(formatTransformContextReportText(result.context)).toContain('解析覆盖 50%');
+    expect(formatTransformContextReportText(result.context)).toContain('原因: 已解码但未结构化');
+    expect(formatTransformContextReportText(result.context)).toContain('下一步: 定位该字段确认是否只是普通埋点参数');
 
     const unresolvedView = buildTransformReportView(report, 'tracking');
     expect(unresolvedView.unresolvedCandidates.map(candidate => candidate.path)).toEqual(['$.tracking']);
     expect(unresolvedView.filteredUnresolvedCount).toBe(1);
+    expect(buildTransformReportView(report, '普通埋点参数').filteredUnresolvedCount).toBe(1);
   });
 
   it('展示运行时占位符路径和来源', () => {
@@ -302,6 +321,11 @@ describe('transformSummary', () => {
     });
 
     expect(formatTransformContextSummary(result.context)).toBe('深度解析: 展开 0 处，跳过 1');
+    expect(buildTransformContextReport(result.context).coverage).toMatchObject({
+      score: 0,
+      label: '解析覆盖 0%',
+      level: 'warning',
+    });
     expect(formatTransformContextReportText(result.context)).toContain(
       '$.action_cmd: 字符串过长，已跳过递归展开以保护性能'
     );
