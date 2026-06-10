@@ -28,6 +28,14 @@ const formatJsonPathValuesForCopy = (values: unknown[]): string => {
     return JSON.stringify(values, null, 2);
 };
 
+const formatJsonPathValueForLineCopy = (value: unknown): string => (
+    typeof value === 'string' ? JSON.stringify(value) : JSON.stringify(value) ?? String(value)
+);
+
+const formatJsonPathItemsForCopy = (items: JsonPathQueryItem[]): string => (
+    items.map(item => `${item.path} = ${formatJsonPathValueForLineCopy(item.value)}`).join('\n')
+);
+
 const formatJsonPathValueForPreview = (value: unknown): string => {
     const text = typeof value === 'string'
         ? value
@@ -366,6 +374,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     }, [queryItems]);
     const hiddenResultCount = Math.max(queryItems.length - queryResultPreviewItems.length, 0);
     const copyButtonLabel = isResultLimited ? '复制已返回结果' : '复制全部结果';
+    const copyPathValueButtonLabel = isResultLimited ? '复制已返回路径和值' : '复制路径和值';
 
     const toggleFavorite = () => {
         if (!normalizedQuery) return;
@@ -386,6 +395,18 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         } catch (error) {
             console.warn('复制 JSONPath 查询结果失败:', error);
             showError('复制查询结果失败');
+        }
+    };
+
+    const copyQueryResultPaths = async () => {
+        if (queryItems.length === 0) return;
+
+        try {
+            await copyText(formatJsonPathItemsForCopy(queryItems));
+            showSuccess('查询路径和值已复制');
+        } catch (error) {
+            console.warn('复制 JSONPath 查询路径和值失败:', error);
+            showError('复制查询路径和值失败');
         }
     };
 
@@ -547,6 +568,19 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </button>
+                            <button
+                                data-tour="jsonpath-copy-path-values"
+                                onClick={copyQueryResultPaths}
+                                disabled={isQuerying || queryItems.length === 0}
+                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={copyPathValueButtonLabel}
+                                aria-label={copyPathValueButtonLabel}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M8 4h8l4 4v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 4v4h4" />
                                 </svg>
                             </button>
                             <button
