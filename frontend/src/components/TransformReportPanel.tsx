@@ -84,6 +84,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
+  const handleCopyDecodedPathValue = async (value: string) => {
+    try {
+      await copyText(value);
+      toast.success('已复制路径和值', { duration: 1600 });
+    } catch (error) {
+      console.warn('复制深度解析内部路径和值失败:', error);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
   const handleLocatePath = (path: string) => {
     if (!onLocatePath) return;
 
@@ -323,10 +333,19 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             </div>
                             <button
                               type="button"
+                              data-tour="transform-report-copy-decoded-path"
                               onClick={() => handleCopyPath(row.path)}
                               className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                             >
-                              复制
+                              复制路径
+                            </button>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-decoded-value"
+                              onClick={() => handleCopyDecodedPathValue(row.copyText)}
+                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            >
+                              复制片段
                             </button>
                             {onLocatePath && (
                               <button

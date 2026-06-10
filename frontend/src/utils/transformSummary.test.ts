@@ -81,8 +81,8 @@ describe('transformSummary', () => {
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: $.cmd.cmd.nid=123');
     expect(report.records[0].originalValue).toBe(`cmd=${cmdPayload}&from=feed`);
     expect(report.records[0].decodedPaths).toEqual([
-      { path: '$.cmd.cmd.nid', preview: '123' },
-      { path: '$.cmd.from', preview: 'feed' },
+      { path: '$.cmd.cmd.nid', preview: '123', copyText: '$.cmd.cmd.nid = 123' },
+      { path: '$.cmd.from', preview: 'feed', copyText: '$.cmd.from = "feed"' },
     ]);
 
     const base64View = buildTransformReportView(report, 'base64');
@@ -166,7 +166,11 @@ describe('transformSummary', () => {
     const report = buildTransformContextReport(result.context);
 
     expect(report.records[0].decodedPaths).toHaveLength(12);
-    expect(report.records[0].decodedPaths[0]).toEqual({ path: '$.payload.k0', preview: '0' });
+    expect(report.records[0].decodedPaths[0]).toEqual({
+      path: '$.payload.k0',
+      preview: '0',
+      copyText: '$.payload.k0 = 0',
+    });
     expect(report.records[0].decodedPaths.some(row => row.path.includes('target_after_display_limit'))).toBe(false);
     expect(report.records[0].hasMoreDecodedPaths).toBe(true);
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: 还有更多未展示');
