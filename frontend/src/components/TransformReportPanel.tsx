@@ -15,6 +15,17 @@ interface TransformReportPanelProps {
   context: TransformContext | null;
 }
 
+const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => (
+  label ? (
+    <span
+      className="max-w-[120px] shrink-0 truncate rounded bg-cyan-900/40 px-2 py-0.5 text-cyan-200"
+      title={label}
+    >
+      {label}
+    </span>
+  ) : null
+);
+
 export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   isOpen,
   onClose,
@@ -154,14 +165,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex items-center gap-1.5">
-                        {record.sourceLabel && (
-                          <span
-                            className="max-w-[120px] shrink-0 truncate rounded bg-cyan-900/40 px-2 py-0.5 text-cyan-200"
-                            title={record.sourceLabel}
-                          >
-                            {record.sourceLabel}
-                          </span>
-                        )}
+                        <SourceLabelBadge label={record.sourceLabel} />
                         <span className="font-mono text-emerald-300 truncate" title={record.path}>
                           {record.path}
                         </span>
@@ -253,8 +257,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     className="rounded border border-sky-700/50 bg-sky-900/20 px-3 py-2 text-xs"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0 font-mono text-sky-200 truncate" title={candidate.path}>
-                        {candidate.path}
+                      <div className="min-w-0 flex items-center gap-1.5">
+                        <SourceLabelBadge label={candidate.sourceLabel} />
+                        <span className="font-mono text-sky-200 truncate" title={candidate.path}>
+                          {candidate.path}
+                        </span>
                       </div>
                       <div className="shrink-0 flex items-center gap-1.5">
                         {candidate.detectedType && (
@@ -297,8 +304,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     className="rounded border border-violet-700/50 bg-violet-900/20 px-3 py-2 text-xs"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0 font-mono text-violet-200 truncate" title={placeholder.path}>
-                        {placeholder.path}
+                      <div className="min-w-0 flex items-center gap-1.5">
+                        <SourceLabelBadge label={placeholder.sourceLabel} />
+                        <span className="font-mono text-violet-200 truncate" title={placeholder.path}>
+                          {placeholder.path}
+                        </span>
                       </div>
                       <div className="shrink-0 flex items-center gap-1.5">
                         <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
@@ -343,8 +353,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     className="rounded border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0 font-mono text-amber-200 truncate" title={warning.path}>
-                        {warning.path}
+                      <div className="min-w-0 flex items-center gap-1.5">
+                        <SourceLabelBadge label={warning.sourceLabel} />
+                        <span className="font-mono text-amber-200 truncate" title={warning.path}>
+                          {warning.path}
+                        </span>
                       </div>
                       <button
                         type="button"

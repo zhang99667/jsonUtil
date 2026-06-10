@@ -417,7 +417,8 @@ export function deepParseWithContext(
     path: string,
     value: string,
     detectedType: string,
-    message: string
+    message: string,
+    sourceLabel?: string
   ) => {
     const candidates = context.unresolvedCandidates || [];
     if (candidates.length >= MAX_UNRESOLVED_CANDIDATE_COUNT) return;
@@ -425,6 +426,7 @@ export function deepParseWithContext(
     context.unresolvedCandidates = candidates;
     context.unresolvedCandidates.push({
       path,
+      sourceLabel,
       message,
       length: value.length,
       preview: formatStringPreview(value),
@@ -436,7 +438,8 @@ export function deepParseWithContext(
     path: string,
     sourcePath: string,
     value: string,
-    description: string
+    description: string,
+    sourceLabel?: string
   ) => {
     const placeholders = context.runtimePlaceholders || [];
     if (placeholders.some(item => item.path === path && item.value === value)) return;
@@ -446,6 +449,7 @@ export function deepParseWithContext(
     context.runtimePlaceholders.push({
       path,
       sourcePath,
+      sourceLabel,
       value,
       description,
     });
@@ -453,14 +457,16 @@ export function deepParseWithContext(
 
   const addSchemeRuntimePlaceholders = (
     sourcePath: string,
-    placeholders?: SchemePlaceholder[]
+    placeholders?: SchemePlaceholder[],
+    sourceLabel?: string
   ) => {
     placeholders?.forEach(placeholder => {
       addRuntimePlaceholder(
         joinDecodedJsonPath(sourcePath, placeholder.path),
         sourcePath,
         placeholder.value,
-        placeholder.description
+        placeholder.description,
+        sourceLabel
       );
     });
   };
@@ -479,6 +485,7 @@ export function deepParseWithContext(
           context.warnings.push({
             type: 'string_decode_skipped',
             path: currentPath,
+            sourceLabel,
             message: '字符串过长，已跳过递归展开以保护性能',
             length: value.length,
             limit: maxStringDecodeLength,
@@ -493,6 +500,7 @@ export function deepParseWithContext(
             context.warnings.push({
               type: 'string_decode_budget_exceeded',
               path: currentPath,
+              sourceLabel,
               message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
               length: value.length,
               limit: maxTotalStringDecodeLength,
@@ -508,7 +516,7 @@ export function deepParseWithContext(
         let unresolvedCandidate: { detectedType: string; message: string } | null = null;
 
         if (options?.autoExpandScheme && isRuntimePlaceholder(current)) {
-          addSchemeRuntimePlaceholders(currentPath, deepDecodeScheme(current).placeholders);
+          addSchemeRuntimePlaceholders(currentPath, deepDecodeScheme(current).placeholders, sourceLabel);
         }
 
         const processParsedValue = (jsonParsed: JsonValue): JsonValue => {
@@ -559,7 +567,7 @@ export function deepParseWithContext(
               try {
                 const schemeParsed = JSON.parse(decodedScheme.decoded) as JsonValue;
                 if (typeof schemeParsed === 'object' && schemeParsed !== null) {
-                  addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders);
+                  addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders, sourceLabel);
                   const processedSchemeValue = processParsedValue(schemeParsed);
                   const isSchemeReversible = decodedScheme.layers.every(layer => layer.reversible !== false);
                   steps.push({
@@ -656,7 +664,8 @@ export function deepParseWithContext(
             currentPath,
             value,
             unresolvedCandidate.detectedType,
-            unresolvedCandidate.message
+            unresolvedCandidate.message,
+            sourceLabel
           );
         }
 
