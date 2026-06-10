@@ -38,8 +38,8 @@ export function scanSchemesInJson(
   let isLimited = false;
 
   try {
-    const parsed: unknown = JSON.parse(jsonString);
     const sourceMap = parseJsonSourceMap(jsonString);
+    const parsed: unknown = sourceMap.data;
 
     const getValueRange = (pointer: string) => {
       const pointerInfo = sourceMap.pointers[pointer];
