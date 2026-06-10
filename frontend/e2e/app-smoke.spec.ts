@@ -194,6 +194,11 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
   await expect(page.getByText('已复制路径和值')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$.payload.target_after_display_limit = "needle_after_display_limit"');
+
+  await page.locator('[data-tour="transform-report-copy-path-values"]').click();
+  await expect(page.getByText('已复制路径和值').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$.payload.target_after_display_limit = "needle_after_display_limit"');
 });
 
 test('深度解析报告展示未展开线索', async ({ page }) => {

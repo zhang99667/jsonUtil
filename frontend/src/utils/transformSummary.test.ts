@@ -6,6 +6,7 @@ import {
   buildTransformReportView,
   formatTransformContextReportText,
   formatTransformContextSummary,
+  formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
   summarizeTransformContext,
@@ -188,6 +189,9 @@ describe('transformSummary', () => {
     ]);
     expect(formatTransformReportViewText(report, hiddenPathView, 'target_after_display_limit')).toContain(
       '内部路径: $.payload.target_after_display_limit=needle_after_display_limit'
+    );
+    expect(formatTransformPathValueReportText(hiddenPathView)).toBe(
+      '$.payload.target_after_display_limit = "needle_after_display_limit"'
     );
   });
 
