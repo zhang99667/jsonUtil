@@ -196,6 +196,19 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         </span>
                       ))}
                     </div>
+                    {record.insights.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {record.insights.map((insight, index) => (
+                          <span
+                            key={`${record.path}:insight:${index}:${insight}`}
+                            className="bg-cyan-950/40 text-cyan-200 border border-cyan-800/60 px-2 py-0.5 rounded font-mono"
+                            title={insight}
+                          >
+                            {insight}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {record.decodedPreview && (
                       <div className="mt-1 font-mono text-cyan-200 truncate" title={record.decodedPreview}>
                         解析结果: {record.decodedPreview}

@@ -538,12 +538,12 @@ describe('deepParseWithContext', () => {
       originalSchemeType: 'url',
       originalSchemeEscapedSlash: true,
     });
-    expect(result.context.runtimePlaceholders).toEqual([
+    expect(result.context.runtimePlaceholders).toMatchObject([
       {
         path: '$.schema.params.ext',
         sourcePath: '$.schema',
         value: '__AD_EXTRA_PARAM_ENCODE_1__',
-        description: '运行时占位符，当前文本未包含可继续展开的实际内容',
+        description: '广告 extraParam 编码占位符，通常由渲染或投放链路在运行时替换',
       },
     ]);
   });

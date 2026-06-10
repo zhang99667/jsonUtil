@@ -44,24 +44,28 @@ describe('transformSummary', () => {
     expect(report.records.map(record => ({
       path: record.path,
       labels: record.labels,
+      insights: record.insights,
       decodedPreview: record.decodedPreview,
       hasNonReversibleScheme: record.hasNonReversibleScheme,
     }))).toEqual([
       {
         path: '$.cmd',
         labels: ['CMD 参数 · 可回写'],
+        insights: ['cmd解析: cmd'],
         decodedPreview: '对象: cmd, from',
         hasNonReversibleScheme: false,
       },
       {
         path: '$.payload',
         labels: ['嵌套 JSON'],
+        insights: [],
         decodedPreview: '对象: nested',
         hasNonReversibleScheme: false,
       },
       {
         path: '$.extra',
         labels: ['Base64 · 不可逆'],
+        insights: [],
         decodedPreview: '对象: meg_name, flag',
         hasNonReversibleScheme: true,
       },
@@ -90,6 +94,50 @@ describe('transformSummary', () => {
     expect(limitedView.records.map(record => record.path)).toEqual(['$.cmd', '$.payload']);
     expect(limitedView.filteredRecordCount).toBe(3);
     expect(limitedView.isRecordTruncated).toBe(true);
+  });
+
+  it('报告展示 CMD Schema、嵌套 CMD 和 ext 解析线索', () => {
+    const extInfo = btoa(JSON.stringify({ user_id: 'u1', cmatch: '1501' }));
+    const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}`;
+    const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      ext_log: {
+        ad_extra_param: extInfo,
+      },
+      tail_frame: {
+        panel_scheme: panelScheme,
+      },
+    }))}`;
+    const result = deepParseWithContext(JSON.stringify({ scheme }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.records[0].insights).toEqual([
+      'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
+      'cmd解析: panel_scheme',
+      'ext解析: ad_extra_param, ext_info',
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain(
+      '解析线索: cmdSchema: nadcorevendor://vendor/ad/rewardImpl；cmd解析: panel_scheme；ext解析: ad_extra_param, ext_info'
+    );
+    expect(buildTransformReportView(report, 'rewardImpl').filteredRecordCount).toBe(1);
+    expect(buildTransformReportView(report, 'ext解析').filteredRecordCount).toBe(1);
+  });
+
+  it('报告展示 Base64 后缀解析线索', () => {
+    const suffixQuery = '&os=2&ip=127.0.0.1&ua=okhttp';
+    const suffixBytes = [
+      ...new TextEncoder().encode(suffixQuery),
+      0xff,
+    ];
+    const extraParam = `AFD8f${base64Encode(JSON.stringify({ meg_name: 'AI' }))}UxM${btoa(
+      String.fromCharCode(...suffixBytes)
+    )}`;
+    const result = deepParseWithContext(JSON.stringify({ extraParam }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.records[0].insights).toEqual([
+      'Base64 后缀: os, ip, ua',
+    ]);
+    expect(buildTransformReportView(report, '127.0.0.1').filteredRecordCount).toBe(1);
   });
 
   it('无转换记录时不展示摘要', () => {
