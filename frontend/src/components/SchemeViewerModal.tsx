@@ -21,6 +21,7 @@ interface SchemeViewerModalProps {
   onClose: () => void;
   path?: string;           // JSON Path，如 "$.action_cmd"（独立模式下可选）
   value?: string;          // 原始 scheme 字符串（独立模式下可选）
+  sourceLabel?: string;    // 来源业务标签，如 extraParam
   onApply?: (newValue: string) => void;  // 应用修改后的值
   standalone?: boolean;    // 是否为独立模式（侧边栏打开，可手动输入）
 }
@@ -79,6 +80,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   onClose,
   path,
   value,
+  sourceLabel,
   onApply,
   standalone = false,
 }) => {
@@ -268,6 +270,15 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   // 头部额外内容：非独立模式显示 path 标签，并支持复制到 JSONPath 面板继续定位
   const headerExtra = !standalone && path ? (
     <div className="flex min-w-0 items-center gap-1.5">
+      {sourceLabel && (
+        <span
+          data-tour="scheme-source-label"
+          className="max-w-[120px] shrink-0 truncate rounded bg-cyan-900/40 px-2 py-0.5 text-xs text-cyan-200"
+          title={sourceLabel}
+        >
+          {sourceLabel}
+        </span>
+      )}
       <span
         data-tour="scheme-source-path"
         className="min-w-0 max-w-[200px] truncate rounded bg-editor-active px-2 py-0.5 font-mono text-xs text-gray-400"

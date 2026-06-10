@@ -81,6 +81,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     path: string;
     pointer: string;
     value: string;
+    label?: string;
   }>({ isOpen: false, path: '', pointer: '', value: '' });
   const [hasLoadedSchemeModal, setHasLoadedSchemeModal] = useState(false);
 
@@ -180,15 +181,21 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       return;
     }
 
-    const decorations = schemeLocations.map(loc => ({
-      range: new monaco.Range(loc.line, loc.column, loc.endLine, loc.endColumn),
-      options: {
-        glyphMarginClassName: 'scheme-glyph-icon',
-        glyphMarginHoverMessage: { value: `🔗 点击解析 Scheme (${loc.schemeType})` },
-        inlineClassName: 'scheme-inline-highlight',
-        hoverMessage: { value: `点击解析 Scheme (${loc.schemeType})` },
-      }
-    }));
+    const decorations = schemeLocations.map(loc => {
+      const hoverText = loc.label
+        ? `🔗 点击解析 Scheme (${loc.schemeType})\n\n业务字段: \`${loc.label}\``
+        : `🔗 点击解析 Scheme (${loc.schemeType})`;
+
+      return {
+        range: new monaco.Range(loc.line, loc.column, loc.endLine, loc.endColumn),
+        options: {
+          glyphMarginClassName: 'scheme-glyph-icon',
+          glyphMarginHoverMessage: { value: hoverText },
+          inlineClassName: 'scheme-inline-highlight',
+          hoverMessage: { value: hoverText },
+        }
+      };
+    });
 
     if (schemeDecorationsRef.current) {
       schemeDecorationsRef.current.clear();
@@ -202,6 +209,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       path: location.path,
       pointer: location.pointer,
       value: location.value,
+      label: location.label,
     });
   }, []);
 
@@ -596,6 +604,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             onClose={() => setSchemeModal({ isOpen: false, path: '', pointer: '', value: '' })}
             path={schemeModal.path}
             value={schemeModal.value}
+            sourceLabel={schemeModal.label}
             onApply={onSchemeEdit ? handleSchemeApply : undefined}
           />
         </Suspense>
