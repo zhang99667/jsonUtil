@@ -14,6 +14,7 @@ interface TransformReportPanelProps {
   onClose: () => void;
   context: TransformContext | null;
   onLocatePath?: (path: string) => void;
+  onOpenSchemeValue?: (value: string) => void;
 }
 
 const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => (
@@ -38,6 +39,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   onClose,
   context,
   onLocatePath,
+  onOpenSchemeValue,
 }) => {
   const [query, setQuery] = useState('');
   const report = useMemo(() => (
@@ -74,6 +76,13 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
     onLocatePath(path);
     toast.success('已填入 JSONPath 查询', { duration: 1600 });
+  };
+
+  const handleOpenSchemeValue = (value: string) => {
+    if (!onOpenSchemeValue) return;
+
+    onOpenSchemeValue(value);
+    toast.success('已填入 Scheme 解析', { duration: 1600 });
   };
 
   const footer = (
@@ -228,6 +237,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
                           >
                             定位
+                          </button>
+                        )}
+                        {onOpenSchemeValue && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-open-scheme"
+                            onClick={() => handleOpenSchemeValue(record.originalValue)}
+                            className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                          >
+                            Scheme 打开
                           </button>
                         )}
                       </div>

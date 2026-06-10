@@ -78,6 +78,11 @@ interface JsonPathQueryRequest {
   query: string;
 }
 
+interface SchemeInputRequest {
+  id: number;
+  value: string;
+}
+
 interface AsyncTransformResult {
   input: string;
   mode: TransformMode;
@@ -188,10 +193,12 @@ const App: React.FC = () => {
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [hasLoadedJsonPathPanel, setHasLoadedJsonPathPanel] = useState(false);
   const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
+  const [schemeInputRequest, setSchemeInputRequest] = useState<SchemeInputRequest | null>(null);
   const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
   const [isOutputTransforming, setIsOutputTransforming] = useState(false);
   const transformRequestIdRef = useRef(0);
   const jsonPathQueryRequestIdRef = useRef(0);
+  const schemeInputRequestIdRef = useRef(0);
   const sourceValidationRequestIdRef = useRef(0);
   const previewValidationRequestIdRef = useRef(0);
   const outputSyncRequestIdRef = useRef(0);
@@ -507,6 +514,17 @@ const App: React.FC = () => {
     setIsJsonPathPanelOpen(true);
     setIsTransformReportOpen(false);
   }, [mode]);
+
+  const handleOpenSchemeFromReport = useCallback((value: string) => {
+    if (!value) return;
+
+    setSchemeInputRequest({
+      id: ++schemeInputRequestIdRef.current,
+      value,
+    });
+    setIsSchemeDecodeOpen(true);
+    setIsTransformReportOpen(false);
+  }, []);
 
   const handleToggleAutoSave = useCallback(() => {
     if (!activeFileId) {
@@ -1158,6 +1176,7 @@ const App: React.FC = () => {
               onClose={() => setIsTransformReportOpen(false)}
               context={transformReportContext}
               onLocatePath={handleLocateJsonPath}
+              onOpenSchemeValue={handleOpenSchemeFromReport}
             />
           </Suspense>
         )}
@@ -1169,6 +1188,8 @@ const App: React.FC = () => {
               isOpen={isSchemeDecodeOpen}
               onClose={() => setIsSchemeDecodeOpen(false)}
               standalone={true}
+              initialStandaloneInput={schemeInputRequest?.value}
+              initialStandaloneInputKey={schemeInputRequest?.id}
               onApply={(encodedValue: string) => {
                 setInput(encodedValue);
                 inputRef.current = encodedValue;
