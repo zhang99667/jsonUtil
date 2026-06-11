@@ -11,6 +11,7 @@ import {
   formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
+  getTransformRecordCmdStructureCopyText,
   summarizeTransformContext,
 } from './transformSummary';
 
@@ -85,7 +86,9 @@ describe('transformSummary', () => {
     expect(formatTransformContextReportText(result.context)).toContain('解析结果: 对象: meg_name, flag');
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: $.cmd.cmd.nid=123');
     expect(report.records[0].originalValue).toBe(`cmd=${cmdPayload}&from=feed`);
-    expect(JSON.parse(report.records[0].cmdStructureCopyText || '')).toEqual({
+    expect(report.records[0].hasCmdStructure).toBe(true);
+    expect(report.records[0].cmdStructureCopyText).toBeUndefined();
+    expect(JSON.parse(getTransformRecordCmdStructureCopyText(report.records[0]))).toEqual({
       result: {
         cmdParams: {
           cmd: {
@@ -100,7 +103,7 @@ describe('transformSummary', () => {
       { path: '$.cmd.cmd.nid', preview: '123', copyText: '$.cmd.cmd.nid = 123' },
       { path: '$.cmd.from', preview: 'feed', copyText: '$.cmd.from = "feed"' },
     ]);
-    expect(report.records[2].cmdStructureCopyText).toBeUndefined();
+    expect(report.records[2].hasCmdStructure).toBe(false);
 
     const base64View = buildTransformReportView(report, 'base64');
     expect(base64View.records.map(record => record.path)).toEqual(['$.extra']);
@@ -153,7 +156,7 @@ describe('transformSummary', () => {
       'cmd解析: panel_scheme',
       'ext解析: ad_extra_param, ext_info',
     ]);
-    expect(JSON.parse(report.records[0].cmdStructureCopyText || '')).toMatchObject({
+    expect(JSON.parse(getTransformRecordCmdStructureCopyText(report.records[0]))).toMatchObject({
       result: {
         cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
         cmdParams: {
@@ -247,7 +250,7 @@ describe('transformSummary', () => {
       'cmd解析: bottom_button_scheme, panel_scheme, panel_cmd, stay_cmd +1',
       'ext解析: ad_extra_param, ext_info, extInfo',
     ]);
-    expect(JSON.parse(record.cmdStructureCopyText || '')).toMatchObject({
+    expect(JSON.parse(getTransformRecordCmdStructureCopyText(record))).toMatchObject({
       result: {
         cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
         cmdParams: {

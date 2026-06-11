@@ -40,6 +40,7 @@
 - **深度解析 cmdHandler 式线索**: 深度解析报告会展示 `cmdSchema`、嵌套 `cmd解析` 字段和 `ad_extra_param` / `extInfo` 等 `ext解析` 线索，贴入真实广告 response 后更容易对齐内部 CMD 调试工具的阅读方式
 - **CMD 结构复制 source 对齐**: 复制 cmdHandler 风格 CMD 结构时同步带上原始 `source` 串，方便和内部 CMD 解析工具对照排查真实 response
 - **CMD 结构嵌套 source 对齐**: 复制 cmdHandler 风格 CMD 结构时，嵌套 `*_cmd` / `*_scheme` 字段会保留各自的 `cmdSchema`、`cmdParams` 和 `source`
+- **CMD 结构复制懒生成**: 深度解析报告改为点击复制时再生成大体积 cmdHandler 结构，打开报告和筛选真实 response 时不再提前拼接整段复制文本
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串
 - **Scheme 面板序列化复制**: 独立 Scheme 解析面板支持将当前编辑后的解码结果重新编码并复制，补齐解析后快速回写 CMD/URL 的工作流
 - **Scheme 面板精确回写**: Scheme 图标弹窗应用修改时改用 JSON Pointer 定位，修复 key 包含点号、斜杠或波浪线时可能写错字段的问题
