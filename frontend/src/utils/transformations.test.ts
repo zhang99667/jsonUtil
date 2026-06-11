@@ -47,6 +47,12 @@ describe('validateJson', () => {
     expect(validateJson('```json\n{"code":0}\n```')).toEqual({ isValid: true });
   });
 
+  it('XSSI 前缀包装中的 JSON 也视为有效', () => {
+    expect(validateJson('while(1);{"code":0}')).toEqual({ isValid: true });
+    expect(validateJson('for(;;);{"code":0}')).toEqual({ isValid: true });
+    expect(validateJson(')]}\',\n{"code":0}')).toEqual({ isValid: true });
+  });
+
   it('普通说明文字中夹带 JSON 片段不会被误判为有效', () => {
     const result = validateJson('response 示例: {"code":0}');
 
@@ -164,6 +170,21 @@ describe('performTransform', () => {
         code: 0,
         message: 'ok',
       }, null, 2));
+    });
+
+    it('格式化 XSSI 前缀包装中的 JSON', () => {
+      const cases = [
+        'while(1);{"code":0,"message":"ok"}',
+        'for(;;);{"code":0,"message":"ok"}',
+        ')]}\',\n{"code":0,"message":"ok"}',
+      ];
+
+      cases.forEach(input => {
+        expect(performTransform(input, TransformMode.FORMAT)).toBe(JSON.stringify({
+          code: 0,
+          message: 'ok',
+        }, null, 2));
+      });
     });
 
     it('格式化 JSON Lines 为可读数组', () => {
@@ -357,6 +378,15 @@ describe('performInverseTransform', () => {
 
     expect(performInverseTransform(editedOutput, TransformMode.FORMAT, original))
       .toBe('```json\n{"id":4}\n```');
+  });
+
+  it('FORMAT 反向在原始输入为 XSSI 前缀包装时保留外壳', () => {
+    const editedOutput = JSON.stringify({ id: 5 }, null, 2);
+
+    expect(performInverseTransform(editedOutput, TransformMode.FORMAT, 'while(1);{"id":1}'))
+      .toBe('while(1);{"id":5}');
+    expect(performInverseTransform(editedOutput, TransformMode.FORMAT, ')]}\',\n{"id":1}'))
+      .toBe(')]}\',\n{"id":5}');
   });
 
   it('ESCAPE/UNESCAPE 互逆', () => {
@@ -866,6 +896,8 @@ describe('inverseWithContext 精确还原', () => {
     const cases = [
       `callback(${JSON.stringify({ data: innerJson })});`,
       `\`\`\`json\n${JSON.stringify({ data: innerJson })}\n\`\`\``,
+      `while(1);${JSON.stringify({ data: innerJson })}`,
+      `)]}',\n${JSON.stringify({ data: innerJson })}`,
     ];
 
     cases.forEach(input => {

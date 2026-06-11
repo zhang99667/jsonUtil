@@ -87,12 +87,32 @@ const extractJsonpCandidate = (input: string): WrappedJsonCandidate | null => {
     : null;
 };
 
+const extractXssiJsonCandidate = (input: string): WrappedJsonCandidate | null => {
+  const trimmed = input.trim();
+  const statementMatch = trimmed.match(/^((?:while\s*\(\s*1\s*\)|for\s*\(\s*;\s*;\s*\))\s*;\s*)([\s\S]+)$/);
+  if (statementMatch) {
+    return {
+      payload: statementMatch[2].trim(),
+      wrapper: { prefix: statementMatch[1], suffix: '' },
+    };
+  }
+
+  const angularMatch = trimmed.match(/^(\)\]\}',?\s*)([\s\S]+)$/);
+  return angularMatch
+    ? {
+        payload: angularMatch[2].trim(),
+        wrapper: { prefix: angularMatch[1], suffix: '' },
+      }
+    : null;
+};
+
 // 只接受明确的复制外壳，避免把普通说明文字里的 JSON 片段误判为完整输入。
 const parseWrappedJsonInput = (input: string): ParsedJsonInput | null => {
   const candidates = [
     extractMarkdownJsonFenceCandidate(input),
     extractAssignmentJsonCandidate(input),
     extractJsonpCandidate(input),
+    extractXssiJsonCandidate(input),
   ];
 
   for (const candidate of candidates) {
