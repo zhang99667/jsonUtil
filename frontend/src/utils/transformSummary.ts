@@ -703,6 +703,7 @@ const buildFilteredRecordView = (
 
   return {
     ...record,
+    decodedSearchPaths: matchedDecodedPaths,
     decodedPaths: matchedDecodedPaths.slice(0, DEFAULT_DECODED_PATH_LIMIT),
     indexedDecodedPathCount: matchedDecodedPaths.length,
     hasMoreDecodedPaths: matchedDecodedPaths.length > DEFAULT_DECODED_PATH_LIMIT,
@@ -1172,11 +1173,12 @@ export const formatTransformPathValueReportText = (
   const lines: string[] = [];
 
   reportView.records.forEach(record => {
-    record.decodedPaths.forEach(row => {
+    const copiedRows = record.decodedSearchPaths || record.decodedPaths;
+    copiedRows.forEach(row => {
       lines.push(row.copyText);
     });
 
-    if (record.hasMoreDecodedPaths) {
+    if (record.indexedDecodedPathCount > copiedRows.length) {
       lines.push(`... ${record.path} 还有更多内部路径未复制`);
     }
   });
