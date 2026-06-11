@@ -270,9 +270,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   </button>
                 )}
                 {report.summary.schemeCounts.nonReversible > 0 && (
-                  <span className="bg-amber-900/30 text-amber-200 border border-amber-700/50 px-2 py-0.5 rounded">
+                  <button
+                    type="button"
+                    data-tour="transform-report-non-reversible-count"
+                    onClick={() => setQuery('不可逆')}
+                    className="bg-amber-900/30 text-amber-200 border border-amber-700/50 px-2 py-0.5 rounded hover:bg-amber-800/50 transition-colors"
+                    title="筛选不可逆解析记录"
+                  >
                     不可逆 {report.summary.schemeCounts.nonReversible}
-                  </span>
+                  </button>
                 )}
                 {report.summary.unresolvedCount > 0 && (
                   <button
