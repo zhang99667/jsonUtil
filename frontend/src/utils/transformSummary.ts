@@ -38,6 +38,7 @@ export interface TransformReportRecord {
   decodedSearchText?: string;
   decodedSearchPaths?: TransformReportDecodedPath[];
   decodedPaths: TransformReportDecodedPath[];
+  indexedDecodedPathCount: number;
   hasMoreDecodedPaths: boolean;
   cmdStructureCopyText?: string;
   stepCount: number;
@@ -703,6 +704,7 @@ const buildFilteredRecordView = (
   return {
     ...record,
     decodedPaths: matchedDecodedPaths.slice(0, DEFAULT_DECODED_PATH_LIMIT),
+    indexedDecodedPathCount: matchedDecodedPaths.length,
     hasMoreDecodedPaths: matchedDecodedPaths.length > DEFAULT_DECODED_PATH_LIMIT,
   };
 };
@@ -902,6 +904,7 @@ export const buildTransformContextReport = (
       decodedPreview: getDecodedPreview(record),
       ...decodedSearchData,
       decodedPaths,
+      indexedDecodedPathCount: decodedSearchData.decodedSearchPaths?.length || decodedPaths.length,
       hasMoreDecodedPaths,
       cmdStructureCopyText: getRecordCmdStructureCopyText(record),
       stepCount: record.steps.length,

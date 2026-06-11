@@ -568,8 +568,13 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           </div>
                         ))}
                         {record.hasMoreDecodedPaths && (
-                          <div className="text-gray-500">
+                          <div data-tour="transform-report-more-decoded-paths" className="text-gray-500">
                             还有更多内部路径未展示
+                            {record.indexedDecodedPathCount > record.decodedPaths.length && (
+                              <span>
+                                ，已索引 {record.indexedDecodedPathCount} 条，可搜索字段名展示隐藏路径
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>

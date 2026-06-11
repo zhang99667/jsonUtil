@@ -193,6 +193,9 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
   await page.locator('[data-tour="transform-report-button"]').click();
 
   const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await expect(reportPanel.locator('[data-tour="transform-report-more-decoded-paths"]')).toContainText('已索引 21 条');
+  await expect(reportPanel.locator('[data-tour="transform-report-more-decoded-paths"]')).toContainText('搜索字段名展示隐藏路径');
+
   await page.locator('[data-tour="transform-report-filter"]').fill('target_after_display_limit');
   const hiddenDecodedPath = reportPanel
     .locator('[data-tour="transform-report-decoded-path"]')
