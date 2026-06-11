@@ -375,15 +375,10 @@ export const useFileSystem = ({
     };
 
     const closeFile = (id: string) => {
-        const fileToClose = files.find(f => f.id === id);
-        if (fileToClose?.isDirty) {
-            // 简单确认，后续可升级为自定义 Modal
-            const confirmClose = window.confirm(`文件 "${fileToClose.name}" 有未保存的修改，确定要关闭吗？\n\n关闭后修改将丢失。`);
-            if (!confirmClose) return;
-        }
-
         // 找到被关闭标签的索引
         const closedIndex = files.findIndex(f => f.id === id);
+        if (closedIndex < 0) return;
+
         const newFiles = files.filter(f => f.id !== id);
         setFiles(newFiles);
 
