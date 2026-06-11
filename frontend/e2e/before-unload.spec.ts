@@ -70,6 +70,46 @@ test('无文件草稿新建标签时保留原草稿', async ({ page }) => {
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
+test('关闭未保存标签使用应用内确认', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(window, '__nativeConfirmCalls', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+    window.confirm = () => {
+      (window as unknown as { __nativeConfirmCalls: number }).__nativeConfirmCalls += 1;
+      return false;
+    };
+  });
+
+  await fillSourceEditor(page, '{"draft":"close-confirm"}');
+  await page.getByTitle('新建标签 (Cmd+N)').click();
+
+  const editorTabs = page.locator('[data-tour="editor-tabs"]');
+  await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
+  await editorTabs.locator('button[title="未保存"]').click();
+
+  const confirmDialog = page.locator('[data-tour="confirm-dialog"]');
+  await expect(confirmDialog).toBeVisible();
+  await expect(confirmDialog).toContainText('关闭未保存标签');
+  await expect(confirmDialog).toContainText('Untitled-1');
+
+  await page.getByRole('button', { name: '继续编辑' }).click();
+  await expect(confirmDialog).toBeHidden();
+  await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
+
+  await editorTabs.locator('button[title="未保存"]').click();
+  await page.getByRole('button', { name: '关闭并丢弃' }).click();
+
+  await expect(confirmDialog).toBeHidden();
+  await expect(editorTabs.getByText('Untitled-1')).toBeHidden();
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(false);
+  await expect.poll(async () => page.evaluate(() => (
+    (window as unknown as { __nativeConfirmCalls: number }).__nativeConfirmCalls
+  ))).toBe(0);
+});
+
 test('无文件草稿打开文件时保留原草稿', async ({ page }) => {
   await installOpenPickerMock(page, 'opened.json', '{"opened":1}');
   await fillSourceEditor(page, '{"draft":"open"}');

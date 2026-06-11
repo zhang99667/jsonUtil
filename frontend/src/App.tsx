@@ -19,6 +19,7 @@ import { useLayout } from './hooks/useLayout';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
@@ -176,6 +177,11 @@ const App: React.FC = () => {
   const activeFile = useMemo(
     () => activeFileId ? files.find(file => file.id === activeFileId) || null : null,
     [activeFileId, files]
+  );
+  const [pendingCloseFileId, setPendingCloseFileId] = useState<string | null>(null);
+  const pendingCloseFile = useMemo(
+    () => pendingCloseFileId ? files.find(file => file.id === pendingCloseFileId) || null : null,
+    [files, pendingCloseFileId]
   );
 
   useEffect(() => {
@@ -542,13 +548,36 @@ const App: React.FC = () => {
     showSuccess(nextEnabled ? '自动保存已开启' : '自动保存已关闭');
   }, [activeFileId, activeFile, isAutoSaveEnabled, setIsAutoSaveEnabled]);
 
+  const requestCloseFile = useCallback((fileId: string) => {
+    const fileToClose = files.find(file => file.id === fileId);
+    if (!fileToClose) return;
+
+    if (fileToClose.isDirty) {
+      setPendingCloseFileId(fileId);
+      return;
+    }
+
+    closeFile(fileId);
+  }, [closeFile, files]);
+
+  const cancelPendingCloseFile = useCallback(() => {
+    setPendingCloseFileId(null);
+  }, []);
+
+  const confirmPendingCloseFile = useCallback(() => {
+    if (pendingCloseFileId) {
+      closeFile(pendingCloseFileId);
+    }
+    setPendingCloseFileId(null);
+  }, [closeFile, pendingCloseFileId]);
+
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({
     onSave: handleSaveShortcut,
     onFormat: () => setMode(TransformMode.FORMAT),
     onDeepFormat: () => setMode(TransformMode.DEEP_FORMAT),
     onMinify: () => setMode(TransformMode.MINIFY),
-    onCloseTab: () => activeFileId && closeFile(activeFileId),
+    onCloseTab: () => activeFileId && requestCloseFile(activeFileId),
     onToggleJsonPath: handleToggleJsonPath,
     onNewTab: createNewTab
   });
@@ -978,6 +1007,16 @@ const App: React.FC = () => {
         </Suspense>
       )}
 
+      <ConfirmDialog
+        isOpen={Boolean(pendingCloseFile)}
+        title="关闭未保存标签"
+        message={`文件「${pendingCloseFile?.name || '未命名文件'}」有未保存的修改。\n关闭后这些修改将丢失。`}
+        confirmLabel="关闭并丢弃"
+        cancelLabel="继续编辑"
+        variant="danger"
+        onConfirm={confirmPendingCloseFile}
+        onCancel={cancelPendingCloseFile}
+      />
 
       {/* 主工作区容器 */}
       <div
@@ -1047,7 +1086,7 @@ const App: React.FC = () => {
               files={files}
               activeFileId={activeFileId}
               onTabClick={switchTab}
-              onCloseFile={closeFile}
+              onCloseFile={requestCloseFile}
               onNewTab={createNewTab}
               onSaveViewState={saveViewState}
               restoreViewState={activeFile?.viewState}
