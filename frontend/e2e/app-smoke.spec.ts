@@ -260,6 +260,10 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   const placeholderSection = reportPanel.locator('[data-tour="transform-report-placeholders"]');
 
   await expect(reportPanel.locator('[data-tour="transform-report-cmd-structure-count"]')).toHaveText('CMD结构 1');
+  await reportPanel.locator('[data-tour="transform-report-cmd-structure-count"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('CMD结构');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.action_cmd');
+  await reportPanel.getByRole('button', { name: '清空' }).click();
   await expect(placeholderSection).toContainText('运行时占位符 · 1');
   const placeholderGroups = placeholderSection.locator('[data-tour="transform-report-placeholder-groups"]');
   await expect(placeholderGroups).toContainText('__CONVERT_CMD__');

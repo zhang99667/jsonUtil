@@ -259,12 +259,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   Base64 {report.summary.schemeCounts.base64}
                 </span>
                 {report.cmdStructureCount > 0 && (
-                  <span
+                  <button
+                    type="button"
                     data-tour="transform-report-cmd-structure-count"
-                    className="bg-cyan-950/40 text-cyan-200 border border-cyan-800/60 px-2 py-0.5 rounded"
+                    onClick={() => setQuery('CMD结构')}
+                    className="bg-cyan-950/40 text-cyan-200 border border-cyan-800/60 px-2 py-0.5 rounded hover:bg-cyan-900/50 transition-colors"
+                    title="筛选可复制的 cmdHandler CMD 结构"
                   >
                     CMD结构 {report.cmdStructureCount}
-                  </span>
+                  </button>
                 )}
                 {report.summary.schemeCounts.nonReversible > 0 && (
                   <span className="bg-amber-900/30 text-amber-200 border border-amber-700/50 px-2 py-0.5 rounded">
