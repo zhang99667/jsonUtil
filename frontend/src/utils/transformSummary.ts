@@ -40,7 +40,9 @@ export interface TransformReportRecord {
   decodedPaths: TransformReportDecodedPath[];
   indexedDecodedPathCount: number;
   hasMoreDecodedPaths: boolean;
+  hasCmdStructure: boolean;
   cmdStructureCopyText?: string;
+  getCmdStructureCopyText?: () => string;
   stepCount: number;
   hasNonReversibleScheme: boolean;
 }
@@ -304,25 +306,42 @@ const getRecordCommandSchema = (record: PathTransformRecord): string | undefined
   return schemeStep?.originalScheme ? getSchemeCommandSchemaFromUrl(schemeStep.originalScheme) : undefined;
 };
 
-const getRecordCmdStructureCopyText = (record: PathTransformRecord): string | undefined => {
+const getRecordCmdStructureSource = (
+  record: PathTransformRecord
+): { decodedValue: JsonValue; commandSchema?: string; source: string } | null => {
   const schemeStep = [...record.steps].reverse().find(step => (
     step.type === 'scheme_decode' &&
     (step.originalSchemeType === 'url' || step.originalSchemeType === 'query-string')
   ));
-  if (!schemeStep) return undefined;
+  if (!schemeStep) return null;
 
   const decodedValue = getSchemeDecodedValue(record.steps);
   if (decodedValue === undefined || decodedValue === null || typeof decodedValue !== 'object') {
-    return undefined;
+    return null;
   }
 
-  const result = formatCmdHandlerCompatibleResult(
-    JSON.stringify(decodedValue),
-    getRecordCommandSchema(record),
-    record.originalValue
-  );
-  return result || undefined;
+  const commandSchema = getRecordCommandSchema(record);
+
+  return {
+    decodedValue,
+    ...(commandSchema ? { commandSchema } : {}),
+    source: record.originalValue,
+  };
 };
+
+const createRecordCmdStructureCopyTextGetter = (
+  source: NonNullable<ReturnType<typeof getRecordCmdStructureSource>>
+): (() => string) => () => formatCmdHandlerCompatibleResult(
+  JSON.stringify(source.decodedValue),
+  source.commandSchema,
+  source.source
+);
+
+export const getTransformRecordCmdStructureCopyText = (
+  record: TransformReportRecord
+): string => (
+  record.cmdStructureCopyText || record.getCmdStructureCopyText?.() || ''
+);
 
 const buildRecordInsights = (record: PathTransformRecord): string[] => {
   const insights: string[] = [];
@@ -672,7 +691,7 @@ const matchesReportRecord = (
   (record.sourceLabel ? includesQuery(record.sourceLabel, normalizedQuery) : false) ||
   includesQuery(record.labels.join(' '), normalizedQuery) ||
   includesQuery(record.insights.join(' '), normalizedQuery) ||
-  (record.cmdStructureCopyText ? includesQuery(CMD_STRUCTURE_SEARCH_TEXT, normalizedQuery) : false) ||
+  (record.hasCmdStructure ? includesQuery(CMD_STRUCTURE_SEARCH_TEXT, normalizedQuery) : false) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
   (record.decodedSearchText ? includesQuery(record.decodedSearchText, normalizedQuery) : false) ||
@@ -895,6 +914,7 @@ export const buildTransformContextReport = (
   const records: TransformReportRecord[] = Array.from(context.records.values()).map(record => {
     const { decodedPaths, hasMoreDecodedPaths } = buildDecodedPaths(record);
     const decodedSearchData = buildDecodedSearchData(record);
+    const cmdStructureSource = getRecordCmdStructureSource(record);
 
     return {
       path: record.path,
@@ -908,14 +928,17 @@ export const buildTransformContextReport = (
       decodedPaths,
       indexedDecodedPathCount: decodedSearchData.decodedSearchPaths?.length || decodedPaths.length,
       hasMoreDecodedPaths,
-      cmdStructureCopyText: getRecordCmdStructureCopyText(record),
+      hasCmdStructure: Boolean(cmdStructureSource),
+      ...(cmdStructureSource
+        ? { getCmdStructureCopyText: createRecordCmdStructureCopyTextGetter(cmdStructureSource) }
+        : {}),
       stepCount: record.steps.length,
       hasNonReversibleScheme: record.steps.some(
         step => step.type === 'scheme_decode' && step.originalSchemeReversible === false
       ),
     };
   });
-  const cmdStructureCount = records.filter(record => record.cmdStructureCopyText).length;
+  const cmdStructureCount = records.filter(record => record.hasCmdStructure).length;
   const summary = summarizeTransformContext(context);
   const runtimePlaceholders: TransformReportRuntimePlaceholder[] = (context.runtimePlaceholders || []).map(placeholder => ({
     path: placeholder.path,
@@ -1093,7 +1116,7 @@ export const buildTransformReportView = (
   const filteredPlaceholders = report.runtimePlaceholders.filter(
     placeholder => matchesRuntimePlaceholder(placeholder, normalizedQuery)
   );
-  const filteredCmdStructureCount = filteredRecords.filter(record => record.cmdStructureCopyText).length;
+  const filteredCmdStructureCount = filteredRecords.filter(record => record.hasCmdStructure).length;
 
   return {
     records: filteredRecords.map(record => (
@@ -1196,7 +1219,7 @@ export const formatTransformCmdStructureReportText = (
   reportView: TransformReportView,
   query: string
 ): string => {
-  const records = reportView.records.filter(record => record.cmdStructureCopyText);
+  const records = reportView.records.filter(record => record.hasCmdStructure);
   if (records.length === 0) return '';
 
   const normalizedQuery = query.trim();
@@ -1214,7 +1237,7 @@ export const formatTransformCmdStructureReportText = (
     if (record.insights.length > 0) {
       lines.push(`解析线索: ${record.insights.join('；')}`);
     }
-    lines.push(record.cmdStructureCopyText || '');
+    lines.push(getTransformRecordCmdStructureCopyText(record));
   });
 
   if (reportView.isRecordTruncated) {
