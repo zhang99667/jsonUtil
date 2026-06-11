@@ -142,6 +142,7 @@
 - **Hash Route CMD 解析**: Scheme 面板支持直接解析 `#/detail?cmd=...&from=...` 这类独立 hash route 参数串，贴入线上跳转片段也能展开内部 CMD
 - **Scheme 参数来源展示**: Scheme 面板会按 Query 参数和 Hash 参数分区展示来源与参数预览，便于快速判断复杂 URL/CMD 的外层和内层参数
 - **Scheme CMD 结构摘要**: Scheme 面板会展示 `cmdSchema`、`cmdParams` 数量、嵌套 `cmd解析` 与 `ext解析` 字段，单独粘贴真实 CMD 时也能快速对齐内部调试工具的阅读方式
+- **Scheme CMD 结构复制**: Scheme 面板新增「复制 CMD 结构」，可导出 cmdHandler 风格的 `cmdSchema` / `cmdParams` JSON，便于和内部 CMD 调试工具、协作排查口径对齐
 - **Scheme 内部 Base64 提示**: Scheme 面板会把 `_base64_*` 元信息提升为可扫读提示，直接展示内部头、拼接后缀和后缀解析出的 os/ip/ua 等参数摘要
 - **Scheme 面板操作区自适应**: 底部操作按钮支持在窄面板下自动换行，避免真实大链路编辑后「复制序列化结果」和「应用修改」被挤出面板
 - **Scheme 扫描路径安全性**: PREVIEW 中 Scheme 图标识别到特殊 key 时改用 JSONPath bracket 写法展示路径，避免 `a.b`、`x/y` 等字段被误读成多级路径
