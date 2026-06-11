@@ -1,12 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { FileTab, TransformMode } from '../types';
 import { getTextFileOpenError, TEXT_FILE_ACCEPT_EXTENSIONS } from '../utils/fileGuards';
+import {
+    buildWorkspaceDraftSnapshot,
+    loadWorkspaceDraftSnapshot,
+    saveWorkspaceDraftSnapshot,
+} from '../utils/workspaceDraft';
 
 interface UseFileSystemProps {
     input: string;
     setInput: (value: string) => void;
     inputRef: React.MutableRefObject<string>;
+    mode: TransformMode;
     setMode: (mode: TransformMode) => void;
     output: string;
 }
@@ -50,12 +56,53 @@ export const useFileSystem = ({
     input,
     setInput,
     inputRef,
+    mode,
     setMode,
     output
 }: UseFileSystemProps) => {
-    const [files, setFiles] = useState<FileTab[]>([]);
-    const [activeFileId, setActiveFileId] = useState<string | null>(null);
+    const [restoredDraft] = useState(() => loadWorkspaceDraftSnapshot());
+    const shouldSkipInitialDraftPersistRef = useRef(Boolean(restoredDraft));
+    const [files, setFiles] = useState<FileTab[]>(() => restoredDraft?.files || []);
+    const [activeFileId, setActiveFileId] = useState<string | null>(() => restoredDraft?.activeFileId || null);
     const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState<boolean>(false);
+
+    useEffect(() => {
+        const draft = restoredDraft;
+        if (!draft) return;
+
+        const activeRestoredFile = draft.activeFileId
+            ? draft.files.find(file => file.id === draft.activeFileId)
+            : null;
+
+        if (activeRestoredFile) {
+            setInput(activeRestoredFile.content);
+            inputRef.current = activeRestoredFile.content;
+            setMode(activeRestoredFile.mode || TransformMode.NONE);
+            toast.success('已恢复上次未保存标签', { duration: 2000 });
+            return;
+        }
+
+        if (draft.standaloneInput) {
+            setInput(draft.standaloneInput);
+            inputRef.current = draft.standaloneInput;
+            setMode(draft.standaloneMode || TransformMode.NONE);
+            toast.success('已恢复上次未保存草稿', { duration: 2000 });
+        }
+    }, [inputRef, restoredDraft, setInput, setMode]);
+
+    useEffect(() => {
+        if (shouldSkipInitialDraftPersistRef.current) {
+            shouldSkipInitialDraftPersistRef.current = false;
+            return;
+        }
+
+        saveWorkspaceDraftSnapshot(buildWorkspaceDraftSnapshot({
+            files,
+            activeFileId,
+            standaloneInput: activeFileId ? '' : input,
+            standaloneMode: activeFileId ? TransformMode.NONE : mode,
+        }));
+    }, [activeFileId, files, input, mode]);
 
     const readTextFileSafely = async (file: File): Promise<string | null> => {
         const sizeError = getTextFileOpenError(file);
