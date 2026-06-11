@@ -121,6 +121,9 @@ describe('transformSummary', () => {
     expect(cmdStructureReportText).toContain('路径: $.cmd');
     expect(cmdStructureReportText).toContain('"cmdParams"');
     expect(formatTransformCmdStructureReportText(report, base64View, 'base64')).toBe('');
+    const cmdStructureView = buildTransformReportView(report, 'CMD结构');
+    expect(cmdStructureView.records.map(record => record.path)).toEqual(['$.cmd']);
+    expect(cmdStructureView.filteredCmdStructureCount).toBe(1);
 
     const limitedView = buildTransformReportView(report, '', { recordLimit: 2 });
     expect(limitedView.records.map(record => record.path)).toEqual(['$.cmd', '$.payload']);

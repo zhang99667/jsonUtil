@@ -157,6 +157,7 @@ export const DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT = 100;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 200;
+const CMD_STRUCTURE_SEARCH_TEXT = 'CMD结构 cmdHandler cmdParams cmdSchema';
 
 const STEP_LABELS: Record<TransformStepType, string> = {
   json_parse: '嵌套 JSON',
@@ -666,6 +667,7 @@ const matchesReportRecord = (
   (record.sourceLabel ? includesQuery(record.sourceLabel, normalizedQuery) : false) ||
   includesQuery(record.labels.join(' '), normalizedQuery) ||
   includesQuery(record.insights.join(' '), normalizedQuery) ||
+  (record.cmdStructureCopyText ? includesQuery(CMD_STRUCTURE_SEARCH_TEXT, normalizedQuery) : false) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
   (record.decodedSearchText ? includesQuery(record.decodedSearchText, normalizedQuery) : false) ||
