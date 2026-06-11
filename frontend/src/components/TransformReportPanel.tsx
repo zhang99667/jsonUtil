@@ -104,7 +104,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     )))
   ), [reportView]);
   const hasCmdStructureCopyItems = useMemo(() => (
-    Boolean(reportView?.records.some(record => record.hasCmdStructure))
+    Boolean(reportView && reportView.filteredCmdStructureCount > 0)
   ), [reportView]);
 
   const handleCopyReport = async () => {

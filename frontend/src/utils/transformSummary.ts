@@ -126,6 +126,7 @@ export interface TransformReportCoverage {
 
 export interface TransformReportView {
   records: TransformReportRecord[];
+  cmdStructureRecords: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
   runtimePlaceholderGroups: TransformReportRuntimePlaceholderGroup[];
@@ -141,6 +142,7 @@ export interface TransformReportView {
   totalPlaceholderCount: number;
   totalCmdStructureCount: number;
   isRecordTruncated: boolean;
+  isCmdStructureTruncated: boolean;
   isWarningTruncated: boolean;
   isUnresolvedTruncated: boolean;
   isPlaceholderTruncated: boolean;
@@ -151,12 +153,14 @@ export interface TransformReportViewOptions {
   warningLimit?: number;
   unresolvedLimit?: number;
   placeholderLimit?: number;
+  cmdStructureLimit?: number;
 }
 
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT = 100;
+export const DEFAULT_TRANSFORM_REPORT_CMD_STRUCTURE_LIMIT = 200;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 200;
@@ -1108,6 +1112,7 @@ export const buildTransformReportView = (
   const warningLimit = options?.warningLimit ?? DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT;
   const unresolvedLimit = options?.unresolvedLimit ?? DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT;
   const placeholderLimit = options?.placeholderLimit ?? DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT;
+  const cmdStructureLimit = options?.cmdStructureLimit ?? DEFAULT_TRANSFORM_REPORT_CMD_STRUCTURE_LIMIT;
   const filteredRecords = report.records.filter(record => matchesReportRecord(record, normalizedQuery));
   const filteredWarnings = report.warnings.filter(warning => matchesReportWarning(warning, normalizedQuery));
   const filteredUnresolved = report.unresolvedCandidates.filter(
@@ -1116,12 +1121,14 @@ export const buildTransformReportView = (
   const filteredPlaceholders = report.runtimePlaceholders.filter(
     placeholder => matchesRuntimePlaceholder(placeholder, normalizedQuery)
   );
-  const filteredCmdStructureCount = filteredRecords.filter(record => record.hasCmdStructure).length;
+  const filteredCmdStructureRecords = filteredRecords.filter(record => record.hasCmdStructure);
+  const filteredCmdStructureCount = filteredCmdStructureRecords.length;
 
   return {
     records: filteredRecords.map(record => (
       buildFilteredRecordView(record, normalizedQuery)
     )).slice(0, recordLimit),
+    cmdStructureRecords: filteredCmdStructureRecords.slice(0, cmdStructureLimit),
     warnings: filteredWarnings.slice(0, warningLimit),
     unresolvedCandidates: filteredUnresolved.slice(0, unresolvedLimit),
     runtimePlaceholderGroups: buildRuntimePlaceholderGroups(filteredPlaceholders),
@@ -1137,6 +1144,7 @@ export const buildTransformReportView = (
     totalPlaceholderCount: report.runtimePlaceholders.length,
     totalCmdStructureCount: report.cmdStructureCount,
     isRecordTruncated: filteredRecords.length > recordLimit,
+    isCmdStructureTruncated: filteredCmdStructureRecords.length > cmdStructureLimit,
     isWarningTruncated: filteredWarnings.length > warningLimit,
     isUnresolvedTruncated: filteredUnresolved.length > unresolvedLimit,
     isPlaceholderTruncated: filteredPlaceholders.length > placeholderLimit,
@@ -1219,14 +1227,16 @@ export const formatTransformCmdStructureReportText = (
   reportView: TransformReportView,
   query: string
 ): string => {
-  const records = reportView.records.filter(record => record.hasCmdStructure);
+  const records = reportView.cmdStructureRecords;
   if (records.length === 0) return '';
 
   const normalizedQuery = query.trim();
   const lines = [
     report.summaryText || '深度解析: 无展开记录',
     ...(normalizedQuery ? [`筛选: ${normalizedQuery}`] : []),
-    `CMD 结构: ${records.length} 条`,
+    reportView.isCmdStructureTruncated
+      ? `CMD 结构: ${records.length}/${reportView.filteredCmdStructureCount} 条`
+      : `CMD 结构: ${records.length} 条`,
   ];
 
   records.forEach(record => {
@@ -1240,8 +1250,8 @@ export const formatTransformCmdStructureReportText = (
     lines.push(getTransformRecordCmdStructureCopyText(record));
   });
 
-  if (reportView.isRecordTruncated) {
-    lines.push(`... 还有 ${reportView.filteredRecordCount - reportView.records.length} 条展开记录未复制`);
+  if (reportView.isCmdStructureTruncated) {
+    lines.push(`... 还有 ${reportView.filteredCmdStructureCount - records.length} 条 CMD 结构未复制`);
   }
 
   return lines.join('\n');
