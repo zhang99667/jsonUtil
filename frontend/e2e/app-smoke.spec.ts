@@ -249,6 +249,26 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue('raw=%7B%22nid%22%3A123%7D');
 });
 
+test('深度解析报告可按不可逆计数筛选', async ({ page }) => {
+  const extraParam = `AFD8f${encodeBase64('meg_name":"AI","flag":true}')}`;
+  await fillSourceEditor(page, JSON.stringify({
+    extra: extraParam,
+    payload: JSON.stringify({ nested: true }),
+  }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await expect(page.locator('[data-tour="preview-editor"]')).toContainText('不可逆 1');
+
+  await page.locator('[data-tour="transform-report-button"]').click();
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await reportPanel.locator('[data-tour="transform-report-non-reversible-count"]').click();
+
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('不可逆');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.extra');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('Base64 · 不可逆');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).not.toContainText('$.payload');
+});
+
 test('深度解析报告展示运行时占位符', async ({ page }) => {
   const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
     button_cmd: '__CONVERT_CMD__',

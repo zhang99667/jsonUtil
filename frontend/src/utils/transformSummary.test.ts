@@ -106,6 +106,7 @@ describe('transformSummary', () => {
     expect(base64View.filteredRecordCount).toBe(1);
     expect(base64View.filteredCmdStructureCount).toBe(0);
     expect(base64View.totalCmdStructureCount).toBe(1);
+    expect(buildTransformReportView(report, '不可逆').records.map(record => record.path)).toEqual(['$.extra']);
 
     const decodedValueView = buildTransformReportView(report, 'nested');
     expect(decodedValueView.records.map(record => record.path)).toEqual(['$.payload']);
