@@ -318,7 +318,8 @@ const getRecordCmdStructureCopyText = (record: PathTransformRecord): string | un
 
   const result = formatCmdHandlerCompatibleResult(
     JSON.stringify(decodedValue),
-    getRecordCommandSchema(record)
+    getRecordCommandSchema(record),
+    record.originalValue
   );
   return result || undefined;
 };

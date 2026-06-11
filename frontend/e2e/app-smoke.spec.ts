@@ -361,6 +361,7 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
         },
         from: 'feed',
       },
+      source: actionCmd,
     },
   });
   await reportPanel.locator('[data-tour="transform-report-copy-cmd-structures"]').click();
@@ -896,6 +897,7 @@ test('Scheme 面板展示 URL 参数来源', async ({ page }) => {
           },
         },
       },
+      source: `https://example.com/page?from=feed#/detail?cmd=${cmdPayload}`,
     },
   });
 });

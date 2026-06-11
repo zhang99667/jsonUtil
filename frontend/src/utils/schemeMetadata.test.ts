@@ -106,7 +106,8 @@ describe('schemeMetadata', () => {
 
     expect(JSON.parse(formatCmdHandlerCompatibleResult(
       decoded,
-      'baiduboxapp://v7/vendor/ad/deeplink'
+      'baiduboxapp://v7/vendor/ad/deeplink',
+      'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D'
     ))).toEqual({
       result: {
         cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
@@ -117,6 +118,7 @@ describe('schemeMetadata', () => {
             },
           },
         },
+        source: 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D',
       },
     });
   });
