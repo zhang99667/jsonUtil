@@ -77,6 +77,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const [totalResults, setTotalResults] = useState<number>(0);
     const [isResultLimited, setIsResultLimited] = useState<boolean>(false);
     const [resultLimit, setResultLimit] = useState<number>(0);
+    const [emptyResultQuery, setEmptyResultQuery] = useState<string>('');
     const [isQuerying, setIsQuerying] = useState<boolean>(false);
     const workerRef = useRef<Worker | null>(null);
     const requestIdRef = useRef(0);
@@ -169,6 +170,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         setTotalResults(0);
         setIsResultLimited(false);
         setResultLimit(0);
+        setEmptyResultQuery('');
         setCurrentResultIndex(0);
         onHighlightRange(null);
     }, [onHighlightRange]);
@@ -180,6 +182,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const handleQuery = useCallback((overrideQuery?: string) => {
         setError('');
         const queryPath = (overrideQuery ?? query).trim();
+        setEmptyResultQuery('');
 
         if (isDataPreparing) {
             setError('深度格式化仍在处理，请稍后查询');
@@ -192,6 +195,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             setQueryValues([]);
             setQueryItems([]);
             setTotalResults(0);
+            setEmptyResultQuery('');
             setCurrentResultIndex(0);
             onHighlightRange(null);
             return;
@@ -234,19 +238,20 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 setTotalResults(0);
                 setIsResultLimited(false);
                 setResultLimit(0);
+                setEmptyResultQuery('');
                 setCurrentResultIndex(0);
                 onHighlightRange(null);
                 return;
             }
 
             if (event.data.totalResults === 0) {
-                setError('未找到匹配项');
                 setQueryRanges([]);
                 setQueryValues([]);
                 setQueryItems([]);
                 setTotalResults(0);
                 setIsResultLimited(false);
                 setResultLimit(0);
+                setEmptyResultQuery(queryPath);
                 setCurrentResultIndex(0);
                 onHighlightRange(null);
                 return;
@@ -258,6 +263,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             setTotalResults(event.data.totalResults);
             setIsResultLimited(event.data.isLimited);
             setResultLimit(event.data.resultLimit);
+            setEmptyResultQuery('');
             setCurrentResultIndex(0);
             onHighlightRange(event.data.ranges[0] || null);
 
@@ -279,6 +285,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             setTotalResults(0);
             setIsResultLimited(false);
             setResultLimit(0);
+            setEmptyResultQuery('');
             setCurrentResultIndex(0);
             onHighlightRange(null);
         };
@@ -365,6 +372,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const hiddenResultCount = Math.max(queryItems.length - queryResultPreviewItems.length, 0);
     const copyButtonLabel = isResultLimited ? '复制已返回结果' : '复制全部结果';
     const copyPathValueButtonLabel = isResultLimited ? '复制已返回路径和值' : '复制路径和值';
+    const showEmptyResult = Boolean(emptyResultQuery) && !error && !isQuerying && totalResults === 0;
 
     const toggleFavorite = () => {
         if (!normalizedQuery) return;
@@ -531,6 +539,19 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>{error}</span>
+                    </div>
+                )}
+
+                {/* 查询空状态 */}
+                {showEmptyResult && (
+                    <div
+                        data-tour="jsonpath-empty"
+                        className="mb-3 rounded border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100"
+                    >
+                        <div className="font-medium">未命中任何结果</div>
+                        <div className="mt-1 break-all font-mono text-xs text-amber-200/80">
+                            {emptyResultQuery}
+                        </div>
                     </div>
                 )}
 
