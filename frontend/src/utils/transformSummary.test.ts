@@ -137,6 +137,23 @@ describe('transformSummary', () => {
     expect(limitedView.isRecordTruncated).toBe(true);
   });
 
+  it('CMD 结构复制不受展开记录展示上限影响', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=feed`;
+    const result = deepParseWithContext(JSON.stringify({
+      first: JSON.stringify({ a: 1 }),
+      second: JSON.stringify({ b: 2 }),
+      action_cmd: actionCmd,
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const limitedView = buildTransformReportView(report, '', { recordLimit: 2 });
+
+    expect(limitedView.records.map(record => record.path)).toEqual(['$.first', '$.second']);
+    expect(limitedView.filteredCmdStructureCount).toBe(1);
+    expect(limitedView.cmdStructureRecords.map(record => record.path)).toEqual(['$.action_cmd']);
+    expect(formatTransformCmdStructureReportText(report, limitedView, '')).toContain('路径: $.action_cmd');
+    expect(formatTransformCmdStructureReportText(report, limitedView, '')).toContain('"nid": 123');
+  });
+
   it('报告展示 CMD Schema、嵌套 CMD 和 ext 解析线索', () => {
     const extInfo = btoa(JSON.stringify({ user_id: 'u1', cmatch: '1501' }));
     const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}`;
