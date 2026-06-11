@@ -38,6 +38,48 @@ const getCoverageClassName = (level: 'success' | 'info' | 'warning'): string => 
   return 'border-sky-700/50 bg-sky-900/20 text-sky-100';
 };
 
+interface SummaryMetricChipProps {
+  label: string;
+  count: number;
+  query: string;
+  dataTour: string;
+  title: string;
+  onFilter: (query: string) => void;
+}
+
+const SummaryMetricChip: React.FC<SummaryMetricChipProps> = ({
+  label,
+  count,
+  query,
+  dataTour,
+  title,
+  onFilter,
+}) => {
+  const className = count > 0
+    ? 'bg-editor-bg text-gray-300 px-2 py-0.5 rounded hover:bg-editor-active hover:text-cyan-100 transition-colors'
+    : 'bg-editor-bg text-gray-300 px-2 py-0.5 rounded';
+
+  if (count <= 0) {
+    return (
+      <span className={className}>
+        {label} {count}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      data-tour={dataTour}
+      onClick={() => onFilter(query)}
+      className={className}
+      title={title}
+    >
+      {label} {count}
+    </button>
+  );
+};
+
 export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   isOpen,
   onClose,
@@ -249,15 +291,30 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                 <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
                   展开 {report.summary.recordCount}
                 </span>
-                <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
-                  CMD {report.summary.schemeCounts.queryString}
-                </span>
-                <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
-                  URL {report.summary.schemeCounts.url}
-                </span>
-                <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
-                  Base64 {report.summary.schemeCounts.base64}
-                </span>
+                <SummaryMetricChip
+                  label="CMD"
+                  count={report.summary.schemeCounts.queryString}
+                  query="CMD 参数"
+                  dataTour="transform-report-cmd-count"
+                  title="筛选 CMD 参数展开记录"
+                  onFilter={setQuery}
+                />
+                <SummaryMetricChip
+                  label="URL"
+                  count={report.summary.schemeCounts.url}
+                  query="URL Scheme"
+                  dataTour="transform-report-url-count"
+                  title="筛选 URL Scheme 展开记录"
+                  onFilter={setQuery}
+                />
+                <SummaryMetricChip
+                  label="Base64"
+                  count={report.summary.schemeCounts.base64}
+                  query="Base64"
+                  dataTour="transform-report-base64-count"
+                  title="筛选 Base64 展开记录"
+                  onFilter={setQuery}
+                />
                 {report.cmdStructureCount > 0 && (
                   <button
                     type="button"

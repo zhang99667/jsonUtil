@@ -261,11 +261,35 @@ test('深度解析报告可按不可逆计数筛选', async ({ page }) => {
 
   await page.locator('[data-tour="transform-report-button"]').click();
   const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await reportPanel.locator('[data-tour="transform-report-base64-count"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('Base64');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.extra');
+  await reportPanel.getByRole('button', { name: '清空' }).click();
+
   await reportPanel.locator('[data-tour="transform-report-non-reversible-count"]').click();
 
   await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('不可逆');
   await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.extra');
   await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('Base64 · 不可逆');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).not.toContainText('$.payload');
+});
+
+test('深度解析报告可按 URL 计数筛选', async ({ page }) => {
+  await fillSourceEditor(page, JSON.stringify({
+    landing_url: 'https://example.com/page?from=feed&target=1',
+    payload: JSON.stringify({ nested: true }),
+  }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await expect(page.locator('[data-tour="preview-editor"]')).toContainText('URL 1');
+
+  await page.locator('[data-tour="transform-report-button"]').click();
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await reportPanel.locator('[data-tour="transform-report-url-count"]').click();
+
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('URL Scheme');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.landing_url');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('URL Scheme · 可回写');
   await expect(reportPanel.locator('[data-tour="transform-report-records"]')).not.toContainText('$.payload');
 });
 
@@ -282,6 +306,12 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await page.locator('[data-tour="transform-report-button"]').click();
   const reportPanel = page.locator('[data-tour="transform-report-panel"]');
   const placeholderSection = reportPanel.locator('[data-tour="transform-report-placeholders"]');
+
+  await expect(reportPanel.locator('[data-tour="transform-report-cmd-count"]')).toHaveText('CMD 1');
+  await reportPanel.locator('[data-tour="transform-report-cmd-count"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('CMD 参数');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.action_cmd');
+  await reportPanel.getByRole('button', { name: '清空' }).click();
 
   await expect(reportPanel.locator('[data-tour="transform-report-cmd-structure-count"]')).toHaveText('CMD结构 1');
   await reportPanel.locator('[data-tour="transform-report-cmd-structure-count"]').click();

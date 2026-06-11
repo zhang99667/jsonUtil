@@ -106,6 +106,7 @@ describe('transformSummary', () => {
     expect(base64View.filteredRecordCount).toBe(1);
     expect(base64View.filteredCmdStructureCount).toBe(0);
     expect(base64View.totalCmdStructureCount).toBe(1);
+    expect(buildTransformReportView(report, 'CMD 参数').records.map(record => record.path)).toEqual(['$.cmd']);
     expect(buildTransformReportView(report, '不可逆').records.map(record => record.path)).toEqual(['$.extra']);
 
     const decodedValueView = buildTransformReportView(report, 'nested');
@@ -171,6 +172,7 @@ describe('transformSummary', () => {
     expect(formatTransformContextReportText(result.context)).toContain(
       '解析线索: cmdSchema: nadcorevendor://vendor/ad/rewardImpl；cmd解析: panel_scheme；ext解析: ad_extra_param, ext_info'
     );
+    expect(buildTransformReportView(report, 'URL Scheme').records.map(record => record.path)).toEqual(['$.scheme']);
     expect(buildTransformReportView(report, 'rewardImpl').filteredRecordCount).toBe(1);
     expect(buildTransformReportView(report, 'ext解析').filteredRecordCount).toBe(1);
   });
