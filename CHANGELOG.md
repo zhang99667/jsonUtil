@@ -38,6 +38,7 @@
 - **深度格式化 Scheme 还原增强**: 修复 URL Scheme 内含二级 URL 时，未编辑预览回写无法优先还原父级原始字符串的问题
 - **深度解析跳过记录定位**: 深度解析报告中的性能保护跳过记录支持一键复制路径，便于在真实 response 中快速回到源字段排查
 - **深度解析 cmdHandler 式线索**: 深度解析报告会展示 `cmdSchema`、嵌套 `cmd解析` 字段和 `ad_extra_param` / `extInfo` 等 `ext解析` 线索，贴入真实广告 response 后更容易对齐内部 CMD 调试工具的阅读方式
+- **CMD 结构复制 source 对齐**: 复制 cmdHandler 风格 CMD 结构时同步带上原始 `source` 串，方便和内部 CMD 解析工具对照排查真实 response
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串
 - **Scheme 面板序列化复制**: 独立 Scheme 解析面板支持将当前编辑后的解码结果重新编码并复制，补齐解析后快速回写 CMD/URL 的工作流
 - **Scheme 面板精确回写**: Scheme 图标弹窗应用修改时改用 JSON Pointer 定位，修复 key 包含点号、斜杠或波浪线时可能写错字段的问题

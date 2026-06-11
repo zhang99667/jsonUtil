@@ -30,6 +30,7 @@ export interface CmdHandlerCompatibleResult {
   result: {
     cmdSchema?: string;
     cmdParams: unknown;
+    source?: string;
   };
 }
 
@@ -273,14 +274,17 @@ export const extractBase64MetaInfo = (
 
 export const formatCmdHandlerCompatibleResult = (
   decoded: string,
-  commandSchema?: string
+  commandSchema?: string,
+  source?: string
 ): string => {
   try {
     const cmdParams: unknown = JSON.parse(decoded);
+    const sourceValue = source?.trim();
     const result: CmdHandlerCompatibleResult = {
       result: {
         ...(commandSchema ? { cmdSchema: commandSchema } : {}),
         cmdParams,
+        ...(sourceValue ? { source: sourceValue } : {}),
       },
     };
 

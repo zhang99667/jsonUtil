@@ -93,6 +93,7 @@ describe('transformSummary', () => {
           },
           from: 'feed',
         },
+        source: `cmd=${cmdPayload}&from=feed`,
       },
     });
     expect(report.records[0].decodedPaths).toEqual([

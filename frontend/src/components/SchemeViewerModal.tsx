@@ -423,9 +423,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   ), [decodeResult.decoded, decodeResult.isJson, decodeResult.schemeInfo]);
   const cmdHandlerCompatibleCopyText = useMemo(() => (
     commandSummaryInfo && decodeResult.isJson && !editedJsonError
-      ? formatCmdHandlerCompatibleResult(editedContent, commandSummaryInfo.commandSchema)
+      ? formatCmdHandlerCompatibleResult(editedContent, commandSummaryInfo.commandSchema, actualValue)
       : ''
-  ), [commandSummaryInfo, decodeResult.isJson, editedContent, editedJsonError]);
+  ), [actualValue, commandSummaryInfo, decodeResult.isJson, editedContent, editedJsonError]);
   const nestedCommandInsight = commandSummaryInfo
     ? formatSchemeInsightItems('cmd解析', commandSummaryInfo.commandFields)
     : undefined;
