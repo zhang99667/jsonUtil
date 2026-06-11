@@ -83,10 +83,21 @@ describe('transformSummary', () => {
     expect(formatTransformContextReportText(result.context)).toContain('解析结果: 对象: meg_name, flag');
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: $.cmd.cmd.nid=123');
     expect(report.records[0].originalValue).toBe(`cmd=${cmdPayload}&from=feed`);
+    expect(JSON.parse(report.records[0].cmdStructureCopyText || '')).toEqual({
+      result: {
+        cmdParams: {
+          cmd: {
+            nid: 123,
+          },
+          from: 'feed',
+        },
+      },
+    });
     expect(report.records[0].decodedPaths).toEqual([
       { path: '$.cmd.cmd.nid', preview: '123', copyText: '$.cmd.cmd.nid = 123' },
       { path: '$.cmd.from', preview: 'feed', copyText: '$.cmd.from = "feed"' },
     ]);
+    expect(report.records[2].cmdStructureCopyText).toBeUndefined();
 
     const base64View = buildTransformReportView(report, 'base64');
     expect(base64View.records.map(record => record.path)).toEqual(['$.extra']);
@@ -125,11 +136,155 @@ describe('transformSummary', () => {
       'cmd解析: panel_scheme',
       'ext解析: ad_extra_param, ext_info',
     ]);
+    expect(JSON.parse(report.records[0].cmdStructureCopyText || '')).toMatchObject({
+      result: {
+        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdParams: {
+          video_info: {
+            tail_frame: {
+              panel_scheme: {
+                ext_info: {
+                  user_id: 'u1',
+                  cmatch: '1501',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
     expect(formatTransformContextReportText(result.context)).toContain(
       '解析线索: cmdSchema: nadcorevendor://vendor/ad/rewardImpl；cmd解析: panel_scheme；ext解析: ad_extra_param, ext_info'
     );
     expect(buildTransformReportView(report, 'rewardImpl').filteredRecordCount).toBe(1);
     expect(buildTransformReportView(report, 'ext解析').filteredRecordCount).toBe(1);
+  });
+
+  it('报告覆盖真实广告 response 中的多层 CMD 与运行时占位符', () => {
+    const extInfo = btoa(JSON.stringify({ user_id: 'u1', cmatch: '1501' }));
+    const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: 'https://pro.m.jd.com/mall/active/page.html?sku=101',
+    }))}`;
+    const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+      appUrl,
+      source: 'feedna',
+      extInfo,
+    }))}`;
+    const bottomButtonScheme = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+      task_id: '602',
+      ext_policy: JSON.stringify({ sdk_switch: '1' }),
+    }))}`;
+    const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}&panel_cmd=${encodeURIComponent(deeplinkCmd)}`;
+    const stayCmd = `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
+      button_cmd: '__CONVERT_CMD__',
+    }))}&convert_cmd=${encodeURIComponent(deeplinkCmd)}`;
+    const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      ext_log: {
+        ad_extra_param: extInfo,
+      },
+      tail_frame: {
+        button_scheme: '__CONVERT_CMD__',
+        bottom_button_scheme: bottomButtonScheme,
+        panel_scheme: panelScheme,
+      },
+    }))}&reward=${encodeURIComponent(JSON.stringify({
+      stay_cmd: stayCmd,
+    }))}&rotation_component=${encodeURIComponent(JSON.stringify({
+      click_event_cmd: '__CONVERT_CMD__',
+      webpanel_event_cmd: '__WEBPANEL_CMD__',
+    }))}`;
+    const result = deepParseWithContext(JSON.stringify({
+      data: {
+        video: [
+          {
+            material: [
+              {
+                info: [
+                  {
+                    ad_common: {
+                      scheme,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const record = report.records[0];
+
+    expect(record).toMatchObject({
+      path: '$.data.video[0].material[0].info[0].ad_common.scheme',
+      labels: ['URL Scheme · 可回写'],
+    });
+    expect(record.insights).toEqual([
+      'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
+      'cmd解析: bottom_button_scheme, panel_scheme, panel_cmd, stay_cmd +1',
+      'ext解析: ad_extra_param, ext_info, extInfo',
+    ]);
+    expect(JSON.parse(record.cmdStructureCopyText || '')).toMatchObject({
+      result: {
+        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdParams: {
+          video_info: {
+            tail_frame: {
+              bottom_button_scheme: {
+                task_params: {
+                  task_id: '602',
+                  ext_policy: {
+                    sdk_switch: '1',
+                  },
+                },
+              },
+              panel_scheme: {
+                panel_cmd: {
+                  params: {
+                    appUrl: {
+                      params: {
+                        url: {
+                          sku: '101',
+                        },
+                      },
+                    },
+                    source: 'feedna',
+                    extInfo: {
+                      user_id: 'u1',
+                      cmatch: '1501',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          reward: {
+            stay_cmd: {
+              convert_btn: {
+                button_cmd: '__CONVERT_CMD__',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(report.runtimePlaceholderGroups.map(group => ({
+      value: group.value,
+      count: group.count,
+      sourceCount: group.sourceCount,
+    }))).toEqual([
+      {
+        value: '__CONVERT_CMD__',
+        count: 3,
+        sourceCount: 1,
+      },
+      {
+        value: '__WEBPANEL_CMD__',
+        count: 1,
+        sourceCount: 1,
+      },
+    ]);
   });
 
   it('报告展示 Base64 后缀解析线索', () => {

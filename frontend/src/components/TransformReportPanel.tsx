@@ -135,6 +135,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
+  const handleCopyCmdStructure = async (value: string) => {
+    try {
+      await copyText(value);
+      toast.success('已复制 CMD 结构', { duration: 1600 });
+    } catch (error) {
+      console.warn('复制深度解析 CMD 结构失败:', error);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
+
   const handleLocatePath = (path: string) => {
     if (!onLocatePath) return;
 
@@ -326,6 +336,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         >
                           复制原始值
                         </button>
+                        {record.cmdStructureCopyText && (
+                          <button
+                            type="button"
+                            data-tour="transform-report-copy-cmd-structure"
+                            onClick={() => handleCopyCmdStructure(record.cmdStructureCopyText)}
+                            className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            title="复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构"
+                          >
+                            复制 CMD 结构
+                          </button>
+                        )}
                         {onLocatePath && (
                           <button
                             type="button"
