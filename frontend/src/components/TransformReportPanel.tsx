@@ -239,7 +239,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyPathValueReport}
           disabled={!pathValueCopyText || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="复制当前展示的内部路径和值"
+          title="复制当前筛选下已索引的内部路径和值"
         >
           复制路径值
         </button>

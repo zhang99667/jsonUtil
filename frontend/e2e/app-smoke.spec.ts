@@ -196,6 +196,11 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
   await expect(reportPanel.locator('[data-tour="transform-report-more-decoded-paths"]')).toContainText('已索引 21 条');
   await expect(reportPanel.locator('[data-tour="transform-report-more-decoded-paths"]')).toContainText('搜索字段名展示隐藏路径');
 
+  await page.locator('[data-tour="transform-report-copy-path-values"]').click();
+  await expect(page.getByText('已复制路径和值').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('$.payload.target_after_display_limit = "needle_after_display_limit"');
+
   await page.locator('[data-tour="transform-report-filter"]').fill('target_after_display_limit');
   const hiddenDecodedPath = reportPanel
     .locator('[data-tour="transform-report-decoded-path"]')
@@ -203,7 +208,7 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
 
   await expect(hiddenDecodedPath).toContainText('needle_after_display_limit');
   await hiddenDecodedPath.locator('[data-tour="transform-report-copy-decoded-value"]').click();
-  await expect(page.getByText('已复制路径和值')).toBeVisible();
+  await expect(page.getByText('已复制路径和值').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$.payload.target_after_display_limit = "needle_after_display_limit"');
 
