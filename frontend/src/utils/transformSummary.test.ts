@@ -401,6 +401,7 @@ describe('transformSummary', () => {
     });
     expect(formatTransformContextReportText(unresolvedResult.context)).toContain('业务字段: trackingParam');
     expect(buildTransformReportView(unresolvedReport, 'trackingParam').filteredUnresolvedCount).toBe(1);
+    expect(buildTransformReportView(unresolvedReport, '待检查').filteredUnresolvedCount).toBe(1);
 
     const placeholderResult = deepParseWithContext(JSON.stringify({
       extra: [{
@@ -416,6 +417,7 @@ describe('transformSummary', () => {
     });
     expect(formatTransformContextReportText(placeholderResult.context)).toContain('业务字段: buttonParam');
     expect(buildTransformReportView(placeholderReport, 'buttonParam').filteredPlaceholderCount).toBe(1);
+    expect(buildTransformReportView(placeholderReport, '占位符').filteredPlaceholderCount).toBe(1);
 
     const skippedValue = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
     const warningResult = deepParseWithContext(JSON.stringify({
@@ -432,6 +434,7 @@ describe('transformSummary', () => {
     });
     expect(formatTransformContextReportText(warningResult.context)).toContain('业务字段: longParam');
     expect(buildTransformReportView(warningReport, 'longParam').filteredWarningCount).toBe(1);
+    expect(buildTransformReportView(warningReport, '跳过').filteredWarningCount).toBe(1);
   });
 
   it('展示疑似未展开的结构化字符串线索', () => {

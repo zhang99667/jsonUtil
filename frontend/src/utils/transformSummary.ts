@@ -158,6 +158,9 @@ const DEFAULT_DECODED_PATH_LIMIT = 12;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 200;
 const CMD_STRUCTURE_SEARCH_TEXT = 'CMD结构 cmdHandler cmdParams cmdSchema';
+const UNRESOLVED_SEARCH_TEXT = '待检查 未展开 线索 unresolved';
+const PLACEHOLDER_SEARCH_TEXT = '占位符 运行时 placeholder';
+const WARNING_SEARCH_TEXT = '跳过 性能保护 warning skipped';
 
 const STEP_LABELS: Record<TransformStepType, string> = {
   json_parse: '嵌套 JSON',
@@ -711,6 +714,7 @@ const matchesReportWarning = (
   !normalizedQuery ||
   includesQuery(warning.path, normalizedQuery) ||
   (warning.sourceLabel ? includesQuery(warning.sourceLabel, normalizedQuery) : false) ||
+  includesQuery(WARNING_SEARCH_TEXT, normalizedQuery) ||
   includesQuery(warning.message, normalizedQuery) ||
   includesQuery(warning.reasonLabel, normalizedQuery) ||
   includesQuery(warning.nextAction, normalizedQuery) ||
@@ -724,6 +728,7 @@ const matchesUnresolvedCandidate = (
   !normalizedQuery ||
   includesQuery(candidate.path, normalizedQuery) ||
   (candidate.sourceLabel ? includesQuery(candidate.sourceLabel, normalizedQuery) : false) ||
+  includesQuery(UNRESOLVED_SEARCH_TEXT, normalizedQuery) ||
   includesQuery(candidate.message, normalizedQuery) ||
   includesQuery(candidate.preview, normalizedQuery) ||
   includesQuery(candidate.reasonLabel, normalizedQuery) ||
@@ -740,6 +745,7 @@ const matchesRuntimePlaceholder = (
   includesQuery(placeholder.path, normalizedQuery) ||
   includesQuery(placeholder.sourcePath, normalizedQuery) ||
   (placeholder.sourceLabel ? includesQuery(placeholder.sourceLabel, normalizedQuery) : false) ||
+  includesQuery(PLACEHOLDER_SEARCH_TEXT, normalizedQuery) ||
   includesQuery(placeholder.value, normalizedQuery) ||
   includesQuery(placeholder.description, normalizedQuery) ||
   (placeholder.sourceOriginalValue ? includesQuery(placeholder.sourceOriginalValue, normalizedQuery) : false)

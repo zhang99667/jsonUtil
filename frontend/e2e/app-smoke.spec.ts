@@ -224,6 +224,10 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
 
   await expect(coverage).toContainText('解析覆盖 50%');
   await expect(coverage).toContainText('还有 1 条疑似结构化内容未完全展开');
+  await reportPanel.locator('[data-tour="transform-report-unresolved-count"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('待检查');
+  await expect(unresolvedSection).toContainText('$.tracking');
+  await reportPanel.getByRole('button', { name: '清空' }).click();
   await expect(unresolvedSection).toContainText('未展开线索 · 1');
   await expect(unresolvedSection).toContainText('$.tracking');
   await expect(unresolvedSection).toContainText('url-encoded');
@@ -263,6 +267,10 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await reportPanel.locator('[data-tour="transform-report-cmd-structure-count"]').click();
   await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('CMD结构');
   await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.action_cmd');
+  await reportPanel.getByRole('button', { name: '清空' }).click();
+  await reportPanel.locator('[data-tour="transform-report-placeholder-count"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('占位符');
+  await expect(placeholderSection).toContainText('$.action_cmd.cmd.button_cmd');
   await reportPanel.getByRole('button', { name: '清空' }).click();
   await expect(placeholderSection).toContainText('运行时占位符 · 1');
   const placeholderGroups = placeholderSection.locator('[data-tour="transform-report-placeholder-groups"]');
