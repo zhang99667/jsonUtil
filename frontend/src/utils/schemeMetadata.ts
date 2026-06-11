@@ -26,6 +26,13 @@ export interface SchemeCommandSummaryInfo extends SchemeInsightFields {
   paramKeys: string[];
 }
 
+export interface CmdHandlerCompatibleResult {
+  result: {
+    cmdSchema?: string;
+    cmdParams: unknown;
+  };
+}
+
 const DEFAULT_DISPLAY_LIMIT = 64;
 const CMD_FIELD_NAMES = new Set([
   'cmd',
@@ -261,5 +268,24 @@ export const extractBase64MetaInfo = (
     };
   } catch {
     return null;
+  }
+};
+
+export const formatCmdHandlerCompatibleResult = (
+  decoded: string,
+  commandSchema?: string
+): string => {
+  try {
+    const cmdParams: unknown = JSON.parse(decoded);
+    const result: CmdHandlerCompatibleResult = {
+      result: {
+        ...(commandSchema ? { cmdSchema: commandSchema } : {}),
+        cmdParams,
+      },
+    };
+
+    return JSON.stringify(result, null, 2);
+  } catch {
+    return '';
   }
 };

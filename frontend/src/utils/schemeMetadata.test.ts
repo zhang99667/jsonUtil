@@ -3,6 +3,7 @@ import {
   extractSchemeCommandSummaryInfo,
   extractBase64MetaInfo,
   formatBase64MetaDisplayValue,
+  formatCmdHandlerCompatibleResult,
 } from './schemeMetadata';
 
 describe('schemeMetadata', () => {
@@ -92,5 +93,35 @@ describe('schemeMetadata', () => {
       extFields: [],
       base64SuffixFields: ['os', 'ip'],
     });
+  });
+
+  it('导出 cmdHandler 风格的 CMD 结构', () => {
+    const decoded = JSON.stringify({
+      params: {
+        appUrl: {
+          source: 'feedna',
+        },
+      },
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      'baiduboxapp://v7/vendor/ad/deeplink'
+    ))).toEqual({
+      result: {
+        cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+        cmdParams: {
+          params: {
+            appUrl: {
+              source: 'feedna',
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('非法 JSON 不导出 CMD 结构', () => {
+    expect(formatCmdHandlerCompatibleResult('{bad json}', 'baiduboxapp://v1/open')).toBe('');
   });
 });

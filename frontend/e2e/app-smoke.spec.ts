@@ -775,6 +775,23 @@ test('Scheme 面板展示 URL 参数来源', async ({ page }) => {
   await expect(commandSummary).toContainText('cmdSchema=https://example.com/page');
   await expect(commandSummary).toContainText('cmdParams · 2');
   await expect(commandSummary).toContainText('cmd解析: cmd');
+
+  await page.locator('[data-tour="scheme-copy-cmd-structure"]').click();
+  await expect(page.getByText('已复制 CMD 结构')).toBeVisible();
+  const copiedCmdStructure = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
+  expect(JSON.parse(copiedCmdStructure || '')).toEqual({
+    result: {
+      cmdSchema: 'https://example.com/page',
+      cmdParams: {
+        from: 'feed',
+        _hash: {
+          cmd: {
+            nid: 123,
+          },
+        },
+      },
+    },
+  });
 });
 
 test('Scheme 面板展示内部 Base64 后缀摘要', async ({ page }) => {

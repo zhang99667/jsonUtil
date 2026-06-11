@@ -17,6 +17,7 @@ import {
   extractSchemeCommandSummaryInfo,
   formatSchemeInsightItems,
   formatBase64MetaDisplayValue,
+  formatCmdHandlerCompatibleResult,
 } from '../utils/schemeMetadata';
 
 interface SchemeViewerModalProps {
@@ -420,6 +421,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       decodeResult.schemeInfo
     )
   ), [decodeResult.decoded, decodeResult.isJson, decodeResult.schemeInfo]);
+  const cmdHandlerCompatibleCopyText = useMemo(() => (
+    commandSummaryInfo && decodeResult.isJson && !editedJsonError
+      ? formatCmdHandlerCompatibleResult(editedContent, commandSummaryInfo.commandSchema)
+      : ''
+  ), [commandSummaryInfo, decodeResult.isJson, editedContent, editedJsonError]);
   const nestedCommandInsight = commandSummaryInfo
     ? formatSchemeInsightItems('cmd解析', commandSummaryInfo.commandFields)
     : undefined;
@@ -429,6 +435,18 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const base64SuffixInsight = commandSummaryInfo
     ? formatSchemeInsightItems('Base64 后缀', commandSummaryInfo.base64SuffixFields, 6)
     : undefined;
+
+  const handleCopyCmdHandlerCompatibleResult = async () => {
+    if (!cmdHandlerCompatibleCopyText) return;
+
+    try {
+      await copyText(cmdHandlerCompatibleCopyText);
+      toast.success('已复制 CMD 结构', { duration: 2000 });
+    } catch (err) {
+      console.warn('复制 CMD 结构失败:', err);
+      toast.error('复制失败', { duration: 2000 });
+    }
+  };
 
   // 头部额外内容：非独立模式显示 path 标签，并支持复制到 JSONPath 面板继续定位
   const headerExtra = !standalone && path ? (
@@ -511,6 +529,20 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           </svg>
           复制解码结果
         </button>
+        {commandSummaryInfo && (
+          <button
+            data-tour="scheme-copy-cmd-structure"
+            onClick={handleCopyCmdHandlerCompatibleResult}
+            disabled={!cmdHandlerCompatibleCopyText}
+            className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8M8 12h8M8 17h5M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+            </svg>
+            复制 CMD 结构
+          </button>
+        )}
         {decodeResult.isJson && (
           <button
             data-tour="scheme-copy-path-values"
