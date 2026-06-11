@@ -96,10 +96,16 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 cmdHandler 风格的 CMD 结构', () => {
+    const nestedSource = 'baiduboxapp://v1/panel?ext_info=%7B%22user_id%22%3A%22u1%22%7D';
     const decoded = JSON.stringify({
       params: {
         appUrl: {
           source: 'feedna',
+        },
+      },
+      panel_scheme: {
+        ext_info: {
+          user_id: 'u1',
         },
       },
     });
@@ -107,7 +113,7 @@ describe('schemeMetadata', () => {
     expect(JSON.parse(formatCmdHandlerCompatibleResult(
       decoded,
       'baiduboxapp://v7/vendor/ad/deeplink',
-      'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D'
+      `baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D&panel_scheme=${encodeURIComponent(nestedSource)}`
     ))).toEqual({
       result: {
         cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
@@ -117,8 +123,17 @@ describe('schemeMetadata', () => {
               source: 'feedna',
             },
           },
+          panel_scheme: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              ext_info: {
+                user_id: 'u1',
+              },
+            },
+            source: nestedSource,
+          },
         },
-        source: 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D',
+        source: `baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D&panel_scheme=${encodeURIComponent(nestedSource)}`,
       },
     });
   });

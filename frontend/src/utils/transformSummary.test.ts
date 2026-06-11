@@ -160,10 +160,14 @@ describe('transformSummary', () => {
           video_info: {
             tail_frame: {
               panel_scheme: {
-                ext_info: {
-                  user_id: 'u1',
-                  cmatch: '1501',
+                cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+                cmdParams: {
+                  ext_info: {
+                    user_id: 'u1',
+                    cmatch: '1501',
+                  },
                 },
+                source: panelScheme,
               },
             },
           },
@@ -250,38 +254,54 @@ describe('transformSummary', () => {
           video_info: {
             tail_frame: {
               bottom_button_scheme: {
-                task_params: {
-                  task_id: '602',
-                  ext_policy: {
-                    sdk_switch: '1',
+                cmdSchema: 'nadcorevendor://vendor/ad/reward',
+                cmdParams: {
+                  task_params: {
+                    task_id: '602',
+                    ext_policy: {
+                      sdk_switch: '1',
+                    },
                   },
                 },
+                source: bottomButtonScheme,
               },
               panel_scheme: {
-                panel_cmd: {
-                  params: {
-                    appUrl: {
+                cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+                cmdParams: {
+                  panel_cmd: {
+                    cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+                    cmdParams: {
                       params: {
-                        url: {
-                          sku: '101',
+                        appUrl: {
+                          params: {
+                            url: {
+                              sku: '101',
+                            },
+                          },
+                        },
+                        source: 'feedna',
+                        extInfo: {
+                          user_id: 'u1',
+                          cmatch: '1501',
                         },
                       },
                     },
-                    source: 'feedna',
-                    extInfo: {
-                      user_id: 'u1',
-                      cmatch: '1501',
-                    },
+                    source: deeplinkCmd,
                   },
                 },
+                source: panelScheme,
               },
             },
           },
           reward: {
             stay_cmd: {
-              convert_btn: {
-                button_cmd: '__CONVERT_CMD__',
+              cmdSchema: 'nadcorevendor://vendor/ad/rewardDialog',
+              cmdParams: {
+                convert_btn: {
+                  button_cmd: '__CONVERT_CMD__',
+                },
               },
+              source: stayCmd,
             },
           },
         },

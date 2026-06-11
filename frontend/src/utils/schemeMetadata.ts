@@ -1,4 +1,5 @@
 import type { SchemeDecodeResult } from './schemeUtils';
+import { detectSchemeType, hasUrlEncoding, parseUrl, urlDecode } from './schemeUtils';
 
 export interface Base64MetaEntry {
   key: string;
@@ -34,7 +35,18 @@ export interface CmdHandlerCompatibleResult {
   };
 }
 
+type SourceShape =
+  | string
+  | number
+  | boolean
+  | null
+  | SourceShape[]
+  | { [key: string]: SourceShape };
+
 const DEFAULT_DISPLAY_LIMIT = 64;
+const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
+const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
+const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const CMD_FIELD_NAMES = new Set([
   'cmd',
   'scheme',
@@ -145,6 +157,210 @@ export const getSchemeCommandSchemaFromUrl = (value: string): string | undefined
   } catch {
     return trimmed.split(/[?#]/)[0] || undefined;
   }
+};
+
+const normalizeSourceString = (value: string): string => {
+  let current = value.trim().replace(/\\\//g, '/');
+
+  for (let depth = 0; depth < 3 && hasUrlEncoding(current); depth++) {
+    if (detectSchemeType(current) !== 'url-encoded') break;
+
+    const decoded = urlDecode(current);
+    if (decoded === current) break;
+    current = decoded;
+  }
+
+  return current;
+};
+
+const decodeQueryComponent = (value: string): string => {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, ' '));
+  } catch {
+    return value;
+  }
+};
+
+const mergeSourceValue = (
+  existing: SourceShape | undefined,
+  value: SourceShape
+): SourceShape => {
+  if (existing === undefined) return value;
+  if (Array.isArray(existing)) return [...existing, value];
+  return [existing, value];
+};
+
+const tryParseJsonSource = (value: string): SourceShape | null => {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    return normalizeSourceShape(parsed);
+  } catch {
+    return null;
+  }
+};
+
+const tryParseJsonStringSource = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) return null;
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    return typeof parsed === 'string' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeSourceShape = (value: unknown): SourceShape => {
+  if (typeof value === 'string') {
+    return parseSourceValue(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => normalizeSourceShape(item));
+  }
+
+  if (isPlainObject(value)) {
+    const result: { [key: string]: SourceShape } = {};
+    Object.entries(value).forEach(([key, item]) => {
+      result[key] = normalizeSourceShape(item);
+    });
+    return result;
+  }
+
+  if (typeof value === 'number') return value;
+  if (typeof value === 'boolean') return value;
+  if (value === null) return null;
+
+  return String(value);
+};
+
+const parseSourceValue = (value: string): SourceShape => {
+  const jsonStringPayload = tryParseJsonStringSource(value);
+  if (jsonStringPayload !== null) {
+    return parseSourceValue(jsonStringPayload);
+  }
+
+  const directJsonValue = tryParseJsonSource(value);
+  if (directJsonValue !== null) return directJsonValue;
+
+  const normalized = normalizeSourceString(value);
+  const jsonValue = tryParseJsonSource(normalized);
+  return jsonValue ?? normalized;
+};
+
+const parseQuerySourceShape = (source: string): SourceShape | null => {
+  const normalizedSource = source.trim().replace(/^\?/, '').replace(/^&+/, '');
+  if (!QUERY_PAIR_START_RE.test(normalizedSource)) return null;
+
+  const result: { [key: string]: SourceShape } = {};
+  normalizedSource.split(QUERY_PAIR_DELIMITER_RE).forEach(pair => {
+    const equalIndex = pair.indexOf('=');
+    if (equalIndex <= 0) return;
+
+    const key = decodeQueryComponent(pair.slice(0, equalIndex));
+    if (!key) return;
+
+    const value = parseSourceValue(decodeQueryComponent(pair.slice(equalIndex + 1)));
+    result[key] = mergeSourceValue(result[key], value);
+  });
+
+  return Object.keys(result).length > 0 ? result : null;
+};
+
+const parseSourceShape = (source?: string): SourceShape | null => {
+  if (!source?.trim()) return null;
+
+  const normalized = normalizeSourceString(source);
+  const sourceType = detectSchemeType(normalized);
+  if (sourceType === 'url') {
+    const schemeInfo = parseUrl(normalized);
+    const queryShape = schemeInfo?.params ? normalizeSourceShape(schemeInfo.params) : null;
+    const hashShape = schemeInfo?.hashParams ? normalizeSourceShape(schemeInfo.hashParams) : null;
+
+    if (queryShape && hashShape && isPlainObject(queryShape)) {
+      return {
+        ...queryShape,
+        _hash: hashShape,
+      };
+    }
+
+    return queryShape || hashShape;
+  }
+  if (sourceType === 'query-string') {
+    return parseQuerySourceShape(normalized);
+  }
+
+  const jsonValue = tryParseJsonSource(normalized);
+  return jsonValue;
+};
+
+const getSourceObjectChild = (
+  sourceShape: SourceShape | null,
+  key: string
+): SourceShape | undefined => (
+  isPlainObject(sourceShape) ? sourceShape[key] : undefined
+);
+
+const getCommandSourceInfo = (
+  sourceShape: SourceShape | undefined
+): { cmdSchema?: string; source: string } | null => {
+  if (typeof sourceShape !== 'string') return null;
+
+  const source = normalizeSourceString(sourceShape);
+  const sourceType = detectSchemeType(source);
+  if (sourceType === 'url') {
+    const cmdSchema = getSchemeCommandSchemaFromUrl(source);
+    return {
+      ...(cmdSchema ? { cmdSchema } : {}),
+      source,
+    };
+  }
+
+  if (sourceType === 'query-string') {
+    return { source };
+  }
+
+  return null;
+};
+
+const wrapNestedCmdHandlerParams = (
+  value: unknown,
+  sourceShape: SourceShape | null
+): unknown => {
+  if (Array.isArray(value)) {
+    const sourceItems = Array.isArray(sourceShape) ? sourceShape : [];
+    return value.map((item, index) => (
+      wrapNestedCmdHandlerParams(item, sourceItems[index] ?? null)
+    ));
+  }
+
+  if (!isPlainObject(value)) return value;
+
+  const result: Record<string, unknown> = {};
+  Object.entries(value).forEach(([key, item]) => {
+    const childSource = getSourceObjectChild(sourceShape, key);
+    const childSourceShape = typeof childSource === 'string'
+      ? parseSourceShape(childSource)
+      : childSource ?? null;
+    const wrappedItem = wrapNestedCmdHandlerParams(item, childSourceShape);
+    const commandSourceInfo = isCmdInsightField(key) && isPlainObject(wrappedItem)
+      ? getCommandSourceInfo(childSource)
+      : null;
+
+    result[key] = commandSourceInfo
+      ? {
+          ...(commandSourceInfo.cmdSchema ? { cmdSchema: commandSourceInfo.cmdSchema } : {}),
+          cmdParams: wrappedItem,
+          source: commandSourceInfo.source,
+        }
+      : wrappedItem;
+  });
+
+  return result;
 };
 
 const getCommandSchemaFromInfo = (
@@ -280,10 +496,11 @@ export const formatCmdHandlerCompatibleResult = (
   try {
     const cmdParams: unknown = JSON.parse(decoded);
     const sourceValue = source?.trim();
+    const sourceShape = parseSourceShape(sourceValue);
     const result: CmdHandlerCompatibleResult = {
       result: {
         ...(commandSchema ? { cmdSchema: commandSchema } : {}),
-        cmdParams,
+        cmdParams: wrapNestedCmdHandlerParams(cmdParams, sourceShape),
         ...(sourceValue ? { source: sourceValue } : {}),
       },
     };
