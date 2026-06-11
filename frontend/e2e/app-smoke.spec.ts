@@ -286,6 +286,12 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
       },
     },
   });
+  await reportPanel.locator('[data-tour="transform-report-copy-cmd-structures"]').click();
+  await expect(page.getByText('已复制 CMD 结构列表')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('路径: $.action_cmd');
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('"button_cmd": "__CONVERT_CMD__"');
   await placeholderGroups.locator('[data-tour="transform-report-filter-placeholder-group"]').click();
   await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('__CONVERT_CMD__');
   await reportPanel.getByRole('button', { name: '复制筛选结果' }).click();

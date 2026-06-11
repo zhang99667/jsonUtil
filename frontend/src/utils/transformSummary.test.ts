@@ -5,6 +5,7 @@ import { deepParseWithContext } from './transformations';
 import {
   buildTransformContextReport,
   buildTransformReportView,
+  formatTransformCmdStructureReportText,
   formatTransformContextReportText,
   formatTransformContextSummary,
   formatTransformPathValueReportText,
@@ -110,6 +111,12 @@ describe('transformSummary', () => {
     const decodedPathView = buildTransformReportView(report, 'cmd.nid');
     expect(decodedPathView.records.map(record => record.path)).toEqual(['$.cmd']);
     expect(decodedPathView.filteredRecordCount).toBe(1);
+    const cmdStructureReportText = formatTransformCmdStructureReportText(report, decodedPathView, 'cmd.nid');
+    expect(cmdStructureReportText).toContain('筛选: cmd.nid');
+    expect(cmdStructureReportText).toContain('CMD 结构: 1 条');
+    expect(cmdStructureReportText).toContain('路径: $.cmd');
+    expect(cmdStructureReportText).toContain('"cmdParams"');
+    expect(formatTransformCmdStructureReportText(report, base64View, 'base64')).toBe('');
 
     const limitedView = buildTransformReportView(report, '', { recordLimit: 2 });
     expect(limitedView.records.map(record => record.path)).toEqual(['$.cmd', '$.payload']);

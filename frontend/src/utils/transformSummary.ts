@@ -1169,6 +1169,39 @@ export const formatTransformPathValueReportText = (
   return lines.join('\n');
 };
 
+export const formatTransformCmdStructureReportText = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string
+): string => {
+  const records = reportView.records.filter(record => record.cmdStructureCopyText);
+  if (records.length === 0) return '';
+
+  const normalizedQuery = query.trim();
+  const lines = [
+    report.summaryText || '深度解析: 无展开记录',
+    ...(normalizedQuery ? [`筛选: ${normalizedQuery}`] : []),
+    `CMD 结构: ${records.length} 条`,
+  ];
+
+  records.forEach(record => {
+    lines.push('', `路径: ${record.path}`);
+    if (record.sourceLabel) {
+      lines.push(`业务字段: ${record.sourceLabel}`);
+    }
+    if (record.insights.length > 0) {
+      lines.push(`解析线索: ${record.insights.join('；')}`);
+    }
+    lines.push(record.cmdStructureCopyText || '');
+  });
+
+  if (reportView.isRecordTruncated) {
+    lines.push(`... 还有 ${reportView.filteredRecordCount - reportView.records.length} 条展开记录未复制`);
+  }
+
+  return lines.join('\n');
+};
+
 export const formatTransformPlaceholderReportText = (
   report: TransformContextReport,
   reportView: TransformReportView,
