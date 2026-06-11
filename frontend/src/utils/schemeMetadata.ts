@@ -67,6 +67,41 @@ const CMD_FIELD_NAMES = new Set([
   'webpanel_event_cmd',
 ]);
 const CMD_FIELD_SUFFIXES = ['_cmd', 'cmd', '_scheme', 'scheme'];
+const URL_FIELD_NAMES = new Set([
+  'url',
+  'uri',
+  'link',
+  'target',
+  'target_url',
+  'redirect',
+  'redirect_url',
+  'next',
+  'next_url',
+  'fallback_url',
+  'deep_link',
+  'deeplink',
+  'jump_url',
+  'landing_url',
+  'h5_url',
+  'page_url',
+  'web_url',
+  'detail_url',
+  'lp_real_url',
+  'app_url',
+  'appurl',
+  'open_app_url',
+  'download_url',
+  'apk_url',
+  'deeplink_url',
+  'deep_link_url',
+  'callback_url',
+  'open_url',
+  'weburl',
+  'appUrl',
+  'webUrl',
+  'openUrl',
+]);
+const URL_FIELD_SUFFIXES = ['_url', 'url'];
 const EXT_FIELD_NAMES = new Set([
   'ad_extra_param',
   'extInfo',
@@ -90,6 +125,18 @@ const isCmdInsightField = (key: string): boolean => {
     CMD_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
 };
 
+const isUrlInsightField = (key: string): boolean => {
+  const normalizedKey = key.trim();
+  const lowerKey = normalizedKey.toLowerCase();
+  return URL_FIELD_NAMES.has(normalizedKey) ||
+    URL_FIELD_NAMES.has(lowerKey) ||
+    URL_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
+};
+
+const isCommandInsightField = (key: string): boolean => (
+  isCmdInsightField(key) || isUrlInsightField(key)
+);
+
 const collectSchemeInsightFieldsInner = (
   value: unknown,
   commandFields: string[],
@@ -105,7 +152,7 @@ const collectSchemeInsightFieldsInner = (
 
   Object.entries(value).forEach(([key, item]) => {
     if (isPlainObject(item)) {
-      if (isCmdInsightField(key)) {
+      if (isCommandInsightField(key)) {
         commandFields.push(key);
       }
       if (EXT_FIELD_NAMES.has(key)) {
@@ -353,7 +400,7 @@ const wrapNestedCmdHandlerParams = (
       ? parseSourceShape(childSource)
       : childSource ?? null;
     const wrappedItem = wrapNestedCmdHandlerParams(item, childSourceShape);
-    const commandSourceInfo = isCmdInsightField(key) && isPlainObject(wrappedItem)
+    const commandSourceInfo = isCommandInsightField(key) && isPlainObject(wrappedItem)
       ? getCommandSourceInfo(childSource)
       : null;
 
