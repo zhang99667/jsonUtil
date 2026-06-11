@@ -96,8 +96,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const reportView = useMemo(() => (
     report ? buildTransformReportView(report, deferredQuery) : null
   ), [report, deferredQuery]);
-  const pathValueCopyText = useMemo(() => (
-    reportView ? formatTransformPathValueReportText(reportView) : ''
+  const hasPathValueCopyItems = useMemo(() => (
+    Boolean(reportView?.records.some(record => (
+      (record.decodedSearchPaths?.length || record.decodedPaths.length) > 0
+    )))
   ), [reportView]);
   const cmdStructureCopyText = useMemo(() => (
     report && reportView ? formatTransformCmdStructureReportText(report, reportView, deferredQuery) : ''
@@ -128,9 +130,12 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const handleCopyPathValueReport = async () => {
-    if (!pathValueCopyText || isFilterPending) return;
+    if (!reportView || !hasPathValueCopyItems || isFilterPending) return;
 
     try {
+      const pathValueCopyText = formatTransformPathValueReportText(reportView);
+      if (!pathValueCopyText) return;
+
       await copyText(pathValueCopyText);
       toast.success('已复制路径和值', { duration: 2000 });
     } catch (error) {
@@ -237,7 +242,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         <button
           data-tour="transform-report-copy-path-values"
           onClick={handleCopyPathValueReport}
-          disabled={!pathValueCopyText || isFilterPending}
+          disabled={!hasPathValueCopyItems || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="复制当前筛选下已索引的内部路径和值"
         >
