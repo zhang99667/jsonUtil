@@ -40,6 +40,7 @@
 - **深度解析 cmdHandler 式线索**: 深度解析报告会展示 `cmdSchema`、嵌套 `cmd解析` 字段和 `ad_extra_param` / `extInfo` 等 `ext解析` 线索，贴入真实广告 response 后更容易对齐内部 CMD 调试工具的阅读方式
 - **CMD 结构复制 source 对齐**: 复制 cmdHandler 风格 CMD 结构时同步带上原始 `source` 串，方便和内部 CMD 解析工具对照排查真实 response
 - **CMD 结构嵌套 source 对齐**: 复制 cmdHandler 风格 CMD 结构时，嵌套 `*_cmd` / `*_scheme` 字段会保留各自的 `cmdSchema`、`cmdParams` 和 `source`
+- **CMD 结构 URL 字段 source 对齐**: 复制 cmdHandler 风格 CMD 结构时，嵌套 `appUrl`、`url`、`webUrl` 等常见跳转字段也会保留 `cmdSchema`、`cmdParams` 和 `source`
 - **CMD 结构复制懒生成**: 深度解析报告改为点击复制时再生成大体积 cmdHandler 结构，打开报告和筛选真实 response 时不再提前拼接整段复制文本
 - **CMD 结构隐藏记录复制**: 深度解析报告即使只展示前 200 条展开记录，也能复制当前筛选下的 CMD 结构，避免大 response 中靠后的 CMD 复制入口消失
 - **Scheme 面板 URL 回写增强**: Scheme 解析面板编辑完整 URL/Scheme 后可按原 query、hash route 和 `_hash` 分区重建链接，避免应用修改时退化成 JSON 字符串

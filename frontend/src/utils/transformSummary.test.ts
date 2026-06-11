@@ -274,7 +274,7 @@ describe('transformSummary', () => {
     });
     expect(record.insights).toEqual([
       'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
-      'cmd解析: bottom_button_scheme, panel_scheme, panel_cmd, stay_cmd +1',
+      'cmd解析: bottom_button_scheme, panel_scheme, panel_cmd, appUrl +3',
       'ext解析: ad_extra_param, ext_info, extInfo',
     ]);
     expect(record.nestedCommandFieldCount).toBeGreaterThan(4);
@@ -311,11 +311,20 @@ describe('transformSummary', () => {
                     cmdParams: {
                       params: {
                         appUrl: {
-                          params: {
-                            url: {
-                              sku: '101',
+                          cmdSchema: 'openapp.jdmobile://virtual',
+                          cmdParams: {
+                            params: {
+                              category: 'jump',
+                              url: {
+                                cmdSchema: 'https://pro.m.jd.com/mall/active/page.html',
+                                cmdParams: {
+                                  sku: '101',
+                                },
+                                source: 'https://pro.m.jd.com/mall/active/page.html?sku=101',
+                              },
                             },
                           },
+                          source: appUrl,
                         },
                         source: 'feedna',
                         extInfo: {
@@ -337,6 +346,35 @@ describe('transformSummary', () => {
               cmdParams: {
                 convert_btn: {
                   button_cmd: '__CONVERT_CMD__',
+                },
+                convert_cmd: {
+                  cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+                  cmdParams: {
+                    params: {
+                      appUrl: {
+                        cmdSchema: 'openapp.jdmobile://virtual',
+                        cmdParams: {
+                          params: {
+                            category: 'jump',
+                            url: {
+                              cmdSchema: 'https://pro.m.jd.com/mall/active/page.html',
+                              cmdParams: {
+                                sku: '101',
+                              },
+                              source: 'https://pro.m.jd.com/mall/active/page.html?sku=101',
+                            },
+                          },
+                        },
+                        source: appUrl,
+                      },
+                      source: 'feedna',
+                      extInfo: {
+                        user_id: 'u1',
+                        cmatch: '1501',
+                      },
+                    },
+                  },
+                  source: deeplinkCmd,
                 },
               },
               source: stayCmd,

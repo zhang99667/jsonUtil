@@ -144,6 +144,57 @@ describe('schemeMetadata', () => {
     });
   });
 
+  it('导出 CMD 结构时包装常见 URL 跳转字段', () => {
+    const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101';
+    const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: landingUrl,
+    }))}`;
+    const source = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+      appUrl,
+    }))}`;
+    const decoded = JSON.stringify({
+      params: {
+        appUrl: {
+          params: {
+            category: 'jump',
+            url: {
+              sku: '101',
+            },
+          },
+        },
+      },
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      'baiduboxapp://v7/vendor/ad/deeplink',
+      source
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          params: {
+            appUrl: {
+              cmdSchema: 'openapp.jdmobile://virtual',
+              cmdParams: {
+                params: {
+                  url: {
+                    cmdSchema: 'https://pro.m.jd.com/mall/active/page.html',
+                    cmdParams: {
+                      sku: '101',
+                    },
+                    source: landingUrl,
+                  },
+                },
+              },
+              source: appUrl,
+            },
+          },
+        },
+      },
+    });
+  });
+
   it('非法 JSON 不导出 CMD 结构', () => {
     expect(formatCmdHandlerCompatibleResult('{bad json}', 'baiduboxapp://v1/open')).toBe('');
   });
