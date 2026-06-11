@@ -664,9 +664,15 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await page.getByRole('button', { name: '查询', exact: true }).click();
   await expect(page.getByText('请输入 JSONPath 表达式')).toBeVisible();
 
+  await page.locator('[data-tour="jsonpath-input"]').fill('$.missing');
+  await page.getByRole('button', { name: '查询', exact: true }).click();
+  await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('未命中任何结果');
+  await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('$.missing');
+
   await page.locator('[data-tour="jsonpath-input"]').fill('$.users[*].name');
   await page.getByRole('button', { name: '查询', exact: true }).click();
 
+  await expect(page.locator('[data-tour="jsonpath-empty"]')).toBeHidden();
   await expect(page.getByText('1 / 2')).toBeVisible();
   await expect(page.locator('.jsonpath-highlight').first()).toBeVisible();
   const resultPreview = page.locator('[data-tour="jsonpath-results"]');
