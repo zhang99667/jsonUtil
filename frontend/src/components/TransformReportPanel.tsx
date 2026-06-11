@@ -179,7 +179,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     <div className="flex w-full flex-wrap items-center justify-between gap-2">
       <div className="min-w-[220px] flex-1 text-xs text-gray-500">
         {report
-          ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredPlaceholderCount || 0}/${reportView?.totalPlaceholderCount || 0} 个占位符 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
+          ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredCmdStructureCount || 0}/${reportView?.totalCmdStructureCount || 0} 条CMD结构 · ${reportView?.filteredPlaceholderCount || 0}/${reportView?.totalPlaceholderCount || 0} 个占位符 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
           : '暂无解析上下文'}
       </div>
       <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
@@ -258,6 +258,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                 <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
                   Base64 {report.summary.schemeCounts.base64}
                 </span>
+                {report.cmdStructureCount > 0 && (
+                  <span
+                    data-tour="transform-report-cmd-structure-count"
+                    className="bg-cyan-950/40 text-cyan-200 border border-cyan-800/60 px-2 py-0.5 rounded"
+                  >
+                    CMD结构 {report.cmdStructureCount}
+                  </span>
+                )}
                 {report.summary.schemeCounts.nonReversible > 0 && (
                   <span className="bg-amber-900/30 text-amber-200 border border-amber-700/50 px-2 py-0.5 rounded">
                     不可逆 {report.summary.schemeCounts.nonReversible}

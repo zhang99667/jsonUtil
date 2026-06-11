@@ -51,6 +51,7 @@ describe('transformSummary', () => {
       label: '解析覆盖 100%',
       level: 'success',
     });
+    expect(report.cmdStructureCount).toBe(1);
     expect(report.records.map(record => ({
       path: record.path,
       labels: record.labels,
@@ -103,6 +104,8 @@ describe('transformSummary', () => {
     const base64View = buildTransformReportView(report, 'base64');
     expect(base64View.records.map(record => record.path)).toEqual(['$.extra']);
     expect(base64View.filteredRecordCount).toBe(1);
+    expect(base64View.filteredCmdStructureCount).toBe(0);
+    expect(base64View.totalCmdStructureCount).toBe(1);
 
     const decodedValueView = buildTransformReportView(report, 'nested');
     expect(decodedValueView.records.map(record => record.path)).toEqual(['$.payload']);
@@ -111,6 +114,7 @@ describe('transformSummary', () => {
     const decodedPathView = buildTransformReportView(report, 'cmd.nid');
     expect(decodedPathView.records.map(record => record.path)).toEqual(['$.cmd']);
     expect(decodedPathView.filteredRecordCount).toBe(1);
+    expect(decodedPathView.filteredCmdStructureCount).toBe(1);
     const cmdStructureReportText = formatTransformCmdStructureReportText(report, decodedPathView, 'cmd.nid');
     expect(cmdStructureReportText).toContain('筛选: cmd.nid');
     expect(cmdStructureReportText).toContain('CMD 结构: 1 条');
@@ -647,6 +651,7 @@ describe('transformSummary', () => {
         description: '结构解析已完成，但仍有 1 个运行时占位符需要服务端或客户端运行时替换。',
         items: [],
       },
+      cmdStructureCount: 0,
       records: [],
       warnings: [],
       unresolvedCandidates: [],
