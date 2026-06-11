@@ -275,14 +275,37 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   </span>
                 )}
                 {report.summary.unresolvedCount > 0 && (
-                  <span className="bg-sky-900/30 text-sky-200 border border-sky-700/50 px-2 py-0.5 rounded">
+                  <button
+                    type="button"
+                    data-tour="transform-report-unresolved-count"
+                    onClick={() => setQuery('待检查')}
+                    className="bg-sky-900/30 text-sky-200 border border-sky-700/50 px-2 py-0.5 rounded hover:bg-sky-800/50 transition-colors"
+                    title="筛选未展开线索"
+                  >
                     待检查 {report.summary.unresolvedCount}
-                  </span>
+                  </button>
+                )}
+                {report.summary.warningCount > 0 && (
+                  <button
+                    type="button"
+                    data-tour="transform-report-warning-count"
+                    onClick={() => setQuery('跳过')}
+                    className="bg-amber-900/30 text-amber-200 border border-amber-700/50 px-2 py-0.5 rounded hover:bg-amber-800/50 transition-colors"
+                    title="筛选性能保护跳过记录"
+                  >
+                    跳过 {report.summary.warningCount}
+                  </button>
                 )}
                 {report.summary.placeholderCount > 0 && (
-                  <span className="bg-violet-900/30 text-violet-200 border border-violet-700/50 px-2 py-0.5 rounded">
+                  <button
+                    type="button"
+                    data-tour="transform-report-placeholder-count"
+                    onClick={() => setQuery('占位符')}
+                    className="bg-violet-900/30 text-violet-200 border border-violet-700/50 px-2 py-0.5 rounded hover:bg-violet-800/50 transition-colors"
+                    title="筛选运行时占位符"
+                  >
                     占位符 {report.summary.placeholderCount}
-                  </span>
+                  </button>
                 )}
               </div>
               <div
