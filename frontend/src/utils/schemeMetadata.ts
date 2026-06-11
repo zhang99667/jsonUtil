@@ -17,8 +17,11 @@ export interface Base64MetaInfo {
 
 export interface SchemeInsightFields {
   commandFields: string[];
+  commandFieldCount: number;
   extFields: string[];
+  extFieldCount: number;
   base64SuffixFields: string[];
+  base64SuffixFieldCount: number;
 }
 
 export interface SchemeCommandSummaryInfo extends SchemeInsightFields {
@@ -128,8 +131,11 @@ export const collectSchemeInsightFields = (value: unknown): SchemeInsightFields 
 
   return {
     commandFields: dedupe(commandFields),
+    commandFieldCount: commandFields.length,
     extFields: dedupe(extFields),
+    extFieldCount: extFields.length,
     base64SuffixFields: dedupe(base64SuffixFields),
+    base64SuffixFieldCount: base64SuffixFields.length,
   };
 };
 
@@ -412,8 +418,11 @@ export const extractSchemeCommandSummaryInfo = (
           paramCount: 0,
           paramKeys: [],
           commandFields: [],
+          commandFieldCount: 0,
           extFields: [],
+          extFieldCount: 0,
           base64SuffixFields: [],
+          base64SuffixFieldCount: 0,
         }
       : null;
   }
