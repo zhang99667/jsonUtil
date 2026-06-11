@@ -38,6 +38,42 @@ test('未保存草稿会阻止页面卸载', async ({ page }) => {
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
+test('无文件草稿刷新后自动恢复', async ({ page }) => {
+  await fillSourceEditor(page, '{"draft":"recover-after-reload"}');
+  await expect.poll(async () => page.evaluate(() => (
+    window.localStorage.getItem('json-helper-workspace-draft')
+  ))).not.toBeNull();
+
+  page.once('dialog', dialog => dialog.accept());
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+
+  await expect(page.getByText('已恢复上次未保存草稿')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"recover-after-reload"');
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+});
+
+test('未保存标签刷新后自动恢复', async ({ page }) => {
+  await fillSourceEditor(page, '{"draft":"tab-recover-after-reload"}');
+  await page.getByTitle('新建标签 (Cmd+N)').click();
+
+  const editorTabs = page.locator('[data-tour="editor-tabs"]');
+  await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
+  await expect(editorTabs.getByText('Untitled-2')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => (
+    window.localStorage.getItem('json-helper-workspace-draft')
+  ))).toContain('tab-recover-after-reload');
+
+  page.once('dialog', dialog => dialog.accept());
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+
+  await expect(page.getByText('已恢复上次未保存标签')).toBeVisible();
+  await expect(page.locator('[data-tour="editor-tabs"]').getByText('Untitled-1')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"tab-recover-after-reload"');
+  await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+});
+
 test('无文件草稿另存后不再阻止页面卸载', async ({ page }) => {
   await installSavePickerMock(page);
   await fillSourceEditor(page, '{"draft":false}');

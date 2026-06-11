@@ -156,7 +156,7 @@ const App: React.FC = () => {
     createNewTab, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
     saveViewState
   } = useFileSystem({
-    input, setInput, inputRef, setMode, output: '' // 初始为空，后面会更新
+    input, setInput, inputRef, mode, setMode, output: '' // 初始为空，后面会更新
   });
 
   // 通用设置状态 + localStorage 持久化（需在 deepFormatResult 之前声明）
