@@ -348,11 +348,13 @@ describe('transformSummary', () => {
     });
     expect(report.records[0].decodedPaths.some(row => row.path.includes('target_after_display_limit'))).toBe(false);
     expect(report.records[0].hasMoreDecodedPaths).toBe(true);
+    expect(report.records[0].indexedDecodedPathCount).toBe(21);
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: 还有更多未展示');
 
     const hiddenPathView = buildTransformReportView(report, 'target_after_display_limit');
     expect(hiddenPathView.records.map(record => record.path)).toEqual(['$.payload']);
     expect(hiddenPathView.filteredRecordCount).toBe(1);
+    expect(hiddenPathView.records[0].indexedDecodedPathCount).toBe(1);
     expect(hiddenPathView.records[0].decodedPaths).toEqual([
       {
         path: '$.payload.target_after_display_limit',
