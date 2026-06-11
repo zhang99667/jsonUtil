@@ -53,10 +53,12 @@ describe('transformSummary', () => {
       level: 'success',
     });
     expect(report.cmdStructureCount).toBe(1);
+    expect(report.nestedCommandFieldCount).toBe(1);
     expect(report.records.map(record => ({
       path: record.path,
       labels: record.labels,
       insights: record.insights,
+      nestedCommandFieldCount: record.nestedCommandFieldCount,
       decodedPreview: record.decodedPreview,
       hasNonReversibleScheme: record.hasNonReversibleScheme,
     }))).toEqual([
@@ -64,6 +66,7 @@ describe('transformSummary', () => {
         path: '$.cmd',
         labels: ['CMD 参数 · 可回写'],
         insights: ['cmd解析: cmd'],
+        nestedCommandFieldCount: 1,
         decodedPreview: '对象: cmd, from',
         hasNonReversibleScheme: false,
       },
@@ -71,6 +74,7 @@ describe('transformSummary', () => {
         path: '$.payload',
         labels: ['嵌套 JSON'],
         insights: [],
+        nestedCommandFieldCount: 0,
         decodedPreview: '对象: nested',
         hasNonReversibleScheme: false,
       },
@@ -78,6 +82,7 @@ describe('transformSummary', () => {
         path: '$.extra',
         labels: ['Base64 · 不可逆'],
         insights: [],
+        nestedCommandFieldCount: 0,
         decodedPreview: '对象: meg_name, flag',
         hasNonReversibleScheme: true,
       },
@@ -110,7 +115,10 @@ describe('transformSummary', () => {
     expect(base64View.filteredRecordCount).toBe(1);
     expect(base64View.filteredCmdStructureCount).toBe(0);
     expect(base64View.totalCmdStructureCount).toBe(1);
+    expect(base64View.filteredNestedCommandFieldCount).toBe(0);
+    expect(base64View.totalNestedCommandFieldCount).toBe(1);
     expect(buildTransformReportView(report, 'CMD 参数').records.map(record => record.path)).toEqual(['$.cmd']);
+    expect(buildTransformReportView(report, '内部CMD字段').records.map(record => record.path)).toEqual(['$.cmd']);
     expect(buildTransformReportView(report, '不可逆').records.map(record => record.path)).toEqual(['$.extra']);
 
     const decodedValueView = buildTransformReportView(report, 'nested');
@@ -168,6 +176,7 @@ describe('transformSummary', () => {
     const result = deepParseWithContext(JSON.stringify({ scheme }), { autoExpandScheme: true });
     const report = buildTransformContextReport(result.context);
 
+    expect(report.nestedCommandFieldCount).toBe(1);
     expect(report.records[0].insights).toEqual([
       'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
       'cmd解析: panel_scheme',
@@ -200,6 +209,7 @@ describe('transformSummary', () => {
     expect(buildTransformReportView(report, 'URL Scheme').records.map(record => record.path)).toEqual(['$.scheme']);
     expect(buildTransformReportView(report, 'rewardImpl').filteredRecordCount).toBe(1);
     expect(buildTransformReportView(report, 'ext解析').filteredRecordCount).toBe(1);
+    expect(buildTransformReportView(report, '内部CMD字段').filteredNestedCommandFieldCount).toBe(1);
   });
 
   it('报告覆盖真实广告 response 中的多层 CMD 与运行时占位符', () => {
@@ -267,6 +277,14 @@ describe('transformSummary', () => {
       'cmd解析: bottom_button_scheme, panel_scheme, panel_cmd, stay_cmd +1',
       'ext解析: ad_extra_param, ext_info, extInfo',
     ]);
+    expect(record.nestedCommandFieldCount).toBeGreaterThan(4);
+    expect(report.nestedCommandFieldCount).toBe(record.nestedCommandFieldCount);
+    expect(buildTransformReportView(report, '内部CMD字段').records.map(item => item.path)).toEqual([record.path]);
+    expect(formatTransformCmdStructureReportText(
+      report,
+      buildTransformReportView(report, '内部CMD字段'),
+      '内部CMD字段'
+    )).toContain('内部CMD字段: ');
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(record))).toMatchObject({
       result: {
         cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
@@ -679,7 +697,7 @@ describe('transformSummary', () => {
 
     const filteredText = formatTransformReportViewText(report, extraView, 'extraParam');
     expect(filteredText).toContain('筛选: extraParam');
-    expect(filteredText).toContain('筛选结果: 展开 1/2，占位符 1/4，待检查 0/0，跳过 0/0');
+    expect(filteredText).toContain('筛选结果: 展开 1/2，内部CMD字段 1/2，占位符 1/4，待检查 0/0，跳过 0/0');
     expect(filteredText).toContain('- $.extra[0].v: CMD 参数 · 可回写');
     expect(filteredText).toContain('- __CONVERT_CMD__ ×1:');
     expect(filteredText).toContain('业务字段: extraParam');
@@ -712,6 +730,7 @@ describe('transformSummary', () => {
         items: [],
       },
       cmdStructureCount: 0,
+      nestedCommandFieldCount: 0,
       records: [],
       warnings: [],
       unresolvedCandidates: [],

@@ -71,8 +71,11 @@ describe('schemeMetadata', () => {
       paramCount: 1,
       paramKeys: ['video_info'],
       commandFields: ['panel_scheme'],
+      commandFieldCount: 1,
       extFields: ['ext_info', 'ad_extra_param'],
+      extFieldCount: 2,
       base64SuffixFields: [],
+      base64SuffixFieldCount: 0,
     });
   });
 
@@ -90,8 +93,11 @@ describe('schemeMetadata', () => {
       paramCount: 2,
       paramKeys: ['meg_name', '_base64_suffix_decoded'],
       commandFields: [],
+      commandFieldCount: 0,
       extFields: [],
+      extFieldCount: 0,
       base64SuffixFields: ['os', 'ip'],
+      base64SuffixFieldCount: 2,
     });
   });
 
