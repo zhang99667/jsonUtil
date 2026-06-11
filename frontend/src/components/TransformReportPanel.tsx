@@ -40,6 +40,10 @@ const getCoverageClassName = (level: 'success' | 'info' | 'warning'): string => 
   return 'border-sky-700/50 bg-sky-900/20 text-sky-100';
 };
 
+const formatDecodedPathCount = (record: TransformReportRecord): string => (
+  record.isDecodedPathCountTruncated ? `${record.decodedPathCount}+` : String(record.decodedPathCount)
+);
+
 interface SummaryMetricChipProps {
   label: string;
   count: number;
@@ -536,7 +540,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     )}
                     {record.decodedPaths.length > 0 && (
                       <div className="mt-1.5 flex flex-col gap-1">
-                        <div className="text-gray-500">内部路径</div>
+                        <div className="text-gray-500">
+                          内部路径 · 显示 {record.decodedPaths.length}/{formatDecodedPathCount(record)} 条
+                        </div>
                         {record.decodedPaths.map(row => (
                           <div
                             key={`${record.path}:${row.path}`}
@@ -582,7 +588,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         ))}
                         {record.hasMoreDecodedPaths && (
                           <div data-tour="transform-report-more-decoded-paths" className="text-gray-500">
-                            还有更多内部路径未展示
+                            还有更多内部路径未展示，总计 {formatDecodedPathCount(record)} 条
                             {record.indexedDecodedPathCount > record.decodedPaths.length && (
                               <span>
                                 ，已索引 {record.indexedDecodedPathCount} 条，可搜索字段名展示隐藏路径

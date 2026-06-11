@@ -38,6 +38,8 @@ export interface TransformReportRecord {
   decodedSearchText?: string;
   decodedSearchPaths?: TransformReportDecodedPath[];
   decodedPaths: TransformReportDecodedPath[];
+  decodedPathCount: number;
+  isDecodedPathCountTruncated: boolean;
   indexedDecodedPathCount: number;
   hasMoreDecodedPaths: boolean;
   hasCmdStructure: boolean;
@@ -162,6 +164,7 @@ export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_CMD_STRUCTURE_LIMIT = 200;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
+const DEFAULT_DECODED_PATH_COUNT_LIMIT = 10_000;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 200;
 const CMD_STRUCTURE_SEARCH_TEXT = 'CMD结构 cmdHandler cmdParams cmdSchema';
@@ -439,6 +442,9 @@ interface DecodedPathCollectState {
   rows: DecodedPathCollectRow[];
   limit: number;
   hasMore: boolean;
+  count: number;
+  countLimit: number;
+  isCountTruncated: boolean;
 }
 
 interface DecodedPathCollectRow {
@@ -458,6 +464,14 @@ const pushDecodedPath = (
   state: DecodedPathCollectState,
   row: DecodedPathCollectRow
 ) => {
+  if (state.count >= state.countLimit) {
+    state.hasMore = true;
+    state.isCountTruncated = true;
+    return;
+  }
+
+  state.count += 1;
+
   if (state.rows.length < state.limit) {
     state.rows.push(row);
     return;
@@ -471,7 +485,7 @@ const collectDecodedLeafPaths = (
   currentPath: string,
   state: DecodedPathCollectState
 ) => {
-  if (state.hasMore) return;
+  if (state.isCountTruncated) return;
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
@@ -481,7 +495,7 @@ const collectDecodedLeafPaths = (
 
     for (let index = 0; index < value.length; index++) {
       collectDecodedLeafPaths(value[index], appendJsonPathIndex(currentPath, index), state);
-      if (state.hasMore) return;
+      if (state.isCountTruncated) return;
     }
     return;
   }
@@ -495,7 +509,7 @@ const collectDecodedLeafPaths = (
 
     for (const [key, item] of entries) {
       collectDecodedLeafPaths(item, appendJsonPathKey(currentPath, key), state);
-      if (state.hasMore) return;
+      if (state.isCountTruncated) return;
     }
     return;
   }
@@ -506,24 +520,43 @@ const collectDecodedLeafPaths = (
 const buildDecodedPaths = (
   record: PathTransformRecord,
   limit = DEFAULT_DECODED_PATH_LIMIT
-): { decodedPaths: TransformReportDecodedPath[]; hasMoreDecodedPaths: boolean } => {
+): {
+  decodedPaths: TransformReportDecodedPath[];
+  decodedPathCount: number;
+  isDecodedPathCountTruncated: boolean;
+  hasMoreDecodedPaths: boolean;
+} => {
   const decodedValue = getDecodedValue(record);
   if (decodedValue === undefined || decodedValue === null || typeof decodedValue !== 'object') {
-    return { decodedPaths: [], hasMoreDecodedPaths: false };
+    return {
+      decodedPaths: [],
+      decodedPathCount: 0,
+      isDecodedPathCountTruncated: false,
+      hasMoreDecodedPaths: false,
+    };
   }
 
   const state: DecodedPathCollectState = {
     rows: [],
     limit,
     hasMore: false,
+    count: 0,
+    countLimit: DEFAULT_DECODED_PATH_COUNT_LIMIT,
+    isCountTruncated: false,
   };
   collectDecodedLeafPaths(decodedValue, '$', state);
 
   return {
     decodedPaths: state.rows.map(row => rebaseDecodedPathRow(record.path, row)),
+    decodedPathCount: state.count,
+    isDecodedPathCountTruncated: state.isCountTruncated,
     hasMoreDecodedPaths: state.hasMore,
   };
 };
+
+const formatDecodedPathCount = (record: Pick<TransformReportRecord, 'decodedPathCount' | 'isDecodedPathCountTruncated'>): string => (
+  record.isDecodedPathCountTruncated ? `${record.decodedPathCount}+` : String(record.decodedPathCount)
+);
 
 const pushDecodedSearchText = (
   state: DecodedSearchTextCollectState,
@@ -729,6 +762,8 @@ const buildFilteredRecordView = (
     ...record,
     decodedSearchPaths: matchedDecodedPaths,
     decodedPaths: matchedDecodedPaths.slice(0, DEFAULT_DECODED_PATH_LIMIT),
+    decodedPathCount: matchedDecodedPaths.length,
+    isDecodedPathCountTruncated: false,
     indexedDecodedPathCount: matchedDecodedPaths.length,
     hasMoreDecodedPaths: matchedDecodedPaths.length > DEFAULT_DECODED_PATH_LIMIT,
   };
@@ -916,7 +951,12 @@ export const buildTransformContextReport = (
   context: TransformContext
 ): TransformContextReport => {
   const records: TransformReportRecord[] = Array.from(context.records.values()).map(record => {
-    const { decodedPaths, hasMoreDecodedPaths } = buildDecodedPaths(record);
+    const {
+      decodedPaths,
+      decodedPathCount,
+      isDecodedPathCountTruncated,
+      hasMoreDecodedPaths,
+    } = buildDecodedPaths(record);
     const decodedSearchData = buildDecodedSearchData(record);
     const cmdStructureSource = getRecordCmdStructureSource(record);
 
@@ -930,6 +970,8 @@ export const buildTransformContextReport = (
       decodedPreview: getDecodedPreview(record),
       ...decodedSearchData,
       decodedPaths,
+      decodedPathCount,
+      isDecodedPathCountTruncated,
       indexedDecodedPathCount: decodedSearchData.decodedSearchPaths?.length || decodedPaths.length,
       hasMoreDecodedPaths,
       hasCmdStructure: Boolean(cmdStructureSource),
@@ -1030,7 +1072,7 @@ const appendReportRecordLines = (
         lines.push(`  内部路径: ${record.decodedPaths.map(row => `${row.path}=${row.preview}`).join('；')}`);
       }
       if (record.hasMoreDecodedPaths) {
-        lines.push('  内部路径: 还有更多未展示');
+        lines.push(`  内部路径: 还有更多未展示（总计 ${formatDecodedPathCount(record)} 条）`);
       }
     });
   }
