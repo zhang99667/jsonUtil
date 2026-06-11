@@ -105,6 +105,7 @@ export interface TransformContextReport {
   summary: TransformContextSummary;
   summaryText?: string;
   coverage: TransformReportCoverage;
+  cmdStructureCount: number;
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
@@ -130,10 +131,12 @@ export interface TransformReportView {
   filteredWarningCount: number;
   filteredUnresolvedCount: number;
   filteredPlaceholderCount: number;
+  filteredCmdStructureCount: number;
   totalRecordCount: number;
   totalWarningCount: number;
   totalUnresolvedCount: number;
   totalPlaceholderCount: number;
+  totalCmdStructureCount: number;
   isRecordTruncated: boolean;
   isWarningTruncated: boolean;
   isUnresolvedTruncated: boolean;
@@ -899,6 +902,7 @@ export const buildTransformContextReport = (
       ),
     };
   });
+  const cmdStructureCount = records.filter(record => record.cmdStructureCopyText).length;
   const summary = summarizeTransformContext(context);
   const runtimePlaceholders: TransformReportRuntimePlaceholder[] = (context.runtimePlaceholders || []).map(placeholder => ({
     path: placeholder.path,
@@ -916,6 +920,7 @@ export const buildTransformContextReport = (
     summary,
     summaryText: formatTransformContextSummary(context),
     coverage: buildTransformReportCoverage(summary),
+    cmdStructureCount,
     records,
     warnings: (context.warnings || []).map(warning => ({
       type: warning.type,
@@ -1075,6 +1080,7 @@ export const buildTransformReportView = (
   const filteredPlaceholders = report.runtimePlaceholders.filter(
     placeholder => matchesRuntimePlaceholder(placeholder, normalizedQuery)
   );
+  const filteredCmdStructureCount = filteredRecords.filter(record => record.cmdStructureCopyText).length;
 
   return {
     records: filteredRecords.map(record => (
@@ -1088,10 +1094,12 @@ export const buildTransformReportView = (
     filteredWarningCount: filteredWarnings.length,
     filteredUnresolvedCount: filteredUnresolved.length,
     filteredPlaceholderCount: filteredPlaceholders.length,
+    filteredCmdStructureCount,
     totalRecordCount: report.records.length,
     totalWarningCount: report.warnings.length,
     totalUnresolvedCount: report.unresolvedCandidates.length,
     totalPlaceholderCount: report.runtimePlaceholders.length,
+    totalCmdStructureCount: report.cmdStructureCount,
     isRecordTruncated: filteredRecords.length > recordLimit,
     isWarningTruncated: filteredWarnings.length > warningLimit,
     isUnresolvedTruncated: filteredUnresolved.length > unresolvedLimit,
