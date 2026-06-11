@@ -9,6 +9,7 @@ import type {
 import {
   collectSchemeInsightFields,
   formatSchemeInsightItems,
+  formatCmdHandlerCompatibleResult,
   getSchemeCommandSchemaFromUrl,
 } from './schemeMetadata';
 
@@ -38,6 +39,7 @@ export interface TransformReportRecord {
   decodedSearchPaths?: TransformReportDecodedPath[];
   decodedPaths: TransformReportDecodedPath[];
   hasMoreDecodedPaths: boolean;
+  cmdStructureCopyText?: string;
   stepCount: number;
   hasNonReversibleScheme: boolean;
 }
@@ -292,6 +294,25 @@ const getRecordCommandSchema = (record: PathTransformRecord): string | undefined
   ));
 
   return schemeStep?.originalScheme ? getSchemeCommandSchemaFromUrl(schemeStep.originalScheme) : undefined;
+};
+
+const getRecordCmdStructureCopyText = (record: PathTransformRecord): string | undefined => {
+  const schemeStep = [...record.steps].reverse().find(step => (
+    step.type === 'scheme_decode' &&
+    (step.originalSchemeType === 'url' || step.originalSchemeType === 'query-string')
+  ));
+  if (!schemeStep) return undefined;
+
+  const decodedValue = getSchemeDecodedValue(record.steps);
+  if (decodedValue === undefined || decodedValue === null || typeof decodedValue !== 'object') {
+    return undefined;
+  }
+
+  const result = formatCmdHandlerCompatibleResult(
+    JSON.stringify(decodedValue),
+    getRecordCommandSchema(record)
+  );
+  return result || undefined;
 };
 
 const buildRecordInsights = (record: PathTransformRecord): string[] => {
@@ -871,6 +892,7 @@ export const buildTransformContextReport = (
       ...decodedSearchData,
       decodedPaths,
       hasMoreDecodedPaths,
+      cmdStructureCopyText: getRecordCmdStructureCopyText(record),
       stepCount: record.steps.length,
       hasNonReversibleScheme: record.steps.some(
         step => step.type === 'scheme_decode' && step.originalSchemeReversible === false
