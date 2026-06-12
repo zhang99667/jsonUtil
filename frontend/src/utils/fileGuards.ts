@@ -6,21 +6,29 @@ export const TEXT_FILE_EXTENSIONS = [
   'css',
   'csv',
   'env',
+  'geojson',
+  'har',
   'html',
   'ini',
   'java',
   'js',
   'json',
+  'json5',
+  'jsonc',
   'jsonl',
   'jsx',
   'log',
+  'map',
   'md',
+  'ndjson',
   'properties',
   'sql',
+  'topojson',
   'toml',
   'ts',
   'tsx',
   'txt',
+  'webmanifest',
   'xml',
   'yaml',
   'yml',
@@ -61,11 +69,14 @@ const BINARY_FILE_EXTENSIONS = new Set([
 const TEXT_MIME_TYPES = new Set([
   'application/javascript',
   'application/json',
+  'application/json5',
   'application/ld+json',
+  'application/manifest+json',
   'application/sql',
   'application/typescript',
   'application/x-javascript',
   'application/x-ndjson',
+  'application/x-yaml',
   'application/xml',
   'application/yaml',
 ]);
@@ -131,6 +142,10 @@ const isLikelyTextFile = (file: Pick<File, 'name'> & { type?: string }): boolean
   }
 
   if (TEXT_FILE_EXTENSION_SET.has(extension)) {
+    return true;
+  }
+
+  if (mimeType.endsWith('+json') || mimeType.endsWith('+xml')) {
     return true;
   }
 

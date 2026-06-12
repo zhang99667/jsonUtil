@@ -39,6 +39,31 @@ describe('getTextFileOpenError', () => {
     })).toBeNull();
   });
 
+  it('允许常见 JSON 家族调试文件', () => {
+    for (const name of [
+      'network.har',
+      'events.ndjson',
+      'config.jsonc',
+      'package.map',
+      'city.geojson',
+      'manifest.webmanifest',
+    ]) {
+      expect(getTextFileOpenError({
+        name,
+        size: 1024,
+        type: 'application/octet-stream',
+      })).toBeNull();
+    }
+  });
+
+  it('允许 application/*+json 这类结构化 JSON MIME', () => {
+    expect(getTextFileOpenError({
+      name: 'response.payload',
+      size: 1024,
+      type: 'application/vnd.api+json',
+    })).toBeNull();
+  });
+
   it('超过上限时返回明确提示', () => {
     const error = getTextFileOpenError({
       name: 'huge.json',
@@ -78,6 +103,11 @@ describe('TEXT_FILE_ACCEPT_EXTENSIONS', () => {
     expect(TEXT_FILE_ACCEPT_EXTENSIONS).toEqual(expect.arrayContaining([
       '.json',
       '.jsonl',
+      '.ndjson',
+      '.har',
+      '.geojson',
+      '.webmanifest',
+      '.map',
       '.log',
       '.sql',
       '.yaml',
