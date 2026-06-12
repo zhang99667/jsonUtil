@@ -262,6 +262,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     result: null,
     metadata: null,
   });
+  const [cancelledDecodeSource, setCancelledDecodeSource] = useState('');
+  const currentWorkerRef = useRef<Worker | null>(null);
+  const workerDecodeRequestIdRef = useRef(0);
 
   // 二维码状态
   const [showQRCode, setShowQRCode] = useState(false);
@@ -274,8 +277,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   // 大 response 粘贴后先保证输入响应，解析结果用低优先级值追赶。
   const decodeSourceValue = actualValue ? deferredActualValue : '';
   const shouldDecodeInWorker = decodeSourceValue.length >= ASYNC_SCHEME_DECODE_THRESHOLD;
+  const isCurrentDecodeCancelled = Boolean(
+    shouldDecodeInWorker && cancelledDecodeSource === decodeSourceValue
+  );
   const hasFreshWorkerDecodeResult = Boolean(
     shouldDecodeInWorker &&
+    !isCurrentDecodeCancelled &&
     workerDecodeState.source === decodeSourceValue &&
     workerDecodeState.result
   );
@@ -284,7 +291,13 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     : null;
   const isDecodePending = Boolean(
     actualValue && deferredActualValue !== actualValue
-  ) || (shouldDecodeInWorker && !hasFreshWorkerDecodeResult);
+  ) || (shouldDecodeInWorker && !isCurrentDecodeCancelled && !hasFreshWorkerDecodeResult);
+  const canCancelDecode = Boolean(
+    shouldDecodeInWorker &&
+    !isCurrentDecodeCancelled &&
+    workerDecodeState.source === decodeSourceValue &&
+    !hasFreshWorkerDecodeResult
+  );
 
   // 自定义滚动条 Hook
   const {
@@ -303,13 +316,23 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     }
 
     if (shouldDecodeInWorker) {
+      if (isCurrentDecodeCancelled) {
+        return createEmptyDecodeResult(decodeSourceValue);
+      }
+
       return hasFreshWorkerDecodeResult && workerDecodeState.result
         ? workerDecodeState.result
         : createEmptyDecodeResult(decodeSourceValue);
     }
 
     return deepDecodeScheme(decodeSourceValue);
-  }, [decodeSourceValue, hasFreshWorkerDecodeResult, shouldDecodeInWorker, workerDecodeState.result]);
+  }, [decodeSourceValue, hasFreshWorkerDecodeResult, isCurrentDecodeCancelled, shouldDecodeInWorker, workerDecodeState.result]);
+
+  useEffect(() => {
+    if (cancelledDecodeSource && cancelledDecodeSource !== decodeSourceValue) {
+      setCancelledDecodeSource('');
+    }
+  }, [cancelledDecodeSource, decodeSourceValue]);
 
   useEffect(() => {
     if (!decodeSourceValue || !shouldDecodeInWorker) {
@@ -319,13 +342,29 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       return;
     }
 
+    if (isCurrentDecodeCancelled) {
+      setWorkerDecodeState(current => (
+        current.source === decodeSourceValue && !current.result && !current.metadata
+          ? current
+          : { source: decodeSourceValue, result: null, metadata: null }
+      ));
+      return;
+    }
+
     let isCancelled = false;
+    const requestId = workerDecodeRequestIdRef.current + 1;
+    workerDecodeRequestIdRef.current = requestId;
     const worker = new Worker(new URL('../workers/schemeDecode.worker.ts', import.meta.url), { type: 'module' });
+    currentWorkerRef.current?.terminate();
+    currentWorkerRef.current = worker;
     setWorkerDecodeState({ source: decodeSourceValue, result: null, metadata: null });
 
     worker.onmessage = (event: MessageEvent<SchemeDecodeWorkerResponse>) => {
       worker.terminate();
-      if (isCancelled) return;
+      if (currentWorkerRef.current === worker) {
+        currentWorkerRef.current = null;
+      }
+      if (isCancelled || requestId !== workerDecodeRequestIdRef.current) return;
 
       if (event.data.error || !event.data.result) {
         console.warn('大 Response Scheme 解码 Worker 处理失败:', event.data.error);
@@ -346,7 +385,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     };
     worker.onerror = (event) => {
       worker.terminate();
-      if (isCancelled) return;
+      if (currentWorkerRef.current === worker) {
+        currentWorkerRef.current = null;
+      }
+      if (isCancelled || requestId !== workerDecodeRequestIdRef.current) return;
 
       console.warn('大 Response Scheme 解码 Worker 运行失败:', event.message);
       const fallbackResult = deepDecodeScheme(decodeSourceValue);
@@ -360,9 +402,23 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
     return () => {
       isCancelled = true;
+      if (currentWorkerRef.current === worker) {
+        currentWorkerRef.current = null;
+      }
       worker.terminate();
     };
-  }, [decodeSourceValue, shouldDecodeInWorker]);
+  }, [decodeSourceValue, isCurrentDecodeCancelled, shouldDecodeInWorker]);
+
+  const handleCancelDecode = () => {
+    if (!canCancelDecode) return;
+
+    currentWorkerRef.current?.terminate();
+    currentWorkerRef.current = null;
+    workerDecodeRequestIdRef.current += 1;
+    setCancelledDecodeSource(decodeSourceValue);
+    setWorkerDecodeState({ source: decodeSourceValue, result: null, metadata: null });
+    toast.success('已取消解析', { duration: 1600 });
+  };
 
   // 初始化编辑内容
   useEffect(() => {
@@ -609,6 +665,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     </div>
   ) : null;
   const decodeStatusText = (() => {
+    if (isCurrentDecodeCancelled) return '已取消解析';
     if (isDecodePending) return '解析中...';
     if (decodeResult.layers.length > 0) return `${decodeResult.layers.length} 层解码`;
     return actualValue ? '无需解码' : '请输入待解码内容';
@@ -617,10 +674,20 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   // 底部操作栏
   const footer = (
     <div className="flex w-full flex-wrap items-center justify-between gap-2">
-      <div className="shrink-0 text-xs text-gray-500">
+      <div data-tour="scheme-decode-status" className="shrink-0 text-xs text-gray-500">
         {decodeStatusText}
       </div>
       <div data-tour="scheme-footer-actions" className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+        {canCancelDecode && (
+          <button
+            data-tour="scheme-cancel-decode"
+            onClick={handleCancelDecode}
+            className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-amber-700/80 text-white rounded hover:bg-amber-700 transition-colors"
+            title="停止当前大内容解析"
+          >
+            取消解析
+          </button>
+        )}
         <button
           onClick={onClose}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm text-gray-400 hover:text-white transition-colors"
