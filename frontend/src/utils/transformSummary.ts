@@ -990,11 +990,14 @@ const buildTransformReportCoverage = (
   if (summary.placeholderCount > 0) {
     return {
       score,
-      label: `解析覆盖 ${score}%`,
+      label: summary.recordCount > 0
+        ? `结构解析完成 · 占位符 ${summary.placeholderCount}`
+        : `运行时占位符 ${summary.placeholderCount}`,
       level: 'info',
-      description: `结构解析已完成，但仍有 ${summary.placeholderCount} 个运行时占位符需要服务端或客户端运行时替换。`,
+      description: `已展开当前可解析结构，但仍有 ${summary.placeholderCount} 个运行时占位符需要服务端或客户端替换。`,
       items: [
-        '占位符不是解析失败，可复制来源路径回到原始字段排查',
+        '占位符不是解析失败，可筛选占位符查看待替换字段',
+        '复制来源路径可回到原始 CMD/Scheme 字段排查',
       ],
     };
   }
