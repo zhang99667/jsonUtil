@@ -982,7 +982,7 @@ const matchesReportRecord = (
   (record.hasCmdStructure ? includesQuery(CMD_STRUCTURE_SEARCH_TEXT, normalizedQuery) : false) ||
   (record.nestedCommandFieldCount > 0 ? includesQuery(NESTED_CMD_SEARCH_TEXT, normalizedQuery) : false) ||
   (record.nestedCommandSearchFields
-    ? record.nestedCommandSearchFields.some(row => matchesDecodedPath(row, normalizedQuery))
+    ? record.nestedCommandSearchFields.some(row => matchesNestedCommandField(row, normalizedQuery))
     : false) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
@@ -1002,6 +1002,16 @@ const matchesDecodedPath = (
   includesQuery(row.preview, normalizedQuery)
 );
 
+const matchesNestedCommandField = (
+  row: TransformReportDecodedPath,
+  normalizedQuery: string
+): boolean => (
+  includesQuery(row.path, normalizedQuery) ||
+  (!row.preview.startsWith('对象:') &&
+    !row.preview.startsWith('数组 ') &&
+    includesQuery(row.preview, normalizedQuery))
+);
+
 const buildFilteredRecordView = (
   record: TransformReportRecord,
   normalizedQuery: string
@@ -1012,7 +1022,7 @@ const buildFilteredRecordView = (
     matchesDecodedPath(row, normalizedQuery)
   )) || [];
   const matchedNestedCommandFields = record.nestedCommandSearchFields?.filter(row => (
-    matchesDecodedPath(row, normalizedQuery)
+    matchesNestedCommandField(row, normalizedQuery)
   )) || [];
   if (matchedDecodedPaths.length === 0 && matchedNestedCommandFields.length === 0) return record;
   const cmdStructureFocusRows = matchedNestedCommandFields.length > 0

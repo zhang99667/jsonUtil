@@ -61,7 +61,20 @@ const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const CMD_FIELD_NAMES = new Set([
   'cmd',
+  'action_cmd',
+  'actioncmd',
+  'actioncommand',
+  'action-command',
+  'command',
+  'cmd_param',
+  'cmd_params',
+  'command_param',
+  'command_params',
   'scheme',
+  'schema_url',
+  'schemaurl',
+  'scheme_url',
+  'schemeurl',
   'convert_cmd',
   'panel_cmd',
   'webpanel_cmd',
@@ -69,6 +82,10 @@ const CMD_FIELD_NAMES = new Set([
   'reward_cmd',
   'strong_guide_cmd',
   'button_cmd',
+  'convert_btn',
+  'main_btn',
+  'bottom_left_btn',
+  'bottom_right_btn',
   'button_scheme',
   'bottom_button_scheme',
   'panel_scheme',
@@ -91,6 +108,7 @@ const URL_FIELD_NAMES = new Set([
   'deeplink',
   'jump_url',
   'landing_url',
+  'landing_page_url',
   'h5_url',
   'page_url',
   'web_url',
@@ -104,7 +122,11 @@ const URL_FIELD_NAMES = new Set([
   'deeplink_url',
   'deep_link_url',
   'callback_url',
+  'callback',
   'open_url',
+  'ad_monitor_url',
+  'monitor_url',
+  'click_url',
   'weburl',
   'appUrl',
   'webUrl',
@@ -234,11 +256,13 @@ const collectSchemeInsightFieldsInner = (
 
   Object.entries(value).forEach(([key, item]) => {
     const childPath = appendJsonPathKey(currentPath, key);
+    const isObjectItem = Boolean(item) && typeof item === 'object';
+    if (isObjectItem && isCommandInsightField(key)) {
+      commandFields.push(key);
+      commandFieldRows.push(createInsightFieldRow(key, childPath, item));
+    }
+
     if (isPlainObject(item)) {
-      if (isCommandInsightField(key)) {
-        commandFields.push(key);
-        commandFieldRows.push(createInsightFieldRow(key, childPath, item));
-      }
       if (EXT_FIELD_NAMES.has(key)) {
         extFields.push(key);
       }
@@ -247,7 +271,7 @@ const collectSchemeInsightFieldsInner = (
       }
     }
 
-    if (item && typeof item === 'object') {
+    if (isObjectItem) {
       collectSchemeInsightFieldsInner(item, childPath, commandFields, commandFieldRows, extFields, base64SuffixFields);
     }
   });
