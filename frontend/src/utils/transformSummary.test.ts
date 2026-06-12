@@ -134,6 +134,17 @@ describe('transformSummary', () => {
     expect(cmdStructureReportText).toContain('CMD 结构: 1 条');
     expect(cmdStructureReportText).toContain('路径: $.cmd');
     expect(cmdStructureReportText).toContain('"cmdParams"');
+    expect(cmdStructureReportText).toContain('聚焦复制: 已按筛选命中的 1 个内部路径裁剪 cmdParams');
+    expect(JSON.parse(getTransformRecordCmdStructureCopyText(decodedPathView.cmdStructureRecords[0]))).toEqual({
+      result: {
+        cmdParams: {
+          cmd: {
+            nid: 123,
+          },
+        },
+        source: `cmd=${cmdPayload}&from=feed`,
+      },
+    });
     expect(formatTransformCmdStructureReportText(report, base64View, 'base64')).toBe('');
     const cmdStructureView = buildTransformReportView(report, 'CMD结构');
     expect(cmdStructureView.records.map(record => record.path)).toEqual(['$.cmd']);
@@ -356,6 +367,58 @@ describe('transformSummary', () => {
       },
     });
     expect(focusedAppUrlCmdStructure.result.cmdParams.reward.stay_cmd.cmdParams).not.toHaveProperty('convert_btn');
+    const categoryView = buildTransformReportView(report, 'category');
+    expect(categoryView.filteredNestedCommandFieldCount).toBe(record.nestedCommandFieldCount);
+    expect(categoryView.cmdStructureRecords[0].cmdStructureFocusLabel).toBe('内部路径');
+    expect(formatTransformCmdStructureReportText(
+      report,
+      categoryView,
+      'category'
+    )).toContain('聚焦复制: 已按筛选命中的 2 个内部路径裁剪 cmdParams');
+    const focusedCategoryCmdStructure = JSON.parse(
+      getTransformRecordCmdStructureCopyText(categoryView.cmdStructureRecords[0])
+    );
+    expect(focusedCategoryCmdStructure.result.cmdParams.video_info.tail_frame).not.toHaveProperty('bottom_button_scheme');
+    expect(focusedCategoryCmdStructure.result.cmdParams.video_info.tail_frame.panel_scheme).toMatchObject({
+      cmdParams: {
+        panel_cmd: {
+          cmdParams: {
+            params: {
+              appUrl: {
+                cmdParams: {
+                  params: {
+                    category: 'jump',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const focusedPanelAppUrlParams = focusedCategoryCmdStructure.result
+      .cmdParams.video_info.tail_frame.panel_scheme
+      .cmdParams.panel_cmd.cmdParams.params.appUrl
+      .cmdParams.params;
+    expect(focusedPanelAppUrlParams).not.toHaveProperty('url');
+    expect(focusedCategoryCmdStructure.result.cmdParams.reward.stay_cmd).toMatchObject({
+      cmdParams: {
+        convert_cmd: {
+          cmdParams: {
+            params: {
+              appUrl: {
+                cmdParams: {
+                  params: {
+                    category: 'jump',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(focusedCategoryCmdStructure.result.cmdParams.reward.stay_cmd.cmdParams).not.toHaveProperty('convert_btn');
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(record))).toMatchObject({
       result: {
         cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
