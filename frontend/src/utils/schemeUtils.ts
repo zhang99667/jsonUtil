@@ -36,12 +36,23 @@ export interface SchemePlaceholderGroup {
   paths: string[];     // 出现路径
 }
 
+export interface SchemeDecodeWarning {
+  type: 'json_string_decode_skipped'; // JSON response 内部字符串递归展开被性能护栏跳过
+  message: string;                    // 面向用户的说明
+  skippedCount: number;               // 跳过的字符串数量
+  decodedStringCount: number;         // 已尝试展开的字符串数量
+  totalStringLength: number;          // 已计入预算的字符串总长度
+  limit: number;                      // 累计字符串预算
+  paths: string[];                    // 部分跳过路径
+}
+
 export interface SchemeDecodeResult {
   original: string;           // 原始字符串
   decoded: string;            // 最终解码结果
   layers: DecodeLayer[];      // 解码层级
   isJson: boolean;            // 最终结果是否为有效 JSON
   placeholders?: SchemePlaceholder[]; // 运行时占位符
+  warnings?: SchemeDecodeWarning[]; // 解析过程中的性能护栏提示
   schemeInfo?: {              // Scheme 信息（如果是 URL）
     protocol: string;         // 协议，如 "https:", "myapp:"
     host?: string;            // 主机
@@ -62,6 +73,15 @@ type StructuredValue =
 
 type QueryKeySegment = string | number | null;
 type QueryParamContainer = { [key: string]: StructuredValue };
+
+interface DecodeStructuredState {
+  maxStringDecodeLength: number;
+  maxTotalStringDecodeLength: number;
+  totalStringDecodeLength: number;
+  decodedStringCount: number;
+  skippedStringCount: number;
+  skippedPaths: string[];
+}
 
 const COMMON_CMD_PARAM_NAMES = new Set([
   'cmd',
@@ -163,6 +183,9 @@ const LINE_QUERY_DELIMITER_RE = new RegExp(`\\r?\\n[ \\t]*(?=${QUERY_KEY_PATTERN
 const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 const BARE_HOST_URL_BASE = 'https://';
 export const DEFAULT_SCHEME_DECODE_MAX_DEPTH = 15;
+export const DEFAULT_SCHEME_JSON_STRING_DECODE_LIMIT = 256_000;
+export const DEFAULT_SCHEME_JSON_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
+const DEFAULT_SCHEME_JSON_SKIPPED_PATH_LIMIT = 8;
 
 const normalizeJsonEscapedSlashes = (source: string): string => (
   source.replace(/\\\//g, '/')
@@ -920,21 +943,78 @@ const tryParseJsonStringPayload = (value: string): string | null => {
   }
 };
 
-const decodeStructuredValue = (value: StructuredValue, maxDepth: number): StructuredValue => {
+const createDecodeStructuredState = (): DecodeStructuredState => ({
+  maxStringDecodeLength: DEFAULT_SCHEME_JSON_STRING_DECODE_LIMIT,
+  maxTotalStringDecodeLength: DEFAULT_SCHEME_JSON_TOTAL_STRING_DECODE_LIMIT,
+  totalStringDecodeLength: 0,
+  decodedStringCount: 0,
+  skippedStringCount: 0,
+  skippedPaths: [],
+});
+
+const markStructuredStringSkipped = (state: DecodeStructuredState, path: string) => {
+  state.skippedStringCount += 1;
+  if (state.skippedPaths.length < DEFAULT_SCHEME_JSON_SKIPPED_PATH_LIMIT) {
+    state.skippedPaths.push(path);
+  }
+};
+
+const shouldSkipStructuredStringDecode = (
+  value: string,
+  path: string,
+  state?: DecodeStructuredState
+): boolean => {
+  if (!state) return false;
+
+  if (
+    value.length > state.maxStringDecodeLength ||
+    state.totalStringDecodeLength + value.length > state.maxTotalStringDecodeLength
+  ) {
+    markStructuredStringSkipped(state, path);
+    return true;
+  }
+
+  state.totalStringDecodeLength += value.length;
+  state.decodedStringCount += 1;
+  return false;
+};
+
+const buildDecodeStructuredWarnings = (state: DecodeStructuredState): SchemeDecodeWarning[] | undefined => (
+  state.skippedStringCount > 0
+    ? [{
+        type: 'json_string_decode_skipped',
+        message: '部分 JSON 字符串因性能保护未递归展开，可复制对应字段单独解析',
+        skippedCount: state.skippedStringCount,
+        decodedStringCount: state.decodedStringCount,
+        totalStringLength: state.totalStringDecodeLength,
+        limit: state.maxTotalStringDecodeLength,
+        paths: state.skippedPaths,
+      }]
+    : undefined
+);
+
+const decodeStructuredValue = (
+  value: StructuredValue,
+  maxDepth: number,
+  state?: DecodeStructuredState,
+  path: string = '$'
+): StructuredValue => {
   if (maxDepth <= 0) return value;
 
   if (typeof value === 'string') {
+    if (detectSchemeType(value) === 'plain') return value;
+    if (shouldSkipStructuredStringDecode(value, path, state)) return value;
     return decodeNestedParamValue(value, maxDepth - 1);
   }
 
   if (Array.isArray(value)) {
-    return value.map(item => decodeStructuredValue(item, maxDepth));
+    return value.map((item, index) => decodeStructuredValue(item, maxDepth, state, `${path}[${index}]`));
   }
 
   if (value && typeof value === 'object') {
     const result: { [key: string]: StructuredValue } = {};
     for (const [key, item] of Object.entries(value)) {
-      result[key] = decodeStructuredValue(item, maxDepth);
+      result[key] = decodeStructuredValue(item, maxDepth, state, `${path}${formatPlaceholderPathSegment(key)}`);
     }
     return result;
   }
@@ -1213,6 +1293,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
   let depth = 0;
   let schemeInfo: SchemeDecodeResult['schemeInfo'];
   let placeholders: SchemePlaceholder[] = [];
+  let warnings: SchemeDecodeWarning[] | undefined;
 
   while (depth < maxDepth) {
     const jsonStringPayload = tryParseJsonStringPayload(current);
@@ -1345,9 +1426,11 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
     try {
       const parsed = JSON.parse(current) as StructuredValue;
       // 独立 Scheme 面板也可能直接粘贴整段 response，这里复用参数递归解析能力展开内部 CMD/Scheme。
-      const decodedParsed = decodeStructuredValue(parsed, maxDepth);
+      const structuredState = createDecodeStructuredState();
+      const decodedParsed = decodeStructuredValue(parsed, maxDepth, structuredState);
       finalDecoded = JSON.stringify(decodedParsed, null, 2);
       placeholders = collectRuntimePlaceholders(decodedParsed);
+      warnings = buildDecodeStructuredWarnings(structuredState);
     } catch {
       // 保持原样
     }
@@ -1365,6 +1448,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
     layers,
     isJson,
     placeholders,
+    warnings,
     schemeInfo,
   };
 }

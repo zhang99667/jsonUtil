@@ -13,6 +13,7 @@ import {
   decodeJwt,
   parseUrl,
   deepDecodeScheme,
+  DEFAULT_SCHEME_JSON_STRING_DECODE_LIMIT,
   encodeWithLayers,
   isQueryStringFormat,
   isDecodableQueryString,
@@ -478,6 +479,29 @@ describe('deepDecodeScheme', () => {
     const result = deepDecodeScheme('hello world');
     expect(result.decoded).toBe('hello world');
     expect(result.layers.length).toBe(0);
+  });
+
+  it('整段 JSON response 内超长结构化字符串会被性能护栏跳过', () => {
+    const oversizedUrl = `url=${encodeURIComponent(`https://example.com/landing?payload=${'x'.repeat(DEFAULT_SCHEME_JSON_STRING_DECODE_LIMIT)}`)}`;
+    const response = JSON.stringify({
+      data: {
+        huge_cmd: oversizedUrl,
+        small_cmd: 'cmd=%7B%22ok%22%3Atrue%7D',
+      },
+    });
+
+    const result = deepDecodeScheme(response);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed.data.huge_cmd).toBe(oversizedUrl);
+    expect(parsed.data.small_cmd).toEqual({ cmd: { ok: true } });
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        type: 'json_string_decode_skipped',
+        skippedCount: 1,
+        paths: ['$.data.huge_cmd'],
+      }),
+    ]);
   });
 
   it('短 JSON Base64 被解码', () => {
