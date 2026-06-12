@@ -568,6 +568,29 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('内部 Base64 后缀混入 JSON 残片时不污染 query 参数', () => {
+    const suffixPayload = [
+      '&os=2',
+      '&ip=127.0.0.1',
+      '&akey=NzYzNDEwMjM=","fmid":"1174813457063265406","trigger_word":"自动定向"',
+    ].join('');
+    const suffix = `UxM${btoa(String.fromCharCode(...new TextEncoder().encode(suffixPayload)))}`;
+    const encoded = `AFD8f${base64Encode('{"meg_name":"AI","flag":true}')}${suffix}`;
+    const result = deepDecodeScheme(encoded);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(result.isJson).toBe(true);
+    expect(parsed).toMatchObject({
+      _base64_suffix_decode_prefix: 'UxM',
+      _base64_suffix_decoded: {
+        os: '2',
+        ip: '127.0.0.1',
+        akey: 'NzYzNDEwMjM=',
+      },
+    });
+    expect(parsed._base64_suffix_decoded).not.toHaveProperty('fmid');
+  });
+
   it('URL 被解析', () => {
     const result = deepDecodeScheme('https://example.com/path?key=value');
     expect(result.schemeInfo).toBeDefined();

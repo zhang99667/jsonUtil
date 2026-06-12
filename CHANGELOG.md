@@ -27,6 +27,7 @@
 - **CMD/Scheme 内部 Base64 片段解析**: 支持只读解析带内部头的 Base64 JSON 片段，提升真实广告 response 中 extraParam 等扩展字段的可读性
 - **CMD/Scheme 内部 Base64 后缀保留**: 带内部头的 Base64 JSON 片段如果在 padding 后继续拼接后缀，会在解析结果中展示 `_base64_prefix` / `_base64_suffix`，避免真实 extraParam 后缀信息被隐藏
 - **CMD/Scheme 内部 Base64 后缀解析**: 内部 Base64 JSON 片段的后缀如果还能解出参数串，会额外展示 `_base64_suffix_decoded`，方便直接查看真实 response 中拼接的 os/ip/ua 等请求上下文
+- **CMD/Scheme 内部 Base64 后缀降噪**: 真实 extraParam 后缀 query 后继续拼接 JSON 残片时，会避免把残片污染到 `_base64_suffix_decoded` 参数值里，保留更干净的 os/ip/akey 等上下文
 - **CMD/Scheme 前导分隔符兼容**: 支持解析 `&cmd=...`、`?&cmd=...` 等日志拼接常见形态，避免前导 `&` 导致整段 CMD 漏解析
 - **CMD/Scheme 协议相对 URL 解析**: 支持识别和展开 `//m.baidu.com/path?...` 这类协议相对 URL，嵌套在 CMD 参数中也会继续解析内部 query
 - **CMD/Scheme 裸域名 URL 解析**: 支持识别和展开 `m.baidu.com/path?...` 这类省略协议的 URL，嵌套在常见 URL 字段中也会继续解析内部 query
