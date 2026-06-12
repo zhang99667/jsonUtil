@@ -321,10 +321,27 @@ describe('transformSummary', () => {
     const report = buildTransformContextReport(result.context);
 
     expect(report.nestedCommandFieldCount).toBe(1);
+    expect(report.records[0].commandSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
     expect(report.records[0].insights).toEqual([
       'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
       'cmd解析: panel_scheme',
       'ext解析: ad_extra_param, ext_info',
+    ]);
+    expect(report.topCommandSchemas).toEqual([
+      {
+        schema: 'nadcorevendor://vendor/ad/rewardImpl',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme'],
+        hasMorePaths: false,
+      },
+      {
+        schema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.tail_frame.panel_scheme'],
+        hasMorePaths: false,
+      },
     ]);
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(report.records[0]))).toMatchObject({
       result: {
@@ -347,6 +364,10 @@ describe('transformSummary', () => {
         },
       },
     });
+    expect(formatTransformContextReportText(result.context)).toContain('CMD Schema 分布:');
+    expect(formatTransformContextReportText(result.context)).toContain(
+      '- nadcorevendor://vendor/ad/rewardImpl ×1（来源记录 1）'
+    );
     expect(formatTransformContextReportText(result.context)).toContain(
       '解析线索: cmdSchema: nadcorevendor://vendor/ad/rewardImpl；cmd解析: panel_scheme；ext解析: ad_extra_param, ext_info'
     );
