@@ -21,6 +21,7 @@ import {
   encodeWithLayers,
   hasUrlEncoding,
   isRuntimePlaceholder,
+  urlDecode,
 } from './schemeUtils.ts';
 import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
@@ -633,7 +634,7 @@ export function deepParseWithContext(
 
           // 当 autoExpandScheme 启用时，尝试 URL 解码
           if (options?.autoExpandScheme && hasUrlEncoding(current)) {
-            const decoded = decodeURIComponent(current);
+            const decoded = urlDecode(current);
             if (decoded !== current) {
               unresolvedCandidate = unresolvedCandidate || {
                 detectedType: 'url-encoded',
@@ -642,6 +643,11 @@ export function deepParseWithContext(
               steps.push({ type: 'url_decode' });
               current = decoded;
               changed = true;
+            } else {
+              unresolvedCandidate = unresolvedCandidate || {
+                detectedType: 'url-encoded',
+                message: 'URL 编码内容解码失败，未展开为结构化对象',
+              };
             }
           }
 

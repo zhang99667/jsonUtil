@@ -799,6 +799,33 @@ describe('deepParseWithContext', () => {
     ]);
   });
 
+  it('异常 URL 编码不会中断深度解析并记录线索', () => {
+    const rawValue = 'raw=%E0%A4%A';
+    const input = JSON.stringify({
+      tracking: rawValue,
+      normal: true,
+    });
+
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed).toEqual({
+      tracking: rawValue,
+      normal: true,
+    });
+    expect(result.context.records.has('$.tracking')).toBe(false);
+    expect(result.context.unresolvedCandidates).toEqual([
+      {
+        path: '$.tracking',
+        originalValue: rawValue,
+        message: 'URL 编码内容解码失败，未展开为结构化对象',
+        length: rawValue.length,
+        preview: rawValue,
+        detectedType: 'url-encoded',
+      },
+    ]);
+  });
+
   it('未启用自动展开时保留 CMD 参数串', () => {
     const input = JSON.stringify({
       action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',

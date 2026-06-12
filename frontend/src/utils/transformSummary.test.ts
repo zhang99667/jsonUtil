@@ -895,6 +895,30 @@ describe('transformSummary', () => {
     expect(buildTransformReportView(report, '普通埋点参数').filteredUnresolvedCount).toBe(1);
   });
 
+  it('展示 URL 编码解码失败线索', () => {
+    const rawValue = 'raw=%E0%A4%A';
+    const result = deepParseWithContext(JSON.stringify({
+      tracking: rawValue,
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.unresolvedCandidates).toEqual([
+      {
+        path: '$.tracking',
+        originalValue: rawValue,
+        message: 'URL 编码内容解码失败，未展开为结构化对象',
+        length: rawValue.length,
+        preview: rawValue,
+        detectedType: 'url-encoded',
+        reasonLabel: 'URL 编码解码失败',
+        reasonLevel: 'warning',
+        nextAction: '检查该字段是否包含半截 UTF-8、孤立百分号或被日志截断的编码片段；可复制原始值单独确认来源。',
+      },
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain('原因: URL 编码解码失败');
+    expect(formatTransformContextReportText(result.context)).toContain('下一步: 检查该字段是否包含半截 UTF-8');
+  });
+
   it('展示运行时占位符路径和来源', () => {
     const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
       button_cmd: '__CONVERT_CMD__',
