@@ -1551,6 +1551,9 @@ export const formatTransformCmdStructureReportText = (
     if (record.insights.length > 0) {
       lines.push(`解析线索: ${record.insights.join('；')}`);
     }
+    if (record.isNestedCommandFieldFiltered) {
+      lines.push(`聚焦复制: 已按筛选命中的 ${record.indexedNestedCommandFieldCount} 个内部 CMD 字段裁剪 cmdParams`);
+    }
     if (record.nestedCommandFieldCount > 0) {
       lines.push(`内部CMD字段: ${record.nestedCommandFieldCount}`);
       record.nestedCommandFields.forEach(row => {
