@@ -47,6 +47,12 @@ export interface CmdHandlerCompatibleResult {
   };
 }
 
+export interface CmdHandlerCommandSchemaRow {
+  schema: string;
+  path: string;
+  source: string;
+}
+
 type SourceShape =
   | string
   | number
@@ -524,6 +530,53 @@ const wrapNestedCmdHandlerParams = (
   });
 
   return result;
+};
+
+const collectNestedCommandSchemaRowsInner = (
+  value: unknown,
+  sourceShape: SourceShape | null,
+  currentPath: string,
+  rows: CmdHandlerCommandSchemaRow[]
+) => {
+  if (Array.isArray(value)) {
+    const sourceItems = Array.isArray(sourceShape) ? sourceShape : [];
+    value.forEach((item, index) => {
+      collectNestedCommandSchemaRowsInner(item, sourceItems[index] ?? null, `${currentPath}[${index}]`, rows);
+    });
+    return;
+  }
+
+  if (!isPlainObject(value)) return;
+
+  Object.entries(value).forEach(([key, item]) => {
+    const childPath = appendJsonPathKey(currentPath, key);
+    const childSource = getSourceObjectChild(sourceShape, key);
+    const childSourceShape = typeof childSource === 'string'
+      ? parseSourceShape(childSource)
+      : childSource ?? null;
+    const commandSourceInfo = isCommandInsightField(key) && isPlainObject(item)
+      ? getCommandSourceInfo(childSource)
+      : null;
+
+    if (commandSourceInfo?.cmdSchema) {
+      rows.push({
+        schema: commandSourceInfo.cmdSchema,
+        path: childPath,
+        source: commandSourceInfo.source,
+      });
+    }
+
+    collectNestedCommandSchemaRowsInner(item, childSourceShape, childPath, rows);
+  });
+};
+
+export const collectCmdHandlerCommandSchemaRows = (
+  decodedValue: unknown,
+  source?: string
+): CmdHandlerCommandSchemaRow[] => {
+  const rows: CmdHandlerCommandSchemaRow[] = [];
+  collectNestedCommandSchemaRowsInner(decodedValue, parseSourceShape(source?.trim()), '$', rows);
+  return rows;
 };
 
 const getCommandSchemaFromInfo = (

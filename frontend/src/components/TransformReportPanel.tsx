@@ -425,6 +425,27 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   </div>
                 )}
               </div>
+              {Boolean(report.topCommandSchemas?.length) && (
+                <div data-tour="transform-report-top-command-schemas" className="mt-2 text-xs">
+                  <div className="mb-1 text-gray-500">CMD Schema 分布</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.topCommandSchemas?.map(group => (
+                      <button
+                        key={group.schema}
+                        type="button"
+                        onClick={() => setQuery(group.schema)}
+                        className="max-w-full rounded border border-emerald-800/50 bg-emerald-950/25 px-2 py-0.5 text-emerald-100 transition-colors hover:bg-emerald-900/45"
+                        title={`${group.schema} 出现 ${group.count} 次，覆盖 ${group.recordCount} 条展开记录。示例路径：${group.paths.join('；')}`}
+                      >
+                        <span className="inline-block max-w-[220px] truncate align-bottom font-mono">
+                          {group.schema}
+                        </span>
+                        <span className="ml-1 text-emerald-300/80">×{group.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {Boolean(report.topNestedCommandFields?.length) && (
                 <div data-tour="transform-report-top-nested-cmd-fields" className="mt-2 text-xs">
                   <div className="mb-1 text-gray-500">内部CMD字段分布</div>
