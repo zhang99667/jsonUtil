@@ -11,6 +11,7 @@ import {
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
   getTransformDecodedPathCopyText,
+  getTransformPathValueCopyRows,
   getTransformRecordCmdStructureCopyText,
 } from '../utils/transformSummary';
 import type { TransformReportRecord } from '../utils/transformSummary';
@@ -105,7 +106,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   ), [report, deferredQuery]);
   const hasPathValueCopyItems = useMemo(() => (
     Boolean(reportView?.records.some(record => (
-      (record.decodedSearchPaths?.length || record.decodedPaths.length) > 0
+      getTransformPathValueCopyRows(record).length > 0
     )))
   ), [reportView]);
   const hasCmdStructureCopyItems = useMemo(() => (
