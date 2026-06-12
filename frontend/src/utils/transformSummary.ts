@@ -629,6 +629,14 @@ const classifyUnresolvedCandidate = (
   candidate: Pick<TransformReportUnresolvedCandidate, 'detectedType' | 'message'>
 ): Pick<TransformReportUnresolvedCandidate, 'reasonLabel' | 'reasonLevel' | 'nextAction'> => {
   if (candidate.detectedType === 'url-encoded') {
+    if (candidate.message.includes('解码失败')) {
+      return {
+        reasonLabel: 'URL 编码解码失败',
+        reasonLevel: 'warning',
+        nextAction: '检查该字段是否包含半截 UTF-8、孤立百分号或被日志截断的编码片段；可复制原始值单独确认来源。',
+      };
+    }
+
     return {
       reasonLabel: '已解码但未结构化',
       reasonLevel: 'info',
