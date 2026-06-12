@@ -4,6 +4,7 @@ import {
   extractBase64MetaInfo,
   formatBase64MetaDisplayValue,
   formatCmdHandlerCompatibleResult,
+  getSchemeInsightFieldCopyText,
 } from './schemeMetadata';
 
 describe('schemeMetadata', () => {
@@ -76,7 +77,11 @@ describe('schemeMetadata', () => {
           key: 'panel_scheme',
           path: '$.video_info.tail_frame.panel_scheme',
           preview: '对象: ext_info',
-          copyText: '$.video_info.tail_frame.panel_scheme = {"ext_info":{"user_id":"u1"}}',
+          value: {
+            ext_info: {
+              user_id: 'u1',
+            },
+          },
         },
       ],
       commandFieldCount: 1,
@@ -85,6 +90,10 @@ describe('schemeMetadata', () => {
       base64SuffixFields: [],
       base64SuffixFieldCount: 0,
     });
+    const info = extractSchemeCommandSummaryInfo(decoded, true);
+    expect(info?.commandFieldRows[0] ? getSchemeInsightFieldCopyText(info.commandFieldRows[0]) : '').toBe(
+      '$.video_info.tail_frame.panel_scheme = {"ext_info":{"user_id":"u1"}}'
+    );
   });
 
   it('提取 Base64 后缀解析线索', () => {

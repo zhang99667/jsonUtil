@@ -298,8 +298,18 @@ describe('transformSummary', () => {
     expect(record.nestedCommandFields[0]).toEqual({
       path: '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.bottom_button_scheme',
       preview: '对象: task_params',
-      copyText: '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.bottom_button_scheme = {"task_params":{"task_id":"602","ext_policy":{"sdk_switch":"1"}}}',
+      value: {
+        task_params: {
+          task_id: '602',
+          ext_policy: {
+            sdk_switch: '1',
+          },
+        },
+      },
     });
+    expect(getTransformDecodedPathCopyText(record.nestedCommandFields[0])).toBe(
+      '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.bottom_button_scheme = {"task_params":{"task_id":"602","ext_policy":{"sdk_switch":"1"}}}'
+    );
     expect(record.nestedCommandFields.map(row => row.path)).toContain(
       '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl'
     );

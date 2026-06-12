@@ -29,7 +29,8 @@ export interface SchemeInsightFieldRow {
   key: string;
   path: string;
   preview: string;
-  copyText: string;
+  copyText?: string;
+  value?: unknown;
 }
 
 export interface SchemeCommandSummaryInfo extends SchemeInsightFields {
@@ -195,8 +196,19 @@ const createInsightFieldRow = (
   key,
   path,
   preview: formatInsightFieldPreview(value),
-  copyText: `${path} = ${formatInsightFieldCopyText(value)}`,
+  value,
 });
+
+export const getSchemeInsightFieldCopyText = (
+  row: SchemeInsightFieldRow
+): string => {
+  if (row.copyText !== undefined) return row.copyText;
+
+  const value = Object.prototype.hasOwnProperty.call(row, 'value')
+    ? row.value
+    : row.preview;
+  return `${row.path} = ${formatInsightFieldCopyText(value)}`;
+};
 
 const collectSchemeInsightFieldsInner = (
   value: unknown,

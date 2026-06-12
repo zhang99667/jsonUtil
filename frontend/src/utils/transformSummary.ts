@@ -10,6 +10,7 @@ import {
   collectSchemeInsightFields,
   formatSchemeInsightItems,
   formatCmdHandlerCompatibleResult,
+  getSchemeInsightFieldCopyText,
   getSchemeCommandSchemaFromUrl,
 } from './schemeMetadata';
 
@@ -580,10 +581,18 @@ const buildRecordInsightData = (
     .slice(0, DEFAULT_NESTED_COMMAND_FIELD_SEARCH_LIMIT)
     .map(row => {
       const path = joinJsonPath(record.path, row.path);
+      if (Object.prototype.hasOwnProperty.call(row, 'value')) {
+        return {
+          path,
+          preview: row.preview,
+          value: row.value as JsonValue,
+        };
+      }
+
       return {
         path,
         preview: row.preview,
-        copyText: row.copyText.replace(row.path, path),
+        copyText: getSchemeInsightFieldCopyText(row).replace(row.path, path),
       };
     });
 
