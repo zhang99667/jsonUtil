@@ -110,6 +110,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const hasCmdStructureCopyItems = useMemo(() => (
     Boolean(reportView && reportView.filteredCmdStructureCount > 0)
   ), [reportView]);
+  const hasFocusedCmdStructureCopyItems = useMemo(() => (
+    Boolean(reportView?.cmdStructureRecords.some(record => record.isNestedCommandFieldFiltered))
+  ), [reportView]);
 
   const handleCopyReport = async () => {
     if (!context) return;
@@ -158,7 +161,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       if (!cmdStructureCopyText) return;
 
       await copyText(cmdStructureCopyText);
-      toast.success('已复制 CMD 结构列表', { duration: 2000 });
+      toast.success(hasFocusedCmdStructureCopyItems ? '已复制聚焦 CMD 结构列表' : '已复制 CMD 结构列表', { duration: 2000 });
     } catch (error) {
       console.warn('复制深度解析 CMD 结构列表失败:', error);
       toast.error('复制失败', { duration: 2000 });
@@ -213,7 +216,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       if (!cmdStructureCopyText) return;
 
       await copyText(cmdStructureCopyText);
-      toast.success('已复制 CMD 结构', { duration: 1600 });
+      toast.success(record.isNestedCommandFieldFiltered ? '已复制聚焦 CMD 结构' : '已复制 CMD 结构', { duration: 1600 });
     } catch (error) {
       console.warn('复制深度解析 CMD 结构失败:', error);
       toast.error('复制失败', { duration: 2000 });
@@ -268,7 +271,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
             className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="复制当前展示的 cmdHandler 风格 CMD 结构"
           >
-            复制 CMD 结构
+            {hasFocusedCmdStructureCopyItems ? '复制聚焦 CMD' : '复制 CMD 结构'}
           </button>
         )}
         <button
@@ -494,9 +497,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             data-tour="transform-report-copy-cmd-structure"
                             onClick={() => handleCopyCmdStructure(record)}
                             className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            title="复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构"
+                            title={record.isNestedCommandFieldFiltered
+                              ? '复制按当前筛选命中的内部 CMD 字段裁剪后的 cmdParams'
+                              : '复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构'}
                           >
-                            复制 CMD 结构
+                            {record.isNestedCommandFieldFiltered ? '复制聚焦 CMD' : '复制 CMD 结构'}
                           </button>
                         )}
                         {onLocatePath && (
@@ -536,6 +541,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           title="该展开结果内部包含的 CMD/Scheme 字段数量"
                         >
                           内部CMD字段 {record.nestedCommandFieldCount}
+                        </span>
+                      )}
+                      {record.isNestedCommandFieldFiltered && (
+                        <span
+                          className="bg-emerald-950/40 text-emerald-200 border border-emerald-800/60 px-2 py-0.5 rounded"
+                          title="复制 CMD 结构时会只保留当前筛选命中的内部 CMD 字段"
+                        >
+                          聚焦复制
                         </span>
                       )}
                     </div>

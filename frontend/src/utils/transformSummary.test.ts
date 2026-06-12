@@ -315,6 +315,11 @@ describe('transformSummary', () => {
       report,
       appUrlView,
       'appUrl'
+    )).toContain('聚焦复制: 已按筛选命中的 4 个内部 CMD 字段裁剪 cmdParams');
+    expect(formatTransformCmdStructureReportText(
+      report,
+      appUrlView,
+      'appUrl'
     )).toContain('内部CMD字段路径: $.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl = 对象: params');
     const focusedAppUrlCmdStructure = JSON.parse(
       getTransformRecordCmdStructureCopyText(appUrlView.cmdStructureRecords[0])
