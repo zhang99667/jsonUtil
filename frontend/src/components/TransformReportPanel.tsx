@@ -46,6 +46,8 @@ const formatDecodedPathCount = (record: TransformReportRecord): string => (
   record.isDecodedPathCountTruncated ? `${record.decodedPathCount}+` : String(record.decodedPathCount)
 );
 
+const COMMAND_SCHEMA_ROW_DISPLAY_LIMIT = 8;
+
 interface SummaryMetricChipProps {
   label: string;
   count: number;
@@ -626,6 +628,61 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             {insight}
                           </span>
                         ))}
+                      </div>
+                    )}
+                    {record.commandSchemaRows?.length && (
+                      <div data-tour="transform-report-command-schema-rows" className="mt-1.5 flex flex-col gap-1">
+                        <div className="text-gray-500">
+                          CMD Schema路径 · 显示 {Math.min(record.commandSchemaRows.length, COMMAND_SCHEMA_ROW_DISPLAY_LIMIT)}/{record.commandSchemaRows.length} 条
+                        </div>
+                        {record.commandSchemaRows.slice(0, COMMAND_SCHEMA_ROW_DISPLAY_LIMIT).map(row => (
+                          <div
+                            key={`${record.path}:cmd-schema:${row.path}:${row.schema}`}
+                            data-tour="transform-report-command-schema-row"
+                            className="flex items-center justify-between gap-2 rounded bg-emerald-950/20 px-2 py-1"
+                          >
+                            <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                              <span className="min-w-0 flex-1 text-emerald-200 truncate" title={row.path}>
+                                {row.path}
+                              </span>
+                              <span className="shrink-0 text-gray-500">=</span>
+                              <span className="min-w-0 flex-1 text-teal-200 truncate" title={row.schema}>
+                                {row.schema}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-command-schema-path"
+                              onClick={() => handleCopyPath(row.path)}
+                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            >
+                              复制路径
+                            </button>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-command-schema-row"
+                              onClick={() => handleCopyDecodedPathValue(`${row.path} = ${JSON.stringify(row.schema)}`)}
+                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            >
+                              复制片段
+                            </button>
+                            {onLocatePath && (
+                              <button
+                                type="button"
+                                data-tour="transform-report-locate-command-schema-path"
+                                onClick={() => handleLocatePath(row.path)}
+                                className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              >
+                                定位
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {record.commandSchemaRows.length > COMMAND_SCHEMA_ROW_DISPLAY_LIMIT && (
+                          <div className="text-gray-500">
+                            还有更多 CMD Schema 路径未展示，可搜索 schema 或来源展示隐藏项
+                          </div>
+                        )}
                       </div>
                     )}
                     {record.nestedCommandFields.length > 0 && (
