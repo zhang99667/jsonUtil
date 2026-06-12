@@ -290,7 +290,9 @@ describe('transformSummary', () => {
     );
     expect(report.nestedCommandFieldCount).toBe(record.nestedCommandFieldCount);
     expect(buildTransformReportView(report, '内部CMD字段').records.map(item => item.path)).toEqual([record.path]);
-    expect(buildTransformReportView(report, 'appUrl').records[0].nestedCommandFields.map(row => row.path)).toEqual([
+    const appUrlView = buildTransformReportView(report, 'appUrl');
+    expect(appUrlView.filteredNestedCommandFieldCount).toBe(4);
+    expect(appUrlView.records[0].nestedCommandFields.map(row => row.path)).toEqual([
       '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl',
       '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.url',
       '$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.appUrl',
@@ -306,7 +308,12 @@ describe('transformSummary', () => {
     )).toContain('内部CMD字段: ');
     expect(formatTransformCmdStructureReportText(
       report,
-      buildTransformReportView(report, 'appUrl'),
+      appUrlView,
+      'appUrl'
+    )).toContain('内部CMD字段: 4');
+    expect(formatTransformCmdStructureReportText(
+      report,
+      appUrlView,
       'appUrl'
     )).toContain('内部CMD字段路径: $.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl = 对象: params');
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(record))).toMatchObject({
@@ -768,7 +775,7 @@ describe('transformSummary', () => {
   });
 
   it('占位符筛选先匹配结构化字段并保留长原文兜底', () => {
-    const longSourceValue = `${'x'.repeat(8_000)}&tail_token=source_tail_needle`;
+    const longSourceValue = `${'x'.repeat(8_000)}&panel_cmd=hidden&tail_token=source_tail_needle`;
     const report: TransformContextReport = {
       summary: {
         recordCount: 0,
@@ -812,6 +819,7 @@ describe('transformSummary', () => {
 
     expect(buildTransformReportView(report, '__CONVERT_CMD__').filteredPlaceholderCount).toBe(1);
     expect(buildTransformReportView(report, 'buttonParam').filteredPlaceholderCount).toBe(1);
+    expect(buildTransformReportView(report, 'panel_cmd').filteredPlaceholderCount).toBe(0);
     expect(buildTransformReportView(report, 'source_tail_needle').filteredPlaceholderCount).toBe(1);
   });
 

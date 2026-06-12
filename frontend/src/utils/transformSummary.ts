@@ -837,6 +837,7 @@ const buildFilteredRecordView = (
       ? {
           nestedCommandSearchFields: matchedNestedCommandFields,
           nestedCommandFields: matchedNestedCommandFields.slice(0, DEFAULT_NESTED_COMMAND_FIELD_LIMIT),
+          nestedCommandFieldCount: matchedNestedCommandFields.length,
           indexedNestedCommandFieldCount: matchedNestedCommandFields.length,
           hasMoreNestedCommandFields: matchedNestedCommandFields.length > DEFAULT_NESTED_COMMAND_FIELD_LIMIT,
         }
@@ -885,7 +886,15 @@ const matchesRuntimePlaceholder = (
   includesQuery(PLACEHOLDER_SEARCH_TEXT, normalizedQuery) ||
   includesQuery(placeholder.value, normalizedQuery) ||
   includesQuery(placeholder.description, normalizedQuery) ||
-  (placeholder.sourceOriginalValue ? includesQuery(placeholder.sourceOriginalValue, normalizedQuery) : false)
+  (placeholder.sourceOriginalValue && shouldSearchRuntimePlaceholderSource(normalizedQuery)
+    ? includesQuery(placeholder.sourceOriginalValue, normalizedQuery)
+    : false)
+);
+
+// 短字段名扫整段原始 CMD 会把同源占位符全部带出；仅对长片段或明显编码/URL 片段兜底。
+const shouldSearchRuntimePlaceholderSource = (normalizedQuery: string): boolean => (
+  normalizedQuery.length >= 12 ||
+  /[%=&?/:#{}[\]"'\\.]/.test(normalizedQuery)
 );
 
 const buildRuntimePlaceholderGroups = (
@@ -1251,16 +1260,17 @@ export const buildTransformReportView = (
   const filteredPlaceholders = report.runtimePlaceholders.filter(
     placeholder => matchesRuntimePlaceholder(placeholder, normalizedQuery)
   );
-  const filteredCmdStructureRecords = filteredRecords.filter(record => record.hasCmdStructure);
+  const filteredRecordViews = filteredRecords.map(record => (
+    buildFilteredRecordView(record, normalizedQuery)
+  ));
+  const filteredCmdStructureRecords = filteredRecordViews.filter(record => record.hasCmdStructure);
   const filteredCmdStructureCount = filteredCmdStructureRecords.length;
-  const filteredNestedCommandFieldCount = filteredRecords.reduce((count, record) => (
-    count + record.nestedCommandFieldCount
+  const filteredNestedCommandFieldCount = filteredRecordViews.reduce((count, record) => (
+    count + record.indexedNestedCommandFieldCount
   ), 0);
 
   return {
-    records: filteredRecords.map(record => (
-      buildFilteredRecordView(record, normalizedQuery)
-    )).slice(0, recordLimit),
+    records: filteredRecordViews.slice(0, recordLimit),
     cmdStructureRecords: filteredCmdStructureRecords.slice(0, cmdStructureLimit),
     warnings: filteredWarnings.slice(0, warningLimit),
     unresolvedCandidates: filteredUnresolved.slice(0, unresolvedLimit),
