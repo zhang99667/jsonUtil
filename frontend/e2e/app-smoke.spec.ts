@@ -241,6 +241,15 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('raw=%7B%22nid%22%3A123%7D');
 
+  await reportPanel.locator('[data-tour="transform-report-copy-issue-samples"]').click();
+  await expect(page.getByText('已复制问题样本')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('未展开线索');
+  const issueSamples = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(issueSamples).toContain('$.tracking');
+  expect(issueSamples).toContain('已解码但未结构化');
+  expect(issueSamples).toContain('raw=%7B%22nid%22%3A123%7D');
+
   await unresolvedSection.locator('[data-tour="transform-report-open-unresolved-scheme"]').click();
   await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
   await expect(reportPanel).toBeHidden();
