@@ -20,6 +20,8 @@ import {
   formatCmdHandlerCompatibleResult,
 } from '../utils/schemeMetadata';
 
+const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
+
 interface SchemeViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,6 +50,24 @@ interface SchemeParamSection {
   title: string;
   params: SchemeParams;
 }
+
+interface SchemeDecodeWorkerResponse {
+  id: number;
+  result?: SchemeDecodeResult;
+  error?: string;
+}
+
+interface SchemeDecodeWorkerState {
+  source: string;
+  result: SchemeDecodeResult | null;
+}
+
+const createEmptyDecodeResult = (original = ''): SchemeDecodeResult => ({
+  original,
+  decoded: '',
+  layers: [],
+  isJson: false,
+});
 
 const getParamCount = (params: SchemeParams): number => {
   if (!params) return 0;
@@ -218,6 +238,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
   // 独立模式下的输入值
   const [standaloneInput, setStandaloneInput] = useState<string>('');
+  const [workerDecodeState, setWorkerDecodeState] = useState<SchemeDecodeWorkerState>({
+    source: '',
+    result: null,
+  });
 
   // 二维码状态
   const [showQRCode, setShowQRCode] = useState(false);
@@ -229,7 +253,15 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const deferredActualValue = useDeferredValue(actualValue);
   // 大 response 粘贴后先保证输入响应，解析结果用低优先级值追赶。
   const decodeSourceValue = actualValue ? deferredActualValue : '';
-  const isDecodePending = Boolean(actualValue && deferredActualValue !== actualValue);
+  const shouldDecodeInWorker = decodeSourceValue.length >= ASYNC_SCHEME_DECODE_THRESHOLD;
+  const hasFreshWorkerDecodeResult = Boolean(
+    shouldDecodeInWorker &&
+    workerDecodeState.source === decodeSourceValue &&
+    workerDecodeState.result
+  );
+  const isDecodePending = Boolean(
+    actualValue && deferredActualValue !== actualValue
+  ) || (shouldDecodeInWorker && !hasFreshWorkerDecodeResult);
 
   // 自定义滚动条 Hook
   const {
@@ -244,15 +276,65 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   // 解析 scheme（添加空值保护）
   const decodeResult = useMemo<SchemeDecodeResult>(() => {
     if (!decodeSourceValue) {
-      return {
-        original: '',
-        decoded: '',
-        layers: [],
-        isJson: false,
-      };
+      return createEmptyDecodeResult();
     }
+
+    if (shouldDecodeInWorker) {
+      return hasFreshWorkerDecodeResult && workerDecodeState.result
+        ? workerDecodeState.result
+        : createEmptyDecodeResult(decodeSourceValue);
+    }
+
     return deepDecodeScheme(decodeSourceValue);
-  }, [decodeSourceValue]);
+  }, [decodeSourceValue, hasFreshWorkerDecodeResult, shouldDecodeInWorker, workerDecodeState.result]);
+
+  useEffect(() => {
+    if (!decodeSourceValue || !shouldDecodeInWorker) {
+      setWorkerDecodeState(current => (
+        current.source || current.result ? { source: '', result: null } : current
+      ));
+      return;
+    }
+
+    let isCancelled = false;
+    const worker = new Worker(new URL('../workers/schemeDecode.worker.ts', import.meta.url), { type: 'module' });
+    setWorkerDecodeState({ source: decodeSourceValue, result: null });
+
+    worker.onmessage = (event: MessageEvent<SchemeDecodeWorkerResponse>) => {
+      worker.terminate();
+      if (isCancelled) return;
+
+      if (event.data.error || !event.data.result) {
+        console.warn('大 Response Scheme 解码 Worker 处理失败:', event.data.error);
+        setWorkerDecodeState({
+          source: decodeSourceValue,
+          result: deepDecodeScheme(decodeSourceValue),
+        });
+        return;
+      }
+
+      setWorkerDecodeState({
+        source: decodeSourceValue,
+        result: event.data.result,
+      });
+    };
+    worker.onerror = (event) => {
+      worker.terminate();
+      if (isCancelled) return;
+
+      console.warn('大 Response Scheme 解码 Worker 运行失败:', event.message);
+      setWorkerDecodeState({
+        source: decodeSourceValue,
+        result: deepDecodeScheme(decodeSourceValue),
+      });
+    };
+    worker.postMessage({ id: 1, input: decodeSourceValue });
+
+    return () => {
+      isCancelled = true;
+      worker.terminate();
+    };
+  }, [decodeSourceValue, shouldDecodeInWorker]);
 
   // 初始化编辑内容
   useEffect(() => {
