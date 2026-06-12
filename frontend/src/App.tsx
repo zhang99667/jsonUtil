@@ -24,6 +24,7 @@ import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
 import { copyText, getClipboardErrorMessage } from './utils/clipboard';
+import { getDetailedErrorMessage, isAbortError } from './utils/errors';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
 import {
@@ -806,11 +807,11 @@ const App: React.FC = () => {
       }
       showSuccess("已保存预览结果");
     } catch (err) {
-      if ((err as Error).name === 'AbortError') {
+      if (isAbortError(err)) {
         return;
       }
       console.error('Failed to save preview:', err);
-      showError('保存预览结果失败');
+      showError(getDetailedErrorMessage(err, '保存预览结果失败'));
     }
   };
 
@@ -937,7 +938,7 @@ const App: React.FC = () => {
       showSuccess('Scheme 修改已应用');
     } catch (err) {
       console.error('Failed to apply scheme edit:', err);
-      showError('应用修改失败');
+      showError(getDetailedErrorMessage(err, '应用修改失败'));
     }
   }, [output, handleOutputChange]);
 

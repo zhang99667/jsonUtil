@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { FileTab, TransformMode } from '../types';
+import { getDetailedErrorMessage, isAbortError } from '../utils/errors';
 import { getTextFileOpenError, TEXT_FILE_ACCEPT_EXTENSIONS } from '../utils/fileGuards';
 import {
     buildWorkspaceDraftSnapshot,
@@ -157,7 +158,10 @@ export const useFileSystem = ({
                 });
             } catch (err) {
                 console.error('Failed to read file:', err);
-                toast.error(`读取文件「${entry.file.name || '未命名文件'}」失败`, { duration: 2000 });
+                toast.error(getDetailedErrorMessage(
+                    err,
+                    `读取文件「${entry.file.name || '未命名文件'}」失败`
+                ), { duration: 3000 });
             }
         }
 
@@ -220,7 +224,7 @@ export const useFileSystem = ({
                 ));
             } catch (err) {
                 console.error('Auto-save failed:', err);
-                toast.error('自动保存失败', { duration: 2000 });
+                toast.error(getDetailedErrorMessage(err, '自动保存失败'), { duration: 3000 });
             }
         }, 1000); // 防抖延迟 1s
 
@@ -289,10 +293,11 @@ export const useFileSystem = ({
 
             await openTextFileEntries(entries);
         } catch (err) {
-            if ((err as Error).name === 'AbortError') {
+            if (isAbortError(err)) {
                 return;
             }
             console.error('Failed to open file:', err);
+            toast.error(getDetailedErrorMessage(err, '打开文件失败'), { duration: 3000 });
         }
     };
 
@@ -359,11 +364,11 @@ export const useFileSystem = ({
             }
         } catch (err) {
             // 用户取消保存不应视为错误
-            if ((err as Error).name === 'AbortError') {
+            if (isAbortError(err)) {
                 return false;
             }
             console.error('Failed to save source as:', err);
-            toast.error('另存为失败', { duration: 2000 });
+            toast.error(getDetailedErrorMessage(err, '另存为失败'), { duration: 3000 });
             return false;
         }
     };
@@ -402,7 +407,7 @@ export const useFileSystem = ({
                 return true;
             } catch (err) {
                 console.error('Failed to save file:', err);
-                toast.error('保存文件失败，请重试', {
+                toast.error(getDetailedErrorMessage(err, '保存文件失败，请重试'), {
                     duration: 3000,
                 });
                 return false;
