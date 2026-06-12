@@ -48,6 +48,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Preload boundary check
+        run: npm run check:preloads
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 

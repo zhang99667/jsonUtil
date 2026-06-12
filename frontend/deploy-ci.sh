@@ -92,6 +92,7 @@ build_web() {
     export NODE_ENV="$NODE_ENV"
     
     npm run build
+    npm run check:preloads
     
     # 验证构建结果
     if [ -f "$DIST_DIR/index.html" ]; then

@@ -22,6 +22,9 @@ npm test
 log "Frontend: production build"
 npm run build
 
+log "Frontend: preload boundary check"
+npm run check:preloads
+
 log "Frontend: E2E smoke tests"
 PLAYWRIGHT_PREBUILT=1 npm run test:e2e
 
