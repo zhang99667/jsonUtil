@@ -1,3 +1,5 @@
+import { getErrorMessage } from './errors';
+
 /**
  * 复制文本到剪贴板。
  * 优先使用现代 Clipboard API，失败时回退到传统 textarea 方案，兼容部分 WebView/Electron 权限场景。
@@ -41,5 +43,5 @@ export const getClipboardErrorMessage = (
   error: unknown,
   fallbackMessage = '复制失败'
 ): string => (
-  error instanceof Error && error.message ? error.message : fallbackMessage
+  getErrorMessage(error, fallbackMessage)
 );

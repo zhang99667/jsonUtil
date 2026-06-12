@@ -1225,6 +1225,24 @@ test('取消打开文件不会输出失败日志', async ({ page }) => {
   expect(consoleMessages.filter(message => message.includes('File open') || message.includes('Failed to open file'))).toEqual([]);
 });
 
+test('打开文件句柄读取失败会展示具体原因', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(window, 'showOpenFilePicker', {
+      configurable: true,
+      value: async () => [{
+        name: 'blocked.json',
+        getFile: async () => {
+          throw new Error('文件权限已失效');
+        },
+      }],
+    });
+  });
+
+  await page.locator('[data-tour="open-file-button"]').click();
+
+  await expect(page.getByText('打开文件失败：文件权限已失效')).toBeVisible();
+});
+
 test('取消保存预览不会提示失败', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(window, 'showSaveFilePicker', {
