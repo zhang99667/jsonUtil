@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider, GeneralSettings } from '../types';
-import { testAIConnection } from '../services/aiService';
 
 interface UnifiedSettingsModalProps {
     isOpen: boolean;
@@ -161,6 +160,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         setAiTestResult(null);
 
         try {
+            const { testAIConnection } = await import('../services/aiService');
             await testAIConnection(localAIConfig);
             if (testVersion === aiConfigVersionRef.current) {
                 setAiTestResult({ type: 'success', message: '连接测试通过' });
