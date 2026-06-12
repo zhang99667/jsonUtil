@@ -334,6 +334,43 @@ describe('schemeMetadata', () => {
     });
   });
 
+  it('导出 CMD 结构时包装 schema 字段', () => {
+    const schemaSource = 'baiduboxapp://v1/browser/open?url=https%3A%2F%2Fexample.com%2Fpage%3Fid%3D1';
+    const decoded = JSON.stringify({
+      schema: {
+        url: {
+          id: '1',
+        },
+      },
+      from: 'feed',
+    });
+
+    expect(extractSchemeCommandSummaryInfo(decoded, true)?.commandFields).toContain('schema');
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      undefined,
+      `schema=${encodeURIComponent(schemaSource)}&from=feed`
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          schema: {
+            cmdSchema: 'baiduboxapp://v1/browser/open',
+            cmdParams: {
+              url: {
+                cmdSchema: 'https://example.com/page',
+                cmdParams: {
+                  id: '1',
+                },
+              },
+            },
+            source: schemaSource,
+          },
+          from: 'feed',
+        },
+      },
+    });
+  });
+
   it('整段 response 导出 CMD 结构时聚焦主入口 Scheme', () => {
     const landingUrl = 'https://example.com/landing?sku=101';
     const nestedPanel = `baiduboxapp://v1/panel?url=${encodeURIComponent(landingUrl)}`;

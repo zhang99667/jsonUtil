@@ -89,6 +89,7 @@ const CMD_FIELD_NAMES = new Set([
   'cmd_params',
   'command_param',
   'command_params',
+  'schema',
   'scheme',
   'schema_url',
   'schemaurl',
@@ -161,6 +162,7 @@ const EXT_FIELD_NAMES = new Set([
 const PRIMARY_COMMAND_FIELD_PRIORITIES = new Map<string, number>([
   ['scheme', 100],
   ['cmd', 100],
+  ['schema', 98],
   ['action_cmd', 96],
   ['actioncmd', 96],
   ['command', 94],
