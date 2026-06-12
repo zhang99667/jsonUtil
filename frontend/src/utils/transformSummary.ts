@@ -1005,7 +1005,15 @@ const buildFilteredRecordView = (
           indexedNestedCommandFieldCount: matchedNestedCommandFields.length,
           hasMoreNestedCommandFields: matchedNestedCommandFields.length > DEFAULT_NESTED_COMMAND_FIELD_LIMIT,
         }
-      : {}),
+      : matchedDecodedPaths.length > 0
+        ? {
+            nestedCommandSearchFields: [],
+            nestedCommandFields: [],
+            nestedCommandFieldCount: 0,
+            indexedNestedCommandFieldCount: 0,
+            hasMoreNestedCommandFields: false,
+          }
+        : {}),
     ...(record.hasCmdStructure && cmdStructureFocusRows.length > 0
       ? {
           cmdStructureFocusPaths: cmdStructureFocusRows.map(row => row.path),

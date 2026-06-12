@@ -129,12 +129,15 @@ describe('transformSummary', () => {
     expect(decodedPathView.records.map(record => record.path)).toEqual(['$.cmd']);
     expect(decodedPathView.filteredRecordCount).toBe(1);
     expect(decodedPathView.filteredCmdStructureCount).toBe(1);
+    expect(decodedPathView.filteredNestedCommandFieldCount).toBe(0);
+    expect(decodedPathView.records[0].nestedCommandFields).toEqual([]);
     const cmdStructureReportText = formatTransformCmdStructureReportText(report, decodedPathView, 'cmd.nid');
     expect(cmdStructureReportText).toContain('筛选: cmd.nid');
     expect(cmdStructureReportText).toContain('CMD 结构: 1 条');
     expect(cmdStructureReportText).toContain('路径: $.cmd');
     expect(cmdStructureReportText).toContain('"cmdParams"');
     expect(cmdStructureReportText).toContain('聚焦复制: 已按筛选命中的 1 个内部路径裁剪 cmdParams');
+    expect(cmdStructureReportText).not.toContain('内部CMD字段路径:');
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(decodedPathView.cmdStructureRecords[0]))).toEqual({
       result: {
         cmdParams: {
@@ -368,13 +371,16 @@ describe('transformSummary', () => {
     });
     expect(focusedAppUrlCmdStructure.result.cmdParams.reward.stay_cmd.cmdParams).not.toHaveProperty('convert_btn');
     const categoryView = buildTransformReportView(report, 'category');
-    expect(categoryView.filteredNestedCommandFieldCount).toBe(record.nestedCommandFieldCount);
+    expect(categoryView.filteredNestedCommandFieldCount).toBe(0);
+    expect(categoryView.records[0].nestedCommandFields).toEqual([]);
     expect(categoryView.cmdStructureRecords[0].cmdStructureFocusLabel).toBe('内部路径');
-    expect(formatTransformCmdStructureReportText(
+    const categoryCmdStructureReportText = formatTransformCmdStructureReportText(
       report,
       categoryView,
       'category'
-    )).toContain('聚焦复制: 已按筛选命中的 2 个内部路径裁剪 cmdParams');
+    );
+    expect(categoryCmdStructureReportText).toContain('聚焦复制: 已按筛选命中的 2 个内部路径裁剪 cmdParams');
+    expect(categoryCmdStructureReportText).not.toContain('内部CMD字段路径:');
     const focusedCategoryCmdStructure = JSON.parse(
       getTransformRecordCmdStructureCopyText(categoryView.cmdStructureRecords[0])
     );
