@@ -1088,6 +1088,13 @@ describe('transformSummary', () => {
     expect(formatTransformContextSummary(result.context)).toBe(
       '深度解析: 展开 1 处，Scheme 1 (CMD 1)，占位符 1'
     );
+    expect(report.coverage).toMatchObject({
+      score: 100,
+      label: '结构解析完成 · 占位符 1',
+      level: 'info',
+      description: '已展开当前可解析结构，但仍有 1 个运行时占位符需要服务端或客户端替换。',
+    });
+    expect(report.coverage.items).toContain('占位符不是解析失败，可筛选占位符查看待替换字段');
     expect(report.runtimePlaceholders).toEqual([
       {
         path: '$.action_cmd.cmd.button_cmd',
@@ -1114,6 +1121,7 @@ describe('transformSummary', () => {
         ],
       },
     ]);
+    expect(formatTransformContextReportText(result.context)).toContain('结构解析完成 · 占位符 1');
     expect(formatTransformContextReportText(result.context)).toContain('运行时占位符汇总:');
     expect(formatTransformContextReportText(result.context)).toContain('- __CONVERT_CMD__ ×1:');
     expect(formatTransformContextReportText(result.context)).toContain('运行时占位符明细:');
@@ -1247,10 +1255,13 @@ describe('transformSummary', () => {
       summaryText: '深度解析: 展开 0 处，占位符 1',
       coverage: {
         score: 100,
-        label: '解析覆盖 100%',
+        label: '运行时占位符 1',
         level: 'info',
-        description: '结构解析已完成，但仍有 1 个运行时占位符需要服务端或客户端运行时替换。',
-        items: [],
+        description: '已展开当前可解析结构，但仍有 1 个运行时占位符需要服务端或客户端替换。',
+        items: [
+          '占位符不是解析失败，可筛选占位符查看待替换字段',
+          '复制来源路径可回到原始 CMD/Scheme 字段排查',
+        ],
       },
       cmdStructureCount: 0,
       nestedCommandFieldCount: 0,
