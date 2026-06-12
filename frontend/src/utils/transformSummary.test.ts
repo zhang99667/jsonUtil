@@ -615,6 +615,34 @@ describe('transformSummary', () => {
     );
   });
 
+  it('内部路径搜索索引覆盖真实大对象后段字段', () => {
+    const widePayload = {
+      ...Object.fromEntries(
+        Array.from({ length: 260 }, (_, index) => [`k${index}`, index])
+      ),
+      target_after_search_limit: 'needle_after_search_limit',
+    };
+    const result = deepParseWithContext(JSON.stringify({
+      payload: JSON.stringify(widePayload),
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.records[0].decodedPaths).toHaveLength(12);
+    expect(report.records[0].decodedPaths.some(row => row.path.includes('target_after_search_limit'))).toBe(false);
+    expect(report.records[0].decodedPathCount).toBe(261);
+    expect(report.records[0].indexedDecodedPathCount).toBe(261);
+
+    const hiddenPathView = buildTransformReportView(report, 'target_after_search_limit');
+    expect(hiddenPathView.records.map(record => record.path)).toEqual(['$.payload']);
+    expect(hiddenPathView.records[0].decodedPaths).toEqual([
+      {
+        path: '$.payload.target_after_search_limit',
+        preview: 'needle_after_search_limit',
+        copyText: '$.payload.target_after_search_limit = "needle_after_search_limit"',
+      },
+    ]);
+  });
+
   it('报告展示 k/v 形态字段的业务标签并支持筛选', () => {
     const result = deepParseWithContext(JSON.stringify({
       extra: [
