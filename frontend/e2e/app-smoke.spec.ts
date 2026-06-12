@@ -915,6 +915,9 @@ test('Scheme 面板整段 Response 超长字段展示性能保护提示', async 
   await expect(warnings).toContainText('性能保护');
   await expect(warnings).toContainText('跳过 1');
   await expect(warnings).toContainText('$.data.huge_cmd');
+  const commandSummary = page.locator('[data-tour="scheme-command-summary"]');
+  await expect(commandSummary).toContainText('CMD 结构');
+  await expect(commandSummary).toContainText('small_cmd');
   await page.getByRole('button', { name: '复制解码结果' }).click();
   const decodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
   expect(decodedResult).toContain('"ok": true');

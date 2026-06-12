@@ -184,6 +184,37 @@ describe('schemeMetadata', () => {
     expect(info?.commandFieldCount).toBe(8);
   });
 
+  it('可提取不带详情行的轻量 CMD 摘要', () => {
+    const decoded = JSON.stringify({
+      panel: {
+        panel_cmd: {
+          params: {
+            appUrl: {
+              params: {
+                url: {
+                  sku: '101',
+                },
+              },
+            },
+          },
+        },
+      },
+      common_info: {
+        callbackUrl: {
+          clickId: '__CLICK_ID__',
+        },
+      },
+    });
+
+    const info = extractSchemeCommandSummaryInfo(decoded, true, undefined, {
+      includeCommandFieldRows: false,
+    });
+
+    expect(info?.commandFields).toEqual(['panel_cmd', 'appUrl', 'url', 'callbackUrl']);
+    expect(info?.commandFieldCount).toBe(4);
+    expect(info?.commandFieldRows).toEqual([]);
+  });
+
   it('提取 Base64 后缀解析线索', () => {
     const decoded = JSON.stringify({
       meg_name: 'AI',

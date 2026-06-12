@@ -18,6 +18,8 @@ import {
   formatSchemeInsightItems,
   formatBase64MetaDisplayValue,
   formatCmdHandlerCompatibleResult,
+  type Base64MetaInfo,
+  type SchemeCommandSummaryInfo,
 } from '../utils/schemeMetadata';
 
 const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
@@ -54,12 +56,19 @@ interface SchemeParamSection {
 interface SchemeDecodeWorkerResponse {
   id: number;
   result?: SchemeDecodeResult;
+  metadata?: SchemeDecodeWorkerMetadata;
   error?: string;
+}
+
+interface SchemeDecodeWorkerMetadata {
+  base64MetaInfo: Base64MetaInfo | null;
+  commandSummaryInfo: SchemeCommandSummaryInfo | null;
 }
 
 interface SchemeDecodeWorkerState {
   source: string;
   result: SchemeDecodeResult | null;
+  metadata: SchemeDecodeWorkerMetadata | null;
 }
 
 const createEmptyDecodeResult = (original = ''): SchemeDecodeResult => ({
@@ -67,6 +76,16 @@ const createEmptyDecodeResult = (original = ''): SchemeDecodeResult => ({
   decoded: '',
   layers: [],
   isJson: false,
+});
+
+const buildSchemePanelMetadata = (result: SchemeDecodeResult): SchemeDecodeWorkerMetadata => ({
+  base64MetaInfo: extractBase64MetaInfo(result.decoded, result.isJson),
+  commandSummaryInfo: extractSchemeCommandSummaryInfo(
+    result.decoded,
+    result.isJson,
+    result.schemeInfo,
+    { includeCommandFieldRows: false }
+  ),
 });
 
 const getParamCount = (params: SchemeParams): number => {
@@ -241,6 +260,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const [workerDecodeState, setWorkerDecodeState] = useState<SchemeDecodeWorkerState>({
     source: '',
     result: null,
+    metadata: null,
   });
 
   // 二维码状态
@@ -259,6 +279,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     workerDecodeState.source === decodeSourceValue &&
     workerDecodeState.result
   );
+  const freshWorkerDecodeMetadata = hasFreshWorkerDecodeResult
+    ? workerDecodeState.metadata
+    : null;
   const isDecodePending = Boolean(
     actualValue && deferredActualValue !== actualValue
   ) || (shouldDecodeInWorker && !hasFreshWorkerDecodeResult);
@@ -291,14 +314,14 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   useEffect(() => {
     if (!decodeSourceValue || !shouldDecodeInWorker) {
       setWorkerDecodeState(current => (
-        current.source || current.result ? { source: '', result: null } : current
+        current.source || current.result || current.metadata ? { source: '', result: null, metadata: null } : current
       ));
       return;
     }
 
     let isCancelled = false;
     const worker = new Worker(new URL('../workers/schemeDecode.worker.ts', import.meta.url), { type: 'module' });
-    setWorkerDecodeState({ source: decodeSourceValue, result: null });
+    setWorkerDecodeState({ source: decodeSourceValue, result: null, metadata: null });
 
     worker.onmessage = (event: MessageEvent<SchemeDecodeWorkerResponse>) => {
       worker.terminate();
@@ -306,9 +329,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
       if (event.data.error || !event.data.result) {
         console.warn('大 Response Scheme 解码 Worker 处理失败:', event.data.error);
+        const fallbackResult = deepDecodeScheme(decodeSourceValue);
         setWorkerDecodeState({
           source: decodeSourceValue,
-          result: deepDecodeScheme(decodeSourceValue),
+          result: fallbackResult,
+          metadata: buildSchemePanelMetadata(fallbackResult),
         });
         return;
       }
@@ -316,6 +341,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       setWorkerDecodeState({
         source: decodeSourceValue,
         result: event.data.result,
+        metadata: event.data.metadata || buildSchemePanelMetadata(event.data.result),
       });
     };
     worker.onerror = (event) => {
@@ -323,9 +349,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       if (isCancelled) return;
 
       console.warn('大 Response Scheme 解码 Worker 运行失败:', event.message);
+      const fallbackResult = deepDecodeScheme(decodeSourceValue);
       setWorkerDecodeState({
         source: decodeSourceValue,
-        result: deepDecodeScheme(decodeSourceValue),
+        result: fallbackResult,
+        metadata: buildSchemePanelMetadata(fallbackResult),
       });
     };
     worker.postMessage({ id: 1, input: decodeSourceValue });
@@ -499,15 +527,19 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     buildSchemePlaceholderGroups(placeholders)
   ), [placeholders]);
   const base64MetaInfo = useMemo(() => (
-    extractBase64MetaInfo(decodeResult.decoded, decodeResult.isJson)
-  ), [decodeResult.decoded, decodeResult.isJson]);
+    freshWorkerDecodeMetadata
+      ? freshWorkerDecodeMetadata.base64MetaInfo
+      : extractBase64MetaInfo(decodeResult.decoded, decodeResult.isJson)
+  ), [decodeResult.decoded, decodeResult.isJson, freshWorkerDecodeMetadata]);
   const commandSummaryInfo = useMemo(() => (
-    extractSchemeCommandSummaryInfo(
-      decodeResult.decoded,
-      decodeResult.isJson,
-      decodeResult.schemeInfo
-    )
-  ), [decodeResult.decoded, decodeResult.isJson, decodeResult.schemeInfo]);
+    freshWorkerDecodeMetadata
+      ? freshWorkerDecodeMetadata.commandSummaryInfo
+      : extractSchemeCommandSummaryInfo(
+          decodeResult.decoded,
+          decodeResult.isJson,
+          decodeResult.schemeInfo
+        )
+  ), [decodeResult.decoded, decodeResult.isJson, decodeResult.schemeInfo, freshWorkerDecodeMetadata]);
   const canCopyCmdHandlerCompatibleResult = Boolean(
     commandSummaryInfo && decodeResult.isJson && !isDecodePending && !editedJsonError
   );
