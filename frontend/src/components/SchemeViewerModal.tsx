@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useDeferredValue, useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { SimpleEditor } from './SimpleEditor';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
@@ -226,6 +226,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   
   // 实际使用的原始值：独立模式用输入值，否则用 prop 传入的值
   const actualValue = standalone ? standaloneInput : (value || '');
+  const deferredActualValue = useDeferredValue(actualValue);
+  // 大 response 粘贴后先保证输入响应，解析结果用低优先级值追赶。
+  const decodeSourceValue = actualValue ? deferredActualValue : '';
+  const isDecodePending = Boolean(actualValue && deferredActualValue !== actualValue);
 
   // 自定义滚动条 Hook
   const {
@@ -239,7 +243,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
   // 解析 scheme（添加空值保护）
   const decodeResult = useMemo<SchemeDecodeResult>(() => {
-    if (!actualValue) {
+    if (!decodeSourceValue) {
       return {
         original: '',
         decoded: '',
@@ -247,8 +251,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         isJson: false,
       };
     }
-    return deepDecodeScheme(actualValue);
-  }, [actualValue]);
+    return deepDecodeScheme(decodeSourceValue);
+  }, [decodeSourceValue]);
 
   // 初始化编辑内容
   useEffect(() => {
@@ -323,19 +327,19 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const hasNonReversibleLayer = useMemo(() => (
     decodeResult.layers.some(layer => layer.reversible === false)
   ), [decodeResult.layers]);
-  const canApplyEdit = Boolean(onApply && isEditing && !editedJsonError && !hasNonReversibleLayer);
+  const canApplyEdit = Boolean(onApply && isEditing && !isDecodePending && !editedJsonError && !hasNonReversibleLayer);
   const serializedContent = useMemo(() => {
-    if (!actualValue || !editedContent || editedJsonError || hasNonReversibleLayer || decodeResult.layers.length === 0) {
+    if (isDecodePending || !actualValue || !editedContent || editedJsonError || hasNonReversibleLayer || decodeResult.layers.length === 0) {
       return '';
     }
 
     return encodeWithLayers(editedContent, decodeResult.layers);
-  }, [actualValue, decodeResult.layers, editedContent, editedJsonError, hasNonReversibleLayer]);
+  }, [actualValue, decodeResult.layers, editedContent, editedJsonError, hasNonReversibleLayer, isDecodePending]);
   const decodedPathValueCopyText = useMemo(() => (
-    decodeResult.isJson && !editedJsonError
+    decodeResult.isJson && !isDecodePending && !editedJsonError
       ? formatSchemePathValuesForCopy(editedContent)
       : ''
-  ), [decodeResult.isJson, editedContent, editedJsonError]);
+  ), [decodeResult.isJson, editedContent, editedJsonError, isDecodePending]);
 
   const handleCopySerialized = async () => {
     if (!serializedContent) return;
@@ -387,8 +391,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
   // 获取二维码内容
   const qrCodeContent = useMemo(() => {
+    if (qrCodeType === 'decoded' && isDecodePending) return '';
     return qrCodeType === 'original' ? actualValue : editedContent;
-  }, [qrCodeType, actualValue, editedContent]);
+  }, [actualValue, editedContent, isDecodePending, qrCodeType]);
 
   // 检查内容是否适合生成二维码（不超过约2953字符）
   const isQRCodeValid = useMemo(() => {
@@ -423,10 +428,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     )
   ), [decodeResult.decoded, decodeResult.isJson, decodeResult.schemeInfo]);
   const cmdHandlerCompatibleCopyText = useMemo(() => (
-    commandSummaryInfo && decodeResult.isJson && !editedJsonError
+    commandSummaryInfo && decodeResult.isJson && !isDecodePending && !editedJsonError
       ? formatCmdHandlerCompatibleResult(editedContent, commandSummaryInfo.commandSchema, actualValue)
       : ''
-  ), [actualValue, commandSummaryInfo, decodeResult.isJson, editedContent, editedJsonError]);
+  ), [actualValue, commandSummaryInfo, decodeResult.isJson, editedContent, editedJsonError, isDecodePending]);
   const nestedCommandInsight = commandSummaryInfo
     ? formatSchemeInsightItems('cmd解析', commandSummaryInfo.commandFields)
     : undefined;
@@ -479,14 +484,17 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       </button>
     </div>
   ) : null;
+  const decodeStatusText = (() => {
+    if (isDecodePending) return '解析中...';
+    if (decodeResult.layers.length > 0) return `${decodeResult.layers.length} 层解码`;
+    return actualValue ? '无需解码' : '请输入待解码内容';
+  })();
 
   // 底部操作栏
   const footer = (
     <div className="flex w-full flex-wrap items-center justify-between gap-2">
       <div className="shrink-0 text-xs text-gray-500">
-        {decodeResult.layers.length > 0
-          ? `${decodeResult.layers.length} 层解码`
-          : actualValue ? '无需解码' : '请输入待解码内容'}
+        {decodeStatusText}
       </div>
       <div data-tour="scheme-footer-actions" className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
         <button
@@ -522,7 +530,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         </button>
         <button
           onClick={handleCopy}
-          disabled={!editedContent}
+          disabled={!editedContent || isDecodePending}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
