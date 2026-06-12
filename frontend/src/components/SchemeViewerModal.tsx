@@ -17,7 +17,7 @@ import {
   extractSchemeCommandSummaryInfo,
   formatSchemeInsightItems,
   formatBase64MetaDisplayValue,
-  formatCmdHandlerCompatibleResult,
+  formatPrimaryCmdHandlerCompatibleResult,
   type Base64MetaInfo,
   type SchemeCommandSummaryInfo,
 } from '../utils/schemeMetadata';
@@ -562,7 +562,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopyCmdHandlerCompatibleResult = async () => {
     if (!canCopyCmdHandlerCompatibleResult) return;
 
-    const cmdHandlerCompatibleCopyText = formatCmdHandlerCompatibleResult(
+    const cmdHandlerCompatibleCopyText = formatPrimaryCmdHandlerCompatibleResult(
       editedContent,
       commandSummaryInfo?.commandSchema,
       actualValue

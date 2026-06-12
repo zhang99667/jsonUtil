@@ -57,6 +57,15 @@ interface SchemeInsightCollectOptions {
   includeCommandFieldRows?: boolean;
 }
 
+interface PrimaryCommandCandidate {
+  decodedValue: unknown;
+  source: string;
+  commandSchema?: string;
+  priority: number;
+  depth: number;
+  order: number;
+}
+
 type SourceShape =
   | string
   | number
@@ -148,6 +157,30 @@ const EXT_FIELD_NAMES = new Set([
   'extInfo',
   'ext_info',
   'adFlag',
+]);
+const PRIMARY_COMMAND_FIELD_PRIORITIES = new Map<string, number>([
+  ['scheme', 100],
+  ['cmd', 100],
+  ['action_cmd', 96],
+  ['actioncmd', 96],
+  ['command', 94],
+  ['convert_cmd', 92],
+  ['panel_cmd', 90],
+  ['webpanel_cmd', 90],
+  ['panel_scheme', 88],
+  ['stay_cmd', 86],
+  ['reward_cmd', 86],
+  ['strong_guide_cmd', 86],
+  ['button_scheme', 82],
+  ['bottom_button_scheme', 82],
+  ['button_cmd', 78],
+  ['callbackUrl', 40],
+  ['callback_url', 40],
+  ['url', 30],
+  ['page_url', 28],
+  ['lp_real_url', 28],
+  ['click_url', 24],
+  ['video_url', 10],
 ]);
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
@@ -523,6 +556,94 @@ const getCommandSourceInfo = (
   return null;
 };
 
+const tryParseRawJsonSource = (source?: string): unknown | null => {
+  const trimmed = source?.trim();
+  if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) return null;
+
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    return null;
+  }
+};
+
+const getRawSourceChild = (source: unknown, key: string, index?: number): unknown => {
+  if (Array.isArray(source)) {
+    return index === undefined ? undefined : source[index];
+  }
+  return isPlainObject(source) ? source[key] : undefined;
+};
+
+const getPrimaryCommandFieldPriority = (key: string): number => {
+  const normalizedKey = key.trim();
+  const lowerKey = normalizedKey.toLowerCase();
+  return PRIMARY_COMMAND_FIELD_PRIORITIES.get(normalizedKey) ??
+    PRIMARY_COMMAND_FIELD_PRIORITIES.get(lowerKey) ??
+    (isCmdInsightField(key) ? 70 : isUrlInsightField(key) ? 20 : 0);
+};
+
+const collectPrimaryCommandCandidates = (
+  decodedValue: unknown,
+  rawSource: unknown,
+  candidates: PrimaryCommandCandidate[],
+  depth = 0,
+  orderRef = { value: 0 }
+) => {
+  if (Array.isArray(decodedValue)) {
+    decodedValue.forEach((item, index) => {
+      collectPrimaryCommandCandidates(
+        item,
+        getRawSourceChild(rawSource, String(index), index),
+        candidates,
+        depth + 1,
+        orderRef
+      );
+    });
+    return;
+  }
+
+  if (!isPlainObject(decodedValue)) return;
+
+  Object.entries(decodedValue).forEach(([key, item]) => {
+    const rawChild = getRawSourceChild(rawSource, key);
+    const commandSourceInfo = isPlainObject(item) && isCommandInsightField(key) && typeof rawChild === 'string'
+      ? getCommandSourceInfo(rawChild)
+      : null;
+
+    if (commandSourceInfo) {
+      candidates.push({
+        decodedValue: item,
+        source: commandSourceInfo.source,
+        ...(commandSourceInfo.cmdSchema ? { commandSchema: commandSourceInfo.cmdSchema } : {}),
+        priority: getPrimaryCommandFieldPriority(key),
+        depth,
+        order: orderRef.value,
+      });
+      orderRef.value += 1;
+    }
+
+    collectPrimaryCommandCandidates(item, rawChild, candidates, depth + 1, orderRef);
+  });
+};
+
+const findPrimaryCommandCandidate = (
+  cmdParams: unknown,
+  source?: string
+): PrimaryCommandCandidate | null => {
+  const rawSource = tryParseRawJsonSource(source);
+  if (!rawSource) return null;
+
+  const candidates: PrimaryCommandCandidate[] = [];
+  collectPrimaryCommandCandidates(cmdParams, rawSource, candidates);
+  if (candidates.length === 0) return null;
+
+  return candidates.sort((left, right) => (
+    right.priority - left.priority ||
+    left.depth - right.depth ||
+    left.order - right.order
+  ))[0];
+};
+
 const wrapNestedCmdHandlerParams = (
   value: unknown,
   sourceShape: SourceShape | null
@@ -750,6 +871,39 @@ export const formatCmdHandlerCompatibleResult = (
         ...(commandSchema ? { cmdSchema: commandSchema } : {}),
         cmdParams: wrapNestedCmdHandlerParams(cmdParams, sourceShape),
         ...(sourceValue ? { source: sourceValue } : {}),
+      },
+    };
+
+    return JSON.stringify(result, null, 2);
+  } catch {
+    return '';
+  }
+};
+
+export const formatPrimaryCmdHandlerCompatibleResult = (
+  decoded: string,
+  commandSchema?: string,
+  source?: string
+): string => {
+  try {
+    const cmdParams: unknown = JSON.parse(decoded);
+    if (commandSchema) {
+      return formatCmdHandlerCompatibleResult(decoded, commandSchema, source);
+    }
+
+    const primaryCommand = findPrimaryCommandCandidate(cmdParams, source);
+    if (!primaryCommand) {
+      return formatCmdHandlerCompatibleResult(decoded, commandSchema, source);
+    }
+
+    const result: CmdHandlerCompatibleResult = {
+      result: {
+        ...(primaryCommand.commandSchema ? { cmdSchema: primaryCommand.commandSchema } : {}),
+        cmdParams: wrapNestedCmdHandlerParams(
+          primaryCommand.decodedValue,
+          parseSourceShape(primaryCommand.source)
+        ),
+        source: primaryCommand.source,
       },
     };
 
