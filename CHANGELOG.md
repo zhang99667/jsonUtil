@@ -17,6 +17,8 @@
 - **Scheme 面板整段 Response E2E 覆盖**: 补充真实 response 抽取链路和超长字段性能保护的界面级回归，防止粘贴整段广告 response 的解析能力退化
 - **Scheme 面板大 Response 输入响应优化**: 独立 Scheme 面板解析改为低优先级追赶输入，粘贴或编辑大 response 时优先保证输入框响应，并避免解析未完成时复制旧结果
 - **Scheme 面板大 Response 解码 Worker 化**: 独立 Scheme 面板粘贴大 response 时将递归解码放入 Worker，减少真实广告 response 展开期间的主线程卡顿
+- **Scheme 面板复制文本懒生成**: 路径和值、cmdHandler 风格 CMD 结构改为点击复制时再生成，减少大 response 解析完成后的额外主线程计算
+- **真实 Response CMD 容器回归**: 补充脱敏真实 response 中 `cmd_policy`、`common_info`、`panel`、`callbackUrl` 链路回归，防止常见广告 CMD 容器和 callback 占位符解析退化
 - **CMD/Scheme 内部 Base64 片段解析**: 支持只读解析带内部头的 Base64 JSON 片段，提升真实广告 response 中 extraParam 等扩展字段的可读性
 - **CMD/Scheme 内部 Base64 后缀保留**: 带内部头的 Base64 JSON 片段如果在 padding 后继续拼接后缀，会在解析结果中展示 `_base64_prefix` / `_base64_suffix`，避免真实 extraParam 后缀信息被隐藏
 - **CMD/Scheme 内部 Base64 后缀解析**: 内部 Base64 JSON 片段的后缀如果还能解出参数串，会额外展示 `_base64_suffix_decoded`，方便直接查看真实 response 中拼接的 os/ip/ua 等请求上下文

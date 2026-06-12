@@ -372,6 +372,11 @@ describe('CMD/Scheme 真实样本回归', () => {
       ext: '__AD_EXTRA_PARAM_ENCODE_1__',
       nid: 'ad1_101',
     }))}`;
+    const monitorCallbackUrl = [
+      'https://callback.example.com/track?clickId=__CLICK_ID__',
+      'sign=__SIGN__',
+      'callbackUrl=__CALLBACK_URL__',
+    ].join('&');
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
       category: 'jump',
       des: 'm',
@@ -418,6 +423,14 @@ describe('CMD/Scheme 真实样本回归', () => {
       reward_cmd: rewardDialog,
       strong_guide_cmd: rewardDialog,
       task_policy: JSON.stringify({ ecpm: 'encoded', businessParams: 'encoded' }),
+    }))}&cmd_policy=${encodeURIComponent(JSON.stringify({
+      panel_cmd: deeplinkCmd,
+      callbackUrl: monitorCallbackUrl,
+    }))}&common_info=${encodeURIComponent(JSON.stringify({
+      callbackUrl: monitorCallbackUrl,
+    }))}&panel=${encodeURIComponent(JSON.stringify({
+      panel_cmd: deeplinkCmd,
+      webpanel_cmd: deeplinkCmd,
     }))}&rotation_component=${encodeURIComponent(JSON.stringify({
       click_event_cmd: '__CONVERT_CMD__',
       webpanel_event_cmd: '__WEBPANEL_CMD__',
@@ -483,6 +496,12 @@ describe('CMD/Scheme 真实样本回归', () => {
     const decodedExtra = parsed.data.video[0].extra[0].v;
     const report = buildTransformContextReport(context);
     const rootRecord = report.records.find(record => record.path.endsWith('.ad_common.scheme'));
+    const allCommandSchemas = report.records.flatMap(record => (
+      [
+        record.commandSchema,
+        ...(record.commandSchemaRows?.map(row => row.schema) || []),
+      ].filter((schema): schema is string => Boolean(schema))
+    ));
     const copiedCmdStructure = rootRecord?.getCmdStructureCopyText
       ? JSON.parse(rootRecord.getCmdStructureCopyText())
       : undefined;
@@ -508,6 +527,17 @@ describe('CMD/Scheme 真实样本回归', () => {
       },
     });
     expect(decodedScheme.reward.reward_cmd.bottom_right_btn.button_cmd.task_params.ext_policy.sdk_switch).toBe('1');
+    expect(decodedScheme.cmd_policy.panel_cmd.params.appUrl.params.url.to).toEqual({
+      sku: '101',
+      bd_vid: 'abc',
+    });
+    expect(decodedScheme.cmd_policy.callbackUrl).toEqual({
+      clickId: '__CLICK_ID__',
+      sign: '__SIGN__',
+      callbackUrl: '__CALLBACK_URL__',
+    });
+    expect(decodedScheme.common_info.callbackUrl.callbackUrl).toBe('__CALLBACK_URL__');
+    expect(decodedScheme.panel.webpanel_cmd.params.webUrl.adFlag.ext).toBe('__AD_EXTRA_PARAM_ENCODE_1__');
     expect(decodedScheme.rotation_component).toEqual({
       click_event_cmd: '__CONVERT_CMD__',
       webpanel_event_cmd: '__WEBPANEL_CMD__',
@@ -518,7 +548,7 @@ describe('CMD/Scheme 真实样本回归', () => {
       ip: '127.0.0.1',
       ua: 'okhttp/3.12.12 SP-engine/2.81.0',
     });
-    expect(report.topCommandSchemas?.map(item => item.schema)).toEqual(expect.arrayContaining([
+    expect(allCommandSchemas).toEqual(expect.arrayContaining([
       'nadcorevendor://vendor/ad/rewardImpl',
       'nadcorevendor://vendor/ad/rewardWebPanel',
       'nadcorevendor://vendor/ad/rewardDialog',
@@ -526,6 +556,7 @@ describe('CMD/Scheme 真实样本回归', () => {
       'baiduboxapp://v1/easybrowse/open',
       'openapp.jdmobile://virtual',
       'https://union-click.jd.com/sem.php',
+      'https://callback.example.com/track',
     ]));
     expect(report.nestedCommandFieldCount).toBeGreaterThanOrEqual(20);
     expect(report.runtimePlaceholderGroups.map(group => group.value)).toEqual(expect.arrayContaining([
@@ -534,6 +565,9 @@ describe('CMD/Scheme 真实样本回归', () => {
       '__AD_EXTRA_PARAM_ENCODE_1__',
       '__REWARD_NUM__',
       '__CONTINUEPLAY__',
+      '__CLICK_ID__',
+      '__SIGN__',
+      '__CALLBACK_URL__',
     ]));
     expect(copiedCmdStructure).toMatchObject({
       result: {
