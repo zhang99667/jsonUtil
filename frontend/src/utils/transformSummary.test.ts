@@ -643,6 +643,24 @@ describe('transformSummary', () => {
     ]);
   });
 
+  it('路径值复制会提示超过索引的内部路径', () => {
+    const widePayload = Object.fromEntries(
+      Array.from({ length: 1_020 }, (_, index) => [`k${index}`, index])
+    );
+    const result = deepParseWithContext(JSON.stringify({
+      payload: JSON.stringify(widePayload),
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.records[0].decodedPathCount).toBe(1_020);
+    expect(report.records[0].indexedDecodedPathCount).toBe(1_000);
+
+    const pathValueText = formatTransformPathValueReportText(buildTransformReportView(report, ''));
+    expect(pathValueText).toContain('$.payload.k999 = 999');
+    expect(pathValueText).not.toContain('$.payload.k1000 = 1000');
+    expect(pathValueText).toContain('... $.payload 还有更多内部路径未复制');
+  });
+
   it('报告展示 k/v 形态字段的业务标签并支持筛选', () => {
     const result = deepParseWithContext(JSON.stringify({
       extra: [

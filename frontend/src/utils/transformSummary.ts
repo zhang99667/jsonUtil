@@ -1534,7 +1534,7 @@ export const formatTransformPathValueReportText = (
       lines.push(row.copyText);
     });
 
-    if (record.indexedDecodedPathCount > copiedRows.length) {
+    if (record.indexedDecodedPathCount > copiedRows.length || record.decodedPathCount > copiedRows.length) {
       lines.push(`... ${record.path} 还有更多内部路径未复制`);
     }
   });
