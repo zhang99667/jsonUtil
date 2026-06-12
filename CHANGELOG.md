@@ -12,6 +12,7 @@
 - **CMD/Scheme 运行时占位符识别**: 支持识别 `__CONVERT_CMD__`、`__WEBPANEL_CMD__` 等运行时占位符并展示所在路径，避免真实广告链路中未替换字段被误认为解析失败
 - **CMD/Scheme 业务占位符说明**: 补充 `__AD_EXTRA_PARAM_ENCODE_1__`、`__EXT_RENDER_AFD__`、`__REWARD_NUM__`、`__CLICK_ID__` 等真实广告 response 常见占位符说明，便于区分运行时替换字段和解析失败
 - **CMD/Scheme 短 Base64 识别**: Scheme 面板支持直接识别短 JSON Base64 和 URL-safe 省略 padding 的短 JSON Base64，减少独立粘贴参数时漏解析
+- **Scheme 面板整段 Response 展开**: 独立 Scheme/CMD 面板支持直接粘贴 JSON response，并递归展开其中的 CMD/Scheme、Base64 JSON 和运行时占位符
 - **CMD/Scheme 内部 Base64 片段解析**: 支持只读解析带内部头的 Base64 JSON 片段，提升真实广告 response 中 extraParam 等扩展字段的可读性
 - **CMD/Scheme 内部 Base64 后缀保留**: 带内部头的 Base64 JSON 片段如果在 padding 后继续拼接后缀，会在解析结果中展示 `_base64_prefix` / `_base64_suffix`，避免真实 extraParam 后缀信息被隐藏
 - **CMD/Scheme 内部 Base64 后缀解析**: 内部 Base64 JSON 片段的后缀如果还能解出参数串，会额外展示 `_base64_suffix_decoded`，方便直接查看真实 response 中拼接的 os/ip/ua 等请求上下文
@@ -141,6 +142,7 @@
 - **JSON Lines 深度格式化**: 嵌套解析支持展开 `.jsonl` 每行对象中的 JSON 字符串和 CMD/Scheme 字段，并在回写时恢复 JSONL 形态
 - **JSON Lines 行级错误提示**: 校验 `.jsonl` 时会标明具体失败行号，便于快速定位日志中的坏行
 - **JSON 家族文件打开增强**: 文件选择器和文本文件识别补充 `.ndjson`、`.har`、`.geojson`、`.webmanifest`、`.map` 等常见调试文件，并兼容 `application/*+json` MIME
+- **JSON 家族后台上传增强**: 管理后台上传白名单和部署默认配置同步支持 `.ndjson`、`.har`、`.geojson`、`.webmanifest`、`.map` 等 JSON 调试文件
 - **真实粘贴 JSON 提取**: 格式化、压缩、Key 排序、深度格式化和校验支持从 Markdown JSON 代码块、JS 赋值和 JSONP 回调中提取 JSON，减少复制 response 后手动删外壳的成本
 - **XSSI Response 外壳提取**: 格式化、压缩、Key 排序、深度格式化和校验支持 `while(1);`、`for(;;);`、`)]}',` 等安全前缀包装的真实接口 response，预览编辑回写时保留原前缀
 - **包装 JSON 回写保真**: FORMAT 模式预览编辑回写时会保留原始 JS 赋值、JSONP 回调和 Markdown 代码块外壳，仅替换内部 JSON 内容

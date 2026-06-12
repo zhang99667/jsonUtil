@@ -303,6 +303,12 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType('%E4%BD%A0%E5%A5%BD')).toBe('url-encoded');
   });
 
+  it('完整 JSON 即使包含 URL 编码内容也优先识别为 JSON', () => {
+    expect(detectSchemeType(JSON.stringify({
+      scheme: 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%22a%22%3A1%7D',
+    }))).toBe('json');
+  });
+
   it('检测短 JSON Base64', () => {
     const encoded = base64Encode('{"a":1}').replace(/=+$/g, '');
     expect(detectSchemeType(encoded)).toBe('base64');

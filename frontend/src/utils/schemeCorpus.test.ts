@@ -565,4 +565,63 @@ describe('CMD/Scheme 真实样本回归', () => {
       },
     });
   });
+
+  it('独立 Scheme 解析可直接展开整段 JSON response 中的广告链路', () => {
+    const landingUrl = 'https://example.com/landing?sku=101&bd_vid=abc';
+    const appUrl = `openapp.demo://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: landingUrl,
+    }))}`;
+    const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+      appUrl,
+      source: 'feedna',
+    }))}`;
+    const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?panel_cmd=${encodeURIComponent(deeplinkCmd)}&url=${encodeURIComponent(landingUrl)}`;
+    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      tail_frame: {
+        panel_scheme: panelScheme,
+      },
+      rotation_component: {
+        click_event_cmd: '__CONVERT_CMD__',
+      },
+    }))}`;
+    const extraParam = `AFD8f${base64Encode(JSON.stringify({
+      meg_name: 'AI',
+      ad_extend: JSON.stringify({
+        ad_info: {
+          h_ecpm: 207000,
+        },
+      }),
+    }))}`;
+    const response = JSON.stringify({
+      errno: 0,
+      data: {
+        video: [{
+          material: [{
+            info: [{
+              ad_common: {
+                scheme: rootScheme,
+              },
+            }],
+          }],
+          extra: [{
+            k: 'extraParam',
+            v: extraParam,
+          }],
+        }],
+      },
+    });
+
+    const decoded = deepDecodeScheme(response);
+    const parsed = JSON.parse(decoded.decoded);
+
+    expect(decoded.isJson).toBe(true);
+    expect(parsed.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.url).toEqual({
+      sku: '101',
+      bd_vid: 'abc',
+    });
+    expect(parsed.data.video[0].material[0].info[0].ad_common.scheme.video_info.rotation_component.click_event_cmd).toBe('__CONVERT_CMD__');
+    expect(parsed.data.video[0].extra[0].v.ad_extend.ad_info.h_ecpm).toBe(207000);
+    expect(decoded.placeholders?.map(placeholder => placeholder.value)).toContain('__CONVERT_CMD__');
+  });
 });

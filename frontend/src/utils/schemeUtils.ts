@@ -453,13 +453,13 @@ export function detectSchemeType(str: string): SchemeType {
   }
 
   // 优先级顺序很重要
+  if (isJsonString(trimmed)) return 'json';
   if (isJwt(trimmed)) return 'jwt';
   if (isUrl(trimmed)) return 'url';
   if (isDecodableFragmentParamString(trimmed)) return 'query-string';
   if (isDecodableQueryString(trimmed)) return 'query-string';
   if (hasUrlEncoding(trimmed)) return 'url-encoded';
   if (isBase64(trimmed)) return 'base64';
-  if (isJsonString(trimmed)) return 'json';
 
   return 'plain';
 }
@@ -928,13 +928,13 @@ const decodeStructuredValue = (value: StructuredValue, maxDepth: number): Struct
   }
 
   if (Array.isArray(value)) {
-    return value.map(item => decodeStructuredValue(item, maxDepth - 1));
+    return value.map(item => decodeStructuredValue(item, maxDepth));
   }
 
   if (value && typeof value === 'object') {
     const result: { [key: string]: StructuredValue } = {};
     for (const [key, item] of Object.entries(value)) {
-      result[key] = decodeStructuredValue(item, maxDepth - 1);
+      result[key] = decodeStructuredValue(item, maxDepth);
     }
     return result;
   }
@@ -1344,8 +1344,10 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
     isJson = true;
     try {
       const parsed = JSON.parse(current) as StructuredValue;
-      finalDecoded = JSON.stringify(parsed, null, 2);
-      placeholders = collectRuntimePlaceholders(parsed);
+      // 独立 Scheme 面板也可能直接粘贴整段 response，这里复用参数递归解析能力展开内部 CMD/Scheme。
+      const decodedParsed = decodeStructuredValue(parsed, maxDepth);
+      finalDecoded = JSON.stringify(decodedParsed, null, 2);
+      placeholders = collectRuntimePlaceholders(decodedParsed);
     } catch {
       // 保持原样
     }

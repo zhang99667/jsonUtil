@@ -96,4 +96,36 @@ class FileServiceTest {
         assertTrue(saved.getStoragePath().startsWith(uploadDir.toString()));
         assertTrue(Files.exists(Path.of(saved.getStoragePath())));
     }
+
+    @Test
+    void saveFileAcceptsCommonJsonFamilyDebugFiles() {
+        ReflectionTestUtils.setField(
+                fileService,
+                "allowedExtensions",
+                ".json,.jsonl,.ndjson,.har,.geojson,.webmanifest,.map,.jsonc,.json5,.topojson"
+        );
+
+        for (String fileName : new String[] {
+                "network.har",
+                "events.ndjson",
+                "city.geojson",
+                "manifest.webmanifest",
+                "bundle.map",
+                "settings.jsonc",
+                "sample.json5",
+                "shape.topojson"
+        }) {
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    fileName,
+                    "application/octet-stream",
+                    "{\"ok\":true}".getBytes()
+            );
+
+            UploadFile saved = fileService.saveFile(file, "admin");
+
+            assertTrue(saved.getStoragePath().startsWith(uploadDir.toString()));
+            assertTrue(Files.exists(Path.of(saved.getStoragePath())));
+        }
+    }
 }
