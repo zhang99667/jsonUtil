@@ -11,6 +11,7 @@ import {
   formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
+  getTransformDecodedPathCopyText,
   getTransformRecordCmdStructureCopyText,
   summarizeTransformContext,
 } from './transformSummary';
@@ -604,9 +605,12 @@ describe('transformSummary', () => {
       {
         path: '$.payload.target_after_display_limit',
         preview: 'needle_after_display_limit',
-        copyText: '$.payload.target_after_display_limit = "needle_after_display_limit"',
+        value: 'needle_after_display_limit',
       },
     ]);
+    expect(getTransformDecodedPathCopyText(hiddenPathView.records[0].decodedPaths[0])).toBe(
+      '$.payload.target_after_display_limit = "needle_after_display_limit"'
+    );
     expect(formatTransformReportViewText(report, hiddenPathView, 'target_after_display_limit')).toContain(
       '内部路径: $.payload.target_after_display_limit=needle_after_display_limit'
     );
@@ -638,9 +642,12 @@ describe('transformSummary', () => {
       {
         path: '$.payload.target_after_search_limit',
         preview: 'needle_after_search_limit',
-        copyText: '$.payload.target_after_search_limit = "needle_after_search_limit"',
+        value: 'needle_after_search_limit',
       },
     ]);
+    expect(getTransformDecodedPathCopyText({ path: '$.payload.empty', preview: 'null', value: null })).toBe(
+      '$.payload.empty = null'
+    );
   });
 
   it('路径值复制会提示超过索引的内部路径', () => {

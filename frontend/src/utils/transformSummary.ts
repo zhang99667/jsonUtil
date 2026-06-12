@@ -62,7 +62,8 @@ export interface TransformReportRecord {
 export interface TransformReportDecodedPath {
   path: string;
   preview: string;
-  copyText: string;
+  copyText?: string;
+  value?: JsonValue;
 }
 
 export interface TransformReportWarning {
@@ -261,6 +262,17 @@ const rebaseDecodedPathRow = (
     preview: row.preview,
     copyText: `${path} = ${row.valueText}`,
   };
+};
+
+export const getTransformDecodedPathCopyText = (
+  row: TransformReportDecodedPath
+): string => {
+  if (row.copyText !== undefined) return row.copyText;
+
+  const value = Object.prototype.hasOwnProperty.call(row, 'value')
+    ? row.value as JsonValue
+    : row.preview;
+  return `${row.path} = ${formatDecodedPathCopyValue(value)}`;
 };
 
 const appendJsonPathKey = (path: string, key: string): string => (
@@ -784,7 +796,7 @@ const pushDecodedSearchText = (
     state.rows.push({
       path,
       preview,
-      copyText: `${path} = ${formatDecodedPathCopyValue(value)}`,
+      value,
     });
   }
 
@@ -1531,7 +1543,7 @@ export const formatTransformPathValueReportText = (
   reportView.records.forEach(record => {
     const copiedRows = record.decodedSearchPaths || record.decodedPaths;
     copiedRows.forEach(row => {
-      lines.push(row.copyText);
+      lines.push(getTransformDecodedPathCopyText(row));
     });
 
     if (record.indexedDecodedPathCount > copiedRows.length || record.decodedPathCount > copiedRows.length) {
