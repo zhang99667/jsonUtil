@@ -10,6 +10,7 @@ import {
   formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
+  getTransformDecodedPathCopyText,
   getTransformRecordCmdStructureCopyText,
 } from '../utils/transformSummary';
 import type { TransformReportRecord } from '../utils/transformSummary';
@@ -596,7 +597,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             <button
                               type="button"
                               data-tour="transform-report-copy-nested-cmd-value"
-                              onClick={() => handleCopyDecodedPathValue(row.copyText)}
+                              onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
                               className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                             >
                               复制片段
@@ -661,7 +662,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             <button
                               type="button"
                               data-tour="transform-report-copy-decoded-value"
-                              onClick={() => handleCopyDecodedPathValue(row.copyText)}
+                              onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
                               className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                             >
                               复制片段
