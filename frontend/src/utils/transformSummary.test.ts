@@ -780,33 +780,73 @@ describe('transformSummary', () => {
     expect(pathValueText).toContain('... $.payload 还有更多内部路径未复制');
   });
 
-  it('报告展示 k/v 形态字段的业务标签并支持筛选', () => {
+  it('报告展示业务字段标签并支持筛选', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=feed`;
     const result = deepParseWithContext(JSON.stringify({
       extra: [
         {
           k: 'extraParam',
-          v: `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=feed`,
+          v: actionCmd,
+        },
+        {
+          key: 'trackingParam',
+          v: actionCmd,
+        },
+        {
+          k: 'buttonParam',
+          value: actionCmd,
+        },
+        {
+          field: 'contentParam',
+          content: actionCmd,
         },
       ],
     }), { autoExpandScheme: true });
     const report = buildTransformContextReport(result.context);
 
-    expect(report.records[0]).toMatchObject({
-      path: '$.extra[0].v',
-      sourceLabel: 'extraParam',
-      labels: ['CMD 参数 · 可回写'],
-    });
+    expect(report.records.map(record => ({
+      path: record.path,
+      sourceLabel: record.sourceLabel,
+      labels: record.labels,
+    }))).toEqual([
+      {
+        path: '$.extra[0].v',
+        sourceLabel: 'extraParam',
+        labels: ['CMD 参数 · 可回写'],
+      },
+      {
+        path: '$.extra[1].v',
+        sourceLabel: 'trackingParam',
+        labels: ['CMD 参数 · 可回写'],
+      },
+      {
+        path: '$.extra[2].value',
+        sourceLabel: 'buttonParam',
+        labels: ['CMD 参数 · 可回写'],
+      },
+      {
+        path: '$.extra[3].content',
+        sourceLabel: 'contentParam',
+        labels: ['CMD 参数 · 可回写'],
+      },
+    ]);
     expect(formatTransformContextReportText(result.context)).toContain('业务字段: extraParam');
+    expect(formatTransformContextReportText(result.context)).toContain('业务字段: trackingParam');
+    expect(formatTransformContextReportText(result.context)).toContain('业务字段: buttonParam');
+    expect(formatTransformContextReportText(result.context)).toContain('业务字段: contentParam');
 
     const labelView = buildTransformReportView(report, 'extraParam');
     expect(labelView.records.map(record => record.path)).toEqual(['$.extra[0].v']);
     expect(labelView.filteredRecordCount).toBe(1);
+    expect(buildTransformReportView(report, 'contentParam').records.map(record => record.path)).toEqual([
+      '$.extra[3].content',
+    ]);
   });
 
-  it('诊断项展示 k/v 形态字段的业务标签并支持筛选', () => {
+  it('诊断项展示业务字段标签并支持筛选', () => {
     const rawValue = `raw=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
     const unresolvedResult = deepParseWithContext(JSON.stringify({
-      extra: [{ k: 'trackingParam', v: rawValue }],
+      extra: [{ key: 'trackingParam', v: rawValue }],
     }), { autoExpandScheme: true });
     const unresolvedReport = buildTransformContextReport(unresolvedResult.context);
 
@@ -821,13 +861,13 @@ describe('transformSummary', () => {
     const placeholderResult = deepParseWithContext(JSON.stringify({
       extra: [{
         k: 'buttonParam',
-        v: `cmd=${encodeURIComponent(JSON.stringify({ button_cmd: '__CONVERT_CMD__' }))}`,
+        value: `cmd=${encodeURIComponent(JSON.stringify({ button_cmd: '__CONVERT_CMD__' }))}`,
       }],
     }), { autoExpandScheme: true });
     const placeholderReport = buildTransformContextReport(placeholderResult.context);
 
     expect(placeholderReport.runtimePlaceholders[0]).toMatchObject({
-      path: '$.extra[0].v.cmd.button_cmd',
+      path: '$.extra[0].value.cmd.button_cmd',
       sourceLabel: 'buttonParam',
     });
     expect(formatTransformContextReportText(placeholderResult.context)).toContain('业务字段: buttonParam');
@@ -836,7 +876,7 @@ describe('transformSummary', () => {
 
     const skippedValue = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
     const warningResult = deepParseWithContext(JSON.stringify({
-      extra: [{ k: 'longParam', v: skippedValue }],
+      extra: [{ field: 'longParam', content: skippedValue }],
     }), {
       autoExpandScheme: true,
       maxStringDecodeLength: 20,
@@ -844,7 +884,7 @@ describe('transformSummary', () => {
     const warningReport = buildTransformContextReport(warningResult.context);
 
     expect(warningReport.warnings[0]).toMatchObject({
-      path: '$.extra[0].v',
+      path: '$.extra[0].content',
       sourceLabel: 'longParam',
     });
     expect(formatTransformContextReportText(warningResult.context)).toContain('业务字段: longParam');
