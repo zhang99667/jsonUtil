@@ -33,7 +33,7 @@ import java.util.UUID;
 public class FileService {
 
     private static final Logger logger = LoggerFactory.getLogger(FileService.class);
-    private static final String DEFAULT_ALLOWED_EXTENSIONS = ".conf,.config,.css,.csv,.env,.html,.ini,.java,.js,.json,.jsonl,.jsx,.log,.md,.properties,.sql,.toml,.ts,.tsx,.txt,.xml,.yaml,.yml";
+    private static final String DEFAULT_ALLOWED_EXTENSIONS = ".conf,.config,.css,.csv,.env,.geojson,.har,.html,.ini,.java,.js,.json,.json5,.jsonc,.jsonl,.jsx,.log,.map,.md,.ndjson,.properties,.sql,.topojson,.toml,.ts,.tsx,.txt,.webmanifest,.xml,.yaml,.yml";
 
     @Autowired
     private UploadFileRepository uploadFileRepository;
