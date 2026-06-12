@@ -408,6 +408,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     buildParamSections(decodeResult.schemeInfo)
   ), [decodeResult.schemeInfo]);
   const placeholders = decodeResult.placeholders || [];
+  const decodeWarnings = decodeResult.warnings || [];
   const placeholderGroups = useMemo(() => (
     buildSchemePlaceholderGroups(placeholders)
   ), [placeholders]);
@@ -639,7 +640,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 上方信息卡片区域 */}
-          {(decodeResult.schemeInfo || commandSummaryInfo || decodeResult.layers.length > 0 || placeholders.length > 0 || base64MetaInfo) && (
+          {(decodeResult.schemeInfo || commandSummaryInfo || decodeResult.layers.length > 0 || placeholders.length > 0 || decodeWarnings.length > 0 || base64MetaInfo) && (
             <div className="bg-editor-sidebar rounded p-3 border border-editor-border flex flex-col gap-2">
               {/* Scheme 信息 */}
               {decodeResult.schemeInfo && (
@@ -757,6 +758,33 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* 性能护栏提示 */}
+              {decodeWarnings.length > 0 && (
+                <div data-tour="scheme-decode-warnings" className="flex flex-col gap-1.5 text-xs">
+                  {decodeWarnings.map(warning => (
+                    <div key={warning.type} className="flex items-start gap-2">
+                      <span className="shrink-0 text-amber-300 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
+                        性能保护 · 跳过 {warning.skippedCount}
+                      </span>
+                      <div className="flex flex-wrap gap-1 min-w-0">
+                        <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
+                          {warning.message}
+                        </span>
+                        {warning.paths.map(itemPath => (
+                          <span
+                            key={itemPath}
+                            className="bg-editor-bg text-amber-100 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                            title={formatTooltipValue(itemPath)}
+                          >
+                            {itemPath}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
