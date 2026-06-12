@@ -377,6 +377,11 @@ describe('CMD/Scheme 真实样本回归', () => {
       'sign=__SIGN__',
       'callbackUrl=__CALLBACK_URL__',
     ].join('&');
+    const monitorClickUrl = [
+      'https://m.baidu.com/baidu.php?clickId=__CLICK_ID__',
+      'sign=__SIGN__',
+      'callbackUrl=__CALLBACK_URL__',
+    ].join('&');
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
       category: 'jump',
       des: 'm',
@@ -423,11 +428,17 @@ describe('CMD/Scheme 真实样本回归', () => {
       reward_cmd: rewardDialog,
       strong_guide_cmd: rewardDialog,
       task_policy: JSON.stringify({ ecpm: 'encoded', businessParams: 'encoded' }),
+    }))}&convert=${encodeURIComponent(JSON.stringify({
+      button_scheme: deeplinkCmd,
+      webpanel_cmd: deeplinkCmd,
     }))}&cmd_policy=${encodeURIComponent(JSON.stringify({
       panel_cmd: deeplinkCmd,
       callbackUrl: monitorCallbackUrl,
     }))}&common_info=${encodeURIComponent(JSON.stringify({
       callbackUrl: monitorCallbackUrl,
+      ad_monitor_url: [{
+        click_url: monitorClickUrl,
+      }],
     }))}&panel=${encodeURIComponent(JSON.stringify({
       panel_cmd: deeplinkCmd,
       webpanel_cmd: deeplinkCmd,
@@ -527,6 +538,10 @@ describe('CMD/Scheme 真实样本回归', () => {
       },
     });
     expect(decodedScheme.reward.reward_cmd.bottom_right_btn.button_cmd.task_params.ext_policy.sdk_switch).toBe('1');
+    expect(decodedScheme.convert.button_scheme.params.appUrl.params.url.to).toEqual({
+      sku: '101',
+      bd_vid: 'abc',
+    });
     expect(decodedScheme.cmd_policy.panel_cmd.params.appUrl.params.url.to).toEqual({
       sku: '101',
       bd_vid: 'abc',
@@ -537,6 +552,7 @@ describe('CMD/Scheme 真实样本回归', () => {
       callbackUrl: '__CALLBACK_URL__',
     });
     expect(decodedScheme.common_info.callbackUrl.callbackUrl).toBe('__CALLBACK_URL__');
+    expect(decodedScheme.common_info.ad_monitor_url[0].click_url.callbackUrl).toBe('__CALLBACK_URL__');
     expect(decodedScheme.panel.webpanel_cmd.params.webUrl.adFlag.ext).toBe('__AD_EXTRA_PARAM_ENCODE_1__');
     expect(decodedScheme.rotation_component).toEqual({
       click_event_cmd: '__CONVERT_CMD__',
@@ -556,6 +572,7 @@ describe('CMD/Scheme 真实样本回归', () => {
       'baiduboxapp://v1/easybrowse/open',
       'openapp.jdmobile://virtual',
       'https://union-click.jd.com/sem.php',
+      'https://m.baidu.com/baidu.php',
       'https://callback.example.com/track',
     ]));
     expect(report.nestedCommandFieldCount).toBeGreaterThanOrEqual(20);
@@ -593,6 +610,11 @@ describe('CMD/Scheme 真实样本回归', () => {
                   },
                 },
               },
+            },
+          },
+          convert: {
+            button_scheme: {
+              cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
             },
           },
         },
