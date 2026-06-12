@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { driver, DriveStep, Driver } from 'driver.js';
+import { useEffect, useCallback, useRef } from 'react';
+import type { DriveStep, Driver } from 'driver.js';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
-import 'driver.js/dist/driver.css';
 
 // 定义所有支持引导的功能
 export enum FeatureId {
@@ -193,8 +192,15 @@ const FEATURE_TOURS: Record<FeatureId, FeatureTourConfig> = {
 
 const STORAGE_KEY_PREFIX = 'json-helper-feature-tour-';
 
+const loadDriver = async () => {
+    await import('driver.js/dist/driver.css');
+    const module = await import('driver.js');
+    return module.driver;
+};
+
 export const useFeatureTour = () => {
-    const [driverInstance, setDriverInstance] = useState<Driver | null>(null);
+    const driverInstanceRef = useRef<Driver | null>(null);
+    const isMountedRef = useRef(true);
 
     // 检查功能是否已完成引导
     const hasCompletedTour = useCallback((featureId: FeatureId): boolean => {
@@ -222,7 +228,7 @@ export const useFeatureTour = () => {
     }, [resetTour]);
 
     // 启动功能引导
-    const startFeatureTour = useCallback((featureId: FeatureId, force: boolean = false) => {
+    const startFeatureTour = useCallback(async (featureId: FeatureId, force: boolean = false) => {
         const config = FEATURE_TOURS[featureId];
         if (!config) {
             console.warn(`Feature tour not found for: ${featureId}`);
@@ -235,12 +241,23 @@ export const useFeatureTour = () => {
         }
 
         // 销毁之前的实例
-        if (driverInstance) {
-            driverInstance.destroy();
+        if (driverInstanceRef.current) {
+            driverInstanceRef.current.destroy();
+            driverInstanceRef.current = null;
         }
 
+        let createDriver: Awaited<ReturnType<typeof loadDriver>>;
+        try {
+            createDriver = await loadDriver();
+        } catch (error) {
+            console.warn('加载功能引导组件失败:', error);
+            return;
+        }
+
+        if (!isMountedRef.current) return;
+
         // 创建新的 driver 实例
-        const newDriver = driver({
+        const newDriver = createDriver({
             showProgress: config.steps.length > 1,
             showButtons: ['next', 'previous', 'close'],
             smoothScroll: false, // 禁用平滑滚动以避免定位问题
@@ -252,17 +269,20 @@ export const useFeatureTour = () => {
                 // 用户完成或跳过引导时,标记为已完成
                 markTourCompleted(featureId);
                 newDriver.destroy();
-                setDriverInstance(null);
+                if (driverInstanceRef.current === newDriver) {
+                    driverInstanceRef.current = null;
+                }
             }
         });
 
-        setDriverInstance(newDriver);
+        driverInstanceRef.current = newDriver;
 
         // 延迟启动,确保 DOM 已渲染且布局稳定
         setTimeout(() => {
+            if (!isMountedRef.current || driverInstanceRef.current !== newDriver) return;
             newDriver.drive();
         }, 500);
-    }, [driverInstance, hasCompletedTour, markTourCompleted]);
+    }, [hasCompletedTour, markTourCompleted]);
 
     // 触发功能首次使用检查
     const triggerFeatureFirstUse = useCallback((featureId: FeatureId) => {
@@ -275,14 +295,17 @@ export const useFeatureTour = () => {
     // 清理
     useEffect(() => {
         return () => {
-            if (driverInstance) {
-                driverInstance.destroy();
+            isMountedRef.current = false;
+            if (driverInstanceRef.current) {
+                driverInstanceRef.current.destroy();
+                driverInstanceRef.current = null;
             }
         };
-    }, [driverInstance]);
+    }, []);
 
     // 刷新引导位置 (用于元素位置变化时)
     const refreshTour = useCallback(() => {
+        const driverInstance = driverInstanceRef.current;
         if (driverInstance) {
             // driver.js v1 使用 refresh() 重新计算位置
             if (typeof driverInstance.refresh === 'function') {
@@ -292,7 +315,7 @@ export const useFeatureTour = () => {
                 driverInstance.drive();
             }
         }
-    }, [driverInstance]);
+    }, []);
 
     return {
         startFeatureTour,

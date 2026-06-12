@@ -35,3 +35,5 @@ interface Window {
     showOpenFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
     showSaveFilePicker(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
 }
+
+declare module '*.css';

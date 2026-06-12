@@ -79,6 +79,7 @@ export default defineConfig(({ mode }) => {
             if (packageName.startsWith('@babel/') || packageName === 'tslib') return 'vendor-runtime';
             if (packageName === 'axios') return 'vendor-http';
             if (packageName === 'html2canvas') return 'vendor-html2canvas';
+            if (packageName === 'driver.js') return 'vendor-driver';
             if (packageName.startsWith('d3-')) return 'vendor-d3';
             if (packageName.startsWith('ml-')) return 'vendor-ml';
             if (
@@ -117,7 +118,6 @@ export default defineConfig(({ mode }) => {
             if (
               [
                 'diff',
-                'driver.js',
                 'json-source-map',
                 'jsonpath-plus',
                 'qrcode.react',
