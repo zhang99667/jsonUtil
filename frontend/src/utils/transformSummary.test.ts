@@ -246,6 +246,66 @@ describe('transformSummary', () => {
     expect(formatTransformReportViewText(report, focusedView, 'panel_cmd')).toContain('内部CMD字段 1/250');
   });
 
+  it('报告汇总高频内部 CMD 字段分布', () => {
+    const primaryCmd = `cmd=${encodeURIComponent(JSON.stringify({
+      panel_cmd: { params: { id: 'p1' } },
+      appUrl: { params: { id: 'app' } },
+      nested: {
+        panel_cmd: { params: { id: 'p2' } },
+      },
+    }))}`;
+    const secondaryCmd = `cmd=${encodeURIComponent(JSON.stringify({
+      panel_cmd: { params: { id: 'p3' } },
+      convert_cmd: { params: { id: 'convert' } },
+    }))}`;
+    const result = deepParseWithContext(JSON.stringify({
+      action_cmd: primaryCmd,
+      extra: [{ k: 'secondParam', v: secondaryCmd }],
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+
+    expect(report.topNestedCommandFields?.slice(0, 4)).toEqual([
+      {
+        key: 'panel_cmd',
+        count: 3,
+        recordCount: 2,
+        paths: [
+          '$.action_cmd.cmd.panel_cmd',
+          '$.action_cmd.cmd.nested.panel_cmd',
+          '$.extra[0].v.cmd.panel_cmd',
+        ],
+        hasMorePaths: false,
+      },
+      {
+        key: 'cmd',
+        count: 2,
+        recordCount: 2,
+        paths: [
+          '$.action_cmd.cmd',
+          '$.extra[0].v.cmd',
+        ],
+        hasMorePaths: false,
+      },
+      {
+        key: 'appUrl',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.action_cmd.cmd.appUrl'],
+        hasMorePaths: false,
+      },
+      {
+        key: 'convert_cmd',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.extra[0].v.cmd.convert_cmd'],
+        hasMorePaths: false,
+      },
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain('内部CMD字段分布:');
+    expect(formatTransformContextReportText(result.context)).toContain('- panel_cmd ×3（来源记录 2）');
+    expect(buildTransformReportView(report, 'panel_cmd').filteredNestedCommandFieldCount).toBe(3);
+  });
+
   it('报告展示 CMD Schema、嵌套 CMD 和 ext 解析线索', () => {
     const extInfo = btoa(JSON.stringify({ user_id: 'u1', cmatch: '1501' }));
     const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}`;

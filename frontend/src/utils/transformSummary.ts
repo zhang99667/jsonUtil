@@ -118,12 +118,21 @@ export interface TransformReportRuntimePlaceholderGroup {
   sources: TransformReportRuntimePlaceholderSourceGroup[];
 }
 
+export interface TransformReportNestedCommandFieldGroup {
+  key: string;
+  count: number;
+  recordCount: number;
+  paths: string[];
+  hasMorePaths: boolean;
+}
+
 export interface TransformContextReport {
   summary: TransformContextSummary;
   summaryText?: string;
   coverage: TransformReportCoverage;
   cmdStructureCount: number;
   nestedCommandFieldCount: number;
+  topNestedCommandFields?: TransformReportNestedCommandFieldGroup[];
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
@@ -181,6 +190,8 @@ export const DEFAULT_TRANSFORM_REPORT_CMD_STRUCTURE_LIMIT = 200;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
 const DEFAULT_NESTED_COMMAND_FIELD_LIMIT = 8;
 const DEFAULT_NESTED_COMMAND_FIELD_SEARCH_LIMIT = 200;
+const DEFAULT_TOP_NESTED_COMMAND_FIELD_LIMIT = 8;
+const DEFAULT_TOP_NESTED_COMMAND_FIELD_PATH_LIMIT = 4;
 const DEFAULT_DECODED_PATH_COUNT_LIMIT = 10_000;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 1_000;
@@ -435,6 +446,18 @@ const getJsonValueBySegments = (
   }
 
   return current;
+};
+
+const getJsonPathLeafKey = (path: string): string => {
+  const segments = parseGeneratedJsonPath(path);
+  if (!segments) return path;
+
+  for (let index = segments.length - 1; index >= 0; index--) {
+    const segment = segments[index];
+    if (typeof segment === 'string') return segment;
+  }
+
+  return path;
 };
 
 const createJsonPathContainer = (segment?: JsonPathSegment): JsonValue => (
@@ -1179,6 +1202,55 @@ const buildRuntimePlaceholderGroups = (
   ));
 };
 
+const buildTopNestedCommandFieldGroups = (
+  records: TransformReportRecord[],
+  limit = DEFAULT_TOP_NESTED_COMMAND_FIELD_LIMIT
+): TransformReportNestedCommandFieldGroup[] => {
+  const groups = new Map<string, {
+    key: string;
+    count: number;
+    recordPaths: Set<string>;
+    paths: string[];
+    hasMorePaths: boolean;
+  }>();
+
+  records.forEach(record => {
+    record.nestedCommandSearchFields?.forEach(row => {
+      const key = getJsonPathLeafKey(row.path);
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          key,
+          count: 0,
+          recordPaths: new Set(),
+          paths: [],
+          hasMorePaths: false,
+        };
+        groups.set(key, group);
+      }
+
+      group.count += 1;
+      group.recordPaths.add(record.path);
+      if (group.paths.length < DEFAULT_TOP_NESTED_COMMAND_FIELD_PATH_LIMIT) {
+        group.paths.push(row.path);
+      } else {
+        group.hasMorePaths = true;
+      }
+    });
+  });
+
+  return Array.from(groups.values())
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
+    .slice(0, limit)
+    .map(group => ({
+      key: group.key,
+      count: group.count,
+      recordCount: group.recordPaths.size,
+      paths: group.paths,
+      hasMorePaths: group.hasMorePaths,
+    }));
+};
+
 export const summarizeTransformContext = (
   context: TransformContext
 ): TransformContextSummary => {
@@ -1318,6 +1390,7 @@ export const buildTransformContextReport = (
     coverage: buildTransformReportCoverage(summary),
     cmdStructureCount,
     nestedCommandFieldCount,
+    topNestedCommandFields: buildTopNestedCommandFieldGroups(records),
     records,
     warnings: (context.warnings || []).map(warning => ({
       type: warning.type,
@@ -1354,15 +1427,30 @@ export const formatTransformContextReportText = (
     `覆盖说明: ${report.coverage.description}`,
     ...report.coverage.items.map(item => `- ${item}`),
     '',
-    '展开记录:',
   ];
 
+  appendNestedCommandFieldSummarySection(lines, report.topNestedCommandFields || []);
+  lines.push('展开记录:');
   appendReportRecordLines(lines, report.records);
   appendReportWarningSection(lines, report.warnings);
   appendReportUnresolvedSection(lines, report.unresolvedCandidates);
   appendReportPlaceholderSection(lines, report.runtimePlaceholderGroups, report.runtimePlaceholders);
 
   return lines.join('\n');
+};
+
+const appendNestedCommandFieldSummarySection = (
+  lines: string[],
+  groups: TransformReportNestedCommandFieldGroup[]
+) => {
+  if (groups.length === 0) return;
+
+  lines.push('内部CMD字段分布:');
+  groups.forEach(group => {
+    lines.push(`- ${group.key} ×${group.count}（来源记录 ${group.recordCount}）`);
+    lines.push(`  示例路径: ${group.paths.join('；')}${group.hasMorePaths ? '；...' : ''}`);
+  });
+  lines.push('');
 };
 
 const appendReportRecordLines = (
