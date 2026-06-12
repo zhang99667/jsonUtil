@@ -2,6 +2,7 @@ import { FileTab, TransformMode } from '../types';
 import { isRecord, safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from './storage';
 
 export const WORKSPACE_DRAFT_STORAGE_KEY = 'json-helper-workspace-draft';
+export const WORKSPACE_DRAFT_MAX_STORAGE_CHARS = 2_500_000;
 
 const WORKSPACE_DRAFT_VERSION = 1;
 
@@ -137,13 +138,33 @@ export const loadWorkspaceDraftSnapshot = (
   parseWorkspaceDraftSnapshot(safeGetStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, storage))
 );
 
+const estimateWorkspaceDraftStorageChars = (snapshot: WorkspaceDraftSnapshot): number => {
+  const fileContentChars = snapshot.files.reduce((total, file) => (
+    total + file.name.length + file.content.length + (file.savedContent || '').length + (file.path || '').length
+  ), 0);
+
+  return fileContentChars + snapshot.standaloneInput.length + 1000;
+};
+
 export const saveWorkspaceDraftSnapshot = (
   snapshot: WorkspaceDraftSnapshot | null,
-  storage: Storage = localStorage
+  storage: Storage = localStorage,
+  maxStorageChars = WORKSPACE_DRAFT_MAX_STORAGE_CHARS
 ): boolean => {
   if (!snapshot) {
     return safeRemoveStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, storage);
   }
 
-  return safeSetStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, JSON.stringify(snapshot), storage);
+  if (estimateWorkspaceDraftStorageChars(snapshot) > maxStorageChars) {
+    safeRemoveStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, storage);
+    return false;
+  }
+
+  const serialized = JSON.stringify(snapshot);
+  if (serialized.length > maxStorageChars) {
+    safeRemoveStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, storage);
+    return false;
+  }
+
+  return safeSetStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, serialized, storage);
 };
