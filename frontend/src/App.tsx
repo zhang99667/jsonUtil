@@ -36,6 +36,7 @@ import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from 
 import { setJsonPointerValue } from './utils/jsonPointer';
 import { cleanJsonInput, startJsonValidation, validateJsonForEditor } from './utils/jsonValidation';
 import { formatTransformContextSummary } from './utils/transformSummary';
+import { initGoogleAnalytics } from './utils/analytics';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -462,6 +463,8 @@ const App: React.FC = () => {
 
   // 访客统计打点 (仅统计前台页面访问)
   useEffect(() => {
+    initGoogleAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
+
     fetch('/api/visitor/ping').catch(() => {
       // 静默失败，不影响用户体验
     });

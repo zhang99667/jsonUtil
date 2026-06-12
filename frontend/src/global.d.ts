@@ -34,6 +34,16 @@ interface FileSystemFileHandle {
 interface Window {
     showOpenFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
     showSaveFilePicker(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
+    dataLayer: unknown[][];
+    gtag: (...args: unknown[]) => void;
+}
+
+interface ImportMetaEnv {
+    readonly VITE_GA_MEASUREMENT_ID?: string;
+}
+
+interface ImportMeta {
+    readonly env: ImportMetaEnv;
 }
 
 declare module '*.css';
