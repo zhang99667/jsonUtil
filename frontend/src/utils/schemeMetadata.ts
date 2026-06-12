@@ -53,6 +53,10 @@ export interface CmdHandlerCommandSchemaRow {
   source: string;
 }
 
+interface SchemeInsightCollectOptions {
+  includeCommandFieldRows?: boolean;
+}
+
 type SourceShape =
   | string
   | number
@@ -244,7 +248,8 @@ const collectSchemeInsightFieldsInner = (
   commandFields: string[],
   commandFieldRows: SchemeInsightFieldRow[],
   extFields: string[],
-  base64SuffixFields: string[]
+  base64SuffixFields: string[],
+  options: SchemeInsightCollectOptions
 ) => {
   if (Array.isArray(value)) {
     value.forEach((item, index) => collectSchemeInsightFieldsInner(
@@ -253,7 +258,8 @@ const collectSchemeInsightFieldsInner = (
       commandFields,
       commandFieldRows,
       extFields,
-      base64SuffixFields
+      base64SuffixFields,
+      options
     ));
     return;
   }
@@ -265,7 +271,9 @@ const collectSchemeInsightFieldsInner = (
     const isObjectItem = Boolean(item) && typeof item === 'object';
     if (isObjectItem && isCommandInsightField(key)) {
       commandFields.push(key);
-      commandFieldRows.push(createInsightFieldRow(key, childPath, item));
+      if (options.includeCommandFieldRows !== false) {
+        commandFieldRows.push(createInsightFieldRow(key, childPath, item));
+      }
     }
 
     if (isPlainObject(item)) {
@@ -278,18 +286,37 @@ const collectSchemeInsightFieldsInner = (
     }
 
     if (isObjectItem) {
-      collectSchemeInsightFieldsInner(item, childPath, commandFields, commandFieldRows, extFields, base64SuffixFields);
+      collectSchemeInsightFieldsInner(
+        item,
+        childPath,
+        commandFields,
+        commandFieldRows,
+        extFields,
+        base64SuffixFields,
+        options
+      );
     }
   });
 };
 
-export const collectSchemeInsightFields = (value: unknown): SchemeInsightFields => {
+export const collectSchemeInsightFields = (
+  value: unknown,
+  options: SchemeInsightCollectOptions = {}
+): SchemeInsightFields => {
   const commandFields: string[] = [];
   const commandFieldRows: SchemeInsightFieldRow[] = [];
   const extFields: string[] = [];
   const base64SuffixFields: string[] = [];
 
-  collectSchemeInsightFieldsInner(value, '$', commandFields, commandFieldRows, extFields, base64SuffixFields);
+  collectSchemeInsightFieldsInner(
+    value,
+    '$',
+    commandFields,
+    commandFieldRows,
+    extFields,
+    base64SuffixFields,
+    options
+  );
 
   return {
     commandFields: dedupe(commandFields),
@@ -618,7 +645,8 @@ export const formatBase64MetaDisplayValue = (
 export const extractSchemeCommandSummaryInfo = (
   decoded: string,
   isJson: boolean,
-  schemeInfo?: SchemeDecodeResult['schemeInfo']
+  schemeInfo?: SchemeDecodeResult['schemeInfo'],
+  options: SchemeInsightCollectOptions = {}
 ): SchemeCommandSummaryInfo | null => {
   if (!isJson) {
     const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo) : undefined;
@@ -642,7 +670,7 @@ export const extractSchemeCommandSummaryInfo = (
     const parsed: unknown = JSON.parse(decoded);
     const rootObject = isPlainObject(parsed) ? parsed : null;
     const paramKeys = rootObject ? Object.keys(rootObject) : [];
-    const fields = collectSchemeInsightFields(parsed);
+    const fields = collectSchemeInsightFields(parsed, options);
     const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo) : undefined;
 
     if (

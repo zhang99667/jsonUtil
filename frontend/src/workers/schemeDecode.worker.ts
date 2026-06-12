@@ -1,4 +1,10 @@
 import { deepDecodeScheme, type SchemeDecodeResult } from '../utils/schemeUtils';
+import {
+  extractBase64MetaInfo,
+  extractSchemeCommandSummaryInfo,
+  type Base64MetaInfo,
+  type SchemeCommandSummaryInfo,
+} from '../utils/schemeMetadata';
 
 interface SchemeDecodeWorkerRequest {
   id: number;
@@ -8,16 +14,34 @@ interface SchemeDecodeWorkerRequest {
 interface SchemeDecodeWorkerResponse {
   id: number;
   result?: SchemeDecodeResult;
+  metadata?: SchemeDecodeWorkerMetadata;
   error?: string;
 }
+
+interface SchemeDecodeWorkerMetadata {
+  base64MetaInfo: Base64MetaInfo | null;
+  commandSummaryInfo: SchemeCommandSummaryInfo | null;
+}
+
+const buildSchemeDecodeMetadata = (result: SchemeDecodeResult): SchemeDecodeWorkerMetadata => ({
+  base64MetaInfo: extractBase64MetaInfo(result.decoded, result.isJson),
+  commandSummaryInfo: extractSchemeCommandSummaryInfo(
+    result.decoded,
+    result.isJson,
+    result.schemeInfo,
+    { includeCommandFieldRows: false }
+  ),
+});
 
 self.onmessage = (event: MessageEvent<SchemeDecodeWorkerRequest>) => {
   const { id, input } = event.data;
 
   try {
+    const result = deepDecodeScheme(input);
     const response: SchemeDecodeWorkerResponse = {
       id,
-      result: deepDecodeScheme(input),
+      result,
+      metadata: buildSchemeDecodeMetadata(result),
     };
     self.postMessage(response);
   } catch (error) {
