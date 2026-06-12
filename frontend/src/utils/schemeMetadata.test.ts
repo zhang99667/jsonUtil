@@ -4,8 +4,10 @@ import {
   extractBase64MetaInfo,
   formatBase64MetaDisplayValue,
   formatCmdHandlerCompatibleResult,
+  formatPrimaryCmdHandlerCompatibleResult,
   getSchemeInsightFieldCopyText,
 } from './schemeMetadata';
+import { deepDecodeScheme } from './schemeUtils';
 
 describe('schemeMetadata', () => {
   it('非 JSON 或普通 JSON 不展示内部 Base64 元信息', () => {
@@ -330,6 +332,68 @@ describe('schemeMetadata', () => {
         },
       },
     });
+  });
+
+  it('整段 response 导出 CMD 结构时聚焦主入口 Scheme', () => {
+    const landingUrl = 'https://example.com/landing?sku=101';
+    const nestedPanel = `baiduboxapp://v1/panel?url=${encodeURIComponent(landingUrl)}`;
+    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      page_url: landingUrl,
+      tail_frame: {
+        panel_scheme: nestedPanel,
+      },
+    }))}`;
+    const response = JSON.stringify({
+      errno: 0,
+      data: {
+        video: [{
+          material: [{
+            info: [{
+              ad_common: {
+                scheme: rootScheme,
+              },
+            }],
+          }],
+        }],
+      },
+    });
+    const decoded = deepDecodeScheme(response);
+    const result = JSON.parse(formatPrimaryCmdHandlerCompatibleResult(
+      decoded.decoded,
+      undefined,
+      response
+    ));
+
+    expect(result).toMatchObject({
+      result: {
+        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdParams: {
+          video_info: {
+            page_url: {
+              cmdSchema: 'https://example.com/landing',
+              cmdParams: {
+                sku: '101',
+              },
+              source: landingUrl,
+            },
+            tail_frame: {
+              panel_scheme: {
+                cmdSchema: 'baiduboxapp://v1/panel',
+                cmdParams: {
+                  url: {
+                    cmdSchema: 'https://example.com/landing',
+                  },
+                },
+                source: nestedPanel,
+              },
+            },
+          },
+        },
+        source: rootScheme,
+      },
+    });
+    expect(result.result.cmdParams.data).toBeUndefined();
+    expect(result.result.cmdParams.errno).toBeUndefined();
   });
 
   it('非法 JSON 不导出 CMD 结构', () => {

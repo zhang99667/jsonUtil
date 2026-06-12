@@ -893,6 +893,29 @@ test('Scheme 面板可展开整段真实 Response 抽取链路', async ({ page }
   await expect(commandSummary).toContainText('CMD 结构');
   await expect(commandSummary).toContainText('cmd解析');
 
+  await page.locator('[data-tour="scheme-copy-cmd-structure"]').click();
+  await expect(page.getByText('已复制 CMD 结构')).toBeVisible();
+  const copiedCmdStructure = JSON.parse(
+    await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}')
+  );
+  expect(copiedCmdStructure).toMatchObject({
+    result: {
+      cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      cmdParams: {
+        video_info: {
+          tail_frame: {
+            panel_scheme: {
+              cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+            },
+          },
+        },
+      },
+      source: rootScheme,
+    },
+  });
+  expect(copiedCmdStructure.result.cmdParams.errno).toBeUndefined();
+  expect(copiedCmdStructure.result.cmdParams.data).toBeUndefined();
+
   const placeholderSection = page.locator('[data-tour="scheme-runtime-placeholders"]');
   await expect(placeholderSection).toContainText('__CONVERT_CMD__');
   await expect(placeholderSection).toContainText('__AD_EXTRA_PARAM_ENCODE_1__');
