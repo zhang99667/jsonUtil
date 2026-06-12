@@ -97,6 +97,7 @@
 - **深度解析 CMD 结构计数**: 报告顶部和底部会展示可复制 CMD 结构数量，URL Scheme 形态的广告跳转也能一眼看到可带走的 cmdHandler 结果
 - **深度解析 CMD 结构快捷筛选**: 点击报告顶部 `CMD结构` 计数即可只看可复制的 cmdHandler 记录，真实 response 多层字段排查时更快定位目标 CMD
 - **深度解析 CMD Schema 分布**: 报告顶部新增 `cmdSchema` 聚合，展示根 CMD 与嵌套 CMD 的 schema 出现次数并支持点击筛选，便于先判断 response 涉及哪些跳转能力再下钻
+- **深度解析 CMD 来源分布**: 报告顶部新增 `cmdSchema` 来源聚合，按 `https://domain`、`baiduboxapp://v7`、`nadcorevendor://vendor` 等来源快速归类，并修正嵌套 schema 筛选命中
 - **深度解析内部 CMD 字段计数**: 报告会统计根 CMD 结构内解析出的内部 CMD/Scheme 字段数量，并支持点击筛选，避免真实 response 中 1 条根结构隐藏多层 CMD 时被低估
 - **深度解析内部 CMD 字段分布**: 报告顶部新增高频内部 CMD 字段聚合，展示 `appUrl`、`panel_cmd`、`convert_cmd` 等字段出现次数并支持点击筛选，大 response 中可先看主要链路分布再下钻
 - **深度解析广告字段识别**: 内部 CMD 字段明细补齐 `convert_btn`、`main_btn`、`ad_monitor_url` 等广告按钮和监测字段，已解析出的局部结构也能在报告、筛选和复制中直接看见

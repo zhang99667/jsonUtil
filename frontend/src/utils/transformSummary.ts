@@ -143,12 +143,22 @@ export interface TransformReportCommandSchemaGroup {
   hasMorePaths: boolean;
 }
 
+export interface TransformReportCommandSchemaOriginGroup {
+  origin: string;
+  count: number;
+  schemaCount: number;
+  recordCount: number;
+  schemas: string[];
+  hasMoreSchemas: boolean;
+}
+
 export interface TransformContextReport {
   summary: TransformContextSummary;
   summaryText?: string;
   coverage: TransformReportCoverage;
   cmdStructureCount: number;
   nestedCommandFieldCount: number;
+  topCommandSchemaOrigins?: TransformReportCommandSchemaOriginGroup[];
   topCommandSchemas?: TransformReportCommandSchemaGroup[];
   topNestedCommandFields?: TransformReportNestedCommandFieldGroup[];
   records: TransformReportRecord[];
@@ -212,6 +222,8 @@ const DEFAULT_TOP_NESTED_COMMAND_FIELD_LIMIT = 8;
 const DEFAULT_TOP_NESTED_COMMAND_FIELD_PATH_LIMIT = 4;
 const DEFAULT_TOP_COMMAND_SCHEMA_LIMIT = 8;
 const DEFAULT_TOP_COMMAND_SCHEMA_PATH_LIMIT = 4;
+const DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_LIMIT = 8;
+const DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_SCHEMA_LIMIT = 4;
 const DEFAULT_DECODED_PATH_COUNT_LIMIT = 10_000;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 1_000;
@@ -1028,12 +1040,17 @@ const matchesReportRecord = (
   !normalizedQuery ||
   includesQuery(record.path, normalizedQuery) ||
   (record.sourceLabel ? includesQuery(record.sourceLabel, normalizedQuery) : false) ||
+  (record.commandSchema ? includesQuery(record.commandSchema, normalizedQuery) : false) ||
+  (record.commandSchema ? includesQuery(getCommandSchemaOrigin(record.commandSchema), normalizedQuery) : false) ||
   includesQuery(record.labels.join(' '), normalizedQuery) ||
   includesQuery(record.insights.join(' '), normalizedQuery) ||
   (record.hasCmdStructure ? includesQuery(CMD_STRUCTURE_SEARCH_TEXT, normalizedQuery) : false) ||
   (record.nestedCommandFieldCount > 0 ? includesQuery(NESTED_CMD_SEARCH_TEXT, normalizedQuery) : false) ||
   (record.nestedCommandSearchFields
     ? record.nestedCommandSearchFields.some(row => matchesNestedCommandField(row, normalizedQuery))
+    : false) ||
+  (record.commandSchemaRows
+    ? record.commandSchemaRows.some(row => matchesCommandSchemaRow(row, normalizedQuery))
     : false) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
@@ -1063,6 +1080,15 @@ const matchesNestedCommandField = (
     includesQuery(row.preview, normalizedQuery))
 );
 
+const matchesCommandSchemaRow = (
+  row: TransformReportCommandSchemaRow,
+  normalizedQuery: string
+): boolean => (
+  includesQuery(row.path, normalizedQuery) ||
+  includesQuery(row.schema, normalizedQuery) ||
+  includesQuery(getCommandSchemaOrigin(row.schema), normalizedQuery)
+);
+
 const buildFilteredRecordView = (
   record: TransformReportRecord,
   normalizedQuery: string
@@ -1075,11 +1101,26 @@ const buildFilteredRecordView = (
   const matchedNestedCommandFields = record.nestedCommandSearchFields?.filter(row => (
     matchesNestedCommandField(row, normalizedQuery)
   )) || [];
-  if (matchedDecodedPaths.length === 0 && matchedNestedCommandFields.length === 0) return record;
+  const matchedCommandSchemaRows = record.commandSchemaRows?.filter(row => (
+    matchesCommandSchemaRow(row, normalizedQuery)
+  )) || [];
+  if (
+    matchedDecodedPaths.length === 0 &&
+    matchedNestedCommandFields.length === 0 &&
+    matchedCommandSchemaRows.length === 0
+  ) {
+    return record;
+  }
   const cmdStructureFocusRows = matchedNestedCommandFields.length > 0
     ? matchedNestedCommandFields
-    : matchedDecodedPaths;
-  const cmdStructureFocusLabel = matchedNestedCommandFields.length > 0 ? '内部 CMD 字段' : '内部路径';
+    : matchedCommandSchemaRows.length > 0
+      ? matchedCommandSchemaRows
+      : matchedDecodedPaths;
+  const cmdStructureFocusLabel = matchedNestedCommandFields.length > 0
+    ? '内部 CMD 字段'
+    : matchedCommandSchemaRows.length > 0
+      ? 'CMD Schema'
+      : '内部路径';
 
   return {
     ...record,
@@ -1110,6 +1151,9 @@ const buildFilteredRecordView = (
             hasMoreNestedCommandFields: false,
           }
         : {}),
+    ...(matchedCommandSchemaRows.length > 0
+      ? { commandSchemaRows: matchedCommandSchemaRows }
+      : {}),
     ...(record.hasCmdStructure && cmdStructureFocusRows.length > 0
       ? {
           cmdStructureFocusPaths: cmdStructureFocusRows.map(row => row.path),
@@ -1271,6 +1315,32 @@ const buildTopNestedCommandFieldGroups = (
     }));
 };
 
+interface CommandSchemaOccurrence {
+  schema: string;
+  path: string;
+  recordPath: string;
+}
+
+const collectCommandSchemaOccurrences = (
+  records: TransformReportRecord[]
+): CommandSchemaOccurrence[] => {
+  const occurrences: CommandSchemaOccurrence[] = [];
+
+  const pushSchema = (schema: string | undefined, path: string, recordPath: string) => {
+    if (!schema) return;
+    occurrences.push({ schema, path, recordPath });
+  };
+
+  records.forEach(record => {
+    pushSchema(record.commandSchema, record.path, record.path);
+    record.commandSchemaRows?.forEach(row => {
+      pushSchema(row.schema, row.path, record.path);
+    });
+  });
+
+  return occurrences;
+};
+
 const buildTopCommandSchemaGroups = (
   records: TransformReportRecord[],
   limit = DEFAULT_TOP_COMMAND_SCHEMA_LIMIT
@@ -1283,9 +1353,7 @@ const buildTopCommandSchemaGroups = (
     hasMorePaths: boolean;
   }>();
 
-  const pushSchema = (schema: string | undefined, path: string, recordPath: string) => {
-    if (!schema) return;
-
+  collectCommandSchemaOccurrences(records).forEach(({ schema, path, recordPath }) => {
     let group = groups.get(schema);
     if (!group) {
       group = {
@@ -1305,13 +1373,6 @@ const buildTopCommandSchemaGroups = (
     } else {
       group.hasMorePaths = true;
     }
-  };
-
-  records.forEach(record => {
-    pushSchema(record.commandSchema, record.path, record.path);
-    record.commandSchemaRows?.forEach(row => {
-      pushSchema(row.schema, row.path, record.path);
-    });
   });
 
   return Array.from(groups.values())
@@ -1323,6 +1384,71 @@ const buildTopCommandSchemaGroups = (
       recordCount: group.recordPaths.size,
       paths: group.paths,
       hasMorePaths: group.hasMorePaths,
+    }));
+};
+
+const getCommandSchemaOrigin = (schema: string): string => {
+  const trimmed = schema.trim().replace(/\\\//g, '/');
+  const protocolRelativeMatch = trimmed.match(/^\/\/([^/?#\s]+)/);
+  if (protocolRelativeMatch) return `//${protocolRelativeMatch[1]}`;
+
+  const absoluteMatch = trimmed.match(/^([A-Za-z][A-Za-z0-9+.-]*:)\/\/([^/?#\s]+)/);
+  if (absoluteMatch) return `${absoluteMatch[1]}//${absoluteMatch[2]}`;
+
+  const protocolMatch = trimmed.match(/^([A-Za-z][A-Za-z0-9+.-]*:)/);
+  return protocolMatch ? protocolMatch[1] : trimmed;
+};
+
+const buildTopCommandSchemaOriginGroups = (
+  records: TransformReportRecord[],
+  limit = DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_LIMIT
+): TransformReportCommandSchemaOriginGroup[] => {
+  const groups = new Map<string, {
+    origin: string;
+    count: number;
+    recordPaths: Set<string>;
+    schemas: Set<string>;
+    visibleSchemas: string[];
+    hasMoreSchemas: boolean;
+  }>();
+
+  collectCommandSchemaOccurrences(records).forEach(({ schema, recordPath }) => {
+    const origin = getCommandSchemaOrigin(schema);
+    let group = groups.get(origin);
+    if (!group) {
+      group = {
+        origin,
+        count: 0,
+        recordPaths: new Set(),
+        schemas: new Set(),
+        visibleSchemas: [],
+        hasMoreSchemas: false,
+      };
+      groups.set(origin, group);
+    }
+
+    group.count += 1;
+    group.recordPaths.add(recordPath);
+    if (!group.schemas.has(schema)) {
+      group.schemas.add(schema);
+      if (group.visibleSchemas.length < DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_SCHEMA_LIMIT) {
+        group.visibleSchemas.push(schema);
+      } else {
+        group.hasMoreSchemas = true;
+      }
+    }
+  });
+
+  return Array.from(groups.values())
+    .sort((left, right) => right.count - left.count || left.origin.localeCompare(right.origin))
+    .slice(0, limit)
+    .map(group => ({
+      origin: group.origin,
+      count: group.count,
+      schemaCount: group.schemas.size,
+      recordCount: group.recordPaths.size,
+      schemas: group.visibleSchemas,
+      hasMoreSchemas: group.hasMoreSchemas,
     }));
 };
 
@@ -1477,6 +1603,7 @@ export const buildTransformContextReport = (
     coverage: buildTransformReportCoverage(summary),
     cmdStructureCount,
     nestedCommandFieldCount,
+    topCommandSchemaOrigins: buildTopCommandSchemaOriginGroups(records),
     topCommandSchemas: buildTopCommandSchemaGroups(records),
     topNestedCommandFields: buildTopNestedCommandFieldGroups(records),
     records,
@@ -1517,6 +1644,7 @@ export const formatTransformContextReportText = (
     '',
   ];
 
+  appendCommandSchemaOriginSummarySection(lines, report.topCommandSchemaOrigins || []);
   appendCommandSchemaSummarySection(lines, report.topCommandSchemas || []);
   appendNestedCommandFieldSummarySection(lines, report.topNestedCommandFields || []);
   lines.push('展开记录:');
@@ -1526,6 +1654,20 @@ export const formatTransformContextReportText = (
   appendReportPlaceholderSection(lines, report.runtimePlaceholderGroups, report.runtimePlaceholders);
 
   return lines.join('\n');
+};
+
+const appendCommandSchemaOriginSummarySection = (
+  lines: string[],
+  groups: TransformReportCommandSchemaOriginGroup[]
+) => {
+  if (groups.length === 0) return;
+
+  lines.push('CMD 来源分布:');
+  groups.forEach(group => {
+    lines.push(`- ${group.origin} ×${group.count}（Schema ${group.schemaCount} / 来源记录 ${group.recordCount}）`);
+    lines.push(`  示例Schema: ${group.schemas.join('；')}${group.hasMoreSchemas ? '；...' : ''}`);
+  });
+  lines.push('');
 };
 
 const appendCommandSchemaSummarySection = (
