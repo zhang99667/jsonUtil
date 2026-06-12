@@ -4,7 +4,7 @@ import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { HighlightRange } from '../types';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
-import { copyText } from '../utils/clipboard';
+import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
@@ -392,7 +392,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             showSuccess('查询结果已复制');
         } catch (error) {
             console.warn('复制 JSONPath 查询结果失败:', error);
-            showError('复制查询结果失败');
+            showError(getClipboardErrorMessage(error, '复制查询结果失败'));
         }
     };
 
@@ -404,7 +404,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             showSuccess('查询路径和值已复制');
         } catch (error) {
             console.warn('复制 JSONPath 查询路径和值失败:', error);
-            showError('复制查询路径和值失败');
+            showError(getClipboardErrorMessage(error, '复制查询路径和值失败'));
         }
     };
 

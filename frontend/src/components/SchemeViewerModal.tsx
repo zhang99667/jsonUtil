@@ -11,7 +11,7 @@ import {
   SchemeType 
 } from '../utils/schemeUtils';
 import { QRCodeCanvas } from 'qrcode.react';
-import { copyText } from '../utils/clipboard';
+import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import {
   extractBase64MetaInfo,
   extractSchemeCommandSummaryInfo,
@@ -383,7 +383,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       toast.success('已复制解码结果', { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 解码结果失败:', err);
-      toast.error('复制失败', { duration: 2000 });
+      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
     }
   };
 
@@ -398,7 +398,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       toast.success('已复制路径和值', { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 路径和值失败:', err);
-      toast.error('复制失败', { duration: 2000 });
+      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
     }
   };
 
@@ -408,7 +408,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       toast.success('已复制原始值', { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 原始值失败:', err);
-      toast.error('复制失败', { duration: 2000 });
+      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
     }
   };
 
@@ -420,7 +420,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       toast.success('已复制路径', { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 来源路径失败:', err);
-      toast.error('复制失败', { duration: 2000 });
+      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
     }
   };
 
@@ -464,7 +464,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       toast.success('已复制序列化结果', { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 序列化结果失败:', err);
-      toast.error('复制失败', { duration: 2000 });
+      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
     }
   };
 
@@ -574,7 +574,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       toast.success('已复制 CMD 结构', { duration: 2000 });
     } catch (err) {
       console.warn('复制 CMD 结构失败:', err);
-      toast.error('复制失败', { duration: 2000 });
+      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
     }
   };
 

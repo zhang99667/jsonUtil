@@ -1,7 +1,7 @@
 import React, { useDeferredValue, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { TransformContext } from '../types';
-import { copyText } from '../utils/clipboard';
+import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import {
   buildTransformContextReport,
   buildTransformReportView,
@@ -118,6 +118,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     Boolean(reportView?.cmdStructureRecords.some(record => record.cmdStructureFocusPaths?.length))
   ), [reportView]);
 
+  const showCopyError = (message: string, error: unknown) => {
+    console.warn(message, error);
+    toast.error(getClipboardErrorMessage(error), { duration: 2000 });
+  };
+
   const handleCopyReport = async () => {
     if (!context) return;
 
@@ -125,8 +130,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(formatTransformContextReportText(context));
       toast.success('已复制解析报告', { duration: 2000 });
     } catch (error) {
-      console.warn('复制深度解析报告失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析报告失败:', error);
     }
   };
 
@@ -137,8 +141,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(formatTransformReportViewText(report, reportView, deferredQuery));
       toast.success('已复制筛选结果', { duration: 2000 });
     } catch (error) {
-      console.warn('复制深度解析筛选结果失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析筛选结果失败:', error);
     }
   };
 
@@ -152,8 +155,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(pathValueCopyText);
       toast.success('已复制路径和值', { duration: 2000 });
     } catch (error) {
-      console.warn('复制深度解析路径和值失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析路径和值失败:', error);
     }
   };
 
@@ -167,8 +169,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(cmdStructureCopyText);
       toast.success(hasFocusedCmdStructureCopyItems ? '已复制聚焦 CMD 结构列表' : '已复制 CMD 结构列表', { duration: 2000 });
     } catch (error) {
-      console.warn('复制深度解析 CMD 结构列表失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析 CMD 结构列表失败:', error);
     }
   };
 
@@ -179,8 +180,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(formatTransformPlaceholderReportText(report, reportView, deferredQuery));
       toast.success(deferredQuery.trim() ? '已复制筛选占位符' : '已复制占位符摘要', { duration: 2000 });
     } catch (error) {
-      console.warn('复制深度解析占位符失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析占位符失败:', error);
     }
   };
 
@@ -189,8 +189,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(path);
       toast.success(successMessage, { duration: 1600 });
     } catch (error) {
-      console.warn('复制深度解析路径失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析路径失败:', error);
     }
   };
 
@@ -199,8 +198,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(value);
       toast.success(successMessage, { duration: 1600 });
     } catch (error) {
-      console.warn('复制深度解析原始值失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析原始值失败:', error);
     }
   };
 
@@ -209,8 +207,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(value);
       toast.success('已复制路径和值', { duration: 1600 });
     } catch (error) {
-      console.warn('复制深度解析内部路径和值失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析内部路径和值失败:', error);
     }
   };
 
@@ -222,8 +219,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       await copyText(cmdStructureCopyText);
       toast.success(record.cmdStructureFocusPaths?.length ? '已复制聚焦 CMD 结构' : '已复制 CMD 结构', { duration: 1600 });
     } catch (error) {
-      console.warn('复制深度解析 CMD 结构失败:', error);
-      toast.error('复制失败', { duration: 2000 });
+      showCopyError('复制深度解析 CMD 结构失败:', error);
     }
   };
 
