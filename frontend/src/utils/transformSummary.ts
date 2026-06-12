@@ -42,6 +42,10 @@ export interface TransformReportRecord {
   isDecodedPathCountTruncated: boolean;
   indexedDecodedPathCount: number;
   hasMoreDecodedPaths: boolean;
+  nestedCommandFields: TransformReportDecodedPath[];
+  nestedCommandSearchFields?: TransformReportDecodedPath[];
+  indexedNestedCommandFieldCount: number;
+  hasMoreNestedCommandFields: boolean;
   hasCmdStructure: boolean;
   nestedCommandFieldCount: number;
   nestedExtFieldCount: number;
@@ -170,6 +174,8 @@ export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_PLACEHOLDER_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_CMD_STRUCTURE_LIMIT = 200;
 const DEFAULT_DECODED_PATH_LIMIT = 12;
+const DEFAULT_NESTED_COMMAND_FIELD_LIMIT = 8;
+const DEFAULT_NESTED_COMMAND_FIELD_SEARCH_LIMIT = 200;
 const DEFAULT_DECODED_PATH_COUNT_LIMIT = 10_000;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 200;
@@ -361,7 +367,14 @@ const buildRecordInsightData = (
   record: PathTransformRecord
 ): Pick<
   TransformReportRecord,
-  'insights' | 'nestedCommandFieldCount' | 'nestedExtFieldCount' | 'nestedBase64SuffixFieldCount'
+  | 'insights'
+  | 'nestedCommandFields'
+  | 'nestedCommandSearchFields'
+  | 'indexedNestedCommandFieldCount'
+  | 'hasMoreNestedCommandFields'
+  | 'nestedCommandFieldCount'
+  | 'nestedExtFieldCount'
+  | 'nestedBase64SuffixFieldCount'
 > => {
   const insights: string[] = [];
   const commandSchema = getRecordCommandSchema(record);
@@ -373,6 +386,9 @@ const buildRecordInsightData = (
   if (decodedValue === undefined || decodedValue === null || typeof decodedValue !== 'object') {
     return {
       insights,
+      nestedCommandFields: [],
+      indexedNestedCommandFieldCount: 0,
+      hasMoreNestedCommandFields: false,
       nestedCommandFieldCount: 0,
       nestedExtFieldCount: 0,
       nestedBase64SuffixFieldCount: 0,
@@ -381,12 +397,23 @@ const buildRecordInsightData = (
 
   const {
     commandFields,
+    commandFieldRows,
     commandFieldCount,
     extFields,
     extFieldCount,
     base64SuffixFields,
     base64SuffixFieldCount,
   } = collectSchemeInsightFields(decodedValue);
+  const nestedCommandSearchFields = commandFieldRows
+    .slice(0, DEFAULT_NESTED_COMMAND_FIELD_SEARCH_LIMIT)
+    .map(row => {
+      const path = joinJsonPath(record.path, row.path);
+      return {
+        path,
+        preview: row.preview,
+        copyText: row.copyText.replace(row.path, path),
+      };
+    });
 
   const nestedCmdInsight = formatSchemeInsightItems('cmd解析', commandFields);
   const extInsight = formatSchemeInsightItems('ext解析', extFields);
@@ -399,6 +426,10 @@ const buildRecordInsightData = (
       ...(extInsight ? [extInsight] : []),
       ...(suffixInsight ? [suffixInsight] : []),
     ],
+    nestedCommandFields: nestedCommandSearchFields.slice(0, DEFAULT_NESTED_COMMAND_FIELD_LIMIT),
+    ...(nestedCommandSearchFields.length > 0 ? { nestedCommandSearchFields } : {}),
+    indexedNestedCommandFieldCount: nestedCommandSearchFields.length,
+    hasMoreNestedCommandFields: commandFieldCount > DEFAULT_NESTED_COMMAND_FIELD_LIMIT,
     nestedCommandFieldCount: commandFieldCount,
     nestedExtFieldCount: extFieldCount,
     nestedBase64SuffixFieldCount: base64SuffixFieldCount,
@@ -755,6 +786,9 @@ const matchesReportRecord = (
   includesQuery(record.insights.join(' '), normalizedQuery) ||
   (record.hasCmdStructure ? includesQuery(CMD_STRUCTURE_SEARCH_TEXT, normalizedQuery) : false) ||
   (record.nestedCommandFieldCount > 0 ? includesQuery(NESTED_CMD_SEARCH_TEXT, normalizedQuery) : false) ||
+  (record.nestedCommandSearchFields
+    ? record.nestedCommandSearchFields.some(row => matchesDecodedPath(row, normalizedQuery))
+    : false) ||
   includesQuery(record.originalPreview, normalizedQuery) ||
   (record.decodedPreview ? includesQuery(record.decodedPreview, normalizedQuery) : false) ||
   (record.decodedSearchText ? includesQuery(record.decodedSearchText, normalizedQuery) : false) ||
@@ -777,21 +811,36 @@ const buildFilteredRecordView = (
   record: TransformReportRecord,
   normalizedQuery: string
 ): TransformReportRecord => {
-  if (!normalizedQuery || !record.decodedSearchPaths) return record;
+  if (!normalizedQuery) return record;
 
-  const matchedDecodedPaths = record.decodedSearchPaths.filter(row => (
+  const matchedDecodedPaths = record.decodedSearchPaths?.filter(row => (
     matchesDecodedPath(row, normalizedQuery)
-  ));
-  if (matchedDecodedPaths.length === 0) return record;
+  )) || [];
+  const matchedNestedCommandFields = record.nestedCommandSearchFields?.filter(row => (
+    matchesDecodedPath(row, normalizedQuery)
+  )) || [];
+  if (matchedDecodedPaths.length === 0 && matchedNestedCommandFields.length === 0) return record;
 
   return {
     ...record,
-    decodedSearchPaths: matchedDecodedPaths,
-    decodedPaths: matchedDecodedPaths.slice(0, DEFAULT_DECODED_PATH_LIMIT),
-    decodedPathCount: matchedDecodedPaths.length,
-    isDecodedPathCountTruncated: false,
-    indexedDecodedPathCount: matchedDecodedPaths.length,
-    hasMoreDecodedPaths: matchedDecodedPaths.length > DEFAULT_DECODED_PATH_LIMIT,
+    ...(matchedDecodedPaths.length > 0
+      ? {
+          decodedSearchPaths: matchedDecodedPaths,
+          decodedPaths: matchedDecodedPaths.slice(0, DEFAULT_DECODED_PATH_LIMIT),
+          decodedPathCount: matchedDecodedPaths.length,
+          isDecodedPathCountTruncated: false,
+          indexedDecodedPathCount: matchedDecodedPaths.length,
+          hasMoreDecodedPaths: matchedDecodedPaths.length > DEFAULT_DECODED_PATH_LIMIT,
+        }
+      : {}),
+    ...(matchedNestedCommandFields.length > 0
+      ? {
+          nestedCommandSearchFields: matchedNestedCommandFields,
+          nestedCommandFields: matchedNestedCommandFields.slice(0, DEFAULT_NESTED_COMMAND_FIELD_LIMIT),
+          indexedNestedCommandFieldCount: matchedNestedCommandFields.length,
+          hasMoreNestedCommandFields: matchedNestedCommandFields.length > DEFAULT_NESTED_COMMAND_FIELD_LIMIT,
+        }
+      : {}),
   };
 };
 
@@ -1099,6 +1148,14 @@ const appendReportRecordLines = (
       if (record.insights.length > 0) {
         lines.push(`  解析线索: ${record.insights.join('；')}`);
       }
+      if (record.nestedCommandFields.length > 0) {
+        lines.push(`  内部CMD字段: ${record.nestedCommandFields.map(row => `${row.path}=${row.preview}`).join('；')}`);
+      }
+      if (record.hasMoreNestedCommandFields) {
+        lines.push(
+          `  内部CMD字段: 还有更多未展示（总计 ${record.nestedCommandFieldCount} 个，已索引 ${record.indexedNestedCommandFieldCount} 个）`
+        );
+      }
       if (record.decodedPaths.length > 0) {
         lines.push(`  内部路径: ${record.decodedPaths.map(row => `${row.path}=${row.preview}`).join('；')}`);
       }
@@ -1327,6 +1384,12 @@ export const formatTransformCmdStructureReportText = (
     }
     if (record.nestedCommandFieldCount > 0) {
       lines.push(`内部CMD字段: ${record.nestedCommandFieldCount}`);
+      record.nestedCommandFields.forEach(row => {
+        lines.push(`内部CMD字段路径: ${row.path} = ${row.preview}`);
+      });
+      if (record.hasMoreNestedCommandFields) {
+        lines.push(`内部CMD字段路径: 还有更多未展示（已索引 ${record.indexedNestedCommandFieldCount} 个）`);
+      }
     }
     lines.push(getTransformRecordCmdStructureCopyText(record));
   });

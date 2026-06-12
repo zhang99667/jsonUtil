@@ -71,6 +71,14 @@ describe('schemeMetadata', () => {
       paramCount: 1,
       paramKeys: ['video_info'],
       commandFields: ['panel_scheme'],
+      commandFieldRows: [
+        {
+          key: 'panel_scheme',
+          path: '$.video_info.tail_frame.panel_scheme',
+          preview: '对象: ext_info',
+          copyText: '$.video_info.tail_frame.panel_scheme = {"ext_info":{"user_id":"u1"}}',
+        },
+      ],
       commandFieldCount: 1,
       extFields: ['ext_info', 'ad_extra_param'],
       extFieldCount: 2,
@@ -93,6 +101,7 @@ describe('schemeMetadata', () => {
       paramCount: 2,
       paramKeys: ['meg_name', '_base64_suffix_decoded'],
       commandFields: [],
+      commandFieldRows: [],
       commandFieldCount: 0,
       extFields: [],
       extFieldCount: 0,

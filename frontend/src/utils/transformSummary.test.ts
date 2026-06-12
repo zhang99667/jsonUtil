@@ -278,13 +278,37 @@ describe('transformSummary', () => {
       'ext解析: ad_extra_param, ext_info, extInfo',
     ]);
     expect(record.nestedCommandFieldCount).toBeGreaterThan(4);
+    expect(record.indexedNestedCommandFieldCount).toBe(9);
+    expect(record.hasMoreNestedCommandFields).toBe(true);
+    expect(record.nestedCommandFields[0]).toEqual({
+      path: '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.bottom_button_scheme',
+      preview: '对象: task_params',
+      copyText: '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.bottom_button_scheme = {"task_params":{"task_id":"602","ext_policy":{"sdk_switch":"1"}}}',
+    });
+    expect(record.nestedCommandFields.map(row => row.path)).toContain(
+      '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl'
+    );
     expect(report.nestedCommandFieldCount).toBe(record.nestedCommandFieldCount);
     expect(buildTransformReportView(report, '内部CMD字段').records.map(item => item.path)).toEqual([record.path]);
+    expect(buildTransformReportView(report, 'appUrl').records[0].nestedCommandFields.map(row => row.path)).toEqual([
+      '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl',
+      '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.url',
+      '$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.appUrl',
+      '$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.appUrl.params.url',
+    ]);
+    expect(formatTransformContextReportText(result.context)).toContain(
+      '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.bottom_button_scheme=对象: task_params'
+    );
     expect(formatTransformCmdStructureReportText(
       report,
       buildTransformReportView(report, '内部CMD字段'),
       '内部CMD字段'
     )).toContain('内部CMD字段: ');
+    expect(formatTransformCmdStructureReportText(
+      report,
+      buildTransformReportView(report, 'appUrl'),
+      'appUrl'
+    )).toContain('内部CMD字段路径: $.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl = 对象: params');
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(record))).toMatchObject({
       result: {
         cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',

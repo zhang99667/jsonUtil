@@ -1,16 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-
-const FEATURE_TOUR_IDS = [
-  'jsonpath',
-  'ai-fix',
-  'deep-format',
-  'escape',
-  'unicode-convert',
-  'discovery-jsonpath',
-  'discovery-file-ops',
-  'discovery-ai-fix',
-  'discovery-settings',
-];
+import { FEATURE_TOUR_IDS, openMainApp, waitForMainAppReady } from './helpers/appReady';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/visitor/ping', async route => {
@@ -24,9 +13,7 @@ test.beforeEach(async ({ page }) => {
     });
   }, FEATURE_TOUR_IDS);
 
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('JSON 工具箱')).toBeVisible();
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+  await openMainApp(page, { waitForPreviewEditor: false });
 });
 
 test('未保存草稿会阻止页面卸载', async ({ page }) => {
@@ -46,7 +33,7 @@ test('无文件草稿刷新后自动恢复', async ({ page }) => {
 
   page.once('dialog', dialog => dialog.accept());
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+  await waitForMainAppReady(page, { waitForPreviewEditor: false });
 
   await expect(page.getByText('已恢复上次未保存草稿')).toBeVisible();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"recover-after-reload"');
@@ -66,7 +53,7 @@ test('未保存标签刷新后自动恢复', async ({ page }) => {
 
   page.once('dialog', dialog => dialog.accept());
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+  await waitForMainAppReady(page, { waitForPreviewEditor: false });
 
   await expect(page.getByText('已恢复上次未保存标签')).toBeVisible();
   await expect(page.locator('[data-tour="editor-tabs"]').getByText('Untitled-1')).toBeVisible();
@@ -221,6 +208,7 @@ test('拖入多个文件时批量打开并保留原草稿', async ({ page }) => 
   await expect(editorTabs.getByText('first.json')).toBeVisible();
   await expect(editorTabs.getByText('second.json')).toBeVisible();
   await expect(page.getByText('已打开 2 个文件')).toBeVisible();
+  await editorTabs.getByText('second.json').click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"second":2');
 
   await editorTabs.getByText('first.json').click();

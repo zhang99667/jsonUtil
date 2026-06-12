@@ -1,16 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-
-const FEATURE_TOUR_IDS = [
-  'jsonpath',
-  'ai-fix',
-  'deep-format',
-  'escape',
-  'unicode-convert',
-  'discovery-jsonpath',
-  'discovery-file-ops',
-  'discovery-ai-fix',
-  'discovery-settings',
-];
+import { FEATURE_TOUR_IDS, openMainApp } from './helpers/appReady';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/visitor/ping', async route => {
@@ -46,9 +35,7 @@ test.beforeEach(async ({ page }) => {
     });
   }, FEATURE_TOUR_IDS);
 
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('JSON 工具箱')).toBeVisible();
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+  await openMainApp(page, { waitForPreviewEditor: false });
 });
 
 test('自动保存成功后清除标签未保存状态', async ({ page }) => {
