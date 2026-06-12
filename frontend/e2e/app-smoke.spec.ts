@@ -784,6 +784,142 @@ test('Scheme 面板展示运行时占位符聚合摘要', async ({ page }) => {
   await expect(placeholderSection).toContainText('$.cmd.first_cmd=__CONVERT_CMD__');
 });
 
+test('Scheme 面板可展开整段真实 Response 抽取链路', async ({ page }) => {
+  const finalUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101&bd_vid=abc';
+  const landingUrl = `https://union-click.jd.com/sem.php?source=baidu-ys&unionId=262767352&to=${encodeURIComponent(finalUrl)}`;
+  const webUrl = `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}&adFlag=${encodeURIComponent(JSON.stringify({
+    ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+    nid: 'ad1_101',
+  }))}`;
+  const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+    category: 'jump',
+    des: 'm',
+    url: landingUrl,
+  }))}`;
+  const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    appUrl,
+    webUrl,
+    source: 'feedna',
+    extInfo: JSON.stringify({
+      ext5: {
+        protocal_header: 'openapp.jdmobile',
+      },
+    }),
+  }))}`;
+  const rewardButtonCmd = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+    android_pid: '1683310188080',
+    task_id: '602',
+    ext_params: {
+      reward_num: '__REWARD_NUM__',
+    },
+  }))}`;
+  const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
+    button_cmd: '__CONVERT_CMD__',
+    button_text: '打开应用并体验',
+  }))}&main_btn=${encodeURIComponent(JSON.stringify({
+    button_cmd: rewardButtonCmd,
+    button_text: '继续完成任务',
+  }))}&convert_cmd=${encodeURIComponent(deeplinkCmd)}`;
+  const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?panel_cmd=${encodeURIComponent(deeplinkCmd)}&url=${encodeURIComponent(landingUrl)}&lp_real_url=${encodeURIComponent(landingUrl)}`;
+  const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    vid: '1353102586669',
+    page_url: landingUrl,
+    poster_image: 'https://feed-image.baidu.com/0/pic/demo.jpg',
+    tail_frame: {
+      bottom_button_scheme: rewardButtonCmd,
+      panel_scheme: panelScheme,
+      user_portrait: 'https://feed-image.baidu.com/0/pic/avatar.jpg',
+    },
+  }))}&reward=${encodeURIComponent(JSON.stringify({
+    scheme: 'openapp.jdmobile://',
+    stay_cmd: rewardDialog,
+    reward_cmd: rewardDialog,
+  }))}&convert=${encodeURIComponent(JSON.stringify({
+    button_scheme: deeplinkCmd,
+  }))}&panel=${encodeURIComponent(JSON.stringify({
+    panel_cmd: deeplinkCmd,
+    webpanel_cmd: deeplinkCmd,
+  }))}&rotation_component=${encodeURIComponent(JSON.stringify({
+    click_event_cmd: '__CONVERT_CMD__',
+    webpanel_event_cmd: '__WEBPANEL_CMD__',
+  }))}`;
+  const extraParam = `AFD8f${encodeBase64(JSON.stringify({
+    meg_name: 'AI',
+    ad_extend: JSON.stringify({
+      ad_info: {
+        h_ecpm: 207000,
+      },
+      bid: 138,
+    }),
+  }))}`;
+  const response = JSON.stringify({
+    errno: 0,
+    errmsg: '',
+    data: {
+      video: [{
+        material: [{
+          info: [{
+            ad_common: {
+              ad_style: 'reward_video_lp',
+              scheme: rootScheme,
+            },
+          }],
+        }],
+        extra: [{
+          k: 'extraParam',
+          v: extraParam,
+        }],
+      }],
+    },
+  });
+
+  await page.evaluate(() => {
+    window.localStorage.setItem('scheme-panel-position', JSON.stringify({ x: 80, y: 80 }));
+    window.localStorage.setItem('scheme-panel-size', JSON.stringify({ width: 560, height: 620 }));
+  });
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(response);
+
+  await page.getByRole('button', { name: '复制解码结果' }).click();
+  const decodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(decodedResult).toContain('"panel_scheme"');
+  expect(decodedResult).toContain('"panel_cmd"');
+  expect(decodedResult).toContain('"appUrl"');
+  expect(decodedResult).toContain('"sku": "101"');
+  expect(decodedResult).toContain('"bd_vid": "abc"');
+  expect(decodedResult).toContain('"h_ecpm": 207000');
+
+  const commandSummary = page.locator('[data-tour="scheme-command-summary"]');
+  await expect(commandSummary).toContainText('CMD 结构');
+  await expect(commandSummary).toContainText('cmd解析');
+
+  const placeholderSection = page.locator('[data-tour="scheme-runtime-placeholders"]');
+  await expect(placeholderSection).toContainText('__CONVERT_CMD__');
+  await expect(placeholderSection).toContainText('__AD_EXTRA_PARAM_ENCODE_1__');
+});
+
+test('Scheme 面板整段 Response 超长字段展示性能保护提示', async ({ page }) => {
+  const hugeCommand = `url=${encodeURIComponent(`https://example.com/landing?payload=${'x'.repeat(260_000)}`)}`;
+  const response = JSON.stringify({
+    errno: 0,
+    data: {
+      huge_cmd: hugeCommand,
+      small_cmd: 'cmd=%7B%22ok%22%3Atrue%7D',
+    },
+  });
+
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(response);
+
+  const warnings = page.locator('[data-tour="scheme-decode-warnings"]');
+  await expect(warnings).toContainText('性能保护');
+  await expect(warnings).toContainText('跳过 1');
+  await expect(warnings).toContainText('$.data.huge_cmd');
+  await page.getByRole('button', { name: '复制解码结果' }).click();
+  const decodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(decodedResult).toContain('"ok": true');
+});
+
 test('Scheme 面板可复制特殊 key 来源路径', async ({ page }) => {
   await fillSourceEditor(page, JSON.stringify({
     'a.b': {
