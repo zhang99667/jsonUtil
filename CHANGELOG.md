@@ -19,6 +19,8 @@
 - **Scheme 面板大 Response 解码 Worker 化**: 独立 Scheme 面板粘贴大 response 时将递归解码放入 Worker，减少真实广告 response 展开期间的主线程卡顿
 - **Scheme 面板大 Response 摘要 Worker 化**: 大 response 的 Base64 元信息和 CMD 摘要随解码 Worker 一起生成，避免返回结果后主线程再次解析整段 JSON
 - **Scheme 面板复制文本懒生成**: 路径和值、cmdHandler 风格 CMD 结构改为点击复制时再生成，减少大 response 解析完成后的额外主线程计算
+- **Scheme 面板序列化与校验懒计算**: 大 response 解码结果未编辑时跳过重复 JSON 校验，序列化结果改为点击复制时再生成，减少 Worker 返回后的主线程计算
+- **真实 Response convert/监测链路回归**: 根据真实广告 response 补充 `convert.button_scheme` 与 `ad_monitor_url.click_url` 脱敏回归，防止按钮转换链路和监测 URL schema 解析退化
 - **真实 Response CMD 容器回归**: 补充脱敏真实 response 中 `cmd_policy`、`common_info`、`panel`、`callbackUrl` 链路回归，防止常见广告 CMD 容器和 callback 占位符解析退化
 - **CMD/Scheme 内部 Base64 片段解析**: 支持只读解析带内部头的 Base64 JSON 片段，提升真实广告 response 中 extraParam 等扩展字段的可读性
 - **CMD/Scheme 内部 Base64 后缀保留**: 带内部头的 Base64 JSON 片段如果在 padding 后继续拼接后缀，会在解析结果中展示 `_base64_prefix` / `_base64_suffix`，避免真实 extraParam 后缀信息被隐藏

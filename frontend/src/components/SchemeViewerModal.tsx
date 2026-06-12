@@ -425,9 +425,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   };
 
   // JSON 解码结果被编辑后需要重新校验，避免非法内容写回原始字段。
+  const isPristineDecodedContent = !isEditing && editedContent === decodeResult.decoded;
   const editedJsonError = useMemo(() => {
     if (!decodeResult.isJson) return '';
     if (!editedContent.trim()) return 'JSON 内容不能为空';
+    if (isPristineDecodedContent) return '';
 
     try {
       JSON.parse(editedContent);
@@ -436,21 +438,25 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       const message = error instanceof Error ? error.message : String(error);
       return `JSON 内容格式有误: ${message}`;
     }
-  }, [decodeResult.isJson, editedContent]);
+  }, [decodeResult.isJson, editedContent, isPristineDecodedContent]);
   const hasNonReversibleLayer = useMemo(() => (
     decodeResult.layers.some(layer => layer.reversible === false)
   ), [decodeResult.layers]);
   const canApplyEdit = Boolean(onApply && isEditing && !isDecodePending && !editedJsonError && !hasNonReversibleLayer);
-  const serializedContent = useMemo(() => {
-    if (isDecodePending || !actualValue || !editedContent || editedJsonError || hasNonReversibleLayer || decodeResult.layers.length === 0) {
-      return '';
-    }
-
-    return encodeWithLayers(editedContent, decodeResult.layers);
-  }, [actualValue, decodeResult.layers, editedContent, editedJsonError, hasNonReversibleLayer, isDecodePending]);
+  const canCopySerializedContent = Boolean(
+    !isDecodePending &&
+    actualValue &&
+    editedContent &&
+    !editedJsonError &&
+    !hasNonReversibleLayer &&
+    decodeResult.layers.length > 0
+  );
   const canCopyPathValues = Boolean(decodeResult.isJson && !isDecodePending && !editedJsonError);
 
   const handleCopySerialized = async () => {
+    if (!canCopySerializedContent) return;
+
+    const serializedContent = encodeWithLayers(editedContent, decodeResult.layers);
     if (!serializedContent) return;
 
     try {
@@ -689,9 +695,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           <button
             data-tour="scheme-copy-serialized"
             onClick={handleCopySerialized}
-            disabled={!serializedContent}
+            disabled={!canCopySerializedContent}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={serializedContent ? '复制当前编辑内容重新编码后的结果' : '请先确保解码结果合法且编码层可逆'}
+            title={canCopySerializedContent ? '复制当前编辑内容重新编码后的结果' : '请先确保解码结果合法且编码层可逆'}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h10m0 0l-3-3m3 3l-3 3m9 7H10m0 0l3 3m-3-3l3-3" />
