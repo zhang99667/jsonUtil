@@ -139,6 +139,7 @@
 - **JSON Lines 格式化回写**: 格式化模式会将 `.jsonl` 预览为可读 JSON 数组，预览编辑同步时再恢复为一行一个 JSON
 - **JSON Lines 深度格式化**: 嵌套解析支持展开 `.jsonl` 每行对象中的 JSON 字符串和 CMD/Scheme 字段，并在回写时恢复 JSONL 形态
 - **JSON Lines 行级错误提示**: 校验 `.jsonl` 时会标明具体失败行号，便于快速定位日志中的坏行
+- **JSON 家族文件打开增强**: 文件选择器和文本文件识别补充 `.ndjson`、`.har`、`.geojson`、`.webmanifest`、`.map` 等常见调试文件，并兼容 `application/*+json` MIME
 - **真实粘贴 JSON 提取**: 格式化、压缩、Key 排序、深度格式化和校验支持从 Markdown JSON 代码块、JS 赋值和 JSONP 回调中提取 JSON，减少复制 response 后手动删外壳的成本
 - **XSSI Response 外壳提取**: 格式化、压缩、Key 排序、深度格式化和校验支持 `while(1);`、`for(;;);`、`)]}',` 等安全前缀包装的真实接口 response，预览编辑回写时保留原前缀
 - **包装 JSON 回写保真**: FORMAT 模式预览编辑回写时会保留原始 JS 赋值、JSONP 回调和 Markdown 代码块外壳，仅替换内部 JSON 内容
