@@ -7,6 +7,7 @@ import {
   buildTransformReportView,
   formatTransformCmdStructureReportText,
   formatTransformContextReportText,
+  formatTransformIssueSampleReportText,
   formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
@@ -117,6 +118,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const hasFocusedCmdStructureCopyItems = useMemo(() => (
     Boolean(reportView?.cmdStructureRecords.some(record => record.cmdStructureFocusPaths?.length))
   ), [reportView]);
+  const issueSampleCopyText = useMemo(() => (
+    reportView ? formatTransformIssueSampleReportText(reportView) : ''
+  ), [reportView]);
 
   const showCopyError = (message: string, error: unknown) => {
     console.warn(message, error);
@@ -181,6 +185,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success(deferredQuery.trim() ? '已复制筛选占位符' : '已复制占位符摘要', { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析占位符失败:', error);
+    }
+  };
+
+  const handleCopyIssueSamples = async () => {
+    if (!issueSampleCopyText || isFilterPending) return;
+
+    try {
+      await copyText(issueSampleCopyText);
+      toast.success('已复制问题样本', { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析问题样本失败:', error);
     }
   };
 
@@ -274,6 +289,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
             {hasFocusedCmdStructureCopyItems ? '复制聚焦 CMD' : '复制 CMD 结构'}
           </button>
         )}
+        <button
+          data-tour="transform-report-copy-issue-samples"
+          onClick={handleCopyIssueSamples}
+          disabled={!issueSampleCopyText || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="复制当前筛选下的待检查、跳过和占位符来源样本"
+        >
+          复制问题样本
+        </button>
         <button
           onClick={handleCopyReport}
           disabled={!context}
