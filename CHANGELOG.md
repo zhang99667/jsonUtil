@@ -14,6 +14,7 @@
 - **CMD/Scheme 短 Base64 识别**: Scheme 面板支持直接识别短 JSON Base64 和 URL-safe 省略 padding 的短 JSON Base64，减少独立粘贴参数时漏解析
 - **Scheme 面板整段 Response 展开**: 独立 Scheme/CMD 面板支持直接粘贴 JSON response，并递归展开其中的 CMD/Scheme、Base64 JSON 和运行时占位符
 - **Scheme 面板整段 Response 性能保护**: 整段 JSON response 内部递归展开增加字符串预算护栏，超长字段会保留原值并提示可单独解析
+- **Scheme 面板整段 Response E2E 覆盖**: 补充真实 response 抽取链路和超长字段性能保护的界面级回归，防止粘贴整段广告 response 的解析能力退化
 - **CMD/Scheme 内部 Base64 片段解析**: 支持只读解析带内部头的 Base64 JSON 片段，提升真实广告 response 中 extraParam 等扩展字段的可读性
 - **CMD/Scheme 内部 Base64 后缀保留**: 带内部头的 Base64 JSON 片段如果在 padding 后继续拼接后缀，会在解析结果中展示 `_base64_prefix` / `_base64_suffix`，避免真实 extraParam 后缀信息被隐藏
 - **CMD/Scheme 内部 Base64 后缀解析**: 内部 Base64 JSON 片段的后缀如果还能解出参数串，会额外展示 `_base64_suffix_decoded`，方便直接查看真实 response 中拼接的 os/ip/ua 等请求上下文
