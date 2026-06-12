@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { copyText } from './clipboard';
+import { copyText, getClipboardErrorMessage } from './clipboard';
 
 describe('copyText', () => {
   afterEach(() => {
@@ -60,5 +60,15 @@ describe('copyText', () => {
     });
 
     await expect(copyText('blocked')).rejects.toThrow('浏览器拒绝复制操作');
+  });
+});
+
+describe('getClipboardErrorMessage', () => {
+  it('优先展示底层复制失败原因', () => {
+    expect(getClipboardErrorMessage(new Error('浏览器拒绝复制操作'))).toBe('浏览器拒绝复制操作');
+  });
+
+  it('非 Error 错误使用兜底文案', () => {
+    expect(getClipboardErrorMessage('blocked', '复制查询结果失败')).toBe('复制查询结果失败');
   });
 });

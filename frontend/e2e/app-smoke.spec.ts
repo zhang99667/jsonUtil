@@ -421,6 +421,23 @@ test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page 
   expect(copiedResult).toContain('"copy": true');
 });
 
+test('预览复制失败时展示浏览器拒绝原因', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+    document.execCommand = () => false;
+  });
+
+  await fillSourceEditor(page, '{"copy":false}');
+  await page.getByRole('button', { name: '格式化' }).click();
+  await expectPreviewText(page, '"copy": false');
+
+  await page.getByRole('button', { name: '复制' }).click();
+  await expect(page.getByText('浏览器拒绝复制操作')).toBeVisible();
+});
+
 test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   await page.evaluate(() => {
     window.localStorage.setItem('json-helper-general-settings', '{bad');

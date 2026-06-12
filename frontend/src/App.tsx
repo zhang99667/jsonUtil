@@ -23,7 +23,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
-import { copyText } from './utils/clipboard';
+import { copyText, getClipboardErrorMessage } from './utils/clipboard';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
 import {
@@ -1069,7 +1069,7 @@ const App: React.FC = () => {
                   setAiRepairSummary(null);
                 }}
                 onCopySuccess={() => showSuccess('已复制 AI 修复摘要')}
-                onCopyError={() => showError('复制 AI 修复摘要失败')}
+                onCopyError={(errorMessage) => showError(errorMessage)}
               />
             </Suspense>
           )}
@@ -1173,8 +1173,8 @@ const App: React.FC = () => {
                       try {
                         await copyText(output);
                         showSuccess('已复制预览内容');
-                      } catch {
-                        showError('复制失败');
+                      } catch (error) {
+                        showError(getClipboardErrorMessage(error));
                       }
                     }}
                     disabled={!output.trim() || isOutputTransforming}

@@ -36,3 +36,10 @@ export const copyText = async (text: string): Promise<void> => {
     textarea.remove();
   }
 };
+
+export const getClipboardErrorMessage = (
+  error: unknown,
+  fallbackMessage = '复制失败'
+): string => (
+  error instanceof Error && error.message ? error.message : fallbackMessage
+);

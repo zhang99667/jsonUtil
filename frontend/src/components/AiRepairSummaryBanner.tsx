@@ -1,13 +1,13 @@
 import React from 'react';
 import type { AiRepairSummary } from '../utils/aiRepairSummary';
 import { formatAiRepairSummary } from '../utils/aiRepairSummary';
-import { copyText } from '../utils/clipboard';
+import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 
 interface AiRepairSummaryBannerProps {
   summary: AiRepairSummary;
   onClose: () => void;
   onCopySuccess: () => void;
-  onCopyError: () => void;
+  onCopyError: (errorMessage: string) => void;
 }
 
 export const AiRepairSummaryBanner: React.FC<AiRepairSummaryBannerProps> = ({
@@ -20,8 +20,8 @@ export const AiRepairSummaryBanner: React.FC<AiRepairSummaryBannerProps> = ({
     try {
       await copyText(formatAiRepairSummary(summary));
       onCopySuccess();
-    } catch {
-      onCopyError();
+    } catch (error) {
+      onCopyError(getClipboardErrorMessage(error, '复制 AI 修复摘要失败'));
     }
   };
 
