@@ -360,10 +360,13 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   };
 
   const handleCopyPathValues = async () => {
-    if (!decodedPathValueCopyText) return;
+    if (!canCopyPathValues) return;
+
+    const pathValueCopyText = formatSchemePathValuesForCopy(editedContent);
+    if (!pathValueCopyText) return;
 
     try {
-      await copyText(decodedPathValueCopyText);
+      await copyText(pathValueCopyText);
       toast.success('已复制路径和值', { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 路径和值失败:', err);
@@ -417,11 +420,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
     return encodeWithLayers(editedContent, decodeResult.layers);
   }, [actualValue, decodeResult.layers, editedContent, editedJsonError, hasNonReversibleLayer, isDecodePending]);
-  const decodedPathValueCopyText = useMemo(() => (
-    decodeResult.isJson && !isDecodePending && !editedJsonError
-      ? formatSchemePathValuesForCopy(editedContent)
-      : ''
-  ), [decodeResult.isJson, editedContent, editedJsonError, isDecodePending]);
+  const canCopyPathValues = Boolean(decodeResult.isJson && !isDecodePending && !editedJsonError);
 
   const handleCopySerialized = async () => {
     if (!serializedContent) return;
@@ -509,11 +508,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       decodeResult.schemeInfo
     )
   ), [decodeResult.decoded, decodeResult.isJson, decodeResult.schemeInfo]);
-  const cmdHandlerCompatibleCopyText = useMemo(() => (
+  const canCopyCmdHandlerCompatibleResult = Boolean(
     commandSummaryInfo && decodeResult.isJson && !isDecodePending && !editedJsonError
-      ? formatCmdHandlerCompatibleResult(editedContent, commandSummaryInfo.commandSchema, actualValue)
-      : ''
-  ), [actualValue, commandSummaryInfo, decodeResult.isJson, editedContent, editedJsonError, isDecodePending]);
+  );
   const nestedCommandInsight = commandSummaryInfo
     ? formatSchemeInsightItems('cmd解析', commandSummaryInfo.commandFields)
     : undefined;
@@ -525,6 +522,13 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     : undefined;
 
   const handleCopyCmdHandlerCompatibleResult = async () => {
+    if (!canCopyCmdHandlerCompatibleResult) return;
+
+    const cmdHandlerCompatibleCopyText = formatCmdHandlerCompatibleResult(
+      editedContent,
+      commandSummaryInfo?.commandSchema,
+      actualValue
+    );
     if (!cmdHandlerCompatibleCopyText) return;
 
     try {
@@ -624,7 +628,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           <button
             data-tour="scheme-copy-cmd-structure"
             onClick={handleCopyCmdHandlerCompatibleResult}
-            disabled={!cmdHandlerCompatibleCopyText}
+            disabled={!canCopyCmdHandlerCompatibleResult}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             title="复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构"
           >
@@ -638,7 +642,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           <button
             data-tour="scheme-copy-path-values"
             onClick={handleCopyPathValues}
-            disabled={!decodedPathValueCopyText}
+            disabled={!canCopyPathValues}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             title="复制解码 JSON 中的路径和值"
           >
