@@ -552,6 +552,66 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         ))}
                       </div>
                     )}
+                    {record.nestedCommandFields.length > 0 && (
+                      <div data-tour="transform-report-nested-cmd-fields" className="mt-1.5 flex flex-col gap-1">
+                        <div className="text-gray-500">
+                          内部CMD字段 · 显示 {record.nestedCommandFields.length}/{record.nestedCommandFieldCount} 个
+                        </div>
+                        {record.nestedCommandFields.map(row => (
+                          <div
+                            key={`${record.path}:cmd-field:${row.path}`}
+                            data-tour="transform-report-nested-cmd-field"
+                            className="flex items-center justify-between gap-2 rounded bg-cyan-950/20 px-2 py-1"
+                          >
+                            <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                              <span className="min-w-0 flex-1 text-emerald-200 truncate" title={row.path}>
+                                {row.path}
+                              </span>
+                              <span className="shrink-0 text-gray-500">=</span>
+                              <span className="min-w-0 flex-1 text-cyan-200 truncate" title={row.preview}>
+                                {row.preview}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-nested-cmd-path"
+                              onClick={() => handleCopyPath(row.path)}
+                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            >
+                              复制路径
+                            </button>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-nested-cmd-value"
+                              onClick={() => handleCopyDecodedPathValue(row.copyText)}
+                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            >
+                              复制片段
+                            </button>
+                            {onLocatePath && (
+                              <button
+                                type="button"
+                                data-tour="transform-report-locate-nested-cmd-path"
+                                onClick={() => handleLocatePath(row.path)}
+                                className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              >
+                                定位
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {record.hasMoreNestedCommandFields && (
+                          <div className="text-gray-500">
+                            还有更多内部 CMD 字段未展示
+                            {record.indexedNestedCommandFieldCount > record.nestedCommandFields.length && (
+                              <span>
+                                ，已索引 {record.indexedNestedCommandFieldCount} 个，可搜索字段名或 schema 展示隐藏项
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {record.decodedPreview && (
                       <div className="mt-1 font-mono text-cyan-200 truncate" title={record.decodedPreview}>
                         解析结果: {record.decodedPreview}

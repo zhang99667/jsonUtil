@@ -17,11 +17,19 @@ export interface Base64MetaInfo {
 
 export interface SchemeInsightFields {
   commandFields: string[];
+  commandFieldRows: SchemeInsightFieldRow[];
   commandFieldCount: number;
   extFields: string[];
   extFieldCount: number;
   base64SuffixFields: string[];
   base64SuffixFieldCount: number;
+}
+
+export interface SchemeInsightFieldRow {
+  key: string;
+  path: string;
+  preview: string;
+  copyText: string;
 }
 
 export interface SchemeCommandSummaryInfo extends SchemeInsightFields {
@@ -117,6 +125,12 @@ const dedupe = (values: string[]): string[] => (
   Array.from(new Set(values)).filter(Boolean)
 );
 
+const appendJsonPathKey = (path: string, key: string): string => (
+  /^[A-Za-z_$][\w$]*$/.test(key)
+    ? `${path}.${key}`
+    : `${path}[${JSON.stringify(key)}]`
+);
+
 const isCmdInsightField = (key: string): boolean => {
   const normalizedKey = key.trim();
   const lowerKey = normalizedKey.toLowerCase();
@@ -137,23 +151,81 @@ const isCommandInsightField = (key: string): boolean => (
   isCmdInsightField(key) || isUrlInsightField(key)
 );
 
+const formatInsightFieldCopyText = (value: unknown, maxLength = 8_000): string => {
+  const text = typeof value === 'string'
+    ? JSON.stringify(value)
+    : JSON.stringify(value) ?? String(value);
+
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+};
+
+const formatInsightFieldPreview = (value: unknown, maxLength = DEFAULT_DISPLAY_LIMIT): string => {
+  if (isPlainObject(value)) {
+    if (typeof value.cmdSchema === 'string') {
+      return value.cmdSchema.length > maxLength
+        ? `${value.cmdSchema.slice(0, maxLength)}...`
+        : value.cmdSchema;
+    }
+
+    const keys = Object.keys(value);
+    if (keys.length === 0) return '对象: 空';
+
+    const visibleKeys = keys.slice(0, 4).join(', ');
+    return keys.length > 4
+      ? `对象: ${visibleKeys} ... +${keys.length - 4}`
+      : `对象: ${visibleKeys}`;
+  }
+
+  if (Array.isArray(value)) return `数组 ${value.length} 项`;
+
+  const text = typeof value === 'string'
+    ? value
+    : value === null
+      ? 'null'
+      : String(value);
+
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+};
+
+const createInsightFieldRow = (
+  key: string,
+  path: string,
+  value: unknown
+): SchemeInsightFieldRow => ({
+  key,
+  path,
+  preview: formatInsightFieldPreview(value),
+  copyText: `${path} = ${formatInsightFieldCopyText(value)}`,
+});
+
 const collectSchemeInsightFieldsInner = (
   value: unknown,
+  currentPath: string,
   commandFields: string[],
+  commandFieldRows: SchemeInsightFieldRow[],
   extFields: string[],
   base64SuffixFields: string[]
 ) => {
   if (Array.isArray(value)) {
-    value.forEach(item => collectSchemeInsightFieldsInner(item, commandFields, extFields, base64SuffixFields));
+    value.forEach((item, index) => collectSchemeInsightFieldsInner(
+      item,
+      `${currentPath}[${index}]`,
+      commandFields,
+      commandFieldRows,
+      extFields,
+      base64SuffixFields
+    ));
     return;
   }
 
   if (!isPlainObject(value)) return;
 
   Object.entries(value).forEach(([key, item]) => {
+    const childPath = appendJsonPathKey(currentPath, key);
     if (isPlainObject(item)) {
       if (isCommandInsightField(key)) {
         commandFields.push(key);
+        commandFieldRows.push(createInsightFieldRow(key, childPath, item));
       }
       if (EXT_FIELD_NAMES.has(key)) {
         extFields.push(key);
@@ -164,20 +236,22 @@ const collectSchemeInsightFieldsInner = (
     }
 
     if (item && typeof item === 'object') {
-      collectSchemeInsightFieldsInner(item, commandFields, extFields, base64SuffixFields);
+      collectSchemeInsightFieldsInner(item, childPath, commandFields, commandFieldRows, extFields, base64SuffixFields);
     }
   });
 };
 
 export const collectSchemeInsightFields = (value: unknown): SchemeInsightFields => {
   const commandFields: string[] = [];
+  const commandFieldRows: SchemeInsightFieldRow[] = [];
   const extFields: string[] = [];
   const base64SuffixFields: string[] = [];
 
-  collectSchemeInsightFieldsInner(value, commandFields, extFields, base64SuffixFields);
+  collectSchemeInsightFieldsInner(value, '$', commandFields, commandFieldRows, extFields, base64SuffixFields);
 
   return {
     commandFields: dedupe(commandFields),
+    commandFieldRows,
     commandFieldCount: commandFields.length,
     extFields: dedupe(extFields),
     extFieldCount: extFields.length,
@@ -465,6 +539,7 @@ export const extractSchemeCommandSummaryInfo = (
           paramCount: 0,
           paramKeys: [],
           commandFields: [],
+          commandFieldRows: [],
           commandFieldCount: 0,
           extFields: [],
           extFieldCount: 0,

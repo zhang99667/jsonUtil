@@ -1,17 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-
-const FEATURE_TOUR_IDS = [
-  'jsonpath',
-  'ai-fix',
-  'deep-format',
-  'escape',
-  'unicode-convert',
-  'discovery-jsonpath',
-  'discovery-file-ops',
-  'discovery-ai-fix',
-  'discovery-settings',
-];
+import { FEATURE_TOUR_IDS, openMainApp, waitForMainAppReady } from './helpers/appReady';
 
 const encodeBase64 = (value: string): string => (
   Buffer.from(value, 'utf8').toString('base64')
@@ -86,10 +75,7 @@ test.beforeEach(async ({ page }) => {
     });
   }, FEATURE_TOUR_IDS);
 
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('JSON 工具箱')).toBeVisible();
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('[data-tour="preview-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+  await openMainApp(page);
 });
 
 test('格式化与压缩主路径可用', async ({ page }) => {
@@ -175,7 +161,7 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expect(page.getByText('已填入 JSONPath 查询')).toBeVisible();
   await expect(reportPanel).toBeHidden();
   const jsonPathPanel = page.locator('[data-tour="jsonpath-panel"]');
-  await expect(jsonPathPanel).toBeVisible();
+  await expect(jsonPathPanel).toBeVisible({ timeout: 30_000 });
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$[0].payload.nested');
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('true');
 });
@@ -446,8 +432,7 @@ test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   });
 
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('JSON 工具箱')).toBeVisible();
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+  await waitForMainAppReady(page);
 
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('button', { name: 'AI 配置' }).click();
@@ -465,8 +450,7 @@ test('本地存储读取异常不会阻止应用启动', async ({ page }) => {
   });
 
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('JSON 工具箱')).toBeVisible();
-  await expect(page.locator('[data-tour="source-editor"] .monaco-editor')).toBeVisible({ timeout: 30_000 });
+  await waitForMainAppReady(page);
 
   await fillSourceEditor(page, '{"read":"safe"}');
   await page.getByRole('button', { name: '格式化' }).click();
@@ -514,10 +498,11 @@ test('离屏面板缓存会被拉回可见区域', async ({ page }) => {
   });
 
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForMainAppReady(page);
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
 
   const panel = page.locator('[data-tour="jsonpath-panel"]');
-  await expect(panel).toBeVisible();
+  await expect(panel).toBeVisible({ timeout: 30_000 });
 
   const box = await panel.boundingBox();
   const viewport = page.viewportSize();
@@ -553,6 +538,7 @@ test('设置中可恢复浮动面板默认布局', async ({ page }) => {
   });
 
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForMainAppReady(page);
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('button', { name: '通用设置' }).click();
   await page.getByRole('button', { name: '恢复默认布局' }).click();
@@ -560,7 +546,9 @@ test('设置中可恢复浮动面板默认布局', async ({ page }) => {
   await page.getByRole('button', { name: '取消' }).click();
 
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
-  const box = await page.locator('[data-tour="jsonpath-panel"]').boundingBox();
+  const jsonPathPanel = page.locator('[data-tour="jsonpath-panel"]');
+  await expect(jsonPathPanel).toBeVisible({ timeout: 30_000 });
+  const box = await jsonPathPanel.boundingBox();
   expect(box).not.toBeNull();
   expect(Math.round(box!.x)).toBe(100);
   expect(Math.round(box!.y)).toBe(100);
@@ -579,6 +567,7 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
   });
 
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForMainAppReady(page);
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('button', { name: '通用设置' }).click();
 
