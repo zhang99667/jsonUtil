@@ -224,6 +224,7 @@ const DEFAULT_TOP_COMMAND_SCHEMA_LIMIT = 8;
 const DEFAULT_TOP_COMMAND_SCHEMA_PATH_LIMIT = 4;
 const DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_LIMIT = 8;
 const DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_SCHEMA_LIMIT = 4;
+const DEFAULT_COMMAND_SCHEMA_ROW_LIMIT = 8;
 const DEFAULT_DECODED_PATH_COUNT_LIMIT = 10_000;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 1_000;
@@ -1715,6 +1716,13 @@ const appendReportRecordLines = (
       }
       if (record.insights.length > 0) {
         lines.push(`  解析线索: ${record.insights.join('；')}`);
+      }
+      if (record.commandSchemaRows?.length) {
+        const rows = record.commandSchemaRows.slice(0, DEFAULT_COMMAND_SCHEMA_ROW_LIMIT);
+        lines.push(`  CMD Schema路径: ${rows.map(row => `${row.path}=${row.schema}`).join('；')}`);
+        if (record.commandSchemaRows.length > rows.length) {
+          lines.push(`  CMD Schema路径: 还有更多未展示（总计 ${record.commandSchemaRows.length} 条）`);
+        }
       }
       if (record.nestedCommandFields.length > 0) {
         lines.push(`  内部CMD字段: ${record.nestedCommandFields.map(row => `${row.path}=${row.preview}`).join('；')}`);
