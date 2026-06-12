@@ -415,6 +415,14 @@ describe('transformSummary', () => {
       appUrlView,
       'appUrl'
     )).toContain('内部CMD字段路径: $.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl = 对象: params');
+    const focusedAppUrlPathValueText = formatTransformPathValueReportText(appUrlView);
+    expect(focusedAppUrlPathValueText.split('\n')).toHaveLength(4);
+    expect(focusedAppUrlPathValueText).toContain(
+      '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl = {"params":{"category":"jump"'
+    );
+    expect(focusedAppUrlPathValueText).not.toContain(
+      '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.category = "jump"'
+    );
     const focusedAppUrlCmdStructure = JSON.parse(
       getTransformRecordCmdStructureCopyText(appUrlView.cmdStructureRecords[0])
     );

@@ -276,6 +276,14 @@ export const getTransformDecodedPathCopyText = (
   return `${row.path} = ${formatDecodedPathCopyValue(value)}`;
 };
 
+export const getTransformPathValueCopyRows = (
+  record: TransformReportRecord
+): TransformReportDecodedPath[] => (
+  record.cmdStructureFocusLabel === '内部 CMD 字段' && record.nestedCommandSearchFields?.length
+    ? record.nestedCommandSearchFields
+    : record.decodedSearchPaths || record.decodedPaths
+);
+
 const appendJsonPathKey = (path: string, key: string): string => (
   /^[A-Za-z_$][\w$]*$/.test(key)
     ? `${path}.${key}`
@@ -1550,12 +1558,17 @@ export const formatTransformPathValueReportText = (
   const lines: string[] = [];
 
   reportView.records.forEach(record => {
-    const copiedRows = record.decodedSearchPaths || record.decodedPaths;
+    const isFocusedNestedCommandCopy = record.cmdStructureFocusLabel === '内部 CMD 字段' &&
+      Boolean(record.nestedCommandSearchFields?.length);
+    const copiedRows = getTransformPathValueCopyRows(record);
     copiedRows.forEach(row => {
       lines.push(getTransformDecodedPathCopyText(row));
     });
 
-    if (record.indexedDecodedPathCount > copiedRows.length || record.decodedPathCount > copiedRows.length) {
+    if (
+      !isFocusedNestedCommandCopy &&
+      (record.indexedDecodedPathCount > copiedRows.length || record.decodedPathCount > copiedRows.length)
+    ) {
       lines.push(`... ${record.path} 还有更多内部路径未复制`);
     }
   });
