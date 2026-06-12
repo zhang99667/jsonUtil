@@ -358,11 +358,11 @@ describe('transformSummary', () => {
     });
     expect(record.insights).toEqual([
       'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
-      'cmd解析: bottom_button_scheme, panel_scheme, panel_cmd, appUrl +3',
+      'cmd解析: bottom_button_scheme, panel_scheme, panel_cmd, appUrl +4',
       'ext解析: ad_extra_param, ext_info, extInfo',
     ]);
     expect(record.nestedCommandFieldCount).toBeGreaterThan(4);
-    expect(record.indexedNestedCommandFieldCount).toBe(9);
+    expect(record.indexedNestedCommandFieldCount).toBe(10);
     expect(record.hasMoreNestedCommandFields).toBe(true);
     expect(record.nestedCommandFields[0]).toEqual({
       path: '$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.bottom_button_scheme',
@@ -415,6 +415,31 @@ describe('transformSummary', () => {
       appUrlView,
       'appUrl'
     )).toContain('内部CMD字段路径: $.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl = 对象: params');
+    const convertBtnView = buildTransformReportView(report, 'convert_btn');
+    expect(convertBtnView.filteredNestedCommandFieldCount).toBe(1);
+    expect(convertBtnView.records[0].nestedCommandFields).toEqual([
+      {
+        path: '$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_btn',
+        preview: '对象: button_cmd',
+        value: {
+          button_cmd: '__CONVERT_CMD__',
+        },
+      },
+    ]);
+    expect(formatTransformPathValueReportText(convertBtnView)).toBe(
+      '$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_btn = {"button_cmd":"__CONVERT_CMD__"}'
+    );
+    const focusedConvertBtnCmdStructure = JSON.parse(
+      getTransformRecordCmdStructureCopyText(convertBtnView.cmdStructureRecords[0])
+    );
+    expect(focusedConvertBtnCmdStructure.result.cmdParams.reward.stay_cmd).toMatchObject({
+      cmdParams: {
+        convert_btn: {
+          button_cmd: '__CONVERT_CMD__',
+        },
+      },
+    });
+    expect(focusedConvertBtnCmdStructure.result.cmdParams.reward.stay_cmd.cmdParams).not.toHaveProperty('convert_cmd');
     const focusedAppUrlPathValueText = formatTransformPathValueReportText(appUrlView);
     expect(focusedAppUrlPathValueText.split('\n')).toHaveLength(4);
     expect(focusedAppUrlPathValueText).toContain(

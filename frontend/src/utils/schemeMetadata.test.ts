@@ -96,6 +96,94 @@ describe('schemeMetadata', () => {
     );
   });
 
+  it('提取广告按钮和监测字段的嵌套解析线索', () => {
+    const decoded = JSON.stringify({
+      convert_btn: {
+        button_cmd: {
+          cmd: {
+            nid: 123,
+          },
+        },
+      },
+      main_btn: {
+        scheme: {
+          params: {
+            id: 'main',
+          },
+        },
+      },
+      ad_monitor_url: [
+        {
+          click_url: {
+            url: {
+              mid: '1',
+            },
+          },
+        },
+      ],
+    });
+
+    const info = extractSchemeCommandSummaryInfo(decoded, true);
+
+    expect(info?.commandFields).toEqual([
+      'convert_btn',
+      'button_cmd',
+      'cmd',
+      'main_btn',
+      'scheme',
+      'ad_monitor_url',
+      'click_url',
+      'url',
+    ]);
+    expect(info?.commandFieldRows.map(row => ({
+      key: row.key,
+      path: row.path,
+      preview: row.preview,
+    }))).toEqual([
+      {
+        key: 'convert_btn',
+        path: '$.convert_btn',
+        preview: '对象: button_cmd',
+      },
+      {
+        key: 'button_cmd',
+        path: '$.convert_btn.button_cmd',
+        preview: '对象: cmd',
+      },
+      {
+        key: 'cmd',
+        path: '$.convert_btn.button_cmd.cmd',
+        preview: '对象: nid',
+      },
+      {
+        key: 'main_btn',
+        path: '$.main_btn',
+        preview: '对象: scheme',
+      },
+      {
+        key: 'scheme',
+        path: '$.main_btn.scheme',
+        preview: '对象: params',
+      },
+      {
+        key: 'ad_monitor_url',
+        path: '$.ad_monitor_url',
+        preview: '数组 1 项',
+      },
+      {
+        key: 'click_url',
+        path: '$.ad_monitor_url[0].click_url',
+        preview: '对象: url',
+      },
+      {
+        key: 'url',
+        path: '$.ad_monitor_url[0].click_url.url',
+        preview: '对象: mid',
+      },
+    ]);
+    expect(info?.commandFieldCount).toBe(8);
+  });
+
   it('提取 Base64 后缀解析线索', () => {
     const decoded = JSON.stringify({
       meg_name: 'AI',
