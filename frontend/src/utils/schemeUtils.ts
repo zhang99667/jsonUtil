@@ -631,6 +631,15 @@ const appendPrefixedBase64Meta = (
   }
 };
 
+const trimDecodedSuffixQueryPayload = (decoded: string): string => {
+  const trimmed = decoded.trim();
+  if (!looksLikeQueryString(trimmed)) return decoded;
+
+  // 真实 extraParam 后缀可能在 query 前缀后继续拼接 JSON 残片，直接按 & 拆会污染最后一个参数。
+  const jsonFragmentIndex = trimmed.search(/","[A-Za-z_$][\w$]*":/);
+  return jsonFragmentIndex > 0 ? trimmed.slice(0, jsonFragmentIndex) : decoded;
+};
+
 const parsePrefixedBase64Suffix = (
   suffix: string
 ): { prefix: string; value: StructuredValue } | null => {
@@ -649,7 +658,7 @@ const parsePrefixedBase64Suffix = (
       : decodeNormalizedBase64ReadablePrefix(normalized);
     if (!decoded || !looksLikeStructuredPayload(decoded)) continue;
 
-    const parsed = decodeNestedParamValue(decoded, DEFAULT_SCHEME_DECODE_MAX_DEPTH);
+    const parsed = decodeNestedParamValue(trimDecodedSuffixQueryPayload(decoded), DEFAULT_SCHEME_DECODE_MAX_DEPTH);
     if (parsed && typeof parsed === 'object') {
       return {
         prefix: compact.slice(0, offset),
