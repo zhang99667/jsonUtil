@@ -177,6 +177,75 @@ describe('transformSummary', () => {
     expect(formatTransformCmdStructureReportText(report, limitedView, '')).toContain('"nid": 123');
   });
 
+  it('内部 CMD 字段计数未聚焦时展示真实总数', () => {
+    const nestedCommandSearchFields = Array.from({ length: 200 }, (_, index) => ({
+      path: `$.cmd.${index === 0 ? 'panel_cmd' : `field_${index}`}`,
+      preview: '对象: params',
+      value: { params: { id: index } },
+    }));
+    const report: TransformContextReport = {
+      summary: {
+        recordCount: 1,
+        stepCounts: {},
+        schemeCounts: {
+          queryString: 1,
+          url: 0,
+          base64: 0,
+          nonReversible: 0,
+        },
+        warningCount: 0,
+        unresolvedCount: 0,
+        placeholderCount: 0,
+      },
+      coverage: {
+        score: 100,
+        label: '解析覆盖 100%',
+        level: 'success',
+        description: '本次未发现待检查线索、性能跳过或运行时占位符。',
+        items: [],
+      },
+      cmdStructureCount: 1,
+      nestedCommandFieldCount: 250,
+      records: [
+        {
+          path: '$.cmd',
+          labels: ['CMD 参数 · 可回写'],
+          insights: ['cmd解析: panel_cmd +249'],
+          originalValue: 'cmd={}',
+          originalPreview: 'cmd={}',
+          decodedPreview: '对象: cmd',
+          decodedPaths: [],
+          decodedPathCount: 0,
+          isDecodedPathCountTruncated: false,
+          indexedDecodedPathCount: 0,
+          hasMoreDecodedPaths: false,
+          nestedCommandFields: nestedCommandSearchFields.slice(0, 8),
+          nestedCommandSearchFields,
+          indexedNestedCommandFieldCount: 200,
+          hasMoreNestedCommandFields: true,
+          hasCmdStructure: true,
+          nestedCommandFieldCount: 250,
+          nestedExtFieldCount: 0,
+          nestedBase64SuffixFieldCount: 0,
+          stepCount: 1,
+          hasNonReversibleScheme: false,
+        },
+      ],
+      warnings: [],
+      unresolvedCandidates: [],
+      runtimePlaceholderGroups: [],
+      runtimePlaceholders: [],
+    };
+
+    const fullView = buildTransformReportView(report, '');
+    expect(fullView.filteredNestedCommandFieldCount).toBe(250);
+    expect(formatTransformReportViewText(report, fullView, '')).toContain('内部CMD字段 250/250');
+
+    const focusedView = buildTransformReportView(report, 'panel_cmd');
+    expect(focusedView.filteredNestedCommandFieldCount).toBe(1);
+    expect(formatTransformReportViewText(report, focusedView, 'panel_cmd')).toContain('内部CMD字段 1/250');
+  });
+
   it('报告展示 CMD Schema、嵌套 CMD 和 ext 解析线索', () => {
     const extInfo = btoa(JSON.stringify({ user_id: 'u1', cmatch: '1501' }));
     const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}`;

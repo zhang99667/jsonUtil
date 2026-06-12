@@ -1466,7 +1466,7 @@ export const buildTransformReportView = (
   const filteredCmdStructureRecords = filteredRecordViews.filter(record => record.hasCmdStructure);
   const filteredCmdStructureCount = filteredCmdStructureRecords.length;
   const filteredNestedCommandFieldCount = filteredRecordViews.reduce((count, record) => (
-    count + record.indexedNestedCommandFieldCount
+    count + record.nestedCommandFieldCount
   ), 0);
 
   return {
