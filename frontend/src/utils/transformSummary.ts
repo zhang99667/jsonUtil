@@ -52,7 +52,9 @@ export interface TransformReportRecord {
   nestedBase64SuffixFieldCount: number;
   cmdStructureCopyText?: string;
   getCmdStructureCopyText?: (focusedFieldPaths?: string[]) => string;
-  isNestedCommandFieldFiltered?: boolean;
+  cmdStructureFocusPaths?: string[];
+  cmdStructureFocusCount?: number;
+  cmdStructureFocusLabel?: string;
   stepCount: number;
   hasNonReversibleScheme: boolean;
 }
@@ -514,8 +516,8 @@ const createRecordCmdStructureCopyTextGetter = (
 export const getTransformRecordCmdStructureCopyText = (
   record: TransformReportRecord
 ): string => (
-  record.isNestedCommandFieldFiltered
-    ? record.getCmdStructureCopyText?.(record.nestedCommandSearchFields?.map(row => row.path)) ||
+  record.cmdStructureFocusPaths?.length
+    ? record.getCmdStructureCopyText?.(record.cmdStructureFocusPaths) ||
       record.cmdStructureCopyText ||
       ''
     : record.cmdStructureCopyText || record.getCmdStructureCopyText?.() || ''
@@ -978,6 +980,10 @@ const buildFilteredRecordView = (
     matchesDecodedPath(row, normalizedQuery)
   )) || [];
   if (matchedDecodedPaths.length === 0 && matchedNestedCommandFields.length === 0) return record;
+  const cmdStructureFocusRows = matchedNestedCommandFields.length > 0
+    ? matchedNestedCommandFields
+    : matchedDecodedPaths;
+  const cmdStructureFocusLabel = matchedNestedCommandFields.length > 0 ? '内部 CMD 字段' : '内部路径';
 
   return {
     ...record,
@@ -998,7 +1004,13 @@ const buildFilteredRecordView = (
           nestedCommandFieldCount: matchedNestedCommandFields.length,
           indexedNestedCommandFieldCount: matchedNestedCommandFields.length,
           hasMoreNestedCommandFields: matchedNestedCommandFields.length > DEFAULT_NESTED_COMMAND_FIELD_LIMIT,
-          isNestedCommandFieldFiltered: true,
+        }
+      : {}),
+    ...(record.hasCmdStructure && cmdStructureFocusRows.length > 0
+      ? {
+          cmdStructureFocusPaths: cmdStructureFocusRows.map(row => row.path),
+          cmdStructureFocusCount: cmdStructureFocusRows.length,
+          cmdStructureFocusLabel,
         }
       : {}),
   };
@@ -1551,8 +1563,10 @@ export const formatTransformCmdStructureReportText = (
     if (record.insights.length > 0) {
       lines.push(`解析线索: ${record.insights.join('；')}`);
     }
-    if (record.isNestedCommandFieldFiltered) {
-      lines.push(`聚焦复制: 已按筛选命中的 ${record.indexedNestedCommandFieldCount} 个内部 CMD 字段裁剪 cmdParams`);
+    if (record.cmdStructureFocusPaths?.length) {
+      lines.push(
+        `聚焦复制: 已按筛选命中的 ${record.cmdStructureFocusCount || record.cmdStructureFocusPaths.length} 个${record.cmdStructureFocusLabel || '内部路径'}裁剪 cmdParams`
+      );
     }
     if (record.nestedCommandFieldCount > 0) {
       lines.push(`内部CMD字段: ${record.nestedCommandFieldCount}`);
