@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { base64Encode, deepDecodeScheme, encodeWithLayers } from './schemeUtils';
 import { deepParseWithContext, inverseWithContext } from './transformations';
+import { scanSchemesInJson } from './schemeScanner';
+import { buildTransformContextReport } from './transformSummary';
 
 const parseDecodedJson = (input: string): unknown => {
   const result = deepDecodeScheme(input);
@@ -361,5 +363,206 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
 
     expect(JSON.parse(inverseWithContext(output, context))).toEqual(JSON.parse(response));
+  });
+
+  it('整段广告 response 可对齐 cmdHandler 风格的 schema 与参数结构', () => {
+    const finalUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101&bd_vid=abc';
+    const landingUrl = `https://union-click.jd.com/sem.php?source=baidu-ys&unionId=262767352&to=${encodeURIComponent(finalUrl)}`;
+    const webUrl = `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}&adFlag=${encodeURIComponent(JSON.stringify({
+      ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+      nid: 'ad1_101',
+    }))}`;
+    const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      des: 'm',
+      url: landingUrl,
+    }))}`;
+    const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+      appUrl,
+      webUrl,
+      source: 'feedna',
+      extInfo: base64Encode(JSON.stringify({ user_id: '74314439', cmatch: '1501' })),
+    }))}`;
+    const taskParams = encodeURIComponent(JSON.stringify({
+      android_pid: '1683310188080',
+      task_id: '602',
+      ext_params: {
+        reward_num: '__REWARD_NUM__',
+      },
+      ext_policy: JSON.stringify({
+        invoke_task_id: '',
+        sdk_switch: '1',
+      }),
+    }));
+    const rewardButtonCmd = `nadcorevendor://vendor/ad/reward?task_params=${taskParams}`;
+    const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
+      button_cmd: '__CONVERT_CMD__',
+      button_text: '打开应用并体验',
+    }))}&main_btn=${encodeURIComponent(JSON.stringify({
+      button_cmd: '__CONTINUEPLAY__',
+      button_text: '继续完成任务',
+    }))}&bottom_right_btn=${encodeURIComponent(JSON.stringify({
+      button_cmd: rewardButtonCmd,
+      button_text: '换个视频',
+    }))}&convert_cmd=${encodeURIComponent(deeplinkCmd)}`;
+    const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?panel_cmd=${encodeURIComponent(deeplinkCmd)}&url=${encodeURIComponent(landingUrl)}&lp_real_url=${encodeURIComponent(landingUrl)}`;
+    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      vid: '1353102586669',
+      page_url: landingUrl,
+      tail_frame: {
+        bottom_button_scheme: rewardButtonCmd,
+        panel_scheme: panelScheme,
+      },
+    }))}&reward=${encodeURIComponent(JSON.stringify({
+      stay_cmd: rewardDialog,
+      reward_cmd: rewardDialog,
+      strong_guide_cmd: rewardDialog,
+      task_policy: JSON.stringify({ ecpm: 'encoded', businessParams: 'encoded' }),
+    }))}&rotation_component=${encodeURIComponent(JSON.stringify({
+      click_event_cmd: '__CONVERT_CMD__',
+      webpanel_event_cmd: '__WEBPANEL_CMD__',
+    }))}&ad_tag=${encodeURIComponent(JSON.stringify({
+      text: '广告',
+    }))}`;
+    const suffixQuery = '&os=2&ip=127.0.0.1&ua=okhttp%2F3.12.12+SP-engine%2F2.81.0';
+    const suffixBytes = [
+      ...new TextEncoder().encode(suffixQuery),
+      0xff,
+    ];
+    const extraParam = `AFD8f${base64Encode(JSON.stringify({
+      meg_name: 'AI',
+      ad_extend: JSON.stringify({
+        ad_info: {
+          h_ecpm: 207000,
+        },
+        bid: 138,
+      }),
+    }))}UxM${base64EncodeBytes(new Uint8Array(suffixBytes))}`;
+    const response = JSON.stringify({
+      errno: 0,
+      errmsg: '',
+      data: {
+        video: [{
+          material: [{
+            info: [{
+              ad_common: {
+                scheme: rootScheme,
+              },
+            }],
+          }],
+          extra: [{
+            k: 'extraParam',
+            v: extraParam,
+          }],
+          platform: 'android',
+        }],
+      },
+    });
+
+    const scanResult = scanSchemesInJson(response);
+    expect(scanResult.locations.map(item => ({
+      path: item.path,
+      label: item.label,
+      type: item.schemeType,
+    }))).toEqual([
+      {
+        path: '$.data.video[0].material[0].info[0].ad_common.scheme',
+        label: undefined,
+        type: 'url',
+      },
+      {
+        path: '$.data.video[0].extra[0].v',
+        label: 'extraParam',
+        type: 'base64',
+      },
+    ]);
+
+    const { output, context } = deepParseWithContext(response, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    const decodedScheme = parsed.data.video[0].material[0].info[0].ad_common.scheme;
+    const decodedExtra = parsed.data.video[0].extra[0].v;
+    const report = buildTransformContextReport(context);
+    const rootRecord = report.records.find(record => record.path.endsWith('.ad_common.scheme'));
+    const copiedCmdStructure = rootRecord?.getCmdStructureCopyText
+      ? JSON.parse(rootRecord.getCmdStructureCopyText())
+      : undefined;
+
+    expect(decodedScheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params).toMatchObject({
+      category: 'jump',
+      des: 'm',
+    });
+    expect(decodedScheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.url.to).toEqual({
+      sku: '101',
+      bd_vid: 'abc',
+    });
+    expect(decodedScheme.reward.stay_cmd.convert_cmd.params.webUrl).toMatchObject({
+      url: {
+        to: {
+          sku: '101',
+          bd_vid: 'abc',
+        },
+      },
+      adFlag: {
+        ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+        nid: 'ad1_101',
+      },
+    });
+    expect(decodedScheme.reward.reward_cmd.bottom_right_btn.button_cmd.task_params.ext_policy.sdk_switch).toBe('1');
+    expect(decodedScheme.rotation_component).toEqual({
+      click_event_cmd: '__CONVERT_CMD__',
+      webpanel_event_cmd: '__WEBPANEL_CMD__',
+    });
+    expect(decodedExtra.ad_extend.ad_info.h_ecpm).toBe(207000);
+    expect(decodedExtra._base64_suffix_decoded).toMatchObject({
+      os: '2',
+      ip: '127.0.0.1',
+      ua: 'okhttp/3.12.12 SP-engine/2.81.0',
+    });
+    expect(report.topCommandSchemas?.map(item => item.schema)).toEqual(expect.arrayContaining([
+      'nadcorevendor://vendor/ad/rewardImpl',
+      'nadcorevendor://vendor/ad/rewardWebPanel',
+      'nadcorevendor://vendor/ad/rewardDialog',
+      'baiduboxapp://v7/vendor/ad/deeplink',
+      'baiduboxapp://v1/easybrowse/open',
+      'openapp.jdmobile://virtual',
+      'https://union-click.jd.com/sem.php',
+    ]));
+    expect(report.nestedCommandFieldCount).toBeGreaterThanOrEqual(20);
+    expect(report.runtimePlaceholderGroups.map(group => group.value)).toEqual(expect.arrayContaining([
+      '__CONVERT_CMD__',
+      '__WEBPANEL_CMD__',
+      '__AD_EXTRA_PARAM_ENCODE_1__',
+      '__REWARD_NUM__',
+      '__CONTINUEPLAY__',
+    ]));
+    expect(copiedCmdStructure).toMatchObject({
+      result: {
+        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdParams: {
+          video_info: {
+            tail_frame: {
+              panel_scheme: {
+                cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+                cmdParams: {
+                  panel_cmd: {
+                    cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+                    cmdParams: {
+                      params: {
+                        appUrl: {
+                          cmdSchema: 'openapp.jdmobile://virtual',
+                        },
+                        webUrl: {
+                          cmdSchema: 'baiduboxapp://v1/easybrowse/open',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
   });
 });
