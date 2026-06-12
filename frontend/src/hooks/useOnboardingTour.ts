@@ -1,7 +1,12 @@
 import { useEffect } from 'react';
-import { driver } from 'driver.js';
+import type { Driver } from 'driver.js';
 import { safeReadStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
-import 'driver.js/dist/driver.css';
+
+const loadDriver = async () => {
+    await import('driver.js/dist/driver.css');
+    const module = await import('driver.js');
+    return module.driver;
+};
 
 export const useOnboardingTour = () => {
     useEffect(() => {
@@ -13,9 +18,22 @@ export const useOnboardingTour = () => {
             return;
         }
 
+        let driverObj: Driver | null = null;
+        let disposed = false;
+
         // 延迟启动引导，确保 DOM 已完全加载
-        const timer = setTimeout(() => {
-            const driverObj = driver({
+        const timer = setTimeout(async () => {
+            let createDriver: Awaited<ReturnType<typeof loadDriver>>;
+            try {
+                createDriver = await loadDriver();
+            } catch (error) {
+                console.warn('加载新手引导组件失败:', error);
+                return;
+            }
+
+            if (disposed) return;
+
+            driverObj = createDriver({
                 showProgress: true,
                 showButtons: ['next', 'previous', 'close'],
                 // 使用驱动器自带的平滑滚动，避免手动滚动导致的高亮错位
@@ -117,14 +135,20 @@ export const useOnboardingTour = () => {
                 onDestroyStarted: () => {
                     // 用户完成或跳过引导时，标记为已完成
                     safeSetStorageItem('json-helper-onboarding-completed', 'true');
-                    driverObj.destroy();
+                    driverObj?.destroy();
+                    driverObj = null;
                 }
             });
 
             driverObj.drive();
         }, 1000); // 延迟 1 秒启动
 
-        return () => clearTimeout(timer);
+        return () => {
+            disposed = true;
+            clearTimeout(timer);
+            driverObj?.destroy();
+            driverObj = null;
+        };
     }, []);
 
     // 提供手动重启引导的方法
