@@ -1184,22 +1184,56 @@ describe('findSchemesInJson', () => {
     expect(results[0].path).toBe('$.action_cmd');
   });
 
-  it('k/v 形态的 Scheme 携带业务标签且不影响路径定位', () => {
+  it('常见业务字段形态的 Scheme 携带业务标签且不影响路径定位', () => {
     const json = JSON.stringify({
       extra: [
         {
           k: 'extraParam',
           v: 'https://example.com/path?from=extra',
         },
+        {
+          key: 'trackingParam',
+          v: 'https://example.com/path?from=tracking',
+        },
+        {
+          k: 'buttonParam',
+          value: 'https://example.com/path?from=button',
+        },
+        {
+          field: 'contentParam',
+          content: 'https://example.com/path?from=content',
+        },
       ],
     }, null, 2);
 
     const results = findSchemesInJson(json);
 
-    expect(results.length).toBe(1);
-    expect(results[0].path).toBe('$.extra[0].v');
-    expect(results[0].pointer).toBe('/extra/0/v');
-    expect(results[0].label).toBe('extraParam');
+    expect(results.map(result => ({
+      path: result.path,
+      pointer: result.pointer,
+      label: result.label,
+    }))).toEqual([
+      {
+        path: '$.extra[0].v',
+        pointer: '/extra/0/v',
+        label: 'extraParam',
+      },
+      {
+        path: '$.extra[1].v',
+        pointer: '/extra/1/v',
+        label: 'trackingParam',
+      },
+      {
+        path: '$.extra[2].value',
+        pointer: '/extra/2/value',
+        label: 'buttonParam',
+      },
+      {
+        path: '$.extra[3].content',
+        pointer: '/extra/3/content',
+        label: 'contentParam',
+      },
+    ]);
   });
 
   it('数组中的 Scheme 使用真实值行号定位', () => {

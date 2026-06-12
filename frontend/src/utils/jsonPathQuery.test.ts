@@ -78,6 +78,45 @@ describe('queryJsonPathRanges', () => {
     });
   });
 
+  it('查询 key/v 和 k/value 形态值时返回业务标签', () => {
+    const jsonData = JSON.stringify({
+      extra: [
+        {
+          key: 'trackingParam',
+          v: 'https://example.com/path?from=tracking',
+        },
+        {
+          k: 'buttonParam',
+          value: 'cmd=%7B%22nid%22%3A123%7D',
+        },
+        {
+          field: 'contentParam',
+          content: 'raw=%7B%22nid%22%3A123%7D',
+        },
+      ],
+    }, null, 2);
+
+    const result = queryJsonPathRanges(jsonData, '$.extra[*].*');
+
+    expect(result.items.filter(item => item.sourceLabel).map(item => ({
+      path: item.path,
+      sourceLabel: item.sourceLabel,
+    }))).toEqual([
+      {
+        path: '$.extra[0].v',
+        sourceLabel: 'trackingParam',
+      },
+      {
+        path: '$.extra[1].value',
+        sourceLabel: 'buttonParam',
+      },
+      {
+        path: '$.extra[2].content',
+        sourceLabel: 'contentParam',
+      },
+    ]);
+  });
+
   it('无匹配时返回空范围', () => {
     const result = queryJsonPathRanges('{"name":"Alice"}', '$.missing');
 
