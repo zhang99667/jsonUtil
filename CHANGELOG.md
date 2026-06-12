@@ -30,6 +30,7 @@
 - **CMD/Scheme 内部 Base64 后缀降噪**: 真实 extraParam 后缀 query 后继续拼接 JSON 残片时，会避免把残片污染到 `_base64_suffix_decoded` 参数值里，保留更干净的 os/ip/akey 等上下文
 - **文件读写错误提示优化**: 打开文件、读取文件、自动保存、另存为、保存预览和 Scheme 应用修改失败时会展示底层错误原因，方便定位权限、句柄失效或 JSON Pointer 写入问题
 - **草稿恢复性能保护**: 未保存草稿持久化改为防抖写入，并在页面隐藏/关闭前静默兜底保存；超大草稿会停止写入本地存储并清理旧快照，避免大 response 反复触发 localStorage 配额和主线程压力
+- **Scheme 大 Response 解析可取消**: 独立 Scheme 面板在大内容 Worker 解析期间提供取消入口，可立即终止当前解析任务，避免误粘贴超大 response 后只能等待解析完成
 - **CMD/Scheme 前导分隔符兼容**: 支持解析 `&cmd=...`、`?&cmd=...` 等日志拼接常见形态，避免前导 `&` 导致整段 CMD 漏解析
 - **CMD/Scheme 协议相对 URL 解析**: 支持识别和展开 `//m.baidu.com/path?...` 这类协议相对 URL，嵌套在 CMD 参数中也会继续解析内部 query
 - **CMD/Scheme 裸域名 URL 解析**: 支持识别和展开 `m.baidu.com/path?...` 这类省略协议的 URL，嵌套在常见 URL 字段中也会继续解析内部 query

@@ -963,6 +963,48 @@ test('Scheme 面板整段 Response 超长字段展示性能保护提示', async 
   expect(decodedResult).toContain('"ok": true');
 });
 
+test('Scheme 面板大 Response 解析中可取消', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(window, '__schemeWorkerTerminateCount', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    class HangingWorker {
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      onerror: ((event: ErrorEvent) => void) | null = null;
+
+      postMessage() {
+        // 保持挂起，用于验证取消解析会终止 Worker。
+      }
+
+      terminate() {
+        (window as unknown as { __schemeWorkerTerminateCount: number }).__schemeWorkerTerminateCount += 1;
+      }
+    }
+
+    Object.defineProperty(window, 'Worker', {
+      configurable: true,
+      value: HangingWorker,
+    });
+  });
+
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(`cmd=${'x'.repeat(55_000)}`);
+
+  await expect(page.locator('[data-tour="scheme-cancel-decode"]')).toBeVisible();
+  await expect(page.locator('[data-tour="scheme-decode-status"]')).toHaveText('解析中...');
+
+  await page.locator('[data-tour="scheme-cancel-decode"]').click();
+
+  await expect(page.locator('[data-tour="scheme-decode-status"]')).toHaveText('已取消解析');
+  await expect(page.locator('[data-tour="scheme-cancel-decode"]')).toHaveCount(0);
+  await expect.poll(async () => page.evaluate(() => (
+    (window as unknown as { __schemeWorkerTerminateCount: number }).__schemeWorkerTerminateCount
+  ))).toBeGreaterThan(0);
+});
+
 test('Scheme 面板可复制特殊 key 来源路径', async ({ page }) => {
   await fillSourceEditor(page, JSON.stringify({
     'a.b': {
