@@ -956,6 +956,12 @@ const includesQuery = (value: string, normalizedQuery: string): boolean => (
   value.toLowerCase().includes(normalizedQuery)
 );
 
+// 短字段名扫整段原始 CMD 会把同源诊断项全部带出；仅对长片段或明显编码/URL 片段兜底。
+const shouldSearchLongSourceValue = (normalizedQuery: string): boolean => (
+  normalizedQuery.length >= 12 ||
+  /[%=&?/:#{}[\]"'\\.]/.test(normalizedQuery)
+);
+
 const matchesReportRecord = (
   record: TransformReportRecord,
   normalizedQuery: string
@@ -1056,7 +1062,7 @@ const matchesReportWarning = (
   includesQuery(warning.message, normalizedQuery) ||
   includesQuery(warning.reasonLabel, normalizedQuery) ||
   includesQuery(warning.nextAction, normalizedQuery) ||
-  includesQuery(warning.originalValue, normalizedQuery)
+  (shouldSearchLongSourceValue(normalizedQuery) ? includesQuery(warning.originalValue, normalizedQuery) : false)
 );
 
 const matchesUnresolvedCandidate = (
@@ -1072,7 +1078,7 @@ const matchesUnresolvedCandidate = (
   includesQuery(candidate.reasonLabel, normalizedQuery) ||
   includesQuery(candidate.nextAction, normalizedQuery) ||
   (candidate.detectedType ? includesQuery(candidate.detectedType, normalizedQuery) : false) ||
-  includesQuery(candidate.originalValue, normalizedQuery)
+  (shouldSearchLongSourceValue(normalizedQuery) ? includesQuery(candidate.originalValue, normalizedQuery) : false)
 );
 
 const matchesRuntimePlaceholder = (
@@ -1086,15 +1092,9 @@ const matchesRuntimePlaceholder = (
   includesQuery(PLACEHOLDER_SEARCH_TEXT, normalizedQuery) ||
   includesQuery(placeholder.value, normalizedQuery) ||
   includesQuery(placeholder.description, normalizedQuery) ||
-  (placeholder.sourceOriginalValue && shouldSearchRuntimePlaceholderSource(normalizedQuery)
+  (placeholder.sourceOriginalValue && shouldSearchLongSourceValue(normalizedQuery)
     ? includesQuery(placeholder.sourceOriginalValue, normalizedQuery)
     : false)
-);
-
-// 短字段名扫整段原始 CMD 会把同源占位符全部带出；仅对长片段或明显编码/URL 片段兜底。
-const shouldSearchRuntimePlaceholderSource = (normalizedQuery: string): boolean => (
-  normalizedQuery.length >= 12 ||
-  /[%=&?/:#{}[\]"'\\.]/.test(normalizedQuery)
 );
 
 const buildRuntimePlaceholderGroups = (

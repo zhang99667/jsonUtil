@@ -946,7 +946,7 @@ describe('transformSummary', () => {
     expect(filteredText).not.toContain('$.action_cmd.cmd.first');
   });
 
-  it('占位符筛选先匹配结构化字段并保留长原文兜底', () => {
+  it('诊断项筛选先匹配结构化字段并保留长原文兜底', () => {
     const longSourceValue = `${'x'.repeat(8_000)}&panel_cmd=hidden&tail_token=source_tail_needle`;
     const report: TransformContextReport = {
       summary: {
@@ -958,8 +958,8 @@ describe('transformSummary', () => {
           base64: 0,
           nonReversible: 0,
         },
-        warningCount: 0,
-        unresolvedCount: 0,
+        warningCount: 1,
+        unresolvedCount: 1,
         placeholderCount: 1,
       },
       summaryText: '深度解析: 展开 0 处，占位符 1',
@@ -973,8 +973,31 @@ describe('transformSummary', () => {
       cmdStructureCount: 0,
       nestedCommandFieldCount: 0,
       records: [],
-      warnings: [],
-      unresolvedCandidates: [],
+      warnings: [
+        {
+          type: 'string_decode_skipped',
+          path: '$.large_action',
+          originalValue: longSourceValue,
+          message: '字符串过长，已跳过递归展开以保护性能',
+          length: longSourceValue.length,
+          limit: 20,
+          reasonLabel: '单字段长度保护',
+          nextAction: '该字段本身超过自动解析阈值，可复制路径定位后单独粘贴到 Scheme 面板，或缩小 response 后再深度解析。',
+        },
+      ],
+      unresolvedCandidates: [
+        {
+          path: '$.raw_action',
+          originalValue: longSourceValue,
+          message: 'URL 编码内容已解码，但未展开为结构化对象',
+          length: longSourceValue.length,
+          preview: 'raw action preview',
+          detectedType: 'url-encoded',
+          reasonLabel: '已解码但未结构化',
+          reasonLevel: 'info',
+          nextAction: '定位该字段确认是否只是普通埋点参数；如果它应继续拆成对象，可把原始值加入 CMD 解析样本。',
+        },
+      ],
       runtimePlaceholderGroups: [],
       runtimePlaceholders: [
         {
@@ -992,7 +1015,14 @@ describe('transformSummary', () => {
     expect(buildTransformReportView(report, '__CONVERT_CMD__').filteredPlaceholderCount).toBe(1);
     expect(buildTransformReportView(report, 'buttonParam').filteredPlaceholderCount).toBe(1);
     expect(buildTransformReportView(report, 'panel_cmd').filteredPlaceholderCount).toBe(0);
+    expect(buildTransformReportView(report, 'panel_cmd').filteredWarningCount).toBe(0);
+    expect(buildTransformReportView(report, 'panel_cmd').filteredUnresolvedCount).toBe(0);
     expect(buildTransformReportView(report, 'source_tail_needle').filteredPlaceholderCount).toBe(1);
+    expect(buildTransformReportView(report, 'source_tail_needle').filteredWarningCount).toBe(1);
+    expect(buildTransformReportView(report, 'source_tail_needle').filteredUnresolvedCount).toBe(1);
+    expect(buildTransformReportView(report, 'panel_cmd=').filteredPlaceholderCount).toBe(1);
+    expect(buildTransformReportView(report, 'panel_cmd=').filteredWarningCount).toBe(1);
+    expect(buildTransformReportView(report, 'panel_cmd=').filteredUnresolvedCount).toBe(1);
   });
 
   it('统计性能保护跳过信息', () => {
