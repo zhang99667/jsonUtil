@@ -133,4 +133,36 @@ describe('workspaceDraft', () => {
     expect(saveWorkspaceDraftSnapshot(null, storage)).toBe(true);
     expect(values.has(WORKSPACE_DRAFT_STORAGE_KEY)).toBe(false);
   });
+
+  it('保存草稿时会限制本地存储体积', () => {
+    const { storage, values } = createStorage();
+    values.set(WORKSPACE_DRAFT_STORAGE_KEY, '{"old":true}');
+
+    const snapshot = buildWorkspaceDraftSnapshot({
+      files: [],
+      activeFileId: null,
+      standaloneInput: 'x'.repeat(10_001),
+      standaloneMode: TransformMode.NONE,
+      now: () => 789,
+    });
+
+    expect(saveWorkspaceDraftSnapshot(snapshot, storage, 10_000)).toBe(false);
+    expect(values.has(WORKSPACE_DRAFT_STORAGE_KEY)).toBe(false);
+  });
+
+  it('草稿体积在上限内时会写入本地存储', () => {
+    const { storage, values } = createStorage();
+    const snapshot = buildWorkspaceDraftSnapshot({
+      files: [],
+      activeFileId: null,
+      standaloneInput: '{"draft":true}',
+      standaloneMode: TransformMode.NONE,
+      now: () => 789,
+    });
+
+    expect(saveWorkspaceDraftSnapshot(snapshot, storage, 10_000)).toBe(true);
+    expect(JSON.parse(values.get(WORKSPACE_DRAFT_STORAGE_KEY) || '{}')).toMatchObject({
+      standaloneInput: '{"draft":true}',
+    });
+  });
 });

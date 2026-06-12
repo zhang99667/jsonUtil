@@ -23,6 +23,8 @@ interface OpenTextFileEntry {
     handle?: FileSystemFileHandle;
 }
 
+const WORKSPACE_DRAFT_PERSIST_DEBOUNCE_MS = 300;
+
 // UUID 生成器 polyfill
 const generateUUID = () => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -66,6 +68,13 @@ export const useFileSystem = ({
     const [files, setFiles] = useState<FileTab[]>(() => restoredDraft?.files || []);
     const [activeFileId, setActiveFileId] = useState<string | null>(() => restoredDraft?.activeFileId || null);
     const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState<boolean>(false);
+    const latestDraftStateRef = useRef({
+        files,
+        activeFileId,
+        input,
+        mode,
+    });
+    const hasShownDraftPersistWarningRef = useRef(false);
 
     useEffect(() => {
         const draft = restoredDraft;
@@ -91,19 +100,69 @@ export const useFileSystem = ({
         }
     }, [inputRef, restoredDraft, setInput, setMode]);
 
+    const persistWorkspaceDraft = useCallback((snapshot: ReturnType<typeof buildWorkspaceDraftSnapshot>, silent = false) => {
+        const saved = saveWorkspaceDraftSnapshot(snapshot);
+        if (saved) {
+            hasShownDraftPersistWarningRef.current = false;
+            return;
+        }
+
+        if (snapshot && !silent && !hasShownDraftPersistWarningRef.current) {
+            hasShownDraftPersistWarningRef.current = true;
+            toast.error('当前草稿过大或浏览器存储受限，已暂停本地草稿恢复', { duration: 4000 });
+        }
+    }, []);
+
+    const buildCurrentWorkspaceDraft = useCallback(() => {
+        const draftState = latestDraftStateRef.current;
+        return buildWorkspaceDraftSnapshot({
+            files: draftState.files,
+            activeFileId: draftState.activeFileId,
+            standaloneInput: draftState.activeFileId ? '' : draftState.input,
+            standaloneMode: draftState.activeFileId ? TransformMode.NONE : draftState.mode,
+        });
+    }, []);
+
+    useEffect(() => {
+        latestDraftStateRef.current = {
+            files,
+            activeFileId,
+            input,
+            mode,
+        };
+    }, [activeFileId, files, input, mode]);
+
     useEffect(() => {
         if (shouldSkipInitialDraftPersistRef.current) {
             shouldSkipInitialDraftPersistRef.current = false;
             return;
         }
 
-        saveWorkspaceDraftSnapshot(buildWorkspaceDraftSnapshot({
-            files,
-            activeFileId,
-            standaloneInput: activeFileId ? '' : input,
-            standaloneMode: activeFileId ? TransformMode.NONE : mode,
-        }));
-    }, [activeFileId, files, input, mode]);
+        const timer = window.setTimeout(() => {
+            persistWorkspaceDraft(buildCurrentWorkspaceDraft());
+        }, WORKSPACE_DRAFT_PERSIST_DEBOUNCE_MS);
+
+        return () => window.clearTimeout(timer);
+    }, [activeFileId, buildCurrentWorkspaceDraft, files, input, mode, persistWorkspaceDraft]);
+
+    useEffect(() => {
+        const flushWorkspaceDraftSilently = () => {
+            persistWorkspaceDraft(buildCurrentWorkspaceDraft(), true);
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                flushWorkspaceDraftSilently();
+            }
+        };
+
+        window.addEventListener('beforeunload', flushWorkspaceDraftSilently);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('beforeunload', flushWorkspaceDraftSilently);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [buildCurrentWorkspaceDraft, persistWorkspaceDraft]);
 
     const readTextFileSafely = async (file: File): Promise<string | null> => {
         const sizeError = getTextFileOpenError(file);
