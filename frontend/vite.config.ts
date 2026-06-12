@@ -52,7 +52,13 @@ export default defineConfig(({ mode }) => {
         },
         output: {
           manualChunks(id) {
-            if (id.includes('commonjsHelpers')) return 'vendor-runtime';
+            const normalizedId = id.split(path.sep).join('/');
+            if (
+              normalizedId.includes('commonjsHelpers') ||
+              normalizedId.includes('vite/preload-helper')
+            ) {
+              return 'vendor-runtime';
+            }
             if (!id.includes('node_modules')) return undefined;
 
             const packageName = getNodeModulePackageName(id);
