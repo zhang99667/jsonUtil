@@ -316,6 +316,41 @@ describe('transformSummary', () => {
       appUrlView,
       'appUrl'
     )).toContain('内部CMD字段路径: $.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl = 对象: params');
+    const focusedAppUrlCmdStructure = JSON.parse(
+      getTransformRecordCmdStructureCopyText(appUrlView.cmdStructureRecords[0])
+    );
+    expect(focusedAppUrlCmdStructure.result.cmdParams.video_info.tail_frame).not.toHaveProperty('bottom_button_scheme');
+    expect(focusedAppUrlCmdStructure.result.cmdParams.video_info.tail_frame.panel_scheme).toMatchObject({
+      cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+      cmdParams: {
+        panel_cmd: {
+          cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+          cmdParams: {
+            params: {
+              appUrl: {
+                cmdSchema: 'openapp.jdmobile://virtual',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(focusedAppUrlCmdStructure.result.cmdParams.reward.stay_cmd).toMatchObject({
+      cmdSchema: 'nadcorevendor://vendor/ad/rewardDialog',
+      cmdParams: {
+        convert_cmd: {
+          cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+          cmdParams: {
+            params: {
+              appUrl: {
+                cmdSchema: 'openapp.jdmobile://virtual',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(focusedAppUrlCmdStructure.result.cmdParams.reward.stay_cmd.cmdParams).not.toHaveProperty('convert_btn');
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(record))).toMatchObject({
       result: {
         cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
