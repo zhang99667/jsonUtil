@@ -343,6 +343,19 @@ describe('transformSummary', () => {
         hasMorePaths: false,
       },
     ]);
+    expect(report.topCommandSchemaOrigins).toEqual([
+      {
+        origin: 'nadcorevendor://vendor',
+        count: 2,
+        schemaCount: 2,
+        recordCount: 1,
+        schemas: [
+          'nadcorevendor://vendor/ad/rewardImpl',
+          'nadcorevendor://vendor/ad/rewardWebPanel',
+        ],
+        hasMoreSchemas: false,
+      },
+    ]);
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(report.records[0]))).toMatchObject({
       result: {
         cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
@@ -364,6 +377,10 @@ describe('transformSummary', () => {
         },
       },
     });
+    expect(formatTransformContextReportText(result.context)).toContain('CMD 来源分布:');
+    expect(formatTransformContextReportText(result.context)).toContain(
+      '- nadcorevendor://vendor ×2（Schema 2 / 来源记录 1）'
+    );
     expect(formatTransformContextReportText(result.context)).toContain('CMD Schema 分布:');
     expect(formatTransformContextReportText(result.context)).toContain(
       '- nadcorevendor://vendor/ad/rewardImpl ×1（来源记录 1）'
@@ -373,6 +390,18 @@ describe('transformSummary', () => {
     );
     expect(buildTransformReportView(report, 'URL Scheme').records.map(record => record.path)).toEqual(['$.scheme']);
     expect(buildTransformReportView(report, 'rewardImpl').filteredRecordCount).toBe(1);
+    const nestedSchemaView = buildTransformReportView(report, 'rewardWebPanel');
+    expect(nestedSchemaView.filteredRecordCount).toBe(1);
+    expect(nestedSchemaView.records[0].commandSchemaRows).toEqual([
+      {
+        schema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+        path: '$.scheme.video_info.tail_frame.panel_scheme',
+        source: panelScheme,
+      },
+    ]);
+    expect(nestedSchemaView.cmdStructureRecords[0].cmdStructureFocusLabel).toBe('CMD Schema');
+    expect(nestedSchemaView.cmdStructureRecords[0].cmdStructureFocusCount).toBe(1);
+    expect(buildTransformReportView(report, 'nadcorevendor://vendor').filteredRecordCount).toBe(1);
     expect(buildTransformReportView(report, 'ext解析').filteredRecordCount).toBe(1);
     expect(buildTransformReportView(report, '内部CMD字段').filteredNestedCommandFieldCount).toBe(1);
   });

@@ -425,6 +425,27 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   </div>
                 )}
               </div>
+              {Boolean(report.topCommandSchemaOrigins?.length) && (
+                <div data-tour="transform-report-top-command-schema-origins" className="mt-2 text-xs">
+                  <div className="mb-1 text-gray-500">CMD 来源分布</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.topCommandSchemaOrigins?.map(group => (
+                      <button
+                        key={group.origin}
+                        type="button"
+                        onClick={() => setQuery(group.origin)}
+                        className="max-w-full rounded border border-teal-800/50 bg-teal-950/25 px-2 py-0.5 text-teal-100 transition-colors hover:bg-teal-900/45"
+                        title={`${group.origin} 出现 ${group.count} 次，覆盖 ${group.schemaCount} 个 Schema、${group.recordCount} 条展开记录。示例 Schema：${group.schemas.join('；')}`}
+                      >
+                        <span className="inline-block max-w-[180px] truncate align-bottom font-mono">
+                          {group.origin}
+                        </span>
+                        <span className="ml-1 text-teal-300/80">×{group.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {Boolean(report.topCommandSchemas?.length) && (
                 <div data-tour="transform-report-top-command-schemas" className="mt-2 text-xs">
                   <div className="mb-1 text-gray-500">CMD Schema 分布</div>
