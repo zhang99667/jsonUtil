@@ -21,6 +21,7 @@
 - **Scheme 面板复制文本懒生成**: 路径和值、cmdHandler 风格 CMD 结构改为点击复制时再生成，减少大 response 解析完成后的额外主线程计算
 - **Scheme 面板序列化与校验懒计算**: 大 response 解码结果未编辑时跳过重复 JSON 校验，序列化结果改为点击复制时再生成，减少 Worker 返回后的主线程计算
 - **Scheme 面板主 CMD 聚焦复制**: 整段 response 粘贴到 Scheme 面板后，复制 cmdHandler 风格 CMD 结构会优先聚焦主入口 Scheme，避免把 `errno/data` 外壳一起塞进 `cmdParams`
+- **Scheme 面板 Top CMD Schema 摘要**: 整段 response 粘贴到 Scheme 面板后，会基于原始 source 对齐并展示 Top CMD Schema 与来源路径，便于快速确认主链路是否被识别
 - **CMD 结构 schema 字段对齐**: `schema=...` 这类常见 CMD 字段会在摘要和 cmdHandler 风格复制中按 `cmdSchema/source` 包装，和底层递归解析规则保持一致
 - **真实 Response convert/监测链路回归**: 根据真实广告 response 补充 `convert.button_scheme` 与 `ad_monitor_url.click_url` 脱敏回归，防止按钮转换链路和监测 URL schema 解析退化
 - **真实 Response CMD 容器回归**: 补充脱敏真实 response 中 `cmd_policy`、`common_info`、`panel`、`callbackUrl` 链路回归，防止常见广告 CMD 容器和 callback 占位符解析退化

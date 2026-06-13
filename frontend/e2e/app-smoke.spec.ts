@@ -1039,6 +1039,10 @@ test('Scheme 面板可展开整段真实 Response 抽取链路', async ({ page }
   const commandSummary = page.locator('[data-tour="scheme-command-summary"]');
   await expect(commandSummary).toContainText('CMD 结构');
   await expect(commandSummary).toContainText('cmd解析');
+  await expect(commandSummary.locator('[data-tour="scheme-command-schema-count"]')).toContainText('Schema');
+  const topCommandSchemas = commandSummary.locator('[data-tour="scheme-top-command-schemas"]');
+  await expect(topCommandSchemas).toContainText('nadcorevendor://vendor/ad/rewardImpl');
+  await expect(topCommandSchemas).toContainText('baiduboxapp://v7/vendor/ad/deeplink');
 
   await page.locator('[data-tour="scheme-copy-cmd-structure"]').click();
   await expect(page.getByText('已复制 CMD 结构')).toBeVisible();

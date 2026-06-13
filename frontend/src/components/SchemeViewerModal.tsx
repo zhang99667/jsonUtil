@@ -84,7 +84,7 @@ const buildSchemePanelMetadata = (result: SchemeDecodeResult): SchemeDecodeWorke
     result.decoded,
     result.isJson,
     result.schemeInfo,
-    { includeCommandFieldRows: false }
+    { includeCommandFieldRows: false, source: result.original }
   ),
 });
 
@@ -599,9 +599,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       : extractSchemeCommandSummaryInfo(
           decodeResult.decoded,
           decodeResult.isJson,
-          decodeResult.schemeInfo
+          decodeResult.schemeInfo,
+          { source: decodeResult.original }
         )
-  ), [decodeResult.decoded, decodeResult.isJson, decodeResult.schemeInfo, freshWorkerDecodeMetadata]);
+  ), [decodeResult.decoded, decodeResult.isJson, decodeResult.original, decodeResult.schemeInfo, freshWorkerDecodeMetadata]);
   const canCopyCmdHandlerCompatibleResult = Boolean(
     commandSummaryInfo && decodeResult.isJson && !isDecodePending && !editedJsonError
   );
@@ -877,6 +878,32 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                         title={formatTooltipValue(commandSummaryInfo.commandSchema)}
                       >
                         cmdSchema={formatSummaryValue(commandSummaryInfo.commandSchema)}
+                      </span>
+                    )}
+                    {commandSummaryInfo.commandSchemaCount > 0 && (
+                      <span
+                        data-tour="scheme-command-schema-count"
+                        className="bg-editor-bg text-cyan-200 px-2 py-0.5 rounded font-mono"
+                        title="已从原始 source 对齐出来的 CMD Schema 数量"
+                      >
+                        Schema · {commandSummaryInfo.commandSchemaCount}
+                      </span>
+                    )}
+                    {commandSummaryInfo.topCommandSchemas.length > 0 && (
+                      <span data-tour="scheme-top-command-schemas" className="contents">
+                        {commandSummaryInfo.topCommandSchemas.map(item => (
+                          <span
+                            key={item.schema}
+                            className="bg-editor-bg text-cyan-100 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                            title={[
+                              item.schema,
+                              ...item.paths,
+                              ...(item.hasMorePaths ? ['...'] : []),
+                            ].join('\n')}
+                          >
+                            {formatSummaryValue(item.schema, 42)} ×{item.count}
+                          </span>
+                        ))}
                       </span>
                     )}
                     {commandSummaryInfo.paramCount > 0 && (
