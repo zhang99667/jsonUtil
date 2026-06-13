@@ -727,6 +727,56 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(page.locator('.jsonpath-highlight')).toHaveCount(0);
 });
 
+test('JSONPath 面板大查询处理中可取消', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(window, '__jsonPathWorkerTerminateCount', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    class HangingWorker {
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      onerror: ((event: ErrorEvent) => void) | null = null;
+
+      postMessage() {
+        // 保持挂起，用于验证取消查询会终止 Worker。
+      }
+
+      terminate() {
+        (window as unknown as { __jsonPathWorkerTerminateCount: number }).__jsonPathWorkerTerminateCount += 1;
+      }
+    }
+
+    Object.defineProperty(window, 'Worker', {
+      configurable: true,
+      value: HangingWorker,
+    });
+  });
+
+  await fillSourceEditor(page, JSON.stringify({
+    users: [
+      { name: 'Ada', payload: { active: true } },
+      { name: 'Bob', payload: { active: false } },
+    ],
+  }));
+
+  await page.getByRole('button', { name: 'JSONPath 查询' }).click();
+  await page.locator('[data-tour="jsonpath-input"]').fill('$..*');
+  await page.getByRole('button', { name: '查询', exact: true }).click();
+
+  await expect(page.locator('[data-tour="jsonpath-cancel-query"]')).toBeVisible();
+  await expect(page.locator('[data-tour="jsonpath-query-status"]')).toHaveText('查询中...');
+
+  await page.locator('[data-tour="jsonpath-cancel-query"]').click();
+
+  await expect(page.locator('[data-tour="jsonpath-query-status"]')).toHaveText('已取消查询');
+  await expect(page.locator('[data-tour="jsonpath-cancel-query"]')).toHaveCount(0);
+  await expect.poll(async () => page.evaluate(() => (
+    (window as unknown as { __jsonPathWorkerTerminateCount: number }).__jsonPathWorkerTerminateCount
+  ))).toBeGreaterThan(0);
+});
+
 test('JSONPath 面板可查询 JSON Lines 输入', async ({ page }) => {
   await fillSourceEditor(page, '{"level":"info","user":{"id":1}}\n  {"level":"error","user":{"id":2}}');
 
