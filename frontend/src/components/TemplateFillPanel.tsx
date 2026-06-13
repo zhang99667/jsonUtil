@@ -11,6 +11,8 @@ interface TemplateFillPanelProps {
   onClose: () => void;
   onApplyTemplate: (templateJson: string) => void;
   targetError?: string;
+  initialTemplate?: string;
+  initialTemplateKey?: number;
 }
 
 export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
@@ -18,6 +20,8 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   onClose,
   onApplyTemplate,
   targetError,
+  initialTemplate,
+  initialTemplateKey,
 }) => {
   // 从 localStorage 恢复模板内容
   const [template, setTemplate] = useState<string>(() => loadTemplateFillConfig().template);
@@ -35,6 +39,13 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
       lastUpdated: Date.now(),
     }));
   }, [template]);
+
+  // 外部报告面板可把生成的回填模板直接送入当前面板
+  useEffect(() => {
+    if (!initialTemplate || initialTemplateKey === undefined) return;
+
+    setTemplate(initialTemplate);
+  }, [initialTemplate, initialTemplateKey]);
 
   // 配置备份导入后同步刷新已挂载面板中的模板内容
   useEffect(() => {
