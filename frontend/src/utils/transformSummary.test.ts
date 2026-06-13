@@ -441,6 +441,46 @@ describe('transformSummary', () => {
     expect(buildTransformReportView(report, '内部CMD字段').filteredNestedCommandFieldCount).toBe(1);
   });
 
+  it('CMD Schema Top 会将静态资源 URL 单独分组', () => {
+    const mediaUrl = 'https://static.example.com/video/ad.mp4?pd=100&cm=1501';
+    const landingUrl = 'https://example.com/landing?sku=101&bd_vid=abc';
+    const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      video_url: mediaUrl,
+      page_url: landingUrl,
+    }))}`;
+    const result = deepParseWithContext(JSON.stringify({ scheme }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const reportView = buildTransformReportView(report, '');
+    const reportText = formatTransformContextReportText(result.context);
+    const diagnosticText = formatTransformDiagnosticSummaryText(report, reportView, '');
+    const qualitySnapshot = JSON.parse(formatTransformQualitySnapshotJsonText(report, reportView, ''));
+
+    expect(report.topCommandSchemas?.map(group => group.schema)).toEqual(expect.arrayContaining([
+      'nadcorevendor://vendor/ad/rewardImpl',
+      'https://example.com/landing',
+    ]));
+    expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/video/ad.mp4');
+    expect(report.topResourceSchemas).toEqual([
+      {
+        schema: 'https://static.example.com/video/ad.mp4',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.video_url'],
+        hasMorePaths: false,
+      },
+    ]);
+    expect(reportText).toContain('CMD Schema 分布:');
+    expect(reportText).toContain('静态资源 URL 分布:');
+    expect(diagnosticText).toContain('全量静态资源 URL Top:');
+    expect(qualitySnapshot.hotspots.topResourceSchemas[0]).toMatchObject({
+      schema: 'https://static.example.com/video/ad.mp4',
+      count: 1,
+    });
+    expect(qualitySnapshot.hotspots.topCommandSchemas.map((group: { schema: string }) => group.schema)).not.toContain(
+      'https://static.example.com/video/ad.mp4'
+    );
+  });
+
   it('报告覆盖真实广告 response 中的多层 CMD 与运行时占位符', () => {
     const extInfo = btoa(JSON.stringify({ user_id: 'u1', cmatch: '1501' }));
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({

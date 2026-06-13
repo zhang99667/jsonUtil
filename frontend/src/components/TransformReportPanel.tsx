@@ -764,7 +764,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               )}
               {Boolean(report.topCommandSchemas?.length) && (
                 <div data-tour="transform-report-top-command-schemas" className="mt-2 text-xs">
-                  <div className="mb-1 text-gray-500">CMD Schema 分布</div>
+                  <div className="mb-1 text-gray-500">CMD 跳转 Schema 分布</div>
                   <div className="flex flex-wrap gap-1.5">
                     {report.topCommandSchemas?.map(group => (
                       <button
@@ -778,6 +778,27 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           {group.schema}
                         </span>
                         <span className="ml-1 text-emerald-300/80">×{group.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {Boolean(report.topResourceSchemas?.length) && (
+                <div data-tour="transform-report-top-resource-schemas" className="mt-2 text-xs">
+                  <div className="mb-1 text-gray-500">静态资源 URL 分布</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.topResourceSchemas?.map(group => (
+                      <button
+                        key={group.schema}
+                        type="button"
+                        onClick={() => setQuery(group.schema)}
+                        className="max-w-full rounded border border-slate-700/60 bg-slate-900/40 px-2 py-0.5 text-slate-100 transition-colors hover:bg-slate-800/60"
+                        title={`${group.schema} 出现 ${group.count} 次，覆盖 ${group.recordCount} 条展开记录。示例路径：${group.paths.join('；')}`}
+                      >
+                        <span className="inline-block max-w-[220px] truncate align-bottom font-mono">
+                          {group.schema}
+                        </span>
+                        <span className="ml-1 text-slate-300/80">×{group.count}</span>
                       </button>
                     ))}
                   </div>
