@@ -121,4 +121,18 @@ describe('diffCmdStructures', () => {
       '$.params.appUrl.cmdParams.params.extra.trace',
     ]);
   });
+
+  it('支持忽略 actual 中多出的路径', () => {
+    const actual = createCmdStructure();
+    const expected = createCmdStructure();
+
+    actual.result.cmdParams.params.appUrl.cmdParams.params.extra = {
+      trace: 'debug',
+    };
+
+    const diff = diffCmdStructures(actual, expected, { ignoreExtraPaths: true });
+
+    expect(diff.hasDifferences).toBe(false);
+    expect(diff.extraPaths).toEqual([]);
+  });
 });
