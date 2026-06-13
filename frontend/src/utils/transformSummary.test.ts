@@ -5,6 +5,7 @@ import { deepParseWithContext } from './transformations';
 import {
   buildTransformContextReport,
   buildTransformReportView,
+  formatTransformCmdStructureComparisonPackageText,
   formatTransformCmdStructureReportText,
   formatTransformContextReportText,
   formatTransformContextSummary,
@@ -106,6 +107,23 @@ describe('transformSummary', () => {
         },
         source: `cmd=${cmdPayload}&from=feed`,
       },
+    });
+    expect(JSON.parse(formatTransformCmdStructureComparisonPackageText(report.records[0]))).toEqual({
+      schemaVersion: 1,
+      kind: 'json-helper-cmd-structure-comparison-package',
+      path: '$.cmd',
+      actual: {
+        result: {
+          cmdParams: {
+            cmd: {
+              nid: 123,
+            },
+            from: 'feed',
+          },
+          source: `cmd=${cmdPayload}&from=feed`,
+        },
+      },
+      expected: {},
     });
     expect(report.records[0].decodedPaths).toEqual([
       { path: '$.cmd.cmd.nid', preview: '123', copyText: '$.cmd.cmd.nid = 123' },

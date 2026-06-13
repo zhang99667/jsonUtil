@@ -6,6 +6,7 @@ import {
   buildTransformContextReport,
   buildTransformReportView,
   formatTransformCmdStructureReportText,
+  formatTransformCmdStructureComparisonPackageText,
   formatTransformContextReportText,
   formatTransformDiagnosticSummaryText,
   formatTransformIssueSampleJsonText,
@@ -276,6 +277,18 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success(record.cmdStructureFocusPaths?.length ? '已复制聚焦 CMD 结构' : '已复制 CMD 结构', { duration: 1600 });
     } catch (error) {
       showCopyError('复制深度解析 CMD 结构失败:', error);
+    }
+  };
+
+  const handleCopyCmdComparisonPackage = async (record: TransformReportRecord) => {
+    try {
+      const comparisonPackageText = formatTransformCmdStructureComparisonPackageText(record);
+      if (!comparisonPackageText) return;
+
+      await copyText(comparisonPackageText);
+      toast.success('已复制 CMD 对比包', { duration: 1600 });
+    } catch (error) {
+      showCopyError('复制深度解析 CMD 对比包失败:', error);
     }
   };
 
@@ -645,17 +658,28 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           复制原始值
                         </button>
                         {record.hasCmdStructure && (
-                          <button
-                            type="button"
-                            data-tour="transform-report-copy-cmd-structure"
-                            onClick={() => handleCopyCmdStructure(record)}
-                            className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            title={record.cmdStructureFocusPaths?.length
-                              ? `复制按当前筛选命中的${record.cmdStructureFocusLabel || '内部路径'}裁剪后的 cmdParams`
-                              : '复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构'}
-                          >
-                            {record.cmdStructureFocusPaths?.length ? '复制聚焦 CMD' : '复制 CMD 结构'}
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-cmd-structure"
+                              onClick={() => handleCopyCmdStructure(record)}
+                              className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              title={record.cmdStructureFocusPaths?.length
+                                ? `复制按当前筛选命中的${record.cmdStructureFocusLabel || '内部路径'}裁剪后的 cmdParams`
+                                : '复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构'}
+                            >
+                              {record.cmdStructureFocusPaths?.length ? '复制聚焦 CMD' : '复制 CMD 结构'}
+                            </button>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-cmd-comparison-package"
+                              onClick={() => handleCopyCmdComparisonPackage(record)}
+                              className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              title="复制可直接用于 cmd:diff -- --stdin 的 actual/expected 对比包"
+                            >
+                              复制对比包
+                            </button>
+                          </>
                         )}
                         {onLocatePath && (
                           <button

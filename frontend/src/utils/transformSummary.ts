@@ -719,6 +719,26 @@ export const getTransformRecordCmdStructureCopyText = (
     : record.cmdStructureCopyText || record.getCmdStructureCopyText?.() || ''
 );
 
+export const formatTransformCmdStructureComparisonPackageText = (
+  record: TransformReportRecord
+): string => {
+  const cmdStructureCopyText = getTransformRecordCmdStructureCopyText(record);
+  if (!cmdStructureCopyText) return '';
+
+  try {
+    return JSON.stringify({
+      schemaVersion: 1,
+      kind: 'json-helper-cmd-structure-comparison-package',
+      path: record.path,
+      ...(record.sourceLabel ? { sourceLabel: record.sourceLabel } : {}),
+      actual: JSON.parse(cmdStructureCopyText) as unknown,
+      expected: {},
+    }, null, 2);
+  } catch {
+    return '';
+  }
+};
+
 const buildRecordInsightData = (
   record: PathTransformRecord
 ): Pick<
