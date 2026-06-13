@@ -90,6 +90,21 @@ const collectSensitiveKeywords = sample => {
   return SENSITIVE_KEYWORDS.filter(keyword => includesSensitiveKeyword(searchText, keyword));
 };
 
+const formatSensitiveHint = hint => `${hint.path}(${hint.keywords.join('/')})`;
+
+const redactSensitiveSampleValues = samples => (
+  samples.map(sample => {
+    const keywords = collectSensitiveKeywords(sample);
+    if (keywords.length === 0 || sample.originalValue === undefined) return sample;
+
+    return {
+      ...sample,
+      originalValue: `[REDACTED: ${keywords.join('/')}]`,
+      redactionHint: `原始值已脱敏，命中: ${keywords.join('/')}`,
+    };
+  })
+);
+
 export const findSensitiveSampleHints = samples => (
   samples.flatMap(sample => {
     const keywords = collectSensitiveKeywords(sample);
@@ -122,7 +137,7 @@ export const parseIssueSampleExport = text => {
   }
 };
 
-export const buildRegressionTemplate = sampleExport => {
+export const buildRegressionTemplate = (sampleExport, options = {}) => {
   const exportData = typeof sampleExport === 'string'
     ? parseIssueSampleExport(sampleExport)
     : assertIssueSampleExport(sampleExport);
@@ -133,12 +148,23 @@ export const buildRegressionTemplate = sampleExport => {
   }
 
   const sensitiveHints = findSensitiveSampleHints(samples);
+  const outputSamples = options.redactSensitiveValues
+    ? redactSensitiveSampleValues(samples)
+    : samples;
+  const hasRedactedValues = outputSamples.some(sample => sample.redactionHint);
   const sensitiveHintLines = sensitiveHints.length > 0
-    ? [
-        '// 注意: 检测到样本可能包含 token/sign/cookie/设备标识等敏感字段。',
-        `// 提交前请先脱敏 originalValue，当前命中: ${sensitiveHints.slice(0, 5).map(hint => `${hint.path}(${hint.keywords.join('/')})`).join('；')}${sensitiveHints.length > 5 ? '；...' : ''}`,
-        '',
-      ]
+    ? (hasRedactedValues
+        ? [
+            '// 注意: 检测到样本可能包含 token/sign/cookie/设备标识等敏感字段。',
+            `// 已按 --redact 脱敏命中的 originalValue，当前命中: ${sensitiveHints.slice(0, 5).map(formatSensitiveHint).join('；')}${sensitiveHints.length > 5 ? '；...' : ''}`,
+            '// 补断言前请用脱敏后的等价样本还原结构。',
+            '',
+          ]
+        : [
+            '// 注意: 检测到样本可能包含 token/sign/cookie/设备标识等敏感字段。',
+            `// 提交前请先脱敏 originalValue，当前命中: ${sensitiveHints.slice(0, 5).map(formatSensitiveHint).join('；')}${sensitiveHints.length > 5 ? '；...' : ''}`,
+            '',
+          ])
     : [];
 
   return [
@@ -146,7 +172,7 @@ export const buildRegressionTemplate = sampleExport => {
     '',
     '// 由深度解析报告「复制样本 JSON」生成；把 it.todo 改成 it 后补充解析断言。',
     ...sensitiveHintLines,
-    `const issueSamples = ${JSON.stringify(samples, null, 2)} as const;`,
+    `const issueSamples = ${JSON.stringify(outputSamples, null, 2)} as const;`,
     '',
     "describe('深度解析问题样本回归', () => {",
     '  issueSamples.forEach(sample => {',
@@ -166,16 +192,41 @@ const readStdin = async () => {
 };
 
 const printUsage = () => {
-  console.error('用法: npm run samples:to-regression -- <sample-json-file>');
-  console.error('也可通过 stdin 输入: pbpaste | npm run samples:to-regression');
+  console.error('用法: npm run samples:to-regression -- [--redact] <sample-json-file>');
+  console.error('也可通过 stdin 输入: pbpaste | npm run samples:to-regression -- --redact');
+};
+
+const parseCliArgs = argv => {
+  const options = { redactSensitiveValues: false };
+  const inputPaths = [];
+
+  argv.forEach(arg => {
+    if (arg === '--redact') {
+      options.redactSensitiveValues = true;
+      return;
+    }
+
+    if (arg.startsWith('-')) {
+      throw new Error(`未知参数: ${arg}`);
+    }
+
+    inputPaths.push(arg);
+  });
+
+  if (inputPaths.length > 1) {
+    throw new Error('一次只能输入一个样本 JSON 文件');
+  }
+
+  return { inputPath: inputPaths[0], options };
 };
 
 const runCli = async () => {
-  const [, scriptPath, inputPath] = process.argv;
+  const [, scriptPath, ...args] = process.argv;
   const isMain = scriptPath && import.meta.url === new URL(scriptPath, 'file:').href;
   if (!isMain) return;
 
   try {
+    const { inputPath, options } = parseCliArgs(args);
     if (!inputPath && process.stdin.isTTY) {
       printUsage();
       process.exitCode = 1;
@@ -185,7 +236,7 @@ const runCli = async () => {
     const inputText = inputPath
       ? await readFile(inputPath, 'utf8')
       : await readStdin();
-    process.stdout.write(buildRegressionTemplate(inputText));
+    process.stdout.write(buildRegressionTemplate(inputText, options));
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

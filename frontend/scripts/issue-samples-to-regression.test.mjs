@@ -98,6 +98,32 @@ describe('buildRegressionTemplate', () => {
     expect(template).toContain('$.reward(token/sign)');
   });
 
+  it('支持脱敏敏感 originalValue 后生成模板', () => {
+    const sampleExport = {
+      kind: 'json-helper-transform-issue-samples',
+      samples: [
+        {
+          type: 'unresolved',
+          path: '$.reward',
+          reasonLabel: '已解码但未结构化',
+          originalValue: `task_params=${encodeURIComponent(JSON.stringify({
+            token: 'real-token',
+            sign: 'real-sign',
+            task_id: '602',
+          }))}`,
+        },
+      ],
+    };
+
+    const template = buildRegressionTemplate(sampleExport, { redactSensitiveValues: true });
+
+    expect(template).toContain('已按 --redact 脱敏命中的 originalValue');
+    expect(template).toContain('"originalValue": "[REDACTED: token/sign]"');
+    expect(template).toContain('"redactionHint": "原始值已脱敏，命中: token/sign"');
+    expect(template).not.toContain('real-token');
+    expect(template).not.toContain('%22token%22');
+  });
+
   it('空样本时给出明确错误', () => {
     expect(() => buildRegressionTemplate({
       kind: 'json-helper-transform-issue-samples',
