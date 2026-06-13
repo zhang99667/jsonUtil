@@ -15,6 +15,7 @@ import {
   formatTransformPathValueReportText,
   formatTransformPlaceholderFillTemplateJsonText,
   formatTransformPlaceholderReportText,
+  formatTransformQualitySnapshotJsonText,
   formatTransformReportViewText,
   getTransformDecodedPathCopyText,
   getTransformRecordCmdStructureCopyText,
@@ -1698,6 +1699,52 @@ describe('transformSummary', () => {
     expect(summaryText).not.toContain('raw=%7B%22nid%22%3A123%7D');
     expect(summaryText).not.toContain('button_cmd=__CONVERT_CMD__');
     expect(summaryText).not.toContain('cmd=xxxxxxxx');
+
+    const qualitySnapshotText = formatTransformQualitySnapshotJsonText(report, buildTransformReportView(report, ''), '');
+    const qualitySnapshot = JSON.parse(qualitySnapshotText);
+
+    expect(qualitySnapshot).toMatchObject({
+      schemaVersion: 1,
+      kind: 'json-helper-transform-quality-snapshot',
+      filter: '全部',
+      coverage: {
+        score: 50,
+        level: 'warning',
+      },
+      totals: {
+        records: 0,
+        cmdStructures: 0,
+        nestedCommandFields: 0,
+        runtimePlaceholders: 1,
+        unresolved: 1,
+        warnings: 1,
+      },
+      filtered: {
+        runtimePlaceholders: 1,
+        unresolved: 1,
+        warnings: 1,
+      },
+    });
+    expect(qualitySnapshot.hotspots.topCommandSchemas[0]).toMatchObject({
+      schema: 'baiduboxapp://v7/vendor/ad/deeplink',
+      count: 3,
+    });
+    expect(qualitySnapshot.hotspots.unresolvedReasons).toEqual([
+      { key: '已解码但未结构化', count: 1, paths: ['$.tracking'] },
+    ]);
+    expect(qualitySnapshot.hotspots.warningTypes).toEqual([
+      { key: 'string_decode_skipped', count: 1, paths: ['$.huge'] },
+    ]);
+    expect(qualitySnapshot.hotspots.runtimePlaceholders).toEqual([
+      { key: '__CONVERT_CMD__', count: 1, paths: ['$.button'] },
+    ]);
+    expect(qualitySnapshot.recommendations).toEqual(expect.arrayContaining([
+      expect.stringContaining('待检查项'),
+      expect.stringContaining('占位符'),
+    ]));
+    expect(qualitySnapshotText).not.toContain('raw=%7B%22nid%22%3A123%7D');
+    expect(qualitySnapshotText).not.toContain('button_cmd=__CONVERT_CMD__');
+    expect(qualitySnapshotText).not.toContain('cmd=xxxxxxxx');
   });
 
   it('统计性能保护跳过信息', () => {
