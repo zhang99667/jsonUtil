@@ -58,6 +58,7 @@
 - **真实 Response 业务外壳回归**: 补充贴近真实广告 response 的脱敏回归，覆盖 `supportCMD`、`render_sbox`、`ext_log.ad_extra_param`、`task_policy` 和 extra 数组业务对象
 - **CMD Schema 资源分层**: 深度解析报告将视频、图片、lottie 等静态资源 URL 从 CMD 跳转 Schema Top 中拆出，降低真实 response 排查时的热点噪音
 - **内部 CMD 字段资源分层**: 深度解析报告将 `video_url`、`poster_image`、`button_icon`、lottie 等静态资源字段从内部 CMD 字段中拆出，并在报告、筛选、质量快照和 UI 中单独展示资源字段分布
+- **解析质量资源字段基线**: 脱敏广告 response corpus 补充资源 URL 样本，并在 expected snapshot 中校验资源字段数量、资源 Schema Top 和资源字段 Top，防止素材字段分层能力回退
 - **JSONPath 大查询可取消**: JSONPath 查询处理中新增取消入口，会立即终止当前 Worker 并清空旧高亮，避免误查大表达式时只能等待结果返回
 - **CMD/Scheme 前导分隔符兼容**: 支持解析 `&cmd=...`、`?&cmd=...` 等日志拼接常见形态，避免前导 `&` 导致整段 CMD 漏解析
 - **CMD/Scheme 协议相对 URL 解析**: 支持识别和展开 `//m.baidu.com/path?...` 这类协议相对 URL，嵌套在 CMD 参数中也会继续解析内部 query

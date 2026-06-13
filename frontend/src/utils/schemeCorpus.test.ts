@@ -43,9 +43,12 @@ interface SchemeCorpusExpectedSnapshot {
     minCoverageScore: number;
     minCmdStructures: number;
     minNestedCommandFields: number;
+    minNestedResourceFields: number;
     maxUnresolved: number;
     maxWarnings: number;
     leadHotspotCommandSchema: string;
+    leadHotspotResourceSchema: string;
+    leadHotspotResourceField: string;
   };
   primaryCommandSchema: string;
   requiredCommandSchemas: string[];
@@ -621,6 +624,10 @@ describe('CMD/Scheme 真实样本回归', () => {
       category: 'jump',
       des: 'm',
     });
+    expect(decodedScheme.video_info.video_url).toEqual({
+      pd: '100',
+      cm: '1501',
+    });
     expect(decodedScheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.url.to).toEqual({
       sku: '101',
       bd_vid: 'abc',
@@ -669,13 +676,23 @@ describe('CMD/Scheme 真实样本回归', () => {
     expect(report.coverage.score).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minCoverageScore);
     expect(report.cmdStructureCount).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minCmdStructures);
     expect(report.nestedCommandFieldCount).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minNestedCommandFields);
+    expect(report.nestedResourceFieldCount).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minNestedResourceFields);
     expect(report.summary.unresolvedCount).toBeLessThanOrEqual(rewardResponseBaseline.quality.maxUnresolved);
     expect(report.summary.warningCount).toBeLessThanOrEqual(rewardResponseBaseline.quality.maxWarnings);
     expect(qualitySnapshot.coverage.score).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minCoverageScore);
+    expect(qualitySnapshot.totals.nestedResourceFields).toBeGreaterThanOrEqual(
+      rewardResponseBaseline.quality.minNestedResourceFields
+    );
     expect(qualitySnapshot.totals.unresolved).toBeLessThanOrEqual(rewardResponseBaseline.quality.maxUnresolved);
     expect(qualitySnapshot.totals.warnings).toBeLessThanOrEqual(rewardResponseBaseline.quality.maxWarnings);
     expect(qualitySnapshot.hotspots.topCommandSchemas[0].schema).toBe(
       rewardResponseBaseline.quality.leadHotspotCommandSchema
+    );
+    expect(qualitySnapshot.hotspots.topResourceSchemas[0].schema).toBe(
+      rewardResponseBaseline.quality.leadHotspotResourceSchema
+    );
+    expect(qualitySnapshot.hotspots.topNestedResourceFields[0].key).toBe(
+      rewardResponseBaseline.quality.leadHotspotResourceField
     );
     expect(report.runtimePlaceholderGroups.map(group => group.value)).toEqual(expect.arrayContaining(
       rewardResponseBaseline.requiredRuntimePlaceholders
