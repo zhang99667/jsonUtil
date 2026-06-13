@@ -356,12 +356,42 @@ export interface TransformCollaborationReportOptions {
   cmdComparisonReportText?: string;
 }
 
+export interface TransformArchivePackageOptions extends TransformCollaborationReportOptions {
+  sampleName?: string;
+}
+
+export interface TransformArchivePackage {
+  schemaVersion: 1;
+  kind: 'json-helper-transform-archive-package';
+  filter: string;
+  safety: {
+    containsRawResponse: false;
+    issueSampleOriginalValues: 'omitted-or-redacted';
+    placeholderSourcePreviews: false;
+    cmdComparisonMayContainValues: boolean;
+    notes: string[];
+  };
+  artifacts: {
+    diagnosticSummaryText: string;
+    collaborationReportText: string;
+    qualitySnapshot: TransformQualitySnapshot;
+    issueSamples: TransformIssueSampleExport | null;
+    placeholderFillTemplate: TransformPlaceholderFillTemplate | null;
+    cmdComparisonReportText?: string;
+  };
+  corpusCandidate: {
+    recommendedFiles: string[];
+    checklist: string[];
+  };
+}
+
 type TransformQualitySnapshotMetricKey = keyof TransformQualitySnapshot['totals'];
 
 const DEFAULT_DIAGNOSTIC_TOP_LIMIT = 8;
 const DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT = 5;
 const DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT = 8;
 const DEFAULT_QUALITY_SNAPSHOT_PATH_LIMIT = 4;
+const ARCHIVE_OMITTED_ORIGINAL_VALUE = '[已省略，归档包默认不携带原始字段值]';
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
@@ -3066,3 +3096,97 @@ export const formatTransformIssueSampleReportText = (
 
   return lines.join('\n');
 };
+
+const buildArchiveIssueSampleExport = (
+  reportView: TransformReportView
+): TransformIssueSampleExport | null => {
+  const sampleExport = buildTransformIssueSampleExport(reportView, { redactSensitiveValues: true });
+  if (!sampleExport) return null;
+
+  return {
+    ...sampleExport,
+    samples: sampleExport.samples.map(sample => ({
+      ...sample,
+      originalValue: sample.redactionHint ? sample.originalValue : ARCHIVE_OMITTED_ORIGINAL_VALUE,
+      redactionHint: sample.redactionHint || '归档包默认省略原始值，沉淀 corpus 前请从已脱敏 response 补齐',
+    })),
+  };
+};
+
+const buildArchivePlaceholderFillTemplate = (
+  reportView: TransformReportView
+): TransformPlaceholderFillTemplate | null => {
+  const fillTemplate = buildTransformPlaceholderFillTemplate(reportView);
+  if (!fillTemplate) return null;
+
+  return {
+    ...fillTemplate,
+    placeholderDetails: fillTemplate.placeholderDetails.map(detail => ({
+      ...detail,
+      sources: detail.sources.map(source => ({
+        sourcePath: source.sourcePath,
+        ...(source.sourceLabel ? { sourceLabel: source.sourceLabel } : {}),
+        count: source.count,
+      })),
+    })),
+  };
+};
+
+export const buildTransformArchivePackage = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string,
+  options: TransformArchivePackageOptions = {}
+): TransformArchivePackage => {
+  const normalizedQuery = query.trim();
+  const sampleName = options.sampleName?.trim() || 'sample-name';
+  const cmdComparisonReportText = options.cmdComparisonReportText?.trim();
+  const qualitySnapshot = buildTransformQualitySnapshot(report, reportView, query);
+  const collaborationOptions = cmdComparisonReportText ? { cmdComparisonReportText } : {};
+  const artifacts: TransformArchivePackage['artifacts'] = {
+    diagnosticSummaryText: formatTransformDiagnosticSummaryText(report, reportView, query),
+    collaborationReportText: formatTransformCollaborationReportText(report, reportView, query, collaborationOptions),
+    qualitySnapshot,
+    issueSamples: buildArchiveIssueSampleExport(reportView),
+    placeholderFillTemplate: buildArchivePlaceholderFillTemplate(reportView),
+    ...(cmdComparisonReportText ? { cmdComparisonReportText } : {}),
+  };
+
+  return {
+    schemaVersion: 1,
+    kind: 'json-helper-transform-archive-package',
+    filter: normalizedQuery || '全部',
+    safety: {
+      containsRawResponse: false,
+      issueSampleOriginalValues: 'omitted-or-redacted',
+      placeholderSourcePreviews: false,
+      cmdComparisonMayContainValues: Boolean(cmdComparisonReportText),
+      notes: [
+        '归档包默认不携带原始 response；保存 corpus 前请单独提供已脱敏的 response 文件。',
+        '问题样本 originalValue 已省略或脱敏，避免把 token/sign/cookie/设备标识带入协作材料。',
+        '如包含 cmdHandler 差异报告，提交前仍需确认其中 actual/expected 值是否需要脱敏。',
+      ],
+    },
+    artifacts,
+    corpusCandidate: {
+      recommendedFiles: [
+        `${sampleName}.redacted.json`,
+        `${sampleName}.expected.snapshot.json`,
+        `${sampleName}.cmdhandler.expected.json`,
+      ],
+      checklist: [
+        `将已脱敏原始 response 保存为 ${sampleName}.redacted.json`,
+        `将 artifacts.qualitySnapshot 转写为 ${sampleName}.expected.snapshot.json`,
+        `如已粘贴 cmdHandler 输出，将稳定子集保存为 ${sampleName}.cmdhandler.expected.json`,
+        '把 artifacts.issueSamples 中仍有价值的路径补成单测或 corpus 阈值断言',
+      ],
+    },
+  };
+};
+
+export const formatTransformArchivePackageJsonText = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string,
+  options: TransformArchivePackageOptions = {}
+): string => JSON.stringify(buildTransformArchivePackage(report, reportView, query, options), null, 2);

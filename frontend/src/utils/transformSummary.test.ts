@@ -5,6 +5,7 @@ import { deepParseWithContext } from './transformations';
 import {
   buildTransformContextReport,
   buildTransformReportView,
+  formatTransformArchivePackageJsonText,
   formatTransformCmdStructureComparisonPackageText,
   formatTransformCmdStructureReportText,
   formatTransformCollaborationReportText,
@@ -1852,6 +1853,57 @@ describe('transformSummary', () => {
     expect(reportWithDiffText).toContain('已附当前页面内 cmdHandler 差异报告');
     expect(reportWithDiffText).toContain('CMD 结构差异报告');
     expect(reportWithDiffText).toContain('缺失路径 1 个');
+  });
+
+  it('归档包合并质量快照和安全沉淀清单', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
+      nid: 123,
+      token: 'secret-token',
+      button_cmd: '__CONVERT_CMD__',
+    }))}&from=feed`;
+    const result = deepParseWithContext(JSON.stringify({
+      action_cmd: actionCmd,
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const reportView = buildTransformReportView(report, '');
+    const archivePackageText = formatTransformArchivePackageJsonText(report, reportView, '', {
+      sampleName: 'reward-response',
+      cmdComparisonReportText: 'CMD 结构差异报告\n- 缺失路径 1 个:\n  - $.cmd.extra',
+    });
+    const archivePackage = JSON.parse(archivePackageText);
+
+    expect(archivePackage).toMatchObject({
+      schemaVersion: 1,
+      kind: 'json-helper-transform-archive-package',
+      filter: '全部',
+      safety: {
+        containsRawResponse: false,
+        issueSampleOriginalValues: 'omitted-or-redacted',
+        placeholderSourcePreviews: false,
+        cmdComparisonMayContainValues: true,
+      },
+      artifacts: {
+        qualitySnapshot: {
+          kind: 'json-helper-transform-quality-snapshot',
+        },
+        placeholderFillTemplate: {
+          kind: 'json-helper-runtime-placeholder-fill-template',
+        },
+      },
+      corpusCandidate: {
+        recommendedFiles: [
+          'reward-response.redacted.json',
+          'reward-response.expected.snapshot.json',
+          'reward-response.cmdhandler.expected.json',
+        ],
+      },
+    });
+    expect(archivePackage.artifacts.diagnosticSummaryText).toContain('深度解析诊断摘要');
+    expect(archivePackage.artifacts.collaborationReportText).toContain('深度解析协作排查报告');
+    expect(archivePackage.artifacts.cmdComparisonReportText).toContain('缺失路径 1 个');
+    expect(archivePackage.artifacts.issueSamples.samples[0].originalValue).not.toBe(actionCmd);
+    expect(JSON.stringify(archivePackage)).not.toContain(actionCmd);
+    expect(JSON.stringify(archivePackage.artifacts.placeholderFillTemplate)).not.toContain('sourceOriginalPreview');
   });
 
   it('质量快照对比摘要展示关键指标变化', () => {
