@@ -18,6 +18,14 @@ const MODE_LABELS: Record<TransformMode, string> = {
   [TransformMode.SORT_KEYS]: 'Key 排序',
 };
 
+const getVersionLabel = (version?: string): string => {
+  const normalizedVersion = version?.trim();
+  if (!normalizedVersion) return 'v0.0.0';
+  return normalizedVersion.startsWith('v') ? normalizedVersion : `v${normalizedVersion}`;
+};
+
+const APP_VERSION_LABEL = getVersionLabel(import.meta.env.VITE_APP_VERSION);
+
 /** StatusBar 组件 Props 定义 */
 interface StatusBarProps {
   /** 输入内容长度 */
@@ -91,7 +99,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       className="h-6 bg-brand-primary flex items-center justify-between px-3 text-[11px] text-white select-none z-20 flex-shrink-0"
     >
       {/* 左侧：编码、长度、行列、文件名 */}
-      <div className="flex gap-4">
+      <div className="flex min-w-0 gap-4">
         <span className="flex items-center gap-1">
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
@@ -115,13 +123,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </span>
         {activeFile && (
           <span
-            className="flex items-center gap-1 text-blue-200"
+            className="flex min-w-0 items-center gap-1 text-blue-200"
             title={activeFile.path || activeFile.name}
           >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            {activeFile.name}
+            <span className="truncate">{activeFile.name}</span>
           </span>
         )}
         <span
@@ -133,8 +141,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </span>
       </div>
 
-      {/* 右侧：当前视图模式 */}
-      <div data-tour="statusbar-view" className="flex gap-2 items-center">
+      {/* 右侧：当前视图模式与版本号 */}
+      <div data-tour="statusbar-view" className="flex shrink-0 gap-2 items-center">
         <span className="opacity-80">当前视图:</span>
         <span className="bg-white text-brand-primary px-1.5 py-0.5 rounded font-bold text-[11px] shadow-sm leading-none">
           {MODE_LABELS[mode]}
@@ -144,6 +152,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             · 自动展开多层嵌套的 JSON 字符串
           </span>
         )}
+        <span
+          className="rounded bg-white/15 px-1.5 py-0.5 font-mono text-[10px] leading-none text-blue-100"
+          title="当前版本"
+        >
+          {APP_VERSION_LABEL}
+        </span>
       </div>
     </div>
   );
