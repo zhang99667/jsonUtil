@@ -94,9 +94,12 @@ describe('transformSummary', () => {
     ]);
     expect(formatTransformContextReportText(result.context)).toContain('$.extra: Base64 · 不可逆');
     expect(formatTransformContextReportText(result.context)).toContain('解析结果: 对象: meg_name, flag');
+    expect(formatTransformContextReportText(result.context)).toContain('cmdParams: 2 个顶层参数（cmd, from）');
     expect(formatTransformContextReportText(result.context)).toContain('内部路径: $.cmd.cmd.nid=123');
     expect(report.records[0].originalValue).toBe(`cmd=${cmdPayload}&from=feed`);
     expect(report.records[0].hasCmdStructure).toBe(true);
+    expect(report.records[0].commandParamCount).toBe(2);
+    expect(report.records[0].commandParamKeys).toEqual(['cmd', 'from']);
     expect(report.records[0].cmdStructureCopyText).toBeUndefined();
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(report.records[0]))).toEqual({
       result: {
@@ -157,6 +160,7 @@ describe('transformSummary', () => {
     expect(cmdStructureReportText).toContain('筛选: cmd.nid');
     expect(cmdStructureReportText).toContain('CMD 结构: 1 条');
     expect(cmdStructureReportText).toContain('路径: $.cmd');
+    expect(cmdStructureReportText).toContain('cmdParams: 2 个顶层参数（cmd, from）');
     expect(cmdStructureReportText).toContain('"cmdParams"');
     expect(cmdStructureReportText).toContain('聚焦复制: 已按筛选命中的 1 个内部路径裁剪 cmdParams');
     expect(cmdStructureReportText).not.toContain('内部CMD字段路径:');
@@ -343,6 +347,8 @@ describe('transformSummary', () => {
 
     expect(report.nestedCommandFieldCount).toBe(1);
     expect(report.records[0].commandSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
+    expect(report.records[0].commandParamCount).toBe(1);
+    expect(report.records[0].commandParamKeys).toEqual(['video_info']);
     expect(report.records[0].insights).toEqual([
       'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
       'cmd解析: panel_scheme',
