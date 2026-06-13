@@ -8,6 +8,7 @@ import {
   formatTransformCmdStructureReportText,
   formatTransformContextReportText,
   formatTransformContextSummary,
+  formatTransformDiagnosticSummaryText,
   formatTransformIssueSampleJsonText,
   formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
@@ -1422,6 +1423,107 @@ describe('transformSummary', () => {
         limit: 20,
       }),
     ]);
+  });
+
+  it('诊断摘要输出覆盖结论和 Top 线索但不暴露原始大字段', () => {
+    const report: TransformContextReport = {
+      summary: {
+        recordCount: 0,
+        stepCounts: {},
+        schemeCounts: {
+          queryString: 0,
+          url: 0,
+          base64: 0,
+          nonReversible: 0,
+        },
+        warningCount: 1,
+        unresolvedCount: 1,
+        placeholderCount: 1,
+      },
+      summaryText: '深度解析: 待检查 1，跳过 1，占位符 1',
+      coverage: {
+        score: 50,
+        label: '解析覆盖 50%',
+        level: 'warning',
+        description: '还有疑似结构化内容未完全展开。',
+        items: ['保留原始值补充解析样本'],
+      },
+      cmdStructureCount: 0,
+      nestedCommandFieldCount: 0,
+      topCommandSchemas: [
+        {
+          schema: 'baiduboxapp://v7/vendor/ad/deeplink',
+          count: 3,
+          recordCount: 2,
+          paths: ['$.scheme.convert_cmd'],
+          hasMorePaths: false,
+        },
+      ],
+      topNestedCommandFields: [
+        {
+          key: 'panel_cmd',
+          count: 2,
+          recordCount: 1,
+          paths: ['$.scheme.panel.panel_cmd'],
+          hasMorePaths: false,
+        },
+      ],
+      records: [],
+      warnings: [
+        {
+          type: 'string_decode_skipped',
+          path: '$.huge',
+          sourceLabel: 'hugeParam',
+          originalValue: 'cmd=' + 'x'.repeat(40),
+          message: '字符串过长，已跳过递归展开以保护性能',
+          length: 44,
+          limit: 20,
+          reasonLabel: '单字段长度保护',
+          nextAction: '单独粘贴到 Scheme 面板。',
+        },
+      ],
+      unresolvedCandidates: [
+        {
+          path: '$.tracking',
+          sourceLabel: 'trackingParam',
+          originalValue: 'raw=%7B%22nid%22%3A123%7D',
+          message: 'URL 编码内容已解码，但未展开为结构化对象',
+          length: 31,
+          preview: 'raw={"nid":123}',
+          detectedType: 'url-encoded',
+          reasonLabel: '已解码但未结构化',
+          reasonLevel: 'info',
+          nextAction: '把原始值加入 CMD 解析样本。',
+        },
+      ],
+      runtimePlaceholderGroups: [],
+      runtimePlaceholders: [
+        {
+          path: '$.button.cmd',
+          sourcePath: '$.button',
+          sourceLabel: 'buttonParam',
+          sourceOriginalValue: 'button_cmd=__CONVERT_CMD__',
+          sourceOriginalPreview: 'button_cmd=__CONVERT_CMD__',
+          value: '__CONVERT_CMD__',
+          description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+        },
+      ],
+    };
+
+    const summaryText = formatTransformDiagnosticSummaryText(report, buildTransformReportView(report, ''), '');
+
+    expect(summaryText).toContain('深度解析诊断摘要');
+    expect(summaryText).toContain('覆盖: 解析覆盖 50%，还有疑似结构化内容未完全展开。');
+    expect(summaryText).toContain('规模: 展开 0/0，CMD结构 0/0，内部CMD字段 0/0，占位符 1/1，待检查 1/1，跳过 1/1');
+    expect(summaryText).toContain('- baiduboxapp://v7/vendor/ad/deeplink ×3（来源记录 2）');
+    expect(summaryText).toContain('- panel_cmd ×2（来源记录 1）');
+    expect(summaryText).toContain('- __CONVERT_CMD__ ×1（来源 1）');
+    expect(summaryText).toContain('- $.tracking · trackingParam · url-encoded: 已解码但未结构化');
+    expect(summaryText).toContain('- $.huge · hugeParam: 单字段长度保护 (44/20)');
+    expect(summaryText).toContain('- 对待检查项判断是否为规则缺口；确认后可复制样本 JSON 并生成回归模板');
+    expect(summaryText).not.toContain('raw=%7B%22nid%22%3A123%7D');
+    expect(summaryText).not.toContain('button_cmd=__CONVERT_CMD__');
+    expect(summaryText).not.toContain('cmd=xxxxxxxx');
   });
 
   it('统计性能保护跳过信息', () => {

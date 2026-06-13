@@ -7,6 +7,7 @@ import {
   buildTransformReportView,
   formatTransformCmdStructureReportText,
   formatTransformContextReportText,
+  formatTransformDiagnosticSummaryText,
   formatTransformIssueSampleJsonText,
   formatTransformIssueSampleReportText,
   formatTransformPathValueReportText,
@@ -153,6 +154,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
+  const handleCopyDiagnosticSummary = async () => {
+    if (!report || !reportView || isFilterPending) return;
+
+    try {
+      await copyText(formatTransformDiagnosticSummaryText(report, reportView, deferredQuery));
+      toast.success('已复制诊断摘要', { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析诊断摘要失败:', error);
+    }
+  };
+
   const handleCopyPathValueReport = async () => {
     if (!reportView || !hasPathValueCopyItems || isFilterPending) return;
 
@@ -284,6 +296,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
             复制筛选结果
           </button>
         )}
+        <button
+          data-tour="transform-report-copy-diagnostic-summary"
+          onClick={handleCopyDiagnosticSummary}
+          disabled={!reportView || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="复制不含原始大字段值的解析覆盖、CMD Schema 和风险摘要"
+        >
+          复制诊断摘要
+        </button>
         <button
           data-tour="transform-report-copy-path-values"
           onClick={handleCopyPathValueReport}
