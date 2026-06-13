@@ -19,6 +19,7 @@ import {
     uploadFile,
     FileItem,
 } from '../services/file';
+import { isAdminRequestError } from '../services/requestErrors';
 import { TEXT_FILE_ACCEPT_EXTENSIONS } from '../../utils/fileGuards';
 
 const { Title } = Typography;
@@ -97,7 +98,9 @@ const FileManagement: React.FC = () => {
                 // 上传成功后刷新列表，回到第一页
                 fetchFiles(1, pagination.pageSize, keyword);
             } catch (error) {
-                message.error('文件上传失败');
+                if (!isAdminRequestError(error)) {
+                    message.error('文件上传失败');
+                }
                 console.error('上传文件失败:', error);
             } finally {
                 setUploading(false);
@@ -187,7 +190,7 @@ const FileManagement: React.FC = () => {
             if (requestId !== previewRequestIdRef.current) {
                 return;
             }
-            setPreviewContent('文件内容加载失败');
+            setPreviewContent(isAdminRequestError(error) ? error.message : '文件内容加载失败');
             console.error('预览文件失败:', error);
         } finally {
             if (requestId === previewRequestIdRef.current) {
@@ -213,7 +216,9 @@ const FileManagement: React.FC = () => {
             await downloadFile(record.id, record.fileName);
             message.success(`${record.fileName} 下载成功`);
         } catch (error) {
-            message.error('文件下载失败');
+            if (!isAdminRequestError(error)) {
+                message.error('文件下载失败');
+            }
             console.error('下载文件失败:', error);
         }
     };
@@ -231,7 +236,9 @@ const FileManagement: React.FC = () => {
             const targetPage = pagination.current > maxPage ? maxPage : pagination.current;
             fetchFiles(targetPage, pagination.pageSize, keyword);
         } catch (error) {
-            message.error('文件删除失败');
+            if (!isAdminRequestError(error)) {
+                message.error('文件删除失败');
+            }
             console.error('删除文件失败:', error);
         }
     };
