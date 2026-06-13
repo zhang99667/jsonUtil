@@ -1342,6 +1342,15 @@ test('AI 修复空输入会提示用户', async ({ page }) => {
   await expect(page.getByText('请先输入需要修复的 JSON 内容')).toBeVisible();
 });
 
+test('AI 修复命中敏感字段会阻止发送原文', async ({ page }) => {
+  await fillSourceEditor(page, '{token:"real-token", ok:true}');
+
+  await page.locator('[data-tour="ai-fix"]').click();
+
+  await expect(page.getByText('AI 修复默认不会发送原文')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('real-token');
+});
+
 test('AI 修复缺少 Key 会引导到配置页', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('button', { name: 'AI 配置' }).click();
