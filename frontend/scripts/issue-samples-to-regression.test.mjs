@@ -124,6 +124,25 @@ describe('buildRegressionTemplate', () => {
     expect(template).not.toContain('%22token%22');
   });
 
+  it('保留已脱敏样本中的脱敏提示', () => {
+    const sampleExport = {
+      kind: 'json-helper-transform-issue-samples',
+      samples: [
+        {
+          type: 'unresolved',
+          path: '$.reward',
+          reasonLabel: '已解码但未结构化',
+          originalValue: '[REDACTED: token/sign]',
+          redactionHint: '原始值已脱敏，命中: token/sign',
+        },
+      ],
+    };
+
+    const template = buildRegressionTemplate(sampleExport);
+
+    expect(template).toContain('"redactionHint": "原始值已脱敏，命中: token/sign"');
+  });
+
   it('空样本时给出明确错误', () => {
     expect(() => buildRegressionTemplate({
       kind: 'json-helper-transform-issue-samples',

@@ -217,6 +217,7 @@ export interface TransformIssueSampleExportItem {
   path: string;
   sourceLabel?: string;
   originalValue: string;
+  redactionHint?: string;
   reasonLabel: string;
   nextAction?: string;
   message?: string;
@@ -255,6 +256,10 @@ export interface TransformIssueSampleExport {
   samples: TransformIssueSampleExportItem[];
 }
 
+export interface TransformIssueSampleJsonOptions {
+  redactSensitiveValues?: boolean;
+}
+
 const DEFAULT_DIAGNOSTIC_TOP_LIMIT = 8;
 const DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT = 5;
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
@@ -280,6 +285,26 @@ const NESTED_CMD_SEARCH_TEXT = '内部CMD字段 内部CMD cmd解析';
 const UNRESOLVED_SEARCH_TEXT = '待检查 未展开 线索 unresolved';
 const PLACEHOLDER_SEARCH_TEXT = '占位符 运行时 placeholder';
 const WARNING_SEARCH_TEXT = '跳过 性能保护 warning skipped';
+const SENSITIVE_SAMPLE_KEYWORDS = [
+  'access_token',
+  'refresh_token',
+  'authorization',
+  'android_id',
+  'device_id',
+  'baiduid',
+  'baidu_id',
+  'password',
+  'passwd',
+  'session',
+  'cookie',
+  'secret',
+  'token',
+  'sign',
+  'imei',
+  'oaid',
+  'idfa',
+  'cuid',
+];
 
 const STEP_LABELS: Record<TransformStepType, string> = {
   json_parse: '嵌套 JSON',
@@ -304,6 +329,53 @@ const incrementCount = <T extends string>(
 
 const formatOriginalPreview = (value: string, maxLength = 96): string => (
   value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
+);
+
+const decodeForSensitiveSearch = (value: string): string => {
+  let current = value;
+  for (let index = 0; index < 2; index++) {
+    try {
+      const decoded = decodeURIComponent(current.replace(/\+/g, ' '));
+      if (decoded === current) break;
+      current = decoded;
+    } catch {
+      break;
+    }
+  }
+  return current;
+};
+
+const includesSensitiveKeyword = (text: string, keyword: string): boolean => {
+  const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^a-z0-9])${escapedKeyword}([^a-z0-9]|$)`, 'i').test(text);
+};
+
+const collectIssueSampleSensitiveKeywords = (sample: TransformIssueSampleExportItem): string[] => {
+  const searchText = [
+    sample.path,
+    sample.sourcePath,
+    sample.sourceLabel,
+    sample.value,
+    sample.originalValue,
+    decodeForSensitiveSearch(sample.originalValue),
+  ].filter(Boolean).join('\n');
+
+  return SENSITIVE_SAMPLE_KEYWORDS.filter(keyword => includesSensitiveKeyword(searchText, keyword));
+};
+
+const redactSensitiveIssueSamples = (
+  samples: TransformIssueSampleExportItem[]
+): TransformIssueSampleExportItem[] => (
+  samples.map(sample => {
+    const keywords = collectIssueSampleSensitiveKeywords(sample);
+    if (keywords.length === 0) return sample;
+
+    return {
+      ...sample,
+      originalValue: `[REDACTED: ${keywords.join('/')}]`,
+      redactionHint: `原始值已脱敏，命中: ${keywords.join('/')}`,
+    };
+  })
 );
 
 const formatJsonValuePreview = (value: JsonValue, maxLength = 120): string => {
@@ -2143,7 +2215,8 @@ export const formatTransformPlaceholderReportText = (
 };
 
 export const buildTransformIssueSampleExport = (
-  reportView: TransformReportView
+  reportView: TransformReportView,
+  options: TransformIssueSampleJsonOptions = {}
 ): TransformIssueSampleExport | null => {
   const placeholderSamples = reportView.runtimePlaceholders.filter(
     placeholder => Boolean(placeholder.sourceOriginalValue)
@@ -2189,6 +2262,10 @@ export const buildTransformIssueSampleExport = (
     return null;
   }
 
+  const outputSamples = options.redactSensitiveValues
+    ? redactSensitiveIssueSamples(samples)
+    : samples;
+
   return {
     schemaVersion: 1,
     kind: 'json-helper-transform-issue-samples',
@@ -2212,14 +2289,15 @@ export const buildTransformIssueSampleExport = (
         truncated: reportView.isWarningTruncated,
       },
     },
-    samples,
+    samples: outputSamples,
   };
 };
 
 export const formatTransformIssueSampleJsonText = (
-  reportView: TransformReportView
+  reportView: TransformReportView,
+  options: TransformIssueSampleJsonOptions = {}
 ): string => {
-  const sampleExport = buildTransformIssueSampleExport(reportView);
+  const sampleExport = buildTransformIssueSampleExport(reportView, options);
   return sampleExport ? JSON.stringify(sampleExport, null, 2) : '';
 };
 
