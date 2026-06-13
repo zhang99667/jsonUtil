@@ -1155,6 +1155,53 @@ describe('applyTemplate', () => {
     expect(result).toContain('\n');
   });
 
+  it('支持占位符回填模板替换当前 JSON 字符串内容', () => {
+    const input = JSON.stringify({
+      button_cmd: '__CONVERT_CMD__',
+      nested: {
+        panel_cmd: 'prefix-__WEBPANEL_CMD__-suffix',
+        keep: '__EMPTY__',
+      },
+      list: ['__CONVERT_CMD__'],
+    });
+    const template = JSON.stringify({
+      schemaVersion: 1,
+      kind: 'json-helper-runtime-placeholder-fill-template',
+      placeholders: {
+        __CONVERT_CMD__: 'baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"',
+        __WEBPANEL_CMD__: 'nadcorevendor://vendor/ad/rewardWebPanel',
+        __EMPTY__: '',
+      },
+      placeholderDetails: [],
+    });
+    const result = applyTemplate(input, template);
+    const parsed = JSON.parse(result);
+
+    expect(parsed).toEqual({
+      button_cmd: 'baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"',
+      nested: {
+        panel_cmd: 'prefix-nadcorevendor://vendor/ad/rewardWebPanel-suffix',
+        keep: '__EMPTY__',
+      },
+      list: ['baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"'],
+    });
+  });
+
+  it('占位符回填模板没有填写 replacement 时抛错', () => {
+    const template = JSON.stringify({
+      schemaVersion: 1,
+      kind: 'json-helper-runtime-placeholder-fill-template',
+      placeholders: {
+        __CONVERT_CMD__: '',
+      },
+      placeholderDetails: [],
+    });
+
+    expect(() => applyTemplate('{"button_cmd":"__CONVERT_CMD__"}', template)).toThrow(
+      '占位符回填模板缺少 replacement'
+    );
+  });
+
   it('空输入抛错', () => {
     expect(() => applyTemplate('   ', '{"a":1}')).toThrow('当前编辑器内容为空');
   });

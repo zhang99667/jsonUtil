@@ -1022,7 +1022,70 @@ export const performTransform = (input: string, mode: TransformMode): string => 
   }
 };
 
-// ============ 模板填充（深度合并） ============
+// ============ 模板填充（深度合并 / 占位符回填） ============
+
+const PLACEHOLDER_FILL_TEMPLATE_KIND = 'json-helper-runtime-placeholder-fill-template';
+
+const isJsonObject = (value: JsonValue): value is JsonObject => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const isPlaceholderFillTemplate = (
+  template: JsonValue
+): template is JsonObject & { placeholders: Record<string, JsonValue> } => (
+  isJsonObject(template) &&
+  template.kind === PLACEHOLDER_FILL_TEMPLATE_KIND &&
+  isJsonObject(template.placeholders)
+);
+
+const buildPlaceholderReplacementMap = (
+  template: JsonObject & { placeholders: Record<string, JsonValue> }
+): Record<string, string> => (
+  Object.fromEntries(
+    Object.entries(template.placeholders).filter((entry): entry is [string, string] => (
+      typeof entry[1] === 'string' && entry[1].length > 0
+    ))
+  )
+);
+
+const replaceRuntimePlaceholders = (
+  value: JsonValue,
+  replacements: Record<string, string>
+): JsonValue => {
+  if (typeof value === 'string') {
+    return Object.entries(replacements).reduce(
+      (current, [placeholder, replacement]) => current.split(placeholder).join(replacement),
+      value
+    );
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => replaceRuntimePlaceholders(item, replacements));
+  }
+
+  if (isJsonObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        replaceRuntimePlaceholders(item, replacements),
+      ])
+    );
+  }
+
+  return value;
+};
+
+export const applyPlaceholderFillTemplate = (
+  target: JsonValue,
+  template: JsonObject & { placeholders: Record<string, JsonValue> }
+): JsonValue => {
+  const replacements = buildPlaceholderReplacementMap(template);
+  if (Object.keys(replacements).length === 0) {
+    throw new Error('占位符回填模板缺少 replacement');
+  }
+
+  return replaceRuntimePlaceholders(target, replacements);
+};
 
 /**
  * 深度合并模板到目标 JSON 对象
@@ -1089,7 +1152,9 @@ export const applyTemplate = (inputJson: string, templateJson: string): string =
     throw new Error('模板内容不是合法的 JSON');
   }
 
-  const merged = deepMergeTemplate(target, template);
+  const merged = isPlaceholderFillTemplate(template)
+    ? applyPlaceholderFillTemplate(target, template)
+    : deepMergeTemplate(target, template);
   return JSON.stringify(merged, null, 2);
 };
 

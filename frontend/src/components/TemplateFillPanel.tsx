@@ -109,7 +109,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
       <div className="flex-1 flex flex-col min-h-0 p-2 gap-2 bg-editor-bg">
         {/* 提示文字 */}
         <div className="text-xs text-gray-500 px-1">
-          输入 JSON 模板，模板中的字段将深度合并到当前编辑器的 JSON 中，未涉及的字段保持不变。
+          输入 JSON 模板，普通模板会深度合并，占位符回填模板会替换当前 JSON 中的运行时占位符。
         </div>
 
         {/* 模板编辑区 */}
