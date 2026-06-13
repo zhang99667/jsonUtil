@@ -371,6 +371,15 @@ test('深度解析报告可页面内对比 cmdHandler 输出', async ({ page }) 
   expect(diffReport).toContain('缺失路径 1 个');
   expect(diffReport).toContain('额外路径 2 个');
   expect(diffReport).toContain('$.cmd.nid');
+
+  await reportPanel.getByRole('button', { name: '复制排查报告' }).click();
+  await expect(page.getByText('已复制排查报告')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('深度解析协作排查报告');
+  const collaborationReport = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(collaborationReport).toContain('三、cmdHandler 对齐');
+  expect(collaborationReport).toContain('CMD 结构差异报告');
+  expect(collaborationReport).toContain('缺失路径 1 个');
 });
 
 test('深度解析报告展示运行时占位符', async ({ page }) => {

@@ -7,6 +7,7 @@ import {
   buildTransformReportView,
   formatTransformCmdStructureComparisonPackageText,
   formatTransformCmdStructureReportText,
+  formatTransformCollaborationReportText,
   formatTransformContextReportText,
   formatTransformContextSummary,
   formatTransformDiagnosticSummaryText,
@@ -1819,6 +1820,37 @@ describe('transformSummary', () => {
     expect(qualitySnapshotText).not.toContain('raw=%7B%22nid%22%3A123%7D');
     expect(qualitySnapshotText).not.toContain('button_cmd=__CONVERT_CMD__');
     expect(qualitySnapshotText).not.toContain('cmd=xxxxxxxx');
+  });
+
+  it('协作排查报告合并质量要点和 cmdHandler 对齐信息', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
+      nid: 123,
+      category: 'jump',
+    }))}&from=feed`;
+    const result = deepParseWithContext(JSON.stringify({
+      action_cmd: actionCmd,
+      button_cmd: '__CONVERT_CMD__',
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const reportView = buildTransformReportView(report, '');
+    const reportText = formatTransformCollaborationReportText(report, reportView, '');
+
+    expect(reportText).toContain('深度解析协作排查报告');
+    expect(reportText).toContain('一、诊断摘要');
+    expect(reportText).toContain('二、质量快照要点');
+    expect(reportText).toContain('三、cmdHandler 对齐');
+    expect(reportText).toContain('待对比: 当前筛选有 1/1 条可复制 CMD 结构');
+    expect(reportText).toContain('$.action_cmd');
+    expect(reportText).toContain('运行时占位符按来源路径确认真实替换链路');
+    expect(reportText).not.toContain(actionCmd);
+
+    const reportWithDiffText = formatTransformCollaborationReportText(report, reportView, '', {
+      cmdComparisonReportText: 'CMD 结构差异报告\n- 缺失路径 1 个:\n  - $.cmd.extra',
+    });
+
+    expect(reportWithDiffText).toContain('已附当前页面内 cmdHandler 差异报告');
+    expect(reportWithDiffText).toContain('CMD 结构差异报告');
+    expect(reportWithDiffText).toContain('缺失路径 1 个');
   });
 
   it('统计性能保护跳过信息', () => {
