@@ -45,6 +45,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Scheme corpus baseline
+        run: npm run corpus:scheme
+
       - name: Production build
         run: npm run build
 

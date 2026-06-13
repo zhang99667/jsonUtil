@@ -19,6 +19,9 @@ npm run typecheck
 log "Frontend: unit tests"
 npm test
 
+log "Frontend: scheme corpus baseline"
+npm run corpus:scheme
+
 log "Frontend: production build"
 npm run build
 
