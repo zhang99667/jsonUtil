@@ -63,6 +63,7 @@
 - **真实 Response 业务外壳回归**: 补充贴近真实广告 response 的脱敏回归，覆盖 `supportCMD`、`render_sbox`、`ext_log.ad_extra_param`、`task_policy` 和 extra 数组业务对象
 - **CMD Schema 资源分层**: 深度解析报告将视频、图片、lottie 等静态资源 URL 从 CMD 跳转 Schema Top 中拆出，降低真实 response 排查时的热点噪音
 - **内部 CMD 字段资源分层**: 深度解析报告将 `video_url`、`poster_image`、`button_icon`、lottie 等静态资源字段从内部 CMD 字段中拆出，并在报告、筛选、质量快照和 UI 中单独展示资源字段分布
+- **字符串资源 URL 洞察**: 真实 response 中不带 query 的 `button_icon`、`user_portrait`、`button_image`、lottie 等纯资源 URL 也会进入资源字段和静态资源 URL Top，减少对 cmdHandler 输出的可见性差距
 - **解析质量资源字段基线**: 脱敏广告 response corpus 补充资源 URL 样本，并在 expected snapshot 中校验资源字段数量、资源 Schema Top 和资源字段 Top，防止素材字段分层能力回退
 - **解析质量快照命令**: 新增 `corpus:snapshot` 命令，可扫描脱敏 Scheme corpus 或通过 `--input` 诊断本地真实 response，并输出覆盖率、CMD/资源热点、占位符和 expected 阈值 pass/fail，便于评审解析质量变化
 - **解析质量快照门禁**: 新增 `corpus:snapshot:check` 严格模式并接入 CI，expected 阈值失败时会直接阻断流水线，同时保留可读质量快照输出

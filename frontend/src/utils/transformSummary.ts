@@ -1753,10 +1753,27 @@ const collectCommandSchemaOccurrences = (
     });
   };
 
+  const pushResourceSchema = (row: TransformReportDecodedPath, recordPath: string) => {
+    const schema = typeof row.value === 'string'
+      ? getSchemeCommandSchemaFromUrl(row.value)
+      : undefined;
+    if (!schema) return;
+
+    occurrences.push({
+      schema,
+      path: row.path,
+      recordPath,
+      kind: 'resource',
+    });
+  };
+
   records.forEach(record => {
     pushSchema(record.commandSchema, record.path, record.path);
     record.commandSchemaRows?.forEach(row => {
       pushSchema(row.schema, row.path, record.path);
+    });
+    record.nestedResourceSearchFields?.forEach(row => {
+      pushResourceSchema(row, record.path);
     });
   });
 
