@@ -3,10 +3,13 @@ import { AIProvider } from '../types';
 import {
   AI_CONNECTION_TEST_TIMEOUT_MESSAGE,
   AI_REPAIR_TIMEOUT_MESSAGE,
+  AI_SENSITIVE_INPUT_MESSAGE,
+  detectAiSensitiveInputLabels,
   fixJsonWithAI,
   normalizeAiJsonResponse,
   testAIConnection,
 } from './aiService';
+import { base64Encode } from '../utils/schemeUtils';
 
 describe('normalizeAiJsonResponse', () => {
   it('直接返回压缩后的有效 JSON', () => {
@@ -67,6 +70,47 @@ describe('fixJsonWithAI', () => {
         signal: expect.any(AbortSignal),
       })
     );
+  });
+
+  it('命中敏感字段时默认阻止发送原文', async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(fixJsonWithAI('{token:"real-token", ok:true}', customConfig, { fetchImpl }))
+      .rejects.toThrow(AI_SENSITIVE_INPUT_MESSAGE);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('可识别 URL 编码后的敏感字段', () => {
+    const encoded = `payload=${encodeURIComponent(JSON.stringify({
+      sign: 'real-sign',
+      device_id: 'real-device',
+    }))}`;
+
+    expect(detectAiSensitiveInputLabels(encoded)).toEqual(['sign', 'device']);
+  });
+
+  it('可识别多层 URL 编码后的敏感字段', () => {
+    const payload = JSON.stringify({
+      token: 'real-token',
+      android_id: 'real-android-id',
+    });
+    const encoded = `task_params=${encodeURIComponent(encodeURIComponent(encodeURIComponent(payload)))}`;
+
+    expect(detectAiSensitiveInputLabels(encoded)).toEqual(['token', 'device']);
+  });
+
+  it('可识别内部 Base64 片段中的敏感字段', async () => {
+    const extraParam = `AFD8f${base64Encode(JSON.stringify({
+      oaid_v: 'real-oaid',
+      akey: 'real-secret',
+    }))}UxM${base64Encode('&sign=real-sign')}`;
+    const fetchImpl = vi.fn();
+
+    await expect(fixJsonWithAI(JSON.stringify({
+      extra: [{ k: 'extraParam', v: extraParam }],
+    }), customConfig, { fetchImpl })).rejects.toThrow(AI_SENSITIVE_INPUT_MESSAGE);
+    expect(detectAiSensitiveInputLabels(extraParam)).toEqual(['sign', 'secret', 'device']);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('API Key 无效时返回友好错误', async () => {
