@@ -9,6 +9,7 @@ import {
   formatTransformCmdStructureComparisonPackageText,
   formatTransformContextReportText,
   formatTransformDiagnosticSummaryText,
+  formatTransformIssueRegressionTemplateText,
   formatTransformIssueSampleJsonText,
   formatTransformIssueSampleReportText,
   formatTransformPathValueReportText,
@@ -132,6 +133,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   ), [reportView]);
   const redactedIssueSampleJsonCopyText = useMemo(() => (
     reportView ? formatTransformIssueSampleJsonText(reportView, { redactSensitiveValues: true }) : ''
+  ), [reportView]);
+  const issueRegressionTemplateCopyText = useMemo(() => (
+    reportView ? formatTransformIssueRegressionTemplateText(reportView, { redactSensitiveValues: true }) : ''
   ), [reportView]);
   const placeholderFillTemplateJsonText = useMemo(() => (
     reportView ? formatTransformPlaceholderFillTemplateJsonText(reportView) : ''
@@ -262,6 +266,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success('已复制脱敏样本 JSON', { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析脱敏样本 JSON 失败:', error);
+    }
+  };
+
+  const handleCopyIssueRegressionTemplate = async () => {
+    if (!issueRegressionTemplateCopyText || isFilterPending) return;
+
+    try {
+      await copyText(issueRegressionTemplateCopyText);
+      toast.success('已复制回归模板', { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析回归模板失败:', error);
     }
   };
 
@@ -402,6 +417,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           title="复制当前筛选下的脱敏结构化样本 JSON，便于安全沉淀回归用例"
         >
           复制脱敏 JSON
+        </button>
+        <button
+          data-tour="transform-report-copy-issue-regression-template"
+          onClick={handleCopyIssueRegressionTemplate}
+          disabled={!issueRegressionTemplateCopyText || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="复制当前筛选下的脱敏 Vitest TODO 回归模板"
+        >
+          复制回归模板
         </button>
         <button
           onClick={handleCopyReport}

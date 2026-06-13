@@ -10,6 +10,7 @@ import {
   formatTransformContextReportText,
   formatTransformContextSummary,
   formatTransformDiagnosticSummaryText,
+  formatTransformIssueRegressionTemplateText,
   formatTransformIssueSampleJsonText,
   formatTransformPathValueReportText,
   formatTransformPlaceholderFillTemplateJsonText,
@@ -1512,6 +1513,14 @@ describe('transformSummary', () => {
         limit: 20,
       }),
     ]);
+
+    const regressionTemplateText = formatTransformIssueRegressionTemplateText(buildTransformReportView(report, ''));
+    expect(regressionTemplateText).toContain("import { describe, it } from 'vitest';");
+    expect(regressionTemplateText).toContain('// 由深度解析报告「复制回归模板」生成；把 it.todo 改成 it 后补充解析断言。');
+    expect(regressionTemplateText).toContain('"type": "unresolved"');
+    expect(regressionTemplateText).toContain('"type": "runtime_placeholder"');
+    expect(regressionTemplateText).toContain('"type": "warning"');
+    expect(regressionTemplateText).toContain('it.todo(`${sample.type} ${sample.path} · ${sample.reasonLabel}`);');
   });
 
   it('问题样本 JSON 支持脱敏敏感原始值', () => {
@@ -1579,6 +1588,15 @@ describe('transformSummary', () => {
         redactionHint: '原始值已脱敏，命中: token/sign',
       }),
     ]);
+
+    const regressionTemplateText = formatTransformIssueRegressionTemplateText(
+      buildTransformReportView(report, ''),
+      { redactSensitiveValues: true }
+    );
+    expect(regressionTemplateText).not.toContain('real-token');
+    expect(regressionTemplateText).not.toContain('%22token%22');
+    expect(regressionTemplateText).toContain('已脱敏命中的 originalValue');
+    expect(regressionTemplateText).toContain('"originalValue": "[REDACTED: token/sign]"');
   });
 
   it('诊断摘要输出覆盖结论和 Top 线索但不暴露原始大字段', () => {
