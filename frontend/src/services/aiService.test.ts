@@ -7,6 +7,7 @@ import {
   detectAiSensitiveInputLabels,
   fixJsonWithAI,
   normalizeAiJsonResponse,
+  repairJsonLocally,
   testAIConnection,
 } from './aiService';
 import { base64Encode } from '../utils/schemeUtils';
@@ -47,7 +48,31 @@ describe('fixJsonWithAI', () => {
     baseUrl: 'https://mock-ai.test/v1',
   };
 
-  it('调用 OpenAI 兼容接口并规范化 JSON 返回', async () => {
+  it('本地修复常见 JSON 小错误', () => {
+    expect(repairJsonLocally(`// comment
+      {items:[1,2,], ok:true, name:'json', note:"line
+      break"}`)).toBe('{"items":[1,2],"ok":true,"name":"json","note":"line\\n      break"}');
+  });
+
+  it('本地可修复时不会调用 AI 接口', async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(fixJsonWithAI('{items:[1,2,], ok:true}', customConfig, { fetchImpl }))
+      .resolves.toBe('{"items":[1,2],"ok":true}');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('本地可修复时无需 API Key', async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(fixJsonWithAI('{ok:true}', {
+      ...customConfig,
+      apiKey: '',
+    }, { fetchImpl })).resolves.toBe('{"ok":true}');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('本地不可修复时调用 OpenAI 兼容接口并规范化 JSON 返回', async () => {
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
       choices: [
         {
@@ -61,7 +86,7 @@ describe('fixJsonWithAI', () => {
       headers: { 'Content-Type': 'application/json' },
     }));
 
-    await expect(fixJsonWithAI('{ok:true}', customConfig, { fetchImpl }))
+    await expect(fixJsonWithAI('{ok:}', customConfig, { fetchImpl }))
       .resolves.toBe('{"ok":true}');
     expect(fetchImpl).toHaveBeenCalledWith(
       'https://mock-ai.test/v1/chat/completions',
@@ -178,7 +203,7 @@ describe('fixJsonWithAI', () => {
       headers: { 'Content-Type': 'application/json' },
     }));
 
-    await expect(fixJsonWithAI('{ok:true}', {
+    await expect(fixJsonWithAI('{ok:}', {
       ...customConfig,
       baseUrl: 'https://mock-ai.test/v1/',
     }, { fetchImpl })).resolves.toBe('{"ok":true}');

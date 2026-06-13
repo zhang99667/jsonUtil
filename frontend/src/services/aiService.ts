@@ -25,6 +25,7 @@ const BASE64_SCAN_CANDIDATE_RE = /[A-Za-z0-9+/_-]{16,}(?:={1,2}[A-Za-z0-9+/_-]{8
 interface FixJsonWithAIOptions {
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
+  allowLocalRepair?: boolean;
 }
 
 /**
@@ -50,6 +51,246 @@ export const normalizeAiJsonResponse = (rawText: string): string => {
   }
 
   throw new Error('AI 返回内容不是有效 JSON，请重试或调整模型配置');
+};
+
+/**
+ * 对常见 JSON 小错误做本地确定性修复，能修好时避免把原文发送给模型
+ */
+export const repairJsonLocally = (input: string): string | null => {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  const candidates = new Set<string>();
+  const appendCandidate = (value: string) => {
+    if (!value.trim()) return;
+    candidates.add(value);
+    candidates.add(escapeRawControlsInDoubleQuotedStrings(value));
+  };
+
+  [trimmed, stripJsonComments(trimmed)].forEach(base => {
+    appendCandidate(base);
+    appendCandidate(removeTrailingCommas(base));
+    appendCandidate(normalizeLooseJsonSyntax(base));
+    appendCandidate(removeTrailingCommas(normalizeLooseJsonSyntax(base)));
+  });
+
+  for (const candidate of candidates) {
+    const normalized = tryNormalizeJson(candidate);
+    if (normalized) return normalized;
+  }
+
+  return null;
+};
+
+const stripJsonComments = (source: string): string => {
+  let output = '';
+  let inString = false;
+  let quote = '';
+  let escaped = false;
+
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+    const next = source[index + 1];
+
+    if (inString) {
+      output += char;
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        inString = false;
+        quote = '';
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      inString = true;
+      quote = char;
+      output += char;
+      continue;
+    }
+
+    if (char === '/' && next === '/') {
+      while (index + 1 < source.length && source[index + 1] !== '\n') {
+        index++;
+      }
+      continue;
+    }
+
+    if (char === '/' && next === '*') {
+      index += 2;
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
+        index++;
+      }
+      index++;
+      continue;
+    }
+
+    output += char;
+  }
+
+  return output;
+};
+
+const removeTrailingCommas = (source: string): string => {
+  let output = '';
+  let inString = false;
+  let quote = '';
+  let escaped = false;
+
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+
+    if (inString) {
+      output += char;
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        inString = false;
+        quote = '';
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      inString = true;
+      quote = char;
+      output += char;
+      continue;
+    }
+
+    if (char === ',') {
+      let nextIndex = index + 1;
+      while (/\s/.test(source[nextIndex] || '')) {
+        nextIndex++;
+      }
+      if (source[nextIndex] === '}' || source[nextIndex] === ']') {
+        continue;
+      }
+    }
+
+    output += char;
+  }
+
+  return output;
+};
+
+const normalizeLooseJsonSyntax = (source: string): string => (
+  quoteBareObjectKeys(convertSingleQuotedStrings(source))
+);
+
+const convertSingleQuotedStrings = (source: string): string => (
+  source.replace(/'((?:\\.|[^'\\])*)'/g, (_, content: string) => (
+    JSON.stringify(content.replace(/\\'/g, "'"))
+  ))
+);
+
+const quoteBareObjectKeys = (source: string): string => {
+  let output = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+
+    if (inString) {
+      output += char;
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      output += char;
+      continue;
+    }
+
+    if (char === '{' || char === ',') {
+      output += char;
+      index++;
+      while (/\s/.test(source[index] || '')) {
+        output += source[index];
+        index++;
+      }
+
+      const match = source.slice(index).match(/^([A-Za-z_$][\w$]*)(\s*:)/);
+      if (match) {
+        output += `"${match[1]}"${match[2]}`;
+        index += match[0].length - 1;
+        continue;
+      }
+
+      index--;
+      continue;
+    }
+
+    output += char;
+  }
+
+  return output;
+};
+
+const escapeRawControlsInDoubleQuotedStrings = (source: string): string => {
+  let output = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+
+    if (!inString) {
+      output += char;
+      if (char === '"') {
+        inString = true;
+      }
+      continue;
+    }
+
+    if (escaped) {
+      output += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      output += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      output += char;
+      inString = false;
+      continue;
+    }
+
+    if (char === '\r' || char === '\n') {
+      output += '\\n';
+      if (char === '\r' && source[index + 1] === '\n') index++;
+      continue;
+    }
+
+    if (char === '\t') {
+      output += '\\t';
+      continue;
+    }
+
+    output += char < ' '
+      ? `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`
+      : char;
+  }
+
+  return output;
 };
 
 const safeDecodeURIComponent = (value: string): string | null => {
@@ -178,6 +419,11 @@ export const fixJsonWithAI = async (
     throw new Error(`${AI_SENSITIVE_INPUT_MESSAGE}（命中: ${sensitiveLabels.join('/')}）`);
   }
 
+  if (options.allowLocalRepair !== false) {
+    const localFixed = repairJsonLocally(brokenJson);
+    if (localFixed) return localFixed;
+  }
+
   // 检查 API Key
   if (!config.apiKey || config.apiKey.trim() === '') {
     throw new Error('API Key 未配置，请先在设置中配置 API Key');
@@ -295,6 +541,7 @@ export const testAIConnection = async (
     await fixJsonWithAI('{connection:true}', config, {
       ...options,
       timeoutMs: options.timeoutMs ?? AI_CONNECTION_TEST_TIMEOUT_MS,
+      allowLocalRepair: false,
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);

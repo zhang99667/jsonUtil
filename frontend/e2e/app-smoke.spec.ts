@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }) => {
       return;
     }
 
-    await expect(userPrompt).toContain('{items:[1,2], ok:true}');
+    await expect(userPrompt).toContain('{items:[1,2], ok:}');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -1327,13 +1327,23 @@ test('Scheme 面板展示内部 Base64 后缀摘要', async ({ page }) => {
 });
 
 test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
-  await fillSourceEditor(page, '{items:[1,2], ok:true}');
+  await fillSourceEditor(page, '{items:[1,2], ok:}');
 
   await page.locator('[data-tour="ai-fix"]').click();
 
   await expect(page.getByText('AI 修复摘要')).toBeVisible();
   await expectPreviewText(page, '"items": [');
   await expectPreviewText(page, '"ok": true');
+});
+
+test('AI 修复可先本地修复常见小错误', async ({ page }) => {
+  await fillSourceEditor(page, "{items:[1,2,], ok:true, name:'json'}");
+
+  await page.locator('[data-tour="ai-fix"]').click();
+
+  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expectPreviewText(page, '"items": [');
+  await expectPreviewText(page, '"name": "json"');
 });
 
 test('AI 修复空输入会提示用户', async ({ page }) => {
@@ -1357,7 +1367,7 @@ test('AI 修复缺少 Key 会引导到配置页', async ({ page }) => {
   await page.locator('input[type="password"]').fill('');
   await page.getByRole('button', { name: '保存设置' }).click();
 
-  await fillSourceEditor(page, '{items:[1,2], ok:true}');
+  await fillSourceEditor(page, '{items:[1,2], ok:}');
   await page.locator('[data-tour="ai-fix"]').click();
 
   await expect(page.getByText('请先配置 AI API Key')).toBeVisible();
