@@ -16,6 +16,25 @@ const parseJsonInput = (text, label) => {
   }
 };
 
+const readStdin = async () => {
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
+};
+
+export const extractCmdStructurePair = value => {
+  if (!isRecord(value) || !Object.prototype.hasOwnProperty.call(value, 'actual') || !Object.prototype.hasOwnProperty.call(value, 'expected')) {
+    throw new Error('单文件或 stdin 输入必须是包含 actual 和 expected 的 JSON 对象');
+  }
+
+  return {
+    actual: value.actual,
+    expected: value.expected,
+  };
+};
+
 const appendPathKey = (path, key) => (
   /^[A-Za-z_$][\w$]*$/.test(key)
     ? `${path}.${key}`
@@ -224,29 +243,81 @@ export const formatCmdStructureDiff = diff => {
 
 const printUsage = () => {
   console.error('用法: npm run cmd:diff -- <actual-json-file> <expected-json-file>');
+  console.error('也可输入单个对比包: npm run cmd:diff -- <pair-json-file>');
+  console.error('也可通过 stdin 输入对比包: pbpaste | npm run cmd:diff -- --stdin');
+  console.error('对比包格式: {"actual": {...}, "expected": {...}}');
   console.error('actual 通常为本工具复制的 CMD 结构，expected 通常为内部 cmdHandler 导出的 JSON');
 };
 
+const parseCliArgs = argv => {
+  const options = { fromStdin: false };
+  const paths = [];
+
+  argv.forEach(arg => {
+    if (arg === '--stdin') {
+      options.fromStdin = true;
+      return;
+    }
+
+    if (arg.startsWith('-')) {
+      throw new Error(`未知参数: ${arg}`);
+    }
+
+    paths.push(arg);
+  });
+
+  if (options.fromStdin && paths.length > 0) {
+    throw new Error('--stdin 不能和文件路径同时使用');
+  }
+
+  if (paths.length > 2) {
+    throw new Error('最多只能输入两个 JSON 文件');
+  }
+
+  return { options, paths };
+};
+
+const readComparisonInputs = async (paths, options) => {
+  if (options.fromStdin || (paths.length === 0 && !process.stdin.isTTY)) {
+    const pair = extractCmdStructurePair(parseJsonInput(await readStdin(), 'stdin'));
+    return pair;
+  }
+
+  if (paths.length === 1) {
+    const pair = extractCmdStructurePair(parseJsonInput(await readFile(paths[0], 'utf8'), 'pair'));
+    return pair;
+  }
+
+  if (paths.length === 2) {
+    const [actualText, expectedText] = await Promise.all([
+      readFile(paths[0], 'utf8'),
+      readFile(paths[1], 'utf8'),
+    ]);
+
+    return {
+      actual: parseJsonInput(actualText, 'actual'),
+      expected: parseJsonInput(expectedText, 'expected'),
+    };
+  }
+
+  return null;
+};
+
 const runCli = async () => {
-  const [, scriptPath, actualPath, expectedPath, ...restArgs] = process.argv;
+  const [, scriptPath, ...args] = process.argv;
   const isMain = scriptPath && import.meta.url === new URL(scriptPath, 'file:').href;
   if (!isMain) return;
 
   try {
-    if (!actualPath || !expectedPath || restArgs.length > 0) {
+    const { options, paths } = parseCliArgs(args);
+    const inputs = await readComparisonInputs(paths, options);
+    if (!inputs) {
       printUsage();
       process.exitCode = 1;
       return;
     }
 
-    const [actualText, expectedText] = await Promise.all([
-      readFile(actualPath, 'utf8'),
-      readFile(expectedPath, 'utf8'),
-    ]);
-    const diff = diffCmdStructures(
-      parseJsonInput(actualText, 'actual'),
-      parseJsonInput(expectedText, 'expected')
-    );
+    const diff = diffCmdStructures(inputs.actual, inputs.expected);
 
     process.stdout.write(`${formatCmdStructureDiff(diff)}\n`);
     process.exitCode = diff.hasDifferences ? 2 : 0;

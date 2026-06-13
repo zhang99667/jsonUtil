@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   diffCmdStructures,
+  extractCmdStructurePair,
   formatCmdStructureDiff,
   normalizeCmdStructure,
 } from './cmd-structure-diff.mjs';
@@ -48,6 +49,19 @@ describe('normalizeCmdStructure', () => {
       },
       source: undefined,
     });
+  });
+});
+
+describe('extractCmdStructurePair', () => {
+  it('读取单文件或 stdin 对比包中的 actual 和 expected', () => {
+    const actual = createCmdStructure();
+    const expected = createCmdStructure();
+
+    expect(extractCmdStructurePair({ actual, expected })).toEqual({ actual, expected });
+  });
+
+  it('对比包缺字段时给出明确错误', () => {
+    expect(() => extractCmdStructurePair({ actual: createCmdStructure() })).toThrow('必须是包含 actual 和 expected 的 JSON 对象');
   });
 });
 
