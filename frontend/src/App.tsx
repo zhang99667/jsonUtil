@@ -934,13 +934,6 @@ const App: React.FC = () => {
         return;
       }
 
-      if (!aiConfig.apiKey.trim()) {
-        showError('请先配置 AI API Key');
-        setSettingsInitialTab('ai');
-        setIsSettingsModalOpen(true);
-        return;
-      }
-
       setIsProcessing(true);
       try {
         // AI 修复针对源输入进行
@@ -957,7 +950,11 @@ const App: React.FC = () => {
       } catch (e: unknown) {
         // 业务逻辑错误（API Key 缺失、网络错误等）使用 Toast 提示
         const errorMessage = e instanceof Error ? e.message : "AI 修复失败";
-        showError(errorMessage);
+        showError(errorMessage.includes('API Key 未配置') ? '请先配置 AI API Key' : errorMessage);
+        if (errorMessage.includes('API Key')) {
+          setSettingsInitialTab('ai');
+          setIsSettingsModalOpen(true);
+        }
       } finally {
         setIsProcessing(false);
       }
