@@ -396,6 +396,19 @@ const collectIssueSampleSensitiveKeywords = (sample: TransformIssueSampleExportI
   return SENSITIVE_SAMPLE_KEYWORDS.filter(keyword => includesSensitiveKeyword(searchText, keyword));
 };
 
+const collectIssueSampleSensitiveHints = (
+  samples: TransformIssueSampleExportItem[]
+): Array<{ path: string; keywords: string[] }> => (
+  samples.flatMap(sample => {
+    const keywords = collectIssueSampleSensitiveKeywords(sample);
+    return keywords.length > 0 ? [{ path: sample.path, keywords }] : [];
+  })
+);
+
+const formatIssueSampleSensitiveHint = (
+  hint: { path: string; keywords: string[] }
+): string => `${hint.path}(${hint.keywords.join('/')})`;
+
 const redactSensitiveIssueSamples = (
   samples: TransformIssueSampleExportItem[]
 ): TransformIssueSampleExportItem[] => (
@@ -2432,6 +2445,55 @@ export const formatTransformIssueSampleJsonText = (
 ): string => {
   const sampleExport = buildTransformIssueSampleExport(reportView, options);
   return sampleExport ? JSON.stringify(sampleExport, null, 2) : '';
+};
+
+export const formatTransformIssueRegressionTemplateText = (
+  reportView: TransformReportView,
+  options: TransformIssueSampleJsonOptions = { redactSensitiveValues: true }
+): string => {
+  const rawSampleExport = buildTransformIssueSampleExport(reportView);
+  if (!rawSampleExport) return '';
+
+  const sampleExport = options.redactSensitiveValues
+    ? buildTransformIssueSampleExport(reportView, options)
+    : rawSampleExport;
+  if (!sampleExport || sampleExport.samples.length === 0) return '';
+
+  const sensitiveHints = collectIssueSampleSensitiveHints(rawSampleExport.samples);
+  const hasRedactedValues = sampleExport.samples.some(sample => sample.redactionHint);
+  const sensitiveHintText = sensitiveHints
+    .slice(0, 5)
+    .map(formatIssueSampleSensitiveHint)
+    .join('；');
+  const sensitiveHintLines = sensitiveHints.length > 0
+    ? (hasRedactedValues
+        ? [
+            '// 注意: 检测到样本可能包含 token/sign/cookie/设备标识等敏感字段。',
+            `// 已脱敏命中的 originalValue，当前命中: ${sensitiveHintText}${sensitiveHints.length > 5 ? '；...' : ''}`,
+            '// 补断言前请用脱敏后的等价样本还原结构。',
+            '',
+          ]
+        : [
+            '// 注意: 检测到样本可能包含 token/sign/cookie/设备标识等敏感字段。',
+            `// 提交前请先脱敏 originalValue，当前命中: ${sensitiveHintText}${sensitiveHints.length > 5 ? '；...' : ''}`,
+            '',
+          ])
+    : [];
+
+  return [
+    "import { describe, it } from 'vitest';",
+    '',
+    '// 由深度解析报告「复制回归模板」生成；把 it.todo 改成 it 后补充解析断言。',
+    ...sensitiveHintLines,
+    `const issueSamples = ${JSON.stringify(sampleExport.samples, null, 2)} as const;`,
+    '',
+    "describe('深度解析问题样本回归', () => {",
+    '  issueSamples.forEach(sample => {',
+    '    it.todo(`${sample.type} ${sample.path} · ${sample.reasonLabel}`);',
+    '  });',
+    '});',
+    '',
+  ].join('\n');
 };
 
 export const formatTransformIssueSampleReportText = (
