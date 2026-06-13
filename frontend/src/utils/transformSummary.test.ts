@@ -17,6 +17,7 @@ import {
   formatTransformPlaceholderFillTemplateJsonText,
   formatTransformPlaceholderReportText,
   formatTransformQualitySnapshotJsonText,
+  formatTransformQualitySnapshotDeltaText,
   formatTransformReportViewText,
   getTransformDecodedPathCopyText,
   getTransformRecordCmdStructureCopyText,
@@ -1851,6 +1852,32 @@ describe('transformSummary', () => {
     expect(reportWithDiffText).toContain('已附当前页面内 cmdHandler 差异报告');
     expect(reportWithDiffText).toContain('CMD 结构差异报告');
     expect(reportWithDiffText).toContain('缺失路径 1 个');
+  });
+
+  it('质量快照对比摘要展示关键指标变化', () => {
+    const beforeReport = buildTransformContextReport(deepParseWithContext(JSON.stringify({
+      button_cmd: '__CONVERT_CMD__',
+    }), { autoExpandScheme: true }).context);
+    const afterReport = buildTransformContextReport(deepParseWithContext(JSON.stringify({
+      button_cmd: 'cmd=%7B%22nid%22%3A123%7D',
+    }), { autoExpandScheme: true }).context);
+    const beforeSnapshot = JSON.parse(formatTransformQualitySnapshotJsonText(
+      beforeReport,
+      buildTransformReportView(beforeReport, ''),
+      ''
+    ));
+    const afterSnapshot = JSON.parse(formatTransformQualitySnapshotJsonText(
+      afterReport,
+      buildTransformReportView(afterReport, ''),
+      ''
+    ));
+    const deltaText = formatTransformQualitySnapshotDeltaText(beforeSnapshot, afterSnapshot);
+
+    expect(deltaText).toContain('深度解析质量对比');
+    expect(deltaText).toContain('覆盖率:');
+    expect(deltaText).toContain('CMD结构: 0 -> 1 (+1)');
+    expect(deltaText).toContain('占位符: 1 -> 0 (-1)');
+    expect(deltaText).toContain('Top CMD Schema: (无) ->');
   });
 
   it('统计性能保护跳过信息', () => {
