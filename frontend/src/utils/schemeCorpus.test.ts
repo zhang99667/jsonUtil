@@ -438,6 +438,156 @@ describe('CMD/Scheme 真实样本回归', () => {
     expect(JSON.parse(inverseWithContext(output, context))).toEqual(JSON.parse(response));
   });
 
+  it('深度格式化可解析真实 response 业务外壳和 ext_log 扩展参数', () => {
+    const landingUrl = 'https://example.com/landing?sku=101&bd_vid=abc';
+    const adExtraParam = base64Encode(JSON.stringify({
+      user_id: 'redacted_user',
+      cpid: '1001',
+      place_id: '1683310188080',
+      ext5: {
+        protocal_header: 'openapp.demo',
+        apk_name: 'com.example.app',
+      },
+    })).replace(/=/g, '%3D');
+    const bottomButtonScheme = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+      android_pid: '1683310188080',
+      task_id: '602',
+      ext_params: {
+        reward_num: '__REWARD_NUM__',
+      },
+      ext_policy: JSON.stringify({
+        sdk_switch: '1',
+        complete_info: '',
+      }),
+    }))}`;
+    const stayCmd = `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
+      button_cmd: '__CONVERT_CMD__',
+      button_text: '打开应用并体验',
+    }))}`;
+    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      video_url: 'https://video.example.com/ad.mp4?pd=100&cm=1501',
+      page_url: landingUrl,
+      ext_log: {
+        pdRec: 'reward',
+        ad_extra_param: adExtraParam,
+      },
+      tail_frame: {
+        bottom_button_text: '__COINTIPS__',
+        bottom_button_scheme: bottomButtonScheme,
+      },
+    }))}&reward=${encodeURIComponent(JSON.stringify({
+      task_policy: JSON.stringify({
+        ecpm: 'encoded_ecpm',
+        businessParams: 'encoded_business_params',
+        cpid_type: 'cpc',
+      }),
+      stay_cmd: stayCmd,
+    }))}&rotation_component=${encodeURIComponent(JSON.stringify({
+      click_event_cmd: '__CONVERT_CMD__',
+      webpanel_event_cmd: '__WEBPANEL_CMD__',
+    }))}`;
+    const response = JSON.stringify({
+      errno: 0,
+      errmsg: '',
+      data: {
+        video: [{
+          isRenderReturnGoodsInfo: true,
+          material: [{
+            info: [{
+              ad_common: {
+                scheme: rootScheme,
+              },
+              supportCMD: true,
+              render_sbox: {
+                sbox_switch: 4,
+              },
+            }],
+            imTimeSign: 110,
+            templateId: '',
+          }],
+          extra: [
+            {
+              k: 'extraParam',
+              v: `AFD8f${base64Encode(JSON.stringify({
+                meg_name: 'AI',
+                ad_extend: JSON.stringify({
+                  ad_info: {
+                    h_ecpm: 207000,
+                  },
+                }),
+              }))}UxM${base64Encode('&os=2&ip=127.0.0.1')}`,
+            },
+            {
+              k: 'dislikeReason',
+              v: {
+                have_seen: '广告重复',
+                have_density: '广告密集',
+                ad_brand: '千问',
+              },
+            },
+            {
+              k: 'ubsParam',
+              v: {
+                ideaid: '1353104569522',
+                cmatch: 1501,
+                adload_related_tag: '',
+              },
+            },
+            {
+              k: 'sboxParam',
+              v: {
+                client_params: {
+                  reward_crius_download_charge: '1',
+                },
+                idea_id: 1353104569522,
+              },
+            },
+          ],
+          platform: 'android',
+        }],
+      },
+    });
+
+    const { output, context } = deepParseWithContext(response, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    const info = parsed.data.video[0].material[0].info[0];
+    const decodedScheme = info.ad_common.scheme;
+    const report = buildTransformContextReport(context);
+
+    expect(info.supportCMD).toBe(true);
+    expect(info.render_sbox.sbox_switch).toBe(4);
+    expect(parsed.data.video[0].isRenderReturnGoodsInfo).toBe(true);
+    expect(decodedScheme.video_info.video_url).toEqual({
+      pd: '100',
+      cm: '1501',
+    });
+    expect(decodedScheme.video_info.page_url).toEqual({
+      sku: '101',
+      bd_vid: 'abc',
+    });
+    expect(decodedScheme.video_info.ext_log.ad_extra_param).toMatchObject({
+      user_id: 'redacted_user',
+      ext5: {
+        apk_name: 'com.example.app',
+      },
+    });
+    expect(decodedScheme.video_info.tail_frame.bottom_button_scheme.task_params.ext_policy.sdk_switch).toBe('1');
+    expect(decodedScheme.reward.task_policy).toMatchObject({
+      cpid_type: 'cpc',
+    });
+    expect(decodedScheme.reward.stay_cmd.convert_btn.button_cmd).toBe('__CONVERT_CMD__');
+    expect(decodedScheme.rotation_component.webpanel_event_cmd).toBe('__WEBPANEL_CMD__');
+    expect(parsed.data.video[0].extra[0].v._base64_suffix_decoded).toMatchObject({
+      os: '2',
+      ip: '127.0.0.1',
+    });
+    expect(parsed.data.video[0].extra[1].v.ad_brand).toBe('千问');
+    expect(parsed.data.video[0].extra[2].v.cmatch).toBe(1501);
+    expect(parsed.data.video[0].extra[3].v.client_params.reward_crius_download_charge).toBe('1');
+    expect(report.summary.warningCount).toBe(0);
+    expect(report.summary.unresolvedCount).toBe(0);
+  });
+
   it('整段广告 response 可对齐 cmdHandler 风格的 schema 与参数结构', () => {
     expect(rewardResponseBaseline.sample).toBe(rewardResponseCorpus.name);
     const response = buildCorpusResponseText(rewardResponseCorpus);
