@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sample": "reward-response-redacted",
+  "scanLocations": [
+    {
+      "path": "$.data.video[0].material[0].info[0].ad_common.scheme",
+      "type": "url"
+    },
+    {
+      "path": "$.data.video[0].extra[0].v",
+      "label": "extraParam",
+      "type": "base64"
+    }
+  ],
+  "quality": {
+    "minCoverageScore": 100,
+    "minCmdStructures": 1,
+    "minNestedCommandFields": 20,
+    "maxUnresolved": 0,
+    "maxWarnings": 0,
+    "leadHotspotCommandSchema": "https://union-click.jd.com/sem.php"
+  },
+  "primaryCommandSchema": "nadcorevendor://vendor/ad/rewardImpl",
+  "requiredCommandSchemas": [
+    "nadcorevendor://vendor/ad/rewardImpl",
+    "nadcorevendor://vendor/ad/rewardWebPanel",
+    "nadcorevendor://vendor/ad/rewardDialog",
+    "baiduboxapp://v7/vendor/ad/deeplink",
+    "baiduboxapp://v1/easybrowse/open",
+    "openapp.jdmobile://virtual",
+    "https://union-click.jd.com/sem.php",
+    "https://m.baidu.com/baidu.php",
+    "https://callback.example.com/track"
+  ],
+  "requiredRuntimePlaceholders": [
+    "__CONVERT_CMD__",
+    "__WEBPANEL_CMD__",
+    "__AD_EXTRA_PARAM_ENCODE_1__",
+    "__REWARD_NUM__",
+    "__CONTINUEPLAY__",
+    "__CLICK_ID__",
+    "__SIGN__",
+    "__CALLBACK_URL__"
+  ]
+}
