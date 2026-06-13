@@ -275,6 +275,20 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   });
   expect(JSON.stringify(qualitySnapshot)).not.toContain('raw=%7B%22nid%22%3A123%7D');
 
+  await reportPanel.locator('[data-tour="transform-report-copy-archive-package"]').click();
+  await expect(page.getByText('已复制归档包')).toBeVisible();
+  const archivePackage = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
+  expect(archivePackage.kind).toBe('json-helper-transform-archive-package');
+  expect(archivePackage.safety.containsRawResponse).toBe(false);
+  expect(archivePackage.artifacts.qualitySnapshot.coverage.score).toBe(50);
+  expect(archivePackage.artifacts.issueSamples.samples[0]).toMatchObject({
+    type: 'unresolved',
+    path: '$.tracking',
+    originalValue: '[已省略，归档包默认不携带原始字段值]',
+  });
+  expect(archivePackage.corpusCandidate.recommendedFiles).toContain('sample-name.expected.snapshot.json');
+  expect(JSON.stringify(archivePackage)).not.toContain('raw=%7B%22nid%22%3A123%7D');
+
   await unresolvedSection.locator('[data-tour="transform-report-open-unresolved-scheme"]').click();
   await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
   await expect(reportPanel).toBeHidden();

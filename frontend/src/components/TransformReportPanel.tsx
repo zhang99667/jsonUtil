@@ -12,6 +12,7 @@ import {
   buildTransformReportView,
   formatTransformCmdStructureReportText,
   formatTransformCmdStructureComparisonPackageText,
+  formatTransformArchivePackageJsonText,
   formatTransformContextReportText,
   formatTransformCollaborationReportText,
   formatTransformDiagnosticSummaryText,
@@ -196,6 +197,19 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success('已复制质量快照', { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析质量快照失败:', error);
+    }
+  };
+
+  const handleCopyArchivePackage = async () => {
+    if (!report || !reportView || isFilterPending) return;
+
+    try {
+      await copyText(formatTransformArchivePackageJsonText(report, reportView, deferredQuery, {
+        cmdComparisonReportText: buildActiveCmdComparisonReportText(),
+      }));
+      toast.success('已复制归档包', { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析归档包失败:', error);
     }
   };
 
@@ -567,6 +581,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           title="复制不含原始大字段值的解析质量指标 JSON，便于保存基线或对比趋势"
         >
           复制质量快照
+        </button>
+        <button
+          data-tour="transform-report-copy-archive-package"
+          onClick={handleCopyArchivePackage}
+          disabled={!reportView || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-cyan-900/40 text-cyan-100 rounded hover:bg-cyan-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="复制不含原始 response 的质量快照、脱敏问题样本和 corpus 沉淀清单"
+        >
+          复制归档包
         </button>
         <button
           data-tour="transform-report-copy-path-values"

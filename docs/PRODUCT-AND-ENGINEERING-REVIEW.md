@@ -222,6 +222,7 @@ frontend/fixtures/scheme-corpus/
 - 质量快照会同步输出 cmdHandler expected 子集对齐结果；strict 模式会拦截 expected 缺失、关键路径缺失和字段值不一致。
 - 深度解析报告已支持一键复制协作排查报告，把诊断摘要、质量快照要点和当前页面内 cmdHandler 差异合并为可转发文本。
 - 占位符回填模板应用后会展示并支持复制质量前后对比，能直接看到 CMD 结构、内部字段、占位符和风险计数变化。
+- 深度解析报告已支持复制排查归档包，把诊断摘要、质量快照、脱敏问题样本、占位符回填模板和 corpus 文件清单打包为安全沉淀材料。
 - CI 会生成 Markdown 质量摘要并上传 JSON 快照 artifact，PM 和研发可以直接下载对照样本质量变化。
 - 已支持用 `--input` 对本地真实 response 做一次性质量诊断，便于先验证、再脱敏沉淀为 corpus。
 
@@ -236,7 +237,7 @@ frontend/fixtures/scheme-corpus/
 
 ### 第 2 周
 
-- 完善协作排查报告，继续补充样本沉淀入口和回填前后报告归档。
+- 完善协作排查报告，继续补充归档包落库、质量趋势和回填前后报告归档。
 - 将 cmdHandler expected 接入 corpus diff。
 - 给 Scheme 面板增加“解析前后质量对比”入口。
 - 更新 `ARCHITECTURE.md` 的 Worker 与解析质量闭环章节。
