@@ -34,6 +34,8 @@ export interface TransformReportRecord {
   sourceLabel?: string;
   commandSchema?: string;
   commandSchemaRows?: TransformReportCommandSchemaRow[];
+  commandParamCount?: number;
+  commandParamKeys?: string[];
   labels: string[];
   insights: string[];
   originalValue: string;
@@ -307,6 +309,7 @@ const DEFAULT_TOP_COMMAND_SCHEMA_PATH_LIMIT = 4;
 const DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_LIMIT = 8;
 const DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_SCHEMA_LIMIT = 4;
 const DEFAULT_COMMAND_SCHEMA_ROW_LIMIT = 8;
+const DEFAULT_COMMAND_PARAM_KEY_LIMIT = 8;
 const DEFAULT_DECODED_PATH_COUNT_LIMIT = 10_000;
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 1_000;
@@ -563,6 +566,20 @@ const getRecordCmdStructureSource = (
     decodedValue,
     ...(commandSchema ? { commandSchema } : {}),
     source: record.originalValue,
+  };
+};
+
+const buildCommandParamSummary = (
+  cmdParams: JsonValue
+): Pick<TransformReportRecord, 'commandParamCount' | 'commandParamKeys'> => {
+  if (!cmdParams || typeof cmdParams !== 'object' || Array.isArray(cmdParams)) {
+    return {};
+  }
+
+  const keys = Object.keys(cmdParams);
+  return {
+    commandParamCount: keys.length,
+    commandParamKeys: keys.slice(0, DEFAULT_COMMAND_PARAM_KEY_LIMIT),
   };
 };
 
@@ -1732,6 +1749,7 @@ export const buildTransformContextReport = (
       sourceLabel: record.sourceLabel,
       ...(commandSchema ? { commandSchema } : {}),
       ...(commandSchemaRows.length > 0 ? { commandSchemaRows } : {}),
+      ...(cmdStructureSource ? buildCommandParamSummary(cmdStructureSource.decodedValue) : {}),
       labels: record.steps.map(getStepLabel),
       ...insightData,
       originalValue: record.originalValue,
@@ -1888,6 +1906,17 @@ const appendReportRecordLines = (
       }
       if (record.insights.length > 0) {
         lines.push(`  解析线索: ${record.insights.join('；')}`);
+      }
+      if (record.commandParamCount !== undefined) {
+        const visibleKeys = record.commandParamKeys || [];
+        const hiddenKeyCount = Math.max(record.commandParamCount - visibleKeys.length, 0);
+        lines.push(
+          `  cmdParams: ${record.commandParamCount} 个顶层参数${
+            visibleKeys.length > 0
+              ? `（${visibleKeys.join(', ')}${hiddenKeyCount > 0 ? ` ... +${hiddenKeyCount}` : ''}）`
+              : ''
+          }`
+        );
       }
       if (record.commandSchemaRows?.length) {
         const rows = record.commandSchemaRows.slice(0, DEFAULT_COMMAND_SCHEMA_ROW_LIMIT);
@@ -2214,6 +2243,17 @@ export const formatTransformCmdStructureReportText = (
     }
     if (record.insights.length > 0) {
       lines.push(`解析线索: ${record.insights.join('；')}`);
+    }
+    if (record.commandParamCount !== undefined) {
+      const visibleKeys = record.commandParamKeys || [];
+      const hiddenKeyCount = Math.max(record.commandParamCount - visibleKeys.length, 0);
+      lines.push(
+        `cmdParams: ${record.commandParamCount} 个顶层参数${
+          visibleKeys.length > 0
+            ? `（${visibleKeys.join(', ')}${hiddenKeyCount > 0 ? ` ... +${hiddenKeyCount}` : ''}）`
+            : ''
+        }`
+      );
     }
     if (record.cmdStructureFocusPaths?.length) {
       lines.push(
