@@ -121,10 +121,20 @@ frontend/
 │   ├── services/             # 主应用服务
 │   │   └── aiService.ts           # AI 修复服务
 │   ├── utils/                # 工具函数
-│   │   ├── transformations.ts     # JSON 转换
+│   │   ├── transformations.ts     # JSON 转换与深度解析
+│   │   ├── schemeUtils.ts         # Scheme/CMD 递归解码与回写
+│   │   ├── transformSummary.ts    # 深度解析报告、质量快照和 CMD 结构导出
+│   │   ├── cmdStructureDiff.ts    # cmdHandler 风格结构差异对比
 │   │   └── diffUtils.ts           # 差异对比
+│   ├── workers/              # 大输入异步处理
+│   │   ├── transform.worker.ts    # 格式化、压缩、深度解析 Worker
+│   │   ├── schemeDecode.worker.ts # Scheme/CMD 大 response 解码 Worker
+│   │   ├── schemeScan.worker.ts   # PREVIEW Scheme 图标扫描 Worker
+│   │   └── jsonPath.worker.ts     # JSONPath 查询 Worker
 │   ├── App.tsx               # 主应用入口
 │   └── main.tsx              # 主应用挂载
+├── fixtures/                 # 回归样本
+│   └── scheme-corpus/             # 脱敏真实 response corpus 与 expected baseline
 ├── electron/                 # Electron 相关
 │   ├── main.js               # 主进程
 │   └── preload.js            # 预加载脚本
@@ -178,6 +188,53 @@ const renderContent = () => {
 ---
 
 ## 数据流架构
+
+### 深度解析与 CMD/Scheme 解析流程
+
+```
+SOURCE JSON → transform.worker → deepParseWithContext
+                         ↓
+             TransformContext 路径记录
+                         ↓
+PREVIEW JSON + TransformReportPanel
+                         ↓
+质量快照 / cmdHandler 结构 / 占位符模板 / 诊断摘要
+```
+
+核心模块：
+
+| 模块 | 说明 |
+|------|------|
+| `transformations.ts` | 负责格式化、压缩、深度格式化、包装 JSON 提取和基于 context 的回写 |
+| `schemeUtils.ts` | 负责 URL/Scheme/CMD/Base64/JWT 等字符串的递归识别、解码和按原层级回写 |
+| `schemeMetadata.ts` | 汇总 CMD Schema、内部 CMD 字段、运行时占位符和 cmdHandler 兼容结构 |
+| `transformSummary.ts` | 生成深度解析报告、质量快照、问题样本、占位符模板和 cmdHandler 风格复制文本 |
+| `cmdStructureDiff.ts` | 对比本工具 actual 与内部 cmdHandler expected，输出缺失路径、额外路径和值差异 |
+
+### 大输入 Worker 分层
+
+真实 response 往往包含大量 URL、Base64 和嵌套 JSON。主线程只保留编辑器交互和结果渲染，耗时解析放入 Worker：
+
+- `transform.worker.ts`: 大输入格式化、压缩、深度解析和 Key 排序。
+- `schemeDecode.worker.ts`: 独立 Scheme 面板的大 response 递归解码、Base64 元信息和 CMD 摘要。
+- `schemeScan.worker.ts`: PREVIEW 区 Scheme 图标扫描，复用 source map 定位字符串范围。
+- `jsonPath.worker.ts`: JSONPath 查询、结果截断和高亮范围映射。
+
+### 解析质量闭环
+
+```
+脱敏 response corpus → npm run corpus:scheme → 质量 snapshot + cmdHandler expected diff → CI 门禁
+```
+
+当前 corpus 位于 `frontend/fixtures/scheme-corpus/`：
+
+| 文件 | 说明 |
+|------|------|
+| `reward-response.redacted.json` | 脱敏广告 response 样本，保留真实编码层级和占位符形态 |
+| `reward-response.expected.snapshot.json` | 质量基线，校验主 CMD Schema、Top 热点 Schema、扫描位置、占位符和覆盖指标 |
+| `reward-response.cmdhandler.expected.json` | cmdHandler expected 子集，用于锁定关键 CMD Schema 和参数路径 |
+
+CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`。该步骤与普通单测分开展示，便于快速定位真实 response 解析能力退化。
 
 ### 流量记录流程
 

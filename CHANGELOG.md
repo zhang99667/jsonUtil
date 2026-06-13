@@ -51,6 +51,7 @@
 - **深度解析回归模板复制**: 深度解析报告可直接复制脱敏 Vitest TODO 回归模板，把真实 response 中的待检查、跳过和占位符样本更快沉淀为解析质量评测集
 - **深度解析质量快照复制**: 深度解析报告支持复制结构化质量快照 JSON，汇总覆盖率、风险计数、Top CMD Schema、待检查/跳过原因和建议，便于沉淀解析质量基线
 - **产品与工程升级评审**: 新增 PM/工程双视角评审文档，梳理当前产品定位、真实 response 解析能力、工程风险、优化方向和新增功能路线
+- **解析能力文档同步**: README、架构说明和 Scheme 方案文档补充复杂 response / CMD / Scheme 工作台、Worker 分层、质量快照、corpus 和 cmdHandler 对齐说明
 - **解析质量 Corpus 基线**: 新增脱敏广告 response corpus 与 expected snapshot，并提供 `corpus:scheme` 命令固定校验主 CMD Schema、占位符、扫描位置和质量指标
 - **解析质量 CI 门禁**: GitHub Actions 与本地 CI 新增独立 Scheme corpus baseline 检查，真实 response 解析退化时可在流水线中单独定位
 - **cmdHandler Corpus 对齐**: 脱敏广告 response corpus 增加 cmdHandler expected 子集，并在回归中用差异工具校验关键 CMD Schema 与参数路径
