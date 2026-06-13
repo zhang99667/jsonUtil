@@ -4,6 +4,26 @@ import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 
 const SAMPLE_EXPORT_KIND = 'json-helper-transform-issue-samples';
+const SENSITIVE_KEYWORDS = [
+  'access_token',
+  'refresh_token',
+  'authorization',
+  'android_id',
+  'device_id',
+  'baiduid',
+  'baidu_id',
+  'password',
+  'passwd',
+  'session',
+  'cookie',
+  'secret',
+  'token',
+  'sign',
+  'imei',
+  'oaid',
+  'idfa',
+  'cuid',
+];
 
 const isRecord = value => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -37,6 +57,51 @@ const pickSampleFields = sample => {
   return result;
 };
 
+const decodeForSensitiveSearch = value => {
+  let current = value;
+  for (let index = 0; index < 2; index++) {
+    try {
+      const decoded = decodeURIComponent(current.replace(/\+/g, ' '));
+      if (decoded === current) break;
+      current = decoded;
+    } catch {
+      break;
+    }
+  }
+  return current;
+};
+
+const includesSensitiveKeyword = (text, keyword) => {
+  const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`(^|[^a-z0-9])${escapedKeyword}([^a-z0-9]|$)`, 'i');
+  return pattern.test(text);
+};
+
+const collectSensitiveKeywords = sample => {
+  const searchText = [
+    sample.path,
+    sample.sourcePath,
+    sample.sourceLabel,
+    sample.value,
+    sample.originalValue,
+    typeof sample.originalValue === 'string' ? decodeForSensitiveSearch(sample.originalValue) : '',
+  ].filter(value => typeof value === 'string' && value).join('\n');
+
+  return SENSITIVE_KEYWORDS.filter(keyword => includesSensitiveKeyword(searchText, keyword));
+};
+
+export const findSensitiveSampleHints = samples => (
+  samples.flatMap(sample => {
+    const keywords = collectSensitiveKeywords(sample);
+    if (keywords.length === 0) return [];
+
+    return [{
+      path: sample.path,
+      keywords,
+    }];
+  })
+);
+
 const assertIssueSampleExport = value => {
   if (!isRecord(value) || value.kind !== SAMPLE_EXPORT_KIND || !Array.isArray(value.samples)) {
     throw new Error('输入不是有效的深度解析问题样本 JSON');
@@ -67,10 +132,20 @@ export const buildRegressionTemplate = sampleExport => {
     throw new Error('样本 JSON 中没有可转换的 samples');
   }
 
+  const sensitiveHints = findSensitiveSampleHints(samples);
+  const sensitiveHintLines = sensitiveHints.length > 0
+    ? [
+        '// 注意: 检测到样本可能包含 token/sign/cookie/设备标识等敏感字段。',
+        `// 提交前请先脱敏 originalValue，当前命中: ${sensitiveHints.slice(0, 5).map(hint => `${hint.path}(${hint.keywords.join('/')})`).join('；')}${sensitiveHints.length > 5 ? '；...' : ''}`,
+        '',
+      ]
+    : [];
+
   return [
     "import { describe, it } from 'vitest';",
     '',
     '// 由深度解析报告「复制样本 JSON」生成；把 it.todo 改成 it 后补充解析断言。',
+    ...sensitiveHintLines,
     `const issueSamples = ${JSON.stringify(samples, null, 2)} as const;`,
     '',
     "describe('深度解析问题样本回归', () => {",

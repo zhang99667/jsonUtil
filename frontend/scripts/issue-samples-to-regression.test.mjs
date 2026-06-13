@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildRegressionTemplate,
+  findSensitiveSampleHints,
   parseIssueSampleExport,
 } from './issue-samples-to-regression.mjs';
 
@@ -65,6 +66,36 @@ describe('buildRegressionTemplate', () => {
     expect(template).toContain('"originalValue": "raw=%7B%22nid%22%3A123%7D"');
     expect(template).toContain('"warningType": "string_decode_skipped"');
     expect(template).toContain('it.todo(`${sample.type} ${sample.path} · ${sample.reasonLabel}`);');
+    expect(template).not.toContain('检测到样本可能包含');
+  });
+
+  it('提示 URL 编码后的敏感字段需先脱敏', () => {
+    const sampleExport = {
+      kind: 'json-helper-transform-issue-samples',
+      samples: [
+        {
+          type: 'unresolved',
+          path: '$.reward',
+          reasonLabel: '已解码但未结构化',
+          originalValue: `task_params=${encodeURIComponent(JSON.stringify({
+            token: 'real-token',
+            sign: 'real-sign',
+            task_id: '602',
+          }))}`,
+        },
+      ],
+    };
+
+    const template = buildRegressionTemplate(sampleExport);
+
+    expect(findSensitiveSampleHints(sampleExport.samples)).toEqual([
+      {
+        path: '$.reward',
+        keywords: ['token', 'sign'],
+      },
+    ]);
+    expect(template).toContain('检测到样本可能包含 token/sign/cookie/设备标识等敏感字段');
+    expect(template).toContain('$.reward(token/sign)');
   });
 
   it('空样本时给出明确错误', () => {
