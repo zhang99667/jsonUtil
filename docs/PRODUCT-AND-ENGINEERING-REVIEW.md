@@ -214,6 +214,12 @@ frontend/fixtures/scheme-corpus/
 - `ARCHITECTURE.md` 需要补 Worker、质量快照、cmdHandler 对比、样本回归脚本这些已落地能力。
 - 新增功能最好从 CHANGELOG 反向沉淀到专题文档，避免只在更新日志里才能找到能力说明。
 
+## 近期落地进展
+
+- 已建立脱敏真实 response corpus，并在 CI 中固定主 CMD Schema、热点 Schema、资源字段、占位符、扫描位置和 cmdHandler expected 子集。
+- 已新增 `corpus:snapshot` / `corpus:snapshot:check`，支持一条命令生成质量快照，并在 expected 阈值不通过时阻断 CI。
+- 已支持用 `--input` 对本地真实 response 做一次性质量诊断，便于先验证、再脱敏沉淀为 corpus。
+
 ## 两周迭代建议
 
 ### 第 1 周

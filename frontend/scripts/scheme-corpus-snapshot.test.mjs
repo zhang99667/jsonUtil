@@ -4,6 +4,8 @@ import {
   buildCorpusResponseText,
   buildCorpusSnapshotSample,
   buildThresholdResults,
+  buildThresholdSummary,
+  listThresholdFailures,
   parseCliArgs,
   SCHEME_CORPUS_SNAPSHOT_KIND,
 } from './scheme-corpus-snapshot.mjs';
@@ -217,6 +219,65 @@ describe('buildCorpusSnapshotSample', () => {
   });
 });
 
+describe('buildThresholdSummary', () => {
+  it('汇总全部样本的阈值失败项', () => {
+    const samples = [
+      {
+        sample: 'pass-sample',
+        thresholds: {
+          minCoverageScore: {
+            actual: 100,
+            expected: 100,
+            pass: true,
+          },
+        },
+      },
+      {
+        sample: 'fail-sample',
+        thresholds: {
+          minNestedCommandFields: {
+            actual: 3,
+            expected: 4,
+            pass: false,
+          },
+        },
+      },
+    ];
+
+    expect(listThresholdFailures(samples)).toEqual([
+      {
+        sample: 'fail-sample',
+        key: 'minNestedCommandFields',
+        actual: 3,
+        expected: 4,
+      },
+    ]);
+    expect(buildThresholdSummary(samples)).toEqual({
+      pass: false,
+      total: 2,
+      failed: 1,
+      failures: [
+        {
+          sample: 'fail-sample',
+          key: 'minNestedCommandFields',
+          actual: 3,
+          expected: 4,
+        },
+      ],
+    });
+  });
+
+  it('没有阈值时视为通过', () => {
+    expect(buildThresholdSummary([{ sample: 'input-response', thresholds: {} }]))
+      .toEqual({
+        pass: true,
+        total: 0,
+        failed: 0,
+        failures: [],
+      });
+  });
+});
+
 describe('parseCliArgs', () => {
   it('支持通过本地 response 文件生成快照', () => {
     expect(parseCliArgs([
@@ -228,6 +289,20 @@ describe('parseCliArgs', () => {
       sampleFilter: undefined,
       inputPath: '/tmp/response.json',
       sampleName: 'local-response',
+      strict: false,
+    });
+  });
+
+  it('支持严格检查模式', () => {
+    expect(parseCliArgs([
+      '--sample',
+      'reward-response-redacted',
+      '--strict',
+    ])).toEqual({
+      sampleFilter: 'reward-response-redacted',
+      inputPath: undefined,
+      sampleName: undefined,
+      strict: true,
     });
   });
 
