@@ -1,7 +1,12 @@
+import { readFileSync } from 'fs';
 import path from 'path';
 import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+
+const packageJson = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf-8')
+) as { version?: string };
 
 const getScopedPackageName = (id: string, scope: string) => {
   const normalized = id.split(path.sep).join('/');
@@ -34,7 +39,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version || '0.0.0')
     },
     resolve: {
       alias: {
