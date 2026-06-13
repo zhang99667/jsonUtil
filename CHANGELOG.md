@@ -37,6 +37,7 @@
 - **深度解析样本回归模板**: 新增 `samples:to-regression` 脚本，可将报告复制出的样本 JSON 转成 Vitest TODO 模板，降低真实 response 问题沉淀为回归测试的整理成本
 - **深度解析样本敏感值提示**: `samples:to-regression` 会提示样本原始值中疑似 token、sign、cookie 或设备标识的字段，减少真实 response 回归沉淀时误提交敏感内容的风险
 - **深度解析样本脱敏模板**: `samples:to-regression` 支持 `--redact` 生成脱敏回归模板，自动替换命中敏感字段的 `originalValue` 并保留命中提示
+- **深度解析样本脱敏复制**: 深度解析报告新增「复制脱敏 JSON」，可在界面侧直接生成已替换敏感原始值的样本 JSON
 - **深度解析诊断摘要复制**: 深度解析报告新增诊断摘要复制，汇总解析覆盖、CMD Schema Top、内部 CMD 字段、占位符与待处理样例，便于对照内部 cmdHandler 或发给协作者排查
 - **JSONPath 大查询可取消**: JSONPath 查询处理中新增取消入口，会立即终止当前 Worker 并清空旧高亮，避免误查大表达式时只能等待结果返回
 - **CMD/Scheme 前导分隔符兼容**: 支持解析 `&cmd=...`、`?&cmd=...` 等日志拼接常见形态，避免前导 `&` 导致整段 CMD 漏解析

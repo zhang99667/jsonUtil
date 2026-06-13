@@ -48,6 +48,7 @@ const pickSampleFields = sample => {
     'sourcePath',
     'warningType',
     'originalValue',
+    'redactionHint',
   ].forEach(key => {
     if (sample[key] !== undefined) {
       result[key] = sample[key];

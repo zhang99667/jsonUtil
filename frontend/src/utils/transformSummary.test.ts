@@ -1425,6 +1425,73 @@ describe('transformSummary', () => {
     ]);
   });
 
+  it('问题样本 JSON 支持脱敏敏感原始值', () => {
+    const rawValue = `task_params=${encodeURIComponent(JSON.stringify({
+      token: 'real-token',
+      sign: 'real-sign',
+      task_id: '602',
+    }))}`;
+    const report: TransformContextReport = {
+      summary: {
+        recordCount: 0,
+        stepCounts: {},
+        schemeCounts: {
+          queryString: 0,
+          url: 0,
+          base64: 0,
+          nonReversible: 0,
+        },
+        warningCount: 0,
+        unresolvedCount: 1,
+        placeholderCount: 0,
+      },
+      summaryText: '深度解析: 待检查 1',
+      coverage: {
+        score: 80,
+        label: '解析覆盖 80%',
+        level: 'warning',
+        description: '还有疑似结构化内容未完全展开。',
+        items: [],
+      },
+      cmdStructureCount: 0,
+      nestedCommandFieldCount: 0,
+      records: [],
+      warnings: [],
+      unresolvedCandidates: [
+        {
+          path: '$.reward',
+          sourceLabel: 'rewardParam',
+          originalValue: rawValue,
+          message: 'URL 编码内容已解码，但未展开为结构化对象',
+          length: rawValue.length,
+          preview: 'task_params={"token":"real-token"}',
+          detectedType: 'url-encoded',
+          reasonLabel: '已解码但未结构化',
+          reasonLevel: 'info',
+          nextAction: '把原始值加入 CMD 解析样本。',
+        },
+      ],
+      runtimePlaceholderGroups: [],
+      runtimePlaceholders: [],
+    };
+
+    const jsonText = formatTransformIssueSampleJsonText(
+      buildTransformReportView(report, ''),
+      { redactSensitiveValues: true }
+    );
+    const parsed = JSON.parse(jsonText);
+
+    expect(jsonText).not.toContain('real-token');
+    expect(jsonText).not.toContain('%22token%22');
+    expect(parsed.samples).toEqual([
+      expect.objectContaining({
+        path: '$.reward',
+        originalValue: '[REDACTED: token/sign]',
+        redactionHint: '原始值已脱敏，命中: token/sign',
+      }),
+    ]);
+  });
+
   it('诊断摘要输出覆盖结论和 Top 线索但不暴露原始大字段', () => {
     const report: TransformContextReport = {
       summary: {

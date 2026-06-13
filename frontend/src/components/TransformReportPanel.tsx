@@ -126,6 +126,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const issueSampleJsonCopyText = useMemo(() => (
     reportView ? formatTransformIssueSampleJsonText(reportView) : ''
   ), [reportView]);
+  const redactedIssueSampleJsonCopyText = useMemo(() => (
+    reportView ? formatTransformIssueSampleJsonText(reportView, { redactSensitiveValues: true }) : ''
+  ), [reportView]);
 
   const showCopyError = (message: string, error: unknown) => {
     console.warn(message, error);
@@ -223,6 +226,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success('已复制样本 JSON', { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析样本 JSON 失败:', error);
+    }
+  };
+
+  const handleCopyRedactedIssueSampleJson = async () => {
+    if (!redactedIssueSampleJsonCopyText || isFilterPending) return;
+
+    try {
+      await copyText(redactedIssueSampleJsonCopyText);
+      toast.success('已复制脱敏样本 JSON', { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析脱敏样本 JSON 失败:', error);
     }
   };
 
@@ -342,6 +356,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           title="复制当前筛选下可沉淀为回归用例的结构化样本 JSON"
         >
           复制样本 JSON
+        </button>
+        <button
+          data-tour="transform-report-copy-redacted-issue-sample-json"
+          onClick={handleCopyRedactedIssueSampleJson}
+          disabled={!redactedIssueSampleJsonCopyText || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="复制当前筛选下的脱敏结构化样本 JSON，便于安全沉淀回归用例"
+        >
+          复制脱敏 JSON
         </button>
         <button
           onClick={handleCopyReport}
