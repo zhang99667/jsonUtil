@@ -15,7 +15,7 @@
 
 - `frontend`: `npm ci`、`npm run typecheck`、`npm test`、`npm run corpus:scheme`、`npm run corpus:snapshot:check`、`npm run build`、`npm run check:preloads`、`npm run test:e2e`
   - `npm run corpus:scheme` 独立校验脱敏 response corpus，固定主 CMD Schema、Top 热点 Schema、占位符、扫描位置和质量指标
-  - `npm run corpus:snapshot:check` 输出 corpus 质量快照，并在 expected 阈值不通过时让 CI 失败，方便直接定位样本质量变化
+  - `npm run corpus:snapshot:check` 输出 corpus 质量快照，并在 expected 阈值不通过或样本缺失 expected snapshot 时让 CI 失败，方便直接定位样本质量变化
   - `Scheme corpus quality snapshot` 会写入 GitHub Step Summary，并上传 `scheme-corpus-quality-snapshot` artifact 供评审下载
 - `backend`: `mvn -B test`、`mvn -B package -DskipTests`
 - `docker`: `docker build ./backend`、`docker build ./frontend`、带测试环境变量执行 `docker compose config`
