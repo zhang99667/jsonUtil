@@ -12,6 +12,7 @@ import {
   formatTransformDiagnosticSummaryText,
   formatTransformIssueSampleJsonText,
   formatTransformPathValueReportText,
+  formatTransformPlaceholderFillTemplateJsonText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
   getTransformDecodedPathCopyText,
@@ -1009,6 +1010,70 @@ describe('transformSummary', () => {
     expect(formatTransformContextReportText(placeholderResult.context)).toContain('业务字段: buttonParam');
     expect(buildTransformReportView(placeholderReport, 'buttonParam').filteredPlaceholderCount).toBe(1);
     expect(buildTransformReportView(placeholderReport, '占位符').filteredPlaceholderCount).toBe(1);
+
+    const placeholderFillResult = deepParseWithContext(JSON.stringify({
+      extra: [
+        {
+          k: 'buttonParam',
+          value: `cmd=${encodeURIComponent(JSON.stringify({
+            button_cmd: '__CONVERT_CMD__',
+            panel_cmd: '__WEBPANEL_CMD__',
+          }))}`,
+        },
+        {
+          k: 'backupParam',
+          value: `cmd=${encodeURIComponent(JSON.stringify({ button_cmd: '__CONVERT_CMD__' }))}`,
+        },
+      ],
+    }), { autoExpandScheme: true });
+    const placeholderFillReport = buildTransformContextReport(placeholderFillResult.context);
+    const placeholderFillTemplateText = formatTransformPlaceholderFillTemplateJsonText(
+      buildTransformReportView(placeholderFillReport, '')
+    );
+    const placeholderFillTemplate = JSON.parse(placeholderFillTemplateText);
+
+    expect(placeholderFillTemplateText).not.toContain('sourceOriginalValue');
+    expect(placeholderFillTemplate).toMatchObject({
+      schemaVersion: 1,
+      kind: 'json-helper-runtime-placeholder-fill-template',
+      summary: {
+        groups: 2,
+        visibleOccurrences: 3,
+        filteredOccurrences: 3,
+        totalOccurrences: 3,
+        truncated: false,
+      },
+      placeholders: {
+        __CONVERT_CMD__: '',
+        __WEBPANEL_CMD__: '',
+      },
+    });
+    expect(placeholderFillTemplate.placeholderDetails).toEqual([
+      expect.objectContaining({
+        value: '__CONVERT_CMD__',
+        replacement: '',
+        count: 2,
+        sourceCount: 2,
+        sources: [
+          expect.objectContaining({
+            sourcePath: '$.extra[0].value',
+            sourceLabel: 'buttonParam',
+            count: 1,
+          }),
+          expect.objectContaining({
+            sourcePath: '$.extra[1].value',
+            sourceLabel: 'backupParam',
+            count: 1,
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        value: '__WEBPANEL_CMD__',
+        replacement: '',
+        count: 1,
+        sourceCount: 1,
+      }),
+    ]);
 
     const skippedValue = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
     const warningResult = deepParseWithContext(JSON.stringify({

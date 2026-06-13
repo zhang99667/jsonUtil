@@ -12,6 +12,7 @@ import {
   formatTransformIssueSampleJsonText,
   formatTransformIssueSampleReportText,
   formatTransformPathValueReportText,
+  formatTransformPlaceholderFillTemplateJsonText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
   getTransformDecodedPathCopyText,
@@ -130,6 +131,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const redactedIssueSampleJsonCopyText = useMemo(() => (
     reportView ? formatTransformIssueSampleJsonText(reportView, { redactSensitiveValues: true }) : ''
   ), [reportView]);
+  const placeholderFillTemplateJsonText = useMemo(() => (
+    reportView ? formatTransformPlaceholderFillTemplateJsonText(reportView) : ''
+  ), [reportView]);
 
   const showCopyError = (message: string, error: unknown) => {
     console.warn(message, error);
@@ -205,6 +209,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success(deferredQuery.trim() ? '已复制筛选占位符' : '已复制占位符摘要', { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析占位符失败:', error);
+    }
+  };
+
+  const handleCopyPlaceholderFillTemplate = async () => {
+    if (!placeholderFillTemplateJsonText || isFilterPending) return;
+
+    try {
+      await copyText(placeholderFillTemplateJsonText);
+      toast.success('已复制占位符回填模板', { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析占位符回填模板失败:', error);
     }
   };
 
@@ -1028,15 +1043,26 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                       <span className="text-amber-300 ml-2">仅显示前 {reportView.runtimePlaceholders.length} 条</span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    data-tour="transform-report-copy-placeholders"
-                    onClick={handleCopyPlaceholderReport}
-                    disabled={isFilterPending}
-                    className="shrink-0 text-xs text-gray-400 hover:text-violet-200 bg-editor-sidebar border border-editor-border px-2 py-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    复制占位符
-                  </button>
+                  <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
+                    <button
+                      type="button"
+                      data-tour="transform-report-copy-placeholder-fill-template"
+                      onClick={handleCopyPlaceholderFillTemplate}
+                      disabled={!placeholderFillTemplateJsonText || isFilterPending}
+                      className="text-xs text-gray-400 hover:text-violet-200 bg-editor-sidebar border border-editor-border px-2 py-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      复制回填模板
+                    </button>
+                    <button
+                      type="button"
+                      data-tour="transform-report-copy-placeholders"
+                      onClick={handleCopyPlaceholderReport}
+                      disabled={isFilterPending}
+                      className="text-xs text-gray-400 hover:text-violet-200 bg-editor-sidebar border border-editor-border px-2 py-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      复制占位符
+                    </button>
+                  </div>
                 </div>
                 <div data-tour="transform-report-placeholder-groups" className="grid gap-1.5">
                   {reportView.runtimePlaceholderGroups.map(group => (
