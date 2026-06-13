@@ -162,6 +162,7 @@ export interface TransformContextReport {
   nestedCommandFieldCount: number;
   topCommandSchemaOrigins?: TransformReportCommandSchemaOriginGroup[];
   topCommandSchemas?: TransformReportCommandSchemaGroup[];
+  topResourceSchemas?: TransformReportCommandSchemaGroup[];
   topNestedCommandFields?: TransformReportNestedCommandFieldGroup[];
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
@@ -322,6 +323,7 @@ export interface TransformQualitySnapshot {
   hotspots: {
     topCommandSchemas: TransformReportCommandSchemaGroup[];
     topCommandSchemaOrigins: TransformReportCommandSchemaOriginGroup[];
+    topResourceSchemas: TransformReportCommandSchemaGroup[];
     topNestedCommandFields: TransformReportNestedCommandFieldGroup[];
     unresolvedReasons: TransformQualitySnapshotBucket[];
     warningReasons: TransformQualitySnapshotBucket[];
@@ -1570,7 +1572,23 @@ interface CommandSchemaOccurrence {
   schema: string;
   path: string;
   recordPath: string;
+  kind: 'navigation' | 'resource';
 }
+
+const STATIC_RESOURCE_SCHEMA_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp|mp4|m4v|mov|webm|avi|m3u8|mp3|wav|aac|ogg|flac|zip)$/i;
+const STATIC_RESOURCE_PATH_RE = /(?:^|[.[\]"])(?:image|img|icon|logo|avatar|portrait|poster|cover|lottie|video_url|audio_url|media_url|swipe_up_lottie)(?:$|[.[\]"])/i;
+
+const isStaticResourceSchema = (schema: string, path: string): boolean => {
+  const normalizedSchema = schema.trim().replace(/\\\//g, '/');
+  try {
+    const url = new URL(normalizedSchema);
+    if (STATIC_RESOURCE_SCHEMA_EXTENSION_RE.test(url.pathname)) return true;
+  } catch {
+    if (STATIC_RESOURCE_SCHEMA_EXTENSION_RE.test(normalizedSchema.split(/[?#]/)[0] || '')) return true;
+  }
+
+  return STATIC_RESOURCE_PATH_RE.test(path);
+};
 
 const collectCommandSchemaOccurrences = (
   records: TransformReportRecord[]
@@ -1579,7 +1597,12 @@ const collectCommandSchemaOccurrences = (
 
   const pushSchema = (schema: string | undefined, path: string, recordPath: string) => {
     if (!schema) return;
-    occurrences.push({ schema, path, recordPath });
+    occurrences.push({
+      schema,
+      path,
+      recordPath,
+      kind: isStaticResourceSchema(schema, path) ? 'resource' : 'navigation',
+    });
   };
 
   records.forEach(record => {
@@ -1594,7 +1617,8 @@ const collectCommandSchemaOccurrences = (
 
 const buildTopCommandSchemaGroups = (
   records: TransformReportRecord[],
-  limit = DEFAULT_TOP_COMMAND_SCHEMA_LIMIT
+  limit = DEFAULT_TOP_COMMAND_SCHEMA_LIMIT,
+  kind: CommandSchemaOccurrence['kind'] = 'navigation'
 ): TransformReportCommandSchemaGroup[] => {
   const groups = new Map<string, {
     schema: string;
@@ -1604,7 +1628,9 @@ const buildTopCommandSchemaGroups = (
     hasMorePaths: boolean;
   }>();
 
-  collectCommandSchemaOccurrences(records).forEach(({ schema, path, recordPath }) => {
+  collectCommandSchemaOccurrences(records).forEach(({ schema, path, recordPath, kind: occurrenceKind }) => {
+    if (occurrenceKind !== kind) return;
+
     let group = groups.get(schema);
     if (!group) {
       group = {
@@ -1652,7 +1678,8 @@ const getCommandSchemaOrigin = (schema: string): string => {
 
 const buildTopCommandSchemaOriginGroups = (
   records: TransformReportRecord[],
-  limit = DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_LIMIT
+  limit = DEFAULT_TOP_COMMAND_SCHEMA_ORIGIN_LIMIT,
+  kind: CommandSchemaOccurrence['kind'] = 'navigation'
 ): TransformReportCommandSchemaOriginGroup[] => {
   const groups = new Map<string, {
     origin: string;
@@ -1663,7 +1690,9 @@ const buildTopCommandSchemaOriginGroups = (
     hasMoreSchemas: boolean;
   }>();
 
-  collectCommandSchemaOccurrences(records).forEach(({ schema, recordPath }) => {
+  collectCommandSchemaOccurrences(records).forEach(({ schema, recordPath, kind: occurrenceKind }) => {
+    if (occurrenceKind !== kind) return;
+
     const origin = getCommandSchemaOrigin(schema);
     let group = groups.get(origin);
     if (!group) {
@@ -1857,6 +1886,7 @@ export const buildTransformContextReport = (
     nestedCommandFieldCount,
     topCommandSchemaOrigins: buildTopCommandSchemaOriginGroups(records),
     topCommandSchemas: buildTopCommandSchemaGroups(records),
+    topResourceSchemas: buildTopCommandSchemaGroups(records, DEFAULT_TOP_COMMAND_SCHEMA_LIMIT, 'resource'),
     topNestedCommandFields: buildTopNestedCommandFieldGroups(records),
     records,
     warnings: (context.warnings || []).map(warning => ({
@@ -1898,6 +1928,7 @@ export const formatTransformContextReportText = (
 
   appendCommandSchemaOriginSummarySection(lines, report.topCommandSchemaOrigins || []);
   appendCommandSchemaSummarySection(lines, report.topCommandSchemas || []);
+  appendResourceSchemaSummarySection(lines, report.topResourceSchemas || []);
   appendNestedCommandFieldSummarySection(lines, report.topNestedCommandFields || []);
   lines.push('展开记录:');
   appendReportRecordLines(lines, report.records);
@@ -1929,6 +1960,20 @@ const appendCommandSchemaSummarySection = (
   if (groups.length === 0) return;
 
   lines.push('CMD Schema 分布:');
+  groups.forEach(group => {
+    lines.push(`- ${group.schema} ×${group.count}（来源记录 ${group.recordCount}）`);
+    lines.push(`  示例路径: ${group.paths.join('；')}${group.hasMorePaths ? '；...' : ''}`);
+  });
+  lines.push('');
+};
+
+const appendResourceSchemaSummarySection = (
+  lines: string[],
+  groups: TransformReportCommandSchemaGroup[]
+) => {
+  if (groups.length === 0) return;
+
+  lines.push('静态资源 URL 分布:');
   groups.forEach(group => {
     lines.push(`- ${group.schema} ×${group.count}（来源记录 ${group.recordCount}）`);
     lines.push(`  示例路径: ${group.paths.join('；')}${group.hasMorePaths ? '；...' : ''}`);
@@ -2194,6 +2239,13 @@ export const formatTransformDiagnosticSummaryText = (
     });
   }
 
+  if (report.topResourceSchemas?.length) {
+    lines.push('', '全量静态资源 URL Top:');
+    report.topResourceSchemas.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
+      lines.push(`- ${group.schema} ×${group.count}（来源记录 ${group.recordCount}）`);
+    });
+  }
+
   if (report.topNestedCommandFields?.length) {
     lines.push('', '全量内部 CMD 字段 Top:');
     report.topNestedCommandFields.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
@@ -2330,6 +2382,7 @@ export const buildTransformQualitySnapshot = (
   hotspots: {
     topCommandSchemas: (report.topCommandSchemas || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     topCommandSchemaOrigins: (report.topCommandSchemaOrigins || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
+    topResourceSchemas: (report.topResourceSchemas || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     topNestedCommandFields: (report.topNestedCommandFields || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     unresolvedReasons: buildQualitySnapshotBuckets(
       reportView.unresolvedCandidates,
