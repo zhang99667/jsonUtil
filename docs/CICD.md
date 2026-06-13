@@ -13,7 +13,8 @@
 
 关键检查：
 
-- `frontend`: `npm ci`、`npm run typecheck`、`npm test`、`npm run build`
+- `frontend`: `npm ci`、`npm run typecheck`、`npm test`、`npm run corpus:scheme`、`npm run build`、`npm run check:preloads`、`npm run test:e2e`
+  - `npm run corpus:scheme` 独立校验脱敏 response corpus，固定主 CMD Schema、Top 热点 Schema、占位符、扫描位置和质量指标
 - `backend`: `mvn -B test`、`mvn -B package -DskipTests`
 - `docker`: `docker build ./backend`、`docker build ./frontend`、带测试环境变量执行 `docker compose config`
 
