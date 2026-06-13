@@ -210,6 +210,51 @@ export interface TransformReportViewOptions {
   cmdStructureLimit?: number;
 }
 
+export type TransformIssueSampleType = 'unresolved' | 'runtime_placeholder' | 'warning';
+
+export interface TransformIssueSampleExportItem {
+  type: TransformIssueSampleType;
+  path: string;
+  sourceLabel?: string;
+  originalValue: string;
+  reasonLabel: string;
+  nextAction?: string;
+  message?: string;
+  detectedType?: string;
+  reasonLevel?: 'info' | 'warning';
+  length?: number;
+  limit?: number;
+  value?: string;
+  sourcePath?: string;
+  warningType?: TransformWarning['type'];
+}
+
+export interface TransformIssueSampleExport {
+  schemaVersion: 1;
+  kind: 'json-helper-transform-issue-samples';
+  summary: {
+    unresolved: {
+      copied: number;
+      filtered: number;
+      total: number;
+      truncated: boolean;
+    };
+    runtimePlaceholders: {
+      copied: number;
+      filtered: number;
+      total: number;
+      truncated: boolean;
+    };
+    warnings: {
+      copied: number;
+      filtered: number;
+      total: number;
+      truncated: boolean;
+    };
+  };
+  samples: TransformIssueSampleExportItem[];
+}
+
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
@@ -2014,6 +2059,87 @@ export const formatTransformPlaceholderReportText = (
   }
 
   return lines.join('\n');
+};
+
+export const buildTransformIssueSampleExport = (
+  reportView: TransformReportView
+): TransformIssueSampleExport | null => {
+  const placeholderSamples = reportView.runtimePlaceholders.filter(
+    placeholder => Boolean(placeholder.sourceOriginalValue)
+  );
+  const samples: TransformIssueSampleExportItem[] = [
+    ...reportView.unresolvedCandidates.map(candidate => ({
+      type: 'unresolved' as const,
+      path: candidate.path,
+      ...(candidate.sourceLabel ? { sourceLabel: candidate.sourceLabel } : {}),
+      originalValue: candidate.originalValue,
+      reasonLabel: candidate.reasonLabel,
+      nextAction: candidate.nextAction,
+      message: candidate.message,
+      ...(candidate.detectedType ? { detectedType: candidate.detectedType } : {}),
+      reasonLevel: candidate.reasonLevel,
+      length: candidate.length,
+    })),
+    ...placeholderSamples.map(placeholder => ({
+      type: 'runtime_placeholder' as const,
+      path: placeholder.path,
+      sourcePath: placeholder.sourcePath,
+      ...(placeholder.sourceLabel ? { sourceLabel: placeholder.sourceLabel } : {}),
+      originalValue: placeholder.sourceOriginalValue || '',
+      reasonLabel: '运行时占位符',
+      message: placeholder.description,
+      value: placeholder.value,
+    })),
+    ...reportView.warnings.map(warning => ({
+      type: 'warning' as const,
+      path: warning.path,
+      ...(warning.sourceLabel ? { sourceLabel: warning.sourceLabel } : {}),
+      originalValue: warning.originalValue,
+      reasonLabel: warning.reasonLabel,
+      nextAction: warning.nextAction,
+      message: warning.message,
+      length: warning.length,
+      limit: warning.limit,
+      warningType: warning.type,
+    })),
+  ];
+
+  if (samples.length === 0) {
+    return null;
+  }
+
+  return {
+    schemaVersion: 1,
+    kind: 'json-helper-transform-issue-samples',
+    summary: {
+      unresolved: {
+        copied: reportView.unresolvedCandidates.length,
+        filtered: reportView.filteredUnresolvedCount,
+        total: reportView.totalUnresolvedCount,
+        truncated: reportView.isUnresolvedTruncated,
+      },
+      runtimePlaceholders: {
+        copied: placeholderSamples.length,
+        filtered: reportView.filteredPlaceholderCount,
+        total: reportView.totalPlaceholderCount,
+        truncated: reportView.isPlaceholderTruncated,
+      },
+      warnings: {
+        copied: reportView.warnings.length,
+        filtered: reportView.filteredWarningCount,
+        total: reportView.totalWarningCount,
+        truncated: reportView.isWarningTruncated,
+      },
+    },
+    samples,
+  };
+};
+
+export const formatTransformIssueSampleJsonText = (
+  reportView: TransformReportView
+): string => {
+  const sampleExport = buildTransformIssueSampleExport(reportView);
+  return sampleExport ? JSON.stringify(sampleExport, null, 2) : '';
 };
 
 export const formatTransformIssueSampleReportText = (

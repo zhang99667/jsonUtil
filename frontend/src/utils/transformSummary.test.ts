@@ -8,6 +8,7 @@ import {
   formatTransformCmdStructureReportText,
   formatTransformContextReportText,
   formatTransformContextSummary,
+  formatTransformIssueSampleJsonText,
   formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
   formatTransformReportViewText,
@@ -1316,6 +1317,111 @@ describe('transformSummary', () => {
     expect(buildTransformReportView(report, 'panel_cmd=').filteredPlaceholderCount).toBe(1);
     expect(buildTransformReportView(report, 'panel_cmd=').filteredWarningCount).toBe(1);
     expect(buildTransformReportView(report, 'panel_cmd=').filteredUnresolvedCount).toBe(1);
+  });
+
+  it('问题样本支持复制结构化 JSON 用于沉淀回归', () => {
+    const report: TransformContextReport = {
+      summary: {
+        recordCount: 0,
+        stepCounts: {},
+        schemeCounts: {
+          queryString: 0,
+          url: 0,
+          base64: 0,
+          nonReversible: 0,
+        },
+        warningCount: 1,
+        unresolvedCount: 1,
+        placeholderCount: 1,
+      },
+      summaryText: '深度解析: 待检查 1，跳过 1，占位符 1',
+      coverage: {
+        score: 50,
+        label: '解析覆盖 50%',
+        level: 'warning',
+        description: '还有疑似结构化内容未完全展开。',
+        items: ['保留原始值补充解析样本'],
+      },
+      cmdStructureCount: 0,
+      nestedCommandFieldCount: 0,
+      records: [],
+      warnings: [
+        {
+          type: 'string_decode_skipped',
+          path: '$.huge',
+          sourceLabel: 'hugeParam',
+          originalValue: 'cmd=' + 'x'.repeat(40),
+          message: '字符串过长，已跳过递归展开以保护性能',
+          length: 44,
+          limit: 20,
+          reasonLabel: '单字段长度保护',
+          nextAction: '单独粘贴到 Scheme 面板。',
+        },
+      ],
+      unresolvedCandidates: [
+        {
+          path: '$.tracking',
+          sourceLabel: 'trackingParam',
+          originalValue: 'raw=%7B%22nid%22%3A123%7D',
+          message: 'URL 编码内容已解码，但未展开为结构化对象',
+          length: 31,
+          preview: 'raw={"nid":123}',
+          detectedType: 'url-encoded',
+          reasonLabel: '已解码但未结构化',
+          reasonLevel: 'info',
+          nextAction: '把原始值加入 CMD 解析样本。',
+        },
+      ],
+      runtimePlaceholderGroups: [],
+      runtimePlaceholders: [
+        {
+          path: '$.button.cmd',
+          sourcePath: '$.button',
+          sourceLabel: 'buttonParam',
+          sourceOriginalValue: 'button_cmd=__CONVERT_CMD__',
+          sourceOriginalPreview: 'button_cmd=__CONVERT_CMD__',
+          value: '__CONVERT_CMD__',
+          description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+        },
+      ],
+    };
+
+    const jsonText = formatTransformIssueSampleJsonText(buildTransformReportView(report, ''));
+    const parsed = JSON.parse(jsonText);
+
+    expect(parsed).toMatchObject({
+      schemaVersion: 1,
+      kind: 'json-helper-transform-issue-samples',
+      summary: {
+        unresolved: { copied: 1, filtered: 1, total: 1, truncated: false },
+        runtimePlaceholders: { copied: 1, filtered: 1, total: 1, truncated: false },
+        warnings: { copied: 1, filtered: 1, total: 1, truncated: false },
+      },
+    });
+    expect(parsed.samples).toEqual([
+      expect.objectContaining({
+        type: 'unresolved',
+        path: '$.tracking',
+        sourceLabel: 'trackingParam',
+        detectedType: 'url-encoded',
+        reasonLabel: '已解码但未结构化',
+        originalValue: 'raw=%7B%22nid%22%3A123%7D',
+      }),
+      expect.objectContaining({
+        type: 'runtime_placeholder',
+        path: '$.button.cmd',
+        sourcePath: '$.button',
+        value: '__CONVERT_CMD__',
+        originalValue: 'button_cmd=__CONVERT_CMD__',
+      }),
+      expect.objectContaining({
+        type: 'warning',
+        path: '$.huge',
+        sourceLabel: 'hugeParam',
+        warningType: 'string_decode_skipped',
+        limit: 20,
+      }),
+    ]);
   });
 
   it('统计性能保护跳过信息', () => {
