@@ -1,6 +1,12 @@
 import axios from 'axios';
 import { message } from 'antd';
 import { safeGetStorageItem, safeRemoveStorageItem } from '../../utils/storage';
+import {
+    AdminRequestError,
+    getAdminResultErrorMessage,
+    isAuthExpiredStatus,
+    resolveAdminRequestErrorMessage,
+} from './requestErrors';
 
 const request = axios.create({
     baseURL: '/api', // Vite proxy should handle this
@@ -28,27 +34,27 @@ request.interceptors.response.use(
             if (res.code === 200) {
                 return res.data;
             } else {
-                message.error(res.message || '业务逻辑错误');
-                return Promise.reject(new Error(res.message || 'Error'));
+                const errorMessage = getAdminResultErrorMessage(res);
+                message.error(errorMessage);
+                return Promise.reject(new AdminRequestError(errorMessage, undefined, response));
             }
         }
         return res;
     },
-    (error) => {
-        if (error.response) {
-            const { status, data } = error.response;
-            // 401 未认证 或 403 禁止访问（token 过期/无效也会返回 403）
-            if (status === 401 || status === 403) {
-                safeRemoveStorageItem('token');
-                message.error('登录已过期，请重新登录');
-                window.location.href = '/admin.html';
-                return Promise.reject(error);
-            }
-            message.error(data.message || '请求错误');
-        } else {
-            message.error('网络错误，请检查网络连接');
+    async (error) => {
+        const status = error.response?.status as number | undefined;
+        const errorMessage = await resolveAdminRequestErrorMessage(error);
+
+        // 401 未认证 或 403 禁止访问（token 过期/无效也会返回 403）
+        if (isAuthExpiredStatus(status)) {
+            safeRemoveStorageItem('token');
+            message.error(errorMessage);
+            window.location.href = '/admin.html';
+            return Promise.reject(new AdminRequestError(errorMessage, status, error));
         }
-        return Promise.reject(error);
+
+        message.error(errorMessage);
+        return Promise.reject(new AdminRequestError(errorMessage, status, error));
     }
 );
 
