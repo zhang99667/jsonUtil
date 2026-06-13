@@ -260,6 +260,36 @@ export interface TransformIssueSampleJsonOptions {
   redactSensitiveValues?: boolean;
 }
 
+export interface TransformPlaceholderFillTemplateSource {
+  sourcePath: string;
+  sourceLabel?: string;
+  count: number;
+  sourceOriginalPreview?: string;
+}
+
+export interface TransformPlaceholderFillTemplateDetail {
+  value: string;
+  replacement: string;
+  description: string;
+  count: number;
+  sourceCount: number;
+  sources: TransformPlaceholderFillTemplateSource[];
+}
+
+export interface TransformPlaceholderFillTemplate {
+  schemaVersion: 1;
+  kind: 'json-helper-runtime-placeholder-fill-template';
+  summary: {
+    groups: number;
+    visibleOccurrences: number;
+    filteredOccurrences: number;
+    totalOccurrences: number;
+    truncated: boolean;
+  };
+  placeholders: Record<string, string>;
+  placeholderDetails: TransformPlaceholderFillTemplateDetail[];
+}
+
 const DEFAULT_DIAGNOSTIC_TOP_LIMIT = 8;
 const DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT = 5;
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
@@ -2232,6 +2262,49 @@ export const formatTransformPlaceholderReportText = (
   }
 
   return lines.join('\n');
+};
+
+export const buildTransformPlaceholderFillTemplate = (
+  reportView: TransformReportView
+): TransformPlaceholderFillTemplate | null => {
+  if (reportView.filteredPlaceholderCount === 0) return null;
+
+  const placeholderDetails = reportView.runtimePlaceholderGroups.map(group => ({
+    value: group.value,
+    replacement: '',
+    description: group.description,
+    count: group.count,
+    sourceCount: group.sourceCount,
+    sources: group.sources.map(source => ({
+      sourcePath: source.sourcePath,
+      ...(source.sourceLabel ? { sourceLabel: source.sourceLabel } : {}),
+      count: source.count,
+      ...(source.sourceOriginalPreview ? { sourceOriginalPreview: source.sourceOriginalPreview } : {}),
+    })),
+  }));
+
+  return {
+    schemaVersion: 1,
+    kind: 'json-helper-runtime-placeholder-fill-template',
+    summary: {
+      groups: placeholderDetails.length,
+      visibleOccurrences: reportView.runtimePlaceholders.length,
+      filteredOccurrences: reportView.filteredPlaceholderCount,
+      totalOccurrences: reportView.totalPlaceholderCount,
+      truncated: reportView.isPlaceholderTruncated,
+    },
+    placeholders: Object.fromEntries(
+      placeholderDetails.map(detail => [detail.value, detail.replacement])
+    ),
+    placeholderDetails,
+  };
+};
+
+export const formatTransformPlaceholderFillTemplateJsonText = (
+  reportView: TransformReportView
+): string => {
+  const fillTemplate = buildTransformPlaceholderFillTemplate(reportView);
+  return fillTemplate ? JSON.stringify(fillTemplate, null, 2) : '';
 };
 
 export const buildTransformIssueSampleExport = (
