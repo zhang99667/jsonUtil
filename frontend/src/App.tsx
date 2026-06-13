@@ -86,6 +86,11 @@ interface SchemeInputRequest {
   value: string;
 }
 
+interface TemplateFillRequest {
+  id: number;
+  template: string;
+}
+
 interface AsyncTransformResult {
   input: string;
   mode: TransformMode;
@@ -202,11 +207,13 @@ const App: React.FC = () => {
   const [hasLoadedJsonPathPanel, setHasLoadedJsonPathPanel] = useState(false);
   const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
   const [schemeInputRequest, setSchemeInputRequest] = useState<SchemeInputRequest | null>(null);
+  const [templateFillRequest, setTemplateFillRequest] = useState<TemplateFillRequest | null>(null);
   const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
   const [isOutputTransforming, setIsOutputTransforming] = useState(false);
   const transformRequestIdRef = useRef(0);
   const jsonPathQueryRequestIdRef = useRef(0);
   const schemeInputRequestIdRef = useRef(0);
+  const templateFillRequestIdRef = useRef(0);
   const sourceValidationRequestIdRef = useRef(0);
   const previewValidationRequestIdRef = useRef(0);
   const outputSyncRequestIdRef = useRef(0);
@@ -533,6 +540,17 @@ const App: React.FC = () => {
       value,
     });
     setIsSchemeDecodeOpen(true);
+    setIsTransformReportOpen(false);
+  }, []);
+
+  const handleOpenTemplateFillFromReport = useCallback((template: string) => {
+    if (!template) return;
+
+    setTemplateFillRequest({
+      id: ++templateFillRequestIdRef.current,
+      template,
+    });
+    setIsTemplatePanelOpen(true);
     setIsTransformReportOpen(false);
   }, []);
 
@@ -1220,6 +1238,7 @@ const App: React.FC = () => {
               context={transformReportContext}
               onLocatePath={handleLocateJsonPath}
               onOpenSchemeValue={handleOpenSchemeFromReport}
+              onOpenTemplateFill={handleOpenTemplateFillFromReport}
             />
           </Suspense>
         )}
@@ -1250,6 +1269,8 @@ const App: React.FC = () => {
               onClose={() => setIsTemplatePanelOpen(false)}
               onApplyTemplate={handleApplyTemplate}
               targetError={templateTargetError}
+              initialTemplate={templateFillRequest?.template}
+              initialTemplateKey={templateFillRequest?.id}
             />
           </Suspense>
         )}

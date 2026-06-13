@@ -28,6 +28,7 @@ interface TransformReportPanelProps {
   context: TransformContext | null;
   onLocatePath?: (path: string) => void;
   onOpenSchemeValue?: (value: string) => void;
+  onOpenTemplateFill?: (template: string) => void;
 }
 
 const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => (
@@ -101,6 +102,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   context,
   onLocatePath,
   onOpenSchemeValue,
+  onOpenTemplateFill,
 }) => {
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
@@ -221,6 +223,13 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     } catch (error) {
       showCopyError('复制深度解析占位符回填模板失败:', error);
     }
+  };
+
+  const handleOpenPlaceholderFillTemplate = () => {
+    if (!placeholderFillTemplateJsonText || isFilterPending || !onOpenTemplateFill) return;
+
+    onOpenTemplateFill(placeholderFillTemplateJsonText);
+    toast.success('已填入模板填充', { duration: 1600 });
   };
 
   const handleCopyIssueSamples = async () => {
@@ -1044,6 +1053,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     )}
                   </div>
                   <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
+                    {onOpenTemplateFill && (
+                      <button
+                        type="button"
+                        data-tour="transform-report-open-placeholder-fill-template"
+                        onClick={handleOpenPlaceholderFillTemplate}
+                        disabled={!placeholderFillTemplateJsonText || isFilterPending}
+                        className="text-xs text-gray-400 hover:text-violet-200 bg-editor-sidebar border border-editor-border px-2 py-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        填入模板填充
+                      </button>
+                    )}
                     <button
                       type="button"
                       data-tour="transform-report-copy-placeholder-fill-template"
