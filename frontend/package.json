@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "check:preloads": "node scripts/check-main-preloads.mjs",
     "corpus:scheme": "vitest run src/utils/schemeCorpus.test.ts",
+    "corpus:snapshot": "node scripts/scheme-corpus-snapshot.mjs",
     "samples:to-regression": "node scripts/issue-samples-to-regression.mjs",
     "cmd:diff": "node scripts/cmd-structure-diff.mjs",
     "test:watch": "vitest",
