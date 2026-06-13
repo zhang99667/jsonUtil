@@ -262,6 +262,19 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
     originalValue: 'raw=%7B%22nid%22%3A123%7D',
   });
 
+  await reportPanel.locator('[data-tour="transform-report-copy-quality-snapshot"]').click();
+  await expect(page.getByText('已复制质量快照')).toBeVisible();
+  const qualitySnapshot = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
+  expect(qualitySnapshot.kind).toBe('json-helper-transform-quality-snapshot');
+  expect(qualitySnapshot.coverage.score).toBe(50);
+  expect(qualitySnapshot.filtered.unresolved).toBe(1);
+  expect(qualitySnapshot.hotspots.unresolvedReasons[0]).toMatchObject({
+    key: '已解码但未结构化',
+    count: 1,
+    paths: ['$.tracking'],
+  });
+  expect(JSON.stringify(qualitySnapshot)).not.toContain('raw=%7B%22nid%22%3A123%7D');
+
   await unresolvedSection.locator('[data-tour="transform-report-open-unresolved-scheme"]').click();
   await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
   await expect(reportPanel).toBeHidden();

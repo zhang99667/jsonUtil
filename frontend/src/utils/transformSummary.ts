@@ -292,8 +292,56 @@ export interface TransformPlaceholderFillTemplate {
   placeholderDetails: TransformPlaceholderFillTemplateDetail[];
 }
 
+export interface TransformQualitySnapshotBucket {
+  key: string;
+  count: number;
+  paths: string[];
+}
+
+export interface TransformQualitySnapshot {
+  schemaVersion: 1;
+  kind: 'json-helper-transform-quality-snapshot';
+  filter: string;
+  coverage: TransformReportCoverage;
+  totals: {
+    records: number;
+    cmdStructures: number;
+    nestedCommandFields: number;
+    runtimePlaceholders: number;
+    unresolved: number;
+    warnings: number;
+  };
+  filtered: {
+    records: number;
+    cmdStructures: number;
+    nestedCommandFields: number;
+    runtimePlaceholders: number;
+    unresolved: number;
+    warnings: number;
+  };
+  hotspots: {
+    topCommandSchemas: TransformReportCommandSchemaGroup[];
+    topCommandSchemaOrigins: TransformReportCommandSchemaOriginGroup[];
+    topNestedCommandFields: TransformReportNestedCommandFieldGroup[];
+    unresolvedReasons: TransformQualitySnapshotBucket[];
+    warningReasons: TransformQualitySnapshotBucket[];
+    warningTypes: TransformQualitySnapshotBucket[];
+    runtimePlaceholders: TransformQualitySnapshotBucket[];
+  };
+  truncation: {
+    records: boolean;
+    cmdStructures: boolean;
+    runtimePlaceholders: boolean;
+    unresolved: boolean;
+    warnings: boolean;
+  };
+  recommendations: string[];
+}
+
 const DEFAULT_DIAGNOSTIC_TOP_LIMIT = 8;
 const DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT = 5;
+const DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT = 8;
+const DEFAULT_QUALITY_SNAPSHOT_PATH_LIMIT = 4;
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
@@ -2203,6 +2251,124 @@ export const formatTransformDiagnosticSummaryText = (
 
   return lines.join('\n');
 };
+
+const buildQualitySnapshotBuckets = <T>(
+  items: T[],
+  getKey: (item: T) => string | undefined,
+  getPath: (item: T) => string
+): TransformQualitySnapshotBucket[] => {
+  const bucketMap = new Map<string, { count: number; paths: string[] }>();
+
+  items.forEach(item => {
+    const key = getKey(item);
+    if (!key) return;
+
+    const bucket = bucketMap.get(key) || { count: 0, paths: [] };
+    bucket.count++;
+    const path = getPath(item);
+    if (bucket.paths.length < DEFAULT_QUALITY_SNAPSHOT_PATH_LIMIT && !bucket.paths.includes(path)) {
+      bucket.paths.push(path);
+    }
+    bucketMap.set(key, bucket);
+  });
+
+  return Array.from(bucketMap.entries())
+    .map(([key, bucket]) => ({ key, count: bucket.count, paths: bucket.paths }))
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
+    .slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT);
+};
+
+const buildQualitySnapshotRecommendations = (
+  reportView: TransformReportView
+): string[] => {
+  const recommendations: string[] = [];
+
+  if (reportView.filteredWarningCount > 0) {
+    recommendations.push('先处理性能保护跳过记录，必要时单独粘贴字段到 Scheme 面板或缩小 response 后再解析');
+  }
+  if (reportView.filteredUnresolvedCount > 0) {
+    recommendations.push('将待检查项按原因分组，确认规则缺口后复制脱敏样本并沉淀回归模板');
+  }
+  if (reportView.filteredPlaceholderCount > 0) {
+    recommendations.push('运行时占位符按来源路径确认真实替换链路，避免误判为解析失败');
+  }
+  if (reportView.filteredCmdStructureCount > 0) {
+    recommendations.push('对关键 CMD 结构粘贴 cmdHandler 输出做页面内对比，优先补齐缺失路径和值差异');
+  }
+  if (recommendations.length === 0) {
+    recommendations.push('当前筛选未发现待处理风险，可将该快照作为解析质量基线保存');
+  }
+
+  return recommendations;
+};
+
+export const buildTransformQualitySnapshot = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string
+): TransformQualitySnapshot => ({
+  schemaVersion: 1,
+  kind: 'json-helper-transform-quality-snapshot',
+  filter: query.trim() || '全部',
+  coverage: report.coverage,
+  totals: {
+    records: reportView.totalRecordCount,
+    cmdStructures: reportView.totalCmdStructureCount,
+    nestedCommandFields: reportView.totalNestedCommandFieldCount,
+    runtimePlaceholders: reportView.totalPlaceholderCount,
+    unresolved: reportView.totalUnresolvedCount,
+    warnings: reportView.totalWarningCount,
+  },
+  filtered: {
+    records: reportView.filteredRecordCount,
+    cmdStructures: reportView.filteredCmdStructureCount,
+    nestedCommandFields: reportView.filteredNestedCommandFieldCount,
+    runtimePlaceholders: reportView.filteredPlaceholderCount,
+    unresolved: reportView.filteredUnresolvedCount,
+    warnings: reportView.filteredWarningCount,
+  },
+  hotspots: {
+    topCommandSchemas: (report.topCommandSchemas || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
+    topCommandSchemaOrigins: (report.topCommandSchemaOrigins || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
+    topNestedCommandFields: (report.topNestedCommandFields || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
+    unresolvedReasons: buildQualitySnapshotBuckets(
+      reportView.unresolvedCandidates,
+      candidate => candidate.reasonLabel,
+      candidate => candidate.path
+    ),
+    warningReasons: buildQualitySnapshotBuckets(
+      reportView.warnings,
+      warning => warning.reasonLabel,
+      warning => warning.path
+    ),
+    warningTypes: buildQualitySnapshotBuckets(
+      reportView.warnings,
+      warning => warning.type,
+      warning => warning.path
+    ),
+    runtimePlaceholders: reportView.runtimePlaceholderGroups
+      .slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT)
+      .map(group => ({
+        key: group.value,
+        count: group.count,
+        paths: group.sources.slice(0, DEFAULT_QUALITY_SNAPSHOT_PATH_LIMIT).map(source => source.sourcePath),
+      })),
+  },
+  truncation: {
+    records: reportView.isRecordTruncated,
+    cmdStructures: reportView.isCmdStructureTruncated,
+    runtimePlaceholders: reportView.isPlaceholderTruncated,
+    unresolved: reportView.isUnresolvedTruncated,
+    warnings: reportView.isWarningTruncated,
+  },
+  recommendations: buildQualitySnapshotRecommendations(reportView),
+});
+
+export const formatTransformQualitySnapshotJsonText = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string
+): string => JSON.stringify(buildTransformQualitySnapshot(report, reportView, query), null, 2);
 
 export const formatTransformPathValueReportText = (
   reportView: TransformReportView

@@ -20,6 +20,7 @@ import {
   formatTransformPathValueReportText,
   formatTransformPlaceholderFillTemplateJsonText,
   formatTransformPlaceholderReportText,
+  formatTransformQualitySnapshotJsonText,
   formatTransformReportViewText,
   getTransformDecodedPathCopyText,
   getTransformPathValueCopyRows,
@@ -183,6 +184,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success('已复制诊断摘要', { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析诊断摘要失败:', error);
+    }
+  };
+
+  const handleCopyQualitySnapshot = async () => {
+    if (!report || !reportView || isFilterPending) return;
+
+    try {
+      await copyText(formatTransformQualitySnapshotJsonText(report, reportView, deferredQuery));
+      toast.success('已复制质量快照', { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析质量快照失败:', error);
     }
   };
 
@@ -514,6 +526,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           title="复制不含原始大字段值的解析覆盖、CMD Schema 和风险摘要"
         >
           复制诊断摘要
+        </button>
+        <button
+          data-tour="transform-report-copy-quality-snapshot"
+          onClick={handleCopyQualitySnapshot}
+          disabled={!reportView || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="复制不含原始大字段值的解析质量指标 JSON，便于保存基线或对比趋势"
+        >
+          复制质量快照
         </button>
         <button
           data-tour="transform-report-copy-path-values"
