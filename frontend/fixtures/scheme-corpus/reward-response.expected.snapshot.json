@@ -17,9 +17,12 @@
     "minCoverageScore": 100,
     "minCmdStructures": 1,
     "minNestedCommandFields": 20,
+    "minNestedResourceFields": 1,
     "maxUnresolved": 0,
     "maxWarnings": 0,
-    "leadHotspotCommandSchema": "https://union-click.jd.com/sem.php"
+    "leadHotspotCommandSchema": "https://union-click.jd.com/sem.php",
+    "leadHotspotResourceSchema": "https://video.example.com/ad.mp4",
+    "leadHotspotResourceField": "video_url"
   },
   "primaryCommandSchema": "nadcorevendor://vendor/ad/rewardImpl",
   "requiredCommandSchemas": [

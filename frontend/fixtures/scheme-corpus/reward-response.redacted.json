@@ -32,7 +32,7 @@
   },
   "replacements": {
     "__ROOT_SCHEME__": [
-      "nadcorevendor://vendor/ad/rewardImpl?video_info=%7B%22vid%22%3A%221353102586669%22%2C%22page_url%22%3A%22https%3A%2F%2Funion-click.jd.com%2F",
+      "nadcorevendor://vendor/ad/rewardImpl?video_info=%7B%22vid%22%3A%221353102586669%22%2C%22video_url%22%3A%22https%3A%2F%2Fvideo.example.com%2Fad.mp4%3Fpd%3D100%26cm%3D1501%22%2C%22page_url%22%3A%22https%3A%2F%2Funion-click.jd.com%2F",
       "sem.php%3Fsource%3Dbaidu-ys%26unionId%3D262767352%26to%3Dhttps%253A%252F%252Fpro.m.jd.com%252Fmall%252Factive%252Fpage.html%253Fsku%253D101%",
       "2526bd_vid%253Dabc%22%2C%22tail_frame%22%3A%7B%22bottom_button_scheme%22%3A%22nadcorevendor%3A%2F%2Fvendor%2Fad%2Freward%3Ftask_params%3D%25",
       "7B%2522android_pid%2522%253A%25221683310188080%2522%252C%2522task_id%2522%253A%2522602%2522%252C%2522ext_params%2522%253A%257B%2522reward_nu",
