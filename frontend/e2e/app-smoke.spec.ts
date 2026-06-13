@@ -250,6 +250,18 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   expect(issueSamples).toContain('已解码但未结构化');
   expect(issueSamples).toContain('raw=%7B%22nid%22%3A123%7D');
 
+  await reportPanel.locator('[data-tour="transform-report-copy-issue-sample-json"]').click();
+  await expect(page.getByText('已复制样本 JSON')).toBeVisible();
+  const issueSampleJson = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
+  expect(issueSampleJson.kind).toBe('json-helper-transform-issue-samples');
+  expect(issueSampleJson.summary.unresolved.copied).toBe(1);
+  expect(issueSampleJson.samples[0]).toMatchObject({
+    type: 'unresolved',
+    path: '$.tracking',
+    detectedType: 'url-encoded',
+    originalValue: 'raw=%7B%22nid%22%3A123%7D',
+  });
+
   await unresolvedSection.locator('[data-tour="transform-report-open-unresolved-scheme"]').click();
   await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
   await expect(reportPanel).toBeHidden();
