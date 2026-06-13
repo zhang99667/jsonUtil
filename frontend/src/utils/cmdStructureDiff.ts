@@ -30,6 +30,10 @@ export interface CmdStructureDiff {
   hasDifferences: boolean;
 }
 
+export interface CmdStructureDiffOptions {
+  ignoreExtraPaths?: boolean;
+}
+
 const isRecord = (value: JsonValue): value is JsonObject => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
@@ -178,7 +182,8 @@ const compareRows = (
 
 export const diffCmdStructures = (
   actualInput: JsonValue,
-  expectedInput: JsonValue
+  expectedInput: JsonValue,
+  options: CmdStructureDiffOptions = {}
 ): CmdStructureDiff => {
   const actual = normalizeCmdStructure(actualInput);
   const expected = normalizeCmdStructure(expectedInput);
@@ -192,16 +197,19 @@ export const diffCmdStructures = (
     collectValueMap(actual.cmdParams),
     collectValueMap(expected.cmdParams)
   );
+  const extraPaths = options.ignoreExtraPaths ? [] : paramDiff.extraPaths;
 
   return {
     schemaDiff,
     sourceDiff,
-    ...paramDiff,
+    missingPaths: paramDiff.missingPaths,
+    extraPaths,
+    valueDiffs: paramDiff.valueDiffs,
     hasDifferences: Boolean(
       schemaDiff ||
       sourceDiff ||
       paramDiff.missingPaths.length ||
-      paramDiff.extraPaths.length ||
+      extraPaths.length ||
       paramDiff.valueDiffs.length
     ),
   };
@@ -252,4 +260,3 @@ export const formatCmdStructureDiff = (diff: CmdStructureDiff): string => {
 
   return lines.join('\n');
 };
-

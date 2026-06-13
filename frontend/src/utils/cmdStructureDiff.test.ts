@@ -99,6 +99,32 @@ describe('cmdStructureDiff', () => {
     expect(report).toContain('值不一致 1 个');
   });
 
+  it('支持忽略 actual 额外路径以对齐 cmdHandler 子集基线', () => {
+    const actual = createCmdStructure();
+    const expected = createCmdStructure();
+    const expectedParams = expected.result.cmdParams.params.appUrl.cmdParams.params as Record<string, unknown>;
+
+    delete expectedParams.url;
+
+    const strictDiff = diffCmdStructures(actual, expected);
+    const subsetDiff = diffCmdStructures(actual, expected, { ignoreExtraPaths: true });
+
+    expect(strictDiff.hasDifferences).toBe(true);
+    expect(strictDiff.extraPaths).toEqual([
+      '$.params.appUrl.cmdParams.params.url',
+      '$.params.appUrl.cmdParams.params.url.cmdSchema',
+      '$.params.appUrl.cmdParams.params.url.cmdParams',
+      '$.params.appUrl.cmdParams.params.url.cmdParams.sku',
+    ]);
+    expect(subsetDiff).toMatchObject({
+      hasDifferences: false,
+      extraPaths: [],
+      missingPaths: [],
+      valueDiffs: [],
+    });
+    expect(formatCmdStructureDiff(subsetDiff)).toContain('结构一致');
+  });
+
   it('解析非法 expected JSON 时给出明确错误', () => {
     expect(() => parseCmdStructureJson('{broken', 'cmdHandler 输出')).toThrow('cmdHandler 输出不是有效 JSON');
   });
