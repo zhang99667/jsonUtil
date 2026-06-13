@@ -291,6 +291,14 @@ const isCommandInsightField = (key: string): boolean => (
   isCmdInsightField(key) || isUrlInsightField(key)
 );
 
+const isResourceInsightValue = (value: unknown): boolean => {
+  if (Boolean(value) && typeof value === 'object') return true;
+  if (typeof value !== 'string') return false;
+
+  const trimmed = value.trim();
+  return Boolean(trimmed) && detectSchemeType(trimmed) === 'url';
+};
+
 const formatInsightFieldCopyText = (value: unknown, maxLength = 8_000): string => {
   const text = typeof value === 'string'
     ? JSON.stringify(value)
@@ -380,7 +388,7 @@ const collectSchemeInsightFieldsInner = (
   Object.entries(value).forEach(([key, item]) => {
     const childPath = appendJsonPathKey(currentPath, key);
     const isObjectItem = Boolean(item) && typeof item === 'object';
-    if (isObjectItem && isResourceInsightField(key)) {
+    if (isResourceInsightField(key) && isResourceInsightValue(item)) {
       resourceFields.push(key);
       if (options.includeCommandFieldRows !== false) {
         resourceFieldRows.push(createInsightFieldRow(key, childPath, item));

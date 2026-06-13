@@ -226,6 +226,7 @@ frontend/fixtures/scheme-corpus/
 - CI 会生成 Markdown 质量摘要并上传 JSON 快照 artifact，PM 和研发可以直接下载对照样本质量变化。
 - 已新增质量快照趋势对比命令，可把两份 snapshot 对比为 JSON/Markdown 报告，并在 strict 模式下拦截解析质量退化。
 - 已支持用 `--input` 对本地真实 response 做一次性质量诊断，便于先验证、再脱敏沉淀为 corpus。
+- 根据真实 response 对照发现并补齐字符串型资源 URL 洞察，`button_icon`、`user_portrait`、`button_image`、lottie 等不带 query 的素材字段会进入资源字段和静态资源 URL Top。
 - AI 修复发送前会默认阻断 token、sign、cookie、密钥和设备标识等疑似敏感字段，覆盖多层 URL 编码和内部 Base64 片段，避免把真实 response 原文直接发给模型。
 - AI 修复已增加本地确定性修复前置能力，常见小错误能在本地完成并跳过模型调用，连接测试仍会真实请求 AI 服务。
 

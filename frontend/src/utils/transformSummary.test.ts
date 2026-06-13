@@ -450,6 +450,8 @@ describe('transformSummary', () => {
     const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       video_url: mediaUrl,
       page_url: landingUrl,
+      button_icon: 'https://static.example.com/assets/open.png',
+      swipe_up_lottie: 'https://static.example.com/lottie/swipe.zip',
     }))}`;
     const result = deepParseWithContext(JSON.stringify({ scheme }), { autoExpandScheme: true });
     const report = buildTransformContextReport(result.context);
@@ -466,30 +468,58 @@ describe('transformSummary', () => {
     expect(record.insights).toEqual([
       'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
       'cmd解析: page_url',
-      '资源URL: video_url',
+      '资源URL: video_url, button_icon, swipe_up_lottie',
     ]);
     expect(report.nestedCommandFieldCount).toBe(1);
-    expect(report.nestedResourceFieldCount).toBe(1);
+    expect(report.nestedResourceFieldCount).toBe(3);
     expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/video/ad.mp4');
-    expect(report.topResourceSchemas).toEqual([
-      {
+    expect(report.topResourceSchemas).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        schema: 'https://static.example.com/assets/open.png',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.button_icon'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
+        schema: 'https://static.example.com/lottie/swipe.zip',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.swipe_up_lottie'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
         schema: 'https://static.example.com/video/ad.mp4',
         count: 1,
         recordCount: 1,
         paths: ['$.scheme.video_info.video_url'],
         hasMorePaths: false,
-      },
-    ]);
-    expect(report.topNestedResourceFields).toEqual([
-      {
+      }),
+    ]));
+    expect(report.topNestedResourceFields).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: 'button_icon',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.button_icon'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
+        key: 'swipe_up_lottie',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.swipe_up_lottie'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
         key: 'video_url',
         count: 1,
         recordCount: 1,
         paths: ['$.scheme.video_info.video_url'],
         hasMorePaths: false,
-      },
-    ]);
-    expect(buildTransformReportView(report, '资源URL').filteredNestedResourceFieldCount).toBe(1);
+      }),
+    ]));
+    expect(buildTransformReportView(report, '资源URL').filteredNestedResourceFieldCount).toBe(3);
     expect(buildTransformReportView(report, 'video_url').records[0].nestedResourceFields).toEqual([
       {
         path: '$.scheme.video_info.video_url',
@@ -500,17 +530,41 @@ describe('transformSummary', () => {
         },
       },
     ]);
+    expect(buildTransformReportView(report, 'button_icon').records[0].nestedResourceFields).toEqual([
+      {
+        path: '$.scheme.video_info.button_icon',
+        preview: 'https://static.example.com/assets/open.png',
+        value: 'https://static.example.com/assets/open.png',
+      },
+    ]);
     expect(reportText).toContain('CMD Schema 分布:');
     expect(reportText).toContain('静态资源 URL 分布:');
     expect(reportText).toContain('静态资源字段分布:');
     expect(diagnosticText).toContain('全量静态资源 URL Top:');
     expect(diagnosticText).toContain('全量静态资源字段 Top:');
-    expect(qualitySnapshot.hotspots.topResourceSchemas[0]).toMatchObject({
-      schema: 'https://static.example.com/video/ad.mp4',
-      count: 1,
-    });
-    expect(qualitySnapshot.hotspots.topNestedResourceFields[0]).toMatchObject({
-      key: 'video_url',
+    expect(qualitySnapshot.hotspots.topResourceSchemas).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        schema: 'https://static.example.com/assets/open.png',
+        count: 1,
+      }),
+      expect.objectContaining({
+        schema: 'https://static.example.com/video/ad.mp4',
+        count: 1,
+      }),
+    ]));
+    expect(qualitySnapshot.hotspots.topNestedResourceFields).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: 'button_icon',
+        count: 1,
+      }),
+      expect.objectContaining({
+        key: 'video_url',
+        count: 1,
+      }),
+    ]));
+    expect(qualitySnapshot.hotspots.topResourceSchemas.find((group: { schema: string }) => (
+      group.schema === 'https://static.example.com/assets/open.png'
+    ))).toMatchObject({
       count: 1,
     });
     expect(qualitySnapshot.hotspots.topCommandSchemas.map((group: { schema: string }) => group.schema)).not.toContain(

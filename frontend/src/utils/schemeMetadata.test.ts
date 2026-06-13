@@ -202,10 +202,12 @@ describe('schemeMetadata', () => {
         pd: '100',
         cm: '1501',
       },
+      button_icon: 'https://static.example.com/open.png',
       tail_frame: {
         poster_image: {
           width: 720,
         },
+        swipe_up_lottie: 'https://static.example.com/swipe.zip',
         panel_scheme: {
           url: {
             sku: '101',
@@ -217,9 +219,9 @@ describe('schemeMetadata', () => {
     const info = extractSchemeCommandSummaryInfo(decoded, true);
 
     expect(info?.commandFields).toEqual(['panel_scheme', 'url']);
-    expect(info?.resourceFields).toEqual(['video_url', 'poster_image']);
+    expect(info?.resourceFields).toEqual(['video_url', 'button_icon', 'poster_image', 'swipe_up_lottie']);
     expect(info?.commandFieldCount).toBe(2);
-    expect(info?.resourceFieldCount).toBe(2);
+    expect(info?.resourceFieldCount).toBe(4);
     expect(info?.resourceFieldRows.map(row => ({
       key: row.key,
       path: row.path,
@@ -231,9 +233,19 @@ describe('schemeMetadata', () => {
         preview: '对象: pd, cm',
       },
       {
+        key: 'button_icon',
+        path: '$.button_icon',
+        preview: 'https://static.example.com/open.png',
+      },
+      {
         key: 'poster_image',
         path: '$.tail_frame.poster_image',
         preview: '对象: width',
+      },
+      {
+        key: 'swipe_up_lottie',
+        path: '$.tail_frame.swipe_up_lottie',
+        preview: 'https://static.example.com/swipe.zip',
       },
     ]);
   });
