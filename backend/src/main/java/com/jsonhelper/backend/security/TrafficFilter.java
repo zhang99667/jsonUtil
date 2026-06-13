@@ -25,8 +25,7 @@ public class TrafficFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // Only log API requests, skip static resources and admin/stats calls
-        if (path.startsWith("/api") && !path.startsWith("/api/admin") && !path.startsWith("/api/stats")) {
+        if (shouldLogTraffic(path)) {
             try {
                 VisitLog log = new VisitLog();
                 log.setIp(getClientIp(request));
@@ -42,6 +41,17 @@ public class TrafficFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean shouldLogTraffic(String path) {
+        if (!path.startsWith("/api")) {
+            return false;
+        }
+
+        // 工具事件有独立聚合表，避免高频埋点请求抬高普通 PV。
+        return !path.startsWith("/api/admin")
+                && !path.startsWith("/api/stats")
+                && !path.startsWith("/api/visitor/events");
     }
 
     private String getClientIp(HttpServletRequest request) {

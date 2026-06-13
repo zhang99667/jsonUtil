@@ -67,6 +67,25 @@ export interface SessionStatsItem {
     percentage: number;
 }
 
+// 工具事件聚合项
+export interface ToolEventGroupItem {
+    label: string;
+    count: number;
+    percentage: number;
+}
+
+// 工具使用事件统计
+export interface ToolEventStats {
+    totalEvents: number;
+    successEvents: number;
+    failedEvents: number;
+    failureRate: number;
+    topEvents: ToolEventGroupItem[];
+    statusDistribution: ToolEventGroupItem[];
+    inputSizeDistribution: ToolEventGroupItem[];
+    durationDistribution: ToolEventGroupItem[];
+}
+
 // 获取流量概览
 export const getTrafficOverview = async (days: number): Promise<TrafficOverview> => {
     return request.get('/admin/traffic/overview', { params: { days } });
@@ -115,4 +134,9 @@ export const getRefererDistribution = async (days: number, limit: number = 10): 
 // 获取停留时长分布
 export const getSessionDuration = async (days: number): Promise<SessionStatsItem[]> => {
     return request.get('/admin/traffic/session-duration', { params: { days } });
+};
+
+// 获取工具使用事件统计
+export const getToolEventStats = async (days: number, limit: number = 10): Promise<ToolEventStats> => {
+    return request.get('/admin/traffic/tool-events', { params: { days, limit } });
 };

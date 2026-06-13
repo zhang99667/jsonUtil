@@ -2,6 +2,7 @@ package com.jsonhelper.backend.controller;
 
 import com.jsonhelper.backend.dto.response.*;
 import com.jsonhelper.backend.service.TrafficService;
+import com.jsonhelper.backend.service.ToolEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +14,7 @@ import java.util.List;
 public class TrafficController {
 
     private final TrafficService trafficService;
+    private final ToolEventService toolEventService;
 
     /**
      * 获取流量概览数据
@@ -134,5 +136,18 @@ public class TrafficController {
             @RequestParam(defaultValue = "7") int days) {
         List<SessionStatsDTO> sessionStats = trafficService.getSessionDurationStats(days);
         return Result.success(sessionStats);
+    }
+
+    /**
+     * 获取工具使用事件统计
+     * @param days 统计天数，默认7天
+     * @param limit 高频功能返回条数，默认10条
+     */
+    @GetMapping("/tool-events")
+    public Result<ToolEventStatsDTO> getToolEvents(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(defaultValue = "10") int limit) {
+        ToolEventStatsDTO stats = toolEventService.getStats(days, limit);
+        return Result.success(stats);
     }
 }
