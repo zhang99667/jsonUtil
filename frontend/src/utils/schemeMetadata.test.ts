@@ -94,6 +94,9 @@ describe('schemeMetadata', () => {
         },
       ],
       commandFieldCount: 1,
+      resourceFields: [],
+      resourceFieldRows: [],
+      resourceFieldCount: 0,
       extFields: ['ext_info', 'ad_extra_param'],
       extFieldCount: 2,
       base64SuffixFields: [],
@@ -193,6 +196,48 @@ describe('schemeMetadata', () => {
     expect(info?.commandFieldCount).toBe(8);
   });
 
+  it('将静态素材 URL 字段从 CMD 线索中分离', () => {
+    const decoded = JSON.stringify({
+      video_url: {
+        pd: '100',
+        cm: '1501',
+      },
+      tail_frame: {
+        poster_image: {
+          width: 720,
+        },
+        panel_scheme: {
+          url: {
+            sku: '101',
+          },
+        },
+      },
+    });
+
+    const info = extractSchemeCommandSummaryInfo(decoded, true);
+
+    expect(info?.commandFields).toEqual(['panel_scheme', 'url']);
+    expect(info?.resourceFields).toEqual(['video_url', 'poster_image']);
+    expect(info?.commandFieldCount).toBe(2);
+    expect(info?.resourceFieldCount).toBe(2);
+    expect(info?.resourceFieldRows.map(row => ({
+      key: row.key,
+      path: row.path,
+      preview: row.preview,
+    }))).toEqual([
+      {
+        key: 'video_url',
+        path: '$.video_url',
+        preview: '对象: pd, cm',
+      },
+      {
+        key: 'poster_image',
+        path: '$.tail_frame.poster_image',
+        preview: '对象: width',
+      },
+    ]);
+  });
+
   it('可提取不带详情行的轻量 CMD 摘要', () => {
     const decoded = JSON.stringify({
       panel: {
@@ -242,6 +287,9 @@ describe('schemeMetadata', () => {
       commandFields: [],
       commandFieldRows: [],
       commandFieldCount: 0,
+      resourceFields: [],
+      resourceFieldRows: [],
+      resourceFieldCount: 0,
       extFields: [],
       extFieldCount: 0,
       base64SuffixFields: ['os', 'ip'],

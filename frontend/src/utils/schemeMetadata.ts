@@ -19,6 +19,9 @@ export interface SchemeInsightFields {
   commandFields: string[];
   commandFieldRows: SchemeInsightFieldRow[];
   commandFieldCount: number;
+  resourceFields: string[];
+  resourceFieldRows: SchemeInsightFieldRow[];
+  resourceFieldCount: number;
   extFields: string[];
   extFieldCount: number;
   base64SuffixFields: string[];
@@ -163,6 +166,55 @@ const URL_FIELD_NAMES = new Set([
   'openUrl',
 ]);
 const URL_FIELD_SUFFIXES = ['_url', 'url'];
+const RESOURCE_FIELD_NAMES = new Set([
+  'avatar',
+  'audio_url',
+  'bg_lottie_url',
+  'bottom_button_icon',
+  'button_icon',
+  'button_image',
+  'close_image',
+  'cover',
+  'fail_lottie',
+  'icon',
+  'image',
+  'image_url',
+  'icon_url',
+  'logo',
+  'logo_url',
+  'lottie',
+  'media_url',
+  'poster',
+  'poster_image',
+  'poster_url',
+  'portrait',
+  'portrait_url',
+  'success_lottie',
+  'swipe_up_lottie',
+  'time_complete_lottie_url',
+  'timer_front_icon',
+  'top_image',
+  'user_portrait',
+  'video_url',
+]);
+const RESOURCE_FIELD_SUFFIXES = [
+  '_avatar',
+  '_avatar_url',
+  '_cover',
+  '_cover_url',
+  '_icon',
+  '_icon_url',
+  '_image',
+  '_image_url',
+  '_lottie',
+  '_lottie_url',
+  '_logo',
+  '_logo_url',
+  '_poster',
+  '_poster_url',
+  '_portrait',
+  '_portrait_url',
+];
 const EXT_FIELD_NAMES = new Set([
   'ad_extra_param',
   'extInfo',
@@ -225,6 +277,14 @@ const isUrlInsightField = (key: string): boolean => {
   return URL_FIELD_NAMES.has(normalizedKey) ||
     URL_FIELD_NAMES.has(lowerKey) ||
     URL_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
+};
+
+const isResourceInsightField = (key: string): boolean => {
+  const normalizedKey = key.trim();
+  const lowerKey = normalizedKey.toLowerCase();
+  return RESOURCE_FIELD_NAMES.has(normalizedKey) ||
+    RESOURCE_FIELD_NAMES.has(lowerKey) ||
+    RESOURCE_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
 };
 
 const isCommandInsightField = (key: string): boolean => (
@@ -294,6 +354,8 @@ const collectSchemeInsightFieldsInner = (
   currentPath: string,
   commandFields: string[],
   commandFieldRows: SchemeInsightFieldRow[],
+  resourceFields: string[],
+  resourceFieldRows: SchemeInsightFieldRow[],
   extFields: string[],
   base64SuffixFields: string[],
   options: SchemeInsightCollectOptions
@@ -304,6 +366,8 @@ const collectSchemeInsightFieldsInner = (
       `${currentPath}[${index}]`,
       commandFields,
       commandFieldRows,
+      resourceFields,
+      resourceFieldRows,
       extFields,
       base64SuffixFields,
       options
@@ -316,7 +380,12 @@ const collectSchemeInsightFieldsInner = (
   Object.entries(value).forEach(([key, item]) => {
     const childPath = appendJsonPathKey(currentPath, key);
     const isObjectItem = Boolean(item) && typeof item === 'object';
-    if (isObjectItem && isCommandInsightField(key)) {
+    if (isObjectItem && isResourceInsightField(key)) {
+      resourceFields.push(key);
+      if (options.includeCommandFieldRows !== false) {
+        resourceFieldRows.push(createInsightFieldRow(key, childPath, item));
+      }
+    } else if (isObjectItem && isCommandInsightField(key)) {
       commandFields.push(key);
       if (options.includeCommandFieldRows !== false) {
         commandFieldRows.push(createInsightFieldRow(key, childPath, item));
@@ -338,6 +407,8 @@ const collectSchemeInsightFieldsInner = (
         childPath,
         commandFields,
         commandFieldRows,
+        resourceFields,
+        resourceFieldRows,
         extFields,
         base64SuffixFields,
         options
@@ -352,6 +423,8 @@ export const collectSchemeInsightFields = (
 ): SchemeInsightFields => {
   const commandFields: string[] = [];
   const commandFieldRows: SchemeInsightFieldRow[] = [];
+  const resourceFields: string[] = [];
+  const resourceFieldRows: SchemeInsightFieldRow[] = [];
   const extFields: string[] = [];
   const base64SuffixFields: string[] = [];
 
@@ -360,6 +433,8 @@ export const collectSchemeInsightFields = (
     '$',
     commandFields,
     commandFieldRows,
+    resourceFields,
+    resourceFieldRows,
     extFields,
     base64SuffixFields,
     options
@@ -369,6 +444,9 @@ export const collectSchemeInsightFields = (
     commandFields: dedupe(commandFields),
     commandFieldRows,
     commandFieldCount: commandFields.length,
+    resourceFields: dedupe(resourceFields),
+    resourceFieldRows,
+    resourceFieldCount: resourceFields.length,
     extFields: dedupe(extFields),
     extFieldCount: extFields.length,
     base64SuffixFields: dedupe(base64SuffixFields),
@@ -853,6 +931,9 @@ export const extractSchemeCommandSummaryInfo = (
           commandFields: [],
           commandFieldRows: [],
           commandFieldCount: 0,
+          resourceFields: [],
+          resourceFieldRows: [],
+          resourceFieldCount: 0,
           extFields: [],
           extFieldCount: 0,
           base64SuffixFields: [],
@@ -888,6 +969,7 @@ export const extractSchemeCommandSummaryInfo = (
       paramKeys.length === 0 &&
       commandSchemaRows.length === 0 &&
       fields.commandFields.length === 0 &&
+      fields.resourceFields.length === 0 &&
       fields.extFields.length === 0 &&
       fields.base64SuffixFields.length === 0
     ) {

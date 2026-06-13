@@ -52,8 +52,13 @@ export interface TransformReportRecord {
   nestedCommandSearchFields?: TransformReportDecodedPath[];
   indexedNestedCommandFieldCount: number;
   hasMoreNestedCommandFields: boolean;
+  nestedResourceFields?: TransformReportDecodedPath[];
+  nestedResourceSearchFields?: TransformReportDecodedPath[];
+  indexedNestedResourceFieldCount?: number;
+  hasMoreNestedResourceFields?: boolean;
   hasCmdStructure: boolean;
   nestedCommandFieldCount: number;
+  nestedResourceFieldCount?: number;
   nestedExtFieldCount: number;
   nestedBase64SuffixFieldCount: number;
   cmdStructureCopyText?: string;
@@ -160,10 +165,12 @@ export interface TransformContextReport {
   coverage: TransformReportCoverage;
   cmdStructureCount: number;
   nestedCommandFieldCount: number;
+  nestedResourceFieldCount?: number;
   topCommandSchemaOrigins?: TransformReportCommandSchemaOriginGroup[];
   topCommandSchemas?: TransformReportCommandSchemaGroup[];
   topResourceSchemas?: TransformReportCommandSchemaGroup[];
   topNestedCommandFields?: TransformReportNestedCommandFieldGroup[];
+  topNestedResourceFields?: TransformReportNestedCommandFieldGroup[];
   records: TransformReportRecord[];
   warnings: TransformReportWarning[];
   unresolvedCandidates: TransformReportUnresolvedCandidate[];
@@ -192,12 +199,14 @@ export interface TransformReportView {
   filteredPlaceholderCount: number;
   filteredCmdStructureCount: number;
   filteredNestedCommandFieldCount: number;
+  filteredNestedResourceFieldCount: number;
   totalRecordCount: number;
   totalWarningCount: number;
   totalUnresolvedCount: number;
   totalPlaceholderCount: number;
   totalCmdStructureCount: number;
   totalNestedCommandFieldCount: number;
+  totalNestedResourceFieldCount: number;
   isRecordTruncated: boolean;
   isCmdStructureTruncated: boolean;
   isWarningTruncated: boolean;
@@ -308,6 +317,7 @@ export interface TransformQualitySnapshot {
     records: number;
     cmdStructures: number;
     nestedCommandFields: number;
+    nestedResourceFields: number;
     runtimePlaceholders: number;
     unresolved: number;
     warnings: number;
@@ -316,6 +326,7 @@ export interface TransformQualitySnapshot {
     records: number;
     cmdStructures: number;
     nestedCommandFields: number;
+    nestedResourceFields: number;
     runtimePlaceholders: number;
     unresolved: number;
     warnings: number;
@@ -325,6 +336,7 @@ export interface TransformQualitySnapshot {
     topCommandSchemaOrigins: TransformReportCommandSchemaOriginGroup[];
     topResourceSchemas: TransformReportCommandSchemaGroup[];
     topNestedCommandFields: TransformReportNestedCommandFieldGroup[];
+    topNestedResourceFields: TransformReportNestedCommandFieldGroup[];
     unresolvedReasons: TransformQualitySnapshotBucket[];
     warningReasons: TransformQualitySnapshotBucket[];
     warningTypes: TransformQualitySnapshotBucket[];
@@ -365,6 +377,7 @@ const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 1_000;
 const CMD_STRUCTURE_SEARCH_TEXT = 'CMD结构 cmdHandler cmdParams cmdSchema';
 const NESTED_CMD_SEARCH_TEXT = '内部CMD字段 内部CMD cmd解析';
+const NESTED_RESOURCE_SEARCH_TEXT = '资源URL 静态资源字段 资源字段 resource url';
 const UNRESOLVED_SEARCH_TEXT = '待检查 未展开 线索 unresolved';
 const PLACEHOLDER_SEARCH_TEXT = '占位符 运行时 placeholder';
 const WARNING_SEARCH_TEXT = '跳过 性能保护 warning skipped';
@@ -849,6 +862,28 @@ export const formatTransformCmdStructureComparisonPackageText = (
   }
 };
 
+const buildNestedInsightSearchFields = (
+  recordPath: string,
+  rows: Array<{ key: string; path: string; preview: string; value?: unknown; copyText?: string }>
+): TransformReportDecodedPath[] => rows
+  .slice(0, DEFAULT_NESTED_COMMAND_FIELD_SEARCH_LIMIT)
+  .map(row => {
+    const path = joinJsonPath(recordPath, row.path);
+    if (Object.prototype.hasOwnProperty.call(row, 'value')) {
+      return {
+        path,
+        preview: row.preview,
+        value: row.value as JsonValue,
+      };
+    }
+
+    return {
+      path,
+      preview: row.preview,
+      copyText: getSchemeInsightFieldCopyText(row).replace(row.path, path),
+    };
+  });
+
 const buildRecordInsightData = (
   record: PathTransformRecord
 ): Pick<
@@ -858,7 +893,12 @@ const buildRecordInsightData = (
   | 'nestedCommandSearchFields'
   | 'indexedNestedCommandFieldCount'
   | 'hasMoreNestedCommandFields'
+  | 'nestedResourceFields'
+  | 'nestedResourceSearchFields'
+  | 'indexedNestedResourceFieldCount'
+  | 'hasMoreNestedResourceFields'
   | 'nestedCommandFieldCount'
+  | 'nestedResourceFieldCount'
   | 'nestedExtFieldCount'
   | 'nestedBase64SuffixFieldCount'
 > => {
@@ -875,7 +915,11 @@ const buildRecordInsightData = (
       nestedCommandFields: [],
       indexedNestedCommandFieldCount: 0,
       hasMoreNestedCommandFields: false,
+      nestedResourceFields: [],
+      indexedNestedResourceFieldCount: 0,
+      hasMoreNestedResourceFields: false,
       nestedCommandFieldCount: 0,
+      nestedResourceFieldCount: 0,
       nestedExtFieldCount: 0,
       nestedBase64SuffixFieldCount: 0,
     };
@@ -885,31 +929,19 @@ const buildRecordInsightData = (
     commandFields,
     commandFieldRows,
     commandFieldCount,
+    resourceFields,
+    resourceFieldRows,
+    resourceFieldCount,
     extFields,
     extFieldCount,
     base64SuffixFields,
     base64SuffixFieldCount,
   } = collectSchemeInsightFields(decodedValue);
-  const nestedCommandSearchFields = commandFieldRows
-    .slice(0, DEFAULT_NESTED_COMMAND_FIELD_SEARCH_LIMIT)
-    .map(row => {
-      const path = joinJsonPath(record.path, row.path);
-      if (Object.prototype.hasOwnProperty.call(row, 'value')) {
-        return {
-          path,
-          preview: row.preview,
-          value: row.value as JsonValue,
-        };
-      }
-
-      return {
-        path,
-        preview: row.preview,
-        copyText: getSchemeInsightFieldCopyText(row).replace(row.path, path),
-      };
-    });
+  const nestedCommandSearchFields = buildNestedInsightSearchFields(record.path, commandFieldRows);
+  const nestedResourceSearchFields = buildNestedInsightSearchFields(record.path, resourceFieldRows);
 
   const nestedCmdInsight = formatSchemeInsightItems('cmd解析', commandFields);
+  const resourceInsight = formatSchemeInsightItems('资源URL', resourceFields);
   const extInsight = formatSchemeInsightItems('ext解析', extFields);
   const suffixInsight = formatSchemeInsightItems('Base64 后缀', base64SuffixFields, 6);
 
@@ -917,6 +949,7 @@ const buildRecordInsightData = (
     insights: [
       ...insights,
       ...(nestedCmdInsight ? [nestedCmdInsight] : []),
+      ...(resourceInsight ? [resourceInsight] : []),
       ...(extInsight ? [extInsight] : []),
       ...(suffixInsight ? [suffixInsight] : []),
     ],
@@ -924,7 +957,12 @@ const buildRecordInsightData = (
     ...(nestedCommandSearchFields.length > 0 ? { nestedCommandSearchFields } : {}),
     indexedNestedCommandFieldCount: nestedCommandSearchFields.length,
     hasMoreNestedCommandFields: commandFieldCount > DEFAULT_NESTED_COMMAND_FIELD_LIMIT,
+    nestedResourceFields: nestedResourceSearchFields.slice(0, DEFAULT_NESTED_COMMAND_FIELD_LIMIT),
+    ...(nestedResourceSearchFields.length > 0 ? { nestedResourceSearchFields } : {}),
+    indexedNestedResourceFieldCount: nestedResourceSearchFields.length,
+    hasMoreNestedResourceFields: resourceFieldCount > DEFAULT_NESTED_COMMAND_FIELD_LIMIT,
     nestedCommandFieldCount: commandFieldCount,
+    nestedResourceFieldCount: resourceFieldCount,
     nestedExtFieldCount: extFieldCount,
     nestedBase64SuffixFieldCount: base64SuffixFieldCount,
   };
@@ -1299,8 +1337,12 @@ const matchesReportRecord = (
   includesQuery(record.insights.join(' '), normalizedQuery) ||
   (record.hasCmdStructure ? includesQuery(CMD_STRUCTURE_SEARCH_TEXT, normalizedQuery) : false) ||
   (record.nestedCommandFieldCount > 0 ? includesQuery(NESTED_CMD_SEARCH_TEXT, normalizedQuery) : false) ||
+  ((record.nestedResourceFieldCount || 0) > 0 ? includesQuery(NESTED_RESOURCE_SEARCH_TEXT, normalizedQuery) : false) ||
   (record.nestedCommandSearchFields
     ? record.nestedCommandSearchFields.some(row => matchesNestedCommandField(row, normalizedQuery))
+    : false) ||
+  (record.nestedResourceSearchFields
+    ? record.nestedResourceSearchFields.some(row => matchesNestedCommandField(row, normalizedQuery))
     : false) ||
   (record.commandSchemaRows
     ? record.commandSchemaRows.some(row => matchesCommandSchemaRow(row, normalizedQuery))
@@ -1354,12 +1396,16 @@ const buildFilteredRecordView = (
   const matchedNestedCommandFields = record.nestedCommandSearchFields?.filter(row => (
     matchesNestedCommandField(row, normalizedQuery)
   )) || [];
+  const matchedNestedResourceFields = record.nestedResourceSearchFields?.filter(row => (
+    matchesNestedCommandField(row, normalizedQuery)
+  )) || [];
   const matchedCommandSchemaRows = record.commandSchemaRows?.filter(row => (
     matchesCommandSchemaRow(row, normalizedQuery)
   )) || [];
   if (
     matchedDecodedPaths.length === 0 &&
     matchedNestedCommandFields.length === 0 &&
+    matchedNestedResourceFields.length === 0 &&
     matchedCommandSchemaRows.length === 0
   ) {
     return record;
@@ -1402,6 +1448,23 @@ const buildFilteredRecordView = (
             nestedCommandFieldCount: 0,
             indexedNestedCommandFieldCount: 0,
             hasMoreNestedCommandFields: false,
+          }
+        : {}),
+    ...(matchedNestedResourceFields.length > 0
+      ? {
+          nestedResourceSearchFields: matchedNestedResourceFields,
+          nestedResourceFields: matchedNestedResourceFields.slice(0, DEFAULT_NESTED_COMMAND_FIELD_LIMIT),
+          nestedResourceFieldCount: matchedNestedResourceFields.length,
+          indexedNestedResourceFieldCount: matchedNestedResourceFields.length,
+          hasMoreNestedResourceFields: matchedNestedResourceFields.length > DEFAULT_NESTED_COMMAND_FIELD_LIMIT,
+        }
+      : matchedDecodedPaths.length > 0
+        ? {
+            nestedResourceSearchFields: [],
+            nestedResourceFields: [],
+            nestedResourceFieldCount: 0,
+            indexedNestedResourceFieldCount: 0,
+            hasMoreNestedResourceFields: false,
           }
         : {}),
     ...(matchedCommandSchemaRows.length > 0
@@ -1533,6 +1596,55 @@ const buildTopNestedCommandFieldGroups = (
 
   records.forEach(record => {
     record.nestedCommandSearchFields?.forEach(row => {
+      const key = getJsonPathLeafKey(row.path);
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          key,
+          count: 0,
+          recordPaths: new Set(),
+          paths: [],
+          hasMorePaths: false,
+        };
+        groups.set(key, group);
+      }
+
+      group.count += 1;
+      group.recordPaths.add(record.path);
+      if (group.paths.length < DEFAULT_TOP_NESTED_COMMAND_FIELD_PATH_LIMIT) {
+        group.paths.push(row.path);
+      } else {
+        group.hasMorePaths = true;
+      }
+    });
+  });
+
+  return Array.from(groups.values())
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
+    .slice(0, limit)
+    .map(group => ({
+      key: group.key,
+      count: group.count,
+      recordCount: group.recordPaths.size,
+      paths: group.paths,
+      hasMorePaths: group.hasMorePaths,
+    }));
+};
+
+const buildTopNestedResourceFieldGroups = (
+  records: TransformReportRecord[],
+  limit = DEFAULT_TOP_NESTED_COMMAND_FIELD_LIMIT
+): TransformReportNestedCommandFieldGroup[] => {
+  const groups = new Map<string, {
+    key: string;
+    count: number;
+    recordPaths: Set<string>;
+    paths: string[];
+    hasMorePaths: boolean;
+  }>();
+
+  records.forEach(record => {
+    record.nestedResourceSearchFields?.forEach(row => {
       const key = getJsonPathLeafKey(row.path);
       let group = groups.get(key);
       if (!group) {
@@ -1865,6 +1977,9 @@ export const buildTransformContextReport = (
   const nestedCommandFieldCount = records.reduce((count, record) => (
     count + record.nestedCommandFieldCount
   ), 0);
+  const nestedResourceFieldCount = records.reduce((count, record) => (
+    count + (record.nestedResourceFieldCount || 0)
+  ), 0);
   const summary = summarizeTransformContext(context);
   const runtimePlaceholders: TransformReportRuntimePlaceholder[] = (context.runtimePlaceholders || []).map(placeholder => ({
     path: placeholder.path,
@@ -1884,10 +1999,12 @@ export const buildTransformContextReport = (
     coverage: buildTransformReportCoverage(summary),
     cmdStructureCount,
     nestedCommandFieldCount,
+    nestedResourceFieldCount,
     topCommandSchemaOrigins: buildTopCommandSchemaOriginGroups(records),
     topCommandSchemas: buildTopCommandSchemaGroups(records),
     topResourceSchemas: buildTopCommandSchemaGroups(records, DEFAULT_TOP_COMMAND_SCHEMA_LIMIT, 'resource'),
     topNestedCommandFields: buildTopNestedCommandFieldGroups(records),
+    topNestedResourceFields: buildTopNestedResourceFieldGroups(records),
     records,
     warnings: (context.warnings || []).map(warning => ({
       type: warning.type,
@@ -1930,6 +2047,7 @@ export const formatTransformContextReportText = (
   appendCommandSchemaSummarySection(lines, report.topCommandSchemas || []);
   appendResourceSchemaSummarySection(lines, report.topResourceSchemas || []);
   appendNestedCommandFieldSummarySection(lines, report.topNestedCommandFields || []);
+  appendNestedResourceFieldSummarySection(lines, report.topNestedResourceFields || []);
   lines.push('展开记录:');
   appendReportRecordLines(lines, report.records);
   appendReportWarningSection(lines, report.warnings);
@@ -1995,6 +2113,20 @@ const appendNestedCommandFieldSummarySection = (
   lines.push('');
 };
 
+const appendNestedResourceFieldSummarySection = (
+  lines: string[],
+  groups: TransformReportNestedCommandFieldGroup[]
+) => {
+  if (groups.length === 0) return;
+
+  lines.push('静态资源字段分布:');
+  groups.forEach(group => {
+    lines.push(`- ${group.key} ×${group.count}（来源记录 ${group.recordCount}）`);
+    lines.push(`  示例路径: ${group.paths.join('；')}${group.hasMorePaths ? '；...' : ''}`);
+  });
+  lines.push('');
+};
+
 const appendReportRecordLines = (
   lines: string[],
   records: TransformReportRecord[]
@@ -2037,6 +2169,14 @@ const appendReportRecordLines = (
       if (record.hasMoreNestedCommandFields) {
         lines.push(
           `  内部CMD字段: 还有更多未展示（总计 ${record.nestedCommandFieldCount} 个，已索引 ${record.indexedNestedCommandFieldCount} 个）`
+        );
+      }
+      if (record.nestedResourceFields?.length) {
+        lines.push(`  资源URL字段: ${record.nestedResourceFields.map(row => `${row.path}=${row.preview}`).join('；')}`);
+      }
+      if (record.hasMoreNestedResourceFields) {
+        lines.push(
+          `  资源URL字段: 还有更多未展示（总计 ${record.nestedResourceFieldCount || 0} 个，已索引 ${record.indexedNestedResourceFieldCount || 0} 个）`
         );
       }
       if (record.decodedPaths.length > 0) {
@@ -2142,6 +2282,9 @@ export const buildTransformReportView = (
   const filteredNestedCommandFieldCount = filteredRecordViews.reduce((count, record) => (
     count + record.nestedCommandFieldCount
   ), 0);
+  const filteredNestedResourceFieldCount = filteredRecordViews.reduce((count, record) => (
+    count + (record.nestedResourceFieldCount || 0)
+  ), 0);
 
   return {
     records: filteredRecordViews.slice(0, recordLimit),
@@ -2156,12 +2299,14 @@ export const buildTransformReportView = (
     filteredPlaceholderCount: filteredPlaceholders.length,
     filteredCmdStructureCount,
     filteredNestedCommandFieldCount,
+    filteredNestedResourceFieldCount,
     totalRecordCount: report.records.length,
     totalWarningCount: report.warnings.length,
     totalUnresolvedCount: report.unresolvedCandidates.length,
     totalPlaceholderCount: report.runtimePlaceholders.length,
     totalCmdStructureCount: report.cmdStructureCount,
     totalNestedCommandFieldCount: report.nestedCommandFieldCount,
+    totalNestedResourceFieldCount: report.nestedResourceFieldCount || 0,
     isRecordTruncated: filteredRecords.length > recordLimit,
     isCmdStructureTruncated: filteredCmdStructureRecords.length > cmdStructureLimit,
     isWarningTruncated: filteredWarnings.length > warningLimit,
@@ -2179,7 +2324,7 @@ export const formatTransformReportViewText = (
   const lines = [
     report.summaryText || '深度解析: 无展开记录',
     `筛选: ${normalizedQuery || '全部'}`,
-    `筛选结果: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
+    `筛选结果: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，资源字段 ${reportView.filteredNestedResourceFieldCount}/${reportView.totalNestedResourceFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
   ];
 
   if (
@@ -2229,7 +2374,7 @@ export const formatTransformDiagnosticSummaryText = (
     report.summaryText || '深度解析: 无展开记录',
     `筛选: ${normalizedQuery || '全部'}`,
     `覆盖: ${report.coverage.label}，${report.coverage.description}`,
-    `规模: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，CMD结构 ${reportView.filteredCmdStructureCount}/${reportView.totalCmdStructureCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
+    `规模: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，CMD结构 ${reportView.filteredCmdStructureCount}/${reportView.totalCmdStructureCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，资源字段 ${reportView.filteredNestedResourceFieldCount}/${reportView.totalNestedResourceFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
   ];
 
   if (report.topCommandSchemas?.length) {
@@ -2249,6 +2394,13 @@ export const formatTransformDiagnosticSummaryText = (
   if (report.topNestedCommandFields?.length) {
     lines.push('', '全量内部 CMD 字段 Top:');
     report.topNestedCommandFields.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
+      lines.push(`- ${group.key} ×${group.count}（来源记录 ${group.recordCount}）`);
+    });
+  }
+
+  if (report.topNestedResourceFields?.length) {
+    lines.push('', '全量静态资源字段 Top:');
+    report.topNestedResourceFields.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
       lines.push(`- ${group.key} ×${group.count}（来源记录 ${group.recordCount}）`);
     });
   }
@@ -2367,6 +2519,7 @@ export const buildTransformQualitySnapshot = (
     records: reportView.totalRecordCount,
     cmdStructures: reportView.totalCmdStructureCount,
     nestedCommandFields: reportView.totalNestedCommandFieldCount,
+    nestedResourceFields: reportView.totalNestedResourceFieldCount,
     runtimePlaceholders: reportView.totalPlaceholderCount,
     unresolved: reportView.totalUnresolvedCount,
     warnings: reportView.totalWarningCount,
@@ -2375,6 +2528,7 @@ export const buildTransformQualitySnapshot = (
     records: reportView.filteredRecordCount,
     cmdStructures: reportView.filteredCmdStructureCount,
     nestedCommandFields: reportView.filteredNestedCommandFieldCount,
+    nestedResourceFields: reportView.filteredNestedResourceFieldCount,
     runtimePlaceholders: reportView.filteredPlaceholderCount,
     unresolved: reportView.filteredUnresolvedCount,
     warnings: reportView.filteredWarningCount,
@@ -2384,6 +2538,7 @@ export const buildTransformQualitySnapshot = (
     topCommandSchemaOrigins: (report.topCommandSchemaOrigins || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     topResourceSchemas: (report.topResourceSchemas || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     topNestedCommandFields: (report.topNestedCommandFields || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
+    topNestedResourceFields: (report.topNestedResourceFields || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     unresolvedReasons: buildQualitySnapshotBuckets(
       reportView.unresolvedCandidates,
       candidate => candidate.reasonLabel,

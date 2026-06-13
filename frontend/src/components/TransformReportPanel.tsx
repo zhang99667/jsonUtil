@@ -505,7 +505,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     <div className="flex w-full flex-wrap items-center justify-between gap-2">
       <div className="min-w-[220px] flex-1 text-xs text-gray-500">
         {report
-          ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredCmdStructureCount || 0}/${reportView?.totalCmdStructureCount || 0} 条CMD结构 · ${reportView?.filteredNestedCommandFieldCount || 0}/${reportView?.totalNestedCommandFieldCount || 0} 个内部CMD字段 · ${reportView?.filteredPlaceholderCount || 0}/${reportView?.totalPlaceholderCount || 0} 个占位符 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
+          ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredCmdStructureCount || 0}/${reportView?.totalCmdStructureCount || 0} 条CMD结构 · ${reportView?.filteredNestedCommandFieldCount || 0}/${reportView?.totalNestedCommandFieldCount || 0} 个内部CMD字段 · ${reportView?.filteredNestedResourceFieldCount || 0}/${reportView?.totalNestedResourceFieldCount || 0} 个资源字段 · ${reportView?.filteredPlaceholderCount || 0}/${reportView?.totalPlaceholderCount || 0} 个占位符 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
           : '暂无解析上下文'}
       </div>
       <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
@@ -675,6 +675,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     内部CMD {report.nestedCommandFieldCount}
                   </button>
                 )}
+                {(report.nestedResourceFieldCount || 0) > 0 && (
+                  <button
+                    type="button"
+                    data-tour="transform-report-nested-resource-count"
+                    onClick={() => setQuery('资源URL')}
+                    className="bg-slate-900/45 text-slate-100 border border-slate-700/60 px-2 py-0.5 rounded hover:bg-slate-800/60 transition-colors"
+                    title="筛选包含静态素材资源 URL 的展开记录"
+                  >
+                    资源URL {report.nestedResourceFieldCount}
+                  </button>
+                )}
                 {report.summary.schemeCounts.nonReversible > 0 && (
                   <button
                     type="button"
@@ -823,6 +834,25 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   </div>
                 </div>
               )}
+              {Boolean(report.topNestedResourceFields?.length) && (
+                <div data-tour="transform-report-top-nested-resource-fields" className="mt-2 text-xs">
+                  <div className="mb-1 text-gray-500">静态资源字段分布</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.topNestedResourceFields?.map(group => (
+                      <button
+                        key={group.key}
+                        type="button"
+                        onClick={() => setQuery(group.key)}
+                        className="max-w-full rounded border border-slate-700/60 bg-slate-900/40 px-2 py-0.5 text-slate-100 transition-colors hover:bg-slate-800/60"
+                        title={`${group.key} 出现 ${group.count} 次，覆盖 ${group.recordCount} 条展开记录。示例路径：${group.paths.join('；')}`}
+                      >
+                        <span className="font-mono">{group.key}</span>
+                        <span className="ml-1 text-slate-300/80">×{group.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -961,6 +991,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           title="该展开结果内部包含的 CMD/Scheme 字段数量"
                         >
                           内部CMD字段 {record.nestedCommandFieldCount}
+                        </span>
+                      )}
+                      {(record.nestedResourceFieldCount || 0) > 0 && (
+                        <span
+                          className="bg-slate-900/45 text-slate-100 border border-slate-700/60 px-2 py-0.5 rounded"
+                          title="该展开结果内部包含的静态素材资源字段数量"
+                        >
+                          资源URL {record.nestedResourceFieldCount}
                         </span>
                       )}
                       {record.cmdStructureFocusPaths?.length && (
@@ -1136,6 +1174,66 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             {record.indexedNestedCommandFieldCount > record.nestedCommandFields.length && (
                               <span>
                                 ，已索引 {record.indexedNestedCommandFieldCount} 个，可搜索字段名或 schema 展示隐藏项
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {Boolean(record.nestedResourceFields?.length) && (
+                      <div data-tour="transform-report-nested-resource-fields" className="mt-1.5 flex flex-col gap-1">
+                        <div className="text-gray-500">
+                          静态资源字段 · 显示 {record.nestedResourceFields?.length || 0}/{record.nestedResourceFieldCount || 0} 个
+                        </div>
+                        {record.nestedResourceFields?.map(row => (
+                          <div
+                            key={`${record.path}:resource-field:${row.path}`}
+                            data-tour="transform-report-nested-resource-field"
+                            className="flex items-center justify-between gap-2 rounded bg-slate-900/30 px-2 py-1"
+                          >
+                            <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                              <span className="min-w-0 flex-1 text-slate-100 truncate" title={row.path}>
+                                {row.path}
+                              </span>
+                              <span className="shrink-0 text-gray-500">=</span>
+                              <span className="min-w-0 flex-1 text-slate-300 truncate" title={row.preview}>
+                                {row.preview}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-nested-resource-path"
+                              onClick={() => handleCopyPath(row.path)}
+                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            >
+                              复制路径
+                            </button>
+                            <button
+                              type="button"
+                              data-tour="transform-report-copy-nested-resource-value"
+                              onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
+                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                            >
+                              复制片段
+                            </button>
+                            {onLocatePath && (
+                              <button
+                                type="button"
+                                data-tour="transform-report-locate-nested-resource-path"
+                                onClick={() => handleLocatePath(row.path)}
+                                className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              >
+                                定位
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {record.hasMoreNestedResourceFields && (
+                          <div className="text-gray-500">
+                            还有更多静态资源字段未展示
+                            {(record.indexedNestedResourceFieldCount || 0) > (record.nestedResourceFields?.length || 0) && (
+                              <span>
+                                ，已索引 {record.indexedNestedResourceFieldCount} 个，可搜索字段名或 URL 展示隐藏项
                               </span>
                             )}
                           </div>

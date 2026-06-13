@@ -454,11 +454,19 @@ describe('transformSummary', () => {
     const reportText = formatTransformContextReportText(result.context);
     const diagnosticText = formatTransformDiagnosticSummaryText(report, reportView, '');
     const qualitySnapshot = JSON.parse(formatTransformQualitySnapshotJsonText(report, reportView, ''));
+    const record = report.records[0];
 
     expect(report.topCommandSchemas?.map(group => group.schema)).toEqual(expect.arrayContaining([
       'nadcorevendor://vendor/ad/rewardImpl',
       'https://example.com/landing',
     ]));
+    expect(record.insights).toEqual([
+      'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
+      'cmd解析: page_url',
+      '资源URL: video_url',
+    ]);
+    expect(report.nestedCommandFieldCount).toBe(1);
+    expect(report.nestedResourceFieldCount).toBe(1);
     expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/video/ad.mp4');
     expect(report.topResourceSchemas).toEqual([
       {
@@ -469,11 +477,37 @@ describe('transformSummary', () => {
         hasMorePaths: false,
       },
     ]);
+    expect(report.topNestedResourceFields).toEqual([
+      {
+        key: 'video_url',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.video_url'],
+        hasMorePaths: false,
+      },
+    ]);
+    expect(buildTransformReportView(report, '资源URL').filteredNestedResourceFieldCount).toBe(1);
+    expect(buildTransformReportView(report, 'video_url').records[0].nestedResourceFields).toEqual([
+      {
+        path: '$.scheme.video_info.video_url',
+        preview: '对象: pd, cm',
+        value: {
+          pd: '100',
+          cm: '1501',
+        },
+      },
+    ]);
     expect(reportText).toContain('CMD Schema 分布:');
     expect(reportText).toContain('静态资源 URL 分布:');
+    expect(reportText).toContain('静态资源字段分布:');
     expect(diagnosticText).toContain('全量静态资源 URL Top:');
+    expect(diagnosticText).toContain('全量静态资源字段 Top:');
     expect(qualitySnapshot.hotspots.topResourceSchemas[0]).toMatchObject({
       schema: 'https://static.example.com/video/ad.mp4',
+      count: 1,
+    });
+    expect(qualitySnapshot.hotspots.topNestedResourceFields[0]).toMatchObject({
+      key: 'video_url',
       count: 1,
     });
     expect(qualitySnapshot.hotspots.topCommandSchemas.map((group: { schema: string }) => group.schema)).not.toContain(
@@ -1361,7 +1395,7 @@ describe('transformSummary', () => {
 
     const filteredText = formatTransformReportViewText(report, extraView, 'extraParam');
     expect(filteredText).toContain('筛选: extraParam');
-    expect(filteredText).toContain('筛选结果: 展开 1/2，内部CMD字段 1/2，占位符 1/4，待检查 0/0，跳过 0/0');
+    expect(filteredText).toContain('筛选结果: 展开 1/2，内部CMD字段 1/2，资源字段 0/0，占位符 1/4，待检查 0/0，跳过 0/0');
     expect(filteredText).toContain('- $.extra[0].v: CMD 参数 · 可回写');
     expect(filteredText).toContain('- __CONVERT_CMD__ ×1:');
     expect(filteredText).toContain('业务字段: extraParam');
@@ -1729,7 +1763,7 @@ describe('transformSummary', () => {
 
     expect(summaryText).toContain('深度解析诊断摘要');
     expect(summaryText).toContain('覆盖: 解析覆盖 50%，还有疑似结构化内容未完全展开。');
-    expect(summaryText).toContain('规模: 展开 0/0，CMD结构 0/0，内部CMD字段 0/0，占位符 1/1，待检查 1/1，跳过 1/1');
+    expect(summaryText).toContain('规模: 展开 0/0，CMD结构 0/0，内部CMD字段 0/0，资源字段 0/0，占位符 1/1，待检查 1/1，跳过 1/1');
     expect(summaryText).toContain('- baiduboxapp://v7/vendor/ad/deeplink ×3（来源记录 2）');
     expect(summaryText).toContain('- panel_cmd ×2（来源记录 1）');
     expect(summaryText).toContain('- __CONVERT_CMD__ ×1（来源 1）');
