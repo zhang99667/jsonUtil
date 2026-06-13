@@ -352,6 +352,10 @@ export interface TransformQualitySnapshot {
   recommendations: string[];
 }
 
+export interface TransformCollaborationReportOptions {
+  cmdComparisonReportText?: string;
+}
+
 const DEFAULT_DIAGNOSTIC_TOP_LIMIT = 8;
 const DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT = 5;
 const DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT = 8;
@@ -2577,6 +2581,72 @@ export const formatTransformQualitySnapshotJsonText = (
   reportView: TransformReportView,
   query: string
 ): string => JSON.stringify(buildTransformQualitySnapshot(report, reportView, query), null, 2);
+
+export const formatTransformCollaborationReportText = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string,
+  options: TransformCollaborationReportOptions = {}
+): string => {
+  const normalizedQuery = query.trim();
+  const qualitySnapshot = buildTransformQualitySnapshot(report, reportView, query);
+  const diagnosticLines = formatTransformDiagnosticSummaryText(report, reportView, query)
+    .split('\n')
+    .slice(1);
+  const cmdComparisonReportText = options.cmdComparisonReportText?.trim();
+  const lines = [
+    '深度解析协作排查报告',
+    `筛选: ${normalizedQuery || '全部'}`,
+    '',
+    '一、诊断摘要',
+    ...diagnosticLines,
+    '',
+    '二、质量快照要点',
+    `- 覆盖: ${qualitySnapshot.coverage.score} (${qualitySnapshot.coverage.level})，${qualitySnapshot.coverage.description}`,
+    `- 全量规模: 展开 ${qualitySnapshot.totals.records}，CMD结构 ${qualitySnapshot.totals.cmdStructures}，内部CMD字段 ${qualitySnapshot.totals.nestedCommandFields}，资源字段 ${qualitySnapshot.totals.nestedResourceFields}，占位符 ${qualitySnapshot.totals.runtimePlaceholders}，待检查 ${qualitySnapshot.totals.unresolved}，跳过 ${qualitySnapshot.totals.warnings}`,
+    `- 当前筛选: 展开 ${qualitySnapshot.filtered.records}，CMD结构 ${qualitySnapshot.filtered.cmdStructures}，内部CMD字段 ${qualitySnapshot.filtered.nestedCommandFields}，资源字段 ${qualitySnapshot.filtered.nestedResourceFields}，占位符 ${qualitySnapshot.filtered.runtimePlaceholders}，待检查 ${qualitySnapshot.filtered.unresolved}，跳过 ${qualitySnapshot.filtered.warnings}`,
+  ];
+
+  if (qualitySnapshot.hotspots.topCommandSchemas.length > 0) {
+    lines.push('- CMD Schema Top:');
+    qualitySnapshot.hotspots.topCommandSchemas.slice(0, 5).forEach(group => {
+      lines.push(`  - ${group.schema} ×${group.count}`);
+    });
+  }
+
+  if (qualitySnapshot.hotspots.topNestedCommandFields.length > 0) {
+    lines.push('- 内部 CMD 字段 Top:');
+    qualitySnapshot.hotspots.topNestedCommandFields.slice(0, 5).forEach(group => {
+      lines.push(`  - ${group.key} ×${group.count}`);
+    });
+  }
+
+  if (qualitySnapshot.recommendations.length > 0) {
+    lines.push('- 建议动作:');
+    qualitySnapshot.recommendations.forEach(recommendation => {
+      lines.push(`  - ${recommendation}`);
+    });
+  }
+
+  lines.push('', '三、cmdHandler 对齐');
+  if (cmdComparisonReportText) {
+    lines.push('- 已附当前页面内 cmdHandler 差异报告:');
+    lines.push('```text', cmdComparisonReportText, '```');
+  } else if (reportView.filteredCmdStructureCount > 0) {
+    lines.push(`- 待对比: 当前筛选有 ${reportView.filteredCmdStructureCount}/${reportView.totalCmdStructureCount} 条可复制 CMD 结构，可粘贴内部 cmdHandler 输出后再次复制本报告。`);
+    reportView.cmdStructureRecords.slice(0, 5).forEach(record => {
+      const schema = record.commandSchema || record.commandSchemaRows?.[0]?.schema || '(未知 schema)';
+      lines.push(`  - ${record.path}: ${schema}`);
+    });
+    if (reportView.isCmdStructureTruncated) {
+      lines.push(`  - 还有 ${reportView.filteredCmdStructureCount - reportView.cmdStructureRecords.length} 条 CMD 结构未列出`);
+    }
+  } else {
+    lines.push('- 当前筛选未识别可复制 CMD 结构，优先确认输入中是否包含 CMD/Scheme 字段。');
+  }
+
+  return lines.join('\n');
+};
 
 export const formatTransformPathValueReportText = (
   reportView: TransformReportView

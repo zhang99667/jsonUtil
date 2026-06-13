@@ -220,6 +220,7 @@ frontend/fixtures/scheme-corpus/
 - 已新增 `corpus:snapshot` / `corpus:snapshot:check`，支持一条命令生成质量快照，并在 expected 阈值不通过时阻断 CI。
 - 新增 corpus 样本如果缺少 expected snapshot，会被质量门禁识别并失败，避免无基线样本混入。
 - 质量快照会同步输出 cmdHandler expected 子集对齐结果；strict 模式会拦截 expected 缺失、关键路径缺失和字段值不一致。
+- 深度解析报告已支持一键复制协作排查报告，把诊断摘要、质量快照要点和当前页面内 cmdHandler 差异合并为可转发文本。
 - CI 会生成 Markdown 质量摘要并上传 JSON 快照 artifact，PM 和研发可以直接下载对照样本质量变化。
 - 已支持用 `--input` 对本地真实 response 做一次性质量诊断，便于先验证、再脱敏沉淀为 corpus。
 
@@ -234,7 +235,7 @@ frontend/fixtures/scheme-corpus/
 
 ### 第 2 周
 
-- 增加一键复制“协作排查报告”。
+- 完善协作排查报告，继续补充占位符回填前后质量对比和样本沉淀入口。
 - 将 cmdHandler expected 接入 corpus diff。
 - 给 Scheme 面板增加“解析前后质量对比”入口。
 - 更新 `ARCHITECTURE.md` 的 Worker 与解析质量闭环章节。

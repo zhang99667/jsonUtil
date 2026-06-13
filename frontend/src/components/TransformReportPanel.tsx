@@ -13,6 +13,7 @@ import {
   formatTransformCmdStructureReportText,
   formatTransformCmdStructureComparisonPackageText,
   formatTransformContextReportText,
+  formatTransformCollaborationReportText,
   formatTransformDiagnosticSummaryText,
   formatTransformIssueRegressionTemplateText,
   formatTransformIssueSampleJsonText,
@@ -360,6 +361,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     return formatCmdStructureDiff(diff);
   };
 
+  const buildActiveCmdComparisonReportText = (): string => {
+    if (!report || !cmdComparisonRecordPath || !cmdComparisonExpectedText.trim()) return '';
+
+    const record = report.records.find(item => item.path === cmdComparisonRecordPath);
+    if (!record) return '';
+
+    return buildCmdComparisonReportText(record);
+  };
+
   const handleToggleCmdComparison = (record: TransformReportRecord) => {
     setCmdComparisonRecordPath(currentPath => {
       if (currentPath === record.path) {
@@ -381,6 +391,19 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success('已复制 CMD 差异报告', { duration: 1600 });
     } catch (error) {
       showCopyError('复制 CMD 差异报告失败:', error);
+    }
+  };
+
+  const handleCopyCollaborationReport = async () => {
+    if (!report || !reportView || isFilterPending) return;
+
+    try {
+      await copyText(formatTransformCollaborationReportText(report, reportView, deferredQuery, {
+        cmdComparisonReportText: buildActiveCmdComparisonReportText(),
+      }));
+      toast.success('已复制排查报告', { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制协作排查报告失败:', error);
     }
   };
 
@@ -518,6 +541,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
             复制筛选结果
           </button>
         )}
+        <button
+          data-tour="transform-report-copy-collaboration-report"
+          onClick={handleCopyCollaborationReport}
+          disabled={!reportView || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-cyan-900/40 text-cyan-100 rounded hover:bg-cyan-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="复制诊断摘要、质量快照要点和 cmdHandler 对齐状态，便于发给协作者排查"
+        >
+          复制排查报告
+        </button>
         <button
           data-tour="transform-report-copy-diagnostic-summary"
           onClick={handleCopyDiagnosticSummary}
