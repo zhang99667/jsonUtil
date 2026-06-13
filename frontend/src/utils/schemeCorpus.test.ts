@@ -1,8 +1,13 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { base64Encode, deepDecodeScheme, encodeWithLayers } from './schemeUtils';
 import { deepParseWithContext, inverseWithContext } from './transformations';
 import { scanSchemesInJson } from './schemeScanner';
-import { buildTransformContextReport } from './transformSummary';
+import {
+  buildTransformContextReport,
+  buildTransformReportView,
+  formatTransformQualitySnapshotJsonText,
+} from './transformSummary';
 
 const parseDecodedJson = (input: string): unknown => {
   const result = deepDecodeScheme(input);
@@ -13,6 +18,71 @@ const parseDecodedJson = (input: string): unknown => {
 const base64EncodeBytes = (bytes: Uint8Array): string => (
   btoa(String.fromCharCode(...bytes))
 );
+
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+
+interface SchemeCorpusFixture {
+  schemaVersion: number;
+  name: string;
+  responseTemplate: JsonValue;
+  replacements: Record<string, string[]>;
+}
+
+interface SchemeCorpusExpectedSnapshot {
+  schemaVersion: number;
+  sample: string;
+  scanLocations: Array<{
+    path: string;
+    label?: string;
+    type: string;
+  }>;
+  quality: {
+    minCoverageScore: number;
+    minCmdStructures: number;
+    minNestedCommandFields: number;
+    maxUnresolved: number;
+    maxWarnings: number;
+    leadHotspotCommandSchema: string;
+  };
+  primaryCommandSchema: string;
+  requiredCommandSchemas: string[];
+  requiredRuntimePlaceholders: string[];
+}
+
+const readCorpusJson = <T,>(filename: string): T => (
+  JSON.parse(readFileSync(new URL(`../../fixtures/scheme-corpus/${filename}`, import.meta.url), 'utf8')) as T
+);
+
+const applyCorpusReplacements = (
+  value: JsonValue,
+  replacements: Record<string, string[]>
+): JsonValue => {
+  if (typeof value === 'string') {
+    return replacements[value]?.join('') ?? value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => applyCorpusReplacements(item, replacements));
+  }
+
+  if (value && typeof value === 'object') {
+    const output: Record<string, JsonValue> = {};
+    Object.entries(value).forEach(([key, child]) => {
+      output[key] = applyCorpusReplacements(child, replacements);
+    });
+    return output;
+  }
+
+  return value;
+};
+
+const buildCorpusResponseText = (fixture: SchemeCorpusFixture): string => (
+  JSON.stringify(applyCorpusReplacements(fixture.responseTemplate, fixture.replacements))
+);
+
+const rewardResponseCorpus = readCorpusJson<SchemeCorpusFixture>('reward-response.redacted.json');
+const rewardResponseBaseline = readCorpusJson<SchemeCorpusExpectedSnapshot>('reward-response.expected.snapshot.json');
 
 describe('CMD/Scheme 真实样本回归', () => {
   it('解析编码 URL 字段并保留外层来源参数', () => {
@@ -366,146 +436,23 @@ describe('CMD/Scheme 真实样本回归', () => {
   });
 
   it('整段广告 response 可对齐 cmdHandler 风格的 schema 与参数结构', () => {
-    const finalUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101&bd_vid=abc';
-    const landingUrl = `https://union-click.jd.com/sem.php?source=baidu-ys&unionId=262767352&to=${encodeURIComponent(finalUrl)}`;
-    const webUrl = `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}&adFlag=${encodeURIComponent(JSON.stringify({
-      ext: '__AD_EXTRA_PARAM_ENCODE_1__',
-      nid: 'ad1_101',
-    }))}`;
-    const monitorCallbackUrl = [
-      'https://callback.example.com/track?clickId=__CLICK_ID__',
-      'sign=__SIGN__',
-      'callbackUrl=__CALLBACK_URL__',
-    ].join('&');
-    const monitorClickUrl = [
-      'https://m.baidu.com/baidu.php?clickId=__CLICK_ID__',
-      'sign=__SIGN__',
-      'callbackUrl=__CALLBACK_URL__',
-    ].join('&');
-    const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
-      category: 'jump',
-      des: 'm',
-      url: landingUrl,
-    }))}`;
-    const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
-      appUrl,
-      webUrl,
-      source: 'feedna',
-      extInfo: base64Encode(JSON.stringify({ user_id: '74314439', cmatch: '1501' })),
-    }))}`;
-    const taskParams = encodeURIComponent(JSON.stringify({
-      android_pid: '1683310188080',
-      task_id: '602',
-      ext_params: {
-        reward_num: '__REWARD_NUM__',
-      },
-      ext_policy: JSON.stringify({
-        invoke_task_id: '',
-        sdk_switch: '1',
-      }),
-    }));
-    const rewardButtonCmd = `nadcorevendor://vendor/ad/reward?task_params=${taskParams}`;
-    const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
-      button_cmd: '__CONVERT_CMD__',
-      button_text: '打开应用并体验',
-    }))}&main_btn=${encodeURIComponent(JSON.stringify({
-      button_cmd: '__CONTINUEPLAY__',
-      button_text: '继续完成任务',
-    }))}&bottom_right_btn=${encodeURIComponent(JSON.stringify({
-      button_cmd: rewardButtonCmd,
-      button_text: '换个视频',
-    }))}&convert_cmd=${encodeURIComponent(deeplinkCmd)}`;
-    const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?panel_cmd=${encodeURIComponent(deeplinkCmd)}&url=${encodeURIComponent(landingUrl)}&lp_real_url=${encodeURIComponent(landingUrl)}`;
-    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
-      vid: '1353102586669',
-      page_url: landingUrl,
-      tail_frame: {
-        bottom_button_scheme: rewardButtonCmd,
-        panel_scheme: panelScheme,
-      },
-    }))}&reward=${encodeURIComponent(JSON.stringify({
-      stay_cmd: rewardDialog,
-      reward_cmd: rewardDialog,
-      strong_guide_cmd: rewardDialog,
-      task_policy: JSON.stringify({ ecpm: 'encoded', businessParams: 'encoded' }),
-    }))}&convert=${encodeURIComponent(JSON.stringify({
-      button_scheme: deeplinkCmd,
-      webpanel_cmd: deeplinkCmd,
-    }))}&cmd_policy=${encodeURIComponent(JSON.stringify({
-      panel_cmd: deeplinkCmd,
-      callbackUrl: monitorCallbackUrl,
-    }))}&common_info=${encodeURIComponent(JSON.stringify({
-      callbackUrl: monitorCallbackUrl,
-      ad_monitor_url: [{
-        click_url: monitorClickUrl,
-      }],
-    }))}&panel=${encodeURIComponent(JSON.stringify({
-      panel_cmd: deeplinkCmd,
-      webpanel_cmd: deeplinkCmd,
-    }))}&rotation_component=${encodeURIComponent(JSON.stringify({
-      click_event_cmd: '__CONVERT_CMD__',
-      webpanel_event_cmd: '__WEBPANEL_CMD__',
-    }))}&ad_tag=${encodeURIComponent(JSON.stringify({
-      text: '广告',
-    }))}`;
-    const suffixQuery = '&os=2&ip=127.0.0.1&ua=okhttp%2F3.12.12+SP-engine%2F2.81.0';
-    const suffixBytes = [
-      ...new TextEncoder().encode(suffixQuery),
-      0xff,
-    ];
-    const extraParam = `AFD8f${base64Encode(JSON.stringify({
-      meg_name: 'AI',
-      ad_extend: JSON.stringify({
-        ad_info: {
-          h_ecpm: 207000,
-        },
-        bid: 138,
-      }),
-    }))}UxM${base64EncodeBytes(new Uint8Array(suffixBytes))}`;
-    const response = JSON.stringify({
-      errno: 0,
-      errmsg: '',
-      data: {
-        video: [{
-          material: [{
-            info: [{
-              ad_common: {
-                scheme: rootScheme,
-              },
-            }],
-          }],
-          extra: [{
-            k: 'extraParam',
-            v: extraParam,
-          }],
-          platform: 'android',
-        }],
-      },
-    });
+    expect(rewardResponseBaseline.sample).toBe(rewardResponseCorpus.name);
+    const response = buildCorpusResponseText(rewardResponseCorpus);
 
     const scanResult = scanSchemesInJson(response);
     expect(scanResult.locations.map(item => ({
       path: item.path,
-      label: item.label,
+      ...(item.label === undefined ? {} : { label: item.label }),
       type: item.schemeType,
-    }))).toEqual([
-      {
-        path: '$.data.video[0].material[0].info[0].ad_common.scheme',
-        label: undefined,
-        type: 'url',
-      },
-      {
-        path: '$.data.video[0].extra[0].v',
-        label: 'extraParam',
-        type: 'base64',
-      },
-    ]);
+    }))).toEqual(rewardResponseBaseline.scanLocations);
 
     const { output, context } = deepParseWithContext(response, { autoExpandScheme: true });
     const parsed = JSON.parse(output);
     const decodedScheme = parsed.data.video[0].material[0].info[0].ad_common.scheme;
     const decodedExtra = parsed.data.video[0].extra[0].v;
     const report = buildTransformContextReport(context);
+    const reportView = buildTransformReportView(report, '');
+    const qualitySnapshot = JSON.parse(formatTransformQualitySnapshotJsonText(report, reportView, ''));
     const rootRecord = report.records.find(record => record.path.endsWith('.ad_common.scheme'));
     const allCommandSchemas = report.records.flatMap(record => (
       [
@@ -564,31 +511,25 @@ describe('CMD/Scheme 真实样本回归', () => {
       ip: '127.0.0.1',
       ua: 'okhttp/3.12.12 SP-engine/2.81.0',
     });
-    expect(allCommandSchemas).toEqual(expect.arrayContaining([
-      'nadcorevendor://vendor/ad/rewardImpl',
-      'nadcorevendor://vendor/ad/rewardWebPanel',
-      'nadcorevendor://vendor/ad/rewardDialog',
-      'baiduboxapp://v7/vendor/ad/deeplink',
-      'baiduboxapp://v1/easybrowse/open',
-      'openapp.jdmobile://virtual',
-      'https://union-click.jd.com/sem.php',
-      'https://m.baidu.com/baidu.php',
-      'https://callback.example.com/track',
-    ]));
-    expect(report.nestedCommandFieldCount).toBeGreaterThanOrEqual(20);
-    expect(report.runtimePlaceholderGroups.map(group => group.value)).toEqual(expect.arrayContaining([
-      '__CONVERT_CMD__',
-      '__WEBPANEL_CMD__',
-      '__AD_EXTRA_PARAM_ENCODE_1__',
-      '__REWARD_NUM__',
-      '__CONTINUEPLAY__',
-      '__CLICK_ID__',
-      '__SIGN__',
-      '__CALLBACK_URL__',
-    ]));
+    expect(rootRecord?.commandSchema).toBe(rewardResponseBaseline.primaryCommandSchema);
+    expect(allCommandSchemas).toEqual(expect.arrayContaining(rewardResponseBaseline.requiredCommandSchemas));
+    expect(report.coverage.score).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minCoverageScore);
+    expect(report.cmdStructureCount).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minCmdStructures);
+    expect(report.nestedCommandFieldCount).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minNestedCommandFields);
+    expect(report.summary.unresolvedCount).toBeLessThanOrEqual(rewardResponseBaseline.quality.maxUnresolved);
+    expect(report.summary.warningCount).toBeLessThanOrEqual(rewardResponseBaseline.quality.maxWarnings);
+    expect(qualitySnapshot.coverage.score).toBeGreaterThanOrEqual(rewardResponseBaseline.quality.minCoverageScore);
+    expect(qualitySnapshot.totals.unresolved).toBeLessThanOrEqual(rewardResponseBaseline.quality.maxUnresolved);
+    expect(qualitySnapshot.totals.warnings).toBeLessThanOrEqual(rewardResponseBaseline.quality.maxWarnings);
+    expect(qualitySnapshot.hotspots.topCommandSchemas[0].schema).toBe(
+      rewardResponseBaseline.quality.leadHotspotCommandSchema
+    );
+    expect(report.runtimePlaceholderGroups.map(group => group.value)).toEqual(expect.arrayContaining(
+      rewardResponseBaseline.requiredRuntimePlaceholders
+    ));
     expect(copiedCmdStructure).toMatchObject({
       result: {
-        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdSchema: rewardResponseBaseline.primaryCommandSchema,
         cmdParams: {
           video_info: {
             tail_frame: {
