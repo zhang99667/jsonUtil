@@ -480,6 +480,48 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue(actionCmd);
 });
 
+test('占位符回填后展示解析质量变化', async ({ page }) => {
+  const replacementCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
+  await fillSourceEditor(page, JSON.stringify({ button_cmd: '__CONVERT_CMD__' }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  const placeholderSection = reportPanel.locator('[data-tour="transform-report-placeholders"]');
+
+  await placeholderSection.locator('[data-tour="transform-report-open-placeholder-fill-template"]').click();
+  await expect(page.getByText('已填入模板填充')).toBeVisible();
+
+  const templatePanel = page.locator('[data-tour="template-fill-panel"]');
+  await expect(templatePanel).toBeVisible();
+  await fillMonacoEditor(
+    page,
+    templatePanel.locator('.monaco-editor').first(),
+    JSON.stringify({
+      schemaVersion: 1,
+      kind: 'json-helper-runtime-placeholder-fill-template',
+      placeholders: {
+        __CONVERT_CMD__: replacementCmd,
+      },
+      placeholderDetails: [],
+    })
+  );
+
+  await page.getByRole('button', { name: '应用模板到当前 JSON' }).click();
+  await expect(page.getByText('占位符已回填，质量对比已更新')).toBeVisible();
+
+  const qualityDelta = templatePanel.locator('[data-tour="template-fill-quality-delta"]');
+  await expect(qualityDelta).toContainText('深度解析质量对比');
+  await expect(qualityDelta).toContainText('CMD结构: 0 -> 1 (+1)');
+  await expect(qualityDelta).toContainText('占位符: 1 -> 0 (-1)');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText(replacementCmd);
+
+  await templatePanel.locator('[data-tour="template-fill-copy-quality-delta"]').click();
+  await expect(page.getByText('已复制质量对比')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('占位符: 1 -> 0 (-1)');
+});
+
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
   await fillSourceEditor(page, '{"ok":1}\n{"broken":}\n{"ok":3}');
 

@@ -4,7 +4,9 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { validateJson } from '../utils/transformations';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { TEMPLATE_FILL_STORAGE_KEY, loadTemplateFillConfig } from '../utils/appSettings';
+import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { safeSetStorageItem } from '../utils/storage';
+import toast from 'react-hot-toast';
 
 interface TemplateFillPanelProps {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface TemplateFillPanelProps {
   targetError?: string;
   initialTemplate?: string;
   initialTemplateKey?: number;
+  applyQualityDelta?: string;
 }
 
 export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
@@ -22,6 +25,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   targetError,
   initialTemplate,
   initialTemplateKey,
+  applyQualityDelta,
 }) => {
   // 从 localStorage 恢复模板内容
   const [template, setTemplate] = useState<string>(() => loadTemplateFillConfig().template);
@@ -70,6 +74,18 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
     if (!template.trim() || !validation.isValid) return;
 
     setTemplate(JSON.stringify(JSON.parse(template), null, 2));
+  };
+
+  const handleCopyQualityDelta = async () => {
+    if (!applyQualityDelta) return;
+
+    try {
+      await copyText(applyQualityDelta);
+      toast.success('已复制质量对比', { duration: 1600 });
+    } catch (error) {
+      console.warn('复制模板质量对比失败:', error);
+      toast.error(getClipboardErrorMessage(error), { duration: 2000 });
+    }
   };
 
   // 底部操作栏
@@ -150,6 +166,28 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20.5a8.5 8.5 0 100-17 8.5 8.5 0 000 17z" />
             </svg>
             {targetError}
+          </div>
+        )}
+
+        {applyQualityDelta && (
+          <div
+            data-tour="template-fill-quality-delta"
+            className="rounded border border-emerald-800/40 bg-emerald-950/20 px-2.5 py-2 text-xs text-emerald-100"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-medium">最近回填质量变化</div>
+              <button
+                type="button"
+                data-tour="template-fill-copy-quality-delta"
+                onClick={handleCopyQualityDelta}
+                className="shrink-0 rounded border border-emerald-800/60 bg-editor-bg px-2 py-0.5 text-emerald-100 transition-colors hover:bg-emerald-900/30"
+              >
+                复制质量对比
+              </button>
+            </div>
+            <pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap font-mono text-[10px] leading-relaxed text-emerald-50/90">
+              {applyQualityDelta}
+            </pre>
           </div>
         )}
 

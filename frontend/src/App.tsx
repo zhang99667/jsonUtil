@@ -36,7 +36,13 @@ import {
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 import { setJsonPointerValue } from './utils/jsonPointer';
 import { cleanJsonInput, startJsonValidation, validateJsonForEditor } from './utils/jsonValidation';
-import { formatTransformContextSummary } from './utils/transformSummary';
+import {
+  buildTransformContextReport,
+  buildTransformQualitySnapshot,
+  buildTransformReportView,
+  formatTransformContextSummary,
+  formatTransformQualitySnapshotDeltaText,
+} from './utils/transformSummary';
 import { initGoogleAnalytics } from './utils/analytics';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
@@ -98,6 +104,21 @@ interface AsyncTransformResult {
   output: string;
   context?: TransformContext;
 }
+
+const PLACEHOLDER_FILL_TEMPLATE_KIND = 'json-helper-runtime-placeholder-fill-template';
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const isPlaceholderFillTemplateJson = (templateJson: string): boolean => {
+  try {
+    const parsed = JSON.parse(templateJson) as unknown;
+    return isRecord(parsed) && parsed.kind === PLACEHOLDER_FILL_TEMPLATE_KIND;
+  } catch {
+    return false;
+  }
+};
 
 const setLegacyJsonPathValue = (root: unknown, jsonPath: string, value: string): unknown => {
   const pathParts = jsonPath
@@ -414,6 +435,7 @@ const App: React.FC = () => {
   const [hasLoadedSchemePanel, setHasLoadedSchemePanel] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [hasLoadedTemplatePanel, setHasLoadedTemplatePanel] = useState(false);
+  const [templateApplyQualityDelta, setTemplateApplyQualityDelta] = useState('');
   const [isTransformReportOpen, setIsTransformReportOpen] = useState(false);
   const [hasLoadedTransformReportPanel, setHasLoadedTransformReportPanel] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
@@ -546,6 +568,7 @@ const App: React.FC = () => {
   const handleOpenTemplateFillFromReport = useCallback((template: string) => {
     if (!template) return;
 
+    setTemplateApplyQualityDelta('');
     setTemplateFillRequest({
       id: ++templateFillRequestIdRef.current,
       template,
@@ -869,18 +892,37 @@ const App: React.FC = () => {
   }, [openDroppedFiles]);
 
   // 模板填充处理
+  const buildCurrentQualitySnapshot = useCallback((source: string) => {
+    const { context } = deepParseWithContext(source, {
+      autoExpandScheme,
+    });
+    const report = buildTransformContextReport(context);
+    return buildTransformQualitySnapshot(report, buildTransformReportView(report, ''), '');
+  }, [autoExpandScheme]);
+
   const handleApplyTemplate = useCallback((templateJson: string) => {
     try {
+      const shouldBuildQualityDelta = isPlaceholderFillTemplateJson(templateJson);
+      const beforeSnapshot = shouldBuildQualityDelta
+        ? buildCurrentQualitySnapshot(input)
+        : null;
       const merged = applyTemplate(input, templateJson);
+      if (beforeSnapshot) {
+        const afterSnapshot = buildCurrentQualitySnapshot(merged);
+        setTemplateApplyQualityDelta(formatTransformQualitySnapshotDeltaText(beforeSnapshot, afterSnapshot));
+      } else {
+        setTemplateApplyQualityDelta('');
+      }
       setInput(merged);
       inputRef.current = merged;
       updateActiveFileContent(merged);
-      showSuccess('模板已应用');
+      showSuccess(beforeSnapshot ? '占位符已回填，质量对比已更新' : '模板已应用');
     } catch (e: unknown) {
+      setTemplateApplyQualityDelta('');
       const message = e instanceof Error ? e.message : '模板应用失败';
       showError(message);
     }
-  }, [input, updateActiveFileContent]);
+  }, [autoExpandScheme, buildCurrentQualitySnapshot, input, updateActiveFileContent]);
 
   const handleAction = async (action: ActionType) => {
     if (action === ActionType.AI_FIX) {
@@ -1064,7 +1106,10 @@ const App: React.FC = () => {
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             onToggleJsonPath={handleToggleJsonPath}
             onToggleSchemeDecode={() => setIsSchemeDecodeOpen(!isSchemeDecodeOpen)}
-            onToggleTemplateFill={() => setIsTemplatePanelOpen(!isTemplatePanelOpen)}
+            onToggleTemplateFill={() => {
+              setTemplateApplyQualityDelta('');
+              setIsTemplatePanelOpen(!isTemplatePanelOpen);
+            }}
           />
         </div>
 
@@ -1271,6 +1316,7 @@ const App: React.FC = () => {
               targetError={templateTargetError}
               initialTemplate={templateFillRequest?.template}
               initialTemplateKey={templateFillRequest?.id}
+              applyQualityDelta={templateApplyQualityDelta}
             />
           </Suspense>
         )}

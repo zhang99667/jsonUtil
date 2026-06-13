@@ -356,6 +356,8 @@ export interface TransformCollaborationReportOptions {
   cmdComparisonReportText?: string;
 }
 
+type TransformQualitySnapshotMetricKey = keyof TransformQualitySnapshot['totals'];
+
 const DEFAULT_DIAGNOSTIC_TOP_LIMIT = 8;
 const DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT = 5;
 const DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT = 8;
@@ -2581,6 +2583,57 @@ export const formatTransformQualitySnapshotJsonText = (
   reportView: TransformReportView,
   query: string
 ): string => JSON.stringify(buildTransformQualitySnapshot(report, reportView, query), null, 2);
+
+const QUALITY_DELTA_METRICS: Array<{
+  key: TransformQualitySnapshotMetricKey;
+  label: string;
+}> = [
+  { key: 'records', label: '展开记录' },
+  { key: 'cmdStructures', label: 'CMD结构' },
+  { key: 'nestedCommandFields', label: '内部CMD字段' },
+  { key: 'nestedResourceFields', label: '资源字段' },
+  { key: 'runtimePlaceholders', label: '占位符' },
+  { key: 'unresolved', label: '待检查' },
+  { key: 'warnings', label: '跳过' },
+];
+
+const formatMetricDelta = (before: number, after: number): string => {
+  const delta = after - before;
+  if (delta === 0) return `${before} -> ${after}`;
+
+  return `${before} -> ${after} (${delta > 0 ? '+' : ''}${delta})`;
+};
+
+export const formatTransformQualitySnapshotDeltaText = (
+  beforeSnapshot: TransformQualitySnapshot,
+  afterSnapshot: TransformQualitySnapshot
+): string => {
+  const lines = [
+    '深度解析质量对比',
+    `覆盖率: ${beforeSnapshot.coverage.score} -> ${afterSnapshot.coverage.score} (${afterSnapshot.coverage.level})`,
+    '指标变化:',
+  ];
+
+  QUALITY_DELTA_METRICS.forEach(metric => {
+    lines.push(`- ${metric.label}: ${formatMetricDelta(
+      beforeSnapshot.totals[metric.key],
+      afterSnapshot.totals[metric.key]
+    )}`);
+  });
+
+  const beforeLeadSchema = beforeSnapshot.hotspots.topCommandSchemas[0]?.schema || '(无)';
+  const afterLeadSchema = afterSnapshot.hotspots.topCommandSchemas[0]?.schema || '(无)';
+  lines.push(`Top CMD Schema: ${beforeLeadSchema} -> ${afterLeadSchema}`);
+
+  if (afterSnapshot.recommendations.length > 0) {
+    lines.push('应用后建议:');
+    afterSnapshot.recommendations.forEach(recommendation => {
+      lines.push(`- ${recommendation}`);
+    });
+  }
+
+  return lines.join('\n');
+};
 
 export const formatTransformCollaborationReportText = (
   report: TransformContextReport,
