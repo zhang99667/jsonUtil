@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,9 +62,9 @@ class ToolEventServiceTest {
     void getStatsAggregatesEventGroupsAndFailureRate() {
         when(toolEventRepository.countByCreatedAtGreaterThanEqual(any(LocalDateTime.class)))
                 .thenReturn(4L);
-        when(toolEventRepository.countByCreatedAtGreaterThanEqualAndStatus(any(LocalDateTime.class), "success"))
+        when(toolEventRepository.countByCreatedAtGreaterThanEqualAndStatus(any(LocalDateTime.class), eq("success")))
                 .thenReturn(3L);
-        when(toolEventRepository.countByCreatedAtGreaterThanEqualAndStatus(any(LocalDateTime.class), "error"))
+        when(toolEventRepository.countByCreatedAtGreaterThanEqualAndStatus(any(LocalDateTime.class), eq("error")))
                 .thenReturn(1L);
         when(toolEventRepository.countByEventNameSince(any(LocalDateTime.class), any(Pageable.class)))
                 .thenReturn(List.of(new TestGroupCount("DEEP_FORMAT", 2L), new TestGroupCount("AI_FIX", 1L)));
