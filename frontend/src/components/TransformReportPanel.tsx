@@ -3,6 +3,11 @@ import toast from 'react-hot-toast';
 import type { TransformContext } from '../types';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import {
+  diffCmdStructures,
+  formatCmdStructureDiff,
+  parseCmdStructureJson,
+} from '../utils/cmdStructureDiff';
+import {
   buildTransformContextReport,
   buildTransformReportView,
   formatTransformCmdStructureReportText,
@@ -106,6 +111,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   onOpenTemplateFill,
 }) => {
   const [query, setQuery] = useState('');
+  const [cmdComparisonRecordPath, setCmdComparisonRecordPath] = useState<string | null>(null);
+  const [cmdComparisonExpectedText, setCmdComparisonExpectedText] = useState('');
   const deferredQuery = useDeferredValue(query);
   const isFilterPending = query !== deferredQuery;
   const report = useMemo(() => (
@@ -331,6 +338,40 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
+  const buildCmdComparisonReportText = (record: TransformReportRecord): string => {
+    const actualText = getTransformRecordCmdStructureCopyText(record);
+    if (!actualText || !cmdComparisonExpectedText.trim()) return '';
+
+    const actual = parseCmdStructureJson(actualText, '本工具 CMD 结构');
+    const expected = parseCmdStructureJson(cmdComparisonExpectedText, 'cmdHandler 输出');
+    const diff = diffCmdStructures(actual, expected);
+    return formatCmdStructureDiff(diff);
+  };
+
+  const handleToggleCmdComparison = (record: TransformReportRecord) => {
+    setCmdComparisonRecordPath(currentPath => {
+      if (currentPath === record.path) {
+        setCmdComparisonExpectedText('');
+        return null;
+      }
+
+      setCmdComparisonExpectedText('');
+      return record.path;
+    });
+  };
+
+  const handleCopyCmdComparisonDiff = async (record: TransformReportRecord) => {
+    try {
+      const reportText = buildCmdComparisonReportText(record);
+      if (!reportText) return;
+
+      await copyText(reportText);
+      toast.success('已复制 CMD 差异报告', { duration: 1600 });
+    } catch (error) {
+      showCopyError('复制 CMD 差异报告失败:', error);
+    }
+  };
+
   const handleLocatePath = (path: string) => {
     if (!onLocatePath) return;
 
@@ -343,6 +384,109 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
     onOpenSchemeValue(value);
     toast.success('已填入 Scheme 解析', { duration: 1600 });
+  };
+
+  const renderCmdComparisonPanel = (record: TransformReportRecord) => {
+    if (cmdComparisonRecordPath !== record.path) return null;
+
+    const expectedText = cmdComparisonExpectedText.trim();
+    let diffReportText = '';
+    let diffSummary: {
+      hasDifferences: boolean;
+      missingCount: number;
+      extraCount: number;
+      valueDiffCount: number;
+      hasSchemaDiff: boolean;
+      hasSourceDiff: boolean;
+      previewLines: string[];
+    } | null = null;
+    let errorText = '';
+
+    if (expectedText) {
+      try {
+        const actual = parseCmdStructureJson(
+          getTransformRecordCmdStructureCopyText(record),
+          '本工具 CMD 结构'
+        );
+        const expected = parseCmdStructureJson(expectedText, 'cmdHandler 输出');
+        const diff = diffCmdStructures(actual, expected);
+        diffReportText = formatCmdStructureDiff(diff);
+        diffSummary = {
+          hasDifferences: diff.hasDifferences,
+          missingCount: diff.missingPaths.length,
+          extraCount: diff.extraPaths.length,
+          valueDiffCount: diff.valueDiffs.length,
+          hasSchemaDiff: Boolean(diff.schemaDiff),
+          hasSourceDiff: Boolean(diff.sourceDiff),
+          previewLines: diffReportText.split('\n').slice(1, 6),
+        };
+      } catch (error) {
+        errorText = error instanceof Error ? error.message : String(error);
+      }
+    }
+
+    return (
+      <div data-tour="transform-report-cmd-comparison-panel" className="mt-2 rounded border border-teal-800/50 bg-teal-950/20 px-3 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-teal-100">cmdHandler 对比</div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              data-tour="transform-report-copy-cmd-comparison-diff"
+              onClick={() => handleCopyCmdComparisonDiff(record)}
+              disabled={!diffReportText}
+              className="text-gray-400 hover:text-teal-100 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="复制当前 actual 与 cmdHandler expected 的差异报告"
+            >
+              复制差异
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleCmdComparison(record)}
+              className="text-gray-400 hover:text-teal-100 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+            >
+              收起
+            </button>
+          </div>
+        </div>
+        <textarea
+          data-tour="transform-report-cmd-comparison-input"
+          value={cmdComparisonExpectedText}
+          onChange={(event) => setCmdComparisonExpectedText(event.target.value)}
+          placeholder="粘贴 cmdHandler 输出 JSON，支持 result / data 包裹"
+          className="mt-2 h-24 w-full resize-y rounded border border-editor-border bg-editor-bg px-2 py-1.5 font-mono text-xs text-gray-200 outline-none focus:border-teal-600"
+          spellCheck={false}
+        />
+        {!expectedText && (
+          <div className="mt-1 text-gray-500">
+            把内部 cmdHandler 的解析结果粘到这里，会对比 cmdSchema、source 和 cmdParams 路径值差异。
+          </div>
+        )}
+        {errorText && (
+          <div className="mt-1 text-amber-200">
+            {errorText}
+          </div>
+        )}
+        {diffSummary && (
+          <div className="mt-1 flex flex-col gap-1">
+            <div className={diffSummary.hasDifferences ? 'text-amber-200' : 'text-emerald-200'}>
+              {diffSummary.hasDifferences
+                ? `存在差异：Schema ${diffSummary.hasSchemaDiff ? 1 : 0}，Source ${diffSummary.hasSourceDiff ? 1 : 0}，缺失 ${diffSummary.missingCount}，额外 ${diffSummary.extraCount}，值不一致 ${diffSummary.valueDiffCount}`
+                : '结构一致'}
+            </div>
+            {diffSummary.previewLines.length > 0 && (
+              <div className="flex flex-col gap-0.5 font-mono text-gray-400">
+                {diffSummary.previewLines.map(line => (
+                  <div key={`${record.path}:cmd-diff:${line}`} className="truncate" title={line}>
+                    {line}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const footer = (
@@ -727,6 +871,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             >
                               复制对比包
                             </button>
+                            <button
+                              type="button"
+                              data-tour="transform-report-open-cmd-comparison"
+                              onClick={() => handleToggleCmdComparison(record)}
+                              className="text-gray-400 hover:text-teal-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              title="粘贴内部 cmdHandler 输出并在页面内查看差异"
+                            >
+                              对比 cmdHandler
+                            </button>
                           </>
                         )}
                         {onLocatePath && (
@@ -831,6 +984,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         )}
                       </div>
                     )}
+                    {renderCmdComparisonPanel(record)}
                     {record.commandSchemaRows?.length && (
                       <div data-tour="transform-report-command-schema-rows" className="mt-1.5 flex flex-col gap-1">
                         <div className="text-gray-500">

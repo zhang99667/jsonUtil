@@ -314,6 +314,52 @@ test('深度解析报告可按 URL 计数筛选', async ({ page }) => {
   await expect(reportPanel.locator('[data-tour="transform-report-records"]')).not.toContainText('$.payload');
 });
 
+test('深度解析报告可页面内对比 cmdHandler 输出', async ({ page }) => {
+  const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
+    nid: 123,
+    category: 'jump',
+  }))}&from=feed`;
+  await fillSourceEditor(page, JSON.stringify({ action_cmd: actionCmd }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  const commandRow = reportPanel
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$.action_cmd' });
+
+  await commandRow.locator('[data-tour="transform-report-open-cmd-comparison"]').click();
+  const comparisonPanel = commandRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
+  await expect(comparisonPanel).toBeVisible();
+  await expect(comparisonPanel).toContainText('cmdHandler 对比');
+
+  await comparisonPanel.locator('[data-tour="transform-report-cmd-comparison-input"]').fill(JSON.stringify({
+    result: {
+      cmdParams: {
+        cmd: {
+          nid: 456,
+        },
+        extra: 'expected',
+      },
+    },
+  }, null, 2));
+
+  await expect(comparisonPanel).toContainText('存在差异');
+  await expect(comparisonPanel).toContainText('缺失 1');
+  await expect(comparisonPanel).toContainText('额外 2');
+  await expect(comparisonPanel).toContainText('值不一致 1');
+
+  await comparisonPanel.locator('[data-tour="transform-report-copy-cmd-comparison-diff"]').click();
+  await expect(page.getByText('已复制 CMD 差异报告')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('CMD 结构差异报告');
+  const diffReport = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(diffReport).toContain('缺失路径 1 个');
+  expect(diffReport).toContain('额外路径 2 个');
+  expect(diffReport).toContain('$.cmd.nid');
+});
+
 test('深度解析报告展示运行时占位符', async ({ page }) => {
   const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
     button_cmd: '__CONVERT_CMD__',
