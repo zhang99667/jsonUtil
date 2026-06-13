@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readdir, readFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -157,6 +157,50 @@ export const buildThresholdSummary = samples => {
   };
 };
 
+const formatMarkdownValue = value => (
+  String(value ?? '').replace(/\|/g, '\\|')
+);
+
+export const formatCorpusSnapshotMarkdownSummary = snapshot => {
+  const lines = [
+    '# Scheme Corpus 质量快照',
+    '',
+    `- 样本数: ${snapshot.sampleCount}`,
+    `- 阈值失败: ${snapshot.thresholdSummary.failed}/${snapshot.thresholdSummary.total}`,
+    `- 结果: ${snapshot.thresholdSummary.pass ? 'PASS' : 'FAIL'}`,
+    '',
+    '| 样本 | 覆盖率 | 展开记录 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 阈值失败 |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+  ];
+
+  snapshot.samples.forEach(sample => {
+    const thresholdCount = Object.keys(sample.thresholds || {}).length;
+    const failedCount = Object.values(sample.thresholds || {})
+      .filter(result => result && result.pass === false).length;
+    lines.push([
+      formatMarkdownValue(sample.sample),
+      sample.coverage.score,
+      sample.totals.records,
+      sample.totals.cmdStructures,
+      sample.totals.nestedCommandFields,
+      sample.totals.nestedResourceFields,
+      sample.totals.runtimePlaceholders,
+      sample.totals.unresolved,
+      sample.totals.warnings,
+      `${failedCount}/${thresholdCount}`,
+    ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
+  });
+
+  if (snapshot.thresholdSummary.failures.length > 0) {
+    lines.push('', '## 失败阈值', '');
+    snapshot.thresholdSummary.failures.forEach(failure => {
+      lines.push(`- ${formatMarkdownValue(failure.sample)}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}`);
+    });
+  }
+
+  return `${lines.join('\n')}\n`;
+};
+
 const buildSnapshotSampleFromResponseText = ({
   sampleName,
   expectedSnapshot,
@@ -298,6 +342,8 @@ export const parseCliArgs = argv => {
     sampleFilter: undefined,
     inputPath: undefined,
     sampleName: undefined,
+    outputPath: undefined,
+    summaryPath: undefined,
     strict: false,
   };
 
@@ -332,6 +378,22 @@ export const parseCliArgs = argv => {
       continue;
     }
 
+    if (arg === '--output') {
+      const value = argv[index + 1];
+      if (!value) throw new Error('--output 需要输出文件路径');
+      options.outputPath = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--summary') {
+      const value = argv[index + 1];
+      if (!value) throw new Error('--summary 需要 Markdown 输出文件路径');
+      options.summaryPath = value;
+      index += 1;
+      continue;
+    }
+
     if (arg.startsWith('-')) {
       throw new Error(`未知参数: ${arg}`);
     }
@@ -354,7 +416,7 @@ export const parseCliArgs = argv => {
 };
 
 const printUsage = () => {
-  console.error('用法: npm run corpus:snapshot -- [--sample reward-response-redacted] [--strict]');
+  console.error('用法: npm run corpus:snapshot -- [--sample reward-response-redacted] [--strict] [--output snapshot.json] [--summary summary.md]');
   console.error('或: npm run corpus:snapshot -- --input /path/to/response.json --name local-response');
   console.error('默认扫描 fixtures/scheme-corpus 下所有 *.redacted.json 样本，并输出质量快照 JSON。');
 };
@@ -362,6 +424,13 @@ const printUsage = () => {
 const formatThresholdFailure = failure => (
   `${failure.sample}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}`
 );
+
+const writeTextFile = async (filePath, text, options = {}) => {
+  const absolutePath = path.resolve(process.cwd(), filePath);
+  await mkdir(path.dirname(absolutePath), { recursive: true });
+  await writeFile(absolutePath, text, options);
+  return absolutePath;
+};
 
 const runCli = async () => {
   const [, scriptPath, ...args] = process.argv;
@@ -371,7 +440,20 @@ const runCli = async () => {
   try {
     const options = parseCliArgs(args);
     const snapshot = await buildCorpusSnapshot(options);
-    process.stdout.write(`${JSON.stringify(snapshot, null, 2)}\n`);
+    const snapshotJsonText = `${JSON.stringify(snapshot, null, 2)}\n`;
+    process.stdout.write(snapshotJsonText);
+    if (options.outputPath) {
+      const outputPath = await writeTextFile(options.outputPath, snapshotJsonText);
+      console.error(`已写入质量快照: ${outputPath}`);
+    }
+    if (options.summaryPath) {
+      const summaryPath = await writeTextFile(
+        options.summaryPath,
+        formatCorpusSnapshotMarkdownSummary(snapshot),
+        { flag: 'a' }
+      );
+      console.error(`已写入质量摘要: ${summaryPath}`);
+    }
     if (options.strict && !snapshot.thresholdSummary.pass) {
       console.error('corpus:snapshot strict 检查失败:');
       snapshot.thresholdSummary.failures.forEach(failure => {

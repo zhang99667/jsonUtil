@@ -5,6 +5,7 @@ import {
   buildCorpusSnapshotSample,
   buildThresholdResults,
   buildThresholdSummary,
+  formatCorpusSnapshotMarkdownSummary,
   listThresholdFailures,
   parseCliArgs,
   SCHEME_CORPUS_SNAPSHOT_KIND,
@@ -278,6 +279,38 @@ describe('buildThresholdSummary', () => {
   });
 });
 
+describe('formatCorpusSnapshotMarkdownSummary', () => {
+  it('生成适合 CI Step Summary 的 Markdown 表格', () => {
+    const sample = buildCorpusSnapshotSample({
+      fixture: {
+        name: 'reward-response-redacted',
+      },
+      expectedSnapshot: createExpectedSnapshot(),
+      responseText: '{"cmd":"1"}',
+      report: createReport(),
+      reportView: {
+        isRecordTruncated: false,
+        isCmdStructureTruncated: false,
+        isPlaceholderTruncated: false,
+        isUnresolvedTruncated: false,
+        isWarningTruncated: false,
+      },
+      qualitySnapshot: createQualitySnapshot(),
+    });
+    const snapshot = {
+      schemaVersion: 1,
+      kind: SCHEME_CORPUS_SNAPSHOT_KIND,
+      sampleCount: 1,
+      thresholdSummary: buildThresholdSummary([sample]),
+      samples: [sample],
+    };
+
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('# Scheme Corpus 质量快照');
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('| reward-response-redacted | 100 | 2 | 2 | 5 | 1 | 2 | 0 | 0 | 0/9 |');
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- 结果: PASS');
+  });
+});
+
 describe('parseCliArgs', () => {
   it('支持通过本地 response 文件生成快照', () => {
     expect(parseCliArgs([
@@ -289,6 +322,8 @@ describe('parseCliArgs', () => {
       sampleFilter: undefined,
       inputPath: '/tmp/response.json',
       sampleName: 'local-response',
+      outputPath: undefined,
+      summaryPath: undefined,
       strict: false,
     });
   });
@@ -302,7 +337,25 @@ describe('parseCliArgs', () => {
       sampleFilter: 'reward-response-redacted',
       inputPath: undefined,
       sampleName: undefined,
+      outputPath: undefined,
+      summaryPath: undefined,
       strict: true,
+    });
+  });
+
+  it('支持输出 JSON 快照和 Markdown 摘要路径', () => {
+    expect(parseCliArgs([
+      '--output',
+      '../artifacts/snapshot.json',
+      '--summary',
+      '../artifacts/summary.md',
+    ])).toEqual({
+      sampleFilter: undefined,
+      inputPath: undefined,
+      sampleName: undefined,
+      outputPath: '../artifacts/snapshot.json',
+      summaryPath: '../artifacts/summary.md',
+      strict: false,
     });
   });
 

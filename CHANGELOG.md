@@ -61,6 +61,7 @@
 - **解析质量资源字段基线**: 脱敏广告 response corpus 补充资源 URL 样本，并在 expected snapshot 中校验资源字段数量、资源 Schema Top 和资源字段 Top，防止素材字段分层能力回退
 - **解析质量快照命令**: 新增 `corpus:snapshot` 命令，可扫描脱敏 Scheme corpus 或通过 `--input` 诊断本地真实 response，并输出覆盖率、CMD/资源热点、占位符和 expected 阈值 pass/fail，便于评审解析质量变化
 - **解析质量快照门禁**: 新增 `corpus:snapshot:check` 严格模式并接入 CI，expected 阈值失败时会直接阻断流水线，同时保留可读质量快照输出
+- **解析质量快照产物**: `corpus:snapshot` 支持 `--output` 和 `--summary`，CI 会上传 JSON 快照 artifact 并写入 Markdown 摘要，方便 PM/研发查看样本质量变化
 - **JSONPath 大查询可取消**: JSONPath 查询处理中新增取消入口，会立即终止当前 Worker 并清空旧高亮，避免误查大表达式时只能等待结果返回
 - **CMD/Scheme 前导分隔符兼容**: 支持解析 `&cmd=...`、`?&cmd=...` 等日志拼接常见形态，避免前导 `&` 导致整段 CMD 漏解析
 - **CMD/Scheme 协议相对 URL 解析**: 支持识别和展开 `//m.baidu.com/path?...` 这类协议相对 URL，嵌套在 CMD 参数中也会继续解析内部 query
