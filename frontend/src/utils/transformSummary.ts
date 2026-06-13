@@ -255,6 +255,8 @@ export interface TransformIssueSampleExport {
   samples: TransformIssueSampleExportItem[];
 }
 
+const DEFAULT_DIAGNOSTIC_TOP_LIMIT = 8;
+const DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT = 5;
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
@@ -1954,6 +1956,85 @@ export const formatTransformReportViewText = (
   appendReportWarningSection(lines, reportView.warnings);
   if (reportView.isWarningTruncated) {
     lines.push(`- 还有 ${reportView.filteredWarningCount - reportView.warnings.length} 条跳过记录未复制`);
+  }
+
+  return lines.join('\n');
+};
+
+export const formatTransformDiagnosticSummaryText = (
+  report: TransformContextReport,
+  reportView: TransformReportView,
+  query: string
+): string => {
+  const normalizedQuery = query.trim();
+  const lines = [
+    '深度解析诊断摘要',
+    report.summaryText || '深度解析: 无展开记录',
+    `筛选: ${normalizedQuery || '全部'}`,
+    `覆盖: ${report.coverage.label}，${report.coverage.description}`,
+    `规模: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，CMD结构 ${reportView.filteredCmdStructureCount}/${reportView.totalCmdStructureCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
+  ];
+
+  if (report.topCommandSchemas?.length) {
+    lines.push('', '全量 CMD Schema Top:');
+    report.topCommandSchemas.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
+      lines.push(`- ${group.schema} ×${group.count}（来源记录 ${group.recordCount}）`);
+    });
+  }
+
+  if (report.topNestedCommandFields?.length) {
+    lines.push('', '全量内部 CMD 字段 Top:');
+    report.topNestedCommandFields.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
+      lines.push(`- ${group.key} ×${group.count}（来源记录 ${group.recordCount}）`);
+    });
+  }
+
+  if (reportView.runtimePlaceholderGroups.length > 0) {
+    lines.push('', '当前占位符 Top:');
+    reportView.runtimePlaceholderGroups.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
+      lines.push(`- ${group.value} ×${group.count}（来源 ${group.sourceCount}）`);
+    });
+  }
+
+  if (reportView.unresolvedCandidates.length > 0) {
+    lines.push('', '当前待检查样例:');
+    reportView.unresolvedCandidates.slice(0, DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT).forEach(candidate => {
+      const sourceLabel = candidate.sourceLabel ? ` · ${candidate.sourceLabel}` : '';
+      const detectedType = candidate.detectedType ? ` · ${candidate.detectedType}` : '';
+      lines.push(`- ${candidate.path}${sourceLabel}${detectedType}: ${candidate.reasonLabel}`);
+    });
+    if (reportView.isUnresolvedTruncated) {
+      lines.push(`- 还有 ${reportView.filteredUnresolvedCount - reportView.unresolvedCandidates.length} 条待检查未列出`);
+    }
+  }
+
+  if (reportView.warnings.length > 0) {
+    lines.push('', '当前跳过样例:');
+    reportView.warnings.slice(0, DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT).forEach(warning => {
+      const sourceLabel = warning.sourceLabel ? ` · ${warning.sourceLabel}` : '';
+      lines.push(`- ${warning.path}${sourceLabel}: ${warning.reasonLabel} (${warning.length}/${warning.limit})`);
+    });
+    if (reportView.isWarningTruncated) {
+      lines.push(`- 还有 ${reportView.filteredWarningCount - reportView.warnings.length} 条跳过记录未列出`);
+    }
+  }
+
+  lines.push('', '建议:');
+  if (reportView.filteredWarningCount > 0) {
+    lines.push('- 先处理跳过记录，超长字段可单独粘贴到 Scheme 面板或缩小 response 后再解析');
+  }
+  if (reportView.filteredUnresolvedCount > 0) {
+    lines.push('- 对待检查项判断是否为规则缺口；确认后可复制样本 JSON 并生成回归模板');
+  }
+  if (reportView.filteredPlaceholderCount > 0) {
+    lines.push('- 运行时占位符通常不是解析失败，可按来源路径确认实际替换链路');
+  }
+  if (
+    reportView.filteredWarningCount === 0 &&
+    reportView.filteredUnresolvedCount === 0 &&
+    reportView.filteredPlaceholderCount === 0
+  ) {
+    lines.push('- 当前筛选未发现跳过、待检查或运行时占位符，可重点核对 CMD Schema 与业务预期是否一致');
   }
 
   return lines.join('\n');
