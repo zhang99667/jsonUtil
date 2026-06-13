@@ -44,6 +44,12 @@ import {
   formatTransformQualitySnapshotDeltaText,
 } from './utils/transformSummary';
 import { initGoogleAnalytics } from './utils/analytics';
+import {
+  getDurationBucket,
+  getTextSizeBucket,
+  trackToolEvent,
+  type ToolEventStatus,
+} from './utils/productTelemetry';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -500,34 +506,59 @@ const App: React.FC = () => {
     });
   }, []);
 
+  const trackCurrentToolEvent = useCallback((
+    eventName: string,
+    category: string,
+    status: ToolEventStatus = 'success',
+    startedAt?: number
+  ) => {
+    const durationMs = typeof startedAt === 'number' ? performance.now() - startedAt : 0;
+    trackToolEvent({
+      eventName,
+      category,
+      status,
+      inputSizeBucket: getTextSizeBucket(inputRef.current),
+      durationBucket: getDurationBucket(durationMs),
+    });
+  }, []);
+
   // 统一的保存处理逻辑
   const handleSaveShortcut = useCallback(async () => {
+    const startedAt = performance.now();
     if (activeEditor === 'PREVIEW' && isOutputTransforming) {
       showError('预览仍在处理，请稍后再保存');
+      trackCurrentToolEvent('SAVE_SHORTCUT', 'file', 'skipped', startedAt);
       return;
     }
 
+    let success = false;
     if (activeFileId) {
       // 如果已打开文件，根据焦点保存不同内容到该文件
       if (activeEditor === 'PREVIEW') {
         // Preview 聚焦：保存 Preview 内容到文件
-        const success = await saveFile(output);
+        success = await saveFile(output);
         if (success) showSuccess("已将 PREVIEW 内容保存到文件");
       } else {
         // Source 聚焦：保存 Source 内容到文件
-        const success = await saveFile(); // 默认保存 input
+        success = await saveFile(); // 默认保存 input
         if (success) showSuccess("已将 SOURCE 内容保存到文件");
       }
     } else {
       // 未打开文件：另存为
       if (activeEditor === 'PREVIEW') {
-        await savePreview(); // 另存为 Preview
+        success = await savePreview(); // 另存为 Preview
       } else {
-        const success = await saveSourceAs(); // 另存为 Source
+        success = await saveSourceAs(); // 另存为 Source
         if (success) showSuccess("已另存为源文件");
       }
     }
-  }, [activeFileId, activeEditor, output, saveFile, saveSourceAs, isOutputTransforming]);
+    trackCurrentToolEvent('SAVE_SHORTCUT', 'file', success ? 'success' : 'skipped', startedAt);
+  }, [activeFileId, activeEditor, output, saveFile, saveSourceAs, isOutputTransforming, trackCurrentToolEvent]);
+
+  const handleModeChange = useCallback((nextMode: TransformMode) => {
+    setMode(nextMode);
+    trackCurrentToolEvent(nextMode, 'transform_mode');
+  }, [trackCurrentToolEvent]);
 
   const handleToggleJsonPath = useCallback(() => {
     const nextOpen = !isJsonPathPanelOpen;
@@ -535,7 +566,8 @@ const App: React.FC = () => {
       setMode(TransformMode.DEEP_FORMAT);
     }
     setIsJsonPathPanelOpen(nextOpen);
-  }, [isJsonPathPanelOpen, mode]);
+    trackCurrentToolEvent(nextOpen ? 'JSONPATH_OPEN' : 'JSONPATH_CLOSE', 'panel');
+  }, [isJsonPathPanelOpen, mode, trackCurrentToolEvent]);
 
   const handleLocateJsonPath = useCallback((query: string) => {
     const normalizedQuery = query.trim();
@@ -552,7 +584,8 @@ const App: React.FC = () => {
     });
     setIsJsonPathPanelOpen(true);
     setIsTransformReportOpen(false);
-  }, [mode]);
+    trackCurrentToolEvent('JSONPATH_LOCATE', 'panel');
+  }, [mode, trackCurrentToolEvent]);
 
   const handleOpenSchemeFromReport = useCallback((value: string) => {
     if (!value) return;
@@ -563,7 +596,8 @@ const App: React.FC = () => {
     });
     setIsSchemeDecodeOpen(true);
     setIsTransformReportOpen(false);
-  }, []);
+    trackCurrentToolEvent('SCHEME_OPEN_FROM_REPORT', 'panel');
+  }, [trackCurrentToolEvent]);
 
   const handleOpenTemplateFillFromReport = useCallback((template: string) => {
     if (!template) return;
@@ -575,7 +609,8 @@ const App: React.FC = () => {
     });
     setIsTemplatePanelOpen(true);
     setIsTransformReportOpen(false);
-  }, []);
+    trackCurrentToolEvent('TEMPLATE_OPEN_FROM_REPORT', 'panel');
+  }, [trackCurrentToolEvent]);
 
   const handleToggleAutoSave = useCallback(() => {
     if (!activeFileId) {
@@ -619,12 +654,15 @@ const App: React.FC = () => {
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({
     onSave: handleSaveShortcut,
-    onFormat: () => setMode(TransformMode.FORMAT),
-    onDeepFormat: () => setMode(TransformMode.DEEP_FORMAT),
-    onMinify: () => setMode(TransformMode.MINIFY),
+    onFormat: () => handleModeChange(TransformMode.FORMAT),
+    onDeepFormat: () => handleModeChange(TransformMode.DEEP_FORMAT),
+    onMinify: () => handleModeChange(TransformMode.MINIFY),
     onCloseTab: () => activeFileId && requestCloseFile(activeFileId),
     onToggleJsonPath: handleToggleJsonPath,
-    onNewTab: createNewTab
+    onNewTab: () => {
+      createNewTab();
+      trackCurrentToolEvent(ActionType.NEW_TAB, 'file');
+    }
   });
 
   // 用户引导 (Hook)
@@ -818,10 +856,10 @@ const App: React.FC = () => {
     }, 400);
   }, [mode, files, activeFileId, updateActiveFileContent, validateJsonMaybeAsync]);
 
-  const savePreview = async () => {
+  const savePreview = async (): Promise<boolean> => {
     if (isOutputTransforming) {
       showError('预览仍在处理，请稍后再保存');
-      return;
+      return false;
     }
 
     try {
@@ -847,12 +885,14 @@ const App: React.FC = () => {
         window.setTimeout(() => URL.revokeObjectURL(url), 0);
       }
       showSuccess("已保存预览结果");
+      return true;
     } catch (err) {
       if (isAbortError(err)) {
-        return;
+        return false;
       }
       console.error('Failed to save preview:', err);
       showError(getDetailedErrorMessage(err, '保存预览结果失败'));
+      return false;
     }
   };
 
@@ -925,12 +965,14 @@ const App: React.FC = () => {
   }, [autoExpandScheme, buildCurrentQualitySnapshot, input, updateActiveFileContent]);
 
   const handleAction = async (action: ActionType) => {
+    const startedAt = performance.now();
     if (action === ActionType.AI_FIX) {
       // 触发 AI 修复功能首次使用引导
       triggerFeatureFirstUse(FeatureId.AI_FIX);
 
       if (!input.trim()) {
         showError('请先输入需要修复的 JSON 内容');
+        trackCurrentToolEvent(action, 'ai', 'skipped', startedAt);
         return;
       }
 
@@ -947,6 +989,7 @@ const App: React.FC = () => {
         // 修复后自动切换至格式化视图
         setMode(TransformMode.FORMAT);
         showSuccess("AI 修复成功");
+        trackCurrentToolEvent(action, 'ai', 'success', startedAt);
       } catch (e: unknown) {
         // 业务逻辑错误（API Key 缺失、网络错误等）使用 Toast 提示
         const errorMessage = e instanceof Error ? e.message : "AI 修复失败";
@@ -955,28 +998,33 @@ const App: React.FC = () => {
           setSettingsInitialTab('ai');
           setIsSettingsModalOpen(true);
         }
+        trackCurrentToolEvent(action, 'ai', 'error', startedAt);
       } finally {
         setIsProcessing(false);
       }
     } else if (action === ActionType.SAVE) {
+      let success = false;
       if (activeEditor === 'PREVIEW') {
-        await savePreview();
+        success = await savePreview();
       } else {
         // Source Save Logic
         if (activeFileId) {
           // If file is open, save to it
-          const success = await saveFile();
+          success = await saveFile();
           if (success) showSuccess("已保存源文件");
         } else {
           // If no file open, Save As
-          const success = await saveSourceAs();
+          success = await saveSourceAs();
           if (success) showSuccess("已另存为源文件");
         }
       }
+      trackCurrentToolEvent(action, 'file', success ? 'success' : 'skipped', startedAt);
     } else if (action === ActionType.OPEN) {
       await openFile();
+      trackCurrentToolEvent(action, 'file', 'success', startedAt);
     } else if (action === ActionType.NEW_TAB) {
       createNewTab();
+      trackCurrentToolEvent(action, 'file', 'success', startedAt);
     }
   };
 
@@ -1092,20 +1140,27 @@ const App: React.FC = () => {
         <div data-tour="toolbar" style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-editor-border transition-all duration-300 ease-in-out h-full overflow-hidden">
           <ActionPanel
             activeMode={mode}
-            onModeChange={setMode}
+            onModeChange={handleModeChange}
             onAction={handleAction}
             isProcessing={isProcessing}
             onOpenSettings={() => {
               setSettingsInitialTab('shortcuts');
               setIsSettingsModalOpen(true);
+              trackCurrentToolEvent('SETTINGS_OPEN', 'panel');
             }}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             onToggleJsonPath={handleToggleJsonPath}
-            onToggleSchemeDecode={() => setIsSchemeDecodeOpen(!isSchemeDecodeOpen)}
+            onToggleSchemeDecode={() => {
+              const nextOpen = !isSchemeDecodeOpen;
+              setIsSchemeDecodeOpen(nextOpen);
+              trackCurrentToolEvent(nextOpen ? 'SCHEME_PANEL_OPEN' : 'SCHEME_PANEL_CLOSE', 'panel');
+            }}
             onToggleTemplateFill={() => {
+              const nextOpen = !isTemplatePanelOpen;
               setTemplateApplyQualityDelta('');
-              setIsTemplatePanelOpen(!isTemplatePanelOpen);
+              setIsTemplatePanelOpen(nextOpen);
+              trackCurrentToolEvent(nextOpen ? 'TEMPLATE_PANEL_OPEN' : 'TEMPLATE_PANEL_CLOSE', 'panel');
             }}
           />
         </div>

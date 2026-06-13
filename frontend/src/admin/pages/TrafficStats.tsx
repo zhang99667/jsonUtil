@@ -29,6 +29,7 @@ import {
     getBrowserDistribution,
     getRefererDistribution,
     getSessionDuration,
+    getToolEventStats,
     TrafficOverview,
     TrendItem,
     TopIpItem,
@@ -38,6 +39,8 @@ import {
     DeviceStatsItem,
     RefererStatsItem,
     SessionStatsItem,
+    ToolEventStats,
+    ToolEventGroupItem,
 } from '../services/traffic';
 
 const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
@@ -74,6 +77,7 @@ const TrafficStats: React.FC = () => {
     const [browserStats, setBrowserStats] = useState<DeviceStatsItem[]>([]);
     const [refererStats, setRefererStats] = useState<RefererStatsItem[]>([]);
     const [sessionStats, setSessionStats] = useState<SessionStatsItem[]>([]);
+    const [toolEventStats, setToolEventStats] = useState<ToolEventStats | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const requestIdRef = useRef(0);
 
@@ -93,7 +97,19 @@ const TrafficStats: React.FC = () => {
         const requestId = ++requestIdRef.current;
         setLoading(true);
         try {
-            const [overviewData, trendData, ipsData, pathsData, hourlyData, geoData, deviceData, browserData, refererData, sessionData] = await Promise.all([
+            const [
+                overviewData,
+                trendData,
+                ipsData,
+                pathsData,
+                hourlyData,
+                geoData,
+                deviceData,
+                browserData,
+                refererData,
+                sessionData,
+                toolEventData,
+            ] = await Promise.all([
                 getTrafficOverview(days),
                 getTrafficTrend(days),
                 getTopIps(days, 10),
@@ -104,6 +120,7 @@ const TrafficStats: React.FC = () => {
                 getBrowserDistribution(days, 10),
                 getRefererDistribution(days, 10),
                 getSessionDuration(days),
+                getToolEventStats(days, 10),
             ]);
             // 只允许最新一次请求更新页面，避免快速切换统计范围时旧响应回写。
             if (requestId !== requestIdRef.current) {
@@ -119,6 +136,7 @@ const TrafficStats: React.FC = () => {
             setBrowserStats(browserData);
             setRefererStats(refererData);
             setSessionStats(sessionData);
+            setToolEventStats(toolEventData);
         } catch (error) {
             if (requestId !== requestIdRef.current) {
                 return;
@@ -276,6 +294,87 @@ const TrafficStats: React.FC = () => {
         region: item.region,
         count: item.count,
     })).reverse(), [geoStats]); // 反转让最高的在上面
+
+    const toolEventLabelMap: Record<string, string> = {
+        FORMAT: '格式化',
+        DEEP_FORMAT: '嵌套解析',
+        MINIFY: '压缩',
+        ESCAPE: '转义',
+        UNESCAPE: '反转义',
+        UNICODE_TO_CN: 'Unicode 转中文',
+        CN_TO_UNICODE: '中文转 Unicode',
+        URL_ENCODE: 'URL 编码',
+        URL_DECODE: 'URL 解码',
+        BASE64_ENCODE: 'Base64 编码',
+        BASE64_DECODE: 'Base64 解码',
+        SORT_KEYS: 'Key 排序',
+        AI_FIX: 'AI 修复',
+        SAVE: '保存',
+        SAVE_SHORTCUT: '快捷键保存',
+        OPEN: '打开文件',
+        NEW_TAB: '新建标签',
+        JSONPATH_OPEN: '打开 JSONPath',
+        JSONPATH_CLOSE: '关闭 JSONPath',
+        JSONPATH_LOCATE: '定位 JSONPath',
+        SCHEME_PANEL_OPEN: '打开 Scheme 面板',
+        SCHEME_PANEL_CLOSE: '关闭 Scheme 面板',
+        SCHEME_OPEN_FROM_REPORT: '报告打开 Scheme',
+        TEMPLATE_PANEL_OPEN: '打开模板填充',
+        TEMPLATE_PANEL_CLOSE: '关闭模板填充',
+        TEMPLATE_OPEN_FROM_REPORT: '报告打开模板',
+        SETTINGS_OPEN: '打开设置',
+        success: '成功',
+        error: '失败',
+        skipped: '跳过',
+        cancelled: '取消',
+        empty: '空输入',
+        lt_10kb: '< 10KB',
+        '10_50kb': '10-50KB',
+        '50_250kb': '50-250KB',
+        '250kb_1mb': '250KB-1MB',
+        gt_1mb: '> 1MB',
+        instant: '即时',
+        lt_100ms: '< 100ms',
+        '100_500ms': '100-500ms',
+        '500ms_2s': '0.5-2s',
+        '2_10s': '2-10s',
+        gt_10s: '> 10s',
+        unknown: '未知',
+    };
+
+    const getToolEventLabel = (label: string) => toolEventLabelMap[label] || label;
+
+    const renderToolEventList = (items: ToolEventGroupItem[], color: string) => {
+        if (items.length === 0) {
+            return (
+                <div style={{ textAlign: 'center', color: '#9CA3BE', padding: 24 }}>
+                    暂无工具事件数据
+                </div>
+            );
+        }
+
+        return (
+            <div style={{ display: 'grid', gap: 12 }}>
+                {items.map(item => (
+                    <div key={item.label}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
+                            <span style={{ color: '#1A1D2E', fontSize: 13 }}>{getToolEventLabel(item.label)}</span>
+                            <span style={{ color: '#9CA3BE', fontSize: 13 }}>
+                                {item.count.toLocaleString()} ({item.percentage}%)
+                            </span>
+                        </div>
+                        <Progress
+                            percent={item.percentage}
+                            showInfo={false}
+                            strokeColor={color}
+                            trailColor="#F0F1F5"
+                            size="small"
+                        />
+                    </div>
+                ))}
+            </div>
+        );
+    };
 
     // 今日模式下高亮当前时段（移到 useMemo 之后，loading 检查之前）
     const currentHour = new Date().getHours();
@@ -496,6 +595,54 @@ const TrafficStats: React.FC = () => {
                     </div>
                 </Col>
             </Row>
+
+            {/* 工具使用洞察 */}
+            <Card
+                title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><BarChartOutlined style={{ marginRight: 8, color: themeColors.success }} />工具使用洞察</span>}
+                bordered={false}
+                style={{ marginTop: 16, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+            >
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} md={6}>
+                        <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 4 }}>工具事件</div>
+                        <div style={{ color: '#1A1D2E', fontSize: 28, fontWeight: 600, lineHeight: 1.2 }}>
+                            {(toolEventStats?.totalEvents || 0).toLocaleString()}
+                        </div>
+                    </Col>
+                    <Col xs={24} md={6}>
+                        <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 4 }}>失败事件</div>
+                        <div style={{ color: toolEventStats?.failedEvents ? '#EF4444' : '#10B981', fontSize: 28, fontWeight: 600, lineHeight: 1.2 }}>
+                            {(toolEventStats?.failedEvents || 0).toLocaleString()}
+                        </div>
+                    </Col>
+                    <Col xs={24} md={6}>
+                        <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 4 }}>失败率</div>
+                        <div style={{ color: toolEventStats?.failureRate ? '#EF4444' : '#10B981', fontSize: 28, fontWeight: 600, lineHeight: 1.2 }}>
+                            {toolEventStats?.failureRate || 0}%
+                        </div>
+                    </Col>
+                    <Col xs={24} md={6}>
+                        <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 4 }}>最常用功能</div>
+                        <div style={{ color: '#1A1D2E', fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}>
+                            {toolEventStats?.topEvents?.[0] ? getToolEventLabel(toolEventStats.topEvents[0].label) : '-'}
+                        </div>
+                    </Col>
+                </Row>
+                <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
+                    <Col xs={24} lg={8}>
+                        <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>高频功能</div>
+                        {renderToolEventList(toolEventStats?.topEvents || [], themeColors.primary)}
+                    </Col>
+                    <Col xs={24} lg={8}>
+                        <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>输入大小</div>
+                        {renderToolEventList(toolEventStats?.inputSizeDistribution || [], themeColors.info)}
+                    </Col>
+                    <Col xs={24} lg={8}>
+                        <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>耗时分布</div>
+                        {renderToolEventList(toolEventStats?.durationDistribution || [], themeColors.warning)}
+                    </Col>
+                </Row>
+            </Card>
 
             {/* 每日趋势图 - 仅在多天视图显示 */}
             {!isToday && (

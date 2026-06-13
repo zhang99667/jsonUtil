@@ -261,6 +261,16 @@ CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`。该
                                返回 DTO 数据
 ```
 
+### 工具事件闭环
+
+```
+主工具动作 → productTelemetry → /api/visitor/events → ToolEventService → tool_events
+                                                     ↓
+管理后台 /api/admin/traffic/tool-events → 功能频率 / 失败率 / 输入大小档 / 耗时档
+```
+
+工具事件只记录功能名、类别、状态、输入大小分桶、耗时分桶和来源，不保存 JSON 原文、路径值、完整输入长度或解析结果。当前覆盖转换模式切换、JSONPath/Scheme/模板面板开关、AI 修复、打开、保存和新建标签等显式动作。
+
 ---
 
 ## 部署架构
