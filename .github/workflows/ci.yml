@@ -48,6 +48,9 @@ jobs:
       - name: Scheme corpus baseline
         run: npm run corpus:scheme
 
+      - name: Scheme corpus quality snapshot
+        run: npm run corpus:snapshot:check
+
       - name: Production build
         run: npm run build
 

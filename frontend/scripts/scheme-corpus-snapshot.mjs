@@ -130,6 +130,33 @@ export const buildCorpusSnapshotSample = ({
   },
 });
 
+export const listThresholdFailures = samples => (
+  samples.flatMap(sample => (
+    Object.entries(sample.thresholds || {})
+      .filter(([, result]) => result && result.pass === false)
+      .map(([key, result]) => ({
+        sample: sample.sample,
+        key,
+        actual: result.actual,
+        expected: result.expected,
+      }))
+  ))
+);
+
+export const buildThresholdSummary = samples => {
+  const thresholdCount = samples.reduce((total, sample) => (
+    total + Object.keys(sample.thresholds || {}).length
+  ), 0);
+  const failures = listThresholdFailures(samples);
+
+  return {
+    pass: failures.length === 0,
+    total: thresholdCount,
+    failed: failures.length,
+    failures,
+  };
+};
+
 const buildSnapshotSampleFromResponseText = ({
   sampleName,
   expectedSnapshot,
@@ -242,6 +269,7 @@ export const buildCorpusSnapshot = async ({ sampleFilter, inputPath, sampleName 
       source: 'input',
       input: absoluteInputPath,
       sampleCount: samples.length,
+      thresholdSummary: buildThresholdSummary(samples),
       samples,
     };
   }
@@ -260,6 +288,7 @@ export const buildCorpusSnapshot = async ({ sampleFilter, inputPath, sampleName 
     schemaVersion: 1,
     kind: SCHEME_CORPUS_SNAPSHOT_KIND,
     sampleCount: samples.length,
+    thresholdSummary: buildThresholdSummary(samples),
     samples,
   };
 };
@@ -269,10 +298,16 @@ export const parseCliArgs = argv => {
     sampleFilter: undefined,
     inputPath: undefined,
     sampleName: undefined,
+    strict: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
+    if (arg === '--strict') {
+      options.strict = true;
+      continue;
+    }
+
     if (arg === '--sample') {
       const value = argv[index + 1];
       if (!value) throw new Error('--sample 需要样本名');
@@ -319,10 +354,14 @@ export const parseCliArgs = argv => {
 };
 
 const printUsage = () => {
-  console.error('用法: npm run corpus:snapshot -- [--sample reward-response-redacted]');
+  console.error('用法: npm run corpus:snapshot -- [--sample reward-response-redacted] [--strict]');
   console.error('或: npm run corpus:snapshot -- --input /path/to/response.json --name local-response');
   console.error('默认扫描 fixtures/scheme-corpus 下所有 *.redacted.json 样本，并输出质量快照 JSON。');
 };
+
+const formatThresholdFailure = failure => (
+  `${failure.sample}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}`
+);
 
 const runCli = async () => {
   const [, scriptPath, ...args] = process.argv;
@@ -333,6 +372,13 @@ const runCli = async () => {
     const options = parseCliArgs(args);
     const snapshot = await buildCorpusSnapshot(options);
     process.stdout.write(`${JSON.stringify(snapshot, null, 2)}\n`);
+    if (options.strict && !snapshot.thresholdSummary.pass) {
+      console.error('corpus:snapshot strict 检查失败:');
+      snapshot.thresholdSummary.failures.forEach(failure => {
+        console.error(`- ${formatThresholdFailure(failure)}`);
+      });
+      process.exitCode = 1;
+    }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     printUsage();
