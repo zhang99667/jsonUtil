@@ -218,6 +218,7 @@ frontend/fixtures/scheme-corpus/
 
 - 已建立脱敏真实 response corpus，并在 CI 中固定主 CMD Schema、热点 Schema、资源字段、占位符、扫描位置和 cmdHandler expected 子集。
 - 已新增 `corpus:snapshot` / `corpus:snapshot:check`，支持一条命令生成质量快照，并在 expected 阈值不通过时阻断 CI。
+- 新增 corpus 样本如果缺少 expected snapshot，会被质量门禁识别并失败，避免无基线样本混入。
 - CI 会生成 Markdown 质量摘要并上传 JSON 快照 artifact，PM 和研发可以直接下载对照样本质量变化。
 - 已支持用 `--input` 对本地真实 response 做一次性质量诊断，便于先验证、再脱敏沉淀为 corpus。
 

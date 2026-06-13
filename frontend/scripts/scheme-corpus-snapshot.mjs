@@ -106,6 +106,7 @@ export const buildCorpusSnapshotSample = ({
   qualitySnapshot,
 }) => ({
   sample: fixture.name,
+  baseline: fixture.baseline,
   responseBytes: Buffer.byteLength(responseText, 'utf8'),
   summaryText: report.summaryText || '深度解析: 无展开记录',
   coverage: report.coverage,
@@ -130,6 +131,15 @@ export const buildCorpusSnapshotSample = ({
   },
 });
 
+export const listMissingBaselines = samples => (
+  samples
+    .filter(sample => sample.baseline && !sample.baseline.expectedSnapshot)
+    .map(sample => ({
+      sample: sample.sample,
+      expectedSnapshot: sample.baseline.expectedSnapshotFile,
+    }))
+);
+
 export const listThresholdFailures = samples => (
   samples.flatMap(sample => (
     Object.entries(sample.thresholds || {})
@@ -147,12 +157,14 @@ export const buildThresholdSummary = samples => {
   const thresholdCount = samples.reduce((total, sample) => (
     total + Object.keys(sample.thresholds || {}).length
   ), 0);
+  const missingBaselines = listMissingBaselines(samples);
   const failures = listThresholdFailures(samples);
 
   return {
-    pass: failures.length === 0,
+    pass: failures.length === 0 && missingBaselines.length === 0,
     total: thresholdCount,
     failed: failures.length,
+    missingBaselines,
     failures,
   };
 };
@@ -166,19 +178,24 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
     '# Scheme Corpus 质量快照',
     '',
     `- 样本数: ${snapshot.sampleCount}`,
+    `- 缺失基线: ${snapshot.thresholdSummary.missingBaselines.length}`,
     `- 阈值失败: ${snapshot.thresholdSummary.failed}/${snapshot.thresholdSummary.total}`,
     `- 结果: ${snapshot.thresholdSummary.pass ? 'PASS' : 'FAIL'}`,
     '',
-    '| 样本 | 覆盖率 | 展开记录 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 阈值失败 |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+    '| 样本 | 基线 | 覆盖率 | 展开记录 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 阈值失败 |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
   ];
 
   snapshot.samples.forEach(sample => {
     const thresholdCount = Object.keys(sample.thresholds || {}).length;
     const failedCount = Object.values(sample.thresholds || {})
       .filter(result => result && result.pass === false).length;
+    const baselineLabel = sample.baseline
+      ? (sample.baseline.expectedSnapshot ? '已配置' : '缺失')
+      : '临时输入';
     lines.push([
       formatMarkdownValue(sample.sample),
+      baselineLabel,
       sample.coverage.score,
       sample.totals.records,
       sample.totals.cmdStructures,
@@ -190,6 +207,13 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
       `${failedCount}/${thresholdCount}`,
     ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
   });
+
+  if (snapshot.thresholdSummary.missingBaselines.length > 0) {
+    lines.push('', '## 缺失基线', '');
+    snapshot.thresholdSummary.missingBaselines.forEach(missing => {
+      lines.push(`- ${formatMarkdownValue(missing.sample)}: ${missing.expectedSnapshot}`);
+    });
+  }
 
   if (snapshot.thresholdSummary.failures.length > 0) {
     lines.push('', '## 失败阈值', '');
@@ -203,6 +227,7 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
 
 const buildSnapshotSampleFromResponseText = ({
   sampleName,
+  baseline,
   expectedSnapshot,
   responseText,
   modules,
@@ -218,6 +243,7 @@ const buildSnapshotSampleFromResponseText = ({
   return buildCorpusSnapshotSample({
     fixture: {
       name: sampleName,
+      baseline,
     },
     expectedSnapshot,
     responseText,
@@ -231,6 +257,10 @@ const loadJsonFile = async filePath => (
   parseJsonInput(await readFile(filePath, 'utf8'), path.basename(filePath))
 );
 
+const isFileNotFoundError = error => (
+  Boolean(error) && typeof error === 'object' && error.code === 'ENOENT'
+);
+
 const listCorpusFixtures = async sampleFilter => {
   const filenames = (await readdir(CORPUS_DIR))
     .filter(filename => filename.endsWith('.redacted.json'))
@@ -242,13 +272,20 @@ const listCorpusFixtures = async sampleFilter => {
     let expectedSnapshot;
     try {
       expectedSnapshot = await loadJsonFile(expectedPath);
-    } catch {
+    } catch (error) {
+      if (!isFileNotFoundError(error)) throw error;
       expectedSnapshot = undefined;
     }
 
     return {
       prefix,
-      fixture,
+      fixture: {
+        ...fixture,
+        baseline: {
+          expectedSnapshot: Boolean(expectedSnapshot),
+          expectedSnapshotFile: path.basename(expectedPath),
+        },
+      },
       expectedSnapshot,
     };
   }));
@@ -322,6 +359,7 @@ export const buildCorpusSnapshot = async ({ sampleFilter, inputPath, sampleName 
   const samples = fixtures.map(({ fixture, expectedSnapshot }) => (
     buildSnapshotSampleFromResponseText({
       sampleName: fixture.name,
+      baseline: fixture.baseline,
       expectedSnapshot,
       responseText: buildCorpusResponseText(fixture),
       modules,
@@ -456,6 +494,9 @@ const runCli = async () => {
     }
     if (options.strict && !snapshot.thresholdSummary.pass) {
       console.error('corpus:snapshot strict 检查失败:');
+      snapshot.thresholdSummary.missingBaselines.forEach(missing => {
+        console.error(`- ${missing.sample}: 缺失 ${missing.expectedSnapshot}`);
+      });
       snapshot.thresholdSummary.failures.forEach(failure => {
         console.error(`- ${formatThresholdFailure(failure)}`);
       });

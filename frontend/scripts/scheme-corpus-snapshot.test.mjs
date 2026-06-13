@@ -6,6 +6,7 @@ import {
   buildThresholdResults,
   buildThresholdSummary,
   formatCorpusSnapshotMarkdownSummary,
+  listMissingBaselines,
   listThresholdFailures,
   parseCliArgs,
   SCHEME_CORPUS_SNAPSHOT_KIND,
@@ -183,6 +184,10 @@ describe('buildCorpusSnapshotSample', () => {
     const sample = buildCorpusSnapshotSample({
       fixture: {
         name: 'reward-response-redacted',
+        baseline: {
+          expectedSnapshot: true,
+          expectedSnapshotFile: 'reward-response.expected.snapshot.json',
+        },
       },
       expectedSnapshot: createExpectedSnapshot(),
       responseText: '{"cmd":"1"}',
@@ -200,6 +205,10 @@ describe('buildCorpusSnapshotSample', () => {
     expect(SCHEME_CORPUS_SNAPSHOT_KIND).toBe('json-helper-scheme-corpus-quality-snapshot');
     expect(sample).toMatchObject({
       sample: 'reward-response-redacted',
+      baseline: {
+        expectedSnapshot: true,
+        expectedSnapshotFile: 'reward-response.expected.snapshot.json',
+      },
       responseBytes: 11,
       totals: {
         nestedResourceFields: 1,
@@ -257,6 +266,7 @@ describe('buildThresholdSummary', () => {
       pass: false,
       total: 2,
       failed: 1,
+      missingBaselines: [],
       failures: [
         {
           sample: 'fail-sample',
@@ -274,8 +284,39 @@ describe('buildThresholdSummary', () => {
         pass: true,
         total: 0,
         failed: 0,
+        missingBaselines: [],
         failures: [],
       });
+  });
+
+  it('corpus 样本缺少 expected snapshot 时标记为失败', () => {
+    const samples = [{
+      sample: 'new-response-redacted',
+      baseline: {
+        expectedSnapshot: false,
+        expectedSnapshotFile: 'new-response.expected.snapshot.json',
+      },
+      thresholds: {},
+    }];
+
+    expect(listMissingBaselines(samples)).toEqual([
+      {
+        sample: 'new-response-redacted',
+        expectedSnapshot: 'new-response.expected.snapshot.json',
+      },
+    ]);
+    expect(buildThresholdSummary(samples)).toEqual({
+      pass: false,
+      total: 0,
+      failed: 0,
+      missingBaselines: [
+        {
+          sample: 'new-response-redacted',
+          expectedSnapshot: 'new-response.expected.snapshot.json',
+        },
+      ],
+      failures: [],
+    });
   });
 });
 
@@ -306,8 +347,51 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
     };
 
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('# Scheme Corpus 质量快照');
-    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('| reward-response-redacted | 100 | 2 | 2 | 5 | 1 | 2 | 0 | 0 | 0/9 |');
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('| reward-response-redacted | 临时输入 | 100 | 2 | 2 | 5 | 1 | 2 | 0 | 0 | 0/9 |');
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- 结果: PASS');
+  });
+
+  it('在 Markdown 摘要中展示缺失基线', () => {
+    const snapshot = {
+      schemaVersion: 1,
+      kind: SCHEME_CORPUS_SNAPSHOT_KIND,
+      sampleCount: 1,
+      thresholdSummary: {
+        pass: false,
+        total: 0,
+        failed: 0,
+        missingBaselines: [
+          {
+            sample: 'new-response-redacted',
+            expectedSnapshot: 'new-response.expected.snapshot.json',
+          },
+        ],
+        failures: [],
+      },
+      samples: [{
+        sample: 'new-response-redacted',
+        baseline: {
+          expectedSnapshot: false,
+          expectedSnapshotFile: 'new-response.expected.snapshot.json',
+        },
+        coverage: { score: 100 },
+        totals: {
+          records: 1,
+          cmdStructures: 1,
+          nestedCommandFields: 1,
+          nestedResourceFields: 0,
+          runtimePlaceholders: 0,
+          unresolved: 0,
+          warnings: 0,
+        },
+        thresholds: {},
+      }],
+    };
+
+    const markdown = formatCorpusSnapshotMarkdownSummary(snapshot);
+    expect(markdown).toContain('- 缺失基线: 1');
+    expect(markdown).toContain('| new-response-redacted | 缺失 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 |');
+    expect(markdown).toContain('- new-response-redacted: new-response.expected.snapshot.json');
   });
 });
 
