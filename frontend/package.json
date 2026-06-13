@@ -16,6 +16,7 @@
     "corpus:scheme": "vitest run src/utils/schemeCorpus.test.ts",
     "corpus:snapshot": "node scripts/scheme-corpus-snapshot.mjs",
     "corpus:snapshot:check": "node scripts/scheme-corpus-snapshot.mjs --strict",
+    "corpus:snapshot:diff": "node scripts/scheme-corpus-snapshot-diff.mjs",
     "samples:to-regression": "node scripts/issue-samples-to-regression.mjs",
     "cmd:diff": "node scripts/cmd-structure-diff.mjs",
     "test:watch": "vitest",
