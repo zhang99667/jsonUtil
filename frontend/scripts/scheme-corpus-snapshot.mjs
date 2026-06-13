@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { runnerImport } from 'vite';
+import { diffCmdStructures, normalizeCmdStructure } from './cmd-structure-diff.mjs';
 
 export const SCHEME_CORPUS_SNAPSHOT_KIND = 'json-helper-scheme-corpus-quality-snapshot';
 
@@ -97,9 +98,85 @@ export const buildThresholdResults = (report, qualitySnapshot, expectedSnapshot)
   return results;
 };
 
+const findCmdStructureRecord = (report, expectedSnapshot) => {
+  const records = Array.isArray(report.records) ? report.records : [];
+  const primaryCommandSchema = expectedSnapshot?.primaryCommandSchema;
+  if (primaryCommandSchema) {
+    const record = records.find(item => (
+      item?.commandSchema === primaryCommandSchema &&
+      typeof item.getCmdStructureCopyText === 'function'
+    ));
+    if (record) return record;
+  }
+
+  return records.find(item => typeof item?.getCmdStructureCopyText === 'function');
+};
+
+const summarizeCmdHandlerDiff = diff => ({
+  schemaDiff: diff.schemaDiff,
+  sourceDiff: diff.sourceDiff,
+  missingPathCount: diff.missingPaths.length,
+  extraPathCount: diff.extraPaths.length,
+  valueDiffCount: diff.valueDiffs.length,
+  missingPaths: diff.missingPaths.slice(0, 20),
+  extraPaths: diff.extraPaths.slice(0, 20),
+  valueDiffs: diff.valueDiffs.slice(0, 20),
+});
+
+export const buildCmdHandlerAlignment = ({
+  sampleName,
+  report,
+  expectedSnapshot,
+  cmdHandlerExpected,
+}) => {
+  if (!expectedSnapshot?.cmdHandlerExpected || cmdHandlerExpected === undefined) {
+    return undefined;
+  }
+
+  const record = findCmdStructureRecord(report, expectedSnapshot);
+  if (!record) {
+    return {
+      expectedFile: expectedSnapshot.cmdHandlerExpected,
+      ignoreExtraPaths: true,
+      pass: false,
+      reason: 'missingActualCmdStructure',
+      actualCommandSchema: undefined,
+      expectedCommandSchema: normalizeCmdStructure(cmdHandlerExpected).cmdSchema,
+      schemaDiff: false,
+      sourceDiff: false,
+      missingPaths: 0,
+      extraPaths: 0,
+      valueDiffs: 0,
+    };
+  }
+
+  const actual = parseJsonInput(
+    record.getCmdStructureCopyText(),
+    `${sampleName} cmdHandler actual`
+  );
+  const diff = diffCmdStructures(actual, cmdHandlerExpected, { ignoreExtraPaths: true });
+  const actualCmdStructure = normalizeCmdStructure(actual);
+  const expectedCmdStructure = normalizeCmdStructure(cmdHandlerExpected);
+
+  return {
+    expectedFile: expectedSnapshot.cmdHandlerExpected,
+    ignoreExtraPaths: true,
+    pass: !diff.hasDifferences,
+    actualCommandSchema: actualCmdStructure.cmdSchema,
+    expectedCommandSchema: expectedCmdStructure.cmdSchema,
+    schemaDiff: Boolean(diff.schemaDiff),
+    sourceDiff: Boolean(diff.sourceDiff),
+    missingPaths: diff.missingPaths.length,
+    extraPaths: diff.extraPaths.length,
+    valueDiffs: diff.valueDiffs.length,
+    diff: summarizeCmdHandlerDiff(diff),
+  };
+};
+
 export const buildCorpusSnapshotSample = ({
   fixture,
   expectedSnapshot,
+  cmdHandlerExpected,
   responseText,
   report,
   reportView,
@@ -121,6 +198,12 @@ export const buildCorpusSnapshotSample = ({
     count: group.count,
     sourceCount: group.sourceCount,
   })),
+  cmdHandlerAlignment: buildCmdHandlerAlignment({
+    sampleName: fixture.name,
+    report,
+    expectedSnapshot,
+    cmdHandlerExpected,
+  }),
   thresholds: buildThresholdResults(report, qualitySnapshot, expectedSnapshot),
   truncated: {
     records: reportView.isRecordTruncated,
@@ -132,12 +215,22 @@ export const buildCorpusSnapshotSample = ({
 });
 
 export const listMissingBaselines = samples => (
-  samples
-    .filter(sample => sample.baseline && !sample.baseline.expectedSnapshot)
-    .map(sample => ({
-      sample: sample.sample,
-      expectedSnapshot: sample.baseline.expectedSnapshotFile,
-    }))
+  samples.flatMap(sample => {
+    const missing = [];
+    if (sample.baseline && !sample.baseline.expectedSnapshot) {
+      missing.push({
+        sample: sample.sample,
+        expectedSnapshot: sample.baseline.expectedSnapshotFile,
+      });
+    }
+    if (sample.baseline?.expectedSnapshot && sample.baseline.cmdHandlerExpected === false) {
+      missing.push({
+        sample: sample.sample,
+        cmdHandlerExpected: sample.baseline.cmdHandlerExpectedFile || '(未配置 cmdHandlerExpected)',
+      });
+    }
+    return missing;
+  })
 );
 
 export const listThresholdFailures = samples => (
@@ -153,25 +246,60 @@ export const listThresholdFailures = samples => (
   ))
 );
 
+export const listCmdHandlerFailures = samples => (
+  samples
+    .filter(sample => sample.cmdHandlerAlignment && !sample.cmdHandlerAlignment.pass)
+    .map(sample => ({
+      sample: sample.sample,
+      expectedFile: sample.cmdHandlerAlignment.expectedFile,
+      reason: sample.cmdHandlerAlignment.reason,
+      schemaDiff: sample.cmdHandlerAlignment.schemaDiff,
+      sourceDiff: sample.cmdHandlerAlignment.sourceDiff,
+      missingPaths: sample.cmdHandlerAlignment.missingPaths,
+      extraPaths: sample.cmdHandlerAlignment.extraPaths,
+      valueDiffs: sample.cmdHandlerAlignment.valueDiffs,
+    }))
+);
+
 export const buildThresholdSummary = samples => {
   const thresholdCount = samples.reduce((total, sample) => (
     total + Object.keys(sample.thresholds || {}).length
   ), 0);
   const missingBaselines = listMissingBaselines(samples);
   const failures = listThresholdFailures(samples);
+  const cmdHandlerFailures = listCmdHandlerFailures(samples);
+  const cmdHandlerTotal = samples.filter(sample => sample.cmdHandlerAlignment).length;
 
   return {
-    pass: failures.length === 0 && missingBaselines.length === 0,
+    pass: failures.length === 0 && missingBaselines.length === 0 && cmdHandlerFailures.length === 0,
     total: thresholdCount,
     failed: failures.length,
     missingBaselines,
     failures,
+    cmdHandler: {
+      total: cmdHandlerTotal,
+      failed: cmdHandlerFailures.length,
+      failures: cmdHandlerFailures,
+    },
   };
 };
 
 const formatMarkdownValue = value => (
   String(value ?? '').replace(/\|/g, '\\|')
 );
+
+const formatCmdHandlerMarkdownLabel = sample => {
+  if (sample.cmdHandlerAlignment) {
+    return sample.cmdHandlerAlignment.pass ? '一致' : '失败';
+  }
+  if (sample.baseline && !sample.baseline.expectedSnapshot) {
+    return '缺失';
+  }
+  if (sample.baseline?.expectedSnapshot && sample.baseline.cmdHandlerExpected === false) {
+    return '缺失';
+  }
+  return sample.baseline ? '未配置' : '临时输入';
+};
 
 export const formatCorpusSnapshotMarkdownSummary = snapshot => {
   const lines = [
@@ -180,10 +308,11 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
     `- 样本数: ${snapshot.sampleCount}`,
     `- 缺失基线: ${snapshot.thresholdSummary.missingBaselines.length}`,
     `- 阈值失败: ${snapshot.thresholdSummary.failed}/${snapshot.thresholdSummary.total}`,
+    `- cmdHandler 对齐失败: ${snapshot.thresholdSummary.cmdHandler.failed}/${snapshot.thresholdSummary.cmdHandler.total}`,
     `- 结果: ${snapshot.thresholdSummary.pass ? 'PASS' : 'FAIL'}`,
     '',
-    '| 样本 | 基线 | 覆盖率 | 展开记录 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 阈值失败 |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+    '| 样本 | 基线 | cmdHandler | 覆盖率 | 展开记录 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 阈值失败 |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
   ];
 
   snapshot.samples.forEach(sample => {
@@ -196,6 +325,7 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
     lines.push([
       formatMarkdownValue(sample.sample),
       baselineLabel,
+      formatCmdHandlerMarkdownLabel(sample),
       sample.coverage.score,
       sample.totals.records,
       sample.totals.cmdStructures,
@@ -211,7 +341,12 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
   if (snapshot.thresholdSummary.missingBaselines.length > 0) {
     lines.push('', '## 缺失基线', '');
     snapshot.thresholdSummary.missingBaselines.forEach(missing => {
-      lines.push(`- ${formatMarkdownValue(missing.sample)}: ${missing.expectedSnapshot}`);
+      if (missing.expectedSnapshot) {
+        lines.push(`- ${formatMarkdownValue(missing.sample)}: 缺失 expected snapshot ${missing.expectedSnapshot}`);
+      }
+      if (missing.cmdHandlerExpected) {
+        lines.push(`- ${formatMarkdownValue(missing.sample)}: 缺失 cmdHandler expected ${missing.cmdHandlerExpected}`);
+      }
     });
   }
 
@@ -222,6 +357,14 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
     });
   }
 
+  if (snapshot.thresholdSummary.cmdHandler.failures.length > 0) {
+    lines.push('', '## cmdHandler 对齐失败', '');
+    snapshot.thresholdSummary.cmdHandler.failures.forEach(failure => {
+      const reason = failure.reason ? `, reason=${failure.reason}` : '';
+      lines.push(`- ${formatMarkdownValue(failure.sample)}: missingPaths=${failure.missingPaths}, valueDiffs=${failure.valueDiffs}, schemaDiff=${failure.schemaDiff ? '是' : '否'}${reason}`);
+    });
+  }
+
   return `${lines.join('\n')}\n`;
 };
 
@@ -229,6 +372,7 @@ const buildSnapshotSampleFromResponseText = ({
   sampleName,
   baseline,
   expectedSnapshot,
+  cmdHandlerExpected,
   responseText,
   modules,
 }) => {
@@ -246,6 +390,7 @@ const buildSnapshotSampleFromResponseText = ({
       baseline,
     },
     expectedSnapshot,
+    cmdHandlerExpected,
     responseText,
     report,
     reportView,
@@ -270,11 +415,21 @@ const listCorpusFixtures = async sampleFilter => {
     const fixture = await loadJsonFile(path.join(CORPUS_DIR, filename));
     const expectedPath = path.join(CORPUS_DIR, `${prefix}.expected.snapshot.json`);
     let expectedSnapshot;
+    let cmdHandlerExpected;
     try {
       expectedSnapshot = await loadJsonFile(expectedPath);
     } catch (error) {
       if (!isFileNotFoundError(error)) throw error;
       expectedSnapshot = undefined;
+    }
+    if (expectedSnapshot?.cmdHandlerExpected) {
+      const cmdHandlerExpectedPath = path.join(CORPUS_DIR, expectedSnapshot.cmdHandlerExpected);
+      try {
+        cmdHandlerExpected = await loadJsonFile(cmdHandlerExpectedPath);
+      } catch (error) {
+        if (!isFileNotFoundError(error)) throw error;
+        cmdHandlerExpected = undefined;
+      }
     }
 
     return {
@@ -284,9 +439,16 @@ const listCorpusFixtures = async sampleFilter => {
         baseline: {
           expectedSnapshot: Boolean(expectedSnapshot),
           expectedSnapshotFile: path.basename(expectedPath),
+          ...(expectedSnapshot
+            ? {
+                cmdHandlerExpected: Boolean(cmdHandlerExpected),
+                cmdHandlerExpectedFile: expectedSnapshot.cmdHandlerExpected,
+              }
+            : {}),
         },
       },
       expectedSnapshot,
+      cmdHandlerExpected,
     };
   }));
 
@@ -356,11 +518,12 @@ export const buildCorpusSnapshot = async ({ sampleFilter, inputPath, sampleName 
   }
 
   const fixtures = await listCorpusFixtures(sampleFilter);
-  const samples = fixtures.map(({ fixture, expectedSnapshot }) => (
+  const samples = fixtures.map(({ fixture, expectedSnapshot, cmdHandlerExpected }) => (
     buildSnapshotSampleFromResponseText({
       sampleName: fixture.name,
       baseline: fixture.baseline,
       expectedSnapshot,
+      cmdHandlerExpected,
       responseText: buildCorpusResponseText(fixture),
       modules,
     })
@@ -463,6 +626,18 @@ const formatThresholdFailure = failure => (
   `${failure.sample}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}`
 );
 
+const formatMissingBaseline = missing => {
+  if (missing.expectedSnapshot) {
+    return `${missing.sample}: 缺失 ${missing.expectedSnapshot}`;
+  }
+  return `${missing.sample}: 缺失 ${missing.cmdHandlerExpected}`;
+};
+
+const formatCmdHandlerFailure = failure => {
+  const reason = failure.reason ? `, reason=${failure.reason}` : '';
+  return `${failure.sample}: missingPaths=${failure.missingPaths}, valueDiffs=${failure.valueDiffs}, schemaDiff=${failure.schemaDiff ? 'yes' : 'no'}${reason}`;
+};
+
 const writeTextFile = async (filePath, text, options = {}) => {
   const absolutePath = path.resolve(process.cwd(), filePath);
   await mkdir(path.dirname(absolutePath), { recursive: true });
@@ -495,10 +670,13 @@ const runCli = async () => {
     if (options.strict && !snapshot.thresholdSummary.pass) {
       console.error('corpus:snapshot strict 检查失败:');
       snapshot.thresholdSummary.missingBaselines.forEach(missing => {
-        console.error(`- ${missing.sample}: 缺失 ${missing.expectedSnapshot}`);
+        console.error(`- ${formatMissingBaseline(missing)}`);
       });
       snapshot.thresholdSummary.failures.forEach(failure => {
         console.error(`- ${formatThresholdFailure(failure)}`);
+      });
+      snapshot.thresholdSummary.cmdHandler.failures.forEach(failure => {
+        console.error(`- cmdHandler ${formatCmdHandlerFailure(failure)}`);
       });
       process.exitCode = 1;
     }

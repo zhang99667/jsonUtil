@@ -3,9 +3,11 @@ import {
   applyCorpusReplacements,
   buildCorpusResponseText,
   buildCorpusSnapshotSample,
+  buildCmdHandlerAlignment,
   buildThresholdResults,
   buildThresholdSummary,
   formatCorpusSnapshotMarkdownSummary,
+  listCmdHandlerFailures,
   listMissingBaselines,
   listThresholdFailures,
   parseCliArgs,
@@ -28,6 +30,20 @@ const createReport = () => ({
   cmdStructureCount: 2,
   nestedCommandFieldCount: 5,
   nestedResourceFieldCount: 1,
+  records: [{
+    commandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+    getCmdStructureCopyText: () => JSON.stringify({
+      result: {
+        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdParams: {
+          panel_cmd: {
+            cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+          },
+          extraParsedField: 'more-than-baseline',
+        },
+      },
+    }),
+  }],
   runtimePlaceholderGroups: [
     {
       value: '__CONVERT_CMD__',
@@ -89,6 +105,8 @@ const createQualitySnapshot = () => ({
 });
 
 const createExpectedSnapshot = () => ({
+  cmdHandlerExpected: 'reward-response.cmdhandler.expected.json',
+  primaryCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
   quality: {
     minCoverageScore: 100,
     minCmdStructures: 1,
@@ -99,6 +117,17 @@ const createExpectedSnapshot = () => ({
     leadHotspotCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
     leadHotspotResourceSchema: 'https://video.example.com/ad.mp4',
     leadHotspotResourceField: 'video_url',
+  },
+});
+
+const createCmdHandlerExpected = () => ({
+  result: {
+    cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+    cmdParams: {
+      panel_cmd: {
+        cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+      },
+    },
   },
 });
 
@@ -190,6 +219,7 @@ describe('buildCorpusSnapshotSample', () => {
         },
       },
       expectedSnapshot: createExpectedSnapshot(),
+      cmdHandlerExpected: createCmdHandlerExpected(),
       responseText: '{"cmd":"1"}',
       report: createReport(),
       reportView: {
@@ -224,6 +254,61 @@ describe('buildCorpusSnapshotSample', () => {
         leadHotspotResourceSchema: {
           pass: true,
         },
+      },
+      cmdHandlerAlignment: {
+        pass: true,
+        expectedFile: 'reward-response.cmdhandler.expected.json',
+        ignoreExtraPaths: true,
+        missingPaths: 0,
+        valueDiffs: 0,
+      },
+    });
+  });
+});
+
+describe('buildCmdHandlerAlignment', () => {
+  it('对齐 cmdHandler expected，并允许本工具多解析额外路径', () => {
+    const alignment = buildCmdHandlerAlignment({
+      sampleName: 'reward-response-redacted',
+      report: createReport(),
+      expectedSnapshot: createExpectedSnapshot(),
+      cmdHandlerExpected: createCmdHandlerExpected(),
+    });
+
+    expect(alignment).toMatchObject({
+      pass: true,
+      expectedFile: 'reward-response.cmdhandler.expected.json',
+      actualCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      expectedCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      extraPaths: 0,
+    });
+  });
+
+  it('关键路径缺失时标记为 cmdHandler 对齐失败', () => {
+    const alignment = buildCmdHandlerAlignment({
+      sampleName: 'reward-response-redacted',
+      report: {
+        ...createReport(),
+        records: [{
+          commandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+          getCmdStructureCopyText: () => JSON.stringify({
+            result: {
+              cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+              cmdParams: {},
+            },
+          }),
+        }],
+      },
+      expectedSnapshot: createExpectedSnapshot(),
+      cmdHandlerExpected: createCmdHandlerExpected(),
+    });
+
+    expect(alignment).toMatchObject({
+      pass: false,
+      missingPaths: 2,
+      valueDiffs: 0,
+      diff: {
+        missingPathCount: 2,
       },
     });
   });
@@ -275,6 +360,11 @@ describe('buildThresholdSummary', () => {
           expected: 4,
         },
       ],
+      cmdHandler: {
+        total: 0,
+        failed: 0,
+        failures: [],
+      },
     });
   });
 
@@ -286,6 +376,11 @@ describe('buildThresholdSummary', () => {
         failed: 0,
         missingBaselines: [],
         failures: [],
+        cmdHandler: {
+          total: 0,
+          failed: 0,
+          failures: [],
+        },
       });
   });
 
@@ -316,6 +411,73 @@ describe('buildThresholdSummary', () => {
         },
       ],
       failures: [],
+      cmdHandler: {
+        total: 0,
+        failed: 0,
+        failures: [],
+      },
+    });
+  });
+
+  it('corpus 样本缺少 cmdHandler expected 时标记为失败', () => {
+    const samples = [{
+      sample: 'new-response-redacted',
+      baseline: {
+        expectedSnapshot: true,
+        expectedSnapshotFile: 'new-response.expected.snapshot.json',
+        cmdHandlerExpected: false,
+        cmdHandlerExpectedFile: 'new-response.cmdhandler.expected.json',
+      },
+      thresholds: {},
+    }];
+
+    expect(listMissingBaselines(samples)).toEqual([
+      {
+        sample: 'new-response-redacted',
+        cmdHandlerExpected: 'new-response.cmdhandler.expected.json',
+      },
+    ]);
+    expect(buildThresholdSummary(samples).pass).toBe(false);
+  });
+
+  it('汇总 cmdHandler 对齐失败项', () => {
+    const samples = [{
+      sample: 'reward-response-redacted',
+      thresholds: {},
+      cmdHandlerAlignment: {
+        expectedFile: 'reward-response.cmdhandler.expected.json',
+        pass: false,
+        schemaDiff: false,
+        sourceDiff: false,
+        missingPaths: 1,
+        extraPaths: 0,
+        valueDiffs: 0,
+      },
+    }];
+
+    expect(listCmdHandlerFailures(samples)).toEqual([
+      {
+        sample: 'reward-response-redacted',
+        expectedFile: 'reward-response.cmdhandler.expected.json',
+        reason: undefined,
+        schemaDiff: false,
+        sourceDiff: false,
+        missingPaths: 1,
+        extraPaths: 0,
+        valueDiffs: 0,
+      },
+    ]);
+    expect(buildThresholdSummary(samples)).toEqual({
+      pass: false,
+      total: 0,
+      failed: 0,
+      missingBaselines: [],
+      failures: [],
+      cmdHandler: {
+        total: 1,
+        failed: 1,
+        failures: listCmdHandlerFailures(samples),
+      },
     });
   });
 });
@@ -347,7 +509,8 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
     };
 
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('# Scheme Corpus 质量快照');
-    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('| reward-response-redacted | 临时输入 | 100 | 2 | 2 | 5 | 1 | 2 | 0 | 0 | 0/9 |');
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('| reward-response-redacted | 临时输入 | 临时输入 | 100 | 2 | 2 | 5 | 1 | 2 | 0 | 0 | 0/9 |');
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- cmdHandler 对齐失败: 0/0');
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- 结果: PASS');
   });
 
@@ -367,6 +530,11 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
           },
         ],
         failures: [],
+        cmdHandler: {
+          total: 0,
+          failed: 0,
+          failures: [],
+        },
       },
       samples: [{
         sample: 'new-response-redacted',
@@ -390,8 +558,62 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
 
     const markdown = formatCorpusSnapshotMarkdownSummary(snapshot);
     expect(markdown).toContain('- 缺失基线: 1');
-    expect(markdown).toContain('| new-response-redacted | 缺失 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 |');
-    expect(markdown).toContain('- new-response-redacted: new-response.expected.snapshot.json');
+    expect(markdown).toContain('| new-response-redacted | 缺失 | 缺失 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 |');
+    expect(markdown).toContain('- new-response-redacted: 缺失 expected snapshot new-response.expected.snapshot.json');
+  });
+
+  it('在 Markdown 摘要中展示 cmdHandler 对齐失败', () => {
+    const snapshot = {
+      schemaVersion: 1,
+      kind: SCHEME_CORPUS_SNAPSHOT_KIND,
+      sampleCount: 1,
+      thresholdSummary: {
+        pass: false,
+        total: 0,
+        failed: 0,
+        missingBaselines: [],
+        failures: [],
+        cmdHandler: {
+          total: 1,
+          failed: 1,
+          failures: [{
+            sample: 'reward-response-redacted',
+            expectedFile: 'reward-response.cmdhandler.expected.json',
+            schemaDiff: false,
+            sourceDiff: false,
+            missingPaths: 1,
+            extraPaths: 0,
+            valueDiffs: 0,
+          }],
+        },
+      },
+      samples: [{
+        sample: 'reward-response-redacted',
+        coverage: { score: 100 },
+        totals: {
+          records: 1,
+          cmdStructures: 1,
+          nestedCommandFields: 1,
+          nestedResourceFields: 0,
+          runtimePlaceholders: 0,
+          unresolved: 0,
+          warnings: 0,
+        },
+        thresholds: {},
+        cmdHandlerAlignment: {
+          pass: false,
+          missingPaths: 1,
+          valueDiffs: 0,
+          schemaDiff: false,
+        },
+      }],
+    };
+
+    const markdown = formatCorpusSnapshotMarkdownSummary(snapshot);
+    expect(markdown).toContain('- cmdHandler 对齐失败: 1/1');
+    expect(markdown).toContain('| reward-response-redacted | 临时输入 | 失败 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 |');
+    expect(markdown).toContain('## cmdHandler 对齐失败');
+    expect(markdown).toContain('- reward-response-redacted: missingPaths=1, valueDiffs=0, schemaDiff=否');
   });
 });
 

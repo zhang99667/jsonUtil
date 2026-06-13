@@ -167,7 +167,7 @@ const compareRows = (actualRows, expectedRows) => {
   return { missingPaths, extraPaths, valueDiffs };
 };
 
-export const diffCmdStructures = (actualInput, expectedInput) => {
+export const diffCmdStructures = (actualInput, expectedInput, options = {}) => {
   const actual = normalizeCmdStructure(actualInput);
   const expected = normalizeCmdStructure(expectedInput);
   const schemaDiff = actual.cmdSchema !== expected.cmdSchema
@@ -180,16 +180,19 @@ export const diffCmdStructures = (actualInput, expectedInput) => {
     collectValueMap(actual.cmdParams),
     collectValueMap(expected.cmdParams)
   );
+  const extraPaths = options.ignoreExtraPaths ? [] : paramDiff.extraPaths;
 
   return {
     schemaDiff,
     sourceDiff,
-    ...paramDiff,
+    missingPaths: paramDiff.missingPaths,
+    extraPaths,
+    valueDiffs: paramDiff.valueDiffs,
     hasDifferences: Boolean(
       schemaDiff ||
       sourceDiff ||
       paramDiff.missingPaths.length ||
-      paramDiff.extraPaths.length ||
+      extraPaths.length ||
       paramDiff.valueDiffs.length
     ),
   };
