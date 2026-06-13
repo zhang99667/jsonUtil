@@ -178,7 +178,7 @@ frontend/fixtures/scheme-corpus/
 
 ### P1: 性能预算分层
 
-已有首屏预加载预算，建议补解析性能预算。
+已有首屏预加载预算，并已新增核心 Scheme 解析性能预算脚本。下一步建议继续补齐浏览器 Worker 与 JSONPath 查询的端到端预算。
 
 建议指标:
 
@@ -226,6 +226,7 @@ frontend/fixtures/scheme-corpus/
 - CI 会生成 Markdown 质量摘要并上传 JSON 快照 artifact，PM 和研发可以直接下载对照样本质量变化。
 - 已新增质量快照趋势对比命令，可把两份 snapshot 对比为 JSON/Markdown 报告，并在 strict 模式下拦截解析质量退化。
 - 已支持用 `--input` 对本地真实 response 做一次性质量诊断，便于先验证、再脱敏沉淀为 corpus。
+- 已新增 `perf:scheme` 核心解析性能预算，可基于脱敏 corpus 构造 50KB / 250KB response，输出耗时、覆盖率、CMD 结构、资源字段、占位符、待检查和跳过数量，并支持 strict 模式拦截本地退化。
 - 根据真实 response 对照发现并补齐字符串型资源 URL 洞察，`button_icon`、`user_portrait`、`button_image`、lottie 等不带 query 的素材字段会进入资源字段和静态资源 URL Top。
 - AI 修复发送前会默认阻断 token、sign、cookie、密钥和设备标识等疑似敏感字段，覆盖多层 URL 编码和内部 Base64 片段，避免把真实 response 原文直接发给模型。
 - AI 修复已增加本地确定性修复前置能力，常见小错误能在本地完成并跳过模型调用，连接测试仍会真实请求 AI 服务。
@@ -245,6 +246,7 @@ frontend/fixtures/scheme-corpus/
 - 将 cmdHandler expected 接入 corpus diff。
 - 给 Scheme 面板增加“解析前后质量对比”入口。
 - 更新 `ARCHITECTURE.md` 的 Worker 与解析质量闭环章节。
+- 继续补浏览器 Worker 端到端性能预算，覆盖解析取消响应和 JSONPath 大查询。
 
 ## 不建议马上做的事
 

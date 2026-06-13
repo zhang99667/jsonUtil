@@ -236,6 +236,15 @@ PREVIEW JSON + TransformReportPanel
 
 CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`。该步骤与普通单测分开展示，便于快速定位真实 response 解析能力退化。
 
+解析质量还提供两个面向评审和本地排查的脚本：
+
+| 命令 | 说明 |
+|------|------|
+| `npm run corpus:snapshot:check` | 输出 corpus 覆盖率、CMD/资源热点、占位符、待检查项和 cmdHandler expected 对齐结果，并在 expected 阈值失败时退出非 0 |
+| `npm run perf:scheme -- --iterations 3 --strict` | 基于脱敏 corpus 构造 50KB / 250KB response，测量 `deepParseWithContext` 核心解析耗时，并同步输出覆盖率、CMD 结构、资源字段、占位符、待检查和跳过数量 |
+
+`perf:scheme` 是核心解析性能预算，不等同于浏览器 Worker 的完整端到端 benchmark。它的目标是给 PM/研发一个稳定、低成本的退化探针；浏览器输入响应、取消响应和 Worker 调度仍由 E2E 与手工体验验证补充。
+
 ### 流量记录流程
 
 ```
