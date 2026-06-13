@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "kind": "json-helper-cmdhandler-expected",
+  "sample": "reward-response-redacted",
+  "result": {
+    "cmdSchema": "nadcorevendor://vendor/ad/rewardImpl",
+    "cmdParams": {
+      "video_info": {
+        "tail_frame": {
+          "panel_scheme": {
+            "cmdSchema": "nadcorevendor://vendor/ad/rewardWebPanel",
+            "cmdParams": {
+              "panel_cmd": {
+                "cmdSchema": "baiduboxapp://v7/vendor/ad/deeplink",
+                "cmdParams": {
+                  "params": {
+                    "appUrl": {
+                      "cmdSchema": "openapp.jdmobile://virtual",
+                      "cmdParams": {
+                        "params": {
+                          "category": "jump",
+                          "des": "m",
+                          "url": {
+                            "cmdSchema": "https://union-click.jd.com/sem.php",
+                            "cmdParams": {
+                              "to": {
+                                "sku": "101",
+                                "bd_vid": "abc"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "webUrl": {
+                      "cmdSchema": "baiduboxapp://v1/easybrowse/open",
+                      "cmdParams": {
+                        "url": {
+                          "cmdSchema": "https://union-click.jd.com/sem.php",
+                          "cmdParams": {
+                            "to": {
+                              "sku": "101",
+                              "bd_vid": "abc"
+                            }
+                          }
+                        },
+                        "adFlag": {
+                          "ext": "__AD_EXTRA_PARAM_ENCODE_1__",
+                          "nid": "ad1_101"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "convert": {
+        "button_scheme": {
+          "cmdSchema": "baiduboxapp://v7/vendor/ad/deeplink"
+        }
+      },
+      "cmd_policy": {
+        "callbackUrl": {
+          "cmdSchema": "https://callback.example.com/track",
+          "cmdParams": {
+            "clickId": "__CLICK_ID__",
+            "sign": "__SIGN__",
+            "callbackUrl": "__CALLBACK_URL__"
+          }
+        }
+      },
+      "common_info": {
+        "ad_monitor_url": [
+          {
+            "click_url": {
+              "cmdSchema": "https://m.baidu.com/baidu.php",
+              "cmdParams": {
+                "clickId": "__CLICK_ID__",
+                "sign": "__SIGN__",
+                "callbackUrl": "__CALLBACK_URL__"
+              }
+            }
+          }
+        ]
+      },
+      "rotation_component": {
+        "click_event_cmd": "__CONVERT_CMD__",
+        "webpanel_event_cmd": "__WEBPANEL_CMD__"
+      }
+    }
+  }
+}

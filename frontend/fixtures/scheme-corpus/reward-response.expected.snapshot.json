@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "sample": "reward-response-redacted",
+  "cmdHandlerExpected": "reward-response.cmdhandler.expected.json",
   "scanLocations": [
     {
       "path": "$.data.video[0].material[0].info[0].ad_common.scheme",

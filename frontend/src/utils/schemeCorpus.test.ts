@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { base64Encode, deepDecodeScheme, encodeWithLayers } from './schemeUtils';
 import { deepParseWithContext, inverseWithContext } from './transformations';
 import { scanSchemesInJson } from './schemeScanner';
+import { diffCmdStructures, formatCmdStructureDiff } from './cmdStructureDiff';
 import {
   buildTransformContextReport,
   buildTransformReportView,
@@ -32,6 +33,7 @@ interface SchemeCorpusFixture {
 interface SchemeCorpusExpectedSnapshot {
   schemaVersion: number;
   sample: string;
+  cmdHandlerExpected: string;
   scanLocations: Array<{
     path: string;
     label?: string;
@@ -83,6 +85,7 @@ const buildCorpusResponseText = (fixture: SchemeCorpusFixture): string => (
 
 const rewardResponseCorpus = readCorpusJson<SchemeCorpusFixture>('reward-response.redacted.json');
 const rewardResponseBaseline = readCorpusJson<SchemeCorpusExpectedSnapshot>('reward-response.expected.snapshot.json');
+const rewardResponseCmdHandlerExpected = readCorpusJson<JsonValue>(rewardResponseBaseline.cmdHandlerExpected);
 
 describe('CMD/Scheme 真实样本回归', () => {
   it('解析编码 URL 字段并保留外层来源参数', () => {
@@ -560,6 +563,20 @@ describe('CMD/Scheme 真实样本回归', () => {
           },
         },
       },
+    });
+
+    const cmdHandlerDiff = diffCmdStructures(
+      copiedCmdStructure as JsonValue,
+      rewardResponseCmdHandlerExpected,
+      { ignoreExtraPaths: true }
+    );
+
+    expect(formatCmdStructureDiff(cmdHandlerDiff)).toContain('结构一致');
+    expect(cmdHandlerDiff).toMatchObject({
+      hasDifferences: false,
+      schemaDiff: null,
+      missingPaths: [],
+      valueDiffs: [],
     });
   });
 

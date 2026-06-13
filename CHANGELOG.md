@@ -53,6 +53,7 @@
 - **产品与工程升级评审**: 新增 PM/工程双视角评审文档，梳理当前产品定位、真实 response 解析能力、工程风险、优化方向和新增功能路线
 - **解析质量 Corpus 基线**: 新增脱敏广告 response corpus 与 expected snapshot，并提供 `corpus:scheme` 命令固定校验主 CMD Schema、占位符、扫描位置和质量指标
 - **解析质量 CI 门禁**: GitHub Actions 与本地 CI 新增独立 Scheme corpus baseline 检查，真实 response 解析退化时可在流水线中单独定位
+- **cmdHandler Corpus 对齐**: 脱敏广告 response corpus 增加 cmdHandler expected 子集，并在回归中用差异工具校验关键 CMD Schema 与参数路径
 - **JSONPath 大查询可取消**: JSONPath 查询处理中新增取消入口，会立即终止当前 Worker 并清空旧高亮，避免误查大表达式时只能等待结果返回
 - **CMD/Scheme 前导分隔符兼容**: 支持解析 `&cmd=...`、`?&cmd=...` 等日志拼接常见形态，避免前导 `&` 导致整段 CMD 漏解析
 - **CMD/Scheme 协议相对 URL 解析**: 支持识别和展开 `//m.baidu.com/path?...` 这类协议相对 URL，嵌套在 CMD 参数中也会继续解析内部 query
