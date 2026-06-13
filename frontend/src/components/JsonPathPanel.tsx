@@ -79,8 +79,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const [resultLimit, setResultLimit] = useState<number>(0);
     const [emptyResultQuery, setEmptyResultQuery] = useState<string>('');
     const [isQuerying, setIsQuerying] = useState<boolean>(false);
+    const [cancelledQuery, setCancelledQuery] = useState<string>('');
     const workerRef = useRef<Worker | null>(null);
     const requestIdRef = useRef(0);
+    const activeQueryRef = useRef('');
     const externalQueryIdRef = useRef<number | null>(null);
 
     // 自定义滚动条 Hook
@@ -162,8 +164,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         workerRef.current?.terminate();
         workerRef.current = null;
         requestIdRef.current++;
+        activeQueryRef.current = '';
         setError('');
         setIsQuerying(false);
+        setCancelledQuery('');
         setQueryRanges([]);
         setQueryValues([]);
         setQueryItems([]);
@@ -181,6 +185,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const handleQuery = useCallback((overrideQuery?: string) => {
         setError('');
+        setCancelledQuery('');
         const queryPath = (overrideQuery ?? query).trim();
         setEmptyResultQuery('');
 
@@ -211,7 +216,16 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         const requestId = ++requestIdRef.current;
         const worker = new Worker(new URL('../workers/jsonPath.worker.ts', import.meta.url), { type: 'module' });
         workerRef.current = worker;
+        activeQueryRef.current = queryPath;
         setIsQuerying(true);
+        setQueryRanges([]);
+        setQueryValues([]);
+        setQueryItems([]);
+        setTotalResults(0);
+        setIsResultLimited(false);
+        setResultLimit(0);
+        setCurrentResultIndex(0);
+        onHighlightRange(null);
 
         worker.onmessage = (event: MessageEvent<{
             id: number;
@@ -229,6 +243,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 workerRef.current = null;
             }
             setIsQuerying(false);
+            activeQueryRef.current = '';
 
             if (event.data.error) {
                 setError(event.data.error);
@@ -278,6 +293,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 workerRef.current = null;
             }
             setIsQuerying(false);
+            activeQueryRef.current = '';
             setError(`JSONPath 查询错误: ${event.message}`);
             setQueryRanges([]);
             setQueryValues([]);
@@ -300,6 +316,29 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             },
         });
     }, [autoExpandScheme, deepFormat, isDataPreparing, jsonData, onHighlightRange, query]);
+
+    const handleCancelQuery = useCallback(() => {
+        if (!isQuerying || !workerRef.current) return;
+
+        const cancelledQueryPath = activeQueryRef.current || query.trim();
+        workerRef.current.terminate();
+        workerRef.current = null;
+        requestIdRef.current++;
+        activeQueryRef.current = '';
+        setIsQuerying(false);
+        setError('');
+        setCancelledQuery(cancelledQueryPath);
+        setQueryRanges([]);
+        setQueryValues([]);
+        setQueryItems([]);
+        setTotalResults(0);
+        setIsResultLimited(false);
+        setResultLimit(0);
+        setEmptyResultQuery('');
+        setCurrentResultIndex(0);
+        onHighlightRange(null);
+        showSuccess('已取消查询', 1600);
+    }, [isQuerying, onHighlightRange, query]);
 
     // 从解析报告等外部入口进入时，自动填入路径并触发一次查询。
     useEffect(() => {
@@ -373,6 +412,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const copyButtonLabel = isResultLimited ? '复制已返回结果' : '复制全部结果';
     const copyPathValueButtonLabel = isResultLimited ? '复制已返回路径和值' : '复制路径和值';
     const showEmptyResult = Boolean(emptyResultQuery) && !error && !isQuerying && totalResults === 0;
+    const showCancelledQuery = Boolean(cancelledQuery) && !error && !isQuerying && totalResults === 0;
 
     const toggleFavorite = () => {
         if (!normalizedQuery) return;
@@ -450,7 +490,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             data-tour="jsonpath-input"
                             type="text"
                             value={query}
-                            onChange={(e) => setQuery(e.target.value)}
+                            onChange={(e) => {
+                                setQuery(e.target.value);
+                                setCancelledQuery('');
+                            }}
                             onKeyDown={handleKeyDown}
                             placeholder="输入 JSONPath 表达式"
                             className="flex-1 bg-editor-bg text-gray-200 text-sm px-3 py-2 rounded border border-editor-border focus:border-emerald-500 focus:outline-none font-mono"
@@ -478,7 +521,25 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         >
                             {isQuerying ? '查询中...' : '查询'}
                         </button>
+                        {isQuerying && (
+                            <button
+                                data-tour="jsonpath-cancel-query"
+                                onClick={handleCancelQuery}
+                                className="px-3 py-2 bg-amber-700/80 text-white text-sm rounded hover:bg-amber-700 transition-colors font-medium"
+                                title="停止当前 JSONPath 查询"
+                            >
+                                取消
+                            </button>
+                        )}
                     </div>
+                    {(isQuerying || showCancelledQuery) && (
+                        <div
+                            data-tour="jsonpath-query-status"
+                            className="mt-2 text-xs text-gray-500"
+                        >
+                            {isQuerying ? '查询中...' : '已取消查询'}
+                        </div>
+                    )}
                 </div>
 
                 {/* 收藏查询 */}
