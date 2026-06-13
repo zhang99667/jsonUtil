@@ -29,7 +29,7 @@ const buildSchemeDecodeMetadata = (result: SchemeDecodeResult): SchemeDecodeWork
     result.decoded,
     result.isJson,
     result.schemeInfo,
-    { includeCommandFieldRows: false }
+    { includeCommandFieldRows: false, source: result.original }
   ),
 });
 

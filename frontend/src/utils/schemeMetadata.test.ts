@@ -73,6 +73,13 @@ describe('schemeMetadata', () => {
       commandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
       paramCount: 1,
       paramKeys: ['video_info'],
+      commandSchemaCount: 1,
+      topCommandSchemas: [{
+        schema: 'nadcorevendor://vendor/ad/rewardImpl',
+        count: 1,
+        paths: ['$'],
+        hasMorePaths: false,
+      }],
       commandFields: ['panel_scheme'],
       commandFieldRows: [
         {
@@ -230,6 +237,8 @@ describe('schemeMetadata', () => {
       commandSchema: undefined,
       paramCount: 2,
       paramKeys: ['meg_name', '_base64_suffix_decoded'],
+      commandSchemaCount: 0,
+      topCommandSchemas: [],
       commandFields: [],
       commandFieldRows: [],
       commandFieldCount: 0,
@@ -431,6 +440,58 @@ describe('schemeMetadata', () => {
     });
     expect(result.result.cmdParams.data).toBeUndefined();
     expect(result.result.cmdParams.errno).toBeUndefined();
+  });
+
+  it('整段 response 可基于原始 source 汇总 Top CMD Schema', () => {
+    const landingUrl = 'https://union-click.jd.com/sem.php?source=baidu-ys&sku=101';
+    const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: landingUrl,
+    }))}`;
+    const webUrl = `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}`;
+    const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+      appUrl,
+      webUrl,
+      source: 'feedna',
+    }))}`;
+    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?convert=${encodeURIComponent(JSON.stringify({
+      button_scheme: deeplinkCmd,
+    }))}`;
+    const response = JSON.stringify({
+      errno: 0,
+      data: {
+        ad_common: {
+          scheme: rootScheme,
+        },
+      },
+    });
+
+    const decoded = deepDecodeScheme(response);
+    const summary = extractSchemeCommandSummaryInfo(
+      decoded.decoded,
+      decoded.isJson,
+      decoded.schemeInfo,
+      { source: response }
+    );
+
+    expect(summary).not.toBeNull();
+    expect(summary?.commandSchemaCount).toBeGreaterThanOrEqual(4);
+    expect(summary?.topCommandSchemas.map(item => item.schema)).toEqual(expect.arrayContaining([
+      'nadcorevendor://vendor/ad/rewardImpl',
+      'baiduboxapp://v7/vendor/ad/deeplink',
+      'baiduboxapp://v1/easybrowse/open',
+      'openapp.jdmobile://virtual',
+    ]));
+    expect(summary?.topCommandSchemas.find(item => item.schema === 'nadcorevendor://vendor/ad/rewardImpl')).toMatchObject({
+      count: 1,
+      paths: ['$.data.ad_common.scheme'],
+    });
+
+    const cmdStructure = JSON.parse(
+      formatPrimaryCmdHandlerCompatibleResult(decoded.decoded, summary?.commandSchema, response)
+    );
+    expect(cmdStructure.result.cmdSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
+    expect(cmdStructure.result.cmdParams.convert.button_scheme.cmdSchema).toBe('baiduboxapp://v7/vendor/ad/deeplink');
   });
 
   it('非法 JSON 不导出 CMD 结构', () => {

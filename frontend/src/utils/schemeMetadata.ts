@@ -37,6 +37,15 @@ export interface SchemeCommandSummaryInfo extends SchemeInsightFields {
   commandSchema?: string;
   paramCount: number;
   paramKeys: string[];
+  commandSchemaCount: number;
+  topCommandSchemas: SchemeCommandSchemaSummary[];
+}
+
+export interface SchemeCommandSchemaSummary {
+  schema: string;
+  count: number;
+  paths: string[];
+  hasMorePaths: boolean;
 }
 
 export interface CmdHandlerCompatibleResult {
@@ -55,6 +64,7 @@ export interface CmdHandlerCommandSchemaRow {
 
 interface SchemeInsightCollectOptions {
   includeCommandFieldRows?: boolean;
+  source?: string;
 }
 
 interface PrimaryCommandCandidate {
@@ -184,6 +194,8 @@ const PRIMARY_COMMAND_FIELD_PRIORITIES = new Map<string, number>([
   ['click_url', 24],
   ['video_url', 10],
 ]);
+const COMMAND_SCHEMA_SUMMARY_LIMIT = 6;
+const COMMAND_SCHEMA_SUMMARY_PATH_LIMIT = 3;
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -729,6 +741,56 @@ export const collectCmdHandlerCommandSchemaRows = (
   return rows;
 };
 
+const buildCommandSchemaSummaries = (
+  rows: CmdHandlerCommandSchemaRow[],
+  pinnedSchema?: string
+): SchemeCommandSchemaSummary[] => {
+  const groups = new Map<string, { count: number; paths: string[]; pathSet: Set<string> }>();
+
+  rows.forEach(row => {
+    const group = groups.get(row.schema);
+    if (group) {
+      group.count += 1;
+      if (!group.pathSet.has(row.path)) {
+        group.pathSet.add(row.path);
+        if (group.paths.length < COMMAND_SCHEMA_SUMMARY_PATH_LIMIT) {
+          group.paths.push(row.path);
+        }
+      }
+      return;
+    }
+
+    groups.set(row.schema, {
+      count: 1,
+      paths: [row.path],
+      pathSet: new Set([row.path]),
+    });
+  });
+
+  const summaries = Array.from(groups.entries())
+    .sort((left, right) => right[1].count - left[1].count || left[0].localeCompare(right[0]))
+    .map(([schema, group]) => ({
+      schema,
+      count: group.count,
+      paths: group.paths,
+      hasMorePaths: group.pathSet.size > group.paths.length,
+    }));
+
+  if (!pinnedSchema) {
+    return summaries.slice(0, COMMAND_SCHEMA_SUMMARY_LIMIT);
+  }
+
+  const pinnedSummary = summaries.find(item => item.schema === pinnedSchema);
+  if (!pinnedSummary) {
+    return summaries.slice(0, COMMAND_SCHEMA_SUMMARY_LIMIT);
+  }
+
+  return [
+    pinnedSummary,
+    ...summaries.filter(item => item.schema !== pinnedSchema),
+  ].slice(0, COMMAND_SCHEMA_SUMMARY_LIMIT);
+};
+
 const getCommandSchemaFromInfo = (
   schemeInfo: SchemeDecodeResult['schemeInfo']
 ): string | undefined => {
@@ -773,11 +835,21 @@ export const extractSchemeCommandSummaryInfo = (
 ): SchemeCommandSummaryInfo | null => {
   if (!isJson) {
     const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo) : undefined;
+    const topCommandSchemas = commandSchema
+      ? [{
+          schema: commandSchema,
+          count: 1,
+          paths: ['$'],
+          hasMorePaths: false,
+        }]
+      : [];
     return commandSchema
       ? {
           commandSchema,
           paramCount: 0,
           paramKeys: [],
+          commandSchemaCount: topCommandSchemas.length,
+          topCommandSchemas,
           commandFields: [],
           commandFieldRows: [],
           commandFieldCount: 0,
@@ -795,10 +867,26 @@ export const extractSchemeCommandSummaryInfo = (
     const paramKeys = rootObject ? Object.keys(rootObject) : [];
     const fields = collectSchemeInsightFields(parsed, options);
     const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo) : undefined;
+    const commandSchemaRows = [
+      ...(commandSchema
+        ? [{
+            schema: commandSchema,
+            path: '$',
+            source: options.source?.trim() || decoded,
+          }]
+        : []),
+      ...collectCmdHandlerCommandSchemaRows(parsed, options.source),
+    ];
+    const primaryCommand = findPrimaryCommandCandidate(parsed, options.source);
+    const topCommandSchemas = buildCommandSchemaSummaries(
+      commandSchemaRows,
+      commandSchema || primaryCommand?.commandSchema
+    );
 
     if (
       !commandSchema &&
       paramKeys.length === 0 &&
+      commandSchemaRows.length === 0 &&
       fields.commandFields.length === 0 &&
       fields.extFields.length === 0 &&
       fields.base64SuffixFields.length === 0
@@ -810,6 +898,8 @@ export const extractSchemeCommandSummaryInfo = (
       commandSchema,
       paramCount: paramKeys.length,
       paramKeys,
+      commandSchemaCount: commandSchemaRows.length,
+      topCommandSchemas,
       ...fields,
     };
   } catch {
