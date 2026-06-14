@@ -1275,6 +1275,28 @@ const App: React.FC = () => {
     }
   }, [aiConfig, replaceShortcuts]);
 
+  const hasSourceContent = input.trim().length > 0;
+  const hasPreviewContent = output.trim().length > 0;
+  const isPreviewSameAsSource = output === input;
+  const copySourceTitle = hasSourceContent ? '复制 SOURCE 内容到剪贴板' : 'SOURCE 为空，暂无内容可复制';
+  const clearSourceTitle = hasSourceContent ? '清空 SOURCE 内容' : 'SOURCE 为空，暂无内容可清空';
+  const transformReportTitle = (() => {
+    if (isOutputTransforming) return '预览仍在处理，请稍后查看报告';
+    if (!transformReportContext) return '暂无深度解析报告可查看';
+    return '查看深度解析报告';
+  })();
+  const applyPreviewTitle = (() => {
+    if (isOutputTransforming) return '预览仍在处理，请稍后应用';
+    if (!hasPreviewContent) return '暂无 PREVIEW 内容可应用';
+    if (isPreviewSameAsSource) return 'PREVIEW 与 SOURCE 内容一致，无需应用';
+    return '用 PREVIEW 内容替换 SOURCE';
+  })();
+  const copyPreviewTitle = (() => {
+    if (isOutputTransforming) return '预览仍在处理，请稍后复制';
+    if (!hasPreviewContent) return '暂无 PREVIEW 内容可复制';
+    return '复制预览内容到剪贴板';
+  })();
+
   return (
     <ErrorBoundary>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
@@ -1448,9 +1470,9 @@ const App: React.FC = () => {
                     data-tour="copy-source"
                     aria-label="复制源内容"
                     onClick={handleCopySource}
-                    disabled={!input.trim()}
+                    disabled={!hasSourceContent}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    title="复制 SOURCE 内容到剪贴板"
+                    title={copySourceTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1461,9 +1483,9 @@ const App: React.FC = () => {
                     data-tour="clear-source"
                     aria-label="清空源内容"
                     onClick={handleRequestClearSource}
-                    disabled={!input.trim()}
+                    disabled={!hasSourceContent}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-red-900/30 hover:text-red-200 transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    title="清空 SOURCE 内容"
+                    title={clearSourceTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-8 0h10" />
@@ -1535,7 +1557,7 @@ const App: React.FC = () => {
                       onClick={() => setIsTransformReportOpen(true)}
                       disabled={!transformReportContext || isOutputTransforming}
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={isOutputTransforming ? "预览仍在处理，请稍后查看报告" : "查看深度解析报告"}
+                      title={transformReportTitle}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1547,9 +1569,9 @@ const App: React.FC = () => {
                     data-tour="apply-preview-to-source"
                     aria-label="应用预览到源内容"
                     onClick={handleRequestApplyPreviewToSource}
-                    disabled={!output.trim() || isOutputTransforming || output === input}
+                    disabled={!hasPreviewContent || isOutputTransforming || isPreviewSameAsSource}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={isOutputTransforming ? "预览仍在处理，请稍后应用" : "用 PREVIEW 内容替换 SOURCE"}
+                    title={applyPreviewTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
@@ -1560,9 +1582,9 @@ const App: React.FC = () => {
                     data-tour="copy-preview"
                     aria-label="复制预览内容"
                     onClick={handleCopyPreview}
-                    disabled={!output.trim() || isOutputTransforming}
+                    disabled={!hasPreviewContent || isOutputTransforming}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={isOutputTransforming ? "预览仍在处理，请稍后复制" : "复制预览内容到剪贴板"}
+                    title={copyPreviewTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
