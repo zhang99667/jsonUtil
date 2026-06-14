@@ -662,6 +662,7 @@ test('源编辑区可复制并确认清空内容', async ({ page }) => {
   await page.locator('[data-tour="clear-source"]').click();
   const dialog = page.locator('[data-tour="confirm-dialog"]');
   await expect(dialog).toContainText('清空源内容');
+  await expect(dialog).toContainText(`当前 SOURCE: ${sourceText.length} 字符 / ${Buffer.byteLength(sourceText, 'utf8')} B`);
   await dialog.getByRole('button', { name: '继续保留' }).click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('sourceOps');
 
@@ -676,19 +677,21 @@ test('源编辑区可从剪贴板粘贴并确认替换内容', async ({ page }) 
   await page.evaluate(() => window.localStorage.setItem('mock-clipboard', '{"pasted":true}'));
 
   await page.locator('[data-tour="paste-source"]').click();
-  await expect(page.getByText('已从剪贴板粘贴到 SOURCE')).toBeVisible();
+  await expect(page.getByText('已从剪贴板粘贴到 SOURCE（15 字符 / 15 B）')).toBeVisible();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('pasted');
 
   await page.evaluate(() => window.localStorage.setItem('mock-clipboard', '{"replaced":true}'));
   await page.locator('[data-tour="paste-source"]').click();
   const dialog = page.locator('[data-tour="confirm-dialog"]');
   await expect(dialog).toContainText('替换源内容');
+  await expect(dialog).toContainText('当前 SOURCE: 15 字符 / 15 B');
+  await expect(dialog).toContainText('剪贴板文本: 17 字符 / 17 B');
   await dialog.getByRole('button', { name: '继续保留' }).click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('pasted');
 
   await page.locator('[data-tour="paste-source"]').click();
   await page.locator('[data-tour="confirm-dialog"]').getByRole('button', { name: '替换' }).click();
-  await expect(page.getByText('已用剪贴板内容替换 SOURCE')).toBeVisible();
+  await expect(page.getByText('已用剪贴板内容替换 SOURCE（17 字符 / 17 B）')).toBeVisible();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('replaced');
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).not.toContainText('pasted');
 });
@@ -707,6 +710,8 @@ test('预览结果可确认应用回源编辑区', async ({ page }) => {
   await page.locator('[data-tour="apply-preview-to-source"]').click();
   const dialog = page.locator('[data-tour="confirm-dialog"]');
   await expect(dialog).toContainText('应用预览到源');
+  await expect(dialog).toContainText(`当前 SOURCE: ${sourceText.length} 字符 / ${Buffer.byteLength(sourceText, 'utf8')} B`);
+  await expect(dialog).toContainText(/PREVIEW: \d+ 字符 \/ \d+ B/);
   await dialog.getByRole('button', { name: '继续保留' }).click();
 
   await page.locator('[data-tour="copy-source"]').click();
@@ -716,7 +721,7 @@ test('预览结果可确认应用回源编辑区', async ({ page }) => {
 
   await page.locator('[data-tour="apply-preview-to-source"]').click();
   await page.locator('[data-tour="confirm-dialog"]').getByRole('button', { name: '应用' }).click();
-  await expect(page.getByText('已用 PREVIEW 替换 SOURCE')).toBeVisible();
+  await expect(page.getByText(/已用 PREVIEW 替换 SOURCE（\d+ 字符 \/ \d+ B）/)).toBeVisible();
   await page.locator('[data-tour="copy-source"]').click();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('"previewApply": true');
