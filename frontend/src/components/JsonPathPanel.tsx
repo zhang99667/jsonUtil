@@ -417,6 +417,16 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const copyPathValueButtonLabel = isResultLimited ? '复制已返回路径和值' : '复制路径和值';
     const showEmptyResult = Boolean(emptyResultQuery) && !error && !isQuerying && totalResults === 0;
     const showCancelledQuery = Boolean(cancelledQuery) && !error && !isQuerying && totalResults === 0;
+    const favoriteToggleTitle = !normalizedQuery
+        ? '请输入 JSONPath 表达式后可收藏'
+        : isCurrentQueryFavorite
+            ? '取消收藏当前查询'
+            : '收藏当前查询';
+    const queryButtonTitle = isDataPreparing
+        ? '深度格式化仍在处理，请稍后查询'
+        : isQuerying
+            ? 'JSONPath 查询正在运行，可取消后重新查询'
+            : '执行 JSONPath 查询';
 
     const runSavedQuery = (queryPath: string) => {
         setQuery(queryPath);
@@ -520,17 +530,19 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                     ? 'bg-amber-500/15 border-amber-400 text-amber-300 hover:bg-amber-500/25'
                                     : 'bg-editor-bg border-editor-border text-gray-400 hover:text-amber-300 hover:border-amber-400'
                             }`}
-                            title={isCurrentQueryFavorite ? '取消收藏当前查询' : '收藏当前查询'}
-                            aria-label={isCurrentQueryFavorite ? '取消收藏当前查询' : '收藏当前查询'}
+                            title={favoriteToggleTitle}
+                            aria-label={favoriteToggleTitle}
                         >
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill={isCurrentQueryFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m11.48 3.5 2.47 5.02 5.54.8-4.01 3.91.95 5.52-4.95-2.6-4.95 2.6.95-5.52-4.01-3.91 5.54-.8 2.47-5.02Z" />
                             </svg>
                         </button>
                         <button
+                            data-tour="jsonpath-query-button"
                             onClick={() => handleQuery()}
                             disabled={isQuerying || isDataPreparing}
                             className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={queryButtonTitle}
                         >
                             {isQuerying ? '查询中...' : '查询'}
                         </button>
