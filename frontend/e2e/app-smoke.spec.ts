@@ -1021,6 +1021,12 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await page.locator('[data-tour="jsonpath-input"]').fill('$.users[0].age');
   await page.locator('[data-tour="jsonpath-favorite-item"]').filter({ hasText: '$.users[*].name' }).click();
   await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.users[*].name');
+  await expect(page.getByText('1 / 2')).toBeVisible();
+
+  await page.locator('[data-tour="jsonpath-input"]').fill('$.users[1].age');
+  await page.locator('[data-tour="jsonpath-history-item"]').filter({ hasText: '$.users[*].name' }).click();
+  await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.users[*].name');
+  await expect(page.getByText('1 / 2')).toBeVisible();
 
   await page.locator('[data-tour="jsonpath-panel"] button[title="关闭"]').click();
   await expect(page.locator('[data-tour="jsonpath-panel"]')).toBeHidden();
