@@ -1823,12 +1823,44 @@ test('AI 修复缺少 Key 会引导到配置页', async ({ page }) => {
 });
 
 test('AI 配置可测试连接', async ({ page }) => {
+  await page.unroute('**/mock-ai/chat/completions');
+  let releaseResponse: () => void = () => undefined;
+  const responseGate = new Promise<void>(resolve => {
+    releaseResponse = resolve;
+  });
+
+  await page.route('**/mock-ai/chat/completions', async route => {
+    await responseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        choices: [
+          {
+            message: {
+              content: '{"connection":true}',
+            },
+          },
+        ],
+      }),
+    });
+  });
+
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('tab', { name: 'AI 配置' }).click();
 
-  await page.getByRole('button', { name: '测试连接' }).click();
+  const testConnectionButton = page.locator('[data-tour="ai-test-connection"]');
+  await expect(testConnectionButton).toHaveAttribute('title', '测试当前 AI 配置是否可用');
 
+  await testConnectionButton.click();
+  await expect(testConnectionButton).toBeDisabled();
+  await expect(testConnectionButton).toHaveAttribute('aria-label', 'AI 连接测试中，请稍候');
+  await expect(testConnectionButton).toHaveAttribute('title', 'AI 连接测试中，请稍候');
+
+  releaseResponse();
   await expect(page.getByText('连接测试通过')).toBeVisible();
+  await expect(testConnectionButton).toBeEnabled();
+  await expect(testConnectionButton).toHaveAttribute('title', '测试当前 AI 配置是否可用');
 
   await page.locator('input[type="password"]').fill('changed-key');
   await expect(page.getByText('连接测试通过')).toHaveCount(0);
