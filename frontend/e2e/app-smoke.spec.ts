@@ -1174,6 +1174,10 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await queryButton.click();
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('未命中任何结果');
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('$.missing');
+  await expect(page.locator('[data-tour="jsonpath-empty-clear"]')).toHaveAttribute('title', '清空当前 JSONPath 查询');
+  await page.locator('[data-tour="jsonpath-empty-clear"]').click();
+  await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('');
+  await expect(page.locator('[data-tour="jsonpath-empty"]')).toHaveCount(0);
 
   const recursiveExample = page.getByRole('button', { name: '递归搜索' });
   await expect(recursiveExample).toHaveAttribute('title', '$..name\n点击填入并查询');
