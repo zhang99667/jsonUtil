@@ -89,7 +89,7 @@ test('无文件草稿新建标签时保留原草稿', async ({ page }) => {
 
   await editorTabs.getByText('Untitled-1').click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"keep"');
-  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(1);
+  await expect(editorTabs.getByRole('button', { name: /^关闭未保存标签 / })).toHaveCount(1);
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
@@ -111,7 +111,9 @@ test('关闭未保存标签使用应用内确认', async ({ page }) => {
 
   const editorTabs = page.locator('[data-tour="editor-tabs"]');
   await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
-  await editorTabs.locator('button[title="未保存"]').click();
+  const dirtyCloseButton = editorTabs.getByRole('button', { name: '关闭未保存标签 Untitled-1' });
+  await expect(dirtyCloseButton).toHaveAttribute('title', '关闭未保存标签 Untitled-1');
+  await dirtyCloseButton.click();
 
   const confirmDialog = page.locator('[data-tour="confirm-dialog"]');
   await expect(confirmDialog).toBeVisible();
@@ -128,9 +130,9 @@ test('关闭未保存标签使用应用内确认', async ({ page }) => {
   await page.getByRole('button', { name: '继续编辑' }).click();
   await expect(confirmDialog).toBeHidden();
   await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
-  await expect(editorTabs.locator('button[title="未保存"]')).toBeFocused();
+  await expect(dirtyCloseButton).toBeFocused();
 
-  await editorTabs.locator('button[title="未保存"]').click();
+  await dirtyCloseButton.click();
   await page.getByRole('button', { name: '关闭并丢弃' }).click();
 
   await expect(confirmDialog).toBeHidden();
@@ -155,7 +157,7 @@ test('无文件草稿打开文件时保留原草稿', async ({ page }) => {
 
   await editorTabs.getByText('Untitled-1').click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"open"');
-  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(1);
+  await expect(editorTabs.getByRole('button', { name: /^关闭未保存标签 / })).toHaveCount(1);
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
@@ -181,7 +183,7 @@ test('无文件草稿批量打开文件时保留原草稿', async ({ page }) => 
 
   await editorTabs.getByText('Untitled-1').click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"multi-open"');
-  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(1);
+  await expect(editorTabs.getByRole('button', { name: /^关闭未保存标签 / })).toHaveCount(1);
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
@@ -198,7 +200,7 @@ test('无文件草稿拖入文件时保留原草稿', async ({ page }) => {
 
   await editorTabs.getByText('Untitled-1').click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"drop"');
-  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(1);
+  await expect(editorTabs.getByRole('button', { name: /^关闭未保存标签 / })).toHaveCount(1);
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
@@ -224,7 +226,7 @@ test('拖入多个文件时批量打开并保留原草稿', async ({ page }) => 
 
   await editorTabs.getByText('Untitled-1').click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"multi-drop"');
-  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(1);
+  await expect(editorTabs.getByRole('button', { name: /^关闭未保存标签 / })).toHaveCount(1);
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 });
 
