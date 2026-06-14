@@ -23,6 +23,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 }) => {
   const dialogPanelRef = useRef<HTMLDivElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -76,8 +78,29 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   useEffect(() => {
     if (!isOpen) return;
 
+    previousActiveElementRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
     const focusTimer = window.setTimeout(() => cancelButtonRef.current?.focus(), 0);
     return () => window.clearTimeout(focusTimer);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      wasOpenRef.current = true;
+      return;
+    }
+
+    if (!wasOpenRef.current) return;
+    wasOpenRef.current = false;
+
+    const previousActiveElement = previousActiveElementRef.current;
+    previousActiveElementRef.current = null;
+    if (!previousActiveElement?.isConnected) return;
+
+    const restoreTimer = window.setTimeout(() => previousActiveElement.focus(), 0);
+    return () => window.clearTimeout(restoreTimer);
   }, [isOpen]);
 
   if (!isOpen) return null;
