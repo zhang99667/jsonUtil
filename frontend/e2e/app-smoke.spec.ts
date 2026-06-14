@@ -770,6 +770,28 @@ test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   await expect(page.getByText('AI 提供商')).toBeVisible();
 });
 
+test('快捷键冲突会提示被解除的动作', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+
+  const saveShortcut = page.locator('[data-tour="shortcut-card-SAVE"]');
+  const formatShortcut = page.locator('[data-tour="shortcut-card-FORMAT"]');
+
+  await saveShortcut.click();
+  await page.keyboard.press('Control+Shift+K');
+  await expect(saveShortcut).toContainText('Ctrl');
+  await expect(saveShortcut).toContainText('Shift');
+  await expect(saveShortcut).toContainText('K');
+
+  await formatShortcut.click();
+  await page.keyboard.press('Control+Shift+K');
+
+  await expect(page.locator('[data-tour="shortcut-conflict-notice"]')).toContainText('已解除「保存」的快捷键');
+  await expect(saveShortcut).toContainText('未设置');
+  await expect(formatShortcut).toContainText('Ctrl');
+  await expect(formatShortcut).toContainText('Shift');
+  await expect(formatShortcut).toContainText('K');
+});
+
 test('本地存储读取异常不会阻止应用启动', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(Storage.prototype, 'getItem', {
