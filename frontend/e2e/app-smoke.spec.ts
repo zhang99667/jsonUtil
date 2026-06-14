@@ -1840,7 +1840,9 @@ test('自动保存按钮展示开关语义和不可用原因', async ({ page }) 
 
 test('文件标签支持键盘切换和关闭语义', async ({ page }) => {
   await fillSourceEditor(page, '{"first":true}');
-  await page.getByRole('button', { name: '新建标签' }).click();
+  const newTabButton = page.getByRole('button', { name: '新建标签 (Cmd+N)' });
+  await expect(newTabButton).toHaveAttribute('title', '新建标签 (Cmd+N)');
+  await newTabButton.click();
 
   const tabList = page.getByRole('tablist', { name: '已打开文件标签' });
   const firstTab = tabList.getByRole('tab', { name: /Untitled-1/ });
@@ -1849,8 +1851,8 @@ test('文件标签支持键盘切换和关闭语义', async ({ page }) => {
   await expect(firstTab).toHaveAttribute('aria-selected', 'false');
   await expect(firstTab).toHaveAttribute('aria-label', 'Untitled-1，未保存');
   await expect(secondTab).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('button', { name: '关闭未保存标签 Untitled-1' })).toHaveAttribute('title', '未保存');
-  await expect(page.getByRole('button', { name: '关闭标签 Untitled-2' })).toHaveAttribute('title', '关闭');
+  await expect(page.getByRole('button', { name: '关闭未保存标签 Untitled-1' })).toHaveAttribute('title', '关闭未保存标签 Untitled-1');
+  await expect(page.getByRole('button', { name: '关闭标签 Untitled-2' })).toHaveAttribute('title', '关闭标签 Untitled-2');
 
   await secondTab.press('ArrowLeft');
   await expect(firstTab).toHaveAttribute('aria-selected', 'true');
