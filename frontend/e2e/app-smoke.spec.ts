@@ -143,6 +143,16 @@ test('浮动面板支持键盘关闭并恢复入口焦点', async ({ page }) => 
   await expect(jsonPathButton).toBeFocused();
 });
 
+test('JSONPath 帮助入口提供可访问名称', async ({ page }) => {
+  await page.locator('[data-tour="jsonpath-button"]').click();
+
+  const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
+  const helpButton = jsonPathPanel.getByRole('button', { name: '学习 JSONPath 语法' });
+
+  await expect(helpButton).toBeVisible();
+  await expect(helpButton).toHaveAttribute('title', '学习 JSONPath 语法');
+});
+
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {
   const wrapToggle = page.locator('[data-tour="source-editor"] [data-tour="editor-wrap"]');
 
