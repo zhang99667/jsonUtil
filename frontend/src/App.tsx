@@ -73,6 +73,15 @@ const getCopySuccessMessage = (label: string, content: string): string => {
   return `已复制${label}（${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}）`;
 };
 
+const getContentSizeSummary = (content: string): string => {
+  const stats = getDocumentStats(content);
+  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
+};
+
+const getSourceUpdateSuccessMessage = (message: string, content: string): string => (
+  `${message}（${getContentSizeSummary(content)}）`
+);
+
 const LazySchemeViewerModal = lazy(() => import('./components/SchemeViewerModal').then(module => ({
   default: module.SchemeViewerModal,
 })));
@@ -819,7 +828,7 @@ const App: React.FC = () => {
   const applySourceTextFromClipboard = useCallback((text: string, successMessage: string) => {
     handleInputChange(text);
     setHighlightRange(null);
-    showSuccess(successMessage);
+    showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
   }, [handleInputChange]);
 
   const handlePasteSource = useCallback(async () => {
@@ -870,7 +879,7 @@ const App: React.FC = () => {
   const applyPreviewTextToSource = useCallback((text: string, successMessage: string) => {
     handleInputChange(text);
     setHighlightRange(null);
-    showSuccess(successMessage);
+    showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
   }, [handleInputChange]);
 
   const handleRequestApplyPreviewToSource = useCallback(() => {
@@ -1323,6 +1332,15 @@ const App: React.FC = () => {
     if (!hasPreviewContent) return '暂无 PREVIEW 内容可复制';
     return '复制预览内容到剪贴板';
   })();
+  const clearSourceConfirmMessage = isClearSourceConfirmOpen
+    ? `这会清空当前 SOURCE 编辑区内容，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}`
+    : '';
+  const pasteSourceConfirmMessage = pendingPasteSourceText === null
+    ? ''
+    : `这会用剪贴板文本替换当前 SOURCE 编辑区内容，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}\n剪贴板文本: ${getContentSizeSummary(pendingPasteSourceText)}`;
+  const applyPreviewConfirmMessage = pendingApplyPreviewText === null
+    ? ''
+    : `这会用当前 PREVIEW 内容替换 SOURCE 编辑区，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}\nPREVIEW: ${getContentSizeSummary(pendingApplyPreviewText)}`;
 
   return (
     <ErrorBoundary>
@@ -1362,7 +1380,7 @@ const App: React.FC = () => {
       <ConfirmDialog
         isOpen={isClearSourceConfirmOpen}
         title="清空源内容"
-        message="这会清空当前 SOURCE 编辑区内容，并将当前标签标记为未保存。"
+        message={clearSourceConfirmMessage}
         confirmLabel="清空"
         cancelLabel="继续保留"
         variant="danger"
@@ -1373,7 +1391,7 @@ const App: React.FC = () => {
       <ConfirmDialog
         isOpen={pendingPasteSourceText !== null}
         title="替换源内容"
-        message="这会用剪贴板文本替换当前 SOURCE 编辑区内容，并将当前标签标记为未保存。"
+        message={pasteSourceConfirmMessage}
         confirmLabel="替换"
         cancelLabel="继续保留"
         variant="danger"
@@ -1384,7 +1402,7 @@ const App: React.FC = () => {
       <ConfirmDialog
         isOpen={pendingApplyPreviewText !== null}
         title="应用预览到源"
-        message="这会用当前 PREVIEW 内容替换 SOURCE 编辑区，并将当前标签标记为未保存。"
+        message={applyPreviewConfirmMessage}
         confirmLabel="应用"
         cancelLabel="继续保留"
         onConfirm={handleConfirmApplyPreviewToSource}
