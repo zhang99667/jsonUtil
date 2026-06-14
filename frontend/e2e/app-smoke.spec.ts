@@ -1709,6 +1709,44 @@ test('Scheme 面板展示内部 Base64 后缀摘要', async ({ page }) => {
   await expect(base64Meta).toContainText('ip=127.0.0.1');
 });
 
+test('AI 修复处理中按钮展示禁用原因', async ({ page }) => {
+  await page.unroute('**/mock-ai/chat/completions');
+  let releaseResponse: () => void = () => undefined;
+  const responseGate = new Promise<void>(resolve => {
+    releaseResponse = resolve;
+  });
+
+  await page.route('**/mock-ai/chat/completions', async route => {
+    await responseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        choices: [
+          {
+            message: {
+              content: '{"items":[1,2],"ok":true}',
+            },
+          },
+        ],
+      }),
+    });
+  });
+
+  await fillSourceEditor(page, '{items:[1,2], ok:}');
+  const aiFixButton = page.locator('[data-tour="ai-fix"]');
+
+  await expect(aiFixButton).toHaveAttribute('title', 'AI 智能修复');
+  await aiFixButton.click();
+  await expect(aiFixButton).toBeDisabled();
+  await expect(aiFixButton).toHaveAttribute('aria-label', 'AI 修复中，请等待当前任务完成');
+  await expect(aiFixButton).toHaveAttribute('title', 'AI 修复中，请等待当前任务完成');
+
+  releaseResponse();
+  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expect(aiFixButton).toBeEnabled();
+});
+
 test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
   await fillSourceEditor(page, '{items:[1,2], ok:}');
 
