@@ -1513,6 +1513,11 @@ test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
   await expect(page.getByText('AI 修复摘要')).toBeVisible();
   await expectPreviewText(page, '"items": [');
   await expectPreviewText(page, '"ok": true');
+
+  await page.getByRole('button', { name: '复制 AI 修复摘要' }).click();
+  await expect(page.getByText(/已复制 AI 修复摘要（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('AI 修复摘要');
 });
 
 test('AI 修复可先本地修复常见小错误', async ({ page }) => {

@@ -2,13 +2,19 @@ import React from 'react';
 import type { AiRepairSummary } from '../utils/aiRepairSummary';
 import { formatAiRepairSummary } from '../utils/aiRepairSummary';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 
 interface AiRepairSummaryBannerProps {
   summary: AiRepairSummary;
   onClose: () => void;
-  onCopySuccess: () => void;
+  onCopySuccess: (message: string) => void;
   onCopyError: (errorMessage: string) => void;
 }
+
+const formatSummarySizeLabel = (content: string): string => {
+  const stats = getDocumentStats(content);
+  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
+};
 
 export const AiRepairSummaryBanner: React.FC<AiRepairSummaryBannerProps> = ({
   summary,
@@ -18,8 +24,9 @@ export const AiRepairSummaryBanner: React.FC<AiRepairSummaryBannerProps> = ({
 }) => {
   const handleCopy = async () => {
     try {
-      await copyText(formatAiRepairSummary(summary));
-      onCopySuccess();
+      const summaryText = formatAiRepairSummary(summary);
+      await copyText(summaryText);
+      onCopySuccess(`已复制 AI 修复摘要（${formatSummarySizeLabel(summaryText)}）`);
     } catch (error) {
       onCopyError(getClipboardErrorMessage(error, '复制 AI 修复摘要失败'));
     }

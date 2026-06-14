@@ -1469,7 +1469,7 @@ const App: React.FC = () => {
                   aiRepairSnapshotRef.current = null;
                   setAiRepairSummary(null);
                 }}
-                onCopySuccess={() => showSuccess('已复制 AI 修复摘要')}
+                onCopySuccess={showSuccess}
                 onCopyError={(errorMessage) => showError(errorMessage)}
               />
             </Suspense>
