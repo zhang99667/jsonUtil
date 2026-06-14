@@ -12,6 +12,7 @@ import {
 } from '../utils/schemeUtils';
 import { QRCodeCanvas } from 'qrcode.react';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import {
   extractBase64MetaInfo,
   extractSchemeCommandSummaryInfo,
@@ -146,6 +147,12 @@ interface SchemePathValueCollectState {
   isTruncated: boolean;
 }
 
+interface SchemePathValueCopyResult {
+  text: string;
+  rowCount: number;
+  isTruncated: boolean;
+}
+
 const formatJsonPathKey = (path: string, key: string): string => (
   /^[A-Za-z_$][\w$]*$/.test(key)
     ? `${path}.${key}`
@@ -207,7 +214,7 @@ const collectSchemePathValues = (
   pushSchemePathValueRow(state, path, value);
 };
 
-const formatSchemePathValuesForCopy = (content: string): string => {
+const buildSchemePathValuesForCopy = (content: string): SchemePathValueCopyResult | null => {
   try {
     const parsed: unknown = JSON.parse(content);
     const state: SchemePathValueCollectState = {
@@ -217,14 +224,29 @@ const formatSchemePathValuesForCopy = (content: string): string => {
     };
 
     collectSchemePathValues(parsed, '$', state);
-    return [
+    const text = [
       ...state.rows,
       ...(state.isTruncated ? ['... 还有更多路径未复制'] : []),
     ].join('\n');
+
+    return {
+      text,
+      rowCount: state.rows.length,
+      isTruncated: state.isTruncated,
+    };
   } catch {
-    return '';
+    return null;
   }
 };
+
+const formatCopySizeLabel = (content: string): string => {
+  const stats = getDocumentStats(content);
+  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
+};
+
+const formatPathValueCountLabel = (rowCount: number, isTruncated: boolean): string => (
+  isTruncated ? `已返回 ${rowCount} 项` : `${rowCount} 项`
+);
 
 const buildParamSections = (
   schemeInfo: SchemeDecodeResult['schemeInfo']
@@ -436,7 +458,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopy = async () => {
     try {
       await copyText(editedContent);
-      toast.success('已复制解码结果', { duration: 2000 });
+      toast.success(`已复制解码结果（${formatCopySizeLabel(editedContent)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 解码结果失败:', err);
       toast.error(getClipboardErrorMessage(err), { duration: 2000 });
@@ -446,12 +468,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopyPathValues = async () => {
     if (!canCopyPathValues) return;
 
-    const pathValueCopyText = formatSchemePathValuesForCopy(editedContent);
-    if (!pathValueCopyText) return;
+    const pathValueCopyResult = buildSchemePathValuesForCopy(editedContent);
+    if (!pathValueCopyResult?.text) return;
 
     try {
-      await copyText(pathValueCopyText);
-      toast.success('已复制路径和值', { duration: 2000 });
+      await copyText(pathValueCopyResult.text);
+      toast.success(`已复制路径和值（${formatPathValueCountLabel(pathValueCopyResult.rowCount, pathValueCopyResult.isTruncated)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 路径和值失败:', err);
       toast.error(getClipboardErrorMessage(err), { duration: 2000 });
@@ -461,7 +483,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopyOriginal = async () => {
     try {
       await copyText(actualValue);
-      toast.success('已复制原始值', { duration: 2000 });
+      toast.success(`已复制原始值（${formatCopySizeLabel(actualValue)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 原始值失败:', err);
       toast.error(getClipboardErrorMessage(err), { duration: 2000 });
@@ -517,7 +539,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
     try {
       await copyText(serializedContent);
-      toast.success('已复制序列化结果', { duration: 2000 });
+      toast.success(`已复制序列化结果（${formatCopySizeLabel(serializedContent)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 序列化结果失败:', err);
       toast.error(getClipboardErrorMessage(err), { duration: 2000 });
