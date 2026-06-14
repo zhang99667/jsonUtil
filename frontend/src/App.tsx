@@ -1185,6 +1185,7 @@ const App: React.FC = () => {
         setAiRepairSummary(buildAiRepairSummary(input, fixed));
         setInput(fixed);
         inputRef.current = fixed; // 同步 Ref 状态
+        updateActiveFileContent(fixed);
         // 修复后自动切换至格式化视图
         setMode(TransformMode.FORMAT);
         showSuccess("AI 修复成功");
