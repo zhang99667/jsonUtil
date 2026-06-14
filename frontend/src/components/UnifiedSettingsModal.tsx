@@ -29,6 +29,10 @@ const ACTION_LABELS: Record<ShortcutAction, string> = {
 
 type TabType = 'shortcuts' | 'ai' | 'general';
 
+const getActionName = (action: ShortcutAction): string => (
+    ACTION_LABELS[action].split(' (')[0]
+);
+
 export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     isOpen,
     initialTab = 'shortcuts',
@@ -46,6 +50,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('shortcuts');
     const [recordingAction, setRecordingAction] = useState<ShortcutAction | null>(null);
+    const [shortcutConflictNotice, setShortcutConflictNotice] = useState('');
     const [localAIConfig, setLocalAIConfig] = useState<AIConfig>(aiConfig);
     const [localGeneralSettings, setLocalGeneralSettings] = useState<GeneralSettings>(generalSettings);
     const [isTestingAI, setIsTestingAI] = useState(false);
@@ -59,6 +64,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
             setLocalAIConfig(aiConfig);
             setLocalGeneralSettings(generalSettings);
             setAiTestResult(null);
+            setShortcutConflictNotice('');
         }
     }, [isOpen, aiConfig, generalSettings]);
 
@@ -79,6 +85,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
             if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
                 const emptyShortcut: ShortcutKey = { key: '', meta: false, ctrl: false, shift: false, alt: false };
                 onUpdateShortcut(recordingAction, emptyShortcut);
+                setShortcutConflictNotice('');
                 setRecordingAction(null);
                 return;
             }
@@ -111,6 +118,11 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                 // 解除冲突绑定
                 const emptyShortcut: ShortcutKey = { key: '', meta: false, ctrl: false, shift: false, alt: false };
                 onUpdateShortcut(conflictingAction, emptyShortcut);
+                setShortcutConflictNotice(
+                    `已解除「${getActionName(conflictingAction)}」的快捷键，避免与「${getActionName(recordingAction)}」冲突`
+                );
+            } else {
+                setShortcutConflictNotice('');
             }
 
             onUpdateShortcut(recordingAction, newShortcut);
@@ -211,6 +223,11 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         return <div className="flex items-center flex-wrap justify-end">{parts}</div>;
     };
 
+    const startRecordingShortcut = (action: ShortcutAction) => {
+        setShortcutConflictNotice('');
+        setRecordingAction(action);
+    };
+
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
             <div className="bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]">
@@ -268,36 +285,49 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                 {/* 内容区域（保留挂载以维持状态） */}
                 <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
                     {/* 快捷键设置 */}
-                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${activeTab === 'shortcuts' ? '' : 'hidden'}`}>
-                        {(Object.keys(shortcuts) as ShortcutAction[]).map((action) => (
+                    <div className={`space-y-3 ${activeTab === 'shortcuts' ? '' : 'hidden'}`}>
+                        {shortcutConflictNotice && (
                             <div
-                                key={action}
-                                onClick={() => setRecordingAction(action)}
-                                className={`flex justify-between items-center bg-editor-bg p-4 rounded border transition-all cursor-pointer group ${recordingAction === action
-                                    ? 'border-emerald-500 bg-emerald-500/5 ring-1 ring-emerald-500/50'
-                                    : 'border-editor-border hover:border-editor-fg-dim hover:bg-editor-hover'
-                                    }`}
+                                data-tour="shortcut-conflict-notice"
+                                role="status"
+                                className="rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
                             >
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
-                                        {ACTION_LABELS[action].split(' (')[0]}
-                                    </span>
-                                    <span className="text-[10px] text-gray-500 font-mono mt-0.5">
-                                        {ACTION_LABELS[action].split(' (')[1]?.replace(')', '')}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center">
-                                    {recordingAction === action ? (
-                                        <span className="text-xs text-emerald-400 animate-pulse font-medium px-2 py-1 bg-emerald-500/10 rounded">
-                                            按下按键...
-                                        </span>
-                                    ) : (
-                                        formatShortcut(shortcuts[action])
-                                    )}
-                                </div>
+                                {shortcutConflictNotice}
                             </div>
-                        ))}
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {(Object.keys(shortcuts) as ShortcutAction[]).map((action) => (
+                                <button
+                                    type="button"
+                                    key={action}
+                                    data-tour={`shortcut-card-${action}`}
+                                    onClick={() => startRecordingShortcut(action)}
+                                    className={`flex justify-between items-center bg-editor-bg p-4 rounded border transition-all cursor-pointer group text-left ${recordingAction === action
+                                        ? 'border-emerald-500 bg-emerald-500/5 ring-1 ring-emerald-500/50'
+                                        : 'border-editor-border hover:border-editor-fg-dim hover:bg-editor-hover'
+                                        }`}
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
+                                            {ACTION_LABELS[action].split(' (')[0]}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                            {ACTION_LABELS[action].split(' (')[1]?.replace(')', '')}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center">
+                                        {recordingAction === action ? (
+                                            <span className="text-xs text-emerald-400 animate-pulse font-medium px-2 py-1 bg-emerald-500/10 rounded">
+                                                按下按键...
+                                            </span>
+                                        ) : (
+                                            formatShortcut(shortcuts[action])
+                                        )}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* AI 参数配置 */}
@@ -488,7 +518,10 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     {activeTab === 'shortcuts' ? (
                         <>
                             <button
-                                onClick={onResetShortcuts}
+                                onClick={() => {
+                                    setShortcutConflictNotice('');
+                                    onResetShortcuts();
+                                }}
                                 className="text-xs text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1.5 px-3 py-2 rounded hover:bg-editor-hover"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
