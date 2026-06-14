@@ -403,6 +403,11 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         safeRemoveStorageItem(JSONPATH_HISTORY_STORAGE_KEY);
     };
 
+    const clearQueryInput = () => {
+        setQuery('');
+        resetQueryState();
+    };
+
     const normalizedQuery = query.trim();
     const isCurrentQueryFavorite = normalizedQuery ? favorites.includes(normalizedQuery) : false;
     const queryResultPreviewItems = useMemo(() => {
@@ -642,7 +647,18 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         data-tour="jsonpath-empty"
                         className="mb-3 rounded border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100"
                     >
-                        <div className="font-medium">未命中任何结果</div>
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="font-medium">未命中任何结果</div>
+                            <button
+                                type="button"
+                                data-tour="jsonpath-empty-clear"
+                                onClick={clearQueryInput}
+                                className="shrink-0 rounded border border-amber-400/40 px-2 py-0.5 text-xs text-amber-100 transition-colors hover:border-amber-300 hover:bg-amber-400/10 focus:outline-none focus:ring-2 focus:ring-amber-300/60"
+                                title="清空当前 JSONPath 查询"
+                            >
+                                清空查询
+                            </button>
+                        </div>
                         <div className="mt-1 break-all font-mono text-xs text-amber-200/80">
                             {emptyResultQuery}
                         </div>
