@@ -150,6 +150,24 @@ test('状态栏展示当前焦点内容的 UTF-8 字节体积', async ({ page })
   await expect(page.locator('[data-tour="statusbar-byte-size"]')).toContainText('Size: 22 B');
 });
 
+test('状态栏展示 SOURCE JSON 校验状态', async ({ page }) => {
+  const validationStatus = page.locator('[data-tour="source-validation-status"]');
+
+  await expect(validationStatus).toHaveText('SOURCE 空');
+
+  await fillSourceEditor(page, 'plain text');
+  await expect(validationStatus).toHaveText('SOURCE 文本');
+  await expect(validationStatus).toHaveAttribute('title', '当前 SOURCE 不以 { 或 [ 开头，按普通文本处理');
+
+  await fillSourceEditor(page, '{"ok":true}');
+  await expect(validationStatus).toHaveText('JSON 有效');
+  await expect(validationStatus).toHaveAttribute('title', 'SOURCE JSON / JSON Lines 校验通过');
+
+  await fillSourceEditor(page, '{"ok":true,}');
+  await expect(validationStatus).toContainText('JSON 无效');
+  await expect(validationStatus).toHaveAttribute('title', /SOURCE JSON 无效:/);
+});
+
 test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await fillSourceEditor(page, '{"payload":"{\\"nested\\":true}"}\n{"payload":"{\\"nested\\":false}"}');
 
