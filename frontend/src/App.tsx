@@ -1278,6 +1278,8 @@ const App: React.FC = () => {
   const hasSourceContent = input.trim().length > 0;
   const hasPreviewContent = output.trim().length > 0;
   const isPreviewSameAsSource = output === input;
+  const canUseAutoSave = Boolean(activeFileId && activeFile?.handle);
+  const isAutoSaveActive = canUseAutoSave && isAutoSaveEnabled;
   const copySourceTitle = hasSourceContent ? '复制 SOURCE 内容到剪贴板' : 'SOURCE 为空，暂无内容可复制';
   const clearSourceTitle = hasSourceContent ? '清空 SOURCE 内容' : 'SOURCE 为空，暂无内容可清空';
   const transformReportTitle = (() => {
@@ -1494,12 +1496,14 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="auto-save"
+                    aria-disabled={!canUseAutoSave}
+                    aria-pressed={isAutoSaveActive}
                     onClick={handleToggleAutoSave}
                     className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
                       ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
-                      : activeFile?.handle && isAutoSaveEnabled
+                      : isAutoSaveActive
                         ? 'bg-status-success-bg text-status-success-text border-status-success-border'
-                        : activeFile?.handle
+                        : canUseAutoSave
                           ? 'text-gray-400 border-transparent hover:bg-editor-active'
                           : 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
                       }`}
@@ -1515,7 +1519,7 @@ const App: React.FC = () => {
                   >
                     <div className={`w-1.5 h-1.5 rounded-full ${!activeFileId
                       ? 'bg-gray-700'
-                      : activeFile?.handle && isAutoSaveEnabled
+                      : isAutoSaveActive
                         ? 'bg-green-500 animate-pulse'
                         : 'bg-gray-500'
                       }`}></div>
