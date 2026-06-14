@@ -5,6 +5,7 @@ import { validateJson } from '../utils/transformations';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { TEMPLATE_FILL_STORAGE_KEY, loadTemplateFillConfig } from '../utils/appSettings';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import { safeSetStorageItem } from '../utils/storage';
 import toast from 'react-hot-toast';
 
@@ -17,6 +18,11 @@ interface TemplateFillPanelProps {
   initialTemplateKey?: number;
   applyQualityDelta?: string;
 }
+
+const formatTemplateSizeLabel = (content: string): string => {
+  const stats = getDocumentStats(content);
+  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
+};
 
 export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   isOpen,
@@ -68,12 +74,15 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
 
   const handleClear = () => {
     setTemplate('');
+    toast.success('模板已清空', { duration: 1600 });
   };
 
   const handleFormatTemplate = () => {
     if (!template.trim() || !validation.isValid) return;
 
-    setTemplate(JSON.stringify(JSON.parse(template), null, 2));
+    const formattedTemplate = JSON.stringify(JSON.parse(template), null, 2);
+    setTemplate(formattedTemplate);
+    toast.success(`模板已格式化（${formatTemplateSizeLabel(formattedTemplate)}）`, { duration: 1600 });
   };
 
   const handleCopyQualityDelta = async () => {
@@ -81,7 +90,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
 
     try {
       await copyText(applyQualityDelta);
-      toast.success('已复制质量对比', { duration: 1600 });
+      toast.success(`已复制质量对比（${formatTemplateSizeLabel(applyQualityDelta)}）`, { duration: 1600 });
     } catch (error) {
       console.warn('复制模板质量对比失败:', error);
       toast.error(getClipboardErrorMessage(error), { duration: 2000 });
@@ -94,6 +103,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
       <button
         onClick={handleClear}
         disabled={!template.trim()}
+        title={template.trim() ? '清空当前模板内容' : '模板为空，暂无内容可清空'}
         className="px-2.5 py-1 text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         清空模板
@@ -102,6 +112,13 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
         data-tour="template-format-button"
         onClick={handleFormatTemplate}
         disabled={!template.trim() || !validation.isValid}
+        title={
+          !template.trim()
+            ? '模板为空，暂无内容可格式化'
+            : validation.isValid
+              ? '格式化模板 JSON'
+              : '请先修正模板 JSON 后再格式化'
+        }
         className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         格式化模板
@@ -109,7 +126,14 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
       <button
         onClick={handleApply}
         disabled={!template.trim() || !validation.isValid || Boolean(targetError)}
-        title={targetError || undefined}
+        title={
+          targetError ||
+          (!template.trim()
+            ? '模板为空，暂无内容可应用'
+            : validation.isValid
+              ? '应用模板到 SOURCE'
+              : '请先修正模板 JSON 后再应用')
+        }
         className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
