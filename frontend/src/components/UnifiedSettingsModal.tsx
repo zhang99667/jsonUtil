@@ -29,6 +29,12 @@ const ACTION_LABELS: Record<ShortcutAction, string> = {
 
 type TabType = 'shortcuts' | 'ai' | 'general';
 
+const SETTINGS_TABS: Array<{ type: TabType; label: string; tabId: string; panelId: string }> = [
+    { type: 'shortcuts', label: '快捷键', tabId: 'settings-tab-shortcuts', panelId: 'settings-panel-shortcuts' },
+    { type: 'ai', label: 'AI 配置', tabId: 'settings-tab-ai', panelId: 'settings-panel-ai' },
+    { type: 'general', label: '通用设置', tabId: 'settings-tab-general', panelId: 'settings-panel-general' },
+];
+
 const getActionName = (action: ShortcutAction): string => (
     ACTION_LABELS[action].split(' (')[0]
 );
@@ -57,6 +63,11 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     const [aiTestResult, setAiTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const modalPanelRef = useRef<HTMLDivElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+    const tabButtonRefs = useRef<Record<TabType, HTMLButtonElement | null>>({
+        shortcuts: null,
+        ai: null,
+        general: null,
+    });
     const previousActiveElementRef = useRef<HTMLElement | null>(null);
     const wasOpenRef = useRef(false);
     const importBackupInputRef = useRef<HTMLInputElement | null>(null);
@@ -312,6 +323,42 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         setRecordingAction(action);
     };
 
+    const selectSettingsTab = (tab: TabType, shouldFocus = false) => {
+        setActiveTab(tab);
+
+        if (shouldFocus) {
+            window.setTimeout(() => {
+                tabButtonRefs.current[tab]?.focus();
+            }, 0);
+        }
+    };
+
+    const handleSettingsTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+        const currentIndex = SETTINGS_TABS.findIndex(tab => tab.type === activeTab);
+        if (currentIndex < 0) return;
+
+        const lastIndex = SETTINGS_TABS.length - 1;
+        let nextIndex = currentIndex;
+
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+            nextIndex = currentIndex === lastIndex ? 0 : currentIndex + 1;
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+            nextIndex = currentIndex === 0 ? lastIndex : currentIndex - 1;
+        } else if (event.key === 'Home') {
+            nextIndex = 0;
+        } else if (event.key === 'End') {
+            nextIndex = lastIndex;
+        } else {
+            return;
+        }
+
+        event.preventDefault();
+        const nextTab = SETTINGS_TABS[nextIndex];
+        if (nextTab) {
+            selectSettingsTab(nextTab.type, true);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
             <div
@@ -339,9 +386,21 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                 </div>
 
                 {/* 选项卡切换 */}
-                <div className="flex border-b border-editor-border bg-editor-header">
+                <div
+                    role="tablist"
+                    aria-label="设置分类"
+                    className="flex border-b border-editor-border bg-editor-header"
+                >
                     <button
-                        onClick={() => setActiveTab('shortcuts')}
+                        ref={(element) => { tabButtonRefs.current.shortcuts = element; }}
+                        type="button"
+                        role="tab"
+                        id="settings-tab-shortcuts"
+                        aria-selected={activeTab === 'shortcuts'}
+                        aria-controls="settings-panel-shortcuts"
+                        tabIndex={activeTab === 'shortcuts' ? 0 : -1}
+                        onClick={() => selectSettingsTab('shortcuts')}
+                        onKeyDown={handleSettingsTabKeyDown}
                         className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'shortcuts'
                             ? 'text-white border-b-2 border-emerald-500 bg-editor-sidebar'
                             : 'text-gray-400 hover:text-gray-200 hover:bg-editor-hover'
@@ -353,7 +412,15 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         </div>
                     </button>
                     <button
-                        onClick={() => setActiveTab('ai')}
+                        ref={(element) => { tabButtonRefs.current.ai = element; }}
+                        type="button"
+                        role="tab"
+                        id="settings-tab-ai"
+                        aria-selected={activeTab === 'ai'}
+                        aria-controls="settings-panel-ai"
+                        tabIndex={activeTab === 'ai' ? 0 : -1}
+                        onClick={() => selectSettingsTab('ai')}
+                        onKeyDown={handleSettingsTabKeyDown}
                         className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'ai'
                             ? 'text-white border-b-2 border-emerald-500 bg-editor-sidebar'
                             : 'text-gray-400 hover:text-gray-200 hover:bg-editor-hover'
@@ -365,7 +432,15 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         </div>
                     </button>
                     <button
-                        onClick={() => setActiveTab('general')}
+                        ref={(element) => { tabButtonRefs.current.general = element; }}
+                        type="button"
+                        role="tab"
+                        id="settings-tab-general"
+                        aria-selected={activeTab === 'general'}
+                        aria-controls="settings-panel-general"
+                        tabIndex={activeTab === 'general' ? 0 : -1}
+                        onClick={() => selectSettingsTab('general')}
+                        onKeyDown={handleSettingsTabKeyDown}
                         className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'general'
                             ? 'text-white border-b-2 border-emerald-500 bg-editor-sidebar'
                             : 'text-gray-400 hover:text-gray-200 hover:bg-editor-hover'
@@ -381,7 +456,13 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                 {/* 内容区域（保留挂载以维持状态） */}
                 <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
                     {/* 快捷键设置 */}
-                    <div className={`space-y-3 ${activeTab === 'shortcuts' ? '' : 'hidden'}`}>
+                    <div
+                        id="settings-panel-shortcuts"
+                        role="tabpanel"
+                        aria-labelledby="settings-tab-shortcuts"
+                        hidden={activeTab !== 'shortcuts'}
+                        className="space-y-3"
+                    >
                         {shortcutConflictNotice && (
                             <div
                                 data-tour="shortcut-conflict-notice"
@@ -427,7 +508,13 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     </div>
 
                     {/* AI 参数配置 */}
-                    <div className={`space-y-4 ${activeTab === 'ai' ? '' : 'hidden'}`}>
+                    <div
+                        id="settings-panel-ai"
+                        role="tabpanel"
+                        aria-labelledby="settings-tab-ai"
+                        hidden={activeTab !== 'ai'}
+                        className="space-y-4"
+                    >
                         {/* AI 提供商选择 */}
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">AI 提供商</label>
@@ -527,7 +614,13 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     </div>
 
                     {/* 通用设置 */}
-                    <div className={`space-y-4 ${activeTab === 'general' ? '' : 'hidden'}`}>
+                    <div
+                        id="settings-panel-general"
+                        role="tabpanel"
+                        aria-labelledby="settings-tab-general"
+                        hidden={activeTab !== 'general'}
+                        className="space-y-4"
+                    >
                         <div className="bg-editor-bg p-4 rounded border border-editor-border">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1 pr-4">
