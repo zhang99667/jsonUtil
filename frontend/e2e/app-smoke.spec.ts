@@ -202,6 +202,22 @@ test('状态栏展示当前焦点内容的 UTF-8 字节体积', async ({ page })
   await expect(page.locator('[data-tour="statusbar-byte-size"]')).toContainText('Size: 22 B');
 });
 
+test('状态栏版本号在窄屏仍保持可见', async ({ page }) => {
+  const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf-8')) as {
+    version: string;
+  };
+
+  await page.setViewportSize({ width: 640, height: 700 });
+  await fillSourceEditor(page, '{"text":"中文","items":[1,2,3]}');
+
+  const statusBar = page.locator('[data-tour="statusbar"]');
+  const versionBadge = page.locator('[data-tour="statusbar-version"]');
+
+  await expect(versionBadge).toHaveText(`v${packageJson.version}`);
+  await expect(versionBadge).toHaveAttribute('title', '当前版本');
+  await expectElementInside(versionBadge, statusBar);
+});
+
 test('状态栏展示 SOURCE JSON 校验状态', async ({ page }) => {
   const validationStatus = page.locator('[data-tour="source-validation-status"]');
 
