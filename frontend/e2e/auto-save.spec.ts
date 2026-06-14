@@ -48,15 +48,17 @@ test('自动保存成功后清除标签未保存状态', async ({ page }) => {
   await expect(page.locator('[data-tour="save-status"]')).toHaveText('自动保存已同步');
   await fillSourceEditor(page, '{"saved":2}');
 
-  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toBeVisible();
+  const dirtyCloseButton = page.getByRole('button', { name: '关闭未保存标签 autosave.json' });
+  await expect(dirtyCloseButton).toBeVisible();
+  await expect(dirtyCloseButton).toHaveAttribute('title', '关闭未保存标签 autosave.json');
   await expect(page.locator('[data-tour="save-status"]')).toHaveText('等待自动保存');
   await expect.poll(async () => page.evaluate(() => {
     const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
     return writes.at(-1) ?? null;
   })).toBe('{"saved":2}');
 
-  await expect(page.locator('[data-tour="editor-tabs"] button[title="未保存"]')).toHaveCount(0);
-  await expect(page.locator('[data-tour="editor-tabs"] button[title="关闭"]')).toHaveCount(1);
+  await expect(dirtyCloseButton).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '关闭标签 autosave.json' })).toHaveAttribute('title', '关闭标签 autosave.json');
   await expect(page.locator('[data-tour="save-status"]')).toHaveText('自动保存已同步');
 });
 
