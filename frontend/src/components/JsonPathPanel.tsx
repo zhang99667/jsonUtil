@@ -418,6 +418,12 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const showEmptyResult = Boolean(emptyResultQuery) && !error && !isQuerying && totalResults === 0;
     const showCancelledQuery = Boolean(cancelledQuery) && !error && !isQuerying && totalResults === 0;
 
+    const runSavedQuery = (queryPath: string) => {
+        setQuery(queryPath);
+        setCancelledQuery('');
+        handleQuery(queryPath);
+    };
+
     const toggleFavorite = () => {
         if (!normalizedQuery) return;
 
@@ -486,7 +492,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             dataTour="jsonpath-panel"
         >
             {/* 面板内容 */}
-            <div className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+            <div className="p-4 flex-1 flex flex-col min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden">
                 {/* 查询输入框 */}
                 <div className="mb-3">
                     <div className="flex gap-2">
@@ -555,9 +561,9 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 <div key={item} className="relative group">
                                     <button
                                         data-tour="jsonpath-favorite-item"
-                                        onClick={() => setQuery(item)}
+                                        onClick={() => runSavedQuery(item)}
                                         className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-amber-100 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7 border border-amber-500/20"
-                                        title={item}
+                                        title={`${item}\n点击填入并查询`}
                                     >
                                         {item}
                                     </button>
@@ -732,7 +738,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
                 {/* 查询历史 */}
                 {history.length > 0 && (
-                    <div data-tour="jsonpath-history" className="border-t border-editor-border pt-2 mt-1 flex-1 flex flex-col min-h-0 relative group/history">
+                    <div data-tour="jsonpath-history" className="border-t border-editor-border pt-2 mt-1 flex-shrink-0 relative group/history">
                         <div className="flex items-center justify-between mb-2 flex-shrink-0">
                             <div className="text-xs text-gray-500">查询历史:</div>
                             <button
@@ -745,14 +751,15 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         <div
                             ref={historyListRef}
                             onScroll={handleScroll}
-                            className="flex-1 overflow-y-auto space-y-1 min-h-0 [&::-webkit-scrollbar]:hidden"
+                            className="max-h-28 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:hidden"
                         >
                             {history.map((item, idx) => (
                                 <div key={idx} className="relative group">
                                     <button
-                                        onClick={() => setQuery(item)}
+                                        data-tour="jsonpath-history-item"
+                                        onClick={() => runSavedQuery(item)}
                                         className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-gray-300 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7"
-                                        title={item}
+                                        title={`${item}\n点击填入并查询`}
                                     >
                                         {item}
                                     </button>
