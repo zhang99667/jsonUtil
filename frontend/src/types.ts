@@ -226,6 +226,11 @@ export interface HighlightRange {
   endColumn: number;
 }
 
+export interface EditorLocation {
+  line: number;
+  column: number;
+}
+
 export interface EditorProps {
   value: string;
   originalValue?: string; // 原始值（用于 Diff 对比）
@@ -236,6 +241,7 @@ export interface EditorProps {
   placeholder?: string;
   label: string;
   error?: string;
+  errorLocation?: EditorLocation | null;
   warning?: string;
   info?: string;
   canToggleReadOnly?: boolean;

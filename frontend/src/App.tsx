@@ -35,7 +35,12 @@ import {
 } from './utils/appBackup';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 import { setJsonPointerValue } from './utils/jsonPointer';
-import { cleanJsonInput, startJsonValidation, validateJsonForEditor } from './utils/jsonValidation';
+import {
+  cleanJsonInput,
+  getJsonValidationErrorLocation,
+  startJsonValidation,
+  validateJsonForEditor,
+} from './utils/jsonValidation';
 import {
   buildTransformContextReport,
   buildTransformQualitySnapshot,
@@ -434,6 +439,14 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
   const [aiRepairSummary, setAiRepairSummary] = useState<AiRepairSummary | null>(null);
+  const sourceErrorLocation = useMemo(
+    () => validation.isValid ? null : getJsonValidationErrorLocation(input, validation.error),
+    [input, validation]
+  );
+  const previewErrorLocation = useMemo(
+    () => previewValidation.isValid ? null : getJsonValidationErrorLocation(output, previewValidation.error),
+    [output, previewValidation]
+  );
 
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
 
@@ -1413,6 +1426,7 @@ const App: React.FC = () => {
               restoreViewState={activeFile?.viewState}
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
+              errorLocation={sourceErrorLocation}
               headerActions={
                 <>
                   <button
@@ -1505,6 +1519,7 @@ const App: React.FC = () => {
               canToggleReadOnly={!isOutputTransforming} // 转换完成后允许解锁编辑
               placeholder="// 结果显示区..."
               error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
+              errorLocation={previewErrorLocation}
               warning={deepFormatWarning}
               info={deepFormatInfo}
               highlightRange={highlightRange}
