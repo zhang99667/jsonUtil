@@ -1147,6 +1147,9 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
 
   await page.locator('[data-tour="jsonpath-favorite-toggle"]').click();
   await expect(page.locator('[data-tour="jsonpath-favorites"]')).toContainText('$.users[*].name');
+  const removeFavoriteButton = page.getByRole('button', { name: '移除收藏：$.users[*].name' });
+  await removeFavoriteButton.focus();
+  await expect(removeFavoriteButton).toHaveCSS('opacity', '1');
 
   await page.locator('[data-tour="jsonpath-input"]').fill('$.users[0].age');
   await page.locator('[data-tour="jsonpath-favorite-item"]').filter({ hasText: '$.users[*].name' }).click();
@@ -1157,6 +1160,9 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await page.locator('[data-tour="jsonpath-history-item"]').filter({ hasText: '$.users[*].name' }).click();
   await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.users[*].name');
   await expect(page.getByText('1 / 2')).toBeVisible();
+  const removeHistoryButton = page.getByRole('button', { name: '删除历史记录：$.users[*].name' });
+  await removeHistoryButton.focus();
+  await expect(removeHistoryButton).toHaveCSS('opacity', '1');
 
   await page.locator('[data-tour="jsonpath-panel"] button[title="关闭"]').click();
   await expect(page.locator('[data-tour="jsonpath-panel"]')).toBeHidden();

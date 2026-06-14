@@ -571,13 +571,14 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                         {item}
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setFavorites(prev => removeJsonPathListItem(prev, item));
                                         }}
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 transition-all"
-                                        title="移除收藏"
-                                        aria-label="移除收藏"
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-400/70 transition-all"
+                                        title={`移除收藏：${item}`}
+                                        aria-label={`移除收藏：${item}`}
                                     >
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -767,12 +768,14 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                         {item}
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setHistory(prev => prev.filter((_, i) => i !== idx));
                                         }}
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 transition-all"
-                                        title="删除此记录"
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-400/70 transition-all"
+                                        title={`删除历史记录：${item}`}
+                                        aria-label={`删除历史记录：${item}`}
                                     >
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
