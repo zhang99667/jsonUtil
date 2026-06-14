@@ -1134,17 +1134,25 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await fillSourceEditor(page, '{"users":[{"name":"Ada","age":20},{"name":"Bob","age":17}]}');
 
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
+  const queryButton = page.locator('[data-tour="jsonpath-query-button"]');
+  const favoriteToggle = page.locator('[data-tour="jsonpath-favorite-toggle"]');
+
+  await expect(queryButton).toHaveAttribute('title', '执行 JSONPath 查询');
   await page.locator('[data-tour="jsonpath-input"]').fill('   ');
-  await page.getByRole('button', { name: '查询', exact: true }).click();
+  await expect(favoriteToggle).toBeDisabled();
+  await expect(favoriteToggle).toHaveAttribute('title', '请输入 JSONPath 表达式后可收藏');
+  await expect(favoriteToggle).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后可收藏');
+  await queryButton.click();
   await expect(page.getByText('请输入 JSONPath 表达式')).toBeVisible();
 
   await page.locator('[data-tour="jsonpath-input"]').fill('$.missing');
-  await page.getByRole('button', { name: '查询', exact: true }).click();
+  await expect(favoriteToggle).toHaveAttribute('title', '收藏当前查询');
+  await queryButton.click();
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('未命中任何结果');
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('$.missing');
 
   await page.locator('[data-tour="jsonpath-input"]').fill('$.users[*].name');
-  await page.getByRole('button', { name: '查询', exact: true }).click();
+  await queryButton.click();
 
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toBeHidden();
   await expect(page.getByText('1 / 2')).toBeVisible();
@@ -1234,10 +1242,12 @@ test('JSONPath 面板大查询处理中可取消', async ({ page }) => {
 
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
   await page.locator('[data-tour="jsonpath-input"]').fill('$..*');
-  await page.getByRole('button', { name: '查询', exact: true }).click();
+  await page.locator('[data-tour="jsonpath-query-button"]').click();
 
   await expect(page.locator('[data-tour="jsonpath-cancel-query"]')).toBeVisible();
   await expect(page.locator('[data-tour="jsonpath-query-status"]')).toHaveText('查询中...');
+  await expect(page.locator('[data-tour="jsonpath-query-button"]')).toBeDisabled();
+  await expect(page.locator('[data-tour="jsonpath-query-button"]')).toHaveAttribute('title', 'JSONPath 查询正在运行，可取消后重新查询');
 
   await page.locator('[data-tour="jsonpath-cancel-query"]').click();
 
