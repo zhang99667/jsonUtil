@@ -2,6 +2,7 @@ import React, { useDeferredValue, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { TransformContext } from '../types';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import {
   diffCmdStructures,
   formatCmdStructureDiff,
@@ -59,6 +60,30 @@ const getCoverageClassName = (level: 'success' | 'info' | 'warning'): string => 
 
 const formatDecodedPathCount = (record: TransformReportRecord): string => (
   record.isDecodedPathCountTruncated ? `${record.decodedPathCount}+` : String(record.decodedPathCount)
+);
+
+const formatCopySizeLabel = (content: string): string => {
+  const stats = getDocumentStats(content);
+  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
+};
+
+const formatCopySuccessMessage = (label: string, content: string): string => (
+  `已复制${label}（${formatCopySizeLabel(content)}）`
+);
+
+const getPathValueCopyRowCount = (records: TransformReportRecord[]): number => (
+  records.reduce((count, record) => count + getTransformPathValueCopyRows(record).length, 0)
+);
+
+const isPathValueCopyLimited = (records: TransformReportRecord[], isRecordTruncated: boolean): boolean => (
+  isRecordTruncated || records.some(record => {
+    const copiedRowCount = getTransformPathValueCopyRows(record).length;
+    return record.indexedDecodedPathCount > copiedRowCount || record.decodedPathCount > copiedRowCount;
+  })
+);
+
+const formatPathValueCopyCountLabel = (count: number, isLimited: boolean): string => (
+  isLimited ? `已返回 ${count} 项` : `${count} 项`
 );
 
 const COMMAND_SCHEMA_ROW_DISPLAY_LIMIT = 8;
@@ -160,8 +185,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     if (!context) return;
 
     try {
-      await copyText(formatTransformContextReportText(context));
-      toast.success('已复制解析报告', { duration: 2000 });
+      const reportText = formatTransformContextReportText(context);
+      await copyText(reportText);
+      toast.success(formatCopySuccessMessage('解析报告', reportText), { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析报告失败:', error);
     }
@@ -171,8 +197,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     if (!report || !reportView || isFilterPending) return;
 
     try {
-      await copyText(formatTransformReportViewText(report, reportView, deferredQuery));
-      toast.success('已复制筛选结果', { duration: 2000 });
+      const filteredReportText = formatTransformReportViewText(report, reportView, deferredQuery);
+      await copyText(filteredReportText);
+      toast.success(formatCopySuccessMessage('筛选结果', filteredReportText), { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析筛选结果失败:', error);
     }
@@ -182,8 +209,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     if (!report || !reportView || isFilterPending) return;
 
     try {
-      await copyText(formatTransformDiagnosticSummaryText(report, reportView, deferredQuery));
-      toast.success('已复制诊断摘要', { duration: 2000 });
+      const diagnosticSummaryText = formatTransformDiagnosticSummaryText(report, reportView, deferredQuery);
+      await copyText(diagnosticSummaryText);
+      toast.success(formatCopySuccessMessage('诊断摘要', diagnosticSummaryText), { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析诊断摘要失败:', error);
     }
@@ -193,8 +221,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     if (!report || !reportView || isFilterPending) return;
 
     try {
-      await copyText(formatTransformQualitySnapshotJsonText(report, reportView, deferredQuery));
-      toast.success('已复制质量快照', { duration: 2000 });
+      const qualitySnapshotText = formatTransformQualitySnapshotJsonText(report, reportView, deferredQuery);
+      await copyText(qualitySnapshotText);
+      toast.success(formatCopySuccessMessage('质量快照', qualitySnapshotText), { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析质量快照失败:', error);
     }
@@ -204,10 +233,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     if (!report || !reportView || isFilterPending) return;
 
     try {
-      await copyText(formatTransformArchivePackageJsonText(report, reportView, deferredQuery, {
+      const archivePackageText = formatTransformArchivePackageJsonText(report, reportView, deferredQuery, {
         cmdComparisonReportText: buildActiveCmdComparisonReportText(),
-      }));
-      toast.success('已复制归档包', { duration: 2000 });
+      });
+      await copyText(archivePackageText);
+      toast.success(formatCopySuccessMessage('归档包', archivePackageText), { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析归档包失败:', error);
     }
@@ -221,7 +251,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       if (!pathValueCopyText) return;
 
       await copyText(pathValueCopyText);
-      toast.success('已复制路径和值', { duration: 2000 });
+      toast.success(`已复制路径和值（${formatPathValueCopyCountLabel(
+        getPathValueCopyRowCount(reportView.records),
+        isPathValueCopyLimited(reportView.records, reportView.isRecordTruncated)
+      )}）`, { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析路径和值失败:', error);
     }
@@ -412,10 +445,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     if (!report || !reportView || isFilterPending) return;
 
     try {
-      await copyText(formatTransformCollaborationReportText(report, reportView, deferredQuery, {
+      const collaborationReportText = formatTransformCollaborationReportText(report, reportView, deferredQuery, {
         cmdComparisonReportText: buildActiveCmdComparisonReportText(),
-      }));
-      toast.success('已复制排查报告', { duration: 2000 });
+      });
+      await copyText(collaborationReportText);
+      toast.success(formatCopySuccessMessage('排查报告', collaborationReportText), { duration: 2000 });
     } catch (error) {
       showCopyError('复制协作排查报告失败:', error);
     }
