@@ -244,6 +244,9 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   }, [readOnly]);
 
   const effectiveReadOnly = readOnly && (!canToggleReadOnly || isLocked);
+  const lockToggleTitle = isLocked
+    ? `${label} 已锁定，点击解锁编辑`
+    : `${label} 可编辑，点击重新锁定`;
 
   // 变更处理（含只读保护）
   const handleEditorChange = (val: string | undefined) => {
@@ -495,9 +498,12 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           {canToggleReadOnly && (
             <button
               data-tour="editor-lock"
+              type="button"
               onClick={() => setIsLocked(!isLocked)}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
-              title={isLocked ? "Click to Edit" : "Unlocked"}
+              aria-label={lockToggleTitle}
+              aria-pressed={!isLocked}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border focus:outline-none focus:ring-2 focus:ring-emerald-400/70 ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
+              title={lockToggleTitle}
             >
               {isLocked ? (
                 <>
