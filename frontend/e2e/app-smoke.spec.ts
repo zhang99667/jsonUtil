@@ -256,7 +256,7 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
   await expect(reportPanel.locator('[data-tour="transform-report-more-decoded-paths"]')).toContainText('搜索字段名展示隐藏路径');
 
   await page.locator('[data-tour="transform-report-copy-path-values"]').click();
-  await expect(page.getByText('已复制路径和值').last()).toBeVisible();
+  await expect(page.getByText('已复制路径和值（21 项）').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('$.payload.target_after_display_limit = "needle_after_display_limit"');
 
@@ -272,7 +272,7 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
     .toBe('$.payload.target_after_display_limit = "needle_after_display_limit"');
 
   await page.locator('[data-tour="transform-report-copy-path-values"]').click();
-  await expect(page.getByText('已复制路径和值').last()).toBeVisible();
+  await expect(page.getByText('已复制路径和值（1 项）').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$.payload.target_after_display_limit = "needle_after_display_limit"');
 
@@ -335,8 +335,13 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
     originalValue: 'raw=%7B%22nid%22%3A123%7D',
   });
 
+  await reportPanel.locator('[data-tour="transform-report-copy-diagnostic-summary"]').click();
+  await expect(page.getByText(/已复制诊断摘要（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('深度解析诊断摘要');
+
   await reportPanel.locator('[data-tour="transform-report-copy-quality-snapshot"]').click();
-  await expect(page.getByText('已复制质量快照')).toBeVisible();
+  await expect(page.getByText(/已复制质量快照（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   const qualitySnapshot = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
   expect(qualitySnapshot.kind).toBe('json-helper-transform-quality-snapshot');
   expect(qualitySnapshot.coverage.score).toBe(50);
@@ -349,7 +354,7 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   expect(JSON.stringify(qualitySnapshot)).not.toContain('raw=%7B%22nid%22%3A123%7D');
 
   await reportPanel.locator('[data-tour="transform-report-copy-archive-package"]').click();
-  await expect(page.getByText('已复制归档包')).toBeVisible();
+  await expect(page.getByText(/已复制归档包（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   const archivePackage = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
   expect(archivePackage.kind).toBe('json-helper-transform-archive-package');
   expect(archivePackage.safety.containsRawResponse).toBe(false);
@@ -460,7 +465,7 @@ test('深度解析报告可页面内对比 cmdHandler 输出', async ({ page }) 
   expect(diffReport).toContain('$.cmd.nid');
 
   await reportPanel.getByRole('button', { name: '复制排查报告' }).click();
-  await expect(page.getByText('已复制排查报告')).toBeVisible();
+  await expect(page.getByText(/已复制排查报告（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('深度解析协作排查报告');
   const collaborationReport = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
@@ -535,7 +540,7 @@ test('深度解析报告展示运行时占位符', async ({ page }) => {
   await placeholderGroups.locator('[data-tour="transform-report-filter-placeholder-group"]').click();
   await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('__CONVERT_CMD__');
   await reportPanel.getByRole('button', { name: '复制筛选结果' }).click();
-  await expect(page.getByText('已复制筛选结果')).toBeVisible();
+  await expect(page.getByText(/已复制筛选结果（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('筛选: __CONVERT_CMD__');
   await placeholderSection.locator('[data-tour="transform-report-copy-placeholders"]').click();
