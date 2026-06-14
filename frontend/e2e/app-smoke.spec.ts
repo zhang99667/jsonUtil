@@ -1119,8 +1119,12 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(schemeResult).toContainText('"nid": 123');
   await expect(schemeResult).toContainText('"title": "标题"');
   await expect(schemeResult).toContainText('"from": "feed"');
+  await page.getByRole('button', { name: '复制原始值' }).click();
+  await expect(page.getByText(/已复制原始值（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  await page.getByRole('button', { name: '复制解码结果' }).click();
+  await expect(page.getByText(/已复制解码结果（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await page.locator('[data-tour="scheme-copy-path-values"]').click();
-  await expect(page.getByText('已复制路径和值')).toBeVisible();
+  await expect(page.getByText('已复制路径和值（3 项）')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe('$.cmd.nid = 123\n$.cmd.title = "标题"\n$.from = "feed"');
 
@@ -1133,7 +1137,7 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expectElementInside(page.locator('[data-tour="scheme-copy-serialized"]'), schemePanel);
   await expectElementInside(page.getByRole('button', { name: '应用修改' }), schemePanel);
   await page.locator('[data-tour="scheme-copy-serialized"]').click();
-  await expect(page.getByText('已复制序列化结果')).toBeVisible();
+  await expect(page.getByText(/已复制序列化结果（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   const serializedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
   expect(serializedResult).toContain('cmd=%7B%22nid%22%3A456');
   expect(serializedResult).toContain('from=feed');
