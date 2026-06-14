@@ -770,6 +770,19 @@ test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   await expect(page.getByText('AI 提供商')).toBeVisible();
 });
 
+test('设置弹窗支持键盘关闭并恢复焦点', async ({ page }) => {
+  const settingsButton = page.locator('[data-tour="settings"]');
+  await settingsButton.click();
+
+  const settingsDialog = page.getByRole('dialog', { name: '设置' });
+  await expect(settingsDialog).toBeVisible();
+  await expect(settingsDialog.getByRole('button', { name: '关闭设置' })).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(settingsDialog).toBeHidden();
+  await expect(settingsButton).toBeFocused();
+});
+
 test('快捷键冲突会提示被解除的动作', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
 

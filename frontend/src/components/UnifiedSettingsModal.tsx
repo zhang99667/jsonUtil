@@ -55,8 +55,92 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     const [localGeneralSettings, setLocalGeneralSettings] = useState<GeneralSettings>(generalSettings);
     const [isTestingAI, setIsTestingAI] = useState(false);
     const [aiTestResult, setAiTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const modalPanelRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+    const previousActiveElementRef = useRef<HTMLElement | null>(null);
+    const wasOpenRef = useRef(false);
     const importBackupInputRef = useRef<HTMLInputElement | null>(null);
     const aiConfigVersionRef = useRef(0);
+
+    useEffect(() => {
+        if (isOpen) {
+            wasOpenRef.current = true;
+            previousActiveElementRef.current = document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null;
+
+            const focusTimer = window.setTimeout(() => {
+                closeButtonRef.current?.focus();
+            }, 0);
+
+            return () => window.clearTimeout(focusTimer);
+        }
+
+        if (!wasOpenRef.current) return;
+
+        wasOpenRef.current = false;
+        const previousActiveElement = previousActiveElementRef.current;
+        previousActiveElementRef.current = null;
+
+        if (!previousActiveElement?.isConnected) return;
+
+        const restoreTimer = window.setTimeout(() => {
+            previousActiveElement.focus();
+        }, 0);
+
+        return () => window.clearTimeout(restoreTimer);
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen || recordingAction) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                onClose();
+                return;
+            }
+
+            if (event.key !== 'Tab') return;
+
+            const focusableElements: HTMLElement[] = modalPanelRef.current
+                ? Array.from(modalPanelRef.current.querySelectorAll(
+                    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )).filter((element): element is HTMLElement => (
+                    element instanceof HTMLElement && element.offsetParent !== null
+                ))
+                : [];
+
+            if (focusableElements.length === 0) {
+                event.preventDefault();
+                return;
+            }
+
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+            if (!firstElement || !lastElement) return;
+
+            if (!modalPanelRef.current?.contains(document.activeElement)) {
+                event.preventDefault();
+                firstElement.focus();
+                return;
+            }
+
+            if (event.shiftKey && document.activeElement === firstElement) {
+                event.preventDefault();
+                lastElement.focus();
+                return;
+            }
+
+            if (!event.shiftKey && document.activeElement === lastElement) {
+                event.preventDefault();
+                firstElement.focus();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose, recordingAction]);
 
     useEffect(() => {
         if (isOpen) {
@@ -230,14 +314,26 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
-            <div className="bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]">
+            <div
+                ref={modalPanelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="settings-modal-title"
+                className="bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]"
+            >
                 {/* 模态框头部 */}
                 <div className="flex justify-between items-center px-4 py-2 border-b border-editor-border bg-editor-header rounded-t-lg">
                     <div className="flex items-center gap-2">
                         <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        <span className="text-sm font-semibold text-gray-200">设置</span>
+                        <span id="settings-modal-title" className="text-sm font-semibold text-gray-200">设置</span>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-editor-hover">
+                    <button
+                        ref={closeButtonRef}
+                        type="button"
+                        aria-label="关闭设置"
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-editor-hover"
+                    >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
