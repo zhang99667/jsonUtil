@@ -747,10 +747,14 @@ test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page 
 test('源编辑区可复制并确认清空内容', async ({ page }) => {
   const sourceText = '{"sourceOps":true,"items":[1,2,3]}';
   await expect(page.locator('[data-tour="copy-source"]')).toHaveAttribute('title', 'SOURCE 为空，暂无内容可复制');
+  await expect(page.locator('[data-tour="copy-source"]')).toHaveAttribute('aria-label', 'SOURCE 为空，暂无内容可复制');
   await expect(page.locator('[data-tour="clear-source"]')).toHaveAttribute('title', 'SOURCE 为空，暂无内容可清空');
+  await expect(page.locator('[data-tour="clear-source"]')).toHaveAttribute('aria-label', 'SOURCE 为空，暂无内容可清空');
   await fillSourceEditor(page, sourceText);
   await expect(page.locator('[data-tour="copy-source"]')).toHaveAttribute('title', '复制 SOURCE 内容到剪贴板');
+  await expect(page.locator('[data-tour="copy-source"]')).toHaveAttribute('aria-label', '复制 SOURCE 内容到剪贴板');
   await expect(page.locator('[data-tour="clear-source"]')).toHaveAttribute('title', '清空 SOURCE 内容');
+  await expect(page.locator('[data-tour="clear-source"]')).toHaveAttribute('aria-label', '清空 SOURCE 内容');
 
   await page.locator('[data-tour="copy-source"]').click();
   await expect(page.getByText(`已复制源内容（${sourceText.length} 字符 / ${Buffer.byteLength(sourceText, 'utf8')} B）`)).toBeVisible();
@@ -797,13 +801,17 @@ test('源编辑区可从剪贴板粘贴并确认替换内容', async ({ page }) 
 test('预览结果可确认应用回源编辑区', async ({ page }) => {
   const sourceText = '{"previewApply":true,"items":[2,1]}';
   await expect(page.locator('[data-tour="apply-preview-to-source"]')).toHaveAttribute('title', '暂无 PREVIEW 内容可应用');
+  await expect(page.locator('[data-tour="apply-preview-to-source"]')).toHaveAttribute('aria-label', '暂无 PREVIEW 内容可应用');
   await expect(page.locator('[data-tour="copy-preview"]')).toHaveAttribute('title', '暂无 PREVIEW 内容可复制');
+  await expect(page.locator('[data-tour="copy-preview"]')).toHaveAttribute('aria-label', '暂无 PREVIEW 内容可复制');
 
   await fillSourceEditor(page, sourceText);
   await page.getByRole('button', { name: '格式化' }).click();
   await expectPreviewText(page, '"previewApply": true');
   await expect(page.locator('[data-tour="apply-preview-to-source"]')).toHaveAttribute('title', '用 PREVIEW 内容替换 SOURCE');
+  await expect(page.locator('[data-tour="apply-preview-to-source"]')).toHaveAttribute('aria-label', '用 PREVIEW 内容替换 SOURCE');
   await expect(page.locator('[data-tour="copy-preview"]')).toHaveAttribute('title', '复制预览内容到剪贴板');
+  await expect(page.locator('[data-tour="copy-preview"]')).toHaveAttribute('aria-label', '复制预览内容到剪贴板');
 
   await page.locator('[data-tour="apply-preview-to-source"]').click();
   const dialog = page.locator('[data-tour="confirm-dialog"]');
@@ -826,6 +834,7 @@ test('预览结果可确认应用回源编辑区', async ({ page }) => {
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('"items": [');
   await expect(page.locator('[data-tour="apply-preview-to-source"]')).toHaveAttribute('title', 'PREVIEW 与 SOURCE 内容一致，无需应用');
+  await expect(page.locator('[data-tour="apply-preview-to-source"]')).toHaveAttribute('aria-label', 'PREVIEW 与 SOURCE 内容一致，无需应用');
 });
 
 test('预览复制失败时展示浏览器拒绝原因', async ({ page }) => {
