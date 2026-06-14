@@ -67,6 +67,8 @@ interface StatusBarProps {
   sourceValidation: ValidationResult;
   /** SOURCE JSON 错误定位 */
   sourceValidationLocation: SourceValidationLocation | null;
+  /** 定位 SOURCE JSON 错误 */
+  onLocateSourceError?: () => void;
   /** 光标所在行号 */
   cursorLine?: number;
   /** 光标所在列号 */
@@ -92,6 +94,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   isSourceJsonCandidate,
   sourceValidation,
   sourceValidationLocation,
+  onLocateSourceError,
   cursorLine,
   cursorColumn,
 }) => {
@@ -157,6 +160,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       title: sourceValidation.error ? `SOURCE JSON 无效: ${sourceValidation.error}` : 'SOURCE JSON 无效',
     };
   })();
+  const canLocateSourceError = Boolean(!sourceValidation.isValid && sourceValidationLocation && onLocateSourceError);
 
   return (
     <div
@@ -210,14 +214,27 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         >
           {saveStatus.label}
         </span>
-        <span
-          data-tour="source-validation-status"
-          aria-live="polite"
-          className={`px-1.5 py-0.5 rounded font-bold leading-none ${sourceValidationStatus.className}`}
-          title={sourceValidationStatus.title}
-        >
-          {sourceValidationStatus.label}
-        </span>
+        {canLocateSourceError ? (
+          <button
+            data-tour="source-validation-status"
+            type="button"
+            aria-live="polite"
+            onClick={onLocateSourceError}
+            className={`px-1.5 py-0.5 rounded font-bold leading-none transition-colors hover:ring-1 hover:ring-white/70 focus:outline-none focus:ring-1 focus:ring-white ${sourceValidationStatus.className}`}
+            title={`${sourceValidationStatus.title}，点击定位`}
+          >
+            {sourceValidationStatus.label}
+          </button>
+        ) : (
+          <span
+            data-tour="source-validation-status"
+            aria-live="polite"
+            className={`px-1.5 py-0.5 rounded font-bold leading-none ${sourceValidationStatus.className}`}
+            title={sourceValidationStatus.title}
+          >
+            {sourceValidationStatus.label}
+          </span>
+        )}
       </div>
 
       {/* 右侧：当前视图模式与版本号 */}

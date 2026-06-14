@@ -163,9 +163,11 @@ test('状态栏展示 SOURCE JSON 校验状态', async ({ page }) => {
   await expect(validationStatus).toHaveText('JSON 有效');
   await expect(validationStatus).toHaveAttribute('title', 'SOURCE JSON / JSON Lines 校验通过');
 
-  await fillSourceEditor(page, '{"ok":true,}');
+  await fillSourceEditor(page, '{"ok":true}\n{"broken":}');
   await expect(validationStatus).toContainText('JSON 无效');
   await expect(validationStatus).toHaveAttribute('title', /SOURCE JSON 无效:/);
+  await validationStatus.click();
+  await expect(page.locator('[data-tour="statusbar"]')).toContainText('Ln 2');
 });
 
 test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {

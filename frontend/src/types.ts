@@ -242,6 +242,7 @@ export interface EditorProps {
   label: string;
   error?: string;
   errorLocation?: EditorLocation | null;
+  locateErrorSignal?: number; // 外部触发错误定位的递增信号
   warning?: string;
   info?: string;
   canToggleReadOnly?: boolean;
