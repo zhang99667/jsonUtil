@@ -311,6 +311,8 @@ const TrafficStats: React.FC = () => {
         AI_FIX: 'AI 修复',
         SAVE: '保存',
         SAVE_SHORTCUT: '快捷键保存',
+        SOURCE_COPY: '复制源内容',
+        SOURCE_CLEAR: '清空源内容',
         OPEN: '打开文件',
         NEW_TAB: '新建标签',
         JSONPATH_OPEN: '打开 JSONPath',
