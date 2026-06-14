@@ -1157,6 +1157,7 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
   const queryButton = page.locator('[data-tour="jsonpath-query-button"]');
   const favoriteToggle = page.locator('[data-tour="jsonpath-favorite-toggle"]');
+  const resultPreview = page.locator('[data-tour="jsonpath-results"]');
 
   await expect(queryButton).toHaveAttribute('title', '执行 JSONPath 查询');
   await page.locator('[data-tour="jsonpath-input"]').fill('   ');
@@ -1174,13 +1175,21 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('未命中任何结果');
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('$.missing');
 
+  const recursiveExample = page.getByRole('button', { name: '递归搜索' });
+  await expect(recursiveExample).toHaveAttribute('title', '$..name\n点击填入并查询');
+  await recursiveExample.click();
+  await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$..name');
+  await expect(page.locator('[data-tour="jsonpath-empty"]')).toBeHidden();
+  await expect(page.getByText('1 / 2')).toBeVisible();
+  await expect(resultPreview).toContainText('Ada');
+  await expect(resultPreview).toContainText('Bob');
+
   await page.locator('[data-tour="jsonpath-input"]').fill('$.users[*].name');
   await queryButton.click();
 
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toBeHidden();
   await expect(page.getByText('1 / 2')).toBeVisible();
   await expect(page.locator('.jsonpath-highlight').first()).toBeVisible();
-  const resultPreview = page.locator('[data-tour="jsonpath-results"]');
   await expect(resultPreview).toContainText('Ada');
   await expect(resultPreview).toContainText('Bob');
   await resultPreview.locator('button').nth(1).click();
