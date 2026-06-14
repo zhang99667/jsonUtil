@@ -670,10 +670,14 @@ test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
   await fillSourceEditor(page, '{"ok":1}\n{"broken":}\n{"ok":3}');
 
   await expect(page.getByText('JSON Lines 第 2 行解析错误')).toBeVisible();
-  await page.locator('[data-tour="source-editor"] [data-tour="editor-locate-error"]').click();
+  const locateErrorButton = page.getByRole('button', { name: /SOURCE 定位到第 2 行，第 \d+ 列/ });
+  await expect(locateErrorButton).toHaveAttribute('title', /SOURCE 定位到第 2 行，第 \d+ 列/);
+  await locateErrorButton.click();
   await expect(page.locator('[data-tour="statusbar"]')).toContainText('Ln 2');
 
-  await page.locator('[data-tour="source-editor"] [data-tour="editor-copy-error"]').click();
+  const copyErrorButton = page.getByRole('button', { name: 'SOURCE 复制错误信息' });
+  await expect(copyErrorButton).toHaveAttribute('title', 'SOURCE 复制错误信息');
+  await copyErrorButton.click();
   await expect(page.getByText('已复制错误信息')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('JSON Lines 第 2 行解析错误');
