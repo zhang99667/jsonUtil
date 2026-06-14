@@ -78,6 +78,7 @@
 - **状态栏字节体积**: 底部状态栏新增当前焦点内容的 UTF-8 字节体积，并让 Length 跟随 SOURCE/PREVIEW 焦点切换
 - **工具栏模式选中态**: 左侧转换工具按钮会高亮当前模式并补充 `aria-pressed` 状态，减少切换格式化、压缩、嵌套解析时的辨认成本
 - **浮动面板入口打开态**: JSONPath、Scheme 和模板填充入口会高亮当前打开状态并补充 `aria-pressed`，减少多面板调试时的辨认成本
+- **编辑器换行开关状态**: SOURCE/PREVIEW 自动换行开关补充 `aria-pressed` 与中文动态提示，长 URL/CMD 排查时状态更清晰
 - **解析质量基线完整性门禁**: `corpus:snapshot:check` 会识别缺失 expected snapshot 的 corpus 样本并失败，避免新增脱敏样本未配置质量基线却通过 CI
 - **cmdHandler 快照对齐门禁**: `corpus:snapshot` 会把 cmdHandler expected 子集对齐结果写入质量快照和 Markdown 摘要，strict 模式在关键路径缺失或 expected 缺失时失败
 - **JSONPath 大查询可取消**: JSONPath 查询处理中新增取消入口，会立即终止当前 Worker 并清空旧高亮，避免误查大表达式时只能等待结果返回

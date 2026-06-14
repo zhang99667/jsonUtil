@@ -114,6 +114,23 @@ test('查询解析工具入口展示浮动面板打开态', async ({ page }) => 
   await assertPanelToggle('template-fill-button');
 });
 
+test('编辑器自动换行开关展示可访问状态', async ({ page }) => {
+  const wrapToggle = page.locator('[data-tour="source-editor"] [data-tour="editor-wrap"]');
+
+  await expect(wrapToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(wrapToggle).toHaveAttribute('title', '自动换行已关闭，点击开启');
+  await expect(wrapToggle).toContainText('不换行');
+
+  await wrapToggle.click();
+  await expect(wrapToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(wrapToggle).toHaveAttribute('title', '自动换行已开启，点击关闭');
+  await expect(wrapToggle).toContainText('换行');
+
+  await wrapToggle.click();
+  await expect(wrapToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(wrapToggle).toContainText('不换行');
+});
+
 test('JSON Lines 可格式化为可读数组预览', async ({ page }) => {
   await fillSourceEditor(page, '{"id":1}\n{"id":2}');
 
