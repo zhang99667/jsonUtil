@@ -38,6 +38,7 @@ import { setJsonPointerValue } from './utils/jsonPointer';
 import {
   cleanJsonInput,
   getJsonValidationErrorLocation,
+  isJsonContainerCandidate,
   startJsonValidation,
   validateJsonForEditor,
 } from './utils/jsonValidation';
@@ -1278,6 +1279,7 @@ const App: React.FC = () => {
   const hasSourceContent = input.trim().length > 0;
   const hasPreviewContent = output.trim().length > 0;
   const isPreviewSameAsSource = output === input;
+  const isSourceJsonCandidate = hasSourceContent && isJsonContainerCandidate(input);
   const canUseAutoSave = Boolean(activeFileId && activeFile?.handle);
   const isAutoSaveActive = canUseAutoSave && isAutoSaveEnabled;
   const autoSaveTitle = !activeFileId
@@ -1712,6 +1714,10 @@ const App: React.FC = () => {
         activeFileId={activeFileId}
         files={files}
         isAutoSaveEnabled={isAutoSaveEnabled}
+        hasSourceContent={hasSourceContent}
+        isSourceJsonCandidate={isSourceJsonCandidate}
+        sourceValidation={validation}
+        sourceValidationLocation={sourceErrorLocation}
         cursorLine={cursorPosition.line}
         cursorColumn={cursorPosition.column}
       />

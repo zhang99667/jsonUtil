@@ -1,5 +1,10 @@
 import React from 'react';
-import { TransformMode, FileTab } from '../types';
+import { TransformMode, FileTab, ValidationResult } from '../types';
+
+interface SourceValidationLocation {
+  line: number;
+  column: number;
+}
 
 /** 转换模式中文标签映射 */
 const MODE_LABELS: Record<TransformMode, string> = {
@@ -54,6 +59,14 @@ interface StatusBarProps {
   files: FileTab[];
   /** 自动保存是否开启 */
   isAutoSaveEnabled: boolean;
+  /** SOURCE 是否有非空内容 */
+  hasSourceContent: boolean;
+  /** SOURCE 是否进入 JSON 容器校验 */
+  isSourceJsonCandidate: boolean;
+  /** SOURCE JSON 校验结果 */
+  sourceValidation: ValidationResult;
+  /** SOURCE JSON 错误定位 */
+  sourceValidationLocation: SourceValidationLocation | null;
   /** 光标所在行号 */
   cursorLine?: number;
   /** 光标所在列号 */
@@ -75,6 +88,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   activeFileId,
   files,
   isAutoSaveEnabled,
+  hasSourceContent,
+  isSourceJsonCandidate,
+  sourceValidation,
+  sourceValidationLocation,
   cursorLine,
   cursorColumn,
 }) => {
@@ -104,6 +121,41 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     return isAutoSaveEnabled
       ? { label: '自动保存已同步', className: 'bg-green-100 text-green-800', title: '当前文件修改已自动同步' }
       : { label: '已保存', className: 'bg-white text-brand-primary', title: '当前文件没有未保存修改' };
+  })();
+  const sourceValidationStatus = (() => {
+    if (!hasSourceContent) {
+      return {
+        label: 'SOURCE 空',
+        className: 'bg-white/15 text-white',
+        title: 'SOURCE 为空，输入 JSON 后会展示校验状态',
+      };
+    }
+
+    if (!isSourceJsonCandidate) {
+      return {
+        label: 'SOURCE 文本',
+        className: 'bg-white/15 text-white',
+        title: '当前 SOURCE 不以 { 或 [ 开头，按普通文本处理',
+      };
+    }
+
+    if (sourceValidation.isValid) {
+      return {
+        label: 'JSON 有效',
+        className: 'bg-green-100 text-green-800',
+        title: 'SOURCE JSON / JSON Lines 校验通过',
+      };
+    }
+
+    const locationText = sourceValidationLocation
+      ? ` L${sourceValidationLocation.line}:C${sourceValidationLocation.column}`
+      : '';
+
+    return {
+      label: `JSON 无效${locationText}`,
+      className: 'bg-red-100 text-red-800',
+      title: sourceValidation.error ? `SOURCE JSON 无效: ${sourceValidation.error}` : 'SOURCE JSON 无效',
+    };
   })();
 
   return (
@@ -157,6 +209,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           title={saveStatus.title}
         >
           {saveStatus.label}
+        </span>
+        <span
+          data-tour="source-validation-status"
+          aria-live="polite"
+          className={`px-1.5 py-0.5 rounded font-bold leading-none ${sourceValidationStatus.className}`}
+          title={sourceValidationStatus.title}
+        >
+          {sourceValidationStatus.label}
         </span>
       </div>
 
