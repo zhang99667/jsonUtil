@@ -23,7 +23,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
-import { copyText, getClipboardErrorMessage } from './utils/clipboard';
+import { copyText, getClipboardErrorMessage, readClipboardText } from './utils/clipboard';
 import { getDetailedErrorMessage, isAbortError } from './utils/errors';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
@@ -218,6 +218,7 @@ const App: React.FC = () => {
     [files, pendingCloseFileId]
   );
   const [isClearSourceConfirmOpen, setIsClearSourceConfirmOpen] = useState(false);
+  const [pendingPasteSourceText, setPendingPasteSourceText] = useState<string | null>(null);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -770,6 +771,57 @@ const App: React.FC = () => {
     }
   }, [input, trackCurrentToolEvent]);
 
+  const applySourceTextFromClipboard = useCallback((text: string, successMessage: string) => {
+    handleInputChange(text);
+    setHighlightRange(null);
+    showSuccess(successMessage);
+  }, [handleInputChange]);
+
+  const handlePasteSource = useCallback(async () => {
+    const startedAt = performance.now();
+
+    try {
+      const clipboardText = await readClipboardText();
+      if (!clipboardText) {
+        showError('剪贴板为空，暂无可粘贴内容');
+        trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'skipped', startedAt);
+        return;
+      }
+
+      if (clipboardText === input) {
+        showSuccess('剪贴板内容已在 SOURCE 中');
+        trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'skipped', startedAt);
+        return;
+      }
+
+      if (input.trim()) {
+        setPendingPasteSourceText(clipboardText);
+        return;
+      }
+
+      applySourceTextFromClipboard(clipboardText, '已从剪贴板粘贴到 SOURCE');
+      trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'success', startedAt);
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '读取剪贴板失败'));
+      trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'error', startedAt);
+    }
+  }, [applySourceTextFromClipboard, input, trackCurrentToolEvent]);
+
+  const handleConfirmPasteSource = useCallback(() => {
+    if (pendingPasteSourceText === null) return;
+
+    const startedAt = performance.now();
+    applySourceTextFromClipboard(pendingPasteSourceText, '已用剪贴板内容替换 SOURCE');
+    setPendingPasteSourceText(null);
+    trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'success', startedAt);
+  }, [applySourceTextFromClipboard, pendingPasteSourceText, trackCurrentToolEvent]);
+
+  const handleCancelPasteSource = useCallback(() => {
+    const startedAt = performance.now();
+    setPendingPasteSourceText(null);
+    trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'cancelled', startedAt);
+  }, [trackCurrentToolEvent]);
+
   const handleRequestClearSource = useCallback(() => {
     const startedAt = performance.now();
     if (!input.trim()) {
@@ -1181,6 +1233,17 @@ const App: React.FC = () => {
         onCancel={handleCancelClearSource}
       />
 
+      <ConfirmDialog
+        isOpen={pendingPasteSourceText !== null}
+        title="替换源内容"
+        message="这会用剪贴板文本替换当前 SOURCE 编辑区内容，并将当前标签标记为未保存。"
+        confirmLabel="替换"
+        cancelLabel="继续保留"
+        variant="danger"
+        onConfirm={handleConfirmPasteSource}
+        onCancel={handleCancelPasteSource}
+      />
+
       {/* 主工作区容器 */}
       <div
         className="flex-1 flex overflow-hidden relative"
@@ -1267,6 +1330,18 @@ const App: React.FC = () => {
               error={validation.isValid ? undefined : validation.error}
               headerActions={
                 <>
+                  <button
+                    data-tour="paste-source"
+                    aria-label="粘贴到源内容"
+                    onClick={handlePasteSource}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-blue-200 transition-colors border border-transparent"
+                    title="从剪贴板粘贴到 SOURCE"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-4 0a2 2 0 104 0m-4 0a2 2 0 114 0m-2 7v6m0 0l-2-2m2 2l2-2" />
+                    </svg>
+                    <span>粘贴</span>
+                  </button>
                   <button
                     data-tour="copy-source"
                     aria-label="复制源内容"

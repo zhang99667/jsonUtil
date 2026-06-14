@@ -58,6 +58,7 @@ test.beforeEach(async ({ page }) => {
         writeText: async (text: string) => {
           window.localStorage.setItem('mock-clipboard', text);
         },
+        readText: async () => window.localStorage.getItem('mock-clipboard') || '',
       },
       configurable: true,
     });
@@ -586,6 +587,27 @@ test('源编辑区可复制并确认清空内容', async ({ page }) => {
   await expect(page.getByText('源内容已清空')).toBeVisible();
   await expect(page.locator('[data-tour="statusbar"]')).toContainText('Length: 0');
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).not.toContainText('sourceOps');
+});
+
+test('源编辑区可从剪贴板粘贴并确认替换内容', async ({ page }) => {
+  await page.evaluate(() => window.localStorage.setItem('mock-clipboard', '{"pasted":true}'));
+
+  await page.locator('[data-tour="paste-source"]').click();
+  await expect(page.getByText('已从剪贴板粘贴到 SOURCE')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('pasted');
+
+  await page.evaluate(() => window.localStorage.setItem('mock-clipboard', '{"replaced":true}'));
+  await page.locator('[data-tour="paste-source"]').click();
+  const dialog = page.locator('[data-tour="confirm-dialog"]');
+  await expect(dialog).toContainText('替换源内容');
+  await dialog.getByRole('button', { name: '继续保留' }).click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('pasted');
+
+  await page.locator('[data-tour="paste-source"]').click();
+  await page.locator('[data-tour="confirm-dialog"]').getByRole('button', { name: '替换' }).click();
+  await expect(page.getByText('已用剪贴板内容替换 SOURCE')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('replaced');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).not.toContainText('pasted');
 });
 
 test('预览复制失败时展示浏览器拒绝原因', async ({ page }) => {
