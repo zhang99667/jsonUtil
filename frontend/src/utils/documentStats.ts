@@ -10,6 +10,12 @@ interface DocumentStatsOptions {
   maxScanLength?: number;
 }
 
+export const formatByteSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+};
+
 /**
  * 单次扫描计算文档行列统计，避免大文件 split 产生额外数组和内存峰值。
  * 大文件只扫描前半段，避免辅助状态栏统计拖慢编辑输入。
