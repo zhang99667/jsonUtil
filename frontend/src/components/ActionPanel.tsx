@@ -12,6 +12,9 @@ interface ActionPanelProps {
   onOpenSettings: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  isJsonPathOpen: boolean;
+  isSchemeDecodeOpen: boolean;
+  isTemplateFillOpen: boolean;
   onToggleJsonPath: () => void;
   onToggleSchemeDecode: () => void;
   onToggleTemplateFill: () => void;
@@ -25,6 +28,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onOpenSettings,
   isCollapsed,
   onToggleCollapse,
+  isJsonPathOpen,
+  isSchemeDecodeOpen,
+  isTemplateFillOpen,
   onToggleJsonPath,
   onToggleSchemeDecode,
   onToggleTemplateFill
@@ -175,6 +181,51 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     );
   };
 
+  const renderPanelBtn = (
+    label: string,
+    icon: React.ReactNode,
+    iconClass: string,
+    hoverIconClass: string,
+    isOpen: boolean,
+    onClick: () => void,
+    dataTour: string
+  ) => {
+    const activeClassName = isOpen
+      ? 'bg-editor-active border-brand-primary/60 text-white ring-1 ring-brand-primary/40'
+      : 'bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600';
+    const iconWrapperClassName = isOpen
+      ? iconClass
+      : `text-gray-500 ${hoverIconClass}`;
+
+    return (
+      <button
+        data-tour={dataTour}
+        aria-pressed={isOpen}
+        onClick={onClick}
+        className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border active:scale-95 shadow-sm ${activeClassName} ${isCollapsed ? 'justify-center px-2' : ''}`}
+        title={isCollapsed ? `${label}${isOpen ? '（已打开）' : ''}` : undefined}
+      >
+        <div className={`transition-colors ${iconWrapperClassName}`}>
+          {icon}
+        </div>
+        {!isCollapsed && (
+          <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+            <span className="truncate">{label}</span>
+            {isOpen && (
+              <span
+                aria-hidden="true"
+                data-tour="panel-open-badge"
+                className="rounded bg-brand-primary/20 px-1.5 py-0.5 text-[10px] font-bold leading-none text-brand-primary"
+              >
+                打开
+              </span>
+            )}
+          </span>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div className="h-full bg-editor-bg border-r border-editor-bg relative group/sidebar">
       {/* ... (container and top bar unchanged) ... */}
@@ -293,47 +344,23 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           </div>
         )}
         <div className="mb-4">
-          <button
-            data-tour="jsonpath-button"
-            onClick={onToggleJsonPath}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
-            title={isCollapsed ? "JSONPath 查询" : undefined}
-          >
-            <div className="transition-colors text-gray-500 group-hover:text-emerald-400">
-              <svg className="w-5 h-5 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {renderPanelBtn('JSONPath 查询', (
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            {!isCollapsed && <span>JSONPath 查询</span>}
-          </button>
+            </svg>
+          ), 'text-emerald-400', 'group-hover:text-emerald-400', isJsonPathOpen, onToggleJsonPath, 'jsonpath-button')}
           
-          <button
-            data-tour="scheme-button"
-            onClick={onToggleSchemeDecode}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
-            title={isCollapsed ? "Scheme 解析" : undefined}
-          >
-            <div className="transition-colors text-gray-500 group-hover:text-emerald-400">
-              <svg className="w-5 h-5 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {renderPanelBtn('Scheme 解析', (
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </div>
-            {!isCollapsed && <span>Scheme 解析</span>}
-          </button>
+            </svg>
+          ), 'text-emerald-400', 'group-hover:text-emerald-400', isSchemeDecodeOpen, onToggleSchemeDecode, 'scheme-button')}
 
-          <button
-            data-tour="template-fill-button"
-            onClick={onToggleTemplateFill}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
-            title={isCollapsed ? "模板填充" : undefined}
-          >
-            <div className="transition-colors text-gray-500 group-hover:text-orange-400">
-              <svg className="w-5 h-5 flex-shrink-0 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {renderPanelBtn('模板填充', (
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
-            </div>
-            {!isCollapsed && <span>模板填充</span>}
-          </button>
+            </svg>
+          ), 'text-orange-400', 'group-hover:text-orange-400', isTemplateFillOpen, onToggleTemplateFill, 'template-fill-button')}
         </div>
 
         {/* 文件管理 */}
