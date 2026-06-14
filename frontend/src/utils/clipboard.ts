@@ -39,6 +39,22 @@ export const copyText = async (text: string): Promise<void> => {
   }
 };
 
+/**
+ * 从剪贴板读取文本。
+ * 浏览器没有可靠的传统读取回退，只在 Clipboard API 可用时读取，避免伪装成已粘贴。
+ */
+export const readClipboardText = async (): Promise<string> => {
+  if (typeof navigator === 'undefined' || !navigator.clipboard?.readText) {
+    throw new Error('当前环境不支持读取剪贴板');
+  }
+
+  try {
+    return await navigator.clipboard.readText();
+  } catch {
+    throw new Error('浏览器拒绝读取剪贴板');
+  }
+};
+
 export const getClipboardErrorMessage = (
   error: unknown,
   fallbackMessage = '复制失败'

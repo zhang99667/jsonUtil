@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { copyText, getClipboardErrorMessage } from './clipboard';
+import { copyText, getClipboardErrorMessage, readClipboardText } from './clipboard';
 
 describe('copyText', () => {
   afterEach(() => {
@@ -60,6 +60,33 @@ describe('copyText', () => {
     });
 
     await expect(copyText('blocked')).rejects.toThrow('浏览器拒绝复制操作');
+  });
+});
+
+describe('readClipboardText', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('通过 Clipboard API 读取文本', async () => {
+    const readText = vi.fn().mockResolvedValue('hello');
+    vi.stubGlobal('navigator', { clipboard: { readText } });
+
+    await expect(readClipboardText()).resolves.toBe('hello');
+    expect(readText).toHaveBeenCalled();
+  });
+
+  it('读取能力不可用时抛出明确错误', async () => {
+    vi.stubGlobal('navigator', {});
+
+    await expect(readClipboardText()).rejects.toThrow('当前环境不支持读取剪贴板');
+  });
+
+  it('浏览器拒绝读取时抛出明确错误', async () => {
+    const readText = vi.fn().mockRejectedValue(new Error('denied'));
+    vi.stubGlobal('navigator', { clipboard: { readText } });
+
+    await expect(readClipboardText()).rejects.toThrow('浏览器拒绝读取剪贴板');
   });
 });
 
