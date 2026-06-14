@@ -128,6 +128,7 @@ test('关闭未保存标签使用应用内确认', async ({ page }) => {
   await page.getByRole('button', { name: '继续编辑' }).click();
   await expect(confirmDialog).toBeHidden();
   await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
+  await expect(editorTabs.locator('button[title="未保存"]')).toBeFocused();
 
   await editorTabs.locator('button[title="未保存"]').click();
   await page.getByRole('button', { name: '关闭并丢弃' }).click();
