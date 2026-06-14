@@ -1,4 +1,6 @@
 export interface DocumentStats {
+  characterCount: number;
+  utf8ByteLength: number;
   totalLines: number;
   maxColumns: number;
   isLimited: boolean;
@@ -19,9 +21,11 @@ export const getDocumentStats = (content: string, options: DocumentStatsOptions 
   let totalLines = 1;
   let maxColumns = 0;
   let currentColumns = 0;
+  let utf8ByteLength = 0;
 
   for (let i = 0; i < scanLength; i++) {
-    if (content.charCodeAt(i) === 10) {
+    const charCode = content.charCodeAt(i);
+    if (charCode === 10) {
       totalLines++;
       if (currentColumns > maxColumns) {
         maxColumns = currentColumns;
@@ -30,11 +34,34 @@ export const getDocumentStats = (content: string, options: DocumentStatsOptions 
     } else {
       currentColumns++;
     }
+
+    if (charCode <= 0x7F) {
+      utf8ByteLength += 1;
+    } else if (charCode <= 0x7FF) {
+      utf8ByteLength += 2;
+    } else if (charCode >= 0xD800 && charCode <= 0xDBFF && i + 1 < scanLength) {
+      const nextCharCode = content.charCodeAt(i + 1);
+      if (nextCharCode >= 0xDC00 && nextCharCode <= 0xDFFF) {
+        utf8ByteLength += 4;
+        i++;
+        currentColumns++;
+      } else {
+        utf8ByteLength += 3;
+      }
+    } else {
+      utf8ByteLength += 3;
+    }
   }
 
   if (currentColumns > maxColumns) {
     maxColumns = currentColumns;
   }
 
-  return { totalLines, maxColumns, isLimited };
+  return {
+    characterCount: content.length,
+    utf8ByteLength,
+    totalLines,
+    maxColumns,
+    isLimited,
+  };
 };

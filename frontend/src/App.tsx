@@ -1670,6 +1670,8 @@ const App: React.FC = () => {
       {/* 底部状态栏 */}
       <StatusBar
         inputLength={input.length}
+        activeContentLength={documentStats.characterCount}
+        activeContentByteLength={documentStats.utf8ByteLength}
         totalLines={documentStats.totalLines}
         maxColumns={documentStats.maxColumns}
         isStatsLimited={documentStats.isLimited}

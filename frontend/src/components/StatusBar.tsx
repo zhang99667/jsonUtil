@@ -26,10 +26,20 @@ const getVersionLabel = (version?: string): string => {
 
 const APP_VERSION_LABEL = getVersionLabel(import.meta.env.VITE_APP_VERSION);
 
+const formatByteSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+};
+
 /** StatusBar 组件 Props 定义 */
 interface StatusBarProps {
-  /** 输入内容长度 */
+  /** SOURCE 内容长度，用于判断草稿保存状态 */
   inputLength: number;
+  /** 当前聚焦内容长度 */
+  activeContentLength: number;
+  /** 当前聚焦内容的 UTF-8 字节数 */
+  activeContentByteLength: number;
   /** 文档总行数 */
   totalLines: number;
   /** 文档最大列数 */
@@ -56,6 +66,8 @@ interface StatusBarProps {
  */
 export const StatusBar: React.FC<StatusBarProps> = ({
   inputLength,
+  activeContentLength,
+  activeContentByteLength,
   totalLines,
   maxColumns,
   isStatsLimited,
@@ -69,6 +81,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   // 查找当前激活的文件
   const activeFile = activeFileId ? files.find(f => f.id === activeFileId) : null;
   const isSavedFile = Boolean(activeFile?.handle);
+  const byteSizeText = `${isStatsLimited ? '≥' : ''}${formatByteSize(activeContentByteLength)}`;
   const saveStatus = (() => {
     if (!activeFile) {
       return inputLength > 0
@@ -106,7 +119,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           </svg>
           {' '}UTF-8
         </span>
-        <span>Length: {inputLength}</span>
+        <span>Length: {activeContentLength}</span>
+        <span
+          data-tour="statusbar-byte-size"
+          title={isStatsLimited ? '大文件只估算已扫描内容的 UTF-8 字节数' : '当前聚焦内容的 UTF-8 字节数'}
+        >
+          Size: {byteSizeText}
+        </span>
         {cursorLine != null && cursorColumn != null && (
           <span className="font-mono">
             Ln {cursorLine}, Col {cursorColumn}
