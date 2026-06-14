@@ -779,7 +779,7 @@ test('损坏的本地配置不会阻止应用启动', async ({ page }) => {
   await waitForMainAppReady(page);
 
   await page.locator('[data-tour="settings"]').click();
-  await page.getByRole('button', { name: 'AI 配置' }).click();
+  await page.getByRole('tab', { name: 'AI 配置' }).click();
   await expect(page.getByText('AI 提供商')).toBeVisible();
 });
 
@@ -798,7 +798,7 @@ test('设置弹窗支持键盘关闭并恢复焦点', async ({ page }) => {
 
 test('通用设置开关提供可访问状态并支持键盘切换', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
-  await page.getByRole('button', { name: '通用设置' }).click();
+  await page.getByRole('tab', { name: '通用设置' }).click();
 
   const autoExpandSwitch = page.getByRole('switch', { name: '嵌套解析时自动展开 CMD/Scheme 字符串' });
   await expect(autoExpandSwitch).toHaveAttribute('aria-checked', 'true');
@@ -806,6 +806,32 @@ test('通用设置开关提供可访问状态并支持键盘切换', async ({ pa
   await autoExpandSwitch.focus();
   await page.keyboard.press('Space');
   await expect(autoExpandSwitch).toHaveAttribute('aria-checked', 'false');
+});
+
+test('设置页签支持方向键切换并同步选中状态', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+
+  const settingsDialog = page.getByRole('dialog', { name: '设置' });
+  const shortcutsTab = settingsDialog.getByRole('tab', { name: '快捷键' });
+  const aiTab = settingsDialog.getByRole('tab', { name: 'AI 配置' });
+  const generalTab = settingsDialog.getByRole('tab', { name: '通用设置' });
+
+  await expect(shortcutsTab).toHaveAttribute('aria-selected', 'true');
+
+  await shortcutsTab.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(aiTab).toBeFocused();
+  await expect(aiTab).toHaveAttribute('aria-selected', 'true');
+  await expect(settingsDialog.getByRole('tabpanel', { name: 'AI 配置' })).toBeVisible();
+
+  await page.keyboard.press('End');
+  await expect(generalTab).toBeFocused();
+  await expect(generalTab).toHaveAttribute('aria-selected', 'true');
+  await expect(settingsDialog.getByRole('tabpanel', { name: '通用设置' })).toBeVisible();
+
+  await page.keyboard.press('Home');
+  await expect(shortcutsTab).toBeFocused();
+  await expect(shortcutsTab).toHaveAttribute('aria-selected', 'true');
 });
 
 test('快捷键冲突会提示被解除的动作', async ({ page }) => {
@@ -865,7 +891,7 @@ test('本地存储写入异常不会打断主路径', async ({ page }) => {
   });
 
   await page.locator('[data-tour="settings"]').click();
-  await page.getByRole('button', { name: '通用设置' }).click();
+  await page.getByRole('tab', { name: '通用设置' }).click();
   const generalSettingCard = page
     .getByText('嵌套解析时自动展开 CMD/Scheme 字符串')
     .locator('xpath=ancestor::div[contains(@class, "bg-editor-bg")][1]');
@@ -931,7 +957,7 @@ test('设置中可恢复浮动面板默认布局', async ({ page }) => {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForMainAppReady(page);
   await page.locator('[data-tour="settings"]').click();
-  await page.getByRole('button', { name: '通用设置' }).click();
+  await page.getByRole('tab', { name: '通用设置' }).click();
   await page.getByRole('button', { name: '恢复默认布局' }).click();
   await expect(page.getByText('浮动面板布局已恢复默认')).toBeVisible();
   await page.getByRole('button', { name: '取消' }).click();
@@ -960,7 +986,7 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForMainAppReady(page);
   await page.locator('[data-tour="settings"]').click();
-  await page.getByRole('button', { name: '通用设置' }).click();
+  await page.getByRole('tab', { name: '通用设置' }).click();
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: '导出配置备份' }).click();
@@ -1628,7 +1654,7 @@ test('AI 修复命中敏感字段会阻止发送原文', async ({ page }) => {
 
 test('AI 修复缺少 Key 会引导到配置页', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
-  await page.getByRole('button', { name: 'AI 配置' }).click();
+  await page.getByRole('tab', { name: 'AI 配置' }).click();
   await page.locator('input[type="password"]').fill('');
   await page.getByRole('button', { name: '保存设置' }).click();
 
@@ -1642,7 +1668,7 @@ test('AI 修复缺少 Key 会引导到配置页', async ({ page }) => {
 
 test('AI 配置可测试连接', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
-  await page.getByRole('button', { name: 'AI 配置' }).click();
+  await page.getByRole('tab', { name: 'AI 配置' }).click();
 
   await page.getByRole('button', { name: '测试连接' }).click();
 
@@ -1654,7 +1680,7 @@ test('AI 配置可测试连接', async ({ page }) => {
 
 test('自定义 AI 配置缺少 Base URL 时阻止保存', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
-  await page.getByRole('button', { name: 'AI 配置' }).click();
+  await page.getByRole('tab', { name: 'AI 配置' }).click();
 
   await page.locator('select').selectOption('custom');
   await page.locator('input[type="text"]').nth(1).fill('');
