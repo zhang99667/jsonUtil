@@ -18,6 +18,7 @@ import {
 } from '../utils/jsonPathLists';
 
 const MAX_VISIBLE_QUERY_RESULTS = 100;
+const JSONPATH_QUERY_BUTTON_DESCRIPTION_ID = 'jsonpath-query-button-description';
 
 const formatJsonPathValuesForCopy = (values: unknown[]): string => {
     if (values.length === 1) {
@@ -545,10 +546,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             disabled={isQuerying || isDataPreparing}
                             className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             title={queryButtonTitle}
-                            aria-label={queryButtonTitle}
+                            aria-describedby={JSONPATH_QUERY_BUTTON_DESCRIPTION_ID}
                         >
                             {isQuerying ? '查询中...' : '查询'}
                         </button>
+                        <span id={JSONPATH_QUERY_BUTTON_DESCRIPTION_ID} className="sr-only">
+                            {queryButtonTitle}
+                        </span>
                         {isQuerying && (
                             <button
                                 data-tour="jsonpath-cancel-query"

@@ -157,12 +157,15 @@ test('JSONPath 查询按钮提前提示不可查询原因', async ({ page }) => 
   await page.locator('[data-tour="jsonpath-button"]').click();
 
   const queryButton = page.locator('[data-tour="jsonpath-query-button"]');
+  const queryButtonDescription = page.locator('#jsonpath-query-button-description');
   await expect(queryButton).toHaveAttribute('title', '请先在 SOURCE 输入 JSON 数据');
-  await expect(queryButton).toHaveAttribute('aria-label', '请先在 SOURCE 输入 JSON 数据');
+  await expect(queryButton).toHaveAttribute('aria-describedby', 'jsonpath-query-button-description');
+  await expect(queryButtonDescription).toHaveText('请先在 SOURCE 输入 JSON 数据');
+  await expect(page.getByRole('button', { name: '查询', exact: true })).toBeVisible();
 
   await page.locator('[data-tour="jsonpath-input"]').fill('   ');
   await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式后查询');
-  await expect(queryButton).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后查询');
+  await expect(queryButtonDescription).toHaveText('请输入 JSONPath 表达式后查询');
 });
 
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {
@@ -1158,12 +1161,12 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(queryButton).toHaveAttribute('title', '执行 JSONPath 查询');
   await page.locator('[data-tour="jsonpath-input"]').fill('   ');
   await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式后查询');
-  await expect(queryButton).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后查询');
+  await expect(page.locator('#jsonpath-query-button-description')).toHaveText('请输入 JSONPath 表达式后查询');
   await expect(favoriteToggle).toBeDisabled();
   await expect(favoriteToggle).toHaveAttribute('title', '请输入 JSONPath 表达式后可收藏');
   await expect(favoriteToggle).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后可收藏');
   await queryButton.click();
-  await expect(page.getByText('请输入 JSONPath 表达式')).toBeVisible();
+  await expect(page.getByText('请输入 JSONPath 表达式', { exact: true })).toBeVisible();
 
   await page.locator('[data-tour="jsonpath-input"]').fill('$.missing');
   await expect(favoriteToggle).toHaveAttribute('title', '收藏当前查询');
