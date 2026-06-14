@@ -217,6 +217,7 @@ const App: React.FC = () => {
     () => pendingCloseFileId ? files.find(file => file.id === pendingCloseFileId) || null : null,
     [files, pendingCloseFileId]
   );
+  const [isClearSourceConfirmOpen, setIsClearSourceConfirmOpen] = useState(false);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -751,6 +752,48 @@ const App: React.FC = () => {
 
   }, [updateActiveFileContent]);
 
+  const handleCopySource = useCallback(async () => {
+    const startedAt = performance.now();
+    if (!input.trim()) {
+      showError('源内容为空，暂无可复制内容');
+      trackCurrentToolEvent('SOURCE_COPY', 'editor', 'skipped', startedAt);
+      return;
+    }
+
+    try {
+      await copyText(input);
+      showSuccess('已复制源内容');
+      trackCurrentToolEvent('SOURCE_COPY', 'editor', 'success', startedAt);
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制源内容失败'));
+      trackCurrentToolEvent('SOURCE_COPY', 'editor', 'error', startedAt);
+    }
+  }, [input, trackCurrentToolEvent]);
+
+  const handleRequestClearSource = useCallback(() => {
+    const startedAt = performance.now();
+    if (!input.trim()) {
+      showError('源内容已经是空的');
+      trackCurrentToolEvent('SOURCE_CLEAR', 'editor', 'skipped', startedAt);
+      return;
+    }
+
+    setIsClearSourceConfirmOpen(true);
+  }, [input, trackCurrentToolEvent]);
+
+  const handleConfirmClearSource = useCallback(() => {
+    const startedAt = performance.now();
+    handleInputChange('');
+    setHighlightRange(null);
+    setIsClearSourceConfirmOpen(false);
+    showSuccess('源内容已清空');
+    trackCurrentToolEvent('SOURCE_CLEAR', 'editor', 'success', startedAt);
+  }, [handleInputChange, trackCurrentToolEvent]);
+
+  const handleCancelClearSource = useCallback(() => {
+    setIsClearSourceConfirmOpen(false);
+  }, []);
+
   // 右侧预览编辑处理（反向转换）
   // 仅在解除只读锁定后触发
   const handleOutputChange = useCallback((newVal: string) => {
@@ -1127,6 +1170,17 @@ const App: React.FC = () => {
         onCancel={cancelPendingCloseFile}
       />
 
+      <ConfirmDialog
+        isOpen={isClearSourceConfirmOpen}
+        title="清空源内容"
+        message="这会清空当前 SOURCE 编辑区内容，并将当前标签标记为未保存。"
+        confirmLabel="清空"
+        cancelLabel="继续保留"
+        variant="danger"
+        onConfirm={handleConfirmClearSource}
+        onCancel={handleCancelClearSource}
+      />
+
       {/* 主工作区容器 */}
       <div
         className="flex-1 flex overflow-hidden relative"
@@ -1212,35 +1266,63 @@ const App: React.FC = () => {
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               headerActions={
-                <button
-                  data-tour="auto-save"
-                  onClick={handleToggleAutoSave}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
-                    ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
-                    : activeFile?.handle && isAutoSaveEnabled
-                      ? 'bg-status-success-bg text-status-success-text border-status-success-border'
-                      : activeFile?.handle
-                        ? 'text-gray-400 border-transparent hover:bg-editor-active'
-                        : 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
-                    }`}
-                  title={
-                    !activeFileId
-                      ? "请先打开文件以启用自动保存"
-                      : !activeFile?.handle
-                        ? "请先保存当前标签以启用自动保存"
-                        : isAutoSaveEnabled
-                        ? "自动保存已开启"
-                        : "点击开启自动保存"
-                  }
-                >
-                  <div className={`w-1.5 h-1.5 rounded-full ${!activeFileId
-                    ? 'bg-gray-700'
-                    : activeFile?.handle && isAutoSaveEnabled
-                      ? 'bg-green-500 animate-pulse'
-                      : 'bg-gray-500'
-                    }`}></div>
-                  <span>自动保存</span>
-                </button>
+                <>
+                  <button
+                    data-tour="copy-source"
+                    aria-label="复制源内容"
+                    onClick={handleCopySource}
+                    disabled={!input.trim()}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    title="复制 SOURCE 内容到剪贴板"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>复制源</span>
+                  </button>
+                  <button
+                    data-tour="clear-source"
+                    aria-label="清空源内容"
+                    onClick={handleRequestClearSource}
+                    disabled={!input.trim()}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-red-900/30 hover:text-red-200 transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    title="清空 SOURCE 内容"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-8 0h10" />
+                    </svg>
+                    <span>清空</span>
+                  </button>
+                  <button
+                    data-tour="auto-save"
+                    onClick={handleToggleAutoSave}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
+                      ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
+                      : activeFile?.handle && isAutoSaveEnabled
+                        ? 'bg-status-success-bg text-status-success-text border-status-success-border'
+                        : activeFile?.handle
+                          ? 'text-gray-400 border-transparent hover:bg-editor-active'
+                          : 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
+                      }`}
+                    title={
+                      !activeFileId
+                        ? "请先打开文件以启用自动保存"
+                        : !activeFile?.handle
+                          ? "请先保存当前标签以启用自动保存"
+                          : isAutoSaveEnabled
+                          ? "自动保存已开启"
+                          : "点击开启自动保存"
+                    }
+                  >
+                    <div className={`w-1.5 h-1.5 rounded-full ${!activeFileId
+                      ? 'bg-gray-700'
+                      : activeFile?.handle && isAutoSaveEnabled
+                        ? 'bg-green-500 animate-pulse'
+                        : 'bg-gray-500'
+                      }`}></div>
+                    <span>自动保存</span>
+                  </button>
+                </>
               }
             />
           </div>
@@ -1284,6 +1366,8 @@ const App: React.FC = () => {
                     </button>
                   )}
                   <button
+                    data-tour="copy-preview"
+                    aria-label="复制预览内容"
                     onClick={async () => {
                       if (!output.trim() || isOutputTransforming) return;
                       try {

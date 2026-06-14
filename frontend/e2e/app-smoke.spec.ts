@@ -560,10 +560,32 @@ test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page 
   await page.getByRole('button', { name: '格式化' }).click();
   await expectPreviewText(page, '"copy": true');
 
-  await page.getByRole('button', { name: '复制' }).click();
+  await page.locator('[data-tour="copy-preview"]').click();
   await expect(page.getByText('已复制预览内容')).toBeVisible();
   const copiedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
   expect(copiedResult).toContain('"copy": true');
+});
+
+test('源编辑区可复制并确认清空内容', async ({ page }) => {
+  const sourceText = '{"sourceOps":true,"items":[1,2,3]}';
+  await fillSourceEditor(page, sourceText);
+
+  await page.locator('[data-tour="copy-source"]').click();
+  await expect(page.getByText('已复制源内容')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe(sourceText);
+
+  await page.locator('[data-tour="clear-source"]').click();
+  const dialog = page.locator('[data-tour="confirm-dialog"]');
+  await expect(dialog).toContainText('清空源内容');
+  await dialog.getByRole('button', { name: '继续保留' }).click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('sourceOps');
+
+  await page.locator('[data-tour="clear-source"]').click();
+  await page.locator('[data-tour="confirm-dialog"]').getByRole('button', { name: '清空' }).click();
+  await expect(page.getByText('源内容已清空')).toBeVisible();
+  await expect(page.locator('[data-tour="statusbar"]')).toContainText('Length: 0');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).not.toContainText('sourceOps');
 });
 
 test('预览复制失败时展示浏览器拒绝原因', async ({ page }) => {
@@ -579,7 +601,7 @@ test('预览复制失败时展示浏览器拒绝原因', async ({ page }) => {
   await page.getByRole('button', { name: '格式化' }).click();
   await expectPreviewText(page, '"copy": false');
 
-  await page.getByRole('button', { name: '复制' }).click();
+  await page.locator('[data-tour="copy-preview"]').click();
   await expect(page.getByText('浏览器拒绝复制操作')).toBeVisible();
 });
 
