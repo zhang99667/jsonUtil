@@ -170,6 +170,19 @@ test('编辑器自动换行开关展示可访问状态', async ({ page }) => {
   await expect(wrapToggle).toContainText('不换行');
 });
 
+test('预览编辑锁定开关展示中文状态', async ({ page }) => {
+  const lockToggle = page.locator('[data-tour="preview-editor"] [data-tour="editor-lock"]');
+
+  await expect(lockToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(lockToggle).toHaveAttribute('title', 'PREVIEW 已锁定，点击解锁编辑');
+  await expect(page.getByRole('button', { name: 'PREVIEW 已锁定，点击解锁编辑' })).toBeVisible();
+
+  await lockToggle.click();
+  await expect(lockToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(lockToggle).toHaveAttribute('title', 'PREVIEW 可编辑，点击重新锁定');
+  await expect(page.getByRole('button', { name: 'PREVIEW 可编辑，点击重新锁定' })).toBeVisible();
+});
+
 test('JSON Lines 可格式化为可读数组预览', async ({ page }) => {
   await fillSourceEditor(page, '{"id":1}\n{"id":2}');
 
