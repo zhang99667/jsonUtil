@@ -1,5 +1,6 @@
 import React from 'react';
 import { TransformMode, FileTab, ValidationResult } from '../types';
+import { formatByteSize } from '../utils/documentStats';
 
 interface SourceValidationLocation {
   line: number;
@@ -30,12 +31,6 @@ const getVersionLabel = (version?: string): string => {
 };
 
 const APP_VERSION_LABEL = getVersionLabel(import.meta.env.VITE_APP_VERSION);
-
-const formatByteSize = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-};
 
 /** StatusBar 组件 Props 定义 */
 interface StatusBarProps {

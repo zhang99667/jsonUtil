@@ -641,7 +641,7 @@ test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page 
   await expectPreviewText(page, '"copy": true');
 
   await page.locator('[data-tour="copy-preview"]').click();
-  await expect(page.getByText('已复制预览内容')).toBeVisible();
+  await expect(page.getByText(/已复制预览内容（\d+ 字符 \/ \d+ B）/)).toBeVisible();
   const copiedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
   expect(copiedResult).toContain('"copy": true');
 });
@@ -655,7 +655,7 @@ test('源编辑区可复制并确认清空内容', async ({ page }) => {
   await expect(page.locator('[data-tour="clear-source"]')).toHaveAttribute('title', '清空 SOURCE 内容');
 
   await page.locator('[data-tour="copy-source"]').click();
-  await expect(page.getByText('已复制源内容')).toBeVisible();
+  await expect(page.getByText(`已复制源内容（${sourceText.length} 字符 / ${Buffer.byteLength(sourceText, 'utf8')} B）`)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe(sourceText);
 
@@ -710,7 +710,7 @@ test('预览结果可确认应用回源编辑区', async ({ page }) => {
   await dialog.getByRole('button', { name: '继续保留' }).click();
 
   await page.locator('[data-tour="copy-source"]').click();
-  await expect(page.getByText('已复制源内容')).toBeVisible();
+  await expect(page.getByText(/已复制源内容（\d+ 字符 \/ \d+ B）/)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe(sourceText);
 

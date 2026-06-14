@@ -21,7 +21,7 @@ import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { StatusBar } from './components/StatusBar';
-import { getDocumentStats } from './utils/documentStats';
+import { formatByteSize, getDocumentStats } from './utils/documentStats';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
 import { copyText, getClipboardErrorMessage, readClipboardText } from './utils/clipboard';
 import { getDetailedErrorMessage, isAbortError } from './utils/errors';
@@ -67,6 +67,11 @@ const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.MINIFY,
   TransformMode.SORT_KEYS,
 ]);
+
+const getCopySuccessMessage = (label: string, content: string): string => {
+  const stats = getDocumentStats(content);
+  return `已复制${label}（${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}）`;
+};
 
 const LazySchemeViewerModal = lazy(() => import('./components/SchemeViewerModal').then(module => ({
   default: module.SchemeViewerModal,
@@ -779,7 +784,7 @@ const App: React.FC = () => {
 
     try {
       await copyText(input);
-      showSuccess('已复制源内容');
+      showSuccess(getCopySuccessMessage('源内容', input));
       trackCurrentToolEvent('SOURCE_COPY', 'editor', 'success', startedAt);
     } catch (error) {
       showError(getClipboardErrorMessage(error, '复制源内容失败'));
@@ -803,7 +808,7 @@ const App: React.FC = () => {
 
     try {
       await copyText(output);
-      showSuccess('已复制预览内容');
+      showSuccess(getCopySuccessMessage('预览内容', output));
       trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'success', startedAt);
     } catch (error) {
       showError(getClipboardErrorMessage(error));
