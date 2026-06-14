@@ -628,6 +628,45 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const canCopyCmdHandlerCompatibleResult = Boolean(
     commandSummaryInfo && decodeResult.isJson && !isDecodePending && !editedJsonError
   );
+  const qrCodeButtonTitle = !actualValue
+    ? '请输入内容后生成二维码'
+    : showQRCode
+      ? '隐藏二维码'
+      : '生成二维码';
+  const copyOriginalTitle = actualValue
+    ? '复制原始值到剪贴板'
+    : '请输入待复制的原始值';
+  const copyDecodedTitle = (() => {
+    if (isDecodePending) return '解析完成后可复制解码结果';
+    if (!editedContent) return '暂无解码结果可复制';
+    return '复制解码结果到剪贴板';
+  })();
+  const copyCmdStructureTitle = (() => {
+    if (isDecodePending) return '解析完成后可复制 CMD 结构';
+    if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
+    if (!decodeResult.isJson) return '当前结果不是 JSON，暂无 CMD 结构可复制';
+    return '复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构';
+  })();
+  const copyPathValuesTitle = (() => {
+    if (isDecodePending) return '解析完成后可复制路径和值';
+    if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
+    return '复制解码 JSON 中的路径和值';
+  })();
+  const copySerializedTitle = (() => {
+    if (isDecodePending) return '解析完成后可复制序列化结果';
+    if (!editedContent) return '暂无编辑内容可序列化';
+    if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
+    if (hasNonReversibleLayer) return '当前编码层不可逆，仅支持查看和复制';
+    if (decodeResult.layers.length === 0) return '当前内容无需重新编码';
+    return '复制当前编辑内容重新编码后的结果';
+  })();
+  const applyEditTitle = (() => {
+    if (isDecodePending) return '解析完成后可应用修改';
+    if (!isEditing) return '修改解码结果后可应用';
+    if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
+    if (hasNonReversibleLayer) return '当前编码层不可逆，无法应用修改';
+    return '将当前编辑内容重新编码并应用回来源';
+  })();
   const nestedCommandInsight = commandSummaryInfo
     ? formatSchemeInsightItems('cmd解析', commandSummaryInfo.commandFields)
     : undefined;
@@ -720,12 +759,13 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         <button
           onClick={() => setShowQRCode(!showQRCode)}
           disabled={!actualValue}
+          aria-pressed={showQRCode}
           className={`shrink-0 whitespace-nowrap px-2.5 py-1 text-sm rounded transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${
             showQRCode 
               ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
               : 'bg-editor-active text-gray-200 hover:bg-editor-border'
           }`}
-          title="生成二维码"
+          title={qrCodeButtonTitle}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -736,6 +776,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           onClick={handleCopyOriginal}
           disabled={!actualValue}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={copyOriginalTitle}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -746,6 +787,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           onClick={handleCopy}
           disabled={!editedContent || isDecodePending}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={copyDecodedTitle}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -758,7 +800,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleCopyCmdHandlerCompatibleResult}
             disabled={!canCopyCmdHandlerCompatibleResult}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构"
+            title={copyCmdStructureTitle}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8M8 12h8M8 17h5M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
@@ -772,7 +814,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleCopyPathValues}
             disabled={!canCopyPathValues}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="复制解码 JSON 中的路径和值"
+            title={copyPathValuesTitle}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M8 4h8l4 4v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z" />
@@ -787,7 +829,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleCopySerialized}
             disabled={!canCopySerializedContent}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={canCopySerializedContent ? '复制当前编辑内容重新编码后的结果' : '请先确保解码结果合法且编码层可逆'}
+            title={copySerializedTitle}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h10m0 0l-3-3m3 3l-3 3m9 7H10m0 0l3 3m-3-3l3-3" />
@@ -800,6 +842,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleApply}
             disabled={!canApplyEdit}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-brand-primary text-white rounded hover:bg-brand-primary/90 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={applyEditTitle}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
