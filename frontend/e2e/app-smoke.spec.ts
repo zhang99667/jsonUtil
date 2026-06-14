@@ -95,6 +95,25 @@ test('格式化与压缩主路径可用', async ({ page }) => {
   await expectPreviewText(page, '{"b":2,"a":1}');
 });
 
+test('查询解析工具入口展示浮动面板打开态', async ({ page }) => {
+  const assertPanelToggle = async (dataTour: string) => {
+    const button = page.locator(`[data-tour="${dataTour}"]`);
+
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    await button.click();
+    await expect(button).toHaveAttribute('aria-pressed', 'true');
+    await expect(button.locator('[data-tour="panel-open-badge"]')).toContainText('打开');
+
+    await button.click();
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    await expect(button.locator('[data-tour="panel-open-badge"]')).toHaveCount(0);
+  };
+
+  await assertPanelToggle('jsonpath-button');
+  await assertPanelToggle('scheme-button');
+  await assertPanelToggle('template-fill-button');
+});
+
 test('JSON Lines 可格式化为可读数组预览', async ({ page }) => {
   await fillSourceEditor(page, '{"id":1}\n{"id":2}');
 

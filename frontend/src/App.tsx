@@ -1365,6 +1365,9 @@ const App: React.FC = () => {
             }}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            isJsonPathOpen={isJsonPathPanelOpen}
+            isSchemeDecodeOpen={isSchemeDecodeOpen}
+            isTemplateFillOpen={isTemplatePanelOpen}
             onToggleJsonPath={handleToggleJsonPath}
             onToggleSchemeDecode={() => {
               const nextOpen = !isSchemeDecodeOpen;
