@@ -247,6 +247,10 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const lockToggleTitle = isLocked
     ? `${label} 已锁定，点击解锁编辑`
     : `${label} 可编辑，点击重新锁定`;
+  const locateErrorLabel = errorLocation
+    ? `${label} 定位到第 ${errorLocation.line} 行，第 ${errorLocation.column} 列`
+    : '';
+  const copyErrorLabel = `${label} 复制错误信息`;
 
   // 变更处理（含只读保护）
   const handleEditorChange = (val: string | undefined) => {
@@ -544,7 +548,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
                   type="button"
                   onClick={handleLocateError}
                   className="ml-1 rounded border border-red-700/50 px-1 py-0 text-[10px] text-red-100 transition-colors hover:bg-red-800/40"
-                  title={`定位到第 ${errorLocation.line} 行，第 ${errorLocation.column} 列`}
+                  title={locateErrorLabel}
+                  aria-label={locateErrorLabel}
                 >
                   定位
                 </button>
@@ -554,7 +559,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
                 type="button"
                 onClick={handleCopyError}
                 className="rounded border border-red-700/50 px-1 py-0 text-[10px] text-red-100 transition-colors hover:bg-red-800/40"
-                title="复制错误信息"
+                title={copyErrorLabel}
+                aria-label={copyErrorLabel}
               >
                 复制
               </button>
