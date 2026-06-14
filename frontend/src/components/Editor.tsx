@@ -279,6 +279,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const toggleWordWrap = () => {
     setWordWrap(prev => prev === 'on' ? 'off' : 'on');
   };
+  const isWordWrapEnabled = wordWrap === 'on';
 
   const handleLocateError = useCallback(() => {
     if (!editorRef.current || !monaco || !errorLocation) return;
@@ -510,11 +511,13 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           <button
             data-tour="editor-wrap"
             onClick={toggleWordWrap}
-            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${wordWrap === 'on' ? 'bg-brand-primary text-white border-brand-primary' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
-            title="Toggle Word Wrap"
+            aria-label="自动换行"
+            aria-pressed={isWordWrapEnabled}
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${isWordWrapEnabled ? 'bg-brand-primary text-white border-brand-primary' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
+            title={isWordWrapEnabled ? '自动换行已开启，点击关闭' : '自动换行已关闭，点击开启'}
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
-            <span>{wordWrap === 'on' ? '换行' : '不换行'}</span>
+            <span>{isWordWrapEnabled ? '换行' : '不换行'}</span>
           </button>
 
           {error ? (
@@ -619,7 +622,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             scrollBeyondLastLine: false,
             automaticLayout: true,
             tabSize: 2,
-            wordWrap: wordWrap,
+            wordWrap,
             folding: true,
             contextmenu: true,
             padding: { top: 10, bottom: 10 },
