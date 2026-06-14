@@ -201,7 +201,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                   }}
                   onKeyDown={(e) => e.stopPropagation()}
                   className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 group/close flex items-center justify-center w-5 h-5 ${file.id === activeFileId ? 'hover:bg-editor-border' : 'hover:bg-editor-active'}`}
-                  title={file.isDirty ? "未保存" : "关闭"}
+                  title={getCloseAriaLabel(file)}
                   aria-label={getCloseAriaLabel(file)}
                 >
                   {file.isDirty ? (
@@ -225,7 +225,7 @@ export const TabBar: React.FC<TabBarProps> = ({
             onClick={() => onNewTab()}
             className="flex items-center justify-center w-6 h-6 rounded-md text-editor-fg-sub hover:text-white hover:bg-editor-active transition-all cursor-pointer flex-shrink-0"
             title="新建标签 (Cmd+N)"
-            aria-label="新建标签"
+            aria-label="新建标签 (Cmd+N)"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
           </button>
