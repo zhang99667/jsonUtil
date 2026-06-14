@@ -142,17 +142,35 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
 
   const renderToolBtn = (mode: TransformMode, label: string, icon: React.ReactNode, colorClass: string, dataTour?: string) => {
+    const isActive = activeMode === mode;
+    const activeClassName = isActive
+      ? 'bg-editor-active border-brand-primary/60 text-white ring-1 ring-brand-primary/40'
+      : 'bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600';
+
     return (
       <button
         data-tour={dataTour}
+        aria-pressed={isActive}
         onClick={() => handleModeChange(mode)}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600 active:scale-95 shadow-sm ${isCollapsed ? 'justify-center px-2' : ''}`}
-        title={isCollapsed ? label : undefined}
+        className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border active:scale-95 shadow-sm ${activeClassName} ${isCollapsed ? 'justify-center px-2' : ''}`}
+        title={isCollapsed ? `${label}${isActive ? '（当前）' : ''}` : undefined}
       >
-        <div className={`transition-colors text-gray-500 group-hover:${colorClass.replace('text-', 'text-')}`}>
+        <div className={`transition-colors ${isActive ? colorClass : 'text-gray-500'}`}>
           <span className={colorClass}>{icon}</span>
         </div>
-        {!isCollapsed && <span>{label}</span>}
+        {!isCollapsed && (
+          <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+            <span className="truncate">{label}</span>
+            {isActive && (
+              <span
+                data-tour="active-mode-badge"
+                className="rounded bg-brand-primary/20 px-1.5 py-0.5 text-[10px] font-bold leading-none text-brand-primary"
+              >
+                当前
+              </span>
+            )}
+          </span>
+        )}
       </button>
     );
   };
