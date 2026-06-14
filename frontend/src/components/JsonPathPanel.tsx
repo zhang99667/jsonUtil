@@ -422,11 +422,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         : isCurrentQueryFavorite
             ? '取消收藏当前查询'
             : '收藏当前查询';
-    const queryButtonTitle = isDataPreparing
-        ? '深度格式化仍在处理，请稍后查询'
-        : isQuerying
-            ? 'JSONPath 查询正在运行，可取消后重新查询'
-            : '执行 JSONPath 查询';
+    const queryButtonTitle = (() => {
+        if (isDataPreparing) return '深度格式化仍在处理，请稍后查询';
+        if (isQuerying) return 'JSONPath 查询正在运行，可取消后重新查询';
+        if (!normalizedQuery) return '请输入 JSONPath 表达式后查询';
+        if (!jsonData.trim()) return '请先在 SOURCE 输入 JSON 数据';
+        return '执行 JSONPath 查询';
+    })();
 
     const runSavedQuery = (queryPath: string) => {
         setQuery(queryPath);
@@ -543,6 +545,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             disabled={isQuerying || isDataPreparing}
                             className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             title={queryButtonTitle}
+                            aria-label={queryButtonTitle}
                         >
                             {isQuerying ? '查询中...' : '查询'}
                         </button>
