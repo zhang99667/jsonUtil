@@ -469,6 +469,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         <DraggablePanel
             isOpen={isOpen}
             onClose={onClose}
+            ariaLabel="JSONPath 查询"
             title={
                 <div className="flex items-center gap-2">
                     <span>JSONPath 查询</span>
