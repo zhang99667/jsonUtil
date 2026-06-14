@@ -1515,7 +1515,7 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="copy-source"
-                    aria-label="复制源内容"
+                    aria-label={copySourceTitle}
                     onClick={handleCopySource}
                     disabled={!hasSourceContent}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
@@ -1528,7 +1528,7 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="clear-source"
-                    aria-label="清空源内容"
+                    aria-label={clearSourceTitle}
                     onClick={handleRequestClearSource}
                     disabled={!hasSourceContent}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-red-900/30 hover:text-red-200 transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
@@ -1595,6 +1595,7 @@ const App: React.FC = () => {
                   {deepFormatInfo && (
                     <button
                       data-tour="transform-report-button"
+                      aria-label={transformReportTitle}
                       onClick={() => setIsTransformReportOpen(true)}
                       disabled={!transformReportContext || isOutputTransforming}
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1608,7 +1609,7 @@ const App: React.FC = () => {
                   )}
                   <button
                     data-tour="apply-preview-to-source"
-                    aria-label="应用预览到源内容"
+                    aria-label={applyPreviewTitle}
                     onClick={handleRequestApplyPreviewToSource}
                     disabled={!hasPreviewContent || isOutputTransforming || isPreviewSameAsSource}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1621,7 +1622,7 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="copy-preview"
-                    aria-label="复制预览内容"
+                    aria-label={copyPreviewTitle}
                     onClick={handleCopyPreview}
                     disabled={!hasPreviewContent || isOutputTransforming}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
