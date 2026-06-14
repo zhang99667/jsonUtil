@@ -52,6 +52,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   label,
   error,
   errorLocation,
+  locateErrorSignal,
   warning,
   info,
   headerActions,
@@ -293,6 +294,11 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     editorRef.current.setPosition(position);
     editorRef.current.focus();
   }, [errorLocation, monaco]);
+
+  useEffect(() => {
+    if (!locateErrorSignal) return;
+    handleLocateError();
+  }, [handleLocateError, locateErrorSignal]);
 
   const handleCopyError = useCallback(async () => {
     if (!error) return;

@@ -440,6 +440,7 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
   const [aiRepairSummary, setAiRepairSummary] = useState<AiRepairSummary | null>(null);
+  const [sourceErrorLocateSignal, setSourceErrorLocateSignal] = useState(0);
   const sourceErrorLocation = useMemo(
     () => validation.isValid ? null : getJsonValidationErrorLocation(input, validation.error),
     [input, validation]
@@ -1280,6 +1281,11 @@ const App: React.FC = () => {
   const hasPreviewContent = output.trim().length > 0;
   const isPreviewSameAsSource = output === input;
   const isSourceJsonCandidate = hasSourceContent && isJsonContainerCandidate(input);
+  const handleLocateSourceErrorFromStatus = useCallback(() => {
+    if (!sourceErrorLocation) return;
+    setActiveEditor('SOURCE');
+    setSourceErrorLocateSignal(signal => signal + 1);
+  }, [sourceErrorLocation]);
   const canUseAutoSave = Boolean(activeFileId && activeFile?.handle);
   const isAutoSaveActive = canUseAutoSave && isAutoSaveEnabled;
   const autoSaveTitle = !activeFileId
@@ -1468,6 +1474,7 @@ const App: React.FC = () => {
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               errorLocation={sourceErrorLocation}
+              locateErrorSignal={sourceErrorLocateSignal}
               headerActions={
                 <>
                   <button
@@ -1718,6 +1725,7 @@ const App: React.FC = () => {
         isSourceJsonCandidate={isSourceJsonCandidate}
         sourceValidation={validation}
         sourceValidationLocation={sourceErrorLocation}
+        onLocateSourceError={handleLocateSourceErrorFromStatus}
         cursorLine={cursorPosition.line}
         cursorColumn={cursorPosition.column}
       />
