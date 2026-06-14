@@ -41,6 +41,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [startScrollTop, setStartScrollTop] = useState(0);
+  const aiFixLabel = isProcessing ? 'AI 修复中，请等待当前任务完成' : 'AI 智能修复';
 
   // 功能级引导
   const { triggerFeatureFirstUse, refreshTour } = useFeatureTour();
@@ -398,9 +399,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             data-tour="ai-fix"
             onClick={() => onAction(ActionType.AI_FIX)}
             disabled={isProcessing}
-            aria-label={isProcessing ? 'AI 修复中' : 'AI 智能修复'}
+            aria-label={aiFixLabel}
             className={`w-full bg-gradient-to-r from-violet-900/20 to-indigo-900/20 hover:from-violet-900/40 hover:to-indigo-900/40 border border-violet-500/20 hover:border-violet-500/40 text-violet-200 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 shadow-lg shadow-violet-900/5 ${isCollapsed ? 'px-2' : ''}`}
-            title={isCollapsed ? "AI 智能修复" : undefined}
+            title={aiFixLabel}
           >
             {isProcessing ? (
               <>
