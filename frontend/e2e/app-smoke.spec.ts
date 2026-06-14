@@ -114,6 +114,22 @@ test('查询解析工具入口展示浮动面板打开态', async ({ page }) => 
   await assertPanelToggle('template-fill-button');
 });
 
+test('折叠工具栏后图标按钮保留可访问名称', async ({ page }) => {
+  const collapseButton = page.getByRole('button', { name: '折叠工具栏' });
+  await expect(collapseButton).toHaveAttribute('aria-expanded', 'true');
+
+  await collapseButton.click();
+
+  const expandButton = page.getByRole('button', { name: '展开工具栏' });
+  await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-label', '嵌套解析');
+  await expect(page.locator('[data-tour="jsonpath-button"]')).toHaveAttribute('aria-label', 'JSONPath 查询，未打开');
+  await expect(page.locator('[data-tour="open-file-button"]')).toHaveAttribute('aria-label', '打开文件');
+  await expect(page.locator('[data-tour="save-file-button"]')).toHaveAttribute('aria-label', '保存为 JSON');
+  await expect(page.locator('[data-tour="ai-fix"]')).toHaveAttribute('aria-label', 'AI 智能修复');
+  await expect(page.locator('[data-tour="settings"]')).toHaveAttribute('aria-label', '设置');
+});
+
 test('浮动面板支持键盘关闭并恢复入口焦点', async ({ page }) => {
   const jsonPathButton = page.locator('[data-tour="jsonpath-button"]');
   await jsonPathButton.click();

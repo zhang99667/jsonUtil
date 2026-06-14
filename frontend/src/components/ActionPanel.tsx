@@ -157,6 +157,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       <button
         data-tour={dataTour}
         aria-pressed={isActive}
+        aria-label={isCollapsed ? `${label}${isActive ? '，当前模式' : ''}` : undefined}
         onClick={() => handleModeChange(mode)}
         className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border active:scale-95 shadow-sm ${activeClassName} ${isCollapsed ? 'justify-center px-2' : ''}`}
         title={isCollapsed ? `${label}${isActive ? '（当前）' : ''}` : undefined}
@@ -201,6 +202,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       <button
         data-tour={dataTour}
         aria-pressed={isOpen}
+        aria-label={isCollapsed ? `${label}${isOpen ? '，已打开' : '，未打开'}` : undefined}
         onClick={onClick}
         className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border active:scale-95 shadow-sm ${activeClassName} ${isCollapsed ? 'justify-center px-2' : ''}`}
         title={isCollapsed ? `${label}${isOpen ? '（已打开）' : ''}` : undefined}
@@ -230,6 +232,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     <div className="h-full bg-editor-bg border-r border-editor-bg relative group/sidebar">
       {/* ... (container and top bar unchanged) ... */}
       <div
+        id="action-panel-content"
         ref={containerRef}
         onScroll={handleScroll}
         className="h-full flex flex-col p-3 overflow-y-auto [&::-webkit-scrollbar]:hidden scrollbar-hide"
@@ -246,6 +249,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           )}
           <button
             onClick={onToggleCollapse}
+            aria-label={isCollapsed ? '展开工具栏' : '折叠工具栏'}
+            aria-controls="action-panel-content"
+            aria-expanded={!isCollapsed}
             className="text-gray-500 hover:text-gray-300 p-1 rounded hover:bg-editor-border transition-colors"
             title={isCollapsed ? "展开" : "折叠"}
           >
@@ -368,6 +374,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           <button
             data-tour="open-file-button"
             onClick={() => onAction(ActionType.OPEN)}
+            aria-label="打开文件"
             className={`w-full bg-editor-sidebar hover:bg-editor-hover border border-editor-border text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
             title={isCollapsed ? "打开文件" : undefined}
           >
@@ -378,6 +385,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           <button
             data-tour="save-file-button"
             onClick={() => onAction(ActionType.SAVE)}
+            aria-label="保存为 JSON"
             className={`w-full bg-editor-sidebar hover:bg-editor-hover border border-editor-border text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
             title={isCollapsed ? "保存为 JSON" : undefined}
           >
@@ -390,6 +398,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             data-tour="ai-fix"
             onClick={() => onAction(ActionType.AI_FIX)}
             disabled={isProcessing}
+            aria-label={isProcessing ? 'AI 修复中' : 'AI 智能修复'}
             className={`w-full bg-gradient-to-r from-violet-900/20 to-indigo-900/20 hover:from-violet-900/40 hover:to-indigo-900/40 border border-violet-500/20 hover:border-violet-500/40 text-violet-200 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 shadow-lg shadow-violet-900/5 ${isCollapsed ? 'px-2' : ''}`}
             title={isCollapsed ? "AI 智能修复" : undefined}
           >
@@ -415,6 +424,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           <button
             data-tour="settings"
             onClick={onOpenSettings}
+            aria-label="设置"
             className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-gray-300 transition-colors p-2 rounded-lg hover:bg-editor-sidebar"
             title="设置"
           >
