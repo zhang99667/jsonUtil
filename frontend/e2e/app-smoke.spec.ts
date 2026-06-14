@@ -153,6 +153,18 @@ test('JSONPath 帮助入口提供可访问名称', async ({ page }) => {
   await expect(helpButton).toHaveAttribute('title', '学习 JSONPath 语法');
 });
 
+test('JSONPath 查询按钮提前提示不可查询原因', async ({ page }) => {
+  await page.locator('[data-tour="jsonpath-button"]').click();
+
+  const queryButton = page.locator('[data-tour="jsonpath-query-button"]');
+  await expect(queryButton).toHaveAttribute('title', '请先在 SOURCE 输入 JSON 数据');
+  await expect(queryButton).toHaveAttribute('aria-label', '请先在 SOURCE 输入 JSON 数据');
+
+  await page.locator('[data-tour="jsonpath-input"]').fill('   ');
+  await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式后查询');
+  await expect(queryButton).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后查询');
+});
+
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {
   const wrapToggle = page.locator('[data-tour="source-editor"] [data-tour="editor-wrap"]');
 
@@ -1145,6 +1157,8 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
 
   await expect(queryButton).toHaveAttribute('title', '执行 JSONPath 查询');
   await page.locator('[data-tour="jsonpath-input"]').fill('   ');
+  await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式后查询');
+  await expect(queryButton).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后查询');
   await expect(favoriteToggle).toBeDisabled();
   await expect(favoriteToggle).toHaveAttribute('title', '请输入 JSONPath 表达式后可收藏');
   await expect(favoriteToggle).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后可收藏');
