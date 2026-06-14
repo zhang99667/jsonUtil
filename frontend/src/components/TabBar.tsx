@@ -103,6 +103,17 @@ export const TabBar: React.FC<TabBarProps> = ({
     window.requestAnimationFrame(() => focusTabByIndex(index));
   };
 
+  const closeTabByIndex = (index: number) => {
+    const currentFile = files[index];
+    if (!currentFile) return;
+
+    onCloseFile(currentFile.id);
+    if (!currentFile.isDirty && files.length > 1) {
+      const nextFocusIndex = Math.min(index, files.length - 2);
+      window.requestAnimationFrame(() => focusTabByIndex(nextFocusIndex));
+    }
+  };
+
   const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, index: number) => {
     if (files.length === 0) return;
 
@@ -127,6 +138,10 @@ export const TabBar: React.FC<TabBarProps> = ({
       case 'End':
         event.preventDefault();
         activateTabByIndex(files.length - 1);
+        break;
+      case 'Delete':
+        event.preventDefault();
+        closeTabByIndex(index);
         break;
       default:
         break;

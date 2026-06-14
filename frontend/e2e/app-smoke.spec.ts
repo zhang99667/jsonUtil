@@ -1715,6 +1715,10 @@ test('文件标签支持键盘切换和关闭语义', async ({ page }) => {
   await firstTab.press('End');
   await expect(secondTab).toHaveAttribute('aria-selected', 'true');
 
+  await secondTab.press('Delete');
+  await expect(secondTab).toHaveCount(0);
+  await expect(firstTab).toHaveAttribute('aria-selected', 'true');
+
   await firstTab.press('Enter');
   await expect(firstTab).toHaveAttribute('aria-selected', 'true');
 });
