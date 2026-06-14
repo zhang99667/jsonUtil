@@ -80,7 +80,8 @@
 - **浮动面板入口打开态**: JSONPath、Scheme 和模板填充入口会高亮当前打开状态并补充 `aria-pressed`，减少多面板调试时的辨认成本
 - **编辑器换行开关状态**: SOURCE/PREVIEW 自动换行开关补充 `aria-pressed` 与中文动态提示，长 URL/CMD 排查时状态更清晰
 - **标题栏禁用原因提示**: SOURCE 复制/清空与 PREVIEW 应用/复制按钮会按空内容、处理中和内容一致展示禁用原因，减少点不动时的困惑
-- **自动保存开关状态**: SOURCE 标题栏自动保存补充 `aria-pressed` 与 `aria-disabled` 语义，不可用时仍保留点击原因提示
+- **自动保存开关状态**: SOURCE 标题栏自动保存补充 `aria-pressed` 与动态 `aria-label`，不可用时仍可点击查看原因提示
+- **自动保存回归覆盖**: 自动保存不可用反馈用例覆盖普通点击路径，防止状态提示变成不可操作
 - **解析质量基线完整性门禁**: `corpus:snapshot:check` 会识别缺失 expected snapshot 的 corpus 样本并失败，避免新增脱敏样本未配置质量基线却通过 CI
 - **cmdHandler 快照对齐门禁**: `corpus:snapshot` 会把 cmdHandler expected 子集对齐结果写入质量快照和 Markdown 摘要，strict 模式在关键路径缺失或 expected 缺失时失败
 - **JSONPath 大查询可取消**: JSONPath 查询处理中新增取消入口，会立即终止当前 Worker 并清空旧高亮，避免误查大表达式时只能等待结果返回
