@@ -287,6 +287,9 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         onClose();
     };
 
+    const aiTestButtonLabel = isTestingAI ? 'AI 连接测试中，请稍候' : '测试连接';
+    const aiTestButtonTitle = isTestingAI ? 'AI 连接测试中，请稍候' : '测试当前 AI 配置是否可用';
+
     const handleImportBackupFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         event.target.value = '';
@@ -738,8 +741,11 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </button>
                             <div className="flex items-center gap-2">
                                 <button
+                                    data-tour="ai-test-connection"
                                     onClick={handleTestAIConnection}
                                     disabled={isTestingAI}
+                                    title={aiTestButtonTitle}
+                                    aria-label={aiTestButtonLabel}
                                     className="text-sm text-gray-300 border border-editor-border px-4 py-2 rounded hover:text-white hover:border-emerald-500 hover:bg-editor-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isTestingAI ? '测试中...' : '测试连接'}
