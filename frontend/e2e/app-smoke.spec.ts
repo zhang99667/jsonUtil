@@ -82,11 +82,16 @@ test.beforeEach(async ({ page }) => {
 test('格式化与压缩主路径可用', async ({ page }) => {
   await fillSourceEditor(page, '{"b":2,"a":1}');
 
+  await expect(page.getByRole('button', { name: /原始视图/ })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: '格式化' }).click();
+  await expect(page.getByRole('button', { name: /格式化/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: /原始视图/ })).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('[data-tour="active-mode-badge"]')).toContainText('当前');
   await expectPreviewText(page, '"b": 2');
   await expectPreviewText(page, '"a": 1');
 
   await page.getByRole('button', { name: '压缩 / 去空格' }).click();
+  await expect(page.getByRole('button', { name: /压缩 \/ 去空格/ })).toHaveAttribute('aria-pressed', 'true');
   await expectPreviewText(page, '{"b":2,"a":1}');
 });
 
