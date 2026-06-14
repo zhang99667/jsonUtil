@@ -1530,6 +1530,27 @@ test('AI 修复可先本地修复常见小错误', async ({ page }) => {
   await expectPreviewText(page, '"name": "json"');
 });
 
+test('AI 修复会同步打开文件的未保存状态', async ({ page }) => {
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.locator('[data-tour="open-file-button"]').click();
+  const fileChooser = await fileChooserPromise;
+
+  await fileChooser.setFiles({
+    name: 'broken-ai.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{items:[1,2], ok:}'),
+  });
+
+  await expect(page.getByText('broken-ai.json').first()).toBeVisible();
+  await expect(page.locator('[data-tour="save-status"]')).toHaveText('未保存标签');
+
+  await page.locator('[data-tour="ai-fix"]').click();
+
+  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expect(page.locator('[data-tour="save-status"]')).toHaveText('未保存');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"ok":true');
+});
+
 test('AI 修复空输入会提示用户', async ({ page }) => {
   await page.locator('[data-tour="ai-fix"]').click();
 
