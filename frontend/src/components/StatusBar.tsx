@@ -160,29 +160,30 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   return (
     <div
       data-tour="statusbar"
-      className="h-6 bg-brand-primary flex items-center justify-between px-3 text-[11px] text-white select-none z-20 flex-shrink-0"
+      className="h-6 bg-brand-primary flex items-center justify-between gap-2 overflow-hidden px-3 text-[11px] text-white select-none z-20 flex-shrink-0"
     >
       {/* 左侧：编码、长度、行列、文件名 */}
-      <div className="flex min-w-0 gap-4">
-        <span className="flex items-center gap-1">
+      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
+        <span className="flex shrink-0 items-center gap-1">
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
           </svg>
           {' '}UTF-8
         </span>
-        <span>Length: {activeContentLength}</span>
+        <span className="shrink-0">Length: {activeContentLength}</span>
         <span
           data-tour="statusbar-byte-size"
+          className="shrink-0"
           title={isStatsLimited ? '大文件只估算已扫描内容的 UTF-8 字节数' : '当前聚焦内容的 UTF-8 字节数'}
         >
           Size: {byteSizeText}
         </span>
         {cursorLine != null && cursorColumn != null && (
-          <span className="font-mono">
+          <span className="shrink-0 font-mono">
             Ln {cursorLine}, Col {cursorColumn}
           </span>
         )}
-        <span className="font-mono">
+        <span className="shrink-0 font-mono">
           {isStatsLimited ? (
             <span title={`大文件只统计前半段，已扫描到 ${totalLines} 行、${maxColumns} 列`}>
               行列统计已简化
@@ -193,7 +194,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </span>
         {activeFile && (
           <span
-            className="flex min-w-0 items-center gap-1 text-blue-200"
+            className="flex min-w-[4rem] max-w-[16rem] items-center gap-1 text-blue-200"
             title={activeFile.path || activeFile.name}
           >
             <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +205,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         )}
         <span
           data-tour="save-status"
-          className={`px-1.5 py-0.5 rounded font-bold leading-none ${saveStatus.className}`}
+          className={`shrink-0 px-1.5 py-0.5 rounded font-bold leading-none ${saveStatus.className}`}
           title={saveStatus.title}
         >
           {saveStatus.label}
@@ -215,7 +216,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             type="button"
             aria-live="polite"
             onClick={onLocateSourceError}
-            className={`px-1.5 py-0.5 rounded font-bold leading-none transition-colors hover:ring-1 hover:ring-white/70 focus:outline-none focus:ring-1 focus:ring-white ${sourceValidationStatus.className}`}
+            className={`shrink-0 px-1.5 py-0.5 rounded font-bold leading-none transition-colors hover:ring-1 hover:ring-white/70 focus:outline-none focus:ring-1 focus:ring-white ${sourceValidationStatus.className}`}
             title={`${sourceValidationStatus.title}，点击定位`}
           >
             {sourceValidationStatus.label}
@@ -224,7 +225,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <span
             data-tour="source-validation-status"
             aria-live="polite"
-            className={`px-1.5 py-0.5 rounded font-bold leading-none ${sourceValidationStatus.className}`}
+            className={`shrink-0 px-1.5 py-0.5 rounded font-bold leading-none ${sourceValidationStatus.className}`}
             title={sourceValidationStatus.title}
           >
             {sourceValidationStatus.label}
@@ -233,8 +234,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       </div>
 
       {/* 右侧：当前视图模式与版本号 */}
-      <div data-tour="statusbar-view" className="flex shrink-0 gap-2 items-center">
-        <span className="opacity-80">当前视图:</span>
+      <div data-tour="statusbar-view" className="flex shrink-0 items-center gap-2">
+        <span className="shrink-0 opacity-80">当前视图:</span>
         <span className="bg-white text-brand-primary px-1.5 py-0.5 rounded font-bold text-[11px] shadow-sm leading-none">
           {MODE_LABELS[mode]}
         </span>
@@ -244,6 +245,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           </span>
         )}
         <span
+          data-tour="statusbar-version"
           className="rounded bg-white/15 px-1.5 py-0.5 font-mono text-[10px] leading-none text-blue-100"
           title="当前版本"
         >
