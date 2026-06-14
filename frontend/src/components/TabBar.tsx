@@ -65,6 +65,14 @@ const getFileIcon = (filename: string) => {
   }
 };
 
+const getTabAriaLabel = (file: FileTab): string => (
+  file.isDirty ? `${file.name}，未保存` : file.name
+);
+
+const getCloseAriaLabel = (file: FileTab): string => (
+  file.isDirty ? `关闭未保存标签 ${file.name}` : `关闭标签 ${file.name}`
+);
+
 /**
  * 标签栏组件
  * 展示已打开的文件标签，支持切换、关闭、新建标签和横向滚动
@@ -82,6 +90,49 @@ export const TabBar: React.FC<TabBarProps> = ({
   thumbLeft,
   onScrollbarMouseDown,
 }) => {
+  const focusTabByIndex = (index: number) => {
+    const tabElements = tabsContainerRef.current?.querySelectorAll('[data-file-tab="true"]');
+    (tabElements?.[index] as HTMLElement | undefined)?.focus();
+  };
+
+  const activateTabByIndex = (index: number) => {
+    const nextFile = files[index];
+    if (!nextFile) return;
+
+    onTabClick(nextFile.id);
+    window.requestAnimationFrame(() => focusTabByIndex(index));
+  };
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, index: number) => {
+    if (files.length === 0) return;
+
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        onTabClick(files[index].id);
+        break;
+      case 'ArrowLeft':
+        event.preventDefault();
+        activateTabByIndex((index - 1 + files.length) % files.length);
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        activateTabByIndex((index + 1) % files.length);
+        break;
+      case 'Home':
+        event.preventDefault();
+        activateTabByIndex(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        activateTabByIndex(files.length - 1);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div className="flex-1 h-full relative min-w-0 ml-2 flex flex-col justify-end">
       <div
@@ -99,52 +150,67 @@ export const TabBar: React.FC<TabBarProps> = ({
         }}
         className="flex items-center h-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden scrollbar-hide"
       >
-        {files.length > 0 && files.map(file => (
-          <div
-            key={file.id}
-            onClick={() => onTabClick(file.id)}
-            onAuxClick={(e) => {
-              // 鼠标中键 (button 1) 关闭标签
-              if (e.button === 1) {
-                e.stopPropagation();
-                e.preventDefault(); // 阻止部分浏览器的自动滚动行为
-                onCloseFile(file.id);
-              }
-            }}
-            className={`flex items-center gap-1.5 px-1.5 h-full border-r border-r-editor-sidebar text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
-              ? 'bg-editor-bg text-white border-t-2 border-t-brand-primary'
-              : 'bg-editor-header text-editor-fg-sub border-t-2 border-t-transparent hover:bg-editor-hover'
-              }`}
-            title={file.name}
-          >
-            {getFileIcon(file.name)}
-            <span className="truncate flex-1">{file.name}</span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onCloseFile(file.id);
-              }}
-              className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 group/close flex items-center justify-center w-5 h-5 ${file.id === activeFileId ? 'hover:bg-editor-border' : 'hover:bg-editor-active'}`}
-              title={file.isDirty ? "未保存" : "关闭"}
-            >
-              {file.isDirty ? (
-                <>
-                  <div className="w-2 h-2 bg-green-400 rounded-full group-hover/close:hidden"></div>
-                  <svg className="w-3.5 h-3.5 text-gray-400 hidden group-hover/close:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </>
-              ) : (
-                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              )}
-            </button>
+        {files.length > 0 && (
+          <div role="tablist" aria-label="已打开文件标签" className="flex items-center h-full flex-shrink-0">
+            {files.map((file, index) => (
+              <div
+                key={file.id}
+                data-file-tab="true"
+                role="tab"
+                aria-selected={file.id === activeFileId}
+                aria-label={getTabAriaLabel(file)}
+                tabIndex={file.id === activeFileId ? 0 : -1}
+                onClick={() => onTabClick(file.id)}
+                onKeyDown={(e) => handleTabKeyDown(e, index)}
+                onAuxClick={(e) => {
+                  // 鼠标中键 (button 1) 关闭标签
+                  if (e.button === 1) {
+                    e.stopPropagation();
+                    e.preventDefault(); // 阻止部分浏览器的自动滚动行为
+                    onCloseFile(file.id);
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-1.5 h-full border-r border-r-editor-sidebar text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
+                  ? 'bg-editor-bg text-white border-t-2 border-t-brand-primary'
+                  : 'bg-editor-header text-editor-fg-sub border-t-2 border-t-transparent hover:bg-editor-hover'
+                  }`}
+                title={file.name}
+              >
+                {getFileIcon(file.name)}
+                <span className="truncate flex-1">{file.name}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCloseFile(file.id);
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  className={`rounded-md p-1 transition-all ml-1 flex-shrink-0 group/close flex items-center justify-center w-5 h-5 ${file.id === activeFileId ? 'hover:bg-editor-border' : 'hover:bg-editor-active'}`}
+                  title={file.isDirty ? "未保存" : "关闭"}
+                  aria-label={getCloseAriaLabel(file)}
+                >
+                  {file.isDirty ? (
+                    <>
+                      <div className="w-2 h-2 bg-green-400 rounded-full group-hover/close:hidden"></div>
+                      <svg className="w-3.5 h-3.5 text-gray-400 hidden group-hover/close:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  )}
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
 
         {/* 新建标签按钮 */}
         <div className="flex items-center justify-center h-full px-1">
           <button
+            type="button"
             onClick={() => onNewTab()}
             className="flex items-center justify-center w-6 h-6 rounded-md text-editor-fg-sub hover:text-white hover:bg-editor-active transition-all cursor-pointer flex-shrink-0"
             title="新建标签 (Cmd+N)"
+            aria-label="新建标签"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
           </button>

@@ -1694,6 +1694,31 @@ test('自动保存按钮展示开关语义和不可用原因', async ({ page }) 
   await expect(autoSave).toHaveAttribute('aria-pressed', 'false');
 });
 
+test('文件标签支持键盘切换和关闭语义', async ({ page }) => {
+  await fillSourceEditor(page, '{"first":true}');
+  await page.getByRole('button', { name: '新建标签' }).click();
+
+  const tabList = page.getByRole('tablist', { name: '已打开文件标签' });
+  const firstTab = tabList.getByRole('tab', { name: /Untitled-1/ });
+  const secondTab = tabList.getByRole('tab', { name: /Untitled-2/ });
+
+  await expect(firstTab).toHaveAttribute('aria-selected', 'false');
+  await expect(firstTab).toHaveAttribute('aria-label', 'Untitled-1，未保存');
+  await expect(secondTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('button', { name: '关闭未保存标签 Untitled-1' })).toHaveAttribute('title', '未保存');
+  await expect(page.getByRole('button', { name: '关闭标签 Untitled-2' })).toHaveAttribute('title', '关闭');
+
+  await secondTab.press('ArrowLeft');
+  await expect(firstTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"first":true');
+
+  await firstTab.press('End');
+  await expect(secondTab).toHaveAttribute('aria-selected', 'true');
+
+  await firstTab.press('Enter');
+  await expect(firstTab).toHaveAttribute('aria-selected', 'true');
+});
+
 test('文件打开后可修改并保存下载', async ({ page }) => {
   const fileChooserPromise = page.waitForEvent('filechooser');
   await page.locator('[data-tour="open-file-button"]').click();
