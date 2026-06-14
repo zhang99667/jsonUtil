@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import React, { useState, useEffect, useId, useRef, ReactNode } from 'react';
 import { isFiniteNumber, isRecord, parseJsonWithFallback, safeGetStorageItem, safeSetStorageItem } from '../utils/storage';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { PANEL_LAYOUT_RESET_EVENT } from '../utils/panelLayout';
@@ -11,7 +11,9 @@ export interface DraggablePanelProps {
   /** 关闭回调 */
   onClose: () => void;
   /** 面板标题 */
-  title: string;
+  title: ReactNode;
+  /** 面板可访问名称，标题为复杂节点时使用 */
+  ariaLabel?: string;
   /** 标题图标 (SVG ReactNode) */
   icon: ReactNode;
   /** 头部额外内容（如 path 标签），显示在标题后、关闭按钮前 */
@@ -94,6 +96,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   isOpen,
   onClose,
   title,
+  ariaLabel,
   icon,
   headerExtra,
   storageKey,
@@ -142,6 +145,41 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   const [startSize, setStartSize] = useState({ width: 0, height: 0 });
 
   const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
+  const titleId = useId();
+  const panelLabel = ariaLabel || (typeof title === 'string' ? title : '浮动面板');
+  const closeButtonLabel = `关闭 ${panelLabel}`;
+
+  useEffect(() => {
+    if (isOpen) {
+      wasOpenRef.current = true;
+      previousActiveElementRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+      const focusTimer = window.setTimeout(() => {
+        closeButtonRef.current?.focus();
+      }, 0);
+
+      return () => window.clearTimeout(focusTimer);
+    }
+
+    if (!wasOpenRef.current) return;
+
+    wasOpenRef.current = false;
+    const previousActiveElement = previousActiveElementRef.current;
+    previousActiveElementRef.current = null;
+
+    if (!previousActiveElement?.isConnected) return;
+
+    const restoreTimer = window.setTimeout(() => {
+      previousActiveElement.focus();
+    }, 0);
+
+    return () => window.clearTimeout(restoreTimer);
+  }, [isOpen]);
 
   // ESC 键关闭面板（仅在焦点位于面板内时生效）
   useEffect(() => {
@@ -149,12 +187,13 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        // 只有焦点在面板内部或面板本身时才关闭
         const panel = panelRef.current;
         if (
           panel &&
           (panel.contains(document.activeElement) || panel === document.activeElement)
         ) {
+          e.preventDefault();
+          e.stopPropagation();
           onClose();
         }
       }
@@ -314,6 +353,9 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
       ref={panelRef}
       tabIndex={-1}
       data-tour={dataTour}
+      role="dialog"
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabel ? undefined : titleId}
       className={`fixed bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden ${className}`}
       style={{
         left: `${position.x}px`,
@@ -332,13 +374,16 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
           {/* 图标 */}
           <span className="flex-shrink-0 text-emerald-400">{icon}</span>
           {/* 标题 */}
-          <span className="text-sm font-semibold text-gray-200 flex-shrink-0">{title}</span>
+          <div id={titleId} className="text-sm font-semibold text-gray-200 flex-shrink-0">{title}</div>
           {/* 额外内容 */}
           {headerExtra && <div className="min-w-0 flex-1">{headerExtra}</div>}
         </div>
         {/* 关闭按钮 */}
         <button
+          ref={closeButtonRef}
+          type="button"
           onClick={onClose}
+          aria-label={closeButtonLabel}
           className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-editor-hover flex-shrink-0 ml-2"
           title="关闭"
         >

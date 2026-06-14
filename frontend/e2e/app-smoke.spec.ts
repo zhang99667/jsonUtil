@@ -114,6 +114,19 @@ test('查询解析工具入口展示浮动面板打开态', async ({ page }) => 
   await assertPanelToggle('template-fill-button');
 });
 
+test('浮动面板支持键盘关闭并恢复入口焦点', async ({ page }) => {
+  const jsonPathButton = page.locator('[data-tour="jsonpath-button"]');
+  await jsonPathButton.click();
+
+  const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
+  await expect(jsonPathPanel).toBeVisible();
+  await expect(jsonPathPanel.getByRole('button', { name: '关闭 JSONPath 查询' })).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(jsonPathPanel).toBeHidden();
+  await expect(jsonPathButton).toBeFocused();
+});
+
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {
   const wrapToggle = page.locator('[data-tour="source-editor"] [data-tour="editor-wrap"]');
 
