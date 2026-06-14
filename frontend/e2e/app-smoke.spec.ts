@@ -1134,6 +1134,15 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(resultPreview).toContainText('Bob');
   await resultPreview.locator('button').nth(1).click();
   await expect(page.getByText('2 / 2')).toBeVisible();
+  const previousResultButton = page.getByRole('button', { name: '上一个结果 (Shift+Enter)' });
+  const nextResultButton = page.getByRole('button', { name: '下一个结果 (Enter)' });
+  await expect(previousResultButton).toHaveAttribute('title', '上一个结果 (Shift+Enter)');
+  await expect(nextResultButton).toHaveAttribute('title', '下一个结果 (Enter)');
+
+  await previousResultButton.click();
+  await expect(page.getByText('1 / 2')).toBeVisible();
+  await nextResultButton.click();
+  await expect(page.getByText('2 / 2')).toBeVisible();
 
   await page.getByRole('button', { name: '复制全部结果' }).click();
   await expect(page.getByText('查询结果已复制（2 项）')).toBeVisible();

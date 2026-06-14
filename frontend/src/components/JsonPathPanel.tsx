@@ -670,20 +670,24 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 </svg>
                             </button>
                             <button
+                                type="button"
                                 onClick={goToPrevious}
                                 disabled={isQuerying}
                                 className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="上一个 (Shift+Enter)"
+                                title="上一个结果 (Shift+Enter)"
+                                aria-label="上一个结果 (Shift+Enter)"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                 </svg>
                             </button>
                             <button
+                                type="button"
                                 onClick={goToNext}
                                 disabled={isQuerying}
                                 className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="下一个 (Enter)"
+                                title="下一个结果 (Enter)"
+                                aria-label="下一个结果 (Enter)"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
