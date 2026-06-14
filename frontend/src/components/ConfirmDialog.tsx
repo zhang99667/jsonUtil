@@ -21,6 +21,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const dialogPanelRef = useRef<HTMLDivElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -30,6 +31,41 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       if (event.key === 'Escape') {
         event.preventDefault();
         onCancel();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusableElements: HTMLElement[] = dialogPanelRef.current
+          ? Array.from(dialogPanelRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          ))
+          : [];
+        if (focusableElements.length === 0) {
+          event.preventDefault();
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        if (!firstElement || !lastElement) return;
+
+        if (!dialogPanelRef.current?.contains(document.activeElement)) {
+          event.preventDefault();
+          firstElement.focus();
+          return;
+        }
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement.focus();
+          return;
+        }
+
+        if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement.focus();
+          return;
+        }
       }
     };
 
@@ -64,7 +100,10 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         }
       }}
     >
-      <div className="w-full max-w-[420px] rounded-lg border border-editor-border bg-editor-sidebar shadow-2xl">
+      <div
+        ref={dialogPanelRef}
+        className="w-full max-w-[420px] rounded-lg border border-editor-border bg-editor-sidebar shadow-2xl"
+      >
         <div className="border-b border-editor-border px-4 py-3">
           <h2 id="confirm-dialog-title" className="text-sm font-semibold text-white">
             {title}

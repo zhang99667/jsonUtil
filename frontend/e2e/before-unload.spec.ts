@@ -117,6 +117,13 @@ test('关闭未保存标签使用应用内确认', async ({ page }) => {
   await expect(confirmDialog).toBeVisible();
   await expect(confirmDialog).toContainText('关闭未保存标签');
   await expect(confirmDialog).toContainText('Untitled-1');
+  await expect(page.getByRole('button', { name: '继续编辑' })).toBeFocused();
+
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByRole('button', { name: '关闭并丢弃' })).toBeFocused();
+
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: '继续编辑' })).toBeFocused();
 
   await page.getByRole('button', { name: '继续编辑' }).click();
   await expect(confirmDialog).toBeHidden();
