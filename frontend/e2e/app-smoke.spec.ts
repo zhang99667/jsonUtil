@@ -98,6 +98,17 @@ test('JSON Lines 可格式化为可读数组预览', async ({ page }) => {
   await expectPreviewText(page, '"id": 2');
 });
 
+test('状态栏展示当前焦点内容的 UTF-8 字节体积', async ({ page }) => {
+  await fillSourceEditor(page, '{"text":"中文"}');
+  await expect(page.locator('[data-tour="statusbar"]')).toContainText('Length: 13');
+  await expect(page.locator('[data-tour="statusbar-byte-size"]')).toContainText('Size: 17 B');
+
+  await page.getByRole('button', { name: '格式化' }).click();
+  await page.locator('[data-tour="preview-editor"] .monaco-editor').click();
+  await expect(page.locator('[data-tour="statusbar"]')).toContainText('Length: 18');
+  await expect(page.locator('[data-tour="statusbar-byte-size"]')).toContainText('Size: 22 B');
+});
+
 test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await fillSourceEditor(page, '{"payload":"{\\"nested\\":true}"}\n{"payload":"{\\"nested\\":false}"}');
 
