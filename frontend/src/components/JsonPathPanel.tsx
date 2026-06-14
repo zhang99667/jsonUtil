@@ -36,6 +36,10 @@ const formatJsonPathItemsForCopy = (items: JsonPathQueryItem[]): string => (
     items.map(item => `${item.path} = ${formatJsonPathValueForLineCopy(item.value)}`).join('\n')
 );
 
+const getJsonPathCopyCountLabel = (count: number, isLimited: boolean): string => (
+    isLimited ? `已返回 ${count} 项` : `${count} 项`
+);
+
 interface JsonPathPanelProps {
     jsonData: string;
     deepFormat?: boolean;
@@ -429,7 +433,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
         try {
             await copyText(formatJsonPathValuesForCopy(queryValues));
-            showSuccess('查询结果已复制');
+            showSuccess(`查询结果已复制（${getJsonPathCopyCountLabel(queryValues.length, isResultLimited)}）`);
         } catch (error) {
             console.warn('复制 JSONPath 查询结果失败:', error);
             showError(getClipboardErrorMessage(error, '复制查询结果失败'));
@@ -441,7 +445,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
         try {
             await copyText(formatJsonPathItemsForCopy(queryItems));
-            showSuccess('查询路径和值已复制');
+            showSuccess(`查询路径和值已复制（${getJsonPathCopyCountLabel(queryItems.length, isResultLimited)}）`);
         } catch (error) {
             console.warn('复制 JSONPath 查询路径和值失败:', error);
             showError(getClipboardErrorMessage(error, '复制查询路径和值失败'));
