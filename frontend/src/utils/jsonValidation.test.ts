@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { cleanJsonInput, isJsonContainerCandidate, validateJsonForEditor } from './jsonValidation';
+import {
+  cleanJsonInput,
+  getJsonValidationErrorLocation,
+  isJsonContainerCandidate,
+  validateJsonForEditor,
+} from './jsonValidation';
 
 describe('jsonValidation', () => {
   it('清理零宽字符后再校验 JSON', () => {
@@ -24,5 +29,34 @@ describe('jsonValidation', () => {
 
     expect(result.isValid).toBe(false);
     expect(result.error).toBeTruthy();
+  });
+
+  it('从普通 JSON position 错误中提取行列', () => {
+    const input = '{\n  "ok": true,\n  "bad":\n}';
+    const location = getJsonValidationErrorLocation(
+      input,
+      'Expected value in JSON at position 25'
+    );
+
+    expect(location).toEqual({ line: 4, column: 1 });
+  });
+
+  it('优先使用普通 JSON line/column 错误定位', () => {
+    const location = getJsonValidationErrorLocation(
+      '{"bad":}',
+      "Expected value in JSON at position 7 (line 1 column 8)"
+    );
+
+    expect(location).toEqual({ line: 1, column: 8 });
+  });
+
+  it('从 JSON Lines 错误中提取实际行号与缩进列号', () => {
+    const input = '{"a":1}\n  {"b":}\n{"c":3}';
+    const location = getJsonValidationErrorLocation(
+      input,
+      'JSON Lines 第 2 行解析错误: Expected value in JSON at position 5'
+    );
+
+    expect(location).toEqual({ line: 2, column: 8 });
   });
 });

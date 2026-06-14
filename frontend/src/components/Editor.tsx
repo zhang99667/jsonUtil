@@ -8,6 +8,8 @@ import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { computeLineDiff, shouldSkipLineDiff } from '../utils/diffUtils';
 import { scanSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
+import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import { showError, showSuccess } from '../utils/toast';
 import { TabBar } from './TabBar';
 
 const ASYNC_SCHEME_SCAN_THRESHOLD = 200_000;
@@ -49,6 +51,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   canToggleReadOnly = false,
   label,
   error,
+  errorLocation,
   warning,
   info,
   headerActions,
@@ -277,7 +280,29 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     setWordWrap(prev => prev === 'on' ? 'off' : 'on');
   };
 
+  const handleLocateError = useCallback(() => {
+    if (!editorRef.current || !monaco || !errorLocation) return;
 
+    const position = {
+      lineNumber: errorLocation.line,
+      column: Math.max(1, errorLocation.column),
+    };
+
+    editorRef.current.revealPositionInCenter(position, monaco.editor.ScrollType.Smooth);
+    editorRef.current.setPosition(position);
+    editorRef.current.focus();
+  }, [errorLocation, monaco]);
+
+  const handleCopyError = useCallback(async () => {
+    if (!error) return;
+
+    try {
+      await copyText(error);
+      showSuccess('已复制错误信息');
+    } catch (copyError) {
+      showError(getClipboardErrorMessage(copyError, '复制错误信息失败'));
+    }
+  }, [error]);
 
   // 高亮区域渲染
   useEffect(() => {
@@ -455,7 +480,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+        <div className="flex min-w-0 items-center gap-1 flex-shrink ml-2 overflow-hidden">
           {/* 自定义操作栏 */}
           {headerActions}
 
@@ -493,9 +518,31 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           </button>
 
           {error ? (
-            <div className="flex items-center text-[10px] text-status-error-text bg-status-error-bg px-2 py-0.5 rounded border border-status-error-border shadow-sm">
+            <div className="flex min-w-0 shrink items-center gap-1 text-[10px] text-status-error-text bg-status-error-bg px-2 py-0.5 rounded border border-status-error-border shadow-sm max-w-[220px]">
               <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5 animate-pulse"></span>
-              {error}
+              <span data-tour="editor-error-message" className="truncate" title={error}>
+                {error}
+              </span>
+              {errorLocation && (
+                <button
+                  data-tour="editor-locate-error"
+                  type="button"
+                  onClick={handleLocateError}
+                  className="ml-1 rounded border border-red-700/50 px-1 py-0 text-[10px] text-red-100 transition-colors hover:bg-red-800/40"
+                  title={`定位到第 ${errorLocation.line} 行，第 ${errorLocation.column} 列`}
+                >
+                  定位
+                </button>
+              )}
+              <button
+                data-tour="editor-copy-error"
+                type="button"
+                onClick={handleCopyError}
+                className="rounded border border-red-700/50 px-1 py-0 text-[10px] text-red-100 transition-colors hover:bg-red-800/40"
+                title="复制错误信息"
+              >
+                复制
+              </button>
             </div>
           ) : editorWarning ? (
             <div className="flex items-center text-[10px] text-amber-200 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-700/50 shadow-sm">
