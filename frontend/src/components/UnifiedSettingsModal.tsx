@@ -531,19 +531,24 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         <div className="bg-editor-bg p-4 rounded border border-editor-border">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1 pr-4">
-                                    <div className="text-sm font-medium text-gray-200">
+                                    <div id="general-auto-expand-label" className="text-sm font-medium text-gray-200">
                                         嵌套解析时自动展开 CMD/Scheme 字符串
                                     </div>
-                                    <div className="text-xs text-gray-500 mt-1">
+                                    <div id="general-auto-expand-description" className="text-xs text-gray-500 mt-1">
                                         启用后，深度格式化将自动展开 CMD、URL Scheme 和 Base64 JSON 片段
                                     </div>
                                 </div>
                                 <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={localGeneralSettings.autoExpandSchemeInDeepFormat}
+                                    aria-labelledby="general-auto-expand-label"
+                                    aria-describedby="general-auto-expand-description"
                                     onClick={() => setLocalGeneralSettings({
                                         ...localGeneralSettings,
                                         autoExpandSchemeInDeepFormat: !localGeneralSettings.autoExpandSchemeInDeepFormat,
                                     })}
-                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-editor-bg ${
                                         localGeneralSettings.autoExpandSchemeInDeepFormat ? 'bg-emerald-500' : 'bg-gray-600'
                                     }`}
                                 >

@@ -796,6 +796,18 @@ test('设置弹窗支持键盘关闭并恢复焦点', async ({ page }) => {
   await expect(settingsButton).toBeFocused();
 });
 
+test('通用设置开关提供可访问状态并支持键盘切换', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('button', { name: '通用设置' }).click();
+
+  const autoExpandSwitch = page.getByRole('switch', { name: '嵌套解析时自动展开 CMD/Scheme 字符串' });
+  await expect(autoExpandSwitch).toHaveAttribute('aria-checked', 'true');
+
+  await autoExpandSwitch.focus();
+  await page.keyboard.press('Space');
+  await expect(autoExpandSwitch).toHaveAttribute('aria-checked', 'false');
+});
+
 test('快捷键冲突会提示被解除的动作', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
 
