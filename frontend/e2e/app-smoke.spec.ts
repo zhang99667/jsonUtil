@@ -610,6 +610,32 @@ test('源编辑区可从剪贴板粘贴并确认替换内容', async ({ page }) 
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).not.toContainText('pasted');
 });
 
+test('预览结果可确认应用回源编辑区', async ({ page }) => {
+  const sourceText = '{"previewApply":true,"items":[2,1]}';
+  await fillSourceEditor(page, sourceText);
+  await page.getByRole('button', { name: '格式化' }).click();
+  await expectPreviewText(page, '"previewApply": true');
+
+  await page.locator('[data-tour="apply-preview-to-source"]').click();
+  const dialog = page.locator('[data-tour="confirm-dialog"]');
+  await expect(dialog).toContainText('应用预览到源');
+  await dialog.getByRole('button', { name: '继续保留' }).click();
+
+  await page.locator('[data-tour="copy-source"]').click();
+  await expect(page.getByText('已复制源内容')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe(sourceText);
+
+  await page.locator('[data-tour="apply-preview-to-source"]').click();
+  await page.locator('[data-tour="confirm-dialog"]').getByRole('button', { name: '应用' }).click();
+  await expect(page.getByText('已用 PREVIEW 替换 SOURCE')).toBeVisible();
+  await page.locator('[data-tour="copy-source"]').click();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('"previewApply": true');
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('"items": [');
+});
+
 test('预览复制失败时展示浏览器拒绝原因', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {

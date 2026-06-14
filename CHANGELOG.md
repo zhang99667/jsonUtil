@@ -73,6 +73,7 @@
 - **匿名工具事件洞察**: 新增 `/api/visitor/events` 与管理后台工具事件聚合，按功能名、状态、输入大小档和耗时档统计使用情况与失败率，不采集 JSON 原文
 - **状态栏版本号**: 底部蓝色状态栏新增前端版本号展示，版本来源与 `frontend/package.json` 保持一致
 - **源编辑区快操作**: SOURCE 标题栏新增剪贴板粘贴、复制源内容和确认清空入口，减少粘贴调试与重新开始时的操作成本
+- **预览结果回写**: PREVIEW 标题栏新增应用到源入口，格式化或深度解析后可确认替换 SOURCE 继续二次处理
 - **解析质量基线完整性门禁**: `corpus:snapshot:check` 会识别缺失 expected snapshot 的 corpus 样本并失败，避免新增脱敏样本未配置质量基线却通过 CI
 - **cmdHandler 快照对齐门禁**: `corpus:snapshot` 会把 cmdHandler expected 子集对齐结果写入质量快照和 Markdown 摘要，strict 模式在关键路径缺失或 expected 缺失时失败
 - **JSONPath 大查询可取消**: JSONPath 查询处理中新增取消入口，会立即终止当前 Worker 并清空旧高亮，避免误查大表达式时只能等待结果返回

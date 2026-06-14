@@ -219,6 +219,7 @@ const App: React.FC = () => {
   );
   const [isClearSourceConfirmOpen, setIsClearSourceConfirmOpen] = useState(false);
   const [pendingPasteSourceText, setPendingPasteSourceText] = useState<string | null>(null);
+  const [pendingApplyPreviewText, setPendingApplyPreviewText] = useState<string | null>(null);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -771,6 +772,30 @@ const App: React.FC = () => {
     }
   }, [input, trackCurrentToolEvent]);
 
+  const handleCopyPreview = useCallback(async () => {
+    const startedAt = performance.now();
+    if (isOutputTransforming) {
+      showError('预览仍在处理，请稍后复制');
+      trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'skipped', startedAt);
+      return;
+    }
+
+    if (!output.trim()) {
+      showError('预览内容为空，暂无可复制内容');
+      trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'skipped', startedAt);
+      return;
+    }
+
+    try {
+      await copyText(output);
+      showSuccess('已复制预览内容');
+      trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'success', startedAt);
+    } catch (error) {
+      showError(getClipboardErrorMessage(error));
+      trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'error', startedAt);
+    }
+  }, [isOutputTransforming, output, trackCurrentToolEvent]);
+
   const applySourceTextFromClipboard = useCallback((text: string, successMessage: string) => {
     handleInputChange(text);
     setHighlightRange(null);
@@ -820,6 +845,56 @@ const App: React.FC = () => {
     const startedAt = performance.now();
     setPendingPasteSourceText(null);
     trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'cancelled', startedAt);
+  }, [trackCurrentToolEvent]);
+
+  const applyPreviewTextToSource = useCallback((text: string, successMessage: string) => {
+    handleInputChange(text);
+    setHighlightRange(null);
+    showSuccess(successMessage);
+  }, [handleInputChange]);
+
+  const handleRequestApplyPreviewToSource = useCallback(() => {
+    const startedAt = performance.now();
+    if (isOutputTransforming) {
+      showError('预览仍在处理，请稍后应用');
+      trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'skipped', startedAt);
+      return;
+    }
+
+    if (!output.trim()) {
+      showError('预览内容为空，暂无可应用内容');
+      trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'skipped', startedAt);
+      return;
+    }
+
+    if (output === input) {
+      showSuccess('PREVIEW 内容已在 SOURCE 中');
+      trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'skipped', startedAt);
+      return;
+    }
+
+    if (input.trim()) {
+      setPendingApplyPreviewText(output);
+      return;
+    }
+
+    applyPreviewTextToSource(output, '已将 PREVIEW 应用到 SOURCE');
+    trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'success', startedAt);
+  }, [applyPreviewTextToSource, input, isOutputTransforming, output, trackCurrentToolEvent]);
+
+  const handleConfirmApplyPreviewToSource = useCallback(() => {
+    if (pendingApplyPreviewText === null) return;
+
+    const startedAt = performance.now();
+    applyPreviewTextToSource(pendingApplyPreviewText, '已用 PREVIEW 替换 SOURCE');
+    setPendingApplyPreviewText(null);
+    trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'success', startedAt);
+  }, [applyPreviewTextToSource, pendingApplyPreviewText, trackCurrentToolEvent]);
+
+  const handleCancelApplyPreviewToSource = useCallback(() => {
+    const startedAt = performance.now();
+    setPendingApplyPreviewText(null);
+    trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'cancelled', startedAt);
   }, [trackCurrentToolEvent]);
 
   const handleRequestClearSource = useCallback(() => {
@@ -1244,6 +1319,16 @@ const App: React.FC = () => {
         onCancel={handleCancelPasteSource}
       />
 
+      <ConfirmDialog
+        isOpen={pendingApplyPreviewText !== null}
+        title="应用预览到源"
+        message="这会用当前 PREVIEW 内容替换 SOURCE 编辑区，并将当前标签标记为未保存。"
+        confirmLabel="应用"
+        cancelLabel="继续保留"
+        onConfirm={handleConfirmApplyPreviewToSource}
+        onCancel={handleCancelApplyPreviewToSource}
+      />
+
       {/* 主工作区容器 */}
       <div
         className="flex-1 flex overflow-hidden relative"
@@ -1441,17 +1526,22 @@ const App: React.FC = () => {
                     </button>
                   )}
                   <button
+                    data-tour="apply-preview-to-source"
+                    aria-label="应用预览到源内容"
+                    onClick={handleRequestApplyPreviewToSource}
+                    disabled={!output.trim() || isOutputTransforming || output === input}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isOutputTransforming ? "预览仍在处理，请稍后应用" : "用 PREVIEW 内容替换 SOURCE"}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+                    </svg>
+                    <span>应用到源</span>
+                  </button>
+                  <button
                     data-tour="copy-preview"
                     aria-label="复制预览内容"
-                    onClick={async () => {
-                      if (!output.trim() || isOutputTransforming) return;
-                      try {
-                        await copyText(output);
-                        showSuccess('已复制预览内容');
-                      } catch (error) {
-                        showError(getClipboardErrorMessage(error));
-                      }
-                    }}
+                    onClick={handleCopyPreview}
                     disabled={!output.trim() || isOutputTransforming}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={isOutputTransforming ? "预览仍在处理，请稍后复制" : "复制预览内容到剪贴板"}

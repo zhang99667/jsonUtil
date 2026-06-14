@@ -314,6 +314,8 @@ const TrafficStats: React.FC = () => {
         SOURCE_PASTE: '粘贴源内容',
         SOURCE_COPY: '复制源内容',
         SOURCE_CLEAR: '清空源内容',
+        PREVIEW_COPY: '复制预览内容',
+        PREVIEW_APPLY_TO_SOURCE: '预览应用到源',
         OPEN: '打开文件',
         NEW_TAB: '新建标签',
         JSONPATH_OPEN: '打开 JSONPath',
