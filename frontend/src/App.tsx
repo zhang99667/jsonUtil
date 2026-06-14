@@ -1280,6 +1280,18 @@ const App: React.FC = () => {
   const isPreviewSameAsSource = output === input;
   const canUseAutoSave = Boolean(activeFileId && activeFile?.handle);
   const isAutoSaveActive = canUseAutoSave && isAutoSaveEnabled;
+  const autoSaveTitle = !activeFileId
+    ? '请先打开文件以启用自动保存'
+    : !activeFile?.handle
+      ? '请先保存当前标签以启用自动保存'
+      : isAutoSaveEnabled
+        ? '自动保存已开启'
+        : '点击开启自动保存';
+  const autoSaveAriaLabel = !canUseAutoSave
+    ? `自动保存不可用，${autoSaveTitle}`
+    : isAutoSaveActive
+      ? '自动保存已开启，点击关闭'
+      : '自动保存已关闭，点击开启';
   const copySourceTitle = hasSourceContent ? '复制 SOURCE 内容到剪贴板' : 'SOURCE 为空，暂无内容可复制';
   const clearSourceTitle = hasSourceContent ? '清空 SOURCE 内容' : 'SOURCE 为空，暂无内容可清空';
   const transformReportTitle = (() => {
@@ -1496,7 +1508,7 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="auto-save"
-                    aria-disabled={!canUseAutoSave}
+                    aria-label={autoSaveAriaLabel}
                     aria-pressed={isAutoSaveActive}
                     onClick={handleToggleAutoSave}
                     className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
@@ -1507,15 +1519,7 @@ const App: React.FC = () => {
                           ? 'text-gray-400 border-transparent hover:bg-editor-active'
                           : 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
                       }`}
-                    title={
-                      !activeFileId
-                        ? "请先打开文件以启用自动保存"
-                        : !activeFile?.handle
-                          ? "请先保存当前标签以启用自动保存"
-                          : isAutoSaveEnabled
-                          ? "自动保存已开启"
-                          : "点击开启自动保存"
-                    }
+                    title={autoSaveTitle}
                   >
                     <div className={`w-1.5 h-1.5 rounded-full ${!activeFileId
                       ? 'bg-gray-700'

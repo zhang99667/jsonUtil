@@ -1578,10 +1578,10 @@ test('模板填充可格式化模板并应用', async ({ page }) => {
 test('自动保存按钮展示开关语义和不可用原因', async ({ page }) => {
   const autoSave = page.locator('[data-tour="auto-save"]');
 
-  await expect(autoSave).toHaveAttribute('aria-disabled', 'true');
+  await expect(autoSave).toHaveAttribute('aria-label', '自动保存不可用，请先打开文件以启用自动保存');
   await expect(autoSave).toHaveAttribute('aria-pressed', 'false');
   await expect(autoSave).toHaveAttribute('title', '请先打开文件以启用自动保存');
-  await autoSave.click({ force: true });
+  await autoSave.click();
   await expect(page.getByText('请先打开或保存文件后再启用自动保存')).toBeVisible();
 
   await page.evaluate(() => {
@@ -1603,17 +1603,19 @@ test('自动保存按钮展示开关语义和不可用原因', async ({ page }) 
 
   await page.locator('[data-tour="open-file-button"]').click();
   await expect(page.getByText('auto-save.json').first()).toBeVisible();
-  await expect(autoSave).toHaveAttribute('aria-disabled', 'false');
+  await expect(autoSave).toHaveAttribute('aria-label', '自动保存已关闭，点击开启');
   await expect(autoSave).toHaveAttribute('aria-pressed', 'false');
   await expect(autoSave).toHaveAttribute('title', '点击开启自动保存');
 
   await autoSave.click();
   await expect(page.getByText('自动保存已开启')).toBeVisible();
+  await expect(autoSave).toHaveAttribute('aria-label', '自动保存已开启，点击关闭');
   await expect(autoSave).toHaveAttribute('aria-pressed', 'true');
   await expect(autoSave).toHaveAttribute('title', '自动保存已开启');
 
   await autoSave.click();
   await expect(page.getByText('自动保存已关闭')).toBeVisible();
+  await expect(autoSave).toHaveAttribute('aria-label', '自动保存已关闭，点击开启');
   await expect(autoSave).toHaveAttribute('aria-pressed', 'false');
 });
 
