@@ -346,6 +346,12 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
 
   await page.locator('[data-tour="transform-report-filter"]').fill('not_exist_in_report');
   await expect(reportPanel.locator('[data-tour="transform-report-empty"]')).toContainText('没有匹配的解析记录');
+  const copyPathValuesButton = reportPanel.locator('[data-tour="transform-report-copy-path-values"]');
+  await expect(copyPathValuesButton).toBeDisabled();
+  await expect(copyPathValuesButton).toHaveAttribute('title', '当前筛选没有可复制的路径和值');
+  const copyIssueSamplesButton = reportPanel.locator('[data-tour="transform-report-copy-issue-samples"]');
+  await expect(copyIssueSamplesButton).toBeDisabled();
+  await expect(copyIssueSamplesButton).toHaveAttribute('title', '当前筛选没有待检查、跳过或占位符来源样本可复制');
   await reportPanel.locator('[data-tour="transform-report-empty-clear"]').click();
   await expect(page.locator('[data-tour="transform-report-filter"]')).toHaveValue('');
   await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.payload');
