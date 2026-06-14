@@ -431,7 +431,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         return '执行 JSONPath 查询';
     })();
 
-    const runSavedQuery = (queryPath: string) => {
+    const fillAndRunQuery = (queryPath: string) => {
         setQuery(queryPath);
         setCancelledQuery('');
         handleQuery(queryPath);
@@ -583,7 +583,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 <div key={item} className="relative group">
                                     <button
                                         data-tour="jsonpath-favorite-item"
-                                        onClick={() => runSavedQuery(item)}
+                                        onClick={() => fillAndRunQuery(item)}
                                         className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-amber-100 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7 border border-amber-500/20"
                                         title={`${item}\n点击填入并查询`}
                                     >
@@ -616,9 +616,9 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         {examples.map((example, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => setQuery(example.query)}
+                                onClick={() => fillAndRunQuery(example.query)}
                                 className="text-xs px-2 py-1 bg-editor-border text-gray-300 rounded hover:bg-editor-active transition-colors"
-                                title={example.query}
+                                title={`${example.query}\n点击填入并查询`}
                             >
                                 {example.label}
                             </button>
@@ -784,7 +784,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 <div key={idx} className="relative group">
                                     <button
                                         data-tour="jsonpath-history-item"
-                                        onClick={() => runSavedQuery(item)}
+                                        onClick={() => fillAndRunQuery(item)}
                                         className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-gray-300 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7"
                                         title={`${item}\n点击填入并查询`}
                                     >
