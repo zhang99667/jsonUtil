@@ -86,7 +86,7 @@ npm run corpus:snapshot:diff -- --before before.json --after after.json --strict
 npm run perf:scheme -- --iterations 3 --strict
 ```
 
-`corpus:snapshot:check` 用于校验脱敏真实 response 的解析质量基线；`corpus:snapshot:diff` 用于对比两份质量快照的覆盖率、CMD/资源字段、必需项失败和 cmdHandler 对齐趋势；`perf:scheme` 用于对 50KB / 250KB response 的核心解析耗时和质量指标做本地/CI 预算检查。
+`corpus:snapshot:check` 用于校验脱敏真实 response 的解析质量基线；`corpus:snapshot:diff` 用于对比两份质量快照的覆盖率、CMD/资源字段、必需项失败和 cmdHandler 对齐趋势；`perf:scheme` 用于对 50KB / 250KB response 的核心解析耗时、覆盖率、CMD 字段和资源字段下限做本地/CI 预算检查。
 
 ## CI/CD 与部署
 

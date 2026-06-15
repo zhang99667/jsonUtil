@@ -112,6 +112,40 @@ describe('buildPerformanceCaseResult', () => {
       'warnings',
     ]);
   });
+
+  it('解析质量低于下限时保留失败原因', () => {
+    const result = buildPerformanceCaseResult({
+      caseConfig: {
+        name: 'response-50kb',
+        targetBytes: 50 * 1024,
+        maxDurationMs: 3_000,
+        maxUnresolved: 0,
+        maxWarnings: 0,
+        minCoverageScore: 100,
+        minCmdStructures: 1,
+        minNestedCommandFields: 20,
+        minNestedResourceFields: 1,
+      },
+      responseBytes: 51_200,
+      durations: [20],
+      report: createReport({
+        coverage: {
+          score: 90,
+        },
+        cmdStructureCount: 0,
+        nestedCommandFieldCount: 8,
+        nestedResourceFieldCount: 0,
+      }),
+    });
+
+    expect(result.pass).toBe(false);
+    expect(result.failures.map(item => item.key)).toEqual([
+      'coverageScore',
+      'cmdStructures',
+      'nestedCommandFields',
+      'nestedResourceFields',
+    ]);
+  });
 });
 
 describe('formatPerformanceBudgetMarkdown', () => {
@@ -139,6 +173,7 @@ describe('formatPerformanceBudgetMarkdown', () => {
           coverageScore: 100,
           records: 2,
           cmdStructures: 1,
+          nestedCommandFields: 20,
           nestedResourceFields: 4,
           unresolved: 0,
           warnings: 0,
@@ -148,7 +183,7 @@ describe('formatPerformanceBudgetMarkdown', () => {
 
     expect(markdown).toContain('# Scheme 解析性能预算');
     expect(markdown).toContain('- 结果: PASS');
-    expect(markdown).toContain('| response-50kb | 51200 | 20ms | 30ms | 3000ms');
+    expect(markdown).toContain('| response-50kb | 51200 | 20ms | 30ms | 3000ms | 100 | 2 | 1 | 20 | 4');
   });
 });
 

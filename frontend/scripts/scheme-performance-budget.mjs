@@ -17,6 +17,10 @@ export const DEFAULT_PERFORMANCE_CASES = [
     maxDurationMs: 3_000,
     maxUnresolved: 0,
     maxWarnings: 0,
+    minCoverageScore: 100,
+    minCmdStructures: 1,
+    minNestedCommandFields: 20,
+    minNestedResourceFields: 1,
   },
   {
     name: 'response-250kb',
@@ -24,6 +28,10 @@ export const DEFAULT_PERFORMANCE_CASES = [
     maxDurationMs: 12_000,
     maxUnresolved: 0,
     maxWarnings: 0,
+    minCoverageScore: 100,
+    minCmdStructures: 1,
+    minNestedCommandFields: 20,
+    minNestedResourceFields: 1,
   },
 ];
 
@@ -80,6 +88,16 @@ export const percentile = (values, ratio) => {
 
 const roundDuration = value => Math.round(value * 10) / 10;
 
+const pushMinimumFailure = (failures, key, label, actual, expected) => {
+  if (!Number.isFinite(expected) || actual >= expected) return;
+  failures.push({
+    key,
+    actual,
+    expected,
+    message: `${label} ${actual} 低于下限 ${expected}`,
+  });
+};
+
 const listFailures = (caseConfig, durationMs, report) => {
   const failures = [];
   if (durationMs > caseConfig.maxDurationMs) {
@@ -106,6 +124,10 @@ const listFailures = (caseConfig, durationMs, report) => {
       message: `跳过 ${report.summary.warningCount} 超过预算 ${caseConfig.maxWarnings}`,
     });
   }
+  pushMinimumFailure(failures, 'coverageScore', '覆盖率', report.coverage.score, caseConfig.minCoverageScore);
+  pushMinimumFailure(failures, 'cmdStructures', 'CMD 结构', report.cmdStructureCount, caseConfig.minCmdStructures);
+  pushMinimumFailure(failures, 'nestedCommandFields', 'CMD 字段', report.nestedCommandFieldCount, caseConfig.minNestedCommandFields);
+  pushMinimumFailure(failures, 'nestedResourceFields', '资源字段', report.nestedResourceFieldCount || 0, caseConfig.minNestedResourceFields);
   return failures;
 };
 
@@ -236,8 +258,8 @@ export const formatPerformanceBudgetMarkdown = budget => {
     `- 轮次: ${budget.iterations}`,
     `- 结果: ${budget.summary.pass ? 'PASS' : 'FAIL'}`,
     '',
-    '| Case | 大小 | Median | Max | 预算 | 覆盖率 | 展开 | CMD结构 | 资源字段 | 待检查 | 跳过 | 结果 |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| Case | 大小 | Median | Max | 预算 | 覆盖率 | 展开 | CMD结构 | CMD字段 | 资源字段 | 待检查 | 跳过 | 结果 |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ];
 
   budget.cases.forEach(result => {
@@ -250,6 +272,7 @@ export const formatPerformanceBudgetMarkdown = budget => {
       result.quality.coverageScore,
       result.quality.records,
       result.quality.cmdStructures,
+      result.quality.nestedCommandFields,
       result.quality.nestedResourceFields,
       result.quality.unresolved,
       result.quality.warnings,
