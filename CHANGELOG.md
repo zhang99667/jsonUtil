@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.14 (2026-06-15) - Scheme 性能预算质量下限
+### 🏗️ 架构与基础设施
+- **Scheme 性能预算**: `perf:scheme` strict 模式会同步校验覆盖率、CMD 结构、CMD 字段和资源字段下限，避免核心解析结果退化但性能预算仍显示 PASS
+
 ## v1.8.13 (2026-06-15) - Scheme 性能预算 CI 门禁
 ### 🏗️ 架构与基础设施
 - **Scheme 性能预算**: GitHub CI 和本地 CI 接入 `perf:scheme -- --iterations 3 --strict`，并上传性能预算 artifact，避免大 response 核心解析耗时退化只在手工检查中暴露
