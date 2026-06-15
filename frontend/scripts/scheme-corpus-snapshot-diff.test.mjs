@@ -183,12 +183,18 @@ describe('buildSampleSnapshotDiff', () => {
       cmdHandlerAlignment: {
         pass: true,
         ignoredExtraPaths: 2,
+        diff: {
+          ignoredExtraPaths: ['$.old.keep', '$.old.resolved'],
+        },
       },
     });
     const after = createSample({
       cmdHandlerAlignment: {
         pass: true,
         ignoredExtraPaths: 8,
+        diff: {
+          ignoredExtraPaths: ['$.old.keep', '$.new.path'],
+        },
       },
     });
     const diff = buildSampleSnapshotDiff(before, after);
@@ -205,6 +211,10 @@ describe('buildSampleSnapshotDiff', () => {
       message: 'cmdHandler 忽略 extra 路径增加',
       before: 2,
       after: 8,
+    });
+    expect(diff.cmdHandler.ignoredExtraPaths).toEqual({
+      lost: ['$.old.resolved'],
+      gained: ['$.new.path'],
     });
     expect(recoveredDiff.improvements).toContainEqual({
       key: 'cmdHandlerIgnoredExtraPaths',
@@ -402,6 +412,35 @@ describe('formatSnapshotDiffMarkdown', () => {
 
     expect(markdown).toContain('## 快照级退化');
     expect(markdown).toContain('after 快照存在缺失基线');
+  });
+
+  it('输出 cmdHandler ignored extra 路径变化样例', () => {
+    const before = createSnapshot([createSample({
+      cmdHandlerAlignment: {
+        pass: true,
+        ignoredExtraPaths: 2,
+        diff: {
+          ignoredExtraPaths: ['$.old.keep', '$.old.resolved'],
+        },
+      },
+    })]);
+    const after = createSnapshot([createSample({
+      cmdHandlerAlignment: {
+        pass: true,
+        ignoredExtraPaths: 3,
+        diff: {
+          ignoredExtraPaths: ['$.old.keep', '$.new.path', '$.new.more'],
+        },
+      },
+    })]);
+    const markdown = formatSnapshotDiffMarkdown(buildSnapshotDiff(before, after));
+
+    expect(markdown).toContain('## cmdHandler ignored extra 路径变化');
+    expect(markdown).toContain('- 新增 ignored extra 路径样例:');
+    expect(markdown).toContain('  - $.new.path');
+    expect(markdown).toContain('  - $.new.more');
+    expect(markdown).toContain('- 消失 ignored extra 路径样例:');
+    expect(markdown).toContain('  - $.old.resolved');
   });
 });
 
