@@ -243,6 +243,59 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
   });
 
+  it('解析电话拨打 Scheme 里的号码、监测 URL 与 extInfo', () => {
+    const extInfo = base64Encode(JSON.stringify({
+      search_id: 'a433862f59552397',
+      cmatch: 222,
+      rank: 2,
+    }));
+    const numberUrl = `https://ada.baidu.com/phone-tracker/getNumber?query=${encodeURIComponent('种植')}&realPhone=400-805-8686&solutionId=__SOLUTIONID__`;
+    const logUrl = 'https://ada.baidu.com/phone-tracker/clicklog?pageid=__TIMESTAMP__&virtualPhone=__VIRTUALPHONE__&realPhone=400-805-8686';
+    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+      phone: '400-805-8686',
+      numberUrl,
+      logUrl,
+      extInfo,
+      type: 1,
+    }))}`;
+
+    const decoded = deepDecodeScheme(scheme);
+    const parsed = JSON.parse(decoded.decoded);
+
+    expect(decoded.isJson).toBe(true);
+    expect(decoded.schemeInfo).toMatchObject({
+      protocol: 'baiduboxapp:',
+      host: 'v7',
+      path: '/vendor/ad/makePhoneCall',
+    });
+    expect(parsed).toEqual({
+      params: {
+        phone: '400-805-8686',
+        numberUrl: {
+          query: '种植',
+          realPhone: '400-805-8686',
+          solutionId: '__SOLUTIONID__',
+        },
+        logUrl: {
+          pageid: '__TIMESTAMP__',
+          virtualPhone: '__VIRTUALPHONE__',
+          realPhone: '400-805-8686',
+        },
+        extInfo: {
+          search_id: 'a433862f59552397',
+          cmatch: 222,
+          rank: 2,
+        },
+        type: 1,
+      },
+    });
+    expect(decoded.placeholders?.map(placeholder => placeholder.value).sort()).toEqual([
+      '__SOLUTIONID__',
+      '__TIMESTAMP__',
+      '__VIRTUALPHONE__',
+    ]);
+  });
+
   it('解析真实广告单字段 task_params 参数', () => {
     const taskParams = encodeURIComponent(JSON.stringify({
       android_pid: '1683310188080',
