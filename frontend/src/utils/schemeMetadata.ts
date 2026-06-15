@@ -92,6 +92,8 @@ const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const UNICODE_EQUALS_RE = /\\u003d/gi;
+const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const CMD_FIELD_NAMES = new Set([
   'cmd',
   'action_cmd',
@@ -586,6 +588,8 @@ const parseQuerySourceShape = (source: string): SourceShape | null => {
   const normalizedSource = source.trim()
     .replace(/^\?/, '')
     .replace(/^&+/, '')
+    .replace(UNICODE_EQUALS_RE, '=')
+    .replace(UNICODE_AMP_QUERY_DELIMITER_RE, '&')
     .replace(COMMA_QUERY_DELIMITER_RE, '&');
   if (!QUERY_PAIR_START_RE.test(normalizedSource)) return null;
 
