@@ -544,6 +544,41 @@ describe('schemeMetadata', () => {
     });
   });
 
+  it('导出 CMD 结构时兼容带日志前缀的字段行', () => {
+    const nestedSource = 'baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson';
+    const decoded = JSON.stringify({
+      scheme: {
+        url: {
+          word: 'json',
+        },
+      },
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      undefined,
+      `I/NadRender: scheme = ${nestedSource}`
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          scheme: {
+            cmdSchema: 'baiduboxapp://v1/browser/open',
+            cmdParams: {
+              url: {
+                cmdSchema: 'https://m.baidu.com/s',
+                cmdParams: {
+                  word: 'json',
+                },
+                source: 'https://m.baidu.com/s?word=json',
+              },
+            },
+            source: nestedSource,
+          },
+        },
+      },
+    });
+  });
+
   it('导出 CMD 结构时包装常见 URL 跳转字段', () => {
     const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101';
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
