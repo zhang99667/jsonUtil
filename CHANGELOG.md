@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.50 (2026-06-15) - HTML 十六进制实体参数解析
+### ✨ 新特性
+- **CMD/Scheme 兼容性**: 支持解析 `cmd&#x3D;...&#x26;from&#x3D;...` 这类 HTML 十六进制实体参数串，并同步用于 cmdHandler 风格导出
+
 ## v1.8.49 (2026-06-15) - HTML 等号参数解析
 ### ✨ 新特性
 - **CMD/Scheme 兼容性**: 支持解析 `cmd&#61;...&#38;from&#61;...` 与 `cmd&equals;...&amp;from&equals;...` 这类 HTML 实体转义参数串，并同步用于 cmdHandler 风格导出

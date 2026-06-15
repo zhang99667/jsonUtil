@@ -92,8 +92,8 @@ const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
-const HTML_EQUALS_RE = /&(?:equals|#61);/gi;
-const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const HTML_EQUALS_RE = /&(?:equals|#61|#x3d);/gi;
+const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38|#x26);(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const UNICODE_EQUALS_RE = /\\u003d/gi;
 const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const CMD_FIELD_NAMES = new Set([
