@@ -165,15 +165,55 @@ describe('buildSampleSnapshotDiff', () => {
     });
     expect(diff.regressions).toContainEqual({
       key: 'requiredChecks',
-      message: '必需项失败数量增加',
-      before: 0,
-      after: 1,
+      message: '新增必需项失败',
+      before: undefined,
+      after: 'requiredCommandSchemas missing=["nadcorevendor://vendor/ad/rewardImpl"] extra=[]',
     });
     expect(recoveredDiff.improvements).toContainEqual({
       key: 'requiredChecks',
-      message: '必需项失败数量减少',
-      before: 1,
-      after: 0,
+      message: '必需项失败恢复',
+      before: 'requiredCommandSchemas missing=["nadcorevendor://vendor/ad/rewardImpl"] extra=[]',
+      after: undefined,
+    });
+  });
+
+  it('必需项失败数量不变但失败内容变化时也标记趋势变化', () => {
+    const before = createSample({
+      requiredChecks: {
+        requiredCommandSchemas: {
+          actual: [],
+          expected: ['nadcorevendor://vendor/ad/rewardImpl'],
+          missing: ['nadcorevendor://vendor/ad/rewardImpl'],
+          pass: false,
+        },
+      },
+    });
+    const after = createSample({
+      requiredChecks: {
+        scanLocations: {
+          actual: [],
+          expected: [{ path: '$.cmd', type: 'url' }],
+          missing: [{ path: '$.cmd', type: 'url' }],
+          extra: [],
+          pass: false,
+        },
+      },
+    });
+    const diff = buildSampleSnapshotDiff(before, after);
+
+    expect(diff.status).toBe('changed');
+    expect(diff.metrics.requiredFailures.delta).toBe(0);
+    expect(diff.regressions).toContainEqual({
+      key: 'requiredChecks',
+      message: '新增必需项失败',
+      before: undefined,
+      after: 'scanLocations missing=[{"path":"$.cmd","type":"url"}] extra=[]',
+    });
+    expect(diff.improvements).toContainEqual({
+      key: 'requiredChecks',
+      message: '必需项失败恢复',
+      before: 'requiredCommandSchemas missing=["nadcorevendor://vendor/ad/rewardImpl"] extra=[]',
+      after: undefined,
     });
   });
 

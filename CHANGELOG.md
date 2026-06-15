@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.10 (2026-06-15) - 必需项趋势内容对比
+### 🐛 Bug 修复
+- **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会按 requiredChecks 失败内容识别新增和恢复，即使失败数量不变也能标记质量变化
+
 ## v1.8.9 (2026-06-15) - 质量趋势必需项对比
 ### 🏗️ 架构与基础设施
 - **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会把 requiredChecks 必需项失败纳入退化/恢复判断，并在 Markdown 趋势摘要中展示必需项失败变化
