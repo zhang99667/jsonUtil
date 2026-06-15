@@ -247,6 +247,7 @@ export interface TransformIssueSampleExport {
   schemaVersion: 1;
   kind: 'json-helper-transform-issue-samples';
   tool: AppVersionMetadata;
+  filter: string;
   summary: {
     unresolved: {
       copied: number;
@@ -272,6 +273,7 @@ export interface TransformIssueSampleExport {
 
 export interface TransformIssueSampleJsonOptions {
   redactSensitiveValues?: boolean;
+  filter?: string;
 }
 
 export interface TransformPlaceholderFillTemplateSource {
@@ -294,6 +296,7 @@ export interface TransformPlaceholderFillTemplate {
   schemaVersion: 1;
   kind: 'json-helper-runtime-placeholder-fill-template';
   tool: AppVersionMetadata;
+  filter: string;
   summary: {
     groups: number;
     visibleOccurrences: number;
@@ -2567,6 +2570,8 @@ const buildQualitySnapshotRecommendations = (
   return recommendations;
 };
 
+const formatTransformExportFilter = (filter?: string): string => filter?.trim() || '全部';
+
 export const buildTransformQualitySnapshot = (
   report: TransformContextReport,
   reportView: TransformReportView,
@@ -2575,7 +2580,7 @@ export const buildTransformQualitySnapshot = (
   schemaVersion: 1,
   kind: 'json-helper-transform-quality-snapshot',
   tool: APP_VERSION_METADATA,
-  filter: query.trim() || '全部',
+  filter: formatTransformExportFilter(query),
   coverage: report.coverage,
   totals: {
     records: reportView.totalRecordCount,
@@ -2874,7 +2879,8 @@ export const formatTransformPlaceholderReportText = (
 };
 
 export const buildTransformPlaceholderFillTemplate = (
-  reportView: TransformReportView
+  reportView: TransformReportView,
+  filter = ''
 ): TransformPlaceholderFillTemplate | null => {
   if (reportView.filteredPlaceholderCount === 0) return null;
 
@@ -2896,6 +2902,7 @@ export const buildTransformPlaceholderFillTemplate = (
     schemaVersion: 1,
     kind: 'json-helper-runtime-placeholder-fill-template',
     tool: APP_VERSION_METADATA,
+    filter: formatTransformExportFilter(filter),
     summary: {
       groups: placeholderDetails.length,
       visibleOccurrences: reportView.runtimePlaceholders.length,
@@ -2911,9 +2918,10 @@ export const buildTransformPlaceholderFillTemplate = (
 };
 
 export const formatTransformPlaceholderFillTemplateJsonText = (
-  reportView: TransformReportView
+  reportView: TransformReportView,
+  filter = ''
 ): string => {
-  const fillTemplate = buildTransformPlaceholderFillTemplate(reportView);
+  const fillTemplate = buildTransformPlaceholderFillTemplate(reportView, filter);
   return fillTemplate ? JSON.stringify(fillTemplate, null, 2) : '';
 };
 
@@ -2973,6 +2981,7 @@ export const buildTransformIssueSampleExport = (
     schemaVersion: 1,
     kind: 'json-helper-transform-issue-samples',
     tool: APP_VERSION_METADATA,
+    filter: formatTransformExportFilter(options.filter),
     summary: {
       unresolved: {
         copied: reportView.unresolvedCandidates.length,
@@ -3130,9 +3139,13 @@ export const formatTransformIssueSampleReportText = (
 };
 
 const buildArchiveIssueSampleExport = (
-  reportView: TransformReportView
+  reportView: TransformReportView,
+  filter = ''
 ): TransformIssueSampleExport | null => {
-  const sampleExport = buildTransformIssueSampleExport(reportView, { redactSensitiveValues: true });
+  const sampleExport = buildTransformIssueSampleExport(reportView, {
+    redactSensitiveValues: true,
+    filter,
+  });
   if (!sampleExport) return null;
 
   return {
@@ -3146,9 +3159,10 @@ const buildArchiveIssueSampleExport = (
 };
 
 const buildArchivePlaceholderFillTemplate = (
-  reportView: TransformReportView
+  reportView: TransformReportView,
+  filter = ''
 ): TransformPlaceholderFillTemplate | null => {
-  const fillTemplate = buildTransformPlaceholderFillTemplate(reportView);
+  const fillTemplate = buildTransformPlaceholderFillTemplate(reportView, filter);
   if (!fillTemplate) return null;
 
   return {
@@ -3179,8 +3193,8 @@ export const buildTransformArchivePackage = (
     diagnosticSummaryText: formatTransformDiagnosticSummaryText(report, reportView, query),
     collaborationReportText: formatTransformCollaborationReportText(report, reportView, query, collaborationOptions),
     qualitySnapshot,
-    issueSamples: buildArchiveIssueSampleExport(reportView),
-    placeholderFillTemplate: buildArchivePlaceholderFillTemplate(reportView),
+    issueSamples: buildArchiveIssueSampleExport(reportView, query),
+    placeholderFillTemplate: buildArchivePlaceholderFillTemplate(reportView, query),
     ...(cmdComparisonReportText ? { cmdComparisonReportText } : {}),
   };
 

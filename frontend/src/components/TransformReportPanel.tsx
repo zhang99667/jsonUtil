@@ -164,17 +164,20 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     reportView ? formatTransformIssueSampleReportText(reportView) : ''
   ), [reportView]);
   const issueSampleJsonCopyText = useMemo(() => (
-    reportView ? formatTransformIssueSampleJsonText(reportView) : ''
-  ), [reportView]);
+    reportView ? formatTransformIssueSampleJsonText(reportView, { filter: deferredQuery }) : ''
+  ), [deferredQuery, reportView]);
   const redactedIssueSampleJsonCopyText = useMemo(() => (
-    reportView ? formatTransformIssueSampleJsonText(reportView, { redactSensitiveValues: true }) : ''
-  ), [reportView]);
+    reportView ? formatTransformIssueSampleJsonText(reportView, {
+      redactSensitiveValues: true,
+      filter: deferredQuery,
+    }) : ''
+  ), [deferredQuery, reportView]);
   const issueRegressionTemplateCopyText = useMemo(() => (
     reportView ? formatTransformIssueRegressionTemplateText(reportView, { redactSensitiveValues: true }) : ''
   ), [reportView]);
   const placeholderFillTemplateJsonText = useMemo(() => (
-    reportView ? formatTransformPlaceholderFillTemplateJsonText(reportView) : ''
-  ), [reportView]);
+    reportView ? formatTransformPlaceholderFillTemplateJsonText(reportView, deferredQuery) : ''
+  ), [deferredQuery, reportView]);
   const getReportCopyTitle = (
     canCopy: boolean,
     readyTitle: string,
