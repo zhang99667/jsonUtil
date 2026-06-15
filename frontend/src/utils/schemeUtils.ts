@@ -216,6 +216,7 @@ const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const ESCAPED_LINE_QUERY_DELIMITER_RE = new RegExp(`(?:\\\\r\\\\n|\\\\n)[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
@@ -238,6 +239,7 @@ const normalizeQueryString = (source: string): string => (
     .replace(HTML_QUERY_DELIMITER_RE, '&')
     .replace(UNICODE_AMP_QUERY_DELIMITER_RE, '&')
     .replace(SEMICOLON_QUERY_DELIMITER_RE, '&')
+    .replace(COMMA_QUERY_DELIMITER_RE, '&')
     .replace(ESCAPED_LINE_QUERY_DELIMITER_RE, '&')
     .replace(LINE_QUERY_DELIMITER_RE, '&')
 );

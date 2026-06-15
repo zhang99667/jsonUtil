@@ -90,6 +90,10 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D;from=test')).toBe(true);
   });
 
+  it('检测日志里逗号分隔的 CMD 参数串', () => {
+    expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D, from=test')).toBe(true);
+  });
+
   it('检测 Unicode 转义分隔符的 CMD 参数串', () => {
     expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D\\u0026from=test')).toBe(true);
   });
@@ -973,6 +977,16 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       cmd: { nid: 123 },
       url: { from: 'box' },
+    });
+  });
+
+  it('日志里逗号分隔的 CMD 参数串被解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`cmd=${payload}, from=comma-log`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      from: 'comma-log',
     });
   });
 

@@ -352,6 +352,30 @@ describe('schemeMetadata', () => {
     });
   });
 
+  it('导出 CMD 结构时兼容日志里的逗号分隔参数', () => {
+    const decoded = JSON.stringify({
+      cmd: {
+        nid: 123,
+      },
+      from: 'comma-log',
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      undefined,
+      'cmd=%7B%22nid%22%3A123%7D, from=comma-log'
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          cmd: {
+            nid: 123,
+          },
+          from: 'comma-log',
+        },
+      },
+    });
+  });
+
   it('导出 CMD 结构时包装常见 URL 跳转字段', () => {
     const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101';
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
