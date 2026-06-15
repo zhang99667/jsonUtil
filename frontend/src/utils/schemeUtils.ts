@@ -303,6 +303,7 @@ const getRuntimePlaceholderDescription = (value: string): string => (
 const isDecodableParamValue = (value: string): boolean => (
   isRuntimePlaceholder(value) ||
   tryNormalizeJsonEscapedSlashPayload(value) !== null ||
+  tryNormalizeJsonEscapedQuotePayload(value) !== null ||
   hasUrlEncoding(value) ||
   isUrl(value) ||
   isJwt(value) ||
@@ -653,6 +654,24 @@ const normalizeLooseJsonCandidate = (value: string): string | null => {
     .replace(/,\s*([}\]])/g, '$1');
 };
 
+const normalizeJsonEscapedQuoteCandidate = (value: string): string | null => {
+  const trimmed = value.trim();
+  if ((!trimmed.startsWith('{') && !trimmed.startsWith('[')) || !trimmed.includes('\\"')) {
+    return null;
+  }
+
+  return normalizeJsonEscapedSlashes(trimmed.replace(/\\"/g, '"'));
+};
+
+const tryNormalizeJsonEscapedQuotePayload = (value: string): string | null => {
+  const normalized = normalizeJsonEscapedQuoteCandidate(value);
+  if (!normalized) return null;
+  if (isJsonString(normalized)) return normalized;
+
+  const looseJson = normalizeLooseJsonCandidate(normalized);
+  return looseJson && isJsonString(looseJson) ? looseJson : null;
+};
+
 /**
  * 检测字符串的 scheme 类型
  */
@@ -668,6 +687,11 @@ export function detectSchemeType(str: string): SchemeType {
   const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(trimmed);
   if (escapedSlashPayload !== null) {
     return detectSchemeType(escapedSlashPayload);
+  }
+
+  const escapedQuotePayload = tryNormalizeJsonEscapedQuotePayload(trimmed);
+  if (escapedQuotePayload !== null) {
+    return detectSchemeType(escapedQuotePayload);
   }
 
   // 优先级顺序很重要
@@ -1139,14 +1163,23 @@ const tryParseJson = (value: string): StructuredValue | null => {
   try {
     return JSON.parse(trimmed) as StructuredValue;
   } catch {
-    const looseJson = normalizeLooseJsonCandidate(trimmed);
-    if (!looseJson) return null;
+    const candidates = [
+      normalizeJsonEscapedQuoteCandidate(trimmed),
+      normalizeLooseJsonCandidate(trimmed),
+    ].filter((candidate): candidate is string => Boolean(candidate));
 
-    try {
-      return JSON.parse(looseJson) as StructuredValue;
-    } catch {
-      return null;
+    for (const candidate of candidates) {
+      const looseCandidate = normalizeLooseJsonCandidate(candidate);
+      for (const jsonCandidate of [candidate, looseCandidate].filter((item): item is string => Boolean(item))) {
+        try {
+          return JSON.parse(jsonCandidate) as StructuredValue;
+        } catch {
+          // 继续尝试下一个候选，兼容日志里混用转义引号和 loose JSON 的片段。
+        }
+      }
     }
+
+    return null;
   }
 };
 

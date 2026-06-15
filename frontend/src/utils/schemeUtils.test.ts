@@ -175,6 +175,11 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('trackingInfo=plain')).toBe(false);
   });
 
+  it('检测日志中反斜杠引号转义的 JSON 参数', () => {
+    expect(isDecodableQueryString('task_params={\\"task_id\\":\\"602\\"}')).toBe(true);
+    expect(isDecodableQueryString('params=[{\\"nid\\":\\"ad1\\"}]')).toBe(true);
+  });
+
   it('普通单键值对不误判', () => {
     expect(isDecodableQueryString('name=test')).toBe(false);
     expect(isDecodableQueryString('next=1')).toBe(false);
@@ -963,6 +968,18 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       cmd: { nid: 123 },
       url: { from: 'box' },
+    });
+  });
+
+  it('反斜杠引号转义的 JSON 参数被解析', () => {
+    const result = deepDecodeScheme('task_params={\\"task_id\\":\\"602\\",\\"ext_params\\":{\\"reward_num\\":\\"135\\"}}');
+    expect(JSON.parse(result.decoded)).toEqual({
+      task_params: {
+        task_id: '602',
+        ext_params: {
+          reward_num: '135',
+        },
+      },
     });
   });
 
