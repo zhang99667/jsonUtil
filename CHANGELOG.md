@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.27 (2026-06-15) - CMD 忽略路径趋势门禁
+### 🔧 改进
+- **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会把 cmdHandler 子集对齐中 ignored extra 路径数量的上升标记为趋势风险，并在 Markdown 摘要中展示变化，避免对齐范围悄悄漂移
+
 ## v1.8.26 (2026-06-15) - CMD 快照忽略路径追踪
 ### 🔧 改进
 - **Scheme Corpus 快照**: cmdHandler 子集对齐会把被忽略的 actual 额外路径数量和样例写入质量快照与 Markdown 摘要，CI 排查时也能看清对齐范围
