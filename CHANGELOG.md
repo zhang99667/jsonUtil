@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.54 (2026-06-15) - Base64 Scheme 导出对齐
+### 🐛 Bug 修复
+- **CMD/Scheme 兼容性**: 修复 `panel_scheme=<Base64(Scheme)>` 这类参数值复制为 cmdHandler 风格结构时，source shape 未解开 Base64 导致内层 Scheme 无法包装 `cmdSchema/source` 的问题
+
 ## v1.8.53 (2026-06-15) - 日志字段导出对齐
 ### 🐛 Bug 修复
 - **CMD/Scheme 兼容性**: 修复 `I/NadRender: scheme = ...`、`cmd -> ...` 这类带日志前缀的单字段行复制为 cmdHandler 风格结构时，source shape 未提取字段原始值导致内层 CMD/Scheme 无法包装 `cmdSchema/source` 的问题

@@ -7,7 +7,7 @@ import {
   formatPrimaryCmdHandlerCompatibleResult,
   getSchemeInsightFieldCopyText,
 } from './schemeMetadata';
-import { deepDecodeScheme } from './schemeUtils';
+import { base64Encode, deepDecodeScheme } from './schemeUtils';
 
 describe('schemeMetadata', () => {
   it('非 JSON 或普通 JSON 不展示内部 Base64 元信息', () => {
@@ -571,6 +571,33 @@ describe('schemeMetadata', () => {
                 },
                 source: 'https://m.baidu.com/s?word=json',
               },
+            },
+            source: nestedSource,
+          },
+        },
+      },
+    });
+  });
+
+  it('导出 CMD 结构时兼容 Base64 包裹的 Scheme 参数值', () => {
+    const nestedSource = 'baiduboxapp://v1/panel?from=base64-source';
+    const decoded = JSON.stringify({
+      panel_scheme: {
+        from: 'base64-source',
+      },
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      undefined,
+      `panel_scheme=${base64Encode(nestedSource)}`
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          panel_scheme: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              from: 'base64-source',
             },
             source: nestedSource,
           },
