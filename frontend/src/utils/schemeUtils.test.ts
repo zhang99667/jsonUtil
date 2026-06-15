@@ -332,8 +332,13 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType(`cmd：${encodeURIComponent(JSON.stringify({ a: 1 }))}`)).toBe('query-string');
   });
 
+  it('检测 JSON 属性片段形态的 CMD 字段行', () => {
+    expect(detectSchemeType('"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?from=log"')).toBe('query-string');
+  });
+
   it('普通冒号说明不误判为 CMD 字段行', () => {
     expect(detectSchemeType('note: https://example.com/path?from=doc')).toBe('plain');
+    expect(detectSchemeType('"note":"https://example.com/path?from=doc"')).toBe('plain');
     expect(detectSchemeType('next: 1')).toBe('plain');
   });
 
@@ -740,6 +745,21 @@ describe('deepDecodeScheme', () => {
         nid: 123,
       },
     });
+  });
+
+  it('JSON 属性片段形态的 Scheme 字段行被递归解析', () => {
+    const original = '"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson"';
+    const result = deepDecodeScheme(original);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      scheme: {
+        url: {
+          word: 'json',
+        },
+      },
+    });
+    expect(result.layers.map(layer => layer.type)).toEqual(['json-escaped-slash', 'query-string']);
   });
 
   it('JSON 字符串字面量包裹的 CMD 参数串被解析', () => {
@@ -1230,6 +1250,19 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe(`cmd: "${encodeURIComponent(JSON.stringify({ nid: 456 }))}"`);
+  });
+
+  it('JSON 属性片段形态的 Scheme 字段编辑后保留属性片段形态', () => {
+    const original = '"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?from=feed"';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      scheme: {
+        from: 'card',
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('"scheme": "baiduboxapp://v1/browser/open?from=card"');
   });
 
   it('JSON 字符串字面量包裹的 CMD 编辑后保留外层字面量', () => {
