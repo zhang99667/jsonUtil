@@ -3018,7 +3018,7 @@ export const formatTransformIssueRegressionTemplateText = (
   reportView: TransformReportView,
   options: TransformIssueSampleJsonOptions = { redactSensitiveValues: true }
 ): string => {
-  const rawSampleExport = buildTransformIssueSampleExport(reportView);
+  const rawSampleExport = buildTransformIssueSampleExport(reportView, { filter: options.filter });
   if (!rawSampleExport) return '';
 
   const sampleExport = options.redactSensitiveValues
@@ -3051,6 +3051,8 @@ export const formatTransformIssueRegressionTemplateText = (
     "import { describe, it } from 'vitest';",
     '',
     '// 由深度解析报告「复制回归模板」生成；把 it.todo 改成 it 后补充解析断言。',
+    `// 工具版本: ${sampleExport.tool.versionLabel}`,
+    `// 筛选: ${sampleExport.filter}`,
     ...sensitiveHintLines,
     `const issueSamples = ${JSON.stringify(sampleExport.samples, null, 2)} as const;`,
     '',
@@ -3064,11 +3066,13 @@ export const formatTransformIssueRegressionTemplateText = (
 };
 
 export const formatTransformIssueSampleReportText = (
-  reportView: TransformReportView
+  reportView: TransformReportView,
+  filter = ''
 ): string => {
   const lines = [
     '深度解析问题样本',
     `工具版本: ${APP_VERSION_LABEL}`,
+    `筛选: ${formatTransformExportFilter(filter)}`,
     `待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}`,
   ];
   let sampleCount = 0;

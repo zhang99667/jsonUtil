@@ -15,6 +15,7 @@ import {
   formatTransformDiagnosticSummaryText,
   formatTransformIssueRegressionTemplateText,
   formatTransformIssueSampleJsonText,
+  formatTransformIssueSampleReportText,
   formatTransformPathValueReportText,
   formatTransformPlaceholderFillTemplateJsonText,
   formatTransformPlaceholderReportText,
@@ -1672,13 +1673,38 @@ describe('transformSummary', () => {
       }),
     ]);
 
+    const issueSampleReportText = formatTransformIssueSampleReportText(
+      buildTransformReportView(report, 'trackingParam'),
+      'trackingParam'
+    );
+    expect(issueSampleReportText).toContain(`工具版本: ${APP_VERSION_LABEL}`);
+    expect(issueSampleReportText).toContain('筛选: trackingParam');
+    expect(issueSampleReportText).toContain('待检查 1/1，跳过 0/1，占位符 0/1');
+    expect(issueSampleReportText).toContain('$.tracking · url-encoded');
+    expect(issueSampleReportText).not.toContain('$.button.cmd');
+    expect(issueSampleReportText).not.toContain('$.huge');
+
     const regressionTemplateText = formatTransformIssueRegressionTemplateText(buildTransformReportView(report, ''));
     expect(regressionTemplateText).toContain("import { describe, it } from 'vitest';");
     expect(regressionTemplateText).toContain('// 由深度解析报告「复制回归模板」生成；把 it.todo 改成 it 后补充解析断言。');
+    expect(regressionTemplateText).toContain(`// 工具版本: ${APP_VERSION_LABEL}`);
+    expect(regressionTemplateText).toContain('// 筛选: 全部');
     expect(regressionTemplateText).toContain('"type": "unresolved"');
     expect(regressionTemplateText).toContain('"type": "runtime_placeholder"');
     expect(regressionTemplateText).toContain('"type": "warning"');
     expect(regressionTemplateText).toContain('it.todo(`${sample.type} ${sample.path} · ${sample.reasonLabel}`);');
+
+    const filteredRegressionTemplateText = formatTransformIssueRegressionTemplateText(
+      buildTransformReportView(report, 'trackingParam'),
+      {
+        redactSensitiveValues: true,
+        filter: 'trackingParam',
+      }
+    );
+    expect(filteredRegressionTemplateText).toContain('// 筛选: trackingParam');
+    expect(filteredRegressionTemplateText).toContain('"path": "$.tracking"');
+    expect(filteredRegressionTemplateText).not.toContain('"path": "$.button.cmd"');
+    expect(filteredRegressionTemplateText).not.toContain('"path": "$.huge"');
   });
 
   it('问题样本 JSON 支持脱敏敏感原始值', () => {
