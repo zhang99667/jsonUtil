@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.13 (2026-06-15) - Scheme 性能预算 CI 门禁
+### 🏗️ 架构与基础设施
+- **Scheme 性能预算**: GitHub CI 和本地 CI 接入 `perf:scheme -- --iterations 3 --strict`，并上传性能预算 artifact，避免大 response 核心解析耗时退化只在手工检查中暴露
+
 ## v1.8.12 (2026-06-15) - 快照级趋势失败识别
 ### 🐛 Bug 修复
 - **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会把 after 快照级失败纳入 strict 结果和 Markdown 摘要，避免缺失基线等非样本指标退化漏判

@@ -22,6 +22,12 @@ npm test
 log "Frontend: scheme corpus baseline"
 npm run corpus:scheme
 
+log "Frontend: scheme corpus quality snapshot"
+npm run corpus:snapshot:check
+
+log "Frontend: scheme performance budget"
+npm run perf:scheme -- --iterations 3 --strict
+
 log "Frontend: production build"
 npm run build
 
