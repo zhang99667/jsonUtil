@@ -44,34 +44,39 @@
   /* Error Red */
 }
 
-/* Monaco Editor Tooltip - 彻底隐藏（包含箭头和所有子元素） */
+/* Monaco 提示层：保留诊断、Scheme 图标和字段说明，统一成暗色工作台样式 */
 .monaco-hover,
 .monaco-editor-hover,
-.monaco-hover-content,
-.monaco-hover-arrow,
 .workbench-hover,
-.workbench-hover-container,
-.workbench-hover-pointer,
-.monaco-resizable-hover,
-[class*="monaco-hover"] {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+.monaco-resizable-hover {
+  background: var(--editor-sidebar) !important;
+  border: 1px solid rgba(96, 165, 250, 0.38) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.36) !important;
+  color: var(--editor-fg) !important;
+  z-index: 80 !important;
 }
 
-/* 隐藏所有相关的伪元素（通常用于绘制箭头） */
-.monaco-hover::before,
-.monaco-hover::after,
-.monaco-editor-hover::before,
-.monaco-editor-hover::after,
-.workbench-hover-pointer::before,
-.workbench-hover-pointer::after,
-[class*="monaco-hover"]::before,
-[class*="monaco-hover"]::after {
-  display: none !important;
-  content: none !important;
-  border: none !important;
+.monaco-hover-content,
+.monaco-hover .markdown-hover,
+.monaco-editor-hover .markdown-hover {
+  color: var(--editor-fg) !important;
+  font-size: 12px !important;
+  line-height: 1.55 !important;
+}
+
+.monaco-hover code,
+.monaco-editor-hover code {
+  background: rgba(0, 0, 0, 0.28) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 4px !important;
+  color: #bfdbfe !important;
+  padding: 1px 4px !important;
+}
+
+.monaco-hover a,
+.monaco-editor-hover a {
+  color: #93c5fd !important;
 }
 
 

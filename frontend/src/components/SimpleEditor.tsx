@@ -67,6 +67,11 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
           tabSize: 2,
           wordWrap: 'on',
           folding: true,
+          hover: {
+            enabled: true,
+            delay: 450,
+            sticky: true,
+          },
           padding: { top: 8, bottom: 8 },
           scrollbar: {
             useShadows: false,
