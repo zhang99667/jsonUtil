@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.58 (2026-06-16) - loose JSON 参数拆分稳固
+### 🐛 Bug 修复
+- **CMD/Scheme 兼容性**: 修复半解码 loose JSON 参数中单引号字符串包含 `}` 时，JSON 值被提前截断并误拆内层 URL 参数的问题
+
 ## v1.8.57 (2026-06-15) - 半解码 Scheme 外层参数保留
 ### 🐛 Bug 修复
 - **CMD/Scheme 兼容性**: 修复 `params={"numberUrl":"...a=1&b=2"}&source=feed` 这类半解码 Scheme 中，JSON 内层 URL 的 `&` 影响后续外层参数拆分的问题

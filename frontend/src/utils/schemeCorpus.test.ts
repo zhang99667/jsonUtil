@@ -359,6 +359,30 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
   });
 
+  it('解析半解码 loose JSON 中单引号字符串里的花括号', () => {
+    const rawParams = "{'title':'a}b','numberUrl':'https://ada.baidu.com/phone-tracker/getNumber?a=1&b=2'}";
+    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${rawParams}&source=feed`;
+
+    const decoded = deepDecodeScheme(scheme);
+    const parsed = JSON.parse(decoded.decoded);
+
+    expect(decoded.isJson).toBe(true);
+    expect(decoded.schemeInfo?.params).toEqual({
+      params: rawParams,
+      source: 'feed',
+    });
+    expect(parsed).toEqual({
+      params: {
+        title: 'a}b',
+        numberUrl: {
+          a: '1',
+          b: '2',
+        },
+      },
+      source: 'feed',
+    });
+  });
+
   it('解析真实广告单字段 task_params 参数', () => {
     const taskParams = encodeURIComponent(JSON.stringify({
       android_pid: '1683310188080',
