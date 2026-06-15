@@ -75,6 +75,7 @@ type QueryKeySegment = string | number | null;
 type QueryParamContainer = { [key: string]: StructuredValue };
 
 interface LogFieldParam {
+  prefix?: string;
   rawKey: string;
   key: string;
   delimiter: ':' | '：' | '=';
@@ -282,6 +283,30 @@ const isDecodableParamValue = (value: string): boolean => (
 const LOG_FIELD_KEY_PATTERN = `(?:"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|${QUERY_KEY_PATTERN})`;
 const LOG_FIELD_SEPARATOR_PATTERN = '(?:\\s*[:：]\\s*|\\s+=\\s*|=\\s+)';
 const LOG_FIELD_RE = new RegExp(`^\\s*(${LOG_FIELD_KEY_PATTERN})(${LOG_FIELD_SEPARATOR_PATTERN})(.+?)\\s*$`);
+const LOG_FIELD_WITH_PREFIX_RE = new RegExp(`^(.*?[\\s[{,(|])(${LOG_FIELD_KEY_PATTERN})(${LOG_FIELD_SEPARATOR_PATTERN})(.+?)\\s*$`);
+
+const matchLogFieldParamString = (
+  source: string
+): { prefix?: string; rawKey: string; separator: string; rawValue: string } | null => {
+  const directMatch = source.match(LOG_FIELD_RE);
+  if (directMatch) {
+    return {
+      rawKey: directMatch[1],
+      separator: directMatch[2],
+      rawValue: directMatch[3],
+    };
+  }
+
+  const prefixedMatch = source.match(LOG_FIELD_WITH_PREFIX_RE);
+  if (!prefixedMatch) return null;
+
+  return {
+    prefix: prefixedMatch[1],
+    rawKey: prefixedMatch[2],
+    separator: prefixedMatch[3],
+    rawValue: prefixedMatch[4],
+  };
+};
 
 const unwrapLogFieldValue = (value: string): { value: string; quote?: '"' | "'" } => {
   const trimmed = value.trim();
@@ -359,22 +384,23 @@ const parseLogFieldParamString = (source: string): LogFieldParam | null => {
   // 日志字段只识别单行，避免把多行说明文本误拆成 CMD。
   if (/[\r\n]/.test(trimmed)) return null;
 
-  const match = trimmed.match(LOG_FIELD_RE);
+  const match = matchLogFieldParamString(trimmed);
   if (!match) return null;
 
-  const rawKey = match[1];
+  const rawKey = match.rawKey;
   const key = unwrapLogFieldKey(rawKey);
   if (!key || !COMMON_CMD_PARAM_NAME_ALIASES.has(normalizeCmdParamName(key))) {
     return null;
   }
 
-  const unwrappedValue = unwrapDecodableLogFieldValue(match[3]);
+  const unwrappedValue = unwrapDecodableLogFieldValue(match.rawValue);
   if (!unwrappedValue) return null;
 
   return {
+    prefix: match.prefix,
     rawKey,
     key,
-    delimiter: normalizeLogFieldDelimiter(match[2]),
+    delimiter: normalizeLogFieldDelimiter(match.separator),
     value: unwrappedValue.value,
     quote: unwrappedValue.quote,
     trailingComma: unwrappedValue.trailingComma,
@@ -1798,7 +1824,7 @@ const encodeSingleLogFieldParamContent = (
   const encodedValue = encodeWithLayers(editedContent, nestedDecoded.layers);
 
   const suffix = logFieldParam.trailingComma ? ',' : '';
-  return `${logFieldParam.rawKey}${formatLogFieldSeparator(logFieldParam.delimiter)}${wrapLogFieldValue(encodedValue, logFieldParam.quote)}${suffix}`;
+  return `${logFieldParam.prefix || ''}${logFieldParam.rawKey}${formatLogFieldSeparator(logFieldParam.delimiter)}${wrapLogFieldValue(encodedValue, logFieldParam.quote)}${suffix}`;
 };
 
 export function encodeWithLayers(content: string, layers: DecodeLayer[]): string {
