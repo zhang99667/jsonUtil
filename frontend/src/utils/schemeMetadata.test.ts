@@ -457,6 +457,64 @@ describe('schemeMetadata', () => {
     });
   });
 
+  it('导出 CMD 结构时兼容换行分隔参数', () => {
+    const nestedSource = 'baiduboxapp://v1/panel?from=line-source';
+    const decoded = JSON.stringify({
+      panel_scheme: {
+        from: 'line-source',
+      },
+      from: 'line',
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      undefined,
+      `panel_scheme=${encodeURIComponent(nestedSource)}\n  from=line`
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          panel_scheme: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              from: 'line-source',
+            },
+            source: nestedSource,
+          },
+          from: 'line',
+        },
+      },
+    });
+  });
+
+  it('导出 CMD 结构时兼容日志里的转义换行分隔参数', () => {
+    const nestedSource = 'baiduboxapp://v1/panel?from=escaped-line-source';
+    const decoded = JSON.stringify({
+      panel_scheme: {
+        from: 'escaped-line-source',
+      },
+      from: 'escaped-line',
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      undefined,
+      `panel_scheme=${encodeURIComponent(nestedSource)}\\n  from=escaped-line`
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          panel_scheme: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              from: 'escaped-line-source',
+            },
+            source: nestedSource,
+          },
+          from: 'escaped-line',
+        },
+      },
+    });
+  });
+
   it('导出 CMD 结构时包装常见 URL 跳转字段', () => {
     const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101';
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({

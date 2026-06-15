@@ -96,6 +96,8 @@ const HTML_EQUALS_RE = /&(?:equals|#61|#x3d);/gi;
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38|#x26);(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const UNICODE_EQUALS_RE = /\\u003d/gi;
 const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTERN}=)`, 'gi');
+const ESCAPED_LINE_QUERY_DELIMITER_RE = new RegExp(`(?:\\\\r\\\\n|\\\\n)[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const LINE_QUERY_DELIMITER_RE = new RegExp(`\\r?\\n[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const CMD_FIELD_NAMES = new Set([
   'cmd',
   'action_cmd',
@@ -594,6 +596,8 @@ const parseQuerySourceShape = (source: string): SourceShape | null => {
     .replace(HTML_QUERY_DELIMITER_RE, '&')
     .replace(UNICODE_EQUALS_RE, '=')
     .replace(UNICODE_AMP_QUERY_DELIMITER_RE, '&')
+    .replace(ESCAPED_LINE_QUERY_DELIMITER_RE, '&')
+    .replace(LINE_QUERY_DELIMITER_RE, '&')
     .replace(COMMA_QUERY_DELIMITER_RE, '&');
   if (!QUERY_PAIR_START_RE.test(normalizedSource)) return null;
 
