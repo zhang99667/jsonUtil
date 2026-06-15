@@ -144,6 +144,7 @@ describe('buildPerformanceCaseResult', () => {
         maxUnresolved: 0,
         maxWarnings: 0,
         minCoverageScore: 100,
+        minRecords: 4,
         minCmdStructures: 1,
         minNestedCommandFields: 20,
         minNestedResourceFields: 1,
@@ -154,6 +155,12 @@ describe('buildPerformanceCaseResult', () => {
         coverage: {
           score: 90,
         },
+        summary: {
+          recordCount: 1,
+          placeholderCount: 3,
+          unresolvedCount: 0,
+          warningCount: 0,
+        },
         cmdStructureCount: 0,
         nestedCommandFieldCount: 8,
         nestedResourceFieldCount: 0,
@@ -163,6 +170,7 @@ describe('buildPerformanceCaseResult', () => {
     expect(result.pass).toBe(false);
     expect(result.failures.map(item => item.key)).toEqual([
       'coverageScore',
+      'records',
       'cmdStructures',
       'nestedCommandFields',
       'nestedResourceFields',
