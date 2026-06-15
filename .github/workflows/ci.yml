@@ -51,12 +51,24 @@ jobs:
       - name: Scheme corpus quality snapshot
         run: npm run corpus:snapshot:check -- --output ../artifacts/scheme-corpus-quality-snapshot.json --summary "$GITHUB_STEP_SUMMARY"
 
+      - name: Scheme performance budget
+        run: npm run perf:scheme -- --iterations 3 --strict --output ../artifacts/scheme-performance-budget.json --summary "$GITHUB_STEP_SUMMARY"
+
       - name: Upload scheme corpus quality snapshot
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: scheme-corpus-quality-snapshot
           path: artifacts/scheme-corpus-quality-snapshot.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload scheme performance budget
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: scheme-performance-budget
+          path: artifacts/scheme-performance-budget.json
           if-no-files-found: warn
           retention-days: 7
 

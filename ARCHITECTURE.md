@@ -223,7 +223,7 @@ PREVIEW JSON + TransformReportPanel
 ### 解析质量闭环
 
 ```
-脱敏 response corpus → npm run corpus:scheme → 质量 snapshot + cmdHandler expected diff → CI 门禁
+脱敏 response corpus → npm run corpus:scheme → 质量 snapshot + cmdHandler expected diff + 性能预算 → CI 门禁
 ```
 
 当前 corpus 位于 `frontend/fixtures/scheme-corpus/`：
@@ -234,7 +234,7 @@ PREVIEW JSON + TransformReportPanel
 | `reward-response.expected.snapshot.json` | 质量基线，校验主 CMD Schema、Top 热点 Schema、扫描位置、占位符和覆盖指标 |
 | `reward-response.cmdhandler.expected.json` | cmdHandler expected 子集，用于锁定关键 CMD Schema 和参数路径 |
 
-CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`。该步骤与普通单测分开展示，便于快速定位真实 response 解析能力退化。
+CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`，`Scheme corpus quality snapshot` 会校验质量阈值和 cmdHandler expected，`Scheme performance budget` 会校验核心解析耗时。相关步骤与普通单测分开展示，便于快速定位真实 response 解析能力或性能退化。
 
 解析质量还提供两个面向评审和本地排查的脚本：
 
@@ -243,7 +243,7 @@ CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`。该
 | `npm run corpus:snapshot:check` | 输出 corpus 覆盖率、CMD/资源热点、占位符、待检查项和 cmdHandler expected 对齐结果，并在 expected 阈值失败时退出非 0 |
 | `npm run perf:scheme -- --iterations 3 --strict` | 基于脱敏 corpus 构造 50KB / 250KB response，测量 `deepParseWithContext` 核心解析耗时，并同步输出覆盖率、CMD 结构、资源字段、占位符、待检查和跳过数量 |
 
-`perf:scheme` 是核心解析性能预算，不等同于浏览器 Worker 的完整端到端 benchmark。它的目标是给 PM/研发一个稳定、低成本的退化探针；浏览器输入响应、取消响应和 Worker 调度仍由 E2E 与手工体验验证补充。
+`perf:scheme` 是核心解析性能预算，不等同于浏览器 Worker 的完整端到端 benchmark。它的目标是给 PM/研发一个稳定、低成本的 CI 退化探针；浏览器输入响应、取消响应和 Worker 调度仍由 E2E 与手工体验验证补充。
 
 ### 流量记录流程
 
