@@ -97,6 +97,40 @@ const countFailedRequiredChecks = sample => (
   Object.values(sample?.requiredChecks || {}).filter(result => result && result.pass === false).length
 );
 
+const normalizeList = value => (
+  Array.isArray(value) ? value : []
+);
+
+const listRequiredCheckFailures = sample => (
+  Object.entries(sample?.requiredChecks || {})
+    .filter(([, result]) => result && result.pass === false)
+    .map(([key, result]) => ({
+      key,
+      missing: normalizeList(result.missing),
+      extra: normalizeList(result.extra),
+    }))
+);
+
+const getRequiredFailureSignature = failure => (
+  `${failure.key}:${JSON.stringify(failure.missing)}:${JSON.stringify(failure.extra)}`
+);
+
+const formatRequiredFailure = failure => (
+  `${failure.key} missing=${JSON.stringify(failure.missing)} extra=${JSON.stringify(failure.extra)}`
+);
+
+const diffRequiredCheckFailures = (beforeSample, afterSample) => {
+  const beforeFailures = listRequiredCheckFailures(beforeSample);
+  const afterFailures = listRequiredCheckFailures(afterSample);
+  const beforeSignatures = new Set(beforeFailures.map(getRequiredFailureSignature));
+  const afterSignatures = new Set(afterFailures.map(getRequiredFailureSignature));
+
+  return {
+    added: afterFailures.filter(failure => !beforeSignatures.has(getRequiredFailureSignature(failure))),
+    resolved: beforeFailures.filter(failure => !afterSignatures.has(getRequiredFailureSignature(failure))),
+  };
+};
+
 const buildMetricRegressions = (metrics, beforeSample, afterSample) => {
   const regressions = [];
   const improvements = [];
@@ -138,13 +172,13 @@ const buildMetricRegressions = (metrics, beforeSample, afterSample) => {
     improvements.push(createImprovement('thresholds', '阈值失败数量减少', beforeThresholdFailures, afterThresholdFailures));
   }
 
-  const beforeRequiredFailures = countFailedRequiredChecks(beforeSample);
-  const afterRequiredFailures = countFailedRequiredChecks(afterSample);
-  if (afterRequiredFailures > beforeRequiredFailures) {
-    regressions.push(createRegression('requiredChecks', '必需项失败数量增加', beforeRequiredFailures, afterRequiredFailures));
-  } else if (afterRequiredFailures < beforeRequiredFailures) {
-    improvements.push(createImprovement('requiredChecks', '必需项失败数量减少', beforeRequiredFailures, afterRequiredFailures));
-  }
+  const requiredFailureDiff = diffRequiredCheckFailures(beforeSample, afterSample);
+  requiredFailureDiff.added.forEach(failure => {
+    regressions.push(createRegression('requiredChecks', '新增必需项失败', undefined, formatRequiredFailure(failure)));
+  });
+  requiredFailureDiff.resolved.forEach(failure => {
+    improvements.push(createImprovement('requiredChecks', '必需项失败恢复', formatRequiredFailure(failure), undefined));
+  });
 
   return { regressions, improvements };
 };
@@ -168,13 +202,12 @@ const buildCmdHandlerChange = (beforeSample, afterSample) => {
 const buildAddedSampleRegressions = sample => {
   const regressions = [];
   const thresholdFailures = countFailedThresholds(sample);
-  const requiredFailures = countFailedRequiredChecks(sample);
   if (thresholdFailures > 0) {
     regressions.push(createRegression('thresholds', '新增样本存在失败阈值', 0, thresholdFailures));
   }
-  if (requiredFailures > 0) {
-    regressions.push(createRegression('requiredChecks', '新增样本存在失败必需项', 0, requiredFailures));
-  }
+  listRequiredCheckFailures(sample).forEach(failure => {
+    regressions.push(createRegression('requiredChecks', '新增样本存在失败必需项', undefined, formatRequiredFailure(failure)));
+  });
   return regressions;
 };
 
@@ -256,7 +289,8 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
     resourceSchemas.gained.length,
     cmdHandler.regression ? 1 : 0,
     cmdHandler.improvement ? 1 : 0,
-    metrics.requiredFailures.delta,
+    regressions.length,
+    improvements.length,
   ].some(Boolean);
 
   return {
