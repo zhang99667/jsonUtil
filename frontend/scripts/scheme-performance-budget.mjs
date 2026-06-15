@@ -50,6 +50,27 @@ const parseJsonInput = (text, label) => {
 
 const byteLength = text => Buffer.byteLength(text, 'utf8');
 
+const cloneJson = value => JSON.parse(JSON.stringify(value));
+
+const buildVideoExpandedResponseText = (sourceValue, targetBytes) => {
+  const videoList = sourceValue?.data?.video;
+  if (!Array.isArray(videoList) || videoList.length === 0) return undefined;
+
+  const output = cloneJson(sourceValue);
+  const templates = cloneJson(videoList);
+  output.data.video = cloneJson(videoList);
+
+  let text = JSON.stringify(output);
+  for (let index = output.data.video.length; byteLength(text) < targetBytes; index += 1) {
+    const nextVideo = cloneJson(templates[index % templates.length]);
+    nextVideo._performance_index = index;
+    output.data.video.push(nextVideo);
+    text = JSON.stringify(output);
+  }
+
+  return text;
+};
+
 export const buildSizedResponseText = (sourceText, targetBytes) => {
   const sourceBytes = byteLength(sourceText);
   if (sourceBytes >= targetBytes) return sourceText;
@@ -58,6 +79,9 @@ export const buildSizedResponseText = (sourceText, targetBytes) => {
   if (!sourceValue || typeof sourceValue !== 'object' || Array.isArray(sourceValue)) {
     throw new Error('performance source 必须是 JSON object');
   }
+
+  const expandedText = buildVideoExpandedResponseText(sourceValue, targetBytes);
+  if (expandedText) return expandedText;
 
   const output = {
     ...sourceValue,

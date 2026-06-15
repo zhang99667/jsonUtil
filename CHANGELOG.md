@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.15 (2026-06-15) - Scheme 性能样本真实放大
+### 🏗️ 架构与基础设施
+- **Scheme 性能预算**: `perf:scheme` 会优先复制脱敏 response 的真实 `data.video` 条目构造 50KB / 250KB 样本，避免仅靠顶层 padding 字符串低估多广告条目解析负载
+
 ## v1.8.14 (2026-06-15) - Scheme 性能预算质量下限
 ### 🏗️ 架构与基础设施
 - **Scheme 性能预算**: `perf:scheme` strict 模式会同步校验覆盖率、CMD 结构、CMD 字段和资源字段下限，避免核心解析结果退化但性能预算仍显示 PASS
