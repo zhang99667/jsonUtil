@@ -80,6 +80,7 @@ interface LogFieldParam {
   delimiter: ':' | '：';
   value: string;
   quote?: '"' | "'";
+  trailingComma?: boolean;
 }
 
 interface DecodeStructuredState {
@@ -322,6 +323,31 @@ const unwrapLogFieldKey = (rawKey: string): string | null => {
   return decodeQueryComponent(trimmed);
 };
 
+const unwrapDecodableLogFieldValue = (
+  rawValue: string
+): { value: string; quote?: '"' | "'"; trailingComma?: boolean } | null => {
+  const trimmed = rawValue.trim();
+  if (trimmed.endsWith(',')) {
+    const withoutCommaSource = trimmed.slice(0, -1).trim();
+    const quote = withoutCommaSource[0];
+    const shouldPreferTrailingComma = (quote === '"' || quote === "'") && withoutCommaSource.endsWith(quote);
+    const withoutTrailingComma = unwrapLogFieldValue(withoutCommaSource);
+    if (shouldPreferTrailingComma && isDecodableParamValue(withoutTrailingComma.value)) {
+      return { ...withoutTrailingComma, trailingComma: true };
+    }
+  }
+
+  const unwrappedValue = unwrapLogFieldValue(rawValue);
+  if (isDecodableParamValue(unwrappedValue.value)) return unwrappedValue;
+
+  if (!trimmed.endsWith(',')) return null;
+
+  const withoutTrailingComma = unwrapLogFieldValue(trimmed.slice(0, -1));
+  return isDecodableParamValue(withoutTrailingComma.value)
+    ? { ...withoutTrailingComma, trailingComma: true }
+    : null;
+};
+
 const parseLogFieldParamString = (source: string): LogFieldParam | null => {
   const trimmed = source.trim();
   // 日志字段只识别单行，避免把多行说明文本误拆成 CMD。
@@ -336,8 +362,8 @@ const parseLogFieldParamString = (source: string): LogFieldParam | null => {
     return null;
   }
 
-  const unwrappedValue = unwrapLogFieldValue(match[3]);
-  if (!isDecodableParamValue(unwrappedValue.value)) return null;
+  const unwrappedValue = unwrapDecodableLogFieldValue(match[3]);
+  if (!unwrappedValue) return null;
 
   return {
     rawKey,
@@ -345,6 +371,7 @@ const parseLogFieldParamString = (source: string): LogFieldParam | null => {
     delimiter: match[2] as ':' | '：',
     value: unwrappedValue.value,
     quote: unwrappedValue.quote,
+    trailingComma: unwrappedValue.trailingComma,
   };
 };
 
@@ -1760,7 +1787,8 @@ const encodeSingleLogFieldParamContent = (
     : stringifyParamValue(editedValue);
   const encodedValue = encodeWithLayers(editedContent, nestedDecoded.layers);
 
-  return `${logFieldParam.rawKey}${logFieldParam.delimiter} ${wrapLogFieldValue(encodedValue, logFieldParam.quote)}`;
+  const suffix = logFieldParam.trailingComma ? ',' : '';
+  return `${logFieldParam.rawKey}${logFieldParam.delimiter} ${wrapLogFieldValue(encodedValue, logFieldParam.quote)}${suffix}`;
 };
 
 export function encodeWithLayers(content: string, layers: DecodeLayer[]): string {
