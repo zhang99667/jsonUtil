@@ -178,6 +178,36 @@ describe('diffCmdStructures', () => {
     expect(diff.extraPaths).toEqual([]);
   });
 
+  it('识别 source 单侧缺失差异', () => {
+    const actual = createCmdStructure();
+    const expected = createCmdStructure();
+
+    delete actual.result.source;
+
+    const diff = diffCmdStructures(actual, expected);
+    const report = formatCmdStructureDiff(diff);
+
+    expect(diff.sourceDiff).toEqual({
+      actual: undefined,
+      expected: 'baiduboxapp://v7/vendor/ad/deeplink?params=...',
+    });
+    expect(report).toContain('source 不一致');
+    expect(report).toContain('actual: (空)');
+    expect(report).toContain('expected: baiduboxapp://v7/vendor/ad/deeplink?params=...');
+  });
+
+  it('expected 未声明 source 时允许 actual 保留来源串', () => {
+    const actual = createCmdStructure();
+    const expected = createCmdStructure();
+
+    delete expected.result.source;
+
+    const diff = diffCmdStructures(actual, expected);
+
+    expect(diff.sourceDiff).toBeNull();
+    expect(diff.hasDifferences).toBe(false);
+  });
+
   it('忽略 actual 额外路径的报告会标记子集模式', () => {
     const actual = createCmdStructure();
     const expected = createCmdStructure();

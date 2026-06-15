@@ -24,7 +24,7 @@ export interface CmdStructureValueDiff {
 
 export interface CmdStructureDiff {
   schemaDiff: { actual?: string; expected?: string } | null;
-  sourceDiff: { actual: string; expected: string } | null;
+  sourceDiff: { actual?: string; expected?: string } | null;
   missingPaths: string[];
   extraPaths: string[];
   valueDiffs: CmdStructureValueDiff[];
@@ -199,7 +199,7 @@ export const diffCmdStructures = (
   const schemaDiff = actual.cmdSchema !== expected.cmdSchema
     ? { actual: actual.cmdSchema, expected: expected.cmdSchema }
     : null;
-  const sourceDiff = actual.source && expected.source && actual.source !== expected.source
+  const sourceDiff = expected.source !== undefined && actual.source !== expected.source
     ? { actual: actual.source, expected: expected.source }
     : null;
   const paramDiff = compareRows(
@@ -271,8 +271,8 @@ export const formatCmdStructureDiff = (
 
   if (diff.sourceDiff) {
     lines.push('- source 不一致');
-    lines.push(`  actual: ${diff.sourceDiff.actual}`);
-    lines.push(`  expected: ${diff.sourceDiff.expected}`);
+    lines.push(`  actual: ${diff.sourceDiff.actual || '(空)'}`);
+    lines.push(`  expected: ${diff.sourceDiff.expected || '(空)'}`);
   }
 
   if (diff.missingPaths.length > 0) {
