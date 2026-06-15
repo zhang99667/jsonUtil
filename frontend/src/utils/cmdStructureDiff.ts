@@ -1,4 +1,5 @@
 import type { JsonValue } from '../types';
+import type { AppVersionMetadata } from './appVersion';
 
 interface JsonObject {
   [key: string]: JsonValue;
@@ -32,6 +33,13 @@ export interface CmdStructureDiff {
 
 export interface CmdStructureDiffOptions {
   ignoreExtraPaths?: boolean;
+}
+
+export interface CmdStructureDiffContext {
+  path?: string;
+  sourceLabel?: string;
+  tool?: Partial<AppVersionMetadata>;
+  toolVersionLabel?: string;
 }
 
 const isRecord = (value: JsonValue): value is JsonObject => (
@@ -220,8 +228,35 @@ const formatValue = (value: JsonValue): string => {
   return text.length > 160 ? `${text.slice(0, 160)}...` : text;
 };
 
-export const formatCmdStructureDiff = (diff: CmdStructureDiff): string => {
+const getContextToolVersionLabel = (context: CmdStructureDiffContext): string => {
+  const explicitVersionLabel = context.toolVersionLabel?.trim();
+  if (explicitVersionLabel) return explicitVersionLabel;
+
+  const versionLabel = context.tool?.versionLabel?.trim();
+  if (versionLabel) return versionLabel;
+
+  const version = context.tool?.version?.trim();
+  if (!version) return '';
+
+  return version.startsWith('v') ? version : `v${version}`;
+};
+
+const appendDiffContextLines = (
+  lines: string[],
+  context: CmdStructureDiffContext
+) => {
+  const toolVersionLabel = getContextToolVersionLabel(context);
+  if (toolVersionLabel) lines.push(`工具版本: ${toolVersionLabel}`);
+  if (context.path) lines.push(`对比路径: ${context.path}`);
+  if (context.sourceLabel) lines.push(`业务字段: ${context.sourceLabel}`);
+};
+
+export const formatCmdStructureDiff = (
+  diff: CmdStructureDiff,
+  context: CmdStructureDiffContext = {}
+): string => {
   const lines = ['CMD 结构差异报告'];
+  appendDiffContextLines(lines, context);
 
   if (!diff.hasDifferences) {
     lines.push('- 结构一致');

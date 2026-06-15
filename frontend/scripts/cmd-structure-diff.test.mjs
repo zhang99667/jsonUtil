@@ -60,6 +60,31 @@ describe('extractCmdStructurePair', () => {
     expect(extractCmdStructurePair({ actual, expected })).toEqual({ actual, expected });
   });
 
+  it('读取对比包中的工具版本和字段上下文', () => {
+    const actual = createCmdStructure();
+    const expected = createCmdStructure();
+
+    expect(extractCmdStructurePair({
+      tool: {
+        name: 'JSONUtils',
+        version: '1.8.20',
+        versionLabel: 'v1.8.20',
+      },
+      path: '$.action_cmd',
+      sourceLabel: 'actionCmd',
+      actual,
+      expected,
+    })).toEqual({
+      actual,
+      expected,
+      context: {
+        toolVersionLabel: 'v1.8.20',
+        path: '$.action_cmd',
+        sourceLabel: 'actionCmd',
+      },
+    });
+  });
+
   it('对比包缺字段时给出明确错误', () => {
     expect(() => extractCmdStructurePair({ actual: createCmdStructure() })).toThrow('必须是包含 actual 和 expected 的 JSON 对象');
   });
@@ -104,6 +129,22 @@ describe('diffCmdStructures', () => {
     expect(report).toContain('cmdSchema 不一致');
     expect(report).toContain('缺失路径 2 个');
     expect(report).toContain('值不一致 1 个');
+  });
+
+  it('差异报告可附带对比包来源上下文', () => {
+    const report = formatCmdStructureDiff(
+      diffCmdStructures(createCmdStructure(), createCmdStructure()),
+      {
+        toolVersionLabel: 'v1.8.20',
+        path: '$.action_cmd',
+        sourceLabel: 'actionCmd',
+      }
+    );
+
+    expect(report).toContain('工具版本: v1.8.20');
+    expect(report).toContain('对比路径: $.action_cmd');
+    expect(report).toContain('业务字段: actionCmd');
+    expect(report).toContain('结构一致');
   });
 
   it('识别 actual 中多出的路径', () => {

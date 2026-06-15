@@ -29,10 +29,36 @@ export const extractCmdStructurePair = value => {
     throw new Error('单文件或 stdin 输入必须是包含 actual 和 expected 的 JSON 对象');
   }
 
+  const context = getComparisonPackageContext(value);
   return {
     actual: value.actual,
     expected: value.expected,
+    ...(context ? { context } : {}),
   };
+};
+
+const getComparisonPackageToolVersionLabel = value => {
+  const tool = isRecord(value.tool) ? value.tool : null;
+  const versionLabel = typeof tool?.versionLabel === 'string' ? tool.versionLabel.trim() : '';
+  if (versionLabel) return versionLabel;
+
+  const version = typeof tool?.version === 'string' ? tool.version.trim() : '';
+  if (!version) return '';
+
+  return version.startsWith('v') ? version : `v${version}`;
+};
+
+const getComparisonPackageContext = value => {
+  const toolVersionLabel = getComparisonPackageToolVersionLabel(value);
+  const path = typeof value.path === 'string' ? value.path.trim() : '';
+  const sourceLabel = typeof value.sourceLabel === 'string' ? value.sourceLabel.trim() : '';
+  const context = {
+    ...(toolVersionLabel ? { toolVersionLabel } : {}),
+    ...(path ? { path } : {}),
+    ...(sourceLabel ? { sourceLabel } : {}),
+  };
+
+  return Object.keys(context).length > 0 ? context : null;
 };
 
 const appendPathKey = (path, key) => (
@@ -203,8 +229,15 @@ const formatValue = value => {
   return text && text.length > 160 ? `${text.slice(0, 160)}...` : text;
 };
 
-export const formatCmdStructureDiff = diff => {
+const appendDiffContextLines = (lines, context = {}) => {
+  if (context.toolVersionLabel) lines.push(`工具版本: ${context.toolVersionLabel}`);
+  if (context.path) lines.push(`对比路径: ${context.path}`);
+  if (context.sourceLabel) lines.push(`业务字段: ${context.sourceLabel}`);
+};
+
+export const formatCmdStructureDiff = (diff, context = {}) => {
   const lines = ['CMD 结构差异报告'];
+  appendDiffContextLines(lines, context);
 
   if (!diff.hasDifferences) {
     lines.push('- 结构一致');
@@ -322,7 +355,7 @@ const runCli = async () => {
 
     const diff = diffCmdStructures(inputs.actual, inputs.expected);
 
-    process.stdout.write(`${formatCmdStructureDiff(diff)}\n`);
+    process.stdout.write(`${formatCmdStructureDiff(diff, inputs.context)}\n`);
     process.exitCode = diff.hasDifferences ? 2 : 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
