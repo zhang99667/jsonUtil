@@ -643,6 +643,11 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             wordWrap,
             folding: true,
             contextmenu: true,
+            hover: {
+              enabled: true,
+              delay: 450,
+              sticky: true,
+            },
             padding: { top: 10, bottom: 10 },
             scrollbar: {
               useShadows: false,

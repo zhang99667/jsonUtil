@@ -322,6 +322,25 @@ test('JSON Lines 可深度格式化行内嵌套 JSON', async ({ page }) => {
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('true');
 });
 
+test('Scheme 行内提示在预览编辑器中可见', async ({ page }) => {
+  await fillSourceEditor(page, JSON.stringify({
+    scheme: 'baiduboxapp://v1/easybrowse/open?url=https%3A%2F%2Fexample.com',
+  }));
+
+  const previewEditor = page.locator('[data-tour="preview-editor"]');
+  const schemeHighlight = previewEditor.locator('.scheme-inline-highlight').first();
+  await expect(schemeHighlight).toBeVisible({ timeout: 15_000 });
+
+  await schemeHighlight.hover();
+
+  const schemeHover = page
+    .locator('.monaco-hover, .monaco-editor-hover')
+    .filter({ hasText: '点击解析 Scheme' })
+    .last();
+  await expect(schemeHover).toBeVisible();
+  await expect(schemeHover).toContainText('点击解析 Scheme');
+});
+
 test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => {
   const widePayload = {
     ...Object.fromEntries(Array.from({ length: 20 }, (_, index) => [`k${index}`, index])),
