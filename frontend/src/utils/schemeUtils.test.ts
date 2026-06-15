@@ -350,6 +350,11 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType('[CMD] "scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?from=log",')).toBe('query-string');
   });
 
+  it('检测带日志前缀的 CMD 参数串', () => {
+    expect(detectSchemeType(`I/NadRender: cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}&from=log`)).toBe('query-string');
+    expect(detectSchemeType('CMD => ?scheme=baiduboxapp://v1/browser/open?from=log')).toBe('query-string');
+  });
+
   it('普通冒号说明不误判为 CMD 字段行', () => {
     expect(detectSchemeType('note: https://example.com/path?from=doc')).toBe('plain');
     expect(detectSchemeType('"note":"https://example.com/path?from=doc"')).toBe('plain');
@@ -820,6 +825,23 @@ describe('deepDecodeScheme', () => {
           word: 'json',
         },
       },
+    });
+  });
+
+  it('带日志前缀的 CMD 参数串被递归解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`I/NadRender: cmd=${payload}&from=log`);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      cmd: {
+        nid: 123,
+      },
+      from: 'log',
+    });
+    expect(result.layers[0]).toMatchObject({
+      type: 'query-string',
+      description: '日志前缀 CMD 参数递归解析',
     });
   });
 
@@ -1363,6 +1385,35 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe('I/NadRender: scheme = baiduboxapp://v1/browser/open?from=card');
+  });
+
+  it('带日志前缀的 CMD 参数串编辑后保留前缀', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const original = `I/NadRender: cmd=${payload}&from=feed`;
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      cmd: {
+        nid: 456,
+      },
+      from: 'card',
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe(`I/NadRender: cmd=${encodeURIComponent(JSON.stringify({ nid: 456 }))}&from=card`);
+  });
+
+  it('带日志前缀的 raw URL 字段编辑后保留前缀和 raw URL', () => {
+    const original = 'I/NadRender: url=https://m.baidu.com/s?word=json&from=feed';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      url: {
+        word: 'schema',
+        from: 'feed',
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('I/NadRender: url=https://m.baidu.com/s?word=schema&from=feed');
   });
 
   it('JSON 字符串字面量包裹的 CMD 编辑后保留外层字面量', () => {
