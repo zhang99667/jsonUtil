@@ -1071,6 +1071,25 @@ interface SingleRawUrlParam {
   value: string;
 }
 
+interface SingleRawStructuredParam {
+  key: string;
+  value: string;
+}
+
+const getSingleRawStructuredParam = (queryString: string): SingleRawStructuredParam | null => {
+  const source = normalizeQueryString(stripQueryPrefix(queryString));
+  if (!QUERY_PAIR_DELIMITER_RE.test(source)) return null;
+
+  const equalIndex = source.indexOf('=');
+  if (equalIndex <= 0) return null;
+
+  const key = decodeQueryComponent(source.slice(0, equalIndex));
+  if (!key || !isKnownDecodableParamName(key)) return null;
+
+  const value = decodeQueryValueComponent(source.slice(equalIndex + 1));
+  return tryParseJson(value) === null ? null : { key, value };
+};
+
 const getSingleRawUrlParam = (queryString: string): SingleRawUrlParam | null => {
   const source = normalizeQueryString(stripQueryPrefix(queryString));
   if (!QUERY_PAIR_DELIMITER_RE.test(source)) return null;
@@ -1090,6 +1109,11 @@ const getSingleRawUrlParam = (queryString: string): SingleRawUrlParam | null => 
 };
 
 const parseFlatQueryParams = (queryString: string): Record<string, string | string[]> | undefined => {
+  const singleRawStructuredParam = getSingleRawStructuredParam(queryString);
+  if (singleRawStructuredParam) {
+    return { [singleRawStructuredParam.key]: singleRawStructuredParam.value };
+  }
+
   const params: Record<string, string | string[]> = {};
 
   splitQueryPairs(queryString).forEach(pair => {
@@ -1467,6 +1491,13 @@ const parseFragmentValueDeep = (value: string, maxDepth: number): StructuredValu
 };
 
 const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredValue => {
+  const singleRawStructuredParam = getSingleRawStructuredParam(queryString);
+  if (singleRawStructuredParam) {
+    return {
+      [singleRawStructuredParam.key]: decodeNestedParamValue(singleRawStructuredParam.value, maxDepth - 1),
+    };
+  }
+
   const singleRawUrlParam = getSingleRawUrlParam(queryString);
   if (singleRawUrlParam) {
     return {

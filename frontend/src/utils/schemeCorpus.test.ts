@@ -296,6 +296,42 @@ describe('CMD/Scheme 真实样本回归', () => {
     ]);
   });
 
+  it('解析半解码电话拨打 Scheme 中未编码 & 的监测 URL', () => {
+    const extInfo = base64Encode(JSON.stringify({ rank: 2 }));
+    const rawParams = JSON.stringify({
+      phone: '400-805-8686',
+      numberUrl: 'https://ada.baidu.com/phone-tracker/getNumber?a=1&b=2&solutionId=__SOLUTIONID__',
+      logUrl: 'https://ada.baidu.com/phone-tracker/clicklog?pageid=__TIMESTAMP__&realPhone=400-805-8686',
+      extInfo,
+    });
+    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${rawParams}`;
+
+    const decoded = deepDecodeScheme(scheme);
+    const parsed = JSON.parse(decoded.decoded);
+
+    expect(decoded.isJson).toBe(true);
+    expect(decoded.schemeInfo?.params).toEqual({
+      params: rawParams,
+    });
+    expect(parsed).toEqual({
+      params: {
+        phone: '400-805-8686',
+        numberUrl: {
+          a: '1',
+          b: '2',
+          solutionId: '__SOLUTIONID__',
+        },
+        logUrl: {
+          pageid: '__TIMESTAMP__',
+          realPhone: '400-805-8686',
+        },
+        extInfo: {
+          rank: 2,
+        },
+      },
+    });
+  });
+
   it('解析真实广告单字段 task_params 参数', () => {
     const taskParams = encodeURIComponent(JSON.stringify({
       android_pid: '1683310188080',
