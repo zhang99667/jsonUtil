@@ -74,6 +74,14 @@ type StructuredValue =
 type QueryKeySegment = string | number | null;
 type QueryParamContainer = { [key: string]: StructuredValue };
 
+interface LogFieldParam {
+  rawKey: string;
+  key: string;
+  delimiter: ':' | '：';
+  value: string;
+  quote?: '"' | "'";
+}
+
 interface DecodeStructuredState {
   maxStringDecodeLength: number;
   maxTotalStringDecodeLength: number;
@@ -268,6 +276,60 @@ const isDecodableParamValue = (value: string): boolean => (
   isBase64(value) ||
   isJsonString(value) ||
   isStructuredBase64Value(value)
+);
+
+const LOG_FIELD_RE = new RegExp(`^\\s*(${QUERY_KEY_PATTERN})\\s*([:：])\\s*(.+?)\\s*$`);
+
+const unwrapLogFieldValue = (value: string): { value: string; quote?: '"' | "'" } => {
+  const trimmed = value.trim();
+  const quote = trimmed[0];
+  if ((quote === '"' || quote === "'") && trimmed.endsWith(quote)) {
+    const inner = trimmed.slice(1, -1);
+    if (quote === '"') {
+      try {
+        const parsed: unknown = JSON.parse(trimmed);
+        if (typeof parsed === 'string') {
+          return { value: parsed, quote };
+        }
+      } catch {
+        return { value: inner, quote };
+      }
+    }
+
+    return { value: inner.replace(/\\'/g, "'"), quote };
+  }
+
+  return { value: trimmed };
+};
+
+const parseLogFieldParamString = (source: string): LogFieldParam | null => {
+  const trimmed = source.trim();
+  // 日志字段只识别单行，避免把多行说明文本误拆成 CMD。
+  if (/[\r\n]/.test(trimmed)) return null;
+
+  const match = trimmed.match(LOG_FIELD_RE);
+  if (!match) return null;
+
+  const rawKey = match[1];
+  const key = decodeQueryComponent(rawKey);
+  if (!key || !COMMON_CMD_PARAM_NAME_ALIASES.has(normalizeCmdParamName(key))) {
+    return null;
+  }
+
+  const unwrappedValue = unwrapLogFieldValue(match[3]);
+  if (!isDecodableParamValue(unwrappedValue.value)) return null;
+
+  return {
+    rawKey,
+    key,
+    delimiter: match[2] as ':' | '：',
+    value: unwrappedValue.value,
+    quote: unwrappedValue.quote,
+  };
+};
+
+const isDecodableLogFieldParamString = (source: string): boolean => (
+  parseLogFieldParamString(source) !== null
 );
 
 // ============ 检测函数 ============
@@ -480,6 +542,7 @@ export function detectSchemeType(str: string): SchemeType {
   if (isJwt(trimmed)) return 'jwt';
   if (isUrl(trimmed)) return 'url';
   if (isDecodableFragmentParamString(trimmed)) return 'query-string';
+  if (isDecodableLogFieldParamString(trimmed)) return 'query-string';
   if (isDecodableQueryString(trimmed)) return 'query-string';
   if (hasUrlEncoding(trimmed)) return 'url-encoded';
   if (isBase64(trimmed)) return 'base64';
@@ -1175,6 +1238,13 @@ const assignQueryParam = (
 };
 
 const parseQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
+  const logFieldParam = parseLogFieldParamString(queryString);
+  if (logFieldParam) {
+    return {
+      [logFieldParam.key]: decodeNestedParamValue(logFieldParam.value, maxDepth - 1),
+    };
+  }
+
   const source = normalizeQueryString(stripQueryPrefix(queryString));
   if (source && isDecodableQueryString(source)) {
     return parseQueryPairsDeep(source, maxDepth);
@@ -1366,7 +1436,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
           layers.push({
             type: 'query-string',
             before,
-            description: 'CMD 参数递归解析',
+            description: isDecodableLogFieldParamString(before) ? '日志字段 CMD 递归解析' : 'CMD 参数递归解析',
           });
           current = JSON.stringify(decodedParams, null, 2);
         } else {
@@ -1645,6 +1715,34 @@ const encodeSingleRawUrlParamContent = (
   return `${singleRawUrlParam.rawKey}=${rebuiltUrl}`;
 };
 
+const wrapLogFieldValue = (value: string, quote?: '"' | "'"): string => {
+  if (quote === '"') return JSON.stringify(value);
+  if (quote === "'") return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+  return value;
+};
+
+const encodeSingleLogFieldParamContent = (
+  editedParams: Record<string, unknown>,
+  originalQueryString: string
+): string | null => {
+  const logFieldParam = parseLogFieldParamString(originalQueryString);
+  if (!logFieldParam) return null;
+
+  const keys = Object.keys(editedParams);
+  if (keys.length !== 1 || !Object.prototype.hasOwnProperty.call(editedParams, logFieldParam.key)) {
+    return null;
+  }
+
+  const nestedDecoded = deepDecodeScheme(logFieldParam.value);
+  const editedValue = editedParams[logFieldParam.key];
+  const editedContent = isPlainObject(editedValue) || Array.isArray(editedValue)
+    ? JSON.stringify(editedValue)
+    : stringifyParamValue(editedValue);
+  const encodedValue = encodeWithLayers(editedContent, nestedDecoded.layers);
+
+  return `${logFieldParam.rawKey}${logFieldParam.delimiter} ${wrapLogFieldValue(encodedValue, logFieldParam.quote)}`;
+};
+
 export function encodeWithLayers(content: string, layers: DecodeLayer[]): string {
   let result = content;
   
@@ -1679,7 +1777,8 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
         try {
           const parsed = JSON.parse(result) as unknown;
           if (isPlainObject(parsed)) {
-            result = encodeSingleRawUrlParamContent(parsed, layer.before) ||
+            result = encodeSingleLogFieldParamContent(parsed, layer.before) ||
+              encodeSingleRawUrlParamContent(parsed, layer.before) ||
               buildQueryStringFromObject(parsed, layer.before);
           }
         } catch {

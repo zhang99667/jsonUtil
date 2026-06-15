@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.32 (2026-06-15) - 日志冒号 CMD 字段解析
+### ✨ 新特性
+- **CMD/Scheme 兼容性**: 支持解析从日志或调试页面复制出的 `scheme: ...`、`cmd：...` 这类冒号字段行，并在编辑回写时保留冒号字段形态，减少真实排查时手动改成 `key=value` 的步骤
+
 ## v1.8.31 (2026-06-15) - CMD 忽略路径失败日志
 ### 🔧 改进
 - **Scheme Corpus 快照**: `maxCmdHandlerIgnoredExtraPaths` 阈值失败时，strict 控制台日志和失败阈值摘要会带上 ignored extra 路径样例，便于不下载 artifact 也能快速定位
