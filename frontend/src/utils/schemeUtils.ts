@@ -1061,9 +1061,93 @@ const assignFlatQueryParam = (
   }
 };
 
-const splitQueryPairs = (queryString: string): string[] => (
-  normalizeQueryString(stripQueryPrefix(queryString)).split(QUERY_PAIR_DELIMITER_RE).filter(Boolean)
-);
+const findQueryPairDelimiterIndex = (source: string, fromIndex: number): number => {
+  for (let index = fromIndex; index < source.length; index++) {
+    if (!['&', ';'].includes(source[index])) continue;
+    if (QUERY_PAIR_START_RE.test(source.slice(index + 1))) return index;
+  }
+
+  return -1;
+};
+
+const findRawJsonValueEndIndex = (source: string, valueStartIndex: number): number => {
+  let index = valueStartIndex;
+  while (index < source.length && /\s/.test(source[index])) index++;
+  if (!['{', '['].includes(source[index])) return -1;
+
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+
+  for (; index < source.length; index++) {
+    const char = source[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      stack.push('}');
+      continue;
+    }
+
+    if (char === '[') {
+      stack.push(']');
+      continue;
+    }
+
+    if (stack.length > 0 && char === stack[stack.length - 1]) {
+      stack.pop();
+      if (stack.length === 0) return index;
+    }
+  }
+
+  return -1;
+};
+
+const getPairValueScanStart = (source: string, pairStartIndex: number): number => {
+  const equalIndex = source.indexOf('=', pairStartIndex);
+  if (equalIndex < 0) return pairStartIndex;
+
+  const valueStartIndex = equalIndex + 1;
+  const rawJsonEndIndex = findRawJsonValueEndIndex(source, valueStartIndex);
+  return rawJsonEndIndex >= 0 ? rawJsonEndIndex + 1 : valueStartIndex;
+};
+
+const splitQueryPairs = (queryString: string): string[] => {
+  const source = normalizeQueryString(stripQueryPrefix(queryString));
+  const pairs: string[] = [];
+  let pairStartIndex = 0;
+
+  while (pairStartIndex < source.length) {
+    const delimiterIndex = findQueryPairDelimiterIndex(
+      source,
+      getPairValueScanStart(source, pairStartIndex)
+    );
+
+    if (delimiterIndex < 0) {
+      pairs.push(source.slice(pairStartIndex));
+      break;
+    }
+
+    pairs.push(source.slice(pairStartIndex, delimiterIndex));
+    pairStartIndex = delimiterIndex + 1;
+  }
+
+  return pairs.filter(Boolean);
+};
 
 interface SingleRawUrlParam {
   rawKey: string;

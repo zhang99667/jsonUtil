@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.57 (2026-06-15) - 半解码 Scheme 外层参数保留
+### 🐛 Bug 修复
+- **CMD/Scheme 兼容性**: 修复 `params={"numberUrl":"...a=1&b=2"}&source=feed` 这类半解码 Scheme 中，JSON 内层 URL 的 `&` 影响后续外层参数拆分的问题
+
 ## v1.8.56 (2026-06-15) - 半解码电话 Scheme 解析
 ### 🐛 Bug 修复
 - **CMD/Scheme 兼容性**: 修复 `makePhoneCall?params={"numberUrl":"...a=1&b=2"}` 这类半解码 Scheme 中，JSON 内层监测 URL 的 `&` 被误拆成外层参数导致 `params` 截断的问题
