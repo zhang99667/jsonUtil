@@ -199,7 +199,7 @@ export const diffCmdStructures = (actualInput, expectedInput, options = {}) => {
   const schemaDiff = actual.cmdSchema !== expected.cmdSchema
     ? { actual: actual.cmdSchema, expected: expected.cmdSchema }
     : null;
-  const sourceDiff = actual.source && expected.source && actual.source !== expected.source
+  const sourceDiff = expected.source !== undefined && actual.source !== expected.source
     ? { actual: actual.source, expected: expected.source }
     : null;
   const paramDiff = compareRows(
@@ -251,8 +251,8 @@ export const formatCmdStructureDiff = (diff, context = {}) => {
 
   if (diff.sourceDiff) {
     lines.push('- source 不一致');
-    lines.push(`  actual: ${diff.sourceDiff.actual}`);
-    lines.push(`  expected: ${diff.sourceDiff.expected}`);
+    lines.push(`  actual: ${diff.sourceDiff.actual || '(空)'}`);
+    lines.push(`  expected: ${diff.sourceDiff.expected || '(空)'}`);
   }
 
   if (diff.missingPaths.length > 0) {
