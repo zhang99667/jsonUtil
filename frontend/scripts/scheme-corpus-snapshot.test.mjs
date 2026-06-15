@@ -354,6 +354,7 @@ describe('buildCorpusSnapshotSample', () => {
         expectedFile: 'reward-response.cmdhandler.expected.json',
         ignoreExtraPaths: true,
         missingPaths: 0,
+        ignoredExtraPaths: 1,
         valueDiffs: 0,
       },
     });
@@ -375,6 +376,11 @@ describe('buildCmdHandlerAlignment', () => {
       actualCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
       expectedCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
       extraPaths: 0,
+      ignoredExtraPaths: 1,
+      diff: {
+        ignoredExtraPathCount: 1,
+        ignoredExtraPaths: ['$.extraParsedField'],
+      },
     });
   });
 
@@ -462,6 +468,7 @@ describe('buildThresholdSummary', () => {
       cmdHandler: {
         total: 0,
         failed: 0,
+        ignoredExtraPaths: 0,
         failures: [],
       },
     });
@@ -483,6 +490,7 @@ describe('buildThresholdSummary', () => {
         cmdHandler: {
           total: 0,
           failed: 0,
+          ignoredExtraPaths: 0,
           failures: [],
         },
       });
@@ -523,6 +531,7 @@ describe('buildThresholdSummary', () => {
       cmdHandler: {
         total: 0,
         failed: 0,
+        ignoredExtraPaths: 0,
         failures: [],
       },
     });
@@ -594,6 +603,7 @@ describe('buildThresholdSummary', () => {
         sourceDiff: false,
         missingPaths: 1,
         extraPaths: 0,
+        ignoredExtraPaths: 2,
         valueDiffs: 0,
       },
     }];
@@ -607,6 +617,7 @@ describe('buildThresholdSummary', () => {
         sourceDiff: false,
         missingPaths: 1,
         extraPaths: 0,
+        ignoredExtraPaths: 2,
         valueDiffs: 0,
       },
     ]);
@@ -624,6 +635,7 @@ describe('buildThresholdSummary', () => {
       cmdHandler: {
         total: 1,
         failed: 1,
+        ignoredExtraPaths: 2,
         failures: listCmdHandlerFailures(samples),
       },
     });
@@ -661,6 +673,7 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('| reward-response-redacted | 临时输入 | 临时输入 | 100 | 2 | 2 | 5 | 1 | 2 | 0 | 0 | 0/9 | 0/3 |');
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- 必需项失败: 0/3');
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- cmdHandler 对齐失败: 0/0');
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- cmdHandler 已忽略 extra: 0');
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- 结果: PASS');
   });
 
@@ -688,6 +701,7 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
         cmdHandler: {
           total: 0,
           failed: 0,
+          ignoredExtraPaths: 0,
           failures: [],
         },
       },
@@ -736,6 +750,7 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
         cmdHandler: {
           total: 1,
           failed: 1,
+          ignoredExtraPaths: 2,
           failures: [{
             sample: 'reward-response-redacted',
             expectedFile: 'reward-response.cmdhandler.expected.json',
@@ -743,6 +758,7 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
             sourceDiff: false,
             missingPaths: 1,
             extraPaths: 0,
+            ignoredExtraPaths: 2,
             valueDiffs: 0,
           }],
         },
@@ -763,6 +779,7 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
         cmdHandlerAlignment: {
           pass: false,
           missingPaths: 1,
+          ignoredExtraPaths: 2,
           valueDiffs: 0,
           schemaDiff: false,
         },
@@ -771,9 +788,10 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
 
     const markdown = formatCorpusSnapshotMarkdownSummary(snapshot);
     expect(markdown).toContain('- cmdHandler 对齐失败: 1/1');
-    expect(markdown).toContain('| reward-response-redacted | 临时输入 | 失败 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 | 0/0 |');
+    expect(markdown).toContain('- cmdHandler 已忽略 extra: 2');
+    expect(markdown).toContain('| reward-response-redacted | 临时输入 | 失败(忽略 2) | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 | 0/0 |');
     expect(markdown).toContain('## cmdHandler 对齐失败');
-    expect(markdown).toContain('- reward-response-redacted: missingPaths=1, valueDiffs=0, schemaDiff=否');
+    expect(markdown).toContain('- reward-response-redacted: missingPaths=1, valueDiffs=0, ignoredExtraPaths=2, schemaDiff=否');
   });
 });
 

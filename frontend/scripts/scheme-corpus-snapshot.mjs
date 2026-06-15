@@ -205,9 +205,11 @@ const summarizeCmdHandlerDiff = diff => ({
   sourceDiff: diff.sourceDiff,
   missingPathCount: diff.missingPaths.length,
   extraPathCount: diff.extraPaths.length,
+  ignoredExtraPathCount: diff.ignoredExtraPaths.length,
   valueDiffCount: diff.valueDiffs.length,
   missingPaths: diff.missingPaths.slice(0, 20),
   extraPaths: diff.extraPaths.slice(0, 20),
+  ignoredExtraPaths: diff.ignoredExtraPaths.slice(0, 20),
   valueDiffs: diff.valueDiffs.slice(0, 20),
 });
 
@@ -234,6 +236,7 @@ export const buildCmdHandlerAlignment = ({
       sourceDiff: false,
       missingPaths: 0,
       extraPaths: 0,
+      ignoredExtraPaths: 0,
       valueDiffs: 0,
     };
   }
@@ -256,6 +259,7 @@ export const buildCmdHandlerAlignment = ({
     sourceDiff: Boolean(diff.sourceDiff),
     missingPaths: diff.missingPaths.length,
     extraPaths: diff.extraPaths.length,
+    ignoredExtraPaths: diff.ignoredExtraPaths.length,
     valueDiffs: diff.valueDiffs.length,
     diff: summarizeCmdHandlerDiff(diff),
   };
@@ -367,6 +371,7 @@ export const listCmdHandlerFailures = samples => (
       sourceDiff: sample.cmdHandlerAlignment.sourceDiff,
       missingPaths: sample.cmdHandlerAlignment.missingPaths,
       extraPaths: sample.cmdHandlerAlignment.extraPaths,
+      ignoredExtraPaths: sample.cmdHandlerAlignment.ignoredExtraPaths || 0,
       valueDiffs: sample.cmdHandlerAlignment.valueDiffs,
     }))
 );
@@ -380,6 +385,9 @@ export const buildThresholdSummary = samples => {
   const requiredFailures = listRequiredFailures(samples);
   const cmdHandlerFailures = listCmdHandlerFailures(samples);
   const cmdHandlerTotal = samples.filter(sample => sample.cmdHandlerAlignment).length;
+  const cmdHandlerIgnoredExtraPaths = samples.reduce((total, sample) => (
+    total + (sample.cmdHandlerAlignment?.ignoredExtraPaths || 0)
+  ), 0);
   const requiredCount = samples.reduce((total, sample) => (
     total + Object.keys(sample.requiredChecks || {}).length
   ), 0);
@@ -401,6 +409,7 @@ export const buildThresholdSummary = samples => {
     cmdHandler: {
       total: cmdHandlerTotal,
       failed: cmdHandlerFailures.length,
+      ignoredExtraPaths: cmdHandlerIgnoredExtraPaths,
       failures: cmdHandlerFailures,
     },
   };
@@ -412,7 +421,9 @@ const formatMarkdownValue = value => (
 
 const formatCmdHandlerMarkdownLabel = sample => {
   if (sample.cmdHandlerAlignment) {
-    return sample.cmdHandlerAlignment.pass ? '一致' : '失败';
+    const ignoredExtraPaths = sample.cmdHandlerAlignment.ignoredExtraPaths || 0;
+    const ignoredLabel = ignoredExtraPaths > 0 ? `(忽略 ${ignoredExtraPaths})` : '';
+    return sample.cmdHandlerAlignment.pass ? `一致${ignoredLabel}` : `失败${ignoredLabel}`;
   }
   if (sample.baseline && !sample.baseline.expectedSnapshot) {
     return '缺失';
@@ -437,6 +448,7 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
     `- 阈值失败: ${snapshot.thresholdSummary.failed}/${snapshot.thresholdSummary.total}`,
     `- 必需项失败: ${requiredSummary.failed}/${requiredSummary.total}`,
     `- cmdHandler 对齐失败: ${snapshot.thresholdSummary.cmdHandler.failed}/${snapshot.thresholdSummary.cmdHandler.total}`,
+    `- cmdHandler 已忽略 extra: ${snapshot.thresholdSummary.cmdHandler.ignoredExtraPaths || 0}`,
     `- 结果: ${snapshot.thresholdSummary.pass ? 'PASS' : 'FAIL'}`,
     '',
     '| 样本 | 基线 | cmdHandler | 覆盖率 | 展开记录 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 阈值失败 | 必需项失败 |',
@@ -500,7 +512,7 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
     lines.push('', '## cmdHandler 对齐失败', '');
     snapshot.thresholdSummary.cmdHandler.failures.forEach(failure => {
       const reason = failure.reason ? `, reason=${failure.reason}` : '';
-      lines.push(`- ${formatMarkdownValue(failure.sample)}: missingPaths=${failure.missingPaths}, valueDiffs=${failure.valueDiffs}, schemaDiff=${failure.schemaDiff ? '是' : '否'}${reason}`);
+      lines.push(`- ${formatMarkdownValue(failure.sample)}: missingPaths=${failure.missingPaths}, valueDiffs=${failure.valueDiffs}, ignoredExtraPaths=${failure.ignoredExtraPaths || 0}, schemaDiff=${failure.schemaDiff ? '是' : '否'}${reason}`);
     });
   }
 
@@ -789,7 +801,7 @@ const formatMissingBaseline = missing => {
 
 const formatCmdHandlerFailure = failure => {
   const reason = failure.reason ? `, reason=${failure.reason}` : '';
-  return `${failure.sample}: missingPaths=${failure.missingPaths}, valueDiffs=${failure.valueDiffs}, schemaDiff=${failure.schemaDiff ? 'yes' : 'no'}${reason}`;
+  return `${failure.sample}: missingPaths=${failure.missingPaths}, valueDiffs=${failure.valueDiffs}, ignoredExtraPaths=${failure.ignoredExtraPaths || 0}, schemaDiff=${failure.schemaDiff ? 'yes' : 'no'}${reason}`;
 };
 
 const writeTextFile = async (filePath, text, options = {}) => {
