@@ -445,12 +445,23 @@ const formatCmdHandlerMarkdownLabel = sample => {
   return sample.baseline ? '未配置' : '临时输入';
 };
 
+const getIgnoredExtraPathSamples = samples => (
+  samples
+    .map(sample => ({
+      sample: sample.sample,
+      total: sample.cmdHandlerAlignment?.ignoredExtraPaths || 0,
+      paths: sample.cmdHandlerAlignment?.diff?.ignoredExtraPaths || [],
+    }))
+    .filter(item => item.total > 0 && item.paths.length > 0)
+);
+
 export const formatCorpusSnapshotMarkdownSummary = snapshot => {
   const requiredSummary = snapshot.thresholdSummary.required || {
     total: 0,
     failed: 0,
     failures: [],
   };
+  const ignoredExtraPathSamples = getIgnoredExtraPathSamples(snapshot.samples || []);
   const lines = [
     '# Scheme Corpus 质量快照',
     '',
@@ -524,6 +535,20 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
     snapshot.thresholdSummary.cmdHandler.failures.forEach(failure => {
       const reason = failure.reason ? `, reason=${failure.reason}` : '';
       lines.push(`- ${formatMarkdownValue(failure.sample)}: missingPaths=${failure.missingPaths}, valueDiffs=${failure.valueDiffs}, ignoredExtraPaths=${failure.ignoredExtraPaths || 0}, schemaDiff=${failure.schemaDiff ? '是' : '否'}${reason}`);
+    });
+  }
+
+  if (ignoredExtraPathSamples.length > 0) {
+    lines.push('', '## cmdHandler 已忽略 extra 样例', '');
+    ignoredExtraPathSamples.forEach(sample => {
+      const displayedPaths = sample.paths.slice(0, 10);
+      lines.push(`- ${formatMarkdownValue(sample.sample)}: ignoredExtraPaths=${sample.total}`);
+      displayedPaths.forEach(ignoredPath => {
+        lines.push(`  - ${formatMarkdownValue(ignoredPath)}`);
+      });
+      if (sample.total > displayedPaths.length) {
+        lines.push(`  - ... 还有 ${sample.total - displayedPaths.length} 个`);
+      }
     });
   }
 

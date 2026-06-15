@@ -855,6 +855,63 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
     expect(markdown).toContain('## cmdHandler 对齐失败');
     expect(markdown).toContain('- reward-response-redacted: missingPaths=1, valueDiffs=0, ignoredExtraPaths=2, schemaDiff=否');
   });
+
+  it('在 Markdown 摘要中展示 cmdHandler ignored extra 路径样例', () => {
+    const ignoredPaths = Array.from({ length: 12 }, (_, index) => `$.extra.path${index + 1}`);
+    const snapshot = {
+      schemaVersion: 1,
+      kind: SCHEME_CORPUS_SNAPSHOT_KIND,
+      sampleCount: 1,
+      thresholdSummary: {
+        pass: true,
+        total: 0,
+        failed: 0,
+        missingBaselines: [],
+        failures: [],
+        required: {
+          total: 0,
+          failed: 0,
+          failures: [],
+        },
+        cmdHandler: {
+          total: 1,
+          failed: 0,
+          ignoredExtraPaths: 12,
+          failures: [],
+        },
+      },
+      samples: [{
+        sample: 'reward-response-redacted',
+        coverage: { score: 100 },
+        totals: {
+          records: 1,
+          cmdStructures: 1,
+          nestedCommandFields: 1,
+          nestedResourceFields: 0,
+          runtimePlaceholders: 0,
+          unresolved: 0,
+          warnings: 0,
+        },
+        thresholds: {},
+        requiredChecks: {},
+        cmdHandlerAlignment: {
+          pass: true,
+          ignoredExtraPaths: 12,
+          diff: {
+            ignoredExtraPaths: ignoredPaths,
+          },
+        },
+      }],
+    };
+
+    const markdown = formatCorpusSnapshotMarkdownSummary(snapshot);
+    expect(markdown).toContain('## cmdHandler 已忽略 extra 样例');
+    expect(markdown).toContain('- reward-response-redacted: ignoredExtraPaths=12');
+    expect(markdown).toContain('  - $.extra.path1');
+    expect(markdown).toContain('  - $.extra.path10');
+    expect(markdown).not.toContain('  - $.extra.path11');
+    expect(markdown).toContain('  - ... 还有 2 个');
+  });
 });
 
 describe('parseCliArgs', () => {
