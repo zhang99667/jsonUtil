@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.52 (2026-06-15) - 日志前缀参数导出对齐
+### 🐛 Bug 修复
+- **CMD/Scheme 兼容性**: 修复 `I/NadRender: cmd=...&from=...` 这类带日志前缀的参数串复制为 cmdHandler 风格结构时，source shape 未剥离前缀导致内层 CMD 字段无法包装 `cmdSchema/source` 的问题
+
 ## v1.8.51 (2026-06-15) - 换行参数导出对齐
 ### 🐛 Bug 修复
 - **CMD/Scheme 兼容性**: 修复 `cmd=...\nfrom=...`、`cmd=...\\nfrom=...` 这类换行分隔参数复制为 cmdHandler 风格结构时，source shape 未正确拆分导致内层 `source` 粘连后续参数的问题

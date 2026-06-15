@@ -92,6 +92,8 @@ const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const PREFIXED_QUERY_BOUNDARY_PATTERN = '[\\s\\[\\]{}(),|:：>]';
+const PREFIXED_QUERY_STRING_RE = new RegExp(`^(.*?${PREFIXED_QUERY_BOUNDARY_PATTERN})([?&]*${QUERY_KEY_PATTERN}=.+)$`);
 const HTML_EQUALS_RE = /&(?:equals|#61|#x3d);/gi;
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38|#x26);(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const UNICODE_EQUALS_RE = /\\u003d/gi;
@@ -588,8 +590,8 @@ const parseSourceValue = (value: string): SourceShape => {
   return jsonValue ?? normalized;
 };
 
-const parseQuerySourceShape = (source: string): SourceShape | null => {
-  const normalizedSource = source.trim()
+const normalizeQuerySourceString = (source: string): string => (
+  source.trim()
     .replace(/^\?/, '')
     .replace(/^&+/, '')
     .replace(HTML_EQUALS_RE, '=')
@@ -598,7 +600,23 @@ const parseQuerySourceShape = (source: string): SourceShape | null => {
     .replace(UNICODE_AMP_QUERY_DELIMITER_RE, '&')
     .replace(ESCAPED_LINE_QUERY_DELIMITER_RE, '&')
     .replace(LINE_QUERY_DELIMITER_RE, '&')
-    .replace(COMMA_QUERY_DELIMITER_RE, '&');
+    .replace(COMMA_QUERY_DELIMITER_RE, '&')
+);
+
+const getQuerySourceShapeString = (source: string): string | null => {
+  const normalizedSource = normalizeQuerySourceString(source);
+  if (QUERY_PAIR_START_RE.test(normalizedSource)) return normalizedSource;
+
+  const prefixedMatch = normalizedSource.match(PREFIXED_QUERY_STRING_RE);
+  if (!prefixedMatch) return null;
+
+  const prefixedSource = normalizeQuerySourceString(prefixedMatch[2]);
+  return QUERY_PAIR_START_RE.test(prefixedSource) ? prefixedSource : null;
+};
+
+const parseQuerySourceShape = (source: string): SourceShape | null => {
+  const normalizedSource = getQuerySourceShapeString(source);
+  if (!normalizedSource) return null;
   if (!QUERY_PAIR_START_RE.test(normalizedSource)) return null;
 
   const result: { [key: string]: SourceShape } = {};
