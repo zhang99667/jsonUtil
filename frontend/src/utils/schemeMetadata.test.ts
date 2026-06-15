@@ -403,6 +403,33 @@ describe('schemeMetadata', () => {
     });
   });
 
+  it('导出 CMD 结构时兼容 HTML 转义等号参数', () => {
+    const nestedSource = 'baiduboxapp://v1/panel?from=html-equals';
+    const decoded = JSON.stringify({
+      panel_scheme: {
+        from: 'html-equals',
+      },
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      undefined,
+      `panel_scheme&#61;${encodeURIComponent(nestedSource)}`
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          panel_scheme: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              from: 'html-equals',
+            },
+            source: nestedSource,
+          },
+        },
+      },
+    });
+  });
+
   it('导出 CMD 结构时包装常见 URL 跳转字段', () => {
     const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101';
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({

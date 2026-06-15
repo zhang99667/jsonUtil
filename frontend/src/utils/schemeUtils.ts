@@ -217,6 +217,7 @@ const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const HTML_EQUALS_RE = /&(?:equals|#61);/gi;
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const UNICODE_EQUALS_RE = /\\u003d/gi;
 const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTERN}=)`, 'gi');
@@ -237,6 +238,7 @@ const normalizeJsonEscapedSlashes = (source: string): string => (
 
 const normalizeQueryString = (source: string): string => (
   source.trim()
+    .replace(HTML_EQUALS_RE, '=')
     .replace(HTML_QUERY_DELIMITER_RE, '&')
     .replace(UNICODE_EQUALS_RE, '=')
     .replace(UNICODE_AMP_QUERY_DELIMITER_RE, '&')
