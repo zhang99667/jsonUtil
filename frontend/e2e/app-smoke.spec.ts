@@ -198,6 +198,34 @@ test('预览编辑锁定开关展示中文状态', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'PREVIEW 可编辑，点击重新锁定' })).toBeVisible();
 });
 
+test('布局分隔条支持键盘调整', async ({ page }) => {
+  const sidebarResizeHandle = page.locator('[data-tour="sidebar-resize-handle"]');
+  await expect(sidebarResizeHandle).toHaveAttribute('role', 'separator');
+  await expect(sidebarResizeHandle).toHaveAttribute('aria-label', '调整工具栏宽度');
+  await expect(sidebarResizeHandle).toHaveAttribute('aria-valuenow', '220');
+
+  await sidebarResizeHandle.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(sidebarResizeHandle).toHaveAttribute('aria-valuenow', '236');
+  await page.keyboard.press('Home');
+  await expect(sidebarResizeHandle).toHaveAttribute('aria-valuenow', '180');
+  await page.keyboard.press('End');
+  await expect(sidebarResizeHandle).toHaveAttribute('aria-valuenow', '400');
+
+  const paneResizeHandle = page.locator('[data-tour="editor-pane-resize-handle"]');
+  await expect(paneResizeHandle).toHaveAttribute('role', 'separator');
+  await expect(paneResizeHandle).toHaveAttribute('aria-label', '调整 SOURCE 和 PREVIEW 宽度');
+  await expect(paneResizeHandle).toHaveAttribute('aria-valuenow', '50');
+
+  await paneResizeHandle.focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(paneResizeHandle).toHaveAttribute('aria-valuenow', '45');
+  await page.keyboard.press('Home');
+  await expect(paneResizeHandle).toHaveAttribute('aria-valuenow', '20');
+  await page.keyboard.press('End');
+  await expect(paneResizeHandle).toHaveAttribute('aria-valuenow', '80');
+});
+
 test('JSON Lines 可格式化为可读数组预览', async ({ page }) => {
   await fillSourceEditor(page, '{"id":1}\n{"id":2}');
 
