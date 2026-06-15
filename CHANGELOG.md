@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.8 (2026-06-15) - 解析基线必需项门禁
+### 🏗️ 架构与基础设施
+- **Scheme Corpus 严格门禁**: `corpus:snapshot:check` 会校验 expected snapshot 中的扫描位置、必需 CMD Schema 和运行时占位符，CI 能发现解析能力退化但数值阈值未触发的问题
+
 ## v1.8.7 (2026-06-15) - JSONPath 打开即输入
 ### 🔧 改进
 - **JSONPath 初始焦点**: JSONPath 面板打开后自动聚焦表达式输入框，保留 Escape 关闭和入口焦点恢复，减少查询前的多余 Tab 操作
