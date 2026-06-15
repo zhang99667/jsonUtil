@@ -2,7 +2,7 @@
   "name": "json-helper-ai-fix",
   "productName": "JSONUtils - 专业版",
   "private": true,
-  "version": "1.8.3",
+  "version": "1.8.4",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -21,7 +21,7 @@
     "samples:to-regression": "node scripts/issue-samples-to-regression.mjs",
     "cmd:diff": "node scripts/cmd-structure-diff.mjs",
     "test:watch": "vitest",
-    "electron:dev": "concurrently \"npm run dev\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on tcp:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:build:mac": "npm run build && electron-builder --mac",
     "electron:build:win": "npm run build && electron-builder --win",
