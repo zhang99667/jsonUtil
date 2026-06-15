@@ -20,6 +20,7 @@
     "minNestedResourceFields": 1,
     "maxUnresolved": 0,
     "maxWarnings": 0,
+    "maxCmdHandlerIgnoredExtraPaths": 474,
     "leadHotspotCommandSchema": "https://union-click.jd.com/sem.php",
     "leadHotspotResourceSchema": "https://video.example.com/ad.mp4",
     "leadHotspotResourceField": "video_url"

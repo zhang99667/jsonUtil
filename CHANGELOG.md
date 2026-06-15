@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.28 (2026-06-15) - CMD 忽略路径基线门禁
+### 🔧 改进
+- **Scheme Corpus 快照**: expected snapshot 支持 `maxCmdHandlerIgnoredExtraPaths`，CI 常规快照检查会拦截 cmdHandler 子集对齐 ignored extra 路径数量异常上升
+
 ## v1.8.27 (2026-06-15) - CMD 忽略路径趋势门禁
 ### 🔧 改进
 - **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会把 cmdHandler 子集对齐中 ignored extra 路径数量的上升标记为趋势风险，并在 Markdown 摘要中展示变化，避免对齐范围悄悄漂移

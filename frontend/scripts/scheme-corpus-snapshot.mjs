@@ -127,7 +127,7 @@ const buildRequiredExactListResult = (actual, expected) => {
   };
 };
 
-export const buildThresholdResults = (report, qualitySnapshot, expectedSnapshot) => {
+export const buildThresholdResults = (report, qualitySnapshot, expectedSnapshot, cmdHandlerAlignment) => {
   const quality = expectedSnapshot?.quality;
   if (!quality) return {};
 
@@ -138,6 +138,13 @@ export const buildThresholdResults = (report, qualitySnapshot, expectedSnapshot)
   addOptionalThreshold(results, 'minNestedResourceFields', report.nestedResourceFieldCount || 0, quality.minNestedResourceFields, (actual, expected) => actual >= expected);
   addOptionalThreshold(results, 'maxUnresolved', report.summary.unresolvedCount, quality.maxUnresolved, (actual, expected) => actual <= expected);
   addOptionalThreshold(results, 'maxWarnings', report.summary.warningCount, quality.maxWarnings, (actual, expected) => actual <= expected);
+  addOptionalThreshold(
+    results,
+    'maxCmdHandlerIgnoredExtraPaths',
+    cmdHandlerAlignment?.ignoredExtraPaths,
+    quality.maxCmdHandlerIgnoredExtraPaths,
+    (actual, expected) => typeof actual === 'number' && actual <= expected
+  );
   addOptionalThreshold(
     results,
     'leadHotspotCommandSchema',
@@ -274,44 +281,48 @@ export const buildCorpusSnapshotSample = ({
   reportView,
   qualitySnapshot,
   scanLocations = [],
-}) => ({
-  sample: fixture.name,
-  baseline: fixture.baseline,
-  responseBytes: Buffer.byteLength(responseText, 'utf8'),
-  summaryText: report.summaryText || '深度解析: 无展开记录',
-  coverage: report.coverage,
-  totals: qualitySnapshot.totals,
-  filtered: qualitySnapshot.filtered,
-  topCommandSchemas: qualitySnapshot.hotspots.topCommandSchemas,
-  topResourceSchemas: qualitySnapshot.hotspots.topResourceSchemas,
-  topNestedCommandFields: qualitySnapshot.hotspots.topNestedCommandFields,
-  topNestedResourceFields: qualitySnapshot.hotspots.topNestedResourceFields,
-  scanLocations: normalizeScanLocations(scanLocations),
-  runtimePlaceholders: report.runtimePlaceholderGroups.map(group => ({
-    value: group.value,
-    count: group.count,
-    sourceCount: group.sourceCount,
-  })),
-  cmdHandlerAlignment: buildCmdHandlerAlignment({
+}) => {
+  const cmdHandlerAlignment = buildCmdHandlerAlignment({
     sampleName: fixture.name,
     report,
     expectedSnapshot,
     cmdHandlerExpected,
-  }),
-  thresholds: buildThresholdResults(report, qualitySnapshot, expectedSnapshot),
-  requiredChecks: buildRequiredResults({
-    report,
-    expectedSnapshot,
-    scanLocations,
-  }),
-  truncated: {
-    records: reportView.isRecordTruncated,
-    cmdStructures: reportView.isCmdStructureTruncated,
-    runtimePlaceholders: reportView.isPlaceholderTruncated,
-    unresolved: reportView.isUnresolvedTruncated,
-    warnings: reportView.isWarningTruncated,
-  },
-});
+  });
+
+  return {
+    sample: fixture.name,
+    baseline: fixture.baseline,
+    responseBytes: Buffer.byteLength(responseText, 'utf8'),
+    summaryText: report.summaryText || '深度解析: 无展开记录',
+    coverage: report.coverage,
+    totals: qualitySnapshot.totals,
+    filtered: qualitySnapshot.filtered,
+    topCommandSchemas: qualitySnapshot.hotspots.topCommandSchemas,
+    topResourceSchemas: qualitySnapshot.hotspots.topResourceSchemas,
+    topNestedCommandFields: qualitySnapshot.hotspots.topNestedCommandFields,
+    topNestedResourceFields: qualitySnapshot.hotspots.topNestedResourceFields,
+    scanLocations: normalizeScanLocations(scanLocations),
+    runtimePlaceholders: report.runtimePlaceholderGroups.map(group => ({
+      value: group.value,
+      count: group.count,
+      sourceCount: group.sourceCount,
+    })),
+    cmdHandlerAlignment,
+    thresholds: buildThresholdResults(report, qualitySnapshot, expectedSnapshot, cmdHandlerAlignment),
+    requiredChecks: buildRequiredResults({
+      report,
+      expectedSnapshot,
+      scanLocations,
+    }),
+    truncated: {
+      records: reportView.isRecordTruncated,
+      cmdStructures: reportView.isCmdStructureTruncated,
+      runtimePlaceholders: reportView.isPlaceholderTruncated,
+      unresolved: reportView.isUnresolvedTruncated,
+      warnings: reportView.isWarningTruncated,
+    },
+  };
+};
 
 export const listMissingBaselines = samples => (
   samples.flatMap(sample => {

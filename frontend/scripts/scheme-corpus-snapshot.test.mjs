@@ -218,6 +218,35 @@ describe('buildThresholdResults', () => {
       pass: false,
     });
   });
+
+  it('校验 cmdHandler ignored extra 路径上限', () => {
+    const expectedSnapshot = {
+      quality: {
+        maxCmdHandlerIgnoredExtraPaths: 1,
+      },
+    };
+
+    expect(buildThresholdResults(
+      createReport(),
+      createQualitySnapshot(),
+      expectedSnapshot,
+      { ignoredExtraPaths: 1 }
+    ).maxCmdHandlerIgnoredExtraPaths).toEqual({
+      actual: 1,
+      expected: 1,
+      pass: true,
+    });
+    expect(buildThresholdResults(
+      createReport(),
+      createQualitySnapshot(),
+      expectedSnapshot,
+      { ignoredExtraPaths: 2 }
+    ).maxCmdHandlerIgnoredExtraPaths).toEqual({
+      actual: 2,
+      expected: 1,
+      pass: false,
+    });
+  });
 });
 
 describe('buildRequiredResults', () => {
@@ -357,6 +386,39 @@ describe('buildCorpusSnapshotSample', () => {
         ignoredExtraPaths: 1,
         valueDiffs: 0,
       },
+    });
+  });
+
+  it('把 cmdHandler ignored extra 上限写入样本阈值', () => {
+    const expectedSnapshot = createExpectedSnapshot();
+    expectedSnapshot.quality = {
+      ...expectedSnapshot.quality,
+      maxCmdHandlerIgnoredExtraPaths: 1,
+    };
+
+    const sample = buildCorpusSnapshotSample({
+      fixture: {
+        name: 'reward-response-redacted',
+      },
+      expectedSnapshot,
+      cmdHandlerExpected: createCmdHandlerExpected(),
+      responseText: '{"cmd":"1"}',
+      report: createReport(),
+      reportView: {
+        isRecordTruncated: false,
+        isCmdStructureTruncated: false,
+        isPlaceholderTruncated: false,
+        isUnresolvedTruncated: false,
+        isWarningTruncated: false,
+      },
+      qualitySnapshot: createQualitySnapshot(),
+      scanLocations: createScanLocations(),
+    });
+
+    expect(sample.thresholds.maxCmdHandlerIgnoredExtraPaths).toEqual({
+      actual: 1,
+      expected: 1,
+      pass: true,
     });
   });
 });
