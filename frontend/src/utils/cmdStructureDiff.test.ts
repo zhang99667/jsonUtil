@@ -131,11 +131,13 @@ describe('cmdStructureDiff', () => {
       toolVersionLabel: 'v1.8.20',
       path: '$.action_cmd',
       sourceLabel: 'actionCmd',
+      modeLabel: '忽略 actual 额外路径',
     });
 
     expect(report).toContain('工具版本: v1.8.20');
     expect(report).toContain('对比路径: $.action_cmd');
     expect(report).toContain('业务字段: actionCmd');
+    expect(report).toContain('对比模式: 忽略 actual 额外路径');
     expect(report).toContain('结构一致');
   });
 

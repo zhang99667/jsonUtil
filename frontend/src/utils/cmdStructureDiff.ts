@@ -40,6 +40,7 @@ export interface CmdStructureDiffContext {
   sourceLabel?: string;
   tool?: Partial<AppVersionMetadata>;
   toolVersionLabel?: string;
+  modeLabel?: string;
 }
 
 const isRecord = (value: JsonValue): value is JsonObject => (
@@ -249,6 +250,7 @@ const appendDiffContextLines = (
   if (toolVersionLabel) lines.push(`工具版本: ${toolVersionLabel}`);
   if (context.path) lines.push(`对比路径: ${context.path}`);
   if (context.sourceLabel) lines.push(`业务字段: ${context.sourceLabel}`);
+  if (context.modeLabel) lines.push(`对比模式: ${context.modeLabel}`);
 };
 
 export const formatCmdStructureDiff = (
