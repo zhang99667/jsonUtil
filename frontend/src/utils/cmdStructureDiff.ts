@@ -229,6 +229,12 @@ const formatValue = (value: JsonValue): string => {
   return text.length > 160 ? `${text.slice(0, 160)}...` : text;
 };
 
+const formatSourceValue = (value?: string): string => {
+  if (!value) return '(空)';
+
+  return value.length > 240 ? `${value.slice(0, 240)}...` : value;
+};
+
 const getContextToolVersionLabel = (context: CmdStructureDiffContext): string => {
   const explicitVersionLabel = context.toolVersionLabel?.trim();
   if (explicitVersionLabel) return explicitVersionLabel;
@@ -271,8 +277,8 @@ export const formatCmdStructureDiff = (
 
   if (diff.sourceDiff) {
     lines.push('- source 不一致');
-    lines.push(`  actual: ${diff.sourceDiff.actual || '(空)'}`);
-    lines.push(`  expected: ${diff.sourceDiff.expected || '(空)'}`);
+    lines.push(`  actual: ${formatSourceValue(diff.sourceDiff.actual)}`);
+    lines.push(`  expected: ${formatSourceValue(diff.sourceDiff.expected)}`);
   }
 
   if (diff.missingPaths.length > 0) {
