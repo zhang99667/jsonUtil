@@ -176,6 +176,11 @@ describe('diffCmdStructures', () => {
 
     expect(diff.hasDifferences).toBe(false);
     expect(diff.extraPaths).toEqual([]);
+    expect(diff.ignoredExtraPaths).toEqual([
+      '$.params.appUrl.cmdParams.params.extra',
+      '$.params.appUrl.cmdParams.params.extra.trace',
+    ]);
+    expect(formatCmdStructureDiff(diff)).toContain('已忽略 actual 额外路径 2 个');
   });
 
   it('识别 source 单侧缺失差异', () => {

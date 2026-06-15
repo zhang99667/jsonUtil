@@ -119,10 +119,16 @@ describe('cmdStructureDiff', () => {
     expect(subsetDiff).toMatchObject({
       hasDifferences: false,
       extraPaths: [],
+      ignoredExtraPaths: [
+        '$.params.appUrl.cmdParams.params.url',
+        '$.params.appUrl.cmdParams.params.url.cmdSchema',
+        '$.params.appUrl.cmdParams.params.url.cmdParams',
+        '$.params.appUrl.cmdParams.params.url.cmdParams.sku',
+      ],
       missingPaths: [],
       valueDiffs: [],
     });
-    expect(formatCmdStructureDiff(subsetDiff)).toContain('结构一致');
+    expect(formatCmdStructureDiff(subsetDiff)).toContain('已忽略 actual 额外路径 4 个');
   });
 
   it('识别 source 单侧缺失差异', () => {
