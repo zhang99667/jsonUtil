@@ -132,6 +132,13 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('s_url=https%3A%2F%2Funet.example.com%2Fv3%2Fad%2Fshow%3Fact%3Dnew')).toBe(true);
   });
 
+  it('检测真实广告日志里的激励与互动组件字段', () => {
+    expect(isDecodableQueryString(`reward=${encodeURIComponent(JSON.stringify({ stay_cmd: '__CONVERT_CMD__' }))}`))
+      .toBe(true);
+    expect(isDecodableQueryString(`rotation_component=${encodeURIComponent(JSON.stringify({ click_event_cmd: '__CONVERT_CMD__' }))}`))
+      .toBe(true);
+  });
+
   it('检测常见跳转兜底单参数字段', () => {
     expect(isDecodableQueryString('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
     expect(isDecodableQueryString('fallbackUrl=//m.baidu.com/s?word=json')).toBe(true);
@@ -1061,6 +1068,63 @@ describe('deepDecodeScheme', () => {
         product: 'demo',
       },
     });
+  });
+
+  it('真实广告日志里的激励字段可作为单参数解析并展开内层 CMD', () => {
+    const rewardPayload = encodeURIComponent(JSON.stringify({
+      stay_cmd: `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
+        button_cmd: '__CONVERT_CMD__',
+        button_text: '打开应用',
+      }))}`,
+      task_policy: JSON.stringify({ sdk_switch: '1' }),
+    }));
+    const result = deepDecodeScheme(`reward=${rewardPayload}`);
+
+    expect(JSON.parse(result.decoded)).toEqual({
+      reward: {
+        stay_cmd: {
+          convert_btn: {
+            button_cmd: '__CONVERT_CMD__',
+            button_text: '打开应用',
+          },
+        },
+        task_policy: {
+          sdk_switch: '1',
+        },
+      },
+    });
+    expect(result.placeholders).toContainEqual({
+      path: '$.reward.stay_cmd.convert_btn.button_cmd',
+      value: '__CONVERT_CMD__',
+      description: '运行时转换 CMD 占位符，当前文本未包含实际 CMD 内容',
+    });
+  });
+
+  it('真实广告日志里的互动组件字段可作为单参数解析', () => {
+    const componentPayload = encodeURIComponent(JSON.stringify({
+      type: 'shake',
+      click_event_cmd: '__CONVERT_CMD__',
+      webpanel_event_cmd: '__WEBPANEL_CMD__',
+      shake_params: {
+        shake_counts: 2,
+      },
+    }));
+    const result = deepDecodeScheme(`rotation_component=${componentPayload}`);
+
+    expect(JSON.parse(result.decoded)).toEqual({
+      rotation_component: {
+        type: 'shake',
+        click_event_cmd: '__CONVERT_CMD__',
+        webpanel_event_cmd: '__WEBPANEL_CMD__',
+        shake_params: {
+          shake_counts: 2,
+        },
+      },
+    });
+    expect(result.placeholders?.map(placeholder => placeholder.path)).toEqual([
+      '$.rotation_component.click_event_cmd',
+      '$.rotation_component.webpanel_event_cmd',
+    ]);
   });
 
   it('常见 hash route 字段可作为单参数解析', () => {
