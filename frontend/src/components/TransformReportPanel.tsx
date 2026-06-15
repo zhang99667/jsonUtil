@@ -161,8 +161,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     Boolean(reportView?.cmdStructureRecords.some(record => record.cmdStructureFocusPaths?.length))
   ), [reportView]);
   const issueSampleCopyText = useMemo(() => (
-    reportView ? formatTransformIssueSampleReportText(reportView) : ''
-  ), [reportView]);
+    reportView ? formatTransformIssueSampleReportText(reportView, deferredQuery) : ''
+  ), [deferredQuery, reportView]);
   const issueSampleJsonCopyText = useMemo(() => (
     reportView ? formatTransformIssueSampleJsonText(reportView, { filter: deferredQuery }) : ''
   ), [deferredQuery, reportView]);
@@ -173,8 +173,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }) : ''
   ), [deferredQuery, reportView]);
   const issueRegressionTemplateCopyText = useMemo(() => (
-    reportView ? formatTransformIssueRegressionTemplateText(reportView, { redactSensitiveValues: true }) : ''
-  ), [reportView]);
+    reportView ? formatTransformIssueRegressionTemplateText(reportView, {
+      redactSensitiveValues: true,
+      filter: deferredQuery,
+    }) : ''
+  ), [deferredQuery, reportView]);
   const placeholderFillTemplateJsonText = useMemo(() => (
     reportView ? formatTransformPlaceholderFillTemplateJsonText(reportView, deferredQuery) : ''
   ), [deferredQuery, reportView]);
