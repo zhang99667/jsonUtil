@@ -143,6 +143,23 @@ describe('cmdStructureDiff', () => {
     expect(report).toContain('expected: baiduboxapp://v7/vendor/ad/deeplink?params=...');
   });
 
+  it('source 差异报告会截断超长来源串', () => {
+    const actual = createCmdStructure();
+    const expected = createCmdStructure();
+    const longActualSource = `baiduboxapp://v7/vendor/ad/deeplink?params=${'a'.repeat(260)}`;
+    const longExpectedSource = `baiduboxapp://v7/vendor/ad/deeplink?params=${'b'.repeat(260)}`;
+
+    actual.result.source = longActualSource;
+    expected.result.source = longExpectedSource;
+
+    const report = formatCmdStructureDiff(diffCmdStructures(actual, expected));
+
+    expect(report).toContain(`${longActualSource.slice(0, 240)}...`);
+    expect(report).toContain(`${longExpectedSource.slice(0, 240)}...`);
+    expect(report).not.toContain(longActualSource);
+    expect(report).not.toContain(longExpectedSource);
+  });
+
   it('expected 未声明 source 时允许 actual 保留来源串', () => {
     const actual = createCmdStructure();
     const expected = createCmdStructure();

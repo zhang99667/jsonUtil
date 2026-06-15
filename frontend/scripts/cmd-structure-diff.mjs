@@ -229,6 +229,12 @@ const formatValue = value => {
   return text && text.length > 160 ? `${text.slice(0, 160)}...` : text;
 };
 
+const formatSourceValue = value => {
+  if (!value) return '(空)';
+
+  return value.length > 240 ? `${value.slice(0, 240)}...` : value;
+};
+
 const appendDiffContextLines = (lines, context = {}) => {
   if (context.toolVersionLabel) lines.push(`工具版本: ${context.toolVersionLabel}`);
   if (context.path) lines.push(`对比路径: ${context.path}`);
@@ -251,8 +257,8 @@ export const formatCmdStructureDiff = (diff, context = {}) => {
 
   if (diff.sourceDiff) {
     lines.push('- source 不一致');
-    lines.push(`  actual: ${diff.sourceDiff.actual || '(空)'}`);
-    lines.push(`  expected: ${diff.sourceDiff.expected || '(空)'}`);
+    lines.push(`  actual: ${formatSourceValue(diff.sourceDiff.actual)}`);
+    lines.push(`  expected: ${formatSourceValue(diff.sourceDiff.expected)}`);
   }
 
   if (diff.missingPaths.length > 0) {
