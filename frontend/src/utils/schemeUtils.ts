@@ -77,7 +77,7 @@ type QueryParamContainer = { [key: string]: StructuredValue };
 interface LogFieldParam {
   rawKey: string;
   key: string;
-  delimiter: ':' | '：';
+  delimiter: ':' | '：' | '=';
   value: string;
   quote?: '"' | "'";
   trailingComma?: boolean;
@@ -280,7 +280,8 @@ const isDecodableParamValue = (value: string): boolean => (
 );
 
 const LOG_FIELD_KEY_PATTERN = `(?:"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|${QUERY_KEY_PATTERN})`;
-const LOG_FIELD_RE = new RegExp(`^\\s*(${LOG_FIELD_KEY_PATTERN})\\s*([:：])\\s*(.+?)\\s*$`);
+const LOG_FIELD_SEPARATOR_PATTERN = '(?:\\s*[:：]\\s*|\\s+=\\s*|=\\s+)';
+const LOG_FIELD_RE = new RegExp(`^\\s*(${LOG_FIELD_KEY_PATTERN})(${LOG_FIELD_SEPARATOR_PATTERN})(.+?)\\s*$`);
 
 const unwrapLogFieldValue = (value: string): { value: string; quote?: '"' | "'" } => {
   const trimmed = value.trim();
@@ -348,6 +349,11 @@ const unwrapDecodableLogFieldValue = (
     : null;
 };
 
+const normalizeLogFieldDelimiter = (separator: string): LogFieldParam['delimiter'] => {
+  if (separator.includes('=')) return '=';
+  return separator.includes('：') ? '：' : ':';
+};
+
 const parseLogFieldParamString = (source: string): LogFieldParam | null => {
   const trimmed = source.trim();
   // 日志字段只识别单行，避免把多行说明文本误拆成 CMD。
@@ -368,7 +374,7 @@ const parseLogFieldParamString = (source: string): LogFieldParam | null => {
   return {
     rawKey,
     key,
-    delimiter: match[2] as ':' | '：',
+    delimiter: normalizeLogFieldDelimiter(match[2]),
     value: unwrappedValue.value,
     quote: unwrappedValue.quote,
     trailingComma: unwrappedValue.trailingComma,
@@ -1768,6 +1774,10 @@ const wrapLogFieldValue = (value: string, quote?: '"' | "'"): string => {
   return value;
 };
 
+const formatLogFieldSeparator = (delimiter: LogFieldParam['delimiter']): string => (
+  delimiter === '=' ? ' = ' : `${delimiter} `
+);
+
 const encodeSingleLogFieldParamContent = (
   editedParams: Record<string, unknown>,
   originalQueryString: string
@@ -1788,7 +1798,7 @@ const encodeSingleLogFieldParamContent = (
   const encodedValue = encodeWithLayers(editedContent, nestedDecoded.layers);
 
   const suffix = logFieldParam.trailingComma ? ',' : '';
-  return `${logFieldParam.rawKey}${logFieldParam.delimiter} ${wrapLogFieldValue(encodedValue, logFieldParam.quote)}${suffix}`;
+  return `${logFieldParam.rawKey}${formatLogFieldSeparator(logFieldParam.delimiter)}${wrapLogFieldValue(encodedValue, logFieldParam.quote)}${suffix}`;
 };
 
 export function encodeWithLayers(content: string, layers: DecodeLayer[]): string {
