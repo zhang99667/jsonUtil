@@ -122,6 +122,7 @@ describe('transformSummary', () => {
     expect(JSON.parse(formatTransformCmdStructureComparisonPackageText(report.records[0]))).toEqual({
       schemaVersion: 1,
       kind: 'json-helper-cmd-structure-comparison-package',
+      tool: APP_VERSION_METADATA,
       path: '$.cmd',
       actual: {
         result: {

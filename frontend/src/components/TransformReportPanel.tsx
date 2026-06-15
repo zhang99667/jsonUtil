@@ -1,6 +1,7 @@
 import React, { useDeferredValue, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { TransformContext } from '../types';
+import { APP_VERSION_METADATA } from '../utils/appVersion';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import {
@@ -442,7 +443,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     const actual = parseCmdStructureJson(actualText, '本工具 CMD 结构');
     const expected = parseCmdStructureJson(cmdComparisonExpectedText, 'cmdHandler 输出');
     const diff = diffCmdStructures(actual, expected);
-    return formatCmdStructureDiff(diff);
+    return formatCmdStructureDiff(diff, {
+      path: record.path,
+      sourceLabel: record.sourceLabel,
+      tool: APP_VERSION_METADATA,
+    });
   };
 
   const buildActiveCmdComparisonReportText = (): string => {
@@ -530,7 +535,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         );
         const expected = parseCmdStructureJson(expectedText, 'cmdHandler 输出');
         const diff = diffCmdStructures(actual, expected);
-        diffReportText = formatCmdStructureDiff(diff);
+        diffReportText = formatCmdStructureDiff(diff, {
+          path: record.path,
+          sourceLabel: record.sourceLabel,
+          tool: APP_VERSION_METADATA,
+        });
         diffSummary = {
           hasDifferences: diff.hasDifferences,
           missingCount: diff.missingPaths.length,

@@ -125,6 +125,20 @@ describe('cmdStructureDiff', () => {
     expect(formatCmdStructureDiff(subsetDiff)).toContain('结构一致');
   });
 
+  it('差异报告可附带对比来源上下文', () => {
+    const diff = diffCmdStructures(createCmdStructure(), createCmdStructure());
+    const report = formatCmdStructureDiff(diff, {
+      toolVersionLabel: 'v1.8.20',
+      path: '$.action_cmd',
+      sourceLabel: 'actionCmd',
+    });
+
+    expect(report).toContain('工具版本: v1.8.20');
+    expect(report).toContain('对比路径: $.action_cmd');
+    expect(report).toContain('业务字段: actionCmd');
+    expect(report).toContain('结构一致');
+  });
+
   it('解析非法 expected JSON 时给出明确错误', () => {
     expect(() => parseCmdStructureJson('{broken', 'cmdHandler 输出')).toThrow('cmdHandler 输出不是有效 JSON');
   });

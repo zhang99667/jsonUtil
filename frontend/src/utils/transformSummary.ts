@@ -896,6 +896,7 @@ export const formatTransformCmdStructureComparisonPackageText = (
     return JSON.stringify({
       schemaVersion: 1,
       kind: 'json-helper-cmd-structure-comparison-package',
+      tool: APP_VERSION_METADATA,
       path: record.path,
       ...(record.sourceLabel ? { sourceLabel: record.sourceLabel } : {}),
       actual: JSON.parse(cmdStructureCopyText) as unknown,
