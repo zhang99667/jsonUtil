@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.59 (2026-06-16) - hash 追踪参数展开
+### ✨ 新特性
+- **CMD/Scheme 解析**: 支持解析 URL hash 锚点后继续拼接的追踪参数，电话 Scheme 内二级落地页的 `unit`、`keyword`、`e_creative` 等字段可在 `_hash` 中直接查看
+
 ## v1.8.58 (2026-06-16) - loose JSON 参数拆分稳固
 ### 🐛 Bug 修复
 - **CMD/Scheme 兼容性**: 修复半解码 loose JSON 参数中单引号字符串包含 `}` 时，JSON 值被提前截断并误拆内层 URL 参数的问题

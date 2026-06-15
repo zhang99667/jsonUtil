@@ -89,6 +89,11 @@ interface PrefixedQueryString {
   queryString: string;
 }
 
+interface FragmentParamSourceInfo {
+  source: string;
+  prefix: string;
+}
+
 interface DecodeStructuredState {
   maxStringDecodeLength: number;
   maxTotalStringDecodeLength: number;
@@ -1214,27 +1219,55 @@ const parseFlatQueryParams = (queryString: string): Record<string, string | stri
   return Object.keys(params).length > 0 ? params : undefined;
 };
 
-const getFragmentParamSource = (hash: string): string | null => {
-  const rawFragment = hash.replace(/^#/, '').trim();
-  if (!rawFragment) return null;
-
-  const candidates = [rawFragment];
-  const decodedFragment = urlDecode(rawFragment);
-  if (decodedFragment !== rawFragment) {
-    candidates.push(decodedFragment);
-  }
-
-  for (const candidate of candidates) {
-    const queryStart = candidate.startsWith('?') ? 1 : candidate.indexOf('?') + 1;
-    const source = queryStart > 0 ? candidate.slice(queryStart) : candidate;
+const getParamSourceInfoFromFragment = (fragment: string): FragmentParamSourceInfo | null => {
+  const queryStart = fragment.startsWith('?') ? 0 : fragment.indexOf('?');
+  if (queryStart >= 0) {
+    const source = fragment.slice(queryStart + 1);
     const normalized = normalizeQueryString(source.replace(/^&/, ''));
     if (QUERY_PAIR_START_RE.test(normalized)) {
-      return source;
+      return {
+        source,
+        prefix: fragment.slice(0, queryStart + 1),
+      };
     }
+  }
+
+  const embeddedParamMatch = fragment.match(new RegExp(`[&](?=${QUERY_KEY_PATTERN}=)`));
+  if (embeddedParamMatch?.index !== undefined) {
+    const sourceStart = embeddedParamMatch.index + 1;
+    const source = fragment.slice(sourceStart);
+    if (QUERY_PAIR_START_RE.test(normalizeQueryString(source))) {
+      return {
+        source,
+        prefix: fragment.slice(0, sourceStart),
+      };
+    }
+  }
+
+  if (QUERY_PAIR_START_RE.test(normalizeQueryString(fragment))) {
+    return {
+      source: fragment,
+      prefix: '',
+    };
   }
 
   return null;
 };
+
+const getFragmentParamSourceInfo = (hash: string): FragmentParamSourceInfo | null => {
+  const rawFragment = hash.replace(/^#/, '').trim();
+  if (!rawFragment) return null;
+
+  const rawInfo = getParamSourceInfoFromFragment(rawFragment);
+  if (rawInfo) return rawInfo;
+
+  const decodedFragment = urlDecode(rawFragment);
+  return decodedFragment !== rawFragment ? getParamSourceInfoFromFragment(decodedFragment) : null;
+};
+
+const getFragmentParamSource = (hash: string): string | null => (
+  getFragmentParamSourceInfo(hash)?.source ?? null
+);
 
 const isDecodableFragmentParamString = (source: string): boolean => {
   const trimmed = source.trim();
@@ -1954,6 +1987,10 @@ const parseEditedQueryObject = (content: string): Record<string, unknown> | null
 // 保留 hash route 的路径前缀，只替换其中的查询参数部分。
 const replaceHashParams = (hash: string, queryString: string): string => {
   const fragment = hash.replace(/^#/, '');
+  const paramSourceInfo = getParamSourceInfoFromFragment(fragment.trim());
+  if (paramSourceInfo) {
+    return queryString ? `${paramSourceInfo.prefix}${queryString}` : paramSourceInfo.prefix.replace(/[?&]$/, '');
+  }
 
   if (!fragment) {
     return queryString ? `?${queryString}` : '';

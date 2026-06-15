@@ -534,6 +534,17 @@ describe('parseUrl', () => {
     expect(result!.hashParams).toEqual({ cmd: '{"a":1}', from: 'hash' });
   });
 
+  it('解析 URL hash 锚点后继续拼接的参数', () => {
+    const result = parseUrl('https://example.com/app?from=feed#zzzaz1)&unit=%E5%8D%95%E5%85%83&keyword=json&e_creative=134');
+    expect(result).not.toBeNull();
+    expect(result!.hash).toBe('zzzaz1)&unit=%E5%8D%95%E5%85%83&keyword=json&e_creative=134');
+    expect(result!.hashParams).toEqual({
+      unit: '单元',
+      keyword: 'json',
+      e_creative: '134',
+    });
+  });
+
   it('查询参数中的加号按表单编码还原为空格', () => {
     const result = parseUrl('https://example.com/search?word=json+schema&redirect=https%3A%2F%2Fexample.com%2Fa%2Bb');
     expect(result).not.toBeNull();
@@ -1493,6 +1504,19 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('URL hash 锚点后继续拼接的参数会保留到 _hash', () => {
+    const result = deepDecodeScheme('https://example.com/page?from=feed#zzzaz1)&unit=%E5%8D%95%E5%85%83&keyword=json&e_creative=134');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      from: 'feed',
+      _hash: {
+        unit: '单元',
+        keyword: 'json',
+        e_creative: '134',
+      },
+    });
+  });
+
   it('CMD 参数串支持点号和空括号展开对象与数组', () => {
     const result = deepDecodeScheme('user.name=%E5%BC%A0%E4%B8%89&user.city=beijing&tags[]=feed&tags[]=news');
     const parsed = JSON.parse(result.decoded);
@@ -1568,6 +1592,21 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe('https://example.com/page?from=card#/detail?cmd=%7B%22a%22%3A4%7D&tab=new');
+  });
+
+  it('URL hash 锚点后参数编辑时保留锚点前缀', () => {
+    const original = 'https://example.com/page?from=feed#zzzaz1)&unit=%E6%97%A7&keyword=json';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      from: 'card',
+      _hash: {
+        unit: '新',
+        keyword: 'schema',
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('https://example.com/page?from=card#zzzaz1)&unit=%E6%96%B0&keyword=schema');
   });
 
   it('独立 CMD 参数串编辑后支持数组恢复为重复参数', () => {

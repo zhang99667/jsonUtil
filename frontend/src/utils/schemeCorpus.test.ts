@@ -296,6 +296,39 @@ describe('CMD/Scheme 真实样本回归', () => {
     ]);
   });
 
+  it('解析电话 Scheme 内落地页 hash 后追加的追踪参数', () => {
+    const landingUrl = `https://ada.baidu.com/site/demo/agent?imid=31&source=baidu#zzzaz1)&unit=${encodeURIComponent('种植牙')}&keyword=${encodeURIComponent('收费表')}&e_creative=134`;
+    const numberUrl = `https://ada.baidu.com/phone-tracker/getNumber?url=${encodeURIComponent(landingUrl)}&query=${encodeURIComponent('种植牙')}`;
+    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+      phone: '400-805-8686',
+      numberUrl,
+      type: 1,
+    }))}`;
+
+    const decoded = deepDecodeScheme(scheme);
+    const parsed = JSON.parse(decoded.decoded);
+
+    expect(decoded.isJson).toBe(true);
+    expect(parsed).toEqual({
+      params: {
+        phone: '400-805-8686',
+        numberUrl: {
+          url: {
+            imid: '31',
+            source: 'baidu',
+            _hash: {
+              unit: '种植牙',
+              keyword: '收费表',
+              e_creative: '134',
+            },
+          },
+          query: '种植牙',
+        },
+        type: 1,
+      },
+    });
+  });
+
   it('解析半解码电话拨打 Scheme 中未编码 & 的监测 URL', () => {
     const extInfo = base64Encode(JSON.stringify({ rank: 2 }));
     const rawParams = JSON.stringify({
