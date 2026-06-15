@@ -1076,25 +1076,25 @@ const findRawJsonValueEndIndex = (source: string, valueStartIndex: number): numb
   if (!['{', '['].includes(source[index])) return -1;
 
   const stack: string[] = [];
-  let inString = false;
+  let stringQuote: '"' | "'" | null = null;
   let escaped = false;
 
   for (; index < source.length; index++) {
     const char = source[index];
 
-    if (inString) {
+    if (stringQuote) {
       if (escaped) {
         escaped = false;
       } else if (char === '\\') {
         escaped = true;
-      } else if (char === '"') {
-        inString = false;
+      } else if (char === stringQuote) {
+        stringQuote = null;
       }
       continue;
     }
 
-    if (char === '"') {
-      inString = true;
+    if (char === '"' || char === "'") {
+      stringQuote = char;
       continue;
     }
 
