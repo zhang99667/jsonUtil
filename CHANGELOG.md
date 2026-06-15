@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.29 (2026-06-15) - CMD 忽略路径摘要样例
+### 🔧 改进
+- **Scheme Corpus 快照**: Markdown 摘要会列出 cmdHandler ignored extra 路径样例，CI 排查时无需先下载 JSON artifact 就能看到对齐范围漂移位置
+
 ## v1.8.28 (2026-06-15) - CMD 忽略路径基线门禁
 ### 🔧 改进
 - **Scheme Corpus 快照**: expected snapshot 支持 `maxCmdHandlerIgnoredExtraPaths`，CI 常规快照检查会拦截 cmdHandler 子集对齐 ignored extra 路径数量异常上升

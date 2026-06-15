@@ -16,7 +16,7 @@
 - `frontend`: `npm ci`、`npm run typecheck`、`npm test`、`npm run corpus:scheme`、`npm run corpus:snapshot:check`、`npm run perf:scheme -- --iterations 3 --strict`、`npm run build`、`npm run check:preloads`、`npm run test:e2e`
   - `npm run corpus:scheme` 独立校验脱敏 response corpus，固定主 CMD Schema、Top 热点 Schema、占位符、扫描位置和质量指标
   - `npm run corpus:snapshot:check` 输出 corpus 质量快照，并在 expected 阈值不通过、cmdHandler ignored extra 路径数量超过基线、必需 CMD Schema/运行时占位符/扫描位置缺失、样本缺失 expected snapshot、缺失 cmdHandler expected 或 cmdHandler 关键子集不对齐时让 CI 失败，方便直接定位样本质量变化
-  - `Scheme corpus quality snapshot` 会把覆盖率、资源/CMD 热点、必需项失败和 cmdHandler 对齐结果写入 GitHub Step Summary，并上传 `scheme-corpus-quality-snapshot` artifact 供评审下载
+  - `Scheme corpus quality snapshot` 会把覆盖率、资源/CMD 热点、必需项失败、cmdHandler 对齐结果和 ignored extra 路径样例写入 GitHub Step Summary，并上传 `scheme-corpus-quality-snapshot` artifact 供评审下载
   - `npm run perf:scheme -- --iterations 3 --strict` 会通过复制真实 `data.video` 条目构造 50KB / 250KB 脱敏 response，校验核心解析耗时、展开记录、CMD 结构、CMD 字段、资源字段、待检查和跳过数量，并上传 `scheme-performance-budget` artifact
   - `npm run corpus:snapshot:diff` 可对比两份质量快照，strict 模式会把 requiredChecks 必需项失败数量增加、cmdHandler ignored extra 路径数量上升等变化视为解析质量退化
 - `backend`: `mvn -B test`、`mvn -B package -DskipTests`
