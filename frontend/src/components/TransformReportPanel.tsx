@@ -190,6 +190,22 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     if (!placeholderFillTemplateJsonText) return '当前筛选没有可用的运行时占位符回填模板';
     return readyTitle;
   };
+  const filteredReportCopyTitle = getReportCopyTitle(Boolean(reportView), '复制当前筛选命中的深度解析记录', '暂无筛选结果可复制');
+  const collaborationReportCopyTitle = getReportCopyTitle(Boolean(reportView), '复制诊断摘要、质量快照要点和 cmdHandler 对齐状态，便于发给协作者排查', '暂无排查报告可复制');
+  const diagnosticSummaryCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始大字段值的解析覆盖、CMD Schema 和风险摘要', '暂无诊断摘要可复制');
+  const qualitySnapshotCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始大字段值的解析质量指标 JSON，便于保存基线或对比趋势', '暂无质量快照可复制');
+  const archivePackageCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始 response 的质量快照、脱敏问题样本和 corpus 沉淀清单', '暂无归档包可复制');
+  const pathValuesCopyTitle = getReportCopyTitle(hasPathValueCopyItems, '复制当前筛选下已索引的内部路径和值', '当前筛选没有可复制的路径和值');
+  const cmdStructuresCopyTitle = getReportCopyTitle(
+    hasCmdStructureCopyItems,
+    hasFocusedCmdStructureCopyItems ? '复制按当前筛选聚焦后的 cmdHandler 风格 CMD 结构' : '复制当前展示的 cmdHandler 风格 CMD 结构',
+    '当前筛选没有可复制的 CMD 结构'
+  );
+  const issueSamplesCopyTitle = getReportCopyTitle(Boolean(issueSampleCopyText), '复制当前筛选下的待检查、跳过和占位符来源样本', '当前筛选没有待检查、跳过或占位符来源样本可复制');
+  const issueSampleJsonCopyTitle = getReportCopyTitle(Boolean(issueSampleJsonCopyText), '复制当前筛选下可沉淀为回归用例的结构化样本 JSON', '当前筛选没有可沉淀为回归用例的结构化样本');
+  const redactedIssueSampleJsonCopyTitle = getReportCopyTitle(Boolean(redactedIssueSampleJsonCopyText), '复制当前筛选下的脱敏结构化样本 JSON，便于安全沉淀回归用例', '当前筛选没有可脱敏沉淀的结构化样本');
+  const issueRegressionTemplateCopyTitle = getReportCopyTitle(Boolean(issueRegressionTemplateCopyText), '复制当前筛选下的脱敏 Vitest TODO 回归模板', '当前筛选没有可生成回归模板的问题样本');
+  const fullReportCopyTitle = context ? '复制完整深度解析报告' : '暂无深度解析报告可复制';
 
   const showCopyError = (message: string, error: unknown) => {
     console.warn(message, error);
@@ -600,7 +616,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
             onClick={handleCopyFilteredReport}
             disabled={!reportView || isFilterPending}
             className="whitespace-nowrap px-2.5 py-1 text-sm bg-cyan-900/40 text-cyan-100 rounded hover:bg-cyan-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={getReportCopyTitle(Boolean(reportView), '复制当前筛选命中的深度解析记录', '暂无筛选结果可复制')}
+            title={filteredReportCopyTitle}
+            aria-label={`复制筛选结果，${filteredReportCopyTitle}`}
           >
             复制筛选结果
           </button>
@@ -610,7 +627,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyCollaborationReport}
           disabled={!reportView || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-cyan-900/40 text-cyan-100 rounded hover:bg-cyan-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(Boolean(reportView), '复制诊断摘要、质量快照要点和 cmdHandler 对齐状态，便于发给协作者排查', '暂无排查报告可复制')}
+          title={collaborationReportCopyTitle}
+          aria-label={`复制排查报告，${collaborationReportCopyTitle}`}
         >
           复制排查报告
         </button>
@@ -619,7 +637,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyDiagnosticSummary}
           disabled={!reportView || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(Boolean(reportView), '复制不含原始大字段值的解析覆盖、CMD Schema 和风险摘要', '暂无诊断摘要可复制')}
+          title={diagnosticSummaryCopyTitle}
+          aria-label={`复制诊断摘要，${diagnosticSummaryCopyTitle}`}
         >
           复制诊断摘要
         </button>
@@ -628,7 +647,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyQualitySnapshot}
           disabled={!reportView || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(Boolean(reportView), '复制不含原始大字段值的解析质量指标 JSON，便于保存基线或对比趋势', '暂无质量快照可复制')}
+          title={qualitySnapshotCopyTitle}
+          aria-label={`复制质量快照，${qualitySnapshotCopyTitle}`}
         >
           复制质量快照
         </button>
@@ -637,7 +657,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyArchivePackage}
           disabled={!reportView || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-cyan-900/40 text-cyan-100 rounded hover:bg-cyan-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(Boolean(reportView), '复制不含原始 response 的质量快照、脱敏问题样本和 corpus 沉淀清单', '暂无归档包可复制')}
+          title={archivePackageCopyTitle}
+          aria-label={`复制归档包，${archivePackageCopyTitle}`}
         >
           复制归档包
         </button>
@@ -646,7 +667,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyPathValueReport}
           disabled={!hasPathValueCopyItems || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(hasPathValueCopyItems, '复制当前筛选下已索引的内部路径和值', '当前筛选没有可复制的路径和值')}
+          title={pathValuesCopyTitle}
+          aria-label={`复制路径值，${pathValuesCopyTitle}`}
         >
           复制路径值
         </button>
@@ -656,7 +678,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
             onClick={handleCopyCmdStructureReport}
             disabled={isFilterPending}
             className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={getReportCopyTitle(hasCmdStructureCopyItems, hasFocusedCmdStructureCopyItems ? '复制按当前筛选聚焦后的 cmdHandler 风格 CMD 结构' : '复制当前展示的 cmdHandler 风格 CMD 结构', '当前筛选没有可复制的 CMD 结构')}
+            title={cmdStructuresCopyTitle}
+            aria-label={`${hasFocusedCmdStructureCopyItems ? '复制聚焦 CMD' : '复制 CMD 结构'}，${cmdStructuresCopyTitle}`}
           >
             {hasFocusedCmdStructureCopyItems ? '复制聚焦 CMD' : '复制 CMD 结构'}
           </button>
@@ -666,7 +689,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyIssueSamples}
           disabled={!issueSampleCopyText || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(Boolean(issueSampleCopyText), '复制当前筛选下的待检查、跳过和占位符来源样本', '当前筛选没有待检查、跳过或占位符来源样本可复制')}
+          title={issueSamplesCopyTitle}
+          aria-label={`复制问题样本，${issueSamplesCopyTitle}`}
         >
           复制问题样本
         </button>
@@ -675,7 +699,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyIssueSampleJson}
           disabled={!issueSampleJsonCopyText || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(Boolean(issueSampleJsonCopyText), '复制当前筛选下可沉淀为回归用例的结构化样本 JSON', '当前筛选没有可沉淀为回归用例的结构化样本')}
+          title={issueSampleJsonCopyTitle}
+          aria-label={`复制样本 JSON，${issueSampleJsonCopyTitle}`}
         >
           复制样本 JSON
         </button>
@@ -684,7 +709,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyRedactedIssueSampleJson}
           disabled={!redactedIssueSampleJsonCopyText || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(Boolean(redactedIssueSampleJsonCopyText), '复制当前筛选下的脱敏结构化样本 JSON，便于安全沉淀回归用例', '当前筛选没有可脱敏沉淀的结构化样本')}
+          title={redactedIssueSampleJsonCopyTitle}
+          aria-label={`复制脱敏 JSON，${redactedIssueSampleJsonCopyTitle}`}
         >
           复制脱敏 JSON
         </button>
@@ -693,7 +719,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyIssueRegressionTemplate}
           disabled={!issueRegressionTemplateCopyText || isFilterPending}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={getReportCopyTitle(Boolean(issueRegressionTemplateCopyText), '复制当前筛选下的脱敏 Vitest TODO 回归模板', '当前筛选没有可生成回归模板的问题样本')}
+          title={issueRegressionTemplateCopyTitle}
+          aria-label={`复制回归模板，${issueRegressionTemplateCopyTitle}`}
         >
           复制回归模板
         </button>
@@ -702,7 +729,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           onClick={handleCopyReport}
           disabled={!context}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={context ? '复制完整深度解析报告' : '暂无深度解析报告可复制'}
+          title={fullReportCopyTitle}
+          aria-label={`复制报告，${fullReportCopyTitle}`}
         >
           复制报告
         </button>
