@@ -18,9 +18,10 @@ export const DEFAULT_PERFORMANCE_CASES = [
     maxUnresolved: 0,
     maxWarnings: 0,
     minCoverageScore: 100,
-    minCmdStructures: 1,
-    minNestedCommandFields: 20,
-    minNestedResourceFields: 1,
+    minRecords: 4,
+    minCmdStructures: 2,
+    minNestedCommandFields: 120,
+    minNestedResourceFields: 2,
   },
   {
     name: 'response-250kb',
@@ -29,9 +30,10 @@ export const DEFAULT_PERFORMANCE_CASES = [
     maxUnresolved: 0,
     maxWarnings: 0,
     minCoverageScore: 100,
-    minCmdStructures: 1,
-    minNestedCommandFields: 20,
-    minNestedResourceFields: 1,
+    minRecords: 20,
+    minCmdStructures: 10,
+    minNestedCommandFields: 600,
+    minNestedResourceFields: 10,
   },
 ];
 
@@ -149,6 +151,7 @@ const listFailures = (caseConfig, durationMs, report) => {
     });
   }
   pushMinimumFailure(failures, 'coverageScore', '覆盖率', report.coverage.score, caseConfig.minCoverageScore);
+  pushMinimumFailure(failures, 'records', '展开记录', report.summary.recordCount, caseConfig.minRecords);
   pushMinimumFailure(failures, 'cmdStructures', 'CMD 结构', report.cmdStructureCount, caseConfig.minCmdStructures);
   pushMinimumFailure(failures, 'nestedCommandFields', 'CMD 字段', report.nestedCommandFieldCount, caseConfig.minNestedCommandFields);
   pushMinimumFailure(failures, 'nestedResourceFields', '资源字段', report.nestedResourceFieldCount || 0, caseConfig.minNestedResourceFields);
