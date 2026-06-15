@@ -97,13 +97,29 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
     }
   };
 
+  const hasTemplateContent = template.trim().length > 0;
+  const clearTemplateTitle = hasTemplateContent ? '清空当前模板内容' : '模板为空，暂无内容可清空';
+  const formatTemplateTitle = !hasTemplateContent
+    ? '模板为空，暂无内容可格式化'
+    : validation.isValid
+      ? '格式化模板 JSON'
+      : '请先修正模板 JSON 后再格式化';
+  const applyTemplateTitle = targetError ||
+    (!hasTemplateContent
+      ? '模板为空，暂无内容可应用'
+      : validation.isValid
+        ? '应用模板到 SOURCE'
+        : '请先修正模板 JSON 后再应用');
+
   // 底部操作栏
   const footer = (
     <>
       <button
+        data-tour="template-clear-button"
         onClick={handleClear}
-        disabled={!template.trim()}
-        title={template.trim() ? '清空当前模板内容' : '模板为空，暂无内容可清空'}
+        disabled={!hasTemplateContent}
+        title={clearTemplateTitle}
+        aria-label={`清空模板，${clearTemplateTitle}`}
         className="px-2.5 py-1 text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         清空模板
@@ -111,29 +127,19 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
       <button
         data-tour="template-format-button"
         onClick={handleFormatTemplate}
-        disabled={!template.trim() || !validation.isValid}
-        title={
-          !template.trim()
-            ? '模板为空，暂无内容可格式化'
-            : validation.isValid
-              ? '格式化模板 JSON'
-              : '请先修正模板 JSON 后再格式化'
-        }
+        disabled={!hasTemplateContent || !validation.isValid}
+        title={formatTemplateTitle}
+        aria-label={`格式化模板，${formatTemplateTitle}`}
         className="px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         格式化模板
       </button>
       <button
+        data-tour="template-apply-button"
         onClick={handleApply}
-        disabled={!template.trim() || !validation.isValid || Boolean(targetError)}
-        title={
-          targetError ||
-          (!template.trim()
-            ? '模板为空，暂无内容可应用'
-            : validation.isValid
-              ? '应用模板到 SOURCE'
-              : '请先修正模板 JSON 后再应用')
-        }
+        disabled={!hasTemplateContent || !validation.isValid || Boolean(targetError)}
+        title={applyTemplateTitle}
+        aria-label={`应用模板到当前 JSON，${applyTemplateTitle}`}
         className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,6 +210,8 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
                 type="button"
                 data-tour="template-fill-copy-quality-delta"
                 onClick={handleCopyQualityDelta}
+                title="复制最近回填质量变化"
+                aria-label="复制质量对比，复制最近回填质量变化"
                 className="shrink-0 rounded border border-emerald-800/60 bg-editor-bg px-2 py-0.5 text-emerald-100 transition-colors hover:bg-emerald-900/30"
               >
                 复制质量对比

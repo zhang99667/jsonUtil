@@ -688,7 +688,7 @@ test('占位符回填后展示解析质量变化', async ({ page }) => {
     })
   );
 
-  await page.getByRole('button', { name: '应用模板到当前 JSON' }).click();
+  await templatePanel.locator('[data-tour="template-apply-button"]').click();
   await expect(page.getByText('占位符已回填，质量对比已更新')).toBeVisible();
 
   const qualityDelta = templatePanel.locator('[data-tour="template-fill-quality-delta"]');
@@ -697,6 +697,8 @@ test('占位符回填后展示解析质量变化', async ({ page }) => {
   await expect(qualityDelta).toContainText('占位符: 1 -> 0 (-1)');
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText(replacementCmd);
 
+  await expect(templatePanel.locator('[data-tour="template-fill-copy-quality-delta"]')).toHaveAttribute('title', '复制最近回填质量变化');
+  await expect(templatePanel.locator('[data-tour="template-fill-copy-quality-delta"]')).toHaveAttribute('aria-label', '复制质量对比，复制最近回填质量变化');
   await templatePanel.locator('[data-tour="template-fill-copy-quality-delta"]').click();
   await expect(page.getByText(/已复制质量对比（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
@@ -1930,8 +1932,10 @@ test('自定义 AI 配置缺少 Base URL 时阻止保存', async ({ page }) => {
 
 test('模板填充会提前提示 SOURCE 前置条件', async ({ page }) => {
   await page.locator('[data-tour="template-fill-button"]').click();
-  await expect(page.getByRole('button', { name: '清空模板' })).toHaveAttribute('title', '模板为空，暂无内容可清空');
+  await expect(page.locator('[data-tour="template-clear-button"]')).toHaveAttribute('title', '模板为空，暂无内容可清空');
+  await expect(page.locator('[data-tour="template-clear-button"]')).toHaveAttribute('aria-label', '清空模板，模板为空，暂无内容可清空');
   await expect(page.locator('[data-tour="template-format-button"]')).toHaveAttribute('title', '模板为空，暂无内容可格式化');
+  await expect(page.locator('[data-tour="template-format-button"]')).toHaveAttribute('aria-label', '格式化模板，模板为空，暂无内容可格式化');
   await fillMonacoEditor(
     page,
     page.locator('[data-tour="template-fill-panel"] .monaco-editor').first(),
@@ -1939,8 +1943,9 @@ test('模板填充会提前提示 SOURCE 前置条件', async ({ page }) => {
   );
 
   await expect(page.getByText('请先在 SOURCE 输入合法 JSON')).toBeVisible();
-  await expect(page.getByRole('button', { name: '应用模板到当前 JSON' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: '应用模板到当前 JSON' })).toHaveAttribute('title', '请先在 SOURCE 输入合法 JSON');
+  await expect(page.locator('[data-tour="template-apply-button"]')).toBeDisabled();
+  await expect(page.locator('[data-tour="template-apply-button"]')).toHaveAttribute('title', '请先在 SOURCE 输入合法 JSON');
+  await expect(page.locator('[data-tour="template-apply-button"]')).toHaveAttribute('aria-label', '应用模板到当前 JSON，请先在 SOURCE 输入合法 JSON');
 });
 
 test('模板填充可格式化模板并应用', async ({ page }) => {
@@ -1954,18 +1959,21 @@ test('模板填充可格式化模板并应用', async ({ page }) => {
   );
 
   await expect(page.locator('[data-tour="template-format-button"]')).toHaveAttribute('title', '格式化模板 JSON');
+  await expect(page.locator('[data-tour="template-format-button"]')).toHaveAttribute('aria-label', '格式化模板，格式化模板 JSON');
   await page.locator('[data-tour="template-format-button"]').click();
   await expect(page.getByText(/模板已格式化（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await expect(page.locator('[data-tour="template-fill-panel"] .view-lines')).toContainText('"extra": {');
 
-  await expect(page.getByRole('button', { name: '应用模板到当前 JSON' })).toHaveAttribute('title', '应用模板到 SOURCE');
-  await page.getByRole('button', { name: '应用模板到当前 JSON' }).click();
+  await expect(page.locator('[data-tour="template-apply-button"]')).toHaveAttribute('title', '应用模板到 SOURCE');
+  await expect(page.locator('[data-tour="template-apply-button"]')).toHaveAttribute('aria-label', '应用模板到当前 JSON，应用模板到 SOURCE');
+  await page.locator('[data-tour="template-apply-button"]').click();
   await expect(page.getByText('模板已应用')).toBeVisible();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"name": "new"');
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"keep": true');
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"enabled": true');
 
-  await page.getByRole('button', { name: '清空模板' }).click();
+  await expect(page.locator('[data-tour="template-clear-button"]')).toHaveAttribute('aria-label', '清空模板，清空当前模板内容');
+  await page.locator('[data-tour="template-clear-button"]').click();
   await expect(page.getByText('模板已清空')).toBeVisible();
 });
 
