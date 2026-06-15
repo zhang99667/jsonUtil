@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TransformContextReport } from './transformSummary';
+import { APP_VERSION_LABEL, APP_VERSION_METADATA } from './appVersion';
 import { base64Encode } from './schemeUtils';
 import { deepParseWithContext } from './transformations';
 import {
@@ -1175,6 +1176,7 @@ describe('transformSummary', () => {
     expect(placeholderFillTemplate).toMatchObject({
       schemaVersion: 1,
       kind: 'json-helper-runtime-placeholder-fill-template',
+      tool: APP_VERSION_METADATA,
       summary: {
         groups: 2,
         visibleOccurrences: 3,
@@ -1615,6 +1617,7 @@ describe('transformSummary', () => {
     expect(parsed).toMatchObject({
       schemaVersion: 1,
       kind: 'json-helper-transform-issue-samples',
+      tool: APP_VERSION_METADATA,
       summary: {
         unresolved: { copied: 1, filtered: 1, total: 1, truncated: false },
         runtimePlaceholders: { copied: 1, filtered: 1, total: 1, truncated: false },
@@ -1819,6 +1822,7 @@ describe('transformSummary', () => {
     const summaryText = formatTransformDiagnosticSummaryText(report, buildTransformReportView(report, ''), '');
 
     expect(summaryText).toContain('深度解析诊断摘要');
+    expect(summaryText).toContain(`工具版本: ${APP_VERSION_LABEL}`);
     expect(summaryText).toContain('覆盖: 解析覆盖 50%，还有疑似结构化内容未完全展开。');
     expect(summaryText).toContain('规模: 展开 0/0，CMD结构 0/0，内部CMD字段 0/0，资源字段 0/0，占位符 1/1，待检查 1/1，跳过 1/1');
     expect(summaryText).toContain('- baiduboxapp://v7/vendor/ad/deeplink ×3（来源记录 2）');
@@ -1837,6 +1841,7 @@ describe('transformSummary', () => {
     expect(qualitySnapshot).toMatchObject({
       schemaVersion: 1,
       kind: 'json-helper-transform-quality-snapshot',
+      tool: APP_VERSION_METADATA,
       filter: '全部',
       coverage: {
         score: 50,
@@ -1892,6 +1897,7 @@ describe('transformSummary', () => {
     const reportText = formatTransformCollaborationReportText(report, reportView, '');
 
     expect(reportText).toContain('深度解析协作排查报告');
+    expect(reportText).toContain(`工具版本: ${APP_VERSION_LABEL}`);
     expect(reportText).toContain('一、诊断摘要');
     expect(reportText).toContain('二、质量快照要点');
     expect(reportText).toContain('三、cmdHandler 对齐');
@@ -1929,6 +1935,7 @@ describe('transformSummary', () => {
     expect(archivePackage).toMatchObject({
       schemaVersion: 1,
       kind: 'json-helper-transform-archive-package',
+      tool: APP_VERSION_METADATA,
       filter: '全部',
       safety: {
         containsRawResponse: false,
@@ -1939,9 +1946,14 @@ describe('transformSummary', () => {
       artifacts: {
         qualitySnapshot: {
           kind: 'json-helper-transform-quality-snapshot',
+          tool: APP_VERSION_METADATA,
+        },
+        issueSamples: {
+          tool: APP_VERSION_METADATA,
         },
         placeholderFillTemplate: {
           kind: 'json-helper-runtime-placeholder-fill-template',
+          tool: APP_VERSION_METADATA,
         },
       },
       corpusCandidate: {
@@ -1953,6 +1965,7 @@ describe('transformSummary', () => {
       },
     });
     expect(archivePackage.artifacts.diagnosticSummaryText).toContain('深度解析诊断摘要');
+    expect(archivePackage.artifacts.diagnosticSummaryText).toContain(`工具版本: ${APP_VERSION_LABEL}`);
     expect(archivePackage.artifacts.collaborationReportText).toContain('深度解析协作排查报告');
     expect(archivePackage.artifacts.cmdComparisonReportText).toContain('缺失路径 1 个');
     expect(archivePackage.artifacts.issueSamples.samples[0].originalValue).not.toBe(actionCmd);

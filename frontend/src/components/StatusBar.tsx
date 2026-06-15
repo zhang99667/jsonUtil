@@ -1,5 +1,6 @@
 import React from 'react';
 import { TransformMode, FileTab, ValidationResult } from '../types';
+import { APP_VERSION_LABEL } from '../utils/appVersion';
 import { formatByteSize } from '../utils/documentStats';
 
 interface SourceValidationLocation {
@@ -23,14 +24,6 @@ const MODE_LABELS: Record<TransformMode, string> = {
   [TransformMode.BASE64_DECODE]: 'Base64 解码',
   [TransformMode.SORT_KEYS]: 'Key 排序',
 };
-
-const getVersionLabel = (version?: string): string => {
-  const normalizedVersion = version?.trim();
-  if (!normalizedVersion) return 'v0.0.0';
-  return normalizedVersion.startsWith('v') ? normalizedVersion : `v${normalizedVersion}`;
-};
-
-const APP_VERSION_LABEL = getVersionLabel(import.meta.env.VITE_APP_VERSION);
 
 /** StatusBar 组件 Props 定义 */
 interface StatusBarProps {
