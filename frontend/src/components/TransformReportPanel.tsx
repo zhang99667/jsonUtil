@@ -142,6 +142,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const [query, setQuery] = useState('');
   const [cmdComparisonRecordPath, setCmdComparisonRecordPath] = useState<string | null>(null);
   const [cmdComparisonExpectedText, setCmdComparisonExpectedText] = useState('');
+  const [cmdComparisonIgnoreExtraPaths, setCmdComparisonIgnoreExtraPaths] = useState(false);
   const deferredQuery = useDeferredValue(query);
   const isFilterPending = query !== deferredQuery;
   const report = useMemo(() => (
@@ -442,11 +443,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
     const actual = parseCmdStructureJson(actualText, '本工具 CMD 结构');
     const expected = parseCmdStructureJson(cmdComparisonExpectedText, 'cmdHandler 输出');
-    const diff = diffCmdStructures(actual, expected);
+    const diff = diffCmdStructures(actual, expected, {
+      ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
+    });
     return formatCmdStructureDiff(diff, {
       path: record.path,
       sourceLabel: record.sourceLabel,
       tool: APP_VERSION_METADATA,
+      modeLabel: cmdComparisonIgnoreExtraPaths ? '忽略 actual 额外路径' : undefined,
     });
   };
 
@@ -534,11 +538,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           '本工具 CMD 结构'
         );
         const expected = parseCmdStructureJson(expectedText, 'cmdHandler 输出');
-        const diff = diffCmdStructures(actual, expected);
+        const diff = diffCmdStructures(actual, expected, {
+          ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
+        });
         diffReportText = formatCmdStructureDiff(diff, {
           path: record.path,
           sourceLabel: record.sourceLabel,
           tool: APP_VERSION_METADATA,
+          modeLabel: cmdComparisonIgnoreExtraPaths ? '忽略 actual 额外路径' : undefined,
         });
         diffSummary = {
           hasDifferences: diff.hasDifferences,
@@ -586,6 +593,18 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           className="mt-2 h-24 w-full resize-y rounded border border-editor-border bg-editor-bg px-2 py-1.5 font-mono text-xs text-gray-200 outline-none focus:border-teal-600"
           spellCheck={false}
         />
+        <label
+          className="mt-2 flex items-center gap-2 text-gray-400"
+          title="expected 只保存稳定子集时，忽略本工具 actual 中多出的路径"
+        >
+          <input
+            type="checkbox"
+            checked={cmdComparisonIgnoreExtraPaths}
+            onChange={(event) => setCmdComparisonIgnoreExtraPaths(event.target.checked)}
+            className="h-3.5 w-3.5 rounded border-editor-border bg-editor-bg text-teal-500 focus:ring-teal-600"
+          />
+          <span>忽略 actual 额外路径</span>
+        </label>
         {!expectedText && (
           <div className="mt-1 text-gray-500">
             把内部 cmdHandler 的解析结果粘到这里，会对比 cmdSchema、source 和 cmdParams 路径值差异。
