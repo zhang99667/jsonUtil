@@ -93,6 +93,21 @@ const collectSensitiveKeywords = sample => {
 
 const formatSensitiveHint = hint => `${hint.path}(${hint.keywords.join('/')})`;
 
+const getExportToolVersionLabel = sampleExport => {
+  const tool = isRecord(sampleExport.tool) ? sampleExport.tool : null;
+  const versionLabel = typeof tool?.versionLabel === 'string' ? tool.versionLabel.trim() : '';
+  if (versionLabel) return versionLabel;
+
+  const version = typeof tool?.version === 'string' ? tool.version.trim() : '';
+  if (!version) return '';
+
+  return version.startsWith('v') ? version : `v${version}`;
+};
+
+const getExportFilter = sampleExport => (
+  typeof sampleExport.filter === 'string' ? sampleExport.filter.trim() : ''
+);
+
 const redactSensitiveSampleValues = samples => (
   samples.map(sample => {
     const keywords = collectSensitiveKeywords(sample);
@@ -152,6 +167,12 @@ export const buildRegressionTemplate = (sampleExport, options = {}) => {
   const outputSamples = options.redactSensitiveValues
     ? redactSensitiveSampleValues(samples)
     : samples;
+  const toolVersionLabel = getExportToolVersionLabel(exportData);
+  const filter = getExportFilter(exportData);
+  const contextLines = [
+    ...(toolVersionLabel ? [`// 工具版本: ${toolVersionLabel}`] : []),
+    ...(filter ? [`// 筛选: ${filter}`] : []),
+  ];
   const hasRedactedValues = outputSamples.some(sample => sample.redactionHint);
   const sensitiveHintLines = sensitiveHints.length > 0
     ? (hasRedactedValues
@@ -172,6 +193,7 @@ export const buildRegressionTemplate = (sampleExport, options = {}) => {
     "import { describe, it } from 'vitest';",
     '',
     '// 由深度解析报告「复制样本 JSON」生成；把 it.todo 改成 it 后补充解析断言。',
+    ...contextLines,
     ...sensitiveHintLines,
     `const issueSamples = ${JSON.stringify(outputSamples, null, 2)} as const;`,
     '',
