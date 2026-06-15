@@ -229,6 +229,36 @@ describe('buildSampleSnapshotDiff', () => {
       message: '样本在 after 快照中缺失',
     });
   });
+
+  it('新增样本存在基线或 cmdHandler 问题时标记为退化', () => {
+    const added = buildSampleSnapshotDiff(undefined, createSample({
+      sample: 'new-sample',
+      baseline: {
+        expectedSnapshot: false,
+        expectedSnapshotFile: 'new-sample.expected.snapshot.json',
+      },
+      cmdHandlerAlignment: {
+        pass: false,
+        reason: 'missingActualCmdStructure',
+      },
+    }));
+
+    expect(added.status).toBe('added');
+    expect(added.regressions).toEqual(expect.arrayContaining([
+      {
+        key: 'baseline',
+        message: '新增样本缺失 expected snapshot',
+        before: undefined,
+        after: 'new-sample.expected.snapshot.json',
+      },
+      {
+        key: 'cmdHandler',
+        message: '新增样本 cmdHandler 对齐失败',
+        before: undefined,
+        after: 'missingActualCmdStructure',
+      },
+    ]));
+  });
 });
 
 describe('buildSnapshotDiff', () => {
