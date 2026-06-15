@@ -78,6 +78,33 @@ const createImprovement = (key, message, before, after) => ({
   after,
 });
 
+const listSnapshotRegressions = snapshot => {
+  const summary = snapshot.thresholdSummary || {};
+  const regressions = [];
+  const missingBaselines = summary.missingBaselines || [];
+  const thresholdFailures = summary.failures || [];
+  const requiredFailures = summary.required?.failures || [];
+  const cmdHandlerFailures = summary.cmdHandler?.failures || [];
+
+  if (missingBaselines.length > 0) {
+    regressions.push(createRegression('missingBaselines', 'after 快照存在缺失基线', 0, missingBaselines.length));
+  }
+  if (thresholdFailures.length > 0) {
+    regressions.push(createRegression('thresholds', 'after 快照存在失败阈值', 0, thresholdFailures.length));
+  }
+  if (requiredFailures.length > 0) {
+    regressions.push(createRegression('requiredChecks', 'after 快照存在失败必需项', 0, requiredFailures.length));
+  }
+  if (cmdHandlerFailures.length > 0) {
+    regressions.push(createRegression('cmdHandler', 'after 快照存在 cmdHandler 对齐失败', 0, cmdHandlerFailures.length));
+  }
+  if (summary.pass === false && regressions.length === 0) {
+    regressions.push(createRegression('snapshot', 'after 快照整体未通过', true, false));
+  }
+
+  return regressions;
+};
+
 const listSchemas = (sample, key) => (
   (sample?.[key] || [])
     .map(item => item.schema)
@@ -327,7 +354,8 @@ export const buildSnapshotDiff = (beforeSnapshot, afterSnapshot) => {
   const samples = sampleNames.map(sampleName => (
     buildSampleSnapshotDiff(beforeSamples.get(sampleName), afterSamples.get(sampleName))
   ));
-  const regressionCount = samples.reduce((total, sample) => total + sample.regressions.length, 0);
+  const snapshotRegressions = listSnapshotRegressions(afterSnapshot);
+  const regressionCount = samples.reduce((total, sample) => total + sample.regressions.length, 0) + snapshotRegressions.length;
   const improvementCount = samples.reduce((total, sample) => total + sample.improvements.length, 0);
 
   return {
@@ -351,6 +379,7 @@ export const buildSnapshotDiff = (beforeSnapshot, afterSnapshot) => {
       regressions: regressionCount,
       improvements: improvementCount,
     },
+    snapshotRegressions,
     samples,
   };
 };
@@ -413,6 +442,13 @@ export const formatSnapshotDiffMarkdown = diff => {
         lines.push(`- ${regression.message}: ${JSON.stringify(regression.before)} -> ${JSON.stringify(regression.after)}`);
       });
       lines.push('');
+    });
+  }
+
+  if ((diff.snapshotRegressions || []).length > 0) {
+    lines.push('', '## 快照级退化', '');
+    diff.snapshotRegressions.forEach(regression => {
+      lines.push(`- ${regression.message}: ${JSON.stringify(regression.before)} -> ${JSON.stringify(regression.after)}`);
     });
   }
 
@@ -528,6 +564,9 @@ const runCli = async () => {
     }
     if (options.strict && !diff.summary.pass) {
       console.error('corpus:snapshot:diff strict 检查失败:');
+      diff.snapshotRegressions.forEach(regression => {
+        console.error(`- snapshot.${regression.key}: ${regression.message}`);
+      });
       diff.samples.forEach(sample => {
         sample.regressions.forEach(regression => {
           console.error(`- ${sample.sample}.${regression.key}: ${regression.message}`);

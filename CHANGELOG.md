@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.12 (2026-06-15) - 快照级趋势失败识别
+### 🐛 Bug 修复
+- **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会把 after 快照级失败纳入 strict 结果和 Markdown 摘要，避免缺失基线等非样本指标退化漏判
+
 ## v1.8.11 (2026-06-15) - 新增样本趋势风险识别
 ### 🐛 Bug 修复
 - **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会把新增样本缺失 expected snapshot、缺失 cmdHandler expected 或 cmdHandler 对齐失败标记为退化，避免新 corpus 样本空基线通过趋势检查

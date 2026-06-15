@@ -289,6 +289,39 @@ describe('buildSnapshotDiff', () => {
     expect(diff.samples[0].metrics.cmdStructures.delta).toBe(1);
   });
 
+  it('after 快照整体失败时即使样本指标未退化也标记失败', () => {
+    const before = createSnapshot([createSample()]);
+    const after = {
+      ...createSnapshot([createSample()]),
+      thresholdSummary: {
+        pass: false,
+        missingBaselines: [
+          {
+            sample: 'new-response-redacted',
+            expectedSnapshot: 'new-response.expected.snapshot.json',
+          },
+        ],
+        failures: [],
+        required: { failures: [] },
+        cmdHandler: { failures: [] },
+      },
+    };
+    const diff = buildSnapshotDiff(before, after);
+
+    expect(diff.summary).toMatchObject({
+      pass: false,
+      regressions: 1,
+    });
+    expect(diff.snapshotRegressions).toEqual([
+      {
+        key: 'missingBaselines',
+        message: 'after 快照存在缺失基线',
+        before: 0,
+        after: 1,
+      },
+    ]);
+  });
+
   it('拒绝非质量快照输入', () => {
     expect(() => buildSnapshotDiff({ kind: 'other', samples: [] }, createSnapshot([])))
       .toThrow('before 不是有效的 Scheme Corpus 质量快照');
@@ -311,6 +344,26 @@ describe('formatSnapshotDiffMarkdown', () => {
     expect(markdown).toContain('必需项失败');
     expect(markdown).toContain('## 退化明细');
     expect(markdown).toContain('覆盖率下降');
+  });
+
+  it('输出快照级退化明细', () => {
+    const before = createSnapshot([createSample()]);
+    const after = {
+      ...createSnapshot([createSample()]),
+      thresholdSummary: {
+        pass: false,
+        missingBaselines: [
+          {
+            sample: 'new-response-redacted',
+            expectedSnapshot: 'new-response.expected.snapshot.json',
+          },
+        ],
+      },
+    };
+    const markdown = formatSnapshotDiffMarkdown(buildSnapshotDiff(before, after));
+
+    expect(markdown).toContain('## 快照级退化');
+    expect(markdown).toContain('after 快照存在缺失基线');
   });
 });
 
