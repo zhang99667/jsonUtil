@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.11 (2026-06-15) - 新增样本趋势风险识别
+### 🐛 Bug 修复
+- **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会把新增样本缺失 expected snapshot、缺失 cmdHandler expected 或 cmdHandler 对齐失败标记为退化，避免新 corpus 样本空基线通过趋势检查
+
 ## v1.8.10 (2026-06-15) - 必需项趋势内容对比
 ### 🐛 Bug 修复
 - **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会按 requiredChecks 失败内容识别新增和恢复，即使失败数量不变也能标记质量变化

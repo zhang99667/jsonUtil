@@ -205,6 +205,15 @@ const buildAddedSampleRegressions = sample => {
   if (thresholdFailures > 0) {
     regressions.push(createRegression('thresholds', '新增样本存在失败阈值', 0, thresholdFailures));
   }
+  if (sample.baseline && !sample.baseline.expectedSnapshot) {
+    regressions.push(createRegression('baseline', '新增样本缺失 expected snapshot', undefined, sample.baseline.expectedSnapshotFile));
+  }
+  if (sample.baseline?.expectedSnapshot && sample.baseline.cmdHandlerExpected === false) {
+    regressions.push(createRegression('cmdHandler', '新增样本缺失 cmdHandler expected', undefined, sample.baseline.cmdHandlerExpectedFile || '(未配置 cmdHandlerExpected)'));
+  }
+  if (sample.cmdHandlerAlignment && sample.cmdHandlerAlignment.pass === false) {
+    regressions.push(createRegression('cmdHandler', '新增样本 cmdHandler 对齐失败', undefined, sample.cmdHandlerAlignment.reason || false));
+  }
   listRequiredCheckFailures(sample).forEach(failure => {
     regressions.push(createRegression('requiredChecks', '新增样本存在失败必需项', undefined, formatRequiredFailure(failure)));
   });
