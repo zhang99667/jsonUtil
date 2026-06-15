@@ -1177,6 +1177,7 @@ describe('transformSummary', () => {
       schemaVersion: 1,
       kind: 'json-helper-runtime-placeholder-fill-template',
       tool: APP_VERSION_METADATA,
+      filter: '全部',
       summary: {
         groups: 2,
         visibleOccurrences: 3,
@@ -1618,6 +1619,7 @@ describe('transformSummary', () => {
       schemaVersion: 1,
       kind: 'json-helper-transform-issue-samples',
       tool: APP_VERSION_METADATA,
+      filter: '全部',
       summary: {
         unresolved: { copied: 1, filtered: 1, total: 1, truncated: false },
         runtimePlaceholders: { copied: 1, filtered: 1, total: 1, truncated: false },
@@ -1646,6 +1648,27 @@ describe('transformSummary', () => {
         sourceLabel: 'hugeParam',
         warningType: 'string_decode_skipped',
         limit: 20,
+      }),
+    ]);
+
+    const filteredJsonText = formatTransformIssueSampleJsonText(
+      buildTransformReportView(report, 'trackingParam'),
+      { filter: 'trackingParam' }
+    );
+    const filteredExport = JSON.parse(filteredJsonText);
+
+    expect(filteredExport).toMatchObject({
+      filter: 'trackingParam',
+      summary: {
+        unresolved: { copied: 1, filtered: 1, total: 1, truncated: false },
+        runtimePlaceholders: { copied: 0, filtered: 0, total: 1, truncated: false },
+        warnings: { copied: 0, filtered: 0, total: 1, truncated: false },
+      },
+    });
+    expect(filteredExport.samples).toEqual([
+      expect.objectContaining({
+        type: 'unresolved',
+        path: '$.tracking',
       }),
     ]);
 
@@ -1950,10 +1973,12 @@ describe('transformSummary', () => {
         },
         issueSamples: {
           tool: APP_VERSION_METADATA,
+          filter: '全部',
         },
         placeholderFillTemplate: {
           kind: 'json-helper-runtime-placeholder-fill-template',
           tool: APP_VERSION_METADATA,
+          filter: '全部',
         },
       },
       corpusCandidate: {
