@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.30 (2026-06-15) - CMD 忽略路径趋势样例
+### 🔧 改进
+- **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会展示 cmdHandler ignored extra 路径新增/消失样例，便于对比两份质量快照时直接定位对齐范围变化
+
 ## v1.8.29 (2026-06-15) - CMD 忽略路径摘要样例
 ### 🔧 改进
 - **Scheme Corpus 快照**: Markdown 摘要会列出 cmdHandler ignored extra 路径样例，CI 排查时无需先下载 JSON artifact 就能看到对齐范围漂移位置

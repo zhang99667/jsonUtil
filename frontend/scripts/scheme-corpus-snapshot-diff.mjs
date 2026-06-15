@@ -120,6 +120,11 @@ const diffList = (beforeList, afterList) => ({
   gained: afterList.filter(item => !beforeList.includes(item)),
 });
 
+const listCmdHandlerIgnoredExtraPaths = sample => (
+  normalizeList(sample?.cmdHandlerAlignment?.diff?.ignoredExtraPaths)
+    .filter(item => typeof item === 'string')
+);
+
 const countFailedThresholds = sample => (
   Object.values(sample?.thresholds || {}).filter(result => result && result.pass === false).length
 );
@@ -235,12 +240,17 @@ const buildCmdHandlerChange = (beforeSample, afterSample) => {
   const afterPass = afterSample?.cmdHandlerAlignment?.pass;
   const regression = beforePass === true && afterPass !== true;
   const improvement = beforePass !== true && afterPass === true;
+  const ignoredExtraPaths = diffList(
+    listCmdHandlerIgnoredExtraPaths(beforeSample),
+    listCmdHandlerIgnoredExtraPaths(afterSample)
+  );
 
   return {
     beforePass,
     afterPass,
     regression,
     improvement,
+    ignoredExtraPaths,
     before: beforeSample?.cmdHandlerAlignment,
     after: afterSample?.cmdHandlerAlignment,
   };
@@ -343,6 +353,8 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
     commandSchemas.gained.length,
     resourceSchemas.lost.length,
     resourceSchemas.gained.length,
+    cmdHandler.ignoredExtraPaths.lost.length,
+    cmdHandler.ignoredExtraPaths.gained.length,
     cmdHandler.regression ? 1 : 0,
     cmdHandler.improvement ? 1 : 0,
     regressions.length,
@@ -470,6 +482,38 @@ export const formatSnapshotDiffMarkdown = diff => {
     lines.push('', '## 快照级退化', '');
     diff.snapshotRegressions.forEach(regression => {
       lines.push(`- ${regression.message}: ${JSON.stringify(regression.before)} -> ${JSON.stringify(regression.after)}`);
+    });
+  }
+
+  const samplesWithIgnoredExtraPathChanges = diff.samples.filter(sample => (
+    sample.cmdHandler?.ignoredExtraPaths?.gained?.length > 0 ||
+    sample.cmdHandler?.ignoredExtraPaths?.lost?.length > 0
+  ));
+  if (samplesWithIgnoredExtraPathChanges.length > 0) {
+    lines.push('', '## cmdHandler ignored extra 路径变化', '');
+    samplesWithIgnoredExtraPathChanges.forEach(sample => {
+      lines.push(`### ${formatMarkdownValue(sample.sample)}`, '');
+      if (sample.cmdHandler.ignoredExtraPaths.gained.length > 0) {
+        const gainedPaths = sample.cmdHandler.ignoredExtraPaths.gained.slice(0, 10);
+        lines.push('- 新增 ignored extra 路径样例:');
+        gainedPaths.forEach(ignoredPath => {
+          lines.push(`  - ${formatMarkdownValue(ignoredPath)}`);
+        });
+        if (sample.cmdHandler.ignoredExtraPaths.gained.length > gainedPaths.length) {
+          lines.push(`  - ... 还有 ${sample.cmdHandler.ignoredExtraPaths.gained.length - gainedPaths.length} 个`);
+        }
+      }
+      if (sample.cmdHandler.ignoredExtraPaths.lost.length > 0) {
+        const lostPaths = sample.cmdHandler.ignoredExtraPaths.lost.slice(0, 10);
+        lines.push('- 消失 ignored extra 路径样例:');
+        lostPaths.forEach(ignoredPath => {
+          lines.push(`  - ${formatMarkdownValue(ignoredPath)}`);
+        });
+        if (sample.cmdHandler.ignoredExtraPaths.lost.length > lostPaths.length) {
+          lines.push(`  - ... 还有 ${sample.cmdHandler.ignoredExtraPaths.lost.length - lostPaths.length} 个`);
+        }
+      }
+      lines.push('');
     });
   }
 
