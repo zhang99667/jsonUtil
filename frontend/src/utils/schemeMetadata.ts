@@ -91,6 +91,7 @@ const DEFAULT_DISPLAY_LIMIT = 64;
 const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
+const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const CMD_FIELD_NAMES = new Set([
   'cmd',
   'action_cmd',
@@ -582,7 +583,10 @@ const parseSourceValue = (value: string): SourceShape => {
 };
 
 const parseQuerySourceShape = (source: string): SourceShape | null => {
-  const normalizedSource = source.trim().replace(/^\?/, '').replace(/^&+/, '');
+  const normalizedSource = source.trim()
+    .replace(/^\?/, '')
+    .replace(/^&+/, '')
+    .replace(COMMA_QUERY_DELIMITER_RE, '&');
   if (!QUERY_PAIR_START_RE.test(normalizedSource)) return null;
 
   const result: { [key: string]: SourceShape } = {};
