@@ -343,16 +343,30 @@ export const listMissingBaselines = samples => (
   })
 );
 
+const buildThresholdFailure = (sample, key, result) => {
+  const failure = {
+    sample: sample.sample,
+    key,
+    actual: result.actual,
+    expected: result.expected,
+  };
+
+  if (key !== 'maxCmdHandlerIgnoredExtraPaths') return failure;
+
+  const ignoredExtraPathSamples = Array.isArray(sample.cmdHandlerAlignment?.diff?.ignoredExtraPaths)
+    ? sample.cmdHandlerAlignment.diff.ignoredExtraPaths.slice(0, 10)
+    : [];
+  return {
+    ...failure,
+    ignoredExtraPathSamples,
+  };
+};
+
 export const listThresholdFailures = samples => (
   samples.flatMap(sample => (
     Object.entries(sample.thresholds || {})
       .filter(([, result]) => result && result.pass === false)
-      .map(([key, result]) => ({
-        sample: sample.sample,
-        key,
-        actual: result.actual,
-        expected: result.expected,
-      }))
+      .map(([key, result]) => buildThresholdFailure(sample, key, result))
   ))
 );
 
@@ -519,7 +533,7 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
   if (snapshot.thresholdSummary.failures.length > 0) {
     lines.push('', '## 失败阈值', '');
     snapshot.thresholdSummary.failures.forEach(failure => {
-      lines.push(`- ${formatMarkdownValue(failure.sample)}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}`);
+      lines.push(`- ${formatMarkdownValue(formatThresholdFailure(failure))}`);
     });
   }
 
@@ -820,8 +834,19 @@ const printUsage = () => {
   console.error('默认扫描 fixtures/scheme-corpus 下所有 *.redacted.json 样本，并输出质量快照 JSON。');
 };
 
-const formatThresholdFailure = failure => (
-  `${failure.sample}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}`
+const formatIgnoredExtraPathSampleSuffix = failure => {
+  if (!Array.isArray(failure.ignoredExtraPathSamples) || failure.ignoredExtraPathSamples.length === 0) {
+    return '';
+  }
+  const hiddenCount = typeof failure.actual === 'number'
+    ? Math.max(failure.actual - failure.ignoredExtraPathSamples.length, 0)
+    : 0;
+  const hiddenLabel = hiddenCount > 0 ? `, ...还有 ${hiddenCount} 个` : '';
+  return `, ignoredExtraPathSamples=${JSON.stringify(failure.ignoredExtraPathSamples)}${hiddenLabel}`;
+};
+
+export const formatThresholdFailure = failure => (
+  `${failure.sample}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}${formatIgnoredExtraPathSampleSuffix(failure)}`
 );
 
 const formatRequiredFailure = failure => (

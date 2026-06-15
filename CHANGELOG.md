@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.31 (2026-06-15) - CMD 忽略路径失败日志
+### 🔧 改进
+- **Scheme Corpus 快照**: `maxCmdHandlerIgnoredExtraPaths` 阈值失败时，strict 控制台日志和失败阈值摘要会带上 ignored extra 路径样例，便于不下载 artifact 也能快速定位
+
 ## v1.8.30 (2026-06-15) - CMD 忽略路径趋势样例
 ### 🔧 改进
 - **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会展示 cmdHandler ignored extra 路径新增/消失样例，便于对比两份质量快照时直接定位对齐范围变化

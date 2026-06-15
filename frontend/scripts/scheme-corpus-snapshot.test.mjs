@@ -7,6 +7,7 @@ import {
   buildRequiredResults,
   buildThresholdResults,
   buildThresholdSummary,
+  formatThresholdFailure,
   formatCorpusSnapshotMarkdownSummary,
   listCmdHandlerFailures,
   listMissingBaselines,
@@ -701,6 +702,47 @@ describe('buildThresholdSummary', () => {
         failures: listCmdHandlerFailures(samples),
       },
     });
+  });
+
+  it('cmdHandler ignored extra 上限失败时保留路径样例', () => {
+    const samples = [{
+      sample: 'reward-response-redacted',
+      thresholds: {
+        maxCmdHandlerIgnoredExtraPaths: {
+          actual: 12,
+          expected: 10,
+          pass: false,
+        },
+      },
+      cmdHandlerAlignment: {
+        ignoredExtraPaths: 12,
+        diff: {
+          ignoredExtraPaths: Array.from({ length: 12 }, (_, index) => `$.extra.path${index + 1}`),
+        },
+      },
+    }];
+    const [failure] = listThresholdFailures(samples);
+
+    expect(failure).toEqual({
+      sample: 'reward-response-redacted',
+      key: 'maxCmdHandlerIgnoredExtraPaths',
+      actual: 12,
+      expected: 10,
+      ignoredExtraPathSamples: [
+        '$.extra.path1',
+        '$.extra.path2',
+        '$.extra.path3',
+        '$.extra.path4',
+        '$.extra.path5',
+        '$.extra.path6',
+        '$.extra.path7',
+        '$.extra.path8',
+        '$.extra.path9',
+        '$.extra.path10',
+      ],
+    });
+    expect(formatThresholdFailure(failure)).toContain('ignoredExtraPathSamples=["$.extra.path1","$.extra.path2"');
+    expect(formatThresholdFailure(failure)).toContain('...还有 2 个');
   });
 });
 
