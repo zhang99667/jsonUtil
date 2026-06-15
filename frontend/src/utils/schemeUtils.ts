@@ -278,7 +278,8 @@ const isDecodableParamValue = (value: string): boolean => (
   isStructuredBase64Value(value)
 );
 
-const LOG_FIELD_RE = new RegExp(`^\\s*(${QUERY_KEY_PATTERN})\\s*([:：])\\s*(.+?)\\s*$`);
+const LOG_FIELD_KEY_PATTERN = `(?:"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|${QUERY_KEY_PATTERN})`;
+const LOG_FIELD_RE = new RegExp(`^\\s*(${LOG_FIELD_KEY_PATTERN})\\s*([:：])\\s*(.+?)\\s*$`);
 
 const unwrapLogFieldValue = (value: string): { value: string; quote?: '"' | "'" } => {
   const trimmed = value.trim();
@@ -302,6 +303,25 @@ const unwrapLogFieldValue = (value: string): { value: string; quote?: '"' | "'" 
   return { value: trimmed };
 };
 
+const unwrapLogFieldKey = (rawKey: string): string | null => {
+  const trimmed = rawKey.trim();
+  const quote = trimmed[0];
+  if ((quote === '"' || quote === "'") && trimmed.endsWith(quote)) {
+    if (quote === '"') {
+      try {
+        const parsed: unknown = JSON.parse(trimmed);
+        return typeof parsed === 'string' ? parsed : null;
+      } catch {
+        return trimmed.slice(1, -1);
+      }
+    }
+
+    return trimmed.slice(1, -1).replace(/\\'/g, "'");
+  }
+
+  return decodeQueryComponent(trimmed);
+};
+
 const parseLogFieldParamString = (source: string): LogFieldParam | null => {
   const trimmed = source.trim();
   // 日志字段只识别单行，避免把多行说明文本误拆成 CMD。
@@ -311,7 +331,7 @@ const parseLogFieldParamString = (source: string): LogFieldParam | null => {
   if (!match) return null;
 
   const rawKey = match[1];
-  const key = decodeQueryComponent(rawKey);
+  const key = unwrapLogFieldKey(rawKey);
   if (!key || !COMMON_CMD_PARAM_NAME_ALIASES.has(normalizeCmdParamName(key))) {
     return null;
   }
