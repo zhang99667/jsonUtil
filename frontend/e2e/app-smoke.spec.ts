@@ -1329,31 +1329,45 @@ test('Scheme 面板底部操作展示禁用原因', async ({ page }) => {
   await page.locator('[data-tour="scheme-button"]').click();
 
   const schemePanel = page.locator('[data-tour="scheme-panel"]');
-  const qrCodeButton = schemePanel.getByRole('button', { name: '二维码' });
-  const copyOriginalButton = schemePanel.getByRole('button', { name: '复制原始值' });
-  const copyDecodedButton = schemePanel.getByRole('button', { name: '复制解码结果' });
+  const qrCodeButton = schemePanel.locator('[data-tour="scheme-qrcode-button"]');
+  const copyOriginalButton = schemePanel.locator('[data-tour="scheme-copy-original"]');
+  const copyDecodedButton = schemePanel.locator('[data-tour="scheme-copy-decoded"]');
 
   await expect(qrCodeButton).toBeDisabled();
   await expect(qrCodeButton).toHaveAttribute('title', '请输入内容后生成二维码');
+  await expect(qrCodeButton).toHaveAttribute('aria-label', '二维码，请输入内容后生成二维码');
   await expect(qrCodeButton).toHaveAttribute('aria-pressed', 'false');
   await expect(copyOriginalButton).toBeDisabled();
   await expect(copyOriginalButton).toHaveAttribute('title', '请输入待复制的原始值');
+  await expect(copyOriginalButton).toHaveAttribute('aria-label', '复制原始值，请输入待复制的原始值');
   await expect(copyDecodedButton).toBeDisabled();
   await expect(copyDecodedButton).toHaveAttribute('title', '暂无解码结果可复制');
+  await expect(copyDecodedButton).toHaveAttribute('aria-label', '复制解码结果，暂无解码结果可复制');
 
   await page.locator('[data-tour="scheme-standalone-input"]').fill('cmd=%7B%22nid%22%3A123%7D&from=feed');
 
   await expect(qrCodeButton).toBeEnabled();
   await expect(qrCodeButton).toHaveAttribute('title', '生成二维码');
+  await expect(qrCodeButton).toHaveAttribute('aria-label', '二维码，生成二维码');
   await expect(copyOriginalButton).toHaveAttribute('title', '复制原始值到剪贴板');
+  await expect(copyOriginalButton).toHaveAttribute('aria-label', '复制原始值，复制原始值到剪贴板');
   await expect(copyDecodedButton).toHaveAttribute('title', '复制解码结果到剪贴板');
+  await expect(copyDecodedButton).toHaveAttribute('aria-label', '复制解码结果，复制解码结果到剪贴板');
   await expect(page.locator('[data-tour="scheme-copy-cmd-structure"]')).toHaveAttribute(
     'title',
     '复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构'
   );
+  await expect(page.locator('[data-tour="scheme-copy-cmd-structure"]')).toHaveAttribute(
+    'aria-label',
+    '复制 CMD 结构，复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构'
+  );
   await expect(page.locator('[data-tour="scheme-copy-path-values"]')).toHaveAttribute(
     'title',
     '复制解码 JSON 中的路径和值'
+  );
+  await expect(page.locator('[data-tour="scheme-copy-path-values"]')).toHaveAttribute(
+    'aria-label',
+    '复制路径和值，复制解码 JSON 中的路径和值'
   );
 });
 
@@ -1373,9 +1387,9 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(schemeResult).toContainText('"nid": 123');
   await expect(schemeResult).toContainText('"title": "标题"');
   await expect(schemeResult).toContainText('"from": "feed"');
-  await page.getByRole('button', { name: '复制原始值' }).click();
+  await page.locator('[data-tour="scheme-copy-original"]').click();
   await expect(page.getByText(/已复制原始值（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
-  await page.getByRole('button', { name: '复制解码结果' }).click();
+  await page.locator('[data-tour="scheme-copy-decoded"]').click();
   await expect(page.getByText(/已复制解码结果（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await page.locator('[data-tour="scheme-copy-path-values"]').click();
   await expect(page.getByText('已复制路径和值（3 项）')).toBeVisible();
@@ -1389,7 +1403,9 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   );
   const schemePanel = page.locator('[data-tour="scheme-panel"]');
   await expectElementInside(page.locator('[data-tour="scheme-copy-serialized"]'), schemePanel);
-  await expectElementInside(page.getByRole('button', { name: '应用修改' }), schemePanel);
+  await expectElementInside(page.locator('[data-tour="scheme-apply-edit"]'), schemePanel);
+  await expect(page.locator('[data-tour="scheme-copy-serialized"]')).toHaveAttribute('aria-label', '复制序列化结果，复制当前编辑内容重新编码后的结果');
+  await expect(page.locator('[data-tour="scheme-apply-edit"]')).toHaveAttribute('aria-label', '应用修改，将当前编辑内容重新编码并应用回来源');
   await page.locator('[data-tour="scheme-copy-serialized"]').click();
   await expect(page.getByText(/已复制序列化结果（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   const serializedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
@@ -1400,7 +1416,9 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(page.getByText('Invalid JSON')).toBeVisible();
   await expect(page.locator('[data-tour="scheme-json-edit-error"]')).toContainText('JSON 内容格式有误');
   await expect(page.locator('[data-tour="scheme-copy-serialized"]')).toHaveAttribute('title', '请先修正解码结果中的 JSON 错误');
-  await expect(page.getByRole('button', { name: '应用修改' })).toHaveAttribute('title', '请先修正解码结果中的 JSON 错误');
+  await expect(page.locator('[data-tour="scheme-copy-serialized"]')).toHaveAttribute('aria-label', '复制序列化结果，请先修正解码结果中的 JSON 错误');
+  await expect(page.locator('[data-tour="scheme-apply-edit"]')).toHaveAttribute('title', '请先修正解码结果中的 JSON 错误');
+  await expect(page.locator('[data-tour="scheme-apply-edit"]')).toHaveAttribute('aria-label', '应用修改，请先修正解码结果中的 JSON 错误');
 });
 
 test('Scheme 面板展示运行时占位符聚合摘要', async ({ page }) => {
@@ -1522,7 +1540,7 @@ test('Scheme 面板可展开整段真实 Response 抽取链路', async ({ page }
   await page.locator('[data-tour="scheme-button"]').click();
   await page.locator('[data-tour="scheme-standalone-input"]').fill(response);
 
-  await page.getByRole('button', { name: '复制解码结果' }).click();
+  await page.locator('[data-tour="scheme-copy-decoded"]').click();
   const decodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
   expect(decodedResult).toContain('"panel_scheme"');
   expect(decodedResult).toContain('"panel_cmd"');
@@ -1587,7 +1605,7 @@ test('Scheme 面板整段 Response 超长字段展示性能保护提示', async 
   const commandSummary = page.locator('[data-tour="scheme-command-summary"]');
   await expect(commandSummary).toContainText('CMD 结构');
   await expect(commandSummary).toContainText('small_cmd');
-  await page.getByRole('button', { name: '复制解码结果' }).click();
+  await page.locator('[data-tour="scheme-copy-decoded"]').click();
   const decodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
   expect(decodedResult).toContain('"ok": true');
 });
