@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.1 (2026-06-15) - 状态栏版本识别
+### 🔧 改进
+- **版本号同步**: 同步 `frontend/package.json` 与 `package-lock.json` 至 v1.8.1，底部状态栏会展示新版本号，便于确认当前更新批次
+
 ## v1.8.0 (2026-04-21) - URL 编解码、侧边栏整理与通用设置
 ### ✨ 新特性
 - **CMD/Scheme 参数递归解析**: Scheme 解析增强为参数级递归展开，支持 URL 内参数、独立 CMD 参数串、二级 URL、URL 编码 JSON 与 Base64/JWT 的组合解析
