@@ -8,6 +8,12 @@ import {
 const createSampleExport = () => ({
   schemaVersion: 1,
   kind: 'json-helper-transform-issue-samples',
+  tool: {
+    name: 'JSONUtils',
+    version: '1.8.18',
+    versionLabel: 'v1.8.18',
+  },
+  filter: 'trackingParam',
   summary: {
     unresolved: { copied: 1, filtered: 1, total: 1, truncated: false },
     runtimePlaceholders: { copied: 1, filtered: 1, total: 1, truncated: false },
@@ -60,6 +66,8 @@ describe('buildRegressionTemplate', () => {
     const template = buildRegressionTemplate(createSampleExport());
 
     expect(template).toContain("import { describe, it } from 'vitest';");
+    expect(template).toContain('// 工具版本: v1.8.18');
+    expect(template).toContain('// 筛选: trackingParam');
     expect(template).toContain('const issueSamples = [');
     expect(template).toContain('"path": "$.tracking"');
     expect(template).toContain('"sourceLabel": "trackingParam"');
@@ -96,6 +104,24 @@ describe('buildRegressionTemplate', () => {
     ]);
     expect(template).toContain('检测到样本可能包含 token/sign/cookie/设备标识等敏感字段');
     expect(template).toContain('$.reward(token/sign)');
+  });
+
+  it('兼容没有导出元信息的旧样本 JSON', () => {
+    const template = buildRegressionTemplate({
+      kind: 'json-helper-transform-issue-samples',
+      samples: [
+        {
+          type: 'unresolved',
+          path: '$.legacy',
+          reasonLabel: '旧样本',
+          originalValue: 'legacy',
+        },
+      ],
+    });
+
+    expect(template).toContain('// 由深度解析报告「复制样本 JSON」生成');
+    expect(template).not.toContain('// 工具版本:');
+    expect(template).not.toContain('// 筛选:');
   });
 
   it('支持脱敏敏感 originalValue 后生成模板', () => {
