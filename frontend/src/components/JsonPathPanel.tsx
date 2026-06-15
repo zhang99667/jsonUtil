@@ -91,6 +91,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const requestIdRef = useRef(0);
     const activeQueryRef = useRef('');
     const externalQueryIdRef = useRef<number | null>(null);
+    const queryInputRef = useRef<HTMLInputElement | null>(null);
 
     // 自定义滚动条 Hook
     const {
@@ -495,6 +496,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             isOpen={isOpen}
             onClose={onClose}
             ariaLabel="JSONPath 查询"
+            initialFocusRef={queryInputRef}
             title={
                 <div className="flex items-center gap-2">
                     <span>JSONPath 查询</span>
@@ -525,6 +527,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 <div className="mb-3">
                     <div className="flex gap-2">
                         <input
+                            ref={queryInputRef}
                             data-tour="jsonpath-input"
                             type="text"
                             value={query}
