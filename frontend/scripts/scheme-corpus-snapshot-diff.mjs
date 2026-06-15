@@ -58,6 +58,10 @@ const buildSampleMetrics = (beforeSample, afterSample) => ({
   runtimePlaceholders: createMetricChange(beforeSample?.totals?.runtimePlaceholders, afterSample?.totals?.runtimePlaceholders),
   unresolved: createMetricChange(beforeSample?.totals?.unresolved, afterSample?.totals?.unresolved),
   warnings: createMetricChange(beforeSample?.totals?.warnings, afterSample?.totals?.warnings),
+  requiredFailures: createMetricChange(
+    beforeSample === undefined ? undefined : countFailedRequiredChecks(beforeSample),
+    afterSample === undefined ? undefined : countFailedRequiredChecks(afterSample)
+  ),
 });
 
 const createRegression = (key, message, before, after) => ({
@@ -87,6 +91,10 @@ const diffList = (beforeList, afterList) => ({
 
 const countFailedThresholds = sample => (
   Object.values(sample?.thresholds || {}).filter(result => result && result.pass === false).length
+);
+
+const countFailedRequiredChecks = sample => (
+  Object.values(sample?.requiredChecks || {}).filter(result => result && result.pass === false).length
 );
 
 const buildMetricRegressions = (metrics, beforeSample, afterSample) => {
@@ -130,6 +138,14 @@ const buildMetricRegressions = (metrics, beforeSample, afterSample) => {
     improvements.push(createImprovement('thresholds', '阈值失败数量减少', beforeThresholdFailures, afterThresholdFailures));
   }
 
+  const beforeRequiredFailures = countFailedRequiredChecks(beforeSample);
+  const afterRequiredFailures = countFailedRequiredChecks(afterSample);
+  if (afterRequiredFailures > beforeRequiredFailures) {
+    regressions.push(createRegression('requiredChecks', '必需项失败数量增加', beforeRequiredFailures, afterRequiredFailures));
+  } else if (afterRequiredFailures < beforeRequiredFailures) {
+    improvements.push(createImprovement('requiredChecks', '必需项失败数量减少', beforeRequiredFailures, afterRequiredFailures));
+  }
+
   return { regressions, improvements };
 };
 
@@ -149,15 +165,26 @@ const buildCmdHandlerChange = (beforeSample, afterSample) => {
   };
 };
 
+const buildAddedSampleRegressions = sample => {
+  const regressions = [];
+  const thresholdFailures = countFailedThresholds(sample);
+  const requiredFailures = countFailedRequiredChecks(sample);
+  if (thresholdFailures > 0) {
+    regressions.push(createRegression('thresholds', '新增样本存在失败阈值', 0, thresholdFailures));
+  }
+  if (requiredFailures > 0) {
+    regressions.push(createRegression('requiredChecks', '新增样本存在失败必需项', 0, requiredFailures));
+  }
+  return regressions;
+};
+
 export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
   if (!beforeSample && afterSample) {
     return {
       sample: afterSample.sample,
       status: 'added',
       metrics: buildSampleMetrics(undefined, afterSample),
-      regressions: countFailedThresholds(afterSample) > 0
-        ? [createRegression('thresholds', '新增样本存在失败阈值', 0, countFailedThresholds(afterSample))]
-        : [],
+      regressions: buildAddedSampleRegressions(afterSample),
       improvements: [],
       commandSchemas: {
         lost: [],
@@ -229,6 +256,7 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
     resourceSchemas.gained.length,
     cmdHandler.regression ? 1 : 0,
     cmdHandler.improvement ? 1 : 0,
+    metrics.requiredFailures.delta,
   ].some(Boolean);
 
   return {
@@ -312,8 +340,8 @@ export const formatSnapshotDiffMarkdown = diff => {
     `- 变化/不变: ${diff.summary.changed}/${diff.summary.unchanged}`,
     `- 退化/提升: ${diff.summary.regressions}/${diff.summary.improvements}`,
     '',
-    '| 样本 | 状态 | 覆盖率 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | cmdHandler | 风险 |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |',
+    '| 样本 | 状态 | 覆盖率 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 必需项失败 | cmdHandler | 风险 |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |',
   ];
 
   diff.samples.forEach(sample => {
@@ -327,6 +355,7 @@ export const formatSnapshotDiffMarkdown = diff => {
       formatMetric(sample.metrics.runtimePlaceholders),
       formatMetric(sample.metrics.unresolved),
       formatMetric(sample.metrics.warnings),
+      formatMetric(sample.metrics.requiredFailures),
       formatCmdHandler(sample.cmdHandler),
       sample.regressions.length,
     ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'));

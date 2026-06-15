@@ -42,6 +42,14 @@ const createSample = (overrides = {}) => ({
       pass: true,
     },
   },
+  requiredChecks: {
+    requiredCommandSchemas: {
+      actual: ['nadcorevendor://vendor/ad/rewardImpl'],
+      expected: ['nadcorevendor://vendor/ad/rewardImpl'],
+      missing: [],
+      pass: true,
+    },
+  },
   cmdHandlerAlignment: {
     pass: true,
   },
@@ -135,6 +143,40 @@ describe('buildSampleSnapshotDiff', () => {
     ]));
   });
 
+  it('识别 expected 必需项失败增加和恢复', () => {
+    const before = createSample();
+    const after = createSample({
+      requiredChecks: {
+        requiredCommandSchemas: {
+          actual: [],
+          expected: ['nadcorevendor://vendor/ad/rewardImpl'],
+          missing: ['nadcorevendor://vendor/ad/rewardImpl'],
+          pass: false,
+        },
+      },
+    });
+    const diff = buildSampleSnapshotDiff(before, after);
+    const recoveredDiff = buildSampleSnapshotDiff(after, before);
+
+    expect(diff.metrics.requiredFailures).toEqual({
+      before: 0,
+      after: 1,
+      delta: 1,
+    });
+    expect(diff.regressions).toContainEqual({
+      key: 'requiredChecks',
+      message: '必需项失败数量增加',
+      before: 0,
+      after: 1,
+    });
+    expect(recoveredDiff.improvements).toContainEqual({
+      key: 'requiredChecks',
+      message: '必需项失败数量减少',
+      before: 1,
+      after: 0,
+    });
+  });
+
   it('识别新增和删除样本', () => {
     const added = buildSampleSnapshotDiff(undefined, createSample({ sample: 'new-sample' }));
     const removed = buildSampleSnapshotDiff(createSample({ sample: 'old-sample' }), undefined);
@@ -196,6 +238,7 @@ describe('formatSnapshotDiffMarkdown', () => {
     expect(markdown).toContain('# Scheme Corpus 质量趋势');
     expect(markdown).toContain('- 结果: FAIL');
     expect(markdown).toContain('| reward-response-redacted | changed | 100 -> 90 (-10)');
+    expect(markdown).toContain('必需项失败');
     expect(markdown).toContain('## 退化明细');
     expect(markdown).toContain('覆盖率下降');
   });
