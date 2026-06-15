@@ -4,6 +4,7 @@ import {
   extractCmdStructurePair,
   formatCmdStructureDiff,
   normalizeCmdStructure,
+  parseCliArgs,
 } from './cmd-structure-diff.mjs';
 
 const createCmdStructure = () => ({
@@ -175,5 +176,47 @@ describe('diffCmdStructures', () => {
 
     expect(diff.hasDifferences).toBe(false);
     expect(diff.extraPaths).toEqual([]);
+  });
+
+  it('忽略 actual 额外路径的报告会标记子集模式', () => {
+    const actual = createCmdStructure();
+    const expected = createCmdStructure();
+
+    actual.result.cmdParams.params.appUrl.cmdParams.params.extra = {
+      trace: 'debug',
+    };
+
+    const strictDiff = diffCmdStructures(actual, expected);
+    const subsetDiff = diffCmdStructures(actual, expected, { ignoreExtraPaths: true });
+    const report = formatCmdStructureDiff(subsetDiff, {
+      modeLabel: '忽略 actual 额外路径',
+    });
+
+    expect(strictDiff.hasDifferences).toBe(true);
+    expect(subsetDiff.hasDifferences).toBe(false);
+    expect(report).toContain('对比模式: 忽略 actual 额外路径');
+    expect(report).toContain('结构一致');
+  });
+});
+
+describe('parseCliArgs', () => {
+  it('支持通过 CLI 开启忽略 actual 额外路径模式', () => {
+    expect(parseCliArgs(['--ignore-extra', 'actual.json', 'expected.json'])).toEqual({
+      options: {
+        fromStdin: false,
+        ignoreExtraPaths: true,
+      },
+      paths: ['actual.json', 'expected.json'],
+    });
+  });
+
+  it('支持 stdin 和忽略额外路径组合使用', () => {
+    expect(parseCliArgs(['--stdin', '--ignore-extra'])).toEqual({
+      options: {
+        fromStdin: true,
+        ignoreExtraPaths: true,
+      },
+      paths: [],
+    });
   });
 });
