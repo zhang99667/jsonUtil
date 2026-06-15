@@ -52,6 +52,7 @@ const createSample = (overrides = {}) => ({
   },
   cmdHandlerAlignment: {
     pass: true,
+    ignoredExtraPaths: 0,
   },
   ...overrides,
 });
@@ -174,6 +175,42 @@ describe('buildSampleSnapshotDiff', () => {
       message: '必需项失败恢复',
       before: 'requiredCommandSchemas missing=["nadcorevendor://vendor/ad/rewardImpl"] extra=[]',
       after: undefined,
+    });
+  });
+
+  it('识别 cmdHandler 忽略 extra 路径增加和减少', () => {
+    const before = createSample({
+      cmdHandlerAlignment: {
+        pass: true,
+        ignoredExtraPaths: 2,
+      },
+    });
+    const after = createSample({
+      cmdHandlerAlignment: {
+        pass: true,
+        ignoredExtraPaths: 8,
+      },
+    });
+    const diff = buildSampleSnapshotDiff(before, after);
+    const recoveredDiff = buildSampleSnapshotDiff(after, before);
+
+    expect(diff.status).toBe('changed');
+    expect(diff.metrics.cmdHandlerIgnoredExtraPaths).toEqual({
+      before: 2,
+      after: 8,
+      delta: 6,
+    });
+    expect(diff.regressions).toContainEqual({
+      key: 'cmdHandlerIgnoredExtraPaths',
+      message: 'cmdHandler 忽略 extra 路径增加',
+      before: 2,
+      after: 8,
+    });
+    expect(recoveredDiff.improvements).toContainEqual({
+      key: 'cmdHandlerIgnoredExtraPaths',
+      message: 'cmdHandler 忽略 extra 路径减少',
+      before: 8,
+      after: 2,
     });
   });
 
@@ -341,6 +378,7 @@ describe('formatSnapshotDiffMarkdown', () => {
     expect(markdown).toContain('# Scheme Corpus 质量趋势');
     expect(markdown).toContain('- 结果: FAIL');
     expect(markdown).toContain('| reward-response-redacted | changed | 100 -> 90 (-10)');
+    expect(markdown).toContain('忽略 extra');
     expect(markdown).toContain('必需项失败');
     expect(markdown).toContain('## 退化明细');
     expect(markdown).toContain('覆盖率下降');

@@ -58,6 +58,10 @@ const buildSampleMetrics = (beforeSample, afterSample) => ({
   runtimePlaceholders: createMetricChange(beforeSample?.totals?.runtimePlaceholders, afterSample?.totals?.runtimePlaceholders),
   unresolved: createMetricChange(beforeSample?.totals?.unresolved, afterSample?.totals?.unresolved),
   warnings: createMetricChange(beforeSample?.totals?.warnings, afterSample?.totals?.warnings),
+  cmdHandlerIgnoredExtraPaths: createMetricChange(
+    beforeSample?.cmdHandlerAlignment ? beforeSample.cmdHandlerAlignment.ignoredExtraPaths || 0 : undefined,
+    afterSample?.cmdHandlerAlignment ? afterSample.cmdHandlerAlignment.ignoredExtraPaths || 0 : undefined
+  ),
   requiredFailures: createMetricChange(
     beforeSample === undefined ? undefined : countFailedRequiredChecks(beforeSample),
     afterSample === undefined ? undefined : countFailedRequiredChecks(afterSample)
@@ -206,6 +210,22 @@ const buildMetricRegressions = (metrics, beforeSample, afterSample) => {
   requiredFailureDiff.resolved.forEach(failure => {
     improvements.push(createImprovement('requiredChecks', '必需项失败恢复', formatRequiredFailure(failure), undefined));
   });
+
+  if (metrics.cmdHandlerIgnoredExtraPaths.delta > 0) {
+    regressions.push(createRegression(
+      'cmdHandlerIgnoredExtraPaths',
+      'cmdHandler 忽略 extra 路径增加',
+      metrics.cmdHandlerIgnoredExtraPaths.before,
+      metrics.cmdHandlerIgnoredExtraPaths.after
+    ));
+  } else if (metrics.cmdHandlerIgnoredExtraPaths.delta < 0) {
+    improvements.push(createImprovement(
+      'cmdHandlerIgnoredExtraPaths',
+      'cmdHandler 忽略 extra 路径减少',
+      metrics.cmdHandlerIgnoredExtraPaths.before,
+      metrics.cmdHandlerIgnoredExtraPaths.after
+    ));
+  }
 
   return { regressions, improvements };
 };
@@ -412,8 +432,8 @@ export const formatSnapshotDiffMarkdown = diff => {
     `- 变化/不变: ${diff.summary.changed}/${diff.summary.unchanged}`,
     `- 退化/提升: ${diff.summary.regressions}/${diff.summary.improvements}`,
     '',
-    '| 样本 | 状态 | 覆盖率 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 必需项失败 | cmdHandler | 风险 |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |',
+    '| 样本 | 状态 | 覆盖率 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 必需项失败 | 忽略 extra | cmdHandler | 风险 |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |',
   ];
 
   diff.samples.forEach(sample => {
@@ -428,6 +448,7 @@ export const formatSnapshotDiffMarkdown = diff => {
       formatMetric(sample.metrics.unresolved),
       formatMetric(sample.metrics.warnings),
       formatMetric(sample.metrics.requiredFailures),
+      formatMetric(sample.metrics.cmdHandlerIgnoredExtraPaths),
       formatCmdHandler(sample.cmdHandler),
       sample.regressions.length,
     ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
