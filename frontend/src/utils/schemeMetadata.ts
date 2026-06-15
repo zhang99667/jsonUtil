@@ -94,6 +94,10 @@ const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const PREFIXED_QUERY_BOUNDARY_PATTERN = '[\\s\\[\\]{}(),|:：>]';
 const PREFIXED_QUERY_STRING_RE = new RegExp(`^(.*?${PREFIXED_QUERY_BOUNDARY_PATTERN})([?&]*${QUERY_KEY_PATTERN}=.+)$`);
+const LOG_FIELD_KEY_PATTERN = `(?:"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|${QUERY_KEY_PATTERN})`;
+const LOG_FIELD_SEPARATOR_PATTERN = '(?:\\s*(?:=>|->)\\s*|\\s*[:：]\\s*|\\s+=\\s*|=\\s+)';
+const LOG_FIELD_RE = new RegExp(`^\\s*(${LOG_FIELD_KEY_PATTERN})${LOG_FIELD_SEPARATOR_PATTERN}(.+?)\\s*$`);
+const LOG_FIELD_WITH_PREFIX_RE = new RegExp(`^(.*?[\\s[{,(|])(${LOG_FIELD_KEY_PATTERN})${LOG_FIELD_SEPARATOR_PATTERN}(.+?)\\s*$`);
 const HTML_EQUALS_RE = /&(?:equals|#61|#x3d);/gi;
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38|#x26);(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const UNICODE_EQUALS_RE = /\\u003d/gi;
@@ -590,6 +594,41 @@ const parseSourceValue = (value: string): SourceShape => {
   return jsonValue ?? normalized;
 };
 
+const parseSourceFieldKey = (rawKey: string): string | null => {
+  const trimmed = rawKey.trim();
+  const quote = trimmed[0];
+  if ((quote === '"' || quote === "'") && trimmed.endsWith(quote)) {
+    if (quote === '"') {
+      try {
+        const parsed = JSON.parse(trimmed) as unknown;
+        return typeof parsed === 'string' ? parsed : null;
+      } catch {
+        return trimmed.slice(1, -1);
+      }
+    }
+
+    return trimmed.slice(1, -1).replace(/\\'/g, "'");
+  }
+
+  return decodeQueryComponent(trimmed);
+};
+
+const parseSourceFieldValue = (rawValue: string): string => {
+  const trimmed = rawValue.trim();
+  const withoutTrailingComma = trimmed.endsWith(',') ? trimmed.slice(0, -1).trim() : trimmed;
+  const quote = withoutTrailingComma[0];
+  if ((quote === '"' || quote === "'") && withoutTrailingComma.endsWith(quote)) {
+    if (quote === '"') {
+      const parsed = tryParseJsonStringSource(withoutTrailingComma);
+      return parsed ?? withoutTrailingComma.slice(1, -1);
+    }
+
+    return withoutTrailingComma.slice(1, -1).replace(/\\'/g, "'");
+  }
+
+  return withoutTrailingComma;
+};
+
 const normalizeQuerySourceString = (source: string): string => (
   source.trim()
     .replace(/^\?/, '')
@@ -614,9 +653,27 @@ const getQuerySourceShapeString = (source: string): string | null => {
   return QUERY_PAIR_START_RE.test(prefixedSource) ? prefixedSource : null;
 };
 
+const parseLogFieldSourceShape = (source: string): SourceShape | null => {
+  const trimmed = source.trim();
+  if (/[\r\n]/.test(trimmed)) return null;
+
+  const directMatch = trimmed.match(LOG_FIELD_RE);
+  const prefixedMatch = directMatch ? null : trimmed.match(LOG_FIELD_WITH_PREFIX_RE);
+  const rawKey = directMatch?.[1] ?? prefixedMatch?.[2];
+  const rawValue = directMatch?.[2] ?? prefixedMatch?.[3];
+  if (!rawKey || rawValue === undefined) return null;
+
+  const key = parseSourceFieldKey(rawKey);
+  if (!key) return null;
+
+  return {
+    [key]: parseSourceValue(parseSourceFieldValue(rawValue)),
+  };
+};
+
 const parseQuerySourceShape = (source: string): SourceShape | null => {
   const normalizedSource = getQuerySourceShapeString(source);
-  if (!normalizedSource) return null;
+  if (!normalizedSource) return parseLogFieldSourceShape(source);
   if (!QUERY_PAIR_START_RE.test(normalizedSource)) return null;
 
   const result: { [key: string]: SourceShape } = {};
