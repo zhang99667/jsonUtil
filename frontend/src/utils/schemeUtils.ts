@@ -198,6 +198,20 @@ const COMMON_CMD_PARAM_NAME_ALIASES = new Set([
   ...Array.from(COMMON_CMD_PARAM_NAMES, normalizeCmdParamName),
 ]);
 
+const STRUCTURED_PARAM_SUFFIX_RE = /(?:^|[_-])(?:cmd|command|schema|scheme|url|uri|link|params?|policy|info)$/i;
+const STRUCTURED_CAMEL_PARAM_SUFFIX_RE = /[a-z0-9](?:Cmd|Command|Schema|Scheme|URL|Url|URI|Uri|Link|Params?|Policy|Info)$/;
+
+const isLikelyStructuredParamName = (key: string): boolean => (
+  STRUCTURED_PARAM_SUFFIX_RE.test(key) || STRUCTURED_CAMEL_PARAM_SUFFIX_RE.test(key)
+);
+
+const isKnownDecodableParamName = (key: string): boolean => {
+  const normalizedKey = normalizeCmdParamName(key);
+  return COMMON_CMD_PARAM_NAME_ALIASES.has(key.toLowerCase()) ||
+    COMMON_CMD_PARAM_NAME_ALIASES.has(normalizedKey) ||
+    isLikelyStructuredParamName(key);
+};
+
 const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
@@ -408,7 +422,7 @@ const parseLogFieldParamString = (source: string): LogFieldParam | null => {
 
   const rawKey = match.rawKey;
   const key = unwrapLogFieldKey(rawKey);
-  if (!key || !COMMON_CMD_PARAM_NAME_ALIASES.has(normalizeCmdParamName(key))) {
+  if (!key || !isKnownDecodableParamName(key)) {
     return null;
   }
 
@@ -528,9 +542,9 @@ export function isDecodableQueryString(str: string): boolean {
   if (QUERY_PAIR_DELIMITER_RE.test(source)) return true;
 
   const equalIndex = source.indexOf('=');
-  const key = source.slice(0, equalIndex).toLowerCase();
+  const key = source.slice(0, equalIndex);
   const value = source.slice(equalIndex + 1);
-  return COMMON_CMD_PARAM_NAME_ALIASES.has(key) && isDecodableParamValue(value);
+  return isKnownDecodableParamName(key) && isDecodableParamValue(value);
 }
 
 const getPrefixedQueryString = (source: string): PrefixedQueryString | null => {
@@ -1034,7 +1048,7 @@ const getSingleRawUrlParam = (queryString: string): SingleRawUrlParam | null => 
 
   const rawKey = source.slice(0, equalIndex);
   const key = decodeQueryComponent(rawKey);
-  if (!key || !COMMON_CMD_PARAM_NAME_ALIASES.has(normalizeCmdParamName(key))) return null;
+  if (!key || !isKnownDecodableParamName(key)) return null;
 
   const rawValue = source.slice(equalIndex + 1);
   if (!isUrl(rawValue)) return null;
