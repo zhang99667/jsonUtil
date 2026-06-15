@@ -1,5 +1,5 @@
 import type { SchemeDecodeResult } from './schemeUtils';
-import { detectSchemeType, hasUrlEncoding, parseUrl, urlDecode } from './schemeUtils';
+import { base64Decode, detectSchemeType, hasUrlEncoding, parseUrl, urlDecode } from './schemeUtils';
 
 export interface Base64MetaEntry {
   key: string;
@@ -590,6 +590,13 @@ const parseSourceValue = (value: string): SourceShape => {
   if (directJsonValue !== null) return directJsonValue;
 
   const normalized = normalizeSourceString(value);
+  if (detectSchemeType(normalized) === 'base64') {
+    const decoded = base64Decode(normalized);
+    if (decoded && decoded !== normalized) {
+      return parseSourceValue(decoded);
+    }
+  }
+
   const jsonValue = tryParseJsonSource(normalized);
   return jsonValue ?? normalized;
 };
