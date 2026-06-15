@@ -213,6 +213,7 @@ export const diffCmdStructures = (actualInput, expectedInput, options = {}) => {
     sourceDiff,
     missingPaths: paramDiff.missingPaths,
     extraPaths,
+    ignoredExtraPaths: options.ignoreExtraPaths ? paramDiff.extraPaths : [],
     valueDiffs: paramDiff.valueDiffs,
     hasDifferences: Boolean(
       schemaDiff ||
@@ -248,6 +249,11 @@ export const formatCmdStructureDiff = (diff, context = {}) => {
 
   if (!diff.hasDifferences) {
     lines.push('- 结构一致');
+    if (diff.ignoredExtraPaths.length > 0) {
+      lines.push(`- 已忽略 actual 额外路径 ${diff.ignoredExtraPaths.length} 个:`);
+      diff.ignoredExtraPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
+      if (diff.ignoredExtraPaths.length > 20) lines.push(`  - ... 还有 ${diff.ignoredExtraPaths.length - 20} 个`);
+    }
     return lines.join('\n');
   }
 
@@ -271,6 +277,12 @@ export const formatCmdStructureDiff = (diff, context = {}) => {
     lines.push(`- 额外路径 ${diff.extraPaths.length} 个:`);
     diff.extraPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
     if (diff.extraPaths.length > 20) lines.push(`  - ... 还有 ${diff.extraPaths.length - 20} 个`);
+  }
+
+  if (diff.ignoredExtraPaths.length > 0) {
+    lines.push(`- 已忽略 actual 额外路径 ${diff.ignoredExtraPaths.length} 个:`);
+    diff.ignoredExtraPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
+    if (diff.ignoredExtraPaths.length > 20) lines.push(`  - ... 还有 ${diff.ignoredExtraPaths.length - 20} 个`);
   }
 
   if (diff.valueDiffs.length > 0) {

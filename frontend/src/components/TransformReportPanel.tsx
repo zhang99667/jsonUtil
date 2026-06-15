@@ -524,6 +524,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       hasDifferences: boolean;
       missingCount: number;
       extraCount: number;
+      ignoredExtraCount: number;
       valueDiffCount: number;
       hasSchemaDiff: boolean;
       hasSourceDiff: boolean;
@@ -551,6 +552,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           hasDifferences: diff.hasDifferences,
           missingCount: diff.missingPaths.length,
           extraCount: diff.extraPaths.length,
+          ignoredExtraCount: diff.ignoredExtraPaths.length,
           valueDiffCount: diff.valueDiffs.length,
           hasSchemaDiff: Boolean(diff.schemaDiff),
           hasSourceDiff: Boolean(diff.sourceDiff),
@@ -619,8 +621,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           <div className="mt-1 flex flex-col gap-1">
             <div className={diffSummary.hasDifferences ? 'text-amber-200' : 'text-emerald-200'}>
               {diffSummary.hasDifferences
-                ? `存在差异：Schema ${diffSummary.hasSchemaDiff ? 1 : 0}，Source ${diffSummary.hasSourceDiff ? 1 : 0}，缺失 ${diffSummary.missingCount}，额外 ${diffSummary.extraCount}，值不一致 ${diffSummary.valueDiffCount}`
-                : '结构一致'}
+                ? `存在差异：Schema ${diffSummary.hasSchemaDiff ? 1 : 0}，Source ${diffSummary.hasSourceDiff ? 1 : 0}，缺失 ${diffSummary.missingCount}，额外 ${diffSummary.extraCount}，值不一致 ${diffSummary.valueDiffCount}${diffSummary.ignoredExtraCount ? `，已忽略 ${diffSummary.ignoredExtraCount}` : ''}`
+                : `结构一致${diffSummary.ignoredExtraCount ? `，已忽略额外 ${diffSummary.ignoredExtraCount}` : ''}`}
             </div>
             {diffSummary.previewLines.length > 0 && (
               <div className="flex flex-col gap-0.5 font-mono text-gray-400">
