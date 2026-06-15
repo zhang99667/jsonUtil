@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.55 (2026-06-15) - 电话拨打 Scheme 解析回归
+### ✅ 测试
+- **CMD/Scheme 兼容性**: 增加 `baiduboxapp://v7/vendor/ad/makePhoneCall?params=...` 电话拨打 Scheme 回归覆盖，确认可直接展开号码、`numberUrl/logUrl` 监测 URL、`extInfo` Base64 JSON 与运行时占位符
+
 ## v1.8.54 (2026-06-15) - Base64 Scheme 导出对齐
 ### 🐛 Bug 修复
 - **CMD/Scheme 兼容性**: 修复 `panel_scheme=<Base64(Scheme)>` 这类参数值复制为 cmdHandler 风格结构时，source shape 未解开 Base64 导致内层 Scheme 无法包装 `cmdSchema/source` 的问题
