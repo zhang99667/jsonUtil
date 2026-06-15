@@ -25,7 +25,28 @@ const createReport = overrides => ({
 });
 
 describe('buildSizedResponseText', () => {
-  it('将 JSON object 扩充到目标大小附近', () => {
+  it('优先复制真实 video 条目扩充到目标大小附近', () => {
+    const text = buildSizedResponseText(JSON.stringify({
+      errno: 0,
+      data: {
+        video: [
+          {
+            material: [{ info: [{ id: 'ad-1' }] }],
+          },
+        ],
+      },
+    }), 2048);
+    const parsed = JSON.parse(text);
+
+    expect(Buffer.byteLength(text, 'utf8')).toBeGreaterThanOrEqual(2048);
+    expect(parsed.data.video.length).toBeGreaterThan(1);
+    expect(parsed.data.video[0]).toMatchObject({
+      material: [{ info: [{ id: 'ad-1' }] }],
+    });
+    expect(parsed).not.toHaveProperty('_performance_padding');
+  });
+
+  it('非广告 response 回退到 padding 扩充', () => {
     const text = buildSizedResponseText(JSON.stringify({ errno: 0, data: { ok: true } }), 2048);
 
     expect(Buffer.byteLength(text, 'utf8')).toBeGreaterThanOrEqual(2048);
@@ -35,6 +56,7 @@ describe('buildSizedResponseText', () => {
         ok: true,
       },
     });
+    expect(JSON.parse(text)).toHaveProperty('_performance_padding');
   });
 
   it('拒绝非 object 输入，避免生成无法代表 response 的样本', () => {
