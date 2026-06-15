@@ -1,5 +1,14 @@
 import { useState, useCallback, useEffect, RefObject } from 'react';
 
+export const SIDEBAR_MIN_WIDTH = 180;
+export const SIDEBAR_MAX_WIDTH = 400;
+export const LEFT_PANE_MIN_PERCENT = 20;
+export const LEFT_PANE_MAX_PERCENT = 80;
+
+export const clampLayoutValue = (value: number, min: number, max: number) => (
+    Math.max(min, Math.min(max, value))
+);
+
 export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
     const [sidebarWidth, setSidebarWidth] = useState(220);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -16,7 +25,7 @@ export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (isResizingSidebar) {
-            const newWidth = Math.max(180, Math.min(400, e.clientX));
+            const newWidth = clampLayoutValue(e.clientX, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH);
             setSidebarWidth(newWidth);
         }
         if (isResizingPane && appRef.current) {
@@ -25,7 +34,7 @@ export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
             const editorAreaWidth = appRect.width - sidebarWidth;
             const relativeX = e.clientX - editorAreaLeft;
             const newPercent = (relativeX / editorAreaWidth) * 100;
-            setLeftPaneWidthPercent(Math.max(20, Math.min(80, newPercent)));
+            setLeftPaneWidthPercent(clampLayoutValue(newPercent, LEFT_PANE_MIN_PERCENT, LEFT_PANE_MAX_PERCENT));
         }
     }, [isResizingSidebar, isResizingPane, sidebarWidth, appRef]);
 

@@ -15,7 +15,14 @@ import {
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
-import { useLayout } from './hooks/useLayout';
+import {
+  LEFT_PANE_MAX_PERCENT,
+  LEFT_PANE_MIN_PERCENT,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  clampLayoutValue,
+  useLayout,
+} from './hooks/useLayout';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -61,6 +68,8 @@ const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
 const DOCUMENT_STATS_SCAN_LIMIT = 300_000;
 const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理大文件，请稍候...';
+const SIDEBAR_KEYBOARD_RESIZE_STEP = 16;
+const PANE_KEYBOARD_RESIZE_STEP = 5;
 const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.FORMAT,
   TransformMode.DEEP_FORMAT,
@@ -203,6 +212,34 @@ const App: React.FC = () => {
     isResizingSidebar, isResizingPane,
     startResizingSidebar, startResizingPane
   } = useLayout(appRef);
+
+  const handleSidebarResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    const keyboardStep = event.shiftKey ? SIDEBAR_KEYBOARD_RESIZE_STEP * 2 : SIDEBAR_KEYBOARD_RESIZE_STEP;
+    let nextWidth: number | null = null;
+
+    if (event.key === 'ArrowLeft') nextWidth = sidebarWidth - keyboardStep;
+    if (event.key === 'ArrowRight') nextWidth = sidebarWidth + keyboardStep;
+    if (event.key === 'Home') nextWidth = SIDEBAR_MIN_WIDTH;
+    if (event.key === 'End') nextWidth = SIDEBAR_MAX_WIDTH;
+    if (nextWidth === null) return;
+
+    event.preventDefault();
+    setSidebarWidth(clampLayoutValue(nextWidth, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH));
+  }, [setSidebarWidth, sidebarWidth]);
+
+  const handlePaneResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    const keyboardStep = event.shiftKey ? PANE_KEYBOARD_RESIZE_STEP * 2 : PANE_KEYBOARD_RESIZE_STEP;
+    let nextPercent: number | null = null;
+
+    if (event.key === 'ArrowLeft') nextPercent = leftPaneWidthPercent - keyboardStep;
+    if (event.key === 'ArrowRight') nextPercent = leftPaneWidthPercent + keyboardStep;
+    if (event.key === 'Home') nextPercent = LEFT_PANE_MIN_PERCENT;
+    if (event.key === 'End') nextPercent = LEFT_PANE_MAX_PERCENT;
+    if (nextPercent === null) return;
+
+    event.preventDefault();
+    setLeftPaneWidthPercent(clampLayoutValue(nextPercent, LEFT_PANE_MIN_PERCENT, LEFT_PANE_MAX_PERCENT));
+  }, [leftPaneWidthPercent, setLeftPaneWidthPercent]);
 
   // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
   const {
@@ -1454,9 +1491,20 @@ const App: React.FC = () => {
         {/* 侧边栏调整手柄 */}
         {!isSidebarCollapsed && (
           <div
-            className={`absolute top-0 bottom-0 w-1 hover:bg-brand-primary cursor-col-resize z-20 transition-colors delay-100 ${isResizingSidebar ? 'bg-brand-primary' : 'bg-transparent'}`}
+            data-tour="sidebar-resize-handle"
+            role="separator"
+            aria-label="调整工具栏宽度"
+            aria-orientation="vertical"
+            aria-valuemin={SIDEBAR_MIN_WIDTH}
+            aria-valuemax={SIDEBAR_MAX_WIDTH}
+            aria-valuenow={Math.round(sidebarWidth)}
+            aria-valuetext={`工具栏宽度 ${Math.round(sidebarWidth)} 像素`}
+            tabIndex={0}
+            className={`absolute top-0 bottom-0 w-1 hover:bg-brand-primary focus:bg-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/70 cursor-col-resize z-20 transition-colors delay-100 ${isResizingSidebar ? 'bg-brand-primary' : 'bg-transparent'}`}
             style={{ left: sidebarWidth - 2 }}
             onMouseDown={startResizingSidebar}
+            onKeyDown={handleSidebarResizeKeyDown}
+            title="拖拽或用方向键调整工具栏宽度"
           ></div>
         )}
 
@@ -1569,8 +1617,19 @@ const App: React.FC = () => {
 
           {/* 分栏调整手柄 */}
           <div
-            className={`w-1 hover:bg-brand-primary cursor-col-resize z-20 flex-shrink-0 transition-colors delay-100 ${isResizingPane ? 'bg-brand-primary' : 'bg-editor-sidebar'}`}
+            data-tour="editor-pane-resize-handle"
+            role="separator"
+            aria-label="调整 SOURCE 和 PREVIEW 宽度"
+            aria-orientation="vertical"
+            aria-valuemin={LEFT_PANE_MIN_PERCENT}
+            aria-valuemax={LEFT_PANE_MAX_PERCENT}
+            aria-valuenow={Math.round(leftPaneWidthPercent)}
+            aria-valuetext={`SOURCE 宽度 ${Math.round(leftPaneWidthPercent)}%`}
+            tabIndex={0}
+            className={`w-1 hover:bg-brand-primary focus:bg-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/70 cursor-col-resize z-20 flex-shrink-0 transition-colors delay-100 ${isResizingPane ? 'bg-brand-primary' : 'bg-editor-sidebar'}`}
             onMouseDown={startResizingPane}
+            onKeyDown={handlePaneResizeKeyDown}
+            title="拖拽或用方向键调整 SOURCE/PREVIEW 宽度"
           ></div>
 
           {/* 右栏：预览与结果 */}
