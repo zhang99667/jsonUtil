@@ -721,6 +721,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         onClick={handleCopyPath}
         className="shrink-0 rounded bg-editor-active px-2 py-0.5 text-xs text-gray-300 transition-colors hover:bg-editor-border hover:text-white"
         title="复制路径"
+        aria-label="复制路径，复制 Scheme 来源路径"
       >
         复制路径
       </button>
@@ -746,20 +747,26 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleCancelDecode}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-amber-700/80 text-white rounded hover:bg-amber-700 transition-colors"
             title="停止当前大内容解析"
+            aria-label="取消解析，停止当前大内容解析"
           >
             取消解析
           </button>
         )}
         <button
+          data-tour="scheme-close-button"
           onClick={onClose}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm text-gray-400 hover:text-white transition-colors"
+          title="关闭 Scheme 解析"
+          aria-label="关闭 Scheme 解析"
         >
           关闭
         </button>
         <button
+          data-tour="scheme-qrcode-button"
           onClick={() => setShowQRCode(!showQRCode)}
           disabled={!actualValue}
           aria-pressed={showQRCode}
+          aria-label={`二维码，${qrCodeButtonTitle}`}
           className={`shrink-0 whitespace-nowrap px-2.5 py-1 text-sm rounded transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${
             showQRCode 
               ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
@@ -773,10 +780,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           二维码
         </button>
         <button
+          data-tour="scheme-copy-original"
           onClick={handleCopyOriginal}
           disabled={!actualValue}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
           title={copyOriginalTitle}
+          aria-label={`复制原始值，${copyOriginalTitle}`}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -784,10 +793,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           复制原始值
         </button>
         <button
+          data-tour="scheme-copy-decoded"
           onClick={handleCopy}
           disabled={!editedContent || isDecodePending}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
           title={copyDecodedTitle}
+          aria-label={`复制解码结果，${copyDecodedTitle}`}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -801,6 +812,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             disabled={!canCopyCmdHandlerCompatibleResult}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             title={copyCmdStructureTitle}
+            aria-label={`复制 CMD 结构，${copyCmdStructureTitle}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8M8 12h8M8 17h5M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
@@ -815,6 +827,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             disabled={!canCopyPathValues}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             title={copyPathValuesTitle}
+            aria-label={`复制路径和值，${copyPathValuesTitle}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M8 4h8l4 4v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z" />
@@ -830,6 +843,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             disabled={!canCopySerializedContent}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             title={copySerializedTitle}
+            aria-label={`复制序列化结果，${copySerializedTitle}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h10m0 0l-3-3m3 3l-3 3m9 7H10m0 0l3 3m-3-3l3-3" />
@@ -839,10 +853,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         )}
         {onApply && isEditing && (
           <button
+            data-tour="scheme-apply-edit"
             onClick={handleApply}
             disabled={!canApplyEdit}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-brand-primary text-white rounded hover:bg-brand-primary/90 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             title={applyEditTitle}
+            aria-label={`应用修改，${applyEditTitle}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
