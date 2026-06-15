@@ -127,6 +127,11 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('downloadUrl=123')).toBe(false);
   });
 
+  it('检测真实广告日志里的落地与曝光 URL 字段', () => {
+    expect(isDecodableQueryString('locid=https%3A%2F%2Funion-click.example.com%2Fsem.php%3Fsku%3D101')).toBe(true);
+    expect(isDecodableQueryString('s_url=https%3A%2F%2Funet.example.com%2Fv3%2Fad%2Fshow%3Fact%3Dnew')).toBe(true);
+  });
+
   it('检测常见跳转兜底单参数字段', () => {
     expect(isDecodableQueryString('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
     expect(isDecodableQueryString('fallbackUrl=//m.baidu.com/s?word=json')).toBe(true);
@@ -1040,6 +1045,24 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('真实广告日志里的落地与曝光 URL 字段可作为单参数解析', () => {
+    const result = deepDecodeScheme('locid=https%3A%2F%2Funion-click.example.com%2Fsem.php%3Fsku%3D101%26bd_vid%3Dabc');
+    expect(JSON.parse(result.decoded)).toEqual({
+      locid: {
+        sku: '101',
+        bd_vid: 'abc',
+      },
+    });
+
+    const showResult = deepDecodeScheme('s_url=https%3A%2F%2Funet.example.com%2Fv3%2Fad%2Fshow%3Fact%3Dnew%26product%3Ddemo');
+    expect(JSON.parse(showResult.decoded)).toEqual({
+      s_url: {
+        act: 'new',
+        product: 'demo',
+      },
+    });
+  });
+
   it('常见 hash route 字段可作为单参数解析', () => {
     const hashRoute = encodeURIComponent('#/detail?cmd=%7B%22a%22%3A1%7D&from=next');
     const result = deepDecodeScheme(`next=${hashRoute}`);
@@ -1330,6 +1353,20 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe('url=https://m.baidu.com/s?word=schema&from=feed');
+  });
+
+  it('真实广告日志 URL 字段编辑后保留 raw URL 形态', () => {
+    const original = 'locid=https://union-click.example.com/sem.php?sku=101&bd_vid=abc';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      locid: {
+        sku: '202',
+        bd_vid: 'abc',
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('locid=https://union-click.example.com/sem.php?sku=202&bd_vid=abc');
   });
 
   it('日志冒号 Scheme 字段编辑后保留冒号形态', () => {
