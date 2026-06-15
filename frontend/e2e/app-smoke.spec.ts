@@ -364,9 +364,11 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
   const copyPathValuesButton = reportPanel.locator('[data-tour="transform-report-copy-path-values"]');
   await expect(copyPathValuesButton).toBeDisabled();
   await expect(copyPathValuesButton).toHaveAttribute('title', '当前筛选没有可复制的路径和值');
+  await expect(copyPathValuesButton).toHaveAttribute('aria-label', '复制路径值，当前筛选没有可复制的路径和值');
   const copyIssueSamplesButton = reportPanel.locator('[data-tour="transform-report-copy-issue-samples"]');
   await expect(copyIssueSamplesButton).toBeDisabled();
   await expect(copyIssueSamplesButton).toHaveAttribute('title', '当前筛选没有待检查、跳过或占位符来源样本可复制');
+  await expect(copyIssueSamplesButton).toHaveAttribute('aria-label', '复制问题样本，当前筛选没有待检查、跳过或占位符来源样本可复制');
   await reportPanel.locator('[data-tour="transform-report-empty-clear"]').click();
   await expect(page.locator('[data-tour="transform-report-filter"]')).toHaveValue('');
   await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.payload');
@@ -425,10 +427,12 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   });
 
   await reportPanel.locator('[data-tour="transform-report-copy-diagnostic-summary"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-copy-diagnostic-summary"]')).toHaveAttribute('aria-label', '复制诊断摘要，复制不含原始大字段值的解析覆盖、CMD Schema 和风险摘要');
   await expect(page.getByText(/已复制诊断摘要（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('深度解析诊断摘要');
 
+  await expect(reportPanel.locator('[data-tour="transform-report-copy-quality-snapshot"]')).toHaveAttribute('aria-label', '复制质量快照，复制不含原始大字段值的解析质量指标 JSON，便于保存基线或对比趋势');
   await reportPanel.locator('[data-tour="transform-report-copy-quality-snapshot"]').click();
   await expect(page.getByText(/已复制质量快照（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   const qualitySnapshot = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
@@ -442,6 +446,7 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   });
   expect(JSON.stringify(qualitySnapshot)).not.toContain('raw=%7B%22nid%22%3A123%7D');
 
+  await expect(reportPanel.locator('[data-tour="transform-report-copy-archive-package"]')).toHaveAttribute('aria-label', '复制归档包，复制不含原始 response 的质量快照、脱敏问题样本和 corpus 沉淀清单');
   await reportPanel.locator('[data-tour="transform-report-copy-archive-package"]').click();
   await expect(page.getByText(/已复制归档包（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   const archivePackage = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
