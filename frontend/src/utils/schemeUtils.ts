@@ -84,6 +84,11 @@ interface LogFieldParam {
   trailingComma?: boolean;
 }
 
+interface PrefixedQueryString {
+  prefix: string;
+  queryString: string;
+}
+
 interface DecodeStructuredState {
   maxStringDecodeLength: number;
   maxTotalStringDecodeLength: number;
@@ -190,6 +195,8 @@ const SEMICOLON_QUERY_DELIMITER_RE = new RegExp(`;(?=${QUERY_KEY_PATTERN}=)`, 'g
 const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38);(?=${QUERY_KEY_PATTERN}=)`, 'g');
 const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTERN}=)`, 'gi');
 const LINE_QUERY_DELIMITER_RE = new RegExp(`\\r?\\n[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
+const PREFIXED_QUERY_BOUNDARY_PATTERN = '[\\s\\[\\]{}(),|:：>]';
+const PREFIXED_QUERY_STRING_RE = new RegExp(`^(.*?${PREFIXED_QUERY_BOUNDARY_PATTERN})([?&]*${QUERY_KEY_PATTERN}=.+)$`);
 const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 const BARE_HOST_URL_BASE = 'https://';
 export const DEFAULT_SCHEME_DECODE_MAX_DEPTH = 15;
@@ -514,6 +521,27 @@ export function isDecodableQueryString(str: string): boolean {
   return COMMON_CMD_PARAM_NAME_ALIASES.has(key) && isDecodableParamValue(value);
 }
 
+const getPrefixedQueryString = (source: string): PrefixedQueryString | null => {
+  const trimmed = source.trim();
+  if (/[\r\n]/.test(trimmed)) return null;
+  if (isDecodableQueryString(trimmed)) return null;
+
+  const match = trimmed.match(PREFIXED_QUERY_STRING_RE);
+  if (!match) return null;
+
+  const queryString = normalizeQueryString(stripQueryPrefix(match[2]));
+  if (!queryString || !isDecodableQueryString(queryString)) return null;
+
+  return {
+    prefix: match[1],
+    queryString,
+  };
+};
+
+const isDecodablePrefixedQueryString = (source: string): boolean => (
+  getPrefixedQueryString(source) !== null
+);
+
 /**
  * 检测字符串是否包含 URL 编码
  */
@@ -623,6 +651,7 @@ export function detectSchemeType(str: string): SchemeType {
   if (isDecodableFragmentParamString(trimmed)) return 'query-string';
   if (isDecodableLogFieldParamString(trimmed)) return 'query-string';
   if (isDecodableQueryString(trimmed)) return 'query-string';
+  if (isDecodablePrefixedQueryString(trimmed)) return 'query-string';
   if (hasUrlEncoding(trimmed)) return 'url-encoded';
   if (isBase64(trimmed)) return 'base64';
 
@@ -1329,6 +1358,11 @@ const parseQueryStringDeep = (queryString: string, maxDepth: number): Structured
     return parseQueryPairsDeep(source, maxDepth);
   }
 
+  const prefixedQueryString = getPrefixedQueryString(queryString);
+  if (prefixedQueryString) {
+    return parseQueryPairsDeep(prefixedQueryString.queryString, maxDepth);
+  }
+
   const fragmentParamSource = getFragmentParamSource(queryString);
   if (!fragmentParamSource || !isDecodableQueryString(fragmentParamSource)) return null;
 
@@ -1515,7 +1549,11 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
           layers.push({
             type: 'query-string',
             before,
-            description: isDecodableLogFieldParamString(before) ? '日志字段 CMD 递归解析' : 'CMD 参数递归解析',
+            description: isDecodableLogFieldParamString(before)
+              ? '日志字段 CMD 递归解析'
+              : isDecodablePrefixedQueryString(before)
+                ? '日志前缀 CMD 参数递归解析'
+                : 'CMD 参数递归解析',
           });
           current = JSON.stringify(decodedParams, null, 2);
         } else {
@@ -1827,6 +1865,19 @@ const encodeSingleLogFieldParamContent = (
   return `${logFieldParam.prefix || ''}${logFieldParam.rawKey}${formatLogFieldSeparator(logFieldParam.delimiter)}${wrapLogFieldValue(encodedValue, logFieldParam.quote)}${suffix}`;
 };
 
+const encodePrefixedQueryStringContent = (
+  editedParams: Record<string, unknown>,
+  originalQueryString: string
+): string | null => {
+  const prefixedQueryString = getPrefixedQueryString(originalQueryString);
+  if (!prefixedQueryString) return null;
+
+  const encodedQueryString = encodeSingleRawUrlParamContent(editedParams, prefixedQueryString.queryString) ||
+    buildQueryStringFromObject(editedParams, prefixedQueryString.queryString);
+
+  return `${prefixedQueryString.prefix}${encodedQueryString}`;
+};
+
 export function encodeWithLayers(content: string, layers: DecodeLayer[]): string {
   let result = content;
   
@@ -1863,6 +1914,7 @@ export function encodeWithLayers(content: string, layers: DecodeLayer[]): string
           if (isPlainObject(parsed)) {
             result = encodeSingleLogFieldParamContent(parsed, layer.before) ||
               encodeSingleRawUrlParamContent(parsed, layer.before) ||
+              encodePrefixedQueryStringContent(parsed, layer.before) ||
               buildQueryStringFromObject(parsed, layer.before);
           }
         } catch {
