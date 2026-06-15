@@ -148,6 +148,15 @@ describe('isDecodableQueryString', () => {
       .toBe(true);
   });
 
+  it('检测真实广告 UI 与渲染配置字段', () => {
+    expect(isDecodableQueryString(`ad_tag=${encodeURIComponent(JSON.stringify({ text: '广告' }))}`))
+      .toBe(true);
+    expect(isDecodableQueryString(`toolbaricons=${encodeURIComponent(JSON.stringify({ toolids: ['8', '11', '3'] }))}`))
+      .toBe(true);
+    expect(isDecodableQueryString(`render_sbox=${encodeURIComponent(JSON.stringify({ sbox_switch: 4 }))}`))
+      .toBe(true);
+  });
+
   it('检测常见跳转兜底单参数字段', () => {
     expect(isDecodableQueryString('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
     expect(isDecodableQueryString('fallbackUrl=//m.baidu.com/s?word=json')).toBe(true);
@@ -1169,6 +1178,37 @@ describe('deepDecodeScheme', () => {
           reward_crius_download_charge: '1',
         },
         idea_id: 1353104569522,
+      },
+    });
+  });
+
+  it('真实广告 UI 与渲染配置字段可作为单参数解析', () => {
+    const adTagResult = deepDecodeScheme(`ad_tag=${encodeURIComponent(JSON.stringify({
+      text: '广告',
+      text_color: '#8effffff',
+      background_color: '#23b5b5b5',
+    }))}`);
+    expect(JSON.parse(adTagResult.decoded)).toEqual({
+      ad_tag: {
+        text: '广告',
+        text_color: '#8effffff',
+        background_color: '#23b5b5b5',
+      },
+    });
+
+    const toolbarResult = deepDecodeScheme(`toolbaricons=${encodeURIComponent(JSON.stringify({
+      toolids: ['8', '11', '3'],
+    }))}`);
+    expect(JSON.parse(toolbarResult.decoded)).toEqual({
+      toolbaricons: {
+        toolids: ['8', '11', '3'],
+      },
+    });
+
+    const renderResult = deepDecodeScheme('render_sbox={"sbox_switch":4}');
+    expect(JSON.parse(renderResult.decoded)).toEqual({
+      render_sbox: {
+        sbox_switch: 4,
       },
     });
   });

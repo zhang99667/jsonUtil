@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.42 (2026-06-15) - 广告 UI 配置字段解析
+### ✨ 新特性
+- **CMD/Scheme 兼容性**: 支持单独粘贴解析真实广告 response 的 `ad_tag=...`、`toolbaricons=...`、`render_sbox=...` UI 与渲染配置字段，减少定位广告标识和 WebPanel 配置时的手动补全
+
 ## v1.8.41 (2026-06-15) - 广告 extra 参数字段解析
 ### ✨ 新特性
 - **CMD/Scheme 兼容性**: 支持单独粘贴解析真实广告 response 的 `extraParam=...`、`ubsParam=...`、`sboxParam=...` 扩展参数字段，减少从 `extra` 数组复制排查时的手动裁剪
