@@ -106,6 +106,10 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('cmd&#61;%7B%22a%22%3A1%7D&#38;from&#61;test')).toBe(true);
   });
 
+  it('检测 HTML 十六进制实体参数串', () => {
+    expect(isDecodableQueryString('cmd&#x3D;%7B%22a%22%3A1%7D&#x26;from&#x3D;test')).toBe(true);
+  });
+
   it('检测换行分隔的 CMD 参数串', () => {
     expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D\n  from=test')).toBe(true);
   });
@@ -1047,6 +1051,16 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       cmd: { nid: 123 },
       from: 'html-equals',
+    });
+  });
+
+  it('HTML 十六进制实体参数串被解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`cmd&#x3D;${payload}&#x26;from&#x3D;html-hex`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      from: 'html-hex',
     });
   });
 
