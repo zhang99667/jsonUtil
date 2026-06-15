@@ -515,6 +515,35 @@ describe('schemeMetadata', () => {
     });
   });
 
+  it('导出 CMD 结构时兼容带日志前缀的参数串', () => {
+    const nestedSource = 'baiduboxapp://v1/panel?from=prefix-source';
+    const decoded = JSON.stringify({
+      panel_scheme: {
+        from: 'prefix-source',
+      },
+      from: 'log',
+    });
+
+    expect(JSON.parse(formatCmdHandlerCompatibleResult(
+      decoded,
+      undefined,
+      `I/NadRender: panel_scheme=${encodeURIComponent(nestedSource)}&from=log`
+    ))).toMatchObject({
+      result: {
+        cmdParams: {
+          panel_scheme: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              from: 'prefix-source',
+            },
+            source: nestedSource,
+          },
+          from: 'log',
+        },
+      },
+    });
+  });
+
   it('导出 CMD 结构时包装常见 URL 跳转字段', () => {
     const landingUrl = 'https://pro.m.jd.com/mall/active/page.html?sku=101';
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
