@@ -1190,9 +1190,11 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   const queryButton = page.locator('[data-tour="jsonpath-query-button"]');
   const favoriteToggle = page.locator('[data-tour="jsonpath-favorite-toggle"]');
   const resultPreview = page.locator('[data-tour="jsonpath-results"]');
+  const queryInput = page.locator('[data-tour="jsonpath-input"]');
 
   await expect(queryButton).toHaveAttribute('title', '执行 JSONPath 查询');
-  await page.locator('[data-tour="jsonpath-input"]').fill('   ');
+  await expect(queryInput).toHaveAttribute('aria-label', 'JSONPath 表达式');
+  await queryInput.fill('   ');
   await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式后查询');
   await expect(page.locator('#jsonpath-query-button-description')).toHaveText('请输入 JSONPath 表达式后查询');
   await expect(favoriteToggle).toBeDisabled();
@@ -1200,27 +1202,39 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(favoriteToggle).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后可收藏');
   await queryButton.click();
   await expect(page.getByText('请输入 JSONPath 表达式', { exact: true })).toBeVisible();
+  await expect(queryInput).toHaveAttribute('aria-invalid', 'true');
+  await expect(queryInput).toHaveAttribute('aria-describedby', 'jsonpath-error-message');
+  await expect(page.locator('#jsonpath-error-message')).toHaveAttribute('role', 'alert');
+  await expect(page.locator('#jsonpath-error-message')).toContainText('请输入 JSONPath 表达式');
 
-  await page.locator('[data-tour="jsonpath-input"]').fill('$.missing');
+  await queryInput.fill('$.missing');
   await expect(favoriteToggle).toHaveAttribute('title', '收藏当前查询');
   await queryButton.click();
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('未命中任何结果');
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toContainText('$.missing');
+  await expect(page.locator('[data-tour="jsonpath-empty"]')).toHaveAttribute('role', 'status');
+  await expect(page.locator('[data-tour="jsonpath-empty"]')).toHaveAttribute('aria-live', 'polite');
   await expect(page.locator('[data-tour="jsonpath-empty-clear"]')).toHaveAttribute('title', '清空当前 JSONPath 查询');
+  await expect(page.locator('[data-tour="jsonpath-empty-clear"]')).toHaveAttribute('aria-label', '清空当前 JSONPath 查询');
   await page.locator('[data-tour="jsonpath-empty-clear"]').click();
-  await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('');
+  await expect(queryInput).toHaveValue('');
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toHaveCount(0);
 
-  const recursiveExample = page.getByRole('button', { name: '递归搜索' });
+  const recursiveExample = page.getByRole('button', { name: /递归搜索/ });
   await expect(recursiveExample).toHaveAttribute('title', '$..name\n点击填入并查询');
+  await expect(recursiveExample).toHaveAttribute('aria-label', '填入并查询示例：递归搜索（$..name）');
   await recursiveExample.click();
-  await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$..name');
+  await expect(queryInput).toHaveValue('$..name');
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toBeHidden();
   await expect(page.getByText('1 / 2')).toBeVisible();
+  await expect(page.locator('#jsonpath-result-status')).toHaveAttribute('role', 'status');
+  await expect(page.locator('#jsonpath-result-status')).toHaveAttribute('aria-live', 'polite');
+  await expect(page.locator('#jsonpath-result-status')).toHaveAttribute('aria-atomic', 'true');
+  await expect(queryInput).toHaveAttribute('aria-describedby', 'jsonpath-result-status');
   await expect(resultPreview).toContainText('Ada');
   await expect(resultPreview).toContainText('Bob');
 
-  await page.locator('[data-tour="jsonpath-input"]').fill('$.users[*].name');
+  await queryInput.fill('$.users[*].name');
   await queryButton.click();
 
   await expect(page.locator('[data-tour="jsonpath-empty"]')).toBeHidden();
@@ -1228,7 +1242,9 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(page.locator('.jsonpath-highlight').first()).toBeVisible();
   await expect(resultPreview).toContainText('Ada');
   await expect(resultPreview).toContainText('Bob');
-  await resultPreview.locator('button').nth(1).click();
+  const secondResultPreview = resultPreview.locator('button').nth(1);
+  await expect(secondResultPreview).toHaveAttribute('aria-label', '定位第 2 个 JSONPath 结果：$.users[1].name');
+  await secondResultPreview.click();
   await expect(page.getByText('2 / 2')).toBeVisible();
   const previousResultButton = page.getByRole('button', { name: '上一个结果 (Shift+Enter)' });
   const nextResultButton = page.getByRole('button', { name: '下一个结果 (Enter)' });
@@ -1252,19 +1268,25 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
 
   await page.locator('[data-tour="jsonpath-favorite-toggle"]').click();
   await expect(page.locator('[data-tour="jsonpath-favorites"]')).toContainText('$.users[*].name');
+  await expect(page.locator('[data-tour="jsonpath-favorite-item"]').filter({ hasText: '$.users[*].name' }))
+    .toHaveAttribute('aria-label', '填入并查询收藏：$.users[*].name');
   const removeFavoriteButton = page.getByRole('button', { name: '移除收藏：$.users[*].name' });
   await removeFavoriteButton.focus();
   await expect(removeFavoriteButton).toHaveCSS('opacity', '1');
 
-  await page.locator('[data-tour="jsonpath-input"]').fill('$.users[0].age');
+  await queryInput.fill('$.users[0].age');
   await page.locator('[data-tour="jsonpath-favorite-item"]').filter({ hasText: '$.users[*].name' }).click();
-  await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.users[*].name');
+  await expect(queryInput).toHaveValue('$.users[*].name');
   await expect(page.getByText('1 / 2')).toBeVisible();
 
-  await page.locator('[data-tour="jsonpath-input"]').fill('$.users[1].age');
-  await page.locator('[data-tour="jsonpath-history-item"]').filter({ hasText: '$.users[*].name' }).click();
-  await expect(page.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.users[*].name');
+  await queryInput.fill('$.users[1].age');
+  const historyItem = page.locator('[data-tour="jsonpath-history-item"]').filter({ hasText: '$.users[*].name' });
+  await expect(historyItem).toHaveAttribute('aria-label', '填入并查询历史记录：$.users[*].name');
+  await historyItem.click();
+  await expect(queryInput).toHaveValue('$.users[*].name');
   await expect(page.getByText('1 / 2')).toBeVisible();
+  const clearHistoryButton = page.locator('[data-tour="jsonpath-history"]').getByRole('button', { name: '清空 JSONPath 查询历史' });
+  await expect(clearHistoryButton).toHaveAttribute('title', '清空 JSONPath 查询历史');
   const removeHistoryButton = page.getByRole('button', { name: '删除历史记录：$.users[*].name' });
   await removeHistoryButton.focus();
   await expect(removeHistoryButton).toHaveCSS('opacity', '1');
@@ -1313,6 +1335,9 @@ test('JSONPath 面板大查询处理中可取消', async ({ page }) => {
   await page.locator('[data-tour="jsonpath-query-button"]').click();
 
   await expect(page.locator('[data-tour="jsonpath-cancel-query"]')).toBeVisible();
+  await expect(page.locator('[data-tour="jsonpath-cancel-query"]')).toHaveAttribute('aria-label', '取消 JSONPath 查询，停止当前正在执行的查询');
+  await expect(page.locator('[data-tour="jsonpath-query-status"]')).toHaveAttribute('role', 'status');
+  await expect(page.locator('[data-tour="jsonpath-query-status"]')).toHaveAttribute('aria-live', 'polite');
   await expect(page.locator('[data-tour="jsonpath-query-status"]')).toHaveText('查询中...');
   await expect(page.locator('[data-tour="jsonpath-query-button"]')).toBeDisabled();
   await expect(page.locator('[data-tour="jsonpath-query-button"]')).toHaveAttribute('title', 'JSONPath 查询正在运行，可取消后重新查询');

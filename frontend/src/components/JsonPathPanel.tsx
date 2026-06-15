@@ -18,6 +18,8 @@ import {
 } from '../utils/jsonPathLists';
 
 const MAX_VISIBLE_QUERY_RESULTS = 100;
+const JSONPATH_ERROR_MESSAGE_ID = 'jsonpath-error-message';
+const JSONPATH_RESULT_STATUS_ID = 'jsonpath-result-status';
 const JSONPATH_QUERY_BUTTON_DESCRIPTION_ID = 'jsonpath-query-button-description';
 
 const formatJsonPathValuesForCopy = (values: unknown[]): string => {
@@ -423,6 +425,11 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const copyPathValueButtonLabel = isResultLimited ? '复制已返回路径和值' : '复制路径和值';
     const showEmptyResult = Boolean(emptyResultQuery) && !error && !isQuerying && totalResults === 0;
     const showCancelledQuery = Boolean(cancelledQuery) && !error && !isQuerying && totalResults === 0;
+    const queryInputDescriptionId = error
+        ? JSONPATH_ERROR_MESSAGE_ID
+        : totalResults > 0 && queryRanges.length > 0
+            ? JSONPATH_RESULT_STATUS_ID
+            : undefined;
     const favoriteToggleTitle = !normalizedQuery
         ? '请输入 JSONPath 表达式后可收藏'
         : isCurrentQueryFavorite
@@ -527,6 +534,9 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             }}
                             onKeyDown={handleKeyDown}
                             placeholder="输入 JSONPath 表达式"
+                            aria-label="JSONPath 表达式"
+                            aria-invalid={Boolean(error)}
+                            aria-describedby={queryInputDescriptionId}
                             className="flex-1 bg-editor-bg text-gray-200 text-sm px-3 py-2 rounded border border-editor-border focus:border-emerald-500 focus:outline-none font-mono"
                         />
                         <button
@@ -564,6 +574,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 onClick={handleCancelQuery}
                                 className="px-3 py-2 bg-amber-700/80 text-white text-sm rounded hover:bg-amber-700 transition-colors font-medium"
                                 title="停止当前 JSONPath 查询"
+                                aria-label="取消 JSONPath 查询，停止当前正在执行的查询"
                             >
                                 取消
                             </button>
@@ -572,6 +583,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                     {(isQuerying || showCancelledQuery) && (
                         <div
                             data-tour="jsonpath-query-status"
+                            role="status"
+                            aria-live="polite"
                             className="mt-2 text-xs text-gray-500"
                         >
                             {isQuerying ? '查询中...' : '已取消查询'}
@@ -591,6 +604,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                         onClick={() => fillAndRunQuery(item)}
                                         className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-amber-100 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7 border border-amber-500/20"
                                         title={`${item}\n点击填入并查询`}
+                                        aria-label={`填入并查询收藏：${item}`}
                                     >
                                         {item}
                                     </button>
@@ -624,6 +638,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 onClick={() => fillAndRunQuery(example.query)}
                                 className="text-xs px-2 py-1 bg-editor-border text-gray-300 rounded hover:bg-editor-active transition-colors"
                                 title={`${example.query}\n点击填入并查询`}
+                                aria-label={`填入并查询示例：${example.label}（${example.query}）`}
                             >
                                 {example.label}
                             </button>
@@ -633,7 +648,11 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
                 {/* 错误提示 */}
                 {error && (
-                    <div className="mb-3 p-3 bg-status-error-bg border border-status-error-border rounded text-sm text-status-error-text flex items-start gap-2">
+                    <div
+                        id={JSONPATH_ERROR_MESSAGE_ID}
+                        role="alert"
+                        className="mb-3 p-3 bg-status-error-bg border border-status-error-border rounded text-sm text-status-error-text flex items-start gap-2"
+                    >
                         <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -645,6 +664,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 {showEmptyResult && (
                     <div
                         data-tour="jsonpath-empty"
+                        role="status"
+                        aria-live="polite"
                         className="mb-3 rounded border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100"
                     >
                         <div className="flex items-center justify-between gap-2">
@@ -655,6 +676,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 onClick={clearQueryInput}
                                 className="shrink-0 rounded border border-amber-400/40 px-2 py-0.5 text-xs text-amber-100 transition-colors hover:border-amber-300 hover:bg-amber-400/10 focus:outline-none focus:ring-2 focus:ring-amber-300/60"
                                 title="清空当前 JSONPath 查询"
+                                aria-label="清空当前 JSONPath 查询"
                             >
                                 清空查询
                             </button>
@@ -668,7 +690,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 {/* 结果计数器和导航控件 (VS Code 风格) */}
                 {totalResults > 0 && queryRanges.length > 0 && (
                     <div className="mb-1 p-1 bg-editor-sidebar border border-editor-border rounded flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div
+                            id={JSONPATH_RESULT_STATUS_ID}
+                            role="status"
+                            aria-live="polite"
+                            aria-atomic="true"
+                            className="flex items-center gap-2"
+                        >
                             <span className="text-xs text-gray-400">结果:</span>
                             <span className="text-sm font-mono text-emerald-400 font-semibold">
                                 {currentResultIndex + 1} / {queryRanges.length}
@@ -748,6 +776,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                         : 'border-transparent bg-editor-sidebar text-gray-300 hover:bg-editor-hover hover:text-gray-100'
                                 }`}
                                 title={`${item.sourceLabel ? `${item.sourceLabel} ` : ''}${item.path}\n${item.text}`}
+                                aria-label={`定位第 ${item.index + 1} 个 JSONPath 结果：${item.path}`}
                             >
                                 <div className="mb-1 flex min-w-0 items-center gap-1.5">
                                     <span className="shrink-0 text-[10px] text-gray-500">{item.index + 1}</span>
@@ -787,6 +816,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             <button
                                 onClick={clearHistory}
                                 className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                                title="清空 JSONPath 查询历史"
+                                aria-label="清空 JSONPath 查询历史"
                             >
                                 清空
                             </button>
@@ -803,6 +834,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                         onClick={() => fillAndRunQuery(item)}
                                         className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-gray-300 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7"
                                         title={`${item}\n点击填入并查询`}
+                                        aria-label={`填入并查询历史记录：${item}`}
                                     >
                                         {item}
                                     </button>
