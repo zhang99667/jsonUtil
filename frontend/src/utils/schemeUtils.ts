@@ -134,6 +134,8 @@ const COMMON_CMD_PARAM_NAMES = new Set([
   'web_url',
   'detail_url',
   'lp_real_url',
+  'locid',
+  's_url',
   'app_url',
   'open_app_url',
   'download_url',
