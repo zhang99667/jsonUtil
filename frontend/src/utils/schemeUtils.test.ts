@@ -139,6 +139,15 @@ describe('isDecodableQueryString', () => {
       .toBe(true);
   });
 
+  it('检测真实广告 extra 数组里的扩展参数字段', () => {
+    const extraParam = `AFD8f${base64Encode('meg_name":"AI","flag":true}')}`;
+    expect(isDecodableQueryString(`extraParam=${extraParam}`)).toBe(true);
+    expect(isDecodableQueryString(`ubsParam=${encodeURIComponent(JSON.stringify({ ideaid: '1353104569522' }))}`))
+      .toBe(true);
+    expect(isDecodableQueryString(`sboxParam=${encodeURIComponent(JSON.stringify({ client_params: { reward: '1' } }))}`))
+      .toBe(true);
+  });
+
   it('检测常见跳转兜底单参数字段', () => {
     expect(isDecodableQueryString('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
     expect(isDecodableQueryString('fallbackUrl=//m.baidu.com/s?word=json')).toBe(true);
@@ -1125,6 +1134,43 @@ describe('deepDecodeScheme', () => {
       '$.rotation_component.click_event_cmd',
       '$.rotation_component.webpanel_event_cmd',
     ]);
+  });
+
+  it('真实广告 extra 数组里的扩展参数可作为单参数解析', () => {
+    const extraParam = `AFD8f${base64Encode('meg_name":"AI","flag":true}')}`;
+    const extraResult = deepDecodeScheme(`extraParam=${extraParam}`);
+    expect(JSON.parse(extraResult.decoded)).toEqual({
+      extraParam: {
+        meg_name: 'AI',
+        flag: true,
+      },
+    });
+
+    const ubsResult = deepDecodeScheme(`ubsParam=${encodeURIComponent(JSON.stringify({
+      ideaid: '1353104569522',
+      cmatch: 1501,
+    }))}`);
+    expect(JSON.parse(ubsResult.decoded)).toEqual({
+      ubsParam: {
+        ideaid: '1353104569522',
+        cmatch: 1501,
+      },
+    });
+
+    const sboxResult = deepDecodeScheme(`sboxParam=${encodeURIComponent(JSON.stringify({
+      client_params: {
+        reward_crius_download_charge: '1',
+      },
+      idea_id: 1353104569522,
+    }))}`);
+    expect(JSON.parse(sboxResult.decoded)).toEqual({
+      sboxParam: {
+        client_params: {
+          reward_crius_download_charge: '1',
+        },
+        idea_id: 1353104569522,
+      },
+    });
   });
 
   it('常见 hash route 字段可作为单参数解析', () => {

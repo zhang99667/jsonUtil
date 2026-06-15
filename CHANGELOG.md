@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.41 (2026-06-15) - 广告 extra 参数字段解析
+### ✨ 新特性
+- **CMD/Scheme 兼容性**: 支持单独粘贴解析真实广告 response 的 `extraParam=...`、`ubsParam=...`、`sboxParam=...` 扩展参数字段，减少从 `extra` 数组复制排查时的手动裁剪
+
 ## v1.8.40 (2026-06-15) - 广告互动组件字段解析
 ### ✨ 新特性
 - **CMD/Scheme 兼容性**: 支持单独粘贴解析真实广告日志里的 `reward=...`、`rotation_component=...` 结构化字段，可展开内层激励 CMD 和互动组件占位符路径
