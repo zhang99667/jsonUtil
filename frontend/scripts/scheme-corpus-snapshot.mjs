@@ -62,6 +62,71 @@ const addOptionalThreshold = (results, key, actual, expected, compare) => {
   results[key] = createThresholdResult(actual, expected, compare(actual, expected));
 };
 
+const uniqueStrings = values => {
+  const result = [];
+  const seen = new Set();
+  values.forEach(value => {
+    if (typeof value !== 'string' || seen.has(value)) return;
+    seen.add(value);
+    result.push(value);
+  });
+  return result;
+};
+
+const collectCommandSchemas = report => {
+  const records = Array.isArray(report.records) ? report.records : [];
+  return uniqueStrings(records.flatMap(record => [
+    record?.commandSchema,
+    ...(Array.isArray(record?.commandSchemaRows)
+      ? record.commandSchemaRows.map(row => row?.schema)
+      : []),
+  ]));
+};
+
+const collectRuntimePlaceholders = report => (
+  uniqueStrings((report.runtimePlaceholderGroups || []).map(group => group?.value))
+);
+
+const normalizeScanLocation = location => {
+  if (!isRecord(location) || typeof location.path !== 'string') return undefined;
+  const normalized = { path: location.path };
+  if (typeof location.label === 'string') normalized.label = location.label;
+  const type = typeof location.type === 'string' ? location.type : location.schemeType;
+  if (typeof type === 'string') normalized.type = type;
+  return normalized;
+};
+
+const normalizeScanLocations = locations => (
+  (Array.isArray(locations) ? locations : [])
+    .map(normalizeScanLocation)
+    .filter(Boolean)
+);
+
+const buildRequiredSetResult = (actual, expected) => {
+  const actualSet = new Set(actual);
+  const missing = expected.filter(item => !actualSet.has(item));
+  return {
+    actual,
+    expected,
+    missing,
+    pass: missing.length === 0,
+  };
+};
+
+const buildRequiredExactListResult = (actual, expected) => {
+  const actualKeys = new Set(actual.map(item => JSON.stringify(item)));
+  const expectedKeys = new Set(expected.map(item => JSON.stringify(item)));
+  const missing = expected.filter(item => !actualKeys.has(JSON.stringify(item)));
+  const extra = actual.filter(item => !expectedKeys.has(JSON.stringify(item)));
+  return {
+    actual,
+    expected,
+    missing,
+    extra,
+    pass: missing.length === 0 && extra.length === 0,
+  };
+};
+
 export const buildThresholdResults = (report, qualitySnapshot, expectedSnapshot) => {
   const quality = expectedSnapshot?.quality;
   if (!quality) return {};
@@ -95,6 +160,29 @@ export const buildThresholdResults = (report, qualitySnapshot, expectedSnapshot)
     (actual, expected) => actual === expected
   );
 
+  return results;
+};
+
+export const buildRequiredResults = ({ report, expectedSnapshot, scanLocations = [] }) => {
+  const results = {};
+  if (Array.isArray(expectedSnapshot?.requiredCommandSchemas)) {
+    results.requiredCommandSchemas = buildRequiredSetResult(
+      collectCommandSchemas(report),
+      uniqueStrings(expectedSnapshot.requiredCommandSchemas)
+    );
+  }
+  if (Array.isArray(expectedSnapshot?.requiredRuntimePlaceholders)) {
+    results.requiredRuntimePlaceholders = buildRequiredSetResult(
+      collectRuntimePlaceholders(report),
+      uniqueStrings(expectedSnapshot.requiredRuntimePlaceholders)
+    );
+  }
+  if (Array.isArray(expectedSnapshot?.scanLocations)) {
+    results.scanLocations = buildRequiredExactListResult(
+      normalizeScanLocations(scanLocations),
+      normalizeScanLocations(expectedSnapshot.scanLocations)
+    );
+  }
   return results;
 };
 
@@ -181,6 +269,7 @@ export const buildCorpusSnapshotSample = ({
   report,
   reportView,
   qualitySnapshot,
+  scanLocations = [],
 }) => ({
   sample: fixture.name,
   baseline: fixture.baseline,
@@ -193,6 +282,7 @@ export const buildCorpusSnapshotSample = ({
   topResourceSchemas: qualitySnapshot.hotspots.topResourceSchemas,
   topNestedCommandFields: qualitySnapshot.hotspots.topNestedCommandFields,
   topNestedResourceFields: qualitySnapshot.hotspots.topNestedResourceFields,
+  scanLocations: normalizeScanLocations(scanLocations),
   runtimePlaceholders: report.runtimePlaceholderGroups.map(group => ({
     value: group.value,
     count: group.count,
@@ -205,6 +295,11 @@ export const buildCorpusSnapshotSample = ({
     cmdHandlerExpected,
   }),
   thresholds: buildThresholdResults(report, qualitySnapshot, expectedSnapshot),
+  requiredChecks: buildRequiredResults({
+    report,
+    expectedSnapshot,
+    scanLocations,
+  }),
   truncated: {
     records: reportView.isRecordTruncated,
     cmdStructures: reportView.isCmdStructureTruncated,
@@ -246,6 +341,21 @@ export const listThresholdFailures = samples => (
   ))
 );
 
+export const listRequiredFailures = samples => (
+  samples.flatMap(sample => (
+    Object.entries(sample.requiredChecks || {})
+      .filter(([, result]) => result && result.pass === false)
+      .map(([key, result]) => ({
+        sample: sample.sample,
+        key,
+        actual: result.actual,
+        expected: result.expected,
+        missing: result.missing || [],
+        extra: result.extra || [],
+      }))
+  ))
+);
+
 export const listCmdHandlerFailures = samples => (
   samples
     .filter(sample => sample.cmdHandlerAlignment && !sample.cmdHandlerAlignment.pass)
@@ -267,15 +377,27 @@ export const buildThresholdSummary = samples => {
   ), 0);
   const missingBaselines = listMissingBaselines(samples);
   const failures = listThresholdFailures(samples);
+  const requiredFailures = listRequiredFailures(samples);
   const cmdHandlerFailures = listCmdHandlerFailures(samples);
   const cmdHandlerTotal = samples.filter(sample => sample.cmdHandlerAlignment).length;
+  const requiredCount = samples.reduce((total, sample) => (
+    total + Object.keys(sample.requiredChecks || {}).length
+  ), 0);
 
   return {
-    pass: failures.length === 0 && missingBaselines.length === 0 && cmdHandlerFailures.length === 0,
+    pass: failures.length === 0 &&
+      missingBaselines.length === 0 &&
+      requiredFailures.length === 0 &&
+      cmdHandlerFailures.length === 0,
     total: thresholdCount,
     failed: failures.length,
     missingBaselines,
     failures,
+    required: {
+      total: requiredCount,
+      failed: requiredFailures.length,
+      failures: requiredFailures,
+    },
     cmdHandler: {
       total: cmdHandlerTotal,
       failed: cmdHandlerFailures.length,
@@ -302,22 +424,31 @@ const formatCmdHandlerMarkdownLabel = sample => {
 };
 
 export const formatCorpusSnapshotMarkdownSummary = snapshot => {
+  const requiredSummary = snapshot.thresholdSummary.required || {
+    total: 0,
+    failed: 0,
+    failures: [],
+  };
   const lines = [
     '# Scheme Corpus 质量快照',
     '',
     `- 样本数: ${snapshot.sampleCount}`,
     `- 缺失基线: ${snapshot.thresholdSummary.missingBaselines.length}`,
     `- 阈值失败: ${snapshot.thresholdSummary.failed}/${snapshot.thresholdSummary.total}`,
+    `- 必需项失败: ${requiredSummary.failed}/${requiredSummary.total}`,
     `- cmdHandler 对齐失败: ${snapshot.thresholdSummary.cmdHandler.failed}/${snapshot.thresholdSummary.cmdHandler.total}`,
     `- 结果: ${snapshot.thresholdSummary.pass ? 'PASS' : 'FAIL'}`,
     '',
-    '| 样本 | 基线 | cmdHandler | 覆盖率 | 展开记录 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 阈值失败 |',
-    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+    '| 样本 | 基线 | cmdHandler | 覆盖率 | 展开记录 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 阈值失败 | 必需项失败 |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
   ];
 
   snapshot.samples.forEach(sample => {
     const thresholdCount = Object.keys(sample.thresholds || {}).length;
     const failedCount = Object.values(sample.thresholds || {})
+      .filter(result => result && result.pass === false).length;
+    const requiredCount = Object.keys(sample.requiredChecks || {}).length;
+    const requiredFailedCount = Object.values(sample.requiredChecks || {})
       .filter(result => result && result.pass === false).length;
     const baselineLabel = sample.baseline
       ? (sample.baseline.expectedSnapshot ? '已配置' : '缺失')
@@ -335,6 +466,7 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
       sample.totals.unresolved,
       sample.totals.warnings,
       `${failedCount}/${thresholdCount}`,
+      `${requiredFailedCount}/${requiredCount}`,
     ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
   });
 
@@ -354,6 +486,13 @@ export const formatCorpusSnapshotMarkdownSummary = snapshot => {
     lines.push('', '## 失败阈值', '');
     snapshot.thresholdSummary.failures.forEach(failure => {
       lines.push(`- ${formatMarkdownValue(failure.sample)}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}`);
+    });
+  }
+
+  if (requiredSummary.failures.length > 0) {
+    lines.push('', '## 必需项失败', '');
+    requiredSummary.failures.forEach(failure => {
+      lines.push(`- ${formatMarkdownValue(failure.sample)}.${failure.key}: missing=${JSON.stringify(failure.missing)}, extra=${JSON.stringify(failure.extra)}`);
     });
   }
 
@@ -383,6 +522,11 @@ const buildSnapshotSampleFromResponseText = ({
     modules.formatTransformQualitySnapshotJsonText(report, reportView, ''),
     `${sampleName} quality snapshot`
   );
+  const scanLocations = modules.scanSchemesInJson(responseText).locations.map(location => ({
+    path: location.path,
+    ...(location.label === undefined ? {} : { label: location.label }),
+    type: location.schemeType,
+  }));
 
   return buildCorpusSnapshotSample({
     fixture: {
@@ -395,6 +539,7 @@ const buildSnapshotSampleFromResponseText = ({
     report,
     reportView,
     qualitySnapshot,
+    scanLocations,
   });
 };
 
@@ -486,9 +631,14 @@ const loadTransformModules = async () => {
     path.join(FRONTEND_ROOT, 'src', 'utils', 'transformSummary.ts'),
     inlineConfig
   );
+  const schemeScanner = await runnerImport(
+    path.join(FRONTEND_ROOT, 'src', 'utils', 'schemeScanner.ts'),
+    inlineConfig
+  );
 
   return {
     deepParseWithContext: transformations.module.deepParseWithContext,
+    scanSchemesInJson: schemeScanner.module.scanSchemesInJson,
     buildTransformContextReport: transformSummary.module.buildTransformContextReport,
     buildTransformReportView: transformSummary.module.buildTransformReportView,
     formatTransformQualitySnapshotJsonText: transformSummary.module.formatTransformQualitySnapshotJsonText,
@@ -626,6 +776,10 @@ const formatThresholdFailure = failure => (
   `${failure.sample}.${failure.key}: actual=${JSON.stringify(failure.actual)}, expected=${JSON.stringify(failure.expected)}`
 );
 
+const formatRequiredFailure = failure => (
+  `${failure.sample}.${failure.key}: missing=${JSON.stringify(failure.missing)}, extra=${JSON.stringify(failure.extra)}`
+);
+
 const formatMissingBaseline = missing => {
   if (missing.expectedSnapshot) {
     return `${missing.sample}: 缺失 ${missing.expectedSnapshot}`;
@@ -674,6 +828,9 @@ const runCli = async () => {
       });
       snapshot.thresholdSummary.failures.forEach(failure => {
         console.error(`- ${formatThresholdFailure(failure)}`);
+      });
+      snapshot.thresholdSummary.required.failures.forEach(failure => {
+        console.error(`- required ${formatRequiredFailure(failure)}`);
       });
       snapshot.thresholdSummary.cmdHandler.failures.forEach(failure => {
         console.error(`- cmdHandler ${formatCmdHandlerFailure(failure)}`);

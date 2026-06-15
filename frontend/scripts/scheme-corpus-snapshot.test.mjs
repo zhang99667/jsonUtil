@@ -4,11 +4,13 @@ import {
   buildCorpusResponseText,
   buildCorpusSnapshotSample,
   buildCmdHandlerAlignment,
+  buildRequiredResults,
   buildThresholdResults,
   buildThresholdSummary,
   formatCorpusSnapshotMarkdownSummary,
   listCmdHandlerFailures,
   listMissingBaselines,
+  listRequiredFailures,
   listThresholdFailures,
   parseCliArgs,
   SCHEME_CORPUS_SNAPSHOT_KIND,
@@ -104,9 +106,19 @@ const createQualitySnapshot = () => ({
   },
 });
 
+const createScanLocations = () => [
+  {
+    path: '$.cmd',
+    type: 'url',
+  },
+];
+
 const createExpectedSnapshot = () => ({
   cmdHandlerExpected: 'reward-response.cmdhandler.expected.json',
   primaryCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+  scanLocations: createScanLocations(),
+  requiredCommandSchemas: ['nadcorevendor://vendor/ad/rewardImpl'],
+  requiredRuntimePlaceholders: ['__CONVERT_CMD__'],
   quality: {
     minCoverageScore: 100,
     minCmdStructures: 1,
@@ -208,6 +220,75 @@ describe('buildThresholdResults', () => {
   });
 });
 
+describe('buildRequiredResults', () => {
+  it('校验 expected 中声明的必需解析结果', () => {
+    expect(buildRequiredResults({
+      report: createReport(),
+      expectedSnapshot: createExpectedSnapshot(),
+      scanLocations: createScanLocations(),
+    })).toMatchObject({
+      requiredCommandSchemas: {
+        actual: ['nadcorevendor://vendor/ad/rewardImpl'],
+        expected: ['nadcorevendor://vendor/ad/rewardImpl'],
+        missing: [],
+        pass: true,
+      },
+      requiredRuntimePlaceholders: {
+        actual: ['__CONVERT_CMD__'],
+        expected: ['__CONVERT_CMD__'],
+        missing: [],
+        pass: true,
+      },
+      scanLocations: {
+        actual: createScanLocations(),
+        expected: createScanLocations(),
+        missing: [],
+        extra: [],
+        pass: true,
+      },
+    });
+  });
+
+  it('必需解析结果缺失或多扫位置时标记为失败', () => {
+    const expectedSnapshot = {
+      scanLocations: createScanLocations(),
+      requiredCommandSchemas: ['missing://schema'],
+      requiredRuntimePlaceholders: ['__MISSING__'],
+    };
+
+    expect(buildRequiredResults({
+      report: createReport(),
+      expectedSnapshot,
+      scanLocations: [
+        ...createScanLocations(),
+        {
+          path: '$.extra',
+          type: 'url',
+        },
+      ],
+    })).toMatchObject({
+      requiredCommandSchemas: {
+        missing: ['missing://schema'],
+        pass: false,
+      },
+      requiredRuntimePlaceholders: {
+        missing: ['__MISSING__'],
+        pass: false,
+      },
+      scanLocations: {
+        missing: [],
+        extra: [
+          {
+            path: '$.extra',
+            type: 'url',
+          },
+        ],
+        pass: false,
+      },
+    });
+  });
+});
+
 describe('buildCorpusSnapshotSample', () => {
   it('汇总单个 corpus 的质量快照和阈值结果', () => {
     const sample = buildCorpusSnapshotSample({
@@ -230,6 +311,7 @@ describe('buildCorpusSnapshotSample', () => {
         isWarningTruncated: false,
       },
       qualitySnapshot: createQualitySnapshot(),
+      scanLocations: createScanLocations(),
     });
 
     expect(SCHEME_CORPUS_SNAPSHOT_KIND).toBe('json-helper-scheme-corpus-quality-snapshot');
@@ -250,8 +332,20 @@ describe('buildCorpusSnapshotSample', () => {
           sourceCount: 1,
         },
       ],
+      scanLocations: createScanLocations(),
       thresholds: {
         leadHotspotResourceSchema: {
+          pass: true,
+        },
+      },
+      requiredChecks: {
+        requiredCommandSchemas: {
+          pass: true,
+        },
+        requiredRuntimePlaceholders: {
+          pass: true,
+        },
+        scanLocations: {
           pass: true,
         },
       },
@@ -360,6 +454,11 @@ describe('buildThresholdSummary', () => {
           expected: 4,
         },
       ],
+      required: {
+        total: 0,
+        failed: 0,
+        failures: [],
+      },
       cmdHandler: {
         total: 0,
         failed: 0,
@@ -376,6 +475,11 @@ describe('buildThresholdSummary', () => {
         failed: 0,
         missingBaselines: [],
         failures: [],
+        required: {
+          total: 0,
+          failed: 0,
+          failures: [],
+        },
         cmdHandler: {
           total: 0,
           failed: 0,
@@ -411,6 +515,11 @@ describe('buildThresholdSummary', () => {
         },
       ],
       failures: [],
+      required: {
+        total: 0,
+        failed: 0,
+        failures: [],
+      },
       cmdHandler: {
         total: 0,
         failed: 0,
@@ -438,6 +547,40 @@ describe('buildThresholdSummary', () => {
       },
     ]);
     expect(buildThresholdSummary(samples).pass).toBe(false);
+  });
+
+  it('汇总 expected 必需项失败项', () => {
+    const samples = [{
+      sample: 'reward-response-redacted',
+      thresholds: {},
+      requiredChecks: {
+        requiredCommandSchemas: {
+          actual: ['actual://schema'],
+          expected: ['missing://schema'],
+          missing: ['missing://schema'],
+          pass: false,
+        },
+      },
+    }];
+
+    expect(listRequiredFailures(samples)).toEqual([
+      {
+        sample: 'reward-response-redacted',
+        key: 'requiredCommandSchemas',
+        actual: ['actual://schema'],
+        expected: ['missing://schema'],
+        missing: ['missing://schema'],
+        extra: [],
+      },
+    ]);
+    expect(buildThresholdSummary(samples)).toMatchObject({
+      pass: false,
+      required: {
+        total: 1,
+        failed: 1,
+        failures: listRequiredFailures(samples),
+      },
+    });
   });
 
   it('汇总 cmdHandler 对齐失败项', () => {
@@ -473,6 +616,11 @@ describe('buildThresholdSummary', () => {
       failed: 0,
       missingBaselines: [],
       failures: [],
+      required: {
+        total: 0,
+        failed: 0,
+        failures: [],
+      },
       cmdHandler: {
         total: 1,
         failed: 1,
@@ -499,6 +647,7 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
         isWarningTruncated: false,
       },
       qualitySnapshot: createQualitySnapshot(),
+      scanLocations: createScanLocations(),
     });
     const snapshot = {
       schemaVersion: 1,
@@ -509,7 +658,8 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
     };
 
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('# Scheme Corpus 质量快照');
-    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('| reward-response-redacted | 临时输入 | 临时输入 | 100 | 2 | 2 | 5 | 1 | 2 | 0 | 0 | 0/9 |');
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('| reward-response-redacted | 临时输入 | 临时输入 | 100 | 2 | 2 | 5 | 1 | 2 | 0 | 0 | 0/9 | 0/3 |');
+    expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- 必需项失败: 0/3');
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- cmdHandler 对齐失败: 0/0');
     expect(formatCorpusSnapshotMarkdownSummary(snapshot)).toContain('- 结果: PASS');
   });
@@ -530,6 +680,11 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
           },
         ],
         failures: [],
+        required: {
+          total: 0,
+          failed: 0,
+          failures: [],
+        },
         cmdHandler: {
           total: 0,
           failed: 0,
@@ -558,7 +713,7 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
 
     const markdown = formatCorpusSnapshotMarkdownSummary(snapshot);
     expect(markdown).toContain('- 缺失基线: 1');
-    expect(markdown).toContain('| new-response-redacted | 缺失 | 缺失 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 |');
+    expect(markdown).toContain('| new-response-redacted | 缺失 | 缺失 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 | 0/0 |');
     expect(markdown).toContain('- new-response-redacted: 缺失 expected snapshot new-response.expected.snapshot.json');
   });
 
@@ -573,6 +728,11 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
         failed: 0,
         missingBaselines: [],
         failures: [],
+        required: {
+          total: 0,
+          failed: 0,
+          failures: [],
+        },
         cmdHandler: {
           total: 1,
           failed: 1,
@@ -611,7 +771,7 @@ describe('formatCorpusSnapshotMarkdownSummary', () => {
 
     const markdown = formatCorpusSnapshotMarkdownSummary(snapshot);
     expect(markdown).toContain('- cmdHandler 对齐失败: 1/1');
-    expect(markdown).toContain('| reward-response-redacted | 临时输入 | 失败 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 |');
+    expect(markdown).toContain('| reward-response-redacted | 临时输入 | 失败 | 100 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0/0 | 0/0 |');
     expect(markdown).toContain('## cmdHandler 对齐失败');
     expect(markdown).toContain('- reward-response-redacted: missingPaths=1, valueDiffs=0, schemaDiff=否');
   });
