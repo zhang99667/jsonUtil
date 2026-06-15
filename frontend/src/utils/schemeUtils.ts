@@ -78,7 +78,7 @@ interface LogFieldParam {
   prefix?: string;
   rawKey: string;
   key: string;
-  delimiter: ':' | '：' | '=';
+  delimiter: ':' | '：' | '=' | '=>' | '->';
   value: string;
   quote?: '"' | "'";
   trailingComma?: boolean;
@@ -288,7 +288,7 @@ const isDecodableParamValue = (value: string): boolean => (
 );
 
 const LOG_FIELD_KEY_PATTERN = `(?:"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|${QUERY_KEY_PATTERN})`;
-const LOG_FIELD_SEPARATOR_PATTERN = '(?:\\s*[:：]\\s*|\\s+=\\s*|=\\s+)';
+const LOG_FIELD_SEPARATOR_PATTERN = '(?:\\s*(?:=>|->)\\s*|\\s*[:：]\\s*|\\s+=\\s*|=\\s+)';
 const LOG_FIELD_RE = new RegExp(`^\\s*(${LOG_FIELD_KEY_PATTERN})(${LOG_FIELD_SEPARATOR_PATTERN})(.+?)\\s*$`);
 const LOG_FIELD_WITH_PREFIX_RE = new RegExp(`^(.*?[\\s[{,(|])(${LOG_FIELD_KEY_PATTERN})(${LOG_FIELD_SEPARATOR_PATTERN})(.+?)\\s*$`);
 
@@ -382,6 +382,8 @@ const unwrapDecodableLogFieldValue = (
 };
 
 const normalizeLogFieldDelimiter = (separator: string): LogFieldParam['delimiter'] => {
+  if (separator.includes('=>')) return '=>';
+  if (separator.includes('->')) return '->';
   if (separator.includes('=')) return '=';
   return separator.includes('：') ? '：' : ':';
 };
@@ -1839,7 +1841,7 @@ const wrapLogFieldValue = (value: string, quote?: '"' | "'"): string => {
 };
 
 const formatLogFieldSeparator = (delimiter: LogFieldParam['delimiter']): string => (
-  delimiter === '=' ? ' = ' : `${delimiter} `
+  delimiter === '=' || delimiter === '=>' || delimiter === '->' ? ` ${delimiter} ` : `${delimiter} `
 );
 
 const encodeSingleLogFieldParamContent = (

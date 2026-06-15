@@ -355,6 +355,11 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType('CMD => ?scheme=baiduboxapp://v1/browser/open?from=log')).toBe('query-string');
   });
 
+  it('检测日志复制出的箭头 CMD 字段行', () => {
+    expect(detectSchemeType('scheme => baiduboxapp://v1/browser/open?from=log')).toBe('query-string');
+    expect(detectSchemeType(`I/NadRender: cmd -> ${encodeURIComponent(JSON.stringify({ a: 1 }))}`)).toBe('query-string');
+  });
+
   it('普通冒号说明不误判为 CMD 字段行', () => {
     expect(detectSchemeType('note: https://example.com/path?from=doc')).toBe('plain');
     expect(detectSchemeType('"note":"https://example.com/path?from=doc"')).toBe('plain');
@@ -842,6 +847,24 @@ describe('deepDecodeScheme', () => {
     expect(result.layers[0]).toMatchObject({
       type: 'query-string',
       description: '日志前缀 CMD 参数递归解析',
+    });
+  });
+
+  it('日志复制出的箭头 Scheme 字段行被递归解析', () => {
+    const original = 'I/NadRender: scheme -> baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson';
+    const result = deepDecodeScheme(original);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      scheme: {
+        url: {
+          word: 'json',
+        },
+      },
+    });
+    expect(result.layers[0]).toMatchObject({
+      type: 'query-string',
+      description: '日志字段 CMD 递归解析',
     });
   });
 
@@ -1414,6 +1437,19 @@ describe('encodeWithLayers', () => {
 
     expect(encodeWithLayers(edited, decoded.layers))
       .toBe('I/NadRender: url=https://m.baidu.com/s?word=schema&from=feed');
+  });
+
+  it('日志箭头 Scheme 字段编辑后保留箭头形态', () => {
+    const original = 'I/NadRender: scheme -> baiduboxapp://v1/browser/open?from=feed';
+    const decoded = deepDecodeScheme(original);
+    const edited = JSON.stringify({
+      scheme: {
+        from: 'card',
+      },
+    }, null, 2);
+
+    expect(encodeWithLayers(edited, decoded.layers))
+      .toBe('I/NadRender: scheme -> baiduboxapp://v1/browser/open?from=card');
   });
 
   it('JSON 字符串字面量包裹的 CMD 编辑后保留外层字面量', () => {
