@@ -233,6 +233,7 @@ const appendDiffContextLines = (lines, context = {}) => {
   if (context.toolVersionLabel) lines.push(`工具版本: ${context.toolVersionLabel}`);
   if (context.path) lines.push(`对比路径: ${context.path}`);
   if (context.sourceLabel) lines.push(`业务字段: ${context.sourceLabel}`);
+  if (context.modeLabel) lines.push(`对比模式: ${context.modeLabel}`);
 };
 
 export const formatCmdStructureDiff = (diff, context = {}) => {
@@ -281,17 +282,23 @@ const printUsage = () => {
   console.error('用法: npm run cmd:diff -- <actual-json-file> <expected-json-file>');
   console.error('也可输入单个对比包: npm run cmd:diff -- <pair-json-file>');
   console.error('也可通过 stdin 输入对比包: pbpaste | npm run cmd:diff -- --stdin');
+  console.error('可选参数: --ignore-extra 忽略 actual 中多出的路径，用于 expected 只保存稳定子集的场景');
   console.error('对比包格式: {"actual": {...}, "expected": {...}}');
   console.error('actual 通常为本工具复制的 CMD 结构，expected 通常为内部 cmdHandler 导出的 JSON');
 };
 
-const parseCliArgs = argv => {
-  const options = { fromStdin: false };
+export const parseCliArgs = argv => {
+  const options = { fromStdin: false, ignoreExtraPaths: false };
   const paths = [];
 
   argv.forEach(arg => {
     if (arg === '--stdin') {
       options.fromStdin = true;
+      return;
+    }
+
+    if (arg === '--ignore-extra') {
+      options.ignoreExtraPaths = true;
       return;
     }
 
@@ -353,9 +360,15 @@ const runCli = async () => {
       return;
     }
 
-    const diff = diffCmdStructures(inputs.actual, inputs.expected);
+    const diff = diffCmdStructures(inputs.actual, inputs.expected, {
+      ignoreExtraPaths: options.ignoreExtraPaths,
+    });
+    const reportContext = {
+      ...(inputs.context || {}),
+      ...(options.ignoreExtraPaths ? { modeLabel: '忽略 actual 额外路径' } : {}),
+    };
 
-    process.stdout.write(`${formatCmdStructureDiff(diff, inputs.context)}\n`);
+    process.stdout.write(`${formatCmdStructureDiff(diff, reportContext)}\n`);
     process.exitCode = diff.hasDifferences ? 2 : 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
