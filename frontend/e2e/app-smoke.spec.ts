@@ -375,6 +375,15 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
 });
 
 test('深度解析报告展示未展开线索', async ({ page }) => {
+  const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf-8')) as {
+    version: string;
+  };
+  const expectedToolMetadata = {
+    name: 'JSONUtils',
+    version: packageJson.version,
+    versionLabel: `v${packageJson.version}`,
+  };
+
   await fillSourceEditor(page, '{"tracking":"raw=%7B%22nid%22%3A123%7D"}');
 
   await page.getByRole('button', { name: '嵌套解析' }).click();
@@ -418,6 +427,7 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect(page.getByText('已复制样本 JSON')).toBeVisible();
   const issueSampleJson = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
   expect(issueSampleJson.kind).toBe('json-helper-transform-issue-samples');
+  expect(issueSampleJson.tool).toEqual(expectedToolMetadata);
   expect(issueSampleJson.summary.unresolved.copied).toBe(1);
   expect(issueSampleJson.samples[0]).toMatchObject({
     type: 'unresolved',
@@ -431,12 +441,15 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect(page.getByText(/已复制诊断摘要（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('深度解析诊断摘要');
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain(`工具版本: v${packageJson.version}`);
 
   await expect(reportPanel.locator('[data-tour="transform-report-copy-quality-snapshot"]')).toHaveAttribute('aria-label', '复制质量快照，复制不含原始大字段值的解析质量指标 JSON，便于保存基线或对比趋势');
   await reportPanel.locator('[data-tour="transform-report-copy-quality-snapshot"]').click();
   await expect(page.getByText(/已复制质量快照（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   const qualitySnapshot = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
   expect(qualitySnapshot.kind).toBe('json-helper-transform-quality-snapshot');
+  expect(qualitySnapshot.tool).toEqual(expectedToolMetadata);
   expect(qualitySnapshot.coverage.score).toBe(50);
   expect(qualitySnapshot.filtered.unresolved).toBe(1);
   expect(qualitySnapshot.hotspots.unresolvedReasons[0]).toMatchObject({
@@ -451,7 +464,10 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await expect(page.getByText(/已复制归档包（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   const archivePackage = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'));
   expect(archivePackage.kind).toBe('json-helper-transform-archive-package');
+  expect(archivePackage.tool).toEqual(expectedToolMetadata);
   expect(archivePackage.safety.containsRawResponse).toBe(false);
+  expect(archivePackage.artifacts.qualitySnapshot.tool).toEqual(expectedToolMetadata);
+  expect(archivePackage.artifacts.issueSamples.tool).toEqual(expectedToolMetadata);
   expect(archivePackage.artifacts.qualitySnapshot.coverage.score).toBe(50);
   expect(archivePackage.artifacts.issueSamples.samples[0]).toMatchObject({
     type: 'unresolved',

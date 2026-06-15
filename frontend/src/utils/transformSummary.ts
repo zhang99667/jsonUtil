@@ -6,6 +6,7 @@ import type {
   TransformStepType,
   TransformWarning,
 } from '../types';
+import { APP_VERSION_METADATA, APP_VERSION_LABEL, type AppVersionMetadata } from './appVersion';
 import {
   collectCmdHandlerCommandSchemaRows,
   collectSchemeInsightFields,
@@ -245,6 +246,7 @@ export interface TransformIssueSampleExportItem {
 export interface TransformIssueSampleExport {
   schemaVersion: 1;
   kind: 'json-helper-transform-issue-samples';
+  tool: AppVersionMetadata;
   summary: {
     unresolved: {
       copied: number;
@@ -291,6 +293,7 @@ export interface TransformPlaceholderFillTemplateDetail {
 export interface TransformPlaceholderFillTemplate {
   schemaVersion: 1;
   kind: 'json-helper-runtime-placeholder-fill-template';
+  tool: AppVersionMetadata;
   summary: {
     groups: number;
     visibleOccurrences: number;
@@ -311,6 +314,7 @@ export interface TransformQualitySnapshotBucket {
 export interface TransformQualitySnapshot {
   schemaVersion: 1;
   kind: 'json-helper-transform-quality-snapshot';
+  tool: AppVersionMetadata;
   filter: string;
   coverage: TransformReportCoverage;
   totals: {
@@ -363,6 +367,7 @@ export interface TransformArchivePackageOptions extends TransformCollaborationRe
 export interface TransformArchivePackage {
   schemaVersion: 1;
   kind: 'json-helper-transform-archive-package';
+  tool: AppVersionMetadata;
   filter: string;
   safety: {
     containsRawResponse: false;
@@ -2090,6 +2095,7 @@ export const formatTransformContextReportText = (
   const report = buildTransformContextReport(context);
   const lines = [
     report.summaryText || '深度解析: 无展开记录',
+    `工具版本: ${APP_VERSION_LABEL}`,
     report.coverage.label,
     `覆盖说明: ${report.coverage.description}`,
     ...report.coverage.items.map(item => `- ${item}`),
@@ -2376,6 +2382,7 @@ export const formatTransformReportViewText = (
   const normalizedQuery = query.trim();
   const lines = [
     report.summaryText || '深度解析: 无展开记录',
+    `工具版本: ${APP_VERSION_LABEL}`,
     `筛选: ${normalizedQuery || '全部'}`,
     `筛选结果: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，资源字段 ${reportView.filteredNestedResourceFieldCount}/${reportView.totalNestedResourceFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
   ];
@@ -2424,6 +2431,7 @@ export const formatTransformDiagnosticSummaryText = (
   const normalizedQuery = query.trim();
   const lines = [
     '深度解析诊断摘要',
+    `工具版本: ${APP_VERSION_LABEL}`,
     report.summaryText || '深度解析: 无展开记录',
     `筛选: ${normalizedQuery || '全部'}`,
     `覆盖: ${report.coverage.label}，${report.coverage.description}`,
@@ -2566,6 +2574,7 @@ export const buildTransformQualitySnapshot = (
 ): TransformQualitySnapshot => ({
   schemaVersion: 1,
   kind: 'json-helper-transform-quality-snapshot',
+  tool: APP_VERSION_METADATA,
   filter: query.trim() || '全部',
   coverage: report.coverage,
   totals: {
@@ -2692,10 +2701,11 @@ export const formatTransformCollaborationReportText = (
   const qualitySnapshot = buildTransformQualitySnapshot(report, reportView, query);
   const diagnosticLines = formatTransformDiagnosticSummaryText(report, reportView, query)
     .split('\n')
-    .slice(1);
+    .slice(2);
   const cmdComparisonReportText = options.cmdComparisonReportText?.trim();
   const lines = [
     '深度解析协作排查报告',
+    `工具版本: ${APP_VERSION_LABEL}`,
     `筛选: ${normalizedQuery || '全部'}`,
     '',
     '一、诊断摘要',
@@ -2787,6 +2797,7 @@ export const formatTransformCmdStructureReportText = (
   const normalizedQuery = query.trim();
   const lines = [
     report.summaryText || '深度解析: 无展开记录',
+    `工具版本: ${APP_VERSION_LABEL}`,
     ...(normalizedQuery ? [`筛选: ${normalizedQuery}`] : []),
     reportView.isCmdStructureTruncated
       ? `CMD 结构: ${records.length}/${reportView.filteredCmdStructureCount} 条`
@@ -2844,6 +2855,7 @@ export const formatTransformPlaceholderReportText = (
   const normalizedQuery = query.trim();
   const lines = [
     report.summaryText || '深度解析: 无展开记录',
+    `工具版本: ${APP_VERSION_LABEL}`,
     ...(normalizedQuery ? [`筛选: ${normalizedQuery}`] : []),
     `占位符: ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}`,
   ];
@@ -2883,6 +2895,7 @@ export const buildTransformPlaceholderFillTemplate = (
   return {
     schemaVersion: 1,
     kind: 'json-helper-runtime-placeholder-fill-template',
+    tool: APP_VERSION_METADATA,
     summary: {
       groups: placeholderDetails.length,
       visibleOccurrences: reportView.runtimePlaceholders.length,
@@ -2959,6 +2972,7 @@ export const buildTransformIssueSampleExport = (
   return {
     schemaVersion: 1,
     kind: 'json-helper-transform-issue-samples',
+    tool: APP_VERSION_METADATA,
     summary: {
       unresolved: {
         copied: reportView.unresolvedCandidates.length,
@@ -3045,6 +3059,7 @@ export const formatTransformIssueSampleReportText = (
 ): string => {
   const lines = [
     '深度解析问题样本',
+    `工具版本: ${APP_VERSION_LABEL}`,
     `待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}`,
   ];
   let sampleCount = 0;
@@ -3172,6 +3187,7 @@ export const buildTransformArchivePackage = (
   return {
     schemaVersion: 1,
     kind: 'json-helper-transform-archive-package',
+    tool: APP_VERSION_METADATA,
     filter: normalizedQuery || '全部',
     safety: {
       containsRawResponse: false,
