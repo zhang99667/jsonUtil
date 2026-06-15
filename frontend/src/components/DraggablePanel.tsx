@@ -14,6 +14,8 @@ export interface DraggablePanelProps {
   title: ReactNode;
   /** 面板可访问名称，标题为复杂节点时使用 */
   ariaLabel?: string;
+  /** 打开后优先聚焦的元素；未传时默认聚焦关闭按钮 */
+  initialFocusRef?: React.RefObject<HTMLElement | null>;
   /** 标题图标 (SVG ReactNode) */
   icon: ReactNode;
   /** 头部额外内容（如 path 标签），显示在标题后、关闭按钮前 */
@@ -97,6 +99,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   onClose,
   title,
   ariaLabel,
+  initialFocusRef,
   icon,
   headerExtra,
   storageKey,
@@ -160,7 +163,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
         : null;
 
       const focusTimer = window.setTimeout(() => {
-        closeButtonRef.current?.focus();
+        (initialFocusRef?.current || closeButtonRef.current)?.focus();
       }, 0);
 
       return () => window.clearTimeout(focusTimer);
@@ -179,7 +182,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
     }, 0);
 
     return () => window.clearTimeout(restoreTimer);
-  }, [isOpen]);
+  }, [initialFocusRef, isOpen]);
 
   // ESC 键关闭面板（仅在焦点位于面板内时生效）
   useEffect(() => {

@@ -136,7 +136,7 @@ test('浮动面板支持键盘关闭并恢复入口焦点', async ({ page }) => 
 
   const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
   await expect(jsonPathPanel).toBeVisible();
-  await expect(jsonPathPanel.getByRole('button', { name: '关闭 JSONPath 查询' })).toBeFocused();
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toBeFocused();
 
   await page.keyboard.press('Escape');
   await expect(jsonPathPanel).toBeHidden();
