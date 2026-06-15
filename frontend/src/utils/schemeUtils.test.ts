@@ -98,6 +98,11 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D\n  from=test')).toBe(true);
   });
 
+  it('检测日志里转义换行分隔的 CMD 参数串', () => {
+    expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D\\n  from=test')).toBe(true);
+    expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D\\r\\n  from=test')).toBe(true);
+  });
+
   it('检测前导 & 的 CMD 参数串', () => {
     expect(isDecodableQueryString('&cmd=%7B%22a%22%3A1%7D&from=test')).toBe(true);
   });
@@ -1010,6 +1015,16 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       cmd: { nid: 123 },
       from: 'line',
+    });
+  });
+
+  it('日志里转义换行分隔的 CMD 参数串被解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`cmd=${payload}\\n  from=escaped-line`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      from: 'escaped-line',
     });
   });
 
