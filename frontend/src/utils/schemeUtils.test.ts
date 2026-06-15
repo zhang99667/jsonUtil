@@ -98,6 +98,10 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D\\u0026from=test')).toBe(true);
   });
 
+  it('检测 Unicode 转义等号的 CMD 参数串', () => {
+    expect(isDecodableQueryString('cmd\\u003d%7B%22a%22%3A1%7D\\u0026from\\u003dtest')).toBe(true);
+  });
+
   it('检测换行分隔的 CMD 参数串', () => {
     expect(isDecodableQueryString('cmd=%7B%22a%22%3A1%7D\n  from=test')).toBe(true);
   });
@@ -1019,6 +1023,16 @@ describe('deepDecodeScheme', () => {
     expect(parsed).toEqual({
       cmd: { nid: 123 },
       from: 'unicode',
+    });
+  });
+
+  it('Unicode 转义等号的 CMD 参数串被解析', () => {
+    const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
+    const result = deepDecodeScheme(`cmd\\u003d${payload}\\u0026from\\u003dunicode-equals`);
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: { nid: 123 },
+      from: 'unicode-equals',
     });
   });
 
