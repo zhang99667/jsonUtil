@@ -163,6 +163,18 @@ describe('isDecodableQueryString', () => {
     expect(isDecodableQueryString('next=%23/detail%3Fcmd%3D%257B%2522a%2522%253A1%257D')).toBe(true);
   });
 
+  it('检测真实链路里的结构化后缀单参数字段', () => {
+    expect(isDecodableQueryString(`m_param=${encodeURIComponent(JSON.stringify({ jdv: 'baidu-ys' }))}`))
+      .toBe(true);
+    expect(isDecodableQueryString(`kepler_param=${encodeURIComponent(JSON.stringify({ source: 'kepler-open' }))}`))
+      .toBe(true);
+    expect(isDecodableQueryString('ulkScheme=baiduboxapp%3A%2F%2Fv1%2Feasybrowse%2Fopen%3Furl%3Dhttps%253A%252F%252Fm.baidu.com'))
+      .toBe(true);
+    expect(isDecodableQueryString('activeUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson'))
+      .toBe(true);
+    expect(isDecodableQueryString('trackingInfo=plain')).toBe(false);
+  });
+
   it('普通单键值对不误判', () => {
     expect(isDecodableQueryString('name=test')).toBe(false);
     expect(isDecodableQueryString('next=1')).toBe(false);
@@ -1187,6 +1199,28 @@ describe('deepDecodeScheme', () => {
           reward_crius_download_charge: '1',
         },
         idea_id: 1353104569522,
+      },
+    });
+  });
+
+  it('结构化后缀单参数可直接展开', () => {
+    const mParamResult = deepDecodeScheme(`m_param=${encodeURIComponent(JSON.stringify({
+      jdv: 'null|baidu-ys|cpc',
+    }))}`);
+    expect(JSON.parse(mParamResult.decoded)).toEqual({
+      m_param: {
+        jdv: 'null|baidu-ys|cpc',
+      },
+    });
+
+    const ulkResult = deepDecodeScheme(
+      'ulkScheme=baiduboxapp%3A%2F%2Fv1%2Feasybrowse%2Fopen%3Furl%3Dhttps%253A%252F%252Fm.baidu.com%252Fs%253Fword%253Djson'
+    );
+    expect(JSON.parse(ulkResult.decoded)).toEqual({
+      ulkScheme: {
+        url: {
+          word: 'json',
+        },
       },
     });
   });
