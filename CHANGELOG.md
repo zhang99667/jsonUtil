@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.51 (2026-06-15) - 换行参数导出对齐
+### 🐛 Bug 修复
+- **CMD/Scheme 兼容性**: 修复 `cmd=...\nfrom=...`、`cmd=...\\nfrom=...` 这类换行分隔参数复制为 cmdHandler 风格结构时，source shape 未正确拆分导致内层 `source` 粘连后续参数的问题
+
 ## v1.8.50 (2026-06-15) - HTML 十六进制实体参数解析
 ### ✨ 新特性
 - **CMD/Scheme 兼容性**: 支持解析 `cmd&#x3D;...&#x26;from&#x3D;...` 这类 HTML 十六进制实体参数串，并同步用于 cmdHandler 风格导出
