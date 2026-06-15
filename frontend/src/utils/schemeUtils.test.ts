@@ -1155,6 +1155,15 @@ describe('deepDecodeScheme', () => {
       },
     });
 
+    const plusExtraParam = 'eyJ2IjoidW43MmzlkYpLU+WPgj02VWZNbjFLZ3hMIn0=';
+    expect(plusExtraParam).toContain('+');
+    const plusExtraResult = deepDecodeScheme(`extraParam=${plusExtraParam}`);
+    expect(JSON.parse(plusExtraResult.decoded)).toEqual({
+      extraParam: {
+        v: 'un72l告KS参=6UfMn1KgxL',
+      },
+    });
+
     const ubsResult = deepDecodeScheme(`ubsParam=${encodeURIComponent(JSON.stringify({
       ideaid: '1353104569522',
       cmatch: 1501,

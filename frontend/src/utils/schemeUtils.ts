@@ -698,6 +698,19 @@ const decodeQueryComponent = (str: string): string => (
   urlDecode(str.replace(/\+/g, ' '))
 );
 
+const decodeQueryValueComponent = (str: string): string => {
+  const formDecoded = decodeQueryComponent(str);
+  if (!str.includes('+')) return formDecoded;
+
+  const plusPreserved = urlDecode(str);
+  if (plusPreserved === formDecoded) return formDecoded;
+
+  // 真实日志里 Base64 字段可能直接带字面量 +，仅在保留后能解析成结构化值时回退为原值语义。
+  return isDecodableParamValue(plusPreserved) && !isDecodableParamValue(formDecoded)
+    ? plusPreserved
+    : formDecoded;
+};
+
 /**
  * URL 编码
  */
@@ -1026,7 +1039,7 @@ const getSingleRawUrlParam = (queryString: string): SingleRawUrlParam | null => 
   const rawValue = source.slice(equalIndex + 1);
   if (!isUrl(rawValue)) return null;
 
-  const value = decodeQueryComponent(rawValue);
+  const value = decodeQueryValueComponent(rawValue);
   return isUrl(value) ? { rawKey, key, value } : null;
 };
 
@@ -1038,7 +1051,7 @@ const parseFlatQueryParams = (queryString: string): Record<string, string | stri
     if (equalIndex <= 0) return;
 
     const key = decodeQueryComponent(pair.slice(0, equalIndex));
-    const value = decodeQueryComponent(pair.slice(equalIndex + 1));
+    const value = decodeQueryValueComponent(pair.slice(equalIndex + 1));
     if (key) {
       assignFlatQueryParam(params, key, value);
     }
@@ -1412,7 +1425,7 @@ const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredV
     if (equalIndex <= 0) return;
 
     const key = decodeQueryComponent(pair.slice(0, equalIndex));
-    const value = decodeQueryComponent(pair.slice(equalIndex + 1));
+    const value = decodeQueryValueComponent(pair.slice(equalIndex + 1));
     if (!key) return;
 
     assignQueryParam(result, key, decodeNestedParamValue(value, maxDepth - 1));
