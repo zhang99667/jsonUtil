@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.9 (2026-06-15) - 质量趋势必需项对比
+### 🏗️ 架构与基础设施
+- **Scheme Corpus 趋势对比**: `corpus:snapshot:diff` 会把 requiredChecks 必需项失败纳入退化/恢复判断，并在 Markdown 趋势摘要中展示必需项失败变化
+
 ## v1.8.8 (2026-06-15) - 解析基线必需项门禁
 ### 🏗️ 架构与基础设施
 - **Scheme Corpus 严格门禁**: `corpus:snapshot:check` 会校验 expected snapshot 中的扫描位置、必需 CMD Schema 和运行时占位符，CI 能发现解析能力退化但数值阈值未触发的问题
