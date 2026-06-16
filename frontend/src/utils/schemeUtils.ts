@@ -14,7 +14,7 @@ export type SchemeType =
   | 'json'          // JSON 字符串
   | 'plain';        // 普通字符串
 
-type DecodeLayerType = SchemeType | 'json-escaped-slash';
+type DecodeLayerType = SchemeType | 'json-escaped-slash' | 'json-unicode-ascii';
 
 export interface DecodeLayer {
   type: DecodeLayerType;
@@ -241,6 +241,17 @@ const normalizeJsonEscapedSlashes = (source: string): string => (
   source.replace(/\\\//g, '/')
 );
 
+const normalizeJsonUnicodeAsciiEscapes = (source: string): string => (
+  source.replace(/\\u00([2-7][0-9a-f])/gi, (match, hex: string) => {
+    const code = Number.parseInt(hex, 16);
+    return code >= 0x20 && code <= 0x7e ? String.fromCharCode(code) : match;
+  })
+);
+
+const normalizeJsonUrlEscapes = (source: string): string => (
+  normalizeJsonUnicodeAsciiEscapes(normalizeJsonEscapedSlashes(source))
+);
+
 const normalizeQueryString = (source: string): string => (
   source.trim()
     .replace(HTML_EQUALS_RE, '=')
@@ -264,7 +275,7 @@ const looksLikeQueryString = (source: string): boolean => {
 
 const looksLikeStructuredPayload = (value: string): boolean => {
   const trimmed = value.trim();
-  const slashNormalized = normalizeJsonEscapedSlashes(trimmed);
+  const slashNormalized = normalizeJsonUrlEscapes(trimmed);
   if (slashNormalized !== trimmed) {
     return looksLikeStructuredPayload(slashNormalized);
   }
@@ -284,6 +295,14 @@ const looksLikeStructuredPayload = (value: string): boolean => {
 const tryNormalizeJsonEscapedSlashPayload = (value: string): string | null => {
   const trimmed = value.trim();
   const normalized = normalizeJsonEscapedSlashes(trimmed);
+  if (normalized === trimmed) return null;
+
+  return looksLikeStructuredPayload(normalized) ? normalized : null;
+};
+
+const tryNormalizeJsonUnicodeAsciiPayload = (value: string): string | null => {
+  const trimmed = value.trim();
+  const normalized = normalizeJsonUnicodeAsciiEscapes(trimmed);
   if (normalized === trimmed) return null;
 
   return looksLikeStructuredPayload(normalized) ? normalized : null;
@@ -321,6 +340,7 @@ const getRuntimePlaceholderDescription = (value: string): string => (
 const isDecodableParamValue = (value: string): boolean => (
   isRuntimePlaceholder(value) ||
   tryNormalizeJsonEscapedSlashPayload(value) !== null ||
+  tryNormalizeJsonUnicodeAsciiPayload(value) !== null ||
   tryNormalizeJsonEscapedQuotePayload(value) !== null ||
   tryNormalizeHtmlJsonQuotePayload(value) !== null ||
   hasUrlEncoding(value) ||
@@ -496,7 +516,7 @@ const isBareHostUrl = (str: string): boolean => {
 };
 
 const createUrl = (urlString: string): URL => {
-  const trimmed = normalizeJsonEscapedSlashes(urlString.trim());
+  const trimmed = normalizeJsonUrlEscapes(urlString.trim());
   if (isBareHostUrl(trimmed)) {
     return new URL(`${BARE_HOST_URL_BASE}${trimmed}`);
   }
@@ -518,7 +538,7 @@ const stringifyUrlForOriginalShape = (url: URL, originalUrl: string): string => 
  * 检测字符串是否为 URL（包含协议）
  */
 export function isUrl(str: string): boolean {
-  const trimmed = normalizeJsonEscapedSlashes(str.trim());
+  const trimmed = normalizeJsonUrlEscapes(str.trim());
   // 匹配 scheme://...、//host/path 和 host/path 这几类常见链接格式
   return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(trimmed) ||
     isProtocolRelativeUrl(trimmed) ||
@@ -733,6 +753,11 @@ export function detectSchemeType(str: string): SchemeType {
   const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(trimmed);
   if (escapedSlashPayload !== null) {
     return detectSchemeType(escapedSlashPayload);
+  }
+
+  const unicodeAsciiPayload = tryNormalizeJsonUnicodeAsciiPayload(trimmed);
+  if (unicodeAsciiPayload !== null) {
+    return detectSchemeType(unicodeAsciiPayload);
   }
 
   const escapedQuotePayload = tryNormalizeJsonEscapedQuotePayload(trimmed);
@@ -1322,10 +1347,11 @@ const isDecodableFragmentParamString = (source: string): boolean => {
  */
 export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | null {
   try {
+    const normalizedUrlString = normalizeJsonUrlEscapes(urlString.trim());
     // 处理自定义 scheme（如 myapp://）
-    const url = createUrl(urlString);
-    const isBareUrl = isBareHostUrl(urlString);
-    const isProtocolRelative = isProtocolRelativeUrl(urlString);
+    const url = createUrl(normalizedUrlString);
+    const isBareUrl = isBareHostUrl(normalizedUrlString);
+    const isProtocolRelative = isProtocolRelativeUrl(normalizedUrlString);
     const params = parseFlatQueryParams(url.search);
     const fragmentParamSource = getFragmentParamSource(url.hash);
     const hashParams = fragmentParamSource ? parseFlatQueryParams(fragmentParamSource) : undefined;
@@ -1775,6 +1801,19 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
         description: 'JSON 斜杠转义还原',
       });
       current = escapedSlashPayload;
+      depth++;
+      continue;
+    }
+
+    const unicodeAsciiPayload = tryNormalizeJsonUnicodeAsciiPayload(current);
+    if (unicodeAsciiPayload !== null) {
+      layers.push({
+        type: 'json-unicode-ascii',
+        before: current,
+        description: 'JSON Unicode ASCII 转义还原',
+        reversible: false,
+      });
+      current = unicodeAsciiPayload;
       depth++;
       continue;
     }

@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.84 (2026-06-16) - Unicode 转义 Scheme 解析
+### 🐛 Bug 修复
+- **CMD/Scheme 解析**: SOURCE、Scheme 面板和深度解析链路支持 `\u003a/\u002f/\u003f` 等 JSON Unicode ASCII 转义形态的裸 Scheme，日志复制出的 `baiduboxapp\u003a...` 可直接结构化展开
+
 ## v1.8.83 (2026-06-16) - 报告内部 CMD 快速解析
 ### ✨ 新特性
 - **深度解析报告**: 内部 CMD 字段行新增“Scheme 打开”入口，可直接把二级/三级 CMD 对象送入 Scheme 面板继续查看，减少真实 response 排查时手动复制粘贴的步骤
