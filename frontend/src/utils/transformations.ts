@@ -439,7 +439,6 @@ export function deepParseWithContext(
   const maxStringDecodeLength = options?.maxStringDecodeLength ?? DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT;
   const maxTotalStringDecodeLength = options?.maxTotalStringDecodeLength ?? DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT;
   let totalStringDecodeLength = 0;
-  let hasTotalStringDecodeBudgetWarning = false;
 
   const addUnresolvedCandidate = (
     path: string,
@@ -529,19 +528,16 @@ export function deepParseWithContext(
 
         totalStringDecodeLength += value.length;
         if (totalStringDecodeLength > maxTotalStringDecodeLength) {
-          if (!hasTotalStringDecodeBudgetWarning) {
-            context.warnings = context.warnings || [];
-            context.warnings.push({
-              type: 'string_decode_budget_exceeded',
-              path: currentPath,
-              sourceLabel,
-              originalValue: value,
-              message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
-              length: value.length,
-              limit: maxTotalStringDecodeLength,
-            });
-            hasTotalStringDecodeBudgetWarning = true;
-          }
+          context.warnings = context.warnings || [];
+          context.warnings.push({
+            type: 'string_decode_budget_exceeded',
+            path: currentPath,
+            sourceLabel,
+            originalValue: value,
+            message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
+            length: value.length,
+            limit: maxTotalStringDecodeLength,
+          });
           return value;
         }
 
