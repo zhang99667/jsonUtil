@@ -10,7 +10,8 @@ import {
   performInverseTransform,
   deepParseWithContext,
   inverseWithContext,
-  applyTemplate
+  applyTemplate,
+  isStandaloneDeepFormatInput
 } from './utils/transformations';
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
@@ -64,7 +65,6 @@ import {
   trackToolEvent,
   type ToolEventStatus,
 } from './utils/productTelemetry';
-import { detectSchemeType, type SchemeType } from './utils/schemeUtils';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -78,7 +78,6 @@ const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.MINIFY,
   TransformMode.SORT_KEYS,
 ]);
-const STANDALONE_SCHEME_TYPES = new Set<SchemeType>(['query-string', 'url', 'base64']);
 
 const getCopySuccessMessage = (label: string, content: string): string => {
   const stats = getDocumentStats(content);
@@ -95,8 +94,7 @@ const getSourceUpdateSuccessMessage = (message: string, content: string): string
 );
 
 const isStandaloneSchemeInput = (value: string): boolean => {
-  const trimmed = value.trim();
-  return trimmed.length > 0 && STANDALONE_SCHEME_TYPES.has(detectSchemeType(trimmed));
+  return isStandaloneDeepFormatInput(value);
 };
 
 const LazySchemeViewerModal = lazy(() => import('./components/SchemeViewerModal').then(module => ({
