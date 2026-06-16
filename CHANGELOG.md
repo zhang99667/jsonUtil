@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.77 (2026-06-16) - 问题样本回归模板 smoke
+### 🧪 测试与体验
+- **深度解析报告**: “复制回归模板”和 `samples:to-regression` 生成的 Vitest 模板新增可执行 smoke 用例，先校验样本路径和原始值可被深度解析入口安全处理，再保留 `it.todo` 供补充精确断言
+
 ## v1.8.76 (2026-06-16) - camelCase 资源 URL 识别
 ### 🐛 Bug 修复
 - **深度解析报告**: `imageUrl`、`iconUrl`、`posterUrl` 等 camelCase 静态资源字段会归入资源 URL 统计，不再被 `*url` 后缀误归为内部 CMD 字段

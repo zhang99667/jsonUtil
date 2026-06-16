@@ -1732,13 +1732,17 @@ describe('transformSummary', () => {
     expect(issueSampleReportText).not.toContain('$.huge');
 
     const regressionTemplateText = formatTransformIssueRegressionTemplateText(buildTransformReportView(report, ''));
-    expect(regressionTemplateText).toContain("import { describe, it } from 'vitest';");
-    expect(regressionTemplateText).toContain('// 由深度解析报告「复制回归模板」生成；把 it.todo 改成 it 后补充解析断言。');
+    expect(regressionTemplateText).toContain("import { describe, expect, it } from 'vitest';");
+    expect(regressionTemplateText).toContain("import { deepParseWithContext } from './transformations';");
+    expect(regressionTemplateText).toContain('// 由深度解析报告「复制回归模板」生成；先跑 smoke，再把 it.todo 改成 it 补充解析断言。');
     expect(regressionTemplateText).toContain(`// 工具版本: ${APP_VERSION_LABEL}`);
     expect(regressionTemplateText).toContain('// 筛选: 全部');
     expect(regressionTemplateText).toContain('"type": "unresolved"');
     expect(regressionTemplateText).toContain('"type": "runtime_placeholder"');
     expect(regressionTemplateText).toContain('"type": "warning"');
+    expect(regressionTemplateText).toContain("it('样本原始值可被深度解析入口安全处理'");
+    expect(regressionTemplateText).toContain('expect(issueSamples.length).toBeGreaterThan(0);');
+    expect(regressionTemplateText).toContain("expect(() => deepParseWithContext(originalValue, { autoExpandScheme: true })).not.toThrow();");
     expect(regressionTemplateText).toContain('it.todo(`${sample.type} ${sample.path} · ${sample.reasonLabel}`);');
 
     const filteredRegressionTemplateText = formatTransformIssueRegressionTemplateText(
