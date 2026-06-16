@@ -55,6 +55,15 @@ update_code() {
 # 构建项目
 build_project() {
     log_info "构建生产版本..."
+
+    if [ "${SKIP_BUILD:-false}" = "true" ]; then
+        log_warning "跳过构建，使用现有 dist 目录"
+        if [ ! -f "dist/index.html" ]; then
+            log_error "跳过构建失败：未找到 dist/index.html"
+            exit 1
+        fi
+        return 0
+    fi
     
     # 设置构建环境
     export NODE_ENV="$NODE_ENV"
@@ -272,6 +281,7 @@ show_help() {
     NODE_ENV       环境变量
     WEB_USER       Web用户
     INSTALL_DEPS   是否安装依赖
+    SKIP_BUILD     是否跳过构建并使用现有 dist
 
 示例:
     $0                          # 默认部署
