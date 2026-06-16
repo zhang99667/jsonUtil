@@ -487,6 +487,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     });
   };
 
+  const handleOpenFirstCmdComparison = () => {
+    const firstRecord = reportView?.cmdStructureRecords[0];
+    if (!firstRecord) return;
+
+    setQuery('CMD结构');
+    setCmdComparisonExpectedText('');
+    setCmdComparisonRecordPath(firstRecord.path);
+  };
+
   const handleCopyCmdComparisonDiff = async (record: TransformReportRecord) => {
     try {
       const reportText = buildCmdComparisonReportText(record);
@@ -837,15 +846,27 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   onFilter={setQuery}
                 />
                 {report.cmdStructureCount > 0 && (
-                  <button
-                    type="button"
-                    data-tour="transform-report-cmd-structure-count"
-                    onClick={() => setQuery('CMD结构')}
-                    className="bg-cyan-950/40 text-cyan-200 border border-cyan-800/60 px-2 py-0.5 rounded hover:bg-cyan-900/50 transition-colors"
-                    title="筛选可复制的 cmdHandler CMD 结构"
-                  >
-                    CMD结构 {report.cmdStructureCount}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      data-tour="transform-report-cmd-structure-count"
+                      onClick={() => setQuery('CMD结构')}
+                      className="bg-cyan-950/40 text-cyan-200 border border-cyan-800/60 px-2 py-0.5 rounded hover:bg-cyan-900/50 transition-colors"
+                      title="筛选可复制的 cmdHandler CMD 结构"
+                    >
+                      CMD结构 {report.cmdStructureCount}
+                    </button>
+                    <button
+                      type="button"
+                      data-tour="transform-report-open-first-cmd-comparison"
+                      onClick={handleOpenFirstCmdComparison}
+                      disabled={!reportView || reportView.filteredCmdStructureCount === 0 || isFilterPending}
+                      className="bg-teal-950/40 text-teal-100 border border-teal-800/60 px-2 py-0.5 rounded hover:bg-teal-900/55 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                      title="打开第一条 CMD 结构的 cmdHandler 对比"
+                    >
+                      对比cmdHandler
+                    </button>
+                  </>
                 )}
                 {report.nestedCommandFieldCount > 0 && (
                   <button
