@@ -1,4 +1,4 @@
-import React, { useDeferredValue, useMemo, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { TransformContext } from '../types';
 import { APP_VERSION_METADATA } from '../utils/appVersion';
@@ -148,6 +148,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const report = useMemo(() => (
     context ? buildTransformContextReport(context) : null
   ), [context]);
+  const reportContextTimestamp = context?.timestamp ?? 0;
+
+  useEffect(() => {
+    setQuery('');
+    setCmdComparisonRecordPath(null);
+    setCmdComparisonExpectedText('');
+    setCmdComparisonIgnoreExtraPaths(false);
+  }, [reportContextTimestamp]);
+
   const reportView = useMemo(() => (
     report ? buildTransformReportView(report, deferredQuery) : null
   ), [report, deferredQuery]);
