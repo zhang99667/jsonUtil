@@ -1570,6 +1570,7 @@ const App: React.FC = () => {
               onNewTab={createNewTab}
               onSaveViewState={saveViewState}
               restoreViewState={activeFile?.viewState}
+              enableSchemeScan={true}
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               errorLocation={sourceErrorLocation}
