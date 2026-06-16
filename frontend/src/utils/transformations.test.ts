@@ -500,6 +500,31 @@ describe('deepParseWithContext', () => {
     expect(inverseWithContext(result.output, result.context)).toBe(scheme);
   });
 
+  it('根输入为 Scheme 时不受自动展开设置关闭影响', () => {
+    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+      phone: '400-805-8686',
+      extInfo: base64Encode(JSON.stringify({ cmatch: 222, rank: 2 })),
+    }))}`;
+    const nestedInput = JSON.stringify({ action_cmd: scheme });
+
+    const rootResult = deepParseWithContext(scheme, { autoExpandScheme: false });
+    const rootParsed = JSON.parse(rootResult.output);
+    const nestedResult = deepParseWithContext(nestedInput, { autoExpandScheme: false });
+    const nestedParsed = JSON.parse(nestedResult.output);
+
+    expect(rootResult.context.sourceFormat).toBe('scheme');
+    expect(rootResult.context.records.get('$')?.steps[0]).toMatchObject({
+      type: 'scheme_decode',
+      originalSchemeType: 'url',
+    });
+    expect(rootParsed.params).toMatchObject({
+      phone: '400-805-8686',
+      extInfo: { cmatch: 222, rank: 2 },
+    });
+    expect(nestedParsed.action_cmd).toBe(scheme);
+    expect(nestedResult.context.records.has('$.action_cmd')).toBe(false);
+  });
+
   it('特殊 key 的转换路径使用 JSONPath 安全写法', () => {
     const input = JSON.stringify({
       'user.name': JSON.stringify({ nested: true }),

@@ -418,7 +418,7 @@ export function deepParseWithContext(
   } catch {
     const jsonLines = parseJsonLines(input);
     if (!jsonLines) {
-      const rootSchemeType = options?.autoExpandScheme ? detectSchemeType(input) : 'plain';
+      const rootSchemeType = detectSchemeType(input);
       if (!ROOT_SCHEME_TYPES.has(rootSchemeType)) {
         // JSON 解析失败且不是独立 Scheme，返回原始输入
         return {
@@ -549,8 +549,11 @@ export function deepParseWithContext(
         let current = value;
         let iterDepth = 0;
         let unresolvedCandidate: { detectedType: string; message: string } | null = null;
+        const shouldDecodeSchemeAtPath = Boolean(
+          options?.autoExpandScheme || (context.sourceFormat === 'scheme' && currentPath === '$')
+        );
 
-        if (options?.autoExpandScheme && isRuntimePlaceholder(current)) {
+        if (shouldDecodeSchemeAtPath && isRuntimePlaceholder(current)) {
           addSchemeRuntimePlaceholders(currentPath, deepDecodeScheme(current).placeholders, sourceLabel, value);
         }
 
@@ -591,10 +594,10 @@ export function deepParseWithContext(
             }
           }
 
-          // 当 autoExpandScheme 启用时，优先展开独立 CMD、URL Scheme 或 Base64 JSON 片段
+          // 自动展开开启，或根输入本身就是 Scheme 时，展开 CMD、URL Scheme 或 Base64 JSON 片段
           const schemeType = detectSchemeType(current);
           if (
-            options?.autoExpandScheme &&
+            shouldDecodeSchemeAtPath &&
             (schemeType === 'query-string' || schemeType === 'url' || schemeType === 'base64')
           ) {
             const decodedScheme = deepDecodeScheme(current, maxDepth - depth);
@@ -639,8 +642,8 @@ export function deepParseWithContext(
             }
           }
 
-          // 当 autoExpandScheme 启用时，尝试 URL 解码
-          if (options?.autoExpandScheme && hasUrlEncoding(current)) {
+          // 自动展开开启，或根输入本身就是 Scheme 时，尝试 URL 解码
+          if (shouldDecodeSchemeAtPath && hasUrlEncoding(current)) {
             const decoded = urlDecode(current);
             if (decoded !== current) {
               unresolvedCandidate = unresolvedCandidate || {
@@ -699,7 +702,7 @@ export function deepParseWithContext(
           });
         }
 
-        if (options?.autoExpandScheme && unresolvedCandidate) {
+        if (shouldDecodeSchemeAtPath && unresolvedCandidate) {
           addUnresolvedCandidate(
             currentPath,
             value,

@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.67 (2026-06-16) - 根 Scheme 强制展开
+### 🐛 Bug 修复
+- **CMD/Scheme 解析**: 修复关闭“深度解析自动展开 Scheme”设置后，整段 `baiduboxapp://...` 虽显示 `SOURCE Scheme` 但 PREVIEW 仍回显原文的问题；根输入为独立 Scheme 时现在始终直接展开
+
 ## v1.8.66 (2026-06-16) - 独立 Scheme 直接解析
 ### 🐛 Bug 修复
 - **CMD/Scheme 解析**: 修复整段 SOURCE 直接粘贴 `baiduboxapp://...makePhoneCall?params=...` 时仍按纯文本展示的问题，独立 URL Scheme/CMD 参数串会自动进入深度解析并显示 `SOURCE Scheme`
