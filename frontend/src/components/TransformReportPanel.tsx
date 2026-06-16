@@ -670,7 +670,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           data-tour="transform-report-cmd-comparison-input"
           value={cmdComparisonExpectedText}
           onChange={(event) => setCmdComparisonExpectedText(event.target.value)}
-          placeholder="粘贴 cmdHandler 输出 JSON，支持 result / data 包裹"
+          placeholder="粘贴 cmdHandler 输出，支持 JSON / result / data / 代码块 / 日志前缀"
+          title="粘贴 cmdHandler 输出，支持 JSON、result/data 包裹、Markdown 代码块、日志前缀和字符串化 JSON"
           className="mt-2 h-24 w-full resize-y rounded border border-editor-border bg-editor-bg px-2 py-1.5 font-mono text-xs text-gray-200 outline-none focus:border-teal-600"
           spellCheck={false}
         />
@@ -688,7 +689,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         </label>
         {!expectedText && (
           <div className="mt-1 text-gray-500">
-            把内部 cmdHandler 的解析结果粘到这里，会对比 cmdSchema、source 和 cmdParams 路径值差异。
+            把内部 cmdHandler 的解析结果粘到这里，会自动清洗日志前缀、Markdown 代码块或字符串化 JSON，并对比 cmdSchema、source 和 cmdParams 路径值差异。
           </div>
         )}
         {errorText && (
