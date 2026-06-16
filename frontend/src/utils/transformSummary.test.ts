@@ -1299,6 +1299,22 @@ describe('transformSummary', () => {
         },
       }),
     ]));
+    const filteredAdPlaceholderTemplate = JSON.parse(formatTransformPlaceholderFillTemplateJsonText(
+      buildTransformReportView(adPlaceholderReport, '占位符'),
+      '占位符',
+      buildTransformReportView(adPlaceholderReport, '')
+    ));
+    expect(filteredAdPlaceholderTemplate.filter).toBe('占位符');
+    expect(filteredAdPlaceholderTemplate.placeholders.__AD_EXTRA_PARAM_ENCODE_1__).toBe(extraParamValue);
+    expect(filteredAdPlaceholderTemplate.placeholderDetails).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        value: '__AD_EXTRA_PARAM_ENCODE_1__',
+        suggestion: expect.objectContaining({
+          sourcePath: '$.extra[0].v',
+          sourceLabel: 'extraParam',
+        }),
+      }),
+    ]));
 
     const conflictingAdPlaceholderResult = deepParseWithContext(JSON.stringify({
       extra: [

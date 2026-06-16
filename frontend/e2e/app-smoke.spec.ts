@@ -983,6 +983,47 @@ test('占位符回填后展示解析质量变化', async ({ page }) => {
     .toContain('占位符: 1 -> 0 (-1)');
 });
 
+test('占位符筛选后回填模板保留候选值', async ({ page }) => {
+  const extraParamValue = `cmd=${encodeURIComponent(JSON.stringify({ aid: 'extra-1' }))}`;
+  await fillSourceEditor(page, JSON.stringify({
+    extra: [
+      {
+        k: 'extraParam',
+        v: extraParamValue,
+      },
+    ],
+    action_cmd: `cmd=${encodeURIComponent(JSON.stringify({
+      ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+    }))}`,
+  }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+
+  await reportPanel.locator('[data-tour="transform-report-placeholder-count"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('占位符');
+  await reportPanel.locator('[data-tour="transform-report-copy-placeholder-fill-template"]').click();
+  const copiedTemplate = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}')) as {
+    placeholders: Record<string, string>;
+    placeholderDetails: Array<{ value: string; suggestion?: { sourcePath?: string; sourceLabel?: string } }>;
+  };
+
+  expect(copiedTemplate.placeholders.__AD_EXTRA_PARAM_ENCODE_1__).toBe(extraParamValue);
+  expect(copiedTemplate.placeholderDetails.find(detail => (
+    detail.value === '__AD_EXTRA_PARAM_ENCODE_1__'
+  ))?.suggestion).toMatchObject({
+    sourcePath: '$.extra[0].v',
+    sourceLabel: 'extraParam',
+  });
+
+  await reportPanel.locator('[data-tour="transform-report-open-placeholder-fill-shortcut"]').click();
+  await expect(page.getByText('已填入模板填充')).toBeVisible();
+
+  const templatePanel = page.locator('[data-tour="template-fill-panel"]');
+  await expect(templatePanel).toBeVisible();
+});
+
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
   await fillSourceEditor(page, '{"ok":1}\n{"broken":}\n{"ok":3}');
 

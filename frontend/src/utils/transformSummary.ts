@@ -2919,16 +2919,17 @@ const isSafePlaceholderReplacement = (replacement: string, placeholderValue: str
 };
 
 const buildPlaceholderReplacementSuggestions = (
-  reportView: TransformReportView
+  reportView: TransformReportView,
+  suggestionSourceView = reportView
 ): Map<string, TransformPlaceholderFillTemplateSuggestion> => {
   const suggestions = new Map<string, TransformPlaceholderFillTemplateSuggestion>();
-  if (reportView.isRecordTruncated) return suggestions;
+  if (suggestionSourceView.isRecordTruncated) return suggestions;
 
   reportView.runtimePlaceholderGroups.forEach(group => {
     const aliases = PLACEHOLDER_REPLACEMENT_SOURCE_LABELS[group.value]?.map(normalizeReplacementSourceLabel) || [];
     if (aliases.length === 0) return;
 
-    const candidates: PlaceholderReplacementCandidate[] = reportView.records.flatMap(record => {
+    const candidates: PlaceholderReplacementCandidate[] = suggestionSourceView.records.flatMap(record => {
       if (!record.sourceLabel || !record.originalValue) return [];
 
       const normalizedSourceLabel = normalizeReplacementSourceLabel(record.sourceLabel);
@@ -2962,11 +2963,12 @@ const buildPlaceholderReplacementSuggestions = (
 
 export const buildTransformPlaceholderFillTemplate = (
   reportView: TransformReportView,
-  filter = ''
+  filter = '',
+  suggestionSourceView = reportView
 ): TransformPlaceholderFillTemplate | null => {
   if (reportView.filteredPlaceholderCount === 0) return null;
 
-  const replacementSuggestions = buildPlaceholderReplacementSuggestions(reportView);
+  const replacementSuggestions = buildPlaceholderReplacementSuggestions(reportView, suggestionSourceView);
   const placeholderDetails = reportView.runtimePlaceholderGroups.map(group => {
     const suggestion = replacementSuggestions.get(group.value);
 
@@ -3007,9 +3009,10 @@ export const buildTransformPlaceholderFillTemplate = (
 
 export const formatTransformPlaceholderFillTemplateJsonText = (
   reportView: TransformReportView,
-  filter = ''
+  filter = '',
+  suggestionSourceView = reportView
 ): string => {
-  const fillTemplate = buildTransformPlaceholderFillTemplate(reportView, filter);
+  const fillTemplate = buildTransformPlaceholderFillTemplate(reportView, filter, suggestionSourceView);
   return fillTemplate ? JSON.stringify(fillTemplate, null, 2) : '';
 };
 

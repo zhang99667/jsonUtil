@@ -172,6 +172,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const reportView = useMemo(() => (
     report ? buildTransformReportView(report, deferredQuery) : null
   ), [report, deferredQuery]);
+  const fullReportView = useMemo(() => (
+    report ? buildTransformReportView(report, '') : null
+  ), [report]);
   const hasPathValueCopyItems = useMemo(() => (
     Boolean(reportView?.records.some(record => (
       getTransformPathValueCopyRows(record).length > 0
@@ -202,8 +205,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }) : ''
   ), [deferredQuery, reportView]);
   const placeholderFillTemplateJsonText = useMemo(() => (
-    reportView ? formatTransformPlaceholderFillTemplateJsonText(reportView, deferredQuery) : ''
-  ), [deferredQuery, reportView]);
+    reportView
+      ? formatTransformPlaceholderFillTemplateJsonText(reportView, deferredQuery, fullReportView || reportView)
+      : ''
+  ), [deferredQuery, fullReportView, reportView]);
   const getReportCopyTitle = (
     canCopy: boolean,
     readyTitle: string,
