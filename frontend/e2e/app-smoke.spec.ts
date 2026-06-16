@@ -953,18 +953,10 @@ test('占位符回填后展示解析质量变化', async ({ page }) => {
 
   const templatePanel = page.locator('[data-tour="template-fill-panel"]');
   await expect(templatePanel).toBeVisible();
-  await fillMonacoEditor(
-    page,
-    templatePanel.locator('.monaco-editor').first(),
-    JSON.stringify({
-      schemaVersion: 1,
-      kind: 'json-helper-runtime-placeholder-fill-template',
-      placeholders: {
-        __CONVERT_CMD__: replacementCmd,
-      },
-      placeholderDetails: [],
-    })
-  );
+  await expect(templatePanel.locator('[data-tour="template-fill-placeholder-form"]')).toBeVisible();
+  const replacementInput = templatePanel.locator('[data-tour="template-fill-placeholder-replacement"]').first();
+  await replacementInput.fill(replacementCmd);
+  await expect(templatePanel.locator('[data-tour="template-fill-placeholder-summary"]')).toContainText('replacement 1/1');
 
   await templatePanel.locator('[data-tour="template-apply-button"]').click();
   await expect(page.getByText('占位符已回填，质量对比已更新')).toBeVisible();
@@ -1028,6 +1020,13 @@ test('占位符筛选后回填模板保留候选值', async ({ page }) => {
   const placeholderSummary = templatePanel.locator('[data-tour="template-fill-placeholder-summary"]');
   await expect(placeholderSummary).toContainText('replacement 1/1');
   await expect(placeholderSummary).toContainText('候选 1');
+  const replacementInput = templatePanel.locator('[data-tour="template-fill-placeholder-replacement"]').first();
+  await expect(replacementInput).toHaveValue(extraParamValue);
+  await replacementInput.fill('');
+  await expect(placeholderSummary).toContainText('待补 1');
+  await templatePanel.locator('[data-tour="template-fill-use-suggestion"]').first().click();
+  await expect(replacementInput).toHaveValue(extraParamValue);
+  await expect(page.getByText('已采用候选 replacement')).toBeVisible();
 });
 
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {

@@ -31,38 +31,166 @@ interface PlaceholderTemplateSummary {
   pending: number;
 }
 
+interface PlaceholderTemplateSource {
+  sourcePath: string;
+  sourceLabel?: string;
+  sourceOriginalPreview?: string;
+}
+
+interface PlaceholderTemplateSuggestion {
+  replacement: string;
+  sourcePath: string;
+  sourceLabel?: string;
+  reason?: string;
+}
+
+interface PlaceholderTemplateDetail {
+  value: string;
+  replacement: string;
+  description?: string;
+  suggestion?: PlaceholderTemplateSuggestion;
+  sources: PlaceholderTemplateSource[];
+}
+
+interface PlaceholderTemplateDraft {
+  placeholders: Record<string, string>;
+  placeholderDetails: PlaceholderTemplateDetail[];
+}
+
+const PLACEHOLDER_FILL_TEMPLATE_KIND = 'json-helper-runtime-placeholder-fill-template';
+
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
 
-const buildPlaceholderTemplateSummary = (templateText: string): PlaceholderTemplateSummary | null => {
+const readString = (record: Record<string, unknown>, key: string): string | undefined => (
+  typeof record[key] === 'string' ? record[key] : undefined
+);
+
+const readPlaceholderSources = (value: unknown): PlaceholderTemplateSource[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap(source => {
+    if (!isRecord(source)) return [];
+
+    const sourcePath = readString(source, 'sourcePath');
+    if (!sourcePath) return [];
+
+    return [{
+      sourcePath,
+      ...(readString(source, 'sourceLabel') ? { sourceLabel: readString(source, 'sourceLabel') } : {}),
+      ...(readString(source, 'sourceOriginalPreview') ? { sourceOriginalPreview: readString(source, 'sourceOriginalPreview') } : {}),
+    }];
+  });
+};
+
+const readPlaceholderSuggestion = (value: unknown): PlaceholderTemplateSuggestion | undefined => {
+  if (!isRecord(value)) return undefined;
+
+  const replacement = readString(value, 'replacement');
+  const sourcePath = readString(value, 'sourcePath');
+  if (!replacement || !sourcePath) return undefined;
+
+  return {
+    replacement,
+    sourcePath,
+    ...(readString(value, 'sourceLabel') ? { sourceLabel: readString(value, 'sourceLabel') } : {}),
+    ...(readString(value, 'reason') ? { reason: readString(value, 'reason') } : {}),
+  };
+};
+
+const parsePlaceholderTemplateDraft = (templateText: string): PlaceholderTemplateDraft | null => {
   if (!templateText.trim()) return null;
 
   try {
     const parsed = JSON.parse(templateText) as unknown;
-    if (!isRecord(parsed) || parsed.kind !== 'json-helper-runtime-placeholder-fill-template') return null;
+    if (!isRecord(parsed) || parsed.kind !== PLACEHOLDER_FILL_TEMPLATE_KIND) return null;
     if (!isRecord(parsed.placeholders)) return null;
 
-    const placeholderEntries = Object.entries(parsed.placeholders);
-    const total = placeholderEntries.length;
-    if (total === 0) return null;
+    const placeholders = Object.fromEntries(
+      Object.entries(parsed.placeholders).filter((entry): entry is [string, string] => (
+        typeof entry[1] === 'string'
+      ))
+    );
+    const detailRows = Array.isArray(parsed.placeholderDetails)
+      ? parsed.placeholderDetails.flatMap(detail => {
+        if (!isRecord(detail)) return [];
 
-    const filled = placeholderEntries.filter(([, replacement]) => (
-      typeof replacement === 'string' && replacement.trim().length > 0
-    )).length;
-    const suggested = Array.isArray(parsed.placeholderDetails)
-      ? parsed.placeholderDetails.filter(detail => isRecord(detail) && isRecord(detail.suggestion)).length
-      : 0;
+        const value = readString(detail, 'value');
+        if (!value) return [];
+
+        return [{
+          value,
+          replacement: readString(detail, 'replacement') ?? placeholders[value] ?? '',
+          ...(readString(detail, 'description') ? { description: readString(detail, 'description') } : {}),
+          ...(readPlaceholderSuggestion(detail.suggestion) ? { suggestion: readPlaceholderSuggestion(detail.suggestion) } : {}),
+          sources: readPlaceholderSources(detail.sources),
+        }];
+      })
+      : [];
+    const details = detailRows.length > 0
+      ? detailRows
+      : Object.entries(placeholders).map(([value, replacement]) => ({
+        value,
+        replacement,
+        sources: [],
+      }));
+
+    if (details.length === 0) return null;
 
     return {
-      total,
-      filled,
-      suggested,
-      pending: Math.max(total - filled, 0),
+      placeholders,
+      placeholderDetails: details,
     };
   } catch {
     return null;
   }
+};
+
+const buildPlaceholderTemplateSummary = (templateText: string): PlaceholderTemplateSummary | null => {
+  const draft = parsePlaceholderTemplateDraft(templateText);
+  if (!draft) return null;
+
+  const total = draft.placeholderDetails.length;
+  const filled = draft.placeholderDetails.filter(detail => detail.replacement.trim().length > 0).length;
+  const suggested = draft.placeholderDetails.filter(detail => Boolean(detail.suggestion)).length;
+
+  return {
+    total,
+    filled,
+    suggested,
+    pending: Math.max(total - filled, 0),
+  };
+};
+
+const updatePlaceholderReplacement = (
+  templateText: string,
+  placeholderValue: string,
+  replacement: string
+): string => {
+  const parsed = JSON.parse(templateText) as unknown;
+  if (!isRecord(parsed) || parsed.kind !== PLACEHOLDER_FILL_TEMPLATE_KIND) return templateText;
+  if (!isRecord(parsed.placeholders)) return templateText;
+
+  const placeholders = {
+    ...parsed.placeholders,
+    [placeholderValue]: replacement,
+  };
+  const placeholderDetails = Array.isArray(parsed.placeholderDetails)
+    ? parsed.placeholderDetails.map(detail => {
+      if (!isRecord(detail) || detail.value !== placeholderValue) return detail;
+      return {
+        ...detail,
+        replacement,
+      };
+    })
+    : parsed.placeholderDetails;
+
+  return JSON.stringify({
+    ...parsed,
+    placeholders,
+    ...(Array.isArray(placeholderDetails) ? { placeholderDetails } : {}),
+  }, null, 2);
 };
 
 export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
@@ -84,6 +212,9 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   }, [template]);
   const placeholderTemplateSummary = useMemo(() => (
     buildPlaceholderTemplateSummary(template)
+  ), [template]);
+  const placeholderTemplateDraft = useMemo(() => (
+    parsePlaceholderTemplateDraft(template)
   ), [template]);
 
   // 自动保存到 localStorage
@@ -139,6 +270,21 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
       console.warn('复制模板质量对比失败:', error);
       toast.error(getClipboardErrorMessage(error), { duration: 2000 });
     }
+  };
+
+  const handlePlaceholderReplacementChange = (placeholderValue: string, replacement: string) => {
+    try {
+      setTemplate(updatePlaceholderReplacement(template, placeholderValue, replacement));
+    } catch (error) {
+      console.warn('更新占位符 replacement 失败:', error);
+    }
+  };
+
+  const handleUsePlaceholderSuggestion = (detail: PlaceholderTemplateDetail) => {
+    if (!detail.suggestion) return;
+
+    handlePlaceholderReplacementChange(detail.value, detail.suggestion.replacement);
+    toast.success('已采用候选 replacement', { duration: 1400 });
   };
 
   const hasTemplateContent = template.trim().length > 0;
@@ -225,6 +371,70 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
             {placeholderTemplateSummary.pending > 0 && (
               <span> · 待补 {placeholderTemplateSummary.pending}</span>
             )}
+          </div>
+        )}
+
+        {placeholderTemplateDraft && (
+          <div
+            data-tour="template-fill-placeholder-form"
+            className="max-h-48 overflow-auto rounded border border-violet-800/40 bg-editor-sidebar text-xs"
+          >
+            {placeholderTemplateDraft.placeholderDetails.map(detail => {
+              const source = detail.sources[0];
+              return (
+                <div
+                  key={detail.value}
+                  data-tour="template-fill-placeholder-row"
+                  className="grid grid-cols-[minmax(120px,1fr)_minmax(140px,1.2fr)_auto] gap-2 border-b border-editor-border/70 px-2 py-2 last:border-b-0"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-mono text-violet-100" title={detail.value}>
+                      {detail.value}
+                    </div>
+                    {detail.description && (
+                      <div className="mt-0.5 line-clamp-2 text-[10px] text-gray-500" title={detail.description}>
+                        {detail.description}
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    data-tour="template-fill-placeholder-replacement"
+                    value={detail.replacement}
+                    onChange={(event) => handlePlaceholderReplacementChange(detail.value, event.target.value)}
+                    className="min-w-0 rounded border border-editor-border bg-editor-bg px-2 py-1 font-mono text-xs text-gray-100 outline-none focus:border-violet-600"
+                    placeholder="replacement"
+                    spellCheck={false}
+                    title={`填写 ${detail.value} 的 replacement`}
+                    aria-label={`${detail.value} replacement`}
+                  />
+                  <button
+                    type="button"
+                    data-tour="template-fill-use-suggestion"
+                    onClick={() => handleUsePlaceholderSuggestion(detail)}
+                    disabled={!detail.suggestion}
+                    className="whitespace-nowrap rounded border border-violet-700/60 bg-violet-950/40 px-2 py-1 text-violet-100 transition-colors hover:bg-violet-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    title={detail.suggestion ? `采用候选：${detail.suggestion.sourcePath}` : '暂无候选 replacement'}
+                    aria-label={`采用 ${detail.value} 候选 replacement`}
+                  >
+                    采用候选
+                  </button>
+                  {(detail.suggestion || source) && (
+                    <div className="col-span-3 min-w-0 truncate text-[10px] text-gray-500">
+                      {detail.suggestion && (
+                        <span title={detail.suggestion.reason || detail.suggestion.sourcePath}>
+                          候选来源: {detail.suggestion.sourceLabel || detail.suggestion.sourcePath}
+                        </span>
+                      )}
+                      {!detail.suggestion && source && (
+                        <span title={source.sourceOriginalPreview || source.sourcePath}>
+                          来源: {source.sourceLabel || source.sourcePath}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
