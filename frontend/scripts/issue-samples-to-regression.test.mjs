@@ -62,10 +62,11 @@ describe('parseIssueSampleExport', () => {
 });
 
 describe('buildRegressionTemplate', () => {
-  it('生成可粘贴的 Vitest TODO 模板并保留关键字段', () => {
+  it('生成可执行 smoke 的 Vitest 模板并保留关键字段', () => {
     const template = buildRegressionTemplate(createSampleExport());
 
-    expect(template).toContain("import { describe, it } from 'vitest';");
+    expect(template).toContain("import { describe, expect, it } from 'vitest';");
+    expect(template).toContain("import { deepParseWithContext } from './transformations';");
     expect(template).toContain('// 工具版本: v1.8.18');
     expect(template).toContain('// 筛选: trackingParam');
     expect(template).toContain('const issueSamples = [');
@@ -73,6 +74,9 @@ describe('buildRegressionTemplate', () => {
     expect(template).toContain('"sourceLabel": "trackingParam"');
     expect(template).toContain('"originalValue": "raw=%7B%22nid%22%3A123%7D"');
     expect(template).toContain('"warningType": "string_decode_skipped"');
+    expect(template).toContain("it('样本原始值可被深度解析入口安全处理'");
+    expect(template).toContain('expect(issueSamples.length).toBeGreaterThan(0);');
+    expect(template).toContain("expect(() => deepParseWithContext(originalValue, { autoExpandScheme: true })).not.toThrow();");
     expect(template).toContain('it.todo(`${sample.type} ${sample.path} · ${sample.reasonLabel}`);');
     expect(template).not.toContain('检测到样本可能包含');
   });
