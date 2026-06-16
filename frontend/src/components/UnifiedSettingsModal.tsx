@@ -631,7 +631,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                         嵌套解析时自动展开 CMD/Scheme 字符串
                                     </div>
                                     <div id="general-auto-expand-description" className="text-xs text-gray-500 mt-1">
-                                        启用后，深度格式化将自动展开 CMD、URL Scheme 和 Base64 JSON 片段
+                                        控制 JSON 字符串内部的 CMD、URL Scheme 和 Base64 JSON 片段是否递归展开；SOURCE 直接粘贴整段 Scheme 时始终会自动展开
                                     </div>
                                 </div>
                                 <button
