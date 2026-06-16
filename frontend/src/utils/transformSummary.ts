@@ -1363,6 +1363,10 @@ const includesQuery = (value: string, normalizedQuery: string): boolean => (
   value.toLowerCase().includes(normalizedQuery)
 );
 
+const isIssuePriorityQuery = (normalizedQuery: string): boolean => (
+  normalizedQuery === '待处理' || normalizedQuery === '问题优先'
+);
+
 // 短字段名扫整段原始 CMD 会把同源诊断项全部带出；仅对长片段或明显编码/URL 片段兜底。
 const shouldSearchLongSourceValue = (normalizedQuery: string): boolean => (
   normalizedQuery.length >= 12 ||
@@ -1530,6 +1534,7 @@ const matchesReportWarning = (
   normalizedQuery: string
 ): boolean => (
   !normalizedQuery ||
+  isIssuePriorityQuery(normalizedQuery) ||
   includesQuery(warning.path, normalizedQuery) ||
   (warning.sourceLabel ? includesQuery(warning.sourceLabel, normalizedQuery) : false) ||
   includesQuery(WARNING_SEARCH_TEXT, normalizedQuery) ||
@@ -1544,6 +1549,7 @@ const matchesUnresolvedCandidate = (
   normalizedQuery: string
 ): boolean => (
   !normalizedQuery ||
+  isIssuePriorityQuery(normalizedQuery) ||
   includesQuery(candidate.path, normalizedQuery) ||
   (candidate.sourceLabel ? includesQuery(candidate.sourceLabel, normalizedQuery) : false) ||
   includesQuery(UNRESOLVED_SEARCH_TEXT, normalizedQuery) ||
@@ -1560,6 +1566,7 @@ const matchesRuntimePlaceholder = (
   normalizedQuery: string
 ): boolean => (
   !normalizedQuery ||
+  isIssuePriorityQuery(normalizedQuery) ||
   includesQuery(placeholder.path, normalizedQuery) ||
   includesQuery(placeholder.sourcePath, normalizedQuery) ||
   (placeholder.sourceLabel ? includesQuery(placeholder.sourceLabel, normalizedQuery) : false) ||

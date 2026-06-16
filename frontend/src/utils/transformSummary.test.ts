@@ -1591,6 +1591,11 @@ describe('transformSummary', () => {
     expect(buildTransformReportView(report, 'panel_cmd=').filteredPlaceholderCount).toBe(1);
     expect(buildTransformReportView(report, 'panel_cmd=').filteredWarningCount).toBe(1);
     expect(buildTransformReportView(report, 'panel_cmd=').filteredUnresolvedCount).toBe(1);
+
+    const issuePriorityView = buildTransformReportView(report, '待处理');
+    expect(issuePriorityView.filteredPlaceholderCount).toBe(1);
+    expect(issuePriorityView.filteredWarningCount).toBe(1);
+    expect(issuePriorityView.filteredUnresolvedCount).toBe(1);
   });
 
   it('问题样本支持复制结构化 JSON 用于沉淀回归', () => {

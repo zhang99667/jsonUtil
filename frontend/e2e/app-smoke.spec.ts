@@ -587,6 +587,10 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
 
   await expect(coverage).toContainText('解析覆盖 50%');
   await expect(coverage).toContainText('还有 1 条疑似结构化内容未完全展开');
+  await reportPanel.locator('[data-tour="transform-report-issue-priority"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('待处理');
+  await expect(unresolvedSection).toContainText('$.tracking');
+  await reportPanel.getByRole('button', { name: '清空' }).click();
   await reportPanel.locator('[data-tour="transform-report-unresolved-count"]').click();
   await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('待检查');
   await expect(unresolvedSection).toContainText('$.tracking');

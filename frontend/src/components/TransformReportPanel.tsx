@@ -223,6 +223,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const redactedIssueSampleJsonCopyTitle = getReportCopyTitle(Boolean(redactedIssueSampleJsonCopyText), '复制当前筛选下的脱敏结构化样本 JSON，便于安全沉淀回归用例', '当前筛选没有可脱敏沉淀的结构化样本');
   const issueRegressionTemplateCopyTitle = getReportCopyTitle(Boolean(issueRegressionTemplateCopyText), '复制当前筛选下的脱敏 Vitest TODO 回归模板', '当前筛选没有可生成回归模板的问题样本');
   const fullReportCopyTitle = context ? '复制完整深度解析报告' : '暂无深度解析报告可复制';
+  const issuePriorityCount = report
+    ? report.summary.unresolvedCount + report.summary.warningCount + report.summary.placeholderCount
+    : 0;
 
   const showCopyError = (message: string, error: unknown) => {
     console.warn(message, error);
@@ -864,6 +867,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                     title="筛选包含静态素材资源 URL 的展开记录"
                   >
                     资源URL {report.nestedResourceFieldCount}
+                  </button>
+                )}
+                {issuePriorityCount > 0 && (
+                  <button
+                    type="button"
+                    data-tour="transform-report-issue-priority"
+                    onClick={() => setQuery('待处理')}
+                    className="bg-rose-950/35 text-rose-100 border border-rose-700/60 px-2 py-0.5 rounded hover:bg-rose-900/55 transition-colors"
+                    title="筛选待检查、跳过记录和运行时占位符"
+                  >
+                    待处理 {issuePriorityCount}
                   </button>
                 )}
                 {report.summary.schemeCounts.nonReversible > 0 && (
