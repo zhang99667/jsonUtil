@@ -2081,6 +2081,21 @@ test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
     .toContain('AI 修复摘要');
 });
 
+test('SOURCE 错误条可直接触发 AI 修复', async ({ page }) => {
+  await fillSourceEditor(page, '{items:[1,2], ok:}');
+
+  const quickFixButton = page.locator('[data-tour="source-error-ai-fix"]');
+  await expect(quickFixButton).toBeVisible();
+  await expect(quickFixButton).toHaveAttribute('aria-label', '用 AI 修复当前 SOURCE JSON 错误');
+
+  await quickFixButton.click();
+
+  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expectPreviewText(page, '"items": [');
+  await expectPreviewText(page, '"ok": true');
+  await expect(quickFixButton).toHaveCount(0);
+});
+
 test('AI 修复可先本地修复常见小错误', async ({ page }) => {
   await fillSourceEditor(page, "{items:[1,2,], ok:true, name:'json'}");
 
