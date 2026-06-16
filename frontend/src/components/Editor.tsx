@@ -254,6 +254,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     ? `${label} 定位到第 ${errorLocation.line} 行，第 ${errorLocation.column} 列`
     : '';
   const copyErrorLabel = `${label} 复制错误信息`;
+  const schemeCountLabel = `${label} 中发现 ${schemeLocations.length} 个可点击 Scheme/CMD 字段`;
 
   // 变更处理（含只读保护）
   const handleEditorChange = (val: string | undefined) => {
@@ -538,6 +539,17 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
             <span>{isWordWrapEnabled ? '换行' : '不换行'}</span>
           </button>
+
+          {schemeLocations.length > 0 && (
+            <span
+              data-tour="editor-scheme-count"
+              className="flex-shrink-0 rounded border border-teal-700/50 bg-teal-900/25 px-2 py-0.5 text-[10px] text-teal-100"
+              title={schemeCountLabel}
+              aria-label={schemeCountLabel}
+            >
+              Scheme {schemeLocations.length}
+            </span>
+          )}
 
           {error ? (
             <div className="flex min-w-0 shrink items-center gap-1 text-[10px] text-status-error-text bg-status-error-bg px-2 py-0.5 rounded border border-status-error-border shadow-sm max-w-[220px]">

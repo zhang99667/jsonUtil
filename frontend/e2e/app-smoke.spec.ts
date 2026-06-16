@@ -381,6 +381,7 @@ test('Scheme 行内提示在预览编辑器中可见', async ({ page }) => {
   const previewEditor = page.locator('[data-tour="preview-editor"]');
   const schemeHighlight = previewEditor.locator('.scheme-inline-highlight').first();
   await expect(schemeHighlight).toBeVisible({ timeout: 15_000 });
+  await expect(previewEditor.locator('[data-tour="editor-scheme-count"]')).toHaveText('Scheme 1', { timeout: 15_000 });
 
   await schemeHighlight.hover();
 
@@ -1923,6 +1924,7 @@ test('SOURCE 编辑器可只读打开内嵌 Scheme', async ({ page }) => {
   const sourceEditor = page.locator('[data-tour="source-editor"]');
   const schemeHighlight = sourceEditor.locator('.scheme-inline-highlight').first();
   await expect(schemeHighlight).toBeVisible({ timeout: 15_000 });
+  await expect(sourceEditor.locator('[data-tour="editor-scheme-count"]')).toHaveText('Scheme 1', { timeout: 15_000 });
 
   await schemeHighlight.click({ force: true });
 
