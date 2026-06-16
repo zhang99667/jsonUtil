@@ -712,21 +712,12 @@ export const buildCorpusSnapshot = async ({ sampleFilter, inputPath, sampleName 
   if (inputPath) {
     const absoluteInputPath = path.resolve(process.cwd(), inputPath);
     const responseText = await readFile(absoluteInputPath, 'utf8');
-    const samples = [buildSnapshotSampleFromResponseText({
+    return buildCorpusSnapshotFromResponseText({
       sampleName: sampleName || normalizeInputSampleName(inputPath),
+      inputPath: absoluteInputPath,
       responseText,
       modules,
-    })];
-
-    return {
-      schemaVersion: 1,
-      kind: SCHEME_CORPUS_SNAPSHOT_KIND,
-      source: 'input',
-      input: absoluteInputPath,
-      sampleCount: samples.length,
-      thresholdSummary: buildThresholdSummary(samples),
-      samples,
-    };
+    });
   }
 
   const fixtures = await listCorpusFixtures(sampleFilter);
@@ -744,6 +735,30 @@ export const buildCorpusSnapshot = async ({ sampleFilter, inputPath, sampleName 
   return {
     schemaVersion: 1,
     kind: SCHEME_CORPUS_SNAPSHOT_KIND,
+    sampleCount: samples.length,
+    thresholdSummary: buildThresholdSummary(samples),
+    samples,
+  };
+};
+
+export const buildCorpusSnapshotFromResponseText = async ({
+  sampleName = 'input-response',
+  inputPath,
+  responseText,
+  modules,
+}) => {
+  const loadedModules = modules || await loadTransformModules();
+  const samples = [buildSnapshotSampleFromResponseText({
+    sampleName,
+    responseText,
+    modules: loadedModules,
+  })];
+
+  return {
+    schemaVersion: 1,
+    kind: SCHEME_CORPUS_SNAPSHOT_KIND,
+    source: 'input',
+    ...(inputPath ? { input: inputPath } : {}),
     sampleCount: samples.length,
     thresholdSummary: buildThresholdSummary(samples),
     samples,
