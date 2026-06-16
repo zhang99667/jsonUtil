@@ -23,6 +23,8 @@ import {
   formatTransformIssueSampleReportText,
   formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
+  buildTransformQualitySnapshot,
+  formatTransformQualitySnapshotDeltaText,
   formatTransformQualitySnapshotJsonText,
   formatTransformReportViewText,
   buildTransformPlaceholderFillTemplate,
@@ -30,7 +32,11 @@ import {
   getTransformPathValueCopyRows,
   getTransformRecordCmdStructureCopyText,
 } from '../utils/transformSummary';
-import type { TransformPlaceholderFillTemplate, TransformReportRecord } from '../utils/transformSummary';
+import type {
+  TransformPlaceholderFillTemplate,
+  TransformQualitySnapshot,
+  TransformReportRecord,
+} from '../utils/transformSummary';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 
 interface TransformReportPanelProps {
@@ -190,6 +196,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const [cmdComparisonRecordPath, setCmdComparisonRecordPath] = useState<string | null>(null);
   const [cmdComparisonExpectedText, setCmdComparisonExpectedText] = useState('');
   const [cmdComparisonIgnoreExtraPaths, setCmdComparisonIgnoreExtraPaths] = useState(false);
+  const [qualityBaseline, setQualityBaseline] = useState<{
+    snapshot: TransformQualitySnapshot;
+    filter: string;
+  } | null>(null);
   const deferredQuery = useDeferredValue(query);
   const isFilterPending = query !== deferredQuery;
   const report = useMemo(() => (
@@ -250,6 +260,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const placeholderFillTemplateJsonText = useMemo(() => (
     placeholderFillTemplate ? JSON.stringify(placeholderFillTemplate, null, 2) : ''
   ), [placeholderFillTemplate]);
+  const qualitySnapshot = useMemo(() => (
+    report && reportView ? buildTransformQualitySnapshot(report, reportView, deferredQuery) : null
+  ), [deferredQuery, report, reportView]);
+  const qualityBaselineDeltaText = useMemo(() => (
+    qualityBaseline && qualitySnapshot
+      ? formatTransformQualitySnapshotDeltaText(qualityBaseline.snapshot, qualitySnapshot)
+      : ''
+  ), [qualityBaseline, qualitySnapshot]);
   const getReportCopyTitle = (
     canCopy: boolean,
     readyTitle: string,
@@ -269,6 +287,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const collaborationReportCopyTitle = getReportCopyTitle(Boolean(reportView), '复制诊断摘要、质量快照要点和 cmdHandler 对齐状态，便于发给协作者排查', '暂无排查报告可复制');
   const diagnosticSummaryCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始大字段值的解析覆盖、CMD Schema 和风险摘要', '暂无诊断摘要可复制');
   const qualitySnapshotCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始大字段值的解析质量指标 JSON，便于保存基线或对比趋势', '暂无质量快照可复制');
+  const qualityBaselineCopyTitle = getReportCopyTitle(Boolean(qualityBaselineDeltaText), '复制当前质量快照与临时基线的指标变化', '请先设为基线后再复制质量对比');
   const archivePackageCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始 response 的质量快照、脱敏问题样本和 corpus 沉淀清单', '暂无归档包可复制');
   const pathValuesCopyTitle = getReportCopyTitle(hasPathValueCopyItems, '复制当前筛选下已索引的内部路径和值', '当前筛选没有可复制的路径和值');
   const cmdStructuresCopyTitle = getReportCopyTitle(
@@ -336,6 +355,32 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     } catch (error) {
       showCopyError('复制深度解析质量快照失败:', error);
     }
+  };
+
+  const handleSetQualityBaseline = () => {
+    if (!qualitySnapshot || isFilterPending) return;
+
+    setQualityBaseline({
+      snapshot: qualitySnapshot,
+      filter: deferredQuery.trim() || '全部',
+    });
+    toast.success('已设为临时质量基线', { duration: 1600 });
+  };
+
+  const handleCopyQualityBaselineDelta = async () => {
+    if (!qualityBaselineDeltaText || isFilterPending) return;
+
+    try {
+      await copyText(qualityBaselineDeltaText);
+      toast.success(formatCopySuccessMessage('质量对比', qualityBaselineDeltaText), { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析质量对比失败:', error);
+    }
+  };
+
+  const handleClearQualityBaseline = () => {
+    setQualityBaseline(null);
+    toast.success('临时质量基线已清除', { duration: 1600 });
   };
 
   const handleCopyArchivePackage = async () => {
@@ -805,6 +850,39 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         >
           复制质量快照
         </button>
+        <button
+          data-tour="transform-report-set-quality-baseline"
+          onClick={handleSetQualityBaseline}
+          disabled={!qualitySnapshot || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={isFilterPending ? '筛选结果仍在更新，请稍后设为基线' : '将当前不含原始 response 的质量快照设为临时基线'}
+          aria-label="设为质量基线，将当前不含原始 response 的质量快照设为临时基线"
+        >
+          设为基线
+        </button>
+        {qualityBaseline && (
+          <>
+            <button
+              data-tour="transform-report-copy-quality-baseline-delta"
+              onClick={handleCopyQualityBaselineDelta}
+              disabled={!qualityBaselineDeltaText || isFilterPending}
+              className="whitespace-nowrap px-2.5 py-1 text-sm bg-emerald-900/40 text-emerald-100 rounded hover:bg-emerald-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`${qualityBaselineCopyTitle}；基线筛选: ${qualityBaseline.filter}`}
+              aria-label={`复制质量对比，${qualityBaselineCopyTitle}`}
+            >
+              复制质量对比
+            </button>
+            <button
+              data-tour="transform-report-clear-quality-baseline"
+              onClick={handleClearQualityBaseline}
+              className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-300 rounded hover:bg-editor-border transition-colors"
+              title={`清除临时质量基线；基线筛选: ${qualityBaseline.filter}`}
+              aria-label="清除临时质量基线"
+            >
+              清除基线
+            </button>
+          </>
+        )}
         <button
           data-tour="transform-report-copy-archive-package"
           onClick={handleCopyArchivePackage}

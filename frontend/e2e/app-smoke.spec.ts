@@ -686,6 +686,19 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   });
   expect(JSON.stringify(qualitySnapshot)).not.toContain('raw=%7B%22nid%22%3A123%7D');
 
+  await reportPanel.locator('[data-tour="transform-report-set-quality-baseline"]').click();
+  await expect(page.getByText('已设为临时质量基线')).toBeVisible();
+  await reportPanel.locator('[data-tour="transform-report-copy-quality-baseline-delta"]').click();
+  await expect(page.getByText(/已复制质量对比（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('深度解析质量对比');
+  const qualityDelta = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(qualityDelta).toContain('覆盖率: 50 -> 50');
+  expect(qualityDelta).toContain('待检查: 1 -> 1');
+  expect(qualityDelta).not.toContain('raw=%7B%22nid%22%3A123%7D');
+  await reportPanel.locator('[data-tour="transform-report-clear-quality-baseline"]').click();
+  await expect(page.getByText('临时质量基线已清除')).toBeVisible();
+
   await expect(reportPanel.locator('[data-tour="transform-report-copy-archive-package"]')).toHaveAttribute('aria-label', '复制归档包，复制不含原始 response 的质量快照、脱敏问题样本和 corpus 沉淀清单');
   await reportPanel.locator('[data-tour="transform-report-copy-archive-package"]').click();
   await expect(page.getByText(/已复制归档包（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
