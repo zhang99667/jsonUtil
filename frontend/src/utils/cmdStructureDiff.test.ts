@@ -178,6 +178,34 @@ describe('cmdStructureDiff', () => {
     expect(diff.hasDifferences).toBe(false);
   });
 
+  it('解析带前后文和代码块的 cmdHandler 输出', () => {
+    const parsed = parseCmdStructureJson(`cmdHandler 输出:
+\`\`\`json
+${JSON.stringify(createCmdStructure(), null, 2)}
+\`\`\`
+复制时间: 2026-06-16`, 'cmdHandler 输出');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
+  });
+
+  it('解析字符串化 JSON 的 cmdHandler 输出', () => {
+    const parsed = parseCmdStructureJson(JSON.stringify(JSON.stringify(createCmdStructure())), 'cmdHandler 输出');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
+  });
+
+  it('解析日志前缀中的首个 JSON 对象', () => {
+    const parsed = parseCmdStructureJson(`cmdHandler result => ${JSON.stringify(createCmdStructure())} // done`, 'cmdHandler 输出');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
+  });
+
+  it('解析带方括号日志前缀的 cmdHandler 输出', () => {
+    const parsed = parseCmdStructureJson(`[cmdHandler] output => ${JSON.stringify(createCmdStructure())}`, 'cmdHandler 输出');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
+  });
+
   it('差异报告可附带对比来源上下文', () => {
     const diff = diffCmdStructures(createCmdStructure(), createCmdStructure());
     const report = formatCmdStructureDiff(diff, {

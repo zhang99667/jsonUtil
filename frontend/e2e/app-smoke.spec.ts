@@ -770,7 +770,7 @@ test('深度解析报告可页面内对比 cmdHandler 输出', async ({ page }) 
   await expect(comparisonPanel).toBeVisible();
   await expect(comparisonPanel).toContainText('cmdHandler 对比');
 
-  await comparisonPanel.locator('[data-tour="transform-report-cmd-comparison-input"]').fill(JSON.stringify({
+  const cmdHandlerOutput = JSON.stringify({
     result: {
       cmdParams: {
         cmd: {
@@ -779,7 +779,11 @@ test('深度解析报告可页面内对比 cmdHandler 输出', async ({ page }) 
         extra: 'expected',
       },
     },
-  }, null, 2));
+  }, null, 2);
+  await comparisonPanel.locator('[data-tour="transform-report-cmd-comparison-input"]').fill(`cmdHandler 输出:
+\`\`\`json
+${cmdHandlerOutput}
+\`\`\``);
 
   await expect(comparisonPanel).toContainText('存在差异');
   await expect(comparisonPanel).toContainText('缺失 1');
