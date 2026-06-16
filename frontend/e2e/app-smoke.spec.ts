@@ -947,9 +947,8 @@ test('占位符回填后展示解析质量变化', async ({ page }) => {
   await page.getByRole('button', { name: '嵌套解析' }).click();
   await page.locator('[data-tour="transform-report-button"]').click();
   const reportPanel = page.locator('[data-tour="transform-report-panel"]');
-  const placeholderSection = reportPanel.locator('[data-tour="transform-report-placeholders"]');
 
-  await placeholderSection.locator('[data-tour="transform-report-open-placeholder-fill-template"]').click();
+  await reportPanel.locator('[data-tour="transform-report-open-placeholder-fill-shortcut"]').click();
   await expect(page.getByText('已填入模板填充')).toBeVisible();
 
   const templatePanel = page.locator('[data-tour="template-fill-panel"]');
