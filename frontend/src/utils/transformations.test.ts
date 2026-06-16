@@ -819,6 +819,14 @@ describe('deepParseWithContext', () => {
         length: actionCmd.length,
         limit: 20,
       },
+      {
+        type: 'string_decode_budget_exceeded',
+        path: '$.next_cmd',
+        originalValue: actionCmd,
+        message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
+        length: actionCmd.length,
+        limit: 20,
+      },
     ]);
   });
 
