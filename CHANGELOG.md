@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.68 (2026-06-16) - Scheme 设置说明与回归保护
+### 🧪 测试与体验
+- **CMD/Scheme 解析**: 设置页明确说明自动展开开关只控制 JSON 内部字符串，SOURCE 直接粘贴整段 Scheme 时始终会结构化预览，并补充页面级回归测试防止再次回显原文
+
 ## v1.8.67 (2026-06-16) - 根 Scheme 强制展开
 ### 🐛 Bug 修复
 - **CMD/Scheme 解析**: 修复关闭“深度解析自动展开 Scheme”设置后，整段 `baiduboxapp://...` 虽显示 `SOURCE Scheme` 但 PREVIEW 仍回显原文的问题；根输入为独立 Scheme 时现在始终直接展开

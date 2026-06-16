@@ -369,6 +369,31 @@ test('Scheme 行内提示在预览编辑器中可见', async ({ page }) => {
   await expect(schemeHover).toContainText('点击解析 Scheme');
 });
 
+test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预览', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('json-helper-general-settings', JSON.stringify({
+      autoExpandSchemeInDeepFormat: false,
+    }));
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForMainAppReady(page);
+
+  const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+    phone: '400-805-8686',
+    extInfo: encodeBase64(JSON.stringify({ cmatch: 222, rank: 2 })),
+  }))}`;
+
+  await fillSourceEditor(page, scheme);
+
+  await expect(page.locator('[data-tour="source-validation-status"]')).toHaveText('SOURCE Scheme');
+  await expect(page.locator('[data-tour="statusbar-view"]')).toContainText('深度格式化');
+  await expectPreviewText(page, '"params": {');
+  await expectPreviewText(page, '"phone": "400-805-8686"');
+  await expectPreviewText(page, '"extInfo": {');
+  await expectPreviewText(page, '"cmatch": 222');
+  await expect(page.locator('[data-tour="preview-editor"] .view-lines')).not.toContainText('baiduboxapp://');
+});
+
 test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => {
   const widePayload = {
     ...Object.fromEntries(Array.from({ length: 20 }, (_, index) => [`k${index}`, index])),
