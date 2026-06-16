@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.78 (2026-06-16) - SOURCE 内嵌 Scheme 只读解析
+### ✨ 新特性
+- **CMD/Scheme 解析**: SOURCE 原文为 JSON 时也会标记内嵌 Scheme/CMD 字段，点击可直接打开只读解析面板查看结构和来源路径，不需要先格式化到 PREVIEW 再定位
+
 ## v1.8.77 (2026-06-16) - 问题样本回归模板 smoke
 ### 🧪 测试与体验
 - **深度解析报告**: “复制回归模板”和 `samples:to-regression` 生成的 Vitest 模板新增可执行 smoke 用例，先校验样本路径和原始值可被深度解析入口安全处理，再保留 `it.todo` 供补充精确断言

@@ -31,6 +31,7 @@ type MonacoJsonDefaults = {
 
 // 扩展 EditorProps 以支持 scheme 修改回调
 interface ExtendedEditorProps extends EditorProps {
+  enableSchemeScan?: boolean;
   onSchemeEdit?: (path: string, newValue: string, pointer?: string) => void;
 }
 
@@ -66,6 +67,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   onCursorPositionChange,
   onSaveViewState,
   restoreViewState,
+  enableSchemeScan = false,
   onSchemeEdit
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
@@ -113,10 +115,9 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
   }, [schemeModal.isOpen]);
 
-  // 检测 JSON 中的 scheme 字符串（仅在 PREVIEW 面板启用）
+  // 检测 JSON 中的 scheme 字符串；SOURCE 只读打开，PREVIEW 可按回调回写。
   useEffect(() => {
-    // 只有当 onSchemeEdit 存在时（即 PREVIEW 面板）才检测 scheme
-    if (onSchemeEdit && language === 'json' && value) {
+    if ((enableSchemeScan || onSchemeEdit) && language === 'json' && value) {
       let worker: Worker | null = null;
       let isCancelled = false;
 
@@ -173,7 +174,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       setSchemeScanWarning('');
       schemeLocationsRef.current = [];
     }
-  }, [value, language, onSchemeEdit]);
+  }, [value, language, enableSchemeScan, onSchemeEdit]);
 
   // 渲染 scheme 图标装饰器
   useEffect(() => {

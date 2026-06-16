@@ -1910,6 +1910,24 @@ test('Scheme 面板可复制特殊 key 来源路径', async ({ page }) => {
     .toBe('$["a.b"]["x/y"]["tilde~key"]');
 });
 
+test('SOURCE 编辑器可只读打开内嵌 Scheme', async ({ page }) => {
+  const scheme = 'baiduboxapp://v1/easybrowse/open?url=https%3A%2F%2Fexample.com%2Fpage&source=feed';
+
+  await fillSourceEditor(page, JSON.stringify({ scheme }));
+
+  const sourceEditor = page.locator('[data-tour="source-editor"]');
+  const schemeHighlight = sourceEditor.locator('.scheme-inline-highlight').first();
+  await expect(schemeHighlight).toBeVisible({ timeout: 15_000 });
+
+  await schemeHighlight.click({ force: true });
+
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel).toContainText('Scheme 解析');
+  await expect(schemePanel.locator('[data-tour="scheme-source-path"]')).toContainText('$.scheme');
+  await expect(schemePanel.locator('[data-tour="scheme-copy-original"]')).toBeVisible();
+  await expect(schemePanel.locator('[data-tour="scheme-apply-edit"]')).toHaveCount(0);
+});
+
 test('Scheme 面板可解析 JSON-like CMD 参数', async ({ page }) => {
   await page.locator('[data-tour="scheme-button"]').click();
   await page.locator('[data-tour="scheme-standalone-input"]').fill("cmd=%7Bnid%3A123%2Ctitle%3A'标题'%7D&from=feed");
