@@ -455,6 +455,9 @@ describe('transformSummary', () => {
       page_url: landingUrl,
       button_icon: 'https://static.example.com/assets/open.png',
       swipe_up_lottie: 'https://static.example.com/lottie/swipe.zip',
+      imageUrl: 'https://static.example.com/assets/banner.jpg?w=100',
+      iconUrl: 'https://static.example.com/assets/icon.png',
+      posterUrl: 'https://static.example.com/assets/poster.jpg',
     }))}`;
     const result = deepParseWithContext(JSON.stringify({ scheme }), { autoExpandScheme: true });
     const report = buildTransformContextReport(result.context);
@@ -471,11 +474,12 @@ describe('transformSummary', () => {
     expect(record.insights).toEqual([
       'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
       'cmd解析: page_url',
-      '资源URL: video_url, button_icon, swipe_up_lottie',
+      '资源URL: video_url, button_icon, swipe_up_lottie, imageUrl +2',
     ]);
     expect(report.nestedCommandFieldCount).toBe(1);
-    expect(report.nestedResourceFieldCount).toBe(3);
+    expect(report.nestedResourceFieldCount).toBe(6);
     expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/video/ad.mp4');
+    expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/assets/banner.jpg');
     expect(report.topResourceSchemas).toEqual(expect.arrayContaining([
       expect.objectContaining({
         schema: 'https://static.example.com/assets/open.png',
@@ -489,6 +493,27 @@ describe('transformSummary', () => {
         count: 1,
         recordCount: 1,
         paths: ['$.scheme.video_info.swipe_up_lottie'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
+        schema: 'https://static.example.com/assets/banner.jpg',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.imageUrl'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
+        schema: 'https://static.example.com/assets/icon.png',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.iconUrl'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
+        schema: 'https://static.example.com/assets/poster.jpg',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.posterUrl'],
         hasMorePaths: false,
       }),
       expect.objectContaining({
@@ -515,6 +540,27 @@ describe('transformSummary', () => {
         hasMorePaths: false,
       }),
       expect.objectContaining({
+        key: 'iconUrl',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.iconUrl'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
+        key: 'imageUrl',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.imageUrl'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
+        key: 'posterUrl',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.posterUrl'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
         key: 'video_url',
         count: 1,
         recordCount: 1,
@@ -522,7 +568,7 @@ describe('transformSummary', () => {
         hasMorePaths: false,
       }),
     ]));
-    expect(buildTransformReportView(report, '资源URL').filteredNestedResourceFieldCount).toBe(3);
+    expect(buildTransformReportView(report, '资源URL').filteredNestedResourceFieldCount).toBe(6);
     expect(buildTransformReportView(report, 'video_url').records[0].nestedResourceFields).toEqual([
       {
         path: '$.scheme.video_info.video_url',
