@@ -172,6 +172,18 @@ describe('CMD/Scheme 真实样本回归', () => {
     });
   });
 
+  it('解析 HTML 引号实体包裹的 CMD JSON 参数', () => {
+    expect(parseDecodedJson(
+      'cmd={&quot;nid&quot;:123,&quot;title&quot;:&quot;标题&quot;}&amp;from=html-quote'
+    )).toEqual({
+      cmd: {
+        nid: 123,
+        title: '标题',
+      },
+      from: 'html-quote',
+    });
+  });
+
   it('解析日志里的 Unicode 转义参数分隔符', () => {
     expect(parseDecodedJson(
       'cmd=%7B%22nid%22%3A123%7D\\u0026from=unicode'

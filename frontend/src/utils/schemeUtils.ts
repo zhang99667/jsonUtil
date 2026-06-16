@@ -269,6 +269,11 @@ const looksLikeStructuredPayload = (value: string): boolean => {
     return looksLikeStructuredPayload(slashNormalized);
   }
 
+  const htmlJsonPayload = tryNormalizeHtmlJsonQuotePayload(trimmed);
+  if (htmlJsonPayload !== null) {
+    return looksLikeStructuredPayload(htmlJsonPayload);
+  }
+
   return isJsonString(trimmed) ||
     isUrl(trimmed) ||
     hasUrlEncoding(trimmed) ||
@@ -317,6 +322,7 @@ const isDecodableParamValue = (value: string): boolean => (
   isRuntimePlaceholder(value) ||
   tryNormalizeJsonEscapedSlashPayload(value) !== null ||
   tryNormalizeJsonEscapedQuotePayload(value) !== null ||
+  tryNormalizeHtmlJsonQuotePayload(value) !== null ||
   hasUrlEncoding(value) ||
   isUrl(value) ||
   isJwt(value) ||
@@ -667,6 +673,33 @@ const normalizeLooseJsonCandidate = (value: string): string | null => {
     .replace(/,\s*([}\]])/g, '$1');
 };
 
+const HTML_JSON_QUOTE_ENTITY_RE = /&(?:quot|#34|#x22|apos|#39|#x27);/i;
+const HTML_JSON_QUOTE_ENTITY_GLOBAL_RE = /&(?:quot|#34|#x22|apos|#39|#x27);/gi;
+
+const normalizeHtmlJsonQuoteCandidate = (value: string): string | null => {
+  const trimmed = value.trim();
+  if ((!trimmed.startsWith('{') && !trimmed.startsWith('[')) || !HTML_JSON_QUOTE_ENTITY_RE.test(trimmed)) {
+    return null;
+  }
+
+  return trimmed.replace(HTML_JSON_QUOTE_ENTITY_GLOBAL_RE, entity => (
+    entity.toLowerCase().includes('apos') ||
+    entity.toLowerCase().includes('39') ||
+    entity.toLowerCase().includes('x27')
+      ? "'"
+      : '"'
+  ));
+};
+
+const tryNormalizeHtmlJsonQuotePayload = (value: string): string | null => {
+  const normalized = normalizeHtmlJsonQuoteCandidate(value);
+  if (!normalized) return null;
+  if (isJsonString(normalized)) return normalized;
+
+  const looseJson = normalizeLooseJsonCandidate(normalized);
+  return looseJson && isJsonString(looseJson) ? looseJson : null;
+};
+
 const normalizeJsonEscapedQuoteCandidate = (value: string): string | null => {
   const trimmed = value.trim();
   if ((!trimmed.startsWith('{') && !trimmed.startsWith('[')) || !trimmed.includes('\\"')) {
@@ -705,6 +738,11 @@ export function detectSchemeType(str: string): SchemeType {
   const escapedQuotePayload = tryNormalizeJsonEscapedQuotePayload(trimmed);
   if (escapedQuotePayload !== null) {
     return detectSchemeType(escapedQuotePayload);
+  }
+
+  const htmlJsonPayload = tryNormalizeHtmlJsonQuotePayload(trimmed);
+  if (htmlJsonPayload !== null) {
+    return detectSchemeType(htmlJsonPayload);
   }
 
   // 优先级顺序很重要
@@ -1313,6 +1351,7 @@ const tryParseJson = (value: string): StructuredValue | null => {
     return JSON.parse(trimmed) as StructuredValue;
   } catch {
     const candidates = [
+      normalizeHtmlJsonQuoteCandidate(trimmed),
       normalizeJsonEscapedQuoteCandidate(trimmed),
       normalizeLooseJsonCandidate(trimmed),
     ].filter((candidate): candidate is string => Boolean(candidate));

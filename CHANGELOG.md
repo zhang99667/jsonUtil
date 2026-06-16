@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.60 (2026-06-16) - HTML 引号实体 CMD 解析
+### ✨ 新特性
+- **CMD/Scheme 解析**: 支持解析 `cmd={&quot;nid&quot;:123}`、`&#34;`、`&#x22;` 等 HTML 引号实体包裹的 JSON 参数，减少从 HTML/日志复制 CMD 后手动替换引号的操作
+
 ## v1.8.59 (2026-06-16) - hash 追踪参数展开
 ### ✨ 新特性
 - **CMD/Scheme 解析**: 支持解析 URL hash 锚点后继续拼接的追踪参数，电话 Scheme 内二级落地页的 `unit`、`keyword`、`e_creative` 等字段可在 `_hash` 中直接查看
