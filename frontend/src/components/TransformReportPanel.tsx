@@ -87,6 +87,18 @@ const formatPathValueCopyCountLabel = (count: number, isLimited: boolean): strin
   isLimited ? `已返回 ${count} 项` : `${count} 项`
 );
 
+const getDecodedPathSchemeInput = (row: TransformReportRecord['nestedCommandFields'][number]): string => {
+  if (!Object.prototype.hasOwnProperty.call(row, 'value')) return '';
+
+  if (typeof row.value === 'string') return row.value;
+
+  try {
+    return JSON.stringify(row.value, null, 2);
+  } catch {
+    return '';
+  }
+};
+
 const COMMAND_SCHEMA_ROW_DISPLAY_LIMIT = 8;
 
 interface SummaryMetricChipProps {
@@ -1340,49 +1352,63 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         <div className="text-gray-500">
                           内部CMD字段 · 显示 {record.nestedCommandFields.length}/{record.nestedCommandFieldCount} 个
                         </div>
-                        {record.nestedCommandFields.map(row => (
-                          <div
-                            key={`${record.path}:cmd-field:${row.path}`}
-                            data-tour="transform-report-nested-cmd-field"
-                            className="flex items-center justify-between gap-2 rounded bg-cyan-950/20 px-2 py-1"
-                          >
-                            <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
-                              <span className="min-w-0 flex-1 text-emerald-200 truncate" title={row.path}>
-                                {row.path}
-                              </span>
-                              <span className="shrink-0 text-gray-500">=</span>
-                              <span className="min-w-0 flex-1 text-cyan-200 truncate" title={row.preview}>
-                                {row.preview}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              data-tour="transform-report-copy-nested-cmd-path"
-                              onClick={() => handleCopyPath(row.path)}
-                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                        {record.nestedCommandFields.map(row => {
+                          const schemeInput = getDecodedPathSchemeInput(row);
+
+                          return (
+                            <div
+                              key={`${record.path}:cmd-field:${row.path}`}
+                              data-tour="transform-report-nested-cmd-field"
+                              className="flex items-center justify-between gap-2 rounded bg-cyan-950/20 px-2 py-1"
                             >
-                              复制路径
-                            </button>
-                            <button
-                              type="button"
-                              data-tour="transform-report-copy-nested-cmd-value"
-                              onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
-                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            >
-                              复制片段
-                            </button>
-                            {onLocatePath && (
+                              <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                                <span className="min-w-0 flex-1 text-emerald-200 truncate" title={row.path}>
+                                  {row.path}
+                                </span>
+                                <span className="shrink-0 text-gray-500">=</span>
+                                <span className="min-w-0 flex-1 text-cyan-200 truncate" title={row.preview}>
+                                  {row.preview}
+                                </span>
+                              </div>
                               <button
                                 type="button"
-                                data-tour="transform-report-locate-nested-cmd-path"
-                                onClick={() => handleLocatePath(row.path)}
-                                className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                data-tour="transform-report-copy-nested-cmd-path"
+                                onClick={() => handleCopyPath(row.path)}
+                                className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                               >
-                                定位
+                                复制路径
                               </button>
-                            )}
-                          </div>
-                        ))}
+                              <button
+                                type="button"
+                                data-tour="transform-report-copy-nested-cmd-value"
+                                onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
+                                className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              >
+                                复制片段
+                              </button>
+                              {onOpenSchemeValue && schemeInput && (
+                                <button
+                                  type="button"
+                                  data-tour="transform-report-open-nested-cmd-scheme"
+                                  onClick={() => handleOpenSchemeValue(schemeInput)}
+                                  className="shrink-0 text-gray-400 hover:text-violet-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                >
+                                  Scheme 打开
+                                </button>
+                              )}
+                              {onLocatePath && (
+                                <button
+                                  type="button"
+                                  data-tour="transform-report-locate-nested-cmd-path"
+                                  onClick={() => handleLocatePath(row.path)}
+                                  className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                >
+                                  定位
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                         {record.hasMoreNestedCommandFields && (
                           <div className="text-gray-500">
                             还有更多内部 CMD 字段未展示

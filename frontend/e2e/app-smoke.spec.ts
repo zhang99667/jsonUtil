@@ -780,6 +780,39 @@ test('深度解析报告可页面内对比 cmdHandler 输出', async ({ page }) 
   expect(collaborationReport).toContain('缺失路径 1 个');
 });
 
+test('深度解析报告内部CMD字段可直接打开 Scheme 面板', async ({ page }) => {
+  const innerCmd = {
+    cmdSchema: 'baiduboxapp://v1/easybrowse/open',
+    cmdParams: {
+      url: 'https://example.com/page',
+      source: 'feed',
+    },
+  };
+  const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
+    convert_cmd: innerCmd,
+    title: 'outer',
+  }))}&from=feed`;
+
+  await fillSourceEditor(page, JSON.stringify({ action_cmd: actionCmd }));
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  const nestedCmdField = reportPanel
+    .locator('[data-tour="transform-report-nested-cmd-field"]')
+    .filter({ hasText: '$.action_cmd.cmd.convert_cmd' });
+
+  await expect(nestedCmdField).toContainText('baiduboxapp://v1/easybrowse/open');
+  await nestedCmdField.locator('[data-tour="transform-report-open-nested-cmd-scheme"]').click();
+  await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
+  await expect(reportPanel).toBeHidden();
+
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel).toBeVisible();
+  await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue(JSON.stringify(innerCmd, null, 2));
+  await expect(schemePanel.locator('[data-tour="scheme-command-summary"]')).toContainText('cmdParams · 2');
+});
+
 test('深度解析报告展示运行时占位符', async ({ page }) => {
   const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
     button_cmd: '__CONVERT_CMD__',
