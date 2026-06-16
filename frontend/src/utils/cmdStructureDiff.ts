@@ -48,13 +48,100 @@ const isRecord = (value: JsonValue): value is JsonObject => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
 
-export const parseCmdStructureJson = (text: string, label = '输入'): JsonValue => {
+const parseJsonCandidate = (candidate: string): JsonValue | undefined => {
   try {
-    return JSON.parse(text) as JsonValue;
+    return JSON.parse(candidate) as JsonValue;
+  } catch {
+    return undefined;
+  }
+};
+
+const extractBalancedJsonFrom = (text: string, start: number): string | null => {
+  const open = text[start];
+  const close = open === '{' ? '}' : ']';
+  const stack: string[] = [];
+  let isInString = false;
+  let isEscaped = false;
+
+  for (let index = start; index < text.length; index++) {
+    const char = text[index];
+
+    if (isInString) {
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (char === '\\') {
+        isEscaped = true;
+      } else if (char === '"') {
+        isInString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      isInString = true;
+      continue;
+    }
+
+    if (char === '{' || char === '[') {
+      stack.push(char === '{' ? '}' : ']');
+      continue;
+    }
+
+    if (char === '}' || char === ']') {
+      if (stack.pop() !== char) return null;
+      if (stack.length === 0) return text.slice(start, index + 1);
+    }
+  }
+
+  return null;
+};
+
+const extractBalancedJsonText = (text: string): string | null => {
+  for (const open of ['{', '[']) {
+    let start = text.indexOf(open);
+    while (start >= 0) {
+      const candidate = extractBalancedJsonFrom(text, start);
+      if (candidate && parseJsonCandidate(candidate) !== undefined) return candidate;
+      start = text.indexOf(open, start + 1);
+    }
+  }
+
+  return null;
+};
+
+const parseCmdStructureJsonCandidate = (text: string, depth = 0): JsonValue | undefined => {
+  if (depth > 1) return undefined;
+
+  const trimmed = text.trim();
+  if (!trimmed) return undefined;
+
+  const parsed = parseJsonCandidate(trimmed);
+  if (parsed !== undefined) {
+    if (typeof parsed === 'string') {
+      const nested = parseCmdStructureJsonCandidate(parsed, depth + 1);
+      return nested ?? parsed;
+    }
+    return parsed;
+  }
+
+  const balancedJson = extractBalancedJsonText(trimmed);
+  if (!balancedJson || balancedJson === trimmed) return undefined;
+
+  return parseCmdStructureJsonCandidate(balancedJson, depth + 1);
+};
+
+export const parseCmdStructureJson = (text: string, label = '输入'): JsonValue => {
+  const parsed = parseCmdStructureJsonCandidate(text);
+  if (parsed !== undefined) return parsed;
+
+  try {
+    JSON.parse(text);
   } catch (error) {
     const detail = error instanceof SyntaxError ? error.message : String(error);
     throw new Error(`${label}不是有效 JSON: ${detail}`);
   }
+
+  throw new Error(`${label}不是有效 JSON`);
 };
 
 const appendPathKey = (path: string, key: string): string => (

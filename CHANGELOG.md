@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.85 (2026-06-16) - cmdHandler 粘贴容错
+### ✨ 新特性
+- **cmdHandler 对比**: 页面内对比输入支持带前后文、Markdown 代码块和字符串化 JSON 的 cmdHandler 输出，减少从内部页面或日志复制结果后手动清洗的成本
+
 ## v1.8.84 (2026-06-16) - Unicode 转义 Scheme 解析
 ### 🐛 Bug 修复
 - **CMD/Scheme 解析**: SOURCE、Scheme 面板和深度解析链路支持 `\u003a/\u002f/\u003f` 等 JSON Unicode ASCII 转义形态的裸 Scheme，日志复制出的 `baiduboxapp\u003a...` 可直接结构化展开
