@@ -791,7 +791,7 @@ ${cmdHandlerOutput}
   await expect(comparisonPanel).toContainText('值不一致 1');
 
   await comparisonPanel.locator('[data-tour="transform-report-copy-cmd-comparison-diff"]').click();
-  await expect(page.getByText('已复制 CMD 差异报告')).toBeVisible();
+  await expect(page.getByText('已复制 CMD 差异报告').first()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('CMD 结构差异报告');
   const diffReport = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
@@ -807,6 +807,32 @@ ${cmdHandlerOutput}
   expect(collaborationReport).toContain('三、cmdHandler 对齐');
   expect(collaborationReport).toContain('CMD 结构差异报告');
   expect(collaborationReport).toContain('缺失路径 1 个');
+
+  const cmdHandlerSubsetOutput = JSON.stringify({
+    result: {
+      cmdParams: {
+        cmd: {
+          nid: 123,
+        },
+      },
+    },
+  }, null, 2);
+  await comparisonPanel.locator('[data-tour="transform-report-cmd-comparison-input"]').fill(`[cmdHandler] output =>
+\`\`\`json
+${cmdHandlerSubsetOutput}
+\`\`\`
+done`);
+  await comparisonPanel.getByLabel('忽略 actual 额外路径').check();
+  await expect(comparisonPanel).toContainText('结构一致');
+  await expect(comparisonPanel).toContainText('已忽略额外');
+
+  await comparisonPanel.locator('[data-tour="transform-report-copy-cmd-comparison-diff"]').click();
+  await expect(page.getByText('已复制 CMD 差异报告').first()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('对比模式: 忽略 actual 额外路径');
+  const subsetDiffReport = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(subsetDiffReport).toContain('结构一致');
+  expect(subsetDiffReport).toContain('已忽略 actual 额外路径');
 });
 
 test('深度解析报告内部CMD字段可直接打开 Scheme 面板', async ({ page }) => {
