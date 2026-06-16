@@ -9,6 +9,7 @@ import {
   applyFixtureReplacements,
   buildPromotionAudit,
   buildCorpusFixtureCandidate,
+  collectPromotionStrictFailures,
   formatPromotionAuditSummary,
   redactJsonValue,
   redactStringContent,
@@ -257,6 +258,23 @@ describe('scheme-corpus-promote', () => {
     expect(summary).toContain('敏感残留样例');
   });
 
+  it('严格校验在审计或质量快照失败时返回失败原因', () => {
+    expect(collectPromotionStrictFailures({
+      audit: {
+        pass: false,
+        status: 'FAIL',
+      },
+      snapshot: {
+        thresholdSummary: {
+          pass: false,
+        },
+      },
+    })).toEqual([
+      '脱敏审计未通过: FAIL',
+      '质量快照未通过',
+    ]);
+  });
+
   it('CLI 生成候选、脱敏 response 和审计摘要', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'scheme-corpus-promote-'));
     try {
@@ -281,6 +299,7 @@ describe('scheme-corpus-promote', () => {
         '--response-output',
         responseOutputPath,
         '--validate',
+        '--strict',
         '--quiet',
       ]);
       const fixture = JSON.parse(await readFile(outputPath, 'utf8'));
@@ -299,6 +318,7 @@ describe('scheme-corpus-promote', () => {
       expect(stderr).toContain('- 覆盖率:');
       expect(stderr).toContain('- CMD 结构:');
       expect(stderr).toContain('下一步可运行: npm run corpus:snapshot');
+      expect(stderr).not.toContain('strict 检查失败');
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
