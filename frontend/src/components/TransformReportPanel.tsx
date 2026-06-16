@@ -594,6 +594,43 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     toast.success('已填入 Scheme 解析', { duration: 1600 });
   };
 
+  const issueTriageItems = report ? [
+    ...(report.summary.warningCount > 0 ? [{
+      key: 'warning',
+      label: '跳过记录',
+      count: report.summary.warningCount,
+      description: '先确认超长字段或预算跳过，必要时单独粘贴字段到 Scheme 面板解析。',
+      actionLabel: '查看跳过',
+      title: '筛选性能保护跳过记录',
+      onClick: () => setQuery('跳过'),
+    }] : []),
+    ...(report.summary.unresolvedCount > 0 ? [{
+      key: 'unresolved',
+      label: '待检查',
+      count: report.summary.unresolvedCount,
+      description: '检查已解码但未结构化的字段，判断是否需要补解析规则或只是普通埋点。',
+      actionLabel: '查看待检查',
+      title: '筛选未展开线索',
+      onClick: () => setQuery('待检查'),
+    }] : []),
+    ...(report.summary.placeholderCount > 0 ? [{
+      key: 'placeholder',
+      label: '占位符',
+      count: report.summary.placeholderCount,
+      description: '优先回填运行时占位符，再观察 CMD 结构数和覆盖质量是否变化。',
+      actionLabel: onOpenTemplateFill && placeholderFillTemplateJsonText && !isFilterPending ? '回填占位符' : '查看占位符',
+      title: getPlaceholderFillTemplateTitle('把运行时占位符回填模板填入模板填充面板'),
+      onClick: () => {
+        if (onOpenTemplateFill && placeholderFillTemplateJsonText && !isFilterPending) {
+          handleOpenPlaceholderFillTemplate();
+          return;
+        }
+
+        setQuery('占位符');
+      },
+    }] : []),
+  ] : [];
+
   const renderCmdComparisonPanel = (record: TransformReportRecord) => {
     if (cmdComparisonRecordPath !== record.path) return null;
 
@@ -1040,6 +1077,51 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   </div>
                 )}
               </div>
+              {issueTriageItems.length > 0 && (
+                <div
+                  data-tour="transform-report-issue-triage"
+                  className="mt-2 rounded border border-rose-800/40 bg-rose-950/15 px-2.5 py-2 text-xs"
+                >
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-medium text-rose-100">建议优先处理</div>
+                    <button
+                      type="button"
+                      data-tour="transform-report-triage-all"
+                      onClick={() => setQuery('待处理')}
+                      className="rounded border border-rose-800/60 bg-editor-bg px-2 py-0.5 text-rose-100 transition-colors hover:bg-rose-900/40"
+                      title="筛选全部待处理项"
+                    >
+                      全部待处理 {issuePriorityCount}
+                    </button>
+                  </div>
+                  <div className="grid gap-1.5 md:grid-cols-3">
+                    {issueTriageItems.map(item => (
+                      <div
+                        key={item.key}
+                        className="rounded border border-editor-border bg-editor-bg/80 px-2 py-1.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="font-medium text-gray-200">
+                            {item.label} {item.count}
+                          </div>
+                          <button
+                            type="button"
+                            data-tour={`transform-report-triage-action-${item.key}`}
+                            onClick={item.onClick}
+                            className="shrink-0 rounded border border-editor-border bg-editor-sidebar px-2 py-0.5 text-gray-300 transition-colors hover:text-rose-100"
+                            title={item.title}
+                          >
+                            {item.actionLabel}
+                          </button>
+                        </div>
+                        <div className="mt-1 text-gray-500">
+                          {item.description}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {Boolean(report.topCommandSchemaOrigins?.length) && (
                 <div data-tour="transform-report-top-command-schema-origins" className="mt-2 text-xs">
                   <div className="mb-1 text-gray-500">CMD 来源分布</div>
