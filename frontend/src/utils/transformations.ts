@@ -11,7 +11,7 @@ import {
   JsonValue,
   JsonObject
 } from '../types.ts';
-import type { DecodeLayer, SchemePlaceholder } from './schemeUtils.ts';
+import type { DecodeLayer, SchemePlaceholder, SchemeType } from './schemeUtils.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
 
 import {
@@ -29,7 +29,7 @@ export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
 const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
-const ROOT_SCHEME_TYPES = new Set(['query-string', 'url', 'base64']);
+const ROOT_SCHEME_TYPES = new Set<SchemeType>(['query-string', 'url', 'base64']);
 
 interface ParsedJsonInput {
   value: JsonValue;
@@ -129,6 +129,30 @@ const parseWrappedJsonInput = (input: string): ParsedJsonInput | null => {
 const parseJsonInput = (input: string): ParsedJsonInput | null => (
   parseJsonCandidate(input) || parseWrappedJsonInput(input)
 );
+
+const isJsonContainerValue = (value: JsonValue): boolean => (
+  typeof value === 'object' && value !== null
+);
+
+const isRootUrlEncodedJsonInput = (input: string): boolean => {
+  const trimmed = input.trim();
+  if (!trimmed || detectSchemeType(trimmed) !== 'url-encoded') return false;
+
+  const decoded = urlDecode(trimmed);
+  if (decoded === trimmed) return false;
+
+  const parsed = parseJsonInput(decoded);
+  return parsed ? isJsonContainerValue(parsed.value) : false;
+};
+
+export const isStandaloneDeepFormatInput = (value: string): boolean => {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  const rootSchemeType = detectSchemeType(trimmed);
+  return ROOT_SCHEME_TYPES.has(rootSchemeType) ||
+    (rootSchemeType === 'url-encoded' && isRootUrlEncodedJsonInput(trimmed));
+};
 
 const wrapJsonContent = (content: string, wrapper: JsonInputWrapper): string => (
   `${wrapper.prefix}${content}${wrapper.suffix}`
@@ -418,8 +442,7 @@ export function deepParseWithContext(
   } catch {
     const jsonLines = parseJsonLines(input);
     if (!jsonLines) {
-      const rootSchemeType = detectSchemeType(input);
-      if (!ROOT_SCHEME_TYPES.has(rootSchemeType)) {
+      if (!isStandaloneDeepFormatInput(input)) {
         // JSON 解析失败且不是独立 Scheme，返回原始输入
         return {
           output: input,

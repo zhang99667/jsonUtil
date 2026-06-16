@@ -9,6 +9,7 @@ import {
   inverseWithContext,
   deepMergeTemplate,
   applyTemplate,
+  isStandaloneDeepFormatInput,
 } from './transformations';
 import { base64Encode } from './schemeUtils';
 
@@ -523,6 +524,43 @@ describe('deepParseWithContext', () => {
     });
     expect(nestedParsed.action_cmd).toBe(scheme);
     expect(nestedResult.context.records.has('$.action_cmd')).toBe(false);
+  });
+
+  it('根输入为 URL 编码 JSON 时可直接展开', () => {
+    const input = encodeURIComponent(JSON.stringify({
+      code: 0,
+      data: {
+        title: '编码 JSON',
+        items: [1, 2, 3],
+      },
+    }));
+
+    const result = deepParseWithContext(input, { autoExpandScheme: false });
+    const parsed = JSON.parse(result.output);
+    const stepTypes = result.context.records.get('$')?.steps.map(step => step.type);
+
+    expect(isStandaloneDeepFormatInput(input)).toBe(true);
+    expect(result.context.sourceFormat).toBe('scheme');
+    expect(parsed).toEqual({
+      code: 0,
+      data: {
+        title: '编码 JSON',
+        items: [1, 2, 3],
+      },
+    });
+    expect(stepTypes).toEqual(['url_decode', 'json_parse']);
+    expect(inverseWithContext(result.output, result.context)).toBe(input);
+  });
+
+  it('普通 URL 编码文本不会被误判为根 JSON', () => {
+    const input = encodeURIComponent('你好世界');
+
+    const result = deepParseWithContext(input);
+
+    expect(isStandaloneDeepFormatInput(input)).toBe(false);
+    expect(result.output).toBe(input);
+    expect(result.context.sourceFormat).toBeUndefined();
+    expect(result.context.records.size).toBe(0);
   });
 
   it('特殊 key 的转换路径使用 JSONPath 安全写法', () => {
