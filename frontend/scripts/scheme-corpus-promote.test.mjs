@@ -280,6 +280,7 @@ describe('scheme-corpus-promote', () => {
         outputPath,
         '--response-output',
         responseOutputPath,
+        '--validate',
         '--quiet',
       ]);
       const fixture = JSON.parse(await readFile(outputPath, 'utf8'));
@@ -294,6 +295,9 @@ describe('scheme-corpus-promote', () => {
       expect(stderr).toContain('已写入 corpus 候选');
       expect(stderr).toContain('已写入脱敏 response');
       expect(stderr).toContain('脱敏审计: PASS');
+      expect(stderr).toContain('质量快照: PASS');
+      expect(stderr).toContain('- 覆盖率:');
+      expect(stderr).toContain('- CMD 结构:');
       expect(stderr).toContain('下一步可运行: npm run corpus:snapshot');
     } finally {
       await rm(tempDir, { recursive: true, force: true });

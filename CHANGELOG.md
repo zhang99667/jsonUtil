@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.96 (2026-06-16) - promote 内置质量快照
+### ✨ 新特性
+- **Scheme Corpus**: `corpus:promote` 新增 `--validate` 参数，可在生成脱敏候选时直接输出质量快照摘要，展示覆盖率、CMD 结构、字段数量、占位符和待检查/跳过数量
+- **质量快照**: 抽出内存 response 快照构建入口，避免 promote 复用 snapshot 能力时必须先落临时文件
+
 ## v1.8.95 (2026-06-16) - corpus 脱敏审计摘要
 ### ✨ 新特性
 - **Scheme Corpus**: `corpus:promote` 生成候选后自动输出脱敏审计摘要，标记敏感属性/参数残留、UUID、长数字和高熵十六进制片段，并给出下一步质量快照命令

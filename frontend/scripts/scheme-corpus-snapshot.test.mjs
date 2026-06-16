@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyCorpusReplacements,
   buildCorpusResponseText,
+  buildCorpusSnapshotFromResponseText,
   buildCorpusSnapshotSample,
   buildCmdHandlerAlignment,
   buildRequiredResults,
@@ -175,6 +176,22 @@ describe('buildCorpusResponseText', () => {
       errno: 0,
       cmd: 'cmd=1',
     });
+  });
+});
+
+describe('buildCorpusSnapshotFromResponseText', () => {
+  it('支持直接从内存 response 文本生成临时输入快照', async () => {
+    const snapshot = await buildCorpusSnapshotFromResponseText({
+      sampleName: 'memory-response',
+      responseText: JSON.stringify({
+        scheme: 'nadcorevendor://vendor/ad/reward?task_params=%7B%22title%22%3A%22ok%22%7D',
+      }),
+    });
+
+    expect(snapshot.source).toBe('input');
+    expect(snapshot.sampleCount).toBe(1);
+    expect(snapshot.samples[0].sample).toBe('memory-response');
+    expect(snapshot.samples[0].coverage.score).toBeGreaterThanOrEqual(0);
   });
 });
 
