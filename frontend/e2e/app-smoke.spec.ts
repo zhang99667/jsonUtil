@@ -738,7 +738,8 @@ test('深度解析报告可页面内对比 cmdHandler 输出', async ({ page }) 
     .locator('[data-tour="transform-report-row"]')
     .filter({ hasText: '$.action_cmd' });
 
-  await commandRow.locator('[data-tour="transform-report-open-cmd-comparison"]').click();
+  await reportPanel.locator('[data-tour="transform-report-open-first-cmd-comparison"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('CMD结构');
   const comparisonPanel = commandRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
   await expect(comparisonPanel).toBeVisible();
   await expect(comparisonPanel).toContainText('cmdHandler 对比');
