@@ -11,6 +11,7 @@ import {
   deepParseWithContext,
   inverseWithContext,
   applyTemplate,
+  getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput
 } from './utils/transformations';
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult } from './types';
@@ -673,6 +674,19 @@ const App: React.FC = () => {
     setIsTransformReportOpen(false);
     trackCurrentToolEvent('SCHEME_OPEN_FROM_REPORT', 'panel');
   }, [trackCurrentToolEvent]);
+
+  const handleOpenSourceSchemeInput = useCallback(() => {
+    const value = input.trim();
+    if (!value || !getStandaloneDeepFormatInputKind(value)) return;
+
+    setSchemeInputRequest({
+      id: ++schemeInputRequestIdRef.current,
+      value,
+    });
+    setIsSchemeDecodeOpen(true);
+    setIsTransformReportOpen(false);
+    trackCurrentToolEvent('SCHEME_OPEN_FROM_SOURCE_STATUS', 'panel');
+  }, [input, trackCurrentToolEvent]);
 
   const handleOpenTemplateFillFromReport = useCallback((template: string) => {
     if (!template) return;
@@ -1345,7 +1359,7 @@ const App: React.FC = () => {
   const hasPreviewContent = output.trim().length > 0;
   const isPreviewSameAsSource = output === input;
   const isSourceJsonCandidate = hasSourceContent && isJsonContainerCandidate(input);
-  const isSourceSchemeCandidate = hasSourceContent && isStandaloneSchemeInput(input);
+  const sourceStandaloneDeepFormatKind = hasSourceContent ? getStandaloneDeepFormatInputKind(input) : null;
   const handleLocateSourceErrorFromStatus = useCallback(() => {
     if (!sourceErrorLocation) return;
     setActiveEditor('SOURCE');
@@ -1820,7 +1834,8 @@ const App: React.FC = () => {
         isAutoSaveEnabled={isAutoSaveEnabled}
         hasSourceContent={hasSourceContent}
         isSourceJsonCandidate={isSourceJsonCandidate}
-        isSourceSchemeCandidate={isSourceSchemeCandidate}
+        sourceStandaloneDeepFormatKind={sourceStandaloneDeepFormatKind}
+        onOpenSourceSchemeInput={handleOpenSourceSchemeInput}
         sourceValidation={validation}
         sourceValidationLocation={sourceErrorLocation}
         onLocateSourceError={handleLocateSourceErrorFromStatus}

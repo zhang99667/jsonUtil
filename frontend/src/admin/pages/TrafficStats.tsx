@@ -325,6 +325,7 @@ const TrafficStats: React.FC = () => {
         SCHEME_PANEL_OPEN: '打开 Scheme 面板',
         SCHEME_PANEL_CLOSE: '关闭 Scheme 面板',
         SCHEME_OPEN_FROM_REPORT: '报告打开 Scheme',
+        SCHEME_OPEN_FROM_SOURCE_STATUS: '状态栏打开 Scheme',
         TEMPLATE_PANEL_OPEN: '打开模板填充',
         TEMPLATE_PANEL_CLOSE: '关闭模板填充',
         TEMPLATE_OPEN_FROM_REPORT: '报告打开模板',
