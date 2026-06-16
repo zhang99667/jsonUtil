@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.61 (2026-06-16) - 生产构建配置修复
+### 🐛 Bug 修复
+- **部署构建**: 修复生产环境执行 `vite build` 时，`vite.config.ts` 运行时依赖 `vitest/config` 导致远端缺少测试依赖后构建失败的问题
+
 ## v1.8.60 (2026-06-16) - HTML 引号实体 CMD 解析
 ### ✨ 新特性
 - **CMD/Scheme 解析**: 支持解析 `cmd={&quot;nid&quot;:123}`、`&#34;`、`&#x22;` 等 HTML 引号实体包裹的 JSON 参数，减少从 HTML/日志复制 CMD 后手动替换引号的操作
