@@ -460,6 +460,46 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
   });
 
+  it('根输入为电话 Scheme 时可直接展开', () => {
+    const numberUrl = `https://ada.baidu.com/phone-tracker/getNumber?query=${encodeURIComponent('种植牙')}&pageid=__TIMESTAMP__`;
+    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+      phone: '400-805-8686',
+      numberUrl,
+      extInfo: base64Encode(JSON.stringify({
+        search_id: 'a433862f59552397',
+        cmatch: 222,
+        rank: 2,
+      })),
+      type: 1,
+    }))}`;
+
+    const result = deepParseWithContext(scheme, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(result.context.sourceFormat).toBe('scheme');
+    expect(result.context.records.get('$')?.steps[0]).toMatchObject({
+      type: 'scheme_decode',
+      originalSchemeType: 'url',
+    });
+    expect(parsed.params).toMatchObject({
+      phone: '400-805-8686',
+      numberUrl: {
+        query: '种植牙',
+        pageid: '__TIMESTAMP__',
+      },
+      extInfo: {
+        search_id: 'a433862f59552397',
+        cmatch: 222,
+        rank: 2,
+      },
+      type: 1,
+    });
+    expect(result.context.runtimePlaceholders?.[0]).toMatchObject({
+      value: '__TIMESTAMP__',
+    });
+    expect(inverseWithContext(result.output, result.context)).toBe(scheme);
+  });
+
   it('特殊 key 的转换路径使用 JSONPath 安全写法', () => {
     const input = JSON.stringify({
       'user.name': JSON.stringify({ nested: true }),
