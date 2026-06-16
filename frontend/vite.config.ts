@@ -1,12 +1,17 @@
 import { readFileSync } from 'fs';
 import path from 'path';
-import { loadEnv } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, loadEnv, type UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf-8')
 ) as { version?: string };
+
+type VitestCompatibleUserConfig = UserConfig & {
+  test?: {
+    exclude?: string[];
+  };
+};
 
 const getScopedPackageName = (id: string, scope: string) => {
   const normalized = id.split(path.sep).join('/');
@@ -22,7 +27,7 @@ const getNodeModulePackageName = (id: string) => {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  return {
+  const config: VitestCompatibleUserConfig = {
     base: '/',
     server: {
       port: 3000,
@@ -151,4 +156,6 @@ export default defineConfig(({ mode }) => {
       ],
     }
   };
+
+  return config;
 });
