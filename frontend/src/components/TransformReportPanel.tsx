@@ -947,15 +947,29 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   </button>
                 )}
                 {report.summary.placeholderCount > 0 && (
-                  <button
-                    type="button"
-                    data-tour="transform-report-placeholder-count"
-                    onClick={() => setQuery('占位符')}
-                    className="bg-violet-900/30 text-violet-200 border border-violet-700/50 px-2 py-0.5 rounded hover:bg-violet-800/50 transition-colors"
-                    title="筛选运行时占位符"
-                  >
-                    占位符 {report.summary.placeholderCount}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      data-tour="transform-report-placeholder-count"
+                      onClick={() => setQuery('占位符')}
+                      className="bg-violet-900/30 text-violet-200 border border-violet-700/50 px-2 py-0.5 rounded hover:bg-violet-800/50 transition-colors"
+                      title="筛选运行时占位符"
+                    >
+                      占位符 {report.summary.placeholderCount}
+                    </button>
+                    {onOpenTemplateFill && (
+                      <button
+                        type="button"
+                        data-tour="transform-report-open-placeholder-fill-shortcut"
+                        onClick={handleOpenPlaceholderFillTemplate}
+                        disabled={!placeholderFillTemplateJsonText || isFilterPending}
+                        className="bg-violet-950/40 text-violet-100 border border-violet-700/60 px-2 py-0.5 rounded hover:bg-violet-900/55 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                        title={getPlaceholderFillTemplateTitle('把运行时占位符回填模板填入模板填充面板')}
+                      >
+                        回填占位符
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
               <div

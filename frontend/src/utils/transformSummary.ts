@@ -283,9 +283,17 @@ export interface TransformPlaceholderFillTemplateSource {
   sourceOriginalPreview?: string;
 }
 
+export interface TransformPlaceholderFillTemplateSuggestion {
+  replacement: string;
+  sourcePath: string;
+  sourceLabel?: string;
+  reason: string;
+}
+
 export interface TransformPlaceholderFillTemplateDetail {
   value: string;
   replacement: string;
+  suggestion?: TransformPlaceholderFillTemplateSuggestion;
   description: string;
   count: number;
   sourceCount: number;
@@ -2886,25 +2894,97 @@ export const formatTransformPlaceholderReportText = (
   return lines.join('\n');
 };
 
+interface PlaceholderReplacementCandidate {
+  replacement: string;
+  sourcePath: string;
+  sourceLabel: string;
+}
+
+const PLACEHOLDER_REPLACEMENT_SOURCE_LABELS: Record<string, readonly string[]> = {
+  __AD_EXTRA_PARAM_ENCODE_1__: ['extraParam', 'ad_extra_param'],
+  __EXT_RENDER_AFD__: ['extRenderAfd', 'ext_render_afd'],
+  __REWARD_NUM__: ['rewardNum', 'reward_num'],
+  __CLICK_ID__: ['clickId', 'click_id'],
+  __SIGN__: ['sign'],
+  __CALLBACK_URL__: ['callbackUrl', 'callback_url'],
+};
+
+const normalizeReplacementSourceLabel = (value: string): string => (
+  value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+);
+
+const isSafePlaceholderReplacement = (replacement: string, placeholderValue: string): boolean => {
+  const trimmed = replacement.trim();
+  return Boolean(trimmed) && trimmed !== placeholderValue && !trimmed.includes(placeholderValue);
+};
+
+const buildPlaceholderReplacementSuggestions = (
+  reportView: TransformReportView
+): Map<string, TransformPlaceholderFillTemplateSuggestion> => {
+  const suggestions = new Map<string, TransformPlaceholderFillTemplateSuggestion>();
+  if (reportView.isRecordTruncated) return suggestions;
+
+  reportView.runtimePlaceholderGroups.forEach(group => {
+    const aliases = PLACEHOLDER_REPLACEMENT_SOURCE_LABELS[group.value]?.map(normalizeReplacementSourceLabel) || [];
+    if (aliases.length === 0) return;
+
+    const candidates: PlaceholderReplacementCandidate[] = reportView.records.flatMap(record => {
+      if (!record.sourceLabel || !record.originalValue) return [];
+
+      const normalizedSourceLabel = normalizeReplacementSourceLabel(record.sourceLabel);
+      if (!aliases.includes(normalizedSourceLabel) || !isSafePlaceholderReplacement(record.originalValue, group.value)) {
+        return [];
+      }
+
+      return [{
+        replacement: record.originalValue,
+        sourcePath: record.path,
+        sourceLabel: record.sourceLabel,
+      }];
+    });
+
+    const uniqueCandidates = Array.from(new Map(
+      candidates.map(candidate => [candidate.replacement, candidate])
+    ).values());
+    if (uniqueCandidates.length !== 1) return;
+
+    const candidate = uniqueCandidates[0];
+    suggestions.set(group.value, {
+      replacement: candidate.replacement,
+      sourcePath: candidate.sourcePath,
+      sourceLabel: candidate.sourceLabel,
+      reason: `业务字段 ${candidate.sourceLabel} 与 ${group.value} 强匹配`,
+    });
+  });
+
+  return suggestions;
+};
+
 export const buildTransformPlaceholderFillTemplate = (
   reportView: TransformReportView,
   filter = ''
 ): TransformPlaceholderFillTemplate | null => {
   if (reportView.filteredPlaceholderCount === 0) return null;
 
-  const placeholderDetails = reportView.runtimePlaceholderGroups.map(group => ({
-    value: group.value,
-    replacement: '',
-    description: group.description,
-    count: group.count,
-    sourceCount: group.sourceCount,
-    sources: group.sources.map(source => ({
-      sourcePath: source.sourcePath,
-      ...(source.sourceLabel ? { sourceLabel: source.sourceLabel } : {}),
-      count: source.count,
-      ...(source.sourceOriginalPreview ? { sourceOriginalPreview: source.sourceOriginalPreview } : {}),
-    })),
-  }));
+  const replacementSuggestions = buildPlaceholderReplacementSuggestions(reportView);
+  const placeholderDetails = reportView.runtimePlaceholderGroups.map(group => {
+    const suggestion = replacementSuggestions.get(group.value);
+
+    return {
+      value: group.value,
+      replacement: suggestion?.replacement || '',
+      ...(suggestion ? { suggestion } : {}),
+      description: group.description,
+      count: group.count,
+      sourceCount: group.sourceCount,
+      sources: group.sources.map(source => ({
+        sourcePath: source.sourcePath,
+        ...(source.sourceLabel ? { sourceLabel: source.sourceLabel } : {}),
+        count: source.count,
+        ...(source.sourceOriginalPreview ? { sourceOriginalPreview: source.sourceOriginalPreview } : {}),
+      })),
+    };
+  });
 
   return {
     schemaVersion: 1,
@@ -3196,8 +3276,15 @@ const buildArchivePlaceholderFillTemplate = (
 
   return {
     ...fillTemplate,
+    placeholders: Object.fromEntries(
+      fillTemplate.placeholderDetails.map(detail => [detail.value, ''])
+    ),
     placeholderDetails: fillTemplate.placeholderDetails.map(detail => ({
-      ...detail,
+      value: detail.value,
+      replacement: '',
+      description: detail.description,
+      count: detail.count,
+      sourceCount: detail.sourceCount,
       sources: detail.sources.map(source => ({
         sourcePath: source.sourcePath,
         ...(source.sourceLabel ? { sourceLabel: source.sourceLabel } : {}),

@@ -1265,6 +1265,56 @@ describe('transformSummary', () => {
       }),
     ]);
 
+    const extraParamValue = `cmd=${encodeURIComponent(JSON.stringify({ aid: 'extra-1' }))}`;
+    const adPlaceholderResult = deepParseWithContext(JSON.stringify({
+      extra: [
+        {
+          k: 'extraParam',
+          v: extraParamValue,
+        },
+      ],
+      action_cmd: `cmd=${encodeURIComponent(JSON.stringify({
+        ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+        button_cmd: '__CONVERT_CMD__',
+      }))}`,
+    }), { autoExpandScheme: true });
+    const adPlaceholderReport = buildTransformContextReport(adPlaceholderResult.context);
+    const adPlaceholderTemplate = JSON.parse(formatTransformPlaceholderFillTemplateJsonText(
+      buildTransformReportView(adPlaceholderReport, '')
+    ));
+
+    expect(adPlaceholderTemplate.placeholders).toMatchObject({
+      __AD_EXTRA_PARAM_ENCODE_1__: extraParamValue,
+      __CONVERT_CMD__: '',
+    });
+    expect(adPlaceholderTemplate.placeholderDetails).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        value: '__AD_EXTRA_PARAM_ENCODE_1__',
+        replacement: extraParamValue,
+        suggestion: {
+          replacement: extraParamValue,
+          sourcePath: '$.extra[0].v',
+          sourceLabel: 'extraParam',
+          reason: '业务字段 extraParam 与 __AD_EXTRA_PARAM_ENCODE_1__ 强匹配',
+        },
+      }),
+    ]));
+
+    const conflictingAdPlaceholderResult = deepParseWithContext(JSON.stringify({
+      extra: [
+        { k: 'extraParam', v: `cmd=${encodeURIComponent(JSON.stringify({ aid: 'extra-1' }))}` },
+        { k: 'extraParam', v: `cmd=${encodeURIComponent(JSON.stringify({ aid: 'extra-2' }))}` },
+      ],
+      action_cmd: `cmd=${encodeURIComponent(JSON.stringify({ ext: '__AD_EXTRA_PARAM_ENCODE_1__' }))}`,
+    }), { autoExpandScheme: true });
+    const conflictingAdPlaceholderTemplate = JSON.parse(formatTransformPlaceholderFillTemplateJsonText(
+      buildTransformReportView(buildTransformContextReport(conflictingAdPlaceholderResult.context), '')
+    ));
+    expect(conflictingAdPlaceholderTemplate.placeholders.__AD_EXTRA_PARAM_ENCODE_1__).toBe('');
+    expect(conflictingAdPlaceholderTemplate.placeholderDetails.find(
+      (detail: { value: string }) => detail.value === '__AD_EXTRA_PARAM_ENCODE_1__'
+    )).not.toHaveProperty('suggestion');
+
     const skippedValue = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&padding=${'x'.repeat(80)}`;
     const warningResult = deepParseWithContext(JSON.stringify({
       extra: [{ field: 'longParam', content: skippedValue }],
@@ -2078,6 +2128,30 @@ describe('transformSummary', () => {
     expect(archivePackage.artifacts.issueSamples.samples[0].originalValue).not.toBe(actionCmd);
     expect(JSON.stringify(archivePackage)).not.toContain(actionCmd);
     expect(JSON.stringify(archivePackage.artifacts.placeholderFillTemplate)).not.toContain('sourceOriginalPreview');
+  });
+
+  it('归档包不会携带占位符回填候选原文', () => {
+    const extraParamValue = `cmd=${encodeURIComponent(JSON.stringify({ token: 'extra-secret' }))}`;
+    const result = deepParseWithContext(JSON.stringify({
+      extra: [
+        {
+          k: 'extraParam',
+          v: extraParamValue,
+        },
+      ],
+      action_cmd: `cmd=${encodeURIComponent(JSON.stringify({
+        ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+      }))}`,
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const reportView = buildTransformReportView(report, '');
+    const fillTemplate = JSON.parse(formatTransformPlaceholderFillTemplateJsonText(reportView));
+    const archivePackage = JSON.parse(formatTransformArchivePackageJsonText(report, reportView, ''));
+
+    expect(fillTemplate.placeholders.__AD_EXTRA_PARAM_ENCODE_1__).toBe(extraParamValue);
+    expect(archivePackage.artifacts.placeholderFillTemplate.placeholders.__AD_EXTRA_PARAM_ENCODE_1__).toBe('');
+    expect(JSON.stringify(archivePackage.artifacts.placeholderFillTemplate)).not.toContain(extraParamValue);
+    expect(JSON.stringify(archivePackage.artifacts.placeholderFillTemplate)).not.toContain('suggestion');
   });
 
   it('质量快照对比摘要展示关键指标变化', () => {
