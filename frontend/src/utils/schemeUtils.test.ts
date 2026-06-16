@@ -1035,6 +1035,28 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('HTML 引号实体包裹的 JSON CMD 参数被解析', () => {
+    const result = deepDecodeScheme('cmd={&quot;nid&quot;:123,&quot;title&quot;:&quot;标题&quot;}');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: {
+        nid: 123,
+        title: '标题',
+      },
+    });
+  });
+
+  it('HTML 数字引号实体包裹的 loose JSON CMD 参数被解析', () => {
+    const result = deepDecodeScheme('cmd={&#x27;title&#x27;:&#x27;标题&#x27;}&#x26;from=html-quote');
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      cmd: {
+        title: '标题',
+      },
+      from: 'html-quote',
+    });
+  });
+
   it('Unicode 转义分隔符的 CMD 参数串被解析', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
     const result = deepDecodeScheme(`cmd=${payload}\\u0026from=unicode`);
