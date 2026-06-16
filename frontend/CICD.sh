@@ -36,7 +36,7 @@ cd "$FRONTEND_DIR"
 # 可选：安装依赖（默认跳过，避免网络卡死）
 if [ "$INSTALL_DEPS" = true ]; then
     echo "📦 安装依赖（使用 npm ci）..."
-    npm ci --include=dev --include=optional
+    npm ci --production=false --include=optional
 else
     echo "⏭️  跳过依赖安装（假设 node_modules 已就绪）"
 fi
