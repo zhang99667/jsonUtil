@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.76 (2026-06-16) - camelCase 资源 URL 识别
+### 🐛 Bug 修复
+- **深度解析报告**: `imageUrl`、`iconUrl`、`posterUrl` 等 camelCase 静态资源字段会归入资源 URL 统计，不再被 `*url` 后缀误归为内部 CMD 字段
+
 ## v1.8.75 (2026-06-16) - SOURCE 编码 JSON 状态识别
 ### 🧪 测试与体验
 - **状态栏**: SOURCE 直接粘贴 URL 编码 JSON 时显示 `SOURCE 编码JSON`，与普通 CMD/Scheme 的 `SOURCE Scheme` 区分；点击状态徽标可直接打开 Scheme 面板并预填当前 SOURCE，减少用户判断和复制成本
