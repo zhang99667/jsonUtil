@@ -32,6 +32,7 @@ type MonacoJsonDefaults = {
 // 扩展 EditorProps 以支持 scheme 修改回调
 interface ExtendedEditorProps extends EditorProps {
   enableSchemeScan?: boolean;
+  errorActions?: React.ReactNode;
   onSchemeEdit?: (path: string, newValue: string, pointer?: string) => void;
 }
 
@@ -53,6 +54,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   label,
   error,
   errorLocation,
+  errorActions,
   locateErrorSignal,
   warning,
   info,
@@ -565,6 +567,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
               >
                 复制
               </button>
+              {errorActions}
             </div>
           ) : editorWarning ? (
             <div className="flex items-center text-[10px] text-amber-200 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-700/50 shadow-sm">

@@ -1381,6 +1381,7 @@ const App: React.FC = () => {
       : '自动保存已关闭，点击开启';
   const copySourceTitle = hasSourceContent ? '复制 SOURCE 内容到剪贴板' : 'SOURCE 为空，暂无内容可复制';
   const clearSourceTitle = hasSourceContent ? '清空 SOURCE 内容' : 'SOURCE 为空，暂无内容可清空';
+  const sourceAiRepairTitle = isProcessing ? 'AI 修复中，请等待当前任务完成' : '用 AI 修复当前 SOURCE JSON 错误';
   const transformReportTitle = (() => {
     if (isOutputTransforming) return '预览仍在处理，请稍后查看报告';
     if (!transformReportContext) return '暂无深度解析报告可查看';
@@ -1574,6 +1575,19 @@ const App: React.FC = () => {
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               errorLocation={sourceErrorLocation}
+              errorActions={!validation.isValid && hasSourceContent ? (
+                <button
+                  data-tour="source-error-ai-fix"
+                  type="button"
+                  onClick={() => void handleAction(ActionType.AI_FIX)}
+                  disabled={isProcessing}
+                  className="rounded border border-violet-500/50 px-1 py-0 text-[10px] text-violet-100 transition-colors hover:bg-violet-800/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  title={sourceAiRepairTitle}
+                  aria-label={sourceAiRepairTitle}
+                >
+                  修复
+                </button>
+              ) : undefined}
               locateErrorSignal={sourceErrorLocateSignal}
               headerActions={
                 <>
