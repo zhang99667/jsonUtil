@@ -80,7 +80,7 @@ clean_build() {
 # 安装依赖
 install_dependencies() {
     log_info "安装项目依赖..."
-    npm ci
+    npm ci --include=dev --include=optional
     log_success "依赖安装完成"
 }
 

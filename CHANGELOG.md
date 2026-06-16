@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.63 (2026-06-16) - 远端构建平台依赖安装
+### 🐛 Bug 修复
+- **部署脚本**: 显式安装 dev 与 optional dependencies，避免 `NODE_ENV=production` 环境下 Rollup/esbuild 平台二进制包缺失导致远端构建失败
+
 ## v1.8.62 (2026-06-16) - 旧部署脚本依赖安装修复
 ### 🐛 Bug 修复
 - **部署脚本**: 修复前端旧部署脚本使用 `npm ci --omit=optional` 导致 esbuild 平台二进制包缺失、远端构建失败的问题

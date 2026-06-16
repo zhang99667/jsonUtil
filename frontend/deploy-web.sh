@@ -62,7 +62,7 @@ build_project() {
     # 安装依赖（谨慎处理）
     if [ "${INSTALL_DEPS:-false}" = "true" ]; then
         log_info "安装依赖..."
-        npm ci
+        npm ci --include=dev --include=optional
     else
         log_warning "跳过依赖安装（假设 node_modules 已就绪）"
     fi
