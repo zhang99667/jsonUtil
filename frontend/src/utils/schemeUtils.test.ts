@@ -360,6 +360,10 @@ describe('detectSchemeType', () => {
     expect(detectSchemeType('baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22a%22%3A1%7D')).toBe('url');
   });
 
+  it('检测日志中 JSON Unicode 转义的 URL', () => {
+    expect(detectSchemeType('baiduboxapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.baidu.com%252Fs%253Fword%253Djson')).toBe('url');
+  });
+
   it('检测协议相对 URL', () => {
     expect(detectSchemeType('//m.baidu.com/s?word=json')).toBe('url');
   });
@@ -738,6 +742,31 @@ describe('deepDecodeScheme', () => {
         description: '广告 extraParam 编码占位符，通常由渲染或投放链路在运行时替换',
       },
     ]);
+  });
+
+  it('JSON Unicode 转义的 URL 被还原后继续解析参数', () => {
+    const result = deepDecodeScheme('baiduboxapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.baidu.com%252Fs%253Fword%253Djson');
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      url: {
+        word: 'json',
+      },
+    });
+    expect(result.layers.map(layer => layer.type)).toEqual(['json-unicode-ascii', 'url']);
+  });
+
+  it('日志字段里的 JSON Unicode 转义 URL 被递归解析', () => {
+    const result = deepDecodeScheme('scheme=baiduboxapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.baidu.com%252Fs%253Fword%253Djson');
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      scheme: {
+        url: {
+          word: 'json',
+        },
+      },
+    });
   });
 
   it('URL 参数中的 JSON 被递归解析为对象', () => {
