@@ -554,6 +554,11 @@ export const formatPromotionSnapshotSummary = snapshot => {
   ].join('\n');
 };
 
+export const collectPromotionStrictFailures = ({ audit, snapshot }) => [
+  ...(!audit.pass ? [`脱敏审计未通过: ${audit.status}`] : []),
+  ...(snapshot && !snapshot.thresholdSummary.pass ? ['质量快照未通过'] : []),
+];
+
 export const buildCorpusFixtureCandidate = (input, options = {}) => {
   const source = typeof input === 'string' ? JSON.parse(input) : input;
   const redacted = redactJsonValue(source);
@@ -580,6 +585,7 @@ const parseCliArgs = argv => {
     chunkSize: DEFAULT_CHUNK_SIZE,
     quiet: false,
     validate: false,
+    strict: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -627,6 +633,10 @@ const parseCliArgs = argv => {
       options.validate = true;
       continue;
     }
+    if (arg === '--strict') {
+      options.strict = true;
+      continue;
+    }
     if (arg.startsWith('-')) {
       throw new Error(`未知参数: ${arg}`);
     }
@@ -646,7 +656,7 @@ const writeTextFile = async (filePath, text) => {
 };
 
 const printUsage = () => {
-  console.error('用法: npm run corpus:promote -- --input response.json --name reward-response-live-redacted [--output fixture.json] [--response-output redacted-response.json] [--validate] [--quiet]');
+  console.error('用法: npm run corpus:promote -- --input response.json --name reward-response-live-redacted [--output fixture.json] [--response-output redacted-response.json] [--validate] [--strict] [--quiet]');
 };
 
 const runCli = async () => {
@@ -662,6 +672,7 @@ const runCli = async () => {
     const responseText = `${JSON.stringify(applyFixtureReplacements(fixture.responseTemplate, fixture.replacements))}\n`;
     const fixtureText = `${JSON.stringify(fixture, null, 2)}\n`;
     if (!options.quiet) process.stdout.write(fixtureText);
+    let snapshot;
 
     if (options.outputPath) {
       const outputPath = await writeTextFile(options.outputPath, fixtureText);
@@ -674,7 +685,7 @@ const runCli = async () => {
     console.error(formatPromotionAuditSummary(audit));
     if (options.validate) {
       const { buildCorpusSnapshotFromResponseText } = await import('./scheme-corpus-snapshot.mjs');
-      const snapshot = await buildCorpusSnapshotFromResponseText({
+      snapshot = await buildCorpusSnapshotFromResponseText({
         sampleName: fixture.name,
         responseText,
       });
@@ -682,6 +693,12 @@ const runCli = async () => {
     }
     if (options.responseOutputPath) {
       console.error(`下一步可运行: npm run corpus:snapshot -- --input ${options.responseOutputPath} --name ${fixture.name}`);
+    }
+    const strictFailures = options.strict ? collectPromotionStrictFailures({ audit, snapshot }) : [];
+    if (strictFailures.length > 0) {
+      console.error('corpus:promote strict 检查失败:');
+      strictFailures.forEach(failure => console.error(`- ${failure}`));
+      process.exitCode = 1;
     }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

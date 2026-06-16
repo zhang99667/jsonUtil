@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.97 (2026-06-16) - promote 严格校验
+### ✨ 新特性
+- **Scheme Corpus**: `corpus:promote` 新增 `--strict` 参数，审计发现敏感残留或 `--validate` 质量快照失败时返回非 0，方便把真实 response 候选生成接入自动化防线
+- **安全提交流程**: 严格校验保留 WARN 人工确认语义，长数字/高熵片段继续提示但不会阻断商品 ID、素材 hash 等业务样本沉淀
+
 ## v1.8.96 (2026-06-16) - promote 内置质量快照
 ### ✨ 新特性
 - **Scheme Corpus**: `corpus:promote` 新增 `--validate` 参数，可在生成脱敏候选时直接输出质量快照摘要，展示覆盖率、CMD 结构、字段数量、占位符和待检查/跳过数量
