@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.65 (2026-06-16) - 低配服务器部署兜底
+### 🐛 Bug 修复
+- **部署脚本**: `deploy-web.sh` 支持 `SKIP_BUILD=true`，低配服务器无法完成前端构建时可复用预构建 `dist` 继续执行备份、发布和健康检查
+
 ## v1.8.64 (2026-06-16) - 远端 devDependencies 安装修复
 ### 🐛 Bug 修复
 - **部署脚本**: 使用 `npm ci --production=false --include=optional` 强制安装构建所需 devDependencies，避免远端 `NODE_ENV=production` 下缺少 `vite`
