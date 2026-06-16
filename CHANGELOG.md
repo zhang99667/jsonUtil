@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.95 (2026-06-16) - corpus 脱敏审计摘要
+### ✨ 新特性
+- **Scheme Corpus**: `corpus:promote` 生成候选后自动输出脱敏审计摘要，标记敏感属性/参数残留、UUID、长数字和高熵十六进制片段，并给出下一步质量快照命令
+- **安全脱敏**: 审计改为检查回填后的完整脱敏 response，避免 replacements 分片导致的误报，同时保留需要人工确认的长 ID 和高熵片段提示
+- **敏感别名**: 脱敏覆盖 `clickId`、`bd_vid`、`unionId`、`phoneNumber`、`mobilePhone` 等真实 CMD 常见标识，并保持多层编码 JSON 参数的原始编码层级
+
 ## v1.8.94 (2026-06-16) - 真实响应 corpus 候选生成
 ### ✨ 新特性
 - **Scheme Corpus**: 新增 `corpus:promote` 命令，可将本地真实 response 转成脱敏 `*.redacted.json` 候选，并支持输出回填后的脱敏 response、安静模式和质量快照校验
