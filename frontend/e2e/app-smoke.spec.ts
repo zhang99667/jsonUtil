@@ -1022,6 +1022,9 @@ test('占位符筛选后回填模板保留候选值', async ({ page }) => {
 
   const templatePanel = page.locator('[data-tour="template-fill-panel"]');
   await expect(templatePanel).toBeVisible();
+  const placeholderSummary = templatePanel.locator('[data-tour="template-fill-placeholder-summary"]');
+  await expect(placeholderSummary).toContainText('replacement 1/1');
+  await expect(placeholderSummary).toContainText('候选 1');
 });
 
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {

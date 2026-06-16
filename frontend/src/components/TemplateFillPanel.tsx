@@ -24,6 +24,47 @@ const formatTemplateSizeLabel = (content: string): string => {
   return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
 };
 
+interface PlaceholderTemplateSummary {
+  total: number;
+  filled: number;
+  suggested: number;
+  pending: number;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const buildPlaceholderTemplateSummary = (templateText: string): PlaceholderTemplateSummary | null => {
+  if (!templateText.trim()) return null;
+
+  try {
+    const parsed = JSON.parse(templateText) as unknown;
+    if (!isRecord(parsed) || parsed.kind !== 'json-helper-runtime-placeholder-fill-template') return null;
+    if (!isRecord(parsed.placeholders)) return null;
+
+    const placeholderEntries = Object.entries(parsed.placeholders);
+    const total = placeholderEntries.length;
+    if (total === 0) return null;
+
+    const filled = placeholderEntries.filter(([, replacement]) => (
+      typeof replacement === 'string' && replacement.trim().length > 0
+    )).length;
+    const suggested = Array.isArray(parsed.placeholderDetails)
+      ? parsed.placeholderDetails.filter(detail => isRecord(detail) && isRecord(detail.suggestion)).length
+      : 0;
+
+    return {
+      total,
+      filled,
+      suggested,
+      pending: Math.max(total - filled, 0),
+    };
+  } catch {
+    return null;
+  }
+};
+
 export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   isOpen,
   onClose,
@@ -41,6 +82,9 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
     if (!template.trim()) return { isValid: true };
     return validateJson(template);
   }, [template]);
+  const placeholderTemplateSummary = useMemo(() => (
+    buildPlaceholderTemplateSummary(template)
+  ), [template]);
 
   // 自动保存到 localStorage
   useEffect(() => {
@@ -168,6 +212,21 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
         <div className="text-xs text-gray-500 px-1">
           输入 JSON 模板，普通模板会深度合并，占位符回填模板会替换当前 JSON 中的运行时占位符。
         </div>
+
+        {placeholderTemplateSummary && (
+          <div
+            data-tour="template-fill-placeholder-summary"
+            className="rounded border border-violet-800/40 bg-violet-950/25 px-2.5 py-1.5 text-xs text-violet-100"
+          >
+            回填模板: replacement {placeholderTemplateSummary.filled}/{placeholderTemplateSummary.total}
+            {placeholderTemplateSummary.suggested > 0 && (
+              <span> · 候选 {placeholderTemplateSummary.suggested}</span>
+            )}
+            {placeholderTemplateSummary.pending > 0 && (
+              <span> · 待补 {placeholderTemplateSummary.pending}</span>
+            )}
+          </div>
+        )}
 
         {/* 模板编辑区 */}
         <div className="flex-1 min-h-[120px] border border-editor-border rounded overflow-hidden">
