@@ -401,7 +401,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
 
       {/* 底部操作栏 */}
       {footer && (
-        <div className="flex items-center justify-between px-4 py-2 border-t border-editor-border bg-editor-sidebar flex-shrink-0">
+        <div className="flex items-center justify-between pl-4 pr-7 py-2 border-t border-editor-border bg-editor-sidebar flex-shrink-0">
           {footer}
         </div>
       )}
@@ -409,10 +409,12 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
       {/* 右侧调整宽度手柄 */}
       {showWidthHandle && (
         <div
-          className="absolute top-0 right-0 w-4 h-full cursor-ew-resize z-10 flex items-center justify-end p-0.5 group/resize-w"
-          onMouseDown={(e) => handleResizeMouseDown(e, 'width')}
+          className="absolute top-0 right-0 w-4 h-full z-10 flex items-center justify-end p-0.5 pointer-events-none"
         >
-          <div className="w-1 h-8 bg-gray-600 rounded-full opacity-0 group-hover/resize-w:opacity-50 transition-opacity" />
+          <div
+            className="w-2 h-8 cursor-ew-resize bg-gray-600 rounded-full opacity-0 transition-opacity hover:opacity-50 pointer-events-auto"
+            onMouseDown={(e) => handleResizeMouseDown(e, 'width')}
+          />
         </div>
       )}
 
