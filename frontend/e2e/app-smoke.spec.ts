@@ -415,6 +415,11 @@ test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预�
   await expectPreviewText(page, '"extInfo": {');
   await expectPreviewText(page, '"cmatch": 222');
   await expect(page.locator('[data-tour="preview-editor"] .view-lines')).not.toContainText('baiduboxapp://');
+
+  await page.locator('[data-tour="source-validation-status"]').click();
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel).toContainText('Scheme 解析');
+  await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue(scheme);
 });
 
 test('SOURCE 直接粘贴 URL 编码 JSON 时自动结构化预览', async ({ page }) => {
@@ -436,12 +441,44 @@ test('SOURCE 直接粘贴 URL 编码 JSON 时自动结构化预览', async ({ pa
 
   await fillSourceEditor(page, encodedJson);
 
-  await expect(page.locator('[data-tour="source-validation-status"]')).toHaveText('SOURCE Scheme');
+  await expect(page.locator('[data-tour="source-validation-status"]')).toHaveText('SOURCE 编码JSON');
   await expect(page.locator('[data-tour="statusbar-view"]')).toContainText('深度格式化');
   await expectPreviewText(page, '"data": {');
   await expectPreviewText(page, '"title": "编码 JSON"');
   await expectPreviewText(page, '"items": [');
   await expect(page.locator('[data-tour="preview-editor"] .view-lines')).not.toContainText('%7B');
+
+  await page.locator('[data-tour="source-validation-status"]').click();
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel).toContainText('Scheme 解析');
+  await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue(encodedJson);
+});
+
+test('SOURCE 直接粘贴 URL 编码 CMD 时自动结构化预览', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('json-helper-general-settings', JSON.stringify({
+      autoExpandSchemeInDeepFormat: false,
+    }));
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForMainAppReady(page);
+
+  const decodedCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }))}&from=feed`;
+  const encodedCmd = encodeURIComponent(decodedCmd);
+
+  await fillSourceEditor(page, encodedCmd);
+
+  await expect(page.locator('[data-tour="source-validation-status"]')).toHaveText('SOURCE 编码Scheme');
+  await expect(page.locator('[data-tour="statusbar-view"]')).toContainText('深度格式化');
+  await expectPreviewText(page, '"cmd": {');
+  await expectPreviewText(page, '"nid": 123');
+  await expectPreviewText(page, '"from": "feed"');
+  await expect(page.locator('[data-tour="preview-editor"] .view-lines')).not.toContainText('cmd%3D');
+
+  await page.locator('[data-tour="source-validation-status"]').click();
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel).toContainText('Scheme 解析');
+  await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue(encodedCmd);
 });
 
 test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => {

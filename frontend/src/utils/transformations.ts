@@ -31,6 +31,8 @@ const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
 const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
 const ROOT_SCHEME_TYPES = new Set<SchemeType>(['query-string', 'url', 'base64']);
 
+export type StandaloneDeepFormatInputKind = 'scheme' | 'url-encoded-json' | 'url-encoded-scheme';
+
 interface ParsedJsonInput {
   value: JsonValue;
   source: string;
@@ -145,14 +147,30 @@ const isRootUrlEncodedJsonInput = (input: string): boolean => {
   return parsed ? isJsonContainerValue(parsed.value) : false;
 };
 
-export const isStandaloneDeepFormatInput = (value: string): boolean => {
+const isRootUrlEncodedSchemeInput = (input: string): boolean => {
+  const trimmed = input.trim();
+  if (!trimmed || detectSchemeType(trimmed) !== 'url-encoded') return false;
+
+  const decoded = urlDecode(trimmed);
+  if (decoded === trimmed) return false;
+
+  return ROOT_SCHEME_TYPES.has(detectSchemeType(decoded));
+};
+
+export const getStandaloneDeepFormatInputKind = (value: string): StandaloneDeepFormatInputKind | null => {
   const trimmed = value.trim();
-  if (!trimmed) return false;
+  if (!trimmed) return null;
 
   const rootSchemeType = detectSchemeType(trimmed);
-  return ROOT_SCHEME_TYPES.has(rootSchemeType) ||
-    (rootSchemeType === 'url-encoded' && isRootUrlEncodedJsonInput(trimmed));
+  if (ROOT_SCHEME_TYPES.has(rootSchemeType)) return 'scheme';
+  if (rootSchemeType === 'url-encoded' && isRootUrlEncodedJsonInput(trimmed)) return 'url-encoded-json';
+  if (rootSchemeType === 'url-encoded' && isRootUrlEncodedSchemeInput(trimmed)) return 'url-encoded-scheme';
+  return null;
 };
+
+export const isStandaloneDeepFormatInput = (value: string): boolean => (
+  getStandaloneDeepFormatInputKind(value) !== null
+);
 
 const wrapJsonContent = (content: string, wrapper: JsonInputWrapper): string => (
   `${wrapper.prefix}${content}${wrapper.suffix}`

@@ -9,6 +9,7 @@ import {
   inverseWithContext,
   deepMergeTemplate,
   applyTemplate,
+  getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput,
 } from './transformations';
 import { base64Encode } from './schemeUtils';
@@ -540,6 +541,7 @@ describe('deepParseWithContext', () => {
     const stepTypes = result.context.records.get('$')?.steps.map(step => step.type);
 
     expect(isStandaloneDeepFormatInput(input)).toBe(true);
+    expect(getStandaloneDeepFormatInputKind(input)).toBe('url-encoded-json');
     expect(result.context.sourceFormat).toBe('scheme');
     expect(parsed).toEqual({
       code: 0,
@@ -552,12 +554,32 @@ describe('deepParseWithContext', () => {
     expect(inverseWithContext(result.output, result.context)).toBe(input);
   });
 
+  it('根输入为 URL 编码 CMD 参数串时可直接展开', () => {
+    const decodedCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }))}&from=feed`;
+    const input = encodeURIComponent(decodedCmd);
+
+    const result = deepParseWithContext(input, { autoExpandScheme: false });
+    const parsed = JSON.parse(result.output);
+    const stepTypes = result.context.records.get('$')?.steps.map(step => step.type);
+
+    expect(isStandaloneDeepFormatInput(input)).toBe(true);
+    expect(getStandaloneDeepFormatInputKind(input)).toBe('url-encoded-scheme');
+    expect(result.context.sourceFormat).toBe('scheme');
+    expect(parsed).toEqual({
+      cmd: { nid: 123, title: '标题' },
+      from: 'feed',
+    });
+    expect(stepTypes).toEqual(['url_decode', 'scheme_decode']);
+    expect(inverseWithContext(result.output, result.context)).toBe(input);
+  });
+
   it('普通 URL 编码文本不会被误判为根 JSON', () => {
     const input = encodeURIComponent('你好世界');
 
     const result = deepParseWithContext(input);
 
     expect(isStandaloneDeepFormatInput(input)).toBe(false);
+    expect(getStandaloneDeepFormatInputKind(input)).toBeNull();
     expect(result.output).toBe(input);
     expect(result.context.sourceFormat).toBeUndefined();
     expect(result.context.records.size).toBe(0);

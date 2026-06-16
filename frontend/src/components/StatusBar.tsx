@@ -2,6 +2,7 @@ import React from 'react';
 import { TransformMode, FileTab, ValidationResult } from '../types';
 import { APP_VERSION_LABEL } from '../utils/appVersion';
 import { formatByteSize } from '../utils/documentStats';
+import type { StandaloneDeepFormatInputKind } from '../utils/transformations';
 
 interface SourceValidationLocation {
   line: number;
@@ -51,8 +52,10 @@ interface StatusBarProps {
   hasSourceContent: boolean;
   /** SOURCE 是否进入 JSON 容器校验 */
   isSourceJsonCandidate: boolean;
-  /** SOURCE 是否为可解析 CMD/Scheme */
-  isSourceSchemeCandidate: boolean;
+  /** SOURCE 独立深度解析输入类型 */
+  sourceStandaloneDeepFormatKind: StandaloneDeepFormatInputKind | null;
+  /** 打开 SOURCE 独立 Scheme/编码 JSON 到解析面板 */
+  onOpenSourceSchemeInput?: () => void;
   /** SOURCE JSON 校验结果 */
   sourceValidation: ValidationResult;
   /** SOURCE JSON 错误定位 */
@@ -82,7 +85,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   isAutoSaveEnabled,
   hasSourceContent,
   isSourceJsonCandidate,
-  isSourceSchemeCandidate,
+  sourceStandaloneDeepFormatKind,
+  onOpenSourceSchemeInput,
   sourceValidation,
   sourceValidationLocation,
   onLocateSourceError,
@@ -126,7 +130,23 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     }
 
     if (!isSourceJsonCandidate) {
-      if (isSourceSchemeCandidate) {
+      if (sourceStandaloneDeepFormatKind) {
+        if (sourceStandaloneDeepFormatKind === 'url-encoded-json') {
+          return {
+            label: 'SOURCE 编码JSON',
+            className: 'bg-blue-100 text-blue-800',
+            title: '当前 SOURCE 是 URL 编码 JSON，已按深度解析处理',
+          };
+        }
+
+        if (sourceStandaloneDeepFormatKind === 'url-encoded-scheme') {
+          return {
+            label: 'SOURCE 编码Scheme',
+            className: 'bg-blue-100 text-blue-800',
+            title: '当前 SOURCE 是 URL 编码 CMD/Scheme，已按深度解析处理',
+          };
+        }
+
         return {
           label: 'SOURCE Scheme',
           className: 'bg-blue-100 text-blue-800',
@@ -160,6 +180,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     };
   })();
   const canLocateSourceError = Boolean(!sourceValidation.isValid && sourceValidationLocation && onLocateSourceError);
+  const canOpenSourceSchemeInput = Boolean(sourceStandaloneDeepFormatKind && onOpenSourceSchemeInput);
 
   return (
     <div
@@ -222,6 +243,17 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             onClick={onLocateSourceError}
             className={`shrink-0 px-1.5 py-0.5 rounded font-bold leading-none transition-colors hover:ring-1 hover:ring-white/70 focus:outline-none focus:ring-1 focus:ring-white ${sourceValidationStatus.className}`}
             title={`${sourceValidationStatus.title}，点击定位`}
+          >
+            {sourceValidationStatus.label}
+          </button>
+        ) : canOpenSourceSchemeInput ? (
+          <button
+            data-tour="source-validation-status"
+            type="button"
+            aria-live="polite"
+            onClick={onOpenSourceSchemeInput}
+            className={`shrink-0 px-1.5 py-0.5 rounded font-bold leading-none transition-colors hover:ring-1 hover:ring-white/70 focus:outline-none focus:ring-1 focus:ring-white ${sourceValidationStatus.className}`}
+            title={`${sourceValidationStatus.title}，点击打开 Scheme 面板`}
           >
             {sourceValidationStatus.label}
           </button>

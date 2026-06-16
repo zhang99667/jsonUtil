@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.75 (2026-06-16) - SOURCE 编码 JSON 状态识别
+### 🧪 测试与体验
+- **状态栏**: SOURCE 直接粘贴 URL 编码 JSON 时显示 `SOURCE 编码JSON`，与普通 CMD/Scheme 的 `SOURCE Scheme` 区分；点击状态徽标可直接打开 Scheme 面板并预填当前 SOURCE，减少用户判断和复制成本
+- **CMD/Scheme 解析**: SOURCE 直接粘贴整段 URL 编码 CMD/Scheme 时会自动进入深度格式化并显示 `SOURCE 编码Scheme`，避免用户先手动 URL 解码再解析
+
 ## v1.8.74 (2026-06-16) - URL 编码 JSON 根输入展开
 ### ✨ 新特性
 - **CMD/Scheme 解析**: SOURCE 直接粘贴 `%7B...%7D` 形式的 URL 编码 JSON 时会自动进入深度格式化并结构化预览；普通 URL 编码文本仍保持原文，避免误展开
