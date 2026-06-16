@@ -13,6 +13,23 @@ type VitestCompatibleUserConfig = UserConfig & {
   };
 };
 
+const createVersionManifestPlugin = () => ({
+  name: 'json-helper-version-manifest',
+  generateBundle() {
+    const version = packageJson.version || '0.0.0';
+    this.emitFile({
+      type: 'asset',
+      fileName: 'version.json',
+      source: JSON.stringify({
+        name: 'JSONUtils',
+        version,
+        versionLabel: `v${version}`,
+        builtAt: new Date().toISOString(),
+      }, null, 2),
+    });
+  },
+});
+
 const getScopedPackageName = (id: string, scope: string) => {
   const normalized = id.split(path.sep).join('/');
   const match = normalized.match(new RegExp(`node_modules/${scope}/([^/]+)`));
@@ -41,7 +58,7 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    plugins: [react()],
+    plugins: [react(), createVersionManifestPlugin()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),

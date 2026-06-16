@@ -15,6 +15,7 @@ import {
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
+import { useAppUpdateCheck } from './hooks/useAppUpdateCheck';
 import {
   LEFT_PANE_MAX_PERCENT,
   LEFT_PANE_MIN_PERCENT,
@@ -743,6 +744,9 @@ const App: React.FC = () => {
 
   // 用户引导 (Hook)
   useOnboardingTour();
+
+  // 生产环境检测新版本，避免长时间打开的页面停留在旧包
+  useAppUpdateCheck();
 
   // 功能级引导 (Hook)
   const { triggerFeatureFirstUse } = useFeatureTour();

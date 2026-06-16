@@ -261,6 +261,29 @@ test('状态栏版本号在窄屏仍保持可见', async ({ page }) => {
   await expectElementInside(versionBadge, statusBar);
 });
 
+test('检测到线上新版本时提示刷新', async ({ page }) => {
+  await page.route('**/version.json*', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        name: 'JSONUtils',
+        version: '99.0.0',
+        versionLabel: 'v99.0.0',
+      }),
+    });
+  });
+
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  const updateToast = page.locator('[data-tour="app-update-toast"]');
+  await expect(updateToast).toContainText('发现新版本 v99.0.0');
+  await expect(updateToast.getByRole('button', { name: '刷新' })).toBeVisible();
+  await expect(updateToast.getByRole('button', { name: '稍后' })).toBeVisible();
+});
+
 test('状态栏展示 SOURCE JSON 校验状态', async ({ page }) => {
   const validationStatus = page.locator('[data-tour="source-validation-status"]');
 
