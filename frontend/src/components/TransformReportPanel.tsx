@@ -22,15 +22,15 @@ import {
   formatTransformIssueSampleJsonText,
   formatTransformIssueSampleReportText,
   formatTransformPathValueReportText,
-  formatTransformPlaceholderFillTemplateJsonText,
   formatTransformPlaceholderReportText,
   formatTransformQualitySnapshotJsonText,
   formatTransformReportViewText,
+  buildTransformPlaceholderFillTemplate,
   getTransformDecodedPathCopyText,
   getTransformPathValueCopyRows,
   getTransformRecordCmdStructureCopyText,
 } from '../utils/transformSummary';
-import type { TransformReportRecord } from '../utils/transformSummary';
+import type { TransformPlaceholderFillTemplate, TransformReportRecord } from '../utils/transformSummary';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 
 interface TransformReportPanelProps {
@@ -143,6 +143,41 @@ const SummaryMetricChip: React.FC<SummaryMetricChipProps> = ({
   );
 };
 
+interface PlaceholderFillSummary {
+  total: number;
+  filled: number;
+  suggested: number;
+  pending: number;
+}
+
+const buildPlaceholderFillSummary = (
+  template: TransformPlaceholderFillTemplate | null
+): PlaceholderFillSummary | null => {
+  if (!template || template.placeholderDetails.length === 0) return null;
+
+  const filled = template.placeholderDetails.filter(detail => detail.replacement.trim().length > 0).length;
+  const suggested = template.placeholderDetails.filter(detail => Boolean(detail.suggestion)).length;
+  const total = template.placeholderDetails.length;
+
+  return {
+    total,
+    filled,
+    suggested,
+    pending: Math.max(total - filled, 0),
+  };
+};
+
+const formatPlaceholderFillTitle = (baseTitle: string, summary: PlaceholderFillSummary | null): string => {
+  if (!summary) return baseTitle;
+
+  const parts = [
+    `已预填 ${summary.filled}/${summary.total}`,
+    `候选 ${summary.suggested}`,
+    `待补 ${summary.pending}`,
+  ];
+  return `${baseTitle}（${parts.join('，')}）`;
+};
+
 export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   isOpen,
   onClose,
@@ -204,11 +239,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       filter: deferredQuery,
     }) : ''
   ), [deferredQuery, reportView]);
-  const placeholderFillTemplateJsonText = useMemo(() => (
+  const placeholderFillTemplate = useMemo(() => (
     reportView
-      ? formatTransformPlaceholderFillTemplateJsonText(reportView, deferredQuery, fullReportView || reportView)
-      : ''
+      ? buildTransformPlaceholderFillTemplate(reportView, deferredQuery, fullReportView || reportView)
+      : null
   ), [deferredQuery, fullReportView, reportView]);
+  const placeholderFillTemplateSummary = useMemo(() => (
+    buildPlaceholderFillSummary(placeholderFillTemplate)
+  ), [placeholderFillTemplate]);
+  const placeholderFillTemplateJsonText = useMemo(() => (
+    placeholderFillTemplate ? JSON.stringify(placeholderFillTemplate, null, 2) : ''
+  ), [placeholderFillTemplate]);
   const getReportCopyTitle = (
     canCopy: boolean,
     readyTitle: string,
@@ -222,7 +263,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const getPlaceholderFillTemplateTitle = (readyTitle: string): string => {
     if (isFilterPending) return '筛选结果仍在更新，请稍后操作占位符回填模板';
     if (!placeholderFillTemplateJsonText) return '当前筛选没有可用的运行时占位符回填模板';
-    return readyTitle;
+    return formatPlaceholderFillTitle(readyTitle, placeholderFillTemplateSummary);
   };
   const filteredReportCopyTitle = getReportCopyTitle(Boolean(reportView), '复制当前筛选命中的深度解析记录', '暂无筛选结果可复制');
   const collaborationReportCopyTitle = getReportCopyTitle(Boolean(reportView), '复制诊断摘要、质量快照要点和 cmdHandler 对齐状态，便于发给协作者排查', '暂无排查报告可复制');
@@ -971,7 +1012,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         className="bg-violet-950/40 text-violet-100 border border-violet-700/60 px-2 py-0.5 rounded hover:bg-violet-900/55 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         title={getPlaceholderFillTemplateTitle('把运行时占位符回填模板填入模板填充面板')}
                       >
-                        回填占位符
+                        回填占位符{placeholderFillTemplateSummary ? ` ${placeholderFillTemplateSummary.filled}/${placeholderFillTemplateSummary.total}` : ''}
                       </button>
                     )}
                   </>

@@ -1017,7 +1017,10 @@ test('占位符筛选后回填模板保留候选值', async ({ page }) => {
     sourceLabel: 'extraParam',
   });
 
-  await reportPanel.locator('[data-tour="transform-report-open-placeholder-fill-shortcut"]').click();
+  const placeholderFillShortcut = reportPanel.locator('[data-tour="transform-report-open-placeholder-fill-shortcut"]');
+  await expect(placeholderFillShortcut).toContainText('回填占位符 1/1');
+  await expect(placeholderFillShortcut).toHaveAttribute('title', /已预填 1\/1，候选 1，待补 0/);
+  await placeholderFillShortcut.click();
   await expect(page.getByText('已填入模板填充')).toBeVisible();
 
   const templatePanel = page.locator('[data-tour="template-fill-panel"]');
