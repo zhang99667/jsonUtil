@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.66 (2026-06-16) - 独立 Scheme 直接解析
+### 🐛 Bug 修复
+- **CMD/Scheme 解析**: 修复整段 SOURCE 直接粘贴 `baiduboxapp://...makePhoneCall?params=...` 时仍按纯文本展示的问题，独立 URL Scheme/CMD 参数串会自动进入深度解析并显示 `SOURCE Scheme`
+
 ## v1.8.65 (2026-06-16) - 低配服务器部署兜底
 ### 🐛 Bug 修复
 - **部署脚本**: `deploy-web.sh` 支持 `SKIP_BUILD=true`，低配服务器无法完成前端构建时可复用预构建 `dist` 继续执行备份、发布和健康检查

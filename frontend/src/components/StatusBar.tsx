@@ -51,6 +51,8 @@ interface StatusBarProps {
   hasSourceContent: boolean;
   /** SOURCE 是否进入 JSON 容器校验 */
   isSourceJsonCandidate: boolean;
+  /** SOURCE 是否为可解析 CMD/Scheme */
+  isSourceSchemeCandidate: boolean;
   /** SOURCE JSON 校验结果 */
   sourceValidation: ValidationResult;
   /** SOURCE JSON 错误定位 */
@@ -80,6 +82,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   isAutoSaveEnabled,
   hasSourceContent,
   isSourceJsonCandidate,
+  isSourceSchemeCandidate,
   sourceValidation,
   sourceValidationLocation,
   onLocateSourceError,
@@ -123,6 +126,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     }
 
     if (!isSourceJsonCandidate) {
+      if (isSourceSchemeCandidate) {
+        return {
+          label: 'SOURCE Scheme',
+          className: 'bg-blue-100 text-blue-800',
+          title: '当前 SOURCE 是可直接解析的 CMD/Scheme，已按深度解析处理',
+        };
+      }
+
       return {
         label: 'SOURCE 文本',
         className: 'bg-white/15 text-white',

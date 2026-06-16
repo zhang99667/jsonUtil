@@ -184,7 +184,7 @@ export interface TransformContext {
   records: Map<string, PathTransformRecord>;  // path -> record
   timestamp: number;
   originalIndentation: number | string;  // 原始缩进（用于还原格式）
-  sourceFormat?: 'json' | 'jsonl';  // 根输入格式，用于 JSONL 深度格式化后回写
+  sourceFormat?: 'json' | 'jsonl' | 'scheme';  // 根输入格式，用于深度格式化后回写
   sourceWrapper?: JsonInputWrapper; // 根输入的复制外壳，用于深度格式化回写保真
   warnings?: TransformWarning[]; // 本次转换中为保护性能而跳过的内容
   unresolvedCandidates?: TransformUnresolvedCandidate[]; // 疑似可解析但未展开成结构化对象的字符串

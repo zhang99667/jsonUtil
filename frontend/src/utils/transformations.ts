@@ -29,6 +29,7 @@ export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
 const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
+const ROOT_SCHEME_TYPES = new Set(['query-string', 'url', 'base64']);
 
 interface ParsedJsonInput {
   value: JsonValue;
@@ -417,15 +418,21 @@ export function deepParseWithContext(
   } catch {
     const jsonLines = parseJsonLines(input);
     if (!jsonLines) {
-      // JSON 解析失败，返回原始输入
-      return {
-        output: input,
-        context,
-      };
-    }
+      const rootSchemeType = options?.autoExpandScheme ? detectSchemeType(input) : 'plain';
+      if (!ROOT_SCHEME_TYPES.has(rootSchemeType)) {
+        // JSON 解析失败且不是独立 Scheme，返回原始输入
+        return {
+          output: input,
+          context,
+        };
+      }
 
-    parsed = jsonLines;
-    context.sourceFormat = 'jsonl';
+      parsed = input;
+      context.sourceFormat = 'scheme';
+    } else {
+      parsed = jsonLines;
+      context.sourceFormat = 'jsonl';
+    }
   }
 
   const maxDepth = options?.maxDepth ?? DEFAULT_SCHEME_DECODE_MAX_DEPTH;
@@ -811,6 +818,10 @@ export function inverseWithContext(
 
     if (context.sourceFormat === 'jsonl' && Array.isArray(result)) {
       return stringifyJsonLines(result);
+    }
+
+    if (context.sourceFormat === 'scheme' && typeof result === 'string') {
+      return result;
     }
 
     // 使用原始缩进格式
