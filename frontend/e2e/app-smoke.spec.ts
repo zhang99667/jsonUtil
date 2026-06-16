@@ -469,6 +469,37 @@ test('深度解析报告筛选会展示隐藏内部路径', async ({ page }) => 
   await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.payload');
 });
 
+test('深度解析报告切换输入后清空旧筛选', async ({ page }) => {
+  await fillSourceEditor(page, JSON.stringify({
+    old_payload: JSON.stringify({
+      old_target: true,
+    }),
+  }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  const filterInput = page.locator('[data-tour="transform-report-filter"]');
+  await filterInput.fill('old_target');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.old_payload');
+  await reportPanel.getByRole('button', { name: '关闭 深度解析报告' }).click();
+  await expect(reportPanel).toBeHidden();
+
+  await fillSourceEditor(page, JSON.stringify({
+    new_payload: JSON.stringify({
+      new_target: true,
+    }),
+  }));
+
+  await expectPreviewText(page, '"new_target": true');
+  await page.locator('[data-tour="transform-report-button"]').click();
+  await expect(filterInput).toHaveValue('');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).toContainText('$.new_payload');
+  await expect(reportPanel.locator('[data-tour="transform-report-records"]')).not.toContainText('$.old_payload');
+  await expect(reportPanel.locator('[data-tour="transform-report-empty"]')).toBeHidden();
+});
+
 test('深度解析报告展示未展开线索', async ({ page }) => {
   const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf-8')) as {
     version: string;
