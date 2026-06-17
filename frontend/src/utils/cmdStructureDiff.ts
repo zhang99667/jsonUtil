@@ -234,17 +234,21 @@ const extractBalancedJsonFrom = (text: string, start: number): string | null => 
   return null;
 };
 
-const extractBalancedJsonText = (text: string): string | null => {
+const extractBalancedJsonTexts = (text: string): string[] => {
+  const candidates: string[] = [];
+
   for (const open of ['{', '[']) {
     let start = text.indexOf(open);
     while (start >= 0) {
       const candidate = extractBalancedJsonFrom(text, start);
-      if (candidate && parseJsonCandidate(candidate) !== undefined) return candidate;
+      if (candidate && parseJsonCandidate(candidate) !== undefined) {
+        candidates.push(candidate);
+      }
       start = text.indexOf(open, start + 1);
     }
   }
 
-  return null;
+  return candidates;
 };
 
 const parseCmdStructureJsonCandidate = (text: string, depth = 0): JsonValue | undefined => {
@@ -265,8 +269,14 @@ const parseCmdStructureJsonCandidate = (text: string, depth = 0): JsonValue | un
   const treeParsed = parseCmdHandlerTreeText(trimmed);
   if (treeParsed !== undefined) return treeParsed;
 
-  const balancedJson = extractBalancedJsonText(trimmed);
-  if (!balancedJson || balancedJson === trimmed) return undefined;
+  const balancedJsonCandidates = extractBalancedJsonTexts(trimmed)
+    .filter(candidate => candidate !== trimmed);
+  const recognizableCandidate = balancedJsonCandidates.find(candidate => {
+    const candidateValue = parseCmdStructureJsonCandidate(candidate, depth + 1);
+    return candidateValue !== undefined && hasRecognizableCmdStructure(candidateValue);
+  });
+  const balancedJson = recognizableCandidate ?? balancedJsonCandidates[0];
+  if (!balancedJson) return undefined;
 
   return parseCmdStructureJsonCandidate(balancedJson, depth + 1);
 };
