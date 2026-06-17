@@ -776,6 +776,14 @@ const getCommandSourceInfo = (
   return null;
 };
 
+const getCommandSchemaFromSource = (source?: string): string | undefined => {
+  if (!source) return undefined;
+  const normalized = normalizeSourceString(source);
+  return detectSchemeType(normalized) === 'url'
+    ? getSchemeCommandSchemaFromUrl(normalized)
+    : undefined;
+};
+
 const tryParseRawJsonSource = (source?: string): unknown | null => {
   const trimmed = source?.trim();
   if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) return null;
@@ -1168,9 +1176,10 @@ export const formatCmdHandlerCompatibleResult = (
     const cmdParams: unknown = JSON.parse(decoded);
     const sourceValue = source?.trim();
     const sourceShape = parseSourceShape(sourceValue);
+    const inferredCommandSchema = commandSchema || getCommandSchemaFromSource(sourceValue);
     const result: CmdHandlerCompatibleResult = {
       result: {
-        ...(commandSchema ? { cmdSchema: commandSchema } : {}),
+        ...(inferredCommandSchema ? { cmdSchema: inferredCommandSchema } : {}),
         cmdParams: wrapNestedCmdHandlerParams(cmdParams, sourceShape),
         ...(sourceValue ? { source: sourceValue } : {}),
       },
@@ -1198,9 +1207,11 @@ export const formatPrimaryCmdHandlerCompatibleResult = (
       return formatCmdHandlerCompatibleResult(decoded, commandSchema, source);
     }
 
+    const inferredPrimaryCommandSchema = primaryCommand.commandSchema ||
+      getCommandSchemaFromSource(primaryCommand.source);
     const result: CmdHandlerCompatibleResult = {
       result: {
-        ...(primaryCommand.commandSchema ? { cmdSchema: primaryCommand.commandSchema } : {}),
+        ...(inferredPrimaryCommandSchema ? { cmdSchema: inferredPrimaryCommandSchema } : {}),
         cmdParams: wrapNestedCmdHandlerParams(
           primaryCommand.decodedValue,
           parseSourceShape(primaryCommand.source)
