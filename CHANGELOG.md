@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.110 (2026-06-17) - cmd:diff 使用引导
+### ✨ 新特性
+- **CLI 帮助**: `cmd:diff` 支持 `-h/--help`，空 stdin 会回退展示用法，README 增加 cmdHandler 对齐、候选推荐和定点路径对比示例
+- **候选引导**: `--suggest-actual` 会优先输出 actual 候选推荐，并给出可复制的 `--actual-path` 下一步参数，避免推荐结果被大段 diff 淹没
+- **自动化契约**: `cmd:diff` 退出码统一为 `0` 结构一致、`1` 存在差异、`2` 参数或输入错误，便于接入 shell/CI 判断
+
 ## v1.8.109 (2026-06-17) - cmd:diff actual 候选推荐
 ### ✨ 新特性
 - **CLI 候选推荐**: `cmd:diff` 新增 `--suggest-actual`，可从整段 actual response 中列出最接近 expected 的 CMD 候选路径，减少多 CMD 场景下猜错字段的排查成本

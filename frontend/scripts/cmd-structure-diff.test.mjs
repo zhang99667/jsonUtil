@@ -1,3 +1,8 @@
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   assertRecognizableCmdInput,
@@ -15,6 +20,8 @@ import {
   prepareComparisonInputs,
   rankCmdStructureCandidates,
 } from './cmd-structure-diff.mjs';
+
+const SCRIPT_PATH = fileURLToPath(new URL('./cmd-structure-diff.mjs', import.meta.url));
 
 const createCmdStructure = () => ({
   result: {
@@ -325,6 +332,7 @@ ${JSON.stringify(createCmdStructure())}
     expect(candidates[1].id).toBe('$.data.action_cmd');
     expect(report).toContain('#1 $.data.panel_cmd');
     expect(report).toContain('结构一致');
+    expect(report).toContain("建议下一步: 重新运行时添加 --actual-path '$.data.panel_cmd'");
   });
 
   it('支持按 actual 候选路径直接选择对比结构', () => {
@@ -585,6 +593,7 @@ describe('parseCliArgs', () => {
         ignoreExtraPaths: true,
         suggestActual: false,
         actualPath: '',
+        help: false,
       },
       paths: ['actual.json', 'expected.json'],
     });
@@ -597,6 +606,7 @@ describe('parseCliArgs', () => {
         ignoreExtraPaths: true,
         suggestActual: false,
         actualPath: '',
+        help: false,
       },
       paths: [],
     });
@@ -615,6 +625,7 @@ describe('parseCliArgs', () => {
         ignoreExtraPaths: false,
         suggestActual: true,
         actualPath: '$.data.panel_cmd',
+        help: false,
       },
       paths: ['actual.json', 'expected.json'],
     });
@@ -622,5 +633,117 @@ describe('parseCliArgs', () => {
 
   it('actual-path 缺少值时给出明确错误', () => {
     expect(() => parseCliArgs(['--actual-path'])).toThrow('--actual-path 需要指定候选路径');
+  });
+
+  it('支持 help 参数', () => {
+    expect(parseCliArgs(['--help'])).toEqual({
+      options: {
+        fromStdin: false,
+        ignoreExtraPaths: false,
+        suggestActual: false,
+        actualPath: '',
+        help: true,
+      },
+      paths: [],
+    });
+  });
+});
+
+describe('cmd:diff CLI', () => {
+  const runCli = (args, input) => spawnSync(process.execPath, [SCRIPT_PATH, ...args], {
+    encoding: 'utf8',
+    input,
+  });
+
+  it('help 输出用法并返回 0', () => {
+    const result = runCli(['--help']);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('用法: npm run cmd:diff');
+    expect(result.stdout).toContain('退出码: 0 结构一致，1 存在差异，2 参数或输入错误');
+  });
+
+  it('结构一致返回 0，存在差异返回 1', () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), 'cmd-diff-'));
+    try {
+      const actualPath = path.join(tmpDir, 'actual.json');
+      const expectedPath = path.join(tmpDir, 'expected.json');
+      writeFileSync(actualPath, JSON.stringify({
+        result: {
+          cmdSchema: 'baiduboxapp://v1/panel',
+          cmdParams: {
+            tab: 'reward',
+          },
+        },
+      }));
+      writeFileSync(expectedPath, JSON.stringify({
+        result: {
+          cmdSchema: 'baiduboxapp://v1/panel',
+          cmdParams: {
+            tab: 'reward',
+          },
+        },
+      }));
+
+      expect(runCli([actualPath, expectedPath]).status).toBe(0);
+
+      writeFileSync(actualPath, JSON.stringify({
+        result: {
+          cmdSchema: 'baiduboxapp://v1/action',
+          cmdParams: {
+            from: 'feed',
+          },
+        },
+      }));
+      const diffResult = runCli([actualPath, expectedPath]);
+
+      expect(diffResult.status).toBe(1);
+      expect(diffResult.stdout).toContain('cmdSchema 不一致');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('非法输入或空 stdin 返回 2', () => {
+    const invalidJsonResult = runCli(['--stdin'], '{"actual":');
+    const invalidPairResult = runCli(['--stdin'], '{"actual":{}}');
+    const emptyResult = runCli(['--stdin'], '');
+
+    expect(invalidJsonResult.status).toBe(2);
+    expect(invalidJsonResult.stderr).toContain('stdin 不是有效 JSON');
+    expect(invalidPairResult.status).toBe(2);
+    expect(invalidPairResult.stderr).toContain('必须是包含 actual 和 expected 的 JSON 对象');
+    expect(emptyResult.status).toBe(2);
+    expect(emptyResult.stderr).toContain('用法: npm run cmd:diff');
+  });
+
+  it('suggest-actual 先输出候选推荐再输出差异报告', () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), 'cmd-diff-'));
+    try {
+      const actualPath = path.join(tmpDir, 'actual.json');
+      const expectedPath = path.join(tmpDir, 'expected.json');
+      writeFileSync(actualPath, JSON.stringify({
+        data: {
+          action_cmd: 'baiduboxapp://v1/action?from=feed',
+          panel_cmd: 'baiduboxapp://v1/panel?tab=reward',
+        },
+      }));
+      writeFileSync(expectedPath, JSON.stringify({
+        result: {
+          cmdSchema: 'baiduboxapp://v1/panel',
+          cmdParams: {
+            tab: 'reward',
+          },
+        },
+      }));
+
+      const result = runCli([actualPath, expectedPath, '--suggest-actual']);
+
+      expect(result.status).toBe(1);
+      expect(result.stdout.indexOf('CMD actual 候选推荐')).toBeLessThan(result.stdout.indexOf('CMD 结构差异报告'));
+      expect(result.stdout).toContain("建议下一步: 重新运行时添加 --actual-path '$.data.panel_cmd'");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });

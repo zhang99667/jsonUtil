@@ -825,6 +825,12 @@ const formatCmdCandidateSummary = candidate => {
   ].join('，');
 };
 
+const formatShellArg = value => {
+  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(value)) return value;
+
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+};
+
 export const formatCmdStructureCandidateRecommendations = candidates => {
   const lines = ['CMD actual 候选推荐'];
   if (candidates.length === 0) {
@@ -838,19 +844,22 @@ export const formatCmdStructureCandidateRecommendations = candidates => {
     lines.push(`- #${index + 1} ${candidate.label}${sourceLabel}${schema}: ${formatCmdCandidateSummary(candidate)}`);
   });
 
+  lines.push(`- 建议下一步: 重新运行时添加 --actual-path ${formatShellArg(candidates[0].id)}`);
   return lines.join('\n');
 };
 
-const printUsage = () => {
-  console.error('用法: npm run cmd:diff -- <actual-json-file> <expected-json-file>');
-  console.error('也可输入单个对比包: npm run cmd:diff -- <pair-json-file>');
-  console.error('也可通过 stdin 输入对比包: pbpaste | npm run cmd:diff -- --stdin');
-  console.error('可选参数: --ignore-extra 忽略 actual 中多出的路径，用于 expected 只保存稳定子集的场景');
-  console.error('可选参数: --suggest-actual 输出 actual response 中最接近 expected 的 CMD 候选');
-  console.error('可选参数: --actual-path <path> 指定 actual response 中的候选路径进行对比');
-  console.error('对比包格式: {"actual": {...}, "expected": {...}}');
-  console.error('actual 通常为本工具复制的 CMD 结构，expected 通常为内部 cmdHandler 导出的 JSON');
-  console.error('输入可带日志前缀、Markdown 代码块、树形文本或字符串化 JSON');
+const printUsage = (writeLine = console.error) => {
+  writeLine('用法: npm run cmd:diff -- <actual-json-file> <expected-json-file>');
+  writeLine('也可输入单个对比包: npm run cmd:diff -- <pair-json-file>');
+  writeLine('也可通过 stdin 输入对比包: pbpaste | npm run cmd:diff -- --stdin');
+  writeLine('可选参数: --ignore-extra 忽略 actual 中多出的路径，用于 expected 只保存稳定子集的场景');
+  writeLine('可选参数: --suggest-actual 输出 actual response 中最接近 expected 的 CMD 候选');
+  writeLine('可选参数: --actual-path <path> 指定 actual response 中的候选路径进行对比');
+  writeLine('可选参数: -h, --help 显示当前帮助');
+  writeLine('退出码: 0 结构一致，1 存在差异，2 参数或输入错误');
+  writeLine('对比包格式: {"actual": {...}, "expected": {...}}');
+  writeLine('actual 通常为本工具复制的 CMD 结构，expected 通常为内部 cmdHandler 导出的 JSON');
+  writeLine('输入可带日志前缀、Markdown 代码块、树形文本或字符串化 JSON');
 };
 
 export const parseCliArgs = argv => {
@@ -859,11 +868,17 @@ export const parseCliArgs = argv => {
     ignoreExtraPaths: false,
     suggestActual: false,
     actualPath: '',
+    help: false,
   };
   const paths = [];
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
+
+    if (arg === '--help' || arg === '-h') {
+      options.help = true;
+      continue;
+    }
 
     if (arg === '--stdin') {
       options.fromStdin = true;
@@ -959,7 +974,10 @@ export const prepareComparisonInputs = (inputs, options = {}) => {
 
 const readComparisonInputs = async (paths, options) => {
   if (options.fromStdin || (paths.length === 0 && !process.stdin.isTTY)) {
-    const pair = extractCmdStructurePair(parseJsonInput(await readStdin(), 'stdin'));
+    const stdinText = await readStdin();
+    if (!stdinText.trim()) return null;
+
+    const pair = extractCmdStructurePair(parseJsonInput(stdinText, 'stdin'));
     return prepareComparisonInputs(pair, options);
   }
 
@@ -990,10 +1008,16 @@ const runCli = async () => {
 
   try {
     const { options, paths } = parseCliArgs(args);
+    if (options.help) {
+      printUsage(line => process.stdout.write(`${line}\n`));
+      process.exitCode = 0;
+      return;
+    }
+
     const comparison = await readComparisonInputs(paths, options);
     if (!comparison) {
       printUsage();
-      process.exitCode = 1;
+      process.exitCode = 2;
       return;
     }
 
@@ -1006,19 +1030,20 @@ const runCli = async () => {
       ...(options.ignoreExtraPaths ? { modeLabel: '忽略 actual 额外路径' } : {}),
     };
 
-    const output = [formatCmdStructureDiff(diff, reportContext)];
+    const output = [];
     if (options.suggestActual) {
       const recommendations = rankCmdStructureCandidates(actualCandidates, inputs.expected, {
         ignoreExtraPaths: options.ignoreExtraPaths,
       });
       output.push(formatCmdStructureCandidateRecommendations(recommendations));
     }
+    output.push(formatCmdStructureDiff(diff, reportContext));
 
     process.stdout.write(`${output.join('\n\n')}\n`);
-    process.exitCode = diff.hasDifferences ? 2 : 0;
+    process.exitCode = diff.hasDifferences ? 1 : 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
-    process.exitCode = 1;
+    process.exitCode = 2;
   }
 };
 
