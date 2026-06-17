@@ -350,6 +350,14 @@ ${JSON.stringify(createCmdStructure(), null, 2)}
     expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
   });
 
+  it('多段日志 JSON 会优先解析可识别的 cmdHandler 结构', () => {
+    const parsed = parseCmdStructureJson(`request meta => {"traceId":"abc","errno":0}
+cmdHandler result => ${JSON.stringify(createCmdStructure())}
+done`, 'cmdHandler 输出');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
+  });
+
   it('解析带方括号日志前缀的 cmdHandler 输出', () => {
     const parsed = parseCmdStructureJson(`[cmdHandler] output => ${JSON.stringify(createCmdStructure())}`, 'cmdHandler 输出');
 

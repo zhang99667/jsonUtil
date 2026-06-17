@@ -173,6 +173,14 @@ ${JSON.stringify(createCmdStructure())}
     expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
   });
 
+  it('文件输入多段 JSON 时优先解析可识别的 cmdHandler 结构', () => {
+    const parsed = parseJsonInput(`request meta => {"traceId":"abc","errno":0}
+cmdHandler result => ${JSON.stringify(createCmdStructure())}
+done`, 'expected');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
+  });
+
   it('文件输入兼容字符串化 JSON', () => {
     const parsed = parseJsonInput(JSON.stringify(JSON.stringify(createCmdStructure())), 'expected');
 

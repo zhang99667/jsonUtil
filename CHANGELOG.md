@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.111 (2026-06-17) - cmdHandler 多段日志解析
+### ✨ 新特性
+- **cmdHandler 粘贴容错**: 页面和 `cmd:diff` 在日志里遇到多个 JSON 片段时，会优先选择可识别为 CMD 结构的片段，避免前置 metadata JSON 抢占解析结果
+- **回归覆盖**: 补充“普通 metadata JSON + 后置 cmdHandler result”的页面与 CLI 解析用例，保持两端粘贴清洗策略一致
+
 ## v1.8.110 (2026-06-17) - cmd:diff 使用引导
 ### ✨ 新特性
 - **CLI 帮助**: `cmd:diff` 支持 `-h/--help`，空 stdin 会回退展示用法，README 增加 cmdHandler 对齐、候选推荐和定点路径对比示例
