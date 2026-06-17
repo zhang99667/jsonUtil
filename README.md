@@ -88,6 +88,29 @@ npm run perf:scheme -- --iterations 3 --strict
 
 `corpus:snapshot:check` 用于校验脱敏真实 response 的解析质量基线；`corpus:snapshot:diff` 用于对比两份质量快照的覆盖率、CMD/资源字段、必需项失败和 cmdHandler 对齐趋势；`perf:scheme` 会优先复制真实 `data.video` 条目构造 50KB / 250KB response，用于对核心解析耗时、展开记录、CMD 字段和资源字段下限做本地/CI 预算检查。
 
+### CMD 结构差异 CLI
+
+`cmd:diff` 用于对齐本工具解析出的 CMD 结构与内部 cmdHandler expected。actual 可以是本工具复制的 CMD 结构，也可以是整段真实 response；expected 可以是 cmdHandler JSON、树形可见文本、日志片段、Markdown 代码块或字符串化 JSON。
+
+```bash
+# 对比两个文件
+npm run cmd:diff -- actual.json expected.json
+
+# 对比页面复制出的 actual/expected 包
+pbpaste | npm run cmd:diff -- --stdin
+
+# expected 只保存稳定子集时忽略 actual 额外展开路径
+npm run cmd:diff -- actual.json expected.json --ignore-extra
+
+# actual 是整段 response 时，先推荐最接近 expected 的 CMD 候选
+npm run cmd:diff -- actual-response.json cmdhandler-expected.json --suggest-actual
+
+# 根据推荐路径定点对比
+npm run cmd:diff -- actual-response.json cmdhandler-expected.json --actual-path '$.data.video[0].material[0].info[0].ad_common.scheme'
+```
+
+退出码约定：`0` 表示结构一致，`1` 表示存在差异，`2` 表示参数或输入错误。运行 `npm run cmd:diff -- --help` 可查看最新参数说明。
+
 ## CI/CD 与部署
 
 项目已提供根目录 GitHub Actions 和本机 SSH 部署脚本：
