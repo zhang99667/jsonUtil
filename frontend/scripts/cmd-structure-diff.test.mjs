@@ -525,6 +525,80 @@ describe('diffCmdStructures', () => {
     expect(formatCmdStructureDiff(diff)).toContain('已忽略 actual 额外路径 2 个');
   });
 
+  it('差异报告会折叠同一额外分支下的子路径', () => {
+    const diff = diffCmdStructures({
+      result: {
+        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdParams: {
+          stable: 'ok',
+          extra: {
+            trace: 'debug',
+            nested: {
+              token: 'abc',
+            },
+          },
+        },
+      },
+    }, {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdParams: {
+          stable: 'ok',
+        },
+      },
+    });
+    const report = formatCmdStructureDiff(diff);
+
+    expect(diff.extraPaths).toEqual([
+      '$.extra',
+      '$.extra.trace',
+      '$.extra.nested',
+      '$.extra.nested.token',
+    ]);
+    expect(report).toContain('额外路径 4 个（折叠为 1 个分支）');
+    expect(report).toContain('  - $.extra');
+    expect(report).not.toContain('$.extra.nested.token');
+  });
+
+  it('候选评分会按折叠后的缺失分支数量计算', () => {
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdParams: {
+          stable: 'ok',
+          branch: {
+            title: 'reward',
+            nested: {
+              id: '123',
+            },
+          },
+        },
+      },
+    };
+    const candidates = rankCmdStructureCandidates([
+      {
+        id: '$.missing_branch',
+        label: '$.missing_branch',
+        actual: {
+          result: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              stable: 'ok',
+            },
+          },
+        },
+      },
+    ], expected);
+
+    expect(candidates[0].diff.missingPaths).toEqual([
+      '$.branch',
+      '$.branch.title',
+      '$.branch.nested',
+      '$.branch.nested.id',
+    ]);
+    expect(candidates[0].score).toBe(100);
+  });
+
   it('识别 source 单侧缺失差异', () => {
     const actual = createCmdStructure();
     const expected = createCmdStructure();
