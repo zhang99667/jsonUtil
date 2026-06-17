@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.100 (2026-06-17) - cmdHandler 树形文本与 response 粘贴
+### ✨ 新特性
+- **cmdHandler 对比**: 支持解析内部参考页树形视图复制出的可见文本，自动清理 `N item(s)` 与 `cmd解析` 展示文案后提取 `cmdSchema/cmdParams`
+- **真实 Response**: 对比输入可直接粘贴整段广告 response，自动优先定位 `ad_common.scheme` 等主 CMD 字段并快速导出 `cmdSchema/cmdParams`
+- **CLI 对齐**: `cmd:diff` 文件输入同步支持树形文本和整段 response，便于直接保存参考页复制内容或接口返回后做本地结构差异检查
+
 ## v1.8.99 (2026-06-17) - cmdHandler 解析结果包装兼容
 ### ✨ 新特性
 - **cmdHandler 对比**: 支持识别内部参考页复制出的 `解析结果` 包装层，粘贴 `{ "解析结果": { "result": ... } }` 时仍能正确提取 `cmdSchema` 和 `cmdParams`

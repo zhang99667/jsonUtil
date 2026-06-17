@@ -5,6 +5,7 @@ import {
   formatCmdStructureDiff,
   normalizeCmdStructure,
   parseCliArgs,
+  parseCmdHandlerTreeText,
 } from './cmd-structure-diff.mjs';
 
 const createCmdStructure = () => ({
@@ -74,6 +75,84 @@ describe('normalizeCmdStructure', () => {
         },
       },
       source: undefined,
+    });
+  });
+
+  it('解析内部页面树形可见文本', () => {
+    const parsed = parseCmdHandlerTreeText(`Home
+"解析结果":{1 item
+cmd解析
+"result":{2 items
+"cmdSchema":"nadcorevendor://vendor/ad/rewardImpl"
+"cmdParams":{1 item
+"video_info":{1 item
+"vid":"123"
+}
+}
+}
+}
+iqoo13`);
+
+    expect(normalizeCmdStructure(parsed)).toEqual({
+      cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      cmdParams: {
+        video_info: {
+          vid: '123',
+        },
+      },
+      source: undefined,
+    });
+  });
+
+  it('整段 response 自动聚焦主 CMD 字段', () => {
+    const landingUrl = 'https://example.com/landing?sku=101';
+    const panelScheme = `baiduboxapp://v1/panel?url=${encodeURIComponent(landingUrl)}`;
+    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      page_url: landingUrl,
+      tail_frame: {
+        panel_scheme: panelScheme,
+      },
+    }))}`;
+
+    const structure = normalizeCmdStructure({
+      errno: 0,
+      data: {
+        video: [{
+          material: [{
+            info: [{
+              ad_common: {
+                scheme: rootScheme,
+              },
+              supportCMD: true,
+            }],
+          }],
+        }],
+      },
+    });
+
+    expect(structure.cmdSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
+    expect(structure.source).toBe(rootScheme);
+    expect(structure.cmdParams).toMatchObject({
+      video_info: {
+        page_url: {
+          cmdSchema: 'https://example.com/landing',
+          cmdParams: {
+            sku: '101',
+          },
+          source: landingUrl,
+        },
+        tail_frame: {
+          panel_scheme: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              url: {
+                cmdSchema: 'https://example.com/landing',
+              },
+            },
+            source: panelScheme,
+          },
+        },
+      },
     });
   });
 });
