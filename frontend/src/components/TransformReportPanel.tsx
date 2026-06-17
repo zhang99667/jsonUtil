@@ -7,6 +7,7 @@ import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import {
   diffCmdStructures,
   formatCmdStructureDiff,
+  hasRecognizableCmdStructure,
   parseCmdStructureJson,
 } from '../utils/cmdStructureDiff';
 import {
@@ -77,6 +78,12 @@ const formatCopySizeLabel = (content: string): string => {
 const formatCopySuccessMessage = (label: string, content: string): string => (
   `已复制${label}（${formatCopySizeLabel(content)}）`
 );
+
+const assertRecognizableCmdComparisonExpected = (value: ReturnType<typeof parseCmdStructureJson>) => {
+  if (!hasRecognizableCmdStructure(value)) {
+    throw new Error('cmdHandler 输出未识别到 CMD 结构，请粘贴解析后的 result、树形文本或包含主 CMD 字段的 response');
+  }
+};
 
 const getPathValueCopyRowCount = (records: TransformReportRecord[]): number => (
   records.reduce((count, record) => count + getTransformPathValueCopyRows(record).length, 0)
@@ -558,6 +565,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
     const actual = parseCmdStructureJson(actualText, '本工具 CMD 结构');
     const expected = parseCmdStructureJson(cmdComparisonExpectedText, 'cmdHandler 输出');
+    assertRecognizableCmdComparisonExpected(expected);
     const diff = diffCmdStructures(actual, expected, {
       ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
     });
@@ -700,6 +708,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           '本工具 CMD 结构'
         );
         const expected = parseCmdStructureJson(expectedText, 'cmdHandler 输出');
+        assertRecognizableCmdComparisonExpected(expected);
         const diff = diffCmdStructures(actual, expected, {
           ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
         });

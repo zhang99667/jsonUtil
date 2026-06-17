@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.102 (2026-06-17) - cmdHandler 无效粘贴提示
+### ✨ 新特性
+- **cmdHandler 对比**: 粘贴普通 JSON、空解析结果或未包含主 CMD 字段的内容时，页面会明确提示未识别到 CMD 结构，避免直接展示误导性的整段差异报告
+- **回归覆盖**: 补充参考页空结果 `{ "解析结果": { "result": "" } }` 的识别用例，确保只有可归一化为 `cmdSchema/cmdParams` 的内容进入对比
+
 ## v1.8.101 (2026-06-17) - cmdHandler 字符串字段兼容
 ### ✨ 新特性
 - **cmdHandler 对比**: 当本工具 actual 已把 URL/CMD 字段展开为 `cmdSchema/cmdParams/source`，而内部 cmdHandler expected 仍保留同一个 source 字符串时，开启忽略额外路径后不再误报父节点类型差异

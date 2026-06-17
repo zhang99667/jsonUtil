@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   diffCmdStructures,
   formatCmdStructureDiff,
+  hasRecognizableCmdStructure,
   normalizeCmdStructure,
   parseCmdStructureJson,
 } from './cmdStructureDiff';
@@ -296,6 +297,24 @@ iqoo13`, 'cmdHandler 输出');
       },
       source: undefined,
     });
+  });
+
+  it('识别可用于对比的 cmdHandler 输入', () => {
+    expect(hasRecognizableCmdStructure({
+      解析结果: {
+        result: {
+          cmdSchema: 'baiduboxapp://v1/browser/open',
+          cmdParams: {
+            url: 'https://example.com',
+          },
+        },
+      },
+    })).toBe(true);
+    expect(hasRecognizableCmdStructure({
+      解析结果: {
+        result: '',
+      },
+    })).toBe(false);
   });
 
   it('整段 response 自动聚焦主 CMD 字段', () => {
