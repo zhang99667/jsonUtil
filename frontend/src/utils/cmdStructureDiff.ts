@@ -496,6 +496,10 @@ const findCmdStructure = (value: JsonValue): NormalizedCmdStructure | null => {
   return null;
 };
 
+export const hasRecognizableCmdStructure = (value: JsonValue): boolean => (
+  Boolean(findCmdStructure(value) || findRawResponseCmdStructure(value))
+);
+
 export const normalizeCmdStructure = (value: JsonValue): NormalizedCmdStructure => {
   const structure = findCmdStructure(value);
   if (structure) return structure;
