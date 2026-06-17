@@ -64,16 +64,43 @@ const looksLikeRawCmdSource = value => {
   return decoded !== normalized && (URL_LIKE_RE.test(decoded) || QUERY_PAIR_RE.test(decoded));
 };
 
-const parseJsonInput = (text, label) => {
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    const treeParsed = parseCmdHandlerTreeText(text);
-    if (treeParsed !== undefined) return treeParsed;
+const extractBalancedJsonFrom = (text, start) => {
+  const open = text[start];
+  const stack = [];
+  let isInString = false;
+  let isEscaped = false;
 
-    const detail = error instanceof SyntaxError ? error.message : String(error);
-    throw new Error(`${label} 不是有效 JSON: ${detail}`);
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (isInString) {
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (char === '\\') {
+        isEscaped = true;
+      } else if (char === '"') {
+        isInString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      isInString = true;
+      continue;
+    }
+
+    if (char === '{' || char === '[') {
+      stack.push(char === '{' ? '}' : ']');
+      continue;
+    }
+
+    if (char === '}' || char === ']') {
+      if (stack.pop() !== char) return null;
+      if (stack.length === 0) return text.slice(start, index + 1);
+    }
   }
+
+  return null;
 };
 
 const parseJsonCandidate = candidate => {
@@ -82,6 +109,63 @@ const parseJsonCandidate = candidate => {
   } catch {
     return undefined;
   }
+};
+
+const extractBalancedJsonText = text => {
+  for (const open of ['{', '[']) {
+    let start = text.indexOf(open);
+    while (start >= 0) {
+      const candidate = extractBalancedJsonFrom(text, start);
+      if (candidate && parseJsonCandidate(candidate) !== undefined) return candidate;
+      start = text.indexOf(open, start + 1);
+    }
+  }
+
+  return null;
+};
+
+const parseJsonInputCandidate = (text, depth = 0) => {
+  if (depth > 1) return undefined;
+
+  const trimmed = text.trim();
+  if (!trimmed) return undefined;
+
+  const parsed = parseJsonCandidate(trimmed);
+  if (parsed !== undefined) {
+    if (typeof parsed === 'string') {
+      const nested = parseJsonInputCandidate(parsed, depth + 1);
+      return nested ?? parsed;
+    }
+    return parsed;
+  }
+
+  const treeParsed = parseCmdHandlerTreeText(trimmed);
+  if (treeParsed !== undefined) return treeParsed;
+
+  const balancedJson = extractBalancedJsonText(trimmed);
+  if (!balancedJson || balancedJson === trimmed) return undefined;
+
+  return parseJsonInputCandidate(balancedJson, depth + 1);
+};
+
+export const parseJsonInput = (text, label) => {
+  const parsed = parseJsonInputCandidate(text);
+  if (parsed !== undefined) return parsed;
+
+  try {
+    JSON.parse(text);
+  } catch (error) {
+    const detail = error instanceof SyntaxError ? error.message : String(error);
+    throw new Error(`${label} 不是有效 JSON: ${detail}`);
+  }
+
+  throw new Error(`${label} 不是有效 JSON`);
+};
+
+const parseEmbeddedJsonInput = value => {
+  if (typeof value !== 'string') return value;
+
+  return parseJsonInputCandidate(value) ?? value;
 };
 
 const normalizeCmdHandlerTreeLine = line => (
@@ -636,6 +720,7 @@ const printUsage = () => {
   console.error('可选参数: --ignore-extra 忽略 actual 中多出的路径，用于 expected 只保存稳定子集的场景');
   console.error('对比包格式: {"actual": {...}, "expected": {...}}');
   console.error('actual 通常为本工具复制的 CMD 结构，expected 通常为内部 cmdHandler 导出的 JSON');
+  console.error('输入可带日志前缀、Markdown 代码块、树形文本或字符串化 JSON');
 };
 
 export const parseCliArgs = argv => {
@@ -671,10 +756,17 @@ export const parseCliArgs = argv => {
   return { options, paths };
 };
 
+export const normalizeComparisonInputs = inputs => ({
+  ...inputs,
+  actual: parseEmbeddedJsonInput(inputs.actual),
+  expected: parseEmbeddedJsonInput(inputs.expected),
+});
+
 const validateComparisonInputs = inputs => {
-  assertRecognizableCmdInput(inputs.actual, 'actual');
-  assertRecognizableCmdInput(inputs.expected, 'expected');
-  return inputs;
+  const normalizedInputs = normalizeComparisonInputs(inputs);
+  assertRecognizableCmdInput(normalizedInputs.actual, 'actual');
+  assertRecognizableCmdInput(normalizedInputs.expected, 'expected');
+  return normalizedInputs;
 };
 
 const readComparisonInputs = async (paths, options) => {
