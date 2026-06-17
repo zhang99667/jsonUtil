@@ -597,11 +597,31 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     });
   };
 
+  const findActiveCmdComparisonRecord = (): TransformReportRecord | null => {
+    if (!cmdComparisonRecordPath) return null;
+
+    return reportView?.records.find(record => record.path === cmdComparisonRecordPath && record.hasCmdStructure) ||
+      reportView?.cmdStructureRecords.find(record => record.path === cmdComparisonRecordPath) ||
+      fullReportView?.records.find(record => record.path === cmdComparisonRecordPath && record.hasCmdStructure) ||
+      fullReportView?.cmdStructureRecords.find(record => record.path === cmdComparisonRecordPath) ||
+      report?.records.find(record => record.path === cmdComparisonRecordPath && record.hasCmdStructure) ||
+      null;
+  };
+
   const buildCmdComparisonCandidates = (
-    expected: ReturnType<typeof parseCmdStructureJson>
+    expected: ReturnType<typeof parseCmdStructureJson>,
+    activeRecord?: TransformReportRecord | null
   ): RankedCmdStructureCandidate[] => {
     const candidateRecords = fullReportView?.cmdStructureRecords || reportView?.cmdStructureRecords || [];
-    const candidateInputs = candidateRecords.reduce<CmdStructureCandidateInput[]>((items, candidateRecord) => {
+    const candidateRecordMap = new Map<string, TransformReportRecord>();
+    candidateRecords.forEach(candidateRecord => {
+      candidateRecordMap.set(candidateRecord.path, candidateRecord);
+    });
+    if (activeRecord) {
+      candidateRecordMap.set(activeRecord.path, activeRecord);
+    }
+
+    const candidateInputs = Array.from(candidateRecordMap.values()).reduce<CmdStructureCandidateInput[]>((items, candidateRecord) => {
       const candidateText = getTransformRecordCmdStructureCopyText(candidateRecord);
       if (!candidateText) return items;
 
@@ -650,9 +670,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const buildActiveCmdComparisonReportText = (): string => {
-    if (!report || !cmdComparisonRecordPath || !cmdComparisonExpectedText.trim()) return '';
+    if (!cmdComparisonExpectedText.trim()) return '';
 
-    const record = report.records.find(item => item.path === cmdComparisonRecordPath);
+    const record = findActiveCmdComparisonRecord();
     if (!record) return '';
 
     return buildCmdComparisonReportText(record);
@@ -664,8 +684,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     try {
       const expected = parseCmdStructureJson(cmdComparisonExpectedText, 'cmdHandler 输出');
       assertRecognizableCmdComparisonExpected(expected);
+      const activeRecord = findActiveCmdComparisonRecord();
       return formatCmdComparisonCandidateText(
-        buildCmdComparisonCandidates(expected),
+        buildCmdComparisonCandidates(expected, activeRecord),
         cmdComparisonRecordPath
       );
     } catch {
@@ -822,7 +843,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           hasSourceDiff: Boolean(diff.sourceDiff),
           previewLines: diffReportText.split('\n').slice(1, 6),
         };
-        candidateRecommendations = buildCmdComparisonCandidates(expected);
+        candidateRecommendations = buildCmdComparisonCandidates(expected, record);
       } catch (error) {
         errorText = error instanceof Error ? error.message : String(error);
       }
