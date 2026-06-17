@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  assertRecognizableCmdInput,
   diffCmdStructures,
   extractCmdStructurePair,
   formatCmdStructureDiff,
+  hasRecognizableCmdStructure,
   normalizeCmdStructure,
   parseCliArgs,
   parseCmdHandlerTreeText,
@@ -154,6 +156,27 @@ iqoo13`);
         },
       },
     });
+  });
+
+  it('识别可对比 CMD 输入并拒绝空解析结果', () => {
+    expect(hasRecognizableCmdStructure({
+      解析结果: {
+        result: {
+          cmdSchema: 'baiduboxapp://v1/open',
+          cmdParams: {},
+        },
+      },
+    })).toBe(true);
+    expect(hasRecognizableCmdStructure({
+      解析结果: {
+        result: '',
+      },
+    })).toBe(false);
+    expect(() => assertRecognizableCmdInput({
+      解析结果: {
+        result: '',
+      },
+    }, 'expected')).toThrow('expected 未识别到 CMD 结构');
   });
 });
 

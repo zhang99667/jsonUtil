@@ -391,6 +391,16 @@ const findCmdStructure = value => {
   return null;
 };
 
+export const hasRecognizableCmdStructure = value => (
+  Boolean(findCmdStructure(value) || findRawResponseCmdStructure(value))
+);
+
+export const assertRecognizableCmdInput = (value, label) => {
+  if (hasRecognizableCmdStructure(value)) return;
+
+  throw new Error(`${label} 未识别到 CMD 结构，请输入 cmdHandler result、树形文本或包含主 CMD 字段的 response`);
+};
+
 export const normalizeCmdStructure = value => {
   const structure = findCmdStructure(value);
   if (structure) return structure;
@@ -661,15 +671,21 @@ export const parseCliArgs = argv => {
   return { options, paths };
 };
 
+const validateComparisonInputs = inputs => {
+  assertRecognizableCmdInput(inputs.actual, 'actual');
+  assertRecognizableCmdInput(inputs.expected, 'expected');
+  return inputs;
+};
+
 const readComparisonInputs = async (paths, options) => {
   if (options.fromStdin || (paths.length === 0 && !process.stdin.isTTY)) {
     const pair = extractCmdStructurePair(parseJsonInput(await readStdin(), 'stdin'));
-    return pair;
+    return validateComparisonInputs(pair);
   }
 
   if (paths.length === 1) {
     const pair = extractCmdStructurePair(parseJsonInput(await readFile(paths[0], 'utf8'), 'pair'));
-    return pair;
+    return validateComparisonInputs(pair);
   }
 
   if (paths.length === 2) {
@@ -678,10 +694,10 @@ const readComparisonInputs = async (paths, options) => {
       readFile(paths[1], 'utf8'),
     ]);
 
-    return {
+    return validateComparisonInputs({
       actual: parseJsonInput(actualText, 'actual'),
       expected: parseJsonInput(expectedText, 'expected'),
-    };
+    });
   }
 
   return null;
