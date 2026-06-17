@@ -889,6 +889,15 @@ test('cmdHandler 对比可推荐更匹配的 actual CMD', async ({ page }) => {
     .locator('[data-tour="transform-report-cmd-candidate"]')
     .filter({ hasText: '$.panel_cmd' });
   await expect(panelCandidate).toContainText('结构一致');
+
+  await reportPanel.getByRole('button', { name: '复制排查报告' }).click();
+  await expect(page.getByText(/已复制排查报告（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('cmdHandler actual 候选推荐');
+  const collaborationReport = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(collaborationReport).toContain('可能拿错 actual');
+  expect(collaborationReport).toContain('#1 $.panel_cmd');
+
   await panelCandidate.click();
 
   const panelRow = reportPanel

@@ -415,6 +415,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     try {
       const archivePackageText = formatTransformArchivePackageJsonText(report, reportView, deferredQuery, {
         cmdComparisonReportText: buildActiveCmdComparisonReportText(),
+        cmdComparisonCandidateText: buildActiveCmdComparisonCandidateText(),
       });
       await copyText(archivePackageText);
       toast.success(formatCopySuccessMessage('归档包', archivePackageText), { duration: 2000 });
@@ -596,6 +597,58 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     });
   };
 
+  const buildCmdComparisonCandidates = (
+    expected: ReturnType<typeof parseCmdStructureJson>
+  ): RankedCmdStructureCandidate[] => {
+    const candidateRecords = fullReportView?.cmdStructureRecords || reportView?.cmdStructureRecords || [];
+    const candidateInputs = candidateRecords.reduce<CmdStructureCandidateInput[]>((items, candidateRecord) => {
+      const candidateText = getTransformRecordCmdStructureCopyText(candidateRecord);
+      if (!candidateText) return items;
+
+      try {
+        items.push({
+          id: candidateRecord.path,
+          label: candidateRecord.path,
+          sourceLabel: candidateRecord.sourceLabel,
+          commandSchema: candidateRecord.commandSchema,
+          actual: parseCmdStructureJson(candidateText, '本工具 CMD 结构'),
+        });
+      } catch {
+        // 单条候选解析失败不影响其他 CMD 的推荐排序。
+      }
+
+      return items;
+    }, []);
+
+    return rankCmdStructureCandidates(candidateInputs, expected, {
+      ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
+      limit: 3,
+    });
+  };
+
+  const formatCmdComparisonCandidateText = (
+    candidates: RankedCmdStructureCandidate[],
+    activePath: string
+  ): string => {
+    if (candidates.length <= 1) return '';
+
+    const bestCandidate = candidates[0];
+    const lines = [
+      'cmdHandler actual 候选推荐',
+      bestCandidate.id === activePath
+        ? '- 当前 actual 已是最匹配候选'
+        : `- 可能拿错 actual，建议优先切到 ${bestCandidate.label}`,
+    ];
+
+    candidates.forEach((candidate, index) => {
+      const schema = candidate.commandSchema ? ` · ${candidate.commandSchema}` : '';
+      const current = candidate.id === activePath ? ' · 当前' : '';
+      lines.push(`- #${index + 1} ${candidate.label}${schema}${current}: ${formatCmdCandidateSummary(candidate)}`);
+    });
+
+    return lines.join('\n');
+  };
+
   const buildActiveCmdComparisonReportText = (): string => {
     if (!report || !cmdComparisonRecordPath || !cmdComparisonExpectedText.trim()) return '';
 
@@ -603,6 +656,21 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     if (!record) return '';
 
     return buildCmdComparisonReportText(record);
+  };
+
+  const buildActiveCmdComparisonCandidateText = (): string => {
+    if (!cmdComparisonRecordPath || !cmdComparisonExpectedText.trim()) return '';
+
+    try {
+      const expected = parseCmdStructureJson(cmdComparisonExpectedText, 'cmdHandler 输出');
+      assertRecognizableCmdComparisonExpected(expected);
+      return formatCmdComparisonCandidateText(
+        buildCmdComparisonCandidates(expected),
+        cmdComparisonRecordPath
+      );
+    } catch {
+      return '';
+    }
   };
 
   const handleToggleCmdComparison = (record: TransformReportRecord) => {
@@ -649,6 +717,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     try {
       const collaborationReportText = formatTransformCollaborationReportText(report, reportView, deferredQuery, {
         cmdComparisonReportText: buildActiveCmdComparisonReportText(),
+        cmdComparisonCandidateText: buildActiveCmdComparisonCandidateText(),
       });
       await copyText(collaborationReportText);
       toast.success(formatCopySuccessMessage('排查报告', collaborationReportText), { duration: 2000 });
@@ -753,29 +822,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           hasSourceDiff: Boolean(diff.sourceDiff),
           previewLines: diffReportText.split('\n').slice(1, 6),
         };
-        const candidateRecords = fullReportView?.cmdStructureRecords || reportView?.cmdStructureRecords || [];
-        const candidateInputs = candidateRecords.reduce<CmdStructureCandidateInput[]>((items, candidateRecord) => {
-          const candidateText = getTransformRecordCmdStructureCopyText(candidateRecord);
-          if (!candidateText) return items;
-
-          try {
-            items.push({
-              id: candidateRecord.path,
-              label: candidateRecord.path,
-              sourceLabel: candidateRecord.sourceLabel,
-              commandSchema: candidateRecord.commandSchema,
-              actual: parseCmdStructureJson(candidateText, '本工具 CMD 结构'),
-            });
-          } catch {
-            // 单条候选解析失败不影响当前 CMD 的差异判断。
-          }
-
-          return items;
-        }, []);
-        candidateRecommendations = rankCmdStructureCandidates(candidateInputs, expected, {
-          ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
-          limit: 3,
-        });
+        candidateRecommendations = buildCmdComparisonCandidates(expected);
       } catch (error) {
         errorText = error instanceof Error ? error.message : String(error);
       }

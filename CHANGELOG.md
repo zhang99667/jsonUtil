@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.106 (2026-06-17) - cmdHandler 候选推荐入报告
+### ✨ 新特性
+- **协作排查**: 复制排查报告时会同步带上 cmdHandler actual 候选推荐，避免协作者只看到当前巨大差异而遗漏“可能拿错 actual”的线索
+- **归档包**: 归档包 artifacts 增加候选推荐摘要，保留多 CMD response 中 expected 最匹配 actual 的判断依据
+
 ## v1.8.105 (2026-06-17) - cmdHandler actual 候选推荐
 ### ✨ 新特性
 - **cmdHandler 对比**: 粘贴 expected 后自动扫描当前报告中的 CMD 结构并展示 Top 3 actual 候选，当前行不是最佳匹配时提示可能拿错 actual
