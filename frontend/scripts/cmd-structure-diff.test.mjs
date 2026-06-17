@@ -108,6 +108,44 @@ iqoo13`);
     });
   });
 
+  it('解析只复制 result 内部的树形文本', () => {
+    const parsed = parseCmdHandlerTreeText(`cmd解析
+"cmdSchema":"nadcorevendor://vendor/ad/rewardImpl"
+"cmdParams":{1 item
+"video_info":{1 item
+"vid":"123"
+}
+}`);
+
+    expect(normalizeCmdStructure(parsed)).toEqual({
+      cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      cmdParams: {
+        video_info: {
+          vid: '123',
+        },
+      },
+      source: undefined,
+    });
+  });
+
+  it('解析只复制 cmdParams 子树的文本', () => {
+    const parsed = parseJsonInput(`"cmdParams":{1 item
+"video_info":{1 item
+"vid":"123"
+}
+}`, 'expected');
+
+    expect(normalizeCmdStructure(parsed)).toEqual({
+      cmdSchema: undefined,
+      cmdParams: {
+        video_info: {
+          vid: '123',
+        },
+      },
+      source: undefined,
+    });
+  });
+
   it('文件输入兼容日志前缀和 Markdown 代码块', () => {
     const parsed = parseJsonInput(`cmdHandler 输出:
 \`\`\`json
