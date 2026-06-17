@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.99 (2026-06-17) - cmdHandler 解析结果包装兼容
+### ✨ 新特性
+- **cmdHandler 对比**: 支持识别内部参考页复制出的 `解析结果` 包装层，粘贴 `{ "解析结果": { "result": ... } }` 时仍能正确提取 `cmdSchema` 和 `cmdParams`
+- **CLI 对齐**: `cmd:diff` 脚本同步支持 `解析结果` 包装，方便直接用页面复制内容做本地差异检查
+
 ## v1.8.98 (2026-06-17) - cmdHandler 根 schema 推断
 ### ✨ 新特性
 - **cmdHandler 对齐**: 导出 cmdHandler 风格 CMD 结构时，如果调用方未显式传入根 `cmdSchema`，会从 URL source 自动推断，和内部 cmdHandler 参考页的根 schema 输出保持一致

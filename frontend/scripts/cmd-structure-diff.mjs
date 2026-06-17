@@ -80,6 +80,11 @@ const findCmdStructure = value => {
     if (result) return result;
   }
 
+  if (isRecord(value['解析结果'])) {
+    const result = findCmdStructure(value['解析结果']);
+    if (result) return result;
+  }
+
   if (Object.prototype.hasOwnProperty.call(value, 'cmdParams')) {
     return {
       cmdSchema: typeof value.cmdSchema === 'string' ? value.cmdSchema : undefined,
