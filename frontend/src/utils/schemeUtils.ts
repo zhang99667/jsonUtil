@@ -687,6 +687,7 @@ const normalizeLooseJsonCandidate = (value: string): string | null => {
 
   return trimmed
     .replace(/([{,]\s*)([A-Za-z_$][\w$]*)(\s*:)/g, '$1"$2"$3')
+    .replace(/([{,]\s*)([A-Za-z_$][\w$]*)(\s*":)/g, '$1"$2$3')
     .replace(/'((?:\\.|[^'\\])*)'/g, (_, content: string) => (
       JSON.stringify(content.replace(/\\'/g, "'"))
     ))

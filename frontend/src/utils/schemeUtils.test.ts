@@ -1495,6 +1495,22 @@ describe('deepDecodeScheme', () => {
     });
   });
 
+  it('URL 参数内缺少 key 开引号的 JSON-like 对象被递归解析', () => {
+    const result = deepDecodeScheme(
+      'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2218800001111%22%2C%22extInfo%22%3A%22AFDXXX%22%2C%22numberUrl%22%3A%22xxx%22%2C%22logUrl%22%3A%22xxxx%22%2Ctype%22%3A%221%22%7D'
+    );
+    const parsed = JSON.parse(result.decoded);
+    expect(parsed).toEqual({
+      params: {
+        phone: '18800001111',
+        extInfo: 'AFDXXX',
+        numberUrl: 'xxx',
+        logUrl: 'xxxx',
+        type: '1',
+      },
+    });
+  });
+
   it('URL hash route 参数被递归解析', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
     const result = deepDecodeScheme(`baiduboxapp://v1/browser/open#/detail?cmd=${payload}&from=hash`);
