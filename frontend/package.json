@@ -2,7 +2,7 @@
   "name": "json-helper-ai-fix",
   "productName": "JSONUtils - 专业版",
   "private": true,
-  "version": "1.8.118",
+  "version": "1.8.119",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -19,6 +19,7 @@
     "corpus:snapshot:diff": "node scripts/scheme-corpus-snapshot-diff.mjs",
     "corpus:promote": "node scripts/scheme-corpus-promote.mjs",
     "perf:scheme": "node scripts/scheme-performance-budget.mjs",
+    "perf:jsonpath": "node scripts/jsonpath-performance-budget.mjs",
     "samples:to-regression": "node scripts/issue-samples-to-regression.mjs",
     "cmd:diff": "node scripts/cmd-structure-diff.mjs",
     "test:watch": "vitest",

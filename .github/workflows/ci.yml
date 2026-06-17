@@ -54,6 +54,9 @@ jobs:
       - name: Scheme performance budget
         run: npm run perf:scheme -- --iterations 3 --strict --output ../artifacts/scheme-performance-budget.json --summary "$GITHUB_STEP_SUMMARY"
 
+      - name: JSONPath performance budget
+        run: npm run perf:jsonpath -- --iterations 3 --strict --output ../artifacts/jsonpath-performance-budget.json --summary "$GITHUB_STEP_SUMMARY"
+
       - name: Upload scheme corpus quality snapshot
         if: always()
         uses: actions/upload-artifact@v7
@@ -69,6 +72,15 @@ jobs:
         with:
           name: scheme-performance-budget
           path: artifacts/scheme-performance-budget.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload JSONPath performance budget
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jsonpath-performance-budget
+          path: artifacts/jsonpath-performance-budget.json
           if-no-files-found: warn
           retention-days: 7
 

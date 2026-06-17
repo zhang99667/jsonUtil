@@ -28,6 +28,9 @@ npm run corpus:snapshot:check
 log "Frontend: scheme performance budget"
 npm run perf:scheme -- --iterations 3 --strict
 
+log "Frontend: JSONPath performance budget"
+npm run perf:jsonpath -- --iterations 3 --strict
+
 log "Frontend: production build"
 npm run build
 
