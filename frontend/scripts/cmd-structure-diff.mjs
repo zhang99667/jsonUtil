@@ -492,23 +492,78 @@ const findRawResponseCmdStructure = value => {
   return null;
 };
 
+const isNormalizedCmdStructureValue = value => (
+  isRecord(value) && Object.prototype.hasOwnProperty.call(value, 'cmdParams')
+);
+
+const appendCmdStructureCandidate = (candidates, seenIds, candidate) => {
+  if (seenIds.has(candidate.id)) return;
+
+  seenIds.add(candidate.id);
+  candidates.push(candidate);
+};
+
+const collectDecodedCmdStructureCandidates = (
+  value,
+  path,
+  candidates,
+  seenIds,
+  sourceLabel
+) => {
+  if (isNormalizedCmdStructureValue(value)) {
+    appendCmdStructureCandidate(candidates, seenIds, {
+      id: path,
+      label: path,
+      sourceLabel,
+      commandSchema: typeof value.cmdSchema === 'string' ? value.cmdSchema : undefined,
+      actual: value,
+    });
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectDecodedCmdStructureCandidates(
+      item,
+      `${path}[${index}]`,
+      candidates,
+      seenIds
+    ));
+    return;
+  }
+
+  if (!isRecord(value)) return;
+
+  Object.entries(value).forEach(([childKey, item]) => {
+    collectDecodedCmdStructureCandidates(
+      item,
+      appendPathKey(path, childKey),
+      candidates,
+      seenIds,
+      childKey
+    );
+  });
+};
+
 export const collectActualCmdStructureCandidates = value => {
+  const candidates = [];
+  const seenIds = new Set();
   const rawCandidates = [];
   collectRawCmdCandidates(value, rawCandidates);
 
-  return rawCandidates.reduce((items, candidate) => {
+  rawCandidates.forEach(candidate => {
     const structure = parseFastCmdSource(candidate.source);
-    if (!structure) return items;
+    if (!structure) return;
 
-    items.push({
-      id: candidate.path,
-      label: candidate.path,
-      sourceLabel: candidate.sourceLabel,
-      commandSchema: structure.cmdSchema,
-      actual: structure,
-    });
-    return items;
-  }, []);
+    collectDecodedCmdStructureCandidates(
+      structure,
+      candidate.path,
+      candidates,
+      seenIds,
+      candidate.sourceLabel
+    );
+  });
+
+  collectDecodedCmdStructureCandidates(value, '$', candidates, seenIds);
+  return candidates;
 };
 
 const findCmdStructure = value => {
@@ -783,6 +838,13 @@ const appendPathDiffLines = (lines, title, paths) => {
   if (collapsedPaths.length > 20) lines.push(`  - ... 还有 ${collapsedPaths.length - 20} 个分支`);
 };
 
+const formatCmdPathCountSummary = (label, paths) => {
+  const branchCount = getCollapsedPathCount(paths);
+  return branchCount < paths.length
+    ? `${label}分支 ${branchCount}`
+    : `${label} ${paths.length}`;
+};
+
 const appendDiffContextLines = (lines, context = {}) => {
   if (context.toolVersionLabel) lines.push(`工具版本: ${context.toolVersionLabel}`);
   if (context.path) lines.push(`对比路径: ${context.path}`);
@@ -838,16 +900,16 @@ export const formatCmdStructureDiff = (diff, context = {}) => {
 const formatCmdCandidateSummary = candidate => {
   const { diff } = candidate;
   if (!diff.hasDifferences) {
-    return `结构一致${diff.ignoredExtraPaths.length ? `，已忽略 ${diff.ignoredExtraPaths.length}` : ''}`;
+    return `结构一致${diff.ignoredExtraPaths.length ? `，${formatCmdPathCountSummary('已忽略', diff.ignoredExtraPaths)}` : ''}`;
   }
 
   return [
     `Schema ${diff.schemaDiff ? 1 : 0}`,
     `Source ${diff.sourceDiff ? 1 : 0}`,
-    `缺失 ${diff.missingPaths.length}`,
-    `额外 ${diff.extraPaths.length}`,
+    formatCmdPathCountSummary('缺失', diff.missingPaths),
+    formatCmdPathCountSummary('额外', diff.extraPaths),
     `值 ${diff.valueDiffs.length}`,
-    ...(diff.ignoredExtraPaths.length ? [`已忽略 ${diff.ignoredExtraPaths.length}`] : []),
+    ...(diff.ignoredExtraPaths.length ? [formatCmdPathCountSummary('已忽略', diff.ignoredExtraPaths)] : []),
   ].join('，');
 };
 

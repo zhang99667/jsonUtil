@@ -48,6 +48,59 @@ const createCmdStructure = () => ({
   },
 });
 
+const createNestedRewardResponse = () => {
+  const rootPath = '$.data.video[0].material[0].info[0].ad_common.scheme';
+  const landingUrl = 'https://example.com/landing?sku=101';
+  const deeplink = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    appUrl: `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: landingUrl,
+    }))}`,
+    webUrl: `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}`,
+  }))}`;
+  const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?url=${encodeURIComponent(landingUrl)}`;
+  const stayCmd = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(deeplink)}&main_btn=${encodeURIComponent(JSON.stringify({
+    button_cmd: '__CONVERT_CMD__',
+  }))}`;
+  const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    tail_frame: {
+      panel_scheme: panelScheme,
+    },
+  }))}&reward=${encodeURIComponent(JSON.stringify({
+    stay_cmd: stayCmd,
+  }))}&panel=${encodeURIComponent(JSON.stringify({
+    panel_cmd: deeplink,
+    webpanel_cmd: deeplink,
+  }))}`;
+
+  return {
+    rootPath,
+    expectedPanelCmd: {
+      result: {
+        cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+        cmdParams: {
+          params: {},
+        },
+      },
+    },
+    response: {
+      errno: 0,
+      data: {
+        video: [{
+          material: [{
+            info: [{
+              ad_common: {
+                scheme: rootScheme,
+              },
+              supportCMD: true,
+            }],
+          }],
+        }],
+      },
+    },
+  };
+};
+
 describe('normalizeCmdStructure', () => {
   it('兼容 result 和 data 包裹的 cmdHandler 输出', () => {
     const structure = normalizeCmdStructure({
@@ -239,6 +292,25 @@ done`, 'expected');
     });
   });
 
+  it('整段真实 response 候选会暴露解析树里的内层 CMD', () => {
+    const { response, rootPath } = createNestedRewardResponse();
+    const candidates = collectActualCmdStructureCandidates(response);
+    const candidateIds = candidates.map(candidate => candidate.id);
+
+    expect(candidateIds).toEqual(expect.arrayContaining([
+      rootPath,
+      `${rootPath}.cmdParams.video_info.tail_frame.panel_scheme`,
+      `${rootPath}.cmdParams.reward.stay_cmd`,
+      `${rootPath}.cmdParams.reward.stay_cmd.cmdParams.convert_cmd`,
+      `${rootPath}.cmdParams.panel.panel_cmd`,
+      `${rootPath}.cmdParams.panel.webpanel_cmd`,
+    ]));
+    expect(candidates.find(candidate => candidate.id === `${rootPath}.cmdParams.panel.panel_cmd`)).toMatchObject({
+      sourceLabel: 'panel_cmd',
+      commandSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+    });
+  });
+
   it('识别可对比 CMD 输入并拒绝空解析结果', () => {
     expect(hasRecognizableCmdStructure({
       解析结果: {
@@ -362,11 +434,31 @@ ${JSON.stringify(createCmdStructure())}
     const prepared = prepareComparisonInputs({ actual, expected }, {
       actualPath: '$.data.panel_cmd',
     });
-    const diff = diffCmdStructures(prepared.inputs.actual, prepared.inputs.expected);
+    const diff = diffCmdStructures(prepared.inputs.actual, prepared.inputs.expected, {
+      ignoreExtraPaths: true,
+    });
 
     expect(diff.hasDifferences).toBe(false);
     expect(prepared.inputs.context).toEqual({
       path: '$.data.panel_cmd',
+      sourceLabel: 'panel_cmd',
+    });
+  });
+
+  it('支持按真实 response 的内层 actual 候选路径选择对比结构', () => {
+    const { response, rootPath, expectedPanelCmd } = createNestedRewardResponse();
+    const actualPath = `${rootPath}.cmdParams.panel.panel_cmd`;
+    const prepared = prepareComparisonInputs({
+      actual: response,
+      expected: expectedPanelCmd,
+    }, { actualPath });
+    const diff = diffCmdStructures(prepared.inputs.actual, prepared.inputs.expected, {
+      ignoreExtraPaths: true,
+    });
+
+    expect(diff.hasDifferences).toBe(false);
+    expect(prepared.inputs.context).toEqual({
+      path: actualPath,
       sourceLabel: 'panel_cmd',
     });
   });
@@ -597,6 +689,41 @@ describe('diffCmdStructures', () => {
       '$.branch.nested.id',
     ]);
     expect(candidates[0].score).toBe(100);
+  });
+
+  it('候选推荐摘要使用折叠后的分支数量', () => {
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdParams: {
+          stable: 'ok',
+          branch: {
+            title: 'reward',
+            nested: {
+              id: '123',
+            },
+          },
+        },
+      },
+    };
+    const candidates = rankCmdStructureCandidates([
+      {
+        id: '$.missing_branch',
+        label: '$.missing_branch',
+        actual: {
+          result: {
+            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdParams: {
+              stable: 'ok',
+            },
+          },
+        },
+      },
+    ], expected);
+    const report = formatCmdStructureCandidateRecommendations(candidates);
+
+    expect(report).toContain('缺失分支 1');
+    expect(report).not.toContain('缺失 4');
   });
 
   it('识别 source 单侧缺失差异', () => {

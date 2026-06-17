@@ -1,4 +1,14 @@
 # 更新日志 (Changelog)
+## v1.8.115 (2026-06-17) - cmdHandler 内层候选发现
+### ✨ 新特性
+- **真实 response 候选**: `cmd:diff --suggest-actual` 会从已解析的 CMD 结构树继续收集内层 `panel_cmd`、`webpanel_cmd`、`stay_cmd` 等候选，不再只推荐整包里的根 `scheme`
+- **定点对比**: `cmd:diff --actual-path` 支持选择这些解析树内层路径，便于把真实广告 response 中的某个内嵌 CMD 直接拿来对齐 cmdHandler expected
+
+## v1.8.114 (2026-06-17) - cmdHandler 摘要分支口径
+### ✨ 新特性
+- **页面摘要**: cmdHandler 对比顶部摘要和 actual 候选卡片会使用折叠后的缺失/额外分支数量，和差异报告正文保持一致
+- **CLI 摘要**: `cmd:diff --suggest-actual` 的候选摘要同步展示折叠分支数量，避免一个深层分支在推荐摘要里再次显示成多条缺失
+
 ## v1.8.113 (2026-06-17) - cmdHandler 差异分支折叠
 ### ✨ 新特性
 - **差异报告**: 页面和 `cmd:diff` 会把同一缺失/额外分支下的子路径折叠展示，保留原始差异数量但只列出顶层分支，降低大对象分支不一致时的噪声
