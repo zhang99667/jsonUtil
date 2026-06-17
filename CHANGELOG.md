@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.98 (2026-06-17) - cmdHandler 根 schema 推断
+### ✨ 新特性
+- **cmdHandler 对齐**: 导出 cmdHandler 风格 CMD 结构时，如果调用方未显式传入根 `cmdSchema`，会从 URL source 自动推断，和内部 cmdHandler 参考页的根 schema 输出保持一致
+- **CMD 结构**: 补充合成 rewardImpl 样例回归，确保根 `nadcorevendor://vendor/ad/rewardImpl` 和内层 `bottom_button_scheme` 都能稳定导出 schema
+
 ## v1.8.97 (2026-06-16) - promote 严格校验
 ### ✨ 新特性
 - **Scheme Corpus**: `corpus:promote` 新增 `--strict` 参数，审计发现敏感残留或 `--validate` 质量快照失败时返回非 0，方便把真实 response 候选生成接入自动化防线

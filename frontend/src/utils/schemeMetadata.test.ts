@@ -352,6 +352,32 @@ describe('schemeMetadata', () => {
     });
   });
 
+  it('导出 CMD 结构时从 source 推断根 cmdSchema', () => {
+    const bottomButtonScheme = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+      title: 'ok',
+    }))}`;
+    const source = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+      vid: '123',
+      tail_frame: {
+        bottom_button_scheme: bottomButtonScheme,
+      },
+    }))}&token=abc`;
+    const decoded = deepDecodeScheme(source);
+    const cmdStructure = JSON.parse(
+      formatPrimaryCmdHandlerCompatibleResult(decoded.decoded, undefined, source)
+    );
+
+    expect(cmdStructure.result.cmdSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
+    expect(cmdStructure.result.cmdParams.video_info.tail_frame.bottom_button_scheme).toMatchObject({
+      cmdSchema: 'nadcorevendor://vendor/ad/reward',
+      cmdParams: {
+        task_params: {
+          title: 'ok',
+        },
+      },
+    });
+  });
+
   it('导出 CMD 结构时兼容日志里的逗号分隔参数', () => {
     const decoded = JSON.stringify({
       cmd: {
