@@ -468,7 +468,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   return (
     <div className="flex flex-col h-full bg-editor-bg border-r border-editor-bg group">
       {/* 编辑器头部 */}
-      <div className="flex items-center bg-editor-sidebar pl-4 pr-2 border-t border-editor-border select-none h-9 min-h-[36px] group/header">
+      <div className="editor-header flex items-center bg-editor-sidebar pl-4 pr-2 border-t border-editor-border select-none h-9 min-h-[36px] group/header">
         <div className="flex items-center gap-3 h-full flex-1 min-w-0 overflow-hidden">
           <span className={`text-xs font-bold font-mono uppercase flex-shrink-0 ${getLanguageColor(language)}`}>
             {language === 'plaintext' ? 'TXT' : language}
@@ -498,7 +498,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           )}
         </div>
 
-        <div className="flex min-w-0 items-center gap-1 flex-shrink ml-2 overflow-hidden">
+        <div className="editor-header-actions flex min-w-0 items-center gap-1 flex-shrink ml-2 overflow-hidden">
           {/* 自定义操作栏 */}
           {headerActions}
 
@@ -510,18 +510,18 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
               onClick={() => setIsLocked(!isLocked)}
               aria-label={lockToggleTitle}
               aria-pressed={!isLocked}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border focus:outline-none focus:ring-2 focus:ring-emerald-400/70 ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
+              className={`editor-header-action flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border focus:outline-none focus:ring-2 focus:ring-emerald-400/70 ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
               title={lockToggleTitle}
             >
               {isLocked ? (
                 <>
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                  <span>锁定</span>
+                  <span className="editor-header-action-label">锁定</span>
                 </>
               ) : (
                 <>
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                  <span>编辑</span>
+                  <span className="editor-header-action-label">编辑</span>
                 </>
               )}
             </button>
@@ -533,26 +533,26 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             onClick={toggleWordWrap}
             aria-label="自动换行"
             aria-pressed={isWordWrapEnabled}
-            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${isWordWrapEnabled ? 'bg-brand-primary text-white border-brand-primary' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
+            className={`editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${isWordWrapEnabled ? 'bg-brand-primary text-white border-brand-primary' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
             title={isWordWrapEnabled ? '自动换行已开启，点击关闭' : '自动换行已关闭，点击开启'}
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
-            <span>{isWordWrapEnabled ? '换行' : '不换行'}</span>
+            <span className="editor-header-action-label">{isWordWrapEnabled ? '换行' : '不换行'}</span>
           </button>
 
           {schemeLocations.length > 0 && (
             <span
               data-tour="editor-scheme-count"
-              className="flex-shrink-0 rounded border border-teal-700/50 bg-teal-900/25 px-2 py-0.5 text-[10px] text-teal-100"
+              className="editor-header-status flex-shrink-0 rounded border border-teal-700/50 bg-teal-900/25 px-2 py-0.5 text-[10px] text-teal-100"
               title={schemeCountLabel}
               aria-label={schemeCountLabel}
             >
-              Scheme {schemeLocations.length}
+              <span className="editor-header-status-label">Scheme </span>{schemeLocations.length}
             </span>
           )}
 
           {error ? (
-            <div className="flex min-w-0 shrink items-center gap-1 text-[10px] text-status-error-text bg-status-error-bg px-2 py-0.5 rounded border border-status-error-border shadow-sm max-w-[220px]">
+            <div className="editor-header-status editor-header-status-message flex min-w-0 shrink items-center gap-1 text-[10px] text-status-error-text bg-status-error-bg px-2 py-0.5 rounded border border-status-error-border shadow-sm max-w-[220px]">
               <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5 animate-pulse"></span>
               <span data-tour="editor-error-message" className="truncate" title={error}>
                 {error}
@@ -582,18 +582,19 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
               {errorActions}
             </div>
           ) : editorWarning ? (
-            <div className="flex items-center text-[10px] text-amber-200 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-700/50 shadow-sm">
+            <div className="editor-header-status flex items-center text-[10px] text-amber-200 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-700/50 shadow-sm">
               <span className="w-1.5 h-1.5 bg-amber-400 rounded-full mr-1.5"></span>
-              {editorWarning}
+              <span className="editor-header-status-label">{editorWarning}</span>
             </div>
           ) : info ? (
-            <div className="flex items-center text-[10px] text-cyan-200 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-700/50 shadow-sm">
+            <div className="editor-header-status flex items-center text-[10px] text-cyan-200 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-700/50 shadow-sm">
               <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full mr-1.5"></span>
-              {info}
+              <span className="editor-header-status-label">{info}</span>
             </div>
           ) : value && language === 'json' ? (
-            <div className="flex items-center text-[10px] text-status-success-text bg-status-success-bg px-2 py-0.5 rounded border border-status-success-border">
-              Valid JSON
+            <div className="editor-header-status flex items-center text-[10px] text-status-success-text bg-status-success-bg px-2 py-0.5 rounded border border-status-success-border" title="Valid JSON">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
+              <span className="editor-header-status-label">Valid JSON</span>
             </div>
           ) : null}
         </div>

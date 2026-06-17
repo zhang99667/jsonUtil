@@ -1595,46 +1595,46 @@ const App: React.FC = () => {
                     data-tour="paste-source"
                     aria-label="粘贴到源内容"
                     onClick={handlePasteSource}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-blue-200 transition-colors border border-transparent"
+                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-blue-200 transition-colors border border-transparent"
                     title="从剪贴板粘贴到 SOURCE"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-4 0a2 2 0 104 0m-4 0a2 2 0 114 0m-2 7v6m0 0l-2-2m2 2l2-2" />
                     </svg>
-                    <span>粘贴</span>
+                    <span className="editor-header-action-label">粘贴</span>
                   </button>
                   <button
                     data-tour="copy-source"
                     aria-label={copySourceTitle}
                     onClick={handleCopySource}
                     disabled={!hasSourceContent}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     title={copySourceTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    <span>复制源</span>
+                    <span className="editor-header-action-label">复制源</span>
                   </button>
                   <button
                     data-tour="clear-source"
                     aria-label={clearSourceTitle}
                     onClick={handleRequestClearSource}
                     disabled={!hasSourceContent}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-red-900/30 hover:text-red-200 transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-red-900/30 hover:text-red-200 transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     title={clearSourceTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-8 0h10" />
                     </svg>
-                    <span>清空</span>
+                    <span className="editor-header-action-label">清空</span>
                   </button>
                   <button
                     data-tour="auto-save"
                     aria-label={autoSaveAriaLabel}
                     aria-pressed={isAutoSaveActive}
                     onClick={handleToggleAutoSave}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
+                    className={`editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
                       ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
                       : isAutoSaveActive
                         ? 'bg-status-success-bg text-status-success-text border-status-success-border'
@@ -1650,7 +1650,7 @@ const App: React.FC = () => {
                         ? 'bg-green-500 animate-pulse'
                         : 'bg-gray-500'
                       }`}></div>
-                    <span>自动保存</span>
+                    <span className="editor-header-action-label">自动保存</span>
                   </button>
                 </>
               }
@@ -1699,13 +1699,13 @@ const App: React.FC = () => {
                       aria-label={transformReportTitle}
                       onClick={() => setIsTransformReportOpen(true)}
                       disabled={!transformReportContext || isOutputTransforming}
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title={transformReportTitle}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <span>报告</span>
+                      <span className="editor-header-action-label">报告</span>
                     </button>
                   )}
                   <button
@@ -1713,26 +1713,26 @@ const App: React.FC = () => {
                     aria-label={applyPreviewTitle}
                     onClick={handleRequestApplyPreviewToSource}
                     disabled={!hasPreviewContent || isOutputTransforming || isPreviewSameAsSource}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={applyPreviewTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
                     </svg>
-                    <span>应用到源</span>
+                    <span className="editor-header-action-label">应用到源</span>
                   </button>
                   <button
                     data-tour="copy-preview"
                     aria-label={copyPreviewTitle}
                     onClick={handleCopyPreview}
                     disabled={!hasPreviewContent || isOutputTransforming}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={copyPreviewTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    <span>复制</span>
+                    <span className="editor-header-action-label">复制</span>
                   </button>
                 </>
               }
