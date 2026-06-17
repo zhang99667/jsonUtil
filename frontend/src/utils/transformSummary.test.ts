@@ -447,7 +447,7 @@ describe('transformSummary', () => {
     expect(buildTransformReportView(report, '内部CMD字段').filteredNestedCommandFieldCount).toBe(1);
   });
 
-  it('CMD Schema Top 会将静态资源 URL 单独分组', () => {
+  it('CMD Schema Top 不混入普通 HTTPS URL，静态资源 URL 单独分组', () => {
     const mediaUrl = 'https://static.example.com/video/ad.mp4?pd=100&cm=1501';
     const landingUrl = 'https://example.com/landing?sku=101&bd_vid=abc';
     const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
@@ -469,8 +469,8 @@ describe('transformSummary', () => {
 
     expect(report.topCommandSchemas?.map(group => group.schema)).toEqual(expect.arrayContaining([
       'nadcorevendor://vendor/ad/rewardImpl',
-      'https://example.com/landing',
     ]));
+    expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://example.com/landing');
     expect(record.insights).toEqual([
       'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
       'cmd解析: page_url',
@@ -496,13 +496,6 @@ describe('transformSummary', () => {
         hasMorePaths: false,
       }),
       expect.objectContaining({
-        schema: 'https://static.example.com/assets/banner.jpg',
-        count: 1,
-        recordCount: 1,
-        paths: ['$.scheme.video_info.imageUrl'],
-        hasMorePaths: false,
-      }),
-      expect.objectContaining({
         schema: 'https://static.example.com/assets/icon.png',
         count: 1,
         recordCount: 1,
@@ -516,14 +509,9 @@ describe('transformSummary', () => {
         paths: ['$.scheme.video_info.posterUrl'],
         hasMorePaths: false,
       }),
-      expect.objectContaining({
-        schema: 'https://static.example.com/video/ad.mp4',
-        count: 1,
-        recordCount: 1,
-        paths: ['$.scheme.video_info.video_url'],
-        hasMorePaths: false,
-      }),
     ]));
+    expect(report.topResourceSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/assets/banner.jpg');
+    expect(report.topResourceSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/video/ad.mp4');
     expect(report.topNestedResourceFields).toEqual(expect.arrayContaining([
       expect.objectContaining({
         key: 'button_icon',
@@ -597,7 +585,7 @@ describe('transformSummary', () => {
         count: 1,
       }),
       expect.objectContaining({
-        schema: 'https://static.example.com/video/ad.mp4',
+        schema: 'https://static.example.com/lottie/swipe.zip',
         count: 1,
       }),
     ]));
@@ -894,11 +882,7 @@ describe('transformSummary', () => {
                             params: {
                               category: 'jump',
                               url: {
-                                cmdSchema: 'https://pro.m.jd.com/mall/active/page.html',
-                                cmdParams: {
-                                  sku: '101',
-                                },
-                                source: 'https://pro.m.jd.com/mall/active/page.html?sku=101',
+                                sku: '101',
                               },
                             },
                           },
@@ -935,11 +919,7 @@ describe('transformSummary', () => {
                           params: {
                             category: 'jump',
                             url: {
-                              cmdSchema: 'https://pro.m.jd.com/mall/active/page.html',
-                              cmdParams: {
-                                sku: '101',
-                              },
-                              source: 'https://pro.m.jd.com/mall/active/page.html?sku=101',
+                              sku: '101',
                             },
                           },
                         },

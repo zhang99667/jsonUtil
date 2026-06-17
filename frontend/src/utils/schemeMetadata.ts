@@ -1,5 +1,12 @@
 import type { SchemeDecodeResult } from './schemeUtils';
-import { base64Decode, detectSchemeType, hasUrlEncoding, parseUrl, urlDecode } from './schemeUtils';
+import {
+  base64Decode,
+  detectSchemeType,
+  hasUrlEncoding,
+  isActionableSchemeUrl,
+  parseUrl,
+  urlDecode,
+} from './schemeUtils';
 
 export interface Base64MetaEntry {
   key: string;
@@ -511,7 +518,7 @@ export const formatSchemeInsightItems = (
     : `${title}: ${visibleItems}`;
 };
 
-export const getSchemeCommandSchemaFromUrl = (value: string): string | undefined => {
+export const getUrlResourceSchemaFromUrl = (value: string): string | undefined => {
   const trimmed = value.trim().replace(/\\\//g, '/');
   if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return undefined;
 
@@ -521,6 +528,14 @@ export const getSchemeCommandSchemaFromUrl = (value: string): string | undefined
   } catch {
     return trimmed.split(/[?#]/)[0] || undefined;
   }
+};
+
+export const getSchemeCommandSchemaFromUrl = (value: string): string | undefined => {
+  const trimmed = value.trim().replace(/\\\//g, '/');
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return undefined;
+  if (!isActionableSchemeUrl(trimmed)) return undefined;
+
+  return getUrlResourceSchemaFromUrl(trimmed);
 };
 
 const normalizeSourceString = (value: string): string => {
@@ -762,6 +777,8 @@ const getCommandSourceInfo = (
   const source = normalizeSourceString(sourceShape);
   const sourceType = detectSchemeType(source);
   if (sourceType === 'url') {
+    if (!isActionableSchemeUrl(source)) return null;
+
     const cmdSchema = getSchemeCommandSchemaFromUrl(source);
     return {
       ...(cmdSchema ? { cmdSchema } : {}),
@@ -1006,9 +1023,16 @@ const buildCommandSchemaSummaries = (
 };
 
 const getCommandSchemaFromInfo = (
-  schemeInfo: SchemeDecodeResult['schemeInfo']
+  schemeInfo: SchemeDecodeResult['schemeInfo'],
+  source?: string
 ): string | undefined => {
   if (!schemeInfo?.protocol || schemeInfo.protocol === '无协议') return undefined;
+  if (
+    (schemeInfo.protocol === 'http:' || schemeInfo.protocol === 'https:' || schemeInfo.protocol === '//') &&
+    (!source || !isActionableSchemeUrl(source))
+  ) {
+    return undefined;
+  }
 
   const host = schemeInfo.host || '';
   const path = schemeInfo.path || '';
@@ -1048,7 +1072,7 @@ export const extractSchemeCommandSummaryInfo = (
   options: SchemeInsightCollectOptions = {}
 ): SchemeCommandSummaryInfo | null => {
   if (!isJson) {
-    const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo) : undefined;
+    const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo, options.source?.trim() || decoded) : undefined;
     const topCommandSchemas = commandSchema
       ? [{
           schema: commandSchema,
@@ -1083,7 +1107,7 @@ export const extractSchemeCommandSummaryInfo = (
     const rootObject = isPlainObject(parsed) ? parsed : null;
     const paramKeys = rootObject ? Object.keys(rootObject) : [];
     const fields = collectSchemeInsightFields(parsed, options);
-    const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo) : undefined;
+    const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo, options.source?.trim() || decoded) : undefined;
     const commandSchemaRows = [
       ...(commandSchema
         ? [{

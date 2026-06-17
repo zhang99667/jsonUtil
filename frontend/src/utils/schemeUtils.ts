@@ -232,6 +232,8 @@ const PREFIXED_QUERY_BOUNDARY_PATTERN = '[\\s\\[\\]{}(),|:：>]';
 const PREFIXED_QUERY_STRING_RE = new RegExp(`^(.*?${PREFIXED_QUERY_BOUNDARY_PATTERN})([?&]*${QUERY_KEY_PATTERN}=.+)$`);
 const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 const BARE_HOST_URL_BASE = 'https://';
+const HTTP_SCHEME_PROTOCOLS = new Set(['http:', 'https:']);
+const ACTIONABLE_URL_MAX_DEPTH = 5;
 export const DEFAULT_SCHEME_DECODE_MAX_DEPTH = 15;
 export const DEFAULT_SCHEME_JSON_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_SCHEME_JSON_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
@@ -789,8 +791,141 @@ export function detectSchemeType(str: string): SchemeType {
  * 检测字符串是否包含需要解析的 scheme
  */
 export function hasScheme(str: string): boolean {
-  const type = detectSchemeType(str);
-  return type !== 'plain' && type !== 'json';
+  return shouldExposeSchemeValue(str);
+}
+
+const isHttpSchemeProtocol = (protocol: string): boolean => (
+  HTTP_SCHEME_PROTOCOLS.has(protocol.toLowerCase())
+);
+
+const isStructuredActionableParamValue = (value: string, depth: number): boolean => {
+  if (depth > ACTIONABLE_URL_MAX_DEPTH) return false;
+
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  const jsonStringPayload = tryParseJsonStringPayload(trimmed);
+  if (jsonStringPayload !== null) {
+    return shouldExposeNormalizedSchemeValue(jsonStringPayload, depth + 1);
+  }
+
+  const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(trimmed);
+  if (escapedSlashPayload !== null) {
+    return shouldExposeNormalizedSchemeValue(escapedSlashPayload, depth + 1);
+  }
+
+  const unicodeAsciiPayload = tryNormalizeJsonUnicodeAsciiPayload(trimmed);
+  if (unicodeAsciiPayload !== null) {
+    return shouldExposeNormalizedSchemeValue(unicodeAsciiPayload, depth + 1);
+  }
+
+  const escapedQuotePayload = tryNormalizeJsonEscapedQuotePayload(trimmed);
+  if (escapedQuotePayload !== null) {
+    return shouldExposeNormalizedSchemeValue(escapedQuotePayload, depth + 1);
+  }
+
+  const htmlJsonPayload = tryNormalizeHtmlJsonQuotePayload(trimmed);
+  if (htmlJsonPayload !== null) {
+    return shouldExposeNormalizedSchemeValue(htmlJsonPayload, depth + 1);
+  }
+
+  if (isUrl(trimmed)) return isActionableSchemeUrl(trimmed, depth + 1);
+  if (
+    isRuntimePlaceholder(trimmed) ||
+    isJsonString(trimmed) ||
+    isJwt(trimmed) ||
+    isDecodableFragmentParamString(trimmed) ||
+    isDecodableQueryString(trimmed) ||
+    isDecodablePrefixedQueryString(trimmed)
+  ) {
+    return true;
+  }
+
+  if (hasUrlEncoding(trimmed)) {
+    const decoded = urlDecode(trimmed);
+    return decoded !== trimmed && isStructuredActionableParamValue(decoded, depth + 1);
+  }
+
+  if (isBase64(trimmed)) {
+    const decoded = base64Decode(trimmed);
+    return decoded !== trimmed && shouldExposeNormalizedSchemeValue(decoded, depth + 1);
+  }
+
+  return false;
+};
+
+const hasActionableUrlParamSource = (paramSource: string, depth: number): boolean => {
+  const source = normalizeQueryString(stripQueryPrefix(paramSource));
+  if (!source || !QUERY_PAIR_START_RE.test(source)) return false;
+
+  return splitQueryPairs(source).some(pair => {
+    const equalIndex = pair.indexOf('=');
+    if (equalIndex <= 0) return false;
+
+    const key = decodeQueryComponent(pair.slice(0, equalIndex));
+    if (!key || !isKnownDecodableParamName(key)) return false;
+
+    const value = decodeQueryValueComponent(pair.slice(equalIndex + 1));
+    return isStructuredActionableParamValue(value, depth + 1);
+  });
+};
+
+const hasActionableHttpUrlParams = (url: URL, depth: number): boolean => {
+  if (url.search && hasActionableUrlParamSource(url.search, depth + 1)) {
+    return true;
+  }
+
+  const hashParamSource = url.hash ? getFragmentParamSource(url.hash) : null;
+  return Boolean(hashParamSource && hasActionableUrlParamSource(hashParamSource, depth + 1));
+};
+
+/**
+ * 判断一个 URL 是否应作为业务 scheme/CMD 暴露。
+ * 普通 HTTP(S) 资源或落地页仍可被解析，但不会进入自动 scheme 列表。
+ */
+export function isActionableSchemeUrl(value: string, depth = 0): boolean {
+  if (depth > ACTIONABLE_URL_MAX_DEPTH) return false;
+
+  const trimmed = normalizeJsonUrlEscapes(value.trim());
+  if (!isUrl(trimmed)) return false;
+
+  try {
+    const url = createUrl(trimmed);
+    if (!isHttpSchemeProtocol(url.protocol)) return true;
+
+    return hasActionableHttpUrlParams(url, depth + 1);
+  } catch {
+    return false;
+  }
+}
+
+const shouldExposeNormalizedSchemeValue = (value: string, depth: number): boolean => {
+  if (depth > ACTIONABLE_URL_MAX_DEPTH) return false;
+
+  const trimmed = value.trim();
+  const type = detectSchemeType(trimmed);
+  if (type === 'plain' || type === 'json') return false;
+  if (type === 'url') return isActionableSchemeUrl(trimmed, depth + 1);
+
+  if (type === 'url-encoded') {
+    const decoded = urlDecode(trimmed);
+    return decoded !== trimmed && shouldExposeNormalizedSchemeValue(decoded, depth + 1);
+  }
+
+  if (type === 'base64') {
+    const decoded = base64Decode(trimmed);
+    return decoded !== trimmed && shouldExposeNormalizedSchemeValue(decoded, depth + 1);
+  }
+
+  return true;
+};
+
+/**
+ * 判断字符串是否值得在编辑器/列表里作为 scheme 暴露。
+ */
+export function shouldExposeSchemeValue(str: string): boolean {
+  if (!str || typeof str !== 'string') return false;
+  return shouldExposeNormalizedSchemeValue(str, 0);
 }
 
 // ============ 解码函数 ============

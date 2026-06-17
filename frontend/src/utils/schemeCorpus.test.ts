@@ -47,7 +47,7 @@ interface SchemeCorpusExpectedSnapshot {
     maxUnresolved: number;
     maxWarnings: number;
     leadHotspotCommandSchema: string;
-    leadHotspotResourceSchema: string;
+    leadHotspotResourceSchema?: string;
     leadHotspotResourceField: string;
   };
   primaryCommandSchema: string;
@@ -873,9 +873,13 @@ describe('CMD/Scheme 真实样本回归', () => {
     expect(qualitySnapshot.hotspots.topCommandSchemas[0].schema).toBe(
       rewardResponseBaseline.quality.leadHotspotCommandSchema
     );
-    expect(qualitySnapshot.hotspots.topResourceSchemas[0].schema).toBe(
-      rewardResponseBaseline.quality.leadHotspotResourceSchema
-    );
+    if (rewardResponseBaseline.quality.leadHotspotResourceSchema) {
+      expect(qualitySnapshot.hotspots.topResourceSchemas[0]?.schema).toBe(
+        rewardResponseBaseline.quality.leadHotspotResourceSchema
+      );
+    } else {
+      expect(qualitySnapshot.hotspots.topResourceSchemas).toEqual([]);
+    }
     expect(qualitySnapshot.hotspots.topNestedResourceFields[0].key).toBe(
       rewardResponseBaseline.quality.leadHotspotResourceField
     );

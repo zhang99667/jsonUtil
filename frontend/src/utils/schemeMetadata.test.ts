@@ -5,6 +5,7 @@ import {
   formatBase64MetaDisplayValue,
   formatCmdHandlerCompatibleResult,
   formatPrimaryCmdHandlerCompatibleResult,
+  getSchemeCommandSchemaFromUrl,
   getSchemeInsightFieldCopyText,
 } from './schemeMetadata';
 import { base64Encode, deepDecodeScheme } from './schemeUtils';
@@ -45,6 +46,14 @@ describe('schemeMetadata', () => {
 
   it('长值会被裁剪成适合徽标展示的预览', () => {
     expect(formatBase64MetaDisplayValue('x'.repeat(70))).toBe(`${'x'.repeat(64)}...`);
+  });
+
+  it('普通 HTTPS URL 不生成 cmdSchema', () => {
+    const plainUrl = 'https://example.com/page?from=feed';
+    const structuredUrl = `https://example.com/callback?cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}`;
+
+    expect(getSchemeCommandSchemaFromUrl(plainUrl)).toBeUndefined();
+    expect(getSchemeCommandSchemaFromUrl(structuredUrl)).toBe('https://example.com/callback');
   });
 
   it('提取 URL Scheme 的 cmdSchema、cmdParams 和嵌套解析线索', () => {
@@ -591,11 +600,7 @@ describe('schemeMetadata', () => {
             cmdSchema: 'baiduboxapp://v1/browser/open',
             cmdParams: {
               url: {
-                cmdSchema: 'https://m.baidu.com/s',
-                cmdParams: {
-                  word: 'json',
-                },
-                source: 'https://m.baidu.com/s?word=json',
+                word: 'json',
               },
             },
             source: nestedSource,
@@ -667,11 +672,7 @@ describe('schemeMetadata', () => {
               cmdParams: {
                 params: {
                   url: {
-                    cmdSchema: 'https://pro.m.jd.com/mall/active/page.html',
-                    cmdParams: {
-                      sku: '101',
-                    },
-                    source: landingUrl,
+                    sku: '101',
                   },
                 },
               },
@@ -706,10 +707,7 @@ describe('schemeMetadata', () => {
             cmdSchema: 'baiduboxapp://v1/browser/open',
             cmdParams: {
               url: {
-                cmdSchema: 'https://example.com/page',
-                cmdParams: {
-                  id: '1',
-                },
+                id: '1',
               },
             },
             source: schemaSource,
@@ -756,18 +754,14 @@ describe('schemeMetadata', () => {
         cmdParams: {
           video_info: {
             page_url: {
-              cmdSchema: 'https://example.com/landing',
-              cmdParams: {
-                sku: '101',
-              },
-              source: landingUrl,
+              sku: '101',
             },
             tail_frame: {
               panel_scheme: {
                 cmdSchema: 'baiduboxapp://v1/panel',
                 cmdParams: {
                   url: {
-                    cmdSchema: 'https://example.com/landing',
+                    sku: '101',
                   },
                 },
                 source: nestedPanel,
