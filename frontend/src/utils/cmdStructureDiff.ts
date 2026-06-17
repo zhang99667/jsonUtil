@@ -556,6 +556,24 @@ const stableStringify = (value: JsonValue): string | undefined => {
   return JSON.stringify(normalize(value));
 };
 
+const getStructuredSourceValue = (value: JsonValue): string | undefined => (
+  isRecord(value) && typeof value.source === 'string'
+    ? normalizeRawSourceString(value.source)
+    : undefined
+);
+
+const isStructuredSourceEquivalent = (actual: JsonValue, expected: JsonValue): boolean => {
+  if (typeof actual === 'string') {
+    return getStructuredSourceValue(expected) === normalizeRawSourceString(actual);
+  }
+
+  if (typeof expected === 'string') {
+    return getStructuredSourceValue(actual) === normalizeRawSourceString(expected);
+  }
+
+  return false;
+};
+
 const compareRows = (
   actualRows: Map<string, ValueRow>,
   expectedRows: Map<string, ValueRow>
@@ -572,6 +590,8 @@ const compareRows = (
     }
 
     if (actualRow.type !== expectedRow.type) {
+      if (isStructuredSourceEquivalent(actualRow.value, expectedRow.value)) return;
+
       valueDiffs.push({
         path,
         actual: actualRow.value,

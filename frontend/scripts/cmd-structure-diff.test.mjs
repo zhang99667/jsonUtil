@@ -236,6 +236,47 @@ describe('diffCmdStructures', () => {
     expect(report).toContain('值不一致 1 个');
   });
 
+  it('允许 actual 展开 URL 而 cmdHandler expected 保留原字符串', () => {
+    const source = 'https://example.com/landing?sku=101';
+    const actual = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdParams: {
+          url: {
+            cmdSchema: 'https://example.com/landing',
+            cmdParams: {
+              sku: '101',
+            },
+            source,
+          },
+        },
+      },
+    };
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdParams: {
+          url: source,
+        },
+      },
+    };
+
+    const diff = diffCmdStructures(actual, expected, { ignoreExtraPaths: true });
+
+    expect(diff).toMatchObject({
+      hasDifferences: false,
+      missingPaths: [],
+      extraPaths: [],
+      valueDiffs: [],
+    });
+    expect(diff.ignoredExtraPaths).toEqual([
+      '$.url.cmdSchema',
+      '$.url.cmdParams',
+      '$.url.cmdParams.sku',
+      '$.url.source',
+    ]);
+  });
+
   it('差异报告可附带对比包来源上下文', () => {
     const report = formatCmdStructureDiff(
       diffCmdStructures(createCmdStructure(), createCmdStructure()),

@@ -453,6 +453,24 @@ const stableStringify = value => {
   return JSON.stringify(normalize(value));
 };
 
+const getStructuredSourceValue = value => (
+  isRecord(value) && typeof value.source === 'string'
+    ? normalizeRawSourceString(value.source)
+    : undefined
+);
+
+const isStructuredSourceEquivalent = (actual, expected) => {
+  if (typeof actual === 'string') {
+    return getStructuredSourceValue(expected) === normalizeRawSourceString(actual);
+  }
+
+  if (typeof expected === 'string') {
+    return getStructuredSourceValue(actual) === normalizeRawSourceString(expected);
+  }
+
+  return false;
+};
+
 const compareRows = (actualRows, expectedRows) => {
   const missingPaths = [];
   const extraPaths = [];
@@ -466,6 +484,8 @@ const compareRows = (actualRows, expectedRows) => {
     }
 
     if (actualRow.type !== expectedRow.type) {
+      if (isStructuredSourceEquivalent(actualRow.value, expectedRow.value)) return;
+
       valueDiffs.push({
         path,
         actual: actualRow.value,

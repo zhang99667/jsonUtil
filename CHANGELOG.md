@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.101 (2026-06-17) - cmdHandler 字符串字段兼容
+### ✨ 新特性
+- **cmdHandler 对比**: 当本工具 actual 已把 URL/CMD 字段展开为 `cmdSchema/cmdParams/source`，而内部 cmdHandler expected 仍保留同一个 source 字符串时，开启忽略额外路径后不再误报父节点类型差异
+- **CLI 对齐**: `cmd:diff` 同步支持结构化 CMD 与原始 source 字符串的等价判断，适配参考页对 `url` 字段只输出字符串的解析形态
+
 ## v1.8.100 (2026-06-17) - cmdHandler 树形文本与 response 粘贴
 ### ✨ 新特性
 - **cmdHandler 对比**: 支持解析内部参考页树形视图复制出的可见文本，自动清理 `N item(s)` 与 `cmd解析` 展示文案后提取 `cmdSchema/cmdParams`
