@@ -51,6 +51,31 @@ describe('cmdStructureDiff', () => {
     });
   });
 
+  it('兼容内部页面复制出的解析结果包装', () => {
+    const structure = normalizeCmdStructure({
+      解析结果: {
+        result: {
+          cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+          cmdParams: {
+            video_info: {
+              vid: '123',
+            },
+          },
+        },
+      },
+    });
+
+    expect(structure).toEqual({
+      cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      cmdParams: {
+        video_info: {
+          vid: '123',
+        },
+      },
+      source: undefined,
+    });
+  });
+
   it('结构一致时输出一致结论', () => {
     const diff = diffCmdStructures(createCmdStructure(), createCmdStructure());
 
