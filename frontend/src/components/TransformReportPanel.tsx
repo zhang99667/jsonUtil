@@ -9,6 +9,9 @@ import {
   formatCmdStructureDiff,
   hasRecognizableCmdStructure,
   parseCmdStructureJson,
+  rankCmdStructureCandidates,
+  type CmdStructureCandidateInput,
+  type RankedCmdStructureCandidate,
 } from '../utils/cmdStructureDiff';
 import {
   buildTransformContextReport,
@@ -99,6 +102,22 @@ const isPathValueCopyLimited = (records: TransformReportRecord[], isRecordTrunca
 const formatPathValueCopyCountLabel = (count: number, isLimited: boolean): string => (
   isLimited ? `已返回 ${count} 项` : `${count} 项`
 );
+
+const formatCmdCandidateSummary = (candidate: RankedCmdStructureCandidate): string => {
+  const { diff } = candidate;
+  if (!diff.hasDifferences) {
+    return `结构一致${diff.ignoredExtraPaths.length ? `，已忽略 ${diff.ignoredExtraPaths.length}` : ''}`;
+  }
+
+  return [
+    `Schema ${diff.schemaDiff ? 1 : 0}`,
+    `Source ${diff.sourceDiff ? 1 : 0}`,
+    `缺失 ${diff.missingPaths.length}`,
+    `额外 ${diff.extraPaths.length}`,
+    `值 ${diff.valueDiffs.length}`,
+    ...(diff.ignoredExtraPaths.length ? [`已忽略 ${diff.ignoredExtraPaths.length}`] : []),
+  ].join('，');
+};
 
 const getDecodedPathSchemeInput = (row: TransformReportRecord['nestedCommandFields'][number]): string => {
   if (!Object.prototype.hasOwnProperty.call(row, 'value')) return '';
@@ -607,6 +626,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     setCmdComparisonRecordPath(firstRecord.path);
   };
 
+  const handleSwitchCmdComparisonRecord = (path: string) => {
+    setQuery('CMD结构');
+    setCmdComparisonRecordPath(path);
+  };
+
   const handleCopyCmdComparisonDiff = async (record: TransformReportRecord) => {
     try {
       const reportText = buildCmdComparisonReportText(record);
@@ -700,6 +724,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       previewLines: string[];
     } | null = null;
     let errorText = '';
+    let candidateRecommendations: RankedCmdStructureCandidate[] = [];
 
     if (expectedText) {
       try {
@@ -728,10 +753,35 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           hasSourceDiff: Boolean(diff.sourceDiff),
           previewLines: diffReportText.split('\n').slice(1, 6),
         };
+        const candidateRecords = fullReportView?.cmdStructureRecords || reportView?.cmdStructureRecords || [];
+        const candidateInputs = candidateRecords.reduce<CmdStructureCandidateInput[]>((items, candidateRecord) => {
+          const candidateText = getTransformRecordCmdStructureCopyText(candidateRecord);
+          if (!candidateText) return items;
+
+          try {
+            items.push({
+              id: candidateRecord.path,
+              label: candidateRecord.path,
+              sourceLabel: candidateRecord.sourceLabel,
+              commandSchema: candidateRecord.commandSchema,
+              actual: parseCmdStructureJson(candidateText, '本工具 CMD 结构'),
+            });
+          } catch {
+            // 单条候选解析失败不影响当前 CMD 的差异判断。
+          }
+
+          return items;
+        }, []);
+        candidateRecommendations = rankCmdStructureCandidates(candidateInputs, expected, {
+          ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
+          limit: 3,
+        });
       } catch (error) {
         errorText = error instanceof Error ? error.message : String(error);
       }
     }
+    const bestCandidate = candidateRecommendations[0];
+    const shouldWarnCurrentCandidate = Boolean(bestCandidate && bestCandidate.id !== record.path);
 
     return (
       <div data-tour="transform-report-cmd-comparison-panel" className="mt-2 rounded border border-teal-800/50 bg-teal-950/20 px-3 py-2">
@@ -804,6 +854,49 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {candidateRecommendations.length > 1 && (
+          <div data-tour="transform-report-cmd-candidate-recommendations" className="mt-2 rounded border border-editor-border bg-editor-bg/70 px-2 py-1.5">
+            <div className={shouldWarnCurrentCandidate ? 'text-amber-200' : 'text-gray-300'}>
+              {shouldWarnCurrentCandidate
+                ? '可能拿错 actual，下面的 CMD 与 expected 更接近'
+                : '当前 actual 已是最匹配候选'}
+            </div>
+            <div className="mt-1 flex flex-col gap-1">
+              {candidateRecommendations.map((candidate, index) => {
+                const isCurrentCandidate = candidate.id === record.path;
+                const summary = formatCmdCandidateSummary(candidate);
+                return (
+                  <button
+                    key={`${record.path}:cmd-candidate:${candidate.id}`}
+                    type="button"
+                    data-tour="transform-report-cmd-candidate"
+                    onClick={() => handleSwitchCmdComparisonRecord(candidate.id)}
+                    disabled={isCurrentCandidate}
+                    className="flex min-w-0 items-center justify-between gap-2 rounded border border-editor-border bg-editor-sidebar px-2 py-1 text-left text-gray-300 transition-colors hover:border-teal-700 hover:text-teal-100 disabled:cursor-default disabled:opacity-70"
+                    title={`${candidate.label} · ${summary}`}
+                  >
+                    <span className="min-w-0 flex items-center gap-1.5">
+                      <span className={candidate.isExactMatch ? 'text-emerald-300' : index === 0 ? 'text-amber-200' : 'text-gray-500'}>
+                        #{index + 1}
+                      </span>
+                      <span className="max-w-[220px] truncate font-mono text-emerald-300">
+                        {candidate.label}
+                      </span>
+                      {candidate.sourceLabel && (
+                        <SourceLabelBadge label={candidate.sourceLabel} />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-right text-gray-400">
+                      {isCurrentCandidate ? '当前 · ' : ''}
+                      {candidate.commandSchema ? `${candidate.commandSchema} · ` : ''}
+                      {summary}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.105 (2026-06-17) - cmdHandler actual 候选推荐
+### ✨ 新特性
+- **cmdHandler 对比**: 粘贴 expected 后自动扫描当前报告中的 CMD 结构并展示 Top 3 actual 候选，当前行不是最佳匹配时提示可能拿错 actual
+- **一键切换**: 候选列表支持直接切到更匹配的 CMD 记录继续对比，减少多 CMD response 中手动猜测和反复展开的成本
+
 ## v1.8.104 (2026-06-17) - cmd:diff 粘贴容错对齐
 ### ✨ 新特性
 - **CLI 对齐**: `cmd:diff` 文件和 stdin 输入支持日志前缀、Markdown 代码块、字符串化 JSON 与树形文本，和页面内 cmdHandler 对比粘贴能力保持一致

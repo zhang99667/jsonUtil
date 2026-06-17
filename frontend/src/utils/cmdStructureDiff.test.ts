@@ -5,6 +5,7 @@ import {
   hasRecognizableCmdStructure,
   normalizeCmdStructure,
   parseCmdStructureJson,
+  rankCmdStructureCandidates,
 } from './cmdStructureDiff';
 
 const createCmdStructure = () => ({
@@ -243,6 +244,88 @@ describe('cmdStructureDiff', () => {
 
     expect(diff.sourceDiff).toBeNull();
     expect(diff.hasDifferences).toBe(false);
+  });
+
+  it('按差异数量推荐最匹配的 actual CMD 候选', () => {
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdParams: {
+          tab: 'reward',
+        },
+      },
+    };
+    const candidates = rankCmdStructureCandidates([
+      {
+        id: '$.action_cmd',
+        label: '$.action_cmd',
+        commandSchema: 'baiduboxapp://v1/action',
+        actual: {
+          result: {
+            cmdSchema: 'baiduboxapp://v1/action',
+            cmdParams: {
+              from: 'feed',
+            },
+          },
+        },
+      },
+      {
+        id: '$.panel_cmd',
+        label: '$.panel_cmd',
+        commandSchema: 'baiduboxapp://v1/panel',
+        actual: expected,
+      },
+    ], expected);
+
+    expect(candidates[0]).toMatchObject({
+      id: '$.panel_cmd',
+      isExactMatch: true,
+      score: 0,
+    });
+    expect(candidates[1].id).toBe('$.action_cmd');
+  });
+
+  it('推荐候选时沿用忽略 actual 额外路径模式', () => {
+    const source = 'https://example.com/landing?sku=101';
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdParams: {
+          url: source,
+        },
+      },
+    };
+    const candidates = rankCmdStructureCandidates([
+      {
+        id: '$.browser_cmd',
+        label: '$.browser_cmd',
+        actual: {
+          result: {
+            cmdSchema: 'baiduboxapp://v1/browser/open',
+            cmdParams: {
+              url: {
+                cmdSchema: 'https://example.com/landing',
+                cmdParams: {
+                  sku: '101',
+                },
+                source,
+              },
+            },
+          },
+        },
+      },
+    ], expected, { ignoreExtraPaths: true });
+
+    expect(candidates[0]).toMatchObject({
+      id: '$.browser_cmd',
+      isExactMatch: true,
+    });
+    expect(candidates[0].diff.ignoredExtraPaths).toEqual([
+      '$.url.cmdSchema',
+      '$.url.cmdParams',
+      '$.url.cmdParams.sku',
+      '$.url.source',
+    ]);
   });
 
   it('解析带前后文和代码块的 cmdHandler 输出', () => {

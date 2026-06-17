@@ -51,6 +51,24 @@ export interface CmdStructureDiffContext {
   modeLabel?: string;
 }
 
+export interface CmdStructureCandidateInput {
+  id: string;
+  label: string;
+  sourceLabel?: string;
+  commandSchema?: string;
+  actual: JsonValue;
+}
+
+export interface RankedCmdStructureCandidate extends Omit<CmdStructureCandidateInput, 'actual'> {
+  diff: CmdStructureDiff;
+  score: number;
+  isExactMatch: boolean;
+}
+
+export interface RankCmdStructureCandidatesOptions extends CmdStructureDiffOptions {
+  limit?: number;
+}
+
 const isRecord = (value: JsonValue): value is JsonObject => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
@@ -660,6 +678,47 @@ export const diffCmdStructures = (
       paramDiff.valueDiffs.length
     ),
   };
+};
+
+const getCmdStructureCandidateScore = (diff: CmdStructureDiff): number => (
+  (diff.schemaDiff ? 10000 : 0) +
+  (diff.sourceDiff ? 5000 : 0) +
+  diff.missingPaths.length * 100 +
+  diff.valueDiffs.length * 50 +
+  diff.extraPaths.length * 10 +
+  diff.ignoredExtraPaths.length
+);
+
+export const rankCmdStructureCandidates = (
+  candidates: CmdStructureCandidateInput[],
+  expectedInput: JsonValue,
+  options: RankCmdStructureCandidatesOptions = {}
+): RankedCmdStructureCandidate[] => {
+  const rankedCandidates = candidates.map((candidate, index) => {
+    const diff = diffCmdStructures(candidate.actual, expectedInput, {
+      ignoreExtraPaths: options.ignoreExtraPaths,
+    });
+    return {
+      id: candidate.id,
+      label: candidate.label,
+      sourceLabel: candidate.sourceLabel,
+      commandSchema: candidate.commandSchema,
+      diff,
+      score: getCmdStructureCandidateScore(diff),
+      isExactMatch: !diff.hasDifferences,
+      index,
+    };
+  });
+
+  return rankedCandidates
+    .sort((left, right) => (
+      left.score - right.score ||
+      left.diff.missingPaths.length - right.diff.missingPaths.length ||
+      left.diff.valueDiffs.length - right.diff.valueDiffs.length ||
+      left.index - right.index
+    ))
+    .slice(0, options.limit ?? 3)
+    .map(({ index: _index, ...candidate }) => candidate);
 };
 
 const formatValue = (value: JsonValue): string => {
