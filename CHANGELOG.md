@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.120 (2026-06-17) - 前端 Docker 构建内存
+### 🐛 Bug 修复
+- **生产部署**: 前端 Docker 构建阶段配置 `NODE_OPTIONS=--max-old-space-size=4096`，避免 Vite 生产构建在默认 Node 堆限制下 OOM 中断上线
+
 ## v1.8.119 (2026-06-17) - JSONPath 性能预算
 ### ✨ 新特性
 - **性能门禁**: 新增 `perf:jsonpath`，复用脱敏 response 和大量命中列表校验 JSONPath 大查询耗时、命中数、高亮范围和结果上限保护，并接入 GitHub Actions 与本地 CI
