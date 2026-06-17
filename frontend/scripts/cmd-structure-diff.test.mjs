@@ -6,8 +6,10 @@ import {
   formatCmdStructureDiff,
   hasRecognizableCmdStructure,
   normalizeCmdStructure,
+  normalizeComparisonInputs,
   parseCliArgs,
   parseCmdHandlerTreeText,
+  parseJsonInput,
 } from './cmd-structure-diff.mjs';
 
 const createCmdStructure = () => ({
@@ -104,6 +106,28 @@ iqoo13`);
       },
       source: undefined,
     });
+  });
+
+  it('文件输入兼容日志前缀和 Markdown 代码块', () => {
+    const parsed = parseJsonInput(`cmdHandler 输出:
+\`\`\`json
+${JSON.stringify(createCmdStructure())}
+\`\`\`
+复制时间: 2026-06-17`, 'expected');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
+  });
+
+  it('文件输入兼容方括号日志前缀', () => {
+    const parsed = parseJsonInput(`[cmdHandler] output => ${JSON.stringify(createCmdStructure())} // done`, 'expected');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
+  });
+
+  it('文件输入兼容字符串化 JSON', () => {
+    const parsed = parseJsonInput(JSON.stringify(JSON.stringify(createCmdStructure())), 'expected');
+
+    expect(normalizeCmdStructure(parsed)).toEqual(normalizeCmdStructure(createCmdStructure()));
   });
 
   it('整段 response 自动聚焦主 CMD 字段', () => {
@@ -215,6 +239,18 @@ describe('extractCmdStructurePair', () => {
 
   it('对比包缺字段时给出明确错误', () => {
     expect(() => extractCmdStructurePair({ actual: createCmdStructure() })).toThrow('必须是包含 actual 和 expected 的 JSON 对象');
+  });
+
+  it('对比包字段兼容原始复制文本字符串', () => {
+    const actual = createCmdStructure();
+    const expectedText = `cmdHandler 输出:
+\`\`\`json
+${JSON.stringify(createCmdStructure())}
+\`\`\``;
+    const pair = normalizeComparisonInputs({ actual, expected: expectedText });
+    const diff = diffCmdStructures(pair.actual, pair.expected);
+
+    expect(diff.hasDifferences).toBe(false);
   });
 });
 

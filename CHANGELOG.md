@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.104 (2026-06-17) - cmd:diff 粘贴容错对齐
+### ✨ 新特性
+- **CLI 对齐**: `cmd:diff` 文件和 stdin 输入支持日志前缀、Markdown 代码块、字符串化 JSON 与树形文本，和页面内 cmdHandler 对比粘贴能力保持一致
+- **对比包容错**: 单文件/stdin 对比包中的 `actual` 或 `expected` 如果是原始复制文本字符串，会先尝试提取 CMD 结构再对比，减少自动化前的手动清洗
+
 ## v1.8.103 (2026-06-17) - cmd:diff 无效输入提示
 ### ✨ 新特性
 - **CLI 对齐**: `cmd:diff` 在 actual/expected 未识别到 CMD 结构时直接给出可操作错误提示，避免把普通 JSON 或空解析结果误判为完整 cmdParams 做噪声对比
