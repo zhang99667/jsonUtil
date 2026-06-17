@@ -855,6 +855,52 @@ done`);
   expect(subsetDiffReport).toContain('已忽略 actual 额外路径');
 });
 
+test('cmdHandler 对比可推荐更匹配的 actual CMD', async ({ page }) => {
+  await fillSourceEditor(page, JSON.stringify({
+    action_cmd: 'baiduboxapp://v1/action?from=feed',
+    panel_cmd: 'baiduboxapp://v1/panel?tab=reward',
+  }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await reportPanel.locator('[data-tour="transform-report-open-first-cmd-comparison"]').click();
+
+  const actionRow = reportPanel
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$.action_cmd' });
+  const comparisonPanel = actionRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
+  await expect(comparisonPanel).toBeVisible();
+
+  const panelExpected = JSON.stringify({
+    result: {
+      cmdSchema: 'baiduboxapp://v1/panel',
+      cmdParams: {
+        tab: 'reward',
+      },
+    },
+  }, null, 2);
+  await comparisonPanel.locator('[data-tour="transform-report-cmd-comparison-input"]').fill(panelExpected);
+
+  await expect(comparisonPanel.locator('[data-tour="transform-report-cmd-candidate-recommendations"]'))
+    .toContainText('可能拿错 actual');
+  const panelCandidate = comparisonPanel
+    .locator('[data-tour="transform-report-cmd-candidate"]')
+    .filter({ hasText: '$.panel_cmd' });
+  await expect(panelCandidate).toContainText('结构一致');
+  await panelCandidate.click();
+
+  const panelRow = reportPanel
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$.panel_cmd' });
+  const switchedPanel = panelRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
+  await expect(switchedPanel).toBeVisible();
+  await expect(switchedPanel).toContainText('结构一致');
+  await expect(switchedPanel.locator('[data-tour="transform-report-cmd-candidate-recommendations"]'))
+    .toContainText('当前 actual 已是最匹配候选');
+});
+
 test('深度解析报告内部CMD字段可直接打开 Scheme 面板', async ({ page }) => {
   const innerCmd = {
     cmdSchema: 'baiduboxapp://v1/easybrowse/open',
