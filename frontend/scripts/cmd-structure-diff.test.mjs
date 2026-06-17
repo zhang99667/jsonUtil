@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   assertRecognizableCmdInput,
+  collectActualCmdStructureCandidates,
   diffCmdStructures,
   extractCmdStructurePair,
+  formatCmdStructureCandidateRecommendations,
   formatCmdStructureDiff,
   hasRecognizableCmdStructure,
   normalizeCmdStructure,
@@ -10,6 +12,8 @@ import {
   parseCliArgs,
   parseCmdHandlerTreeText,
   parseJsonInput,
+  prepareComparisonInputs,
+  rankCmdStructureCandidates,
 } from './cmd-structure-diff.mjs';
 
 const createCmdStructure = () => ({
@@ -290,6 +294,86 @@ ${JSON.stringify(createCmdStructure())}
 
     expect(diff.hasDifferences).toBe(false);
   });
+
+  it('从整段 actual response 推荐最匹配的 CMD 候选', () => {
+    const actual = {
+      data: {
+        action_cmd: 'baiduboxapp://v1/action?from=feed',
+        panel_cmd: 'baiduboxapp://v1/panel?tab=reward',
+      },
+    };
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdParams: {
+          tab: 'reward',
+        },
+      },
+    };
+
+    const candidates = rankCmdStructureCandidates(
+      collectActualCmdStructureCandidates(actual),
+      expected
+    );
+    const report = formatCmdStructureCandidateRecommendations(candidates);
+
+    expect(candidates[0]).toMatchObject({
+      id: '$.data.panel_cmd',
+      isExactMatch: true,
+      score: 0,
+    });
+    expect(candidates[1].id).toBe('$.data.action_cmd');
+    expect(report).toContain('#1 $.data.panel_cmd');
+    expect(report).toContain('结构一致');
+  });
+
+  it('支持按 actual 候选路径直接选择对比结构', () => {
+    const actual = {
+      data: {
+        action_cmd: 'baiduboxapp://v1/action?from=feed',
+        panel_cmd: 'baiduboxapp://v1/panel?tab=reward',
+      },
+    };
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdParams: {
+          tab: 'reward',
+        },
+      },
+    };
+
+    const prepared = prepareComparisonInputs({ actual, expected }, {
+      actualPath: '$.data.panel_cmd',
+    });
+    const diff = diffCmdStructures(prepared.inputs.actual, prepared.inputs.expected);
+
+    expect(diff.hasDifferences).toBe(false);
+    expect(prepared.inputs.context).toEqual({
+      path: '$.data.panel_cmd',
+      sourceLabel: 'panel_cmd',
+    });
+  });
+
+  it('actual 候选路径不存在时列出可用路径', () => {
+    const actual = {
+      data: {
+        panel_cmd: 'baiduboxapp://v1/panel?tab=reward',
+      },
+    };
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdParams: {
+          tab: 'reward',
+        },
+      },
+    };
+
+    expect(() => prepareComparisonInputs({ actual, expected }, {
+      actualPath: '$.data.missing_cmd',
+    })).toThrow('可用路径: $.data.panel_cmd');
+  });
 });
 
 describe('diffCmdStructures', () => {
@@ -499,6 +583,8 @@ describe('parseCliArgs', () => {
       options: {
         fromStdin: false,
         ignoreExtraPaths: true,
+        suggestActual: false,
+        actualPath: '',
       },
       paths: ['actual.json', 'expected.json'],
     });
@@ -509,8 +595,32 @@ describe('parseCliArgs', () => {
       options: {
         fromStdin: true,
         ignoreExtraPaths: true,
+        suggestActual: false,
+        actualPath: '',
       },
       paths: [],
     });
+  });
+
+  it('支持 CLI actual 候选推荐和路径选择参数', () => {
+    expect(parseCliArgs([
+      '--suggest-actual',
+      '--actual-path',
+      '$.data.panel_cmd',
+      'actual.json',
+      'expected.json',
+    ])).toEqual({
+      options: {
+        fromStdin: false,
+        ignoreExtraPaths: false,
+        suggestActual: true,
+        actualPath: '$.data.panel_cmd',
+      },
+      paths: ['actual.json', 'expected.json'],
+    });
+  });
+
+  it('actual-path 缺少值时给出明确错误', () => {
+    expect(() => parseCliArgs(['--actual-path'])).toThrow('--actual-path 需要指定候选路径');
   });
 });

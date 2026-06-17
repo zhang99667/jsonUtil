@@ -280,7 +280,8 @@ const collectRawCmdCandidates = (
   candidates,
   key = '$',
   depth = 0,
-  orderRef = { value: 0 }
+  orderRef = { value: 0 },
+  path = '$'
 ) => {
   if (typeof value === 'string') {
     const priority = getRawCmdFieldPriority(key);
@@ -290,6 +291,8 @@ const collectRawCmdCandidates = (
         priority,
         depth,
         order: orderRef.value,
+        path,
+        sourceLabel: key === '$' ? undefined : key,
       });
       orderRef.value += 1;
     }
@@ -297,14 +300,28 @@ const collectRawCmdCandidates = (
   }
 
   if (Array.isArray(value)) {
-    value.forEach(item => collectRawCmdCandidates(item, candidates, key, depth + 1, orderRef));
+    value.forEach((item, index) => collectRawCmdCandidates(
+      item,
+      candidates,
+      key,
+      depth + 1,
+      orderRef,
+      `${path}[${index}]`
+    ));
     return;
   }
 
   if (!isRecord(value)) return;
 
   Object.entries(value).forEach(([childKey, item]) => {
-    collectRawCmdCandidates(item, candidates, childKey, depth + 1, orderRef);
+    collectRawCmdCandidates(
+      item,
+      candidates,
+      childKey,
+      depth + 1,
+      orderRef,
+      appendPathKey(path, childKey)
+    );
   });
 };
 
@@ -463,6 +480,25 @@ const findRawResponseCmdStructure = value => {
   }
 
   return null;
+};
+
+export const collectActualCmdStructureCandidates = value => {
+  const rawCandidates = [];
+  collectRawCmdCandidates(value, rawCandidates);
+
+  return rawCandidates.reduce((items, candidate) => {
+    const structure = parseFastCmdSource(candidate.source);
+    if (!structure) return items;
+
+    items.push({
+      id: candidate.path,
+      label: candidate.path,
+      sourceLabel: candidate.sourceLabel,
+      commandSchema: structure.cmdSchema,
+      actual: structure,
+    });
+    return items;
+  }, []);
 };
 
 const findCmdStructure = value => {
@@ -661,6 +697,47 @@ export const diffCmdStructures = (actualInput, expectedInput, options = {}) => {
   };
 };
 
+const getCmdStructureCandidateScore = diff => (
+  (diff.schemaDiff ? 10000 : 0) +
+  (diff.sourceDiff ? 5000 : 0) +
+  diff.missingPaths.length * 100 +
+  diff.valueDiffs.length * 50 +
+  diff.extraPaths.length * 10 +
+  diff.ignoredExtraPaths.length
+);
+
+export const rankCmdStructureCandidates = (
+  candidates,
+  expectedInput,
+  options = {}
+) => {
+  const rankedCandidates = candidates.map((candidate, index) => {
+    const diff = diffCmdStructures(candidate.actual, expectedInput, {
+      ignoreExtraPaths: options.ignoreExtraPaths,
+    });
+    return {
+      id: candidate.id,
+      label: candidate.label,
+      sourceLabel: candidate.sourceLabel,
+      commandSchema: candidate.commandSchema,
+      diff,
+      score: getCmdStructureCandidateScore(diff),
+      isExactMatch: !diff.hasDifferences,
+      index,
+    };
+  });
+
+  return rankedCandidates
+    .sort((left, right) => (
+      left.score - right.score ||
+      left.diff.missingPaths.length - right.diff.missingPaths.length ||
+      left.diff.valueDiffs.length - right.diff.valueDiffs.length ||
+      left.index - right.index
+    ))
+    .slice(0, options.limit ?? 3)
+    .map(({ index: _index, ...candidate }) => candidate);
+};
+
 const formatValue = value => {
   const text = stableStringify(value);
   return text && text.length > 160 ? `${text.slice(0, 160)}...` : text;
@@ -732,29 +809,85 @@ export const formatCmdStructureDiff = (diff, context = {}) => {
   return lines.join('\n');
 };
 
+const formatCmdCandidateSummary = candidate => {
+  const { diff } = candidate;
+  if (!diff.hasDifferences) {
+    return `结构一致${diff.ignoredExtraPaths.length ? `，已忽略 ${diff.ignoredExtraPaths.length}` : ''}`;
+  }
+
+  return [
+    `Schema ${diff.schemaDiff ? 1 : 0}`,
+    `Source ${diff.sourceDiff ? 1 : 0}`,
+    `缺失 ${diff.missingPaths.length}`,
+    `额外 ${diff.extraPaths.length}`,
+    `值 ${diff.valueDiffs.length}`,
+    ...(diff.ignoredExtraPaths.length ? [`已忽略 ${diff.ignoredExtraPaths.length}`] : []),
+  ].join('，');
+};
+
+export const formatCmdStructureCandidateRecommendations = candidates => {
+  const lines = ['CMD actual 候选推荐'];
+  if (candidates.length === 0) {
+    lines.push('- 未发现可解析的 actual CMD 候选');
+    return lines.join('\n');
+  }
+
+  candidates.forEach((candidate, index) => {
+    const sourceLabel = candidate.sourceLabel ? ` · ${candidate.sourceLabel}` : '';
+    const schema = candidate.commandSchema ? ` · ${candidate.commandSchema}` : '';
+    lines.push(`- #${index + 1} ${candidate.label}${sourceLabel}${schema}: ${formatCmdCandidateSummary(candidate)}`);
+  });
+
+  return lines.join('\n');
+};
+
 const printUsage = () => {
   console.error('用法: npm run cmd:diff -- <actual-json-file> <expected-json-file>');
   console.error('也可输入单个对比包: npm run cmd:diff -- <pair-json-file>');
   console.error('也可通过 stdin 输入对比包: pbpaste | npm run cmd:diff -- --stdin');
   console.error('可选参数: --ignore-extra 忽略 actual 中多出的路径，用于 expected 只保存稳定子集的场景');
+  console.error('可选参数: --suggest-actual 输出 actual response 中最接近 expected 的 CMD 候选');
+  console.error('可选参数: --actual-path <path> 指定 actual response 中的候选路径进行对比');
   console.error('对比包格式: {"actual": {...}, "expected": {...}}');
   console.error('actual 通常为本工具复制的 CMD 结构，expected 通常为内部 cmdHandler 导出的 JSON');
   console.error('输入可带日志前缀、Markdown 代码块、树形文本或字符串化 JSON');
 };
 
 export const parseCliArgs = argv => {
-  const options = { fromStdin: false, ignoreExtraPaths: false };
+  const options = {
+    fromStdin: false,
+    ignoreExtraPaths: false,
+    suggestActual: false,
+    actualPath: '',
+  };
   const paths = [];
 
-  argv.forEach(arg => {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
     if (arg === '--stdin') {
       options.fromStdin = true;
-      return;
+      continue;
     }
 
     if (arg === '--ignore-extra') {
       options.ignoreExtraPaths = true;
-      return;
+      continue;
+    }
+
+    if (arg === '--suggest-actual') {
+      options.suggestActual = true;
+      continue;
+    }
+
+    if (arg === '--actual-path') {
+      const actualPath = argv[index + 1];
+      if (!actualPath) {
+        throw new Error('--actual-path 需要指定候选路径');
+      }
+      options.actualPath = actualPath;
+      index += 1;
+      continue;
     }
 
     if (arg.startsWith('-')) {
@@ -762,7 +895,7 @@ export const parseCliArgs = argv => {
     }
 
     paths.push(arg);
-  });
+  }
 
   if (options.fromStdin && paths.length > 0) {
     throw new Error('--stdin 不能和文件路径同时使用');
@@ -781,22 +914,58 @@ export const normalizeComparisonInputs = inputs => ({
   expected: parseEmbeddedJsonInput(inputs.expected),
 });
 
-const validateComparisonInputs = inputs => {
+const formatAvailableActualCandidatePaths = candidates => {
+  if (candidates.length === 0) return '(无)';
+
+  const paths = candidates.slice(0, 12).map(candidate => candidate.id).join(', ');
+  return candidates.length > 12 ? `${paths}, ...` : paths;
+};
+
+const applyActualCandidatePath = (inputs, candidates, actualPath) => {
+  if (!actualPath) return inputs;
+
+  const selected = candidates.find(candidate => candidate.id === actualPath);
+  if (!selected) {
+    throw new Error(`actual 未找到 CMD 候选路径: ${actualPath}；可用路径: ${formatAvailableActualCandidatePaths(candidates)}`);
+  }
+
+  return {
+    ...inputs,
+    actual: selected.actual,
+    context: {
+      ...(inputs.context || {}),
+      path: selected.id,
+      ...(selected.sourceLabel ? { sourceLabel: selected.sourceLabel } : {}),
+    },
+  };
+};
+
+export const prepareComparisonInputs = (inputs, options = {}) => {
   const normalizedInputs = normalizeComparisonInputs(inputs);
-  assertRecognizableCmdInput(normalizedInputs.actual, 'actual');
-  assertRecognizableCmdInput(normalizedInputs.expected, 'expected');
-  return normalizedInputs;
+  const actualCandidates = collectActualCmdStructureCandidates(normalizedInputs.actual);
+  const selectedInputs = applyActualCandidatePath(
+    normalizedInputs,
+    actualCandidates,
+    options.actualPath || ''
+  );
+
+  assertRecognizableCmdInput(selectedInputs.actual, 'actual');
+  assertRecognizableCmdInput(selectedInputs.expected, 'expected');
+  return {
+    inputs: selectedInputs,
+    actualCandidates,
+  };
 };
 
 const readComparisonInputs = async (paths, options) => {
   if (options.fromStdin || (paths.length === 0 && !process.stdin.isTTY)) {
     const pair = extractCmdStructurePair(parseJsonInput(await readStdin(), 'stdin'));
-    return validateComparisonInputs(pair);
+    return prepareComparisonInputs(pair, options);
   }
 
   if (paths.length === 1) {
     const pair = extractCmdStructurePair(parseJsonInput(await readFile(paths[0], 'utf8'), 'pair'));
-    return validateComparisonInputs(pair);
+    return prepareComparisonInputs(pair, options);
   }
 
   if (paths.length === 2) {
@@ -805,10 +974,10 @@ const readComparisonInputs = async (paths, options) => {
       readFile(paths[1], 'utf8'),
     ]);
 
-    return validateComparisonInputs({
+    return prepareComparisonInputs({
       actual: parseJsonInput(actualText, 'actual'),
       expected: parseJsonInput(expectedText, 'expected'),
-    });
+    }, options);
   }
 
   return null;
@@ -821,13 +990,14 @@ const runCli = async () => {
 
   try {
     const { options, paths } = parseCliArgs(args);
-    const inputs = await readComparisonInputs(paths, options);
-    if (!inputs) {
+    const comparison = await readComparisonInputs(paths, options);
+    if (!comparison) {
       printUsage();
       process.exitCode = 1;
       return;
     }
 
+    const { inputs, actualCandidates } = comparison;
     const diff = diffCmdStructures(inputs.actual, inputs.expected, {
       ignoreExtraPaths: options.ignoreExtraPaths,
     });
@@ -836,7 +1006,15 @@ const runCli = async () => {
       ...(options.ignoreExtraPaths ? { modeLabel: '忽略 actual 额外路径' } : {}),
     };
 
-    process.stdout.write(`${formatCmdStructureDiff(diff, reportContext)}\n`);
+    const output = [formatCmdStructureDiff(diff, reportContext)];
+    if (options.suggestActual) {
+      const recommendations = rankCmdStructureCandidates(actualCandidates, inputs.expected, {
+        ignoreExtraPaths: options.ignoreExtraPaths,
+      });
+      output.push(formatCmdStructureCandidateRecommendations(recommendations));
+    }
+
+    process.stdout.write(`${output.join('\n\n')}\n`);
     process.exitCode = diff.hasDifferences ? 2 : 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

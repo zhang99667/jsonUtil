@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.109 (2026-06-17) - cmd:diff actual 候选推荐
+### ✨ 新特性
+- **CLI 候选推荐**: `cmd:diff` 新增 `--suggest-actual`，可从整段 actual response 中列出最接近 expected 的 CMD 候选路径，减少多 CMD 场景下猜错字段的排查成本
+- **CLI 定点对比**: `cmd:diff` 新增 `--actual-path <path>`，可直接指定 actual response 里的候选路径参与结构对比，并在报告中保留所选路径和业务字段
+
 ## v1.8.108 (2026-06-17) - cmdHandler 局部树文本解析
 ### ✨ 新特性
 - **cmdHandler 对比**: 支持只复制内部参考页 `result` 子树或 `cmdParams` 子树的可见文本，粘贴时仍能识别 `cmdSchema/cmdParams`
