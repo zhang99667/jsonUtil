@@ -675,6 +675,20 @@ const compareRows = (actualRows, expectedRows) => {
   return { missingPaths, extraPaths, valueDiffs };
 };
 
+const isDescendantPath = (path, ancestor) => (
+  path.startsWith(`${ancestor}.`) || path.startsWith(`${ancestor}[`)
+);
+
+const collapseDescendantPaths = paths => (
+  paths.reduce((items, path) => (
+    items.some(parentPath => isDescendantPath(path, parentPath))
+      ? items
+      : [...items, path]
+  ), [])
+);
+
+const getCollapsedPathCount = paths => collapseDescendantPaths(paths).length;
+
 export const diffCmdStructures = (actualInput, expectedInput, options = {}) => {
   const actual = normalizeCmdStructure(actualInput);
   const expected = normalizeCmdStructure(expectedInput);
@@ -710,10 +724,10 @@ export const diffCmdStructures = (actualInput, expectedInput, options = {}) => {
 const getCmdStructureCandidateScore = diff => (
   (diff.schemaDiff ? 10000 : 0) +
   (diff.sourceDiff ? 5000 : 0) +
-  diff.missingPaths.length * 100 +
+  getCollapsedPathCount(diff.missingPaths) * 100 +
   diff.valueDiffs.length * 50 +
-  diff.extraPaths.length * 10 +
-  diff.ignoredExtraPaths.length
+  getCollapsedPathCount(diff.extraPaths) * 10 +
+  getCollapsedPathCount(diff.ignoredExtraPaths)
 );
 
 export const rankCmdStructureCandidates = (
@@ -740,7 +754,7 @@ export const rankCmdStructureCandidates = (
   return rankedCandidates
     .sort((left, right) => (
       left.score - right.score ||
-      left.diff.missingPaths.length - right.diff.missingPaths.length ||
+      getCollapsedPathCount(left.diff.missingPaths) - getCollapsedPathCount(right.diff.missingPaths) ||
       left.diff.valueDiffs.length - right.diff.valueDiffs.length ||
       left.index - right.index
     ))
@@ -759,6 +773,16 @@ const formatSourceValue = value => {
   return value.length > 240 ? `${value.slice(0, 240)}...` : value;
 };
 
+const appendPathDiffLines = (lines, title, paths) => {
+  const collapsedPaths = collapseDescendantPaths(paths);
+  const collapsedLabel = collapsedPaths.length < paths.length
+    ? `（折叠为 ${collapsedPaths.length} 个分支）`
+    : '';
+  lines.push(`- ${title} ${paths.length} 个${collapsedLabel}:`);
+  collapsedPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
+  if (collapsedPaths.length > 20) lines.push(`  - ... 还有 ${collapsedPaths.length - 20} 个分支`);
+};
+
 const appendDiffContextLines = (lines, context = {}) => {
   if (context.toolVersionLabel) lines.push(`工具版本: ${context.toolVersionLabel}`);
   if (context.path) lines.push(`对比路径: ${context.path}`);
@@ -773,9 +797,7 @@ export const formatCmdStructureDiff = (diff, context = {}) => {
   if (!diff.hasDifferences) {
     lines.push('- 结构一致');
     if (diff.ignoredExtraPaths.length > 0) {
-      lines.push(`- 已忽略 actual 额外路径 ${diff.ignoredExtraPaths.length} 个:`);
-      diff.ignoredExtraPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
-      if (diff.ignoredExtraPaths.length > 20) lines.push(`  - ... 还有 ${diff.ignoredExtraPaths.length - 20} 个`);
+      appendPathDiffLines(lines, '已忽略 actual 额外路径', diff.ignoredExtraPaths);
     }
     return lines.join('\n');
   }
@@ -791,21 +813,15 @@ export const formatCmdStructureDiff = (diff, context = {}) => {
   }
 
   if (diff.missingPaths.length > 0) {
-    lines.push(`- 缺失路径 ${diff.missingPaths.length} 个:`);
-    diff.missingPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
-    if (diff.missingPaths.length > 20) lines.push(`  - ... 还有 ${diff.missingPaths.length - 20} 个`);
+    appendPathDiffLines(lines, '缺失路径', diff.missingPaths);
   }
 
   if (diff.extraPaths.length > 0) {
-    lines.push(`- 额外路径 ${diff.extraPaths.length} 个:`);
-    diff.extraPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
-    if (diff.extraPaths.length > 20) lines.push(`  - ... 还有 ${diff.extraPaths.length - 20} 个`);
+    appendPathDiffLines(lines, '额外路径', diff.extraPaths);
   }
 
   if (diff.ignoredExtraPaths.length > 0) {
-    lines.push(`- 已忽略 actual 额外路径 ${diff.ignoredExtraPaths.length} 个:`);
-    diff.ignoredExtraPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
-    if (diff.ignoredExtraPaths.length > 20) lines.push(`  - ... 还有 ${diff.ignoredExtraPaths.length - 20} 个`);
+    appendPathDiffLines(lines, '已忽略 actual 额外路径', diff.ignoredExtraPaths);
   }
 
   if (diff.valueDiffs.length > 0) {
