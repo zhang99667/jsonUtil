@@ -910,6 +910,47 @@ test('cmdHandler 对比可推荐更匹配的 actual CMD', async ({ page }) => {
     .toContainText('当前 actual 已是最匹配候选');
 });
 
+test('cmdHandler 聚焦对比复制报告保持当前筛选范围', async ({ page }) => {
+  const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
+    nid: 123,
+    category: 'jump',
+  }))}&from=feed`;
+  await fillSourceEditor(page, JSON.stringify({ action_cmd: actionCmd }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await reportPanel.locator('[data-tour="transform-report-filter"]').fill('category');
+  const commandRow = reportPanel
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$.action_cmd' });
+  await commandRow.locator('[data-tour="transform-report-open-cmd-comparison"]').click();
+
+  const comparisonPanel = commandRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
+  const categoryExpected = JSON.stringify({
+    result: {
+      cmdParams: {
+        cmd: {
+          category: 'jump',
+        },
+      },
+    },
+  }, null, 2);
+  await comparisonPanel.locator('[data-tour="transform-report-cmd-comparison-input"]').fill(categoryExpected);
+  await comparisonPanel.getByLabel('忽略 actual 额外路径').check();
+  await expect(comparisonPanel).toContainText('结构一致');
+
+  await reportPanel.getByRole('button', { name: '复制排查报告' }).click();
+  await expect(page.getByText(/已复制排查报告（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('CMD 结构差异报告');
+  const collaborationReport = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(collaborationReport).toContain('筛选: category');
+  expect(collaborationReport).toContain('结构一致');
+  expect(collaborationReport).not.toContain('- 额外路径');
+});
+
 test('深度解析报告内部CMD字段可直接打开 Scheme 面板', async ({ page }) => {
   const innerCmd = {
     cmdSchema: 'baiduboxapp://v1/easybrowse/open',
