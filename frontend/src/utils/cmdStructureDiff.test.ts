@@ -382,6 +382,44 @@ iqoo13`, 'cmdHandler 输出');
     });
   });
 
+  it('解析只复制 result 内部的 cmdHandler 树形文本', () => {
+    const parsed = parseCmdStructureJson(`cmd解析
+"cmdSchema":"nadcorevendor://vendor/ad/rewardImpl"
+"cmdParams":{1 item
+"video_info":{1 item
+"vid":"123"
+}
+}`, 'cmdHandler 输出');
+
+    expect(normalizeCmdStructure(parsed)).toEqual({
+      cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      cmdParams: {
+        video_info: {
+          vid: '123',
+        },
+      },
+      source: undefined,
+    });
+  });
+
+  it('解析只复制 cmdParams 子树的 cmdHandler 文本', () => {
+    const parsed = parseCmdStructureJson(`"cmdParams":{1 item
+"video_info":{1 item
+"vid":"123"
+}
+}`, 'cmdHandler 输出');
+
+    expect(normalizeCmdStructure(parsed)).toEqual({
+      cmdSchema: undefined,
+      cmdParams: {
+        video_info: {
+          vid: '123',
+        },
+      },
+      source: undefined,
+    });
+  });
+
   it('识别可用于对比的 cmdHandler 输入', () => {
     expect(hasRecognizableCmdStructure({
       解析结果: {

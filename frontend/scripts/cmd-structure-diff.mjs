@@ -172,23 +172,42 @@ const normalizeCmdHandlerTreeLine = line => (
   line.trim().replace(/([\[{])\s*\d+\s+items?\s*$/i, '$1')
 );
 
+const findCmdHandlerTreeStartIndex = lines => {
+  const wrappedIndex = lines.findIndex(line => /"(解析结果|result)"\s*:/.test(line));
+  if (wrappedIndex >= 0) return wrappedIndex;
+
+  return lines.findIndex(line => /"(cmdSchema|cmdParams|source)"\s*:/.test(line));
+};
+
+const isCmdHandlerTreeContentLine = line => (
+  /^"[^"]+"\s*:/.test(line) || /^[}\]]$/.test(line) || /^[\[{]$/.test(line)
+);
+
 export const parseCmdHandlerTreeText = text => {
-  if (!/cmd解析|\bitems?\b/i.test(text)) return undefined;
+  if (!/cmd解析|\bitems?\b|"(cmdSchema|cmdParams)"\s*:/i.test(text)) return undefined;
 
   const lines = text.split(/\r?\n/);
-  const startIndex = lines.findIndex(line => /"(解析结果|result)"\s*:/.test(line));
+  const startIndex = findCmdHandlerTreeStartIndex(lines);
   if (startIndex < 0) return undefined;
 
   const relevantLines = [];
   let depth = 0;
+  let hasOpenedContainer = false;
   for (let index = startIndex; index < lines.length; index += 1) {
     const line = normalizeCmdHandlerTreeLine(lines[index]);
     if (!line || /^cmd解析$/i.test(line) || /^\d+\s+items?$/i.test(line)) continue;
+    if (!isCmdHandlerTreeContentLine(line)) {
+      if (relevantLines.length > 0 && depth <= 0) break;
+      continue;
+    }
 
     relevantLines.push(line);
-    if (/[\[{]\s*$/.test(line)) depth += 1;
+    if (/[\[{]\s*$/.test(line)) {
+      depth += 1;
+      hasOpenedContainer = true;
+    }
     if (/^[}\]]$/.test(line)) depth -= 1;
-    if (relevantLines.length > 0 && depth <= 0) break;
+    if (relevantLines.length > 0 && depth <= 0 && hasOpenedContainer) break;
   }
 
   if (relevantLines.length === 0) return undefined;
