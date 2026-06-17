@@ -2079,11 +2079,14 @@ describe('transformSummary', () => {
 
     const reportWithDiffText = formatTransformCollaborationReportText(report, reportView, '', {
       cmdComparisonReportText: 'CMD 结构差异报告\n- 缺失路径 1 个:\n  - $.cmd.extra',
+      cmdComparisonCandidateText: 'cmdHandler actual 候选推荐\n- #1 $.action_cmd: 结构一致',
     });
 
     expect(reportWithDiffText).toContain('已附当前页面内 cmdHandler 差异报告');
     expect(reportWithDiffText).toContain('CMD 结构差异报告');
     expect(reportWithDiffText).toContain('缺失路径 1 个');
+    expect(reportWithDiffText).toContain('actual 候选推荐');
+    expect(reportWithDiffText).toContain('#1 $.action_cmd: 结构一致');
   });
 
   it('归档包合并质量快照和安全沉淀清单', () => {
@@ -2100,6 +2103,7 @@ describe('transformSummary', () => {
     const archivePackageText = formatTransformArchivePackageJsonText(report, reportView, '', {
       sampleName: 'reward-response',
       cmdComparisonReportText: 'CMD 结构差异报告\n- 缺失路径 1 个:\n  - $.cmd.extra',
+      cmdComparisonCandidateText: 'cmdHandler actual 候选推荐\n- #1 $.action_cmd: 结构一致',
     });
     const archivePackage = JSON.parse(archivePackageText);
 
@@ -2141,6 +2145,8 @@ describe('transformSummary', () => {
     expect(archivePackage.artifacts.diagnosticSummaryText).toContain(`工具版本: ${APP_VERSION_LABEL}`);
     expect(archivePackage.artifacts.collaborationReportText).toContain('深度解析协作排查报告');
     expect(archivePackage.artifacts.cmdComparisonReportText).toContain('缺失路径 1 个');
+    expect(archivePackage.artifacts.collaborationReportText).toContain('actual 候选推荐');
+    expect(archivePackage.artifacts.cmdComparisonCandidateText).toContain('#1 $.action_cmd');
     expect(archivePackage.artifacts.issueSamples.samples[0].originalValue).not.toBe(actionCmd);
     expect(JSON.stringify(archivePackage)).not.toContain(actionCmd);
     expect(JSON.stringify(archivePackage.artifacts.placeholderFillTemplate)).not.toContain('sourceOriginalPreview');

@@ -369,6 +369,7 @@ export interface TransformQualitySnapshot {
 
 export interface TransformCollaborationReportOptions {
   cmdComparisonReportText?: string;
+  cmdComparisonCandidateText?: string;
 }
 
 export interface TransformArchivePackageOptions extends TransformCollaborationReportOptions {
@@ -394,6 +395,7 @@ export interface TransformArchivePackage {
     issueSamples: TransformIssueSampleExport | null;
     placeholderFillTemplate: TransformPlaceholderFillTemplate | null;
     cmdComparisonReportText?: string;
+    cmdComparisonCandidateText?: string;
   };
   corpusCandidate: {
     recommendedFiles: string[];
@@ -2724,6 +2726,7 @@ export const formatTransformCollaborationReportText = (
     .split('\n')
     .slice(2);
   const cmdComparisonReportText = options.cmdComparisonReportText?.trim();
+  const cmdComparisonCandidateText = options.cmdComparisonCandidateText?.trim();
   const lines = [
     '深度解析协作排查报告',
     `工具版本: ${APP_VERSION_LABEL}`,
@@ -2763,6 +2766,10 @@ export const formatTransformCollaborationReportText = (
   if (cmdComparisonReportText) {
     lines.push('- 已附当前页面内 cmdHandler 差异报告:');
     lines.push('```text', cmdComparisonReportText, '```');
+    if (cmdComparisonCandidateText) {
+      lines.push('- actual 候选推荐:');
+      lines.push('```text', cmdComparisonCandidateText, '```');
+    }
   } else if (reportView.filteredCmdStructureCount > 0) {
     lines.push(`- 待对比: 当前筛选有 ${reportView.filteredCmdStructureCount}/${reportView.totalCmdStructureCount} 条可复制 CMD 结构，可粘贴内部 cmdHandler 输出后再次复制本报告。`);
     reportView.cmdStructureRecords.slice(0, 5).forEach(record => {
@@ -3306,8 +3313,12 @@ export const buildTransformArchivePackage = (
   const normalizedQuery = query.trim();
   const sampleName = options.sampleName?.trim() || 'sample-name';
   const cmdComparisonReportText = options.cmdComparisonReportText?.trim();
+  const cmdComparisonCandidateText = options.cmdComparisonCandidateText?.trim();
   const qualitySnapshot = buildTransformQualitySnapshot(report, reportView, query);
-  const collaborationOptions = cmdComparisonReportText ? { cmdComparisonReportText } : {};
+  const collaborationOptions = {
+    ...(cmdComparisonReportText ? { cmdComparisonReportText } : {}),
+    ...(cmdComparisonCandidateText ? { cmdComparisonCandidateText } : {}),
+  };
   const artifacts: TransformArchivePackage['artifacts'] = {
     diagnosticSummaryText: formatTransformDiagnosticSummaryText(report, reportView, query),
     collaborationReportText: formatTransformCollaborationReportText(report, reportView, query, collaborationOptions),
@@ -3315,6 +3326,7 @@ export const buildTransformArchivePackage = (
     issueSamples: buildArchiveIssueSampleExport(reportView, query),
     placeholderFillTemplate: buildArchivePlaceholderFillTemplate(reportView, query),
     ...(cmdComparisonReportText ? { cmdComparisonReportText } : {}),
+    ...(cmdComparisonCandidateText ? { cmdComparisonCandidateText } : {}),
   };
 
   return {
@@ -3326,7 +3338,7 @@ export const buildTransformArchivePackage = (
       containsRawResponse: false,
       issueSampleOriginalValues: 'omitted-or-redacted',
       placeholderSourcePreviews: false,
-      cmdComparisonMayContainValues: Boolean(cmdComparisonReportText),
+      cmdComparisonMayContainValues: Boolean(cmdComparisonReportText || cmdComparisonCandidateText),
       notes: [
         '归档包默认不携带原始 response；保存 corpus 前请单独提供已脱敏的 response 文件。',
         '问题样本 originalValue 已省略或脱敏，避免把 token/sign/cookie/设备标识带入协作材料。',
