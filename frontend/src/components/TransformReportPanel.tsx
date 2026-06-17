@@ -1,10 +1,11 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import type { TransformContext } from '../types';
+import type { JsonValue, TransformContext } from '../types';
 import { APP_VERSION_METADATA } from '../utils/appVersion';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import {
+  collectActualCmdStructureCandidates,
   countCmdStructurePathBranches,
   diffCmdStructures,
   formatCmdStructureDiff,
@@ -51,6 +52,15 @@ interface TransformReportPanelProps {
   onLocatePath?: (path: string) => void;
   onOpenSchemeValue?: (value: string) => void;
   onOpenTemplateFill?: (template: string) => void;
+}
+
+interface CmdComparisonCandidateInput extends CmdStructureCandidateInput {
+  recordPath: string;
+}
+
+interface RankedCmdComparisonCandidate extends RankedCmdStructureCandidate {
+  actual: JsonValue;
+  recordPath: string;
 }
 
 const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => (
@@ -125,6 +135,21 @@ const formatCmdCandidateSummary = (candidate: RankedCmdStructureCandidate): stri
     `值 ${diff.valueDiffs.length}`,
     ...(diff.ignoredExtraPaths.length ? [formatCmdPathCountSummary('已忽略', diff.ignoredExtraPaths)] : []),
   ].join('，');
+};
+
+const rebaseCmdStructureCandidatePath = (recordPath: string, candidatePath: string): string => {
+  if (candidatePath === '$' || candidatePath === '$.result') return recordPath;
+  if (candidatePath.startsWith('$.result.cmdParams')) {
+    return `${recordPath}.cmdParams${candidatePath.slice('$.result.cmdParams'.length)}`;
+  }
+  if (candidatePath.startsWith('$.cmdParams')) {
+    return `${recordPath}.cmdParams${candidatePath.slice('$.cmdParams'.length)}`;
+  }
+  if (candidatePath.startsWith('$.result')) {
+    return `${recordPath}${candidatePath.slice('$.result'.length)}`;
+  }
+  if (candidatePath.startsWith('$')) return `${recordPath}${candidatePath.slice(1)}`;
+  return `${recordPath}.${candidatePath}`;
 };
 
 const getDecodedPathSchemeInput = (row: TransformReportRecord['nestedCommandFields'][number]): string => {
@@ -228,6 +253,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const [cmdComparisonRecordPath, setCmdComparisonRecordPath] = useState<string | null>(null);
+  const [cmdComparisonActualCandidate, setCmdComparisonActualCandidate] = useState<CmdComparisonCandidateInput | null>(null);
   const [cmdComparisonExpectedText, setCmdComparisonExpectedText] = useState('');
   const [cmdComparisonIgnoreExtraPaths, setCmdComparisonIgnoreExtraPaths] = useState(false);
   const [qualityBaseline, setQualityBaseline] = useState<{
@@ -244,6 +270,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   useEffect(() => {
     setQuery('');
     setCmdComparisonRecordPath(null);
+    setCmdComparisonActualCandidate(null);
     setCmdComparisonExpectedText('');
     setCmdComparisonIgnoreExtraPaths(false);
   }, [reportContextTimestamp]);
@@ -587,19 +614,22 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }
   };
 
-  const buildCmdComparisonReportText = (record: TransformReportRecord): string => {
-    const actualText = getTransformRecordCmdStructureCopyText(record);
-    if (!actualText || !cmdComparisonExpectedText.trim()) return '';
+  const buildCmdComparisonReportText = (
+    record: TransformReportRecord,
+    actualCandidate?: CmdComparisonCandidateInput | null
+  ): string => {
+    const actualText = actualCandidate ? '' : getTransformRecordCmdStructureCopyText(record);
+    if ((!actualCandidate && !actualText) || !cmdComparisonExpectedText.trim()) return '';
 
-    const actual = parseCmdStructureJson(actualText, '本工具 CMD 结构');
+    const actual = actualCandidate?.actual || parseCmdStructureJson(actualText, '本工具 CMD 结构');
     const expected = parseCmdStructureJson(cmdComparisonExpectedText, 'cmdHandler 输出');
     assertRecognizableCmdComparisonExpected(expected);
     const diff = diffCmdStructures(actual, expected, {
       ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
     });
     return formatCmdStructureDiff(diff, {
-      path: record.path,
-      sourceLabel: record.sourceLabel,
+      path: actualCandidate?.id || record.path,
+      sourceLabel: actualCandidate?.sourceLabel || record.sourceLabel,
       tool: APP_VERSION_METADATA,
       modeLabel: cmdComparisonIgnoreExtraPaths ? '忽略 actual 额外路径' : undefined,
     });
@@ -619,7 +649,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const buildCmdComparisonCandidates = (
     expected: ReturnType<typeof parseCmdStructureJson>,
     activeRecord?: TransformReportRecord | null
-  ): RankedCmdStructureCandidate[] => {
+  ): RankedCmdComparisonCandidate[] => {
     const candidateRecords = report?.records.filter(candidateRecord => candidateRecord.hasCmdStructure) ||
       fullReportView?.cmdStructureRecords ||
       reportView?.cmdStructureRecords ||
@@ -632,17 +662,32 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       candidateRecordMap.set(activeRecord.path, activeRecord);
     }
 
-    const candidateInputs = Array.from(candidateRecordMap.values()).reduce<CmdStructureCandidateInput[]>((items, candidateRecord) => {
+    const candidateInputs = Array.from(candidateRecordMap.values()).reduce<CmdComparisonCandidateInput[]>((items, candidateRecord) => {
       const candidateText = getTransformRecordCmdStructureCopyText(candidateRecord);
       if (!candidateText) return items;
 
       try {
+        const actual = parseCmdStructureJson(candidateText, '本工具 CMD 结构');
         items.push({
           id: candidateRecord.path,
           label: candidateRecord.path,
           sourceLabel: candidateRecord.sourceLabel,
           commandSchema: candidateRecord.commandSchema,
-          actual: parseCmdStructureJson(candidateText, '本工具 CMD 结构'),
+          actual,
+          recordPath: candidateRecord.path,
+        });
+        collectActualCmdStructureCandidates(actual).forEach(candidate => {
+          const id = rebaseCmdStructureCandidatePath(candidateRecord.path, candidate.id);
+          if (id === candidateRecord.path) return;
+
+          items.push({
+            id,
+            label: id,
+            sourceLabel: candidate.sourceLabel || candidateRecord.sourceLabel,
+            commandSchema: candidate.commandSchema,
+            actual: candidate.actual,
+            recordPath: candidateRecord.path,
+          });
         });
       } catch {
         // 单条候选解析失败不影响其他 CMD 的推荐排序。
@@ -650,30 +695,38 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
       return items;
     }, []);
+    const candidateInputMap = new Map(candidateInputs.map(candidate => [candidate.id, candidate]));
 
     return rankCmdStructureCandidates(candidateInputs, expected, {
       ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
       limit: 3,
+    }).map(candidate => {
+      const input = candidateInputMap.get(candidate.id);
+      return {
+        ...candidate,
+        actual: input?.actual ?? {},
+        recordPath: input?.recordPath ?? candidate.id,
+      };
     });
   };
 
   const formatCmdComparisonCandidateText = (
-    candidates: RankedCmdStructureCandidate[],
-    activePath: string
+    candidates: RankedCmdComparisonCandidate[],
+    activeCandidateId: string
   ): string => {
     if (candidates.length <= 1) return '';
 
     const bestCandidate = candidates[0];
     const lines = [
       'cmdHandler actual 候选推荐',
-      bestCandidate.id === activePath
+      bestCandidate.id === activeCandidateId
         ? '- 当前 actual 已是最匹配候选'
         : `- 可能拿错 actual，建议优先切到 ${bestCandidate.label}`,
     ];
 
     candidates.forEach((candidate, index) => {
       const schema = candidate.commandSchema ? ` · ${candidate.commandSchema}` : '';
-      const current = candidate.id === activePath ? ' · 当前' : '';
+      const current = candidate.id === activeCandidateId ? ' · 当前' : '';
       lines.push(`- #${index + 1} ${candidate.label}${schema}${current}: ${formatCmdCandidateSummary(candidate)}`);
     });
 
@@ -686,7 +739,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     const record = findActiveCmdComparisonRecord();
     if (!record) return '';
 
-    return buildCmdComparisonReportText(record);
+    return buildCmdComparisonReportText(record, cmdComparisonActualCandidate);
   };
 
   const buildActiveCmdComparisonCandidateText = (): string => {
@@ -696,9 +749,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       const expected = parseCmdStructureJson(cmdComparisonExpectedText, 'cmdHandler 输出');
       assertRecognizableCmdComparisonExpected(expected);
       const activeRecord = findActiveCmdComparisonRecord();
+      const activeCandidateId = cmdComparisonActualCandidate?.id || cmdComparisonRecordPath;
       return formatCmdComparisonCandidateText(
         buildCmdComparisonCandidates(expected, activeRecord),
-        cmdComparisonRecordPath
+        activeCandidateId
       );
     } catch {
       return '';
@@ -708,10 +762,12 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const handleToggleCmdComparison = (record: TransformReportRecord) => {
     setCmdComparisonRecordPath(currentPath => {
       if (currentPath === record.path) {
+        setCmdComparisonActualCandidate(null);
         setCmdComparisonExpectedText('');
         return null;
       }
 
+      setCmdComparisonActualCandidate(null);
       setCmdComparisonExpectedText('');
       return record.path;
     });
@@ -723,17 +779,30 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
     setQuery('CMD结构');
     setCmdComparisonExpectedText('');
+    setCmdComparisonActualCandidate(null);
     setCmdComparisonRecordPath(firstRecord.path);
   };
 
-  const handleSwitchCmdComparisonRecord = (path: string) => {
-    setQuery(path);
-    setCmdComparisonRecordPath(path);
+  const handleSwitchCmdComparisonCandidate = (candidate: RankedCmdComparisonCandidate) => {
+    setQuery(candidate.recordPath);
+    setCmdComparisonRecordPath(candidate.recordPath);
+    setCmdComparisonActualCandidate(
+      candidate.id === candidate.recordPath
+        ? null
+        : {
+            id: candidate.id,
+            label: candidate.label,
+            sourceLabel: candidate.sourceLabel,
+            commandSchema: candidate.commandSchema,
+            actual: candidate.actual,
+            recordPath: candidate.recordPath,
+          }
+    );
   };
 
   const handleCopyCmdComparisonDiff = async (record: TransformReportRecord) => {
     try {
-      const reportText = buildCmdComparisonReportText(record);
+      const reportText = buildCmdComparisonReportText(record, cmdComparisonActualCandidate);
       if (!reportText) return;
 
       await copyText(reportText);
@@ -825,11 +894,15 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       previewLines: string[];
     } | null = null;
     let errorText = '';
-    let candidateRecommendations: RankedCmdStructureCandidate[] = [];
+    let candidateRecommendations: RankedCmdComparisonCandidate[] = [];
+    const activeCandidate = cmdComparisonActualCandidate?.recordPath === record.path
+      ? cmdComparisonActualCandidate
+      : null;
+    const activeCandidateId = activeCandidate?.id || record.path;
 
     if (expectedText) {
       try {
-        const actual = parseCmdStructureJson(
+        const actual = activeCandidate?.actual || parseCmdStructureJson(
           getTransformRecordCmdStructureCopyText(record),
           '本工具 CMD 结构'
         );
@@ -839,8 +912,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
         });
         diffReportText = formatCmdStructureDiff(diff, {
-          path: record.path,
-          sourceLabel: record.sourceLabel,
+          path: activeCandidate?.id || record.path,
+          sourceLabel: activeCandidate?.sourceLabel || record.sourceLabel,
           tool: APP_VERSION_METADATA,
           modeLabel: cmdComparisonIgnoreExtraPaths ? '忽略 actual 额外路径' : undefined,
         });
@@ -862,7 +935,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       }
     }
     const bestCandidate = candidateRecommendations[0];
-    const shouldWarnCurrentCandidate = Boolean(bestCandidate && bestCandidate.id !== record.path);
+    const shouldWarnCurrentCandidate = Boolean(bestCandidate && bestCandidate.id !== activeCandidateId);
 
     return (
       <div data-tour="transform-report-cmd-comparison-panel" className="mt-2 rounded border border-teal-800/50 bg-teal-950/20 px-3 py-2">
@@ -946,14 +1019,14 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
             </div>
             <div className="mt-1 flex flex-col gap-1">
               {candidateRecommendations.map((candidate, index) => {
-                const isCurrentCandidate = candidate.id === record.path;
+                const isCurrentCandidate = candidate.id === activeCandidateId;
                 const summary = formatCmdCandidateSummary(candidate);
                 return (
                   <button
                     key={`${record.path}:cmd-candidate:${candidate.id}`}
                     type="button"
                     data-tour="transform-report-cmd-candidate"
-                    onClick={() => handleSwitchCmdComparisonRecord(candidate.id)}
+                    onClick={() => handleSwitchCmdComparisonCandidate(candidate)}
                     disabled={isCurrentCandidate}
                     className="flex min-w-0 items-center justify-between gap-2 rounded border border-editor-border bg-editor-sidebar px-2 py-1 text-left text-gray-300 transition-colors hover:border-teal-700 hover:text-teal-100 disabled:cursor-default disabled:opacity-70"
                     title={`${candidate.label} · ${summary}`}

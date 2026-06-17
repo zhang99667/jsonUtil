@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.116 (2026-06-17) - 页面内层 CMD 候选切换
+### ✨ 新特性
+- **页面候选**: cmdHandler 页面内 actual 候选推荐会展开根 CMD 解析树里的内层 `panel_cmd`、`webpanel_cmd` 等结构，和 `cmd:diff --suggest-actual` 保持一致
+- **候选切换**: 点击内层候选后会在原记录的对比面板中直接使用该候选作为 actual，复制差异报告和排查报告也会保留内层候选路径
+
 ## v1.8.115 (2026-06-17) - cmdHandler 内层候选发现
 ### ✨ 新特性
 - **真实 response 候选**: `cmd:diff --suggest-actual` 会从已解析的 CMD 结构树继续收集内层 `panel_cmd`、`webpanel_cmd`、`stay_cmd` 等候选，不再只推荐整包里的根 `scheme`

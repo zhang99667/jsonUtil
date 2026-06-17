@@ -910,6 +910,71 @@ test('cmdHandler 对比可推荐更匹配的 actual CMD', async ({ page }) => {
     .toContainText('当前 actual 已是最匹配候选');
 });
 
+test('cmdHandler actual 候选推荐会扫描根 CMD 内层结构', async ({ page }) => {
+  const rootPath = '$.data.video[0].material[0].info[0].ad_common.scheme';
+  const landingUrl = 'https://example.com/landing?sku=101';
+  const panelCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    appUrl: `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: landingUrl,
+    }))}`,
+    webUrl: `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}`,
+  }))}`;
+  const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?panel=${encodeURIComponent(JSON.stringify({
+    panel_cmd: panelCmd,
+    webpanel_cmd: panelCmd,
+  }))}`;
+
+  await fillSourceEditor(page, JSON.stringify({
+    data: {
+      video: [{
+        material: [{
+          info: [{
+            ad_common: {
+              scheme: rootScheme,
+            },
+          }],
+        }],
+      }],
+    },
+  }));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await reportPanel.locator('[data-tour="transform-report-open-first-cmd-comparison"]').click();
+
+  const rootRow = reportPanel
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: rootPath });
+  const comparisonPanel = rootRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
+  await expect(comparisonPanel).toBeVisible();
+
+  await comparisonPanel.locator('[data-tour="transform-report-cmd-comparison-input"]').fill(JSON.stringify({
+    result: {
+      cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+      cmdParams: {
+        params: {},
+      },
+    },
+  }, null, 2));
+  await comparisonPanel.getByLabel('忽略 actual 额外路径').check();
+
+  const panelCmdCandidate = comparisonPanel
+    .locator('[data-tour="transform-report-cmd-candidate"]')
+    .filter({ hasText: `${rootPath}.cmdParams.panel.panel_cmd` })
+    .first();
+  await expect(panelCmdCandidate).toContainText('结构一致');
+
+  await panelCmdCandidate.click();
+
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue(rootPath);
+  await expect(comparisonPanel).toContainText('结构一致');
+  await expect(comparisonPanel.locator('[data-tour="transform-report-cmd-candidate-recommendations"]'))
+    .toContainText('当前 actual 已是最匹配候选');
+});
+
 test('cmdHandler actual 候选推荐会扫描截断列表后的 CMD', async ({ page }) => {
   const response = Object.fromEntries(Array.from({ length: 205 }, (_, index) => {
     const key = `item_${index.toString().padStart(3, '0')}_cmd`;
