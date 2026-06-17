@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.121 (2026-06-17) - 前端 Docker 构建内存上限
+### 🐛 Bug 修复
+- **生产部署**: 前端 Docker 构建期 Node 堆上限调整为 `1536MB`，适配 2GB 级线上主机，避免过高堆配置触发系统 OOM
+
 ## v1.8.120 (2026-06-17) - 前端 Docker 构建内存
 ### 🐛 Bug 修复
 - **生产部署**: 前端 Docker 构建阶段配置 `NODE_OPTIONS=--max-old-space-size=4096`，避免 Vite 生产构建在默认 Node 堆限制下 OOM 中断上线
