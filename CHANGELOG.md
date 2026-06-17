@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.117 (2026-06-17) - Scheme 内层 JSON 宽松解析
+### 🐛 Bug 修复
+- **Scheme 解析**: URL 参数解码后如果内层 JSON-like 对象出现 `,type"` 这类 key 前缺开引号的脏格式，会自动宽松修复并展开成对象，避免结果里残留 `\"` 形式的反转义字符
+
 ## v1.8.116 (2026-06-17) - 页面内层 CMD 候选切换
 ### ✨ 新特性
 - **页面候选**: cmdHandler 页面内 actual 候选推荐会展开根 CMD 解析树里的内层 `panel_cmd`、`webpanel_cmd` 等结构，和 `cmd:diff --suggest-actual` 保持一致
