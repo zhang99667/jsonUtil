@@ -612,7 +612,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     expected: ReturnType<typeof parseCmdStructureJson>,
     activeRecord?: TransformReportRecord | null
   ): RankedCmdStructureCandidate[] => {
-    const candidateRecords = fullReportView?.cmdStructureRecords || reportView?.cmdStructureRecords || [];
+    const candidateRecords = report?.records.filter(candidateRecord => candidateRecord.hasCmdStructure) ||
+      fullReportView?.cmdStructureRecords ||
+      reportView?.cmdStructureRecords ||
+      [];
     const candidateRecordMap = new Map<string, TransformReportRecord>();
     candidateRecords.forEach(candidateRecord => {
       candidateRecordMap.set(candidateRecord.path, candidateRecord);
@@ -716,7 +719,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const handleSwitchCmdComparisonRecord = (path: string) => {
-    setQuery('CMD结构');
+    setQuery(path);
     setCmdComparisonRecordPath(path);
   };
 

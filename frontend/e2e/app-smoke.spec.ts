@@ -910,6 +910,55 @@ test('cmdHandler 对比可推荐更匹配的 actual CMD', async ({ page }) => {
     .toContainText('当前 actual 已是最匹配候选');
 });
 
+test('cmdHandler actual 候选推荐会扫描截断列表后的 CMD', async ({ page }) => {
+  const response = Object.fromEntries(Array.from({ length: 205 }, (_, index) => {
+    const key = `item_${index.toString().padStart(3, '0')}_cmd`;
+    const value = index === 204
+      ? 'baiduboxapp://v1/panel?tab=reward'
+      : `baiduboxapp://v1/action?from=feed&idx=${index}`;
+
+    return [key, value];
+  }));
+  await fillSourceEditor(page, JSON.stringify(response));
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="transform-report-button"]').click();
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await reportPanel.locator('[data-tour="transform-report-open-first-cmd-comparison"]').click();
+
+  const firstRow = reportPanel
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$.item_000_cmd' });
+  const comparisonPanel = firstRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
+  await expect(comparisonPanel).toBeVisible();
+
+  const panelExpected = JSON.stringify({
+    result: {
+      cmdSchema: 'baiduboxapp://v1/panel',
+      cmdParams: {
+        tab: 'reward',
+      },
+    },
+  }, null, 2);
+  await comparisonPanel.locator('[data-tour="transform-report-cmd-comparison-input"]').fill(panelExpected);
+
+  const tailCandidate = comparisonPanel
+    .locator('[data-tour="transform-report-cmd-candidate"]')
+    .filter({ hasText: '$.item_204_cmd' });
+  await expect(tailCandidate).toContainText('结构一致');
+
+  await tailCandidate.click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('$.item_204_cmd');
+
+  const tailRow = reportPanel
+    .locator('[data-tour="transform-report-row"]')
+    .filter({ hasText: '$.item_204_cmd' });
+  const switchedPanel = tailRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
+  await expect(switchedPanel).toBeVisible();
+  await expect(switchedPanel).toContainText('结构一致');
+});
+
 test('cmdHandler 聚焦对比复制报告保持当前筛选范围', async ({ page }) => {
   const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
     nid: 123,
