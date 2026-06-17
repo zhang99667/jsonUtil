@@ -21,6 +21,8 @@ interface RawCmdCandidate {
   priority: number;
   depth: number;
   order: number;
+  path: string;
+  sourceLabel?: string;
 }
 
 export interface CmdStructureValueDiff {
@@ -306,7 +308,8 @@ const collectRawCmdCandidates = (
   candidates: RawCmdCandidate[],
   key = '$',
   depth = 0,
-  orderRef = { value: 0 }
+  orderRef = { value: 0 },
+  path = '$'
 ) => {
   if (typeof value === 'string') {
     const priority = getRawCmdFieldPriority(key);
@@ -316,6 +319,8 @@ const collectRawCmdCandidates = (
         priority,
         depth,
         order: orderRef.value,
+        path,
+        sourceLabel: key === '$' ? undefined : key,
       });
       orderRef.value += 1;
     }
@@ -323,14 +328,28 @@ const collectRawCmdCandidates = (
   }
 
   if (Array.isArray(value)) {
-    value.forEach(item => collectRawCmdCandidates(item, candidates, key, depth + 1, orderRef));
+    value.forEach((item, index) => collectRawCmdCandidates(
+      item,
+      candidates,
+      key,
+      depth + 1,
+      orderRef,
+      `${path}[${index}]`
+    ));
     return;
   }
 
   if (!isRecord(value)) return;
 
   Object.entries(value).forEach(([childKey, item]) => {
-    collectRawCmdCandidates(item, candidates, childKey, depth + 1, orderRef);
+    collectRawCmdCandidates(
+      item,
+      candidates,
+      childKey,
+      depth + 1,
+      orderRef,
+      appendPathKey(path, childKey)
+    );
   });
 };
 
@@ -559,6 +578,101 @@ export const normalizeCmdStructure = (value: JsonValue): NormalizedCmdStructure 
   };
 };
 
+const toCmdStructureCandidateActual = (value: {
+  cmdSchema?: JsonValue;
+  cmdParams: JsonValue;
+  source?: JsonValue;
+}): JsonObject => ({
+  ...(typeof value.cmdSchema === 'string' ? { cmdSchema: value.cmdSchema } : {}),
+  cmdParams: value.cmdParams,
+  ...(typeof value.source === 'string' ? { source: value.source } : {}),
+});
+
+const getCmdStructureCandidateActual = (value: JsonValue): JsonObject | null => (
+  isRecord(value) && Object.prototype.hasOwnProperty.call(value, 'cmdParams')
+    ? toCmdStructureCandidateActual(value as {
+        cmdSchema?: JsonValue;
+        cmdParams: JsonValue;
+        source?: JsonValue;
+      })
+    : null
+);
+
+const appendCmdStructureCandidate = (
+  candidates: CmdStructureCandidateInput[],
+  seenIds: Set<string>,
+  candidate: CmdStructureCandidateInput
+) => {
+  if (seenIds.has(candidate.id)) return;
+
+  seenIds.add(candidate.id);
+  candidates.push(candidate);
+};
+
+const collectDecodedCmdStructureCandidates = (
+  value: JsonValue,
+  path: string,
+  candidates: CmdStructureCandidateInput[],
+  seenIds: Set<string>,
+  sourceLabel?: string
+) => {
+  const cmdStructureActual = getCmdStructureCandidateActual(value);
+  if (cmdStructureActual) {
+    appendCmdStructureCandidate(candidates, seenIds, {
+      id: path,
+      label: path,
+      sourceLabel,
+      commandSchema: typeof cmdStructureActual.cmdSchema === 'string' ? cmdStructureActual.cmdSchema : undefined,
+      actual: cmdStructureActual,
+    });
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectDecodedCmdStructureCandidates(
+      item,
+      `${path}[${index}]`,
+      candidates,
+      seenIds
+    ));
+    return;
+  }
+
+  if (!isRecord(value)) return;
+
+  Object.entries(value).forEach(([childKey, item]) => {
+    collectDecodedCmdStructureCandidates(
+      item,
+      appendPathKey(path, childKey),
+      candidates,
+      seenIds,
+      childKey
+    );
+  });
+};
+
+export const collectActualCmdStructureCandidates = (value: JsonValue): CmdStructureCandidateInput[] => {
+  const candidates: CmdStructureCandidateInput[] = [];
+  const seenIds = new Set<string>();
+  const rawCandidates: RawCmdCandidate[] = [];
+  collectRawCmdCandidates(value, rawCandidates);
+
+  rawCandidates.forEach(candidate => {
+    const structure = decodeRawCmdCandidate(candidate.source);
+    if (!structure) return;
+
+    collectDecodedCmdStructureCandidates(
+      toCmdStructureCandidateActual(structure),
+      candidate.path,
+      candidates,
+      seenIds,
+      candidate.sourceLabel
+    );
+  });
+
+  collectDecodedCmdStructureCandidates(value, '$', candidates, seenIds);
+  return candidates;
+};
+
 const collectValueMap = (value: JsonValue, path = '$'): Map<string, ValueRow> => {
   const rows = new Map<string, ValueRow>();
 
@@ -685,7 +799,7 @@ const collapseDescendantPaths = (paths: string[]): string[] => (
   ), [])
 );
 
-const getCollapsedPathCount = (paths: string[]): number => collapseDescendantPaths(paths).length;
+export const countCmdStructurePathBranches = (paths: string[]): number => collapseDescendantPaths(paths).length;
 
 export const diffCmdStructures = (
   actualInput: JsonValue,
@@ -726,10 +840,10 @@ export const diffCmdStructures = (
 const getCmdStructureCandidateScore = (diff: CmdStructureDiff): number => (
   (diff.schemaDiff ? 10000 : 0) +
   (diff.sourceDiff ? 5000 : 0) +
-  getCollapsedPathCount(diff.missingPaths) * 100 +
+  countCmdStructurePathBranches(diff.missingPaths) * 100 +
   diff.valueDiffs.length * 50 +
-  getCollapsedPathCount(diff.extraPaths) * 10 +
-  getCollapsedPathCount(diff.ignoredExtraPaths)
+  countCmdStructurePathBranches(diff.extraPaths) * 10 +
+  countCmdStructurePathBranches(diff.ignoredExtraPaths)
 );
 
 export const rankCmdStructureCandidates = (
@@ -756,7 +870,7 @@ export const rankCmdStructureCandidates = (
   return rankedCandidates
     .sort((left, right) => (
       left.score - right.score ||
-      getCollapsedPathCount(left.diff.missingPaths) - getCollapsedPathCount(right.diff.missingPaths) ||
+      countCmdStructurePathBranches(left.diff.missingPaths) - countCmdStructurePathBranches(right.diff.missingPaths) ||
       left.diff.valueDiffs.length - right.diff.valueDiffs.length ||
       left.index - right.index
     ))

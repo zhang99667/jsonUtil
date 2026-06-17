@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  collectActualCmdStructureCandidates,
+  countCmdStructurePathBranches,
   diffCmdStructures,
   formatCmdStructureDiff,
   hasRecognizableCmdStructure,
@@ -32,6 +34,51 @@ const createCmdStructure = () => ({
     source: 'baiduboxapp://v7/vendor/ad/deeplink?params=...',
   },
 });
+
+const createNestedRewardResponse = () => {
+  const rootPath = '$.data.video[0].material[0].info[0].ad_common.scheme';
+  const landingUrl = 'https://example.com/landing?sku=101';
+  const deeplink = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    appUrl: `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
+      category: 'jump',
+      url: landingUrl,
+    }))}`,
+    webUrl: `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}`,
+  }))}`;
+  const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?url=${encodeURIComponent(landingUrl)}`;
+  const stayCmd = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(deeplink)}&main_btn=${encodeURIComponent(JSON.stringify({
+    button_cmd: '__CONVERT_CMD__',
+  }))}`;
+  const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    tail_frame: {
+      panel_scheme: panelScheme,
+    },
+  }))}&reward=${encodeURIComponent(JSON.stringify({
+    stay_cmd: stayCmd,
+  }))}&panel=${encodeURIComponent(JSON.stringify({
+    panel_cmd: deeplink,
+    webpanel_cmd: deeplink,
+  }))}`;
+
+  return {
+    rootPath,
+    response: {
+      errno: 0,
+      data: {
+        video: [{
+          material: [{
+            info: [{
+              ad_common: {
+                scheme: rootScheme,
+              },
+              supportCMD: true,
+            }],
+          }],
+        }],
+      },
+    },
+  };
+};
 
 describe('cmdStructureDiff', () => {
   it('兼容 result 和 data 包裹的 cmdHandler 输出', () => {
@@ -191,6 +238,16 @@ describe('cmdStructureDiff', () => {
     expect(report).toContain('额外路径 4 个（折叠为 1 个分支）');
     expect(report).toContain('  - $.extra');
     expect(report).not.toContain('$.extra.nested.token');
+  });
+
+  it('可统计折叠后的路径分支数量', () => {
+    expect(countCmdStructurePathBranches([
+      '$.extra',
+      '$.extra.trace',
+      '$.extra.nested',
+      '$.extra.nested.token',
+      '$.other',
+    ])).toBe(2);
   });
 
   it('候选评分会按折叠后的缺失分支数量计算', () => {
@@ -570,6 +627,25 @@ iqoo13`, 'cmdHandler 输出');
           },
         },
       },
+    });
+  });
+
+  it('整段真实 response 候选会暴露解析树里的内层 CMD', () => {
+    const { response, rootPath } = createNestedRewardResponse();
+    const candidates = collectActualCmdStructureCandidates(response);
+    const candidateIds = candidates.map(candidate => candidate.id);
+
+    expect(candidateIds).toEqual(expect.arrayContaining([
+      rootPath,
+      `${rootPath}.cmdParams.video_info.tail_frame.panel_scheme`,
+      `${rootPath}.cmdParams.reward.stay_cmd`,
+      `${rootPath}.cmdParams.reward.stay_cmd.cmdParams.convert_cmd`,
+      `${rootPath}.cmdParams.panel.panel_cmd`,
+      `${rootPath}.cmdParams.panel.webpanel_cmd`,
+    ]));
+    expect(candidates.find(candidate => candidate.id === `${rootPath}.cmdParams.panel.panel_cmd`)).toMatchObject({
+      sourceLabel: 'panel_cmd',
+      commandSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
     });
   });
 

@@ -5,6 +5,7 @@ import { APP_VERSION_METADATA } from '../utils/appVersion';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import {
+  countCmdStructurePathBranches,
   diffCmdStructures,
   formatCmdStructureDiff,
   hasRecognizableCmdStructure,
@@ -103,19 +104,26 @@ const formatPathValueCopyCountLabel = (count: number, isLimited: boolean): strin
   isLimited ? `已返回 ${count} 项` : `${count} 项`
 );
 
+const formatCmdPathCountSummary = (label: string, paths: string[]): string => {
+  const branchCount = countCmdStructurePathBranches(paths);
+  return branchCount < paths.length
+    ? `${label}分支 ${branchCount}`
+    : `${label} ${paths.length}`;
+};
+
 const formatCmdCandidateSummary = (candidate: RankedCmdStructureCandidate): string => {
   const { diff } = candidate;
   if (!diff.hasDifferences) {
-    return `结构一致${diff.ignoredExtraPaths.length ? `，已忽略 ${diff.ignoredExtraPaths.length}` : ''}`;
+    return `结构一致${diff.ignoredExtraPaths.length ? `，${formatCmdPathCountSummary('已忽略', diff.ignoredExtraPaths)}` : ''}`;
   }
 
   return [
     `Schema ${diff.schemaDiff ? 1 : 0}`,
     `Source ${diff.sourceDiff ? 1 : 0}`,
-    `缺失 ${diff.missingPaths.length}`,
-    `额外 ${diff.extraPaths.length}`,
+    formatCmdPathCountSummary('缺失', diff.missingPaths),
+    formatCmdPathCountSummary('额外', diff.extraPaths),
     `值 ${diff.valueDiffs.length}`,
-    ...(diff.ignoredExtraPaths.length ? [`已忽略 ${diff.ignoredExtraPaths.length}`] : []),
+    ...(diff.ignoredExtraPaths.length ? [formatCmdPathCountSummary('已忽略', diff.ignoredExtraPaths)] : []),
   ].join('，');
 };
 
@@ -808,9 +816,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     let diffReportText = '';
     let diffSummary: {
       hasDifferences: boolean;
-      missingCount: number;
-      extraCount: number;
-      ignoredExtraCount: number;
+      missingLabel: string;
+      extraLabel: string;
+      ignoredExtraLabel: string;
       valueDiffCount: number;
       hasSchemaDiff: boolean;
       hasSourceDiff: boolean;
@@ -838,9 +846,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         });
         diffSummary = {
           hasDifferences: diff.hasDifferences,
-          missingCount: diff.missingPaths.length,
-          extraCount: diff.extraPaths.length,
-          ignoredExtraCount: diff.ignoredExtraPaths.length,
+          missingLabel: formatCmdPathCountSummary('缺失', diff.missingPaths),
+          extraLabel: formatCmdPathCountSummary('额外', diff.extraPaths),
+          ignoredExtraLabel: diff.ignoredExtraPaths.length
+            ? formatCmdPathCountSummary('已忽略', diff.ignoredExtraPaths)
+            : '',
           valueDiffCount: diff.valueDiffs.length,
           hasSchemaDiff: Boolean(diff.schemaDiff),
           hasSourceDiff: Boolean(diff.sourceDiff),
@@ -913,8 +923,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           <div className="mt-1 flex flex-col gap-1">
             <div className={diffSummary.hasDifferences ? 'text-amber-200' : 'text-emerald-200'}>
               {diffSummary.hasDifferences
-                ? `存在差异：Schema ${diffSummary.hasSchemaDiff ? 1 : 0}，Source ${diffSummary.hasSourceDiff ? 1 : 0}，缺失 ${diffSummary.missingCount}，额外 ${diffSummary.extraCount}，值不一致 ${diffSummary.valueDiffCount}${diffSummary.ignoredExtraCount ? `，已忽略 ${diffSummary.ignoredExtraCount}` : ''}`
-                : `结构一致${diffSummary.ignoredExtraCount ? `，已忽略额外 ${diffSummary.ignoredExtraCount}` : ''}`}
+                ? `存在差异：Schema ${diffSummary.hasSchemaDiff ? 1 : 0}，Source ${diffSummary.hasSourceDiff ? 1 : 0}，${diffSummary.missingLabel}，${diffSummary.extraLabel}，值不一致 ${diffSummary.valueDiffCount}${diffSummary.ignoredExtraLabel ? `，${diffSummary.ignoredExtraLabel}` : ''}`
+                : `结构一致${diffSummary.ignoredExtraLabel ? `，${diffSummary.ignoredExtraLabel.replace('已忽略', '已忽略额外')}` : ''}`}
             </div>
             {diffSummary.previewLines.length > 0 && (
               <div className="flex flex-col gap-0.5 font-mono text-gray-400">
