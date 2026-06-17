@@ -106,6 +106,70 @@
   cursor: pointer;
 }
 
+/* 编辑器头部操作默认图标化，把横向宽度优先留给文件标签 */
+.editor-header {
+  container-type: inline-size;
+}
+
+.editor-header-action {
+  flex-shrink: 0;
+  justify-content: center;
+  gap: 0;
+  width: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.editor-header-action-label {
+  display: none;
+}
+
+.editor-header-status-label {
+  white-space: nowrap;
+}
+
+.editor-header-status {
+  flex-shrink: 0;
+  min-height: 1.5rem;
+}
+
+.editor-header-status-message {
+  max-width: 12rem;
+}
+
+@container (max-width: 760px) {
+  .editor-header-actions {
+    gap: 0.125rem;
+    margin-left: 0.25rem;
+    max-width: 38%;
+  }
+
+  .editor-header-status-label {
+    display: none;
+  }
+
+  .editor-header-status {
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
+  }
+
+  .editor-header-status-message {
+    max-width: 8rem;
+  }
+}
+
+@container (max-width: 560px) {
+  .editor-header-actions {
+    max-width: 34%;
+  }
+
+  .editor-header-status-message {
+    max-width: 6rem;
+  }
+}
+
 
 /* 光标动画 */
 .monaco-editor .cursor {

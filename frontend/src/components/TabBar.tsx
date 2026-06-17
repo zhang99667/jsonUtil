@@ -185,7 +185,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                     onCloseFile(file.id);
                   }
                 }}
-                className={`flex items-center gap-1.5 px-1.5 h-full border-r border-r-editor-sidebar text-[13px] select-none cursor-pointer group/tab min-w-[120px] max-w-[200px] flex-shrink-0 ${file.id === activeFileId
+                className={`flex items-center gap-1.5 px-1.5 h-full border-r border-r-editor-sidebar text-[13px] select-none cursor-pointer group/tab min-w-[96px] max-w-[180px] flex-shrink-0 ${file.id === activeFileId
                   ? 'bg-editor-bg text-white border-t-2 border-t-brand-primary'
                   : 'bg-editor-header text-editor-fg-sub border-t-2 border-t-transparent hover:bg-editor-hover'
                   }`}
