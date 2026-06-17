@@ -21,12 +21,9 @@
                           "category": "jump",
                           "des": "m",
                           "url": {
-                            "cmdSchema": "https://union-click.jd.com/sem.php",
-                            "cmdParams": {
-                              "to": {
-                                "sku": "101",
-                                "bd_vid": "abc"
-                              }
+                            "to": {
+                              "sku": "101",
+                              "bd_vid": "abc"
                             }
                           }
                         }
@@ -36,12 +33,9 @@
                       "cmdSchema": "baiduboxapp://v1/easybrowse/open",
                       "cmdParams": {
                         "url": {
-                          "cmdSchema": "https://union-click.jd.com/sem.php",
-                          "cmdParams": {
-                            "to": {
-                              "sku": "101",
-                              "bd_vid": "abc"
-                            }
+                          "to": {
+                            "sku": "101",
+                            "bd_vid": "abc"
                           }
                         },
                         "adFlag": {

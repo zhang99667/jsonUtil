@@ -19,6 +19,8 @@ import {
   isDecodableQueryString,
   isRuntimePlaceholder,
   buildSchemePlaceholderGroups,
+  isActionableSchemeUrl,
+  shouldExposeSchemeValue,
 } from './schemeUtils';
 import { findSchemesInJson, scanSchemesInJson } from './schemeScanner';
 
@@ -49,6 +51,37 @@ describe('isUrl', () => {
     expect(isUrl('key=value')).toBe(false);
     expect(isUrl('foo.bar')).toBe(false);
     expect(isUrl('1.2.3/path')).toBe(false);
+  });
+});
+
+describe('shouldExposeSchemeValue', () => {
+  it('普通 HTTP(S) URL 不作为业务 Scheme 暴露', () => {
+    expect(isActionableSchemeUrl('https://example.com/path?from=doc')).toBe(false);
+    expect(shouldExposeSchemeValue('https://example.com/path?from=doc')).toBe(false);
+    expect(shouldExposeSchemeValue('https%3A%2F%2Fexample.com%2Fpath%3Ffrom%3Ddoc')).toBe(false);
+  });
+
+  it('自定义 Scheme 仍作为业务 Scheme 暴露', () => {
+    expect(isActionableSchemeUrl('baiduboxapp://v1/browser/open?from=feed')).toBe(true);
+    expect(shouldExposeSchemeValue('baiduboxapp://v1/browser/open?from=feed')).toBe(true);
+  });
+
+  it('携带结构化 CMD 参数的 HTTP(S) URL 仍作为业务 Scheme 暴露', () => {
+    const urlWithCmd = `https://example.com/callback?cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}`;
+    const urlWithHashCmd = `https://example.com/app#/detail?cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}`;
+    const urlWithNestedScheme = `https://example.com/jump?url=${encodeURIComponent('baiduboxapp://v1/browser/open?from=feed')}`;
+
+    expect(isActionableSchemeUrl(urlWithCmd)).toBe(true);
+    expect(isActionableSchemeUrl(urlWithHashCmd)).toBe(true);
+    expect(isActionableSchemeUrl(urlWithNestedScheme)).toBe(true);
+  });
+
+  it('只嵌套普通 HTTP(S) 落地页时不作为业务 Scheme 暴露', () => {
+    const landingUrl = 'https://m.baidu.com/s?word=json';
+    const wrapperUrl = `https://example.com/jump?url=${encodeURIComponent(landingUrl)}`;
+
+    expect(isActionableSchemeUrl(wrapperUrl)).toBe(false);
+    expect(shouldExposeSchemeValue(wrapperUrl)).toBe(false);
   });
 });
 
@@ -1923,8 +1956,13 @@ describe('encodeWithLayers', () => {
 // ============ findSchemesInJson 测试 ============
 
 describe('findSchemesInJson', () => {
-  it('找到 JSON 中的 URL', () => {
+  it('普通 HTTPS URL 不作为 Scheme 入口返回', () => {
     const json = JSON.stringify({ link: 'https://example.com', name: 'test' }, null, 2);
+    expect(findSchemesInJson(json)).toEqual([]);
+  });
+
+  it('找到 JSON 中的业务 Scheme', () => {
+    const json = JSON.stringify({ link: 'baiduboxapp://v1/browser/open?from=test', name: 'test' }, null, 2);
     const results = findSchemesInJson(json);
     expect(results.length).toBe(1);
     expect(results[0].schemeType).toBe('url');
@@ -1952,19 +1990,19 @@ describe('findSchemesInJson', () => {
       extra: [
         {
           k: 'extraParam',
-          v: 'https://example.com/path?from=extra',
+          v: 'baiduboxapp://v1/browser/open?from=extra',
         },
         {
           key: 'trackingParam',
-          v: 'https://example.com/path?from=tracking',
+          v: 'baiduboxapp://v1/browser/open?from=tracking',
         },
         {
           k: 'buttonParam',
-          value: 'https://example.com/path?from=button',
+          value: 'baiduboxapp://v1/browser/open?from=button',
         },
         {
           field: 'contentParam',
-          content: 'https://example.com/path?from=content',
+          content: 'baiduboxapp://v1/browser/open?from=content',
         },
       ],
     }, null, 2);
@@ -2003,7 +2041,7 @@ describe('findSchemesInJson', () => {
     const json = JSON.stringify({
       items: [
         { name: 'first' },
-        { url: 'https://example.com/path?from=list' },
+        { url: 'baiduboxapp://v1/browser/open?from=list' },
       ],
     }, null, 2);
 
@@ -2031,7 +2069,7 @@ describe('findSchemesInJson', () => {
     const json = JSON.stringify({
       'a.b': {
         'x/y': {
-          'tilde~key': 'https://example.com/path?from=key',
+          'tilde~key': 'baiduboxapp://v1/browser/open?from=key',
         },
       },
     }, null, 2);
@@ -2051,7 +2089,7 @@ describe('findSchemesInJson', () => {
 
 describe('scanSchemesInJson', () => {
   it('扫描时复用 source map 的解析结果，避免重复 JSON.parse', () => {
-    const json = JSON.stringify({ link: 'https://example.com/path?from=scan' });
+    const json = JSON.stringify({ link: 'baiduboxapp://v1/browser/open?from=scan' });
     const parseSpy = vi.spyOn(JSON, 'parse').mockImplementation(() => {
       throw new Error('不应调用额外 JSON.parse');
     });
@@ -2067,9 +2105,9 @@ describe('scanSchemesInJson', () => {
 
   it('超过结果上限时提前停止并标记截断', () => {
     const json = JSON.stringify({
-      first: 'https://example.com/first',
-      second: 'https://example.com/second',
-      third: 'https://example.com/third',
+      first: 'baiduboxapp://v1/browser/open?from=first',
+      second: 'baiduboxapp://v1/browser/open?from=second',
+      third: 'baiduboxapp://v1/browser/open?from=third',
     }, null, 2);
 
     const result = scanSchemesInJson(json, { resultLimit: 2 });
@@ -2082,8 +2120,8 @@ describe('scanSchemesInJson', () => {
 
   it('结果数量等于上限时不标记截断', () => {
     const json = JSON.stringify({
-      first: 'https://example.com/first',
-      second: 'https://example.com/second',
+      first: 'baiduboxapp://v1/browser/open?from=first',
+      second: 'baiduboxapp://v1/browser/open?from=second',
     }, null, 2);
 
     const result = scanSchemesInJson(json, { resultLimit: 2 });
@@ -2094,7 +2132,7 @@ describe('scanSchemesInJson', () => {
   });
 
   it('单行 JSON 中多个 Scheme 返回可区分的列范围', () => {
-    const json = '{"first":"https://example.com/first","second":"https://example.com/second"}';
+    const json = '{"first":"baiduboxapp://v1/browser/open?from=first","second":"baiduboxapp://v1/browser/open?from=second"}';
 
     const result = scanSchemesInJson(json);
 
@@ -2104,5 +2142,18 @@ describe('scanSchemesInJson', () => {
     expect(result.locations[0].column).toBeLessThan(result.locations[1].column);
     expect(result.locations[0].endColumn).toBeGreaterThan(result.locations[0].column);
     expect(result.locations[1].endColumn).toBeGreaterThan(result.locations[1].column);
+  });
+
+  it('携带结构化 CMD 参数的 HTTPS URL 仍会返回', () => {
+    const json = JSON.stringify({
+      callback: `https://example.com/app#/detail?cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}`,
+      landing: 'https://example.com/path?from=landing',
+    }, null, 2);
+
+    const result = scanSchemesInJson(json);
+
+    expect(result.locations).toHaveLength(1);
+    expect(result.locations[0].path).toBe('$.callback');
+    expect(result.locations[0].schemeType).toBe('url');
   });
 });

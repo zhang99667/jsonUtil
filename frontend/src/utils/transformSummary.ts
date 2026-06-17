@@ -14,6 +14,7 @@ import {
   formatCmdHandlerCompatibleResult,
   getSchemeInsightFieldCopyText,
   getSchemeCommandSchemaFromUrl,
+  getUrlResourceSchemaFromUrl,
 } from './schemeMetadata';
 
 export interface TransformContextSummary {
@@ -1781,7 +1782,7 @@ const collectCommandSchemaOccurrences = (
 
   const pushResourceSchema = (row: TransformReportDecodedPath, recordPath: string) => {
     const schema = typeof row.value === 'string'
-      ? getSchemeCommandSchemaFromUrl(row.value)
+      ? getUrlResourceSchemaFromUrl(row.value)
       : undefined;
     if (!schema) return;
 

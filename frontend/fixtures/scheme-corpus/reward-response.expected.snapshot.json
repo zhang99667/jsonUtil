@@ -6,11 +6,6 @@
     {
       "path": "$.data.video[0].material[0].info[0].ad_common.scheme",
       "type": "url"
-    },
-    {
-      "path": "$.data.video[0].extra[0].v",
-      "label": "extraParam",
-      "type": "base64"
     }
   ],
   "quality": {
@@ -21,8 +16,8 @@
     "maxUnresolved": 0,
     "maxWarnings": 0,
     "maxCmdHandlerIgnoredExtraPaths": 474,
-    "leadHotspotCommandSchema": "https://union-click.jd.com/sem.php",
-    "leadHotspotResourceSchema": "https://video.example.com/ad.mp4",
+    "leadHotspotCommandSchema": "baiduboxapp://v1/easybrowse/open",
+    "leadHotspotResourceSchema": "",
     "leadHotspotResourceField": "video_url"
   },
   "primaryCommandSchema": "nadcorevendor://vendor/ad/rewardImpl",
@@ -33,7 +28,6 @@
     "baiduboxapp://v7/vendor/ad/deeplink",
     "baiduboxapp://v1/easybrowse/open",
     "openapp.jdmobile://virtual",
-    "https://union-click.jd.com/sem.php",
     "https://m.baidu.com/baidu.php",
     "https://callback.example.com/track"
   ],

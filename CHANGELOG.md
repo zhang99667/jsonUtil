@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.123 (2026-06-17) - HTTPS Scheme 误判收敛
+### 🐛 Bug 修复
+- **Scheme 扫描**: 普通 `http/https` URL 不再自动作为业务 Scheme/CMD 入口展示，只有自定义 Scheme 或携带结构化 CMD 参数的 HTTP(S) URL 会进入 Scheme 列表和 `cmdSchema`
+- **cmdHandler 导出**: 普通 HTTPS 落地页、静态资源 URL 不再生成内层 `cmdSchema` 包装，同时保留静态资源 URL 的资源分组统计
+
 ## v1.8.122 (2026-06-17) - 前端 Docker 低内存构建
 ### 🐛 Bug 修复
 - **生产部署**: 前端 Docker 构建期 Node 堆上限调整为已在 2GB 线上主机验证通过的 `1200MB`，保证 Vite 构建和 preload 检查可稳定完成

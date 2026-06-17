@@ -1,6 +1,6 @@
 import { parse as parseJsonSourceMap } from 'json-source-map';
 import { getBusinessLabelForField } from './businessLabels';
-import { detectSchemeType, type SchemeType } from './schemeUtils';
+import { detectSchemeType, shouldExposeSchemeValue, type SchemeType } from './schemeUtils';
 
 export interface SchemeLocation {
   path: string;           // JSON Path，如 "$.action_cmd" 或 `$["a.b"]`
@@ -73,7 +73,7 @@ export function scanSchemesInJson(
     ): boolean => {
       if (typeof obj === 'string') {
         const schemeType = detectSchemeType(obj);
-        if (schemeType !== 'plain' && schemeType !== 'json') {
+        if (shouldExposeSchemeValue(obj)) {
           if (results.length >= limit) {
             return markLimited();
           }
