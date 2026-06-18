@@ -23,6 +23,12 @@
 - `backend`: `mvn -B test`、`mvn -B package -DskipTests`
 - `docker`: `docker build ./backend`、`docker build ./frontend`、带测试环境变量执行 `docker compose config`
 
+#### 质量趋势基线更新
+
+当解析逻辑或 corpus 样本发生预期变化时，先运行 `npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after <new-snapshot.json> --strict --resource-type-drop video=20 --resource-type-rise lottie=20` 查看趋势。只有在变化能解释为解析覆盖提升、样本脱敏更新或业务素材结构预期变化时，才运行 `npm run corpus:snapshot:baseline` 更新 `corpus-quality.baseline.snapshot.json`。
+
+如果 diff 出现覆盖率下降、CMD/资源热点消失、requiredChecks 失败、cmdHandler ignored extra 上升，或视频/Lottie 占比漂移无法由样本变化解释，应优先回退实现或修复解析逻辑，不应直接更新 baseline。
+
 ### CD
 
 工作流文件：`.github/workflows/deploy.yml`

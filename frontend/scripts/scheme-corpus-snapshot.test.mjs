@@ -1000,6 +1000,7 @@ describe('parseCliArgs', () => {
       sampleName: 'local-response',
       outputPath: undefined,
       summaryPath: undefined,
+      failBeforeWrite: false,
       strict: false,
     });
   });
@@ -1015,6 +1016,24 @@ describe('parseCliArgs', () => {
       sampleName: undefined,
       outputPath: undefined,
       summaryPath: undefined,
+      failBeforeWrite: false,
+      strict: true,
+    });
+  });
+
+  it('支持严格失败时先拦截再写文件', () => {
+    expect(parseCliArgs([
+      '--strict',
+      '--fail-before-write',
+      '--output',
+      'fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json',
+    ])).toEqual({
+      sampleFilter: undefined,
+      inputPath: undefined,
+      sampleName: undefined,
+      outputPath: 'fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json',
+      summaryPath: undefined,
+      failBeforeWrite: true,
       strict: true,
     });
   });
@@ -1031,6 +1050,7 @@ describe('parseCliArgs', () => {
       sampleName: undefined,
       outputPath: '../artifacts/snapshot.json',
       summaryPath: '../artifacts/summary.md',
+      failBeforeWrite: false,
       strict: false,
     });
   });

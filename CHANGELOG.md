@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.131 (2026-06-18) - 质量基线安全更新
+### ✨ 新特性
+- **质量门禁**: 新增 `corpus:snapshot:baseline` 命令，严格检查通过后才更新 committed 质量趋势基线，避免失败快照覆盖 CI baseline；同步补充基线接受/回退指引
+
 ## v1.8.130 (2026-06-18) - 质量趋势 CI 门禁
 ### ✨ 新特性
 - **CI 门禁**: 新增完整 corpus 质量快照基线，并在 GitHub Actions 中运行 `corpus:snapshot:diff`，对比当前快照与基线，上传质量趋势 artifact；视频占比下降和 Lottie 占比上升阈值会在 strict 模式下参与发布门禁
