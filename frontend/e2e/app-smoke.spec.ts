@@ -609,11 +609,20 @@ test('深度解析报告展示未展开线索', async ({ page }) => {
   await page.locator('[data-tour="transform-report-button"]').click();
   const reportPanel = page.locator('[data-tour="transform-report-panel"]');
   const coverage = reportPanel.locator('[data-tour="transform-report-coverage"]');
+  const nextActions = reportPanel.locator('[data-tour="transform-report-next-actions"]');
   const triage = reportPanel.locator('[data-tour="transform-report-issue-triage"]');
   const unresolvedSection = reportPanel.locator('[data-tour="transform-report-unresolved"]');
 
   await expect(coverage).toContainText('解析覆盖 50%');
   await expect(coverage).toContainText('还有 1 条疑似结构化内容未完全展开');
+  await expect(nextActions).toContainText('真实 response 下一步');
+  await expect(nextActions).toContainText('查看待处理');
+  await expect(nextActions).toContainText('复制归档包');
+  await expect(nextActions).toContainText('复制协作报告');
+  await nextActions.locator('[data-tour="transform-report-next-action-triage"]').click();
+  await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('待处理');
+  await expect(unresolvedSection).toContainText('$.tracking');
+  await reportPanel.getByRole('button', { name: '清空' }).click();
   await expect(triage).toContainText('建议优先处理');
   await expect(triage).toContainText('待检查 1');
   await triage.locator('[data-tour="transform-report-triage-action-unresolved"]').click();
@@ -784,7 +793,10 @@ test('深度解析报告可页面内对比 cmdHandler 输出', async ({ page }) 
     .locator('[data-tour="transform-report-row"]')
     .filter({ hasText: '$.action_cmd' });
 
-  await reportPanel.locator('[data-tour="transform-report-open-first-cmd-comparison"]').click();
+  const nextActions = reportPanel.locator('[data-tour="transform-report-next-actions"]');
+  await expect(nextActions).toContainText('对比 cmdHandler');
+  await expect(nextActions).toContainText('复制归档包');
+  await nextActions.locator('[data-tour="transform-report-next-action-compare-cmd"]').click();
   await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('CMD结构');
   const comparisonPanel = commandRow.locator('[data-tour="transform-report-cmd-comparison-panel"]');
   await expect(comparisonPanel).toBeVisible();
