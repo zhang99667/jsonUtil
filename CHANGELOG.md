@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.170 (2026-06-18) - 复制产物下一步命令
+### ✨ 新特性
+- **排查闭环**: CMD 对比包、问题样本 JSON 和深度解析归档包新增 `suggestedCommands`，把页面复制结果直接衔接到 `cmd:diff`、`samples:to-regression` 和 corpus 质量基线校验
+
 ## v1.8.169 (2026-06-18) - HAR 摘要标签
 ### ✨ 新特性
 - **HAR 导入**: 派生 JSON 顶层新增 method、status、host、MIME 和 body 类型摘要，并为每条 payload 生成不含 query 的短标签，便于后续筛选和排查接口来源
