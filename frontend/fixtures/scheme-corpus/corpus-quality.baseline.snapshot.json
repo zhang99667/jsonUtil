@@ -1,26 +1,336 @@
 {
   "schemaVersion": 1,
   "kind": "json-helper-scheme-corpus-quality-snapshot",
-  "sampleCount": 1,
+  "sampleCount": 2,
   "thresholdSummary": {
     "pass": true,
-    "total": 10,
+    "total": 18,
     "failed": 0,
     "missingBaselines": [],
     "failures": [],
     "required": {
-      "total": 3,
+      "total": 6,
       "failed": 0,
       "failures": []
     },
     "cmdHandler": {
-      "total": 1,
+      "total": 2,
       "failed": 0,
-      "ignoredExtraPaths": 412,
+      "ignoredExtraPaths": 442,
       "failures": []
     }
   },
   "samples": [
+    {
+      "sample": "landing-response-redacted",
+      "baseline": {
+        "expectedSnapshot": true,
+        "expectedSnapshotFile": "landing-response.expected.snapshot.json",
+        "cmdHandlerExpected": true,
+        "cmdHandlerExpectedFile": "landing-response.cmdhandler.expected.json"
+      },
+      "responseBytes": 1763,
+      "summaryText": "深度解析: 展开 4 处，Scheme 4 (URL 4)，占位符 6",
+      "coverage": {
+        "score": 100,
+        "label": "结构解析完成 · 占位符 6",
+        "level": "info",
+        "description": "已展开当前可解析结构，但仍有 6 个运行时占位符需要服务端或客户端替换。",
+        "items": [
+          "占位符不是解析失败，可筛选占位符查看待替换字段",
+          "复制来源路径可回到原始 CMD/Scheme 字段排查"
+        ]
+      },
+      "totals": {
+        "records": 4,
+        "cmdStructures": 4,
+        "nestedCommandFields": 10,
+        "nestedResourceFields": 0,
+        "runtimePlaceholders": 6,
+        "unresolved": 0,
+        "warnings": 0
+      },
+      "filtered": {
+        "records": 4,
+        "cmdStructures": 4,
+        "nestedCommandFields": 10,
+        "nestedResourceFields": 0,
+        "runtimePlaceholders": 6,
+        "unresolved": 0,
+        "warnings": 0
+      },
+      "topCommandSchemas": [
+        {
+          "schema": "https://m.example.com/promo",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.url",
+            "$.data.ads[0].common.scheme.fallback_cmd.params.appUrl.params.url",
+            "$.data.ads[0].common.scheme.fallback_cmd.params.webUrl.url"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "schema": "baiduboxapp://v1/easybrowse/open",
+          "count": 2,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme",
+            "$.data.ads[0].common.scheme.fallback_cmd.params.webUrl"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "schema": "baiduboxapp://v7/vendor/ad/deeplink",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.fallback_cmd"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "schema": "openapp.demo://virtual",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.fallback_cmd.params.appUrl"
+          ],
+          "hasMorePaths": false
+        }
+      ],
+      "topResourceSchemas": [],
+      "topResourceTypes": [],
+      "topNestedCommandFields": [
+        {
+          "key": "cmd",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.url._hash.cmd",
+            "$.data.ads[0].common.scheme.fallback_cmd.params.appUrl.params.url._hash.cmd",
+            "$.data.ads[0].common.scheme.fallback_cmd.params.webUrl.url._hash.cmd"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "url",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.url",
+            "$.data.ads[0].common.scheme.fallback_cmd.params.appUrl.params.url",
+            "$.data.ads[0].common.scheme.fallback_cmd.params.webUrl.url"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "appUrl",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.fallback_cmd.params.appUrl"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "callbackUrl",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.callbackUrl"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "fallback_cmd",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.fallback_cmd"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "webUrl",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.fallback_cmd.params.webUrl"
+          ],
+          "hasMorePaths": false
+        }
+      ],
+      "topNestedResourceFields": [],
+      "scanLocations": [
+        {
+          "path": "$.data.ads[0].common.scheme",
+          "type": "url"
+        }
+      ],
+      "runtimePlaceholders": [
+        {
+          "value": "__CLICK_ID__",
+          "count": 3,
+          "sourceCount": 3
+        },
+        {
+          "value": "__SIGN__",
+          "count": 2,
+          "sourceCount": 2
+        },
+        {
+          "value": "__AD_EXTRA_PARAM_ENCODE_2__",
+          "count": 1,
+          "sourceCount": 1
+        }
+      ],
+      "cmdHandlerAlignment": {
+        "expectedFile": "landing-response.cmdhandler.expected.json",
+        "ignoreExtraPaths": true,
+        "pass": true,
+        "actualCommandSchema": "baiduboxapp://v1/easybrowse/open",
+        "expectedCommandSchema": "baiduboxapp://v1/easybrowse/open",
+        "schemaDiff": false,
+        "sourceDiff": false,
+        "missingPaths": 0,
+        "extraPaths": 0,
+        "ignoredExtraPaths": 30,
+        "valueDiffs": 0,
+        "diff": {
+          "schemaDiff": null,
+          "sourceDiff": null,
+          "missingPathCount": 0,
+          "extraPathCount": 0,
+          "ignoredExtraPathCount": 30,
+          "valueDiffCount": 0,
+          "missingPaths": [],
+          "extraPaths": [],
+          "ignoredExtraPaths": [
+            "$.url.source",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.category",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.cmdSchema",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.cmdParams",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.cmdParams.campaign",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.cmdParams.bd_vid",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.cmdParams._hash",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.cmdParams._hash.cmd",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.cmdParams._hash.cmd.nid",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.cmdParams._hash.from",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.url.source",
+            "$.fallback_cmd.cmdParams.params.appUrl.cmdParams.params.source",
+            "$.fallback_cmd.cmdParams.params.appUrl.source",
+            "$.fallback_cmd.cmdParams.params.webUrl.cmdParams",
+            "$.fallback_cmd.cmdParams.params.webUrl.cmdParams.url",
+            "$.fallback_cmd.cmdParams.params.webUrl.cmdParams.url.cmdSchema",
+            "$.fallback_cmd.cmdParams.params.webUrl.cmdParams.url.cmdParams"
+          ],
+          "valueDiffs": []
+        }
+      },
+      "thresholds": {
+        "minCoverageScore": {
+          "actual": 100,
+          "expected": 100,
+          "pass": true
+        },
+        "minCmdStructures": {
+          "actual": 4,
+          "expected": 4,
+          "pass": true
+        },
+        "minNestedCommandFields": {
+          "actual": 10,
+          "expected": 8,
+          "pass": true
+        },
+        "minNestedResourceFields": {
+          "actual": 0,
+          "expected": 0,
+          "pass": true
+        },
+        "maxUnresolved": {
+          "actual": 0,
+          "expected": 0,
+          "pass": true
+        },
+        "maxWarnings": {
+          "actual": 0,
+          "expected": 0,
+          "pass": true
+        },
+        "maxCmdHandlerIgnoredExtraPaths": {
+          "actual": 30,
+          "expected": 80,
+          "pass": true
+        },
+        "leadHotspotCommandSchema": {
+          "actual": "https://m.example.com/promo",
+          "expected": "https://m.example.com/promo",
+          "pass": true
+        }
+      },
+      "requiredChecks": {
+        "requiredCommandSchemas": {
+          "actual": [
+            "baiduboxapp://v1/easybrowse/open",
+            "https://m.example.com/promo",
+            "baiduboxapp://v7/vendor/ad/deeplink",
+            "openapp.demo://virtual"
+          ],
+          "expected": [
+            "baiduboxapp://v1/easybrowse/open",
+            "baiduboxapp://v7/vendor/ad/deeplink",
+            "openapp.demo://virtual",
+            "https://m.example.com/promo"
+          ],
+          "missing": [],
+          "pass": true
+        },
+        "requiredRuntimePlaceholders": {
+          "actual": [
+            "__CLICK_ID__",
+            "__SIGN__",
+            "__AD_EXTRA_PARAM_ENCODE_2__"
+          ],
+          "expected": [
+            "__AD_EXTRA_PARAM_ENCODE_2__",
+            "__CLICK_ID__",
+            "__SIGN__"
+          ],
+          "missing": [],
+          "pass": true
+        },
+        "scanLocations": {
+          "actual": [
+            {
+              "path": "$.data.ads[0].common.scheme",
+              "type": "url"
+            }
+          ],
+          "expected": [
+            {
+              "path": "$.data.ads[0].common.scheme",
+              "type": "url"
+            }
+          ],
+          "missing": [],
+          "extra": [],
+          "pass": true
+        }
+      },
+      "truncated": {
+        "records": false,
+        "cmdStructures": false,
+        "runtimePlaceholders": false,
+        "unresolved": false,
+        "warnings": false
+      }
+    },
     {
       "sample": "reward-response-redacted",
       "baseline": {

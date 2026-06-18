@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "json-helper-cmdhandler-expected",
+  "sample": "landing-response-redacted",
+  "result": {
+    "cmdSchema": "baiduboxapp://v1/easybrowse/open",
+    "cmdParams": {
+      "url": {
+        "cmdSchema": "https://m.example.com/promo",
+        "cmdParams": {
+          "campaign": "landing",
+          "bd_vid": "land_001",
+          "_hash": {
+            "cmd": {
+              "nid": "landing_001"
+            },
+            "from": "ad"
+          }
+        }
+      },
+      "fallback_cmd": {
+        "cmdSchema": "baiduboxapp://v7/vendor/ad/deeplink",
+        "cmdParams": {
+          "params": {
+            "appUrl": {
+              "cmdSchema": "openapp.demo://virtual"
+            },
+            "webUrl": {
+              "cmdSchema": "baiduboxapp://v1/easybrowse/open"
+            },
+            "source": "feedna"
+          }
+        }
+      },
+      "adFlag": {
+        "ext": "__AD_EXTRA_PARAM_ENCODE_2__",
+        "nid": "landing_001"
+      },
+      "callbackUrl": {
+        "clickId": "__CLICK_ID__",
+        "sign": "__SIGN__"
+      }
+    }
+  }
+}

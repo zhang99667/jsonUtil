@@ -48,7 +48,7 @@ interface SchemeCorpusExpectedSnapshot {
     maxWarnings: number;
     leadHotspotCommandSchema: string;
     leadHotspotResourceSchema?: string;
-    leadHotspotResourceField: string;
+    leadHotspotResourceField?: string;
   };
   primaryCommandSchema: string;
   requiredCommandSchemas: string[];
@@ -89,6 +89,9 @@ const buildCorpusResponseText = (fixture: SchemeCorpusFixture): string => (
 const rewardResponseCorpus = readCorpusJson<SchemeCorpusFixture>('reward-response.redacted.json');
 const rewardResponseBaseline = readCorpusJson<SchemeCorpusExpectedSnapshot>('reward-response.expected.snapshot.json');
 const rewardResponseCmdHandlerExpected = readCorpusJson<JsonValue>(rewardResponseBaseline.cmdHandlerExpected);
+const landingResponseCorpus = readCorpusJson<SchemeCorpusFixture>('landing-response.redacted.json');
+const landingResponseBaseline = readCorpusJson<SchemeCorpusExpectedSnapshot>('landing-response.expected.snapshot.json');
+const landingResponseCmdHandlerExpected = readCorpusJson<JsonValue>(landingResponseBaseline.cmdHandlerExpected);
 
 describe('CMD/Scheme 真实样本回归', () => {
   it('解析编码 URL 字段并保留外层来源参数', () => {
@@ -924,6 +927,104 @@ describe('CMD/Scheme 真实样本回归', () => {
     const cmdHandlerDiff = diffCmdStructures(
       copiedCmdStructure as JsonValue,
       rewardResponseCmdHandlerExpected,
+      { ignoreExtraPaths: true }
+    );
+
+    expect(formatCmdStructureDiff(cmdHandlerDiff)).toContain('结构一致');
+    expect(cmdHandlerDiff).toMatchObject({
+      hasDifferences: false,
+      schemaDiff: null,
+      missingPaths: [],
+      valueDiffs: [],
+    });
+  });
+
+  it('整段落地页 response 只扫描主入口 Scheme 并对齐 cmdHandler 子集', () => {
+    expect(landingResponseBaseline.sample).toBe(landingResponseCorpus.name);
+    const response = buildCorpusResponseText(landingResponseCorpus);
+
+    const scanResult = scanSchemesInJson(response);
+    expect(scanResult.locations.map(item => ({
+      path: item.path,
+      ...(item.label === undefined ? {} : { label: item.label }),
+      type: item.schemeType,
+    }))).toEqual(landingResponseBaseline.scanLocations);
+
+    const { output, context } = deepParseWithContext(response, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    const decodedScheme = parsed.data.ads[0].common.scheme;
+    const report = buildTransformContextReport(context);
+    const reportView = buildTransformReportView(report, '');
+    const qualitySnapshot = JSON.parse(formatTransformQualitySnapshotJsonText(report, reportView, ''));
+    const rootRecord = report.records.find(record => record.path === '$.data.ads[0].common.scheme');
+    const allCommandSchemas = report.records.flatMap(record => (
+      [
+        record.commandSchema,
+        ...(record.commandSchemaRows?.map(row => row.schema) || []),
+      ].filter((schema): schema is string => Boolean(schema))
+    ));
+    const copiedCmdStructure = rootRecord?.getCmdStructureCopyText
+      ? JSON.parse(rootRecord.getCmdStructureCopyText())
+      : undefined;
+
+    expect(parsed.data.ads[0].common.landing_url).toEqual({
+      campaign: 'landing',
+      bd_vid: 'land_001',
+    });
+    expect(parsed.data.ads[0].common.image_url).toEqual({
+      size: '750x300',
+    });
+    expect(parsed.data.ads[0].common.monitor_urls[0]).toEqual({
+      clickId: '__CLICK_ID__',
+      from: 'landing',
+    });
+    expect(decodedScheme.url._hash.cmd).toEqual({ nid: 'landing_001' });
+    expect(decodedScheme.fallback_cmd.params.appUrl.params.url._hash.cmd).toEqual({ nid: 'landing_001' });
+    expect(decodedScheme.fallback_cmd.params.webUrl.url._hash.cmd).toEqual({ nid: 'landing_001' });
+    expect(decodedScheme.fallback_cmd.params.source).toBe('feedna');
+    expect(decodedScheme.adFlag.ext).toBe('__AD_EXTRA_PARAM_ENCODE_2__');
+    expect(decodedScheme.callbackUrl).toEqual({
+      clickId: '__CLICK_ID__',
+      sign: '__SIGN__',
+    });
+    expect(rootRecord?.commandSchema).toBe(landingResponseBaseline.primaryCommandSchema);
+    expect(allCommandSchemas).toEqual(expect.arrayContaining(landingResponseBaseline.requiredCommandSchemas));
+    expect(report.coverage.score).toBeGreaterThanOrEqual(landingResponseBaseline.quality.minCoverageScore);
+    expect(report.cmdStructureCount).toBeGreaterThanOrEqual(landingResponseBaseline.quality.minCmdStructures);
+    expect(report.nestedCommandFieldCount).toBeGreaterThanOrEqual(landingResponseBaseline.quality.minNestedCommandFields);
+    expect(report.nestedResourceFieldCount).toBeGreaterThanOrEqual(landingResponseBaseline.quality.minNestedResourceFields);
+    expect(report.summary.unresolvedCount).toBeLessThanOrEqual(landingResponseBaseline.quality.maxUnresolved);
+    expect(report.summary.warningCount).toBeLessThanOrEqual(landingResponseBaseline.quality.maxWarnings);
+    expect(qualitySnapshot.hotspots.topCommandSchemas[0].schema).toBe(
+      landingResponseBaseline.quality.leadHotspotCommandSchema
+    );
+    expect(report.runtimePlaceholderGroups.map(group => group.value)).toEqual(expect.arrayContaining(
+      landingResponseBaseline.requiredRuntimePlaceholders
+    ));
+    expect(copiedCmdStructure).toMatchObject({
+      result: {
+        cmdSchema: landingResponseBaseline.primaryCommandSchema,
+        cmdParams: {
+          fallback_cmd: {
+            cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+            cmdParams: {
+              params: {
+                appUrl: {
+                  cmdSchema: 'openapp.demo://virtual',
+                },
+                webUrl: {
+                  cmdSchema: 'baiduboxapp://v1/easybrowse/open',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const cmdHandlerDiff = diffCmdStructures(
+      copiedCmdStructure as JsonValue,
+      landingResponseCmdHandlerExpected,
       { ignoreExtraPaths: true }
     );
 
