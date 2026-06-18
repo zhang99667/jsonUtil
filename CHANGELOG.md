@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.197 (2026-06-19) - Schema 依赖子 Schema 示例
+### ✨ 新特性
+- **JSON Schema 示例**: 对象示例生成支持 `dependentSchemas` 和 schema 型 `dependencies`，字段出现后会尝试从被触发的子 Schema 生成并合并依赖字段，支付方式、订阅模式、登录态等联动对象可直接生成可校验示例
+- **兼容边界**: 合并依赖子 Schema 时仍遵守根对象 `propertyNames` 和 `additionalProperties:false`，不可满足的依赖组合继续由最终自校验提示失败路径，避免静默塞入非法字段
+
 ## v1.8.196 (2026-06-19) - Schema 对象依赖示例
 ### ✨ 新特性
 - **JSON Schema 示例**: 对象示例生成支持 `dependentRequired` 和老版 `dependencies` 数组依赖，生成 required/properties 后会自动补齐被当前字段触发的依赖字段，避免登录态、支付信息、类型标识等接口 Schema 示例缺少联动字段后被自校验拦截
