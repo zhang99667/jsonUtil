@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.181 (2026-06-18) - Schema Format 推断
+### ✨ 新特性
+- **JSON Schema 生成**: 根据 SOURCE 生成 Schema 时会保守识别 `email`、`uri`、`date-time` 和 `uuid` 字符串格式，并在数组样本格式一致时保留 `format` 约束，生成结果可直接配合标准 format 校验
+
 ## v1.8.180 (2026-06-18) - Schema Format 校验
 ### ✨ 新特性
 - **JSON Schema 校验**: 接入官方 `ajv-formats`，启用 `email`、`uri`、`date-time`、`uuid` 等标准 `format` 约束校验，避免格式错误字段被误判为通过

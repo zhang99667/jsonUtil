@@ -68,6 +68,43 @@ describe('jsonSchemaInference', () => {
     });
   });
 
+  it('为常见字符串值推断标准 format', () => {
+    const result = inferJsonSchemaFromText(JSON.stringify({
+      email: 'user@example.com',
+      homepage: 'https://example.com/path?a=1',
+      createdAt: '2026-06-18T10:11:12Z',
+      traceId: '550e8400-e29b-41d4-a716-446655440000',
+      title: '订单',
+    }));
+    const schema = JSON.parse(result.schemaText || '{}');
+
+    expect(schema.properties).toMatchObject({
+      email: { type: 'string', format: 'email' },
+      homepage: { type: 'string', format: 'uri' },
+      createdAt: { type: 'string', format: 'date-time' },
+      traceId: { type: 'string', format: 'uuid' },
+      title: { type: 'string' },
+    });
+    expect(schema.properties.title).not.toHaveProperty('format');
+  });
+
+  it('数组字符串仅在所有样本 format 一致时保留 format', () => {
+    const emailResult = inferJsonSchemaFromText(JSON.stringify({
+      contacts: ['a@example.com', 'b@example.com'],
+    }));
+    const mixedResult = inferJsonSchemaFromText(JSON.stringify({
+      links: ['https://example.com', 'not-url'],
+    }));
+    const emailSchema = JSON.parse(emailResult.schemaText || '{}');
+    const mixedSchema = JSON.parse(mixedResult.schemaText || '{}');
+
+    expect(emailSchema.properties.contacts.items).toMatchObject({
+      type: 'string',
+      format: 'email',
+    });
+    expect(mixedSchema.properties.links.items).toEqual({ type: 'string' });
+  });
+
   it('数组内整数和小数合并为 number', () => {
     const result = inferJsonSchemaFromText(JSON.stringify([1, 2.5]));
     const schema = JSON.parse(result.schemaText || '{}');
