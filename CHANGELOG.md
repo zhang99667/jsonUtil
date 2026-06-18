@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.185 (2026-06-19) - Schema 动态对象示例
+### ✨ 新特性
+- **JSON Schema 校验**: 示例 JSON 生成支持 `patternProperties`、`additionalProperties`、`propertyNames` 和 `minProperties` 的常见动态对象写法，动态 map 类 Schema 不再容易生成 `{}` 后立即校验失败
+
 ## v1.8.184 (2026-06-19) - Schema 示例应用
 ### ✨ 新特性
 - **JSON Schema 校验**: 面板新增“应用示例”，可将当前 Schema 生成的示例 JSON 直接写入 SOURCE；当 SOURCE 已有内容时复用全局确认弹窗，避免误覆盖，同时保留复制示例的轻量协作路径

@@ -72,6 +72,34 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('支持动态对象 Schema 的 patternProperties 和 additionalProperties', () => {
+    const schemaText = JSON.stringify({
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      minProperties: 2,
+      propertyNames: {
+        pattern: '^[a-z_]+$',
+      },
+      patternProperties: {
+        '^meta_[a-z]+$': {
+          type: 'integer',
+          minimum: 5,
+        },
+      },
+      additionalProperties: {
+        type: 'boolean',
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '{}');
+
+    expect(example).toMatchObject({
+      meta_key: 5,
+      key: true,
+    });
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
   it('处理非法或永假 Schema 时返回可读错误', () => {
     expect(generateJsonSchemaExampleText('{bad}').error).toContain('Schema 不是合法 JSON');
     expect(generateJsonSchemaExampleText('false')).toMatchObject({
