@@ -8,7 +8,7 @@ import {
   type JsonSchemaValidationResult,
   type JsonSchemaValidationStatus,
 } from '../utils/jsonSchemaValidation';
-import { inferJsonSchemaFromText } from '../utils/jsonSchemaInference';
+import { inferJsonSchemaFromText, type JsonSchemaInferenceRequiredMode } from '../utils/jsonSchemaInference';
 import {
   JSON_SCHEMA_LIBRARY_STORAGE_KEY,
   MAX_JSON_SCHEMA_LIBRARY_ITEMS,
@@ -75,6 +75,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   const [schemaLibrary, setSchemaLibrary] = useState<JsonSchemaLibraryItem[]>(() => (
     parseJsonSchemaLibrary(safeGetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY))
   ));
+  const [schemaRequiredMode, setSchemaRequiredMode] = useState<JsonSchemaInferenceRequiredMode>('strict');
   const [result, setResult] = useState<JsonSchemaValidationResult | null>(null);
 
   const validateButtonDisabledReason = useMemo(() => {
@@ -136,7 +137,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
 
   const handleGenerateSchema = useCallback(() => {
     const startedAt = performance.now();
-    const inferenceResult = inferJsonSchemaFromText(jsonData);
+    const inferenceResult = inferJsonSchemaFromText(jsonData, { requiredMode: schemaRequiredMode });
     if (!inferenceResult.schemaText) {
       trackToolEvent({
         eventName: 'SCHEMA_INFER',
@@ -144,6 +145,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
         status: 'error',
         inputSizeBucket: getTextSizeBucket(jsonData),
         durationBucket: getDurationBucket(performance.now() - startedAt),
+        source: schemaRequiredMode,
       });
       showError(inferenceResult.error || '生成 Schema 失败');
       return;
@@ -156,10 +158,11 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
       status: 'success',
       inputSizeBucket: getTextSizeBucket(jsonData),
       durationBucket: getDurationBucket(performance.now() - startedAt),
+      source: schemaRequiredMode,
     });
-    showSuccess('已根据 SOURCE 生成 Schema');
+    showSuccess(`已根据 SOURCE 生成${schemaRequiredMode === 'strict' ? '严格' : '宽松'} Schema`);
     requestAnimationFrame(() => schemaInputRef.current?.focus());
-  }, [handleSchemaChange, jsonData]);
+  }, [handleSchemaChange, jsonData, schemaRequiredMode]);
 
   const handleCopyReport = useCallback(async () => {
     if (!result) return;
@@ -301,12 +304,38 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-xs font-semibold text-gray-300">Schema</span>
             <div className="flex items-center gap-2">
+              <div
+                role="group"
+                aria-label="Schema 生成必填策略"
+                className="flex shrink-0 overflow-hidden rounded border border-editor-border"
+              >
+                {(['strict', 'loose'] as const).map(mode => {
+                  const isActive = schemaRequiredMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      data-tour={`json-schema-generate-mode-${mode}`}
+                      onClick={() => setSchemaRequiredMode(mode)}
+                      className={`px-1.5 py-1 text-[11px] transition-colors ${
+                        isActive
+                          ? 'bg-brand-primary text-white'
+                          : 'bg-editor-bg text-gray-400 hover:bg-editor-hover hover:text-gray-200'
+                      }`}
+                      aria-pressed={isActive}
+                      title={mode === 'strict' ? '生成 required 约束，适合锁定当前样例' : '不生成 required 约束，适合团队复用'}
+                    >
+                      {mode === 'strict' ? '严格' : '宽松'}
+                    </button>
+                  );
+                })}
+              </div>
               <button
                 type="button"
                 data-tour="json-schema-generate"
                 onClick={handleGenerateSchema}
                 disabled={!jsonData.trim()}
-                title={jsonData.trim() ? '根据当前 SOURCE 生成 Schema' : '请先在 SOURCE 输入 JSON'}
+                title={jsonData.trim() ? `根据当前 SOURCE 生成${schemaRequiredMode === 'strict' ? '严格' : '宽松'} Schema` : '请先在 SOURCE 输入 JSON'}
                 className="rounded border border-editor-border px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 生成
