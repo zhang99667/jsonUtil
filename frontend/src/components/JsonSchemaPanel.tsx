@@ -26,6 +26,7 @@ interface JsonSchemaPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onLocatePath: (query: string) => void;
+  onValidationResult?: (result: JsonSchemaValidationResult | null) => void;
 }
 
 const getValidationStatusLabel = (status: JsonSchemaValidationStatus): string => {
@@ -54,6 +55,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   isOpen,
   onClose,
   onLocatePath,
+  onValidationResult,
 }) => {
   const schemaInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [schemaText, setSchemaText] = useState(() => safeGetStorageItem(JSON_SCHEMA_STORAGE_KEY) || '');
@@ -66,15 +68,18 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   }, [jsonData, schemaText]);
   const isValidateDisabled = Boolean(validateButtonDisabledReason);
 
-  const handleSchemaChange = (value: string) => {
+  const handleSchemaChange = useCallback((value: string) => {
     setSchemaText(value);
     safeSetStorageItem(JSON_SCHEMA_STORAGE_KEY, value);
-  };
+    setResult(null);
+    onValidationResult?.(null);
+  }, [onValidationResult]);
 
   const handleValidate = useCallback(() => {
     const startedAt = performance.now();
     const nextResult = validateJsonAgainstSchema(jsonData, schemaText);
     setResult(nextResult);
+    onValidationResult?.(nextResult);
     trackToolEvent({
       eventName: 'SCHEMA_VALIDATE',
       category: 'schema',
@@ -82,7 +87,12 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
       inputSizeBucket: getTextSizeBucket(jsonData),
       durationBucket: getDurationBucket(performance.now() - startedAt),
     });
-  }, [jsonData, schemaText]);
+  }, [jsonData, onValidationResult, schemaText]);
+
+  React.useEffect(() => {
+    setResult(null);
+    onValidationResult?.(null);
+  }, [jsonData, onValidationResult]);
 
   const handlePasteSchema = useCallback(async () => {
     try {
@@ -92,7 +102,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     } catch (error) {
       showError(getClipboardErrorMessage(error, '读取剪贴板失败'));
     }
-  }, []);
+  }, [handleSchemaChange]);
 
   const handleCopyReport = useCallback(async () => {
     if (!result) return;
@@ -108,8 +118,9 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   const handleClearSchema = useCallback(() => {
     handleSchemaChange('');
     setResult(null);
+    onValidationResult?.(null);
     schemaInputRef.current?.focus();
-  }, []);
+  }, [handleSchemaChange, onValidationResult]);
 
   const footer = (
     <>

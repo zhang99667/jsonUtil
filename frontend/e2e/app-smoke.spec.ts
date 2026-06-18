@@ -162,6 +162,8 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
   await expect(schemaPanel.locator('[data-tour="json-schema-status"]')).toContainText('未通过');
   await expect(schemaPanel.locator('[data-tour="json-schema-summary"]')).toContainText('当前 JSON 不符合 Schema');
   await expect(schemaPanel.locator('[data-tour="json-schema-issues"]')).toContainText('$.items[0].price');
+  await expect(page.locator('[data-tour="source-editor"]')).toContainText('Schema 未通过 1 个问题');
+  await expect(page.locator('[data-tour="source-editor"] .schema-issue-highlight')).toHaveCount(1);
 
   await schemaPanel.locator('[data-tour="json-schema-locate-issue"]').first().click();
   const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
@@ -180,6 +182,7 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
   await schemaPanel.locator('[data-tour="json-schema-validate-button"]').click();
   await expect(schemaPanel.locator('[data-tour="json-schema-status"]')).toContainText('通过');
   await expect(schemaPanel.locator('[data-tour="json-schema-summary"]')).toContainText('当前 JSON 符合 Schema');
+  await expect(page.locator('[data-tour="source-editor"] .schema-issue-highlight')).toHaveCount(0);
 });
 
 test('浮动面板支持键盘关闭并恢复入口焦点', async ({ page }) => {

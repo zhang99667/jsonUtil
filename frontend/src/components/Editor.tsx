@@ -65,6 +65,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   onCloseFile,
   onNewTab,
   highlightRange,
+  diagnosticHighlights,
   onFocus,
   onCursorPositionChange,
   onSaveViewState,
@@ -78,6 +79,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const monaco = useMonaco();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const decorationsCollectionRef = useRef<editor.IEditorDecorationsCollection | null>(null);
+  const diagnosticDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
 
   // Scheme 检测状态
   const [schemeLocations, setSchemeLocations] = useState<SchemeLocation[]>([]);
@@ -310,6 +312,38 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     if (!locateErrorSignal) return;
     handleLocateError();
   }, [handleLocateError, locateErrorSignal]);
+
+  useEffect(() => {
+    if (!editorRef.current || !monaco) return;
+
+    if (!diagnosticHighlights || diagnosticHighlights.length === 0) {
+      diagnosticDecorationsRef.current?.clear();
+      return;
+    }
+
+    const decorations: editor.IModelDeltaDecoration[] = diagnosticHighlights.map(issue => ({
+      range: new monaco.Range(
+        issue.range.startLine,
+        issue.range.startColumn,
+        issue.range.endLine,
+        issue.range.endColumn
+      ),
+      options: {
+        className: 'schema-issue-highlight',
+        hoverMessage: {
+          value: `**JSON Schema** \`${issue.path}\`\n\n\`${issue.keyword}\`: ${issue.message}`,
+        },
+        overviewRuler: {
+          color: 'rgba(248, 113, 113, 0.9)',
+          position: monaco.editor.OverviewRulerLane.Right,
+        },
+        stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+      },
+    }));
+
+    diagnosticDecorationsRef.current?.clear();
+    diagnosticDecorationsRef.current = editorRef.current.createDecorationsCollection(decorations);
+  }, [diagnosticHighlights, monaco]);
 
   const handleCopyError = useCallback(async () => {
     if (!error) return;

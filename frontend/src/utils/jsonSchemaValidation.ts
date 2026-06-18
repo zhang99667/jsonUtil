@@ -6,6 +6,7 @@ export type JsonSchemaValidationStatus = 'empty' | 'valid' | 'invalid' | 'input-
 
 export interface JsonSchemaIssue {
   path: string;
+  pointer: string;
   keyword: string;
   message: string;
   schemaPath: string;
@@ -37,6 +38,10 @@ const parseJson = (value: string, label: string): { value?: unknown; error?: str
 
 const decodeJsonPointerSegment = (segment: string): string => (
   segment.replace(/~1/g, '/').replace(/~0/g, '~')
+);
+
+const encodeJsonPointerSegment = (segment: string): string => (
+  segment.replace(/~/g, '~0').replace(/\//g, '~1')
 );
 
 const escapeJsonPathKey = (key: string): string => (
@@ -84,12 +89,29 @@ const getAjvForSchema = (schema: unknown) => {
   return new Ajv(options);
 };
 
-const toIssue = (error: ErrorObject): JsonSchemaIssue => ({
-  path: jsonPointerToJsonPath(error.instancePath),
-  keyword: error.keyword,
-  message: error.message || '不符合 JSON Schema 约束',
-  schemaPath: error.schemaPath,
-});
+const getIssuePointer = (error: ErrorObject): string => {
+  const pointer = error.instancePath || '';
+
+  if (error.keyword === 'additionalProperties') {
+    const additionalProperty = (error.params as { additionalProperty?: unknown }).additionalProperty;
+    if (typeof additionalProperty === 'string') {
+      return `${pointer}/${encodeJsonPointerSegment(additionalProperty)}`;
+    }
+  }
+
+  return pointer;
+};
+
+const toIssue = (error: ErrorObject): JsonSchemaIssue => {
+  const pointer = getIssuePointer(error);
+  return {
+    pointer,
+    path: jsonPointerToJsonPath(pointer),
+    keyword: error.keyword,
+    message: error.message || '不符合 JSON Schema 约束',
+    schemaPath: error.schemaPath,
+  };
+};
 
 export const validateJsonAgainstSchema = (
   jsonText: string,

@@ -263,6 +263,7 @@ frontend/fixtures/scheme-corpus/
 - 已新增 `perf:e2e` 浏览器 Worker 端到端性能预算，覆盖 JSONPath 取消响应、Scheme 取消响应和连续大 response 解析，并在 CI 中输出 JSON artifact / Step Summary。
 - 管理后台工具事件洞察已新增 PM 周报视图，按统计周期聚合高频功能、失败率、大输入和慢操作，并输出重点关注与下周动作。
 - 已新增 JSON Schema 校验浮动面板，支持粘贴 Schema 校验当前 SOURCE JSON，展示错误 JSONPath、Schema 关键字和 Schema 路径，并可一键交给 JSONPath 面板定位。
+- JSON Schema 校验结果已支持 SOURCE 编辑器内错误标记，校验未通过时会在原字段位置显示高亮和 hover 说明，头部同步提示问题数量，额外字段会优先定位到具体字段。
 
 ## 两周迭代建议
 
