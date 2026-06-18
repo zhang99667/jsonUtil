@@ -22,7 +22,7 @@
   - `npm run perf:scheme -- --iterations 3 --strict` 会通过复制真实 `data.video` 条目构造 50KB / 250KB 脱敏 response，校验核心解析耗时、展开记录、CMD 结构、CMD 字段、资源字段、待检查和跳过数量，并上传 `scheme-performance-budget` artifact
   - `npm run perf:jsonpath -- --iterations 3 --strict` 会复用脱敏 response 和大量命中列表，校验 JSONPath 大查询耗时、命中数、高亮范围和结果上限保护，并上传 `jsonpath-performance-budget` artifact
   - `Scheme corpus quality trend` 会用 `frontend/fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json` 对比本次生成的快照，strict 模式会把 requiredChecks 必需项失败数量增加、cmdHandler ignored extra 路径数量上升等变化视为解析质量退化，并在摘要中展示 ignored extra 路径新增/消失样例；当前 CI 还通过 `--resource-type-drop video=20`、`--resource-type-rise lottie=20` 把视频占比骤降或 Lottie 占比异常上升纳入门禁，并上传 `scheme-corpus-quality-trend` artifact
-- `backend`: `mvn -B test`、`mvn -B package -DskipTests`
+- `backend`: `mvn -B test`、`node scripts/ci/check-backend-api-matrix.mjs`、`mvn -B package -DskipTests`
 - `docker`: `docker build ./backend`、`docker build ./frontend`、带测试环境变量执行 `docker compose config`
 
 #### 质量趋势基线更新
@@ -60,6 +60,8 @@ bash scripts/ci/local-ci.sh
 如果本机没有 Maven，脚本会尝试使用 `maven:3.9-eclipse-temurin-17` Docker 镜像运行后端检查。此时需要 Docker daemon 已启动。
 
 本地 CI 的 `docker compose config` 会使用仅用于配置校验的假环境变量填充 `POSTGRES_PASSWORD`、`SPRING_DATASOURCE_PASSWORD` 和 `JWT_SECRET`，因此不依赖本机存在生产 `.env` 文件。
+
+本地 CI 还会运行 `node scripts/ci/check-backend-api-matrix.mjs`，扫描后端 Controller 并校验所有 API 都已写入 [后端 API 权限矩阵](BACKEND-API-MATRIX.md)，避免新增接口绕过权限文档评审。
 
 ## 本机直连服务器部署
 
