@@ -3,6 +3,7 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { copyText, getClipboardErrorMessage, readClipboardText } from '../utils/clipboard';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
+  formatJsonSchemaIssueChecklistText,
   formatJsonSchemaValidationReport,
   validateJsonAgainstSchema,
   type JsonSchemaValidationResult,
@@ -84,6 +85,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     return '';
   }, [jsonData, schemaText]);
   const isValidateDisabled = Boolean(validateButtonDisabledReason);
+  const canCopyIssueChecklist = Boolean(result?.issues.length);
 
   const handleSchemaChange = useCallback((value: string) => {
     setSchemaText(value);
@@ -175,6 +177,17 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     }
   }, [result]);
 
+  const handleCopyIssueChecklist = useCallback(async () => {
+    if (!result || result.issues.length === 0) return;
+
+    try {
+      await copyText(formatJsonSchemaIssueChecklistText(result));
+      showSuccess('已复制 Schema 修复清单');
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制清单失败'));
+    }
+  }, [result]);
+
   const handleClearSchema = useCallback(() => {
     handleSchemaChange('');
     setResult(null);
@@ -260,6 +273,16 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
         {validateButtonDisabledReason || '校验当前 SOURCE JSON'}
       </div>
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          data-tour="json-schema-copy-checklist"
+          onClick={() => void handleCopyIssueChecklist()}
+          disabled={!canCopyIssueChecklist}
+          title={canCopyIssueChecklist ? '复制当前失败项的修复清单' : '校验失败后可复制修复清单'}
+          className="rounded border border-editor-border px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          复制清单
+        </button>
         <button
           type="button"
           data-tour="json-schema-copy-report"

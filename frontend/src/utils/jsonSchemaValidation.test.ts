@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  formatJsonSchemaIssueChecklistText,
   formatJsonSchemaValidationReport,
   jsonPointerToJsonPath,
   validateJsonAgainstSchema,
@@ -157,5 +158,21 @@ describe('jsonSchemaValidation', () => {
     expect(report).toContain('建议: 调整该路径的数值到 Schema 允许范围');
     expect(report).not.toContain('"订单"');
     expect(report).not.toContain('"required"');
+  });
+
+  it('复制修复清单输出可分发的待办项', () => {
+    const result = validateJsonAgainstSchema(
+      JSON.stringify({ name: '订单', items: [{ price: 0 }] }),
+      schema
+    );
+    const checklist = formatJsonSchemaIssueChecklistText(result);
+
+    expect(checklist).toContain('JSON Schema 修复清单');
+    expect(checklist).toContain('问题分布: minimum 1');
+    expect(checklist).toContain('- [ ] $.items[0].price [minimum]');
+    expect(checklist).toContain('建议: 调整该路径的数值到 Schema 允许范围');
+    expect(checklist).toContain('Schema: #/properties/items/items/properties/price/minimum');
+    expect(checklist).not.toContain('"订单"');
+    expect(checklist).not.toContain('"required"');
   });
 });

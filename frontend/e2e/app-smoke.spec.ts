@@ -174,6 +174,9 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
   await expect(schemaPanel.locator('[data-tour="json-schema-issues"]')).toContainText('$.items[0].price');
   await expect(page.locator('[data-tour="source-editor"]')).toContainText('Schema 未通过 1 个问题');
   await expect(page.locator('[data-tour="source-editor"] .schema-issue-highlight')).toHaveCount(1);
+  await expect(schemaPanel.locator('[data-tour="json-schema-copy-checklist"]')).toBeEnabled();
+  await schemaPanel.locator('[data-tour="json-schema-copy-checklist"]').click();
+  await expect(page.getByText('已复制 Schema 修复清单')).toBeVisible();
 
   await schemaPanel.locator('[data-tour="json-schema-locate-issue"]').first().click();
   const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
