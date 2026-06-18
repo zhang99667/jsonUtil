@@ -105,7 +105,7 @@
 
 ### 5. 代码质量工具配置
 
-#### ✅ frontend/.eslintrc.cjs
+#### ✅ frontend/eslint.config.js
 - ESLint 配置
 - TypeScript 和 React 规则
 - 自定义规则设置
@@ -153,7 +153,7 @@
 │   └── PULL_REQUEST_TEMPLATE.md       # PR 模板
 │
 └── frontend/                          # 前端代码质量配置 ✨
-    ├── .eslintrc.cjs                  # ESLint 配置
+    ├── eslint.config.js               # ESLint 配置
     ├── .prettierrc.json               # Prettier 配置
     └── .prettierignore                # Prettier 忽略
 
@@ -264,7 +264,7 @@
 - [x] .github/ISSUE_TEMPLATE/bug_report.yml
 - [x] .github/ISSUE_TEMPLATE/feature_request.yml
 - [x] .github/PULL_REQUEST_TEMPLATE.md
-- [x] frontend/.eslintrc.cjs
+- [x] frontend/eslint.config.js
 - [x] frontend/.prettierrc.json
 - [x] frontend/.prettierignore
 
