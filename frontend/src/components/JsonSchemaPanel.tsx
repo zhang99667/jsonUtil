@@ -348,6 +348,23 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
         return;
       }
 
+      const skippedParts = [
+        importResult.skippedCount > 0 ? `跳过 ${importResult.skippedCount} 个重复项` : '',
+        importResult.invalidCount > 0 ? `跳过 ${importResult.invalidCount} 个无效项` : '',
+      ].filter(Boolean);
+      const skippedText = skippedParts.length > 0 ? `，${skippedParts.join('，')}` : '';
+
+      if (importResult.importedCount === 0) {
+        trackToolEvent({
+          eventName: 'SCHEMA_LIBRARY_IMPORT',
+          category: 'schema',
+          status: 'error',
+          inputSizeBucket: getTextSizeBucket(text),
+        });
+        showError(`未导入 Schema${skippedText || '，剪贴板中没有有效 Schema'}`);
+        return;
+      }
+
       persistSchemaLibrary(importResult.items);
       trackToolEvent({
         eventName: 'SCHEMA_LIBRARY_IMPORT',
@@ -355,7 +372,6 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
         status: 'success',
         inputSizeBucket: getTextSizeBucket(text),
       });
-      const skippedText = importResult.skippedCount > 0 ? `，跳过 ${importResult.skippedCount} 个重复项` : '';
       showSuccess(`已导入 ${importResult.importedCount} 个 Schema${skippedText}`);
     } catch (error) {
       showError(getClipboardErrorMessage(error, '导入收藏失败'));

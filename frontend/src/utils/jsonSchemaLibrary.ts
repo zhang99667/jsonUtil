@@ -22,6 +22,7 @@ export interface JsonSchemaLibraryImportResult {
   items: JsonSchemaLibraryItem[];
   importedCount: number;
   skippedCount: number;
+  invalidCount: number;
 }
 
 export const MAX_JSON_SCHEMA_LIBRARY_ITEMS = 12;
@@ -163,6 +164,26 @@ const looksLikeJsonSchemaObject = (value: Record<string, unknown>): boolean => (
     .some(key => key in value)
 );
 
+const isImportableJsonSchemaValue = (value: unknown): boolean => (
+  typeof value === 'boolean' || (isRecord(value) && looksLikeJsonSchemaObject(value))
+);
+
+const createImportableJsonSchemaLibraryItem = (
+  schemaText: string,
+  now: number
+): JsonSchemaLibraryItem | null => {
+  const normalizedSchemaText = normalizeSchemaText(schemaText);
+  if (!normalizedSchemaText) return null;
+
+  try {
+    if (!isImportableJsonSchemaValue(JSON.parse(normalizedSchemaText))) return null;
+  } catch {
+    return null;
+  }
+
+  return createJsonSchemaLibraryItem(normalizedSchemaText, now);
+};
+
 const stringifySchemaObject = (value: unknown): string | null => {
   try {
     return JSON.stringify(value, null, 2);
@@ -172,6 +193,10 @@ const stringifySchemaObject = (value: unknown): string | null => {
 };
 
 const collectImportSchemaTexts = (value: unknown): string[] => {
+  if (typeof value === 'boolean') {
+    return [JSON.stringify(value)];
+  }
+
   if (typeof value === 'string') {
     const normalized = value.trim();
     return normalized ? [normalized] : [];
@@ -220,10 +245,18 @@ export const importJsonSchemaLibrary = (
 
   const importedItems: JsonSchemaLibraryItem[] = [];
   const importedIds = new Set<string>();
+  let skippedCount = 0;
+  let invalidCount = 0;
 
   schemaTexts.forEach((schemaText, index) => {
-    const item = createJsonSchemaLibraryItem(schemaText, now + index);
-    if (!item || importedIds.has(item.id)) {
+    const item = createImportableJsonSchemaLibraryItem(schemaText, now + index);
+    if (!item) {
+      invalidCount += 1;
+      return;
+    }
+
+    if (importedIds.has(item.id)) {
+      skippedCount += 1;
       return;
     }
 
@@ -231,7 +264,7 @@ export const importJsonSchemaLibrary = (
     importedItems.push(item);
   });
 
-  if (importedItems.length === 0) return null;
+  if (importedItems.length === 0 && invalidCount === 0) return null;
 
   const nextItems = [
     ...importedItems,
@@ -241,6 +274,7 @@ export const importJsonSchemaLibrary = (
   return {
     items: nextItems,
     importedCount: importedItems.length,
-    skippedCount: schemaTexts.length - importedItems.length,
+    skippedCount,
+    invalidCount,
   };
 };

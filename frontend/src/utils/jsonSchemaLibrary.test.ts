@@ -91,6 +91,7 @@ describe('jsonSchemaLibrary', () => {
     expect(result).toMatchObject({
       importedCount: 2,
       skippedCount: 0,
+      invalidCount: 0,
     });
     expect(result?.items.map(item => item.name)).toEqual(['导入 A', '导入 B', '现有']);
   });
@@ -118,8 +119,58 @@ describe('jsonSchemaLibrary', () => {
 
     expect(result?.importedCount).toBe(2);
     expect(result?.skippedCount).toBe(1);
+    expect(result?.invalidCount).toBe(0);
     expect(result?.items).toHaveLength(MAX_JSON_SCHEMA_LIBRARY_ITEMS);
     expect(result?.items.slice(0, 2).map(item => item.name)).toEqual(['重复', '新增']);
+  });
+
+  it('导入共享包时跳过无效 schemaText 并单独计数', () => {
+    const importText = JSON.stringify({
+      source: 'JSON_SCHEMA_LIBRARY_EXPORT',
+      items: [
+        { schemaText: '{"title":"有效 A","type":"object"}' },
+        { schemaText: '{"title":"有效 A","type":"object"}' },
+        { schemaText: '{"title":"有效 B","type":"boolean"}' },
+        { schemaText: '{"foo":"bar"}' },
+        { schemaText: 'not json' },
+      ],
+    });
+    const result = importJsonSchemaLibrary([], importText, 20);
+
+    expect(result).toMatchObject({
+      importedCount: 2,
+      skippedCount: 1,
+      invalidCount: 2,
+    });
+    expect(result?.items.map(item => item.name)).toEqual(['有效 A', '有效 B']);
+  });
+
+  it('导入包只有无效 schemaText 时返回无效计数且不写入收藏', () => {
+    const result = importJsonSchemaLibrary([], JSON.stringify({
+      source: 'JSON_SCHEMA_LIBRARY_EXPORT',
+      items: [
+        { schemaText: '{"foo":"bar"}' },
+        { schemaText: 'not json' },
+      ],
+    }), 30);
+
+    expect(result).toEqual({
+      items: [],
+      importedCount: 0,
+      skippedCount: 0,
+      invalidCount: 2,
+    });
+  });
+
+  it('支持导入布尔 JSON Schema', () => {
+    const result = importJsonSchemaLibrary([], 'true', 1);
+
+    expect(result).toMatchObject({
+      importedCount: 1,
+      skippedCount: 0,
+      invalidCount: 0,
+    });
+    expect(result?.items[0].schemaText).toBe('true');
   });
 
   it('拒绝无法识别的导入内容', () => {
