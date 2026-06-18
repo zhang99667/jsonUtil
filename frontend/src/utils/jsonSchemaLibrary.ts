@@ -26,6 +26,7 @@ export interface JsonSchemaLibraryImportResult {
 
 export const MAX_JSON_SCHEMA_LIBRARY_ITEMS = 12;
 export const JSON_SCHEMA_LIBRARY_EXPORT_SOURCE = 'JSON_SCHEMA_LIBRARY_EXPORT';
+export const JSON_SCHEMA_LIBRARY_STORAGE_KEY = 'json-schema-panel-library';
 
 const MAX_SCHEMA_NAME_LENGTH = 64;
 
