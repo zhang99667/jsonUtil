@@ -189,6 +189,24 @@ const getDependentRequiredKeys = (
   return uniqueKeys(keys);
 };
 
+const getDependentSchemaNodes = (
+  schema: Record<string, unknown>,
+  presentKeys: Set<string>
+): JsonSchemaNode[] => {
+  const schemas: JsonSchemaNode[] = [];
+  const dependentSchemas = isRecord(schema.dependentSchemas) ? schema.dependentSchemas : {};
+  Object.entries(dependentSchemas).forEach(([key, value]) => {
+    if (presentKeys.has(key) && (isRecord(value) || typeof value === 'boolean')) schemas.push(value);
+  });
+
+  const dependencies = isRecord(schema.dependencies) ? schema.dependencies : {};
+  Object.entries(dependencies).forEach(([key, value]) => {
+    if (presentKeys.has(key) && (isRecord(value) || typeof value === 'boolean')) schemas.push(value);
+  });
+
+  return schemas.slice(0, MAX_OBJECT_EXAMPLE_PROPERTIES);
+};
+
 const getSchemaProperties = (schema: Record<string, unknown>): Record<string, JsonSchemaNode> => {
   if (!isRecord(schema.properties)) return {};
 
@@ -762,7 +780,17 @@ const generateArrayExample = (schema: Record<string, unknown>, context: ExampleC
   return ensureUniqueArrayValues(values, valueSchemas, itemContext);
 };
 
-const addDependentRequiredEntries = (
+const isObjectDependencyKeyAllowed = (
+  key: string,
+  properties: Record<string, JsonSchemaNode>,
+  propertyNamesSchema: JsonSchemaNode | undefined,
+  additionalPropertiesSchema: JsonSchemaNode | false | undefined
+): boolean => (
+  isPropertyNameAllowed(key, propertyNamesSchema) &&
+  (key in properties || additionalPropertiesSchema !== false)
+);
+
+const addObjectDependencyEntries = (
   entries: Map<string, unknown>,
   schema: Record<string, unknown>,
   properties: Record<string, JsonSchemaNode>,
@@ -773,10 +801,11 @@ const addDependentRequiredEntries = (
   let hasAddedEntry = true;
   while (hasAddedEntry && entries.size < MAX_OBJECT_EXAMPLE_PROPERTIES) {
     hasAddedEntry = false;
-    const keys = getDependentRequiredKeys(schema, new Set(entries.keys()));
+    const presentKeys = new Set(entries.keys());
+    const keys = getDependentRequiredKeys(schema, presentKeys);
     for (const key of keys) {
       if (entries.has(key) || entries.size >= MAX_OBJECT_EXAMPLE_PROPERTIES) continue;
-      if (!isPropertyNameAllowed(key, propertyNamesSchema)) continue;
+      if (!isObjectDependencyKeyAllowed(key, properties, propertyNamesSchema, additionalPropertiesSchema)) continue;
 
       const valueSchema = properties[key] || (
         additionalPropertiesSchema === false ? undefined : additionalPropertiesSchema || {}
@@ -786,6 +815,19 @@ const addDependentRequiredEntries = (
       const value = generateExampleValue(valueSchema, { ...context, depth: context.depth + 1 });
       entries.set(key, value === undefined ? null : value);
       hasAddedEntry = true;
+    }
+
+    const dependentSchemaExamples = getDependentSchemaNodes(schema, presentKeys)
+      .map(dependentSchema => generateExampleValue(dependentSchema, { ...context, depth: context.depth + 1 }))
+      .filter(isRecord);
+    for (const example of dependentSchemaExamples) {
+      for (const [key, value] of Object.entries(example)) {
+        if (entries.has(key) || entries.size >= MAX_OBJECT_EXAMPLE_PROPERTIES) continue;
+        if (!isObjectDependencyKeyAllowed(key, properties, propertyNamesSchema, additionalPropertiesSchema)) continue;
+
+        entries.set(key, value);
+        hasAddedEntry = true;
+      }
     }
   }
 };
@@ -805,7 +847,7 @@ const generateObjectExample = (schema: Record<string, unknown>, context: Example
     const value = generateExampleValue(properties[key] || {}, { ...context, depth: context.depth + 1 });
     entries.set(key, value === undefined ? null : value);
   });
-  addDependentRequiredEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
+  addObjectDependencyEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
 
   patternProperties.forEach(([pattern, patternSchema]) => {
     if (entries.size >= MAX_OBJECT_EXAMPLE_PROPERTIES) return;
@@ -821,7 +863,7 @@ const generateObjectExample = (schema: Record<string, unknown>, context: Example
     const value = generateExampleValue(patternSchema, { ...context, depth: context.depth + 1 });
     entries.set(key, value === undefined ? null : value);
   });
-  addDependentRequiredEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
+  addObjectDependencyEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
 
   const minProperties = Math.max(getIntegerValue(schema, 'minProperties') || 0, 0);
   const extraSchema = additionalPropertiesSchema === undefined ? true : additionalPropertiesSchema;
@@ -840,7 +882,7 @@ const generateObjectExample = (schema: Record<string, unknown>, context: Example
     const value = generateExampleValue(extraSchema, { ...context, depth: context.depth + 1 });
     entries.set(key, value === undefined ? null : value);
   }
-  addDependentRequiredEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
+  addObjectDependencyEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
 
   return Object.fromEntries(entries);
 };

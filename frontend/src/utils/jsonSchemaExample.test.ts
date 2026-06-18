@@ -150,6 +150,85 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(dependenciesResult.exampleText || '', dependenciesSchemaText).status).toBe('valid');
   });
 
+  it('支持 dependentSchemas 和 schema dependencies 的对象依赖子 Schema', () => {
+    const dependentSchemasText = JSON.stringify({
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['paymentType'],
+      additionalProperties: false,
+      properties: {
+        paymentType: { const: 'card' },
+        billingAddress: {
+          type: 'string',
+          minLength: 8,
+        },
+        invoice: {
+          type: 'boolean',
+        },
+      },
+      dependentSchemas: {
+        paymentType: {
+          required: ['billingAddress'],
+          properties: {
+            billingAddress: {
+              type: 'string',
+              minLength: 8,
+            },
+            invoice: {
+              const: true,
+            },
+          },
+        },
+      },
+    });
+    const schemaDependenciesText = JSON.stringify({
+      type: 'object',
+      required: ['mode'],
+      additionalProperties: false,
+      properties: {
+        mode: { const: 'pro' },
+        quota: {
+          type: 'integer',
+          minimum: 10,
+        },
+        note: {
+          type: 'string',
+          pattern: '^PRO-[0-9]+$',
+        },
+      },
+      dependencies: {
+        mode: {
+          required: ['quota', 'note'],
+          properties: {
+            quota: {
+              type: 'integer',
+              minimum: 10,
+            },
+            note: {
+              type: 'string',
+              pattern: '^PRO-[0-9]+$',
+            },
+          },
+        },
+      },
+    });
+    const dependentSchemasResult = generateJsonSchemaExampleText(dependentSchemasText);
+    const schemaDependenciesResult = generateJsonSchemaExampleText(schemaDependenciesText);
+
+    expect(JSON.parse(dependentSchemasResult.exampleText || '{}')).toEqual({
+      paymentType: 'card',
+      billingAddress: 'stringxx',
+      invoice: true,
+    });
+    expect(JSON.parse(schemaDependenciesResult.exampleText || '{}')).toEqual({
+      mode: 'pro',
+      quota: 10,
+      note: 'PRO-1',
+    });
+    expect(validateJsonAgainstSchema(dependentSchemasResult.exampleText || '', dependentSchemasText).status).toBe('valid');
+    expect(validateJsonAgainstSchema(schemaDependenciesResult.exampleText || '', schemaDependenciesText).status).toBe('valid');
+  });
+
   it('为常见字符串 pattern 生成可校验的样例值', () => {
     const schemaText = JSON.stringify({
       type: 'object',
