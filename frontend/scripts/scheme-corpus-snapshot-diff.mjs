@@ -115,10 +115,55 @@ const listSchemas = (sample, key) => (
     .filter(Boolean)
 );
 
+const listResourceTypes = sample => (
+  (sample?.topResourceTypes || [])
+    .filter(item => item && (item.resourceType || item.resourceTypeLabel))
+    .map(item => ({
+      resourceType: item.resourceType || item.resourceTypeLabel,
+      resourceTypeLabel: item.resourceTypeLabel || item.resourceType,
+      count: item.count || 0,
+      percentage: item.percentage || 0,
+      recordCount: item.recordCount || 0,
+      schemaCount: item.schemaCount || 0,
+    }))
+);
+
+const resourceTypeKey = item => item.resourceType;
+
 const diffList = (beforeList, afterList) => ({
   lost: beforeList.filter(item => !afterList.includes(item)),
   gained: afterList.filter(item => !beforeList.includes(item)),
 });
+
+const hasResourceTypeChanged = (beforeItem, afterItem) => (
+  beforeItem.count !== afterItem.count ||
+  beforeItem.percentage !== afterItem.percentage ||
+  beforeItem.recordCount !== afterItem.recordCount ||
+  beforeItem.schemaCount !== afterItem.schemaCount
+);
+
+const diffResourceTypes = (beforeSample, afterSample) => {
+  const beforeItems = listResourceTypes(beforeSample);
+  const afterItems = listResourceTypes(afterSample);
+  const beforeMap = new Map(beforeItems.map(item => [resourceTypeKey(item), item]));
+  const afterMap = new Map(afterItems.map(item => [resourceTypeKey(item), item]));
+
+  const lost = beforeItems.filter(item => !afterMap.has(resourceTypeKey(item)));
+  const gained = afterItems.filter(item => !beforeMap.has(resourceTypeKey(item)));
+  const changed = afterItems
+    .filter(item => beforeMap.has(resourceTypeKey(item)))
+    .map(afterItem => ({
+      resourceType: afterItem.resourceType,
+      resourceTypeLabel: afterItem.resourceTypeLabel,
+      before: beforeMap.get(resourceTypeKey(afterItem)),
+      after: afterItem,
+      countDelta: afterItem.count - beforeMap.get(resourceTypeKey(afterItem)).count,
+      percentageDelta: Number((afterItem.percentage - beforeMap.get(resourceTypeKey(afterItem)).percentage).toFixed(1)),
+    }))
+    .filter(item => hasResourceTypeChanged(item.before, item.after));
+
+  return { lost, gained, changed };
+};
 
 const listCmdHandlerIgnoredExtraPaths = sample => (
   normalizeList(sample?.cmdHandlerAlignment?.diff?.ignoredExtraPaths)
@@ -293,6 +338,11 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
         lost: [],
         gained: listSchemas(afterSample, 'topResourceSchemas'),
       },
+      resourceTypes: {
+        lost: [],
+        gained: listResourceTypes(afterSample),
+        changed: [],
+      },
       cmdHandler: buildCmdHandlerChange(undefined, afterSample),
     };
   }
@@ -312,6 +362,11 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
         lost: listSchemas(beforeSample, 'topResourceSchemas'),
         gained: [],
       },
+      resourceTypes: {
+        lost: listResourceTypes(beforeSample),
+        gained: [],
+        changed: [],
+      },
       cmdHandler: buildCmdHandlerChange(beforeSample, undefined),
     };
   }
@@ -326,6 +381,7 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
     listSchemas(beforeSample, 'topResourceSchemas'),
     listSchemas(afterSample, 'topResourceSchemas')
   );
+  const resourceTypes = diffResourceTypes(beforeSample, afterSample);
   const cmdHandler = buildCmdHandlerChange(beforeSample, afterSample);
 
   commandSchemas.lost.forEach(schema => {
@@ -353,6 +409,9 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
     commandSchemas.gained.length,
     resourceSchemas.lost.length,
     resourceSchemas.gained.length,
+    resourceTypes.lost.length,
+    resourceTypes.gained.length,
+    resourceTypes.changed.length,
     cmdHandler.ignoredExtraPaths.lost.length,
     cmdHandler.ignoredExtraPaths.gained.length,
     cmdHandler.regression ? 1 : 0,
@@ -369,6 +428,7 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
     improvements,
     commandSchemas,
     resourceSchemas,
+    resourceTypes,
     cmdHandler,
   };
 };
@@ -434,6 +494,10 @@ const formatCmdHandler = cmdHandler => {
   return `${before} -> ${after}`;
 };
 
+const formatResourceTypeSummary = item => (
+  `${item.resourceTypeLabel || item.resourceType} ${item.percentage}% ×${item.count}（URL ${item.schemaCount} / 来源记录 ${item.recordCount}）`
+);
+
 export const formatSnapshotDiffMarkdown = diff => {
   const lines = [
     '# Scheme Corpus 质量趋势',
@@ -482,6 +546,30 @@ export const formatSnapshotDiffMarkdown = diff => {
     lines.push('', '## 快照级退化', '');
     diff.snapshotRegressions.forEach(regression => {
       lines.push(`- ${regression.message}: ${JSON.stringify(regression.before)} -> ${JSON.stringify(regression.after)}`);
+    });
+  }
+
+  const samplesWithResourceTypeChanges = diff.samples.filter(sample => (
+    sample.resourceTypes?.gained?.length > 0 ||
+    sample.resourceTypes?.lost?.length > 0 ||
+    sample.resourceTypes?.changed?.length > 0
+  ));
+  if (samplesWithResourceTypeChanges.length > 0) {
+    lines.push('', '## 静态资源类型占比变化', '');
+    samplesWithResourceTypeChanges.forEach(sample => {
+      lines.push(`### ${formatMarkdownValue(sample.sample)}`, '');
+      sample.resourceTypes.changed.forEach(change => {
+        lines.push(
+          `- ${formatMarkdownValue(change.resourceTypeLabel)}: ${formatResourceTypeSummary(change.before)} -> ${formatResourceTypeSummary(change.after)}（占比 ${formatSignedDelta(change.percentageDelta)}，次数 ${formatSignedDelta(change.countDelta)}）`
+        );
+      });
+      sample.resourceTypes.gained.forEach(item => {
+        lines.push(`- 新增类型: ${formatResourceTypeSummary(item)}`);
+      });
+      sample.resourceTypes.lost.forEach(item => {
+        lines.push(`- 消失类型: ${formatResourceTypeSummary(item)}`);
+      });
+      lines.push('');
     });
   }
 

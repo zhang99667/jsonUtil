@@ -35,6 +35,16 @@ const createSample = (overrides = {}) => ({
       count: 1,
     },
   ],
+  topResourceTypes: [
+    {
+      resourceType: 'video',
+      resourceTypeLabel: '视频',
+      count: 1,
+      percentage: 100,
+      recordCount: 1,
+      schemaCount: 1,
+    },
+  ],
   thresholds: {
     minCoverageScore: {
       actual: 100,
@@ -264,6 +274,65 @@ describe('buildSampleSnapshotDiff', () => {
     });
   });
 
+  it('识别静态资源类型占比变化但不作为质量退化', () => {
+    const before = createSample({
+      topResourceTypes: [
+        {
+          resourceType: 'image',
+          resourceTypeLabel: '图片',
+          count: 4,
+          percentage: 66.7,
+          recordCount: 1,
+          schemaCount: 4,
+        },
+        {
+          resourceType: 'video',
+          resourceTypeLabel: '视频',
+          count: 2,
+          percentage: 33.3,
+          recordCount: 1,
+          schemaCount: 2,
+        },
+      ],
+    });
+    const after = createSample({
+      topResourceTypes: [
+        {
+          resourceType: 'image',
+          resourceTypeLabel: '图片',
+          count: 3,
+          percentage: 50,
+          recordCount: 1,
+          schemaCount: 3,
+        },
+        {
+          resourceType: 'lottie',
+          resourceTypeLabel: 'Lottie',
+          count: 3,
+          percentage: 50,
+          recordCount: 1,
+          schemaCount: 3,
+        },
+      ],
+    });
+    const diff = buildSampleSnapshotDiff(before, after);
+
+    expect(diff.status).toBe('changed');
+    expect(diff.regressions).toEqual([]);
+    expect(diff.resourceTypes.changed).toEqual([
+      {
+        resourceType: 'image',
+        resourceTypeLabel: '图片',
+        before: before.topResourceTypes[0],
+        after: after.topResourceTypes[0],
+        countDelta: -1,
+        percentageDelta: -16.7,
+      },
+    ]);
+    expect(diff.resourceTypes.gained).toEqual([after.topResourceTypes[1]]);
+    expect(diff.resourceTypes.lost).toEqual([before.topResourceTypes[1]]);
+  });
+
   it('识别新增和删除样本', () => {
     const added = buildSampleSnapshotDiff(undefined, createSample({ sample: 'new-sample' }));
     const removed = buildSampleSnapshotDiff(createSample({ sample: 'old-sample' }), undefined);
@@ -441,6 +510,55 @@ describe('formatSnapshotDiffMarkdown', () => {
     expect(markdown).toContain('  - $.new.more');
     expect(markdown).toContain('- 消失 ignored extra 路径样例:');
     expect(markdown).toContain('  - $.old.resolved');
+  });
+
+  it('输出静态资源类型占比变化', () => {
+    const before = createSnapshot([createSample({
+      topResourceTypes: [
+        {
+          resourceType: 'image',
+          resourceTypeLabel: '图片',
+          count: 4,
+          percentage: 66.7,
+          recordCount: 1,
+          schemaCount: 4,
+        },
+        {
+          resourceType: 'video',
+          resourceTypeLabel: '视频',
+          count: 2,
+          percentage: 33.3,
+          recordCount: 1,
+          schemaCount: 2,
+        },
+      ],
+    })]);
+    const after = createSnapshot([createSample({
+      topResourceTypes: [
+        {
+          resourceType: 'image',
+          resourceTypeLabel: '图片',
+          count: 3,
+          percentage: 50,
+          recordCount: 1,
+          schemaCount: 3,
+        },
+        {
+          resourceType: 'lottie',
+          resourceTypeLabel: 'Lottie',
+          count: 3,
+          percentage: 50,
+          recordCount: 1,
+          schemaCount: 3,
+        },
+      ],
+    })]);
+    const markdown = formatSnapshotDiffMarkdown(buildSnapshotDiff(before, after));
+
+    expect(markdown).toContain('## 静态资源类型占比变化');
+    expect(markdown).toContain('- 图片: 图片 66.7% ×4（URL 4 / 来源记录 1） -> 图片 50% ×3（URL 3 / 来源记录 1）（占比 -16.7，次数 -1）');
+    expect(markdown).toContain('- 新增类型: Lottie 50% ×3（URL 3 / 来源记录 1）');
+    expect(markdown).toContain('- 消失类型: 视频 33.3% ×2（URL 2 / 来源记录 1）');
   });
 });
 

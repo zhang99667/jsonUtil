@@ -91,6 +91,14 @@ const createQualitySnapshot = () => ({
       paths: ['$.scheme.video_url'],
       hasMorePaths: false,
     }],
+    topResourceTypes: [{
+      resourceType: 'video',
+      resourceTypeLabel: '视频',
+      count: 1,
+      percentage: 100,
+      recordCount: 1,
+      schemaCount: 1,
+    }],
     topNestedCommandFields: [{
       key: 'panel_cmd',
       count: 1,
@@ -372,6 +380,12 @@ describe('buildCorpusSnapshotSample', () => {
       totals: {
         nestedResourceFields: 1,
       },
+      topResourceTypes: [{
+        resourceType: 'video',
+        resourceTypeLabel: '视频',
+        count: 1,
+        percentage: 100,
+      }],
       runtimePlaceholders: [
         {
           value: '__CONVERT_CMD__',
