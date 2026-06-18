@@ -104,6 +104,39 @@ print_section "应用目录占用"
 du -sh "$APP_DIR" 2>/dev/null || true
 find "$APP_DIR" -maxdepth 1 -mindepth 1 -exec du -sh {} + 2>/dev/null | sort -h | tail -20 || true
 
+print_section "非运行时开发残留"
+FOUND_DEV_ARTIFACTS=0
+if find "$APP_DIR" -name .DS_Store -print -quit 2>/dev/null | grep -q .; then
+  FOUND_DEV_ARTIFACTS=1
+  find "$APP_DIR" -name .DS_Store -print 2>/dev/null | sort
+fi
+
+for item in \
+  "$APP_DIR/.vscode" \
+  "$APP_DIR/.idea" \
+  "$APP_DIR/.cursor" \
+  "$APP_DIR/.comate" \
+  "$APP_DIR/.cursorrules" \
+  "$APP_DIR/AGENTS.md" \
+  "$APP_DIR/CLAUDE.md"
+do
+  if [ -e "$item" ]; then
+    FOUND_DEV_ARTIFACTS=1
+    du -sh "$item" 2>/dev/null || printf '%s\n' "$item"
+  fi
+done
+
+if [ "$FOUND_DEV_ARTIFACTS" -eq 0 ]; then
+  printf '未发现已知非运行时开发残留。\n'
+else
+  cat <<SUGGESTIONS
+这些文件已被后续部署同步排除。确认不需要保留后，可在远端应用目录执行：
+  find "$APP_DIR" -name .DS_Store -delete
+  rm -rf "$APP_DIR/.vscode" "$APP_DIR/.idea" "$APP_DIR/.cursor" "$APP_DIR/.comate"
+  rm -f "$APP_DIR/.cursorrules" "$APP_DIR/AGENTS.md" "$APP_DIR/CLAUDE.md"
+SUGGESTIONS
+fi
+
 print_section "安全清理建议"
 cat <<'SUGGESTIONS'
 只清理 Docker 未使用对象时，优先考虑：

@@ -127,6 +127,8 @@ bash scripts/deploy/ssh-disk-health.sh
 
 该脚本默认不执行清理动作；如果希望在巡检或 CI 中把水位告警转成非零退出码，可设置 `DISK_HEALTH_STRICT=true`。
 
+同步脚本会排除 `.DS_Store`、`.vscode`、`.idea`、`.cursor`、`.comate`、`.cursorrules`、`AGENTS.md`、`CLAUDE.md` 等非运行时开发文件。磁盘健康检查会列出远端历史残留，并只输出人工确认后的清理建议，不会自动删除。
+
 健康检查不会把 Nginx `301/302` 当作成功；`/api/visitor/ping` 必须跟随后端转发后返回 `200`，否则脚本会继续等待或失败。
 
 ## 远程服务器要求
