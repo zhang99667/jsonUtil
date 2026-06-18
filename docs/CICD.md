@@ -129,6 +129,28 @@ bash scripts/deploy/ssh-disk-health.sh
 
 同步脚本会排除 `.DS_Store`、`.vscode`、`.idea`、`.cursor`、`.comate`、`.cursorrules`、`AGENTS.md`、`CLAUDE.md` 等非运行时开发文件。磁盘健康检查会列出远端历史残留，并只输出人工确认后的清理建议，不会自动删除。
 
+远端历史残留可以用独立脚本清理；脚本默认 dry-run，只列候选项，不删除文件：
+
+```bash
+SSH_HOST=39.97.237.248 \
+SSH_USER=markz \
+SSH_KEY=~/.ssh/id_ed25519 \
+REMOTE_APP_DIR=/home/markz/apps/jsonUtil \
+bash scripts/deploy/ssh-prune-dev-artifacts.sh
+```
+
+确认候选项都是非运行时文件后，再显式执行：
+
+```bash
+REMOTE_CLEAN_APPLY=true \
+REMOTE_CLEAN_CONFIRM=prune-dev-artifacts \
+SSH_HOST=39.97.237.248 \
+SSH_USER=markz \
+SSH_KEY=~/.ssh/id_ed25519 \
+REMOTE_APP_DIR=/home/markz/apps/jsonUtil \
+bash scripts/deploy/ssh-prune-dev-artifacts.sh
+```
+
 健康检查不会把 Nginx `301/302` 当作成功；`/api/visitor/ping` 必须跟随后端转发后返回 `200`，否则脚本会继续等待或失败。
 
 ## 远程服务器要求
