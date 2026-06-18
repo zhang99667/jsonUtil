@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.179 (2026-06-18) - Schema 修复清单
+### ✨ 新特性
+- **JSON Schema 校验**: 校验失败后支持一键复制 Markdown 修复清单，将路径、关键字、错误说明、修复建议和 Schema 路径整理成待办项，便于跨端协作分发且不包含原始 JSON 值
+
 ## v1.8.178 (2026-06-18) - Schema 修复建议
 ### ✨ 新特性
 - **JSON Schema 校验**: 每条校验问题新增脱敏修复建议，覆盖 `required`、`type`、`additionalProperties`、数值范围、字符串格式、数组约束和组合 Schema 等常见场景，面板和复制报告共用同一口径

@@ -357,3 +357,33 @@ export const formatJsonSchemaValidationReport = (
 
   return `${lines.join('\n')}\n`;
 };
+
+export const formatJsonSchemaIssueChecklistText = (
+  result: JsonSchemaValidationResult
+): string => {
+  const lines = [
+    'JSON Schema 修复清单',
+    `摘要: ${result.summary}`,
+  ];
+
+  if (result.issueKeywordGroups.length > 0) {
+    lines.push(`问题分布: ${result.issueKeywordGroups.map(group => `${group.key} ${group.count}`).join('，')}`);
+  }
+
+  if (result.issues.length === 0) {
+    lines.push('暂无可处理的问题');
+    return `${lines.join('\n')}\n`;
+  }
+
+  result.issues.forEach((issue) => {
+    lines.push(`- [ ] ${issue.path} [${issue.keyword}] ${issue.message}`);
+    lines.push(`  - 建议: ${issue.suggestion}`);
+    lines.push(`  - Schema: ${issue.schemaPath}`);
+  });
+
+  if (result.issueCount > result.shownIssueCount) {
+    lines.push(`- [ ] 还有 ${result.issueCount - result.shownIssueCount} 个问题未展示，请在工具内继续查看`);
+  }
+
+  return `${lines.join('\n')}\n`;
+};
