@@ -24,6 +24,14 @@ on:
         description: 'Remote application directory'
         required: true
         default: '/home/markz/apps/jsonUtil'
+      deploy_mode:
+        description: 'Deploy mode'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - prebuilt-frontend
       health_check_urls:
         description: 'Space separated health check URLs on remote host'
         required: false
@@ -42,6 +50,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Node.js
+        if: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend dist
+        if: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm run check:preloads
+
       - name: Setup SSH key
         run: |
           install -m 700 -d ~/.ssh
@@ -58,27 +82,53 @@ jobs:
             "command -v rsync >/dev/null && command -v docker >/dev/null && command -v curl >/dev/null && (docker compose version >/dev/null 2>&1 || command -v docker-compose >/dev/null) && mkdir -p '${{ inputs.app_dir }}'"
 
       - name: Sync source to remote
+        env:
+          SYNC_FRONTEND_DIST: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
         run: |
+          rsync_excludes=(
+            --exclude='.git/'
+            --exclude='.github/'
+            --exclude='.claude/'
+            --exclude='.env'
+            --exclude='.env.*'
+            --exclude='artifacts/'
+            --exclude='outputs/'
+            --exclude='frontend/node_modules/'
+            --exclude='frontend/.vite/'
+            --exclude='frontend/build/'
+            --exclude='frontend/releases/'
+            --exclude='frontend/test-results/'
+            --exclude='backend/target/'
+            --exclude='node_modules/'
+            --exclude='*.log'
+          )
+
+          if [ "$SYNC_FRONTEND_DIST" != "true" ]; then
+            rsync_excludes+=(--exclude='frontend/dist/')
+          fi
+
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -p ${{ inputs.port }} -o ServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL} -o ServerAliveCountMax=${SSH_SERVER_ALIVE_COUNT_MAX}" \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='.claude/' \
-            --exclude='.env' \
-            --exclude='.env.*' \
-            --exclude='frontend/node_modules/' \
-            --exclude='frontend/dist/' \
-            --exclude='frontend/build/' \
-            --exclude='frontend/releases/' \
-            --exclude='backend/target/' \
-            --exclude='node_modules/' \
-            --exclude='*.log' \
+            "${rsync_excludes[@]}" \
             ./ "${{ inputs.user }}@${{ inputs.host }}:${{ inputs.app_dir }}/"
 
       - name: Deploy docker compose
+        env:
+          DEPLOY_MODE: ${{ inputs.deploy_mode }}
+          HEALTH_CHECK_URLS: ${{ inputs.health_check_urls }}
         run: |
+          frontend_dockerfile='Dockerfile'
+          compose_services=''
+          compose_no_deps='false'
+
+          if [ "$DEPLOY_MODE" = "prebuilt-frontend" ]; then
+            frontend_dockerfile='Dockerfile.prebuilt'
+            compose_services='app-frontend'
+            compose_no_deps='true'
+          fi
+
           ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" \
             -o ServerAliveInterval="${SSH_SERVER_ALIVE_INTERVAL}" \
             -o ServerAliveCountMax="${SSH_SERVER_ALIVE_COUNT_MAX}" \
             "${{ inputs.user }}@${{ inputs.host }}" \
-            "cd '${{ inputs.app_dir }}' && HEALTH_CHECK_URLS='${{ inputs.health_check_urls }}' bash scripts/deploy/remote-docker-compose-deploy.sh"
+            "cd '${{ inputs.app_dir }}' && HEALTH_CHECK_URLS='$HEALTH_CHECK_URLS' FRONTEND_DOCKERFILE='$frontend_dockerfile' COMPOSE_SERVICES='$compose_services' COMPOSE_NO_DEPS='$compose_no_deps' bash scripts/deploy/remote-docker-compose-deploy.sh"

@@ -46,9 +46,12 @@
 - `user`: SSH 用户，默认 `markz`
 - `port`: SSH 端口，默认 `22`
 - `app_dir`: 远程应用目录，默认 `/home/markz/apps/jsonUtil`
+- `deploy_mode`: 发布模式，`full` 为远端全量 Docker Compose 构建，`prebuilt-frontend` 为 Actions 预构建前端并只替换远端前端服务
 - `health_check_urls`: 远程健康检查 URL 列表，默认 `http://127.0.0.1 http://127.0.0.1/api/visitor/ping`
 
 CD 不依赖远程 `git pull`，而是同步当前 workflow checkout 的源码到服务器，适合服务器没有 GitHub 凭据的场景。
+
+当 `deploy_mode=prebuilt-frontend` 时，工作流会先在 GitHub runner 中执行 `npm ci`、`npm run build` 和 `npm run check:preloads`，同步 `frontend/dist` 后在远端使用 `Dockerfile.prebuilt` 只重建 `app-frontend`。该模式适合只更新前端静态资源、远端 Node/npm 网络不稳定，或希望避免后端与数据库无意义重启的场景。
 
 ## 本地 CI
 
