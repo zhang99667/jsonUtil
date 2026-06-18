@@ -67,6 +67,8 @@ bash scripts/ci/local-ci.sh
 SSH_HOST=39.97.237.248 \
 SSH_USER=markz \
 SSH_KEY=~/.ssh/id_ed25519 \
+SSH_SERVER_ALIVE_INTERVAL=15 \
+SSH_SERVER_ALIVE_COUNT_MAX=10 \
 REMOTE_APP_DIR=/home/markz/apps/jsonUtil \
 bash scripts/deploy/ssh-docker-compose-deploy.sh
 ```
@@ -75,10 +77,13 @@ bash scripts/deploy/ssh-docker-compose-deploy.sh
 
 1. 检查本机与远程部署依赖
 2. 创建远程应用目录
-3. 通过 `rsync --delete` 同步源码，排除 `.git`、`.env`、`node_modules`、构建产物等目录
-4. 在远程执行 `scripts/deploy/remote-docker-compose-deploy.sh`
-5. 运行 `docker compose up -d --build --remove-orphans`
-6. 执行健康检查
+3. 使用 SSH keepalive 参数保持长时间 Docker build 期间的连接
+4. 通过 `rsync --delete` 同步源码，排除 `.git`、`.env`、`node_modules`、构建产物等目录
+5. 在远程执行 `scripts/deploy/remote-docker-compose-deploy.sh`
+6. 运行 `docker compose up -d --build --remove-orphans`
+7. 执行健康检查
+
+`SSH_SERVER_ALIVE_INTERVAL` 与 `SSH_SERVER_ALIVE_COUNT_MAX` 默认分别为 `15` 和 `10`。如果远端构建阶段长时间无输出导致 SSH 断开，可按网络环境调大这两个值。
 
 ## 远程服务器要求
 

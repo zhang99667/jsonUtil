@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.137 (2026-06-18) - SSH 部署保活
+### ✨ 新特性
+- **部署可靠性**: 本机 SSH 部署脚本和 GitHub Actions Deploy 工作流新增 SSH keepalive 参数，长时间 Docker 构建期间默认保持连接，并支持通过 `SSH_SERVER_ALIVE_INTERVAL` / `SSH_SERVER_ALIVE_COUNT_MAX` 调整
+
 ## v1.8.136 (2026-06-18) - 前端依赖安全治理
 ### ✨ 新特性
 - **依赖安全**: 修复前端 `npm audit` 中的 Babel、DOMPurify、form-data、joi 与 `shell-quote` 风险，保留 `concurrently@9` 的 Node 20 兼容性并通过 override 使用修复版 `shell-quote`
