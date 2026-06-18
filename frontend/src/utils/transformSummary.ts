@@ -269,6 +269,7 @@ export interface TransformIssueSampleExport {
   kind: 'json-helper-transform-issue-samples';
   tool: AppVersionMetadata;
   filter: string;
+  suggestedCommands: TransformSuggestedCommand[];
   summary: {
     unresolved: {
       copied: number;
@@ -398,6 +399,13 @@ export interface TransformArchivePackageOptions extends TransformCollaborationRe
   sampleName?: string;
 }
 
+export interface TransformSuggestedCommand {
+  id: string;
+  label: string;
+  command: string;
+  description: string;
+}
+
 export interface TransformArchivePackage {
   schemaVersion: 1;
   kind: 'json-helper-transform-archive-package';
@@ -419,6 +427,7 @@ export interface TransformArchivePackage {
     cmdComparisonReportText?: string;
     cmdComparisonCandidateText?: string;
   };
+  suggestedCommands: TransformSuggestedCommand[];
   corpusCandidate: {
     recommendedFiles: string[];
     checklist: string[];
@@ -432,6 +441,11 @@ const DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT = 5;
 const DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT = 8;
 const DEFAULT_QUALITY_SNAPSHOT_PATH_LIMIT = 4;
 const ARCHIVE_OMITTED_ORIGINAL_VALUE = '[已省略，归档包默认不携带原始字段值]';
+const CMD_DIFF_STDIN_COMMAND = 'pbpaste | npm run cmd:diff -- --stdin';
+const CMD_DIFF_STDIN_IGNORE_EXTRA_COMMAND = 'pbpaste | npm run cmd:diff -- --stdin --ignore-extra';
+const ISSUE_SAMPLES_TO_REGRESSION_STDIN_COMMAND = 'pbpaste | npm run samples:to-regression -- --redact';
+const ISSUE_SAMPLES_TO_REGRESSION_FILE_COMMAND = 'npm run samples:to-regression -- --redact <issue-samples.json>';
+const CORPUS_SNAPSHOT_CHECK_COMMAND = 'npm run corpus:snapshot:check';
 export const DEFAULT_TRANSFORM_REPORT_RECORD_LIMIT = 200;
 export const DEFAULT_TRANSFORM_REPORT_WARNING_LIMIT = 100;
 export const DEFAULT_TRANSFORM_REPORT_UNRESOLVED_LIMIT = 100;
@@ -476,6 +490,45 @@ const SENSITIVE_SAMPLE_KEYWORDS = [
   'oaid',
   'idfa',
   'cuid',
+];
+
+const buildCmdComparisonSuggestedCommands = (): TransformSuggestedCommand[] => [
+  {
+    id: 'cmd-diff-stdin',
+    label: '对比 actual/expected',
+    command: CMD_DIFF_STDIN_COMMAND,
+    description: '复制当前对比包后直接运行，输出 cmdHandler 结构差异。',
+  },
+  {
+    id: 'cmd-diff-stdin-ignore-extra',
+    label: '忽略 actual 额外路径对比',
+    command: CMD_DIFF_STDIN_IGNORE_EXTRA_COMMAND,
+    description: 'expected 只保存稳定子集时使用，避免 actual 额外展开字段造成噪音。',
+  },
+];
+
+const buildIssueSampleSuggestedCommands = (): TransformSuggestedCommand[] => [
+  {
+    id: 'issue-samples-to-regression-stdin',
+    label: '生成回归测试模板',
+    command: ISSUE_SAMPLES_TO_REGRESSION_STDIN_COMMAND,
+    description: '复制问题样本 JSON 后直接运行，输出可补断言的 Vitest 模板。',
+  },
+];
+
+const buildArchiveSuggestedCommands = (): TransformSuggestedCommand[] => [
+  {
+    id: 'issue-samples-to-regression-file',
+    label: '沉淀问题样本回归',
+    command: ISSUE_SAMPLES_TO_REGRESSION_FILE_COMMAND,
+    description: '先将 artifacts.issueSamples 保存为 issue-samples.json，再生成可补断言的回归测试模板。',
+  },
+  {
+    id: 'corpus-snapshot-check',
+    label: '校验 corpus 质量基线',
+    command: CORPUS_SNAPSHOT_CHECK_COMMAND,
+    description: '按 recommendedFiles 补齐脱敏 response、expected snapshot 和 cmdHandler expected 后运行。',
+  },
 ];
 
 const STEP_LABELS: Record<TransformStepType, string> = {
@@ -931,6 +984,7 @@ export const formatTransformCmdStructureComparisonPackageText = (
       tool: APP_VERSION_METADATA,
       path: record.path,
       ...(record.sourceLabel ? { sourceLabel: record.sourceLabel } : {}),
+      suggestedCommands: buildCmdComparisonSuggestedCommands(),
       actual: JSON.parse(cmdStructureCopyText) as unknown,
       expected: {},
     }, null, 2);
@@ -3324,6 +3378,7 @@ export const buildTransformIssueSampleExport = (
     kind: 'json-helper-transform-issue-samples',
     tool: APP_VERSION_METADATA,
     filter: formatTransformExportFilter(options.filter),
+    suggestedCommands: buildIssueSampleSuggestedCommands(),
     summary: {
       unresolved: {
         copied: reportView.unresolvedCandidates.length,
@@ -3590,6 +3645,7 @@ export const buildTransformArchivePackage = (
       ],
     },
     artifacts,
+    suggestedCommands: buildArchiveSuggestedCommands(),
     corpusCandidate: {
       recommendedFiles: [
         `${sampleName}.redacted.json`,

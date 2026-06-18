@@ -124,6 +124,20 @@ describe('transformSummary', () => {
       kind: 'json-helper-cmd-structure-comparison-package',
       tool: APP_VERSION_METADATA,
       path: '$.cmd',
+      suggestedCommands: [
+        {
+          id: 'cmd-diff-stdin',
+          label: '对比 actual/expected',
+          command: 'pbpaste | npm run cmd:diff -- --stdin',
+          description: '复制当前对比包后直接运行，输出 cmdHandler 结构差异。',
+        },
+        {
+          id: 'cmd-diff-stdin-ignore-extra',
+          label: '忽略 actual 额外路径对比',
+          command: 'pbpaste | npm run cmd:diff -- --stdin --ignore-extra',
+          description: 'expected 只保存稳定子集时使用，避免 actual 额外展开字段造成噪音。',
+        },
+      ],
       actual: {
         result: {
           cmdParams: {
@@ -1808,6 +1822,14 @@ describe('transformSummary', () => {
       kind: 'json-helper-transform-issue-samples',
       tool: APP_VERSION_METADATA,
       filter: '全部',
+      suggestedCommands: [
+        {
+          id: 'issue-samples-to-regression-stdin',
+          label: '生成回归测试模板',
+          command: 'pbpaste | npm run samples:to-regression -- --redact',
+          description: '复制问题样本 JSON 后直接运行，输出可补断言的 Vitest 模板。',
+        },
+      ],
       summary: {
         unresolved: { copied: 1, filtered: 1, total: 1, truncated: false },
         runtimePlaceholders: { copied: 1, filtered: 1, total: 1, truncated: false },
@@ -2202,6 +2224,20 @@ describe('transformSummary', () => {
           filter: '全部',
         },
       },
+      suggestedCommands: [
+        {
+          id: 'issue-samples-to-regression-file',
+          label: '沉淀问题样本回归',
+          command: 'npm run samples:to-regression -- --redact <issue-samples.json>',
+          description: '先将 artifacts.issueSamples 保存为 issue-samples.json，再生成可补断言的回归测试模板。',
+        },
+        {
+          id: 'corpus-snapshot-check',
+          label: '校验 corpus 质量基线',
+          command: 'npm run corpus:snapshot:check',
+          description: '按 recommendedFiles 补齐脱敏 response、expected snapshot 和 cmdHandler expected 后运行。',
+        },
+      ],
       corpusCandidate: {
         recommendedFiles: [
           'reward-response.redacted.json',

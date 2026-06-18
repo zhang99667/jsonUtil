@@ -94,6 +94,8 @@ npm run perf:jsonpath -- --iterations 3 --strict
 
 `cmd:diff` 用于对齐本工具解析出的 CMD 结构与内部 cmdHandler expected。actual 可以是本工具复制的 CMD 结构，也可以是整段真实 response；expected 可以是 cmdHandler JSON、树形可见文本、日志片段、Markdown 代码块或字符串化 JSON。
 
+页面复制出的 CMD 对比包、问题样本 JSON 和深度解析归档包会内置 `suggestedCommands`，可直接看到下一步建议命令，把页面排查结果衔接到 CLI 对比、回归模板生成和 corpus 基线校验。
+
 ```bash
 # 对比两个文件
 npm run cmd:diff -- actual.json expected.json
