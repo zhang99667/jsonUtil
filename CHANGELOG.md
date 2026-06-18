@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.178 (2026-06-18) - Schema 修复建议
+### ✨ 新特性
+- **JSON Schema 校验**: 每条校验问题新增脱敏修复建议，覆盖 `required`、`type`、`additionalProperties`、数值范围、字符串格式、数组约束和组合 Schema 等常见场景，面板和复制报告共用同一口径
+
 ## v1.8.177 (2026-06-18) - Schema 问题分布
 ### ✨ 新特性
 - **JSON Schema 校验**: 校验失败结果新增关键字问题分布和路径清单，复制报告会携带不含原始值的修复清单，便于协作者快速定位 `required`、`type`、`additionalProperties` 等高频问题

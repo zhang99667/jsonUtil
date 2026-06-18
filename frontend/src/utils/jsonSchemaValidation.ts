@@ -10,6 +10,7 @@ export interface JsonSchemaIssue {
   keyword: string;
   message: string;
   schemaPath: string;
+  suggestion: string;
 }
 
 export interface JsonSchemaIssueGroup {
@@ -109,6 +110,71 @@ const getIssuePointer = (error: ErrorObject): string => {
   return pointer;
 };
 
+const getErrorParamText = (error: ErrorObject, key: string): string => {
+  const value = (error.params as Record<string, unknown>)[key];
+
+  if (Array.isArray(value)) return value.map(item => String(item)).join(', ');
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  return '';
+};
+
+const getIssueSuggestion = (error: ErrorObject): string => {
+  const missingProperty = getErrorParamText(error, 'missingProperty');
+  const additionalProperty = getErrorParamText(error, 'additionalProperty');
+  const expectedType = getErrorParamText(error, 'type');
+
+  if (error.keyword === 'required') {
+    return missingProperty
+      ? `补齐必填字段 ${missingProperty}，或从 Schema required 中移除该字段。`
+      : '补齐缺失的必填字段，或放宽 Schema required 约束。';
+  }
+
+  if (error.keyword === 'type') {
+    return expectedType
+      ? `将该路径调整为 ${expectedType} 类型，或放宽 Schema type 约束。`
+      : '将该路径调整为 Schema 要求的类型，或放宽 type 约束。';
+  }
+
+  if (error.keyword === 'additionalProperties') {
+    return additionalProperty
+      ? `移除未声明字段 ${additionalProperty}，或在 Schema properties 中声明它。`
+      : '移除未声明字段，或在 Schema properties / patternProperties 中声明它。';
+  }
+
+  if (['enum', 'const'].includes(error.keyword)) {
+    return '改成 Schema 允许的取值，或确认业务允许后扩展枚举/常量约束。';
+  }
+
+  if (['minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum', 'multipleOf'].includes(error.keyword)) {
+    return '调整该路径的数值到 Schema 允许范围，或放宽数值边界约束。';
+  }
+
+  if (['minLength', 'maxLength', 'pattern', 'format'].includes(error.keyword)) {
+    return '调整该路径的字符串内容以符合长度、格式或正则约束。';
+  }
+
+  if (['minItems', 'maxItems', 'uniqueItems', 'contains'].includes(error.keyword)) {
+    return '调整数组元素数量、唯一性或必含元素，或放宽数组约束。';
+  }
+
+  if (['minProperties', 'maxProperties', 'propertyNames'].includes(error.keyword)) {
+    return '调整对象字段数量或字段名，或放宽对象结构约束。';
+  }
+
+  if (['oneOf', 'anyOf', 'allOf', 'not'].includes(error.keyword)) {
+    return '检查组合 Schema 分支，确保该路径只匹配业务期望的约束组合。';
+  }
+
+  if (['dependentRequired', 'dependencies'].includes(error.keyword)) {
+    return '补齐依赖字段，或调整 Schema 中的字段依赖约束。';
+  }
+
+  return '按 Schema 路径检查对应约束，确认应修正 JSON 数据还是放宽 Schema。';
+};
+
 const toIssue = (error: ErrorObject): JsonSchemaIssue => {
   const pointer = getIssuePointer(error);
   return {
@@ -117,6 +183,7 @@ const toIssue = (error: ErrorObject): JsonSchemaIssue => {
     keyword: error.keyword,
     message: error.message || '不符合 JSON Schema 约束',
     schemaPath: error.schemaPath,
+    suggestion: getIssueSuggestion(error),
   };
 };
 
@@ -280,6 +347,7 @@ export const formatJsonSchemaValidationReport = (
     lines.push('问题:');
     result.issues.forEach((issue, index) => {
       lines.push(`${index + 1}. ${issue.path} [${issue.keyword}] ${issue.message}`);
+      lines.push(`   建议: ${issue.suggestion}`);
     });
   }
 

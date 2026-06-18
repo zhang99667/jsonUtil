@@ -240,7 +240,7 @@ Schema 推断     收藏 / 导入 / 导出
 | 模块 | 说明 |
 |------|------|
 | `jsonSchemaInference.ts` | 根据当前 SOURCE JSON 推断初始 JSON Schema，支持严格/宽松必填策略，并限制深度和数组采样数量 |
-| `jsonSchemaValidation.ts` | 选择 Ajv / Ajv2019 / Ajv2020 校验 Schema，并输出可定位的问题列表、关键字分布和路径清单 |
+| `jsonSchemaValidation.ts` | 选择 Ajv / Ajv2019 / Ajv2020 校验 Schema，并输出可定位的问题列表、关键字分布、路径清单和脱敏修复建议 |
 | `jsonSchemaIssueHighlights.ts` | 将 Schema 校验问题映射成 SOURCE 编辑器高亮范围 |
 | `jsonSchemaLibrary.ts` | 管理浏览器本地 Schema 收藏，并支持剪贴板导入/导出共享包和配置备份同步 |
 
