@@ -92,6 +92,8 @@ bash scripts/deploy/ssh-docker-compose-deploy.sh
 
 `SSH_SERVER_ALIVE_INTERVAL` 与 `SSH_SERVER_ALIVE_COUNT_MAX` 默认分别为 `15` 和 `10`。如果远端构建阶段长时间无输出导致 SSH 断开，可按网络环境调大这两个值。
 
+前端 Docker 构建会复制 `frontend/.npmrc` 到依赖安装层，`npm ci --include=optional` 默认启用多次 fetch 重试和较长网络超时，用于降低 registry 临时断连、`ECONNRESET` 或平台 optional 包下载失败导致的发布中断。
+
 ## 远程服务器要求
 
 服务器需要具备：
