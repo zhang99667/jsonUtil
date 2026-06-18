@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.189 (2026-06-19) - Schema 唯一 Contains 示例
+### ✨ 新特性
+- **JSON Schema 校验**: 示例 JSON 生成优化 `contains` / `minContains` 与 `uniqueItems` 组合约束，重复匹配元素会生成更自然的递增值，且不会改写原本已经唯一的普通元素，事件流、错误列表等数组 Schema 示例可直接通过校验
+
 ## v1.8.188 (2026-06-19) - Schema Contains 数组示例
 ### ✨ 新特性
 - **JSON Schema 校验**: 示例 JSON 生成支持 `contains` / `minContains` 数组约束，会优先生成满足条件的元素，再按 `minItems` 补足普通元素，减少事件列表、错误列表等“至少包含某类对象”的 Schema 示例失败

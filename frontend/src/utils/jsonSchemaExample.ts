@@ -320,13 +320,18 @@ const getUniqueStringExample = (
   schema: Record<string, unknown>,
   index: number
 ): string | undefined => {
+  const numericSuffixMatch = value.match(/^(.*?)(\d+)$/);
+  const incrementedNumericSuffix = numericSuffixMatch
+    ? `${numericSuffixMatch[1]}${Number(numericSuffixMatch[2]) + index}`
+    : '';
   const candidates = [
+    incrementedNumericSuffix,
     `${value}${index + 1}`,
     `${value}-${index + 1}`,
     `value${index + 1}`,
     `key${index + 1}`,
     String(index + 1),
-  ];
+  ].filter(Boolean);
 
   return candidates.find(candidate => isStringExampleAllowed(candidate, schema));
 };
@@ -555,14 +560,22 @@ const ensureUniqueArrayValues = (
   const seenValues = new Set<string>();
 
   return values.map((value, index) => {
-    const uniqueValue = getUniqueExampleValue(value, valueSchemas[index], context, index);
-    const serializedUniqueValue = serializeExampleValue(uniqueValue);
-    if (!seenValues.has(serializedUniqueValue)) {
-      seenValues.add(serializedUniqueValue);
-      return uniqueValue;
+    const serializedValue = serializeExampleValue(value);
+    if (!seenValues.has(serializedValue)) {
+      seenValues.add(serializedValue);
+      return value;
     }
 
-    seenValues.add(serializeExampleValue(value));
+    for (let attemptIndex = index; attemptIndex < index + MAX_ARRAY_EXAMPLE_ITEMS + 1; attemptIndex++) {
+      const uniqueValue = getUniqueExampleValue(value, valueSchemas[index], context, attemptIndex);
+      const serializedUniqueValue = serializeExampleValue(uniqueValue);
+      if (!seenValues.has(serializedUniqueValue)) {
+        seenValues.add(serializedUniqueValue);
+        return uniqueValue;
+      }
+    }
+
+    seenValues.add(serializedValue);
     return value;
   });
 };
