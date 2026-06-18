@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.171 (2026-06-18) - HAR 报告上下文
+### ✨ 新特性
+- **HAR 排查**: 深度解析 HAR 派生 payload 时，接口 URL 和 request/response body 内的 CMD/资源记录会继承 `HAR method status host/path` 上下文标签，可直接按域名、状态码或接口路径筛选报告
+
 ## v1.8.170 (2026-06-18) - 复制产物下一步命令
 ### ✨ 新特性
 - **排查闭环**: CMD 对比包、问题样本 JSON 和深度解析归档包新增 `suggestedCommands`，把页面复制结果直接衔接到 `cmd:diff`、`samples:to-regression` 和 corpus 质量基线校验

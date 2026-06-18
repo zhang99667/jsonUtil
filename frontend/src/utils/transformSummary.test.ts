@@ -1251,6 +1251,60 @@ describe('transformSummary', () => {
     ]);
   });
 
+  it('HAR 派生 payload 的报告记录带接口上下文标签并支持筛选', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=feed`;
+    const result = deepParseWithContext(JSON.stringify({
+      source: 'HAR_PAYLOAD_EXPORT',
+      entries: [
+        {
+          index: 0,
+          label: 'POST 500 api.example.com/api/order',
+          request: {
+            method: 'POST',
+            url: 'https://api.example.com/api/order?token=secret',
+            host: 'api.example.com',
+            path: '/api/order',
+          },
+          response: {
+            status: 500,
+            body: {
+              kind: 'json',
+              value: {
+                action_cmd: actionCmd,
+              },
+            },
+          },
+        },
+      ],
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const harRecords = report.records.filter(record => record.sourceLabel?.startsWith('HAR '));
+    const actionRecord = report.records.find(record => record.path === '$.entries[0].response.body.value.action_cmd');
+
+    expect(harRecords.map(record => record.path)).toEqual([
+      '$.entries[0].request.url',
+      '$.entries[0].response.body.value.action_cmd',
+    ]);
+    expect(harRecords.every(record => record.sourceLabel === 'HAR POST 500 api.example.com/api/order')).toBe(true);
+    expect(harRecords.every(record => !record.sourceLabel?.includes('secret'))).toBe(true);
+    expect(actionRecord).toMatchObject({
+      path: '$.entries[0].response.body.value.action_cmd',
+      sourceLabel: 'HAR POST 500 api.example.com/api/order',
+      labels: ['CMD 参数 · 可回写'],
+    });
+    expect(formatTransformContextReportText(result.context)).toContain('业务字段: HAR POST 500 api.example.com/api/order');
+
+    const hostView = buildTransformReportView(report, 'api.example.com');
+    expect(hostView.records.map(item => item.path)).toEqual([
+      '$.entries[0].request.url',
+      '$.entries[0].response.body.value.action_cmd',
+    ]);
+    expect(buildTransformReportView(report, '500').records.map(item => item.path)).toEqual([
+      '$.entries[0].request.url',
+      '$.entries[0].response.body.value.action_cmd',
+    ]);
+  });
+
   it('诊断项展示业务字段标签并支持筛选', () => {
     const rawValue = `raw=${encodeURIComponent(JSON.stringify({ nid: 123 }))}`;
     const unresolvedResult = deepParseWithContext(JSON.stringify({

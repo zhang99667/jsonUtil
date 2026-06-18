@@ -29,6 +29,42 @@ export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
 const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
+const HAR_SOURCE_LABEL_PREFIX = 'HAR ';
+
+const trimSourceLabel = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
+const formatHarSourceLabel = (label: string): string => (
+  label.startsWith(HAR_SOURCE_LABEL_PREFIX) ? label : `${HAR_SOURCE_LABEL_PREFIX}${label}`
+);
+
+const getHarEntrySourceLabelForField = (
+  container: Record<string, unknown>,
+  key: string
+): string | undefined => {
+  if (key !== 'request' && key !== 'response') return undefined;
+
+  const label = trimSourceLabel(container.label);
+  return label ? formatHarSourceLabel(label) : undefined;
+};
+
+const getInheritedHarSourceLabel = (sourceLabel?: string): string | undefined => (
+  sourceLabel?.startsWith(HAR_SOURCE_LABEL_PREFIX) ? sourceLabel : undefined
+);
+
+const getNestedSourceLabelForField = (
+  container: Record<string, unknown>,
+  key: string,
+  sourceLabel?: string
+): string | undefined => (
+  getBusinessLabelForField(container, key) ||
+  getHarEntrySourceLabelForField(container, key) ||
+  getInheritedHarSourceLabel(sourceLabel)
+);
 const ROOT_SCHEME_TYPES = new Set<SchemeType>(['query-string', 'url', 'base64']);
 
 export type StandaloneDeepFormatInputKind = 'scheme' | 'url-encoded-json' | 'url-encoded-scheme';
@@ -597,7 +633,7 @@ export function deepParseWithContext(
         const processParsedValue = (jsonParsed: JsonValue): JsonValue => {
           if (Array.isArray(jsonParsed)) {
             return jsonParsed.map((item, index) =>
-              processValue(item, appendJsonPathIndex(currentPath, index), depth + 1)
+              processValue(item, appendJsonPathIndex(currentPath, index), depth + 1, getInheritedHarSourceLabel(sourceLabel))
             );
           }
 
@@ -609,7 +645,7 @@ export function deepParseWithContext(
                 jsonObj[key],
                 appendJsonPathKey(currentPath, key),
                 depth + 1,
-                getBusinessLabelForField(jsonObj, key)
+                getNestedSourceLabelForField(jsonObj, key, sourceLabel)
               );
             }
             return result;
@@ -754,7 +790,7 @@ export function deepParseWithContext(
 
       if (Array.isArray(value)) {
         return value.map((item, index) =>
-          processValue(item, appendJsonPathIndex(currentPath, index), depth)
+          processValue(item, appendJsonPathIndex(currentPath, index), depth, getInheritedHarSourceLabel(sourceLabel))
         );
       }
 
@@ -766,7 +802,7 @@ export function deepParseWithContext(
             objValue[key],
             appendJsonPathKey(currentPath, key),
             depth,
-            getBusinessLabelForField(objValue, key)
+            getNestedSourceLabelForField(objValue, key, sourceLabel)
           );
         }
         return result;
