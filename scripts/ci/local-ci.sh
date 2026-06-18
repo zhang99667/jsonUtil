@@ -19,6 +19,9 @@ npm run typecheck
 log "Frontend: lint"
 npm run lint
 
+log "Frontend: dependency security audit"
+npm run audit:security
+
 log "Frontend: unit tests"
 npm test
 

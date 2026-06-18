@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.136 (2026-06-18) - 前端依赖安全治理
+### ✨ 新特性
+- **依赖安全**: 修复前端 `npm audit` 中的 Babel、DOMPurify、form-data、joi 与 `shell-quote` 风险，保留 `concurrently@9` 的 Node 20 兼容性并通过 override 使用修复版 `shell-quote`
+- **CI 门禁**: 新增 `npm run audit:security`，以 moderate 及以上漏洞作为依赖安全门禁，并接入本地 CI 与 GitHub Actions
+
 ## v1.8.135 (2026-06-18) - 前端 Lint 门禁接入
 ### ✨ 新特性
 - **工程质量**: 前端迁移到 ESLint flat config，新增 `npm run lint` 错误级门禁和 `npm run lint:report` 历史 warning 报告，并接入本地 CI 与 GitHub Actions
