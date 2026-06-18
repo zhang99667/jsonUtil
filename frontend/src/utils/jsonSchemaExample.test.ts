@@ -229,6 +229,75 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(schemaDependenciesResult.exampleText || '', schemaDependenciesText).status).toBe('valid');
   });
 
+  it('支持 if then else 条件分支补齐对象字段', () => {
+    const thenSchemaText = JSON.stringify({
+      type: 'object',
+      required: ['kind'],
+      properties: {
+        kind: { const: 'card' },
+      },
+      if: {
+        required: ['kind'],
+        properties: {
+          kind: { const: 'card' },
+        },
+      },
+      then: {
+        required: ['cardNumber'],
+        properties: {
+          cardNumber: {
+            type: 'string',
+            pattern: '^CARD-[0-9]+$',
+          },
+        },
+      },
+    });
+    const elseSchemaText = JSON.stringify({
+      type: 'object',
+      required: ['kind'],
+      properties: {
+        kind: { const: 'bank' },
+      },
+      if: {
+        required: ['kind'],
+        properties: {
+          kind: { const: 'card' },
+        },
+      },
+      then: {
+        required: ['cardNumber'],
+        properties: {
+          cardNumber: {
+            type: 'string',
+            pattern: '^CARD-[0-9]+$',
+          },
+        },
+      },
+      else: {
+        required: ['bankAccount'],
+        properties: {
+          bankAccount: {
+            type: 'string',
+            pattern: '^BANK-[0-9]+$',
+          },
+        },
+      },
+    });
+    const thenResult = generateJsonSchemaExampleText(thenSchemaText);
+    const elseResult = generateJsonSchemaExampleText(elseSchemaText);
+
+    expect(JSON.parse(thenResult.exampleText || '{}')).toEqual({
+      kind: 'card',
+      cardNumber: 'CARD-1',
+    });
+    expect(JSON.parse(elseResult.exampleText || '{}')).toEqual({
+      kind: 'bank',
+      bankAccount: 'BANK-1',
+    });
+    expect(validateJsonAgainstSchema(thenResult.exampleText || '', thenSchemaText).status).toBe('valid');
+    expect(validateJsonAgainstSchema(elseResult.exampleText || '', elseSchemaText).status).toBe('valid');
+  });
+
   it('为常见字符串 pattern 生成可校验的样例值', () => {
     const schemaText = JSON.stringify({
       type: 'object',
