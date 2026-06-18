@@ -2038,6 +2038,39 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(page.locator('[data-tour="scheme-apply-edit"]')).toHaveAttribute('aria-label', '应用修改，请先修正解码结果中的 JSON 错误');
 });
 
+test('Scheme 面板可用原始值替换 SOURCE 并打开深度解析报告', async ({ page }) => {
+  const cmdPayload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
+  const schemeInput = `cmd=${cmdPayload}&from=feed`;
+
+  await fillSourceEditor(page, '{"existing":true}');
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(schemeInput);
+
+  const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await schemePanel.locator('[data-tour="scheme-inspect-original"]').click();
+
+  const confirmDialog = page.locator('[data-tour="confirm-dialog"]');
+  await expect(confirmDialog).toContainText('用 Scheme 原始值排查');
+  await expect(confirmDialog).toContainText('这会用 Scheme 面板原始值替换 SOURCE');
+  await confirmDialog.getByRole('button', { name: '继续保留' }).click();
+  await expect(confirmDialog).toHaveCount(0);
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('{"existing":true}');
+
+  await schemePanel.locator('[data-tour="scheme-inspect-original"]').click();
+  await page.locator('[data-tour="confirm-dialog"]').getByRole('button', { name: '替换并排查' }).click();
+
+  await expect(page.getByText(/已用 Scheme 原始值替换 SOURCE 并开始排查/)).toBeVisible();
+  await expect(schemePanel).toHaveCount(0);
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('cmd=');
+  await expectPreviewText(page, '"cmd"');
+  await expectPreviewText(page, '"nid": 123');
+
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await expect(reportPanel).toBeVisible();
+  await expect(reportPanel).toContainText('深度解析报告');
+  await expect(reportPanel.locator('[data-tour="transform-report-cmd-count"]')).toContainText('CMD');
+});
+
 test('Scheme 面板展示运行时占位符聚合摘要', async ({ page }) => {
   const cmdPayload = encodeURIComponent(JSON.stringify({
     first_cmd: '__CONVERT_CMD__',

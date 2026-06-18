@@ -284,6 +284,7 @@ const App: React.FC = () => {
   const [isClearSourceConfirmOpen, setIsClearSourceConfirmOpen] = useState(false);
   const [pendingPasteSourceText, setPendingPasteSourceText] = useState<string | null>(null);
   const [pendingApplyPreviewText, setPendingApplyPreviewText] = useState<string | null>(null);
+  const [pendingSchemeInspectSourceText, setPendingSchemeInspectSourceText] = useState<string | null>(null);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -846,6 +847,61 @@ const App: React.FC = () => {
 
   }, [mode, updateActiveFileContent]);
 
+  const applySchemeInspectSourceText = useCallback((text: string, successMessage: string) => {
+    handleInputChange(text);
+    setMode(TransformMode.DEEP_FORMAT);
+    setHighlightRange(null);
+    setIsJsonPathPanelOpen(false);
+    setIsTransformReportOpen(true);
+    setIsSchemeDecodeOpen(false);
+    showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
+  }, [handleInputChange]);
+
+  const handleInspectSourceFromScheme = useCallback((value: string) => {
+    const sourceText = value;
+    const startedAt = performance.now();
+    if (!sourceText.trim()) {
+      showError('Scheme 原始值为空，暂无可排查内容');
+      trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
+      return;
+    }
+
+    if (sourceText === input) {
+      setMode(TransformMode.DEEP_FORMAT);
+      setHighlightRange(null);
+      setIsJsonPathPanelOpen(false);
+      setIsTransformReportOpen(true);
+      setIsSchemeDecodeOpen(false);
+      showSuccess('Scheme 原始值已在 SOURCE 中，已打开深度解析报告');
+      trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
+      return;
+    }
+
+    if (input.trim()) {
+      setPendingSchemeInspectSourceText(sourceText);
+      trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
+      return;
+    }
+
+    applySchemeInspectSourceText(sourceText, '已用 Scheme 原始值开始排查');
+    trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'success', startedAt);
+  }, [applySchemeInspectSourceText, input, trackCurrentToolEvent]);
+
+  const handleConfirmSchemeInspectSource = useCallback(() => {
+    if (pendingSchemeInspectSourceText === null) return;
+
+    const startedAt = performance.now();
+    applySchemeInspectSourceText(pendingSchemeInspectSourceText, '已用 Scheme 原始值替换 SOURCE 并开始排查');
+    setPendingSchemeInspectSourceText(null);
+    trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'success', startedAt);
+  }, [applySchemeInspectSourceText, pendingSchemeInspectSourceText, trackCurrentToolEvent]);
+
+  const handleCancelSchemeInspectSource = useCallback(() => {
+    const startedAt = performance.now();
+    setPendingSchemeInspectSourceText(null);
+    trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'cancelled', startedAt);
+  }, [trackCurrentToolEvent]);
+
   const handleCopySource = useCallback(async () => {
     const startedAt = performance.now();
     if (!input.trim()) {
@@ -1407,6 +1463,9 @@ const App: React.FC = () => {
   const applyPreviewConfirmMessage = pendingApplyPreviewText === null
     ? ''
     : `这会用当前 PREVIEW 内容替换 SOURCE 编辑区，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}\nPREVIEW: ${getContentSizeSummary(pendingApplyPreviewText)}`;
+  const schemeInspectConfirmMessage = pendingSchemeInspectSourceText === null
+    ? ''
+    : `这会用 Scheme 面板原始值替换 SOURCE，并切换到嵌套解析、打开深度解析报告。\n当前 SOURCE: ${getContentSizeSummary(input)}\nScheme 原始值: ${getContentSizeSummary(pendingSchemeInspectSourceText)}`;
 
   return (
     <ErrorBoundary>
@@ -1473,6 +1532,17 @@ const App: React.FC = () => {
         cancelLabel="继续保留"
         onConfirm={handleConfirmApplyPreviewToSource}
         onCancel={handleCancelApplyPreviewToSource}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingSchemeInspectSourceText !== null}
+        title="用 Scheme 原始值排查"
+        message={schemeInspectConfirmMessage}
+        confirmLabel="替换并排查"
+        cancelLabel="继续保留"
+        variant="danger"
+        onConfirm={handleConfirmSchemeInspectSource}
+        onCancel={handleCancelSchemeInspectSource}
       />
 
       {/* 主工作区容器 */}
@@ -1786,6 +1856,7 @@ const App: React.FC = () => {
                 inputRef.current = encodedValue;
                 updateActiveFileContent(encodedValue);
               }}
+              onInspectOriginal={handleInspectSourceFromScheme}
             />
           </Suspense>
         )}

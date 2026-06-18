@@ -41,6 +41,7 @@ interface SchemeViewerModalProps {
   standalone?: boolean;    // 是否为独立模式（侧边栏打开，可手动输入）
   initialStandaloneInput?: string; // 独立模式下从外部入口预填的内容
   initialStandaloneInputKey?: number; // 用于同一内容重复打开时触发重新预填
+  onInspectOriginal?: (value: string) => void; // 将原始值送回主工作台排查
 }
 
 const schemeTypeLabels: Record<SchemeType, string> = {
@@ -307,6 +308,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   standalone = false,
   initialStandaloneInput,
   initialStandaloneInputKey,
+  onInspectOriginal,
 }) => {
   const [editedContent, setEditedContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
@@ -764,6 +766,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     }
   };
 
+  const handleInspectOriginal = () => {
+    if (!actualValue || !onInspectOriginal) return;
+
+    onInspectOriginal(actualValue);
+  };
+
   // 头部额外内容：非独立模式显示 path 标签，并支持复制到 JSONPath 面板继续定位
   const headerExtra = !standalone && path ? (
     <div className="flex min-w-0 items-center gap-1.5">
@@ -1000,16 +1008,30 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="shrink-0 font-medium">{schemeQualitySummary.label}</span>
                     <span className="min-w-0 text-gray-300">{schemeQualitySummary.description}</span>
-                    <button
-                      data-tour="scheme-copy-quality-summary"
-                      type="button"
-                      onClick={handleCopyQualitySummary}
-                      className="ml-auto shrink-0 rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
-                      title="复制当前 Scheme 解析质量摘要"
-                      aria-label="复制质量摘要，复制当前 Scheme 解析质量摘要"
-                    >
-                      复制摘要
-                    </button>
+                    <div className="ml-auto flex shrink-0 items-center gap-1">
+                      {standalone && onInspectOriginal && (
+                        <button
+                          data-tour="scheme-inspect-original"
+                          type="button"
+                          onClick={handleInspectOriginal}
+                          className="rounded border border-emerald-500/40 bg-emerald-600/20 px-2 py-0.5 text-xs text-emerald-100 transition-colors hover:bg-emerald-500/30 focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
+                          title="将原始值送入 SOURCE 并打开深度解析报告"
+                          aria-label="用原始值排查，将原始值送入 SOURCE 并打开深度解析报告"
+                        >
+                          用原始值排查
+                        </button>
+                      )}
+                      <button
+                        data-tour="scheme-copy-quality-summary"
+                        type="button"
+                        onClick={handleCopyQualitySummary}
+                        className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
+                        title="复制当前 Scheme 解析质量摘要"
+                        aria-label="复制质量摘要，复制当前 Scheme 解析质量摘要"
+                      >
+                        复制摘要
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-1">
                     {schemeQualitySummary.items.map(item => (
