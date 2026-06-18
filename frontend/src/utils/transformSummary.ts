@@ -78,6 +78,8 @@ export interface TransformReportDecodedPath {
   copyText?: string;
   value?: JsonValue;
   sourceValue?: JsonValue;
+  resourceType?: TransformReportResourceType;
+  resourceTypeLabel?: string;
 }
 
 export interface TransformReportCommandSchemaRow {
@@ -157,6 +159,18 @@ export interface TransformReportCommandSchemaGroup {
 
 export type TransformReportResourceType = 'image' | 'video' | 'lottie' | 'audio' | 'package' | 'other';
 
+export interface TransformReportResourceTypeGroup {
+  resourceType: TransformReportResourceType;
+  resourceTypeLabel: string;
+  query: string;
+  count: number;
+  percentage: number;
+  recordCount: number;
+  schemaCount: number;
+  schemas: string[];
+  hasMoreSchemas: boolean;
+}
+
 export interface TransformReportCommandSchemaOriginGroup {
   origin: string;
   count: number;
@@ -176,6 +190,7 @@ export interface TransformContextReport {
   topCommandSchemaOrigins?: TransformReportCommandSchemaOriginGroup[];
   topCommandSchemas?: TransformReportCommandSchemaGroup[];
   topResourceSchemas?: TransformReportCommandSchemaGroup[];
+  topResourceTypes?: TransformReportResourceTypeGroup[];
   topNestedCommandFields?: TransformReportNestedCommandFieldGroup[];
   topNestedResourceFields?: TransformReportNestedCommandFieldGroup[];
   records: TransformReportRecord[];
@@ -356,6 +371,7 @@ export interface TransformQualitySnapshot {
     topCommandSchemas: TransformReportCommandSchemaGroup[];
     topCommandSchemaOrigins: TransformReportCommandSchemaOriginGroup[];
     topResourceSchemas: TransformReportCommandSchemaGroup[];
+    topResourceTypes: TransformReportResourceTypeGroup[];
     topNestedCommandFields: TransformReportNestedCommandFieldGroup[];
     topNestedResourceFields: TransformReportNestedCommandFieldGroup[];
     unresolvedReasons: TransformQualitySnapshotBucket[];
@@ -946,6 +962,23 @@ const buildNestedInsightSearchFields = (
     };
   });
 
+const withResourceType = (row: TransformReportDecodedPath): TransformReportDecodedPath => {
+  const schemaSource = typeof row.sourceValue === 'string'
+    ? row.sourceValue
+    : typeof row.value === 'string'
+      ? row.value
+      : undefined;
+  const schema = schemaSource ? getUrlResourceSchemaFromUrl(schemaSource) : undefined;
+  if (!schema) return row;
+
+  const resourceType = getStaticResourceType(schema, row.path);
+  return {
+    ...row,
+    resourceType,
+    resourceTypeLabel: getResourceTypeLabel(resourceType),
+  };
+};
+
 const buildRecordInsightData = (
   record: PathTransformRecord
 ): Pick<
@@ -1000,7 +1033,7 @@ const buildRecordInsightData = (
     base64SuffixFieldCount,
   } = collectSchemeInsightFields(decodedValue, { source: record.originalValue });
   const nestedCommandSearchFields = buildNestedInsightSearchFields(record.path, commandFieldRows);
-  const nestedResourceSearchFields = buildNestedInsightSearchFields(record.path, resourceFieldRows);
+  const nestedResourceSearchFields = buildNestedInsightSearchFields(record.path, resourceFieldRows).map(withResourceType);
 
   const nestedCmdInsight = formatSchemeInsightItems('cmd解析', commandFields);
   const resourceInsight = formatSchemeInsightItems('资源URL', resourceFields);
@@ -1384,6 +1417,14 @@ const isIssuePriorityQuery = (normalizedQuery: string): boolean => (
   normalizedQuery === '待处理' || normalizedQuery === '问题优先'
 );
 
+const matchesResourceType = (
+  resourceType: TransformReportResourceType | undefined,
+  normalizedQuery: string
+): boolean => {
+  if (!resourceType) return false;
+  return getResourceTypeSearchTokens(resourceType).some(token => token.includes(normalizedQuery));
+};
+
 // 短字段名扫整段原始 CMD 会把同源诊断项全部带出；仅对长片段或明显编码/URL 片段兜底。
 const shouldSearchLongSourceValue = (normalizedQuery: string): boolean => (
   normalizedQuery.length >= 12 ||
@@ -1428,7 +1469,8 @@ const matchesDecodedPath = (
   normalizedQuery: string
 ): boolean => (
   includesQuery(row.path, normalizedQuery) ||
-  includesQuery(row.preview, normalizedQuery)
+  includesQuery(row.preview, normalizedQuery) ||
+  matchesResourceType(row.resourceType, normalizedQuery)
 );
 
 const matchesNestedCommandField = (
@@ -1436,6 +1478,7 @@ const matchesNestedCommandField = (
   normalizedQuery: string
 ): boolean => (
   includesQuery(row.path, normalizedQuery) ||
+  matchesResourceType(row.resourceType, normalizedQuery) ||
   (!row.preview.startsWith('对象:') &&
     !row.preview.startsWith('数组 ') &&
     includesQuery(row.preview, normalizedQuery))
@@ -1814,6 +1857,20 @@ const getResourceTypeLabel = (resourceType: TransformReportResourceType): string
   RESOURCE_TYPE_LABELS[resourceType]
 );
 
+const getResourceTypeQuery = (resourceType: TransformReportResourceType): string => (
+  `资源类型:${getResourceTypeLabel(resourceType)}`
+);
+
+const getResourceTypeSearchTokens = (resourceType: TransformReportResourceType): string[] => {
+  const label = getResourceTypeLabel(resourceType);
+  return [
+    resourceType,
+    label,
+    getResourceTypeQuery(resourceType),
+    `resource:${resourceType}`,
+  ].map(token => token.toLowerCase());
+};
+
 const isStaticResourceSchema = (schema: string, path: string): boolean => {
   const normalizedSchema = schema.trim().replace(/\\\//g, '/');
   try {
@@ -1932,6 +1989,69 @@ const buildTopCommandSchemaGroups = (
           resourceTypeLabel: getResourceTypeLabel(group.resourceType),
         }
         : {}),
+    }));
+};
+
+const buildTopResourceTypeGroups = (
+  records: TransformReportRecord[]
+): TransformReportResourceTypeGroup[] => {
+  const resourceOccurrences = collectCommandSchemaOccurrences(records).filter(occurrence => (
+    occurrence.kind === 'resource' && occurrence.resourceType
+  ));
+  const totalCount = resourceOccurrences.length;
+  if (totalCount === 0) return [];
+
+  const groups = new Map<TransformReportResourceType, {
+    resourceType: TransformReportResourceType;
+    count: number;
+    recordPaths: Set<string>;
+    schemas: string[];
+    schemaSet: Set<string>;
+    hasMoreSchemas: boolean;
+  }>();
+
+  resourceOccurrences.forEach(({ schema, recordPath, resourceType }) => {
+    if (!resourceType) return;
+
+    let group = groups.get(resourceType);
+    if (!group) {
+      group = {
+        resourceType,
+        count: 0,
+        recordPaths: new Set(),
+        schemas: [],
+        schemaSet: new Set(),
+        hasMoreSchemas: false,
+      };
+      groups.set(resourceType, group);
+    }
+
+    group.count += 1;
+    group.recordPaths.add(recordPath);
+    group.schemaSet.add(schema);
+    if (group.schemas.includes(schema)) return;
+    if (group.schemas.length < DEFAULT_TOP_COMMAND_SCHEMA_PATH_LIMIT) {
+      group.schemas.push(schema);
+    } else {
+      group.hasMoreSchemas = true;
+    }
+  });
+
+  return Array.from(groups.values())
+    .sort((left, right) => (
+      right.count - left.count ||
+      getResourceTypeLabel(left.resourceType).localeCompare(getResourceTypeLabel(right.resourceType))
+    ))
+    .map(group => ({
+      resourceType: group.resourceType,
+      resourceTypeLabel: getResourceTypeLabel(group.resourceType),
+      query: getResourceTypeQuery(group.resourceType),
+      count: group.count,
+      percentage: Number(((group.count / totalCount) * 100).toFixed(1)),
+      recordCount: group.recordPaths.size,
+      schemaCount: group.schemaSet.size,
+      schemas: group.schemas,
+      hasMoreSchemas: group.hasMoreSchemas,
     }));
 };
 
@@ -2162,6 +2282,7 @@ export const buildTransformContextReport = (
     topCommandSchemaOrigins: buildTopCommandSchemaOriginGroups(records),
     topCommandSchemas: buildTopCommandSchemaGroups(records),
     topResourceSchemas: buildTopCommandSchemaGroups(records, DEFAULT_TOP_COMMAND_SCHEMA_LIMIT, 'resource'),
+    topResourceTypes: buildTopResourceTypeGroups(records),
     topNestedCommandFields: buildTopNestedCommandFieldGroups(records),
     topNestedResourceFields: buildTopNestedResourceFieldGroups(records),
     records,
@@ -2205,6 +2326,7 @@ export const formatTransformContextReportText = (
 
   appendCommandSchemaOriginSummarySection(lines, report.topCommandSchemaOrigins || []);
   appendCommandSchemaSummarySection(lines, report.topCommandSchemas || []);
+  appendResourceTypeSummarySection(lines, report.topResourceTypes || []);
   appendResourceSchemaSummarySection(lines, report.topResourceSchemas || []);
   appendNestedCommandFieldSummarySection(lines, report.topNestedCommandFields || []);
   appendNestedResourceFieldSummarySection(lines, report.topNestedResourceFields || []);
@@ -2248,6 +2370,22 @@ const appendCommandSchemaSummarySection = (
 const formatResourceSchemaGroupTitle = (group: TransformReportCommandSchemaGroup): string => (
   group.resourceTypeLabel ? `[${group.resourceTypeLabel}] ${group.schema}` : group.schema
 );
+
+const appendResourceTypeSummarySection = (
+  lines: string[],
+  groups: TransformReportResourceTypeGroup[]
+) => {
+  if (groups.length === 0) return;
+
+  lines.push('静态资源类型分布:');
+  groups.forEach(group => {
+    lines.push(
+      `- ${group.resourceTypeLabel} ${group.percentage}% ×${group.count}（URL ${group.schemaCount} / 来源记录 ${group.recordCount}）`
+    );
+    lines.push(`  示例URL: ${group.schemas.join('；')}${group.hasMoreSchemas ? '；...' : ''}`);
+  });
+  lines.push('');
+};
 
 const appendResourceSchemaSummarySection = (
   lines: string[],
@@ -2557,6 +2695,13 @@ export const formatTransformDiagnosticSummaryText = (
     });
   }
 
+  if (report.topResourceTypes?.length) {
+    lines.push('', '全量静态资源类型 Top:');
+    report.topResourceTypes.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
+      lines.push(`- ${group.resourceTypeLabel} ${group.percentage}% ×${group.count}（URL ${group.schemaCount} / 来源记录 ${group.recordCount}）`);
+    });
+  }
+
   if (report.topNestedCommandFields?.length) {
     lines.push('', '全量内部 CMD 字段 Top:');
     report.topNestedCommandFields.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
@@ -2706,6 +2851,7 @@ export const buildTransformQualitySnapshot = (
     topCommandSchemas: (report.topCommandSchemas || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     topCommandSchemaOrigins: (report.topCommandSchemaOrigins || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     topResourceSchemas: (report.topResourceSchemas || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
+    topResourceTypes: (report.topResourceTypes || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     topNestedCommandFields: (report.topNestedCommandFields || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     topNestedResourceFields: (report.topNestedResourceFields || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
     unresolvedReasons: buildQualitySnapshotBuckets(
@@ -2836,6 +2982,13 @@ export const formatTransformCollaborationReportText = (
     lines.push('- 静态资源 URL Top:');
     qualitySnapshot.hotspots.topResourceSchemas.slice(0, 5).forEach(group => {
       lines.push(`  - ${formatResourceSchemaGroupTitle(group)} ×${group.count}`);
+    });
+  }
+
+  if (qualitySnapshot.hotspots.topResourceTypes.length > 0) {
+    lines.push('- 静态资源类型 Top:');
+    qualitySnapshot.hotspots.topResourceTypes.slice(0, 5).forEach(group => {
+      lines.push(`  - ${group.resourceTypeLabel} ${group.percentage}% ×${group.count}`);
     });
   }
 
