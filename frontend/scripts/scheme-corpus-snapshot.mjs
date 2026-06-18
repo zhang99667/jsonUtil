@@ -299,6 +299,7 @@ export const buildCorpusSnapshotSample = ({
     filtered: qualitySnapshot.filtered,
     topCommandSchemas: qualitySnapshot.hotspots.topCommandSchemas,
     topResourceSchemas: qualitySnapshot.hotspots.topResourceSchemas,
+    topResourceTypes: qualitySnapshot.hotspots.topResourceTypes,
     topNestedCommandFields: qualitySnapshot.hotspots.topNestedCommandFields,
     topNestedResourceFields: qualitySnapshot.hotspots.topNestedResourceFields,
     scanLocations: normalizeScanLocations(scanLocations),
