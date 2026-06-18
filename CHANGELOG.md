@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.186 (2026-06-19) - Schema 字符串 Pattern 示例
+### ✨ 新特性
+- **JSON Schema 校验**: 示例 JSON 生成支持常见字符串 `pattern`，如订单号 `^ORD-[0-9]+$`、固定长度 trace code `^[A-Z]{3}-\\d{4}$` 等字段会生成更接近约束的样例，减少“复制/应用示例后立即校验失败”的情况
+
 ## v1.8.185 (2026-06-19) - Schema 动态对象示例
 ### ✨ 新特性
 - **JSON Schema 校验**: 示例 JSON 生成支持 `patternProperties`、`additionalProperties`、`propertyNames` 和 `minProperties` 的常见动态对象写法，动态 map 类 Schema 不再容易生成 `{}` 后立即校验失败

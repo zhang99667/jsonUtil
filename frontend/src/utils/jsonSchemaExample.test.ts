@@ -100,6 +100,31 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('为常见字符串 pattern 生成可校验的样例值', () => {
+    const schemaText = JSON.stringify({
+      type: 'object',
+      required: ['orderId', 'traceCode'],
+      properties: {
+        orderId: {
+          type: 'string',
+          pattern: '^ORD-[0-9]+$',
+        },
+        traceCode: {
+          type: 'string',
+          pattern: '^[A-Z]{3}-\\d{4}$',
+        },
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '{}');
+
+    expect(example).toEqual({
+      orderId: 'ORD-1',
+      traceCode: 'AAA-1111',
+    });
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
   it('处理非法或永假 Schema 时返回可读错误', () => {
     expect(generateJsonSchemaExampleText('{bad}').error).toContain('Schema 不是合法 JSON');
     expect(generateJsonSchemaExampleText('false')).toMatchObject({

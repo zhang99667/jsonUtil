@@ -27,6 +27,18 @@ const COMMON_DYNAMIC_PROPERTY_KEYS = [
   'A',
   '1',
 ];
+const COMMON_STRING_PATTERN_CANDIDATES = [
+  'string',
+  'key',
+  'value',
+  'abc',
+  'ABC',
+  'A1',
+  'id-1',
+  'ORD-1',
+  '2026-01-01',
+  'user@example.com',
+];
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -161,22 +173,48 @@ const stripRegexAnchors = (pattern: string): string => (
   pattern.replace(/^\^/, '').replace(/\$$/, '')
 );
 
-const inferKeyFromPattern = (pattern: string): string => {
-  let key = stripRegexAnchors(pattern);
-  key = key.replace(/\[a-z]\+/gi, 'key');
-  key = key.replace(/\[a-z_]\+/gi, 'key');
-  key = key.replace(/\[a-z-]\+/gi, 'key');
-  key = key.replace(/\[A-Z]\+/g, 'KEY');
-  key = key.replace(/\[0-9]\+/g, '1');
-  key = key.replace(/\\d\+/g, '1');
-  key = key.replace(/\\w\+/g, 'key');
-  key = key.replace(/\\S\+/g, 'key');
-  key = key.replace(/\.\+/g, 'key');
-  key = key.replace(/\(([^|()]+)\|[^()]+\)/g, '$1');
-  key = key.replace(/[?*+]/g, '');
-  key = key.replace(/\\([.^$*+?()[\]{}|/-])/g, '$1');
-  key = key.replace(/[^A-Za-z0-9_-]/g, '');
+const repeatToken = (token: string, countText?: string): string => (
+  token.repeat(Math.max(Number(countText) || 1, 1))
+);
 
+const inferTextFromPattern = (pattern: string): string => {
+  let text = stripRegexAnchors(pattern);
+  text = text.replace(/\(([^|()]+)\|[^()]+\)/g, '$1');
+  text = text.replace(/\\d\{(\d+)\}/g, (_match, count: string) => repeatToken('1', count));
+  text = text.replace(/\[0-9]\{(\d+)\}/g, (_match, count: string) => repeatToken('1', count));
+  text = text.replace(/\[A-Z]\{(\d+)\}/g, (_match, count: string) => repeatToken('A', count));
+  text = text.replace(/\[a-z]\{(\d+)\}/g, (_match, count: string) => repeatToken('a', count));
+  text = text.replace(/\[A-Za-z]\{(\d+)\}/g, (_match, count: string) => repeatToken('a', count));
+  text = text.replace(/\[A-Za-z0-9]\{(\d+)\}/g, (_match, count: string) => repeatToken('a', count));
+  text = text.replace(/\\w\{(\d+)\}/g, (_match, count: string) => repeatToken('a', count));
+  text = text.replace(/\[a-z]\+/gi, 'key');
+  text = text.replace(/\[a-z_]\+/gi, 'key');
+  text = text.replace(/\[a-z-]\+/gi, 'key');
+  text = text.replace(/\[A-Z]\+/g, 'KEY');
+  text = text.replace(/\[0-9]\+/g, '1');
+  text = text.replace(/\[A-Za-z]\+/g, 'key');
+  text = text.replace(/\[A-Za-z0-9]\+/g, 'key1');
+  text = text.replace(/\\d\+/g, '1');
+  text = text.replace(/\\w\+/g, 'key');
+  text = text.replace(/\\S\+/g, 'key');
+  text = text.replace(/\.\+/g, 'key');
+  text = text.replace(/\\d/g, '1');
+  text = text.replace(/\\w/g, 'a');
+  text = text.replace(/\[0-9]/g, '1');
+  text = text.replace(/\[A-Z]/g, 'A');
+  text = text.replace(/\[a-z]/gi, 'a');
+  text = text.replace(/\[A-Za-z]/g, 'a');
+  text = text.replace(/\[A-Za-z0-9]/g, 'a');
+  text = text.replace(/[?*+]/g, '');
+  text = text.replace(/\{(\d+)\}/g, '');
+  text = text.replace(/\{(\d+),\d*}/g, '');
+  text = text.replace(/\\([.^$*+?()[\]{}|/-])/g, '$1');
+
+  return text || 'string';
+};
+
+const inferKeyFromPattern = (pattern: string): string => {
+  const key = inferTextFromPattern(pattern).replace(/[^A-Za-z0-9_-]/g, '');
   return key || 'key';
 };
 
@@ -256,6 +294,18 @@ const findAvailablePropertyKey = (
   [...new Set(candidates)].find(key => !usedKeys.has(key) && isAllowed(key))
 );
 
+const isStringExampleAllowed = (value: string, schema: Record<string, unknown>): boolean => {
+  const minLength = getIntegerValue(schema, 'minLength');
+  if (typeof minLength === 'number' && value.length < minLength) return false;
+
+  const maxLength = getIntegerValue(schema, 'maxLength');
+  if (typeof maxLength === 'number' && value.length > maxLength) return false;
+
+  if (typeof schema.pattern === 'string' && !getPatternMatcher(schema.pattern)(value)) return false;
+
+  return true;
+};
+
 const generateStringExample = (schema: Record<string, unknown>): string => {
   const format = typeof schema.format === 'string' ? schema.format : '';
   const base = (() => {
@@ -277,6 +327,16 @@ const generateStringExample = (schema: Record<string, unknown>): string => {
   if (typeof maxLength === 'number' && maxLength >= 0 && value.length > maxLength) {
     const fallbackLength = Math.max(Math.min(maxLength, Math.max(minLength, 1)), 0);
     value = 'x'.repeat(fallbackLength);
+  }
+
+  if (typeof schema.pattern === 'string') {
+    const patternCandidate = inferTextFromPattern(schema.pattern);
+    const matchedCandidate = [
+      patternCandidate,
+      value,
+      ...COMMON_STRING_PATTERN_CANDIDATES,
+    ].find(candidate => isStringExampleAllowed(candidate, schema));
+    if (matchedCandidate) return matchedCandidate;
   }
 
   return value;
