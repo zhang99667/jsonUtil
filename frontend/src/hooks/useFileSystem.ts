@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { FileTab, TransformMode } from '../types';
 import { getDetailedErrorMessage, isAbortError } from '../utils/errors';
 import { getTextFileOpenError, TEXT_FILE_ACCEPT_EXTENSIONS } from '../utils/fileGuards';
+import { importTextFileContent } from '../utils/harImport';
 import {
     buildWorkspaceDraftSnapshot,
     loadWorkspaceDraftSnapshot,
@@ -202,19 +203,27 @@ export const useFileSystem = ({
             try {
                 const contents = await readTextFileSafely(entry.file);
                 if (contents === null) continue;
+                const importedFile = importTextFileContent(entry.file.name, contents);
                 const newFileId = generateUUID();
 
                 openedFiles.push({
                     id: newFileId,
-                    name: entry.file.name,
-                    content: contents,
-                    savedContent: contents,
-                    handle: entry.handle,
+                    name: importedFile.name || entry.file.name,
+                    content: importedFile.content,
+                    savedContent: importedFile.content,
+                    handle: importedFile.preserveHandle === false ? undefined : entry.handle,
                     isDirty: false,
-                    mode: TransformMode.NONE,
-                    path: (entry.file as File & { path?: string }).path ||
+                    mode: importedFile.mode || TransformMode.NONE,
+                    path: importedFile.preserveHandle === false ? undefined : (entry.file as File & { path?: string }).path ||
                         (entry.handle as FileSystemFileHandle & { path?: string } | undefined)?.path
                 });
+                if (importedFile.toastMessage) {
+                    if (importedFile.toastType === 'info') {
+                        toast(importedFile.toastMessage, { duration: 2500 });
+                    } else {
+                        toast.success(importedFile.toastMessage, { duration: 2500 });
+                    }
+                }
             } catch (err) {
                 console.error('Failed to read file:', err);
                 toast.error(getDetailedErrorMessage(
@@ -233,7 +242,7 @@ export const useFileSystem = ({
         setActiveFileId(activeFile.id);
         setInput(activeFile.content);
         inputRef.current = activeFile.content;
-        setMode(TransformMode.NONE);
+        setMode(activeFile.mode || TransformMode.NONE);
 
         if (openedFiles.length > 1) {
             toast.success(`已打开 ${openedFiles.length} 个文件`, { duration: 2000 });

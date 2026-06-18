@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.168 (2026-06-18) - HAR 请求响应提取
+### ✨ 新特性
+- **HAR 导入**: 打开 `.har` 文件时自动提取 request/response body 为派生 JSON 标签，支持 JSON、表单参数和 base64 JSON body，并默认进入嵌套解析模式
+- **文件安全**: HAR 派生标签不绑定原始抓包文件句柄，避免保存时把 `.har` 覆盖成提取后的 JSON
+
 ## v1.8.167 (2026-06-18) - Schema 本地收藏
 ### ✨ 新特性
 - **JSON Schema 校验**: 新增本地 Schema 收藏列表，可保存、载入和删除常用 Schema，优先使用 `title` 或 `$id` 命名，并限制在浏览器本地最多保留 12 个
