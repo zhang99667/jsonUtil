@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.129 (2026-06-18) - 资源类型趋势阈值
+### ✨ 新特性
+- **质量趋势**: `corpus:snapshot:diff` 新增 `--resource-type-drop` 与 `--resource-type-rise` 可选阈值，strict 模式可在视频占比骤降、Lottie 占比异常上升等素材结构漂移超过阈值时失败
+
 ## v1.8.128 (2026-06-18) - 资源类型趋势对比
 ### ✨ 新特性
 - **质量趋势**: `corpus:snapshot` 样本快照会沉淀静态资源类型占比，`corpus:snapshot:diff` 的 JSON 与 Markdown 会展示视频、图片、Lottie 等资源类型的新增、消失和占比变化，方便 PM 观察素材结构漂移
