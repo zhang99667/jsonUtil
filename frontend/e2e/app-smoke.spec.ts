@@ -165,6 +165,11 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
   await expect(page.getByText('已复制当前 Schema')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toContain('"title": "订单 Schema"');
+  await expect(schemaPanel.locator('[data-tour="json-schema-copy-example"]')).toBeEnabled();
+  await schemaPanel.locator('[data-tour="json-schema-copy-example"]').click();
+  await expect(page.getByText('已复制 Schema 示例 JSON')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('"price": 1');
   await schemaPanel.locator('[data-tour="json-schema-save"]').click();
   await expect(schemaPanel.locator('[data-tour="json-schema-library"]')).toContainText('订单 Schema');
 
