@@ -21,10 +21,13 @@ interface HarPayloadBody {
 
 interface HarPayloadEntry {
   index: number;
+  label: string;
   startedDateTime?: string;
   request: {
     method: string;
     url: string;
+    host?: string;
+    path?: string;
     body?: HarPayloadBody;
   };
   response: {
@@ -34,6 +37,17 @@ interface HarPayloadEntry {
   };
 }
 
+interface HarPayloadSummary {
+  requestBodyCount: number;
+  responseBodyCount: number;
+  methods: Record<string, number>;
+  statusCodes: Record<string, number>;
+  statusGroups: Record<string, number>;
+  hosts: Record<string, number>;
+  mimeTypes: Record<string, number>;
+  bodyKinds: Record<string, number>;
+}
+
 interface HarPayloadExport {
   schemaVersion: 1;
   source: 'HAR_PAYLOAD_EXPORT';
@@ -41,11 +55,13 @@ interface HarPayloadExport {
   extractedEntryCount: number;
   skippedEntryCount: number;
   isLimited: boolean;
+  summary: HarPayloadSummary;
   entries: HarPayloadEntry[];
 }
 
 const MAX_HAR_PAYLOAD_ENTRIES = 200;
 const MAX_HAR_BODY_TEXT_CHARS = 200_000;
+const EMPTY_HAR_URL_LABEL = '(empty url)';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -61,6 +77,20 @@ const getString = (value: unknown): string | undefined => (
 
 const getNumber = (value: unknown): number | undefined => (
   typeof value === 'number' && Number.isFinite(value) ? value : undefined
+);
+
+const incrementCounter = (counter: Record<string, number>, key: string | undefined) => {
+  const normalizedKey = key?.trim() || 'unknown';
+  counter[normalizedKey] = (counter[normalizedKey] || 0) + 1;
+};
+
+const sortCounter = (counter: Record<string, number>): Record<string, number> => (
+  Object.fromEntries(
+    Object.entries(counter).sort(([leftKey, leftValue], [rightKey, rightValue]) => {
+      if (leftValue !== rightValue) return rightValue - leftValue;
+      return leftKey.localeCompare(rightKey);
+    })
+  )
 );
 
 const truncateBodyText = (text: string): { text: string; truncated: boolean } => {
@@ -125,6 +155,78 @@ const toHarPostDataParamsBody = (value: unknown): HarPayloadBody | undefined => 
   return {
     kind: 'form',
     params,
+  };
+};
+
+const getUrlSummaryParts = (url: string): { host?: string; path?: string; label: string } => {
+  if (!url.trim()) {
+    return { label: EMPTY_HAR_URL_LABEL };
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    const path = parsedUrl.pathname || '/';
+    return {
+      host: parsedUrl.host,
+      path,
+      label: `${parsedUrl.host}${path}`,
+    };
+  } catch {
+    const label = url.split(/[?#]/)[0].trim() || EMPTY_HAR_URL_LABEL;
+    return { path: label, label };
+  }
+};
+
+const getStatusGroup = (status: number): string => {
+  if (status >= 100 && status <= 599) {
+    return `${Math.floor(status / 100)}xx`;
+  }
+
+  return 'unknown';
+};
+
+const buildHarPayloadSummary = (entries: HarPayloadEntry[]): HarPayloadSummary => {
+  const summary: HarPayloadSummary = {
+    requestBodyCount: 0,
+    responseBodyCount: 0,
+    methods: {},
+    statusCodes: {},
+    statusGroups: {},
+    hosts: {},
+    mimeTypes: {},
+    bodyKinds: {},
+  };
+
+  entries.forEach(entry => {
+    incrementCounter(summary.methods, entry.request.method);
+    incrementCounter(summary.statusCodes, String(entry.response.status || 'unknown'));
+    incrementCounter(summary.statusGroups, getStatusGroup(entry.response.status));
+    incrementCounter(summary.hosts, entry.request.host);
+
+    if (entry.response.mimeType) {
+      incrementCounter(summary.mimeTypes, entry.response.mimeType);
+    }
+
+    if (entry.request.body) {
+      summary.requestBodyCount++;
+      incrementCounter(summary.bodyKinds, `request:${entry.request.body.kind}`);
+    }
+
+    if (entry.response.body) {
+      summary.responseBodyCount++;
+      incrementCounter(summary.bodyKinds, `response:${entry.response.body.kind}`);
+    }
+  });
+
+  return {
+    requestBodyCount: summary.requestBodyCount,
+    responseBodyCount: summary.responseBodyCount,
+    methods: sortCounter(summary.methods),
+    statusCodes: sortCounter(summary.statusCodes),
+    statusGroups: sortCounter(summary.statusGroups),
+    hosts: sortCounter(summary.hosts),
+    mimeTypes: sortCounter(summary.mimeTypes),
+    bodyKinds: sortCounter(summary.bodyKinds),
   };
 };
 
@@ -214,6 +316,7 @@ const toPayloadEntry = (entry: unknown, index: number): HarPayloadEntry | null =
   const requestPostData = isRecord(request.postData) ? request.postData : {};
   const requestMimeType = getString(requestPostData.mimeType) || '';
   const responseMimeType = getString(responseContent.mimeType) || '';
+  const urlSummaryParts = getUrlSummaryParts(url);
   const requestBody = toPayloadBody(getString(requestPostData.text), requestMimeType) ||
     toHarPostDataParamsBody(requestPostData.params);
   const responseBody = toPayloadBody(
@@ -227,10 +330,13 @@ const toPayloadEntry = (entry: unknown, index: number): HarPayloadEntry | null =
 
   return {
     index,
+    label: `${method} ${status} ${urlSummaryParts.label}`,
     ...(startedDateTime ? { startedDateTime } : {}),
     request: {
       method,
       url,
+      ...(urlSummaryParts.host ? { host: urlSummaryParts.host } : {}),
+      ...(urlSummaryParts.path ? { path: urlSummaryParts.path } : {}),
       ...(requestBody ? { body: requestBody } : {}),
     },
     response: {
@@ -269,6 +375,7 @@ export const extractHarPayloads = (harText: string): HarPayloadExport | null => 
     extractedEntryCount: payloadEntries.length,
     skippedEntryCount: entries.length - payloadEntries.length,
     isLimited: payloadEntries.length >= MAX_HAR_PAYLOAD_ENTRIES && processedEntryCount < entries.length,
+    summary: buildHarPayloadSummary(payloadEntries),
     entries: payloadEntries,
   };
 };

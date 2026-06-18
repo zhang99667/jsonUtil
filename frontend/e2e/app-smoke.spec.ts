@@ -2944,8 +2944,15 @@ test('打开 HAR 文件会提取请求响应 body 为派生 JSON', async ({ page
     source: 'HAR_PAYLOAD_EXPORT',
     entryCount: 2,
     extractedEntryCount: 1,
+    summary: {
+      methods: { GET: 1 },
+      statusCodes: { '200': 1 },
+      hosts: { 'api.example.com': 1 },
+      bodyKinds: { 'response:json': 1 },
+    },
     entries: [
       {
+        label: 'GET 200 api.example.com/feed',
         response: {
           body: {
             kind: 'json',

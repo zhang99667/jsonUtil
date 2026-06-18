@@ -48,12 +48,28 @@ describe('harImport', () => {
       entryCount: 2,
       extractedEntryCount: 1,
       skippedEntryCount: 1,
+      summary: {
+        requestBodyCount: 1,
+        responseBodyCount: 1,
+        methods: { POST: 1 },
+        statusCodes: { '200': 1 },
+        statusGroups: { '2xx': 1 },
+        hosts: { 'api.example.com': 1 },
+        mimeTypes: { 'application/json': 1 },
+        bodyKinds: {
+          'request:json': 1,
+          'response:json': 1,
+        },
+      },
     });
     expect(result?.entries[0]).toMatchObject({
       index: 0,
+      label: 'POST 200 api.example.com/order',
       request: {
         method: 'POST',
         url: 'https://api.example.com/order',
+        host: 'api.example.com',
+        path: '/order',
         body: {
           kind: 'json',
           value: { id: 1 },
@@ -70,6 +86,46 @@ describe('harImport', () => {
           },
         },
       },
+    });
+  });
+
+  it('生成不含 query 的接口标签和摘要', () => {
+    const result = extractHarPayloads(JSON.stringify({
+      log: {
+        entries: [
+          {
+            request: {
+              method: 'POST',
+              url: 'https://api.example.com/api/order?token=secret&uid=1',
+            },
+            response: {
+              status: 500,
+              content: {
+                mimeType: 'application/json;charset=utf-8',
+                text: '{"error":"failed"}',
+              },
+            },
+          },
+        ],
+      },
+    }));
+
+    expect(result?.entries[0]).toMatchObject({
+      label: 'POST 500 api.example.com/api/order',
+      request: {
+        url: 'https://api.example.com/api/order?token=secret&uid=1',
+        host: 'api.example.com',
+        path: '/api/order',
+      },
+    });
+    expect(result?.entries[0].label).not.toContain('secret');
+    expect(result?.summary).toMatchObject({
+      methods: { POST: 1 },
+      statusCodes: { '500': 1 },
+      statusGroups: { '5xx': 1 },
+      hosts: { 'api.example.com': 1 },
+      mimeTypes: { 'application/json;charset=utf-8': 1 },
+      bodyKinds: { 'response:json': 1 },
     });
   });
 
@@ -146,6 +202,9 @@ describe('harImport', () => {
     expect(JSON.parse(imported.content)).toMatchObject({
       source: 'HAR_PAYLOAD_EXPORT',
       extractedEntryCount: 1,
+      summary: {
+        hosts: { 'api.example.com': 1 },
+      },
     });
   });
 
