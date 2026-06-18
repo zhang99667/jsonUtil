@@ -2887,6 +2887,78 @@ test('文件打开后可修改并保存下载', async ({ page }) => {
   await expect(readFile(downloadPath!, 'utf-8')).resolves.toBe(savedContent);
 });
 
+test('打开 HAR 文件会提取请求响应 body 为派生 JSON', async ({ page }) => {
+  const har = {
+    log: {
+      entries: [
+        {
+          request: {
+            method: 'GET',
+            url: 'https://api.example.com/feed',
+          },
+          response: {
+            status: 200,
+            content: {
+              mimeType: 'application/json',
+              text: JSON.stringify({
+                ok: true,
+                cmd: 'baiduboxapp://v1/open?params=%7B%22id%22%3A1%7D',
+              }),
+            },
+          },
+        },
+        {
+          request: {
+            method: 'GET',
+            url: 'https://static.example.com/image.png',
+          },
+          response: {
+            status: 200,
+            content: {
+              mimeType: 'image/png',
+            },
+          },
+        },
+      ],
+    },
+  };
+
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.locator('[data-tour="open-file-button"]').click();
+  const fileChooser = await fileChooserPromise;
+
+  await fileChooser.setFiles({
+    name: 'network.har',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(har)),
+  });
+
+  await expect(page.getByText('network.har.payloads.json').first()).toBeVisible();
+  await expect(page.getByText('已从 HAR 提取 1/2 条请求/响应 body')).toBeVisible();
+  await expect(page.getByRole('button', { name: /嵌套解析/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('HAR_PAYLOAD_EXPORT');
+
+  await page.locator('[data-tour="copy-source"]').click();
+  const copiedSource = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(JSON.parse(copiedSource)).toMatchObject({
+    source: 'HAR_PAYLOAD_EXPORT',
+    entryCount: 2,
+    extractedEntryCount: 1,
+    entries: [
+      {
+        response: {
+          body: {
+            kind: 'json',
+            value: {
+              cmd: 'baiduboxapp://v1/open?params=%7B%22id%22%3A1%7D',
+            },
+          },
+        },
+      },
+    ],
+  });
+});
+
 test('取消打开文件不会输出失败日志', async ({ page }) => {
   const consoleMessages: string[] = [];
   page.on('console', message => {
