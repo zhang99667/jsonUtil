@@ -12,6 +12,10 @@ REMOTE_APP_DIR="${REMOTE_APP_DIR:-/home/markz/apps/jsonUtil}"
 HEALTH_CHECK_URLS="${HEALTH_CHECK_URLS:-http://127.0.0.1 http://127.0.0.1/api/visitor/ping}"
 SSH_SERVER_ALIVE_INTERVAL="${SSH_SERVER_ALIVE_INTERVAL:-15}"
 SSH_SERVER_ALIVE_COUNT_MAX="${SSH_SERVER_ALIVE_COUNT_MAX:-10}"
+FRONTEND_DOCKERFILE="${FRONTEND_DOCKERFILE:-Dockerfile}"
+SYNC_FRONTEND_DIST="${SYNC_FRONTEND_DIST:-false}"
+COMPOSE_SERVICES="${COMPOSE_SERVICES:-}"
+COMPOSE_NO_DEPS="${COMPOSE_NO_DEPS:-false}"
 
 SSH_BASE_OPTS=(
   -i "$SSH_KEY"
@@ -54,28 +58,35 @@ log "创建远程目录: $REMOTE_APP_DIR"
 ssh "${SSH_BASE_OPTS[@]}" "$SSH_USER@$SSH_HOST" "mkdir -p '$REMOTE_APP_DIR'"
 
 log "同步源码到远程服务器"
+RSYNC_EXCLUDES=(
+  --exclude='.git/'
+  --exclude='.github/'
+  --exclude='.claude/'
+  --exclude='.env'
+  --exclude='.env.*'
+  --exclude='artifacts/'
+  --exclude='outputs/'
+  --exclude='frontend/node_modules/'
+  --exclude='frontend/.vite/'
+  --exclude='frontend/build/'
+  --exclude='frontend/releases/'
+  --exclude='frontend/test-results/'
+  --exclude='backend/target/'
+  --exclude='node_modules/'
+  --exclude='*.log'
+)
+
+if [ "$SYNC_FRONTEND_DIST" != "true" ]; then
+  RSYNC_EXCLUDES+=(--exclude='frontend/dist/')
+fi
+
 rsync -az --delete \
   -e "$(build_rsync_ssh_command)" \
-  --exclude='.git/' \
-  --exclude='.github/' \
-  --exclude='.claude/' \
-  --exclude='.env' \
-  --exclude='.env.*' \
-  --exclude='artifacts/' \
-  --exclude='outputs/' \
-  --exclude='frontend/node_modules/' \
-  --exclude='frontend/.vite/' \
-  --exclude='frontend/dist/' \
-  --exclude='frontend/build/' \
-  --exclude='frontend/releases/' \
-  --exclude='frontend/test-results/' \
-  --exclude='backend/target/' \
-  --exclude='node_modules/' \
-  --exclude='*.log' \
+  "${RSYNC_EXCLUDES[@]}" \
   "$ROOT_DIR/" "$SSH_USER@$SSH_HOST:$REMOTE_APP_DIR/"
 
 log "执行远程 Docker Compose 部署"
 ssh "${SSH_BASE_OPTS[@]}" "$SSH_USER@$SSH_HOST" \
-  "cd '$REMOTE_APP_DIR' && HEALTH_CHECK_URLS='$HEALTH_CHECK_URLS' bash scripts/deploy/remote-docker-compose-deploy.sh"
+  "cd '$REMOTE_APP_DIR' && HEALTH_CHECK_URLS='$HEALTH_CHECK_URLS' FRONTEND_DOCKERFILE='$FRONTEND_DOCKERFILE' COMPOSE_SERVICES='$COMPOSE_SERVICES' COMPOSE_NO_DEPS='$COMPOSE_NO_DEPS' bash scripts/deploy/remote-docker-compose-deploy.sh"
 
 log "SSH 部署完成"
