@@ -59,6 +59,8 @@ bash scripts/ci/local-ci.sh
 
 如果本机没有 Maven，脚本会尝试使用 `maven:3.9-eclipse-temurin-17` Docker 镜像运行后端检查。此时需要 Docker daemon 已启动。
 
+本地 CI 的 `docker compose config` 会使用仅用于配置校验的假环境变量填充 `POSTGRES_PASSWORD`、`SPRING_DATASOURCE_PASSWORD` 和 `JWT_SECRET`，因此不依赖本机存在生产 `.env` 文件。
+
 ## 本机直连服务器部署
 
 当 GitHub push 或 GitHub Actions 不可用时，可以从本机通过 SSH 直连服务器部署：

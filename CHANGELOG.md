@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.138 (2026-06-18) - 本地 CI Compose 校验补强
+### ✨ 新特性
+- **质量门禁**: 本地 CI 的 Docker Compose 配置校验内置仅用于校验的数据库/JWT 假环境变量，不再依赖开发机存在生产 `.env` 文件，避免完整本地 CI 在最后一步误失败
+
 ## v1.8.137 (2026-06-18) - SSH 部署保活
 ### ✨ 新特性
 - **部署可靠性**: 本机 SSH 部署脚本和 GitHub Actions Deploy 工作流新增 SSH keepalive 参数，长时间 Docker 构建期间默认保持连接，并支持通过 `SSH_SERVER_ALIVE_INTERVAL` / `SSH_SERVER_ALIVE_COUNT_MAX` 调整

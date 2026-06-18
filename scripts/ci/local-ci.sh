@@ -74,6 +74,9 @@ fi
 
 log "Docker: compose config"
 cd "$ROOT_DIR"
+POSTGRES_PASSWORD=ci-postgres-password \
+SPRING_DATASOURCE_PASSWORD=ci-postgres-password \
+JWT_SECRET=ci-jwt-secret-for-compose-validation \
 docker compose -f docker-compose.yml config
 
 log "Local CI finished"
