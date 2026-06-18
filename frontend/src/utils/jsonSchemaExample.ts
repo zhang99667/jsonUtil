@@ -1,0 +1,303 @@
+export interface JsonSchemaExampleResult {
+  exampleText?: string;
+  error?: string;
+}
+
+type JsonSchemaType = 'array' | 'boolean' | 'integer' | 'null' | 'number' | 'object' | 'string';
+type JsonSchemaNode = boolean | Record<string, unknown>;
+
+interface ExampleContext {
+  rootSchema: unknown;
+  seenRefs: Set<string>;
+  depth: number;
+}
+
+const MAX_EXAMPLE_DEPTH = 8;
+const MAX_ARRAY_EXAMPLE_ITEMS = 3;
+const MAX_OBJECT_EXAMPLE_PROPERTIES = 80;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const isJsonSerializableValue = (value: unknown): boolean => {
+  if (value === null) return true;
+  if (['string', 'number', 'boolean'].includes(typeof value)) return Number.isFinite(value as number) || typeof value !== 'number';
+  if (Array.isArray(value)) return value.every(isJsonSerializableValue);
+  if (isRecord(value)) return Object.values(value).every(isJsonSerializableValue);
+  return false;
+};
+
+const cloneJsonValue = (value: unknown): unknown => (
+  isJsonSerializableValue(value) ? JSON.parse(JSON.stringify(value)) : undefined
+);
+
+const getNumberValue = (schema: Record<string, unknown>, key: string): number | undefined => {
+  const value = schema[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+};
+
+const getIntegerValue = (schema: Record<string, unknown>, key: string): number | undefined => {
+  const value = getNumberValue(schema, key);
+  return typeof value === 'number' ? Math.trunc(value) : undefined;
+};
+
+const decodeJsonPointerSegment = (segment: string): string => (
+  segment.replace(/~1/g, '/').replace(/~0/g, '~')
+);
+
+const resolveLocalRef = (rootSchema: unknown, ref: string): unknown => {
+  if (ref === '#') return rootSchema;
+  if (!ref.startsWith('#/')) return undefined;
+
+  return ref
+    .slice(2)
+    .split('/')
+    .map(decodeJsonPointerSegment)
+    .reduce<unknown>((current, segment) => {
+      if (current === undefined) return undefined;
+      if (Array.isArray(current)) {
+        const index = Number(segment);
+        return Number.isInteger(index) ? current[index] : undefined;
+      }
+      if (isRecord(current)) return current[segment];
+      return undefined;
+    }, rootSchema);
+};
+
+const getPrimaryType = (schema: Record<string, unknown>): JsonSchemaType | undefined => {
+  const type = schema.type;
+  if (typeof type === 'string') return type as JsonSchemaType;
+  if (Array.isArray(type)) {
+    return type.find((item): item is JsonSchemaType => (
+      typeof item === 'string' && item !== 'null'
+    ));
+  }
+
+  if (isRecord(schema.properties) || Array.isArray(schema.required)) return 'object';
+  if (isRecord(schema.items) || schema.items === false || Array.isArray(schema.prefixItems)) return 'array';
+  if (typeof schema.format === 'string' || typeof schema.minLength === 'number' || typeof schema.pattern === 'string') return 'string';
+  if (typeof schema.minimum === 'number' || typeof schema.maximum === 'number' || typeof schema.multipleOf === 'number') return 'number';
+  return undefined;
+};
+
+const getPreferredLiteral = (schema: Record<string, unknown>): unknown => {
+  const defaultValue = cloneJsonValue(schema.default);
+  if (defaultValue !== undefined) return defaultValue;
+
+  const examples = schema.examples;
+  if (Array.isArray(examples) && examples.length > 0) {
+    const exampleValue = cloneJsonValue(examples[0]);
+    if (exampleValue !== undefined) return exampleValue;
+  }
+
+  const constValue = cloneJsonValue(schema.const);
+  if (constValue !== undefined) return constValue;
+
+  const enumValues = schema.enum;
+  if (Array.isArray(enumValues) && enumValues.length > 0) {
+    const enumValue = cloneJsonValue(enumValues.find(value => value !== null) ?? enumValues[0]);
+    if (enumValue !== undefined) return enumValue;
+  }
+
+  return undefined;
+};
+
+const getRequiredKeys = (schema: Record<string, unknown>): string[] => {
+  const required = schema.required;
+  return Array.isArray(required)
+    ? required.filter((key): key is string => typeof key === 'string')
+    : [];
+};
+
+const getSchemaProperties = (schema: Record<string, unknown>): Record<string, JsonSchemaNode> => {
+  if (!isRecord(schema.properties)) return {};
+
+  return Object.fromEntries(
+    Object.entries(schema.properties).filter((entry): entry is [string, JsonSchemaNode] => (
+      isRecord(entry[1]) || typeof entry[1] === 'boolean'
+    ))
+  );
+};
+
+const uniqueKeys = (keys: string[]): string[] => [...new Set(keys)].slice(0, MAX_OBJECT_EXAMPLE_PROPERTIES);
+
+const generateStringExample = (schema: Record<string, unknown>): string => {
+  const format = typeof schema.format === 'string' ? schema.format : '';
+  const base = (() => {
+    if (format === 'email') return 'user@example.com';
+    if (['uri', 'url', 'iri'].includes(format)) return 'https://example.com';
+    if (format === 'date-time') return '2026-01-01T00:00:00.000Z';
+    if (format === 'date') return '2026-01-01';
+    if (format === 'time') return '12:00:00';
+    if (format === 'uuid') return '550e8400-e29b-41d4-a716-446655440000';
+    if (format === 'ipv4') return '127.0.0.1';
+    if (format === 'ipv6') return '2001:db8::1';
+    return 'string';
+  })();
+
+  const minLength = Math.max(getIntegerValue(schema, 'minLength') || 0, 0);
+  const maxLength = getIntegerValue(schema, 'maxLength');
+  let value = base.length >= minLength ? base : `${base}${'x'.repeat(minLength - base.length)}`;
+
+  if (typeof maxLength === 'number' && maxLength >= 0 && value.length > maxLength) {
+    const fallbackLength = Math.max(Math.min(maxLength, Math.max(minLength, 1)), 0);
+    value = 'x'.repeat(fallbackLength);
+  }
+
+  return value;
+};
+
+const generateNumberExample = (schema: Record<string, unknown>, integerOnly: boolean): number => {
+  const minimum = getNumberValue(schema, 'minimum');
+  const exclusiveMinimum = getNumberValue(schema, 'exclusiveMinimum');
+  const maximum = getNumberValue(schema, 'maximum');
+  const exclusiveMaximum = getNumberValue(schema, 'exclusiveMaximum');
+  const multipleOf = getNumberValue(schema, 'multipleOf');
+
+  let value = typeof minimum === 'number' ? minimum : 1;
+  if (typeof exclusiveMinimum === 'number') value = exclusiveMinimum + (integerOnly ? 1 : 0.1);
+  if (integerOnly) value = Math.ceil(value);
+
+  if (typeof multipleOf === 'number' && multipleOf > 0) {
+    value = Math.ceil(value / multipleOf) * multipleOf;
+    if (integerOnly) value = Math.ceil(value);
+  }
+
+  if (typeof maximum === 'number' && value > maximum) value = integerOnly ? Math.floor(maximum) : maximum;
+  if (typeof exclusiveMaximum === 'number' && value >= exclusiveMaximum) {
+    value = integerOnly ? Math.floor(exclusiveMaximum - 1) : exclusiveMaximum - 0.1;
+  }
+
+  return integerOnly ? Math.trunc(value) : Number(value.toFixed(4));
+};
+
+const mergeAllOfExamples = (examples: unknown[]): unknown => {
+  const objectExamples = examples.filter(isRecord);
+  if (objectExamples.length === examples.length) return Object.assign({}, ...objectExamples);
+  return examples.find(value => value !== undefined) ?? {};
+};
+
+const pickFirstBranchExample = (
+  branches: unknown,
+  context: ExampleContext
+): unknown | undefined => {
+  if (!Array.isArray(branches)) return undefined;
+
+  for (const branch of branches) {
+    const example = generateExampleValue(branch, { ...context, depth: context.depth + 1 });
+    if (example !== undefined) return example;
+  }
+
+  return undefined;
+};
+
+const generateArrayExample = (schema: Record<string, unknown>, context: ExampleContext): unknown[] => {
+  const prefixItems = Array.isArray(schema.prefixItems)
+    ? schema.prefixItems.filter((item): item is JsonSchemaNode => isRecord(item) || typeof item === 'boolean')
+    : [];
+  if (prefixItems.length > 0) {
+    return prefixItems
+      .slice(0, MAX_ARRAY_EXAMPLE_ITEMS)
+      .map(item => generateExampleValue(item, { ...context, depth: context.depth + 1 }));
+  }
+
+  const items = schema.items;
+  if (items === false) return [];
+
+  const minItems = Math.max(getIntegerValue(schema, 'minItems') || 0, 0);
+  const exampleCount = Math.min(Math.max(minItems, isRecord(items) || typeof items === 'boolean' ? 1 : 0), MAX_ARRAY_EXAMPLE_ITEMS);
+  if (exampleCount === 0) return [];
+
+  const itemSchema = isRecord(items) || typeof items === 'boolean' ? items : {};
+  return Array.from({ length: exampleCount }, () => (
+    generateExampleValue(itemSchema, { ...context, depth: context.depth + 1 })
+  ));
+};
+
+const generateObjectExample = (schema: Record<string, unknown>, context: ExampleContext): Record<string, unknown> => {
+  const properties = getSchemaProperties(schema);
+  const keys = uniqueKeys([
+    ...getRequiredKeys(schema),
+    ...Object.keys(properties),
+  ]);
+
+  return Object.fromEntries(
+    keys.map(key => {
+      const value = generateExampleValue(properties[key] || {}, { ...context, depth: context.depth + 1 });
+      return [key, value === undefined ? null : value];
+    })
+  );
+};
+
+const generateExampleValue = (schemaNode: unknown, context: ExampleContext): unknown => {
+  if (context.depth > MAX_EXAMPLE_DEPTH) return {};
+  if (schemaNode === true) return {};
+  if (schemaNode === false) return undefined;
+  if (!isRecord(schemaNode)) return {};
+
+  const ref = typeof schemaNode.$ref === 'string' ? schemaNode.$ref : '';
+  if (ref) {
+    if (context.seenRefs.has(ref)) return {};
+
+    const resolved = resolveLocalRef(context.rootSchema, ref);
+    if (resolved !== undefined) {
+      const nextRefs = new Set(context.seenRefs);
+      nextRefs.add(ref);
+      return generateExampleValue(resolved, {
+        ...context,
+        seenRefs: nextRefs,
+        depth: context.depth + 1,
+      });
+    }
+  }
+
+  const preferredLiteral = getPreferredLiteral(schemaNode);
+  if (preferredLiteral !== undefined) return preferredLiteral;
+
+  if (Array.isArray(schemaNode.allOf)) {
+    return mergeAllOfExamples(
+      schemaNode.allOf.map(branch => generateExampleValue(branch, { ...context, depth: context.depth + 1 }))
+    );
+  }
+
+  const branchExample = pickFirstBranchExample(schemaNode.oneOf || schemaNode.anyOf, context);
+  if (branchExample !== undefined) return branchExample;
+
+  const type = getPrimaryType(schemaNode);
+  if (type === 'object') return generateObjectExample(schemaNode, context);
+  if (type === 'array') return generateArrayExample(schemaNode, context);
+  if (type === 'string') return generateStringExample(schemaNode);
+  if (type === 'integer') return generateNumberExample(schemaNode, true);
+  if (type === 'number') return generateNumberExample(schemaNode, false);
+  if (type === 'boolean') return true;
+  if (type === 'null') return null;
+
+  return {};
+};
+
+export const generateJsonSchemaExampleText = (schemaText: string): JsonSchemaExampleResult => {
+  if (!schemaText.trim()) return { error: '请先粘贴 JSON Schema' };
+
+  let schema: unknown;
+  try {
+    schema = JSON.parse(schemaText);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { error: `Schema 不是合法 JSON: ${message}` };
+  }
+
+  if (schema === false) return { error: '当前 Schema 不允许任何 JSON 值，无法生成示例' };
+
+  const example = generateExampleValue(schema, {
+    rootSchema: schema,
+    seenRefs: new Set(),
+    depth: 0,
+  });
+
+  if (example === undefined) return { error: '当前 Schema 不允许任何 JSON 值，无法生成示例' };
+
+  return {
+    exampleText: JSON.stringify(example, null, 2),
+  };
+};

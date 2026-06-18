@@ -10,6 +10,7 @@ import {
   type JsonSchemaValidationStatus,
 } from '../utils/jsonSchemaValidation';
 import { inferJsonSchemaFromText, type JsonSchemaInferenceRequiredMode } from '../utils/jsonSchemaInference';
+import { generateJsonSchemaExampleText } from '../utils/jsonSchemaExample';
 import {
   JSON_SCHEMA_LIBRARY_STORAGE_KEY,
   MAX_JSON_SCHEMA_LIBRARY_ITEMS,
@@ -86,6 +87,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   }, [jsonData, schemaText]);
   const isValidateDisabled = Boolean(validateButtonDisabledReason);
   const canCopySchema = Boolean(schemaText.trim());
+  const canCopySchemaExample = Boolean(schemaText.trim());
   const canCopyIssueChecklist = Boolean(result?.issues.length);
 
   const handleSchemaChange = useCallback((value: string) => {
@@ -201,6 +203,45 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     }
   }, [schemaText]);
 
+  const handleCopySchemaExample = useCallback(async () => {
+    if (!schemaText.trim()) return;
+
+    const startedAt = performance.now();
+    const exampleResult = generateJsonSchemaExampleText(schemaText);
+    if (!exampleResult.exampleText) {
+      trackToolEvent({
+        eventName: 'SCHEMA_EXAMPLE_COPY',
+        category: 'schema',
+        status: 'error',
+        inputSizeBucket: getTextSizeBucket(schemaText),
+        durationBucket: getDurationBucket(performance.now() - startedAt),
+      });
+      showError(exampleResult.error || '生成示例 JSON 失败');
+      return;
+    }
+
+    try {
+      await copyText(exampleResult.exampleText);
+      trackToolEvent({
+        eventName: 'SCHEMA_EXAMPLE_COPY',
+        category: 'schema',
+        status: 'success',
+        inputSizeBucket: getTextSizeBucket(schemaText),
+        durationBucket: getDurationBucket(performance.now() - startedAt),
+      });
+      showSuccess('已复制 Schema 示例 JSON');
+    } catch (error) {
+      trackToolEvent({
+        eventName: 'SCHEMA_EXAMPLE_COPY',
+        category: 'schema',
+        status: 'error',
+        inputSizeBucket: getTextSizeBucket(schemaText),
+        durationBucket: getDurationBucket(performance.now() - startedAt),
+      });
+      showError(getClipboardErrorMessage(error, '复制示例失败'));
+    }
+  }, [schemaText]);
+
   const handleCopyIssueChecklist = useCallback(async () => {
     if (!result || result.issues.length === 0) return;
 
@@ -296,7 +337,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
       <div id={SCHEMA_VALIDATE_BUTTON_DESCRIPTION_ID} className="text-xs text-gray-500">
         {validateButtonDisabledReason || '校验当前 SOURCE JSON'}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           type="button"
           data-tour="json-schema-copy-schema"
@@ -306,6 +347,16 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
           className="rounded border border-editor-border px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           复制Schema
+        </button>
+        <button
+          type="button"
+          data-tour="json-schema-copy-example"
+          onClick={() => void handleCopySchemaExample()}
+          disabled={!canCopySchemaExample}
+          title={canCopySchemaExample ? '根据当前 Schema 复制一份示例 JSON' : 'Schema 为空，暂无内容可生成示例'}
+          className="rounded border border-editor-border px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          复制示例
         </button>
         <button
           type="button"
