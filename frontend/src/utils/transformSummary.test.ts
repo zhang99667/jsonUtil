@@ -496,6 +496,13 @@ describe('transformSummary', () => {
         hasMorePaths: false,
       }),
       expect.objectContaining({
+        schema: 'https://static.example.com/assets/banner.jpg',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.imageUrl'],
+        hasMorePaths: false,
+      }),
+      expect.objectContaining({
         schema: 'https://static.example.com/assets/icon.png',
         count: 1,
         recordCount: 1,
@@ -509,9 +516,14 @@ describe('transformSummary', () => {
         paths: ['$.scheme.video_info.posterUrl'],
         hasMorePaths: false,
       }),
+      expect.objectContaining({
+        schema: 'https://static.example.com/video/ad.mp4',
+        count: 1,
+        recordCount: 1,
+        paths: ['$.scheme.video_info.video_url'],
+        hasMorePaths: false,
+      }),
     ]));
-    expect(report.topResourceSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/assets/banner.jpg');
-    expect(report.topResourceSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/video/ad.mp4');
     expect(report.topNestedResourceFields).toEqual(expect.arrayContaining([
       expect.objectContaining({
         key: 'button_icon',
@@ -565,6 +577,7 @@ describe('transformSummary', () => {
           pd: '100',
           cm: '1501',
         },
+        sourceValue: mediaUrl,
       },
     ]);
     expect(buildTransformReportView(report, 'button_icon').records[0].nestedResourceFields).toEqual([
@@ -572,6 +585,7 @@ describe('transformSummary', () => {
         path: '$.scheme.video_info.button_icon',
         preview: 'https://static.example.com/assets/open.png',
         value: 'https://static.example.com/assets/open.png',
+        sourceValue: 'https://static.example.com/assets/open.png',
       },
     ]);
     expect(reportText).toContain('CMD Schema 分布:');
@@ -585,7 +599,7 @@ describe('transformSummary', () => {
         count: 1,
       }),
       expect.objectContaining({
-        schema: 'https://static.example.com/lottie/swipe.zip',
+        schema: 'https://static.example.com/video/ad.mp4',
         count: 1,
       }),
     ]));

@@ -77,6 +77,7 @@ export interface TransformReportDecodedPath {
   preview: string;
   copyText?: string;
   value?: JsonValue;
+  sourceValue?: JsonValue;
 }
 
 export interface TransformReportCommandSchemaRow {
@@ -920,7 +921,7 @@ export const formatTransformCmdStructureComparisonPackageText = (
 
 const buildNestedInsightSearchFields = (
   recordPath: string,
-  rows: Array<{ key: string; path: string; preview: string; value?: unknown; copyText?: string }>
+  rows: Array<{ key: string; path: string; preview: string; value?: unknown; sourceValue?: unknown; copyText?: string }>
 ): TransformReportDecodedPath[] => rows
   .slice(0, DEFAULT_NESTED_COMMAND_FIELD_SEARCH_LIMIT)
   .map(row => {
@@ -930,6 +931,7 @@ const buildNestedInsightSearchFields = (
         path,
         preview: row.preview,
         value: row.value as JsonValue,
+        ...(row.sourceValue !== undefined ? { sourceValue: row.sourceValue as JsonValue } : {}),
       };
     }
 
@@ -992,7 +994,7 @@ const buildRecordInsightData = (
     extFieldCount,
     base64SuffixFields,
     base64SuffixFieldCount,
-  } = collectSchemeInsightFields(decodedValue);
+  } = collectSchemeInsightFields(decodedValue, { source: record.originalValue });
   const nestedCommandSearchFields = buildNestedInsightSearchFields(record.path, commandFieldRows);
   const nestedResourceSearchFields = buildNestedInsightSearchFields(record.path, resourceFieldRows);
 
@@ -1781,8 +1783,13 @@ const collectCommandSchemaOccurrences = (
   };
 
   const pushResourceSchema = (row: TransformReportDecodedPath, recordPath: string) => {
-    const schema = typeof row.value === 'string'
-      ? getUrlResourceSchemaFromUrl(row.value)
+    const schemaSource = typeof row.sourceValue === 'string'
+      ? row.sourceValue
+      : typeof row.value === 'string'
+        ? row.value
+        : undefined;
+    const schema = schemaSource
+      ? getUrlResourceSchemaFromUrl(schemaSource)
       : undefined;
     if (!schema) return;
 

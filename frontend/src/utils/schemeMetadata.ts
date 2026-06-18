@@ -41,6 +41,7 @@ export interface SchemeInsightFieldRow {
   preview: string;
   copyText?: string;
   value?: unknown;
+  sourceValue?: unknown;
 }
 
 export interface SchemeCommandSummaryInfo extends SchemeInsightFields {
@@ -380,12 +381,14 @@ const formatInsightFieldPreview = (value: unknown, maxLength = DEFAULT_DISPLAY_L
 const createInsightFieldRow = (
   key: string,
   path: string,
-  value: unknown
+  value: unknown,
+  sourceValue?: SourceShape
 ): SchemeInsightFieldRow => ({
   key,
   path,
   preview: formatInsightFieldPreview(value),
   value,
+  ...(sourceValue !== undefined ? { sourceValue } : {}),
 });
 
 export const getSchemeInsightFieldCopyText = (
@@ -401,6 +404,7 @@ export const getSchemeInsightFieldCopyText = (
 
 const collectSchemeInsightFieldsInner = (
   value: unknown,
+  sourceShape: SourceShape | null,
   currentPath: string,
   commandFields: string[],
   commandFieldRows: SchemeInsightFieldRow[],
@@ -413,6 +417,7 @@ const collectSchemeInsightFieldsInner = (
   if (Array.isArray(value)) {
     value.forEach((item, index) => collectSchemeInsightFieldsInner(
       item,
+      Array.isArray(sourceShape) ? sourceShape[index] ?? null : null,
       `${currentPath}[${index}]`,
       commandFields,
       commandFieldRows,
@@ -430,10 +435,11 @@ const collectSchemeInsightFieldsInner = (
   Object.entries(value).forEach(([key, item]) => {
     const childPath = appendJsonPathKey(currentPath, key);
     const isObjectItem = Boolean(item) && typeof item === 'object';
+    const childSourceShape = isPlainObject(sourceShape) ? sourceShape[key] : undefined;
     if (isResourceInsightField(key) && isResourceInsightValue(item)) {
       resourceFields.push(key);
       if (options.includeCommandFieldRows !== false) {
-        resourceFieldRows.push(createInsightFieldRow(key, childPath, item));
+        resourceFieldRows.push(createInsightFieldRow(key, childPath, item, childSourceShape));
       }
     } else if (isObjectItem && isCommandInsightField(key)) {
       commandFields.push(key);
@@ -454,6 +460,7 @@ const collectSchemeInsightFieldsInner = (
     if (isObjectItem) {
       collectSchemeInsightFieldsInner(
         item,
+        childSourceShape ?? null,
         childPath,
         commandFields,
         commandFieldRows,
@@ -477,9 +484,11 @@ export const collectSchemeInsightFields = (
   const resourceFieldRows: SchemeInsightFieldRow[] = [];
   const extFields: string[] = [];
   const base64SuffixFields: string[] = [];
+  const sourceShape = parseSourceShape(options.source?.trim());
 
   collectSchemeInsightFieldsInner(
     value,
+    sourceShape,
     '$',
     commandFields,
     commandFieldRows,
