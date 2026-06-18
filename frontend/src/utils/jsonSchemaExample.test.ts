@@ -332,6 +332,52 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('为 oneOf 和 anyOf 选择可通过整体校验的分支示例', () => {
+    const oneOfSchemaText = JSON.stringify({
+      oneOf: [
+        {
+          type: 'string',
+          minLength: 1,
+        },
+        {
+          type: 'string',
+          pattern: '^string$',
+        },
+        {
+          type: 'object',
+          required: ['kind'],
+          additionalProperties: false,
+          properties: {
+            kind: {
+              const: 'fallback',
+            },
+          },
+        },
+      ],
+    });
+    const anyOfSchemaText = JSON.stringify({
+      anyOf: [
+        {
+          type: 'array',
+          minItems: 9,
+          items: {
+            type: 'string',
+          },
+        },
+        {
+          const: 'fallback',
+        },
+      ],
+    });
+    const oneOfResult = generateJsonSchemaExampleText(oneOfSchemaText);
+    const anyOfResult = generateJsonSchemaExampleText(anyOfSchemaText);
+
+    expect(JSON.parse(oneOfResult.exampleText || '{}')).toEqual({ kind: 'fallback' });
+    expect(JSON.parse(anyOfResult.exampleText || '""')).toBe('fallback');
+    expect(validateJsonAgainstSchema(oneOfResult.exampleText || '', oneOfSchemaText).status).toBe('valid');
+    expect(validateJsonAgainstSchema(anyOfResult.exampleText || '', anyOfSchemaText).status).toBe('valid');
+  });
+
   it('生成后自校验并拦截超出安全上限的数组下限示例', () => {
     const schemaText = JSON.stringify({
       type: 'array',

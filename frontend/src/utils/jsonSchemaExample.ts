@@ -522,18 +522,30 @@ const mergeAllOfExamples = (examples: unknown[]): unknown => {
   return examples.find(value => value !== undefined) ?? {};
 };
 
+const isExampleValidForSchemaNode = (example: unknown, schemaNode: Record<string, unknown>): boolean => {
+  const exampleText = JSON.stringify(example);
+  const schemaText = JSON.stringify(schemaNode);
+  if (typeof exampleText !== 'string' || typeof schemaText !== 'string') return false;
+
+  return validateJsonAgainstSchema(exampleText, schemaText).status === 'valid';
+};
+
 const pickFirstBranchExample = (
   branches: unknown,
-  context: ExampleContext
+  context: ExampleContext,
+  schemaNode: Record<string, unknown>
 ): unknown | undefined => {
   if (!Array.isArray(branches)) return undefined;
 
+  let firstExample: unknown;
   for (const branch of branches) {
     const example = generateExampleValue(branch, { ...context, depth: context.depth + 1 });
-    if (example !== undefined) return example;
+    if (example === undefined) continue;
+    if (isExampleValidForSchemaNode(example, schemaNode)) return example;
+    if (firstExample === undefined) firstExample = example;
   }
 
-  return undefined;
+  return firstExample;
 };
 
 const getObjectSchemaProperties = (schema: Record<string, unknown>): Record<string, JsonSchemaNode> => (
@@ -809,7 +821,7 @@ const generateExampleValue = (schemaNode: unknown, context: ExampleContext): unk
     );
   }
 
-  const branchExample = pickFirstBranchExample(schemaNode.oneOf || schemaNode.anyOf, context);
+  const branchExample = pickFirstBranchExample(schemaNode.oneOf || schemaNode.anyOf, context, schemaNode);
   if (branchExample !== undefined) return branchExample;
 
   const type = getPrimaryType(schemaNode);
