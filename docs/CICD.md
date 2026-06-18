@@ -85,7 +85,7 @@ bash scripts/deploy/ssh-docker-compose-deploy.sh
 1. 检查本机与远程部署依赖
 2. 创建远程应用目录
 3. 使用 SSH keepalive 参数保持长时间 Docker build 期间的连接
-4. 通过 `rsync --delete` 同步源码，排除 `.git`、`.env`、`node_modules`、构建产物等目录
+4. 通过 `rsync --delete` 同步源码，排除 `.git`、`.env`、`node_modules`、`artifacts`、`outputs`、`.vite`、`test-results`、构建产物等目录
 5. 在远程执行 `scripts/deploy/remote-docker-compose-deploy.sh`
 6. 运行 `docker compose up -d --build --remove-orphans`
 7. 执行健康检查
@@ -93,6 +93,8 @@ bash scripts/deploy/ssh-docker-compose-deploy.sh
 `SSH_SERVER_ALIVE_INTERVAL` 与 `SSH_SERVER_ALIVE_COUNT_MAX` 默认分别为 `15` 和 `10`。如果远端构建阶段长时间无输出导致 SSH 断开，可按网络环境调大这两个值。
 
 前端 Docker 构建会复制 `frontend/.npmrc` 到依赖安装层，`npm ci --include=optional` 默认启用多次 fetch 重试和较长网络超时，用于降低 registry 临时断连、`ECONNRESET` 或平台 optional 包下载失败导致的发布中断。
+
+如果远端根盘已满，优先清理 Docker 未使用镜像或构建缓存，不要删除 `db-data`、`upload-data` 等业务 volume；同步脚本默认不会再上传本机测试输出和临时产物。
 
 ## 远程服务器要求
 
