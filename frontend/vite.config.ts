@@ -99,6 +99,7 @@ export default defineConfig(({ mode }) => {
             if (packageName === '@ant-design/charts') return 'vendor-ant-design-charts';
             if ([
               'ajv',
+              'ajv-formats',
               'fast-deep-equal',
               'fast-uri',
               'json-schema-traverse',

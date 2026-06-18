@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.180 (2026-06-18) - Schema Format 校验
+### ✨ 新特性
+- **JSON Schema 校验**: 接入官方 `ajv-formats`，启用 `email`、`uri`、`date-time`、`uuid` 等标准 `format` 约束校验，避免格式错误字段被误判为通过
+
 ## v1.8.179 (2026-06-18) - Schema 修复清单
 ### ✨ 新特性
 - **JSON Schema 校验**: 校验失败后支持一键复制 Markdown 修复清单，将路径、关键字、错误说明、修复建议和 Schema 路径整理成待办项，便于跨端协作分发且不包含原始 JSON 值
