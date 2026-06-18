@@ -48,6 +48,11 @@ describe('jsonSchemaValidation', () => {
     expect(result.status).toBe('invalid');
     expect(result.isValid).toBe(false);
     expect(result.issueCount).toBe(2);
+    expect(result.issueKeywordGroups).toEqual([
+      { key: 'minimum', count: 1 },
+      { key: 'required', count: 1 },
+    ]);
+    expect(result.issuePathList).toEqual(['$.items[0].price', '$.items[1]']);
     expect(result.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({
         path: '$.items[0].price',
@@ -142,6 +147,10 @@ describe('jsonSchemaValidation', () => {
     const report = formatJsonSchemaValidationReport(result);
 
     expect(report).toContain('JSON Schema 校验报告');
+    expect(report).toContain('问题分布:');
+    expect(report).toContain('- minimum: 1');
+    expect(report).toContain('路径清单:');
+    expect(report).toContain('1. $.items[0].price');
     expect(report).toContain('$.items[0].price [minimum]');
     expect(report).not.toContain('"订单"');
     expect(report).not.toContain('"required"');
