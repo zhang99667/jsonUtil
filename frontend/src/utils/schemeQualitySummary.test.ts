@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SchemeCommandSummaryInfo } from './schemeMetadata';
 import type { SchemeDecodeResult, SchemeDecodeWarning, SchemePlaceholder } from './schemeUtils';
-import { buildSchemeQualitySummary } from './schemeQualitySummary';
+import { buildSchemeQualitySummary, formatSchemeQualitySummaryText } from './schemeQualitySummary';
 
 const baseDecodeResult: SchemeDecodeResult = {
   original: '',
@@ -117,5 +117,26 @@ describe('schemeQualitySummary', () => {
       label: '部分跳过',
     });
     expect(summary?.items).toContainEqual({ label: '跳过', value: 5, tone: 'warning' });
+  });
+
+  it('格式化可协作复制的质量摘要文本', () => {
+    const summary = buildSummary({
+      commandSummaryInfo: buildCommandSummary({
+        commandSchemaCount: 1,
+        commandFieldCount: 2,
+      }),
+    });
+
+    expect(summary && formatSchemeQualitySummaryText(summary)).toBe([
+      'Scheme 解析质量摘要',
+      '状态: 解析完成',
+      '说明: 已识别 CMD、资源字段和可复制结构',
+      '解码层: 0',
+      'CMD: 1',
+      'CMD字段: 2',
+      '资源字段: 0',
+      '占位符: 0',
+      '跳过: 0',
+    ].join('\n'));
   });
 });

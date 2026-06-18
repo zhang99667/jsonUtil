@@ -1991,6 +1991,13 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(qualitySummary).toContainText('解析完成');
   await expect(qualitySummary).toContainText('解码层 · 1');
   await expect(qualitySummary).toContainText('CMD字段 · 1');
+  await qualitySummary.locator('[data-tour="scheme-copy-quality-summary"]').click();
+  await expect(page.getByText(/已复制质量摘要（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  const copiedQualitySummary = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  expect(copiedQualitySummary).toContain('Scheme 解析质量摘要');
+  expect(copiedQualitySummary).toContain('状态: 解析完成');
+  expect(copiedQualitySummary).toContain('CMD字段: 1');
+  expect(copiedQualitySummary).not.toContain('nid');
   await expect(page.getByText('CMD 参数递归解析')).toBeVisible();
   await expect(schemeResult).toContainText('"cmd"');
   await expect(schemeResult).toContainText('"nid": 123');
