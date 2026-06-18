@@ -51,6 +51,9 @@ jobs:
       - name: Scheme corpus quality snapshot
         run: npm run corpus:snapshot:check -- --output ../artifacts/scheme-corpus-quality-snapshot.json --summary "$GITHUB_STEP_SUMMARY"
 
+      - name: Scheme corpus quality trend
+        run: npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after ../artifacts/scheme-corpus-quality-snapshot.json --strict --resource-type-drop video=20 --resource-type-rise lottie=20 --output ../artifacts/scheme-corpus-quality-trend.json --summary "$GITHUB_STEP_SUMMARY"
+
       - name: Scheme performance budget
         run: npm run perf:scheme -- --iterations 3 --strict --output ../artifacts/scheme-performance-budget.json --summary "$GITHUB_STEP_SUMMARY"
 
@@ -63,6 +66,15 @@ jobs:
         with:
           name: scheme-corpus-quality-snapshot
           path: artifacts/scheme-corpus-quality-snapshot.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload scheme corpus quality trend
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: scheme-corpus-quality-trend
+          path: artifacts/scheme-corpus-quality-trend.json
           if-no-files-found: warn
           retention-days: 7
 
