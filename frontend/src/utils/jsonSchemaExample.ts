@@ -530,6 +530,43 @@ const getUniqueExampleValue = (
   return value;
 };
 
+const getArrayItemSchema = (schema: Record<string, unknown>): JsonSchemaNode => {
+  const items = schema.items;
+  return isRecord(items) || typeof items === 'boolean' ? items : {};
+};
+
+const getContainsSchema = (schema: Record<string, unknown>): JsonSchemaNode | undefined => {
+  const contains = schema.contains;
+  return isRecord(contains) || typeof contains === 'boolean' ? contains : undefined;
+};
+
+const getArrayExampleLimit = (schema: Record<string, unknown>): number => {
+  const maxItems = getIntegerValue(schema, 'maxItems');
+  return typeof maxItems === 'number' && maxItems >= 0
+    ? Math.min(maxItems, MAX_ARRAY_EXAMPLE_ITEMS)
+    : MAX_ARRAY_EXAMPLE_ITEMS;
+};
+
+const ensureUniqueArrayValues = (
+  values: unknown[],
+  valueSchemas: unknown[],
+  context: ExampleContext
+): unknown[] => {
+  const seenValues = new Set<string>();
+
+  return values.map((value, index) => {
+    const uniqueValue = getUniqueExampleValue(value, valueSchemas[index], context, index);
+    const serializedUniqueValue = serializeExampleValue(uniqueValue);
+    if (!seenValues.has(serializedUniqueValue)) {
+      seenValues.add(serializedUniqueValue);
+      return uniqueValue;
+    }
+
+    seenValues.add(serializeExampleValue(value));
+    return value;
+  });
+};
+
 const generateArrayExample = (schema: Record<string, unknown>, context: ExampleContext): unknown[] => {
   const prefixItems = Array.isArray(schema.prefixItems)
     ? schema.prefixItems.filter((item): item is JsonSchemaNode => isRecord(item) || typeof item === 'boolean')
@@ -544,29 +581,38 @@ const generateArrayExample = (schema: Record<string, unknown>, context: ExampleC
   if (items === false) return [];
 
   const minItems = Math.max(getIntegerValue(schema, 'minItems') || 0, 0);
-  const exampleCount = Math.min(Math.max(minItems, isRecord(items) || typeof items === 'boolean' ? 1 : 0), MAX_ARRAY_EXAMPLE_ITEMS);
+  const containsSchema = getContainsSchema(schema);
+  const minContains = containsSchema === undefined
+    ? 0
+    : Math.max(getIntegerValue(schema, 'minContains') ?? 1, 0);
+  const arrayLimit = getArrayExampleLimit(schema);
+  const exampleCount = Math.min(
+    Math.max(minItems, minContains, isRecord(items) || typeof items === 'boolean' || containsSchema ? 1 : 0),
+    arrayLimit
+  );
   if (exampleCount === 0) return [];
 
-  const itemSchema = isRecord(items) || typeof items === 'boolean' ? items : {};
+  const itemSchema = getArrayItemSchema(schema);
   const itemContext = { ...context, depth: context.depth + 1 };
-  const values = Array.from({ length: exampleCount }, (_item, index) => (
-    generateExampleValue(itemSchema, itemContext)
-  ));
+  const values: unknown[] = [];
+  const valueSchemas: unknown[] = [];
+
+  if (containsSchema !== undefined && containsSchema !== false) {
+    const containsCount = Math.min(minContains, exampleCount);
+    for (let index = 0; index < containsCount; index++) {
+      values.push(generateExampleValue(containsSchema, itemContext));
+      valueSchemas.push(containsSchema);
+    }
+  }
+
+  while (values.length < exampleCount) {
+    values.push(generateExampleValue(itemSchema, itemContext));
+    valueSchemas.push(itemSchema);
+  }
 
   if (schema.uniqueItems !== true) return values;
 
-  const seenValues = new Set<string>();
-  return values.map((value, index) => {
-    const uniqueValue = getUniqueExampleValue(value, itemSchema, itemContext, index);
-    const serializedUniqueValue = serializeExampleValue(uniqueValue);
-    if (!seenValues.has(serializedUniqueValue)) {
-      seenValues.add(serializedUniqueValue);
-      return uniqueValue;
-    }
-
-    seenValues.add(serializeExampleValue(value));
-    return value;
-  });
+  return ensureUniqueArrayValues(values, valueSchemas, itemContext);
 };
 
 const generateObjectExample = (schema: Record<string, unknown>, context: ExampleContext): Record<string, unknown> => {
