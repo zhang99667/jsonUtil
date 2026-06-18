@@ -21,7 +21,7 @@ json-助手-&-ai-修复/
 ### 技术栈
 - **框架**: Spring Boot 3.x
 - **语言**: Java 17+
-- **数据库**: MySQL (生产) / H2 (开发)
+- **数据库**: PostgreSQL (生产与 Docker 本地环境)
 - **ORM**: Spring Data JPA
 - **安全**: Spring Security + JWT
 
@@ -32,7 +32,9 @@ backend/src/main/java/com/jsonhelper/backend/
 ├── controller/           # REST API 控制器
 │   ├── StatisticsController.java   # 仪表盘统计
 │   ├── TrafficController.java      # 流量统计 API
-│   ├── UserController.java         # 用户管理
+│   ├── AdminController.java        # 用户管理
+│   ├── FileController.java         # 管理后台文件
+│   ├── VisitorController.java      # 健康检查与匿名事件
 │   └── ...
 ├── service/              # 业务逻辑层
 │   ├── StatisticsService.java
@@ -66,8 +68,9 @@ backend/src/main/java/com/jsonhelper/backend/
 | 统计 | `/api/stats` | 仪表盘统计数据 |
 | 流量 | `/api/admin/traffic` | 流量分析 API |
 | 用户 | `/api/admin/users` | 用户管理 |
-| 认证 | `/api/admin/auth` | 登录认证 |
-| 访客 | `/api/visitor` | 访客打点 |
+| 文件 | `/api/admin/files` | 管理后台文件上传、预览和下载 |
+| 认证 | `/api/auth` | 登录认证 |
+| 访客 | `/api/visitor` | 健康检查与匿名工具事件 |
 
 ### 流量统计 API 详情
 
@@ -299,8 +302,8 @@ services:
 
 ### 环境配置
 
-- **开发环境**: H2 内存数据库 + Vite Dev Server
-- **生产环境**: MySQL + Nginx 静态托管
+- **开发环境**: Vite Dev Server + PostgreSQL（可通过 `docker-compose.local.yml` 启动）
+- **生产环境**: PostgreSQL + Nginx 静态托管
 
 ---
 

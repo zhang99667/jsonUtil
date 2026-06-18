@@ -29,7 +29,7 @@
 |------|------|----------|
 | 框架 | Spring Boot | 3.x |
 | 语言 | Java | 17+ |
-| 数据库 | MySQL/H2 | - |
+| 数据库 | PostgreSQL | - |
 | ORM | Spring Data JPA | - |
 
 ### 管理后台 (frontend/src/admin/)
