@@ -111,6 +111,21 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      - name: Browser Worker E2E performance budget
+        env:
+          PLAYWRIGHT_PREBUILT: '1'
+          BROWSER_WORKER_PERF_OUTPUT: ../artifacts/browser-worker-performance-budget.json
+        run: BROWSER_WORKER_PERF_SUMMARY="$GITHUB_STEP_SUMMARY" npm run perf:e2e
+
+      - name: Upload browser Worker performance budget
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-worker-performance-budget
+          path: artifacts/browser-worker-performance-budget.json
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: E2E smoke tests
         env:
           PLAYWRIGHT_PREBUILT: '1'

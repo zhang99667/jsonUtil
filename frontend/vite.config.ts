@@ -170,6 +170,7 @@ export default defineConfig(({ mode }) => {
         '**/node_modules/**',
         '**/dist/**',
         '**/e2e/**',
+        '**/e2e-performance/**',
       ],
     }
   };
