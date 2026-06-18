@@ -194,6 +194,20 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.items[0].price');
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('0');
 
+  await schemaPanel.locator('[data-tour="json-schema-apply-example"]').click();
+  const applyExampleDialog = page.locator('[data-tour="confirm-dialog"]');
+  await expect(applyExampleDialog).toContainText('应用 Schema 示例到源');
+  await expect(applyExampleDialog).toContainText('Schema 示例:');
+  await applyExampleDialog.getByRole('button', { name: '继续保留' }).click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"price":0');
+
+  await schemaPanel.locator('[data-tour="json-schema-apply-example"]').click();
+  await page.locator('[data-tour="confirm-dialog"]').getByRole('button', { name: '应用示例' }).click();
+  await expect(page.getByText('已用 Schema 示例替换 SOURCE')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"price": 1');
+  await schemaPanel.locator('[data-tour="json-schema-validate-button"]').click();
+  await expect(schemaPanel.locator('[data-tour="json-schema-status"]')).toContainText('通过');
+
   await schemaPanel.locator('[data-tour="json-schema-input"]').fill(JSON.stringify({
     type: 'object',
     required: ['id', 'items'],
