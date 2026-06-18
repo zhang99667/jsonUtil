@@ -43,6 +43,11 @@ import type {
   TransformQualitySnapshot,
   TransformReportRecord,
 } from '../utils/transformSummary';
+import {
+  getSourceLabelDisplayValue,
+  getSourceLabelKindText,
+  isHarSourceLabel,
+} from '../utils/sourceLabels';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 
 interface TransformReportPanelProps {
@@ -75,16 +80,26 @@ interface ReportNextAction {
   onClick: () => void;
 }
 
-const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => (
-  label ? (
+const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => {
+  if (!label) return null;
+
+  const isHarLabel = isHarSourceLabel(label);
+  const displayValue = getSourceLabelDisplayValue(label);
+  const title = `${getSourceLabelKindText(label)}: ${displayValue}`;
+
+  return (
     <span
-      className="max-w-[120px] shrink-0 truncate rounded bg-cyan-900/40 px-2 py-0.5 text-cyan-200"
-      title={label}
+      className={`max-w-[160px] shrink-0 truncate rounded px-2 py-0.5 ${
+        isHarLabel
+          ? 'bg-teal-900/40 text-teal-100'
+          : 'bg-cyan-900/40 text-cyan-200'
+      }`}
+      title={title}
     >
-      {label}
+      {isHarLabel ? `接口 · ${displayValue}` : displayValue}
     </span>
-  ) : null
-);
+  );
+};
 
 const getCoverageClassName = (level: 'success' | 'info' | 'warning'): string => {
   if (level === 'success') return 'border-emerald-700/50 bg-emerald-900/20 text-emerald-100';

@@ -16,6 +16,7 @@ import {
   getSchemeCommandSchemaFromUrl,
   getUrlResourceSchemaFromUrl,
 } from './schemeMetadata';
+import { formatSourceLabelText, getSourceLabelDisplayValue } from './sourceLabels';
 
 export interface TransformContextSummary {
   recordCount: number;
@@ -2493,7 +2494,7 @@ const appendReportRecordLines = (
     records.forEach(record => {
       lines.push(`- ${record.path}: ${record.labels.join(' -> ')}`);
       if (record.sourceLabel) {
-        lines.push(`  业务字段: ${record.sourceLabel}`);
+        lines.push(`  ${formatSourceLabelText(record.sourceLabel)}`);
       }
       if (record.decodedPreview) {
         lines.push(`  解析结果: ${record.decodedPreview}`);
@@ -2554,7 +2555,7 @@ const appendReportWarningSection = (
     warnings.forEach(warning => {
       lines.push(`- ${warning.path}: ${warning.message} (${warning.length}/${warning.limit})`);
       if (warning.sourceLabel) {
-        lines.push(`  业务字段: ${warning.sourceLabel}`);
+        lines.push(`  ${formatSourceLabelText(warning.sourceLabel)}`);
       }
       lines.push(`  原因: ${warning.reasonLabel}`);
       lines.push(`  下一步: ${warning.nextAction}`);
@@ -2572,7 +2573,7 @@ const appendReportUnresolvedSection = (
       const typeText = candidate.detectedType ? ` · ${candidate.detectedType}` : '';
       lines.push(`- ${candidate.path}${typeText}: ${candidate.message} (${candidate.length} 字符)`);
       if (candidate.sourceLabel) {
-        lines.push(`  业务字段: ${candidate.sourceLabel}`);
+        lines.push(`  ${formatSourceLabelText(candidate.sourceLabel)}`);
       }
       lines.push(`  原因: ${candidate.reasonLabel}`);
       lines.push(`  下一步: ${candidate.nextAction}`);
@@ -2592,7 +2593,7 @@ const appendReportPlaceholderSection = (
       lines.push(`- ${group.value} ×${group.count}: ${group.description}`);
       lines.push(`  来源数: ${group.sourceCount}`);
       lines.push(`  主要来源: ${group.sources.map(source => (
-        `${source.sourceLabel ? `${source.sourceLabel} ` : ''}${source.sourcePath} ×${source.count}`
+        `${source.sourceLabel ? `${getSourceLabelDisplayValue(source.sourceLabel)} ` : ''}${source.sourcePath} ×${source.count}`
       )).join('；')}`);
     });
 
@@ -2601,7 +2602,7 @@ const appendReportPlaceholderSection = (
       lines.push(`- ${placeholder.path}: ${placeholder.value}`);
       lines.push(`  来源: ${placeholder.sourcePath}`);
       if (placeholder.sourceLabel) {
-        lines.push(`  业务字段: ${placeholder.sourceLabel}`);
+        lines.push(`  ${formatSourceLabelText(placeholder.sourceLabel)}`);
       }
       if (placeholder.sourceOriginalPreview) {
         lines.push(`  来源预览: ${placeholder.sourceOriginalPreview}`);
@@ -2780,7 +2781,7 @@ export const formatTransformDiagnosticSummaryText = (
   if (reportView.unresolvedCandidates.length > 0) {
     lines.push('', '当前待检查样例:');
     reportView.unresolvedCandidates.slice(0, DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT).forEach(candidate => {
-      const sourceLabel = candidate.sourceLabel ? ` · ${candidate.sourceLabel}` : '';
+      const sourceLabel = candidate.sourceLabel ? ` · ${getSourceLabelDisplayValue(candidate.sourceLabel)}` : '';
       const detectedType = candidate.detectedType ? ` · ${candidate.detectedType}` : '';
       lines.push(`- ${candidate.path}${sourceLabel}${detectedType}: ${candidate.reasonLabel}`);
     });
@@ -2792,7 +2793,7 @@ export const formatTransformDiagnosticSummaryText = (
   if (reportView.warnings.length > 0) {
     lines.push('', '当前跳过样例:');
     reportView.warnings.slice(0, DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT).forEach(warning => {
-      const sourceLabel = warning.sourceLabel ? ` · ${warning.sourceLabel}` : '';
+      const sourceLabel = warning.sourceLabel ? ` · ${getSourceLabelDisplayValue(warning.sourceLabel)}` : '';
       lines.push(`- ${warning.path}${sourceLabel}: ${warning.reasonLabel} (${warning.length}/${warning.limit})`);
     });
     if (reportView.isWarningTruncated) {
@@ -3133,7 +3134,7 @@ export const formatTransformCmdStructureReportText = (
   records.forEach(record => {
     lines.push('', `路径: ${record.path}`);
     if (record.sourceLabel) {
-      lines.push(`业务字段: ${record.sourceLabel}`);
+      lines.push(formatSourceLabelText(record.sourceLabel));
     }
     if (record.insights.length > 0) {
       lines.push(`解析线索: ${record.insights.join('；')}`);
@@ -3498,7 +3499,7 @@ export const formatTransformIssueSampleReportText = (
       const typeText = candidate.detectedType ? ` · ${candidate.detectedType}` : '';
       lines.push(`- ${candidate.path}${typeText}`);
       if (candidate.sourceLabel) {
-        lines.push(`  业务字段: ${candidate.sourceLabel}`);
+        lines.push(`  ${formatSourceLabelText(candidate.sourceLabel)}`);
       }
       lines.push(`  原因: ${candidate.reasonLabel}`);
       lines.push(`  下一步: ${candidate.nextAction}`);
@@ -3520,7 +3521,7 @@ export const formatTransformIssueSampleReportText = (
       lines.push(`- ${placeholder.path}: ${placeholder.value}`);
       lines.push(`  来源: ${placeholder.sourcePath}`);
       if (placeholder.sourceLabel) {
-        lines.push(`  业务字段: ${placeholder.sourceLabel}`);
+        lines.push(`  ${formatSourceLabelText(placeholder.sourceLabel)}`);
       }
       lines.push(`  说明: ${placeholder.description}`);
       lines.push('  来源原始值:');
@@ -3537,7 +3538,7 @@ export const formatTransformIssueSampleReportText = (
       sampleCount++;
       lines.push(`- ${warning.path}: ${warning.reasonLabel}`);
       if (warning.sourceLabel) {
-        lines.push(`  业务字段: ${warning.sourceLabel}`);
+        lines.push(`  ${formatSourceLabelText(warning.sourceLabel)}`);
       }
       lines.push(`  下一步: ${warning.nextAction}`);
       lines.push(`  长度: ${warning.length}/${warning.limit}`);

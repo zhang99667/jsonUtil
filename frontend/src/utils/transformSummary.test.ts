@@ -1292,7 +1292,7 @@ describe('transformSummary', () => {
       sourceLabel: 'HAR POST 500 api.example.com/api/order',
       labels: ['CMD 参数 · 可回写'],
     });
-    expect(formatTransformContextReportText(result.context)).toContain('业务字段: HAR POST 500 api.example.com/api/order');
+    expect(formatTransformContextReportText(result.context)).toContain('接口上下文: POST 500 api.example.com/api/order');
 
     const hostView = buildTransformReportView(report, 'api.example.com');
     expect(hostView.records.map(item => item.path)).toEqual([

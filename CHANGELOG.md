@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.172 (2026-06-18) - HAR 上下文展示优化
+### 🎨 UI/UE 优化
+- **HAR 排查**: 深度解析报告和复制文本会将 HAR 标签展示为“接口上下文”，并隐藏内部 `HAR ` 前缀，避免抓包 payload 被误读为普通业务字段
+
 ## v1.8.171 (2026-06-18) - HAR 报告上下文
 ### ✨ 新特性
 - **HAR 排查**: 深度解析 HAR 派生 payload 时，接口 URL 和 request/response body 内的 CMD/资源记录会继承 `HAR method status host/path` 上下文标签，可直接按域名、状态码或接口路径筛选报告

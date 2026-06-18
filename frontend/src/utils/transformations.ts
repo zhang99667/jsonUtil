@@ -13,6 +13,7 @@ import {
 } from '../types.ts';
 import type { DecodeLayer, SchemePlaceholder, SchemeType } from './schemeUtils.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
+import { formatHarSourceLabel, trimSourceLabel, HAR_SOURCE_LABEL_PREFIX } from './sourceLabels.ts';
 
 import {
   DEFAULT_SCHEME_DECODE_MAX_DEPTH,
@@ -29,18 +30,6 @@ export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
 const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
-const HAR_SOURCE_LABEL_PREFIX = 'HAR ';
-
-const trimSourceLabel = (value: unknown): string | undefined => {
-  if (typeof value !== 'string') return undefined;
-
-  const trimmed = value.trim();
-  return trimmed || undefined;
-};
-
-const formatHarSourceLabel = (label: string): string => (
-  label.startsWith(HAR_SOURCE_LABEL_PREFIX) ? label : `${HAR_SOURCE_LABEL_PREFIX}${label}`
-);
 
 const getHarEntrySourceLabelForField = (
   container: Record<string, unknown>,
