@@ -85,6 +85,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     return '';
   }, [jsonData, schemaText]);
   const isValidateDisabled = Boolean(validateButtonDisabledReason);
+  const canCopySchema = Boolean(schemaText.trim());
   const canCopyIssueChecklist = Boolean(result?.issues.length);
 
   const handleSchemaChange = useCallback((value: string) => {
@@ -176,6 +177,29 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
       showError(getClipboardErrorMessage(error, '复制报告失败'));
     }
   }, [result]);
+
+  const handleCopySchema = useCallback(async () => {
+    if (!schemaText.trim()) return;
+
+    try {
+      await copyText(schemaText);
+      trackToolEvent({
+        eventName: 'SCHEMA_COPY',
+        category: 'schema',
+        status: 'success',
+        inputSizeBucket: getTextSizeBucket(schemaText),
+      });
+      showSuccess('已复制当前 Schema');
+    } catch (error) {
+      trackToolEvent({
+        eventName: 'SCHEMA_COPY',
+        category: 'schema',
+        status: 'error',
+        inputSizeBucket: getTextSizeBucket(schemaText),
+      });
+      showError(getClipboardErrorMessage(error, '复制 Schema 失败'));
+    }
+  }, [schemaText]);
 
   const handleCopyIssueChecklist = useCallback(async () => {
     if (!result || result.issues.length === 0) return;
@@ -273,6 +297,16 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
         {validateButtonDisabledReason || '校验当前 SOURCE JSON'}
       </div>
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          data-tour="json-schema-copy-schema"
+          onClick={() => void handleCopySchema()}
+          disabled={!canCopySchema}
+          title={canCopySchema ? '复制当前 Schema 文本' : 'Schema 为空，暂无内容可复制'}
+          className="rounded border border-editor-border px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          复制Schema
+        </button>
         <button
           type="button"
           data-tour="json-schema-copy-checklist"
