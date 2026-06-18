@@ -42,6 +42,34 @@ const COMMON_STRING_PATTERN_CANDIDATES = [
   '2026-01-01',
   'user@example.com',
 ];
+const COMMON_SHORT_STRING_CANDIDATES = [
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'F',
+  'G',
+  'H',
+  'a',
+  'b',
+  'c',
+  'd',
+  'e',
+  'f',
+  'g',
+  'h',
+  '0',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+];
+const UPPERCASE_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const LOWERCASE_LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -318,23 +346,62 @@ const isStringExampleAllowed = (value: string, schema: Record<string, unknown>):
   return true;
 };
 
+const getShiftedCharacter = (characters: string, currentCharacter: string, index: number): string => {
+  const currentIndex = characters.indexOf(currentCharacter);
+  const nextIndex = currentIndex >= 0
+    ? (currentIndex + index) % characters.length
+    : (index - 1) % characters.length;
+  const shiftedCharacter = characters[nextIndex];
+
+  return shiftedCharacter === currentCharacter
+    ? characters[(nextIndex + 1) % characters.length]
+    : shiftedCharacter;
+};
+
+const getAlphabeticStringVariant = (value: string, index: number): string | undefined => {
+  if (!value) return undefined;
+  const lastCharacter = value[value.length - 1];
+
+  if (/^[A-Z]+$/.test(value)) {
+    return `${value.slice(0, -1)}${getShiftedCharacter(UPPERCASE_LETTERS, lastCharacter, index)}`;
+  }
+
+  if (/^[a-z]+$/.test(value)) {
+    return `${value.slice(0, -1)}${getShiftedCharacter(LOWERCASE_LETTERS, lastCharacter, index)}`;
+  }
+
+  return undefined;
+};
+
 const getUniqueStringExample = (
   value: string,
   schema: Record<string, unknown>,
   index: number
 ): string | undefined => {
+  const maxLength = getIntegerValue(schema, 'maxLength');
+  const hasPatternConstraint = typeof schema.pattern === 'string';
+  const shouldTryConstrainedVariants = hasPatternConstraint ||
+    value.length <= 1 ||
+    (typeof maxLength === 'number' && `${value}${index + 1}`.length > maxLength);
   const numericSuffixMatch = value.match(/^(.*?)(\d+)$/);
   const incrementedNumericSuffix = numericSuffixMatch
     ? `${numericSuffixMatch[1]}${Number(numericSuffixMatch[2]) + index}`
     : '';
+  const constrainedCandidates = shouldTryConstrainedVariants
+    ? [
+      getAlphabeticStringVariant(value, index),
+      ...COMMON_SHORT_STRING_CANDIDATES,
+    ]
+    : [];
   const candidates = [
     incrementedNumericSuffix,
+    ...constrainedCandidates,
     `${value}${index + 1}`,
     `${value}-${index + 1}`,
     `value${index + 1}`,
     `key${index + 1}`,
     String(index + 1),
-  ].filter(Boolean);
+  ].filter((candidate): candidate is string => Boolean(candidate) && candidate !== value);
 
   return candidates.find(candidate => isStringExampleAllowed(candidate, schema));
 };

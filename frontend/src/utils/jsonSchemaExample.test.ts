@@ -169,6 +169,42 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('为受限短字符串 uniqueItems 生成不重复的样例值', () => {
+    const schemaText = JSON.stringify({
+      type: 'object',
+      required: ['codes', 'tokens'],
+      properties: {
+        codes: {
+          type: 'array',
+          minItems: 3,
+          uniqueItems: true,
+          items: {
+            type: 'string',
+            maxLength: 1,
+            pattern: '^[A-Z]$',
+          },
+        },
+        tokens: {
+          type: 'array',
+          minItems: 3,
+          uniqueItems: true,
+          items: {
+            type: 'string',
+            pattern: '^[A-Z]{3}$',
+          },
+        },
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '{}');
+
+    expect(example).toEqual({
+      codes: ['A', 'B', 'C'],
+      tokens: ['AAA', 'AAB', 'AAC'],
+    });
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
   it('为 contains 数组生成满足条件的样例元素', () => {
     const schemaText = JSON.stringify({
       $schema: 'https://json-schema.org/draft/2020-12/schema',

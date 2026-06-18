@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.194 (2026-06-19) - Schema 短字符串唯一示例
+### ✨ 新特性
+- **JSON Schema 示例**: `uniqueItems` 字符串数组在遇到 `maxLength: 1`、单字符 `pattern` 或固定长度大写 `pattern` 时，会生成 `A/B/C`、`AAA/AAB/AAC` 这类不重复且可校验的短值，避免短 code、状态位、权限标识等 Schema 示例被自校验拦截
+- **兼容策略**: 普通字符串数组仍保持 `string/string2/string3` 的既有示例风格，仅在后缀会违反长度或 pattern 约束时启用短候选，降低对已有协作样例的扰动
+
 ## v1.8.193 (2026-06-19) - Schema 数组示例扩容
 ### ✨ 新特性
 - **JSON Schema 示例**: 常见 `minItems` / `minContains` 下限会按约束扩展示例数组，最多生成 8 项，`minItems: 5`、`minContains: 5` 这类接口列表 Schema 可直接复制/应用并通过校验
