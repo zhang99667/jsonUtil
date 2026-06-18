@@ -117,7 +117,7 @@ npm run cmd:diff -- actual-response.json cmdhandler-expected.json --actual-path 
 项目已提供根目录 GitHub Actions 和本机 SSH 部署脚本：
 
 *   CI: `.github/workflows/ci.yml`
-*   CD: `.github/workflows/deploy.yml`
+*   CD: `.github/workflows/deploy.yml`，支持全量部署和预构建前端快速部署
 *   本地完整检查: `bash scripts/ci/local-ci.sh`
 *   本机直连服务器部署: `bash scripts/deploy/ssh-docker-compose-deploy.sh`
 *   本机预构建前端快速部署: `bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh`
