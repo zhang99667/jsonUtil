@@ -7,6 +7,7 @@
 - `deepParseWithContext()` 和 `inverseWithContext()` 已用于深度格式化和预览回写，负责记录转换路径并尽量保持原格式还原。
 - `schemeUtils.ts` 支持 URL/Scheme/CMD/Base64/JWT 等字符串递归解码，默认深度已覆盖真实广告 response 中的多层跳转链路。
 - `SchemeViewerModal.tsx` 支持整段 JSON response 粘贴、Worker 解码、Top CMD Schema 摘要、运行时占位符聚合、Base64 后缀元信息、cmdHandler 风格复制和不含原始值的质量快照 JSON。
+- `schemePathValues.ts` 承接 Scheme 面板“复制路径和值”的 JSONPath 生成、空容器保留和截断文案，避免这类纯逻辑继续堆在组件中。
 - `TransformReportPanel.tsx` 支持深度解析报告、质量快照、诊断摘要、问题样本、占位符回填模板、cmdHandler 页面内对比和聚焦复制。
 - `frontend/fixtures/scheme-corpus/` 已保存脱敏真实 response、质量 snapshot baseline 和 cmdHandler expected 子集。
 - `npm run corpus:scheme` 已接入 GitHub Actions 的 `Scheme corpus baseline` 独立门禁，用于防止主 CMD Schema、Top 热点 Schema、占位符、扫描位置和关键参数路径退化。

@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.144 (2026-06-18) - Scheme 路径值工具拆分
+### ✨ 新特性
+- **工程质量**: 将 Scheme 面板“复制路径和值”的 JSONPath 生成、叶子节点遍历和截断文案抽成 `schemePathValues` 纯工具函数，降低 `SchemeViewerModal` 组件体量
+- **回归保护**: 新增路径值复制单测，锁住特殊 key bracket 表达式、空数组/空对象、非法 JSON 和截断提示，避免真实 response 排查路径复制漂移
+
 ## v1.8.143 (2026-06-18) - Scheme 质量快照 JSON
 ### ✨ 新特性
 - **Scheme 面板**: 解析质量摘要新增“复制快照”，输出不含原始值的结构化 JSON，沉淀 coverage、状态、解码层、CMD/资源/占位符/跳过数量、Top CMD Schema 和建议动作
