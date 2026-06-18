@@ -290,6 +290,7 @@ const App: React.FC = () => {
   const [isClearSourceConfirmOpen, setIsClearSourceConfirmOpen] = useState(false);
   const [pendingPasteSourceText, setPendingPasteSourceText] = useState<string | null>(null);
   const [pendingApplyPreviewText, setPendingApplyPreviewText] = useState<string | null>(null);
+  const [pendingSchemaExampleText, setPendingSchemaExampleText] = useState<string | null>(null);
   const [pendingSchemeInspectSourceText, setPendingSchemeInspectSourceText] = useState<string | null>(null);
 
   useEffect(() => {
@@ -1078,6 +1079,50 @@ const App: React.FC = () => {
     trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'cancelled', startedAt);
   }, [trackCurrentToolEvent]);
 
+  const applySchemaExampleToSource = useCallback((text: string, successMessage: string) => {
+    handleInputChange(text);
+    setHighlightRange(null);
+    showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
+  }, [handleInputChange]);
+
+  const handleRequestApplySchemaExampleToSource = useCallback((text: string) => {
+    const startedAt = performance.now();
+    if (!text.trim()) {
+      showError('Schema 示例为空，暂无可应用内容');
+      trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'skipped', startedAt);
+      return;
+    }
+
+    if (text === input) {
+      showSuccess('Schema 示例已在 SOURCE 中');
+      trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'skipped', startedAt);
+      return;
+    }
+
+    if (input.trim()) {
+      setPendingSchemaExampleText(text);
+      return;
+    }
+
+    applySchemaExampleToSource(text, '已将 Schema 示例应用到 SOURCE');
+    trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'success', startedAt);
+  }, [applySchemaExampleToSource, input, trackCurrentToolEvent]);
+
+  const handleConfirmApplySchemaExampleToSource = useCallback(() => {
+    if (pendingSchemaExampleText === null) return;
+
+    const startedAt = performance.now();
+    applySchemaExampleToSource(pendingSchemaExampleText, '已用 Schema 示例替换 SOURCE');
+    setPendingSchemaExampleText(null);
+    trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'success', startedAt);
+  }, [applySchemaExampleToSource, pendingSchemaExampleText, trackCurrentToolEvent]);
+
+  const handleCancelApplySchemaExampleToSource = useCallback(() => {
+    const startedAt = performance.now();
+    setPendingSchemaExampleText(null);
+    trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'cancelled', startedAt);
+  }, [trackCurrentToolEvent]);
+
   const handleRequestClearSource = useCallback(() => {
     const startedAt = performance.now();
     if (!input.trim()) {
@@ -1496,6 +1541,9 @@ const App: React.FC = () => {
   const applyPreviewConfirmMessage = pendingApplyPreviewText === null
     ? ''
     : `这会用当前 PREVIEW 内容替换 SOURCE 编辑区，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}\nPREVIEW: ${getContentSizeSummary(pendingApplyPreviewText)}`;
+  const applySchemaExampleConfirmMessage = pendingSchemaExampleText === null
+    ? ''
+    : `这会用当前 Schema 生成的示例 JSON 替换 SOURCE 编辑区，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}\nSchema 示例: ${getContentSizeSummary(pendingSchemaExampleText)}`;
   const schemeInspectConfirmMessage = pendingSchemeInspectSourceText === null
     ? ''
     : `这会用 Scheme 面板原始值替换 SOURCE，并切换到嵌套解析、打开深度解析报告。\n当前 SOURCE: ${getContentSizeSummary(input)}\nScheme 原始值: ${getContentSizeSummary(pendingSchemeInspectSourceText)}`;
@@ -1565,6 +1613,16 @@ const App: React.FC = () => {
         cancelLabel="继续保留"
         onConfirm={handleConfirmApplyPreviewToSource}
         onCancel={handleCancelApplyPreviewToSource}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingSchemaExampleText !== null}
+        title="应用 Schema 示例到源"
+        message={applySchemaExampleConfirmMessage}
+        confirmLabel="应用示例"
+        cancelLabel="继续保留"
+        onConfirm={handleConfirmApplySchemaExampleToSource}
+        onCancel={handleCancelApplySchemaExampleToSource}
       />
 
       <ConfirmDialog
@@ -1876,6 +1934,7 @@ const App: React.FC = () => {
                 setJsonSchemaValidationResult(null);
               }}
               onLocatePath={handleLocateJsonPath}
+              onApplyExampleToSource={handleRequestApplySchemaExampleToSource}
               onValidationResult={setJsonSchemaValidationResult}
             />
           </Suspense>

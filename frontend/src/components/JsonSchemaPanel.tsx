@@ -41,6 +41,7 @@ interface JsonSchemaPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onLocatePath: (query: string) => void;
+  onApplyExampleToSource?: (exampleText: string) => void;
   onValidationResult?: (result: JsonSchemaValidationResult | null) => void;
 }
 
@@ -70,6 +71,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   isOpen,
   onClose,
   onLocatePath,
+  onApplyExampleToSource,
   onValidationResult,
 }) => {
   const schemaInputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -88,6 +90,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   const isValidateDisabled = Boolean(validateButtonDisabledReason);
   const canCopySchema = Boolean(schemaText.trim());
   const canCopySchemaExample = Boolean(schemaText.trim());
+  const canApplySchemaExample = Boolean(schemaText.trim() && onApplyExampleToSource);
   const canCopyIssueChecklist = Boolean(result?.issues.length);
 
   const handleSchemaChange = useCallback((value: string) => {
@@ -242,6 +245,33 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     }
   }, [schemaText]);
 
+  const handleApplySchemaExample = useCallback(() => {
+    if (!schemaText.trim() || !onApplyExampleToSource) return;
+
+    const startedAt = performance.now();
+    const exampleResult = generateJsonSchemaExampleText(schemaText);
+    if (!exampleResult.exampleText) {
+      trackToolEvent({
+        eventName: 'SCHEMA_EXAMPLE_APPLY',
+        category: 'schema',
+        status: 'error',
+        inputSizeBucket: getTextSizeBucket(schemaText),
+        durationBucket: getDurationBucket(performance.now() - startedAt),
+      });
+      showError(exampleResult.error || '生成示例 JSON 失败');
+      return;
+    }
+
+    onApplyExampleToSource(exampleResult.exampleText);
+    trackToolEvent({
+      eventName: 'SCHEMA_EXAMPLE_APPLY',
+      category: 'schema',
+      status: 'success',
+      inputSizeBucket: getTextSizeBucket(schemaText),
+      durationBucket: getDurationBucket(performance.now() - startedAt),
+    });
+  }, [onApplyExampleToSource, schemaText]);
+
   const handleCopyIssueChecklist = useCallback(async () => {
     if (!result || result.issues.length === 0) return;
 
@@ -357,6 +387,16 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
           className="rounded border border-editor-border px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           复制示例
+        </button>
+        <button
+          type="button"
+          data-tour="json-schema-apply-example"
+          onClick={handleApplySchemaExample}
+          disabled={!canApplySchemaExample}
+          title={canApplySchemaExample ? '根据当前 Schema 生成示例 JSON 并应用到 SOURCE' : 'Schema 为空，暂无内容可应用'}
+          className="rounded border border-editor-border px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          应用示例
         </button>
         <button
           type="button"

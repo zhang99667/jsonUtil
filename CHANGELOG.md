@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.184 (2026-06-19) - Schema 示例应用
+### ✨ 新特性
+- **JSON Schema 校验**: 面板新增“应用示例”，可将当前 Schema 生成的示例 JSON 直接写入 SOURCE；当 SOURCE 已有内容时复用全局确认弹窗，避免误覆盖，同时保留复制示例的轻量协作路径
+
 ## v1.8.183 (2026-06-18) - Schema 示例生成
 ### ✨ 新特性
 - **JSON Schema 校验**: 面板新增“复制示例”，可根据当前 Schema 生成一份示例 JSON 并复制到剪贴板，支持常见类型、数组/对象约束、`format`、`default/examples/const/enum` 和本地 `$ref`，让接口约束能快速反向起草请求体/响应体

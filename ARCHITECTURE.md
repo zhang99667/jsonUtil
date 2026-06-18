@@ -230,7 +230,7 @@ PREVIEW JSON + TransformReportPanel
 ```
 SOURCE JSON → JsonSchemaPanel → Ajv 校验
        ↓              ↓
-Schema 推断     示例生成 / 复制 / 收藏 / 导入 / 导出
+Schema 推断     示例生成 / 应用 SOURCE / 复制 / 收藏 / 导入 / 导出
        ↓              ↓
 编辑器错误标记 ← 校验结果 / JSONPath 定位
 ```
@@ -240,7 +240,7 @@ Schema 推断     示例生成 / 复制 / 收藏 / 导入 / 导出
 | 模块 | 说明 |
 |------|------|
 | `jsonSchemaInference.ts` | 根据当前 SOURCE JSON 推断初始 JSON Schema，支持严格/宽松必填策略、常见字符串 format 推断，并限制深度和数组采样数量 |
-| `jsonSchemaExample.ts` | 根据当前 JSON Schema 生成可复制的示例 JSON，支持常见类型、数组/对象约束、标准 format、字面量优先级和本地 `$ref` |
+| `jsonSchemaExample.ts` | 根据当前 JSON Schema 生成可复制或应用到 SOURCE 的示例 JSON，支持常见类型、数组/对象约束、标准 format、字面量优先级和本地 `$ref` |
 | `jsonSchemaValidation.ts` | 选择 Ajv / Ajv2019 / Ajv2020 并接入 `ajv-formats` 校验 Schema，输出可定位的问题列表、关键字分布、路径清单、脱敏修复建议和 Markdown 修复清单 |
 | `jsonSchemaIssueHighlights.ts` | 将 Schema 校验问题映射成 SOURCE 编辑器高亮范围 |
 | `jsonSchemaLibrary.ts` | 管理浏览器本地 Schema 收藏，并支持剪贴板导入/导出共享包和配置备份同步 |
