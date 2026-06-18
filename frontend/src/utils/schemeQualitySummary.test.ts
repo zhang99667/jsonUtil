@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { SchemeCommandSummaryInfo } from './schemeMetadata';
 import type { SchemeDecodeResult, SchemeDecodeWarning, SchemePlaceholder } from './schemeUtils';
-import { buildSchemeQualitySummary, formatSchemeQualitySummaryText } from './schemeQualitySummary';
+import {
+  buildSchemeQualitySnapshot,
+  buildSchemeQualitySummary,
+  formatSchemeQualitySnapshotJsonText,
+  formatSchemeQualitySummaryText,
+} from './schemeQualitySummary';
 
 const baseDecodeResult: SchemeDecodeResult = {
   original: '',
@@ -138,5 +143,119 @@ describe('schemeQualitySummary', () => {
       '占位符: 0',
       '跳过: 0',
     ].join('\n'));
+  });
+
+  it('构建不含原始业务值的结构化质量快照', () => {
+    const placeholders: SchemePlaceholder[] = [{
+      path: '$.cmd.phone',
+      value: '__VIRTUALPHONE__',
+      description: '运行时虚拟号码占位符',
+    }];
+    const decodeWarnings: SchemeDecodeWarning[] = [{
+      type: 'json_string_decode_skipped',
+      message: '部分长字符串已跳过',
+      skippedCount: 2,
+      decodedStringCount: 3,
+      totalStringLength: 1200,
+      limit: 500,
+      paths: ['$.cmd.logUrl'],
+    }];
+    const decodeResult: SchemeDecodeResult = {
+      ...baseDecodeResult,
+      original: 'cmd=%7B%22phone%22%3A%2213718164578%22%7D',
+      decoded: '{"cmd":{"phone":"13718164578"}}',
+      layers: [{
+        type: 'url',
+        before: 'cmd=%7B%22phone%22%3A%2213718164578%22%7D',
+        description: 'URL Decode',
+      }],
+      isJson: true,
+    };
+    const commandSummaryInfo = buildCommandSummary({
+      commandSchemaCount: 1,
+      commandFieldCount: 2,
+      resourceFieldCount: 1,
+      extFieldCount: 1,
+      base64SuffixFieldCount: 1,
+      commandFields: ['cmd', 'button_cmd'],
+      resourceFields: ['logUrl'],
+      extFields: ['ext'],
+      base64SuffixFields: ['extInfo'],
+      topCommandSchemas: [{
+        schema: 'baiduboxapp://v7/vendor/ad/makePhoneCall',
+        count: 1,
+        paths: ['$.cmd'],
+        hasMorePaths: false,
+      }],
+    });
+    const summary = buildSummary({
+      decodeResult,
+      commandSummaryInfo,
+      placeholders,
+      decodeWarnings,
+    });
+
+    expect(summary).not.toBeNull();
+    const snapshot = buildSchemeQualitySnapshot({
+      summary: summary!,
+      decodeResult,
+      commandSummaryInfo,
+      placeholders,
+      decodeWarnings,
+    });
+
+    expect(snapshot).toMatchObject({
+      schemaVersion: 1,
+      kind: 'json-helper-scheme-quality-snapshot',
+      safety: {
+        containsRawValue: false,
+      },
+      status: {
+        label: '部分跳过',
+      },
+      coverage: {
+        score: 75,
+        level: 'warning',
+      },
+      totals: {
+        records: 1,
+        cmdStructures: 1,
+        nestedCommandFields: 2,
+        nestedResourceFields: 1,
+        unresolved: 0,
+        decodeLayers: 1,
+        commandSchemas: 1,
+        commandFields: 2,
+        resourceFields: 1,
+        extFields: 1,
+        base64SuffixFields: 1,
+        runtimePlaceholders: 1,
+        warnings: 1,
+        skipped: 2,
+      },
+    });
+    expect(snapshot.hotspots.topCommandSchemas).toEqual([{
+      schema: 'baiduboxapp://v7/vendor/ad/makePhoneCall',
+      count: 1,
+      paths: ['$.cmd'],
+      hasMorePaths: false,
+    }]);
+    expect(snapshot.hotspots.runtimePlaceholders).toEqual([{
+      value: '__VIRTUALPHONE__',
+      count: 1,
+      description: '运行时虚拟号码占位符',
+      paths: ['$.cmd.phone'],
+    }]);
+
+    const snapshotText = formatSchemeQualitySnapshotJsonText({
+      summary: summary!,
+      decodeResult,
+      commandSummaryInfo,
+      placeholders,
+      decodeWarnings,
+    });
+    expect(snapshotText).toContain('"containsRawValue": false');
+    expect(snapshotText).not.toContain('13718164578');
+    expect(snapshotText).not.toContain('cmd=%7B');
   });
 });

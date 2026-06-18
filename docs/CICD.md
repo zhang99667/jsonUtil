@@ -59,6 +59,8 @@ bash scripts/ci/local-ci.sh
 
 如果本机没有 Maven，脚本会尝试使用 `maven:3.9-eclipse-temurin-17` Docker 镜像运行后端检查。此时需要 Docker daemon 已启动。
 
+如果本机安装了多个 JDK，且没有显式设置 `JAVA_HOME`，macOS 下脚本会优先选择 `/usr/libexec/java_home -v 17`，避免 Maven 误用过新的 JDK 触发 Mockito / Byte Buddy mock 兼容问题。
+
 本地 CI 的 `docker compose config` 会使用仅用于配置校验的假环境变量填充 `POSTGRES_PASSWORD`、`SPRING_DATASOURCE_PASSWORD` 和 `JWT_SECRET`，因此不依赖本机存在生产 `.env` 文件。
 
 本地 CI 还会运行 `node scripts/ci/check-backend-api-matrix.mjs`，扫描后端 Controller 并校验所有 API 都已写入 [后端 API 权限矩阵](BACKEND-API-MATRIX.md)，避免新增接口绕过权限文档评审。
