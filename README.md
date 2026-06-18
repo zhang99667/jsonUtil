@@ -120,6 +120,7 @@ npm run cmd:diff -- actual-response.json cmdhandler-expected.json --actual-path 
 *   CD: `.github/workflows/deploy.yml`
 *   本地完整检查: `bash scripts/ci/local-ci.sh`
 *   本机直连服务器部署: `bash scripts/deploy/ssh-docker-compose-deploy.sh`
+*   本机预构建前端快速部署: `bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh`
 
 详细配置、GitHub Secrets 和服务器要求请查看 [CI/CD 使用说明](docs/CICD.md)。
 
