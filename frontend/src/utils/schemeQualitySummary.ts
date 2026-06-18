@@ -154,3 +154,12 @@ export const buildSchemeQualitySummary = ({
     items,
   };
 };
+
+export const formatSchemeQualitySummaryText = (summary: SchemeQualitySummary): string => (
+  [
+    'Scheme 解析质量摘要',
+    `状态: ${summary.label}`,
+    `说明: ${summary.description}`,
+    ...summary.items.map(item => `${item.label}: ${item.value}`),
+  ].join('\n')
+);

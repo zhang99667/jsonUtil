@@ -24,6 +24,7 @@ import {
 } from '../utils/schemeMetadata';
 import {
   buildSchemeQualitySummary,
+  formatSchemeQualitySummaryText,
   type SchemeQualityLevel,
   type SchemeQualitySummaryItem,
 } from '../utils/schemeQualitySummary';
@@ -750,6 +751,19 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     }
   };
 
+  const handleCopyQualitySummary = async () => {
+    if (!schemeQualitySummary) return;
+
+    const qualitySummaryText = formatSchemeQualitySummaryText(schemeQualitySummary);
+    try {
+      await copyText(qualitySummaryText);
+      toast.success(`已复制质量摘要（${formatCopySizeLabel(qualitySummaryText)}）`, { duration: 2000 });
+    } catch (err) {
+      console.warn('复制 Scheme 质量摘要失败:', err);
+      toast.error(getClipboardErrorMessage(err, '复制质量摘要失败'), { duration: 2000 });
+    }
+  };
+
   // 头部额外内容：非独立模式显示 path 标签，并支持复制到 JSONPath 面板继续定位
   const headerExtra = !standalone && path ? (
     <div className="flex min-w-0 items-center gap-1.5">
@@ -986,6 +1000,16 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="shrink-0 font-medium">{schemeQualitySummary.label}</span>
                     <span className="min-w-0 text-gray-300">{schemeQualitySummary.description}</span>
+                    <button
+                      data-tour="scheme-copy-quality-summary"
+                      type="button"
+                      onClick={handleCopyQualitySummary}
+                      className="ml-auto shrink-0 rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
+                      title="复制当前 Scheme 解析质量摘要"
+                      aria-label="复制质量摘要，复制当前 Scheme 解析质量摘要"
+                    >
+                      复制摘要
+                    </button>
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-1">
                     {schemeQualitySummary.items.map(item => (
