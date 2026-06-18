@@ -97,6 +97,13 @@ export default defineConfig(({ mode }) => {
             if (packageName === '@ant-design/icons') return 'vendor-antd-icons';
             if (packageName === 'antd') return 'vendor-antd';
             if (packageName === '@ant-design/charts') return 'vendor-ant-design-charts';
+            if ([
+              'ajv',
+              'fast-deep-equal',
+              'fast-uri',
+              'json-schema-traverse',
+              'require-from-string',
+            ].includes(packageName || '')) return 'vendor-json-schema';
 
             const antvPackage = getScopedPackageName(id, '@antv');
             if (antvPackage) return `vendor-antv-${antvPackage}`;
