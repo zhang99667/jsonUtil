@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.196 (2026-06-19) - Schema 对象依赖示例
+### ✨ 新特性
+- **JSON Schema 示例**: 对象示例生成支持 `dependentRequired` 和老版 `dependencies` 数组依赖，生成 required/properties 后会自动补齐被当前字段触发的依赖字段，避免登录态、支付信息、类型标识等接口 Schema 示例缺少联动字段后被自校验拦截
+- **链式补齐**: 依赖字段会按当前已生成字段闭环补齐，支持 `a -> b -> c` 这类链式依赖；若依赖字段被 `propertyNames` 或 `additionalProperties:false` 阻断，仍由最终自校验给出明确失败路径
+
 ## v1.8.195 (2026-06-19) - Schema 组合分支示例
 ### ✨ 新特性
 - **JSON Schema 示例**: `oneOf` / `anyOf` 分支示例会优先选择能通过当前组合 Schema 整体校验的候选，避免第一个分支生成值与其它分支重叠或自身超过安全上限时，明明后续分支可用却被自校验拦截

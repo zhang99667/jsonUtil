@@ -100,6 +100,56 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('支持 dependentRequired 和 dependencies 的对象依赖字段', () => {
+    const dependentRequiredSchemaText = JSON.stringify({
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['type'],
+      additionalProperties: false,
+      properties: {
+        type: { const: 'book' },
+        id: {
+          type: 'string',
+          pattern: '^ID-[0-9]+$',
+        },
+      },
+      dependentRequired: {
+        type: ['id'],
+      },
+    });
+    const dependenciesSchemaText = JSON.stringify({
+      type: 'object',
+      required: ['creditCard'],
+      additionalProperties: false,
+      properties: {
+        creditCard: {
+          type: 'string',
+          minLength: 4,
+        },
+        billingAddress: {
+          type: 'string',
+          minLength: 6,
+        },
+      },
+      dependencies: {
+        creditCard: ['billingAddress'],
+      },
+    });
+    const dependentRequiredResult = generateJsonSchemaExampleText(dependentRequiredSchemaText);
+    const dependenciesResult = generateJsonSchemaExampleText(dependenciesSchemaText);
+
+    expect(JSON.parse(dependentRequiredResult.exampleText || '{}')).toEqual({
+      type: 'book',
+      id: 'ID-1',
+    });
+    expect(JSON.parse(dependenciesResult.exampleText || '{}')).toEqual({
+      creditCard: 'string',
+      billingAddress: 'string',
+    });
+    expect(validateJsonAgainstSchema(dependentRequiredResult.exampleText || '', dependentRequiredSchemaText).status).toBe('valid');
+    expect(validateJsonAgainstSchema(dependenciesResult.exampleText || '', dependenciesSchemaText).status).toBe('valid');
+  });
+
   it('为常见字符串 pattern 生成可校验的样例值', () => {
     const schemaText = JSON.stringify({
       type: 'object',

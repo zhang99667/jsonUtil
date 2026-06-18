@@ -165,6 +165,30 @@ const getRequiredKeys = (schema: Record<string, unknown>): string[] => {
     : [];
 };
 
+const getStringArrayValues = (value: unknown): string[] => (
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : []
+);
+
+const getDependentRequiredKeys = (
+  schema: Record<string, unknown>,
+  presentKeys: Set<string>
+): string[] => {
+  const keys: string[] = [];
+  const dependentRequired = isRecord(schema.dependentRequired) ? schema.dependentRequired : {};
+  Object.entries(dependentRequired).forEach(([key, value]) => {
+    if (presentKeys.has(key)) keys.push(...getStringArrayValues(value));
+  });
+
+  const dependencies = isRecord(schema.dependencies) ? schema.dependencies : {};
+  Object.entries(dependencies).forEach(([key, value]) => {
+    if (presentKeys.has(key)) keys.push(...getStringArrayValues(value));
+  });
+
+  return uniqueKeys(keys);
+};
+
 const getSchemaProperties = (schema: Record<string, unknown>): Record<string, JsonSchemaNode> => {
   if (!isRecord(schema.properties)) return {};
 
@@ -738,6 +762,34 @@ const generateArrayExample = (schema: Record<string, unknown>, context: ExampleC
   return ensureUniqueArrayValues(values, valueSchemas, itemContext);
 };
 
+const addDependentRequiredEntries = (
+  entries: Map<string, unknown>,
+  schema: Record<string, unknown>,
+  properties: Record<string, JsonSchemaNode>,
+  propertyNamesSchema: JsonSchemaNode | undefined,
+  additionalPropertiesSchema: JsonSchemaNode | false | undefined,
+  context: ExampleContext
+) => {
+  let hasAddedEntry = true;
+  while (hasAddedEntry && entries.size < MAX_OBJECT_EXAMPLE_PROPERTIES) {
+    hasAddedEntry = false;
+    const keys = getDependentRequiredKeys(schema, new Set(entries.keys()));
+    for (const key of keys) {
+      if (entries.has(key) || entries.size >= MAX_OBJECT_EXAMPLE_PROPERTIES) continue;
+      if (!isPropertyNameAllowed(key, propertyNamesSchema)) continue;
+
+      const valueSchema = properties[key] || (
+        additionalPropertiesSchema === false ? undefined : additionalPropertiesSchema || {}
+      );
+      if (valueSchema === undefined) continue;
+
+      const value = generateExampleValue(valueSchema, { ...context, depth: context.depth + 1 });
+      entries.set(key, value === undefined ? null : value);
+      hasAddedEntry = true;
+    }
+  }
+};
+
 const generateObjectExample = (schema: Record<string, unknown>, context: ExampleContext): Record<string, unknown> => {
   const properties = getSchemaProperties(schema);
   const patternProperties = getPatternProperties(schema);
@@ -753,6 +805,7 @@ const generateObjectExample = (schema: Record<string, unknown>, context: Example
     const value = generateExampleValue(properties[key] || {}, { ...context, depth: context.depth + 1 });
     entries.set(key, value === undefined ? null : value);
   });
+  addDependentRequiredEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
 
   patternProperties.forEach(([pattern, patternSchema]) => {
     if (entries.size >= MAX_OBJECT_EXAMPLE_PROPERTIES) return;
@@ -768,6 +821,7 @@ const generateObjectExample = (schema: Record<string, unknown>, context: Example
     const value = generateExampleValue(patternSchema, { ...context, depth: context.depth + 1 });
     entries.set(key, value === undefined ? null : value);
   });
+  addDependentRequiredEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
 
   const minProperties = Math.max(getIntegerValue(schema, 'minProperties') || 0, 0);
   const extraSchema = additionalPropertiesSchema === undefined ? true : additionalPropertiesSchema;
@@ -786,6 +840,7 @@ const generateObjectExample = (schema: Record<string, unknown>, context: Example
     const value = generateExampleValue(extraSchema, { ...context, depth: context.depth + 1 });
     entries.set(key, value === undefined ? null : value);
   }
+  addDependentRequiredEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
 
   return Object.fromEntries(entries);
 };
