@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { copyText, getClipboardErrorMessage, readClipboardText } from '../utils/clipboard';
+import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
   formatJsonSchemaValidationReport,
   validateJsonAgainstSchema,
@@ -9,6 +10,7 @@ import {
 } from '../utils/jsonSchemaValidation';
 import { inferJsonSchemaFromText } from '../utils/jsonSchemaInference';
 import {
+  JSON_SCHEMA_LIBRARY_STORAGE_KEY,
   MAX_JSON_SCHEMA_LIBRARY_ITEMS,
   formatJsonSchemaLibraryExport,
   importJsonSchemaLibrary,
@@ -28,7 +30,6 @@ import {
 } from '../utils/productTelemetry';
 
 export const JSON_SCHEMA_STORAGE_KEY = 'json-schema-panel-schema';
-export const JSON_SCHEMA_LIBRARY_STORAGE_KEY = 'json-schema-panel-library';
 
 const SCHEMA_RESULT_STATUS_ID = 'json-schema-result-status';
 const SCHEMA_VALIDATE_BUTTON_DESCRIPTION_ID = 'json-schema-validate-button-description';
@@ -113,6 +114,15 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     setResult(null);
     onValidationResult?.(null);
   }, [jsonData, onValidationResult]);
+
+  React.useEffect(() => {
+    const handleBackupImported = () => {
+      setSchemaLibrary(parseJsonSchemaLibrary(safeGetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY)));
+    };
+
+    window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+    return () => window.removeEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+  }, []);
 
   const handlePasteSchema = useCallback(async () => {
     try {

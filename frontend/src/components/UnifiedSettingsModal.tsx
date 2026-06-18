@@ -681,7 +681,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                         配置备份
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                        导出/导入快捷键、收藏、模板和布局；AI Key 不会写入备份文件
+                                        导出/导入快捷键、JSONPath 收藏、Schema 收藏、模板和布局；AI Key 不会写入备份文件
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
