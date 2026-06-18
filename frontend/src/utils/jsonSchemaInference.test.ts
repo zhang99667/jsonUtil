@@ -46,6 +46,28 @@ describe('jsonSchemaInference', () => {
     });
   });
 
+  it('宽松模式不生成 required 约束', () => {
+    const result = inferJsonSchemaFromText(JSON.stringify({
+      id: 1,
+      profile: {
+        name: '用户',
+      },
+      items: [
+        { sku: 'A', price: 1 },
+        { sku: 'B' },
+      ],
+    }), { requiredMode: 'loose' });
+    const schema = JSON.parse(result.schemaText || '{}');
+
+    expect(schema).not.toHaveProperty('required');
+    expect(schema.properties.profile).not.toHaveProperty('required');
+    expect(schema.properties.items.items).not.toHaveProperty('required');
+    expect(schema.properties.items.items.properties).toMatchObject({
+      sku: { type: 'string' },
+      price: { type: 'integer' },
+    });
+  });
+
   it('数组内整数和小数合并为 number', () => {
     const result = inferJsonSchemaFromText(JSON.stringify([1, 2.5]));
     const schema = JSON.parse(result.schemaText || '{}');
