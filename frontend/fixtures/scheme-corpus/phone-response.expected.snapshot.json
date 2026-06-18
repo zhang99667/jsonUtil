@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "sample": "phone-response-redacted",
+  "cmdHandlerExpected": "phone-response.cmdhandler.expected.json",
+  "scanLocations": [
+    {
+      "path": "$.data.ads[0].common.scheme",
+      "type": "url"
+    }
+  ],
+  "quality": {
+    "minCoverageScore": 100,
+    "minCmdStructures": 3,
+    "minNestedCommandFields": 4,
+    "minNestedResourceFields": 0,
+    "maxUnresolved": 0,
+    "maxWarnings": 0,
+    "maxCmdHandlerIgnoredExtraPaths": 10,
+    "leadHotspotCommandSchema": "baiduboxapp://v7/vendor/ad/makePhoneCall"
+  },
+  "primaryCommandSchema": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+  "requiredCommandSchemas": [
+    "baiduboxapp://v7/vendor/ad/makePhoneCall"
+  ],
+  "requiredRuntimePlaceholders": [
+    "__SOLUTIONID__",
+    "__TIMESTAMP__",
+    "__VIRTUALPHONE__"
+  ]
+}

@@ -92,6 +92,9 @@ const rewardResponseCmdHandlerExpected = readCorpusJson<JsonValue>(rewardRespons
 const landingResponseCorpus = readCorpusJson<SchemeCorpusFixture>('landing-response.redacted.json');
 const landingResponseBaseline = readCorpusJson<SchemeCorpusExpectedSnapshot>('landing-response.expected.snapshot.json');
 const landingResponseCmdHandlerExpected = readCorpusJson<JsonValue>(landingResponseBaseline.cmdHandlerExpected);
+const phoneResponseCorpus = readCorpusJson<SchemeCorpusFixture>('phone-response.redacted.json');
+const phoneResponseBaseline = readCorpusJson<SchemeCorpusExpectedSnapshot>('phone-response.expected.snapshot.json');
+const phoneResponseCmdHandlerExpected = readCorpusJson<JsonValue>(phoneResponseBaseline.cmdHandlerExpected);
 
 describe('CMD/Scheme 真实样本回归', () => {
   it('解析编码 URL 字段并保留外层来源参数', () => {
@@ -1025,6 +1028,105 @@ describe('CMD/Scheme 真实样本回归', () => {
     const cmdHandlerDiff = diffCmdStructures(
       copiedCmdStructure as JsonValue,
       landingResponseCmdHandlerExpected,
+      { ignoreExtraPaths: true }
+    );
+
+    expect(formatCmdStructureDiff(cmdHandlerDiff)).toContain('结构一致');
+    expect(cmdHandlerDiff).toMatchObject({
+      hasDifferences: false,
+      schemaDiff: null,
+      missingPaths: [],
+      valueDiffs: [],
+    });
+  });
+
+  it('整段电话拨打 response 可展开号码监测链路并对齐 cmdHandler 子集', () => {
+    expect(phoneResponseBaseline.sample).toBe(phoneResponseCorpus.name);
+    const response = buildCorpusResponseText(phoneResponseCorpus);
+
+    const scanResult = scanSchemesInJson(response);
+    expect(scanResult.locations.map(item => ({
+      path: item.path,
+      ...(item.label === undefined ? {} : { label: item.label }),
+      type: item.schemeType,
+    }))).toEqual(phoneResponseBaseline.scanLocations);
+
+    const { output, context } = deepParseWithContext(response, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    const common = parsed.data.ads[0].common;
+    const decodedScheme = common.scheme;
+    const report = buildTransformContextReport(context);
+    const reportView = buildTransformReportView(report, '');
+    const qualitySnapshot = JSON.parse(formatTransformQualitySnapshotJsonText(report, reportView, ''));
+    const rootRecord = report.records.find(record => record.path === '$.data.ads[0].common.scheme');
+    const allCommandSchemas = report.records.flatMap(record => (
+      [
+        record.commandSchema,
+        ...(record.commandSchemaRows?.map(row => row.schema) || []),
+      ].filter((schema): schema is string => Boolean(schema))
+    ));
+    const copiedCmdStructure = rootRecord?.getCmdStructureCopyText
+      ? JSON.parse(rootRecord.getCmdStructureCopyText())
+      : undefined;
+
+    expect(decodedScheme.params.phone).toBe('400-805-8686');
+    expect(decodedScheme.params.extInfo).toEqual({
+      search_id: 'redacted_search_id',
+      cmatch: 222,
+      rank: 2,
+    });
+    expect(decodedScheme.params.numberUrl.url._hash).toEqual({
+      unit: '种植牙',
+      keyword: '收费表',
+      e_creative: '134',
+    });
+    expect(decodedScheme.params.numberUrl).toMatchObject({
+      query: '种植牙',
+      realPhone: '400-805-8686',
+      solutionId: '__SOLUTIONID__',
+    });
+    expect(decodedScheme.params.logUrl).toEqual({
+      pageid: '__TIMESTAMP__',
+      virtualPhone: '__VIRTUALPHONE__',
+      realPhone: '400-805-8686',
+    });
+    expect(common.number_url.solutionId).toBe('__SOLUTIONID__');
+    expect(common.log_url.virtualPhone).toBe('__VIRTUALPHONE__');
+    expect(rootRecord?.commandSchema).toBe(phoneResponseBaseline.primaryCommandSchema);
+    expect(allCommandSchemas).toEqual(expect.arrayContaining(phoneResponseBaseline.requiredCommandSchemas));
+    expect(report.coverage.score).toBeGreaterThanOrEqual(phoneResponseBaseline.quality.minCoverageScore);
+    expect(report.cmdStructureCount).toBeGreaterThanOrEqual(phoneResponseBaseline.quality.minCmdStructures);
+    expect(report.nestedCommandFieldCount).toBeGreaterThanOrEqual(phoneResponseBaseline.quality.minNestedCommandFields);
+    expect(report.summary.unresolvedCount).toBeLessThanOrEqual(phoneResponseBaseline.quality.maxUnresolved);
+    expect(report.summary.warningCount).toBeLessThanOrEqual(phoneResponseBaseline.quality.maxWarnings);
+    expect(qualitySnapshot.hotspots.topCommandSchemas[0].schema).toBe(
+      phoneResponseBaseline.quality.leadHotspotCommandSchema
+    );
+    expect(report.runtimePlaceholderGroups.map(group => group.value)).toEqual(expect.arrayContaining(
+      phoneResponseBaseline.requiredRuntimePlaceholders
+    ));
+    expect(copiedCmdStructure).toMatchObject({
+      result: {
+        cmdSchema: phoneResponseBaseline.primaryCommandSchema,
+        cmdParams: {
+          params: {
+            extInfo: {
+              search_id: 'redacted_search_id',
+            },
+            numberUrl: {
+              solutionId: '__SOLUTIONID__',
+            },
+            logUrl: {
+              virtualPhone: '__VIRTUALPHONE__',
+            },
+          },
+        },
+      },
+    });
+
+    const cmdHandlerDiff = diffCmdStructures(
+      copiedCmdStructure as JsonValue,
+      phoneResponseCmdHandlerExpected,
       { ignoreExtraPaths: true }
     );
 

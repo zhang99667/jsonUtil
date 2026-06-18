@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
   "kind": "json-helper-scheme-corpus-quality-snapshot",
-  "sampleCount": 2,
+  "sampleCount": 3,
   "thresholdSummary": {
     "pass": true,
-    "total": 18,
+    "total": 26,
     "failed": 0,
     "missingBaselines": [],
     "failures": [],
     "required": {
-      "total": 6,
+      "total": 9,
       "failed": 0,
       "failures": []
     },
     "cmdHandler": {
-      "total": 2,
+      "total": 3,
       "failed": 0,
       "ignoredExtraPaths": 442,
       "failures": []
@@ -301,6 +301,229 @@
             "__AD_EXTRA_PARAM_ENCODE_2__",
             "__CLICK_ID__",
             "__SIGN__"
+          ],
+          "missing": [],
+          "pass": true
+        },
+        "scanLocations": {
+          "actual": [
+            {
+              "path": "$.data.ads[0].common.scheme",
+              "type": "url"
+            }
+          ],
+          "expected": [
+            {
+              "path": "$.data.ads[0].common.scheme",
+              "type": "url"
+            }
+          ],
+          "missing": [],
+          "extra": [],
+          "pass": true
+        }
+      },
+      "truncated": {
+        "records": false,
+        "cmdStructures": false,
+        "runtimePlaceholders": false,
+        "unresolved": false,
+        "warnings": false
+      }
+    },
+    {
+      "sample": "phone-response-redacted",
+      "baseline": {
+        "expectedSnapshot": true,
+        "expectedSnapshotFile": "phone-response.expected.snapshot.json",
+        "cmdHandlerExpected": true,
+        "cmdHandlerExpectedFile": "phone-response.cmdhandler.expected.json"
+      },
+      "responseBytes": 1560,
+      "summaryText": "深度解析: 展开 3 处，Scheme 3 (URL 3)，占位符 8",
+      "coverage": {
+        "score": 100,
+        "label": "结构解析完成 · 占位符 8",
+        "level": "info",
+        "description": "已展开当前可解析结构，但仍有 8 个运行时占位符需要服务端或客户端替换。",
+        "items": [
+          "占位符不是解析失败，可筛选占位符查看待替换字段",
+          "复制来源路径可回到原始 CMD/Scheme 字段排查"
+        ]
+      },
+      "totals": {
+        "records": 3,
+        "cmdStructures": 3,
+        "nestedCommandFields": 4,
+        "nestedResourceFields": 0,
+        "runtimePlaceholders": 8,
+        "unresolved": 0,
+        "warnings": 0
+      },
+      "filtered": {
+        "records": 3,
+        "cmdStructures": 3,
+        "nestedCommandFields": 4,
+        "nestedResourceFields": 0,
+        "runtimePlaceholders": 8,
+        "unresolved": 0,
+        "warnings": 0
+      },
+      "topCommandSchemas": [
+        {
+          "schema": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme"
+          ],
+          "hasMorePaths": false
+        }
+      ],
+      "topResourceSchemas": [],
+      "topResourceTypes": [],
+      "topNestedCommandFields": [
+        {
+          "key": "url",
+          "count": 2,
+          "recordCount": 2,
+          "paths": [
+            "$.data.ads[0].common.scheme.params.numberUrl.url",
+            "$.data.ads[0].common.number_url.url"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "logUrl",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.params.logUrl"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "numberUrl",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.params.numberUrl"
+          ],
+          "hasMorePaths": false
+        }
+      ],
+      "topNestedResourceFields": [],
+      "scanLocations": [
+        {
+          "path": "$.data.ads[0].common.scheme",
+          "type": "url"
+        }
+      ],
+      "runtimePlaceholders": [
+        {
+          "value": "__SOLUTIONID__",
+          "count": 3,
+          "sourceCount": 3
+        },
+        {
+          "value": "__VIRTUALPHONE__",
+          "count": 3,
+          "sourceCount": 3
+        },
+        {
+          "value": "__TIMESTAMP__",
+          "count": 2,
+          "sourceCount": 2
+        }
+      ],
+      "cmdHandlerAlignment": {
+        "expectedFile": "phone-response.cmdhandler.expected.json",
+        "ignoreExtraPaths": true,
+        "pass": true,
+        "actualCommandSchema": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+        "expectedCommandSchema": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+        "schemaDiff": false,
+        "sourceDiff": false,
+        "missingPaths": 0,
+        "extraPaths": 0,
+        "ignoredExtraPaths": 0,
+        "valueDiffs": 0,
+        "diff": {
+          "schemaDiff": null,
+          "sourceDiff": null,
+          "missingPathCount": 0,
+          "extraPathCount": 0,
+          "ignoredExtraPathCount": 0,
+          "valueDiffCount": 0,
+          "missingPaths": [],
+          "extraPaths": [],
+          "ignoredExtraPaths": [],
+          "valueDiffs": []
+        }
+      },
+      "thresholds": {
+        "minCoverageScore": {
+          "actual": 100,
+          "expected": 100,
+          "pass": true
+        },
+        "minCmdStructures": {
+          "actual": 3,
+          "expected": 3,
+          "pass": true
+        },
+        "minNestedCommandFields": {
+          "actual": 4,
+          "expected": 4,
+          "pass": true
+        },
+        "minNestedResourceFields": {
+          "actual": 0,
+          "expected": 0,
+          "pass": true
+        },
+        "maxUnresolved": {
+          "actual": 0,
+          "expected": 0,
+          "pass": true
+        },
+        "maxWarnings": {
+          "actual": 0,
+          "expected": 0,
+          "pass": true
+        },
+        "maxCmdHandlerIgnoredExtraPaths": {
+          "actual": 0,
+          "expected": 10,
+          "pass": true
+        },
+        "leadHotspotCommandSchema": {
+          "actual": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+          "expected": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+          "pass": true
+        }
+      },
+      "requiredChecks": {
+        "requiredCommandSchemas": {
+          "actual": [
+            "baiduboxapp://v7/vendor/ad/makePhoneCall"
+          ],
+          "expected": [
+            "baiduboxapp://v7/vendor/ad/makePhoneCall"
+          ],
+          "missing": [],
+          "pass": true
+        },
+        "requiredRuntimePlaceholders": {
+          "actual": [
+            "__SOLUTIONID__",
+            "__VIRTUALPHONE__",
+            "__TIMESTAMP__"
+          ],
+          "expected": [
+            "__SOLUTIONID__",
+            "__TIMESTAMP__",
+            "__VIRTUALPHONE__"
           ],
           "missing": [],
           "pass": true

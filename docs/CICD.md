@@ -16,7 +16,7 @@
 - `frontend`: `npm ci`、`npm run typecheck`、`npm run lint`、`npm run audit:security`、`npm test`、`npm run corpus:scheme`、`npm run corpus:snapshot:check`、`npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after <current-snapshot.json> --strict`、`npm run perf:scheme -- --iterations 3 --strict`、`npm run perf:jsonpath -- --iterations 3 --strict`、`npm run build`、`npm run check:preloads`、`npm run test:e2e`
   - `npm run lint` 使用 ESLint flat config 执行错误级静态门禁；需要查看历史 warning 时可运行 `npm run lint:report`
   - `npm run audit:security` 使用 npm audit 拦截 moderate 及以上依赖漏洞；低危漏洞可在依赖治理批次中评估，不阻塞普通功能迭代
-  - `npm run corpus:scheme` 独立校验脱敏 response corpus，当前覆盖激励广告与落地页两类样本，固定主 CMD Schema、Top 热点 Schema、占位符、扫描位置和质量指标
+  - `npm run corpus:scheme` 独立校验脱敏 response corpus，当前覆盖激励广告、落地页与电话拨打三类样本，固定主 CMD Schema、Top 热点 Schema、占位符、扫描位置和质量指标
   - `npm run corpus:snapshot:check` 输出 corpus 质量快照，并在 expected 阈值不通过、cmdHandler ignored extra 路径数量超过基线、必需 CMD Schema/运行时占位符/扫描位置缺失、样本缺失 expected snapshot、缺失 cmdHandler expected 或 cmdHandler 关键子集不对齐时让 CI 失败；ignored extra 超限会在 strict 日志中带出路径样例，方便直接定位样本质量变化
   - `Scheme corpus quality snapshot` 会把覆盖率、资源/CMD 热点、必需项失败、cmdHandler 对齐结果和 ignored extra 路径样例写入 GitHub Step Summary，并上传 `scheme-corpus-quality-snapshot` artifact 供评审下载
   - `npm run perf:scheme -- --iterations 3 --strict` 会通过复制真实 `data.video` 条目构造 50KB / 250KB 脱敏 response，校验核心解析耗时、展开记录、CMD 结构、CMD 字段、资源字段、待检查和跳过数量，并上传 `scheme-performance-budget` artifact
