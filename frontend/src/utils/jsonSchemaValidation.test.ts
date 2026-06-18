@@ -4,6 +4,7 @@ import {
   jsonPointerToJsonPath,
   validateJsonAgainstSchema,
 } from './jsonSchemaValidation';
+import { getJsonSchemaIssueHighlights } from './jsonSchemaIssueHighlights';
 
 describe('jsonSchemaValidation', () => {
   const schema = JSON.stringify({
@@ -50,13 +51,50 @@ describe('jsonSchemaValidation', () => {
     expect(result.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({
         path: '$.items[0].price',
+        pointer: '/items/0/price',
         keyword: 'minimum',
       }),
       expect.objectContaining({
         path: '$.items[1]',
+        pointer: '/items/1',
         keyword: 'required',
       }),
     ]));
+  });
+
+  it('把 Schema 问题映射成编辑器高亮范围', () => {
+    const jsonText = JSON.stringify({
+      name: '订单',
+      items: [{ price: 0 }],
+    }, null, 2);
+    const result = validateJsonAgainstSchema(jsonText, schema);
+    const highlights = getJsonSchemaIssueHighlights(jsonText, result);
+
+    expect(highlights).toHaveLength(1);
+    expect(highlights[0].issue.path).toBe('$.items[0].price');
+    expect(highlights[0].range.startLine).toBeGreaterThan(1);
+    expect(highlights[0].range.startColumn).toBeGreaterThan(1);
+  });
+
+  it('额外字段问题优先定位到具体字段', () => {
+    const jsonText = JSON.stringify({
+      id: 1,
+      extra: true,
+    }, null, 2);
+    const result = validateJsonAgainstSchema(jsonText, JSON.stringify({
+      type: 'object',
+      properties: {
+        id: { type: 'number' },
+      },
+      additionalProperties: false,
+    }));
+
+    expect(result.issues[0]).toMatchObject({
+      path: '$.extra',
+      pointer: '/extra',
+      keyword: 'additionalProperties',
+    });
+    expect(getJsonSchemaIssueHighlights(jsonText, result)[0].range.startLine).toBe(3);
   });
 
   it('区分 SOURCE JSON 错误和 Schema JSON 错误', () => {

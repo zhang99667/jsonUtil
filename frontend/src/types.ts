@@ -231,6 +231,13 @@ export interface EditorLocation {
   column: number;
 }
 
+export interface EditorDiagnosticHighlight {
+  range: HighlightRange;
+  path: string;
+  keyword: string;
+  message: string;
+}
+
 export interface EditorProps {
   value: string;
   originalValue?: string; // 原始值（用于 Diff 对比）
@@ -253,6 +260,7 @@ export interface EditorProps {
   onCloseFile?: (id: string) => void;
   onNewTab?: () => void;
   highlightRange?: HighlightRange | null;
+  diagnosticHighlights?: EditorDiagnosticHighlight[];
   onFocus?: () => void;
   onCursorPositionChange?: (line: number, column: number) => void;
   onSaveViewState?: (fileId: string, viewState: unknown) => void; // 保存标签页的编辑器视图状态

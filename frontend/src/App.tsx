@@ -14,7 +14,7 @@ import {
   getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput
 } from './utils/transformations';
-import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult } from './types';
+import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult, type EditorDiagnosticHighlight } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useAppUpdateCheck } from './hooks/useAppUpdateCheck';
@@ -66,6 +66,8 @@ import {
   trackToolEvent,
   type ToolEventStatus,
 } from './utils/productTelemetry';
+import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
+import { getJsonSchemaIssueHighlights } from './utils/jsonSchemaIssueHighlights';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -516,6 +518,19 @@ const App: React.FC = () => {
   );
 
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
+  const [jsonSchemaValidationResult, setJsonSchemaValidationResult] = useState<JsonSchemaValidationResult | null>(null);
+  const jsonSchemaDiagnosticHighlights = useMemo<EditorDiagnosticHighlight[]>(() => (
+    getJsonSchemaIssueHighlights(input, jsonSchemaValidationResult).map(({ range, issue }) => ({
+      range,
+      path: issue.path,
+      keyword: issue.keyword,
+      message: issue.message,
+    }))
+  ), [input, jsonSchemaValidationResult]);
+  const jsonSchemaWarning = useMemo(() => {
+    if (!jsonSchemaValidationResult || jsonSchemaValidationResult.status !== 'invalid') return '';
+    return `Schema 未通过 ${jsonSchemaValidationResult.issueCount} 个问题`;
+  }, [jsonSchemaValidationResult]);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [hasLoadedSettingsModal, setHasLoadedSettingsModal] = useState(false);
@@ -1665,6 +1680,8 @@ const App: React.FC = () => {
               placeholder="// 在此输入 JSON 或文本..."
               error={validation.isValid ? undefined : validation.error}
               errorLocation={sourceErrorLocation}
+              warning={jsonSchemaWarning}
+              diagnosticHighlights={jsonSchemaDiagnosticHighlights}
               errorActions={!validation.isValid && hasSourceContent ? (
                 <button
                   data-tour="source-error-ai-fix"
@@ -1854,8 +1871,12 @@ const App: React.FC = () => {
             <LazyJsonSchemaPanel
               jsonData={input}
               isOpen={isJsonSchemaPanelOpen}
-              onClose={() => setIsJsonSchemaPanelOpen(false)}
+              onClose={() => {
+                setIsJsonSchemaPanelOpen(false);
+                setJsonSchemaValidationResult(null);
+              }}
               onLocatePath={handleLocateJsonPath}
+              onValidationResult={setJsonSchemaValidationResult}
             />
           </Suspense>
         )}
