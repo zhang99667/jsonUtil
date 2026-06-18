@@ -564,7 +564,7 @@ const mergeAllOfExamples = (examples: unknown[]): unknown => {
   return examples.find(value => value !== undefined) ?? {};
 };
 
-const isExampleValidForSchemaNode = (example: unknown, schemaNode: Record<string, unknown>): boolean => {
+const isExampleValidForSchemaNode = (example: unknown, schemaNode: JsonSchemaNode): boolean => {
   const exampleText = JSON.stringify(example);
   const schemaText = JSON.stringify(schemaNode);
   if (typeof exampleText !== 'string' || typeof schemaText !== 'string') return false;
@@ -790,6 +790,25 @@ const isObjectDependencyKeyAllowed = (
   (key in properties || additionalPropertiesSchema !== false)
 );
 
+const addGeneratedObjectEntries = (
+  entries: Map<string, unknown>,
+  example: Record<string, unknown>,
+  properties: Record<string, JsonSchemaNode>,
+  propertyNamesSchema: JsonSchemaNode | undefined,
+  additionalPropertiesSchema: JsonSchemaNode | false | undefined
+): boolean => {
+  let hasAddedEntry = false;
+  for (const [key, value] of Object.entries(example)) {
+    if (entries.has(key) || entries.size >= MAX_OBJECT_EXAMPLE_PROPERTIES) continue;
+    if (!isObjectDependencyKeyAllowed(key, properties, propertyNamesSchema, additionalPropertiesSchema)) continue;
+
+    entries.set(key, value);
+    hasAddedEntry = true;
+  }
+
+  return hasAddedEntry;
+};
+
 const addObjectDependencyEntries = (
   entries: Map<string, unknown>,
   schema: Record<string, unknown>,
@@ -821,14 +840,53 @@ const addObjectDependencyEntries = (
       .map(dependentSchema => generateExampleValue(dependentSchema, { ...context, depth: context.depth + 1 }))
       .filter(isRecord);
     for (const example of dependentSchemaExamples) {
-      for (const [key, value] of Object.entries(example)) {
-        if (entries.has(key) || entries.size >= MAX_OBJECT_EXAMPLE_PROPERTIES) continue;
-        if (!isObjectDependencyKeyAllowed(key, properties, propertyNamesSchema, additionalPropertiesSchema)) continue;
-
-        entries.set(key, value);
-        hasAddedEntry = true;
-      }
+      hasAddedEntry = addGeneratedObjectEntries(
+        entries,
+        example,
+        properties,
+        propertyNamesSchema,
+        additionalPropertiesSchema
+      ) || hasAddedEntry;
     }
+  }
+};
+
+const getConditionalBranchSchema = (
+  schema: Record<string, unknown>,
+  example: Record<string, unknown>
+): JsonSchemaNode | undefined => {
+  const conditionSchema = schema.if;
+  if (!isRecord(conditionSchema) && typeof conditionSchema !== 'boolean') return undefined;
+
+  const branchSchema = isExampleValidForSchemaNode(example, conditionSchema)
+    ? schema.then
+    : schema.else;
+  return isRecord(branchSchema) || typeof branchSchema === 'boolean' ? branchSchema : undefined;
+};
+
+const addConditionalObjectEntries = (
+  entries: Map<string, unknown>,
+  schema: Record<string, unknown>,
+  properties: Record<string, JsonSchemaNode>,
+  propertyNamesSchema: JsonSchemaNode | undefined,
+  additionalPropertiesSchema: JsonSchemaNode | false | undefined,
+  context: ExampleContext
+) => {
+  const branchSchema = getConditionalBranchSchema(schema, Object.fromEntries(entries));
+  if (branchSchema === undefined || branchSchema === false) return;
+
+  const branchExample = generateExampleValue(branchSchema, { ...context, depth: context.depth + 1 });
+  if (!isRecord(branchExample)) return;
+
+  const hasAddedEntry = addGeneratedObjectEntries(
+    entries,
+    branchExample,
+    properties,
+    propertyNamesSchema,
+    additionalPropertiesSchema
+  );
+  if (hasAddedEntry) {
+    addObjectDependencyEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
   }
 };
 
@@ -883,6 +941,7 @@ const generateObjectExample = (schema: Record<string, unknown>, context: Example
     entries.set(key, value === undefined ? null : value);
   }
   addObjectDependencyEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
+  addConditionalObjectEntries(entries, schema, properties, propertyNamesSchema, additionalPropertiesSchema, context);
 
   return Object.fromEntries(entries);
 };

@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.198 (2026-06-19) - Schema 条件分支示例
+### ✨ 新特性
+- **JSON Schema 示例**: 对象示例生成支持常见 `if` / `then` / `else` 条件分支，会根据当前生成对象判断命中的条件分支，并合并分支子 Schema 生成出的字段，判别字段、支付方式、类型分流等接口 Schema 示例不再容易缺少分支必填字段
+- **约束一致性**: 条件分支合并继续复用对象字段准入规则，遵守根对象 `propertyNames` 和 `additionalProperties:false`，并在分支字段触发对象依赖时继续补齐依赖字段
+
 ## v1.8.197 (2026-06-19) - Schema 依赖子 Schema 示例
 ### ✨ 新特性
 - **JSON Schema 示例**: 对象示例生成支持 `dependentSchemas` 和 schema 型 `dependencies`，字段出现后会尝试从被触发的子 Schema 生成并合并依赖字段，支付方式、订阅模式、登录态等联动对象可直接生成可校验示例
