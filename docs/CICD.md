@@ -111,6 +111,13 @@ bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
 
 该脚本会先在本机执行 `npm run build` 和 `npm run check:preloads`，再同步 `frontend/dist`，并在远端使用 `Dockerfile.prebuilt` 只重建 `app-frontend`。后端和数据库不会因为前端静态资源更新而被重启。
 
+本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/visitor/ping` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://$SSH_HOST`，可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
+
+```bash
+PUBLIC_BASE_URL=https://39.97.237.248 \
+bash scripts/deploy/verify-public-deploy.sh
+```
+
 如果远端根盘已满，优先清理 Docker 未使用镜像或构建缓存，不要删除 `db-data`、`upload-data` 等业务 volume；同步脚本默认不会再上传本机测试输出和临时产物。
 
 远端部署会在 `docker compose up` 前检查应用目录所在磁盘水位，默认已使用 `90%` 时打印告警和 `docker system df` 摘要，达到 `95%` 时停止部署。可通过 `DEPLOY_DISK_WARN_USED_PERCENT`、`DEPLOY_DISK_MAX_USED_PERCENT` 调整阈值，或临时设置 `DEPLOY_DISK_CHECK_ENABLED=false` 跳过检查。
