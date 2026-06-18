@@ -7,8 +7,11 @@ import {
   type JsonSchemaValidationResult,
   type JsonSchemaValidationStatus,
 } from '../utils/jsonSchemaValidation';
+import { inferJsonSchemaFromText } from '../utils/jsonSchemaInference';
 import {
   MAX_JSON_SCHEMA_LIBRARY_ITEMS,
+  formatJsonSchemaLibraryExport,
+  importJsonSchemaLibrary,
   parseJsonSchemaLibrary,
   removeJsonSchemaLibraryItem,
   serializeJsonSchemaLibrary,
@@ -121,6 +124,33 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     }
   }, [handleSchemaChange]);
 
+  const handleGenerateSchema = useCallback(() => {
+    const startedAt = performance.now();
+    const inferenceResult = inferJsonSchemaFromText(jsonData);
+    if (!inferenceResult.schemaText) {
+      trackToolEvent({
+        eventName: 'SCHEMA_INFER',
+        category: 'schema',
+        status: 'error',
+        inputSizeBucket: getTextSizeBucket(jsonData),
+        durationBucket: getDurationBucket(performance.now() - startedAt),
+      });
+      showError(inferenceResult.error || '生成 Schema 失败');
+      return;
+    }
+
+    handleSchemaChange(inferenceResult.schemaText);
+    trackToolEvent({
+      eventName: 'SCHEMA_INFER',
+      category: 'schema',
+      status: 'success',
+      inputSizeBucket: getTextSizeBucket(jsonData),
+      durationBucket: getDurationBucket(performance.now() - startedAt),
+    });
+    showSuccess('已根据 SOURCE 生成 Schema');
+    requestAnimationFrame(() => schemaInputRef.current?.focus());
+  }, [handleSchemaChange, jsonData]);
+
   const handleCopyReport = useCallback(async () => {
     if (!result) return;
 
@@ -156,6 +186,59 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   const handleRemoveSchema = useCallback((itemId: string) => {
     persistSchemaLibrary(removeJsonSchemaLibraryItem(schemaLibrary, itemId));
     showSuccess('已删除 Schema 收藏');
+  }, [persistSchemaLibrary, schemaLibrary]);
+
+  const handleExportSchemaLibrary = useCallback(async () => {
+    if (schemaLibrary.length === 0) return;
+
+    const exportText = formatJsonSchemaLibraryExport(schemaLibrary);
+    try {
+      await copyText(exportText);
+      trackToolEvent({
+        eventName: 'SCHEMA_LIBRARY_EXPORT',
+        category: 'schema',
+        status: 'success',
+        inputSizeBucket: getTextSizeBucket(exportText),
+      });
+      showSuccess(`已复制 ${schemaLibrary.length} 个 Schema 收藏`);
+    } catch (error) {
+      trackToolEvent({
+        eventName: 'SCHEMA_LIBRARY_EXPORT',
+        category: 'schema',
+        status: 'error',
+        inputSizeBucket: getTextSizeBucket(exportText),
+      });
+      showError(getClipboardErrorMessage(error, '导出收藏失败'));
+    }
+  }, [schemaLibrary]);
+
+  const handleImportSchemaLibrary = useCallback(async () => {
+    try {
+      const text = await readClipboardText();
+      const importResult = importJsonSchemaLibrary(schemaLibrary, text);
+      if (!importResult) {
+        trackToolEvent({
+          eventName: 'SCHEMA_LIBRARY_IMPORT',
+          category: 'schema',
+          status: 'error',
+          inputSizeBucket: getTextSizeBucket(text),
+        });
+        showError('剪贴板中未识别到可导入的 Schema');
+        return;
+      }
+
+      persistSchemaLibrary(importResult.items);
+      trackToolEvent({
+        eventName: 'SCHEMA_LIBRARY_IMPORT',
+        category: 'schema',
+        status: 'success',
+        inputSizeBucket: getTextSizeBucket(text),
+      });
+      const skippedText = importResult.skippedCount > 0 ? `，跳过 ${importResult.skippedCount} 个重复项` : '';
+      showSuccess(`已导入 ${importResult.importedCount} 个 Schema${skippedText}`);
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '导入收藏失败'));
+    }
   }, [persistSchemaLibrary, schemaLibrary]);
 
   const footer = (
@@ -210,6 +293,16 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                data-tour="json-schema-generate"
+                onClick={handleGenerateSchema}
+                disabled={!jsonData.trim()}
+                title={jsonData.trim() ? '根据当前 SOURCE 生成 Schema' : '请先在 SOURCE 输入 JSON'}
+                className="rounded border border-editor-border px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                生成
+              </button>
+              <button
+                type="button"
                 data-tour="json-schema-paste"
                 onClick={() => void handlePasteSchema()}
                 className="rounded border border-editor-border px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-hover"
@@ -253,6 +346,25 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
               <span className="text-[11px] font-semibold text-gray-400">
                 收藏 {schemaLibrary.length}/{MAX_JSON_SCHEMA_LIBRARY_ITEMS}
               </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  data-tour="json-schema-library-import"
+                  onClick={() => void handleImportSchemaLibrary()}
+                  className="rounded border border-editor-border px-1.5 py-0.5 text-[11px] text-gray-400 transition-colors hover:bg-editor-hover hover:text-gray-200"
+                >
+                  导入
+                </button>
+                <button
+                  type="button"
+                  data-tour="json-schema-library-export"
+                  onClick={() => void handleExportSchemaLibrary()}
+                  disabled={schemaLibrary.length === 0}
+                  className="rounded border border-editor-border px-1.5 py-0.5 text-[11px] text-gray-400 transition-colors hover:bg-editor-hover hover:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  导出
+                </button>
+              </div>
             </div>
             {schemaLibrary.length === 0 ? (
               <div className="flex flex-1 items-center px-2 py-2 text-xs text-gray-600">

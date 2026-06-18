@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   MAX_JSON_SCHEMA_LIBRARY_ITEMS,
   createJsonSchemaLibraryItem,
+  formatJsonSchemaLibraryExport,
+  importJsonSchemaLibrary,
   parseJsonSchemaLibrary,
   removeJsonSchemaLibraryItem,
   serializeJsonSchemaLibrary,
@@ -58,5 +60,70 @@ describe('jsonSchemaLibrary', () => {
     expect(parsed).toEqual([item]);
     expect(removeJsonSchemaLibraryItem(parsed, item.id)).toEqual([]);
     expect(parseJsonSchemaLibrary(serializeJsonSchemaLibrary(parsed))).toEqual(parsed);
+  });
+
+  it('导出 Schema 收藏为可共享包', () => {
+    const item = createJsonSchemaLibraryItem('{"title":"订单响应","type":"object"}', 1)!;
+    const exportText = formatJsonSchemaLibraryExport([item], new Date('2026-06-18T00:00:00.000Z'));
+
+    expect(JSON.parse(exportText)).toEqual({
+      schemaVersion: 1,
+      source: 'JSON_SCHEMA_LIBRARY_EXPORT',
+      exportedAt: '2026-06-18T00:00:00.000Z',
+      itemCount: 1,
+      items: [
+        {
+          name: '订单响应',
+          schemaText: '{"title":"订单响应","type":"object"}',
+        },
+      ],
+    });
+  });
+
+  it('导入共享包并合并到收藏顶部', () => {
+    const current = upsertJsonSchemaLibraryItem([], '{"title":"现有"}', 1);
+    const exportText = formatJsonSchemaLibraryExport([
+      createJsonSchemaLibraryItem('{"title":"导入 A"}', 2)!,
+      createJsonSchemaLibraryItem('{"title":"导入 B"}', 3)!,
+    ], new Date('2026-06-18T00:00:00.000Z'));
+    const result = importJsonSchemaLibrary(current, exportText, 10);
+
+    expect(result).toMatchObject({
+      importedCount: 2,
+      skippedCount: 0,
+    });
+    expect(result?.items.map(item => item.name)).toEqual(['导入 A', '导入 B', '现有']);
+  });
+
+  it('支持直接导入单个 JSON Schema', () => {
+    const result = importJsonSchemaLibrary([], '{"title":"直接 Schema","type":"object"}', 1);
+
+    expect(result?.importedCount).toBe(1);
+    expect(result?.items[0].name).toBe('直接 Schema');
+    expect(result?.items[0].schemaText).toContain('"title": "直接 Schema"');
+  });
+
+  it('导入时跳过重复项并遵守收藏上限', () => {
+    const duplicate = '{"title":"重复"}';
+    let current: JsonSchemaLibraryItem[] = [];
+    for (let index = 0; index < MAX_JSON_SCHEMA_LIBRARY_ITEMS; index++) {
+      current = upsertJsonSchemaLibraryItem(current, JSON.stringify({ title: `现有 ${index}` }), index);
+    }
+
+    const result = importJsonSchemaLibrary(current, JSON.stringify([
+      JSON.parse(duplicate),
+      JSON.parse(duplicate),
+      { title: '新增' },
+    ]), 100);
+
+    expect(result?.importedCount).toBe(2);
+    expect(result?.skippedCount).toBe(1);
+    expect(result?.items).toHaveLength(MAX_JSON_SCHEMA_LIBRARY_ITEMS);
+    expect(result?.items.slice(0, 2).map(item => item.name)).toEqual(['重复', '新增']);
+  });
+
+  it('拒绝无法识别的导入内容', () => {
+    expect(importJsonSchemaLibrary([], 'not json')).toBeNull();
+    expect(importJsonSchemaLibrary([], '{"foo":"bar"}')).toBeNull();
   });
 });
