@@ -2,7 +2,7 @@
   "name": "json-helper-ai-fix",
   "productName": "JSONUtils - 专业版",
   "private": true,
-  "version": "1.8.145",
+  "version": "1.8.146",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -24,6 +24,7 @@
     "corpus:promote": "node scripts/scheme-corpus-promote.mjs",
     "perf:scheme": "node scripts/scheme-performance-budget.mjs",
     "perf:jsonpath": "node scripts/jsonpath-performance-budget.mjs",
+    "perf:e2e": "playwright test --config playwright.performance.config.ts",
     "samples:to-regression": "node scripts/issue-samples-to-regression.mjs",
     "cmd:diff": "node scripts/cmd-structure-diff.mjs",
     "test:watch": "vitest",

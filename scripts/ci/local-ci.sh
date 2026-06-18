@@ -59,6 +59,9 @@ npm run build
 log "Frontend: preload boundary check"
 npm run check:preloads
 
+log "Frontend: browser Worker E2E performance budget"
+PLAYWRIGHT_PREBUILT=1 npm run perf:e2e
+
 log "Frontend: E2E smoke tests"
 PLAYWRIGHT_PREBUILT=1 npm run test:e2e
 

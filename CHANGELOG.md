@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.146 (2026-06-18) - 浏览器 Worker 性能预算
+### ✨ 新特性
+- **性能门禁**: 新增 `npm run perf:e2e`，用独立 Playwright performance 配置量化 JSONPath Worker 取消、Scheme Worker 取消和连续大 response 解析的浏览器端到端耗时
+- **CI 闭环**: 本地 CI 与 GitHub Actions 接入浏览器 Worker 性能预算，并输出 `browser-worker-performance-budget` JSON artifact / Step Summary，补齐核心函数预算之外的真实页面响应探针
+
 ## v1.8.145 (2026-06-18) - 真实 Response 下一步动作条
 ### ✨ 新特性
 - **深度解析报告**: 覆盖率摘要下新增“真实 response 下一步”，按当前解析状态推荐最多 3 个优先入口，收敛 cmdHandler 对比、占位符回填、待处理筛选、归档包和协作报告复制
