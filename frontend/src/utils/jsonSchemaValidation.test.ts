@@ -136,6 +136,35 @@ describe('jsonSchemaValidation', () => {
     });
   });
 
+  it('校验 JSON Schema format 常见格式', () => {
+    const result = validateJsonAgainstSchema(
+      JSON.stringify({ email: 'not-email', homepage: 'not-url' }),
+      JSON.stringify({
+        type: 'object',
+        required: ['email', 'homepage'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          homepage: { type: 'string', format: 'uri' },
+        },
+      })
+    );
+
+    expect(result.status).toBe('invalid');
+    expect(result.issueKeywordGroups).toEqual([{ key: 'format', count: 2 }]);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        path: '$.email',
+        keyword: 'format',
+        suggestion: '调整该路径的字符串内容以符合长度、格式或正则约束。',
+      }),
+      expect.objectContaining({
+        path: '$.homepage',
+        keyword: 'format',
+        suggestion: '调整该路径的字符串内容以符合长度、格式或正则约束。',
+      }),
+    ]));
+  });
+
   it('把 JSON Pointer 转成可读 JSONPath', () => {
     expect(jsonPointerToJsonPath('')).toBe('$');
     expect(jsonPointerToJsonPath('/items/0/price')).toBe('$.items[0].price');

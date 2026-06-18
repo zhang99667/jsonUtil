@@ -1,6 +1,7 @@
 import Ajv, { type AnySchema, type ErrorObject } from 'ajv';
 import Ajv2019 from 'ajv/dist/2019';
 import Ajv2020 from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
 
 export type JsonSchemaValidationStatus = 'empty' | 'valid' | 'invalid' | 'input-error' | 'schema-error';
 
@@ -82,19 +83,19 @@ const getAjvForSchema = (schema: unknown) => {
   const options = {
     allErrors: true,
     strict: false,
-    validateFormats: false,
+    validateFormats: true,
     allowUnionTypes: true,
   } as const;
 
   if (schemaVersion.includes('2020-12')) {
-    return new Ajv2020(options);
+    return addFormats(new Ajv2020(options));
   }
 
   if (schemaVersion.includes('2019-09')) {
-    return new Ajv2019(options);
+    return addFormats(new Ajv2019(options));
   }
 
-  return new Ajv(options);
+  return addFormats(new Ajv(options));
 };
 
 const getIssuePointer = (error: ErrorObject): string => {
