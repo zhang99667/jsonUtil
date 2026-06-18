@@ -37,8 +37,8 @@ health_check_url() {
   local code
 
   while [ "$attempt" -le "$HEALTH_CHECK_RETRIES" ]; do
-    code="$(curl -fsS -o /dev/null -w '%{http_code}' "$url" 2>/dev/null || true)"
-    if [ "$code" = "200" ] || [ "$code" = "301" ] || [ "$code" = "302" ]; then
+    code="$(curl -kLsS --max-time 10 -o /dev/null -w '%{http_code}' "$url" 2>/dev/null || true)"
+    if [ "$code" = "200" ]; then
       log "健康检查通过: $url ($code)"
       return 0
     fi
