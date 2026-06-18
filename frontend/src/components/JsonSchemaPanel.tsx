@@ -469,6 +469,49 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
                   {result.summary}
                 </div>
 
+                {(result.issueKeywordGroups.length > 0 || result.issuePathList.length > 0) && (
+                  <div
+                    data-tour="json-schema-issue-distribution"
+                    className="rounded border border-editor-border bg-editor-sidebar/70 px-3 py-2"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-gray-300">修复概览</span>
+                      <span className="text-[11px] text-gray-500">{result.issueCount} 个问题</span>
+                    </div>
+                    {result.issueKeywordGroups.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.issueKeywordGroups.map(group => (
+                          <span
+                            key={group.key}
+                            className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-100"
+                          >
+                            <code>{group.key}</code>
+                            <span className="ml-1 text-amber-200/80">{group.count}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {result.issuePathList.length > 0 && (
+                      <div data-tour="json-schema-issue-path-list" className="mt-2">
+                        <div className="mb-1 text-[11px] font-semibold text-gray-500">路径清单</div>
+                        <div className="space-y-1">
+                          {result.issuePathList.map(path => (
+                            <button
+                              key={path}
+                              type="button"
+                              onClick={() => onLocatePath(path)}
+                              className="block w-full truncate rounded border border-transparent px-2 py-1 text-left font-mono text-[11px] text-emerald-200 transition-colors hover:border-editor-border hover:bg-editor-hover"
+                              title={path}
+                            >
+                              {path}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {result.issues.length > 0 && (
                   <div data-tour="json-schema-issues" className="space-y-2">
                     {result.issues.map((issue, index) => (

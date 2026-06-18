@@ -12,6 +12,11 @@ export interface JsonSchemaIssue {
   schemaPath: string;
 }
 
+export interface JsonSchemaIssueGroup {
+  key: string;
+  count: number;
+}
+
 export interface JsonSchemaValidationResult {
   status: JsonSchemaValidationStatus;
   isValid: boolean;
@@ -19,6 +24,8 @@ export interface JsonSchemaValidationResult {
   issues: JsonSchemaIssue[];
   issueCount: number;
   shownIssueCount: number;
+  issueKeywordGroups: JsonSchemaIssueGroup[];
+  issuePathList: string[];
 }
 
 const MAX_VISIBLE_SCHEMA_ISSUES = 20;
@@ -113,6 +120,29 @@ const toIssue = (error: ErrorObject): JsonSchemaIssue => {
   };
 };
 
+const createEmptyIssueInsights = () => ({
+  issueKeywordGroups: [],
+  issuePathList: [],
+});
+
+const groupIssueKeywords = (issues: JsonSchemaIssue[]): JsonSchemaIssueGroup[] => {
+  const keywordCounts = new Map<string, number>();
+
+  issues.forEach((issue) => {
+    keywordCounts.set(issue.keyword, (keywordCounts.get(issue.keyword) || 0) + 1);
+  });
+
+  return Array.from(keywordCounts.entries())
+    .sort(([leftKey, leftCount], [rightKey, rightCount]) => (
+      rightCount - leftCount || leftKey.localeCompare(rightKey)
+    ))
+    .map(([key, count]) => ({ key, count }));
+};
+
+const getIssuePathList = (issues: JsonSchemaIssue[]): string[] => (
+  Array.from(new Set(issues.map(issue => issue.path))).slice(0, MAX_VISIBLE_SCHEMA_ISSUES)
+);
+
 export const validateJsonAgainstSchema = (
   jsonText: string,
   schemaText: string
@@ -125,6 +155,7 @@ export const validateJsonAgainstSchema = (
       issues: [],
       issueCount: 0,
       shownIssueCount: 0,
+      ...createEmptyIssueInsights(),
     };
   }
 
@@ -136,6 +167,7 @@ export const validateJsonAgainstSchema = (
       issues: [],
       issueCount: 0,
       shownIssueCount: 0,
+      ...createEmptyIssueInsights(),
     };
   }
 
@@ -147,6 +179,7 @@ export const validateJsonAgainstSchema = (
       issues: [],
       issueCount: 0,
       shownIssueCount: 0,
+      ...createEmptyIssueInsights(),
     };
   }
 
@@ -159,6 +192,7 @@ export const validateJsonAgainstSchema = (
       issues: [],
       issueCount: 0,
       shownIssueCount: 0,
+      ...createEmptyIssueInsights(),
     };
   }
 
@@ -171,6 +205,7 @@ export const validateJsonAgainstSchema = (
       issues: [],
       issueCount: 0,
       shownIssueCount: 0,
+      ...createEmptyIssueInsights(),
     };
   }
 
@@ -187,6 +222,7 @@ export const validateJsonAgainstSchema = (
         issues: [],
         issueCount: 0,
         shownIssueCount: 0,
+        ...createEmptyIssueInsights(),
       };
     }
 
@@ -200,6 +236,8 @@ export const validateJsonAgainstSchema = (
       issues: visibleIssues,
       issueCount: allIssues.length,
       shownIssueCount: visibleIssues.length,
+      issueKeywordGroups: groupIssueKeywords(allIssues),
+      issuePathList: getIssuePathList(allIssues),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -210,6 +248,7 @@ export const validateJsonAgainstSchema = (
       issues: [],
       issueCount: 0,
       shownIssueCount: 0,
+      ...createEmptyIssueInsights(),
     };
   }
 };
@@ -222,6 +261,20 @@ export const formatJsonSchemaValidationReport = (
     `状态: ${result.isValid ? '通过' : '未通过'}`,
     `摘要: ${result.summary}`,
   ];
+
+  if (result.issueKeywordGroups.length > 0) {
+    lines.push('问题分布:');
+    result.issueKeywordGroups.forEach((group) => {
+      lines.push(`- ${group.key}: ${group.count}`);
+    });
+  }
+
+  if (result.issuePathList.length > 0) {
+    lines.push('路径清单:');
+    result.issuePathList.forEach((path, index) => {
+      lines.push(`${index + 1}. ${path}`);
+    });
+  }
 
   if (result.issues.length > 0) {
     lines.push('问题:');

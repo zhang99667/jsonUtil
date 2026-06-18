@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.177 (2026-06-18) - Schema 问题分布
+### ✨ 新特性
+- **JSON Schema 校验**: 校验失败结果新增关键字问题分布和路径清单，复制报告会携带不含原始值的修复清单，便于协作者快速定位 `required`、`type`、`additionalProperties` 等高频问题
+
 ## v1.8.176 (2026-06-18) - Schema 生成策略
 ### ✨ 新特性
 - **JSON Schema 校验**: Schema 自动生成新增“严格/宽松”必填策略，默认保持严格 `required` 约束，宽松模式不生成 `required`，便于团队复用可选字段较多的接口 Schema
