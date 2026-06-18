@@ -2,7 +2,8 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY .npmrc package*.json ./
-RUN npm ci --include=optional
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+RUN npm ci --include=optional --registry="${NPM_REGISTRY}"
 COPY . .
 ARG VITE_GA_MEASUREMENT_ID=
 ENV VITE_GA_MEASUREMENT_ID=$VITE_GA_MEASUREMENT_ID

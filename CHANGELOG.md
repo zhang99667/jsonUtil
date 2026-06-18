@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.153 (2026-06-18) - npm 安装网络兜底
+### ✨ 新特性
+- **部署可靠性**: Docker 前端构建默认使用 `npmmirror` 安装依赖，并保留 `NPM_REGISTRY` 构建参数，降低远端 `npm ci` 因公网 registry 连接重置而失败的概率
+
 ## v1.8.152 (2026-06-18) - Docker 冷构建瘦身
 ### ✨ 新特性
 - **部署可靠性**: 前端 Docker 构建阶段切换为 `node:20-alpine`，降低远端冷构建拉取 Node 基础镜像的体积，减少 Docker Hub 抖动导致的上线阻塞
