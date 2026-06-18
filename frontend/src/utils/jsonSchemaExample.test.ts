@@ -247,6 +247,45 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('生成后自校验并拦截无法满足数组下限的示例', () => {
+    const schemaText = JSON.stringify({
+      type: 'array',
+      minItems: 4,
+      items: {
+        type: 'string',
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+
+    expect(result.exampleText).toBeUndefined();
+    expect(result.error).toContain('生成的示例未通过当前 Schema 校验');
+    expect(result.error).toContain('$ [minItems]');
+  });
+
+  it('生成后自校验并拦截无法满足组合约束的示例', () => {
+    const schemaText = JSON.stringify({
+      type: 'object',
+      required: ['status'],
+      properties: {
+        status: {
+          type: 'string',
+        },
+      },
+      not: {
+        properties: {
+          status: {
+            const: 'string',
+          },
+        },
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+
+    expect(result.exampleText).toBeUndefined();
+    expect(result.error).toContain('生成的示例未通过当前 Schema 校验');
+    expect(result.error).toContain('$ [not]');
+  });
+
   it('处理非法或永假 Schema 时返回可读错误', () => {
     expect(generateJsonSchemaExampleText('{bad}').error).toContain('Schema 不是合法 JSON');
     expect(generateJsonSchemaExampleText('false')).toMatchObject({
