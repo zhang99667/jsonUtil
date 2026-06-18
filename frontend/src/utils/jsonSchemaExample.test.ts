@@ -125,6 +125,50 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('为 uniqueItems 数组生成不重复的样例值', () => {
+    const schemaText = JSON.stringify({
+      type: 'object',
+      required: ['tags', 'items'],
+      properties: {
+        tags: {
+          type: 'array',
+          minItems: 3,
+          uniqueItems: true,
+          items: {
+            type: 'string',
+          },
+        },
+        items: {
+          type: 'array',
+          minItems: 2,
+          uniqueItems: true,
+          items: {
+            type: 'object',
+            required: ['id'],
+            additionalProperties: false,
+            properties: {
+              id: {
+                type: 'integer',
+                minimum: 1,
+              },
+            },
+          },
+        },
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '{}');
+
+    expect(example).toEqual({
+      tags: ['string', 'string2', 'string3'],
+      items: [
+        { id: 1 },
+        { id: 2 },
+      ],
+    });
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
   it('处理非法或永假 Schema 时返回可读错误', () => {
     expect(generateJsonSchemaExampleText('{bad}').error).toContain('Schema 不是合法 JSON');
     expect(generateJsonSchemaExampleText('false')).toMatchObject({
