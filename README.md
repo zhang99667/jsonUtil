@@ -120,6 +120,7 @@ npm run cmd:diff -- actual-response.json cmdhandler-expected.json --actual-path 
 *   CD: `.github/workflows/deploy.yml`，支持全量部署和预构建前端快速部署
 *   本地完整检查: `bash scripts/ci/local-ci.sh`
 *   远端磁盘健康检查: `bash scripts/deploy/ssh-disk-health.sh`
+*   远端 Docker 未使用对象清理: `bash scripts/deploy/ssh-docker-prune.sh`
 *   远端开发残留清理: `bash scripts/deploy/ssh-prune-dev-artifacts.sh`
 *   公网部署验证: `bash scripts/deploy/verify-public-deploy.sh`
 *   本机直连服务器部署: `bash scripts/deploy/ssh-docker-compose-deploy.sh`
