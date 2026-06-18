@@ -127,7 +127,7 @@ bash scripts/deploy/ssh-disk-health.sh
 
 该脚本默认不执行清理动作；如果希望在巡检或 CI 中把水位告警转成非零退出码，可设置 `DISK_HEALTH_STRICT=true`。
 
-同步脚本会排除 `.DS_Store`、`.vscode`、`.idea`、`.cursor`、`.comate`、`.cursorrules`、`AGENTS.md`、`CLAUDE.md` 等非运行时开发文件。磁盘健康检查会列出远端历史残留，并只输出人工确认后的清理建议，不会自动删除。
+同步脚本会读取 `scripts/deploy/rsync-excludes.txt`，统一排除 `.DS_Store`、`.vscode`、`.idea`、`.cursor`、`.comate`、`.cursorrules`、`AGENTS.md`、`CLAUDE.md` 等非运行时开发文件。本机部署和 GitHub Actions 共用同一份清单；磁盘健康检查会列出远端历史残留，并只输出人工确认后的清理建议，不会自动删除。
 
 远端历史残留可以用独立脚本清理；脚本默认 dry-run，只列候选项，不删除文件：
 

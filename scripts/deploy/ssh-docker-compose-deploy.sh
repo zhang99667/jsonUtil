@@ -19,6 +19,7 @@ COMPOSE_NO_DEPS="${COMPOSE_NO_DEPS:-false}"
 DEPLOY_DISK_CHECK_ENABLED="${DEPLOY_DISK_CHECK_ENABLED:-true}"
 DEPLOY_DISK_WARN_USED_PERCENT="${DEPLOY_DISK_WARN_USED_PERCENT:-90}"
 DEPLOY_DISK_MAX_USED_PERCENT="${DEPLOY_DISK_MAX_USED_PERCENT:-95}"
+RSYNC_EXCLUDES_FILE="$ROOT_DIR/scripts/deploy/rsync-excludes.txt"
 
 SSH_BASE_OPTS=(
   -i "$SSH_KEY"
@@ -62,29 +63,7 @@ ssh "${SSH_BASE_OPTS[@]}" "$SSH_USER@$SSH_HOST" "mkdir -p '$REMOTE_APP_DIR'"
 
 log "同步源码到远程服务器"
 RSYNC_EXCLUDES=(
-  --exclude='.git/'
-  --exclude='.github/'
-  --exclude='.claude/'
-  --exclude='.comate/'
-  --exclude='.cursor/'
-  --exclude='.idea/'
-  --exclude='.vscode/'
-  --exclude='.DS_Store'
-  --exclude='.cursorrules'
-  --exclude='.env'
-  --exclude='.env.*'
-  --exclude='AGENTS.md'
-  --exclude='CLAUDE.md'
-  --exclude='artifacts/'
-  --exclude='outputs/'
-  --exclude='frontend/node_modules/'
-  --exclude='frontend/.vite/'
-  --exclude='frontend/build/'
-  --exclude='frontend/releases/'
-  --exclude='frontend/test-results/'
-  --exclude='backend/target/'
-  --exclude='node_modules/'
-  --exclude='*.log'
+  --exclude-from="$RSYNC_EXCLUDES_FILE"
 )
 
 if [ "$SYNC_FRONTEND_DIST" != "true" ]; then
