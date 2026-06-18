@@ -48,6 +48,17 @@ interface HarPayloadSummary {
   bodyKinds: Record<string, number>;
 }
 
+interface HarPayloadIssueSummary {
+  issueEntryCount: number;
+  clientErrorCount: number;
+  serverErrorCount: number;
+  unknownStatusCount: number;
+  jsonParseErrorBodyCount: number;
+  truncatedBodyCount: number;
+  undecodedBase64BodyCount: number;
+  issueLabels: string[];
+}
+
 interface HarPayloadExport {
   schemaVersion: 1;
   source: 'HAR_PAYLOAD_EXPORT';
@@ -56,6 +67,7 @@ interface HarPayloadExport {
   skippedEntryCount: number;
   isLimited: boolean;
   summary: HarPayloadSummary;
+  issueSummary: HarPayloadIssueSummary;
   entries: HarPayloadEntry[];
 }
 
@@ -230,6 +242,67 @@ const buildHarPayloadSummary = (entries: HarPayloadEntry[]): HarPayloadSummary =
   };
 };
 
+const getEntryBodies = (entry: HarPayloadEntry): HarPayloadBody[] => (
+  [entry.request.body, entry.response.body].filter((body): body is HarPayloadBody => Boolean(body))
+);
+
+const isClientErrorStatus = (status: number): boolean => status >= 400 && status < 500;
+
+const isServerErrorStatus = (status: number): boolean => status >= 500 && status < 600;
+
+const hasHarEntryIssue = (entry: HarPayloadEntry): boolean => {
+  if (isClientErrorStatus(entry.response.status) || isServerErrorStatus(entry.response.status)) return true;
+  if (entry.response.status <= 0) return true;
+
+  return getEntryBodies(entry).some(body => (
+    Boolean(body.parseError) || Boolean(body.truncated) || body.kind === 'base64'
+  ));
+};
+
+const buildHarPayloadIssueSummary = (entries: HarPayloadEntry[]): HarPayloadIssueSummary => {
+  const issueSummary: HarPayloadIssueSummary = {
+    issueEntryCount: 0,
+    clientErrorCount: 0,
+    serverErrorCount: 0,
+    unknownStatusCount: 0,
+    jsonParseErrorBodyCount: 0,
+    truncatedBodyCount: 0,
+    undecodedBase64BodyCount: 0,
+    issueLabels: [],
+  };
+
+  entries.forEach(entry => {
+    if (hasHarEntryIssue(entry)) {
+      issueSummary.issueEntryCount++;
+      if (issueSummary.issueLabels.length < 20) {
+        issueSummary.issueLabels.push(entry.label);
+      }
+    }
+
+    if (isClientErrorStatus(entry.response.status)) {
+      issueSummary.clientErrorCount++;
+    } else if (isServerErrorStatus(entry.response.status)) {
+      issueSummary.serverErrorCount++;
+    } else if (entry.response.status <= 0) {
+      issueSummary.unknownStatusCount++;
+    }
+
+    getEntryBodies(entry).forEach(body => {
+      if (body.parseError) {
+        issueSummary.jsonParseErrorBodyCount++;
+      }
+      if (body.truncated) {
+        issueSummary.truncatedBodyCount++;
+      }
+      if (body.kind === 'base64') {
+        issueSummary.undecodedBase64BodyCount++;
+      }
+    });
+  });
+
+  return issueSummary;
+};
+
 const toPayloadBody = (
   rawText: string | undefined,
   mimeType: string = '',
@@ -376,6 +449,7 @@ export const extractHarPayloads = (harText: string): HarPayloadExport | null => 
     skippedEntryCount: entries.length - payloadEntries.length,
     isLimited: payloadEntries.length >= MAX_HAR_PAYLOAD_ENTRIES && processedEntryCount < entries.length,
     summary: buildHarPayloadSummary(payloadEntries),
+    issueSummary: buildHarPayloadIssueSummary(payloadEntries),
     entries: payloadEntries,
   };
 };
@@ -403,7 +477,9 @@ export const importTextFileContent = (
     name: `${fileName}.payloads.json`,
     mode: TransformMode.DEEP_FORMAT,
     preserveHandle: false,
-    toastMessage: `已从 HAR 提取 ${harPayloads.extractedEntryCount}/${harPayloads.entryCount} 条请求/响应 body`,
+    toastMessage: harPayloads.issueSummary.issueEntryCount > 0
+      ? `已从 HAR 提取 ${harPayloads.extractedEntryCount}/${harPayloads.entryCount} 条请求/响应 body，发现 ${harPayloads.issueSummary.issueEntryCount} 条需关注接口`
+      : `已从 HAR 提取 ${harPayloads.extractedEntryCount}/${harPayloads.entryCount} 条请求/响应 body`,
     toastType: 'success',
   };
 };

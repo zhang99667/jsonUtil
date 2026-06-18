@@ -127,6 +127,79 @@ describe('harImport', () => {
       mimeTypes: { 'application/json;charset=utf-8': 1 },
       bodyKinds: { 'response:json': 1 },
     });
+    expect(result?.issueSummary).toMatchObject({
+      issueEntryCount: 1,
+      clientErrorCount: 0,
+      serverErrorCount: 1,
+      issueLabels: ['POST 500 api.example.com/api/order'],
+    });
+  });
+
+  it('生成问题导向摘要且不暴露 query 参数', () => {
+    const longJsonText = `{"payload":"${'x'.repeat(210_000)}"}`;
+    const result = extractHarPayloads(JSON.stringify({
+      log: {
+        entries: [
+          {
+            request: {
+              method: 'GET',
+              url: 'https://api.example.com/missing?token=secret',
+            },
+            response: {
+              status: 404,
+              content: {
+                mimeType: 'application/json',
+                text: '{bad',
+              },
+            },
+          },
+          {
+            request: {
+              method: 'POST',
+              url: 'https://api.example.com/large?uid=1',
+            },
+            response: {
+              status: 200,
+              content: {
+                mimeType: 'application/json',
+                text: longJsonText,
+              },
+            },
+          },
+          {
+            request: {
+              method: 'GET',
+              url: 'https://api.example.com/base64?sign=secret',
+            },
+            response: {
+              status: 0,
+              content: {
+                mimeType: 'application/json',
+                encoding: 'base64',
+                text: '%%%invalid%%%',
+              },
+            },
+          },
+        ],
+      },
+    }));
+
+    expect(result?.issueSummary).toEqual({
+      issueEntryCount: 3,
+      clientErrorCount: 1,
+      serverErrorCount: 0,
+      unknownStatusCount: 1,
+      jsonParseErrorBodyCount: 2,
+      truncatedBodyCount: 1,
+      undecodedBase64BodyCount: 1,
+      issueLabels: [
+        'GET 404 api.example.com/missing',
+        'POST 200 api.example.com/large',
+        'GET 0 api.example.com/base64',
+      ],
+    });
+    expect(JSON.stringify(result?.issueSummary)).not.toContain('secret');
+    expect(JSON.stringify(result?.issueSummary)).not.toContain('uid=1');
   });
 
   it('支持提取 HAR postData params 表单参数', () => {
@@ -205,6 +278,34 @@ describe('harImport', () => {
       summary: {
         hosts: { 'api.example.com': 1 },
       },
+    });
+  });
+
+  it('打开含异常接口的 HAR 文件时提示需关注数量', () => {
+    const imported = importTextFileContent('network.har', JSON.stringify({
+      log: {
+        entries: [
+          {
+            request: {
+              method: 'GET',
+              url: 'https://api.example.com/error',
+            },
+            response: {
+              status: 500,
+              content: {
+                mimeType: 'application/json',
+                text: '{"error":true}',
+              },
+            },
+          },
+        ],
+      },
+    }));
+
+    expect(imported.toastMessage).toContain('发现 1 条需关注接口');
+    expect(JSON.parse(imported.content).issueSummary).toMatchObject({
+      issueEntryCount: 1,
+      serverErrorCount: 1,
     });
   });
 

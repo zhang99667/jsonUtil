@@ -214,6 +214,7 @@ PREVIEW JSON + TransformReportPanel
 | `schemeMetadata.ts` | 汇总 CMD Schema、内部 CMD 字段、运行时占位符和 cmdHandler 兼容结构 |
 | `transformSummary.ts` | 生成深度解析报告、质量快照、问题样本、占位符模板和 cmdHandler 风格复制文本 |
 | `cmdStructureDiff.ts` | 对比本工具 actual 与内部 cmdHandler expected，输出缺失路径、额外路径和值差异 |
+| `harImport.ts` | 将 HAR 请求/响应 body 提取为派生 JSON，生成接口摘要、异常摘要和不含 query 的短标签 |
 
 ### 大输入 Worker 分层
 
