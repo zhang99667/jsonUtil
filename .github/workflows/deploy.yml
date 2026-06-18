@@ -2,6 +2,8 @@ name: Deploy
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  SSH_SERVER_ALIVE_INTERVAL: '15'
+  SSH_SERVER_ALIVE_COUNT_MAX: '10'
 
 on:
   workflow_dispatch:
@@ -49,13 +51,16 @@ jobs:
 
       - name: Prepare remote directory
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" "${{ inputs.user }}@${{ inputs.host }}" \
+          ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" \
+            -o ServerAliveInterval="${SSH_SERVER_ALIVE_INTERVAL}" \
+            -o ServerAliveCountMax="${SSH_SERVER_ALIVE_COUNT_MAX}" \
+            "${{ inputs.user }}@${{ inputs.host }}" \
             "command -v rsync >/dev/null && command -v docker >/dev/null && command -v curl >/dev/null && (docker compose version >/dev/null 2>&1 || command -v docker-compose >/dev/null) && mkdir -p '${{ inputs.app_dir }}'"
 
       - name: Sync source to remote
         run: |
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -p ${{ inputs.port }}" \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ inputs.port }} -o ServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL} -o ServerAliveCountMax=${SSH_SERVER_ALIVE_COUNT_MAX}" \
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='.claude/' \
@@ -72,5 +77,8 @@ jobs:
 
       - name: Deploy docker compose
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" "${{ inputs.user }}@${{ inputs.host }}" \
+          ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" \
+            -o ServerAliveInterval="${SSH_SERVER_ALIVE_INTERVAL}" \
+            -o ServerAliveCountMax="${SSH_SERVER_ALIVE_COUNT_MAX}" \
+            "${{ inputs.user }}@${{ inputs.host }}" \
             "cd '${{ inputs.app_dir }}' && HEALTH_CHECK_URLS='${{ inputs.health_check_urls }}' bash scripts/deploy/remote-docker-compose-deploy.sh"
