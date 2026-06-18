@@ -8,6 +8,9 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 HEALTH_CHECK_URLS="${HEALTH_CHECK_URLS:-http://127.0.0.1 http://127.0.0.1/api/visitor/ping}"
 HEALTH_CHECK_RETRIES="${HEALTH_CHECK_RETRIES:-10}"
 HEALTH_CHECK_INTERVAL="${HEALTH_CHECK_INTERVAL:-3}"
+export FRONTEND_DOCKERFILE="${FRONTEND_DOCKERFILE:-Dockerfile}"
+COMPOSE_SERVICES="${COMPOSE_SERVICES:-}"
+COMPOSE_NO_DEPS="${COMPOSE_NO_DEPS:-false}"
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
@@ -80,7 +83,15 @@ log "校验 Docker Compose 配置"
 compose config >/dev/null
 
 log "构建并启动服务"
-compose up -d --build --remove-orphans
+UP_ARGS=(up -d --build --remove-orphans)
+if [ "$COMPOSE_NO_DEPS" = "true" ]; then
+  UP_ARGS+=(--no-deps)
+fi
+if [ -n "$COMPOSE_SERVICES" ]; then
+  read -r -a SERVICE_ARGS <<< "$COMPOSE_SERVICES"
+  UP_ARGS+=("${SERVICE_ARGS[@]}")
+fi
+compose "${UP_ARGS[@]}"
 
 log "当前服务状态"
 compose ps
