@@ -590,6 +590,34 @@ const pickFirstBranchExample = (
   return firstExample;
 };
 
+const removeSchemaKeyword = (
+  schema: Record<string, unknown>,
+  keyword: string
+): Record<string, unknown> => (
+  Object.fromEntries(Object.entries(schema).filter(([key]) => key !== keyword))
+);
+
+const generateAllOfExample = (
+  schema: Record<string, unknown>,
+  context: ExampleContext
+): unknown => {
+  if (!Array.isArray(schema.allOf)) return undefined;
+
+  const nextContext = { ...context, depth: context.depth + 1 };
+  const baseSchema = removeSchemaKeyword(schema, 'allOf');
+  const examples = [
+    generateExampleValue(baseSchema, nextContext),
+    ...schema.allOf.map(branch => generateExampleValue(branch, nextContext)),
+  ].filter(value => value !== undefined);
+  const mergedExample = mergeAllOfExamples(examples);
+
+  if (isExampleValidForSchemaNode(mergedExample, schema)) return mergedExample;
+  const validExample = examples.find(example => isExampleValidForSchemaNode(example, schema));
+  if (validExample !== undefined) return validExample;
+
+  return mergedExample;
+};
+
 const getObjectSchemaProperties = (schema: Record<string, unknown>): Record<string, JsonSchemaNode> => (
   getSchemaProperties(schema)
 );
@@ -972,9 +1000,7 @@ const generateExampleValue = (schemaNode: unknown, context: ExampleContext): unk
   if (preferredLiteral !== undefined) return preferredLiteral;
 
   if (Array.isArray(schemaNode.allOf)) {
-    return mergeAllOfExamples(
-      schemaNode.allOf.map(branch => generateExampleValue(branch, { ...context, depth: context.depth + 1 }))
-    );
+    return generateAllOfExample(schemaNode, context);
   }
 
   const branchExample = pickFirstBranchExample(schemaNode.oneOf || schemaNode.anyOf, context, schemaNode);
