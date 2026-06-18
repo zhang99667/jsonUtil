@@ -239,6 +239,9 @@ PREVIEW JSON + TransformReportPanel
 | `landing-response.redacted.json` | 脱敏落地页 response 样本，覆盖 easybrowse、deeplink、openapp、结构化 HTTPS 落地页、监测 URL 和占位符 |
 | `landing-response.expected.snapshot.json` | 落地页质量基线，校验扫描入口、热点 Schema、占位符和 cmdHandler ignored extra 上限 |
 | `landing-response.cmdhandler.expected.json` | 落地页 cmdHandler expected 子集，用于锁定 fallback_cmd、appUrl、webUrl、adFlag 和 callbackUrl |
+| `phone-response.redacted.json` | 脱敏电话拨打 response 样本，覆盖 makePhoneCall、numberUrl、logUrl、Base64 extInfo、hash 落地页参数和占位符 |
+| `phone-response.expected.snapshot.json` | 电话拨打质量基线，校验扫描入口、热点 Schema、号码监测 URL 展开和运行时占位符 |
+| `phone-response.cmdhandler.expected.json` | 电话拨打 cmdHandler expected 子集，用于锁定 params、extInfo、numberUrl、logUrl 和 type |
 | `corpus-quality.baseline.snapshot.json` | 完整 corpus 质量快照基线，用于 CI 趋势对比和资源类型占比漂移门禁 |
 
 CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`，`Scheme corpus quality snapshot` 会校验质量阈值和 cmdHandler expected，`Scheme corpus quality trend` 会把当前快照与完整基线做 strict 对比并拦截视频占比骤降或 Lottie 占比异常上升，`Scheme performance budget` 会校验核心解析耗时。相关步骤与普通单测分开展示，便于快速定位真实 response 解析能力、素材结构或性能退化。

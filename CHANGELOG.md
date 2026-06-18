@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.142 (2026-06-18) - 电话拨打 Corpus 基线
+### ✨ 新特性
+- **质量门禁**: 新增 `phone-response` 脱敏电话拨打 response 样本，覆盖 `makePhoneCall`、`numberUrl`、`logUrl`、Base64 `extInfo`、hash 落地页参数和运行时占位符
+- **回归保护**: corpus 单测和质量快照扩展到 3 个样本，固定电话拨打链路的主入口、号码监测 URL 展开、占位符聚合和 cmdHandler expected 子集
+
 ## v1.8.141 (2026-06-18) - 落地页 Corpus 基线
 ### ✨ 新特性
 - **质量门禁**: 新增 `landing-response` 脱敏落地页 response 样本，覆盖 easybrowse、deeplink、openapp、结构化 HTTPS 落地页、监测 URL 和运行时占位符
