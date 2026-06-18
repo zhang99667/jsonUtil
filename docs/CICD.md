@@ -94,6 +94,20 @@ bash scripts/deploy/ssh-docker-compose-deploy.sh
 
 前端 Docker 构建会复制 `frontend/.npmrc` 到依赖安装层，`npm ci --include=optional` 默认启用多次 fetch 重试和较长网络超时，用于降低 registry 临时断连、`ECONNRESET` 或平台 optional 包下载失败导致的发布中断。
 
+如果只需要替换前端，或远端 Node/npm/Docker Hub 网络不稳定，可以使用本机预构建前端快速部署：
+
+```bash
+SSH_HOST=39.97.237.248 \
+SSH_USER=markz \
+SSH_KEY=~/.ssh/id_ed25519 \
+SSH_SERVER_ALIVE_INTERVAL=15 \
+SSH_SERVER_ALIVE_COUNT_MAX=10 \
+REMOTE_APP_DIR=/home/markz/apps/jsonUtil \
+bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
+```
+
+该脚本会先在本机执行 `npm run build` 和 `npm run check:preloads`，再同步 `frontend/dist`，并在远端使用 `Dockerfile.prebuilt` 只重建 `app-frontend`。后端和数据库不会因为前端静态资源更新而被重启。
+
 如果远端根盘已满，优先清理 Docker 未使用镜像或构建缓存，不要删除 `db-data`、`upload-data` 等业务 volume；同步脚本默认不会再上传本机测试输出和临时产物。
 
 健康检查不会把 Nginx `301/302` 当作成功；`/api/visitor/ping` 必须跟随后端转发后返回 `200`，否则脚本会继续等待或失败。
