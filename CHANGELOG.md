@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.124 (2026-06-18) - 资源 URL 热点追踪
+### ✨ 新特性
+- **深度解析报告**: 资源字段会同时保留解析后的对象和值来源 URL，带 query 的 `video_url`、`imageUrl` 等素材地址也能进入静态资源 URL Top，方便 PM 和研发定位素材链路问题
+- **产品工程评审**: 更新产品与工程升级评审的当前证据，补充 1.8.123 后的模块体量、测试规模和 HTTPS Scheme 收敛进展
+
 ## v1.8.123 (2026-06-17) - HTTPS Scheme 误判收敛
 ### 🐛 Bug 修复
 - **Scheme 扫描**: 普通 `http/https` URL 不再自动作为业务 Scheme/CMD 入口展示，只有自定义 Scheme 或携带结构化 CMD 参数的 HTTP(S) URL 会进入 Scheme 列表和 `cmdSchema`

@@ -17,7 +17,7 @@
     "maxWarnings": 0,
     "maxCmdHandlerIgnoredExtraPaths": 474,
     "leadHotspotCommandSchema": "baiduboxapp://v1/easybrowse/open",
-    "leadHotspotResourceSchema": "",
+    "leadHotspotResourceSchema": "https://video.example.com/ad.mp4",
     "leadHotspotResourceField": "video_url"
   },
   "primaryCommandSchema": "nadcorevendor://vendor/ad/rewardImpl",
