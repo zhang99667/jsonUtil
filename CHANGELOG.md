@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.182 (2026-06-18) - 当前 Schema 复制
+### ✨ 新特性
+- **JSON Schema 校验**: 面板底部新增“复制Schema”，可直接复制当前生成或编辑中的 Schema 文本，便于把单份约束快速发给协作者，而无需先加入收藏包
+
 ## v1.8.181 (2026-06-18) - Schema Format 推断
 ### ✨ 新特性
 - **JSON Schema 生成**: 根据 SOURCE 生成 Schema 时会保守识别 `email`、`uri`、`date-time` 和 `uuid` 字符串格式，并在数组样本格式一致时保留 `format` 约束，生成结果可直接配合标准 format 校验

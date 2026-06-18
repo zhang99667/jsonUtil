@@ -230,7 +230,7 @@ PREVIEW JSON + TransformReportPanel
 ```
 SOURCE JSON → JsonSchemaPanel → Ajv 校验
        ↓              ↓
-Schema 推断     收藏 / 导入 / 导出
+Schema 推断     复制 / 收藏 / 导入 / 导出
        ↓              ↓
 编辑器错误标记 ← 校验结果 / JSONPath 定位
 ```
