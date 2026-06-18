@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.174 (2026-06-18) - HAR 异常摘要
+### ✨ 新特性
+- **HAR 导入**: 派生 JSON 顶层新增 `issueSummary`，统计 4xx/5xx、未知状态、JSON body 解析失败、截断 body 和未解码 Base64，并在导入提示中标出需关注接口数量
+
 ## v1.8.173 (2026-06-18) - Schema 生成与共享
 ### ✨ 新特性
 - **JSON Schema 校验**: Schema 面板新增“生成”能力，可根据当前 SOURCE JSON 推断初始 Schema，并支持收藏包从剪贴板导入/导出，便于跨机器和团队复用常用接口约束
