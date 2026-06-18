@@ -110,6 +110,7 @@ test('查询解析工具入口展示浮动面板打开态', async ({ page }) => 
   };
 
   await assertPanelToggle('jsonpath-button');
+  await assertPanelToggle('json-schema-button');
   await assertPanelToggle('scheme-button');
   await assertPanelToggle('template-fill-button');
 });
@@ -124,10 +125,61 @@ test('折叠工具栏后图标按钮保留可访问名称', async ({ page }) => 
   await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-label', '嵌套解析');
   await expect(page.locator('[data-tour="jsonpath-button"]')).toHaveAttribute('aria-label', 'JSONPath 查询，未打开');
+  await expect(page.locator('[data-tour="json-schema-button"]')).toHaveAttribute('aria-label', 'Schema 校验，未打开');
   await expect(page.locator('[data-tour="open-file-button"]')).toHaveAttribute('aria-label', '打开文件');
   await expect(page.locator('[data-tour="save-file-button"]')).toHaveAttribute('aria-label', '保存为 JSON');
   await expect(page.locator('[data-tour="ai-fix"]')).toHaveAttribute('aria-label', 'AI 智能修复');
   await expect(page.locator('[data-tour="settings"]')).toHaveAttribute('aria-label', '设置');
+});
+
+test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ page }) => {
+  await fillSourceEditor(page, '{"id":1,"items":[{"price":0}]}');
+  await page.locator('[data-tour="json-schema-button"]').click();
+
+  const schemaPanel = page.getByRole('dialog', { name: 'JSON Schema 校验' });
+  await expect(schemaPanel).toBeVisible();
+  await expect(schemaPanel.locator('[data-tour="json-schema-input"]')).toBeFocused();
+
+  await schemaPanel.locator('[data-tour="json-schema-input"]').fill(JSON.stringify({
+    type: 'object',
+    required: ['id', 'items'],
+    properties: {
+      id: { type: 'number' },
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['price'],
+          properties: {
+            price: { type: 'number', minimum: 1 },
+          },
+        },
+      },
+    },
+  }, null, 2));
+
+  await schemaPanel.locator('[data-tour="json-schema-validate-button"]').click();
+  await expect(schemaPanel.locator('[data-tour="json-schema-status"]')).toContainText('未通过');
+  await expect(schemaPanel.locator('[data-tour="json-schema-summary"]')).toContainText('当前 JSON 不符合 Schema');
+  await expect(schemaPanel.locator('[data-tour="json-schema-issues"]')).toContainText('$.items[0].price');
+
+  await schemaPanel.locator('[data-tour="json-schema-locate-issue"]').first().click();
+  const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
+  await expect(jsonPathPanel).toBeVisible();
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.items[0].price');
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('0');
+
+  await schemaPanel.locator('[data-tour="json-schema-input"]').fill(JSON.stringify({
+    type: 'object',
+    required: ['id', 'items'],
+    properties: {
+      id: { type: 'number' },
+      items: { type: 'array' },
+    },
+  }, null, 2));
+  await schemaPanel.locator('[data-tour="json-schema-validate-button"]').click();
+  await expect(schemaPanel.locator('[data-tour="json-schema-status"]')).toContainText('通过');
+  await expect(schemaPanel.locator('[data-tour="json-schema-summary"]')).toContainText('当前 JSON 符合 Schema');
 });
 
 test('浮动面板支持键盘关闭并恢复入口焦点', async ({ page }) => {

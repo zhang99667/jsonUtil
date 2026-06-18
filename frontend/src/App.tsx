@@ -106,6 +106,10 @@ const LazyJsonPathPanel = lazy(() => import('./components/JsonPathPanel').then(m
   default: module.JsonPathPanel,
 })));
 
+const LazyJsonSchemaPanel = lazy(() => import('./components/JsonSchemaPanel').then(module => ({
+  default: module.JsonSchemaPanel,
+})));
+
 const LazyTemplateFillPanel = lazy(() => import('./components/TemplateFillPanel').then(module => ({
   default: module.TemplateFillPanel,
 })));
@@ -300,6 +304,8 @@ const App: React.FC = () => {
 
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [hasLoadedJsonPathPanel, setHasLoadedJsonPathPanel] = useState(false);
+  const [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen] = useState(false);
+  const [hasLoadedJsonSchemaPanel, setHasLoadedJsonSchemaPanel] = useState(false);
   const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
   const [schemeInputRequest, setSchemeInputRequest] = useState<SchemeInputRequest | null>(null);
   const [templateFillRequest, setTemplateFillRequest] = useState<TemplateFillRequest | null>(null);
@@ -545,6 +551,12 @@ const App: React.FC = () => {
   }, [isJsonPathPanelOpen]);
 
   useEffect(() => {
+    if (isJsonSchemaPanelOpen) {
+      setHasLoadedJsonSchemaPanel(true);
+    }
+  }, [isJsonSchemaPanelOpen]);
+
+  useEffect(() => {
     if (isTemplatePanelOpen) {
       setHasLoadedTemplatePanel(true);
     }
@@ -645,6 +657,12 @@ const App: React.FC = () => {
     setIsJsonPathPanelOpen(nextOpen);
     trackCurrentToolEvent(nextOpen ? 'JSONPATH_OPEN' : 'JSONPATH_CLOSE', 'panel');
   }, [isJsonPathPanelOpen, mode, trackCurrentToolEvent]);
+
+  const handleToggleJsonSchema = useCallback(() => {
+    const nextOpen = !isJsonSchemaPanelOpen;
+    setIsJsonSchemaPanelOpen(nextOpen);
+    trackCurrentToolEvent(nextOpen ? 'SCHEMA_PANEL_OPEN' : 'SCHEMA_PANEL_CLOSE', 'panel');
+  }, [isJsonSchemaPanelOpen, trackCurrentToolEvent]);
 
   const handleLocateJsonPath = useCallback((query: string) => {
     const normalizedQuery = query.trim();
@@ -1571,7 +1589,9 @@ const App: React.FC = () => {
             isJsonPathOpen={isJsonPathPanelOpen}
             isSchemeDecodeOpen={isSchemeDecodeOpen}
             isTemplateFillOpen={isTemplatePanelOpen}
+            isJsonSchemaOpen={isJsonSchemaPanelOpen}
             onToggleJsonPath={handleToggleJsonPath}
+            onToggleJsonSchema={handleToggleJsonSchema}
             onToggleSchemeDecode={() => {
               const nextOpen = !isSchemeDecodeOpen;
               setIsSchemeDecodeOpen(nextOpen);
@@ -1824,6 +1844,18 @@ const App: React.FC = () => {
                 setHighlightRange(null); // 关闭时清除高亮
               }}
               onHighlightRange={handleJsonPathHighlight}
+            />
+          </Suspense>
+        )}
+
+        {/* JSON Schema 校验面板 */}
+        {hasLoadedJsonSchemaPanel && (
+          <Suspense fallback={null}>
+            <LazyJsonSchemaPanel
+              jsonData={input}
+              isOpen={isJsonSchemaPanelOpen}
+              onClose={() => setIsJsonSchemaPanelOpen(false)}
+              onLocatePath={handleLocateJsonPath}
             />
           </Suspense>
         )}
