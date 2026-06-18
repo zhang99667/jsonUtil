@@ -15,6 +15,18 @@ interface ExampleContext {
 const MAX_EXAMPLE_DEPTH = 8;
 const MAX_ARRAY_EXAMPLE_ITEMS = 3;
 const MAX_OBJECT_EXAMPLE_PROPERTIES = 80;
+const COMMON_DYNAMIC_PROPERTY_KEYS = [
+  'key',
+  'name',
+  'value',
+  'extra',
+  'meta_key',
+  'x-key',
+  'field',
+  'a',
+  'A',
+  '1',
+];
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -120,7 +132,129 @@ const getSchemaProperties = (schema: Record<string, unknown>): Record<string, Js
   );
 };
 
+const getPatternProperties = (schema: Record<string, unknown>): Array<[string, JsonSchemaNode]> => {
+  if (!isRecord(schema.patternProperties)) return [];
+
+  return Object.entries(schema.patternProperties).filter((entry): entry is [string, JsonSchemaNode] => (
+    isRecord(entry[1]) || typeof entry[1] === 'boolean'
+  ));
+};
+
+const getAdditionalPropertiesSchema = (schema: Record<string, unknown>): JsonSchemaNode | false | undefined => {
+  if (schema.additionalProperties === false) return false;
+  if (schema.additionalProperties === true) return true;
+  if (isRecord(schema.additionalProperties)) return schema.additionalProperties;
+  return undefined;
+};
+
+const getPropertyNamesSchema = (schema: Record<string, unknown>): JsonSchemaNode | undefined => {
+  if (schema.propertyNames === true || schema.propertyNames === false || isRecord(schema.propertyNames)) {
+    return schema.propertyNames;
+  }
+
+  return undefined;
+};
+
 const uniqueKeys = (keys: string[]): string[] => [...new Set(keys)].slice(0, MAX_OBJECT_EXAMPLE_PROPERTIES);
+
+const stripRegexAnchors = (pattern: string): string => (
+  pattern.replace(/^\^/, '').replace(/\$$/, '')
+);
+
+const inferKeyFromPattern = (pattern: string): string => {
+  let key = stripRegexAnchors(pattern);
+  key = key.replace(/\[a-z]\+/gi, 'key');
+  key = key.replace(/\[a-z_]\+/gi, 'key');
+  key = key.replace(/\[a-z-]\+/gi, 'key');
+  key = key.replace(/\[A-Z]\+/g, 'KEY');
+  key = key.replace(/\[0-9]\+/g, '1');
+  key = key.replace(/\\d\+/g, '1');
+  key = key.replace(/\\w\+/g, 'key');
+  key = key.replace(/\\S\+/g, 'key');
+  key = key.replace(/\.\+/g, 'key');
+  key = key.replace(/\(([^|()]+)\|[^()]+\)/g, '$1');
+  key = key.replace(/[?*+]/g, '');
+  key = key.replace(/\\([.^$*+?()[\]{}|/-])/g, '$1');
+  key = key.replace(/[^A-Za-z0-9_-]/g, '');
+
+  return key || 'key';
+};
+
+const getPatternMatcher = (pattern: string): ((value: string) => boolean) => {
+  try {
+    const regex = new RegExp(pattern);
+    return value => regex.test(value);
+  } catch {
+    return () => false;
+  }
+};
+
+const getStringEnumValues = (value: unknown): string[] => (
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+);
+
+const isPropertyNameAllowed = (key: string, schema: JsonSchemaNode | undefined): boolean => {
+  if (schema === undefined || schema === true) return true;
+  if (schema === false || !isRecord(schema)) return false;
+
+  const type = schema.type;
+  if (
+    (typeof type === 'string' && type !== 'string') ||
+    (Array.isArray(type) && !type.includes('string'))
+  ) {
+    return false;
+  }
+
+  if (typeof schema.const === 'string' && key !== schema.const) return false;
+
+  const enumValues = getStringEnumValues(schema.enum);
+  if (enumValues.length > 0 && !enumValues.includes(key)) return false;
+
+  const minLength = getIntegerValue(schema, 'minLength');
+  if (typeof minLength === 'number' && key.length < minLength) return false;
+
+  const maxLength = getIntegerValue(schema, 'maxLength');
+  if (typeof maxLength === 'number' && key.length > maxLength) return false;
+
+  if (typeof schema.pattern === 'string' && !getPatternMatcher(schema.pattern)(key)) return false;
+
+  return true;
+};
+
+const getPropertyNameCandidates = (propertyNamesSchema: JsonSchemaNode | undefined): string[] => {
+  if (!isRecord(propertyNamesSchema)) return COMMON_DYNAMIC_PROPERTY_KEYS;
+
+  if (typeof propertyNamesSchema.const === 'string') return [propertyNamesSchema.const];
+
+  const enumValues = getStringEnumValues(propertyNamesSchema.enum);
+  if (enumValues.length > 0) return enumValues;
+
+  if (typeof propertyNamesSchema.pattern === 'string') {
+    return [
+      inferKeyFromPattern(propertyNamesSchema.pattern),
+      ...COMMON_DYNAMIC_PROPERTY_KEYS,
+    ];
+  }
+
+  return COMMON_DYNAMIC_PROPERTY_KEYS;
+};
+
+const getPatternPropertyKeyCandidates = (
+  pattern: string,
+  propertyNamesSchema: JsonSchemaNode | undefined
+): string[] => ([
+  inferKeyFromPattern(pattern),
+  ...getPropertyNameCandidates(propertyNamesSchema),
+  ...COMMON_DYNAMIC_PROPERTY_KEYS,
+]);
+
+const findAvailablePropertyKey = (
+  candidates: string[],
+  usedKeys: Set<string>,
+  isAllowed: (key: string) => boolean
+): string | undefined => (
+  [...new Set(candidates)].find(key => !usedKeys.has(key) && isAllowed(key))
+);
 
 const generateStringExample = (schema: Record<string, unknown>): string => {
   const format = typeof schema.format === 'string' ? schema.format : '';
@@ -217,17 +351,54 @@ const generateArrayExample = (schema: Record<string, unknown>, context: ExampleC
 
 const generateObjectExample = (schema: Record<string, unknown>, context: ExampleContext): Record<string, unknown> => {
   const properties = getSchemaProperties(schema);
+  const patternProperties = getPatternProperties(schema);
+  const propertyNamesSchema = getPropertyNamesSchema(schema);
+  const additionalPropertiesSchema = getAdditionalPropertiesSchema(schema);
   const keys = uniqueKeys([
     ...getRequiredKeys(schema),
     ...Object.keys(properties),
   ]);
+  const entries = new Map<string, unknown>();
 
-  return Object.fromEntries(
-    keys.map(key => {
-      const value = generateExampleValue(properties[key] || {}, { ...context, depth: context.depth + 1 });
-      return [key, value === undefined ? null : value];
-    })
-  );
+  keys.forEach(key => {
+    const value = generateExampleValue(properties[key] || {}, { ...context, depth: context.depth + 1 });
+    entries.set(key, value === undefined ? null : value);
+  });
+
+  patternProperties.forEach(([pattern, patternSchema]) => {
+    if (entries.size >= MAX_OBJECT_EXAMPLE_PROPERTIES) return;
+
+    const matcher = getPatternMatcher(pattern);
+    const key = findAvailablePropertyKey(
+      getPatternPropertyKeyCandidates(pattern, propertyNamesSchema),
+      new Set(entries.keys()),
+      candidate => matcher(candidate) && isPropertyNameAllowed(candidate, propertyNamesSchema)
+    );
+    if (!key) return;
+
+    const value = generateExampleValue(patternSchema, { ...context, depth: context.depth + 1 });
+    entries.set(key, value === undefined ? null : value);
+  });
+
+  const minProperties = Math.max(getIntegerValue(schema, 'minProperties') || 0, 0);
+  const extraSchema = additionalPropertiesSchema === undefined ? true : additionalPropertiesSchema;
+  while (
+    entries.size < minProperties &&
+    entries.size < MAX_OBJECT_EXAMPLE_PROPERTIES &&
+    extraSchema !== false
+  ) {
+    const key = findAvailablePropertyKey(
+      getPropertyNameCandidates(propertyNamesSchema),
+      new Set(entries.keys()),
+      candidate => isPropertyNameAllowed(candidate, propertyNamesSchema)
+    );
+    if (!key) break;
+
+    const value = generateExampleValue(extraSchema, { ...context, depth: context.depth + 1 });
+    entries.set(key, value === undefined ? null : value);
+  }
+
+  return Object.fromEntries(entries);
 };
 
 const generateExampleValue = (schemaNode: unknown, context: ExampleContext): unknown => {
