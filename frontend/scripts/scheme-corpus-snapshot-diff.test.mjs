@@ -405,6 +405,98 @@ describe('buildSnapshotDiff', () => {
     expect(diff.samples[0].metrics.cmdStructures.delta).toBe(1);
   });
 
+  it('资源类型占比超过可选阈值时标记为退化', () => {
+    const before = createSnapshot([createSample({
+      topResourceTypes: [
+        {
+          resourceType: 'video',
+          resourceTypeLabel: '视频',
+          count: 4,
+          percentage: 80,
+          recordCount: 2,
+          schemaCount: 4,
+        },
+        {
+          resourceType: 'image',
+          resourceTypeLabel: '图片',
+          count: 1,
+          percentage: 20,
+          recordCount: 1,
+          schemaCount: 1,
+        },
+      ],
+    })]);
+    const after = createSnapshot([createSample({
+      topResourceTypes: [
+        {
+          resourceType: 'video',
+          resourceTypeLabel: '视频',
+          count: 2,
+          percentage: 40,
+          recordCount: 1,
+          schemaCount: 2,
+        },
+        {
+          resourceType: 'lottie',
+          resourceTypeLabel: 'Lottie',
+          count: 3,
+          percentage: 60,
+          recordCount: 2,
+          schemaCount: 3,
+        },
+      ],
+    })]);
+    const diff = buildSnapshotDiff(before, after, {
+      resourceTypeThresholds: [
+        { resourceType: 'video', direction: 'drop', percentagePoints: 30 },
+        { resourceType: 'Lottie', direction: 'rise', percentagePoints: 30 },
+      ],
+    });
+
+    expect(diff.summary).toMatchObject({
+      pass: false,
+      regressions: 2,
+    });
+    expect(diff.resourceTypeThresholds).toEqual([
+      { resourceType: 'video', direction: 'drop', percentagePoints: 30 },
+      { resourceType: 'Lottie', direction: 'rise', percentagePoints: 30 },
+    ]);
+    expect(diff.samples[0].regressions).toEqual(expect.arrayContaining([
+      {
+        key: 'resourceTypePercentageDrop',
+        message: '资源类型占比下降超过阈值: 视频',
+        before: {
+          resourceType: 'video',
+          resourceTypeLabel: '视频',
+          percentage: 80,
+        },
+        after: {
+          resourceType: 'video',
+          resourceTypeLabel: '视频',
+          percentage: 40,
+          percentageDelta: -40,
+          thresholdPercentagePoints: 30,
+        },
+      },
+      {
+        key: 'resourceTypePercentageRise',
+        message: '资源类型占比上升超过阈值: Lottie',
+        before: {
+          resourceType: 'Lottie',
+          resourceTypeLabel: 'Lottie',
+          percentage: 0,
+        },
+        after: {
+          resourceType: 'Lottie',
+          resourceTypeLabel: 'Lottie',
+          percentage: 60,
+          percentageDelta: 60,
+          thresholdPercentagePoints: 30,
+        },
+      },
+    ]));
+  });
+
   it('after 快照整体失败时即使样本指标未退化也标记失败', () => {
     const before = createSnapshot([createSample()]);
     const after = {
@@ -560,6 +652,41 @@ describe('formatSnapshotDiffMarkdown', () => {
     expect(markdown).toContain('- 新增类型: Lottie 50% ×3（URL 3 / 来源记录 1）');
     expect(markdown).toContain('- 消失类型: 视频 33.3% ×2（URL 2 / 来源记录 1）');
   });
+
+  it('输出资源类型阈值摘要', () => {
+    const before = createSnapshot([createSample({
+      topResourceTypes: [
+        {
+          resourceType: 'video',
+          resourceTypeLabel: '视频',
+          count: 4,
+          percentage: 80,
+          recordCount: 2,
+          schemaCount: 4,
+        },
+      ],
+    })]);
+    const after = createSnapshot([createSample({
+      topResourceTypes: [
+        {
+          resourceType: 'video',
+          resourceTypeLabel: '视频',
+          count: 2,
+          percentage: 40,
+          recordCount: 1,
+          schemaCount: 2,
+        },
+      ],
+    })]);
+    const markdown = formatSnapshotDiffMarkdown(buildSnapshotDiff(before, after, {
+      resourceTypeThresholds: [
+        { resourceType: 'video', direction: 'drop', percentagePoints: 30 },
+      ],
+    }));
+
+    expect(markdown).toContain('- 资源类型阈值: video 下降 30 个百分点');
+    expect(markdown).toContain('资源类型占比下降超过阈值: 视频');
+  });
 });
 
 describe('parseCliArgs', () => {
@@ -579,7 +706,27 @@ describe('parseCliArgs', () => {
       afterPath: 'after.json',
       outputPath: 'diff.json',
       summaryPath: 'diff.md',
+      resourceTypeThresholds: [],
       strict: true,
+    });
+  });
+
+  it('解析资源类型占比阈值参数', () => {
+    expect(parseCliArgs([
+      '--before',
+      'before.json',
+      '--after',
+      'after.json',
+      '--resource-type-drop',
+      'video=20,image=15',
+      '--resource-type-rise',
+      'lottie=25',
+    ])).toMatchObject({
+      resourceTypeThresholds: [
+        { resourceType: 'video', direction: 'drop', percentagePoints: 20 },
+        { resourceType: 'image', direction: 'drop', percentagePoints: 15 },
+        { resourceType: 'lottie', direction: 'rise', percentagePoints: 25 },
+      ],
     });
   });
 

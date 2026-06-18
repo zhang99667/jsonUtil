@@ -19,7 +19,7 @@
   - `Scheme corpus quality snapshot` 会把覆盖率、资源/CMD 热点、必需项失败、cmdHandler 对齐结果和 ignored extra 路径样例写入 GitHub Step Summary，并上传 `scheme-corpus-quality-snapshot` artifact 供评审下载
   - `npm run perf:scheme -- --iterations 3 --strict` 会通过复制真实 `data.video` 条目构造 50KB / 250KB 脱敏 response，校验核心解析耗时、展开记录、CMD 结构、CMD 字段、资源字段、待检查和跳过数量，并上传 `scheme-performance-budget` artifact
   - `npm run perf:jsonpath -- --iterations 3 --strict` 会复用脱敏 response 和大量命中列表，校验 JSONPath 大查询耗时、命中数、高亮范围和结果上限保护，并上传 `jsonpath-performance-budget` artifact
-  - `npm run corpus:snapshot:diff` 可对比两份质量快照，strict 模式会把 requiredChecks 必需项失败数量增加、cmdHandler ignored extra 路径数量上升等变化视为解析质量退化，并在摘要中展示 ignored extra 路径新增/消失样例
+  - `npm run corpus:snapshot:diff` 可对比两份质量快照，strict 模式会把 requiredChecks 必需项失败数量增加、cmdHandler ignored extra 路径数量上升等变化视为解析质量退化，并在摘要中展示 ignored extra 路径新增/消失样例；可通过 `--resource-type-drop video=20`、`--resource-type-rise lottie=20` 把视频占比骤降或 Lottie 占比异常上升纳入可选门禁
 - `backend`: `mvn -B test`、`mvn -B package -DskipTests`
 - `docker`: `docker build ./backend`、`docker build ./frontend`、带测试环境变量执行 `docker compose config`
 

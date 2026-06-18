@@ -130,6 +130,70 @@ const listResourceTypes = sample => (
 
 const resourceTypeKey = item => item.resourceType;
 
+const normalizeResourceTypeName = value => (
+  String(value || '').trim().toLowerCase()
+);
+
+const normalizeResourceTypeThresholds = thresholds => (
+  normalizeList(thresholds)
+    .filter(threshold => threshold && threshold.resourceType && threshold.percentagePoints > 0)
+    .map(threshold => ({
+      resourceType: String(threshold.resourceType).trim(),
+      direction: threshold.direction === 'rise' ? 'rise' : 'drop',
+      percentagePoints: Number(threshold.percentagePoints),
+    }))
+);
+
+const findResourceTypeByThreshold = (items, threshold) => {
+  const target = normalizeResourceTypeName(threshold.resourceType);
+  return items.find(item => (
+    normalizeResourceTypeName(item.resourceType) === target ||
+    normalizeResourceTypeName(item.resourceTypeLabel) === target
+  ));
+};
+
+const formatResourceTypeThresholdDirection = direction => (
+  direction === 'rise' ? '上升' : '下降'
+);
+
+const buildResourceTypeThresholdRegressions = (beforeSample, afterSample, thresholds) => {
+  const beforeItems = listResourceTypes(beforeSample);
+  const afterItems = listResourceTypes(afterSample);
+
+  return normalizeResourceTypeThresholds(thresholds)
+    .map(threshold => {
+      const beforeItem = findResourceTypeByThreshold(beforeItems, threshold);
+      const afterItem = findResourceTypeByThreshold(afterItems, threshold);
+      const beforePercentage = beforeItem?.percentage || 0;
+      const afterPercentage = afterItem?.percentage || 0;
+      const percentageDelta = Number((afterPercentage - beforePercentage).toFixed(1));
+      const violated = threshold.direction === 'rise'
+        ? percentageDelta >= threshold.percentagePoints
+        : percentageDelta <= -threshold.percentagePoints;
+
+      if (!violated) return null;
+
+      const resourceTypeLabel = afterItem?.resourceTypeLabel || beforeItem?.resourceTypeLabel || threshold.resourceType;
+      return createRegression(
+        `resourceTypePercentage${threshold.direction === 'rise' ? 'Rise' : 'Drop'}`,
+        `资源类型占比${formatResourceTypeThresholdDirection(threshold.direction)}超过阈值: ${resourceTypeLabel}`,
+        {
+          resourceType: threshold.resourceType,
+          resourceTypeLabel,
+          percentage: beforePercentage,
+        },
+        {
+          resourceType: threshold.resourceType,
+          resourceTypeLabel,
+          percentage: afterPercentage,
+          percentageDelta,
+          thresholdPercentagePoints: threshold.percentagePoints,
+        }
+      );
+    })
+    .filter(Boolean);
+};
+
 const diffList = (beforeList, afterList) => ({
   lost: beforeList.filter(item => !afterList.includes(item)),
   gained: afterList.filter(item => !beforeList.includes(item)),
@@ -322,7 +386,7 @@ const buildAddedSampleRegressions = sample => {
   return regressions;
 };
 
-export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
+export const buildSampleSnapshotDiff = (beforeSample, afterSample, options = {}) => {
   if (!beforeSample && afterSample) {
     return {
       sample: afterSample.sample,
@@ -382,6 +446,11 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
     listSchemas(afterSample, 'topResourceSchemas')
   );
   const resourceTypes = diffResourceTypes(beforeSample, afterSample);
+  const resourceTypeThresholdRegressions = buildResourceTypeThresholdRegressions(
+    beforeSample,
+    afterSample,
+    options.resourceTypeThresholds
+  );
   const cmdHandler = buildCmdHandlerChange(beforeSample, afterSample);
 
   commandSchemas.lost.forEach(schema => {
@@ -402,6 +471,7 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
   if (cmdHandler.improvement) {
     improvements.push(createImprovement('cmdHandler', 'cmdHandler 对齐恢复通过', cmdHandler.beforePass, true));
   }
+  regressions.push(...resourceTypeThresholdRegressions);
 
   const changed = [
     ...Object.values(metrics).map(item => item.delta),
@@ -433,10 +503,11 @@ export const buildSampleSnapshotDiff = (beforeSample, afterSample) => {
   };
 };
 
-export const buildSnapshotDiff = (beforeSnapshot, afterSnapshot) => {
+export const buildSnapshotDiff = (beforeSnapshot, afterSnapshot, options = {}) => {
   assertSnapshot(beforeSnapshot, 'before');
   assertSnapshot(afterSnapshot, 'after');
 
+  const resourceTypeThresholds = normalizeResourceTypeThresholds(options.resourceTypeThresholds);
   const beforeSamples = indexSamples(beforeSnapshot);
   const afterSamples = indexSamples(afterSnapshot);
   const sampleNames = Array.from(new Set([
@@ -444,7 +515,7 @@ export const buildSnapshotDiff = (beforeSnapshot, afterSnapshot) => {
     ...afterSamples.keys(),
   ])).sort();
   const samples = sampleNames.map(sampleName => (
-    buildSampleSnapshotDiff(beforeSamples.get(sampleName), afterSamples.get(sampleName))
+    buildSampleSnapshotDiff(beforeSamples.get(sampleName), afterSamples.get(sampleName), { resourceTypeThresholds })
   ));
   const snapshotRegressions = listSnapshotRegressions(afterSnapshot);
   const regressionCount = samples.reduce((total, sample) => total + sample.regressions.length, 0) + snapshotRegressions.length;
@@ -471,6 +542,7 @@ export const buildSnapshotDiff = (beforeSnapshot, afterSnapshot) => {
       regressions: regressionCount,
       improvements: improvementCount,
     },
+    resourceTypeThresholds,
     snapshotRegressions,
     samples,
   };
@@ -498,6 +570,10 @@ const formatResourceTypeSummary = item => (
   `${item.resourceTypeLabel || item.resourceType} ${item.percentage}% ×${item.count}（URL ${item.schemaCount} / 来源记录 ${item.recordCount}）`
 );
 
+const formatResourceTypeThreshold = threshold => (
+  `${threshold.resourceType} ${formatResourceTypeThresholdDirection(threshold.direction)} ${threshold.percentagePoints} 个百分点`
+);
+
 export const formatSnapshotDiffMarkdown = diff => {
   const lines = [
     '# Scheme Corpus 质量趋势',
@@ -507,10 +583,17 @@ export const formatSnapshotDiffMarkdown = diff => {
     `- 新增/删除: ${diff.summary.added}/${diff.summary.removed}`,
     `- 变化/不变: ${diff.summary.changed}/${diff.summary.unchanged}`,
     `- 退化/提升: ${diff.summary.regressions}/${diff.summary.improvements}`,
+  ];
+
+  if (diff.resourceTypeThresholds?.length > 0) {
+    lines.push(`- 资源类型阈值: ${diff.resourceTypeThresholds.map(formatResourceTypeThreshold).join('；')}`);
+  }
+
+  lines.push(
     '',
     '| 样本 | 状态 | 覆盖率 | CMD | CMD字段 | 资源字段 | 占位符 | 待检查 | 跳过 | 必需项失败 | 忽略 extra | cmdHandler | 风险 |',
     '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |',
-  ];
+  );
 
   diff.samples.forEach(sample => {
     lines.push([
@@ -626,6 +709,7 @@ export const parseCliArgs = argv => {
     afterPath: undefined,
     outputPath: undefined,
     summaryPath: undefined,
+    resourceTypeThresholds: [],
     strict: false,
   };
   const positional = [];
@@ -664,6 +748,14 @@ export const parseCliArgs = argv => {
       index += 1;
       continue;
     }
+    if (arg === '--resource-type-drop' || arg === '--resource-type-rise') {
+      const value = argv[index + 1];
+      const direction = arg === '--resource-type-rise' ? 'rise' : 'drop';
+      if (!value) throw new Error(`${arg} 需要 type=百分点，例如 video=20`);
+      options.resourceTypeThresholds.push(...parseResourceTypeThresholdArg(value, direction, arg));
+      index += 1;
+      continue;
+    }
     if (arg.startsWith('-')) {
       throw new Error(`未知参数: ${arg}`);
     }
@@ -679,6 +771,28 @@ export const parseCliArgs = argv => {
   return options;
 };
 
+const parseResourceTypeThresholdArg = (value, direction, flag) => (
+  value.split(',').map(entry => {
+    const trimmedEntry = entry.trim();
+    const separatorIndex = trimmedEntry.indexOf('=');
+    if (separatorIndex <= 0 || separatorIndex === trimmedEntry.length - 1) {
+      throw new Error(`${flag} 需要 type=百分点，例如 video=20`);
+    }
+
+    const resourceType = trimmedEntry.slice(0, separatorIndex).trim();
+    const percentagePoints = Number(trimmedEntry.slice(separatorIndex + 1).trim());
+    if (!resourceType || !Number.isFinite(percentagePoints) || percentagePoints <= 0) {
+      throw new Error(`${flag} 需要正数阈值，例如 video=20`);
+    }
+
+    return {
+      resourceType,
+      direction,
+      percentagePoints,
+    };
+  })
+);
+
 const loadJsonFile = async filePath => (
   parseJsonInput(await readFile(path.resolve(process.cwd(), filePath), 'utf8'), path.basename(filePath))
 );
@@ -691,7 +805,7 @@ const writeTextFile = async (filePath, text) => {
 };
 
 const printUsage = () => {
-  console.error('用法: npm run corpus:snapshot:diff -- --before before.json --after after.json [--strict] [--output diff.json] [--summary diff.md]');
+  console.error('用法: npm run corpus:snapshot:diff -- --before before.json --after after.json [--strict] [--output diff.json] [--summary diff.md] [--resource-type-drop video=20] [--resource-type-rise lottie=20]');
   console.error(`默认 JSON 输出文件名建议: ${path.relative(process.cwd(), path.join(__dirname, '..', DEFAULT_OUTPUT_NAME))}`);
 };
 
@@ -704,7 +818,9 @@ const runCli = async () => {
     const options = parseCliArgs(args);
     const beforeSnapshot = await loadJsonFile(options.beforePath);
     const afterSnapshot = await loadJsonFile(options.afterPath);
-    const diff = buildSnapshotDiff(beforeSnapshot, afterSnapshot);
+    const diff = buildSnapshotDiff(beforeSnapshot, afterSnapshot, {
+      resourceTypeThresholds: options.resourceTypeThresholds,
+    });
     const diffJsonText = `${JSON.stringify(diff, null, 2)}\n`;
     process.stdout.write(diffJsonText);
     if (options.outputPath) {
