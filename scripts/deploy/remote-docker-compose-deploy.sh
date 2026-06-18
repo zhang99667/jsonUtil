@@ -11,6 +11,9 @@ HEALTH_CHECK_INTERVAL="${HEALTH_CHECK_INTERVAL:-3}"
 export FRONTEND_DOCKERFILE="${FRONTEND_DOCKERFILE:-Dockerfile}"
 COMPOSE_SERVICES="${COMPOSE_SERVICES:-}"
 COMPOSE_NO_DEPS="${COMPOSE_NO_DEPS:-false}"
+DEPLOY_DISK_CHECK_ENABLED="${DEPLOY_DISK_CHECK_ENABLED:-true}"
+DEPLOY_DISK_WARN_USED_PERCENT="${DEPLOY_DISK_WARN_USED_PERCENT:-90}"
+DEPLOY_DISK_MAX_USED_PERCENT="${DEPLOY_DISK_MAX_USED_PERCENT:-95}"
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
@@ -54,6 +57,53 @@ health_check_url() {
   return 1
 }
 
+is_unsigned_int() {
+  case "$1" in
+    ''|*[!0-9]*)
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+check_disk_watermark() {
+  local path="$1"
+  local used_percent
+
+  if [ "$DEPLOY_DISK_CHECK_ENABLED" != "true" ]; then
+    log "磁盘水位检查已跳过"
+    return 0
+  fi
+
+  if ! is_unsigned_int "$DEPLOY_DISK_WARN_USED_PERCENT" || ! is_unsigned_int "$DEPLOY_DISK_MAX_USED_PERCENT"; then
+    printf '磁盘水位阈值必须是整数: DEPLOY_DISK_WARN_USED_PERCENT=%s, DEPLOY_DISK_MAX_USED_PERCENT=%s\n' \
+      "$DEPLOY_DISK_WARN_USED_PERCENT" "$DEPLOY_DISK_MAX_USED_PERCENT" >&2
+    return 1
+  fi
+
+  used_percent="$(df -P "$path" | awk 'NR == 2 { gsub("%", "", $5); print $5 }')"
+  if ! is_unsigned_int "$used_percent"; then
+    log "无法读取磁盘水位，跳过部署磁盘检查: $path"
+    return 0
+  fi
+
+  log "磁盘水位: $path 已使用 ${used_percent}% (warn ${DEPLOY_DISK_WARN_USED_PERCENT}%, max ${DEPLOY_DISK_MAX_USED_PERCENT}%)"
+
+  if [ "$used_percent" -ge "$DEPLOY_DISK_WARN_USED_PERCENT" ]; then
+    log "磁盘水位告警: 请尽快清理 Docker 未使用镜像/构建缓存，避免数据库和镜像构建写入失败"
+    docker system df || true
+  fi
+
+  if [ "$used_percent" -ge "$DEPLOY_DISK_MAX_USED_PERCENT" ]; then
+    printf '磁盘水位过高，已停止部署: %s 已使用 %s%%，达到阻断阈值 %s%%。\n' \
+      "$path" "$used_percent" "$DEPLOY_DISK_MAX_USED_PERCENT" >&2
+    printf '建议先执行 docker builder prune -af 或 docker image prune -af，并确认不要删除 db-data、upload-data 等业务 volume。\n' >&2
+    return 1
+  fi
+}
+
 cd "$APP_DIR"
 
 require_cmd docker
@@ -78,6 +128,8 @@ if grep -Eq '^ADMIN_BOOTSTRAP_ENABLED=true$' .env && grep -Eq '^ADMIN_BOOTSTRAP_
   printf '.env 已启用管理员初始化，但 ADMIN_BOOTSTRAP_PASSWORD 仍为示例值\n' >&2
   exit 1
 fi
+
+check_disk_watermark "$APP_DIR"
 
 log "校验 Docker Compose 配置"
 compose config >/dev/null
