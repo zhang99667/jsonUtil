@@ -773,6 +773,7 @@ export const parseCliArgs = argv => {
     sampleName: undefined,
     outputPath: undefined,
     summaryPath: undefined,
+    failBeforeWrite: false,
     strict: false,
   };
 
@@ -780,6 +781,11 @@ export const parseCliArgs = argv => {
     const arg = argv[index];
     if (arg === '--strict') {
       options.strict = true;
+      continue;
+    }
+
+    if (arg === '--fail-before-write') {
+      options.failBeforeWrite = true;
       continue;
     }
 
@@ -845,7 +851,7 @@ export const parseCliArgs = argv => {
 };
 
 const printUsage = () => {
-  console.error('用法: npm run corpus:snapshot -- [--sample reward-response-redacted] [--strict] [--output snapshot.json] [--summary summary.md]');
+  console.error('用法: npm run corpus:snapshot -- [--sample reward-response-redacted] [--strict] [--fail-before-write] [--output snapshot.json] [--summary summary.md]');
   console.error('或: npm run corpus:snapshot -- --input /path/to/response.json --name local-response');
   console.error('默认扫描 fixtures/scheme-corpus 下所有 *.redacted.json 样本，并输出质量快照 JSON。');
 };
@@ -881,6 +887,22 @@ const formatCmdHandlerFailure = failure => {
   return `${failure.sample}: missingPaths=${failure.missingPaths}, valueDiffs=${failure.valueDiffs}, ignoredExtraPaths=${failure.ignoredExtraPaths || 0}, schemaDiff=${failure.schemaDiff ? 'yes' : 'no'}${reason}`;
 };
 
+const printStrictFailures = snapshot => {
+  console.error('corpus:snapshot strict 检查失败:');
+  snapshot.thresholdSummary.missingBaselines.forEach(missing => {
+    console.error(`- ${formatMissingBaseline(missing)}`);
+  });
+  snapshot.thresholdSummary.failures.forEach(failure => {
+    console.error(`- ${formatThresholdFailure(failure)}`);
+  });
+  snapshot.thresholdSummary.required.failures.forEach(failure => {
+    console.error(`- required ${formatRequiredFailure(failure)}`);
+  });
+  snapshot.thresholdSummary.cmdHandler.failures.forEach(failure => {
+    console.error(`- cmdHandler ${formatCmdHandlerFailure(failure)}`);
+  });
+};
+
 const writeTextFile = async (filePath, text, options = {}) => {
   const absolutePath = path.resolve(process.cwd(), filePath);
   await mkdir(path.dirname(absolutePath), { recursive: true });
@@ -898,6 +920,12 @@ const runCli = async () => {
     const snapshot = await buildCorpusSnapshot(options);
     const snapshotJsonText = `${JSON.stringify(snapshot, null, 2)}\n`;
     process.stdout.write(snapshotJsonText);
+    const strictFailed = options.strict && !snapshot.thresholdSummary.pass;
+    if (strictFailed && options.failBeforeWrite) {
+      printStrictFailures(snapshot);
+      process.exitCode = 1;
+      return;
+    }
     if (options.outputPath) {
       const outputPath = await writeTextFile(options.outputPath, snapshotJsonText);
       console.error(`已写入质量快照: ${outputPath}`);
@@ -910,20 +938,8 @@ const runCli = async () => {
       );
       console.error(`已写入质量摘要: ${summaryPath}`);
     }
-    if (options.strict && !snapshot.thresholdSummary.pass) {
-      console.error('corpus:snapshot strict 检查失败:');
-      snapshot.thresholdSummary.missingBaselines.forEach(missing => {
-        console.error(`- ${formatMissingBaseline(missing)}`);
-      });
-      snapshot.thresholdSummary.failures.forEach(failure => {
-        console.error(`- ${formatThresholdFailure(failure)}`);
-      });
-      snapshot.thresholdSummary.required.failures.forEach(failure => {
-        console.error(`- required ${formatRequiredFailure(failure)}`);
-      });
-      snapshot.thresholdSummary.cmdHandler.failures.forEach(failure => {
-        console.error(`- cmdHandler ${formatCmdHandlerFailure(failure)}`);
-      });
+    if (strictFailed) {
+      printStrictFailures(snapshot);
       process.exitCode = 1;
     }
   } catch (error) {

@@ -243,6 +243,7 @@ CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`，`Sc
 |------|------|
 | `npm run corpus:snapshot:check` | 输出 corpus 覆盖率、CMD/资源热点、占位符、待检查项和 cmdHandler expected 对齐结果，并在 expected 阈值失败时退出非 0 |
 | `npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after <snapshot.json> --strict --resource-type-drop video=20 --resource-type-rise lottie=20` | 对比完整质量快照趋势，拦截覆盖率、CMD/资源热点、必需项、cmdHandler ignored extra 和资源类型占比异常漂移 |
+| `npm run corpus:snapshot:baseline` | 在 strict 检查通过后更新 committed 完整质量快照基线，用于接受已评审的解析能力或样本结构变化 |
 | `npm run perf:scheme -- --iterations 3 --strict` | 基于脱敏 corpus 复制真实 `data.video` 条目构造 50KB / 250KB response，测量 `deepParseWithContext` 核心解析耗时，并同步校验展开记录、CMD 结构、CMD 字段、资源字段、待检查和跳过数量 |
 
 `perf:scheme` 是核心解析性能预算，不等同于浏览器 Worker 的完整端到端 benchmark。它的目标是给 PM/研发一个稳定、低成本的 CI 退化探针；浏览器输入响应、取消响应和 Worker 调度仍由 E2E 与手工体验验证补充。
