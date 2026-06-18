@@ -45,6 +45,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Dependency security audit
+        run: npm run audit:security
+
       - name: Unit tests
         run: npm test
 

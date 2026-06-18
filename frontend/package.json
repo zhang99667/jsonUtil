@@ -2,7 +2,7 @@
   "name": "json-helper-ai-fix",
   "productName": "JSONUtils - 专业版",
   "private": true,
-  "version": "1.8.135",
+  "version": "1.8.136",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --quiet",
     "lint:report": "eslint \"src/**/*.{ts,tsx}\"",
+    "audit:security": "npm audit --audit-level=moderate",
     "typecheck": "tsc --noEmit",
     "check:preloads": "node scripts/check-main-preloads.mjs",
     "corpus:scheme": "vitest run src/utils/schemeCorpus.test.ts",
@@ -147,6 +148,7 @@
     "@rollup/rollup-linux-x64-gnu": "^4.53.3"
   },
   "overrides": {
-    "dompurify": "^3.4.8"
+    "dompurify": "^3.4.11",
+    "shell-quote": "1.8.4"
   }
 }
