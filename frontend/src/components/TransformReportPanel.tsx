@@ -1500,6 +1500,26 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               )}
               {Boolean(report.topResourceSchemas?.length) && (
                 <div data-tour="transform-report-top-resource-schemas" className="mt-2 text-xs">
+                  {Boolean(report.topResourceTypes?.length) && (
+                    <div className="mb-2">
+                      <div className="mb-1 text-gray-500">静态资源类型分布</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {report.topResourceTypes?.map(group => (
+                          <button
+                            key={group.resourceType}
+                            type="button"
+                            onClick={() => setQuery(group.query)}
+                            className="max-w-full rounded border border-sky-800/50 bg-sky-950/25 px-2 py-0.5 text-sky-100 transition-colors hover:bg-sky-900/45"
+                            title={`${group.resourceTypeLabel} 占 ${group.percentage}%，出现 ${group.count} 次，覆盖 ${group.schemaCount} 个 URL、${group.recordCount} 条展开记录。示例 URL：${group.schemas.join('；')}`}
+                          >
+                            <span>{group.resourceTypeLabel}</span>
+                            <span className="ml-1 text-sky-300/80">{group.percentage}%</span>
+                            <span className="ml-1 text-sky-300/70">×{group.count}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="mb-1 text-gray-500">静态资源 URL 分布</div>
                   <div className="flex flex-wrap gap-1.5">
                     {report.topResourceSchemas?.map(group => (

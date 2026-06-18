@@ -480,6 +480,35 @@ describe('transformSummary', () => {
     expect(report.nestedResourceFieldCount).toBe(6);
     expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/video/ad.mp4');
     expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://static.example.com/assets/banner.jpg');
+    expect(report.topResourceTypes).toEqual([
+      expect.objectContaining({
+        resourceType: 'image',
+        resourceTypeLabel: '图片',
+        query: '资源类型:图片',
+        count: 4,
+        percentage: 66.7,
+        recordCount: 1,
+        schemaCount: 4,
+      }),
+      expect.objectContaining({
+        resourceType: 'lottie',
+        resourceTypeLabel: 'Lottie',
+        query: '资源类型:Lottie',
+        count: 1,
+        percentage: 16.7,
+        recordCount: 1,
+        schemaCount: 1,
+      }),
+      expect.objectContaining({
+        resourceType: 'video',
+        resourceTypeLabel: '视频',
+        query: '资源类型:视频',
+        count: 1,
+        percentage: 16.7,
+        recordCount: 1,
+        schemaCount: 1,
+      }),
+    ]);
     expect(report.topResourceSchemas).toEqual(expect.arrayContaining([
       expect.objectContaining({
         schema: 'https://static.example.com/assets/open.png',
@@ -586,6 +615,8 @@ describe('transformSummary', () => {
           cm: '1501',
         },
         sourceValue: mediaUrl,
+        resourceType: 'video',
+        resourceTypeLabel: '视频',
       },
     ]);
     expect(buildTransformReportView(report, 'button_icon').records[0].nestedResourceFields).toEqual([
@@ -594,16 +625,45 @@ describe('transformSummary', () => {
         preview: 'https://static.example.com/assets/open.png',
         value: 'https://static.example.com/assets/open.png',
         sourceValue: 'https://static.example.com/assets/open.png',
+        resourceType: 'image',
+        resourceTypeLabel: '图片',
       },
     ]);
+    expect(buildTransformReportView(report, '资源类型:视频').records[0].nestedResourceFields).toEqual([
+      expect.objectContaining({
+        path: '$.scheme.video_info.video_url',
+        resourceType: 'video',
+      }),
+    ]);
+    expect(buildTransformReportView(report, '资源类型:视频').filteredNestedResourceFieldCount).toBe(1);
     expect(reportText).toContain('CMD Schema 分布:');
+    expect(reportText).toContain('静态资源类型分布:');
+    expect(reportText).toContain('图片 66.7% ×4');
     expect(reportText).toContain('静态资源 URL 分布:');
     expect(reportText).toContain('[视频] https://static.example.com/video/ad.mp4 ×1');
     expect(reportText).toContain('[Lottie] https://static.example.com/lottie/swipe.zip ×1');
     expect(reportText).toContain('静态资源字段分布:');
+    expect(diagnosticText).toContain('全量静态资源类型 Top:');
+    expect(diagnosticText).toContain('图片 66.7% ×4');
     expect(diagnosticText).toContain('全量静态资源 URL Top:');
     expect(diagnosticText).toContain('[图片] https://static.example.com/assets/open.png ×1');
     expect(diagnosticText).toContain('全量静态资源字段 Top:');
+    expect(qualitySnapshot.hotspots.topResourceTypes).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        resourceType: 'image',
+        resourceTypeLabel: '图片',
+        query: '资源类型:图片',
+        count: 4,
+        percentage: 66.7,
+      }),
+      expect.objectContaining({
+        resourceType: 'video',
+        resourceTypeLabel: '视频',
+        query: '资源类型:视频',
+        count: 1,
+        percentage: 16.7,
+      }),
+    ]));
     expect(qualitySnapshot.hotspots.topResourceSchemas).toEqual(expect.arrayContaining([
       expect.objectContaining({
         schema: 'https://static.example.com/assets/open.png',
