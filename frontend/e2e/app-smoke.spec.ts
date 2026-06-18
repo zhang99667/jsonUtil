@@ -137,10 +137,9 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
   await page.locator('[data-tour="json-schema-button"]').click();
 
   const schemaPanel = page.getByRole('dialog', { name: 'JSON Schema 校验' });
-  await expect(schemaPanel).toBeVisible();
-  await expect(schemaPanel.locator('[data-tour="json-schema-input"]')).toBeFocused();
-
-  await schemaPanel.locator('[data-tour="json-schema-input"]').fill(JSON.stringify({
+  const schemaInput = schemaPanel.locator('[data-tour="json-schema-input"]');
+  const orderSchema = {
+    title: '订单 Schema',
     type: 'object',
     required: ['id', 'items'],
     properties: {
@@ -156,7 +155,18 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
         },
       },
     },
-  }, null, 2));
+  };
+  await expect(schemaPanel).toBeVisible();
+  await expect(schemaInput).toBeFocused();
+
+  await schemaInput.fill(JSON.stringify(orderSchema, null, 2));
+  await schemaPanel.locator('[data-tour="json-schema-save"]').click();
+  await expect(schemaPanel.locator('[data-tour="json-schema-library"]')).toContainText('订单 Schema');
+
+  await schemaPanel.locator('[data-tour="json-schema-clear"]').click();
+  await expect(schemaInput).toHaveValue('');
+  await schemaPanel.locator('[data-tour="json-schema-library-load"]').first().click();
+  await expect(schemaInput).toHaveValue(/"title": "订单 Schema"/);
 
   await schemaPanel.locator('[data-tour="json-schema-validate-button"]').click();
   await expect(schemaPanel.locator('[data-tour="json-schema-status"]')).toContainText('未通过');
