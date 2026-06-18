@@ -5,7 +5,27 @@ export interface JsonSchemaLibraryItem {
   updatedAt: number;
 }
 
+interface JsonSchemaLibraryExportItem {
+  name: string;
+  schemaText: string;
+}
+
+interface JsonSchemaLibraryExportPackage {
+  schemaVersion: 1;
+  source: typeof JSON_SCHEMA_LIBRARY_EXPORT_SOURCE;
+  exportedAt: string;
+  itemCount: number;
+  items: JsonSchemaLibraryExportItem[];
+}
+
+export interface JsonSchemaLibraryImportResult {
+  items: JsonSchemaLibraryItem[];
+  importedCount: number;
+  skippedCount: number;
+}
+
 export const MAX_JSON_SCHEMA_LIBRARY_ITEMS = 12;
+export const JSON_SCHEMA_LIBRARY_EXPORT_SOURCE = 'JSON_SCHEMA_LIBRARY_EXPORT';
 
 const MAX_SCHEMA_NAME_LENGTH = 64;
 
@@ -95,6 +115,27 @@ export const serializeJsonSchemaLibrary = (items: JsonSchemaLibraryItem[]): stri
   JSON.stringify(items.slice(0, MAX_JSON_SCHEMA_LIBRARY_ITEMS))
 );
 
+const toExportItem = (item: JsonSchemaLibraryItem): JsonSchemaLibraryExportItem => ({
+  name: item.name,
+  schemaText: item.schemaText,
+});
+
+export const formatJsonSchemaLibraryExport = (
+  items: JsonSchemaLibraryItem[],
+  now: Date = new Date()
+): string => {
+  const exportItems = items.slice(0, MAX_JSON_SCHEMA_LIBRARY_ITEMS).map(toExportItem);
+  const exportPackage: JsonSchemaLibraryExportPackage = {
+    schemaVersion: 1,
+    source: JSON_SCHEMA_LIBRARY_EXPORT_SOURCE,
+    exportedAt: now.toISOString(),
+    itemCount: exportItems.length,
+    items: exportItems,
+  };
+
+  return JSON.stringify(exportPackage, null, 2);
+};
+
 export const upsertJsonSchemaLibraryItem = (
   items: JsonSchemaLibraryItem[],
   schemaText: string,
@@ -115,3 +156,90 @@ export const removeJsonSchemaLibraryItem = (
 ): JsonSchemaLibraryItem[] => (
   items.filter(item => item.id !== itemId)
 );
+
+const looksLikeJsonSchemaObject = (value: Record<string, unknown>): boolean => (
+  ['$schema', '$id', 'title', 'type', 'properties', 'items', 'required', 'oneOf', 'anyOf', 'allOf']
+    .some(key => key in value)
+);
+
+const stringifySchemaObject = (value: unknown): string | null => {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return null;
+  }
+};
+
+const collectImportSchemaTexts = (value: unknown): string[] => {
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    return normalized ? [normalized] : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(collectImportSchemaTexts);
+  }
+
+  if (!isRecord(value)) return [];
+
+  if (value.source === JSON_SCHEMA_LIBRARY_EXPORT_SOURCE && Array.isArray(value.items)) {
+    return value.items.flatMap(collectImportSchemaTexts);
+  }
+
+  if (typeof value.schemaText === 'string') {
+    return collectImportSchemaTexts(value.schemaText);
+  }
+
+  if ('schema' in value) {
+    return collectImportSchemaTexts(value.schema);
+  }
+
+  if (looksLikeJsonSchemaObject(value)) {
+    const schemaText = stringifySchemaObject(value);
+    return schemaText ? [schemaText] : [];
+  }
+
+  return [];
+};
+
+export const importJsonSchemaLibrary = (
+  currentItems: JsonSchemaLibraryItem[],
+  importText: string,
+  now: number = Date.now()
+): JsonSchemaLibraryImportResult | null => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(importText);
+  } catch {
+    return null;
+  }
+
+  const schemaTexts = collectImportSchemaTexts(parsed);
+  if (schemaTexts.length === 0) return null;
+
+  const importedItems: JsonSchemaLibraryItem[] = [];
+  const importedIds = new Set<string>();
+
+  schemaTexts.forEach((schemaText, index) => {
+    const item = createJsonSchemaLibraryItem(schemaText, now + index);
+    if (!item || importedIds.has(item.id)) {
+      return;
+    }
+
+    importedIds.add(item.id);
+    importedItems.push(item);
+  });
+
+  if (importedItems.length === 0) return null;
+
+  const nextItems = [
+    ...importedItems,
+    ...currentItems.filter(item => !importedIds.has(item.id)),
+  ].slice(0, MAX_JSON_SCHEMA_LIBRARY_ITEMS);
+
+  return {
+    items: nextItems,
+    importedCount: importedItems.length,
+    skippedCount: schemaTexts.length - importedItems.length,
+  };
+};

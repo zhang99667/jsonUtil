@@ -224,6 +224,25 @@ PREVIEW JSON + TransformReportPanel
 - `schemeScan.worker.ts`: PREVIEW 区 Scheme 图标扫描，复用 source map 定位字符串范围。
 - `jsonPath.worker.ts`: JSONPath 查询、结果截断和高亮范围映射。
 
+### JSON Schema 校验流程
+
+```
+SOURCE JSON → JsonSchemaPanel → Ajv 校验
+       ↓              ↓
+Schema 推断     收藏 / 导入 / 导出
+       ↓              ↓
+编辑器错误标记 ← 校验结果 / JSONPath 定位
+```
+
+核心模块：
+
+| 模块 | 说明 |
+|------|------|
+| `jsonSchemaInference.ts` | 根据当前 SOURCE JSON 推断初始 JSON Schema，限制深度和数组采样数量 |
+| `jsonSchemaValidation.ts` | 选择 Ajv / Ajv2019 / Ajv2020 校验 Schema，并输出可定位的问题列表 |
+| `jsonSchemaIssueHighlights.ts` | 将 Schema 校验问题映射成 SOURCE 编辑器高亮范围 |
+| `jsonSchemaLibrary.ts` | 管理浏览器本地 Schema 收藏，并支持剪贴板导入/导出共享包 |
+
 ### 解析质量闭环
 
 ```
