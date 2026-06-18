@@ -207,6 +207,46 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('为 contains 与 uniqueItems 组合数组生成不重复的匹配元素', () => {
+    const schemaText = JSON.stringify({
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['events'],
+      properties: {
+        events: {
+          type: 'array',
+          minItems: 3,
+          minContains: 2,
+          uniqueItems: true,
+          contains: {
+            type: 'object',
+            required: ['code'],
+            additionalProperties: false,
+            properties: {
+              code: {
+                type: 'string',
+                pattern: '^ERR-[0-9]+$',
+              },
+            },
+          },
+          items: {
+            type: 'object',
+            additionalProperties: true,
+          },
+        },
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '{}');
+
+    expect(example.events).toEqual([
+      { code: 'ERR-1' },
+      { code: 'ERR-2' },
+      {},
+    ]);
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
   it('处理非法或永假 Schema 时返回可读错误', () => {
     expect(generateJsonSchemaExampleText('{bad}').error).toContain('Schema 不是合法 JSON');
     expect(generateJsonSchemaExampleText('false')).toMatchObject({
