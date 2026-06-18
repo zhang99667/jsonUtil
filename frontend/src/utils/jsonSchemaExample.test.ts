@@ -298,6 +298,35 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(elseResult.exampleText || '', elseSchemaText).status).toBe('valid');
   });
 
+  it('合并 allOf 分支示例时保留根级对象字段', () => {
+    const schemaText = JSON.stringify({
+      type: 'object',
+      required: ['kind'],
+      properties: {
+        kind: { const: 'card' },
+      },
+      allOf: [
+        {
+          required: ['cardNumber'],
+          properties: {
+            cardNumber: {
+              type: 'string',
+              pattern: '^CARD-[0-9]+$',
+            },
+          },
+        },
+      ],
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '{}');
+
+    expect(example).toEqual({
+      kind: 'card',
+      cardNumber: 'CARD-1',
+    });
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
   it('为常见字符串 pattern 生成可校验的样例值', () => {
     const schemaText = JSON.stringify({
       type: 'object',
