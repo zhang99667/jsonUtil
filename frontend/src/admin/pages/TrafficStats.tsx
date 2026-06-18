@@ -43,7 +43,11 @@ import {
     ToolEventStats,
     ToolEventGroupItem,
 } from '../services/traffic';
-import { buildToolEventInsights } from '../utils/toolEventInsights';
+import {
+    buildToolEventInsights,
+    buildToolEventWeeklyReport,
+    type ToolEventWeeklyTone,
+} from '../utils/toolEventInsights';
 
 const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
 
@@ -91,6 +95,7 @@ const TrafficStats: React.FC = () => {
         secondary: '#7C5BF5',
         success: '#10B981',
         warning: '#F59E0B',
+        danger: '#EF4444',
         info: '#8B9CF7',
         muted: '#9CA3BE',
     };
@@ -297,7 +302,7 @@ const TrafficStats: React.FC = () => {
         count: item.count,
     })).reverse(), [geoStats]); // 反转让最高的在上面
 
-    const toolEventLabelMap: Record<string, string> = {
+    const toolEventLabelMap = useMemo<Record<string, string>>(() => ({
         FORMAT: '格式化',
         DEEP_FORMAT: '嵌套解析',
         MINIFY: '压缩',
@@ -349,10 +354,28 @@ const TrafficStats: React.FC = () => {
         '2_10s': '2-10s',
         gt_10s: '> 10s',
         unknown: '未知',
+    }), []);
+
+    const getToolEventLabel = useCallback((label: string) => toolEventLabelMap[label] || label, [toolEventLabelMap]);
+    const toolEventInsights = useMemo(() => buildToolEventInsights(toolEventStats), [toolEventStats]);
+    const toolEventWeeklyReport = useMemo(
+        () => buildToolEventWeeklyReport(toolEventStats, days, getToolEventLabel),
+        [toolEventStats, days, getToolEventLabel]
+    );
+
+    const getWeeklyToneColor = (tone: ToolEventWeeklyTone): string => {
+        if (tone === 'success') return themeColors.success;
+        if (tone === 'warning') return themeColors.warning;
+        if (tone === 'danger') return themeColors.danger;
+        return themeColors.primary;
     };
 
-    const getToolEventLabel = (label: string) => toolEventLabelMap[label] || label;
-    const toolEventInsights = useMemo(() => buildToolEventInsights(toolEventStats), [toolEventStats]);
+    const getWeeklyToneBackground = (tone: ToolEventWeeklyTone): string => {
+        if (tone === 'success') return 'rgba(16,185,129,0.08)';
+        if (tone === 'warning') return 'rgba(245,158,11,0.1)';
+        if (tone === 'danger') return 'rgba(239,68,68,0.08)';
+        return 'rgba(91,110,245,0.08)';
+    };
 
     const renderToolEventList = (items: ToolEventGroupItem[], color: string) => {
         if (items.length === 0) {
@@ -694,6 +717,126 @@ const TrafficStats: React.FC = () => {
                         </div>
                     </Col>
                 </Row>
+                <div
+                    data-tour="tool-event-weekly-report"
+                    style={{
+                        marginTop: 20,
+                        border: '1px solid #E7EAF5',
+                        borderRadius: 8,
+                        padding: 16,
+                        background: '#FFFFFF',
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                        <div>
+                            <div style={{ color: '#1A1D2E', fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
+                                PM 周报 · {toolEventWeeklyReport.periodLabel}
+                            </div>
+                            <div style={{ color: '#5A607F', fontSize: 13, lineHeight: 1.6 }}>
+                                {toolEventWeeklyReport.headline}
+                            </div>
+                        </div>
+                        <Tag color={toolEventWeeklyReport.isEmpty ? 'default' : 'blue'} style={{ marginInlineEnd: 0 }}>
+                            {toolEventWeeklyReport.isEmpty ? '待观测' : '可复盘'}
+                        </Tag>
+                    </div>
+
+                    <Row gutter={[12, 12]} style={{ marginTop: 14 }}>
+                        {toolEventWeeklyReport.metrics.map(metric => (
+                            <Col key={metric.key} xs={24} sm={12} lg={6}>
+                                <div
+                                    data-tour={`tool-event-weekly-metric-${metric.key}`}
+                                    style={{
+                                        height: '100%',
+                                        minHeight: 94,
+                                        border: '1px solid #EEF0F6',
+                                        borderRadius: 8,
+                                        padding: 12,
+                                        background: getWeeklyToneBackground(metric.tone),
+                                    }}
+                                >
+                                    <div style={{ color: '#5A607F', fontSize: 12, marginBottom: 6 }}>{metric.label}</div>
+                                    <div style={{
+                                        color: getWeeklyToneColor(metric.tone),
+                                        fontSize: 20,
+                                        fontWeight: 600,
+                                        lineHeight: 1.25,
+                                        wordBreak: 'break-word',
+                                    }}>
+                                        {metric.value}
+                                    </div>
+                                    <div style={{ color: '#7A819D', fontSize: 12, marginTop: 6, lineHeight: 1.4 }}>
+                                        {metric.helper}
+                                    </div>
+                                </div>
+                            </Col>
+                        ))}
+                    </Row>
+
+                    <Row gutter={[16, 16]} style={{ marginTop: 14 }}>
+                        <Col xs={24} lg={12}>
+                            <div style={{ color: '#1A1D2E', fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
+                                重点关注
+                            </div>
+                            <div style={{ display: 'grid', gap: 10 }}>
+                                {toolEventWeeklyReport.focusItems.map(item => (
+                                    <div
+                                        key={item.key}
+                                        data-tour={`tool-event-weekly-focus-${item.key}`}
+                                        style={{
+                                            borderLeft: `3px solid ${getWeeklyToneColor(item.tone)}`,
+                                            borderRadius: 6,
+                                            background: getWeeklyToneBackground(item.tone),
+                                            padding: '10px 12px',
+                                        }}
+                                    >
+                                        <div style={{ color: '#1A1D2E', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+                                            {item.title}
+                                        </div>
+                                        <div style={{ color: '#5A607F', fontSize: 12, lineHeight: 1.5 }}>
+                                            {item.description}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Col>
+                        <Col xs={24} lg={12}>
+                            <div style={{ color: '#1A1D2E', fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
+                                下周动作
+                            </div>
+                            <div style={{
+                                display: 'grid',
+                                gap: 10,
+                                border: '1px solid #EEF0F6',
+                                borderRadius: 8,
+                                padding: 12,
+                                background: '#FAFBFF',
+                            }}>
+                                {toolEventWeeklyReport.actionItems.map((item, index) => (
+                                    <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                                        <span style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: 18,
+                                            height: 18,
+                                            borderRadius: '50%',
+                                            background: 'rgba(91,110,245,0.12)',
+                                            color: themeColors.primary,
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            flexShrink: 0,
+                                            marginTop: 1,
+                                        }}>
+                                            {index + 1}
+                                        </span>
+                                        <span style={{ color: '#5A607F', fontSize: 12, lineHeight: 1.5 }}>{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </Col>
+                    </Row>
+                </div>
                 <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
                     <Col xs={24} lg={8}>
                         <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>高频功能</div>
