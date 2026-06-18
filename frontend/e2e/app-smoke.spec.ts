@@ -1998,6 +1998,26 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   expect(copiedQualitySummary).toContain('状态: 解析完成');
   expect(copiedQualitySummary).toContain('CMD字段: 1');
   expect(copiedQualitySummary).not.toContain('nid');
+  await qualitySummary.locator('[data-tour="scheme-copy-quality-snapshot"]').click();
+  await expect(page.getByText(/已复制质量快照（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  const copiedQualitySnapshot = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
+  const qualitySnapshotJson = JSON.parse(copiedQualitySnapshot) as {
+    kind: string;
+    safety: { containsRawValue: boolean };
+    coverage: { score: number; level: string };
+    totals: { records: number; decodeLayers: number; commandFields: number; nestedCommandFields: number };
+    hotspots: { commandFields: string[] };
+  };
+  expect(qualitySnapshotJson.kind).toBe('json-helper-scheme-quality-snapshot');
+  expect(qualitySnapshotJson.safety.containsRawValue).toBe(false);
+  expect(qualitySnapshotJson.coverage).toMatchObject({ score: 100, level: 'success' });
+  expect(qualitySnapshotJson.totals.records).toBe(1);
+  expect(qualitySnapshotJson.totals.decodeLayers).toBe(1);
+  expect(qualitySnapshotJson.totals.commandFields).toBe(1);
+  expect(qualitySnapshotJson.totals.nestedCommandFields).toBe(1);
+  expect(qualitySnapshotJson.hotspots.commandFields).toContain('cmd');
+  expect(copiedQualitySnapshot).not.toContain('nid');
+  expect(copiedQualitySnapshot).not.toContain('标题');
   await expect(page.getByText('CMD 参数递归解析')).toBeVisible();
   await expect(schemeResult).toContainText('"cmd"');
   await expect(schemeResult).toContainText('"nid": 123');

@@ -24,6 +24,7 @@ import {
 } from '../utils/schemeMetadata';
 import {
   buildSchemeQualitySummary,
+  formatSchemeQualitySnapshotJsonText,
   formatSchemeQualitySummaryText,
   type SchemeQualityLevel,
   type SchemeQualitySummaryItem,
@@ -698,6 +699,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     if (!editedContent) return '暂无解码结果可复制';
     return '复制解码结果到剪贴板';
   })();
+  const copyQualitySnapshotTitle = schemeQualitySummary
+    ? '复制不含原始值的 Scheme 解析质量指标 JSON'
+    : '暂无质量快照可复制';
   const copyCmdStructureTitle = (() => {
     if (isDecodePending) return '解析完成后可复制 CMD 结构';
     if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
@@ -763,6 +767,25 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     } catch (err) {
       console.warn('复制 Scheme 质量摘要失败:', err);
       toast.error(getClipboardErrorMessage(err, '复制质量摘要失败'), { duration: 2000 });
+    }
+  };
+
+  const handleCopyQualitySnapshot = async () => {
+    if (!schemeQualitySummary) return;
+
+    const qualitySnapshotText = formatSchemeQualitySnapshotJsonText({
+      summary: schemeQualitySummary,
+      decodeResult,
+      commandSummaryInfo,
+      placeholders,
+      decodeWarnings,
+    });
+    try {
+      await copyText(qualitySnapshotText);
+      toast.success(`已复制质量快照（${formatCopySizeLabel(qualitySnapshotText)}）`, { duration: 2000 });
+    } catch (err) {
+      console.warn('复制 Scheme 质量快照失败:', err);
+      toast.error(getClipboardErrorMessage(err, '复制质量快照失败'), { duration: 2000 });
     }
   };
 
@@ -1030,6 +1053,16 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                         aria-label="复制质量摘要，复制当前 Scheme 解析质量摘要"
                       >
                         复制摘要
+                      </button>
+                      <button
+                        data-tour="scheme-copy-quality-snapshot"
+                        type="button"
+                        onClick={handleCopyQualitySnapshot}
+                        className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
+                        title={copyQualitySnapshotTitle}
+                        aria-label={`复制质量快照，${copyQualitySnapshotTitle}`}
+                      >
+                        复制快照
                       </button>
                     </div>
                   </div>

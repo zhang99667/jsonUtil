@@ -8,7 +8,7 @@
 
 JSONUtils 专业版是一款现代化的 JSON 处理工具，旨在提高开发人员的效率。它不仅提供了标准的格式化和验证功能，还集成了 Google Gemini AI，能够智能修复格式错误的 JSON 数据。配合双栏实时预览、JSONPath 查询和丰富的文件管理功能，它是您处理 JSON 数据的得力助手。
 
-除了通用 JSON 场景，当前版本也面向复杂接口 response / CMD / Scheme 排查做了专项增强。整段广告 response 可以直接展开多层 URL、CMD、Base64、运行时占位符和监测链接，并可复制 cmdHandler 风格结构、质量快照和协作排查摘要。
+除了通用 JSON 场景，当前版本也面向复杂接口 response / CMD / Scheme 排查做了专项增强。整段广告 response 可以直接展开多层 URL、CMD、Base64、运行时占位符和监测链接，并可复制 cmdHandler 风格结构、质量快照和协作排查摘要；独立 Scheme 面板也支持复制不含原始值的结构化质量快照。
 
 ## 核心功能
 

@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.143 (2026-06-18) - Scheme 质量快照 JSON
+### ✨ 新特性
+- **Scheme 面板**: 解析质量摘要新增“复制快照”，输出不含原始值的结构化 JSON，沉淀 coverage、状态、解码层、CMD/资源/占位符/跳过数量、Top CMD Schema 和建议动作
+- **协作排查**: 单条 CMD/URL 不必先送回 SOURCE，也可以复制机器可读质量指标用于 issue、样本评审或后续转 corpus expected
+- **本地 CI**: 本机完整 CI 在未显式设置 `JAVA_HOME` 时会优先选择 Java 17，避免 Maven 误用 Java 26 触发 Mockito/Byte Buddy 兼容失败
+
 ## v1.8.142 (2026-06-18) - 电话拨打 Corpus 基线
 ### ✨ 新特性
 - **质量门禁**: 新增 `phone-response` 脱敏电话拨打 response 样本，覆盖 `makePhoneCall`、`numberUrl`、`logUrl`、Base64 `extInfo`、hash 落地页参数和运行时占位符

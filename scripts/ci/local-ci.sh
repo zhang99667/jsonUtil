@@ -9,6 +9,22 @@ log() {
   printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$1"
 }
 
+use_project_java_home() {
+  if [[ -n "${JAVA_HOME:-}" ]]; then
+    log "Backend: using preset JAVA_HOME=$JAVA_HOME"
+    return
+  fi
+
+  if [[ "$(uname -s)" == "Darwin" ]] && command -v /usr/libexec/java_home >/dev/null 2>&1; then
+    local java_home
+    if java_home="$(/usr/libexec/java_home -v 17 2>/dev/null)"; then
+      export JAVA_HOME="$java_home"
+      export PATH="$JAVA_HOME/bin:$PATH"
+      log "Backend: selected Java 17 at $JAVA_HOME"
+    fi
+  fi
+}
+
 log "Frontend: install dependencies"
 cd "$ROOT_DIR/frontend"
 npm ci
@@ -49,6 +65,8 @@ PLAYWRIGHT_PREBUILT=1 npm run test:e2e
 log "Governance: backend API matrix"
 cd "$ROOT_DIR"
 node scripts/ci/check-backend-api-matrix.mjs
+
+use_project_java_home
 
 log "Backend: Maven test"
 cd "$ROOT_DIR/backend"
