@@ -53,7 +53,7 @@ describe('jsonSchemaValidation', () => {
       { key: 'minimum', count: 1 },
       { key: 'required', count: 1 },
     ]);
-    expect(result.issuePathList).toEqual(['$.items[0].price', '$.items[1]']);
+    expect(result.issuePathList).toEqual(['$.items[0].price', '$.items[1].price']);
     expect(result.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({
         path: '$.items[0].price',
@@ -62,10 +62,31 @@ describe('jsonSchemaValidation', () => {
         suggestion: '调整该路径的数值到 Schema 允许范围，或放宽数值边界约束。',
       }),
       expect.objectContaining({
-        path: '$.items[1]',
-        pointer: '/items/1',
+        path: '$.items[1].price',
+        pointer: '/items/1/price',
         keyword: 'required',
         suggestion: '补齐必填字段 price，或从 Schema required 中移除该字段。',
+      }),
+    ]));
+  });
+
+  it('缺失必填字段问题定位到具体缺失字段路径', () => {
+    const result = validateJsonAgainstSchema(
+      JSON.stringify({ items: [{}] }),
+      schema
+    );
+
+    expect(result.issuePathList).toEqual(['$.name', '$.items[0].price']);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        path: '$.name',
+        pointer: '/name',
+        keyword: 'required',
+      }),
+      expect.objectContaining({
+        path: '$.items[0].price',
+        pointer: '/items/0/price',
+        keyword: 'required',
       }),
     ]));
   });
@@ -185,6 +206,7 @@ describe('jsonSchemaValidation', () => {
     expect(report).toContain('1. $.items[0].price');
     expect(report).toContain('$.items[0].price [minimum]');
     expect(report).toContain('建议: 调整该路径的数值到 Schema 允许范围');
+    expect(report).toContain('Schema: #/properties/items/items/properties/price/minimum');
     expect(report).not.toContain('"订单"');
     expect(report).not.toContain('"required"');
   });

@@ -53,6 +53,10 @@ const encodeJsonPointerSegment = (segment: string): string => (
   segment.replace(/~/g, '~0').replace(/\//g, '~1')
 );
 
+const appendJsonPointerSegment = (pointer: string, segment: string): string => (
+  `${pointer}/${encodeJsonPointerSegment(segment)}`
+);
+
 const escapeJsonPathKey = (key: string): string => (
   key.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 );
@@ -101,10 +105,17 @@ const getAjvForSchema = (schema: unknown) => {
 const getIssuePointer = (error: ErrorObject): string => {
   const pointer = error.instancePath || '';
 
+  if (error.keyword === 'required') {
+    const missingProperty = (error.params as { missingProperty?: unknown }).missingProperty;
+    if (typeof missingProperty === 'string') {
+      return appendJsonPointerSegment(pointer, missingProperty);
+    }
+  }
+
   if (error.keyword === 'additionalProperties') {
     const additionalProperty = (error.params as { additionalProperty?: unknown }).additionalProperty;
     if (typeof additionalProperty === 'string') {
-      return `${pointer}/${encodeJsonPointerSegment(additionalProperty)}`;
+      return appendJsonPointerSegment(pointer, additionalProperty);
     }
   }
 
@@ -349,6 +360,7 @@ export const formatJsonSchemaValidationReport = (
     result.issues.forEach((issue, index) => {
       lines.push(`${index + 1}. ${issue.path} [${issue.keyword}] ${issue.message}`);
       lines.push(`   建议: ${issue.suggestion}`);
+      lines.push(`   Schema: ${issue.schemaPath}`);
     });
   }
 

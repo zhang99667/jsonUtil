@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.190 (2026-06-19) - Schema 必填路径定位
+### ✨ 新特性
+- **JSON Schema 校验**: `required` 缺失字段问题会定位到具体缺失字段路径，例如 `$.items[0].price`，复制报告、修复清单和路径清单不再只停留在父对象，协作修复时更容易直接找到应补字段
+- **协作报告**: Schema 校验报告的每条问题补充 `Schema` 约束路径，发给接口维护者时可同时定位 JSON 数据路径和 Schema 规则路径，且仍不包含原始 JSON 或完整 Schema 内容
+
 ## v1.8.189 (2026-06-19) - Schema 唯一 Contains 示例
 ### ✨ 新特性
 - **JSON Schema 校验**: 示例 JSON 生成优化 `contains` / `minContains` 与 `uniqueItems` 组合约束，重复匹配元素会生成更自然的递增值，且不会改写原本已经唯一的普通元素，事件流、错误列表等数组 Schema 示例可直接通过校验
