@@ -196,7 +196,7 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
 
   await schemaInput.fill(JSON.stringify({
     type: 'array',
-    minItems: 4,
+    minItems: 9,
     items: {
       type: 'string',
     },
