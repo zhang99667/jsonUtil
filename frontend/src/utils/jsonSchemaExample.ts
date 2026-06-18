@@ -294,6 +294,15 @@ const findAvailablePropertyKey = (
   [...new Set(candidates)].find(key => !usedKeys.has(key) && isAllowed(key))
 );
 
+const serializeExampleValue = (value: unknown): string => JSON.stringify(value);
+
+const getEnumValueAt = (schema: Record<string, unknown>, index: number): unknown => {
+  const enumValues = schema.enum;
+  if (!Array.isArray(enumValues) || index >= enumValues.length) return undefined;
+
+  return cloneJsonValue(enumValues[index]);
+};
+
 const isStringExampleAllowed = (value: string, schema: Record<string, unknown>): boolean => {
   const minLength = getIntegerValue(schema, 'minLength');
   if (typeof minLength === 'number' && value.length < minLength) return false;
@@ -304,6 +313,22 @@ const isStringExampleAllowed = (value: string, schema: Record<string, unknown>):
   if (typeof schema.pattern === 'string' && !getPatternMatcher(schema.pattern)(value)) return false;
 
   return true;
+};
+
+const getUniqueStringExample = (
+  value: string,
+  schema: Record<string, unknown>,
+  index: number
+): string | undefined => {
+  const candidates = [
+    `${value}${index + 1}`,
+    `${value}-${index + 1}`,
+    `value${index + 1}`,
+    `key${index + 1}`,
+    String(index + 1),
+  ];
+
+  return candidates.find(candidate => isStringExampleAllowed(candidate, schema));
 };
 
 const generateStringExample = (schema: Record<string, unknown>): string => {
@@ -342,6 +367,35 @@ const generateStringExample = (schema: Record<string, unknown>): string => {
   return value;
 };
 
+const isNumberExampleAllowed = (
+  value: number,
+  schema: Record<string, unknown>,
+  integerOnly: boolean
+): boolean => {
+  if (!Number.isFinite(value)) return false;
+  if (integerOnly && !Number.isInteger(value)) return false;
+
+  const minimum = getNumberValue(schema, 'minimum');
+  if (typeof minimum === 'number' && value < minimum) return false;
+
+  const exclusiveMinimum = getNumberValue(schema, 'exclusiveMinimum');
+  if (typeof exclusiveMinimum === 'number' && value <= exclusiveMinimum) return false;
+
+  const maximum = getNumberValue(schema, 'maximum');
+  if (typeof maximum === 'number' && value > maximum) return false;
+
+  const exclusiveMaximum = getNumberValue(schema, 'exclusiveMaximum');
+  if (typeof exclusiveMaximum === 'number' && value >= exclusiveMaximum) return false;
+
+  const multipleOf = getNumberValue(schema, 'multipleOf');
+  if (typeof multipleOf === 'number' && multipleOf > 0) {
+    const quotient = value / multipleOf;
+    if (Math.abs(quotient - Math.round(quotient)) > Number.EPSILON * 100) return false;
+  }
+
+  return true;
+};
+
 const generateNumberExample = (schema: Record<string, unknown>, integerOnly: boolean): number => {
   const minimum = getNumberValue(schema, 'minimum');
   const exclusiveMinimum = getNumberValue(schema, 'exclusiveMinimum');
@@ -366,6 +420,27 @@ const generateNumberExample = (schema: Record<string, unknown>, integerOnly: boo
   return integerOnly ? Math.trunc(value) : Number(value.toFixed(4));
 };
 
+const getUniqueNumberExample = (
+  value: number,
+  schema: Record<string, unknown>,
+  index: number,
+  integerOnly: boolean
+): number | undefined => {
+  const multipleOf = getNumberValue(schema, 'multipleOf');
+  const step = typeof multipleOf === 'number' && multipleOf > 0
+    ? multipleOf
+    : integerOnly
+      ? 1
+      : 0.1;
+  const candidates = [
+    value + step * index,
+    value + step * (index + 1),
+    value - step * index,
+  ].map(candidate => (integerOnly ? Math.trunc(candidate) : Number(candidate.toFixed(4))));
+
+  return candidates.find(candidate => isNumberExampleAllowed(candidate, schema, integerOnly));
+};
+
 const mergeAllOfExamples = (examples: unknown[]): unknown => {
   const objectExamples = examples.filter(isRecord);
   if (objectExamples.length === examples.length) return Object.assign({}, ...objectExamples);
@@ -386,6 +461,75 @@ const pickFirstBranchExample = (
   return undefined;
 };
 
+const getObjectSchemaProperties = (schema: Record<string, unknown>): Record<string, JsonSchemaNode> => (
+  getSchemaProperties(schema)
+);
+
+const getUniqueObjectExample = (
+  value: Record<string, unknown>,
+  schema: Record<string, unknown>,
+  context: ExampleContext,
+  index: number
+): Record<string, unknown> | undefined => {
+  const properties = getObjectSchemaProperties(schema);
+
+  for (const [key, childSchema] of Object.entries(properties)) {
+    if (!(key in value)) continue;
+
+    const nextChildValue = getUniqueExampleValue(
+      value[key],
+      childSchema,
+      context,
+      index
+    );
+    if (serializeExampleValue(nextChildValue) !== serializeExampleValue(value[key])) {
+      return {
+        ...value,
+        [key]: nextChildValue,
+      };
+    }
+  }
+
+  if (schema.additionalProperties === false) return undefined;
+
+  return {
+    ...value,
+    _exampleIndex: index + 1,
+  };
+};
+
+const getUniqueExampleValue = (
+  value: unknown,
+  schemaNode: unknown,
+  context: ExampleContext,
+  index: number
+): unknown => {
+  if (index <= 0 || schemaNode === false || !isRecord(schemaNode)) return value;
+  if ('const' in schemaNode) return value;
+
+  const enumValue = getEnumValueAt(schemaNode, index);
+  if (enumValue !== undefined) return enumValue;
+
+  if (typeof value === 'string') {
+    return getUniqueStringExample(value, schemaNode, index) ?? value;
+  }
+
+  if (typeof value === 'number') {
+    const type = getPrimaryType(schemaNode);
+    return getUniqueNumberExample(value, schemaNode, index, type === 'integer') ?? value;
+  }
+
+  if (typeof value === 'boolean') {
+    return index === 1 ? !value : value;
+  }
+
+  if (isRecord(value)) {
+    return getUniqueObjectExample(value, schemaNode, context, index) ?? value;
+  }
+
+  return value;
+};
+
 const generateArrayExample = (schema: Record<string, unknown>, context: ExampleContext): unknown[] => {
   const prefixItems = Array.isArray(schema.prefixItems)
     ? schema.prefixItems.filter((item): item is JsonSchemaNode => isRecord(item) || typeof item === 'boolean')
@@ -404,9 +548,25 @@ const generateArrayExample = (schema: Record<string, unknown>, context: ExampleC
   if (exampleCount === 0) return [];
 
   const itemSchema = isRecord(items) || typeof items === 'boolean' ? items : {};
-  return Array.from({ length: exampleCount }, () => (
-    generateExampleValue(itemSchema, { ...context, depth: context.depth + 1 })
+  const itemContext = { ...context, depth: context.depth + 1 };
+  const values = Array.from({ length: exampleCount }, (_item, index) => (
+    generateExampleValue(itemSchema, itemContext)
   ));
+
+  if (schema.uniqueItems !== true) return values;
+
+  const seenValues = new Set<string>();
+  return values.map((value, index) => {
+    const uniqueValue = getUniqueExampleValue(value, itemSchema, itemContext, index);
+    const serializedUniqueValue = serializeExampleValue(uniqueValue);
+    if (!seenValues.has(serializedUniqueValue)) {
+      seenValues.add(serializedUniqueValue);
+      return uniqueValue;
+    }
+
+    seenValues.add(serializeExampleValue(value));
+    return value;
+  });
 };
 
 const generateObjectExample = (schema: Record<string, unknown>, context: ExampleContext): Record<string, unknown> => {
