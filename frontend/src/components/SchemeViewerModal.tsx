@@ -29,6 +29,10 @@ import {
   type SchemeQualityLevel,
   type SchemeQualitySummaryItem,
 } from '../utils/schemeQualitySummary';
+import {
+  buildSchemePathValuesForCopy,
+  formatSchemePathValueCountLabel,
+} from '../utils/schemePathValues';
 
 const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
 
@@ -147,114 +151,10 @@ const formatParamTooltipValue = (value: string | string[]): string => (
     : formatTooltipValue(value)
 );
 
-const MAX_SCHEME_PATH_VALUE_COPY_ROWS = 500;
-
-interface SchemePathValueCollectState {
-  rows: string[];
-  limit: number;
-  isTruncated: boolean;
-}
-
-interface SchemePathValueCopyResult {
-  text: string;
-  rowCount: number;
-  isTruncated: boolean;
-}
-
-const formatJsonPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
-
-const formatJsonPathValue = (value: unknown): string => {
-  if (typeof value === 'string') return JSON.stringify(value);
-  return JSON.stringify(value) ?? String(value);
-};
-
-const pushSchemePathValueRow = (
-  state: SchemePathValueCollectState,
-  path: string,
-  value: unknown
-) => {
-  if (state.rows.length >= state.limit) {
-    state.isTruncated = true;
-    return;
-  }
-
-  state.rows.push(`${path} = ${formatJsonPathValue(value)}`);
-};
-
-const collectSchemePathValues = (
-  value: unknown,
-  path: string,
-  state: SchemePathValueCollectState
-) => {
-  if (state.isTruncated) return;
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      pushSchemePathValueRow(state, path, value);
-      return;
-    }
-
-    for (let index = 0; index < value.length; index++) {
-      collectSchemePathValues(value[index], `${path}[${index}]`, state);
-      if (state.isTruncated) return;
-    }
-    return;
-  }
-
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) {
-      pushSchemePathValueRow(state, path, value);
-      return;
-    }
-
-    for (const [key, item] of entries) {
-      collectSchemePathValues(item, formatJsonPathKey(path, key), state);
-      if (state.isTruncated) return;
-    }
-    return;
-  }
-
-  pushSchemePathValueRow(state, path, value);
-};
-
-const buildSchemePathValuesForCopy = (content: string): SchemePathValueCopyResult | null => {
-  try {
-    const parsed: unknown = JSON.parse(content);
-    const state: SchemePathValueCollectState = {
-      rows: [],
-      limit: MAX_SCHEME_PATH_VALUE_COPY_ROWS,
-      isTruncated: false,
-    };
-
-    collectSchemePathValues(parsed, '$', state);
-    const text = [
-      ...state.rows,
-      ...(state.isTruncated ? ['... 还有更多路径未复制'] : []),
-    ].join('\n');
-
-    return {
-      text,
-      rowCount: state.rows.length,
-      isTruncated: state.isTruncated,
-    };
-  } catch {
-    return null;
-  }
-};
-
 const formatCopySizeLabel = (content: string): string => {
   const stats = getDocumentStats(content);
   return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
 };
-
-const formatPathValueCountLabel = (rowCount: number, isTruncated: boolean): string => (
-  isTruncated ? `已返回 ${rowCount} 项` : `${rowCount} 项`
-);
 
 const buildParamSections = (
   schemeInfo: SchemeDecodeResult['schemeInfo']
@@ -510,7 +410,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
     try {
       await copyText(pathValueCopyResult.text);
-      toast.success(`已复制路径和值（${formatPathValueCountLabel(pathValueCopyResult.rowCount, pathValueCopyResult.isTruncated)}）`, { duration: 2000 });
+      toast.success(`已复制路径和值（${formatSchemePathValueCountLabel(pathValueCopyResult.rowCount, pathValueCopyResult.isTruncated)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 路径和值失败:', err);
       toast.error(getClipboardErrorMessage(err), { duration: 2000 });

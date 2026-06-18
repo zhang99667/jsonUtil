@@ -126,6 +126,7 @@ frontend/
 │   ├── utils/                # 工具函数
 │   │   ├── transformations.ts     # JSON 转换与深度解析
 │   │   ├── schemeUtils.ts         # Scheme/CMD 递归解码与回写
+│   │   ├── schemePathValues.ts    # Scheme 面板 JSONPath 路径值复制
 │   │   ├── transformSummary.ts    # 深度解析报告、质量快照和 CMD 结构导出
 │   │   ├── cmdStructureDiff.ts    # cmdHandler 风格结构差异对比
 │   │   └── diffUtils.ts           # 差异对比
