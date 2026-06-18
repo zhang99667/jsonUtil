@@ -264,6 +264,7 @@ frontend/fixtures/scheme-corpus/
 - 管理后台工具事件洞察已新增 PM 周报视图，按统计周期聚合高频功能、失败率、大输入和慢操作，并输出重点关注与下周动作。
 - 已新增 JSON Schema 校验浮动面板，支持粘贴 Schema 校验当前 SOURCE JSON，展示错误 JSONPath、Schema 关键字和 Schema 路径，并可一键交给 JSONPath 面板定位。
 - JSON Schema 校验结果已支持 SOURCE 编辑器内错误标记，校验未通过时会在原字段位置显示高亮和 hover 说明，头部同步提示问题数量，额外字段会优先定位到具体字段。
+- JSON Schema 校验面板已支持浏览器本地 Schema 收藏，常用 Schema 可保存、载入和删除，避免同一接口反复校验时重复粘贴。
 
 ## 两周迭代建议
 

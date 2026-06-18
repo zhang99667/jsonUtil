@@ -7,6 +7,14 @@ import {
   type JsonSchemaValidationResult,
   type JsonSchemaValidationStatus,
 } from '../utils/jsonSchemaValidation';
+import {
+  MAX_JSON_SCHEMA_LIBRARY_ITEMS,
+  parseJsonSchemaLibrary,
+  removeJsonSchemaLibraryItem,
+  serializeJsonSchemaLibrary,
+  upsertJsonSchemaLibraryItem,
+  type JsonSchemaLibraryItem,
+} from '../utils/jsonSchemaLibrary';
 import { safeGetStorageItem, safeSetStorageItem } from '../utils/storage';
 import { showError, showSuccess } from '../utils/toast';
 import {
@@ -17,6 +25,7 @@ import {
 } from '../utils/productTelemetry';
 
 export const JSON_SCHEMA_STORAGE_KEY = 'json-schema-panel-schema';
+export const JSON_SCHEMA_LIBRARY_STORAGE_KEY = 'json-schema-panel-library';
 
 const SCHEMA_RESULT_STATUS_ID = 'json-schema-result-status';
 const SCHEMA_VALIDATE_BUTTON_DESCRIPTION_ID = 'json-schema-validate-button-description';
@@ -59,6 +68,9 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
 }) => {
   const schemaInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [schemaText, setSchemaText] = useState(() => safeGetStorageItem(JSON_SCHEMA_STORAGE_KEY) || '');
+  const [schemaLibrary, setSchemaLibrary] = useState<JsonSchemaLibraryItem[]>(() => (
+    parseJsonSchemaLibrary(safeGetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY))
+  ));
   const [result, setResult] = useState<JsonSchemaValidationResult | null>(null);
 
   const validateButtonDisabledReason = useMemo(() => {
@@ -74,6 +86,11 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     setResult(null);
     onValidationResult?.(null);
   }, [onValidationResult]);
+
+  const persistSchemaLibrary = useCallback((items: JsonSchemaLibraryItem[]) => {
+    setSchemaLibrary(items);
+    safeSetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY, serializeJsonSchemaLibrary(items));
+  }, []);
 
   const handleValidate = useCallback(() => {
     const startedAt = performance.now();
@@ -121,6 +138,25 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     onValidationResult?.(null);
     schemaInputRef.current?.focus();
   }, [handleSchemaChange, onValidationResult]);
+
+  const handleSaveSchema = useCallback(() => {
+    if (!schemaText.trim()) return;
+
+    const nextLibrary = upsertJsonSchemaLibraryItem(schemaLibrary, schemaText);
+    persistSchemaLibrary(nextLibrary);
+    showSuccess(`已收藏 Schema: ${nextLibrary[0]?.name || '未命名 Schema'}`);
+  }, [persistSchemaLibrary, schemaLibrary, schemaText]);
+
+  const handleLoadSchema = useCallback((item: JsonSchemaLibraryItem) => {
+    handleSchemaChange(item.schemaText);
+    showSuccess(`已载入 Schema: ${item.name}`);
+    requestAnimationFrame(() => schemaInputRef.current?.focus());
+  }, [handleSchemaChange]);
+
+  const handleRemoveSchema = useCallback((itemId: string) => {
+    persistSchemaLibrary(removeJsonSchemaLibraryItem(schemaLibrary, itemId));
+    showSuccess('已删除 Schema 收藏');
+  }, [persistSchemaLibrary, schemaLibrary]);
 
   const footer = (
     <>
@@ -189,6 +225,15 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
               >
                 清空
               </button>
+              <button
+                type="button"
+                data-tour="json-schema-save"
+                onClick={handleSaveSchema}
+                disabled={!schemaText.trim()}
+                className="rounded border border-editor-border px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                收藏
+              </button>
             </div>
           </div>
           <textarea
@@ -200,6 +245,51 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
             className="min-h-0 flex-1 resize-none rounded border border-editor-border bg-editor-bg p-3 font-mono text-xs leading-5 text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
             placeholder='{"type":"object","required":["id"]}'
           />
+          <div
+            data-tour="json-schema-library"
+            className="mt-2 flex max-h-28 min-h-[74px] flex-col rounded border border-editor-border bg-editor-bg/60"
+          >
+            <div className="flex items-center justify-between border-b border-editor-border px-2 py-1.5">
+              <span className="text-[11px] font-semibold text-gray-400">
+                收藏 {schemaLibrary.length}/{MAX_JSON_SCHEMA_LIBRARY_ITEMS}
+              </span>
+            </div>
+            {schemaLibrary.length === 0 ? (
+              <div className="flex flex-1 items-center px-2 py-2 text-xs text-gray-600">
+                暂无收藏 Schema
+              </div>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto p-1">
+                {schemaLibrary.map(item => (
+                  <div
+                    key={item.id}
+                    data-tour="json-schema-library-item"
+                    className="flex items-center gap-1 rounded px-1 py-0.5 hover:bg-editor-hover"
+                  >
+                    <button
+                      type="button"
+                      data-tour="json-schema-library-load"
+                      onClick={() => handleLoadSchema(item)}
+                      className="min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-xs text-gray-300 transition-colors hover:text-emerald-100"
+                      title={item.name}
+                    >
+                      {item.name}
+                    </button>
+                    <button
+                      type="button"
+                      data-tour="json-schema-library-remove"
+                      onClick={() => handleRemoveSchema(item.id)}
+                      className="shrink-0 rounded px-1.5 py-1 text-xs text-gray-500 transition-colors hover:bg-red-900/30 hover:text-red-100"
+                      title={`删除 ${item.name}`}
+                      aria-label={`删除 Schema 收藏 ${item.name}`}
+                    >
+                      删除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex min-h-0 flex-col overflow-hidden rounded border border-editor-border bg-editor-bg">
