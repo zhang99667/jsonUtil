@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.169 (2026-06-18) - HAR 摘要标签
+### ✨ 新特性
+- **HAR 导入**: 派生 JSON 顶层新增 method、status、host、MIME 和 body 类型摘要，并为每条 payload 生成不含 query 的短标签，便于后续筛选和排查接口来源
+
 ## v1.8.168 (2026-06-18) - HAR 请求响应提取
 ### ✨ 新特性
 - **HAR 导入**: 打开 `.har` 文件时自动提取 request/response body 为派生 JSON 标签，支持 JSON、表单参数和 base64 JSON body，并默认进入嵌套解析模式
