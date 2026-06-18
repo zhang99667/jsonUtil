@@ -233,9 +233,12 @@ PREVIEW JSON + TransformReportPanel
 
 | 文件 | 说明 |
 |------|------|
-| `reward-response.redacted.json` | 脱敏广告 response 样本，保留真实编码层级和占位符形态 |
-| `reward-response.expected.snapshot.json` | 质量基线，校验主 CMD Schema、Top 热点 Schema、扫描位置、占位符和覆盖指标 |
-| `reward-response.cmdhandler.expected.json` | cmdHandler expected 子集，用于锁定关键 CMD Schema 和参数路径 |
+| `reward-response.redacted.json` | 脱敏激励广告 response 样本，保留 rewardImpl、rewardDialog、deeplink、easybrowse、openapp、资源 URL 和占位符形态 |
+| `reward-response.expected.snapshot.json` | 激励广告质量基线，校验主 CMD Schema、Top 热点 Schema、扫描位置、占位符和覆盖指标 |
+| `reward-response.cmdhandler.expected.json` | 激励广告 cmdHandler expected 子集，用于锁定关键 CMD Schema 和参数路径 |
+| `landing-response.redacted.json` | 脱敏落地页 response 样本，覆盖 easybrowse、deeplink、openapp、结构化 HTTPS 落地页、监测 URL 和占位符 |
+| `landing-response.expected.snapshot.json` | 落地页质量基线，校验扫描入口、热点 Schema、占位符和 cmdHandler ignored extra 上限 |
+| `landing-response.cmdhandler.expected.json` | 落地页 cmdHandler expected 子集，用于锁定 fallback_cmd、appUrl、webUrl、adFlag 和 callbackUrl |
 | `corpus-quality.baseline.snapshot.json` | 完整 corpus 质量快照基线，用于 CI 趋势对比和资源类型占比漂移门禁 |
 
 CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`，`Scheme corpus quality snapshot` 会校验质量阈值和 cmdHandler expected，`Scheme corpus quality trend` 会把当前快照与完整基线做 strict 对比并拦截视频占比骤降或 Lottie 占比异常上升，`Scheme performance budget` 会校验核心解析耗时。相关步骤与普通单测分开展示，便于快速定位真实 response 解析能力、素材结构或性能退化。

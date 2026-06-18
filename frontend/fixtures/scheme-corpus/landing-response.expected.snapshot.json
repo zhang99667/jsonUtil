@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "sample": "landing-response-redacted",
+  "cmdHandlerExpected": "landing-response.cmdhandler.expected.json",
+  "scanLocations": [
+    {
+      "path": "$.data.ads[0].common.scheme",
+      "type": "url"
+    }
+  ],
+  "quality": {
+    "minCoverageScore": 100,
+    "minCmdStructures": 4,
+    "minNestedCommandFields": 8,
+    "minNestedResourceFields": 0,
+    "maxUnresolved": 0,
+    "maxWarnings": 0,
+    "maxCmdHandlerIgnoredExtraPaths": 80,
+    "leadHotspotCommandSchema": "https://m.example.com/promo"
+  },
+  "primaryCommandSchema": "baiduboxapp://v1/easybrowse/open",
+  "requiredCommandSchemas": [
+    "baiduboxapp://v1/easybrowse/open",
+    "baiduboxapp://v7/vendor/ad/deeplink",
+    "openapp.demo://virtual",
+    "https://m.example.com/promo"
+  ],
+  "requiredRuntimePlaceholders": [
+    "__AD_EXTRA_PARAM_ENCODE_2__",
+    "__CLICK_ID__",
+    "__SIGN__"
+  ]
+}

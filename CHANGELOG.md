@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.141 (2026-06-18) - 落地页 Corpus 基线
+### ✨ 新特性
+- **质量门禁**: 新增 `landing-response` 脱敏落地页 response 样本，覆盖 easybrowse、deeplink、openapp、结构化 HTTPS 落地页、监测 URL 和运行时占位符
+- **回归保护**: corpus 单测和 committed 质量快照扩展到 2 个样本，固定落地页链路的扫描入口、热点 Schema、占位符和 cmdHandler expected 子集，降低单一样本导致的回归盲区
+
 ## v1.8.140 (2026-06-18) - 工具事件 PM 速览
 ### ✨ 新特性
 - **管理后台**: 工具使用洞察新增 PM 速览，展示最常用功能次数占比、大输入事件占比、慢操作事件占比和建议动作，帮助快速判断高频功能、失败风险与大 response 性能压力
