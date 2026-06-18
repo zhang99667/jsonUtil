@@ -89,29 +89,7 @@ jobs:
           SYNC_FRONTEND_DIST: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
         run: |
           rsync_excludes=(
-            --exclude='.git/'
-            --exclude='.github/'
-            --exclude='.claude/'
-            --exclude='.comate/'
-            --exclude='.cursor/'
-            --exclude='.idea/'
-            --exclude='.vscode/'
-            --exclude='.DS_Store'
-            --exclude='.cursorrules'
-            --exclude='.env'
-            --exclude='.env.*'
-            --exclude='AGENTS.md'
-            --exclude='CLAUDE.md'
-            --exclude='artifacts/'
-            --exclude='outputs/'
-            --exclude='frontend/node_modules/'
-            --exclude='frontend/.vite/'
-            --exclude='frontend/build/'
-            --exclude='frontend/releases/'
-            --exclude='frontend/test-results/'
-            --exclude='backend/target/'
-            --exclude='node_modules/'
-            --exclude='*.log'
+            --exclude-from='scripts/deploy/rsync-excludes.txt'
           )
 
           if [ "$SYNC_FRONTEND_DIST" != "true" ]; then
