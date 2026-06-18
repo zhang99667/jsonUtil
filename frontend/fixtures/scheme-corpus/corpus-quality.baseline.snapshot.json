@@ -1,0 +1,506 @@
+{
+  "schemaVersion": 1,
+  "kind": "json-helper-scheme-corpus-quality-snapshot",
+  "sampleCount": 1,
+  "thresholdSummary": {
+    "pass": true,
+    "total": 10,
+    "failed": 0,
+    "missingBaselines": [],
+    "failures": [],
+    "required": {
+      "total": 3,
+      "failed": 0,
+      "failures": []
+    },
+    "cmdHandler": {
+      "total": 1,
+      "failed": 0,
+      "ignoredExtraPaths": 412,
+      "failures": []
+    }
+  },
+  "samples": [
+    {
+      "sample": "reward-response-redacted",
+      "baseline": {
+        "expectedSnapshot": true,
+        "expectedSnapshotFile": "reward-response.expected.snapshot.json",
+        "cmdHandlerExpected": true,
+        "cmdHandlerExpectedFile": "reward-response.cmdhandler.expected.json"
+      },
+      "responseBytes": 18646,
+      "summaryText": "深度解析: 展开 2 处，Scheme 2 (URL 1 / Base64 1)，不可逆 1，占位符 30",
+      "coverage": {
+        "score": 100,
+        "label": "结构解析完成 · 占位符 30",
+        "level": "info",
+        "description": "已展开当前可解析结构，但仍有 30 个运行时占位符需要服务端或客户端替换。",
+        "items": [
+          "占位符不是解析失败，可筛选占位符查看待替换字段",
+          "复制来源路径可回到原始 CMD/Scheme 字段排查"
+        ]
+      },
+      "totals": {
+        "records": 2,
+        "cmdStructures": 1,
+        "nestedCommandFields": 69,
+        "nestedResourceFields": 1,
+        "runtimePlaceholders": 30,
+        "unresolved": 0,
+        "warnings": 0
+      },
+      "filtered": {
+        "records": 2,
+        "cmdStructures": 1,
+        "nestedCommandFields": 69,
+        "nestedResourceFields": 1,
+        "runtimePlaceholders": 30,
+        "unresolved": 0,
+        "warnings": 0
+      },
+      "topCommandSchemas": [
+        {
+          "schema": "baiduboxapp://v1/easybrowse/open",
+          "count": 9,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd.params.webUrl"
+          ],
+          "hasMorePaths": true
+        },
+        {
+          "schema": "baiduboxapp://v7/vendor/ad/deeplink",
+          "count": 9,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd"
+          ],
+          "hasMorePaths": true
+        },
+        {
+          "schema": "openapp.jdmobile://virtual",
+          "count": 9,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.appUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd.params.appUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd.params.appUrl"
+          ],
+          "hasMorePaths": true
+        },
+        {
+          "schema": "nadcorevendor://vendor/ad/reward",
+          "count": 4,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.bottom_button_scheme",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.bottom_right_btn.button_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.bottom_right_btn.button_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.bottom_right_btn.button_cmd"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "schema": "nadcorevendor://vendor/ad/rewardDialog",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "schema": "https://callback.example.com/track",
+          "count": 2,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.cmd_policy.callbackUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.common_info.callbackUrl"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "schema": "https://m.baidu.com/baidu.php",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.common_info.ad_monitor_url[0].click_url"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "schema": "nadcorevendor://vendor/ad/rewardImpl",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme"
+          ],
+          "hasMorePaths": false
+        }
+      ],
+      "topResourceSchemas": [
+        {
+          "schema": "https://video.example.com/ad.mp4",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.video_url"
+          ],
+          "hasMorePaths": false,
+          "resourceType": "video",
+          "resourceTypeLabel": "视频"
+        }
+      ],
+      "topResourceTypes": [
+        {
+          "resourceType": "video",
+          "resourceTypeLabel": "视频",
+          "query": "资源类型:视频",
+          "count": 1,
+          "percentage": 100,
+          "recordCount": 1,
+          "schemaCount": 1,
+          "schemas": [
+            "https://video.example.com/ad.mp4"
+          ],
+          "hasMoreSchemas": false
+        }
+      ],
+      "topNestedCommandFields": [
+        {
+          "key": "url",
+          "count": 19,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.url",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.webUrl.url",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.url",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.appUrl.params.url"
+          ],
+          "hasMorePaths": true
+        },
+        {
+          "key": "appUrl",
+          "count": 9,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.appUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd.params.appUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd.params.appUrl"
+          ],
+          "hasMorePaths": true
+        },
+        {
+          "key": "webUrl",
+          "count": 9,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd.params.webUrl"
+          ],
+          "hasMorePaths": true
+        },
+        {
+          "key": "bottom_right_btn",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.bottom_right_btn",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.bottom_right_btn",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.bottom_right_btn"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "button_cmd",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.bottom_right_btn.button_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.bottom_right_btn.button_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.bottom_right_btn.button_cmd"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "convert_btn",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_btn",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_btn",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_btn"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "convert_cmd",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "key": "main_btn",
+          "count": 3,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.main_btn",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.main_btn",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.main_btn"
+          ],
+          "hasMorePaths": false
+        }
+      ],
+      "topNestedResourceFields": [
+        {
+          "key": "video_url",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.video_url"
+          ],
+          "hasMorePaths": false
+        }
+      ],
+      "scanLocations": [
+        {
+          "path": "$.data.video[0].material[0].info[0].ad_common.scheme",
+          "type": "url"
+        }
+      ],
+      "runtimePlaceholders": [
+        {
+          "value": "__AD_EXTRA_PARAM_ENCODE_1__",
+          "count": 9,
+          "sourceCount": 1
+        },
+        {
+          "value": "__CONVERT_CMD__",
+          "count": 4,
+          "sourceCount": 1
+        },
+        {
+          "value": "__REWARD_NUM__",
+          "count": 4,
+          "sourceCount": 1
+        },
+        {
+          "value": "__CALLBACK_URL__",
+          "count": 3,
+          "sourceCount": 1
+        },
+        {
+          "value": "__CLICK_ID__",
+          "count": 3,
+          "sourceCount": 1
+        },
+        {
+          "value": "__CONTINUEPLAY__",
+          "count": 3,
+          "sourceCount": 1
+        },
+        {
+          "value": "__SIGN__",
+          "count": 3,
+          "sourceCount": 1
+        },
+        {
+          "value": "__WEBPANEL_CMD__",
+          "count": 1,
+          "sourceCount": 1
+        }
+      ],
+      "cmdHandlerAlignment": {
+        "expectedFile": "reward-response.cmdhandler.expected.json",
+        "ignoreExtraPaths": true,
+        "pass": true,
+        "actualCommandSchema": "nadcorevendor://vendor/ad/rewardImpl",
+        "expectedCommandSchema": "nadcorevendor://vendor/ad/rewardImpl",
+        "schemaDiff": false,
+        "sourceDiff": false,
+        "missingPaths": 0,
+        "extraPaths": 0,
+        "ignoredExtraPaths": 412,
+        "valueDiffs": 0,
+        "diff": {
+          "schemaDiff": null,
+          "sourceDiff": null,
+          "missingPathCount": 0,
+          "extraPathCount": 0,
+          "ignoredExtraPathCount": 412,
+          "valueDiffCount": 0,
+          "missingPaths": [],
+          "extraPaths": [],
+          "ignoredExtraPaths": [
+            "$.video_info.vid",
+            "$.video_info.video_url",
+            "$.video_info.video_url.pd",
+            "$.video_info.video_url.cm",
+            "$.video_info.page_url",
+            "$.video_info.page_url.source",
+            "$.video_info.page_url.unionId",
+            "$.video_info.page_url.to",
+            "$.video_info.page_url.to.sku",
+            "$.video_info.page_url.to.bd_vid",
+            "$.video_info.tail_frame.bottom_button_scheme",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdSchema",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdParams",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdParams.task_params",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdParams.task_params.android_pid",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdParams.task_params.task_id",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdParams.task_params.ext_params",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdParams.task_params.ext_params.reward_num",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdParams.task_params.ext_policy",
+            "$.video_info.tail_frame.bottom_button_scheme.cmdParams.task_params.ext_policy.invoke_task_id"
+          ],
+          "valueDiffs": []
+        }
+      },
+      "thresholds": {
+        "minCoverageScore": {
+          "actual": 100,
+          "expected": 100,
+          "pass": true
+        },
+        "minCmdStructures": {
+          "actual": 1,
+          "expected": 1,
+          "pass": true
+        },
+        "minNestedCommandFields": {
+          "actual": 69,
+          "expected": 20,
+          "pass": true
+        },
+        "minNestedResourceFields": {
+          "actual": 1,
+          "expected": 1,
+          "pass": true
+        },
+        "maxUnresolved": {
+          "actual": 0,
+          "expected": 0,
+          "pass": true
+        },
+        "maxWarnings": {
+          "actual": 0,
+          "expected": 0,
+          "pass": true
+        },
+        "maxCmdHandlerIgnoredExtraPaths": {
+          "actual": 412,
+          "expected": 474,
+          "pass": true
+        },
+        "leadHotspotCommandSchema": {
+          "actual": "baiduboxapp://v1/easybrowse/open",
+          "expected": "baiduboxapp://v1/easybrowse/open",
+          "pass": true
+        },
+        "leadHotspotResourceSchema": {
+          "actual": "https://video.example.com/ad.mp4",
+          "expected": "https://video.example.com/ad.mp4",
+          "pass": true
+        },
+        "leadHotspotResourceField": {
+          "actual": "video_url",
+          "expected": "video_url",
+          "pass": true
+        }
+      },
+      "requiredChecks": {
+        "requiredCommandSchemas": {
+          "actual": [
+            "nadcorevendor://vendor/ad/rewardImpl",
+            "nadcorevendor://vendor/ad/reward",
+            "nadcorevendor://vendor/ad/rewardWebPanel",
+            "baiduboxapp://v7/vendor/ad/deeplink",
+            "openapp.jdmobile://virtual",
+            "baiduboxapp://v1/easybrowse/open",
+            "nadcorevendor://vendor/ad/rewardDialog",
+            "https://callback.example.com/track",
+            "https://m.baidu.com/baidu.php"
+          ],
+          "expected": [
+            "nadcorevendor://vendor/ad/rewardImpl",
+            "nadcorevendor://vendor/ad/rewardWebPanel",
+            "nadcorevendor://vendor/ad/rewardDialog",
+            "baiduboxapp://v7/vendor/ad/deeplink",
+            "baiduboxapp://v1/easybrowse/open",
+            "openapp.jdmobile://virtual",
+            "https://m.baidu.com/baidu.php",
+            "https://callback.example.com/track"
+          ],
+          "missing": [],
+          "pass": true
+        },
+        "requiredRuntimePlaceholders": {
+          "actual": [
+            "__AD_EXTRA_PARAM_ENCODE_1__",
+            "__CONVERT_CMD__",
+            "__REWARD_NUM__",
+            "__CALLBACK_URL__",
+            "__CLICK_ID__",
+            "__CONTINUEPLAY__",
+            "__SIGN__",
+            "__WEBPANEL_CMD__"
+          ],
+          "expected": [
+            "__CONVERT_CMD__",
+            "__WEBPANEL_CMD__",
+            "__AD_EXTRA_PARAM_ENCODE_1__",
+            "__REWARD_NUM__",
+            "__CONTINUEPLAY__",
+            "__CLICK_ID__",
+            "__SIGN__",
+            "__CALLBACK_URL__"
+          ],
+          "missing": [],
+          "pass": true
+        },
+        "scanLocations": {
+          "actual": [
+            {
+              "path": "$.data.video[0].material[0].info[0].ad_common.scheme",
+              "type": "url"
+            }
+          ],
+          "expected": [
+            {
+              "path": "$.data.video[0].material[0].info[0].ad_common.scheme",
+              "type": "url"
+            }
+          ],
+          "missing": [],
+          "extra": [],
+          "pass": true
+        }
+      },
+      "truncated": {
+        "records": false,
+        "cmdStructures": false,
+        "runtimePlaceholders": false,
+        "unresolved": false,
+        "warnings": false
+      }
+    }
+  ]
+}

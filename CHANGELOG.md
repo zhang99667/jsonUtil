@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.130 (2026-06-18) - 质量趋势 CI 门禁
+### ✨ 新特性
+- **CI 门禁**: 新增完整 corpus 质量快照基线，并在 GitHub Actions 中运行 `corpus:snapshot:diff`，对比当前快照与基线，上传质量趋势 artifact；视频占比下降和 Lottie 占比上升阈值会在 strict 模式下参与发布门禁
+
 ## v1.8.129 (2026-06-18) - 资源类型趋势阈值
 ### ✨ 新特性
 - **质量趋势**: `corpus:snapshot:diff` 新增 `--resource-type-drop` 与 `--resource-type-rise` 可选阈值，strict 模式可在视频占比骤降、Lottie 占比异常上升等素材结构漂移超过阈值时失败
