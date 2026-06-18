@@ -1,5 +1,5 @@
+# 预构建前端镜像需要复制 dist，其余本地目录继续排除。
 node_modules
-dist
 build
 releases
 .vite
