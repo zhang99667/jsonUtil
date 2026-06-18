@@ -134,6 +134,30 @@ bash scripts/deploy/ssh-disk-health.sh
 
 该脚本默认不执行清理动作；如果希望在巡检或 CI 中把水位告警转成非零退出码，可设置 `DISK_HEALTH_STRICT=true`。
 
+当磁盘健康检查提示 Docker 有可回收空间时，可先用 Docker 清理脚本 dry-run 查看计划动作：
+
+```bash
+SSH_HOST=39.97.237.248 \
+SSH_USER=markz \
+SSH_KEY=~/.ssh/id_ed25519 \
+REMOTE_APP_DIR=/home/markz/apps/jsonUtil \
+bash scripts/deploy/ssh-docker-prune.sh
+```
+
+确认只清理已停止容器、未使用构建缓存和未被容器引用的镜像后，再显式执行：
+
+```bash
+SSH_HOST=39.97.237.248 \
+SSH_USER=markz \
+SSH_KEY=~/.ssh/id_ed25519 \
+REMOTE_APP_DIR=/home/markz/apps/jsonUtil \
+REMOTE_DOCKER_PRUNE_APPLY=true \
+REMOTE_DOCKER_PRUNE_CONFIRM=prune-docker-unused \
+bash scripts/deploy/ssh-docker-prune.sh
+```
+
+该脚本不会执行 `docker volume prune`，避免误删 `db-data`、`upload-data` 等业务 volume。
+
 同步脚本会读取 `scripts/deploy/rsync-excludes.txt`，统一排除 `.DS_Store`、`.vscode`、`.idea`、`.cursor`、`.comate`、`.cursorrules`、`AGENTS.md`、`CLAUDE.md` 等非运行时开发文件。本机部署和 GitHub Actions 共用同一份清单；磁盘健康检查会列出远端历史残留，并只输出人工确认后的清理建议，不会自动删除。
 
 远端历史残留可以用独立脚本清理；脚本默认 dry-run，只列候选项，不删除文件：
