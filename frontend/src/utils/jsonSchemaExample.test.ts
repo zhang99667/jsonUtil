@@ -169,6 +169,44 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('为 contains 数组生成满足条件的样例元素', () => {
+    const schemaText = JSON.stringify({
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['events'],
+      properties: {
+        events: {
+          type: 'array',
+          minItems: 3,
+          minContains: 2,
+          contains: {
+            type: 'object',
+            required: ['code'],
+            properties: {
+              code: {
+                type: 'string',
+                pattern: '^ERR-[0-9]+$',
+              },
+            },
+          },
+          items: {
+            type: 'object',
+            additionalProperties: true,
+          },
+        },
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '{}');
+
+    expect(example.events).toEqual([
+      { code: 'ERR-1' },
+      { code: 'ERR-1' },
+      {},
+    ]);
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
   it('处理非法或永假 Schema 时返回可读错误', () => {
     expect(generateJsonSchemaExampleText('{bad}').error).toContain('Schema 不是合法 JSON');
     expect(generateJsonSchemaExampleText('false')).toMatchObject({
