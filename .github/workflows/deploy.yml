@@ -4,6 +4,9 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   SSH_SERVER_ALIVE_INTERVAL: '15'
   SSH_SERVER_ALIVE_COUNT_MAX: '10'
+  DEPLOY_DISK_CHECK_ENABLED: 'true'
+  DEPLOY_DISK_WARN_USED_PERCENT: '90'
+  DEPLOY_DISK_MAX_USED_PERCENT: '95'
 
 on:
   workflow_dispatch:
@@ -131,4 +134,4 @@ jobs:
             -o ServerAliveInterval="${SSH_SERVER_ALIVE_INTERVAL}" \
             -o ServerAliveCountMax="${SSH_SERVER_ALIVE_COUNT_MAX}" \
             "${{ inputs.user }}@${{ inputs.host }}" \
-            "cd '${{ inputs.app_dir }}' && HEALTH_CHECK_URLS='$HEALTH_CHECK_URLS' FRONTEND_DOCKERFILE='$frontend_dockerfile' COMPOSE_SERVICES='$compose_services' COMPOSE_NO_DEPS='$compose_no_deps' bash scripts/deploy/remote-docker-compose-deploy.sh"
+            "cd '${{ inputs.app_dir }}' && HEALTH_CHECK_URLS='$HEALTH_CHECK_URLS' FRONTEND_DOCKERFILE='$frontend_dockerfile' COMPOSE_SERVICES='$compose_services' COMPOSE_NO_DEPS='$compose_no_deps' DEPLOY_DISK_CHECK_ENABLED='$DEPLOY_DISK_CHECK_ENABLED' DEPLOY_DISK_WARN_USED_PERCENT='$DEPLOY_DISK_WARN_USED_PERCENT' DEPLOY_DISK_MAX_USED_PERCENT='$DEPLOY_DISK_MAX_USED_PERCENT' bash scripts/deploy/remote-docker-compose-deploy.sh"

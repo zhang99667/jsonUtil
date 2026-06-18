@@ -113,6 +113,8 @@ bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
 
 如果远端根盘已满，优先清理 Docker 未使用镜像或构建缓存，不要删除 `db-data`、`upload-data` 等业务 volume；同步脚本默认不会再上传本机测试输出和临时产物。
 
+远端部署会在 `docker compose up` 前检查应用目录所在磁盘水位，默认已使用 `90%` 时打印告警和 `docker system df` 摘要，达到 `95%` 时停止部署。可通过 `DEPLOY_DISK_WARN_USED_PERCENT`、`DEPLOY_DISK_MAX_USED_PERCENT` 调整阈值，或临时设置 `DEPLOY_DISK_CHECK_ENABLED=false` 跳过检查。
+
 健康检查不会把 Nginx `301/302` 当作成功；`/api/visitor/ping` 必须跟随后端转发后返回 `200`，否则脚本会继续等待或失败。
 
 ## 远程服务器要求
