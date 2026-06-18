@@ -129,6 +129,7 @@ npm run cmd:diff -- actual-response.json cmdhandler-expected.json --actual-path 
 
 *   [产品与工程升级评审](docs/PRODUCT-AND-ENGINEERING-REVIEW.md): PM 与工程视角的当前状态、风险、优化方向和新增功能路线。
 *   [架构说明](ARCHITECTURE.md): 前后端架构、模块目录、数据流和扩展指南。
+*   [后端 API 权限矩阵](docs/BACKEND-API-MATRIX.md): 后端接口访问级别、数据边界、文件限制和生产部署前检查。
 *   [Scheme 字符串解析方案](docs/SCHEME-STRING-FEATURE.md): 深度格式化和 Scheme/CMD 解析机制说明。
 
 ## 技术栈

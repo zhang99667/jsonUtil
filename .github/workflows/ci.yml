@@ -140,8 +140,17 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
       - name: Maven test
         run: mvn -B test
+
+      - name: Backend API matrix coverage
+        working-directory: .
+        run: node scripts/ci/check-backend-api-matrix.mjs
 
       - name: Maven package
         run: mvn -B package -DskipTests

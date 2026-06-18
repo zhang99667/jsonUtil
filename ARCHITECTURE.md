@@ -274,6 +274,12 @@ CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`，`Sc
 
 工具事件只记录功能名、类别、状态、输入大小分桶、耗时分桶和来源，不保存 JSON 原文、路径值、完整输入长度或解析结果。当前覆盖转换模式切换、JSONPath/Scheme/模板面板开关、AI 修复、打开、保存和新建标签等显式动作。
 
+### 后端 API 权限治理
+
+后端接口按路径分为公开入口、访客匿名事件、管理员统计和管理后台接口。完整端点、权限、请求数据和生产配置要求维护在 `docs/BACKEND-API-MATRIX.md`。
+
+CI 会运行 `node scripts/ci/check-backend-api-matrix.mjs` 扫描 `backend/src/main/java/com/jsonhelper/backend/controller` 下的 Controller 映射，并和权限矩阵中的 Method + Path 对齐。新增或删除后端端点时，如果没有同步更新矩阵，本地 CI 和 GitHub Actions 会失败。
+
 ---
 
 ## 部署架构

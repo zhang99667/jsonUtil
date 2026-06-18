@@ -46,6 +46,10 @@ npm run check:preloads
 log "Frontend: E2E smoke tests"
 PLAYWRIGHT_PREBUILT=1 npm run test:e2e
 
+log "Governance: backend API matrix"
+cd "$ROOT_DIR"
+node scripts/ci/check-backend-api-matrix.mjs
+
 log "Backend: Maven test"
 cd "$ROOT_DIR/backend"
 if command -v mvn >/dev/null 2>&1; then
