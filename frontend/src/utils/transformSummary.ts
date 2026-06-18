@@ -151,7 +151,11 @@ export interface TransformReportCommandSchemaGroup {
   recordCount: number;
   paths: string[];
   hasMorePaths: boolean;
+  resourceType?: TransformReportResourceType;
+  resourceTypeLabel?: string;
 }
+
+export type TransformReportResourceType = 'image' | 'video' | 'lottie' | 'audio' | 'package' | 'other';
 
 export interface TransformReportCommandSchemaOriginGroup {
   origin: string;
@@ -1750,10 +1754,65 @@ interface CommandSchemaOccurrence {
   path: string;
   recordPath: string;
   kind: 'navigation' | 'resource';
+  resourceType?: TransformReportResourceType;
 }
 
-const STATIC_RESOURCE_SCHEMA_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp|mp4|m4v|mov|webm|avi|m3u8|mp3|wav|aac|ogg|flac|zip)$/i;
+const STATIC_RESOURCE_SCHEMA_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp|mp4|m4v|mov|webm|avi|m3u8|mp3|wav|aac|ogg|flac|zip|rar|7z|tar|gz|tgz)$/i;
 const STATIC_RESOURCE_PATH_RE = /(?:^|[.[\]"])(?:image|img|icon|logo|avatar|portrait|poster|cover|lottie|video_url|audio_url|media_url|swipe_up_lottie)(?:$|[.[\]"])/i;
+
+const RESOURCE_TYPE_LABELS: Record<TransformReportResourceType, string> = {
+  image: '图片',
+  video: '视频',
+  lottie: 'Lottie',
+  audio: '音频',
+  package: '包/压缩',
+  other: '其他',
+};
+
+const VIDEO_RESOURCE_EXTENSION_RE = /\.(?:mp4|m4v|mov|webm|avi|m3u8)$/i;
+const IMAGE_RESOURCE_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i;
+const AUDIO_RESOURCE_EXTENSION_RE = /\.(?:mp3|wav|aac|ogg|flac)$/i;
+const PACKAGE_RESOURCE_EXTENSION_RE = /\.(?:zip|rar|7z|tar|gz|tgz)$/i;
+
+const getStaticResourcePathname = (schema: string): string => {
+  const normalizedSchema = schema.trim().replace(/\\\//g, '/');
+  try {
+    return new URL(normalizedSchema).pathname;
+  } catch {
+    return normalizedSchema.split(/[?#]/)[0] || normalizedSchema;
+  }
+};
+
+const getStaticResourceType = (
+  schema: string,
+  path: string
+): TransformReportResourceType => {
+  const pathname = getStaticResourcePathname(schema);
+  const normalizedPath = path.toLowerCase();
+  const compactPath = normalizedPath.replace(/[^a-z0-9]/g, '');
+  const haystack = `${pathname} ${normalizedPath}`.toLowerCase();
+
+  if (haystack.includes('lottie')) return 'lottie';
+  if (VIDEO_RESOURCE_EXTENSION_RE.test(pathname) || compactPath.includes('videourl') || compactPath.includes('mediaurl')) {
+    return 'video';
+  }
+  if (
+    IMAGE_RESOURCE_EXTENSION_RE.test(pathname) ||
+    ['image', 'img', 'icon', 'logo', 'avatar', 'portrait', 'poster', 'cover'].some(keyword => compactPath.includes(keyword))
+  ) {
+    return 'image';
+  }
+  if (AUDIO_RESOURCE_EXTENSION_RE.test(pathname) || compactPath.includes('audiourl') || compactPath.includes('audio')) {
+    return 'audio';
+  }
+  if (PACKAGE_RESOURCE_EXTENSION_RE.test(pathname)) return 'package';
+
+  return 'other';
+};
+
+const getResourceTypeLabel = (resourceType: TransformReportResourceType): string => (
+  RESOURCE_TYPE_LABELS[resourceType]
+);
 
 const isStaticResourceSchema = (schema: string, path: string): boolean => {
   const normalizedSchema = schema.trim().replace(/\\\//g, '/');
@@ -1774,11 +1833,13 @@ const collectCommandSchemaOccurrences = (
 
   const pushSchema = (schema: string | undefined, path: string, recordPath: string) => {
     if (!schema) return;
+    const kind = isStaticResourceSchema(schema, path) ? 'resource' : 'navigation';
     occurrences.push({
       schema,
       path,
       recordPath,
-      kind: isStaticResourceSchema(schema, path) ? 'resource' : 'navigation',
+      kind,
+      ...(kind === 'resource' ? { resourceType: getStaticResourceType(schema, path) } : {}),
     });
   };
 
@@ -1798,6 +1859,7 @@ const collectCommandSchemaOccurrences = (
       path: row.path,
       recordPath,
       kind: 'resource',
+      resourceType: getStaticResourceType(schema, row.path),
     });
   };
 
@@ -1825,9 +1887,10 @@ const buildTopCommandSchemaGroups = (
     recordPaths: Set<string>;
     paths: string[];
     hasMorePaths: boolean;
+    resourceType?: TransformReportResourceType;
   }>();
 
-  collectCommandSchemaOccurrences(records).forEach(({ schema, path, recordPath, kind: occurrenceKind }) => {
+  collectCommandSchemaOccurrences(records).forEach(({ schema, path, recordPath, kind: occurrenceKind, resourceType }) => {
     if (occurrenceKind !== kind) return;
 
     let group = groups.get(schema);
@@ -1838,8 +1901,11 @@ const buildTopCommandSchemaGroups = (
         recordPaths: new Set(),
         paths: [],
         hasMorePaths: false,
+        ...(resourceType ? { resourceType } : {}),
       };
       groups.set(schema, group);
+    } else if (resourceType && group.resourceType === 'other') {
+      group.resourceType = resourceType;
     }
 
     group.count += 1;
@@ -1860,6 +1926,12 @@ const buildTopCommandSchemaGroups = (
       recordCount: group.recordPaths.size,
       paths: group.paths,
       hasMorePaths: group.hasMorePaths,
+      ...(group.resourceType
+        ? {
+          resourceType: group.resourceType,
+          resourceTypeLabel: getResourceTypeLabel(group.resourceType),
+        }
+        : {}),
     }));
 };
 
@@ -2173,6 +2245,10 @@ const appendCommandSchemaSummarySection = (
   lines.push('');
 };
 
+const formatResourceSchemaGroupTitle = (group: TransformReportCommandSchemaGroup): string => (
+  group.resourceTypeLabel ? `[${group.resourceTypeLabel}] ${group.schema}` : group.schema
+);
+
 const appendResourceSchemaSummarySection = (
   lines: string[],
   groups: TransformReportCommandSchemaGroup[]
@@ -2181,7 +2257,7 @@ const appendResourceSchemaSummarySection = (
 
   lines.push('静态资源 URL 分布:');
   groups.forEach(group => {
-    lines.push(`- ${group.schema} ×${group.count}（来源记录 ${group.recordCount}）`);
+    lines.push(`- ${formatResourceSchemaGroupTitle(group)} ×${group.count}（来源记录 ${group.recordCount}）`);
     lines.push(`  示例路径: ${group.paths.join('；')}${group.hasMorePaths ? '；...' : ''}`);
   });
   lines.push('');
@@ -2477,7 +2553,7 @@ export const formatTransformDiagnosticSummaryText = (
   if (report.topResourceSchemas?.length) {
     lines.push('', '全量静态资源 URL Top:');
     report.topResourceSchemas.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(group => {
-      lines.push(`- ${group.schema} ×${group.count}（来源记录 ${group.recordCount}）`);
+      lines.push(`- ${formatResourceSchemaGroupTitle(group)} ×${group.count}（来源记录 ${group.recordCount}）`);
     });
   }
 
@@ -2753,6 +2829,13 @@ export const formatTransformCollaborationReportText = (
     lines.push('- CMD Schema Top:');
     qualitySnapshot.hotspots.topCommandSchemas.slice(0, 5).forEach(group => {
       lines.push(`  - ${group.schema} ×${group.count}`);
+    });
+  }
+
+  if (qualitySnapshot.hotspots.topResourceSchemas.length > 0) {
+    lines.push('- 静态资源 URL Top:');
+    qualitySnapshot.hotspots.topResourceSchemas.slice(0, 5).forEach(group => {
+      lines.push(`  - ${formatResourceSchemaGroupTitle(group)} ×${group.count}`);
     });
   }
 

@@ -485,6 +485,8 @@ describe('transformSummary', () => {
         schema: 'https://static.example.com/assets/open.png',
         count: 1,
         recordCount: 1,
+        resourceType: 'image',
+        resourceTypeLabel: '图片',
         paths: ['$.scheme.video_info.button_icon'],
         hasMorePaths: false,
       }),
@@ -492,6 +494,8 @@ describe('transformSummary', () => {
         schema: 'https://static.example.com/lottie/swipe.zip',
         count: 1,
         recordCount: 1,
+        resourceType: 'lottie',
+        resourceTypeLabel: 'Lottie',
         paths: ['$.scheme.video_info.swipe_up_lottie'],
         hasMorePaths: false,
       }),
@@ -499,6 +503,8 @@ describe('transformSummary', () => {
         schema: 'https://static.example.com/assets/banner.jpg',
         count: 1,
         recordCount: 1,
+        resourceType: 'image',
+        resourceTypeLabel: '图片',
         paths: ['$.scheme.video_info.imageUrl'],
         hasMorePaths: false,
       }),
@@ -520,6 +526,8 @@ describe('transformSummary', () => {
         schema: 'https://static.example.com/video/ad.mp4',
         count: 1,
         recordCount: 1,
+        resourceType: 'video',
+        resourceTypeLabel: '视频',
         paths: ['$.scheme.video_info.video_url'],
         hasMorePaths: false,
       }),
@@ -590,17 +598,24 @@ describe('transformSummary', () => {
     ]);
     expect(reportText).toContain('CMD Schema 分布:');
     expect(reportText).toContain('静态资源 URL 分布:');
+    expect(reportText).toContain('[视频] https://static.example.com/video/ad.mp4 ×1');
+    expect(reportText).toContain('[Lottie] https://static.example.com/lottie/swipe.zip ×1');
     expect(reportText).toContain('静态资源字段分布:');
     expect(diagnosticText).toContain('全量静态资源 URL Top:');
+    expect(diagnosticText).toContain('[图片] https://static.example.com/assets/open.png ×1');
     expect(diagnosticText).toContain('全量静态资源字段 Top:');
     expect(qualitySnapshot.hotspots.topResourceSchemas).toEqual(expect.arrayContaining([
       expect.objectContaining({
         schema: 'https://static.example.com/assets/open.png',
         count: 1,
+        resourceType: 'image',
+        resourceTypeLabel: '图片',
       }),
       expect.objectContaining({
         schema: 'https://static.example.com/video/ad.mp4',
         count: 1,
+        resourceType: 'video',
+        resourceTypeLabel: '视频',
       }),
     ]));
     expect(qualitySnapshot.hotspots.topNestedResourceFields).toEqual(expect.arrayContaining([

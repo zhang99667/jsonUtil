@@ -1508,8 +1508,13 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                         type="button"
                         onClick={() => setQuery(group.schema)}
                         className="max-w-full rounded border border-slate-700/60 bg-slate-900/40 px-2 py-0.5 text-slate-100 transition-colors hover:bg-slate-800/60"
-                        title={`${group.schema} 出现 ${group.count} 次，覆盖 ${group.recordCount} 条展开记录。示例路径：${group.paths.join('；')}`}
+                        title={`${group.resourceTypeLabel ? `${group.resourceTypeLabel} · ` : ''}${group.schema} 出现 ${group.count} 次，覆盖 ${group.recordCount} 条展开记录。示例路径：${group.paths.join('；')}`}
                       >
+                        {group.resourceTypeLabel && (
+                          <span className="mr-1 rounded bg-slate-800 px-1 py-px text-[10px] text-slate-300">
+                            {group.resourceTypeLabel}
+                          </span>
+                        )}
                         <span className="inline-block max-w-[220px] truncate align-bottom font-mono">
                           {group.schema}
                         </span>
