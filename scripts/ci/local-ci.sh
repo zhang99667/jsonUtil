@@ -16,6 +16,9 @@ npm ci
 log "Frontend: typecheck"
 npm run typecheck
 
+log "Frontend: lint"
+npm run lint
+
 log "Frontend: unit tests"
 npm test
 

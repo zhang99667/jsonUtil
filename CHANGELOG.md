@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.135 (2026-06-18) - 前端 Lint 门禁接入
+### ✨ 新特性
+- **工程质量**: 前端迁移到 ESLint flat config，新增 `npm run lint` 错误级门禁和 `npm run lint:report` 历史 warning 报告，并接入本地 CI 与 GitHub Actions
+- **仓库清理**: 移除已被 `.gitignore` 覆盖但仍被版本库跟踪的 `frontend/.vite` 缓存文件，减少构建缓存污染提交的风险
+
 ## v1.8.134 (2026-06-18) - Scheme 原始值排查入口
 ### ✨ 新特性
 - **Scheme 面板**: 新增“用原始值排查”入口，可将独立 Scheme 面板中的原始值送回 SOURCE、切换嵌套解析并打开深度解析报告；SOURCE 已有内容时会先确认，避免静默覆盖
