@@ -58,11 +58,13 @@ describe('jsonSchemaValidation', () => {
         path: '$.items[0].price',
         pointer: '/items/0/price',
         keyword: 'minimum',
+        suggestion: '调整该路径的数值到 Schema 允许范围，或放宽数值边界约束。',
       }),
       expect.objectContaining({
         path: '$.items[1]',
         pointer: '/items/1',
         keyword: 'required',
+        suggestion: '补齐必填字段 price，或从 Schema required 中移除该字段。',
       }),
     ]));
   });
@@ -152,6 +154,7 @@ describe('jsonSchemaValidation', () => {
     expect(report).toContain('路径清单:');
     expect(report).toContain('1. $.items[0].price');
     expect(report).toContain('$.items[0].price [minimum]');
+    expect(report).toContain('建议: 调整该路径的数值到 Schema 允许范围');
     expect(report).not.toContain('"订单"');
     expect(report).not.toContain('"required"');
   });

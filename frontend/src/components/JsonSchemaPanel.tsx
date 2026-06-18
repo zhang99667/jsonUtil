@@ -538,6 +538,9 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
                           </span>
                           <span className="ml-2">{issue.message}</span>
                         </div>
+                        <div className="mt-2 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-xs leading-5 text-emerald-100">
+                          建议: {issue.suggestion}
+                        </div>
                         <div className="mt-1 truncate text-[11px] text-gray-500" title={issue.schemaPath}>
                           {issue.schemaPath}
                         </div>
