@@ -22,6 +22,11 @@ import {
   type Base64MetaInfo,
   type SchemeCommandSummaryInfo,
 } from '../utils/schemeMetadata';
+import {
+  buildSchemeQualitySummary,
+  type SchemeQualityLevel,
+  type SchemeQualitySummaryItem,
+} from '../utils/schemeQualitySummary';
 
 const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
 
@@ -262,6 +267,34 @@ const buildParamSections = (
 const getParamEntries = (params: SchemeParams): Array<[string, string | string[]]> => (
   Object.entries(params || {}) as Array<[string, string | string[]]>
 );
+
+const getSchemeQualityClassName = (level: SchemeQualityLevel): string => {
+  switch (level) {
+    case 'success':
+      return 'border-emerald-700/50 bg-emerald-950/30 text-emerald-100';
+    case 'warning':
+      return 'border-amber-700/50 bg-amber-950/30 text-amber-100';
+    case 'error':
+      return 'border-red-700/50 bg-red-950/30 text-red-100';
+    case 'info':
+    default:
+      return 'border-cyan-700/50 bg-cyan-950/30 text-cyan-100';
+  }
+};
+
+const getSchemeQualityItemClassName = (tone: SchemeQualitySummaryItem['tone'] = 'default'): string => {
+  switch (tone) {
+    case 'success':
+      return 'bg-emerald-900/30 text-emerald-200 border-emerald-700/40';
+    case 'warning':
+      return 'bg-amber-900/30 text-amber-200 border-amber-700/40';
+    case 'cyan':
+      return 'bg-cyan-900/30 text-cyan-200 border-cyan-700/40';
+    case 'default':
+    default:
+      return 'bg-editor-bg text-gray-300 border-editor-border';
+  }
+};
 
 export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   isOpen,
@@ -625,6 +658,27 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           { source: decodeResult.original }
         )
   ), [decodeResult.decoded, decodeResult.isJson, decodeResult.original, decodeResult.schemeInfo, freshWorkerDecodeMetadata]);
+  const schemeQualitySummary = useMemo(() => (
+    buildSchemeQualitySummary({
+      actualValue,
+      isDecodePending,
+      isDecodeCancelled: isCurrentDecodeCancelled,
+      editedJsonError,
+      decodeResult,
+      commandSummaryInfo,
+      placeholders,
+      decodeWarnings,
+    })
+  ), [
+    actualValue,
+    commandSummaryInfo,
+    decodeResult,
+    decodeWarnings,
+    editedJsonError,
+    isCurrentDecodeCancelled,
+    isDecodePending,
+    placeholders,
+  ]);
   const canCopyCmdHandlerCompatibleResult = Boolean(
     commandSummaryInfo && decodeResult.isJson && !isDecodePending && !editedJsonError
   );
@@ -921,8 +975,31 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 上方信息卡片区域 */}
-          {(decodeResult.schemeInfo || commandSummaryInfo || decodeResult.layers.length > 0 || placeholders.length > 0 || decodeWarnings.length > 0 || base64MetaInfo) && (
+          {(schemeQualitySummary || decodeResult.schemeInfo || commandSummaryInfo || decodeResult.layers.length > 0 || placeholders.length > 0 || decodeWarnings.length > 0 || base64MetaInfo) && (
             <div className="bg-editor-sidebar rounded p-3 border border-editor-border flex flex-col gap-2">
+              {/* 解析质量摘要 */}
+              {schemeQualitySummary && (
+                <div
+                  data-tour="scheme-quality-summary"
+                  className={`rounded border px-2.5 py-2 text-xs ${getSchemeQualityClassName(schemeQualitySummary.level)}`}
+                >
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="shrink-0 font-medium">{schemeQualitySummary.label}</span>
+                    <span className="min-w-0 text-gray-300">{schemeQualitySummary.description}</span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {schemeQualitySummary.items.map(item => (
+                      <span
+                        key={item.label}
+                        className={`rounded border px-2 py-0.5 font-mono ${getSchemeQualityItemClassName(item.tone)}`}
+                      >
+                        {item.label} · {item.value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Scheme 信息 */}
               {decodeResult.schemeInfo && (
                 <div className="flex items-center gap-2 flex-wrap">

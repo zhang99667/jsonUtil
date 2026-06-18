@@ -1987,6 +1987,10 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await page.locator('[data-tour="scheme-standalone-input"]').fill(`cmd=${cmdPayload}&from=feed`);
 
   const schemeResult = page.locator('[data-tour="scheme-result"] .view-lines');
+  const qualitySummary = page.locator('[data-tour="scheme-quality-summary"]');
+  await expect(qualitySummary).toContainText('解析完成');
+  await expect(qualitySummary).toContainText('解码层 · 1');
+  await expect(qualitySummary).toContainText('CMD字段 · 1');
   await expect(page.getByText('CMD 参数递归解析')).toBeVisible();
   await expect(schemeResult).toContainText('"cmd"');
   await expect(schemeResult).toContainText('"nid": 123');
@@ -2019,6 +2023,7 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
 
   await fillMonacoEditor(page, page.locator('[data-tour="scheme-result"] .monaco-editor').first(), '{"cmd":');
   await expect(page.getByText('Invalid JSON')).toBeVisible();
+  await expect(qualitySummary).toContainText('JSON 异常');
   await expect(page.locator('[data-tour="scheme-json-edit-error"]')).toContainText('JSON 内容格式有误');
   await expect(page.locator('[data-tour="scheme-copy-serialized"]')).toHaveAttribute('title', '请先修正解码结果中的 JSON 错误');
   await expect(page.locator('[data-tour="scheme-copy-serialized"]')).toHaveAttribute('aria-label', '复制序列化结果，请先修正解码结果中的 JSON 错误');
@@ -2041,6 +2046,9 @@ test('Scheme 面板展示运行时占位符聚合摘要', async ({ page }) => {
   await page.locator('[data-tour="scheme-standalone-input"]').fill(`cmd=${cmdPayload}&from=feed`);
 
   const placeholderSection = page.locator('[data-tour="scheme-runtime-placeholders"]');
+  const qualitySummary = page.locator('[data-tour="scheme-quality-summary"]');
+  await expect(qualitySummary).toContainText('结构可用');
+  await expect(qualitySummary).toContainText('占位符 · 3');
   await expect(placeholderSection).toContainText('运行时占位符 · 3');
   const placeholderGroups = placeholderSection.locator('[data-tour="scheme-runtime-placeholder-groups"]');
   await expect(placeholderGroups).toContainText('__CONVERT_CMD__ ×2');
@@ -2204,6 +2212,9 @@ test('Scheme 面板整段 Response 超长字段展示性能保护提示', async 
   await page.locator('[data-tour="scheme-standalone-input"]').fill(response);
 
   const warnings = page.locator('[data-tour="scheme-decode-warnings"]');
+  const qualitySummary = page.locator('[data-tour="scheme-quality-summary"]');
+  await expect(qualitySummary).toContainText('部分跳过');
+  await expect(qualitySummary).toContainText('跳过 · 1');
   await expect(warnings).toContainText('性能保护');
   await expect(warnings).toContainText('跳过 1');
   await expect(warnings).toContainText('$.data.huge_cmd');
@@ -2258,15 +2269,17 @@ test('Scheme 面板大 Response 解析中可取消', async ({ page }) => {
 });
 
 test('Scheme 面板可复制特殊 key 来源路径', async ({ page }) => {
+  const nestedScheme = 'baiduboxapp://v1/easybrowse/open?url=https%3A%2F%2Fexample.com%2Fpath%3Ffrom%3Dkey';
+
   await fillSourceEditor(page, JSON.stringify({
     'a.b': {
       'x/y': {
-        'tilde~key': 'https://example.com/path?from=key',
+        'tilde~key': nestedScheme,
       },
     },
   }));
   await page.getByRole('button', { name: '格式化' }).click();
-  await expectPreviewText(page, '"tilde~key": "https://example.com/path?from=key"');
+  await expectPreviewText(page, `"tilde~key": "${nestedScheme}"`);
 
   await page.locator('[data-tour="preview-editor"] .scheme-inline-highlight').first().click();
   const schemePanel = page.locator('[data-tour="scheme-panel"]');
