@@ -12,7 +12,8 @@ import {
     LaptopOutlined,
     ChromeOutlined,
     ShareAltOutlined,
-    FieldTimeOutlined
+    FieldTimeOutlined,
+    WarningOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -42,6 +43,7 @@ import {
     ToolEventStats,
     ToolEventGroupItem,
 } from '../services/traffic';
+import { buildToolEventInsights } from '../utils/toolEventInsights';
 
 const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
 
@@ -350,6 +352,7 @@ const TrafficStats: React.FC = () => {
     };
 
     const getToolEventLabel = (label: string) => toolEventLabelMap[label] || label;
+    const toolEventInsights = useMemo(() => buildToolEventInsights(toolEventStats), [toolEventStats]);
 
     const renderToolEventList = (items: ToolEventGroupItem[], color: string) => {
         if (items.length === 0) {
@@ -631,7 +634,63 @@ const TrafficStats: React.FC = () => {
                     <Col xs={24} md={6}>
                         <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 4 }}>最常用功能</div>
                         <div style={{ color: '#1A1D2E', fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}>
-                            {toolEventStats?.topEvents?.[0] ? getToolEventLabel(toolEventStats.topEvents[0].label) : '-'}
+                            {toolEventInsights.topEventLabel ? getToolEventLabel(toolEventInsights.topEventLabel) : '-'}
+                        </div>
+                        {toolEventInsights.topEventCount > 0 && (
+                            <div style={{ color: '#9CA3BE', fontSize: 12, marginTop: 4 }}>
+                                {toolEventInsights.topEventCount.toLocaleString()} 次 · {toolEventInsights.topEventPercentage}%
+                            </div>
+                        )}
+                    </Col>
+                </Row>
+                <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
+                    <Col xs={24} md={8}>
+                        <div style={{
+                            border: '1px solid #EEF0F6',
+                            borderRadius: 8,
+                            padding: 14,
+                            background: '#FAFBFF',
+                        }}>
+                            <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 6 }}>大输入事件</div>
+                            <div style={{ color: '#1A1D2E', fontSize: 22, fontWeight: 600 }}>
+                                {toolEventInsights.largeInputPercentage}%
+                            </div>
+                            <div style={{ color: '#9CA3BE', fontSize: 12 }}>
+                                {toolEventInsights.largeInputEvents.toLocaleString()} 次 · 50KB 以上
+                            </div>
+                        </div>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <div style={{
+                            border: '1px solid #EEF0F6',
+                            borderRadius: 8,
+                            padding: 14,
+                            background: '#FAFBFF',
+                        }}>
+                            <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 6 }}>慢操作事件</div>
+                            <div style={{ color: toolEventInsights.slowPercentage >= 10 ? '#F59E0B' : '#1A1D2E', fontSize: 22, fontWeight: 600 }}>
+                                {toolEventInsights.slowPercentage}%
+                            </div>
+                            <div style={{ color: '#9CA3BE', fontSize: 12 }}>
+                                {toolEventInsights.slowEvents.toLocaleString()} 次 · 2 秒以上
+                            </div>
+                        </div>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <div style={{
+                            border: '1px solid #EEF0F6',
+                            borderRadius: 8,
+                            padding: 14,
+                            background: '#FAFBFF',
+                            minHeight: 92,
+                        }}>
+                            <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 8 }}>
+                                <WarningOutlined style={{ marginRight: 6, color: themeColors.warning }} />
+                                建议动作
+                            </div>
+                            <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, lineHeight: 1.5 }}>
+                                {toolEventInsights.recommendation}
+                            </div>
                         </div>
                     </Col>
                 </Row>
