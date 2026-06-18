@@ -15,7 +15,8 @@ interface ExampleContext {
 }
 
 const MAX_EXAMPLE_DEPTH = 8;
-const MAX_ARRAY_EXAMPLE_ITEMS = 3;
+const DEFAULT_ARRAY_EXAMPLE_ITEMS = 3;
+const MAX_ARRAY_CONSTRAINT_EXAMPLE_ITEMS = 8;
 const MAX_OBJECT_EXAMPLE_PROPERTIES = 80;
 const COMMON_DYNAMIC_PROPERTY_KEYS = [
   'key',
@@ -547,11 +548,18 @@ const getContainsSchema = (schema: Record<string, unknown>): JsonSchemaNode | un
   return isRecord(contains) || typeof contains === 'boolean' ? contains : undefined;
 };
 
-const getArrayExampleLimit = (schema: Record<string, unknown>): number => {
+const getArrayExampleLimit = (
+  schema: Record<string, unknown>,
+  requiredCount: number
+): number => {
   const maxItems = getIntegerValue(schema, 'maxItems');
+  const safeLimit = Math.max(
+    DEFAULT_ARRAY_EXAMPLE_ITEMS,
+    Math.min(requiredCount, MAX_ARRAY_CONSTRAINT_EXAMPLE_ITEMS)
+  );
   return typeof maxItems === 'number' && maxItems >= 0
-    ? Math.min(maxItems, MAX_ARRAY_EXAMPLE_ITEMS)
-    : MAX_ARRAY_EXAMPLE_ITEMS;
+    ? Math.min(maxItems, safeLimit)
+    : safeLimit;
 };
 
 const ensureUniqueArrayValues = (
@@ -568,7 +576,7 @@ const ensureUniqueArrayValues = (
       return value;
     }
 
-    for (let attemptIndex = index; attemptIndex < index + MAX_ARRAY_EXAMPLE_ITEMS + 1; attemptIndex++) {
+    for (let attemptIndex = index; attemptIndex < index + MAX_ARRAY_CONSTRAINT_EXAMPLE_ITEMS + 1; attemptIndex++) {
       const uniqueValue = getUniqueExampleValue(value, valueSchemas[index], context, attemptIndex);
       const serializedUniqueValue = serializeExampleValue(uniqueValue);
       if (!seenValues.has(serializedUniqueValue)) {
@@ -586,23 +594,44 @@ const generateArrayExample = (schema: Record<string, unknown>, context: ExampleC
   const prefixItems = Array.isArray(schema.prefixItems)
     ? schema.prefixItems.filter((item): item is JsonSchemaNode => isRecord(item) || typeof item === 'boolean')
     : [];
+  const minItems = Math.max(getIntegerValue(schema, 'minItems') || 0, 0);
+  const items = schema.items;
+
   if (prefixItems.length > 0) {
-    return prefixItems
-      .slice(0, MAX_ARRAY_EXAMPLE_ITEMS)
-      .map(item => generateExampleValue(item, { ...context, depth: context.depth + 1 }));
+    const arrayLimit = getArrayExampleLimit(schema, minItems);
+    const exampleCount = Math.min(
+      Math.max(minItems, Math.min(prefixItems.length, DEFAULT_ARRAY_EXAMPLE_ITEMS)),
+      arrayLimit
+    );
+    const itemSchema = getArrayItemSchema(schema);
+    const itemContext = { ...context, depth: context.depth + 1 };
+    const values = prefixItems
+      .slice(0, Math.min(prefixItems.length, exampleCount))
+      .map(item => generateExampleValue(item, itemContext));
+
+    while (values.length < exampleCount && items !== false) {
+      values.push(generateExampleValue(itemSchema, itemContext));
+    }
+
+    return schema.uniqueItems === true
+      ? ensureUniqueArrayValues(values, values.map((_, index) => prefixItems[index] || itemSchema), itemContext)
+      : values;
   }
 
-  const items = schema.items;
   if (items === false) return [];
 
-  const minItems = Math.max(getIntegerValue(schema, 'minItems') || 0, 0);
   const containsSchema = getContainsSchema(schema);
   const minContains = containsSchema === undefined
     ? 0
     : Math.max(getIntegerValue(schema, 'minContains') ?? 1, 0);
-  const arrayLimit = getArrayExampleLimit(schema);
+  const requiredCount = Math.max(
+    minItems,
+    minContains,
+    isRecord(items) || typeof items === 'boolean' || containsSchema ? 1 : 0
+  );
+  const arrayLimit = getArrayExampleLimit(schema, requiredCount);
   const exampleCount = Math.min(
-    Math.max(minItems, minContains, isRecord(items) || typeof items === 'boolean' || containsSchema ? 1 : 0),
+    requiredCount,
     arrayLimit
   );
   if (exampleCount === 0) return [];

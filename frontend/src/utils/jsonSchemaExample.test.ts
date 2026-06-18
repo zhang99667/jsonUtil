@@ -247,10 +247,59 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
-  it('生成后自校验并拦截无法满足数组下限的示例', () => {
+  it('按常见数组下限扩展示例项数并通过自校验', () => {
     const schemaText = JSON.stringify({
       type: 'array',
-      minItems: 4,
+      minItems: 5,
+      items: {
+        type: 'string',
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '[]');
+
+    expect(example).toEqual(['string', 'string', 'string', 'string', 'string']);
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
+  it('按常见 contains 下限扩展唯一匹配元素并通过自校验', () => {
+    const schemaText = JSON.stringify({
+      type: 'array',
+      minContains: 5,
+      uniqueItems: true,
+      contains: {
+        type: 'object',
+        required: ['code'],
+        additionalProperties: false,
+        properties: {
+          code: {
+            type: 'string',
+            pattern: '^ERR-[0-9]+$',
+          },
+        },
+      },
+      items: {
+        type: 'object',
+        additionalProperties: true,
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+    const example = JSON.parse(result.exampleText || '[]');
+
+    expect(example).toEqual([
+      { code: 'ERR-1' },
+      { code: 'ERR-2' },
+      { code: 'ERR-3' },
+      { code: 'ERR-4' },
+      { code: 'ERR-5' },
+    ]);
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
+  it('生成后自校验并拦截超出安全上限的数组下限示例', () => {
+    const schemaText = JSON.stringify({
+      type: 'array',
+      minItems: 9,
       items: {
         type: 'string',
       },
