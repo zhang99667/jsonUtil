@@ -13,6 +13,7 @@ type JsonSchemaType = 'array' | 'boolean' | 'integer' | 'null' | 'number' | 'obj
 
 type InferredSchema = {
   type?: JsonSchemaType | JsonSchemaType[];
+  format?: 'date-time' | 'email' | 'uri' | 'uuid';
   properties?: Record<string, InferredSchema>;
   required?: string[];
   items?: InferredSchema;
@@ -54,6 +55,38 @@ const mergeTypeOnlySchemas = (schemas: InferredSchema[]): InferredSchema => {
   if (types.length === 0) return {};
   if (types.length === 1) return { type: types[0] };
   return { type: types };
+};
+
+const inferStringFormat = (value: string): InferredSchema['format'] | undefined => {
+  const text = value.trim();
+  if (!text || text !== value) return undefined;
+
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return 'email';
+
+  if (
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(text) &&
+    !Number.isNaN(Date.parse(text))
+  ) {
+    return 'date-time';
+  }
+
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)) {
+    return 'uuid';
+  }
+
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:[^\s]+$/.test(text)) return 'uri';
+
+  return undefined;
+};
+
+const mergeStringSchemas = (schemas: InferredSchema[]): InferredSchema => {
+  const formats = schemas.map(schema => schema.format);
+  const firstFormat = formats[0];
+  if (firstFormat && formats.every(format => format === firstFormat)) {
+    return { type: 'string', format: firstFormat };
+  }
+
+  return { type: 'string' };
 };
 
 const mergeObjectSchemas = (
@@ -107,6 +140,7 @@ const mergeInferredSchemas = (
 
   if (schemaTypes[0] === 'object') return mergeObjectSchemas(schemas, options);
   if (schemaTypes[0] === 'array') return mergeArraySchemas(schemas, options);
+  if (schemaTypes[0] === 'string') return mergeStringSchemas(schemas);
 
   return { type: schemaTypes[0] };
 };
@@ -118,7 +152,10 @@ const inferSchema = (
 ): InferredSchema => {
   if (value === null) return { type: 'null' };
 
-  if (typeof value === 'string') return { type: 'string' };
+  if (typeof value === 'string') {
+    const format = inferStringFormat(value);
+    return { type: 'string', ...(format ? { format } : {}) };
+  }
   if (typeof value === 'boolean') return { type: 'boolean' };
   if (typeof value === 'number') return { type: Number.isInteger(value) ? 'integer' : 'number' };
 
