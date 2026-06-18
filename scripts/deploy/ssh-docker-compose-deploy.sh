@@ -61,10 +61,14 @@ rsync -az --delete \
   --exclude='.claude/' \
   --exclude='.env' \
   --exclude='.env.*' \
+  --exclude='artifacts/' \
+  --exclude='outputs/' \
   --exclude='frontend/node_modules/' \
+  --exclude='frontend/.vite/' \
   --exclude='frontend/dist/' \
   --exclude='frontend/build/' \
   --exclude='frontend/releases/' \
+  --exclude='frontend/test-results/' \
   --exclude='backend/target/' \
   --exclude='node_modules/' \
   --exclude='*.log' \
