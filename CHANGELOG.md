@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.149 (2026-06-18) - Docker 构建依赖重试
+### ✨ 新特性
+- **部署可靠性**: 前端新增 npm fetch 重试配置，远端 Docker 构建在依赖下载遇到网络抖动时会自动重试，降低 `ECONNRESET` 等临时错误导致的发布失败率
+- **镜像构建**: 前端 Dockerfile 在依赖层复制 `.npmrc` 并显式保留 optional dependencies，兼顾重试策略与 esbuild 平台包安装稳定性
+
 ## v1.8.148 (2026-06-18) - JSON Schema 校验闭环
 ### ✨ 新特性
 - **主工具**: 新增 JSON Schema 校验浮动面板，支持粘贴 Schema 校验当前 SOURCE JSON，展示通过/未通过状态、错误路径、关键字和 Schema 路径
