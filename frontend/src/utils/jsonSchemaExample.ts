@@ -1,3 +1,5 @@
+import { validateJsonAgainstSchema, type JsonSchemaValidationResult } from './jsonSchemaValidation';
+
 export interface JsonSchemaExampleResult {
   exampleText?: string;
   error?: string;
@@ -726,6 +728,15 @@ const generateExampleValue = (schemaNode: unknown, context: ExampleContext): unk
   return {};
 };
 
+const formatExampleValidationError = (result: JsonSchemaValidationResult): string => {
+  const firstIssue = result.issues[0];
+  if (firstIssue) {
+    return `生成的示例未通过当前 Schema 校验：${firstIssue.path} [${firstIssue.keyword}] ${firstIssue.message}`;
+  }
+
+  return `生成的示例未通过当前 Schema 校验：${result.summary}`;
+};
+
 export const generateJsonSchemaExampleText = (schemaText: string): JsonSchemaExampleResult => {
   if (!schemaText.trim()) return { error: '请先粘贴 JSON Schema' };
 
@@ -747,7 +758,11 @@ export const generateJsonSchemaExampleText = (schemaText: string): JsonSchemaExa
 
   if (example === undefined) return { error: '当前 Schema 不允许任何 JSON 值，无法生成示例' };
 
-  return {
-    exampleText: JSON.stringify(example, null, 2),
-  };
+  const exampleText = JSON.stringify(example, null, 2);
+  const validationResult = validateJsonAgainstSchema(exampleText, schemaText);
+  if (validationResult.status !== 'valid') {
+    return { error: formatExampleValidationError(validationResult) };
+  }
+
+  return { exampleText };
 };
