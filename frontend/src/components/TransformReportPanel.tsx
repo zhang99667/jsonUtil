@@ -63,6 +63,18 @@ interface RankedCmdComparisonCandidate extends RankedCmdStructureCandidate {
   recordPath: string;
 }
 
+type ReportNextActionTone = 'primary' | 'purple' | 'rose' | 'cyan';
+
+interface ReportNextAction {
+  key: string;
+  label: string;
+  description: string;
+  title: string;
+  tone: ReportNextActionTone;
+  disabled?: boolean;
+  onClick: () => void;
+}
+
 const SourceLabelBadge: React.FC<{ label?: string }> = ({ label }) => (
   label ? (
     <span
@@ -78,6 +90,14 @@ const getCoverageClassName = (level: 'success' | 'info' | 'warning'): string => 
   if (level === 'success') return 'border-emerald-700/50 bg-emerald-900/20 text-emerald-100';
   if (level === 'warning') return 'border-amber-700/50 bg-amber-900/20 text-amber-100';
   return 'border-sky-700/50 bg-sky-900/20 text-sky-100';
+};
+
+const getNextActionClassName = (tone: ReportNextActionTone): string => {
+  const baseClassName = 'rounded border px-2.5 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50';
+  if (tone === 'primary') return `${baseClassName} border-teal-700/70 bg-teal-950/35 text-teal-100 hover:bg-teal-900/55`;
+  if (tone === 'purple') return `${baseClassName} border-violet-700/70 bg-violet-950/35 text-violet-100 hover:bg-violet-900/55`;
+  if (tone === 'rose') return `${baseClassName} border-rose-700/70 bg-rose-950/30 text-rose-100 hover:bg-rose-900/50`;
+  return `${baseClassName} border-cyan-800/70 bg-cyan-950/30 text-cyan-100 hover:bg-cyan-900/50`;
 };
 
 const formatDecodedPathCount = (record: TransformReportRecord): string => (
@@ -878,6 +898,100 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     }] : []),
   ] : [];
 
+  const buildNextActions = (): ReportNextAction[] => {
+    const actions: ReportNextAction[] = [];
+
+    if (report && reportView?.filteredCmdStructureCount) {
+      actions.push({
+        key: 'compare-cmd',
+        label: '对比 cmdHandler',
+        description: '打开当前筛选下的第一条 CMD 结构，粘贴内部解析结果后看差异。',
+        title: '打开第一条 CMD 结构的 cmdHandler 对比',
+        tone: 'primary',
+        disabled: isFilterPending,
+        onClick: handleOpenFirstCmdComparison,
+      });
+    }
+
+    if (report?.summary.placeholderCount) {
+      const canOpenTemplateFill = Boolean(onOpenTemplateFill && placeholderFillTemplateJsonText && !isFilterPending);
+      actions.push({
+        key: 'placeholder',
+        label: canOpenTemplateFill ? '回填占位符' : '查看占位符',
+        description: canOpenTemplateFill
+          ? '带入候选值后重新生成质量对比，判断覆盖率和 CMD 结构变化。'
+          : '先定位运行时占位符，再确认需要服务端或客户端补哪些值。',
+        title: getPlaceholderFillTemplateTitle('把运行时占位符回填模板填入模板填充面板'),
+        tone: 'purple',
+        disabled: isFilterPending,
+        onClick: () => {
+          if (canOpenTemplateFill) {
+            handleOpenPlaceholderFillTemplate();
+            return;
+          }
+
+          setQuery('占位符');
+        },
+      });
+    } else if (issuePriorityCount > 0) {
+      actions.push({
+        key: 'triage',
+        label: '查看待处理',
+        description: '聚焦待检查、跳过和占位符，先把影响解析质量的风险收敛。',
+        title: '筛选待检查、跳过记录和运行时占位符',
+        tone: 'rose',
+        disabled: isFilterPending,
+        onClick: () => setQuery('待处理'),
+      });
+    }
+
+    if (reportView) {
+      actions.push({
+        key: 'archive',
+        label: '复制归档包',
+        description: '复制质量快照、脱敏问题样本和 corpus 沉淀清单，不携带原始 response。',
+        title: archivePackageCopyTitle,
+        tone: 'cyan',
+        disabled: isFilterPending,
+        onClick: () => {
+          void handleCopyArchivePackage();
+        },
+      });
+    }
+
+    if (actions.length < 3 && reportView) {
+      actions.push({
+        key: 'collaboration',
+        label: '复制协作报告',
+        description: '把诊断摘要、质量要点和 cmdHandler 对齐状态发给协作者。',
+        title: collaborationReportCopyTitle,
+        tone: 'cyan',
+        disabled: isFilterPending,
+        onClick: () => {
+          void handleCopyCollaborationReport();
+        },
+      });
+    }
+
+    if (actions.length < 3 && reportView) {
+      actions.push({
+        key: 'quality-snapshot',
+        label: '复制质量快照',
+        description: '保存不含原始值的结构化质量指标，便于后续趋势对比。',
+        title: qualitySnapshotCopyTitle,
+        tone: 'cyan',
+        disabled: isFilterPending,
+        onClick: () => {
+          void handleCopyQualitySnapshot();
+        },
+      });
+    }
+
+    return actions.slice(0, 3);
+  };
+
+  const nextActions = buildNextActions();
+
   const renderCmdComparisonPanel = (record: TransformReportRecord) => {
     if (cmdComparisonRecordPath !== record.path) return null;
 
@@ -1411,6 +1525,36 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                   </div>
                 )}
               </div>
+              {nextActions.length > 0 && (
+                <div
+                  data-tour="transform-report-next-actions"
+                  className="mt-2 rounded border border-cyan-800/40 bg-cyan-950/15 px-2.5 py-2 text-xs"
+                >
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-medium text-cyan-100">真实 response 下一步</div>
+                    <div className="text-gray-500">推荐 {nextActions.length} 项</div>
+                  </div>
+                  <div className="grid gap-1.5 md:grid-cols-3">
+                    {nextActions.map(item => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        data-tour={`transform-report-next-action-${item.key}`}
+                        onClick={item.onClick}
+                        disabled={item.disabled}
+                        className={getNextActionClassName(item.tone)}
+                        title={item.title}
+                        aria-label={`${item.label}，${item.title}`}
+                      >
+                        <span className="block font-medium">{item.label}</span>
+                        <span className="mt-0.5 block text-[11px] leading-4 text-current/75">
+                          {item.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {issueTriageItems.length > 0 && (
                 <div
                   data-tour="transform-report-issue-triage"
