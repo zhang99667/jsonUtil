@@ -115,6 +115,18 @@ bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
 
 远端部署会在 `docker compose up` 前检查应用目录所在磁盘水位，默认已使用 `90%` 时打印告警和 `docker system df` 摘要，达到 `95%` 时停止部署。可通过 `DEPLOY_DISK_WARN_USED_PERCENT`、`DEPLOY_DISK_MAX_USED_PERCENT` 调整阈值，或临时设置 `DEPLOY_DISK_CHECK_ENABLED=false` 跳过检查。
 
+也可以单独运行只读磁盘健康检查，提前查看磁盘水位、Docker 空间摘要、运行容器、应用目录占用和安全清理建议：
+
+```bash
+SSH_HOST=39.97.237.248 \
+SSH_USER=markz \
+SSH_KEY=~/.ssh/id_ed25519 \
+REMOTE_APP_DIR=/home/markz/apps/jsonUtil \
+bash scripts/deploy/ssh-disk-health.sh
+```
+
+该脚本默认不执行清理动作；如果希望在巡检或 CI 中把水位告警转成非零退出码，可设置 `DISK_HEALTH_STRICT=true`。
+
 健康检查不会把 Nginx `301/302` 当作成功；`/api/visitor/ping` 必须跟随后端转发后返回 `200`，否则脚本会继续等待或失败。
 
 ## 远程服务器要求
