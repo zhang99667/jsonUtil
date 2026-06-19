@@ -13,8 +13,16 @@ import {
   getJsonTreeNodeValueCopyText,
   matchesJsonTreeSearchText,
 } from '../utils/jsonTreeModel';
+import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { getJsonStringSemanticHints, type JsonStringSemanticHint } from '../utils/jsonValueSemantics';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import {
+  addJsonTreeSearchHistoryItem,
+  JSON_TREE_SEARCH_HISTORY_STORAGE_KEY,
+  parseStoredJsonTreeSearchHistory,
+  removeJsonTreeSearchHistoryItem,
+} from '../utils/jsonTreeSearchHistory';
+import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import { showError, showSuccess } from '../utils/toast';
 
 interface JsonTreePanelProps {
@@ -148,6 +156,9 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
   const [searchText, setSearchText] = useState('');
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => (
+    parseStoredJsonTreeSearchHistory(safeGetStorageItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY))
+  ));
   const [kindFilter, setKindFilter] = useState<JsonTreeKindFilter>('all');
   const [tableColumnFilter, setTableColumnFilter] = useState('');
   const [selectedPath, setSelectedPath] = useState('$');
@@ -214,6 +225,20 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       }
     };
   }, [isDataPreparing, isOpen, jsonData]);
+
+  useEffect(() => {
+    safeSetStorageItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(searchHistory));
+  }, [searchHistory]);
+
+  useEffect(() => {
+    const handleBackupImported = () => {
+      setSearchHistory(parseStoredJsonTreeSearchHistory(safeGetStorageItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY)));
+    };
+
+    window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+    return () => window.removeEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
+  }, []);
+
   const nodes = modelState.model?.nodes || [];
   const hasActiveFilter = Boolean(searchText.trim()) || kindFilter !== 'all';
   const searchHighlightTokens = useMemo(
@@ -348,9 +373,36 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     }
   };
 
+  const commitSearchHistory = () => {
+    if (!searchText.trim()) return;
+    setSearchHistory(prev => addJsonTreeSearchHistoryItem(prev, searchText));
+  };
+
+  const handleSearchInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      commitSearchHistory();
+    }
+  };
+
+  const handleFillSearchHistory = (query: string) => {
+    setSearchText(query);
+    setSearchHistory(prev => addJsonTreeSearchHistoryItem(prev, query));
+    searchInputRef.current?.focus();
+  };
+
+  const handleRemoveSearchHistory = (query: string) => {
+    setSearchHistory(prev => removeJsonTreeSearchHistoryItem(prev, query));
+  };
+
+  const handleClearSearchHistory = () => {
+    setSearchHistory([]);
+    safeRemoveStorageItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY);
+  };
+
   const handleCopySearchResultsJson = async () => {
     if (!hasActiveFilter || visibleNodes.length === 0) return;
 
+    commitSearchHistory();
     await handleCopyText(
       formatJsonTreeSearchResultsText(visibleNodes),
       '已复制搜索结果',
@@ -362,6 +414,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const handleCopySearchResultsMarkdown = async () => {
     if (!hasActiveFilter || visibleNodes.length === 0) return;
 
+    commitSearchHistory();
     await handleCopyText(
       formatJsonTreeSearchResultsMarkdownText(visibleNodes),
       '已复制 Markdown 摘要',
@@ -373,6 +426,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const handleCopySearchResultsCsv = async () => {
     if (!hasActiveFilter || visibleNodes.length === 0) return;
 
+    commitSearchHistory();
     await handleCopyText(
       formatJsonTreeSearchResultsCsvText(visibleNodes),
       '已复制 CSV 摘要',
@@ -402,6 +456,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   };
 
   const handleSelectNode = (node: JsonTreeNode) => {
+    commitSearchHistory();
     setSelectedPath(node.path);
     handleLocatePath(node.path);
   };
@@ -722,6 +777,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             type="text"
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
+            onKeyDown={handleSearchInputKeyDown}
             placeholder="搜索路径、字段或值"
             aria-label="搜索 JSON 结构"
             className="min-w-0 flex-1 rounded border border-editor-border bg-editor-bg px-2 py-1.5 font-mono text-xs text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500"
@@ -807,6 +863,52 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             折叠
           </button>
         </div>
+
+        {searchHistory.length > 0 && (
+          <div
+            data-tour="structure-nav-search-history"
+            className="flex shrink-0 items-center gap-2 border-b border-editor-border bg-editor-bg/60 px-3 py-1.5 text-[11px]"
+          >
+            <span className="shrink-0 text-gray-500">最近</span>
+            <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+              {searchHistory.map(item => (
+                <span
+                  key={item}
+                  className="group/history-item inline-flex max-w-[180px] shrink-0 items-center rounded border border-editor-border bg-editor-sidebar text-gray-300 transition-colors hover:border-emerald-500/40 hover:bg-editor-hover"
+                >
+                  <button
+                    type="button"
+                    data-tour="structure-nav-search-history-item"
+                    onClick={() => handleFillSearchHistory(item)}
+                    className="min-w-0 truncate px-2 py-1 font-mono text-[11px] text-gray-300 transition-colors hover:text-emerald-100 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    title={`${item}\n点击填入结构搜索`}
+                    aria-label={`填入结构搜索历史：${item}`}
+                  >
+                    {item}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSearchHistory(item)}
+                    className="shrink-0 rounded-r px-1 py-1 text-gray-500 opacity-0 transition-colors hover:text-red-300 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-red-400 group-hover/history-item:opacity-100"
+                    title={`删除结构搜索历史：${item}`}
+                    aria-label={`删除结构搜索历史：${item}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleClearSearchHistory}
+              className="shrink-0 rounded px-1.5 py-1 text-gray-500 transition-colors hover:bg-editor-hover hover:text-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-400"
+              title="清空结构搜索历史"
+              aria-label="清空结构搜索历史"
+            >
+              清空
+            </button>
+          </div>
+        )}
 
         {renderSelectedNodeDetails()}
         {renderBody()}

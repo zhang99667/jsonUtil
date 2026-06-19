@@ -391,6 +391,10 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       preview: '"t-1"',
     },
   ], null, 2));
+  const structureSearchHistory = structurePanel.locator('[data-tour="structure-nav-search-history"]');
+  await expect(structureSearchHistory).toContainText('trace.id');
+  await expect(structureSearchHistory.locator('[data-tour="structure-nav-search-history-item"]').filter({ hasText: 'trace.id' }))
+    .toHaveAttribute('aria-label', '填入结构搜索历史：trace.id');
 
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results-markdown"]').click();
@@ -429,6 +433,12 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await structurePanel.getByTitle('选中并定位 $.user.homepage').click();
   await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('URL');
   await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('example.com/docs');
+  await expect(structureSearchHistory).toContainText('homepage');
+  await structureSearchHistory.locator('[data-tour="structure-nav-search-history-item"]').filter({ hasText: 'trace.id' }).click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-search"]')).toHaveValue('trace.id');
+  await expect(structurePanel.locator('[data-tour="structure-nav-row"]')).toHaveCount(1);
+  await page.getByRole('button', { name: '删除结构搜索历史：homepage' }).click();
+  await expect(structureSearchHistory).not.toContainText('homepage');
 
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('phone');
   await structurePanel.getByTitle('选中并定位 $.user.phone').click();
@@ -559,6 +569,9 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
     '$.wideItems,/wideItems,array,2,数组 2 项',
     '$.lateItems,/lateItems,array,10,数组 10 项',
   ].join('\n'));
+
+  await page.getByRole('button', { name: '清空结构搜索历史' }).click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-search-history"]')).toHaveCount(0);
 });
 
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {
@@ -2082,6 +2095,7 @@ test('设置中可恢复浮动面板默认布局', async ({ page }) => {
 test('设置中可导出并导入配置备份', async ({ page }) => {
   await page.evaluate(() => {
     window.localStorage.setItem('jsonpath-query-favorites', JSON.stringify(['$.exported']));
+    window.localStorage.setItem('json-tree-search-history', JSON.stringify(['cmdSchema']));
     window.localStorage.setItem('json-helper-template-fill', JSON.stringify({
       template: '{"before":1}',
       lastUpdated: 1,
@@ -2104,10 +2118,12 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
   const exportedBackup = JSON.parse(await readFile(downloadPath!, 'utf-8')) as {
     settings: { ai: { apiKey: string } };
     jsonPath: { favorites: string[] };
+    structureNav: { searchHistory: string[] };
     templateFill: { template: string };
   };
   expect(exportedBackup.settings.ai.apiKey).toBe('');
   expect(exportedBackup.jsonPath.favorites).toEqual(['$.exported']);
+  expect(exportedBackup.structureNav.searchHistory).toEqual(['cmdSchema']);
   expect(exportedBackup.templateFill.template).toBe('{"before":1}');
 
   const importedBackup = {
@@ -2127,6 +2143,9 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
     jsonPath: {
       history: ['$.imported'],
       favorites: ['$.importedFavorite'],
+    },
+    structureNav: {
+      searchHistory: [' importedField ', 'phone', 'phone'],
     },
     templateFill: {
       template: '{"after":2}',
@@ -2175,6 +2194,11 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
   expect(Math.round(box!.y)).toBe(180);
   expect(Math.round(box!.width)).toBe(650);
   expect(Math.round(box!.height)).toBe(410);
+
+  await page.getByRole('button', { name: '结构导航' }).click();
+  const structurePanel = page.getByRole('dialog', { name: 'JSON 结构导航' });
+  await expect(structurePanel.locator('[data-tour="structure-nav-search-history"]')).toContainText('importedField');
+  await expect(structurePanel.locator('[data-tour="structure-nav-search-history"]')).toContainText('phone');
 });
 
 test('JSONPath 面板可查询预览数据', async ({ page }) => {
