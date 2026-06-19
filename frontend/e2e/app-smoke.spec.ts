@@ -121,6 +121,33 @@ test('JSON 转 TS 可生成接口声明', async ({ page }) => {
   await expectPreviewText(page, 'active?: boolean;');
 });
 
+test('智能建议会根据 SOURCE 推荐下一步动作', async ({ page }) => {
+  const businessScheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
+  await fillSourceEditor(page, JSON.stringify({
+    data: {
+      action_cmd: businessScheme,
+    },
+  }));
+
+  const suggestion = page.locator('[data-tour="smart-action-suggestion"]');
+  await expect(suggestion).toContainText('检测到 JSON 内含 CMD / Scheme');
+  await expect(suggestion).toContainText('嵌套解析');
+  await suggestion.locator('[data-tour="smart-action-deep-format-report"]').click();
+
+  await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-pressed', 'true');
+  const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await expect(reportPanel).toContainText('深度解析报告');
+  await expect(reportPanel).toContainText('action_cmd');
+  await reportPanel.getByRole('button', { name: '关闭 深度解析报告' }).click();
+
+  await fillSourceEditor(page, 'https://example.com/docs?a=1&b=2');
+  await expect(suggestion).toContainText('检测到普通 URL');
+  await expect(suggestion).toContainText('普通 HTTP(S) 链接不会直接当成业务 Scheme');
+  await expect(suggestion.locator('[data-tour="smart-action-scheme-panel"]')).toHaveCount(0);
+  await suggestion.locator('[data-tour="smart-action-url-decode"]').click();
+  await expect(page.locator('button[aria-pressed="true"]').filter({ hasText: 'URL 解码' })).toBeVisible();
+});
+
 test('JSON 对比面板可输出路径级语义差异并复制报告', async ({ page }) => {
   await fillSourceEditor(page, JSON.stringify({
     id: 1,

@@ -1,4 +1,15 @@
 # 更新日志 (Changelog)
+## v1.8.229 (2026-06-19) - SOURCE 智能建议
+### ✨ 新特性
+- **输入智能识别**: 侧栏会根据当前 SOURCE 自动推荐下一步动作，复杂 response 优先提示嵌套解析报告，独立 CMD/Scheme 优先提示 Scheme 面板，复杂 JSON 优先提示结构导航，简单 JSON 可直接推荐 TS 或 Schema
+- **HTTPS 误判保护**: 普通 HTTP(S) URL 只推荐 URL 解码，不再被当成业务 Scheme；带可展开 action 参数的 HTTP(S) 链接仍会推荐 Scheme 面板
+
+### 📝 文档
+- **竞品学习落地**: README、架构说明和产品评审同步记录 DevToys Smart Detection 类能力的第一步落地，后续可继续扩展到剪贴板检测和工具链串联
+
+### 🧪 测试
+- **建议逻辑覆盖**: 新增智能建议单测，覆盖 JSON 内嵌 Scheme、独立 Scheme、普通 HTTPS、可展开 HTTPS 参数、坏 JSON、复杂 JSON 和简单 JSON；E2E 覆盖建议动作切换到深度解析报告和普通 HTTPS URL 解码
+
 ## v1.8.228 (2026-06-19) - Schema 生成采样摘要
 ### ✨ 新特性
 - **采样摘要可见**: JSON Schema 生成后会展示长数组采样摘要，说明路径、总项数、采样项数、稀疏字段扫描范围和 strict/loose required 策略

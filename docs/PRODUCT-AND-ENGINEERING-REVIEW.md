@@ -310,7 +310,7 @@ frontend/fixtures/scheme-corpus/
 - JSON Hero: 多视图浏览、字符串语义预览、自动 Schema、键值搜索、键盘可访问和带路径的分享链接都很强；当前已先补 URL、Scheme、JWT、Base64、资源 URL、邮箱、电话、日期和颜色的轻量语义标签，后续可把空值分布、相关值统计和长数组字段采样质量做成节点详情语义卡片。
 - JSON Crack: 图形化结构、多格式转换、Schema/类型生成、查询和图片导出更适合讲解复杂结构；我们应保留轻量结构树，同时补“从节点继续转换/生成类型/对比/导出证据图”的短路径，Schema/类型生成要对真实长列表给出采样覆盖说明。
 - quicktype: 多语言模型和运行时校验生成证明“从样本到代码”是高频链路；本项目已补 JSON 转 TS 和 Schema 示例，后续可把 Schema 与 TS 生成的字段覆盖率、可选字段和混合类型提示统一起来。
-- DevToys: 离线工具箱和 Smart Detection 说明“自动识别当前输入并推荐可串联工具”很重要；Electron 版后续应优先做剪贴板智能识别、转换结果转入下一工具和本地隐私承诺。
+- DevToys: 离线工具箱和 Smart Detection 说明“自动识别当前输入并推荐可串联工具”很重要；本项目已先补 SOURCE 智能建议，会按当前输入推荐嵌套解析报告、Scheme 面板、结构导航、TS/Schema 或 URL 解码，后续可扩展到剪贴板智能识别、转换结果转入下一工具和本地隐私承诺。
 - JSONLint Repair / jsonrepair: 自动修复要明确列出 trailing comma、单引号、未加引号 key、注释、Markdown 包裹、截断和缺逗号等可修复类型；本项目应继续保持本地规则优先，并把修复步骤解释做成可复制摘要。
 - Dadroit: 大文件、JSON Lines/ndjson、类数据库查询和自动刷新是桌面场景刚需；本项目应继续强化 Worker/虚拟化/增量分析能力，并把“敏感数据本地处理”作为桌面版核心承诺。
 - JSON Diff / JSON Path Finder / jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目已为 JSON 对比补充按 JSONPath 前缀忽略噪声字段、复制 JSONPath / JSON Pointer 和联动 JSONPath 定位 SOURCE 原值，后续更应该把“转换后如何检查结果是否可信”做成优势。
@@ -320,7 +320,7 @@ frontend/fixtures/scheme-corpus/
 - 语义预览: 已在结构检查器节点详情中识别 URL、Scheme、JWT、Base64、图片/视频/Lottie/音频/包资源、邮箱、电话、日期和颜色；后续提供复制、打开和继续解析入口。
 - 路径级协作: 已支持复制带路径上下文的 Markdown 和 CSV 摘要，JSON 对比也支持按 JSONPath 前缀忽略噪声字段、复制 Path / Pointer 并定位修改或删除项的 SOURCE 原值；后续 Web 版可考虑 URL hash 定位到某个 JSONPath。
 - 图形证据: 复杂对象可导出结构缩略图或 Mermaid/图片，服务于排查报告和评审沟通，而不是把完整 JSON 截图贴出去。
-- 桌面效率: Electron 版可补剪贴板智能识别、打开历史、文件拖拽和系统快捷入口，强化“敏感数据不出本机”的定位。
+- 桌面效率: 已补当前 SOURCE 的智能建议入口；Electron 版可继续补剪贴板智能识别、打开历史、文件拖拽和系统快捷入口，强化“敏感数据不出本机”的定位。
 - 转换可信度: JSON 转 CSV/YAML/TS/Schema 后增加样本行数、丢失字段、动态 key、混合类型和截断提示，让转换结果更可审查；JSON Schema 生成已补长数组前段、尾段、分散点和稀疏字段代表行采样，并在面板展示采样行数、稀疏字段命中、扫描上限和 required 策略摘要。
 
 ### 新 P0: 结构检查器

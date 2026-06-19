@@ -69,6 +69,11 @@ import {
 } from './utils/productTelemetry';
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { getJsonSchemaIssueHighlights } from './utils/jsonSchemaIssueHighlights';
+import {
+  getSmartInputSuggestion,
+  getSmartSuggestionMode,
+  type SmartSuggestionActionId,
+} from './utils/smartInputSuggestion';
 
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
@@ -889,6 +894,7 @@ const App: React.FC = () => {
     const content = activeEditor === 'PREVIEW' ? output : input;
     return getDocumentStats(content, { maxScanLength: DOCUMENT_STATS_SCAN_LIMIT });
   }, [input, output, activeEditor]);
+  const smartSuggestion = useMemo(() => getSmartInputSuggestion(input), [input]);
 
   const templateTargetError = useMemo(() => {
     if (!isTemplatePanelOpen) return '';
@@ -1506,6 +1512,56 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSmartSuggestionAction = (actionId: SmartSuggestionActionId) => {
+    const startedAt = performance.now();
+    const suggestedMode = getSmartSuggestionMode(actionId);
+    const eventName = `SMART_SUGGESTION_${actionId.toUpperCase().replace(/-/g, '_')}`;
+
+    if (actionId === 'ai-fix') {
+      void handleAction(ActionType.AI_FIX);
+      return;
+    }
+
+    if (suggestedMode && mode !== suggestedMode) {
+      setMode(suggestedMode);
+    }
+
+    if (actionId === 'deep-format-report') {
+      setIsTransformReportOpen(true);
+      showSuccess('已切换到嵌套解析并打开报告');
+    } else if (actionId === 'scheme-panel') {
+      const sourceText = input.trim();
+      if (!sourceText) {
+        showError('SOURCE 为空，暂无可解析内容');
+        trackCurrentToolEvent(eventName, 'smart_suggestion', 'skipped', startedAt);
+        return;
+      }
+
+      setSchemeInputRequest({
+        id: ++schemeInputRequestIdRef.current,
+        value: sourceText,
+      });
+      setIsSchemeDecodeOpen(true);
+      setIsTransformReportOpen(false);
+      showSuccess('已填入 Scheme 解析');
+    } else if (actionId === 'structure-nav') {
+      if (mode !== TransformMode.DEEP_FORMAT) {
+        setMode(TransformMode.DEEP_FORMAT);
+      }
+      setIsJsonTreePanelOpen(true);
+      showSuccess('已打开结构导航');
+    } else if (actionId === 'schema-panel') {
+      setIsJsonSchemaPanelOpen(true);
+      showSuccess('已打开 Schema 校验');
+    } else if (actionId === 'json-to-typescript') {
+      showSuccess('已切换到 JSON 转 TS');
+    } else if (actionId === 'url-decode') {
+      showSuccess('已切换到 URL 解码');
+    }
+
+    trackCurrentToolEvent(eventName, 'smart_suggestion', 'success', startedAt);
+  };
+
   // 处理 Scheme 编辑：将修改后的值应用到 JSON 对应路径
   const handleSchemeEdit = useCallback((jsonPath: string, newValue: string, pointer?: string) => {
     try {
@@ -1772,6 +1828,8 @@ const App: React.FC = () => {
               setIsTemplatePanelOpen(nextOpen);
               trackCurrentToolEvent(nextOpen ? 'TEMPLATE_PANEL_OPEN' : 'TEMPLATE_PANEL_CLOSE', 'panel');
             }}
+            smartSuggestion={smartSuggestion}
+            onSmartSuggestionAction={handleSmartSuggestionAction}
           />
         </div>
 

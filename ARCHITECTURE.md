@@ -114,7 +114,7 @@ frontend/
 │   │   └── main.tsx          # 管理后台挂载
 │   ├── components/           # 主应用组件
 │   │   ├── Editor.tsx             # Monaco 编辑器封装
-│   │   ├── ActionPanel.tsx        # 工具栏
+│   │   ├── ActionPanel.tsx        # 工具栏与 SOURCE 智能建议入口
 │   │   ├── ChangelogModal.tsx     # 前端版本更新日志弹窗
 │   │   ├── JsonPathPanel.tsx      # JSONPath 查询面板
 │   │   ├── JsonComparePanel.tsx   # 通用 JSON 语义对比、忽略路径、差异路径动作与报告复制面板
@@ -135,6 +135,7 @@ frontend/
 │   │   ├── jsonSemanticDiff.ts    # 通用 JSON / JSON Lines 语义 diff、JSON Pointer、忽略路径和 Markdown 报告
 │   │   ├── jsonTreeModel.ts       # JSON 树模型、路径与预览摘要生成
 │   │   ├── jsonToTypeScript.ts    # JSON / JSON Lines 到 TypeScript 类型声明生成
+│   │   ├── smartInputSuggestion.ts # SOURCE 输入类型识别与下一步工具推荐
 │   │   ├── changelog.ts           # CHANGELOG 解析与前端展示数据
 │   │   └── diffUtils.ts           # 差异对比
 │   ├── workers/              # 大输入异步处理
