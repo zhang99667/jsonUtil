@@ -268,7 +268,7 @@ frontend/fixtures/scheme-corpus/
 - 本地 CI 会在 macOS 未显式设置 `JAVA_HOME` 时优先选择 Java 17，避免 Maven 误用 Java 26 导致 Mockito/Byte Buddy 后端测试兼容失败。
 - Scheme 面板“复制路径和值”的 JSONPath 生成和截断逻辑已抽成 `schemePathValues` 纯工具函数，并用单测锁住特殊 key、空数组/空对象、非法 JSON 与截断提示。
 - 深度解析报告已新增“真实 response 下一步”动作条，根据当前报告推荐最多 3 个优先入口，把 cmdHandler 对比、占位符回填、待处理筛选、归档包和协作报告复制从长按钮区收敛到摘要下方。
-- 已新增 `perf:e2e` 浏览器 Worker 端到端性能预算，覆盖 JSONPath 取消响应、Scheme 取消响应和连续大 response 解析，并在 CI 中输出 JSON artifact / Step Summary。
+- 已新增 `perf:e2e` 浏览器 Worker 端到端性能预算，覆盖 JSONPath 取消响应、Scheme 取消响应、连续大 response 解析和已加载面板关闭态大输入切换，并在 CI 中输出 JSON artifact / Step Summary。
 - 管理后台工具事件洞察已新增 PM 周报视图，按统计周期聚合高频功能、失败率、大输入和慢操作，并输出重点关注与下周动作。
 - 已新增 JSON Schema 校验浮动面板，支持从当前 SOURCE JSON 按严格/宽松策略生成初始 Schema、粘贴 Schema 校验当前 JSON，展示错误 JSONPath、Schema 关键字和 Schema 路径，并可一键交给 JSONPath 面板定位。
 - JSON Schema 校验结果已支持 SOURCE 编辑器内错误标记，校验未通过时会在原字段位置显示高亮和 hover 说明，头部同步提示问题数量，额外字段会优先定位到具体字段。
@@ -277,6 +277,7 @@ frontend/fixtures/scheme-corpus/
 - 结构导航已支持多关键词和字符顺序模糊搜索，用户可以用路径/字段缩写快速命中目标节点，并在底部看到当前匹配数。
 - 结构导航已补齐节点详情和复制能力，选中节点后可查看 JSONPath、JSON Pointer、类型、子节点数和值预览，并复制 Pointer、紧凑值或格式化值。
 - 结构导航已补对象数组表格预览，选中列表型 response 数组时可直接看前几行字段分布，并复制表格 JSON 或 CSV 继续排查。
+- 结构导航已补搜索结果和节点子树复制，搜索命中可复制结构化 JSON 清单，容器节点可直接复制完整子树。
 - 深度解析报告面板关闭时不再构建报告视图和质量快照，减少关闭态随输入变化产生的主线程派生计算。
 
 ## 2026-06-19 竞品复评补充
@@ -297,7 +298,7 @@ frontend/fixtures/scheme-corpus/
 建议功能:
 
 - 节点详情: 选中节点后展示类型、子节点数量、JSONPath、JSON Pointer、值预览、紧凑值和格式化值。
-- 复制能力: 支持复制 JSONPath、JSON Pointer、节点值、节点子树和当前搜索结果。
+- 复制能力: 已支持复制 JSONPath、JSON Pointer、节点值、节点子树和当前搜索结果；后续可补当前搜索结果导出为 Markdown/CSV。
 - 数组表格视图: 已完成前 N 行对象数组表格和 CSV/JSON 复制；后续补列筛选、展开嵌套对象和更多 CSV 选项，降低接口列表型 response 的阅读成本。
 - 搜索增强: 已完成多关键词和模糊搜索，后续可补匹配高亮、搜索历史和按类型筛选。
 
@@ -313,7 +314,7 @@ frontend/fixtures/scheme-corpus/
 
 建议功能:
 
-- 深度报告: 已完成关闭态派生门控，后续补组件级回归测试或浏览器性能预算。
+- 深度报告: 已完成关闭态派生门控，并补充已加载面板关闭态大输入切换的浏览器性能预算；后续可继续下钻组件级回归测试。
 - 占位符回填: 大文件回填后的质量对比仍可能同步跑两次深度解析，建议迁移到 Worker 或增加大小预算。
 - 浮动面板: 继续确认所有面板关闭态都不会保留昂贵计算和事件监听。
 
@@ -321,7 +322,7 @@ frontend/fixtures/scheme-corpus/
 
 - 关闭深度报告后切换大输入，不触发报告聚合。
 - 大文件占位符回填不会长时间阻塞主线程。
-- E2E 性能预算能覆盖“面板关闭态输入切换”的退化。
+- E2E 性能预算已覆盖“已加载面板关闭态输入切换”的退化。
 
 ## 两周迭代建议
 

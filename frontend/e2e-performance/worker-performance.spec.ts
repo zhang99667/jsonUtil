@@ -16,6 +16,7 @@ const BROWSER_WORKER_PERFORMANCE_BUDGET_KIND = 'json-helper-browser-worker-perfo
 const JSONPATH_CANCEL_BUDGET_MS = 1_500;
 const SCHEME_CANCEL_BUDGET_MS = 1_500;
 const SCHEME_CONTINUOUS_LARGE_RESPONSE_BUDGET_MS = 15_000;
+const CLOSED_PANELS_LARGE_INPUT_SWITCH_BUDGET_MS = 8_000;
 
 const budgetCases: BrowserWorkerBudgetCase[] = [];
 
@@ -129,7 +130,7 @@ const getTerminateCount = async (page: Page, terminateCounterName: string): Prom
   ), terminateCounterName)
 );
 
-const buildLargeResponse = (marker: string): string => {
+const buildLargeResponse = (marker: string, paddingSize = 70_000): string => {
   const landingUrl = `https://example.com/landing?sku=${marker}&bd_vid=${marker}`;
   const rootScheme = `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}&from=${marker}`;
   const response = {
@@ -147,7 +148,7 @@ const buildLargeResponse = (marker: string): string => {
         }],
       }],
     },
-    _performance_padding: 'x'.repeat(70_000),
+    _performance_padding: 'x'.repeat(paddingSize),
   };
 
   return JSON.stringify(response);
@@ -259,5 +260,41 @@ test('Scheme Worker 连续大 response 解析进入预算', async ({ page }) => 
     durationMs,
     SCHEME_CONTINUOUS_LARGE_RESPONSE_BUDGET_MS,
     `连续解析 ${firstResponse.length} / ${secondResponse.length} 字符 response 并确认第二次结果生效`
+  );
+});
+
+test('已加载面板关闭后切换大输入进入预算', async ({ page }) => {
+  const warmupResponse = buildLargeResponse('closed-panels-warmup', 25_000);
+  const nextResponse = buildLargeResponse('closed-panels-next', 25_000);
+
+  await fillSourceEditor(page, warmupResponse);
+
+  await page.locator('[data-tour="jsonpath-button"]').click();
+  await expect(page.locator('[data-tour="jsonpath-panel"]')).toBeVisible();
+  await page.getByRole('button', { name: '关闭 JSONPath 查询' }).click();
+  await expect(page.locator('[data-tour="jsonpath-panel"]')).toBeHidden();
+
+  await page.locator('[data-tour="structure-nav-button"]').click();
+  await expect(page.locator('[data-tour="structure-nav-panel"]')).toBeVisible();
+  await page.getByRole('button', { name: '关闭 JSON 结构导航' }).click();
+  await expect(page.locator('[data-tour="structure-nav-panel"]')).toBeHidden();
+
+  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await expect(page.locator('[data-tour="transform-report-button"]')).toBeVisible({ timeout: 20_000 });
+  await page.locator('[data-tour="transform-report-button"]').click();
+  await expect(page.locator('[data-tour="transform-report-panel"]')).toBeVisible();
+  await page.getByRole('button', { name: '关闭 深度解析报告' }).click();
+  await expect(page.locator('[data-tour="transform-report-panel"]')).toBeHidden();
+
+  const startedAt = performance.now();
+  await fillSourceEditor(page, nextResponse);
+  await expect(page.locator('[data-tour="preview-editor"]')).toContainText('closed-panels-next', { timeout: 20_000 });
+  const durationMs = performance.now() - startedAt;
+
+  recordBudgetCase(
+    'closed-panels-large-input-switch',
+    durationMs,
+    CLOSED_PANELS_LARGE_INPUT_SWITCH_BUDGET_MS,
+    `JSONPath、结构导航、深度报告已加载并关闭后切换 ${nextResponse.length} 字符 response`
   );
 });

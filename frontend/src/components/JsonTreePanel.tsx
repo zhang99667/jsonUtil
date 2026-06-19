@@ -3,6 +3,7 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { JsonTreeArrayTablePreview, JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
 import {
   buildJsonTreeArrayTablePreview,
+  formatJsonTreeSearchResultsText,
   formatJsonTreeArrayTableCsvText,
   formatJsonTreeArrayTableJsonText,
   getJsonTreeNodeValueCopyText,
@@ -228,6 +229,26 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     }
   };
 
+  const handleCopyNodeSubtree = async (node: JsonTreeNode) => {
+    try {
+      const copyTextValue = getJsonTreeNodeValueCopyText(jsonData, node.jsonPointer, { pretty: true });
+      await copyText(copyTextValue);
+      showSuccess('已复制节点子树');
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制节点子树失败'));
+    }
+  };
+
+  const handleCopySearchResults = async () => {
+    if (!searchText.trim() || visibleNodes.length === 0) return;
+
+    await handleCopyText(
+      formatJsonTreeSearchResultsText(visibleNodes),
+      '已复制搜索结果',
+      '复制搜索结果失败'
+    );
+  };
+
   const handleCopyArrayTableJson = async (preview: JsonTreeArrayTablePreview) => {
     await handleCopyText(
       formatJsonTreeArrayTableJsonText(preview),
@@ -368,6 +389,16 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
           >
             格式化值
           </button>
+          {selectedNode.isContainer && (
+            <button
+              type="button"
+              data-tour="structure-nav-copy-subtree"
+              onClick={() => void handleCopyNodeSubtree(selectedNode)}
+              className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-amber-100"
+            >
+              子树
+            </button>
+          )}
         </div>
         {renderArrayTablePreview()}
       </div>
@@ -523,6 +554,16 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             aria-label="搜索 JSON 结构"
             className="min-w-0 flex-1 rounded border border-editor-border bg-editor-bg px-2 py-1.5 font-mono text-xs text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500"
           />
+          <button
+            type="button"
+            data-tour="structure-nav-copy-search-results"
+            onClick={() => void handleCopySearchResults()}
+            disabled={!searchText.trim() || visibleNodes.length === 0}
+            className="rounded border border-editor-border px-2 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
+            title="复制当前搜索结果"
+          >
+            结果
+          </button>
           <button
             type="button"
             onClick={handleExpandAll}
