@@ -297,10 +297,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   } | null>(null);
   const deferredQuery = useDeferredValue(query);
   const isFilterPending = query !== deferredQuery;
+  const activeContext = isOpen ? context : null;
   const report = useMemo(() => (
-    context ? buildTransformContextReport(context) : null
-  ), [context]);
-  const reportContextTimestamp = context?.timestamp ?? 0;
+    activeContext ? buildTransformContextReport(activeContext) : null
+  ), [activeContext]);
+  const reportContextTimestamp = activeContext?.timestamp ?? 0;
 
   useEffect(() => {
     setQuery('');
@@ -395,7 +396,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const issueSampleJsonCopyTitle = getReportCopyTitle(Boolean(issueSampleJsonCopyText), '复制当前筛选下可沉淀为回归用例的结构化样本 JSON', '当前筛选没有可沉淀为回归用例的结构化样本');
   const redactedIssueSampleJsonCopyTitle = getReportCopyTitle(Boolean(redactedIssueSampleJsonCopyText), '复制当前筛选下的脱敏结构化样本 JSON，便于安全沉淀回归用例', '当前筛选没有可脱敏沉淀的结构化样本');
   const issueRegressionTemplateCopyTitle = getReportCopyTitle(Boolean(issueRegressionTemplateCopyText), '复制当前筛选下的脱敏 Vitest TODO 回归模板', '当前筛选没有可生成回归模板的问题样本');
-  const fullReportCopyTitle = context ? '复制完整深度解析报告' : '暂无深度解析报告可复制';
+  const fullReportCopyTitle = activeContext ? '复制完整深度解析报告' : '暂无深度解析报告可复制';
   const issuePriorityCount = report
     ? report.summary.unresolvedCount + report.summary.warningCount + report.summary.placeholderCount
     : 0;
@@ -406,10 +407,10 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const handleCopyReport = async () => {
-    if (!context) return;
+    if (!activeContext) return;
 
     try {
-      const reportText = formatTransformContextReportText(context);
+      const reportText = formatTransformContextReportText(activeContext);
       await copyText(reportText);
       toast.success(formatCopySuccessMessage('解析报告', reportText), { duration: 2000 });
     } catch (error) {
@@ -1343,7 +1344,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         <button
           data-tour="transform-report-copy-full-report"
           onClick={handleCopyReport}
-          disabled={!context}
+          disabled={!activeContext}
           className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title={fullReportCopyTitle}
           aria-label={`复制报告，${fullReportCopyTitle}`}
