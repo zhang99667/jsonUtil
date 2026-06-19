@@ -14,7 +14,11 @@ import {
   matchesJsonTreeSearchText,
 } from '../utils/jsonTreeModel';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
-import { getJsonStringSemanticHints, type JsonStringSemanticHint } from '../utils/jsonValueSemantics';
+import {
+  getJsonStringSemanticHints,
+  isJsonStringSemanticHintActionable,
+  type JsonStringSemanticHint,
+} from '../utils/jsonValueSemantics';
 import { jsonValueToTypeScriptDeclaration } from '../utils/jsonToTypeScript';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import {
@@ -32,6 +36,7 @@ interface JsonTreePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onLocatePath: (path: string) => void;
+  onOpenSchemeValue: (value: string) => void;
 }
 
 interface JsonTreeWorkerResponse {
@@ -155,6 +160,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   isOpen,
   onClose,
   onLocatePath,
+  onOpenSchemeValue,
 }) => {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const copyResultsMenuRef = useRef<HTMLDetailsElement | null>(null);
@@ -276,18 +282,26 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       ? filterJsonTreeArrayTablePreviewColumns(selectedArrayTablePreview, tableColumnFilter)
       : null
   ), [selectedArrayTablePreview, tableColumnFilter]);
-  const selectedSemanticHints = useMemo(() => {
-    if (!selectedNode || selectedNode.kind !== 'string') return [];
+  const selectedStringValue = useMemo(() => {
+    if (!selectedNode || selectedNode.kind !== 'string') return null;
 
     try {
-      return getJsonStringSemanticHints(getJsonTreeNodeValue(jsonData, selectedNode.jsonPointer), {
-        keyLabel: selectedNode.keyLabel,
-        path: selectedNode.path,
-      });
+      const value = getJsonTreeNodeValue(jsonData, selectedNode.jsonPointer);
+      return typeof value === 'string' ? value : null;
     } catch {
-      return [];
+      return null;
     }
   }, [jsonData, selectedNode?.jsonPointer, selectedNode?.kind]);
+  const selectedSemanticHints = useMemo(() => {
+    if (selectedStringValue === null || !selectedNode) return [];
+
+    return getJsonStringSemanticHints(selectedStringValue, {
+      keyLabel: selectedNode.keyLabel,
+      path: selectedNode.path,
+    });
+  }, [selectedNode?.keyLabel, selectedNode?.path, selectedStringValue]);
+  const canOpenSelectedSemanticValue = selectedStringValue !== null &&
+    selectedSemanticHints.some(isJsonStringSemanticHintActionable);
 
   useEffect(() => {
     if (!isOpen || !modelState.model) return;
@@ -479,6 +493,13 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     onLocatePath(path);
   };
 
+  const handleOpenSelectedSemanticValue = () => {
+    if (selectedStringValue === null) return;
+
+    onOpenSchemeValue(selectedStringValue);
+    showSuccess('已填入 Scheme 解析');
+  };
+
   const handleSelectNode = (node: JsonTreeNode) => {
     commitSearchHistory();
     setSelectedPath(node.path);
@@ -640,6 +661,18 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
           >
             格式化值
           </button>
+          {canOpenSelectedSemanticValue && (
+            <button
+              type="button"
+              data-tour="structure-nav-open-semantic-value"
+              onClick={handleOpenSelectedSemanticValue}
+              aria-label="继续解析当前语义字符串"
+              className="rounded border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-100 transition-colors hover:border-cyan-400/60 hover:bg-cyan-500/20"
+              title="把当前字符串原始值填入 Scheme/编码解析面板继续排查"
+            >
+              继续解析
+            </button>
+          )}
           {selectedNode.isContainer && (
             <button
               type="button"
