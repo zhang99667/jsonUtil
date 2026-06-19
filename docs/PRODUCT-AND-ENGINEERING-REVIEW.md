@@ -297,6 +297,36 @@ frontend/fixtures/scheme-corpus/
 - JSON 转 TS 已补生成可信度摘要，主转换和结构节点复制会说明样本数量、对象类型数量、可选字段、混合类型和空数组 unknown 风险，让从 response 到前端类型的结果更容易复核。
 - JSON 转 TS 已从基础转换静态链路移到动态加载路径，小输入按需 import、大输入继续走 transform worker，避免低频类型生成和可信度摘要逻辑继续挤压首屏预加载预算。
 
+## 2026-06-20 竞品复评补充
+
+本轮继续参考 JSON Hero、JSON Crack、JSON Editor Online / jsoneditor、DevToys、quicktype、JSON Formatter、JSONLint 和 JSONGrid。整体判断不变: 项目不应该走“按钮越多越强”的路线，而应继续把复杂 response / CMD / Scheme 排查做成更短的智能路径。
+
+本次联网复核补充参考:
+
+- JSON Hero: https://jsonhero.io/
+- JSON Crack: https://jsoncrack.com/ 和 https://github.com/AykutSarac/jsoncrack.com
+- JSON Editor Online / jsoneditor: https://jsoneditor.io/ 和 https://github.com/josdejong/jsoneditor
+- DevToys: https://devtoys.app/ 和 https://github.com/DevToys-app/DevToys
+- quicktype: https://quicktype.io/
+- JSON Formatter & Validator: https://jsonformatter.curiousconcept.com/ 和 https://jsonformatter.org/
+- JSONLint: https://jsonlint.com/
+- JSONGrid: https://jsongrid.com/json-grid/
+
+### 可学习点和对应产品动作
+
+- 智能检测优先于工具堆叠: DevToys 的工具箱思路说明常用开发工具应从剪贴板、当前输入和上下文识别下一步。当前已先把 SOURCE 智能建议扩展为“智能粘贴”来源标识，用户点击粘贴后能明确看到本次建议来自剪贴板内容，避免从日志/IM/Charles 复制后还要自己判断该点哪个工具。
+- 搜索和字段画像是复杂 JSON 的核心入口: JSON Hero 强在全局搜索、字段相关值和自动 Schema。当前已具备结构导航、JSONPath、Schema 可信度和同名字段反查，下一步可把节点详情里的同名字段分布、空值占比和相关值统计做成轻量画像。
+- 结构可视化的价值在协作证据: JSON Crack 的图谱、树视图和导出能力适合解释复杂响应。本项目短期更适合继续加强 Markdown/CSV/截图式证据导出，而不是先做完整图编辑器。
+- 大文件和本地隐私要持续前置: jsoneditor 强调大 JSON、多视图、修复和 Schema；DevToys、JSON Formatter 类工具强调离线或本地处理。项目应继续守住 Worker、懒加载、预加载门禁和“不上传原始 response”的产品承诺。
+- 类型和契约生成要解释可信度: quicktype 的核心价值是从样本到类型/序列化代码。项目已经补 TS/Schema 可信度摘要，后续可增加多样本覆盖率和字段稳定性提示。
+
+短期优先级建议:
+
+1. P0: 继续把剪贴板、SOURCE 智能建议和 Response 排查工作流串起来，沉淀“粘贴 -> 识别 -> 一键排查”的默认路径。
+2. P1: 结构导航补当前节点证据卡，包含 Path、Pointer、类型、语义标签、同名字段查询和脱敏预览。
+3. P1: 后台和低频面板继续做依赖隔离，防止图表、二维码、导出等低频能力挤进首屏。
+4. P2: 评估 jq/JMESPath 只读预览，作为 JSONPath 的高级补充，而不是替代现有低门槛查询。
+
 ## 2026-06-19 竞品复评补充
 
 参考 JSON Hero、JSON Crack、JSON Editor Online / jsoneditor、Dadroit、jq playground、JSON Compare 和 JSON Formatter 后，当前项目已经覆盖通用 JSON 工作台的大部分基础能力，差异化优势仍在复杂 response / CMD / Scheme 解析。下一阶段不建议继续堆单点按钮，而应把“结构理解、修复解释、协作排查”做得更像一个检查器。

@@ -157,6 +157,33 @@ test('智能建议会根据 SOURCE 推荐下一步动作', async ({ page }) => {
   await expect(page.locator('button[aria-pressed="true"]').filter({ hasText: 'URL 解码' })).toBeVisible();
 });
 
+test('智能粘贴会标记剪贴板来源并复用输入建议', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('mock-clipboard', '{"level":"info","user":{"id":1}}\n{"level":"error","user":{"id":2}}');
+  });
+
+  await page.locator('[data-tour="paste-source"]').click();
+
+  const suggestion = page.locator('[data-tour="smart-action-suggestion"]');
+  await expect(suggestion.locator('[data-tour="smart-action-origin"]')).toContainText('剪贴板识别');
+  await expect(suggestion).toContainText('检测到 JSON Lines / NDJSON');
+  await expect(suggestion).toContainText('结构导航');
+  await expect(suggestion).toContainText('转 TS');
+  await expect(suggestion.locator('[data-tour="smart-action-ai-fix"]')).toHaveCount(0);
+
+  await fillSourceEditor(page, '');
+  await page.evaluate(() => {
+    window.localStorage.setItem('mock-clipboard', 'https://example.com/docs?a=1&b=2');
+  });
+  await page.locator('[data-tour="paste-source"]').click();
+
+  await expect(suggestion.locator('[data-tour="smart-action-origin"]')).toContainText('剪贴板识别');
+  await expect(suggestion).toContainText('检测到普通 URL');
+  await expect(suggestion).toContainText('普通 HTTP(S) 链接不会直接当成业务 Scheme');
+  await expect(suggestion.locator('[data-tour="smart-action-scheme-panel"]')).toHaveCount(0);
+  await expect(suggestion.locator('[data-tour="smart-action-url-decode"]')).toBeVisible();
+});
+
 test('JSON 对比面板可输出路径级语义差异并复制报告', async ({ page }) => {
   await fillSourceEditor(page, JSON.stringify({
     id: 1,
