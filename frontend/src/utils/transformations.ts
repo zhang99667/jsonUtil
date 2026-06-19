@@ -14,6 +14,7 @@ import {
 import type { DecodeLayer, SchemePlaceholder, SchemeType } from './schemeUtils.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
 import { formatHarSourceLabel, trimSourceLabel, HAR_SOURCE_LABEL_PREFIX } from './sourceLabels.ts';
+import { jsonValueToTypeScriptDeclaration } from './jsonToTypeScript.ts';
 
 import {
   DEFAULT_SCHEME_DECODE_MAX_DEPTH,
@@ -318,6 +319,18 @@ const minifyJson = (input: string): string => {
     if (jsonLines) return stringifyJsonLines(jsonLines);
 
     return input;
+  }
+};
+
+const jsonToTypeScript = (input: string): string => {
+  try {
+    const parsed = parseJsonInput(input);
+    if (!parsed) throw new Error('未找到可生成类型的 JSON 内容');
+
+    return jsonValueToTypeScriptDeclaration(parsed.value);
+  } catch {
+    const jsonLines = parseJsonLines(input);
+    return jsonLines ? jsonValueToTypeScriptDeclaration(jsonLines) : input;
   }
 };
 
@@ -1091,6 +1104,7 @@ export const performTransform = (input: string, mode: TransformMode): string => 
           return jsonLines ? stringifyJsonLines(jsonLines.map(sortJsonKeys)) : input;
         }
       }
+      case TransformMode.JSON_TO_TYPESCRIPT: return jsonToTypeScript(input);
       default: return input;
     }
   } catch (e) {
@@ -1258,6 +1272,7 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
       case TransformMode.BASE64_ENCODE: return base64Decode(output);
       case TransformMode.BASE64_DECODE: return base64Encode(output);
       case TransformMode.SORT_KEYS: return output;
+      case TransformMode.JSON_TO_TYPESCRIPT: return output;
       default: return output;
     }
   } catch (e) {

@@ -95,6 +95,28 @@ test('格式化与压缩主路径可用', async ({ page }) => {
   await expectPreviewText(page, '{"b":2,"a":1}');
 });
 
+test('JSON 转 TS 可生成接口声明', async ({ page }) => {
+  await fillSourceEditor(page, JSON.stringify({
+    user: {
+      id: 1,
+      name: 'Ada',
+    },
+    items: [
+      { id: 1, title: 'first' },
+      { id: 2, active: true },
+    ],
+  }));
+
+  await page.locator('[data-tour="json-to-ts-btn"]').click();
+
+  await expect(page.getByRole('button', { name: /JSON 转 TS/ })).toHaveAttribute('aria-pressed', 'true');
+  await expectPreviewText(page, 'export interface Root');
+  await expectPreviewText(page, 'user: RootUser;');
+  await expectPreviewText(page, 'items: RootItemsItem[];');
+  await expectPreviewText(page, 'title?: string;');
+  await expectPreviewText(page, 'active?: boolean;');
+});
+
 test('查询解析工具入口展示浮动面板打开态', async ({ page }) => {
   const assertPanelToggle = async (dataTour: string) => {
     const button = page.locator(`[data-tour="${dataTour}"]`);
@@ -125,6 +147,7 @@ test('折叠工具栏后图标按钮保留可访问名称', async ({ page }) => 
   const expandButton = page.getByRole('button', { name: '展开工具栏' });
   await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-label', '嵌套解析');
+  await expect(page.locator('[data-tour="json-to-ts-btn"]')).toHaveAttribute('aria-label', 'JSON 转 TS');
   await expect(page.locator('[data-tour="jsonpath-button"]')).toHaveAttribute('aria-label', 'JSONPath 查询，未打开');
   await expect(page.locator('[data-tour="structure-nav-button"]')).toHaveAttribute('aria-label', '结构导航，未打开');
   await expect(page.locator('[data-tour="json-schema-button"]')).toHaveAttribute('aria-label', 'Schema 校验，未打开');

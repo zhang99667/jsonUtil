@@ -330,6 +330,38 @@ describe('performTransform', () => {
     });
   });
 
+  describe('JSON_TO_TYPESCRIPT 模式', () => {
+    it('从 JSON 对象生成 TypeScript 声明', () => {
+      const input = JSON.stringify({
+        user: {
+          id: 1,
+          name: 'Ada',
+        },
+        items: [
+          { id: 1, title: 'first' },
+          { id: 2, active: true },
+        ],
+      });
+      const result = performTransform(input, TransformMode.JSON_TO_TYPESCRIPT);
+
+      expect(result).toContain('export interface Root {');
+      expect(result).toContain('  user: RootUser;');
+      expect(result).toContain('  items: RootItemsItem[];');
+      expect(result).toContain('export interface RootItemsItem {');
+      expect(result).toContain('  title?: string;');
+      expect(result).toContain('  active?: boolean;');
+    });
+
+    it('从 JSON Lines 生成 RootItem 数组声明', () => {
+      const result = performTransform('{"id":1,"name":"Ada"}\n{"id":2,"active":true}', TransformMode.JSON_TO_TYPESCRIPT);
+
+      expect(result).toContain('export type Root = RootItem[];');
+      expect(result).toContain('  id: number;');
+      expect(result).toContain('  name?: string;');
+      expect(result).toContain('  active?: boolean;');
+    });
+  });
+
   describe('NONE 模式', () => {
     it('原样返回', () => {
       const input = '任何内容';

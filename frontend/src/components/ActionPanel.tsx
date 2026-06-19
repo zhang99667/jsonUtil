@@ -336,10 +336,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           ), 'text-sky-400')}
         </div>
 
-        {/* 工具组：排序 */}
+        {/* 工具组：整理与生成 */}
         {!isCollapsed && (
           <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
-            排序
+            整理 / 生成
           </div>
         )}
         <div className="mb-4">
@@ -348,6 +348,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
             </svg>
           ), 'text-teal-400')}
+
+          {renderToolBtn(TransformMode.JSON_TO_TYPESCRIPT, 'JSON 转 TS', (
+            <span className="font-mono font-bold text-sm">TS</span>
+          ), 'text-sky-300', 'json-to-ts-btn')}
         </div>
 
         <div className="flex-1"></div>
