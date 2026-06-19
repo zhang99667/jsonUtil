@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.204 (2026-06-19) - JSON 语义对比
+### ✨ 新特性
+- **通用 JSON 对比**: 工具栏新增“JSON 对比”浮动面板，可用当前 SOURCE 作为基线，粘贴另一份 JSON / JSON Lines 后输出路径级新增、删除和修改差异
+- **协作报告复制**: 对比结果可一键复制 Markdown 报告，包含差异汇总、JSONPath 路径和变更前后预览，方便发给接口维护者或沉淀排查记录
+- **布局与备份同步**: JSON 对比面板复用浮动面板布局能力，支持拖拽、调整尺寸、布局重置和配置备份导入导出
+
+### 🧪 测试
+- **回归保护**: 补充语义 diff 单测、布局备份覆盖和 JSON 对比 E2E，验证特殊 key、JSON Lines、截断、路径级结果与报告复制
+
 ## v1.8.203 (2026-06-19) - JSON 转 TypeScript
 ### ✨ 新特性
 - **类型声明生成**: 工具栏新增“JSON 转 TS”，可从当前 JSON / JSON Lines 生成 `export interface Root` 或 `export type Root`，方便接口 response 直接沉淀为前端类型声明

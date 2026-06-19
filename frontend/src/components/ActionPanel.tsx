@@ -14,11 +14,13 @@ interface ActionPanelProps {
   onToggleCollapse: () => void;
   isJsonPathOpen: boolean;
   isJsonTreeOpen: boolean;
+  isJsonCompareOpen: boolean;
   isSchemeDecodeOpen: boolean;
   isTemplateFillOpen: boolean;
   isJsonSchemaOpen: boolean;
   onToggleJsonPath: () => void;
   onToggleJsonTree: () => void;
+  onToggleJsonCompare: () => void;
   onToggleSchemeDecode: () => void;
   onToggleTemplateFill: () => void;
   onToggleJsonSchema: () => void;
@@ -34,11 +36,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onToggleCollapse,
   isJsonPathOpen,
   isJsonTreeOpen,
+  isJsonCompareOpen,
   isSchemeDecodeOpen,
   isTemplateFillOpen,
   isJsonSchemaOpen,
   onToggleJsonPath,
   onToggleJsonTree,
+  onToggleJsonCompare,
   onToggleSchemeDecode,
   onToggleTemplateFill,
   onToggleJsonSchema
@@ -368,6 +372,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           ), 'text-emerald-400', 'group-hover:text-emerald-400', isJsonPathOpen, onToggleJsonPath, 'jsonpath-button')}
+
+          {renderPanelBtn('JSON 对比', (
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m2 0h4M7 16h10M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+            </svg>
+          ), 'text-amber-400', 'group-hover:text-amber-400', isJsonCompareOpen, onToggleJsonCompare, 'json-compare-button')}
 
           {renderPanelBtn('结构导航', (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

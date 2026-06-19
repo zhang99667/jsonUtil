@@ -7,7 +7,8 @@ import {
 } from './panelLayout';
 
 describe('resetFloatingPanelLayoutStorage', () => {
-  it('默认覆盖结构导航面板布局缓存', () => {
+  it('默认覆盖新增浮动面板布局缓存', () => {
+    expect(FLOATING_PANEL_STORAGE_KEYS).toContain('json-compare-panel');
     expect(FLOATING_PANEL_STORAGE_KEYS).toContain('structure-nav-panel');
   });
 

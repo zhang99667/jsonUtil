@@ -114,6 +114,10 @@ const LazyJsonTreePanel = lazy(() => import('./components/JsonTreePanel').then(m
   default: module.JsonTreePanel,
 })));
 
+const LazyJsonComparePanel = lazy(() => import('./components/JsonComparePanel').then(module => ({
+  default: module.JsonComparePanel,
+})));
+
 const LazyJsonSchemaPanel = lazy(() => import('./components/JsonSchemaPanel').then(module => ({
   default: module.JsonSchemaPanel,
 })));
@@ -319,6 +323,8 @@ const App: React.FC = () => {
   const [hasLoadedJsonPathPanel, setHasLoadedJsonPathPanel] = useState(false);
   const [isJsonTreePanelOpen, setIsJsonTreePanelOpen] = useState(false);
   const [hasLoadedJsonTreePanel, setHasLoadedJsonTreePanel] = useState(false);
+  const [isJsonComparePanelOpen, setIsJsonComparePanelOpen] = useState(false);
+  const [hasLoadedJsonComparePanel, setHasLoadedJsonComparePanel] = useState(false);
   const [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen] = useState(false);
   const [hasLoadedJsonSchemaPanel, setHasLoadedJsonSchemaPanel] = useState(false);
   const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
@@ -595,6 +601,12 @@ const App: React.FC = () => {
   }, [isJsonTreePanelOpen]);
 
   useEffect(() => {
+    if (isJsonComparePanelOpen) {
+      setHasLoadedJsonComparePanel(true);
+    }
+  }, [isJsonComparePanelOpen]);
+
+  useEffect(() => {
     if (isJsonSchemaPanelOpen) {
       setHasLoadedJsonSchemaPanel(true);
     }
@@ -710,6 +722,12 @@ const App: React.FC = () => {
     setIsJsonTreePanelOpen(nextOpen);
     trackCurrentToolEvent(nextOpen ? 'STRUCTURE_NAV_OPEN' : 'STRUCTURE_NAV_CLOSE', 'panel');
   }, [isJsonTreePanelOpen, mode, trackCurrentToolEvent]);
+
+  const handleToggleJsonCompare = useCallback(() => {
+    const nextOpen = !isJsonComparePanelOpen;
+    setIsJsonComparePanelOpen(nextOpen);
+    trackCurrentToolEvent(nextOpen ? 'JSON_COMPARE_OPEN' : 'JSON_COMPARE_CLOSE', 'panel');
+  }, [isJsonComparePanelOpen, trackCurrentToolEvent]);
 
   const handleToggleJsonSchema = useCallback(() => {
     const nextOpen = !isJsonSchemaPanelOpen;
@@ -1735,11 +1753,13 @@ const App: React.FC = () => {
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             isJsonPathOpen={isJsonPathPanelOpen}
             isJsonTreeOpen={isJsonTreePanelOpen}
+            isJsonCompareOpen={isJsonComparePanelOpen}
             isSchemeDecodeOpen={isSchemeDecodeOpen}
             isTemplateFillOpen={isTemplatePanelOpen}
             isJsonSchemaOpen={isJsonSchemaPanelOpen}
             onToggleJsonPath={handleToggleJsonPath}
             onToggleJsonTree={handleToggleJsonTree}
+            onToggleJsonCompare={handleToggleJsonCompare}
             onToggleJsonSchema={handleToggleJsonSchema}
             onToggleSchemeDecode={() => {
               const nextOpen = !isSchemeDecodeOpen;
@@ -2008,6 +2028,17 @@ const App: React.FC = () => {
               isOpen={isJsonTreePanelOpen}
               onClose={() => setIsJsonTreePanelOpen(false)}
               onLocatePath={handleLocateJsonPath}
+            />
+          </Suspense>
+        )}
+
+        {/* JSON 语义对比面板 */}
+        {hasLoadedJsonComparePanel && (
+          <Suspense fallback={null}>
+            <LazyJsonComparePanel
+              sourceText={input}
+              isOpen={isJsonComparePanelOpen}
+              onClose={() => setIsJsonComparePanelOpen(false)}
             />
           </Suspense>
         )}
