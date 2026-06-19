@@ -118,7 +118,7 @@ frontend/
 │   │   ├── ChangelogModal.tsx     # 前端版本更新日志弹窗
 │   │   ├── JsonPathPanel.tsx      # JSONPath 查询面板
 │   │   ├── JsonComparePanel.tsx   # 通用 JSON 语义对比、忽略路径、差异路径动作与报告复制面板
-│   │   ├── JsonTreePanel.tsx      # JSON 结构导航与路径定位面板
+│   │   ├── JsonTreePanel.tsx      # JSON 结构导航、路径定位和节点 TS 类型复制面板
 │   │   └── ...
 │   ├── hooks/                # 自定义 Hooks
 │   │   ├── useFileSystem.ts       # 文件操作

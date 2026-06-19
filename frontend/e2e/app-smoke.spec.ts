@@ -552,6 +552,29 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
     { id: 2, name: 'Bob' },
   ], null, 2));
 
+  await structurePanel.locator('[data-tour="structure-nav-copy-typescript"]').click();
+  await expect(page.getByText('已复制 TS 类型')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toContain([
+    'export type Items = ItemsItem[];',
+    '',
+    'export interface ItemsItem {',
+    '  id: number;',
+    '  name: string;',
+    '}',
+  ].join('\n'));
+
+  await structurePanel.locator('button[title="选中并定位 $.items[0]"]').click();
+  await structurePanel.locator('[data-tour="structure-nav-copy-typescript"]').click();
+  await expect(page.getByText('已复制 TS 类型').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toContain([
+    'export interface ItemsItem {',
+    '  id: number;',
+    '  name: string;',
+    '}',
+  ].join('\n'));
+
+  await structurePanel.locator('button[title="选中并定位 $.items"]').click();
+
   const tablePreview = structurePanel.locator('[data-tour="structure-nav-table-preview"]');
   await expect(tablePreview).toBeVisible();
   await expect(tablePreview).toContainText('对象数组预览: 2/2 行，2/2 列');

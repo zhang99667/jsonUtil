@@ -15,6 +15,7 @@ import {
 } from '../utils/jsonTreeModel';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { getJsonStringSemanticHints, type JsonStringSemanticHint } from '../utils/jsonValueSemantics';
+import { jsonValueToTypeScriptDeclaration } from '../utils/jsonToTypeScript';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import {
   addJsonTreeSearchHistoryItem,
@@ -143,6 +144,10 @@ const getVisibleNodes = (
     && (!hasTypeFilter || node.kind === kindFilter)
   ));
 };
+
+const isArrayIndexKeyLabel = (value: string): boolean => (
+  /^\[\d+\]$/.test(value)
+);
 
 export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   jsonData,
@@ -364,6 +369,25 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       showSuccess('已复制节点子树');
     } catch (error) {
       showError(getClipboardErrorMessage(error, '复制节点子树失败'));
+    }
+  };
+
+  const handleCopyNodeTypeScript = async (node: JsonTreeNode) => {
+    try {
+      const nodeValue = getJsonTreeNodeValue(jsonData, node.jsonPointer);
+      const parentNode = node.parentPath ? nodes.find(item => item.path === node.parentPath) : null;
+      const rootName = node.path === '$'
+        ? 'Root'
+        : isArrayIndexKeyLabel(node.keyLabel)
+          ? `${parentNode?.keyLabel || 'Root'}Item`
+          : node.keyLabel;
+      const declaration = jsonValueToTypeScriptDeclaration(nodeValue, {
+        rootName,
+      });
+      await copyText(declaration);
+      showSuccess('已复制 TS 类型');
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制 TS 类型失败'));
     }
   };
 
@@ -624,6 +648,16 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
               className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-amber-100"
             >
               子树
+            </button>
+          )}
+          {selectedNode.isContainer && (
+            <button
+              type="button"
+              data-tour="structure-nav-copy-typescript"
+              onClick={() => void handleCopyNodeTypeScript(selectedNode)}
+              className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-sky-100"
+            >
+              TS 类型
             </button>
           )}
         </div>
