@@ -813,6 +813,56 @@ describe('deepDecodeScheme', () => {
     expect(result.layers[0].description).toBe('URL 参数递归解析');
   });
 
+  it('URL 编码 params 中缺少起始引号的 JSON key 会被修复为对象', () => {
+    const scheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7b%22phone%22%3a%2213718164578%22%2c%22extInfo%22%3a%22AFDXXX%22%2c%22numberUrl%22%3a%22xxx%22%2c%22logUrl%22%3a%22xxxx%22%2ctype%22%3a%221%22%7d';
+    const result = deepDecodeScheme(scheme);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      params: {
+        phone: '13718164578',
+        extInfo: 'AFDXXX',
+        numberUrl: 'xxx',
+        logUrl: 'xxxx',
+        type: '1',
+      },
+    });
+    expect(result.layers[0]).toMatchObject({
+      type: 'url',
+      description: 'URL 参数递归解析',
+      before: scheme,
+      after: expect.stringContaining('"params": {'),
+    });
+    expect(result.paramStages?.[0]).toMatchObject({
+      path: '$.params',
+      key: 'params',
+      source: 'query',
+      raw: '%7b%22phone%22%3a%2213718164578%22%2c%22extInfo%22%3a%22AFDXXX%22%2c%22numberUrl%22%3a%22xxx%22%2c%22logUrl%22%3a%22xxxx%22%2ctype%22%3a%221%22%7d',
+      urlDecoded: '{"phone":"13718164578","extInfo":"AFDXXX","numberUrl":"xxx","logUrl":"xxxx",type":"1"}',
+      parsed: expect.stringContaining('"type": "1"'),
+      repairHint: 'Loose JSON 已补齐字段引号/单引号/尾逗号',
+      reencoded: expect.stringContaining('%22phone%22'),
+      reversible: false,
+    });
+  });
+
+  it('URL 编码 params 中的 JSON 字符串字面量不会残留反斜杠引号', () => {
+    const payload = JSON.stringify(JSON.stringify({
+      phone: '13718164578',
+      extInfo: 'AFDXXX',
+    }));
+    const result = deepDecodeScheme(`baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(payload)}`);
+    const parsed = JSON.parse(result.decoded);
+
+    expect(parsed).toEqual({
+      params: {
+        phone: '13718164578',
+        extInfo: 'AFDXXX',
+      },
+    });
+    expect(result.decoded).not.toContain('\\\\"phone\\\\"');
+  });
+
   it('URL 参数中的二级 URL 被继续解析', () => {
     const nestedUrl = encodeURIComponent('https://m.baidu.com/s?word=%25E4%25BD%25A0%25E5%25A5%25BD');
     const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?url=${nestedUrl}`);

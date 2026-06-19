@@ -7,8 +7,10 @@ import {
   buildSchemePlaceholderGroups,
   deepDecodeScheme, 
   encodeWithLayers, 
-  SchemeDecodeResult,
-  SchemeType 
+  type DecodeLayer,
+  type SchemeParamDecodeStage,
+  type SchemeDecodeResult,
+  type SchemeType
 } from '../utils/schemeUtils';
 import { QRCodeCanvas } from 'qrcode.react';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
@@ -143,6 +145,48 @@ const formatSummaryValue = (value: string, maxLength = 56): string => (
 
 const formatTooltipValue = (value: string, maxLength = 160): string => (
   formatTextPreview(value, maxLength)
+);
+
+const schemeLayerTypeLabels: Record<DecodeLayer['type'], string> = {
+  'url': 'URL',
+  'query-string': 'CMD 参数',
+  'url-encoded': 'URL Decode',
+  'base64': 'Base64',
+  'jwt': 'JWT',
+  'json': 'JSON 字符串',
+  'plain': '纯文本',
+  'json-escaped-slash': '斜杠转义',
+  'json-unicode-ascii': 'Unicode ASCII',
+};
+
+const schemeParamStageSourceLabels: Record<SchemeParamDecodeStage['source'], string> = {
+  query: 'Query',
+  hash: 'Hash',
+  fragment: 'Fragment',
+  'log-field': '日志字段',
+  'prefixed-query': '日志参数',
+};
+
+const formatLayerSizeLabel = (value?: string): string => {
+  if (value === undefined) return '未知';
+  const stats = getDocumentStats(value);
+  return `${stats.characterCount} 字符`;
+};
+
+const getLayerAfterContent = (
+  layers: DecodeLayer[],
+  index: number,
+  decodedContent: string
+): string | undefined => (
+  layers[index].after ?? layers[index + 1]?.before ?? (index === layers.length - 1 ? decodedContent : undefined)
+);
+
+const getLayerReversibleLabel = (layer: DecodeLayer): string => (
+  layer.reversible === false ? '只读' : '可回写'
+);
+
+const formatParamStageValue = (value: string, maxLength = 72): string => (
+  formatTextPreview(value.replace(/\s+/g, ' ').trim(), maxLength)
 );
 
 const formatParamTooltipValue = (value: string | string[]): string => (
@@ -542,6 +586,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const paramSections = useMemo(() => (
     buildParamSections(decodeResult.schemeInfo)
   ), [decodeResult.schemeInfo]);
+  const paramStages = decodeResult.paramStages || [];
   const placeholders = decodeResult.placeholders || [];
   const decodeWarnings = decodeResult.warnings || [];
   const placeholderGroups = useMemo(() => (
@@ -920,7 +965,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 上方信息卡片区域 */}
-          {(schemeQualitySummary || decodeResult.schemeInfo || commandSummaryInfo || decodeResult.layers.length > 0 || placeholders.length > 0 || decodeWarnings.length > 0 || base64MetaInfo) && (
+          {(schemeQualitySummary || decodeResult.schemeInfo || commandSummaryInfo || decodeResult.layers.length > 0 || paramStages.length > 0 || placeholders.length > 0 || decodeWarnings.length > 0 || base64MetaInfo) && (
             <div className="bg-editor-sidebar rounded p-3 border border-editor-border flex flex-col gap-2">
               {/* 解析质量摘要 */}
               {schemeQualitySummary && (
@@ -1180,6 +1225,81 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 </div>
               )}
 
+              {/* Query 参数分层解析 */}
+              {paramStages.length > 0 && (
+                <div data-tour="scheme-param-stages" className="flex flex-col gap-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="shrink-0 text-cyan-300 bg-cyan-900/30 border border-cyan-700/50 px-2 py-0.5 rounded">
+                      参数分层 · {paramStages.length}
+                    </span>
+                    <span className="text-gray-500">
+                      Raw → URL Decode → JSON/CMD 解析 → 重新编码
+                    </span>
+                  </div>
+                  <div className="grid gap-1">
+                    {paramStages.slice(0, 6).map(stage => {
+                      const title = [
+                        `${stage.path} (${schemeParamStageSourceLabels[stage.source]})`,
+                        '',
+                        'Raw:',
+                        formatTooltipValue(stage.raw, 320),
+                        '',
+                        'URL Decode:',
+                        formatTooltipValue(stage.urlDecoded, 320),
+                        '',
+                        'JSON/CMD 解析:',
+                        formatTooltipValue(stage.parsed, 320),
+                        '',
+                        '重新编码:',
+                        formatTooltipValue(stage.reencoded, 320),
+                        stage.repairHint ? `\n修复提示: ${stage.repairHint}` : '',
+                      ].filter(Boolean).join('\n');
+
+                      return (
+                        <div
+                          key={`${stage.source}:${stage.path}`}
+                          data-tour="scheme-param-stage"
+                          className="flex flex-wrap items-center gap-1 rounded border border-editor-border bg-editor-bg/70 px-2 py-1"
+                          title={title}
+                        >
+                          <span className="rounded bg-editor-sidebar px-2 py-0.5 text-cyan-200">
+                            {schemeParamStageSourceLabels[stage.source]}
+                          </span>
+                          <span className="rounded bg-gray-800 px-2 py-0.5 font-mono text-gray-200">
+                            {stage.path}
+                          </span>
+                          <span className="rounded bg-editor-sidebar px-2 py-0.5 font-mono text-gray-300">
+                            {stage.key}
+                          </span>
+                          <span className="text-gray-500">
+                            {formatLayerSizeLabel(stage.raw)} → {formatLayerSizeLabel(stage.parsed)}
+                          </span>
+                          {stage.repairHint && (
+                            <span className="rounded bg-amber-900/30 px-2 py-0.5 text-amber-200">
+                              {stage.repairHint}
+                            </span>
+                          )}
+                          <span className={stage.reversible
+                            ? 'rounded bg-emerald-900/20 px-2 py-0.5 text-emerald-200'
+                            : 'rounded bg-amber-900/30 px-2 py-0.5 text-amber-200'}
+                          >
+                            {stage.reversible ? '可重新编码' : '需确认'}
+                          </span>
+                          <span className="min-w-0 truncate text-gray-500">
+                            {formatParamStageValue(stage.urlDecoded)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {paramStages.length > 6 && (
+                      <div className="text-xs text-gray-500">
+                        还有 {paramStages.length - 6} 个参数分层未展示
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* 内部 Base64 元信息 */}
               {base64MetaInfo && (
                 <div data-tour="scheme-base64-meta" className="flex items-start gap-2 text-xs">
@@ -1236,30 +1356,64 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
               {/* 解码层级 */}
               {decodeResult.layers.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    解码:
-                  </span>
-                  <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">原始</span>
-                  {decodeResult.layers.map((layer, index) => (
-                    <React.Fragment key={index}>
-                      <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <div data-tour="scheme-decode-layers" className="flex flex-col gap-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
-                      <span className="bg-emerald-900/40 text-emerald-300 px-2 py-0.5 rounded text-xs font-medium">
-                        {layer.description}
-                      </span>
-                    </React.Fragment>
-                  ))}
-                  <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  <span className="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded font-medium">
-                    {decodeResult.isJson ? 'JSON' : '文本'}
-                  </span>
+                      解析链路 · {decodeResult.layers.length} 层
+                    </span>
+                    <span className="rounded bg-editor-bg px-2 py-0.5 font-mono text-gray-400">
+                      原始 → {decodeResult.isJson ? 'JSON' : '文本'}
+                    </span>
+                  </div>
+                  <div className="grid gap-1">
+                    {decodeResult.layers.map((layer, index) => {
+                      const afterContent = getLayerAfterContent(decodeResult.layers, index, decodeResult.decoded);
+                      const title = [
+                        layer.description,
+                        `输入: ${formatLayerSizeLabel(layer.before)}`,
+                        `输出: ${formatLayerSizeLabel(afterContent)}`,
+                        `类型: ${schemeLayerTypeLabels[layer.type]}`,
+                        `模式: ${getLayerReversibleLabel(layer)}`,
+                        '',
+                        '输入预览:',
+                        formatTooltipValue(layer.before, 260),
+                        '',
+                        '输出预览:',
+                        formatTooltipValue(afterContent || '', 260),
+                      ].join('\n');
+
+                      return (
+                        <div
+                          key={`${layer.type}:${index}:${layer.description}`}
+                          data-tour="scheme-decode-layer"
+                          className="flex flex-wrap items-center gap-1 rounded border border-editor-border bg-editor-bg/70 px-2 py-1"
+                          title={title}
+                        >
+                          <span className="rounded bg-gray-800 px-1.5 py-0.5 font-mono text-gray-300">
+                            {index + 1}
+                          </span>
+                          <span className="rounded bg-emerald-900/40 px-2 py-0.5 font-medium text-emerald-300">
+                            {layer.description}
+                          </span>
+                          <span className="rounded bg-editor-sidebar px-2 py-0.5 font-mono text-cyan-200">
+                            {schemeLayerTypeLabels[layer.type]}
+                          </span>
+                          <span className={layer.reversible === false
+                            ? 'rounded bg-amber-900/30 px-2 py-0.5 text-amber-200'
+                            : 'rounded bg-emerald-900/20 px-2 py-0.5 text-emerald-200'}
+                          >
+                            {getLayerReversibleLabel(layer)}
+                          </span>
+                          <span className="text-gray-500">
+                            {formatLayerSizeLabel(layer.before)} → {formatLayerSizeLabel(afterContent)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
