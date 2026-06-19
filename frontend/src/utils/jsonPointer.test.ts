@@ -1,5 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { setJsonPointerValue } from './jsonPointer';
+import {
+  decodeJsonPointerSegment,
+  encodeJsonPointerSegment,
+  getJsonPointerValue,
+  setJsonPointerValue,
+  stringifyJsonPointerValue,
+} from './jsonPointer';
+
+describe('jsonPointer helpers', () => {
+  it('编码和解码 JSON Pointer segment', () => {
+    expect(encodeJsonPointerSegment('a/b~c')).toBe('a~1b~0c');
+    expect(decodeJsonPointerSegment('a~1b~0c')).toBe('a/b~c');
+  });
+
+  it('按 JSON Pointer 读取和序列化值', () => {
+    const root = {
+      user: {
+        name: 'Alice',
+        'a/b~c': true,
+      },
+      items: [{ id: 1 }],
+    };
+
+    expect(getJsonPointerValue(root, '')).toBe(root);
+    expect(getJsonPointerValue(root, '/user/a~1b~0c')).toBe(true);
+    expect(getJsonPointerValue(root, '/items/0/id')).toBe(1);
+    expect(stringifyJsonPointerValue(root, '/user/name')).toBe('"Alice"');
+    expect(stringifyJsonPointerValue(root, '/items/0', { pretty: true })).toBe(JSON.stringify({
+      id: 1,
+    }, null, 2));
+  });
+
+  it('非法读取路径抛出错误', () => {
+    expect(() => getJsonPointerValue({ items: [] }, 'items')).toThrow('非法 JSON Pointer');
+    expect(() => getJsonPointerValue({ items: [] }, '/items/0')).toThrow('数组下标越界');
+    expect(() => getJsonPointerValue({ user: {} }, '/user/name')).toThrow('无法继续访问');
+  });
+});
 
 describe('setJsonPointerValue', () => {
   it('按对象路径替换值', () => {

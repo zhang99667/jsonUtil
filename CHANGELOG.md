@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.210 (2026-06-19) - 结构检查器节点详情
+### ✨ 新特性
+- **节点详情面板**: 结构导航选中节点后会展示类型、子节点数、JSONPath、JSON Pointer 和值预览，搜索命中后能直接看清节点上下文
+- **节点复制能力**: 结构导航支持复制 JSONPath、JSON Pointer、紧凑节点值和格式化节点值，复制值使用真实节点数据而不是截断预览
+- **Pointer 语义打通**: 结构树遍历时直接生成 RFC6901 JSON Pointer，JSONPath 查询结果也带出 pointer 字段，为后续结构检查器与 JSONPath 面板联动打基础
+
+### 🧪 测试
+- **回归保护**: 补充 JSON Pointer 工具、结构树节点值复制、JSONPath pointer 输出和结构导航 E2E，覆盖特殊 key、JSON Lines、根节点与非法 pointer
+
 ## v1.8.209 (2026-06-19) - 结构导航模糊搜索
 ### ✨ 新特性
 - **结构导航搜索升级**: 结构导航支持多关键词和字符顺序模糊匹配，例如 `usr dnm` 可命中 `userProfile.displayName`，大 response 里按记忆片段找字段更快

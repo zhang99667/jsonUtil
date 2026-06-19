@@ -2,6 +2,7 @@ import { JSONPath } from 'jsonpath-plus';
 import { parse as parseJsonSourceMap } from 'json-source-map';
 import type { HighlightRange, JsonValue } from '../types';
 import { getBusinessLabelForField } from './businessLabels';
+import { decodeJsonPointerSegment, encodeJsonPointerSegment } from './jsonPointer';
 import { parseJsonLinesWithMetadata, type JsonLineRecord } from './jsonLines';
 import { deepParseWithContext } from './transformations';
 
@@ -15,6 +16,7 @@ export interface JsonPathQueryItem {
   range: HighlightRange;
   value: unknown;
   path: string;
+  pointer: string;
   sourceLabel?: string;
 }
 
@@ -82,14 +84,6 @@ const parseJsonPathSource = (
   }
 };
 
-const decodeJsonPointerToken = (token: string): string => (
-  token.replace(/~1/g, '/').replace(/~0/g, '~')
-);
-
-const encodeJsonPointerToken = (token: string): string => (
-  token.replace(/~/g, '~0').replace(/\//g, '~1')
-);
-
 const appendJsonPathKey = (path: string, key: string): string => (
   /^[A-Za-z_$][\w$]*$/.test(key)
     ? `${path}.${key}`
@@ -102,7 +96,7 @@ const getMatchMeta = (
 ): { path: string; sourceLabel?: string } => {
   if (!pointer) return { path: '$' };
 
-  const tokens = pointer.slice(1).split('/').map(decodeJsonPointerToken);
+  const tokens = pointer.slice(1).split('/').map(decodeJsonPointerSegment);
   let current: unknown = root;
   let path = '$';
   let sourceLabel: string | undefined;
@@ -182,7 +176,7 @@ const toJsonLineHighlightRange = (
     };
   }
 
-  const tokens = pointer.slice(1).split('/').map(decodeJsonPointerToken);
+  const tokens = pointer.slice(1).split('/').map(decodeJsonPointerSegment);
   const recordIndex = Number(tokens[0]);
   if (!Number.isInteger(recordIndex) || String(recordIndex) !== tokens[0]) return null;
 
@@ -197,7 +191,7 @@ const toJsonLineHighlightRange = (
 
   const linePointer = tokens.length === 1
     ? ''
-    : `/${tokens.slice(1).map(encodeJsonPointerToken).join('/')}`;
+    : `/${tokens.slice(1).map(encodeJsonPointerSegment).join('/')}`;
   const lineRange = toHighlightRange(linePointer, pointers);
   return lineRange ? offsetLineRange(lineRange, record) : null;
 };
@@ -268,6 +262,7 @@ export const queryJsonPathRanges = (
         ? toJsonLineHighlightRange(match.pointer, parsedSource.jsonLines, jsonLineSourceMapCache)
         : parsedSource.pointers ? toHighlightRange(match.pointer, parsedSource.pointers) : null,
         value: match.value,
+        pointer: match.pointer,
         ...meta,
       };
     })

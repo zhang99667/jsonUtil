@@ -1,4 +1,9 @@
 import type { JsonValue } from '../types';
+import {
+  encodeJsonPointerSegment,
+  getJsonPointerValue,
+  stringifyJsonPointerValue,
+} from './jsonPointer';
 import { parseJsonLinesWithMetadata } from './jsonLines';
 
 export type JsonTreeNodeKind = 'object' | 'array' | 'string' | 'number' | 'boolean' | 'null';
@@ -6,6 +11,7 @@ export type JsonTreeNodeKind = 'object' | 'array' | 'string' | 'number' | 'boole
 export interface JsonTreeNode {
   id: string;
   path: string;
+  jsonPointer: string;
   parentPath: string | null;
   ancestorPaths: string[];
   keyLabel: string;
@@ -34,6 +40,7 @@ export interface BuildJsonTreeModelOptions {
 interface PendingTreeNode {
   value: JsonValue;
   path: string;
+  jsonPointer: string;
   parentPath: string | null;
   ancestorPaths: string[];
   keyLabel: string;
@@ -52,6 +59,10 @@ const appendJsonPathKey = (path: string, key: string): string => (
   /^[A-Za-z_$][\w$]*$/.test(key)
     ? `${path}.${key}`
     : `${path}[${JSON.stringify(key)}]`
+);
+
+const appendJsonPointerSegment = (pointer: string, segment: string): string => (
+  `${pointer}/${encodeJsonPointerSegment(segment)}`
 );
 
 const getNodeKind = (value: JsonValue): JsonTreeNodeKind => {
@@ -115,7 +126,7 @@ const getValuePreview = (value: JsonValue, maxLength: number): string => {
   return String(value);
 };
 
-const parseTreeSource = (source: string): JsonValue => {
+export const parseJsonTreeSource = (source: string): JsonValue => {
   try {
     return JSON.parse(source) as JsonValue;
   } catch (error) {
@@ -134,6 +145,7 @@ const getChildren = (node: PendingTreeNode): PendingTreeNode[] => {
     return node.value.map((value, index) => ({
       value,
       path: `${node.path}[${index}]`,
+      jsonPointer: appendJsonPointerSegment(node.jsonPointer, String(index)),
       parentPath: node.path,
       ancestorPaths: [...node.ancestorPaths, node.path],
       keyLabel: `[${index}]`,
@@ -145,6 +157,7 @@ const getChildren = (node: PendingTreeNode): PendingTreeNode[] => {
     return Object.keys(node.value).map(key => ({
       value: node.value[key],
       path: appendJsonPathKey(node.path, key),
+      jsonPointer: appendJsonPointerSegment(node.jsonPointer, key),
       parentPath: node.path,
       ancestorPaths: [...node.ancestorPaths, node.path],
       keyLabel: key,
@@ -154,6 +167,18 @@ const getChildren = (node: PendingTreeNode): PendingTreeNode[] => {
 
   return [];
 };
+
+export const getJsonTreeNodeValue = (jsonText: string, jsonPointer: string): JsonValue => (
+  getJsonPointerValue(parseJsonTreeSource(jsonText.trim()), jsonPointer) as JsonValue
+);
+
+export const getJsonTreeNodeValueCopyText = (
+  jsonText: string,
+  jsonPointer: string,
+  options: { pretty?: boolean } = {}
+): string => (
+  stringifyJsonPointerValue(parseJsonTreeSource(jsonText.trim()), jsonPointer, options)
+);
 
 export const buildJsonTreeModel = (
   jsonText: string,
@@ -173,11 +198,12 @@ export const buildJsonTreeModel = (
   const maxNodes = Math.max(1, options.maxNodes ?? DEFAULT_MAX_TREE_NODES);
   const maxDepth = Math.max(1, options.maxDepth ?? DEFAULT_MAX_TREE_DEPTH);
   const previewMaxLength = Math.max(16, options.previewMaxLength ?? DEFAULT_PREVIEW_MAX_LENGTH);
-  const rootValue = parseTreeSource(source);
+  const rootValue = parseJsonTreeSource(source);
   const nodes: JsonTreeNode[] = [];
   const stack: PendingTreeNode[] = [{
     value: rootValue,
     path: '$',
+    jsonPointer: '',
     parentPath: null,
     ancestorPaths: [],
     keyLabel: '$',
@@ -202,6 +228,7 @@ export const buildJsonTreeModel = (
     nodes.push({
       id: current.path,
       path: current.path,
+      jsonPointer: current.jsonPointer,
       parentPath: current.parentPath,
       ancestorPaths: current.ancestorPaths,
       keyLabel: current.keyLabel,

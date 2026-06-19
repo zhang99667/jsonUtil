@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
-import { matchesJsonTreeSearchText } from '../utils/jsonTreeModel';
+import { getJsonTreeNodeValueCopyText, matchesJsonTreeSearchText } from '../utils/jsonTreeModel';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 
@@ -43,6 +43,10 @@ const getKindClassName = (kind: JsonTreeNode['kind']): string => {
   return 'border-gray-500/30 bg-gray-500/10 text-gray-300';
 };
 
+const getJsonPointerDisplayValue = (jsonPointer: string): string => (
+  jsonPointer || '(root)'
+);
+
 const getVisibleNodes = (
   nodes: JsonTreeNode[],
   expandedPaths: Set<string>,
@@ -69,6 +73,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
   const [searchText, setSearchText] = useState('');
+  const [selectedPath, setSelectedPath] = useState('$');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['$']));
   const [modelState, setModelState] = useState<JsonTreeModelState>({
     model: null,
@@ -141,6 +146,10 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     () => nodes.filter(node => node.isContainer).length,
     [nodes]
   );
+  const selectedNode = useMemo(
+    () => nodes.find(node => node.path === selectedPath) || nodes[0] || null,
+    [nodes, selectedPath]
+  );
 
   useEffect(() => {
     if (!isOpen || !modelState.model) return;
@@ -149,6 +158,9 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       modelState.model.nodes
         .filter(node => node.isContainer && node.depth <= 1)
         .map(node => node.path)
+    ));
+    setSelectedPath(prevPath => (
+      modelState.model?.nodes.some(node => node.path === prevPath) ? prevPath : '$'
     ));
   }, [isOpen, modelState.model]);
 
@@ -174,17 +186,100 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     setExpandedPaths(new Set(['$']));
   };
 
-  const handleCopyPath = async (path: string) => {
+  const handleCopyText = async (text: string, successMessage: string, errorMessage: string) => {
     try {
-      await copyText(path);
-      showSuccess('已复制 JSONPath');
+      await copyText(text);
+      showSuccess(successMessage);
     } catch (error) {
-      showError(getClipboardErrorMessage(error, '复制 JSONPath 失败'));
+      showError(getClipboardErrorMessage(error, errorMessage));
+    }
+  };
+
+  const handleCopyPath = async (path: string) => {
+    await handleCopyText(path, '已复制 JSONPath', '复制 JSONPath 失败');
+  };
+
+  const handleCopyPointer = async (node: JsonTreeNode) => {
+    await handleCopyText(node.jsonPointer, '已复制 JSON Pointer', '复制 JSON Pointer 失败');
+  };
+
+  const handleCopyNodeValue = async (node: JsonTreeNode, pretty: boolean) => {
+    try {
+      const copyTextValue = getJsonTreeNodeValueCopyText(jsonData, node.jsonPointer, { pretty });
+      await copyText(copyTextValue);
+      showSuccess(pretty ? '已复制格式化节点值' : '已复制节点值');
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制节点值失败'));
     }
   };
 
   const handleLocatePath = (path: string) => {
     onLocatePath(path);
+  };
+
+  const handleSelectNode = (node: JsonTreeNode) => {
+    setSelectedPath(node.path);
+    handleLocatePath(node.path);
+  };
+
+  const renderSelectedNodeDetails = () => {
+    if (!selectedNode || modelState.isLoading || modelState.error || !jsonData.trim()) return null;
+
+    return (
+      <div className="shrink-0 border-b border-editor-border bg-editor-bg/50 px-3 py-2 text-xs text-gray-300">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] leading-none ${getKindClassName(selectedNode.kind)}`}>
+            {KIND_LABELS[selectedNode.kind]}
+          </span>
+          <span className="min-w-0 flex-1 truncate font-mono text-gray-100" title={selectedNode.path}>
+            {selectedNode.path}
+          </span>
+          <span className="shrink-0 text-gray-500">
+            子节点 {selectedNode.childCount}
+          </span>
+        </div>
+        <div className="mt-2 grid grid-cols-[72px_minmax(0,1fr)] gap-x-2 gap-y-1 text-[11px]">
+          <span className="text-gray-500">Pointer</span>
+          <span className="truncate font-mono text-cyan-100" title={selectedNode.jsonPointer || '根节点 JSON Pointer 为空字符串'}>
+            {getJsonPointerDisplayValue(selectedNode.jsonPointer)}
+          </span>
+          <span className="text-gray-500">预览</span>
+          <span className="truncate font-mono text-gray-300" title={selectedNode.valuePreview}>
+            {selectedNode.valuePreview}
+          </span>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleCopyPath(selectedNode.path)}
+            className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-emerald-100"
+          >
+            PATH
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyPointer(selectedNode)}
+            className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-cyan-100"
+          >
+            Pointer
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyNodeValue(selectedNode, false)}
+            className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-blue-100"
+          >
+            复制值
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyNodeValue(selectedNode, true)}
+            className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-violet-100"
+          >
+            格式化值
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const renderBody = () => {
@@ -233,13 +328,14 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
         <div className="space-y-1">
           {visibleNodes.map(node => {
             const isExpanded = expandedPaths.has(node.path);
+            const isSelected = selectedNode?.path === node.path;
             const indent = Math.min(node.depth * 14, 140);
 
             return (
               <div
                 key={node.id}
                 data-tour="structure-nav-row"
-                className="group flex min-h-[34px] items-center gap-1 rounded border border-transparent px-2 py-1 text-xs text-gray-300 hover:border-editor-border hover:bg-editor-hover/70"
+                className={`group flex min-h-[34px] items-center gap-1 rounded border px-2 py-1 text-xs text-gray-300 hover:border-editor-border hover:bg-editor-hover/70 ${isSelected ? 'border-emerald-500/50 bg-emerald-950/20' : 'border-transparent'}`}
                 style={{ paddingLeft: `${8 + indent}px` }}
               >
                 <button
@@ -265,9 +361,9 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => handleLocatePath(node.path)}
+                  onClick={() => handleSelectNode(node)}
                   className="min-w-0 flex flex-1 items-center gap-2 rounded px-1 py-0.5 text-left transition-colors hover:bg-editor-active focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                  title={`定位 ${node.path}`}
+                  title={`选中并定位 ${node.path}`}
                 >
                   <span className="max-w-[160px] shrink-0 truncate font-mono text-[11px] font-semibold text-gray-100">
                     {node.keyLabel}
@@ -355,6 +451,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
           </button>
         </div>
 
+        {renderSelectedNodeDetails()}
         {renderBody()}
       </div>
     </DraggablePanel>

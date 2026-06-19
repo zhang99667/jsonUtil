@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildJsonTreeModel, matchesJsonTreeSearchText } from './jsonTreeModel';
+import {
+  buildJsonTreeModel,
+  getJsonTreeNodeValue,
+  getJsonTreeNodeValueCopyText,
+  matchesJsonTreeSearchText,
+} from './jsonTreeModel';
 
 describe('jsonTreeModel', () => {
   it('生成 JSON 结构节点和可定位路径', () => {
@@ -14,20 +19,21 @@ describe('jsonTreeModel', () => {
     expect(model.isLimited).toBe(false);
     expect(model.nodes.map(node => ({
       path: node.path,
+      jsonPointer: node.jsonPointer,
       keyLabel: node.keyLabel,
       depth: node.depth,
       kind: node.kind,
       childCount: node.childCount,
       valuePreview: node.valuePreview,
     }))).toEqual([
-      { path: '$', keyLabel: '$', depth: 0, kind: 'object', childCount: 2, valuePreview: '对象 2 个键' },
-      { path: '$.user', keyLabel: 'user', depth: 1, kind: 'object', childCount: 2, valuePreview: '对象 2 个键' },
-      { path: '$.user.name', keyLabel: 'name', depth: 2, kind: 'string', childCount: 0, valuePreview: '"Alice"' },
-      { path: '$.user["trace.id"]', keyLabel: 'trace.id', depth: 2, kind: 'string', childCount: 0, valuePreview: '"t-1"' },
-      { path: '$.items', keyLabel: 'items', depth: 1, kind: 'array', childCount: 3, valuePreview: '数组 3 项' },
-      { path: '$.items[0]', keyLabel: '[0]', depth: 2, kind: 'number', childCount: 0, valuePreview: '1' },
-      { path: '$.items[1]', keyLabel: '[1]', depth: 2, kind: 'boolean', childCount: 0, valuePreview: 'true' },
-      { path: '$.items[2]', keyLabel: '[2]', depth: 2, kind: 'null', childCount: 0, valuePreview: 'null' },
+      { path: '$', jsonPointer: '', keyLabel: '$', depth: 0, kind: 'object', childCount: 2, valuePreview: '对象 2 个键' },
+      { path: '$.user', jsonPointer: '/user', keyLabel: 'user', depth: 1, kind: 'object', childCount: 2, valuePreview: '对象 2 个键' },
+      { path: '$.user.name', jsonPointer: '/user/name', keyLabel: 'name', depth: 2, kind: 'string', childCount: 0, valuePreview: '"Alice"' },
+      { path: '$.user["trace.id"]', jsonPointer: '/user/trace.id', keyLabel: 'trace.id', depth: 2, kind: 'string', childCount: 0, valuePreview: '"t-1"' },
+      { path: '$.items', jsonPointer: '/items', keyLabel: 'items', depth: 1, kind: 'array', childCount: 3, valuePreview: '数组 3 项' },
+      { path: '$.items[0]', jsonPointer: '/items/0', keyLabel: '[0]', depth: 2, kind: 'number', childCount: 0, valuePreview: '1' },
+      { path: '$.items[1]', jsonPointer: '/items/1', keyLabel: '[1]', depth: 2, kind: 'boolean', childCount: 0, valuePreview: 'true' },
+      { path: '$.items[2]', jsonPointer: '/items/2', keyLabel: '[2]', depth: 2, kind: 'null', childCount: 0, valuePreview: 'null' },
     ]);
   });
 
@@ -40,6 +46,13 @@ describe('jsonTreeModel', () => {
       '$[0].id',
       '$[1]',
       '$[1].id',
+    ]);
+    expect(model.nodes.map(node => node.jsonPointer)).toEqual([
+      '',
+      '/0',
+      '/0/id',
+      '/1',
+      '/1/id',
     ]);
   });
 
@@ -89,5 +102,39 @@ describe('jsonTreeModel', () => {
     expect(matchesJsonTreeSearchText(displayNameNode?.searchText || '', 'usr dnm')).toBe(true);
     expect(matchesJsonTreeSearchText(skuNode?.searchText || '', 'ord sku')).toBe(true);
     expect(matchesJsonTreeSearchText(displayNameNode?.searchText || '', 'order sku')).toBe(false);
+  });
+
+  it('支持按 JSON Pointer 复制节点值', () => {
+    const source = JSON.stringify({
+      user: {
+        name: 'Alice',
+        'a/b~c': true,
+      },
+    });
+    const model = buildJsonTreeModel(source);
+    const escapedNode = model.nodes.find(node => node.keyLabel === 'a/b~c');
+
+    expect(escapedNode?.path).toBe('$.user["a/b~c"]');
+    expect(escapedNode?.jsonPointer).toBe('/user/a~1b~0c');
+    expect(getJsonTreeNodeValue(source, '')).toEqual({
+      user: {
+        name: 'Alice',
+        'a/b~c': true,
+      },
+    });
+    expect(getJsonTreeNodeValue(source, escapedNode?.jsonPointer || '')).toBe(true);
+    expect(getJsonTreeNodeValueCopyText(source, '/user/name')).toBe('"Alice"');
+    expect(getJsonTreeNodeValueCopyText(source, '/user', { pretty: true })).toBe(JSON.stringify({
+      name: 'Alice',
+      'a/b~c': true,
+    }, null, 2));
+  });
+
+  it('支持从 JSON Lines 节点复制值并处理非法 Pointer', () => {
+    const source = '{"id":1}\n{"id":2}';
+
+    expect(getJsonTreeNodeValue(source, '/1/id')).toBe(2);
+    expect(getJsonTreeNodeValueCopyText(source, '/0')).toBe('{"id":1}');
+    expect(() => getJsonTreeNodeValue(source, '/2/id')).toThrow('数组下标越界');
   });
 });
