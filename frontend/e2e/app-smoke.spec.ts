@@ -507,6 +507,14 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.user["trace.id"]');
   await expect(jsonPathPanel).toContainText('t-1');
 
+  const sameFieldButton = structurePanel.locator('[data-tour="structure-nav-query-same-field"]');
+  await expect(sameFieldButton).toHaveAttribute('title', '用 $..["trace.id"] 查询全局同名字段');
+  await expect(sameFieldButton).toHaveAttribute('aria-label', '查询同名字段：trace.id');
+  await sameFieldButton.click();
+  await expect(page.getByText('已填入同名字段查询')).toBeVisible();
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$..["trace.id"]');
+  await expect(jsonPathPanel).toContainText('t-1');
+
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('homepage');
   await structurePanel.getByTitle('选中并定位 $.user.homepage').click();
   await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('URL');
@@ -564,6 +572,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   ].join('\n'));
 
   await structurePanel.locator('button[title="选中并定位 $.items[0]"]').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-query-same-field"]')).toHaveCount(0);
   await structurePanel.locator('[data-tour="structure-nav-copy-typescript"]').click();
   await expect(page.getByText('已复制 TS 类型').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toContain([
@@ -2572,6 +2581,28 @@ test('JSONPath 面板可查询 JSON Lines 输入', async ({ page }) => {
   await expect(page.getByText('1 / 2')).toBeVisible();
   await expect(resultPreview).toContainText('1');
   await expect(resultPreview).toContainText('2');
+});
+
+test('结构导航同名字段查询可覆盖 JSON Lines', async ({ page }) => {
+  await fillSourceEditor(page, '{"level":"info","user":{"id":1}}\n{"level":"error","user":{"id":2}}');
+
+  await page.getByRole('button', { name: '结构导航' }).click();
+  const structurePanel = page.getByRole('dialog', { name: 'JSON 结构导航' });
+  await expect(structurePanel).toBeVisible();
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('user id');
+  await structurePanel.getByTitle('选中并定位 $[0].user.id').click();
+
+  const sameFieldButton = structurePanel.locator('[data-tour="structure-nav-query-same-field"]');
+  await expect(sameFieldButton).toHaveAttribute('title', '用 $..id 查询全局同名字段');
+  await sameFieldButton.click();
+
+  const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
+  await expect(jsonPathPanel).toBeVisible();
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$..id');
+  await expect(page.getByText('1 / 2')).toBeVisible();
+  const recursiveResultPreview = jsonPathPanel.locator('[data-tour="jsonpath-results"]');
+  await expect(recursiveResultPreview).toContainText('$[0].user.id');
+  await expect(recursiveResultPreview).toContainText('$[1].user.id');
 });
 
 test('Scheme 面板底部操作展示禁用原因', async ({ page }) => {

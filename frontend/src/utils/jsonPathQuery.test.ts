@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { formatJsonPathRecursiveFieldQuery } from './jsonPathInput';
 import { queryJsonPathRanges } from './jsonPathQuery';
 
 describe('queryJsonPathRanges', () => {
@@ -57,6 +58,38 @@ describe('queryJsonPathRanges', () => {
     expect(result.items[0].path).toBe('$["a.b"]["x/y"]["tilde~key"]');
     expect(result.items[0].pointer).toBe('/a.b/x~1y/tilde~0key');
     expect(result.ranges[0].startLine).toBe(4);
+  });
+
+  it('支持结构导航生成的特殊字段递归查询', () => {
+    const jsonData = JSON.stringify({
+      nested: {
+        'a/b~c': 'slash',
+        'quote"key': 'double',
+        "single'key": 'single',
+      },
+    }, null, 2);
+
+    expect(queryJsonPathRanges(jsonData, formatJsonPathRecursiveFieldQuery('a/b~c')).items.map(item => ({
+      path: item.path,
+      pointer: item.pointer,
+      value: item.value,
+    }))).toEqual([
+      { path: '$.nested["a/b~c"]', pointer: '/nested/a~1b~0c', value: 'slash' },
+    ]);
+    expect(queryJsonPathRanges(jsonData, formatJsonPathRecursiveFieldQuery('quote"key')).items.map(item => ({
+      path: item.path,
+      pointer: item.pointer,
+      value: item.value,
+    }))).toEqual([
+      { path: '$.nested["quote\\"key"]', pointer: '/nested/quote"key', value: 'double' },
+    ]);
+    expect(queryJsonPathRanges(jsonData, formatJsonPathRecursiveFieldQuery("single'key")).items.map(item => ({
+      path: item.path,
+      pointer: item.pointer,
+      value: item.value,
+    }))).toEqual([
+      { path: '$.nested["single\'key"]', pointer: "/nested/single'key", value: 'single' },
+    ]);
   });
 
   it('查询 k/v 形态值时返回业务标签', () => {

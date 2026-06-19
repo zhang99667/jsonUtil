@@ -31,6 +31,7 @@ import {
 } from '../utils/jsonTreeSearchHistory';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import { showError, showSuccess } from '../utils/toast';
+import { formatJsonPathRecursiveFieldQuery } from '../utils/jsonPathInput';
 
 interface JsonTreePanelProps {
   jsonData: string;
@@ -307,6 +308,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   }, [selectedNode?.keyLabel, selectedNode?.path, selectedStringValue]);
   const canOpenSelectedSemanticValue = selectedStringValue !== null &&
     selectedSemanticHints.some(isJsonStringSemanticHintActionable);
+  const canQuerySelectedField = Boolean(selectedNode && selectedNode.path !== '$' && !isArrayIndexKeyLabel(selectedNode.keyLabel));
 
   useEffect(() => {
     if (!isOpen || !modelState.model) return;
@@ -522,6 +524,13 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     showSuccess('已填入 Scheme 解析');
   };
 
+  const handleQuerySelectedField = (node: JsonTreeNode) => {
+    if (node.path === '$' || isArrayIndexKeyLabel(node.keyLabel)) return;
+
+    handleLocatePath(formatJsonPathRecursiveFieldQuery(node.keyLabel));
+    showSuccess('已填入同名字段查询');
+  };
+
   const handleSelectNode = (node: JsonTreeNode) => {
     commitSearchHistory();
     setSelectedPath(node.path);
@@ -683,6 +692,18 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
           >
             格式化值
           </button>
+          {canQuerySelectedField && (
+            <button
+              type="button"
+              data-tour="structure-nav-query-same-field"
+              onClick={() => handleQuerySelectedField(selectedNode)}
+              aria-label={`查询同名字段：${selectedNode.keyLabel}`}
+              className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-100 transition-colors hover:border-emerald-400/60 hover:bg-emerald-500/20"
+              title={`用 ${formatJsonPathRecursiveFieldQuery(selectedNode.keyLabel)} 查询全局同名字段`}
+            >
+              同名字段
+            </button>
+          )}
           {canOpenSelectedSemanticValue && (
             <button
               type="button"

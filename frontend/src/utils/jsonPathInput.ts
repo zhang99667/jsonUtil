@@ -6,9 +6,11 @@ export interface JsonPathQueryNormalization {
 const FIELD_NAME_SHORTCUT_RE = /^[\p{L}\p{N}_$-][\p{L}\p{N}_$.-]*$/u;
 const JSONPATH_IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
-const formatRecursiveFieldQuery = (fieldName: string): string => (
+export const formatJsonPathRecursiveFieldQuery = (fieldName: string): string => (
   JSONPATH_IDENTIFIER_RE.test(fieldName)
     ? `$..${fieldName}`
+    : /['"]/.test(fieldName)
+      ? `$..[?(@property == ${JSON.stringify(fieldName)})]`
     : `$..[${JSON.stringify(fieldName)}]`
 );
 
@@ -23,7 +25,7 @@ export const normalizeJsonPathQueryInput = (input: string): JsonPathQueryNormali
   }
 
   return {
-    query: formatRecursiveFieldQuery(query),
+    query: formatJsonPathRecursiveFieldQuery(query),
     isFieldNameShortcut: true,
   };
 };
