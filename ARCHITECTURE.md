@@ -115,6 +115,7 @@ frontend/
 │   ├── components/           # 主应用组件
 │   │   ├── Editor.tsx             # Monaco 编辑器封装
 │   │   ├── ActionPanel.tsx        # 工具栏
+│   │   ├── ChangelogModal.tsx     # 前端版本更新日志弹窗
 │   │   ├── JsonPathPanel.tsx      # JSONPath 查询面板
 │   │   └── ...
 │   ├── hooks/                # 自定义 Hooks
@@ -129,6 +130,7 @@ frontend/
 │   │   ├── schemePathValues.ts    # Scheme 面板 JSONPath 路径值复制
 │   │   ├── transformSummary.ts    # 深度解析报告、质量快照和 CMD 结构导出
 │   │   ├── cmdStructureDiff.ts    # cmdHandler 风格结构差异对比
+│   │   ├── changelog.ts           # CHANGELOG 解析与前端展示数据
 │   │   └── diffUtils.ts           # 差异对比
 │   ├── workers/              # 大输入异步处理
 │   │   ├── transform.worker.ts    # 格式化、压缩、深度解析 Worker
@@ -161,6 +163,12 @@ frontend/
    - 数据统计和用户管理
    - 面向管理员
    - 使用 Ant Design UI
+
+### 前端版本感知
+
+- `vite.config.ts` 构建时读取根目录 `CHANGELOG.md`，将完整内容注入 `import.meta.env.VITE_APP_CHANGELOG`，供主应用懒加载的 `ChangelogModal` 解析展示。
+- 构建产物中的 `/version.json` 会携带当前版本号、构建时间和最近 changelog 片段；`useAppUpdateCheck` 在生产环境轮询该文件，发现新版本后展示 Toast，并允许用户在刷新前打开目标版本更新说明。
+- 底部状态栏版本号是常驻入口，点击后展示最近 12 个版本，避免版本更新提示与具体变更说明脱节。
 
 ### 管理后台路由机制
 

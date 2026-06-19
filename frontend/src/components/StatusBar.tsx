@@ -56,6 +56,8 @@ interface StatusBarProps {
   sourceStandaloneDeepFormatKind: StandaloneDeepFormatInputKind | null;
   /** 打开 SOURCE 独立 Scheme/编码 JSON 到解析面板 */
   onOpenSourceSchemeInput?: () => void;
+  /** 打开版本更新日志 */
+  onOpenChangelog?: () => void;
   /** SOURCE JSON 校验结果 */
   sourceValidation: ValidationResult;
   /** SOURCE JSON 错误定位 */
@@ -87,6 +89,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   isSourceJsonCandidate,
   sourceStandaloneDeepFormatKind,
   onOpenSourceSchemeInput,
+  onOpenChangelog,
   sourceValidation,
   sourceValidationLocation,
   onLocateSourceError,
@@ -181,6 +184,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   })();
   const canLocateSourceError = Boolean(!sourceValidation.isValid && sourceValidationLocation && onLocateSourceError);
   const canOpenSourceSchemeInput = Boolean(sourceStandaloneDeepFormatKind && onOpenSourceSchemeInput);
+  const versionBadgeClassName = 'rounded bg-white/15 px-1.5 py-0.5 font-mono text-[10px] leading-none text-blue-100';
 
   return (
     <div
@@ -280,13 +284,26 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             · 自动展开多层嵌套的 JSON 字符串
           </span>
         )}
-        <span
-          data-tour="statusbar-version"
-          className="rounded bg-white/15 px-1.5 py-0.5 font-mono text-[10px] leading-none text-blue-100"
-          title="当前版本"
-        >
-          {APP_VERSION_LABEL}
-        </span>
+        {onOpenChangelog ? (
+          <button
+            data-tour="statusbar-version"
+            type="button"
+            onClick={onOpenChangelog}
+            className={`${versionBadgeClassName} transition-colors hover:bg-white/25 hover:text-white focus:outline-none focus:ring-1 focus:ring-white`}
+            title="当前版本，点击查看更新日志"
+            aria-label={`查看版本更新，当前版本 ${APP_VERSION_LABEL}`}
+          >
+            {APP_VERSION_LABEL}
+          </button>
+        ) : (
+          <span
+            data-tour="statusbar-version"
+            className={versionBadgeClassName}
+            title="当前版本"
+          >
+            {APP_VERSION_LABEL}
+          </span>
+        )}
       </div>
     </div>
   );

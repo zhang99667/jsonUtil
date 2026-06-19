@@ -18,6 +18,7 @@ import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, 
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useAppUpdateCheck } from './hooks/useAppUpdateCheck';
+import { APP_CHANGELOG_OPEN_EVENT, type AppChangelogOpenDetail } from './utils/appEvents';
 import {
   LEFT_PANE_MAX_PERCENT,
   LEFT_PANE_MIN_PERCENT,
@@ -126,6 +127,10 @@ const LazyAiRepairSummaryBanner = lazy(() => import('./components/AiRepairSummar
 
 const LazyTransformReportPanel = lazy(() => import('./components/TransformReportPanel').then(module => ({
   default: module.TransformReportPanel,
+})));
+
+const LazyChangelogModal = lazy(() => import('./components/ChangelogModal').then(module => ({
+  default: module.ChangelogModal,
 })));
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
@@ -536,6 +541,10 @@ const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [hasLoadedSettingsModal, setHasLoadedSettingsModal] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
+  const [isChangelogModalOpen, setIsChangelogModalOpen] = useState(false);
+  const [hasLoadedChangelogModal, setHasLoadedChangelogModal] = useState(false);
+  const [changelogSourceMarkdown, setChangelogSourceMarkdown] = useState<string | null>(null);
+  const [changelogHighlightedVersion, setChangelogHighlightedVersion] = useState<string | null>(null);
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
   const [hasLoadedSchemePanel, setHasLoadedSchemePanel] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
@@ -559,6 +568,12 @@ const App: React.FC = () => {
       setHasLoadedSettingsModal(true);
     }
   }, [isSettingsModalOpen]);
+
+  useEffect(() => {
+    if (isChangelogModalOpen) {
+      setHasLoadedChangelogModal(true);
+    }
+  }, [isChangelogModalOpen]);
 
   useEffect(() => {
     if (isJsonPathPanelOpen) {
@@ -723,6 +738,16 @@ const App: React.FC = () => {
     trackCurrentToolEvent('SCHEME_OPEN_FROM_SOURCE_STATUS', 'panel');
   }, [input, trackCurrentToolEvent]);
 
+  const handleOpenChangelog = useCallback((detail?: AppChangelogOpenDetail) => {
+    setChangelogSourceMarkdown(detail?.changelogMarkdown?.trim() ? detail.changelogMarkdown : null);
+    setChangelogHighlightedVersion(detail?.version || null);
+    setIsChangelogModalOpen(true);
+  }, []);
+
+  const handleCloseChangelog = useCallback(() => {
+    setIsChangelogModalOpen(false);
+  }, []);
+
   const handleOpenTemplateFillFromReport = useCallback((template: string) => {
     if (!template) return;
 
@@ -794,6 +819,18 @@ const App: React.FC = () => {
 
   // 生产环境检测新版本，避免长时间打开的页面停留在旧包
   useAppUpdateCheck();
+
+  useEffect(() => {
+    const handleChangelogOpen = (event: Event) => {
+      const detail = event instanceof CustomEvent
+        ? event.detail as AppChangelogOpenDetail | undefined
+        : undefined;
+      handleOpenChangelog(detail);
+    };
+
+    window.addEventListener(APP_CHANGELOG_OPEN_EVENT, handleChangelogOpen);
+    return () => window.removeEventListener(APP_CHANGELOG_OPEN_EVENT, handleChangelogOpen);
+  }, [handleOpenChangelog]);
 
   // 功能级引导 (Hook)
   const { triggerFeatureFirstUse } = useFeatureTour();
@@ -1572,6 +1609,17 @@ const App: React.FC = () => {
         </Suspense>
       )}
 
+      {hasLoadedChangelogModal && (
+        <Suspense fallback={null}>
+          <LazyChangelogModal
+            isOpen={isChangelogModalOpen}
+            onClose={handleCloseChangelog}
+            sourceMarkdown={changelogSourceMarkdown}
+            highlightedVersion={changelogHighlightedVersion}
+          />
+        </Suspense>
+      )}
+
       <ConfirmDialog
         isOpen={Boolean(pendingCloseFile)}
         title="关闭未保存标签"
@@ -2034,6 +2082,7 @@ const App: React.FC = () => {
         isSourceJsonCandidate={isSourceJsonCandidate}
         sourceStandaloneDeepFormatKind={sourceStandaloneDeepFormatKind}
         onOpenSourceSchemeInput={handleOpenSourceSchemeInput}
+        onOpenChangelog={() => handleOpenChangelog()}
         sourceValidation={validation}
         sourceValidationLocation={sourceErrorLocation}
         onLocateSourceError={handleLocateSourceErrorFromStatus}
