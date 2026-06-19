@@ -73,6 +73,8 @@ const getJsonPointerDisplayValue = (jsonPointer: string): string => (
 const getSemanticHintClassName = (kind: JsonStringSemanticHint['kind']): string => {
   if (kind === 'url') return 'border-sky-500/30 bg-sky-500/10 text-sky-100';
   if (kind === 'scheme') return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100';
+  if (kind === 'jwt') return 'border-indigo-500/30 bg-indigo-500/10 text-indigo-100';
+  if (kind === 'base64') return 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-100';
   if (kind === 'email') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100';
   if (kind === 'phone') return 'border-lime-500/30 bg-lime-500/10 text-lime-100';
   if (kind === 'date' || kind === 'date-time') return 'border-amber-500/30 bg-amber-500/10 text-amber-100';

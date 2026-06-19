@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { getJsonStringSemanticHints } from './jsonValueSemantics';
+import { base64Encode } from './schemeUtils';
+
+const encodeBase64Url = (value: string): string => (
+  base64Encode(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+);
 
 describe('jsonValueSemantics', () => {
   it('识别普通 HTTPS URL 但不把它标记为业务 Scheme', () => {
@@ -124,12 +129,52 @@ describe('jsonValueSemantics', () => {
     ]));
   });
 
+  it('识别 JWT 和 Base64 结构化内容但不展示解码明文', () => {
+    const jwt = [
+      encodeBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' })),
+      encodeBase64Url(JSON.stringify({ sub: 'u-1', exp: 1893456000, role: 'admin' })),
+      'fake-signature',
+    ].join('.');
+
+    expect(getJsonStringSemanticHints(jwt)).toEqual([
+      {
+        kind: 'jwt',
+        label: 'JWT',
+        detail: 'payload: sub, exp, role · header: alg, typ',
+      },
+    ]);
+    expect(getJsonStringSemanticHints(base64Encode(JSON.stringify({ scene: 'demo', enabled: true })))).toEqual([
+      {
+        kind: 'base64',
+        label: 'Base64',
+        detail: 'JSON: scene, enabled',
+      },
+    ]);
+    expect(getJsonStringSemanticHints(encodeBase64Url(JSON.stringify({ a: 1 })))).toEqual([
+      {
+        kind: 'base64',
+        label: 'Base64',
+        detail: 'JSON: a',
+      },
+    ]);
+    expect(getJsonStringSemanticHints(base64Encode('plain readable text longer than twenty chars'))).toEqual([
+      {
+        kind: 'base64',
+        label: 'Base64',
+        detail: '文本 44 字符',
+      },
+    ]);
+  });
+
   it('忽略非字符串、空字符串和非法日期', () => {
     expect(getJsonStringSemanticHints(123)).toEqual([]);
     expect(getJsonStringSemanticHints('   ')).toEqual([]);
     expect(getJsonStringSemanticHints('2026-02-31')).toEqual([]);
     expect(getJsonStringSemanticHints('hello')).toEqual([]);
     expect(getJsonStringSemanticHints('1.2.3')).toEqual([]);
+    expect(getJsonStringSemanticHints('foo.bar.baz')).toEqual([]);
+    expect(getJsonStringSemanticHints('not.a.jwt.token')).toEqual([]);
+    expect(getJsonStringSemanticHints(base64Encode('hello'))).toEqual([]);
     expect(getJsonStringSemanticHints('13718164578')).toEqual([]);
     expect(getJsonStringSemanticHints('13718164578', { path: '$.traceId', keyLabel: 'traceId' })).toEqual([]);
     expect(getJsonStringSemanticHints('20260619123', { path: '$.phone', keyLabel: 'phone' })).toEqual([]);
