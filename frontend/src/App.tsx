@@ -109,6 +109,10 @@ const LazyJsonPathPanel = lazy(() => import('./components/JsonPathPanel').then(m
   default: module.JsonPathPanel,
 })));
 
+const LazyJsonTreePanel = lazy(() => import('./components/JsonTreePanel').then(module => ({
+  default: module.JsonTreePanel,
+})));
+
 const LazyJsonSchemaPanel = lazy(() => import('./components/JsonSchemaPanel').then(module => ({
   default: module.JsonSchemaPanel,
 })));
@@ -312,6 +316,8 @@ const App: React.FC = () => {
 
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [hasLoadedJsonPathPanel, setHasLoadedJsonPathPanel] = useState(false);
+  const [isJsonTreePanelOpen, setIsJsonTreePanelOpen] = useState(false);
+  const [hasLoadedJsonTreePanel, setHasLoadedJsonTreePanel] = useState(false);
   const [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen] = useState(false);
   const [hasLoadedJsonSchemaPanel, setHasLoadedJsonSchemaPanel] = useState(false);
   const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
@@ -502,12 +508,12 @@ const App: React.FC = () => {
 
   // JSONPath 查询当前 PREVIEW 文本，确保 Worker 返回的高亮范围与右侧编辑器坐标一致
   const jsonPathDataSource = useMemo(() => {
-    if (!isJsonPathPanelOpen) {
+    if (!isJsonPathPanelOpen && !isJsonTreePanelOpen) {
       return '';
     }
 
     return output;
-  }, [output, isJsonPathPanelOpen]);
+  }, [output, isJsonPathPanelOpen, isJsonTreePanelOpen]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -580,6 +586,12 @@ const App: React.FC = () => {
       setHasLoadedJsonPathPanel(true);
     }
   }, [isJsonPathPanelOpen]);
+
+  useEffect(() => {
+    if (isJsonTreePanelOpen) {
+      setHasLoadedJsonTreePanel(true);
+    }
+  }, [isJsonTreePanelOpen]);
 
   useEffect(() => {
     if (isJsonSchemaPanelOpen) {
@@ -688,6 +700,15 @@ const App: React.FC = () => {
     setIsJsonPathPanelOpen(nextOpen);
     trackCurrentToolEvent(nextOpen ? 'JSONPATH_OPEN' : 'JSONPATH_CLOSE', 'panel');
   }, [isJsonPathPanelOpen, mode, trackCurrentToolEvent]);
+
+  const handleToggleJsonTree = useCallback(() => {
+    const nextOpen = !isJsonTreePanelOpen;
+    if (nextOpen && mode !== TransformMode.DEEP_FORMAT) {
+      setMode(TransformMode.DEEP_FORMAT);
+    }
+    setIsJsonTreePanelOpen(nextOpen);
+    trackCurrentToolEvent(nextOpen ? 'STRUCTURE_NAV_OPEN' : 'STRUCTURE_NAV_CLOSE', 'panel');
+  }, [isJsonTreePanelOpen, mode, trackCurrentToolEvent]);
 
   const handleToggleJsonSchema = useCallback(() => {
     const nextOpen = !isJsonSchemaPanelOpen;
@@ -1712,10 +1733,12 @@ const App: React.FC = () => {
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             isJsonPathOpen={isJsonPathPanelOpen}
+            isJsonTreeOpen={isJsonTreePanelOpen}
             isSchemeDecodeOpen={isSchemeDecodeOpen}
             isTemplateFillOpen={isTemplatePanelOpen}
             isJsonSchemaOpen={isJsonSchemaPanelOpen}
             onToggleJsonPath={handleToggleJsonPath}
+            onToggleJsonTree={handleToggleJsonTree}
             onToggleJsonSchema={handleToggleJsonSchema}
             onToggleSchemeDecode={() => {
               const nextOpen = !isSchemeDecodeOpen;
@@ -1971,6 +1994,19 @@ const App: React.FC = () => {
                 setHighlightRange(null); // 关闭时清除高亮
               }}
               onHighlightRange={handleJsonPathHighlight}
+            />
+          </Suspense>
+        )}
+
+        {/* JSON 结构导航面板 */}
+        {hasLoadedJsonTreePanel && (
+          <Suspense fallback={null}>
+            <LazyJsonTreePanel
+              jsonData={jsonPathDataSource}
+              isDataPreparing={mode === TransformMode.DEEP_FORMAT && isOutputTransforming}
+              isOpen={isJsonTreePanelOpen}
+              onClose={() => setIsJsonTreePanelOpen(false)}
+              onLocatePath={handleLocateJsonPath}
             />
           </Suspense>
         )}
