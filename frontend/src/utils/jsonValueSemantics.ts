@@ -1,6 +1,10 @@
+import { base64Decode, decodeJwt, isBase64, isJwt } from './schemeUtils';
+
 export type JsonStringSemanticKind =
   | 'url'
   | 'scheme'
+  | 'jwt'
+  | 'base64'
   | 'email'
   | 'phone'
   | 'date'
@@ -57,6 +61,55 @@ const isValidDateOnly = (value: string): boolean => {
 const truncateSemanticDetail = (value: string, maxLength = 80): string => (
   value.length <= maxLength ? value : `${value.slice(0, maxLength - 3)}...`
 );
+
+const formatKeySummary = (keys: string[], emptyLabel = '无字段'): string => {
+  if (keys.length === 0) return emptyLabel;
+  const visibleKeys = keys.slice(0, 4).join(', ');
+  return keys.length > 4 ? `${visibleKeys} +${keys.length - 4}` : visibleKeys;
+};
+
+const summarizeDecodedPayload = (decoded: string): string => {
+  try {
+    const parsed: unknown = JSON.parse(decoded);
+    if (Array.isArray(parsed)) return `JSON 数组 ${parsed.length} 项`;
+    if (parsed && typeof parsed === 'object') {
+      return `JSON: ${formatKeySummary(Object.keys(parsed))}`;
+    }
+  } catch {
+    // 非 JSON 的可读 Base64 只展示长度，避免把解码明文直接暴露在结构详情区。
+  }
+
+  return `文本 ${decoded.length} 字符`;
+};
+
+const getJwtSemanticHint = (value: string): JsonStringSemanticHint | null => {
+  if (!isJwt(value)) return null;
+  const decoded = decodeJwt(value);
+  if (!decoded) return null;
+
+  const detail = [
+    `payload: ${formatKeySummary(Object.keys(decoded.payload))}`,
+    `header: ${formatKeySummary(Object.keys(decoded.header))}`,
+  ].join(' · ');
+
+  return {
+    kind: 'jwt',
+    label: 'JWT',
+    detail: truncateSemanticDetail(detail),
+  };
+};
+
+const getBase64SemanticHint = (value: string): JsonStringSemanticHint | null => {
+  if (!isBase64(value)) return null;
+  const decoded = base64Decode(value);
+  if (decoded === value) return null;
+
+  return {
+    kind: 'base64',
+    label: 'Base64',
+    detail: truncateSemanticDetail(summarizeDecodedPayload(decoded)),
+  };
+};
 
 const maskPhoneDetail = (value: string): string => {
   const digits = value.replace(/\D/g, '');
@@ -180,6 +233,10 @@ export const getJsonStringSemanticHints = (
   if (urlHint) hints.push(urlHint);
   const resourceHint = getResourceSemanticHint(text, context);
   if (resourceHint) hints.push(resourceHint);
+  const jwtHint = getJwtSemanticHint(text);
+  if (jwtHint) hints.push(jwtHint);
+  const base64Hint = jwtHint ? null : getBase64SemanticHint(text);
+  if (base64Hint) hints.push(base64Hint);
   if (EMAIL_RE.test(text)) {
     hints.push({
       kind: 'email',

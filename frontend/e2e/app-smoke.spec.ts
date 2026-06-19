@@ -6,6 +6,10 @@ const encodeBase64 = (value: string): string => (
   Buffer.from(value, 'utf8').toString('base64')
 );
 
+const encodeBase64Url = (value: string): string => (
+  encodeBase64(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+);
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/visitor/ping', async route => {
     await route.fulfill({ status: 204, body: '' });
@@ -328,6 +332,12 @@ test('JSONPath 查询按钮提前提示不可查询原因', async ({ page }) => 
 });
 
 test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) => {
+  const jwt = [
+    encodeBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' })),
+    encodeBase64Url(JSON.stringify({ sub: 'u-1', exp: 1893456000, role: 'admin' })),
+    'fake-signature',
+  ].join('.');
+
   await fillSourceEditor(page, JSON.stringify({
     user: {
       name: 'Alice',
@@ -336,6 +346,8 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       phone: '13718164578',
       id: '13718164578',
       poster_image: 'https://static.example.com/banner.jpg',
+      token: jwt,
+      config_b64: encodeBase64('plain readable text longer than twenty chars'),
     },
     items: [{ id: 1, name: 'A,B' }, { id: 2, name: 'Bob' }],
   }));
@@ -415,6 +427,16 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await structurePanel.getByTitle('选中并定位 $.user.poster_image').click();
   await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('图片资源');
   await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('banner.jpg');
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('token');
+  await structurePanel.getByTitle('选中并定位 $.user.token').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('JWT');
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('payload: sub, exp, role');
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('config_b64');
+  await structurePanel.getByTitle('选中并定位 $.user.config_b64').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('Base64');
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('文本 44 字符');
 
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('items');
   await structurePanel.locator('button[title="选中并定位 $.items"]').click();
