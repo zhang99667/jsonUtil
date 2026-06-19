@@ -114,7 +114,7 @@ frontend/
 │   │   └── main.tsx          # 管理后台挂载
 │   ├── components/           # 主应用组件
 │   │   ├── Editor.tsx             # Monaco 编辑器封装
-│   │   ├── ActionPanel.tsx        # 工具栏与 SOURCE 智能建议入口
+│   │   ├── ActionPanel.tsx        # 工具栏、SOURCE 智能建议和轻量排查工作流入口
 │   │   ├── ChangelogModal.tsx     # 前端版本更新日志弹窗
 │   │   ├── JsonPathPanel.tsx      # JSONPath 查询、字段名快捷查询、Response 常用预设、结果复制和结构导航定位面板
 │   │   ├── JsonComparePanel.tsx   # 通用 JSON 语义对比、忽略路径、差异路径动作与报告复制面板
@@ -135,7 +135,7 @@ frontend/
 │   │   ├── jsonSemanticDiff.ts    # 通用 JSON / JSON Lines 语义 diff、JSON Pointer、忽略路径和 Markdown 报告
 │   │   ├── jsonTreeModel.ts       # JSON 树模型、路径与预览摘要生成
 │   │   ├── jsonToTypeScript.ts    # JSON / JSON Lines 到 TypeScript 类型声明生成与可信度摘要
-│   │   ├── smartInputSuggestion.ts # SOURCE 输入类型识别与下一步工具推荐
+│   │   ├── smartInputSuggestion.ts # SOURCE 输入类型识别、下一步工具推荐与轻量工作流动作
 │   │   ├── changelog.ts           # CHANGELOG 解析与前端展示数据
 │   │   └── diffUtils.ts           # 差异对比
 │   ├── workers/              # 大输入异步处理
@@ -228,6 +228,7 @@ PREVIEW JSON + TransformReportPanel
 | `schemeUtils.ts` | 负责 URL/Scheme/CMD/Base64/JWT 等字符串的递归识别、分层解码、Query 参数 raw/URL Decode/JSON 解析证据和按原层级回写 |
 | `schemeMetadata.ts` | 汇总 CMD Schema、内部 CMD 字段、运行时占位符和 cmdHandler 兼容结构 |
 | `transformSummary.ts` | 生成深度解析报告、质量快照、问题样本、占位符模板和 cmdHandler 风格复制文本 |
+| `smartInputSuggestion.ts` | 根据 SOURCE 内容推荐单步工具或 Response 排查工作流，工作流由 App 串联嵌套解析和深度解析报告 |
 | `cmdStructureDiff.ts` | 对比本工具 actual 与内部 cmdHandler expected，输出缺失路径、额外路径和值差异 |
 | `harImport.ts` | 将 HAR 请求/响应 body 提取为派生 JSON，生成接口摘要、异常摘要和不含 query 的短标签 |
 

@@ -2,6 +2,7 @@ import { TransformMode } from '../types';
 import { detectSchemeType, isActionableSchemeUrl, isUrl, shouldExposeSchemeValue } from './schemeUtils';
 
 export type SmartSuggestionActionId =
+  | 'response-inspection'
   | 'deep-format-report'
   | 'scheme-panel'
   | 'structure-nav'
@@ -142,8 +143,8 @@ const buildJsonSuggestion = (
       description: `建议先嵌套解析并查看报告，已命中 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串。`,
       tone: 'cyan',
       actions: [
+        createAction('response-inspection', '排查工作流'),
         createAction('deep-format-report', '嵌套解析'),
-        createAction('structure-nav', '结构导航'),
       ],
     };
   }
@@ -289,6 +290,7 @@ export const getSmartInputSuggestion = (sourceText: string): SmartInputSuggestio
 };
 
 export const getSmartSuggestionMode = (actionId: SmartSuggestionActionId): TransformMode | null => {
+  if (actionId === 'response-inspection') return TransformMode.DEEP_FORMAT;
   if (actionId === 'deep-format-report') return TransformMode.DEEP_FORMAT;
   if (actionId === 'json-to-typescript') return TransformMode.JSON_TO_TYPESCRIPT;
   if (actionId === 'url-decode') return TransformMode.URL_DECODE;
