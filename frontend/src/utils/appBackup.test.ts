@@ -14,6 +14,7 @@ import {
   createJsonSchemaLibraryItem,
   serializeJsonSchemaLibrary,
 } from './jsonSchemaLibrary';
+import { JSON_TREE_SEARCH_HISTORY_STORAGE_KEY } from './jsonTreeSearchHistory';
 
 class MemoryStorage implements Storage {
   private data = new Map<string, string>();
@@ -47,6 +48,7 @@ describe('app backup', () => {
   it('构建配置备份时不导出 AI Key', () => {
     const storage = new MemoryStorage();
     storage.setItem('jsonpath-query-favorites', JSON.stringify(['$.users[*].name']));
+    storage.setItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(['cmdSchema', 'phone']));
     storage.setItem('json-helper-template-fill', JSON.stringify({
       template: '{"env":"test"}',
       lastUpdated: 1,
@@ -78,6 +80,7 @@ describe('app backup', () => {
       baseUrl: '/mock-ai',
     });
     expect(backup.jsonPath.favorites).toEqual(['$.users[*].name']);
+    expect(backup.structureNav.searchHistory).toEqual(['cmdSchema', 'phone']);
     expect(backup.jsonSchema.library).toHaveLength(1);
     expect(backup.jsonSchema.library[0]).toMatchObject({
       name: '订单响应',
@@ -124,6 +127,9 @@ describe('app backup', () => {
           { id: 'broken' },
         ],
       },
+      structureNav: {
+        searchHistory: [' cmdSchema ', 'phone', 'phone', ''],
+      },
       templateFill: {
         template: '{"debug":true}',
         lastUpdated: 2,
@@ -153,6 +159,7 @@ describe('app backup', () => {
     expect(JSON.parse(storage.getItem('json-helper-ai-config') || '{}').apiKey).toBe('current-key');
     expect(JSON.parse(storage.getItem('jsonpath-query-history') || '[]')).toEqual(['$.users']);
     expect(JSON.parse(storage.getItem('jsonpath-query-favorites') || '[]')).toEqual(['$.users[*].name']);
+    expect(JSON.parse(storage.getItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY) || '[]')).toEqual(['cmdSchema', 'phone']);
     expect(JSON.parse(storage.getItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY) || '[]')).toEqual([
       expect.objectContaining({
         name: '用户响应',
@@ -160,6 +167,7 @@ describe('app backup', () => {
       }),
     ]);
     expect(result.importedCounts.jsonSchemaLibrary).toBe(1);
+    expect(result.importedCounts.structureSearchHistory).toBe(2);
     expect(JSON.parse(storage.getItem('json-helper-template-fill') || '{}').template).toBe('{"debug":true}');
     expect(JSON.parse(storage.getItem('jsonpath-panel-position') || '{}')).toEqual({ x: 50, y: 60 });
   });

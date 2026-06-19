@@ -23,6 +23,11 @@ import {
   serializeJsonSchemaLibrary,
   type JsonSchemaLibraryItem,
 } from './jsonSchemaLibrary';
+import {
+  JSON_TREE_SEARCH_HISTORY_STORAGE_KEY,
+  normalizeJsonTreeSearchHistory,
+  parseStoredJsonTreeSearchHistory,
+} from './jsonTreeSearchHistory';
 import { FLOATING_PANEL_STORAGE_KEYS } from './panelLayout';
 import { DEFAULT_SHORTCUTS, SHORTCUTS_STORAGE_KEY, normalizeShortcutConfig } from './shortcuts';
 import { isFiniteNumber, isRecord, parseJsonWithFallback, safeGetStorageItem } from './storage';
@@ -52,6 +57,9 @@ export interface AppBackupPayload {
   jsonSchema: {
     library: JsonSchemaLibraryItem[];
   };
+  structureNav: {
+    searchHistory: string[];
+  };
   templateFill: {
     template: string;
     lastUpdated: number;
@@ -74,6 +82,7 @@ export interface ApplyAppBackupResult {
   importedCounts: {
     jsonPathHistory: number;
     jsonPathFavorites: number;
+    structureSearchHistory: number;
     jsonSchemaLibrary: number;
     panelLayouts: number;
     hasTemplate: boolean;
@@ -144,6 +153,9 @@ export const buildAppBackup = ({
     jsonSchema: {
       library: parseJsonSchemaLibrary(safeGetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY, storage)),
     },
+    structureNav: {
+      searchHistory: parseStoredJsonTreeSearchHistory(safeGetStorageItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY, storage)),
+    },
     templateFill,
     panelLayout: readPanelLayout(storage),
   };
@@ -186,6 +198,7 @@ export const applyAppBackupContent = (
   const settings = getRecord(payload.settings);
   const jsonPath = getRecord(payload.jsonPath);
   const jsonSchema = getRecord(payload.jsonSchema);
+  const structureNav = getRecord(payload.structureNav);
   const importedAIConfig = normalizeAIConfig(settings.ai);
   const nextAIConfig: AIConfig = {
     ...importedAIConfig,
@@ -197,6 +210,7 @@ export const applyAppBackupContent = (
   const history = normalizeJsonPathList(jsonPath.history);
   const favorites = normalizeJsonPathList(jsonPath.favorites);
   const schemaLibrary = parseJsonSchemaLibrary(JSON.stringify(jsonSchema.library || []));
+  const structureSearchHistory = normalizeJsonTreeSearchHistory(structureNav.searchHistory);
   const templateFill = normalizeTemplateFillConfig(payload.templateFill);
   const panelLayout = getRecord(payload.panelLayout);
   let panelLayouts = 0;
@@ -207,6 +221,7 @@ export const applyAppBackupContent = (
   writeJson(storage, JSONPATH_HISTORY_STORAGE_KEY, history);
   writeJson(storage, JSONPATH_FAVORITES_STORAGE_KEY, favorites);
   storage.setItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY, serializeJsonSchemaLibrary(schemaLibrary));
+  writeJson(storage, JSON_TREE_SEARCH_HISTORY_STORAGE_KEY, structureSearchHistory);
   writeJson(storage, TEMPLATE_FILL_STORAGE_KEY, templateFill);
 
   for (const key of FLOATING_PANEL_STORAGE_KEYS) {
@@ -241,6 +256,7 @@ export const applyAppBackupContent = (
     importedCounts: {
       jsonPathHistory: history.length,
       jsonPathFavorites: favorites.length,
+      structureSearchHistory: structureSearchHistory.length,
       jsonSchemaLibrary: schemaLibrary.length,
       panelLayouts,
       hasTemplate: Boolean(templateFill.template.trim()),
