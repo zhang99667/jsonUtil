@@ -74,6 +74,13 @@ const getNodeModulePackageName = (id: string) => {
   return match ? match[1] : null;
 };
 
+const ANT_DESIGN_CHART_PACKAGES = new Set([
+  '@ant-design/charts',
+  '@ant-design/charts-util',
+  '@ant-design/graphs',
+  '@ant-design/plots',
+]);
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   const config: VitestCompatibleUserConfig = {
@@ -128,8 +135,8 @@ export default defineConfig(({ mode }) => {
             if (packageName === '@google/genai') return 'vendor-ai';
             if (['react', 'react-dom', 'scheduler'].includes(packageName || '')) return 'vendor-react';
             if (packageName === '@ant-design/icons') return 'vendor-antd-icons';
+            if (ANT_DESIGN_CHART_PACKAGES.has(packageName || '')) return 'vendor-ant-design-charts';
             if (packageName === 'antd') return 'vendor-antd';
-            if (packageName === '@ant-design/charts') return 'vendor-ant-design-charts';
             if ([
               'ajv',
               'ajv-formats',

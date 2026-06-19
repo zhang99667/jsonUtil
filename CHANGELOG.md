@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.246 (2026-06-20) - 后台首屏图表依赖隔离
+### ⚡ 性能优化
+- **后台图表依赖隔离**: 将 `@ant-design/charts`、`@ant-design/plots`、`@ant-design/graphs` 和 `@ant-design/charts-util` 明确归入图表 chunk，避免它们落入后台基础 `vendor-antd-deps` 后把 AntV / D3 / html2canvas 提前拉进 `admin.html`
+- **后台首屏瘦身**: 后台首屏 `modulepreload` 从 35 个降到 10 个，初始 JS 从约 3291.7 KiB raw / 1005.8 KiB gzip 降到 1306.2 KiB raw / 427.3 KiB gzip，流量统计图表仍保留页面内按需加载
+- **门禁补强**: `check:preloads` 新增后台入口检查，禁止后台首屏预加载 AntV、D3、html2canvas、图表工具和相关 graph/ml chunk，防止图表依赖再次回流首屏
+
+### 🧪 测试
+- **首屏预算覆盖**: 构建后通过主页面和后台页面 preload 门禁，持续守住主工具与后台首屏预算
+
 ## v1.8.245 (2026-06-20) - 智能粘贴识别
 ### ✨ 新特性
 - **智能粘贴来源**: 点击 SOURCE 顶部“粘贴”后，如果剪贴板内容命中智能建议，会在侧栏建议卡片标记“剪贴板识别”，让从日志、IM、Charles 或浏览器复制来的 JSON / JSON Lines / URL 能直接进入下一步动作
