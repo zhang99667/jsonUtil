@@ -336,6 +336,40 @@ export const formatJsonTreeArrayTableJsonText = (
   JSON.stringify(preview.rows.map(row => row.jsonObject), null, 2)
 );
 
+export const filterJsonTreeArrayTablePreviewColumns = (
+  preview: JsonTreeArrayTablePreview,
+  query: string
+): JsonTreeArrayTablePreview => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return preview;
+
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  const columnEntries = preview.columns
+    .map((column, index) => ({ column, index }))
+    .filter(({ column }) => {
+      const normalizedColumn = column.toLowerCase();
+      return tokens.every(token => normalizedColumn.includes(token));
+    });
+
+  const columns = columnEntries.map(entry => entry.column);
+  return {
+    ...preview,
+    columns,
+    rows: preview.rows.map(row => ({
+      ...row,
+      cells: columnEntries.map(entry => row.cells[entry.index] || ''),
+      copyCells: columnEntries.map(entry => row.copyCells[entry.index] || ''),
+      jsonObject: columns.reduce<JsonObject>((result, column) => {
+        if (Object.prototype.hasOwnProperty.call(row.jsonObject, column)) {
+          result[column] = row.jsonObject[column];
+        }
+        return result;
+      }, {}),
+    })),
+    isColumnLimited: preview.isColumnLimited || columns.length < preview.columns.length,
+  };
+};
+
 export const formatJsonTreeArrayTableCsvText = (
   preview: JsonTreeArrayTablePreview
 ): string => (
