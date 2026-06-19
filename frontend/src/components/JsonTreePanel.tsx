@@ -12,6 +12,8 @@ import {
   getJsonTreeNodeValue,
   getJsonTreeNodeValueCopyText,
   matchesJsonTreeSearchText,
+  resolveJsonTreeFocusTarget,
+  type JsonTreeFocusTarget,
 } from '../utils/jsonTreeModel';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
@@ -34,6 +36,7 @@ interface JsonTreePanelProps {
   jsonData: string;
   isDataPreparing: boolean;
   isOpen: boolean;
+  externalFocusRequest?: (JsonTreeFocusTarget & { id: number }) | null;
   onClose: () => void;
   onLocatePath: (path: string) => void;
   onOpenSchemeValue: (value: string) => void;
@@ -158,6 +161,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   jsonData,
   isDataPreparing,
   isOpen,
+  externalFocusRequest = null,
   onClose,
   onLocatePath,
   onOpenSchemeValue,
@@ -166,6 +170,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const copyResultsMenuRef = useRef<HTMLDetailsElement | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
+  const externalFocusRequestIdRef = useRef<number | null>(null);
   const [searchText, setSearchText] = useState('');
   const [searchHistory, setSearchHistory] = useState<string[]>(() => (
     parseStoredJsonTreeSearchHistory(safeGetStorageItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY))
@@ -315,6 +320,23 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       modelState.model?.nodes.some(node => node.path === prevPath) ? prevPath : '$'
     ));
   }, [isOpen, modelState.model]);
+
+  useEffect(() => {
+    if (!isOpen || !modelState.model || !externalFocusRequest) return;
+    if (externalFocusRequestIdRef.current === externalFocusRequest.id) return;
+
+    externalFocusRequestIdRef.current = externalFocusRequest.id;
+    const targetNode = resolveJsonTreeFocusTarget(modelState.model.nodes, externalFocusRequest);
+    if (!targetNode) {
+      showError('结构导航未找到对应节点');
+      return;
+    }
+
+    setSearchText('');
+    setKindFilter('all');
+    setSelectedPath(targetNode.path);
+    setExpandedPaths(prev => new Set([...prev, ...targetNode.ancestorPaths]));
+  }, [externalFocusRequest, isOpen, modelState.model]);
 
   useEffect(() => {
     if (!selectedNode || visibleNodes.length === 0) return;
