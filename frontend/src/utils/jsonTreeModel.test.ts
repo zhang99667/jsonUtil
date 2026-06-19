@@ -3,6 +3,7 @@ import {
   buildJsonTreeModel,
   buildJsonTreeArrayTablePreview,
   formatJsonTreeSearchResultsText,
+  formatJsonTreeSearchResultsMarkdownText,
   formatJsonTreeArrayTableCsvText,
   formatJsonTreeArrayTableJsonText,
   getJsonTreeNodeValue,
@@ -153,6 +154,35 @@ describe('jsonTreeModel', () => {
         preview: '"trace-001"',
       },
     ], null, 2));
+  });
+
+  it('可把结构搜索结果复制为 Markdown 表格摘要', () => {
+    const model = buildJsonTreeModel(JSON.stringify({
+      user: {
+        'trace.id': 'trace-001',
+        note: 'A|B\\C',
+      },
+    }));
+    const matchedNodes = model.nodes.filter(node => (
+      matchesJsonTreeSearchText(node.searchText, 'trace.id') ||
+      matchesJsonTreeSearchText(node.searchText, 'note')
+    ));
+
+    expect(formatJsonTreeSearchResultsMarkdownText(matchedNodes)).toBe([
+      '| Path | Pointer | Kind | Children | Preview |',
+      '| --- | --- | --- | ---: | --- |',
+      '| $.user["trace.id"] | /user/trace.id | string | 0 | "trace-001" |',
+      '| $.user.note | /user/note | string | 0 | "A\\|B\\\\\\\\C" |',
+    ].join('\n'));
+    expect(formatJsonTreeSearchResultsMarkdownText([model.nodes[0]])).toBe([
+      '| Path | Pointer | Kind | Children | Preview |',
+      '| --- | --- | --- | ---: | --- |',
+      '| $ | (root) | object | 1 | 对象 1 个键 |',
+    ].join('\n'));
+    expect(formatJsonTreeSearchResultsMarkdownText([])).toBe([
+      '| Path | Pointer | Kind | Children | Preview |',
+      '| --- | --- | --- | ---: | --- |',
+    ].join('\n'));
   });
 
   it('支持从 JSON Lines 节点复制值并处理非法 Pointer', () => {

@@ -129,6 +129,14 @@ const escapeCsvCell = (value: string): string => {
   return `"${value.replace(/"/g, '""')}"`;
 };
 
+const escapeMarkdownTableCell = (value: string): string => (
+  value
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, ' ')
+    .trim()
+);
+
 const normalizeSearchToken = (value: string): string => value.trim().toLowerCase();
 
 const isFuzzyTokenMatch = (text: string, token: string): boolean => {
@@ -234,6 +242,27 @@ export const formatJsonTreeSearchResultsText = (
     preview: node.valuePreview,
   })), null, 2)
 );
+
+export const formatJsonTreeSearchResultsMarkdownText = (
+  nodes: JsonTreeNode[]
+): string => {
+  const lines = [
+    '| Path | Pointer | Kind | Children | Preview |',
+    '| --- | --- | --- | ---: | --- |',
+  ];
+
+  nodes.forEach(node => {
+    lines.push([
+      node.path,
+      node.jsonPointer || '(root)',
+      node.kind,
+      String(node.childCount),
+      node.valuePreview,
+    ].map(escapeMarkdownTableCell).join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
+  });
+
+  return lines.join('\n');
+};
 
 export const buildJsonTreeArrayTablePreview = (
   jsonText: string,

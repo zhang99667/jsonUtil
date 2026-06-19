@@ -4,6 +4,7 @@ import type { JsonTreeArrayTablePreview, JsonTreeModel, JsonTreeNode } from '../
 import {
   buildJsonTreeArrayTablePreview,
   formatJsonTreeSearchResultsText,
+  formatJsonTreeSearchResultsMarkdownText,
   formatJsonTreeArrayTableCsvText,
   formatJsonTreeArrayTableJsonText,
   getJsonTreeNodeValue,
@@ -133,6 +134,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   onLocatePath,
 }) => {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const copyResultsMenuRef = useRef<HTMLDetailsElement | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
   const [searchText, setSearchText] = useState('');
@@ -317,7 +319,13 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     }
   };
 
-  const handleCopySearchResults = async () => {
+  const closeCopyResultsMenu = () => {
+    if (copyResultsMenuRef.current) {
+      copyResultsMenuRef.current.open = false;
+    }
+  };
+
+  const handleCopySearchResultsJson = async () => {
     if (!hasActiveFilter || visibleNodes.length === 0) return;
 
     await handleCopyText(
@@ -325,6 +333,18 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       '已复制搜索结果',
       '复制搜索结果失败'
     );
+    closeCopyResultsMenu();
+  };
+
+  const handleCopySearchResultsMarkdown = async () => {
+    if (!hasActiveFilter || visibleNodes.length === 0) return;
+
+    await handleCopyText(
+      formatJsonTreeSearchResultsMarkdownText(visibleNodes),
+      '已复制 Markdown 摘要',
+      '复制 Markdown 摘要失败'
+    );
+    closeCopyResultsMenu();
   };
 
   const handleCopyArrayTableJson = async (preview: JsonTreeArrayTablePreview) => {
@@ -663,16 +683,46 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            data-tour="structure-nav-copy-search-results"
-            onClick={() => void handleCopySearchResults()}
-            disabled={!hasActiveFilter || visibleNodes.length === 0}
-            className="rounded border border-editor-border px-2 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
-            title="复制当前筛选结果"
-          >
-            结果
-          </button>
+          {hasActiveFilter && visibleNodes.length > 0 ? (
+            <details ref={copyResultsMenuRef} className="relative shrink-0">
+              <summary
+                data-tour="structure-nav-copy-search-results-menu"
+                className="w-12 list-none rounded border border-editor-border px-2 py-1.5 text-center text-xs text-gray-300 transition-colors hover:bg-editor-hover focus:outline-none focus:ring-1 focus:ring-emerald-400 [&::-webkit-details-marker]:hidden"
+                title="复制当前筛选结果"
+                aria-label="复制当前筛选结果"
+              >
+                结果
+              </summary>
+              <div className="absolute right-0 top-full z-20 mt-1 w-32 rounded border border-editor-border bg-editor-sidebar py-1 text-xs shadow-xl shadow-black/30">
+                <button
+                  type="button"
+                  data-tour="structure-nav-copy-search-results"
+                  onClick={() => void handleCopySearchResultsJson()}
+                  className="block w-full px-2 py-1.5 text-left text-gray-300 transition-colors hover:bg-editor-hover hover:text-emerald-100"
+                >
+                  JSON 清单
+                </button>
+                <button
+                  type="button"
+                  data-tour="structure-nav-copy-search-results-markdown"
+                  onClick={() => void handleCopySearchResultsMarkdown()}
+                  className="block w-full px-2 py-1.5 text-left text-gray-300 transition-colors hover:bg-editor-hover hover:text-cyan-100"
+                >
+                  Markdown 摘要
+                </button>
+              </div>
+            </details>
+          ) : (
+            <button
+              type="button"
+              data-tour="structure-nav-copy-search-results"
+              disabled
+              className="rounded border border-editor-border px-2 py-1.5 text-xs text-gray-300 opacity-50"
+              title="有搜索或类型筛选结果后可复制"
+            >
+              结果
+            </button>
+          )}
           <button
             type="button"
             onClick={handleExpandAll}
