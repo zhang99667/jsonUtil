@@ -138,6 +138,7 @@ const LazyChangelogModal = lazy(() => import('./components/ChangelogModal').then
 })));
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
+type SmartSuggestionOrigin = 'clipboard';
 
 interface JsonPathQueryRequest {
   id: number;
@@ -345,6 +346,7 @@ const App: React.FC = () => {
   const previewValidationRequestIdRef = useRef(0);
   const outputSyncRequestIdRef = useRef(0);
   const aiRepairSnapshotRef = useRef<string | null>(null);
+  const smartSuggestionOriginTextRef = useRef('');
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
   const shouldUseTransformWorker = (
     ASYNC_TRANSFORM_MODES.has(mode) &&
@@ -607,6 +609,7 @@ const App: React.FC = () => {
   const [isTransformReportOpen, setIsTransformReportOpen] = useState(false);
   const [hasLoadedTransformReportPanel, setHasLoadedTransformReportPanel] = useState(false);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
+  const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<SmartSuggestionOrigin | null>(null);
 
   // 光标位置状态（用于状态栏显示）
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
@@ -950,6 +953,14 @@ const App: React.FC = () => {
   }, [input, output, activeEditor]);
   const smartSuggestion = useMemo(() => getSmartInputSuggestion(input), [input]);
 
+  useEffect(() => {
+    if (!smartSuggestionOrigin) return;
+    if (input === smartSuggestionOriginTextRef.current && smartSuggestion) return;
+
+    smartSuggestionOriginTextRef.current = '';
+    setSmartSuggestionOrigin(null);
+  }, [input, smartSuggestion, smartSuggestionOrigin]);
+
   const templateTargetError = useMemo(() => {
     if (!isTemplatePanelOpen) return '';
 
@@ -1001,6 +1012,7 @@ const App: React.FC = () => {
   const handleInputChange = useCallback((newVal: string) => {
     // 实时清理不可见字符
     const cleanVal = cleanJsonInput(newVal);
+    setSmartSuggestionOrigin(null);
     if (aiRepairSnapshotRef.current !== cleanVal) {
       aiRepairSnapshotRef.current = null;
       setAiRepairSummary(null);
@@ -1118,6 +1130,14 @@ const App: React.FC = () => {
   const applySourceTextFromClipboard = useCallback((text: string, successMessage: string) => {
     handleInputChange(text);
     setHighlightRange(null);
+    const clipboardSourceText = cleanJsonInput(text);
+    const clipboardSuggestion = getSmartInputSuggestion(clipboardSourceText);
+    if (clipboardSuggestion) {
+      smartSuggestionOriginTextRef.current = clipboardSourceText;
+      setSmartSuggestionOrigin('clipboard');
+    } else {
+      smartSuggestionOriginTextRef.current = '';
+    }
     showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
   }, [handleInputChange]);
 
@@ -1907,6 +1927,7 @@ const App: React.FC = () => {
               trackCurrentToolEvent(nextOpen ? 'TEMPLATE_PANEL_OPEN' : 'TEMPLATE_PANEL_CLOSE', 'panel');
             }}
             smartSuggestion={smartSuggestion}
+            smartSuggestionOrigin={smartSuggestionOrigin}
             onSmartSuggestionAction={handleSmartSuggestionAction}
           />
         </div>

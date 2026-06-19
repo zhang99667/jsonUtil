@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.245 (2026-06-20) - 智能粘贴识别
+### ✨ 新特性
+- **智能粘贴来源**: 点击 SOURCE 顶部“粘贴”后，如果剪贴板内容命中智能建议，会在侧栏建议卡片标记“剪贴板识别”，让从日志、IM、Charles 或浏览器复制来的 JSON / JSON Lines / URL 能直接进入下一步动作
+- **竞品学习落地**: 参考 DevToys 的 Smart Detection、JSON Hero 的快速搜索、JSON Crack 的结构理解和 JSON Editor Online 的工作台能力，把本轮对标沉淀到产品工程评审文档，并优先推进“粘贴 -> 识别 -> 一键排查”路径
+- **HTTPS 边界延续**: 智能粘贴复用现有 SOURCE 智能建议，普通 HTTP(S) URL 仍只推荐 URL 解码，不会被误导到业务 Scheme 面板
+
+### 🧪 测试
+- **剪贴板回归**: 扩展主应用 E2E，覆盖 JSON Lines 剪贴板推荐结构导航 / 转 TS、普通 HTTPS 剪贴板推荐 URL 解码，以及剪贴板来源标识展示
+
 ## v1.8.244 (2026-06-19) - Schema 问题同名字段查询
 ### ✨ 新特性
 - **Schema 问题反查**: Schema 校验失败项新增“同名字段”动作，可从失败路径生成 `$..field` 或 bracket JSONPath 并打开 JSONPath 面板排查全局同名字段
