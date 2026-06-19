@@ -139,6 +139,7 @@ frontend/
 │   │   └── diffUtils.ts           # 差异对比
 │   ├── workers/              # 大输入异步处理
 │   │   ├── transform.worker.ts    # 格式化、压缩、深度解析 Worker
+│   │   ├── jsonTree.worker.ts     # 结构导航树模型 Worker
 │   │   ├── schemeDecode.worker.ts # Scheme/CMD 大 response 解码 Worker
 │   │   ├── schemeScan.worker.ts   # PREVIEW Scheme 图标扫描 Worker
 │   │   └── jsonPath.worker.ts     # JSONPath 查询 Worker
@@ -234,6 +235,7 @@ PREVIEW JSON + TransformReportPanel
 真实 response 往往包含大量 URL、Base64 和嵌套 JSON。主线程只保留编辑器交互和结果渲染，耗时解析放入 Worker：
 
 - `transform.worker.ts`: 大输入格式化、压缩、深度解析和 Key 排序。
+- `jsonTree.worker.ts`: 结构导航异步构建 JSON / JSON Lines 树模型，避免大 JSON 树遍历阻塞编辑器交互。
 - `schemeDecode.worker.ts`: 独立 Scheme 面板的大 response 递归解码、Base64 元信息和 CMD 摘要，供面板展示与质量快照复制使用。
 - `schemeScan.worker.ts`: PREVIEW 区 Scheme 图标扫描，复用 source map 定位字符串范围。
 - `jsonPath.worker.ts`: JSONPath 查询、结果截断和高亮范围映射。
