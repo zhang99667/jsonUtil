@@ -346,7 +346,16 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('trace');
   await expect(structurePanel).toContainText('trace.id');
 
-  await structurePanel.getByTitle('定位 $.user["trace.id"]').click();
+  await structurePanel.getByTitle('选中并定位 $.user["trace.id"]').click();
+  await expect(structurePanel).toContainText('/user/trace.id');
+
+  await structurePanel.getByRole('button', { name: 'Pointer' }).click();
+  await expect(page.getByText('已复制 JSON Pointer')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('/user/trace.id');
+
+  await structurePanel.getByRole('button', { name: '复制值' }).click();
+  await expect(page.getByText('已复制节点值')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('"t-1"');
 
   const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
   await expect(jsonPathPanel).toBeVisible();

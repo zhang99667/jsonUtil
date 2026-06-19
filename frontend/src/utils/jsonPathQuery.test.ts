@@ -15,9 +15,9 @@ describe('queryJsonPathRanges', () => {
     expect(result.totalResults).toBe(2);
     expect(result.ranges).toHaveLength(2);
     expect(result.values).toEqual(['Alice', 'Bob']);
-    expect(result.items.map(item => ({ path: item.path, value: item.value }))).toEqual([
-      { path: '$.users[0].name', value: 'Alice' },
-      { path: '$.users[1].name', value: 'Bob' },
+    expect(result.items.map(item => ({ path: item.path, pointer: item.pointer, value: item.value }))).toEqual([
+      { path: '$.users[0].name', pointer: '/users/0/name', value: 'Alice' },
+      { path: '$.users[1].name', pointer: '/users/1/name', value: 'Bob' },
     ]);
     expect(result.ranges[0].startLine).toBeGreaterThan(0);
     expect(result.ranges[0].startColumn).toBeGreaterThan(0);
@@ -55,6 +55,7 @@ describe('queryJsonPathRanges', () => {
     expect(result.totalResults).toBe(1);
     expect(result.values).toEqual(['https://example.com/path?from=key']);
     expect(result.items[0].path).toBe('$["a.b"]["x/y"]["tilde~key"]');
+    expect(result.items[0].pointer).toBe('/a.b/x~1y/tilde~0key');
     expect(result.ranges[0].startLine).toBe(4);
   });
 

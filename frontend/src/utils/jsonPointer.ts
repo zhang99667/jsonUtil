@@ -2,7 +2,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
 
-const decodePointerSegment = (segment: string): string => (
+export const encodeJsonPointerSegment = (segment: string): string => (
+  segment.replace(/~/g, '~0').replace(/\//g, '~1')
+);
+
+export const decodeJsonPointerSegment = (segment: string): string => (
   segment.replace(/~1/g, '/').replace(/~0/g, '~')
 );
 
@@ -18,6 +22,49 @@ const parseArrayIndex = (segment: string, arrayLength: number): number => {
 
   return index;
 };
+
+/**
+ * 按 JSON Pointer 精确读取 JSON 树中的值
+ */
+export const getJsonPointerValue = (
+  root: unknown,
+  pointer: string
+): unknown => {
+  if (pointer === '') {
+    return root;
+  }
+
+  if (!pointer.startsWith('/')) {
+    throw new Error(`非法 JSON Pointer: ${pointer}`);
+  }
+
+  const segments = pointer.slice(1).split('/').map(decodeJsonPointerSegment);
+  let current = root;
+
+  for (const segment of segments) {
+    if (Array.isArray(current)) {
+      current = current[parseArrayIndex(segment, current.length)];
+      continue;
+    }
+
+    if (isRecord(current) && Object.prototype.hasOwnProperty.call(current, segment)) {
+      current = current[segment];
+      continue;
+    }
+
+    throw new Error(`JSON Pointer 无法继续访问: ${pointer}`);
+  }
+
+  return current;
+};
+
+export const stringifyJsonPointerValue = (
+  root: unknown,
+  pointer: string,
+  options: { pretty?: boolean } = {}
+): string => (
+  JSON.stringify(getJsonPointerValue(root, pointer), null, options.pretty ? 2 : 0) ?? ''
+);
 
 /**
  * 按 JSON Pointer 精确替换 JSON 树中的值
@@ -36,7 +83,7 @@ export const setJsonPointerValue = (
     throw new Error(`非法 JSON Pointer: ${pointer}`);
   }
 
-  const segments = pointer.slice(1).split('/').map(decodePointerSegment);
+  const segments = pointer.slice(1).split('/').map(decodeJsonPointerSegment);
   let current = root;
 
   for (let i = 0; i < segments.length - 1; i++) {
