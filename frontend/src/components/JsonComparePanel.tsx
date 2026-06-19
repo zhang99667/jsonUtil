@@ -4,6 +4,7 @@ import { SimpleEditor } from './SimpleEditor';
 import {
   compareJsonSemanticText,
   formatJsonSemanticDiffMarkdown,
+  parseJsonSemanticDiffIgnoredPaths,
   parseJsonForSemanticDiff,
   type JsonSemanticDiffItem,
   type JsonSemanticDiffResult,
@@ -37,8 +38,9 @@ const formatSizeLabel = (content: string): string => {
 
 const buildResultSummary = (result: JsonSemanticDiffResult | null): string => {
   if (!result) return '等待对比';
-  if (result.total === 0) return '语义一致';
-  return `新增 ${result.added} / 删除 ${result.removed} / 修改 ${result.changed}`;
+  const ignoredLabel = result.ignoredPaths.length > 0 ? `，忽略 ${result.ignoredPaths.length} 条路径` : '';
+  if (result.total === 0) return `${result.ignoredPaths.length > 0 ? '忽略后' : ''}语义一致${ignoredLabel}`;
+  return `新增 ${result.added} / 删除 ${result.removed} / 修改 ${result.changed}${ignoredLabel}`;
 };
 
 export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
@@ -48,6 +50,8 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
 }) => {
   const compareInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [compareText, setCompareText] = useState('');
+  const [ignoredPathsText, setIgnoredPathsText] = useState('');
+  const ignoredPaths = useMemo(() => parseJsonSemanticDiffIgnoredPaths(ignoredPathsText), [ignoredPathsText]);
   const diffState = useMemo(() => {
     if (!isOpen || !sourceText.trim() || !compareText.trim()) {
       return {
@@ -58,7 +62,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
 
     try {
       return {
-        result: compareJsonSemanticText(sourceText, compareText),
+        result: compareJsonSemanticText(sourceText, compareText, { ignoredPaths }),
         error: '',
       };
     } catch (error) {
@@ -67,7 +71,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
         error: error instanceof Error ? error.message : String(error),
       };
     }
-  }, [compareText, isOpen, sourceText]);
+  }, [compareText, ignoredPaths, isOpen, sourceText]);
   const hasCompareText = compareText.trim().length > 0;
   const canCopyReport = Boolean(diffState.result);
 
@@ -270,6 +274,23 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
               aria-label="对比 JSON"
             />
           </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2 border-b border-editor-border bg-editor-sidebar/60 px-3 py-2 text-xs text-gray-400">
+          <label htmlFor="json-compare-ignore-paths" className="shrink-0 font-medium text-gray-300">
+            忽略路径
+          </label>
+          <input
+            id="json-compare-ignore-paths"
+            data-tour="json-compare-ignore-paths"
+            value={ignoredPathsText}
+            onChange={(event) => setIgnoredPathsText(event.target.value)}
+            className="min-w-0 flex-1 rounded border border-editor-border bg-editor-bg px-2 py-1.5 font-mono text-xs text-gray-100 outline-none transition-colors placeholder:text-gray-600 focus:border-blue-500/70"
+            placeholder="$.traceId, $.meta.updatedAt"
+            aria-label="JSON 对比忽略路径"
+          />
+          <span className="hidden shrink-0 text-[11px] text-gray-500 md:inline">
+            JSONPath 前缀，逗号分隔
+          </span>
         </div>
         {renderDiffRows()}
       </div>
