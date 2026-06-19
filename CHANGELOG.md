@@ -1,4 +1,15 @@
 # 更新日志 (Changelog)
+## v1.8.227 (2026-06-19) - JSON 对比差异行路径动作
+### ✨ 新特性
+- **差异行可行动**: JSON 对比结果每行新增 `Path`、`Ptr` 和“定位”动作，可直接复制 JSONPath、复制 JSON Pointer，或把修改/删除项联动到 JSONPath 面板定位 SOURCE 原值
+- **新增项定位保护**: 新增差异只存在于对比 JSON，定位 SOURCE 动作会置灰并给出禁用说明，避免误导用户
+
+### 📝 文档
+- **路径级协作升级**: README、架构说明和产品评审同步补充差异行复制路径、复制 Pointer 和定位 SOURCE 能力
+
+### 🧪 测试
+- **路径动作覆盖**: 扩展语义 diff 单测和 JSON 对比 E2E，覆盖特殊 key Pointer 转义、Path/Pointer 复制、SOURCE 定位和新增项禁用定位
+
 ## v1.8.226 (2026-06-19) - JSON 对比忽略路径
 ### ✨ 新特性
 - **忽略噪声路径**: JSON 对比面板新增忽略路径输入，可按 JSONPath 前缀排除 `$.traceId`、`$.meta.updatedAt` 等时间戳、追踪 ID 或埋点字段，让报告聚焦真实业务差异

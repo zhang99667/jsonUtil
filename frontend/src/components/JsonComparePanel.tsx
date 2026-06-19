@@ -17,6 +17,7 @@ interface JsonComparePanelProps {
   sourceText: string;
   isOpen: boolean;
   onClose: () => void;
+  onLocatePath?: (path: string) => void;
 }
 
 const DIFF_KIND_LABELS: Record<JsonSemanticDiffItem['kind'], string> = {
@@ -30,6 +31,8 @@ const DIFF_KIND_CLASS_NAMES: Record<JsonSemanticDiffItem['kind'], string> = {
   removed: 'border-red-500/30 bg-red-500/10 text-red-200',
   changed: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
 };
+
+const DIFF_ACTION_BUTTON_CLASS_NAME = 'rounded border border-editor-border bg-editor-bg px-1.5 py-0.5 text-[10px] leading-none text-gray-300 transition-colors hover:border-emerald-500/60 hover:text-emerald-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-editor-border disabled:hover:text-gray-300';
 
 const formatSizeLabel = (content: string): string => {
   const stats = getDocumentStats(content);
@@ -47,6 +50,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
   sourceText,
   isOpen,
   onClose,
+  onLocatePath,
 }) => {
   const compareInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [compareText, setCompareText] = useState('');
@@ -115,6 +119,29 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
     showSuccess('对比 JSON 已清空', 1600);
   };
 
+  const handleCopyDiffPath = async (item: JsonSemanticDiffItem) => {
+    try {
+      await copyText(item.path);
+      showSuccess(`已复制 JSONPath: ${item.path}`);
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制 JSONPath 失败'));
+    }
+  };
+
+  const handleCopyDiffPointer = async (item: JsonSemanticDiffItem) => {
+    try {
+      await copyText(item.pointer);
+      showSuccess(`已复制 JSON Pointer: ${item.pointer || '/'}`);
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制 JSON Pointer 失败'));
+    }
+  };
+
+  const handleLocateDiffPath = (item: JsonSemanticDiffItem) => {
+    if (item.kind === 'added' || !onLocatePath) return;
+    onLocatePath(item.path);
+  };
+
   const renderDiffRows = () => {
     if (!sourceText.trim()) {
       return (
@@ -150,17 +177,18 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
 
     return (
       <div className="min-h-0 flex-1 overflow-y-auto" data-tour="json-compare-results">
-        <div className="grid grid-cols-[80px_minmax(180px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)] border-b border-editor-border bg-editor-sidebar/80 px-3 py-2 text-[11px] font-semibold text-gray-400">
+        <div className="grid grid-cols-[72px_minmax(160px,1.15fr)_minmax(130px,1fr)_minmax(130px,1fr)_108px] border-b border-editor-border bg-editor-sidebar/80 px-3 py-2 text-[11px] font-semibold text-gray-400">
           <div>类型</div>
           <div>路径</div>
           <div>SOURCE</div>
           <div>对比值</div>
+          <div>动作</div>
         </div>
         {diffState.result.items.map((item, index) => (
           <div
             key={`${item.kind}-${item.path}-${index}`}
             data-tour="json-compare-row"
-            className="grid grid-cols-[80px_minmax(180px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)] gap-2 border-b border-editor-border/60 px-3 py-2 text-xs text-gray-300 last:border-b-0 hover:bg-editor-hover/50"
+            className="grid grid-cols-[72px_minmax(160px,1.15fr)_minmax(130px,1fr)_minmax(130px,1fr)_108px] gap-2 border-b border-editor-border/60 px-3 py-2 text-xs text-gray-300 last:border-b-0 hover:bg-editor-hover/50"
           >
             <div>
               <span className={`rounded border px-1.5 py-0.5 text-[10px] leading-none ${DIFF_KIND_CLASS_NAMES[item.kind]}`}>
@@ -175,6 +203,39 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
             </div>
             <div className="min-w-0 truncate font-mono text-gray-500" title={item.afterPreview}>
               {item.afterPreview || '-'}
+            </div>
+            <div className="flex min-w-0 items-center gap-1">
+              <button
+                type="button"
+                data-tour="json-compare-copy-path"
+                onClick={() => void handleCopyDiffPath(item)}
+                className={DIFF_ACTION_BUTTON_CLASS_NAME}
+                title={`复制 JSONPath: ${item.path}`}
+                aria-label={`复制差异 JSONPath：${item.path}`}
+              >
+                Path
+              </button>
+              <button
+                type="button"
+                data-tour="json-compare-copy-pointer"
+                onClick={() => void handleCopyDiffPointer(item)}
+                className={DIFF_ACTION_BUTTON_CLASS_NAME}
+                title={`复制 JSON Pointer: ${item.pointer || '/'}`}
+                aria-label={`复制差异 JSON Pointer：${item.pointer || '/'}`}
+              >
+                Ptr
+              </button>
+              <button
+                type="button"
+                data-tour="json-compare-locate-source"
+                onClick={() => handleLocateDiffPath(item)}
+                disabled={item.kind === 'added' || !onLocatePath}
+                className={DIFF_ACTION_BUTTON_CLASS_NAME}
+                title={item.kind === 'added' ? '新增项仅存在于对比 JSON，无法定位 SOURCE' : `定位 SOURCE: ${item.path}`}
+                aria-label={item.kind === 'added' ? `新增项仅存在于对比 JSON：${item.path}` : `定位 SOURCE 差异：${item.path}`}
+              >
+                定位
+              </button>
             </div>
           </div>
         ))}
