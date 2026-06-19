@@ -19,8 +19,21 @@ type DecodeLayerType = SchemeType | 'json-escaped-slash' | 'json-unicode-ascii';
 export interface DecodeLayer {
   type: DecodeLayerType;
   before: string;     // 解码前的内容
+  after?: string;     // 解码后的内容，用于面板展示每层转换证据
   description: string; // 描述，如 "URL Decode", "Base64 Decode"
   reversible?: boolean; // 是否可按原格式重新编码
+}
+
+export interface SchemeParamDecodeStage {
+  path: string;        // 参数在解码结果中的路径
+  key: string;         // 解码后的参数名
+  source: 'query' | 'hash' | 'fragment' | 'log-field' | 'prefixed-query'; // 参数来源
+  raw: string;         // URL Decode 前的原始参数值
+  urlDecoded: string;  // URL Decode 后的参数值
+  parsed: string;      // 继续递归解析后的展示文本
+  repairHint?: string; // loose JSON 等兜底修复说明
+  reencoded: string;   // 按当前解析值重新 URL 编码后的预览
+  reversible: boolean; // 是否可以按普通 query 参数重新编码
 }
 
 export interface SchemePlaceholder {
@@ -53,6 +66,7 @@ export interface SchemeDecodeResult {
   isJson: boolean;            // 最终结果是否为有效 JSON
   placeholders?: SchemePlaceholder[]; // 运行时占位符
   warnings?: SchemeDecodeWarning[]; // 解析过程中的性能护栏提示
+  paramStages?: SchemeParamDecodeStage[]; // Query 参数分层解析证据
   schemeInfo?: {              // Scheme 信息（如果是 URL）
     protocol: string;         // 协议，如 "https:", "myapp:"
     host?: string;            // 主机
@@ -238,6 +252,8 @@ export const DEFAULT_SCHEME_DECODE_MAX_DEPTH = 15;
 export const DEFAULT_SCHEME_JSON_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_SCHEME_JSON_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 const DEFAULT_SCHEME_JSON_SKIPPED_PATH_LIMIT = 8;
+const DEFAULT_SCHEME_PARAM_STAGE_LIMIT = 24;
+const DEFAULT_SCHEME_PARAM_STAGE_VALUE_LIMIT = 100_000;
 
 const normalizeJsonEscapedSlashes = (source: string): string => (
   source.replace(/\\\//g, '/')
@@ -1505,32 +1521,60 @@ export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | 
   }
 }
 
-const tryParseJson = (value: string): StructuredValue | null => {
+type JsonParseStrategy = 'strict' | 'html-quote' | 'escaped-quote' | 'loose-json';
+
+interface JsonParseMeta {
+  value: StructuredValue;
+  strategy: JsonParseStrategy;
+  normalized: string;
+}
+
+const parseJsonCandidateWithMeta = (candidate: string, strategy: JsonParseStrategy): JsonParseMeta | null => {
+  try {
+    return {
+      value: JSON.parse(candidate) as StructuredValue,
+      strategy,
+      normalized: candidate,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const tryParseJsonWithMeta = (value: string): JsonParseMeta | null => {
   const trimmed = value.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
 
-  try {
-    return JSON.parse(trimmed) as StructuredValue;
-  } catch {
-    const candidates = [
-      normalizeHtmlJsonQuoteCandidate(trimmed),
-      normalizeJsonEscapedQuoteCandidate(trimmed),
-      normalizeLooseJsonCandidate(trimmed),
-    ].filter((candidate): candidate is string => Boolean(candidate));
+  const strictMeta = parseJsonCandidateWithMeta(trimmed, 'strict');
+  if (strictMeta) return strictMeta;
 
-    for (const candidate of candidates) {
-      const looseCandidate = normalizeLooseJsonCandidate(candidate);
-      for (const jsonCandidate of [candidate, looseCandidate].filter((item): item is string => Boolean(item))) {
-        try {
-          return JSON.parse(jsonCandidate) as StructuredValue;
-        } catch {
-          // 继续尝试下一个候选，兼容日志里混用转义引号和 loose JSON 的片段。
-        }
-      }
+  const candidates: Array<{ value: string | null; strategy: JsonParseStrategy }> = [
+    { value: normalizeHtmlJsonQuoteCandidate(trimmed), strategy: 'html-quote' },
+    { value: normalizeJsonEscapedQuoteCandidate(trimmed), strategy: 'escaped-quote' },
+    { value: normalizeLooseJsonCandidate(trimmed), strategy: 'loose-json' },
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate.value) continue;
+
+    const candidateMeta = parseJsonCandidateWithMeta(candidate.value, candidate.strategy);
+    if (candidateMeta) return candidateMeta;
+
+    const looseCandidate = normalizeLooseJsonCandidate(candidate.value);
+    if (!looseCandidate) continue;
+
+    const looseMeta = parseJsonCandidateWithMeta(looseCandidate, 'loose-json');
+    if (looseMeta) {
+      return looseMeta;
     }
-
-    return null;
   }
+
+  return null;
+};
+
+const tryParseJson = (value: string): StructuredValue | null => {
+  const parsed = tryParseJsonWithMeta(value);
+  return parsed ? parsed.value : null;
 };
 
 const tryParseJsonStringPayload = (value: string): string | null => {
@@ -1837,6 +1881,134 @@ const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredV
   return result as StructuredValue;
 };
 
+const formatStageStructuredValue = (value: StructuredValue): string => (
+  typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+);
+
+const getJsonRepairHint = (meta: JsonParseMeta | null): string | undefined => {
+  if (!meta || meta.strategy === 'strict') return undefined;
+  if (meta.strategy === 'html-quote') return 'HTML 引号实体已还原为 JSON 引号';
+  if (meta.strategy === 'escaped-quote') return '反斜杠引号已还原为 JSON 引号';
+  return 'Loose JSON 已补齐字段引号/单引号/尾逗号';
+};
+
+const createParamDecodeStage = (
+  key: string,
+  rawValue: string,
+  urlDecodedValue: string,
+  source: SchemeParamDecodeStage['source'],
+  pathPrefix: string,
+  maxDepth: number
+): SchemeParamDecodeStage => {
+  const shouldParse = urlDecodedValue.length <= DEFAULT_SCHEME_PARAM_STAGE_VALUE_LIMIT;
+  const parsedValue = shouldParse
+    ? decodeNestedParamValue(urlDecodedValue, maxDepth - 1)
+    : urlDecodedValue;
+  const parsedText = formatStageStructuredValue(parsedValue);
+  const jsonMeta = shouldParse ? tryParseJsonWithMeta(urlDecodedValue) : null;
+  const repairHint = getJsonRepairHint(jsonMeta);
+  const stageHint = shouldParse ? repairHint : '参数过长，已跳过分层 JSON 解析预览';
+
+  return {
+    path: `${pathPrefix}${formatPlaceholderPathSegment(key)}`,
+    key,
+    source,
+    raw: rawValue,
+    urlDecoded: urlDecodedValue,
+    parsed: parsedText,
+    repairHint: stageHint,
+    reencoded: urlEncode(typeof parsedValue === 'string' ? parsedValue : JSON.stringify(parsedValue)),
+    reversible: !stageHint,
+  };
+};
+
+const buildParamDecodeStagesFromPairs = (
+  queryString: string,
+  source: SchemeParamDecodeStage['source'],
+  pathPrefix: string,
+  maxDepth: number
+): SchemeParamDecodeStage[] => {
+  const stages: SchemeParamDecodeStage[] = [];
+  const normalized = normalizeQueryString(stripQueryPrefix(queryString));
+
+  for (const pair of splitQueryPairs(normalized)) {
+    if (stages.length >= DEFAULT_SCHEME_PARAM_STAGE_LIMIT) break;
+
+    const equalIndex = pair.indexOf('=');
+    if (equalIndex <= 0) continue;
+
+    const key = decodeQueryComponent(pair.slice(0, equalIndex));
+    if (!key) continue;
+
+    const rawValue = pair.slice(equalIndex + 1);
+    stages.push(createParamDecodeStage(
+      key,
+      rawValue,
+      decodeQueryValueComponent(rawValue),
+      source,
+      pathPrefix,
+      maxDepth
+    ));
+  }
+
+  return stages;
+};
+
+const buildQueryStringParamDecodeStages = (
+  queryString: string,
+  maxDepth: number
+): SchemeParamDecodeStage[] => {
+  const logFieldParam = parseLogFieldParamString(queryString);
+  if (logFieldParam) {
+    return [createParamDecodeStage(
+      logFieldParam.key,
+      logFieldParam.value,
+      logFieldParam.value,
+      'log-field',
+      '$',
+      maxDepth
+    )];
+  }
+
+  const prefixedQueryString = getPrefixedQueryString(queryString);
+  if (prefixedQueryString) {
+    return buildParamDecodeStagesFromPairs(prefixedQueryString.queryString, 'prefixed-query', '$', maxDepth);
+  }
+
+  const fragmentParamSource = getFragmentParamSource(queryString);
+  if (fragmentParamSource) {
+    return buildParamDecodeStagesFromPairs(fragmentParamSource, 'fragment', '$', maxDepth);
+  }
+
+  return buildParamDecodeStagesFromPairs(queryString, 'query', '$', maxDepth);
+};
+
+const buildUrlParamDecodeStages = (urlString: string, maxDepth: number): SchemeParamDecodeStage[] => {
+  try {
+    const url = createUrl(urlString);
+    const stages: SchemeParamDecodeStage[] = [];
+    const hasQueryParams = Boolean(url.search);
+    const fragmentParamSource = getFragmentParamSource(url.hash);
+
+    if (url.search) {
+      stages.push(...buildParamDecodeStagesFromPairs(url.search, 'query', '$', maxDepth));
+    }
+
+    if (fragmentParamSource && stages.length < DEFAULT_SCHEME_PARAM_STAGE_LIMIT) {
+      stages.push(...buildParamDecodeStagesFromPairs(
+        fragmentParamSource,
+        'hash',
+        hasQueryParams ? '$._hash' : '$',
+        maxDepth
+      ).slice(0, DEFAULT_SCHEME_PARAM_STAGE_LIMIT - stages.length));
+    }
+
+    return stages;
+  } catch {
+    return [];
+  }
+};
+
 const mergeUrlDecodedParams = (
   queryParams: StructuredValue | null,
   hashParams: StructuredValue | null
@@ -1915,6 +2087,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
   let schemeInfo: SchemeDecodeResult['schemeInfo'];
   let placeholders: SchemePlaceholder[] = [];
   let warnings: SchemeDecodeWarning[] | undefined;
+  let paramStages: SchemeParamDecodeStage[] = [];
 
   while (depth < maxDepth) {
     const jsonStringPayload = tryParseJsonStringPayload(current);
@@ -1922,6 +2095,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
       layers.push({
         type: 'json',
         before: current,
+        after: jsonStringPayload,
         description: 'JSON 字符串字面量解析',
       });
       current = jsonStringPayload;
@@ -1934,6 +2108,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
       layers.push({
         type: 'json-escaped-slash',
         before: current,
+        after: escapedSlashPayload,
         description: 'JSON 斜杠转义还原',
       });
       current = escapedSlashPayload;
@@ -1946,6 +2121,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
       layers.push({
         type: 'json-unicode-ascii',
         before: current,
+        after: unicodeAsciiPayload,
         description: 'JSON Unicode ASCII 转义还原',
         reversible: false,
       });
@@ -1972,12 +2148,15 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
           // 如果有参数，将 query/hash 参数按 CMD 习惯逐项递归展开
           const decodedParams = parseUrlParamsDeep(current, maxDepth - depth);
           if (decodedParams) {
-            current = JSON.stringify(decodedParams, null, 2);
+            const decodedText = JSON.stringify(decodedParams, null, 2);
+            paramStages = buildUrlParamDecodeStages(current, maxDepth - depth);
             layers.push({
               type: 'url',
               before,
+              after: decodedText,
               description: 'URL 参数递归解析',
             });
+            current = decodedText;
           }
         }
         // URL 解析完成后停止；参数值已在 parseUrlParamsDeep 中递归处理
@@ -1988,16 +2167,19 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
       case 'query-string': {
         const decodedParams = parseQueryStringDeep(current, maxDepth - depth);
         if (decodedParams) {
+          const decodedText = JSON.stringify(decodedParams, null, 2);
+          paramStages = buildQueryStringParamDecodeStages(current, maxDepth - depth);
           layers.push({
             type: 'query-string',
             before,
+            after: decodedText,
             description: isDecodableLogFieldParamString(before)
               ? '日志字段 CMD 递归解析'
               : isDecodablePrefixedQueryString(before)
                 ? '日志前缀 CMD 参数递归解析'
                 : 'CMD 参数递归解析',
           });
-          current = JSON.stringify(decodedParams, null, 2);
+          current = decodedText;
         } else {
           depth = maxDepth;
         }
@@ -2010,6 +2192,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
           layers.push({
             type: 'url-encoded',
             before,
+            after: decoded,
             description: 'URL Decode',
           });
           current = decoded;
@@ -2025,6 +2208,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
           layers.push({
             type: 'base64',
             before,
+            after: decodedResult.decoded,
             description: decodedResult.reversible ? 'Base64 Decode' : 'Base64 JSON 片段解析',
             reversible: decodedResult.reversible,
           });
@@ -2041,6 +2225,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
           layers.push({
             type: 'jwt',
             before,
+            after: JSON.stringify(decoded.payload, null, 2),
             description: 'JWT Decode (Payload)',
             reversible: false,
           });
@@ -2087,6 +2272,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
     isJson,
     placeholders,
     warnings,
+    paramStages,
     schemeInfo,
   };
 }

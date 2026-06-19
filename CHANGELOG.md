@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.206 (2026-06-19) - Scheme 分层解析链路
+### ✨ 新特性
+- **解析链路可见**: Scheme 面板的解码层级升级为“解析链路”明细，每层展示解析类型、可回写/只读状态、输入输出字符数和前后内容预览，方便定位 URL Decode、JSON 字符串解析、Base64 或 CMD 参数展开在哪一层发生变化
+- **复杂 params 兜底**: `baiduboxapp://...makePhoneCall?params=%7b...%2ctype%22...%7d` 这类 URL 编码内嵌半坏 JSON 的参数会继续修复为对象，并在参数分层中标出 raw、URL Decode、JSON/CMD 解析、修复提示和重新编码预览
+- **链路证据保留**: `DecodeLayer` 新增每层输出内容，`SchemeDecodeResult` 新增 Query 参数分层证据，后续复制质量快照、问题样本和解析报告时可以复用同一份转换证据
+
+### 🧪 测试
+- **回归保护**: 补充真实 makePhoneCall Scheme、双层 JSON 字符串转义和 Scheme 面板解析链路 E2E 断言，锁住 URL 编码 + JSON 反转义组合场景
+
 ## v1.8.205 (2026-06-19) - 结构导航 Worker 化
 ### ⚡ 性能优化
 - **结构导航异步解析**: 结构导航从主线程同步 `JSON.parse` 改为独立 Worker 构建树模型，大 JSON 打开结构树时不再长时间阻塞编辑器交互
