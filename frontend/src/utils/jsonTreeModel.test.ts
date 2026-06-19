@@ -239,10 +239,14 @@ describe('jsonTreeModel', () => {
       allColumns: ['id', 'name', 'note', 'extra'],
       totalRows: 3,
       sampledRows: 2,
+      scannedRows: 3,
       totalColumns: 4,
+      maxRows: 2,
+      maxScanRows: 200,
       maxColumns: 3,
       isRowLimited: true,
       isColumnLimited: true,
+      isRowResampled: false,
     });
     expect(preview?.rows.map(row => ({
       index: row.index,
@@ -323,6 +327,52 @@ describe('jsonTreeModel', () => {
     const shortHiddenColumnPreview = filterJsonTreeArrayTablePreviewColumns(shortCellPreview!, 'hiddenLong');
     expect(shortHiddenColumnPreview.rows[0].cells).toEqual(['very long hid...']);
     expect(shortHiddenColumnPreview.rows[0].copyCells).toEqual(['very long hidden value']);
+
+    const sparseSource = JSON.stringify({
+      rows: [
+        { id: 1, name: 'A' },
+        { id: 2, name: 'B' },
+        { id: 3, name: 'C' },
+        { id: 4, name: 'D' },
+        { id: 5, name: 'E' },
+        { id: 6, name: 'F' },
+        { id: 7, name: 'G' },
+        { id: 8, name: 'H' },
+        { id: 9, name: 'I', lateMetric: 88 },
+        { id: 10, name: 'J', lateMetric: 99 },
+      ],
+    });
+    const sparsePreview = buildJsonTreeArrayTablePreview(sparseSource, '/rows', {
+      maxRows: 2,
+      maxColumns: 2,
+      maxScanRows: 10,
+    });
+    expect(sparsePreview).toMatchObject({
+      columns: ['id', 'name'],
+      allColumns: ['id', 'name', 'lateMetric'],
+      sampledRows: 2,
+      scannedRows: 10,
+      totalColumns: 3,
+      isRowResampled: false,
+    });
+    const lateMetricPreview = filterJsonTreeArrayTablePreviewColumns(sparsePreview!, 'lateMetric');
+    expect(lateMetricPreview.columns).toEqual(['lateMetric']);
+    expect(lateMetricPreview.sampledRows).toBe(2);
+    expect(lateMetricPreview.isRowResampled).toBe(true);
+    expect(lateMetricPreview.rows.map(row => row.index)).toEqual([8, 9]);
+    expect(lateMetricPreview.rows.map(row => row.cells)).toEqual([
+      ['88'],
+      ['99'],
+    ]);
+    expect(formatJsonTreeArrayTableJsonText(lateMetricPreview)).toBe(JSON.stringify([
+      { lateMetric: 88 },
+      { lateMetric: 99 },
+    ], null, 2));
+    expect(formatJsonTreeArrayTableCsvText(lateMetricPreview)).toBe([
+      'lateMetric',
+      '88',
+      '99',
+    ].join('\n'));
 
     const emptyPreview = filterJsonTreeArrayTablePreviewColumns(preview!, 'missing');
     expect(emptyPreview.columns).toEqual([]);

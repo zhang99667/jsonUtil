@@ -417,9 +417,10 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       <div data-tour="structure-nav-table-preview" className="mt-2 rounded border border-editor-border bg-editor-sidebar/60">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-editor-border px-2 py-1.5">
           <span className="min-w-[160px] flex-1 truncate text-[11px] text-gray-300">
-            对象数组预览: {sourcePreview.sampledRows}/{sourcePreview.totalRows} 行，{preview.columns.length}/{sourcePreview.totalColumns} 列
-            {(sourcePreview.isRowLimited || sourcePreview.isColumnLimited) && '，已截断'}
+            对象数组预览: {preview.sampledRows}/{sourcePreview.totalRows} 行，{preview.columns.length}/{sourcePreview.totalColumns} 列
+            {(sourcePreview.isRowLimited || sourcePreview.isColumnLimited || sourcePreview.isScanLimited) && '，已截断'}
             {hasColumnFilter && `，列筛选 ${preview.columns.length}/${sourcePreview.totalColumns}`}
+            {preview.isRowResampled && '，行重采样'}
           </span>
           <span className="flex min-w-0 shrink-0 items-center gap-1">
             <input
@@ -429,7 +430,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
               onChange={(event) => setTableColumnFilter(event.target.value)}
               placeholder="筛列名"
               aria-label="筛选表格列名"
-              title="筛选采样行中的表格列"
+              title="筛选前 200 行扫描到的表格列；稀疏字段会重采样包含该字段的行"
               className="h-6 w-24 rounded border border-editor-border bg-editor-bg px-1.5 font-mono text-[10px] text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500"
             />
             <button
