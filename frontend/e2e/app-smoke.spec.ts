@@ -345,6 +345,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
 
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('trace.id');
   await expect(structurePanel).toContainText('trace.id');
+  await expect(structurePanel.locator('[data-tour="structure-nav-row"] mark').first()).toHaveText('trace.id');
 
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results"]').click();
   await expect(page.getByText('已复制搜索结果').last()).toBeVisible();
