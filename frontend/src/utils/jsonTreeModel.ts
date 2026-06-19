@@ -45,21 +45,33 @@ export interface JsonTreeArrayTablePreviewRow {
   sourceObject: JsonObject;
 }
 
+export interface JsonTreeArrayTableSourceRow {
+  index: number;
+  sourceObject: JsonObject;
+}
+
 export interface JsonTreeArrayTablePreview {
   columns: string[];
   allColumns: string[];
   rows: JsonTreeArrayTablePreviewRow[];
+  sourceRows: JsonTreeArrayTableSourceRow[];
   totalRows: number;
   sampledRows: number;
+  scannedRows: number;
   totalColumns: number;
+  maxRows: number;
+  maxScanRows: number;
   maxColumns: number;
   maxCellLength: number;
   isRowLimited: boolean;
+  isScanLimited: boolean;
   isColumnLimited: boolean;
+  isRowResampled: boolean;
 }
 
 interface BuildJsonTreeArrayTablePreviewOptions {
   maxRows?: number;
+  maxScanRows?: number;
   maxColumns?: number;
   maxCellLength?: number;
 }
@@ -78,6 +90,7 @@ const DEFAULT_MAX_TREE_NODES = 1500;
 const DEFAULT_MAX_TREE_DEPTH = 24;
 const DEFAULT_PREVIEW_MAX_LENGTH = 80;
 const DEFAULT_TABLE_PREVIEW_ROWS = 8;
+const DEFAULT_TABLE_COLUMN_SCAN_ROWS = 200;
 const DEFAULT_TABLE_PREVIEW_COLUMNS = 8;
 const DEFAULT_TABLE_CELL_MAX_LENGTH = 80;
 
@@ -139,6 +152,41 @@ const escapeMarkdownTableCell = (value: string): string => (
     .replace(/\|/g, '\\|')
     .replace(/\r?\n/g, ' ')
     .trim()
+);
+
+const hasOwnJsonColumn = (row: JsonObject, column: string): boolean => (
+  Object.prototype.hasOwnProperty.call(row, column)
+);
+
+const getJsonTableColumns = (rows: JsonTreeArrayTableSourceRow[]): string[] => (
+  [...new Set(rows.flatMap(row => Object.keys(row.sourceObject)))]
+);
+
+const buildJsonTreeArrayTableRows = (
+  sourceRows: JsonTreeArrayTableSourceRow[],
+  columns: string[],
+  maxCellLength: number
+): JsonTreeArrayTablePreviewRow[] => (
+  sourceRows.map(row => ({
+    index: row.index,
+    cells: columns.map(column => (
+      hasOwnJsonColumn(row.sourceObject, column)
+        ? getTableCellText(row.sourceObject[column], maxCellLength)
+        : ''
+    )),
+    copyCells: columns.map(column => (
+      hasOwnJsonColumn(row.sourceObject, column)
+        ? getTableCellText(row.sourceObject[column])
+        : ''
+    )),
+    jsonObject: columns.reduce<JsonObject>((result, column) => {
+      if (hasOwnJsonColumn(row.sourceObject, column)) {
+        result[column] = row.sourceObject[column];
+      }
+      return result;
+    }, {}),
+    sourceObject: row.sourceObject,
+  }))
 );
 
 const normalizeSearchToken = (value: string): string => value.trim().toLowerCase();
@@ -292,49 +340,48 @@ export const buildJsonTreeArrayTablePreview = (
   if (!Array.isArray(value) || value.length === 0) return null;
 
   const maxRows = Math.max(1, options.maxRows ?? DEFAULT_TABLE_PREVIEW_ROWS);
+  const maxScanRows = Math.max(maxRows, options.maxScanRows ?? DEFAULT_TABLE_COLUMN_SCAN_ROWS);
   const maxColumns = Math.max(1, options.maxColumns ?? DEFAULT_TABLE_PREVIEW_COLUMNS);
   const maxCellLength = Math.max(16, options.maxCellLength ?? DEFAULT_TABLE_CELL_MAX_LENGTH);
   const sampledItems = value.slice(0, maxRows);
   if (sampledItems.some(item => !isJsonRecord(item))) return null;
 
-  const objectRows = sampledItems.map((item, index) => ({ item: item as JsonObject, index }));
+  const objectRows = sampledItems.map((item, index) => ({
+    index,
+    sourceObject: item as JsonObject,
+  }));
+  const scannedItems = value.slice(0, maxScanRows);
+  const sourceRows = scannedItems.reduce<JsonTreeArrayTableSourceRow[]>((result, item, index) => {
+    if (isJsonRecord(item)) {
+      result.push({ index, sourceObject: item as JsonObject });
+    }
+    return result;
+  }, []);
 
-  const allColumns = [...new Set(objectRows.flatMap(row => Object.keys(row.item)))];
+  const defaultColumns = getJsonTableColumns(objectRows);
+  const allColumns = getJsonTableColumns(sourceRows);
   if (allColumns.length === 0) return null;
 
-  const columns = allColumns.slice(0, maxColumns);
-  const rows = objectRows.map(row => ({
-    index: row.index,
-    cells: columns.map(column => (
-      Object.prototype.hasOwnProperty.call(row.item, column)
-        ? getTableCellText(row.item[column], maxCellLength)
-        : ''
-    )),
-    copyCells: columns.map(column => (
-      Object.prototype.hasOwnProperty.call(row.item, column)
-        ? getTableCellText(row.item[column])
-        : ''
-    )),
-    jsonObject: columns.reduce<JsonObject>((result, column) => {
-      if (Object.prototype.hasOwnProperty.call(row.item, column)) {
-        result[column] = row.item[column];
-      }
-      return result;
-    }, {}),
-    sourceObject: row.item,
-  }));
+  const columns = defaultColumns.slice(0, maxColumns);
+  const rows = buildJsonTreeArrayTableRows(objectRows, columns, maxCellLength);
 
   return {
     columns,
     allColumns,
     rows,
+    sourceRows,
     totalRows: value.length,
     sampledRows: objectRows.length,
+    scannedRows: sourceRows.length,
     totalColumns: allColumns.length,
+    maxRows,
+    maxScanRows,
     maxColumns,
     maxCellLength,
     isRowLimited: value.length > sampledItems.length,
-    isColumnLimited: allColumns.length > columns.length,
+    isScanLimited: value.length > scannedItems.length,
+    isColumnLimited: defaultColumns.length > columns.length || allColumns.length > defaultColumns.length,
+    isRowResampled: false,
   };
 };
 
@@ -362,29 +409,34 @@ export const filterJsonTreeArrayTablePreviewColumns = (
   const columnEntries = matchedColumnEntries.slice(0, Math.max(1, preview.maxColumns || preview.columns.length || 1));
 
   const columns = columnEntries.map(entry => entry.column);
+  const hasMatchedColumnInCurrentRows = columns.length === 0 || preview.rows.some(row => (
+    columns.some(column => hasOwnJsonColumn(row.sourceObject, column))
+  ));
+  const maxRows = Math.max(1, preview.maxRows || preview.rows.length || 1);
+  const candidateSourceRows = preview.sourceRows || preview.rows.map(row => ({
+    index: row.index,
+    sourceObject: row.sourceObject,
+  }));
+  const filteredSourceRows = hasMatchedColumnInCurrentRows
+    ? preview.rows.map(row => ({
+      index: row.index,
+      sourceObject: row.sourceObject,
+    }))
+    : candidateSourceRows
+      .filter(row => columns.some(column => hasOwnJsonColumn(row.sourceObject, column)))
+      .slice(0, maxRows);
+
   return {
     ...preview,
     columns,
-    rows: preview.rows.map(row => ({
-      ...row,
-      cells: columns.map(column => (
-        Object.prototype.hasOwnProperty.call(row.sourceObject, column)
-          ? getTableCellText(row.sourceObject[column], preview.maxCellLength || DEFAULT_TABLE_CELL_MAX_LENGTH)
-          : ''
-      )),
-      copyCells: columns.map(column => (
-        Object.prototype.hasOwnProperty.call(row.sourceObject, column)
-          ? getTableCellText(row.sourceObject[column])
-          : ''
-      )),
-      jsonObject: columns.reduce<JsonObject>((result, column) => {
-        if (Object.prototype.hasOwnProperty.call(row.sourceObject, column)) {
-          result[column] = row.sourceObject[column];
-        }
-        return result;
-      }, {}),
-    })),
+    rows: buildJsonTreeArrayTableRows(
+      filteredSourceRows,
+      columns,
+      preview.maxCellLength || DEFAULT_TABLE_CELL_MAX_LENGTH
+    ),
+    sampledRows: filteredSourceRows.length,
     isColumnLimited: preview.isColumnLimited || matchedColumnEntries.length > columns.length,
+    isRowResampled: !hasMatchedColumnInCurrentRows,
   };
 };
 

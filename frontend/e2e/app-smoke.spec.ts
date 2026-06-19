@@ -354,6 +354,18 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       { c1: 'a1', c2: 'a2', c3: 'a3', c4: 'a4', c5: 'a5', c6: 'a6', c7: 'a7', c8: 'a8', hiddenMetric: 88 },
       { c1: 'b1', c2: 'b2', c3: 'b3', c4: 'b4', c5: 'b5', c6: 'b6', c7: 'b7', c8: 'b8', hiddenMetric: 99 },
     ],
+    lateItems: [
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+      { id: 3, name: 'C' },
+      { id: 4, name: 'D' },
+      { id: 5, name: 'E' },
+      { id: 6, name: 'F' },
+      { id: 7, name: 'G' },
+      { id: 8, name: 'H' },
+      { id: 9, name: 'I', lateMetric: 88 },
+      { id: 10, name: 'J', lateMetric: 99 },
+    ],
   }));
 
   await page.locator('[data-tour="structure-nav-button"]').click();
@@ -495,9 +507,20 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(page.getByText('已复制表格 CSV').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('hiddenMetric\n88\n99');
 
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('lateItems');
+  await structurePanel.locator('button[title="选中并定位 $.lateItems"]').click();
+  await expect(tablePreview).toContainText('对象数组预览: 8/10 行，2/3 列');
+  await tablePreview.locator('[data-tour="structure-nav-table-column-filter"]').fill('lateMetric');
+  await expect(tablePreview).toContainText('列筛选 1/3');
+  await expect(tablePreview).toContainText('行重采样');
+  await expect(tablePreview).toContainText('lateMetric');
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]').click();
+  await expect(page.getByText('已复制表格 CSV').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('lateMetric\n88\n99');
+
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('');
   await structurePanel.locator('[data-tour="structure-nav-kind-filter"]').selectOption('array');
-  await expect(structurePanel.locator('[data-tour="structure-nav-row"]')).toHaveCount(2);
+  await expect(structurePanel.locator('[data-tour="structure-nav-row"]')).toHaveCount(3);
   await expect(structurePanel.locator('[data-tour="structure-nav-row"]').first()).toContainText('items');
 
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
@@ -518,6 +541,13 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       childCount: 2,
       preview: '数组 2 项',
     },
+    {
+      path: '$.lateItems',
+      pointer: '/lateItems',
+      kind: 'array',
+      childCount: 10,
+      preview: '数组 10 项',
+    },
   ], null, 2));
 
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
@@ -527,6 +557,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
     'path,pointer,kind,childCount,preview',
     '$.items,/items,array,2,数组 2 项',
     '$.wideItems,/wideItems,array,2,数组 2 项',
+    '$.lateItems,/lateItems,array,10,数组 10 项',
   ].join('\n'));
 });
 
