@@ -405,8 +405,8 @@ test('JSONPath 查询按钮提前提示不可查询原因', async ({ page }) => 
   await expect(page.getByRole('button', { name: '查询', exact: true })).toBeVisible();
 
   await page.locator('[data-tour="jsonpath-input"]').fill('   ');
-  await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式后查询');
-  await expect(queryButtonDescription).toHaveText('请输入 JSONPath 表达式后查询');
+  await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式或字段名后查询');
+  await expect(queryButtonDescription).toHaveText('请输入 JSONPath 表达式或字段名后查询');
 });
 
 test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) => {
@@ -2351,6 +2351,7 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
     meta: {
       action_cmd: 'baiduboxapp://v7/vendor/ad/open?params=%7B%22nid%22%3A123%7D',
       traceId: 'trace-jsonpath-1',
+      'trace.id': 'trace-dot-1',
     },
   }));
 
@@ -2362,14 +2363,15 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
 
   await expect(queryButton).toHaveAttribute('title', '执行 JSONPath 查询');
   await expect(queryInput).toHaveAttribute('aria-label', 'JSONPath 表达式');
+  await expect(queryInput).toHaveAttribute('placeholder', '输入 JSONPath 表达式或字段名');
   await queryInput.fill('   ');
-  await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式后查询');
-  await expect(page.locator('#jsonpath-query-button-description')).toHaveText('请输入 JSONPath 表达式后查询');
+  await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式或字段名后查询');
+  await expect(page.locator('#jsonpath-query-button-description')).toHaveText('请输入 JSONPath 表达式或字段名后查询');
   await expect(favoriteToggle).toBeDisabled();
-  await expect(favoriteToggle).toHaveAttribute('title', '请输入 JSONPath 表达式后可收藏');
-  await expect(favoriteToggle).toHaveAttribute('aria-label', '请输入 JSONPath 表达式后可收藏');
+  await expect(favoriteToggle).toHaveAttribute('title', '请输入 JSONPath 表达式或字段名后可收藏');
+  await expect(favoriteToggle).toHaveAttribute('aria-label', '请输入 JSONPath 表达式或字段名后可收藏');
   await queryButton.click();
-  await expect(page.getByText('请输入 JSONPath 表达式', { exact: true })).toBeVisible();
+  await expect(page.getByText('请输入 JSONPath 表达式或字段名', { exact: true })).toBeVisible();
   await expect(queryInput).toHaveAttribute('aria-invalid', 'true');
   await expect(queryInput).toHaveAttribute('aria-describedby', 'jsonpath-error-message');
   await expect(page.locator('#jsonpath-error-message')).toHaveAttribute('role', 'alert');
@@ -2412,6 +2414,18 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(page.getByText('1 / 1')).toBeVisible();
   await expect(resultPreview).toContainText('$.meta.action_cmd');
   await expect(resultPreview).toContainText('"nid": 123');
+
+  await queryInput.fill('traceId');
+  await queryButton.click();
+  await expect(queryInput).toHaveValue('$..traceId');
+  await expect(page.getByText('1 / 1')).toBeVisible();
+  await expect(resultPreview).toContainText('trace-jsonpath-1');
+
+  await queryInput.fill('trace.id');
+  await queryButton.click();
+  await expect(queryInput).toHaveValue('$..["trace.id"]');
+  await expect(page.getByText('1 / 1')).toBeVisible();
+  await expect(resultPreview).toContainText('trace-dot-1');
 
   await queryInput.fill('$.users[*].name');
   await queryButton.click();

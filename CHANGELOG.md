@@ -1,4 +1,15 @@
 # 更新日志 (Changelog)
+## v1.8.233 (2026-06-19) - JSONPath 字段名快捷查询
+### ✨ 新特性
+- **字段名直查**: JSONPath 面板支持直接输入 `traceId`、`action_cmd` 等字段名，查询时自动转成 `$..traceId`、`$..action_cmd` 递归查询
+- **特殊字段保护**: `button-cmd`、`trace.id`、中文字段等会自动生成 bracket JSONPath，标准 `$` / `@` 表达式保持原样，不干扰高级查询
+
+### 📝 文档
+- **查询门槛降低**: README、架构说明和产品评审同步记录字段名快捷查询能力，承接 JSON Path Finder 类工具的快速找字段体验
+
+### 🧪 测试
+- **JSONPath 覆盖**: 新增字段名归一化单测，扩展 JSONPath 面板 E2E 覆盖字段名自动转递归查询和结果展示
+
 ## v1.8.232 (2026-06-19) - JSONPath Response 常用预设
 ### ✨ 新特性
 - **Response 快查**: JSONPath 面板新增 `action_cmd`、`button_cmd`、`scheme`、`url`、`params`、`traceId` 常用查询预设，可一键填入并执行递归查询
