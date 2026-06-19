@@ -1,4 +1,11 @@
-export type JsonStringSemanticKind = 'url' | 'scheme' | 'email' | 'date' | 'date-time' | 'color';
+export type JsonStringSemanticKind =
+  | 'url'
+  | 'scheme'
+  | 'email'
+  | 'phone'
+  | 'date'
+  | 'date-time'
+  | 'color';
 
 export interface JsonStringSemanticHint {
   kind: JsonStringSemanticKind;
@@ -6,9 +13,18 @@ export interface JsonStringSemanticHint {
   detail: string;
 }
 
+export interface JsonStringSemanticContext {
+  path?: string;
+  keyLabel?: string;
+}
+
 const URL_PROTOCOL_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
 const PROTOCOL_RELATIVE_URL_RE = /^\/\/[^\s/$.?#].[^\s]*$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_CONTEXT_RE = /(?:phone|mobile|tel|telephone|call|手机号|电话|号码)/i;
+const CHINA_MOBILE_PHONE_RE = /^(?:\+?86[-\s]?)?1[3-9]\d{9}$/;
+const SERVICE_PHONE_RE = /^(?:400|800)-?\d{3}-?\d{4}$/;
+const LANDLINE_PHONE_RE = /^0\d{2,3}-?\d{7,8}$/;
 const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DATE_TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})?$/;
@@ -30,6 +46,36 @@ const isValidDateOnly = (value: string): boolean => {
 const truncateSemanticDetail = (value: string, maxLength = 80): string => (
   value.length <= maxLength ? value : `${value.slice(0, maxLength - 3)}...`
 );
+
+const maskPhoneDetail = (value: string): string => {
+  const digits = value.replace(/\D/g, '');
+  const localDigits = digits.startsWith('86') && digits.length === 13 ? digits.slice(2) : digits;
+
+  return localDigits.length === 11
+    ? `${localDigits.slice(0, 3)}****${localDigits.slice(-4)}`
+    : value;
+};
+
+const hasPhoneContext = (context?: JsonStringSemanticContext): boolean => {
+  const source = `${context?.keyLabel || ''} ${context?.path || ''}`.trim();
+  return Boolean(source) && PHONE_CONTEXT_RE.test(source);
+};
+
+const getPhoneSemanticHint = (
+  value: string,
+  context?: JsonStringSemanticContext
+): JsonStringSemanticHint | null => {
+  if (!hasPhoneContext(context)) return null;
+  if (!CHINA_MOBILE_PHONE_RE.test(value) && !SERVICE_PHONE_RE.test(value) && !LANDLINE_PHONE_RE.test(value)) {
+    return null;
+  }
+
+  return {
+    kind: 'phone',
+    label: '电话',
+    detail: maskPhoneDetail(value),
+  };
+};
 
 const getUrlSemanticHint = (value: string): JsonStringSemanticHint | null => {
   if (/\s/.test(value)) return null;
@@ -57,7 +103,10 @@ const getUrlSemanticHint = (value: string): JsonStringSemanticHint | null => {
   }
 };
 
-export const getJsonStringSemanticHints = (value: unknown): JsonStringSemanticHint[] => {
+export const getJsonStringSemanticHints = (
+  value: unknown,
+  context?: JsonStringSemanticContext
+): JsonStringSemanticHint[] => {
   if (typeof value !== 'string') return [];
 
   const text = value.trim();
@@ -73,6 +122,8 @@ export const getJsonStringSemanticHints = (value: unknown): JsonStringSemanticHi
       detail: text,
     });
   }
+  const phoneHint = getPhoneSemanticHint(text, context);
+  if (phoneHint) hints.push(phoneHint);
   if (DATE_TIME_RE.test(text) && !Number.isNaN(Date.parse(text))) {
     hints.push({
       kind: 'date-time',
@@ -93,6 +144,5 @@ export const getJsonStringSemanticHints = (value: unknown): JsonStringSemanticHi
       detail: text.toUpperCase(),
     });
   }
-
   return hints;
 };

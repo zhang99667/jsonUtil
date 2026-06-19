@@ -333,6 +333,8 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       name: 'Alice',
       'trace.id': 't-1',
       homepage: 'https://example.com/docs',
+      phone: '13718164578',
+      id: '13718164578',
     },
     items: [{ id: 1, name: 'A,B' }, { id: 2, name: 'Bob' }],
   }));
@@ -398,6 +400,15 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await structurePanel.getByTitle('选中并定位 $.user.homepage').click();
   await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('URL');
   await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('example.com/docs');
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('phone');
+  await structurePanel.getByTitle('选中并定位 $.user.phone').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('电话');
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('137****4578');
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('id');
+  await structurePanel.getByTitle('选中并定位 $.user.id').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toHaveCount(0);
 
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('items');
   await structurePanel.locator('button[title="选中并定位 $.items"]').click();
