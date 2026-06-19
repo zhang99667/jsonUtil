@@ -294,6 +294,11 @@ frontend/fixtures/scheme-corpus/
 - JSON Hero: https://jsonhero.io/ 和 https://github.com/triggerdotdev/jsonhero-web
 - JSON Crack: https://jsoncrack.com/ 和 https://github.com/AykutSarac/jsoncrack.com
 - JSON Editor Online / jsoneditor: https://jsoneditor.io/ 和 https://github.com/josdejong/jsoneditor
+- quicktype: https://quicktype.io/ 和 https://quicktype.io/typescript
+- DevToys: https://devtoys.app/ 和 https://devtoys.app/doc/articles/extension-development/guidelines/UX/support-smart-detection.html
+- JSONLint Repair / jsonrepair: https://jsonlint.com/json-repair 和 https://github.com/josdejong/jsonrepair
+- JSON Diff: https://jsondiff.com/
+- JSON Path Finder: https://jsonpathfinder.com/
 - Dadroit: https://dadroit.com/
 - jq playground: https://play.jqlang.org/
 - JSON Compare: https://jsoncompare.com/
@@ -302,10 +307,13 @@ frontend/fixtures/scheme-corpus/
 ### 同类工具学习点
 
 - JSON Editor Online / jsoneditor: 多模式编辑、自动修复、Schema 校验、JMESPath 转换和 500MiB 级预览是成熟工作台的底线；本项目已具备格式化、修复和结构导航，后续要补 Schema 校验、JMESPath/jq 预览和更明确的修复解释。
-- JSON Hero: 多视图浏览、字符串语义预览、自动 Schema、键值搜索、键盘可访问和带路径的分享链接都很强；当前已先补 URL、Scheme、JWT、Base64、资源 URL、邮箱、电话、日期和颜色的轻量语义标签，后续可把空值分布和相关值统计做成节点详情语义卡片。
-- JSON Crack: 图形化结构、多格式转换、Schema/类型生成、查询和图片导出更适合讲解复杂结构；我们应保留轻量结构树，同时补“从节点继续转换/生成类型/对比/导出证据图”的短路径。
+- JSON Hero: 多视图浏览、字符串语义预览、自动 Schema、键值搜索、键盘可访问和带路径的分享链接都很强；当前已先补 URL、Scheme、JWT、Base64、资源 URL、邮箱、电话、日期和颜色的轻量语义标签，后续可把空值分布、相关值统计和长数组字段采样质量做成节点详情语义卡片。
+- JSON Crack: 图形化结构、多格式转换、Schema/类型生成、查询和图片导出更适合讲解复杂结构；我们应保留轻量结构树，同时补“从节点继续转换/生成类型/对比/导出证据图”的短路径，Schema/类型生成要对真实长列表给出采样覆盖说明。
+- quicktype: 多语言模型和运行时校验生成证明“从样本到代码”是高频链路；本项目已补 JSON 转 TS 和 Schema 示例，后续可把 Schema 与 TS 生成的字段覆盖率、可选字段和混合类型提示统一起来。
+- DevToys: 离线工具箱和 Smart Detection 说明“自动识别当前输入并推荐可串联工具”很重要；Electron 版后续应优先做剪贴板智能识别、转换结果转入下一工具和本地隐私承诺。
+- JSONLint Repair / jsonrepair: 自动修复要明确列出 trailing comma、单引号、未加引号 key、注释、Markdown 包裹、截断和缺逗号等可修复类型；本项目应继续保持本地规则优先，并把修复步骤解释做成可复制摘要。
 - Dadroit: 大文件、JSON Lines/ndjson、类数据库查询和自动刷新是桌面场景刚需；本项目应继续强化 Worker/虚拟化/增量分析能力，并把“敏感数据本地处理”作为桌面版核心承诺。
-- jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目下一步更应该把“转换后如何检查结果是否可信”和“差异如何定位到 JSONPath”做成优势。
+- JSON Diff / JSON Path Finder / jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目下一步更应该把“转换后如何检查结果是否可信”和“差异如何定位到 JSONPath / JSON Pointer”做成优势。
 
 ### 竞品启发的新增待办
 
@@ -313,7 +321,7 @@ frontend/fixtures/scheme-corpus/
 - 路径级协作: 已支持复制带路径上下文的 Markdown 和 CSV 摘要；后续 Web 版可考虑 URL hash 定位到某个 JSONPath。
 - 图形证据: 复杂对象可导出结构缩略图或 Mermaid/图片，服务于排查报告和评审沟通，而不是把完整 JSON 截图贴出去。
 - 桌面效率: Electron 版可补剪贴板智能识别、打开历史、文件拖拽和系统快捷入口，强化“敏感数据不出本机”的定位。
-- 转换可信度: JSON 转 CSV/YAML/TS/Schema 后增加样本行数、丢失字段、动态 key、混合类型和截断提示，让转换结果更可审查。
+- 转换可信度: JSON 转 CSV/YAML/TS/Schema 后增加样本行数、丢失字段、动态 key、混合类型和截断提示，让转换结果更可审查；JSON Schema 生成已补长数组前段、尾段、分散点和稀疏字段代表行采样，后续可把采样摘要展示到面板中。
 
 ### 新 P0: 结构检查器
 

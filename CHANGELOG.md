@@ -1,4 +1,15 @@
 # 更新日志 (Changelog)
+## v1.8.225 (2026-06-19) - Schema 长数组采样补强
+### ✨ 新特性
+- **长数组 Schema 推断**: JSON Schema 生成从仅采样数组前 20 项升级为前段、尾段、分散点和稀疏字段代表行采样，真实 response 后段才出现的 `cmdSchema`、`traceId` 等字段不再容易漏出 Schema
+- **竞品调研落地**: 结合 JSON Hero 的结构推断、JSON Crack 的 Schema/类型生成和 JSON Editor Online 的大文件工作台思路，将“长列表结构可信推断”补到当前 Schema 生成链路
+
+### 📝 文档
+- **同类工具复核**: 产品与工程评审补充 quicktype、DevToys 智能检测、JSONLint Repair、JSON Diff 和 JSONPath Finder 等学习点，沉淀为 Schema 可信度、工具串联和路径级协作待办
+
+### 🧪 测试
+- **采样覆盖**: 新增长数组后段稀疏字段和后段类型差异单测，确保稀疏字段不会误标 required，尾部类型差异能参与合并
+
 ## v1.8.224 (2026-06-19) - 结构导航搜索历史
 ### ✨ 新特性
 - **最近搜索词**: 结构导航会记录最近 10 个搜索词，按 Enter、点击节点或复制筛选结果后自动置顶，方便反复排查 `cmdSchema`、`traceId`、`phone` 等字段

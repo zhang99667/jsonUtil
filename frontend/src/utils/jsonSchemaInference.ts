@@ -21,7 +21,11 @@ type InferredSchema = {
 };
 
 const MAX_SCHEMA_INFERENCE_DEPTH = 8;
-const MAX_ARRAY_SAMPLE_ITEMS = 20;
+const MAX_ARRAY_SAMPLE_ITEMS = 32;
+const ARRAY_SAMPLE_FRONT_ITEMS = 12;
+const ARRAY_SAMPLE_TAIL_ITEMS = 8;
+const ARRAY_SAMPLE_MIDDLE_ITEMS = 4;
+const MAX_ARRAY_SPARSE_FIELD_SCAN_ITEMS = 200;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -42,6 +46,62 @@ const uniqueTypes = (types: JsonSchemaType[]): JsonSchemaType[] => {
     : types;
 
   return [...new Set(normalized)].sort();
+};
+
+const addArraySampleIndex = (
+  indices: Set<number>,
+  index: number,
+  arrayLength: number
+): void => {
+  if (index < 0 || index >= arrayLength || indices.has(index) || indices.size >= MAX_ARRAY_SAMPLE_ITEMS) return;
+
+  indices.add(index);
+};
+
+const collectRecordKeys = (value: unknown): string[] => (
+  isRecord(value) ? Object.keys(value) : []
+);
+
+const getArraySampleItems = (value: unknown[]): unknown[] => {
+  if (value.length <= MAX_ARRAY_SAMPLE_ITEMS) return value;
+
+  const indices = new Set<number>();
+
+  for (let index = 0; index < ARRAY_SAMPLE_FRONT_ITEMS; index += 1) {
+    addArraySampleIndex(indices, index, value.length);
+  }
+
+  const tailStart = Math.max(value.length - ARRAY_SAMPLE_TAIL_ITEMS, 0);
+  for (let index = tailStart; index < value.length; index += 1) {
+    addArraySampleIndex(indices, index, value.length);
+  }
+
+  const middleStart = ARRAY_SAMPLE_FRONT_ITEMS;
+  const middleEnd = Math.max(middleStart, tailStart - 1);
+  const middleSpan = middleEnd - middleStart + 1;
+  for (let order = 1; order <= ARRAY_SAMPLE_MIDDLE_ITEMS && middleSpan > 0; order += 1) {
+    const index = middleStart + Math.floor((middleSpan * order) / (ARRAY_SAMPLE_MIDDLE_ITEMS + 1));
+    addArraySampleIndex(indices, index, value.length);
+  }
+
+  const seenKeys = new Set<string>();
+  indices.forEach(index => {
+    collectRecordKeys(value[index]).forEach(key => seenKeys.add(key));
+  });
+
+  // 长数组里稀疏字段常出现在后段样本，扫描代表行可避免生成 Schema 漏字段。
+  const scanLimit = Math.min(value.length, MAX_ARRAY_SPARSE_FIELD_SCAN_ITEMS);
+  for (let index = 0; index < scanLimit && indices.size < MAX_ARRAY_SAMPLE_ITEMS; index += 1) {
+    const keys = collectRecordKeys(value[index]);
+    if (!keys.some(key => !seenKeys.has(key))) continue;
+
+    addArraySampleIndex(indices, index, value.length);
+    keys.forEach(key => seenKeys.add(key));
+  }
+
+  return [...indices]
+    .sort((left, right) => left - right)
+    .map(index => value[index]);
 };
 
 const mergeTypeOnlySchemas = (schemas: InferredSchema[]): InferredSchema => {
@@ -164,7 +224,7 @@ const inferSchema = (
       return { type: 'array', items: {} };
     }
 
-    const sampledItems = value.slice(0, MAX_ARRAY_SAMPLE_ITEMS).map(item => inferSchema(item, depth + 1, options));
+    const sampledItems = getArraySampleItems(value).map(item => inferSchema(item, depth + 1, options));
     return {
       type: 'array',
       items: sampledItems.length > 0 ? mergeInferredSchemas(sampledItems, options) : {},
