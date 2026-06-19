@@ -116,7 +116,7 @@ frontend/
 │   │   ├── Editor.tsx             # Monaco 编辑器封装
 │   │   ├── ActionPanel.tsx        # 工具栏与 SOURCE 智能建议入口
 │   │   ├── ChangelogModal.tsx     # 前端版本更新日志弹窗
-│   │   ├── JsonPathPanel.tsx      # JSONPath 查询、Response 常用预设和结果复制面板
+│   │   ├── JsonPathPanel.tsx      # JSONPath 查询、字段名快捷查询、Response 常用预设和结果复制面板
 │   │   ├── JsonComparePanel.tsx   # 通用 JSON 语义对比、忽略路径、差异路径动作与报告复制面板
 │   │   ├── JsonTreePanel.tsx      # JSON 结构导航、路径定位、语义继续解析和节点 TS 类型复制面板
 │   │   └── ...

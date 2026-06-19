@@ -8,6 +8,7 @@ import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
+import { normalizeJsonPathQueryInput } from '../utils/jsonPathInput';
 import { formatJsonPathValueForPreview } from '../utils/jsonPathPreview';
 import {
     getDurationBucket,
@@ -232,7 +233,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         const startedAt = performance.now();
         setError('');
         setCancelledQuery('');
-        const queryPath = (overrideQuery ?? query).trim();
+        const normalizedQueryInput = normalizeJsonPathQueryInput(overrideQuery ?? query);
+        const queryPath = normalizedQueryInput.query;
         setEmptyResultQuery('');
 
         if (isDataPreparing) {
@@ -242,7 +244,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         }
 
         if (!queryPath) {
-            setError('请输入 JSONPath 表达式');
+            setError('请输入 JSONPath 表达式或字段名');
             setQueryRanges([]);
             setQueryValues([]);
             setQueryItems([]);
@@ -252,6 +254,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             onHighlightRange(null);
             trackJsonPathQueryEvent('skipped', startedAt);
             return;
+        }
+
+        if (normalizedQueryInput.isFieldNameShortcut) {
+            setQuery(queryPath);
         }
 
         // 校验 JSON 数据有效性
@@ -477,14 +483,14 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             ? JSONPATH_RESULT_STATUS_ID
             : undefined;
     const favoriteToggleTitle = !normalizedQuery
-        ? '请输入 JSONPath 表达式后可收藏'
+        ? '请输入 JSONPath 表达式或字段名后可收藏'
         : isCurrentQueryFavorite
             ? '取消收藏当前查询'
             : '收藏当前查询';
     const queryButtonTitle = (() => {
         if (isDataPreparing) return '深度格式化仍在处理，请稍后查询';
         if (isQuerying) return 'JSONPath 查询正在运行，可取消后重新查询';
-        if (!normalizedQuery) return '请输入 JSONPath 表达式后查询';
+        if (!normalizedQuery) return '请输入 JSONPath 表达式或字段名后查询';
         if (!jsonData.trim()) return '请先在 SOURCE 输入 JSON 数据';
         return '执行 JSONPath 查询';
     })();
@@ -581,7 +587,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 setCancelledQuery('');
                             }}
                             onKeyDown={handleKeyDown}
-                            placeholder="输入 JSONPath 表达式"
+                            placeholder="输入 JSONPath 表达式或字段名"
                             aria-label="JSONPath 表达式"
                             aria-invalid={Boolean(error)}
                             aria-describedby={queryInputDescriptionId}
