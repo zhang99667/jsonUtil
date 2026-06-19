@@ -3,6 +3,7 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { JsonTreeArrayTablePreview, JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
 import {
   buildJsonTreeArrayTablePreview,
+  formatJsonTreeSearchResultsCsvText,
   formatJsonTreeSearchResultsText,
   formatJsonTreeSearchResultsMarkdownText,
   formatJsonTreeArrayTableCsvText,
@@ -343,6 +344,17 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       formatJsonTreeSearchResultsMarkdownText(visibleNodes),
       '已复制 Markdown 摘要',
       '复制 Markdown 摘要失败'
+    );
+    closeCopyResultsMenu();
+  };
+
+  const handleCopySearchResultsCsv = async () => {
+    if (!hasActiveFilter || visibleNodes.length === 0) return;
+
+    await handleCopyText(
+      formatJsonTreeSearchResultsCsvText(visibleNodes),
+      '已复制 CSV 摘要',
+      '复制 CSV 摘要失败'
     );
     closeCopyResultsMenu();
   };
@@ -710,6 +722,14 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
                 >
                   Markdown 摘要
                 </button>
+                <button
+                  type="button"
+                  data-tour="structure-nav-copy-search-results-csv"
+                  onClick={() => void handleCopySearchResultsCsv()}
+                  className="block w-full px-2 py-1.5 text-left text-gray-300 transition-colors hover:bg-editor-hover hover:text-amber-100"
+                >
+                  CSV 摘要
+                </button>
               </div>
             </details>
           ) : (
@@ -717,7 +737,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
               type="button"
               data-tour="structure-nav-copy-search-results"
               disabled
-              className="rounded border border-editor-border px-2 py-1.5 text-xs text-gray-300 opacity-50"
+              className="w-12 rounded border border-editor-border px-2 py-1.5 text-center text-xs text-gray-300 opacity-50"
               title="有搜索或类型筛选结果后可复制"
             >
               结果
