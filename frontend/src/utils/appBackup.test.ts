@@ -56,6 +56,7 @@ describe('app backup', () => {
     ]));
     storage.setItem('jsonpath-panel-position', JSON.stringify({ x: 20, y: 40 }));
     storage.setItem('jsonpath-panel-size', JSON.stringify({ width: 620, height: 420 }));
+    storage.setItem('structure-nav-panel-position', JSON.stringify({ x: 120, y: 80 }));
 
     const backup = buildAppBackup({
       storage,
@@ -85,6 +86,9 @@ describe('app backup', () => {
     expect(backup.panelLayout['jsonpath-panel']).toEqual({
       position: { x: 20, y: 40 },
       size: { width: 620, height: 420 },
+    });
+    expect(backup.panelLayout['structure-nav-panel']).toEqual({
+      position: { x: 120, y: 80 },
     });
   });
 

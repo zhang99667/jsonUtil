@@ -4,6 +4,7 @@ export const PANEL_LAYOUT_RESET_EVENT = 'json-helper-panel-layout-reset';
 
 export const FLOATING_PANEL_STORAGE_KEYS = [
   'jsonpath-panel',
+  'structure-nav-panel',
   'json-schema-panel',
   'scheme-panel',
   'template-fill-panel',

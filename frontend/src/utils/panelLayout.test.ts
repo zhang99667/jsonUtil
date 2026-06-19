@@ -1,7 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
-import { notifyFloatingPanelLayoutReset, PANEL_LAYOUT_RESET_EVENT, resetFloatingPanelLayoutStorage } from './panelLayout';
+import {
+  FLOATING_PANEL_STORAGE_KEYS,
+  notifyFloatingPanelLayoutReset,
+  PANEL_LAYOUT_RESET_EVENT,
+  resetFloatingPanelLayoutStorage,
+} from './panelLayout';
 
 describe('resetFloatingPanelLayoutStorage', () => {
+  it('默认覆盖结构导航面板布局缓存', () => {
+    expect(FLOATING_PANEL_STORAGE_KEYS).toContain('structure-nav-panel');
+  });
+
   it('清理浮动面板位置和尺寸缓存', () => {
     const storage = {
       removeItem: vi.fn(),

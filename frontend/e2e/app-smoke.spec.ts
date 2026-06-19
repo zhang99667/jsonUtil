@@ -110,6 +110,7 @@ test('查询解析工具入口展示浮动面板打开态', async ({ page }) => 
   };
 
   await assertPanelToggle('jsonpath-button');
+  await assertPanelToggle('structure-nav-button');
   await assertPanelToggle('json-schema-button');
   await assertPanelToggle('scheme-button');
   await assertPanelToggle('template-fill-button');
@@ -125,6 +126,7 @@ test('折叠工具栏后图标按钮保留可访问名称', async ({ page }) => 
   await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-label', '嵌套解析');
   await expect(page.locator('[data-tour="jsonpath-button"]')).toHaveAttribute('aria-label', 'JSONPath 查询，未打开');
+  await expect(page.locator('[data-tour="structure-nav-button"]')).toHaveAttribute('aria-label', '结构导航，未打开');
   await expect(page.locator('[data-tour="json-schema-button"]')).toHaveAttribute('aria-label', 'Schema 校验，未打开');
   await expect(page.locator('[data-tour="open-file-button"]')).toHaveAttribute('aria-label', '打开文件');
   await expect(page.locator('[data-tour="save-file-button"]')).toHaveAttribute('aria-label', '保存为 JSON');
@@ -270,6 +272,32 @@ test('JSONPath 查询按钮提前提示不可查询原因', async ({ page }) => 
   await page.locator('[data-tour="jsonpath-input"]').fill('   ');
   await expect(queryButton).toHaveAttribute('title', '请输入 JSONPath 表达式后查询');
   await expect(queryButtonDescription).toHaveText('请输入 JSONPath 表达式后查询');
+});
+
+test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) => {
+  await fillSourceEditor(page, JSON.stringify({
+    user: {
+      name: 'Alice',
+      'trace.id': 't-1',
+    },
+    items: [{ id: 1 }, { id: 2 }],
+  }));
+
+  await page.locator('[data-tour="structure-nav-button"]').click();
+
+  const structurePanel = page.getByRole('dialog', { name: 'JSON 结构导航' });
+  await expect(structurePanel).toBeVisible();
+  await expect(structurePanel.locator('[data-tour="structure-nav-search"]')).toBeFocused();
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('trace');
+  await expect(structurePanel).toContainText('trace.id');
+
+  await structurePanel.getByTitle('定位 $.user["trace.id"]').click();
+
+  const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
+  await expect(jsonPathPanel).toBeVisible();
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.user["trace.id"]');
+  await expect(jsonPathPanel).toContainText('t-1');
 });
 
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {

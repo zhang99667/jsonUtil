@@ -117,6 +117,7 @@ frontend/
 │   │   ├── ActionPanel.tsx        # 工具栏
 │   │   ├── ChangelogModal.tsx     # 前端版本更新日志弹窗
 │   │   ├── JsonPathPanel.tsx      # JSONPath 查询面板
+│   │   ├── JsonTreePanel.tsx      # JSON 结构导航与路径定位面板
 │   │   └── ...
 │   ├── hooks/                # 自定义 Hooks
 │   │   ├── useFileSystem.ts       # 文件操作
@@ -130,6 +131,7 @@ frontend/
 │   │   ├── schemePathValues.ts    # Scheme 面板 JSONPath 路径值复制
 │   │   ├── transformSummary.ts    # 深度解析报告、质量快照和 CMD 结构导出
 │   │   ├── cmdStructureDiff.ts    # cmdHandler 风格结构差异对比
+│   │   ├── jsonTreeModel.ts       # JSON 树模型、路径与预览摘要生成
 │   │   ├── changelog.ts           # CHANGELOG 解析与前端展示数据
 │   │   └── diffUtils.ts           # 差异对比
 │   ├── workers/              # 大输入异步处理
