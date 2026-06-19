@@ -28,6 +28,23 @@ const JSONPATH_ERROR_MESSAGE_ID = 'jsonpath-error-message';
 const JSONPATH_RESULT_STATUS_ID = 'jsonpath-result-status';
 const JSONPATH_QUERY_BUTTON_DESCRIPTION_ID = 'jsonpath-query-button-description';
 
+const JSONPATH_EXAMPLES = [
+    { label: '根节点', query: '$' },
+    { label: '所有属性', query: '$.*' },
+    { label: '数组第一项', query: '$[0]' },
+    { label: '递归搜索', query: '$..name' },
+    { label: '过滤条件', query: '$[?(@.age > 18)]' },
+];
+
+const RESPONSE_JSONPATH_PRESETS = [
+    { label: 'action_cmd', query: '$..action_cmd' },
+    { label: 'button_cmd', query: '$..button_cmd' },
+    { label: 'scheme', query: '$..scheme' },
+    { label: 'url', query: '$..url' },
+    { label: 'params', query: '$..params' },
+    { label: 'traceId', query: '$..traceId' },
+];
+
 const formatJsonPathValuesForCopy = (values: unknown[]): string => {
     if (values.length === 1) {
         const [value] = values;
@@ -394,14 +411,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         handleQuery(externalQueryRequest.query);
     }, [externalQueryRequest, handleQuery, isDataPreparing, isOpen]);
 
-    const examples = [
-        { label: '根节点', query: '$' },
-        { label: '所有属性', query: '$.*' },
-        { label: '数组第一项', query: '$[0]' },
-        { label: '递归搜索', query: '$..name' },
-        { label: '过滤条件', query: '$[?(@.age > 18)]' },
-    ];
-
     // 导航到上一个结果
     const goToPrevious = () => {
         const navigableResultCount = queryRanges.length;
@@ -671,15 +680,34 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 <div className="mb-3" data-tour="jsonpath-examples">
                     <div className="text-xs text-gray-500 mb-2">常用示例:</div>
                     <div className="flex flex-wrap gap-2">
-                        {examples.map((example, idx) => (
+                        {JSONPATH_EXAMPLES.map((example) => (
                             <button
-                                key={idx}
+                                key={example.query}
                                 onClick={() => fillAndRunQuery(example.query)}
                                 className="text-xs px-2 py-1 bg-editor-border text-gray-300 rounded hover:bg-editor-active transition-colors"
                                 title={`${example.query}\n点击填入并查询`}
                                 aria-label={`填入并查询示例：${example.label}（${example.query}）`}
                             >
                                 {example.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Response 常用 */}
+                <div className="mb-3" data-tour="jsonpath-response-presets">
+                    <div className="text-xs text-gray-500 mb-2">Response 常用:</div>
+                    <div className="flex flex-wrap gap-2">
+                        {RESPONSE_JSONPATH_PRESETS.map((preset) => (
+                            <button
+                                key={preset.query}
+                                data-tour="jsonpath-response-preset"
+                                onClick={() => fillAndRunQuery(preset.query)}
+                                className="rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 font-mono text-[11px] text-cyan-100 transition-colors hover:border-cyan-400/50 hover:bg-cyan-500/20"
+                                title={`${preset.query}\n点击填入并查询`}
+                                aria-label={`填入并查询 Response 常用：${preset.label}（${preset.query}）`}
+                            >
+                                {preset.label}
                             </button>
                         ))}
                     </div>

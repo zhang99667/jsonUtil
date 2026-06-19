@@ -271,6 +271,7 @@ frontend/fixtures/scheme-corpus/
 - 已新增 `perf:e2e` 浏览器 Worker 端到端性能预算，覆盖 JSONPath 取消响应、Scheme 取消响应、连续大 response 解析和已加载面板关闭态大输入切换，并在 CI 中输出 JSON artifact / Step Summary。
 - 管理后台工具事件洞察已新增 PM 周报视图，按统计周期聚合高频功能、失败率、大输入和慢操作，并输出重点关注与下周动作。
 - 已新增 JSON Schema 校验浮动面板，支持从当前 SOURCE JSON 按严格/宽松策略生成初始 Schema、粘贴 Schema 校验当前 JSON，展示错误 JSONPath、Schema 关键字和 Schema 路径，并可一键交给 JSONPath 面板定位。
+- JSONPath 面板已补 Response 常用查询预设，`action_cmd`、`button_cmd`、`scheme`、`url`、`params`、`traceId` 可一键填入并查询，减少真实接口 response 排查时手写递归表达式的成本。
 - JSON Schema 校验结果已支持 SOURCE 编辑器内错误标记，校验未通过时会在原字段位置显示高亮和 hover 说明，头部同步提示问题数量，额外字段会优先定位到具体字段。
 - JSON Schema 校验面板已支持浏览器本地 Schema 收藏、剪贴板导入/导出和配置备份同步，常用 Schema 可保存、载入、跨机器共享和团队复用。
 - HAR 派生 payload 已新增问题导向摘要，统计客户端/服务端错误、未知状态、JSON 解析失败、截断 body 和未解码 Base64，并只暴露不含 query 的接口标签。
@@ -313,12 +314,12 @@ frontend/fixtures/scheme-corpus/
 - DevToys: 离线工具箱和 Smart Detection 说明“自动识别当前输入并推荐可串联工具”很重要；本项目已先补 SOURCE 智能建议，会按当前输入推荐嵌套解析报告、Scheme 面板、结构导航、TS/Schema 或 URL 解码，后续可扩展到剪贴板智能识别、转换结果转入下一工具和本地隐私承诺。
 - JSONLint Repair / jsonrepair: 自动修复要明确列出 trailing comma、单引号、未加引号 key、注释、Markdown 包裹、截断和缺逗号等可修复类型；本项目应继续保持本地规则优先，并把修复步骤解释做成可复制摘要。
 - Dadroit: 大文件、JSON Lines/ndjson、类数据库查询和自动刷新是桌面场景刚需；本项目应继续强化 Worker/虚拟化/增量分析能力，并把“敏感数据本地处理”作为桌面版核心承诺。
-- JSON Diff / JSON Path Finder / jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目已为 JSON 对比补充按 JSONPath 前缀忽略噪声字段、复制 JSONPath / JSON Pointer 和联动 JSONPath 定位 SOURCE 原值，后续更应该把“转换后如何检查结果是否可信”做成优势。
+- JSON Diff / JSON Path Finder / jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目已为 JSONPath 补充 Response 常用查询预设，也为 JSON 对比补充按 JSONPath 前缀忽略噪声字段、复制 JSONPath / JSON Pointer 和联动 JSONPath 定位 SOURCE 原值，后续更应该把“转换后如何检查结果是否可信”做成优势。
 
 ### 竞品启发的新增待办
 
 - 语义预览: 已在结构检查器节点详情中识别 URL、Scheme、JWT、Base64、图片/视频/Lottie/音频/包资源、邮箱、电话、日期和颜色；URL/Scheme/JWT/Base64/资源 URL 已提供继续解析入口，后续可补复制属性、资源预览和相关值统计。
-- 路径级协作: 已支持复制带路径上下文的 Markdown 和 CSV 摘要，JSON 对比也支持按 JSONPath 前缀忽略噪声字段、复制 Path / Pointer 并定位修改或删除项的 SOURCE 原值；后续 Web 版可考虑 URL hash 定位到某个 JSONPath。
+- 路径级协作: 已支持复制带路径上下文的 Markdown 和 CSV 摘要，JSONPath 面板提供 Response 常用查询预设，JSON 对比也支持按 JSONPath 前缀忽略噪声字段、复制 Path / Pointer 并定位修改或删除项的 SOURCE 原值；后续 Web 版可考虑 URL hash 定位到某个 JSONPath。
 - 图形证据: 复杂对象可导出结构缩略图或 Mermaid/图片，服务于排查报告和评审沟通，而不是把完整 JSON 截图贴出去。
 - 桌面效率: 已补当前 SOURCE 的智能建议入口；Electron 版可继续补剪贴板智能识别、打开历史、文件拖拽和系统快捷入口，强化“敏感数据不出本机”的定位。
 - 转换可信度: JSON 转 CSV/YAML/TS/Schema 后增加样本行数、丢失字段、动态 key、混合类型和截断提示，让转换结果更可审查；JSON Schema 生成已补长数组前段、尾段、分散点和稀疏字段代表行采样，并在面板展示采样行数、稀疏字段命中、扫描上限和 required 策略摘要。

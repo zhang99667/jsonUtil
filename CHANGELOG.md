@@ -1,4 +1,15 @@
 # 更新日志 (Changelog)
+## v1.8.232 (2026-06-19) - JSONPath Response 常用预设
+### ✨ 新特性
+- **Response 快查**: JSONPath 面板新增 `action_cmd`、`button_cmd`、`scheme`、`url`、`params`、`traceId` 常用查询预设，可一键填入并执行递归查询
+- **查询链路复用**: 预设点击沿用现有查询、结果预览、历史记录、路径和值复制与 PREVIEW 高亮能力，不新增额外面板负担
+
+### 📝 文档
+- **竞品学习落地**: README、架构说明和产品评审同步记录 JSON Path Finder / jq 类工具的高频字段快查思路
+
+### 🧪 测试
+- **JSONPath 覆盖**: 扩展 JSONPath 面板 E2E，覆盖 Response 常用预设的可访问文案、自动填入、查询执行和结果展示
+
 ## v1.8.231 (2026-06-19) - 结构语义继续解析
 ### ✨ 新特性
 - **语义值继续解析**: 结构导航选中 URL、Scheme、JWT、Base64 或资源 URL 字符串时，节点详情区新增“继续解析”动作，可直接把原始值送入 Scheme/编码解析面板继续排查
