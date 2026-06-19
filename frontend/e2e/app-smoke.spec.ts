@@ -114,6 +114,8 @@ test('JSON 转 TS 可生成接口声明', async ({ page }) => {
   await page.locator('[data-tour="json-to-ts-btn"]').click();
 
   await expect(page.getByRole('button', { name: /JSON 转 TS/ })).toHaveAttribute('aria-pressed', 'true');
+  await expectPreviewText(page, '生成说明: 基于单个对象样本推断');
+  await expectPreviewText(page, '可信提示: 2 个可选字段');
   await expectPreviewText(page, 'export interface Root');
   await expectPreviewText(page, 'user: RootUser;');
   await expectPreviewText(page, 'items: RootItemsItem[];');

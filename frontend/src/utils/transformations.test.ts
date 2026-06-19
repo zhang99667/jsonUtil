@@ -344,6 +344,8 @@ describe('performTransform', () => {
       });
       const result = performTransform(input, TransformMode.JSON_TO_TYPESCRIPT);
 
+      expect(result).toContain('// 生成说明: 基于单个对象样本推断');
+      expect(result).toContain('// 可信提示: 2 个可选字段');
       expect(result).toContain('export interface Root {');
       expect(result).toContain('  user: RootUser;');
       expect(result).toContain('  items: RootItemsItem[];');
@@ -355,6 +357,7 @@ describe('performTransform', () => {
     it('从 JSON Lines 生成 RootItem 数组声明', () => {
       const result = performTransform('{"id":1,"name":"Ada"}\n{"id":2,"active":true}', TransformMode.JSON_TO_TYPESCRIPT);
 
+      expect(result).toContain('// 生成说明: 基于数组样本 2 项推断');
       expect(result).toContain('export type Root = RootItem[];');
       expect(result).toContain('  id: number;');
       expect(result).toContain('  name?: string;');

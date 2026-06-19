@@ -421,6 +421,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
           : node.keyLabel;
       const declaration = jsonValueToTypeScriptDeclaration(nodeValue, {
         rootName,
+        includeSummary: true,
       });
       await copyText(declaration);
       showSuccess('已复制 TS 类型');

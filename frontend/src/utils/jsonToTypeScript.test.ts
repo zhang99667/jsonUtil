@@ -48,4 +48,16 @@ describe('jsonToTypeScript', () => {
     expect(declaration).toContain('export type Items = ItemsItem[];');
     expect(declaration).toContain('export interface ItemsItem {');
   });
+
+  it('可输出生成可信度摘要', () => {
+    const declaration = jsonValueToTypeScriptDeclaration([
+      { id: 1, tags: [], value: '1' },
+      { id: 2, active: true, value: 2 },
+    ], { includeSummary: true });
+
+    expect(declaration).toContain('// 生成说明: 基于数组样本 2 项推断，生成 1 个对象类型');
+    expect(declaration).toContain('// 可信提示: 2 个可选字段，1 处混合类型，1 个空数组为 unknown[]');
+    expect(declaration).toContain('  active?: boolean;');
+    expect(declaration).toContain('  value: string | number;');
+  });
 });
