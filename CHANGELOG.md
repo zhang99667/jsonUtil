@@ -1,4 +1,15 @@
 # 更新日志 (Changelog)
+## v1.8.241 (2026-06-19) - Schema 可信度摘要
+### ✨ 新特性
+- **Schema 契约提示**: 根据 SOURCE 生成 JSON Schema 后新增可信度摘要，展示对象数、字段数、required 数、可选字段、union 类型、format 识别和长数组采样数量
+- **生成风险可见**: 手动编辑 Schema 后会清除推断摘要，避免把旧 SOURCE 的采样和可信度信息误认为当前 Schema 仍然适用
+
+### 📝 文档
+- **联网竞品复核**: 产品评审继续沉淀 JSON Editor Online、JSON Crack、JSON Hero、quicktype、CyberChef、DevToys 和 jq Playground 的学习点，将“契约可信度、可组合排查链路、本地隐私承诺、结构证据导出”列为后续重点
+
+### 🧪 测试
+- **Schema 推断覆盖**: 扩展 Schema 推断单测和主应用 E2E，覆盖 required/optional、union、format、长数组采样和手动编辑清除摘要
+
 ## v1.8.240 (2026-06-19) - Response 排查工作流
 ### ✨ 新特性
 - **智能工作流**: SOURCE 智能建议在识别到 JSON 内含 CMD / Scheme 时新增“排查工作流”，一键切到嵌套解析并打开深度解析报告

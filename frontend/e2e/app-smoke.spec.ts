@@ -368,10 +368,16 @@ test('JSON Schema 生成会展示长数组采样摘要', async ({ page }) => {
   await expect(samplingSummary).toContainText('$.items: 45 项中采样 25 项');
   await expect(samplingSummary).toContainText('命中后段稀疏字段 cmdSchema、traceId');
   await expect(samplingSummary).toContainText('required 按采样交集生成');
+  const trustSummary = schemaPanel.locator('[data-tour="json-schema-trust-summary"]');
+  await expect(trustSummary).toContainText('对象 2 个');
+  await expect(trustSummary).toContainText('字段 5 个');
+  await expect(trustSummary).toContainText('可选字段 2');
+  await expect(trustSummary).toContainText('长数组采样 1');
   await expect(schemaInput).toHaveValue(/"cmdSchema"/);
 
   await schemaInput.fill('{"type":"object"}');
   await expect(schemaPanel.locator('[data-tour="json-schema-inference-summary"]')).toHaveCount(0);
+  await expect(schemaPanel.locator('[data-tour="json-schema-trust-summary"]')).toHaveCount(0);
 });
 
 test('浮动面板支持键盘关闭并恢复入口焦点', async ({ page }) => {
