@@ -32,6 +32,8 @@ interface JsonTreeModelState {
   isLoading: boolean;
 }
 
+type JsonTreeKindFilter = JsonTreeNode['kind'] | 'all';
+
 const KIND_LABELS: Record<JsonTreeNode['kind'], string> = {
   object: '对象',
   array: '数组',
@@ -40,6 +42,16 @@ const KIND_LABELS: Record<JsonTreeNode['kind'], string> = {
   boolean: '布尔',
   null: '空值',
 };
+
+const KIND_FILTER_OPTIONS: Array<{ value: JsonTreeKindFilter; label: string }> = [
+  { value: 'all', label: '全部类型' },
+  { value: 'object', label: '对象' },
+  { value: 'array', label: '数组' },
+  { value: 'string', label: '字符串' },
+  { value: 'number', label: '数字' },
+  { value: 'boolean', label: '布尔' },
+  { value: 'null', label: '空值' },
+];
 
 const getKindClassName = (kind: JsonTreeNode['kind']): string => {
   if (kind === 'object') return 'border-blue-500/30 bg-blue-500/10 text-blue-200';
@@ -57,15 +69,20 @@ const getJsonPointerDisplayValue = (jsonPointer: string): string => (
 const getVisibleNodes = (
   nodes: JsonTreeNode[],
   expandedPaths: Set<string>,
-  searchText: string
+  searchText: string,
+  kindFilter: JsonTreeKindFilter
 ): JsonTreeNode[] => {
   const normalizedSearch = searchText.trim().toLowerCase();
-  if (normalizedSearch) {
-    return nodes.filter(node => matchesJsonTreeSearchText(node.searchText, normalizedSearch));
-  }
+  const hasTypeFilter = kindFilter !== 'all';
+  const baseNodes = normalizedSearch || hasTypeFilter
+    ? nodes
+    : nodes.filter(node => (
+      node.depth === 0 || node.ancestorPaths.every(path => expandedPaths.has(path))
+    ));
 
-  return nodes.filter(node => (
-    node.depth === 0 || node.ancestorPaths.every(path => expandedPaths.has(path))
+  return baseNodes.filter(node => (
+    (!normalizedSearch || matchesJsonTreeSearchText(node.searchText, normalizedSearch))
+    && (!hasTypeFilter || node.kind === kindFilter)
   ));
 };
 
@@ -80,6 +97,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
   const [searchText, setSearchText] = useState('');
+  const [kindFilter, setKindFilter] = useState<JsonTreeKindFilter>('all');
   const [selectedPath, setSelectedPath] = useState('$');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['$']));
   const [modelState, setModelState] = useState<JsonTreeModelState>({
@@ -145,9 +163,10 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     };
   }, [isDataPreparing, isOpen, jsonData]);
   const nodes = modelState.model?.nodes || [];
+  const hasActiveFilter = Boolean(searchText.trim()) || kindFilter !== 'all';
   const visibleNodes = useMemo(
-    () => getVisibleNodes(nodes, expandedPaths, searchText),
-    [expandedPaths, nodes, searchText]
+    () => getVisibleNodes(nodes, expandedPaths, searchText, kindFilter),
+    [expandedPaths, kindFilter, nodes, searchText]
   );
   const containerCount = useMemo(
     () => nodes.filter(node => node.isContainer).length,
@@ -179,6 +198,13 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       modelState.model?.nodes.some(node => node.path === prevPath) ? prevPath : '$'
     ));
   }, [isOpen, modelState.model]);
+
+  useEffect(() => {
+    if (!selectedNode || visibleNodes.length === 0) return;
+    if (visibleNodes.some(node => node.path === selectedNode.path)) return;
+
+    setSelectedPath(visibleNodes[0]?.path || '$');
+  }, [selectedNode, visibleNodes]);
 
   const handleToggleNode = (node: JsonTreeNode) => {
     if (!node.isContainer) return;
@@ -240,7 +266,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   };
 
   const handleCopySearchResults = async () => {
-    if (!searchText.trim() || visibleNodes.length === 0) return;
+    if (!hasActiveFilter || visibleNodes.length === 0) return;
 
     await handleCopyText(
       formatJsonTreeSearchResultsText(visibleNodes),
@@ -441,7 +467,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     if (visibleNodes.length === 0) {
       return (
         <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-gray-400">
-          没有匹配的路径或字段。
+          没有匹配的路径、字段、值或类型。
         </div>
       );
     }
@@ -535,7 +561,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             {modelState.isLoading
               ? '结构导航解析中...'
               : modelState.model
-                ? `${searchText.trim() ? `${visibleNodes.length}/${modelState.model.totalNodes} 个匹配` : `${modelState.model.totalNodes} 个节点`} / ${containerCount} 个容器${modelState.model.isLimited ? `，已按 ${modelState.model.maxNodes} 节点上限截断` : ''}`
+                ? `${hasActiveFilter ? `${visibleNodes.length}/${modelState.model.totalNodes} 个匹配` : `${modelState.model.totalNodes} 个节点`} / ${containerCount} 个容器${modelState.model.isLimited ? `，已按 ${modelState.model.maxNodes} 节点上限截断` : ''}`
               : '结构导航'}
           </span>
           <span className="shrink-0">点击节点可定位，PATH 可复制路径</span>
@@ -554,13 +580,27 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             aria-label="搜索 JSON 结构"
             className="min-w-0 flex-1 rounded border border-editor-border bg-editor-bg px-2 py-1.5 font-mono text-xs text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500"
           />
+          <select
+            data-tour="structure-nav-kind-filter"
+            value={kindFilter}
+            onChange={(event) => setKindFilter(event.target.value as JsonTreeKindFilter)}
+            aria-label="筛选节点类型"
+            className="w-24 shrink-0 rounded border border-editor-border bg-editor-bg px-2 py-1.5 text-xs text-gray-200 outline-none transition-colors focus:border-emerald-500"
+            title="按节点类型筛选"
+          >
+            {KIND_FILTER_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             data-tour="structure-nav-copy-search-results"
             onClick={() => void handleCopySearchResults()}
-            disabled={!searchText.trim() || visibleNodes.length === 0}
+            disabled={!hasActiveFilter || visibleNodes.length === 0}
             className="rounded border border-editor-border px-2 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
-            title="复制当前搜索结果"
+            title="复制当前筛选结果"
           >
             结果
           </button>
