@@ -43,9 +43,45 @@ describe('jsonValueSemantics', () => {
     ]);
   });
 
+  it('结合字段上下文识别电话并遮罩手机号', () => {
+    expect(getJsonStringSemanticHints('13718164578', { path: '$.phone', keyLabel: 'phone' })).toEqual([
+      {
+        kind: 'phone',
+        label: '电话',
+        detail: '137****4578',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('+86 13718164578', { path: '$.user.realPhone', keyLabel: 'realPhone' })).toEqual([
+      {
+        kind: 'phone',
+        label: '电话',
+        detail: '137****4578',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('400-805-8686', { path: '$.contactTel', keyLabel: 'contactTel' })).toEqual([
+      {
+        kind: 'phone',
+        label: '电话',
+        detail: '400-805-8686',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('010-88886666', { path: '$.电话', keyLabel: '电话' })).toEqual([
+      {
+        kind: 'phone',
+        label: '电话',
+        detail: '010****6666',
+      },
+    ]);
+  });
+
   it('忽略非字符串、空字符串和非法日期', () => {
     expect(getJsonStringSemanticHints(123)).toEqual([]);
     expect(getJsonStringSemanticHints('   ')).toEqual([]);
     expect(getJsonStringSemanticHints('2026-02-31')).toEqual([]);
+    expect(getJsonStringSemanticHints('hello')).toEqual([]);
+    expect(getJsonStringSemanticHints('1.2.3')).toEqual([]);
+    expect(getJsonStringSemanticHints('13718164578')).toEqual([]);
+    expect(getJsonStringSemanticHints('13718164578', { path: '$.traceId', keyLabel: 'traceId' })).toEqual([]);
+    expect(getJsonStringSemanticHints('20260619123', { path: '$.phone', keyLabel: 'phone' })).toEqual([]);
   });
 });
