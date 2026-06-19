@@ -392,10 +392,10 @@ const jsonToTypeScript = (input: string): string => {
     const parsed = parseJsonInput(input);
     if (!parsed) throw new Error('未找到可生成类型的 JSON 内容');
 
-    return jsonValueToTypeScriptDeclaration(parsed.value);
+    return jsonValueToTypeScriptDeclaration(parsed.value, { includeSummary: true });
   } catch {
     const jsonLines = parseJsonLines(input);
-    return jsonLines ? jsonValueToTypeScriptDeclaration(jsonLines) : input;
+    return jsonLines ? jsonValueToTypeScriptDeclaration(jsonLines, { includeSummary: true }) : input;
   }
 };
 

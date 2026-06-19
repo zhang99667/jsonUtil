@@ -134,7 +134,7 @@ frontend/
 │   │   ├── cmdStructureDiff.ts    # cmdHandler 风格结构差异对比
 │   │   ├── jsonSemanticDiff.ts    # 通用 JSON / JSON Lines 语义 diff、JSON Pointer、忽略路径和 Markdown 报告
 │   │   ├── jsonTreeModel.ts       # JSON 树模型、路径与预览摘要生成
-│   │   ├── jsonToTypeScript.ts    # JSON / JSON Lines 到 TypeScript 类型声明生成
+│   │   ├── jsonToTypeScript.ts    # JSON / JSON Lines 到 TypeScript 类型声明生成与可信度摘要
 │   │   ├── smartInputSuggestion.ts # SOURCE 输入类型识别与下一步工具推荐
 │   │   ├── changelog.ts           # CHANGELOG 解析与前端展示数据
 │   │   └── diffUtils.ts           # 差异对比

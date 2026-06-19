@@ -2,6 +2,7 @@ import type { JsonObject, JsonValue } from '../types';
 
 export interface JsonToTypeScriptOptions {
   rootName?: string;
+  includeSummary?: boolean;
 }
 
 type PrimitiveTypeName = 'string' | 'number' | 'boolean' | 'null';
@@ -17,6 +18,13 @@ interface ObjectProperty {
   type: TypeModel;
   seenCount: number;
   order: number;
+}
+
+interface TypeScriptInferenceStats {
+  objectCount: number;
+  optionalPropertyCount: number;
+  unionCount: number;
+  emptyArrayCount: number;
 }
 
 const UNKNOWN_TYPE: TypeModel = { kind: 'unknown' };
@@ -252,6 +260,93 @@ const buildChildTypeName = (parentName: string, key: string, suffix = ''): strin
   sanitizeTypeName(`${parentName}${toPascalCase(key)}${suffix}`)
 );
 
+const collectInferenceStats = (model: TypeModel): TypeScriptInferenceStats => {
+  const stats: TypeScriptInferenceStats = {
+    objectCount: 0,
+    optionalPropertyCount: 0,
+    unionCount: 0,
+    emptyArrayCount: 0,
+  };
+
+  const visit = (current: TypeModel) => {
+    if (current.kind === 'array') {
+      if (current.element.kind === 'unknown') {
+        stats.emptyArrayCount += 1;
+      }
+      visit(current.element);
+      return;
+    }
+
+    if (current.kind === 'union') {
+      stats.unionCount += 1;
+      current.variants.forEach(visit);
+      return;
+    }
+
+    if (current.kind !== 'object') return;
+
+    stats.objectCount += 1;
+    Object.values(current.properties).forEach(property => {
+      if (property.seenCount < current.sampleCount) {
+        stats.optionalPropertyCount += 1;
+      }
+      visit(property.type);
+    });
+  };
+
+  visit(model);
+  return stats;
+};
+
+const getInferenceSourceText = (value: JsonValue): string => {
+  if (Array.isArray(value)) {
+    return value.length === 0
+      ? '基于空数组推断，元素类型未知'
+      : `基于数组样本 ${value.length} 项推断`;
+  }
+
+  if (isJsonObject(value)) return '基于单个对象样本推断';
+  if (value === null) return '基于 null 值推断';
+
+  return `基于 ${typeof value} 值推断`;
+};
+
+const buildTypeScriptInferenceSummaryLines = (
+  value: JsonValue,
+  model: TypeModel
+): string[] => {
+  const stats = collectInferenceStats(model);
+  const explainParts = [
+    getInferenceSourceText(value),
+    stats.objectCount > 0 ? `生成 ${stats.objectCount} 个对象类型` : '',
+  ].filter(Boolean);
+  const riskParts = [
+    stats.optionalPropertyCount > 0 ? `${stats.optionalPropertyCount} 个可选字段` : '',
+    stats.unionCount > 0 ? `${stats.unionCount} 处混合类型` : '',
+    stats.emptyArrayCount > 0 ? `${stats.emptyArrayCount} 个空数组为 unknown[]` : '',
+  ].filter(Boolean);
+
+  if (riskParts.length === 0 && isJsonObject(value)) {
+    riskParts.push('单样本无法判断字段是否必填');
+  }
+
+  return [
+    `生成说明: ${explainParts.join('，')}`,
+    riskParts.length > 0
+      ? `可信提示: ${riskParts.join('，')}，建议结合更多 response 样本复核 required 与 union 类型`
+      : '可信提示: 当前样本未发现可选字段或混合类型，仍建议结合更多 response 样本复核',
+  ];
+};
+
+const formatTypeScriptInferenceSummary = (
+  value: JsonValue,
+  model: TypeModel
+): string => (
+  buildTypeScriptInferenceSummaryLines(value, model)
+    .map(line => `// ${line}`)
+    .join('\n')
+);
+
 export const jsonValueToTypeScriptDeclaration = (
   value: JsonValue,
   options: JsonToTypeScriptOptions = {}
@@ -324,8 +419,12 @@ export const jsonValueToTypeScriptDeclaration = (
     });
   }
 
-  return definitions
+  const declaration = definitions
     .sort((left, right) => (left.name === rootName ? -1 : right.name === rootName ? 1 : 0))
     .map(definition => definition.block)
     .join('\n\n');
+
+  return options.includeSummary
+    ? `${formatTypeScriptInferenceSummary(value, rootModel)}\n\n${declaration}`
+    : declaration;
 };
