@@ -2343,7 +2343,16 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
 });
 
 test('JSONPath 面板可查询预览数据', async ({ page }) => {
-  await fillSourceEditor(page, '{"users":[{"name":"Ada","age":20},{"name":"Bob","age":17}]}');
+  await fillSourceEditor(page, JSON.stringify({
+    users: [
+      { name: 'Ada', age: 20 },
+      { name: 'Bob', age: 17 },
+    ],
+    meta: {
+      action_cmd: 'baiduboxapp://v7/vendor/ad/open?params=%7B%22nid%22%3A123%7D',
+      traceId: 'trace-jsonpath-1',
+    },
+  }));
 
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
   const queryButton = page.locator('[data-tour="jsonpath-query-button"]');
@@ -2392,6 +2401,17 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(queryInput).toHaveAttribute('aria-describedby', 'jsonpath-result-status');
   await expect(resultPreview).toContainText('Ada');
   await expect(resultPreview).toContainText('Bob');
+
+  const actionCmdPreset = page.locator('[data-tour="jsonpath-response-preset"]').filter({ hasText: 'action_cmd' });
+  await expect(page.locator('[data-tour="jsonpath-response-presets"]')).toContainText('Response 常用');
+  await expect(page.locator('[data-tour="jsonpath-response-presets"]')).toContainText('traceId');
+  await expect(actionCmdPreset).toHaveAttribute('title', '$..action_cmd\n点击填入并查询');
+  await expect(actionCmdPreset).toHaveAttribute('aria-label', '填入并查询 Response 常用：action_cmd（$..action_cmd）');
+  await actionCmdPreset.click();
+  await expect(queryInput).toHaveValue('$..action_cmd');
+  await expect(page.getByText('1 / 1')).toBeVisible();
+  await expect(resultPreview).toContainText('$.meta.action_cmd');
+  await expect(resultPreview).toContainText('"nid": 123');
 
   await queryInput.fill('$.users[*].name');
   await queryButton.click();
