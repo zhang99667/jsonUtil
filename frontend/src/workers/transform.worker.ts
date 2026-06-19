@@ -1,6 +1,8 @@
 import { TransformMode } from '../types';
 import type { TransformContext } from '../types';
-import { deepParseWithContext, performTransform } from '../utils/transformations';
+import { deepParseWithContext, parseJsonInput, performTransform } from '../utils/transformations';
+import { parseJsonLines } from '../utils/jsonLines';
+import { jsonValueToTypeScriptDeclaration } from '../utils/jsonToTypeScript';
 
 interface TransformWorkerRequest {
   id: number;
@@ -18,6 +20,15 @@ export interface TransformWorkerResponse {
   error?: string;
 }
 
+const performWorkerJsonToTypeScriptTransform = (input: string): string => {
+  const parsed = parseJsonInput(input);
+  const jsonLines = parsed ? null : parseJsonLines(input);
+  if (!parsed && !jsonLines) return input;
+
+  const value = parsed ? parsed.value : jsonLines;
+  return jsonValueToTypeScriptDeclaration(value, { includeSummary: true });
+};
+
 self.onmessage = (event: MessageEvent<TransformWorkerRequest>) => {
   const { id, input, mode, options } = event.data;
 
@@ -30,6 +41,15 @@ self.onmessage = (event: MessageEvent<TransformWorkerRequest>) => {
         id,
         output: result.output,
         context: result.context,
+      };
+      self.postMessage(response);
+      return;
+    }
+
+    if (mode === TransformMode.JSON_TO_TYPESCRIPT) {
+      const response: TransformWorkerResponse = {
+        id,
+        output: performWorkerJsonToTypeScriptTransform(input),
       };
       self.postMessage(response);
       return;

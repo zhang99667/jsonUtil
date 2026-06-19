@@ -5,6 +5,7 @@ import {
   detectLanguage,
   performTransform,
   performInverseTransform,
+  performTransformAsync,
   deepParseWithContext,
   inverseWithContext,
   deepMergeTemplate,
@@ -331,7 +332,7 @@ describe('performTransform', () => {
   });
 
   describe('JSON_TO_TYPESCRIPT 模式', () => {
-    it('从 JSON 对象生成 TypeScript 声明', () => {
+    it('从 JSON 对象生成 TypeScript 声明', async () => {
       const input = JSON.stringify({
         user: {
           id: 1,
@@ -342,7 +343,7 @@ describe('performTransform', () => {
           { id: 2, active: true },
         ],
       });
-      const result = performTransform(input, TransformMode.JSON_TO_TYPESCRIPT);
+      const result = await performTransformAsync(input, TransformMode.JSON_TO_TYPESCRIPT);
 
       expect(result).toContain('// 生成说明: 基于单个对象样本推断');
       expect(result).toContain('// 可信提示: 2 个可选字段');
@@ -354,14 +355,21 @@ describe('performTransform', () => {
       expect(result).toContain('  active?: boolean;');
     });
 
-    it('从 JSON Lines 生成 RootItem 数组声明', () => {
-      const result = performTransform('{"id":1,"name":"Ada"}\n{"id":2,"active":true}', TransformMode.JSON_TO_TYPESCRIPT);
+    it('从 JSON Lines 生成 RootItem 数组声明', async () => {
+      const result = await performTransformAsync('{"id":1,"name":"Ada"}\n{"id":2,"active":true}', TransformMode.JSON_TO_TYPESCRIPT);
 
       expect(result).toContain('// 生成说明: 基于数组样本 2 项推断');
       expect(result).toContain('export type Root = RootItem[];');
       expect(result).toContain('  id: number;');
       expect(result).toContain('  name?: string;');
       expect(result).toContain('  active?: boolean;');
+    });
+
+    it('保留 null 这类合法 JSON 值的类型生成', async () => {
+      const result = await performTransformAsync('null', TransformMode.JSON_TO_TYPESCRIPT);
+
+      expect(result).toContain('// 生成说明: 基于 null 值推断');
+      expect(result).toContain('export type Root = null;');
     });
   });
 

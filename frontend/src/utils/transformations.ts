@@ -15,7 +15,6 @@ import {
 import type { DecodeLayer, SchemeParamDecodeStage, SchemePlaceholder, SchemeType } from './schemeUtils.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
 import { formatHarSourceLabel, trimSourceLabel, HAR_SOURCE_LABEL_PREFIX } from './sourceLabels.ts';
-import { jsonValueToTypeScriptDeclaration } from './jsonToTypeScript.ts';
 
 import {
   DEFAULT_SCHEME_DECODE_MAX_DEPTH,
@@ -124,7 +123,7 @@ const ROOT_SCHEME_TYPES = new Set<SchemeType>(['query-string', 'url', 'base64'])
 
 export type StandaloneDeepFormatInputKind = 'scheme' | 'url-encoded-json' | 'url-encoded-scheme';
 
-interface ParsedJsonInput {
+export interface ParsedJsonInput {
   value: JsonValue;
   source: string;
   wrapper?: JsonInputWrapper;
@@ -219,7 +218,7 @@ const parseWrappedJsonInput = (input: string): ParsedJsonInput | null => {
   return null;
 };
 
-const parseJsonInput = (input: string): ParsedJsonInput | null => (
+export const parseJsonInput = (input: string): ParsedJsonInput | null => (
   parseJsonCandidate(input) || parseWrappedJsonInput(input)
 );
 
@@ -387,16 +386,19 @@ const minifyJson = (input: string): string => {
   }
 };
 
-const jsonToTypeScript = (input: string): string => {
-  try {
-    const parsed = parseJsonInput(input);
-    if (!parsed) throw new Error('未找到可生成类型的 JSON 内容');
-
-    return jsonValueToTypeScriptDeclaration(parsed.value, { includeSummary: true });
-  } catch {
-    const jsonLines = parseJsonLines(input);
-    return jsonLines ? jsonValueToTypeScriptDeclaration(jsonLines, { includeSummary: true }) : input;
+export const performTransformAsync = async (input: string, mode: TransformMode): Promise<string> => {
+  if (mode !== TransformMode.JSON_TO_TYPESCRIPT) {
+    return performTransform(input, mode);
   }
+
+  const parsed = parseJsonInput(input);
+  const jsonLines = parsed ? null : parseJsonLines(input);
+  if (!parsed && !jsonLines) return input;
+
+  const value = parsed ? parsed.value : jsonLines;
+
+  const { jsonValueToTypeScriptDeclaration } = await import('./jsonToTypeScript.ts');
+  return jsonValueToTypeScriptDeclaration(value, { includeSummary: true });
 };
 
 const escapeString = (input: string): string => {
@@ -1171,7 +1173,6 @@ export const performTransform = (input: string, mode: TransformMode): string => 
           return jsonLines ? stringifyJsonLines(jsonLines.map(sortJsonKeys)) : input;
         }
       }
-      case TransformMode.JSON_TO_TYPESCRIPT: return jsonToTypeScript(input);
       default: return input;
     }
   } catch (e) {
