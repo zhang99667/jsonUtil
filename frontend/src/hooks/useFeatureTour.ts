@@ -74,8 +74,8 @@ const FEATURE_TOURS: Record<FeatureId, FeatureTourConfig> = {
             {
                 element: 'body',
                 popover: {
-                    title: 'AI 智能修复 🤖',
-                    description: '使用 AI 自动修复格式错误的 JSON。首次使用需要在设置中配置 API Key。',
+                    title: '智能修复',
+                    description: '优先使用本地规则修复常见 JSON 小错误，本地无法修复时再调用已配置的 AI 服务。',
                     side: 'over',
                     align: 'center'
                 }
@@ -165,8 +165,8 @@ const FEATURE_TOURS: Record<FeatureId, FeatureTourConfig> = {
             {
                 element: '[data-tour="ai-fix"]',
                 popover: {
-                    title: 'AI 智能修复 🤖',
-                    description: '遇到格式错误的 JSON？使用 AI 功能自动修复语法问题。需要在设置中配置 API Key。',
+                    title: '智能修复',
+                    description: '遇到格式错误的 JSON？先尝试本地规则修复，必要时再使用 AI 服务处理更复杂的问题。',
                     side: 'right',
                     align: 'start'
                 }

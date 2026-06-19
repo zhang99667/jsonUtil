@@ -123,7 +123,7 @@ frontend/
 │   │   ├── useFeatureTour.ts      # 功能引导
 │   │   └── ...
 │   ├── services/             # 主应用服务
-│   │   └── aiService.ts           # AI 修复服务
+│   │   └── aiService.ts           # 智能修复服务（本地规则优先，必要时调用 AI）
 │   ├── utils/                # 工具函数
 │   │   ├── transformations.ts     # JSON 转换与深度解析
 │   │   ├── schemeUtils.ts         # Scheme/CMD 递归解码与回写
@@ -312,7 +312,7 @@ CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`，`Sc
 管理后台 /api/admin/traffic/tool-events → 功能频率 / 失败率 / 输入大小档 / 耗时档
 ```
 
-工具事件只记录功能名、类别、状态、输入大小分桶、耗时分桶和来源，不保存 JSON 原文、路径值、完整输入长度或解析结果。当前覆盖转换模式切换、JSONPath/Scheme/模板面板开关、AI 修复、打开、保存和新建标签等显式动作。
+工具事件只记录功能名、类别、状态、输入大小分桶、耗时分桶和来源，不保存 JSON 原文、路径值、完整输入长度或解析结果。当前覆盖转换模式切换、JSONPath/Scheme/模板面板开关、智能修复、打开、保存和新建标签等显式动作。
 
 ### 后端 API 权限治理
 

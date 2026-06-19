@@ -45,7 +45,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [startScrollTop, setStartScrollTop] = useState(0);
-  const aiFixLabel = isProcessing ? 'AI 修复中，请等待当前任务完成' : 'AI 智能修复';
+  const aiFixLabel = isProcessing ? '智能修复中，请等待当前任务完成' : '智能修复';
 
   // 功能级引导
   const { triggerFeatureFirstUse, refreshTour } = useFeatureTour();
@@ -404,7 +404,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             {!isCollapsed && "保存为 JSON"}
           </button>
 
-          {/* AI 智能修复 */}
+          {/* 智能修复 */}
           <button
             data-tour="ai-fix"
             onClick={() => onAction(ActionType.AI_FIX)}
@@ -424,7 +424,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             ) : (
               <>
                 <svg className="w-5 h-5 flex-shrink-0 text-violet-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                {!isCollapsed && "AI 智能修复"}
+                {!isCollapsed && "智能修复"}
               </>
             )}
           </button>
