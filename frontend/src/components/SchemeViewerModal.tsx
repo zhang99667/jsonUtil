@@ -1487,7 +1487,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
               </div>
               
               {/* 二维码显示 */}
-              <div className="flex flex-col items-center justify-center py-4 bg-white rounded">
+              <div data-tour="scheme-qrcode-preview" className="flex flex-col items-center justify-center py-4 bg-white rounded">
                 {isQRCodeValid ? (
                   <QRCodeCanvas
                     ref={qrCodeRef}

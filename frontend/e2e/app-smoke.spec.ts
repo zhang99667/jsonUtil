@@ -2658,6 +2658,11 @@ test('Scheme 面板底部操作展示禁用原因', async ({ page }) => {
     'aria-label',
     '复制路径和值，复制解码 JSON 中的路径和值'
   );
+
+  await qrCodeButton.click();
+  await expect(qrCodeButton).toHaveAttribute('title', '隐藏二维码');
+  await expect(qrCodeButton).toHaveAttribute('aria-pressed', 'true');
+  await expect(schemePanel.locator('[data-tour="scheme-qrcode-preview"] canvas[role="img"]')).toHaveCount(1);
 });
 
 test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
