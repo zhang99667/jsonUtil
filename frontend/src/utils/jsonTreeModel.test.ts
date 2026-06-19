@@ -236,9 +236,11 @@ describe('jsonTreeModel', () => {
 
     expect(preview).toMatchObject({
       columns: ['id', 'name', 'note'],
+      allColumns: ['id', 'name', 'note', 'extra'],
       totalRows: 3,
       sampledRows: 2,
       totalColumns: 4,
+      maxColumns: 3,
       isRowLimited: true,
       isColumnLimited: true,
     });
@@ -283,6 +285,44 @@ describe('jsonTreeModel', () => {
       'Alice',
       'Bob',
     ].join('\n'));
+
+    const narrowPreview = buildJsonTreeArrayTablePreview(source, '/items', {
+      maxRows: 2,
+      maxColumns: 2,
+    });
+    const manyMatchedPreview = filterJsonTreeArrayTablePreviewColumns(narrowPreview!, 'e');
+    expect(manyMatchedPreview.columns).toEqual(['name', 'note']);
+    expect(manyMatchedPreview.isColumnLimited).toBe(true);
+
+    const hiddenColumnPreview = filterJsonTreeArrayTablePreviewColumns(preview!, 'extra');
+    expect(hiddenColumnPreview.columns).toEqual(['extra']);
+    expect(hiddenColumnPreview.rows.map(row => row.cells)).toEqual([
+      [''],
+      ['{"ok":true}'],
+    ]);
+    expect(formatJsonTreeArrayTableJsonText(hiddenColumnPreview)).toBe(JSON.stringify([
+      {},
+      { extra: { ok: true } },
+    ], null, 2));
+    expect(formatJsonTreeArrayTableCsvText(hiddenColumnPreview)).toBe([
+      'extra',
+      '',
+      '"{""ok"":true}"',
+    ].join('\n'));
+
+    const shortCellSource = JSON.stringify({
+      rows: [
+        { id: 1, name: 'Alice', hiddenLong: 'very long hidden value' },
+      ],
+    });
+    const shortCellPreview = buildJsonTreeArrayTablePreview(shortCellSource, '/rows', {
+      maxRows: 2,
+      maxColumns: 2,
+      maxCellLength: 16,
+    });
+    const shortHiddenColumnPreview = filterJsonTreeArrayTablePreviewColumns(shortCellPreview!, 'hiddenLong');
+    expect(shortHiddenColumnPreview.rows[0].cells).toEqual(['very long hid...']);
+    expect(shortHiddenColumnPreview.rows[0].copyCells).toEqual(['very long hidden value']);
 
     const emptyPreview = filterJsonTreeArrayTablePreviewColumns(preview!, 'missing');
     expect(emptyPreview.columns).toEqual([]);

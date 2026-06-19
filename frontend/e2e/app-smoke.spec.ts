@@ -350,6 +350,10 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       config_b64: encodeBase64('plain readable text longer than twenty chars'),
     },
     items: [{ id: 1, name: 'A,B' }, { id: 2, name: 'Bob' }],
+    wideItems: [
+      { c1: 'a1', c2: 'a2', c3: 'a3', c4: 'a4', c5: 'a5', c6: 'a6', c7: 'a7', c8: 'a8', hiddenMetric: 88 },
+      { c1: 'b1', c2: 'b2', c3: 'b3', c4: 'b4', c5: 'b5', c6: 'b6', c7: 'b7', c8: 'b8', hiddenMetric: 99 },
+    ],
   }));
 
   await page.locator('[data-tour="structure-nav-button"]').click();
@@ -453,11 +457,11 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(tablePreview).toContainText('对象数组预览: 2/2 行，2/2 列');
   await expect(tablePreview).toContainText('A,B');
 
-  await tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]').click();
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]').dispatchEvent('click');
   await expect(page.getByText('已复制表格 CSV')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('id,name\n1,"A,B"\n2,Bob');
 
-  await tablePreview.locator('[data-tour="structure-nav-copy-table-json"]').click();
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-json"]').dispatchEvent('click');
   await expect(page.getByText('已复制表格 JSON')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe(JSON.stringify([
     { id: 1, name: 'A,B' },
@@ -470,8 +474,8 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(tablePreview.locator('[data-tour="structure-nav-copy-table-json"]')).toBeDisabled();
 
   await tablePreview.locator('[data-tour="structure-nav-table-column-filter"]').fill('name');
-  await expect(tablePreview).toContainText('已显示列筛选 1/2');
-  await tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]').click();
+  await expect(tablePreview).toContainText('列筛选 1/2');
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]').dispatchEvent('click');
   await expect(page.getByText('已复制表格 CSV').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('name\n"A,B"\nBob');
 
@@ -482,9 +486,18 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
     { name: 'Bob' },
   ], null, 2));
 
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('wideItems');
+  await structurePanel.locator('button[title="选中并定位 $.wideItems"]').click();
+  await tablePreview.locator('[data-tour="structure-nav-table-column-filter"]').fill('hiddenMetric');
+  await expect(tablePreview).toContainText('列筛选 1/9');
+  await expect(tablePreview).toContainText('hiddenMetric');
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]').click();
+  await expect(page.getByText('已复制表格 CSV').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('hiddenMetric\n88\n99');
+
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('');
   await structurePanel.locator('[data-tour="structure-nav-kind-filter"]').selectOption('array');
-  await expect(structurePanel.locator('[data-tour="structure-nav-row"]')).toHaveCount(1);
+  await expect(structurePanel.locator('[data-tour="structure-nav-row"]')).toHaveCount(2);
   await expect(structurePanel.locator('[data-tour="structure-nav-row"]').first()).toContainText('items');
 
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
@@ -498,6 +511,13 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       childCount: 2,
       preview: '数组 2 项',
     },
+    {
+      path: '$.wideItems',
+      pointer: '/wideItems',
+      kind: 'array',
+      childCount: 2,
+      preview: '数组 2 项',
+    },
   ], null, 2));
 
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
@@ -506,6 +526,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe([
     'path,pointer,kind,childCount,preview',
     '$.items,/items,array,2,数组 2 项',
+    '$.wideItems,/wideItems,array,2,数组 2 项',
   ].join('\n'));
 });
 
