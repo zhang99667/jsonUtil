@@ -370,6 +370,14 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
     '| $.user["trace.id"] | /user/trace.id | string | 0 | "t-1" |',
   ].join('\n'));
 
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results-csv"]').click();
+  await expect(page.getByText('已复制 CSV 摘要').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe([
+    'path,pointer,kind,childCount,preview',
+    '"$.user[""trace.id""]",/user/trace.id,string,0,"""t-1"""',
+  ].join('\n'));
+
   await structurePanel.getByTitle('选中并定位 $.user["trace.id"]').click();
   await expect(structurePanel).toContainText('/user/trace.id');
 
@@ -434,6 +442,14 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       preview: '数组 2 项',
     },
   ], null, 2));
+
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results-csv"]').click();
+  await expect(page.getByText('已复制 CSV 摘要').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe([
+    'path,pointer,kind,childCount,preview',
+    '$.items,/items,array,2,数组 2 项',
+  ].join('\n'));
 });
 
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {

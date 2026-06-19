@@ -264,6 +264,21 @@ export const formatJsonTreeSearchResultsMarkdownText = (
   return lines.join('\n');
 };
 
+export const formatJsonTreeSearchResultsCsvText = (
+  nodes: JsonTreeNode[]
+): string => (
+  [
+    ['path', 'pointer', 'kind', 'childCount', 'preview'].map(escapeCsvCell).join(','),
+    ...nodes.map(node => [
+      node.path,
+      node.jsonPointer,
+      node.kind,
+      String(node.childCount),
+      node.valuePreview,
+    ].map(escapeCsvCell).join(',')),
+  ].join('\n')
+);
+
 export const buildJsonTreeArrayTablePreview = (
   jsonText: string,
   jsonPointer: string,

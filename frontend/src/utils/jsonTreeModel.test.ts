@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildJsonTreeModel,
   buildJsonTreeArrayTablePreview,
+  formatJsonTreeSearchResultsCsvText,
   formatJsonTreeSearchResultsText,
   formatJsonTreeSearchResultsMarkdownText,
   formatJsonTreeArrayTableCsvText,
@@ -182,6 +183,32 @@ describe('jsonTreeModel', () => {
     expect(formatJsonTreeSearchResultsMarkdownText([])).toBe([
       '| Path | Pointer | Kind | Children | Preview |',
       '| --- | --- | --- | ---: | --- |',
+    ].join('\n'));
+  });
+
+  it('可把结构搜索结果复制为 CSV 摘要', () => {
+    const model = buildJsonTreeModel(JSON.stringify({
+      user: {
+        'trace.id': 'trace-001',
+        note: ' A,B ',
+        multiline: 'line1\nline2',
+      },
+    }));
+    const matchedNodes = model.nodes.filter(node => (
+      matchesJsonTreeSearchText(node.searchText, 'trace.id') ||
+      matchesJsonTreeSearchText(node.searchText, 'note') ||
+      matchesJsonTreeSearchText(node.searchText, 'multiline')
+    ));
+
+    expect(formatJsonTreeSearchResultsCsvText(matchedNodes)).toBe([
+      'path,pointer,kind,childCount,preview',
+      '"$.user[""trace.id""]",/user/trace.id,string,0,"""trace-001"""',
+      '$.user.note,/user/note,string,0,""" A,B """',
+      '$.user.multiline,/user/multiline,string,0,"""line1\\nline2"""',
+    ].join('\n'));
+    expect(formatJsonTreeSearchResultsCsvText([model.nodes[0]])).toBe([
+      'path,pointer,kind,childCount,preview',
+      '$,,object,1,对象 1 个键',
     ].join('\n'));
   });
 
