@@ -48,9 +48,10 @@ public class TrafficFilter extends OncePerRequestFilter {
             return false;
         }
 
-        // 工具事件有独立聚合表，避免高频埋点请求抬高普通 PV。
+        // 健康检查和工具事件都有独立用途，避免部署/监控请求抬高普通 PV。
         return !path.startsWith("/api/admin")
                 && !path.startsWith("/api/stats")
+                && !path.equals("/api/health")
                 && !path.startsWith("/api/visitor/events");
     }
 

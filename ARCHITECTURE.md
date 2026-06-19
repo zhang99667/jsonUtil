@@ -34,7 +34,8 @@ backend/src/main/java/com/jsonhelper/backend/
 │   ├── TrafficController.java      # 流量统计 API
 │   ├── AdminController.java        # 用户管理
 │   ├── FileController.java         # 管理后台文件
-│   ├── VisitorController.java      # 健康检查与匿名事件
+│   ├── HealthController.java       # 部署与外部监控探活
+│   ├── VisitorController.java      # 前台访客打点与匿名事件
 │   └── ...
 ├── service/              # 业务逻辑层
 │   ├── StatisticsService.java
@@ -70,7 +71,8 @@ backend/src/main/java/com/jsonhelper/backend/
 | 用户 | `/api/admin/users` | 用户管理 |
 | 文件 | `/api/admin/files` | 管理后台文件上传、预览和下载 |
 | 认证 | `/api/auth` | 登录认证 |
-| 访客 | `/api/visitor` | 健康检查与匿名工具事件 |
+| 健康检查 | `/api/health` | 部署与外部监控探活，不写入访客流量表 |
+| 访客 | `/api/visitor` | 前台访客打点与匿名工具事件 |
 
 ### 流量统计 API 详情
 
@@ -327,7 +329,7 @@ CI 中的 `Scheme corpus baseline` 步骤会运行 `npm run corpus:scheme`，`Sc
 
 ### 后端 API 权限治理
 
-后端接口按路径分为公开入口、访客匿名事件、管理员统计和管理后台接口。完整端点、权限、请求数据和生产配置要求维护在 `docs/BACKEND-API-MATRIX.md`。
+后端接口按路径分为公开入口、健康检查、访客匿名事件、管理员统计和管理后台接口。完整端点、权限、请求数据和生产配置要求维护在 `docs/BACKEND-API-MATRIX.md`。
 
 CI 会运行 `node scripts/ci/check-backend-api-matrix.mjs` 扫描 `backend/src/main/java/com/jsonhelper/backend/controller` 下的 Controller 映射，并和权限矩阵中的 Method + Path 对齐。新增或删除后端端点时，如果没有同步更新矩阵，本地 CI 和 GitHub Actions 会失败。
 

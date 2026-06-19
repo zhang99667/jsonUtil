@@ -62,6 +62,7 @@ public class SecurityConfig {
                         // 允许所有 OPTIONS 请求（CORS 预检）
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/api/visitor/**").permitAll()
                         .requestMatchers("/api/stats/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

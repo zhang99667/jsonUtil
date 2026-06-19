@@ -8,7 +8,8 @@
 |------|------|------|
 | `OPTIONS /**` | 公开 | CORS 预检请求放行，不进入业务接口 |
 | `/api/auth/**` | 公开 | 登录入口，不要求 JWT |
-| `/api/visitor/**` | 公开 | 健康检查与匿名工具事件，只允许采集分桶和枚举，不采集 JSON 原文 |
+| `/api/health` | 公开 | 部署与外部监控探活，不写入访客流量表 |
+| `/api/visitor/**` | 公开 | 前台访客打点与匿名工具事件，只允许采集分桶和枚举，不采集 JSON 原文 |
 | `/api/stats/**` | 管理员 | 统计汇总接口，需要 `ROLE_ADMIN` |
 | `/api/admin/**` | 管理员 | 管理后台接口，需要 `ROLE_ADMIN` |
 | 其他路径 | 已登录 | 当前没有额外业务 Controller，默认要求认证 |
@@ -18,7 +19,8 @@
 | Method | Path | 权限 | 请求参数/Body | 响应 | 数据与风险边界 |
 |--------|------|------|---------------|------|----------------|
 | POST | `/api/auth/login` | 公开 | `LoginRequest` | `JwtResponse` | 返回 JWT；失败信息不得泄露账号枚举细节 |
-| GET | `/api/visitor/ping` | 公开 | 无 | `Result<String>` | 健康检查，仅返回 `pong` |
+| GET | `/api/health` | 公开 | 无 | `Result<String>` | 部署和外部监控探活，仅返回 `pong`，不计入 PV/UV |
+| GET | `/api/visitor/ping` | 公开 | 无 | `Result<String>` | 前台访客打点，仅返回 `pong`，由流量过滤器计入普通访问统计 |
 | POST | `/api/visitor/events` | 公开 | `ToolEventRequest` | `Result<Void>` | 仅保存功能名、类别、状态、输入大小档、耗时档和来源；不得接收 JSON 原文、路径值或完整输入长度 |
 | GET | `/api/stats` | 管理员 | 无 | `Result<StatisticsDTO>` | 管理统计汇总，需要 JWT 管理员权限 |
 | POST | `/api/admin/users/add` | 管理员 | `RegisterRequest` | `Result<User>` | 创建后台用户；调用方必须已是管理员 |
