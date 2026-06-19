@@ -341,6 +341,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   const structurePanel = page.getByRole('dialog', { name: 'JSON 结构导航' });
   await expect(structurePanel).toBeVisible();
   await expect(structurePanel.locator('[data-tour="structure-nav-search"]')).toBeFocused();
+  await expect(structurePanel.locator('[data-tour="structure-nav-row"]').first()).toBeVisible();
 
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('trace');
   await expect(structurePanel).toContainText('trace.id');

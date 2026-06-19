@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
-import { buildJsonTreeModel, type JsonTreeNode } from '../utils/jsonTreeModel';
+import type { JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 
@@ -10,6 +10,18 @@ interface JsonTreePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onLocatePath: (path: string) => void;
+}
+
+interface JsonTreeWorkerResponse {
+  id: number;
+  model: JsonTreeModel | null;
+  error?: string;
+}
+
+interface JsonTreeModelState {
+  model: JsonTreeModel | null;
+  error: string;
+  isLoading: boolean;
 }
 
 const KIND_LABELS: Record<JsonTreeNode['kind'], string> = {
@@ -53,26 +65,73 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   onLocatePath,
 }) => {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const requestIdRef = useRef(0);
   const [searchText, setSearchText] = useState('');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['$']));
-  const modelResult = useMemo(() => {
+  const [modelState, setModelState] = useState<JsonTreeModelState>({
+    model: null,
+    error: '',
+    isLoading: false,
+  });
+
+  useEffect(() => {
     if (!isOpen || isDataPreparing || !jsonData.trim()) {
-      return { model: null, error: '' };
+      workerRef.current?.terminate();
+      workerRef.current = null;
+      requestIdRef.current += 1;
+      setModelState({ model: null, error: '', isLoading: false });
+      return;
     }
 
-    try {
-      return {
-        model: buildJsonTreeModel(jsonData),
-        error: '',
-      };
-    } catch (error) {
-      return {
+    workerRef.current?.terminate();
+    const requestId = ++requestIdRef.current;
+    const worker = new Worker(new URL('../workers/jsonTree.worker.ts', import.meta.url), { type: 'module' });
+    workerRef.current = worker;
+    setModelState({ model: null, error: '', isLoading: true });
+
+    worker.onmessage = (event: MessageEvent<JsonTreeWorkerResponse>) => {
+      if (event.data.id !== requestId || requestIdRef.current !== requestId) return;
+      worker.terminate();
+      if (workerRef.current === worker) {
+        workerRef.current = null;
+      }
+
+      setModelState({
+        model: event.data.model,
+        error: event.data.error || '',
+        isLoading: false,
+      });
+    };
+
+    worker.onerror = (event) => {
+      if (requestIdRef.current !== requestId) return;
+      worker.terminate();
+      if (workerRef.current === worker) {
+        workerRef.current = null;
+      }
+
+      setModelState({
         model: null,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+        error: `JSON 结构解析失败: ${event.message}`,
+        isLoading: false,
+      });
+    };
+
+    worker.postMessage({
+      id: requestId,
+      jsonData,
+    });
+
+    return () => {
+      requestIdRef.current += 1;
+      worker.terminate();
+      if (workerRef.current === worker) {
+        workerRef.current = null;
+      }
+    };
   }, [isDataPreparing, isOpen, jsonData]);
-  const nodes = modelResult.model?.nodes || [];
+  const nodes = modelState.model?.nodes || [];
   const visibleNodes = useMemo(
     () => getVisibleNodes(nodes, expandedPaths, searchText),
     [expandedPaths, nodes, searchText]
@@ -83,14 +142,14 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   );
 
   useEffect(() => {
-    if (!isOpen || !modelResult.model) return;
+    if (!isOpen || !modelState.model) return;
 
     setExpandedPaths(new Set(
-      modelResult.model.nodes
+      modelState.model.nodes
         .filter(node => node.isContainer && node.depth <= 1)
         .map(node => node.path)
     ));
-  }, [isOpen, modelResult.model]);
+  }, [isOpen, modelState.model]);
 
   const handleToggleNode = (node: JsonTreeNode) => {
     if (!node.isContainer) return;
@@ -130,7 +189,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const renderBody = () => {
     if (isDataPreparing) {
       return (
-        <div className="flex flex-1 items-center justify-center text-sm text-gray-400">
+        <div role="status" className="flex flex-1 items-center justify-center text-sm text-gray-400">
           预览仍在处理，请稍候...
         </div>
       );
@@ -144,10 +203,18 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       );
     }
 
-    if (modelResult.error) {
+    if (modelState.isLoading) {
       return (
-        <div className="m-3 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm leading-6 text-red-100">
-          {modelResult.error}
+        <div role="status" className="flex flex-1 items-center justify-center text-sm text-gray-400">
+          结构导航正在解析，请稍候...
+        </div>
+      );
+    }
+
+    if (modelState.error) {
+      return (
+        <div role="alert" className="m-3 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm leading-6 text-red-100">
+          {modelState.error}
         </div>
       );
     }
@@ -245,8 +312,10 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       footer={
         <div className="flex min-w-0 flex-1 items-center justify-between gap-3 text-xs text-gray-400">
           <span className="truncate">
-            {modelResult.model
-              ? `${modelResult.model.totalNodes} 个节点 / ${containerCount} 个容器${modelResult.model.isLimited ? `，已按 ${modelResult.model.maxNodes} 节点上限截断` : ''}`
+            {modelState.isLoading
+              ? '结构导航解析中...'
+              : modelState.model
+                ? `${modelState.model.totalNodes} 个节点 / ${containerCount} 个容器${modelState.model.isLimited ? `，已按 ${modelState.model.maxNodes} 节点上限截断` : ''}`
               : '结构导航'}
           </span>
           <span className="shrink-0">点击节点可定位，PATH 可复制路径</span>

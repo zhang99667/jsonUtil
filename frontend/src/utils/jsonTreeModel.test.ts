@@ -53,4 +53,23 @@ describe('jsonTreeModel', () => {
     expect(model.isLimited).toBe(true);
     expect(model.nodes).toHaveLength(4);
   });
+
+  it('深度超过上限时标记截断', () => {
+    const model = buildJsonTreeModel(JSON.stringify({
+      level1: {
+        level2: {
+          level3: true,
+        },
+      },
+    }), {
+      maxDepth: 1,
+    });
+
+    expect(model.isLimited).toBe(true);
+    expect(model.nodes.map(node => node.path)).toEqual(['$', '$.level1']);
+  });
+
+  it('非法 JSON 返回可读错误', () => {
+    expect(() => buildJsonTreeModel('{"broken":}')).toThrow('JSON 结构解析失败');
+  });
 });
