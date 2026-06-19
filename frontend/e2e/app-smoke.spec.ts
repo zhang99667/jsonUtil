@@ -343,8 +343,20 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(structurePanel.locator('[data-tour="structure-nav-search"]')).toBeFocused();
   await expect(structurePanel.locator('[data-tour="structure-nav-row"]').first()).toBeVisible();
 
-  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('trace');
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('trace.id');
   await expect(structurePanel).toContainText('trace.id');
+
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results"]').click();
+  await expect(page.getByText('已复制搜索结果')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe(JSON.stringify([
+    {
+      path: '$.user["trace.id"]',
+      pointer: '/user/trace.id',
+      kind: 'string',
+      childCount: 0,
+      preview: '"t-1"',
+    },
+  ], null, 2));
 
   await structurePanel.getByTitle('选中并定位 $.user["trace.id"]').click();
   await expect(structurePanel).toContainText('/user/trace.id');
@@ -364,6 +376,13 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
 
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('items');
   await structurePanel.locator('button[title="选中并定位 $.items"]').click();
+
+  await structurePanel.locator('[data-tour="structure-nav-copy-subtree"]').click();
+  await expect(page.getByText('已复制节点子树')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe(JSON.stringify([
+    { id: 1, name: 'A,B' },
+    { id: 2, name: 'Bob' },
+  ], null, 2));
 
   const tablePreview = structurePanel.locator('[data-tour="structure-nav-table-preview"]');
   await expect(tablePreview).toBeVisible();

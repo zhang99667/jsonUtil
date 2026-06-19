@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildJsonTreeModel,
   buildJsonTreeArrayTablePreview,
+  formatJsonTreeSearchResultsText,
   formatJsonTreeArrayTableCsvText,
   formatJsonTreeArrayTableJsonText,
   getJsonTreeNodeValue,
@@ -131,6 +132,27 @@ describe('jsonTreeModel', () => {
       name: 'Alice',
       'a/b~c': true,
     }, null, 2));
+  });
+
+  it('可把结构搜索结果复制为结构化 JSON 清单', () => {
+    const model = buildJsonTreeModel(JSON.stringify({
+      user: {
+        name: 'Alice',
+        trackingId: 'trace-001',
+      },
+      items: [{ skuId: 'sku-1' }],
+    }));
+    const matchedNodes = model.nodes.filter(node => matchesJsonTreeSearchText(node.searchText, 'trackingId'));
+
+    expect(formatJsonTreeSearchResultsText(matchedNodes)).toBe(JSON.stringify([
+      {
+        path: '$.user.trackingId',
+        pointer: '/user/trackingId',
+        kind: 'string',
+        childCount: 0,
+        preview: '"trace-001"',
+      },
+    ], null, 2));
   });
 
   it('支持从 JSON Lines 节点复制值并处理非法 Pointer', () => {

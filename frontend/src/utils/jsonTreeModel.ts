@@ -223,6 +223,18 @@ export const getJsonTreeNodeValueCopyText = (
   stringifyJsonPointerValue(parseJsonTreeSource(jsonText.trim()), jsonPointer, options)
 );
 
+export const formatJsonTreeSearchResultsText = (
+  nodes: JsonTreeNode[]
+): string => (
+  JSON.stringify(nodes.map(node => ({
+    path: node.path,
+    pointer: node.jsonPointer,
+    kind: node.kind,
+    childCount: node.childCount,
+    preview: node.valuePreview,
+  })), null, 2)
+);
+
 export const buildJsonTreeArrayTablePreview = (
   jsonText: string,
   jsonPointer: string,
