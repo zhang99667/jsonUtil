@@ -348,6 +348,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(structurePanel).toContainText('trace.id');
   await expect(structurePanel.locator('[data-tour="structure-nav-row"] mark').first()).toHaveText('trace.id');
 
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results"]').click();
   await expect(page.getByText('已复制搜索结果').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe(JSON.stringify([
@@ -359,6 +360,15 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       preview: '"t-1"',
     },
   ], null, 2));
+
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results-markdown"]').click();
+  await expect(page.getByText('已复制 Markdown 摘要').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe([
+    '| Path | Pointer | Kind | Children | Preview |',
+    '| --- | --- | --- | ---: | --- |',
+    '| $.user["trace.id"] | /user/trace.id | string | 0 | "t-1" |',
+  ].join('\n'));
 
   await structurePanel.getByTitle('选中并定位 $.user["trace.id"]').click();
   await expect(structurePanel).toContainText('/user/trace.id');
@@ -412,6 +422,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(structurePanel.locator('[data-tour="structure-nav-row"]')).toHaveCount(1);
   await expect(structurePanel.locator('[data-tour="structure-nav-row"]').first()).toContainText('items');
 
+  await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results"]').click();
   await expect(page.getByText('已复制搜索结果').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe(JSON.stringify([
