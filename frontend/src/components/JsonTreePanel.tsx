@@ -76,6 +76,11 @@ const getSemanticHintClassName = (kind: JsonStringSemanticHint['kind']): string 
   if (kind === 'email') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100';
   if (kind === 'phone') return 'border-lime-500/30 bg-lime-500/10 text-lime-100';
   if (kind === 'date' || kind === 'date-time') return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
+  if (kind === 'resource-image') return 'border-pink-500/30 bg-pink-500/10 text-pink-100';
+  if (kind === 'resource-video') return 'border-red-500/30 bg-red-500/10 text-red-100';
+  if (kind === 'resource-lottie') return 'border-purple-500/30 bg-purple-500/10 text-purple-100';
+  if (kind === 'resource-audio') return 'border-teal-500/30 bg-teal-500/10 text-teal-100';
+  if (kind === 'resource-package') return 'border-orange-500/30 bg-orange-500/10 text-orange-100';
   return 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-100';
 };
 

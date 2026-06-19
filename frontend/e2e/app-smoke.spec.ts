@@ -335,6 +335,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       homepage: 'https://example.com/docs',
       phone: '13718164578',
       id: '13718164578',
+      poster_image: 'https://static.example.com/banner.jpg',
     },
     items: [{ id: 1, name: 'A,B' }, { id: 2, name: 'Bob' }],
   }));
@@ -409,6 +410,11 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('id');
   await structurePanel.getByTitle('选中并定位 $.user.id').click();
   await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toHaveCount(0);
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('poster_image');
+  await structurePanel.getByTitle('选中并定位 $.user.poster_image').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('图片资源');
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('banner.jpg');
 
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('items');
   await structurePanel.locator('button[title="选中并定位 $.items"]').click();

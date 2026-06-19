@@ -74,6 +74,56 @@ describe('jsonValueSemantics', () => {
     ]);
   });
 
+  it('识别常见静态资源 URL 类型', () => {
+    expect(getJsonStringSemanticHints('https://static.example.com/banner.jpg', { path: '$.poster_image', keyLabel: 'poster_image' })).toEqual([
+      {
+        kind: 'url',
+        label: 'URL',
+        detail: 'static.example.com/banner.jpg',
+      },
+      {
+        kind: 'resource-image',
+        label: '图片资源',
+        detail: 'banner.jpg',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('https://static.example.com/ad.mp4', { path: '$.video_url', keyLabel: 'video_url' })).toEqual(expect.arrayContaining([
+      {
+        kind: 'resource-video',
+        label: '视频资源',
+        detail: 'ad.mp4',
+      },
+    ]));
+    expect(getJsonStringSemanticHints('https://static.example.com/swipe.zip', { path: '$.swipe_up_lottie', keyLabel: 'swipe_up_lottie' })).toEqual(expect.arrayContaining([
+      {
+        kind: 'resource-lottie',
+        label: 'Lottie',
+        detail: 'swipe.zip',
+      },
+    ]));
+    expect(getJsonStringSemanticHints('https://static.example.com/voice.mp3', { path: '$.audio_url', keyLabel: 'audio_url' })).toEqual(expect.arrayContaining([
+      {
+        kind: 'resource-audio',
+        label: '音频资源',
+        detail: 'voice.mp3',
+      },
+    ]));
+    expect(getJsonStringSemanticHints('https://static.example.com/app.apk', { path: '$.download_url', keyLabel: 'download_url' })).toEqual(expect.arrayContaining([
+      {
+        kind: 'resource-package',
+        label: '包资源',
+        detail: 'app.apk',
+      },
+    ]));
+    expect(getJsonStringSemanticHints('https://static.example.com/anim.lottie')).toEqual(expect.arrayContaining([
+      {
+        kind: 'resource-lottie',
+        label: 'Lottie',
+        detail: 'anim.lottie',
+      },
+    ]));
+  });
+
   it('忽略非字符串、空字符串和非法日期', () => {
     expect(getJsonStringSemanticHints(123)).toEqual([]);
     expect(getJsonStringSemanticHints('   ')).toEqual([]);
@@ -83,5 +133,26 @@ describe('jsonValueSemantics', () => {
     expect(getJsonStringSemanticHints('13718164578')).toEqual([]);
     expect(getJsonStringSemanticHints('13718164578', { path: '$.traceId', keyLabel: 'traceId' })).toEqual([]);
     expect(getJsonStringSemanticHints('20260619123', { path: '$.phone', keyLabel: 'phone' })).toEqual([]);
+    expect(getJsonStringSemanticHints('https://example.com/docs')).toEqual([
+      {
+        kind: 'url',
+        label: 'URL',
+        detail: 'example.com/docs',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('https://example.com/page', { path: '$.download_url', keyLabel: 'download_url' })).toEqual([
+      {
+        kind: 'url',
+        label: 'URL',
+        detail: 'example.com/page',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('https://example.com/api?id=1', { path: '$.imageUrl', keyLabel: 'imageUrl' })).toEqual([
+      {
+        kind: 'url',
+        label: 'URL',
+        detail: 'example.com/api',
+      },
+    ]);
   });
 });
