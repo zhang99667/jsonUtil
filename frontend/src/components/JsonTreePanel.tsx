@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
-import type { JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
-import { getJsonTreeNodeValueCopyText, matchesJsonTreeSearchText } from '../utils/jsonTreeModel';
+import type { JsonTreeArrayTablePreview, JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
+import {
+  buildJsonTreeArrayTablePreview,
+  formatJsonTreeArrayTableCsvText,
+  formatJsonTreeArrayTableJsonText,
+  getJsonTreeNodeValueCopyText,
+  matchesJsonTreeSearchText,
+} from '../utils/jsonTreeModel';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 
@@ -150,6 +156,15 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     () => nodes.find(node => node.path === selectedPath) || nodes[0] || null,
     [nodes, selectedPath]
   );
+  const selectedArrayTablePreview = useMemo(() => {
+    if (!selectedNode || selectedNode.kind !== 'array') return null;
+
+    try {
+      return buildJsonTreeArrayTablePreview(jsonData, selectedNode.jsonPointer);
+    } catch {
+      return null;
+    }
+  }, [jsonData, selectedNode?.jsonPointer, selectedNode?.kind]);
 
   useEffect(() => {
     if (!isOpen || !modelState.model) return;
@@ -213,6 +228,22 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     }
   };
 
+  const handleCopyArrayTableJson = async (preview: JsonTreeArrayTablePreview) => {
+    await handleCopyText(
+      formatJsonTreeArrayTableJsonText(preview),
+      '已复制表格 JSON',
+      '复制表格 JSON 失败'
+    );
+  };
+
+  const handleCopyArrayTableCsv = async (preview: JsonTreeArrayTablePreview) => {
+    await handleCopyText(
+      formatJsonTreeArrayTableCsvText(preview),
+      '已复制表格 CSV',
+      '复制表格 CSV 失败'
+    );
+  };
+
   const handleLocatePath = (path: string) => {
     onLocatePath(path);
   };
@@ -220,6 +251,66 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const handleSelectNode = (node: JsonTreeNode) => {
     setSelectedPath(node.path);
     handleLocatePath(node.path);
+  };
+
+  const renderArrayTablePreview = () => {
+    const preview = selectedArrayTablePreview;
+    if (!preview) return null;
+
+    return (
+      <div data-tour="structure-nav-table-preview" className="mt-2 rounded border border-editor-border bg-editor-sidebar/60">
+        <div className="flex min-w-0 items-center justify-between gap-2 border-b border-editor-border px-2 py-1.5">
+          <span className="min-w-0 truncate text-[11px] text-gray-300">
+            对象数组预览: {preview.sampledRows}/{preview.totalRows} 行，{preview.columns.length}/{preview.totalColumns} 列
+            {(preview.isRowLimited || preview.isColumnLimited) && '，已截断'}
+          </span>
+          <span className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              data-tour="structure-nav-copy-table-json"
+              onClick={() => void handleCopyArrayTableJson(preview)}
+              className="rounded border border-editor-border px-1.5 py-0.5 text-[10px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-blue-100"
+            >
+              JSON
+            </button>
+            <button
+              type="button"
+              data-tour="structure-nav-copy-table-csv"
+              onClick={() => void handleCopyArrayTableCsv(preview)}
+              className="rounded border border-editor-border px-1.5 py-0.5 text-[10px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-emerald-100"
+            >
+              CSV
+            </button>
+          </span>
+        </div>
+        <div className="max-h-40 overflow-auto">
+          <table className="min-w-full border-collapse text-left font-mono text-[10px]">
+            <thead className="sticky top-0 bg-editor-sidebar text-gray-400">
+              <tr>
+                <th className="w-10 border-b border-editor-border px-2 py-1 font-medium">#</th>
+                {preview.columns.map(column => (
+                  <th key={column} className="max-w-[140px] border-b border-editor-border px-2 py-1 font-medium">
+                    <span className="block truncate" title={column}>{column}</span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {preview.rows.map(row => (
+                <tr key={row.index} className="border-b border-editor-border/60 last:border-b-0">
+                  <td className="px-2 py-1 text-gray-500">{row.index}</td>
+                  {row.cells.map((cell, index) => (
+                    <td key={`${row.index}-${preview.columns[index]}`} className="max-w-[140px] px-2 py-1 text-gray-300">
+                      <span className="block truncate" title={row.copyCells[index]}>{cell}</span>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   };
 
   const renderSelectedNodeDetails = () => {
@@ -278,6 +369,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             格式化值
           </button>
         </div>
+        {renderArrayTablePreview()}
       </div>
     );
   };
