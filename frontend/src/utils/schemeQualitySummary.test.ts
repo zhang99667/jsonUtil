@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { SchemeCommandSummaryInfo } from './schemeMetadata';
-import type { SchemeDecodeResult, SchemeDecodeWarning, SchemePlaceholder } from './schemeUtils';
+import type {
+  SchemeDecodeResult,
+  SchemeDecodeWarning,
+  SchemeParamDecodeStage,
+  SchemePlaceholder,
+} from './schemeUtils';
 import {
   buildSchemeQualitySnapshot,
   buildSchemeQualitySummary,
@@ -143,6 +148,135 @@ describe('schemeQualitySummary', () => {
       '占位符: 0',
       '跳过: 0',
     ].join('\n'));
+  });
+
+  it('汇总参数分层数量和脱敏修复提示', () => {
+    const paramStages: SchemeParamDecodeStage[] = [
+      {
+        path: '$.params',
+        key: 'params',
+        source: 'query',
+        raw: '%7b%22phone%22%3a%2213718164578%22%2ctype%22%3a%221%22%7d',
+        urlDecoded: '{"phone":"13718164578",type":"1"}',
+        parsed: '{"phone":"13718164578","type":"1"}',
+        repairHint: 'Loose JSON 已补齐字段引号/单引号/尾逗号',
+        reencoded: '%7B%22phone%22%3A%2213718164578%22%2C%22type%22%3A%221%22%7D',
+        reversible: true,
+      },
+      {
+        path: '$.logUrl',
+        key: 'logUrl',
+        source: 'log-field',
+        raw: 'https://example.com/callback?token=SECRET_TOKEN_ABC',
+        urlDecoded: 'https://example.com/callback?token=SECRET_TOKEN_ABC',
+        parsed: 'https://example.com/callback?token=SECRET_TOKEN_ABC',
+        reencoded: 'https%3A%2F%2Fexample.com%2Fcallback%3Ftoken%3DSECRET_TOKEN_ABC',
+        reversible: false,
+      },
+    ];
+    const decodeResult: SchemeDecodeResult = {
+      ...baseDecodeResult,
+      layers: [{
+        type: 'url',
+        before: 'input',
+        description: 'URL Decode',
+      }],
+      isJson: true,
+      paramStages,
+    };
+    const summary = buildSummary({ decodeResult });
+
+    expect(summary?.items).toEqual(expect.arrayContaining([
+      { label: '参数层', value: 2, tone: 'success' },
+      { label: '修复提示', value: 1, tone: 'warning' },
+    ]));
+
+    const snapshotText = formatSchemeQualitySnapshotJsonText({
+      summary: summary!,
+      decodeResult,
+      commandSummaryInfo: null,
+      placeholders: [],
+      decodeWarnings: [],
+    });
+    const snapshot = JSON.parse(snapshotText);
+
+    expect(snapshot.totals).toMatchObject({
+      paramStages: 2,
+      paramStageRepairHints: 1,
+      nonReversibleParamStages: 1,
+    });
+    expect(snapshot.hotspots.paramStageSources).toEqual([
+      {
+        source: 'log-field',
+        count: 1,
+        paths: ['$.logUrl'],
+        hasMorePaths: false,
+      },
+      {
+        source: 'query',
+        count: 1,
+        paths: ['$.params'],
+        hasMorePaths: false,
+      },
+    ]);
+    expect(snapshot.hotspots.paramStageKeys).toEqual([
+      {
+        key: 'logUrl',
+        count: 1,
+        paths: ['$.logUrl'],
+        hasMorePaths: false,
+      },
+      {
+        key: 'params',
+        count: 1,
+        paths: ['$.params'],
+        hasMorePaths: false,
+      },
+    ]);
+    expect(snapshot.hotspots.paramStageRepairHints).toEqual([{
+      hint: 'Loose JSON 已补齐字段引号/单引号/尾逗号',
+      count: 1,
+      paths: ['$.params'],
+      hasMorePaths: false,
+    }]);
+    expect(snapshot.hotspots.paramStageSamples).toEqual([
+      {
+        path: '$.params',
+        key: 'params',
+        source: 'query',
+        lengths: {
+          encodedInput: paramStages[0].raw.length,
+          decodedInput: paramStages[0].urlDecoded.length,
+          expandedOutput: paramStages[0].parsed.length,
+          encodedOutput: paramStages[0].reencoded.length,
+        },
+        reversible: true,
+        hasRepairHint: true,
+        repairHint: 'Loose JSON 已补齐字段引号/单引号/尾逗号',
+      },
+      {
+        path: '$.logUrl',
+        key: 'logUrl',
+        source: 'log-field',
+        lengths: {
+          encodedInput: paramStages[1].raw.length,
+          decodedInput: paramStages[1].urlDecoded.length,
+          expandedOutput: paramStages[1].parsed.length,
+          encodedOutput: paramStages[1].reencoded.length,
+        },
+        reversible: false,
+        hasRepairHint: false,
+      },
+    ]);
+    expect(snapshot.recommendations).toContain('参数分层存在修复提示，建议核对原始值、URL Decode、JSON 解析链路后再沉淀样本');
+    expect(snapshotText).not.toContain('13718164578');
+    expect(snapshotText).not.toContain('SECRET_TOKEN_ABC');
+    expect(snapshotText).not.toContain('%7b%22phone%22');
+    expect(snapshotText).not.toContain('example.com/callback');
+    expect(snapshotText).not.toContain('"raw"');
+    expect(snapshotText).not.toContain('"urlDecoded"');
+    expect(snapshotText).not.toContain('"parsed"');
+    expect(snapshotText).not.toContain('"reencoded"');
   });
 
   it('构建不含原始业务值的结构化质量快照', () => {

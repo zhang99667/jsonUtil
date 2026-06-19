@@ -1,5 +1,10 @@
 import type { SchemeCommandSummaryInfo } from './schemeMetadata';
-import type { SchemeDecodeResult, SchemeDecodeWarning, SchemePlaceholder } from './schemeUtils';
+import type {
+  SchemeDecodeResult,
+  SchemeDecodeWarning,
+  SchemeParamDecodeStage,
+  SchemePlaceholder,
+} from './schemeUtils';
 import { APP_VERSION_METADATA, type AppVersionMetadata } from './appVersion';
 
 export type SchemeQualityLevel = 'success' | 'info' | 'warning' | 'error';
@@ -50,6 +55,9 @@ export interface SchemeQualitySnapshot {
     extFields: number;
     base64SuffixFields: number;
     runtimePlaceholders: number;
+    paramStages: number;
+    paramStageRepairHints: number;
+    nonReversibleParamStages: number;
     warnings: number;
     skipped: number;
   };
@@ -77,6 +85,38 @@ export interface SchemeQualitySnapshot {
       pathCount: number;
       paths: string[];
     }>;
+    paramStageSources: Array<{
+      source: SchemeParamDecodeStage['source'];
+      count: number;
+      paths: string[];
+      hasMorePaths: boolean;
+    }>;
+    paramStageKeys: Array<{
+      key: string;
+      count: number;
+      paths: string[];
+      hasMorePaths: boolean;
+    }>;
+    paramStageRepairHints: Array<{
+      hint: string;
+      count: number;
+      paths: string[];
+      hasMorePaths: boolean;
+    }>;
+    paramStageSamples: Array<{
+      path: string;
+      key: string;
+      source: SchemeParamDecodeStage['source'];
+      lengths: {
+        encodedInput: number;
+        decodedInput: number;
+        expandedOutput: number;
+        encodedOutput: number;
+      };
+      reversible: boolean;
+      hasRepairHint: boolean;
+      repairHint?: string;
+    }>;
   };
   recommendations: string[];
 }
@@ -102,12 +142,42 @@ export interface BuildSchemeQualitySnapshotOptions {
 
 const SCHEME_QUALITY_SNAPSHOT_TOP_LIMIT = 8;
 const SCHEME_QUALITY_SNAPSHOT_PATH_LIMIT = 4;
+const SCHEME_QUALITY_SNAPSHOT_LABEL_LIMIT = 80;
 
 const sumSkippedCount = (decodeWarnings: SchemeDecodeWarning[]): number => (
   decodeWarnings.reduce((total, warning) => total + warning.skippedCount, 0)
 );
 
 const dedupe = (values: string[]): string[] => Array.from(new Set(values));
+
+const getParamStages = (decodeResult: SchemeDecodeResult): SchemeParamDecodeStage[] => (
+  decodeResult.paramStages || []
+);
+
+const countParamStageRepairHints = (paramStages: SchemeParamDecodeStage[]): number => (
+  paramStages.filter(stage => Boolean(stage.repairHint)).length
+);
+
+const countParamStageNeedsReview = (paramStages: SchemeParamDecodeStage[]): number => (
+  paramStages.filter(stage => Boolean(stage.repairHint) || !stage.reversible).length
+);
+
+const countNonReversibleParamStages = (paramStages: SchemeParamDecodeStage[]): number => (
+  paramStages.filter(stage => !stage.reversible).length
+);
+
+const normalizeSnapshotLabel = (value: string, fallback: string): string => {
+  const trimmed = value.trim();
+  const label = trimmed || fallback;
+  return label.length > SCHEME_QUALITY_SNAPSHOT_LABEL_LIMIT
+    ? `${label.slice(0, SCHEME_QUALITY_SNAPSHOT_LABEL_LIMIT)}...`
+    : label;
+};
+
+const pushSnapshotPath = (paths: string[], path: string) => {
+  if (paths.length >= SCHEME_QUALITY_SNAPSHOT_PATH_LIMIT || paths.includes(path)) return;
+  paths.push(path);
+};
 
 const buildPlaceholderGroups = (placeholders: SchemePlaceholder[]): SchemeQualitySnapshot['hotspots']['runtimePlaceholders'] => {
   const groupMap = new Map<string, SchemeQualitySnapshot['hotspots']['runtimePlaceholders'][number]>();
@@ -135,13 +205,121 @@ const buildPlaceholderGroups = (placeholders: SchemePlaceholder[]): SchemeQualit
     .slice(0, SCHEME_QUALITY_SNAPSHOT_TOP_LIMIT);
 };
 
+const buildParamStageSourceGroups = (
+  paramStages: SchemeParamDecodeStage[]
+): SchemeQualitySnapshot['hotspots']['paramStageSources'] => {
+  const groupMap = new Map<SchemeParamDecodeStage['source'], SchemeQualitySnapshot['hotspots']['paramStageSources'][number]>();
+
+  paramStages.forEach(stage => {
+    const current = groupMap.get(stage.source);
+    if (current) {
+      current.count += 1;
+      pushSnapshotPath(current.paths, stage.path);
+      current.hasMorePaths = current.hasMorePaths || current.count > current.paths.length;
+      return;
+    }
+
+    groupMap.set(stage.source, {
+      source: stage.source,
+      count: 1,
+      paths: [stage.path],
+      hasMorePaths: false,
+    });
+  });
+
+  return Array.from(groupMap.values())
+    .sort((left, right) => right.count - left.count || left.source.localeCompare(right.source))
+    .slice(0, SCHEME_QUALITY_SNAPSHOT_TOP_LIMIT);
+};
+
+const buildParamStageKeyGroups = (
+  paramStages: SchemeParamDecodeStage[]
+): SchemeQualitySnapshot['hotspots']['paramStageKeys'] => {
+  const groupMap = new Map<string, SchemeQualitySnapshot['hotspots']['paramStageKeys'][number]>();
+
+  paramStages.forEach(stage => {
+    const key = normalizeSnapshotLabel(stage.key, '(empty key)');
+    const current = groupMap.get(key);
+    if (current) {
+      current.count += 1;
+      pushSnapshotPath(current.paths, stage.path);
+      current.hasMorePaths = current.hasMorePaths || current.count > current.paths.length;
+      return;
+    }
+
+    groupMap.set(key, {
+      key,
+      count: 1,
+      paths: [stage.path],
+      hasMorePaths: false,
+    });
+  });
+
+  return Array.from(groupMap.values())
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
+    .slice(0, SCHEME_QUALITY_SNAPSHOT_TOP_LIMIT);
+};
+
+const buildParamStageRepairHintGroups = (
+  paramStages: SchemeParamDecodeStage[]
+): SchemeQualitySnapshot['hotspots']['paramStageRepairHints'] => {
+  const groupMap = new Map<string, SchemeQualitySnapshot['hotspots']['paramStageRepairHints'][number]>();
+
+  paramStages.forEach(stage => {
+    if (!stage.repairHint) return;
+
+    const hint = normalizeSnapshotLabel(stage.repairHint, '参数分层需要人工复核');
+    const current = groupMap.get(hint);
+    if (current) {
+      current.count += 1;
+      pushSnapshotPath(current.paths, stage.path);
+      current.hasMorePaths = current.hasMorePaths || current.count > current.paths.length;
+      return;
+    }
+
+    groupMap.set(hint, {
+      hint,
+      count: 1,
+      paths: [stage.path],
+      hasMorePaths: false,
+    });
+  });
+
+  return Array.from(groupMap.values())
+    .sort((left, right) => right.count - left.count || left.hint.localeCompare(right.hint))
+    .slice(0, SCHEME_QUALITY_SNAPSHOT_TOP_LIMIT);
+};
+
+const buildParamStageSamples = (
+  paramStages: SchemeParamDecodeStage[]
+): SchemeQualitySnapshot['hotspots']['paramStageSamples'] => (
+  paramStages.slice(0, SCHEME_QUALITY_SNAPSHOT_TOP_LIMIT).map(stage => ({
+    path: stage.path,
+    key: normalizeSnapshotLabel(stage.key, '(empty key)'),
+    source: stage.source,
+    lengths: {
+      encodedInput: stage.raw.length,
+      decodedInput: stage.urlDecoded.length,
+      expandedOutput: stage.parsed.length,
+      encodedOutput: stage.reencoded.length,
+    },
+    reversible: stage.reversible,
+    hasRepairHint: Boolean(stage.repairHint),
+    ...(stage.repairHint
+      ? { repairHint: normalizeSnapshotLabel(stage.repairHint, '参数分层需要人工复核') }
+      : {}),
+  }))
+);
+
 const buildSnapshotRecommendations = (
   summary: SchemeQualitySummary,
   commandSummaryInfo: SchemeCommandSummaryInfo | null,
   placeholders: SchemePlaceholder[],
-  decodeWarnings: SchemeDecodeWarning[]
+  decodeWarnings: SchemeDecodeWarning[],
+  paramStages: SchemeParamDecodeStage[]
 ): string[] => {
   const recommendations: string[] = [];
+  const paramStageRepairHints = countParamStageRepairHints(paramStages);
 
   if (summary.level === 'error') {
     recommendations.push('先修正解码结果中的 JSON 错误，再复制 CMD 结构或沉淀样本');
@@ -151,6 +329,9 @@ const buildSnapshotRecommendations = (
   }
   if (placeholders.length > 0) {
     recommendations.push('运行时占位符不是解析失败，建议回填真实值后再次复制质量快照');
+  }
+  if (paramStageRepairHints > 0) {
+    recommendations.push('参数分层存在修复提示，建议核对原始值、URL Decode、JSON 解析链路后再沉淀样本');
   }
   if (commandSummaryInfo?.commandSchemaCount) {
     recommendations.push('已识别 CMD Schema，可复制 CMD 结构与内部 cmdHandler 输出做子集对齐');
@@ -169,8 +350,10 @@ const buildSchemeSnapshotCoverage = (
   placeholders: SchemePlaceholder[],
   decodeWarnings: SchemeDecodeWarning[]
 ): SchemeQualitySnapshot['coverage'] => {
+  const paramStages = getParamStages(decodeResult);
   const signalCount = (
     decodeResult.layers.length +
+    paramStages.length +
     (decodeResult.isJson ? 1 : 0) +
     (decodeResult.schemeInfo ? 1 : 0) +
     (commandSummaryInfo?.commandSchemaCount || 0) +
@@ -183,6 +366,7 @@ const buildSchemeSnapshotCoverage = (
     (summary.label === '解析中' ? 1 : 0) +
     (summary.label === '解析已取消' ? 1 : 0) +
     (placeholders.length > 0 ? 1 : 0) +
+    countParamStageNeedsReview(paramStages) +
     decodeWarnings.length
   );
   const score = signalCount + attentionCount === 0
@@ -249,38 +433,63 @@ const buildSummaryItems = (
   commandSummaryInfo: SchemeCommandSummaryInfo | null,
   placeholders: SchemePlaceholder[],
   skippedCount: number
-): SchemeQualitySummaryItem[] => [
-  {
-    label: '解码层',
-    value: decodeResult.layers.length,
-    tone: decodeResult.layers.length > 0 ? 'success' : 'default',
-  },
-  {
-    label: 'CMD',
-    value: commandSummaryInfo?.commandSchemaCount || 0,
-    tone: commandSummaryInfo?.commandSchemaCount ? 'cyan' : 'default',
-  },
-  {
-    label: 'CMD字段',
-    value: commandSummaryInfo?.commandFieldCount || 0,
-    tone: commandSummaryInfo?.commandFieldCount ? 'cyan' : 'default',
-  },
-  {
-    label: '资源字段',
-    value: commandSummaryInfo?.resourceFieldCount || 0,
-    tone: commandSummaryInfo?.resourceFieldCount ? 'success' : 'default',
-  },
-  {
-    label: '占位符',
-    value: placeholders.length,
-    tone: placeholders.length > 0 ? 'warning' : 'default',
-  },
-  {
-    label: '跳过',
-    value: skippedCount,
-    tone: skippedCount > 0 ? 'warning' : 'default',
-  },
-];
+): SchemeQualitySummaryItem[] => {
+  const paramStages = getParamStages(decodeResult);
+  const paramStageRepairHints = countParamStageRepairHints(paramStages);
+  const items: SchemeQualitySummaryItem[] = [
+    {
+      label: '解码层',
+      value: decodeResult.layers.length,
+      tone: decodeResult.layers.length > 0 ? 'success' : 'default',
+    },
+  ];
+
+  if (paramStages.length > 0) {
+    items.push({
+      label: '参数层',
+      value: paramStages.length,
+      tone: 'success',
+    });
+  }
+
+  if (paramStageRepairHints > 0) {
+    items.push({
+      label: '修复提示',
+      value: paramStageRepairHints,
+      tone: 'warning',
+    });
+  }
+
+  items.push(
+    {
+      label: 'CMD',
+      value: commandSummaryInfo?.commandSchemaCount || 0,
+      tone: commandSummaryInfo?.commandSchemaCount ? 'cyan' : 'default',
+    },
+    {
+      label: 'CMD字段',
+      value: commandSummaryInfo?.commandFieldCount || 0,
+      tone: commandSummaryInfo?.commandFieldCount ? 'cyan' : 'default',
+    },
+    {
+      label: '资源字段',
+      value: commandSummaryInfo?.resourceFieldCount || 0,
+      tone: commandSummaryInfo?.resourceFieldCount ? 'success' : 'default',
+    },
+    {
+      label: '占位符',
+      value: placeholders.length,
+      tone: placeholders.length > 0 ? 'warning' : 'default',
+    },
+    {
+      label: '跳过',
+      value: skippedCount,
+      tone: skippedCount > 0 ? 'warning' : 'default',
+    }
+  );
+
+  return items;
+};
 
 export const buildSchemeQualitySummary = ({
   actualValue,
@@ -385,6 +594,7 @@ export const buildSchemeQualitySnapshot = ({
   decodeWarnings,
 }: BuildSchemeQualitySnapshotOptions): SchemeQualitySnapshot => {
   const skippedCount = sumSkippedCount(decodeWarnings);
+  const paramStages = getParamStages(decodeResult);
 
   return {
     schemaVersion: 1,
@@ -395,6 +605,8 @@ export const buildSchemeQualitySnapshot = ({
       notes: [
         '质量快照不包含原始 Scheme、解码结果或参数值',
         'paths 仅用于定位结构来源，Top schema 只保留解析出的 cmdSchema',
+        'runtimePlaceholders.value 仅表示运行时占位符 token，不表示真实业务参数值',
+        '参数分层仅保留来源、路径、长度、可回写状态和修复类型',
       ],
     },
     status: {
@@ -416,6 +628,9 @@ export const buildSchemeQualitySnapshot = ({
       extFields: commandSummaryInfo?.extFieldCount || 0,
       base64SuffixFields: commandSummaryInfo?.base64SuffixFieldCount || 0,
       runtimePlaceholders: placeholders.length,
+      paramStages: paramStages.length,
+      paramStageRepairHints: countParamStageRepairHints(paramStages),
+      nonReversibleParamStages: countNonReversibleParamStages(paramStages),
       warnings: decodeWarnings.length,
       skipped: skippedCount,
     },
@@ -440,8 +655,12 @@ export const buildSchemeQualitySnapshot = ({
         pathCount: warning.paths.length,
         paths: warning.paths.slice(0, SCHEME_QUALITY_SNAPSHOT_PATH_LIMIT),
       })),
+      paramStageSources: buildParamStageSourceGroups(paramStages),
+      paramStageKeys: buildParamStageKeyGroups(paramStages),
+      paramStageRepairHints: buildParamStageRepairHintGroups(paramStages),
+      paramStageSamples: buildParamStageSamples(paramStages),
     },
-    recommendations: buildSnapshotRecommendations(summary, commandSummaryInfo, placeholders, decodeWarnings),
+    recommendations: buildSnapshotRecommendations(summary, commandSummaryInfo, placeholders, decodeWarnings, paramStages),
   };
 };
 
