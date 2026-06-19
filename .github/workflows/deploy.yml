@@ -38,7 +38,7 @@ on:
       health_check_urls:
         description: 'Space separated health check URLs on remote host'
         required: false
-        default: 'http://127.0.0.1 http://127.0.0.1/api/visitor/ping'
+        default: 'http://127.0.0.1 http://127.0.0.1/api/health'
 
 concurrency:
   group: deploy-production

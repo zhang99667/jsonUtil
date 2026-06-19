@@ -47,7 +47,7 @@
 - `port`: SSH 端口，默认 `22`
 - `app_dir`: 远程应用目录，默认 `/home/markz/apps/jsonUtil`
 - `deploy_mode`: 发布模式，`full` 为远端全量 Docker Compose 构建，`prebuilt-frontend` 为 Actions 预构建前端并只替换远端前端服务
-- `health_check_urls`: 远程健康检查 URL 列表，默认 `http://127.0.0.1 http://127.0.0.1/api/visitor/ping`
+- `health_check_urls`: 远程健康检查 URL 列表，默认 `http://127.0.0.1 http://127.0.0.1/api/health`
 
 CD 不依赖远程 `git pull`，而是同步当前 workflow checkout 的源码到服务器，适合服务器没有 GitHub 凭据的场景。
 
@@ -111,7 +111,7 @@ bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
 
 该脚本会先在本机执行 `npm run build` 和 `npm run check:preloads`，再同步 `frontend/dist`，并在远端使用 `Dockerfile.prebuilt` 只重建 `app-frontend`。后端和数据库不会因为前端静态资源更新而被重启。
 
-本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/visitor/ping` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://$SSH_HOST`，可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
+本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://$SSH_HOST`，可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
 
 ```bash
 PUBLIC_BASE_URL=https://39.97.237.248 \
@@ -182,7 +182,7 @@ REMOTE_APP_DIR=/home/markz/apps/jsonUtil \
 bash scripts/deploy/ssh-prune-dev-artifacts.sh
 ```
 
-健康检查不会把 Nginx `301/302` 当作成功；`/api/visitor/ping` 必须跟随后端转发后返回 `200`，否则脚本会继续等待或失败。
+健康检查不会把 Nginx `301/302` 当作成功；`/api/health` 必须跟随后端转发后返回 `200`，否则脚本会继续等待或失败。`/api/visitor/ping` 保留给前台访客打点，避免部署和监控请求污染 PV/UV。
 
 ## 远程服务器要求
 

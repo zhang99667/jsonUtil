@@ -1,4 +1,16 @@
 # 更新日志 (Changelog)
+## v1.8.247 (2026-06-20) - 健康检查与访客统计分流
+### ⚡ 性能优化
+- **流量口径隔离**: 新增 `/api/health` 作为部署和外部监控专用探活接口，避免健康检查请求混入前台 PV/UV
+- **访客打点保留**: `/api/visitor/ping` 继续作为前台页面访问打点，防止优化健康检查时误伤真实访问统计
+- **部署脚本更新**: GitHub Actions、本机 SSH 部署、远端 Docker Compose 健康检查和公网验证默认切换到 `/api/health`
+
+### 📝 文档
+- **API 矩阵更新**: 后端 API 权限矩阵和 CI/CD 文档补充 `/api/health`，明确健康检查与访客打点的数据边界
+
+### 🧪 测试
+- **流量过滤覆盖**: 新增 `TrafficFilterTest`，覆盖健康检查不写入访问日志、前台 ping 仍写入访问日志
+
 ## v1.8.246 (2026-06-20) - 后台首屏图表依赖隔离
 ### ⚡ 性能优化
 - **后台图表依赖隔离**: 将 `@ant-design/charts`、`@ant-design/plots`、`@ant-design/graphs` 和 `@ant-design/charts-util` 明确归入图表 chunk，避免它们落入后台基础 `vendor-antd-deps` 后把 AntV / D3 / html2canvas 提前拉进 `admin.html`
