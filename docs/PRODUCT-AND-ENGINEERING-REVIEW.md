@@ -321,6 +321,24 @@ frontend/fixtures/scheme-corpus/
 - Dadroit: 大文件、JSON Lines/ndjson、类数据库查询和自动刷新是桌面场景刚需；本项目应继续强化 Worker/虚拟化/增量分析能力，并把“敏感数据本地处理”作为桌面版核心承诺。
 - JSON Diff / JSON Path Finder / jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目已为 JSONPath 补充字段名快捷查询和 Response 常用查询预设，也为 JSON 对比补充按 JSONPath 前缀忽略噪声字段、复制 JSONPath / JSON Pointer 和联动 JSONPath 定位 SOURCE 原值，后续更应该把“转换后如何检查结果是否可信”做成优势。
 
+### 2026-06-19 联网竞品扫描结论
+
+本次继续检索 JSON Hero、JSON Crack、JSONLint、quicktype、JSON Formatter、FreeFormatter URL Parser、EasyTools URL Parser、Jam Query Params to JSON 等工具，补充以下更贴近当前产品形态的学习点:
+
+- 工具箱矩阵不是简单堆按钮。JSONLint 把验证、修复、Diff、Tree、Path、Search、Schema、CSV/YAML/XML、代码生成和编码工具分成清晰栏目；本项目应保持主界面克制，把高频链路做成智能建议和动作条，把低频工具放到懒加载面板或专题入口。
+- URL / Query 解析要明确输入边界。FreeFormatter 会拆出 scheme、host、path、query、hash 等 URL 部件；EasyTools 明确要求完整 URL，重复 query key 导出为数组；Jam 聚焦 query 参数转 JSON。对应到本项目，普通 HTTPS 应继续按 URL 处理，不默认当业务 Scheme；只有自定义 Scheme 或携带可展开业务参数的 URL 才进入 CMD/Scheme 链路。
+- JSON 修复要可解释。JSONLint Repair 把尾逗号、单引号、未加引号 key、注释、Markdown 包裹、截断和缺逗号列成可修复类型。本项目的 AI 修复应继续“本地确定性规则优先”，并把修复步骤、风险和前后结构差异输出成可复制摘要。
+- Schema / 类型生成要从“生成结果”升级到“契约可信度”。JSON Hero 和 JSONLint 都强调从样本推断 Schema，quicktype 强调从 JSON / Schema / TypeScript 生成多语言模型。本项目更适合补字段覆盖率、可选字段、混合类型、示例值和格式识别提示，让用户知道生成的 TS/Schema 可信到什么程度。
+- 可视化价值在“定位复杂结构”。JSON Crack 的图形/树视图、导出图片和多格式转换适合讲解复杂数据；本项目不必立刻做完整图编辑器，可以先在结构导航补“证据导出图/Markdown”、节点间差异对比和 Top CMD Schema 到结构节点的反向定位。
+- 隐私承诺应该前置。JSON Crack、EasyTools、quicktype 都强调浏览器本地处理或不上传样本。本项目已适合把“本地解析、不上传原始 response、AI 发送前敏感阻断”放在设置、AI 修复和导出报告中更显眼的位置。
+
+短期优先级建议:
+
+1. P0: 继续强化 CMD/Scheme 边界判断和样本回归，尤其是普通 HTTPS、结构化 HTTPS、query JSON、URL 编码 JSON、多层转义之间的分类解释。
+2. P1: 给 Schema/TS 生成补可信度摘要，包括字段覆盖、混合类型、数组采样和格式识别。
+3. P1: 增加查询/解析 recipe，支持保存 URL Decode -> JSON Repair -> Deep Parse -> JSONPath/Schema 的常用排查链路。
+4. P2: 做轻量证据导出，把结构导航当前节点、路径、同名字段分布、Top CMD Schema 和资源类型分布导出为 Markdown 或图片。
+
 ### 竞品启发的新增待办
 
 - 语义预览: 已在结构检查器节点详情中识别 URL、Scheme、JWT、Base64、图片/视频/Lottie/音频/包资源、邮箱、电话、日期和颜色；URL/Scheme/JWT/Base64/资源 URL 已提供继续解析入口，后续可补复制属性、资源预览和相关值统计。
