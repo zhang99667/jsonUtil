@@ -332,6 +332,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
     user: {
       name: 'Alice',
       'trace.id': 't-1',
+      homepage: 'https://example.com/docs',
     },
     items: [{ id: 1, name: 'A,B' }, { id: 2, name: 'Bob' }],
   }));
@@ -374,6 +375,11 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(jsonPathPanel).toBeVisible();
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.user["trace.id"]');
   await expect(jsonPathPanel).toContainText('t-1');
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('homepage');
+  await structurePanel.getByTitle('选中并定位 $.user.homepage').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('URL');
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('example.com/docs');
 
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('items');
   await structurePanel.locator('button[title="选中并定位 $.items"]').click();
