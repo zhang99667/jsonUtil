@@ -48,13 +48,7 @@ import {
   startJsonValidation,
   validateJsonForEditor,
 } from './utils/jsonValidation';
-import {
-  buildTransformContextReport,
-  buildTransformQualitySnapshot,
-  buildTransformReportView,
-  formatTransformContextSummary,
-  formatTransformQualitySnapshotDeltaText,
-} from './utils/transformSummary';
+import { formatTransformContextSummary } from './utils/transformContextSummary';
 import { initGoogleAnalytics } from './utils/analytics';
 import {
   getDurationBucket,
@@ -165,6 +159,8 @@ interface TemplateFillRequest {
   id: number;
   template: string;
 }
+
+type TransformSummaryModule = typeof import('./utils/transformSummary');
 
 interface AsyncTransformResult {
   input: string;
@@ -1469,7 +1465,12 @@ const App: React.FC = () => {
   }, [openDroppedFiles]);
 
   // 模板填充处理
-  const buildCurrentQualitySnapshot = useCallback((source: string) => {
+  const buildCurrentQualitySnapshot = useCallback((source: string, summaryModule: TransformSummaryModule) => {
+    const {
+      buildTransformContextReport,
+      buildTransformQualitySnapshot,
+      buildTransformReportView,
+    } = summaryModule;
     const { context } = deepParseWithContext(source, {
       autoExpandScheme,
     });
@@ -1477,16 +1478,25 @@ const App: React.FC = () => {
     return buildTransformQualitySnapshot(report, buildTransformReportView(report, ''), '');
   }, [autoExpandScheme]);
 
-  const handleApplyTemplate = useCallback((templateJson: string) => {
+  const handleApplyTemplate = useCallback(async (templateJson: string) => {
     try {
+      const sourceBeforeApply = input;
       const shouldBuildQualityDelta = isPlaceholderFillTemplateJson(templateJson);
-      const beforeSnapshot = shouldBuildQualityDelta
-        ? buildCurrentQualitySnapshot(input)
+      const summaryModule = shouldBuildQualityDelta
+        ? await import('./utils/transformSummary')
         : null;
-      const merged = applyTemplate(input, templateJson);
+      if (summaryModule && inputRef.current !== sourceBeforeApply) {
+        setTemplateApplyQualityDelta('');
+        showError('内容已变化，请重新应用模板');
+        return;
+      }
+      const beforeSnapshot = shouldBuildQualityDelta
+        ? buildCurrentQualitySnapshot(sourceBeforeApply, summaryModule)
+        : null;
+      const merged = applyTemplate(sourceBeforeApply, templateJson);
       if (beforeSnapshot) {
-        const afterSnapshot = buildCurrentQualitySnapshot(merged);
-        setTemplateApplyQualityDelta(formatTransformQualitySnapshotDeltaText(beforeSnapshot, afterSnapshot));
+        const afterSnapshot = buildCurrentQualitySnapshot(merged, summaryModule);
+        setTemplateApplyQualityDelta(summaryModule.formatTransformQualitySnapshotDeltaText(beforeSnapshot, afterSnapshot));
       } else {
         setTemplateApplyQualityDelta('');
       }
