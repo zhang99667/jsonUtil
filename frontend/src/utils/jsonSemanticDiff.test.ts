@@ -3,6 +3,7 @@ import {
   compareJsonSemanticText,
   compareJsonSemanticValues,
   formatJsonSemanticDiffMarkdown,
+  parseJsonSemanticDiffIgnoredPaths,
 } from './jsonSemanticDiff';
 
 describe('jsonSemanticDiff', () => {
@@ -79,12 +80,49 @@ describe('jsonSemanticDiff', () => {
     expect(result.isLimited).toBe(true);
   });
 
+  it('支持按 JSONPath 前缀忽略噪声字段', () => {
+    const result = compareJsonSemanticValues(
+      {
+        id: 1,
+        meta: { updatedAt: 'old', trace: 'old' },
+        items: [{ score: 1, traceId: 'old' }],
+      },
+      {
+        id: 1,
+        meta: { updatedAt: 'new', trace: 'new' },
+        items: [{ score: 2, traceId: 'new' }],
+      },
+      { ignoredPaths: ['$.meta', '$.items[0].traceId'] }
+    );
+
+    expect(result).toMatchObject({
+      added: 0,
+      removed: 0,
+      changed: 1,
+      total: 1,
+      ignoredPaths: ['$.meta', '$.items[0].traceId'],
+    });
+    expect(result.items.map(item => item.path)).toEqual(['$.items[0].score']);
+  });
+
+  it('解析忽略路径输入并补齐根路径前缀', () => {
+    expect(parseJsonSemanticDiffIgnoredPaths('traceId, $.meta.updatedAt; [0].id\ntraceId')).toEqual([
+      '$.traceId',
+      '$.meta.updatedAt',
+      '$[0].id',
+    ]);
+  });
+
   it('生成可复制 Markdown 报告', () => {
-    const result = compareJsonSemanticValues({ id: 1 }, { id: 2 });
+    const result = compareJsonSemanticValues({ id: 1, traceId: 'old' }, { id: 2, traceId: 'new' }, {
+      ignoredPaths: ['$.traceId'],
+    });
     const report = formatJsonSemanticDiffMarkdown(result);
 
     expect(report).toContain('# JSON 对比报告');
     expect(report).toContain('汇总: 新增 0 / 删除 0 / 修改 1');
+    expect(report).toContain('忽略路径: `$.traceId`');
     expect(report).toContain('| 修改 | `$.id` | `1` | `2` |');
+    expect(report).not.toContain('`$.traceId` | `"old"`');
   });
 });

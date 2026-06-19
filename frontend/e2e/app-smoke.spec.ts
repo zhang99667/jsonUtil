@@ -126,6 +126,10 @@ test('JSON 对比面板可输出路径级语义差异并复制报告', async ({ 
     id: 1,
     name: 'old',
     keep: true,
+    traceId: 'trace-old',
+    meta: {
+      updatedAt: '2026-06-18T10:00:00Z',
+    },
   }));
 
   await page.locator('[data-tour="json-compare-button"]').click();
@@ -137,15 +141,24 @@ test('JSON 对比面板可输出路径级语义差异并复制报告', async ({ 
     id: 1,
     name: 'new',
     extra: 2,
+    traceId: 'trace-new',
+    meta: {
+      updatedAt: '2026-06-19T10:00:00Z',
+    },
   }));
 
-  await expect(comparePanel.locator('[data-tour="json-compare-summary"]')).toContainText('新增 1 / 删除 1 / 修改 1');
+  await expect(comparePanel.locator('[data-tour="json-compare-summary"]')).toContainText('新增 1 / 删除 1 / 修改 3');
+  await comparePanel.locator('[data-tour="json-compare-ignore-paths"]').fill('$.traceId, $.meta');
+  await expect(comparePanel.locator('[data-tour="json-compare-summary"]')).toContainText('新增 1 / 删除 1 / 修改 1，忽略 2 条路径');
   await expect(comparePanel.locator('[data-tour="json-compare-results"]')).toContainText('$.extra');
   await expect(comparePanel.locator('[data-tour="json-compare-results"]')).toContainText('$.keep');
   await expect(comparePanel.locator('[data-tour="json-compare-results"]')).toContainText('$.name');
+  await expect(comparePanel.locator('[data-tour="json-compare-results"]')).not.toContainText('$.traceId');
+  await expect(comparePanel.locator('[data-tour="json-compare-results"]')).not.toContainText('$.meta.updatedAt');
 
   await comparePanel.locator('[data-tour="json-compare-copy-markdown"]').click();
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('# JSON 对比报告');
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('忽略路径: `$.traceId`、`$.meta`');
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('$.name');
 });
 
