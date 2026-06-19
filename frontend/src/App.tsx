@@ -7,6 +7,7 @@ import { CodeEditor } from './components/Editor';
 import {
   detectLanguage,
   performTransform,
+  performTransformAsync,
   performInverseTransform,
   deepParseWithContext,
   inverseWithContext,
@@ -73,7 +74,7 @@ import {
 const ASYNC_TRANSFORM_THRESHOLD = 200_000;
 const ASYNC_VALIDATION_THRESHOLD = 200_000;
 const DOCUMENT_STATS_SCAN_LIMIT = 300_000;
-const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理大文件，请稍候...';
+const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理，请稍候...';
 const SIDEBAR_KEYBOARD_RESIZE_STEP = 16;
 const PANE_KEYBOARD_RESIZE_STEP = 5;
 const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
@@ -349,11 +350,17 @@ const App: React.FC = () => {
   const outputSyncRequestIdRef = useRef(0);
   const aiRepairSnapshotRef = useRef<string | null>(null);
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
-  const shouldUseAsyncTransform = (
-    input.length >= ASYNC_TRANSFORM_THRESHOLD &&
+  const shouldUseTransformWorker = (
     ASYNC_TRANSFORM_MODES.has(mode) &&
+    input.length >= ASYNC_TRANSFORM_THRESHOLD &&
     !isUpdatingFromOutput.current
   );
+  const shouldUseDynamicTransform = (
+    mode === TransformMode.JSON_TO_TYPESCRIPT &&
+    input.trim().length > 0 &&
+    !isUpdatingFromOutput.current
+  );
+  const shouldUseAsyncTransform = shouldUseTransformWorker || shouldUseDynamicTransform;
 
   const validateJsonMaybeAsync = useCallback((
     value: string,
@@ -380,10 +387,40 @@ const App: React.FC = () => {
     }
 
     const requestId = ++transformRequestIdRef.current;
-    const worker = new Worker(new URL('./workers/transform.worker.ts', import.meta.url), { type: 'module' });
-
     setIsOutputTransforming(true);
     setAsyncTransformResult(null);
+
+    if (!shouldUseTransformWorker) {
+      let isCancelled = false;
+      performTransformAsync(input, mode)
+        .then(output => {
+          if (isCancelled || transformRequestIdRef.current !== requestId) return;
+          setAsyncTransformResult({
+            input,
+            mode,
+            autoExpandScheme,
+            output,
+          });
+          setIsOutputTransforming(false);
+        })
+        .catch(error => {
+          if (isCancelled || transformRequestIdRef.current !== requestId) return;
+          console.warn('异步转换处理失败:', error);
+          setAsyncTransformResult({
+            input,
+            mode,
+            autoExpandScheme,
+            output: input,
+          });
+          setIsOutputTransforming(false);
+        });
+
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    const worker = new Worker(new URL('./workers/transform.worker.ts', import.meta.url), { type: 'module' });
 
     worker.onmessage = (event: MessageEvent<{
       id: number;
@@ -391,7 +428,7 @@ const App: React.FC = () => {
       context?: TransformContext;
       error?: string;
     }>) => {
-      if (event.data.id !== requestId) return;
+      if (event.data.id !== requestId || transformRequestIdRef.current !== requestId) return;
       if (event.data.error) {
         console.warn('大文件转换 Worker 处理失败:', event.data.error);
       }
@@ -428,7 +465,7 @@ const App: React.FC = () => {
     return () => {
       worker.terminate();
     };
-  }, [input, mode, autoExpandScheme, shouldUseAsyncTransform]);
+  }, [input, mode, autoExpandScheme, shouldUseAsyncTransform, shouldUseTransformWorker]);
 
   const currentAsyncTransformResult = useMemo(() => {
     if (
