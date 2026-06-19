@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeJsonPathQueryInput } from './jsonPathInput';
+import {
+  formatJsonPathRecursiveFieldQuery,
+  normalizeJsonPathQueryInput,
+} from './jsonPathInput';
 
 describe('jsonPathInput', () => {
   it('将字段名快捷输入转成递归 JSONPath 查询', () => {
@@ -49,5 +52,15 @@ describe('jsonPathInput', () => {
       query: 'name age',
       isFieldNameShortcut: false,
     });
+  });
+
+  it('可为结构导航里的任意真实字段名生成递归查询', () => {
+    expect(formatJsonPathRecursiveFieldQuery('name')).toBe('$..name');
+    expect(formatJsonPathRecursiveFieldQuery('trace.id')).toBe('$..["trace.id"]');
+    expect(formatJsonPathRecursiveFieldQuery('a/b~c')).toBe('$..["a/b~c"]');
+    expect(formatJsonPathRecursiveFieldQuery('https://key')).toBe('$..["https://key"]');
+    expect(formatJsonPathRecursiveFieldQuery('中文 key')).toBe('$..["中文 key"]');
+    expect(formatJsonPathRecursiveFieldQuery('quote"key')).toBe('$..[?(@property == "quote\\"key")]');
+    expect(formatJsonPathRecursiveFieldQuery("single'key")).toBe('$..[?(@property == "single\'key")]');
   });
 });
