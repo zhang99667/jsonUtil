@@ -329,6 +329,7 @@ const TrafficStats: React.FC = () => {
         JSONPATH_CLOSE: '关闭 JSONPath',
         JSONPATH_LOCATE: '定位 JSONPath',
         JSONPATH_QUERY: 'JSONPath 查询',
+        STRUCTURE_NAV_LOCATE: '结构导航定位',
         SCHEMA_PANEL_OPEN: '打开 Schema 校验',
         SCHEMA_PANEL_CLOSE: '关闭 Schema 校验',
         SCHEMA_VALIDATE: 'Schema 校验',

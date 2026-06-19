@@ -31,6 +31,11 @@ export interface JsonTreeModel {
   maxDepth: number;
 }
 
+export interface JsonTreeFocusTarget {
+  path?: string;
+  pointer?: string;
+}
+
 export interface BuildJsonTreeModelOptions {
   maxNodes?: number;
   maxDepth?: number;
@@ -219,6 +224,22 @@ export const matchesJsonTreeSearchText = (searchText: string, query: string): bo
   return tokens.every(token => (
     normalizedText.includes(token) || isFuzzyTokenMatch(normalizedText, token)
   ));
+};
+
+export const resolveJsonTreeFocusTarget = (
+  nodes: JsonTreeNode[],
+  target: JsonTreeFocusTarget
+): JsonTreeNode | null => {
+  const pointer = target.pointer;
+  if (pointer !== undefined) {
+    const pointerNode = nodes.find(node => node.jsonPointer === pointer);
+    if (pointerNode) return pointerNode;
+  }
+
+  const path = target.path?.trim();
+  if (!path) return null;
+
+  return nodes.find(node => node.path === path) || null;
 };
 
 const getValuePreview = (value: JsonValue, maxLength: number): string => {

@@ -69,6 +69,7 @@ import {
 } from './utils/productTelemetry';
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { getJsonSchemaIssueHighlights } from './utils/jsonSchemaIssueHighlights';
+import type { JsonPathQueryItem } from './utils/jsonPathQuery';
 import {
   getSmartInputSuggestion,
   getSmartSuggestionMode,
@@ -152,6 +153,12 @@ type SettingsTab = 'shortcuts' | 'ai' | 'general';
 interface JsonPathQueryRequest {
   id: number;
   query: string;
+}
+
+interface JsonTreeFocusRequest {
+  id: number;
+  path: string;
+  pointer: string;
 }
 
 interface SchemeInputRequest {
@@ -333,12 +340,14 @@ const App: React.FC = () => {
   const [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen] = useState(false);
   const [hasLoadedJsonSchemaPanel, setHasLoadedJsonSchemaPanel] = useState(false);
   const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
+  const [jsonTreeFocusRequest, setJsonTreeFocusRequest] = useState<JsonTreeFocusRequest | null>(null);
   const [schemeInputRequest, setSchemeInputRequest] = useState<SchemeInputRequest | null>(null);
   const [templateFillRequest, setTemplateFillRequest] = useState<TemplateFillRequest | null>(null);
   const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
   const [isOutputTransforming, setIsOutputTransforming] = useState(false);
   const transformRequestIdRef = useRef(0);
   const jsonPathQueryRequestIdRef = useRef(0);
+  const jsonTreeFocusRequestIdRef = useRef(0);
   const schemeInputRequestIdRef = useRef(0);
   const templateFillRequestIdRef = useRef(0);
   const sourceValidationRequestIdRef = useRef(0);
@@ -757,6 +766,17 @@ const App: React.FC = () => {
     setIsTransformReportOpen(false);
     trackCurrentToolEvent('JSONPATH_LOCATE', 'panel');
   }, [mode, trackCurrentToolEvent]);
+
+  const handleLocateJsonPathResultInStructure = useCallback((item: JsonPathQueryItem) => {
+    setJsonTreeFocusRequest({
+      id: ++jsonTreeFocusRequestIdRef.current,
+      path: item.path,
+      pointer: item.pointer,
+    });
+    setIsJsonTreePanelOpen(true);
+    setIsTransformReportOpen(false);
+    trackCurrentToolEvent('STRUCTURE_NAV_LOCATE', 'panel');
+  }, [trackCurrentToolEvent]);
 
   const openStandaloneSchemePanel = useCallback((value: string, eventName: string) => {
     if (!value) return;
@@ -2080,6 +2100,7 @@ const App: React.FC = () => {
                 setHighlightRange(null); // 关闭时清除高亮
               }}
               onHighlightRange={handleJsonPathHighlight}
+              onLocateStructure={handleLocateJsonPathResultInStructure}
             />
           </Suspense>
         )}
@@ -2091,6 +2112,7 @@ const App: React.FC = () => {
               jsonData={jsonPathDataSource}
               isDataPreparing={mode === TransformMode.DEEP_FORMAT && isOutputTransforming}
               isOpen={isJsonTreePanelOpen}
+              externalFocusRequest={jsonTreeFocusRequest}
               onClose={() => setIsJsonTreePanelOpen(false)}
               onLocatePath={handleLocateJsonPath}
               onOpenSchemeValue={handleOpenSchemeFromStructure}

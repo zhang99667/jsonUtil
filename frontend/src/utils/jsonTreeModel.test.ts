@@ -11,6 +11,7 @@ import {
   getJsonTreeNodeValue,
   getJsonTreeNodeValueCopyText,
   matchesJsonTreeSearchText,
+  resolveJsonTreeFocusTarget,
 } from './jsonTreeModel';
 
 describe('jsonTreeModel', () => {
@@ -91,6 +92,33 @@ describe('jsonTreeModel', () => {
 
   it('非法 JSON 返回可读错误', () => {
     expect(() => buildJsonTreeModel('{"broken":}')).toThrow('JSON 结构解析失败');
+  });
+
+  it('按 JSON Pointer 优先解析结构导航外部定位目标', () => {
+    const model = buildJsonTreeModel(JSON.stringify({
+      user: {
+        name: 'Alice',
+        'trace.id': 't-1',
+      },
+      fallback: {
+        name: 'Bob',
+      },
+    }));
+
+    expect(resolveJsonTreeFocusTarget(model.nodes, {
+      pointer: '/user/trace.id',
+      path: '$.fallback.name',
+    })?.path).toBe('$.user["trace.id"]');
+    expect(resolveJsonTreeFocusTarget(model.nodes, {
+      path: '$.fallback.name',
+    })?.jsonPointer).toBe('/fallback/name');
+    expect(resolveJsonTreeFocusTarget(model.nodes, {
+      pointer: '',
+    })?.path).toBe('$');
+    expect(resolveJsonTreeFocusTarget(model.nodes, {
+      pointer: '/missing',
+      path: '$.missing',
+    })).toBeNull();
   });
 
   it('结构搜索支持多关键词和字符顺序模糊匹配', () => {

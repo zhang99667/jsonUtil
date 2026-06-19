@@ -79,6 +79,7 @@ interface JsonPathPanelProps {
     isOpen: boolean;
     onClose: () => void;
     onHighlightRange: (range: HighlightRange | null) => void;
+    onLocateStructure?: (item: JsonPathQueryItem) => void;
 }
 
 export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
@@ -89,7 +90,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     externalQueryRequest = null,
     isOpen,
     onClose,
-    onHighlightRange
+    onHighlightRange,
+    onLocateStructure
 }) => {
     const [query, setQuery] = useState<string>('$');
     const [error, setError] = useState<string>('');
@@ -542,6 +544,16 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         onHighlightRange(queryRanges[index] || null);
     };
 
+    const locateStructureResult = (index: number) => {
+        if (!onLocateStructure) return;
+        const item = queryItems[index];
+        if (!item) return;
+
+        focusQueryResult(index);
+        onLocateStructure(item);
+        showSuccess('已定位结构导航');
+    };
+
     return (
         <DraggablePanel
             isOpen={isOpen}
@@ -840,33 +852,51 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         className="mb-3 max-h-28 flex-shrink-0 overflow-y-auto rounded border border-editor-border bg-editor-bg/60 p-1 space-y-1 [&::-webkit-scrollbar]:hidden"
                     >
                         {queryResultPreviewItems.map(item => (
-                            <button
+                            <div
                                 key={item.index}
-                                onClick={() => focusQueryResult(item.index)}
-                                className={`w-full text-left text-xs rounded border px-2 py-1.5 transition-colors ${
+                                className={`flex min-w-0 items-stretch gap-1 rounded border text-xs transition-colors ${
                                     item.index === currentResultIndex
                                         ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-100'
                                         : 'border-transparent bg-editor-sidebar text-gray-300 hover:bg-editor-hover hover:text-gray-100'
                                 }`}
-                                title={`${item.sourceLabel ? `${item.sourceLabel} ` : ''}${item.path}\n${item.text}`}
-                                aria-label={`定位第 ${item.index + 1} 个 JSONPath 结果：${item.path}`}
                             >
-                                <div className="mb-1 flex min-w-0 items-center gap-1.5">
-                                    <span className="shrink-0 text-[10px] text-gray-500">{item.index + 1}</span>
-                                    {item.sourceLabel && (
-                                        <span
-                                            className="max-w-[120px] shrink-0 truncate rounded bg-cyan-900/40 px-1.5 py-0.5 text-[10px] text-cyan-200"
-                                            title={item.sourceLabel}
-                                        >
-                                            {item.sourceLabel}
+                                <button
+                                    type="button"
+                                    data-tour="jsonpath-result-preview"
+                                    onClick={() => focusQueryResult(item.index)}
+                                    className="min-w-0 flex-1 rounded px-2 py-1.5 text-left focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                    title={`${item.sourceLabel ? `${item.sourceLabel} ` : ''}${item.path}\n${item.text}`}
+                                    aria-label={`定位第 ${item.index + 1} 个 JSONPath 结果：${item.path}`}
+                                >
+                                    <div className="mb-1 flex min-w-0 items-center gap-1.5">
+                                        <span className="shrink-0 text-[10px] text-gray-500">{item.index + 1}</span>
+                                        {item.sourceLabel && (
+                                            <span
+                                                className="max-w-[120px] shrink-0 truncate rounded bg-cyan-900/40 px-1.5 py-0.5 text-[10px] text-cyan-200"
+                                                title={item.sourceLabel}
+                                            >
+                                                {item.sourceLabel}
+                                            </span>
+                                        )}
+                                        <span className="min-w-0 truncate font-mono text-[10px] text-emerald-300" title={item.path}>
+                                            {item.path}
                                         </span>
-                                    )}
-                                    <span className="min-w-0 truncate font-mono text-[10px] text-emerald-300" title={item.path}>
-                                        {item.path}
-                                    </span>
-                                </div>
-                                <span className="font-mono whitespace-pre-wrap break-words align-top">{item.text}</span>
-                            </button>
+                                    </div>
+                                    <span className="font-mono whitespace-pre-wrap break-words align-top">{item.text}</span>
+                                </button>
+                                {onLocateStructure && (
+                                    <button
+                                        type="button"
+                                        data-tour="jsonpath-locate-structure"
+                                        onClick={() => locateStructureResult(item.index)}
+                                        className="m-1 shrink-0 self-start rounded border border-cyan-500/25 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] text-cyan-100 transition-colors hover:border-cyan-400/60 hover:bg-cyan-500/20 focus:outline-none focus:ring-1 focus:ring-cyan-300"
+                                        title={`在结构导航中定位 ${item.path}`}
+                                        aria-label={`在结构导航中定位第 ${item.index + 1} 个 JSONPath 结果：${item.path}`}
+                                    >
+                                        结构
+                                    </button>
+                                )}
+                            </div>
                         ))}
                         {hiddenResultCount > 0 && (
                             <div className="px-2 py-1 text-[11px] text-gray-500">

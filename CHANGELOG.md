@@ -1,4 +1,15 @@
 # 更新日志 (Changelog)
+## v1.8.234 (2026-06-19) - JSONPath 结果定位结构导航
+### ✨ 新特性
+- **结果回到结构**: JSONPath 查询结果新增“结构”动作，可把当前命中项直接定位到结构导航节点，快速查看上下文、Pointer、子树和语义标签
+- **特殊 key 稳定定位**: 结构导航外部定位优先使用 JSON Pointer 匹配，`trace.id`、数组下标和 JSON Lines 等路径不再依赖字符串 JSONPath 比对
+
+### 📝 文档
+- **闭环排查**: README、架构说明和产品评审同步记录 JSONPath 查询结果与结构导航的双向联动，承接 JSON Hero / JSONPath Finder 类工具的查找上下文体验
+
+### 🧪 测试
+- **联动覆盖**: 新增结构导航外部定位纯函数单测，扩展 JSONPath E2E 覆盖命中结果打开结构导航并选中对应节点
+
 ## v1.8.233 (2026-06-19) - JSONPath 字段名快捷查询
 ### ✨ 新特性
 - **字段名直查**: JSONPath 面板支持直接输入 `traceId`、`action_cmd` 等字段名，查询时自动转成 `$..traceId`、`$..action_cmd` 递归查询
