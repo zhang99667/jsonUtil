@@ -1,11 +1,13 @@
 import type { JsonObject, JsonValue } from '../types';
 import { parseJsonLines } from './jsonLines';
+import { encodeJsonPointerSegment } from './jsonPointer';
 
 export type JsonSemanticDiffKind = 'added' | 'removed' | 'changed';
 
 export interface JsonSemanticDiffItem {
   kind: JsonSemanticDiffKind;
   path: string;
+  pointer: string;
   before?: JsonValue;
   after?: JsonValue;
   beforePreview?: string;
@@ -42,6 +44,9 @@ const appendJsonPathKey = (path: string, key: string): string => (
 );
 
 const appendJsonPathIndex = (path: string, index: number): string => `${path}[${index}]`;
+const appendJsonPointerSegment = (pointer: string, segment: string): string => (
+  `${pointer}/${encodeJsonPointerSegment(segment)}`
+);
 
 const getValuePreview = (value: JsonValue | undefined): string | undefined => {
   if (value === undefined) return undefined;
@@ -112,6 +117,7 @@ export const compareJsonSemanticValues = (
   const pushDiff = (
     kind: JsonSemanticDiffKind,
     path: string,
+    pointer: string,
     beforeValue?: JsonValue,
     afterValue?: JsonValue
   ) => {
@@ -129,6 +135,7 @@ export const compareJsonSemanticValues = (
     items.push({
       kind,
       path,
+      pointer,
       before: beforeValue,
       after: afterValue,
       beforePreview: getValuePreview(beforeValue),
@@ -137,13 +144,13 @@ export const compareJsonSemanticValues = (
   };
 
   // 深度优先对比，保留稳定路径，方便复制给接口维护者。
-  const visit = (left: JsonValue, right: JsonValue, path: string) => {
+  const visit = (left: JsonValue, right: JsonValue, path: string, pointer: string) => {
     if (isLimited) return;
     if (isIgnoredDiffPath(path, ignoredPaths)) return;
 
     if (Array.isArray(left) || Array.isArray(right)) {
       if (!Array.isArray(left) || !Array.isArray(right)) {
-        pushDiff('changed', path, left, right);
+        pushDiff('changed', path, pointer, left, right);
         return;
       }
 
@@ -151,13 +158,14 @@ export const compareJsonSemanticValues = (
       for (let index = 0; index < maxLength; index += 1) {
         if (isLimited) return;
         const childPath = appendJsonPathIndex(path, index);
+        const childPointer = appendJsonPointerSegment(pointer, String(index));
         if (isIgnoredDiffPath(childPath, ignoredPaths)) continue;
         if (index >= left.length) {
-          pushDiff('added', childPath, undefined, right[index]);
+          pushDiff('added', childPath, childPointer, undefined, right[index]);
         } else if (index >= right.length) {
-          pushDiff('removed', childPath, left[index], undefined);
+          pushDiff('removed', childPath, childPointer, left[index], undefined);
         } else {
-          visit(left[index] as JsonValue, right[index] as JsonValue, childPath);
+          visit(left[index] as JsonValue, right[index] as JsonValue, childPath, childPointer);
         }
       }
       return;
@@ -165,7 +173,7 @@ export const compareJsonSemanticValues = (
 
     if (isJsonRecord(left) || isJsonRecord(right)) {
       if (!isJsonRecord(left) || !isJsonRecord(right)) {
-        pushDiff('changed', path, left, right);
+        pushDiff('changed', path, pointer, left, right);
         return;
       }
 
@@ -173,26 +181,27 @@ export const compareJsonSemanticValues = (
       for (const key of keys) {
         if (isLimited) return;
         const childPath = appendJsonPathKey(path, key);
+        const childPointer = appendJsonPointerSegment(pointer, key);
         if (isIgnoredDiffPath(childPath, ignoredPaths)) continue;
         const hasLeft = Object.prototype.hasOwnProperty.call(left, key);
         const hasRight = Object.prototype.hasOwnProperty.call(right, key);
         if (!hasLeft) {
-          pushDiff('added', childPath, undefined, right[key]);
+          pushDiff('added', childPath, childPointer, undefined, right[key]);
         } else if (!hasRight) {
-          pushDiff('removed', childPath, left[key], undefined);
+          pushDiff('removed', childPath, childPointer, left[key], undefined);
         } else {
-          visit(left[key], right[key], childPath);
+          visit(left[key], right[key], childPath, childPointer);
         }
       }
       return;
     }
 
     if (!areSamePrimitiveValue(left, right)) {
-      pushDiff('changed', path, left, right);
+      pushDiff('changed', path, pointer, left, right);
     }
   };
 
-  visit(before, after, '$');
+  visit(before, after, '$', '');
 
   return {
     items,

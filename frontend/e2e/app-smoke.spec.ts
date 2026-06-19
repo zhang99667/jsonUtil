@@ -156,6 +156,20 @@ test('JSON 对比面板可输出路径级语义差异并复制报告', async ({ 
   await expect(comparePanel.locator('[data-tour="json-compare-results"]')).not.toContainText('$.traceId');
   await expect(comparePanel.locator('[data-tour="json-compare-results"]')).not.toContainText('$.meta.updatedAt');
 
+  const nameDiffRow = comparePanel.locator('[data-tour="json-compare-row"]').filter({ hasText: '$.name' });
+  await nameDiffRow.locator('[data-tour="json-compare-copy-path"]').click();
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toBe('$.name');
+  await nameDiffRow.locator('[data-tour="json-compare-copy-pointer"]').click();
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toBe('/name');
+  await nameDiffRow.locator('[data-tour="json-compare-locate-source"]').click();
+  const jsonPathPanel = page.getByRole('dialog', { name: 'JSONPath 查询' });
+  await expect(jsonPathPanel).toBeVisible();
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.name');
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('old');
+
+  const extraDiffRow = comparePanel.locator('[data-tour="json-compare-row"]').filter({ hasText: '$.extra' });
+  await expect(extraDiffRow.locator('[data-tour="json-compare-locate-source"]')).toBeDisabled();
+
   await comparePanel.locator('[data-tour="json-compare-copy-markdown"]').click();
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('# JSON 对比报告');
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('忽略路径: `$.traceId`、`$.meta`');

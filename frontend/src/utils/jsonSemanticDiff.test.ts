@@ -42,6 +42,12 @@ describe('jsonSemanticDiff', () => {
       { kind: 'removed', path: '$.nested.remove' },
       { kind: 'changed', path: '$.nested["trace.id"]' },
     ]);
+    expect(result.items.map(item => item.pointer)).toEqual([
+      '/name',
+      '/nested/add',
+      '/nested/remove',
+      '/nested/trace.id',
+    ]);
   });
 
   it('按数组索引对比数组变化', () => {
@@ -54,6 +60,32 @@ describe('jsonSemanticDiff', () => {
       { kind: 'changed', path: '$[1].id' },
       { kind: 'added', path: '$[2]' },
     ]);
+    expect(result.items.map(item => item.pointer)).toEqual(['/1/id', '/2']);
+  });
+
+  it('差异项生成可复制 JSON Pointer 并转义特殊 key', () => {
+    const result = compareJsonSemanticValues(
+      {
+        'a.b': {
+          'x/y': {
+            'tilde~key': 'old',
+          },
+        },
+      },
+      {
+        'a.b': {
+          'x/y': {
+            'tilde~key': 'new',
+          },
+        },
+      }
+    );
+
+    expect(result.items[0]).toMatchObject({
+      kind: 'changed',
+      path: '$["a.b"]["x/y"]["tilde~key"]',
+      pointer: '/a.b/x~1y/tilde~0key',
+    });
   });
 
   it('支持 JSON Lines 文本对比', () => {

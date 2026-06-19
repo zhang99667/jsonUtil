@@ -313,12 +313,12 @@ frontend/fixtures/scheme-corpus/
 - DevToys: 离线工具箱和 Smart Detection 说明“自动识别当前输入并推荐可串联工具”很重要；Electron 版后续应优先做剪贴板智能识别、转换结果转入下一工具和本地隐私承诺。
 - JSONLint Repair / jsonrepair: 自动修复要明确列出 trailing comma、单引号、未加引号 key、注释、Markdown 包裹、截断和缺逗号等可修复类型；本项目应继续保持本地规则优先，并把修复步骤解释做成可复制摘要。
 - Dadroit: 大文件、JSON Lines/ndjson、类数据库查询和自动刷新是桌面场景刚需；本项目应继续强化 Worker/虚拟化/增量分析能力，并把“敏感数据本地处理”作为桌面版核心承诺。
-- JSON Diff / JSON Path Finder / jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目已为 JSON 对比补充按 JSONPath 前缀忽略噪声字段，下一步更应该把“转换后如何检查结果是否可信”和“差异如何定位到 JSONPath / JSON Pointer”做成优势。
+- JSON Diff / JSON Path Finder / jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目已为 JSON 对比补充按 JSONPath 前缀忽略噪声字段、复制 JSONPath / JSON Pointer 和联动 JSONPath 定位 SOURCE 原值，后续更应该把“转换后如何检查结果是否可信”做成优势。
 
 ### 竞品启发的新增待办
 
 - 语义预览: 已在结构检查器节点详情中识别 URL、Scheme、JWT、Base64、图片/视频/Lottie/音频/包资源、邮箱、电话、日期和颜色；后续提供复制、打开和继续解析入口。
-- 路径级协作: 已支持复制带路径上下文的 Markdown 和 CSV 摘要，JSON 对比也支持按 JSONPath 前缀忽略噪声字段；后续 Web 版可考虑 URL hash 定位到某个 JSONPath，并在 JSON 对比差异行补复制 Pointer / 定位 SOURCE 动作。
+- 路径级协作: 已支持复制带路径上下文的 Markdown 和 CSV 摘要，JSON 对比也支持按 JSONPath 前缀忽略噪声字段、复制 Path / Pointer 并定位修改或删除项的 SOURCE 原值；后续 Web 版可考虑 URL hash 定位到某个 JSONPath。
 - 图形证据: 复杂对象可导出结构缩略图或 Mermaid/图片，服务于排查报告和评审沟通，而不是把完整 JSON 截图贴出去。
 - 桌面效率: Electron 版可补剪贴板智能识别、打开历史、文件拖拽和系统快捷入口，强化“敏感数据不出本机”的定位。
 - 转换可信度: JSON 转 CSV/YAML/TS/Schema 后增加样本行数、丢失字段、动态 key、混合类型和截断提示，让转换结果更可审查；JSON Schema 生成已补长数组前段、尾段、分散点和稀疏字段代表行采样，后续可把采样摘要展示到面板中。

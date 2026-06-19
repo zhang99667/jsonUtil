@@ -2039,6 +2039,7 @@ const App: React.FC = () => {
               sourceText={input}
               isOpen={isJsonComparePanelOpen}
               onClose={() => setIsJsonComparePanelOpen(false)}
+              onLocatePath={handleLocateJsonPath}
             />
           </Suspense>
         )}
