@@ -333,7 +333,7 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
       name: 'Alice',
       'trace.id': 't-1',
     },
-    items: [{ id: 1 }, { id: 2 }],
+    items: [{ id: 1, name: 'A,B' }, { id: 2, name: 'Bob' }],
   }));
 
   await page.locator('[data-tour="structure-nav-button"]').click();
@@ -361,6 +361,25 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(jsonPathPanel).toBeVisible();
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.user["trace.id"]');
   await expect(jsonPathPanel).toContainText('t-1');
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('items');
+  await structurePanel.locator('button[title="选中并定位 $.items"]').click();
+
+  const tablePreview = structurePanel.locator('[data-tour="structure-nav-table-preview"]');
+  await expect(tablePreview).toBeVisible();
+  await expect(tablePreview).toContainText('对象数组预览: 2/2 行，2/2 列');
+  await expect(tablePreview).toContainText('A,B');
+
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]').click();
+  await expect(page.getByText('已复制表格 CSV')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('id,name\n1,"A,B"\n2,Bob');
+
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-json"]').click();
+  await expect(page.getByText('已复制表格 JSON')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe(JSON.stringify([
+    { id: 1, name: 'A,B' },
+    { id: 2, name: 'Bob' },
+  ], null, 2));
 });
 
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {

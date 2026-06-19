@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildJsonTreeModel,
+  buildJsonTreeArrayTablePreview,
+  formatJsonTreeArrayTableCsvText,
+  formatJsonTreeArrayTableJsonText,
   getJsonTreeNodeValue,
   getJsonTreeNodeValueCopyText,
   matchesJsonTreeSearchText,
@@ -136,5 +139,65 @@ describe('jsonTreeModel', () => {
     expect(getJsonTreeNodeValue(source, '/1/id')).toBe(2);
     expect(getJsonTreeNodeValueCopyText(source, '/0')).toBe('{"id":1}');
     expect(() => getJsonTreeNodeValue(source, '/2/id')).toThrow('数组下标越界');
+  });
+
+  it('为对象数组生成表格预览并复制 JSON 和 CSV', () => {
+    const source = JSON.stringify({
+      items: [
+        { id: 1, name: 'Alice', note: ' a,b ' },
+        { id: 2, name: 'Bob', extra: { ok: true }, note: 'quote "x"\nline' },
+        { id: 3, name: 'Charlie', note: 'quote "x"' },
+      ],
+    });
+    const preview = buildJsonTreeArrayTablePreview(source, '/items', {
+      maxRows: 2,
+      maxColumns: 3,
+    });
+
+    expect(preview).toMatchObject({
+      columns: ['id', 'name', 'note'],
+      totalRows: 3,
+      sampledRows: 2,
+      totalColumns: 4,
+      isRowLimited: true,
+      isColumnLimited: true,
+    });
+    expect(preview?.rows.map(row => ({
+      index: row.index,
+      cells: row.cells,
+      jsonObject: row.jsonObject,
+    }))).toEqual([
+      {
+        index: 0,
+        cells: ['1', 'Alice', 'a,b'],
+        jsonObject: { id: 1, name: 'Alice', note: ' a,b ' },
+      },
+      {
+        index: 1,
+        cells: ['2', 'Bob', 'quote "x" line'],
+        jsonObject: { id: 2, name: 'Bob', note: 'quote "x"\nline' },
+      },
+    ]);
+    expect(formatJsonTreeArrayTableJsonText(preview!)).toBe(JSON.stringify([
+      { id: 1, name: 'Alice', note: ' a,b ' },
+      { id: 2, name: 'Bob', note: 'quote "x"\nline' },
+    ], null, 2));
+    expect(formatJsonTreeArrayTableCsvText(preview!)).toBe([
+      'id,name,note',
+      '1,Alice," a,b "',
+      '2,Bob,"quote ""x""\nline"',
+    ].join('\n'));
+  });
+
+  it('非对象数组不生成表格预览', () => {
+    expect(buildJsonTreeArrayTablePreview(JSON.stringify({
+      items: [1, 2, 3],
+    }), '/items')).toBeNull();
+    expect(buildJsonTreeArrayTablePreview(JSON.stringify({
+      items: [{ id: 1 }, 2],
+    }), '/items')).toBeNull();
+    expect(buildJsonTreeArrayTablePreview(JSON.stringify({
+      items: [{}, {}],
+    }), '/items')).toBeNull();
   });
 });

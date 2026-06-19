@@ -1,4 +1,4 @@
-import type { JsonValue } from '../types';
+import type { JsonObject, JsonValue } from '../types';
 import {
   encodeJsonPointerSegment,
   getJsonPointerValue,
@@ -37,6 +37,29 @@ export interface BuildJsonTreeModelOptions {
   previewMaxLength?: number;
 }
 
+export interface JsonTreeArrayTablePreviewRow {
+  index: number;
+  cells: string[];
+  copyCells: string[];
+  jsonObject: JsonObject;
+}
+
+export interface JsonTreeArrayTablePreview {
+  columns: string[];
+  rows: JsonTreeArrayTablePreviewRow[];
+  totalRows: number;
+  sampledRows: number;
+  totalColumns: number;
+  isRowLimited: boolean;
+  isColumnLimited: boolean;
+}
+
+interface BuildJsonTreeArrayTablePreviewOptions {
+  maxRows?: number;
+  maxColumns?: number;
+  maxCellLength?: number;
+}
+
 interface PendingTreeNode {
   value: JsonValue;
   path: string;
@@ -50,6 +73,9 @@ interface PendingTreeNode {
 const DEFAULT_MAX_TREE_NODES = 1500;
 const DEFAULT_MAX_TREE_DEPTH = 24;
 const DEFAULT_PREVIEW_MAX_LENGTH = 80;
+const DEFAULT_TABLE_PREVIEW_ROWS = 8;
+const DEFAULT_TABLE_PREVIEW_COLUMNS = 8;
+const DEFAULT_TABLE_CELL_MAX_LENGTH = 80;
 
 const isJsonRecord = (value: JsonValue): value is Record<string, JsonValue> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -84,6 +110,23 @@ const compactText = (value: string, maxLength: number): string => {
   const compacted = value.replace(/\s+/g, ' ').trim();
   if (compacted.length <= maxLength) return compacted;
   return `${compacted.slice(0, Math.max(0, maxLength - 3))}...`;
+};
+
+const getTableCellText = (value: JsonValue, maxLength = Number.POSITIVE_INFINITY): string => {
+  const text = typeof value === 'string'
+    ? value
+    : value === null
+      ? 'null'
+      : typeof value === 'object'
+        ? JSON.stringify(value)
+        : String(value);
+
+  return Number.isFinite(maxLength) ? compactText(text, maxLength) : text;
+};
+
+const escapeCsvCell = (value: string): string => {
+  if (!/[",\n\r]/.test(value) && value.trim() === value) return value;
+  return `"${value.replace(/"/g, '""')}"`;
 };
 
 const normalizeSearchToken = (value: string): string => value.trim().toLowerCase();
@@ -178,6 +221,72 @@ export const getJsonTreeNodeValueCopyText = (
   options: { pretty?: boolean } = {}
 ): string => (
   stringifyJsonPointerValue(parseJsonTreeSource(jsonText.trim()), jsonPointer, options)
+);
+
+export const buildJsonTreeArrayTablePreview = (
+  jsonText: string,
+  jsonPointer: string,
+  options: BuildJsonTreeArrayTablePreviewOptions = {}
+): JsonTreeArrayTablePreview | null => {
+  const value = getJsonTreeNodeValue(jsonText, jsonPointer);
+  if (!Array.isArray(value) || value.length === 0) return null;
+
+  const maxRows = Math.max(1, options.maxRows ?? DEFAULT_TABLE_PREVIEW_ROWS);
+  const maxColumns = Math.max(1, options.maxColumns ?? DEFAULT_TABLE_PREVIEW_COLUMNS);
+  const maxCellLength = Math.max(16, options.maxCellLength ?? DEFAULT_TABLE_CELL_MAX_LENGTH);
+  const sampledItems = value.slice(0, maxRows);
+  if (sampledItems.some(item => !isJsonRecord(item))) return null;
+
+  const objectRows = sampledItems.map((item, index) => ({ item: item as JsonObject, index }));
+
+  const allColumns = [...new Set(objectRows.flatMap(row => Object.keys(row.item)))];
+  if (allColumns.length === 0) return null;
+
+  const columns = allColumns.slice(0, maxColumns);
+  const rows = objectRows.map(row => ({
+    index: row.index,
+    cells: columns.map(column => (
+      Object.prototype.hasOwnProperty.call(row.item, column)
+        ? getTableCellText(row.item[column], maxCellLength)
+        : ''
+    )),
+    copyCells: columns.map(column => (
+      Object.prototype.hasOwnProperty.call(row.item, column)
+        ? getTableCellText(row.item[column])
+        : ''
+    )),
+    jsonObject: columns.reduce<JsonObject>((result, column) => {
+      if (Object.prototype.hasOwnProperty.call(row.item, column)) {
+        result[column] = row.item[column];
+      }
+      return result;
+    }, {}),
+  }));
+
+  return {
+    columns,
+    rows,
+    totalRows: value.length,
+    sampledRows: objectRows.length,
+    totalColumns: allColumns.length,
+    isRowLimited: value.length > sampledItems.length,
+    isColumnLimited: allColumns.length > columns.length,
+  };
+};
+
+export const formatJsonTreeArrayTableJsonText = (
+  preview: JsonTreeArrayTablePreview
+): string => (
+  JSON.stringify(preview.rows.map(row => row.jsonObject), null, 2)
+);
+
+export const formatJsonTreeArrayTableCsvText = (
+  preview: JsonTreeArrayTablePreview
+): string => (
+  [
+    preview.columns.map(escapeCsvCell).join(','),
+    ...preview.rows.map(row => row.copyCells.map(escapeCsvCell).join(',')),
+  ].join('\n')
 );
 
 export const buildJsonTreeModel = (
