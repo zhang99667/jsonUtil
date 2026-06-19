@@ -41,6 +41,7 @@ interface Window {
 interface ImportMetaEnv {
     readonly PROD?: boolean;
     readonly VITE_APP_VERSION?: string;
+    readonly VITE_APP_CHANGELOG?: string;
     readonly VITE_GA_MEASUREMENT_ID?: string;
     readonly VITE_TOOL_EVENT_TELEMETRY_ENABLED?: string;
 }

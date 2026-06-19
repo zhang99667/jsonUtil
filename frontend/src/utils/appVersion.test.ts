@@ -33,11 +33,13 @@ describe('appVersion', () => {
       name: 'JSONUtils',
       version: 'v1.8.70',
       builtAt: '2026-06-16T00:00:00.000Z',
+      changelogMarkdown: '## v1.8.70 (2026-06-16) - 测试版本',
     })).toEqual({
       name: 'JSONUtils',
       version: '1.8.70',
       versionLabel: 'v1.8.70',
       builtAt: '2026-06-16T00:00:00.000Z',
+      changelogMarkdown: '## v1.8.70 (2026-06-16) - 测试版本',
     });
 
     expect(parseAppVersionManifest({ version: '' })).toBeNull();

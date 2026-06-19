@@ -361,8 +361,22 @@ test('状态栏版本号在窄屏仍保持可见', async ({ page }) => {
   const versionBadge = page.locator('[data-tour="statusbar-version"]');
 
   await expect(versionBadge).toHaveText(`v${packageJson.version}`);
-  await expect(versionBadge).toHaveAttribute('title', '当前版本');
+  await expect(versionBadge).toHaveAttribute('title', '当前版本，点击查看更新日志');
   await expectElementInside(versionBadge, statusBar);
+});
+
+test('状态栏版本号可打开版本更新日志', async ({ page }) => {
+  const versionBadge = page.locator('[data-tour="statusbar-version"]');
+
+  await versionBadge.click();
+
+  const changelogDialog = page.getByRole('dialog', { name: '版本更新' });
+  await expect(changelogDialog).toBeVisible();
+  await expect(changelogDialog).toContainText('当前版本');
+  await expect(changelogDialog).toContainText('版本更新');
+
+  await changelogDialog.getByRole('button', { name: '关闭版本更新' }).click();
+  await expect(changelogDialog).toBeHidden();
 });
 
 test('检测到线上新版本时提示刷新', async ({ page }) => {
@@ -374,6 +388,11 @@ test('检测到线上新版本时提示刷新', async ({ page }) => {
         name: 'JSONUtils',
         version: '99.0.0',
         versionLabel: 'v99.0.0',
+        changelogMarkdown: [
+          '## v99.0.0 (2026-06-19) - 远端测试版本',
+          '### ✨ 新特性',
+          '- **更新提示**: 支持在刷新前查看远端版本日志',
+        ].join('\n'),
       }),
     });
   });
@@ -384,8 +403,15 @@ test('检测到线上新版本时提示刷新', async ({ page }) => {
 
   const updateToast = page.locator('[data-tour="app-update-toast"]');
   await expect(updateToast).toContainText('发现新版本 v99.0.0');
+  await expect(updateToast.getByRole('button', { name: '查看更新' })).toBeVisible();
   await expect(updateToast.getByRole('button', { name: '刷新' })).toBeVisible();
   await expect(updateToast.getByRole('button', { name: '稍后' })).toBeVisible();
+
+  await updateToast.getByRole('button', { name: '查看更新' }).click();
+  const changelogDialog = page.getByRole('dialog', { name: '版本更新' });
+  await expect(changelogDialog).toContainText('v99.0.0');
+  await expect(changelogDialog).toContainText('远端测试版本');
+  await expect(changelogDialog).toContainText('支持在刷新前查看远端版本日志');
 });
 
 test('状态栏展示 SOURCE JSON 校验状态', async ({ page }) => {

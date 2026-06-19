@@ -7,6 +7,37 @@ const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf-8')
 ) as { version?: string };
 
+const readRootChangelog = (): string => {
+  try {
+    return readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf-8');
+  } catch {
+    return '';
+  }
+};
+
+const extractRecentChangelogMarkdown = (markdown: string, limit = 8): string => {
+  const lines: string[] = [];
+  let entryCount = 0;
+  let hasStarted = false;
+
+  for (const line of markdown.split(/\r?\n/)) {
+    if (line.startsWith('## ')) {
+      entryCount++;
+      if (entryCount > limit) break;
+      hasStarted = true;
+    }
+
+    if (hasStarted) {
+      lines.push(line);
+    }
+  }
+
+  return lines.join('\n').trim();
+};
+
+const changelogMarkdown = readRootChangelog();
+const frontendChangelogMarkdown = extractRecentChangelogMarkdown(changelogMarkdown, 12);
+
 type VitestCompatibleUserConfig = UserConfig & {
   test?: {
     exclude?: string[];
@@ -25,6 +56,7 @@ const createVersionManifestPlugin = () => ({
         version,
         versionLabel: `v${version}`,
         builtAt: new Date().toISOString(),
+        changelogMarkdown: extractRecentChangelogMarkdown(changelogMarkdown),
       }, null, 2),
     });
   },
@@ -62,7 +94,8 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version || '0.0.0')
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version || '0.0.0'),
+      'import.meta.env.VITE_APP_CHANGELOG': JSON.stringify(frontendChangelogMarkdown)
     },
     resolve: {
       alias: {

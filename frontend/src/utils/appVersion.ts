@@ -9,6 +9,7 @@ export interface AppVersionManifest {
   version: string;
   versionLabel: string;
   builtAt?: string;
+  changelogMarkdown?: string;
 }
 
 export const VERSION_MANIFEST_PATH = '/version.json';
@@ -69,11 +70,16 @@ export const parseAppVersionManifest = (value: unknown): AppVersionManifest | nu
   const version = normalizeAppVersion(value.version);
   if (!version || version === '0.0.0') return null;
 
+  const changelogMarkdown = typeof value.changelogMarkdown === 'string' && value.changelogMarkdown.trim()
+    ? value.changelogMarkdown
+    : undefined;
+
   return {
     name: 'JSONUtils',
     version,
     versionLabel: `v${version}`,
     ...(typeof value.builtAt === 'string' ? { builtAt: value.builtAt } : {}),
+    ...(changelogMarkdown ? { changelogMarkdown } : {}),
   };
 };
 
