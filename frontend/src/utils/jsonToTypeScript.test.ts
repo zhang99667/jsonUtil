@@ -39,4 +39,13 @@ describe('jsonToTypeScript', () => {
   it('为空数组生成 unknown 数组类型', () => {
     expect(jsonValueToTypeScriptDeclaration([])).toBe('export type Root = unknown[];');
   });
+
+  it('支持自定义根类型名', () => {
+    const declaration = jsonValueToTypeScriptDeclaration([
+      { id: 1, name: 'Ada' },
+    ], { rootName: 'items' });
+
+    expect(declaration).toContain('export type Items = ItemsItem[];');
+    expect(declaration).toContain('export interface ItemsItem {');
+  });
 });
