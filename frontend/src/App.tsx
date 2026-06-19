@@ -758,7 +758,7 @@ const App: React.FC = () => {
     trackCurrentToolEvent('JSONPATH_LOCATE', 'panel');
   }, [mode, trackCurrentToolEvent]);
 
-  const handleOpenSchemeFromReport = useCallback((value: string) => {
+  const openStandaloneSchemePanel = useCallback((value: string, eventName: string) => {
     if (!value) return;
 
     setSchemeInputRequest({
@@ -767,21 +767,28 @@ const App: React.FC = () => {
     });
     setIsSchemeDecodeOpen(true);
     setIsTransformReportOpen(false);
-    trackCurrentToolEvent('SCHEME_OPEN_FROM_REPORT', 'panel');
+    trackCurrentToolEvent(eventName, 'panel');
   }, [trackCurrentToolEvent]);
+
+  const handleOpenSchemeFromReport = useCallback((value: string) => {
+    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_REPORT');
+  }, [openStandaloneSchemePanel]);
+
+  const handleOpenSchemeFromStructure = useCallback((value: string) => {
+    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_STRUCTURE');
+    setIsJsonTreePanelOpen(false);
+  }, [openStandaloneSchemePanel]);
+
+  const handleOpenSchemeFromSourceStatus = useCallback((value: string) => {
+    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_SOURCE_STATUS');
+  }, [openStandaloneSchemePanel]);
 
   const handleOpenSourceSchemeInput = useCallback(() => {
     const value = input.trim();
     if (!value || !getStandaloneDeepFormatInputKind(value)) return;
 
-    setSchemeInputRequest({
-      id: ++schemeInputRequestIdRef.current,
-      value,
-    });
-    setIsSchemeDecodeOpen(true);
-    setIsTransformReportOpen(false);
-    trackCurrentToolEvent('SCHEME_OPEN_FROM_SOURCE_STATUS', 'panel');
-  }, [input, trackCurrentToolEvent]);
+    handleOpenSchemeFromSourceStatus(value);
+  }, [handleOpenSchemeFromSourceStatus, input]);
 
   const handleOpenChangelog = useCallback((detail?: AppChangelogOpenDetail) => {
     setChangelogSourceMarkdown(detail?.changelogMarkdown?.trim() ? detail.changelogMarkdown : null);
@@ -2086,6 +2093,7 @@ const App: React.FC = () => {
               isOpen={isJsonTreePanelOpen}
               onClose={() => setIsJsonTreePanelOpen(false)}
               onLocatePath={handleLocateJsonPath}
+              onOpenSchemeValue={handleOpenSchemeFromStructure}
             />
           </Suspense>
         )}

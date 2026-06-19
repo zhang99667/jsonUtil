@@ -27,6 +27,18 @@ export interface JsonStringSemanticContext {
   keyLabel?: string;
 }
 
+const ACTIONABLE_SEMANTIC_HINT_KINDS: ReadonlySet<JsonStringSemanticKind> = new Set([
+  'url',
+  'scheme',
+  'jwt',
+  'base64',
+  'resource-image',
+  'resource-video',
+  'resource-lottie',
+  'resource-audio',
+  'resource-package',
+]);
+
 const URL_PROTOCOL_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
 const PROTOCOL_RELATIVE_URL_RE = /^\/\/[^\s/$.?#].[^\s]*$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -268,3 +280,7 @@ export const getJsonStringSemanticHints = (
   }
   return hints;
 };
+
+export const isJsonStringSemanticHintActionable = (hint: JsonStringSemanticHint): boolean => (
+  ACTIONABLE_SEMANTIC_HINT_KINDS.has(hint.kind)
+);

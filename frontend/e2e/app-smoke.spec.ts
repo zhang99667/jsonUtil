@@ -675,6 +675,46 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(structurePanel.locator('[data-tour="structure-nav-search-history"]')).toHaveCount(0);
 });
 
+test('结构导航语义字符串可继续打开 Scheme 解析', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('json-helper-general-settings', JSON.stringify({
+      autoExpandSchemeInDeepFormat: false,
+    }));
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForMainAppReady(page);
+
+  const businessScheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
+
+  await fillSourceEditor(page, JSON.stringify({
+    user: {
+      phone: '13718164578',
+      action_cmd: businessScheme,
+    },
+  }));
+
+  await page.locator('[data-tour="structure-nav-button"]').click();
+
+  const structurePanel = page.getByRole('dialog', { name: 'JSON 结构导航' });
+  await expect(structurePanel).toBeVisible();
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('phone');
+  await structurePanel.getByTitle('选中并定位 $.user.phone').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('电话');
+  await expect(structurePanel.locator('[data-tour="structure-nav-open-semantic-value"]')).toHaveCount(0);
+
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('action_cmd');
+  await structurePanel.getByTitle('选中并定位 $.user.action_cmd').click();
+  await expect(structurePanel.locator('[data-tour="structure-nav-semantic-hints"]')).toContainText('Scheme');
+
+  await structurePanel.locator('[data-tour="structure-nav-open-semantic-value"]').click();
+  await expect(page.getByText('已填入 Scheme 解析')).toBeVisible();
+
+  const schemePanel = page.getByRole('dialog', { name: 'Scheme 解析' });
+  await expect(schemePanel).toBeVisible();
+  await expect(schemePanel.locator('[data-tour="scheme-standalone-input"]')).toHaveValue(businessScheme);
+});
+
 test('编辑器自动换行开关展示可访问状态', async ({ page }) => {
   const wrapToggle = page.locator('[data-tour="source-editor"] [data-tour="editor-wrap"]');
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getJsonStringSemanticHints } from './jsonValueSemantics';
+import { getJsonStringSemanticHints, isJsonStringSemanticHintActionable } from './jsonValueSemantics';
 import { base64Encode } from './schemeUtils';
 
 const encodeBase64Url = (value: string): string => (
@@ -8,23 +8,29 @@ const encodeBase64Url = (value: string): string => (
 
 describe('jsonValueSemantics', () => {
   it('识别普通 HTTPS URL 但不把它标记为业务 Scheme', () => {
-    expect(getJsonStringSemanticHints('https://example.com/docs?a=1#top')).toEqual([
+    const hints = getJsonStringSemanticHints('https://example.com/docs?a=1#top');
+
+    expect(hints).toEqual([
       {
         kind: 'url',
         label: 'URL',
         detail: 'example.com/docs#...',
       },
     ]);
+    expect(hints.some(isJsonStringSemanticHintActionable)).toBe(true);
   });
 
   it('识别自定义 Scheme、邮箱、日期和颜色', () => {
-    expect(getJsonStringSemanticHints('baiduboxapp://v7/vendor/ad')).toEqual([
+    const schemeHints = getJsonStringSemanticHints('baiduboxapp://v7/vendor/ad');
+
+    expect(schemeHints).toEqual([
       {
         kind: 'scheme',
         label: 'Scheme',
         detail: 'v7/vendor/ad',
       },
     ]);
+    expect(schemeHints.some(isJsonStringSemanticHintActionable)).toBe(true);
     expect(getJsonStringSemanticHints('dev@example.com')).toEqual([
       {
         kind: 'email',
@@ -46,6 +52,9 @@ describe('jsonValueSemantics', () => {
         detail: '#12ABEF',
       },
     ]);
+    expect(getJsonStringSemanticHints('dev@example.com').some(isJsonStringSemanticHintActionable)).toBe(false);
+    expect(getJsonStringSemanticHints('2026-06-19T17:58:00Z').some(isJsonStringSemanticHintActionable)).toBe(false);
+    expect(getJsonStringSemanticHints('#12abef').some(isJsonStringSemanticHintActionable)).toBe(false);
   });
 
   it('结合字段上下文识别电话并遮罩手机号', () => {
