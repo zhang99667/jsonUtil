@@ -419,7 +419,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
           <span className="min-w-[160px] flex-1 truncate text-[11px] text-gray-300">
             对象数组预览: {sourcePreview.sampledRows}/{sourcePreview.totalRows} 行，{preview.columns.length}/{sourcePreview.totalColumns} 列
             {(sourcePreview.isRowLimited || sourcePreview.isColumnLimited) && '，已截断'}
-            {hasColumnFilter && `，已显示列筛选 ${preview.columns.length}/${sourcePreview.columns.length}`}
+            {hasColumnFilter && `，列筛选 ${preview.columns.length}/${sourcePreview.totalColumns}`}
           </span>
           <span className="flex min-w-0 shrink-0 items-center gap-1">
             <input
@@ -427,9 +427,9 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
               type="text"
               value={tableColumnFilter}
               onChange={(event) => setTableColumnFilter(event.target.value)}
-              placeholder="筛已显示列"
-              aria-label="筛选已显示表格列名"
-              title="筛选当前已显示的表格列"
+              placeholder="筛列名"
+              aria-label="筛选表格列名"
+              title="筛选采样行中的表格列"
               className="h-6 w-24 rounded border border-editor-border bg-editor-bg px-1.5 font-mono text-[10px] text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500"
             />
             <button

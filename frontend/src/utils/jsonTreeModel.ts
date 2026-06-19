@@ -42,14 +42,18 @@ export interface JsonTreeArrayTablePreviewRow {
   cells: string[];
   copyCells: string[];
   jsonObject: JsonObject;
+  sourceObject: JsonObject;
 }
 
 export interface JsonTreeArrayTablePreview {
   columns: string[];
+  allColumns: string[];
   rows: JsonTreeArrayTablePreviewRow[];
   totalRows: number;
   sampledRows: number;
   totalColumns: number;
+  maxColumns: number;
+  maxCellLength: number;
   isRowLimited: boolean;
   isColumnLimited: boolean;
 }
@@ -317,14 +321,18 @@ export const buildJsonTreeArrayTablePreview = (
       }
       return result;
     }, {}),
+    sourceObject: row.item,
   }));
 
   return {
     columns,
+    allColumns,
     rows,
     totalRows: value.length,
     sampledRows: objectRows.length,
     totalColumns: allColumns.length,
+    maxColumns,
+    maxCellLength,
     isRowLimited: value.length > sampledItems.length,
     isColumnLimited: allColumns.length > columns.length,
   };
@@ -344,12 +352,14 @@ export const filterJsonTreeArrayTablePreviewColumns = (
   if (!normalizedQuery) return preview;
 
   const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
-  const columnEntries = preview.columns
+  const sourceColumns = preview.allColumns || preview.columns;
+  const matchedColumnEntries = sourceColumns
     .map((column, index) => ({ column, index }))
     .filter(({ column }) => {
       const normalizedColumn = column.toLowerCase();
       return tokens.every(token => normalizedColumn.includes(token));
     });
+  const columnEntries = matchedColumnEntries.slice(0, Math.max(1, preview.maxColumns || preview.columns.length || 1));
 
   const columns = columnEntries.map(entry => entry.column);
   return {
@@ -357,16 +367,24 @@ export const filterJsonTreeArrayTablePreviewColumns = (
     columns,
     rows: preview.rows.map(row => ({
       ...row,
-      cells: columnEntries.map(entry => row.cells[entry.index] || ''),
-      copyCells: columnEntries.map(entry => row.copyCells[entry.index] || ''),
+      cells: columns.map(column => (
+        Object.prototype.hasOwnProperty.call(row.sourceObject, column)
+          ? getTableCellText(row.sourceObject[column], preview.maxCellLength || DEFAULT_TABLE_CELL_MAX_LENGTH)
+          : ''
+      )),
+      copyCells: columns.map(column => (
+        Object.prototype.hasOwnProperty.call(row.sourceObject, column)
+          ? getTableCellText(row.sourceObject[column])
+          : ''
+      )),
       jsonObject: columns.reduce<JsonObject>((result, column) => {
-        if (Object.prototype.hasOwnProperty.call(row.jsonObject, column)) {
-          result[column] = row.jsonObject[column];
+        if (Object.prototype.hasOwnProperty.call(row.sourceObject, column)) {
+          result[column] = row.sourceObject[column];
         }
         return result;
       }, {}),
     })),
-    isColumnLimited: preview.isColumnLimited || columns.length < preview.columns.length,
+    isColumnLimited: preview.isColumnLimited || matchedColumnEntries.length > columns.length,
   };
 };
 
