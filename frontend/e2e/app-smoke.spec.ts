@@ -117,6 +117,34 @@ test('JSON 转 TS 可生成接口声明', async ({ page }) => {
   await expectPreviewText(page, 'active?: boolean;');
 });
 
+test('JSON 对比面板可输出路径级语义差异并复制报告', async ({ page }) => {
+  await fillSourceEditor(page, JSON.stringify({
+    id: 1,
+    name: 'old',
+    keep: true,
+  }));
+
+  await page.locator('[data-tour="json-compare-button"]').click();
+
+  const comparePanel = page.getByRole('dialog', { name: 'JSON 对比' });
+  await expect(comparePanel).toBeVisible();
+
+  await comparePanel.locator('[data-tour="json-compare-target-input"]').fill(JSON.stringify({
+    id: 1,
+    name: 'new',
+    extra: 2,
+  }));
+
+  await expect(comparePanel.locator('[data-tour="json-compare-summary"]')).toContainText('新增 1 / 删除 1 / 修改 1');
+  await expect(comparePanel.locator('[data-tour="json-compare-results"]')).toContainText('$.extra');
+  await expect(comparePanel.locator('[data-tour="json-compare-results"]')).toContainText('$.keep');
+  await expect(comparePanel.locator('[data-tour="json-compare-results"]')).toContainText('$.name');
+
+  await comparePanel.locator('[data-tour="json-compare-copy-markdown"]').click();
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('# JSON 对比报告');
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('$.name');
+});
+
 test('查询解析工具入口展示浮动面板打开态', async ({ page }) => {
   const assertPanelToggle = async (dataTour: string) => {
     const button = page.locator(`[data-tour="${dataTour}"]`);
@@ -132,6 +160,7 @@ test('查询解析工具入口展示浮动面板打开态', async ({ page }) => 
   };
 
   await assertPanelToggle('jsonpath-button');
+  await assertPanelToggle('json-compare-button');
   await assertPanelToggle('structure-nav-button');
   await assertPanelToggle('json-schema-button');
   await assertPanelToggle('scheme-button');
@@ -149,6 +178,7 @@ test('折叠工具栏后图标按钮保留可访问名称', async ({ page }) => 
   await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-label', '嵌套解析');
   await expect(page.locator('[data-tour="json-to-ts-btn"]')).toHaveAttribute('aria-label', 'JSON 转 TS');
   await expect(page.locator('[data-tour="jsonpath-button"]')).toHaveAttribute('aria-label', 'JSONPath 查询，未打开');
+  await expect(page.locator('[data-tour="json-compare-button"]')).toHaveAttribute('aria-label', 'JSON 对比，未打开');
   await expect(page.locator('[data-tour="structure-nav-button"]')).toHaveAttribute('aria-label', '结构导航，未打开');
   await expect(page.locator('[data-tour="json-schema-button"]')).toHaveAttribute('aria-label', 'Schema 校验，未打开');
   await expect(page.locator('[data-tour="open-file-button"]')).toHaveAttribute('aria-label', '打开文件');
