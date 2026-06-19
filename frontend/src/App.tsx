@@ -38,12 +38,6 @@ import { copyText, getClipboardErrorMessage, readClipboardText } from './utils/c
 import { getDetailedErrorMessage, isAbortError } from './utils/errors';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
-import {
-  applyAppBackupContent,
-  buildAppBackup,
-  notifyAppBackupImported,
-  serializeAppBackup,
-} from './utils/appBackup';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 import { setJsonPointerValue } from './utils/jsonPointer';
 import {
@@ -1618,28 +1612,34 @@ const App: React.FC = () => {
     showSuccess('浮动面板布局已恢复默认');
   }, []);
 
-  const handleExportSettingsBackup = useCallback(() => {
-    const backup = buildAppBackup({
-      generalSettings,
-      aiConfig,
-      shortcuts,
-    });
-    const blob = new Blob([serializeAppBackup(backup)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const timestamp = backup.exportedAt.replace(/[:.]/g, '-');
+  const handleExportSettingsBackup = useCallback(async () => {
+    try {
+      const { buildAppBackup, serializeAppBackup } = await import('./utils/appBackup');
+      const backup = buildAppBackup({
+        generalSettings,
+        aiConfig,
+        shortcuts,
+      });
+      const blob = new Blob([serializeAppBackup(backup)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const timestamp = backup.exportedAt.replace(/[:.]/g, '-');
 
-    link.href = url;
-    link.download = `jsonutils-backup-${timestamp}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    showSuccess('配置备份已导出，未包含 AI Key');
+      link.href = url;
+      link.download = `jsonutils-backup-${timestamp}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showSuccess('配置备份已导出，未包含 AI Key');
+    } catch (error) {
+      showError(getDetailedErrorMessage(error, '导出配置备份失败'));
+    }
   }, [aiConfig, generalSettings, shortcuts]);
 
   const handleImportSettingsBackup = useCallback(async (file: File) => {
     try {
+      const { applyAppBackupContent, notifyAppBackupImported } = await import('./utils/appBackup');
       const content = await file.text();
       const result = applyAppBackupContent(content, localStorage, aiConfig);
 
