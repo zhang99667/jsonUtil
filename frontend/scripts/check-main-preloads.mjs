@@ -40,6 +40,7 @@ const forbiddenChunkNames = [
   'vendor-graph-utils',
   'vendor-html2canvas',
   'vendor-ml',
+  'vendor-qrcode',
 ];
 
 const forbiddenPreloads = preloadHrefs.filter((href) =>
@@ -53,6 +54,13 @@ if (forbiddenPreloads.length > 0) {
   }
   process.exit(1);
 }
+
+const forbiddenInitialAssetPatterns = [
+  {
+    label: 'qrcode.react 二维码实现',
+    pattern: /@license qrcode\.react|QRCodeCanvas|QRCodeSVG/,
+  },
+];
 
 const formatKiB = (bytes) => `${(bytes / 1024).toFixed(1)} KiB`;
 
@@ -68,8 +76,23 @@ const initialJsAssets = initialJsHrefs.map((href) => {
     href,
     rawBytes: content.length,
     gzipBytes: gzipSync(content).length,
+    source: content.toString('utf8'),
   };
 });
+
+const forbiddenInitialAssetMatches = initialJsAssets.flatMap((asset) =>
+  forbiddenInitialAssetPatterns
+    .filter(({ pattern }) => pattern.test(asset.source))
+    .map(({ label }) => ({ href: asset.href, label })),
+);
+
+if (forbiddenInitialAssetMatches.length > 0) {
+  console.error('主页面首屏 JS 包含应按需加载的实现:');
+  for (const match of forbiddenInitialAssetMatches) {
+    console.error(`- ${match.href}: ${match.label}`);
+  }
+  process.exit(1);
+}
 
 const initialRawBytes = initialJsAssets.reduce((total, asset) => total + asset.rawBytes, 0);
 const initialGzipBytes = initialJsAssets.reduce((total, asset) => total + asset.gzipBytes, 0);

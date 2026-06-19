@@ -155,6 +155,7 @@ export default defineConfig(({ mode }) => {
             if (packageName === 'axios') return 'vendor-http';
             if (packageName === 'html2canvas') return 'vendor-html2canvas';
             if (packageName === 'driver.js') return 'vendor-driver';
+            if (packageName === 'qrcode.react') return 'vendor-qrcode';
             if (packageName.startsWith('d3-')) return 'vendor-d3';
             if (packageName.startsWith('ml-')) return 'vendor-ml';
             if (
@@ -195,7 +196,6 @@ export default defineConfig(({ mode }) => {
                 'diff',
                 'json-source-map',
                 'jsonpath-plus',
-                'qrcode.react',
               ].includes(packageName)
             ) {
               return 'vendor-tools';
