@@ -1987,7 +1987,7 @@ interface CommandSchemaOccurrence {
   resourceType?: TransformReportResourceType;
 }
 
-const STATIC_RESOURCE_SCHEMA_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp|mp4|m4v|mov|webm|avi|m3u8|mp3|wav|aac|ogg|flac|zip|rar|7z|tar|gz|tgz)$/i;
+const STATIC_RESOURCE_SCHEMA_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp|mp4|m4v|mov|webm|avi|m3u8|mp3|wav|aac|ogg|flac|m4a|lottie|apk|ipa|zip|rar|7z|tar|gz|tgz)$/i;
 const STATIC_RESOURCE_PATH_RE = /(?:^|[.[\]"])(?:image|img|icon|logo|avatar|portrait|poster|cover|lottie|video_url|audio_url|media_url|swipe_up_lottie)(?:$|[.[\]"])/i;
 
 const RESOURCE_TYPE_LABELS: Record<TransformReportResourceType, string> = {
@@ -2001,8 +2001,8 @@ const RESOURCE_TYPE_LABELS: Record<TransformReportResourceType, string> = {
 
 const VIDEO_RESOURCE_EXTENSION_RE = /\.(?:mp4|m4v|mov|webm|avi|m3u8)$/i;
 const IMAGE_RESOURCE_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i;
-const AUDIO_RESOURCE_EXTENSION_RE = /\.(?:mp3|wav|aac|ogg|flac)$/i;
-const PACKAGE_RESOURCE_EXTENSION_RE = /\.(?:zip|rar|7z|tar|gz|tgz)$/i;
+const AUDIO_RESOURCE_EXTENSION_RE = /\.(?:mp3|wav|aac|ogg|flac|m4a)$/i;
+const PACKAGE_RESOURCE_EXTENSION_RE = /\.(?:apk|ipa|zip|rar|7z|tar|gz|tgz)$/i;
 
 const getStaticResourcePathname = (schema: string): string => {
   const normalizedSchema = schema.trim().replace(/\\\//g, '/');
@@ -2022,7 +2022,7 @@ const getStaticResourceType = (
   const compactPath = normalizedPath.replace(/[^a-z0-9]/g, '');
   const haystack = `${pathname} ${normalizedPath}`.toLowerCase();
 
-  if (haystack.includes('lottie')) return 'lottie';
+  if (pathname.toLowerCase().endsWith('.lottie') || haystack.includes('lottie')) return 'lottie';
   if (VIDEO_RESOURCE_EXTENSION_RE.test(pathname) || compactPath.includes('videourl') || compactPath.includes('mediaurl')) {
     return 'video';
   }

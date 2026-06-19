@@ -281,33 +281,34 @@ frontend/fixtures/scheme-corpus/
 - 结构导航已补搜索/筛选结果 Markdown 和 CSV 摘要复制，路径、Pointer、类型、子节点数和值预览可直接粘贴到排查文档或表格工具。
 - 结构导航已补节点类型筛选，可跨整棵树筛选对象、数组、字符串、数字、布尔和空值节点，并联动复制当前筛选结果。
 - 结构导航已补搜索命中高亮，精确命中的字段名和值预览片段会在结构行内突出显示，降低大 response 扫描成本。
-- 结构导航已补字符串节点语义预览，选中 URL、Scheme、邮箱、电话、日期或颜色字符串时在节点详情区展示轻量标签；电话识别结合字段上下文，普通 HTTPS 与业务 Scheme 的入口判断保持不变。
+- 结构导航已补字符串节点语义预览，选中 URL、Scheme、资源 URL、邮箱、电话、日期或颜色字符串时在节点详情区展示轻量标签；电话识别结合字段上下文，资源类型优先依据 URL 路径后缀，普通 HTTPS 与业务 Scheme 的入口判断保持不变。
 - 深度解析报告面板关闭时不再构建报告视图和质量快照，减少关闭态随输入变化产生的主线程派生计算。
 
 ## 2026-06-19 竞品复评补充
 
-参考 JSON Editor Online、JSON Hero、JSON Crack、CyberChef、DevToys、quicktype 和 fx 后，当前项目已经覆盖通用 JSON 工作台的大部分基础能力，差异化优势仍在复杂 response / CMD / Scheme 解析。下一阶段不建议继续堆单点按钮，而应把“结构理解、修复解释、协作排查”做得更像一个检查器。
+参考 JSON Hero、JSON Crack、JSON Editor Online / jsoneditor、Dadroit、jq playground、JSON Compare 和 JSON Formatter 后，当前项目已经覆盖通用 JSON 工作台的大部分基础能力，差异化优势仍在复杂 response / CMD / Scheme 解析。下一阶段不建议继续堆单点按钮，而应把“结构理解、修复解释、协作排查”做得更像一个检查器。
 
 本次联网复核补充参考:
 
 - JSON Hero: https://jsonhero.io/ 和 https://github.com/triggerdotdev/jsonhero-web
 - JSON Crack: https://jsoncrack.com/ 和 https://github.com/AykutSarac/jsoncrack.com
-- jsoneditor: https://github.com/josdejong/jsoneditor
-- DevUtils: https://devutils.com/ 和 https://devutils.com/changelog/
+- JSON Editor Online / jsoneditor: https://jsoneditor.io/ 和 https://github.com/josdejong/jsoneditor
+- Dadroit: https://dadroit.com/
+- jq playground: https://play.jqlang.org/
+- JSON Compare: https://jsoncompare.com/
 - JSON Formatter: https://jsonformatter.org/
-- OK JSON: https://apps.apple.com/us/app/ok-json-viewer-formatter/id1576121509
 
 ### 同类工具学习点
 
-- JSON Editor Online / Chrome JSON Editor / jsoneditor: 表格模式、树模式、文本模式并列，尤其适合对象数组和嵌套数组的快速检查；本次已先落地结构导航内的对象数组表格预览，后续要让表格、树和源码之间的定位关系更稳定。
-- JSON Hero: 多视图浏览、字符串语义预览、自动 Schema、键值搜索、键盘可访问和带路径的分享链接都很强；当前已先补 URL、Scheme、邮箱、电话、日期和颜色的轻量语义标签，后续可把空值分布和 Base64/JWT 等内容做成节点详情的语义卡片。
+- JSON Editor Online / jsoneditor: 多模式编辑、自动修复、Schema 校验、JMESPath 转换和 500MiB 级预览是成熟工作台的底线；本项目已具备格式化、修复和结构导航，后续要补 Schema 校验、JMESPath/jq 预览和更明确的修复解释。
+- JSON Hero: 多视图浏览、字符串语义预览、自动 Schema、键值搜索、键盘可访问和带路径的分享链接都很强；当前已先补 URL、Scheme、资源 URL、邮箱、电话、日期和颜色的轻量语义标签，后续可把空值分布、Base64/JWT 和相关值统计做成节点详情语义卡片。
 - JSON Crack: 图形化结构、多格式转换、Schema/类型生成、查询和图片导出更适合讲解复杂结构；我们应保留轻量结构树，同时补“从节点继续转换/生成类型/对比/导出证据图”的短路径。
-- DevUtils / OK JSON: 离线隐私、剪贴板智能检测、jq/JSONPath、查看历史、Quick Look/Raycast 等系统集成是开发者工具的信任来源；本项目的桌面版和复制导出能力应继续强调本地处理、历史回看与可配置转换。
-- JSON Formatter 类在线工具: 格式化、校验和 JSON 转 XML/CSV/YAML 是用户的高频入口；本项目已经覆盖核心处理，下一步更应该把“转换后如何检查结果是否可信”做成优势。
+- Dadroit: 大文件、JSON Lines/ndjson、类数据库查询和自动刷新是桌面场景刚需；本项目应继续强化 Worker/虚拟化/增量分析能力，并把“敏感数据本地处理”作为桌面版核心承诺。
+- jq playground / JSON Compare / JSON Formatter: 查询、对比、格式化、校验和多格式转换是开发者高频入口；本项目下一步更应该把“转换后如何检查结果是否可信”和“差异如何定位到 JSONPath”做成优势。
 
 ### 竞品启发的新增待办
 
-- 语义预览: 已在结构检查器节点详情中识别 URL、Scheme、邮箱、电话、日期和颜色；后续补 JWT、Base64、图片/视频资源，并提供复制、打开和继续解析入口。
+- 语义预览: 已在结构检查器节点详情中识别 URL、Scheme、图片/视频/Lottie/音频/包资源、邮箱、电话、日期和颜色；后续补 JWT、Base64，并提供复制、打开和继续解析入口。
 - 路径级协作: 已支持复制带路径上下文的 Markdown 和 CSV 摘要；后续 Web 版可考虑 URL hash 定位到某个 JSONPath。
 - 图形证据: 复杂对象可导出结构缩略图或 Mermaid/图片，服务于排查报告和评审沟通，而不是把完整 JSON 截图贴出去。
 - 桌面效率: Electron 版可补剪贴板智能识别、打开历史、文件拖拽和系统快捷入口，强化“敏感数据不出本机”的定位。

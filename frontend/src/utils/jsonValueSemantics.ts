@@ -5,7 +5,12 @@ export type JsonStringSemanticKind =
   | 'phone'
   | 'date'
   | 'date-time'
-  | 'color';
+  | 'color'
+  | 'resource-image'
+  | 'resource-video'
+  | 'resource-lottie'
+  | 'resource-audio'
+  | 'resource-package';
 
 export interface JsonStringSemanticHint {
   kind: JsonStringSemanticKind;
@@ -28,6 +33,12 @@ const LANDLINE_PHONE_RE = /^0\d{2,3}-?\d{7,8}$/;
 const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DATE_TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})?$/;
+const LOTTIE_RESOURCE_EXTENSION_RE = /\.(?:lottie)$/i;
+const IMAGE_RESOURCE_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i;
+const VIDEO_RESOURCE_EXTENSION_RE = /\.(?:mp4|m4v|mov|webm|avi|m3u8)$/i;
+const AUDIO_RESOURCE_EXTENSION_RE = /\.(?:mp3|wav|aac|ogg|flac|m4a)$/i;
+const PACKAGE_RESOURCE_EXTENSION_RE = /\.(?:apk|ipa|zip|rar|7z|tar|gz|tgz)$/i;
+const LOTTIE_CONTEXT_RE = /lottie/i;
 
 const isValidDateOnly = (value: string): boolean => {
   const match = value.match(DATE_ONLY_RE);
@@ -103,6 +114,58 @@ const getUrlSemanticHint = (value: string): JsonStringSemanticHint | null => {
   }
 };
 
+const getUrlForSemanticScan = (value: string): URL | null => {
+  const source = PROTOCOL_RELATIVE_URL_RE.test(value)
+    ? `https:${value}`
+    : value;
+
+  if (!URL_PROTOCOL_RE.test(source)) return null;
+
+  try {
+    return new URL(source);
+  } catch {
+    return null;
+  }
+};
+
+const getResourceDetail = (url: URL): string => {
+  const segments = url.pathname.split('/').filter(Boolean);
+  return decodeURIComponent(segments.at(-1) || url.hostname || '资源');
+};
+
+const getResourceSemanticHint = (
+  value: string,
+  context?: JsonStringSemanticContext
+): JsonStringSemanticHint | null => {
+  const url = getUrlForSemanticScan(value);
+  if (!url) return null;
+
+  const pathname = url.pathname.toLowerCase();
+  const contextText = `${context?.keyLabel || ''} ${context?.path || ''}`;
+  const detail = getResourceDetail(url);
+
+  if (
+    LOTTIE_RESOURCE_EXTENSION_RE.test(pathname) ||
+    ((pathname.endsWith('.json') || pathname.endsWith('.zip')) && LOTTIE_CONTEXT_RE.test(contextText))
+  ) {
+    return { kind: 'resource-lottie', label: 'Lottie', detail };
+  }
+  if (VIDEO_RESOURCE_EXTENSION_RE.test(pathname)) {
+    return { kind: 'resource-video', label: '视频资源', detail };
+  }
+  if (IMAGE_RESOURCE_EXTENSION_RE.test(pathname)) {
+    return { kind: 'resource-image', label: '图片资源', detail };
+  }
+  if (AUDIO_RESOURCE_EXTENSION_RE.test(pathname)) {
+    return { kind: 'resource-audio', label: '音频资源', detail };
+  }
+  if (PACKAGE_RESOURCE_EXTENSION_RE.test(pathname)) {
+    return { kind: 'resource-package', label: '包资源', detail };
+  }
+
+  return null;
+};
+
 export const getJsonStringSemanticHints = (
   value: unknown,
   context?: JsonStringSemanticContext
@@ -115,6 +178,8 @@ export const getJsonStringSemanticHints = (
   const hints: JsonStringSemanticHint[] = [];
   const urlHint = getUrlSemanticHint(text);
   if (urlHint) hints.push(urlHint);
+  const resourceHint = getResourceSemanticHint(text, context);
+  if (resourceHint) hints.push(resourceHint);
   if (EMAIL_RE.test(text)) {
     hints.push({
       kind: 'email',
