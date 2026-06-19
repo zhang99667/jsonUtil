@@ -9,9 +9,10 @@ import {
   TransformResult,
   JsonInputWrapper,
   JsonValue,
-  JsonObject
+  JsonObject,
+  TransformSchemeParamStageSummary,
 } from '../types.ts';
-import type { DecodeLayer, SchemePlaceholder, SchemeType } from './schemeUtils.ts';
+import type { DecodeLayer, SchemeParamDecodeStage, SchemePlaceholder, SchemeType } from './schemeUtils.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
 import { formatHarSourceLabel, trimSourceLabel, HAR_SOURCE_LABEL_PREFIX } from './sourceLabels.ts';
 import { jsonValueToTypeScriptDeclaration } from './jsonToTypeScript.ts';
@@ -31,6 +32,70 @@ export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
 const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
+const SCHEME_PARAM_STAGE_SUMMARY_LIMIT = 8;
+const SCHEME_PARAM_STAGE_LABEL_LIMIT = 80;
+
+const normalizeParamStageLabel = (value: string, fallback: string): string => {
+  const trimmed = value.trim();
+  const label = trimmed || fallback;
+  return label.length > SCHEME_PARAM_STAGE_LABEL_LIMIT
+    ? `${label.slice(0, SCHEME_PARAM_STAGE_LABEL_LIMIT)}...`
+    : label;
+};
+
+const buildParamStageBuckets = (
+  stages: SchemeParamDecodeStage[],
+  getKey: (stage: SchemeParamDecodeStage) => string | undefined
+): TransformSchemeParamStageSummary['keys'] => {
+  const bucketMap = new Map<string, number>();
+
+  stages.forEach(stage => {
+    const key = getKey(stage);
+    if (!key) return;
+    bucketMap.set(key, (bucketMap.get(key) || 0) + 1);
+  });
+
+  return Array.from(bucketMap.entries())
+    .map(([key, count]) => ({ key, count }))
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
+    .slice(0, SCHEME_PARAM_STAGE_SUMMARY_LIMIT);
+};
+
+const buildSchemeParamStageSummary = (
+  stages?: SchemeParamDecodeStage[]
+): TransformSchemeParamStageSummary | undefined => {
+  if (!stages?.length) return undefined;
+
+  return {
+    total: stages.length,
+    repairHints: stages.filter(stage => Boolean(stage.repairHint)).length,
+    nonReversible: stages.filter(stage => !stage.reversible).length,
+    sources: buildParamStageBuckets(stages, stage => stage.source),
+    keys: buildParamStageBuckets(stages, stage => normalizeParamStageLabel(stage.key, '(empty key)')),
+    repairHintLabels: buildParamStageBuckets(
+      stages,
+      stage => stage.repairHint
+        ? normalizeParamStageLabel(stage.repairHint, '参数分层需要人工复核')
+        : undefined
+    ),
+    samples: stages.slice(0, SCHEME_PARAM_STAGE_SUMMARY_LIMIT).map(stage => ({
+      path: stage.path,
+      key: normalizeParamStageLabel(stage.key, '(empty key)'),
+      source: stage.source,
+      lengths: {
+        encodedInput: stage.raw.length,
+        decodedInput: stage.urlDecoded.length,
+        expandedOutput: stage.parsed.length,
+        encodedOutput: stage.reencoded.length,
+      },
+      reversible: stage.reversible,
+      hasRepairHint: Boolean(stage.repairHint),
+      ...(stage.repairHint
+        ? { repairHint: normalizeParamStageLabel(stage.repairHint, '参数分层需要人工复核') }
+        : {}),
+    })),
+  };
+};
 
 const getHarEntrySourceLabelForField = (
   container: Record<string, unknown>,
@@ -683,6 +748,7 @@ export function deepParseWithContext(
                   addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders, sourceLabel, value);
                   const processedSchemeValue = processParsedValue(schemeParsed);
                   const isSchemeReversible = decodedScheme.layers.every(layer => layer.reversible !== false);
+                  const schemeParamStageSummary = buildSchemeParamStageSummary(decodedScheme.paramStages);
                   steps.push({
                     type: 'scheme_decode',
                     originalScheme: current,
@@ -691,6 +757,7 @@ export function deepParseWithContext(
                     originalSchemeStringLiteral: decodedScheme.layers.some(layer => layer.type === 'json'),
                     originalSchemeEscapedSlash: decodedScheme.layers.some(layer => layer.type === 'json-escaped-slash'),
                     decodedSchemeValue: processedSchemeValue,
+                    ...(schemeParamStageSummary ? { schemeParamStageSummary } : {}),
                   });
 
                   context.records.set(currentPath, {
