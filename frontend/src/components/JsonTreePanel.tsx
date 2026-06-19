@@ -6,9 +6,11 @@ import {
   formatJsonTreeSearchResultsText,
   formatJsonTreeArrayTableCsvText,
   formatJsonTreeArrayTableJsonText,
+  getJsonTreeNodeValue,
   getJsonTreeNodeValueCopyText,
   matchesJsonTreeSearchText,
 } from '../utils/jsonTreeModel';
+import { getJsonStringSemanticHints, type JsonStringSemanticHint } from '../utils/jsonValueSemantics';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 
@@ -65,6 +67,14 @@ const getKindClassName = (kind: JsonTreeNode['kind']): string => {
 const getJsonPointerDisplayValue = (jsonPointer: string): string => (
   jsonPointer || '(root)'
 );
+
+const getSemanticHintClassName = (kind: JsonStringSemanticHint['kind']): string => {
+  if (kind === 'url') return 'border-sky-500/30 bg-sky-500/10 text-sky-100';
+  if (kind === 'scheme') return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100';
+  if (kind === 'email') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100';
+  if (kind === 'date' || kind === 'date-time') return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
+  return 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-100';
+};
 
 const escapeRegExp = (value: string): string => (
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -216,6 +226,15 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       return buildJsonTreeArrayTablePreview(jsonData, selectedNode.jsonPointer);
     } catch {
       return null;
+    }
+  }, [jsonData, selectedNode?.jsonPointer, selectedNode?.kind]);
+  const selectedSemanticHints = useMemo(() => {
+    if (!selectedNode || selectedNode.kind !== 'string') return [];
+
+    try {
+      return getJsonStringSemanticHints(getJsonTreeNodeValue(jsonData, selectedNode.jsonPointer));
+    } catch {
+      return [];
     }
   }, [jsonData, selectedNode?.jsonPointer, selectedNode?.kind]);
 
@@ -418,6 +437,23 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
           <span className="truncate font-mono text-gray-300" title={selectedNode.valuePreview}>
             {selectedNode.valuePreview}
           </span>
+          {selectedSemanticHints.length > 0 && (
+            <>
+              <span className="text-gray-500">语义</span>
+              <span data-tour="structure-nav-semantic-hints" className="flex min-w-0 flex-wrap items-center gap-1">
+                {selectedSemanticHints.map(hint => (
+                  <span
+                    key={`${hint.kind}-${hint.detail}`}
+                    className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded border px-1.5 py-0.5 ${getSemanticHintClassName(hint.kind)}`}
+                    title={hint.detail}
+                  >
+                    <span className="shrink-0">{hint.label}</span>
+                    <span className="min-w-0 truncate font-mono text-[10px] opacity-80">{hint.detail}</span>
+                  </span>
+                ))}
+              </span>
+            </>
+          )}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <button
