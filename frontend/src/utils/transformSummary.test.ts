@@ -51,11 +51,12 @@ describe('transformSummary', () => {
         url: 0,
         base64: 1,
         nonReversible: 1,
+        paramStages: 1,
       },
       warningCount: 0,
     });
     expect(formatTransformContextSummary(result.context)).toBe(
-      '深度解析: 展开 3 处，Scheme 2 (CMD 1 / Base64 1)，嵌套 JSON 1，不可逆 1'
+      '深度解析: 展开 3 处，Scheme 2 (CMD 1 / Base64 1)，嵌套 JSON 1，不可逆 1，参数层 1'
     );
 
     const report = buildTransformContextReport(result.context);
@@ -1564,7 +1565,7 @@ describe('transformSummary', () => {
 
     expect(report.summary.placeholderCount).toBe(1);
     expect(formatTransformContextSummary(result.context)).toBe(
-      '深度解析: 展开 1 处，Scheme 1 (CMD 1)，占位符 1'
+      '深度解析: 展开 1 处，Scheme 1 (CMD 1)，参数层 1，占位符 1'
     );
     expect(report.coverage).toMatchObject({
       score: 100,
@@ -1706,8 +1707,9 @@ describe('transformSummary', () => {
 
     const filteredText = formatTransformReportViewText(report, extraView, 'extraParam');
     expect(filteredText).toContain('筛选: extraParam');
-    expect(filteredText).toContain('筛选结果: 展开 1/2，内部CMD字段 1/2，资源字段 0/0，占位符 1/4，待检查 0/0，跳过 0/0');
+    expect(filteredText).toContain('筛选结果: 展开 1/2，内部CMD字段 1/2，资源字段 0/0，占位符 1/4，参数层 1/2，参数修复 0/0，待检查 0/0，跳过 0/0');
     expect(filteredText).toContain('- $.extra[0].v: CMD 参数 · 可回写');
+    expect(filteredText).toContain('参数分层: 1 个（cmd）');
     expect(filteredText).toContain('- __CONVERT_CMD__ ×1:');
     expect(filteredText).toContain('业务字段: extraParam');
     expect(filteredText).toContain('$.extra[0].v.cmd.third');
@@ -2140,7 +2142,7 @@ describe('transformSummary', () => {
     expect(summaryText).toContain('深度解析诊断摘要');
     expect(summaryText).toContain(`工具版本: ${APP_VERSION_LABEL}`);
     expect(summaryText).toContain('覆盖: 解析覆盖 50%，还有疑似结构化内容未完全展开。');
-    expect(summaryText).toContain('规模: 展开 0/0，CMD结构 0/0，内部CMD字段 0/0，资源字段 0/0，占位符 1/1，待检查 1/1，跳过 1/1');
+    expect(summaryText).toContain('规模: 展开 0/0，CMD结构 0/0，内部CMD字段 0/0，资源字段 0/0，占位符 1/1，参数层 0/0，参数修复 0/0，待检查 1/1，跳过 1/1');
     expect(summaryText).toContain('- baiduboxapp://v7/vendor/ad/deeplink ×3（来源记录 2）');
     expect(summaryText).toContain('- panel_cmd ×2（来源记录 1）');
     expect(summaryText).toContain('- __CONVERT_CMD__ ×1（来源 1）');
@@ -2197,6 +2199,67 @@ describe('transformSummary', () => {
     expect(qualitySnapshotText).not.toContain('raw=%7B%22nid%22%3A123%7D');
     expect(qualitySnapshotText).not.toContain('button_cmd=__CONVERT_CMD__');
     expect(qualitySnapshotText).not.toContain('cmd=xxxxxxxx');
+  });
+
+  it('深度解析质量快照汇总参数分层修复且不暴露参数原值', () => {
+    const brokenParamsScheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7b%22phone%22%3a%2213718164578%22%2c%22extInfo%22%3a%22AFDXXX%22%2c%22numberUrl%22%3a%22SECRET_NUMBER_URL%22%2c%22logUrl%22%3a%22SECRET_LOG_URL%22%2ctype%22%3a%221%22%7d';
+    const result = deepParseWithContext(JSON.stringify({
+      scheme: brokenParamsScheme,
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const reportView = buildTransformReportView(report, '');
+    const diagnosticText = formatTransformDiagnosticSummaryText(report, reportView, '');
+    const collaborationText = formatTransformCollaborationReportText(report, reportView, '');
+    const qualitySnapshotText = formatTransformQualitySnapshotJsonText(report, reportView, '');
+    const qualitySnapshot = JSON.parse(qualitySnapshotText);
+
+    expect(report.summary.schemeCounts.paramStages).toBe(1);
+    expect(report.summary.schemeCounts.paramStageRepairHints).toBe(1);
+    expect(report.summary.schemeCounts.nonReversibleParamStages).toBe(1);
+    expect(report.records[0].schemeParamStageSummary).toMatchObject({
+      total: 1,
+      repairHints: 1,
+      nonReversible: 1,
+      sources: [{ key: 'query', count: 1 }],
+      keys: [{ key: 'params', count: 1 }],
+      repairHintLabels: [{ key: 'Loose JSON 已补齐字段引号/单引号/尾逗号', count: 1 }],
+    });
+    expect(qualitySnapshot.totals).toMatchObject({
+      schemeParamStages: 1,
+      schemeParamStageRepairHints: 1,
+      nonReversibleParamStages: 1,
+    });
+    expect(qualitySnapshot.filtered).toMatchObject({
+      schemeParamStages: 1,
+      schemeParamStageRepairHints: 1,
+      nonReversibleParamStages: 1,
+    });
+    expect(qualitySnapshot.hotspots.schemeParamStageSources).toEqual([
+      { key: 'query', count: 1, paths: ['$.scheme'] },
+    ]);
+    expect(qualitySnapshot.hotspots.schemeParamStageKeys).toEqual([
+      { key: 'params', count: 1, paths: ['$.scheme'] },
+    ]);
+    expect(qualitySnapshot.hotspots.schemeParamStageRepairHints).toEqual([
+      { key: 'Loose JSON 已补齐字段引号/单引号/尾逗号', count: 1, paths: ['$.scheme'] },
+    ]);
+    expect(diagnosticText).toContain('参数层 1/1');
+    expect(diagnosticText).toContain('参数修复 1/1');
+    expect(diagnosticText).toContain('参数分层修复 Top:');
+    expect(collaborationText).toContain('参数层 1/1');
+    expect(collaborationText).toContain('参数修复 1/1');
+    expect(collaborationText).toContain('参数分层修复 Top:');
+
+    const exportedText = `${qualitySnapshotText}\n${diagnosticText}\n${collaborationText}`;
+    expect(exportedText).not.toContain('13718164578');
+    expect(exportedText).not.toContain('AFDXXX');
+    expect(exportedText).not.toContain('SECRET_NUMBER_URL');
+    expect(exportedText).not.toContain('SECRET_LOG_URL');
+    expect(exportedText).not.toContain('%7b%22phone');
+    expect(exportedText).not.toContain('"raw"');
+    expect(exportedText).not.toContain('"urlDecoded"');
+    expect(exportedText).not.toContain('"parsed"');
+    expect(exportedText).not.toContain('"reencoded"');
   });
 
   it('协作排查报告合并质量要点和 cmdHandler 对齐信息', () => {

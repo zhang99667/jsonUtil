@@ -2,6 +2,8 @@ import type {
   JsonValue,
   PathTransformRecord,
   TransformContext,
+  TransformSchemeParamStageSummary,
+  TransformSchemeParamStageSummaryBucket,
   TransformStep,
   TransformStepType,
   TransformWarning,
@@ -26,6 +28,9 @@ export interface TransformContextSummary {
     url: number;
     base64: number;
     nonReversible: number;
+    paramStages?: number;
+    paramStageRepairHints?: number;
+    nonReversibleParamStages?: number;
   };
   warningCount: number;
   unresolvedCount: number;
@@ -71,6 +76,7 @@ export interface TransformReportRecord {
   cmdStructureFocusLabel?: string;
   stepCount: number;
   hasNonReversibleScheme: boolean;
+  schemeParamStageSummary?: TransformSchemeParamStageSummary;
 }
 
 export interface TransformReportDecodedPath {
@@ -220,6 +226,9 @@ export interface TransformReportView {
   filteredWarningCount: number;
   filteredUnresolvedCount: number;
   filteredPlaceholderCount: number;
+  filteredSchemeParamStageCount: number;
+  filteredSchemeParamStageRepairHintCount: number;
+  filteredNonReversibleParamStageCount: number;
   filteredCmdStructureCount: number;
   filteredNestedCommandFieldCount: number;
   filteredNestedResourceFieldCount: number;
@@ -227,6 +236,9 @@ export interface TransformReportView {
   totalWarningCount: number;
   totalUnresolvedCount: number;
   totalPlaceholderCount: number;
+  totalSchemeParamStageCount: number;
+  totalSchemeParamStageRepairHintCount: number;
+  totalNonReversibleParamStageCount: number;
   totalCmdStructureCount: number;
   totalNestedCommandFieldCount: number;
   totalNestedResourceFieldCount: number;
@@ -357,6 +369,9 @@ export interface TransformQualitySnapshot {
     nestedCommandFields: number;
     nestedResourceFields: number;
     runtimePlaceholders: number;
+    schemeParamStages: number;
+    schemeParamStageRepairHints: number;
+    nonReversibleParamStages: number;
     unresolved: number;
     warnings: number;
   };
@@ -366,6 +381,9 @@ export interface TransformQualitySnapshot {
     nestedCommandFields: number;
     nestedResourceFields: number;
     runtimePlaceholders: number;
+    schemeParamStages: number;
+    schemeParamStageRepairHints: number;
+    nonReversibleParamStages: number;
     unresolved: number;
     warnings: number;
   };
@@ -380,6 +398,9 @@ export interface TransformQualitySnapshot {
     warningReasons: TransformQualitySnapshotBucket[];
     warningTypes: TransformQualitySnapshotBucket[];
     runtimePlaceholders: TransformQualitySnapshotBucket[];
+    schemeParamStageSources: TransformQualitySnapshotBucket[];
+    schemeParamStageKeys: TransformQualitySnapshotBucket[];
+    schemeParamStageRepairHints: TransformQualitySnapshotBucket[];
   };
   truncation: {
     records: boolean;
@@ -1497,6 +1518,7 @@ const matchesReportRecord = (
   (record.commandSchema ? includesQuery(getCommandSchemaOrigin(record.commandSchema), normalizedQuery) : false) ||
   includesQuery(record.labels.join(' '), normalizedQuery) ||
   includesQuery(record.insights.join(' '), normalizedQuery) ||
+  includesQuery(getSchemeParamStageSearchText(record.schemeParamStageSummary), normalizedQuery) ||
   (record.hasCmdStructure ? includesQuery(CMD_STRUCTURE_SEARCH_TEXT, normalizedQuery) : false) ||
   (record.nestedCommandFieldCount > 0 ? includesQuery(NESTED_CMD_SEARCH_TEXT, normalizedQuery) : false) ||
   ((record.nestedResourceFieldCount || 0) > 0 ? includesQuery(NESTED_RESOURCE_SEARCH_TEXT, normalizedQuery) : false) ||
@@ -1747,6 +1769,116 @@ const buildRuntimePlaceholderGroups = (
   }).sort((left, right) => (
     right.count - left.count || left.value.localeCompare(right.value)
   ));
+};
+
+const addSchemeParamStageBuckets = (
+  target: Map<string, number>,
+  buckets: TransformSchemeParamStageSummaryBucket[]
+) => {
+  buckets.forEach(bucket => {
+    target.set(bucket.key, (target.get(bucket.key) || 0) + bucket.count);
+  });
+};
+
+const buildSchemeParamStageBucketsFromMap = (
+  bucketMap: Map<string, number>
+): TransformSchemeParamStageSummaryBucket[] => (
+  Array.from(bucketMap.entries())
+    .map(([key, count]) => ({ key, count }))
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
+    .slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT)
+);
+
+const getRecordSchemeParamStageSummary = (
+  record: PathTransformRecord
+): TransformSchemeParamStageSummary | undefined => {
+  const summaries = record.steps
+    .map(step => step.schemeParamStageSummary)
+    .filter((summary): summary is TransformSchemeParamStageSummary => Boolean(summary));
+  if (summaries.length === 0) return undefined;
+
+  const sources = new Map<string, number>();
+  const keys = new Map<string, number>();
+  const repairHintLabels = new Map<string, number>();
+  const samples: TransformSchemeParamStageSummary['samples'] = [];
+
+  summaries.forEach(summary => {
+    addSchemeParamStageBuckets(sources, summary.sources);
+    addSchemeParamStageBuckets(keys, summary.keys);
+    addSchemeParamStageBuckets(repairHintLabels, summary.repairHintLabels);
+    if (samples.length < DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT) {
+      samples.push(...summary.samples.slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT - samples.length));
+    }
+  });
+
+  return {
+    total: summaries.reduce((count, summary) => count + summary.total, 0),
+    repairHints: summaries.reduce((count, summary) => count + summary.repairHints, 0),
+    nonReversible: summaries.reduce((count, summary) => count + summary.nonReversible, 0),
+    sources: buildSchemeParamStageBucketsFromMap(sources),
+    keys: buildSchemeParamStageBucketsFromMap(keys),
+    repairHintLabels: buildSchemeParamStageBucketsFromMap(repairHintLabels),
+    samples,
+  };
+};
+
+const sumSchemeParamStageCount = (records: TransformReportRecord[]): number => (
+  records.reduce((count, record) => count + (record.schemeParamStageSummary?.total || 0), 0)
+);
+
+const sumSchemeParamStageRepairHintCount = (records: TransformReportRecord[]): number => (
+  records.reduce((count, record) => count + (record.schemeParamStageSummary?.repairHints || 0), 0)
+);
+
+const sumNonReversibleParamStageCount = (records: TransformReportRecord[]): number => (
+  records.reduce((count, record) => count + (record.schemeParamStageSummary?.nonReversible || 0), 0)
+);
+
+const buildSchemeParamStageQualityBuckets = (
+  records: TransformReportRecord[],
+  getBuckets: (summary: TransformSchemeParamStageSummary) => TransformSchemeParamStageSummaryBucket[]
+): TransformQualitySnapshotBucket[] => {
+  const bucketMap = new Map<string, { count: number; paths: string[] }>();
+
+  records.forEach(record => {
+    const summary = record.schemeParamStageSummary;
+    if (!summary) return;
+
+    getBuckets(summary).forEach(summaryBucket => {
+      const bucket = bucketMap.get(summaryBucket.key) || { count: 0, paths: [] };
+      bucket.count += summaryBucket.count;
+      if (bucket.paths.length < DEFAULT_QUALITY_SNAPSHOT_PATH_LIMIT && !bucket.paths.includes(record.path)) {
+        bucket.paths.push(record.path);
+      }
+      bucketMap.set(summaryBucket.key, bucket);
+    });
+  });
+
+  return Array.from(bucketMap.entries())
+    .map(([key, bucket]) => ({ key, count: bucket.count, paths: bucket.paths }))
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
+    .slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT);
+};
+
+const getSchemeParamStageSearchText = (
+  summary: TransformSchemeParamStageSummary | undefined
+): string => {
+  if (!summary) return '';
+
+  return [
+    '参数层',
+    'param stage',
+    ...summary.sources.map(bucket => bucket.key),
+    ...summary.keys.map(bucket => bucket.key),
+    ...summary.repairHintLabels.map(bucket => bucket.key),
+    ...summary.samples.flatMap(sample => [
+      sample.path,
+      sample.key,
+      sample.source,
+      sample.repairHint || '',
+      sample.reversible ? '可回写' : '不可回写',
+    ]),
+  ].filter(Boolean).join(' ');
 };
 
 const buildTopNestedCommandFieldGroups = (
@@ -2189,6 +2321,9 @@ export const summarizeTransformContext = (
       url: 0,
       base64: 0,
       nonReversible: 0,
+      paramStages: 0,
+      paramStageRepairHints: 0,
+      nonReversibleParamStages: 0,
     },
     warningCount: context.warnings?.length || 0,
     unresolvedCount: context.unresolvedCandidates?.length || 0,
@@ -2211,6 +2346,16 @@ export const summarizeTransformContext = (
 
       if (step.originalSchemeReversible === false) {
         summary.schemeCounts.nonReversible += 1;
+      }
+
+      if (step.schemeParamStageSummary) {
+        summary.schemeCounts.paramStages = (summary.schemeCounts.paramStages || 0) + step.schemeParamStageSummary.total;
+        summary.schemeCounts.paramStageRepairHints = (
+          summary.schemeCounts.paramStageRepairHints || 0
+        ) + step.schemeParamStageSummary.repairHints;
+        summary.schemeCounts.nonReversibleParamStages = (
+          summary.schemeCounts.nonReversibleParamStages || 0
+        ) + step.schemeParamStageSummary.nonReversible;
       }
     });
   });
@@ -2249,6 +2394,13 @@ export const formatTransformContextSummary = (
   if (urlDecodeCount > 0) parts.push(`URL 解码 ${urlDecodeCount}`);
   if (unicodeDecodeCount > 0) parts.push(`Unicode ${unicodeDecodeCount}`);
   if (summary.schemeCounts.nonReversible > 0) parts.push(`不可逆 ${summary.schemeCounts.nonReversible}`);
+  if ((summary.schemeCounts.paramStages || 0) > 0) parts.push(`参数层 ${summary.schemeCounts.paramStages}`);
+  if ((summary.schemeCounts.paramStageRepairHints || 0) > 0) {
+    parts.push(`参数修复 ${summary.schemeCounts.paramStageRepairHints}`);
+  }
+  if ((summary.schemeCounts.nonReversibleParamStages || 0) > 0) {
+    parts.push(`参数不可回写 ${summary.schemeCounts.nonReversibleParamStages}`);
+  }
   if (summary.warningCount > 0) parts.push(`跳过 ${summary.warningCount}`);
   if (summary.unresolvedCount > 0) parts.push(`待检查 ${summary.unresolvedCount}`);
   if (summary.placeholderCount > 0) parts.push(`占位符 ${summary.placeholderCount}`);
@@ -2259,7 +2411,7 @@ export const formatTransformContextSummary = (
 export const buildTransformContextReport = (
   context: TransformContext
 ): TransformContextReport => {
-  const records: TransformReportRecord[] = Array.from(context.records.values()).map(record => {
+	  const records: TransformReportRecord[] = Array.from(context.records.values()).map(record => {
     const {
       decodedPaths,
       decodedPathCount,
@@ -2267,9 +2419,10 @@ export const buildTransformContextReport = (
       hasMoreDecodedPaths,
     } = buildDecodedPaths(record);
     const decodedSearchData = buildDecodedSearchData(record);
-    const cmdStructureSource = getRecordCmdStructureSource(record);
-    const insightData = buildRecordInsightData(record);
-    const commandSchema = getRecordCommandSchema(record);
+	    const cmdStructureSource = getRecordCmdStructureSource(record);
+	    const insightData = buildRecordInsightData(record);
+	    const commandSchema = getRecordCommandSchema(record);
+	    const schemeParamStageSummary = getRecordSchemeParamStageSummary(record);
     const commandSchemaRows = cmdStructureSource
       ? collectCmdHandlerCommandSchemaRows(
           cmdStructureSource.decodedValue,
@@ -2301,12 +2454,13 @@ export const buildTransformContextReport = (
       ...(cmdStructureSource
         ? { getCmdStructureCopyText: createRecordCmdStructureCopyTextGetter(cmdStructureSource, record.path) }
         : {}),
-      stepCount: record.steps.length,
-      hasNonReversibleScheme: record.steps.some(
-        step => step.type === 'scheme_decode' && step.originalSchemeReversible === false
-      ),
-    };
-  });
+	      stepCount: record.steps.length,
+	      hasNonReversibleScheme: record.steps.some(
+	        step => step.type === 'scheme_decode' && step.originalSchemeReversible === false
+	      ),
+	      ...(schemeParamStageSummary ? { schemeParamStageSummary } : {}),
+	    };
+	  });
   const cmdStructureCount = records.filter(record => record.hasCmdStructure).length;
   const nestedCommandFieldCount = records.reduce((count, record) => (
     count + record.nestedCommandFieldCount
@@ -2502,17 +2656,34 @@ const appendReportRecordLines = (
       if (record.insights.length > 0) {
         lines.push(`  解析线索: ${record.insights.join('；')}`);
       }
-      if (record.commandParamCount !== undefined) {
-        const visibleKeys = record.commandParamKeys || [];
-        const hiddenKeyCount = Math.max(record.commandParamCount - visibleKeys.length, 0);
-        lines.push(
-          `  cmdParams: ${record.commandParamCount} 个顶层参数${
-            visibleKeys.length > 0
-              ? `（${visibleKeys.join(', ')}${hiddenKeyCount > 0 ? ` ... +${hiddenKeyCount}` : ''}）`
-              : ''
-          }`
-        );
-      }
+	      if (record.commandParamCount !== undefined) {
+	        const visibleKeys = record.commandParamKeys || [];
+	        const hiddenKeyCount = Math.max(record.commandParamCount - visibleKeys.length, 0);
+	        lines.push(
+	          `  cmdParams: ${record.commandParamCount} 个顶层参数${
+	            visibleKeys.length > 0
+	              ? `（${visibleKeys.join(', ')}${hiddenKeyCount > 0 ? ` ... +${hiddenKeyCount}` : ''}）`
+	              : ''
+	          }`
+	        );
+	      }
+	      if (record.schemeParamStageSummary) {
+	        const visibleKeys = record.schemeParamStageSummary.keys.map(bucket => bucket.key);
+	        const hiddenKeyCount = Math.max(record.schemeParamStageSummary.total - visibleKeys.length, 0);
+	        lines.push(
+	          `  参数分层: ${record.schemeParamStageSummary.total} 个${
+	            visibleKeys.length > 0
+	              ? `（${visibleKeys.join(', ')}${hiddenKeyCount > 0 ? ` ... +${hiddenKeyCount}` : ''}）`
+	              : ''
+	          }`
+	        );
+	        if (record.schemeParamStageSummary.repairHints > 0) {
+	          lines.push(`  参数修复提示: ${record.schemeParamStageSummary.repairHints}`);
+	        }
+	        if (record.schemeParamStageSummary.nonReversible > 0) {
+	          lines.push(`  参数不可回写: ${record.schemeParamStageSummary.nonReversible}`);
+	        }
+	      }
       if (record.commandSchemaRows?.length) {
         const rows = record.commandSchemaRows.slice(0, DEFAULT_COMMAND_SCHEMA_ROW_LIMIT);
         lines.push(`  CMD Schema路径: ${rows.map(row => `${row.path}=${row.schema}`).join('；')}`);
@@ -2642,6 +2813,12 @@ export const buildTransformReportView = (
   const filteredNestedResourceFieldCount = filteredRecordViews.reduce((count, record) => (
     count + (record.nestedResourceFieldCount || 0)
   ), 0);
+  const filteredSchemeParamStageCount = sumSchemeParamStageCount(filteredRecordViews);
+  const filteredSchemeParamStageRepairHintCount = sumSchemeParamStageRepairHintCount(filteredRecordViews);
+  const filteredNonReversibleParamStageCount = sumNonReversibleParamStageCount(filteredRecordViews);
+  const totalSchemeParamStageCount = sumSchemeParamStageCount(report.records);
+  const totalSchemeParamStageRepairHintCount = sumSchemeParamStageRepairHintCount(report.records);
+  const totalNonReversibleParamStageCount = sumNonReversibleParamStageCount(report.records);
 
   return {
     records: filteredRecordViews.slice(0, recordLimit),
@@ -2654,6 +2831,9 @@ export const buildTransformReportView = (
     filteredWarningCount: filteredWarnings.length,
     filteredUnresolvedCount: filteredUnresolved.length,
     filteredPlaceholderCount: filteredPlaceholders.length,
+    filteredSchemeParamStageCount,
+    filteredSchemeParamStageRepairHintCount,
+    filteredNonReversibleParamStageCount,
     filteredCmdStructureCount,
     filteredNestedCommandFieldCount,
     filteredNestedResourceFieldCount,
@@ -2661,6 +2841,9 @@ export const buildTransformReportView = (
     totalWarningCount: report.warnings.length,
     totalUnresolvedCount: report.unresolvedCandidates.length,
     totalPlaceholderCount: report.runtimePlaceholders.length,
+    totalSchemeParamStageCount,
+    totalSchemeParamStageRepairHintCount,
+    totalNonReversibleParamStageCount,
     totalCmdStructureCount: report.cmdStructureCount,
     totalNestedCommandFieldCount: report.nestedCommandFieldCount,
     totalNestedResourceFieldCount: report.nestedResourceFieldCount || 0,
@@ -2682,7 +2865,7 @@ export const formatTransformReportViewText = (
     report.summaryText || '深度解析: 无展开记录',
     `工具版本: ${APP_VERSION_LABEL}`,
     `筛选: ${normalizedQuery || '全部'}`,
-    `筛选结果: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，资源字段 ${reportView.filteredNestedResourceFieldCount}/${reportView.totalNestedResourceFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
+    `筛选结果: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，资源字段 ${reportView.filteredNestedResourceFieldCount}/${reportView.totalNestedResourceFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，参数层 ${reportView.filteredSchemeParamStageCount}/${reportView.totalSchemeParamStageCount}，参数修复 ${reportView.filteredSchemeParamStageRepairHintCount}/${reportView.totalSchemeParamStageRepairHintCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
   ];
 
   if (
@@ -2733,7 +2916,7 @@ export const formatTransformDiagnosticSummaryText = (
     report.summaryText || '深度解析: 无展开记录',
     `筛选: ${normalizedQuery || '全部'}`,
     `覆盖: ${report.coverage.label}，${report.coverage.description}`,
-    `规模: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，CMD结构 ${reportView.filteredCmdStructureCount}/${reportView.totalCmdStructureCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，资源字段 ${reportView.filteredNestedResourceFieldCount}/${reportView.totalNestedResourceFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
+    `规模: 展开 ${reportView.filteredRecordCount}/${reportView.totalRecordCount}，CMD结构 ${reportView.filteredCmdStructureCount}/${reportView.totalCmdStructureCount}，内部CMD字段 ${reportView.filteredNestedCommandFieldCount}/${reportView.totalNestedCommandFieldCount}，资源字段 ${reportView.filteredNestedResourceFieldCount}/${reportView.totalNestedResourceFieldCount}，占位符 ${reportView.filteredPlaceholderCount}/${reportView.totalPlaceholderCount}，参数层 ${reportView.filteredSchemeParamStageCount}/${reportView.totalSchemeParamStageCount}，参数修复 ${reportView.filteredSchemeParamStageRepairHintCount}/${reportView.totalSchemeParamStageRepairHintCount}，待检查 ${reportView.filteredUnresolvedCount}/${reportView.totalUnresolvedCount}，跳过 ${reportView.filteredWarningCount}/${reportView.totalWarningCount}`,
   ];
 
   if (report.topCommandSchemas?.length) {
@@ -2778,6 +2961,26 @@ export const formatTransformDiagnosticSummaryText = (
     });
   }
 
+  const paramStageRepairHintBuckets = buildSchemeParamStageQualityBuckets(
+    reportView.records,
+    summary => summary.repairHintLabels
+  );
+  const paramStageKeyBuckets = buildSchemeParamStageQualityBuckets(
+    reportView.records,
+    summary => summary.keys
+  );
+  if (paramStageRepairHintBuckets.length > 0) {
+    lines.push('', '当前参数分层修复 Top:');
+    paramStageRepairHintBuckets.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(bucket => {
+      lines.push(`- ${bucket.key} ×${bucket.count}（来源 ${bucket.paths.length}）`);
+    });
+  } else if (paramStageKeyBuckets.length > 0) {
+    lines.push('', '当前参数分层 Key Top:');
+    paramStageKeyBuckets.slice(0, DEFAULT_DIAGNOSTIC_TOP_LIMIT).forEach(bucket => {
+      lines.push(`- ${bucket.key} ×${bucket.count}（来源 ${bucket.paths.length}）`);
+    });
+  }
+
   if (reportView.unresolvedCandidates.length > 0) {
     lines.push('', '当前待检查样例:');
     reportView.unresolvedCandidates.slice(0, DEFAULT_DIAGNOSTIC_SAMPLE_LIMIT).forEach(candidate => {
@@ -2811,10 +3014,18 @@ export const formatTransformDiagnosticSummaryText = (
   if (reportView.filteredPlaceholderCount > 0) {
     lines.push('- 运行时占位符通常不是解析失败，可按来源路径确认实际替换链路');
   }
+  if (reportView.filteredSchemeParamStageRepairHintCount > 0) {
+    lines.push('- 参数分层存在修复提示，建议核对原始值、URL Decode、JSON 解析链路后沉淀回归样本');
+  }
+  if (reportView.filteredNonReversibleParamStageCount > 0) {
+    lines.push('- 存在不可回写参数层，复制回写前需确认该字段是否只用于只读排查');
+  }
   if (
     reportView.filteredWarningCount === 0 &&
     reportView.filteredUnresolvedCount === 0 &&
-    reportView.filteredPlaceholderCount === 0
+    reportView.filteredPlaceholderCount === 0 &&
+    reportView.filteredSchemeParamStageRepairHintCount === 0 &&
+    reportView.filteredNonReversibleParamStageCount === 0
   ) {
     lines.push('- 当前筛选未发现跳过、待检查或运行时占位符，可重点核对 CMD Schema 与业务预期是否一致');
   }
@@ -2862,6 +3073,12 @@ const buildQualitySnapshotRecommendations = (
   if (reportView.filteredPlaceholderCount > 0) {
     recommendations.push('运行时占位符按来源路径确认真实替换链路，避免误判为解析失败');
   }
+  if (reportView.filteredSchemeParamStageRepairHintCount > 0) {
+    recommendations.push('参数分层存在修复提示，建议核对原始值、URL Decode、JSON 解析链路后沉淀回归样本');
+  }
+  if (reportView.filteredNonReversibleParamStageCount > 0) {
+    recommendations.push('存在不可回写参数层，复制回写前需确认该字段是否只用于只读排查');
+  }
   if (reportView.filteredCmdStructureCount > 0) {
     recommendations.push('对关键 CMD 结构粘贴 cmdHandler 输出做页面内对比，优先补齐缺失路径和值差异');
   }
@@ -2888,19 +3105,25 @@ export const buildTransformQualitySnapshot = (
     records: reportView.totalRecordCount,
     cmdStructures: reportView.totalCmdStructureCount,
     nestedCommandFields: reportView.totalNestedCommandFieldCount,
-    nestedResourceFields: reportView.totalNestedResourceFieldCount,
-    runtimePlaceholders: reportView.totalPlaceholderCount,
-    unresolved: reportView.totalUnresolvedCount,
-    warnings: reportView.totalWarningCount,
+	    nestedResourceFields: reportView.totalNestedResourceFieldCount,
+	    runtimePlaceholders: reportView.totalPlaceholderCount,
+	    schemeParamStages: reportView.totalSchemeParamStageCount,
+	    schemeParamStageRepairHints: reportView.totalSchemeParamStageRepairHintCount,
+	    nonReversibleParamStages: reportView.totalNonReversibleParamStageCount,
+	    unresolved: reportView.totalUnresolvedCount,
+	    warnings: reportView.totalWarningCount,
   },
   filtered: {
     records: reportView.filteredRecordCount,
     cmdStructures: reportView.filteredCmdStructureCount,
     nestedCommandFields: reportView.filteredNestedCommandFieldCount,
-    nestedResourceFields: reportView.filteredNestedResourceFieldCount,
-    runtimePlaceholders: reportView.filteredPlaceholderCount,
-    unresolved: reportView.filteredUnresolvedCount,
-    warnings: reportView.filteredWarningCount,
+	    nestedResourceFields: reportView.filteredNestedResourceFieldCount,
+	    runtimePlaceholders: reportView.filteredPlaceholderCount,
+	    schemeParamStages: reportView.filteredSchemeParamStageCount,
+	    schemeParamStageRepairHints: reportView.filteredSchemeParamStageRepairHintCount,
+	    nonReversibleParamStages: reportView.filteredNonReversibleParamStageCount,
+	    unresolved: reportView.filteredUnresolvedCount,
+	    warnings: reportView.filteredWarningCount,
   },
   hotspots: {
     topCommandSchemas: (report.topCommandSchemas || []).slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT),
@@ -2924,14 +3147,26 @@ export const buildTransformQualitySnapshot = (
       warning => warning.type,
       warning => warning.path
     ),
-    runtimePlaceholders: reportView.runtimePlaceholderGroups
-      .slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT)
-      .map(group => ({
-        key: group.value,
-        count: group.count,
-        paths: group.sources.slice(0, DEFAULT_QUALITY_SNAPSHOT_PATH_LIMIT).map(source => source.sourcePath),
-      })),
-  },
+	    runtimePlaceholders: reportView.runtimePlaceholderGroups
+	      .slice(0, DEFAULT_QUALITY_SNAPSHOT_TOP_LIMIT)
+	      .map(group => ({
+	        key: group.value,
+	        count: group.count,
+	        paths: group.sources.slice(0, DEFAULT_QUALITY_SNAPSHOT_PATH_LIMIT).map(source => source.sourcePath),
+	      })),
+	    schemeParamStageSources: buildSchemeParamStageQualityBuckets(
+	      reportView.records,
+	      summary => summary.sources
+	    ),
+	    schemeParamStageKeys: buildSchemeParamStageQualityBuckets(
+	      reportView.records,
+	      summary => summary.keys
+	    ),
+	    schemeParamStageRepairHints: buildSchemeParamStageQualityBuckets(
+	      reportView.records,
+	      summary => summary.repairHintLabels
+	    ),
+	  },
   truncation: {
     records: reportView.isRecordTruncated,
     cmdStructures: reportView.isCmdStructureTruncated,
@@ -2957,6 +3192,9 @@ const QUALITY_DELTA_METRICS: Array<{
   { key: 'nestedCommandFields', label: '内部CMD字段' },
   { key: 'nestedResourceFields', label: '资源字段' },
   { key: 'runtimePlaceholders', label: '占位符' },
+  { key: 'schemeParamStages', label: '参数层' },
+  { key: 'schemeParamStageRepairHints', label: '参数修复' },
+  { key: 'nonReversibleParamStages', label: '参数不可回写' },
   { key: 'unresolved', label: '待检查' },
   { key: 'warnings', label: '跳过' },
 ];
@@ -3022,8 +3260,8 @@ export const formatTransformCollaborationReportText = (
     '',
     '二、质量快照要点',
     `- 覆盖: ${qualitySnapshot.coverage.score} (${qualitySnapshot.coverage.level})，${qualitySnapshot.coverage.description}`,
-    `- 全量规模: 展开 ${qualitySnapshot.totals.records}，CMD结构 ${qualitySnapshot.totals.cmdStructures}，内部CMD字段 ${qualitySnapshot.totals.nestedCommandFields}，资源字段 ${qualitySnapshot.totals.nestedResourceFields}，占位符 ${qualitySnapshot.totals.runtimePlaceholders}，待检查 ${qualitySnapshot.totals.unresolved}，跳过 ${qualitySnapshot.totals.warnings}`,
-    `- 当前筛选: 展开 ${qualitySnapshot.filtered.records}，CMD结构 ${qualitySnapshot.filtered.cmdStructures}，内部CMD字段 ${qualitySnapshot.filtered.nestedCommandFields}，资源字段 ${qualitySnapshot.filtered.nestedResourceFields}，占位符 ${qualitySnapshot.filtered.runtimePlaceholders}，待检查 ${qualitySnapshot.filtered.unresolved}，跳过 ${qualitySnapshot.filtered.warnings}`,
+    `- 全量规模: 展开 ${qualitySnapshot.totals.records}，CMD结构 ${qualitySnapshot.totals.cmdStructures}，内部CMD字段 ${qualitySnapshot.totals.nestedCommandFields}，资源字段 ${qualitySnapshot.totals.nestedResourceFields}，占位符 ${qualitySnapshot.totals.runtimePlaceholders}，参数层 ${qualitySnapshot.totals.schemeParamStages}，参数修复 ${qualitySnapshot.totals.schemeParamStageRepairHints}，待检查 ${qualitySnapshot.totals.unresolved}，跳过 ${qualitySnapshot.totals.warnings}`,
+    `- 当前筛选: 展开 ${qualitySnapshot.filtered.records}，CMD结构 ${qualitySnapshot.filtered.cmdStructures}，内部CMD字段 ${qualitySnapshot.filtered.nestedCommandFields}，资源字段 ${qualitySnapshot.filtered.nestedResourceFields}，占位符 ${qualitySnapshot.filtered.runtimePlaceholders}，参数层 ${qualitySnapshot.filtered.schemeParamStages}，参数修复 ${qualitySnapshot.filtered.schemeParamStageRepairHints}，待检查 ${qualitySnapshot.filtered.unresolved}，跳过 ${qualitySnapshot.filtered.warnings}`,
   ];
 
   if (qualitySnapshot.hotspots.topCommandSchemas.length > 0) {
@@ -3050,6 +3288,18 @@ export const formatTransformCollaborationReportText = (
   if (qualitySnapshot.hotspots.topNestedCommandFields.length > 0) {
     lines.push('- 内部 CMD 字段 Top:');
     qualitySnapshot.hotspots.topNestedCommandFields.slice(0, 5).forEach(group => {
+      lines.push(`  - ${group.key} ×${group.count}`);
+    });
+  }
+
+  if (qualitySnapshot.hotspots.schemeParamStageRepairHints.length > 0) {
+    lines.push('- 参数分层修复 Top:');
+    qualitySnapshot.hotspots.schemeParamStageRepairHints.slice(0, 5).forEach(group => {
+      lines.push(`  - ${group.key} ×${group.count}`);
+    });
+  } else if (qualitySnapshot.hotspots.schemeParamStageKeys.length > 0) {
+    lines.push('- 参数分层 Key Top:');
+    qualitySnapshot.hotspots.schemeParamStageKeys.slice(0, 5).forEach(group => {
       lines.push(`  - ${group.key} ×${group.count}`);
     });
   }

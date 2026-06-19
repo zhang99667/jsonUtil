@@ -515,6 +515,20 @@ describe('deepParseWithContext', () => {
       type: 'scheme_decode',
       originalSchemeType: 'url',
     });
+    expect(result.context.records.get('$')?.steps[0].schemeParamStageSummary).toMatchObject({
+      total: 1,
+      repairHints: 0,
+      nonReversible: 0,
+      sources: [{ key: 'query', count: 1 }],
+      keys: [{ key: 'params', count: 1 }],
+    });
+    const paramStageSummaryText = JSON.stringify(result.context.records.get('$')?.steps[0].schemeParamStageSummary);
+    expect(paramStageSummaryText).not.toContain('400-805-8686');
+    expect(paramStageSummaryText).not.toContain('a433862f59552397');
+    expect(paramStageSummaryText).not.toContain('"raw"');
+    expect(paramStageSummaryText).not.toContain('"urlDecoded"');
+    expect(paramStageSummaryText).not.toContain('"parsed"');
+    expect(paramStageSummaryText).not.toContain('"reencoded"');
     expect(parsed.params).toMatchObject({
       phone: '400-805-8686',
       numberUrl: {

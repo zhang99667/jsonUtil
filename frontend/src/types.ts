@@ -123,6 +123,36 @@ export type TransformStepType =
   | 'unescape'        // 反转义
   | 'escape';         // 转义
 
+export interface TransformSchemeParamStageSummaryBucket {
+  key: string;
+  count: number;
+}
+
+export interface TransformSchemeParamStageSummarySample {
+  path: string;
+  key: string;
+  source: string;
+  lengths: {
+    encodedInput: number;
+    decodedInput: number;
+    expandedOutput: number;
+    encodedOutput: number;
+  };
+  reversible: boolean;
+  hasRepairHint: boolean;
+  repairHint?: string;
+}
+
+export interface TransformSchemeParamStageSummary {
+  total: number;
+  repairHints: number;
+  nonReversible: number;
+  sources: TransformSchemeParamStageSummaryBucket[];
+  keys: TransformSchemeParamStageSummaryBucket[];
+  repairHintLabels: TransformSchemeParamStageSummaryBucket[];
+  samples: TransformSchemeParamStageSummarySample[];
+}
+
 // 单步转换操作
 export interface TransformStep {
   type: TransformStepType;
@@ -135,6 +165,7 @@ export interface TransformStep {
   originalSchemeStringLiteral?: boolean; // 原始 Scheme 外层是否为 JSON 字符串字面量
   originalSchemeEscapedSlash?: boolean; // 原始 Scheme 是否包含 JSON 风格的斜杠转义
   decodedSchemeValue?: JsonValue; // 原始串对应的展开结果，用于无编辑时精确还原
+  schemeParamStageSummary?: TransformSchemeParamStageSummary; // Query 参数分层的脱敏摘要，不能包含原始参数值
 }
 
 // 单个路径的转换记录
