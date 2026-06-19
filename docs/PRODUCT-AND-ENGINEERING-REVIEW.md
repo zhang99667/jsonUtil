@@ -321,7 +321,7 @@ frontend/fixtures/scheme-corpus/
 - 路径级协作: 已支持复制带路径上下文的 Markdown 和 CSV 摘要，JSON 对比也支持按 JSONPath 前缀忽略噪声字段、复制 Path / Pointer 并定位修改或删除项的 SOURCE 原值；后续 Web 版可考虑 URL hash 定位到某个 JSONPath。
 - 图形证据: 复杂对象可导出结构缩略图或 Mermaid/图片，服务于排查报告和评审沟通，而不是把完整 JSON 截图贴出去。
 - 桌面效率: Electron 版可补剪贴板智能识别、打开历史、文件拖拽和系统快捷入口，强化“敏感数据不出本机”的定位。
-- 转换可信度: JSON 转 CSV/YAML/TS/Schema 后增加样本行数、丢失字段、动态 key、混合类型和截断提示，让转换结果更可审查；JSON Schema 生成已补长数组前段、尾段、分散点和稀疏字段代表行采样，后续可把采样摘要展示到面板中。
+- 转换可信度: JSON 转 CSV/YAML/TS/Schema 后增加样本行数、丢失字段、动态 key、混合类型和截断提示，让转换结果更可审查；JSON Schema 生成已补长数组前段、尾段、分散点和稀疏字段代表行采样，并在面板展示采样行数、稀疏字段命中、扫描上限和 required 策略摘要。
 
 ### 新 P0: 结构检查器
 

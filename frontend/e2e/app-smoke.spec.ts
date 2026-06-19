@@ -320,6 +320,30 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
   await expect(page.locator('[data-tour="source-editor"] .schema-issue-highlight')).toHaveCount(0);
 });
 
+test('JSON Schema 生成会展示长数组采样摘要', async ({ page }) => {
+  const items = Array.from({ length: 45 }, (_, index) => ({
+    id: index + 1,
+    title: `item-${index + 1}`,
+    ...(index === 35 ? { cmdSchema: 'makePhoneCall', traceId: 'late-trace' } : {}),
+  }));
+  await fillSourceEditor(page, JSON.stringify({ items }));
+  await page.locator('[data-tour="json-schema-button"]').click();
+
+  const schemaPanel = page.getByRole('dialog', { name: 'JSON Schema 校验' });
+  const schemaInput = schemaPanel.locator('[data-tour="json-schema-input"]');
+  await schemaPanel.locator('[data-tour="json-schema-generate"]').click();
+
+  const samplingSummary = schemaPanel.locator('[data-tour="json-schema-inference-summary"]');
+  await expect(samplingSummary).toContainText('1 个长数组使用采样推断');
+  await expect(samplingSummary).toContainText('$.items: 45 项中采样 25 项');
+  await expect(samplingSummary).toContainText('命中后段稀疏字段 cmdSchema、traceId');
+  await expect(samplingSummary).toContainText('required 按采样交集生成');
+  await expect(schemaInput).toHaveValue(/"cmdSchema"/);
+
+  await schemaInput.fill('{"type":"object"}');
+  await expect(schemaPanel.locator('[data-tour="json-schema-inference-summary"]')).toHaveCount(0);
+});
+
 test('浮动面板支持键盘关闭并恢复入口焦点', async ({ page }) => {
   const jsonPathButton = page.locator('[data-tour="jsonpath-button"]');
   await jsonPathButton.click();

@@ -1,6 +1,17 @@
 export interface JsonSchemaInferenceResult {
   schemaText?: string;
+  samplingSummaries?: JsonSchemaInferenceSamplingSummary[];
   error?: string;
+}
+
+export interface JsonSchemaInferenceSamplingSummary {
+  path: string;
+  totalItems: number;
+  sampledItems: number;
+  scannedItems: number;
+  sparseFieldKeys: string[];
+  isScanLimited: boolean;
+  requiredMode: JsonSchemaInferenceRequiredMode;
 }
 
 export type JsonSchemaInferenceRequiredMode = 'strict' | 'loose';
@@ -18,6 +29,21 @@ type InferredSchema = {
   required?: string[];
   items?: InferredSchema;
   additionalProperties?: boolean;
+};
+
+type ArraySampleEntry = {
+  index: number;
+  item: unknown;
+};
+
+type ArraySampleResult = {
+  entries: ArraySampleEntry[];
+  scannedItems: number;
+  sparseFieldKeys: string[];
+};
+
+type SchemaInferenceContext = {
+  samplingSummaries: JsonSchemaInferenceSamplingSummary[];
 };
 
 const MAX_SCHEMA_INFERENCE_DEPTH = 8;
@@ -48,6 +74,14 @@ const uniqueTypes = (types: JsonSchemaType[]): JsonSchemaType[] => {
   return [...new Set(normalized)].sort();
 };
 
+const appendJsonPathKey = (path: string, key: string): string => (
+  /^[A-Za-z_$][\w$]*$/.test(key)
+    ? `${path}.${key}`
+    : `${path}[${JSON.stringify(key)}]`
+);
+
+const appendJsonPathIndex = (path: string, index: number): string => `${path}[${index}]`;
+
 const addArraySampleIndex = (
   indices: Set<number>,
   index: number,
@@ -62,10 +96,17 @@ const collectRecordKeys = (value: unknown): string[] => (
   isRecord(value) ? Object.keys(value) : []
 );
 
-const getArraySampleItems = (value: unknown[]): unknown[] => {
-  if (value.length <= MAX_ARRAY_SAMPLE_ITEMS) return value;
+const getArraySampleEntries = (value: unknown[]): ArraySampleResult => {
+  if (value.length <= MAX_ARRAY_SAMPLE_ITEMS) {
+    return {
+      entries: value.map((item, index) => ({ index, item })),
+      scannedItems: value.length,
+      sparseFieldKeys: [],
+    };
+  }
 
   const indices = new Set<number>();
+  const sparseFieldKeys = new Set<string>();
 
   for (let index = 0; index < ARRAY_SAMPLE_FRONT_ITEMS; index += 1) {
     addArraySampleIndex(indices, index, value.length);
@@ -93,15 +134,21 @@ const getArraySampleItems = (value: unknown[]): unknown[] => {
   const scanLimit = Math.min(value.length, MAX_ARRAY_SPARSE_FIELD_SCAN_ITEMS);
   for (let index = 0; index < scanLimit && indices.size < MAX_ARRAY_SAMPLE_ITEMS; index += 1) {
     const keys = collectRecordKeys(value[index]);
-    if (!keys.some(key => !seenKeys.has(key))) continue;
+    const newKeys = keys.filter(key => !seenKeys.has(key));
+    if (newKeys.length === 0) continue;
 
     addArraySampleIndex(indices, index, value.length);
+    newKeys.forEach(key => sparseFieldKeys.add(key));
     keys.forEach(key => seenKeys.add(key));
   }
 
-  return [...indices]
-    .sort((left, right) => left - right)
-    .map(index => value[index]);
+  return {
+    entries: [...indices]
+      .sort((left, right) => left - right)
+      .map(index => ({ index, item: value[index] })),
+    scannedItems: scanLimit,
+    sparseFieldKeys: [...sparseFieldKeys].sort(),
+  };
 };
 
 const mergeTypeOnlySchemas = (schemas: InferredSchema[]): InferredSchema => {
@@ -208,7 +255,9 @@ const mergeInferredSchemas = (
 const inferSchema = (
   value: unknown,
   depth: number,
-  options: JsonSchemaInferenceOptions
+  options: JsonSchemaInferenceOptions,
+  path: string,
+  context: SchemaInferenceContext
 ): InferredSchema => {
   if (value === null) return { type: 'null' };
 
@@ -224,7 +273,22 @@ const inferSchema = (
       return { type: 'array', items: {} };
     }
 
-    const sampledItems = getArraySampleItems(value).map(item => inferSchema(item, depth + 1, options));
+    const sampleResult = getArraySampleEntries(value);
+    if (value.length > MAX_ARRAY_SAMPLE_ITEMS) {
+      context.samplingSummaries.push({
+        path,
+        totalItems: value.length,
+        sampledItems: sampleResult.entries.length,
+        scannedItems: sampleResult.scannedItems,
+        sparseFieldKeys: sampleResult.sparseFieldKeys,
+        isScanLimited: sampleResult.scannedItems < value.length,
+        requiredMode: options.requiredMode || 'strict',
+      });
+    }
+
+    const sampledItems = sampleResult.entries.map(({ index, item }) => (
+      inferSchema(item, depth + 1, options, appendJsonPathIndex(path, index), context)
+    ));
     return {
       type: 'array',
       items: sampledItems.length > 0 ? mergeInferredSchemas(sampledItems, options) : {},
@@ -237,7 +301,10 @@ const inferSchema = (
     }
 
     const properties = Object.fromEntries(
-      Object.entries(value).map(([key, child]) => [key, inferSchema(child, depth + 1, options)])
+      Object.entries(value).map(([key, child]) => [
+        key,
+        inferSchema(child, depth + 1, options, appendJsonPathKey(path, key), context),
+      ])
     );
     const required = shouldIncludeRequired(options) ? Object.keys(properties) : [];
 
@@ -268,13 +335,15 @@ export const inferJsonSchemaFromText = (
     return { error: `SOURCE 不是合法 JSON: ${message}` };
   }
 
+  const context: SchemaInferenceContext = { samplingSummaries: [] };
   const schema = {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     title: '从 SOURCE 生成',
-    ...inferSchema(parsed, 0, options),
+    ...inferSchema(parsed, 0, options, '$', context),
   };
 
   return {
     schemaText: JSON.stringify(schema, null, 2),
+    samplingSummaries: context.samplingSummaries,
   };
 };
