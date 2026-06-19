@@ -35,6 +35,10 @@ import {
   trackToolEvent,
   type ToolEventStatus,
 } from '../utils/productTelemetry';
+import {
+  formatJsonPathRecursiveFieldQuery,
+  getJsonPointerLastFieldName,
+} from '../utils/jsonPathInput';
 
 export const JSON_SCHEMA_STORAGE_KEY = 'json-schema-panel-schema';
 
@@ -128,6 +132,15 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   const canCopySchemaExample = Boolean(schemaText.trim());
   const canApplySchemaExample = Boolean(schemaText.trim() && onApplyExampleToSource);
   const canCopyIssueChecklist = Boolean(result?.issues.length);
+  const parsedJsonData = useMemo((): unknown | undefined => {
+    if (!result?.issues.length) return undefined;
+
+    try {
+      return JSON.parse(jsonData);
+    } catch {
+      return undefined;
+    }
+  }, [jsonData, result?.issues.length]);
 
   const handleSchemaChange = useCallback((value: string) => {
     setSchemaText(value);
@@ -322,6 +335,20 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
       showError(getClipboardErrorMessage(error, '复制清单失败'));
     }
   }, [result]);
+
+  const handleLocateSameField = useCallback((fieldName: string) => {
+    onLocatePath(formatJsonPathRecursiveFieldQuery(fieldName));
+    showSuccess('已填入同名字段查询');
+  }, [onLocatePath]);
+
+  const handleCopySameFieldQuery = useCallback(async (fieldName: string) => {
+    try {
+      await copyText(formatJsonPathRecursiveFieldQuery(fieldName));
+      showSuccess('已复制同名字段查询');
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制同名字段查询失败'));
+    }
+  }, []);
 
   const handleClearSchema = useCallback(() => {
     handleSchemaChange('');
@@ -743,38 +770,68 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
 
                 {result.issues.length > 0 && (
                   <div data-tour="json-schema-issues" className="space-y-2">
-                    {result.issues.map((issue, index) => (
-                      <div
-                        key={`${issue.path}:${issue.keyword}:${index}`}
-                        className="rounded border border-editor-border bg-editor-sidebar p-3"
-                      >
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <code className="min-w-0 truncate text-xs text-emerald-200" title={issue.path}>
-                            {issue.path}
-                          </code>
-                          <button
-                            type="button"
-                            data-tour="json-schema-locate-issue"
-                            onClick={() => onLocatePath(issue.path)}
-                            className="shrink-0 rounded border border-editor-border px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-hover"
-                          >
-                            定位
-                          </button>
+                    {result.issues.map((issue, index) => {
+                      const sameFieldName = getJsonPointerLastFieldName(issue.pointer, parsedJsonData);
+                      const sameFieldQuery = sameFieldName ? formatJsonPathRecursiveFieldQuery(sameFieldName) : '';
+
+                      return (
+                        <div
+                          key={`${issue.path}:${issue.keyword}:${index}`}
+                          className="rounded border border-editor-border bg-editor-sidebar p-3"
+                        >
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <code className="min-w-0 truncate text-xs text-emerald-200" title={issue.path}>
+                              {issue.path}
+                            </code>
+                            <span className="flex shrink-0 items-center gap-1">
+                              <button
+                                type="button"
+                                data-tour="json-schema-locate-issue"
+                                onClick={() => onLocatePath(issue.path)}
+                                className="rounded border border-editor-border px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-hover"
+                              >
+                                定位
+                              </button>
+                              {sameFieldName && (
+                                <>
+                                  <button
+                                    type="button"
+                                    data-tour="json-schema-query-same-field"
+                                    onClick={() => handleLocateSameField(sameFieldName)}
+                                    aria-label={`查询同名字段：${sameFieldName}`}
+                                    title={`用 ${sameFieldQuery} 查询全局同名字段`}
+                                    className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-100 transition-colors hover:border-emerald-400/60 hover:bg-emerald-500/20"
+                                  >
+                                    同名字段
+                                  </button>
+                                  <button
+                                    type="button"
+                                    data-tour="json-schema-copy-same-field-query"
+                                    onClick={() => void handleCopySameFieldQuery(sameFieldName)}
+                                    title={`复制 ${sameFieldQuery}`}
+                                    className="rounded border border-editor-border px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-hover hover:text-emerald-100"
+                                  >
+                                    复制查询
+                                  </button>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                          <div className="text-xs leading-5 text-gray-300">
+                            <span className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-amber-100">
+                              {issue.keyword}
+                            </span>
+                            <span className="ml-2">{issue.message}</span>
+                          </div>
+                          <div className="mt-2 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-xs leading-5 text-emerald-100">
+                            建议: {issue.suggestion}
+                          </div>
+                          <div className="mt-1 truncate text-[11px] text-gray-500" title={issue.schemaPath}>
+                            {issue.schemaPath}
+                          </div>
                         </div>
-                        <div className="text-xs leading-5 text-gray-300">
-                          <span className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-amber-100">
-                            {issue.keyword}
-                          </span>
-                          <span className="ml-2">{issue.message}</span>
-                        </div>
-                        <div className="mt-2 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-xs leading-5 text-emerald-100">
-                          建议: {issue.suggestion}
-                        </div>
-                        <div className="mt-1 truncate text-[11px] text-gray-500" title={issue.schemaPath}>
-                          {issue.schemaPath}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {result.issueCount > result.shownIssueCount && (
                       <div className="rounded border border-editor-border bg-editor-sidebar px-3 py-2 text-xs text-gray-500">
                         还有 {result.issueCount - result.shownIssueCount} 个问题未展示

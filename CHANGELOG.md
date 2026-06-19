@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.244 (2026-06-19) - Schema 问题同名字段查询
+### ✨ 新特性
+- **Schema 问题反查**: Schema 校验失败项新增“同名字段”动作，可从失败路径生成 `$..field` 或 bracket JSONPath 并打开 JSONPath 面板排查全局同名字段
+- **查询复制**: 每条可定位问题新增“复制查询”，方便把同名字段 JSONPath 贴到协作排查文档或单独复用
+- **特殊字段安全**: 复用 JSONPath 字段查询规则，`trace.id`、中文字段、数字字符串字段、包含引号或 URL 字符的字段会自动生成安全查询表达式
+
+### 🧪 测试
+- **Schema 联动覆盖**: 扩展 JSONPath 输入工具单测和 Schema 面板 E2E，覆盖 JSON Pointer 字段提取、同名字段查询、复制查询和精确路径定位共存
+
 ## v1.8.243 (2026-06-19) - JSON Lines 智能建议
 ### ✨ 新特性
 - **JSON Lines 入口识别**: SOURCE 智能建议可识别合法 JSON Lines / NDJSON，直接推荐结构导航和 JSON 转 TS，不再把日志型多行 JSON 误当成坏 JSON

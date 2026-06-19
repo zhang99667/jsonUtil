@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatJsonPathRecursiveFieldQuery,
+  getJsonPointerLastFieldName,
   normalizeJsonPathQueryInput,
 } from './jsonPathInput';
 
@@ -62,5 +63,31 @@ describe('jsonPathInput', () => {
     expect(formatJsonPathRecursiveFieldQuery('中文 key')).toBe('$..["中文 key"]');
     expect(formatJsonPathRecursiveFieldQuery('quote"key')).toBe('$..[?(@property == "quote\\"key")]');
     expect(formatJsonPathRecursiveFieldQuery("single'key")).toBe('$..[?(@property == "single\'key")]');
+  });
+
+  it('可从 JSON Pointer 提取最后一个真实字段名', () => {
+    expect(getJsonPointerLastFieldName('/items/0/price')).toBe('price');
+    expect(getJsonPointerLastFieldName('/items/0')).toBe('items');
+    expect(getJsonPointerLastFieldName('/0/user/trace.id')).toBe('trace.id');
+    expect(getJsonPointerLastFieldName('/meta/a~1b~0c')).toBe('a/b~c');
+    expect(getJsonPointerLastFieldName('/0/1')).toBeNull();
+    expect(getJsonPointerLastFieldName('')).toBeNull();
+  });
+
+  it('结合 JSON 数据区分数组下标和数字字符串字段', () => {
+    const data = {
+      metrics: {
+        '2024': 10,
+      },
+      items: [
+        { price: 1 },
+      ],
+    };
+
+    expect(getJsonPointerLastFieldName('/metrics/2024', data)).toBe('2024');
+    expect(getJsonPointerLastFieldName('/items/0', data)).toBe('items');
+    expect(getJsonPointerLastFieldName('/items/0/price', data)).toBe('price');
+    expect(formatJsonPathRecursiveFieldQuery(getJsonPointerLastFieldName('/metrics/2024', data) || ''))
+      .toBe('$..["2024"]');
   });
 });
