@@ -143,6 +143,12 @@ test('智能建议会根据 SOURCE 推荐下一步动作', async ({ page }) => {
   await expect(reportPanel).toContainText('action_cmd');
   await reportPanel.getByRole('button', { name: '关闭 深度解析报告' }).click();
 
+  await fillSourceEditor(page, '{"level":"info","user":{"id":1}}\n{"level":"error","user":{"id":2}}');
+  await expect(suggestion).toContainText('检测到 JSON Lines / NDJSON');
+  await expect(suggestion).toContainText('结构导航');
+  await expect(suggestion).toContainText('转 TS');
+  await expect(suggestion.locator('[data-tour="smart-action-ai-fix"]')).toHaveCount(0);
+
   await fillSourceEditor(page, 'https://example.com/docs?a=1&b=2');
   await expect(suggestion).toContainText('检测到普通 URL');
   await expect(suggestion).toContainText('普通 HTTP(S) 链接不会直接当成业务 Scheme');

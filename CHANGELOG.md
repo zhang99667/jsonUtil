@@ -1,4 +1,14 @@
 # 更新日志 (Changelog)
+## v1.8.243 (2026-06-19) - JSON Lines 智能建议
+### ✨ 新特性
+- **JSON Lines 入口识别**: SOURCE 智能建议可识别合法 JSON Lines / NDJSON，直接推荐结构导航和 JSON 转 TS，不再把日志型多行 JSON 误当成坏 JSON
+- **行级错误提示**: JSON Lines 只有后续某行解析失败时，会在智能建议中提示首个失败行号，并继续引导智能修复
+- **CMD 工作流串联**: JSON Lines 内含 CMD / Scheme 字符串时仍会优先推荐 Response 排查工作流和嵌套解析报告
+- **大输入保护**: 超大 JSON Lines 候选会跳过同步逐行解析并推荐结构导航 / 嵌套解析，避免误落到当前不适用的 Schema 入口
+
+### 🧪 测试
+- **智能建议覆盖**: 扩展智能建议单测和主应用 E2E，覆盖合法 JSON Lines、含 CMD 的 JSON Lines、坏行行号、超大 JSON Lines 和多行普通坏 JSON 的区分
+
 ## v1.8.242 (2026-06-19) - 二维码依赖按需分包
 ### ⚡ 性能优化
 - **二维码依赖拆包**: 将 `qrcode.react` 从首屏通用 `vendor-tools` 拆到独立 `vendor-qrcode`，Scheme 二维码功能保持按需加载，减少低频二维码能力对首屏工具包的挤占
