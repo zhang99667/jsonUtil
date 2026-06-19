@@ -79,6 +79,76 @@ describe('getSmartInputSuggestion', () => {
     });
   });
 
+  it('合法 JSON Lines 推荐结构导航和类型生成', () => {
+    const suggestion = getSmartInputSuggestion('{"level":"info","user":{"id":1}}\n{"level":"error","user":{"id":2}}');
+
+    expect(suggestion).toMatchObject({
+      id: 'json-lines-structure',
+      title: '检测到 JSON Lines / NDJSON',
+      actions: [
+        { id: 'structure-nav' },
+        { id: 'json-to-typescript' },
+      ],
+    });
+    expect(suggestion?.actions.some(action => action.id === 'ai-fix')).toBe(false);
+  });
+
+  it('JSON Lines 内含业务 Scheme 时推荐排查工作流', () => {
+    const scheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
+    const suggestion = getSmartInputSuggestion([
+      JSON.stringify({ level: 'info', action_cmd: scheme }),
+      JSON.stringify({ level: 'debug', id: 2 }),
+    ].join('\n'));
+
+    expect(suggestion).toMatchObject({
+      id: 'json-lines-with-cmd',
+      actions: [
+        { id: 'response-inspection' },
+        { id: 'deep-format-report' },
+      ],
+    });
+  });
+
+  it('部分 JSON Lines 行损坏时提示首个失败行', () => {
+    const suggestion = getSmartInputSuggestion('{"ok":1}\n{"broken":}\n{"ok":3}');
+
+    expect(suggestion).toMatchObject({
+      id: 'malformed-json-lines',
+      title: 'JSON Lines 第 2 行可能有语法错误',
+      actions: [
+        { id: 'ai-fix' },
+      ],
+    });
+    expect(suggestion?.description).toContain('JSON Lines 第 2 行解析错误');
+  });
+
+  it('无效多行普通 JSON 仍按 JSON 修复提示处理', () => {
+    const suggestion = getSmartInputSuggestion('{\n  "items": [1, 2],\n  "ok":\n}');
+
+    expect(suggestion).toMatchObject({
+      id: 'malformed-json',
+      actions: [
+        { id: 'ai-fix' },
+      ],
+    });
+  });
+
+  it('超大 JSON Lines 候选跳过同步解析时不推荐 Schema', () => {
+    const largeJsonLines = Array.from({ length: 18_000 }, (_, index) => (
+      JSON.stringify({ id: index, level: index % 2 === 0 ? 'info' : 'error' })
+    )).join('\n');
+    const suggestion = getSmartInputSuggestion(largeJsonLines);
+
+    expect(suggestion).toMatchObject({
+      id: 'large-json-lines',
+      actions: [
+        { id: 'structure-nav' },
+        { id: 'deep-format-report' },
+      ],
+    });
+    expect(suggestion?.actions.some(action => action.id === 'schema-panel')).toBe(false);
+  });
+
   it('超大 JSON 候选跳过同步解析时推荐结构导航', () => {
     const largeJson = `{"items":[${Array.from({ length: 120_000 }, () => '0').join(',')}]}`;
     const suggestion = getSmartInputSuggestion(largeJson);

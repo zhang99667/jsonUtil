@@ -1,4 +1,5 @@
 import { TransformMode } from '../types';
+import { parseJsonLinesDetailed } from './jsonLines';
 import { detectSchemeType, isActionableSchemeUrl, isUrl, shouldExposeSchemeValue } from './schemeUtils';
 
 export type SmartSuggestionActionId =
@@ -40,6 +41,8 @@ const MAX_JSON_SIGNAL_NODES = 1_800;
 const MAX_JSON_SIGNAL_STRINGS = 600;
 const ACTIONABLE_FIELD_RE = /"(?:action_?cmd|button_?cmd|panel_?cmd|cmd|schema|scheme|url|params?|payload|ext|extra)[^"]*"\s*:/i;
 const URL_ENCODED_RE = /%[0-9A-Fa-f]{2}/;
+const JSON_LINES_ERROR_LINE_RE = /JSON Lines 第\s*(\d+)\s*行解析错误/;
+const JSON_LINE_PREFIX_RE = /^[{\["tfn\-\d]/;
 
 const createAction = (id: SmartSuggestionActionId, label: string): SmartSuggestionAction => ({
   id,
@@ -120,6 +123,20 @@ const isLikelyJsonContainerText = (source: string): boolean => (
   source.startsWith('{') || source.startsWith('[')
 );
 
+const isLikelyJsonLinesText = (source: string): boolean => {
+  if (!source.includes('\n')) return false;
+
+  const lines = source
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
+  return lines.length >= 2 && lines.every(line => (
+    JSON_LINE_PREFIX_RE.test(line) && line !== '{' && line !== '['
+  ));
+};
+
 const hasEncodedJsonHint = (source: string): boolean => (
   /%7B|%7D|%5B|%5D|%22|%3A/i.test(source)
 );
@@ -172,6 +189,82 @@ const buildJsonSuggestion = (
       createAction('schema-panel', 'Schema'),
     ],
   };
+};
+
+const getJsonLinesErrorLineNumber = (error?: string): number | null => {
+  if (!error) return null;
+  const match = error.match(JSON_LINES_ERROR_LINE_RE);
+  return match ? Number(match[1]) : null;
+};
+
+const hasParsableJsonLineBefore = (source: string, lineNumber: number): boolean => (
+  source
+    .split(/\r?\n/)
+    .slice(0, Math.max(lineNumber - 1, 0))
+    .some(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return false;
+      try {
+        JSON.parse(trimmed);
+        return true;
+      } catch {
+        return false;
+      }
+    })
+);
+
+const buildJsonLinesSuggestion = (source: string): SmartInputSuggestion | null => {
+  if (source.length > MAX_JSON_PARSE_LENGTH) return null;
+
+  const diagnostic = parseJsonLinesDetailed(source);
+  if (diagnostic.records) {
+    const lineValues = diagnostic.records.map(record => record.value);
+    const signal = collectJsonContentSignal(lineValues);
+
+    if (signal.actionableStringCount > 0) {
+      return {
+        id: 'json-lines-with-cmd',
+        title: '检测到 JSON Lines 内含 CMD / Scheme',
+        description: `已识别 ${diagnostic.records.length} 行，其中包含 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串，建议进入排查工作流。`,
+        tone: 'cyan',
+        actions: [
+          createAction('response-inspection', '排查工作流'),
+          createAction('deep-format-report', '嵌套解析'),
+        ],
+      };
+    }
+
+    return {
+      id: 'json-lines-structure',
+      title: '检测到 JSON Lines / NDJSON',
+      description: `已识别 ${diagnostic.records.length} 行 JSON，可按虚拟数组浏览结构，也可以直接生成 TypeScript 类型。`,
+      tone: 'emerald',
+      actions: [
+        createAction('structure-nav', '结构导航'),
+        createAction('json-to-typescript', '转 TS'),
+      ],
+    };
+  }
+
+  const errorLineNumber = getJsonLinesErrorLineNumber(diagnostic.error);
+  if (
+    diagnostic.error &&
+    errorLineNumber &&
+    errorLineNumber > 1 &&
+    hasParsableJsonLineBefore(source, errorLineNumber)
+  ) {
+    return {
+      id: 'malformed-json-lines',
+      title: `JSON Lines 第 ${errorLineNumber} 行可能有语法错误`,
+      description: diagnostic.error,
+      tone: 'rose',
+      actions: [
+        createAction('ai-fix', '智能修复'),
+      ],
+    };
+  }
+
+  return null;
 };
 
 const buildStandaloneSuggestion = (source: string): SmartInputSuggestion | null => {
@@ -234,8 +327,24 @@ export const getSmartInputSuggestion = (sourceText: string): SmartInputSuggestio
     return buildJsonSuggestion(parsed, sample);
   }
 
+  const jsonLinesSuggestion = buildJsonLinesSuggestion(source);
+  if (jsonLinesSuggestion) return jsonLinesSuggestion;
+
   const standaloneSuggestion = buildStandaloneSuggestion(source);
   if (standaloneSuggestion) return standaloneSuggestion;
+
+  if (source.length > MAX_JSON_PARSE_LENGTH && isLikelyJsonLinesText(source)) {
+    return {
+      id: 'large-json-lines',
+      title: '检测到较大的 JSON Lines 候选',
+      description: '输入较大，建议先按虚拟数组打开结构导航，或用嵌套解析报告查看行内 CMD / JSON 字符串。',
+      tone: 'emerald',
+      actions: [
+        createAction('structure-nav', '结构导航'),
+        createAction('deep-format-report', '嵌套解析'),
+      ],
+    };
+  }
 
   if (isLikelyJsonContainerText(source) && source.length > MAX_JSON_PARSE_LENGTH) {
     return {
