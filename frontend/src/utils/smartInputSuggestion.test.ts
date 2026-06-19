@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getSmartInputSuggestion } from './smartInputSuggestion';
+import { TransformMode } from '../types';
+import { getSmartInputSuggestion, getSmartSuggestionMode } from './smartInputSuggestion';
 
 describe('getSmartInputSuggestion', () => {
   it('为空输入不展示建议', () => {
@@ -17,10 +18,11 @@ describe('getSmartInputSuggestion', () => {
     expect(suggestion).toMatchObject({
       id: 'json-with-cmd',
       actions: [
+        { id: 'response-inspection', label: '排查工作流' },
         { id: 'deep-format-report' },
-        { id: 'structure-nav' },
       ],
     });
+    expect(getSmartSuggestionMode('response-inspection')).toBe(TransformMode.DEEP_FORMAT);
   });
 
   it('独立业务 Scheme 推荐打开 Scheme 面板', () => {
