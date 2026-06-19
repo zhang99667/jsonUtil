@@ -6,6 +6,8 @@ describe('buildAiRepairSummary', () => {
     const summary = buildAiRepairSummary('{"ok":true}', '{"ok":true}');
 
     expect(summary.changed).toBe(false);
+    expect(summary.repairMethod).toBe('ai');
+    expect(summary.localRuleLabels).toEqual([]);
     expect(summary.changedChunks).toBe(0);
     expect(summary.rootDescription).toBe('对象 1 个键');
   });
@@ -28,6 +30,18 @@ describe('buildAiRepairSummary', () => {
 
     expect(summary.rootDescription).toBe('对象 2 个键');
     expect(formatAiRepairSummary(summary)).toContain('结构: 对象 2 个键');
+  });
+
+  it('可标记本地规则修复来源和规则列表', () => {
+    const summary = buildAiRepairSummary('{ok:true}', '{"ok":true}', {
+      repairMethod: 'local',
+      localRuleLabels: ['修正常见 JS 对象写法'],
+    });
+
+    expect(summary.repairMethod).toBe('local');
+    expect(summary.localRuleLabels).toEqual(['修正常见 JS 对象写法']);
+    expect(formatAiRepairSummary(summary)).toContain('方式: 本地规则修复');
+    expect(formatAiRepairSummary(summary)).toContain('本地规则: 修正常见 JS 对象写法');
   });
 
   it('大内容跳过字符级预览，避免主线程过重计算', () => {

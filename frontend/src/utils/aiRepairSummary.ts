@@ -10,6 +10,8 @@ export interface AiRepairPreviewItem {
 
 export interface AiRepairSummary {
   changed: boolean;
+  repairMethod: 'local' | 'ai';
+  localRuleLabels: string[];
   beforeLength: number;
   afterLength: number;
   beforeLines: number;
@@ -23,16 +25,27 @@ export interface AiRepairSummary {
   isDiffSkipped: boolean;
 }
 
+interface AiRepairSummaryOptions {
+  repairMethod?: 'local' | 'ai';
+  localRuleLabels?: string[];
+}
+
 const MAX_DIFF_INPUT_LENGTH = 200_000;
 const MAX_PREVIEW_ITEMS = 8;
 const MAX_PREVIEW_TEXT_LENGTH = 80;
 
 /**
- * 生成 AI 修复前后的轻量差异摘要，用于帮助用户判断修复是否可信。
+ * 生成智能修复前后的轻量差异摘要，用于帮助用户判断修复是否可信。
  */
-export const buildAiRepairSummary = (before: string, after: string): AiRepairSummary => {
+export const buildAiRepairSummary = (
+  before: string,
+  after: string,
+  options: AiRepairSummaryOptions = {}
+): AiRepairSummary => {
   const baseSummary: AiRepairSummary = {
     changed: before !== after,
+    repairMethod: options.repairMethod || 'ai',
+    localRuleLabels: options.localRuleLabels || [],
     beforeLength: before.length,
     afterLength: after.length,
     beforeLines: countLines(before),
@@ -85,11 +98,16 @@ export const buildAiRepairSummary = (before: string, after: string): AiRepairSum
 
 export const formatAiRepairSummary = (summary: AiRepairSummary): string => {
   const lines = [
-    'AI 修复摘要',
+    '智能修复摘要',
+    `方式: ${summary.repairMethod === 'local' ? '本地规则修复' : 'AI 模型修复'}`,
     `结构: ${summary.rootDescription}`,
     `长度: ${summary.beforeLength} -> ${summary.afterLength} 字符`,
     `行数: ${summary.beforeLines} -> ${summary.afterLines} 行`,
   ];
+
+  if (summary.localRuleLabels.length > 0) {
+    lines.push(`本地规则: ${summary.localRuleLabels.join('、')}`);
+  }
 
   if (!summary.changed) {
     lines.push('差异: AI 返回内容与源内容一致');

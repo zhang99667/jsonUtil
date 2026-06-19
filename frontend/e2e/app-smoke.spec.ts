@@ -128,7 +128,7 @@ test('折叠工具栏后图标按钮保留可访问名称', async ({ page }) => 
   await expect(page.locator('[data-tour="json-schema-button"]')).toHaveAttribute('aria-label', 'Schema 校验，未打开');
   await expect(page.locator('[data-tour="open-file-button"]')).toHaveAttribute('aria-label', '打开文件');
   await expect(page.locator('[data-tour="save-file-button"]')).toHaveAttribute('aria-label', '保存为 JSON');
-  await expect(page.locator('[data-tour="ai-fix"]')).toHaveAttribute('aria-label', 'AI 智能修复');
+  await expect(page.locator('[data-tour="ai-fix"]')).toHaveAttribute('aria-label', '智能修复');
   await expect(page.locator('[data-tour="settings"]')).toHaveAttribute('aria-label', '设置');
 });
 
@@ -2613,7 +2613,7 @@ test('Scheme 面板展示内部 Base64 后缀摘要', async ({ page }) => {
   await expect(base64Meta).toContainText('ip=127.0.0.1');
 });
 
-test('AI 修复处理中按钮展示禁用原因', async ({ page }) => {
+test('智能修复调用 AI 时按钮展示禁用原因', async ({ page }) => {
   await page.unroute('**/mock-ai/chat/completions');
   let releaseResponse: () => void = () => undefined;
   const responseGate = new Promise<void>(resolve => {
@@ -2640,58 +2640,63 @@ test('AI 修复处理中按钮展示禁用原因', async ({ page }) => {
   await fillSourceEditor(page, '{items:[1,2], ok:}');
   const aiFixButton = page.locator('[data-tour="ai-fix"]');
 
-  await expect(aiFixButton).toHaveAttribute('title', 'AI 智能修复');
+  await expect(aiFixButton).toHaveAttribute('title', '智能修复');
   await aiFixButton.click();
   await expect(aiFixButton).toBeDisabled();
-  await expect(aiFixButton).toHaveAttribute('aria-label', 'AI 修复中，请等待当前任务完成');
-  await expect(aiFixButton).toHaveAttribute('title', 'AI 修复中，请等待当前任务完成');
+  await expect(aiFixButton).toHaveAttribute('aria-label', '智能修复中，请等待当前任务完成');
+  await expect(aiFixButton).toHaveAttribute('title', '智能修复中，请等待当前任务完成');
 
   releaseResponse();
-  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expect(page.getByText('智能修复摘要')).toBeVisible();
+  await expect(page.getByText('AI 模型修复')).toBeVisible();
   await expect(aiFixButton).toBeEnabled();
 });
 
-test('AI 修复可写回有效 JSON 并展示摘要', async ({ page }) => {
+test('智能修复可通过 AI 写回有效 JSON 并展示摘要', async ({ page }) => {
   await fillSourceEditor(page, '{items:[1,2], ok:}');
 
   await page.locator('[data-tour="ai-fix"]').click();
 
-  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expect(page.getByText('智能修复摘要')).toBeVisible();
+  await expect(page.getByText('AI 模型修复')).toBeVisible();
   await expectPreviewText(page, '"items": [');
   await expectPreviewText(page, '"ok": true');
 
-  await page.getByRole('button', { name: '复制 AI 修复摘要' }).click();
-  await expect(page.getByText(/已复制 AI 修复摘要（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
+  await page.getByRole('button', { name: '复制智能修复摘要' }).click();
+  await expect(page.getByText(/已复制智能修复摘要（\d+ 字符 \/ [\d.]+ (?:B|KB|MB)）/)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
-    .toContain('AI 修复摘要');
+    .toContain('智能修复摘要');
 });
 
-test('SOURCE 错误条可直接触发 AI 修复', async ({ page }) => {
+test('SOURCE 错误条可直接触发智能修复', async ({ page }) => {
   await fillSourceEditor(page, '{items:[1,2], ok:}');
 
   const quickFixButton = page.locator('[data-tour="source-error-ai-fix"]');
   await expect(quickFixButton).toBeVisible();
-  await expect(quickFixButton).toHaveAttribute('aria-label', '用 AI 修复当前 SOURCE JSON 错误');
+  await expect(quickFixButton).toHaveAttribute('aria-label', '用智能修复当前 SOURCE JSON 错误');
 
   await quickFixButton.click();
 
-  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expect(page.getByText('智能修复摘要')).toBeVisible();
   await expectPreviewText(page, '"items": [');
   await expectPreviewText(page, '"ok": true');
   await expect(quickFixButton).toHaveCount(0);
 });
 
-test('AI 修复可先本地修复常见小错误', async ({ page }) => {
+test('智能修复可先本地修复常见小错误', async ({ page }) => {
   await fillSourceEditor(page, "{items:[1,2,], ok:true, name:'json'}");
 
   await page.locator('[data-tour="ai-fix"]').click();
 
-  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expect(page.getByText('智能修复摘要')).toBeVisible();
+  await expect(page.getByText('本地规则修复')).toBeVisible();
+  await expect(page.getByText('修正常见 JS 对象写法')).toBeVisible();
+  await expect(page.getByText('移除尾随逗号')).toBeVisible();
   await expectPreviewText(page, '"items": [');
   await expectPreviewText(page, '"name": "json"');
 });
 
-test('AI 修复会同步打开文件的未保存状态', async ({ page }) => {
+test('智能修复会同步打开文件的未保存状态', async ({ page }) => {
   const fileChooserPromise = page.waitForEvent('filechooser');
   await page.locator('[data-tour="open-file-button"]').click();
   const fileChooser = await fileChooserPromise;
@@ -2707,27 +2712,37 @@ test('AI 修复会同步打开文件的未保存状态', async ({ page }) => {
 
   await page.locator('[data-tour="ai-fix"]').click();
 
-  await expect(page.getByText('AI 修复摘要')).toBeVisible();
+  await expect(page.getByText('智能修复摘要')).toBeVisible();
   await expect(page.locator('[data-tour="save-status"]')).toHaveText('未保存');
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"ok":true');
 });
 
-test('AI 修复空输入会提示用户', async ({ page }) => {
+test('智能修复空输入会提示用户', async ({ page }) => {
   await page.locator('[data-tour="ai-fix"]').click();
 
   await expect(page.getByText('请先输入需要修复的 JSON 内容')).toBeVisible();
 });
 
-test('AI 修复命中敏感字段会阻止发送原文', async ({ page }) => {
+test('智能修复本地可修敏感字段时不阻止写回', async ({ page }) => {
   await fillSourceEditor(page, '{token:"real-token", ok:true}');
 
   await page.locator('[data-tour="ai-fix"]').click();
 
-  await expect(page.getByText('AI 修复默认不会发送原文')).toBeVisible();
-  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('real-token');
+  await expect(page.getByText('智能修复摘要')).toBeVisible();
+  await expect(page.getByText('本地规则修复')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"token":"real-token"');
 });
 
-test('AI 修复缺少 Key 会引导到配置页', async ({ page }) => {
+test('智能修复本地不可修敏感字段时阻止发送原文', async ({ page }) => {
+  await fillSourceEditor(page, '{token:}');
+
+  await page.locator('[data-tour="ai-fix"]').click();
+
+  await expect(page.getByText('AI 修复默认不会发送原文')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('{token:}');
+});
+
+test('智能修复缺少 Key 会引导到配置页', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('tab', { name: 'AI 配置' }).click();
   await page.locator('input[type="password"]').fill('');

@@ -5,9 +5,11 @@ import {
   AI_REPAIR_TIMEOUT_MESSAGE,
   AI_SENSITIVE_INPUT_MESSAGE,
   detectAiSensitiveInputLabels,
+  fixJsonWithRepairDetails,
   fixJsonWithAI,
   normalizeAiJsonResponse,
   repairJsonLocally,
+  repairJsonLocallyWithReport,
   testAIConnection,
 } from './aiService';
 import { base64Encode } from '../utils/schemeUtils';
@@ -54,11 +56,37 @@ describe('fixJsonWithAI', () => {
       break"}`)).toBe('{"items":[1,2],"ok":true,"name":"json","note":"line\\n      break"}');
   });
 
+  it('本地修复会返回命中的确定性规则', () => {
+    expect(repairJsonLocallyWithReport(`// comment
+      {items:[1,2,], note:"line
+      break"}`)).toEqual({
+      fixedJson: '{"items":[1,2],"note":"line\\n      break"}',
+      ruleLabels: [
+        '移除 JSON 注释',
+        '修正常见 JS 对象写法',
+        '移除尾随逗号',
+        '转义字符串内换行/控制字符',
+      ],
+    });
+  });
+
   it('本地可修复时不会调用 AI 接口', async () => {
     const fetchImpl = vi.fn();
 
     await expect(fixJsonWithAI('{items:[1,2,], ok:true}', customConfig, { fetchImpl }))
       .resolves.toBe('{"items":[1,2],"ok":true}');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('本地可修复敏感字段时不发送 AI 请求', async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(fixJsonWithRepairDetails('{token:"real-token", ok:true}', customConfig, { fetchImpl }))
+      .resolves.toEqual({
+        fixedJson: '{"token":"real-token","ok":true}',
+        repairMethod: 'local',
+        localRuleLabels: ['修正常见 JS 对象写法'],
+      });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -100,7 +128,7 @@ describe('fixJsonWithAI', () => {
   it('命中敏感字段时默认阻止发送原文', async () => {
     const fetchImpl = vi.fn();
 
-    await expect(fixJsonWithAI('{token:"real-token", ok:true}', customConfig, { fetchImpl }))
+    await expect(fixJsonWithAI('{token:}', customConfig, { fetchImpl }))
       .rejects.toThrow(AI_SENSITIVE_INPUT_MESSAGE);
     expect(fetchImpl).not.toHaveBeenCalled();
   });
@@ -124,16 +152,15 @@ describe('fixJsonWithAI', () => {
     expect(detectAiSensitiveInputLabels(encoded)).toEqual(['token', 'device']);
   });
 
-  it('可识别内部 Base64 片段中的敏感字段', async () => {
+  it('本地不可修复时可识别内部 Base64 片段中的敏感字段并阻止发送', async () => {
     const extraParam = `AFD8f${base64Encode(JSON.stringify({
       oaid_v: 'real-oaid',
       akey: 'real-secret',
     }))}UxM${base64Encode('&sign=real-sign')}`;
     const fetchImpl = vi.fn();
 
-    await expect(fixJsonWithAI(JSON.stringify({
-      extra: [{ k: 'extraParam', v: extraParam }],
-    }), customConfig, { fetchImpl })).rejects.toThrow(AI_SENSITIVE_INPUT_MESSAGE);
+    await expect(fixJsonWithAI(`{"extra":[{"k":"extraParam","v":"${extraParam}"}],"bad":}`, customConfig, { fetchImpl }))
+      .rejects.toThrow(AI_SENSITIVE_INPUT_MESSAGE);
     expect(detectAiSensitiveInputLabels(extraParam)).toEqual(['sign', 'secret', 'device']);
     expect(fetchImpl).not.toHaveBeenCalled();
   });

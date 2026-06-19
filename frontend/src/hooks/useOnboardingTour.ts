@@ -72,7 +72,7 @@ export const useOnboardingTour = () => {
                         element: '[data-tour="toolbar"]',
                         popover: {
                             title: '功能工具栏',
-                            description: '集成了格式化、转义、编码转换、AI 修复等核心工具。点击对应按钮即可使用。',
+                            description: '集成了格式化、转义、编码转换、智能修复等核心工具。点击对应按钮即可使用。',
                             side: 'right',
                             align: 'start'
                         }

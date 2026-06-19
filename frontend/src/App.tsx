@@ -1411,18 +1411,22 @@ const App: React.FC = () => {
 
       setIsProcessing(true);
       try {
-        // AI 修复针对源输入进行
-        const { fixJsonWithAI } = await import('./services/aiService');
-        const fixed = await fixJsonWithAI(input, aiConfig);
+        // 智能修复针对源输入进行，优先本地规则，必要时再调用 AI。
+        const { fixJsonWithRepairDetails } = await import('./services/aiService');
+        const repairResult = await fixJsonWithRepairDetails(input, aiConfig);
+        const fixed = repairResult.fixedJson;
         const { buildAiRepairSummary } = await import('./utils/aiRepairSummary');
         aiRepairSnapshotRef.current = fixed;
-        setAiRepairSummary(buildAiRepairSummary(input, fixed));
+        setAiRepairSummary(buildAiRepairSummary(input, fixed, {
+          repairMethod: repairResult.repairMethod,
+          localRuleLabels: repairResult.localRuleLabels,
+        }));
         setInput(fixed);
         inputRef.current = fixed; // 同步 Ref 状态
         updateActiveFileContent(fixed);
         // 修复后自动切换至格式化视图
         setMode(TransformMode.FORMAT);
-        showSuccess("AI 修复成功");
+        showSuccess(repairResult.repairMethod === 'local' ? '本地修复成功' : 'AI 修复成功');
         trackCurrentToolEvent(action, 'ai', 'success', startedAt);
       } catch (e: unknown) {
         // 业务逻辑错误（API Key 缺失、网络错误等）使用 Toast 提示
@@ -1552,7 +1556,7 @@ const App: React.FC = () => {
       : '自动保存已关闭，点击开启';
   const copySourceTitle = hasSourceContent ? '复制 SOURCE 内容到剪贴板' : 'SOURCE 为空，暂无内容可复制';
   const clearSourceTitle = hasSourceContent ? '清空 SOURCE 内容' : 'SOURCE 为空，暂无内容可清空';
-  const sourceAiRepairTitle = isProcessing ? 'AI 修复中，请等待当前任务完成' : '用 AI 修复当前 SOURCE JSON 错误';
+  const sourceAiRepairTitle = isProcessing ? '智能修复中，请等待当前任务完成' : '用智能修复当前 SOURCE JSON 错误';
   const transformReportTitle = (() => {
     if (isOutputTransforming) return '预览仍在处理，请稍后查看报告';
     if (!transformReportContext) return '暂无深度解析报告可查看';

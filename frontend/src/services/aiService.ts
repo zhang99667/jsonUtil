@@ -28,6 +28,22 @@ interface FixJsonWithAIOptions {
   allowLocalRepair?: boolean;
 }
 
+export interface LocalJsonRepairReport {
+  fixedJson: string;
+  ruleLabels: string[];
+}
+
+export interface FixJsonResult {
+  fixedJson: string;
+  repairMethod: 'local' | 'ai';
+  localRuleLabels: string[];
+}
+
+interface LocalRepairCandidate {
+  value: string;
+  ruleLabels: string[];
+}
+
 /**
  * 将 AI 返回内容规范化为有效的压缩 JSON，避免解释文本或 Markdown 写回编辑器
  */
@@ -57,26 +73,79 @@ export const normalizeAiJsonResponse = (rawText: string): string => {
  * 对常见 JSON 小错误做本地确定性修复，能修好时避免把原文发送给模型
  */
 export const repairJsonLocally = (input: string): string | null => {
+  return repairJsonLocallyWithReport(input)?.fixedJson || null;
+};
+
+export const repairJsonLocallyWithReport = (input: string): LocalJsonRepairReport | null => {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  const candidates = new Set<string>();
-  const appendCandidate = (value: string) => {
+  const candidates = new Map<string, LocalRepairCandidate>();
+  const appendCandidate = (value: string, ruleLabels: string[]) => {
     if (!value.trim()) return;
-    candidates.add(value);
-    candidates.add(escapeRawControlsInDoubleQuotedStrings(value));
+    if (!candidates.has(value)) {
+      candidates.set(value, { value, ruleLabels });
+    }
+
+    const escapedControls = escapeRawControlsInDoubleQuotedStrings(value);
+    if (escapedControls !== value && !candidates.has(escapedControls)) {
+      candidates.set(escapedControls, {
+        value: escapedControls,
+        ruleLabels: [...ruleLabels, '转义字符串内换行/控制字符'],
+      });
+    }
   };
 
-  [trimmed, stripJsonComments(trimmed)].forEach(base => {
-    appendCandidate(base);
-    appendCandidate(removeTrailingCommas(base));
-    appendCandidate(normalizeLooseJsonSyntax(base));
-    appendCandidate(removeTrailingCommas(normalizeLooseJsonSyntax(base)));
+  const strippedComments = stripJsonComments(trimmed);
+  const baseCandidates: LocalRepairCandidate[] = [
+    { value: trimmed, ruleLabels: [] },
+    ...(strippedComments !== trimmed
+      ? [{ value: strippedComments, ruleLabels: ['移除 JSON 注释'] }]
+      : []),
+  ];
+
+  baseCandidates.forEach(base => {
+    appendCandidate(base.value, base.ruleLabels);
+
+    const withoutTrailingCommas = removeTrailingCommas(base.value);
+    appendCandidate(
+      withoutTrailingCommas,
+      withoutTrailingCommas === base.value
+        ? base.ruleLabels
+        : [...base.ruleLabels, '移除尾随逗号']
+    );
+
+    const looseNormalized = normalizeLooseJsonSyntax(base.value);
+    appendCandidate(
+      looseNormalized,
+      looseNormalized === base.value
+        ? base.ruleLabels
+        : [...base.ruleLabels, '修正常见 JS 对象写法']
+    );
+
+    const looseWithoutTrailingCommas = removeTrailingCommas(looseNormalized);
+    appendCandidate(
+      looseWithoutTrailingCommas,
+      looseWithoutTrailingCommas === looseNormalized
+        ? looseNormalized === base.value ? base.ruleLabels : [...base.ruleLabels, '修正常见 JS 对象写法']
+        : [
+          ...base.ruleLabels,
+          ...(looseNormalized === base.value ? [] : ['修正常见 JS 对象写法']),
+          '移除尾随逗号',
+        ]
+    );
   });
 
-  for (const candidate of candidates) {
-    const normalized = tryNormalizeJson(candidate);
-    if (normalized) return normalized;
+  for (const candidate of candidates.values()) {
+    const normalized = tryNormalizeJson(candidate.value);
+    if (normalized) {
+      return {
+        fixedJson: normalized,
+        ruleLabels: Array.from(new Set(
+          candidate.ruleLabels.length > 0 ? candidate.ruleLabels : ['规范化 JSON']
+        )),
+      };
+    }
   }
 
   return null;
@@ -414,14 +483,29 @@ export const fixJsonWithAI = async (
   config: AIConfig,
   options: FixJsonWithAIOptions = {}
 ): Promise<string> => {
+  const result = await fixJsonWithRepairDetails(brokenJson, config, options);
+  return result.fixedJson;
+};
+
+export const fixJsonWithRepairDetails = async (
+  brokenJson: string,
+  config: AIConfig,
+  options: FixJsonWithAIOptions = {}
+): Promise<FixJsonResult> => {
+  if (options.allowLocalRepair !== false) {
+    const localReport = repairJsonLocallyWithReport(brokenJson);
+    if (localReport) {
+      return {
+        fixedJson: localReport.fixedJson,
+        repairMethod: 'local',
+        localRuleLabels: localReport.ruleLabels,
+      };
+    }
+  }
+
   const sensitiveLabels = detectAiSensitiveInputLabels(brokenJson);
   if (sensitiveLabels.length > 0) {
     throw new Error(`${AI_SENSITIVE_INPUT_MESSAGE}（命中: ${sensitiveLabels.join('/')}）`);
-  }
-
-  if (options.allowLocalRepair !== false) {
-    const localFixed = repairJsonLocally(brokenJson);
-    if (localFixed) return localFixed;
   }
 
   // 检查 API Key
@@ -453,7 +537,11 @@ export const fixJsonWithAI = async (
       }), timeoutMs);
 
       const text = response.text;
-      return normalizeAiJsonResponse(text || '{}');
+      return {
+        fixedJson: normalizeAiJsonResponse(text || '{}'),
+        repairMethod: 'ai',
+        localRuleLabels: [],
+      };
     }
 
     // OpenAI 兼容接口调用 (OpenAI, Qwen, GLM, DeepSeek, Custom)
@@ -501,7 +589,11 @@ export const fixJsonWithAI = async (
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content || '{}';
 
-    return normalizeAiJsonResponse(text);
+    return {
+      fixedJson: normalizeAiJsonResponse(text),
+      repairMethod: 'ai',
+      localRuleLabels: [],
+    };
   } catch (error: unknown) {
     console.error("Error calling AI API:", error);
 
