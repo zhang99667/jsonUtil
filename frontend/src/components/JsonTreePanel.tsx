@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
+import { matchesJsonTreeSearchText } from '../utils/jsonTreeModel';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 
@@ -49,7 +50,7 @@ const getVisibleNodes = (
 ): JsonTreeNode[] => {
   const normalizedSearch = searchText.trim().toLowerCase();
   if (normalizedSearch) {
-    return nodes.filter(node => node.searchText.includes(normalizedSearch));
+    return nodes.filter(node => matchesJsonTreeSearchText(node.searchText, normalizedSearch));
   }
 
   return nodes.filter(node => (
@@ -315,7 +316,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             {modelState.isLoading
               ? '结构导航解析中...'
               : modelState.model
-                ? `${modelState.model.totalNodes} 个节点 / ${containerCount} 个容器${modelState.model.isLimited ? `，已按 ${modelState.model.maxNodes} 节点上限截断` : ''}`
+                ? `${searchText.trim() ? `${visibleNodes.length}/${modelState.model.totalNodes} 个匹配` : `${modelState.model.totalNodes} 个节点`} / ${containerCount} 个容器${modelState.model.isLimited ? `，已按 ${modelState.model.maxNodes} 节点上限截断` : ''}`
               : '结构导航'}
           </span>
           <span className="shrink-0">点击节点可定位，PATH 可复制路径</span>

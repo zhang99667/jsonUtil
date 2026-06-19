@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildJsonTreeModel } from './jsonTreeModel';
+import { buildJsonTreeModel, matchesJsonTreeSearchText } from './jsonTreeModel';
 
 describe('jsonTreeModel', () => {
   it('生成 JSON 结构节点和可定位路径', () => {
@@ -71,5 +71,23 @@ describe('jsonTreeModel', () => {
 
   it('非法 JSON 返回可读错误', () => {
     expect(() => buildJsonTreeModel('{"broken":}')).toThrow('JSON 结构解析失败');
+  });
+
+  it('结构搜索支持多关键词和字符顺序模糊匹配', () => {
+    const model = buildJsonTreeModel(JSON.stringify({
+      userProfile: {
+        displayName: 'Alice',
+        trackingId: 'trace-001',
+      },
+      orderItems: [{ skuId: 'sku-1' }],
+    }));
+    const displayNameNode = model.nodes.find(node => node.path === '$.userProfile.displayName');
+    const skuNode = model.nodes.find(node => node.path === '$.orderItems[0].skuId');
+
+    expect(displayNameNode).toBeDefined();
+    expect(skuNode).toBeDefined();
+    expect(matchesJsonTreeSearchText(displayNameNode?.searchText || '', 'usr dnm')).toBe(true);
+    expect(matchesJsonTreeSearchText(skuNode?.searchText || '', 'ord sku')).toBe(true);
+    expect(matchesJsonTreeSearchText(displayNameNode?.searchText || '', 'order sku')).toBe(false);
   });
 });

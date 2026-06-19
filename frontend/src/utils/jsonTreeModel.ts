@@ -75,6 +75,38 @@ const compactText = (value: string, maxLength: number): string => {
   return `${compacted.slice(0, Math.max(0, maxLength - 3))}...`;
 };
 
+const normalizeSearchToken = (value: string): string => value.trim().toLowerCase();
+
+const isFuzzyTokenMatch = (text: string, token: string): boolean => {
+  if (!token) return true;
+
+  let tokenIndex = 0;
+  for (let textIndex = 0; textIndex < text.length && tokenIndex < token.length; textIndex++) {
+    if (text[textIndex] === token[tokenIndex]) {
+      tokenIndex++;
+    }
+  }
+
+  return tokenIndex === token.length;
+};
+
+/**
+ * 结构导航搜索支持多关键词和字符顺序模糊匹配，方便在大 JSON 中快速定位路径。
+ */
+export const matchesJsonTreeSearchText = (searchText: string, query: string): boolean => {
+  const normalizedText = normalizeSearchToken(searchText);
+  const tokens = query
+    .split(/\s+/)
+    .map(normalizeSearchToken)
+    .filter(Boolean);
+
+  if (tokens.length === 0) return true;
+
+  return tokens.every(token => (
+    normalizedText.includes(token) || isFuzzyTokenMatch(normalizedText, token)
+  ));
+};
+
 const getValuePreview = (value: JsonValue, maxLength: number): string => {
   if (Array.isArray(value)) return `数组 ${value.length} 项`;
   if (isJsonRecord(value)) return `对象 ${Object.keys(value).length} 个键`;
