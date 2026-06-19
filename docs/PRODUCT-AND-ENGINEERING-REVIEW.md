@@ -279,18 +279,37 @@ frontend/fixtures/scheme-corpus/
 - 结构导航已补对象数组表格预览，选中列表型 response 数组时可直接看前几行字段分布，并复制表格 JSON 或 CSV 继续排查。
 - 结构导航已补搜索结果和节点子树复制，搜索命中可复制结构化 JSON 清单，容器节点可直接复制完整子树。
 - 结构导航已补节点类型筛选，可跨整棵树筛选对象、数组、字符串、数字、布尔和空值节点，并联动复制当前筛选结果。
+- 结构导航已补搜索命中高亮，精确命中的字段名和值预览片段会在结构行内突出显示，降低大 response 扫描成本。
 - 深度解析报告面板关闭时不再构建报告视图和质量快照，减少关闭态随输入变化产生的主线程派生计算。
 
 ## 2026-06-19 竞品复评补充
 
 参考 JSON Editor Online、JSON Hero、JSON Crack、CyberChef、DevToys、quicktype 和 fx 后，当前项目已经覆盖通用 JSON 工作台的大部分基础能力，差异化优势仍在复杂 response / CMD / Scheme 解析。下一阶段不建议继续堆单点按钮，而应把“结构理解、修复解释、协作排查”做得更像一个检查器。
 
+本次联网复核补充参考:
+
+- JSON Hero: https://jsonhero.io/ 和 https://github.com/triggerdotdev/jsonhero-web
+- JSON Crack: https://jsoncrack.com/ 和 https://github.com/AykutSarac/jsoncrack.com
+- jsoneditor: https://github.com/josdejong/jsoneditor
+- DevUtils: https://devutils.com/ 和 https://devutils.com/changelog/
+- JSON Formatter: https://jsonformatter.org/
+- OK JSON: https://apps.apple.com/us/app/ok-json-viewer-formatter/id1576121509
+
 ### 同类工具学习点
 
-- JSON Editor Online / Chrome JSON Editor: 表格模式、树模式、文本模式并列，尤其适合对象数组和嵌套数组的快速检查；本次已先落地结构导航内的对象数组表格预览。
-- JSON Hero: 通过字符串语义识别、相关值和自动 Schema 帮用户发现边界数据；后续可把 URL、颜色、日期、空值分布做成节点详情的语义卡片。
-- JSON Crack: 图形化结构、多格式转换、Schema/类型生成和 jq/JSONPath 集成很完整；我们应保留轻量结构树，同时补“从节点继续转换/生成类型/对比”的短路径。
-- DevUtils: 离线隐私、剪贴板智能检测和 JSON to CSV 细节选项是开发者工具的信任来源；本项目的桌面版和复制导出能力应继续强调本地处理与可配置转换。
+- JSON Editor Online / Chrome JSON Editor / jsoneditor: 表格模式、树模式、文本模式并列，尤其适合对象数组和嵌套数组的快速检查；本次已先落地结构导航内的对象数组表格预览，后续要让表格、树和源码之间的定位关系更稳定。
+- JSON Hero: 多视图浏览、字符串语义预览、自动 Schema、键值搜索、键盘可访问和带路径的分享链接都很强；后续可把 URL、颜色、日期、空值分布和 Base64/JWT 等内容做成节点详情的语义卡片。
+- JSON Crack: 图形化结构、多格式转换、Schema/类型生成、查询和图片导出更适合讲解复杂结构；我们应保留轻量结构树，同时补“从节点继续转换/生成类型/对比/导出证据图”的短路径。
+- DevUtils / OK JSON: 离线隐私、剪贴板智能检测、jq/JSONPath、查看历史、Quick Look/Raycast 等系统集成是开发者工具的信任来源；本项目的桌面版和复制导出能力应继续强调本地处理、历史回看与可配置转换。
+- JSON Formatter 类在线工具: 格式化、校验和 JSON 转 XML/CSV/YAML 是用户的高频入口；本项目已经覆盖核心处理，下一步更应该把“转换后如何检查结果是否可信”做成优势。
+
+### 竞品启发的新增待办
+
+- 语义预览: 在结构检查器节点详情中识别 URL、日期、颜色、邮箱、手机号、JWT、Base64、图片/视频资源和业务 Scheme，并提供复制、打开和继续解析入口。
+- 路径级协作: 支持复制带路径上下文的 Markdown/CSV 摘要，后续 Web 版可考虑 URL hash 定位到某个 JSONPath。
+- 图形证据: 复杂对象可导出结构缩略图或 Mermaid/图片，服务于排查报告和评审沟通，而不是把完整 JSON 截图贴出去。
+- 桌面效率: Electron 版可补剪贴板智能识别、打开历史、文件拖拽和系统快捷入口，强化“敏感数据不出本机”的定位。
+- 转换可信度: JSON 转 CSV/YAML/TS/Schema 后增加样本行数、丢失字段、动态 key、混合类型和截断提示，让转换结果更可审查。
 
 ### 新 P0: 结构检查器
 
@@ -301,7 +320,7 @@ frontend/fixtures/scheme-corpus/
 - 节点详情: 选中节点后展示类型、子节点数量、JSONPath、JSON Pointer、值预览、紧凑值和格式化值。
 - 复制能力: 已支持复制 JSONPath、JSON Pointer、节点值、节点子树和当前搜索结果；后续可补当前搜索结果导出为 Markdown/CSV。
 - 数组表格视图: 已完成前 N 行对象数组表格和 CSV/JSON 复制；后续补列筛选、展开嵌套对象和更多 CSV 选项，降低接口列表型 response 的阅读成本。
-- 搜索增强: 已完成多关键词、模糊搜索和按类型筛选，后续可补匹配高亮和搜索历史。
+- 搜索增强: 已完成多关键词、模糊搜索、按类型筛选和精确命中高亮，后续可补搜索历史。
 
 验收标准:
 

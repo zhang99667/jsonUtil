@@ -66,6 +66,35 @@ const getJsonPointerDisplayValue = (jsonPointer: string): string => (
   jsonPointer || '(root)'
 );
 
+const escapeRegExp = (value: string): string => (
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+);
+
+const getSearchHighlightTokens = (searchText: string): string[] => (
+  [...new Set(searchText
+    .split(/\s+/)
+    .map(token => token.trim())
+    .filter(Boolean))]
+    .sort((left, right) => right.length - left.length)
+);
+
+const renderHighlightedText = (text: string, tokens: string[]): React.ReactNode => {
+  if (tokens.length === 0) return text;
+
+  const pattern = new RegExp(`(${tokens.map(escapeRegExp).join('|')})`, 'ig');
+  const parts = text.split(pattern).filter(part => part.length > 0);
+
+  return parts.map((part, index) => (
+    tokens.some(token => token.toLowerCase() === part.toLowerCase())
+      ? (
+        <mark key={`${part}-${index}`} className="rounded bg-amber-300/20 px-0.5 text-amber-100">
+          {part}
+        </mark>
+      )
+      : part
+  ));
+};
+
 const getVisibleNodes = (
   nodes: JsonTreeNode[],
   expandedPaths: Set<string>,
@@ -164,6 +193,10 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   }, [isDataPreparing, isOpen, jsonData]);
   const nodes = modelState.model?.nodes || [];
   const hasActiveFilter = Boolean(searchText.trim()) || kindFilter !== 'all';
+  const searchHighlightTokens = useMemo(
+    () => getSearchHighlightTokens(searchText),
+    [searchText]
+  );
   const visibleNodes = useMemo(
     () => getVisibleNodes(nodes, expandedPaths, searchText, kindFilter),
     [expandedPaths, kindFilter, nodes, searchText]
@@ -515,13 +548,13 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
                   title={`选中并定位 ${node.path}`}
                 >
                   <span className="max-w-[160px] shrink-0 truncate font-mono text-[11px] font-semibold text-gray-100">
-                    {node.keyLabel}
+                    {renderHighlightedText(node.keyLabel, searchHighlightTokens)}
                   </span>
                   <span className={`shrink-0 rounded border px-1 py-0.5 text-[10px] leading-none ${getKindClassName(node.kind)}`}>
                     {KIND_LABELS[node.kind]}
                   </span>
                   <span className="min-w-0 truncate font-mono text-[11px] text-gray-400">
-                    {node.valuePreview}
+                    {renderHighlightedText(node.valuePreview, searchHighlightTokens)}
                   </span>
                 </button>
 
