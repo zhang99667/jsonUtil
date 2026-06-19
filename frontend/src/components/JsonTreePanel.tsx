@@ -3,6 +3,7 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import type { JsonTreeArrayTablePreview, JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
 import {
   buildJsonTreeArrayTablePreview,
+  filterJsonTreeArrayTablePreviewColumns,
   formatJsonTreeSearchResultsCsvText,
   formatJsonTreeSearchResultsText,
   formatJsonTreeSearchResultsMarkdownText,
@@ -148,6 +149,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const requestIdRef = useRef(0);
   const [searchText, setSearchText] = useState('');
   const [kindFilter, setKindFilter] = useState<JsonTreeKindFilter>('all');
+  const [tableColumnFilter, setTableColumnFilter] = useState('');
   const [selectedPath, setSelectedPath] = useState('$');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['$']));
   const [modelState, setModelState] = useState<JsonTreeModelState>({
@@ -239,6 +241,11 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       return null;
     }
   }, [jsonData, selectedNode?.jsonPointer, selectedNode?.kind]);
+  const visibleArrayTablePreview = useMemo(() => (
+    selectedArrayTablePreview
+      ? filterJsonTreeArrayTablePreviewColumns(selectedArrayTablePreview, tableColumnFilter)
+      : null
+  ), [selectedArrayTablePreview, tableColumnFilter]);
   const selectedSemanticHints = useMemo(() => {
     if (!selectedNode || selectedNode.kind !== 'string') return [];
 
@@ -271,6 +278,10 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
 
     setSelectedPath(visibleNodes[0]?.path || '$');
   }, [selectedNode, visibleNodes]);
+
+  useEffect(() => {
+    setTableColumnFilter('');
+  }, [selectedNode?.path]);
 
   const handleToggleNode = (node: JsonTreeNode) => {
     if (!node.isContainer) return;
@@ -396,22 +407,37 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   };
 
   const renderArrayTablePreview = () => {
-    const preview = selectedArrayTablePreview;
-    if (!preview) return null;
+    const sourcePreview = selectedArrayTablePreview;
+    const preview = visibleArrayTablePreview;
+    if (!sourcePreview || !preview) return null;
+    const hasColumnFilter = Boolean(tableColumnFilter.trim());
+    const hasVisibleColumns = preview.columns.length > 0;
 
     return (
       <div data-tour="structure-nav-table-preview" className="mt-2 rounded border border-editor-border bg-editor-sidebar/60">
-        <div className="flex min-w-0 items-center justify-between gap-2 border-b border-editor-border px-2 py-1.5">
-          <span className="min-w-0 truncate text-[11px] text-gray-300">
-            对象数组预览: {preview.sampledRows}/{preview.totalRows} 行，{preview.columns.length}/{preview.totalColumns} 列
-            {(preview.isRowLimited || preview.isColumnLimited) && '，已截断'}
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-editor-border px-2 py-1.5">
+          <span className="min-w-[160px] flex-1 truncate text-[11px] text-gray-300">
+            对象数组预览: {sourcePreview.sampledRows}/{sourcePreview.totalRows} 行，{preview.columns.length}/{sourcePreview.totalColumns} 列
+            {(sourcePreview.isRowLimited || sourcePreview.isColumnLimited) && '，已截断'}
+            {hasColumnFilter && `，已显示列筛选 ${preview.columns.length}/${sourcePreview.columns.length}`}
           </span>
-          <span className="flex shrink-0 items-center gap-1">
+          <span className="flex min-w-0 shrink-0 items-center gap-1">
+            <input
+              data-tour="structure-nav-table-column-filter"
+              type="text"
+              value={tableColumnFilter}
+              onChange={(event) => setTableColumnFilter(event.target.value)}
+              placeholder="筛已显示列"
+              aria-label="筛选已显示表格列名"
+              title="筛选当前已显示的表格列"
+              className="h-6 w-24 rounded border border-editor-border bg-editor-bg px-1.5 font-mono text-[10px] text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500"
+            />
             <button
               type="button"
               data-tour="structure-nav-copy-table-json"
               onClick={() => void handleCopyArrayTableJson(preview)}
-              className="rounded border border-editor-border px-1.5 py-0.5 text-[10px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-blue-100"
+              disabled={!hasVisibleColumns}
+              className="rounded border border-editor-border px-1.5 py-0.5 text-[10px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-blue-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-300"
             >
               JSON
             </button>
@@ -419,12 +445,18 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
               type="button"
               data-tour="structure-nav-copy-table-csv"
               onClick={() => void handleCopyArrayTableCsv(preview)}
-              className="rounded border border-editor-border px-1.5 py-0.5 text-[10px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-emerald-100"
+              disabled={!hasVisibleColumns}
+              className="rounded border border-editor-border px-1.5 py-0.5 text-[10px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-300"
             >
               CSV
             </button>
           </span>
         </div>
+        {!hasVisibleColumns ? (
+          <div className="px-2 py-3 text-center text-[11px] text-gray-500">
+            没有匹配的表格列。
+          </div>
+        ) : (
         <div className="max-h-40 overflow-auto">
           <table className="min-w-full border-collapse text-left font-mono text-[10px]">
             <thead className="sticky top-0 bg-editor-sidebar text-gray-400">
@@ -451,6 +483,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             </tbody>
           </table>
         </div>
+        )}
       </div>
     );
   };

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildJsonTreeModel,
   buildJsonTreeArrayTablePreview,
+  filterJsonTreeArrayTablePreviewColumns,
   formatJsonTreeSearchResultsCsvText,
   formatJsonTreeSearchResultsText,
   formatJsonTreeSearchResultsMarkdownText,
@@ -266,6 +267,29 @@ describe('jsonTreeModel', () => {
       '1,Alice," a,b "',
       '2,Bob,"quote ""x""\nline"',
     ].join('\n'));
+
+    const filteredPreview = filterJsonTreeArrayTablePreviewColumns(preview!, 'na');
+    expect(filteredPreview.columns).toEqual(['name']);
+    expect(filteredPreview.rows.map(row => row.cells)).toEqual([
+      ['Alice'],
+      ['Bob'],
+    ]);
+    expect(formatJsonTreeArrayTableJsonText(filteredPreview)).toBe(JSON.stringify([
+      { name: 'Alice' },
+      { name: 'Bob' },
+    ], null, 2));
+    expect(formatJsonTreeArrayTableCsvText(filteredPreview)).toBe([
+      'name',
+      'Alice',
+      'Bob',
+    ].join('\n'));
+
+    const emptyPreview = filterJsonTreeArrayTablePreviewColumns(preview!, 'missing');
+    expect(emptyPreview.columns).toEqual([]);
+    expect(emptyPreview.rows.map(row => row.cells)).toEqual([
+      [],
+      [],
+    ]);
   });
 
   it('非对象数组不生成表格预览', () => {

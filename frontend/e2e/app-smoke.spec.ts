@@ -464,6 +464,24 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
     { id: 2, name: 'Bob' },
   ], null, 2));
 
+  await tablePreview.locator('[data-tour="structure-nav-table-column-filter"]').fill('missing');
+  await expect(tablePreview).toContainText('没有匹配的表格列');
+  await expect(tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]')).toBeDisabled();
+  await expect(tablePreview.locator('[data-tour="structure-nav-copy-table-json"]')).toBeDisabled();
+
+  await tablePreview.locator('[data-tour="structure-nav-table-column-filter"]').fill('name');
+  await expect(tablePreview).toContainText('已显示列筛选 1/2');
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-csv"]').click();
+  await expect(page.getByText('已复制表格 CSV').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe('name\n"A,B"\nBob');
+
+  await tablePreview.locator('[data-tour="structure-nav-copy-table-json"]').click();
+  await expect(page.getByText('已复制表格 JSON').last()).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe(JSON.stringify([
+    { name: 'A,B' },
+    { name: 'Bob' },
+  ], null, 2));
+
   await structurePanel.locator('[data-tour="structure-nav-search"]').fill('');
   await structurePanel.locator('[data-tour="structure-nav-kind-filter"]').selectOption('array');
   await expect(structurePanel.locator('[data-tour="structure-nav-row"]')).toHaveCount(1);
