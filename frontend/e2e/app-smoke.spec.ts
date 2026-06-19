@@ -316,6 +316,18 @@ test('JSON Schema 面板可校验当前 SOURCE 并定位问题路径', async ({ 
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$.items[0].price');
   await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('0');
 
+  const sameFieldButton = schemaPanel.locator('[data-tour="json-schema-query-same-field"]').first();
+  await expect(sameFieldButton).toHaveAttribute('title', '用 $..price 查询全局同名字段');
+  await sameFieldButton.click();
+  await expect(page.getByText('已填入同名字段查询')).toBeVisible();
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-input"]')).toHaveValue('$..price');
+  await expect(jsonPathPanel.locator('[data-tour="jsonpath-results"]')).toContainText('0');
+
+  await schemaPanel.locator('[data-tour="json-schema-copy-same-field-query"]').first().click();
+  await expect(page.getByText('已复制同名字段查询')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe('$..price');
+
   await schemaInput.fill(JSON.stringify({
     type: 'array',
     minItems: 9,
