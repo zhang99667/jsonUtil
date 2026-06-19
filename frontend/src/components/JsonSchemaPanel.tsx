@@ -9,7 +9,11 @@ import {
   type JsonSchemaValidationResult,
   type JsonSchemaValidationStatus,
 } from '../utils/jsonSchemaValidation';
-import { inferJsonSchemaFromText, type JsonSchemaInferenceRequiredMode } from '../utils/jsonSchemaInference';
+import {
+  inferJsonSchemaFromText,
+  type JsonSchemaInferenceRequiredMode,
+  type JsonSchemaInferenceSamplingSummary,
+} from '../utils/jsonSchemaInference';
 import { generateJsonSchemaExampleText } from '../utils/jsonSchemaExample';
 import {
   JSON_SCHEMA_LIBRARY_STORAGE_KEY,
@@ -66,6 +70,19 @@ const getToolEventStatus = (status: JsonSchemaValidationStatus): ToolEventStatus
   return 'success';
 };
 
+const formatSamplingSummary = (summary: JsonSchemaInferenceSamplingSummary): string => (
+  [
+    `${summary.path}: ${summary.totalItems} 项中采样 ${summary.sampledItems} 项`,
+    summary.isScanLimited
+      ? `仅扫描前 ${summary.scannedItems} 项稀疏字段`
+      : `扫描 ${summary.scannedItems} 项稀疏字段`,
+    summary.sparseFieldKeys.length > 0
+      ? `命中后段稀疏字段 ${summary.sparseFieldKeys.slice(0, 6).join('、')}${summary.sparseFieldKeys.length > 6 ? ` 等 ${summary.sparseFieldKeys.length} 个` : ''}`
+      : '未命中额外稀疏字段',
+    summary.requiredMode === 'loose' ? '宽松模式不生成 required' : 'required 按采样交集生成',
+  ].join('，')
+);
+
 export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   jsonData,
   isOpen,
@@ -80,6 +97,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     parseJsonSchemaLibrary(safeGetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY))
   ));
   const [schemaRequiredMode, setSchemaRequiredMode] = useState<JsonSchemaInferenceRequiredMode>('strict');
+  const [inferenceSamplingSummaries, setInferenceSamplingSummaries] = useState<JsonSchemaInferenceSamplingSummary[]>([]);
   const [result, setResult] = useState<JsonSchemaValidationResult | null>(null);
 
   const validateButtonDisabledReason = useMemo(() => {
@@ -96,6 +114,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   const handleSchemaChange = useCallback((value: string) => {
     setSchemaText(value);
     safeSetStorageItem(JSON_SCHEMA_STORAGE_KEY, value);
+    setInferenceSamplingSummaries([]);
     setResult(null);
     onValidationResult?.(null);
   }, [onValidationResult]);
@@ -160,6 +179,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     }
 
     handleSchemaChange(inferenceResult.schemaText);
+    setInferenceSamplingSummaries(inferenceResult.samplingSummaries || []);
     trackToolEvent({
       eventName: 'SCHEMA_INFER',
       category: 'schema',
@@ -541,6 +561,19 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
             className="min-h-0 flex-1 resize-none rounded border border-editor-border bg-editor-bg p-3 font-mono text-xs leading-5 text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
             placeholder='{"type":"object","required":["id"]}'
           />
+          {inferenceSamplingSummaries.length > 0 && (
+            <div
+              data-tour="json-schema-inference-summary"
+              className="mt-2 rounded border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-xs leading-5 text-amber-100"
+              title={inferenceSamplingSummaries.map(formatSamplingSummary).join('\n')}
+            >
+              <span className="font-semibold">采样提示: </span>
+              <span>
+                {inferenceSamplingSummaries.length} 个长数组使用采样推断；{formatSamplingSummary(inferenceSamplingSummaries[0])}
+                {inferenceSamplingSummaries.length > 1 ? `，另有 ${inferenceSamplingSummaries.length - 1} 个路径` : ''}
+              </span>
+            </div>
+          )}
           <div
             data-tour="json-schema-library"
             className="mt-2 flex max-h-28 min-h-[74px] flex-col rounded border border-editor-border bg-editor-bg/60"

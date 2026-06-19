@@ -62,6 +62,33 @@ describe('jsonSchemaInference', () => {
       traceId: { type: 'string' },
     });
     expect(schema.properties.items.items.required).toEqual(['id', 'title']);
+    expect(result.samplingSummaries).toEqual([{
+      path: '$.items',
+      totalItems: 45,
+      sampledItems: 25,
+      scannedItems: 45,
+      sparseFieldKeys: ['cmdSchema', 'traceId'],
+      isScanLimited: false,
+      requiredMode: 'strict',
+    }]);
+  });
+
+  it('长数组采样摘要标记稀疏字段扫描上限', () => {
+    const items = Array.from({ length: 260 }, (_, index) => ({
+      id: index + 1,
+      ...(index === 230 ? { lateOnly: true } : {}),
+    }));
+    const result = inferJsonSchemaFromText(JSON.stringify({ items }), { requiredMode: 'loose' });
+
+    expect(result.samplingSummaries).toEqual([{
+      path: '$.items',
+      totalItems: 260,
+      sampledItems: 24,
+      scannedItems: 200,
+      sparseFieldKeys: [],
+      isScanLimited: true,
+      requiredMode: 'loose',
+    }]);
   });
 
   it('长数组后段类型差异参与合并', () => {
@@ -141,6 +168,7 @@ describe('jsonSchemaInference', () => {
       type: 'array',
       items: { type: 'number' },
     });
+    expect(result.samplingSummaries).toEqual([]);
   });
 
   it('混合类型数组使用 type 数组表达', () => {
