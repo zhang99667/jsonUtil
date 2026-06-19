@@ -1,7 +1,19 @@
 export interface JsonSchemaInferenceResult {
   schemaText?: string;
   samplingSummaries?: JsonSchemaInferenceSamplingSummary[];
+  trustSummary?: JsonSchemaInferenceTrustSummary;
   error?: string;
+}
+
+export interface JsonSchemaInferenceTrustSummary {
+  objectSchemaCount: number;
+  propertyCount: number;
+  requiredFieldCount: number;
+  optionalFieldCount: number;
+  unionTypeCount: number;
+  formatFieldCount: number;
+  sampledArrayCount: number;
+  requiredMode: JsonSchemaInferenceRequiredMode;
 }
 
 export interface JsonSchemaInferenceSamplingSummary {
@@ -319,6 +331,54 @@ const inferSchema = (
   return {};
 };
 
+const getSchemaTypeList = (schema: InferredSchema): JsonSchemaType[] => (
+  Array.isArray(schema.type) ? schema.type : schema.type ? [schema.type] : []
+);
+
+const buildTrustSummary = (
+  schema: InferredSchema,
+  samplingSummaries: JsonSchemaInferenceSamplingSummary[],
+  options: JsonSchemaInferenceOptions
+): JsonSchemaInferenceTrustSummary => {
+  const summary: JsonSchemaInferenceTrustSummary = {
+    objectSchemaCount: 0,
+    propertyCount: 0,
+    requiredFieldCount: 0,
+    optionalFieldCount: 0,
+    unionTypeCount: 0,
+    formatFieldCount: 0,
+    sampledArrayCount: samplingSummaries.length,
+    requiredMode: options.requiredMode || 'strict',
+  };
+
+  const visit = (current: InferredSchema): void => {
+    const typeList = getSchemaTypeList(current);
+    if (typeList.length > 1) {
+      summary.unionTypeCount += 1;
+    }
+    if (current.format) {
+      summary.formatFieldCount += 1;
+    }
+
+    if (typeList.includes('object') && current.properties) {
+      const propertyKeys = Object.keys(current.properties);
+      const requiredKeys = new Set(current.required || []);
+      summary.objectSchemaCount += 1;
+      summary.propertyCount += propertyKeys.length;
+      summary.requiredFieldCount += requiredKeys.size;
+      summary.optionalFieldCount += propertyKeys.filter(key => !requiredKeys.has(key)).length;
+      propertyKeys.forEach(key => visit(current.properties?.[key] || {}));
+    }
+
+    if (typeList.includes('array') && current.items) {
+      visit(current.items);
+    }
+  };
+
+  visit(schema);
+  return summary;
+};
+
 export const inferJsonSchemaFromText = (
   jsonText: string,
   options: JsonSchemaInferenceOptions = {}
@@ -345,5 +405,6 @@ export const inferJsonSchemaFromText = (
   return {
     schemaText: JSON.stringify(schema, null, 2),
     samplingSummaries: context.samplingSummaries,
+    trustSummary: buildTrustSummary(schema, context.samplingSummaries, options),
   };
 };

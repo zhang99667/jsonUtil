@@ -135,6 +135,7 @@ frontend/
 │   │   ├── jsonSemanticDiff.ts    # 通用 JSON / JSON Lines 语义 diff、JSON Pointer、忽略路径和 Markdown 报告
 │   │   ├── jsonTreeModel.ts       # JSON 树模型、路径与预览摘要生成
 │   │   ├── jsonToTypeScript.ts    # JSON / JSON Lines 到 TypeScript 类型声明生成与可信度摘要
+│   │   ├── jsonSchemaInference.ts # JSON Schema 推断、采样摘要与契约可信度统计
 │   │   ├── smartInputSuggestion.ts # SOURCE 输入类型识别、下一步工具推荐与轻量工作流动作
 │   │   ├── changelog.ts           # CHANGELOG 解析与前端展示数据
 │   │   └── diffUtils.ts           # 差异对比
@@ -229,6 +230,7 @@ PREVIEW JSON + TransformReportPanel
 | `schemeMetadata.ts` | 汇总 CMD Schema、内部 CMD 字段、运行时占位符和 cmdHandler 兼容结构 |
 | `transformSummary.ts` | 生成深度解析报告、质量快照、问题样本、占位符模板和 cmdHandler 风格复制文本 |
 | `smartInputSuggestion.ts` | 根据 SOURCE 内容推荐单步工具或 Response 排查工作流，工作流由 App 串联嵌套解析和深度解析报告 |
+| `jsonSchemaInference.ts` | 从 SOURCE 推断 JSON Schema，输出长数组采样摘要和对象/字段/required/union/format 可信度统计 |
 | `cmdStructureDiff.ts` | 对比本工具 actual 与内部 cmdHandler expected，输出缺失路径、额外路径和值差异 |
 | `harImport.ts` | 将 HAR 请求/响应 body 提取为派生 JSON，生成接口摘要、异常摘要和不含 query 的短标签 |
 

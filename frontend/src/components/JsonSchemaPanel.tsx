@@ -13,6 +13,7 @@ import {
   inferJsonSchemaFromText,
   type JsonSchemaInferenceRequiredMode,
   type JsonSchemaInferenceSamplingSummary,
+  type JsonSchemaInferenceTrustSummary,
 } from '../utils/jsonSchemaInference';
 import { generateJsonSchemaExampleText } from '../utils/jsonSchemaExample';
 import {
@@ -83,6 +84,22 @@ const formatSamplingSummary = (summary: JsonSchemaInferenceSamplingSummary): str
   ].join('，')
 );
 
+const formatTrustSummary = (summary: JsonSchemaInferenceTrustSummary): string => {
+  const parts = [
+    `对象 ${summary.objectSchemaCount} 个`,
+    `字段 ${summary.propertyCount} 个`,
+    summary.requiredMode === 'loose'
+      ? '宽松模式不生成 required'
+      : `required ${summary.requiredFieldCount}`,
+    `可选字段 ${summary.optionalFieldCount}`,
+    summary.unionTypeCount > 0 ? `union ${summary.unionTypeCount}` : '',
+    summary.formatFieldCount > 0 ? `format ${summary.formatFieldCount}` : '',
+    summary.sampledArrayCount > 0 ? `长数组采样 ${summary.sampledArrayCount}` : '',
+  ].filter(Boolean);
+
+  return `可信提示: ${parts.join('，')}`;
+};
+
 export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   jsonData,
   isOpen,
@@ -98,6 +115,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   ));
   const [schemaRequiredMode, setSchemaRequiredMode] = useState<JsonSchemaInferenceRequiredMode>('strict');
   const [inferenceSamplingSummaries, setInferenceSamplingSummaries] = useState<JsonSchemaInferenceSamplingSummary[]>([]);
+  const [inferenceTrustSummary, setInferenceTrustSummary] = useState<JsonSchemaInferenceTrustSummary | null>(null);
   const [result, setResult] = useState<JsonSchemaValidationResult | null>(null);
 
   const validateButtonDisabledReason = useMemo(() => {
@@ -115,6 +133,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     setSchemaText(value);
     safeSetStorageItem(JSON_SCHEMA_STORAGE_KEY, value);
     setInferenceSamplingSummaries([]);
+    setInferenceTrustSummary(null);
     setResult(null);
     onValidationResult?.(null);
   }, [onValidationResult]);
@@ -180,6 +199,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
 
     handleSchemaChange(inferenceResult.schemaText);
     setInferenceSamplingSummaries(inferenceResult.samplingSummaries || []);
+    setInferenceTrustSummary(inferenceResult.trustSummary || null);
     trackToolEvent({
       eventName: 'SCHEMA_INFER',
       category: 'schema',
@@ -571,6 +591,18 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
               <span>
                 {inferenceSamplingSummaries.length} 个长数组使用采样推断；{formatSamplingSummary(inferenceSamplingSummaries[0])}
                 {inferenceSamplingSummaries.length > 1 ? `，另有 ${inferenceSamplingSummaries.length - 1} 个路径` : ''}
+              </span>
+            </div>
+          )}
+          {inferenceTrustSummary && (
+            <div
+              data-tour="json-schema-trust-summary"
+              className="mt-2 rounded border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-2 text-xs leading-5 text-emerald-100"
+              title={formatTrustSummary(inferenceTrustSummary)}
+            >
+              <span className="font-semibold">可信提示: </span>
+              <span>
+                {formatTrustSummary(inferenceTrustSummary).replace(/^可信提示: /, '')}
               </span>
             </div>
           )}

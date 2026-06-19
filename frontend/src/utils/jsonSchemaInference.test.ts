@@ -24,6 +24,16 @@ describe('jsonSchemaInference', () => {
         meta: { type: 'null' },
       },
     });
+    expect(result.trustSummary).toEqual({
+      objectSchemaCount: 1,
+      propertyCount: 4,
+      requiredFieldCount: 4,
+      optionalFieldCount: 0,
+      unionTypeCount: 0,
+      formatFieldCount: 0,
+      sampledArrayCount: 0,
+      requiredMode: 'strict',
+    });
   });
 
   it('数组对象 required 取样本交集', () => {
@@ -71,6 +81,14 @@ describe('jsonSchemaInference', () => {
       isScanLimited: false,
       requiredMode: 'strict',
     }]);
+    expect(result.trustSummary).toMatchObject({
+      objectSchemaCount: 2,
+      propertyCount: 5,
+      requiredFieldCount: 3,
+      optionalFieldCount: 2,
+      sampledArrayCount: 1,
+      requiredMode: 'strict',
+    });
   });
 
   it('长数组采样摘要标记稀疏字段扫描上限', () => {
@@ -121,6 +139,11 @@ describe('jsonSchemaInference', () => {
       sku: { type: 'string' },
       price: { type: 'integer' },
     });
+    expect(result.trustSummary).toMatchObject({
+      requiredFieldCount: 0,
+      optionalFieldCount: 6,
+      requiredMode: 'loose',
+    });
   });
 
   it('为常见字符串值推断标准 format', () => {
@@ -141,6 +164,7 @@ describe('jsonSchemaInference', () => {
       title: { type: 'string' },
     });
     expect(schema.properties.title).not.toHaveProperty('format');
+    expect(result.trustSummary?.formatFieldCount).toBe(4);
   });
 
   it('数组字符串仅在所有样本 format 一致时保留 format', () => {
@@ -176,6 +200,7 @@ describe('jsonSchemaInference', () => {
     const schema = JSON.parse(result.schemaText || '{}');
 
     expect(schema.items.type).toEqual(['boolean', 'null', 'string']);
+    expect(result.trustSummary?.unionTypeCount).toBe(1);
   });
 
   it('空输入和非法 JSON 返回错误', () => {
