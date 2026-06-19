@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { TransformMode, ActionType } from '../types';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
+import type { SmartInputSuggestion, SmartSuggestionActionId } from '../utils/smartInputSuggestion';
 
 interface ActionPanelProps {
   activeMode: TransformMode;
@@ -24,6 +25,8 @@ interface ActionPanelProps {
   onToggleSchemeDecode: () => void;
   onToggleTemplateFill: () => void;
   onToggleJsonSchema: () => void;
+  smartSuggestion: SmartInputSuggestion | null;
+  onSmartSuggestionAction: (actionId: SmartSuggestionActionId) => void;
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
@@ -45,7 +48,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onToggleJsonCompare,
   onToggleSchemeDecode,
   onToggleTemplateFill,
-  onToggleJsonSchema
+  onToggleJsonSchema,
+  smartSuggestion,
+  onSmartSuggestionAction
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollState, setScrollState] = useState({ scrollTop: 0, scrollHeight: 0, clientHeight: 0 });
@@ -241,6 +246,73 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     );
   };
 
+  const smartSuggestionToneClassName = (() => {
+    if (!smartSuggestion) return '';
+    if (smartSuggestion.tone === 'emerald') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100';
+    if (smartSuggestion.tone === 'amber') return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
+    if (smartSuggestion.tone === 'violet') return 'border-violet-500/30 bg-violet-500/10 text-violet-100';
+    if (smartSuggestion.tone === 'rose') return 'border-rose-500/30 bg-rose-500/10 text-rose-100';
+    return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100';
+  })();
+
+  const renderSmartSuggestion = () => {
+    if (!smartSuggestion) return null;
+
+    const primaryAction = smartSuggestion.actions[0];
+    if (!primaryAction) return null;
+
+    if (isCollapsed) {
+      return (
+        <button
+          data-tour="smart-action-suggestion"
+          onClick={() => onSmartSuggestionAction(primaryAction.id)}
+          aria-label={`智能建议：${smartSuggestion.title}，${primaryAction.label}`}
+          title={`${smartSuggestion.title}：${primaryAction.label}`}
+          className={`mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg border transition-all hover:bg-editor-hover active:scale-95 ${smartSuggestionToneClassName}`}
+        >
+          <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 21l3-1.5L15 21l-.75-4M4 5h16M5 9h14M7 13h10" />
+          </svg>
+        </button>
+      );
+    }
+
+    return (
+      <div
+        data-tour="smart-action-suggestion"
+        className={`mb-4 rounded-lg border p-3 shadow-sm ${smartSuggestionToneClassName}`}
+      >
+        <div className="mb-2 flex items-start gap-2">
+          <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 21l3-1.5L15 21l-.75-4M4 5h16M5 9h14M7 13h10" />
+          </svg>
+          <div className="min-w-0">
+            <div className="truncate text-xs font-semibold" title={smartSuggestion.title}>
+              {smartSuggestion.title}
+            </div>
+            <div className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-gray-300" title={smartSuggestion.description}>
+              {smartSuggestion.description}
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {smartSuggestion.actions.slice(0, 2).map((action, index) => (
+            <button
+              key={action.id}
+              data-tour={`smart-action-${action.id}`}
+              onClick={() => onSmartSuggestionAction(action.id)}
+              aria-label={`智能建议动作 ${index + 1}: ${smartSuggestion.title}`}
+              className="min-w-0 rounded border border-white/10 bg-editor-bg/70 px-2 py-1.5 text-[11px] font-medium text-gray-100 transition-colors hover:border-white/20 hover:bg-editor-active active:scale-95"
+              title={action.label}
+            >
+              <span className="block truncate">{action.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="h-full bg-editor-bg border-r border-editor-bg relative group/sidebar">
       {/* ... (container and top bar unchanged) ... */}
@@ -275,6 +347,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             )}
           </button>
         </div>
+
+        {renderSmartSuggestion()}
 
         {/* 工具组：视图与格式化 */}
         {!isCollapsed && (
