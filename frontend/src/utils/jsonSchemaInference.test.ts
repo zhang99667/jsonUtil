@@ -46,6 +46,34 @@ describe('jsonSchemaInference', () => {
     });
   });
 
+  it('长数组后段稀疏字段也进入 Schema 且不误标 required', () => {
+    const items = Array.from({ length: 45 }, (_, index) => ({
+      id: index + 1,
+      title: `item-${index + 1}`,
+      ...(index === 35 ? { cmdSchema: 'makePhoneCall', traceId: 'late-trace' } : {}),
+    }));
+    const result = inferJsonSchemaFromText(JSON.stringify({ items }));
+    const schema = JSON.parse(result.schemaText || '{}');
+
+    expect(schema.properties.items.items.properties).toMatchObject({
+      id: { type: 'integer' },
+      title: { type: 'string' },
+      cmdSchema: { type: 'string' },
+      traceId: { type: 'string' },
+    });
+    expect(schema.properties.items.items.required).toEqual(['id', 'title']);
+  });
+
+  it('长数组后段类型差异参与合并', () => {
+    const rows = Array.from({ length: 45 }, (_, index) => ({
+      score: index === 44 ? 'late-score' : index,
+    }));
+    const result = inferJsonSchemaFromText(JSON.stringify({ rows }));
+    const schema = JSON.parse(result.schemaText || '{}');
+
+    expect(schema.properties.rows.items.properties.score.type).toEqual(['integer', 'string']);
+  });
+
   it('宽松模式不生成 required 约束', () => {
     const result = inferJsonSchemaFromText(JSON.stringify({
       id: 1,
