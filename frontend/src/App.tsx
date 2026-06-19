@@ -81,6 +81,7 @@ const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
   TransformMode.DEEP_FORMAT,
   TransformMode.MINIFY,
   TransformMode.SORT_KEYS,
+  TransformMode.JSON_TO_TYPESCRIPT,
 ]);
 
 const getCopySuccessMessage = (label: string, content: string): string => {

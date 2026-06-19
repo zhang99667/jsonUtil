@@ -132,6 +132,7 @@ frontend/
 │   │   ├── transformSummary.ts    # 深度解析报告、质量快照和 CMD 结构导出
 │   │   ├── cmdStructureDiff.ts    # cmdHandler 风格结构差异对比
 │   │   ├── jsonTreeModel.ts       # JSON 树模型、路径与预览摘要生成
+│   │   ├── jsonToTypeScript.ts    # JSON / JSON Lines 到 TypeScript 类型声明生成
 │   │   ├── changelog.ts           # CHANGELOG 解析与前端展示数据
 │   │   └── diffUtils.ts           # 差异对比
 │   ├── workers/              # 大输入异步处理

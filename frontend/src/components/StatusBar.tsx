@@ -24,6 +24,7 @@ const MODE_LABELS: Record<TransformMode, string> = {
   [TransformMode.BASE64_ENCODE]: 'Base64 编码',
   [TransformMode.BASE64_DECODE]: 'Base64 解码',
   [TransformMode.SORT_KEYS]: 'Key 排序',
+  [TransformMode.JSON_TO_TYPESCRIPT]: 'JSON 转 TS',
 };
 
 /** StatusBar 组件 Props 定义 */
