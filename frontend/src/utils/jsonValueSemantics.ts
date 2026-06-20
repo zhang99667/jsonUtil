@@ -7,6 +7,9 @@ export type JsonStringSemanticKind =
   | 'base64'
   | 'email'
   | 'phone'
+  | 'uuid'
+  | 'timestamp'
+  | 'hash'
   | 'date'
   | 'date-time'
   | 'color'
@@ -46,6 +49,8 @@ const PHONE_CONTEXT_RE = /(?:phone|mobile|tel|telephone|call|手机号|电话|�
 const CHINA_MOBILE_PHONE_RE = /^(?:\+?86[-\s]?)?1[3-9]\d{9}$/;
 const SERVICE_PHONE_RE = /^(?:400|800)-?\d{3}-?\d{4}$/;
 const LANDLINE_PHONE_RE = /^0\d{2,3}-?\d{7,8}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const HEX_HASH_RE = /^(?=[0-9a-f]*[a-f])[0-9a-f]{32}(?:[0-9a-f]{8})?(?:[0-9a-f]{24})?$/i;
 const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DATE_TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})?$/;
@@ -55,6 +60,14 @@ const VIDEO_RESOURCE_EXTENSION_RE = /\.(?:mp4|m4v|mov|webm|avi|m3u8)$/i;
 const AUDIO_RESOURCE_EXTENSION_RE = /\.(?:mp3|wav|aac|ogg|flac|m4a)$/i;
 const PACKAGE_RESOURCE_EXTENSION_RE = /\.(?:apk|ipa|zip|rar|7z|tar|gz|tgz)$/i;
 const LOTTIE_CONTEXT_RE = /lottie/i;
+const TIMESTAMP_CONTEXT_KEY_RE = /(?:timestamp|time|created|updated|ctime|mtime|时间|日期)/i;
+const TIMESTAMP_CONTEXT_EXACT_KEY_RE = /^(?:ts|tm)$/i;
+
+const hasTimestampContext = (context?: JsonStringSemanticContext): boolean => {
+  const key = context?.keyLabel?.trim() || '';
+  const source = `${key} ${context?.path || ''}`.trim();
+  return TIMESTAMP_CONTEXT_EXACT_KEY_RE.test(key) || TIMESTAMP_CONTEXT_KEY_RE.test(source);
+};
 
 const isValidDateOnly = (value: string): boolean => {
   const match = value.match(DATE_ONLY_RE);
@@ -150,6 +163,41 @@ const getPhoneSemanticHint = (
     kind: 'phone',
     label: '电话',
     detail: maskPhoneDetail(value),
+  };
+};
+
+const getTimestampSemanticHint = (
+  value: string,
+  context?: JsonStringSemanticContext
+): JsonStringSemanticHint | null => {
+  if (!hasTimestampContext(context)) return null;
+  if (!/^(?:\d{10}|\d{13})$/.test(value)) return null;
+
+  const timestamp = value.length === 10 ? Number(value) * 1000 : Number(value);
+  const lowerBound = Date.UTC(2000, 0, 1);
+  const upperBound = Date.UTC(2100, 0, 1);
+  if (!Number.isSafeInteger(timestamp) || timestamp < lowerBound || timestamp > upperBound) return null;
+
+  return {
+    kind: 'timestamp',
+    label: '时间戳',
+    detail: `${value.length === 10 ? '秒' : '毫秒'} ${new Date(timestamp).toISOString()}`,
+  };
+};
+
+const getHashSemanticHint = (value: string): JsonStringSemanticHint | null => {
+  if (!HEX_HASH_RE.test(value)) return null;
+
+  const hashType = value.length === 32
+    ? 'MD5 形态'
+    : value.length === 40
+      ? 'SHA-1 形态'
+      : 'SHA-256 形态';
+
+  return {
+    kind: 'hash',
+    label: '哈希',
+    detail: `${hashType} · ${value.length} hex`,
   };
 };
 
@@ -258,6 +306,17 @@ export const getJsonStringSemanticHints = (
   }
   const phoneHint = getPhoneSemanticHint(text, context);
   if (phoneHint) hints.push(phoneHint);
+  if (UUID_RE.test(text)) {
+    hints.push({
+      kind: 'uuid',
+      label: 'UUID',
+      detail: text.toLowerCase(),
+    });
+  }
+  const timestampHint = getTimestampSemanticHint(text, context);
+  if (timestampHint) hints.push(timestampHint);
+  const hashHint = getHashSemanticHint(text);
+  if (hashHint) hints.push(hashHint);
   if (DATE_TIME_RE.test(text) && !Number.isNaN(Date.parse(text))) {
     hints.push({
       kind: 'date-time',
