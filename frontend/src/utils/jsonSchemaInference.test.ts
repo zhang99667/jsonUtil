@@ -25,12 +25,16 @@ describe('jsonSchemaInference', () => {
       },
     });
     expect(result.trustSummary).toEqual({
+      sourceSampleCount: 1,
+      sourceSampleUsedCount: 1,
       objectSchemaCount: 1,
       propertyCount: 4,
       requiredFieldCount: 4,
       optionalFieldCount: 0,
       unionTypeCount: 0,
       formatFieldCount: 0,
+      arrayTotalItemCount: 0,
+      arraySampledItemCount: 0,
       sampledArrayCount: 0,
       requiredMode: 'strict',
     });
@@ -86,6 +90,8 @@ describe('jsonSchemaInference', () => {
       propertyCount: 5,
       requiredFieldCount: 3,
       optionalFieldCount: 2,
+      arrayTotalItemCount: 45,
+      arraySampledItemCount: 25,
       sampledArrayCount: 1,
       requiredMode: 'strict',
     });
@@ -201,6 +207,21 @@ describe('jsonSchemaInference', () => {
 
     expect(schema.items.type).toEqual(['boolean', 'null', 'string']);
     expect(result.trustSummary?.unionTypeCount).toBe(1);
+  });
+
+  it('根数组会展示 SOURCE 多样本可信度', () => {
+    const result = inferJsonSchemaFromText(JSON.stringify([
+      { id: 1, title: 'A' },
+      { id: 2, title: 'B', tag: 'new' },
+    ]));
+
+    expect(result.trustSummary).toMatchObject({
+      sourceSampleCount: 2,
+      sourceSampleUsedCount: 2,
+      arrayTotalItemCount: 2,
+      arraySampledItemCount: 2,
+      optionalFieldCount: 1,
+    });
   });
 
   it('空输入和非法 JSON 返回错误', () => {

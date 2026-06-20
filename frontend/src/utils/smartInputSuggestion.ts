@@ -157,11 +157,12 @@ const buildJsonSuggestion = (
     return {
       id: 'json-with-cmd',
       title: '检测到 JSON 内含 CMD / Scheme',
-      description: `建议先嵌套解析并查看报告，已命中 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串。`,
+      description: `建议进入本地排查工作流，已命中 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串，可继续看结构导航。`,
       tone: 'cyan',
       actions: [
         createAction('response-inspection', '排查工作流'),
         createAction('deep-format-report', '嵌套解析'),
+        createAction('structure-nav', '结构导航'),
       ],
     };
   }
@@ -175,6 +176,7 @@ const buildJsonSuggestion = (
       actions: [
         createAction('structure-nav', '结构导航'),
         createAction('schema-panel', 'Schema'),
+        createAction('json-to-typescript', '转 TS'),
       ],
     };
   }
@@ -187,6 +189,7 @@ const buildJsonSuggestion = (
     actions: [
       createAction('json-to-typescript', '转 TS'),
       createAction('schema-panel', 'Schema'),
+      createAction('structure-nav', '结构导航'),
     ],
   };
 };
@@ -225,11 +228,12 @@ const buildJsonLinesSuggestion = (source: string): SmartInputSuggestion | null =
       return {
         id: 'json-lines-with-cmd',
         title: '检测到 JSON Lines 内含 CMD / Scheme',
-        description: `已识别 ${diagnostic.records.length} 行，其中包含 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串，建议进入排查工作流。`,
+        description: `已识别 ${diagnostic.records.length} 行，其中包含 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串，建议进入排查工作流并查看虚拟数组结构。`,
         tone: 'cyan',
         actions: [
           createAction('response-inspection', '排查工作流'),
           createAction('deep-format-report', '嵌套解析'),
+          createAction('structure-nav', '结构导航'),
         ],
       };
     }
@@ -242,6 +246,7 @@ const buildJsonLinesSuggestion = (source: string): SmartInputSuggestion | null =
       actions: [
         createAction('structure-nav', '结构导航'),
         createAction('json-to-typescript', '转 TS'),
+        createAction('deep-format-report', '嵌套解析'),
       ],
     };
   }
@@ -337,7 +342,7 @@ export const getSmartInputSuggestion = (sourceText: string): SmartInputSuggestio
     return {
       id: 'large-json-lines',
       title: '检测到较大的 JSON Lines 候选',
-      description: '输入较大，建议先按虚拟数组打开结构导航，或用嵌套解析报告查看行内 CMD / JSON 字符串。',
+      description: '输入较大，建议先在本地按虚拟数组打开结构导航，或用嵌套解析报告查看行内 CMD / JSON 字符串。',
       tone: 'emerald',
       actions: [
         createAction('structure-nav', '结构导航'),
@@ -350,11 +355,12 @@ export const getSmartInputSuggestion = (sourceText: string): SmartInputSuggestio
     return {
       id: 'large-json',
       title: '检测到较大的 JSON 候选',
-      description: '输入较大，建议先用结构导航异步浏览，再按需生成 Schema 或类型。',
+      description: '输入较大，建议先用本地结构导航异步浏览，再按需生成 Schema 或类型。',
       tone: 'emerald',
       actions: [
         createAction('structure-nav', '结构导航'),
         createAction('schema-panel', 'Schema'),
+        createAction('deep-format-report', '嵌套解析'),
       ],
     };
   }
@@ -379,6 +385,7 @@ export const getSmartInputSuggestion = (sourceText: string): SmartInputSuggestio
       tone: 'cyan',
       actions: [
         createAction('deep-format-report', '嵌套解析'),
+        createAction('structure-nav', '结构导航'),
       ],
     };
   }

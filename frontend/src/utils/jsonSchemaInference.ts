@@ -6,12 +6,16 @@ export interface JsonSchemaInferenceResult {
 }
 
 export interface JsonSchemaInferenceTrustSummary {
+  sourceSampleCount: number;
+  sourceSampleUsedCount: number;
   objectSchemaCount: number;
   propertyCount: number;
   requiredFieldCount: number;
   optionalFieldCount: number;
   unionTypeCount: number;
   formatFieldCount: number;
+  arrayTotalItemCount: number;
+  arraySampledItemCount: number;
   sampledArrayCount: number;
   requiredMode: JsonSchemaInferenceRequiredMode;
 }
@@ -56,6 +60,8 @@ type ArraySampleResult = {
 
 type SchemaInferenceContext = {
   samplingSummaries: JsonSchemaInferenceSamplingSummary[];
+  arrayTotalItemCount: number;
+  arraySampledItemCount: number;
 };
 
 const MAX_SCHEMA_INFERENCE_DEPTH = 8;
@@ -286,6 +292,8 @@ const inferSchema = (
     }
 
     const sampleResult = getArraySampleEntries(value);
+    context.arrayTotalItemCount += value.length;
+    context.arraySampledItemCount += sampleResult.entries.length;
     if (value.length > MAX_ARRAY_SAMPLE_ITEMS) {
       context.samplingSummaries.push({
         path,
@@ -338,15 +346,21 @@ const getSchemaTypeList = (schema: InferredSchema): JsonSchemaType[] => (
 const buildTrustSummary = (
   schema: InferredSchema,
   samplingSummaries: JsonSchemaInferenceSamplingSummary[],
-  options: JsonSchemaInferenceOptions
+  options: JsonSchemaInferenceOptions,
+  context: SchemaInferenceContext,
+  rootSample: Pick<JsonSchemaInferenceTrustSummary, 'sourceSampleCount' | 'sourceSampleUsedCount'>
 ): JsonSchemaInferenceTrustSummary => {
   const summary: JsonSchemaInferenceTrustSummary = {
+    sourceSampleCount: rootSample.sourceSampleCount,
+    sourceSampleUsedCount: rootSample.sourceSampleUsedCount,
     objectSchemaCount: 0,
     propertyCount: 0,
     requiredFieldCount: 0,
     optionalFieldCount: 0,
     unionTypeCount: 0,
     formatFieldCount: 0,
+    arrayTotalItemCount: context.arrayTotalItemCount,
+    arraySampledItemCount: context.arraySampledItemCount,
     sampledArrayCount: samplingSummaries.length,
     requiredMode: options.requiredMode || 'strict',
   };
@@ -379,6 +393,23 @@ const buildTrustSummary = (
   return summary;
 };
 
+const getRootSampleSummary = (
+  value: unknown
+): Pick<JsonSchemaInferenceTrustSummary, 'sourceSampleCount' | 'sourceSampleUsedCount'> => {
+  if (!Array.isArray(value)) {
+    return {
+      sourceSampleCount: 1,
+      sourceSampleUsedCount: 1,
+    };
+  }
+
+  const sampleResult = getArraySampleEntries(value);
+  return {
+    sourceSampleCount: value.length,
+    sourceSampleUsedCount: sampleResult.entries.length,
+  };
+};
+
 export const inferJsonSchemaFromText = (
   jsonText: string,
   options: JsonSchemaInferenceOptions = {}
@@ -395,7 +426,12 @@ export const inferJsonSchemaFromText = (
     return { error: `SOURCE 不是合法 JSON: ${message}` };
   }
 
-  const context: SchemaInferenceContext = { samplingSummaries: [] };
+  const context: SchemaInferenceContext = {
+    samplingSummaries: [],
+    arrayTotalItemCount: 0,
+    arraySampledItemCount: 0,
+  };
+  const rootSample = getRootSampleSummary(parsed);
   const schema = {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     title: '从 SOURCE 生成',
@@ -405,6 +441,6 @@ export const inferJsonSchemaFromText = (
   return {
     schemaText: JSON.stringify(schema, null, 2),
     samplingSummaries: context.samplingSummaries,
-    trustSummary: buildTrustSummary(schema, context.samplingSummaries, options),
+    trustSummary: buildTrustSummary(schema, context.samplingSummaries, options, context, rootSample),
   };
 };
