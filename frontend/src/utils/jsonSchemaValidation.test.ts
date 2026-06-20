@@ -40,6 +40,41 @@ describe('jsonSchemaValidation', () => {
     });
   });
 
+  it('JSON Lines 可按多样本数组 Schema 校验', () => {
+    const arraySchema = JSON.stringify({
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['id', 'title'],
+        properties: {
+          id: { type: 'integer' },
+          title: { type: 'string' },
+        },
+      },
+    });
+
+    expect(validateJsonAgainstSchema(
+      '{"id":1,"title":"A"}\n{"id":2,"title":"B"}',
+      arraySchema
+    )).toMatchObject({
+      status: 'valid',
+      isValid: true,
+      summary: '当前 JSON Lines 符合 Schema',
+    });
+
+    const invalidResult = validateJsonAgainstSchema(
+      '{"id":1,"title":"A"}\n{"id":2}',
+      arraySchema
+    );
+
+    expect(invalidResult).toMatchObject({
+      status: 'invalid',
+      isValid: false,
+      summary: '当前 JSON Lines 不符合 Schema，共 1 个问题',
+    });
+    expect(invalidResult.issuePathList).toEqual(['$[1].title']);
+  });
+
   it('返回 Schema 校验问题和 JSONPath 路径', () => {
     const result = validateJsonAgainstSchema(
       JSON.stringify({ name: '订单', items: [{ price: 0 }, {}] }),

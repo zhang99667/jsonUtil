@@ -1,11 +1,17 @@
+import { isLikelyJsonLinesInput, parseJsonLinesDetailed } from './jsonLines';
+
 export interface JsonSchemaInferenceResult {
   schemaText?: string;
   samplingSummaries?: JsonSchemaInferenceSamplingSummary[];
   trustSummary?: JsonSchemaInferenceTrustSummary;
+  sourceKind?: JsonSchemaInferenceSourceKind;
   error?: string;
 }
 
+export type JsonSchemaInferenceSourceKind = 'json' | 'json-lines';
+
 export interface JsonSchemaInferenceTrustSummary {
+  sourceKind: JsonSchemaInferenceSourceKind;
   sourceSampleCount: number;
   sourceSampleUsedCount: number;
   objectSchemaCount: number;
@@ -62,6 +68,11 @@ type SchemaInferenceContext = {
   samplingSummaries: JsonSchemaInferenceSamplingSummary[];
   arrayTotalItemCount: number;
   arraySampledItemCount: number;
+};
+
+type ParsedSchemaSource = {
+  value: unknown;
+  sourceKind: JsonSchemaInferenceSourceKind;
 };
 
 const MAX_SCHEMA_INFERENCE_DEPTH = 8;
@@ -348,9 +359,10 @@ const buildTrustSummary = (
   samplingSummaries: JsonSchemaInferenceSamplingSummary[],
   options: JsonSchemaInferenceOptions,
   context: SchemaInferenceContext,
-  rootSample: Pick<JsonSchemaInferenceTrustSummary, 'sourceSampleCount' | 'sourceSampleUsedCount'>
+  rootSample: Pick<JsonSchemaInferenceTrustSummary, 'sourceKind' | 'sourceSampleCount' | 'sourceSampleUsedCount'>
 ): JsonSchemaInferenceTrustSummary => {
   const summary: JsonSchemaInferenceTrustSummary = {
+    sourceKind: rootSample.sourceKind,
     sourceSampleCount: rootSample.sourceSampleCount,
     sourceSampleUsedCount: rootSample.sourceSampleUsedCount,
     objectSchemaCount: 0,
@@ -394,10 +406,12 @@ const buildTrustSummary = (
 };
 
 const getRootSampleSummary = (
-  value: unknown
-): Pick<JsonSchemaInferenceTrustSummary, 'sourceSampleCount' | 'sourceSampleUsedCount'> => {
+  value: unknown,
+  sourceKind: JsonSchemaInferenceSourceKind
+): Pick<JsonSchemaInferenceTrustSummary, 'sourceKind' | 'sourceSampleCount' | 'sourceSampleUsedCount'> => {
   if (!Array.isArray(value)) {
     return {
+      sourceKind,
       sourceSampleCount: 1,
       sourceSampleUsedCount: 1,
     };
@@ -405,9 +419,37 @@ const getRootSampleSummary = (
 
   const sampleResult = getArraySampleEntries(value);
   return {
+    sourceKind,
     sourceSampleCount: value.length,
     sourceSampleUsedCount: sampleResult.entries.length,
   };
+};
+
+const parseSchemaSource = (jsonText: string): ParsedSchemaSource | { error: string } => {
+  try {
+    return {
+      value: JSON.parse(jsonText),
+      sourceKind: 'json',
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (isLikelyJsonLinesInput(jsonText)) {
+      const jsonLines = parseJsonLinesDetailed(jsonText);
+      if (jsonLines.records) {
+        return {
+          value: jsonLines.records.map(record => record.value),
+          sourceKind: 'json-lines',
+        };
+      }
+
+      if (jsonLines.error) {
+        return { error: `SOURCE 不是合法 JSON / JSON Lines: ${message}；${jsonLines.error}` };
+      }
+    }
+
+    return { error: `SOURCE 不是合法 JSON: ${message}` };
+  }
 };
 
 export const inferJsonSchemaFromText = (
@@ -418,29 +460,25 @@ export const inferJsonSchemaFromText = (
     return { error: '请先在 SOURCE 输入 JSON' };
   }
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(jsonText);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { error: `SOURCE 不是合法 JSON: ${message}` };
-  }
+  const parsedSource = parseSchemaSource(jsonText);
+  if ('error' in parsedSource) return parsedSource;
 
   const context: SchemaInferenceContext = {
     samplingSummaries: [],
     arrayTotalItemCount: 0,
     arraySampledItemCount: 0,
   };
-  const rootSample = getRootSampleSummary(parsed);
+  const rootSample = getRootSampleSummary(parsedSource.value, parsedSource.sourceKind);
   const schema = {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
-    title: '从 SOURCE 生成',
-    ...inferSchema(parsed, 0, options, '$', context),
+    title: parsedSource.sourceKind === 'json-lines' ? '从 SOURCE JSON Lines 生成' : '从 SOURCE 生成',
+    ...inferSchema(parsedSource.value, 0, options, '$', context),
   };
 
   return {
     schemaText: JSON.stringify(schema, null, 2),
     samplingSummaries: context.samplingSummaries,
+    sourceKind: parsedSource.sourceKind,
     trustSummary: buildTrustSummary(schema, context.samplingSummaries, options, context, rootSample),
   };
 };

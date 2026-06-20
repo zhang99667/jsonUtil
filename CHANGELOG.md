@@ -1,4 +1,16 @@
 # 更新日志 (Changelog)
+## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
+### ✨ 新特性
+- **JSON Lines Schema 生成**: Schema 面板支持从 JSON Lines / NDJSON 直接生成根数组 Schema，按多行样本合并字段、推断 required 交集并保留可选字段
+- **多样本可信度**: Schema 可信提示新增来源类型，JSON Lines 会显示为多样本来源并复用样本数、format 命中、可选字段和采样摘要
+- **Schema 校验闭环**: 使用生成后的根数组 Schema 校验同一份 JSON Lines 时会按多样本数组校验，问题路径以 `$[行索引]` 形式展示
+
+### 📝 文档
+- **Schema 说明同步**: README 补充 JSON / JSON Lines 多样本 Schema 推断、来源类型和 required 交集说明
+
+### 🧪 测试
+- **JSON Lines 覆盖**: 扩展 Schema 推断和校验单测，覆盖 JSON Lines 多样本生成、坏行错误、校验通过和缺字段路径
+
 ## v1.8.253 (2026-06-20) - 本地隐私状态与辅助入口
 ### ✨ 新特性
 - **本地隐私状态**: 底部状态栏新增“本地处理 / 本地大输入 / 本地 Worker / 智能修复中”状态，明确常规格式化、查询、结构导航、Schema 和类型生成默认在浏览器本地执行
