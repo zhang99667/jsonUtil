@@ -232,7 +232,7 @@ PREVIEW JSON + TransformReportPanel
 | `schemeMetadata.ts` | 汇总 CMD Schema、内部 CMD 字段、运行时占位符和 cmdHandler 兼容结构 |
 | `transformSummary.ts` | 生成深度解析报告、质量快照、问题样本、占位符模板和 cmdHandler 风格复制文本 |
 | `smartInputSuggestion.ts` | 根据 SOURCE 内容推荐单步工具或 Response 排查工作流，支持 JSON Lines / NDJSON 入口识别、坏行提示和 App 串联嵌套解析报告 |
-| `jsonSchemaInference.ts` | 从 SOURCE 推断 JSON Schema，输出长数组采样摘要和对象/字段/required/union/format 可信度统计 |
+| `jsonSchemaInference.ts` | 从 SOURCE JSON / JSON Lines 推断 JSON Schema，输出长数组采样摘要和对象/字段/required/union/format 可信度统计 |
 | `cmdStructureDiff.ts` | 对比本工具 actual 与内部 cmdHandler expected，输出缺失路径、额外路径和值差异 |
 | `harImport.ts` | 将 HAR 请求/响应 body 提取为派生 JSON，生成接口摘要、异常摘要和不含 query 的短标签 |
 

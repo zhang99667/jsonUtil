@@ -25,6 +25,7 @@ describe('jsonSchemaInference', () => {
       },
     });
     expect(result.trustSummary).toEqual({
+      sourceKind: 'json',
       sourceSampleCount: 1,
       sourceSampleUsedCount: 1,
       objectSchemaCount: 1,
@@ -216,6 +217,7 @@ describe('jsonSchemaInference', () => {
     ]));
 
     expect(result.trustSummary).toMatchObject({
+      sourceKind: 'json',
       sourceSampleCount: 2,
       sourceSampleUsedCount: 2,
       arrayTotalItemCount: 2,
@@ -224,10 +226,42 @@ describe('jsonSchemaInference', () => {
     });
   });
 
+  it('JSON Lines 会作为多样本 SOURCE 生成 Schema', () => {
+    const result = inferJsonSchemaFromText([
+      '{"id":1,"title":"A","createdAt":"2026-06-20T10:00:00Z"}',
+      '{"id":2,"title":"B","tag":"new","createdAt":"2026-06-21T10:00:00Z"}',
+    ].join('\n'));
+    const schema = JSON.parse(result.schemaText || '{}');
+
+    expect(result.sourceKind).toBe('json-lines');
+    expect(schema).toMatchObject({
+      title: '从 SOURCE JSON Lines 生成',
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['id', 'title', 'createdAt'],
+        properties: {
+          id: { type: 'integer' },
+          title: { type: 'string' },
+          tag: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    });
+    expect(result.trustSummary).toMatchObject({
+      sourceKind: 'json-lines',
+      sourceSampleCount: 2,
+      sourceSampleUsedCount: 2,
+      optionalFieldCount: 1,
+      formatFieldCount: 1,
+    });
+  });
+
   it('空输入和非法 JSON 返回错误', () => {
     expect(inferJsonSchemaFromText('')).toMatchObject({
       error: '请先在 SOURCE 输入 JSON',
     });
     expect(inferJsonSchemaFromText('{bad}').error).toContain('SOURCE 不是合法 JSON');
+    expect(inferJsonSchemaFromText('{"ok":true}\n{bad}').error).toContain('JSON Lines 第 2 行解析错误');
   });
 });

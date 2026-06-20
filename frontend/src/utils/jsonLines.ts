@@ -1,6 +1,7 @@
 import type { JsonValue } from '../types';
 
 const JSON_LINE_PREFIX_RE = /^[{\["tfn\-\d]/;
+const JSON_LINE_STRUCTURAL_FRAGMENT_RE = /^(?:[\[{]|[\]}],?)$/;
 
 export interface JsonLineRecord {
   value: JsonValue;
@@ -46,6 +47,17 @@ export const parseJsonLinesDetailed = (input: string): JsonLinesDiagnostic => {
   }
 
   return { records: records.length >= 2 ? records : null };
+};
+
+export const isLikelyJsonLinesInput = (input: string): boolean => {
+  const nonEmptyLines = input
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  return nonEmptyLines.length >= 2 && nonEmptyLines.every(line => (
+    JSON_LINE_PREFIX_RE.test(line) && !JSON_LINE_STRUCTURAL_FRAGMENT_RE.test(line)
+  ));
 };
 
 export const parseJsonLinesWithMetadata = (input: string): JsonLineRecord[] | null => {

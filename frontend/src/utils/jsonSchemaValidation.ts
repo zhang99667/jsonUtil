@@ -2,6 +2,7 @@ import Ajv, { type AnySchema, type ErrorObject } from 'ajv';
 import Ajv2019 from 'ajv/dist/2019';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
+import { isLikelyJsonLinesInput, parseJsonLinesDetailed } from './jsonLines';
 
 export type JsonSchemaValidationStatus = 'empty' | 'valid' | 'invalid' | 'input-error' | 'schema-error';
 
@@ -36,11 +37,32 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
 
-const parseJson = (value: string, label: string): { value?: unknown; error?: string } => {
+type ParsedJsonSourceKind = 'json' | 'json-lines';
+
+const parseJson = (
+  value: string,
+  label: string,
+  options: { allowJsonLines?: boolean } = {}
+): { value?: unknown; sourceKind?: ParsedJsonSourceKind; error?: string } => {
   try {
-    return { value: JSON.parse(value) };
+    return { value: JSON.parse(value), sourceKind: 'json' };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+
+    if (options.allowJsonLines && isLikelyJsonLinesInput(value)) {
+      const jsonLines = parseJsonLinesDetailed(value);
+      if (jsonLines.records) {
+        return {
+          value: jsonLines.records.map(record => record.value),
+          sourceKind: 'json-lines',
+        };
+      }
+
+      if (jsonLines.error) {
+        return { error: `${label} 不是合法 JSON / JSON Lines: ${message}；${jsonLines.error}` };
+      }
+    }
+
     return { error: `${label} 不是合法 JSON: ${message}` };
   }
 };
@@ -262,7 +284,7 @@ export const validateJsonAgainstSchema = (
     };
   }
 
-  const parsedData = parseJson(jsonText, 'SOURCE');
+  const parsedData = parseJson(jsonText, 'SOURCE', { allowJsonLines: true });
   if (parsedData.error) {
     return {
       status: 'input-error',
@@ -292,12 +314,13 @@ export const validateJsonAgainstSchema = (
     const ajv = getAjvForSchema(parsedSchema.value);
     const validate = ajv.compile(parsedSchema.value as AnySchema);
     const isValid = validate(parsedData.value);
+    const sourceLabel = parsedData.sourceKind === 'json-lines' ? 'JSON Lines' : 'JSON';
 
     if (isValid) {
       return {
         status: 'valid',
         isValid: true,
-        summary: '当前 JSON 符合 Schema',
+        summary: `当前 ${sourceLabel} 符合 Schema`,
         issues: [],
         issueCount: 0,
         shownIssueCount: 0,
@@ -311,7 +334,7 @@ export const validateJsonAgainstSchema = (
     return {
       status: 'invalid',
       isValid: false,
-      summary: `当前 JSON 不符合 Schema，共 ${allIssues.length} 个问题`,
+      summary: `当前 ${sourceLabel} 不符合 Schema，共 ${allIssues.length} 个问题`,
       issues: visibleIssues,
       issueCount: allIssues.length,
       shownIssueCount: visibleIssues.length,

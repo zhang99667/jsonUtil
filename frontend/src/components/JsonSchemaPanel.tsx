@@ -89,7 +89,9 @@ const formatSamplingSummary = (summary: JsonSchemaInferenceSamplingSummary): str
 );
 
 const formatTrustSummary = (summary: JsonSchemaInferenceTrustSummary): string => {
+  const sourceLabel = summary.sourceKind === 'json-lines' ? 'JSON Lines' : 'JSON';
   const parts = [
+    `来源 ${sourceLabel}`,
     `样本 ${summary.sourceSampleUsedCount}/${summary.sourceSampleCount}`,
     `对象 ${summary.objectSchemaCount} 个`,
     `字段 ${summary.propertyCount} 个`,
