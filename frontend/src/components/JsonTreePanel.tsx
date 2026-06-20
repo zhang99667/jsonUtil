@@ -116,6 +116,9 @@ const getSemanticHintClassName = (kind: JsonStringSemanticHint['kind']): string 
   if (kind === 'base64') return 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-100';
   if (kind === 'email') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100';
   if (kind === 'phone') return 'border-lime-500/30 bg-lime-500/10 text-lime-100';
+  if (kind === 'uuid') return 'border-slate-400/30 bg-slate-400/10 text-slate-100';
+  if (kind === 'timestamp') return 'border-yellow-500/30 bg-yellow-500/10 text-yellow-100';
+  if (kind === 'hash') return 'border-stone-400/30 bg-stone-400/10 text-stone-100';
   if (kind === 'date' || kind === 'date-time') return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
   if (kind === 'resource-image') return 'border-pink-500/30 bg-pink-500/10 text-pink-100';
   if (kind === 'resource-video') return 'border-red-500/30 bg-red-500/10 text-red-100';

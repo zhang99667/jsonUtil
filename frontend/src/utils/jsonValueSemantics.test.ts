@@ -88,6 +88,40 @@ describe('jsonValueSemantics', () => {
     ]);
   });
 
+  it('识别 UUID、时间戳和哈希摘要', () => {
+    expect(getJsonStringSemanticHints('550e8400-e29b-41d4-a716-446655440000')).toEqual([
+      {
+        kind: 'uuid',
+        label: 'UUID',
+        detail: '550e8400-e29b-41d4-a716-446655440000',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('1893456000', { path: '$.event_time', keyLabel: 'event_time' })).toEqual([
+      {
+        kind: 'timestamp',
+        label: '时间戳',
+        detail: '秒 2030-01-01T00:00:00.000Z',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('1893456000000', { path: '$.timestamp', keyLabel: 'timestamp' })).toEqual([
+      {
+        kind: 'timestamp',
+        label: '时间戳',
+        detail: '毫秒 2030-01-01T00:00:00.000Z',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('d41d8cd98f00b204e9800998ecf8427e')).toEqual([
+      {
+        kind: 'hash',
+        label: '哈希',
+        detail: 'MD5 形态 · 32 hex',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('550e8400-e29b-41d4-a716-446655440000').some(isJsonStringSemanticHintActionable)).toBe(false);
+    expect(getJsonStringSemanticHints('1893456000', { path: '$.event_time', keyLabel: 'event_time' }).some(isJsonStringSemanticHintActionable)).toBe(false);
+    expect(getJsonStringSemanticHints('d41d8cd98f00b204e9800998ecf8427e').some(isJsonStringSemanticHintActionable)).toBe(false);
+  });
+
   it('识别常见静态资源 URL 类型', () => {
     expect(getJsonStringSemanticHints('https://static.example.com/banner.jpg', { path: '$.poster_image', keyLabel: 'poster_image' })).toEqual([
       {
@@ -187,6 +221,9 @@ describe('jsonValueSemantics', () => {
     expect(getJsonStringSemanticHints('13718164578')).toEqual([]);
     expect(getJsonStringSemanticHints('13718164578', { path: '$.traceId', keyLabel: 'traceId' })).toEqual([]);
     expect(getJsonStringSemanticHints('20260619123', { path: '$.phone', keyLabel: 'phone' })).toEqual([]);
+    expect(getJsonStringSemanticHints('1893456000')).toEqual([]);
+    expect(getJsonStringSemanticHints('550e8400-e29b-61d4-a716-446655440000')).toEqual([]);
+    expect(getJsonStringSemanticHints('12345678901234567890123456789012')).toEqual([]);
     expect(getJsonStringSemanticHints('https://example.com/docs')).toEqual([
       {
         kind: 'url',
