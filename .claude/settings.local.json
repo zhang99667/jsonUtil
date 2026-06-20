@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/Users/markz/code/tools/json-助手-&-ai-修复/frontend\" && npm install -D vitest 2>&1)",
+      "WebFetch(domain:github.com)",
+      "Bash(ssh:*)"
+    ]
+  }
+}
