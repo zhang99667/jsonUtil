@@ -90,6 +90,7 @@ const formatSamplingSummary = (summary: JsonSchemaInferenceSamplingSummary): str
 
 const formatTrustSummary = (summary: JsonSchemaInferenceTrustSummary): string => {
   const parts = [
+    `样本 ${summary.sourceSampleUsedCount}/${summary.sourceSampleCount}`,
     `对象 ${summary.objectSchemaCount} 个`,
     `字段 ${summary.propertyCount} 个`,
     summary.requiredMode === 'loose'
@@ -98,6 +99,7 @@ const formatTrustSummary = (summary: JsonSchemaInferenceTrustSummary): string =>
     `可选字段 ${summary.optionalFieldCount}`,
     summary.unionTypeCount > 0 ? `union ${summary.unionTypeCount}` : '',
     summary.formatFieldCount > 0 ? `format ${summary.formatFieldCount}` : '',
+    summary.arrayTotalItemCount > 0 ? `数组项 ${summary.arraySampledItemCount}/${summary.arrayTotalItemCount}` : '',
     summary.sampledArrayCount > 0 ? `长数组采样 ${summary.sampledArrayCount}` : '',
   ].filter(Boolean);
 

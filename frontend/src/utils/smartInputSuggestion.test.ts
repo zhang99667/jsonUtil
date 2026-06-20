@@ -20,6 +20,7 @@ describe('getSmartInputSuggestion', () => {
       actions: [
         { id: 'response-inspection', label: '排查工作流' },
         { id: 'deep-format-report' },
+        { id: 'structure-nav' },
       ],
     });
     expect(getSmartSuggestionMode('response-inspection')).toBe(TransformMode.DEEP_FORMAT);
@@ -88,6 +89,7 @@ describe('getSmartInputSuggestion', () => {
       actions: [
         { id: 'structure-nav' },
         { id: 'json-to-typescript' },
+        { id: 'deep-format-report' },
       ],
     });
     expect(suggestion?.actions.some(action => action.id === 'ai-fix')).toBe(false);
@@ -105,6 +107,7 @@ describe('getSmartInputSuggestion', () => {
       actions: [
         { id: 'response-inspection' },
         { id: 'deep-format-report' },
+        { id: 'structure-nav' },
       ],
     });
   });
@@ -158,6 +161,7 @@ describe('getSmartInputSuggestion', () => {
       actions: [
         { id: 'structure-nav' },
         { id: 'schema-panel' },
+        { id: 'deep-format-report' },
       ],
     });
   });
@@ -183,6 +187,7 @@ describe('getSmartInputSuggestion', () => {
       actions: [
         { id: 'structure-nav' },
         { id: 'schema-panel' },
+        { id: 'json-to-typescript' },
       ],
     });
   });
@@ -195,6 +200,7 @@ describe('getSmartInputSuggestion', () => {
       actions: [
         { id: 'json-to-typescript' },
         { id: 'schema-panel' },
+        { id: 'structure-nav' },
       ],
     });
   });
