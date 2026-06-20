@@ -22,6 +22,7 @@ import {
   formatTransformQualitySnapshotJsonText,
   formatTransformQualitySnapshotDeltaText,
   formatTransformReportViewText,
+  formatTransformTroubleshootingRecipeJsonText,
   getTransformDecodedPathCopyText,
   getTransformRecordCmdStructureCopyText,
   summarizeTransformContext,
@@ -2372,6 +2373,56 @@ describe('transformSummary', () => {
     expect(archivePackage.artifacts.issueSamples.samples[0].originalValue).not.toBe(actionCmd);
     expect(JSON.stringify(archivePackage)).not.toContain(actionCmd);
     expect(JSON.stringify(archivePackage.artifacts.placeholderFillTemplate)).not.toContain('sourceOriginalPreview');
+  });
+
+  it('可导出不含原始值的可组合排查 recipe', () => {
+    const actionCmd = `cmd=${encodeURIComponent(JSON.stringify({
+      nid: 123,
+      token: 'secret-token',
+      button_cmd: '__CONVERT_CMD__',
+    }))}&from=feed`;
+    const result = deepParseWithContext(JSON.stringify({
+      action_cmd: actionCmd,
+    }), { autoExpandScheme: true });
+    const report = buildTransformContextReport(result.context);
+    const reportView = buildTransformReportView(report, '');
+    const recipeText = formatTransformTroubleshootingRecipeJsonText(report, reportView, 'action_cmd');
+    const recipe = JSON.parse(recipeText);
+
+    expect(recipe).toMatchObject({
+      schemaVersion: 1,
+      kind: 'json-helper-transform-troubleshooting-recipe',
+      tool: APP_VERSION_METADATA,
+      filter: 'action_cmd',
+      safety: {
+        containsRawResponse: false,
+        containsOriginalValues: false,
+      },
+      summary: {
+        cmdStructures: 1,
+        runtimePlaceholders: 1,
+      },
+    });
+    expect(recipe.steps.map((step: { id: string }) => step.id)).toEqual([
+      'deep-format-report',
+      'apply-report-filter',
+      'compare-cmd-handler',
+      'fill-runtime-placeholders',
+      'save-quality-snapshot',
+      'archive-safe-artifacts',
+    ]);
+    expect(recipe.steps.find((step: { id: string; dependsOn: string[] }) => (
+      step.id === 'compare-cmd-handler'
+    )).dependsOn).toEqual(['apply-report-filter']);
+    expect(recipe.suggestedCommands.map((command: { id: string }) => command.id)).toEqual([
+      'cmd-diff-stdin',
+      'cmd-diff-stdin-ignore-extra',
+      'issue-samples-to-regression-file',
+      'corpus-snapshot-check',
+    ]);
+    expect(recipeText).not.toContain(actionCmd);
+    expect(recipeText).not.toContain('secret-token');
+    expect(recipeText).not.toContain('%7B%22nid');
   });
 
   it('归档包不会携带占位符回填候选原文', () => {

@@ -317,21 +317,6 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         dataTour: 'workbench-structure-map',
       },
       {
-        id: 'debug-recipe',
-        label: '排查配方',
-        hint: '报告 / 热点 / CMD',
-        title: '切到嵌套解析并打开 Response 排查报告',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-          </svg>
-        ),
-        isActive: activeMode === TransformMode.DEEP_FORMAT,
-        onClick: () => onSmartSuggestionAction('response-inspection'),
-        iconClassName: 'text-violet-300',
-        dataTour: 'workbench-debug-recipe',
-      },
-      {
         id: 'semantic-preview',
         label: '语义预览',
         hint: 'URL / JWT / 资源',
@@ -376,13 +361,28 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         iconClassName: 'text-sky-300',
         dataTour: 'workbench-local-large-file',
       },
+      {
+        id: 'debug-recipe',
+        label: '高级排查',
+        hint: '低频复盘',
+        title: '低频排查入口：切到嵌套解析并打开 Response 报告',
+        icon: (
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+          </svg>
+        ),
+        isActive: activeMode === TransformMode.DEEP_FORMAT,
+        onClick: () => onSmartSuggestionAction('response-inspection'),
+        iconClassName: 'text-gray-400',
+        dataTour: 'workbench-debug-recipe',
+      },
     ];
 
     return (
       <details data-tour="product-workbench" className="mb-4 rounded-lg border border-editor-border bg-editor-sidebar/40">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[11px] font-semibold text-gray-400 transition-colors hover:text-gray-200">
           <span>进阶工作流</span>
-          <span className="truncate text-[10px] font-normal text-gray-600">结构 / 排查 / Schema</span>
+          <span className="truncate text-[10px] font-normal text-gray-600">结构 / Schema / 本地</span>
         </summary>
         <div className="border-t border-editor-border p-2.5">
           <div className="grid grid-cols-1 gap-1.5">

@@ -1617,7 +1617,7 @@ const App: React.FC = () => {
     if (actionId === 'response-inspection') {
       setHighlightRange(null);
       setIsTransformReportOpen(true);
-      showSuccess('已打开 Response 排查工作流');
+      showSuccess('已打开高级排查报告');
     } else if (actionId === 'deep-format-report') {
       setIsTransformReportOpen(true);
       showSuccess('已切换到嵌套解析并打开报告');
