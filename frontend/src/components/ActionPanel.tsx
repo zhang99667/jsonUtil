@@ -297,104 +297,38 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     );
   };
 
-  const renderProductWorkbench = () => {
+  const renderAuxiliaryWorkbench = () => {
     if (isCollapsed) return null;
 
-    const shortcuts: WorkbenchShortcut[] = [
-      {
-        id: 'structure-map',
-        label: '结构图谱',
-        hint: '树 / 路径 / 搜索',
-        title: '打开结构导航，按路径搜索和定位字段',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h6v6H4V7zm10 0h6v6h-6V7zM7 13v4h10v-4" />
-          </svg>
-        ),
-        isActive: isJsonTreeOpen,
-        onClick: onToggleJsonTree,
-        iconClassName: 'text-cyan-300',
-        dataTour: 'workbench-structure-map',
-      },
-      {
-        id: 'semantic-preview',
-        label: '语义预览',
-        hint: 'URL / JWT / 资源',
-        title: '打开结构导航查看字符串语义标签',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4h6m-7 4h8m-9 4h10m-8 4h6m-3 4v-4" />
-          </svg>
-        ),
-        isActive: isJsonTreeOpen,
-        onClick: onToggleJsonTree,
-        iconClassName: 'text-emerald-300',
-        dataTour: 'workbench-semantic-preview',
-      },
-      {
-        id: 'schema-trust',
-        label: '契约可信',
-        hint: 'Schema / 样本',
-        title: '打开 Schema 校验并查看生成可信提示',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z" />
-          </svg>
-        ),
-        isActive: isJsonSchemaOpen,
-        onClick: onToggleJsonSchema,
-        iconClassName: 'text-lime-300',
-        dataTour: 'workbench-schema-trust',
-      },
-      {
-        id: 'local-large-file',
-        label: '本地大文件',
-        hint: '结构优先',
-        title: '切到嵌套解析并打开结构导航，优先在本地浏览大输入',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3l7 4v5c0 4.5-2.8 7.4-7 9-4.2-1.6-7-4.5-7-9V7l7-4z" />
-          </svg>
-        ),
-        isActive: activeMode === TransformMode.DEEP_FORMAT && isJsonTreeOpen,
-        onClick: () => onSmartSuggestionAction('structure-nav'),
-        iconClassName: 'text-sky-300',
-        dataTour: 'workbench-local-large-file',
-      },
-      {
-        id: 'debug-recipe',
-        label: '高级排查',
-        hint: '低频复盘',
-        title: '低频排查入口：切到嵌套解析并打开 Response 报告',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-          </svg>
-        ),
-        isActive: activeMode === TransformMode.DEEP_FORMAT,
-        onClick: () => onSmartSuggestionAction('response-inspection'),
-        iconClassName: 'text-gray-400',
-        dataTour: 'workbench-debug-recipe',
-      },
-    ];
+    const debugShortcut: WorkbenchShortcut = {
+      id: 'debug-recipe',
+      label: '高级排查',
+      hint: '低频复盘',
+      title: '低频排查入口：切到嵌套解析并打开 Response 报告',
+      icon: (
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+        </svg>
+      ),
+      isActive: activeMode === TransformMode.DEEP_FORMAT,
+      onClick: () => onSmartSuggestionAction('response-inspection'),
+      iconClassName: 'text-gray-400',
+      dataTour: 'workbench-debug-recipe',
+    };
 
     return (
-      <details data-tour="product-workbench" className="mb-4 rounded-lg border border-editor-border bg-editor-sidebar/40">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[11px] font-semibold text-gray-400 transition-colors hover:text-gray-200">
-          <span>进阶工作流</span>
-          <span className="truncate text-[10px] font-normal text-gray-600">结构 / Schema / 本地</span>
+      <details data-tour="auxiliary-workbench" className="mt-3 border-t border-editor-border pt-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium text-gray-500 transition-colors hover:bg-editor-sidebar hover:text-gray-300">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h7" />
+            </svg>
+            <span className="truncate">更多 / 实验</span>
+          </span>
+          <span className="truncate text-[10px] font-normal text-gray-600">低频</span>
         </summary>
-        <div className="border-t border-editor-border p-2.5">
-          <div className="grid grid-cols-1 gap-1.5">
-            {shortcuts.map(renderWorkbenchShortcut)}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {['本地解析', '大输入异步', 'AI 前敏感拦截'].map(label => (
-              <span key={label} className="rounded border border-white/10 bg-editor-bg/70 px-1.5 py-0.5 text-[10px] text-gray-500">
-                {label}
-              </span>
-            ))}
-          </div>
+        <div className="pt-2">
+          {renderWorkbenchShortcut(debugShortcut)}
         </div>
       </details>
     );
@@ -637,8 +571,6 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           ), 'text-orange-400', 'group-hover:text-orange-400', isTemplateFillOpen, onToggleTemplateFill, 'template-fill-button')}
         </div>
 
-        {renderProductWorkbench()}
-
         {/* 文件管理 */}
         <div data-tour="file-operations" className="pt-4 mt-2 border-t border-editor-border">
           <button
@@ -688,6 +620,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             )}
           </button>
         </div>
+
+        {renderAuxiliaryWorkbench()}
 
         {/* 设置入口 */}
         <div className="pt-4 mt-auto">

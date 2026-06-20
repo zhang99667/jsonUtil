@@ -951,6 +951,8 @@ const App: React.FC = () => {
     const content = activeEditor === 'PREVIEW' ? output : input;
     return getDocumentStats(content, { maxScanLength: DOCUMENT_STATS_SCAN_LIMIT });
   }, [input, output, activeEditor]);
+  const isSourceLarge = input.length >= ASYNC_TRANSFORM_THRESHOLD;
+  const isAiConfigured = Boolean(aiConfig.apiKey.trim());
   const smartSuggestion = useMemo(() => getSmartInputSuggestion(input), [input]);
 
   useEffect(() => {
@@ -2311,6 +2313,10 @@ const App: React.FC = () => {
         activeFileId={activeFileId}
         files={files}
         isAutoSaveEnabled={isAutoSaveEnabled}
+        isSourceLarge={isSourceLarge}
+        isOutputTransforming={isOutputTransforming}
+        isAiRepairing={isProcessing}
+        isAiConfigured={isAiConfigured}
         hasSourceContent={hasSourceContent}
         isSourceJsonCandidate={isSourceJsonCandidate}
         sourceStandaloneDeepFormatKind={sourceStandaloneDeepFormatKind}

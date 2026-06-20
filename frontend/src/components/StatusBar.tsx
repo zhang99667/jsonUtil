@@ -2,6 +2,7 @@ import React from 'react';
 import { TransformMode, FileTab, ValidationResult } from '../types';
 import { APP_VERSION_LABEL } from '../utils/appVersion';
 import { formatByteSize } from '../utils/documentStats';
+import { getLocalProcessingStatus, type LocalProcessingStatusTone } from '../utils/localProcessingStatus';
 import type { StandaloneDeepFormatInputKind } from '../utils/transformations';
 
 interface SourceValidationLocation {
@@ -27,6 +28,13 @@ const MODE_LABELS: Record<TransformMode, string> = {
   [TransformMode.JSON_TO_TYPESCRIPT]: 'JSON 转 TS',
 };
 
+const LOCAL_PROCESSING_STATUS_CLASS_NAMES: Record<LocalProcessingStatusTone, string> = {
+  local: 'bg-white/15 text-white',
+  large: 'bg-amber-100 text-amber-900',
+  worker: 'bg-cyan-100 text-cyan-900',
+  repairing: 'bg-violet-100 text-violet-900',
+};
+
 /** StatusBar 组件 Props 定义 */
 interface StatusBarProps {
   /** SOURCE 内容长度，用于判断草稿保存状态 */
@@ -49,6 +57,14 @@ interface StatusBarProps {
   files: FileTab[];
   /** 自动保存是否开启 */
   isAutoSaveEnabled: boolean;
+  /** SOURCE 是否达到大输入保护阈值 */
+  isSourceLarge: boolean;
+  /** PREVIEW 是否正在 Worker / 动态转换处理中 */
+  isOutputTransforming: boolean;
+  /** 智能修复是否正在运行 */
+  isAiRepairing: boolean;
+  /** AI 是否已配置 */
+  isAiConfigured: boolean;
   /** SOURCE 是否有非空内容 */
   hasSourceContent: boolean;
   /** SOURCE 是否进入 JSON 容器校验 */
@@ -86,6 +102,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   activeFileId,
   files,
   isAutoSaveEnabled,
+  isSourceLarge,
+  isOutputTransforming,
+  isAiRepairing,
+  isAiConfigured,
   hasSourceContent,
   isSourceJsonCandidate,
   sourceStandaloneDeepFormatKind,
@@ -185,6 +205,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   })();
   const canLocateSourceError = Boolean(!sourceValidation.isValid && sourceValidationLocation && onLocateSourceError);
   const canOpenSourceSchemeInput = Boolean(sourceStandaloneDeepFormatKind && onOpenSourceSchemeInput);
+  const localProcessingStatus = getLocalProcessingStatus({
+    hasSourceContent,
+    isSourceLarge,
+    isOutputTransforming,
+    isAiRepairing,
+    isAiConfigured,
+  });
   const versionBadgeClassName = 'rounded bg-white/15 px-1.5 py-0.5 font-mono text-[10px] leading-none text-blue-100';
 
   return (
@@ -276,6 +303,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
       {/* 右侧：当前视图模式与版本号 */}
       <div data-tour="statusbar-view" className="flex shrink-0 items-center gap-2">
+        <span
+          data-tour="local-processing-status"
+          className={`shrink-0 rounded px-1.5 py-0.5 font-bold leading-none ${LOCAL_PROCESSING_STATUS_CLASS_NAMES[localProcessingStatus.tone]}`}
+          title={localProcessingStatus.title}
+        >
+          {localProcessingStatus.label}
+        </span>
         <span className="shrink-0 opacity-80">当前视图:</span>
         <span className="bg-white text-brand-primary px-1.5 py-0.5 rounded font-bold text-[11px] shadow-sm leading-none">
           {MODE_LABELS[mode]}
