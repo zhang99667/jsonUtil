@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildJsonTreeModel,
+  buildJsonTreeGraphView,
   buildJsonTreeArrayTablePreview,
   filterJsonTreeArrayTablePreviewColumns,
   formatJsonTreeSearchResultsCsvText,
@@ -43,6 +44,74 @@ describe('jsonTreeModel', () => {
       { path: '$.items[1]', jsonPointer: '/items/1', keyLabel: '[1]', depth: 2, kind: 'boolean', childCount: 0, valuePreview: 'true' },
       { path: '$.items[2]', jsonPointer: '/items/2', keyLabel: '[2]', depth: 2, kind: 'null', childCount: 0, valuePreview: 'null' },
     ]);
+  });
+
+  it('根据结构节点生成轻量图谱布局和父子边', () => {
+    const model = buildJsonTreeModel(JSON.stringify({
+      user: {
+        name: 'Alice',
+      },
+      items: [1],
+    }));
+    const graph = buildJsonTreeGraphView(model.nodes, {
+      columnWidth: 100,
+      rowHeight: 40,
+      nodeWidth: 80,
+      nodeHeight: 24,
+    });
+
+    expect(graph.nodes.map(node => ({
+      path: node.path,
+      parentPath: node.parentPath,
+      depth: node.depth,
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+    }))).toEqual([
+      { path: '$', parentPath: null, depth: 0, x: 24, y: 18, width: 80, height: 24 },
+      { path: '$.user', parentPath: '$', depth: 1, x: 124, y: 58, width: 80, height: 24 },
+      { path: '$.user.name', parentPath: '$.user', depth: 2, x: 224, y: 98, width: 80, height: 24 },
+      { path: '$.items', parentPath: '$', depth: 1, x: 124, y: 138, width: 80, height: 24 },
+      { path: '$.items[0]', parentPath: '$.items', depth: 2, x: 224, y: 178, width: 80, height: 24 },
+    ]);
+    expect(graph.edges.map(edge => ({
+      fromPath: edge.fromPath,
+      toPath: edge.toPath,
+      x1: edge.x1,
+      y1: edge.y1,
+      x2: edge.x2,
+      y2: edge.y2,
+    }))).toEqual([
+      { fromPath: '$', toPath: '$.user', x1: 104, y1: 30, x2: 124, y2: 70 },
+      { fromPath: '$.user', toPath: '$.user.name', x1: 204, y1: 70, x2: 224, y2: 110 },
+      { fromPath: '$', toPath: '$.items', x1: 104, y1: 30, x2: 124, y2: 150 },
+      { fromPath: '$.items', toPath: '$.items[0]', x1: 204, y1: 150, x2: 224, y2: 190 },
+    ]);
+    expect(graph).toMatchObject({
+      width: 328,
+      height: 236,
+      totalCandidateNodes: 5,
+      isLimited: false,
+    });
+  });
+
+  it('图谱布局支持按深度和数量截断', () => {
+    const model = buildJsonTreeModel(JSON.stringify({
+      a: { b: { c: { d: 1 } } },
+      list: [1, 2, 3],
+    }));
+    const graph = buildJsonTreeGraphView(model.nodes, {
+      maxDepth: 2,
+      maxNodes: 4,
+    });
+
+    expect(graph.nodes.map(node => node.path)).toEqual(['$', '$.a', '$.a.b', '$.list']);
+    expect(graph.edges.map(edge => edge.toPath)).toEqual(['$.a', '$.a.b', '$.list']);
+    expect(graph.isLimited).toBe(true);
+    expect(graph.totalCandidateNodes).toBe(7);
+    expect(graph.maxDepth).toBe(2);
+    expect(graph.maxNodes).toBe(4);
   });
 
   it('支持 JSON Lines 作为数组结构浏览', () => {

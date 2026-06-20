@@ -31,6 +31,41 @@ export interface JsonTreeModel {
   maxDepth: number;
 }
 
+export interface JsonTreeGraphNode {
+  path: string;
+  parentPath: string | null;
+  keyLabel: string;
+  kind: JsonTreeNodeKind;
+  childCount: number;
+  valuePreview: string;
+  depth: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface JsonTreeGraphEdge {
+  id: string;
+  fromPath: string;
+  toPath: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface JsonTreeGraphView {
+  nodes: JsonTreeGraphNode[];
+  edges: JsonTreeGraphEdge[];
+  width: number;
+  height: number;
+  totalCandidateNodes: number;
+  isLimited: boolean;
+  maxNodes: number;
+  maxDepth: number;
+}
+
 export interface JsonTreeFocusTarget {
   path?: string;
   pointer?: string;
@@ -40,6 +75,15 @@ export interface BuildJsonTreeModelOptions {
   maxNodes?: number;
   maxDepth?: number;
   previewMaxLength?: number;
+}
+
+export interface BuildJsonTreeGraphViewOptions {
+  maxNodes?: number;
+  maxDepth?: number;
+  columnWidth?: number;
+  rowHeight?: number;
+  nodeWidth?: number;
+  nodeHeight?: number;
 }
 
 export interface JsonTreeArrayTablePreviewRow {
@@ -98,6 +142,14 @@ const DEFAULT_TABLE_PREVIEW_ROWS = 8;
 const DEFAULT_TABLE_COLUMN_SCAN_ROWS = 200;
 const DEFAULT_TABLE_PREVIEW_COLUMNS = 8;
 const DEFAULT_TABLE_CELL_MAX_LENGTH = 80;
+const DEFAULT_GRAPH_MAX_NODES = 90;
+const DEFAULT_GRAPH_MAX_DEPTH = 6;
+const DEFAULT_GRAPH_COLUMN_WIDTH = 168;
+const DEFAULT_GRAPH_ROW_HEIGHT = 48;
+const DEFAULT_GRAPH_NODE_WIDTH = 136;
+const DEFAULT_GRAPH_NODE_HEIGHT = 32;
+const GRAPH_PADDING_X = 24;
+const GRAPH_PADDING_Y = 18;
 
 const isJsonRecord = (value: JsonValue): value is Record<string, JsonValue> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -469,6 +521,61 @@ export const formatJsonTreeArrayTableCsvText = (
     ...preview.rows.map(row => row.copyCells.map(escapeCsvCell).join(',')),
   ].join('\n')
 );
+
+export const buildJsonTreeGraphView = (
+  nodes: JsonTreeNode[],
+  options: BuildJsonTreeGraphViewOptions = {}
+): JsonTreeGraphView => {
+  const maxNodes = Math.max(1, options.maxNodes ?? DEFAULT_GRAPH_MAX_NODES);
+  const maxDepth = Math.max(1, options.maxDepth ?? DEFAULT_GRAPH_MAX_DEPTH);
+  const columnWidth = Math.max(96, options.columnWidth ?? DEFAULT_GRAPH_COLUMN_WIDTH);
+  const rowHeight = Math.max(36, options.rowHeight ?? DEFAULT_GRAPH_ROW_HEIGHT);
+  const nodeWidth = Math.max(80, options.nodeWidth ?? DEFAULT_GRAPH_NODE_WIDTH);
+  const nodeHeight = Math.max(24, options.nodeHeight ?? DEFAULT_GRAPH_NODE_HEIGHT);
+  const candidates = nodes.filter(node => node.depth <= maxDepth);
+  const graphNodes = candidates.slice(0, maxNodes).map((node, index): JsonTreeGraphNode => ({
+    path: node.path,
+    parentPath: node.parentPath,
+    keyLabel: node.keyLabel,
+    kind: node.kind,
+    childCount: node.childCount,
+    valuePreview: node.valuePreview,
+    depth: node.depth,
+    x: GRAPH_PADDING_X + node.depth * columnWidth,
+    y: GRAPH_PADDING_Y + index * rowHeight,
+    width: nodeWidth,
+    height: nodeHeight,
+  }));
+  const includedPaths = new Set(graphNodes.map(node => node.path));
+  const edges = graphNodes
+    .filter(node => node.parentPath && includedPaths.has(node.parentPath))
+    .map((node): JsonTreeGraphEdge => {
+      const parent = graphNodes.find(item => item.path === node.parentPath);
+      return {
+        id: `${node.parentPath}->${node.path}`,
+        fromPath: node.parentPath || '',
+        toPath: node.path,
+        x1: parent ? parent.x + parent.width : node.x,
+        y1: parent ? parent.y + parent.height / 2 : node.y + node.height / 2,
+        x2: node.x,
+        y2: node.y + node.height / 2,
+      };
+    });
+  const maxGraphDepth = graphNodes.reduce((max, node) => Math.max(max, node.depth), 0);
+  const width = Math.max(320, GRAPH_PADDING_X * 2 + maxGraphDepth * columnWidth + nodeWidth);
+  const height = Math.max(220, GRAPH_PADDING_Y * 2 + Math.max(graphNodes.length, 1) * rowHeight);
+
+  return {
+    nodes: graphNodes,
+    edges,
+    width,
+    height,
+    totalCandidateNodes: candidates.length,
+    isLimited: candidates.length > graphNodes.length,
+    maxNodes,
+    maxDepth,
+  };
+};
 
 export const buildJsonTreeModel = (
   jsonText: string,
