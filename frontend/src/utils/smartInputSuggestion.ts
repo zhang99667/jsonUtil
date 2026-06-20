@@ -157,12 +157,12 @@ const buildJsonSuggestion = (
     return {
       id: 'json-with-cmd',
       title: '检测到 JSON 内含 CMD / Scheme',
-      description: `建议进入本地排查工作流，已命中 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串，可继续看结构导航。`,
+      description: `建议先做嵌套解析和结构浏览，已命中 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串；需要复盘时再进入高级排查。`,
       tone: 'cyan',
       actions: [
-        createAction('response-inspection', '排查工作流'),
         createAction('deep-format-report', '嵌套解析'),
         createAction('structure-nav', '结构导航'),
+        createAction('response-inspection', '高级排查'),
       ],
     };
   }
@@ -228,12 +228,12 @@ const buildJsonLinesSuggestion = (source: string): SmartInputSuggestion | null =
       return {
         id: 'json-lines-with-cmd',
         title: '检测到 JSON Lines 内含 CMD / Scheme',
-        description: `已识别 ${diagnostic.records.length} 行，其中包含 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串，建议进入排查工作流并查看虚拟数组结构。`,
+        description: `已识别 ${diagnostic.records.length} 行，其中包含 ${Math.max(signal.actionableStringCount, 1)} 个可展开字符串，建议先嵌套解析并查看虚拟数组结构。`,
         tone: 'cyan',
         actions: [
-          createAction('response-inspection', '排查工作流'),
           createAction('deep-format-report', '嵌套解析'),
           createAction('structure-nav', '结构导航'),
+          createAction('response-inspection', '高级排查'),
         ],
       };
     }

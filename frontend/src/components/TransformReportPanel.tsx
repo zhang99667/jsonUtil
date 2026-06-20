@@ -33,6 +33,7 @@ import {
   formatTransformQualitySnapshotDeltaText,
   formatTransformQualitySnapshotJsonText,
   formatTransformReportViewText,
+  formatTransformTroubleshootingRecipeJsonText,
   buildTransformPlaceholderFillTemplate,
   getTransformDecodedPathCopyText,
   getTransformPathValueCopyRows,
@@ -386,6 +387,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const qualitySnapshotCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始大字段值的解析质量指标 JSON，便于保存基线或对比趋势', '暂无质量快照可复制');
   const qualityBaselineCopyTitle = getReportCopyTitle(Boolean(qualityBaselineDeltaText), '复制当前质量快照与临时基线的指标变化', '请先设为基线后再复制质量对比');
   const archivePackageCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始 response 的质量快照、脱敏问题样本和 corpus 沉淀清单', '暂无归档包可复制');
+  const troubleshootingRecipeCopyTitle = getReportCopyTitle(Boolean(reportView), '复制不含原始 response 的可复用排查 recipe，便于按步骤复现当前分析链路', '暂无排查 recipe 可复制');
   const pathValuesCopyTitle = getReportCopyTitle(hasPathValueCopyItems, '复制当前筛选下已索引的内部路径和值', '当前筛选没有可复制的路径和值');
   const cmdStructuresCopyTitle = getReportCopyTitle(
     hasCmdStructureCopyItems,
@@ -492,6 +494,18 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       toast.success(formatCopySuccessMessage('归档包', archivePackageText), { duration: 2000 });
     } catch (error) {
       showCopyError('复制深度解析归档包失败:', error);
+    }
+  };
+
+  const handleCopyTroubleshootingRecipe = async () => {
+    if (!report || !reportView || isFilterPending) return;
+
+    try {
+      const recipeText = formatTransformTroubleshootingRecipeJsonText(report, reportView, deferredQuery);
+      await copyText(recipeText);
+      toast.success(formatCopySuccessMessage('排查 recipe', recipeText), { duration: 2000 });
+    } catch (error) {
+      showCopyError('复制深度解析排查 recipe 失败:', error);
     }
   };
 
@@ -1278,6 +1292,16 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           aria-label={`复制归档包，${archivePackageCopyTitle}`}
         >
           复制归档包
+        </button>
+        <button
+          data-tour="transform-report-copy-troubleshooting-recipe"
+          onClick={handleCopyTroubleshootingRecipe}
+          disabled={!reportView || isFilterPending}
+          className="whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-300 rounded hover:bg-editor-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={troubleshootingRecipeCopyTitle}
+          aria-label={`复制排查 recipe，${troubleshootingRecipeCopyTitle}`}
+        >
+          复制 recipe
         </button>
         <button
           data-tour="transform-report-copy-path-values"

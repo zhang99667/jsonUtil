@@ -18,9 +18,9 @@ describe('getSmartInputSuggestion', () => {
     expect(suggestion).toMatchObject({
       id: 'json-with-cmd',
       actions: [
-        { id: 'response-inspection', label: '排查工作流' },
-        { id: 'deep-format-report' },
+        { id: 'deep-format-report', label: '嵌套解析' },
         { id: 'structure-nav' },
+        { id: 'response-inspection', label: '高级排查' },
       ],
     });
     expect(getSmartSuggestionMode('response-inspection')).toBe(TransformMode.DEEP_FORMAT);
@@ -95,7 +95,7 @@ describe('getSmartInputSuggestion', () => {
     expect(suggestion?.actions.some(action => action.id === 'ai-fix')).toBe(false);
   });
 
-  it('JSON Lines 内含业务 Scheme 时推荐排查工作流', () => {
+  it('JSON Lines 内含业务 Scheme 时优先推荐嵌套解析', () => {
     const scheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
     const suggestion = getSmartInputSuggestion([
       JSON.stringify({ level: 'info', action_cmd: scheme }),
@@ -105,9 +105,9 @@ describe('getSmartInputSuggestion', () => {
     expect(suggestion).toMatchObject({
       id: 'json-lines-with-cmd',
       actions: [
-        { id: 'response-inspection' },
         { id: 'deep-format-report' },
         { id: 'structure-nav' },
+        { id: 'response-inspection' },
       ],
     });
   });
