@@ -7,6 +7,7 @@ import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import { getJsonPathScenarioExamples } from '../utils/jsonPathExamples';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
 import { normalizeJsonPathQueryInput } from '../utils/jsonPathInput';
 import { formatJsonPathValueForPreview } from '../utils/jsonPathPreview';
@@ -474,6 +475,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             text: formatJsonPathValueForPreview(item.value),
         }));
     }, [queryItems]);
+    const scenarioExamples = useMemo(() => getJsonPathScenarioExamples(jsonData), [jsonData]);
     const hiddenResultCount = Math.max(queryItems.length - queryResultPreviewItems.length, 0);
     const copyButtonLabel = isResultLimited ? '复制已返回结果' : '复制全部结果';
     const copyPathValueButtonLabel = isResultLimited ? '复制已返回路径和值' : '复制路径和值';
@@ -711,6 +713,26 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         ))}
                     </div>
                 </div>
+
+                {/* 场景示例 */}
+                {scenarioExamples.length > 0 && (
+                    <div className="mb-3" data-tour="jsonpath-scenario-examples">
+                        <div className="text-xs text-gray-500 mb-2">场景示例:</div>
+                        <div className="flex flex-wrap gap-2">
+                            {scenarioExamples.map((example) => (
+                                <button
+                                    key={example.id}
+                                    onClick={() => fillAndRunQuery(example.query)}
+                                    className="rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-100 transition-colors hover:border-emerald-400/50 hover:bg-emerald-500/20"
+                                    title={`${example.description}\n${example.query}\n点击填入并查询`}
+                                    aria-label={`填入并查询场景示例：${example.label}（${example.query}）`}
+                                >
+                                    {example.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Response 常用 */}
                 <div className="mb-3" data-tour="jsonpath-response-presets">
