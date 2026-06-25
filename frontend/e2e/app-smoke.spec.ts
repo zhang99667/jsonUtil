@@ -133,12 +133,14 @@ test('智能建议会根据 SOURCE 推荐下一步动作', async ({ page }) => {
 
   const suggestion = page.locator('[data-tour="smart-action-suggestion"]');
   await expect(suggestion).toContainText('检测到 JSON 内含 CMD / Scheme');
-  await expect(suggestion).toContainText('排查工作流');
+  await expect(suggestion).toContainText('高级排查');
   await expect(suggestion).toContainText('嵌套解析');
   await suggestion.locator('[data-tour="smart-action-response-inspection"]').click();
 
   await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-pressed', 'true');
   const reportPanel = page.locator('[data-tour="transform-report-panel"]');
+  await expect(reportPanel).toBeHidden();
+  await page.locator('[data-tour="transform-report-button"]').click();
   await expect(reportPanel).toContainText('深度解析报告');
   await expect(reportPanel).toContainText('action_cmd');
   await reportPanel.getByRole('button', { name: '关闭 深度解析报告' }).click();

@@ -1037,7 +1037,7 @@ const App: React.FC = () => {
     setMode(TransformMode.DEEP_FORMAT);
     setHighlightRange(null);
     setIsJsonPathPanelOpen(false);
-    setIsTransformReportOpen(true);
+    setIsTransformReportOpen(false);
     setIsSchemeDecodeOpen(false);
     showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
   }, [handleInputChange]);
@@ -1055,9 +1055,9 @@ const App: React.FC = () => {
       setMode(TransformMode.DEEP_FORMAT);
       setHighlightRange(null);
       setIsJsonPathPanelOpen(false);
-      setIsTransformReportOpen(true);
+      setIsTransformReportOpen(false);
       setIsSchemeDecodeOpen(false);
-      showSuccess('Scheme 原始值已在 SOURCE 中，已打开深度解析报告');
+      showSuccess('Scheme 原始值已在 SOURCE 中，可手动查看深度解析报告');
       trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
       return;
     }
@@ -1618,11 +1618,11 @@ const App: React.FC = () => {
 
     if (actionId === 'response-inspection') {
       setHighlightRange(null);
-      setIsTransformReportOpen(true);
-      showSuccess('已打开高级排查报告');
+      setIsTransformReportOpen(false);
+      showSuccess('已切换到嵌套解析，可手动查看报告');
     } else if (actionId === 'deep-format-report') {
-      setIsTransformReportOpen(true);
-      showSuccess('已切换到嵌套解析并打开报告');
+      setIsTransformReportOpen(false);
+      showSuccess('已切换到嵌套解析，可手动查看报告');
     } else if (actionId === 'scheme-panel') {
       const sourceText = input.trim();
       if (!sourceText) {
