@@ -1208,7 +1208,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
           ? `${reportView?.filteredRecordCount || 0}/${reportView?.totalRecordCount || 0} 条展开记录 · ${reportView?.filteredCmdStructureCount || 0}/${reportView?.totalCmdStructureCount || 0} 条CMD结构 · ${reportView?.filteredNestedCommandFieldCount || 0}/${reportView?.totalNestedCommandFieldCount || 0} 个内部CMD字段 · ${reportView?.filteredNestedResourceFieldCount || 0}/${reportView?.totalNestedResourceFieldCount || 0} 个资源字段 · ${reportView?.filteredPlaceholderCount || 0}/${reportView?.totalPlaceholderCount || 0} 个占位符 · ${reportView?.filteredUnresolvedCount || 0}/${reportView?.totalUnresolvedCount || 0} 条待检查 · ${reportView?.filteredWarningCount || 0}/${reportView?.totalWarningCount || 0} 条跳过记录`
           : '暂无解析上下文'}
       </div>
-      <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
+      <div className="min-w-0 flex flex-1 flex-wrap items-center justify-end gap-1.5">
         {query.trim() && (
           <button
             onClick={handleCopyFilteredReport}
@@ -1987,9 +1987,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           <div
                             key={`${record.path}:cmd-schema:${row.path}:${row.schema}`}
                             data-tour="transform-report-command-schema-row"
-                            className="flex items-center justify-between gap-2 rounded bg-emerald-950/20 px-2 py-1"
+                            className="flex items-center gap-2 rounded bg-emerald-950/20 px-2 py-1"
                           >
-                            <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                            <div className="min-w-0 flex flex-1 items-center gap-1 font-mono overflow-hidden">
                               <span className="min-w-0 flex-1 text-emerald-200 truncate" title={row.path}>
                                 {row.path}
                               </span>
@@ -1998,32 +1998,34 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                                 {row.schema}
                               </span>
                             </div>
-                            <button
-                              type="button"
-                              data-tour="transform-report-copy-command-schema-path"
-                              onClick={() => handleCopyPath(row.path)}
-                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            >
-                              复制路径
-                            </button>
-                            <button
-                              type="button"
-                              data-tour="transform-report-copy-command-schema-row"
-                              onClick={() => handleCopyDecodedPathValue(`${row.path} = ${JSON.stringify(row.schema)}`)}
-                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            >
-                              复制片段
-                            </button>
-                            {onLocatePath && (
+                            <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
                               <button
                                 type="button"
-                                data-tour="transform-report-locate-command-schema-path"
-                                onClick={() => handleLocatePath(row.path)}
-                                className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                data-tour="transform-report-copy-command-schema-path"
+                                onClick={() => handleCopyPath(row.path)}
+                                className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                               >
-                                定位
+                                复制路径
                               </button>
-                            )}
+                              <button
+                                type="button"
+                                data-tour="transform-report-copy-command-schema-row"
+                                onClick={() => handleCopyDecodedPathValue(`${row.path} = ${JSON.stringify(row.schema)}`)}
+                                className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              >
+                                复制片段
+                              </button>
+                              {onLocatePath && (
+                                <button
+                                  type="button"
+                                  data-tour="transform-report-locate-command-schema-path"
+                                  onClick={() => handleLocatePath(row.path)}
+                                  className="text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                >
+                                  定位
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                         {record.commandSchemaRows.length > COMMAND_SCHEMA_ROW_DISPLAY_LIMIT && (
@@ -2045,9 +2047,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                             <div
                               key={`${record.path}:cmd-field:${row.path}`}
                               data-tour="transform-report-nested-cmd-field"
-                              className="flex items-center justify-between gap-2 rounded bg-cyan-950/20 px-2 py-1"
+                              className="flex items-center gap-2 rounded bg-cyan-950/20 px-2 py-1"
                             >
-                              <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                              <div className="min-w-0 flex flex-1 items-center gap-1 font-mono overflow-hidden">
                                 <span className="min-w-0 flex-1 text-emerald-200 truncate" title={row.path}>
                                   {row.path}
                                 </span>
@@ -2056,42 +2058,44 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                                   {row.preview}
                                 </span>
                               </div>
-                              <button
-                                type="button"
-                                data-tour="transform-report-copy-nested-cmd-path"
-                                onClick={() => handleCopyPath(row.path)}
-                                className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                              >
-                                复制路径
-                              </button>
-                              <button
-                                type="button"
-                                data-tour="transform-report-copy-nested-cmd-value"
-                                onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
-                                className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                              >
-                                复制片段
-                              </button>
-                              {onOpenSchemeValue && schemeInput && (
+                              <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
                                 <button
                                   type="button"
-                                  data-tour="transform-report-open-nested-cmd-scheme"
-                                  onClick={() => handleOpenSchemeValue(schemeInput)}
-                                  className="shrink-0 text-gray-400 hover:text-violet-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                  data-tour="transform-report-copy-nested-cmd-path"
+                                  onClick={() => handleCopyPath(row.path)}
+                                  className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                                 >
-                                  Scheme 打开
+                                  复制路径
                                 </button>
-                              )}
-                              {onLocatePath && (
                                 <button
                                   type="button"
-                                  data-tour="transform-report-locate-nested-cmd-path"
-                                  onClick={() => handleLocatePath(row.path)}
-                                  className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                  data-tour="transform-report-copy-nested-cmd-value"
+                                  onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
+                                  className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                                 >
-                                  定位
+                                  复制片段
                                 </button>
-                              )}
+                                {onOpenSchemeValue && schemeInput && (
+                                  <button
+                                    type="button"
+                                    data-tour="transform-report-open-nested-cmd-scheme"
+                                    onClick={() => handleOpenSchemeValue(schemeInput)}
+                                    className="text-gray-400 hover:text-violet-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                  >
+                                    Scheme 打开
+                                  </button>
+                                )}
+                                {onLocatePath && (
+                                  <button
+                                    type="button"
+                                    data-tour="transform-report-locate-nested-cmd-path"
+                                    onClick={() => handleLocatePath(row.path)}
+                                    className="text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                  >
+                                    定位
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -2116,9 +2120,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           <div
                             key={`${record.path}:resource-field:${row.path}`}
                             data-tour="transform-report-nested-resource-field"
-                            className="flex items-center justify-between gap-2 rounded bg-slate-900/30 px-2 py-1"
+                            className="flex items-center gap-2 rounded bg-slate-900/30 px-2 py-1"
                           >
-                            <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                            <div className="min-w-0 flex flex-1 items-center gap-1 font-mono overflow-hidden">
                               <span className="min-w-0 flex-1 text-slate-100 truncate" title={row.path}>
                                 {row.path}
                               </span>
@@ -2127,32 +2131,34 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                                 {row.preview}
                               </span>
                             </div>
-                            <button
-                              type="button"
-                              data-tour="transform-report-copy-nested-resource-path"
-                              onClick={() => handleCopyPath(row.path)}
-                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            >
-                              复制路径
-                            </button>
-                            <button
-                              type="button"
-                              data-tour="transform-report-copy-nested-resource-value"
-                              onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
-                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            >
-                              复制片段
-                            </button>
-                            {onLocatePath && (
+                            <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
                               <button
                                 type="button"
-                                data-tour="transform-report-locate-nested-resource-path"
-                                onClick={() => handleLocatePath(row.path)}
-                                className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                data-tour="transform-report-copy-nested-resource-path"
+                                onClick={() => handleCopyPath(row.path)}
+                                className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                               >
-                                定位
+                                复制路径
                               </button>
-                            )}
+                              <button
+                                type="button"
+                                data-tour="transform-report-copy-nested-resource-value"
+                                onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
+                                className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              >
+                                复制片段
+                              </button>
+                              {onLocatePath && (
+                                <button
+                                  type="button"
+                                  data-tour="transform-report-locate-nested-resource-path"
+                                  onClick={() => handleLocatePath(row.path)}
+                                  className="text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                >
+                                  定位
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                         {record.hasMoreNestedResourceFields && (
@@ -2181,9 +2187,9 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                           <div
                             key={`${record.path}:${row.path}`}
                             data-tour="transform-report-decoded-path"
-                            className="flex items-center justify-between gap-2 rounded bg-editor-bg px-2 py-1"
+                            className="flex items-center gap-2 rounded bg-editor-bg px-2 py-1"
                           >
-                            <div className="min-w-0 flex items-center gap-1 font-mono overflow-hidden">
+                            <div className="min-w-0 flex flex-1 items-center gap-1 font-mono overflow-hidden">
                               <span className="min-w-0 flex-1 text-emerald-200 truncate" title={row.path}>
                                 {row.path}
                               </span>
@@ -2192,32 +2198,34 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
                                 {row.preview}
                               </span>
                             </div>
-                            <button
-                              type="button"
-                              data-tour="transform-report-copy-decoded-path"
-                              onClick={() => handleCopyPath(row.path)}
-                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            >
-                              复制路径
-                            </button>
-                            <button
-                              type="button"
-                              data-tour="transform-report-copy-decoded-value"
-                              onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
-                              className="shrink-0 text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
-                            >
-                              复制片段
-                            </button>
-                            {onLocatePath && (
+                            <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
                               <button
                                 type="button"
-                                data-tour="transform-report-locate-decoded-path"
-                                onClick={() => handleLocatePath(row.path)}
-                                className="shrink-0 text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                data-tour="transform-report-copy-decoded-path"
+                                onClick={() => handleCopyPath(row.path)}
+                                className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
                               >
-                                定位
+                                复制路径
                               </button>
-                            )}
+                              <button
+                                type="button"
+                                data-tour="transform-report-copy-decoded-value"
+                                onClick={() => handleCopyDecodedPathValue(getTransformDecodedPathCopyText(row))}
+                                className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                              >
+                                复制片段
+                              </button>
+                              {onLocatePath && (
+                                <button
+                                  type="button"
+                                  data-tour="transform-report-locate-decoded-path"
+                                  onClick={() => handleLocatePath(row.path)}
+                                  className="text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+                                >
+                                  定位
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                         {record.hasMoreDecodedPaths && (
