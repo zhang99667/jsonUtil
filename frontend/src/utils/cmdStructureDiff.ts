@@ -1,28 +1,36 @@
 import type { JsonValue } from '../types';
 import type { AppVersionMetadata } from './appVersion';
+import type { CmdStructureCandidateInput } from './cmdStructureCandidates';
+import {
+  stringifyCmdStructureValue,
+} from './cmdStructureDiffFormatter';
+import { countCmdStructurePathBranches } from './cmdStructurePathBranches';
+import {
+  findRawResponseCmdStructure,
+  normalizeRawSourceString,
+} from './cmdStructureRawSource';
+import type { NormalizedCmdStructure } from './cmdStructureRawSource';
+
+export {
+  collectActualCmdStructureCandidates,
+} from './cmdStructureCandidates';
+export type {
+  CmdStructureCandidateInput,
+} from './cmdStructureCandidates';
+export {
+  formatCmdStructureDiff,
+} from './cmdStructureDiffFormatter';
+export {
+  countCmdStructurePathBranches,
+} from './cmdStructurePathBranches';
 
 interface JsonObject {
   [key: string]: JsonValue;
 }
 
-interface NormalizedCmdStructure {
-  cmdSchema?: string;
-  cmdParams: JsonValue;
-  source?: string;
-}
-
 interface ValueRow {
   type: string;
   value: JsonValue;
-}
-
-interface RawCmdCandidate {
-  source: string;
-  priority: number;
-  depth: number;
-  order: number;
-  path: string;
-  sourceLabel?: string;
 }
 
 export interface CmdStructureValueDiff {
@@ -53,14 +61,6 @@ export interface CmdStructureDiffContext {
   modeLabel?: string;
 }
 
-export interface CmdStructureCandidateInput {
-  id: string;
-  label: string;
-  sourceLabel?: string;
-  commandSchema?: string;
-  actual: JsonValue;
-}
-
 export interface RankedCmdStructureCandidate extends Omit<CmdStructureCandidateInput, 'actual'> {
   diff: CmdStructureDiff;
   score: number;
@@ -74,63 +74,6 @@ export interface RankCmdStructureCandidatesOptions extends CmdStructureDiffOptio
 const isRecord = (value: JsonValue): value is JsonObject => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
-
-const RAW_CMD_FIELD_PRIORITIES = new Map<string, number>([
-  ['$', 100],
-  ['scheme', 100],
-  ['cmd', 100],
-  ['schema', 98],
-  ['action_cmd', 96],
-  ['actioncmd', 96],
-  ['command', 94],
-  ['convert_cmd', 92],
-  ['panel_cmd', 90],
-  ['webpanel_cmd', 90],
-  ['panel_scheme', 88],
-  ['stay_cmd', 86],
-  ['reward_cmd', 86],
-  ['strong_guide_cmd', 86],
-  ['button_scheme', 82],
-  ['bottom_button_scheme', 82],
-  ['button_cmd', 78],
-  ['url', 30],
-  ['page_url', 28],
-  ['lp_real_url', 28],
-  ['click_url', 24],
-  ['video_url', 10],
-]);
-const RAW_CMD_DECODE_MAX_DEPTH = 10;
-const URL_LIKE_RE = /^[A-Za-z][A-Za-z0-9+.-]*:\/\//;
-const QUERY_PAIR_RE = /^\??[A-Za-z0-9_.\-[\]%]+=/;
-const STRUCTURED_FIELD_RE = /(^|[_-])(cmd|command|schema|scheme|url|uri|link|params?|policy|info)$/i;
-const STRUCTURED_CAMEL_FIELD_RE = /[a-z0-9](Cmd|Command|Schema|Scheme|URL|Url|URI|Uri|Link|Params?|Policy|Info)$/;
-
-const safeDecodeURIComponent = (value: string): string => {
-  try {
-    return decodeURIComponent(value.replace(/\+/g, ' '));
-  } catch {
-    return value;
-  }
-};
-
-const normalizeRawSourceString = (value: string): string => value.trim().replace(/\\\//g, '/');
-
-const getRawCmdFieldPriority = (key: string): number => {
-  const lowerKey = key.trim().toLowerCase();
-  return RAW_CMD_FIELD_PRIORITIES.get(key) ??
-    RAW_CMD_FIELD_PRIORITIES.get(lowerKey) ??
-    (/(_cmd|cmd|_scheme|scheme)$/i.test(key) ? 70 : 0);
-};
-
-const looksLikeRawCmdSource = (value: string): boolean => {
-  const normalized = normalizeRawSourceString(value);
-  if (!normalized || /^__[^_]+__$/.test(normalized)) return false;
-
-  if (URL_LIKE_RE.test(normalized) || QUERY_PAIR_RE.test(normalized)) return true;
-
-  const decoded = safeDecodeURIComponent(normalized);
-  return decoded !== normalized && (URL_LIKE_RE.test(decoded) || QUERY_PAIR_RE.test(decoded));
-};
 
 const parseJsonCandidate = (candidate: string): JsonValue | undefined => {
   try {
@@ -303,236 +246,6 @@ const appendPathKey = (path: string, key: string): string => (
     : `${path}[${JSON.stringify(key)}]`
 );
 
-const collectRawCmdCandidates = (
-  value: JsonValue,
-  candidates: RawCmdCandidate[],
-  key = '$',
-  depth = 0,
-  orderRef = { value: 0 },
-  path = '$'
-) => {
-  if (typeof value === 'string') {
-    const priority = getRawCmdFieldPriority(key);
-    if (priority > 0 && looksLikeRawCmdSource(value)) {
-      candidates.push({
-        source: value,
-        priority,
-        depth,
-        order: orderRef.value,
-        path,
-        sourceLabel: key === '$' ? undefined : key,
-      });
-      orderRef.value += 1;
-    }
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectRawCmdCandidates(
-      item,
-      candidates,
-      key,
-      depth + 1,
-      orderRef,
-      `${path}[${index}]`
-    ));
-    return;
-  }
-
-  if (!isRecord(value)) return;
-
-  Object.entries(value).forEach(([childKey, item]) => {
-    collectRawCmdCandidates(
-      item,
-      candidates,
-      childKey,
-      depth + 1,
-      orderRef,
-      appendPathKey(path, childKey)
-    );
-  });
-};
-
-const isStructuredCmdField = (key: string): boolean => {
-  const lowerKey = key.trim().toLowerCase();
-  return RAW_CMD_FIELD_PRIORITIES.has(key) ||
-    RAW_CMD_FIELD_PRIORITIES.has(lowerKey) ||
-    STRUCTURED_FIELD_RE.test(key) ||
-    STRUCTURED_CAMEL_FIELD_RE.test(key);
-};
-
-const getUrlCmdSchema = (source: string): string | undefined => {
-  if (!URL_LIKE_RE.test(source)) return undefined;
-
-  try {
-    const url = new URL(source);
-    return `${url.protocol}//${url.host}${url.pathname}`;
-  } catch {
-    return source.split(/[?#]/)[0] || undefined;
-  }
-};
-
-const toJsonValue = (value: unknown): JsonValue => {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'boolean') return value;
-  if (value === null) return null;
-
-  if (Array.isArray(value)) return value.map(toJsonValue);
-
-  if (Boolean(value) && typeof value === 'object') {
-    const result: JsonObject = {};
-    Object.entries(value as Record<string, unknown>).forEach(([key, item]) => {
-      result[key] = toJsonValue(item);
-    });
-    return result;
-  }
-
-  return String(value);
-};
-
-const tryParseJsonString = (value: string): JsonValue | undefined => {
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  if (!/^[{["]/.test(trimmed)) return undefined;
-
-  const parsed = parseJsonCandidate(trimmed);
-  if (parsed !== undefined) return parsed;
-
-  const decoded = safeDecodeURIComponent(trimmed);
-  if (decoded !== trimmed) {
-    return parseJsonCandidate(decoded);
-  }
-
-  return undefined;
-};
-
-const parseFastCmdValue = (value: string, key: string, depth: number): JsonValue => {
-  if (depth > RAW_CMD_DECODE_MAX_DEPTH) return value;
-
-  const normalized = normalizeRawSourceString(value);
-  const parsedJson = tryParseJsonString(normalized);
-  if (parsedJson !== undefined) {
-    return parseFastStructuredValue(parsedJson, key, depth + 1);
-  }
-
-  const decoded = URL_LIKE_RE.test(normalized) ? normalized : safeDecodeURIComponent(normalized);
-  if (decoded !== normalized) {
-    const decodedJson = tryParseJsonString(decoded);
-    if (decodedJson !== undefined) {
-      return parseFastStructuredValue(decodedJson, key, depth + 1);
-    }
-
-    if (looksLikeRawCmdSource(decoded) && isStructuredCmdField(key)) {
-      const decodedStructure = parseFastCmdSource(decoded, depth + 1);
-      if (decodedStructure) return toJsonValue(decodedStructure);
-    }
-  }
-
-  if (looksLikeRawCmdSource(normalized) && isStructuredCmdField(key)) {
-    const structure = parseFastCmdSource(normalized, depth + 1);
-    if (structure) return toJsonValue(structure);
-  }
-
-  return value;
-};
-
-const parseFastStructuredValue = (value: JsonValue, key: string, depth: number): JsonValue => {
-  if (depth > RAW_CMD_DECODE_MAX_DEPTH) return value;
-
-  if (typeof value === 'string') return parseFastCmdValue(value, key, depth);
-
-  if (Array.isArray(value)) {
-    return value.map(item => parseFastStructuredValue(item, key, depth + 1));
-  }
-
-  if (!isRecord(value)) return value;
-
-  const result: JsonObject = {};
-  Object.entries(value).forEach(([childKey, item]) => {
-    result[childKey] = parseFastStructuredValue(item, childKey, depth + 1);
-  });
-  return result;
-};
-
-const parseFastQueryParams = (queryString: string, depth: number): JsonObject => {
-  const normalizedQuery = queryString.replace(/^\?/, '');
-  const params = new URLSearchParams(normalizedQuery);
-  const result: JsonObject = {};
-
-  params.forEach((value, key) => {
-    const parsedValue = parseFastCmdValue(value, key, depth + 1);
-    const existing = result[key];
-    if (existing === undefined) {
-      result[key] = parsedValue;
-      return;
-    }
-
-    result[key] = Array.isArray(existing)
-      ? [...existing, parsedValue]
-      : [existing, parsedValue];
-  });
-
-  return result;
-};
-
-const parseFastCmdSource = (source: string, depth = 0): NormalizedCmdStructure | null => {
-  if (depth > RAW_CMD_DECODE_MAX_DEPTH) return null;
-
-  const normalized = normalizeRawSourceString(source);
-  const decoded = URL_LIKE_RE.test(normalized) ? normalized : safeDecodeURIComponent(normalized);
-  const schema = getUrlCmdSchema(decoded);
-  if (!schema) {
-    if (QUERY_PAIR_RE.test(decoded)) {
-      return {
-        cmdParams: parseFastQueryParams(decoded, depth + 1),
-        source: decoded,
-      };
-    }
-    return null;
-  }
-
-  let query = '';
-  try {
-    const url = new URL(decoded);
-    query = url.search;
-  } catch {
-    const queryIndex = decoded.indexOf('?');
-    const hashIndex = decoded.indexOf('#');
-    const endIndex = hashIndex >= 0 ? hashIndex : decoded.length;
-    query = queryIndex >= 0 ? decoded.slice(queryIndex + 1, endIndex) : '';
-  }
-
-  return {
-    cmdSchema: schema,
-    cmdParams: query ? parseFastQueryParams(query, depth + 1) : {},
-    source: decoded,
-  };
-};
-
-const decodeRawCmdCandidate = (source: string): NormalizedCmdStructure | null => {
-  return parseFastCmdSource(source);
-};
-
-const findRawResponseCmdStructure = (value: JsonValue): NormalizedCmdStructure | null => {
-  const candidates: RawCmdCandidate[] = [];
-  collectRawCmdCandidates(value, candidates);
-  if (candidates.length === 0) return null;
-
-  const orderedCandidates = candidates.sort((left, right) => (
-    right.priority - left.priority ||
-    left.depth - right.depth ||
-    left.order - right.order
-  ));
-
-  for (const candidate of orderedCandidates) {
-    const structure = decodeRawCmdCandidate(candidate.source);
-    if (structure) return structure;
-  }
-
-  return null;
-};
-
 const findCmdStructure = (value: JsonValue): NormalizedCmdStructure | null => {
   if (!isRecord(value)) return null;
 
@@ -578,101 +291,6 @@ export const normalizeCmdStructure = (value: JsonValue): NormalizedCmdStructure 
   };
 };
 
-const toCmdStructureCandidateActual = (value: {
-  cmdSchema?: JsonValue;
-  cmdParams: JsonValue;
-  source?: JsonValue;
-}): JsonObject => ({
-  ...(typeof value.cmdSchema === 'string' ? { cmdSchema: value.cmdSchema } : {}),
-  cmdParams: value.cmdParams,
-  ...(typeof value.source === 'string' ? { source: value.source } : {}),
-});
-
-const getCmdStructureCandidateActual = (value: JsonValue): JsonObject | null => (
-  isRecord(value) && Object.prototype.hasOwnProperty.call(value, 'cmdParams')
-    ? toCmdStructureCandidateActual(value as {
-        cmdSchema?: JsonValue;
-        cmdParams: JsonValue;
-        source?: JsonValue;
-      })
-    : null
-);
-
-const appendCmdStructureCandidate = (
-  candidates: CmdStructureCandidateInput[],
-  seenIds: Set<string>,
-  candidate: CmdStructureCandidateInput
-) => {
-  if (seenIds.has(candidate.id)) return;
-
-  seenIds.add(candidate.id);
-  candidates.push(candidate);
-};
-
-const collectDecodedCmdStructureCandidates = (
-  value: JsonValue,
-  path: string,
-  candidates: CmdStructureCandidateInput[],
-  seenIds: Set<string>,
-  sourceLabel?: string
-) => {
-  const cmdStructureActual = getCmdStructureCandidateActual(value);
-  if (cmdStructureActual) {
-    appendCmdStructureCandidate(candidates, seenIds, {
-      id: path,
-      label: path,
-      sourceLabel,
-      commandSchema: typeof cmdStructureActual.cmdSchema === 'string' ? cmdStructureActual.cmdSchema : undefined,
-      actual: cmdStructureActual,
-    });
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectDecodedCmdStructureCandidates(
-      item,
-      `${path}[${index}]`,
-      candidates,
-      seenIds
-    ));
-    return;
-  }
-
-  if (!isRecord(value)) return;
-
-  Object.entries(value).forEach(([childKey, item]) => {
-    collectDecodedCmdStructureCandidates(
-      item,
-      appendPathKey(path, childKey),
-      candidates,
-      seenIds,
-      childKey
-    );
-  });
-};
-
-export const collectActualCmdStructureCandidates = (value: JsonValue): CmdStructureCandidateInput[] => {
-  const candidates: CmdStructureCandidateInput[] = [];
-  const seenIds = new Set<string>();
-  const rawCandidates: RawCmdCandidate[] = [];
-  collectRawCmdCandidates(value, rawCandidates);
-
-  rawCandidates.forEach(candidate => {
-    const structure = decodeRawCmdCandidate(candidate.source);
-    if (!structure) return;
-
-    collectDecodedCmdStructureCandidates(
-      toCmdStructureCandidateActual(structure),
-      candidate.path,
-      candidates,
-      seenIds,
-      candidate.sourceLabel
-    );
-  });
-
-  collectDecodedCmdStructureCandidates(value, '$', candidates, seenIds);
-  return candidates;
-};
-
 const collectValueMap = (value: JsonValue, path = '$'): Map<string, ValueRow> => {
   const rows = new Map<string, ValueRow>();
 
@@ -701,24 +319,6 @@ const collectValueMap = (value: JsonValue, path = '$'): Map<string, ValueRow> =>
     value,
   });
   return rows;
-};
-
-const stableStringify = (value: JsonValue): string | undefined => {
-  if (!isRecord(value) && !Array.isArray(value)) {
-    return JSON.stringify(value);
-  }
-
-  const normalize = (item: JsonValue): JsonValue => {
-    if (Array.isArray(item)) return item.map(normalize);
-    if (!isRecord(item)) return item;
-
-    return Object.keys(item).sort().reduce<JsonObject>((result, key) => {
-      result[key] = normalize(item[key]);
-      return result;
-    }, {});
-  };
-
-  return JSON.stringify(normalize(value));
 };
 
 const getStructuredSourceValue = (value: JsonValue): string | undefined => (
@@ -769,7 +369,7 @@ const compareRows = (
       return;
     }
 
-    if (stableStringify(actualRow.value) !== stableStringify(expectedRow.value)) {
+    if (stringifyCmdStructureValue(actualRow.value) !== stringifyCmdStructureValue(expectedRow.value)) {
       valueDiffs.push({
         path,
         actual: actualRow.value,
@@ -786,20 +386,6 @@ const compareRows = (
 
   return { missingPaths, extraPaths, valueDiffs };
 };
-
-const isDescendantPath = (path: string, ancestor: string): boolean => (
-  path.startsWith(`${ancestor}.`) || path.startsWith(`${ancestor}[`)
-);
-
-const collapseDescendantPaths = (paths: string[]): string[] => (
-  paths.reduce<string[]>((items, path) => (
-    items.some(parentPath => isDescendantPath(path, parentPath))
-      ? items
-      : [...items, path]
-  ), [])
-);
-
-export const countCmdStructurePathBranches = (paths: string[]): number => collapseDescendantPaths(paths).length;
 
 export const diffCmdStructures = (
   actualInput: JsonValue,
@@ -876,101 +462,4 @@ export const rankCmdStructureCandidates = (
     ))
     .slice(0, options.limit ?? 3)
     .map(({ index: _index, ...candidate }) => candidate);
-};
-
-const formatValue = (value: JsonValue): string => {
-  const text = stableStringify(value) || String(value);
-  return text.length > 160 ? `${text.slice(0, 160)}...` : text;
-};
-
-const formatSourceValue = (value?: string): string => {
-  if (!value) return '(空)';
-
-  return value.length > 240 ? `${value.slice(0, 240)}...` : value;
-};
-
-const getContextToolVersionLabel = (context: CmdStructureDiffContext): string => {
-  const explicitVersionLabel = context.toolVersionLabel?.trim();
-  if (explicitVersionLabel) return explicitVersionLabel;
-
-  const versionLabel = context.tool?.versionLabel?.trim();
-  if (versionLabel) return versionLabel;
-
-  const version = context.tool?.version?.trim();
-  if (!version) return '';
-
-  return version.startsWith('v') ? version : `v${version}`;
-};
-
-const appendDiffContextLines = (
-  lines: string[],
-  context: CmdStructureDiffContext
-) => {
-  const toolVersionLabel = getContextToolVersionLabel(context);
-  if (toolVersionLabel) lines.push(`工具版本: ${toolVersionLabel}`);
-  if (context.path) lines.push(`对比路径: ${context.path}`);
-  if (context.sourceLabel) lines.push(`业务字段: ${context.sourceLabel}`);
-  if (context.modeLabel) lines.push(`对比模式: ${context.modeLabel}`);
-};
-
-const appendPathDiffLines = (
-  lines: string[],
-  title: string,
-  paths: string[]
-) => {
-  const collapsedPaths = collapseDescendantPaths(paths);
-  const collapsedLabel = collapsedPaths.length < paths.length
-    ? `（折叠为 ${collapsedPaths.length} 个分支）`
-    : '';
-  lines.push(`- ${title} ${paths.length} 个${collapsedLabel}:`);
-  collapsedPaths.slice(0, 20).forEach(path => lines.push(`  - ${path}`));
-  if (collapsedPaths.length > 20) lines.push(`  - ... 还有 ${collapsedPaths.length - 20} 个分支`);
-};
-
-export const formatCmdStructureDiff = (
-  diff: CmdStructureDiff,
-  context: CmdStructureDiffContext = {}
-): string => {
-  const lines = ['CMD 结构差异报告'];
-  appendDiffContextLines(lines, context);
-
-  if (!diff.hasDifferences) {
-    lines.push('- 结构一致');
-    if (diff.ignoredExtraPaths.length > 0) {
-      appendPathDiffLines(lines, '已忽略 actual 额外路径', diff.ignoredExtraPaths);
-    }
-    return lines.join('\n');
-  }
-
-  if (diff.schemaDiff) {
-    lines.push(`- cmdSchema 不一致: actual=${diff.schemaDiff.actual || '(空)'} expected=${diff.schemaDiff.expected || '(空)'}`);
-  }
-
-  if (diff.sourceDiff) {
-    lines.push('- source 不一致');
-    lines.push(`  actual: ${formatSourceValue(diff.sourceDiff.actual)}`);
-    lines.push(`  expected: ${formatSourceValue(diff.sourceDiff.expected)}`);
-  }
-
-  if (diff.missingPaths.length > 0) {
-    appendPathDiffLines(lines, '缺失路径', diff.missingPaths);
-  }
-
-  if (diff.extraPaths.length > 0) {
-    appendPathDiffLines(lines, '额外路径', diff.extraPaths);
-  }
-
-  if (diff.ignoredExtraPaths.length > 0) {
-    appendPathDiffLines(lines, '已忽略 actual 额外路径', diff.ignoredExtraPaths);
-  }
-
-  if (diff.valueDiffs.length > 0) {
-    lines.push(`- 值不一致 ${diff.valueDiffs.length} 个:`);
-    diff.valueDiffs.slice(0, 20).forEach(item => {
-      lines.push(`  - ${item.path}: actual=${formatValue(item.actual)} expected=${formatValue(item.expected)}`);
-    });
-    if (diff.valueDiffs.length > 20) lines.push(`  - ... 还有 ${diff.valueDiffs.length - 20} 个`);
-  }
-
-  return lines.join('\n');
 };

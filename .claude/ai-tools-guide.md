@@ -19,7 +19,17 @@ Claude Code (Anthropic) 和 Ducc (百度) 的项目指引文件，包含:
 - 文件内容会被用作项目上下文
 - 提供更准确的代码建议和修复方案
 
-### 2. Cursor AI
+### 2. Codex / OpenAI Coding Agent
+**配置文件**: `AGENTS.md`、`.codex/skills/jsonutils-maintainer/SKILL.md`
+
+Codex 使用 `AGENTS.md` 作为项目入口，并可参考 `.codex/skills/` 中的项目维护技能模板。
+
+**使用方式**:
+- 开始任务前读取 `AGENTS.md` 和 `rules/code-style.md`
+- 性能优化、重构、Scheme/CMD 解析改动参考 `docs/AI-ENGINEERING-PLAYBOOK.md`
+- 需要迁移到本机 Codex skills 时，可复制 `.codex/skills/jsonutils-maintainer/SKILL.md`
+
+### 3. Cursor AI
 **配置文件**: `.cursorrules`
 
 Cursor AI 的规则文件，定义了:
@@ -34,7 +44,7 @@ Cursor AI 的规则文件，定义了:
 - 规则会应用到所有代码生成和建议中
 - 确保生成的代码符合项目规范
 
-### 3. GitHub Copilot
+### 4. GitHub Copilot
 **配置文件**: 无需特殊配置
 
 GitHub Copilot 会根据:
@@ -49,7 +59,7 @@ GitHub Copilot 会根据:
 - 保持代码风格一致
 - 使用有意义的变量和函数名
 
-### 4. Comate (百度代码助手)
+### 5. Comate (百度代码助手)
 **配置文件**: `.comate/` 目录
 
 项目中已有 `.comate/` 目录配置。
@@ -96,6 +106,20 @@ GitHub Copilot 会根据:
 - 包含反例和正例对比
 - 快速参考手册风格
 
+### docs/AI-ENGINEERING-PLAYBOOK.md
+**目标用户**: Claude Code、Codex、Ducc、Cursor 等所有 AI 编程助手
+
+**内容包括**:
+- 必读文件顺序
+- 性能、重构、后端和部署改动的验证方式
+- AI 资产维护清单
+- 修改代码后的收尾检查
+
+**特点**:
+- 跨工具共享
+- 强调可验证闭环
+- 适合长期维护和交接
+
 ## 使用建议
 
 ### 对于 AI 助手
@@ -132,13 +156,13 @@ GitHub Copilot 会根据:
 
 ## 文档结构对比
 
-| 特性 | CLAUDE.md | .cursorrules |
-|------|-----------|--------------|
-| **详细程度** | 非常详细 | 简洁规范 |
-| **目标场景** | 对话式理解和任务执行 | 实时代码建议 |
-| **内容组织** | 教程式，分步骤 | 规则式，快速查找 |
-| **示例代码** | 大量示例 | 关键示例 |
-| **更新频率** | 架构变更时 | 规范变更时 |
+| 特性 | CLAUDE.md / AGENTS.md | .cursorrules | AI Playbook |
+|------|---------------------|--------------|-------------|
+| **详细程度** | 非常详细 | 简洁规范 | 中等，偏流程 |
+| **目标场景** | 对话式理解和任务执行 | 实时代码建议 | 跨 AI 工具闭环 |
+| **内容组织** | 教程式，分步骤 | 规则式，快速查找 | 验证清单式 |
+| **示例代码** | 大量示例 | 关键示例 | 命令和门禁 |
+| **更新频率** | 架构变更时 | 规范变更时 | 流程和门禁变化时 |
 
 ## 最佳实践
 
@@ -195,6 +219,7 @@ GitHub Copilot 会根据:
 - 添加 `CLAUDE.md` - Claude Code/Ducc 指引
 - 添加 `.cursorrules` - Cursor AI 规则
 - 说明各 AI 工具的使用方式和最佳实践
+- **2026-06-28**: 补充 Codex 项目级 skill 和 AI 工程协作 Playbook，统一跨工具验证闭环
 
 ---
 

@@ -5,6 +5,7 @@
 ## 📖 重要：完整编码规范
 
 **项目的详细编码规范请参考**: `rules/code-style.md` ⭐
+**AI 工程闭环请参考**: `docs/AI-ENGINEERING-PLAYBOOK.md`
 
 该文件包含：
 - 详细的代码风格规范
@@ -12,6 +13,11 @@
 - CHANGELOG 更新规范
 - 中文注释要求
 - 文件组织规范
+
+AI Playbook 包含：
+- Claude Code / Codex / Ducc 的统一读文件顺序
+- 性能、重构、部署和解析能力的验证门禁
+- 修改代码后的测试、lint、CHANGELOG 收尾要求
 
 本文档 (AGENTS.md) 侧重于项目整体理解和开发指引。
 

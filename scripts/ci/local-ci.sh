@@ -69,6 +69,12 @@ log "Governance: backend API matrix"
 cd "$ROOT_DIR"
 node scripts/ci/check-backend-api-matrix.mjs
 
+log "Governance: AI playbook and skill links"
+node scripts/ci/check-ai-governance.mjs
+
+log "Governance: maintainability budgets"
+node scripts/ci/check-maintainability-budgets.mjs
+
 use_project_java_home
 
 log "Backend: Maven test"
