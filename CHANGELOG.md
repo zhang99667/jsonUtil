@@ -1,6 +1,9 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **Scheme 弹窗格式化分层**: 将参数预览、tooltip 裁剪、解码层尺寸和可回写标签拆到 `schemeViewerFormatters` 并补充单测，继续压缩弹窗组件内的纯展示逻辑
+- **Scheme 弹窗操作标题分层**: 将二维码、复制、序列化和应用修改按钮的 title/aria 状态矩阵拆到 `schemeViewerActionTitles` 并补充单测，减少弹窗主组件中的分支文案
+- **Scheme 解析弹窗诊断分层**: 将弹窗顶部诊断摘要、参数来源计数和详情显示条件拆到 `schemeViewerDiagnostics` 并补充单测，让 `SchemeViewerModal` 更聚焦渲染与交互状态
 - **Scheme 解析默认聚焦结果**: 将 Scheme 解析弹窗上方诊断区改为默认紧凑摘要，CMD 结构、参数分层和解析链路改为按需展开，减少对解码结果区域的遮挡
 - **深度解析报告分布文案分层**: 将 CMD Schema、资源类型、静态资源字段等分布摘要段落拆到 `transformReportTextDistributionSections` 并补充单测，报告文本入口继续收敛为记录、跳过和占位符明细
 - **深度解析 Schema occurrence 分层**: 将 command/resource schema 的记录扫描和资源 URL schema 提取拆到 `transformReportCommandSchemaOccurrences` 并补充单测，schema 分组模块继续收敛为纯聚合排序

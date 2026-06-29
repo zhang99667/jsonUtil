@@ -16,4 +16,19 @@ export const schemeSupportMaintainabilityBudgets = [
   ...schemeSupportStructuredDecodeMaintainabilityBudgets,
   ...schemeSupportStructuredQueryMaintainabilityBudgets,
   ...schemeSupportTokenMaintainabilityBudgets,
+  {
+    file: 'frontend/src/utils/schemeViewerDiagnostics.ts',
+    maxLines: 220,
+    reason: 'Scheme 弹窗诊断摘要和参数来源 helper 不应继续膨胀',
+  },
+  {
+    file: 'frontend/src/utils/schemeViewerActionTitles.ts',
+    maxLines: 130,
+    reason: 'Scheme 弹窗操作标题状态矩阵应保持短小可测试',
+  },
+  {
+    file: 'frontend/src/utils/schemeViewerFormatters.ts',
+    maxLines: 130,
+    reason: 'Scheme 弹窗展示格式化 helper 应保持短小可测试',
+  },
 ];
