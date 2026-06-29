@@ -7,14 +7,11 @@ import {
   buildSchemePlaceholderGroups,
   deepDecodeScheme, 
   encodeWithLayers, 
-  type DecodeLayer,
-  type SchemeParamDecodeStage,
   type SchemeDecodeResult,
   type SchemeType
 } from '../utils/schemeUtils';
 import { QRCodeCanvas } from 'qrcode.react';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
-import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import {
   extractBase64MetaInfo,
   extractSchemeCommandSummaryInfo,
@@ -35,6 +32,29 @@ import {
   buildSchemePathValuesForCopy,
   formatSchemePathValueCountLabel,
 } from '../utils/schemePathValues';
+import {
+  buildSchemeDiagnosticSummaryItems,
+  buildSchemeViewerParamSections,
+  getSchemeViewerParamCount,
+  getSchemeViewerParamEntries,
+  hasSchemeDiagnosticDetails,
+  sumSchemeSkippedDecodeCount,
+} from '../utils/schemeViewerDiagnostics';
+import { buildSchemeViewerActionTitles } from '../utils/schemeViewerActionTitles';
+import {
+  formatSchemeCopySizeLabel,
+  formatSchemeLayerSizeLabel,
+  formatSchemeParamStageValue,
+  formatSchemeParamTooltipValue,
+  formatSchemeParamValue,
+  formatSchemePlaceholderValue,
+  formatSchemeSummaryValue,
+  formatSchemeTooltipValue,
+  getSchemeLayerAfterContent,
+  getSchemeLayerReversibleLabel,
+  schemeLayerTypeLabels,
+  schemeParamStageSourceLabels,
+} from '../utils/schemeViewerFormatters';
 
 const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
 
@@ -60,13 +80,6 @@ const schemeTypeLabels: Record<SchemeType, string> = {
   'json': 'JSON',
   'plain': '纯文本',
 };
-
-type SchemeParams = NonNullable<SchemeDecodeResult['schemeInfo']>['params'];
-
-interface SchemeParamSection {
-  title: string;
-  params: SchemeParams;
-}
 
 interface SchemeDecodeWorkerResponse {
   id: number;
@@ -102,118 +115,6 @@ const buildSchemePanelMetadata = (result: SchemeDecodeResult): SchemeDecodeWorke
     { includeCommandFieldRows: false, source: result.original }
   ),
 });
-
-const getParamCount = (params: SchemeParams): number => {
-  if (!params) return 0;
-
-  return Object.values(params).reduce((count, value) => (
-    count + (Array.isArray(value) ? value.length : 1)
-  ), 0);
-};
-
-const formatTextPreview = (value: string, maxLength: number): string => (
-  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
-);
-
-const formatJoinedValuePreview = (values: string[], maxLength: number): string => {
-  let preview = '';
-
-  for (const value of values) {
-    const nextPreview = preview ? `${preview}, ${value}` : value;
-    if (nextPreview.length > maxLength) {
-      return `${nextPreview.slice(0, maxLength)}...`;
-    }
-    preview = nextPreview;
-  }
-
-  return preview;
-};
-
-const formatParamValue = (value: string | string[]): string => (
-  Array.isArray(value)
-    ? formatJoinedValuePreview(value, 48)
-    : formatTextPreview(value, 48)
-);
-
-const formatPlaceholderValue = (value: string): string => (
-  formatTextPreview(value, 32)
-);
-
-const formatSummaryValue = (value: string, maxLength = 56): string => (
-  formatTextPreview(value, maxLength)
-);
-
-const formatTooltipValue = (value: string, maxLength = 160): string => (
-  formatTextPreview(value, maxLength)
-);
-
-const schemeLayerTypeLabels: Record<DecodeLayer['type'], string> = {
-  'url': 'URL',
-  'query-string': 'CMD 参数',
-  'url-encoded': 'URL Decode',
-  'base64': 'Base64',
-  'jwt': 'JWT',
-  'json': 'JSON 字符串',
-  'plain': '纯文本',
-  'json-escaped-slash': '斜杠转义',
-  'json-unicode-ascii': 'Unicode ASCII',
-};
-
-const schemeParamStageSourceLabels: Record<SchemeParamDecodeStage['source'], string> = {
-  query: 'Query',
-  hash: 'Hash',
-  fragment: 'Fragment',
-  'log-field': '日志字段',
-  'prefixed-query': '日志参数',
-};
-
-const formatLayerSizeLabel = (value?: string): string => {
-  if (value === undefined) return '未知';
-  const stats = getDocumentStats(value);
-  return `${stats.characterCount} 字符`;
-};
-
-const getLayerAfterContent = (
-  layers: DecodeLayer[],
-  index: number,
-  decodedContent: string
-): string | undefined => (
-  layers[index].after ?? layers[index + 1]?.before ?? (index === layers.length - 1 ? decodedContent : undefined)
-);
-
-const getLayerReversibleLabel = (layer: DecodeLayer): string => (
-  layer.reversible === false ? '只读' : '可回写'
-);
-
-const formatParamStageValue = (value: string, maxLength = 72): string => (
-  formatTextPreview(value.replace(/\s+/g, ' ').trim(), maxLength)
-);
-
-const formatParamTooltipValue = (value: string | string[]): string => (
-  Array.isArray(value)
-    ? formatJoinedValuePreview(value, 160)
-    : formatTooltipValue(value)
-);
-
-const formatCopySizeLabel = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
-
-const buildParamSections = (
-  schemeInfo: SchemeDecodeResult['schemeInfo']
-): SchemeParamSection[] => {
-  if (!schemeInfo) return [];
-
-  return [
-    { title: 'Query 参数', params: schemeInfo.params },
-    { title: 'Hash 参数', params: schemeInfo.hashParams },
-  ].filter(section => getParamCount(section.params) > 0);
-};
-
-const getParamEntries = (params: SchemeParams): Array<[string, string | string[]]> => (
-  Object.entries(params || {}) as Array<[string, string | string[]]>
-);
 
 const getSchemeQualityClassName = (level: SchemeQualityLevel): string => {
   switch (level) {
@@ -446,7 +347,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopy = async () => {
     try {
       await copyText(editedContent);
-      toast.success(`已复制解码结果（${formatCopySizeLabel(editedContent)}）`, { duration: 2000 });
+      toast.success(`已复制解码结果（${formatSchemeCopySizeLabel(editedContent)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 解码结果失败:', err);
       toast.error(getClipboardErrorMessage(err), { duration: 2000 });
@@ -471,7 +372,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopyOriginal = async () => {
     try {
       await copyText(actualValue);
-      toast.success(`已复制原始值（${formatCopySizeLabel(actualValue)}）`, { duration: 2000 });
+      toast.success(`已复制原始值（${formatSchemeCopySizeLabel(actualValue)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 原始值失败:', err);
       toast.error(getClipboardErrorMessage(err), { duration: 2000 });
@@ -527,7 +428,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
     try {
       await copyText(serializedContent);
-      toast.success(`已复制序列化结果（${formatCopySizeLabel(serializedContent)}）`, { duration: 2000 });
+      toast.success(`已复制序列化结果（${formatSchemeCopySizeLabel(serializedContent)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 序列化结果失败:', err);
       toast.error(getClipboardErrorMessage(err), { duration: 2000 });
@@ -591,7 +492,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   }, [decodeResult.isJson, editedContent]);
 
   const paramSections = useMemo(() => (
-    buildParamSections(decodeResult.schemeInfo)
+    buildSchemeViewerParamSections(decodeResult.schemeInfo)
   ), [decodeResult.schemeInfo]);
   const paramStages = decodeResult.paramStages || [];
   const placeholders = decodeResult.placeholders || [];
@@ -638,48 +539,31 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const canCopyCmdHandlerCompatibleResult = Boolean(
     commandSummaryInfo && decodeResult.isJson && !isDecodePending && !editedJsonError
   );
-  const qrCodeButtonTitle = !actualValue
-    ? '请输入内容后生成二维码'
-    : showQRCode
-      ? '隐藏二维码'
-      : '生成二维码';
-  const copyOriginalTitle = actualValue
-    ? '复制原始值到剪贴板'
-    : '请输入待复制的原始值';
-  const copyDecodedTitle = (() => {
-    if (isDecodePending) return '解析完成后可复制解码结果';
-    if (!editedContent) return '暂无解码结果可复制';
-    return '复制解码结果到剪贴板';
-  })();
-  const copyQualitySnapshotTitle = schemeQualitySummary
-    ? '复制不含原始值的 Scheme 解析质量指标 JSON'
-    : '暂无质量快照可复制';
-  const copyCmdStructureTitle = (() => {
-    if (isDecodePending) return '解析完成后可复制 CMD 结构';
-    if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
-    if (!decodeResult.isJson) return '当前结果不是 JSON，暂无 CMD 结构可复制';
-    return '复制为 cmdHandler 风格的 cmdSchema / cmdParams 结构';
-  })();
-  const copyPathValuesTitle = (() => {
-    if (isDecodePending) return '解析完成后可复制路径和值';
-    if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
-    return '复制解码 JSON 中的路径和值';
-  })();
-  const copySerializedTitle = (() => {
-    if (isDecodePending) return '解析完成后可复制序列化结果';
-    if (!editedContent) return '暂无编辑内容可序列化';
-    if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
-    if (hasNonReversibleLayer) return '当前编码层不可逆，仅支持查看和复制';
-    if (decodeResult.layers.length === 0) return '当前内容无需重新编码';
-    return '复制当前编辑内容重新编码后的结果';
-  })();
-  const applyEditTitle = (() => {
-    if (isDecodePending) return '解析完成后可应用修改';
-    if (!isEditing) return '修改解码结果后可应用';
-    if (editedJsonError) return '请先修正解码结果中的 JSON 错误';
-    if (hasNonReversibleLayer) return '当前编码层不可逆，无法应用修改';
-    return '将当前编辑内容重新编码并应用回来源';
-  })();
+  const actionTitles = useMemo(() => (
+    buildSchemeViewerActionTitles({
+      hasOriginalValue: Boolean(actualValue),
+      showQRCode,
+      isDecodePending,
+      hasDecodedContent: Boolean(editedContent),
+      hasSchemeQualitySummary: Boolean(schemeQualitySummary),
+      hasEditedJsonError: Boolean(editedJsonError),
+      isJsonResult: decodeResult.isJson,
+      hasNonReversibleLayer,
+      decodeLayerCount: decodeResult.layers.length,
+      isEditing,
+    })
+  ), [
+    actualValue,
+    decodeResult.isJson,
+    decodeResult.layers.length,
+    editedContent,
+    editedJsonError,
+    hasNonReversibleLayer,
+    isDecodePending,
+    isEditing,
+    schemeQualitySummary,
+    showQRCode,
+  ]);
   const nestedCommandInsight = commandSummaryInfo
     ? formatSchemeInsightItems('cmd解析', commandSummaryInfo.commandFields)
     : undefined;
@@ -690,103 +574,48 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     ? formatSchemeInsightItems('Base64 后缀', commandSummaryInfo.base64SuffixFields, 6)
     : undefined;
   const skippedDecodeCount = useMemo(() => (
-    decodeWarnings.reduce((total, warning) => total + warning.skippedCount, 0)
+    sumSchemeSkippedDecodeCount(decodeWarnings)
   ), [decodeWarnings]);
-  const diagnosticSummaryItems = useMemo(() => {
-    const items: Array<{ key: string; label: string; title?: string }> = [];
-
-    if (decodeResult.schemeInfo) {
-      const schemeLabel = [
-        decodeResult.schemeInfo.protocol,
-        decodeResult.schemeInfo.host,
-        decodeResult.schemeInfo.path,
-      ].filter(Boolean).join(' · ');
-      items.push({
-        key: 'scheme',
-        label: schemeLabel || 'Scheme',
-        title: '已识别 Scheme 信息',
-      });
-    }
-
-    if (commandSummaryInfo?.commandSchemaCount) {
-      items.push({
-        key: 'cmd',
-        label: `CMD · ${commandSummaryInfo.commandSchemaCount}`,
-        title: '已识别 CMD 结构',
-      });
-    }
-
-    const totalParamCount = paramSections.reduce((total, section) => total + getParamCount(section.params), 0);
-    if (totalParamCount > 0) {
-      items.push({
-        key: 'params',
-        label: `参数 · ${totalParamCount}`,
-        title: '已识别 URL 参数来源',
-      });
-    }
-
-    if (paramStages.length > 0) {
-      items.push({
-        key: 'param-stages',
-        label: `参数层 · ${paramStages.length}`,
-        title: '已识别参数递归解码链路',
-      });
-    }
-
-    if (decodeResult.layers.length > 0) {
-      items.push({
-        key: 'layers',
-        label: `解码层 · ${decodeResult.layers.length}`,
-        title: '已识别整体解码链路',
-      });
-    }
-
-    if (placeholders.length > 0) {
-      items.push({
-        key: 'placeholders',
-        label: `占位符 · ${placeholders.length}`,
-        title: '已识别运行时占位符',
-      });
-    }
-
-    if (skippedDecodeCount > 0) {
-      items.push({
-        key: 'skipped',
-        label: `跳过 · ${skippedDecodeCount}`,
-        title: '性能护栏跳过的长字符串数量',
-      });
-    }
-
-    if (base64MetaInfo) {
-      items.push({
-        key: 'base64',
-        label: 'Base64 线索',
-        title: '已识别内部 Base64 后缀信息',
-      });
-    }
-
-    return items;
-  }, [
+  const diagnosticSummaryItems = useMemo(() => (
+    buildSchemeDiagnosticSummaryItems({
+      decodeResult,
+      commandSummaryInfo,
+      paramSections,
+      paramStages,
+      placeholders,
+      skippedDecodeCount,
+      base64MetaInfo,
+    })
+  ), [
     base64MetaInfo,
     commandSummaryInfo,
-    decodeResult.layers.length,
-    decodeResult.schemeInfo,
+    decodeResult,
     paramSections,
-    paramStages.length,
-    placeholders.length,
+    paramStages,
+    placeholders,
     skippedDecodeCount,
   ]);
-  const hasDiagnosticDetails = Boolean(
-    schemeQualitySummary ||
-    decodeResult.schemeInfo ||
-    commandSummaryInfo ||
-    decodeResult.layers.length > 0 ||
-    paramSections.length > 0 ||
-    paramStages.length > 0 ||
-    placeholders.length > 0 ||
-    decodeWarnings.length > 0 ||
-    base64MetaInfo
-  );
+  const hasDiagnosticDetails = useMemo(() => (
+    hasSchemeDiagnosticDetails({
+      schemeQualitySummary,
+      decodeResult,
+      commandSummaryInfo,
+      paramSections,
+      paramStages,
+      placeholders,
+      decodeWarnings,
+      base64MetaInfo,
+    })
+  ), [
+    base64MetaInfo,
+    commandSummaryInfo,
+    decodeResult,
+    decodeWarnings,
+    paramSections,
+    paramStages,
+    placeholders,
+    schemeQualitySummary,
+  ]);
 
   const handleCopyCmdHandlerCompatibleResult = async () => {
     if (!canCopyCmdHandlerCompatibleResult) return;
@@ -813,7 +642,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     const qualitySummaryText = formatSchemeQualitySummaryText(schemeQualitySummary);
     try {
       await copyText(qualitySummaryText);
-      toast.success(`已复制质量摘要（${formatCopySizeLabel(qualitySummaryText)}）`, { duration: 2000 });
+      toast.success(`已复制质量摘要（${formatSchemeCopySizeLabel(qualitySummaryText)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 质量摘要失败:', err);
       toast.error(getClipboardErrorMessage(err, '复制质量摘要失败'), { duration: 2000 });
@@ -832,7 +661,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     });
     try {
       await copyText(qualitySnapshotText);
-      toast.success(`已复制质量快照（${formatCopySizeLabel(qualitySnapshotText)}）`, { duration: 2000 });
+      toast.success(`已复制质量快照（${formatSchemeCopySizeLabel(qualitySnapshotText)}）`, { duration: 2000 });
     } catch (err) {
       console.warn('复制 Scheme 质量快照失败:', err);
       toast.error(getClipboardErrorMessage(err, '复制质量快照失败'), { duration: 2000 });
@@ -915,13 +744,13 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           onClick={() => setShowQRCode(!showQRCode)}
           disabled={!actualValue}
           aria-pressed={showQRCode}
-          aria-label={`二维码，${qrCodeButtonTitle}`}
+          aria-label={`二维码，${actionTitles.qrCode}`}
           className={`shrink-0 whitespace-nowrap px-2.5 py-1 text-sm rounded transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${
             showQRCode 
               ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
               : 'bg-editor-active text-gray-200 hover:bg-editor-border'
           }`}
-          title={qrCodeButtonTitle}
+          title={actionTitles.qrCode}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -933,8 +762,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           onClick={handleCopyOriginal}
           disabled={!actualValue}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          title={copyOriginalTitle}
-          aria-label={`复制原始值，${copyOriginalTitle}`}
+          title={actionTitles.copyOriginal}
+          aria-label={`复制原始值，${actionTitles.copyOriginal}`}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -946,8 +775,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           onClick={handleCopy}
           disabled={!editedContent || isDecodePending}
           className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          title={copyDecodedTitle}
-          aria-label={`复制解码结果，${copyDecodedTitle}`}
+          title={actionTitles.copyDecoded}
+          aria-label={`复制解码结果，${actionTitles.copyDecoded}`}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -960,8 +789,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleCopyCmdHandlerCompatibleResult}
             disabled={!canCopyCmdHandlerCompatibleResult}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={copyCmdStructureTitle}
-            aria-label={`复制 CMD 结构，${copyCmdStructureTitle}`}
+            title={actionTitles.copyCmdStructure}
+            aria-label={`复制 CMD 结构，${actionTitles.copyCmdStructure}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8M8 12h8M8 17h5M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
@@ -975,8 +804,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleCopyPathValues}
             disabled={!canCopyPathValues}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={copyPathValuesTitle}
-            aria-label={`复制路径和值，${copyPathValuesTitle}`}
+            title={actionTitles.copyPathValues}
+            aria-label={`复制路径和值，${actionTitles.copyPathValues}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M8 4h8l4 4v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z" />
@@ -991,8 +820,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleCopySerialized}
             disabled={!canCopySerializedContent}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={copySerializedTitle}
-            aria-label={`复制序列化结果，${copySerializedTitle}`}
+            title={actionTitles.copySerialized}
+            aria-label={`复制序列化结果，${actionTitles.copySerialized}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h10m0 0l-3-3m3 3l-3 3m9 7H10m0 0l3 3m-3-3l3-3" />
@@ -1006,8 +835,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             onClick={handleApply}
             disabled={!canApplyEdit}
             className="shrink-0 whitespace-nowrap px-2.5 py-1 text-sm bg-brand-primary text-white rounded hover:bg-brand-primary/90 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={applyEditTitle}
-            aria-label={`应用修改，${applyEditTitle}`}
+            title={actionTitles.applyEdit}
+            aria-label={`应用修改，${actionTitles.applyEdit}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1155,8 +984,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                         type="button"
                         onClick={handleCopyQualitySnapshot}
                         className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
-                        title={copyQualitySnapshotTitle}
-                        aria-label={`复制质量快照，${copyQualitySnapshotTitle}`}
+                        title={actionTitles.copyQualitySnapshot}
+                        aria-label={`复制质量快照，${actionTitles.copyQualitySnapshot}`}
                       >
                         复制快照
                       </button>
@@ -1191,7 +1020,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded text-xs">{decodeResult.schemeInfo.host}</span>
                   )}
                   {decodeResult.schemeInfo.path && (
-                    <span className="bg-editor-bg text-gray-400 px-2 py-0.5 rounded text-xs truncate max-w-[200px]" title={formatTooltipValue(decodeResult.schemeInfo.path)}>
+                    <span className="bg-editor-bg text-gray-400 px-2 py-0.5 rounded text-xs truncate max-w-[200px]" title={formatSchemeTooltipValue(decodeResult.schemeInfo.path)}>
                       {decodeResult.schemeInfo.path}
                     </span>
                   )}
@@ -1208,9 +1037,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     {commandSummaryInfo.commandSchema && (
                       <span
                         className="bg-editor-bg text-cyan-200 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatTooltipValue(commandSummaryInfo.commandSchema)}
+                        title={formatSchemeTooltipValue(commandSummaryInfo.commandSchema)}
                       >
-                        cmdSchema={formatSummaryValue(commandSummaryInfo.commandSchema)}
+                        cmdSchema={formatSchemeSummaryValue(commandSummaryInfo.commandSchema)}
                       </span>
                     )}
                     {commandSummaryInfo.commandSchemaCount > 0 && (
@@ -1234,7 +1063,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                               ...(item.hasMorePaths ? ['...'] : []),
                             ].join('\n')}
                           >
-                            {formatSummaryValue(item.schema, 42)} ×{item.count}
+                            {formatSchemeSummaryValue(item.schema, 42)} ×{item.count}
                           </span>
                         ))}
                       </span>
@@ -1248,9 +1077,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       <span
                         key={key}
                         className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatTooltipValue(key, 80)}
+                        title={formatSchemeTooltipValue(key, 80)}
                       >
-                        {formatSummaryValue(key, 24)}
+                        {formatSchemeSummaryValue(key, 24)}
                       </span>
                     ))}
                     {commandSummaryInfo.paramKeys.length > 6 && (
@@ -1305,9 +1134,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                         <span
                           key={`${placeholder.path}:${placeholder.value}`}
                           className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                          title={`${placeholder.path} = ${formatTooltipValue(placeholder.value)}\n${placeholder.description}`}
+                          title={`${placeholder.path} = ${formatSchemeTooltipValue(placeholder.value)}\n${placeholder.description}`}
                         >
-                          {placeholder.path}={formatPlaceholderValue(placeholder.value)}
+                          {placeholder.path}={formatSchemePlaceholderValue(placeholder.value)}
                         </span>
                       ))}
                       {placeholders.length > 6 && (
@@ -1336,7 +1165,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                           <span
                             key={itemPath}
                             className="bg-editor-bg text-amber-100 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                            title={formatTooltipValue(itemPath)}
+                            title={formatSchemeTooltipValue(itemPath)}
                           >
                             {itemPath}
                           </span>
@@ -1350,29 +1179,33 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
               {/* 参数来源 */}
               {paramSections.length > 0 && (
                 <div data-tour="scheme-param-sections" className="flex flex-col gap-1.5">
-                  {paramSections.map(section => (
-                    <div key={section.title} className="flex items-start gap-2 text-xs">
-                      <span className="shrink-0 text-gray-500 bg-editor-bg px-2 py-0.5 rounded">
-                        {section.title} · {getParamCount(section.params)}
-                      </span>
-                      <div className="flex flex-wrap gap-1 min-w-0">
-                        {getParamEntries(section.params).slice(0, 6).map(([key, paramValue]) => (
-                          <span
-                            key={key}
-                            className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                            title={`${key}=${formatParamTooltipValue(paramValue)}`}
-                          >
-                            {key}={formatParamValue(paramValue)}
-                          </span>
-                        ))}
-                        {getParamEntries(section.params).length > 6 && (
-                          <span className="text-gray-500 px-1 py-0.5">
-                            +{getParamEntries(section.params).length - 6}
-                          </span>
-                        )}
+                  {paramSections.map(section => {
+                    const entries = getSchemeViewerParamEntries(section.params);
+
+                    return (
+                      <div key={section.title} className="flex items-start gap-2 text-xs">
+                        <span className="shrink-0 text-gray-500 bg-editor-bg px-2 py-0.5 rounded">
+                          {section.title} · {getSchemeViewerParamCount(section.params)}
+                        </span>
+                        <div className="flex flex-wrap gap-1 min-w-0">
+                          {entries.slice(0, 6).map(([key, paramValue]) => (
+                            <span
+                              key={key}
+                              className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
+                              title={`${key}=${formatSchemeParamTooltipValue(paramValue)}`}
+                            >
+                              {key}={formatSchemeParamValue(paramValue)}
+                            </span>
+                          ))}
+                          {entries.length > 6 && (
+                            <span className="text-gray-500 px-1 py-0.5">
+                              +{entries.length - 6}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -1393,16 +1226,16 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                         `${stage.path} (${schemeParamStageSourceLabels[stage.source]})`,
                         '',
                         'Raw:',
-                        formatTooltipValue(stage.raw, 320),
+                        formatSchemeTooltipValue(stage.raw, 320),
                         '',
                         'URL Decode:',
-                        formatTooltipValue(stage.urlDecoded, 320),
+                        formatSchemeTooltipValue(stage.urlDecoded, 320),
                         '',
                         'JSON/CMD 解析:',
-                        formatTooltipValue(stage.parsed, 320),
+                        formatSchemeTooltipValue(stage.parsed, 320),
                         '',
                         '重新编码:',
-                        formatTooltipValue(stage.reencoded, 320),
+                        formatSchemeTooltipValue(stage.reencoded, 320),
                         stage.repairHint ? `\n修复提示: ${stage.repairHint}` : '',
                       ].filter(Boolean).join('\n');
 
@@ -1423,7 +1256,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                             {stage.key}
                           </span>
                           <span className="text-gray-500">
-                            {formatLayerSizeLabel(stage.raw)} → {formatLayerSizeLabel(stage.parsed)}
+                            {formatSchemeLayerSizeLabel(stage.raw)} → {formatSchemeLayerSizeLabel(stage.parsed)}
                           </span>
                           {stage.repairHint && (
                             <span className="rounded bg-amber-900/30 px-2 py-0.5 text-amber-200">
@@ -1437,7 +1270,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                             {stage.reversible ? '可重新编码' : '需确认'}
                           </span>
                           <span className="min-w-0 truncate text-gray-500">
-                            {formatParamStageValue(stage.urlDecoded)}
+                            {formatSchemeParamStageValue(stage.urlDecoded)}
                           </span>
                         </div>
                       );
@@ -1461,7 +1294,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     {base64MetaInfo.prefix && (
                       <span
                         className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatTooltipValue(base64MetaInfo.prefix)}
+                        title={formatSchemeTooltipValue(base64MetaInfo.prefix)}
                       >
                         头部={formatBase64MetaDisplayValue(base64MetaInfo.prefix, 24)}
                       </span>
@@ -1469,7 +1302,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     {base64MetaInfo.suffix && (
                       <span
                         className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatTooltipValue(base64MetaInfo.suffix)}
+                        title={formatSchemeTooltipValue(base64MetaInfo.suffix)}
                       >
                         后缀={formatBase64MetaDisplayValue(base64MetaInfo.suffix, 32)}
                       </span>
@@ -1477,7 +1310,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                     {base64MetaInfo.suffixDecodePrefix && (
                       <span
                         className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatTooltipValue(base64MetaInfo.suffixDecodePrefix)}
+                        title={formatSchemeTooltipValue(base64MetaInfo.suffixDecodePrefix)}
                       >
                         跳过={formatBase64MetaDisplayValue(base64MetaInfo.suffixDecodePrefix, 16)}
                       </span>
@@ -1486,7 +1319,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       <span
                         key={entry.key}
                         className="bg-editor-bg text-emerald-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={`${entry.key}=${formatTooltipValue(entry.displayValue)}`}
+                        title={`${entry.key}=${formatSchemeTooltipValue(entry.displayValue)}`}
                       >
                         {entry.key}={entry.displayValue}
                       </span>
@@ -1521,19 +1354,19 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                   </div>
                   <div className="grid gap-1">
                     {decodeResult.layers.map((layer, index) => {
-                      const afterContent = getLayerAfterContent(decodeResult.layers, index, decodeResult.decoded);
+                      const afterContent = getSchemeLayerAfterContent(decodeResult.layers, index, decodeResult.decoded);
                       const title = [
                         layer.description,
-                        `输入: ${formatLayerSizeLabel(layer.before)}`,
-                        `输出: ${formatLayerSizeLabel(afterContent)}`,
+                        `输入: ${formatSchemeLayerSizeLabel(layer.before)}`,
+                        `输出: ${formatSchemeLayerSizeLabel(afterContent)}`,
                         `类型: ${schemeLayerTypeLabels[layer.type]}`,
-                        `模式: ${getLayerReversibleLabel(layer)}`,
+                        `模式: ${getSchemeLayerReversibleLabel(layer)}`,
                         '',
                         '输入预览:',
-                        formatTooltipValue(layer.before, 260),
+                        formatSchemeTooltipValue(layer.before, 260),
                         '',
                         '输出预览:',
-                        formatTooltipValue(afterContent || '', 260),
+                        formatSchemeTooltipValue(afterContent || '', 260),
                       ].join('\n');
 
                       return (
@@ -1556,10 +1389,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                             ? 'rounded bg-amber-900/30 px-2 py-0.5 text-amber-200'
                             : 'rounded bg-emerald-900/20 px-2 py-0.5 text-emerald-200'}
                           >
-                            {getLayerReversibleLabel(layer)}
+                            {getSchemeLayerReversibleLabel(layer)}
                           </span>
                           <span className="text-gray-500">
-                            {formatLayerSizeLabel(layer.before)} → {formatLayerSizeLabel(afterContent)}
+                            {formatSchemeLayerSizeLabel(layer.before)} → {formatSchemeLayerSizeLabel(afterContent)}
                           </span>
                         </div>
                       );
