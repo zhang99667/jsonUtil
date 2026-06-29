@@ -45,6 +45,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Maintainability budgets
+        working-directory: .
+        run: node scripts/ci/check-maintainability-budgets.mjs
+
       - name: Dependency security audit
         run: npm run audit:security
 
@@ -159,6 +163,10 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
+
+      - name: AI governance coverage
+        working-directory: .
+        run: node scripts/ci/check-ai-governance.mjs
 
       - name: Maven test
         run: mvn -B test

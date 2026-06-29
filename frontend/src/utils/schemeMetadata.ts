@@ -7,6 +7,7 @@ import {
   parseUrl,
   urlDecode,
 } from './schemeUtils';
+import { findSchemePrefixedQueryString } from './schemePrefixedQuery';
 
 export interface Base64MetaEntry {
   key: string;
@@ -100,8 +101,6 @@ const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
 const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
 const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
 const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
-const PREFIXED_QUERY_BOUNDARY_PATTERN = '[\\s\\[\\]{}(),|:：>]';
-const PREFIXED_QUERY_STRING_RE = new RegExp(`^(.*?${PREFIXED_QUERY_BOUNDARY_PATTERN})([?&]*${QUERY_KEY_PATTERN}=.+)$`);
 const LOG_FIELD_KEY_PATTERN = `(?:"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|${QUERY_KEY_PATTERN})`;
 const LOG_FIELD_SEPARATOR_PATTERN = '(?:\\s*(?:=>|->)\\s*|\\s*[:：]\\s*|\\s+=\\s*|=\\s+)';
 const LOG_FIELD_RE = new RegExp(`^\\s*(${LOG_FIELD_KEY_PATTERN})${LOG_FIELD_SEPARATOR_PATTERN}(.+?)\\s*$`);
@@ -699,10 +698,10 @@ const getQuerySourceShapeString = (source: string): string | null => {
   const normalizedSource = normalizeQuerySourceString(source);
   if (QUERY_PAIR_START_RE.test(normalizedSource)) return normalizedSource;
 
-  const prefixedMatch = normalizedSource.match(PREFIXED_QUERY_STRING_RE);
-  if (!prefixedMatch) return null;
+  const prefixedQuery = findSchemePrefixedQueryString(normalizedSource);
+  if (!prefixedQuery) return null;
 
-  const prefixedSource = normalizeQuerySourceString(prefixedMatch[2]);
+  const prefixedSource = normalizeQuerySourceString(prefixedQuery.queryString);
   return QUERY_PAIR_START_RE.test(prefixedSource) ? prefixedSource : null;
 };
 

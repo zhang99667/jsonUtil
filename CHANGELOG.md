@@ -1,5 +1,210 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
+### 🚀 优化与改进
+- **Scheme 解析默认聚焦结果**: 将 Scheme 解析弹窗上方诊断区改为默认紧凑摘要，CMD 结构、参数分层和解析链路改为按需展开，减少对解码结果区域的遮挡
+- **深度解析报告分布文案分层**: 将 CMD Schema、资源类型、静态资源字段等分布摘要段落拆到 `transformReportTextDistributionSections` 并补充单测，报告文本入口继续收敛为记录、跳过和占位符明细
+- **深度解析 Schema occurrence 分层**: 将 command/resource schema 的记录扫描和资源 URL schema 提取拆到 `transformReportCommandSchemaOccurrences` 并补充单测，schema 分组模块继续收敛为纯聚合排序
+- **深度解析质量快照热点分层**: 将质量快照的 schema、问题原因、占位符和参数分层热点聚合拆到 `transformQualitySnapshotHotspots` 并补充单测，快照入口继续收敛为顶层编排
+- **深度解析占位符工具栏分层**: 将 `TransformReportPlaceholdersSection` 内的运行时占位符摘要和模板复制按钮拆到 `TransformReportPlaceholderToolbar` 并补充单测，section 继续收敛为占位符区域装配入口
+- **CMD 差异报告段落分层**: 将 CMD 结构差异报告的上下文、source 截断和路径分支段落拼装拆到 `cmdStructureDiffReportSections`，并收紧 formatter 预算防止展示 helper 回涨
+- **深度解析占位符单行动作分层**: 将 `TransformReportPlaceholderRow` 内的复制、定位和 Scheme 打开按钮矩阵拆到 `TransformReportPlaceholderRowActions` 并补充单测，单行组件继续收敛为路径和值展示
+- **深度解析占位符区域瘦身**: 将 `TransformReportPlaceholdersSection` 的行级复制、定位和 Scheme 动作改为类型化 props 透传并收紧预算，减少占位符 section 与单行组件的重复耦合
+- **深度解析路径行单行瘦身**: 将 `TransformReportRecordPathRow` 的动作配置改为 rest props 透传并收紧组件预算，避免单行展示组件重复维护复制、定位和 Scheme 打开参数
+- **深度解析路径行列表瘦身**: 将 `TransformReportRecordPathRows` 的行级配置改为 rest props 透传并收紧组件预算，避免路径行列表因重复转发 props 贴近上限
+- **深度解析记录洞察分层**: 将内部 CMD 字段、资源 URL 字段、ext 和 Base64 后缀解析线索构建拆到 `transformReportRecordInsights` 并补充单测，`transformSummary` 继续收敛为报告聚合入口
+- **深度解析 CMD 结构源分层**: 将报告记录的 commandSchema 提取、CMD 结构源判断、参数摘要和 cmdHandler 兼容复制 getter 拆到 `transformReportCmdStructureSource` 并补充单测，继续压缩 `transformSummary` 单文件职责
+- **深度解析 decoded value 分层**: 将报告记录的 Scheme 解码值优先级、JSON parse 兜底和预览格式化拆到 `transformReportDecodedValue` 并补充单测，避免 decoded 提取逻辑继续停留在 `transformSummary`
+- **深度解析 Schema 分组分层**: 将报告顶部 command/resource schema、origin 与资源类型聚合拆到 `transformReportCommandSchemaGroups` 并补充单测，`transformSummary` 继续收敛为深度解析报告聚合入口
+- **深度解析嵌套字段分组分层**: 将报告顶部内部 CMD 字段与资源 URL 字段的 Top 分组共用逻辑拆到 `transformReportNestedFieldGroups` 并补充单测，`transformSummary` 继续收敛为报告聚合入口
+- **CMD raw JSON 值处理分层**: 将原始 CMD 快速解码中的 JSON 字符串解析、URL Decode 后 JSON 解析和 unknown 到 JsonValue 转换拆到 `cmdStructureRawJsonValue` 并补充单测，raw source decoder 聚焦 URL/query 递归流程
+- **Scheme 参数值暴露判断分层**: 将嵌套 CMD 参数值的 JSON 字符串、转义、URL 编码和 Base64 递归判断拆到 `schemeStructuredActionableParamValue` 并补充单测，HTTP(S) 参数扫描入口继续收敛
+- **CMD 差异路径分支分层**: 将 CMD 结构差异里的子孙路径折叠和分支计数拆到 `cmdStructurePathBranches` 并补充单测，diff formatter 聚焦报告文本展示
+- **Scheme 暴露判断分层**: 将 HTTP(S) query/hash 中嵌套 CMD 参数的识别拆到 `schemeNestedCommandExposure` 并补充专属单测，`schemeExposure` 聚焦协议分流和递归暴露入口
+- **Scheme 参数 stage 构造分层**: 将参数分层证据的 path、解析预览、修复提示和可逆性判断拆到 `schemeParamDecodeStageBuilder`，`schemeParamDecodeStages` 聚焦 query/hash/log-field 来源扫描
+- **Scheme Query 识别分层**: 将普通 query、单参数可解析 query 和日志前缀 query 的检测拆到 `schemeQueryDetection` 并补充单测，`schemeUtils` 继续收敛为递归解码策略编排入口
+- **CMD raw source 解码器分层**: 将原始 CMD 的 URL/query/JSON 快速结构化解码拆到 `cmdStructureRawSourceDecoder` 并补充单测，raw source 入口继续收敛为候选扫描、优先级排序和兼容导出
+- **CMD raw source guard 分层**: 将原始 CMD 字段优先级、URL/query 形态判断、安全 URL Decode 和结构化字段识别拆到 `cmdStructureRawSourceGuards` 并补充单测，raw source 解码器继续聚焦候选扫描与快速结构化解析
+- **CMD actual 候选收集分层**: 将 actual CMD 候选的结构化对象扫描、raw source 解码接入、去重和路径标注拆到 `cmdStructureCandidates` 并补充单测，`cmdStructureDiff` 继续收敛为结构归一化、diff 和候选排序入口
+- **CMD raw source 解码分层**: 将 response 内原始 CMD 字符串候选扫描、优先级选择和快速 query/JSON 解码拆到 `cmdStructureRawSource` 并补充单测，`cmdStructureDiff` 继续收敛为结构归一化、diff 和候选排序入口
+- **深度解析当前 CMD 对比分层**: 将面板内 active CMD 对比记录定位、候选集合和当前报告文本构建拆到 `transformReportActiveCmdComparison` 并补充单测，继续压缩深度解析主面板状态编排
+- **Scheme 参数分层证据分层**: 将 query/hash/log-field 的参数分层证据构建拆到 `schemeParamDecodeStages` 并补充单测，同时把 Scheme 核心 helper 预算拆到独立子表，让 `schemeUtils` 继续收敛为递归解码编排入口
+- **深度解析路径行动作分层**: 将展开记录路径行的复制路径、复制片段、Scheme 打开和定位按钮拆到 `TransformReportRecordPathRowActions` 并补充单测，同时把记录路径组件预算收口到独立子表
+- **深度解析占位符分组分层**: 将运行时占位符分组摘要、来源预览和筛选入口拆到 `TransformReportPlaceholderGroupCard` 并补充单测，同时把占位符 section 与面板 helper 治理预算收口到独立子表
+- **深度解析占位符单行分层**: 将运行时占位符的路径、来源、复制、定位和 Scheme 打开操作拆到 `TransformReportPlaceholderRow` 并补充单测，占位符 section 继续收敛为分组和行组件装配
+- **深度解析指标栏分层**: 将顶部总览里的展开计数、Scheme 计数、cmdHandler 对比、待处理和占位符快捷入口拆到 `TransformReportSummaryMetricsBar` 并补充单测，顶部总览 section 收敛为纯子模块装配
+- **深度解析优先处理分层**: 将顶部总览里的建议优先处理卡片拆到 `TransformReportIssueTriagePanel` 并补充单测，顶部总览 section 继续收敛为筛选指标和子面板装配
+- **深度解析下一步行动分层**: 将顶部总览里的真实 response 下一步行动卡片拆到 `TransformReportNextActionsPanel` 并补充单测，顶部总览 section 继续收敛为总览模块装配
+- **深度解析记录路径分层**: 将展开记录内部 CMD 字段、静态资源字段、内部路径、解析结果和原始值预览编排拆到 `TransformReportRecordPathSections` 并补充单测，记录主 section 继续收敛为记录模块装配
+- **深度解析记录标签分层**: 将展开记录标签、内部 CMD/资源计数、聚焦复制和洞察 chip 拆到 `TransformReportRecordBadges` 并补充单测，记录主 section 继续收敛为模块编排
+- **深度解析记录头部分层**: 将展开记录头部路径、不可逆状态和复制/定位/Scheme 操作拆到 `TransformReportRecordHeader` 并补充单测，展开记录主 section 继续收敛为记录级编排
+- **深度解析 cmdHandler 摘要分层**: 将展开记录内的 cmdHandler schema 与参数筛选摘要拆到 `TransformReportCmdHandlerSummary` 并补充单测，展开记录主 section 继续聚焦记录级编排
+- **深度解析 CMD Schema 行分层**: 将展开记录内的 CMD Schema 路径列表拆到 `TransformReportCommandSchemaRows` 并补充单测，展开记录主 section 继续收敛为记录级编排
+- **深度解析路径行单行分层**: 将展开记录路径行的单行布局、复制、定位和 Scheme 打开动作拆到 `TransformReportRecordPathRow` 并补充单测，路径行列表只负责标题、列表和更多提示
+- **深度解析展开记录路径行分层**: 将内部 CMD 字段、静态资源字段和内部路径的重复行展示抽到 `TransformReportRecordPathRows` 并补充单测，展开记录 section 继续收敛为记录级编排
+- **深度解析记录区预算分层**: 将展开记录 section 和路径行组件预算拆到 record-section 子表，避免面板组件预算表继续膨胀
+- **深度解析质量快照计数分层**: 将质量快照 totals、filtered 和 truncation 映射拆到 `transformQualitySnapshotMetrics` 并补充单测，质量快照入口继续聚焦热点和建议编排
+- **深度解析质量预算分层**: 将质量建议、Bucket、Delta、快照和计数 helper 预算拆到 quality 子表，避免核心预算规则继续贴线
+- **深度解析问题样本文本分层**: 将问题样本复制报告文本拆到 `transformIssueSampleReportText` 并补充单测，`transformIssueSamples` 继续聚焦 JSON 样本导出
+- **深度解析 issue 预算分层**: 将问题筛选、样本 JSON、样本文本和回归模板预算拆到 report issue 子表，避免报告预算规则继续膨胀
+- **深度解析覆盖率策略分层**: 将报告覆盖率评分、风险文案和占位符提示拆到 `transformReportCoverage` 并补充单测，继续压缩 `transformSummary` 聚合职责
+- **深度解析 summary 预算分层**: 将 decoded、coverage、copy payload 和 recipe 等 support helper 预算拆到独立子表，并收紧 `transformSummary` 行数预算防止回涨
+- **深度解析 footer 分发分层**: 将报告 footer action id 到复制、基线和归档副作用的映射拆到 `transformReportFooterActionHandlers` 并补充单测，主面板继续收敛为状态装配
+- **深度解析行动分发分层**: 将报告下一步和优先处理 action 到面板副作用的分发拆到 `transformReportActionRunners`，主面板继续聚焦状态装配和渲染
+- **深度解析覆盖率卡片组件化**: 将报告覆盖率说明和覆盖项展示拆到 `TransformReportCoverageCard` 并纳入小型 section 预算，顶部总览继续收敛为指标与行动编排
+- **深度解析空态组件化**: 将报告筛选空态拆到 `TransformReportEmptyState` 并纳入预算，让主面板继续聚焦状态和动作编排
+- **深度解析顶部总览组件化**: 将报告顶部指标、覆盖率、下一步行动和优先处理区域拆到 `TransformReportSummarySection` 并纳入预算，继续压缩主面板 JSX
+- **深度解析占位符模板分层**: 将运行时占位符回填模板 JSON 构建拆到 `transformPlaceholderFillTemplate` 并纳入预算，让 `transformSummary` 继续收敛为报告聚合入口
+- **深度解析问题样本分层**: 将问题样本 JSON、复制报告文本和脱敏回归模板拆到 `transformIssueSamples`、`transformIssueRegressionTemplate` 并纳入预算，减少 `transformSummary` 的导出策略耦合
+- **深度解析质量快照分层**: 将质量快照指标、热点 Bucket 和建议组装拆到 `transformQualitySnapshot` 并纳入预算，让 `transformSummary` 继续回归报告聚合
+- **Scheme Query 解码分层**: 将 URL Decode 兜底、query 加号空格语义和结构化值加号保留逻辑拆到 `schemeQueryDecoding` 并补充单测，继续收窄 Scheme 核心文件职责
+- **Scheme URL 信息分层**: 将 URL protocol/host/path、query 参数和 hash 参数摘要提取拆到 `schemeUrlInfo` 并补充单测，继续压缩 Scheme 解码核心入口
+- **深度解析展开记录组件化**: 将展开记录列表、内部路径、CMD Schema 行和 cmdHandler 对比入口拆到 `TransformReportRecordsSection` 并补充单测，主面板继续收敛为状态编排
+- **深度解析排查 Recipe 分层**: 将 troubleshooting recipe 的步骤编排、摘要和建议命令拆到 `transformTroubleshootingRecipe` 并纳入维护性预算，让 `transformSummary` 继续回归报告聚合
+- **深度解析占位符区域组件化**: 将运行时占位符分组、明细和回填模板操作拆到 `TransformReportPlaceholdersSection` 并补充单测，继续压缩深度解析主面板 JSX
+- **深度解析未展开线索组件化**: 将报告底部的未展开线索列表拆到 `TransformReportUnresolvedSection` 并补充单测，继续降低深度解析主面板的异常线索展示复杂度
+- **深度解析跳过记录组件化**: 将报告底部的性能保护跳过记录列表拆到 `TransformReportWarningsSection` 并补充单测，让深度解析主面板继续聚焦状态编排
+- **深度解析 Top 分布组件化**: 将报告顶部的 CMD 来源、CMD Schema、静态资源和内部字段分布按钮拆到 `TransformReportTopDistributions` 并补充单测，继续压缩深度解析主面板 JSX
+- **深度解析报告文本分层**: 将深度解析报告的 CMD/资源分布、展开记录、待检查、跳过和占位符文本段落拆到 `transformReportTextSections`，让 `transformSummary` 继续聚焦报告聚合与导出入口
+- **CMD 差异报告格式化分层**: 将 CMD 结构差异报告格式化、路径分支折叠和稳定值序列化拆到 `cmdStructureDiffFormatter`，让 `cmdStructureDiff` 聚焦解析、归一化和 diff 排序
+- **Scheme 暴露判断分层**: 将普通 HTTP(S) 过滤、业务 Scheme 暴露和嵌套 CMD 参数启发式拆到 `schemeExposure`，让 `schemeUtils` 继续收窄为检测与递归解码入口
+- **Scheme query layer 回写分层**: 将 raw URL、日志字段和前缀 query 的回写策略拆到 `schemeQueryLayerEncoding` 并补充单测，进一步收窄反向编码入口职责
+- **Scheme URL layer 回写分层**: 将 URL query/hash 合并回写拆到 `schemeUrlLayerEncoding` 并补充单测，让反向编码入口只负责编码层顺序
+- **Scheme hash 回写分层**: 将 hash route、锚点参数和裸 query hash 的替换规则拆到 `schemeHashEncoding` 并补充单测，继续降低反向编码 helper 复杂度
+- **Scheme 反向编码分层**: 将 URL/query/hash/log-field 回写从 `schemeUtils` 拆到 `schemeLayerEncoding`，让 Scheme 核心文件继续聚焦检测与递归解码
+- **Scheme Base64 后缀 Query 分层**: 将 extraParam 后缀 Base64 query 扫描拆到 `schemeBase64SuffixQuery` 并补充单测，让后缀元信息模块只负责 JSON 注入
+- **Scheme 扁平 Query 分层**: 将扁平 query 参数聚合与重复 key 合并拆到 `schemeFlatQueryParams`，让原始参数模块聚焦单个未编码 JSON/URL 参数识别
+- **Scheme 日志字段引号分层**: 将日志字段 key/value 引号解包拆到 `schemeLogFieldQuotes` 并补充单测，让语法模块继续聚焦字段匹配、尾逗号和分隔符归一化
+- **Scheme 结构化 Query 路径赋值分层**: 将结构化 Query 的嵌套路径遍历拆到 `schemeStructuredQueryAssignPath`，让赋值入口只保留 key 解析与普通参数合并
+- **Scheme JWT 分层**: 将 JWT header/payload 解码拆到 `schemeJwt` 并补充专属单测，让 Base64 公开入口继续聚焦编码、解码和结构化片段识别
+- **主应用旧 JSONPath 分层**: 将旧 JSONPath 写值兼容逻辑拆到 `appLegacyJsonPath` 并补充独立单测，让 App 工作流 helper 回归文案与模板判断
+- **可维护性预算面板治理分层**: 将深度解析面板相关预算规则自身拆到独立治理子表，并让新子表继续纳入预算自检
+- **深度解析 warning 分类分层**: 将性能保护 warning 的原因和下一步建议拆到 `transformWarningClassification`，让待检查候选分类入口更聚焦
+- **占位符回填类型分层**: 将运行时占位符回填建议的 group/record/view 类型拆到 `transformPlaceholderSuggestionTypes`，让建议入口继续保持短小
+- **AI Skill 发现闭环**: AI 治理脚本自动发现 `.codex/skills/*/SKILL.md`，新增项目级 Codex skill 时会校验 README、Claude guide 和 Playbook 引用同步
+- **可维护性预算自检闭环**: 预算检查脚本会自动发现未纳入自检的 `maintainability-budget-*` 规则文件，并补齐深度解析复制 helper 规则表自身预算
+- **可维护性预算治理分层**: 将 Scheme support 预算规则自身拆入独立治理子表，补齐 Base64、日志字段、Query 语法和结构化 Query 规则文件的自检覆盖
+- **构建配置可维护性**: 将 Vite 手工分包策略拆成独立 `config/chunkStrategy` 纯函数并补充单测，继续守住 Monaco、AntD、AntV、二维码和 JSON 工具依赖的 chunk 边界
+- **版本更新闭环**: 将 `version.json` manifest 和前端 CHANGELOG 注入逻辑拆成独立构建模块，避免更新提示逻辑散落在 Vite 配置中
+- **深度解析可维护性**: 将静态资源 URL 类型识别从 `transformSummary` 拆到独立 `staticResourceSchema` 模块，降低报表汇总大文件的规则耦合
+- **协作样本脱敏可维护性**: 将问题样本敏感字段识别和 originalValue 脱敏逻辑拆到独立 `issueSampleRedaction` 模块，便于后续审计协作材料隐私边界
+- **CMD 聚焦复制可维护性**: 将内部路径 JSONPath 解析、取值和聚焦 cmdParams 子树构建拆到独立 `jsonPathFocus` 模块，降低深度解析报告大文件的路径投影复杂度
+- **深度解析面板可维护性**: 将复制文案、CMD 候选摘要、路径重映射和占位符回填摘要等纯 UI helper 拆到 `transformReportPanelHelpers`，让报告面板组件更聚焦渲染和状态
+- **深度解析面板 helper 分层**: 将复制大小统计、内部字段 Scheme 输入、复制 title 基础状态和占位符回填摘要拆到 `transformReportCopyMetrics`、`transformReportDecodedSchemeInput`、`transformReportCopyTitleHelpers`、`transformReportPlaceholderFillSummary`，让 `transformReportPanelHelpers` 只保留兼容导出
+- **深度解析面板 atom 可维护性**: 将来源标签、摘要指标 chip 和内部路径计数展示拆到 `TransformReportPanelAtoms`，继续压缩报告面板主组件体积
+- **深度解析面板布局分层**: 将报告 footer 按钮区和筛选输入条拆到 `TransformReportPanelFooter`、`TransformReportFilterBar`，让主面板继续聚焦报告状态编排
+- **深度解析复制文案可维护性**: 将深度解析报告复制按钮 title 和占位符回填模板 title 规则收敛到 `transformReportPanelHelpers`，避免筛选 pending、无报告和不可复制状态分散在组件内
+- **深度解析复制入口可维护性**: 将深度解析报告复制入口的 title 文案矩阵拆到 `transformReportCopyTitles`，让报告面板组件只保留当前状态和事件处理
+- **深度解析底部汇总可维护性**: 将深度解析报告 footer 的筛选/总量汇总文案拆到 `transformReportFooterSummary`，减少报告面板 JSX 内的长字符串拼装
+- **深度解析样式可维护性**: 将深度解析覆盖率标签和下一步行动按钮的 class 映射拆到 `transformReportPanelStyles`，让状态到样式的映射可单测验证
+- **深度解析行动策略可维护性**: 将真实 response 下一步行动和建议优先处理项的排序、标题、禁用态拆到 `transformReportActionItems`，让报告面板只负责事件分发和渲染
+- **深度解析行动策略分层**: 将优先处理项和下一步行动 builder 拆到 `transformReportIssueTriageItems`、`transformReportNextActionItems`，让行动项入口只保留兼容导出
+- **深度解析行动项类型分层**: 将下一步行动和优先处理项的 action/state/item 类型拆到 `transformReportActionItemTypes`，让行动策略 builder 更聚焦文案与排序规则
+- **深度解析行动项配置分层**: 将下一步行动和优先处理项的静态文案、action 与 tone 矩阵拆到 `transformReportActionItemConfig`，让行动策略 builder 只保留排序编排
+- **深度解析 footer 操作可维护性**: 将报告底部复制、质量基线、问题样本和 CMD 结构入口的显示顺序、标题、禁用态拆到 `transformReportFooterActions`，避免按钮状态矩阵继续堆在主面板 JSX
+- **深度解析 footer 操作分层**: 将 footer 操作 ID/状态类型与静态配置拆到 `transformReportFooterActionTypes`、`transformReportFooterActionConfig`，让 `transformReportFooterActions` 只保留操作组装逻辑
+- **深度解析 footer builder 分层**: 将筛选报告、质量基线、CMD 结构和配置化 footer action 生成拆到 `transformReportFooterActionBuilders`、`transformReportFooterBaselineActions`、`transformReportFooterActionFactory`，让 footer actions 入口只保留操作顺序编排
+- **深度解析 CMD 对比可维护性**: 将 cmdHandler expected 对比、actual 候选推荐、差异摘要和候选文本拆到 `transformReportCmdComparison`，继续压缩报告面板组件
+- **深度解析 CMD 对比面板组件化**: 将报告面板内联的 cmdHandler 对比 UI 抽到 `TransformReportCmdComparisonPanel`，主面板只保留状态编排和复制副作用，并将主面板预算收紧到 2000 行
+- **深度解析 CMD 对比候选分层**: 将 actual 候选收集、排序、候选文案和输入转换拆到 `transformReportCmdComparisonCandidates`，类型集中到 `transformReportCmdComparisonTypes`，让面板状态模块只保留差异报告编排
+- **深度解析 CMD 对比 helper 分层**: 将 cmdHandler expected 校验、路径数量摘要、候选摘要和候选路径重映射拆到 `transformReportCmdComparisonHelpers`，让通用面板 helper 回归复制文案、路径值和占位符标题
+- **深度解析 CMD 对比摘要分层**: 将 cmdHandler 差异报告格式化和面板摘要提取拆到 `transformReportCmdComparisonSummary`，让 CMD 对比状态构建只保留解析、diff 和候选推荐流程
+- **深度解析复制 payload 可维护性**: 将路径值复制、聚焦 CMD 结构复制和 cmdHandler 对比包组装拆到 `transformReportCopyPayloads`，继续压缩 `transformSummary` 聚合文件
+- **深度解析 decoded 路径可维护性**: 将 decoded leaf 路径收集、复制文本重定位和搜索索引构建拆到 `transformReportDecodedPaths`，让报告聚合文件减少递归遍历细节
+- **深度解析 decoded 搜索索引分层**: 将 decoded 搜索文本和搜索路径索引构建继续拆到 `transformReportDecodedSearchData`，路径复制模块只保留可复制 leaf 路径收集
+- **深度解析归档脱敏可维护性**: 将归档包问题样本省略原文和占位符回填模板去候选值逻辑拆到 `transformArchiveSanitizers`，强化协作材料隐私边界
+- **深度解析建议命令可维护性**: 将 cmdHandler 对比、问题样本回归和归档 corpus 的建议命令构造拆到 `transformSuggestedCommands`，减少 `transformSummary` 聚合文件的数据常量负担
+- **深度解析值预览可维护性**: 将 JSON 值预览、原始字符串截断和内部路径复制值格式化拆到 `transformValuePreview`，继续压缩 `transformSummary` 聚合文件体积
+- **深度解析质量对比可维护性**: 将质量快照指标 delta、Top CMD Schema 对比和建议文案格式化拆到 `transformQualityDelta`，让 `transformSummary` 更聚焦报告聚合
+- **深度解析质量建议可维护性**: 将质量快照的跳过、待检查、占位符、参数分层和 CMD 对比建议文案拆到 `transformQualityRecommendations`，减少报告聚合文件中的策略分支
+- **深度解析质量 Bucket 可维护性**: 将质量快照待检查原因、跳过原因和跳过类型的 Top Bucket 聚合拆到 `transformQualityBuckets`，让主报告聚合文件不再承载排序与路径去重细节
+- **深度解析问题分类可维护性**: 将待检查字段和性能保护跳过记录的原因标签、风险等级和下一步建议拆到 `transformIssueClassification`，让 `transformSummary` 更聚焦报告聚合
+- **占位符回填建议可维护性**: 将运行时占位符回填候选匹配、冲突去重和强匹配文案拆到 `transformPlaceholderSuggestions`，继续压缩深度解析报告聚合文件
+- **占位符回填规则分层**: 将运行时占位符别名表、安全替换判断和候选去重拆到 `transformPlaceholderSuggestionRules`，让建议生成入口只保留 view 到 suggestion 的编排
+- **占位符回填 builder 分层**: 将单个运行时占位符的候选收集、唯一性判断和强匹配文案拆到 `transformPlaceholderSuggestionBuilder`，让建议入口只负责遍历 view 与组装 Map
+- **深度解析筛选可维护性**: 将报告查询匹配、资源类型 token 匹配、CMD Schema 行聚焦和筛选视图裁剪拆到 `transformReportFilters`，让 `transformSummary` 更聚焦报告聚合
+- **深度解析筛选 matcher 分层**: 将路径、资源类型、内部 CMD 字段、CMD Schema 行和长原文兜底匹配拆到 `transformReportFilterMatchers`，让筛选入口只保留记录匹配与兼容导出
+- **深度解析筛选 view 分层**: 将筛选后的内部路径、资源字段和 CMD Schema 聚焦裁剪拆到 `transformReportFilterView`，避免 `transformReportFilters` 贴近预算上限
+- **深度解析占位符可维护性**: 将运行时占位符筛选、按值聚合和来源聚合拆到 `transformRuntimePlaceholders`，减少报告聚合文件中的占位符分组细节
+- **深度解析占位符分层**: 将运行时占位符类型、快捷筛选和按来源聚合继续拆到 `transformRuntimePlaceholderTypes`、`transformRuntimePlaceholderMatchers`、`transformRuntimePlaceholderGroups`，让公开入口只保留兼容导出
+- **深度解析问题筛选可维护性**: 将待检查和跳过记录的快捷词、来源标签、原因文案和长原文兜底筛选拆到 `transformIssueFilters`，继续降低报告聚合文件复杂度
+- **深度解析参数分层可维护性**: 将参数分层标签、摘要合并、质量 Bucket 和搜索文本拆到 `transformSchemeParamStages`，继续压缩 `transformSummary` 聚合文件
+- **深度解析步骤标签分层**: 将转换步骤类型和 Scheme 可回写标签文案拆到 `transformStepLabels`，让参数分层模块只保留摘要聚合和质量 Bucket 逻辑
+- **深度解析参数分层 helper 分层**: 将参数层质量 Bucket 聚合和搜索索引文本拆到 `transformSchemeParamStageBuckets`、`transformSchemeParamStageSearch`，让参数分层入口只保留摘要合并和兼容导出
+- **CMD 参数识别可维护性**: 将常见 CMD / Schema 参数名白名单与结构化字段后缀判定拆到 `structuredParamNames`，统一 `schemeUtils` 和 `cmdStructureDiff` 的识别规则来源
+- **Scheme 占位符可维护性**: 将运行时占位符识别、业务说明、递归收集和分组排序拆到 `schemePlaceholders`，让 Scheme 解码核心文件更聚焦解析流程
+- **Scheme URL 形态可维护性**: 将 JSON 转义 URL 归一化、协议相对 URL、裸域名 URL 和原形状序列化拆到 `schemeUrlShapes`，减少 Scheme 解码主流程中的 URL 形态分支
+- **Scheme Query 语法可维护性**: 将 Query 参数串归一化、前缀剥离、参数串识别和保留原始 JSON 值的 pair 拆分拆到 `schemeQuerySyntax`，让 Scheme 解码主流程更聚焦业务语义
+- **Scheme Query 语法分层**: 将 Query key/pair pattern、日志形态归一化和原始 JSON 值安全 pair 拆分拆到 `schemeQueryPatterns`、`schemeQueryNormalization`、`schemeQueryPairs`，让 `schemeQuerySyntax` 只保留兼容导出
+- **Scheme Query JSON 值扫描分层**: 将 Query pair 中原始 JSON 值边界扫描拆到 `schemeQueryRawJson`，让 `schemeQueryPairs` 只保留分隔符定位和 pair 切分
+- **Scheme 前缀 Query 可维护性**: 将带日志前缀的 CMD 参数串切分规则拆到 `schemePrefixedQuery`，统一递归解码和元信息导出对前缀 query 的识别边界
+- **Scheme 原始参数可维护性**: 将单个未编码 JSON/URL 参数识别和扁平 query 参数收集拆到 `schemeRawParams`，统一 `parseUrl`、深层解码和反向编码的原始参数规则
+- **Scheme 结构化 Query 可维护性**: 将点号 key、括号 key、空数组 key 的解析赋值和反向编码风格恢复拆到 `schemeStructuredQuery`，让 Scheme 主流程不再承载 Query 树构建细节
+- **Scheme 结构化 Query 分层**: 将结构化 Query 的 key 解析、对象/数组赋值和类型定义拆到 `schemeStructuredQueryKeys`、`schemeStructuredQueryAssign`、`schemeStructuredQueryTypes`，让回写模块只保留原始风格恢复和序列化
+- **Scheme 结构化 Query 回写分层**: 将结构化 Query 的原始风格恢复/序列化和值字符串化拆到 `schemeStructuredQuerySerializer`、`schemeStructuredQueryValues`，让公开入口只保留兼容导出
+- **Scheme 结构化 Query 赋值分层**: 将结构化 Query 的叶子合并和嵌套容器创建拆到 `schemeStructuredQueryAssignNodes`，让赋值入口只保留 key 遍历和路径落点
+- **Scheme 结构化 Query 风格分层**: 将原始 Query 的 dot/bracket/空数组风格采集拆到 `schemeStructuredQueryStyles`，让序列化模块只保留递归回写
+- **Scheme 日志字段可维护性**: 将日志字段 CMD 识别、引号解包、尾逗号保留和回写格式化拆到 `schemeLogFields`，让 Scheme 主流程继续聚焦递归解析
+- **Scheme 日志字段语法分层**: 将日志字段正则匹配、key/value 解包和分隔符归一化拆到 `schemeLogFieldSyntax`，类型集中到 `schemeLogFieldTypes`，让 `schemeLogFields` 只保留业务字段与可解码判定
+- **Scheme Base64 可维护性**: 将 UTF-8 Base64、JWT、带内部头 JSON 片段和 extraParam 后缀元信息解析拆到 `schemeBase64`，让 Scheme 主流程只保留递归编排
+- **Scheme Base64 分层**: 将 Base64 UTF-8 codec、真实广告 extraParam 内部头/后缀 JSON 片段解析和类型定义拆到 `schemeBase64Codec`、`schemeBase64PrefixedJson`、`schemeBase64Types`，让公开入口只组合解码、识别和 JWT 包装
+- **Scheme Base64 后缀分层**: 将内部头 Base64 JSON 候选补全和 extraParam 后缀元信息注入拆到 `schemeBase64JsonFragments`、`schemeBase64SuffixMeta`，让 `schemeBase64PrefixedJson` 只保留 payload 扫描编排
+- **Scheme Fragment 可维护性**: 将 hash route、锚点后追加参数和 URL 编码 fragment 参数源识别拆到 `schemeFragmentParams`，继续降低 Scheme 主流程复杂度
+- **Scheme JSON Payload 可维护性**: 将严格 JSON、HTML 引号实体、反斜杠引号、Loose JSON 修复和 parse meta 拆到 `schemeJsonPayloads`，让 Scheme 主流程只消费解析结果和修复提示
+- **Scheme JSON Payload 分层**: 将 JSON payload 类型定义与 HTML 引号、反斜杠引号、Loose JSON 修复策略拆到 `schemeJsonPayloadTypes`、`schemeJsonPayloadNormalizers`，让解析入口只保留策略编排和 parse meta
+- **Scheme JSON Payload parser 分层**: 将 JSON payload 的 strict/html-quote/escaped-quote/loose-json 解析编排拆到 `schemeJsonPayloadParser`，让公开入口只保留兼容导出
+- **Scheme JSON 转义载荷可维护性**: 将 JSON 斜杠转义和 Unicode ASCII 转义载荷识别拆到 `schemeEscapedPayloads`，并收紧 `schemeUtils` 核心预算
+- **Scheme 结构化展开护栏可维护性**: 将整段 JSON response 内部字符串递归展开预算、跳过计数和警告构造拆到 `schemeStructuredDecodeGuards`，减少 `schemeUtils` 主流程状态机负担
+- **Scheme 结构化展开护栏分层**: 将 JSON response 字符串递归展开 warning/state 类型拆到 `schemeStructuredDecodeTypes`，让护栏模块只保留预算状态机
+- **Scheme 结构化展开 warning 分层**: 将递归展开性能保护 warning 构造拆到 `schemeStructuredDecodeWarnings`，让护栏入口只保留计数状态机和兼容导出
+- **Scheme 结构化展开 state 分层**: 将 JSON response 字符串递归展开默认阈值和 state factory 拆到 `schemeStructuredDecodeState`，让 guard 文件只保留跳过判定
+- **Scheme 结构化展开 skip 分层**: 将递归展开预算命中判定和跳过路径记录拆到 `schemeStructuredDecodeSkip`，给 guard 入口继续留出维护余量
+- **Scheme 结构化展开 budget 分层**: 将 JSON response 字符串递归展开预算累计和跳过判定拆到 `schemeStructuredDecodeBudget`，让 guard 入口只保留兼容导出
+- **主应用编排可维护性**: 将 App 顶部复制文案、内容体积摘要、占位符模板识别和旧 JSONPath 写值逻辑拆到 `appWorkflowHelpers`，让主组件更聚焦状态与事件编排
+- **主应用懒加载可维护性**: 将侧边工具、设置、更新日志、AI 摘要和深度解析等懒加载注册拆到 `appLazyPanels`，减少 App 主入口的加载边界噪音
+- **主应用懒加载状态可维护性**: 将设置、更新日志、JSONPath、结构导航、Schema、Scheme、模板和深度报告面板的 loaded 粘性状态合并逻辑拆到 `appLazyPanelLoadState`，减少 App 主入口重复 state/effect
+- **布局键盘交互可维护性**: 将侧栏和左右面板键盘 resize 的按键计算拆到 `layoutKeyboardResize`，保留组件内事件分发并让可访问性边界可单测验证
+- **主应用文件拖拽分层**: 将文件拖拽计数、遮罩状态和 drop 事件封装到 `useAppFileDrop`，让 App 主入口减少边缘交互状态
+- **确认弹窗文案可维护性**: 将清空、粘贴替换、应用预览、应用 Schema 示例和 Scheme 原始值排查的确认文案下沉到 `appWorkflowHelpers`，减少 App 渲染前的字符串拼装
+- **操作文案可维护性**: 将自动保存、SOURCE 操作、智能修复、深度解析报告和 PREVIEW 操作的 title / aria 文案拆到 `appActionLabels`，减少主组件内 UI 文案分支
+- **主应用编辑区状态可维护性**: 将 SOURCE / PREVIEW 派生状态、自动保存可用性、按钮 title 和确认弹窗文案组合拆到 `appEditorUiState`，让 App 主入口更聚焦事件和渲染编排
+- **主应用 SOURCE 替换可维护性**: 将剪贴板粘贴、PREVIEW 应用、Schema 示例应用和 Scheme 原始值排查的跳过/确认/替换决策拆到 `appSourceReplacePlans`，减少 App 主入口重复分支
+- **主应用 SOURCE 替换 core 分层**: 将候选为空、内容相同、已有 SOURCE 确认和直接应用的通用决策拆到 `appSourceReplacePlanCore`，让各入口只保留场景文案与特殊条件
+- **智能建议动作可维护性**: 将智能输入建议点击后的 mode 切换、面板打开、跳过状态和提示文案拆到 `appSmartSuggestionActions`，让 App 主入口只执行副作用
+- **智能建议动作矩阵分层**: 将智能输入建议的静态 effects 与成功文案拆到 `appSmartSuggestionActionConfig`，让计划 builder 只保留特殊动作校验和分发
+- **主应用异步策略可维护性**: 将大输入 Worker 阈值、异步校验阈值、动态转换触发和统计扫描上限拆到 `appAsyncPolicy`，让 App 主入口不再直接承载性能策略常量
+- **主应用异步状态可维护性**: 将异步转换结果 freshness、深度格式化结果选择和 PREVIEW 输出占位/回退决策拆到 `appAsyncTransformState`，继续压缩 App 主入口
+- **主应用异步转换 hook 化**: 将大输入 Worker、动态转换 Promise、requestId 竞态保护和异步结果 freshness 下沉到 `useAppAsyncTransform`，让 App 主入口只消费转换状态
+- **React Compiler 兼容性**: 补齐 App 主入口手写 `useCallback` 的 setter 依赖，让 `preserve-manual-memoization` 门禁可以持续校验 memo 语义
+
+### 🏗️ 架构与基础设施
+- **Scheme Base64 后缀预算分层**: 将 extraParam 后缀 meta/query 预算拆到独立规则子表，避免 Base64 主预算表因真实广告后缀扩展继续贴边
+- **Scheme token 预算分层**: 新增 token 预算规则子表承接 `schemeJwt`，避免 Base64 预算规则表因 JWT/JWS/JWE 扩展继续贴边
+- **AI 协作资产**: 新增 Codex 项目级 skill 模板和 AI 工程协作 Playbook，让 Claude Code、Codex、Ducc 等工具共享同一套读文件、改代码、验证、更新日志闭环
+- **AI 治理门禁**: 新增 `check-ai-governance` 脚本并接入 GitHub Actions / 本地 CI，自动校验 AGENTS、CLAUDE、Playbook 和 Codex skill 的关键引用不失联
+- **可维护性预算门禁**: 新增 `check-maintainability-budgets` 脚本并接入 CI，守住 `transformSummary`、`TransformReportPanel`、`schemeUtils`、`App` 和新拆分 helper 的行数预算，防止复杂度反弹
+- **可维护性预算规则拆分**: 将预算清单拆到 `maintainability-budget-rules`，让检查脚本只保留执行逻辑，后续新增受控模块不再推高 checker 复杂度
+- **可维护性预算规则分域**: 将预算规则继续按深度解析、Scheme/App 和基础设施拆成独立规则表，聚合入口只负责组合，避免治理规则自身成为新大文件
+- **深度解析预算规则分域**: 将深度解析预算规则继续拆成核心聚合与报告 UI 两个子域，避免新增报告面板 helper 时撑大单个治理规则文件
+- **深度解析面板预算分域**: 将报告面板、footer、样式、atom 和 CMD 对比 helper 预算拆到独立规则表，避免报告数据 helper 与 UI helper 共享单个上限
+- **深度解析面板预算细分**: 将报告面板组件预算与 footer/CMD 对比/helper 预算继续拆成 component/helper 两张规则表，避免新增 UI helper 时撑大单个治理清单
+- **深度解析 helper 预算细分**: 将面板 helper 预算继续拆成 UI、footer 和 CMD 对比三张规则表，避免新增 CMD 对比 helper 后让治理清单再次接近上限
+- **深度解析行动项预算细分**: 将报告行动项 helper 预算拆到独立 action 规则表，避免 UI helper 预算清单继续贴近上限
+- **深度解析聚合预算细分**: 将 `transformSummary`、decoded 路径 helper 与复制 payload helper 的预算拆到独立 summary 规则表，后续压缩聚合文件时可以单独收紧预算
+- **深度解析筛选预算细分**: 将报告筛选 view 与 matcher 预算拆到独立 filter 规则表，避免 transform core 治理清单再次贴近上限
+- **Scheme/App 预算规则分域**: 将 Scheme 与 App 预算规则继续拆成独立子域，新增解析 helper 时不再推高单个治理规则文件复杂度
+- **App 预算规则细分**: 将 App 主入口、懒加载和键盘交互预算拆到 core 规则表，工作流 helper 拆到 workflow 规则表，避免主应用治理清单再次接近上限
+- **App 工作流预算细分**: 将 SOURCE 替换计划入口与 core helper 的预算拆到 workflow-source 规则表，避免主应用工作流治理清单继续贴近上限
+- **App 主入口预算收紧**: 将 `App.tsx` 行数预算从 2115 收紧到 2030，并新增 `useAppAsyncTransform` hook 预算，防止异步转换编排回流主组件
+- **Scheme 预算规则细分**: 将 Scheme 核心大文件预算和 Base64、日志字段、Query、原始参数、URL 形态等支撑 helper 预算拆成 core/support 两张规则表，给后续 CMD/Scheme 解析增强预留治理空间
+- **Scheme 支撑预算细分**: 将 Scheme 支撑 helper 预算继续拆成 payload 与 query 两张规则表，避免 JSON 转义载荷 helper 接入后治理清单贴近上限
+- **Scheme Base64 预算细分**: 将 Base64 公开入口、codec、extraParam 片段解析和类型预算拆到独立 base64 规则表，避免 payload 预算清单继续贴近上限
+- **Scheme 结构化展开预算细分**: 将 JSON response 字符串递归展开的 guard、warning 和类型预算拆到独立 structured-decode 规则表，避免 payload 预算清单继续贴近上限
+- **Scheme 日志预算细分**: 将日志字段解析入口、语法 helper 和类型定义预算拆到独立 log 规则表，避免 Query 支撑预算清单再次贴近上限
+- **Scheme Query 语法预算细分**: 将 Query syntax、pattern、normalization 和 pair 拆分预算拆到独立 query-syntax 规则表，避免 Query 支撑预算清单继续贴边
+- **Scheme 结构化 Query 预算细分**: 将结构化 Query 回写、赋值、key 解析和类型预算拆到独立 structured-query 规则表，避免 Query 支撑预算清单继续贴边
+- **治理预算规则分域**: 将 CI checker 与预算规则文件自身的预算从基础设施规则表拆到 governance 规则表，确保治理脚本新增受控条目时也有自我约束
+- **治理预算自分层**: 将治理规则自身的预算继续拆成 checker、transform、Scheme/App 三张子表，避免治理清单接近上限后反向阻碍新增规范
+
 ### ✨ 新特性
 - **JSON Lines Schema 生成**: Schema 面板支持从 JSON Lines / NDJSON 直接生成根数组 Schema，按多行样本合并字段、推断 required 交集并保留可选字段
 - **多样本可信度**: Schema 可信提示新增来源类型，JSON Lines 会显示为多样本来源并复用样本数、format 命中、可选字段和采样摘要
@@ -14,6 +219,63 @@
 
 ### 🧪 测试
 - **JSON Lines 覆盖**: 扩展 Schema 推断和校验单测，覆盖 JSON Lines 多样本生成、坏行错误、校验通过和缺字段路径
+- **资源识别覆盖**: 新增静态资源 Schema 单测，覆盖图片、视频、Lottie、音频、安装包、普通落地页 HTTPS 边界和资源类型搜索 token
+- **脱敏规则覆盖**: 新增问题样本脱敏单测，覆盖 URL 编码敏感字段、边界词误报、脱敏提示和回归模板敏感线索
+- **聚焦路径覆盖**: 新增 JSONPath 聚焦单测，覆盖 dot/bracket/数组路径解析、叶子 key 提取、cmdParams 子树裁剪和无效路径忽略
+- **面板 helper 覆盖**: 新增深度解析面板 helper 单测，覆盖复制大小、CMD diff 摘要、候选路径重映射、Scheme 输入转换和占位符回填标题
+- **面板 atom 覆盖**: 新增深度解析面板 atom 单测，覆盖 CMD Schema 展示上限和内部路径截断计数文案
+- **深度解析 title 覆盖**: 扩展深度解析面板 helper 单测，覆盖复制按钮 pending、无报告、不可复制和占位符回填模板不可用状态
+- **深度解析复制入口覆盖**: 新增复制入口 title 矩阵单测，覆盖筛选更新中、无报告、不可复制、聚焦 CMD、完整报告和占位符回填模板标题
+- **深度解析底部汇总覆盖**: 新增 footer 汇总文案单测，覆盖无报告空态和展开记录、CMD、内部字段、资源、占位符、待检查、跳过记录计数
+- **深度解析样式覆盖**: 新增深度解析面板样式映射单测，覆盖覆盖率 success/info/warning 和下一步行动 primary/purple/rose/cyan tone
+- **深度解析行动策略覆盖**: 新增深度解析行动策略单测，覆盖优先处理项顺序、占位符回填降级、下一步行动排序和筛选 pending 禁用态
+- **深度解析行动项配置覆盖**: 新增行动项静态配置单测，覆盖跳过/待检查文案、占位符动作降级、归档和质量快照配置
+- **深度解析 footer 操作覆盖**: 新增 footer 操作矩阵单测，覆盖筛选入口、质量基线对比、CMD 聚焦、筛选 pending 禁用态和不可复制内容降级
+- **深度解析 CMD 对比覆盖**: 新增 CMD 对比 helper 单测，覆盖差异报告、actual 候选推荐、候选切换输入和无效 expected 错误态
+- **深度解析 CMD 对比面板覆盖**: 新增 cmdHandler 对比面板组件单测，覆盖差异摘要、候选推荐、空 expected 引导、复制按钮禁用态和候选切换回调
+- **深度解析复制 payload 覆盖**: 新增复制 payload helper 单测，覆盖内部路径复制文本、内部 CMD 字段聚焦复制、CMD 结构裁剪和 cmdHandler 对比包生成
+- **深度解析 decoded 路径覆盖**: 新增 decoded 路径 helper 单测，覆盖路径重定位、展示上限、搜索索引和非对象值空态
+- **深度解析 decoded 搜索覆盖**: 新增 decoded 搜索索引 helper 单测，覆盖搜索文本、路径数量上限和非对象值空态
+- **深度解析筛选覆盖**: 新增报告筛选 helper 单测，覆盖 schema origin、参数层 key、资源类型 token、内部路径裁剪和 CMD Schema 聚焦路径
+- **深度解析筛选 matcher 覆盖**: 新增筛选 matcher 单测，覆盖资源 token、对象/数组摘要防误命中、CMD Schema origin 和长原文兜底规则
+- **深度解析占位符覆盖**: 新增运行时占位符 helper 单测，覆盖按值/来源聚合排序、快捷筛选词、来源标签和长原文兜底搜索
+- **深度解析问题筛选覆盖**: 新增待检查/跳过筛选 helper 单测，覆盖快捷筛选词、detectedType、来源标签、原因建议和长原文兜底搜索
+- **深度解析参数分层覆盖**: 新增参数分层 helper 单测，覆盖步骤标签、摘要合并、计数统计、质量 Bucket 和搜索文本
+- **Scheme Base64 覆盖**: 新增 Base64/JWT 纯模块单测，覆盖 UTF-8 编解码、短 JSON 识别、普通短文本误判防护和 extraParam 后缀元信息
+- **Scheme Fragment 覆盖**: 新增 fragment 参数源单测，覆盖 hash route、锚点后追加参数、URL 编码 fragment 和普通文本误判防护
+- **Scheme JSON Payload 覆盖**: 新增 JSON payload 单测，覆盖严格 JSON、Loose JSON、HTML 引号实体、反斜杠引号和修复策略元信息
+- **Scheme JSON 转义载荷覆盖**: 新增 JSON 斜杠转义和 Unicode ASCII 转义 helper 单测，覆盖结构化载荷归一化和普通文本误判防护
+- **Scheme 结构化展开护栏覆盖**: 新增字符串递归展开护栏单测，覆盖长度累计、单字段跳过、警告生成和跳过路径样本上限
+- **深度解析归档脱敏覆盖**: 新增归档脱敏单测，覆盖未脱敏 originalValue 省略、脱敏样本保留、占位符候选值清空和来源预览移除
+- **建议命令覆盖**: 新增深度解析建议命令单测，覆盖 cmdHandler 对比、问题样本回归、归档命令和按 id 去重
+- **值预览覆盖**: 新增深度解析值预览单测，覆盖字符串截断、对象/数组摘要、基础类型预览和内部路径复制值长度保护
+- **质量对比覆盖**: 新增深度解析质量快照 delta 单测，覆盖正负指标变化、Top CMD Schema 对比和应用后建议输出
+- **质量建议覆盖**: 新增深度解析质量建议单测，覆盖多风险建议组合和无风险质量基线建议
+- **质量 Bucket 覆盖**: 新增深度解析质量 Bucket 单测，覆盖原因聚合、稳定排序、路径去重、路径上限和 Top 上限
+- **问题分类覆盖**: 新增深度解析问题分类单测，覆盖 URL 编码失败、疑似 CMD/URL 规则缺口、Base64 非 JSON、默认风险等级和两类跳过保护文案
+- **占位符回填建议覆盖**: 新增运行时占位符回填建议单测，覆盖字段名归一化、安全替换过滤、冲突候选跳过和筛选态复用全量记录
+- **CMD 参数名覆盖**: 新增结构化参数名单测，覆盖别名归一化、camelCase 结构化后缀和普通字段不误判
+- **Scheme 占位符覆盖**: 新增运行时占位符单测，覆盖业务说明兜底、对象/数组路径收集和按值聚合排序
+- **Scheme URL 形态覆盖**: 新增 URL 形态单测，覆盖 JSON 转义归一化、协议相对 URL、裸域名 URL、HTTP 协议判定和按原始形态序列化
+- **Scheme Query 语法覆盖**: 新增 Query 语法单测，覆盖 HTML/Unicode/分号/逗号/换行归一化、前缀剥离、参数串识别和原始 JSON 值安全拆分
+- **Scheme 前缀 Query 覆盖**: 新增前缀 query helper 单测，覆盖日志前缀、箭头前缀、问号前缀、多行防误判和普通 query 防误判
+- **Scheme 原始参数覆盖**: 新增原始参数 helper 单测，覆盖未编码 JSON 参数、未编码 URL 参数、重复 key 合并和加号表单解码
+- **Scheme 结构化 Query 覆盖**: 新增结构化 Query 单测，覆盖点号 key、索引数组、空数组、括号对象、重复参数和原始回写风格恢复
+- **Scheme 日志字段覆盖**: 新增日志字段解析单测，覆盖中文冒号、箭头分隔符、日志前缀、JSON 属性片段、尾逗号和回写引号格式
+- **App helper 覆盖**: 新增主应用 workflow helper 单测，覆盖复制文案、多字节大小、占位符模板识别和旧 JSONPath 对象/数组写值
+- **布局键盘覆盖**: 新增布局键盘 resize 单测，覆盖方向键、Shift 双倍步长、Home/End、边界收敛和无关按键忽略
+- **确认弹窗覆盖**: 扩展主应用 workflow helper 单测，覆盖清空 SOURCE、粘贴替换、应用 PREVIEW、Schema 示例和 Scheme 原始值排查确认文案
+- **操作文案覆盖**: 新增主应用操作文案单测，覆盖自动保存 title/aria、SOURCE 操作、智能修复、深度解析报告和 PREVIEW 操作文案
+- **编辑区状态覆盖**: 新增主应用编辑区 UI 状态单测，覆盖 SOURCE/PREVIEW 内容状态、自动保存状态、处理中按钮文案、确认弹窗文案和独立 Scheme 输入识别
+- **SOURCE 替换计划覆盖**: 新增 SOURCE 替换计划单测，覆盖剪贴板粘贴、PREVIEW 应用、Schema 示例应用和 Scheme 原始值排查的空态、相同内容、确认替换和直接应用
+- **SOURCE 替换 core 覆盖**: 新增 SOURCE 替换通用决策单测，覆盖候选为空、内容相同、已有 SOURCE 确认和空 SOURCE 直接应用
+- **智能建议动作覆盖**: 新增智能建议动作计划单测，覆盖 AI 修复委托、空 SOURCE 跳过、Scheme 面板打开、结构导航 mode 切换和纯模式切换
+- **智能建议动作矩阵覆盖**: 新增智能建议静态动作配置单测，覆盖报告、结构导航、纯模式切换和特殊动作回退
+- **懒加载状态覆盖**: 新增主应用懒加载面板 loaded 状态单测，覆盖默认未加载、打开后粘性保持和无新增打开时复用原对象
+- **异步策略覆盖**: 新增主应用异步策略单测，覆盖 Worker 阈值、输出同步保护、TypeScript 动态异步路径、空白输入和性能常量稳定性
+- **异步状态覆盖**: 新增主应用异步转换状态单测，覆盖过期结果丢弃、深度格式化结果选择、PREVIEW 暂存保护、异步占位和 fallback 懒执行
+- **构建规则覆盖**: 新增 chunk 分包策略和版本 manifest 单测，覆盖首屏性能边界和打开状态更新检查所需的构建资产
+- **Lint 门禁补齐**: 前端 lint 范围纳入 `config/` 构建源码，避免 Vite 分包和版本 manifest 规则绕过日常静态检查
 
 ## v1.8.253 (2026-06-20) - 本地隐私状态与辅助入口
 ### ✨ 新特性

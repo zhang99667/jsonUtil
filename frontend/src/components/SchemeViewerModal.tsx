@@ -257,6 +257,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 }) => {
   const [editedContent, setEditedContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
+  const [isDiagnosticsExpanded, setIsDiagnosticsExpanded] = useState(false);
 
   // 独立模式下的输入值
   const [standaloneInput, setStandaloneInput] = useState<string>('');
@@ -435,6 +436,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       setStandaloneInput(initialStandaloneInput);
     }
   }, [initialStandaloneInput, initialStandaloneInputKey, isOpen, standalone]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsDiagnosticsExpanded(false);
+    }
+  }, [isOpen]);
 
   const handleCopy = async () => {
     try {
@@ -682,6 +689,104 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const base64SuffixInsight = commandSummaryInfo
     ? formatSchemeInsightItems('Base64 后缀', commandSummaryInfo.base64SuffixFields, 6)
     : undefined;
+  const skippedDecodeCount = useMemo(() => (
+    decodeWarnings.reduce((total, warning) => total + warning.skippedCount, 0)
+  ), [decodeWarnings]);
+  const diagnosticSummaryItems = useMemo(() => {
+    const items: Array<{ key: string; label: string; title?: string }> = [];
+
+    if (decodeResult.schemeInfo) {
+      const schemeLabel = [
+        decodeResult.schemeInfo.protocol,
+        decodeResult.schemeInfo.host,
+        decodeResult.schemeInfo.path,
+      ].filter(Boolean).join(' · ');
+      items.push({
+        key: 'scheme',
+        label: schemeLabel || 'Scheme',
+        title: '已识别 Scheme 信息',
+      });
+    }
+
+    if (commandSummaryInfo?.commandSchemaCount) {
+      items.push({
+        key: 'cmd',
+        label: `CMD · ${commandSummaryInfo.commandSchemaCount}`,
+        title: '已识别 CMD 结构',
+      });
+    }
+
+    const totalParamCount = paramSections.reduce((total, section) => total + getParamCount(section.params), 0);
+    if (totalParamCount > 0) {
+      items.push({
+        key: 'params',
+        label: `参数 · ${totalParamCount}`,
+        title: '已识别 URL 参数来源',
+      });
+    }
+
+    if (paramStages.length > 0) {
+      items.push({
+        key: 'param-stages',
+        label: `参数层 · ${paramStages.length}`,
+        title: '已识别参数递归解码链路',
+      });
+    }
+
+    if (decodeResult.layers.length > 0) {
+      items.push({
+        key: 'layers',
+        label: `解码层 · ${decodeResult.layers.length}`,
+        title: '已识别整体解码链路',
+      });
+    }
+
+    if (placeholders.length > 0) {
+      items.push({
+        key: 'placeholders',
+        label: `占位符 · ${placeholders.length}`,
+        title: '已识别运行时占位符',
+      });
+    }
+
+    if (skippedDecodeCount > 0) {
+      items.push({
+        key: 'skipped',
+        label: `跳过 · ${skippedDecodeCount}`,
+        title: '性能护栏跳过的长字符串数量',
+      });
+    }
+
+    if (base64MetaInfo) {
+      items.push({
+        key: 'base64',
+        label: 'Base64 线索',
+        title: '已识别内部 Base64 后缀信息',
+      });
+    }
+
+    return items;
+  }, [
+    base64MetaInfo,
+    commandSummaryInfo,
+    decodeResult.layers.length,
+    decodeResult.schemeInfo,
+    paramSections,
+    paramStages.length,
+    placeholders.length,
+    skippedDecodeCount,
+  ]);
+  const hasDiagnosticDetails = Boolean(
+    schemeQualitySummary ||
+    decodeResult.schemeInfo ||
+    commandSummaryInfo ||
+    decodeResult.layers.length > 0 ||
+    paramSections.length > 0 ||
+    paramStages.length > 0 ||
+    placeholders.length > 0 ||
+    decodeWarnings.length > 0 ||
+    base64MetaInfo
+  );
 
   const handleCopyCmdHandlerCompatibleResult = async () => {
     if (!canCopyCmdHandlerCompatibleResult) return;
@@ -965,8 +1070,54 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
           )}
 
           {/* 上方信息卡片区域 */}
-          {(schemeQualitySummary || decodeResult.schemeInfo || commandSummaryInfo || decodeResult.layers.length > 0 || paramStages.length > 0 || placeholders.length > 0 || decodeWarnings.length > 0 || base64MetaInfo) && (
-            <div className="bg-editor-sidebar rounded p-3 border border-editor-border flex flex-col gap-2">
+          {hasDiagnosticDetails && (
+            <div
+              data-tour="scheme-diagnostics-panel"
+              className="bg-editor-sidebar rounded border border-editor-border"
+            >
+              <div className="flex items-center gap-2 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDiagnosticsExpanded(expanded => !expanded)}
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus:outline-none focus:ring-2 focus:ring-emerald-300/30"
+                  aria-expanded={isDiagnosticsExpanded}
+                  aria-controls="scheme-diagnostics-detail"
+                  title={isDiagnosticsExpanded ? '收起 Scheme 解析详情' : '展开 Scheme 解析详情'}
+                >
+                  <span className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
+                    schemeQualitySummary
+                      ? getSchemeQualityClassName(schemeQualitySummary.level)
+                      : 'border-editor-border bg-editor-bg text-gray-300'
+                  }`}>
+                    {schemeQualitySummary?.label || '解析信息'}
+                  </span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-xs text-gray-400 [&::-webkit-scrollbar]:hidden">
+                    {diagnosticSummaryItems.map(item => (
+                      <span
+                        key={item.key}
+                        className="rounded bg-editor-bg px-2 py-0.5 font-mono text-gray-300"
+                        title={item.title}
+                      >
+                        {item.label}
+                      </span>
+                    ))}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDiagnosticsExpanded(expanded => !expanded)}
+                  className="shrink-0 rounded bg-editor-active px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-border hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/30"
+                  aria-expanded={isDiagnosticsExpanded}
+                  aria-controls="scheme-diagnostics-detail"
+                >
+                  {isDiagnosticsExpanded ? '收起详情' : '展开详情'}
+                </button>
+              </div>
+              {isDiagnosticsExpanded && (
+                <div
+                  id="scheme-diagnostics-detail"
+                  className="flex flex-col gap-2 border-t border-editor-border px-3 py-2"
+                >
               {/* 解析质量摘要 */}
               {schemeQualitySummary && (
                 <div
@@ -1414,6 +1565,8 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                       );
                     })}
                   </div>
+                </div>
+              )}
                 </div>
               )}
             </div>

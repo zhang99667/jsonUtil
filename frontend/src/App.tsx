@@ -1,5 +1,5 @@
 
-import React, { lazy, Suspense, useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { Suspense, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { showSuccess, showError } from './utils/toast';
 import { ActionPanel } from './components/ActionPanel';
@@ -7,7 +7,6 @@ import { CodeEditor } from './components/Editor';
 import {
   detectLanguage,
   performTransform,
-  performTransformAsync,
   performInverseTransform,
   deepParseWithContext,
   inverseWithContext,
@@ -15,25 +14,43 @@ import {
   getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput
 } from './utils/transformations';
-import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, TransformResult, type EditorDiagnosticHighlight } from './types';
+import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, type EditorDiagnosticHighlight } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useAppUpdateCheck } from './hooks/useAppUpdateCheck';
+import { useAppAsyncTransform } from './hooks/useAppAsyncTransform';
+import { useAppFileDrop } from './hooks/useAppFileDrop';
 import { APP_CHANGELOG_OPEN_EVENT, type AppChangelogOpenDetail } from './utils/appEvents';
 import {
   LEFT_PANE_MAX_PERCENT,
   LEFT_PANE_MIN_PERCENT,
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
-  clampLayoutValue,
   useLayout,
 } from './hooks/useLayout';
+import { getPaneKeyboardResizePercent, getSidebarKeyboardResizeWidth } from './hooks/layoutKeyboardResize';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { StatusBar } from './components/StatusBar';
-import { formatByteSize, getDocumentStats } from './utils/documentStats';
+import {
+  LazyAiRepairSummaryBanner,
+  LazyChangelogModal,
+  LazyJsonComparePanel,
+  LazyJsonPathPanel,
+  LazyJsonSchemaPanel,
+  LazyJsonTreePanel,
+  LazySchemeViewerModal,
+  LazyTemplateFillPanel,
+  LazyTransformReportPanel,
+  LazyUnifiedSettingsModal,
+} from './components/appLazyPanels';
+import {
+  createAppLazyPanelLoadState,
+  updateAppLazyPanelLoadState,
+} from './utils/appLazyPanelLoadState';
+import { getDocumentStats } from './utils/documentStats';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
 import { copyText, getClipboardErrorMessage, readClipboardText } from './utils/clipboard';
 import { getDetailedErrorMessage, isAbortError } from './utils/errors';
@@ -44,7 +61,6 @@ import { setJsonPointerValue } from './utils/jsonPointer';
 import {
   cleanJsonInput,
   getJsonValidationErrorLocation,
-  isJsonContainerCandidate,
   startJsonValidation,
   validateJsonForEditor,
 } from './utils/jsonValidation';
@@ -61,81 +77,31 @@ import { getJsonSchemaIssueHighlights } from './utils/jsonSchemaIssueHighlights'
 import type { JsonPathQueryItem } from './utils/jsonPathQuery';
 import {
   getSmartInputSuggestion,
-  getSmartSuggestionMode,
   type SmartSuggestionActionId,
 } from './utils/smartInputSuggestion';
-
-const ASYNC_TRANSFORM_THRESHOLD = 200_000;
-const ASYNC_VALIDATION_THRESHOLD = 200_000;
-const DOCUMENT_STATS_SCAN_LIMIT = 300_000;
-const ASYNC_TRANSFORM_PLACEHOLDER = '// 正在处理，请稍候...';
-const SIDEBAR_KEYBOARD_RESIZE_STEP = 16;
-const PANE_KEYBOARD_RESIZE_STEP = 5;
-const ASYNC_TRANSFORM_MODES = new Set<TransformMode>([
-  TransformMode.FORMAT,
-  TransformMode.DEEP_FORMAT,
-  TransformMode.MINIFY,
-  TransformMode.SORT_KEYS,
-  TransformMode.JSON_TO_TYPESCRIPT,
-]);
-
-const getCopySuccessMessage = (label: string, content: string): string => {
-  const stats = getDocumentStats(content);
-  return `已复制${label}（${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}）`;
-};
-
-const getContentSizeSummary = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
-
-const getSourceUpdateSuccessMessage = (message: string, content: string): string => (
-  `${message}（${getContentSizeSummary(content)}）`
-);
-
-const isStandaloneSchemeInput = (value: string): boolean => {
-  return isStandaloneDeepFormatInput(value);
-};
-
-const LazySchemeViewerModal = lazy(() => import('./components/SchemeViewerModal').then(module => ({
-  default: module.SchemeViewerModal,
-})));
-
-const LazyJsonPathPanel = lazy(() => import('./components/JsonPathPanel').then(module => ({
-  default: module.JsonPathPanel,
-})));
-
-const LazyJsonTreePanel = lazy(() => import('./components/JsonTreePanel').then(module => ({
-  default: module.JsonTreePanel,
-})));
-
-const LazyJsonComparePanel = lazy(() => import('./components/JsonComparePanel').then(module => ({
-  default: module.JsonComparePanel,
-})));
-
-const LazyJsonSchemaPanel = lazy(() => import('./components/JsonSchemaPanel').then(module => ({
-  default: module.JsonSchemaPanel,
-})));
-
-const LazyTemplateFillPanel = lazy(() => import('./components/TemplateFillPanel').then(module => ({
-  default: module.TemplateFillPanel,
-})));
-
-const LazyUnifiedSettingsModal = lazy(() => import('./components/UnifiedSettingsModal').then(module => ({
-  default: module.UnifiedSettingsModal,
-})));
-
-const LazyAiRepairSummaryBanner = lazy(() => import('./components/AiRepairSummaryBanner').then(module => ({
-  default: module.AiRepairSummaryBanner,
-})));
-
-const LazyTransformReportPanel = lazy(() => import('./components/TransformReportPanel').then(module => ({
-  default: module.TransformReportPanel,
-})));
-
-const LazyChangelogModal = lazy(() => import('./components/ChangelogModal').then(module => ({
-  default: module.ChangelogModal,
-})));
+import { buildAppEditorUiState } from './utils/appEditorUiState';
+import { buildAppSmartSuggestionActionPlan } from './utils/appSmartSuggestionActions';
+import {
+  getContentSizeSummary,
+  getCopySuccessMessage,
+  getSourceUpdateSuccessMessage,
+  isPlaceholderFillTemplateJson,
+} from './utils/appWorkflowHelpers';
+import { setLegacyJsonPathValue } from './utils/appLegacyJsonPath';
+import {
+  buildApplyPreviewToSourcePlan,
+  buildApplySchemaExampleToSourcePlan,
+  buildSchemeInspectSourcePlan,
+  buildPasteSourcePlan,
+} from './utils/appSourceReplacePlans';
+import {
+  ASYNC_VALIDATION_THRESHOLD,
+  DOCUMENT_STATS_SCAN_LIMIT,
+} from './utils/appAsyncPolicy';
+import {
+  getActiveAppDeepFormatResult,
+  resolveAppOutputValue,
+} from './utils/appAsyncTransformState';
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
 type SmartSuggestionOrigin = 'clipboard';
@@ -162,55 +128,6 @@ interface TemplateFillRequest {
 }
 
 type TransformSummaryModule = typeof import('./utils/transformSummary');
-
-interface AsyncTransformResult {
-  input: string;
-  mode: TransformMode;
-  autoExpandScheme: boolean;
-  output: string;
-  context?: TransformContext;
-}
-
-const PLACEHOLDER_FILL_TEMPLATE_KIND = 'json-helper-runtime-placeholder-fill-template';
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-const isPlaceholderFillTemplateJson = (templateJson: string): boolean => {
-  try {
-    const parsed = JSON.parse(templateJson) as unknown;
-    return isRecord(parsed) && parsed.kind === PLACEHOLDER_FILL_TEMPLATE_KIND;
-  } catch {
-    return false;
-  }
-};
-
-const setLegacyJsonPathValue = (root: unknown, jsonPath: string, value: string): unknown => {
-  const pathParts = jsonPath
-    .replace(/^\$\.?/, '')
-    .split(/\.|\[|\]/)
-    .filter(p => p !== '');
-
-  let current = root as Record<string, unknown> | unknown[];
-  for (let i = 0; i < pathParts.length - 1; i++) {
-    const part = pathParts[i];
-    const index = parseInt(part, 10);
-    current = (isNaN(index)
-      ? (current as Record<string, unknown>)[part]
-      : (current as unknown[])[index]) as Record<string, unknown> | unknown[];
-  }
-
-  const lastPart = pathParts[pathParts.length - 1];
-  const lastIndex = parseInt(lastPart, 10);
-  if (isNaN(lastIndex)) {
-    (current as Record<string, unknown>)[lastPart] = value;
-  } else {
-    (current as unknown[])[lastIndex] = value;
-  }
-
-  return root;
-};
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -245,31 +162,19 @@ const App: React.FC = () => {
   } = useLayout(appRef);
 
   const handleSidebarResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    const keyboardStep = event.shiftKey ? SIDEBAR_KEYBOARD_RESIZE_STEP * 2 : SIDEBAR_KEYBOARD_RESIZE_STEP;
-    let nextWidth: number | null = null;
-
-    if (event.key === 'ArrowLeft') nextWidth = sidebarWidth - keyboardStep;
-    if (event.key === 'ArrowRight') nextWidth = sidebarWidth + keyboardStep;
-    if (event.key === 'Home') nextWidth = SIDEBAR_MIN_WIDTH;
-    if (event.key === 'End') nextWidth = SIDEBAR_MAX_WIDTH;
+    const nextWidth = getSidebarKeyboardResizeWidth(sidebarWidth, event.key, event.shiftKey);
     if (nextWidth === null) return;
 
     event.preventDefault();
-    setSidebarWidth(clampLayoutValue(nextWidth, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH));
+    setSidebarWidth(nextWidth);
   }, [setSidebarWidth, sidebarWidth]);
 
   const handlePaneResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    const keyboardStep = event.shiftKey ? PANE_KEYBOARD_RESIZE_STEP * 2 : PANE_KEYBOARD_RESIZE_STEP;
-    let nextPercent: number | null = null;
-
-    if (event.key === 'ArrowLeft') nextPercent = leftPaneWidthPercent - keyboardStep;
-    if (event.key === 'ArrowRight') nextPercent = leftPaneWidthPercent + keyboardStep;
-    if (event.key === 'Home') nextPercent = LEFT_PANE_MIN_PERCENT;
-    if (event.key === 'End') nextPercent = LEFT_PANE_MAX_PERCENT;
+    const nextPercent = getPaneKeyboardResizePercent(leftPaneWidthPercent, event.key, event.shiftKey);
     if (nextPercent === null) return;
 
     event.preventDefault();
-    setLeftPaneWidthPercent(clampLayoutValue(nextPercent, LEFT_PANE_MIN_PERCENT, LEFT_PANE_MAX_PERCENT));
+    setLeftPaneWidthPercent(nextPercent);
   }, [leftPaneWidthPercent, setLeftPaneWidthPercent]);
 
   // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
@@ -324,20 +229,13 @@ const App: React.FC = () => {
   }, [hasUnsavedChanges]);
 
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
-  const [hasLoadedJsonPathPanel, setHasLoadedJsonPathPanel] = useState(false);
   const [isJsonTreePanelOpen, setIsJsonTreePanelOpen] = useState(false);
-  const [hasLoadedJsonTreePanel, setHasLoadedJsonTreePanel] = useState(false);
   const [isJsonComparePanelOpen, setIsJsonComparePanelOpen] = useState(false);
-  const [hasLoadedJsonComparePanel, setHasLoadedJsonComparePanel] = useState(false);
   const [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen] = useState(false);
-  const [hasLoadedJsonSchemaPanel, setHasLoadedJsonSchemaPanel] = useState(false);
   const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
   const [jsonTreeFocusRequest, setJsonTreeFocusRequest] = useState<JsonTreeFocusRequest | null>(null);
   const [schemeInputRequest, setSchemeInputRequest] = useState<SchemeInputRequest | null>(null);
   const [templateFillRequest, setTemplateFillRequest] = useState<TemplateFillRequest | null>(null);
-  const [asyncTransformResult, setAsyncTransformResult] = useState<AsyncTransformResult | null>(null);
-  const [isOutputTransforming, setIsOutputTransforming] = useState(false);
-  const transformRequestIdRef = useRef(0);
   const jsonPathQueryRequestIdRef = useRef(0);
   const jsonTreeFocusRequestIdRef = useRef(0);
   const schemeInputRequestIdRef = useRef(0);
@@ -348,17 +246,17 @@ const App: React.FC = () => {
   const aiRepairSnapshotRef = useRef<string | null>(null);
   const smartSuggestionOriginTextRef = useRef('');
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
-  const shouldUseTransformWorker = (
-    ASYNC_TRANSFORM_MODES.has(mode) &&
-    input.length >= ASYNC_TRANSFORM_THRESHOLD &&
-    !isUpdatingFromOutput.current
-  );
-  const shouldUseDynamicTransform = (
-    mode === TransformMode.JSON_TO_TYPESCRIPT &&
-    input.trim().length > 0 &&
-    !isUpdatingFromOutput.current
-  );
-  const shouldUseAsyncTransform = shouldUseTransformWorker || shouldUseDynamicTransform;
+  const {
+    asyncTransformPolicy,
+    currentAsyncTransformResult,
+    isOutputTransforming,
+    shouldUseAsyncTransform,
+  } = useAppAsyncTransform({
+    input,
+    mode,
+    isUpdatingFromOutput: isUpdatingFromOutput.current,
+    autoExpandScheme,
+  });
 
   const validateJsonMaybeAsync = useCallback((
     value: string,
@@ -377,117 +275,8 @@ const App: React.FC = () => {
     return null;
   }, [input, mode, autoExpandScheme, shouldUseAsyncTransform]);
 
-  useEffect(() => {
-    if (!shouldUseAsyncTransform) {
-      setIsOutputTransforming(false);
-      setAsyncTransformResult(null);
-      return;
-    }
-
-    const requestId = ++transformRequestIdRef.current;
-    setIsOutputTransforming(true);
-    setAsyncTransformResult(null);
-
-    if (!shouldUseTransformWorker) {
-      let isCancelled = false;
-      performTransformAsync(input, mode)
-        .then(output => {
-          if (isCancelled || transformRequestIdRef.current !== requestId) return;
-          setAsyncTransformResult({
-            input,
-            mode,
-            autoExpandScheme,
-            output,
-          });
-          setIsOutputTransforming(false);
-        })
-        .catch(error => {
-          if (isCancelled || transformRequestIdRef.current !== requestId) return;
-          console.warn('异步转换处理失败:', error);
-          setAsyncTransformResult({
-            input,
-            mode,
-            autoExpandScheme,
-            output: input,
-          });
-          setIsOutputTransforming(false);
-        });
-
-      return () => {
-        isCancelled = true;
-      };
-    }
-
-    const worker = new Worker(new URL('./workers/transform.worker.ts', import.meta.url), { type: 'module' });
-
-    worker.onmessage = (event: MessageEvent<{
-      id: number;
-      output: string;
-      context?: TransformContext;
-      error?: string;
-    }>) => {
-      if (event.data.id !== requestId || transformRequestIdRef.current !== requestId) return;
-      if (event.data.error) {
-        console.warn('大文件转换 Worker 处理失败:', event.data.error);
-      }
-
-      setAsyncTransformResult({
-        input,
-        mode,
-        autoExpandScheme,
-        output: event.data.output,
-        context: event.data.context,
-      });
-      setIsOutputTransforming(false);
-    };
-
-    worker.onerror = (event) => {
-      if (transformRequestIdRef.current !== requestId) return;
-      console.warn('大文件转换 Worker 运行失败:', event.message);
-      setAsyncTransformResult({
-        input,
-        mode,
-        autoExpandScheme,
-        output: input,
-      });
-      setIsOutputTransforming(false);
-    };
-
-    worker.postMessage({
-      id: requestId,
-      input,
-      mode,
-      options: { autoExpandScheme },
-    });
-
-    return () => {
-      worker.terminate();
-    };
-  }, [input, mode, autoExpandScheme, shouldUseAsyncTransform, shouldUseTransformWorker]);
-
-  const currentAsyncTransformResult = useMemo(() => {
-    if (
-      asyncTransformResult &&
-      asyncTransformResult.input === input &&
-      asyncTransformResult.mode === mode &&
-      asyncTransformResult.autoExpandScheme === autoExpandScheme
-    ) {
-      return asyncTransformResult;
-    }
-    return null;
-  }, [asyncTransformResult, input, mode, autoExpandScheme]);
-
-  const activeDeepFormatResult = useMemo<TransformResult | null>(() => {
-    if (syncDeepFormatResult) {
-      return syncDeepFormatResult;
-    }
-    if (mode === TransformMode.DEEP_FORMAT && currentAsyncTransformResult?.context) {
-      return {
-        output: currentAsyncTransformResult.output,
-        context: currentAsyncTransformResult.context,
-      };
-    }
-    return null;
+  const activeDeepFormatResult = useMemo(() => {
+    return getActiveAppDeepFormatResult(syncDeepFormatResult, mode, currentAsyncTransformResult);
   }, [syncDeepFormatResult, mode, currentAsyncTransformResult]);
 
   const deepFormatWarning = useMemo(() => {
@@ -526,34 +315,20 @@ const App: React.FC = () => {
 
   // 计算派生输出（纯计算，无副作用）
   const output = useMemo(() => {
-    // 若处于输出编辑状态，优先返回暂存值以避免覆盖用户输入
-    if (isUpdatingFromOutput.current && pendingOutputValue.current) {
-      return pendingOutputValue.current;
-    }
+    const resolvedOutput = resolveAppOutputValue({
+      isUpdatingFromOutput: isUpdatingFromOutput.current,
+      pendingOutputValue: pendingOutputValue.current,
+      mode,
+      activeDeepFormatResult,
+      shouldUseAsyncTransform,
+      currentAsyncTransformResult,
+      getFallbackOutput: () => performTransform(input, mode),
+    });
 
-    // 深度格式化模式：使用预计算的结果
-    if (mode === TransformMode.DEEP_FORMAT && activeDeepFormatResult) {
-      if (!isUpdatingFromOutput.current) {
-        pendingOutputValue.current = '';
-      }
-      return activeDeepFormatResult.output;
-    }
-
-    if (shouldUseAsyncTransform) {
-      if (currentAsyncTransformResult) {
-        if (!isUpdatingFromOutput.current) {
-          pendingOutputValue.current = '';
-        }
-        return currentAsyncTransformResult.output;
-      }
-      return ASYNC_TRANSFORM_PLACEHOLDER;
-    }
-
-    const result = performTransform(input, mode);
-    if (!isUpdatingFromOutput.current) {
+    if (resolvedOutput.shouldClearPendingOutput && !isUpdatingFromOutput.current) {
       pendingOutputValue.current = '';
     }
-    return result;
+    return resolvedOutput.output;
   }, [input, mode, activeDeepFormatResult, shouldUseAsyncTransform, currentAsyncTransformResult]);
 
   // JSONPath 查询当前 PREVIEW 文本，确保 Worker 返回的高亮范围与右侧编辑器坐标一致
@@ -595,84 +370,46 @@ const App: React.FC = () => {
   }, [jsonSchemaValidationResult]);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [hasLoadedSettingsModal, setHasLoadedSettingsModal] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
   const [isChangelogModalOpen, setIsChangelogModalOpen] = useState(false);
-  const [hasLoadedChangelogModal, setHasLoadedChangelogModal] = useState(false);
   const [changelogSourceMarkdown, setChangelogSourceMarkdown] = useState<string | null>(null);
   const [changelogHighlightedVersion, setChangelogHighlightedVersion] = useState<string | null>(null);
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
-  const [hasLoadedSchemePanel, setHasLoadedSchemePanel] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
-  const [hasLoadedTemplatePanel, setHasLoadedTemplatePanel] = useState(false);
   const [templateApplyQualityDelta, setTemplateApplyQualityDelta] = useState('');
   const [isTransformReportOpen, setIsTransformReportOpen] = useState(false);
-  const [hasLoadedTransformReportPanel, setHasLoadedTransformReportPanel] = useState(false);
+  const [lazyPanelsLoaded, setLazyPanelsLoaded] = useState(createAppLazyPanelLoadState);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
   const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<SmartSuggestionOrigin | null>(null);
 
   // 光标位置状态（用于状态栏显示）
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
 
-  // 拖拽文件状态
-  const [isDraggingFile, setIsDraggingFile] = useState(false);
-  const dragCounter = useRef(0);
-
   const [aiConfig, setAiConfig] = useState<AIConfig>(loadAIConfig);
 
   useEffect(() => {
-    if (isSettingsModalOpen) {
-      setHasLoadedSettingsModal(true);
-    }
-  }, [isSettingsModalOpen]);
-
-  useEffect(() => {
-    if (isChangelogModalOpen) {
-      setHasLoadedChangelogModal(true);
-    }
-  }, [isChangelogModalOpen]);
-
-  useEffect(() => {
-    if (isJsonPathPanelOpen) {
-      setHasLoadedJsonPathPanel(true);
-    }
-  }, [isJsonPathPanelOpen]);
-
-  useEffect(() => {
-    if (isJsonTreePanelOpen) {
-      setHasLoadedJsonTreePanel(true);
-    }
-  }, [isJsonTreePanelOpen]);
-
-  useEffect(() => {
-    if (isJsonComparePanelOpen) {
-      setHasLoadedJsonComparePanel(true);
-    }
-  }, [isJsonComparePanelOpen]);
-
-  useEffect(() => {
-    if (isJsonSchemaPanelOpen) {
-      setHasLoadedJsonSchemaPanel(true);
-    }
-  }, [isJsonSchemaPanelOpen]);
-
-  useEffect(() => {
-    if (isTemplatePanelOpen) {
-      setHasLoadedTemplatePanel(true);
-    }
-  }, [isTemplatePanelOpen]);
-
-  useEffect(() => {
-    if (isSchemeDecodeOpen) {
-      setHasLoadedSchemePanel(true);
-    }
-  }, [isSchemeDecodeOpen]);
-
-  useEffect(() => {
-    if (isTransformReportOpen) {
-      setHasLoadedTransformReportPanel(true);
-    }
-  }, [isTransformReportOpen]);
+    setLazyPanelsLoaded(current => updateAppLazyPanelLoadState(current, {
+      settings: isSettingsModalOpen,
+      changelog: isChangelogModalOpen,
+      jsonPath: isJsonPathPanelOpen,
+      jsonTree: isJsonTreePanelOpen,
+      jsonCompare: isJsonComparePanelOpen,
+      jsonSchema: isJsonSchemaPanelOpen,
+      scheme: isSchemeDecodeOpen,
+      template: isTemplatePanelOpen,
+      transformReport: isTransformReportOpen,
+    }));
+  }, [
+    isChangelogModalOpen,
+    isJsonComparePanelOpen,
+    isJsonPathPanelOpen,
+    isJsonSchemaPanelOpen,
+    isJsonTreePanelOpen,
+    isSchemeDecodeOpen,
+    isSettingsModalOpen,
+    isTemplatePanelOpen,
+    isTransformReportOpen,
+  ]);
 
   useEffect(() => {
     safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
@@ -747,7 +484,7 @@ const App: React.FC = () => {
   const handleModeChange = useCallback((nextMode: TransformMode) => {
     setMode(nextMode);
     trackCurrentToolEvent(nextMode, 'transform_mode');
-  }, [trackCurrentToolEvent]);
+  }, [setMode, trackCurrentToolEvent]);
 
   const handleToggleJsonPath = useCallback(() => {
     const nextOpen = !isJsonPathPanelOpen;
@@ -756,7 +493,7 @@ const App: React.FC = () => {
     }
     setIsJsonPathPanelOpen(nextOpen);
     trackCurrentToolEvent(nextOpen ? 'JSONPATH_OPEN' : 'JSONPATH_CLOSE', 'panel');
-  }, [isJsonPathPanelOpen, mode, trackCurrentToolEvent]);
+  }, [isJsonPathPanelOpen, mode, setIsJsonPathPanelOpen, setMode, trackCurrentToolEvent]);
 
   const handleToggleJsonTree = useCallback(() => {
     const nextOpen = !isJsonTreePanelOpen;
@@ -765,19 +502,19 @@ const App: React.FC = () => {
     }
     setIsJsonTreePanelOpen(nextOpen);
     trackCurrentToolEvent(nextOpen ? 'STRUCTURE_NAV_OPEN' : 'STRUCTURE_NAV_CLOSE', 'panel');
-  }, [isJsonTreePanelOpen, mode, trackCurrentToolEvent]);
+  }, [isJsonTreePanelOpen, mode, setIsJsonTreePanelOpen, setMode, trackCurrentToolEvent]);
 
   const handleToggleJsonCompare = useCallback(() => {
     const nextOpen = !isJsonComparePanelOpen;
     setIsJsonComparePanelOpen(nextOpen);
     trackCurrentToolEvent(nextOpen ? 'JSON_COMPARE_OPEN' : 'JSON_COMPARE_CLOSE', 'panel');
-  }, [isJsonComparePanelOpen, trackCurrentToolEvent]);
+  }, [isJsonComparePanelOpen, setIsJsonComparePanelOpen, trackCurrentToolEvent]);
 
   const handleToggleJsonSchema = useCallback(() => {
     const nextOpen = !isJsonSchemaPanelOpen;
     setIsJsonSchemaPanelOpen(nextOpen);
     trackCurrentToolEvent(nextOpen ? 'SCHEMA_PANEL_OPEN' : 'SCHEMA_PANEL_CLOSE', 'panel');
-  }, [isJsonSchemaPanelOpen, trackCurrentToolEvent]);
+  }, [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen, trackCurrentToolEvent]);
 
   const handleLocateJsonPath = useCallback((query: string) => {
     const normalizedQuery = query.trim();
@@ -795,7 +532,7 @@ const App: React.FC = () => {
     setIsJsonPathPanelOpen(true);
     setIsTransformReportOpen(false);
     trackCurrentToolEvent('JSONPATH_LOCATE', 'panel');
-  }, [mode, trackCurrentToolEvent]);
+  }, [mode, setHighlightRange, setIsJsonPathPanelOpen, setIsTransformReportOpen, setJsonPathQueryRequest, setMode, trackCurrentToolEvent]);
 
   const handleLocateJsonPathResultInStructure = useCallback((item: JsonPathQueryItem) => {
     setJsonTreeFocusRequest({
@@ -806,7 +543,7 @@ const App: React.FC = () => {
     setIsJsonTreePanelOpen(true);
     setIsTransformReportOpen(false);
     trackCurrentToolEvent('STRUCTURE_NAV_LOCATE', 'panel');
-  }, [trackCurrentToolEvent]);
+  }, [setIsJsonTreePanelOpen, setIsTransformReportOpen, setJsonTreeFocusRequest, trackCurrentToolEvent]);
 
   const openStandaloneSchemePanel = useCallback((value: string, eventName: string) => {
     if (!value) return;
@@ -818,7 +555,7 @@ const App: React.FC = () => {
     setIsSchemeDecodeOpen(true);
     setIsTransformReportOpen(false);
     trackCurrentToolEvent(eventName, 'panel');
-  }, [trackCurrentToolEvent]);
+  }, [setIsSchemeDecodeOpen, setIsTransformReportOpen, setSchemeInputRequest, trackCurrentToolEvent]);
 
   const handleOpenSchemeFromReport = useCallback((value: string) => {
     openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_REPORT');
@@ -827,7 +564,7 @@ const App: React.FC = () => {
   const handleOpenSchemeFromStructure = useCallback((value: string) => {
     openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_STRUCTURE');
     setIsJsonTreePanelOpen(false);
-  }, [openStandaloneSchemePanel]);
+  }, [openStandaloneSchemePanel, setIsJsonTreePanelOpen]);
 
   const handleOpenSchemeFromSourceStatus = useCallback((value: string) => {
     openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_SOURCE_STATUS');
@@ -861,7 +598,7 @@ const App: React.FC = () => {
     setIsTemplatePanelOpen(true);
     setIsTransformReportOpen(false);
     trackCurrentToolEvent('TEMPLATE_OPEN_FROM_REPORT', 'panel');
-  }, [trackCurrentToolEvent]);
+  }, [setIsTemplatePanelOpen, setIsTransformReportOpen, setTemplateApplyQualityDelta, setTemplateFillRequest, trackCurrentToolEvent]);
 
   const handleToggleAutoSave = useCallback(() => {
     if (!activeFileId) {
@@ -889,18 +626,18 @@ const App: React.FC = () => {
     }
 
     closeFile(fileId);
-  }, [closeFile, files]);
+  }, [closeFile, files, setPendingCloseFileId]);
 
   const cancelPendingCloseFile = useCallback(() => {
     setPendingCloseFileId(null);
-  }, []);
+  }, [setPendingCloseFileId]);
 
   const confirmPendingCloseFile = useCallback(() => {
     if (pendingCloseFileId) {
       closeFile(pendingCloseFileId);
     }
     setPendingCloseFileId(null);
-  }, [closeFile, pendingCloseFileId]);
+  }, [closeFile, pendingCloseFileId, setPendingCloseFileId]);
 
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({
@@ -951,7 +688,7 @@ const App: React.FC = () => {
     const content = activeEditor === 'PREVIEW' ? output : input;
     return getDocumentStats(content, { maxScanLength: DOCUMENT_STATS_SCAN_LIMIT });
   }, [input, output, activeEditor]);
-  const isSourceLarge = input.length >= ASYNC_TRANSFORM_THRESHOLD;
+  const isSourceLarge = asyncTransformPolicy.isSourceLarge;
   const isAiConfigured = Boolean(aiConfig.apiKey.trim());
   const smartSuggestion = useMemo(() => getSmartInputSuggestion(input), [input]);
 
@@ -1020,7 +757,7 @@ const App: React.FC = () => {
       setAiRepairSummary(null);
     }
     setInput(cleanVal);
-    if (mode === TransformMode.NONE && isStandaloneSchemeInput(cleanVal)) {
+    if (mode === TransformMode.NONE && isStandaloneDeepFormatInput(cleanVal)) {
       setMode(TransformMode.DEEP_FORMAT);
     }
 
@@ -1030,7 +767,7 @@ const App: React.FC = () => {
     // 更新活动文件内容缓存
     updateActiveFileContent(cleanVal);
 
-  }, [mode, updateActiveFileContent]);
+  }, [mode, setAiRepairSummary, setInput, setMode, setSmartSuggestionOrigin, updateActiveFileContent]);
 
   const applySchemeInspectSourceText = useCallback((text: string, successMessage: string) => {
     handleInputChange(text);
@@ -1040,37 +777,33 @@ const App: React.FC = () => {
     setIsTransformReportOpen(false);
     setIsSchemeDecodeOpen(false);
     showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
-  }, [handleInputChange]);
+  }, [handleInputChange, setHighlightRange, setIsJsonPathPanelOpen, setIsSchemeDecodeOpen, setIsTransformReportOpen, setMode]);
 
   const handleInspectSourceFromScheme = useCallback((value: string) => {
-    const sourceText = value;
     const startedAt = performance.now();
-    if (!sourceText.trim()) {
-      showError('Scheme 原始值为空，暂无可排查内容');
+    const plan = buildSchemeInspectSourcePlan(input, value);
+    if (plan.action === 'skip') {
+      (plan.feedback === 'error' ? showError : showSuccess)(plan.message);
+      if (plan.feedback === 'success') {
+        setMode(TransformMode.DEEP_FORMAT);
+        setHighlightRange(null);
+        setIsJsonPathPanelOpen(false);
+        setIsTransformReportOpen(false);
+        setIsSchemeDecodeOpen(false);
+      }
       trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
       return;
     }
 
-    if (sourceText === input) {
-      setMode(TransformMode.DEEP_FORMAT);
-      setHighlightRange(null);
-      setIsJsonPathPanelOpen(false);
-      setIsTransformReportOpen(false);
-      setIsSchemeDecodeOpen(false);
-      showSuccess('Scheme 原始值已在 SOURCE 中，可手动查看深度解析报告');
+    if (plan.action === 'confirm') {
+      setPendingSchemeInspectSourceText(plan.pendingText);
       trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
       return;
     }
 
-    if (input.trim()) {
-      setPendingSchemeInspectSourceText(sourceText);
-      trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
-      return;
-    }
-
-    applySchemeInspectSourceText(sourceText, '已用 Scheme 原始值开始排查');
+    applySchemeInspectSourceText(plan.text, plan.successMessage);
     trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'success', startedAt);
-  }, [applySchemeInspectSourceText, input, trackCurrentToolEvent]);
+  }, [applySchemeInspectSourceText, input, setHighlightRange, setIsJsonPathPanelOpen, setIsSchemeDecodeOpen, setIsTransformReportOpen, setMode, setPendingSchemeInspectSourceText, trackCurrentToolEvent]);
 
   const handleConfirmSchemeInspectSource = useCallback(() => {
     if (pendingSchemeInspectSourceText === null) return;
@@ -1079,13 +812,13 @@ const App: React.FC = () => {
     applySchemeInspectSourceText(pendingSchemeInspectSourceText, '已用 Scheme 原始值替换 SOURCE 并开始排查');
     setPendingSchemeInspectSourceText(null);
     trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'success', startedAt);
-  }, [applySchemeInspectSourceText, pendingSchemeInspectSourceText, trackCurrentToolEvent]);
+  }, [applySchemeInspectSourceText, pendingSchemeInspectSourceText, setPendingSchemeInspectSourceText, trackCurrentToolEvent]);
 
   const handleCancelSchemeInspectSource = useCallback(() => {
     const startedAt = performance.now();
     setPendingSchemeInspectSourceText(null);
     trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'cancelled', startedAt);
-  }, [trackCurrentToolEvent]);
+  }, [setPendingSchemeInspectSourceText, trackCurrentToolEvent]);
 
   const handleCopySource = useCallback(async () => {
     const startedAt = performance.now();
@@ -1148,30 +881,25 @@ const App: React.FC = () => {
 
     try {
       const clipboardText = await readClipboardText();
-      if (!clipboardText) {
-        showError('剪贴板为空，暂无可粘贴内容');
+      const plan = buildPasteSourcePlan(input, clipboardText);
+      if (plan.action === 'skip') {
+        (plan.feedback === 'error' ? showError : showSuccess)(plan.message);
         trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'skipped', startedAt);
         return;
       }
 
-      if (clipboardText === input) {
-        showSuccess('剪贴板内容已在 SOURCE 中');
-        trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'skipped', startedAt);
+      if (plan.action === 'confirm') {
+        setPendingPasteSourceText(plan.pendingText);
         return;
       }
 
-      if (input.trim()) {
-        setPendingPasteSourceText(clipboardText);
-        return;
-      }
-
-      applySourceTextFromClipboard(clipboardText, '已从剪贴板粘贴到 SOURCE');
+      applySourceTextFromClipboard(plan.text, plan.successMessage);
       trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'success', startedAt);
     } catch (error) {
       showError(getClipboardErrorMessage(error, '读取剪贴板失败'));
       trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'error', startedAt);
     }
-  }, [applySourceTextFromClipboard, input, trackCurrentToolEvent]);
+  }, [applySourceTextFromClipboard, input, setPendingPasteSourceText, trackCurrentToolEvent]);
 
   const handleConfirmPasteSource = useCallback(() => {
     if (pendingPasteSourceText === null) return;
@@ -1180,13 +908,13 @@ const App: React.FC = () => {
     applySourceTextFromClipboard(pendingPasteSourceText, '已用剪贴板内容替换 SOURCE');
     setPendingPasteSourceText(null);
     trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'success', startedAt);
-  }, [applySourceTextFromClipboard, pendingPasteSourceText, trackCurrentToolEvent]);
+  }, [applySourceTextFromClipboard, pendingPasteSourceText, setPendingPasteSourceText, trackCurrentToolEvent]);
 
   const handleCancelPasteSource = useCallback(() => {
     const startedAt = performance.now();
     setPendingPasteSourceText(null);
     trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'cancelled', startedAt);
-  }, [trackCurrentToolEvent]);
+  }, [setPendingPasteSourceText, trackCurrentToolEvent]);
 
   const applyPreviewTextToSource = useCallback((text: string, successMessage: string) => {
     handleInputChange(text);
@@ -1196,32 +924,21 @@ const App: React.FC = () => {
 
   const handleRequestApplyPreviewToSource = useCallback(() => {
     const startedAt = performance.now();
-    if (isOutputTransforming) {
-      showError('预览仍在处理，请稍后应用');
+    const plan = buildApplyPreviewToSourcePlan(input, output, isOutputTransforming);
+    if (plan.action === 'skip') {
+      (plan.feedback === 'error' ? showError : showSuccess)(plan.message);
       trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'skipped', startedAt);
       return;
     }
 
-    if (!output.trim()) {
-      showError('预览内容为空，暂无可应用内容');
-      trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'skipped', startedAt);
+    if (plan.action === 'confirm') {
+      setPendingApplyPreviewText(plan.pendingText);
       return;
     }
 
-    if (output === input) {
-      showSuccess('PREVIEW 内容已在 SOURCE 中');
-      trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'skipped', startedAt);
-      return;
-    }
-
-    if (input.trim()) {
-      setPendingApplyPreviewText(output);
-      return;
-    }
-
-    applyPreviewTextToSource(output, '已将 PREVIEW 应用到 SOURCE');
+    applyPreviewTextToSource(plan.text, plan.successMessage);
     trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'success', startedAt);
-  }, [applyPreviewTextToSource, input, isOutputTransforming, output, trackCurrentToolEvent]);
+  }, [applyPreviewTextToSource, input, isOutputTransforming, output, setPendingApplyPreviewText, trackCurrentToolEvent]);
 
   const handleConfirmApplyPreviewToSource = useCallback(() => {
     if (pendingApplyPreviewText === null) return;
@@ -1230,13 +947,13 @@ const App: React.FC = () => {
     applyPreviewTextToSource(pendingApplyPreviewText, '已用 PREVIEW 替换 SOURCE');
     setPendingApplyPreviewText(null);
     trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'success', startedAt);
-  }, [applyPreviewTextToSource, pendingApplyPreviewText, trackCurrentToolEvent]);
+  }, [applyPreviewTextToSource, pendingApplyPreviewText, setPendingApplyPreviewText, trackCurrentToolEvent]);
 
   const handleCancelApplyPreviewToSource = useCallback(() => {
     const startedAt = performance.now();
     setPendingApplyPreviewText(null);
     trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'cancelled', startedAt);
-  }, [trackCurrentToolEvent]);
+  }, [setPendingApplyPreviewText, trackCurrentToolEvent]);
 
   const applySchemaExampleToSource = useCallback((text: string, successMessage: string) => {
     handleInputChange(text);
@@ -1246,26 +963,21 @@ const App: React.FC = () => {
 
   const handleRequestApplySchemaExampleToSource = useCallback((text: string) => {
     const startedAt = performance.now();
-    if (!text.trim()) {
-      showError('Schema 示例为空，暂无可应用内容');
+    const plan = buildApplySchemaExampleToSourcePlan(input, text);
+    if (plan.action === 'skip') {
+      (plan.feedback === 'error' ? showError : showSuccess)(plan.message);
       trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'skipped', startedAt);
       return;
     }
 
-    if (text === input) {
-      showSuccess('Schema 示例已在 SOURCE 中');
-      trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'skipped', startedAt);
+    if (plan.action === 'confirm') {
+      setPendingSchemaExampleText(plan.pendingText);
       return;
     }
 
-    if (input.trim()) {
-      setPendingSchemaExampleText(text);
-      return;
-    }
-
-    applySchemaExampleToSource(text, '已将 Schema 示例应用到 SOURCE');
+    applySchemaExampleToSource(plan.text, plan.successMessage);
     trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'success', startedAt);
-  }, [applySchemaExampleToSource, input, trackCurrentToolEvent]);
+  }, [applySchemaExampleToSource, input, setPendingSchemaExampleText, trackCurrentToolEvent]);
 
   const handleConfirmApplySchemaExampleToSource = useCallback(() => {
     if (pendingSchemaExampleText === null) return;
@@ -1274,13 +986,13 @@ const App: React.FC = () => {
     applySchemaExampleToSource(pendingSchemaExampleText, '已用 Schema 示例替换 SOURCE');
     setPendingSchemaExampleText(null);
     trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'success', startedAt);
-  }, [applySchemaExampleToSource, pendingSchemaExampleText, trackCurrentToolEvent]);
+  }, [applySchemaExampleToSource, pendingSchemaExampleText, setPendingSchemaExampleText, trackCurrentToolEvent]);
 
   const handleCancelApplySchemaExampleToSource = useCallback(() => {
     const startedAt = performance.now();
     setPendingSchemaExampleText(null);
     trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'cancelled', startedAt);
-  }, [trackCurrentToolEvent]);
+  }, [setPendingSchemaExampleText, trackCurrentToolEvent]);
 
   const handleRequestClearSource = useCallback(() => {
     const startedAt = performance.now();
@@ -1291,7 +1003,7 @@ const App: React.FC = () => {
     }
 
     setIsClearSourceConfirmOpen(true);
-  }, [input, trackCurrentToolEvent]);
+  }, [input, setIsClearSourceConfirmOpen, trackCurrentToolEvent]);
 
   const handleConfirmClearSource = useCallback(() => {
     const startedAt = performance.now();
@@ -1300,11 +1012,11 @@ const App: React.FC = () => {
     setIsClearSourceConfirmOpen(false);
     showSuccess('源内容已清空');
     trackCurrentToolEvent('SOURCE_CLEAR', 'editor', 'success', startedAt);
-  }, [handleInputChange, trackCurrentToolEvent]);
+  }, [handleInputChange, setHighlightRange, setIsClearSourceConfirmOpen, trackCurrentToolEvent]);
 
   const handleCancelClearSource = useCallback(() => {
     setIsClearSourceConfirmOpen(false);
-  }, []);
+  }, [setIsClearSourceConfirmOpen]);
 
   // 右侧预览编辑处理（反向转换）
   // 仅在解除只读锁定后触发
@@ -1451,40 +1163,13 @@ const App: React.FC = () => {
     }
   };
 
-  // 拖拽文件事件处理
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter.current++;
-    if (e.dataTransfer.types.includes('Files')) {
-      setIsDraggingFile(true);
-    }
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter.current--;
-    if (dragCounter.current === 0) {
-      setIsDraggingFile(false);
-    }
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFile(false);
-    dragCounter.current = 0;
-
-    if (e.dataTransfer.files?.length) {
-      openDroppedFiles(e.dataTransfer.files);
-    }
-  }, [openDroppedFiles]);
+  const {
+    isDraggingFile,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+  } = useAppFileDrop({ onDropFiles: openDroppedFiles });
 
   // 模板填充处理
   const buildCurrentQualitySnapshot = useCallback((source: string, summaryModule: TransformSummaryModule) => {
@@ -1604,56 +1289,51 @@ const App: React.FC = () => {
 
   const handleSmartSuggestionAction = (actionId: SmartSuggestionActionId) => {
     const startedAt = performance.now();
-    const suggestedMode = getSmartSuggestionMode(actionId);
-    const eventName = `SMART_SUGGESTION_${actionId.toUpperCase().replace(/-/g, '_')}`;
+    const plan = buildAppSmartSuggestionActionPlan({
+      actionId,
+      currentMode: mode,
+      sourceText: input,
+    });
 
-    if (actionId === 'ai-fix') {
+    if (plan.status === 'delegate-ai-fix') {
       void handleAction(ActionType.AI_FIX);
       return;
     }
 
-    if (suggestedMode && mode !== suggestedMode) {
-      setMode(suggestedMode);
+    if (plan.nextMode) {
+      setMode(plan.nextMode);
     }
 
-    if (actionId === 'response-inspection') {
-      setHighlightRange(null);
-      setIsTransformReportOpen(false);
-      showSuccess('已切换到嵌套解析，可手动查看报告');
-    } else if (actionId === 'deep-format-report') {
-      setIsTransformReportOpen(false);
-      showSuccess('已切换到嵌套解析，可手动查看报告');
-    } else if (actionId === 'scheme-panel') {
-      const sourceText = input.trim();
-      if (!sourceText) {
-        showError('SOURCE 为空，暂无可解析内容');
-        trackCurrentToolEvent(eventName, 'smart_suggestion', 'skipped', startedAt);
-        return;
-      }
+    if (plan.status === 'skipped') {
+      showError(plan.errorMessage || '当前智能建议暂不可用');
+      trackCurrentToolEvent(plan.eventName, 'smart_suggestion', 'skipped', startedAt);
+      return;
+    }
 
+    if (plan.effects.includes('clear-highlight')) {
+      setHighlightRange(null);
+    }
+    if (plan.effects.includes('open-scheme-panel') && plan.schemeInputValue !== undefined) {
       setSchemeInputRequest({
         id: ++schemeInputRequestIdRef.current,
-        value: sourceText,
+        value: plan.schemeInputValue,
       });
+    }
+    if (plan.effects.includes('open-scheme-panel')) {
       setIsSchemeDecodeOpen(true);
+    }
+    if (plan.effects.includes('close-transform-report')) {
       setIsTransformReportOpen(false);
-      showSuccess('已填入 Scheme 解析');
-    } else if (actionId === 'structure-nav') {
-      if (mode !== TransformMode.DEEP_FORMAT) {
-        setMode(TransformMode.DEEP_FORMAT);
-      }
+    }
+    if (plan.effects.includes('open-json-tree-panel')) {
       setIsJsonTreePanelOpen(true);
-      showSuccess('已打开结构导航');
-    } else if (actionId === 'schema-panel') {
+    }
+    if (plan.effects.includes('open-json-schema-panel')) {
       setIsJsonSchemaPanelOpen(true);
-      showSuccess('已打开 Schema 校验');
-    } else if (actionId === 'json-to-typescript') {
-      showSuccess('已切换到 JSON 转 TS');
-    } else if (actionId === 'url-decode') {
-      showSuccess('已切换到 URL 解码');
     }
 
-    trackCurrentToolEvent(eventName, 'smart_suggestion', 'success', startedAt);
+    if (plan.successMessage) showSuccess(plan.successMessage);
+    trackCurrentToolEvent(plan.eventName, 'smart_suggestion', 'success', startedAt);
   };
 
   // 处理 Scheme 编辑：将修改后的值应用到 JSON 对应路径
@@ -1724,72 +1404,34 @@ const App: React.FC = () => {
     } catch (error) {
       showError(error instanceof Error ? error.message : '导入配置备份失败');
     }
-  }, [aiConfig, replaceShortcuts]);
+  }, [aiConfig, replaceShortcuts, setAiConfig, setGeneralSettings]);
 
-  const hasSourceContent = input.trim().length > 0;
-  const hasPreviewContent = output.trim().length > 0;
-  const isPreviewSameAsSource = output === input;
-  const isSourceJsonCandidate = hasSourceContent && isJsonContainerCandidate(input);
-  const sourceStandaloneDeepFormatKind = hasSourceContent ? getStandaloneDeepFormatInputKind(input) : null;
+  const editorUiState = buildAppEditorUiState({
+    sourceText: input,
+    previewText: output,
+    isProcessing,
+    isOutputTransforming,
+    hasActiveFile: Boolean(activeFileId),
+    activeFileHasHandle: Boolean(activeFile?.handle),
+    isAutoSaveEnabled,
+    hasTransformReportContext: Boolean(transformReportContext),
+    isClearSourceConfirmOpen,
+    pendingPasteSourceText,
+    pendingApplyPreviewText,
+    pendingSchemaExampleText,
+    pendingSchemeInspectSourceText,
+  });
   const handleLocateSourceErrorFromStatus = useCallback(() => {
     if (!sourceErrorLocation) return;
     setActiveEditor('SOURCE');
     setSourceErrorLocateSignal(signal => signal + 1);
   }, [sourceErrorLocation]);
-  const canUseAutoSave = Boolean(activeFileId && activeFile?.handle);
-  const isAutoSaveActive = canUseAutoSave && isAutoSaveEnabled;
-  const autoSaveTitle = !activeFileId
-    ? '请先打开文件以启用自动保存'
-    : !activeFile?.handle
-      ? '请先保存当前标签以启用自动保存'
-      : isAutoSaveEnabled
-        ? '自动保存已开启'
-        : '点击开启自动保存';
-  const autoSaveAriaLabel = !canUseAutoSave
-    ? `自动保存不可用，${autoSaveTitle}`
-    : isAutoSaveActive
-      ? '自动保存已开启，点击关闭'
-      : '自动保存已关闭，点击开启';
-  const copySourceTitle = hasSourceContent ? '复制 SOURCE 内容到剪贴板' : 'SOURCE 为空，暂无内容可复制';
-  const clearSourceTitle = hasSourceContent ? '清空 SOURCE 内容' : 'SOURCE 为空，暂无内容可清空';
-  const sourceAiRepairTitle = isProcessing ? '智能修复中，请等待当前任务完成' : '用智能修复当前 SOURCE JSON 错误';
-  const transformReportTitle = (() => {
-    if (isOutputTransforming) return '预览仍在处理，请稍后查看报告';
-    if (!transformReportContext) return '暂无深度解析报告可查看';
-    return '查看深度解析报告';
-  })();
-  const applyPreviewTitle = (() => {
-    if (isOutputTransforming) return '预览仍在处理，请稍后应用';
-    if (!hasPreviewContent) return '暂无 PREVIEW 内容可应用';
-    if (isPreviewSameAsSource) return 'PREVIEW 与 SOURCE 内容一致，无需应用';
-    return '用 PREVIEW 内容替换 SOURCE';
-  })();
-  const copyPreviewTitle = (() => {
-    if (isOutputTransforming) return '预览仍在处理，请稍后复制';
-    if (!hasPreviewContent) return '暂无 PREVIEW 内容可复制';
-    return '复制预览内容到剪贴板';
-  })();
-  const clearSourceConfirmMessage = isClearSourceConfirmOpen
-    ? `这会清空当前 SOURCE 编辑区内容，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}`
-    : '';
-  const pasteSourceConfirmMessage = pendingPasteSourceText === null
-    ? ''
-    : `这会用剪贴板文本替换当前 SOURCE 编辑区内容，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}\n剪贴板文本: ${getContentSizeSummary(pendingPasteSourceText)}`;
-  const applyPreviewConfirmMessage = pendingApplyPreviewText === null
-    ? ''
-    : `这会用当前 PREVIEW 内容替换 SOURCE 编辑区，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}\nPREVIEW: ${getContentSizeSummary(pendingApplyPreviewText)}`;
-  const applySchemaExampleConfirmMessage = pendingSchemaExampleText === null
-    ? ''
-    : `这会用当前 Schema 生成的示例 JSON 替换 SOURCE 编辑区，并将当前标签标记为未保存。\n当前 SOURCE: ${getContentSizeSummary(input)}\nSchema 示例: ${getContentSizeSummary(pendingSchemaExampleText)}`;
-  const schemeInspectConfirmMessage = pendingSchemeInspectSourceText === null
-    ? ''
-    : `这会用 Scheme 面板原始值替换 SOURCE，并切换到嵌套解析、打开深度解析报告。\n当前 SOURCE: ${getContentSizeSummary(input)}\nScheme 原始值: ${getContentSizeSummary(pendingSchemeInspectSourceText)}`;
 
   return (
     <ErrorBoundary>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
 
-      {hasLoadedSettingsModal && (
+      {lazyPanelsLoaded.settings && (
         <Suspense fallback={null}>
           <LazyUnifiedSettingsModal
             isOpen={isSettingsModalOpen}
@@ -1809,7 +1451,7 @@ const App: React.FC = () => {
         </Suspense>
       )}
 
-      {hasLoadedChangelogModal && (
+      {lazyPanelsLoaded.changelog && (
         <Suspense fallback={null}>
           <LazyChangelogModal
             isOpen={isChangelogModalOpen}
@@ -1834,7 +1476,7 @@ const App: React.FC = () => {
       <ConfirmDialog
         isOpen={isClearSourceConfirmOpen}
         title="清空源内容"
-        message={clearSourceConfirmMessage}
+        message={editorUiState.clearSourceConfirmMessage}
         confirmLabel="清空"
         cancelLabel="继续保留"
         variant="danger"
@@ -1845,7 +1487,7 @@ const App: React.FC = () => {
       <ConfirmDialog
         isOpen={pendingPasteSourceText !== null}
         title="替换源内容"
-        message={pasteSourceConfirmMessage}
+        message={editorUiState.pasteSourceConfirmMessage}
         confirmLabel="替换"
         cancelLabel="继续保留"
         variant="danger"
@@ -1856,7 +1498,7 @@ const App: React.FC = () => {
       <ConfirmDialog
         isOpen={pendingApplyPreviewText !== null}
         title="应用预览到源"
-        message={applyPreviewConfirmMessage}
+        message={editorUiState.applyPreviewConfirmMessage}
         confirmLabel="应用"
         cancelLabel="继续保留"
         onConfirm={handleConfirmApplyPreviewToSource}
@@ -1866,7 +1508,7 @@ const App: React.FC = () => {
       <ConfirmDialog
         isOpen={pendingSchemaExampleText !== null}
         title="应用 Schema 示例到源"
-        message={applySchemaExampleConfirmMessage}
+        message={editorUiState.applySchemaExampleConfirmMessage}
         confirmLabel="应用示例"
         cancelLabel="继续保留"
         onConfirm={handleConfirmApplySchemaExampleToSource}
@@ -1876,7 +1518,7 @@ const App: React.FC = () => {
       <ConfirmDialog
         isOpen={pendingSchemeInspectSourceText !== null}
         title="用 Scheme 原始值排查"
-        message={schemeInspectConfirmMessage}
+        message={editorUiState.schemeInspectConfirmMessage}
         confirmLabel="替换并排查"
         cancelLabel="继续保留"
         variant="danger"
@@ -1995,15 +1637,15 @@ const App: React.FC = () => {
               errorLocation={sourceErrorLocation}
               warning={jsonSchemaWarning}
               diagnosticHighlights={jsonSchemaDiagnosticHighlights}
-              errorActions={!validation.isValid && hasSourceContent ? (
+              errorActions={!validation.isValid && editorUiState.hasSourceContent ? (
                 <button
                   data-tour="source-error-ai-fix"
                   type="button"
                   onClick={() => void handleAction(ActionType.AI_FIX)}
                   disabled={isProcessing}
                   className="rounded border border-violet-500/50 px-1 py-0 text-[10px] text-violet-100 transition-colors hover:bg-violet-800/40 disabled:cursor-not-allowed disabled:opacity-60"
-                  title={sourceAiRepairTitle}
-                  aria-label={sourceAiRepairTitle}
+                  title={editorUiState.sourceAiRepairTitle}
+                  aria-label={editorUiState.sourceAiRepairTitle}
                 >
                   修复
                 </button>
@@ -2025,11 +1667,11 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="copy-source"
-                    aria-label={copySourceTitle}
+                    aria-label={editorUiState.copySourceTitle}
                     onClick={handleCopySource}
-                    disabled={!hasSourceContent}
+                    disabled={!editorUiState.hasSourceContent}
                     className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    title={copySourceTitle}
+                    title={editorUiState.copySourceTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -2038,11 +1680,11 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="clear-source"
-                    aria-label={clearSourceTitle}
+                    aria-label={editorUiState.clearSourceTitle}
                     onClick={handleRequestClearSource}
-                    disabled={!hasSourceContent}
+                    disabled={!editorUiState.hasSourceContent}
                     className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-red-900/30 hover:text-red-200 transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    title={clearSourceTitle}
+                    title={editorUiState.clearSourceTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-8 0h10" />
@@ -2051,22 +1693,22 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="auto-save"
-                    aria-label={autoSaveAriaLabel}
-                    aria-pressed={isAutoSaveActive}
+                    aria-label={editorUiState.autoSaveAriaLabel}
+                    aria-pressed={editorUiState.isAutoSaveActive}
                     onClick={handleToggleAutoSave}
                     className={`editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
                       ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
-                      : isAutoSaveActive
+                      : editorUiState.isAutoSaveActive
                         ? 'bg-status-success-bg text-status-success-text border-status-success-border'
-                        : canUseAutoSave
+                        : editorUiState.canUseAutoSave
                           ? 'text-gray-400 border-transparent hover:bg-editor-active'
                           : 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
                       }`}
-                    title={autoSaveTitle}
+                    title={editorUiState.autoSaveTitle}
                   >
                     <div className={`w-1.5 h-1.5 rounded-full ${!activeFileId
                       ? 'bg-gray-700'
-                      : isAutoSaveActive
+                      : editorUiState.isAutoSaveActive
                         ? 'bg-green-500 animate-pulse'
                         : 'bg-gray-500'
                       }`}></div>
@@ -2116,11 +1758,11 @@ const App: React.FC = () => {
                   {deepFormatInfo && (
                     <button
                       data-tour="transform-report-button"
-                      aria-label={transformReportTitle}
+                      aria-label={editorUiState.transformReportTitle}
                       onClick={() => setIsTransformReportOpen(true)}
                       disabled={!transformReportContext || isOutputTransforming}
                       className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={transformReportTitle}
+                      title={editorUiState.transformReportTitle}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -2130,11 +1772,11 @@ const App: React.FC = () => {
                   )}
                   <button
                     data-tour="apply-preview-to-source"
-                    aria-label={applyPreviewTitle}
+                    aria-label={editorUiState.applyPreviewTitle}
                     onClick={handleRequestApplyPreviewToSource}
-                    disabled={!hasPreviewContent || isOutputTransforming || isPreviewSameAsSource}
+                    disabled={!editorUiState.hasPreviewContent || isOutputTransforming || editorUiState.isPreviewSameAsSource}
                     className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={applyPreviewTitle}
+                    title={editorUiState.applyPreviewTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
@@ -2143,11 +1785,11 @@ const App: React.FC = () => {
                   </button>
                   <button
                     data-tour="copy-preview"
-                    aria-label={copyPreviewTitle}
+                    aria-label={editorUiState.copyPreviewTitle}
                     onClick={handleCopyPreview}
-                    disabled={!hasPreviewContent || isOutputTransforming}
+                    disabled={!editorUiState.hasPreviewContent || isOutputTransforming}
                     className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={copyPreviewTitle}
+                    title={editorUiState.copyPreviewTitle}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -2162,7 +1804,7 @@ const App: React.FC = () => {
         </div>
 
         {/* JSONPath 查询面板 */}
-        {hasLoadedJsonPathPanel && (
+        {lazyPanelsLoaded.jsonPath && (
           <Suspense fallback={null}>
             <LazyJsonPathPanel
               jsonData={jsonPathDataSource}
@@ -2180,7 +1822,7 @@ const App: React.FC = () => {
         )}
 
         {/* JSON 结构导航面板 */}
-        {hasLoadedJsonTreePanel && (
+        {lazyPanelsLoaded.jsonTree && (
           <Suspense fallback={null}>
             <LazyJsonTreePanel
               jsonData={jsonPathDataSource}
@@ -2195,7 +1837,7 @@ const App: React.FC = () => {
         )}
 
         {/* JSON 语义对比面板 */}
-        {hasLoadedJsonComparePanel && (
+        {lazyPanelsLoaded.jsonCompare && (
           <Suspense fallback={null}>
             <LazyJsonComparePanel
               sourceText={input}
@@ -2207,7 +1849,7 @@ const App: React.FC = () => {
         )}
 
         {/* JSON Schema 校验面板 */}
-        {hasLoadedJsonSchemaPanel && (
+        {lazyPanelsLoaded.jsonSchema && (
           <Suspense fallback={null}>
             <LazyJsonSchemaPanel
               jsonData={input}
@@ -2224,7 +1866,7 @@ const App: React.FC = () => {
         )}
 
         {/* 深度解析报告面板 */}
-        {hasLoadedTransformReportPanel && (
+        {lazyPanelsLoaded.transformReport && (
           <Suspense fallback={null}>
             <LazyTransformReportPanel
               isOpen={isTransformReportOpen}
@@ -2238,7 +1880,7 @@ const App: React.FC = () => {
         )}
 
         {/* Scheme 解析面板（独立模式） */}
-        {hasLoadedSchemePanel && (
+        {lazyPanelsLoaded.scheme && (
           <Suspense fallback={null}>
             <LazySchemeViewerModal
               isOpen={isSchemeDecodeOpen}
@@ -2257,7 +1899,7 @@ const App: React.FC = () => {
         )}
 
         {/* 模板填充面板 */}
-        {hasLoadedTemplatePanel && (
+        {lazyPanelsLoaded.template && (
           <Suspense fallback={null}>
             <LazyTemplateFillPanel
               isOpen={isTemplatePanelOpen}
@@ -2317,9 +1959,9 @@ const App: React.FC = () => {
         isOutputTransforming={isOutputTransforming}
         isAiRepairing={isProcessing}
         isAiConfigured={isAiConfigured}
-        hasSourceContent={hasSourceContent}
-        isSourceJsonCandidate={isSourceJsonCandidate}
-        sourceStandaloneDeepFormatKind={sourceStandaloneDeepFormatKind}
+        hasSourceContent={editorUiState.hasSourceContent}
+        isSourceJsonCandidate={editorUiState.isSourceJsonCandidate}
+        sourceStandaloneDeepFormatKind={editorUiState.sourceStandaloneDeepFormatKind}
         onOpenSourceSchemeInput={handleOpenSourceSchemeInput}
         onOpenChangelog={() => handleOpenChangelog()}
         sourceValidation={validation}
