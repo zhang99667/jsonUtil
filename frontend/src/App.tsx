@@ -27,6 +27,7 @@ import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupComman
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
 import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
+import { useAppSourceValidation } from './hooks/useAppSourceValidation';
 import {
   useAppSourceReplacementCommands,
   type AppSmartSuggestionOrigin,
@@ -207,7 +208,6 @@ const App: React.FC = () => {
   const jsonTreeFocusRequestIdRef = useRef(0);
   const schemeInputRequestIdRef = useRef(0);
   const templateFillRequestIdRef = useRef(0);
-  const sourceValidationRequestIdRef = useRef(0);
   const aiRepairSnapshotRef = useRef<string | null>(null);
   const smartSuggestionOriginTextRef = useRef('');
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
@@ -678,30 +678,7 @@ const App: React.FC = () => {
   }, [input, isTemplatePanelOpen, validation]);
 
 
-  // 输入变更验证（防抖）
-  useEffect(() => {
-    let validationTask: ReturnType<typeof startJsonValidation> | null = null;
-    const timeoutId = setTimeout(() => {
-      if (input && input.trim()) {
-        // 预处理：移除零宽空格等不可见字符，避免误报
-        const cleanInput = cleanJsonInput(input);
-        const requestId = ++sourceValidationRequestIdRef.current;
-        validationTask = startJsonValidation(cleanInput, ASYNC_VALIDATION_THRESHOLD, { requireContainer: true });
-        validationTask.promise.then(result => {
-          if (requestId === sourceValidationRequestIdRef.current) {
-            setValidation(result);
-          }
-        });
-      } else {
-        sourceValidationRequestIdRef.current++;
-        setValidation({ isValid: true });
-      }
-    }, 500);
-    return () => {
-      clearTimeout(timeoutId);
-      validationTask?.cancel();
-    };
-  }, [input]);
+  useAppSourceValidation({ input, onSetValidation: setValidation });
 
   // 左侧编辑器变更处理
   const handleInputChange = useCallback((newVal: string) => {
