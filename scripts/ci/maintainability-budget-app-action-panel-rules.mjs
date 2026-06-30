@@ -1,7 +1,12 @@
 const actionPanelBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const appActionPanelMaintainabilityBudgets = [
-  actionPanelBudget('frontend/src/components/ActionPanel.tsx', 270, '主工具栏应只负责交互装配，工具按钮/面板元数据、智能建议、图标、滚动和低频入口继续拆到独立模块'),
+  actionPanelBudget('frontend/src/components/ActionPanel.tsx', 200, '主工具栏应只负责交互装配、引导触发和状态汇总，顶部栏、工具组、面板组、滚动条、图标和低频入口继续拆到独立模块'),
+  actionPanelBudget('frontend/src/components/ActionPanelHeader.tsx', 55, '工具栏顶部栏应只维护标题、折叠按钮和可访问语义'),
+  actionPanelBudget('frontend/src/components/ActionPanelSectionTitle.tsx', 30, '工具栏分组标题应只维护折叠态空渲染和首组间距'),
+  actionPanelBudget('frontend/src/components/ActionPanelToolGroups.tsx', 60, '工具栏转换工具分组应只负责配置遍历、图标装配和模式切换透传'),
+  actionPanelBudget('frontend/src/components/ActionPanelPanelGroup.tsx', 65, '工具栏面板入口分组应只负责面板配置遍历和开关状态透传'),
+  actionPanelBudget('frontend/src/components/ActionPanelScrollbar.tsx', 45, '工具栏滚动条壳只负责展示开关、thumb 百分比样式和拖拽入口透传'),
   actionPanelBudget('frontend/src/components/ActionPanelAuxiliaryWorkbench.tsx', 70, '工具栏低频辅助工作台只负责实验入口展示和智能建议动作透传，不承载主功能状态'),
   actionPanelBudget('frontend/src/components/ActionPanelButtonBadge.tsx', 25, '工具栏按钮状态 badge 应只维护按钮右侧短标签样式和可访问隐藏标记'),
   actionPanelBudget('frontend/src/components/ActionPanelButtonTypes.ts', 35, '工具栏按钮 props 契约应集中维护，避免具体按钮组件因类型声明贴线'),

@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **主工具栏入口分层**: 将 `ActionPanel` 的顶部栏、分组标题、转换工具组、面板入口组和自定义滚动条拆成独立组件，并补充折叠语义、分组透传和滚动条样式直测，主工具栏预算从 270 行收紧到 200 行，降低后续新增工具入口时挤占主功能结构的风险
 - **深度解析报告问题与占位符文本分层**: 将报告文本里的跳过记录/未展开线索拆到 `transformReportIssueTextSections`，运行时占位符汇总/明细拆到 `transformReportPlaceholderTextSections`，`transformReportTextSections` 回归为兼容导出入口，并新增来源标签、预览和空态直测，降低报告复制文案继续扩展时的职责混杂风险
 - **状态栏 SOURCE 动作契约分层**: 将 SOURCE 校验状态栏的定位错误和打开 Scheme 动作类型拆到 `statusBarSourceValidationActionTypes`，展示组件改为依赖独立契约，动作 helper 继续只保留错误定位优先于 Scheme 面板入口的纯规则，降低后续新增状态栏动作时的耦合
 - **深度解析报告记录文本分层**: 将报告文本里的记录明细行输出拆到 `transformReportRecordTextLines`，原 `transformReportTextSections` 保留兼容导出和跳过/未展开/占位符段落，并新增 cmdParams、参数分层、Schema 行、内部字段和截断提示直测，降低报告文案继续扩展时的维护压力

@@ -4,13 +4,14 @@ import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { useActionPanelScrollbar } from '../hooks/useActionPanelScrollbar';
 import { ActionPanelAuxiliaryWorkbench } from './ActionPanelAuxiliaryWorkbench';
 import { ActionPanelFileOperations } from './ActionPanelFileOperations';
-import { ActionPanelPanelIcon } from './ActionPanelPanelIcon';
-import { ActionPanelPanelButton } from './ActionPanelPanelButton';
+import { ActionPanelHeader } from './ActionPanelHeader';
+import {
+  ActionPanelPanelGroup,
+  type ActionPanelPanelStateById,
+} from './ActionPanelPanelGroup';
+import { ActionPanelScrollbar } from './ActionPanelScrollbar';
 import { ActionPanelSmartSuggestion } from './ActionPanelSmartSuggestion';
-import { ActionPanelToolIcon } from './ActionPanelToolIcon';
-import { ActionPanelToolButton } from './ActionPanelToolButton';
-import { ACTION_PANEL_PANEL_GROUP, type ActionPanelPanelItemId } from '../utils/actionPanelPanelItems';
-import { ACTION_PANEL_TOOL_GROUPS } from '../utils/actionPanelToolGroups';
+import { ActionPanelToolGroups } from './ActionPanelToolGroups';
 import type { SmartInputSuggestion, SmartSuggestionActionId } from '../utils/smartInputSuggestion';
 
 export interface ActionPanelProps {
@@ -75,7 +76,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     isCollapsed,
     onScrollFrame: refreshTour,
   });
-  const panelStateById: Record<ActionPanelPanelItemId, { isOpen: boolean; onClick: () => void }> = {
+  const panelStateById: ActionPanelPanelStateById = {
     jsonPath: { isOpen: isJsonPathOpen, onClick: onToggleJsonPath },
     jsonCompare: { isOpen: isJsonCompareOpen, onClick: onToggleJsonCompare },
     jsonTree: { isOpen: isJsonTreeOpen, onClick: onToggleJsonTree },
@@ -110,31 +111,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         onScroll={handleScroll}
         className="h-full flex flex-col p-3 overflow-y-auto [&::-webkit-scrollbar]:hidden scrollbar-hide"
       >
-        {/* 侧边栏顶部栏 */}
-        <div className={`px-2 mb-6 mt-1 pb-4 border-b border-editor-border flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
-          {!isCollapsed && (
-            <div className="text-sm font-bold text-gray-200 tracking-wide flex items-center gap-2">
-              <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-              </div>
-              JSON 工具箱
-            </div>
-          )}
-          <button
-            onClick={onToggleCollapse}
-            aria-label={isCollapsed ? '展开工具栏' : '折叠工具栏'}
-            aria-controls="action-panel-content"
-            aria-expanded={!isCollapsed}
-            className="text-gray-500 hover:text-gray-300 p-1 rounded hover:bg-editor-border transition-colors"
-            title={isCollapsed ? "展开" : "折叠"}
-          >
-            {isCollapsed ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
-            )}
-          </button>
-        </div>
+        <ActionPanelHeader
+          isCollapsed={isCollapsed}
+          onToggleCollapse={onToggleCollapse}
+        />
 
         <ActionPanelSmartSuggestion
           smartSuggestion={smartSuggestion}
@@ -143,60 +123,18 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           onSmartSuggestionAction={onSmartSuggestionAction}
         />
 
-        {ACTION_PANEL_TOOL_GROUPS.map((group, index) => (
-          <React.Fragment key={group.id}>
-            {!isCollapsed && (
-              <div className={`px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2 ${index === 0 ? 'mt-2' : ''}`}>
-                {group.title}
-              </div>
-            )}
-            <div className="mb-4">
-              {group.items.map(item => (
-                <React.Fragment key={item.mode}>
-                  <ActionPanelToolButton
-                    mode={item.mode}
-                    label={item.label}
-                    icon={<ActionPanelToolIcon iconId={item.iconId} />}
-                    colorClass={item.colorClass}
-                    dataTour={item.dataTour}
-                    isActive={activeMode === item.mode}
-                    isCollapsed={isCollapsed}
-                    onClick={handleModeChange}
-                  />
-                </React.Fragment>
-              ))}
-            </div>
-          </React.Fragment>
-        ))}
+        <ActionPanelToolGroups
+          activeMode={activeMode}
+          isCollapsed={isCollapsed}
+          onModeChange={handleModeChange}
+        />
 
         <div className="flex-1"></div>
 
-        {/* 工具组：查询与解析工具 */}
-        {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
-            {ACTION_PANEL_PANEL_GROUP.title}
-          </div>
-        )}
-        <div className="mb-4">
-          {ACTION_PANEL_PANEL_GROUP.items.map(item => {
-            const panelState = panelStateById[item.id];
-
-            return (
-              <React.Fragment key={item.id}>
-                <ActionPanelPanelButton
-                  label={item.label}
-                  icon={<ActionPanelPanelIcon iconId={item.iconId} />}
-                  iconClass={item.iconClass}
-                  hoverIconClass={item.hoverIconClass}
-                  isOpen={panelState.isOpen}
-                  isCollapsed={isCollapsed}
-                  onClick={panelState.onClick}
-                  dataTour={item.dataTour}
-                />
-              </React.Fragment>
-            );
-          })}
-        </div>
+        <ActionPanelPanelGroup
+          isCollapsed={isCollapsed}
+          panelStateById={panelStateById}
+        />
 
         <ActionPanelFileOperations
           isCollapsed={isCollapsed}
@@ -226,19 +164,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         </div>
       </div>
 
-      {/* 自定义垂直滚动条 */}
-      {showScrollbar && (
-        <div className="absolute right-0 top-0 bottom-0 w-[10px] opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
-          <div
-            className="absolute right-[2px] w-[6px] bg-scrollbar-bg hover:bg-scrollbar-hover rounded-full cursor-pointer"
-            style={{
-              height: `${thumbHeight}%`,
-              top: `${thumbTop}%`
-            }}
-            onMouseDown={handleScrollbarMouseDown}
-          />
-        </div>
-      )}
+      <ActionPanelScrollbar
+        showScrollbar={showScrollbar}
+        thumbHeight={thumbHeight}
+        thumbTop={thumbTop}
+        onMouseDown={handleScrollbarMouseDown}
+      />
     </div>
   );
 };
