@@ -28,6 +28,12 @@ describe('appSmartSuggestionCommandRunner', () => {
     }, effects);
 
     expect(effects.onRunAiFix).toHaveBeenCalledTimes(1);
+    expect(effects.onSetMode).not.toHaveBeenCalled();
+    expect(effects.onClearHighlight).not.toHaveBeenCalled();
+    expect(effects.onSetSchemePanelOpen).not.toHaveBeenCalled();
+    expect(effects.onSetJsonSchemaPanelOpen).not.toHaveBeenCalled();
+    expect(effects.onShowError).not.toHaveBeenCalled();
+    expect(effects.onShowSuccess).not.toHaveBeenCalled();
     expect(effects.onTrackToolEvent).not.toHaveBeenCalled();
   });
 
@@ -83,6 +89,25 @@ describe('appSmartSuggestionCommandRunner', () => {
     expect(effects.onSetMode).toHaveBeenCalledWith(TransformMode.DEEP_FORMAT);
     expect(effects.onSetJsonTreePanelOpen).toHaveBeenCalledWith(true);
     expect(effects.onShowSuccess).toHaveBeenCalledWith('已打开结构导航');
+  });
+
+  it('Schema 建议会打开 Schema 面板并记录成功', () => {
+    const effects = createEffects();
+
+    runAppSmartSuggestionCommand({
+      actionId: 'schema-panel',
+      currentMode: TransformMode.NONE,
+      sourceText: '{"a":1}',
+    }, effects);
+
+    expect(effects.onSetJsonSchemaPanelOpen).toHaveBeenCalledWith(true);
+    expect(effects.onShowSuccess).toHaveBeenCalledWith('已打开 Schema 校验');
+    expect(effects.onTrackToolEvent).toHaveBeenCalledWith(
+      'SMART_SUGGESTION_SCHEMA_PANEL',
+      'smart_suggestion',
+      'success',
+      123,
+    );
   });
 
   it('response 排查建议会清空高亮并关闭报告', () => {

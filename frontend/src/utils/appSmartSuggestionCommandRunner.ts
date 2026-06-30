@@ -3,7 +3,7 @@ import type { SmartSuggestionActionId } from './smartInputSuggestion';
 import { buildAppSmartSuggestionActionPlan } from './appSmartSuggestionActions';
 import type { ToolEventStatus } from './productTelemetry';
 
-type AppSmartSuggestionTrackEvent = (
+export type AppSmartSuggestionTrackEvent = (
   eventName: string,
   category: string,
   status?: ToolEventStatus,
@@ -16,7 +16,7 @@ interface AppSmartSuggestionCommandInput {
   sourceText: string;
 }
 
-interface AppSmartSuggestionCommandEffects {
+export interface AppSmartSuggestionCommandEffects {
   onRunAiFix: () => void;
   onSetMode: (mode: TransformMode) => void;
   onClearHighlight: () => void;
