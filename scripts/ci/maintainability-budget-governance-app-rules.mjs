@@ -28,7 +28,9 @@ export const governanceAppMaintainabilityBudgets = [
     reason: 'App 发布恢复预算入口应只组合运行时恢复和版本检测子表',
   },
   { file: 'scripts/ci/maintainability-budget-app-recovery-runtime-rules.mjs', maxLines: 40, reason: 'App 发布恢复运行时预算规则应保持短表，继续增长时按事件监听和 UI 兜底拆分' },
-  { file: 'scripts/ci/maintainability-budget-app-recovery-update-rules.mjs', maxLines: 30, reason: 'App 发布恢复版本检测预算规则应保持短表，新增检测 helper 先拆独立子表' },
+  { file: 'scripts/ci/maintainability-budget-app-recovery-update-rules.mjs', maxLines: 20, reason: 'App 发布恢复版本检测预算入口应只组合 core 和 schedule 子表' },
+  { file: 'scripts/ci/maintainability-budget-app-recovery-update-core-rules.mjs', maxLines: 35, reason: 'App 发布恢复版本检测核心预算规则应维护 hook、策略、决策和执行器预算' },
+  { file: 'scripts/ci/maintainability-budget-app-recovery-update-schedule-rules.mjs', maxLines: 20, reason: 'App 发布恢复版本检测调度预算规则应只维护调度 helper 预算' },
   {
     file: 'scripts/ci/maintainability-budget-app-shell-rules.mjs',
     maxLines: 25,
