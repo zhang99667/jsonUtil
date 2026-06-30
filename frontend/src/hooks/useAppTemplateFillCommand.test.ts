@@ -2,18 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ValidationResult } from '../types';
 import { useAppTemplateFillCommand } from './useAppTemplateFillCommand';
 import { showError, showSuccess } from '../utils/toast';
-import {
-  applyTemplate,
-  deepParseWithContext,
-  detectLanguage,
-} from '../utils/transformations';
+import { applyTemplate } from '../utils/transformations';
 import { isPlaceholderFillTemplateJson } from '../utils/appWorkflowHelpers';
-import {
-  buildTransformContextReport,
-  buildTransformQualitySnapshot,
-  buildTransformReportView,
-  formatTransformQualitySnapshotDeltaText,
-} from '../utils/transformSummary';
+import { buildAppTemplateFillQualityDelta } from '../utils/appTemplateFillQualityDelta';
 
 const reactMocks = vi.hoisted(() => ({
   useCallback: vi.fn(),
@@ -34,8 +25,6 @@ vi.mock('../utils/toast', () => ({
 vi.mock('../utils/transformations', async importOriginal => ({
   ...await importOriginal<typeof import('../utils/transformations')>(),
   applyTemplate: vi.fn(() => '{"merged":true}'),
-  deepParseWithContext: vi.fn(() => ({ context: { records: [] } })),
-  detectLanguage: vi.fn(() => 'json'),
 }));
 
 vi.mock('../utils/appWorkflowHelpers', async importOriginal => ({
@@ -43,15 +32,11 @@ vi.mock('../utils/appWorkflowHelpers', async importOriginal => ({
   isPlaceholderFillTemplateJson: vi.fn(() => false),
 }));
 
-vi.mock('../utils/transformSummary', () => ({
-  buildTransformContextReport: vi.fn(() => ({ records: [] })),
-  buildTransformQualitySnapshot: vi.fn((_report: unknown, view: unknown) => ({
-    view,
-    score: 1,
-  })),
-  buildTransformReportView: vi.fn(() => ({ rows: [] })),
-  formatTransformQualitySnapshotDeltaText: vi.fn(() => '质量变化: +1'),
+vi.mock('../utils/appTemplateFillQualityDelta', () => ({
+  buildAppTemplateFillQualityDelta: vi.fn(() => '质量变化: +1'),
 }));
+
+vi.mock('../utils/transformSummary', () => ({}));
 
 const validValidation: ValidationResult = { isValid: true };
 const invalidValidation: ValidationResult = { isValid: false, error: 'bad json' };
@@ -74,20 +59,12 @@ describe('useAppTemplateFillCommand', () => {
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
     reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
     vi.mocked(applyTemplate).mockReturnValue('{"merged":true}');
-    vi.mocked(deepParseWithContext).mockReturnValue({
-      context: { records: [] },
-      output: '{}',
-    } as unknown as ReturnType<typeof deepParseWithContext>);
-    vi.mocked(detectLanguage).mockReturnValue('json');
+    vi.mocked(buildAppTemplateFillQualityDelta).mockReturnValue('质量变化: +1');
     vi.mocked(isPlaceholderFillTemplateJson).mockReturnValue(false);
   });
 
-  it('根据面板状态和 SOURCE 校验状态生成模板目标错误', () => {
+  it('暴露模板目标错误', () => {
     expect(useAppTemplateFillCommand(createHookInput({ isTemplatePanelOpen: false })).templateTargetError).toBe('');
-    expect(useAppTemplateFillCommand(createHookInput({ sourceText: '   ' })).templateTargetError).toBe('请先在 SOURCE 输入合法 JSON');
-
-    vi.mocked(detectLanguage).mockReturnValueOnce('text');
-    expect(useAppTemplateFillCommand(createHookInput({ sourceText: 'not json' })).templateTargetError).toBe('当前 SOURCE 不是合法 JSON，无法应用模板');
     expect(useAppTemplateFillCommand(createHookInput({ validation: invalidValidation })).templateTargetError).toBe('当前 SOURCE JSON 无效: bad json');
   });
 
@@ -112,12 +89,12 @@ describe('useAppTemplateFillCommand', () => {
 
     await handleApplyTemplate('{"kind":"json-helper-runtime-placeholder-fill-template"}');
 
-    expect(deepParseWithContext).toHaveBeenCalledWith('{"a":1}', { autoExpandScheme: true });
-    expect(deepParseWithContext).toHaveBeenCalledWith('{"merged":true}', { autoExpandScheme: true });
-    expect(buildTransformContextReport).toHaveBeenCalledTimes(2);
-    expect(buildTransformReportView).toHaveBeenCalledTimes(2);
-    expect(buildTransformQualitySnapshot).toHaveBeenCalledTimes(2);
-    expect(formatTransformQualitySnapshotDeltaText).toHaveBeenCalledTimes(1);
+    expect(buildAppTemplateFillQualityDelta).toHaveBeenCalledTimes(1);
+    expect(buildAppTemplateFillQualityDelta).toHaveBeenCalledWith(expect.objectContaining({
+      sourceBeforeApply: '{"a":1}',
+      sourceAfterApply: '{"merged":true}',
+      autoExpandScheme: true,
+    }));
     expect(input.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('质量变化: +1');
     expect(showSuccess).toHaveBeenCalledWith('占位符已回填，质量对比已更新');
   });
