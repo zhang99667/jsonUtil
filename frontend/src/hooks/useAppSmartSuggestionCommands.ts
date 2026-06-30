@@ -1,24 +1,20 @@
-import { useCallback, useMemo, type MutableRefObject } from 'react';
+import { useCallback, useMemo } from 'react';
 import { TransformMode } from '../types';
 import type { SmartSuggestionActionId } from '../utils/smartInputSuggestion';
 import {
   runAppSmartSuggestionCommand,
+  type AppSmartSuggestionCommandEffects,
   type AppSmartSuggestionTrackEvent,
 } from '../utils/appSmartSuggestionCommandRunner';
-import {
-  buildAppSmartSuggestionCommandEffects,
-  type SmartSuggestionSchemeInputRequest,
-} from '../utils/appSmartSuggestionCommandEffects';
 import { showError, showSuccess } from '../utils/toast';
 
 interface UseAppSmartSuggestionCommandsInput {
   currentMode: TransformMode;
   sourceText: string;
-  schemeInputRequestIdRef: MutableRefObject<number>;
   onRunAiFix: () => void;
   onSetMode: (mode: TransformMode) => void;
   onSetHighlightRange: (range: null) => void;
-  onSetSchemeInputRequest: (request: SmartSuggestionSchemeInputRequest) => void;
+  onOpenSchemeInput: (value: string) => void;
   onSetSchemePanelOpen: (isOpen: boolean) => void;
   onSetTransformReportOpen: (isOpen: boolean) => void;
   onSetJsonTreePanelOpen: (isOpen: boolean) => void;
@@ -29,23 +25,21 @@ interface UseAppSmartSuggestionCommandsInput {
 export const useAppSmartSuggestionCommands = ({
   currentMode,
   sourceText,
-  schemeInputRequestIdRef,
   onRunAiFix,
   onSetMode,
   onSetHighlightRange,
-  onSetSchemeInputRequest,
+  onOpenSchemeInput,
   onSetSchemePanelOpen,
   onSetTransformReportOpen,
   onSetJsonTreePanelOpen,
   onSetJsonSchemaPanelOpen,
   onTrackToolEvent,
 }: UseAppSmartSuggestionCommandsInput) => {
-  const smartSuggestionEffects = useMemo(() => buildAppSmartSuggestionCommandEffects({
-    schemeInputRequestIdRef,
+  const smartSuggestionEffects = useMemo<AppSmartSuggestionCommandEffects>(() => ({
     onRunAiFix,
     onSetMode,
-    onSetHighlightRange,
-    onSetSchemeInputRequest,
+    onClearHighlight: () => onSetHighlightRange(null),
+    onOpenSchemeInput,
     onSetSchemePanelOpen,
     onSetTransformReportOpen,
     onSetJsonTreePanelOpen,
@@ -54,16 +48,15 @@ export const useAppSmartSuggestionCommands = ({
     onShowSuccess: showSuccess,
     onTrackToolEvent,
   }), [
+    onOpenSchemeInput,
     onRunAiFix,
     onSetHighlightRange,
     onSetJsonSchemaPanelOpen,
     onSetJsonTreePanelOpen,
     onSetMode,
-    onSetSchemeInputRequest,
     onSetSchemePanelOpen,
     onSetTransformReportOpen,
     onTrackToolEvent,
-    schemeInputRequestIdRef,
   ]);
 
   const handleSmartSuggestionAction = useCallback((actionId: SmartSuggestionActionId) => (

@@ -7,7 +7,6 @@ import { AppWorkspaceOverlays } from './components/AppWorkspaceOverlays';
 import {
   performTransform,
   deepParseWithContext,
-  getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput
 } from './utils/transformations';
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, type EditorDiagnosticHighlight } from './types';
@@ -28,11 +27,11 @@ import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
 import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import { useAppSourceValidation } from './hooks/useAppSourceValidation';
 import { useAppTemplateFillCommand } from './hooks/useAppTemplateFillCommand';
+import { useAppToolPanelCommands } from './hooks/useAppToolPanelCommands';
 import {
   useAppSourceReplacementCommands,
   type AppSmartSuggestionOrigin,
 } from './hooks/useAppSourceReplacementCommands';
-import { APP_CHANGELOG_OPEN_EVENT, type AppChangelogOpenDetail } from './utils/appEvents';
 import { useLayout } from './hooks/useLayout';
 import { getPaneKeyboardResizePercent, getSidebarKeyboardResizeWidth } from './hooks/layoutKeyboardResize';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
@@ -64,7 +63,6 @@ import {
 } from './utils/productTelemetry';
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { getJsonSchemaIssueHighlights } from './utils/jsonSchemaIssueHighlights';
-import type { JsonPathQueryItem } from './utils/jsonPathQuery';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
 import { buildAppEditorUiState } from './utils/appEditorUiState';
 import { getContentSizeSummary } from './utils/appWorkflowHelpers';
@@ -77,28 +75,6 @@ import {
   getActiveAppDeepFormatResult,
   resolveAppOutputValue,
 } from './utils/appAsyncTransformState';
-
-type SettingsTab = 'shortcuts' | 'ai' | 'general';
-interface JsonPathQueryRequest {
-  id: number;
-  query: string;
-}
-
-interface JsonTreeFocusRequest {
-  id: number;
-  path: string;
-  pointer: string;
-}
-
-interface SchemeInputRequest {
-  id: number;
-  value: string;
-}
-
-interface TemplateFillRequest {
-  id: number;
-  template: string;
-}
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -177,18 +153,6 @@ const App: React.FC = () => {
     onCloseFile: closeFile,
   });
 
-  const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
-  const [isJsonTreePanelOpen, setIsJsonTreePanelOpen] = useState(false);
-  const [isJsonComparePanelOpen, setIsJsonComparePanelOpen] = useState(false);
-  const [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen] = useState(false);
-  const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
-  const [jsonTreeFocusRequest, setJsonTreeFocusRequest] = useState<JsonTreeFocusRequest | null>(null);
-  const [schemeInputRequest, setSchemeInputRequest] = useState<SchemeInputRequest | null>(null);
-  const [templateFillRequest, setTemplateFillRequest] = useState<TemplateFillRequest | null>(null);
-  const jsonPathQueryRequestIdRef = useRef(0);
-  const jsonTreeFocusRequestIdRef = useRef(0);
-  const schemeInputRequestIdRef = useRef(0);
-  const templateFillRequestIdRef = useRef(0);
   const aiRepairSnapshotRef = useRef<string | null>(null);
   const smartSuggestionOriginTextRef = useRef('');
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
@@ -277,15 +241,6 @@ const App: React.FC = () => {
     return resolvedOutput.output;
   }, [input, mode, activeDeepFormatResult, shouldUseAsyncTransform, currentAsyncTransformResult]);
 
-  // JSONPath 查询当前 PREVIEW 文本，确保 Worker 返回的高亮范围与右侧编辑器坐标一致
-  const jsonPathDataSource = useMemo(() => {
-    if (!isJsonPathPanelOpen && !isJsonTreePanelOpen) {
-      return '';
-    }
-
-    return output;
-  }, [output, isJsonPathPanelOpen, isJsonTreePanelOpen]);
-
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const { previewValidation, handleOutputChange } = useAppPreviewOutputSync({
     files,
@@ -325,26 +280,6 @@ const App: React.FC = () => {
     return `Schema 未通过 ${jsonSchemaValidationResult.issueCount} 个问题`;
   }, [jsonSchemaValidationResult]);
 
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
-  const [isChangelogModalOpen, setIsChangelogModalOpen] = useState(false);
-  const [changelogSourceMarkdown, setChangelogSourceMarkdown] = useState<string | null>(null);
-  const [changelogHighlightedVersion, setChangelogHighlightedVersion] = useState<string | null>(null);
-  const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
-  const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
-  const [templateApplyQualityDelta, setTemplateApplyQualityDelta] = useState('');
-  const [isTransformReportOpen, setIsTransformReportOpen] = useState(false);
-  const lazyPanelsLoaded = useAppLazyPanelLoadState({
-    settings: isSettingsModalOpen,
-    changelog: isChangelogModalOpen,
-    jsonPath: isJsonPathPanelOpen,
-    jsonTree: isJsonTreePanelOpen,
-    jsonCompare: isJsonComparePanelOpen,
-    jsonSchema: isJsonSchemaPanelOpen,
-    scheme: isSchemeDecodeOpen,
-    template: isTemplatePanelOpen,
-    transformReport: isTransformReportOpen,
-  });
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
   const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<AppSmartSuggestionOrigin | null>(null);
 
@@ -390,6 +325,80 @@ const App: React.FC = () => {
     });
   }, []);
 
+  const {
+    changelogHighlightedVersion,
+    changelogSourceMarkdown,
+    handleCloseChangelog,
+    handleCloseJsonPathPanel,
+    handleLocateJsonPath,
+    handleLocateJsonPathResultInStructure,
+    handleOpenAiSettings,
+    handleOpenChangelog,
+    handleOpenSchemeFromReport,
+    handleOpenSchemeFromStructure,
+    handleOpenSettingsPanel,
+    handleOpenSourceSchemeInput,
+    handleOpenTemplateFillFromReport,
+    handleToggleJsonCompare,
+    handleToggleJsonPath,
+    handleToggleJsonSchema,
+    handleToggleJsonTree,
+    handleToggleSchemeDecode,
+    handleToggleTemplateFill,
+    isChangelogModalOpen,
+    isJsonComparePanelOpen,
+    isJsonPathPanelOpen,
+    isJsonSchemaPanelOpen,
+    isJsonTreePanelOpen,
+    isSchemeDecodeOpen,
+    isSettingsModalOpen,
+    isTemplatePanelOpen,
+    isTransformReportOpen,
+    jsonPathQueryRequest,
+    jsonTreeFocusRequest,
+    requestSchemeInput,
+    schemeInputRequest,
+    setIsJsonComparePanelOpen,
+    setIsJsonPathPanelOpen,
+    setIsJsonSchemaPanelOpen,
+    setIsJsonTreePanelOpen,
+    setIsSchemeDecodeOpen,
+    setIsSettingsModalOpen,
+    setIsTemplatePanelOpen,
+    setIsTransformReportOpen,
+    setTemplateApplyQualityDelta,
+    settingsInitialTab,
+    templateApplyQualityDelta,
+    templateFillRequest,
+  } = useAppToolPanelCommands({
+    mode,
+    sourceText: input,
+    onSetMode: setMode,
+    onSetHighlightRange: setHighlightRange,
+    onTrackToolEvent: trackCurrentToolEvent,
+  });
+
+  const lazyPanelsLoaded = useAppLazyPanelLoadState({
+    settings: isSettingsModalOpen,
+    changelog: isChangelogModalOpen,
+    jsonPath: isJsonPathPanelOpen,
+    jsonTree: isJsonTreePanelOpen,
+    jsonCompare: isJsonComparePanelOpen,
+    jsonSchema: isJsonSchemaPanelOpen,
+    scheme: isSchemeDecodeOpen,
+    template: isTemplatePanelOpen,
+    transformReport: isTransformReportOpen,
+  });
+
+  // JSONPath 查询当前 PREVIEW 文本，确保 Worker 返回的高亮范围与右侧编辑器坐标一致
+  const jsonPathDataSource = useMemo(() => {
+    if (!isJsonPathPanelOpen && !isJsonTreePanelOpen) {
+      return '';
+    }
+
+    return output;
+  }, [output, isJsonPathPanelOpen, isJsonTreePanelOpen]);
+
   const { handleSaveShortcut, handleToolbarSave } = useAppSaveCommands({
     activeEditor,
     hasActiveFile: Boolean(activeFileId),
@@ -405,126 +414,6 @@ const App: React.FC = () => {
     setMode(nextMode);
     trackCurrentToolEvent(nextMode, 'transform_mode');
   }, [setMode, trackCurrentToolEvent]);
-
-  const handleToggleJsonPath = useCallback(() => {
-    const nextOpen = !isJsonPathPanelOpen;
-    if (nextOpen && mode !== TransformMode.DEEP_FORMAT) {
-      setMode(TransformMode.DEEP_FORMAT);
-    }
-    setIsJsonPathPanelOpen(nextOpen);
-    trackCurrentToolEvent(nextOpen ? 'JSONPATH_OPEN' : 'JSONPATH_CLOSE', 'panel');
-  }, [isJsonPathPanelOpen, mode, setIsJsonPathPanelOpen, setMode, trackCurrentToolEvent]);
-
-  const handleToggleJsonTree = useCallback(() => {
-    const nextOpen = !isJsonTreePanelOpen;
-    if (nextOpen && mode !== TransformMode.DEEP_FORMAT) {
-      setMode(TransformMode.DEEP_FORMAT);
-    }
-    setIsJsonTreePanelOpen(nextOpen);
-    trackCurrentToolEvent(nextOpen ? 'STRUCTURE_NAV_OPEN' : 'STRUCTURE_NAV_CLOSE', 'panel');
-  }, [isJsonTreePanelOpen, mode, setIsJsonTreePanelOpen, setMode, trackCurrentToolEvent]);
-
-  const handleToggleJsonCompare = useCallback(() => {
-    const nextOpen = !isJsonComparePanelOpen;
-    setIsJsonComparePanelOpen(nextOpen);
-    trackCurrentToolEvent(nextOpen ? 'JSON_COMPARE_OPEN' : 'JSON_COMPARE_CLOSE', 'panel');
-  }, [isJsonComparePanelOpen, setIsJsonComparePanelOpen, trackCurrentToolEvent]);
-
-  const handleToggleJsonSchema = useCallback(() => {
-    const nextOpen = !isJsonSchemaPanelOpen;
-    setIsJsonSchemaPanelOpen(nextOpen);
-    trackCurrentToolEvent(nextOpen ? 'SCHEMA_PANEL_OPEN' : 'SCHEMA_PANEL_CLOSE', 'panel');
-  }, [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen, trackCurrentToolEvent]);
-
-  const handleOpenSettingsPanel = useCallback(() => {
-    setSettingsInitialTab('shortcuts');
-    setIsSettingsModalOpen(true);
-    trackCurrentToolEvent('SETTINGS_OPEN', 'panel');
-  }, [setIsSettingsModalOpen, setSettingsInitialTab, trackCurrentToolEvent]);
-
-  const handleLocateJsonPath = useCallback((query: string) => {
-    const normalizedQuery = query.trim();
-    if (!normalizedQuery) return;
-
-    if (mode !== TransformMode.DEEP_FORMAT) {
-      setMode(TransformMode.DEEP_FORMAT);
-    }
-
-    setHighlightRange(null);
-    setJsonPathQueryRequest({
-      id: ++jsonPathQueryRequestIdRef.current,
-      query: normalizedQuery,
-    });
-    setIsJsonPathPanelOpen(true);
-    setIsTransformReportOpen(false);
-    trackCurrentToolEvent('JSONPATH_LOCATE', 'panel');
-  }, [mode, setHighlightRange, setIsJsonPathPanelOpen, setIsTransformReportOpen, setJsonPathQueryRequest, setMode, trackCurrentToolEvent]);
-
-  const handleLocateJsonPathResultInStructure = useCallback((item: JsonPathQueryItem) => {
-    setJsonTreeFocusRequest({
-      id: ++jsonTreeFocusRequestIdRef.current,
-      path: item.path,
-      pointer: item.pointer,
-    });
-    setIsJsonTreePanelOpen(true);
-    setIsTransformReportOpen(false);
-    trackCurrentToolEvent('STRUCTURE_NAV_LOCATE', 'panel');
-  }, [setIsJsonTreePanelOpen, setIsTransformReportOpen, setJsonTreeFocusRequest, trackCurrentToolEvent]);
-
-  const openStandaloneSchemePanel = useCallback((value: string, eventName: string) => {
-    if (!value) return;
-
-    setSchemeInputRequest({
-      id: ++schemeInputRequestIdRef.current,
-      value,
-    });
-    setIsSchemeDecodeOpen(true);
-    setIsTransformReportOpen(false);
-    trackCurrentToolEvent(eventName, 'panel');
-  }, [setIsSchemeDecodeOpen, setIsTransformReportOpen, setSchemeInputRequest, trackCurrentToolEvent]);
-
-  const handleOpenSchemeFromReport = useCallback((value: string) => {
-    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_REPORT');
-  }, [openStandaloneSchemePanel]);
-
-  const handleOpenSchemeFromStructure = useCallback((value: string) => {
-    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_STRUCTURE');
-    setIsJsonTreePanelOpen(false);
-  }, [openStandaloneSchemePanel, setIsJsonTreePanelOpen]);
-
-  const handleOpenSchemeFromSourceStatus = useCallback((value: string) => {
-    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_SOURCE_STATUS');
-  }, [openStandaloneSchemePanel]);
-
-  const handleOpenSourceSchemeInput = useCallback(() => {
-    const value = input.trim();
-    if (!value || !getStandaloneDeepFormatInputKind(value)) return;
-
-    handleOpenSchemeFromSourceStatus(value);
-  }, [handleOpenSchemeFromSourceStatus, input]);
-
-  const handleOpenChangelog = useCallback((detail?: AppChangelogOpenDetail) => {
-    setChangelogSourceMarkdown(detail?.changelogMarkdown?.trim() ? detail.changelogMarkdown : null);
-    setChangelogHighlightedVersion(detail?.version || null);
-    setIsChangelogModalOpen(true);
-  }, []);
-
-  const handleCloseChangelog = useCallback(() => {
-    setIsChangelogModalOpen(false);
-  }, []);
-
-  const handleOpenTemplateFillFromReport = useCallback((template: string) => {
-    if (!template) return;
-
-    setTemplateApplyQualityDelta('');
-    setTemplateFillRequest({
-      id: ++templateFillRequestIdRef.current,
-      template,
-    });
-    setIsTemplatePanelOpen(true);
-    setIsTransformReportOpen(false);
-    trackCurrentToolEvent('TEMPLATE_OPEN_FROM_REPORT', 'panel');
-  }, [setIsTemplatePanelOpen, setIsTransformReportOpen, setTemplateApplyQualityDelta, setTemplateFillRequest, trackCurrentToolEvent]);
 
   const handleToggleAutoSave = useCallback(() => {
     if (!activeFileId) {
@@ -572,18 +461,6 @@ const App: React.FC = () => {
   useAppUpdateCheck();
   useAppChunkLoadRecovery({ onBeforeReload: flushWorkspaceDraft });
   useAppLazyPanelWarmup();
-
-  useEffect(() => {
-    const handleChangelogOpen = (event: Event) => {
-      const detail = event instanceof CustomEvent
-        ? event.detail as AppChangelogOpenDetail | undefined
-        : undefined;
-      handleOpenChangelog(detail);
-    };
-
-    window.addEventListener(APP_CHANGELOG_OPEN_EVENT, handleChangelogOpen);
-    return () => window.removeEventListener(APP_CHANGELOG_OPEN_EVENT, handleChangelogOpen);
-  }, [handleOpenChangelog]);
 
   // 功能级引导 (Hook)
   const { triggerFeatureFirstUse } = useFeatureTour();
@@ -644,11 +521,6 @@ const App: React.FC = () => {
     inputRef.current = fixedJson;
     updateActiveFileContent(fixedJson);
   }, [setAiRepairSummary, setInput, updateActiveFileContent]);
-
-  const handleOpenAiSettings = useCallback(() => {
-    setSettingsInitialTab('ai');
-    setIsSettingsModalOpen(true);
-  }, [setIsSettingsModalOpen, setSettingsInitialTab]);
 
   const {
     isAiRepairing: isProcessing,
@@ -756,13 +628,12 @@ const App: React.FC = () => {
   const { handleSmartSuggestionAction } = useAppSmartSuggestionCommands({
     currentMode: mode,
     sourceText: input,
-    schemeInputRequestIdRef,
     onRunAiFix: () => {
       void handleAction(ActionType.AI_FIX);
     },
     onSetMode: setMode,
     onSetHighlightRange: setHighlightRange,
-    onSetSchemeInputRequest: setSchemeInputRequest,
+    onOpenSchemeInput: requestSchemeInput,
     onSetSchemePanelOpen: setIsSchemeDecodeOpen,
     onSetTransformReportOpen: setIsTransformReportOpen,
     onSetJsonTreePanelOpen: setIsJsonTreePanelOpen,
@@ -902,17 +773,8 @@ const App: React.FC = () => {
           onToggleJsonTree={handleToggleJsonTree}
           onToggleJsonCompare={handleToggleJsonCompare}
           onToggleJsonSchema={handleToggleJsonSchema}
-          onToggleSchemeDecode={() => {
-            const nextOpen = !isSchemeDecodeOpen;
-            setIsSchemeDecodeOpen(nextOpen);
-            trackCurrentToolEvent(nextOpen ? 'SCHEME_PANEL_OPEN' : 'SCHEME_PANEL_CLOSE', 'panel');
-          }}
-          onToggleTemplateFill={() => {
-            const nextOpen = !isTemplatePanelOpen;
-            setTemplateApplyQualityDelta('');
-            setIsTemplatePanelOpen(nextOpen);
-            trackCurrentToolEvent(nextOpen ? 'TEMPLATE_PANEL_OPEN' : 'TEMPLATE_PANEL_CLOSE', 'panel');
-          }}
+          onToggleSchemeDecode={handleToggleSchemeDecode}
+          onToggleTemplateFill={handleToggleTemplateFill}
           smartSuggestion={smartSuggestion}
           smartSuggestionOrigin={smartSuggestionOrigin}
           onSmartSuggestionAction={handleSmartSuggestionAction}
@@ -976,10 +838,7 @@ const App: React.FC = () => {
             isDataPreparing: mode === TransformMode.DEEP_FORMAT && isOutputTransforming,
             externalQueryRequest: jsonPathQueryRequest,
             isOpen: isJsonPathPanelOpen,
-            onClose: () => {
-              setIsJsonPathPanelOpen(false);
-              setHighlightRange(null);
-            },
+            onClose: handleCloseJsonPathPanel,
             onHighlightRange: handleJsonPathHighlight,
             onLocateStructure: handleLocateJsonPathResultInStructure,
           }}

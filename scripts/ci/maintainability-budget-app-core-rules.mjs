@@ -1,8 +1,8 @@
 export const appCoreMaintainabilityBudgets = [
   {
     file: 'frontend/src/App.tsx',
-    maxLines: 1090,
-    reason: '主应用编排文件应只负责顶层状态和组件装配，PREVIEW 同步、SOURCE 校验、模板填充、文件关闭保护、懒加载 loaded 状态、命令工作流和派生状态不得回流',
+    maxLines: 980,
+    reason: '主应用编排文件应只负责顶层状态和组件装配，PREVIEW 同步、SOURCE 校验、模板填充、工具面板命令、文件关闭保护、懒加载 loaded 状态和派生状态不得回流',
   },
   {
     file: 'frontend/src/hooks/useAppAsyncTransform.ts',

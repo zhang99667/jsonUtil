@@ -26,7 +26,7 @@
 - **深度解析 Schema 分组分层**: 将 schema origin 归并、资源类型分组和 schema 分组默认上限拆到独立纯 helper，`transformReportCommandSchemaGroups` 保留兼容导出并只负责 schema 维度聚合；同步把 schema 预算拆成子表，降低后续扩展 CMD/资源分布统计时的维护风险
 - **深度解析资源字段提取分层**: 将资源字段 schema 提取和 resourceType 补充抽到 `transformReportDecodedPathResource` 共享 helper，`transformReportCommandSchemaOccurrences` 只保留记录扫描入口，并用单测锁定 `sourceValue` 优先级，减少 CMD/资源分组与记录洞察的重复规则
 - **占位符回填模板明细分层**: 将运行时占位符回填模板里的 `placeholderDetails` 构建抽到 `transformPlaceholderFillTemplateDetails`，模板入口继续专注 schema/tool/filter/summary/placeholders 外层契约，并用单测锁定 suggestion 与来源字段的可选输出结构，降低后续扩展回填候选字段时的回归风险
-- **智能建议副作用装配分层**: 将智能建议 Hook 里的面板开关、清高亮、Scheme request 自增、toast 和埋点 effects 装配抽到 `appSmartSuggestionCommandEffects`，Hook 只保留 action 输入与 runner 调用，并用单测锁定副作用映射，降低后续扩展智能建议入口时的回调接线风险
+- **主应用工具面板命令分层**: 将 `App.tsx` 内 JSONPath/结构树/Schema/Scheme/模板/changelog 面板开关、外部请求 ID 和报告入口动作下沉到 `useAppToolPanelCommands`，智能建议改为消费受控 Scheme 请求回调，补充面板命令直测，并把主应用预算从 1090 行收紧到 980 行
 - **SOURCE 命令聚合装配分层**: 将 `useAppSourceReplacementCommands` 的公开字段拼装抽到 `appSourceReplacementCommandBundle` 纯 helper，并用单测锁定 App 消费字段名与函数引用，聚合 Hook 继续保持固定 hooks 调用顺序，降低 SOURCE 替换入口继续扩展时的维护成本
 - **SOURCE 粘贴与 Scheme 排查 pending 收敛**: 粘贴 SOURCE 和 Scheme 原始值排查复用 `usePendingSourceReplacementCommand` 的 request/confirm/cancel 编排，继续保留剪贴板错误计时、Scheme confirm-as-skipped 特例和各自确认文案，减少 SOURCE 替换命令后续维护重复配置
 - **SOURCE 替换 pending 编排复用**: 抽出 `usePendingSourceReplacementCommand` 统一管理 pending 文本、确认替换和取消打点，`useAppApplySourceReplacementCommands` 只保留 PREVIEW/Schema 两个 request 入口，降低后续新增 SOURCE 替换场景时复制 event/category/successMessage 的风险
