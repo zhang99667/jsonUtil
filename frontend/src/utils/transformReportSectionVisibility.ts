@@ -1,41 +1,26 @@
-export interface TransformReportSectionVisibilityInput {
-  filteredRecordCount: number;
-  filteredUnresolvedCount: number;
-  filteredPlaceholderCount: number;
-  filteredWarningCount: number;
-}
+import type {
+  TransformReportSectionVisibility,
+  TransformReportSectionVisibilityInput,
+} from './transformReportSectionVisibilityTypes';
+import {
+  buildTransformReportVisibleSectionFlags,
+  hasVisibleTransformReportSection,
+  HIDDEN_TRANSFORM_REPORT_SECTION_VISIBILITY,
+} from './transformReportVisibleSections';
 
-export interface TransformReportSectionVisibility {
-  showRecords: boolean;
-  showUnresolved: boolean;
-  showPlaceholders: boolean;
-  showWarnings: boolean;
-  showEmptyState: boolean;
-}
-
-const HIDDEN_SECTION_VISIBILITY: TransformReportSectionVisibility = {
-  showRecords: false,
-  showUnresolved: false,
-  showPlaceholders: false,
-  showWarnings: false,
-  showEmptyState: false,
-};
+export type {
+  TransformReportSectionVisibility,
+  TransformReportSectionVisibilityInput,
+} from './transformReportSectionVisibilityTypes';
 
 export const buildTransformReportSectionVisibility = (
   reportView: TransformReportSectionVisibilityInput | null | undefined,
 ): TransformReportSectionVisibility => {
-  if (!reportView) return HIDDEN_SECTION_VISIBILITY;
+  if (!reportView) return HIDDEN_TRANSFORM_REPORT_SECTION_VISIBILITY;
 
-  const showRecords = reportView.filteredRecordCount > 0;
-  const showUnresolved = reportView.filteredUnresolvedCount > 0;
-  const showPlaceholders = reportView.filteredPlaceholderCount > 0;
-  const showWarnings = reportView.filteredWarningCount > 0;
-
+  const visibleSections = buildTransformReportVisibleSectionFlags(reportView);
   return {
-    showRecords,
-    showUnresolved,
-    showPlaceholders,
-    showWarnings,
-    showEmptyState: !showRecords && !showUnresolved && !showPlaceholders && !showWarnings,
+    ...visibleSections,
+    showEmptyState: !hasVisibleTransformReportSection(visibleSections),
   };
 };
