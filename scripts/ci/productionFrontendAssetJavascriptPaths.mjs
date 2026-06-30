@@ -2,31 +2,28 @@ import {
   normalizeProductionAssetPath,
   normalizeRelativeProductionAssetPath,
 } from './productionFrontendAssetPathNormalization.mjs';
-
-const DOCUMENT_EXAMPLE_ASSET_PATHS = new Set([
-  '/assets/chunk.js',
-  '/assets/theme.css',
-  '/assets/worker.js',
-]);
-
-const isDocumentExampleAssetPath = (assetPath) =>
-  assetPath.includes('*') || DOCUMENT_EXAMPLE_ASSET_PATHS.has(assetPath);
+import {
+  extractJavascriptAssetCandidates,
+  isDocumentExampleAssetPath,
+} from './productionFrontendAssetJavascriptCandidates.mjs';
 
 const addProductionAssetPath = (assetPaths, assetPath) =>
   assetPath && !isDocumentExampleAssetPath(assetPath) && assetPaths.add(assetPath);
 
 export const extractFrontendAssetPathsFromJavascript = (javascript, currentAssetPath = '/assets/') => {
   const assetPaths = new Set();
-  for (const match of javascript.matchAll(/["'`](\/?assets\/[^"'`]+)["'`]/g)) {
-    addProductionAssetPath(assetPaths, normalizeProductionAssetPath(match[1]));
+  const candidates = extractJavascriptAssetCandidates(javascript);
+  for (const assetString of candidates.assetStrings) {
+    addProductionAssetPath(assetPaths, normalizeProductionAssetPath(assetString));
   }
-  for (const match of javascript.matchAll(/["'`](\.{1,2}\/[^"'`]+)["'`]/g)) {
-    addProductionAssetPath(assetPaths, normalizeRelativeProductionAssetPath(match[1], currentAssetPath));
+  for (const relativeString of candidates.relativeStrings) {
+    addProductionAssetPath(assetPaths, normalizeRelativeProductionAssetPath(relativeString, currentAssetPath));
   }
-  for (const match of javascript.matchAll(/\bnew\s+URL\(\s*["'`]([^"'`]+)["'`]\s*,\s*import\.meta\.url\s*\)/g)) {
+  for (const importMetaString of candidates.importMetaStrings) {
     addProductionAssetPath(
       assetPaths,
-      normalizeProductionAssetPath(match[1]) || normalizeRelativeProductionAssetPath(match[1], currentAssetPath, true)
+      normalizeProductionAssetPath(importMetaString) ||
+        normalizeRelativeProductionAssetPath(importMetaString, currentAssetPath, true)
     );
   }
   return [...assetPaths];
