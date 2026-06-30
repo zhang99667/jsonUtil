@@ -34,4 +34,5 @@ export const appActionPanelMaintainabilityBudgets = [
   actionPanelBudget('frontend/src/utils/actionPanelEntryButtonState.ts', 20, '工具栏入口按钮状态兼容出口应只聚合工具/面板入口状态 helper 和类型导出'),
   actionPanelBudget('frontend/src/utils/actionPanelToolEntryButtonState.ts', 35, '工具栏转换工具入口状态 helper 应只维护工具模式 a11y、当前 badge 和图标状态'),
   actionPanelBudget('frontend/src/utils/actionPanelPanelEntryButtonState.ts', 35, '工具栏面板入口状态 helper 应只维护面板开关 a11y、打开 badge 和图标状态'),
+  actionPanelBudget('frontend/src/utils/actionPanelEntryButtonStateFactory.ts', 40, '工具栏入口按钮状态 factory 只维护 entryProps 和 iconState 的通用拼装'),
 ];
