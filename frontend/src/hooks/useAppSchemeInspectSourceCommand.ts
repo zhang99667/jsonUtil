@@ -1,11 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { buildSchemeInspectSourcePlan } from '../utils/appSourceReplacePlans';
-import {
-  cancelPendingSourceReplacement,
-  confirmPendingSourceReplacement,
-  runSourceReplacePlan,
-  type AppSourceReplacementTrackEvent,
-} from '../utils/appSourceReplacementCommandHelpers';
+import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandHelpers';
+import { usePendingSourceReplacementCommand } from './usePendingSourceReplacementCommand';
 
 interface UseAppSchemeInspectSourceCommandInput {
   sourceText: string;
@@ -20,40 +16,26 @@ export const useAppSchemeInspectSourceCommand = ({
   onSuccessSkip,
   onTrackToolEvent,
 }: UseAppSchemeInspectSourceCommandInput) => {
-  const [pendingSchemeInspectSourceText, setPendingSchemeInspectSourceText] = useState<string | null>(null);
+  const {
+    pendingText: pendingSchemeInspectSourceText,
+    handleRequest: requestSchemeInspectSource,
+    handleConfirm: handleConfirmSchemeInspectSource,
+    handleCancel: handleCancelSchemeInspectSource,
+  } = usePendingSourceReplacementCommand({
+    eventName: 'SCHEME_INSPECT_SOURCE',
+    category: 'panel',
+    confirmSuccessMessage: '已用 Scheme 原始值替换 SOURCE 并开始排查',
+    onApply,
+    onTrackToolEvent,
+  });
 
   const handleInspectSourceFromScheme = useCallback((value: string) => {
-    const startedAt = performance.now();
-    runSourceReplacePlan({
-      plan: buildSchemeInspectSourcePlan(sourceText, value),
-      eventName: 'SCHEME_INSPECT_SOURCE',
-      category: 'panel',
-      startedAt,
-      onApply,
-      onConfirm: setPendingSchemeInspectSourceText,
+    requestSchemeInspectSource(buildSchemeInspectSourcePlan(sourceText, value), {
+      startedAt: performance.now(),
       onSuccessSkip,
-      onTrackToolEvent,
       shouldTrackConfirmAsSkipped: true,
     });
-  }, [onApply, onSuccessSkip, onTrackToolEvent, sourceText]);
-
-  const handleConfirmSchemeInspectSource = useCallback(() => {
-    confirmPendingSourceReplacement({
-      pendingText: pendingSchemeInspectSourceText,
-      successMessage: '已用 Scheme 原始值替换 SOURCE 并开始排查',
-      eventName: 'SCHEME_INSPECT_SOURCE',
-      category: 'panel',
-      onApply,
-      onClearPending: () => setPendingSchemeInspectSourceText(null),
-      onTrackToolEvent,
-    });
-  }, [onApply, onTrackToolEvent, pendingSchemeInspectSourceText]);
-
-  const handleCancelSchemeInspectSource = useCallback(() => {
-    cancelPendingSourceReplacement('SCHEME_INSPECT_SOURCE', 'panel', () => {
-      setPendingSchemeInspectSourceText(null);
-    }, onTrackToolEvent);
-  }, [onTrackToolEvent]);
+  }, [onSuccessSkip, requestSchemeInspectSource, sourceText]);
 
   return {
     pendingSchemeInspectSourceText,
