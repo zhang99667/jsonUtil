@@ -1,4 +1,4 @@
-import type { SchemeParamDecodeStage } from './schemeUtils';
+import type { SchemeParamDecodeStage } from './schemeTypes';
 import type { JsonParseMeta, SchemeJsonPayloadValue } from './schemeJsonPayloads';
 
 const DEFAULT_SCHEME_PARAM_STAGE_VALUE_LIMIT = 100_000;

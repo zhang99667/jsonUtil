@@ -6,7 +6,7 @@ import {
   type PrefixedQueryLookup,
 } from './schemeQueryLayerEncoding';
 import { encodeUrlLayerContent } from './schemeUrlLayerEncoding';
-import type { DecodeLayer } from './schemeUtils';
+import type { DecodeLayer } from './schemeTypes';
 
 export interface SchemeLayerEncodingOptions {
   createRawParamOptions: () => SchemeRawParamOptions;

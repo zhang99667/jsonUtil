@@ -12,7 +12,7 @@ import {
   JsonObject,
   TransformSchemeParamStageSummary,
 } from '../types.ts';
-import type { DecodeLayer, SchemeParamDecodeStage, SchemePlaceholder, SchemeType } from './schemeUtils.ts';
+import type { DecodeLayer, SchemeParamDecodeStage, SchemePlaceholder, SchemeType } from './schemeTypes.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
 import { formatHarSourceLabel, trimSourceLabel, HAR_SOURCE_LABEL_PREFIX } from './sourceLabels.ts';
 

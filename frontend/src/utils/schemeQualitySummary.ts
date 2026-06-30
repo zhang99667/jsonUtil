@@ -4,7 +4,7 @@ import type {
   SchemeDecodeWarning,
   SchemeParamDecodeStage,
   SchemePlaceholder,
-} from './schemeUtils';
+} from './schemeTypes';
 import { APP_VERSION_METADATA, type AppVersionMetadata } from './appVersion';
 
 export type SchemeQualityLevel = 'success' | 'info' | 'warning' | 'error';

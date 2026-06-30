@@ -1,4 +1,4 @@
-import type { SchemeParamDecodeStage } from './schemeUtils';
+import type { SchemeParamDecodeStage } from './schemeTypes';
 import { normalizeQueryString, splitQueryPairs, stripQueryPrefix } from './schemeQuerySyntax';
 import { createUrl } from './schemeUrlShapes';
 import {

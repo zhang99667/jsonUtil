@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DecodeLayer } from './schemeUtils';
+import type { DecodeLayer } from './schemeTypes';
 import {
   formatSchemeCopySizeLabel,
   formatSchemeJoinedValuePreview,

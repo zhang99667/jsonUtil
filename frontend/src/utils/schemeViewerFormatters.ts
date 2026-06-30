@@ -2,7 +2,7 @@ import { formatByteSize, getDocumentStats } from './documentStats';
 import type {
   DecodeLayer,
   SchemeParamDecodeStage,
-} from './schemeUtils';
+} from './schemeTypes';
 
 export const formatSchemeTextPreview = (value: string, maxLength: number): string => (
   value.length > maxLength ? `${value.slice(0, maxLength)}...` : value

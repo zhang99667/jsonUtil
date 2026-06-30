@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **Scheme 类型契约分层**: 将 `SchemeDecodeResult`、`DecodeLayer`、参数 stage 和占位符等公共类型拆到 `schemeTypes`，`schemeUtils` 保留兼容导出，减少占位符、编码、诊断和 worker 模块对核心解码入口的类型耦合
 - **公网资源巡检示例降噪**: JS chunk 扫描会忽略 CHANGELOG/文档里的 `/assets/chunk.js`、`/assets/chunks/*.js` 等占位示例，避免发布后巡检被非真实资源误报拦截
 - **前端旧 chunk 迁移保护**: 远端 Docker Compose 部署会在替换前从当前前端容器备份旧 `/assets`，新容器启动后回填到静态目录，并把 helper 纳入部署语法检查、静态保留自检和预算，避免首次切换静态保留卷或发布替换时让打开中的旧页面懒加载 chunk 404
 - **深度解析类型出口分层**: 将样本导出、占位符回填模板、质量快照和协作归档包类型拆到 `transformSummaryArtifactTypes`，并将 schema/资源/嵌套字段分组类型拆到 `transformSummaryGroupTypes`，`transformSummaryTypes` 保留核心报告/视图契约并兼容 re-export；同步拆出 artifact 类型预算子表，降低深度解析类型仓库继续贴线和 type-only 环的风险
