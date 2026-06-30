@@ -17,6 +17,7 @@ import { useAppChunkLoadRecovery } from './hooks/useAppChunkLoadRecovery';
 import { useAppLazyPanelWarmup } from './hooks/useAppLazyPanelWarmup';
 import { useAppUpdateCheck } from './hooks/useAppUpdateCheck';
 import { useAppAsyncTransform } from './hooks/useAppAsyncTransform';
+import { useAppFileCloseGuard } from './hooks/useAppFileCloseGuard';
 import { useAppFileDrop } from './hooks/useAppFileDrop';
 import { useAppAiRepairCommand } from './hooks/useAppAiRepairCommand';
 import { useAppCopyCommands } from './hooks/useAppCopyCommands';
@@ -160,35 +161,21 @@ const App: React.FC = () => {
     safeSetStorageItem(GENERAL_SETTINGS_STORAGE_KEY, JSON.stringify(generalSettings));
   }, [generalSettings]);
 
-  const hasUnsavedChanges = useMemo(() => {
-    if (files.some(file => file.isDirty)) {
-      return true;
-    }
-
-    return !activeFileId && input.trim().length > 0;
-  }, [files, activeFileId, input]);
-
   const activeFile = useMemo(
     () => activeFileId ? files.find(file => file.id === activeFileId) || null : null,
     [activeFileId, files]
   );
-  const [pendingCloseFileId, setPendingCloseFileId] = useState<string | null>(null);
-  const pendingCloseFile = useMemo(
-    () => pendingCloseFileId ? files.find(file => file.id === pendingCloseFileId) || null : null,
-    [files, pendingCloseFileId]
-  );
-
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!hasUnsavedChanges) return;
-
-      event.preventDefault();
-      event.returnValue = '';
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+  const {
+    cancelPendingCloseFile,
+    confirmPendingCloseFile,
+    pendingCloseFile,
+    requestCloseFile,
+  } = useAppFileCloseGuard({
+    files,
+    activeFileId,
+    sourceText: input,
+    onCloseFile: closeFile,
+  });
 
   const [isJsonPathPanelOpen, setIsJsonPathPanelOpen] = useState(false);
   const [isJsonTreePanelOpen, setIsJsonTreePanelOpen] = useState(false);
@@ -554,29 +541,6 @@ const App: React.FC = () => {
     setIsAutoSaveEnabled(nextEnabled);
     showSuccess(nextEnabled ? '自动保存已开启' : '自动保存已关闭');
   }, [activeFileId, activeFile, isAutoSaveEnabled, setIsAutoSaveEnabled]);
-
-  const requestCloseFile = useCallback((fileId: string) => {
-    const fileToClose = files.find(file => file.id === fileId);
-    if (!fileToClose) return;
-
-    if (fileToClose.isDirty) {
-      setPendingCloseFileId(fileId);
-      return;
-    }
-
-    closeFile(fileId);
-  }, [closeFile, files, setPendingCloseFileId]);
-
-  const cancelPendingCloseFile = useCallback(() => {
-    setPendingCloseFileId(null);
-  }, [setPendingCloseFileId]);
-
-  const confirmPendingCloseFile = useCallback(() => {
-    if (pendingCloseFileId) {
-      closeFile(pendingCloseFileId);
-    }
-    setPendingCloseFileId(null);
-  }, [closeFile, pendingCloseFileId, setPendingCloseFileId]);
 
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({

@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **主应用文件关闭保护分层**: 将 `App.tsx` 内未保存状态计算、离开页面确认、脏文件关闭 pending/确认/取消逻辑下沉到 `useAppFileCloseGuard`，补充 beforeunload、脏文件拦截和确认关闭直测，并把主应用预算从 1130 行收紧到 1090 行
 - **主应用模板填充分层**: 将 `App.tsx` 内模板目标错误、模板应用、占位符回填质量 delta 和 SOURCE 变化竞态保护下沉到 `useAppTemplateFillCommand`，补充普通模板、占位符模板和 stale SOURCE 直测，并把主应用预算从 1190 行收紧到 1130 行
 - **主应用 SOURCE 校验分层**: 将 `App.tsx` 内 SOURCE 输入防抖校验、旧请求取消和 request id 防串写逻辑下沉到 `useAppSourceValidation`，补充 hook 直测并把主应用预算从 1220 行收紧到 1190 行
 - **工具栏入口状态工厂**: 将 ActionPanel 转换工具按钮和面板入口按钮重复的 `entryProps/iconState` 拼装收敛到纯 factory，保留现有 Tool/Panel 组件 DOM 契约与状态测试，降低后续新增入口按钮时复制状态结构的风险
