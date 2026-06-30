@@ -12,17 +12,13 @@ export const ActionPanelPanelButton: React.FC<ActionPanelPanelButtonProps> = ({
   isCollapsed,
   onClick,
   dataTour,
-}) => {
-  const buttonState = getActionPanelPanelEntryButtonState({ label, iconClass, hoverIconClass, isOpen, isCollapsed });
-
-  return (
-    <ActionPanelEntryButton
-      state={buttonState}
-      dataTour={dataTour}
-      isCollapsed={isCollapsed}
-      onClick={onClick}
-      label={label}
-      icon={icon}
-    />
-  );
-};
+}) => (
+  <ActionPanelEntryButton
+    state={getActionPanelPanelEntryButtonState({ label, iconClass, hoverIconClass, isOpen, isCollapsed })}
+    dataTour={dataTour}
+    isCollapsed={isCollapsed}
+    onClick={onClick}
+    label={label}
+    icon={icon}
+  />
+);

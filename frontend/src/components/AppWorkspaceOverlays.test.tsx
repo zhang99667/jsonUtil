@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AppFileDropOverlay } from './AppFileDropOverlay';
-import { AppResizeCaptureOverlay } from './AppResizeCaptureOverlay';
+import { AppInteractionOverlays } from './AppInteractionOverlays';
 import { AppToastHost } from './AppToastHost';
 import { AppWorkspaceOverlays } from './AppWorkspaceOverlays';
 
@@ -26,40 +25,18 @@ const findByType = (node: unknown, type: unknown): ElementLike[] => {
 };
 
 describe('AppWorkspaceOverlays', () => {
-  it('仅在拖拽文件时装配文件释放浮层', () => {
-    const draggingTree = AppWorkspaceOverlays({
-      isResizing: false,
+  it('装配交互遮罩组和主应用 toast 宿主', () => {
+    const tree = AppWorkspaceOverlays({
+      isResizing: true,
       isDraggingFile: true,
     });
-    const idleTree = AppWorkspaceOverlays({
-      isResizing: false,
-      isDraggingFile: false,
-    });
+    const interactionOverlays = findByType(tree, AppInteractionOverlays);
 
-    expect(findByType(draggingTree, AppFileDropOverlay)).toHaveLength(1);
-    expect(findByType(idleTree, AppFileDropOverlay)).toHaveLength(0);
-  });
-
-  it('仅在调整布局时装配 resize 捕获层', () => {
-    const resizingTree = AppWorkspaceOverlays({
+    expect(interactionOverlays).toHaveLength(1);
+    expect(interactionOverlays[0].props).toMatchObject({
       isResizing: true,
-      isDraggingFile: false,
+      isDraggingFile: true,
     });
-    const idleTree = AppWorkspaceOverlays({
-      isResizing: false,
-      isDraggingFile: false,
-    });
-
-    expect(findByType(resizingTree, AppResizeCaptureOverlay)).toHaveLength(1);
-    expect(findByType(idleTree, AppResizeCaptureOverlay)).toHaveLength(0);
-  });
-
-  it('始终装配主应用 toast 宿主', () => {
-    const tree = AppWorkspaceOverlays({
-      isResizing: false,
-      isDraggingFile: false,
-    });
-
     expect(findByType(tree, AppToastHost)).toHaveLength(1);
   });
 });

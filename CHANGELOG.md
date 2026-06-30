@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **主工作台交互遮罩分层**: 将 resize 捕获层和文件拖拽浮层下沉到 `AppInteractionOverlays`，`AppWorkspaceOverlays` 回归为交互遮罩组与 Toast 宿主装配层，并补充分层后的组件测试，降低主应用遮罩入口继续扩展时的耦合
+- **工具栏入口按钮包装瘦身**: 将转换工具按钮和面板入口按钮改为纯表达式包装器，继续复用统一入口状态 helper 与 `ActionPanelEntryButton`，两个组件各从 28 行降到 24 行，减少新增工具入口时的样板维护成本
 - **深度解析 Support 治理预算分层**: 将 `maintainability-budget-governance-transform-panel-helper-support-rules` 拆成 UI、复制和 CMD 三张子表，原入口只聚合子表并追踪子治理表预算，避免 helper support 治理继续贴线
 - **深度解析行动项与 Footer 预算分层**: 将 `maintainability-budget-transform-panel-helper-action-item-rules` 拆成 builder 与 contract 子表，`footer-workflow-rules` 拆成 action 与 handler 子表，原入口只聚合子表，并补充对应治理预算，避免深度解析 helper 继续扩展时预算规则表贴线
 - **工具栏 AI 修复按钮契约收敛**: 将 `ActionPanelAiFixButtonProps` 并入 `ActionPanelButtonTypes`，让 AI 修复、转换工具和面板入口按钮复用同一 props 契约出口，AI 修复按钮组件从 32 行降到 27 行

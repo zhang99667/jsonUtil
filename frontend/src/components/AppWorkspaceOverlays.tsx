@@ -1,6 +1,5 @@
 import React from 'react';
-import { AppFileDropOverlay } from './AppFileDropOverlay';
-import { AppResizeCaptureOverlay } from './AppResizeCaptureOverlay';
+import { AppInteractionOverlays } from './AppInteractionOverlays';
 import { AppToastHost } from './AppToastHost';
 
 interface AppWorkspaceOverlaysProps {
@@ -13,10 +12,7 @@ export const AppWorkspaceOverlays: React.FC<AppWorkspaceOverlaysProps> = ({
   isDraggingFile,
 }) => (
   <>
-    {isResizing && <AppResizeCaptureOverlay />}
-
-    {isDraggingFile && <AppFileDropOverlay />}
-
+    <AppInteractionOverlays isResizing={isResizing} isDraggingFile={isDraggingFile} />
     <AppToastHost />
   </>
 );
