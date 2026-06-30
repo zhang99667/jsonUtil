@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **文件关闭保护再分层**: 将 `useAppFileCloseGuard` 内未保存状态、pending 文件查找和关闭决策抽到 `appFileCloseGuardState` 纯 helper，补充关闭决策矩阵直测，并把文件关闭保护 hook 预算从 80 行收紧到 72 行
 - **模板填充命令再分层**: 将 `useAppTemplateFillCommand` 内目标错误文案抽到 `appTemplateFillTargetError`，占位符回填前后质量 delta 构建抽到 `appTemplateFillQualityDelta`，补充目标错误矩阵和质量 delta 直测，并把模板填充命令 hook 预算从 125 行收紧到 90 行
 - **主应用文件关闭保护分层**: 将 `App.tsx` 内未保存状态计算、离开页面确认、脏文件关闭 pending/确认/取消逻辑下沉到 `useAppFileCloseGuard`，补充 beforeunload、脏文件拦截和确认关闭直测，并把主应用预算从 1130 行收紧到 1090 行
 - **主应用模板填充分层**: 将 `App.tsx` 内模板目标错误、模板应用、占位符回填质量 delta 和 SOURCE 变化竞态保护下沉到 `useAppTemplateFillCommand`，补充普通模板、占位符模板和 stale SOURCE 直测，并把主应用预算从 1190 行收紧到 1130 行
