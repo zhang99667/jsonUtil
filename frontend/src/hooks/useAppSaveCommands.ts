@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { showError, showSuccess } from '../utils/toast';
 import type { AppSaveEditor } from '../utils/appSaveActionPlan';
 import type { AppSaveTrackEvent } from '../utils/appSaveCommandTypes';
@@ -34,42 +34,34 @@ export const useAppSaveCommands = ({
     isOutputTransforming,
   }), [isOutputTransforming, previewText]);
 
+  const effects = useMemo(() => ({
+    onSaveFile,
+    onSaveSourceAs,
+    onSavePreviewAs: savePreview,
+    onShowError: showError,
+    onShowSuccess: showSuccess,
+    onTrackToolEvent,
+  }), [onSaveFile, onSaveSourceAs, onTrackToolEvent, savePreview]);
+
   const handleSaveShortcut = useCallback(() => runAppSaveShortcutCommand({
     activeEditor,
     hasActiveFile,
     activeFileHasHandle,
     previewText,
     isOutputTransforming,
-  }, {
-    onSaveFile,
-    onSaveSourceAs,
-    onSavePreviewAs: savePreview,
-    onShowError: showError,
-    onShowSuccess: showSuccess,
-    onTrackToolEvent,
-  }), [
+  }, effects), [
     activeEditor,
     activeFileHasHandle,
+    effects,
     hasActiveFile,
     isOutputTransforming,
-    onSaveFile,
-    onSaveSourceAs,
-    onTrackToolEvent,
     previewText,
-    savePreview,
   ]);
 
   const handleToolbarSave = useCallback(() => runAppToolbarSaveCommand({
     activeEditor,
     hasActiveFile,
-  }, {
-    onSaveFile,
-    onSaveSourceAs,
-    onSavePreviewAs: savePreview,
-    onShowError: showError,
-    onShowSuccess: showSuccess,
-    onTrackToolEvent,
-  }), [activeEditor, hasActiveFile, onSaveFile, onSaveSourceAs, onTrackToolEvent, savePreview]);
+  }, effects), [activeEditor, effects, hasActiveFile]);
 
   return { handleSaveShortcut, handleToolbarSave };
 };
