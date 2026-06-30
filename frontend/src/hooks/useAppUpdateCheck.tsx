@@ -11,6 +11,7 @@ import {
   APP_UPDATE_CHECK_INTERVAL_MS,
 } from '../utils/appUpdatePolicy';
 import { runAppUpdateCheckOnce } from '../utils/appUpdateCheckRunner';
+import { installAppUpdateCheckSchedule } from '../utils/appUpdateCheckSchedule';
 
 const APP_UPDATE_TOAST_ID = 'json-helper-app-update';
 
@@ -54,26 +55,17 @@ export const useAppUpdateCheck = () => {
       });
     };
 
-    const initialTimer = window.setTimeout(checkForUpdate, APP_UPDATE_CHECK_INITIAL_DELAY_MS);
-    const intervalTimer = window.setInterval(checkForUpdate, APP_UPDATE_CHECK_INTERVAL_MS);
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void checkForUpdate();
-      }
-    };
-    const handleFocus = () => {
-      void checkForUpdate();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
+    const cleanupSchedule = installAppUpdateCheckSchedule({
+      checkForUpdate,
+      windowTarget: window,
+      documentTarget: document,
+      initialDelayMs: APP_UPDATE_CHECK_INITIAL_DELAY_MS,
+      intervalMs: APP_UPDATE_CHECK_INTERVAL_MS,
+    });
 
     return () => {
       isActive = false;
-      window.clearTimeout(initialTimer);
-      window.clearInterval(intervalTimer);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      cleanupSchedule();
     };
   }, []);
 };
