@@ -1,57 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import type {
   TransformContextReport,
-  TransformReportRecord,
   TransformReportView,
 } from '../utils/transformSummary';
 import type { TransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
-import { TransformReportEmptyState } from './TransformReportEmptyState';
-import { TransformReportFilterBar } from './TransformReportFilterBar';
 import { TransformReportPanelContent } from './TransformReportPanelContent';
-import { TransformReportPlaceholdersSection } from './TransformReportPlaceholdersSection';
-import { TransformReportRecordsSection } from './TransformReportRecordsSection';
-import { TransformReportSummarySection } from './TransformReportSummarySection';
-import { TransformReportWarningsSection } from './TransformReportWarningsSection';
+import { TransformReportPanelSections } from './TransformReportPanelSections';
 
-vi.mock('./TransformReportSummarySection', () => ({
-  TransformReportSummarySection: (props: Record<string, unknown>) => (
-    <section data-mock="summary" {...props} />
-  ),
-}));
-
-vi.mock('./TransformReportFilterBar', () => ({
-  TransformReportFilterBar: (props: Record<string, unknown>) => (
-    <section data-mock="filter" {...props} />
-  ),
-}));
-
-vi.mock('./TransformReportRecordsSection', () => ({
-  TransformReportRecordsSection: (props: Record<string, unknown>) => (
-    <section data-mock="records" {...props} />
-  ),
-}));
-
-vi.mock('./TransformReportUnresolvedSection', () => ({
-  TransformReportUnresolvedSection: (props: Record<string, unknown>) => (
-    <section data-mock="unresolved" {...props} />
-  ),
-}));
-
-vi.mock('./TransformReportPlaceholdersSection', () => ({
-  TransformReportPlaceholdersSection: (props: Record<string, unknown>) => (
-    <section data-mock="placeholders" {...props} />
-  ),
-}));
-
-vi.mock('./TransformReportWarningsSection', () => ({
-  TransformReportWarningsSection: (props: Record<string, unknown>) => (
-    <section data-mock="warnings" {...props} />
-  ),
-}));
-
-vi.mock('./TransformReportEmptyState', () => ({
-  TransformReportEmptyState: (props: Record<string, unknown>) => (
-    <section data-mock="empty" {...props} />
+vi.mock('./TransformReportPanelSections', () => ({
+  TransformReportPanelSections: (props: Record<string, unknown>) => (
+    <section data-mock="sections" {...props} />
   ),
 }));
 
@@ -84,17 +42,16 @@ const collectText = (node: unknown): string => {
 };
 
 const report = { summaryText: '解析完成' } as TransformContextReport;
-const record = { path: '$.a' } as TransformReportRecord;
 const reportView = {
-  records: [record],
+  records: [],
   unresolvedCandidates: [],
   runtimePlaceholderGroups: [],
   runtimePlaceholders: [],
-  warnings: [{ path: '$.warn' }],
-  filteredRecordCount: 1,
+  warnings: [],
+  filteredRecordCount: 0,
   filteredUnresolvedCount: 0,
   filteredPlaceholderCount: 0,
-  filteredWarningCount: 1,
+  filteredWarningCount: 0,
   isRecordTruncated: false,
   isUnresolvedTruncated: false,
   isPlaceholderTruncated: false,
@@ -168,55 +125,17 @@ describe('TransformReportPanelContent', () => {
     }));
 
     expect(collectText(tree)).toContain('暂无深度解析上下文');
-    expect(findByType(tree, TransformReportSummarySection)).toHaveLength(0);
+    expect(findByType(tree, TransformReportPanelSections)).toHaveLength(0);
   });
 
-  it('按 section 可见性渲染记录、告警和空态', () => {
-    const tree = TransformReportPanelContent(buildProps({
-      sectionVisibility: {
-        showRecords: true,
-        showUnresolved: false,
-        showPlaceholders: false,
-        showWarnings: true,
-        showEmptyState: true,
-      },
-    }));
-
-    expect(findByType(tree, TransformReportSummarySection)).toHaveLength(1);
-    expect(findByType(tree, TransformReportFilterBar)).toHaveLength(1);
-    expect(findByType(tree, TransformReportRecordsSection)).toHaveLength(1);
-    expect(findByType(tree, TransformReportWarningsSection)).toHaveLength(1);
-    expect(findByType(tree, TransformReportEmptyState)).toHaveLength(1);
-  });
-
-  it('向记录和占位符分区透传复制、定位和模板回调', () => {
+  it('有报告时委派 sections 组件渲染内容区', () => {
     const onFilter = vi.fn();
-    const onCopyPlaceholderReport = vi.fn();
-    const onOpenPlaceholderFillTemplate = vi.fn();
-    const tree = TransformReportPanelContent(buildProps({
-      onFilter,
-      onCopyPlaceholderReport,
-      onOpenPlaceholderFillTemplate,
-      sectionVisibility: {
-        showRecords: true,
-        showUnresolved: false,
-        showPlaceholders: true,
-        showWarnings: false,
-        showEmptyState: false,
-      },
-    }));
-    const records = findByType(tree, TransformReportRecordsSection)[0];
-    const placeholders = findByType(tree, TransformReportPlaceholdersSection)[0];
+    const tree = TransformReportPanelContent(buildProps({ onFilter }));
+    const sections = findByType(tree, TransformReportPanelSections)[0];
 
-    expect(records.props.records).toBe(reportView.records);
-    expect(records.props.onFilter).toBe(onFilter);
-    expect(records.props.onLocatePath).toBeDefined();
-    const toolbar = placeholders.props.toolbar as {
-      onOpenPlaceholderFillTemplate: () => void;
-      onCopyPlaceholderReport: () => void;
-    };
-    expect(toolbar.onOpenPlaceholderFillTemplate).toBe(onOpenPlaceholderFillTemplate);
-    expect(toolbar.onCopyPlaceholderReport).toBe(onCopyPlaceholderReport);
-    expect(placeholders.props.onFilter).toBe(onFilter);
+    expect(sections.props.report).toBe(report);
+    expect(sections.props.reportView).toBe(reportView);
+    expect(sections.props.query).toBe('CMD');
+    expect(sections.props.onFilter).toBe(onFilter);
   });
 });
