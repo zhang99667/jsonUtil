@@ -1,13 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { getClipboardErrorMessage, readClipboardText } from '../utils/clipboard';
 import { buildPasteSourcePlan } from '../utils/appSourceReplacePlans';
 import { showError } from '../utils/toast';
-import {
-  cancelPendingSourceReplacement,
-  confirmPendingSourceReplacement,
-  runSourceReplacePlan,
-  type AppSourceReplacementTrackEvent,
-} from '../utils/appSourceReplacementCommandHelpers';
+import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandHelpers';
+import { usePendingSourceReplacementCommand } from './usePendingSourceReplacementCommand';
 
 interface UseAppPasteSourceCommandInput {
   sourceText: string;
@@ -20,45 +16,33 @@ export const useAppPasteSourceCommand = ({
   onApply,
   onTrackToolEvent,
 }: UseAppPasteSourceCommandInput) => {
-  const [pendingPasteSourceText, setPendingPasteSourceText] = useState<string | null>(null);
+  const {
+    pendingText: pendingPasteSourceText,
+    handleRequest: requestPasteSource,
+    handleConfirm: handleConfirmPasteSource,
+    handleCancel: handleCancelPasteSource,
+  } = usePendingSourceReplacementCommand({
+    eventName: 'SOURCE_PASTE',
+    category: 'editor',
+    confirmSuccessMessage: '已用剪贴板内容替换 SOURCE',
+    onApply,
+    onTrackToolEvent,
+  });
 
   const handlePasteSource = useCallback(async () => {
     const startedAt = performance.now();
 
     try {
       const clipboardText = await readClipboardText();
-      runSourceReplacePlan({
-        plan: buildPasteSourcePlan(sourceText, clipboardText),
-        eventName: 'SOURCE_PASTE',
-        category: 'editor',
-        startedAt,
-        onApply,
-        onConfirm: setPendingPasteSourceText,
-        onTrackToolEvent,
-      });
+      requestPasteSource(
+        buildPasteSourcePlan(sourceText, clipboardText),
+        { startedAt },
+      );
     } catch (error) {
       showError(getClipboardErrorMessage(error, '读取剪贴板失败'));
       onTrackToolEvent('SOURCE_PASTE', 'editor', 'error', startedAt);
     }
-  }, [onApply, onTrackToolEvent, sourceText]);
-
-  const handleConfirmPasteSource = useCallback(() => {
-    confirmPendingSourceReplacement({
-      pendingText: pendingPasteSourceText,
-      successMessage: '已用剪贴板内容替换 SOURCE',
-      eventName: 'SOURCE_PASTE',
-      category: 'editor',
-      onApply,
-      onClearPending: () => setPendingPasteSourceText(null),
-      onTrackToolEvent,
-    });
-  }, [onApply, onTrackToolEvent, pendingPasteSourceText]);
-
-  const handleCancelPasteSource = useCallback(() => {
-    cancelPendingSourceReplacement('SOURCE_PASTE', 'editor', () => {
-      setPendingPasteSourceText(null);
-    }, onTrackToolEvent);
-  }, [onTrackToolEvent]);
+  }, [onTrackToolEvent, requestPasteSource, sourceText]);
 
   return {
     pendingPasteSourceText,

@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **SOURCE 粘贴与 Scheme 排查 pending 收敛**: 粘贴 SOURCE 和 Scheme 原始值排查复用 `usePendingSourceReplacementCommand` 的 request/confirm/cancel 编排，继续保留剪贴板错误计时、Scheme confirm-as-skipped 特例和各自确认文案，减少 SOURCE 替换命令后续维护重复配置
 - **SOURCE 替换 pending 编排复用**: 抽出 `usePendingSourceReplacementCommand` 统一管理 pending 文本、确认替换和取消打点，`useAppApplySourceReplacementCommands` 只保留 PREVIEW/Schema 两个 request 入口，降低后续新增 SOURCE 替换场景时复制 event/category/successMessage 的风险
 - **版本检测调度分层**: 将打开状态下的新版本检测定时器、窗口聚焦和可见态恢复监听抽到 `appUpdateCheckSchedule`，`useAppUpdateCheck` 继续专注 Toast、manifest 拉取和单次检查器装配，并用单测锁定监听清理行为
 - **保存命令副作用装配收敛**: `useAppSaveCommands` 复用 memoized save effects 装配，快捷键保存和工具栏保存只传各自输入数据，减少保存链路新增 toast、埋点或另存为副作用时的重复改动点
