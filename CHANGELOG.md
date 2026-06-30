@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **公网 JS 资源路径解析分层**: 将 JS chunk 中 assets 字符串、相对 import 和 `import.meta.url` 候选的归一化与文档示例过滤抽到 `productionFrontendAssetJavascriptPathResolvers`，并新增 focused node:test 锁定顺序、嵌套 chunk 和示例降噪边界，降低发布巡检继续扩展时漏扫旧 chunk 的风险
 - **保存计划副作用分层**: 将保存计划到文件副作用的分发抽到 `appSavePlanEffectRunner`，`appSavePlanExecutor` 聚焦 skip、执行结果和成功提示，并补齐 executor 直测覆盖 PREVIEW/SOURCE 写入边界
 - **工具栏入口状态分层**: 将转换工具入口和面板入口的状态派生拆到独立纯 helper，`actionPanelEntryButtonState` 保留兼容导出，减少新增工具或面板时互相挤占预算的维护风险
 - **深度解析 Schema 分组分层**: 将 schema origin 归并、资源类型分组和 schema 分组默认上限拆到独立纯 helper，`transformReportCommandSchemaGroups` 保留兼容导出并只负责 schema 维度聚合；同步把 schema 预算拆成子表，降低后续扩展 CMD/资源分布统计时的维护风险
