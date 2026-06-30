@@ -13,6 +13,9 @@ export type AppToolbarSavePlan =
   | { action: 'save-source-to-file'; successMessage: string }
   | { action: 'save-source-as'; successMessage: string };
 
+export type AppSaveExecutablePlan = AppSaveShortcutPlan | AppToolbarSavePlan;
+export type AppSaveEffectPlan = Exclude<AppSaveExecutablePlan, { action: 'skip' }>;
+
 export interface AppSavePlanInput {
   activeEditor: AppSaveEditor;
   hasActiveFile: boolean;

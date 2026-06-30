@@ -1,10 +1,6 @@
-import type {
-  AppSaveShortcutPlan,
-  AppToolbarSavePlan,
-} from './appSaveActionPlanTypes';
+import type { AppSaveExecutablePlan } from './appSaveActionPlanTypes';
 import type { AppSaveCommandEffects } from './appSaveCommandTypes';
-
-type AppSaveExecutablePlan = AppSaveShortcutPlan | AppToolbarSavePlan;
+import { runAppSavePlanEffect } from './appSavePlanEffectRunner';
 
 interface ExecuteAppSavePlanInput {
   plan: AppSaveExecutablePlan;
@@ -22,17 +18,7 @@ export const executeAppSavePlan = async ({
     return false;
   }
 
-  let success = false;
-  if (plan.action === 'save-preview-to-file') {
-    success = await effects.onSaveFile(previewText);
-  } else if (plan.action === 'save-source-to-file') {
-    success = await effects.onSaveFile();
-  } else if (plan.action === 'save-preview-as') {
-    success = await effects.onSavePreviewAs();
-  } else {
-    success = await effects.onSaveSourceAs();
-  }
-
+  const success = await runAppSavePlanEffect({ plan, previewText, effects });
   if (success && 'successMessage' in plan) {
     effects.onShowSuccess(plan.successMessage);
   }

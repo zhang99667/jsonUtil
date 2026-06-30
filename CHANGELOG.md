@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **保存计划副作用分层**: 将保存计划到文件副作用的分发抽到 `appSavePlanEffectRunner`，`appSavePlanExecutor` 聚焦 skip、执行结果和成功提示，并补齐 executor 直测覆盖 PREVIEW/SOURCE 写入边界
+- **工具栏入口状态分层**: 将转换工具入口和面板入口的状态派生拆到独立纯 helper，`actionPanelEntryButtonState` 保留兼容导出，减少新增工具或面板时互相挤占预算的维护风险
 - **深度解析 Schema 分组分层**: 将 schema origin 归并、资源类型分组和 schema 分组默认上限拆到独立纯 helper，`transformReportCommandSchemaGroups` 保留兼容导出并只负责 schema 维度聚合；同步把 schema 预算拆成子表，降低后续扩展 CMD/资源分布统计时的维护风险
 - **深度解析资源字段提取分层**: 将资源字段 schema 提取和 resourceType 补充抽到 `transformReportDecodedPathResource` 共享 helper，`transformReportCommandSchemaOccurrences` 只保留记录扫描入口，并用单测锁定 `sourceValue` 优先级，减少 CMD/资源分组与记录洞察的重复规则
 - **占位符回填模板明细分层**: 将运行时占位符回填模板里的 `placeholderDetails` 构建抽到 `transformPlaceholderFillTemplateDetails`，模板入口继续专注 schema/tool/filter/summary/placeholders 外层契约，并用单测锁定 suggestion 与来源字段的可选输出结构，降低后续扩展回填候选字段时的回归风险
