@@ -73,6 +73,20 @@ test('从 JS chunk 提取深层 assets 路径并忽略外部资源', () => {
   ]);
 });
 
+test('JS 文档示例里的 assets 占位路径不会进入巡检', () => {
+  const javascript = [
+    'const markdown = "Use /assets/chunk.js and /assets/chunks/*.js and /assets/chunks/*.css";',
+    "const markdownSnippet = '`import(\"./chunk.js\")` `@import \"./theme.css\"` `new URL(\"./worker.js\", import.meta.url)`';",
+    'const theme = "/assets/theme.css";',
+    'const worker = "/assets/worker.js";',
+    'const real = "/assets/deep-worker.js";',
+  ].join('');
+
+  assert.deepEqual(extractFrontendAssetPathsFromJavascript(javascript, '/assets/main-a.js'), [
+    '/assets/deep-worker.js',
+  ]);
+});
+
 test('从 CSS url() 提取同站静态资源并忽略 data 和外链', () => {
   const css = [
     '@font-face { src: url("./font-main.woff2?v=1") format("woff2"); }',

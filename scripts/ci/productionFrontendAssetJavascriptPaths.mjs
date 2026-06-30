@@ -3,7 +3,17 @@ import {
   normalizeRelativeProductionAssetPath,
 } from './productionFrontendAssetPathNormalization.mjs';
 
-const addProductionAssetPath = (assetPaths, assetPath) => assetPath && assetPaths.add(assetPath);
+const DOCUMENT_EXAMPLE_ASSET_PATHS = new Set([
+  '/assets/chunk.js',
+  '/assets/theme.css',
+  '/assets/worker.js',
+]);
+
+const isDocumentExampleAssetPath = (assetPath) =>
+  assetPath.includes('*') || DOCUMENT_EXAMPLE_ASSET_PATHS.has(assetPath);
+
+const addProductionAssetPath = (assetPaths, assetPath) =>
+  assetPath && !isDocumentExampleAssetPath(assetPath) && assetPaths.add(assetPath);
 
 export const extractFrontendAssetPathsFromJavascript = (javascript, currentAssetPath = '/assets/') => {
   const assetPaths = new Set();
