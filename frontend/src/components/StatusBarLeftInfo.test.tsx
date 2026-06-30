@@ -3,6 +3,7 @@ import type { FileTab } from '../types';
 import { StatusBarActiveFileBadge } from './StatusBarActiveFileBadge';
 import { StatusBarContentMetrics } from './StatusBarContentMetrics';
 import { StatusBarLeftInfo } from './StatusBarLeftInfo';
+import { StatusBarSaveStatusBadge } from './StatusBarSaveStatusBadge';
 import { StatusBarSourceValidationBadge } from './StatusBarSourceValidationBadge';
 
 interface ElementLike {
@@ -81,9 +82,11 @@ describe('StatusBarLeftInfo', () => {
     expect(metrics.props.maxColumns).toBe(80);
     expect(metrics.props.cursorLine).toBe(3);
     expect(metrics.props.cursorColumn).toBe(9);
-    expect(findByDataTour(tree, 'save-status')[0].props.className).toContain('bg-yellow-100');
-    expect(collectText(findByDataTour(tree, 'save-status')[0])).toContain('未保存');
     expect(findByType(tree, StatusBarActiveFileBadge)[0].props.activeFile).toBe(activeFile);
+    expect(findByType(tree, StatusBarSaveStatusBadge)[0].props.status).toMatchObject({
+      label: '未保存',
+      className: 'bg-yellow-100 text-yellow-800',
+    });
   });
 
   it('采样统计时展示简化行列并透传 SOURCE 校验动作', () => {
