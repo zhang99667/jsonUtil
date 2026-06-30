@@ -330,6 +330,42 @@ describe('cmdStructureDiff', () => {
     ]);
   });
 
+  it('允许 actual 保留原字符串而 expected 展开 URL', () => {
+    const source = 'https://example.com/landing?sku=101';
+    const actual = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdParams: {
+          url: source,
+        },
+      },
+    };
+    const expected = {
+      result: {
+        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdParams: {
+          url: {
+            cmdSchema: 'https://example.com/landing',
+            cmdParams: {
+              sku: '101',
+            },
+            source,
+          },
+        },
+      },
+    };
+
+    const diff = diffCmdStructures(actual, expected);
+
+    expect(diff.valueDiffs).toEqual([]);
+    expect(diff.missingPaths).toEqual([
+      '$.url.cmdSchema',
+      '$.url.cmdParams',
+      '$.url.cmdParams.sku',
+      '$.url.source',
+    ]);
+  });
+
   it('识别 source 单侧缺失差异', () => {
     const actual = createCmdStructure();
     const expected = createCmdStructure();

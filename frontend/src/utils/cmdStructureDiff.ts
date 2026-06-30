@@ -1,15 +1,15 @@
 import type { JsonValue } from '../types';
 import type { AppVersionMetadata } from './appVersion';
 import type { CmdStructureCandidateInput } from './cmdStructureCandidates';
-import {
-  stringifyCmdStructureValue,
-} from './cmdStructureDiffFormatter';
 import { countCmdStructurePathBranches } from './cmdStructurePathBranches';
 import {
   findRawResponseCmdStructure,
-  normalizeRawSourceString,
 } from './cmdStructureRawSource';
 import type { NormalizedCmdStructure } from './cmdStructureRawSource';
+import {
+  compareCmdStructureValues,
+  type CmdStructureValueDiff,
+} from './cmdStructureValueDiff';
 
 export {
   collectActualCmdStructureCandidates,
@@ -23,20 +23,12 @@ export {
 export {
   countCmdStructurePathBranches,
 } from './cmdStructurePathBranches';
+export type {
+  CmdStructureValueDiff,
+} from './cmdStructureValueDiff';
 
 interface JsonObject {
   [key: string]: JsonValue;
-}
-
-interface ValueRow {
-  type: string;
-  value: JsonValue;
-}
-
-export interface CmdStructureValueDiff {
-  path: string;
-  actual: JsonValue;
-  expected: JsonValue;
 }
 
 export interface CmdStructureDiff {
@@ -240,12 +232,6 @@ export const parseCmdStructureJson = (text: string, label = '输入'): JsonValue
   throw new Error(`${label}不是有效 JSON`);
 };
 
-const appendPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
-
 const findCmdStructure = (value: JsonValue): NormalizedCmdStructure | null => {
   if (!isRecord(value)) return null;
 
@@ -291,102 +277,6 @@ export const normalizeCmdStructure = (value: JsonValue): NormalizedCmdStructure 
   };
 };
 
-const collectValueMap = (value: JsonValue, path = '$'): Map<string, ValueRow> => {
-  const rows = new Map<string, ValueRow>();
-
-  if (Array.isArray(value)) {
-    rows.set(path, { type: 'array', value });
-    value.forEach((item, index) => {
-      collectValueMap(item, `${path}[${index}]`).forEach((row, rowPath) => {
-        rows.set(rowPath, row);
-      });
-    });
-    return rows;
-  }
-
-  if (isRecord(value)) {
-    rows.set(path, { type: 'object', value });
-    Object.entries(value).forEach(([key, item]) => {
-      collectValueMap(item, appendPathKey(path, key)).forEach((row, rowPath) => {
-        rows.set(rowPath, row);
-      });
-    });
-    return rows;
-  }
-
-  rows.set(path, {
-    type: value === null ? 'null' : typeof value,
-    value,
-  });
-  return rows;
-};
-
-const getStructuredSourceValue = (value: JsonValue): string | undefined => (
-  isRecord(value) && typeof value.source === 'string'
-    ? normalizeRawSourceString(value.source)
-    : undefined
-);
-
-const isStructuredSourceEquivalent = (actual: JsonValue, expected: JsonValue): boolean => {
-  if (typeof actual === 'string') {
-    return getStructuredSourceValue(expected) === normalizeRawSourceString(actual);
-  }
-
-  if (typeof expected === 'string') {
-    return getStructuredSourceValue(actual) === normalizeRawSourceString(expected);
-  }
-
-  return false;
-};
-
-const compareRows = (
-  actualRows: Map<string, ValueRow>,
-  expectedRows: Map<string, ValueRow>
-): Pick<CmdStructureDiff, 'missingPaths' | 'extraPaths' | 'valueDiffs'> => {
-  const missingPaths: string[] = [];
-  const extraPaths: string[] = [];
-  const valueDiffs: CmdStructureValueDiff[] = [];
-
-  expectedRows.forEach((expectedRow, path) => {
-    const actualRow = actualRows.get(path);
-    if (!actualRow) {
-      missingPaths.push(path);
-      return;
-    }
-
-    if (actualRow.type !== expectedRow.type) {
-      if (isStructuredSourceEquivalent(actualRow.value, expectedRow.value)) return;
-
-      valueDiffs.push({
-        path,
-        actual: actualRow.value,
-        expected: expectedRow.value,
-      });
-      return;
-    }
-
-    if (actualRow.type === 'object' || actualRow.type === 'array') {
-      return;
-    }
-
-    if (stringifyCmdStructureValue(actualRow.value) !== stringifyCmdStructureValue(expectedRow.value)) {
-      valueDiffs.push({
-        path,
-        actual: actualRow.value,
-        expected: expectedRow.value,
-      });
-    }
-  });
-
-  actualRows.forEach((_actualRow, path) => {
-    if (!expectedRows.has(path)) {
-      extraPaths.push(path);
-    }
-  });
-
-  return { missingPaths, extraPaths, valueDiffs };
-};
-
 export const diffCmdStructures = (
   actualInput: JsonValue,
   expectedInput: JsonValue,
@@ -400,10 +290,7 @@ export const diffCmdStructures = (
   const sourceDiff = expected.source !== undefined && actual.source !== expected.source
     ? { actual: actual.source, expected: expected.source }
     : null;
-  const paramDiff = compareRows(
-    collectValueMap(actual.cmdParams),
-    collectValueMap(expected.cmdParams)
-  );
+  const paramDiff = compareCmdStructureValues(actual.cmdParams, expected.cmdParams);
   const extraPaths = options.ignoreExtraPaths ? [] : paramDiff.extraPaths;
 
   return {
