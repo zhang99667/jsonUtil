@@ -14,7 +14,7 @@ export const governanceTransformPanelHelperMaintainabilityBudgets = [
   },
   {
     file: 'scripts/ci/maintainability-budget-governance-transform-panel-helper-support-rules.mjs',
-    maxLines: 25,
+    maxLines: 30,
     reason: '深度解析面板 UI、复制和 CMD helper 治理规则应独立收口，避免 helper 治理入口继续贴线',
   },
   ...governanceTransformPanelHelperWorkflowMaintainabilityBudgets,

@@ -1,22 +1,24 @@
+import { governanceTransformPanelHelperSupportCmdMaintainabilityBudgets } from './maintainability-budget-governance-transform-panel-helper-support-cmd-rules.mjs';
+import { governanceTransformPanelHelperSupportCopyMaintainabilityBudgets } from './maintainability-budget-governance-transform-panel-helper-support-copy-rules.mjs';
+import { governanceTransformPanelHelperSupportUiMaintainabilityBudgets } from './maintainability-budget-governance-transform-panel-helper-support-ui-rules.mjs';
+
 export const governanceTransformPanelHelperSupportMaintainabilityBudgets = [
   {
-    file: 'scripts/ci/maintainability-budget-transform-panel-helper-ui-rules.mjs',
-    maxLines: 50,
-    reason: '深度解析面板 UI helper 预算规则过多时应继续按行动项和样式拆分',
+    file: 'scripts/ci/maintainability-budget-governance-transform-panel-helper-support-ui-rules.mjs',
+    maxLines: 15,
+    reason: '深度解析 UI helper 治理预算规则应独立收口，避免 support 治理入口继续贴线',
   },
   {
-    file: 'scripts/ci/maintainability-budget-transform-panel-helper-copy-rules.mjs',
-    maxLines: 40,
-    reason: '深度解析面板复制 helper 预算规则应保持短表，新增复制规则先按 title/payload/metrics 分层',
+    file: 'scripts/ci/maintainability-budget-governance-transform-panel-helper-support-copy-rules.mjs',
+    maxLines: 20,
+    reason: '深度解析复制 helper 治理预算规则应独立收口，避免 support 治理入口继续贴线',
   },
   {
-    file: 'scripts/ci/maintainability-budget-transform-panel-helper-copy-workflow-rules.mjs',
-    maxLines: 45,
-    reason: '深度解析面板复制 workflow 预算规则应独立维护，避免复制 helper 总表回涨',
+    file: 'scripts/ci/maintainability-budget-governance-transform-panel-helper-support-cmd-rules.mjs',
+    maxLines: 15,
+    reason: '深度解析 CMD helper 治理预算规则应独立收口，避免 support 治理入口继续贴线',
   },
-  {
-    file: 'scripts/ci/maintainability-budget-transform-panel-helper-cmd-rules.mjs',
-    maxLines: 50,
-    reason: '深度解析 CMD 对比 helper 预算规则应保持短表',
-  },
+  ...governanceTransformPanelHelperSupportUiMaintainabilityBudgets,
+  ...governanceTransformPanelHelperSupportCopyMaintainabilityBudgets,
+  ...governanceTransformPanelHelperSupportCmdMaintainabilityBudgets,
 ];

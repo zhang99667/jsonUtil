@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **深度解析 Support 治理预算分层**: 将 `maintainability-budget-governance-transform-panel-helper-support-rules` 拆成 UI、复制和 CMD 三张子表，原入口只聚合子表并追踪子治理表预算，避免 helper support 治理继续贴线
 - **深度解析行动项与 Footer 预算分层**: 将 `maintainability-budget-transform-panel-helper-action-item-rules` 拆成 builder 与 contract 子表，`footer-workflow-rules` 拆成 action 与 handler 子表，原入口只聚合子表，并补充对应治理预算，避免深度解析 helper 继续扩展时预算规则表贴线
 - **工具栏 AI 修复按钮契约收敛**: 将 `ActionPanelAiFixButtonProps` 并入 `ActionPanelButtonTypes`，让 AI 修复、转换工具和面板入口按钮复用同一 props 契约出口，AI 修复按钮组件从 32 行降到 27 行
 - **文件关闭保护再分层**: 将 `useAppFileCloseGuard` 内未保存状态、pending 文件查找和关闭决策抽到 `appFileCloseGuardState` 纯 helper，补充关闭决策矩阵直测，并把文件关闭保护 hook 预算从 80 行收紧到 72 行
