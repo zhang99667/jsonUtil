@@ -4,8 +4,9 @@ export const appWorkflowCommandMaintainabilityBudgets = [
   { file: 'frontend/src/hooks/useAppSettingsBackupCommands.ts', maxLines: 90, reason: '设置备份 hook 只负责动态加载备份模块、下载文件和状态写回依赖装配' },
   { file: 'frontend/src/utils/appSettingsBackupCommandRunner.ts', maxLines: 110, reason: '设置备份 runner 只维护导出/导入副作用顺序和错误提示语义' },
   { file: 'frontend/src/hooks/useAppSmartSuggestionCommands.ts', maxLines: 95, reason: '智能建议命令 hook 只装配模式、面板和 toast 副作用，计划逻辑留在 runner/helper' },
-  { file: 'frontend/src/utils/appSmartSuggestionCommandEffects.ts', maxLines: 75, reason: '智能建议 effects helper 只装配 App 回调到 runner 副作用，不承载建议计划逻辑' },
-  { file: 'frontend/src/utils/appSmartSuggestionCommandEffects.test.ts', maxLines: 90, reason: '智能建议 effects 测试只锁定 Scheme request 自增和副作用回调映射' },
+  { file: 'frontend/src/hooks/useAppSmartSuggestionCommands.test.ts', maxLines: 120, reason: '智能建议命令 hook 测试只锁定 runner 输入和调用方 effects 接线' },
   { file: 'frontend/src/utils/appSmartSuggestionCommandRunner.ts', maxLines: 95, reason: '智能建议命令 runner 只执行计划副作用顺序和埋点语义' },
   { file: 'frontend/src/hooks/useAppTemplateFillCommand.ts', maxLines: 125, reason: '模板填充命令 hook 只维护目标校验、模板应用、质量 delta 和竞态保护' },
+  { file: 'frontend/src/hooks/useAppToolPanelCommands.ts', maxLines: 310, reason: '主应用工具面板命令 hook 只维护面板开关、外部请求信号、changelog 监听和报告入口动作，继续增长时按面板域拆分' },
+  { file: 'frontend/src/hooks/useAppToolPanelCommands.test.ts', maxLines: 300, reason: '工具面板命令测试只锁定面板开关、请求 ID 自增、changelog 事件和报告入口动作' },
 ];
