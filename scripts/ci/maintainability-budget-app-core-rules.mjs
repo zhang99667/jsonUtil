@@ -1,8 +1,8 @@
 export const appCoreMaintainabilityBudgets = [
   {
     file: 'frontend/src/App.tsx',
-    maxLines: 1220,
-    reason: '主应用编排文件应只负责顶层状态和组件装配，PREVIEW 同步、懒加载 loaded 状态、命令工作流和派生状态不得回流',
+    maxLines: 1190,
+    reason: '主应用编排文件应只负责顶层状态和组件装配，PREVIEW 同步、SOURCE 校验、懒加载 loaded 状态、命令工作流和派生状态不得回流',
   },
   {
     file: 'frontend/src/hooks/useAppAsyncTransform.ts',
@@ -18,5 +18,10 @@ export const appCoreMaintainabilityBudgets = [
     file: 'frontend/src/hooks/useAppFileDrop.ts',
     maxLines: 70,
     reason: '主应用文件拖拽 hook 只维护拖拽计数和文件投递事件，业务处理留在调用方',
+  },
+  {
+    file: 'frontend/src/hooks/useAppSourceValidation.ts',
+    maxLines: 55,
+    reason: '主应用 SOURCE 校验 hook 应只维护输入防抖、旧请求取消和校验结果防串写',
   },
 ];
