@@ -1,5 +1,6 @@
 export const schemeCmdMaintainabilityBudgets = [
   { file: 'frontend/src/utils/cmdStructureDiff.ts', maxLines: 500, reason: 'CMD 结构对比逻辑应聚焦解析、归一化、diff 和候选排序，候选收集、raw source 解码与格式化展示继续拆到独立 helper' },
+  { file: 'frontend/src/utils/cmdStructureValueDiff.ts', maxLines: 140, reason: 'CMD 参数值路径展开、source 等价和 value diff 应独立于解析归一化入口，避免纯比对逻辑回流' },
   { file: 'frontend/src/utils/cmdStructureCandidates.ts', maxLines: 140, reason: 'CMD actual 候选收集应保持纯扫描与去重 helper，避免 diff 和报告展示逻辑回流' },
   { file: 'frontend/src/utils/cmdStructureDiffFormatter.ts', maxLines: 100, reason: 'CMD 结构差异报告格式化入口应只负责报告顺序和差异类型分发，段落 helper、路径折叠和解析排序逻辑不应回流' },
   { file: 'frontend/src/utils/cmdStructureDiffReportSections.ts', maxLines: 60, reason: 'CMD 结构差异报告段落 helper 应集中治理上下文、source 和路径分支展示文案' },
