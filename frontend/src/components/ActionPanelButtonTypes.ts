@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import type { TransformMode } from '../types';
+import type { ActionType, TransformMode } from '../types';
+
+export interface ActionPanelAiFixButtonProps {
+  isCollapsed: boolean;
+  isProcessing: boolean;
+  onAction: (action: ActionType) => void;
+}
 
 export interface ActionPanelToolButtonProps {
   mode: TransformMode;
