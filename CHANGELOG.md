@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **深度解析 Schema 分组分层**: 将 schema origin 归并、资源类型分组和 schema 分组默认上限拆到独立纯 helper，`transformReportCommandSchemaGroups` 保留兼容导出并只负责 schema 维度聚合；同步把 schema 预算拆成子表，降低后续扩展 CMD/资源分布统计时的维护风险
 - **深度解析资源字段提取分层**: 将资源字段 schema 提取和 resourceType 补充抽到 `transformReportDecodedPathResource` 共享 helper，`transformReportCommandSchemaOccurrences` 只保留记录扫描入口，并用单测锁定 `sourceValue` 优先级，减少 CMD/资源分组与记录洞察的重复规则
 - **占位符回填模板明细分层**: 将运行时占位符回填模板里的 `placeholderDetails` 构建抽到 `transformPlaceholderFillTemplateDetails`，模板入口继续专注 schema/tool/filter/summary/placeholders 外层契约，并用单测锁定 suggestion 与来源字段的可选输出结构，降低后续扩展回填候选字段时的回归风险
 - **智能建议副作用装配分层**: 将智能建议 Hook 里的面板开关、清高亮、Scheme request 自增、toast 和埋点 effects 装配抽到 `appSmartSuggestionCommandEffects`，Hook 只保留 action 输入与 runner 调用，并用单测锁定副作用映射，降低后续扩展智能建议入口时的回调接线风险

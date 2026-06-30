@@ -3,7 +3,7 @@ import {
   getResourceTypeLabel,
   getStaticResourceType,
 } from './staticResourceSchema';
-import type { TransformReportDecodedPath } from './transformSummary';
+import type { TransformReportDecodedPath } from './transformSummaryTypes';
 
 export const getTransformReportResourceSchemaFromDecodedPath = (
   row: TransformReportDecodedPath
