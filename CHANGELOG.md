@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **公网 JS 资源候选提取分层**: 将 JS chunk 内 assets 字符串、相对 import 和 `new URL(..., import.meta.url)` 候选识别拆到 `productionFrontendAssetJavascriptCandidates`，资源路径入口继续专注归一化和文档示例降噪，降低后续扩展深层 chunk 巡检规则时的贴线风险
 - **深度解析 Footer Handler 映射收敛**: 将底部操作 handler 改为 `ActionId -> dependency key` 的类型约束映射，并用表驱动测试校验每个按钮触发对应副作用，降低后续新增复制/快照动作时漏补 handler 的风险
 - **CMD 结构值比对分层**: 将 CMD 参数路径展开、source 等价判断和值差异比较抽到 `cmdStructureValueDiff`，`cmdStructureDiff` 继续聚焦解析归一化、schema/source 顶层差异和候选排序，降低后续扩展 cmdHandler 对比规则时的耦合
 - **Scheme 类型契约分层**: 将 `SchemeDecodeResult`、`DecodeLayer`、参数 stage 和占位符等公共类型拆到 `schemeTypes`，`schemeUtils` 保留兼容导出，减少占位符、编码、诊断和 worker 模块对核心解码入口的类型耦合
