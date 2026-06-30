@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **状态栏保存状态分层**: 将左侧状态栏中的保存状态 badge 拆成独立组件并纳入可维护性预算，`StatusBarLeftInfo` 回归为内容统计、文件、保存和 SOURCE 校验状态装配层，降低后续扩展状态栏时互相挤占预算的风险
 - **深度解析诊断摘要分层**: 将诊断摘要 Top、样例和建议 section 拆成独立 helper，原 section 入口保留兼容导出，并新增样例 section 脱敏直测，降低复制给协作者/AI 的排查摘要继续扩展时误带原始值的风险
 - **公网 JS 资源路径解析分层**: 将 JS chunk 中 assets 字符串、相对 import 和 `import.meta.url` 候选的归一化与文档示例过滤抽到 `productionFrontendAssetJavascriptPathResolvers`，并新增 focused node:test 锁定顺序、嵌套 chunk 和示例降噪边界，降低发布巡检继续扩展时漏扫旧 chunk 的风险
 - **保存计划副作用分层**: 将保存计划到文件副作用的分发抽到 `appSavePlanEffectRunner`，`appSavePlanExecutor` 聚焦 skip、执行结果和成功提示，并补齐 executor 直测覆盖 PREVIEW/SOURCE 写入边界

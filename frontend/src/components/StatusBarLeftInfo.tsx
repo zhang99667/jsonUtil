@@ -4,6 +4,7 @@ import type { StatusBarBadgeState } from '../utils/statusBarState';
 import type { StatusBarSourceValidationAction } from '../utils/statusBarSourceValidationAction';
 import { StatusBarActiveFileBadge } from './StatusBarActiveFileBadge';
 import { StatusBarContentMetrics } from './StatusBarContentMetrics';
+import { StatusBarSaveStatusBadge } from './StatusBarSaveStatusBadge';
 import { StatusBarSourceValidationBadge } from './StatusBarSourceValidationBadge';
 
 interface StatusBarLeftInfoProps {
@@ -44,13 +45,7 @@ export const StatusBarLeftInfo: React.FC<StatusBarLeftInfoProps> = ({
       cursorColumn={cursorColumn}
     />
     <StatusBarActiveFileBadge activeFile={activeFile} />
-    <span
-      data-tour="save-status"
-      className={`shrink-0 px-1.5 py-0.5 rounded font-bold leading-none ${saveStatus.className}`}
-      title={saveStatus.title}
-    >
-      {saveStatus.label}
-    </span>
+    <StatusBarSaveStatusBadge status={saveStatus} />
     <StatusBarSourceValidationBadge
       status={sourceValidationStatus}
       action={sourceValidationAction}
