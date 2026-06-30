@@ -56,6 +56,9 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'CSS `url(...)`',
     'CSS `@import`',
     '--extra-asset',
+    '子 Agent 委派',
+    '主线程负责',
+    '拆分边界',
   ].join('\n');
 
   [
@@ -194,6 +197,9 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
     assert.equal(rule.contains.includes('CSS `url(...)`'), true);
     assert.equal(rule.contains.includes('CSS `@import`'), true);
     assert.equal(rule.contains.includes('--extra-asset'), true);
+    assert.equal(rule.contains.includes('子 Agent 委派'), true);
+    assert.equal(rule.contains.includes('主线程负责'), true);
+    assert.equal(rule.contains.includes('拆分边界'), true);
   });
 });
 

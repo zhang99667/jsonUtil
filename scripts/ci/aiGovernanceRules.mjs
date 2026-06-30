@@ -1,17 +1,8 @@
-const PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES = [
-  'node scripts/ci/check-production-frontend-assets.mjs',
-  'Content-Type',
-  'fallback 成 HTML',
-  'CSS `url(...)`',
-  'CSS `@import`',
-  '--extra-asset',
-];
-
-const DEPLOY_SHELL_SYNTAX_REFERENCES = [
-  'node scripts/ci/check-deploy-shell-syntax.mjs',
-  'REMOTE_SCRIPT heredoc',
-  'workflow run',
-];
+import {
+  DEPLOY_SHELL_SYNTAX_REFERENCES,
+  PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
+  SUBAGENT_DELEGATION_REFERENCES,
+} from './aiGovernanceReferenceGroups.mjs';
 
 export const buildAiGovernanceRequiredFiles = (codexSkillFiles) => [
   'AGENTS.md',
@@ -28,14 +19,15 @@ export const buildAiGovernanceRequiredFiles = (codexSkillFiles) => [
 ];
 
 export const buildAiGovernanceReferenceRules = (codexSkillFiles) => [
-  { file: 'AGENTS.md', contains: ['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md'] },
-  { file: 'CLAUDE.md', contains: ['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md'] },
+  { file: 'AGENTS.md', contains: ['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', ...SUBAGENT_DELEGATION_REFERENCES] },
+  { file: 'CLAUDE.md', contains: ['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', ...SUBAGENT_DELEGATION_REFERENCES] },
   {
     file: '.claude/ai-tools-guide.md',
     contains: [
       'AGENTS.md',
       ...codexSkillFiles,
       'docs/AI-ENGINEERING-PLAYBOOK.md',
+      ...SUBAGENT_DELEGATION_REFERENCES,
       ...DEPLOY_SHELL_SYNTAX_REFERENCES,
       'node scripts/ci/check-frontend-static-retention.mjs',
       ...PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
@@ -47,6 +39,7 @@ export const buildAiGovernanceReferenceRules = (codexSkillFiles) => [
       'AGENTS.md',
       'rules/code-style.md',
       'docs/AI-ENGINEERING-PLAYBOOK.md',
+      ...SUBAGENT_DELEGATION_REFERENCES,
       ...DEPLOY_SHELL_SYNTAX_REFERENCES,
       'node scripts/ci/check-frontend-static-retention.mjs',
       ...PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
@@ -63,6 +56,7 @@ export const buildAiGovernanceReferenceRules = (codexSkillFiles) => [
       'npm run typecheck',
       'npm run build',
       'npm run check:preloads',
+      ...SUBAGENT_DELEGATION_REFERENCES,
       ...DEPLOY_SHELL_SYNTAX_REFERENCES,
       'node scripts/ci/check-frontend-static-retention.mjs',
       'node scripts/ci/check-maintainability-budgets.mjs',
@@ -77,6 +71,7 @@ export const buildAiGovernanceReferenceRules = (codexSkillFiles) => [
       ...codexSkillFiles,
       'npm run lint',
       'npm run check:preloads',
+      ...SUBAGENT_DELEGATION_REFERENCES,
       ...DEPLOY_SHELL_SYNTAX_REFERENCES,
       'node scripts/ci/check-frontend-static-retention.mjs',
       'git diff --check',
