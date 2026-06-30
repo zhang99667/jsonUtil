@@ -3,7 +3,7 @@ import {
   isStaticResourceSchema,
 } from './staticResourceSchema';
 import { getTransformReportResourceSchemaFromDecodedPath } from './transformReportDecodedPathResource';
-import type { TransformReportDecodedPath, TransformReportResourceType } from './transformSummary';
+import type { TransformReportDecodedPath, TransformReportResourceType } from './transformSummaryTypes';
 
 export type CommandSchemaOccurrenceKind = 'navigation' | 'resource';
 
