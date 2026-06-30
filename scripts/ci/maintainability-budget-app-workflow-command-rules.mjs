@@ -6,7 +6,11 @@ export const appWorkflowCommandMaintainabilityBudgets = [
   { file: 'frontend/src/hooks/useAppSmartSuggestionCommands.ts', maxLines: 95, reason: '智能建议命令 hook 只装配模式、面板和 toast 副作用，计划逻辑留在 runner/helper' },
   { file: 'frontend/src/hooks/useAppSmartSuggestionCommands.test.ts', maxLines: 120, reason: '智能建议命令 hook 测试只锁定 runner 输入和调用方 effects 接线' },
   { file: 'frontend/src/utils/appSmartSuggestionCommandRunner.ts', maxLines: 95, reason: '智能建议命令 runner 只执行计划副作用顺序和埋点语义' },
-  { file: 'frontend/src/hooks/useAppTemplateFillCommand.ts', maxLines: 125, reason: '模板填充命令 hook 只维护目标校验、模板应用、质量 delta 和竞态保护' },
+  { file: 'frontend/src/hooks/useAppTemplateFillCommand.ts', maxLines: 90, reason: '模板填充命令 hook 只维护模板动态加载、模板应用、竞态保护和状态写回，目标校验与质量 delta 留在纯 helper' },
+  { file: 'frontend/src/utils/appTemplateFillTargetError.ts', maxLines: 45, reason: '模板填充目标错误 helper 只维护面板状态、SOURCE 语言和校验结果文案' },
+  { file: 'frontend/src/utils/appTemplateFillTargetError.test.ts', maxLines: 70, reason: '模板填充目标错误测试只锁定空 SOURCE、非 JSON、校验失败和成功分支' },
+  { file: 'frontend/src/utils/appTemplateFillQualityDelta.ts', maxLines: 65, reason: '模板填充质量 delta helper 只维护回填前后深度解析快照和 delta 文本构造' },
+  { file: 'frontend/src/utils/appTemplateFillQualityDelta.test.ts', maxLines: 70, reason: '模板填充质量 delta 测试只锁定前后 SOURCE 快照构造和 summary 模块调用' },
   { file: 'frontend/src/hooks/useAppToolPanelCommands.ts', maxLines: 310, reason: '主应用工具面板命令 hook 只维护面板开关、外部请求信号、changelog 监听和报告入口动作，继续增长时按面板域拆分' },
   { file: 'frontend/src/hooks/useAppToolPanelCommands.test.ts', maxLines: 300, reason: '工具面板命令测试只锁定面板开关、请求 ID 自增、changelog 事件和报告入口动作' },
 ];
