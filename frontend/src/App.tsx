@@ -26,6 +26,7 @@ import { useAppSaveCommands } from './hooks/useAppSaveCommands';
 import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
+import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import {
   useAppSourceReplacementCommands,
   type AppSmartSuggestionOrigin,
@@ -40,10 +41,6 @@ import { AppLazyShellModals } from './components/AppLazyShellModals';
 import { AppLazyToolPanels } from './components/AppLazyToolPanels';
 import ErrorBoundary from './components/ErrorBoundary';
 import { StatusBar } from './components/StatusBar';
-import {
-  createAppLazyPanelLoadState,
-  updateAppLazyPanelLoadState,
-} from './utils/appLazyPanelLoadState';
 import { getDocumentStats } from './utils/documentStats';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
 import { getDetailedErrorMessage } from './utils/errors';
@@ -356,7 +353,17 @@ const App: React.FC = () => {
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [templateApplyQualityDelta, setTemplateApplyQualityDelta] = useState('');
   const [isTransformReportOpen, setIsTransformReportOpen] = useState(false);
-  const [lazyPanelsLoaded, setLazyPanelsLoaded] = useState(createAppLazyPanelLoadState);
+  const lazyPanelsLoaded = useAppLazyPanelLoadState({
+    settings: isSettingsModalOpen,
+    changelog: isChangelogModalOpen,
+    jsonPath: isJsonPathPanelOpen,
+    jsonTree: isJsonTreePanelOpen,
+    jsonCompare: isJsonComparePanelOpen,
+    jsonSchema: isJsonSchemaPanelOpen,
+    scheme: isSchemeDecodeOpen,
+    template: isTemplatePanelOpen,
+    transformReport: isTransformReportOpen,
+  });
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
   const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<AppSmartSuggestionOrigin | null>(null);
 
@@ -364,30 +371,6 @@ const App: React.FC = () => {
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
 
   const [aiConfig, setAiConfig] = useState<AIConfig>(loadAIConfig);
-
-  useEffect(() => {
-    setLazyPanelsLoaded(current => updateAppLazyPanelLoadState(current, {
-      settings: isSettingsModalOpen,
-      changelog: isChangelogModalOpen,
-      jsonPath: isJsonPathPanelOpen,
-      jsonTree: isJsonTreePanelOpen,
-      jsonCompare: isJsonComparePanelOpen,
-      jsonSchema: isJsonSchemaPanelOpen,
-      scheme: isSchemeDecodeOpen,
-      template: isTemplatePanelOpen,
-      transformReport: isTransformReportOpen,
-    }));
-  }, [
-    isChangelogModalOpen,
-    isJsonComparePanelOpen,
-    isJsonPathPanelOpen,
-    isJsonSchemaPanelOpen,
-    isJsonTreePanelOpen,
-    isSchemeDecodeOpen,
-    isSettingsModalOpen,
-    isTemplatePanelOpen,
-    isTransformReportOpen,
-  ]);
 
   useEffect(() => {
     safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
