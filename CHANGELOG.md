@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **SOURCE 替换 pending 编排复用**: 抽出 `usePendingSourceReplacementCommand` 统一管理 pending 文本、确认替换和取消打点，`useAppApplySourceReplacementCommands` 只保留 PREVIEW/Schema 两个 request 入口，降低后续新增 SOURCE 替换场景时复制 event/category/successMessage 的风险
 - **版本检测调度分层**: 将打开状态下的新版本检测定时器、窗口聚焦和可见态恢复监听抽到 `appUpdateCheckSchedule`，`useAppUpdateCheck` 继续专注 Toast、manifest 拉取和单次检查器装配，并用单测锁定监听清理行为
 - **保存命令副作用装配收敛**: `useAppSaveCommands` 复用 memoized save effects 装配，快捷键保存和工具栏保存只传各自输入数据，减少保存链路新增 toast、埋点或另存为副作用时的重复改动点
 - **公网 JS 资源候选提取分层**: 将 JS chunk 内 assets 字符串、相对 import 和 `new URL(..., import.meta.url)` 候选识别拆到 `productionFrontendAssetJavascriptCandidates`，资源路径入口继续专注归一化和文档示例降噪，降低后续扩展深层 chunk 巡检规则时的贴线风险

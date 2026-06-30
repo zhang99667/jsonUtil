@@ -3,6 +3,7 @@ export const appWorkflowSourceMaintainabilityBudgets = [
   { file: 'frontend/src/utils/appSourceReplacePlanCore.ts', maxLines: 80, reason: 'SOURCE 替换通用决策应保持纯计划输出，副作用留在 App 主入口' },
   { file: 'frontend/src/hooks/useAppSourceReplacementCommands.ts', maxLines: 145, reason: 'SOURCE 替换 hook 只装配粘贴、Scheme、预览和 Schema 命令，场景命令状态留在专用 hook' },
   { file: 'frontend/src/hooks/useAppApplySourceReplacementCommands.ts', maxLines: 110, reason: '应用 PREVIEW/Schema 到 SOURCE hook 只维护 pending 替换确认、场景 event 和打点' },
+  { file: 'frontend/src/hooks/usePendingSourceReplacementCommand.ts', maxLines: 90, reason: 'SOURCE pending 替换 hook 应只维护 request、pending 文本、确认和取消共用编排' },
   { file: 'frontend/src/hooks/useAppPasteSourceCommand.ts', maxLines: 90, reason: '粘贴 SOURCE hook 只维护剪贴板读取、pending 替换确认、错误提示和打点' },
   { file: 'frontend/src/hooks/useAppSchemeInspectSourceCommand.ts', maxLines: 80, reason: 'Scheme 排查 SOURCE hook 只维护 Scheme 原始值替换、面板复位回调接入和打点语义' },
   { file: 'frontend/src/hooks/useAppClearSourceCommands.ts', maxLines: 70, reason: '清空 SOURCE hook 只维护确认弹窗状态、清空写入、提示和打点' },
