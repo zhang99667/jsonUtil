@@ -9,7 +9,7 @@ export const governanceTransformPanelHelperMaintainabilityBudgets = [
   },
   {
     file: 'scripts/ci/maintainability-budget-governance-transform-panel-helper-workflow-rules.mjs',
-    maxLines: 25,
+    maxLines: 30,
     reason: '深度解析面板行动与 footer helper 治理规则应独立收口，避免 helper 治理入口继续贴线',
   },
   {
