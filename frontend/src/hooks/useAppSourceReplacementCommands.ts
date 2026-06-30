@@ -9,6 +9,7 @@ import {
   type AppSmartSuggestionOrigin,
 } from './useAppSourceApplyEffects';
 import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandHelpers';
+import { buildAppSourceReplacementCommands } from '../utils/appSourceReplacementCommandBundle';
 
 export type { AppSmartSuggestionOrigin } from './useAppSourceApplyEffects';
 interface AppSourceReplacementCommandsInput {
@@ -40,12 +41,7 @@ export const useAppSourceReplacementCommands = ({
   onSetSmartSuggestionOrigin,
   onTrackToolEvent,
 }: AppSourceReplacementCommandsInput) => {
-  const {
-    isClearSourceConfirmOpen,
-    handleRequestClearSource,
-    handleConfirmClearSource,
-    handleCancelClearSource,
-  } = useAppClearSourceCommands({
+  const clearSourceCommands = useAppClearSourceCommands({
     sourceText: input,
     onInputChange,
     onSetHighlightRange,
@@ -68,39 +64,20 @@ export const useAppSourceReplacementCommands = ({
     onSetSmartSuggestionOrigin,
   });
 
-  const {
-    pendingSchemeInspectSourceText,
-    handleInspectSourceFromScheme,
-    handleConfirmSchemeInspectSource,
-    handleCancelSchemeInspectSource,
-  } = useAppSchemeInspectSourceCommand({
+  const schemeInspectCommands = useAppSchemeInspectSourceCommand({
     sourceText: input,
     onApply: applySchemeInspectSourceText,
     onSuccessSkip: handleSchemeInspectSuccessSkip,
     onTrackToolEvent,
   });
 
-  const {
-    pendingPasteSourceText,
-    handlePasteSource,
-    handleConfirmPasteSource,
-    handleCancelPasteSource,
-  } = useAppPasteSourceCommand({
+  const pasteCommands = useAppPasteSourceCommand({
     sourceText: input,
     onApply: applySourceTextFromClipboard,
     onTrackToolEvent,
   });
 
-  const {
-    pendingApplyPreviewText,
-    pendingSchemaExampleText,
-    handleRequestApplyPreviewToSource,
-    handleConfirmApplyPreviewToSource,
-    handleCancelApplyPreviewToSource,
-    handleRequestApplySchemaExampleToSource,
-    handleConfirmApplySchemaExampleToSource,
-    handleCancelApplySchemaExampleToSource,
-  } = useAppApplySourceReplacementCommands({
+  const applyCommands = useAppApplySourceReplacementCommands({
     sourceText: input,
     previewText: output,
     isOutputTransforming,
@@ -108,26 +85,10 @@ export const useAppSourceReplacementCommands = ({
     onTrackToolEvent,
   });
 
-  return {
-    isClearSourceConfirmOpen,
-    pendingPasteSourceText,
-    pendingApplyPreviewText,
-    pendingSchemaExampleText,
-    pendingSchemeInspectSourceText,
-    handleInspectSourceFromScheme,
-    handleConfirmSchemeInspectSource,
-    handleCancelSchemeInspectSource,
-    handlePasteSource,
-    handleConfirmPasteSource,
-    handleCancelPasteSource,
-    handleRequestApplyPreviewToSource,
-    handleConfirmApplyPreviewToSource,
-    handleCancelApplyPreviewToSource,
-    handleRequestApplySchemaExampleToSource,
-    handleConfirmApplySchemaExampleToSource,
-    handleCancelApplySchemaExampleToSource,
-    handleRequestClearSource,
-    handleConfirmClearSource,
-    handleCancelClearSource,
-  };
+  return buildAppSourceReplacementCommands({
+    clearSourceCommands,
+    schemeInspectCommands,
+    pasteCommands,
+    applyCommands,
+  });
 };
