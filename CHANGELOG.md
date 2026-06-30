@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **深度解析内容区 Shell 再分层**: 将 `TransformReportPanelContent` 收敛为滚动容器、无报告提示和 sections 分流，把有报告状态下的 section 装配下沉到 `TransformReportPanelSections`，并将 props 契约拆成 type-only 文件，补充 shell 委派和 section 透传测试，降低深度解析内容区继续扩展时的耦合
 - **主工作台交互遮罩分层**: 将 resize 捕获层和文件拖拽浮层下沉到 `AppInteractionOverlays`，`AppWorkspaceOverlays` 回归为交互遮罩组与 Toast 宿主装配层，并补充分层后的组件测试，降低主应用遮罩入口继续扩展时的耦合
 - **工具栏入口按钮包装瘦身**: 将转换工具按钮和面板入口按钮改为纯表达式包装器，继续复用统一入口状态 helper 与 `ActionPanelEntryButton`，两个组件各从 28 行降到 24 行，减少新增工具入口时的样板维护成本
 - **深度解析 Support 治理预算分层**: 将 `maintainability-budget-governance-transform-panel-helper-support-rules` 拆成 UI、复制和 CMD 三张子表，原入口只聚合子表并追踪子治理表预算，避免 helper support 治理继续贴线
