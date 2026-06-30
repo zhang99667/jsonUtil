@@ -1,7 +1,7 @@
 import React from 'react';
 import type { FileTab } from '../types';
 import type { StatusBarBadgeState } from '../utils/statusBarState';
-import type { StatusBarSourceValidationAction } from '../utils/statusBarSourceValidationAction';
+import type { StatusBarSourceValidationAction } from '../utils/statusBarSourceValidationActionTypes';
 import { StatusBarActiveFileBadge } from './StatusBarActiveFileBadge';
 import { StatusBarContentMetrics } from './StatusBarContentMetrics';
 import { StatusBarSaveStatusBadge } from './StatusBarSaveStatusBadge';
