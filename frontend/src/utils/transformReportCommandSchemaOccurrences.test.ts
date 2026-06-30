@@ -14,6 +14,12 @@ describe('transformReportCommandSchemaOccurrences', () => {
       nestedResourceSearchFields: [
         { path: '$.record.videoUrl', preview: 'video', value: 'https://cdn.example.com/b.mp4?token=1' },
         { path: '$.record.iconUrl', preview: 'icon', sourceValue: 'https://cdn.example.com/icon.webp?x=1' },
+        {
+          path: '$.record.sourceFirst',
+          preview: 'source first',
+          value: 'https://cdn.example.com/fallback.png',
+          sourceValue: 'https://cdn.example.com/source-first.mp4?x=1',
+        },
       ],
     }] as unknown as TransformReportRecord[];
 
@@ -44,6 +50,13 @@ describe('transformReportCommandSchemaOccurrences', () => {
         recordPath: '$.record',
         kind: 'resource',
         resourceType: 'image',
+      },
+      {
+        schema: 'https://cdn.example.com/source-first.mp4',
+        path: '$.record.sourceFirst',
+        recordPath: '$.record',
+        kind: 'resource',
+        resourceType: 'video',
       },
     ]);
   });
