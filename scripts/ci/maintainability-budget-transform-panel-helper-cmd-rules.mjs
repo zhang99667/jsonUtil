@@ -29,4 +29,9 @@ export const transformPanelHelperCmdMaintainabilityBudgets = [
     maxLines: 90,
     reason: '深度解析当前 CMD 对比 record、候选和复制文本构建应保持纯 helper，避免回流主面板',
   },
+  {
+    file: 'frontend/src/utils/transformReportCmdComparisonController.ts',
+    maxLines: 100,
+    reason: '深度解析 CMD 对比 UI 状态转移应保持纯 controller，避免 recordPath、候选和 expectedText 状态机回流主面板',
+  },
 ];
