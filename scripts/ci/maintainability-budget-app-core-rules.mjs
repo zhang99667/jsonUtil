@@ -1,8 +1,8 @@
 export const appCoreMaintainabilityBudgets = [
   {
     file: 'frontend/src/App.tsx',
-    maxLines: 1700,
-    reason: '主应用编排文件较大，新增工作流应优先下沉到 hooks、组件或纯 helper',
+    maxLines: 1250,
+    reason: '主应用编排文件应只负责顶层状态和组件装配，PREVIEW 同步、命令工作流和派生状态不得回流',
   },
   {
     file: 'frontend/src/hooks/useAppAsyncTransform.ts',

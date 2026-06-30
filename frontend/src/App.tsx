@@ -7,9 +7,7 @@ import { AppWorkspaceOverlays } from './components/AppWorkspaceOverlays';
 import {
   detectLanguage,
   performTransform,
-  performInverseTransform,
   deepParseWithContext,
-  inverseWithContext,
   applyTemplate,
   getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput
@@ -27,6 +25,7 @@ import { useAppCopyCommands } from './hooks/useAppCopyCommands';
 import { useAppSaveCommands } from './hooks/useAppSaveCommands';
 import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
+import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
 import {
   useAppSourceReplacementCommands,
   type AppSmartSuggestionOrigin,
@@ -56,7 +55,6 @@ import {
   cleanJsonInput,
   getJsonValidationErrorLocation,
   startJsonValidation,
-  validateJsonForEditor,
 } from './utils/jsonValidation';
 import { formatTransformContextSummary } from './utils/transformContextSummary';
 import { initGoogleAnalytics } from './utils/analytics';
@@ -121,9 +119,6 @@ const App: React.FC = () => {
 
   // 使用 Ref 暂存待处理的输出值
   const pendingOutputValue = useRef<string>('');
-
-  // 输出变更防抖定时器
-  const outputChangeTimer = useRef<NodeJS.Timeout | null>(null);
 
   // 当前转换模式
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
@@ -216,8 +211,6 @@ const App: React.FC = () => {
   const schemeInputRequestIdRef = useRef(0);
   const templateFillRequestIdRef = useRef(0);
   const sourceValidationRequestIdRef = useRef(0);
-  const previewValidationRequestIdRef = useRef(0);
-  const outputSyncRequestIdRef = useRef(0);
   const aiRepairSnapshotRef = useRef<string | null>(null);
   const smartSuggestionOriginTextRef = useRef('');
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
@@ -316,7 +309,18 @@ const App: React.FC = () => {
   }, [output, isJsonPathPanelOpen, isJsonTreePanelOpen]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
-  const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
+  const { previewValidation, handleOutputChange } = useAppPreviewOutputSync({
+    files,
+    activeFileId,
+    mode,
+    inputRef,
+    fallbackContextRef,
+    isUpdatingFromOutput,
+    pendingOutputValue,
+    validateJsonMaybeAsync,
+    onSetInput: setInput,
+    onUpdateActiveFileContent: updateActiveFileContent,
+  });
   const [aiRepairSummary, setAiRepairSummary] = useState<AiRepairSummary | null>(null);
   const [sourceErrorLocateSignal, setSourceErrorLocateSignal] = useState(0);
   const sourceErrorLocation = useMemo(
@@ -806,111 +810,6 @@ const App: React.FC = () => {
     isOutputTransforming,
     onTrackToolEvent: trackCurrentToolEvent,
   });
-
-  // 右侧预览编辑处理（反向转换）
-  // 仅在解除只读锁定后触发
-  const handleOutputChange = useCallback((newVal: string) => {
-    // 暂存编辑值，保持编辑器响应
-    pendingOutputValue.current = newVal;
-
-    // 标记输出更新状态
-    isUpdatingFromOutput.current = true;
-
-    // 预览内容快速验证
-    if (newVal && newVal.trim()) {
-      const cleanVal = cleanJsonInput(newVal);
-      const requestId = ++previewValidationRequestIdRef.current;
-      if (cleanVal.length >= ASYNC_VALIDATION_THRESHOLD) {
-        setPreviewValidation({ isValid: true });
-        validateJsonMaybeAsync(cleanVal, { requireContainer: true }).then(result => {
-          if (requestId === previewValidationRequestIdRef.current) {
-            setPreviewValidation(result);
-          }
-        });
-      } else {
-        const result = validateJsonForEditor(cleanVal, { requireContainer: true });
-        if (requestId === previewValidationRequestIdRef.current) {
-          setPreviewValidation(result);
-        }
-      }
-    } else {
-      previewValidationRequestIdRef.current++;
-      setPreviewValidation({ isValid: true });
-    }
-
-    // 重置防抖定时器
-    if (outputChangeTimer.current) {
-      clearTimeout(outputChangeTimer.current);
-    }
-
-    const outputSyncRequestId = ++outputSyncRequestIdRef.current;
-
-    // 执行反向转换（防抖 400ms）
-    outputChangeTimer.current = setTimeout(() => {
-      // Timer fired, clear the ref so we know it's not pending anymore
-      outputChangeTimer.current = null;
-
-      const syncOutputToSource = async () => {
-        // 修复：在格式化模式下，如果右侧内容不是有效的 JSON，则不进行同步
-        // 避免因语法错误导致反向转换失败，从而将错误内容覆盖到左侧源文件
-        if ((mode === TransformMode.FORMAT || mode === TransformMode.DEEP_FORMAT || mode === TransformMode.MINIFY)) {
-          const validation = await validateJsonMaybeAsync(newVal);
-          if (outputSyncRequestId !== outputSyncRequestIdRef.current) {
-            return;
-          }
-          if (!validation.isValid) {
-            // 验证失败，仅重置更新标志（允许用户继续编辑），但不同步回左侧
-            setPreviewValidation(validation);
-            isUpdatingFromOutput.current = false;
-            pendingOutputValue.current = '';
-            return;
-          }
-        }
-
-        if (outputSyncRequestId !== outputSyncRequestIdRef.current) {
-          return;
-        }
-
-        // 深度格式化模式：使用当前 Tab 的 context 进行精确还原
-        let newSource: string;
-        if (mode === TransformMode.DEEP_FORMAT) {
-          const currentFile = files.find(f => f.id === activeFileId);
-          const context = currentFile?.transformContext || fallbackContextRef.current;
-          if (context) {
-            // 使用精确的上下文还原
-            newSource = inverseWithContext(newVal, context);
-          } else {
-            // 无上下文时回退到旧方法
-            newSource = performInverseTransform(newVal, mode, inputRef.current);
-          }
-        } else {
-          // 其他模式使用旧方法
-          newSource = performInverseTransform(newVal, mode, inputRef.current);
-        }
-
-        setInput(newSource);
-
-        // 同步更新 Ref
-        inputRef.current = newSource;
-
-        // 同步更新文件缓存
-        updateActiveFileContent(newSource);
-
-        // 重置更新标志 - 延长锁定时间以防止连续删除时的竞态条件
-        setTimeout(() => {
-          // 只有在没有新的定时器运行时（即用户停止输入 1000ms + 500ms 后），才释放锁定
-          if (!outputChangeTimer.current && outputSyncRequestId === outputSyncRequestIdRef.current) {
-            isUpdatingFromOutput.current = false;
-            pendingOutputValue.current = '';
-            // 可选：在此处触发一次强制刷新以应用最终的格式化结果？
-            // 目前保持静默，直到下一次输入或模式切换，避免光标跳动
-          }
-        }, 600);
-      };
-
-      void syncOutputToSource();
-    }, 400);
-  }, [mode, files, activeFileId, updateActiveFileContent, validateJsonMaybeAsync]);
 
   const {
     isDraggingFile,

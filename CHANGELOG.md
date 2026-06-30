@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **主应用 PREVIEW 同步分层**: 将 `App.tsx` 内右侧 PREVIEW 编辑反向同步的校验、防抖回写、深度格式化 context 还原和解锁时序下沉到 `useAppPreviewOutputSync` 与纯 helper，并补充 context 回写/fallback 直测，主应用预算从 1700 行收紧到 1250 行
 - **深度解析复制 workflow 分层**: 将 `TransformReportPanel` 中报告复制、归档/协作导出、质量基线、占位符模板、问题样本和行级 CMD 复制动作拆到独立 workflow 子模块，并补充 pending guard、CMD 对比注入、模板打开、质量基线和空 CMD 包直测，主面板预算从 700 行收紧到 430 行，降低复制导出逻辑继续回流主面板的风险
 - **AI 子 Agent 委派治理**: 在 `AGENTS.md`、`CLAUDE.md`、AI Playbook、Codex skill 和工具适配文档中补充子 Agent 委派判断、主线程整合和复杂任务拆分边界，并让 `check-ai-governance` 强制校验关键引用，避免复杂重构只靠临场记忆执行
 - **深度解析 CMD 对比状态分层**: 将 `TransformReportPanel` 内的 CMD 对比打开/收起、首条打开、候选切换、expectedText 和忽略额外路径状态转移拆到 `transformReportCmdComparisonController`，并补充 ignoreExtraPaths 保留/重置边界直测，降低报告面板状态机和 UI 编排继续交织的风险
