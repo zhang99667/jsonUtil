@@ -4,51 +4,37 @@ type FooterActionEffect = () => void | Promise<void>;
 
 export type TransformReportFooterActionHandlers = Record<TransformReportFooterActionId, () => void>;
 
-export interface TransformReportFooterActionHandlerDependencies {
-  copyFilteredReport: FooterActionEffect;
-  copyCollaborationReport: FooterActionEffect;
-  copyDiagnosticSummary: FooterActionEffect;
-  copyQualitySnapshot: FooterActionEffect;
-  setQualityBaseline: FooterActionEffect;
-  copyQualityBaselineDelta: FooterActionEffect;
-  clearQualityBaseline: FooterActionEffect;
-  copyArchivePackage: FooterActionEffect;
-  copyTroubleshootingRecipe: FooterActionEffect;
-  copyPathValueReport: FooterActionEffect;
-  copyCmdStructureReport: FooterActionEffect;
-  copyIssueSamples: FooterActionEffect;
-  copyIssueSampleJson: FooterActionEffect;
-  copyRedactedIssueSampleJson: FooterActionEffect;
-  copyIssueRegressionTemplate: FooterActionEffect;
-  copyFullReport: FooterActionEffect;
-}
+const FOOTER_ACTION_EFFECT_KEYS = {
+  'copy-filtered-report': 'copyFilteredReport',
+  'copy-collaboration-report': 'copyCollaborationReport',
+  'copy-diagnostic-summary': 'copyDiagnosticSummary',
+  'copy-quality-snapshot': 'copyQualitySnapshot',
+  'set-quality-baseline': 'setQualityBaseline',
+  'copy-quality-baseline-delta': 'copyQualityBaselineDelta',
+  'clear-quality-baseline': 'clearQualityBaseline',
+  'copy-archive-package': 'copyArchivePackage',
+  'copy-troubleshooting-recipe': 'copyTroubleshootingRecipe',
+  'copy-path-values': 'copyPathValueReport',
+  'copy-cmd-structures': 'copyCmdStructureReport',
+  'copy-issue-samples': 'copyIssueSamples',
+  'copy-issue-sample-json': 'copyIssueSampleJson',
+  'copy-redacted-issue-sample-json': 'copyRedactedIssueSampleJson',
+  'copy-issue-regression-template': 'copyIssueRegressionTemplate',
+  'copy-full-report': 'copyFullReport',
+} as const satisfies Record<TransformReportFooterActionId, string>;
+
+type FooterActionEffectKey = typeof FOOTER_ACTION_EFFECT_KEYS[keyof typeof FOOTER_ACTION_EFFECT_KEYS];
+
+export type TransformReportFooterActionHandlerDependencies = Record<FooterActionEffectKey, FooterActionEffect>;
 
 export const buildTransformReportFooterActionHandlers = (
   dependencies: TransformReportFooterActionHandlerDependencies
 ): TransformReportFooterActionHandlers => {
-  const effectHandlers: Record<TransformReportFooterActionId, FooterActionEffect> = {
-    'copy-filtered-report': dependencies.copyFilteredReport,
-    'copy-collaboration-report': dependencies.copyCollaborationReport,
-    'copy-diagnostic-summary': dependencies.copyDiagnosticSummary,
-    'copy-quality-snapshot': dependencies.copyQualitySnapshot,
-    'set-quality-baseline': dependencies.setQualityBaseline,
-    'copy-quality-baseline-delta': dependencies.copyQualityBaselineDelta,
-    'clear-quality-baseline': dependencies.clearQualityBaseline,
-    'copy-archive-package': dependencies.copyArchivePackage,
-    'copy-troubleshooting-recipe': dependencies.copyTroubleshootingRecipe,
-    'copy-path-values': dependencies.copyPathValueReport,
-    'copy-cmd-structures': dependencies.copyCmdStructureReport,
-    'copy-issue-samples': dependencies.copyIssueSamples,
-    'copy-issue-sample-json': dependencies.copyIssueSampleJson,
-    'copy-redacted-issue-sample-json': dependencies.copyRedactedIssueSampleJson,
-    'copy-issue-regression-template': dependencies.copyIssueRegressionTemplate,
-    'copy-full-report': dependencies.copyFullReport,
-  };
-
   return Object.fromEntries(
-    Object.entries(effectHandlers).map(([id, effect]) => [
-      id,
-      () => { void effect(); },
-    ])
+    (Object.entries(FOOTER_ACTION_EFFECT_KEYS) as Array<[TransformReportFooterActionId, FooterActionEffectKey]>)
+      .map(([id, effectKey]) => [
+        id,
+        () => { void dependencies[effectKey](); },
+      ])
   ) as TransformReportFooterActionHandlers;
 };
