@@ -1,6 +1,7 @@
 import { parse as parseJsonSourceMap } from 'json-source-map';
 import { getBusinessLabelForField } from './businessLabels';
-import { detectSchemeType, shouldExposeSchemeValue, type SchemeType } from './schemeUtils';
+import { detectSchemeType, shouldExposeSchemeValue } from './schemeUtils';
+import type { SchemeType } from './schemeTypes';
 
 export interface SchemeLocation {
   path: string;           // JSON Path，如 "$.action_cmd" 或 `$["a.b"]`

@@ -8,7 +8,7 @@ import type {
   SchemeDecodeWarning,
   SchemeParamDecodeStage,
   SchemePlaceholder,
-} from './schemeUtils';
+} from './schemeTypes';
 
 type SchemeParams = NonNullable<SchemeDecodeResult['schemeInfo']>['params'];
 

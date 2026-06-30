@@ -1,4 +1,4 @@
-import type { SchemePlaceholder, SchemePlaceholderGroup } from './schemeUtils';
+import type { SchemePlaceholder, SchemePlaceholderGroup } from './schemeTypes';
 
 type PlaceholderValue =
   | string

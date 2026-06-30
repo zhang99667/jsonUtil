@@ -1,4 +1,5 @@
-import { deepDecodeScheme, type SchemeDecodeResult } from '../utils/schemeUtils';
+import { deepDecodeScheme } from '../utils/schemeUtils';
+import type { SchemeDecodeResult } from '../utils/schemeTypes';
 import {
   extractBase64MetaInfo,
   extractSchemeCommandSummaryInfo,

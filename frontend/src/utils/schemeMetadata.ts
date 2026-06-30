@@ -1,4 +1,4 @@
-import type { SchemeDecodeResult } from './schemeUtils';
+import type { SchemeDecodeResult } from './schemeTypes';
 import {
   base64Decode,
   detectSchemeType,
