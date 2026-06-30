@@ -9,6 +9,10 @@ import {
   formatTransformDiagnosticSummaryText,
   formatTransformReportViewText,
 } from './transformReportDiagnosticText';
+import {
+  appendDiagnosticSummaryRecommendationSection,
+  appendDiagnosticSummarySampleSections,
+} from './transformReportDiagnosticSummarySections';
 
 const createReport = (
   overrides: Partial<TransformContextReport> = {}
@@ -338,5 +342,67 @@ describe('transformReportDiagnosticText', () => {
     expect(text).toContain('- url ×2（来源 1）');
     expect(text).toContain('- 当前筛选未发现跳过、待检查或运行时占位符，可重点核对 CMD Schema 与业务预期是否一致');
     expect(text).not.toContain('当前参数分层修复 Top:');
+  });
+
+  it('诊断摘要样例 section 不输出原始值、预览和内部消息', () => {
+    const lines: string[] = [];
+    appendDiagnosticSummarySampleSections(lines, createView({
+      unresolvedCandidates: [{
+        path: '$.raw',
+        sourceLabel: 'extraParam',
+        originalValue: 'token=private',
+        message: '内部消息包含 private',
+        length: 12,
+        preview: 'private-preview',
+        detectedType: 'url',
+        reasonLabel: '疑似 URL',
+        reasonLevel: 'info',
+        nextAction: '确认规则',
+      }],
+      warnings: [{
+        type: 'string_decode_skipped',
+        path: '$.big',
+        sourceLabel: 'ad_common',
+        originalValue: 'cookie=private',
+        message: '跳过消息包含 private',
+        length: 2048,
+        limit: 1024,
+        reasonLabel: '超长字段',
+        nextAction: '单独排查',
+      }],
+      filteredUnresolvedCount: 1,
+      filteredWarningCount: 1,
+    }));
+
+    const text = lines.join('\n');
+    expect(text).toContain('- $.raw · extraParam · url: 疑似 URL');
+    expect(text).toContain('- $.big · ad_common: 超长字段 (2048/1024)');
+    expect(text).not.toContain('token=private');
+    expect(text).not.toContain('private-preview');
+    expect(text).not.toContain('内部消息包含 private');
+    expect(text).not.toContain('cookie=private');
+    expect(text).not.toContain('跳过消息包含 private');
+  });
+
+  it('诊断摘要建议 section 覆盖全部风险动作和空态建议', () => {
+    const riskLines: string[] = [];
+    appendDiagnosticSummaryRecommendationSection(riskLines, createView({
+      filteredWarningCount: 1,
+      filteredUnresolvedCount: 1,
+      filteredPlaceholderCount: 1,
+      filteredSchemeParamStageRepairHintCount: 1,
+      filteredNonReversibleParamStageCount: 1,
+    }));
+
+    const riskText = riskLines.join('\n');
+    expect(riskText).toContain('- 先处理跳过记录，超长字段可单独粘贴到 Scheme 面板或缩小 response 后再解析');
+    expect(riskText).toContain('- 对待检查项判断是否为规则缺口；确认后可复制样本 JSON 并生成回归模板');
+    expect(riskText).toContain('- 运行时占位符通常不是解析失败，可按来源路径确认实际替换链路');
+    expect(riskText).toContain('- 参数分层存在修复提示，建议核对原始值、URL Decode、JSON 解析链路后沉淀回归样本');
+    expect(riskText).toContain('- 存在不可回写参数层，复制回写前需确认该字段是否只用于只读排查');
+
+    const emptyLines: string[] = [];
+    appendDiagnosticSummaryRecommendationSection(emptyLines, createView());
+    expect(emptyLines.join('\n')).toContain('- 当前筛选未发现跳过、待检查或运行时占位符，可重点核对 CMD Schema 与业务预期是否一致');
   });
 });
