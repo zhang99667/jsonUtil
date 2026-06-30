@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **深度解析报告记录文本分层**: 将报告文本里的记录明细行输出拆到 `transformReportRecordTextLines`，原 `transformReportTextSections` 保留兼容导出和跳过/未展开/占位符段落，并新增 cmdParams、参数分层、Schema 行、内部字段和截断提示直测，降低报告文案继续扩展时的维护压力
 - **深度解析资源类型 Top 分层**: 将资源类型 Top 的草稿累计、schema 展示截断和结果排序映射拆成独立纯 helper，原 `buildTopResourceTypeGroups` 保留兼容入口，并新增重复资源、record 去重、schemaLimit 和同数排序直测，降低静态资源分布继续扩展时的误改风险
 - **CMD 结构值 Diff 分层**: 将 CMD 参数值 diff 的路径行展开、结构化 source 等价判断和类型契约拆成独立 helper，保留 `compareCmdStructureValues` 兼容入口，并新增 bracket key、数组路径和 source 等价直测，降低后续 CMD 对比/回写排查误改风险
 - **深度解析 Section 可见性 Helper 分层**: 将四类 section 可见 flag 与空态编排拆成独立纯 helper 和类型契约，保留原入口兼容调用，并补齐任一区域可见与全空态直测，降低报告面板继续扩展筛选区域时的误改风险

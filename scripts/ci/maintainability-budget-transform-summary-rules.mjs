@@ -8,8 +8,13 @@ export const transformSummaryMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/utils/transformReportTextSections.ts',
-    maxLines: 190,
-    reason: '深度解析报告文本段落入口应只负责记录、跳过、未展开和占位符文本，分布摘要不得回流',
+    maxLines: 110,
+    reason: '深度解析报告文本段落入口应只负责兼容导出、跳过、未展开和占位符文本，记录明细与分布摘要不得回流',
+  },
+  {
+    file: 'frontend/src/utils/transformReportRecordTextLines.ts',
+    maxLines: 120,
+    reason: '深度解析报告记录明细文本应集中维护路径、参数、内部字段和截断提示，避免报告段落入口继续膨胀',
   },
   {
     file: 'frontend/src/utils/transformReportTextDistributionSections.ts',
