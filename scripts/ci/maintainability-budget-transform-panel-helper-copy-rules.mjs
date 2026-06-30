@@ -1,4 +1,7 @@
+import { transformPanelHelperCopyWorkflowMaintainabilityBudgets } from './maintainability-budget-transform-panel-helper-copy-workflow-rules.mjs';
+
 export const transformPanelHelperCopyMaintainabilityBudgets = [
+  ...transformPanelHelperCopyWorkflowMaintainabilityBudgets,
   {
     file: 'frontend/src/utils/transformReportCopyMetrics.ts',
     maxLines: 60,
