@@ -7,6 +7,8 @@ import { buildTransformReportFooterActions } from './transformReportFooterAction
 import type { TransformReportCopyTitles } from './transformReportCopyTitles';
 import type { TransformReportFooterActionId } from './transformReportFooterActionTypes';
 
+type FooterActionDependencyKey = keyof TransformReportFooterActionHandlerDependencies;
+
 const buildDependencies = (): TransformReportFooterActionHandlerDependencies => ({
   copyFilteredReport: vi.fn(),
   copyCollaborationReport: vi.fn(),
@@ -25,6 +27,25 @@ const buildDependencies = (): TransformReportFooterActionHandlerDependencies => 
   copyIssueRegressionTemplate: vi.fn(),
   copyFullReport: vi.fn(),
 });
+
+const actionDependencyKeys: Record<TransformReportFooterActionId, FooterActionDependencyKey> = {
+  'copy-filtered-report': 'copyFilteredReport',
+  'copy-collaboration-report': 'copyCollaborationReport',
+  'copy-diagnostic-summary': 'copyDiagnosticSummary',
+  'copy-quality-snapshot': 'copyQualitySnapshot',
+  'set-quality-baseline': 'setQualityBaseline',
+  'copy-quality-baseline-delta': 'copyQualityBaselineDelta',
+  'clear-quality-baseline': 'clearQualityBaseline',
+  'copy-archive-package': 'copyArchivePackage',
+  'copy-troubleshooting-recipe': 'copyTroubleshootingRecipe',
+  'copy-path-values': 'copyPathValueReport',
+  'copy-cmd-structures': 'copyCmdStructureReport',
+  'copy-issue-samples': 'copyIssueSamples',
+  'copy-issue-sample-json': 'copyIssueSampleJson',
+  'copy-redacted-issue-sample-json': 'copyRedactedIssueSampleJson',
+  'copy-issue-regression-template': 'copyIssueRegressionTemplate',
+  'copy-full-report': 'copyFullReport',
+};
 
 const copyTitles: TransformReportCopyTitles = {
   filteredReport: '筛选标题',
@@ -47,44 +68,13 @@ describe('transformReportFooterActionHandlers', () => {
   it('为每个 footer action 生成稳定 handler', () => {
     const dependencies = buildDependencies();
     const handlers = buildTransformReportFooterActionHandlers(dependencies);
-    const actionIds: TransformReportFooterActionId[] = [
-      'copy-filtered-report',
-      'copy-collaboration-report',
-      'copy-diagnostic-summary',
-      'copy-quality-snapshot',
-      'set-quality-baseline',
-      'copy-quality-baseline-delta',
-      'clear-quality-baseline',
-      'copy-archive-package',
-      'copy-troubleshooting-recipe',
-      'copy-path-values',
-      'copy-cmd-structures',
-      'copy-issue-samples',
-      'copy-issue-sample-json',
-      'copy-redacted-issue-sample-json',
-      'copy-issue-regression-template',
-      'copy-full-report',
-    ];
+    const actionIds = Object.keys(actionDependencyKeys) as TransformReportFooterActionId[];
 
     expect(Object.keys(handlers)).toEqual(actionIds);
-    actionIds.forEach(actionId => handlers[actionId]());
-
-    expect(dependencies.copyFilteredReport).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyCollaborationReport).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyDiagnosticSummary).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyQualitySnapshot).toHaveBeenCalledTimes(1);
-    expect(dependencies.setQualityBaseline).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyQualityBaselineDelta).toHaveBeenCalledTimes(1);
-    expect(dependencies.clearQualityBaseline).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyArchivePackage).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyTroubleshootingRecipe).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyPathValueReport).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyCmdStructureReport).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyIssueSamples).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyIssueSampleJson).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyRedactedIssueSampleJson).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyIssueRegressionTemplate).toHaveBeenCalledTimes(1);
-    expect(dependencies.copyFullReport).toHaveBeenCalledTimes(1);
+    actionIds.forEach(actionId => {
+      handlers[actionId]();
+      expect(dependencies[actionDependencyKeys[actionId]]).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('异步 footer action 以 fire-and-forget 方式触发', () => {
