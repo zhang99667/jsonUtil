@@ -39,10 +39,18 @@ import { buildPlaceholderFillSummary } from '../utils/transformReportPlaceholder
 import { buildTransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
 import {
   buildCmdComparisonReportText,
-  toCmdComparisonCandidateInput,
   type CmdComparisonCandidateInput,
   type RankedCmdComparisonCandidate,
 } from '../utils/transformReportCmdComparison';
+import {
+  buildOpenFirstTransformReportCmdComparisonPlan,
+  createInitialTransformReportCmdComparisonState,
+  resetTransformReportCmdComparisonState,
+  switchTransformReportCmdComparisonCandidate,
+  toggleTransformReportCmdComparisonRecord,
+  updateTransformReportCmdComparisonExpectedText,
+  updateTransformReportCmdComparisonIgnoreExtraPaths,
+} from '../utils/transformReportCmdComparisonController';
 import {
   buildActiveCmdComparisonCandidateText as buildActiveCmdComparisonCandidateTextForPanel,
   buildActiveCmdComparisonReportText as buildActiveCmdComparisonReportTextForPanel,
@@ -67,14 +75,8 @@ import {
   buildTransformReportIssueTriageItems,
   buildTransformReportNextActionItems,
 } from '../utils/transformReportActionItems';
-import { TransformReportEmptyState } from './TransformReportEmptyState';
-import { TransformReportFilterBar } from './TransformReportFilterBar';
+import { TransformReportPanelContent } from './TransformReportPanelContent';
 import { TransformReportPanelFooter } from './TransformReportPanelFooter';
-import { TransformReportPlaceholdersSection } from './TransformReportPlaceholdersSection';
-import { TransformReportRecordsSection } from './TransformReportRecordsSection';
-import { TransformReportSummarySection } from './TransformReportSummarySection';
-import { TransformReportUnresolvedSection } from './TransformReportUnresolvedSection';
-import { TransformReportWarningsSection } from './TransformReportWarningsSection';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 
 interface TransformReportPanelProps {
@@ -95,10 +97,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   onOpenTemplateFill,
 }) => {
   const [query, setQuery] = useState('');
-  const [cmdComparisonRecordPath, setCmdComparisonRecordPath] = useState<string | null>(null);
-  const [cmdComparisonActualCandidate, setCmdComparisonActualCandidate] = useState<CmdComparisonCandidateInput | null>(null);
-  const [cmdComparisonExpectedText, setCmdComparisonExpectedText] = useState('');
-  const [cmdComparisonIgnoreExtraPaths, setCmdComparisonIgnoreExtraPaths] = useState(false);
+  const [cmdComparisonState, setCmdComparisonState] = useState(createInitialTransformReportCmdComparisonState);
   const [qualityBaseline, setQualityBaseline] = useState<{
     snapshot: TransformQualitySnapshot;
     filter: string;
@@ -113,10 +112,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
   useEffect(() => {
     setQuery('');
-    setCmdComparisonRecordPath(null);
-    setCmdComparisonActualCandidate(null);
-    setCmdComparisonExpectedText('');
-    setCmdComparisonIgnoreExtraPaths(false);
+    setCmdComparisonState(resetTransformReportCmdComparisonState());
   }, [reportContextTimestamp]);
 
   const reportView = useMemo(() => (
@@ -438,10 +434,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const activeCmdComparisonState = {
-    recordPath: cmdComparisonRecordPath,
-    expectedText: cmdComparisonExpectedText,
-    ignoreExtraPaths: cmdComparisonIgnoreExtraPaths,
-    actualCandidate: cmdComparisonActualCandidate,
+    ...cmdComparisonState,
     report,
     reportView,
     fullReportView,
@@ -456,46 +449,33 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const handleToggleCmdComparison = (record: TransformReportRecord) => {
-    setCmdComparisonRecordPath(currentPath => {
-      if (currentPath === record.path) {
-        setCmdComparisonActualCandidate(null);
-        setCmdComparisonExpectedText('');
-        return null;
-      }
-
-      setCmdComparisonActualCandidate(null);
-      setCmdComparisonExpectedText('');
-      return record.path;
-    });
+    setCmdComparisonState(currentState => toggleTransformReportCmdComparisonRecord(currentState, record));
   };
 
   const handleOpenFirstCmdComparison = () => {
-    const firstRecord = reportView?.cmdStructureRecords[0];
-    if (!firstRecord) return;
+    const plan = buildOpenFirstTransformReportCmdComparisonPlan(
+      cmdComparisonState,
+      reportView?.cmdStructureRecords[0]
+    );
+    if (!plan) return;
 
-    setQuery('CMD结构');
-    setCmdComparisonExpectedText('');
-    setCmdComparisonActualCandidate(null);
-    setCmdComparisonRecordPath(firstRecord.path);
+    setQuery(plan.query);
+    setCmdComparisonState(plan.state);
   };
 
   const handleSwitchCmdComparisonCandidate = (candidate: RankedCmdComparisonCandidate) => {
-    setQuery(candidate.recordPath);
-    setCmdComparisonRecordPath(candidate.recordPath);
-    setCmdComparisonActualCandidate(
-      candidate.id === candidate.recordPath
-        ? null
-        : toCmdComparisonCandidateInput(candidate)
-    );
+    const plan = switchTransformReportCmdComparisonCandidate(cmdComparisonState, candidate);
+    setQuery(plan.query);
+    setCmdComparisonState(plan.state);
   };
 
   const handleCopyCmdComparisonDiff = async (record: TransformReportRecord) => {
     await copyPanelText({
       text: buildCmdComparisonReportText(
         record,
-        cmdComparisonExpectedText,
-        cmdComparisonIgnoreExtraPaths,
-        cmdComparisonActualCandidate
+        cmdComparisonState.expectedText,
+        cmdComparisonState.ignoreExtraPaths,
+        cmdComparisonState.actualCandidate
       ),
       successMessage: '已复制 CMD 差异报告',
       errorLogMessage: '复制 CMD 差异报告失败:',
@@ -628,116 +608,49 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       footer={footer}
       dataTour="transform-report-panel"
     >
-      <div className="flex-1 min-h-0 overflow-y-auto bg-editor-bg p-3">
-        {!report ? (
-          <div className="h-full flex items-center justify-center text-xs text-gray-500">
-            暂无深度解析上下文
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <TransformReportSummarySection
-              report={report}
-              reportView={reportView}
-              issuePriorityCount={issuePriorityCount}
-              isFilterPending={isFilterPending}
-              hasTemplateFillTarget={Boolean(onOpenTemplateFill)}
-              placeholderFillTemplateJsonText={placeholderFillTemplateJsonText}
-              placeholderFillTemplateSummary={placeholderFillTemplateSummary}
-              placeholderFillPanelTitle={placeholderFillPanelTitle}
-              nextActions={nextActions}
-              issueTriageItems={issueTriageItems}
-              onFilter={setQuery}
-              onOpenFirstCmdComparison={handleOpenFirstCmdComparison}
-              onOpenPlaceholderFillTemplate={handleOpenPlaceholderFillTemplate}
-              onRunNextAction={runNextAction}
-              onRunIssueTriageAction={runIssueTriageAction}
-            />
-
-            <TransformReportFilterBar
-              query={query}
-              isFilterPending={isFilterPending}
-              onQueryChange={setQuery}
-            />
-
-            {reportView && sectionVisibility.showRecords && (
-              <TransformReportRecordsSection
-                records={reportView.records}
-                filteredRecordCount={reportView.filteredRecordCount}
-                isRecordTruncated={reportView.isRecordTruncated}
-                cmdComparisonRecordPath={cmdComparisonRecordPath}
-                cmdComparisonActualCandidate={cmdComparisonActualCandidate}
-                cmdComparisonExpectedText={cmdComparisonExpectedText}
-                cmdComparisonIgnoreExtraPaths={cmdComparisonIgnoreExtraPaths}
-                getCmdComparisonCandidateRecords={() => getCmdComparisonCandidateRecordsForPanel(activeCmdComparisonState)}
-                onCopyPath={handleCopyPath}
-                onCopyOriginalValue={handleCopyOriginalValue}
-                onCopyDecodedPathValue={handleCopyDecodedPathValue}
-                onCopyCmdStructure={handleCopyCmdStructure}
-                onCopyCmdComparisonPackage={handleCopyCmdComparisonPackage}
-                onToggleCmdComparison={handleToggleCmdComparison}
-                onCopyCmdComparisonDiff={handleCopyCmdComparisonDiff}
-                onSwitchCmdComparisonCandidate={handleSwitchCmdComparisonCandidate}
-                onCmdComparisonExpectedTextChange={setCmdComparisonExpectedText}
-                onCmdComparisonIgnoreExtraPathsChange={setCmdComparisonIgnoreExtraPaths}
-                onFilter={setQuery}
-                onLocatePath={onLocatePath ? handleLocatePath : undefined}
-                onOpenSchemeValue={onOpenSchemeValue ? handleOpenSchemeValue : undefined}
-              />
-            )}
-
-            {reportView && sectionVisibility.showUnresolved && (
-              <TransformReportUnresolvedSection
-                unresolvedCandidates={reportView.unresolvedCandidates}
-                filteredUnresolvedCount={reportView.filteredUnresolvedCount}
-                isUnresolvedTruncated={reportView.isUnresolvedTruncated}
-                onCopyPath={handleCopyPath}
-                onCopyOriginalValue={handleCopyOriginalValue}
-                onLocatePath={onLocatePath ? handleLocatePath : undefined}
-                onOpenSchemeValue={onOpenSchemeValue ? handleOpenSchemeValue : undefined}
-              />
-            )}
-
-            {reportView && placeholderToolbarState && sectionVisibility.showPlaceholders && (
-              <TransformReportPlaceholdersSection
-                runtimePlaceholderGroups={reportView.runtimePlaceholderGroups}
-                runtimePlaceholders={reportView.runtimePlaceholders}
-                toolbar={{
-                  ...placeholderToolbarState,
-                  onOpenPlaceholderFillTemplate: handleOpenPlaceholderFillTemplate,
-                  onCopyPlaceholderFillTemplate: handleCopyPlaceholderFillTemplate,
-                  onCopyPlaceholderReport: handleCopyPlaceholderReport,
-                }}
-                onFilter={setQuery}
-                rows={{
-                  onCopyPath: handleCopyPath,
-                  onCopyOriginalValue: handleCopyOriginalValue,
-                  onLocatePath: onLocatePath ? handleLocatePath : undefined,
-                  onOpenSchemeValue: onOpenSchemeValue ? handleOpenSchemeValue : undefined,
-                }}
-              />
-            )}
-
-            {reportView && sectionVisibility.showWarnings && (
-              <TransformReportWarningsSection
-                warnings={reportView.warnings}
-                filteredWarningCount={reportView.filteredWarningCount}
-                isWarningTruncated={reportView.isWarningTruncated}
-                onCopyPath={handleCopyPath}
-                onCopyOriginalValue={handleCopyOriginalValue}
-                onLocatePath={onLocatePath ? handleLocatePath : undefined}
-                onOpenSchemeValue={onOpenSchemeValue ? handleOpenSchemeValue : undefined}
-              />
-            )}
-
-            {reportView && sectionVisibility.showEmptyState && (
-              <TransformReportEmptyState
-                query={query}
-                onClearFilter={() => setQuery('')}
-              />
-            )}
-          </div>
-        )}
-      </div>
+      <TransformReportPanelContent
+        report={report}
+        reportView={reportView}
+        query={query}
+        issuePriorityCount={issuePriorityCount}
+        isFilterPending={isFilterPending}
+        hasTemplateFillTarget={Boolean(onOpenTemplateFill)}
+        placeholderFillTemplateJsonText={placeholderFillTemplateJsonText}
+        placeholderFillTemplateSummary={placeholderFillTemplateSummary}
+        placeholderFillPanelTitle={placeholderFillPanelTitle}
+        nextActions={nextActions}
+        issueTriageItems={issueTriageItems}
+        sectionVisibility={sectionVisibility}
+        placeholderToolbarState={placeholderToolbarState}
+        cmdComparisonRecordPath={cmdComparisonState.recordPath}
+        cmdComparisonActualCandidate={cmdComparisonState.actualCandidate}
+        cmdComparisonExpectedText={cmdComparisonState.expectedText}
+        cmdComparisonIgnoreExtraPaths={cmdComparisonState.ignoreExtraPaths}
+        getCmdComparisonCandidateRecords={() => getCmdComparisonCandidateRecordsForPanel(activeCmdComparisonState)}
+        onFilter={setQuery}
+        onOpenFirstCmdComparison={handleOpenFirstCmdComparison}
+        onOpenPlaceholderFillTemplate={handleOpenPlaceholderFillTemplate}
+        onCopyPlaceholderFillTemplate={handleCopyPlaceholderFillTemplate}
+        onCopyPlaceholderReport={handleCopyPlaceholderReport}
+        onRunNextAction={runNextAction}
+        onRunIssueTriageAction={runIssueTriageAction}
+        onCopyPath={handleCopyPath}
+        onCopyOriginalValue={handleCopyOriginalValue}
+        onCopyDecodedPathValue={handleCopyDecodedPathValue}
+        onCopyCmdStructure={handleCopyCmdStructure}
+        onCopyCmdComparisonPackage={handleCopyCmdComparisonPackage}
+        onToggleCmdComparison={handleToggleCmdComparison}
+        onCopyCmdComparisonDiff={handleCopyCmdComparisonDiff}
+        onSwitchCmdComparisonCandidate={handleSwitchCmdComparisonCandidate}
+        onCmdComparisonExpectedTextChange={expectedText => setCmdComparisonState(currentState => (
+          updateTransformReportCmdComparisonExpectedText(currentState, expectedText)
+        ))}
+        onCmdComparisonIgnoreExtraPathsChange={ignoreExtraPaths => setCmdComparisonState(currentState => (
+          updateTransformReportCmdComparisonIgnoreExtraPaths(currentState, ignoreExtraPaths)
+        ))}
+        onLocatePath={onLocatePath ? handleLocatePath : undefined}
+        onOpenSchemeValue={onOpenSchemeValue ? handleOpenSchemeValue : undefined}
+      />
     </DraggablePanel>
   );
 };

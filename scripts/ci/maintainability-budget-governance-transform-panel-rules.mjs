@@ -13,6 +13,11 @@ export const governanceTransformPanelMaintainabilityBudgets = [
     reason: '深度解析面板组件预算规则应保持短表，新增组件需先评估主面板拆分收益',
   },
   {
+    file: 'scripts/ci/maintainability-budget-transform-panel-shell-component-rules.mjs',
+    maxLines: 25,
+    reason: '深度解析面板壳组件预算规则应独立收口，避免组件预算总表回涨',
+  },
+  {
     file: 'scripts/ci/maintainability-budget-transform-panel-record-section-rules.mjs',
     maxLines: 45,
     reason: '深度解析展开记录预算规则应独立收口，允许头部、标签、路径和预览组件在子表内集中治理',

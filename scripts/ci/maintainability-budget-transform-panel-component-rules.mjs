@@ -1,14 +1,7 @@
+import { transformPanelShellComponentMaintainabilityBudgets } from './maintainability-budget-transform-panel-shell-component-rules.mjs';
+
 export const transformPanelComponentMaintainabilityBudgets = [
-  {
-    file: 'frontend/src/components/TransformReportPanel.tsx',
-    maxLines: 830,
-    reason: '深度解析报告 UI 复杂度较高，新增视图应优先拆组件或纯 helper，顶部总览、空态、Top 分布、展开记录、未展开线索、运行时占位符和跳过记录展示不得回流',
-  },
-  {
-    file: 'frontend/src/components/TransformReportTopDistributions.tsx',
-    maxLines: 180,
-    reason: '深度解析报告 Top 分布按钮应保持纯展示组件，筛选状态留在主面板',
-  },
+  ...transformPanelShellComponentMaintainabilityBudgets,
   {
     file: 'frontend/src/components/TransformReportCmdComparisonPanel.tsx',
     maxLines: 220,
