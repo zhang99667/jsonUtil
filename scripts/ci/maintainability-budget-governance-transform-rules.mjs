@@ -24,6 +24,16 @@ export const governanceTransformMaintainabilityBudgets = [
     reason: '深度解析占位符预算规则应保持短表，新增建议 helper 先拆 builder/rules',
   },
   {
+    file: 'scripts/ci/maintainability-budget-transform-placeholder-suggestion-rules.mjs',
+    maxLines: 40,
+    reason: '深度解析占位符建议预算规则应独立收口，避免 placeholder 聚合表继续膨胀',
+  },
+  {
+    file: 'scripts/ci/maintainability-budget-transform-placeholder-fill-rules.mjs',
+    maxLines: 35,
+    reason: '深度解析占位符回填预算规则应独立收口，避免 placeholder 聚合表继续膨胀',
+  },
+  {
     file: 'scripts/ci/maintainability-budget-transform-quality-rules.mjs',
     maxLines: 40,
     reason: '深度解析质量预算规则应独立收口，避免核心规则表继续贴线',

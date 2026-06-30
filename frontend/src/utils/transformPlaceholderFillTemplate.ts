@@ -4,6 +4,7 @@ import type {
   TransformPlaceholderFillTemplate,
   TransformReportView,
 } from './transformSummary';
+import { buildTransformPlaceholderFillTemplateDetails } from './transformPlaceholderFillTemplateDetails';
 
 const formatPlaceholderFillTemplateFilter = (filter?: string): string => filter?.trim() || '全部';
 
@@ -15,24 +16,7 @@ export const buildTransformPlaceholderFillTemplate = (
   if (reportView.filteredPlaceholderCount === 0) return null;
 
   const replacementSuggestions = buildPlaceholderReplacementSuggestions(reportView, suggestionSourceView);
-  const placeholderDetails = reportView.runtimePlaceholderGroups.map(group => {
-    const suggestion = replacementSuggestions.get(group.value);
-
-    return {
-      value: group.value,
-      replacement: suggestion?.replacement || '',
-      ...(suggestion ? { suggestion } : {}),
-      description: group.description,
-      count: group.count,
-      sourceCount: group.sourceCount,
-      sources: group.sources.map(source => ({
-        sourcePath: source.sourcePath,
-        ...(source.sourceLabel ? { sourceLabel: source.sourceLabel } : {}),
-        count: source.count,
-        ...(source.sourceOriginalPreview ? { sourceOriginalPreview: source.sourceOriginalPreview } : {}),
-      })),
-    };
-  });
+  const placeholderDetails = buildTransformPlaceholderFillTemplateDetails(reportView, replacementSuggestions);
 
   return {
     schemaVersion: 1,
