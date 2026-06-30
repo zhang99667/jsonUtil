@@ -1,6 +1,6 @@
 import React from 'react';
 import type { StatusBarBadgeState } from '../utils/statusBarState';
-import type { StatusBarSourceValidationAction } from '../utils/statusBarSourceValidationAction';
+import type { StatusBarSourceValidationAction } from '../utils/statusBarSourceValidationActionTypes';
 
 interface StatusBarSourceValidationBadgeProps {
   status: StatusBarBadgeState;
