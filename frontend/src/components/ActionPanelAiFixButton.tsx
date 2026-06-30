@@ -2,12 +2,7 @@ import React from 'react';
 import { ActionType } from '../types';
 import { getActionPanelAiFixButtonState } from '../utils/actionPanelFileActions';
 import { ActionPanelAiFixIcon } from './ActionPanelAiFixIcon';
-
-interface ActionPanelAiFixButtonProps {
-  isCollapsed: boolean;
-  isProcessing: boolean;
-  onAction: (action: ActionType) => void;
-}
+import type { ActionPanelAiFixButtonProps } from './ActionPanelButtonTypes';
 
 export const ActionPanelAiFixButton: React.FC<ActionPanelAiFixButtonProps> = ({
   isCollapsed,
