@@ -36,6 +36,7 @@ import {
   isPathValueCopyLimited,
 } from '../utils/transformReportCopyMetrics';
 import { buildPlaceholderFillSummary } from '../utils/transformReportPlaceholderFillSummary';
+import { buildTransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
 import {
   buildCmdComparisonReportText,
   toCmdComparisonCandidateInput,
@@ -52,6 +53,11 @@ import {
   buildTransformReportCopyTitles,
   getTransformPlaceholderFillTemplateTitle,
 } from '../utils/transformReportCopyTitles';
+import { buildTransformReportSectionVisibility } from '../utils/transformReportSectionVisibility';
+import {
+  runTransformReportCopyText,
+  type TransformReportCopyTextOptions,
+} from '../utils/transformReportCopyActionRunner';
 import {
   buildTransformReportFooterActionHandlers,
   buildTransformReportFooterActions,
@@ -199,52 +205,52 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     toast.error(getClipboardErrorMessage(error), { duration: 2000 });
   };
 
+  const copyPanelText = (options: TransformReportCopyTextOptions) => (
+    runTransformReportCopyText(options, {
+      copyText,
+      showSuccess: (message, toastOptions) => toast.success(message, toastOptions),
+      showError: showCopyError,
+    })
+  );
+
   const handleCopyReport = async () => {
     if (!activeContext) return;
 
-    try {
-      const reportText = formatTransformContextReportText(activeContext);
-      await copyText(reportText);
-      toast.success(formatCopySuccessMessage('解析报告', reportText), { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析报告失败:', error);
-    }
+    await copyPanelText({
+      text: formatTransformContextReportText(activeContext),
+      successMessage: text => formatCopySuccessMessage('解析报告', text),
+      errorLogMessage: '复制深度解析报告失败:',
+    });
   };
 
   const handleCopyFilteredReport = async () => {
     if (!report || !reportView || isFilterPending) return;
 
-    try {
-      const filteredReportText = formatTransformReportViewText(report, reportView, deferredQuery);
-      await copyText(filteredReportText);
-      toast.success(formatCopySuccessMessage('筛选结果', filteredReportText), { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析筛选结果失败:', error);
-    }
+    await copyPanelText({
+      text: formatTransformReportViewText(report, reportView, deferredQuery),
+      successMessage: text => formatCopySuccessMessage('筛选结果', text),
+      errorLogMessage: '复制深度解析筛选结果失败:',
+    });
   };
 
   const handleCopyDiagnosticSummary = async () => {
     if (!report || !reportView || isFilterPending) return;
 
-    try {
-      const diagnosticSummaryText = formatTransformDiagnosticSummaryText(report, reportView, deferredQuery);
-      await copyText(diagnosticSummaryText);
-      toast.success(formatCopySuccessMessage('诊断摘要', diagnosticSummaryText), { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析诊断摘要失败:', error);
-    }
+    await copyPanelText({
+      text: formatTransformDiagnosticSummaryText(report, reportView, deferredQuery),
+      successMessage: text => formatCopySuccessMessage('诊断摘要', text),
+      errorLogMessage: '复制深度解析诊断摘要失败:',
+    });
   };
 
   const handleCopyQualitySnapshot = async () => {
     if (!report || !reportView || isFilterPending) return;
 
-    try {
-      const qualitySnapshotText = formatTransformQualitySnapshotJsonText(report, reportView, deferredQuery);
-      await copyText(qualitySnapshotText);
-      toast.success(formatCopySuccessMessage('质量快照', qualitySnapshotText), { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析质量快照失败:', error);
-    }
+    await copyPanelText({
+      text: formatTransformQualitySnapshotJsonText(report, reportView, deferredQuery),
+      successMessage: text => formatCopySuccessMessage('质量快照', text),
+      errorLogMessage: '复制深度解析质量快照失败:',
+    });
   };
 
   const handleSetQualityBaseline = () => {
@@ -260,12 +266,11 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const handleCopyQualityBaselineDelta = async () => {
     if (!qualityBaselineDeltaText || isFilterPending) return;
 
-    try {
-      await copyText(qualityBaselineDeltaText);
-      toast.success(formatCopySuccessMessage('质量对比', qualityBaselineDeltaText), { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析质量对比失败:', error);
-    }
+    await copyPanelText({
+      text: qualityBaselineDeltaText,
+      successMessage: text => formatCopySuccessMessage('质量对比', text),
+      errorLogMessage: '复制深度解析质量对比失败:',
+    });
   };
 
   const handleClearQualityBaseline = () => {
@@ -276,81 +281,68 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const handleCopyArchivePackage = async () => {
     if (!report || !reportView || isFilterPending) return;
 
-    try {
-      const archivePackageText = formatTransformArchivePackageJsonText(report, reportView, deferredQuery, {
+    await copyPanelText({
+      text: formatTransformArchivePackageJsonText(report, reportView, deferredQuery, {
         cmdComparisonReportText: buildActiveCmdComparisonReportText(),
         cmdComparisonCandidateText: buildActiveCmdComparisonCandidateText(),
-      });
-      await copyText(archivePackageText);
-      toast.success(formatCopySuccessMessage('归档包', archivePackageText), { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析归档包失败:', error);
-    }
+      }),
+      successMessage: text => formatCopySuccessMessage('归档包', text),
+      errorLogMessage: '复制深度解析归档包失败:',
+    });
   };
 
   const handleCopyTroubleshootingRecipe = async () => {
     if (!report || !reportView || isFilterPending) return;
 
-    try {
-      const recipeText = formatTransformTroubleshootingRecipeJsonText(report, reportView, deferredQuery);
-      await copyText(recipeText);
-      toast.success(formatCopySuccessMessage('排查 recipe', recipeText), { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析排查 recipe 失败:', error);
-    }
+    await copyPanelText({
+      text: formatTransformTroubleshootingRecipeJsonText(report, reportView, deferredQuery),
+      successMessage: text => formatCopySuccessMessage('排查 recipe', text),
+      errorLogMessage: '复制深度解析排查 recipe 失败:',
+    });
   };
 
   const handleCopyPathValueReport = async () => {
     if (!reportView || !hasPathValueCopyItems || isFilterPending) return;
 
-    try {
-      const pathValueCopyText = formatTransformPathValueReportText(reportView);
-      if (!pathValueCopyText) return;
-
-      await copyText(pathValueCopyText);
-      toast.success(`已复制路径和值（${formatPathValueCopyCountLabel(
+    const pathValueCopyText = formatTransformPathValueReportText(reportView);
+    await copyPanelText({
+      text: pathValueCopyText,
+      successMessage: `已复制路径和值（${formatPathValueCopyCountLabel(
         getPathValueCopyRowCount(reportView.records),
         isPathValueCopyLimited(reportView.records, reportView.isRecordTruncated)
-      )}）`, { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析路径和值失败:', error);
-    }
+      )}）`,
+      errorLogMessage: '复制深度解析路径和值失败:',
+    });
   };
 
   const handleCopyCmdStructureReport = async () => {
     if (!report || !reportView || !hasCmdStructureCopyItems || isFilterPending) return;
 
-    try {
-      const cmdStructureCopyText = formatTransformCmdStructureReportText(report, reportView, deferredQuery);
-      if (!cmdStructureCopyText) return;
-
-      await copyText(cmdStructureCopyText);
-      toast.success(hasFocusedCmdStructureCopyItems ? '已复制聚焦 CMD 结构列表' : '已复制 CMD 结构列表', { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析 CMD 结构列表失败:', error);
-    }
+    await copyPanelText({
+      text: formatTransformCmdStructureReportText(report, reportView, deferredQuery),
+      successMessage: hasFocusedCmdStructureCopyItems ? '已复制聚焦 CMD 结构列表' : '已复制 CMD 结构列表',
+      errorLogMessage: '复制深度解析 CMD 结构列表失败:',
+    });
   };
 
   const handleCopyPlaceholderReport = async () => {
     if (!report || !reportView || isFilterPending) return;
 
-    try {
-      await copyText(formatTransformPlaceholderReportText(report, reportView, deferredQuery));
-      toast.success(deferredQuery.trim() ? '已复制筛选占位符' : '已复制占位符摘要', { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析占位符失败:', error);
-    }
+    await copyPanelText({
+      text: formatTransformPlaceholderReportText(report, reportView, deferredQuery),
+      successMessage: deferredQuery.trim() ? '已复制筛选占位符' : '已复制占位符摘要',
+      errorLogMessage: '复制深度解析占位符失败:',
+    });
   };
 
   const handleCopyPlaceholderFillTemplate = async () => {
     if (!placeholderFillTemplateJsonText || isFilterPending) return;
 
-    try {
-      await copyText(placeholderFillTemplateJsonText);
-      toast.success('已复制占位符回填模板', { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析占位符回填模板失败:', error);
-    }
+    await copyPanelText({
+      text: placeholderFillTemplateJsonText,
+      successMessage: '已复制占位符回填模板',
+      errorLogMessage: '复制深度解析占位符回填模板失败:',
+    });
   };
 
   const handleOpenPlaceholderFillTemplate = () => {
@@ -363,96 +355,86 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const handleCopyIssueSamples = async () => {
     if (!issueSampleCopyText || isFilterPending) return;
 
-    try {
-      await copyText(issueSampleCopyText);
-      toast.success('已复制问题样本', { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析问题样本失败:', error);
-    }
+    await copyPanelText({
+      text: issueSampleCopyText,
+      successMessage: '已复制问题样本',
+      errorLogMessage: '复制深度解析问题样本失败:',
+    });
   };
 
   const handleCopyIssueSampleJson = async () => {
     if (!issueSampleJsonCopyText || isFilterPending) return;
 
-    try {
-      await copyText(issueSampleJsonCopyText);
-      toast.success('已复制样本 JSON', { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析样本 JSON 失败:', error);
-    }
+    await copyPanelText({
+      text: issueSampleJsonCopyText,
+      successMessage: '已复制样本 JSON',
+      errorLogMessage: '复制深度解析样本 JSON 失败:',
+    });
   };
 
   const handleCopyRedactedIssueSampleJson = async () => {
     if (!redactedIssueSampleJsonCopyText || isFilterPending) return;
 
-    try {
-      await copyText(redactedIssueSampleJsonCopyText);
-      toast.success('已复制脱敏样本 JSON', { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析脱敏样本 JSON 失败:', error);
-    }
+    await copyPanelText({
+      text: redactedIssueSampleJsonCopyText,
+      successMessage: '已复制脱敏样本 JSON',
+      errorLogMessage: '复制深度解析脱敏样本 JSON 失败:',
+    });
   };
 
   const handleCopyIssueRegressionTemplate = async () => {
     if (!issueRegressionTemplateCopyText || isFilterPending) return;
 
-    try {
-      await copyText(issueRegressionTemplateCopyText);
-      toast.success('已复制回归模板', { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制深度解析回归模板失败:', error);
-    }
+    await copyPanelText({
+      text: issueRegressionTemplateCopyText,
+      successMessage: '已复制回归模板',
+      errorLogMessage: '复制深度解析回归模板失败:',
+    });
   };
 
   const handleCopyPath = async (path: string, successMessage = '已复制路径') => {
-    try {
-      await copyText(path);
-      toast.success(successMessage, { duration: 1600 });
-    } catch (error) {
-      showCopyError('复制深度解析路径失败:', error);
-    }
+    await copyPanelText({
+      text: path,
+      successMessage,
+      errorLogMessage: '复制深度解析路径失败:',
+      duration: 1600,
+    });
   };
 
   const handleCopyOriginalValue = async (value: string, successMessage = '已复制原始值') => {
-    try {
-      await copyText(value);
-      toast.success(successMessage, { duration: 1600 });
-    } catch (error) {
-      showCopyError('复制深度解析原始值失败:', error);
-    }
+    await copyPanelText({
+      text: value,
+      successMessage,
+      errorLogMessage: '复制深度解析原始值失败:',
+      duration: 1600,
+    });
   };
 
   const handleCopyDecodedPathValue = async (value: string) => {
-    try {
-      await copyText(value);
-      toast.success('已复制路径和值', { duration: 1600 });
-    } catch (error) {
-      showCopyError('复制深度解析内部路径和值失败:', error);
-    }
+    await copyPanelText({
+      text: value,
+      successMessage: '已复制路径和值',
+      errorLogMessage: '复制深度解析内部路径和值失败:',
+      duration: 1600,
+    });
   };
 
   const handleCopyCmdStructure = async (record: TransformReportRecord) => {
-    try {
-      const cmdStructureCopyText = getTransformRecordCmdStructureCopyText(record);
-      if (!cmdStructureCopyText) return;
-
-      await copyText(cmdStructureCopyText);
-      toast.success(record.cmdStructureFocusPaths?.length ? '已复制聚焦 CMD 结构' : '已复制 CMD 结构', { duration: 1600 });
-    } catch (error) {
-      showCopyError('复制深度解析 CMD 结构失败:', error);
-    }
+    await copyPanelText({
+      text: getTransformRecordCmdStructureCopyText(record),
+      successMessage: record.cmdStructureFocusPaths?.length ? '已复制聚焦 CMD 结构' : '已复制 CMD 结构',
+      errorLogMessage: '复制深度解析 CMD 结构失败:',
+      duration: 1600,
+    });
   };
 
   const handleCopyCmdComparisonPackage = async (record: TransformReportRecord) => {
-    try {
-      const comparisonPackageText = formatTransformCmdStructureComparisonPackageText(record);
-      if (!comparisonPackageText) return;
-
-      await copyText(comparisonPackageText);
-      toast.success('已复制 CMD 对比包', { duration: 1600 });
-    } catch (error) {
-      showCopyError('复制深度解析 CMD 对比包失败:', error);
-    }
+    await copyPanelText({
+      text: formatTransformCmdStructureComparisonPackageText(record),
+      successMessage: '已复制 CMD 对比包',
+      errorLogMessage: '复制深度解析 CMD 对比包失败:',
+      duration: 1600,
+    });
   };
 
   const activeCmdComparisonState = {
@@ -508,35 +490,30 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   };
 
   const handleCopyCmdComparisonDiff = async (record: TransformReportRecord) => {
-    try {
-      const reportText = buildCmdComparisonReportText(
+    await copyPanelText({
+      text: buildCmdComparisonReportText(
         record,
         cmdComparisonExpectedText,
         cmdComparisonIgnoreExtraPaths,
         cmdComparisonActualCandidate
-      );
-      if (!reportText) return;
-
-      await copyText(reportText);
-      toast.success('已复制 CMD 差异报告', { duration: 1600 });
-    } catch (error) {
-      showCopyError('复制 CMD 差异报告失败:', error);
-    }
+      ),
+      successMessage: '已复制 CMD 差异报告',
+      errorLogMessage: '复制 CMD 差异报告失败:',
+      duration: 1600,
+    });
   };
 
   const handleCopyCollaborationReport = async () => {
     if (!report || !reportView || isFilterPending) return;
 
-    try {
-      const collaborationReportText = formatTransformCollaborationReportText(report, reportView, deferredQuery, {
+    await copyPanelText({
+      text: formatTransformCollaborationReportText(report, reportView, deferredQuery, {
         cmdComparisonReportText: buildActiveCmdComparisonReportText(),
         cmdComparisonCandidateText: buildActiveCmdComparisonCandidateText(),
-      });
-      await copyText(collaborationReportText);
-      toast.success(formatCopySuccessMessage('排查报告', collaborationReportText), { duration: 2000 });
-    } catch (error) {
-      showCopyError('复制协作排查报告失败:', error);
-    }
+      }),
+      successMessage: text => formatCopySuccessMessage('排查报告', text),
+      errorLogMessage: '复制协作排查报告失败:',
+    });
   };
 
   const handleLocatePath = (path: string) => {
@@ -555,6 +532,17 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
 
   const placeholderFillPanelTitle = getPanelPlaceholderFillTemplateTitle('把运行时占位符回填模板填入模板填充面板');
   const canOpenPlaceholderFill = Boolean(onOpenTemplateFill && placeholderFillTemplateJsonText && !isFilterPending);
+  const placeholderToolbarState = reportView
+    ? buildTransformReportPlaceholderToolbarState({
+      filteredPlaceholderCount: reportView.filteredPlaceholderCount,
+      isPlaceholderTruncated: reportView.isPlaceholderTruncated,
+      hasTemplateFillTarget: Boolean(onOpenTemplateFill),
+      hasPlaceholderFillTemplate: Boolean(placeholderFillTemplateJsonText),
+      isFilterPending,
+      formatTemplateFillTitle: getPanelPlaceholderFillTemplateTitle,
+    })
+    : null;
+  const sectionVisibility = buildTransformReportSectionVisibility(reportView);
   const issueTriageItems = report ? buildTransformReportIssueTriageItems({
     warningCount: report.summary.warningCount,
     unresolvedCount: report.summary.unresolvedCount,
@@ -671,7 +659,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               onQueryChange={setQuery}
             />
 
-            {reportView && reportView.filteredRecordCount > 0 && (
+            {reportView && sectionVisibility.showRecords && (
               <TransformReportRecordsSection
                 records={reportView.records}
                 filteredRecordCount={reportView.filteredRecordCount}
@@ -697,7 +685,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               />
             )}
 
-            {reportView && reportView.filteredUnresolvedCount > 0 && (
+            {reportView && sectionVisibility.showUnresolved && (
               <TransformReportUnresolvedSection
                 unresolvedCandidates={reportView.unresolvedCandidates}
                 filteredUnresolvedCount={reportView.filteredUnresolvedCount}
@@ -709,30 +697,27 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               />
             )}
 
-            {reportView && reportView.filteredPlaceholderCount > 0 && (
+            {reportView && placeholderToolbarState && sectionVisibility.showPlaceholders && (
               <TransformReportPlaceholdersSection
                 runtimePlaceholderGroups={reportView.runtimePlaceholderGroups}
                 runtimePlaceholders={reportView.runtimePlaceholders}
-                filteredPlaceholderCount={reportView.filteredPlaceholderCount}
-                isPlaceholderTruncated={reportView.isPlaceholderTruncated}
-                canShowOpenTemplateFill={Boolean(onOpenTemplateFill)}
-                isPlaceholderFillTemplateDisabled={!placeholderFillTemplateJsonText || isFilterPending}
-                isCopyPlaceholderReportDisabled={isFilterPending}
-                openTemplateFillTitle={getPanelPlaceholderFillTemplateTitle('把当前筛选下的运行时占位符回填模板填入模板填充面板')}
-                copyTemplateTitle={getPanelPlaceholderFillTemplateTitle('复制当前筛选下的运行时占位符回填模板')}
-                copyPlaceholderReportTitle={isFilterPending ? '筛选结果仍在更新，请稍后复制占位符摘要' : '复制当前筛选下的运行时占位符摘要'}
-                onOpenPlaceholderFillTemplate={handleOpenPlaceholderFillTemplate}
-                onCopyPlaceholderFillTemplate={handleCopyPlaceholderFillTemplate}
-                onCopyPlaceholderReport={handleCopyPlaceholderReport}
+                toolbar={{
+                  ...placeholderToolbarState,
+                  onOpenPlaceholderFillTemplate: handleOpenPlaceholderFillTemplate,
+                  onCopyPlaceholderFillTemplate: handleCopyPlaceholderFillTemplate,
+                  onCopyPlaceholderReport: handleCopyPlaceholderReport,
+                }}
                 onFilter={setQuery}
-                onCopyPath={handleCopyPath}
-                onCopyOriginalValue={handleCopyOriginalValue}
-                onLocatePath={onLocatePath ? handleLocatePath : undefined}
-                onOpenSchemeValue={onOpenSchemeValue ? handleOpenSchemeValue : undefined}
+                rows={{
+                  onCopyPath: handleCopyPath,
+                  onCopyOriginalValue: handleCopyOriginalValue,
+                  onLocatePath: onLocatePath ? handleLocatePath : undefined,
+                  onOpenSchemeValue: onOpenSchemeValue ? handleOpenSchemeValue : undefined,
+                }}
               />
             )}
 
-            {reportView && reportView.filteredWarningCount > 0 && (
+            {reportView && sectionVisibility.showWarnings && (
               <TransformReportWarningsSection
                 warnings={reportView.warnings}
                 filteredWarningCount={reportView.filteredWarningCount}
@@ -744,11 +729,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
               />
             )}
 
-            {reportView &&
-              reportView.filteredRecordCount === 0 &&
-              reportView.filteredPlaceholderCount === 0 &&
-              reportView.filteredUnresolvedCount === 0 &&
-              reportView.filteredWarningCount === 0 && (
+            {reportView && sectionVisibility.showEmptyState && (
               <TransformReportEmptyState
                 query={query}
                 onClearFilter={() => setQuery('')}

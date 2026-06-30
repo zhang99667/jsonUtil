@@ -1,4 +1,7 @@
+import { governanceSchemeStructuredQueryMaintainabilityBudgets } from './maintainability-budget-governance-scheme-structured-query-rules.mjs';
+
 export const governanceSchemeSupportMaintainabilityBudgets = [
+  ...governanceSchemeStructuredQueryMaintainabilityBudgets,
   {
     file: 'scripts/ci/maintainability-budget-scheme-support-rules.mjs',
     maxLines: 60,
@@ -38,11 +41,6 @@ export const governanceSchemeSupportMaintainabilityBudgets = [
     file: 'scripts/ci/maintainability-budget-scheme-support-structured-decode-rules.mjs',
     maxLines: 40,
     reason: 'Scheme 结构化展开预算规则应独立成短表，避免 payload 规则继续膨胀',
-  },
-  {
-    file: 'scripts/ci/maintainability-budget-scheme-support-structured-query-rules.mjs',
-    maxLines: 50,
-    reason: 'Scheme 结构化 Query 预算规则应保持短表，新增回写规则先按 key/assign/serializer 分层',
   },
   {
     file: 'scripts/ci/maintainability-budget-scheme-support-token-rules.mjs',

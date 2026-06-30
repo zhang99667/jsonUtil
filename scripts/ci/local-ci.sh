@@ -41,7 +41,12 @@ npm run audit:security
 log "Frontend: unit tests"
 npm test
 
+log "Governance: Node script unit tests"
+cd "$ROOT_DIR"
+node --test scripts/ci/*.test.mjs
+
 log "Frontend: scheme corpus baseline"
+cd "$ROOT_DIR/frontend"
 npm run corpus:scheme
 
 log "Frontend: scheme corpus quality snapshot"
@@ -59,7 +64,15 @@ npm run build
 log "Frontend: preload boundary check"
 npm run check:preloads
 
+log "Governance: frontend static asset retention"
+cd "$ROOT_DIR"
+node scripts/ci/check-frontend-static-retention.mjs
+
+log "Governance: deploy shell syntax"
+node scripts/ci/check-deploy-shell-syntax.mjs
+
 log "Frontend: browser Worker E2E performance budget"
+cd "$ROOT_DIR/frontend"
 PLAYWRIGHT_PREBUILT=1 npm run perf:e2e
 
 log "Frontend: E2E smoke tests"

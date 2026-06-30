@@ -6,7 +6,12 @@ export const transformPanelSectionSmallMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/components/TransformReportCoverageCard.tsx',
+    maxLines: 30,
+    reason: '深度解析报告覆盖率卡片应只负责摘要外壳和覆盖率样式，覆盖项列表由子组件渲染',
+  },
+  {
+    file: 'frontend/src/components/TransformReportCoverageItems.tsx',
     maxLines: 35,
-    reason: '深度解析报告覆盖率卡片应保持纯展示组件，覆盖率判定和筛选动作由上游注入',
+    reason: '深度解析报告覆盖率条目列表应只负责 chips 渲染和空列表隐藏',
   },
 ];

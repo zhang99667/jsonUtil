@@ -1,4 +1,5 @@
 import { governanceTransformPanelMaintainabilityBudgets } from './maintainability-budget-governance-transform-panel-rules.mjs';
+import { governanceTransformSummaryMaintainabilityBudgets } from './maintainability-budget-governance-transform-summary-rules.mjs';
 
 export const governanceTransformMaintainabilityBudgets = [
   {
@@ -11,21 +12,7 @@ export const governanceTransformMaintainabilityBudgets = [
     maxLines: 70,
     reason: '深度解析核心预算规则过多时应继续按子领域拆分',
   },
-  {
-    file: 'scripts/ci/maintainability-budget-transform-summary-rules.mjs',
-    maxLines: 40,
-    reason: '深度解析聚合文件预算规则应保持短表，新增拆分模块需在这里收口',
-  },
-  {
-    file: 'scripts/ci/maintainability-budget-transform-summary-support-rules.mjs',
-    maxLines: 40,
-    reason: '深度解析聚合 support 预算规则应保持短表，新增 helper 先评估是否继续拆子表',
-  },
-  {
-    file: 'scripts/ci/maintainability-budget-transform-summary-decoded-rules.mjs',
-    maxLines: 35,
-    reason: '深度解析 decoded 预算规则应独立收口，避免 summary support 规则表继续膨胀',
-  },
+  ...governanceTransformSummaryMaintainabilityBudgets,
   {
     file: 'scripts/ci/maintainability-budget-transform-filter-rules.mjs',
     maxLines: 40,
@@ -55,6 +42,11 @@ export const governanceTransformMaintainabilityBudgets = [
     file: 'scripts/ci/maintainability-budget-governance-transform-panel-helper-rules.mjs',
     maxLines: 35,
     reason: '深度解析面板 helper 预算治理规则应独立收口，避免 panel 治理表继续膨胀',
+  },
+  {
+    file: 'scripts/ci/maintainability-budget-governance-transform-summary-rules.mjs',
+    maxLines: 40,
+    reason: '深度解析 summary 预算治理规则应独立收口，避免 transform 治理表继续膨胀',
   },
   ...governanceTransformPanelMaintainabilityBudgets,
 ];

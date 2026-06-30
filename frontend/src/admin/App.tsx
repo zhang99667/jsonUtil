@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 import {
     FileOutlined,
     PieChartOutlined,
@@ -14,6 +15,7 @@ import { Breadcrumb, Layout, Menu, Avatar, Dropdown, Spin } from 'antd';
 import Login from './pages/Login';
 import { logout } from './services/auth';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { useAdminReleaseRecovery } from '../hooks/useAdminReleaseRecovery';
 import { safeGetStorageItem } from '../utils/storage';
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -71,6 +73,7 @@ const App: React.FC = () => {
     const [collapsed, setCollapsed] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [selectedKey, setSelectedKey] = useState('1');
+    useAdminReleaseRecovery();
 
     useEffect(() => {
         // 检查本地存储中的认证令牌
@@ -392,6 +395,7 @@ const App: React.FC = () => {
                     </Footer>
                 </Layout>
             </Layout>
+            <Toaster position="top-center" />
         </ErrorBoundary>
     );
 };

@@ -4,12 +4,16 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-https://${SSH_HOST:-39.97.237.248}}"
+DEFAULT_PUBLIC_BASE_URL="${DEFAULT_PUBLIC_BASE_URL:-https://jsonutils.markz.fun}"
+PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}"
 PUBLIC_VERSION_PATH="${PUBLIC_VERSION_PATH:-/version.json}"
 PUBLIC_HEALTH_PATH="${PUBLIC_HEALTH_PATH:-${PUBLIC_PING_PATH:-/api/health}}"
 PUBLIC_VERIFY_RETRIES="${PUBLIC_VERIFY_RETRIES:-8}"
 PUBLIC_VERIFY_INTERVAL="${PUBLIC_VERIFY_INTERVAL:-3}"
 PUBLIC_VERIFY_TIMEOUT="${PUBLIC_VERIFY_TIMEOUT:-10}"
+PUBLIC_VERIFY_INSECURE_TLS="${PUBLIC_VERIFY_INSECURE_TLS:-false}"
+PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED="${PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED:-true}"
+PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="${PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS:-$PUBLIC_VERIFY_INSECURE_TLS}"
 EXPECTED_APP_VERSION="${EXPECTED_APP_VERSION:-}"
 
 log() {
@@ -43,6 +47,11 @@ read_expected_version() {
 
 require_cmd curl
 
+CURL_TLS_ARG=""
+if [ "$PUBLIC_VERIFY_INSECURE_TLS" = "true" ]; then
+  CURL_TLS_ARG="-k"
+fi
+
 PUBLIC_BASE_URL="$(normalize_base_url "$PUBLIC_BASE_URL")"
 EXPECTED_APP_VERSION="$(read_expected_version)"
 
@@ -61,14 +70,20 @@ last_version="unknown"
 last_health="unknown"
 
 while [ "$attempt" -le "$PUBLIC_VERIFY_RETRIES" ]; do
-  version_body="$(curl -kfsS --max-time "$PUBLIC_VERIFY_TIMEOUT" "${VERSION_URL}?t=$(date +%s)" 2>/dev/null || true)"
-  health_body="$(curl -kfsS --max-time "$PUBLIC_VERIFY_TIMEOUT" "$HEALTH_URL" 2>/dev/null || true)"
+  version_body="$(curl $CURL_TLS_ARG -fsS --max-time "$PUBLIC_VERIFY_TIMEOUT" "${VERSION_URL}?t=$(date +%s)" 2>/dev/null || true)"
+  health_body="$(curl $CURL_TLS_ARG -fsS --max-time "$PUBLIC_VERIFY_TIMEOUT" "$HEALTH_URL" 2>/dev/null || true)"
 
   last_version="$(printf '%s' "$version_body" | extract_json_string version)"
   last_health="$(printf '%s' "$health_body" | extract_json_string data)"
 
   if [ "$last_version" = "$EXPECTED_APP_VERSION" ] && [ "$last_health" = "pong" ]; then
     log "公网验证通过: version=v$last_version, health=$last_health"
+    if [ "$PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED" != "false" ]; then
+      require_cmd node
+      log "验证公网前端静态资源"
+      FRONTEND_ASSET_VERIFY_INSECURE_TLS="$PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS" \
+        node "$ROOT_DIR/scripts/ci/check-production-frontend-assets.mjs" "$PUBLIC_BASE_URL"
+    fi
     exit 0
   fi
 

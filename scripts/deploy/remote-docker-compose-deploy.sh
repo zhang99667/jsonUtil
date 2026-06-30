@@ -109,6 +109,10 @@ cd "$APP_DIR"
 require_cmd docker
 require_cmd curl
 
+# shellcheck source=scripts/deploy/frontend-legacy-assets.sh
+. "$APP_DIR/scripts/deploy/frontend-legacy-assets.sh"
+trap cleanup_frontend_legacy_assets EXIT
+
 if [ ! -f "$COMPOSE_FILE" ]; then
   printf '未找到 compose 文件: %s/%s\n' "$APP_DIR" "$COMPOSE_FILE" >&2
   exit 1
@@ -133,6 +137,7 @@ check_disk_watermark "$APP_DIR"
 
 log "校验 Docker Compose 配置"
 compose config >/dev/null
+backup_frontend_legacy_assets
 
 log "构建并启动服务"
 UP_ARGS=(up -d --build --remove-orphans)
@@ -144,6 +149,7 @@ if [ -n "$COMPOSE_SERVICES" ]; then
   UP_ARGS+=("${SERVICE_ARGS[@]}")
 fi
 compose "${UP_ARGS[@]}"
+restore_frontend_legacy_assets
 
 log "当前服务状态"
 compose ps

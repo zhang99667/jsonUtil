@@ -1,9 +1,7 @@
+import { governanceTransformPanelSectionDomainMaintainabilityBudgets } from './maintainability-budget-governance-transform-panel-section-domain-rules.mjs';
+
 export const governanceTransformPanelSectionMaintainabilityBudgets = [
-  {
-    file: 'scripts/ci/maintainability-budget-transform-panel-section-rules.mjs',
-    maxLines: 40,
-    reason: '深度解析面板 section 预算规则应保持短表，占位符区域独立收口到 placeholder-section 子表',
-  },
+  ...governanceTransformPanelSectionDomainMaintainabilityBudgets,
   {
     file: 'scripts/ci/maintainability-budget-transform-panel-section-small-rules.mjs',
     maxLines: 30,

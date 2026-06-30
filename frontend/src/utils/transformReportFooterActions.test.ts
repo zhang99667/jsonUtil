@@ -97,6 +97,9 @@ describe('transformReportFooterActions', () => {
       label: '复制聚焦 CMD',
       ariaLabel: '复制聚焦 CMD，CMD 标题',
     });
+    expect(actions.find(action => action.id === 'copy-troubleshooting-recipe')).toMatchObject({
+      ariaLabel: '复制排查 recipe，recipe 标题',
+    });
   });
 
   it('筛选更新中时禁用依赖筛选结果的操作但保留完整报告与清除基线', () => {
@@ -115,6 +118,19 @@ describe('transformReportFooterActions', () => {
     expect(actions.find(action => action.id === 'copy-full-report')?.disabled).toBe(false);
   });
 
+  it('有筛选但报告视图不可用时仍展示并禁用筛选结果入口', () => {
+    const actions = buildTransformReportFooterActions(buildState({
+      hasQuery: true,
+      hasReportView: false,
+      isFilterPending: true,
+    }));
+
+    expect(actions.find(action => action.id === 'copy-filtered-report')).toMatchObject({
+      title: '筛选标题',
+      disabled: true,
+    });
+  });
+
   it('没有可复制内容时隐藏 CMD 入口并禁用对应按钮', () => {
     const actions = buildTransformReportFooterActions(buildState({
       hasCmdStructureCopyItems: false,
@@ -125,10 +141,23 @@ describe('transformReportFooterActions', () => {
 
     expect(actions.some(action => action.id === 'copy-cmd-structures')).toBe(false);
     expect(actions.find(action => action.id === 'copy-path-values')?.disabled).toBe(true);
+    expect(actions.find(action => action.id === 'copy-issue-samples')?.disabled).toBe(false);
     expect(actions.find(action => action.id === 'copy-issue-sample-json')?.disabled).toBe(true);
     expect(actions.find(action => action.id === 'copy-full-report')).toMatchObject({
       disabled: true,
       title: '完整报告标题',
     });
+  });
+
+  it('样本导出类 tail action 缺内容时各自禁用', () => {
+    const actions = buildTransformReportFooterActions(buildState({
+      hasIssueSampleCopyText: false,
+      hasRedactedIssueSampleJsonCopyText: false,
+      hasIssueRegressionTemplateCopyText: false,
+    }));
+
+    expect(actions.find(action => action.id === 'copy-issue-samples')?.disabled).toBe(true);
+    expect(actions.find(action => action.id === 'copy-redacted-issue-sample-json')?.disabled).toBe(true);
+    expect(actions.find(action => action.id === 'copy-issue-regression-template')?.disabled).toBe(true);
   });
 });

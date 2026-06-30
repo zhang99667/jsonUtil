@@ -1,8 +1,14 @@
 import { lazy } from 'react';
 
-export const LazySchemeViewerModal = lazy(() => import('./SchemeViewerModal').then(module => ({
+const loadSchemeViewerModal = () => import('./SchemeViewerModal').then(module => ({
   default: module.SchemeViewerModal,
-})));
+}));
+
+export const preloadFrequentAppLazyPanels = (): Promise<unknown[]> => Promise.all([
+  loadSchemeViewerModal(),
+]);
+
+export const LazySchemeViewerModal = lazy(loadSchemeViewerModal);
 
 export const LazyJsonPathPanel = lazy(() => import('./JsonPathPanel').then(module => ({
   default: module.JsonPathPanel,

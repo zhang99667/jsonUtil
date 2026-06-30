@@ -1,9 +1,9 @@
 
-import React, { Suspense, useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Toaster } from 'react-hot-toast';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { showSuccess, showError } from './utils/toast';
-import { ActionPanel } from './components/ActionPanel';
-import { CodeEditor } from './components/Editor';
+import { AppActionSidebar } from './components/AppActionSidebar';
+import { AppEditorWorkspace } from './components/AppEditorWorkspace';
+import { AppWorkspaceOverlays } from './components/AppWorkspaceOverlays';
 import {
   detectLanguage,
   performTransform,
@@ -17,43 +17,37 @@ import {
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, type EditorDiagnosticHighlight } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
+import { useAppChunkLoadRecovery } from './hooks/useAppChunkLoadRecovery';
+import { useAppLazyPanelWarmup } from './hooks/useAppLazyPanelWarmup';
 import { useAppUpdateCheck } from './hooks/useAppUpdateCheck';
 import { useAppAsyncTransform } from './hooks/useAppAsyncTransform';
 import { useAppFileDrop } from './hooks/useAppFileDrop';
-import { APP_CHANGELOG_OPEN_EVENT, type AppChangelogOpenDetail } from './utils/appEvents';
+import { useAppAiRepairCommand } from './hooks/useAppAiRepairCommand';
+import { useAppCopyCommands } from './hooks/useAppCopyCommands';
+import { useAppSaveCommands } from './hooks/useAppSaveCommands';
+import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
+import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import {
-  LEFT_PANE_MAX_PERCENT,
-  LEFT_PANE_MIN_PERCENT,
-  SIDEBAR_MAX_WIDTH,
-  SIDEBAR_MIN_WIDTH,
-  useLayout,
-} from './hooks/useLayout';
+  useAppSourceReplacementCommands,
+  type AppSmartSuggestionOrigin,
+} from './hooks/useAppSourceReplacementCommands';
+import { APP_CHANGELOG_OPEN_EVENT, type AppChangelogOpenDetail } from './utils/appEvents';
+import { useLayout } from './hooks/useLayout';
 import { getPaneKeyboardResizePercent, getSidebarKeyboardResizeWidth } from './hooks/layoutKeyboardResize';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
+import { AppConfirmDialogs } from './components/AppConfirmDialogs';
+import { AppLazyShellModals } from './components/AppLazyShellModals';
+import { AppLazyToolPanels } from './components/AppLazyToolPanels';
 import ErrorBoundary from './components/ErrorBoundary';
-import { ConfirmDialog } from './components/ConfirmDialog';
 import { StatusBar } from './components/StatusBar';
-import {
-  LazyAiRepairSummaryBanner,
-  LazyChangelogModal,
-  LazyJsonComparePanel,
-  LazyJsonPathPanel,
-  LazyJsonSchemaPanel,
-  LazyJsonTreePanel,
-  LazySchemeViewerModal,
-  LazyTemplateFillPanel,
-  LazyTransformReportPanel,
-  LazyUnifiedSettingsModal,
-} from './components/appLazyPanels';
 import {
   createAppLazyPanelLoadState,
   updateAppLazyPanelLoadState,
 } from './utils/appLazyPanelLoadState';
 import { getDocumentStats } from './utils/documentStats';
 import type { AiRepairSummary } from './utils/aiRepairSummary';
-import { copyText, getClipboardErrorMessage, readClipboardText } from './utils/clipboard';
-import { getDetailedErrorMessage, isAbortError } from './utils/errors';
+import { getDetailedErrorMessage } from './utils/errors';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
@@ -75,25 +69,13 @@ import {
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { getJsonSchemaIssueHighlights } from './utils/jsonSchemaIssueHighlights';
 import type { JsonPathQueryItem } from './utils/jsonPathQuery';
-import {
-  getSmartInputSuggestion,
-  type SmartSuggestionActionId,
-} from './utils/smartInputSuggestion';
+import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
 import { buildAppEditorUiState } from './utils/appEditorUiState';
-import { buildAppSmartSuggestionActionPlan } from './utils/appSmartSuggestionActions';
 import {
   getContentSizeSummary,
-  getCopySuccessMessage,
-  getSourceUpdateSuccessMessage,
   isPlaceholderFillTemplateJson,
 } from './utils/appWorkflowHelpers';
 import { setLegacyJsonPathValue } from './utils/appLegacyJsonPath';
-import {
-  buildApplyPreviewToSourcePlan,
-  buildApplySchemaExampleToSourcePlan,
-  buildSchemeInspectSourcePlan,
-  buildPasteSourcePlan,
-} from './utils/appSourceReplacePlans';
 import {
   ASYNC_VALIDATION_THRESHOLD,
   DOCUMENT_STATS_SCAN_LIMIT,
@@ -104,8 +86,6 @@ import {
 } from './utils/appAsyncTransformState';
 
 type SettingsTab = 'shortcuts' | 'ai' | 'general';
-type SmartSuggestionOrigin = 'clipboard';
-
 interface JsonPathQueryRequest {
   id: number;
   query: string;
@@ -181,7 +161,7 @@ const App: React.FC = () => {
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
     createNewTab, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
-    saveViewState
+    saveViewState, flushWorkspaceDraft
   } = useFileSystem({
     input, setInput, inputRef, mode, setMode, output: '' // 初始为空，后面会更新
   });
@@ -210,11 +190,6 @@ const App: React.FC = () => {
     () => pendingCloseFileId ? files.find(file => file.id === pendingCloseFileId) || null : null,
     [files, pendingCloseFileId]
   );
-  const [isClearSourceConfirmOpen, setIsClearSourceConfirmOpen] = useState(false);
-  const [pendingPasteSourceText, setPendingPasteSourceText] = useState<string | null>(null);
-  const [pendingApplyPreviewText, setPendingApplyPreviewText] = useState<string | null>(null);
-  const [pendingSchemaExampleText, setPendingSchemaExampleText] = useState<string | null>(null);
-  const [pendingSchemeInspectSourceText, setPendingSchemeInspectSourceText] = useState<string | null>(null);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -341,7 +316,6 @@ const App: React.FC = () => {
   }, [output, isJsonPathPanelOpen, isJsonTreePanelOpen]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
   const [aiRepairSummary, setAiRepairSummary] = useState<AiRepairSummary | null>(null);
   const [sourceErrorLocateSignal, setSourceErrorLocateSignal] = useState(0);
@@ -380,7 +354,7 @@ const App: React.FC = () => {
   const [isTransformReportOpen, setIsTransformReportOpen] = useState(false);
   const [lazyPanelsLoaded, setLazyPanelsLoaded] = useState(createAppLazyPanelLoadState);
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
-  const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<SmartSuggestionOrigin | null>(null);
+  const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<AppSmartSuggestionOrigin | null>(null);
 
   // 光标位置状态（用于状态栏显示）
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
@@ -448,38 +422,16 @@ const App: React.FC = () => {
     });
   }, []);
 
-  // 统一的保存处理逻辑
-  const handleSaveShortcut = useCallback(async () => {
-    const startedAt = performance.now();
-    if (activeEditor === 'PREVIEW' && isOutputTransforming) {
-      showError('预览仍在处理，请稍后再保存');
-      trackCurrentToolEvent('SAVE_SHORTCUT', 'file', 'skipped', startedAt);
-      return;
-    }
-
-    let success = false;
-    if (activeFileId) {
-      // 如果已打开文件，根据焦点保存不同内容到该文件
-      if (activeEditor === 'PREVIEW') {
-        // Preview 聚焦：保存 Preview 内容到文件
-        success = await saveFile(output);
-        if (success) showSuccess("已将 PREVIEW 内容保存到文件");
-      } else {
-        // Source 聚焦：保存 Source 内容到文件
-        success = await saveFile(); // 默认保存 input
-        if (success) showSuccess("已将 SOURCE 内容保存到文件");
-      }
-    } else {
-      // 未打开文件：另存为
-      if (activeEditor === 'PREVIEW') {
-        success = await savePreview(); // 另存为 Preview
-      } else {
-        success = await saveSourceAs(); // 另存为 Source
-        if (success) showSuccess("已另存为源文件");
-      }
-    }
-    trackCurrentToolEvent('SAVE_SHORTCUT', 'file', success ? 'success' : 'skipped', startedAt);
-  }, [activeFileId, activeEditor, output, saveFile, saveSourceAs, isOutputTransforming, trackCurrentToolEvent]);
+  const { handleSaveShortcut, handleToolbarSave } = useAppSaveCommands({
+    activeEditor,
+    hasActiveFile: Boolean(activeFileId),
+    activeFileHasHandle: Boolean(activeFile?.handle),
+    previewText: output,
+    isOutputTransforming,
+    onSaveFile: saveFile,
+    onSaveSourceAs: saveSourceAs,
+    onTrackToolEvent: trackCurrentToolEvent,
+  });
 
   const handleModeChange = useCallback((nextMode: TransformMode) => {
     setMode(nextMode);
@@ -515,6 +467,12 @@ const App: React.FC = () => {
     setIsJsonSchemaPanelOpen(nextOpen);
     trackCurrentToolEvent(nextOpen ? 'SCHEMA_PANEL_OPEN' : 'SCHEMA_PANEL_CLOSE', 'panel');
   }, [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen, trackCurrentToolEvent]);
+
+  const handleOpenSettingsPanel = useCallback(() => {
+    setSettingsInitialTab('shortcuts');
+    setIsSettingsModalOpen(true);
+    trackCurrentToolEvent('SETTINGS_OPEN', 'panel');
+  }, [setIsSettingsModalOpen, setSettingsInitialTab, trackCurrentToolEvent]);
 
   const handleLocateJsonPath = useCallback((query: string) => {
     const normalizedQuery = query.trim();
@@ -653,11 +611,22 @@ const App: React.FC = () => {
     }
   });
 
+  const { handleExportSettingsBackup, handleImportSettingsBackup } = useAppSettingsBackupCommands({
+    generalSettings,
+    aiConfig,
+    shortcuts,
+    onSetGeneralSettings: setGeneralSettings,
+    onSetAIConfig: setAiConfig,
+    onReplaceShortcuts: replaceShortcuts,
+  });
+
   // 用户引导 (Hook)
   useOnboardingTour();
 
   // 生产环境检测新版本，避免长时间打开的页面停留在旧包
   useAppUpdateCheck();
+  useAppChunkLoadRecovery({ onBeforeReload: flushWorkspaceDraft });
+  useAppLazyPanelWarmup();
 
   useEffect(() => {
     const handleChangelogOpen = (event: Event) => {
@@ -769,254 +738,74 @@ const App: React.FC = () => {
 
   }, [mode, setAiRepairSummary, setInput, setMode, setSmartSuggestionOrigin, updateActiveFileContent]);
 
-  const applySchemeInspectSourceText = useCallback((text: string, successMessage: string) => {
-    handleInputChange(text);
-    setMode(TransformMode.DEEP_FORMAT);
-    setHighlightRange(null);
-    setIsJsonPathPanelOpen(false);
-    setIsTransformReportOpen(false);
-    setIsSchemeDecodeOpen(false);
-    showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
-  }, [handleInputChange, setHighlightRange, setIsJsonPathPanelOpen, setIsSchemeDecodeOpen, setIsTransformReportOpen, setMode]);
+  const handleApplyAiRepairResult = useCallback((fixedJson: string, summary: AiRepairSummary) => {
+    setAiRepairSummary(summary);
+    setInput(fixedJson);
+    inputRef.current = fixedJson;
+    updateActiveFileContent(fixedJson);
+  }, [setAiRepairSummary, setInput, updateActiveFileContent]);
 
-  const handleInspectSourceFromScheme = useCallback((value: string) => {
-    const startedAt = performance.now();
-    const plan = buildSchemeInspectSourcePlan(input, value);
-    if (plan.action === 'skip') {
-      (plan.feedback === 'error' ? showError : showSuccess)(plan.message);
-      if (plan.feedback === 'success') {
-        setMode(TransformMode.DEEP_FORMAT);
-        setHighlightRange(null);
-        setIsJsonPathPanelOpen(false);
-        setIsTransformReportOpen(false);
-        setIsSchemeDecodeOpen(false);
-      }
-      trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
-      return;
-    }
+  const handleOpenAiSettings = useCallback(() => {
+    setSettingsInitialTab('ai');
+    setIsSettingsModalOpen(true);
+  }, [setIsSettingsModalOpen, setSettingsInitialTab]);
 
-    if (plan.action === 'confirm') {
-      setPendingSchemeInspectSourceText(plan.pendingText);
-      trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'skipped', startedAt);
-      return;
-    }
+  const {
+    isAiRepairing: isProcessing,
+    handleAiRepair,
+  } = useAppAiRepairCommand({
+    sourceText: input,
+    aiConfig,
+    aiRepairSnapshotRef,
+    onApplyFixedJson: handleApplyAiRepairResult,
+    onSetMode: setMode,
+    onOpenAiSettings: handleOpenAiSettings,
+    onTriggerFeatureFirstUse: () => triggerFeatureFirstUse(FeatureId.AI_FIX),
+    onTrackToolEvent: trackCurrentToolEvent,
+  });
 
-    applySchemeInspectSourceText(plan.text, plan.successMessage);
-    trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'success', startedAt);
-  }, [applySchemeInspectSourceText, input, setHighlightRange, setIsJsonPathPanelOpen, setIsSchemeDecodeOpen, setIsTransformReportOpen, setMode, setPendingSchemeInspectSourceText, trackCurrentToolEvent]);
+  const {
+    isClearSourceConfirmOpen,
+    pendingPasteSourceText,
+    pendingApplyPreviewText,
+    pendingSchemaExampleText,
+    pendingSchemeInspectSourceText,
+    handleInspectSourceFromScheme,
+    handleConfirmSchemeInspectSource,
+    handleCancelSchemeInspectSource,
+    handlePasteSource,
+    handleConfirmPasteSource,
+    handleCancelPasteSource,
+    handleRequestApplyPreviewToSource,
+    handleConfirmApplyPreviewToSource,
+    handleCancelApplyPreviewToSource,
+    handleRequestApplySchemaExampleToSource,
+    handleConfirmApplySchemaExampleToSource,
+    handleCancelApplySchemaExampleToSource,
+    handleRequestClearSource,
+    handleConfirmClearSource,
+    handleCancelClearSource,
+  } = useAppSourceReplacementCommands({
+    input,
+    output,
+    isOutputTransforming,
+    smartSuggestionOriginTextRef,
+    onInputChange: handleInputChange,
+    onSetMode: setMode,
+    onSetHighlightRange: setHighlightRange,
+    onSetJsonPathPanelOpen: setIsJsonPathPanelOpen,
+    onSetTransformReportOpen: setIsTransformReportOpen,
+    onSetSchemeDecodeOpen: setIsSchemeDecodeOpen,
+    onSetSmartSuggestionOrigin: setSmartSuggestionOrigin,
+    onTrackToolEvent: trackCurrentToolEvent,
+  });
 
-  const handleConfirmSchemeInspectSource = useCallback(() => {
-    if (pendingSchemeInspectSourceText === null) return;
-
-    const startedAt = performance.now();
-    applySchemeInspectSourceText(pendingSchemeInspectSourceText, '已用 Scheme 原始值替换 SOURCE 并开始排查');
-    setPendingSchemeInspectSourceText(null);
-    trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'success', startedAt);
-  }, [applySchemeInspectSourceText, pendingSchemeInspectSourceText, setPendingSchemeInspectSourceText, trackCurrentToolEvent]);
-
-  const handleCancelSchemeInspectSource = useCallback(() => {
-    const startedAt = performance.now();
-    setPendingSchemeInspectSourceText(null);
-    trackCurrentToolEvent('SCHEME_INSPECT_SOURCE', 'panel', 'cancelled', startedAt);
-  }, [setPendingSchemeInspectSourceText, trackCurrentToolEvent]);
-
-  const handleCopySource = useCallback(async () => {
-    const startedAt = performance.now();
-    if (!input.trim()) {
-      showError('源内容为空，暂无可复制内容');
-      trackCurrentToolEvent('SOURCE_COPY', 'editor', 'skipped', startedAt);
-      return;
-    }
-
-    try {
-      await copyText(input);
-      showSuccess(getCopySuccessMessage('源内容', input));
-      trackCurrentToolEvent('SOURCE_COPY', 'editor', 'success', startedAt);
-    } catch (error) {
-      showError(getClipboardErrorMessage(error, '复制源内容失败'));
-      trackCurrentToolEvent('SOURCE_COPY', 'editor', 'error', startedAt);
-    }
-  }, [input, trackCurrentToolEvent]);
-
-  const handleCopyPreview = useCallback(async () => {
-    const startedAt = performance.now();
-    if (isOutputTransforming) {
-      showError('预览仍在处理，请稍后复制');
-      trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'skipped', startedAt);
-      return;
-    }
-
-    if (!output.trim()) {
-      showError('预览内容为空，暂无可复制内容');
-      trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'skipped', startedAt);
-      return;
-    }
-
-    try {
-      await copyText(output);
-      showSuccess(getCopySuccessMessage('预览内容', output));
-      trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'success', startedAt);
-    } catch (error) {
-      showError(getClipboardErrorMessage(error));
-      trackCurrentToolEvent('PREVIEW_COPY', 'editor', 'error', startedAt);
-    }
-  }, [isOutputTransforming, output, trackCurrentToolEvent]);
-
-  const applySourceTextFromClipboard = useCallback((text: string, successMessage: string) => {
-    handleInputChange(text);
-    setHighlightRange(null);
-    const clipboardSourceText = cleanJsonInput(text);
-    const clipboardSuggestion = getSmartInputSuggestion(clipboardSourceText);
-    if (clipboardSuggestion) {
-      smartSuggestionOriginTextRef.current = clipboardSourceText;
-      setSmartSuggestionOrigin('clipboard');
-    } else {
-      smartSuggestionOriginTextRef.current = '';
-    }
-    showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
-  }, [handleInputChange]);
-
-  const handlePasteSource = useCallback(async () => {
-    const startedAt = performance.now();
-
-    try {
-      const clipboardText = await readClipboardText();
-      const plan = buildPasteSourcePlan(input, clipboardText);
-      if (plan.action === 'skip') {
-        (plan.feedback === 'error' ? showError : showSuccess)(plan.message);
-        trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'skipped', startedAt);
-        return;
-      }
-
-      if (plan.action === 'confirm') {
-        setPendingPasteSourceText(plan.pendingText);
-        return;
-      }
-
-      applySourceTextFromClipboard(plan.text, plan.successMessage);
-      trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'success', startedAt);
-    } catch (error) {
-      showError(getClipboardErrorMessage(error, '读取剪贴板失败'));
-      trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'error', startedAt);
-    }
-  }, [applySourceTextFromClipboard, input, setPendingPasteSourceText, trackCurrentToolEvent]);
-
-  const handleConfirmPasteSource = useCallback(() => {
-    if (pendingPasteSourceText === null) return;
-
-    const startedAt = performance.now();
-    applySourceTextFromClipboard(pendingPasteSourceText, '已用剪贴板内容替换 SOURCE');
-    setPendingPasteSourceText(null);
-    trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'success', startedAt);
-  }, [applySourceTextFromClipboard, pendingPasteSourceText, setPendingPasteSourceText, trackCurrentToolEvent]);
-
-  const handleCancelPasteSource = useCallback(() => {
-    const startedAt = performance.now();
-    setPendingPasteSourceText(null);
-    trackCurrentToolEvent('SOURCE_PASTE', 'editor', 'cancelled', startedAt);
-  }, [setPendingPasteSourceText, trackCurrentToolEvent]);
-
-  const applyPreviewTextToSource = useCallback((text: string, successMessage: string) => {
-    handleInputChange(text);
-    setHighlightRange(null);
-    showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
-  }, [handleInputChange]);
-
-  const handleRequestApplyPreviewToSource = useCallback(() => {
-    const startedAt = performance.now();
-    const plan = buildApplyPreviewToSourcePlan(input, output, isOutputTransforming);
-    if (plan.action === 'skip') {
-      (plan.feedback === 'error' ? showError : showSuccess)(plan.message);
-      trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'skipped', startedAt);
-      return;
-    }
-
-    if (plan.action === 'confirm') {
-      setPendingApplyPreviewText(plan.pendingText);
-      return;
-    }
-
-    applyPreviewTextToSource(plan.text, plan.successMessage);
-    trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'success', startedAt);
-  }, [applyPreviewTextToSource, input, isOutputTransforming, output, setPendingApplyPreviewText, trackCurrentToolEvent]);
-
-  const handleConfirmApplyPreviewToSource = useCallback(() => {
-    if (pendingApplyPreviewText === null) return;
-
-    const startedAt = performance.now();
-    applyPreviewTextToSource(pendingApplyPreviewText, '已用 PREVIEW 替换 SOURCE');
-    setPendingApplyPreviewText(null);
-    trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'success', startedAt);
-  }, [applyPreviewTextToSource, pendingApplyPreviewText, setPendingApplyPreviewText, trackCurrentToolEvent]);
-
-  const handleCancelApplyPreviewToSource = useCallback(() => {
-    const startedAt = performance.now();
-    setPendingApplyPreviewText(null);
-    trackCurrentToolEvent('PREVIEW_APPLY_TO_SOURCE', 'editor', 'cancelled', startedAt);
-  }, [setPendingApplyPreviewText, trackCurrentToolEvent]);
-
-  const applySchemaExampleToSource = useCallback((text: string, successMessage: string) => {
-    handleInputChange(text);
-    setHighlightRange(null);
-    showSuccess(getSourceUpdateSuccessMessage(successMessage, text));
-  }, [handleInputChange]);
-
-  const handleRequestApplySchemaExampleToSource = useCallback((text: string) => {
-    const startedAt = performance.now();
-    const plan = buildApplySchemaExampleToSourcePlan(input, text);
-    if (plan.action === 'skip') {
-      (plan.feedback === 'error' ? showError : showSuccess)(plan.message);
-      trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'skipped', startedAt);
-      return;
-    }
-
-    if (plan.action === 'confirm') {
-      setPendingSchemaExampleText(plan.pendingText);
-      return;
-    }
-
-    applySchemaExampleToSource(plan.text, plan.successMessage);
-    trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'success', startedAt);
-  }, [applySchemaExampleToSource, input, setPendingSchemaExampleText, trackCurrentToolEvent]);
-
-  const handleConfirmApplySchemaExampleToSource = useCallback(() => {
-    if (pendingSchemaExampleText === null) return;
-
-    const startedAt = performance.now();
-    applySchemaExampleToSource(pendingSchemaExampleText, '已用 Schema 示例替换 SOURCE');
-    setPendingSchemaExampleText(null);
-    trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'success', startedAt);
-  }, [applySchemaExampleToSource, pendingSchemaExampleText, setPendingSchemaExampleText, trackCurrentToolEvent]);
-
-  const handleCancelApplySchemaExampleToSource = useCallback(() => {
-    const startedAt = performance.now();
-    setPendingSchemaExampleText(null);
-    trackCurrentToolEvent('SCHEMA_EXAMPLE_APPLY_TO_SOURCE', 'schema', 'cancelled', startedAt);
-  }, [setPendingSchemaExampleText, trackCurrentToolEvent]);
-
-  const handleRequestClearSource = useCallback(() => {
-    const startedAt = performance.now();
-    if (!input.trim()) {
-      showError('源内容已经是空的');
-      trackCurrentToolEvent('SOURCE_CLEAR', 'editor', 'skipped', startedAt);
-      return;
-    }
-
-    setIsClearSourceConfirmOpen(true);
-  }, [input, setIsClearSourceConfirmOpen, trackCurrentToolEvent]);
-
-  const handleConfirmClearSource = useCallback(() => {
-    const startedAt = performance.now();
-    handleInputChange('');
-    setHighlightRange(null);
-    setIsClearSourceConfirmOpen(false);
-    showSuccess('源内容已清空');
-    trackCurrentToolEvent('SOURCE_CLEAR', 'editor', 'success', startedAt);
-  }, [handleInputChange, setHighlightRange, setIsClearSourceConfirmOpen, trackCurrentToolEvent]);
-
-  const handleCancelClearSource = useCallback(() => {
-    setIsClearSourceConfirmOpen(false);
-  }, [setIsClearSourceConfirmOpen]);
+  const { handleCopySource, handleCopyPreview } = useAppCopyCommands({
+    sourceText: input,
+    previewText: output,
+    isOutputTransforming,
+    onTrackToolEvent: trackCurrentToolEvent,
+  });
 
   // 右侧预览编辑处理（反向转换）
   // 仅在解除只读锁定后触发
@@ -1123,46 +912,6 @@ const App: React.FC = () => {
     }, 400);
   }, [mode, files, activeFileId, updateActiveFileContent, validateJsonMaybeAsync]);
 
-  const savePreview = async (): Promise<boolean> => {
-    if (isOutputTransforming) {
-      showError('预览仍在处理，请稍后再保存');
-      return false;
-    }
-
-    try {
-      if (window.showSaveFilePicker) {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: 'preview_result.json',
-          types: [{
-            description: 'JSON File',
-            accept: { 'application/json': ['.json'] },
-          }],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(output);
-        await writable.close();
-      } else {
-        // Fallback for browsers without File System Access API
-        const blob = new Blob([output], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'preview_result.json';
-        a.click();
-        window.setTimeout(() => URL.revokeObjectURL(url), 0);
-      }
-      showSuccess("已保存预览结果");
-      return true;
-    } catch (err) {
-      if (isAbortError(err)) {
-        return false;
-      }
-      console.error('Failed to save preview:', err);
-      showError(getDetailedErrorMessage(err, '保存预览结果失败'));
-      return false;
-    }
-  };
-
   const {
     isDraggingFile,
     handleDragEnter,
@@ -1218,123 +967,49 @@ const App: React.FC = () => {
     }
   }, [autoExpandScheme, buildCurrentQualitySnapshot, input, updateActiveFileContent]);
 
-  const handleAction = async (action: ActionType) => {
-    const startedAt = performance.now();
+  const handleAction = useCallback(async (action: ActionType) => {
     if (action === ActionType.AI_FIX) {
-      // 触发 AI 修复功能首次使用引导
-      triggerFeatureFirstUse(FeatureId.AI_FIX);
+      await handleAiRepair();
+      return;
+    }
 
-      if (!input.trim()) {
-        showError('请先输入需要修复的 JSON 内容');
-        trackCurrentToolEvent(action, 'ai', 'skipped', startedAt);
-        return;
-      }
+    if (action === ActionType.SAVE) {
+      await handleToolbarSave();
+      return;
+    }
 
-      setIsProcessing(true);
-      try {
-        // 智能修复针对源输入进行，优先本地规则，必要时再调用 AI。
-        const { fixJsonWithRepairDetails } = await import('./services/aiService');
-        const repairResult = await fixJsonWithRepairDetails(input, aiConfig);
-        const fixed = repairResult.fixedJson;
-        const { buildAiRepairSummary } = await import('./utils/aiRepairSummary');
-        aiRepairSnapshotRef.current = fixed;
-        setAiRepairSummary(buildAiRepairSummary(input, fixed, {
-          repairMethod: repairResult.repairMethod,
-          localRuleLabels: repairResult.localRuleLabels,
-        }));
-        setInput(fixed);
-        inputRef.current = fixed; // 同步 Ref 状态
-        updateActiveFileContent(fixed);
-        // 修复后自动切换至格式化视图
-        setMode(TransformMode.FORMAT);
-        showSuccess(repairResult.repairMethod === 'local' ? '本地修复成功' : 'AI 修复成功');
-        trackCurrentToolEvent(action, 'ai', 'success', startedAt);
-      } catch (e: unknown) {
-        // 业务逻辑错误（API Key 缺失、网络错误等）使用 Toast 提示
-        const errorMessage = e instanceof Error ? e.message : "AI 修复失败";
-        showError(errorMessage.includes('API Key 未配置') ? '请先配置 AI API Key' : errorMessage);
-        if (errorMessage.includes('API Key')) {
-          setSettingsInitialTab('ai');
-          setIsSettingsModalOpen(true);
-        }
-        trackCurrentToolEvent(action, 'ai', 'error', startedAt);
-      } finally {
-        setIsProcessing(false);
-      }
-    } else if (action === ActionType.SAVE) {
-      let success = false;
-      if (activeEditor === 'PREVIEW') {
-        success = await savePreview();
-      } else {
-        // Source Save Logic
-        if (activeFileId) {
-          // If file is open, save to it
-          success = await saveFile();
-          if (success) showSuccess("已保存源文件");
-        } else {
-          // If no file open, Save As
-          success = await saveSourceAs();
-          if (success) showSuccess("已另存为源文件");
-        }
-      }
-      trackCurrentToolEvent(action, 'file', success ? 'success' : 'skipped', startedAt);
-    } else if (action === ActionType.OPEN) {
+    const startedAt = performance.now();
+    if (action === ActionType.OPEN) {
       await openFile();
       trackCurrentToolEvent(action, 'file', 'success', startedAt);
     } else if (action === ActionType.NEW_TAB) {
       createNewTab();
       trackCurrentToolEvent(action, 'file', 'success', startedAt);
     }
-  };
+  }, [
+    createNewTab,
+    handleAiRepair,
+    handleToolbarSave,
+    openFile,
+    trackCurrentToolEvent,
+  ]);
 
-  const handleSmartSuggestionAction = (actionId: SmartSuggestionActionId) => {
-    const startedAt = performance.now();
-    const plan = buildAppSmartSuggestionActionPlan({
-      actionId,
-      currentMode: mode,
-      sourceText: input,
-    });
-
-    if (plan.status === 'delegate-ai-fix') {
+  const { handleSmartSuggestionAction } = useAppSmartSuggestionCommands({
+    currentMode: mode,
+    sourceText: input,
+    schemeInputRequestIdRef,
+    onRunAiFix: () => {
       void handleAction(ActionType.AI_FIX);
-      return;
-    }
-
-    if (plan.nextMode) {
-      setMode(plan.nextMode);
-    }
-
-    if (plan.status === 'skipped') {
-      showError(plan.errorMessage || '当前智能建议暂不可用');
-      trackCurrentToolEvent(plan.eventName, 'smart_suggestion', 'skipped', startedAt);
-      return;
-    }
-
-    if (plan.effects.includes('clear-highlight')) {
-      setHighlightRange(null);
-    }
-    if (plan.effects.includes('open-scheme-panel') && plan.schemeInputValue !== undefined) {
-      setSchemeInputRequest({
-        id: ++schemeInputRequestIdRef.current,
-        value: plan.schemeInputValue,
-      });
-    }
-    if (plan.effects.includes('open-scheme-panel')) {
-      setIsSchemeDecodeOpen(true);
-    }
-    if (plan.effects.includes('close-transform-report')) {
-      setIsTransformReportOpen(false);
-    }
-    if (plan.effects.includes('open-json-tree-panel')) {
-      setIsJsonTreePanelOpen(true);
-    }
-    if (plan.effects.includes('open-json-schema-panel')) {
-      setIsJsonSchemaPanelOpen(true);
-    }
-
-    if (plan.successMessage) showSuccess(plan.successMessage);
-    trackCurrentToolEvent(plan.eventName, 'smart_suggestion', 'success', startedAt);
-  };
+    },
+    onSetMode: setMode,
+    onSetHighlightRange: setHighlightRange,
+    onSetSchemeInputRequest: setSchemeInputRequest,
+    onSetSchemePanelOpen: setIsSchemeDecodeOpen,
+    onSetTransformReportOpen: setIsTransformReportOpen,
+    onSetJsonTreePanelOpen: setIsJsonTreePanelOpen,
+    onSetJsonSchemaPanelOpen: setIsJsonSchemaPanelOpen,
+    onTrackToolEvent: trackCurrentToolEvent,
+  });
 
   // 处理 Scheme 编辑：将修改后的值应用到 JSON 对应路径
   const handleSchemeEdit = useCallback((jsonPath: string, newValue: string, pointer?: string) => {
@@ -1365,47 +1040,6 @@ const App: React.FC = () => {
     showSuccess('浮动面板布局已恢复默认');
   }, []);
 
-  const handleExportSettingsBackup = useCallback(async () => {
-    try {
-      const { buildAppBackup, serializeAppBackup } = await import('./utils/appBackup');
-      const backup = buildAppBackup({
-        generalSettings,
-        aiConfig,
-        shortcuts,
-      });
-      const blob = new Blob([serializeAppBackup(backup)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const timestamp = backup.exportedAt.replace(/[:.]/g, '-');
-
-      link.href = url;
-      link.download = `jsonutils-backup-${timestamp}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      showSuccess('配置备份已导出，未包含 AI Key');
-    } catch (error) {
-      showError(getDetailedErrorMessage(error, '导出配置备份失败'));
-    }
-  }, [aiConfig, generalSettings, shortcuts]);
-
-  const handleImportSettingsBackup = useCallback(async (file: File) => {
-    try {
-      const { applyAppBackupContent, notifyAppBackupImported } = await import('./utils/appBackup');
-      const content = await file.text();
-      const result = applyAppBackupContent(content, localStorage, aiConfig);
-
-      setGeneralSettings(result.generalSettings);
-      setAiConfig(result.aiConfig);
-      replaceShortcuts(result.shortcuts);
-      notifyAppBackupImported();
-      showSuccess('配置备份已导入，AI Key 已保留');
-    } catch (error) {
-      showError(error instanceof Error ? error.message : '导入配置备份失败');
-    }
-  }, [aiConfig, replaceShortcuts, setAiConfig, setGeneralSettings]);
-
   const editorUiState = buildAppEditorUiState({
     sourceText: input,
     previewText: output,
@@ -1431,99 +1065,51 @@ const App: React.FC = () => {
     <ErrorBoundary>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
 
-      {lazyPanelsLoaded.settings && (
-        <Suspense fallback={null}>
-          <LazyUnifiedSettingsModal
-            isOpen={isSettingsModalOpen}
-            initialTab={settingsInitialTab}
-            onClose={() => setIsSettingsModalOpen(false)}
-            shortcuts={shortcuts}
-            onUpdateShortcut={updateShortcut}
-            onResetShortcuts={resetShortcuts}
-            aiConfig={aiConfig}
-            onSaveAIConfig={setAiConfig}
-            generalSettings={generalSettings}
-            onSaveGeneralSettings={setGeneralSettings}
-            onResetPanelLayout={handleResetPanelLayout}
-            onExportSettingsBackup={handleExportSettingsBackup}
-            onImportSettingsBackup={handleImportSettingsBackup}
-          />
-        </Suspense>
-      )}
-
-      {lazyPanelsLoaded.changelog && (
-        <Suspense fallback={null}>
-          <LazyChangelogModal
-            isOpen={isChangelogModalOpen}
-            onClose={handleCloseChangelog}
-            sourceMarkdown={changelogSourceMarkdown}
-            highlightedVersion={changelogHighlightedVersion}
-          />
-        </Suspense>
-      )}
-
-      <ConfirmDialog
-        isOpen={Boolean(pendingCloseFile)}
-        title="关闭未保存标签"
-        message={`文件「${pendingCloseFile?.name || '未命名文件'}」有未保存的修改。\n关闭后这些修改将丢失。`}
-        confirmLabel="关闭并丢弃"
-        cancelLabel="继续编辑"
-        variant="danger"
-        onConfirm={confirmPendingCloseFile}
-        onCancel={cancelPendingCloseFile}
+      <AppLazyShellModals
+        lazyPanelsLoaded={lazyPanelsLoaded}
+        settingsModal={{
+          isOpen: isSettingsModalOpen,
+          initialTab: settingsInitialTab,
+          onClose: () => setIsSettingsModalOpen(false),
+          shortcuts,
+          onUpdateShortcut: updateShortcut,
+          onResetShortcuts: resetShortcuts,
+          aiConfig,
+          onSaveAIConfig: setAiConfig,
+          generalSettings,
+          onSaveGeneralSettings: setGeneralSettings,
+          onResetPanelLayout: handleResetPanelLayout,
+          onExportSettingsBackup: handleExportSettingsBackup,
+          onImportSettingsBackup: handleImportSettingsBackup,
+        }}
+        changelogModal={{
+          isOpen: isChangelogModalOpen,
+          onClose: handleCloseChangelog,
+          sourceMarkdown: changelogSourceMarkdown,
+          highlightedVersion: changelogHighlightedVersion,
+        }}
       />
 
-      <ConfirmDialog
-        isOpen={isClearSourceConfirmOpen}
-        title="清空源内容"
-        message={editorUiState.clearSourceConfirmMessage}
-        confirmLabel="清空"
-        cancelLabel="继续保留"
-        variant="danger"
-        onConfirm={handleConfirmClearSource}
-        onCancel={handleCancelClearSource}
-      />
-
-      <ConfirmDialog
-        isOpen={pendingPasteSourceText !== null}
-        title="替换源内容"
-        message={editorUiState.pasteSourceConfirmMessage}
-        confirmLabel="替换"
-        cancelLabel="继续保留"
-        variant="danger"
-        onConfirm={handleConfirmPasteSource}
-        onCancel={handleCancelPasteSource}
-      />
-
-      <ConfirmDialog
-        isOpen={pendingApplyPreviewText !== null}
-        title="应用预览到源"
-        message={editorUiState.applyPreviewConfirmMessage}
-        confirmLabel="应用"
-        cancelLabel="继续保留"
-        onConfirm={handleConfirmApplyPreviewToSource}
-        onCancel={handleCancelApplyPreviewToSource}
-      />
-
-      <ConfirmDialog
-        isOpen={pendingSchemaExampleText !== null}
-        title="应用 Schema 示例到源"
-        message={editorUiState.applySchemaExampleConfirmMessage}
-        confirmLabel="应用示例"
-        cancelLabel="继续保留"
-        onConfirm={handleConfirmApplySchemaExampleToSource}
-        onCancel={handleCancelApplySchemaExampleToSource}
-      />
-
-      <ConfirmDialog
-        isOpen={pendingSchemeInspectSourceText !== null}
-        title="用 Scheme 原始值排查"
-        message={editorUiState.schemeInspectConfirmMessage}
-        confirmLabel="替换并排查"
-        cancelLabel="继续保留"
-        variant="danger"
-        onConfirm={handleConfirmSchemeInspectSource}
-        onCancel={handleCancelSchemeInspectSource}
+      <AppConfirmDialogs
+        pendingCloseFileName={pendingCloseFile ? pendingCloseFile.name : null}
+        isClearSourceConfirmOpen={isClearSourceConfirmOpen}
+        hasPendingPasteSourceText={pendingPasteSourceText !== null}
+        hasPendingApplyPreviewText={pendingApplyPreviewText !== null}
+        hasPendingSchemaExampleText={pendingSchemaExampleText !== null}
+        hasPendingSchemeInspectSourceText={pendingSchemeInspectSourceText !== null}
+        editorUiState={editorUiState}
+        onConfirmCloseFile={confirmPendingCloseFile}
+        onCancelCloseFile={cancelPendingCloseFile}
+        onConfirmClearSource={handleConfirmClearSource}
+        onCancelClearSource={handleCancelClearSource}
+        onConfirmPasteSource={handleConfirmPasteSource}
+        onCancelPasteSource={handleCancelPasteSource}
+        onConfirmApplyPreviewToSource={handleConfirmApplyPreviewToSource}
+        onCancelApplyPreviewToSource={handleCancelApplyPreviewToSource}
+        onConfirmApplySchemaExampleToSource={handleConfirmApplySchemaExampleToSource}
+        onCancelApplySchemaExampleToSource={handleCancelApplySchemaExampleToSource}
+        onConfirmSchemeInspectSource={handleConfirmSchemeInspectSource}
+        onCancelSchemeInspectSource={handleCancelSchemeInspectSource}
       />
 
       {/* 主工作区容器 */}
@@ -1535,411 +1121,170 @@ const App: React.FC = () => {
         onDrop={handleDrop}
       >
 
-        {/* 左侧工具栏 */}
-        <div data-tour="toolbar" style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }} className="flex-shrink-0 z-10 border-r border-editor-border transition-all duration-300 ease-in-out h-full overflow-hidden">
-          <ActionPanel
-            activeMode={mode}
-            onModeChange={handleModeChange}
-            onAction={handleAction}
-            isProcessing={isProcessing}
-            onOpenSettings={() => {
-              setSettingsInitialTab('shortcuts');
-              setIsSettingsModalOpen(true);
-              trackCurrentToolEvent('SETTINGS_OPEN', 'panel');
-            }}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            isJsonPathOpen={isJsonPathPanelOpen}
-            isJsonTreeOpen={isJsonTreePanelOpen}
-            isJsonCompareOpen={isJsonComparePanelOpen}
-            isSchemeDecodeOpen={isSchemeDecodeOpen}
-            isTemplateFillOpen={isTemplatePanelOpen}
-            isJsonSchemaOpen={isJsonSchemaPanelOpen}
-            onToggleJsonPath={handleToggleJsonPath}
-            onToggleJsonTree={handleToggleJsonTree}
-            onToggleJsonCompare={handleToggleJsonCompare}
-            onToggleJsonSchema={handleToggleJsonSchema}
-            onToggleSchemeDecode={() => {
-              const nextOpen = !isSchemeDecodeOpen;
-              setIsSchemeDecodeOpen(nextOpen);
-              trackCurrentToolEvent(nextOpen ? 'SCHEME_PANEL_OPEN' : 'SCHEME_PANEL_CLOSE', 'panel');
-            }}
-            onToggleTemplateFill={() => {
-              const nextOpen = !isTemplatePanelOpen;
-              setTemplateApplyQualityDelta('');
-              setIsTemplatePanelOpen(nextOpen);
-              trackCurrentToolEvent(nextOpen ? 'TEMPLATE_PANEL_OPEN' : 'TEMPLATE_PANEL_CLOSE', 'panel');
-            }}
-            smartSuggestion={smartSuggestion}
-            smartSuggestionOrigin={smartSuggestionOrigin}
-            onSmartSuggestionAction={handleSmartSuggestionAction}
-          />
-        </div>
-
-        {/* 侧边栏调整手柄 */}
-        {!isSidebarCollapsed && (
-          <div
-            data-tour="sidebar-resize-handle"
-            role="separator"
-            aria-label="调整工具栏宽度"
-            aria-orientation="vertical"
-            aria-valuemin={SIDEBAR_MIN_WIDTH}
-            aria-valuemax={SIDEBAR_MAX_WIDTH}
-            aria-valuenow={Math.round(sidebarWidth)}
-            aria-valuetext={`工具栏宽度 ${Math.round(sidebarWidth)} 像素`}
-            tabIndex={0}
-            className={`absolute top-0 bottom-0 w-1 hover:bg-brand-primary focus:bg-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/70 cursor-col-resize z-20 transition-colors delay-100 ${isResizingSidebar ? 'bg-brand-primary' : 'bg-transparent'}`}
-            style={{ left: sidebarWidth - 2 }}
-            onMouseDown={startResizingSidebar}
-            onKeyDown={handleSidebarResizeKeyDown}
-            title="拖拽或用方向键调整工具栏宽度"
-          ></div>
-        )}
-
-        {/* 双栏编辑器区域 */}
-        <div className="flex-1 flex flex-col min-w-0 bg-editor-bg">
-          {aiRepairSummary && (
-            <Suspense fallback={null}>
-              <LazyAiRepairSummaryBanner
-                summary={aiRepairSummary}
-                onClose={() => {
-                  aiRepairSnapshotRef.current = null;
-                  setAiRepairSummary(null);
-                }}
-                onCopySuccess={showSuccess}
-                onCopyError={(errorMessage) => showError(errorMessage)}
-              />
-            </Suspense>
-          )}
-
-          <div className="flex-1 flex min-h-0">
-
-          {/* 左栏：源文件编辑 */}
-          <div data-tour="source-editor" style={{ width: `${leftPaneWidthPercent}%` }} className="flex flex-col min-w-[100px] h-full relative">
-            <CodeEditor
-              value={input}
-              originalValue={activeFile?.savedContent}
-              path={activeFileId || undefined}
-              onChange={handleInputChange}
-              onFocus={() => setActiveEditor('SOURCE')}
-              onCursorPositionChange={(line, column) => setCursorPosition({ line, column })}
-              label="SOURCE"
-              files={files}
-              activeFileId={activeFileId}
-              onTabClick={switchTab}
-              onCloseFile={requestCloseFile}
-              onNewTab={createNewTab}
-              onSaveViewState={saveViewState}
-              restoreViewState={activeFile?.viewState}
-              enableSchemeScan={true}
-              placeholder="// 在此输入 JSON 或文本..."
-              error={validation.isValid ? undefined : validation.error}
-              errorLocation={sourceErrorLocation}
-              warning={jsonSchemaWarning}
-              diagnosticHighlights={jsonSchemaDiagnosticHighlights}
-              errorActions={!validation.isValid && editorUiState.hasSourceContent ? (
-                <button
-                  data-tour="source-error-ai-fix"
-                  type="button"
-                  onClick={() => void handleAction(ActionType.AI_FIX)}
-                  disabled={isProcessing}
-                  className="rounded border border-violet-500/50 px-1 py-0 text-[10px] text-violet-100 transition-colors hover:bg-violet-800/40 disabled:cursor-not-allowed disabled:opacity-60"
-                  title={editorUiState.sourceAiRepairTitle}
-                  aria-label={editorUiState.sourceAiRepairTitle}
-                >
-                  修复
-                </button>
-              ) : undefined}
-              locateErrorSignal={sourceErrorLocateSignal}
-              headerActions={
-                <>
-                  <button
-                    data-tour="paste-source"
-                    aria-label="粘贴到源内容"
-                    onClick={handlePasteSource}
-                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-blue-200 transition-colors border border-transparent"
-                    title="从剪贴板粘贴到 SOURCE"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-4 0a2 2 0 104 0m-4 0a2 2 0 114 0m-2 7v6m0 0l-2-2m2 2l2-2" />
-                    </svg>
-                    <span className="editor-header-action-label">粘贴</span>
-                  </button>
-                  <button
-                    data-tour="copy-source"
-                    aria-label={editorUiState.copySourceTitle}
-                    onClick={handleCopySource}
-                    disabled={!editorUiState.hasSourceContent}
-                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    title={editorUiState.copySourceTitle}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    <span className="editor-header-action-label">复制源</span>
-                  </button>
-                  <button
-                    data-tour="clear-source"
-                    aria-label={editorUiState.clearSourceTitle}
-                    onClick={handleRequestClearSource}
-                    disabled={!editorUiState.hasSourceContent}
-                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-red-900/30 hover:text-red-200 transition-colors border border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    title={editorUiState.clearSourceTitle}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-8 0h10" />
-                    </svg>
-                    <span className="editor-header-action-label">清空</span>
-                  </button>
-                  <button
-                    data-tour="auto-save"
-                    aria-label={editorUiState.autoSaveAriaLabel}
-                    aria-pressed={editorUiState.isAutoSaveActive}
-                    onClick={handleToggleAutoSave}
-                    className={`editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${!activeFileId
-                      ? 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
-                      : editorUiState.isAutoSaveActive
-                        ? 'bg-status-success-bg text-status-success-text border-status-success-border'
-                        : editorUiState.canUseAutoSave
-                          ? 'text-gray-400 border-transparent hover:bg-editor-active'
-                          : 'text-gray-600 border-transparent cursor-not-allowed opacity-50'
-                      }`}
-                    title={editorUiState.autoSaveTitle}
-                  >
-                    <div className={`w-1.5 h-1.5 rounded-full ${!activeFileId
-                      ? 'bg-gray-700'
-                      : editorUiState.isAutoSaveActive
-                        ? 'bg-green-500 animate-pulse'
-                        : 'bg-gray-500'
-                      }`}></div>
-                    <span className="editor-header-action-label">自动保存</span>
-                  </button>
-                </>
-              }
-            />
-          </div>
-
-          {/* 分栏调整手柄 */}
-          <div
-            data-tour="editor-pane-resize-handle"
-            role="separator"
-            aria-label="调整 SOURCE 和 PREVIEW 宽度"
-            aria-orientation="vertical"
-            aria-valuemin={LEFT_PANE_MIN_PERCENT}
-            aria-valuemax={LEFT_PANE_MAX_PERCENT}
-            aria-valuenow={Math.round(leftPaneWidthPercent)}
-            aria-valuetext={`SOURCE 宽度 ${Math.round(leftPaneWidthPercent)}%`}
-            tabIndex={0}
-            className={`w-1 hover:bg-brand-primary focus:bg-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/70 cursor-col-resize z-20 flex-shrink-0 transition-colors delay-100 ${isResizingPane ? 'bg-brand-primary' : 'bg-editor-sidebar'}`}
-            onMouseDown={startResizingPane}
-            onKeyDown={handlePaneResizeKeyDown}
-            title="拖拽或用方向键调整 SOURCE/PREVIEW 宽度"
-          ></div>
-
-          {/* 右栏：预览与结果 */}
-          <div data-tour="preview-editor" className="flex-1 flex flex-col min-w-[100px] h-full relative">
-            <CodeEditor
-              label="PREVIEW"
-              value={output}
-              onChange={handleOutputChange}
-              onFocus={() => setActiveEditor('PREVIEW')}
-              onCursorPositionChange={(line, column) => setCursorPosition({ line, column })}
-              readOnly={true} // 默认只读状态
-              canToggleReadOnly={!isOutputTransforming} // 转换完成后允许解锁编辑
-              placeholder="// 结果显示区..."
-              error={!previewValidation.isValid ? (previewValidation.error || "Error") : undefined}
-              errorLocation={previewErrorLocation}
-              warning={deepFormatWarning}
-              info={deepFormatInfo}
-              highlightRange={highlightRange}
-              onSchemeEdit={handleSchemeEdit}
-              headerActions={
-                <>
-                  {deepFormatInfo && (
-                    <button
-                      data-tour="transform-report-button"
-                      aria-label={editorUiState.transformReportTitle}
-                      onClick={() => setIsTransformReportOpen(true)}
-                      disabled={!transformReportContext || isOutputTransforming}
-                      className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={editorUiState.transformReportTitle}
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="editor-header-action-label">报告</span>
-                    </button>
-                  )}
-                  <button
-                    data-tour="apply-preview-to-source"
-                    aria-label={editorUiState.applyPreviewTitle}
-                    onClick={handleRequestApplyPreviewToSource}
-                    disabled={!editorUiState.hasPreviewContent || isOutputTransforming || editorUiState.isPreviewSameAsSource}
-                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active hover:text-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={editorUiState.applyPreviewTitle}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-                    </svg>
-                    <span className="editor-header-action-label">应用到源</span>
-                  </button>
-                  <button
-                    data-tour="copy-preview"
-                    aria-label={editorUiState.copyPreviewTitle}
-                    onClick={handleCopyPreview}
-                    disabled={!editorUiState.hasPreviewContent || isOutputTransforming}
-                    className="editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:bg-editor-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={editorUiState.copyPreviewTitle}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    <span className="editor-header-action-label">复制</span>
-                  </button>
-                </>
-              }
-            />
-          </div>
-          </div>
-        </div>
-
-        {/* JSONPath 查询面板 */}
-        {lazyPanelsLoaded.jsonPath && (
-          <Suspense fallback={null}>
-            <LazyJsonPathPanel
-              jsonData={jsonPathDataSource}
-              isDataPreparing={mode === TransformMode.DEEP_FORMAT && isOutputTransforming}
-              externalQueryRequest={jsonPathQueryRequest}
-              isOpen={isJsonPathPanelOpen}
-              onClose={() => {
-                setIsJsonPathPanelOpen(false);
-                setHighlightRange(null); // 关闭时清除高亮
-              }}
-              onHighlightRange={handleJsonPathHighlight}
-              onLocateStructure={handleLocateJsonPathResultInStructure}
-            />
-          </Suspense>
-        )}
-
-        {/* JSON 结构导航面板 */}
-        {lazyPanelsLoaded.jsonTree && (
-          <Suspense fallback={null}>
-            <LazyJsonTreePanel
-              jsonData={jsonPathDataSource}
-              isDataPreparing={mode === TransformMode.DEEP_FORMAT && isOutputTransforming}
-              isOpen={isJsonTreePanelOpen}
-              externalFocusRequest={jsonTreeFocusRequest}
-              onClose={() => setIsJsonTreePanelOpen(false)}
-              onLocatePath={handleLocateJsonPath}
-              onOpenSchemeValue={handleOpenSchemeFromStructure}
-            />
-          </Suspense>
-        )}
-
-        {/* JSON 语义对比面板 */}
-        {lazyPanelsLoaded.jsonCompare && (
-          <Suspense fallback={null}>
-            <LazyJsonComparePanel
-              sourceText={input}
-              isOpen={isJsonComparePanelOpen}
-              onClose={() => setIsJsonComparePanelOpen(false)}
-              onLocatePath={handleLocateJsonPath}
-            />
-          </Suspense>
-        )}
-
-        {/* JSON Schema 校验面板 */}
-        {lazyPanelsLoaded.jsonSchema && (
-          <Suspense fallback={null}>
-            <LazyJsonSchemaPanel
-              jsonData={input}
-              isOpen={isJsonSchemaPanelOpen}
-              onClose={() => {
-                setIsJsonSchemaPanelOpen(false);
-                setJsonSchemaValidationResult(null);
-              }}
-              onLocatePath={handleLocateJsonPath}
-              onApplyExampleToSource={handleRequestApplySchemaExampleToSource}
-              onValidationResult={setJsonSchemaValidationResult}
-            />
-          </Suspense>
-        )}
-
-        {/* 深度解析报告面板 */}
-        {lazyPanelsLoaded.transformReport && (
-          <Suspense fallback={null}>
-            <LazyTransformReportPanel
-              isOpen={isTransformReportOpen}
-              onClose={() => setIsTransformReportOpen(false)}
-              context={transformReportContext}
-              onLocatePath={handleLocateJsonPath}
-              onOpenSchemeValue={handleOpenSchemeFromReport}
-              onOpenTemplateFill={handleOpenTemplateFillFromReport}
-            />
-          </Suspense>
-        )}
-
-        {/* Scheme 解析面板（独立模式） */}
-        {lazyPanelsLoaded.scheme && (
-          <Suspense fallback={null}>
-            <LazySchemeViewerModal
-              isOpen={isSchemeDecodeOpen}
-              onClose={() => setIsSchemeDecodeOpen(false)}
-              standalone={true}
-              initialStandaloneInput={schemeInputRequest?.value}
-              initialStandaloneInputKey={schemeInputRequest?.id}
-              onApply={(encodedValue: string) => {
-                setInput(encodedValue);
-                inputRef.current = encodedValue;
-                updateActiveFileContent(encodedValue);
-              }}
-              onInspectOriginal={handleInspectSourceFromScheme}
-            />
-          </Suspense>
-        )}
-
-        {/* 模板填充面板 */}
-        {lazyPanelsLoaded.template && (
-          <Suspense fallback={null}>
-            <LazyTemplateFillPanel
-              isOpen={isTemplatePanelOpen}
-              onClose={() => setIsTemplatePanelOpen(false)}
-              onApplyTemplate={handleApplyTemplate}
-              targetError={templateTargetError}
-              initialTemplate={templateFillRequest?.template}
-              initialTemplateKey={templateFillRequest?.id}
-              applyQualityDelta={templateApplyQualityDelta}
-            />
-          </Suspense>
-        )}
-
-        {/* 拖拽遮罩层（防止 iframe/webview 捕获事件） */}
-        {(isResizingSidebar || isResizingPane) && (
-          <div className="absolute inset-0 z-50 cursor-col-resize"></div>
-        )}
-
-        {/* 文件拖拽放置遮罩层 */}
-        {isDraggingFile && (
-          <div className="absolute inset-0 z-50 bg-brand-primary/10 border-2 border-dashed border-brand-primary rounded-lg flex items-center justify-center pointer-events-none">
-            <div className="bg-editor-bg/90 px-6 py-4 rounded-xl border border-brand-primary shadow-lg text-center">
-              <svg className="w-10 h-10 mx-auto mb-2 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <p className="text-sm font-medium text-white">释放以打开文件</p>
-              <p className="text-xs text-gray-400 mt-1">支持 JSON、TXT、JS、TS 等文本文件</p>
-            </div>
-          </div>
-        )}
-
-        {/* Toast Notifications - react-hot-toast */}
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            className: '',
-            style: {
-              marginTop: '16px',
-            },
+        <AppActionSidebar
+          activeMode={mode}
+          onModeChange={handleModeChange}
+          onAction={handleAction}
+          isProcessing={isProcessing}
+          onOpenSettings={handleOpenSettingsPanel}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          sidebarWidth={sidebarWidth}
+          isResizing={isResizingSidebar}
+          onStartResize={startResizingSidebar}
+          onResizeKeyDown={handleSidebarResizeKeyDown}
+          isJsonPathOpen={isJsonPathPanelOpen}
+          isJsonTreeOpen={isJsonTreePanelOpen}
+          isJsonCompareOpen={isJsonComparePanelOpen}
+          isSchemeDecodeOpen={isSchemeDecodeOpen}
+          isTemplateFillOpen={isTemplatePanelOpen}
+          isJsonSchemaOpen={isJsonSchemaPanelOpen}
+          onToggleJsonPath={handleToggleJsonPath}
+          onToggleJsonTree={handleToggleJsonTree}
+          onToggleJsonCompare={handleToggleJsonCompare}
+          onToggleJsonSchema={handleToggleJsonSchema}
+          onToggleSchemeDecode={() => {
+            const nextOpen = !isSchemeDecodeOpen;
+            setIsSchemeDecodeOpen(nextOpen);
+            trackCurrentToolEvent(nextOpen ? 'SCHEME_PANEL_OPEN' : 'SCHEME_PANEL_CLOSE', 'panel');
           }}
+          onToggleTemplateFill={() => {
+            const nextOpen = !isTemplatePanelOpen;
+            setTemplateApplyQualityDelta('');
+            setIsTemplatePanelOpen(nextOpen);
+            trackCurrentToolEvent(nextOpen ? 'TEMPLATE_PANEL_OPEN' : 'TEMPLATE_PANEL_CLOSE', 'panel');
+          }}
+          smartSuggestion={smartSuggestion}
+          smartSuggestionOrigin={smartSuggestionOrigin}
+          onSmartSuggestionAction={handleSmartSuggestionAction}
+        />
+
+        <AppEditorWorkspace
+          input={input}
+          output={output}
+          activeFile={activeFile}
+          activeFileId={activeFileId}
+          files={files}
+          leftPaneWidthPercent={leftPaneWidthPercent}
+          isPaneResizing={isResizingPane}
+          isProcessing={isProcessing}
+          isOutputTransforming={isOutputTransforming}
+          aiRepairSummary={aiRepairSummary}
+          sourceValidation={validation}
+          previewValidation={previewValidation}
+          sourceErrorLocation={sourceErrorLocation}
+          previewErrorLocation={previewErrorLocation}
+          sourceErrorLocateSignal={sourceErrorLocateSignal}
+          jsonSchemaWarning={jsonSchemaWarning}
+          jsonSchemaDiagnosticHighlights={jsonSchemaDiagnosticHighlights}
+          deepFormatWarning={deepFormatWarning}
+          deepFormatInfo={deepFormatInfo}
+          hasTransformReportContext={Boolean(transformReportContext)}
+          highlightRange={highlightRange}
+          editorUiState={editorUiState}
+          onInputChange={handleInputChange}
+          onOutputChange={handleOutputChange}
+          onSourceFocus={() => setActiveEditor('SOURCE')}
+          onPreviewFocus={() => setActiveEditor('PREVIEW')}
+          onCursorPositionChange={(line, column) => setCursorPosition({ line, column })}
+          onTabClick={switchTab}
+          onCloseFile={requestCloseFile}
+          onNewTab={createNewTab}
+          onSaveViewState={saveViewState}
+          onSourceAiFix={() => void handleAction(ActionType.AI_FIX)}
+          onPasteSource={handlePasteSource}
+          onCopySource={handleCopySource}
+          onClearSource={handleRequestClearSource}
+          onToggleAutoSave={handleToggleAutoSave}
+          onOpenTransformReport={() => setIsTransformReportOpen(true)}
+          onApplyPreviewToSource={handleRequestApplyPreviewToSource}
+          onCopyPreview={handleCopyPreview}
+          onSchemeEdit={handleSchemeEdit}
+          onPaneResizeMouseDown={startResizingPane}
+          onPaneResizeKeyDown={handlePaneResizeKeyDown}
+          onCloseAiRepairSummary={() => {
+            aiRepairSnapshotRef.current = null;
+            setAiRepairSummary(null);
+          }}
+          onCopyAiRepairSummarySuccess={showSuccess}
+          onCopyAiRepairSummaryError={showError}
+        />
+
+        <AppLazyToolPanels
+          lazyPanelsLoaded={lazyPanelsLoaded}
+          jsonPathPanel={{
+            jsonData: jsonPathDataSource,
+            isDataPreparing: mode === TransformMode.DEEP_FORMAT && isOutputTransforming,
+            externalQueryRequest: jsonPathQueryRequest,
+            isOpen: isJsonPathPanelOpen,
+            onClose: () => {
+              setIsJsonPathPanelOpen(false);
+              setHighlightRange(null);
+            },
+            onHighlightRange: handleJsonPathHighlight,
+            onLocateStructure: handleLocateJsonPathResultInStructure,
+          }}
+          jsonTreePanel={{
+            jsonData: jsonPathDataSource,
+            isDataPreparing: mode === TransformMode.DEEP_FORMAT && isOutputTransforming,
+            isOpen: isJsonTreePanelOpen,
+            externalFocusRequest: jsonTreeFocusRequest,
+            onClose: () => setIsJsonTreePanelOpen(false),
+            onLocatePath: handleLocateJsonPath,
+            onOpenSchemeValue: handleOpenSchemeFromStructure,
+          }}
+          jsonComparePanel={{
+            sourceText: input,
+            isOpen: isJsonComparePanelOpen,
+            onClose: () => setIsJsonComparePanelOpen(false),
+            onLocatePath: handleLocateJsonPath,
+          }}
+          jsonSchemaPanel={{
+            jsonData: input,
+            isOpen: isJsonSchemaPanelOpen,
+            onClose: () => {
+              setIsJsonSchemaPanelOpen(false);
+              setJsonSchemaValidationResult(null);
+            },
+            onLocatePath: handleLocateJsonPath,
+            onApplyExampleToSource: handleRequestApplySchemaExampleToSource,
+            onValidationResult: setJsonSchemaValidationResult,
+          }}
+          transformReportPanel={{
+            isOpen: isTransformReportOpen,
+            onClose: () => setIsTransformReportOpen(false),
+            context: transformReportContext,
+            onLocatePath: handleLocateJsonPath,
+            onOpenSchemeValue: handleOpenSchemeFromReport,
+            onOpenTemplateFill: handleOpenTemplateFillFromReport,
+          }}
+          schemePanel={{
+            isOpen: isSchemeDecodeOpen,
+            onClose: () => setIsSchemeDecodeOpen(false),
+            standalone: true,
+            initialStandaloneInput: schemeInputRequest?.value,
+            initialStandaloneInputKey: schemeInputRequest?.id,
+            onApply: (encodedValue: string) => {
+              setInput(encodedValue);
+              inputRef.current = encodedValue;
+              updateActiveFileContent(encodedValue);
+            },
+            onInspectOriginal: handleInspectSourceFromScheme,
+          }}
+          templatePanel={{
+            isOpen: isTemplatePanelOpen,
+            onClose: () => setIsTemplatePanelOpen(false),
+            onApplyTemplate: handleApplyTemplate,
+            targetError: templateTargetError,
+            initialTemplate: templateFillRequest?.template,
+            initialTemplateKey: templateFillRequest?.id,
+            applyQualityDelta: templateApplyQualityDelta,
+          }}
+        />
+
+        <AppWorkspaceOverlays
+          isResizing={isResizingSidebar || isResizingPane}
+          isDraggingFile={isDraggingFile}
         />
       </div>
 

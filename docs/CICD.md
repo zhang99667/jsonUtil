@@ -13,7 +13,7 @@
 
 关键检查：
 
-- `frontend`: `npm ci`、`npm run typecheck`、`npm run lint`、`npm run audit:security`、`npm test`、`npm run corpus:scheme`、`npm run corpus:snapshot:check`、`npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after <current-snapshot.json> --strict`、`npm run perf:scheme -- --iterations 3 --strict`、`npm run perf:jsonpath -- --iterations 3 --strict`、`npm run build`、`npm run check:preloads`、`npm run perf:e2e`、`npm run test:e2e`
+- `frontend`: `npm ci`、`npm run typecheck`、`npm run lint`、`npm run audit:security`、`npm test`、`npm run corpus:scheme`、`npm run corpus:snapshot:check`、`npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after <current-snapshot.json> --strict`、`npm run perf:scheme -- --iterations 3 --strict`、`npm run perf:jsonpath -- --iterations 3 --strict`、`npm run build`、`npm run check:preloads`、`node scripts/ci/check-frontend-static-retention.mjs`、`npm run perf:e2e`、`npm run test:e2e`
   - `npm run lint` 使用 ESLint flat config 执行错误级静态门禁；需要查看历史 warning 时可运行 `npm run lint:report`
   - `npm run audit:security` 使用 npm audit 拦截 moderate 及以上依赖漏洞；低危漏洞可在依赖治理批次中评估，不阻塞普通功能迭代
   - `npm run corpus:scheme` 独立校验脱敏 response corpus，当前覆盖激励广告、落地页与电话拨打三类样本，固定主 CMD Schema、Top 热点 Schema、占位符、扫描位置和质量指标
@@ -23,6 +23,7 @@
   - `npm run perf:jsonpath -- --iterations 3 --strict` 会复用脱敏 response 和大量命中列表，校验 JSONPath 大查询耗时、命中数、高亮范围和结果上限保护，并上传 `jsonpath-performance-budget` artifact
   - `npm run perf:e2e` 会通过独立 Playwright performance 配置校验浏览器 Worker 端到端响应，覆盖 JSONPath 取消、Scheme 取消、连续大 response 解析和已加载面板关闭态大输入切换，并上传 `browser-worker-performance-budget` artifact
   - `Scheme corpus quality trend` 会用 `frontend/fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json` 对比本次生成的快照，strict 模式会把 requiredChecks 必需项失败数量增加、cmdHandler ignored extra 路径数量上升等变化视为解析质量退化，并在摘要中展示 ignored extra 路径新增/消失样例；当前 CI 还通过 `--resource-type-drop video=20`、`--resource-type-rise lottie=20` 把视频占比骤降或 Lottie 占比异常上升纳入门禁，并上传 `scheme-corpus-quality-trend` artifact
+  - `node scripts/ci/check-frontend-static-retention.mjs` 会校验前端 Dockerfile、Compose volume 和容器启动脚本保持一致，并实际验证新静态产物覆盖、近期旧 hash assets 保留和过期旧 assets 清理，避免上线后长时间打开的旧页面无法加载懒加载 chunk
 - `backend`: `mvn -B test`、`node scripts/ci/check-backend-api-matrix.mjs`、`mvn -B package -DskipTests`
 - `docker`: `docker build ./backend`、`docker build ./frontend`、带测试环境变量执行 `docker compose config`
 
@@ -48,8 +49,13 @@
 - `app_dir`: 远程应用目录，默认 `/home/markz/apps/jsonUtil`
 - `deploy_mode`: 发布模式，`full` 为远端全量 Docker Compose 构建，`prebuilt-frontend` 为 Actions 预构建前端并只替换远端前端服务
 - `health_check_urls`: 远程健康检查 URL 列表，默认 `http://127.0.0.1 http://127.0.0.1/api/health`
+- `public_base_url`: 部署后公网验证地址，默认 `https://jsonutils.markz.fun`
+- `public_verify_enabled`: 是否执行公网版本、健康检查和前端静态资源递归巡检，默认 `true`
+- `public_verify_insecure_tls`: 公网验证是否允许证书不匹配，默认 `false`；只有临时用 IP 或证书域名不匹配地址验证时才建议设为 `true`
 
 CD 不依赖远程 `git pull`，而是同步当前 workflow checkout 的源码到服务器，适合服务器没有 GitHub 凭据的场景。
+
+Deploy 工作流会在同步前运行 `node scripts/ci/check-frontend-static-retention.mjs`，避免手动发布绕过旧 hash assets 保留配置门禁；启用公网验证时还会在部署前记录当前公网入口引用的 `/assets/*`，部署后通过 `scripts/deploy/verify-public-deploy.sh` 同时复查新版本入口、后端 `pong`、当前构建深层 chunk，以及部署前记录的旧 hash 资源。
 
 当 `deploy_mode=prebuilt-frontend` 时，工作流会先在 GitHub runner 中执行 `npm ci`、`npm run build` 和 `npm run check:preloads`，同步 `frontend/dist` 后在远端使用 `Dockerfile.prebuilt` 只重建 `app-frontend`。该模式适合只更新前端静态资源、远端 Node/npm 网络不稳定，或希望避免后端与数据库无意义重启的场景。
 
@@ -111,12 +117,16 @@ bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
 
 该脚本会先在本机执行 `npm run build` 和 `npm run check:preloads`，再同步 `frontend/dist`，并在远端使用 `Dockerfile.prebuilt` 只重建 `app-frontend`。后端和数据库不会因为前端静态资源更新而被重启。
 
-本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://$SSH_HOST`，可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
+前端容器会把镜像内 `/opt/jsonutils-dist` 覆盖同步到持久化卷 `frontend-static:/usr/share/nginx/html`，入口 HTML 和 `version.json` 每次启动更新，近期旧 `assets/*` hash 文件默认保留 14 天，降低用户长时间打开旧页面后点击懒加载面板时请求旧 chunk 失败的概率。保留天数可通过 `STATIC_ASSET_RETENTION_DAYS` 调整，设置为 `0` 可关闭自动清理。
+
+本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://jsonutils.markz.fun`，确保按主站域名记录首页和后台入口的静态资源；可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
 
 ```bash
-PUBLIC_BASE_URL=https://39.97.237.248 \
+PUBLIC_BASE_URL=https://jsonutils.markz.fun \
 bash scripts/deploy/verify-public-deploy.sh
 ```
+
+公网部署验证还会默认执行 `node scripts/ci/check-production-frontend-assets.mjs "$PUBLIC_BASE_URL"`，从首页和后台入口提取当前构建的 `/assets/*`，再递归扫描已发现 JS chunk 内的懒加载、worker、二级资源引用、CSS `url(...)` 中的字体和图片资源以及 CSS `@import` 链路，并逐个确认返回成功，同时校验 JS/CSS 的 `Content-Type`，避免发布后入口 HTML 已更新但深层 chunk 缺失，或缺失资源 fallback 成 HTML 仍返回 200。SSH 部署会在替换容器前记录当前公网 asset 列表，并通过 `FRONTEND_ASSET_VERIFY_EXTRA_PATHS` 在部署后一起复查旧 hash 资源，防止已打开页面持有的懒加载 chunk 被新版本清理。排查用户反馈的旧 chunk URL 时，可追加 `--extra-asset "https://jsonutils.markz.fun/assets/xxx.js"` 直接纳入巡检。可用 `PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED=false` 临时跳过；如果临时改用 IP 探活且证书域名不匹配，需要显式设置 `PUBLIC_VERIFY_INSECURE_TLS=true`，让版本/健康检查和 Node 静态资源巡检都按 `curl -k` 方式容错。直接运行 `check-production-frontend-assets.mjs` 时，也兼容 `PUBLIC_VERIFY_INSECURE_TLS=true`、`PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS=true` 和 `FRONTEND_ASSET_VERIFY_INSECURE_TLS=true`。
 
 如果远端根盘已满，优先清理 Docker 未使用镜像或构建缓存，不要删除 `db-data`、`upload-data` 等业务 volume；同步脚本默认不会再上传本机测试输出和临时产物。
 
