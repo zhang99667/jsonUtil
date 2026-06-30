@@ -21,6 +21,11 @@ DEPLOY_DISK_WARN_USED_PERCENT="${DEPLOY_DISK_WARN_USED_PERCENT:-90}"
 DEPLOY_DISK_MAX_USED_PERCENT="${DEPLOY_DISK_MAX_USED_PERCENT:-95}"
 RSYNC_EXCLUDES_FILE="$ROOT_DIR/scripts/deploy/rsync-excludes.txt"
 PUBLIC_VERIFY_ENABLED="${PUBLIC_VERIFY_ENABLED:-true}"
+DEFAULT_PUBLIC_BASE_URL="${DEFAULT_PUBLIC_BASE_URL:-https://jsonutils.markz.fun}"
+PUBLIC_VERIFY_INSECURE_TLS="${PUBLIC_VERIFY_INSECURE_TLS:-false}"
+PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED="${PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED:-true}"
+PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="${PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS:-$PUBLIC_VERIFY_INSECURE_TLS}"
+LEGACY_FRONTEND_ASSETS=""
 
 SSH_BASE_OPTS=(
   -i "$SSH_KEY"
@@ -44,6 +49,42 @@ require_cmd() {
 require_cmd ssh
 require_cmd rsync
 
+capture_legacy_frontend_assets() {
+  if [ "$PUBLIC_VERIFY_ENABLED" != "true" ] || [ "$PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED" = "false" ]; then
+    return 0
+  fi
+
+  require_cmd node
+  local public_base_url="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}"
+  local count
+  local legacy_assets_file
+  local legacy_capture_status=0
+
+  log "记录部署前公网前端静态资源: $public_base_url"
+  legacy_assets_file="$(mktemp)"
+  FRONTEND_ASSET_VERIFY_INSECURE_TLS="$PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS" \
+    node "$ROOT_DIR/scripts/ci/check-production-frontend-assets.mjs" "$public_base_url" --print-paths > "$legacy_assets_file" || legacy_capture_status=$?
+  LEGACY_FRONTEND_ASSETS="$(cat "$legacy_assets_file")"
+  rm -f "$legacy_assets_file"
+
+  if [ "$legacy_capture_status" -ne 0 ] && [ -z "$LEGACY_FRONTEND_ASSETS" ]; then
+    printf '部署前公网前端静态资源捕获失败，且未产出任何旧资源路径\n' >&2
+    return "$legacy_capture_status"
+  fi
+
+  if [ "$legacy_capture_status" -ne 0 ]; then
+    log "部署前公网资源巡检报告失败，部署后会复查已捕获的旧资源路径"
+  fi
+
+  if [ -z "$LEGACY_FRONTEND_ASSETS" ]; then
+    log "未获取到部署前静态资源列表，部署后仅校验当前入口资源"
+    return 0
+  fi
+
+  count="$(printf '%s' "$LEGACY_FRONTEND_ASSETS" | tr ',' '\n' | sed '/^$/d' | wc -l | tr -d ' ')"
+  log "已记录部署前静态资源: ${count} 个"
+}
+
 build_rsync_ssh_command() {
   local command="ssh"
   local option
@@ -54,6 +95,8 @@ build_rsync_ssh_command() {
 
   printf '%s' "$command"
 }
+
+capture_legacy_frontend_assets
 
 log "检查远程部署依赖"
 ssh "${SSH_BASE_OPTS[@]}" "$SSH_USER@$SSH_HOST" \
@@ -84,6 +127,10 @@ log "SSH 部署完成"
 
 if [ "$PUBLIC_VERIFY_ENABLED" = "true" ]; then
   log "验证公网部署"
-  PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-https://$SSH_HOST}" \
+  PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}" \
+  PUBLIC_VERIFY_INSECURE_TLS="$PUBLIC_VERIFY_INSECURE_TLS" \
+  PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED="$PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED" \
+  PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="$PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS" \
+  FRONTEND_ASSET_VERIFY_EXTRA_PATHS="$LEGACY_FRONTEND_ASSETS" \
     bash "$ROOT_DIR/scripts/deploy/verify-public-deploy.sh"
 fi

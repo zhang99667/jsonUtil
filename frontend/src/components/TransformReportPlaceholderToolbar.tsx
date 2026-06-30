@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface TransformReportPlaceholderToolbarProps {
+export interface TransformReportPlaceholderToolbarProps {
   filteredPlaceholderCount: number;
   visiblePlaceholderCount: number;
   isPlaceholderTruncated: boolean;

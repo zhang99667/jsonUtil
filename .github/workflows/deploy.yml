@@ -39,6 +39,26 @@ on:
         description: 'Space separated health check URLs on remote host'
         required: false
         default: 'http://127.0.0.1 http://127.0.0.1/api/health'
+      public_base_url:
+        description: 'Public base URL for post-deploy verification'
+        required: false
+        default: 'https://jsonutils.markz.fun'
+      public_verify_enabled:
+        description: 'Run public version, health and frontend asset verification'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      public_verify_insecure_tls:
+        description: 'Allow insecure TLS for public verification when using an IP or mismatched certificate'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 concurrency:
   group: deploy-production
@@ -54,12 +74,14 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Node.js
-        if: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
         uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+
+      - name: Static asset retention check
+        run: node scripts/ci/check-frontend-static-retention.mjs
 
       - name: Build frontend dist
         if: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
@@ -75,6 +97,41 @@ jobs:
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p "${{ inputs.port }}" "${{ inputs.host }}" >> ~/.ssh/known_hosts
+
+      - name: Capture legacy frontend assets
+        if: ${{ inputs.public_verify_enabled == 'true' }}
+        env:
+          PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+          SSH_HOST: ${{ inputs.host }}
+          DEFAULT_PUBLIC_BASE_URL: 'https://jsonutils.markz.fun'
+          PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS: ${{ inputs.public_verify_insecure_tls }}
+        run: |
+          base_url="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}"
+          echo "Capturing legacy frontend assets from $base_url"
+          legacy_assets_file="$(mktemp)"
+          legacy_capture_status=0
+          FRONTEND_ASSET_VERIFY_INSECURE_TLS="$PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS" \
+            node scripts/ci/check-production-frontend-assets.mjs "$base_url" --print-paths > "$legacy_assets_file" || legacy_capture_status=$?
+          legacy_assets="$(cat "$legacy_assets_file")"
+          rm -f "$legacy_assets_file"
+
+          if [ "$legacy_capture_status" -ne 0 ] && [ -z "$legacy_assets" ]; then
+            echo "Failed to capture legacy frontend assets and no asset paths were produced." >&2
+            exit "$legacy_capture_status"
+          fi
+
+          if [ "$legacy_capture_status" -ne 0 ]; then
+            echo "Legacy asset capture reported failures; post-deploy verification will recheck captured paths."
+          fi
+
+          if [ -z "$legacy_assets" ]; then
+            echo "No legacy assets captured; post-deploy verification will scan current entry assets only."
+            exit 0
+          fi
+
+          count="$(printf '%s' "$legacy_assets" | tr ',' '\n' | sed '/^$/d' | wc -l | tr -d ' ')"
+          echo "Captured $count legacy frontend assets."
+          printf 'LEGACY_FRONTEND_ASSETS=%s\n' "$legacy_assets" >> "$GITHUB_ENV"
 
       - name: Prepare remote directory
         run: |
@@ -121,3 +178,14 @@ jobs:
             -o ServerAliveCountMax="${SSH_SERVER_ALIVE_COUNT_MAX}" \
             "${{ inputs.user }}@${{ inputs.host }}" \
             "cd '${{ inputs.app_dir }}' && HEALTH_CHECK_URLS='$HEALTH_CHECK_URLS' FRONTEND_DOCKERFILE='$frontend_dockerfile' COMPOSE_SERVICES='$compose_services' COMPOSE_NO_DEPS='$compose_no_deps' DEPLOY_DISK_CHECK_ENABLED='$DEPLOY_DISK_CHECK_ENABLED' DEPLOY_DISK_WARN_USED_PERCENT='$DEPLOY_DISK_WARN_USED_PERCENT' DEPLOY_DISK_MAX_USED_PERCENT='$DEPLOY_DISK_MAX_USED_PERCENT' bash scripts/deploy/remote-docker-compose-deploy.sh"
+
+      - name: Verify public deploy
+        if: ${{ inputs.public_verify_enabled == 'true' }}
+        env:
+          PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+          SSH_HOST: ${{ inputs.host }}
+          FRONTEND_ASSET_VERIFY_EXTRA_PATHS: ${{ env.LEGACY_FRONTEND_ASSETS }}
+          PUBLIC_VERIFY_INSECURE_TLS: ${{ inputs.public_verify_insecure_tls }}
+          PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED: 'true'
+          PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS: ${{ inputs.public_verify_insecure_tls }}
+        run: bash scripts/deploy/verify-public-deploy.sh

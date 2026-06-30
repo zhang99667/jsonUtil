@@ -1,0 +1,96 @@
+.app-release-toast {
+  display: flex;
+  max-width: 28rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgba(0, 122, 204, 0.6);
+  border-radius: 0.5rem;
+  background: var(--editor-sidebar, #252526);
+  color: #ffffff;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.36);
+}
+
+.app-release-toast--chunk {
+  border-color: rgba(251, 191, 36, 0.6);
+}
+
+.app-release-toast__body {
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.app-release-toast__title {
+  font-weight: 600;
+}
+
+.app-release-toast__description {
+  margin-top: 0.125rem;
+  color: #d1d5db;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.app-release-toast__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-release-toast__button {
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.app-release-toast__button:focus-visible {
+  outline: 2px solid rgba(110, 231, 183, 0.9);
+  outline-offset: 2px;
+}
+
+.app-release-toast__button--primary {
+  border: 1px solid var(--brand-primary, #007acc);
+  background: var(--brand-primary, #007acc);
+  color: #ffffff;
+}
+
+.app-release-toast__button--primary:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.app-release-toast__button--secondary {
+  border: 1px solid rgba(0, 122, 204, 0.7);
+  background: transparent;
+  color: #a7f3d0;
+}
+
+.app-release-toast__button--secondary:hover,
+.app-release-toast__button--muted:hover {
+  background: var(--editor-hover, #2a2d2e);
+  color: #ffffff;
+}
+
+.app-release-toast__button--muted {
+  border: 1px solid var(--editor-border, #333333);
+  background: transparent;
+  color: #d1d5db;
+}
+
+.app-release-toast__button--chunk {
+  border: 1px solid #f59e0b;
+  background: #f59e0b;
+  color: #111827;
+}
+
+.app-release-toast__button--chunk:hover {
+  background: #fbbf24;
+  border-color: #fbbf24;
+}

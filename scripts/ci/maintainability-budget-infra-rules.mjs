@@ -1,3 +1,7 @@
+import { infraDeployMaintainabilityBudgets } from './maintainability-budget-infra-deploy-rules.mjs';
+import { infraProductionAssetsMaintainabilityBudgets } from './maintainability-budget-infra-production-assets-rules.mjs';
+import { infraStaticRetentionMaintainabilityBudgets } from './maintainability-budget-infra-static-retention-rules.mjs';
+
 export const infraMaintainabilityBudgets = [
   {
     file: 'frontend/config/chunkStrategy.ts',
@@ -9,4 +13,7 @@ export const infraMaintainabilityBudgets = [
     maxLines: 140,
     reason: '版本 manifest 构建逻辑应保持轻量',
   },
+  ...infraDeployMaintainabilityBudgets,
+  ...infraStaticRetentionMaintainabilityBudgets,
+  ...infraProductionAssetsMaintainabilityBudgets,
 ];

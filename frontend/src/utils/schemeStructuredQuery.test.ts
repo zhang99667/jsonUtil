@@ -32,6 +32,21 @@ describe('schemeStructuredQuery', () => {
     });
   });
 
+  it('同一个结构化数组索引重复赋值时保留所有叶子值', () => {
+    const result: StructuredQueryParamContainer = {};
+
+    assignQueryParam(result, 'items[0].tag', 'feed');
+    assignQueryParam(result, 'items[0].tag', 'news');
+    assignQueryParam(result, 'items[1].tag', 'sports');
+
+    expect(result).toEqual({
+      items: [
+        { tag: ['feed', 'news'] },
+        { tag: 'sports' },
+      ],
+    });
+  });
+
   it('按原始 query 风格回写点号和括号结构化参数', () => {
     expect(buildQueryStringFromObject({
       items: [
@@ -49,6 +64,27 @@ describe('schemeStructuredQuery', () => {
       },
     }, 'ext%5Bscene%5D=feed&ext%5Bsource%5D=box')).toBe(
       'ext%5Bscene%5D=detail&ext%5Bsource%5D=box'
+    );
+  });
+
+  it('嵌套对象中的数组回写时沿用原始括号和空数组风格', () => {
+    expect(buildQueryStringFromObject({
+      ext: {
+        tags: ['feed', 'news'],
+        meta: { source: 'box' },
+      },
+    }, 'ext%5Btags%5D%5B%5D=old&ext%5Bmeta%5D%5Bsource%5D=old')).toBe(
+      'ext%5Btags%5D%5B%5D=feed&ext%5Btags%5D%5B%5D=news&ext%5Bmeta%5D%5Bsource%5D=box'
+    );
+  });
+
+  it('对象数组内的数组字段回写时保留点号对象风格', () => {
+    expect(buildQueryStringFromObject({
+      items: [
+        { id: '10', tags: ['feed', 'news'] },
+      ],
+    }, 'items[0].id=1&items[0].tags[]=old')).toBe(
+      'items%5B0%5D.id=10&items%5B0%5D.tags%5B%5D=feed&items%5B0%5D.tags%5B%5D=news'
     );
   });
 

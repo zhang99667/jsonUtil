@@ -1,11 +1,19 @@
-
-
-import React, { useRef, useState, useEffect } from 'react';
+import React from 'react';
 import { TransformMode, ActionType } from '../types';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
+import { useActionPanelScrollbar } from '../hooks/useActionPanelScrollbar';
+import { ActionPanelAuxiliaryWorkbench } from './ActionPanelAuxiliaryWorkbench';
+import { ActionPanelFileOperations } from './ActionPanelFileOperations';
+import { ActionPanelPanelIcon } from './ActionPanelPanelIcon';
+import { ActionPanelPanelButton } from './ActionPanelPanelButton';
+import { ActionPanelSmartSuggestion } from './ActionPanelSmartSuggestion';
+import { ActionPanelToolIcon } from './ActionPanelToolIcon';
+import { ActionPanelToolButton } from './ActionPanelToolButton';
+import { ACTION_PANEL_PANEL_GROUP, type ActionPanelPanelItemId } from '../utils/actionPanelPanelItems';
+import { ACTION_PANEL_TOOL_GROUPS } from '../utils/actionPanelToolGroups';
 import type { SmartInputSuggestion, SmartSuggestionActionId } from '../utils/smartInputSuggestion';
 
-interface ActionPanelProps {
+export interface ActionPanelProps {
   activeMode: TransformMode;
   onModeChange: (mode: TransformMode) => void;
   onAction: (action: ActionType) => void;
@@ -28,18 +36,6 @@ interface ActionPanelProps {
   smartSuggestion: SmartInputSuggestion | null;
   smartSuggestionOrigin?: 'clipboard' | null;
   onSmartSuggestionAction: (actionId: SmartSuggestionActionId) => void;
-}
-
-interface WorkbenchShortcut {
-  id: string;
-  label: string;
-  hint: string;
-  title: string;
-  icon: React.ReactNode;
-  isActive: boolean;
-  onClick: () => void;
-  iconClassName: string;
-  dataTour: string;
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
@@ -66,16 +62,27 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   smartSuggestionOrigin = null,
   onSmartSuggestionAction
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scrollState, setScrollState] = useState({ scrollTop: 0, scrollHeight: 0, clientHeight: 0 });
-  const [showScrollbar, setShowScrollbar] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [startScrollTop, setStartScrollTop] = useState(0);
-  const aiFixLabel = isProcessing ? '智能修复中，请等待当前任务完成' : '智能修复';
-
   // 功能级引导
   const { triggerFeatureFirstUse, refreshTour } = useFeatureTour();
+  const {
+    containerRef,
+    handleScroll,
+    handleScrollbarMouseDown,
+    showScrollbar,
+    thumbHeight,
+    thumbTop,
+  } = useActionPanelScrollbar({
+    isCollapsed,
+    onScrollFrame: refreshTour,
+  });
+  const panelStateById: Record<ActionPanelPanelItemId, { isOpen: boolean; onClick: () => void }> = {
+    jsonPath: { isOpen: isJsonPathOpen, onClick: onToggleJsonPath },
+    jsonCompare: { isOpen: isJsonCompareOpen, onClick: onToggleJsonCompare },
+    jsonTree: { isOpen: isJsonTreeOpen, onClick: onToggleJsonTree },
+    jsonSchema: { isOpen: isJsonSchemaOpen, onClick: onToggleJsonSchema },
+    scheme: { isOpen: isSchemeDecodeOpen, onClick: onToggleSchemeDecode },
+    template: { isOpen: isTemplateFillOpen, onClick: onToggleTemplateFill },
+  };
 
   // 处理模式切换并触发功能引导
   const handleModeChange = (mode: TransformMode) => {
@@ -92,320 +99,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     onModeChange(mode);
   };
 
-  // 检测是否需要滚动条
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const checkScrollbar = () => {
-      const needsScrollbar = container.scrollHeight > container.clientHeight;
-      setShowScrollbar(needsScrollbar);
-      setScrollState({
-        scrollTop: container.scrollTop,
-        scrollHeight: container.scrollHeight,
-        clientHeight: container.clientHeight
-      });
-    };
-
-    checkScrollbar();
-
-    const resizeObserver = new ResizeObserver(checkScrollbar);
-    resizeObserver.observe(container);
-
-    return () => resizeObserver.disconnect();
-  }, [isCollapsed]);
-
-  // 滚动事件处理
-  const handleScroll = () => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    // 实时刷新引导位置，确保高亮区域跟随滚动
-    requestAnimationFrame(() => {
-      refreshTour();
-    });
-
-    setScrollState({
-      scrollTop: container.scrollTop,
-      scrollHeight: container.scrollHeight,
-      clientHeight: container.clientHeight
-    });
-  };
-
-  // 计算滚动条位置和大小
-  const thumbHeight = scrollState.scrollHeight > 0
-    ? (scrollState.clientHeight / scrollState.scrollHeight) * 100
-    : 0;
-  const thumbTop = scrollState.scrollHeight > 0
-    ? (scrollState.scrollTop / scrollState.scrollHeight) * 100
-    : 0;
-
-  // 滚动条拖动处理
-  const handleScrollbarMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartY(e.pageY);
-    setStartScrollTop(scrollState.scrollTop);
-    e.preventDefault();
-  };
-
-  // 监听拖动事件
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !containerRef.current) return;
-
-      const deltaY = e.pageY - startY;
-      const scrollRatio = scrollState.scrollHeight / scrollState.clientHeight;
-      const newScrollTop = startScrollTop + deltaY * scrollRatio;
-
-      containerRef.current.scrollTop = newScrollTop;
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, startY, startScrollTop, scrollState.scrollHeight, scrollState.clientHeight]);
-
   // 自动触发发现式引导 - 已移除 (根据用户反馈，仅在点击时触发或在主引导中介绍)
   // 之前的 IntersectionObserver 逻辑已删除，恢复为被动触发模式
-
-
-  const renderToolBtn = (mode: TransformMode, label: string, icon: React.ReactNode, colorClass: string, dataTour?: string) => {
-    const isActive = activeMode === mode;
-    const activeClassName = isActive
-      ? 'bg-editor-active border-brand-primary/60 text-white ring-1 ring-brand-primary/40'
-      : 'bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600';
-
-    return (
-      <button
-        data-tour={dataTour}
-        aria-pressed={isActive}
-        aria-label={isCollapsed ? `${label}${isActive ? '，当前模式' : ''}` : undefined}
-        onClick={() => handleModeChange(mode)}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border active:scale-95 shadow-sm ${activeClassName} ${isCollapsed ? 'justify-center px-2' : ''}`}
-        title={isCollapsed ? `${label}${isActive ? '（当前）' : ''}` : undefined}
-      >
-        <div className={`transition-colors ${isActive ? colorClass : 'text-gray-500'}`}>
-          <span className={colorClass}>{icon}</span>
-        </div>
-        {!isCollapsed && (
-          <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-            <span className="truncate">{label}</span>
-            {isActive && (
-              <span
-                data-tour="active-mode-badge"
-                className="rounded bg-brand-primary/20 px-1.5 py-0.5 text-[10px] font-bold leading-none text-brand-primary"
-              >
-                当前
-              </span>
-            )}
-          </span>
-        )}
-      </button>
-    );
-  };
-
-  const renderPanelBtn = (
-    label: string,
-    icon: React.ReactNode,
-    iconClass: string,
-    hoverIconClass: string,
-    isOpen: boolean,
-    onClick: () => void,
-    dataTour: string
-  ) => {
-    const activeClassName = isOpen
-      ? 'bg-editor-active border-brand-primary/60 text-white ring-1 ring-brand-primary/40'
-      : 'bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600';
-    const iconWrapperClassName = isOpen
-      ? iconClass
-      : `text-gray-500 ${hoverIconClass}`;
-
-    return (
-      <button
-        data-tour={dataTour}
-        aria-pressed={isOpen}
-        aria-label={isCollapsed ? `${label}${isOpen ? '，已打开' : '，未打开'}` : undefined}
-        onClick={onClick}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-medium rounded-xl transition-all mb-2 group border active:scale-95 shadow-sm ${activeClassName} ${isCollapsed ? 'justify-center px-2' : ''}`}
-        title={isCollapsed ? `${label}${isOpen ? '（已打开）' : ''}` : undefined}
-      >
-        <div className={`transition-colors ${iconWrapperClassName}`}>
-          {icon}
-        </div>
-        {!isCollapsed && (
-          <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-            <span className="truncate">{label}</span>
-            {isOpen && (
-              <span
-                aria-hidden="true"
-                data-tour="panel-open-badge"
-                className="rounded bg-brand-primary/20 px-1.5 py-0.5 text-[10px] font-bold leading-none text-brand-primary"
-              >
-                打开
-              </span>
-            )}
-          </span>
-        )}
-      </button>
-    );
-  };
-
-  const smartSuggestionToneClassName = (() => {
-    if (!smartSuggestion) return '';
-    if (smartSuggestion.tone === 'emerald') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100';
-    if (smartSuggestion.tone === 'amber') return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
-    if (smartSuggestion.tone === 'violet') return 'border-violet-500/30 bg-violet-500/10 text-violet-100';
-    if (smartSuggestion.tone === 'rose') return 'border-rose-500/30 bg-rose-500/10 text-rose-100';
-    return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100';
-  })();
-
-  const renderWorkbenchShortcut = (shortcut: WorkbenchShortcut) => {
-    const stateClassName = shortcut.isActive
-      ? 'border-brand-primary/50 bg-editor-active text-white ring-1 ring-brand-primary/30'
-      : 'border-editor-border bg-editor-sidebar/70 text-gray-300 hover:border-gray-600 hover:bg-editor-hover hover:text-gray-100';
-
-    return (
-      <button
-        key={shortcut.id}
-        type="button"
-        data-tour={shortcut.dataTour}
-        onClick={shortcut.onClick}
-        aria-pressed={shortcut.isActive}
-        title={shortcut.title}
-        className={`min-h-[42px] rounded-lg border px-2 py-1.5 text-left transition-all active:scale-95 ${stateClassName}`}
-      >
-        <span className="flex items-center gap-2">
-          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded border border-white/10 bg-editor-bg/70 ${shortcut.iconClassName}`}>
-            {shortcut.icon}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-[11px] font-semibold">{shortcut.label}</span>
-            <span className="mt-0.5 block truncate text-[10px] text-gray-500">{shortcut.hint}</span>
-          </span>
-        </span>
-      </button>
-    );
-  };
-
-  const renderAuxiliaryWorkbench = () => {
-    if (isCollapsed) return null;
-
-    const debugShortcut: WorkbenchShortcut = {
-      id: 'debug-recipe',
-      label: '高级排查',
-      hint: '低频复盘',
-      title: '低频排查入口：切到嵌套解析并打开 Response 报告',
-      icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-        </svg>
-      ),
-      isActive: activeMode === TransformMode.DEEP_FORMAT,
-      onClick: () => onSmartSuggestionAction('response-inspection'),
-      iconClassName: 'text-gray-400',
-      dataTour: 'workbench-debug-recipe',
-    };
-
-    return (
-      <details data-tour="auxiliary-workbench" className="mt-3 border-t border-editor-border pt-3">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium text-gray-500 transition-colors hover:bg-editor-sidebar hover:text-gray-300">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h7" />
-            </svg>
-            <span className="truncate">更多 / 实验</span>
-          </span>
-          <span className="truncate text-[10px] font-normal text-gray-600">低频</span>
-        </summary>
-        <div className="pt-2">
-          {renderWorkbenchShortcut(debugShortcut)}
-        </div>
-      </details>
-    );
-  };
-
-  const renderSmartSuggestion = () => {
-    if (!smartSuggestion) return null;
-
-    const primaryAction = smartSuggestion.actions[0];
-    if (!primaryAction) return null;
-    const originLabel = smartSuggestionOrigin === 'clipboard' ? '剪贴板识别' : '';
-
-    if (isCollapsed) {
-      return (
-        <button
-          data-tour="smart-action-suggestion"
-          onClick={() => onSmartSuggestionAction(primaryAction.id)}
-          aria-label={`智能建议：${originLabel ? `${originLabel}，` : ''}${smartSuggestion.title}，${primaryAction.label}`}
-          title={`${originLabel ? `${originLabel}：` : ''}${smartSuggestion.title}：${primaryAction.label}`}
-          className={`mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg border transition-all hover:bg-editor-hover active:scale-95 ${smartSuggestionToneClassName}`}
-        >
-          <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 21l3-1.5L15 21l-.75-4M4 5h16M5 9h14M7 13h10" />
-          </svg>
-        </button>
-      );
-    }
-
-    const visibleActions = smartSuggestion.actions.slice(0, 3);
-
-    return (
-      <div
-        data-tour="smart-action-suggestion"
-        className={`mb-4 rounded-lg border p-3 shadow-sm ${smartSuggestionToneClassName}`}
-      >
-        <div className="mb-2 flex items-start gap-2">
-          <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 21l3-1.5L15 21l-.75-4M4 5h16M5 9h14M7 13h10" />
-          </svg>
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <div className="truncate text-xs font-semibold" title={smartSuggestion.title}>
-                {smartSuggestion.title}
-              </div>
-              {originLabel && (
-                <span
-                  data-tour="smart-action-origin"
-                  className="flex-shrink-0 rounded border border-white/10 bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white/90"
-                  title="来自本次手动粘贴后的剪贴板内容识别"
-                >
-                  {originLabel}
-                </span>
-              )}
-            </div>
-            <div className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-gray-300" title={smartSuggestion.description}>
-              {smartSuggestion.description}
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          {visibleActions.map((action, index) => (
-            <button
-              key={action.id}
-              data-tour={`smart-action-${action.id}`}
-              onClick={() => onSmartSuggestionAction(action.id)}
-              aria-label={`智能建议动作 ${index + 1}: ${action.label}`}
-              className={`min-w-0 rounded border border-white/10 bg-editor-bg/70 px-2 py-1.5 text-[11px] font-medium text-gray-100 transition-colors hover:border-white/20 hover:bg-editor-active active:scale-95 ${visibleActions.length === 3 && index === 2 ? 'col-span-2' : ''}`}
-              title={action.label}
-            >
-              <span className="block truncate">{action.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="h-full bg-editor-bg border-r border-editor-bg relative group/sidebar">
       {/* ... (container and top bar unchanged) ... */}
@@ -441,187 +136,79 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           </button>
         </div>
 
-        {renderSmartSuggestion()}
+        <ActionPanelSmartSuggestion
+          smartSuggestion={smartSuggestion}
+          smartSuggestionOrigin={smartSuggestionOrigin}
+          isCollapsed={isCollapsed}
+          onSmartSuggestionAction={onSmartSuggestionAction}
+        />
 
-        {/* 工具组：视图与格式化 */}
-        {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2 mt-2">
-            预览 / 输出
-          </div>
-        )}
-        <div className="mb-4">
-          {renderToolBtn(TransformMode.NONE, '原始视图', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-          ), 'text-gray-400')}
-
-          {renderToolBtn(TransformMode.FORMAT, '格式化', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
-          ), 'text-blue-400')}
-
-          {renderToolBtn(TransformMode.DEEP_FORMAT, '嵌套解析', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-          ), 'text-purple-400', 'deep-format-btn')}
-
-          {renderToolBtn(TransformMode.MINIFY, '压缩 / 去空格', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          ), 'text-cyan-400')}
-        </div>
-
-        {/* 工具组：编码 / 转义 */}
-        {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
-            编码 / 转义
-          </div>
-        )}
-        <div className="mb-4">
-          {renderToolBtn(TransformMode.ESCAPE, '转义', (
-            <span className="font-mono font-bold text-sm">\n</span>
-          ), 'text-amber-400', 'escape-btn')}
-
-          {renderToolBtn(TransformMode.UNESCAPE, '反转义', (
-            <span className="font-mono font-bold text-sm">"</span>
-          ), 'text-yellow-400')}
-
-          {renderToolBtn(TransformMode.UNICODE_TO_CN, 'Unicode 转中文', (
-            <span className="font-mono font-bold text-sm">\u</span>
-          ), 'text-fuchsia-400')}
-
-          {renderToolBtn(TransformMode.CN_TO_UNICODE, '中文 转 Unicode', (
-            <span className="font-mono font-bold text-sm">cn</span>
-          ), 'text-pink-400')}
-
-          {renderToolBtn(TransformMode.URL_ENCODE, 'URL 编码', (
-            <span className="font-mono font-bold text-sm">%</span>
-          ), 'text-rose-400')}
-
-          {renderToolBtn(TransformMode.URL_DECODE, 'URL 解码', (
-            <span className="font-mono font-bold text-sm">Ur</span>
-          ), 'text-red-400')}
-
-          {renderToolBtn(TransformMode.BASE64_ENCODE, 'Base64 编码', (
-            <span className="font-mono font-bold text-sm">B64</span>
-          ), 'text-indigo-400')}
-
-          {renderToolBtn(TransformMode.BASE64_DECODE, 'Base64 解码', (
-            <span className="font-mono font-bold text-sm">64</span>
-          ), 'text-sky-400')}
-        </div>
-
-        {/* 工具组：整理与生成 */}
-        {!isCollapsed && (
-          <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
-            整理 / 生成
-          </div>
-        )}
-        <div className="mb-4">
-          {renderToolBtn(TransformMode.SORT_KEYS, 'Key 排序', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-            </svg>
-          ), 'text-teal-400')}
-
-          {renderToolBtn(TransformMode.JSON_TO_TYPESCRIPT, 'JSON 转 TS', (
-            <span className="font-mono font-bold text-sm">TS</span>
-          ), 'text-sky-300', 'json-to-ts-btn')}
-        </div>
+        {ACTION_PANEL_TOOL_GROUPS.map((group, index) => (
+          <React.Fragment key={group.id}>
+            {!isCollapsed && (
+              <div className={`px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2 ${index === 0 ? 'mt-2' : ''}`}>
+                {group.title}
+              </div>
+            )}
+            <div className="mb-4">
+              {group.items.map(item => (
+                <React.Fragment key={item.mode}>
+                  <ActionPanelToolButton
+                    mode={item.mode}
+                    label={item.label}
+                    icon={<ActionPanelToolIcon iconId={item.iconId} />}
+                    colorClass={item.colorClass}
+                    dataTour={item.dataTour}
+                    isActive={activeMode === item.mode}
+                    isCollapsed={isCollapsed}
+                    onClick={handleModeChange}
+                  />
+                </React.Fragment>
+              ))}
+            </div>
+          </React.Fragment>
+        ))}
 
         <div className="flex-1"></div>
 
         {/* 工具组：查询与解析工具 */}
         {!isCollapsed && (
           <div className="px-2 text-[10px] font-bold text-editor-fg-dim uppercase tracking-wider mb-2">
-            查询 / 解析
+            {ACTION_PANEL_PANEL_GROUP.title}
           </div>
         )}
         <div className="mb-4">
-          {renderPanelBtn('JSONPath 查询', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          ), 'text-emerald-400', 'group-hover:text-emerald-400', isJsonPathOpen, onToggleJsonPath, 'jsonpath-button')}
+          {ACTION_PANEL_PANEL_GROUP.items.map(item => {
+            const panelState = panelStateById[item.id];
 
-          {renderPanelBtn('JSON 对比', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m2 0h4M7 16h10M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
-            </svg>
-          ), 'text-amber-400', 'group-hover:text-amber-400', isJsonCompareOpen, onToggleJsonCompare, 'json-compare-button')}
-
-          {renderPanelBtn('结构导航', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h6v6H4V6zm10 0h6v6h-6V6zM4 16h6v2H4v-2zm10 0h6v2h-6v-2z" />
-            </svg>
-          ), 'text-cyan-400', 'group-hover:text-cyan-400', isJsonTreeOpen, onToggleJsonTree, 'structure-nav-button')}
-
-          {renderPanelBtn('Schema 校验', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z" />
-            </svg>
-          ), 'text-lime-400', 'group-hover:text-lime-400', isJsonSchemaOpen, onToggleJsonSchema, 'json-schema-button')}
-          
-          {renderPanelBtn('Scheme 解析', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
-          ), 'text-emerald-400', 'group-hover:text-emerald-400', isSchemeDecodeOpen, onToggleSchemeDecode, 'scheme-button')}
-
-          {renderPanelBtn('模板填充', (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          ), 'text-orange-400', 'group-hover:text-orange-400', isTemplateFillOpen, onToggleTemplateFill, 'template-fill-button')}
+            return (
+              <React.Fragment key={item.id}>
+                <ActionPanelPanelButton
+                  label={item.label}
+                  icon={<ActionPanelPanelIcon iconId={item.iconId} />}
+                  iconClass={item.iconClass}
+                  hoverIconClass={item.hoverIconClass}
+                  isOpen={panelState.isOpen}
+                  isCollapsed={isCollapsed}
+                  onClick={panelState.onClick}
+                  dataTour={item.dataTour}
+                />
+              </React.Fragment>
+            );
+          })}
         </div>
 
-        {/* 文件管理 */}
-        <div data-tour="file-operations" className="pt-4 mt-2 border-t border-editor-border">
-          <button
-            data-tour="open-file-button"
-            onClick={() => onAction(ActionType.OPEN)}
-            aria-label="打开文件"
-            className={`w-full bg-editor-sidebar hover:bg-editor-hover border border-editor-border text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
-            title={isCollapsed ? "打开文件" : undefined}
-          >
-            <svg className="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>
-            {!isCollapsed && "打开文件"}
-          </button>
+        <ActionPanelFileOperations
+          isCollapsed={isCollapsed}
+          isProcessing={isProcessing}
+          onAction={onAction}
+        />
 
-          <button
-            data-tour="save-file-button"
-            onClick={() => onAction(ActionType.SAVE)}
-            aria-label="保存为 JSON"
-            className={`w-full bg-editor-sidebar hover:bg-editor-hover border border-editor-border text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3 ${isCollapsed ? 'px-2' : ''}`}
-            title={isCollapsed ? "保存为 JSON" : undefined}
-          >
-            <svg className="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-            {!isCollapsed && "保存为 JSON"}
-          </button>
-
-          {/* 智能修复 */}
-          <button
-            data-tour="ai-fix"
-            onClick={() => onAction(ActionType.AI_FIX)}
-            disabled={isProcessing}
-            aria-label={aiFixLabel}
-            className={`w-full bg-gradient-to-r from-violet-900/20 to-indigo-900/20 hover:from-violet-900/40 hover:to-indigo-900/40 border border-violet-500/20 hover:border-violet-500/40 text-violet-200 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 shadow-lg shadow-violet-900/5 ${isCollapsed ? 'px-2' : ''}`}
-            title={aiFixLabel}
-          >
-            {isProcessing ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 flex-shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {!isCollapsed && "修复中..."}
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5 flex-shrink-0 text-violet-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                {!isCollapsed && "智能修复"}
-              </>
-            )}
-          </button>
-        </div>
-
-        {renderAuxiliaryWorkbench()}
+        <ActionPanelAuxiliaryWorkbench
+          activeMode={activeMode}
+          isCollapsed={isCollapsed}
+          onSmartSuggestionAction={onSmartSuggestionAction}
+        />
 
         {/* 设置入口 */}
         <div className="pt-4 mt-auto">

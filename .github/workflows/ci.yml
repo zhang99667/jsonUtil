@@ -55,6 +55,10 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Node script unit tests
+        working-directory: .
+        run: node --test scripts/ci/*.test.mjs
+
       - name: Scheme corpus baseline
         run: npm run corpus:scheme
 
@@ -111,6 +115,14 @@ jobs:
 
       - name: Preload boundary check
         run: npm run check:preloads
+
+      - name: Static asset retention check
+        working-directory: .
+        run: node scripts/ci/check-frontend-static-retention.mjs
+
+      - name: Deploy shell syntax check
+        working-directory: .
+        run: node scripts/ci/check-deploy-shell-syntax.mjs
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium

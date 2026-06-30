@@ -36,7 +36,10 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"  # QUIC/HTTP3 需要 UDP
+    environment:
+      - STATIC_ASSET_RETENTION_DAYS=${STATIC_ASSET_RETENTION_DAYS:-14}
     volumes:
+      - frontend-static:/usr/share/nginx/html
       - /www/server/panel/vhost/cert/39.97.237.248:/etc/nginx/ssl:ro
     depends_on:
       - app-backend
@@ -69,3 +72,4 @@ networks:
 volumes:
   db-data:
   upload-data:
+  frontend-static:

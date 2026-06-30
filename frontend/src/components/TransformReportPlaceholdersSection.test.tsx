@@ -3,8 +3,9 @@ import type {
   TransformReportRuntimePlaceholder,
   TransformReportRuntimePlaceholderGroup,
 } from '../utils/transformRuntimePlaceholderTypes';
-import { TransformReportPlaceholderGroupCard } from './TransformReportPlaceholderGroupCard';
+import { TransformReportPlaceholderGroupsList } from './TransformReportPlaceholderGroupsList';
 import { TransformReportPlaceholderRow } from './TransformReportPlaceholderRow';
+import { TransformReportPlaceholderRowsList } from './TransformReportPlaceholderRowsList';
 import { TransformReportPlaceholderToolbar } from './TransformReportPlaceholderToolbar';
 import { TransformReportPlaceholdersSection } from './TransformReportPlaceholdersSection';
 
@@ -82,22 +83,26 @@ describe('TransformReportPlaceholdersSection', () => {
     const tree = TransformReportPlaceholdersSection({
       runtimePlaceholderGroups: [group],
       runtimePlaceholders: [placeholder],
-      filteredPlaceholderCount: 3,
-      isPlaceholderTruncated: true,
-      canShowOpenTemplateFill: true,
-      isPlaceholderFillTemplateDisabled: false,
-      isCopyPlaceholderReportDisabled: false,
-      openTemplateFillTitle: '填入模板',
-      copyTemplateTitle: '复制模板',
-      copyPlaceholderReportTitle: '复制摘要',
-      onOpenPlaceholderFillTemplate,
-      onCopyPlaceholderFillTemplate,
-      onCopyPlaceholderReport,
+      toolbar: {
+        filteredPlaceholderCount: 3,
+        isPlaceholderTruncated: true,
+        canShowOpenTemplateFill: true,
+        isPlaceholderFillTemplateDisabled: false,
+        isCopyPlaceholderReportDisabled: false,
+        openTemplateFillTitle: '填入模板',
+        copyTemplateTitle: '复制模板',
+        copyPlaceholderReportTitle: '复制摘要',
+        onOpenPlaceholderFillTemplate,
+        onCopyPlaceholderFillTemplate,
+        onCopyPlaceholderReport,
+      },
       onFilter,
-      onCopyPath,
-      onCopyOriginalValue,
-      onLocatePath,
-      onOpenSchemeValue,
+      rows: {
+        onCopyPath,
+        onCopyOriginalValue,
+        onLocatePath,
+        onOpenSchemeValue,
+      },
     });
 
     const toolbars = findByType(tree, TransformReportPlaceholderToolbar);
@@ -114,10 +119,35 @@ describe('TransformReportPlaceholdersSection', () => {
     expect(toolbars[0].props.onOpenPlaceholderFillTemplate).toBe(onOpenPlaceholderFillTemplate);
     expect(toolbars[0].props.onCopyPlaceholderFillTemplate).toBe(onCopyPlaceholderFillTemplate);
     expect(toolbars[0].props.onCopyPlaceholderReport).toBe(onCopyPlaceholderReport);
-    const placeholderGroups = findByType(tree, TransformReportPlaceholderGroupCard);
+    const placeholderGroups = findByType(tree, TransformReportPlaceholderGroupsList);
     expect(placeholderGroups).toHaveLength(1);
-    expect(placeholderGroups[0].props.group).toBe(group);
+    expect(placeholderGroups[0].props.runtimePlaceholderGroups).toEqual([group]);
     expect(placeholderGroups[0].props.onFilter).toBe(onFilter);
+    const placeholderRowsList = findByType(tree, TransformReportPlaceholderRowsList);
+    expect(placeholderRowsList).toHaveLength(1);
+    expect(placeholderRowsList[0].props.runtimePlaceholders).toEqual([placeholder]);
+    expect(placeholderRowsList[0].props.onCopyPath).toBe(onCopyPath);
+    expect(placeholderRowsList[0].props.onCopyOriginalValue).toBe(onCopyOriginalValue);
+    expect(placeholderRowsList[0].props.onLocatePath).toBe(onLocatePath);
+    expect(placeholderRowsList[0].props.onOpenSchemeValue).toBe(onOpenSchemeValue);
+  });
+});
+
+describe('TransformReportPlaceholderRowsList', () => {
+  it('按占位符列表渲染单行组件并透传行级动作', () => {
+    const onCopyPath = vi.fn();
+    const onCopyOriginalValue = vi.fn();
+    const onLocatePath = vi.fn();
+    const onOpenSchemeValue = vi.fn();
+
+    const tree = TransformReportPlaceholderRowsList({
+      runtimePlaceholders: [placeholder],
+      onCopyPath,
+      onCopyOriginalValue,
+      onLocatePath,
+      onOpenSchemeValue,
+    });
+
     const placeholderRows = findByType(tree, TransformReportPlaceholderRow);
     expect(placeholderRows).toHaveLength(1);
     expect(placeholderRows[0].props.placeholder).toBe(placeholder);

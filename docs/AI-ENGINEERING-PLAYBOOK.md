@@ -35,7 +35,7 @@
 | 构建配置 / Vite 分包 | `npm run lint`、`npm run test -- config/xxx.test.ts`、`npm run build`、`npm run check:preloads` |
 | 前端组件交互 | 相关 Vitest 单测，必要时跑 `npm run test:e2e` |
 | 后端 API | `mvn test`，并检查 `docs/BACKEND-API-MATRIX.md` |
-| 部署脚本 | 本地 dry-run 或远端健康检查脚本 |
+| 部署脚本 | `node scripts/ci/check-deploy-shell-syntax.mjs`、`node scripts/ci/check-frontend-static-retention.mjs`；公网发布后运行 `node scripts/ci/check-production-frontend-assets.mjs <baseUrl>` 或远端健康检查脚本，确认深层 chunk、CSS `url(...)` 二级资源、CSS `@import` 链路可达且 JS/CSS `Content-Type` 正确 |
 | AI 协作资产 | `node scripts/ci/check-ai-governance.mjs` |
 | 可维护性预算 | `node scripts/ci/check-maintainability-budgets.mjs` |
 
@@ -52,6 +52,9 @@
 
 - 运行和改动范围匹配的测试或说明无法运行的原因。
 - 涉及前端 TypeScript 源码时运行 `npm run lint` 或说明未运行原因。
+- 涉及 `scripts/deploy/*.sh`、`.github/scripts/*.sh`、`scripts/ci/local-ci.sh` 或 `.github/workflows/*.yml` 的 `workflow run` 块时运行 `node scripts/ci/check-deploy-shell-syntax.mjs`，先用 `bash -n` 拦截发布脚本语法错误，并单独检查 `REMOTE_SCRIPT heredoc` 这类远端脚本片段。
+- 涉及前端 Docker、Compose、Nginx 或发布静态资源时运行 `node scripts/ci/check-frontend-static-retention.mjs`。
+- 公网资源巡检不能只看 2xx；`node scripts/ci/check-production-frontend-assets.mjs <baseUrl>` 还会校验 JS/CSS `Content-Type`，并递归检查 CSS `url(...)` 二级资源和 CSS `@import` 链路，防止缺失 chunk fallback 成 HTML。排查用户反馈的旧 chunk URL 时，追加 `--extra-asset <url-or-path>` 纳入同一轮递归巡检。
 - 涉及大模块或新增 helper 时运行 `node scripts/ci/check-maintainability-budgets.mjs`。
 - 更新 `CHANGELOG.md` 当前版本区块。
 - 用 `git diff --check` 检查空白错误。

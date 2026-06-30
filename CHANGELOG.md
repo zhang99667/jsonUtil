@@ -1,6 +1,152 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **前端旧 chunk 迁移保护**: 远端 Docker Compose 部署会在替换前从当前前端容器备份旧 `/assets`，新容器启动后回填到静态目录，并把 helper 纳入部署语法检查、静态保留自检和预算，避免首次切换静态保留卷或发布替换时让打开中的旧页面懒加载 chunk 404
+- **深度解析类型出口分层**: 将样本导出、占位符回填模板、质量快照和协作归档包类型拆到 `transformSummaryArtifactTypes`，并将 schema/资源/嵌套字段分组类型拆到 `transformSummaryGroupTypes`，`transformSummaryTypes` 保留核心报告/视图契约并兼容 re-export；同步拆出 artifact 类型预算子表，降低深度解析类型仓库继续贴线和 type-only 环的风险
+- **工具栏入口按钮状态装配收敛**: `ActionPanelEntryButton` 改为接收完整入口状态并统一装配图标 slot、active、a11y 和 badge，转换工具/面板入口按钮只保留点击语义透传，减少后续新增工具入口的重复样板
+- **公网资源支撑预算分层**: 将 production assets 支撑预算继续拆成 IO 与 discovery queue 子表，support 聚合入口从 24/25 行降到轻量聚合，避免新增旧资源、请求或 MIME 规则时再次贴线
+- **公网资源发现队列职责收敛**: 将旧资源和深层 chunk 的发现入队逻辑从 `productionFrontendAssetPaths` 迁到 `productionFrontendAssetDiscoveryQueue`，路径入口只保留 HTML/env/兼容导出，递归 scanner 专注消费 JS/CSS 待扫描队列
+- **公网 JS 资源发现分层**: 将公网资源巡检里的 JS chunk 引用发现拆到 `productionFrontendAssetJavascriptPaths`，并新增 production assets path 预算子表，让 HTML 入口解析、JS 引用提取和路径归一化各自独立演进
+- **深度解析 Section 预算分层**: 将 `maintainability-budget-transform-panel-section-rules` 拆成 summary 与 issue section 子表，并新增 section domain 治理预算，降低顶部总览和问题线索区域后续扩展时预算入口贴线风险
+- **Scheme 结构化 Query 预算分层**: 将 `maintainability-budget-scheme-support-structured-query-rules` 拆成 parse、assign、serialize 三个子表，并新增结构化 Query 治理预算，避免后续 CMD/Scheme 回写能力扩展时预算入口再次贴线
+- **部署预算规则再分层**: 将 `maintainability-budget-infra-deploy-rules` 拆成部署检查器与运行脚本两个子表，并把基础设施治理入口继续分为部署/资源子表，降低发布门禁和部署脚本继续扩展时规则表贴线风险
+- **可维护性预算临界摘要**: `check-maintainability-budgets` 新增“剩余 ≤5 行或使用率 ≥90%”热点摘要，并将报告构造拆到 `maintainabilityBudgetReport` 纯 helper，帮助 AI/人工优先处理即将贴线的模块
+- **公网 CSS 资源归一化分层**: 将公网资源巡检里的 CSS 相对路径归一化和同站 asset 判断拆到 `productionFrontendAssetCssNormalization`，CSS 提取文件从贴线的 43 行降到 24 行并收紧预算
+- **公网资源路径归一化分层**: 将公网资源巡检里的 baseUrl 校验、asset path 归一化、相对路径归一化和 JS asset 类型判断拆到 `productionFrontendAssetPathNormalization`，让 HTML/JS 提取文件从贴线的 68 行降到 46 行并收紧预算
+- **动态 chunk 刷新前草稿保护**: 旧页面懒加载 chunk 失效提示刷新时会先显式写入现有工作区草稿快照，避免用户为恢复新版资源而丢失未保存 SOURCE 或标签内容
+- **部署语法检查器职责拆分**: 将 `check-deploy-shell-syntax` 的目标清单、`bash -n` 执行/失败格式化、shell 文件检查和 workflow run 检查拆到独立 helper，主检查器重新聚焦报告合并，避免发布门禁自身继续贴近预算上限
+- **Workflow Run 语法门禁**: `check-deploy-shell-syntax` 会提取 GitHub Actions 的 inline/block `workflow run` 脚本并替换 `${{ ... }}` 表达式后执行 `bash -n`，让 CI/Deploy YAML 内联脚本也进入同一条发布语法门禁
+- **部署 Heredoc 语法门禁**: `check-deploy-shell-syntax` 会提取 `REMOTE_SCRIPT heredoc` 远端脚本片段并单独执行 `bash -n`，补齐外层部署脚本语法检查无法覆盖远端清理脚本正文的问题
+- **部署 Shell 语法门禁**: 新增 `check-deploy-shell-syntax`，用 `bash -n` 覆盖 GitHub helper、前端 entrypoint、本地 CI 和远端部署脚本，并接入 GitHub CI、本地 CI、AI Playbook 与可维护性预算，减少上线脚本语法错误流入远端部署
+- **动态 chunk 恢复事件分层**: 将旧页面加载新版懒加载 chunk 失败的监听和去重抽到 `chunkLoadRecoveryEvents` 并补充事件安装测试，Vite preloadError 保留默认错误传播给 ErrorBoundary，同时补齐 CSS preload 失败识别并把发布恢复预算拆成 runtime/update 子表
+- **动态 chunk 恢复 Hook 门禁**: 补充 `useAppChunkLoadRecovery` focused test，固定生产态监听安装、自定义 Toast 参数和刷新按钮行为，避免旧页面资源失效提示在装配层退化
+- **CI 脚本单测门禁**: 将 `scripts/ci/*.test.mjs` 挂入本地 CI 和 GitHub 前端流水线，确保公网资源巡检与静态资源保留脚本的回归测试不再只靠人工手跑
+- **后台发布恢复入口**: 新增 `useAdminReleaseRecovery`，让管理后台同时具备主动版本检测和动态 chunk 失效刷新提示，并将后台恢复入口与更新检查 hook 纳入发布恢复预算
+- **GitHub Deploy 公网复查对齐**: Deploy workflow 增加静态资源保留门禁、部署前旧 asset 记录和部署后公网递归巡检，复用 `verify-public-deploy.sh` 校验新版本、后端健康、当前 chunk 与旧 hash 资源
+- **GitHub Workflow 发布门禁自检**: 将 CI/Deploy 中脚本单测、静态资源保留、部署前旧 asset 捕获、部署后旧资源复查和公网验证命令纳入静态保留配置自检，避免 workflow 漂移后发布恢复链路只停留在文档里
+- **部署旧资源捕获失败保护**: GitHub Deploy 捕获旧 hash assets 时会区分“巡检失败但已拿到路径”和“完全未拿到路径”，后者直接中断发布，避免旧页面 chunk 复查静默降级
+- **SSH 部署旧资源捕获失败保护**: 本机 SSH 部署脚本同步收紧部署前旧 hash assets 捕获，巡检失败且没有任何路径时会中断部署，避免手动远端上线绕过旧 chunk 复查
+- **更新提示 Toast 分层**: 将新版本提示 UI 拆到 `AppUpdateToastContent` 并补充按钮行为测试，`useAppUpdateCheck` 回归定时器、可见态监听和版本检查编排
+- **发布恢复 Toast 样式独立化**: 新版本和旧 chunk 失效刷新提示改为复用独立 CSS，避免后台入口缺少主应用 Tailwind 类时提示样式丢失
+- **公网资源巡检覆盖 import.meta worker**: 资源巡检支持 `new URL("worker.js", import.meta.url)` 这类同目录裸文件名，防止 worker chunk 缺失绕过发布后公网校验
+- **公网资源 MIME 校验**: 资源巡检对 JS/CSS 增加 Content-Type 校验，避免缺失 chunk 被 fallback 成 HTML 且返回 200 时误判发布成功
+- **旧 chunk 临场复查参数**: `check-production-frontend-assets` 支持 `--extra-asset <url-or-path>`，可把用户反馈的历史 hash chunk 直接纳入公网巡检并复用 404/MIME 诊断；CLI 参数解析拆到 `productionFrontendAssetCliArgs` 并纳入预算，AI 治理脚本同步防止入口文档遗漏该排查动作
+- **旧 Scheme chunk 404 回归**: 将用户反馈的 `SchemeViewerModal` 旧 hash chunk 缺失场景补入公网资源巡检单测，确保 `--extra-asset` 复查能稳定报告旧页面动态 import 404
+- **公网巡检参数解析瘦身**: 将 `--extra-asset=` / `--extra-assets=` inline 参数识别收敛为统一模式并补充单数 inline 回归测试，给发布巡检 CLI 参数解析继续扩展留出预算余量
+- **公网资源外链过滤**: 公网资源巡检忽略 `new URL("https://cdn.example.com/assets/x.js", import.meta.url)` 这类外部绝对 URL，并补充嵌套 chunk 同目录相对路径测试，避免把第三方资源误判为本站缺失 chunk
+- **部署旧资源主域名快照**: SSH 部署、独立公网验证和 GitHub Deploy 捕获旧 hash 资源时默认使用 `https://jsonutils.markz.fun`，避免 IP 访问落到后台默认站点而漏记主应用懒加载 chunk；静态资源保留门禁同步保护该默认值
+- **公网验证 TLS 默认收紧**: 公网版本/健康检查和资源巡检随主域名默认值改为启用正常 TLS 校验，不再默认设置不安全证书容错；GitHub Deploy 增加显式 `public_verify_insecure_tls` 输入，仅在临时用 IP 探活且证书域名不匹配时开启
+- **公网巡检 TLS 开关别名**: `check-production-frontend-assets` 兼容部署 wrapper 的 `PUBLIC_VERIFY_INSECURE_TLS` / `PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS` 和直接脚本的 `FRONTEND_ASSET_VERIFY_INSECURE_TLS`，减少手动排查旧 chunk 时环境变量误用
+- **公网巡检入口页失败聚合**: 公网资源巡检在首页或后台入口读取失败时返回可读页面失败项，并继续扫描其他可访问入口，避免部署前旧资源快照因单页异常丢失全部资产线索
+- **公网巡检 CSS 资源递归**: 公网资源巡检会继续解析 CSS `url(...)` 中的字体和图片资源，防止样式文件可达但字体、背景图等二级静态资源漏部署
+- **公网巡检 CSS import 递归**: 公网资源巡检补充识别 CSS `@import "./theme.css"` 链路，继续扫描被引入样式及其后续字体、图片资源
+- **公网巡检子目录资源递归**: 公网资源巡检将 `/assets/chunks/*.js` 和 `/assets/chunks/*.css` 等子目录资源也纳入递归扫描，避免深层样式或脚本内部资源漏检
+- **公网巡检 CSS 注释降噪**: CSS 资源扫描会忽略注释中的 `url(...)` 和 `@import` 示例，避免注释里的无效资源路径导致线上巡检误报
+- **AI 发布治理 CSS 自检**: Codex/Claude/Playbook/skill 均明确公网资源巡检需要覆盖 CSS `url(...)` 二级资源和 CSS `@import` 链路，并由 AI 治理脚本防止该语义从入口文档中丢失
+- **静态资源保留缺失文件诊断**: 静态资源保留配置检查在 Dockerfile/Compose 配置文件缺失时返回可读失败项，不再直接抛出 Node 文件读取异常，方便 CI 和 AI 助手定位发布保留链路断点
+- **AI 发布治理 MIME 自检**: Codex/Claude/Playbook/skill 均明确公网资源巡检需要校验 JS/CSS `Content-Type`，并由 AI 治理脚本防止该规则从入口文档中丢失
+- **AI 治理脚本可测化**: 将 AI 协作入口规则构造和缺失收集拆到 `aiGovernanceRules` / `aiGovernanceChecks` 并补充 node:test，确保 `fallback 成 HTML` 等发布门禁语义缺失时能被单测定位
+- **打开状态更新策略分层**: 将版本检查活跃态、可见态、重复提示和单次请求执行拆到纯 helper 并补充单测，避免页面卸载后异步返回仍弹出更新 Toast
+- **SOURCE 替换命令契约补强**: 补齐 SOURCE 替换 helper 的错误跳过和空 pending no-op 测试，保护粘贴、应用预览、Schema 示例和 Scheme 排查共用命令链路
+- **工具栏图标契约收紧**: 将工具按钮 iconId 收敛为运行时可校验列表，`ActionPanelToolIcon` 改为显式覆盖 `sort` 等全部图标并补齐组件测试，避免新增图标静默落到错误兜底
+- **Scheme 结构化 Query 回归契约**: 补齐结构化数组索引重复叶子合并、嵌套对象数组回写和点号/括号风格保持测试，防止后续 CMD/Scheme 参数编辑破坏原始 query 形态
+- **深度解析 Footer Action 契约测试**: 补强 footer action 可见性、禁用态和 handler 异步触发语义测试，保护筛选 pending、样本导出和完整报告等入口的既有行为
+- **深度解析诊断摘要分层**: 将诊断摘要 formatter 从筛选报告文本 helper 中拆出，并继续把 Top、样例、建议 section 下沉到独立 helper；补齐 limit、资源 Top、字段 Top 与脱敏边界测试
+- **深度解析 CMD 复制文本分层**: 将 CMD 结构复制文案 formatter 拆到独立 helper，并补齐空态、来源、参数摘要、内部 CMD 聚焦和占位符截断边界测试，降低复制文本入口继续贴线风险
+- **工具栏文件操作配置分层**: 将打开文件和保存 JSON 的普通文件操作元数据拆到纯配置 helper 并补充顺序单测，文件操作区组件继续只负责配置渲染和 AI 修复入口装配
+- **工具栏入口状态契约分层**: 将工具栏入口按钮 badge、icon state 和状态生成参数类型拆到独立契约文件，并收紧状态 helper 预算，避免按钮状态适配继续因类型声明贴线
+- **App Workflow 预算分层**: 将 App workflow 预算入口里的状态派生和支撑 helper 拆成 state/support 子表，并把治理入口自检预算拆到 self 子表，避免后续命令工作流继续扩展时预算入口贴线
+- **静态资源保留门禁分层**: 将旧 hash assets 保留校验拆成配置片段检查与发布场景验证两个 helper，并纳入独立预算子表，降低后续部署策略扩展时 CI 脚本贴线风险
+- **部署前旧资源回归验证**: SSH 部署会在替换前记录当前公网 asset 列表，部署后将旧 hash 资源一并纳入递归巡检，防止长时间打开页面持有的懒加载 chunk 被新版本清理后 404
+- **深度解析 Footer Helper 预算分层**: 将 footer helper 预算拆成 workflow 与 contract 两个子表，并把 workflow 治理继续按 action/footer 分层，避免 footer 规则表和治理入口继续贴线
+- **深度解析 Action Helper 预算分层**: 将面板 action helper 预算拆成 action item 与 runner 两个子表，降低行动项配置和副作用分发继续堆到同一规则表的风险
+- **深度解析 Panel Helper 治理分层**: 将面板 helper 自检预算拆成 workflow 与 support 两个治理子表，降低 action/footer/UI/copy/CMD helper 后续扩展时治理入口贴线风险
+- **深度解析 Summary Support 治理分层**: 将 summary support 自检预算继续拆成 foundation 与 artifact 两个治理子表，降低新增预算规则时 support 治理入口继续贴线的风险
+- **深度解析 Summary 预算子表分层**: 将 coverage、CMD 源、嵌套字段、记录洞察、schema 分组和排查 recipe 预算拆到 `maintainability-budget-transform-summary-insight-rules`，并新增 summary support 治理子表，避免 support 与 summary 治理表继续贴线
+- **Scheme 弹窗懒加载入口收敛**: 编辑器内 Scheme 弹窗改为复用统一懒加载入口，并补充 ErrorBoundary 动态 import 旧 chunk 失效刷新提示测试，减少发布后旧页面资源失效的漏兜底风险
+- **可维护性治理规则分层**: 将深度解析 summary 相关预算规则的自检预算拆到 `maintainability-budget-governance-transform-summary-rules`，避免 transform 治理表继续贴线
+- **深度解析 Section 可见性分层**: 将展开记录、待检查、占位符、跳过记录和空态的显示条件拆到 `transformReportSectionVisibility` 并补充单测，减少主面板 JSX 内重复计数判断
+- **深度解析占位符工具栏状态分层**: 将占位符工具栏的禁用态和按钮 title 派生拆到 `transformReportPlaceholderToolbarState` 并补充单测，减少主面板 JSX 内联状态矩阵
+- **深度解析复制副作用收敛**: 将深度解析面板内复制、成功提示和错误提示的重复流程收敛到 `transformReportCopyActionRunner` 并补充单测，减少新增复制动作时的样板代码和漏改风险
+- **深度解析类型契约分层**: 将深度解析报告记录、视图、质量快照、样本导出、占位符模板和归档包类型拆到 `transformSummaryTypes`，`transformSummary` 保持兼容 re-export 并继续聚焦构建流程
+- **深度解析协作归档分层**: 将协作排查报告和安全归档包组装拆到 `transformCollaborationReport` / `transformArchivePackage` 并补充专属单测，`transformSummary` 继续收敛为报告聚合入口和类型契约
+- **深度解析诊断文本分层**: 将筛选报告和诊断摘要文本 formatter 拆到 `transformReportDiagnosticText` 并补充专属单测，继续削薄 `transformSummary` 聚合职责
+- **深度解析复制文本分层**: 将路径值、CMD 结构和运行时占位符复制文本 formatter 拆到 `transformReportCopyTexts` 并补充专属单测，继续压缩 `transformSummary` 聚合文件职责
+- **工具栏入口 Badge 契约收敛**: 将入口按钮 badge 类型从组件与状态 helper 的重复定义收敛为单一导出契约，减少后续工具栏状态字段调整时的双点维护
+- **公网资源相对 chunk 覆盖**: 公网资源巡检的 JS 解析支持 `import("./chunk.js")` / `new URL("./worker.js", import.meta.url)` 这类相对 asset 引用，避免仅依赖 Vite mapDeps 中的 `assets/...` 字符串兜底
+- **公网资源请求层分离**: 将公网资源巡检里的超时包装、文本拉取和 HEAD 可达性检查拆到 `productionFrontendAssetRequests` 并纳入预算，`productionFrontendAssetAudit` 继续收敛为递归扫描编排
+- **公网资源路径解析分层**: 将公网资源巡检里的 HTML/JS asset 提取、路径归一化和 JS 资源判断拆到 `productionFrontendAssetPaths` 并补充纯函数测试，让 audit 核心继续聚焦递归扫描和可达性校验
+- **公网资源巡检职责分层**: 将公网静态资源递归发现与可达性校验拆到 `productionFrontendAssetAudit`，`check-production-frontend-assets` 收敛为 CLI 壳，并把生产资源巡检预算拆到独立子表，方便后续扩展资源校验策略
+- **公网资源递归巡检**: `check-production-frontend-assets` 从入口资源扩展为递归扫描已发现的 JS chunk，能继续校验二级懒加载、worker 等深层 `/assets/*` 引用，降低发布后深层功能点击才暴露缺 chunk 的风险
+- **懒加载恢复判定分层**: 将 Vite preloadError 与 Promise rejection 的刷新提示判断收敛到 `chunkLoadRecovery` 纯函数并补充单测，避免发布后旧 chunk 失效恢复逻辑散落在 hook 事件分支里
+- **保存计划策略分层**: 将快捷键保存和工具栏保存的路径决策拆到 `appSaveShortcutPlan` / `appSaveToolbarPlan`，`appSaveActionPlan` 收敛为兼容入口，降低 PREVIEW/SOURCE 保存语义混在同一文件里的维护风险
+- **工具栏 AI 修复按钮状态分层**: 将 AI 修复按钮的 class、禁用态、aria/title 和可见文案聚合到 `actionPanelFileActions`，按钮组件继续聚焦 AI_FIX 点击透传与图标装配
+- **工具栏入口状态适配分层**: 将转换工具按钮和面板入口按钮重复的 a11y、badge 与图标状态适配拆到 `actionPanelEntryButtonState` 和 `ActionPanelEntryIconSlot`，两个按钮组件继续聚焦点击语义透传
+- **状态栏右侧 Badge 分层**: 将本地处理状态样式矩阵和当前视图提示拆到 `StatusBarLocalProcessingBadge` / `StatusBarModeBadge`，右侧状态入口继续收敛为状态、视图和版本装配
+- **工具栏文件操作图标分层**: 将打开文件和保存 JSON 的 SVG 图标拆到 `ActionPanelFileActionIcon`，文件操作区继续收敛为打开、保存和 AI 修复入口装配
+- **工具栏 AI 修复图标分层**: 将 AI 修复按钮的 idle/loading 图标拆到 `ActionPanelAiFixIcon` 并补充单测，按钮主体继续聚焦文案、禁用态和 AI_FIX 动作透传
+- **状态栏内容统计分层**: 将左侧状态栏里的编码、长度、字节、光标和行列统计拆到 `StatusBarContentMetrics`，`StatusBarLeftInfo` 继续收敛为统计、文件、保存和 SOURCE 校验装配入口
+- **保存计划执行器分层**: 将保存命令中的 skip、SOURCE/PREVIEW 写回、另存为和成功提示矩阵拆到 `appSavePlanExecutor`，`appSaveCommandRunner` 收敛为计划生成与打点入口并收紧预算
+- **深度解析占位符 Section 契约分组**: 将占位符 section 的工具栏参数和行级动作参数改为 `toolbar` / `rows` 分组透传，并收紧 section 与类型预算，让渲染入口继续只负责三块区域装配
+- **工具栏按钮预算余量收口**: 继续压缩转换工具按钮和面板入口按钮的样板行数，并下调薄组件预算上限，防止按钮入口在后续功能迭代中重新贴线膨胀
+- **工具栏按钮薄组件收口**: 移除转换工具按钮和面板入口按钮未使用的 props 二次导出，并继续收紧按钮预算，让类型契约统一由 `ActionPanelButtonTypes` 承接
+- **深度解析占位符行列表分层**: 将运行时占位符 section 的 props 契约和行列表遍历拆到独立模块，并收紧占位符 section 预算，让区域入口只负责工具栏、分组列表和行列表装配
+- **保存链路类型契约分层**: 将保存计划类型与保存命令输入/副作用类型拆到独立契约文件，并收紧 `appSaveActionPlan` 与 `appSaveCommandRunner` 预算，让保存计划和执行器继续聚焦纯路径分支与副作用编排
+- **工具栏按钮类型契约分层**: 将转换工具按钮和面板入口按钮的 props 契约集中到 `ActionPanelButtonTypes`，并收紧按钮组件预算，让具体按钮继续只维护图标状态、badge 和点击透传
+- **SOURCE 编辑器类型契约分层**: 将 `AppSourceCodeEditorProps` 拆到独立类型契约文件并收紧 SOURCE 编辑器预算，组件主体继续聚焦 `CodeEditor` 装配和动作 slot 组合
+- **App 工作流预算子表分层**: 将复制、设置备份和智能建议等命令型 workflow 预算拆到 `maintainability-budget-app-workflow-command-rules`，并把新子表纳入治理预算，避免 App 工作流预算入口继续贴线膨胀
+- **智能建议命令分层**: 将智能建议点击后的 AI 修复委托、模式切换、Scheme 输入请求、面板开关、toast 和埋点执行拆到 `useAppSmartSuggestionCommands` 与 `appSmartSuggestionCommandRunner` 并补充单测，`App.tsx` 继续收敛为状态编排
+- **设置备份命令分层**: 将配置备份导出/导入的动态加载、文件下载、文件读取、状态写回和 toast 副作用拆到 `useAppSettingsBackupCommands` 与 `appSettingsBackupCommandRunner` 并补充单测，继续压缩 `App.tsx` 主编排职责且保持 `appBackup` 懒加载边界
+- **公网静态资源巡检**: 新增 `check-production-frontend-assets` 线上资源巡检脚本，从入口 HTML 追踪 main/admin JS 懒加载 asset 表并逐个校验可达性，公网部署验证会在版本和健康检查通过后继续拦截当前构建 chunk 缺失导致的动态 import 失败
+- **复制命令 Hook 分层**: 将 SOURCE/PREVIEW 复制的空态、处理中、剪贴板错误、成功文案和打点拆到 `useAppCopyCommands` 与 `appCopyCommandRunner`，并补充单测，继续压缩 `App.tsx` 内编辑器命令副作用
+- **SOURCE 替换副作用分层**: 将 SOURCE 写入提示、Scheme 排查面板复位、剪贴板智能建议来源、粘贴 SOURCE、Scheme 排查替换、PREVIEW/Schema 应用和清空 SOURCE 命令拆到专用 hooks，并收紧 SOURCE 工作流预算，降低替换命令继续回流到主 hook 的风险
+- **保存命令 Hook 分层**: 将预览另存为、快捷键保存、工具栏保存和保存打点编排拆到 `useAppSaveCommands`，`App.tsx` 只保留动作分发入口，继续为后续 `useAppActionCommands` 收敛铺路
+- **保存动作计划分层**: 将快捷键保存和工具栏保存的路径差异抽到 `appSaveActionPlan` 并补充单测，明确 PREVIEW 快捷键写回当前文件、工具栏另存为预览结果的历史语义，降低后续动作命令重构误合并风险
+- **AI 修复命令 Hook 分层**: 将 AI 修复的首次引导、处理中状态、动态加载、错误提示、设置入口和摘要写回编排拆到 `useAppAiRepairCommand`，纯提示与摘要组装逻辑拆到 `appAiRepairCommand` 并补充单测，继续压缩 `App.tsx` 主动作分发职责
+- **SOURCE 替换工作流 Hook 分层**: 将粘贴 SOURCE、应用 PREVIEW、应用 Schema 示例、Scheme 原始值排查和清空 SOURCE 的 pending 状态与确认处理拆到 `useAppSourceReplacementCommands`，共用计划分发逻辑拆到 `appSourceReplacementCommandHelpers` 并补充单测，显著压缩 `App.tsx` 主编排职责
+- **状态栏 ViewModel 分层**: 将当前文件、字节大小、保存状态、SOURCE 校验状态/动作和本地处理状态聚合拆到 `statusBarViewModel` 并补充单测，收紧 `StatusBar` 预算，让状态栏组件只负责左右状态区装配
+- **PREVIEW 编辑器装配分层**: 将 PREVIEW 版 `CodeEditor` 的只读状态、校验错误、深度解析提示、高亮和头部动作装配拆到 `AppPreviewCodeEditor` 并补充单测，拆出 PREVIEW/editor 治理预算子表并收紧 `AppPreviewEditorPane` 预算，让 Pane 只负责右侧编辑器容器
+- **SOURCE 错误修复入口 Slot 分层**: 将 SOURCE 校验无效且有内容时展示 AI 修复按钮的条件拆到 `AppSourceErrorActionsSlot` 并补充单测，收紧 `AppSourceCodeEditor` 预算，让 SOURCE 编辑器主体继续聚焦 `CodeEditor` 参数和头部动作装配
+- **SOURCE 编辑器装配分层**: 将 SOURCE 版 `CodeEditor` 的文件状态、校验错误、Schema 提示、AI 修复入口和头部动作装配拆到 `AppSourceCodeEditor` 并补充单测，收紧 `AppSourceEditorPane` 预算，让 Pane 只负责左侧宽度容器
+- **状态栏 SOURCE 动作分层**: 将 SOURCE JSON 错误定位与独立 Scheme 输入打开的优先级判断拆到 `statusBarSourceValidationAction` 并补充单测，收紧 `StatusBar` 预算，让状态栏主组件继续聚焦状态派生和左右区域装配
+- **主工具栏入口按钮壳分层**: 将转换工具按钮和面板入口按钮共用的 DOM 外壳、折叠态标签隐藏与状态 badge 装配拆到 `ActionPanelEntryButton` 并补充单测，收紧 `ActionPanelToolButton` / `ActionPanelPanelButton` 预算，让两个业务按钮只保留图标状态和点击透传
+- **主工具栏 AI 修复按钮分层**: 将文件操作区里的 AI 修复按钮状态、loading 图标和处理中中文案拆到 `ActionPanelAiFixButton` 并补充单测，收紧 `ActionPanelFileOperations` 预算，让文件操作区只负责打开、保存和 AI 修复入口装配
+- **主工具栏文件按钮壳分层**: 将打开文件和保存 JSON 共用的按钮样式、折叠态 title 与 action 透传拆到 `ActionPanelFileActionButton` 并补充单测，收紧 `ActionPanelFileOperations` 预算，让文件操作区继续聚焦图标选择和 AI 修复入口装配
+- **主工具栏按钮状态分层**: 将转换工具和面板入口按钮共用的 active/collapsed class、折叠态可访问文案与右侧状态 badge 拆到 `actionPanelButtonState` / `ActionPanelButtonBadge` 并补充单测，收紧 `ActionPanelToolButton` / `ActionPanelPanelButton` 预算，让按钮组件只负责渲染和点击透传
+- **状态栏当前文件 badge 分层**: 将左侧状态栏里的当前文件图标、路径提示和文件名截断展示拆到 `StatusBarActiveFileBadge` 并补充单测，收紧 `StatusBarLeftInfo` 预算，让左侧状态栏继续聚焦编码、长度、行列、保存和 SOURCE 校验装配
+- **主编辑区分栏布局分层**: 将 SOURCE/PREVIEW 分栏容器和 resize handle 装配拆到 `AppEditorSplitPanes` 并补充单测，收紧 `AppEditorWorkspace` 预算，让编辑区外壳继续聚焦 AI 修复摘要和两侧编辑 Pane 装配
+- **主工具栏低频入口分层**: 将“更多 / 实验”里的高级排查入口拆到 `ActionPanelAuxiliaryWorkbench` 并补充单测，继续把低频排查能力隔离在主功能按钮之外，收紧 `ActionPanel` 预算
+- **主工具栏按钮分层**: 将转换工具按钮和面板入口按钮拆到 `ActionPanelToolButton` / `ActionPanelPanelButton` 并补充单测，收紧 `ActionPanel` 预算，让主工具栏继续聚焦工具分组、状态装配和引导触发
+- **状态栏左侧信息分层**: 将状态栏左侧编码、长度、行列、文件名、保存状态和 SOURCE 校验状态展示拆到 `StatusBarLeftInfo` 并补充单测，收紧 `StatusBar` 预算，让状态栏入口只负责状态派生和左右区域装配
+- **主工作台懒加载面板插槽分层**: 将工具面板的 loaded 判断和空 fallback `Suspense` 包裹拆到 `AppLazyPanelSlot` 并补充单测，收紧 `AppLazyToolPanels` 预算，减少懒加载面板装配重复 JSX
+- **主应用 Toast 宿主分层**: 将主工作台全局 Toast 的位置和顶部偏移配置拆到 `AppToastHost` 并补充单测，继续收紧 `AppWorkspaceOverlays` 预算，让 overlay 容器只负责组合展示层
+- **主工作台 resize 捕获层分层**: 将布局调整时的全屏鼠标捕获层拆到 `AppResizeCaptureOverlay` 并补充单测，收紧 `AppWorkspaceOverlays` 预算，让工作区 overlay 容器只负责组合 resize、拖拽和 Toast 宿主
+- **状态栏 SOURCE 校验状态分层**: 将 SOURCE 校验状态的普通展示、错误定位和 Scheme 面板打开三态渲染拆到 `StatusBarSourceValidationBadge` 并补充单测，收紧 `StatusBar` 预算，让状态栏主组件继续聚焦状态计算与布局
+- **SOURCE 错误修复入口分层**: 将 SOURCE 编辑器错误态的 AI 修复按钮拆到 `SourceEditorErrorActions` 并补充单测，同时拆出 `app-editor-source` 预算子表，让源编辑 Pane 保持纯编辑器装配职责
+- **主工作台 AI 修复摘要槽位分层**: 将 AI 修复摘要的懒加载与事件透传拆到 `AppAiRepairSummarySlot` 并补充单测，进一步收紧 `AppEditorWorkspace` 预算，让主编辑区外壳只保留 SOURCE/PREVIEW 与分栏装配
+- **发布后懒加载恢复**: 主工具会更快检测线上新版本并在空闲时预热高频 Scheme 弹窗 chunk，主工具和后台都会监听 Vite 动态 chunk 加载失败并提示刷新，ErrorBoundary 也会识别旧页面加载新版资源失败，解决长时间打开页面后点击 Scheme 面板拉取旧 hash 文件失败的问题
+- **状态栏右侧视图分层**: 将本地处理状态和当前视图标签拆到 `StatusBarViewStatus`，版本入口拆到 `StatusBarVersionBadge` 并补充单测，主状态栏继续收敛为状态计算和左侧状态装配
+- **主工作台侧栏面板容器分层**: 将工具栏宽度和 `ActionPanel` props 透传拆到 `AppSidebarActionPanel` 并补充单测，`AppActionSidebar` 只保留侧栏容器与 resize handle 装配
+- **深度解析覆盖率条目分层**: 将覆盖率卡片内的条目 chips 拆到 `TransformReportCoverageItems` 并补充单测，收紧覆盖率卡片预算，让卡片只保留摘要外壳和风险样式
+- **主工作台拖拽浮层组件化**: 将文件拖拽释放提示拆到 `AppFileDropOverlay` 并补充单测，`AppWorkspaceOverlays` 只保留 resize、拖拽浮层和 Toast 宿主装配
+- **深度解析占位符分组列表分层**: 将运行时占位符分组列表拆到 `TransformReportPlaceholderGroupsList` 并补充单测，收紧占位符 section 预算，让区域入口继续保持纯装配职责
+- **静态资源发布保留**: 前端 Docker 镜像启动时会把新构建产物同步到持久化静态目录，并默认保留 14 天旧 hash assets；CI 新增静态资源保留校验，防止上线后旧页面请求懒加载 chunk 直接 404
+- **AI 发布门禁闭环**: 将静态资源保留校验写入 AI Playbook、Codex skill、Claude 工具说明和 AI 治理脚本，确保后续 agent 修改前端 Docker/Compose/Nginx 时会检查旧 chunk 兼容性
+- **主工具栏文件操作分层**: 将打开文件、保存 JSON 和 AI 智能修复按钮拆到 `ActionPanelFileOperations`，将 AI 修复状态文案与折叠态 title 拆到 `actionPanelFileActions` 并补充单测，继续压缩 `ActionPanel` 主组件
+- **主工具栏智能建议分层**: 将智能建议卡片的折叠/展开渲染拆到 `ActionPanelSmartSuggestion`，将 tone 样式、剪贴板来源标签和可见动作规则拆到 `actionPanelSmartSuggestionState` 并补充单测，继续压缩 `ActionPanel` 主组件
+- **主工具栏面板入口配置分层**: 将 JSONPath、JSON 对比、结构导航、Schema、Scheme 和模板填充入口拆到 `actionPanelPanelItems` 纯配置并补充单测，图标渲染拆到 `ActionPanelPanelIcon`，减少 `ActionPanel` 内重复面板按钮 JSX
+- **主工具栏滚动交互分层**: 将工具栏自定义滚动条监听、拖拽和 thumb 计算拆到 `useActionPanelScrollbar` 与 `actionPanelScrollbar`，并补充纯函数单测，让 `ActionPanel` 继续收敛为工具入口装配
+- **主工具栏按钮配置分层**: 将转换工具按钮的分组、文案、颜色和引导锚点拆到 `actionPanelToolGroups` 纯配置并补充单测，图标渲染拆到 `ActionPanelToolIcon`，同时把工具栏纳入 App 可维护性预算
+- **主工作台状态栏状态分层**: 将保存状态、SOURCE 校验状态、字节大小和模式文案拆到 `statusBarState` 纯 helper 并补充单测，同时把状态栏纳入 App 可维护性预算，避免状态栏文案矩阵继续堆在 JSX 中
+- **主工作台侧栏外壳组件化**: 将左侧 `ActionPanel` 容器和 sidebar resize handle 拆到 `AppActionSidebar`，新增 App shell 预算子表，给 `App.tsx` 主编排文件释放维护余量
+- **主工作台编辑区组件化**: 将 AI 修复摘要、SOURCE/PREVIEW 编辑器和分栏调整手柄拆到 `AppEditorWorkspace`，新增 App editor 预算子表，让 `App.tsx` 继续回归状态与事件编排
+- **主工作台编辑 Pane 分层**: 将 SOURCE 与 PREVIEW 两侧编辑器分别拆到 `AppSourceEditorPane` 和 `AppPreviewEditorPane`，让 `AppEditorWorkspace` 只保留编辑区外壳装配
+- **主工作台遮罩层组件化**: 将 resize 捕获层、文件拖拽放置提示和全局 Toast 宿主拆到 `AppWorkspaceOverlays`，减少 `App.tsx` 内的静态 SVG、通知宿主与展示节点
+- **主工作台调整手柄组件化**: 将工具栏宽度和 SOURCE/PREVIEW 分栏调整手柄拆到 `AppResizeHandles`，保留原 ARIA 与键盘拖拽能力，同时继续压缩 `App.tsx`
+- **主工作台全局弹窗组件化**: 将 Settings 和 Changelog 的懒加载弹窗壳拆到 `AppLazyShellModals`，继续让 `App.tsx` 聚焦业务状态和工作区编排
+- **主工作台懒加载面板组件化**: 将 JSONPath、结构导航、语义对比、Schema、深度解析、Scheme 和模板填充懒加载面板装配拆到 `AppLazyToolPanels`，并把 App 展示组件预算拆入独立规则表
+- **主工作台确认弹窗组件化**: 将关闭标签、清空、粘贴替换、应用预览、Schema 示例和 Scheme 排查确认弹窗拆到 `AppConfirmDialogs`，继续压缩 `App.tsx` 的纯展示装配
+- **主工作台头部动作组件化**: 将 SOURCE/PREVIEW 编辑器头部按钮从 `App.tsx` 拆到 `EditorHeaderActions`，并收紧主入口预算，减少主应用编排文件的 JSX 噪声
 - **Scheme 弹窗格式化分层**: 将参数预览、tooltip 裁剪、解码层尺寸和可回写标签拆到 `schemeViewerFormatters` 并补充单测，继续压缩弹窗组件内的纯展示逻辑
 - **Scheme 弹窗操作标题分层**: 将二维码、复制、序列化和应用修改按钮的 title/aria 状态矩阵拆到 `schemeViewerActionTitles` 并补充单测，减少弹窗主组件中的分支文案
 - **Scheme 解析弹窗诊断分层**: 将弹窗顶部诊断摘要、参数来源计数和详情显示条件拆到 `schemeViewerDiagnostics` 并补充单测，让 `SchemeViewerModal` 更聚焦渲染与交互状态

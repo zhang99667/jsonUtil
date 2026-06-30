@@ -1,6 +1,6 @@
 
 
-import React, { lazy, Suspense, useEffect, useState, useRef, useCallback } from 'react';
+import React, { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
 import type { editor } from 'monaco-editor';
 import { EditorProps, HighlightRange } from '../types';
@@ -11,11 +11,9 @@ import { scanSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { TabBar } from './TabBar';
+import { LazySchemeViewerModal } from './appLazyPanels';
 
 const ASYNC_SCHEME_SCAN_THRESHOLD = 200_000;
-const LazySchemeViewerModal = lazy(() => import('./SchemeViewerModal').then(module => ({
-  default: module.SchemeViewerModal,
-})));
 
 type MonacoJsonDefaults = {
   json?: {

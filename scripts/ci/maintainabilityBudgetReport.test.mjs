@@ -1,0 +1,77 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { test } from 'node:test';
+
+import { buildMaintainabilityBudgetReport } from './maintainabilityBudgetReport.mjs';
+
+const writeLines = (rootDir, relativePath, lineCount) => {
+  const filePath = path.join(rootDir, relativePath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, Array.from({ length: lineCount }, (_, index) => `line ${index + 1}`).join('\n'));
+};
+
+const withBudgetFixture = (run) => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-budget-report-'));
+  fs.mkdirSync(path.join(rootDir, 'scripts/ci'), { recursive: true });
+  try {
+    return run(rootDir);
+  } finally {
+    fs.rmSync(rootDir, { recursive: true, force: true });
+  }
+};
+
+test('可维护性预算报告会突出接近上限的文件', () => {
+  withBudgetFixture((rootDir) => {
+    writeLines(rootDir, 'src/tight.js', 9);
+    writeLines(rootDir, 'src/large-near.js', 91);
+    writeLines(rootDir, 'src/roomy.js', 10);
+    writeLines(rootDir, 'scripts/ci/maintainability-budget-demo-rules.mjs', 1);
+
+    const report = buildMaintainabilityBudgetReport(rootDir, [
+      { file: 'src/large-near.js', maxLines: 100, reason: 'large near' },
+      { file: 'src/tight.js', maxLines: 10, reason: 'tight' },
+      { file: 'src/roomy.js', maxLines: 20, reason: 'roomy' },
+      {
+        file: 'scripts/ci/maintainability-budget-demo-rules.mjs',
+        maxLines: 10,
+        reason: 'rule table',
+      },
+    ]);
+
+    assert.deepEqual(report.failures, []);
+    assert.deepEqual(report.nearLimitSummaries, [
+      'src/tight.js: 9/10，剩余 1 行',
+      'src/large-near.js: 91/100，剩余 9 行',
+    ]);
+    assert.deepEqual(report.summaries, [
+      'src/large-near.js: 91/100',
+      'src/tight.js: 9/10',
+      'src/roomy.js: 10/20',
+      'scripts/ci/maintainability-budget-demo-rules.mjs: 1/10',
+    ]);
+  });
+});
+
+test('可维护性预算报告会收集缺失文件、超预算和未纳入自检的规则表', () => {
+  withBudgetFixture((rootDir) => {
+    writeLines(rootDir, 'src/over.js', 6);
+    writeLines(rootDir, 'scripts/ci/maintainability-budget-untracked-rules.mjs', 1);
+
+    const report = buildMaintainabilityBudgetReport(rootDir, [
+      { file: 'src/over.js', maxLines: 5, reason: 'too large' },
+      { file: 'src/missing.js', maxLines: 5, reason: 'missing' },
+    ]);
+
+    assert.deepEqual(report.summaries, [
+      'src/over.js: 6/5',
+    ]);
+    assert.deepEqual(report.nearLimitSummaries, []);
+    assert.deepEqual(report.failures, [
+      'scripts/ci/maintainability-budget-untracked-rules.mjs: 预算规则文件未纳入自检预算',
+      'src/over.js: 6/5 行，too large',
+      'src/missing.js: 文件不存在，无法检查预算',
+    ]);
+  });
+});

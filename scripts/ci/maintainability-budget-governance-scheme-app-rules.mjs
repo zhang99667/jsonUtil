@@ -32,24 +32,4 @@ export const governanceSchemeAppMaintainabilityBudgets = [
     reason: 'CMD 结构预算规则应保持短表，格式化和解析预算继续分开治理',
   },
   ...governanceSchemeSupportMaintainabilityBudgets,
-  {
-    file: 'scripts/ci/maintainability-budget-app-rules.mjs',
-    maxLines: 40,
-    reason: 'App 预算规则聚合入口应只负责组合子领域规则',
-  },
-  {
-    file: 'scripts/ci/maintainability-budget-app-core-rules.mjs',
-    maxLines: 40,
-    reason: 'App 主入口和交互边界预算规则应保持短表',
-  },
-  {
-    file: 'scripts/ci/maintainability-budget-app-workflow-rules.mjs',
-    maxLines: 60,
-    reason: 'App 工作流 helper 预算规则过多时应继续按动作域拆分',
-  },
-  {
-    file: 'scripts/ci/maintainability-budget-app-workflow-source-rules.mjs',
-    maxLines: 30,
-    reason: 'App SOURCE 替换预算规则应保持短表，新增替换 helper 先按入口/core 分层',
-  },
 ];

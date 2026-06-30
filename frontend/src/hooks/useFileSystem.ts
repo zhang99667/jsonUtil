@@ -124,6 +124,10 @@ export const useFileSystem = ({
         });
     }, []);
 
+    const flushWorkspaceDraft = useCallback(() => {
+        persistWorkspaceDraft(buildCurrentWorkspaceDraft(), true);
+    }, [buildCurrentWorkspaceDraft, persistWorkspaceDraft]);
+
     useEffect(() => {
         latestDraftStateRef.current = {
             files,
@@ -147,23 +151,20 @@ export const useFileSystem = ({
     }, [activeFileId, buildCurrentWorkspaceDraft, files, input, mode, persistWorkspaceDraft]);
 
     useEffect(() => {
-        const flushWorkspaceDraftSilently = () => {
-            persistWorkspaceDraft(buildCurrentWorkspaceDraft(), true);
-        };
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') {
-                flushWorkspaceDraftSilently();
+                flushWorkspaceDraft();
             }
         };
 
-        window.addEventListener('beforeunload', flushWorkspaceDraftSilently);
+        window.addEventListener('beforeunload', flushWorkspaceDraft);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
-            window.removeEventListener('beforeunload', flushWorkspaceDraftSilently);
+            window.removeEventListener('beforeunload', flushWorkspaceDraft);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [buildCurrentWorkspaceDraft, persistWorkspaceDraft]);
+    }, [flushWorkspaceDraft]);
 
     const readTextFileSafely = async (file: File): Promise<string | null> => {
         const sizeError = getTextFileOpenError(file);
@@ -559,6 +560,7 @@ export const useFileSystem = ({
         closeFile,
         switchTab,
         updateActiveFileContent,
-        saveViewState
+        saveViewState,
+        flushWorkspaceDraft
     };
 };

@@ -15,6 +15,16 @@ export const transformPanelHelperUiMaintainabilityBudgets = [
     reason: '深度解析报告 footer 汇总文案应保持纯函数和集中测试',
   },
   {
+    file: 'frontend/src/utils/transformReportPlaceholderToolbarState.ts',
+    maxLines: 45,
+    reason: '深度解析占位符工具栏状态应保持纯派生，不承载 handler 或 JSX',
+  },
+  {
+    file: 'frontend/src/utils/transformReportSectionVisibility.ts',
+    maxLines: 45,
+    reason: '深度解析报告 section 可见性应保持纯计数派生，避免 JSX 内重复判断',
+  },
+  {
     file: 'frontend/src/utils/transformReportPanelStyles.ts',
     maxLines: 60,
     reason: '深度解析报告样式映射应保持纯函数和少量 tone 分支',

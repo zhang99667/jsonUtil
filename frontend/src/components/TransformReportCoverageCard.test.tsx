@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { TransformReportCoverage } from '../utils/transformSummary';
 import { TransformReportCoverageCard } from './TransformReportCoverageCard';
+import { TransformReportCoverageItems } from './TransformReportCoverageItems';
 
 interface ElementLike {
+  type?: unknown;
   props: Record<string, unknown>;
 }
 
@@ -53,6 +55,14 @@ const findByClassFragment = (node: unknown, classFragment: string): ElementLike[
   return matches.concat(findByClassFragment(node.props.children, classFragment));
 };
 
+const findByType = (node: unknown, type: unknown): ElementLike[] => {
+  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
+  if (!isElementLike(node)) return [];
+
+  const matches = node.type === type ? [node] : [];
+  return matches.concat(findByType(node.props.children, type));
+};
+
 const buildCoverage = (overrides: Partial<TransformReportCoverage> = {}): TransformReportCoverage => ({
   score: 0.62,
   level: 'warning',
@@ -70,8 +80,9 @@ describe('TransformReportCoverageCard', () => {
     expect(card.props.className).toContain('border-amber-700/50');
     expect(collectText(tree)).toContain('覆盖不足');
     expect(collectText(tree)).toContain('存在跳过记录');
-    expect(collectText(tree)).toContain('跳过 1');
-    expect(collectText(tree)).toContain('待检查 2');
+    const items = findByType(tree, TransformReportCoverageItems);
+    expect(items).toHaveLength(1);
+    expect(items[0].props.items).toEqual(['跳过 1', '待检查 2']);
   });
 
   it('无覆盖项时只渲染摘要文本', () => {
@@ -88,5 +99,6 @@ describe('TransformReportCoverageCard', () => {
     expect(card.props.className).toContain('border-emerald-700/50');
     expect(collectText(tree)).toContain('覆盖完整');
     expect(findByClassFragment(tree, 'bg-editor-bg/70')).toHaveLength(0);
+    expect(findByType(tree, TransformReportCoverageItems)[0].props.items).toEqual([]);
   });
 });
