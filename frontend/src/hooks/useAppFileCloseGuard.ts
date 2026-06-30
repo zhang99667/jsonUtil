@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FileTab } from '../types';
+import {
+  buildAppFileCloseDecision,
+  getPendingAppCloseFile,
+  hasAppFileUnsavedChanges,
+} from '../utils/appFileCloseGuardState';
 
 interface UseAppFileCloseGuardInput {
   files: FileTab[];
@@ -8,22 +13,14 @@ interface UseAppFileCloseGuardInput {
   onCloseFile: (fileId: string) => void;
 }
 
-export const useAppFileCloseGuard = ({
-  files,
-  activeFileId,
-  sourceText,
-  onCloseFile,
-}: UseAppFileCloseGuardInput) => {
+export const useAppFileCloseGuard = ({ files, activeFileId, sourceText, onCloseFile }: UseAppFileCloseGuardInput) => {
   const [pendingCloseFileId, setPendingCloseFileId] = useState<string | null>(null);
-  const hasUnsavedChanges = useMemo(() => {
-    if (files.some(file => file.isDirty)) {
-      return true;
-    }
-
-    return !activeFileId && sourceText.trim().length > 0;
-  }, [activeFileId, files, sourceText]);
+  const hasUnsavedChanges = useMemo(
+    () => hasAppFileUnsavedChanges({ files, activeFileId, sourceText }),
+    [activeFileId, files, sourceText]
+  );
   const pendingCloseFile = useMemo(
-    () => pendingCloseFileId ? files.find(file => file.id === pendingCloseFileId) || null : null,
+    () => getPendingAppCloseFile(files, pendingCloseFileId),
     [files, pendingCloseFileId]
   );
 
@@ -40,15 +37,16 @@ export const useAppFileCloseGuard = ({
   }, [hasUnsavedChanges]);
 
   const requestCloseFile = useCallback((fileId: string) => {
-    const fileToClose = files.find(file => file.id === fileId);
-    if (!fileToClose) return;
+    const decision = buildAppFileCloseDecision(files, fileId);
 
-    if (fileToClose.isDirty) {
-      setPendingCloseFileId(fileId);
+    if (decision.action === 'confirm') {
+      setPendingCloseFileId(decision.fileId);
       return;
     }
 
-    onCloseFile(fileId);
+    if (decision.action === 'close') {
+      onCloseFile(decision.fileId);
+    }
   }, [files, onCloseFile]);
 
   const cancelPendingCloseFile = useCallback(() => {
@@ -62,11 +60,5 @@ export const useAppFileCloseGuard = ({
     setPendingCloseFileId(null);
   }, [onCloseFile, pendingCloseFileId]);
 
-  return {
-    cancelPendingCloseFile,
-    confirmPendingCloseFile,
-    hasUnsavedChanges,
-    pendingCloseFile,
-    requestCloseFile,
-  };
+  return { cancelPendingCloseFile, confirmPendingCloseFile, hasUnsavedChanges, pendingCloseFile, requestCloseFile };
 };

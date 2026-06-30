@@ -1,3 +1,5 @@
+import { appFileCloseMaintainabilityBudgets } from './maintainability-budget-app-file-close-rules.mjs';
+
 export const appCoreMaintainabilityBudgets = [
   {
     file: 'frontend/src/App.tsx',
@@ -19,11 +21,7 @@ export const appCoreMaintainabilityBudgets = [
     maxLines: 70,
     reason: '主应用文件拖拽 hook 只维护拖拽计数和文件投递事件，业务处理留在调用方',
   },
-  {
-    file: 'frontend/src/hooks/useAppFileCloseGuard.ts',
-    maxLines: 80,
-    reason: '主应用文件关闭保护 hook 应只维护未保存状态、beforeunload 和脏文件关闭确认',
-  },
+  ...appFileCloseMaintainabilityBudgets,
   {
     file: 'frontend/src/hooks/useAppSourceValidation.ts',
     maxLines: 55,
