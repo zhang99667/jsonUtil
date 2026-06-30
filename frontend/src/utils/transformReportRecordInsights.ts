@@ -3,14 +3,10 @@ import {
   collectSchemeInsightFields,
   formatSchemeInsightItems,
   getSchemeInsightFieldCopyText,
-  getUrlResourceSchemaFromUrl,
   type SchemeInsightFieldRow,
 } from './schemeMetadata';
-import {
-  getResourceTypeLabel,
-  getStaticResourceType,
-} from './staticResourceSchema';
 import { getTransformRecordCommandSchema } from './transformReportCmdStructureSource';
+import { withTransformReportDecodedPathResourceType } from './transformReportDecodedPathResource';
 import { getTransformDecodedValue } from './transformReportDecodedValue';
 import { joinTransformJsonPath } from './transformReportJsonPath';
 import type {
@@ -61,23 +57,6 @@ const buildNestedInsightSearchFields = (
     };
   });
 
-const withResourceType = (row: TransformReportDecodedPath): TransformReportDecodedPath => {
-  const schemaSource = typeof row.sourceValue === 'string'
-    ? row.sourceValue
-    : typeof row.value === 'string'
-      ? row.value
-      : undefined;
-  const schema = schemaSource ? getUrlResourceSchemaFromUrl(schemaSource) : undefined;
-  if (!schema) return row;
-
-  const resourceType = getStaticResourceType(schema, row.path);
-  return {
-    ...row,
-    resourceType,
-    resourceTypeLabel: getResourceTypeLabel(resourceType),
-  };
-};
-
 export const buildTransformRecordInsightData = (
   record: PathTransformRecord
 ): TransformReportRecordInsightData => {
@@ -117,7 +96,8 @@ export const buildTransformRecordInsightData = (
     base64SuffixFieldCount,
   } = collectSchemeInsightFields(decodedValue, { source: record.originalValue });
   const nestedCommandSearchFields = buildNestedInsightSearchFields(record.path, commandFieldRows);
-  const nestedResourceSearchFields = buildNestedInsightSearchFields(record.path, resourceFieldRows).map(withResourceType);
+  const nestedResourceSearchFields = buildNestedInsightSearchFields(record.path, resourceFieldRows)
+    .map(withTransformReportDecodedPathResourceType);
 
   const nestedCmdInsight = formatSchemeInsightItems('cmd解析', commandFields);
   const resourceInsight = formatSchemeInsightItems('资源URL', resourceFields);
