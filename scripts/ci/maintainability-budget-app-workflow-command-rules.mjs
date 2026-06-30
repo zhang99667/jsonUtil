@@ -7,4 +7,5 @@ export const appWorkflowCommandMaintainabilityBudgets = [
   { file: 'frontend/src/utils/appSmartSuggestionCommandEffects.ts', maxLines: 75, reason: '智能建议 effects helper 只装配 App 回调到 runner 副作用，不承载建议计划逻辑' },
   { file: 'frontend/src/utils/appSmartSuggestionCommandEffects.test.ts', maxLines: 90, reason: '智能建议 effects 测试只锁定 Scheme request 自增和副作用回调映射' },
   { file: 'frontend/src/utils/appSmartSuggestionCommandRunner.ts', maxLines: 95, reason: '智能建议命令 runner 只执行计划副作用顺序和埋点语义' },
+  { file: 'frontend/src/hooks/useAppTemplateFillCommand.ts', maxLines: 125, reason: '模板填充命令 hook 只维护目标校验、模板应用、质量 delta 和竞态保护' },
 ];

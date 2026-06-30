@@ -5,10 +5,8 @@ import { AppActionSidebar } from './components/AppActionSidebar';
 import { AppEditorWorkspace } from './components/AppEditorWorkspace';
 import { AppWorkspaceOverlays } from './components/AppWorkspaceOverlays';
 import {
-  detectLanguage,
   performTransform,
   deepParseWithContext,
-  applyTemplate,
   getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput
 } from './utils/transformations';
@@ -28,6 +26,7 @@ import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionComm
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
 import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import { useAppSourceValidation } from './hooks/useAppSourceValidation';
+import { useAppTemplateFillCommand } from './hooks/useAppTemplateFillCommand';
 import {
   useAppSourceReplacementCommands,
   type AppSmartSuggestionOrigin,
@@ -67,10 +66,7 @@ import { getJsonSchemaIssueHighlights } from './utils/jsonSchemaIssueHighlights'
 import type { JsonPathQueryItem } from './utils/jsonPathQuery';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
 import { buildAppEditorUiState } from './utils/appEditorUiState';
-import {
-  getContentSizeSummary,
-  isPlaceholderFillTemplateJson,
-} from './utils/appWorkflowHelpers';
+import { getContentSizeSummary } from './utils/appWorkflowHelpers';
 import { setLegacyJsonPathValue } from './utils/appLegacyJsonPath';
 import {
   ASYNC_VALIDATION_THRESHOLD,
@@ -102,8 +98,6 @@ interface TemplateFillRequest {
   id: number;
   template: string;
 }
-
-type TransformSummaryModule = typeof import('./utils/transformSummary');
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -656,28 +650,6 @@ const App: React.FC = () => {
     setSmartSuggestionOrigin(null);
   }, [input, smartSuggestion, smartSuggestionOrigin]);
 
-  const templateTargetError = useMemo(() => {
-    if (!isTemplatePanelOpen) return '';
-
-    const trimmedInput = input.trim();
-    if (!trimmedInput) {
-      return '请先在 SOURCE 输入合法 JSON';
-    }
-
-    if (detectLanguage(trimmedInput) !== 'json') {
-      return '当前 SOURCE 不是合法 JSON，无法应用模板';
-    }
-
-    if (!validation.isValid) {
-      return validation.error
-        ? `当前 SOURCE JSON 无效: ${validation.error}`
-        : '当前 SOURCE JSON 无效';
-    }
-
-    return '';
-  }, [input, isTemplatePanelOpen, validation]);
-
-
   useAppSourceValidation({ input, onSetValidation: setValidation });
 
   // 左侧编辑器变更处理
@@ -779,52 +751,16 @@ const App: React.FC = () => {
     handleDrop,
   } = useAppFileDrop({ onDropFiles: openDroppedFiles });
 
-  // 模板填充处理
-  const buildCurrentQualitySnapshot = useCallback((source: string, summaryModule: TransformSummaryModule) => {
-    const {
-      buildTransformContextReport,
-      buildTransformQualitySnapshot,
-      buildTransformReportView,
-    } = summaryModule;
-    const { context } = deepParseWithContext(source, {
-      autoExpandScheme,
-    });
-    const report = buildTransformContextReport(context);
-    return buildTransformQualitySnapshot(report, buildTransformReportView(report, ''), '');
-  }, [autoExpandScheme]);
-
-  const handleApplyTemplate = useCallback(async (templateJson: string) => {
-    try {
-      const sourceBeforeApply = input;
-      const shouldBuildQualityDelta = isPlaceholderFillTemplateJson(templateJson);
-      const summaryModule = shouldBuildQualityDelta
-        ? await import('./utils/transformSummary')
-        : null;
-      if (summaryModule && inputRef.current !== sourceBeforeApply) {
-        setTemplateApplyQualityDelta('');
-        showError('内容已变化，请重新应用模板');
-        return;
-      }
-      const beforeSnapshot = shouldBuildQualityDelta
-        ? buildCurrentQualitySnapshot(sourceBeforeApply, summaryModule)
-        : null;
-      const merged = applyTemplate(sourceBeforeApply, templateJson);
-      if (beforeSnapshot) {
-        const afterSnapshot = buildCurrentQualitySnapshot(merged, summaryModule);
-        setTemplateApplyQualityDelta(summaryModule.formatTransformQualitySnapshotDeltaText(beforeSnapshot, afterSnapshot));
-      } else {
-        setTemplateApplyQualityDelta('');
-      }
-      setInput(merged);
-      inputRef.current = merged;
-      updateActiveFileContent(merged);
-      showSuccess(beforeSnapshot ? '占位符已回填，质量对比已更新' : '模板已应用');
-    } catch (e: unknown) {
-      setTemplateApplyQualityDelta('');
-      const message = e instanceof Error ? e.message : '模板应用失败';
-      showError(message);
-    }
-  }, [autoExpandScheme, buildCurrentQualitySnapshot, input, updateActiveFileContent]);
+  const { handleApplyTemplate, templateTargetError } = useAppTemplateFillCommand({
+    sourceText: input,
+    inputRef,
+    autoExpandScheme,
+    validation,
+    isTemplatePanelOpen,
+    onSetSourceText: setInput,
+    onUpdateActiveFileContent: updateActiveFileContent,
+    onSetTemplateApplyQualityDelta: setTemplateApplyQualityDelta,
+  });
 
   const handleAction = useCallback(async (action: ActionType) => {
     if (action === ActionType.AI_FIX) {
