@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **工具栏入口状态工厂**: 将 ActionPanel 转换工具按钮和面板入口按钮重复的 `entryProps/iconState` 拼装收敛到纯 factory，保留现有 Tool/Panel 组件 DOM 契约与状态测试，降低后续新增入口按钮时复制状态结构的风险
 - **主应用懒加载状态分层**: 将 `App.tsx` 内根据设置、更新日志、JSONPath、结构树、对比、Schema、Scheme、模板和深度解析面板 open 状态维护 loaded 标记的编排下沉到 `useAppLazyPanelLoadState`，补充粘性加载直测，并把主应用预算从 1250 行收紧到 1220 行
 - **主应用 PREVIEW 同步分层**: 将 `App.tsx` 内右侧 PREVIEW 编辑反向同步的校验、防抖回写、深度格式化 context 还原和解锁时序下沉到 `useAppPreviewOutputSync` 与纯 helper，并补充 context 回写/fallback 直测，主应用预算从 1700 行收紧到 1250 行
 - **深度解析复制 workflow 分层**: 将 `TransformReportPanel` 中报告复制、归档/协作导出、质量基线、占位符模板、问题样本和行级 CMD 复制动作拆到独立 workflow 子模块，并补充 pending guard、CMD 对比注入、模板打开、质量基线和空 CMD 包直测，主面板预算从 700 行收紧到 430 行，降低复制导出逻辑继续回流主面板的风险

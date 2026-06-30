@@ -1,4 +1,5 @@
 import { getActionPanelToolButtonA11y } from './actionPanelButtonState';
+import { createActionPanelEntryButtonState } from './actionPanelEntryButtonStateFactory';
 import type {
   ActionPanelEntryButtonState,
   ActionPanelToolEntryButtonStateOptions,
@@ -12,16 +13,13 @@ export const getActionPanelToolEntryButtonState = ({
 }: ActionPanelToolEntryButtonStateOptions): ActionPanelEntryButtonState => {
   const collapsedA11y = getActionPanelToolButtonA11y(label, isActive, isCollapsed);
 
-  return {
-    entryProps: {
-      isActive,
-      ariaLabel: collapsedA11y.ariaLabel,
-      title: collapsedA11y.title,
-      badge: isActive ? { label: '当前', dataTour: 'active-mode-badge' } : undefined,
-    },
+  return createActionPanelEntryButtonState({
+    isActive,
+    ...collapsedA11y,
+    badge: isActive ? { label: '当前', dataTour: 'active-mode-badge' } : undefined,
     iconState: {
       iconWrapperClassName: `transition-colors ${isActive ? colorClass : 'text-gray-500'}`,
       iconInnerClassName: colorClass,
     },
-  };
+  });
 };
