@@ -21,8 +21,18 @@ export const transformPanelHelperUiMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/utils/transformReportSectionVisibility.ts',
-    maxLines: 45,
-    reason: '深度解析报告 section 可见性应保持纯计数派生，避免 JSX 内重复判断',
+    maxLines: 35,
+    reason: '深度解析报告 section 可见性入口应只编排可见区域 flag 和空态，具体计数派生留在专用 helper',
+  },
+  {
+    file: 'frontend/src/utils/transformReportVisibleSections.ts',
+    maxLines: 40,
+    reason: '深度解析报告可见区域 flag helper 应只维护四类筛选计数到 section 显隐的纯派生',
+  },
+  {
+    file: 'frontend/src/utils/transformReportSectionVisibilityTypes.ts',
+    maxLines: 25,
+    reason: '深度解析报告 section 可见性类型契约应独立维护输入、区域 flag 和空态输出结构',
   },
   {
     file: 'frontend/src/utils/transformReportPanelStyles.ts',
