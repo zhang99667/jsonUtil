@@ -15,6 +15,11 @@ export const governanceSelfMaintainabilityBudgets = [
     reason: '治理 checker 与顶层聚合预算规则应保持短表',
   },
   {
+    file: 'scripts/ci/maintainability-budget-governance-ai-rules.mjs',
+    maxLines: 35,
+    reason: 'AI 治理预算子表应独立收口，避免治理 checker 规则表继续膨胀',
+  },
+  {
     file: 'scripts/ci/maintainability-budget-governance-transform-rules.mjs',
     maxLines: 80,
     reason: '深度解析预算规则自身的预算应按 transform 域独立维护',

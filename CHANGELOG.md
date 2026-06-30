@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **AI 子 Agent 委派治理**: 在 `AGENTS.md`、`CLAUDE.md`、AI Playbook、Codex skill 和工具适配文档中补充子 Agent 委派判断、主线程整合和复杂任务拆分边界，并让 `check-ai-governance` 强制校验关键引用，避免复杂重构只靠临场记忆执行
 - **深度解析 CMD 对比状态分层**: 将 `TransformReportPanel` 内的 CMD 对比打开/收起、首条打开、候选切换、expectedText 和忽略额外路径状态转移拆到 `transformReportCmdComparisonController`，并补充 ignoreExtraPaths 保留/重置边界直测，降低报告面板状态机和 UI 编排继续交织的风险
 - **深度解析报告内容区分层**: 将 `TransformReportPanel` 内的总览、筛选、记录、未展开线索、占位符、告警和空态装配拆到 `TransformReportPanelContent`，主面板预算从 830 行收紧到 700 行，并把壳组件预算拆到独立子表、补充 section 可见性与回调透传直测，降低报告面板继续扩展时的 UI 编排耦合
 - **主工具栏入口分层**: 将 `ActionPanel` 的顶部栏、分组标题、转换工具组、面板入口组和自定义滚动条拆成独立组件，并补充折叠语义、分组透传和滚动条样式直测，主工具栏预算从 270 行收紧到 200 行，降低后续新增工具入口时挤占主功能结构的风险
