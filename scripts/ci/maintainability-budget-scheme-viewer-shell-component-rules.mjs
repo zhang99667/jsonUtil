@@ -7,8 +7,18 @@ const schemeViewerShellComponentBudget = (file, maxLines, reason) => ({
 export const schemeViewerShellComponentMaintainabilityBudgets = [
   schemeViewerShellComponentBudget(
     'SchemeViewerModal.tsx',
-    1320,
+    1220,
     'Scheme 弹窗主组件应继续拆出纯展示面板、worker helper 和状态 helper，避免诊断 UI 继续回流主文件'
+  ),
+  schemeViewerShellComponentBudget(
+    'SchemeViewerFooterActions.tsx',
+    240,
+    'Scheme 弹窗底部操作栏只负责按钮展示和回调透传，复制、二维码和应用逻辑应留在主弹窗状态层'
+  ),
+  schemeViewerShellComponentBudget(
+    'SchemeViewerFooterActions.test.tsx',
+    170,
+    'Scheme 弹窗底部操作栏测试只覆盖按钮显隐、禁用态和回调透传'
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerBase64MetaPanel.tsx',

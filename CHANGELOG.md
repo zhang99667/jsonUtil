@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **Scheme 底部操作栏分层**: 将取消解析、二维码、复制、序列化和应用修改按钮抽到 `SchemeViewerFooterActions`，主弹窗继续保留状态与 handler wiring，并把 `SchemeViewerModal.tsx` 预算从 1320 收紧到 1220，降低后续调整底部操作密度时误碰解码链路的风险
 - **旧 chunk 预加载恢复降噪**: Vite `preloadError` 命中动态 import 失效时会阻止默认错误继续冒泡，只展示刷新恢复提示，减少打开中的旧页面在发布切换后看到原始 chunk 加载红错的概率
 - **Scheme CMD 摘要 Badge 分层**: 将 CMD Schema、参数 keys 和内部线索展示拆到独立 badge 子组件，`SchemeViewerCommandSummaryPanel` 回归为组合外框并退出可维护性 near-list，降低后续扩展 CMD 摘要展示时的回流风险
 - **Scheme 参数与链路诊断面板分层**: 将参数来源、参数分层解析证据和解码链路展示拆到 `SchemeViewerParamSectionsPanel`、`SchemeViewerParamStagesPanel` 与 `SchemeViewerDecodeLayersPanel`，主弹窗继续瘦身并保留原有参数预览、修复提示、可回写状态和层级证据语义
