@@ -1,71 +1,26 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { isPlaceholderFillTemplateJson } from './appWorkflowHelpers';
-import { buildAppTemplateFillQualityDelta } from './appTemplateFillQualityDelta';
-import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
-import { applyTemplate } from './transformations';
-import { runAppTemplateFillCommand } from './appTemplateFillCommandRunner';
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  createAppTemplateFillCommandEffects,
+  getAppTemplateFillCommandRunnerMocks,
+  resetAppTemplateFillCommandRunnerMocks,
+  runTemplateFillCommand,
+} from './appTemplateFillCommandRunnerTestFixture';
 
-vi.mock('./chunkLoadRecoveryDispatch', () => ({
-  dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
-}));
-
-vi.mock('./transformations', async importOriginal => ({
-  ...await importOriginal<typeof import('./transformations')>(),
-  applyTemplate: vi.fn(() => '{"merged":true}'),
-}));
-
-vi.mock('./appWorkflowHelpers', async importOriginal => ({
-  ...await importOriginal<typeof import('./appWorkflowHelpers')>(),
-  isPlaceholderFillTemplateJson: vi.fn(() => false),
-}));
-
-vi.mock('./appTemplateFillQualityDelta', () => ({
-  buildAppTemplateFillQualityDelta: vi.fn(() => '质量变化: +1'),
-}));
-
-const createEffectsBase = () => ({
-  currentSourceText: '{"a":1}',
-  getCurrentSourceText: vi.fn(function getCurrentSourceText(this: { currentSourceText: string }) {
-    return this.currentSourceText;
-  }),
-  setCurrentSourceText: vi.fn(function setCurrentSourceText(this: { currentSourceText: string }, value: string) {
-    this.currentSourceText = value;
-  }),
-  loadSummaryModule: vi.fn(async () => ({}) as never),
-  onSetSourceText: vi.fn(),
-  onUpdateActiveFileContent: vi.fn(),
-  onSetTemplateApplyQualityDelta: vi.fn(),
-  onShowError: vi.fn(),
-  onShowSuccess: vi.fn(),
-});
-
-const createEffects = (overrides: Partial<ReturnType<typeof createEffectsBase>> = {}) => ({
-  ...createEffectsBase(),
-  ...overrides,
-});
-
-const runTemplate = (effects = createEffects(), templateJson = '{"b":2}') => runAppTemplateFillCommand(
-  { sourceBeforeApply: '{"a":1}', templateJson, autoExpandScheme: true },
-  effects
-);
+const mocks = getAppTemplateFillCommandRunnerMocks();
 
 describe('appTemplateFillCommandRunner', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(applyTemplate).mockReturnValue('{"merged":true}');
-    vi.mocked(buildAppTemplateFillQualityDelta).mockReturnValue('质量变化: +1');
-    vi.mocked(isPlaceholderFillTemplateJson).mockReturnValue(false);
-    vi.mocked(dispatchChunkLoadRecoveryEvent).mockReturnValue(false);
+    resetAppTemplateFillCommandRunnerMocks();
   });
 
   it('应用普通模板时更新 SOURCE 并清空质量 delta', async () => {
-    const effects = createEffects();
+    const effects = createAppTemplateFillCommandEffects();
 
-    await runTemplate(effects);
+    await runTemplateFillCommand(effects);
 
     expect(effects.loadSummaryModule).not.toHaveBeenCalled();
-    expect(buildAppTemplateFillQualityDelta).not.toHaveBeenCalled();
-    expect(applyTemplate).toHaveBeenCalledWith('{"a":1}', '{"b":2}');
+    expect(mocks.buildAppTemplateFillQualityDelta).not.toHaveBeenCalled();
+    expect(mocks.applyTemplate).toHaveBeenCalledWith('{"a":1}', '{"b":2}');
     expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
     expect(effects.onSetSourceText).toHaveBeenCalledWith('{"merged":true}');
     expect(effects.currentSourceText).toBe('{"merged":true}');
@@ -74,29 +29,29 @@ describe('appTemplateFillCommandRunner', () => {
   });
 
   it('质量摘要模块 chunk 失效时交给统一刷新恢复', async () => {
-    const effects = createEffects();
+    const effects = createAppTemplateFillCommandEffects();
     const error = new TypeError('Failed to fetch dynamically imported module: /assets/transformSummary-old.js');
-    vi.mocked(isPlaceholderFillTemplateJson).mockReturnValue(true);
-    vi.mocked(dispatchChunkLoadRecoveryEvent).mockReturnValue(true);
+    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
+    mocks.dispatchChunkLoadRecoveryEvent.mockReturnValue(true);
     effects.loadSummaryModule.mockRejectedValue(error);
 
-    await runTemplate(effects, '{"templateVersion":"1.0","placeholders":{}}');
+    await runTemplateFillCommand(effects, '{"templateVersion":"1.0","placeholders":{}}');
 
-    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
+    expect(mocks.dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
     expect(effects.onSetTemplateApplyQualityDelta).not.toHaveBeenCalled();
     expect(effects.onShowError).not.toHaveBeenCalled();
   });
 
   it('占位符回填模板会生成质量 delta', async () => {
-    vi.mocked(isPlaceholderFillTemplateJson).mockReturnValue(true);
+    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
     const summaryModule = { marker: 'summary' } as never;
-    const effects = createEffects();
+    const effects = createAppTemplateFillCommandEffects();
     effects.loadSummaryModule.mockResolvedValue(summaryModule);
 
-    await runTemplate(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
+    await runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
 
     expect(effects.loadSummaryModule).toHaveBeenCalledTimes(1);
-    expect(buildAppTemplateFillQualityDelta).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.buildAppTemplateFillQualityDelta).toHaveBeenCalledWith(expect.objectContaining({
       sourceBeforeApply: '{"a":1}',
       sourceAfterApply: '{"merged":true}',
       autoExpandScheme: true,
@@ -107,39 +62,39 @@ describe('appTemplateFillCommandRunner', () => {
   });
 
   it('占位符回填期间 SOURCE 已变化时阻止应用模板', async () => {
-    vi.mocked(isPlaceholderFillTemplateJson).mockReturnValue(true);
-    const effects = createEffects();
+    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
+    const effects = createAppTemplateFillCommandEffects();
     effects.loadSummaryModule.mockImplementation(async () => {
       effects.currentSourceText = '{"changed":true}';
       return {} as never;
     });
 
-    await runTemplate(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
+    await runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
 
-    expect(applyTemplate).not.toHaveBeenCalled();
+    expect(mocks.applyTemplate).not.toHaveBeenCalled();
     expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
     expect(effects.onShowError).toHaveBeenCalledWith('内容已变化，请重新应用模板');
   });
 
   it('模板应用失败时保留原始错误文案', async () => {
-    vi.mocked(applyTemplate).mockImplementation(() => {
+    mocks.applyTemplate.mockImplementation(() => {
       throw new Error('当前编辑器内容为空');
     });
-    const effects = createEffects();
+    const effects = createAppTemplateFillCommandEffects();
 
-    await runTemplate(effects);
+    await runTemplateFillCommand(effects);
 
     expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
     expect(effects.onShowError).toHaveBeenCalledWith('当前编辑器内容为空');
   });
 
   it('非 Error 异常使用失败兜底文案且不写回 SOURCE', async () => {
-    vi.mocked(applyTemplate).mockImplementation(() => {
+    mocks.applyTemplate.mockImplementation(() => {
       throw 'blocked';
     });
-    const effects = createEffects();
+    const effects = createAppTemplateFillCommandEffects();
 
-    await runTemplate(effects);
+    await runTemplateFillCommand(effects);
 
     expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
     expect(effects.onSetSourceText).not.toHaveBeenCalled();
