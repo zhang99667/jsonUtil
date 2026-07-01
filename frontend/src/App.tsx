@@ -4,10 +4,6 @@ import { showSuccess, showError } from './utils/toast';
 import { AppActionSidebar } from './components/AppActionSidebar';
 import { AppEditorWorkspace } from './components/AppEditorWorkspace';
 import { AppWorkspaceOverlays } from './components/AppWorkspaceOverlays';
-import {
-  performTransform,
-  deepParseWithContext,
-} from './utils/transformations';
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, type EditorDiagnosticHighlight } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
@@ -51,7 +47,6 @@ import {
   getJsonValidationErrorLocation,
   startJsonValidation,
 } from './utils/jsonValidation';
-import { formatTransformContextSummary } from './utils/transformContextSummary';
 import { initGoogleAnalytics } from './utils/analytics';
 import {
   getDurationBucket,
@@ -69,10 +64,7 @@ import {
   ASYNC_VALIDATION_THRESHOLD,
   DOCUMENT_STATS_SCAN_LIMIT,
 } from './utils/appAsyncPolicy';
-import {
-  getActiveAppDeepFormatResult,
-  resolveAppOutputValue,
-} from './utils/appAsyncTransformState';
+import { buildAppTransformOutputState } from './utils/appTransformOutput';
 
 const App: React.FC = () => {
   // 核心状态：输入源
@@ -172,38 +164,29 @@ const App: React.FC = () => {
     return startJsonValidation(value, ASYNC_VALIDATION_THRESHOLD, options).promise;
   }, []);
 
-  // 深度格式化结果和上下文（避免在 output 计算中产生副作用）
-  const syncDeepFormatResult = useMemo(() => {
-    if (mode === TransformMode.DEEP_FORMAT && !shouldUseAsyncTransform) {
-      return deepParseWithContext(input, {
-        autoExpandScheme,
-      });
+  const transformOutputState = useMemo(() => {
+    const state = buildAppTransformOutputState({
+      input,
+      mode,
+      autoExpandScheme,
+      shouldUseAsyncTransform,
+      currentAsyncTransformResult,
+      isUpdatingFromOutput: isUpdatingFromOutput.current,
+      pendingOutputValue: pendingOutputValue.current,
+    });
+
+    if (state.shouldClearPendingOutput && !isUpdatingFromOutput.current) {
+      pendingOutputValue.current = '';
     }
-    return null;
-  }, [input, mode, autoExpandScheme, shouldUseAsyncTransform]);
-
-  const activeDeepFormatResult = useMemo(() => {
-    return getActiveAppDeepFormatResult(syncDeepFormatResult, mode, currentAsyncTransformResult);
-  }, [syncDeepFormatResult, mode, currentAsyncTransformResult]);
-
-  const deepFormatWarning = useMemo(() => {
-    if (mode !== TransformMode.DEEP_FORMAT) return undefined;
-    const warnings = activeDeepFormatResult?.context.warnings || [];
-    if (warnings.length === 0) return undefined;
-
-    const firstWarning = warnings[0];
-    return warnings.length === 1
-      ? `${firstWarning.message}: ${firstWarning.path} (${firstWarning.length} 字符，阈值 ${firstWarning.limit})`
-      : `已跳过 ${warnings.length} 个字符串递归展开，首个位置 ${firstWarning.path}: ${firstWarning.message}`;
-  }, [activeDeepFormatResult, mode]);
-
-  const deepFormatInfo = useMemo(() => {
-    if (mode !== TransformMode.DEEP_FORMAT || !activeDeepFormatResult) return undefined;
-    return formatTransformContextSummary(activeDeepFormatResult.context);
-  }, [activeDeepFormatResult, mode]);
-  const transformReportContext = mode === TransformMode.DEEP_FORMAT
-    ? activeDeepFormatResult?.context || null
-    : null;
+    return state;
+  }, [input, mode, autoExpandScheme, shouldUseAsyncTransform, currentAsyncTransformResult]);
+  const {
+    activeDeepFormatResult,
+    deepFormatWarning,
+    deepFormatInfo,
+    transformReportContext,
+    output,
+  } = transformOutputState;
 
   // 保存深度格式化上下文到文件（副作用独立处理）
   useEffect(() => {
@@ -219,24 +202,6 @@ const App: React.FC = () => {
       }
     }
   }, [activeDeepFormatResult, activeFileId, setFiles]);
-
-  // 计算派生输出（纯计算，无副作用）
-  const output = useMemo(() => {
-    const resolvedOutput = resolveAppOutputValue({
-      isUpdatingFromOutput: isUpdatingFromOutput.current,
-      pendingOutputValue: pendingOutputValue.current,
-      mode,
-      activeDeepFormatResult,
-      shouldUseAsyncTransform,
-      currentAsyncTransformResult,
-      getFallbackOutput: () => performTransform(input, mode),
-    });
-
-    if (resolvedOutput.shouldClearPendingOutput && !isUpdatingFromOutput.current) {
-      pendingOutputValue.current = '';
-    }
-    return resolvedOutput.output;
-  }, [input, mode, activeDeepFormatResult, shouldUseAsyncTransform, currentAsyncTransformResult]);
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const { previewValidation, handleOutputChange } = useAppPreviewOutputSync({

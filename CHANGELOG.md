@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.263 (2026-07-01) - App 转换输出派生分层
+### 🚀 优化与改进
+- **转换输出派生**: 将 `App.tsx` 中同步深度解析、异步结果优先级、诊断文案和 PREVIEW 暂存输出解析抽成可测 helper，主入口继续回归状态接线
+- **输出优先级覆盖**: 新增输出派生单测，锁定 pending 输出、同步/异步 deep format、异步占位和普通转换 fallback 的顺序，保护 PREVIEW 反写防回流语义
+
 ## v1.8.262 (2026-07-01) - SOURCE 替换命令契约分层
 ### 🚀 优化与改进
 - **SOURCE 替换类型契约**: 将 SOURCE 替换命令的打点和 pending 操作类型抽成 type-only 契约文件，多个 hook 不再从带 toast/performance 副作用的 helper 中取类型
