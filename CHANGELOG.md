@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **展开记录动作按钮壳复用**: 新增 `TransformReportRecordActionButton` 复用深度解析记录头部与路径行里的动作按钮壳，保留原有 `data-tour` 测试锚点和点击语义，同时减少复制、定位、Scheme 打开按钮样式重复
 - **展开记录头部动作区分层**: 将深度解析展开记录头部里的复制、cmdHandler 对比、定位和 Scheme 打开按钮拆到 `TransformReportRecordHeaderActions`，主头部组件只保留来源 badge、路径和动作区装配，降低后续扩展记录操作时的回流风险
 - **深度解析指标按钮分层**: 将深度解析顶部指标栏里重复的计数/快捷入口按钮样式抽到 `transformReportSummaryMetricButtons`，主指标栏只保留指标顺序、条件展示和动作装配，降低后续新增诊断指标时的样式复制成本
 - **可维护性预算候选资产化**: 预算检查新增高使用率候选输出，并支持 `--top` 与 `--threshold` 控制候选池，方便 AI 后续从脚本结果直接选择重构切面，减少人工筛选预算清单的成本
