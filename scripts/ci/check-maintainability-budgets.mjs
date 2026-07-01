@@ -3,11 +3,18 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseMaintainabilityBudgetCliArgs } from './maintainabilityBudgetCliArgs.mjs';
 import { buildMaintainabilityBudgetReport } from './maintainabilityBudgetReport.mjs';
 import { maintainabilityBudgets } from './maintainability-budget-rules.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const { failures, summaries, nearLimitSummaries } = buildMaintainabilityBudgetReport(rootDir, maintainabilityBudgets);
+const reportOptions = parseMaintainabilityBudgetCliArgs(process.argv.slice(2));
+const {
+  failures,
+  summaries,
+  nearLimitSummaries,
+  highUsageSummaries,
+} = buildMaintainabilityBudgetReport(rootDir, maintainabilityBudgets, reportOptions);
 
 if (failures.length > 0) {
   console.error('可维护性预算检查失败:');
@@ -22,6 +29,12 @@ if (nearLimitSummaries.length > 0) {
   console.log(`接近预算上限 ${nearLimitSummaries.length} 个文件（剩余 ≤5 行或使用率 ≥90%）：`);
   for (const summary of nearLimitSummaries) {
     console.log(`! ${summary}`);
+  }
+}
+if (highUsageSummaries.length > 0) {
+  console.log(`高使用率候选 ${highUsageSummaries.length} 个：`);
+  for (const summary of highUsageSummaries) {
+    console.log(`> ${summary}`);
   }
 }
 for (const summary of summaries) {

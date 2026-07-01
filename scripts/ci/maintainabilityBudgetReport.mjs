@@ -1,5 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  buildHighUsageSummaries,
+  buildNearLimitSummaries,
+  formatBudgetUsage,
+} from './maintainabilityBudgetUsageSummaries.mjs';
 
 export const NEAR_LIMIT_REMAINING_LINES = 5;
 export const NEAR_LIMIT_USAGE_RATIO = 0.9;
@@ -19,16 +24,15 @@ const isNearLimitUsage = ({ lineCount, maxLines }) => {
     lineCount / maxLines >= NEAR_LIMIT_USAGE_RATIO;
 };
 
-const formatUsage = ({ file, lineCount, maxLines }) => `${file}: ${lineCount}/${maxLines}`;
-
 const getBudgetRuleFiles = (rootDir) => fs
   .readdirSync(path.join(rootDir, 'scripts/ci'))
   .filter(file => file.startsWith('maintainability-budget-') && file.endsWith('.mjs'))
   .map(file => `scripts/ci/${file}`);
 
-export const buildMaintainabilityBudgetReport = (rootDir, budgets) => {
+export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {}) => {
   const failures = [];
   const summaries = [];
+  const usages = [];
   const nearLimitUsages = [];
   const budgetedFiles = new Set(budgets.map(budget => budget.file));
 
@@ -47,7 +51,8 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets) => {
 
     const lineCount = countLines(filePath);
     const usage = { ...budget, lineCount };
-    summaries.push(formatUsage(usage));
+    usages.push(usage);
+    summaries.push(formatBudgetUsage(usage));
     if (isNearLimitUsage(usage)) {
       nearLimitUsages.push(usage);
     }
@@ -56,13 +61,8 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets) => {
     }
   }
 
-  const nearLimitSummaries = nearLimitUsages
-    .sort((left, right) => (
-      (left.maxLines - left.lineCount) - (right.maxLines - right.lineCount) ||
-      right.lineCount / right.maxLines - left.lineCount / left.maxLines ||
-      left.file.localeCompare(right.file)
-    ))
-    .map(usage => `${formatUsage(usage)}，剩余 ${usage.maxLines - usage.lineCount} 行`);
+  const nearLimitSummaries = buildNearLimitSummaries(nearLimitUsages);
+  const highUsageSummaries = buildHighUsageSummaries(usages, options);
 
-  return { failures, summaries, nearLimitSummaries };
+  return { failures, summaries, nearLimitSummaries, highUsageSummaries };
 };
