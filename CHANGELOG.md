@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **公网资源预算表收敛**: JS 路径与扫描器预算规则复用表项工厂，预算内容保持不变但两个临界规则表退出 near-list，降低后续扩展静态资源巡检规则时的治理噪音
 - **静态保留预算表收敛**: 静态资源保留预算规则复用表项工厂，预算内容保持不变但移除重复对象样板，给后续扩展部署保留门禁留出治理余量
 - **工具栏 Badge 契约复用**: `ActionPanelButtonBadge` 复用入口按钮状态里的 badge 类型契约，移除重复 props 定义并退出预算临界列表，降低后续扩展工具栏状态徽标时的同步成本
 - **深度解析复制 workflow 测试分层**: 将 `transformReportPanelCopyWorkflow.test` 中的 mock、默认 state/effects 和 guarded action 列表抽到专用 fixture，测试文件回归为复制行为断言，并收紧测试预算，降低后续扩展复制动作时的维护噪音
