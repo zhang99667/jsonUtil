@@ -246,7 +246,14 @@ git commit -m "[Feature]优化专项-UI UE"
 
 ### 更新位置
 
-在 `CHANGELOG.md` 文件顶部的当前版本区块中添加记录。
+在 `CHANGELOG.md` 文件顶部维护当前发布版本区块。
+
+### 发布节奏
+
+- 用户可见、准备上线或会触发前端构建的改动，先递增 `frontend/package.json` 的 patch 版本，并同步 `frontend/package-lock.json`。
+- 同步在 `CHANGELOG.md` 顶部新建对应版本区块，只记录本次发布内容，不要把多轮提交长期追加到同一个版本。
+- 顶部版本区块最多保留 8 条列表项；超过时必须新开下一个 patch 版本，避免一个版本下堆积几十条提交。
+- 提交前运行 `node scripts/ci/check-version-consistency.mjs`，校验包版本、锁文件、CHANGELOG 顶部版本和顶部条目数量。
 
 ### 更新格式
 
