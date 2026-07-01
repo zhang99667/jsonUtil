@@ -17,6 +17,11 @@ export const governanceAppWorkflowMaintainabilityBudgets = [
     reason: 'App 命令工作流预算规则应保持短表，新增命令继续按动作域拆分',
   },
   {
+    file: 'scripts/ci/maintainability-budget-app-workflow-settings-backup-rules.mjs',
+    maxLines: 15,
+    reason: '设置备份命令预算规则应独立维护 hook、导出、导入和类型契约预算',
+  },
+  {
     file: 'scripts/ci/maintainability-budget-app-workflow-save-rules.mjs',
     maxLines: 30,
     reason: 'App 保存工作流预算规则应保持短表，保存命令继续增长时按计划/执行拆分',
