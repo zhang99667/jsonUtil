@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TransformReportRecord } from '../utils/transformSummary';
+import { TransformReportRecordActionButton } from './TransformReportRecordActionButton';
 
 interface TransformReportRecordHeaderActionsProps {
   record: TransformReportRecord;
@@ -13,26 +14,6 @@ interface TransformReportRecordHeaderActionsProps {
 }
 
 const cyanActionClassName = 'text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors';
-
-interface HeaderActionButtonInput {
-  children: React.ReactNode;
-  className: string;
-  dataTour: string;
-  title?: string;
-  onClick: () => void;
-}
-
-const renderHeaderActionButton = ({
-  children,
-  className,
-  dataTour,
-  title,
-  onClick,
-}: HeaderActionButtonInput) => (
-  <button type="button" data-tour={dataTour} onClick={onClick} className={className} title={title}>
-    {children}
-  </button>
-);
 
 export const TransformReportRecordHeaderActions: React.FC<TransformReportRecordHeaderActionsProps> = ({
   record,
@@ -57,55 +38,66 @@ export const TransformReportRecordHeaderActions: React.FC<TransformReportRecordH
           不可逆
         </span>
       )}
-      {renderHeaderActionButton({
-        dataTour: 'transform-report-copy-path',
-        className: cyanActionClassName,
-        onClick: () => { void onCopyPath(record.path); },
-        children: '复制路径',
-      })}
-      {renderHeaderActionButton({
-        dataTour: 'transform-report-copy-original-value',
-        className: cyanActionClassName,
-        onClick: () => { void onCopyOriginalValue(record.originalValue); },
-        children: '复制原始值',
-      })}
+      <TransformReportRecordActionButton
+        data-tour="transform-report-copy-path"
+        className={cyanActionClassName}
+        onClick={() => { void onCopyPath(record.path); }}
+      >
+        复制路径
+      </TransformReportRecordActionButton>
+      <TransformReportRecordActionButton
+        data-tour="transform-report-copy-original-value"
+        className={cyanActionClassName}
+        onClick={() => { void onCopyOriginalValue(record.originalValue); }}
+      >
+        复制原始值
+      </TransformReportRecordActionButton>
       {record.hasCmdStructure && (
         <>
-          {renderHeaderActionButton({
-            dataTour: 'transform-report-copy-cmd-structure',
-            className: cyanActionClassName,
-            title: cmdStructureTitle,
-            onClick: () => { void onCopyCmdStructure(record); },
-            children: cmdStructureLabel,
-          })}
-          {renderHeaderActionButton({
-            dataTour: 'transform-report-copy-cmd-comparison-package',
-            className: cyanActionClassName,
-            title: '复制可直接用于 cmd:diff -- --stdin 的 actual/expected 对比包',
-            onClick: () => { void onCopyCmdComparisonPackage(record); },
-            children: '复制对比包',
-          })}
-          {renderHeaderActionButton({
-            dataTour: 'transform-report-open-cmd-comparison',
-            className: 'text-gray-400 hover:text-teal-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors',
-            title: '粘贴内部 cmdHandler 输出并在页面内查看差异',
-            onClick: () => onToggleCmdComparison(record),
-            children: '对比 cmdHandler',
-          })}
+          <TransformReportRecordActionButton
+            data-tour="transform-report-copy-cmd-structure"
+            className={cyanActionClassName}
+            title={cmdStructureTitle}
+            onClick={() => { void onCopyCmdStructure(record); }}
+          >
+            {cmdStructureLabel}
+          </TransformReportRecordActionButton>
+          <TransformReportRecordActionButton
+            data-tour="transform-report-copy-cmd-comparison-package"
+            className={cyanActionClassName}
+            title="复制可直接用于 cmd:diff -- --stdin 的 actual/expected 对比包"
+            onClick={() => { void onCopyCmdComparisonPackage(record); }}
+          >
+            复制对比包
+          </TransformReportRecordActionButton>
+          <TransformReportRecordActionButton
+            data-tour="transform-report-open-cmd-comparison"
+            className="text-gray-400 hover:text-teal-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+            title="粘贴内部 cmdHandler 输出并在页面内查看差异"
+            onClick={() => onToggleCmdComparison(record)}
+          >
+            对比 cmdHandler
+          </TransformReportRecordActionButton>
         </>
       )}
-      {onLocatePath && renderHeaderActionButton({
-        dataTour: 'transform-report-locate-path',
-        className: 'text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors',
-        onClick: () => onLocatePath(record.path),
-        children: '定位',
-      })}
-      {onOpenSchemeValue && renderHeaderActionButton({
-        dataTour: 'transform-report-open-scheme',
-        className: 'text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors',
-        onClick: () => onOpenSchemeValue(record.originalValue),
-        children: 'Scheme 打开',
-      })}
+      {onLocatePath && (
+        <TransformReportRecordActionButton
+          data-tour="transform-report-locate-path"
+          className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+          onClick={() => onLocatePath(record.path)}
+        >
+          定位
+        </TransformReportRecordActionButton>
+      )}
+      {onOpenSchemeValue && (
+        <TransformReportRecordActionButton
+          data-tour="transform-report-open-scheme"
+          className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+          onClick={() => onOpenSchemeValue(record.originalValue)}
+        >
+          Scheme 打开
+        </TransformReportRecordActionButton>
+      )}
     </div>
   );
 };

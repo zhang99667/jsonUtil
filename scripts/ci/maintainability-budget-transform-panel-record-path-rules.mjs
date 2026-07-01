@@ -16,8 +16,8 @@ export const transformPanelRecordPathMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/components/TransformReportRecordPathRowActions.tsx',
-    maxLines: 80,
-    reason: '深度解析展开记录路径行动作应集中治理复制、定位和 Scheme 打开按钮矩阵',
+    maxLines: 75,
+    reason: '深度解析展开记录路径行动作应集中治理动作顺序，按钮壳复用 TransformReportRecordActionButton',
   },
   {
     file: 'frontend/src/components/TransformReportCommandSchemaRows.tsx',
