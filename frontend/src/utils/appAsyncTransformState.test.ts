@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TransformMode, type TransformContext, type TransformResult } from '../types';
 import { ASYNC_TRANSFORM_PLACEHOLDER } from './appAsyncPolicy';
+import { buildAppAsyncTransformSnapshot } from './appAsyncTransformSnapshot';
 import {
   buildAppAsyncTransformFallbackResult,
   buildAppAsyncTransformResult,
@@ -18,10 +19,10 @@ const createContext = (): TransformContext => ({
   originalIndentation: 2,
 });
 
+const asyncSnapshot = buildAppAsyncTransformSnapshot('{"a":1}', TransformMode.DEEP_FORMAT, true);
+
 const asyncResult: AppAsyncTransformResult = {
-  input: '{"a":1}',
-  mode: TransformMode.DEEP_FORMAT,
-  autoExpandScheme: true,
+  ...asyncSnapshot,
   output: '{\n  "a": 1\n}',
   context: createContext(),
 };
@@ -31,9 +32,7 @@ describe('appAsyncTransformState', () => {
     const context = createContext();
 
     expect(buildAppAsyncTransformResult({
-      input: '{"a":1}',
-      mode: TransformMode.DEEP_FORMAT,
-      autoExpandScheme: true,
+      snapshot: asyncSnapshot,
       output: 'formatted',
       context,
     })).toEqual({
@@ -44,9 +43,7 @@ describe('appAsyncTransformState', () => {
       context,
     });
     expect(buildAppAsyncTransformResult({
-      input: '{"a":1}',
-      mode: TransformMode.FORMAT,
-      autoExpandScheme: false,
+      snapshot: buildAppAsyncTransformSnapshot('{"a":1}', TransformMode.FORMAT, false),
       output: 'formatted',
     })).toEqual({
       input: '{"a":1}',
@@ -54,7 +51,9 @@ describe('appAsyncTransformState', () => {
       autoExpandScheme: false,
       output: 'formatted',
     });
-    expect(buildAppAsyncTransformFallbackResult('raw', TransformMode.MINIFY, false)).toEqual({
+    expect(buildAppAsyncTransformFallbackResult(
+      buildAppAsyncTransformSnapshot('raw', TransformMode.MINIFY, false)
+    )).toEqual({
       input: 'raw',
       mode: TransformMode.MINIFY,
       autoExpandScheme: false,
@@ -65,21 +64,15 @@ describe('appAsyncTransformState', () => {
   it('只复用 input、mode 和 autoExpandScheme 都匹配的异步结果', () => {
     expect(getFreshAppAsyncTransformResult(
       asyncResult,
-      '{"a":1}',
-      TransformMode.DEEP_FORMAT,
-      true
+      asyncSnapshot
     )).toBe(asyncResult);
     expect(getFreshAppAsyncTransformResult(
       asyncResult,
-      '{"a":2}',
-      TransformMode.DEEP_FORMAT,
-      true
+      buildAppAsyncTransformSnapshot('{"a":2}', TransformMode.DEEP_FORMAT, true)
     )).toBeNull();
     expect(getFreshAppAsyncTransformResult(
       asyncResult,
-      '{"a":1}',
-      TransformMode.DEEP_FORMAT,
-      false
+      buildAppAsyncTransformSnapshot('{"a":1}', TransformMode.DEEP_FORMAT, false)
     )).toBeNull();
   });
 

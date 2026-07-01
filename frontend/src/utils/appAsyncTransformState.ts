@@ -4,19 +4,18 @@ import {
   type TransformResult,
 } from '../types';
 import { ASYNC_TRANSFORM_PLACEHOLDER } from './appAsyncPolicy';
+import {
+  isSameAppAsyncTransformSnapshot,
+  type AppAsyncTransformSnapshot,
+} from './appAsyncTransformSnapshot';
 
-export interface AppAsyncTransformResult {
-  input: string;
-  mode: TransformMode;
-  autoExpandScheme: boolean;
+export interface AppAsyncTransformResult extends AppAsyncTransformSnapshot {
   output: string;
   context?: TransformContext;
 }
 
 interface AppAsyncTransformResultInput {
-  input: string;
-  mode: TransformMode;
-  autoExpandScheme: boolean;
+  snapshot: AppAsyncTransformSnapshot;
   output: string;
   context?: TransformContext;
 }
@@ -37,42 +36,27 @@ export interface AppOutputResolution {
 }
 
 export const buildAppAsyncTransformResult = ({
-  input,
-  mode,
-  autoExpandScheme,
+  snapshot,
   output,
   context,
 }: AppAsyncTransformResultInput): AppAsyncTransformResult => ({
-  input,
-  mode,
-  autoExpandScheme,
+  ...snapshot,
   output,
   ...(context ? { context } : {}),
 });
 
 export const buildAppAsyncTransformFallbackResult = (
-  input: string,
-  mode: TransformMode,
-  autoExpandScheme: boolean
+  snapshot: AppAsyncTransformSnapshot,
 ): AppAsyncTransformResult => buildAppAsyncTransformResult({
-  input,
-  mode,
-  autoExpandScheme,
-  output: input,
+  snapshot,
+  output: snapshot.input,
 });
 
 export const getFreshAppAsyncTransformResult = (
   result: AppAsyncTransformResult | null,
-  input: string,
-  mode: TransformMode,
-  autoExpandScheme: boolean
+  snapshot: AppAsyncTransformSnapshot,
 ): AppAsyncTransformResult | null => {
-  if (
-    result &&
-    result.input === input &&
-    result.mode === mode &&
-    result.autoExpandScheme === autoExpandScheme
-  ) {
+  if (result && isSameAppAsyncTransformSnapshot(result, snapshot)) {
     return result;
   }
   return null;

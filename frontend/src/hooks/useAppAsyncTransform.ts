@@ -1,21 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  TransformMode,
-  type TransformContext,
-} from '../types';
-import {
-  buildAppAsyncTransformPolicy,
-} from '../utils/appAsyncPolicy';
+import { TransformMode, type TransformContext } from '../types';
+import { buildAppAsyncTransformPolicy } from '../utils/appAsyncPolicy';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
+import { buildAppAsyncTransformSnapshot } from '../utils/appAsyncTransformSnapshot';
 import {
   buildAppAsyncTransformFallbackResult,
   buildAppAsyncTransformResult,
   getFreshAppAsyncTransformResult,
   type AppAsyncTransformResult,
 } from '../utils/appAsyncTransformState';
-import {
-  performTransformAsync,
-} from '../utils/transformations';
+import { performTransformAsync } from '../utils/transformations';
 
 interface UseAppAsyncTransformOptions {
   input: string;
@@ -40,6 +34,10 @@ export const useAppAsyncTransform = ({
   });
   const shouldUseTransformWorker = asyncTransformPolicy.shouldUseTransformWorker;
   const shouldUseAsyncTransform = asyncTransformPolicy.shouldUseAsyncTransform;
+  const transformSnapshot = useMemo(
+    () => buildAppAsyncTransformSnapshot(input, mode, autoExpandScheme),
+    [input, mode, autoExpandScheme],
+  );
 
   useEffect(() => {
     if (!shouldUseAsyncTransform) {
@@ -54,13 +52,11 @@ export const useAppAsyncTransform = ({
 
     if (!shouldUseTransformWorker) {
       let isCancelled = false;
-      performTransformAsync(input, mode)
+      performTransformAsync(transformSnapshot.input, transformSnapshot.mode)
         .then(output => {
           if (isCancelled || transformRequestIdRef.current !== requestId) return;
           setAsyncTransformResult(buildAppAsyncTransformResult({
-            input,
-            mode,
-            autoExpandScheme,
+            snapshot: transformSnapshot,
             output,
           }));
           setIsOutputTransforming(false);
@@ -73,7 +69,7 @@ export const useAppAsyncTransform = ({
           }
 
           console.warn('异步转换处理失败:', error);
-          setAsyncTransformResult(buildAppAsyncTransformFallbackResult(input, mode, autoExpandScheme));
+          setAsyncTransformResult(buildAppAsyncTransformFallbackResult(transformSnapshot));
           setIsOutputTransforming(false);
         });
 
@@ -96,9 +92,7 @@ export const useAppAsyncTransform = ({
       }
 
       setAsyncTransformResult(buildAppAsyncTransformResult({
-        input,
-        mode,
-        autoExpandScheme,
+        snapshot: transformSnapshot,
         output: event.data.output,
         context: event.data.context,
       }));
@@ -108,25 +102,25 @@ export const useAppAsyncTransform = ({
     worker.onerror = (event) => {
       if (transformRequestIdRef.current !== requestId) return;
       console.warn('大文件转换 Worker 运行失败:', event.message);
-      setAsyncTransformResult(buildAppAsyncTransformFallbackResult(input, mode, autoExpandScheme));
+      setAsyncTransformResult(buildAppAsyncTransformFallbackResult(transformSnapshot));
       setIsOutputTransforming(false);
     };
 
     worker.postMessage({
       id: requestId,
-      input,
-      mode,
-      options: { autoExpandScheme },
+      input: transformSnapshot.input,
+      mode: transformSnapshot.mode,
+      options: { autoExpandScheme: transformSnapshot.autoExpandScheme },
     });
 
     return () => {
       worker.terminate();
     };
-  }, [input, mode, autoExpandScheme, shouldUseAsyncTransform, shouldUseTransformWorker]);
+  }, [transformSnapshot, shouldUseAsyncTransform, shouldUseTransformWorker]);
 
   const currentAsyncTransformResult = useMemo(() => (
-    getFreshAppAsyncTransformResult(asyncTransformResult, input, mode, autoExpandScheme)
-  ), [asyncTransformResult, input, mode, autoExpandScheme]);
+    getFreshAppAsyncTransformResult(asyncTransformResult, transformSnapshot)
+  ), [asyncTransformResult, transformSnapshot]);
 
   return {
     asyncTransformPolicy,
