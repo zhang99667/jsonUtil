@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **App 状态预算规则分层**: 将主应用状态预算下沉为 async/ui/core 三层子表，异步策略、异步转换状态、编辑区派生状态和懒加载 panel 状态各自归组，原 state 入口回归为聚合层，降低继续新增状态 helper 时预算规则贴线风险
 - **旧 chunk 错误边界草稿保护**: 全局 ErrorBoundary 的动态 import 失效刷新按钮复用主应用草稿保存回调，避免旧页面 chunk 加载失败落到错误边界时直接刷新丢失当前工作区内容
 - **工具面板命令计划与测试分层**: 将 `useAppToolPanelCommands` 中的请求 ID、面板事件名、SOURCE Scheme 判断、Changelog 状态和模板请求构造抽到 `appToolPanelCommandPlans` 纯 helper，并把测试里的 React hook mock、窗口事件 stub 和 state setter 捕获下沉到专用 fixture，主测试文件回归为 JSONPath、Scheme、模板和 Changelog 场景断言，降低后续拆分工具面板命令时被 `useState` 顺序误伤的风险
 - **模板填充命令 Runner 分层**: 将 `useAppTemplateFillCommand` 中的模板应用顺序、占位符质量 delta、SOURCE 竞态保护和 toast 语义抽到 `appTemplateFillCommandRunner`，hook 回归为动态 summary loader、ref 和回调 effects 装配层，并补充 runner 直测，降低模板填充命令继续扩展时的回归风险

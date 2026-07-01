@@ -1,3 +1,5 @@
+import { governanceAppWorkflowStateMaintainabilityBudgets } from './maintainability-budget-governance-app-workflow-state-rules.mjs';
+
 export const governanceAppWorkflowMaintainabilityBudgets = [
   {
     file: 'scripts/ci/maintainability-budget-app-workflow-rules.mjs',
@@ -25,15 +27,11 @@ export const governanceAppWorkflowMaintainabilityBudgets = [
     reason: 'App SOURCE 替换预算规则应保持短表，新增替换 helper 先按入口/core 分层',
   },
   {
-    file: 'scripts/ci/maintainability-budget-app-workflow-state-rules.mjs',
-    maxLines: 30,
-    reason: 'App 状态派生预算规则应保持短表，新增状态 helper 先按异步/编辑区分层',
+    file: 'scripts/ci/maintainability-budget-governance-app-workflow-state-rules.mjs',
+    maxLines: 20,
+    reason: 'App 状态预算治理规则应独立维护 state/core/async/ui/helper 子表预算',
   },
-  {
-    file: 'scripts/ci/maintainability-budget-app-workflow-state-helper-rules.mjs',
-    maxLines: 25,
-    reason: 'App 状态 helper 预算规则应承接 PREVIEW 同步和懒加载 loaded 等专用 hook/helper',
-  },
+  ...governanceAppWorkflowStateMaintainabilityBudgets,
   {
     file: 'scripts/ci/maintainability-budget-app-workflow-support-rules.mjs',
     maxLines: 35,
