@@ -1,33 +1,13 @@
-import type { FileTab, ValidationResult } from '../types';
 import { getLocalProcessingStatus } from './localProcessingStatus';
 import {
   getStatusBarByteSizeText,
-  getStatusBarSaveStatus,
   getStatusBarSourceValidationStatus,
-  type StatusBarSourceValidationLocation,
 } from './statusBarState';
+import { buildStatusBarFileState } from './statusBarFileState';
 import { getStatusBarSourceValidationAction } from './statusBarSourceValidationAction';
-import type { StandaloneDeepFormatInputKind } from './transformations';
+import type { StatusBarViewModelInput } from './statusBarViewModelTypes';
 
-export interface StatusBarViewModelInput {
-  inputLength: number;
-  activeContentByteLength: number;
-  isStatsLimited: boolean;
-  activeFileId: string | null;
-  files: FileTab[];
-  isAutoSaveEnabled: boolean;
-  isSourceLarge: boolean;
-  isOutputTransforming: boolean;
-  isAiRepairing: boolean;
-  isAiConfigured: boolean;
-  hasSourceContent: boolean;
-  isSourceJsonCandidate: boolean;
-  sourceStandaloneDeepFormatKind: StandaloneDeepFormatInputKind | null;
-  sourceValidation: ValidationResult;
-  sourceValidationLocation: StatusBarSourceValidationLocation | null;
-  onLocateSourceError?: () => void;
-  onOpenSourceSchemeInput?: () => void;
-}
+export type { StatusBarViewModelInput } from './statusBarViewModelTypes';
 
 export const buildStatusBarViewModel = ({
   inputLength,
@@ -48,18 +28,17 @@ export const buildStatusBarViewModel = ({
   onLocateSourceError,
   onOpenSourceSchemeInput,
 }: StatusBarViewModelInput) => {
-  const activeFile = activeFileId ? files.find(file => file.id === activeFileId) ?? null : null;
+  const fileState = buildStatusBarFileState({
+    activeFileId,
+    files,
+    inputLength,
+    isAutoSaveEnabled,
+  });
 
   return {
-    activeFile,
+    activeFile: fileState.activeFile,
     byteSizeText: getStatusBarByteSizeText(activeContentByteLength, isStatsLimited),
-    saveStatus: getStatusBarSaveStatus({
-      hasActiveFile: Boolean(activeFile),
-      isSavedFile: Boolean(activeFile?.handle),
-      isDirty: Boolean(activeFile?.isDirty),
-      inputLength,
-      isAutoSaveEnabled,
-    }),
+    saveStatus: fileState.saveStatus,
     sourceValidationStatus: getStatusBarSourceValidationStatus({
       hasSourceContent,
       isSourceJsonCandidate,

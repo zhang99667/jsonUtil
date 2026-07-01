@@ -12,7 +12,10 @@ export const appStatusMaintainabilityBudgets = [
   statusBudget('frontend/src/components/StatusBarModeBadge.tsx', 35, '状态栏模式 badge 应只维护当前模式标签和深度格式化说明'),
   statusBudget('frontend/src/components/StatusBarVersionBadge.tsx', 45, '状态栏版本标识应只负责静态版本展示和更新日志入口按钮'),
   statusBudget('frontend/src/utils/statusBarState.ts', 170, '状态栏状态 helper 应只维护保存、校验和模式文案矩阵，增长时按状态域拆分'),
+  statusBudget('frontend/src/utils/statusBarFileState.ts', 55, '状态栏文件状态 helper 应只维护当前文件查找和保存状态构造'),
+  statusBudget('frontend/src/utils/statusBarFileState.test.ts', 70, '状态栏文件状态测试只覆盖当前文件查找、已保存文件和草稿状态'),
+  statusBudget('frontend/src/utils/statusBarViewModelTypes.ts', 35, '状态栏 view model 输入契约应独立维护，避免聚合实现被类型声明撑大'),
   statusBudget('frontend/src/utils/statusBarSourceValidationActionTypes.ts', 35, '状态栏 SOURCE 校验动作类型契约应独立维护，避免展示组件依赖动作生成 helper'),
   statusBudget('frontend/src/utils/statusBarSourceValidationAction.ts', 45, '状态栏 SOURCE 校验动作 helper 应只维护错误定位与 Scheme 面板入口优先级'),
-  statusBudget('frontend/src/utils/statusBarViewModel.ts', 95, '状态栏 view model 只聚合当前文件、保存状态、SOURCE 校验动作和本地处理状态'),
+  statusBudget('frontend/src/utils/statusBarViewModel.ts', 80, '状态栏 view model 只聚合文件状态、SOURCE 校验动作和本地处理状态'),
 ];

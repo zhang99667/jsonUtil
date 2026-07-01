@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **状态栏文件状态分层**: 将当前文件查找和保存状态构造抽到 `statusBarFileState` 纯 helper，`statusBarViewModel` 回归为状态栏聚合入口并收紧预算，降低后续扩展保存/草稿提示时误碰 SOURCE 校验和本地处理状态的风险
 - **Scheme 诊断详情再分层**: 将诊断顶部摘要条、质量摘要卡片和性能护栏提示拆成独立纯展示组件，主诊断容器从 250 行降到 146 行，并把 diagnostics 预算拆成独立子表，继续保持“默认收起、解码结果优先”的低干扰展示结构
 - **旧 chunk 错误边界降噪**: 动态 import 旧资源失败落到 ErrorBoundary 时不再展示 `Failed to fetch dynamically imported module` 和 hash 资源 URL，只保留“页面资源已更新”和刷新恢复入口，减少发布切换期间的技术噪音
 - **Scheme 诊断容器分层**: 将 Scheme 解析详情的折叠摘要、质量摘要、Scheme 信息、性能护栏和诊断子面板装配抽到 `SchemeViewerDiagnosticsPanel`，主弹窗继续保留解码、复制、编辑和二维码副作用，降低后续压缩详情区视觉密度时误碰状态链路的风险
