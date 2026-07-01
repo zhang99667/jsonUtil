@@ -3,17 +3,9 @@ import {
   shouldNotifyAppUpdate,
   shouldRunAppUpdateCheck,
 } from './appUpdateCheckDecision';
-import type { AppVersionManifest } from './appVersion';
+import type { RunAppUpdateCheckOnceInput } from './appUpdateCheckRunnerTypes';
 
-interface RunAppUpdateCheckOnceInput {
-  notifiedVersion: string | null;
-  fetchManifest: () => Promise<unknown>;
-  getIsActive: () => boolean;
-  getVisibilityState: () => DocumentVisibilityState;
-  onNotify: (manifest: AppVersionManifest) => void;
-  onNotifiedVersionChange: (version: string) => void;
-  currentVersion?: string;
-}
+export type { RunAppUpdateCheckOnceInput } from './appUpdateCheckRunnerTypes';
 
 const canRunAppUpdateCheck = (
   getIsActive: () => boolean,
