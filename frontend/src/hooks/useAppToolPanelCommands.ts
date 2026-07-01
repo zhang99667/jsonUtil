@@ -2,30 +2,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TransformMode, type HighlightRange } from '../types';
 import { APP_CHANGELOG_OPEN_EVENT, type AppChangelogOpenDetail } from '../utils/appEvents';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
-import { getStandaloneDeepFormatInputKind } from '../utils/transformations';
+import {
+  buildChangelogOpenState,
+  buildJsonPathQueryRequest,
+  buildJsonTreeFocusRequest,
+  buildSchemeInputRequest,
+  buildTemplateFillRequest,
+  getPanelToggleEventName,
+  getStandaloneSourceSchemeValue,
+  type JsonPathQueryRequest,
+  type JsonTreeFocusRequest,
+  type SchemeInputRequest,
+  type TemplateFillRequest,
+} from '../utils/appToolPanelCommandPlans';
 
 export type SettingsTab = 'shortcuts' | 'ai' | 'general';
-
-interface JsonPathQueryRequest {
-  id: number;
-  query: string;
-}
-
-interface JsonTreeFocusRequest {
-  id: number;
-  path: string;
-  pointer: string;
-}
-
-interface SchemeInputRequest {
-  id: number;
-  value: string;
-}
-
-interface TemplateFillRequest {
-  id: number;
-  template: string;
-}
 
 type TrackPanelEvent = (eventName: string, category: string) => void;
 
@@ -67,10 +58,9 @@ export const useAppToolPanelCommands = ({
   const templateFillRequestIdRef = useRef(0);
 
   const requestSchemeInput = useCallback((value: string) => {
-    setSchemeInputRequest({
-      id: ++schemeInputRequestIdRef.current,
-      value,
-    });
+    const plan = buildSchemeInputRequest(schemeInputRequestIdRef.current, value);
+    schemeInputRequestIdRef.current = plan.nextId;
+    setSchemeInputRequest(plan.request);
   }, []);
 
   const handleToggleJsonPath = useCallback(() => {
@@ -79,7 +69,7 @@ export const useAppToolPanelCommands = ({
       onSetMode(TransformMode.DEEP_FORMAT);
     }
     setIsJsonPathPanelOpen(nextOpen);
-    onTrackToolEvent(nextOpen ? 'JSONPATH_OPEN' : 'JSONPATH_CLOSE', 'panel');
+    onTrackToolEvent(getPanelToggleEventName(nextOpen, 'JSONPATH_OPEN', 'JSONPATH_CLOSE'), 'panel');
   }, [isJsonPathPanelOpen, mode, onSetMode, onTrackToolEvent]);
 
   const handleToggleJsonTree = useCallback(() => {
@@ -88,32 +78,32 @@ export const useAppToolPanelCommands = ({
       onSetMode(TransformMode.DEEP_FORMAT);
     }
     setIsJsonTreePanelOpen(nextOpen);
-    onTrackToolEvent(nextOpen ? 'STRUCTURE_NAV_OPEN' : 'STRUCTURE_NAV_CLOSE', 'panel');
+    onTrackToolEvent(getPanelToggleEventName(nextOpen, 'STRUCTURE_NAV_OPEN', 'STRUCTURE_NAV_CLOSE'), 'panel');
   }, [isJsonTreePanelOpen, mode, onSetMode, onTrackToolEvent]);
 
   const handleToggleJsonCompare = useCallback(() => {
     const nextOpen = !isJsonComparePanelOpen;
     setIsJsonComparePanelOpen(nextOpen);
-    onTrackToolEvent(nextOpen ? 'JSON_COMPARE_OPEN' : 'JSON_COMPARE_CLOSE', 'panel');
+    onTrackToolEvent(getPanelToggleEventName(nextOpen, 'JSON_COMPARE_OPEN', 'JSON_COMPARE_CLOSE'), 'panel');
   }, [isJsonComparePanelOpen, onTrackToolEvent]);
 
   const handleToggleJsonSchema = useCallback(() => {
     const nextOpen = !isJsonSchemaPanelOpen;
     setIsJsonSchemaPanelOpen(nextOpen);
-    onTrackToolEvent(nextOpen ? 'SCHEMA_PANEL_OPEN' : 'SCHEMA_PANEL_CLOSE', 'panel');
+    onTrackToolEvent(getPanelToggleEventName(nextOpen, 'SCHEMA_PANEL_OPEN', 'SCHEMA_PANEL_CLOSE'), 'panel');
   }, [isJsonSchemaPanelOpen, onTrackToolEvent]);
 
   const handleToggleSchemeDecode = useCallback(() => {
     const nextOpen = !isSchemeDecodeOpen;
     setIsSchemeDecodeOpen(nextOpen);
-    onTrackToolEvent(nextOpen ? 'SCHEME_PANEL_OPEN' : 'SCHEME_PANEL_CLOSE', 'panel');
+    onTrackToolEvent(getPanelToggleEventName(nextOpen, 'SCHEME_PANEL_OPEN', 'SCHEME_PANEL_CLOSE'), 'panel');
   }, [isSchemeDecodeOpen, onTrackToolEvent]);
 
   const handleToggleTemplateFill = useCallback(() => {
     const nextOpen = !isTemplatePanelOpen;
     setTemplateApplyQualityDelta('');
     setIsTemplatePanelOpen(nextOpen);
-    onTrackToolEvent(nextOpen ? 'TEMPLATE_PANEL_OPEN' : 'TEMPLATE_PANEL_CLOSE', 'panel');
+    onTrackToolEvent(getPanelToggleEventName(nextOpen, 'TEMPLATE_PANEL_OPEN', 'TEMPLATE_PANEL_CLOSE'), 'panel');
   }, [isTemplatePanelOpen, onTrackToolEvent]);
 
   const handleOpenSettingsPanel = useCallback(() => {
@@ -128,29 +118,25 @@ export const useAppToolPanelCommands = ({
   }, []);
 
   const handleLocateJsonPath = useCallback((query: string) => {
-    const normalizedQuery = query.trim();
-    if (!normalizedQuery) return;
+    const plan = buildJsonPathQueryRequest(jsonPathQueryRequestIdRef.current, query);
+    if (!plan) return;
 
     if (mode !== TransformMode.DEEP_FORMAT) {
       onSetMode(TransformMode.DEEP_FORMAT);
     }
 
     onSetHighlightRange(null);
-    setJsonPathQueryRequest({
-      id: ++jsonPathQueryRequestIdRef.current,
-      query: normalizedQuery,
-    });
+    jsonPathQueryRequestIdRef.current = plan.nextId;
+    setJsonPathQueryRequest(plan.request);
     setIsJsonPathPanelOpen(true);
     setIsTransformReportOpen(false);
     onTrackToolEvent('JSONPATH_LOCATE', 'panel');
   }, [mode, onSetHighlightRange, onSetMode, onTrackToolEvent]);
 
   const handleLocateJsonPathResultInStructure = useCallback((item: JsonPathQueryItem) => {
-    setJsonTreeFocusRequest({
-      id: ++jsonTreeFocusRequestIdRef.current,
-      path: item.path,
-      pointer: item.pointer,
-    });
+    const plan = buildJsonTreeFocusRequest(jsonTreeFocusRequestIdRef.current, item);
+    jsonTreeFocusRequestIdRef.current = plan.nextId;
+    setJsonTreeFocusRequest(plan.request);
     setIsJsonTreePanelOpen(true);
     setIsTransformReportOpen(false);
     onTrackToolEvent('STRUCTURE_NAV_LOCATE', 'panel');
@@ -179,15 +165,16 @@ export const useAppToolPanelCommands = ({
   }, [openStandaloneSchemePanel]);
 
   const handleOpenSourceSchemeInput = useCallback(() => {
-    const value = sourceText.trim();
-    if (!value || !getStandaloneDeepFormatInputKind(value)) return;
+    const value = getStandaloneSourceSchemeValue(sourceText);
+    if (!value) return;
 
     handleOpenSchemeFromSourceStatus(value);
   }, [handleOpenSchemeFromSourceStatus, sourceText]);
 
   const handleOpenChangelog = useCallback((detail?: AppChangelogOpenDetail) => {
-    setChangelogSourceMarkdown(detail?.changelogMarkdown?.trim() ? detail.changelogMarkdown : null);
-    setChangelogHighlightedVersion(detail?.version || null);
+    const state = buildChangelogOpenState(detail);
+    setChangelogSourceMarkdown(state.sourceMarkdown);
+    setChangelogHighlightedVersion(state.highlightedVersion);
     setIsChangelogModalOpen(true);
   }, []);
 
@@ -208,13 +195,12 @@ export const useAppToolPanelCommands = ({
   }, [handleOpenChangelog]);
 
   const handleOpenTemplateFillFromReport = useCallback((template: string) => {
-    if (!template) return;
+    const plan = buildTemplateFillRequest(templateFillRequestIdRef.current, template);
+    if (!plan) return;
 
     setTemplateApplyQualityDelta('');
-    setTemplateFillRequest({
-      id: ++templateFillRequestIdRef.current,
-      template,
-    });
+    templateFillRequestIdRef.current = plan.nextId;
+    setTemplateFillRequest(plan.request);
     setIsTemplatePanelOpen(true);
     setIsTransformReportOpen(false);
     onTrackToolEvent('TEMPLATE_OPEN_FROM_REPORT', 'panel');

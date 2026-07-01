@@ -692,7 +692,7 @@ const App: React.FC = () => {
   }, [sourceErrorLocation]);
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary onBeforeReload={flushWorkspaceDraft}>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
 
       <AppLazyShellModals

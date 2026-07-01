@@ -14,5 +14,8 @@ export const appWorkflowCommandMaintainabilityBudgets = [
   { file: 'frontend/src/utils/appTemplateFillQualityDelta.ts', maxLines: 65, reason: '模板填充质量 delta helper 只维护回填前后深度解析快照和 delta 文本构造' },
   { file: 'frontend/src/utils/appTemplateFillQualityDelta.test.ts', maxLines: 70, reason: '模板填充质量 delta 测试只锁定前后 SOURCE 快照构造和 summary 模块调用' },
   { file: 'frontend/src/hooks/useAppToolPanelCommands.ts', maxLines: 310, reason: '主应用工具面板命令 hook 只维护面板开关、外部请求信号、changelog 监听和报告入口动作，继续增长时按面板域拆分' },
-  { file: 'frontend/src/hooks/useAppToolPanelCommands.test.ts', maxLines: 300, reason: '工具面板命令测试只锁定面板开关、请求 ID 自增、changelog 事件和报告入口动作' },
+  { file: 'frontend/src/utils/appToolPanelCommandPlans.ts', maxLines: 120, reason: '工具面板命令计划 helper 只维护请求 ID、面板事件名、SOURCE Scheme 判断和 Changelog 状态归一化' },
+  { file: 'frontend/src/utils/appToolPanelCommandPlans.test.ts', maxLines: 120, reason: '工具面板命令计划测试只锁定请求构造、事件名、Scheme 判断、Changelog 和模板请求边界' },
+  { file: 'frontend/src/hooks/useAppToolPanelCommands.test.ts', maxLines: 190, reason: '工具面板命令测试只锁定面板开关、请求 ID 自增、changelog 事件和报告入口动作' },
+  { file: 'frontend/src/hooks/useAppToolPanelCommandsTestFixture.ts', maxLines: 150, reason: '工具面板命令测试 fixture 只维护 React hook mock、窗口事件 stub 和 state setter 捕获' },
 ];

@@ -8,6 +8,7 @@ import { isDynamicImportLoadError } from '../utils/chunkLoadRecovery';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
+  onBeforeReload?: () => void;
 }
 
 interface ErrorBoundaryState {
@@ -46,6 +47,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   };
 
   handleReload = (): void => {
+    try {
+      this.getInstance().props.onBeforeReload?.();
+    } catch (error) {
+      console.warn('刷新前保存工作区草稿失败', error);
+    }
     window.location.reload();
   };
 

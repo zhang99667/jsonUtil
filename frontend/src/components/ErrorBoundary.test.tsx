@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import ErrorBoundary from './ErrorBoundary';
 
 interface ElementLike {
@@ -19,11 +19,22 @@ const collectText = (node: unknown): string => {
   return collectText(node.props?.children);
 };
 
-const createErrorBoundary = (children: string): ErrorBoundary => (
-  new (ErrorBoundary as unknown as { new(props: { children: string }): ErrorBoundary })({ children })
+type ErrorBoundaryTestProps = {
+  children: string;
+  onBeforeReload?: () => void;
+};
+
+const createErrorBoundary = (props: ErrorBoundaryTestProps | string): ErrorBoundary => (
+  new (ErrorBoundary as unknown as { new(props: ErrorBoundaryTestProps): ErrorBoundary })(
+    typeof props === 'string' ? { children: props } : props
+  )
 );
 
 describe('ErrorBoundary', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('正常状态直接渲染子节点', () => {
     const boundary = createErrorBoundary('正常内容');
 
@@ -40,5 +51,17 @@ describe('ErrorBoundary', () => {
 
     expect(text).toContain('页面资源已更新');
     expect(text).toContain('刷新页面');
+  });
+
+  it('刷新恢复前先执行草稿保存回调', () => {
+    const onBeforeReload = vi.fn();
+    const reload = vi.fn();
+    vi.stubGlobal('window', { location: { reload } });
+    const boundary = createErrorBoundary({ children: '正常内容', onBeforeReload });
+
+    boundary.handleReload();
+
+    expect(onBeforeReload).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

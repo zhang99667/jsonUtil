@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **旧 chunk 错误边界草稿保护**: 全局 ErrorBoundary 的动态 import 失效刷新按钮复用主应用草稿保存回调，避免旧页面 chunk 加载失败落到错误边界时直接刷新丢失当前工作区内容
+- **工具面板命令计划与测试分层**: 将 `useAppToolPanelCommands` 中的请求 ID、面板事件名、SOURCE Scheme 判断、Changelog 状态和模板请求构造抽到 `appToolPanelCommandPlans` 纯 helper，并把测试里的 React hook mock、窗口事件 stub 和 state setter 捕获下沉到专用 fixture，主测试文件回归为 JSONPath、Scheme、模板和 Changelog 场景断言，降低后续拆分工具面板命令时被 `useState` 顺序误伤的风险
 - **模板填充命令 Runner 分层**: 将 `useAppTemplateFillCommand` 中的模板应用顺序、占位符质量 delta、SOURCE 竞态保护和 toast 语义抽到 `appTemplateFillCommandRunner`，hook 回归为动态 summary loader、ref 和回调 effects 装配层，并补充 runner 直测，降低模板填充命令继续扩展时的回归风险
 - **深度解析内容区 Shell 再分层**: 将 `TransformReportPanelContent` 收敛为滚动容器、无报告提示和 sections 分流，把有报告状态下的 section 装配下沉到 `TransformReportPanelSections`，并将 props 契约拆成 type-only 文件，补充 shell 委派和 section 透传测试，降低深度解析内容区继续扩展时的耦合
 - **主工作台交互遮罩分层**: 将 resize 捕获层和文件拖拽浮层下沉到 `AppInteractionOverlays`，`AppWorkspaceOverlays` 回归为交互遮罩组与 Toast 宿主装配层，并补充分层后的组件测试，降低主应用遮罩入口继续扩展时的耦合
