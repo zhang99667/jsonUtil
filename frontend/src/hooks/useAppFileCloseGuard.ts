@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { FileTab } from '../types';
 import {
   buildAppFileCloseDecision,
   getPendingAppCloseFile,
   hasAppFileUnsavedChanges,
 } from '../utils/appFileCloseGuardState';
+import { useAppBeforeUnloadGuard } from './useAppBeforeUnloadGuard';
 
 interface UseAppFileCloseGuardInput {
   files: FileTab[];
@@ -24,17 +25,7 @@ export const useAppFileCloseGuard = ({ files, activeFileId, sourceText, onCloseF
     [files, pendingCloseFileId]
   );
 
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!hasUnsavedChanges) return;
-
-      event.preventDefault();
-      event.returnValue = '';
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+  useAppBeforeUnloadGuard(hasUnsavedChanges);
 
   const requestCloseFile = useCallback((fileId: string) => {
     const decision = buildAppFileCloseDecision(files, fileId);

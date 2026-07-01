@@ -1,19 +1,23 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FileTab } from '../types';
 import { useAppFileCloseGuard } from './useAppFileCloseGuard';
+
+const beforeUnloadMocks = vi.hoisted(() => ({
+  useAppBeforeUnloadGuard: vi.fn(),
+}));
 
 const reactMocks = vi.hoisted(() => ({
   setPendingCloseFileId: vi.fn(),
   useCallback: vi.fn(),
-  useEffect: vi.fn(),
   useMemo: vi.fn(),
   useState: vi.fn(),
 }));
 
+vi.mock('./useAppBeforeUnloadGuard', () => beforeUnloadMocks);
+
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
-  useEffect: reactMocks.useEffect,
   useMemo: reactMocks.useMemo,
   useState: reactMocks.useState,
 }));
@@ -49,36 +53,17 @@ const useGuardFixture = (
 };
 
 describe('useAppFileCloseGuard', () => {
-  const listeners = new Map<string, EventListener>();
-
   beforeEach(() => {
     vi.clearAllMocks();
-    listeners.clear();
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => effect());
     reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
-    vi.stubGlobal('window', {
-      addEventListener: vi.fn((type: string, listener: EventListener) => {
-        listeners.set(type, listener);
-      }),
-      removeEventListener: vi.fn(),
-    });
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('存在脏文件时注册 beforeunload 阻止直接离开页面', () => {
+  it('存在脏文件时把未保存状态同步给 beforeunload guard', () => {
     const { guard } = useGuardFixture();
-    const preventDefault = vi.fn();
-    const event = { preventDefault, returnValue: undefined } as unknown as BeforeUnloadEvent;
-
-    listeners.get('beforeunload')?.(event);
 
     expect(guard.hasUnsavedChanges).toBe(true);
-    expect(preventDefault).toHaveBeenCalledTimes(1);
-    expect(event.returnValue).toBe('');
+    expect(beforeUnloadMocks.useAppBeforeUnloadGuard).toHaveBeenCalledWith(true);
   });
 
   it('无脏文件但 SOURCE 有未保存内容时也提示离开确认', () => {
@@ -97,27 +82,9 @@ describe('useAppFileCloseGuard', () => {
       activeFileId: null,
       sourceText: '   ',
     });
-    const preventDefault = vi.fn();
-    const event = { preventDefault, returnValue: undefined } as unknown as BeforeUnloadEvent;
-
-    listeners.get('beforeunload')?.(event);
 
     expect(guard.hasUnsavedChanges).toBe(false);
-    expect(preventDefault).not.toHaveBeenCalled();
-    expect(event.returnValue).toBeUndefined();
-  });
-
-  it('effect 清理时移除 beforeunload 监听', () => {
-    let cleanup: (() => void) | undefined;
-    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
-      const result = effect();
-      cleanup = typeof result === 'function' ? result : undefined;
-    });
-
-    useGuardFixture();
-    cleanup?.();
-
-    expect(window.removeEventListener).toHaveBeenCalledWith('beforeunload', listeners.get('beforeunload'));
+    expect(beforeUnloadMocks.useAppBeforeUnloadGuard).toHaveBeenCalledWith(false);
   });
 
   it('关闭脏文件时进入 pending 状态而不是直接关闭', () => {
