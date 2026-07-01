@@ -12,10 +12,7 @@ import {
 } from '../utils/schemeUtils';
 import { QRCodeCanvas } from 'qrcode.react';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
-import {
-  formatSchemeInsightItems,
-  formatPrimaryCmdHandlerCompatibleResult,
-} from '../utils/schemeMetadata';
+import { formatPrimaryCmdHandlerCompatibleResult } from '../utils/schemeMetadata';
 import {
   buildSchemeQualitySummary,
   formatSchemeQualitySnapshotJsonText,
@@ -40,8 +37,6 @@ import {
   formatSchemeParamStageValue,
   formatSchemeParamTooltipValue,
   formatSchemeParamValue,
-  formatSchemePlaceholderValue,
-  formatSchemeSummaryValue,
   formatSchemeTooltipValue,
   getSchemeLayerAfterContent,
   getSchemeLayerReversibleLabel,
@@ -58,6 +53,8 @@ import {
   getSchemeQualityItemClassName,
 } from '../utils/schemeViewerQualityStyles';
 import { SchemeViewerBase64MetaPanel } from './SchemeViewerBase64MetaPanel';
+import { SchemeViewerCommandSummaryPanel } from './SchemeViewerCommandSummaryPanel';
+import { SchemeViewerRuntimePlaceholdersPanel } from './SchemeViewerRuntimePlaceholdersPanel';
 
 const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
 
@@ -513,15 +510,6 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     schemeQualitySummary,
     showQRCode,
   ]);
-  const nestedCommandInsight = commandSummaryInfo
-    ? formatSchemeInsightItems('cmd解析', commandSummaryInfo.commandFields)
-    : undefined;
-  const extInsight = commandSummaryInfo
-    ? formatSchemeInsightItems('ext解析', commandSummaryInfo.extFields)
-    : undefined;
-  const base64SuffixInsight = commandSummaryInfo
-    ? formatSchemeInsightItems('Base64 后缀', commandSummaryInfo.base64SuffixFields, 6)
-    : undefined;
   const skippedDecodeCount = useMemo(() => (
     sumSchemeSkippedDecodeCount(decodeWarnings)
   ), [decodeWarnings]);
@@ -976,127 +964,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 </div>
               )}
 
-              {/* CMD 结构摘要 */}
-              {commandSummaryInfo && (
-                <div data-tour="scheme-command-summary" className="flex items-start gap-2 text-xs">
-                  <span className="shrink-0 text-cyan-300 bg-cyan-900/30 border border-cyan-700/50 px-2 py-0.5 rounded">
-                    CMD 结构
-                  </span>
-                  <div className="flex flex-wrap gap-1 min-w-0">
-                    {commandSummaryInfo.commandSchema && (
-                      <span
-                        className="bg-editor-bg text-cyan-200 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatSchemeTooltipValue(commandSummaryInfo.commandSchema)}
-                      >
-                        cmdSchema={formatSchemeSummaryValue(commandSummaryInfo.commandSchema)}
-                      </span>
-                    )}
-                    {commandSummaryInfo.commandSchemaCount > 0 && (
-                      <span
-                        data-tour="scheme-command-schema-count"
-                        className="bg-editor-bg text-cyan-200 px-2 py-0.5 rounded font-mono"
-                        title="已从原始 source 对齐出来的 CMD Schema 数量"
-                      >
-                        Schema · {commandSummaryInfo.commandSchemaCount}
-                      </span>
-                    )}
-                    {commandSummaryInfo.topCommandSchemas.length > 0 && (
-                      <span data-tour="scheme-top-command-schemas" className="contents">
-                        {commandSummaryInfo.topCommandSchemas.map(item => (
-                          <span
-                            key={item.schema}
-                            className="bg-editor-bg text-cyan-100 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                            title={[
-                              item.schema,
-                              ...item.paths,
-                              ...(item.hasMorePaths ? ['...'] : []),
-                            ].join('\n')}
-                          >
-                            {formatSchemeSummaryValue(item.schema, 42)} ×{item.count}
-                          </span>
-                        ))}
-                      </span>
-                    )}
-                    {commandSummaryInfo.paramCount > 0 && (
-                      <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono">
-                        cmdParams · {commandSummaryInfo.paramCount}
-                      </span>
-                    )}
-                    {commandSummaryInfo.paramKeys.slice(0, 6).map(key => (
-                      <span
-                        key={key}
-                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatSchemeTooltipValue(key, 80)}
-                      >
-                        {formatSchemeSummaryValue(key, 24)}
-                      </span>
-                    ))}
-                    {commandSummaryInfo.paramKeys.length > 6 && (
-                      <span className="text-gray-500 px-1 py-0.5">
-                        +{commandSummaryInfo.paramKeys.length - 6}
-                      </span>
-                    )}
-                    {nestedCommandInsight && (
-                      <span className="bg-editor-bg text-emerald-300 px-2 py-0.5 rounded font-mono max-w-full truncate" title={nestedCommandInsight}>
-                        {nestedCommandInsight}
-                      </span>
-                    )}
-                    {extInsight && (
-                      <span className="bg-editor-bg text-amber-200 px-2 py-0.5 rounded font-mono max-w-full truncate" title={extInsight}>
-                        {extInsight}
-                      </span>
-                    )}
-                    {base64SuffixInsight && (
-                      <span className="bg-editor-bg text-emerald-300 px-2 py-0.5 rounded font-mono max-w-full truncate" title={base64SuffixInsight}>
-                        {base64SuffixInsight}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+              <SchemeViewerCommandSummaryPanel commandSummaryInfo={commandSummaryInfo} />
 
-              {/* 运行时占位符 */}
-              {placeholders.length > 0 && (
-                <div data-tour="scheme-runtime-placeholders" className="flex flex-col gap-1.5 text-xs">
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0 text-amber-300 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
-                      运行时占位符 · {placeholders.length}
-                    </span>
-                    <div data-tour="scheme-runtime-placeholder-groups" className="flex flex-wrap gap-1 min-w-0">
-                      {placeholderGroups.map(group => (
-                        <span
-                          key={group.value}
-                          className="bg-editor-bg text-amber-100 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                          title={`${group.description}\n${group.paths.slice(0, 8).join('\n')}`}
-                        >
-                          {group.value} ×{group.count}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0 text-amber-300 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
-                      路径明细
-                    </span>
-                    <div className="flex flex-wrap gap-1 min-w-0">
-                      {placeholders.slice(0, 6).map(placeholder => (
-                        <span
-                          key={`${placeholder.path}:${placeholder.value}`}
-                          className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                          title={`${placeholder.path} = ${formatSchemeTooltipValue(placeholder.value)}\n${placeholder.description}`}
-                        >
-                          {placeholder.path}={formatSchemePlaceholderValue(placeholder.value)}
-                        </span>
-                      ))}
-                      {placeholders.length > 6 && (
-                        <span className="text-gray-500 px-1 py-0.5">
-                          +{placeholders.length - 6}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+              <SchemeViewerRuntimePlaceholdersPanel
+                placeholders={placeholders}
+                placeholderGroups={placeholderGroups}
+              />
 
               {/* 性能护栏提示 */}
               {decodeWarnings.length > 0 && (
