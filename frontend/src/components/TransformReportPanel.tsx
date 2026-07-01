@@ -15,7 +15,6 @@ import {
 } from '../utils/transformSummary';
 import type { TransformReportRecord } from '../utils/transformSummary';
 import { buildPlaceholderFillSummary } from '../utils/transformReportPlaceholderFillSummary';
-import { buildTransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
 import type { RankedCmdComparisonCandidate } from '../utils/transformReportCmdComparison';
 import {
   buildOpenFirstTransformReportCmdComparisonPlan,
@@ -43,16 +42,14 @@ import {
 } from '../utils/transformReportFooterActions';
 import {
   buildTransformReportActionRunners,
-  buildTransformReportIssueTriageItems,
-  buildTransformReportNextActionItems,
 } from '../utils/transformReportActionItems';
 import {
   buildTransformReportPanelCopyWorkflow,
   type TransformReportQualityBaseline,
 } from '../utils/transformReportPanelCopyWorkflow';
+import { buildTransformReportPanelSectionModel } from '../utils/transformReportPanelSectionModel';
 import { TransformReportPanelContent } from './TransformReportPanelContent';
-import { TransformReportPanelFooter } from './TransformReportPanelFooter';
-import { DraggablePanel, PanelIcons } from './DraggablePanel';
+import { TransformReportPanelFrame } from './TransformReportPanelFrame';
 
 interface TransformReportPanelProps {
   isOpen: boolean;
@@ -164,10 +161,6 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
       isFilterPending
     )
   );
-  const issuePriorityCount = report
-    ? report.summary.unresolvedCount + report.summary.warningCount + report.summary.placeholderCount
-    : 0;
-
   const showCopyError = (message: string, error: unknown) => {
     console.warn(message, error);
     toast.error(getClipboardErrorMessage(error), { duration: 2000 });
@@ -253,26 +246,26 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     toast.success('已填入 Scheme 解析', { duration: 1600 });
   };
 
-  const placeholderFillPanelTitle = getPanelPlaceholderFillTemplateTitle('把运行时占位符回填模板填入模板填充面板');
-  const canOpenPlaceholderFill = Boolean(onOpenTemplateFill && placeholderFillTemplateJsonText && !isFilterPending);
-  const placeholderToolbarState = reportView
-    ? buildTransformReportPlaceholderToolbarState({
-      filteredPlaceholderCount: reportView.filteredPlaceholderCount,
-      isPlaceholderTruncated: reportView.isPlaceholderTruncated,
-      hasTemplateFillTarget: Boolean(onOpenTemplateFill),
-      hasPlaceholderFillTemplate: Boolean(placeholderFillTemplateJsonText),
-      isFilterPending,
-      formatTemplateFillTitle: getPanelPlaceholderFillTemplateTitle,
-    })
-    : null;
-  const sectionVisibility = buildTransformReportSectionVisibility(reportView);
-  const issueTriageItems = report ? buildTransformReportIssueTriageItems({
-    warningCount: report.summary.warningCount,
-    unresolvedCount: report.summary.unresolvedCount,
-    placeholderCount: report.summary.placeholderCount,
+  const sectionModel = buildTransformReportPanelSectionModel({
+    report,
+    reportView,
+    isFilterPending,
+    hasTemplateFillTarget: Boolean(onOpenTemplateFill),
+    hasPlaceholderFillTemplate: Boolean(placeholderFillTemplateJsonText),
+    formatPlaceholderFillTitle: getPanelPlaceholderFillTemplateTitle,
+    archivePackageTitle: copyTitles.archivePackage,
+    collaborationReportTitle: copyTitles.collaborationReport,
+    qualitySnapshotTitle: copyTitles.qualitySnapshot,
+  });
+  const {
+    placeholderFillPanelTitle,
     canOpenPlaceholderFill,
-    placeholderFillTitle: placeholderFillPanelTitle,
-  }) : [];
+    placeholderToolbarState,
+    sectionVisibility,
+    issuePriorityCount,
+    issueTriageItems,
+    nextActions,
+  } = sectionModel;
   const { runIssueTriageAction, runNextAction } = buildTransformReportActionRunners({
     setQuery,
     openFirstCmdComparison: handleOpenFirstCmdComparison,
@@ -280,19 +273,6 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     copyArchivePackage: copyWorkflow.copyArchivePackage,
     copyCollaborationReport: copyWorkflow.copyCollaborationReport,
     copyQualitySnapshot: copyWorkflow.copyQualitySnapshot,
-  });
-  const nextActions = buildTransformReportNextActionItems({
-    hasReport: Boolean(report),
-    hasReportView: Boolean(reportView),
-    hasFilteredCmdStructure: Boolean(reportView?.filteredCmdStructureCount),
-    hasPlaceholders: Boolean(report?.summary.placeholderCount),
-    issuePriorityCount,
-    canOpenPlaceholderFill,
-    isFilterPending,
-    placeholderFillTitle: placeholderFillPanelTitle,
-    archivePackageTitle: copyTitles.archivePackage,
-    collaborationReportTitle: copyTitles.collaborationReport,
-    qualitySnapshotTitle: copyTitles.qualitySnapshot,
   });
   const footerActions = buildTransformReportFooterActions({
     hasQuery: Boolean(query.trim()),
@@ -330,26 +310,13 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     copyFullReport: copyWorkflow.copyReport,
   });
 
-  const footer = (
-    <TransformReportPanelFooter
+  return (
+    <TransformReportPanelFrame
+      isOpen={isOpen}
+      onClose={onClose}
       summary={formatTransformReportFooterSummary(report ? reportView : null)}
       actions={footerActions}
       actionHandlers={footerActionHandlers}
-    />
-  );
-
-  return (
-    <DraggablePanel
-      isOpen={isOpen}
-      onClose={onClose}
-      title="深度解析报告"
-      icon={PanelIcons.Code}
-      storageKey="transform-report-panel"
-      defaultPosition={{ x: 220, y: 120 }}
-      defaultSize={{ width: 680, height: 520 }}
-      minSize={{ width: 480, height: 320 }}
-      footer={footer}
-      dataTour="transform-report-panel"
     >
       <TransformReportPanelContent
         report={report}
@@ -394,6 +361,6 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         onLocatePath={onLocatePath ? handleLocatePath : undefined}
         onOpenSchemeValue={onOpenSchemeValue ? handleOpenSchemeValue : undefined}
       />
-    </DraggablePanel>
+    </TransformReportPanelFrame>
   );
 };

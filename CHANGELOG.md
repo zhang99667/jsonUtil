@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **深度解析 Section Model 分层**: 将报告内容区可见性、占位符工具栏、优先处理项和下一步行动的纯派生下沉到 `transformReportPanelSectionModel`，主面板继续保留真实状态与 handler wiring，降低后续扩展报告 section 时的耦合
+- **深度解析面板 Frame 分层**: 将主报告面板的 DraggablePanel 默认布局和 footer 装配下沉到 `TransformReportPanelFrame`，主面板继续聚焦状态、复制 workflow 和内容 wiring，并退出可维护性预算 near-list
 - **占位符 Section 类型契约复用**: 占位符 rows list 导出可复用行级 props 契约，Section 类型入口不再重复声明 `Omit<placeholder>` 结构，降低深度解析占位符区域继续扩展时的类型同步成本
 - **深度解析预算规则表收敛**: 深度解析 artifact 治理、诊断和洞察预算规则复用本地表项工厂，预算内容保持不变但三张临界规则表退出 near-list，降低后续扩展报告治理规则时的维护噪音
 - **公网资源预算表收敛**: JS 路径与扫描器预算规则复用表项工厂，预算内容保持不变但两个临界规则表退出 near-list，降低后续扩展静态资源巡检规则时的治理噪音
