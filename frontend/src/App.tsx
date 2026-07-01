@@ -4,7 +4,7 @@ import { showSuccess, showError } from './utils/toast';
 import { AppActionSidebar } from './components/AppActionSidebar';
 import { AppEditorWorkspace } from './components/AppEditorWorkspace';
 import { AppWorkspaceOverlays } from './components/AppWorkspaceOverlays';
-import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, type EditorDiagnosticHighlight } from './types';
+import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useAppChunkLoadRecovery } from './hooks/useAppChunkLoadRecovery';
@@ -56,7 +56,7 @@ import {
   type ToolEventStatus,
 } from './utils/productTelemetry';
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
-import { getJsonSchemaIssueHighlights } from './utils/jsonSchemaIssueHighlights';
+import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFeedback';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
 import { buildAppEditorUiState } from './utils/appEditorUiState';
 import { getContentSizeSummary } from './utils/appWorkflowHelpers';
@@ -221,18 +221,13 @@ const App: React.FC = () => {
 
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
   const [jsonSchemaValidationResult, setJsonSchemaValidationResult] = useState<JsonSchemaValidationResult | null>(null);
-  const jsonSchemaDiagnosticHighlights = useMemo<EditorDiagnosticHighlight[]>(() => (
-    getJsonSchemaIssueHighlights(input, jsonSchemaValidationResult).map(({ range, issue }) => ({
-      range,
-      path: issue.path,
-      keyword: issue.keyword,
-      message: issue.message,
-    }))
-  ), [input, jsonSchemaValidationResult]);
-  const jsonSchemaWarning = useMemo(() => {
-    if (!jsonSchemaValidationResult || jsonSchemaValidationResult.status !== 'invalid') return '';
-    return `Schema 未通过 ${jsonSchemaValidationResult.issueCount} 个问题`;
-  }, [jsonSchemaValidationResult]);
+  const {
+    diagnosticHighlights: jsonSchemaDiagnosticHighlights,
+    warning: jsonSchemaWarning,
+  } = useMemo(
+    () => buildAppJsonSchemaEditorFeedback(input, jsonSchemaValidationResult),
+    [input, jsonSchemaValidationResult]
+  );
 
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
   const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<AppSmartSuggestionOrigin | null>(null);
