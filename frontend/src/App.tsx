@@ -59,6 +59,7 @@ import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFeedback';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
 import { buildAppEditorUiState } from './utils/appEditorUiState';
+import { buildAppAutoSaveTogglePlan } from './utils/appAutoSaveTogglePlan';
 import { getContentSizeSummary } from './utils/appWorkflowHelpers';
 import { setLegacyJsonPathValue } from './utils/appLegacyJsonPath';
 import {
@@ -372,19 +373,19 @@ const App: React.FC = () => {
   }, [setMode, trackCurrentToolEvent]);
 
   const handleToggleAutoSave = useCallback(() => {
-    if (!activeFileId) {
-      showError('请先打开或保存文件后再启用自动保存');
+    const plan = buildAppAutoSaveTogglePlan({
+      hasActiveFile: Boolean(activeFileId),
+      activeFileHasHandle: Boolean(activeFile?.handle),
+      isAutoSaveEnabled,
+    });
+
+    if (plan.type === 'error') {
+      showError(plan.message);
       return;
     }
 
-    if (!activeFile?.handle) {
-      showError('请先保存当前标签后再启用自动保存');
-      return;
-    }
-
-    const nextEnabled = !isAutoSaveEnabled;
-    setIsAutoSaveEnabled(nextEnabled);
-    showSuccess(nextEnabled ? '自动保存已开启' : '自动保存已关闭');
+    setIsAutoSaveEnabled(plan.nextEnabled);
+    showSuccess(plan.message);
   }, [activeFileId, activeFile, isAutoSaveEnabled, setIsAutoSaveEnabled]);
 
   // 快捷键状态 (Hook)

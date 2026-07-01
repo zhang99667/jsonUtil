@@ -1,6 +1,8 @@
 import { appWorkflowSettingsBackupMaintainabilityBudgets } from './maintainability-budget-app-workflow-settings-backup-rules.mjs';
 
 export const appWorkflowCommandMaintainabilityBudgets = [
+  { file: 'frontend/src/utils/appAutoSaveTogglePlan.ts', maxLines: 55, reason: '自动保存开关计划 helper 只维护可用性校验、下一状态和 toast 文案' },
+  { file: 'frontend/src/utils/appAutoSaveTogglePlan.test.ts', maxLines: 70, reason: '自动保存开关计划测试只锁定无文件、无句柄、开启和关闭四种路径' },
   { file: 'frontend/src/hooks/useAppCopyCommands.ts', maxLines: 65, reason: '复制命令 hook 只接 SOURCE/PREVIEW 文本和复制 runner，副作用分支留在可测 helper' },
   { file: 'frontend/src/utils/appCopyCommandRunner.ts', maxLines: 85, reason: '复制命令 runner 只维护空态、处理中、复制、toast 和打点语义' },
   ...appWorkflowSettingsBackupMaintainabilityBudgets,
