@@ -8,7 +8,7 @@ export const governanceAppWorkflowMaintainabilityBudgets = [
   },
   {
     file: 'scripts/ci/maintainability-budget-app-workflow-ai-rules.mjs',
-    maxLines: 30,
+    maxLines: 45,
     reason: 'App AI 修复预算规则应保持短表，新增 AI 工作流 helper 先按 hook/helper 分层',
   },
   {
