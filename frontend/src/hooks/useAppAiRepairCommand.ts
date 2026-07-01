@@ -1,14 +1,12 @@
 import { useCallback, useState, type MutableRefObject } from 'react';
-import { ActionType, TransformMode, type AIConfig } from '../types';
+import type { AIConfig, TransformMode } from '../types';
 import type { AiRepairSummary } from '../utils/aiRepairSummary';
-import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { showError, showSuccess } from '../utils/toast';
 import type { ToolEventStatus } from '../utils/productTelemetry';
 import {
-  buildAppAiRepairApplyResult,
-  getAppAiRepairErrorFeedback,
-  getAppAiRepairSkipMessage,
-} from '../utils/appAiRepairCommand';
+  loadAppAiRepairRuntime,
+  runAppAiRepairCommand,
+} from '../utils/appAiRepairCommandRunner';
 
 type AppAiRepairTrackEvent = (
   eventName: string,
@@ -44,44 +42,21 @@ export const useAppAiRepairCommand = ({
     const startedAt = performance.now();
     onTriggerFeatureFirstUse();
 
-    const skipMessage = getAppAiRepairSkipMessage(sourceText);
-    if (skipMessage) {
-      showError(skipMessage);
-      onTrackToolEvent(ActionType.AI_FIX, 'ai', 'skipped', startedAt);
-      return;
-    }
-
-    setIsAiRepairing(true);
-    try {
-      const { fixJsonWithRepairDetails } = await import('../services/aiService');
-      const repairResult = await fixJsonWithRepairDetails(sourceText, aiConfig);
-      const { buildAiRepairSummary } = await import('../utils/aiRepairSummary');
-      const applyResult = buildAppAiRepairApplyResult({
-        sourceText,
-        repairResult,
-        buildAiRepairSummary,
-      });
-
-      aiRepairSnapshotRef.current = applyResult.fixedJson;
-      onApplyFixedJson(applyResult.fixedJson, applyResult.summary);
-      onSetMode(TransformMode.FORMAT);
-      showSuccess(applyResult.successMessage);
-      onTrackToolEvent(ActionType.AI_FIX, 'ai', 'success', startedAt);
-    } catch (error) {
-      if (dispatchChunkLoadRecoveryEvent(error)) {
-        onTrackToolEvent(ActionType.AI_FIX, 'ai', 'error', startedAt);
-        return;
-      }
-
-      const feedback = getAppAiRepairErrorFeedback(error);
-      showError(feedback.message);
-      if (feedback.shouldOpenAiSettings) {
-        onOpenAiSettings();
-      }
-      onTrackToolEvent(ActionType.AI_FIX, 'ai', 'error', startedAt);
-    } finally {
-      setIsAiRepairing(false);
-    }
+    await runAppAiRepairCommand({
+      sourceText,
+      aiConfig,
+      aiRepairSnapshotRef,
+      startedAt,
+    }, {
+      onLoadRuntime: loadAppAiRepairRuntime,
+      onSetRepairing: setIsAiRepairing,
+      onApplyFixedJson,
+      onSetMode,
+      onOpenAiSettings,
+      onTrackToolEvent,
+      onShowError: showError,
+      onShowSuccess: showSuccess,
+    });
   }, [
     aiConfig,
     aiRepairSnapshotRef,
