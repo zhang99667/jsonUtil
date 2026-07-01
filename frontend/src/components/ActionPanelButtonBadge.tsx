@@ -1,12 +1,7 @@
 import React from 'react';
+import type { ActionPanelEntryButtonBadge } from '../utils/actionPanelEntryButtonTypes';
 
-interface ActionPanelButtonBadgeProps {
-  label: string;
-  dataTour: string;
-  ariaHidden?: boolean;
-}
-
-export const ActionPanelButtonBadge: React.FC<ActionPanelButtonBadgeProps> = ({
+export const ActionPanelButtonBadge: React.FC<ActionPanelEntryButtonBadge> = ({
   label,
   dataTour,
   ariaHidden,

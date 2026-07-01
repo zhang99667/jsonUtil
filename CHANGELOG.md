@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **静态保留预算表收敛**: 静态资源保留预算规则复用表项工厂，预算内容保持不变但移除重复对象样板，给后续扩展部署保留门禁留出治理余量
+- **工具栏 Badge 契约复用**: `ActionPanelButtonBadge` 复用入口按钮状态里的 badge 类型契约，移除重复 props 定义并退出预算临界列表，降低后续扩展工具栏状态徽标时的同步成本
 - **深度解析复制 workflow 测试分层**: 将 `transformReportPanelCopyWorkflow.test` 中的 mock、默认 state/effects 和 guarded action 列表抽到专用 fixture，测试文件回归为复制行为断言，并收紧测试预算，降低后续扩展复制动作时的维护噪音
 - **App 状态预算规则分层**: 将主应用状态预算下沉为 async/ui/core 三层子表，异步策略、异步转换状态、编辑区派生状态和懒加载 panel 状态各自归组，原 state 入口回归为聚合层，降低继续新增状态 helper 时预算规则贴线风险
 - **旧 chunk 错误边界草稿保护**: 全局 ErrorBoundary 的动态 import 失效刷新按钮复用主应用草稿保存回调，避免旧页面 chunk 加载失败落到错误边界时直接刷新丢失当前工作区内容
