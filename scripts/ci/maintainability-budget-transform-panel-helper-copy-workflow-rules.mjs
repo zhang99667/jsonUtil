@@ -26,7 +26,12 @@ export const transformPanelHelperCopyWorkflowMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/utils/transformReportPanelCopyWorkflow.test.ts',
-    maxLines: 260,
-    reason: '深度解析复制 workflow 单测应覆盖 pending、CMD 对比注入、质量基线、占位符和行级复制边界',
+    maxLines: 170,
+    reason: '深度解析复制 workflow 单测应只保留 pending、CMD 对比注入、质量基线、占位符和行级复制行为断言',
+  },
+  {
+    file: 'frontend/src/utils/transformReportPanelCopyWorkflowTestFixture.ts',
+    maxLines: 150,
+    reason: '深度解析复制 workflow 测试 fixture 应集中 mock、默认 state/effects 和 guarded action 列表',
   },
 ];
