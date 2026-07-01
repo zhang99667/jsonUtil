@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { getClipboardErrorMessage, readClipboardText } from '../utils/clipboard';
 import { buildPasteSourcePlan } from '../utils/appSourceReplacePlans';
 import { showError } from '../utils/toast';
-import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandHelpers';
+import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandTypes';
 import { usePendingSourceReplacementCommand } from './usePendingSourceReplacementCommand';
 
 interface UseAppPasteSourceCommandInput {

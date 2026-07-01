@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { buildSchemeInspectSourcePlan } from '../utils/appSourceReplacePlans';
-import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandHelpers';
+import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandTypes';
 import { usePendingSourceReplacementCommand } from './usePendingSourceReplacementCommand';
 
 interface UseAppSchemeInspectSourceCommandInput {

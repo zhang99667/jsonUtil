@@ -1,35 +1,9 @@
-import type { AppSourceReplacePlan } from './appSourceReplacePlans';
-import type { ToolEventStatus } from './productTelemetry';
 import { showError, showSuccess } from './toast';
-
-export type AppSourceReplacementTrackEvent = (
-  eventName: string,
-  category: string,
-  status?: ToolEventStatus,
-  startedAt?: number,
-) => void;
-
-interface RunSourceReplacePlanInput {
-  plan: AppSourceReplacePlan;
-  eventName: string;
-  category: string;
-  startedAt: number;
-  onApply: (text: string, successMessage: string) => void;
-  onConfirm: (text: string) => void;
-  onTrackToolEvent: AppSourceReplacementTrackEvent;
-  onSuccessSkip?: () => void;
-  shouldTrackConfirmAsSkipped?: boolean;
-}
-
-interface ConfirmPendingSourceReplacementInput {
-  pendingText: string | null;
-  successMessage: string;
-  eventName: string;
-  category: string;
-  onApply: (text: string, successMessage: string) => void;
-  onClearPending: () => void;
-  onTrackToolEvent: AppSourceReplacementTrackEvent;
-}
+import type {
+  AppSourceReplacementTrackEvent,
+  ConfirmPendingSourceReplacementInput,
+  RunSourceReplacePlanInput,
+} from './appSourceReplacementCommandTypes';
 
 export const runSourceReplacePlan = ({
   plan,
