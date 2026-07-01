@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **状态栏左侧信息分层**: 将文件、保存和 SOURCE 校验 badge 组合抽到 `StatusBarStatusBadges`，并把左侧信息 props 拆成 type-only 契约，左侧容器继续只负责布局和指标/状态装配，降低后续扩展状态栏时的耦合
 - **旧 chunk 全局错误恢复**: 动态 import 失败恢复新增 `window error` 事件覆盖，并将事件 target/载荷契约拆到 type-only 模块，减少部分浏览器只抛全局模块加载错误时暴露原始异常的概率
 - **版本检测契约分层**: 将单次更新检测输入契约和调度 target 契约拆到独立 type-only 模块，runner 与 schedule 继续只保留请求/解析/通知和定时器监听装配，降低发布恢复链路继续扩展时的贴线风险
 - **状态栏文件状态分层**: 将当前文件查找和保存状态构造抽到 `statusBarFileState` 纯 helper，`statusBarViewModel` 回归为状态栏聚合入口并收紧预算，降低后续扩展保存/草稿提示时误碰 SOURCE 校验和本地处理状态的风险

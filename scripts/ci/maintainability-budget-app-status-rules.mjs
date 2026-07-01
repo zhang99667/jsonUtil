@@ -2,7 +2,9 @@ const statusBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const appStatusMaintainabilityBudgets = [
   statusBudget('frontend/src/components/StatusBar.tsx', 95, '状态栏组件应只负责 view model 调用和左/右状态区装配，状态派生留在纯 helper'),
-  statusBudget('frontend/src/components/StatusBarLeftInfo.tsx', 62, '状态栏左侧信息组件应只负责内容统计、文件、保存和 SOURCE 校验状态装配，具体统计展示交给子组件'),
+  statusBudget('frontend/src/components/StatusBarLeftInfo.tsx', 45, '状态栏左侧信息组件应只负责内容统计与状态 badge 组装配，具体展示交给子组件'),
+  statusBudget('frontend/src/components/StatusBarLeftInfoTypes.ts', 35, '状态栏左侧信息类型契约应独立维护，避免展示组件被 props 声明撑大'),
+  statusBudget('frontend/src/components/StatusBarStatusBadges.tsx', 35, '状态栏左侧状态 badge 组应只负责文件、保存和 SOURCE 校验 badge 装配'),
   statusBudget('frontend/src/components/StatusBarContentMetrics.tsx', 70, '状态栏内容统计组件应只维护编码、长度、字节、光标和行列统计展示'),
   statusBudget('frontend/src/components/StatusBarActiveFileBadge.tsx', 35, '状态栏当前文件 badge 应只负责文件名截断、路径提示和文件图标展示'),
   statusBudget('frontend/src/components/StatusBarSaveStatusBadge.tsx', 30, '状态栏保存状态 badge 应只负责保存文案、样式和提示展示'),

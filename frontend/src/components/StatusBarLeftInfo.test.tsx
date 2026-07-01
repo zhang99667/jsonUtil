@@ -5,6 +5,7 @@ import { StatusBarContentMetrics } from './StatusBarContentMetrics';
 import { StatusBarLeftInfo } from './StatusBarLeftInfo';
 import { StatusBarSaveStatusBadge } from './StatusBarSaveStatusBadge';
 import { StatusBarSourceValidationBadge } from './StatusBarSourceValidationBadge';
+import { StatusBarStatusBadges } from './StatusBarStatusBadges';
 
 interface ElementLike {
   type?: unknown;
@@ -82,8 +83,9 @@ describe('StatusBarLeftInfo', () => {
     expect(metrics.props.maxColumns).toBe(80);
     expect(metrics.props.cursorLine).toBe(3);
     expect(metrics.props.cursorColumn).toBe(9);
-    expect(findByType(tree, StatusBarActiveFileBadge)[0].props.activeFile).toBe(activeFile);
-    expect(findByType(tree, StatusBarSaveStatusBadge)[0].props.status).toMatchObject({
+    const badgeGroup = findByType(tree, StatusBarStatusBadges)[0];
+    expect(badgeGroup.props.activeFile).toBe(activeFile);
+    expect(badgeGroup.props.saveStatus).toMatchObject({
       label: '未保存',
       className: 'bg-yellow-100 text-yellow-800',
     });
@@ -115,9 +117,33 @@ describe('StatusBarLeftInfo', () => {
     expect(metrics.props.isStatsLimited).toBe(true);
     expect(metrics.props.byteSizeText).toBe('≥2.0 KB');
 
-    const validationBadge = findByType(tree, StatusBarSourceValidationBadge)[0];
-    expect(validationBadge.props.status).toMatchObject({ label: 'JSON 无效 L1:C2' });
-    expect(validationBadge.props.action).toMatchObject({ type: 'locate', onClick });
+    const badgeGroup = findByType(tree, StatusBarStatusBadges)[0];
+    expect(badgeGroup.props.sourceValidationStatus).toMatchObject({ label: 'JSON 无效 L1:C2' });
+    expect(badgeGroup.props.sourceValidationAction).toMatchObject({ type: 'locate', onClick });
+  });
+});
+
+describe('StatusBarStatusBadges', () => {
+  it('透传文件、保存和 SOURCE 校验状态到各 badge', () => {
+    const onClick = vi.fn();
+    const tree = StatusBarStatusBadges({
+      activeFile,
+      saveStatus: {
+        label: '已保存',
+        className: 'bg-green-100 text-green-800',
+        title: '当前文件已保存',
+      },
+      sourceValidationStatus: {
+        label: 'JSON 无效 L2:C4',
+        className: 'bg-red-100 text-red-800',
+        title: 'SOURCE JSON 无效: 缺少右括号',
+      },
+      sourceValidationAction: { type: 'locate', onClick },
+    });
+
+    expect(findByType(tree, StatusBarActiveFileBadge)[0].props.activeFile).toBe(activeFile);
+    expect(findByType(tree, StatusBarSaveStatusBadge)[0].props.status).toMatchObject({ label: '已保存' });
+    expect(findByType(tree, StatusBarSourceValidationBadge)[0].props.action).toMatchObject({ type: 'locate', onClick });
   });
 });
 
