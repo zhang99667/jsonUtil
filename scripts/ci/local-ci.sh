@@ -29,7 +29,12 @@ log "Frontend: install dependencies"
 cd "$ROOT_DIR/frontend"
 npm ci
 
+log "Governance: version consistency"
+cd "$ROOT_DIR"
+node scripts/ci/check-version-consistency.mjs
+
 log "Frontend: typecheck"
+cd "$ROOT_DIR/frontend"
 npm run typecheck
 
 log "Frontend: lint"
