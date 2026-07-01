@@ -1,20 +1,19 @@
 import {
   formatTransformArchivePackageJsonText,
-  formatTransformCmdStructureReportText,
   formatTransformCollaborationReportText,
   formatTransformContextReportText,
   formatTransformDiagnosticSummaryText,
-  formatTransformPathValueReportText,
   formatTransformQualitySnapshotJsonText,
   formatTransformReportViewText,
   formatTransformTroubleshootingRecipeJsonText,
 } from './transformSummary';
+import { formatCopySuccessMessage } from './transformReportCopyMetrics';
 import {
-  formatCopySuccessMessage,
-  formatPathValueCopyCountLabel,
-  getPathValueCopyRowCount,
-  isPathValueCopyLimited,
-} from './transformReportCopyMetrics';
+  buildReportCopyCmdComparisonContext,
+  copyCmdStructureReportText,
+  copyPathValueReportText,
+  copyReportViewText,
+} from './transformReportPanelReportCopyActions';
 import type {
   TransformReportPanelCopyTextRunner,
   TransformReportPanelCopyWorkflowEffects,
@@ -27,8 +26,6 @@ export const buildTransformReportPanelReportCopyWorkflow = (
   effects: TransformReportPanelCopyWorkflowEffects,
   copyPanelText: TransformReportPanelCopyTextRunner
 ): TransformReportPanelReportCopyWorkflow => {
-  const hasReportView = Boolean(state.report && state.reportView && !state.isFilterPending);
-
   const copyReport = async () => {
     if (!state.activeContext) return;
 
@@ -40,32 +37,32 @@ export const buildTransformReportPanelReportCopyWorkflow = (
   };
 
   const copyFilteredReport = async () => {
-    if (!state.report || !state.reportView || state.isFilterPending) return;
-
-    await copyPanelText({
-      text: formatTransformReportViewText(state.report, state.reportView, state.deferredQuery),
-      successMessage: text => formatCopySuccessMessage('筛选结果', text),
+    await copyReportViewText({
+      state,
+      copyPanelText,
+      label: '筛选结果',
       errorLogMessage: '复制深度解析筛选结果失败:',
+      formatText: formatTransformReportViewText,
     });
   };
 
   const copyDiagnosticSummary = async () => {
-    if (!hasReportView || !state.report || !state.reportView) return;
-
-    await copyPanelText({
-      text: formatTransformDiagnosticSummaryText(state.report, state.reportView, state.deferredQuery),
-      successMessage: text => formatCopySuccessMessage('诊断摘要', text),
+    await copyReportViewText({
+      state,
+      copyPanelText,
+      label: '诊断摘要',
       errorLogMessage: '复制深度解析诊断摘要失败:',
+      formatText: formatTransformDiagnosticSummaryText,
     });
   };
 
   const copyQualitySnapshot = async () => {
-    if (!hasReportView || !state.report || !state.reportView) return;
-
-    await copyPanelText({
-      text: formatTransformQualitySnapshotJsonText(state.report, state.reportView, state.deferredQuery),
-      successMessage: text => formatCopySuccessMessage('质量快照', text),
+    await copyReportViewText({
+      state,
+      copyPanelText,
+      label: '质量快照',
       errorLogMessage: '复制深度解析质量快照失败:',
+      formatText: formatTransformQualitySnapshotJsonText,
     });
   };
 
@@ -95,61 +92,50 @@ export const buildTransformReportPanelReportCopyWorkflow = (
   };
 
   const copyArchivePackage = async () => {
-    if (!hasReportView || !state.report || !state.reportView) return;
-
-    await copyPanelText({
-      text: formatTransformArchivePackageJsonText(state.report, state.reportView, state.deferredQuery, {
-        cmdComparisonReportText: effects.buildActiveCmdComparisonReportText(),
-        cmdComparisonCandidateText: effects.buildActiveCmdComparisonCandidateText(),
-      }),
-      successMessage: text => formatCopySuccessMessage('归档包', text),
+    await copyReportViewText({
+      state,
+      copyPanelText,
+      label: '归档包',
       errorLogMessage: '复制深度解析归档包失败:',
+      formatText: (report, reportView, query) => formatTransformArchivePackageJsonText(
+        report,
+        reportView,
+        query,
+        buildReportCopyCmdComparisonContext(effects)
+      ),
     });
   };
 
   const copyTroubleshootingRecipe = async () => {
-    if (!hasReportView || !state.report || !state.reportView) return;
-
-    await copyPanelText({
-      text: formatTransformTroubleshootingRecipeJsonText(state.report, state.reportView, state.deferredQuery),
-      successMessage: text => formatCopySuccessMessage('排查 recipe', text),
+    await copyReportViewText({
+      state,
+      copyPanelText,
+      label: '排查 recipe',
       errorLogMessage: '复制深度解析排查 recipe 失败:',
+      formatText: formatTransformTroubleshootingRecipeJsonText,
     });
   };
 
   const copyPathValueReport = async () => {
-    if (!state.reportView || !state.hasPathValueCopyItems || state.isFilterPending) return;
-
-    await copyPanelText({
-      text: formatTransformPathValueReportText(state.reportView),
-      successMessage: `已复制路径和值（${formatPathValueCopyCountLabel(
-        getPathValueCopyRowCount(state.reportView.records),
-        isPathValueCopyLimited(state.reportView.records, state.reportView.isRecordTruncated)
-      )}）`,
-      errorLogMessage: '复制深度解析路径和值失败:',
-    });
+    await copyPathValueReportText(state, copyPanelText);
   };
 
   const copyCmdStructureReport = async () => {
-    if (!hasReportView || !state.report || !state.reportView || !state.hasCmdStructureCopyItems) return;
-
-    await copyPanelText({
-      text: formatTransformCmdStructureReportText(state.report, state.reportView, state.deferredQuery),
-      successMessage: state.hasFocusedCmdStructureCopyItems ? '已复制聚焦 CMD 结构列表' : '已复制 CMD 结构列表',
-      errorLogMessage: '复制深度解析 CMD 结构列表失败:',
-    });
+    await copyCmdStructureReportText(state, copyPanelText);
   };
 
   const copyCollaborationReport = async () => {
-    if (!hasReportView || !state.report || !state.reportView) return;
-
-    await copyPanelText({
-      text: formatTransformCollaborationReportText(state.report, state.reportView, state.deferredQuery, {
-        cmdComparisonReportText: effects.buildActiveCmdComparisonReportText(),
-        cmdComparisonCandidateText: effects.buildActiveCmdComparisonCandidateText(),
-      }),
-      successMessage: text => formatCopySuccessMessage('排查报告', text),
+    await copyReportViewText({
+      state,
+      copyPanelText,
+      label: '排查报告',
       errorLogMessage: '复制协作排查报告失败:',
+      formatText: (report, reportView, query) => formatTransformCollaborationReportText(
+        report,
+        reportView,
+        query,
+        buildReportCopyCmdComparisonContext(effects)
+      ),
     });
   };
 
