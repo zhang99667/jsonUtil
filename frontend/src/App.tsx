@@ -7,7 +7,6 @@ import { AppWorkspaceOverlays } from './components/AppWorkspaceOverlays';
 import {
   performTransform,
   deepParseWithContext,
-  isStandaloneDeepFormatInput
 } from './utils/transformations';
 import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext, type EditorDiagnosticHighlight } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
@@ -27,6 +26,7 @@ import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
 import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import { useAppSourceValidation } from './hooks/useAppSourceValidation';
 import { useAppTemplateFillCommand } from './hooks/useAppTemplateFillCommand';
+import { useAppSourceInputCommands } from './hooks/useAppSourceInputCommands';
 import { useAppToolPanelCommands } from './hooks/useAppToolPanelCommands';
 import {
   useAppSourceReplacementCommands,
@@ -38,18 +38,16 @@ import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import { AppConfirmDialogs } from './components/AppConfirmDialogs';
 import { AppLazyShellModals } from './components/AppLazyShellModals';
-import { AppLazyToolPanels } from './components/AppLazyToolPanels';
+import { AppToolPanelsController } from './components/AppToolPanelsController';
 import ErrorBoundary from './components/ErrorBoundary';
 import { StatusBar } from './components/StatusBar';
 import { getDocumentStats } from './utils/documentStats';
-import type { AiRepairSummary } from './utils/aiRepairSummary';
 import { getDetailedErrorMessage } from './utils/errors';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 import { setJsonPointerValue } from './utils/jsonPointer';
 import {
-  cleanJsonInput,
   getJsonValidationErrorLocation,
   startJsonValidation,
 } from './utils/jsonValidation';
@@ -153,7 +151,6 @@ const App: React.FC = () => {
     onCloseFile: closeFile,
   });
 
-  const aiRepairSnapshotRef = useRef<string | null>(null);
   const smartSuggestionOriginTextRef = useRef('');
   const autoExpandScheme = generalSettings.autoExpandSchemeInDeepFormat;
   const {
@@ -254,7 +251,6 @@ const App: React.FC = () => {
     onSetInput: setInput,
     onUpdateActiveFileContent: updateActiveFileContent,
   });
-  const [aiRepairSummary, setAiRepairSummary] = useState<AiRepairSummary | null>(null);
   const [sourceErrorLocateSignal, setSourceErrorLocateSignal] = useState(0);
   const sourceErrorLocation = useMemo(
     () => validation.isValid ? null : getJsonValidationErrorLocation(input, validation.error),
@@ -282,6 +278,21 @@ const App: React.FC = () => {
 
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
   const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<AppSmartSuggestionOrigin | null>(null);
+  const {
+    aiRepairSnapshotRef,
+    aiRepairSummary,
+    handleApplyAiRepairResult,
+    handleCloseAiRepairSummary,
+    handleInputChange,
+  } = useAppSourceInputCommands({
+    sourceText: input,
+    mode,
+    inputRef,
+    onSetSourceText: setInput,
+    onSetMode: setMode,
+    onSetSmartSuggestionOrigin: setSmartSuggestionOrigin,
+    onUpdateActiveFileContent: updateActiveFileContent,
+  });
 
   // 光标位置状态（用于状态栏显示）
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
@@ -291,14 +302,6 @@ const App: React.FC = () => {
   useEffect(() => {
     safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
   }, [aiConfig]);
-
-  useEffect(() => {
-    if (!aiRepairSummary) return;
-    if (aiRepairSnapshotRef.current !== input) {
-      aiRepairSnapshotRef.current = null;
-      setAiRepairSummary(null);
-    }
-  }, [input, aiRepairSummary]);
 
   // 访客统计打点 (仅统计前台页面访问)
   useEffect(() => {
@@ -479,8 +482,6 @@ const App: React.FC = () => {
     const content = activeEditor === 'PREVIEW' ? output : input;
     return getDocumentStats(content, { maxScanLength: DOCUMENT_STATS_SCAN_LIMIT });
   }, [input, output, activeEditor]);
-  const isSourceLarge = asyncTransformPolicy.isSourceLarge;
-  const isAiConfigured = Boolean(aiConfig.apiKey.trim());
   const smartSuggestion = useMemo(() => getSmartInputSuggestion(input), [input]);
 
   useEffect(() => {
@@ -492,35 +493,6 @@ const App: React.FC = () => {
   }, [input, smartSuggestion, smartSuggestionOrigin]);
 
   useAppSourceValidation({ input, onSetValidation: setValidation });
-
-  // 左侧编辑器变更处理
-  const handleInputChange = useCallback((newVal: string) => {
-    // 实时清理不可见字符
-    const cleanVal = cleanJsonInput(newVal);
-    setSmartSuggestionOrigin(null);
-    if (aiRepairSnapshotRef.current !== cleanVal) {
-      aiRepairSnapshotRef.current = null;
-      setAiRepairSummary(null);
-    }
-    setInput(cleanVal);
-    if (mode === TransformMode.NONE && isStandaloneDeepFormatInput(cleanVal)) {
-      setMode(TransformMode.DEEP_FORMAT);
-    }
-
-    // 同步更新 Ref 状态
-    inputRef.current = cleanVal;
-
-    // 更新活动文件内容缓存
-    updateActiveFileContent(cleanVal);
-
-  }, [mode, setAiRepairSummary, setInput, setMode, setSmartSuggestionOrigin, updateActiveFileContent]);
-
-  const handleApplyAiRepairResult = useCallback((fixedJson: string, summary: AiRepairSummary) => {
-    setAiRepairSummary(summary);
-    setInput(fixedJson);
-    inputRef.current = fixedJson;
-    updateActiveFileContent(fixedJson);
-  }, [setAiRepairSummary, setInput, updateActiveFileContent]);
 
   const {
     isAiRepairing: isProcessing,
@@ -659,10 +631,6 @@ const App: React.FC = () => {
       showError(getDetailedErrorMessage(err, '应用修改失败'));
     }
   }, [output, handleOutputChange]);
-
-  const handleJsonPathHighlight = useCallback((range: HighlightRange | null) => {
-    setHighlightRange(range);
-  }, []);
 
   const handleResetPanelLayout = useCallback(() => {
     resetFloatingPanelLayoutStorage();
@@ -823,81 +791,51 @@ const App: React.FC = () => {
           onSchemeEdit={handleSchemeEdit}
           onPaneResizeMouseDown={startResizingPane}
           onPaneResizeKeyDown={handlePaneResizeKeyDown}
-          onCloseAiRepairSummary={() => {
-            aiRepairSnapshotRef.current = null;
-            setAiRepairSummary(null);
-          }}
+          onCloseAiRepairSummary={handleCloseAiRepairSummary}
           onCopyAiRepairSummarySuccess={showSuccess}
           onCopyAiRepairSummaryError={showError}
         />
 
-        <AppLazyToolPanels
+        <AppToolPanelsController
           lazyPanelsLoaded={lazyPanelsLoaded}
-          jsonPathPanel={{
-            jsonData: jsonPathDataSource,
-            isDataPreparing: mode === TransformMode.DEEP_FORMAT && isOutputTransforming,
-            externalQueryRequest: jsonPathQueryRequest,
-            isOpen: isJsonPathPanelOpen,
-            onClose: handleCloseJsonPathPanel,
-            onHighlightRange: handleJsonPathHighlight,
-            onLocateStructure: handleLocateJsonPathResultInStructure,
-          }}
-          jsonTreePanel={{
-            jsonData: jsonPathDataSource,
-            isDataPreparing: mode === TransformMode.DEEP_FORMAT && isOutputTransforming,
-            isOpen: isJsonTreePanelOpen,
-            externalFocusRequest: jsonTreeFocusRequest,
-            onClose: () => setIsJsonTreePanelOpen(false),
-            onLocatePath: handleLocateJsonPath,
-            onOpenSchemeValue: handleOpenSchemeFromStructure,
-          }}
-          jsonComparePanel={{
-            sourceText: input,
-            isOpen: isJsonComparePanelOpen,
-            onClose: () => setIsJsonComparePanelOpen(false),
-            onLocatePath: handleLocateJsonPath,
-          }}
-          jsonSchemaPanel={{
-            jsonData: input,
-            isOpen: isJsonSchemaPanelOpen,
-            onClose: () => {
-              setIsJsonSchemaPanelOpen(false);
-              setJsonSchemaValidationResult(null);
-            },
-            onLocatePath: handleLocateJsonPath,
-            onApplyExampleToSource: handleRequestApplySchemaExampleToSource,
-            onValidationResult: setJsonSchemaValidationResult,
-          }}
-          transformReportPanel={{
-            isOpen: isTransformReportOpen,
-            onClose: () => setIsTransformReportOpen(false),
-            context: transformReportContext,
-            onLocatePath: handleLocateJsonPath,
-            onOpenSchemeValue: handleOpenSchemeFromReport,
-            onOpenTemplateFill: handleOpenTemplateFillFromReport,
-          }}
-          schemePanel={{
-            isOpen: isSchemeDecodeOpen,
-            onClose: () => setIsSchemeDecodeOpen(false),
-            standalone: true,
-            initialStandaloneInput: schemeInputRequest?.value,
-            initialStandaloneInputKey: schemeInputRequest?.id,
-            onApply: (encodedValue: string) => {
-              setInput(encodedValue);
-              inputRef.current = encodedValue;
-              updateActiveFileContent(encodedValue);
-            },
-            onInspectOriginal: handleInspectSourceFromScheme,
-          }}
-          templatePanel={{
-            isOpen: isTemplatePanelOpen,
-            onClose: () => setIsTemplatePanelOpen(false),
-            onApplyTemplate: handleApplyTemplate,
-            targetError: templateTargetError,
-            initialTemplate: templateFillRequest?.template,
-            initialTemplateKey: templateFillRequest?.id,
-            applyQualityDelta: templateApplyQualityDelta,
-          }}
+          mode={mode}
+          input={input}
+          jsonPathDataSource={jsonPathDataSource}
+          isOutputTransforming={isOutputTransforming}
+          transformReportContext={transformReportContext}
+          inputRef={inputRef}
+          jsonPathQueryRequest={jsonPathQueryRequest}
+          jsonTreeFocusRequest={jsonTreeFocusRequest}
+          schemeInputRequest={schemeInputRequest}
+          templateFillRequest={templateFillRequest}
+          isJsonPathPanelOpen={isJsonPathPanelOpen}
+          isJsonTreePanelOpen={isJsonTreePanelOpen}
+          isJsonComparePanelOpen={isJsonComparePanelOpen}
+          isJsonSchemaPanelOpen={isJsonSchemaPanelOpen}
+          isTransformReportOpen={isTransformReportOpen}
+          isSchemeDecodeOpen={isSchemeDecodeOpen}
+          isTemplatePanelOpen={isTemplatePanelOpen}
+          templateApplyQualityDelta={templateApplyQualityDelta}
+          templateTargetError={templateTargetError}
+          onSetSourceText={setInput}
+          onUpdateActiveFileContent={updateActiveFileContent}
+          onSetJsonTreePanelOpen={setIsJsonTreePanelOpen}
+          onSetJsonComparePanelOpen={setIsJsonComparePanelOpen}
+          onSetJsonSchemaPanelOpen={setIsJsonSchemaPanelOpen}
+          onSetTransformReportOpen={setIsTransformReportOpen}
+          onSetSchemeDecodeOpen={setIsSchemeDecodeOpen}
+          onSetTemplatePanelOpen={setIsTemplatePanelOpen}
+          onSetJsonSchemaValidationResult={setJsonSchemaValidationResult}
+          onCloseJsonPathPanel={handleCloseJsonPathPanel}
+          onLocateJsonPath={handleLocateJsonPath}
+          onLocateJsonPathResultInStructure={handleLocateJsonPathResultInStructure}
+          onJsonPathHighlight={setHighlightRange}
+          onOpenSchemeFromStructure={handleOpenSchemeFromStructure}
+          onOpenSchemeFromReport={handleOpenSchemeFromReport}
+          onOpenTemplateFillFromReport={handleOpenTemplateFillFromReport}
+          onApplySchemaExampleToSource={handleRequestApplySchemaExampleToSource}
+          onInspectSourceFromScheme={handleInspectSourceFromScheme}
+          onApplyTemplate={handleApplyTemplate}
         />
 
         <AppWorkspaceOverlays
@@ -918,10 +856,10 @@ const App: React.FC = () => {
         activeFileId={activeFileId}
         files={files}
         isAutoSaveEnabled={isAutoSaveEnabled}
-        isSourceLarge={isSourceLarge}
+        isSourceLarge={asyncTransformPolicy.isSourceLarge}
         isOutputTransforming={isOutputTransforming}
         isAiRepairing={isProcessing}
-        isAiConfigured={isAiConfigured}
+        isAiConfigured={Boolean(aiConfig.apiKey.trim())}
         hasSourceContent={editorUiState.hasSourceContent}
         isSourceJsonCandidate={editorUiState.isSourceJsonCandidate}
         sourceStandaloneDeepFormatKind={editorUiState.sourceStandaloneDeepFormatKind}

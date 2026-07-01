@@ -7,6 +7,8 @@ const appComponentBudget = (file, maxLines, reason) => ({
 export const appComponentMaintainabilityBudgets = [
   appComponentBudget('AppConfirmDialogs.tsx', 140, '主工作台确认弹窗组件只装配确认文案和回调，业务状态应留在 App 或纯 helper'),
   appComponentBudget('EditorHeaderActions.tsx', 210, '编辑器头部按钮组件只承载 SOURCE/PREVIEW 展示动作，业务判断应继续留在 App 派生状态'),
+  appComponentBudget('AppToolPanelsController.tsx', 210, '主工作台工具面板 controller 只负责 App 顶层状态到懒加载面板 props 的等价装配'),
+  appComponentBudget('AppToolPanelsController.test.tsx', 210, '工具面板 controller 测试应只覆盖 props 透传、关闭动作和 SOURCE 写入回调'),
   appComponentBudget('AppLazyToolPanels.tsx', 85, '主工作台懒加载工具面板组件只负责 lazy 面板装配，状态和事件语义应留在 App'),
   appComponentBudget('AppLazyPanelSlot.tsx', 30, '主工作台懒加载面板插槽只承载 loaded 判断和空 fallback Suspense 包裹'),
   appComponentBudget('AppLazyShellModals.tsx', 60, '主工作台全局懒加载弹窗壳只负责 settings/changelog 装配，不承载业务状态'),
