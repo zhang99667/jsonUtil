@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **CMD 值展示规则分层**: 将 CMD 结构 diff 里的稳定值序列化和预览截断抽到 `cmdStructureValueFormatter`，diff 报告入口只保留报告顺序和差异类型分发，并补充 key 排序与截断边界直测
 - **文件关闭离页保护分层**: 将 `useAppFileCloseGuard` 中的 `beforeunload` 浏览器离页拦截拆到 `useAppBeforeUnloadGuard`，主 hook 只保留 pending 关闭编排，并把新 hook 与测试纳入可维护性预算
 - **工具栏折叠态文案收敛**: 将工具栏工具按钮和面板入口按钮的折叠态 aria/title 文案拼装复用本地 helper，保持现有可访问输出不变，同时收紧 `actionPanelButtonState` 预算
 - **展开记录 cmdHandler 动作分层**: 将深度解析展开记录头部里的 CMD 结构复制、对比包复制和 cmdHandler 对比入口下沉到 `transformReportRecordCmdActionButtons`，主动作区只保留通用复制、定位和 Scheme 打开装配

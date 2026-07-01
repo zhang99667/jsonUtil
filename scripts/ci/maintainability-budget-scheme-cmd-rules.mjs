@@ -2,6 +2,8 @@ export const schemeCmdMaintainabilityBudgets = [
   { file: 'frontend/src/utils/cmdStructureDiff.ts', maxLines: 500, reason: 'CMD 结构对比逻辑应聚焦解析、归一化、diff 和候选排序，候选收集、raw source 解码与格式化展示继续拆到独立 helper' },
   { file: 'frontend/src/utils/cmdStructureValueDiff.ts', maxLines: 85, reason: 'CMD 参数值 diff 入口应只聚合路径行、source 等价和 value diff，不承载路径展开细节' },
   { file: 'frontend/src/utils/cmdStructureValueRows.ts', maxLines: 65, reason: 'CMD 参数值路径展开 helper 应独立维护对象、数组和转义 key 到路径行的纯派生' },
+  { file: 'frontend/src/utils/cmdStructureValueFormatter.ts', maxLines: 55, reason: 'CMD 参数值展示 formatter 应独立维护稳定 stringify 和预览截断规则' },
+  { file: 'frontend/src/utils/cmdStructureValueFormatter.test.ts', maxLines: 70, reason: 'CMD 参数值展示 formatter 测试只锁定稳定 stringify 和预览截断边界' },
   { file: 'frontend/src/utils/cmdStructureSourceEquivalence.ts', maxLines: 45, reason: 'CMD 结构化 source 等价判断应独立维护字符串与展开结构的归一化比较' },
   { file: 'frontend/src/utils/cmdStructureValueDiffTypes.ts', maxLines: 30, reason: 'CMD 参数值 diff 类型契约应独立维护路径行、值差异和比较结果结构' },
   { file: 'frontend/src/utils/cmdStructureCandidates.ts', maxLines: 140, reason: 'CMD actual 候选收集应保持纯扫描与去重 helper，避免 diff 和报告展示逻辑回流' },
