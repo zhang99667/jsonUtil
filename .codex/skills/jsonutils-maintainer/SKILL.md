@@ -21,12 +21,13 @@ description: JSONUtils 项目维护技能。用于优化性能、重构可维护
 3. 用 `rg` 或 `rg --files` 定位相关实现和测试。
 4. 明确成功标准：性能预算、解析 corpus、类型检查、构建门禁或交互测试。
 5. 做最小可验证改动，不做无关大重构。
-6. 更新 `CHANGELOG.md` 当前版本区块。
+6. 用户可见或准备上线的改动先递增 patch 版本并在 `CHANGELOG.md` 顶部新开版本区块，避免一个版本堆积几十条提交。
 7. 运行匹配范围的验证命令，并在最终回复中说明结果。
 
 ## 常用验证命令
 
 ```bash
+node scripts/ci/check-version-consistency.mjs
 node scripts/ci/check-deploy-shell-syntax.mjs
 node scripts/ci/check-ai-governance.mjs
 node scripts/ci/check-chunk-load-recovery-catches.mjs

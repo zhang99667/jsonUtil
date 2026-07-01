@@ -41,6 +41,7 @@
 | JSONPath / 结构导航性能 | `npm run perf:jsonpath`、相关单测 |
 | Scheme 解码性能 | `npm run perf:scheme`、相关 corpus 测试 |
 | 构建配置 / Vite 分包 | `npm run lint`、`npm run test -- config/xxx.test.ts`、`npm run build`、`npm run check:preloads` |
+| 版本 / CHANGELOG | `node scripts/ci/check-version-consistency.mjs` |
 | 前端组件交互 | 相关 Vitest 单测，必要时跑 `npm run test:e2e` |
 | 后端 API | `mvn test`，并检查 `docs/BACKEND-API-MATRIX.md` |
 | 部署脚本 | `node scripts/ci/check-deploy-shell-syntax.mjs`、`node scripts/ci/check-frontend-static-retention.mjs`；公网发布后运行 `node scripts/ci/check-production-frontend-assets.mjs <baseUrl>` 或远端健康检查脚本，确认深层 chunk、CSS `url(...)` 二级资源、CSS `@import` 链路可达且 JS/CSS `Content-Type` 正确 |
@@ -59,6 +60,7 @@
 每次代码改动至少完成：
 
 - 运行和改动范围匹配的测试或说明无法运行的原因。
+- 用户可见或准备上线的改动先递增 patch 版本并新开顶部 CHANGELOG 版本区块，运行 `node scripts/ci/check-version-consistency.mjs`，避免一个版本堆积几十条提交。
 - 涉及前端 TypeScript 源码时运行 `npm run lint` 或说明未运行原因。
 - 涉及手动 `import()`、懒加载 helper、`dispatchChunkLoadRecoveryEvent` 或发布恢复 catch 时运行 `node scripts/ci/check-chunk-load-recovery-catches.mjs`，确认旧 chunk 加载失败不会被业务 catch 吞掉。
 - 涉及 `scripts/deploy/*.sh`、`.github/scripts/*.sh`、`scripts/ci/local-ci.sh` 或 `.github/workflows/*.yml` 的 `workflow run` 块时运行 `node scripts/ci/check-deploy-shell-syntax.mjs`，先用 `bash -n` 拦截发布脚本语法错误，并单独检查 `REMOTE_SCRIPT heredoc` 这类远端脚本片段。
