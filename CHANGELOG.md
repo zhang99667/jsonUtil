@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.261 (2026-07-01) - 异步 Promise 分支分层
+### 🚀 优化与改进
+- **异步 Promise Task**: 将异步转换 hook 中的动态转换 Promise 分支抽成可测 helper，hook 回归请求启动、Worker 分流和状态消费
+- **旧 Chunk 恢复覆盖**: 新增 Promise task 单测覆盖成功结果、旧 chunk 统一刷新恢复、业务错误 fallback 和过期请求忽略，保护发布切换期间的恢复链路
+
 ## v1.8.260 (2026-07-01) - 异步 Worker 消息分层
 ### 🚀 优化与改进
 - **Worker 消息契约**: 将异步转换 Worker 的请求/响应类型和请求构造抽成共享 helper，hook 与 worker 共用同一份消息边界
