@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { HighlightRange } from '../types';
 import { showError, showSuccess } from '../utils/toast';
-import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandHelpers';
+import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandTypes';
 
 interface UseAppClearSourceCommandsInput {
   sourceText: string;

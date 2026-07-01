@@ -4,8 +4,8 @@ import {
   cancelPendingSourceReplacement,
   confirmPendingSourceReplacement,
   runSourceReplacePlan,
-  type AppSourceReplacementTrackEvent,
 } from '../utils/appSourceReplacementCommandHelpers';
+import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandTypes';
 
 interface PendingSourceReplacementRequestOptions {
   startedAt?: number;

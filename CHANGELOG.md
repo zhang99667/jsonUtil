@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.262 (2026-07-01) - SOURCE 替换命令契约分层
+### 🚀 优化与改进
+- **SOURCE 替换类型契约**: 将 SOURCE 替换命令的打点和 pending 操作类型抽成 type-only 契约文件，多个 hook 不再从带 toast/performance 副作用的 helper 中取类型
+- **SOURCE 工作流预算**: 将新的命令契约文件纳入可维护性预算，防止后续替换计划、确认和打点类型继续堆回同一 runner
+
 ## v1.8.261 (2026-07-01) - 异步 Promise 分支分层
 ### 🚀 优化与改进
 - **异步 Promise Task**: 将异步转换 hook 中的动态转换 Promise 分支抽成可测 helper，hook 回归请求启动、Worker 分流和状态消费

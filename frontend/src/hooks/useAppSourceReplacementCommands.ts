@@ -8,7 +8,7 @@ import {
   useAppSourceApplyEffects,
   type AppSmartSuggestionOrigin,
 } from './useAppSourceApplyEffects';
-import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandHelpers';
+import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandTypes';
 import { buildAppSourceReplacementCommands } from '../utils/appSourceReplacementCommandBundle';
 
 export type { AppSmartSuggestionOrigin } from './useAppSourceApplyEffects';
