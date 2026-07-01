@@ -13,20 +13,13 @@ import {
 import { QRCodeCanvas } from 'qrcode.react';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import {
-  extractBase64MetaInfo,
-  extractSchemeCommandSummaryInfo,
   formatSchemeInsightItems,
-  formatBase64MetaDisplayValue,
   formatPrimaryCmdHandlerCompatibleResult,
-  type Base64MetaInfo,
-  type SchemeCommandSummaryInfo,
 } from '../utils/schemeMetadata';
 import {
   buildSchemeQualitySummary,
   formatSchemeQualitySnapshotJsonText,
   formatSchemeQualitySummaryText,
-  type SchemeQualityLevel,
-  type SchemeQualitySummaryItem,
 } from '../utils/schemeQualitySummary';
 import {
   buildSchemePathValuesForCopy,
@@ -55,6 +48,16 @@ import {
   schemeLayerTypeLabels,
   schemeParamStageSourceLabels,
 } from '../utils/schemeViewerFormatters';
+import {
+  buildSchemeViewerDecodeMetadata,
+  createEmptySchemeDecodeResult,
+  type SchemeViewerDecodeMetadata,
+} from '../utils/schemeViewerDecodeMetadata';
+import {
+  getSchemeQualityClassName,
+  getSchemeQualityItemClassName,
+} from '../utils/schemeViewerQualityStyles';
+import { SchemeViewerBase64MetaPanel } from './SchemeViewerBase64MetaPanel';
 
 const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
 
@@ -84,65 +87,15 @@ const schemeTypeLabels: Record<SchemeType, string> = {
 interface SchemeDecodeWorkerResponse {
   id: number;
   result?: SchemeDecodeResult;
-  metadata?: SchemeDecodeWorkerMetadata;
+  metadata?: SchemeViewerDecodeMetadata;
   error?: string;
-}
-
-interface SchemeDecodeWorkerMetadata {
-  base64MetaInfo: Base64MetaInfo | null;
-  commandSummaryInfo: SchemeCommandSummaryInfo | null;
 }
 
 interface SchemeDecodeWorkerState {
   source: string;
   result: SchemeDecodeResult | null;
-  metadata: SchemeDecodeWorkerMetadata | null;
+  metadata: SchemeViewerDecodeMetadata | null;
 }
-
-const createEmptyDecodeResult = (original = ''): SchemeDecodeResult => ({
-  original,
-  decoded: '',
-  layers: [],
-  isJson: false,
-});
-
-const buildSchemePanelMetadata = (result: SchemeDecodeResult): SchemeDecodeWorkerMetadata => ({
-  base64MetaInfo: extractBase64MetaInfo(result.decoded, result.isJson),
-  commandSummaryInfo: extractSchemeCommandSummaryInfo(
-    result.decoded,
-    result.isJson,
-    result.schemeInfo,
-    { includeCommandFieldRows: false, source: result.original }
-  ),
-});
-
-const getSchemeQualityClassName = (level: SchemeQualityLevel): string => {
-  switch (level) {
-    case 'success':
-      return 'border-emerald-700/50 bg-emerald-950/30 text-emerald-100';
-    case 'warning':
-      return 'border-amber-700/50 bg-amber-950/30 text-amber-100';
-    case 'error':
-      return 'border-red-700/50 bg-red-950/30 text-red-100';
-    case 'info':
-    default:
-      return 'border-cyan-700/50 bg-cyan-950/30 text-cyan-100';
-  }
-};
-
-const getSchemeQualityItemClassName = (tone: SchemeQualitySummaryItem['tone'] = 'default'): string => {
-  switch (tone) {
-    case 'success':
-      return 'bg-emerald-900/30 text-emerald-200 border-emerald-700/40';
-    case 'warning':
-      return 'bg-amber-900/30 text-amber-200 border-amber-700/40';
-    case 'cyan':
-      return 'bg-cyan-900/30 text-cyan-200 border-cyan-700/40';
-    case 'default':
-    default:
-      return 'bg-editor-bg text-gray-300 border-editor-border';
-  }
-};
 
 export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   isOpen,
@@ -217,17 +170,17 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   // 解析 scheme（添加空值保护）
   const decodeResult = useMemo<SchemeDecodeResult>(() => {
     if (!decodeSourceValue) {
-      return createEmptyDecodeResult();
+      return createEmptySchemeDecodeResult();
     }
 
     if (shouldDecodeInWorker) {
       if (isCurrentDecodeCancelled) {
-        return createEmptyDecodeResult(decodeSourceValue);
+        return createEmptySchemeDecodeResult(decodeSourceValue);
       }
 
       return hasFreshWorkerDecodeResult && workerDecodeState.result
         ? workerDecodeState.result
-        : createEmptyDecodeResult(decodeSourceValue);
+        : createEmptySchemeDecodeResult(decodeSourceValue);
     }
 
     return deepDecodeScheme(decodeSourceValue);
@@ -277,7 +230,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
         setWorkerDecodeState({
           source: decodeSourceValue,
           result: fallbackResult,
-          metadata: buildSchemePanelMetadata(fallbackResult),
+          metadata: buildSchemeViewerDecodeMetadata(fallbackResult, {
+            includeCommandFieldRows: false,
+          }),
         });
         return;
       }
@@ -285,7 +240,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       setWorkerDecodeState({
         source: decodeSourceValue,
         result: event.data.result,
-        metadata: event.data.metadata || buildSchemePanelMetadata(event.data.result),
+        metadata: event.data.metadata || buildSchemeViewerDecodeMetadata(event.data.result, {
+          includeCommandFieldRows: false,
+        }),
       });
     };
     worker.onerror = (event) => {
@@ -300,7 +257,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       setWorkerDecodeState({
         source: decodeSourceValue,
         result: fallbackResult,
-        metadata: buildSchemePanelMetadata(fallbackResult),
+        metadata: buildSchemeViewerDecodeMetadata(fallbackResult, {
+          includeCommandFieldRows: false,
+        }),
       });
     };
     worker.postMessage({ id: 1, input: decodeSourceValue });
@@ -500,21 +459,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const placeholderGroups = useMemo(() => (
     buildSchemePlaceholderGroups(placeholders)
   ), [placeholders]);
-  const base64MetaInfo = useMemo(() => (
-    freshWorkerDecodeMetadata
-      ? freshWorkerDecodeMetadata.base64MetaInfo
-      : extractBase64MetaInfo(decodeResult.decoded, decodeResult.isJson)
-  ), [decodeResult.decoded, decodeResult.isJson, freshWorkerDecodeMetadata]);
-  const commandSummaryInfo = useMemo(() => (
-    freshWorkerDecodeMetadata
-      ? freshWorkerDecodeMetadata.commandSummaryInfo
-      : extractSchemeCommandSummaryInfo(
-          decodeResult.decoded,
-          decodeResult.isJson,
-          decodeResult.schemeInfo,
-          { source: decodeResult.original }
-        )
-  ), [decodeResult.decoded, decodeResult.isJson, decodeResult.original, decodeResult.schemeInfo, freshWorkerDecodeMetadata]);
+  const schemeDecodeMetadata = useMemo(() => (
+    freshWorkerDecodeMetadata ?? buildSchemeViewerDecodeMetadata(decodeResult)
+  ), [decodeResult, freshWorkerDecodeMetadata]);
+  const base64MetaInfo = schemeDecodeMetadata.base64MetaInfo;
+  const commandSummaryInfo = schemeDecodeMetadata.commandSummaryInfo;
   const schemeQualitySummary = useMemo(() => (
     buildSchemeQualitySummary({
       actualValue,
@@ -1284,59 +1233,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 </div>
               )}
 
-              {/* 内部 Base64 元信息 */}
-              {base64MetaInfo && (
-                <div data-tour="scheme-base64-meta" className="flex items-start gap-2 text-xs">
-                  <span className="shrink-0 text-cyan-300 bg-cyan-900/30 border border-cyan-700/50 px-2 py-0.5 rounded">
-                    内部 Base64
-                  </span>
-                  <div className="flex flex-wrap gap-1 min-w-0">
-                    {base64MetaInfo.prefix && (
-                      <span
-                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatSchemeTooltipValue(base64MetaInfo.prefix)}
-                      >
-                        头部={formatBase64MetaDisplayValue(base64MetaInfo.prefix, 24)}
-                      </span>
-                    )}
-                    {base64MetaInfo.suffix && (
-                      <span
-                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatSchemeTooltipValue(base64MetaInfo.suffix)}
-                      >
-                        后缀={formatBase64MetaDisplayValue(base64MetaInfo.suffix, 32)}
-                      </span>
-                    )}
-                    {base64MetaInfo.suffixDecodePrefix && (
-                      <span
-                        className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatSchemeTooltipValue(base64MetaInfo.suffixDecodePrefix)}
-                      >
-                        跳过={formatBase64MetaDisplayValue(base64MetaInfo.suffixDecodePrefix, 16)}
-                      </span>
-                    )}
-                    {base64MetaInfo.suffixDecodedEntries.slice(0, 6).map(entry => (
-                      <span
-                        key={entry.key}
-                        className="bg-editor-bg text-emerald-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={`${entry.key}=${formatSchemeTooltipValue(entry.displayValue)}`}
-                      >
-                        {entry.key}={entry.displayValue}
-                      </span>
-                    ))}
-                    {base64MetaInfo.suffixDecodedCount > 6 && (
-                      <span className="text-gray-500 px-1 py-0.5">
-                        +{base64MetaInfo.suffixDecodedCount - 6}
-                      </span>
-                    )}
-                    {base64MetaInfo.suffix && (
-                      <span className="text-gray-500 px-1 py-0.5">
-                        {base64MetaInfo.suffixLength} 字符
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+              <SchemeViewerBase64MetaPanel base64MetaInfo={base64MetaInfo} />
 
               {/* 解码层级 */}
               {decodeResult.layers.length > 0 && (
