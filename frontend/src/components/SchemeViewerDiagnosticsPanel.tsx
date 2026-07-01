@@ -9,10 +9,6 @@ import type {
   SchemeViewerParamSection,
 } from '../utils/schemeViewerDiagnostics';
 import { formatSchemeTooltipValue } from '../utils/schemeViewerFormatters';
-import {
-  getSchemeQualityClassName,
-  getSchemeQualityItemClassName,
-} from '../utils/schemeViewerQualityStyles';
 import type {
   DecodeLayer,
   SchemeDecodeResult,
@@ -23,7 +19,10 @@ import type {
 } from '../utils/schemeTypes';
 import { SchemeViewerBase64MetaPanel } from './SchemeViewerBase64MetaPanel';
 import { SchemeViewerCommandSummaryPanel } from './SchemeViewerCommandSummaryPanel';
+import { SchemeViewerDecodeWarningsPanel } from './SchemeViewerDecodeWarningsPanel';
 import { SchemeViewerDecodeLayersPanel } from './SchemeViewerDecodeLayersPanel';
+import { SchemeViewerDiagnosticsQualityCard } from './SchemeViewerDiagnosticsQualityCard';
+import { SchemeViewerDiagnosticsSummaryBar } from './SchemeViewerDiagnosticsSummaryBar';
 import { SchemeViewerParamSectionsPanel } from './SchemeViewerParamSectionsPanel';
 import { SchemeViewerParamStagesPanel } from './SchemeViewerParamStagesPanel';
 import { SchemeViewerRuntimePlaceholdersPanel } from './SchemeViewerRuntimePlaceholdersPanel';
@@ -82,104 +81,25 @@ export const SchemeViewerDiagnosticsPanel: React.FC<SchemeViewerDiagnosticsPanel
       data-tour="scheme-diagnostics-panel"
       className="bg-editor-sidebar rounded border border-editor-border"
     >
-      <div className="flex items-center gap-2 px-3 py-2">
-        <button
-          type="button"
-          onClick={onToggleExpanded}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus:outline-none focus:ring-2 focus:ring-emerald-300/30"
-          aria-expanded={isExpanded}
-          aria-controls="scheme-diagnostics-detail"
-          title={isExpanded ? '收起 Scheme 解析详情' : '展开 Scheme 解析详情'}
-        >
-          <span className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
-            schemeQualitySummary
-              ? getSchemeQualityClassName(schemeQualitySummary.level)
-              : 'border-editor-border bg-editor-bg text-gray-300'
-          }`}>
-            {schemeQualitySummary?.label || '解析信息'}
-          </span>
-          <span className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-xs text-gray-400 [&::-webkit-scrollbar]:hidden">
-            {diagnosticSummaryItems.map(item => (
-              <span
-                key={item.key}
-                className="rounded bg-editor-bg px-2 py-0.5 font-mono text-gray-300"
-                title={item.title}
-              >
-                {item.label}
-              </span>
-            ))}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={onToggleExpanded}
-          className="shrink-0 rounded bg-editor-active px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-border hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/30"
-          aria-expanded={isExpanded}
-          aria-controls="scheme-diagnostics-detail"
-        >
-          {isExpanded ? '收起详情' : '展开详情'}
-        </button>
-      </div>
+      <SchemeViewerDiagnosticsSummaryBar
+        isExpanded={isExpanded}
+        onToggleExpanded={onToggleExpanded}
+        schemeQualitySummary={schemeQualitySummary}
+        diagnosticSummaryItems={diagnosticSummaryItems}
+      />
       {isExpanded && (
         <div
           id="scheme-diagnostics-detail"
           className="flex flex-col gap-2 border-t border-editor-border px-3 py-2"
         >
-          {schemeQualitySummary && (
-            <div
-              data-tour="scheme-quality-summary"
-              className={`rounded border px-2.5 py-2 text-xs ${getSchemeQualityClassName(schemeQualitySummary.level)}`}
-            >
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="shrink-0 font-medium">{schemeQualitySummary.label}</span>
-                <span className="min-w-0 text-gray-300">{schemeQualitySummary.description}</span>
-                <div className="ml-auto flex shrink-0 items-center gap-1">
-                  {canInspectOriginal && (
-                    <button
-                      data-tour="scheme-inspect-original"
-                      type="button"
-                      onClick={onInspectOriginal}
-                      className="rounded border border-emerald-500/40 bg-emerald-600/20 px-2 py-0.5 text-xs text-emerald-100 transition-colors hover:bg-emerald-500/30 focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
-                      title="将原始值送入 SOURCE 并打开深度解析报告"
-                      aria-label="用原始值排查，将原始值送入 SOURCE 并打开深度解析报告"
-                    >
-                      用原始值排查
-                    </button>
-                  )}
-                  <button
-                    data-tour="scheme-copy-quality-summary"
-                    type="button"
-                    onClick={onCopyQualitySummary}
-                    className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
-                    title="复制当前 Scheme 解析质量摘要"
-                    aria-label="复制质量摘要，复制当前 Scheme 解析质量摘要"
-                  >
-                    复制摘要
-                  </button>
-                  <button
-                    data-tour="scheme-copy-quality-snapshot"
-                    type="button"
-                    onClick={onCopyQualitySnapshot}
-                    className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
-                    title={copyQualitySnapshotTitle}
-                    aria-label={`复制质量快照，${copyQualitySnapshotTitle}`}
-                  >
-                    复制快照
-                  </button>
-                </div>
-              </div>
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {schemeQualitySummary.items.map(item => (
-                  <span
-                    key={item.label}
-                    className={`rounded border px-2 py-0.5 font-mono ${getSchemeQualityItemClassName(item.tone)}`}
-                  >
-                    {item.label} · {item.value}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          <SchemeViewerDiagnosticsQualityCard
+            schemeQualitySummary={schemeQualitySummary}
+            canInspectOriginal={canInspectOriginal}
+            onInspectOriginal={onInspectOriginal}
+            onCopyQualitySummary={onCopyQualitySummary}
+            onCopyQualitySnapshot={onCopyQualitySnapshot}
+            copyQualitySnapshotTitle={copyQualitySnapshotTitle}
+          />
 
           {schemeInfo && (
             <div className="flex items-center gap-2 flex-wrap">
@@ -209,31 +129,7 @@ export const SchemeViewerDiagnosticsPanel: React.FC<SchemeViewerDiagnosticsPanel
             placeholderGroups={placeholderGroups}
           />
 
-          {decodeWarnings.length > 0 && (
-            <div data-tour="scheme-decode-warnings" className="flex flex-col gap-1.5 text-xs">
-              {decodeWarnings.map(warning => (
-                <div key={warning.type} className="flex items-start gap-2">
-                  <span className="shrink-0 text-amber-300 bg-amber-900/30 border border-amber-700/50 px-2 py-0.5 rounded">
-                    性能保护 · 跳过 {warning.skippedCount}
-                  </span>
-                  <div className="flex flex-wrap gap-1 min-w-0">
-                    <span className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded">
-                      {warning.message}
-                    </span>
-                    {warning.paths.map(itemPath => (
-                      <span
-                        key={itemPath}
-                        className="bg-editor-bg text-amber-100 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                        title={formatSchemeTooltipValue(itemPath)}
-                      >
-                        {itemPath}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <SchemeViewerDecodeWarningsPanel decodeWarnings={decodeWarnings} />
 
           <SchemeViewerParamSectionsPanel paramSections={paramSections} />
           <SchemeViewerParamStagesPanel paramStages={paramStages} />
