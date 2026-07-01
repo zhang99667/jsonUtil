@@ -3,18 +3,15 @@ import type {
   TransformReportRuntimePlaceholderGroup,
 } from '../utils/transformRuntimePlaceholderTypes';
 import type { TransformReportPlaceholderToolbarProps } from './TransformReportPlaceholderToolbar';
-import type { TransformReportPlaceholderRowProps } from './TransformReportPlaceholderRow';
+import type { TransformReportPlaceholderRowsProps } from './TransformReportPlaceholderRowsList';
 
 export type TransformReportPlaceholdersToolbarProps =
   Omit<TransformReportPlaceholderToolbarProps, 'visiblePlaceholderCount'>;
-
-export type TransformReportPlaceholdersRowProps =
-  Omit<TransformReportPlaceholderRowProps, 'placeholder'>;
 
 export interface TransformReportPlaceholdersSectionProps {
   runtimePlaceholderGroups: TransformReportRuntimePlaceholderGroup[];
   runtimePlaceholders: TransformReportRuntimePlaceholder[];
   toolbar: TransformReportPlaceholdersToolbarProps;
-  rows: TransformReportPlaceholdersRowProps;
+  rows: TransformReportPlaceholderRowsProps;
   onFilter: (query: string) => void;
 }
