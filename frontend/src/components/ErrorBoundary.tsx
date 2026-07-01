@@ -58,6 +58,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render(): ReactNode {
     if (this.state.hasError) {
       const isChunkLoadError = isDynamicImportLoadError(this.state.error);
+      const shouldShowErrorMessage = Boolean(this.state.error && !isChunkLoadError);
 
       return (
         <div className="flex items-center justify-center min-h-screen bg-gray-900">
@@ -69,9 +70,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                 ? '当前打开的旧页面无法加载新版资源，刷新后即可恢复。'
                 : '应用遇到了一个意外错误，请尝试重新加载。'}
             </p>
-            {this.state.error && (
+            {shouldShowErrorMessage && (
               <pre className="text-red-400 text-xs bg-gray-900 p-3 rounded mb-4 overflow-auto max-h-32 text-left">
-                {this.state.error.message}
+                {this.state.error?.message}
               </pre>
             )}
             <button
