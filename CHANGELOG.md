@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **旧 chunk 错误边界降噪**: 动态 import 旧资源失败落到 ErrorBoundary 时不再展示 `Failed to fetch dynamically imported module` 和 hash 资源 URL，只保留“页面资源已更新”和刷新恢复入口，减少发布切换期间的技术噪音
+- **Scheme 诊断容器分层**: 将 Scheme 解析详情的折叠摘要、质量摘要、Scheme 信息、性能护栏和诊断子面板装配抽到 `SchemeViewerDiagnosticsPanel`，主弹窗继续保留解码、复制、编辑和二维码副作用，降低后续压缩详情区视觉密度时误碰状态链路的风险
 - **Scheme 底部操作栏分层**: 将取消解析、二维码、复制、序列化和应用修改按钮抽到 `SchemeViewerFooterActions`，主弹窗继续保留状态与 handler wiring，并把 `SchemeViewerModal.tsx` 预算从 1320 收紧到 1220，降低后续调整底部操作密度时误碰解码链路的风险
 - **旧 chunk 预加载恢复降噪**: Vite `preloadError` 命中动态 import 失效时会阻止默认错误继续冒泡，只展示刷新恢复提示，减少打开中的旧页面在发布切换后看到原始 chunk 加载红错的概率
 - **Scheme CMD 摘要 Badge 分层**: 将 CMD Schema、参数 keys 和内部线索展示拆到独立 badge 子组件，`SchemeViewerCommandSummaryPanel` 回归为组合外框并退出可维护性 near-list，降低后续扩展 CMD 摘要展示时的回流风险

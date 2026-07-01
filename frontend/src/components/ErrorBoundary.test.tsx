@@ -51,6 +51,8 @@ describe('ErrorBoundary', () => {
 
     expect(text).toContain('页面资源已更新');
     expect(text).toContain('刷新页面');
+    expect(text).not.toContain('Failed to fetch dynamically imported module');
+    expect(text).not.toContain('/assets/SchemeViewerModal-old.js');
   });
 
   it('刷新恢复前先执行草稿保存回调', () => {

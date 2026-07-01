@@ -35,4 +35,6 @@ export const schemeViewerDetailComponentMaintainabilityBudgets = [
     115,
     'Scheme 解码链路面板测试只覆盖空态、目标类型、层级展示和 after 内容 fallback'
   ),
+  schemeViewerDetailComponentBudget('SchemeViewerDiagnosticsPanel.tsx', 280, 'Scheme 诊断容器只装配摘要、详情折叠和子面板，不承载解码或复制副作用'),
+  schemeViewerDetailComponentBudget('SchemeViewerDiagnosticsPanel.test.tsx', 260, 'Scheme 诊断容器测试只覆盖折叠、展开、操作回调和子面板透传'),
 ];
