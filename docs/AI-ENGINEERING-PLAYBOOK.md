@@ -37,6 +37,7 @@
 | --- | --- |
 | JSON / Scheme 解析 | `npm run test -- src/utils/xxx.test.ts`，必要时跑 `npm run corpus:scheme` |
 | 首屏性能 / 分包 | `npm run build`、`npm run check:preloads` |
+| 发布恢复 / 手动懒加载 catch | `node scripts/ci/check-chunk-load-recovery-catches.mjs`，必要时追加 `npm run build`、`npm run check:preloads` |
 | JSONPath / 结构导航性能 | `npm run perf:jsonpath`、相关单测 |
 | Scheme 解码性能 | `npm run perf:scheme`、相关 corpus 测试 |
 | 构建配置 / Vite 分包 | `npm run lint`、`npm run test -- config/xxx.test.ts`、`npm run build`、`npm run check:preloads` |
@@ -59,6 +60,7 @@
 
 - 运行和改动范围匹配的测试或说明无法运行的原因。
 - 涉及前端 TypeScript 源码时运行 `npm run lint` 或说明未运行原因。
+- 涉及手动 `import()`、懒加载 helper、`dispatchChunkLoadRecoveryEvent` 或发布恢复 catch 时运行 `node scripts/ci/check-chunk-load-recovery-catches.mjs`，确认旧 chunk 加载失败不会被业务 catch 吞掉。
 - 涉及 `scripts/deploy/*.sh`、`.github/scripts/*.sh`、`scripts/ci/local-ci.sh` 或 `.github/workflows/*.yml` 的 `workflow run` 块时运行 `node scripts/ci/check-deploy-shell-syntax.mjs`，先用 `bash -n` 拦截发布脚本语法错误，并单独检查 `REMOTE_SCRIPT heredoc` 这类远端脚本片段。
 - 涉及前端 Docker、Compose、Nginx 或发布静态资源时运行 `node scripts/ci/check-frontend-static-retention.mjs`。
 - 公网资源巡检不能只看 2xx；`node scripts/ci/check-production-frontend-assets.mjs <baseUrl>` 还会校验 JS/CSS `Content-Type`，并递归检查 CSS `url(...)` 二级资源和 CSS `@import` 链路，防止缺失 chunk fallback 成 HTML。排查用户反馈的旧 chunk URL 时，追加 `--extra-asset <url-or-path>` 纳入同一轮递归巡检。

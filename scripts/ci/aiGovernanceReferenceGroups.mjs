@@ -18,3 +18,9 @@ export const SUBAGENT_DELEGATION_REFERENCES = [
   '主线程负责',
   '拆分边界',
 ];
+
+export const CHUNK_LOAD_RECOVERY_CATCH_REFERENCES = [
+  'node scripts/ci/check-chunk-load-recovery-catches.mjs',
+  'dispatchChunkLoadRecoveryEvent',
+  '手动懒加载',
+];

@@ -29,6 +29,7 @@ description: JSONUtils 项目维护技能。用于优化性能、重构可维护
 ```bash
 node scripts/ci/check-deploy-shell-syntax.mjs
 node scripts/ci/check-ai-governance.mjs
+node scripts/ci/check-chunk-load-recovery-catches.mjs
 node scripts/ci/check-frontend-static-retention.mjs
 node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 # 用户反馈旧 chunk URL 时追加: --extra-asset https://jsonutils.markz.fun/assets/xxx.js
@@ -55,6 +56,7 @@ mvn test
 
 - Scheme/CMD 解析要保护 URL 编码、JSON 字符串转义、base64、JWT、嵌套 query、普通 HTTP(S) URL 的区分。
 - 首屏性能优化要用构建产物和 preload 检查证明，不凭感觉判断。
+- 手动懒加载 `import()` 或相关 catch 改动要运行 `node scripts/ci/check-chunk-load-recovery-catches.mjs`，并通过 `dispatchChunkLoadRecoveryEvent` 保留旧 chunk 失效刷新恢复能力。
 - 前端 Docker/Compose/Nginx 发布改动要保护旧 hash assets，并用公网资源巡检校验 JS/CSS `Content-Type`、CSS `url(...)` 二级资源和 CSS `@import` 链路，避免长时间打开页面后懒加载 chunk 404 或缺失 chunk fallback 成 HTML。
 - 部署 shell、GitHub shell helper、本地 CI 入口或 `.github/workflows/*.yml` 的 `workflow run` 块改动后先跑 `node scripts/ci/check-deploy-shell-syntax.mjs`，避免外层脚本、内联 run 和 `REMOTE_SCRIPT heredoc` 远端片段语法错误进入上线链路。
 - 大输入处理优先走 worker、采样、预算和降级提示。

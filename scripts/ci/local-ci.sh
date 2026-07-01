@@ -45,6 +45,9 @@ log "Governance: Node script unit tests"
 cd "$ROOT_DIR"
 node --test scripts/ci/*.test.mjs
 
+log "Governance: chunk load recovery catch audit"
+node scripts/ci/check-chunk-load-recovery-catches.mjs
+
 log "Frontend: scheme corpus baseline"
 cd "$ROOT_DIR/frontend"
 npm run corpus:scheme

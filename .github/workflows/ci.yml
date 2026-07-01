@@ -59,6 +59,10 @@ jobs:
         working-directory: .
         run: node --test scripts/ci/*.test.mjs
 
+      - name: Chunk load recovery catch audit
+        working-directory: .
+        run: node scripts/ci/check-chunk-load-recovery-catches.mjs
+
       - name: Scheme corpus baseline
         run: npm run corpus:scheme
 
