@@ -8,6 +8,8 @@ import {
 } from '../utils/appAsyncPolicy';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import {
+  buildAppAsyncTransformFallbackResult,
+  buildAppAsyncTransformResult,
   getFreshAppAsyncTransformResult,
   type AppAsyncTransformResult,
 } from '../utils/appAsyncTransformState';
@@ -55,12 +57,12 @@ export const useAppAsyncTransform = ({
       performTransformAsync(input, mode)
         .then(output => {
           if (isCancelled || transformRequestIdRef.current !== requestId) return;
-          setAsyncTransformResult({
+          setAsyncTransformResult(buildAppAsyncTransformResult({
             input,
             mode,
             autoExpandScheme,
             output,
-          });
+          }));
           setIsOutputTransforming(false);
         })
         .catch(error => {
@@ -71,12 +73,7 @@ export const useAppAsyncTransform = ({
           }
 
           console.warn('异步转换处理失败:', error);
-          setAsyncTransformResult({
-            input,
-            mode,
-            autoExpandScheme,
-            output: input,
-          });
+          setAsyncTransformResult(buildAppAsyncTransformFallbackResult(input, mode, autoExpandScheme));
           setIsOutputTransforming(false);
         });
 
@@ -98,25 +95,20 @@ export const useAppAsyncTransform = ({
         console.warn('大文件转换 Worker 处理失败:', event.data.error);
       }
 
-      setAsyncTransformResult({
+      setAsyncTransformResult(buildAppAsyncTransformResult({
         input,
         mode,
         autoExpandScheme,
         output: event.data.output,
         context: event.data.context,
-      });
+      }));
       setIsOutputTransforming(false);
     };
 
     worker.onerror = (event) => {
       if (transformRequestIdRef.current !== requestId) return;
       console.warn('大文件转换 Worker 运行失败:', event.message);
-      setAsyncTransformResult({
-        input,
-        mode,
-        autoExpandScheme,
-        output: input,
-      });
+      setAsyncTransformResult(buildAppAsyncTransformFallbackResult(input, mode, autoExpandScheme));
       setIsOutputTransforming(false);
     };
 

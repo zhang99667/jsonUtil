@@ -8,7 +8,7 @@ export const appCoreMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/hooks/useAppAsyncTransform.ts',
-    maxLines: 160,
+    maxLines: 145,
     reason: '主应用异步转换 hook 应只保留 Worker/Promise 编排，纯状态决策继续放在 utils',
   },
   {

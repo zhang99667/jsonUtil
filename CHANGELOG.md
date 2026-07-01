@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **异步转换结果构造分层**: 将 `useAppAsyncTransform` 中 Promise/Worker 成功和 fallback 的结果对象构造抽到 `appAsyncTransformState` 纯 helper，hook 回归异步编排与取消保护，并用直测锁定 context 与 fallback 输出结构
 - **模板填充 Runner 测试分层**: 将 `appTemplateFillCommandRunner.test` 中的模块 mock、默认 effects 和执行包装抽到专用 fixture，测试文件回归为普通模板、占位符质量 delta、SOURCE 竞态和错误文案断言，并收紧测试预算
 - **旧 chunk 恢复事件分层**: 将 Vite preload、Promise rejection、全局 error 和手动 catch 的恢复判定抽到 `chunkLoadRecoveryEventHandlers`，监听安装入口只保留注册/卸载和一次性刷新提示，降低发布恢复链路继续扩展时的耦合
 - **手动懒加载恢复门禁**: 新增 `check-chunk-load-recovery-catches` AST 检查并接入本地 CI、AI Playbook、Codex skill 和 Claude guide，后续新增手动 `import()` catch 若缺少 `dispatchChunkLoadRecoveryEvent` 会直接报出文件和行号

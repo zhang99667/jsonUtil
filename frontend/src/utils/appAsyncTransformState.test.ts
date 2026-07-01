@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { TransformMode, type TransformContext, type TransformResult } from '../types';
 import { ASYNC_TRANSFORM_PLACEHOLDER } from './appAsyncPolicy';
 import {
+  buildAppAsyncTransformFallbackResult,
+  buildAppAsyncTransformResult,
   getActiveAppDeepFormatResult,
   getFreshAppAsyncTransformResult,
   resolveAppOutputValue,
@@ -25,6 +27,41 @@ const asyncResult: AppAsyncTransformResult = {
 };
 
 describe('appAsyncTransformState', () => {
+  it('统一构造异步转换成功结果和 fallback 结果', () => {
+    const context = createContext();
+
+    expect(buildAppAsyncTransformResult({
+      input: '{"a":1}',
+      mode: TransformMode.DEEP_FORMAT,
+      autoExpandScheme: true,
+      output: 'formatted',
+      context,
+    })).toEqual({
+      input: '{"a":1}',
+      mode: TransformMode.DEEP_FORMAT,
+      autoExpandScheme: true,
+      output: 'formatted',
+      context,
+    });
+    expect(buildAppAsyncTransformResult({
+      input: '{"a":1}',
+      mode: TransformMode.FORMAT,
+      autoExpandScheme: false,
+      output: 'formatted',
+    })).toEqual({
+      input: '{"a":1}',
+      mode: TransformMode.FORMAT,
+      autoExpandScheme: false,
+      output: 'formatted',
+    });
+    expect(buildAppAsyncTransformFallbackResult('raw', TransformMode.MINIFY, false)).toEqual({
+      input: 'raw',
+      mode: TransformMode.MINIFY,
+      autoExpandScheme: false,
+      output: 'raw',
+    });
+  });
+
   it('只复用 input、mode 和 autoExpandScheme 都匹配的异步结果', () => {
     expect(getFreshAppAsyncTransformResult(
       asyncResult,
