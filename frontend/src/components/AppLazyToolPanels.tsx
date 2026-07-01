@@ -1,4 +1,4 @@
-import React, { type ComponentProps } from 'react';
+import React from 'react';
 import { AppLazyPanelSlot } from './AppLazyPanelSlot';
 import {
   LazyJsonComparePanel,
@@ -9,29 +9,9 @@ import {
   LazyTemplateFillPanel,
   LazyTransformReportPanel,
 } from './appLazyPanels';
-import type { AppLazyPanelLoadState } from '../utils/appLazyPanelLoadState';
+import type { AppLazyToolPanelsProps } from './AppLazyToolPanelsTypes';
 
-type JsonPathPanelProps = ComponentProps<typeof LazyJsonPathPanel>;
-type JsonTreePanelProps = ComponentProps<typeof LazyJsonTreePanel>;
-type JsonComparePanelProps = ComponentProps<typeof LazyJsonComparePanel>;
-type JsonSchemaPanelProps = ComponentProps<typeof LazyJsonSchemaPanel>;
-type TransformReportPanelProps = ComponentProps<typeof LazyTransformReportPanel>;
-type SchemeViewerModalProps = ComponentProps<typeof LazySchemeViewerModal>;
-type TemplateFillPanelProps = ComponentProps<typeof LazyTemplateFillPanel>;
-
-interface AppLazyToolPanelsProps {
-  lazyPanelsLoaded: Pick<
-    AppLazyPanelLoadState,
-    'jsonPath' | 'jsonTree' | 'jsonCompare' | 'jsonSchema' | 'transformReport' | 'scheme' | 'template'
-  >;
-  jsonPathPanel: JsonPathPanelProps;
-  jsonTreePanel: JsonTreePanelProps;
-  jsonComparePanel: JsonComparePanelProps;
-  jsonSchemaPanel: JsonSchemaPanelProps;
-  transformReportPanel: TransformReportPanelProps;
-  schemePanel: SchemeViewerModalProps;
-  templatePanel: TemplateFillPanelProps;
-}
+export type { AppLazyToolPanelsProps } from './AppLazyToolPanelsTypes';
 
 export const AppLazyToolPanels: React.FC<AppLazyToolPanelsProps> = ({
   lazyPanelsLoaded,

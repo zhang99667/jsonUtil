@@ -1,18 +1,18 @@
-import React, { type ComponentProps, type MutableRefObject } from 'react';
+import React, { type MutableRefObject } from 'react';
 import { AppLazyToolPanels } from './AppLazyToolPanels';
+import type { AppLazyToolPanelsProps } from './AppLazyToolPanelsTypes';
 import { TransformMode, type TransformContext } from '../types';
 
-type AppLazyToolPanelsConfig = ComponentProps<typeof AppLazyToolPanels>;
-type JsonPathPanelConfig = AppLazyToolPanelsConfig['jsonPathPanel'];
-type JsonTreePanelConfig = AppLazyToolPanelsConfig['jsonTreePanel'];
-type JsonComparePanelConfig = AppLazyToolPanelsConfig['jsonComparePanel'];
-type JsonSchemaPanelConfig = AppLazyToolPanelsConfig['jsonSchemaPanel'];
-type TransformReportPanelConfig = AppLazyToolPanelsConfig['transformReportPanel'];
-type SchemePanelConfig = AppLazyToolPanelsConfig['schemePanel'];
-type TemplatePanelConfig = AppLazyToolPanelsConfig['templatePanel'];
+type JsonPathPanelConfig = AppLazyToolPanelsProps['jsonPathPanel'];
+type JsonTreePanelConfig = AppLazyToolPanelsProps['jsonTreePanel'];
+type JsonComparePanelConfig = AppLazyToolPanelsProps['jsonComparePanel'];
+type JsonSchemaPanelConfig = AppLazyToolPanelsProps['jsonSchemaPanel'];
+type TransformReportPanelConfig = AppLazyToolPanelsProps['transformReportPanel'];
+type SchemePanelConfig = AppLazyToolPanelsProps['schemePanel'];
+type TemplatePanelConfig = AppLazyToolPanelsProps['templatePanel'];
 
 export interface AppToolPanelsControllerProps {
-  lazyPanelsLoaded: AppLazyToolPanelsConfig['lazyPanelsLoaded'];
+  lazyPanelsLoaded: AppLazyToolPanelsProps['lazyPanelsLoaded'];
   mode: TransformMode;
   input: string;
   jsonPathDataSource: string;
