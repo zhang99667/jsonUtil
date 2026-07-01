@@ -1,9 +1,12 @@
 import { isDynamicImportLoadError } from './chunkLoadRecovery';
 import {
   CHUNK_LOAD_RECOVERY_EVENT,
-  type ChunkLoadRecoveryDispatchTarget,
   type ManualChunkLoadRecoveryEvent,
 } from './chunkLoadRecoveryEventTypes';
+
+interface ChunkLoadRecoveryDispatchTarget {
+  dispatchEvent(event: Event): boolean;
+}
 
 const getDefaultDispatchTarget = (): ChunkLoadRecoveryDispatchTarget | undefined => (
   typeof window === 'undefined' ? undefined : window

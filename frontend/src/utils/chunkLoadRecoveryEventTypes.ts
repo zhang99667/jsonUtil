@@ -7,10 +7,6 @@ export interface ChunkLoadRecoveryEventTarget {
   removeEventListener(type: string, listener: ChunkLoadRecoveryListener): void;
 }
 
-export interface ChunkLoadRecoveryDispatchTarget {
-  dispatchEvent(event: Event): boolean;
-}
-
 export interface VitePreloadErrorEvent extends Event {
   payload?: unknown;
 }
