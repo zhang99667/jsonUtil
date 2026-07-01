@@ -1,13 +1,16 @@
-import { shouldPromptChunkLoadRecovery } from './chunkLoadRecovery';
-import { getGlobalErrorPayload, getManualRecoveryPayload } from './chunkLoadRecoveryEventPayloads';
+import { createChunkLoadRecoveryHandlers } from './chunkLoadRecoveryEventHandlers';
 import {
   CHUNK_LOAD_RECOVERY_EVENT,
+  type ChunkLoadRecoveryListener,
   type ChunkLoadRecoveryEventTarget,
-  type GlobalErrorLikeEvent,
-  type ManualChunkLoadRecoveryEvent,
-  type PromiseRejectionLikeEvent,
-  type VitePreloadErrorEvent,
 } from './chunkLoadRecoveryEventTypes';
+
+const RECOVERY_LISTENER_TYPES = {
+  vitePreload: 'vite:preloadError',
+  unhandledRejection: 'unhandledrejection',
+  globalError: 'error',
+  manualRecovery: CHUNK_LOAD_RECOVERY_EVENT,
+} as const;
 
 export const installChunkLoadRecoveryListeners = (
   target: ChunkLoadRecoveryEventTarget,
@@ -21,47 +24,17 @@ export const installChunkLoadRecoveryListeners = (
     promptRefresh();
   };
 
-  const handlePreloadError = (event: Event) => {
-    const preloadEvent = event as VitePreloadErrorEvent;
-    if (!shouldPromptChunkLoadRecovery('vite-preload', preloadEvent.payload)) return;
+  const handlers = createChunkLoadRecoveryHandlers(promptRefreshOnce);
+  const listeners: Array<[string, ChunkLoadRecoveryListener]> = [
+    [RECOVERY_LISTENER_TYPES.vitePreload, handlers.handlePreloadError],
+    [RECOVERY_LISTENER_TYPES.unhandledRejection, handlers.handleUnhandledRejection],
+    [RECOVERY_LISTENER_TYPES.globalError, handlers.handleGlobalError],
+    [RECOVERY_LISTENER_TYPES.manualRecovery, handlers.handleManualRecovery],
+  ];
 
-    event.preventDefault();
-    promptRefreshOnce();
-  };
-
-  const handleUnhandledRejection = (event: Event) => {
-    const rejectionEvent = event as PromiseRejectionLikeEvent;
-    if (!shouldPromptChunkLoadRecovery('promise-rejection', rejectionEvent.reason)) return;
-
-    event.preventDefault();
-    promptRefreshOnce();
-  };
-
-  const handleGlobalError = (event: Event) => {
-    const errorEvent = event as GlobalErrorLikeEvent;
-    if (!shouldPromptChunkLoadRecovery('global-error', getGlobalErrorPayload(errorEvent))) return;
-
-    event.preventDefault();
-    promptRefreshOnce();
-  };
-
-  const handleManualRecovery = (event: Event) => {
-    const recoveryEvent = event as ManualChunkLoadRecoveryEvent;
-    if (!shouldPromptChunkLoadRecovery('manual-catch', getManualRecoveryPayload(recoveryEvent))) return;
-
-    event.preventDefault();
-    promptRefreshOnce();
-  };
-
-  target.addEventListener('vite:preloadError', handlePreloadError);
-  target.addEventListener('unhandledrejection', handleUnhandledRejection);
-  target.addEventListener('error', handleGlobalError);
-  target.addEventListener(CHUNK_LOAD_RECOVERY_EVENT, handleManualRecovery);
+  listeners.forEach(([type, listener]) => target.addEventListener(type, listener));
 
   return () => {
-    target.removeEventListener('vite:preloadError', handlePreloadError);
-    target.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    target.removeEventListener('error', handleGlobalError);
-    target.removeEventListener(CHUNK_LOAD_RECOVERY_EVENT, handleManualRecovery);
+    listeners.forEach(([type, listener]) => target.removeEventListener(type, listener));
   };
 };
