@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import type { DriveStep, Driver } from 'driver.js';
+import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 
 // 定义所有支持引导的功能
@@ -250,6 +251,8 @@ export const useFeatureTour = () => {
         try {
             createDriver = await loadDriver();
         } catch (error) {
+            if (dispatchChunkLoadRecoveryEvent(error)) return;
+
             console.warn('加载功能引导组件失败:', error);
             return;
         }

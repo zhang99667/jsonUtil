@@ -1,14 +1,13 @@
 import { shouldPromptChunkLoadRecovery } from './chunkLoadRecovery';
-import { getChunkLoadResourceTargetUrl } from './chunkLoadRecoveryResourceTargets';
-import type { ChunkLoadRecoveryEventTarget, GlobalErrorLikeEvent, PromiseRejectionLikeEvent, VitePreloadErrorEvent } from './chunkLoadRecoveryEventTypes';
-
-const getGlobalErrorPayload = (event: GlobalErrorLikeEvent): unknown => {
-  const error = event.error ?? event.message;
-  if (error) return error;
-
-  const targetUrl = getChunkLoadResourceTargetUrl(event.target);
-  return targetUrl ? `Failed to load module script: ${targetUrl}` : undefined;
-};
+import { getGlobalErrorPayload, getManualRecoveryPayload } from './chunkLoadRecoveryEventPayloads';
+import {
+  CHUNK_LOAD_RECOVERY_EVENT,
+  type ChunkLoadRecoveryEventTarget,
+  type GlobalErrorLikeEvent,
+  type ManualChunkLoadRecoveryEvent,
+  type PromiseRejectionLikeEvent,
+  type VitePreloadErrorEvent,
+} from './chunkLoadRecoveryEventTypes';
 
 export const installChunkLoadRecoveryListeners = (
   target: ChunkLoadRecoveryEventTarget,
@@ -46,13 +45,23 @@ export const installChunkLoadRecoveryListeners = (
     promptRefreshOnce();
   };
 
+  const handleManualRecovery = (event: Event) => {
+    const recoveryEvent = event as ManualChunkLoadRecoveryEvent;
+    if (!shouldPromptChunkLoadRecovery('manual-catch', getManualRecoveryPayload(recoveryEvent))) return;
+
+    event.preventDefault();
+    promptRefreshOnce();
+  };
+
   target.addEventListener('vite:preloadError', handlePreloadError);
   target.addEventListener('unhandledrejection', handleUnhandledRejection);
   target.addEventListener('error', handleGlobalError);
+  target.addEventListener(CHUNK_LOAD_RECOVERY_EVENT, handleManualRecovery);
 
   return () => {
     target.removeEventListener('vite:preloadError', handlePreloadError);
     target.removeEventListener('unhandledrejection', handleUnhandledRejection);
     target.removeEventListener('error', handleGlobalError);
+    target.removeEventListener(CHUNK_LOAD_RECOVERY_EVENT, handleManualRecovery);
   };
 };

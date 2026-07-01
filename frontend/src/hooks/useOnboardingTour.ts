@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { Driver } from 'driver.js';
+import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { safeReadStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 
 const loadDriver = async () => {
@@ -27,6 +28,8 @@ export const useOnboardingTour = () => {
             try {
                 createDriver = await loadDriver();
             } catch (error) {
+                if (dispatchChunkLoadRecoveryEvent(error)) return;
+
                 console.warn('加载新手引导组件失败:', error);
                 return;
             }

@@ -1,6 +1,7 @@
 import { useCallback, useState, type MutableRefObject } from 'react';
 import { ActionType, TransformMode, type AIConfig } from '../types';
 import type { AiRepairSummary } from '../utils/aiRepairSummary';
+import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { showError, showSuccess } from '../utils/toast';
 import type { ToolEventStatus } from '../utils/productTelemetry';
 import {
@@ -67,6 +68,11 @@ export const useAppAiRepairCommand = ({
       showSuccess(applyResult.successMessage);
       onTrackToolEvent(ActionType.AI_FIX, 'ai', 'success', startedAt);
     } catch (error) {
+      if (dispatchChunkLoadRecoveryEvent(error)) {
+        onTrackToolEvent(ActionType.AI_FIX, 'ai', 'error', startedAt);
+        return;
+      }
+
       const feedback = getAppAiRepairErrorFeedback(error);
       showError(feedback.message);
       if (feedback.shouldOpenAiSettings) {

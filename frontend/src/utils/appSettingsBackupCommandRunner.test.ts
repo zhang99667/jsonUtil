@@ -1,12 +1,17 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AIProvider, type AIConfig, type GeneralSettings } from '../types';
 import type { AppBackupPayload, ApplyAppBackupResult } from './appBackup';
 import { DEFAULT_SHORTCUTS } from './shortcuts';
+import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import {
   buildAppSettingsBackupFileName,
   runAppExportSettingsBackupCommand,
   runAppImportSettingsBackupCommand,
 } from './appSettingsBackupCommandRunner';
+
+vi.mock('./chunkLoadRecoveryDispatch', () => ({
+  dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
+}));
 
 const generalSettings: GeneralSettings = {
   autoExpandSchemeInDeepFormat: true,
@@ -51,6 +56,11 @@ class MemoryStorage implements Storage {
 }
 
 describe('appSettingsBackupCommandRunner', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(dispatchChunkLoadRecoveryEvent).mockReturnValue(false);
+  });
+
   it('按导出时间构建安全的备份文件名', () => {
     expect(buildAppSettingsBackupFileName('2026-06-29T12:34:56.789Z'))
       .toBe('jsonutils-backup-2026-06-29T12-34-56-789Z.json');
@@ -102,6 +112,28 @@ describe('appSettingsBackupCommandRunner', () => {
     });
 
     expect(onShowError).toHaveBeenCalledWith('导出配置备份失败：模块加载失败');
+  });
+
+  it('导出模块 chunk 失效时交给统一刷新恢复', async () => {
+    const onShowError = vi.fn();
+    vi.mocked(dispatchChunkLoadRecoveryEvent).mockReturnValue(true);
+    const error = new TypeError('Failed to fetch dynamically imported module: /assets/appBackup-old.js');
+
+    await runAppExportSettingsBackupCommand({
+      generalSettings,
+      aiConfig,
+      shortcuts: DEFAULT_SHORTCUTS,
+    }, {
+      onLoadBackupModule: async () => {
+        throw error;
+      },
+      onDownloadTextFile: vi.fn(),
+      onShowSuccess: vi.fn(),
+      onShowError,
+    });
+
+    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
+    expect(onShowError).not.toHaveBeenCalled();
   });
 
   it('导入配置备份后同步设置状态、快捷键和导入事件', async () => {
@@ -171,5 +203,27 @@ describe('appSettingsBackupCommandRunner', () => {
     });
 
     expect(onShowError).toHaveBeenCalledWith('备份文件不是 JSONUtils 配置备份');
+  });
+
+  it('导入模块 chunk 失效时不展示备份解析错误', async () => {
+    const onShowError = vi.fn();
+    vi.mocked(dispatchChunkLoadRecoveryEvent).mockReturnValue(true);
+    const error = new TypeError('Failed to fetch dynamically imported module: /assets/appBackup-old.js');
+
+    await runAppImportSettingsBackupCommand({ text: async () => '{}' }, aiConfig, {
+      onLoadBackupModule: async () => {
+        throw error;
+      },
+      onReadFileText: backupFile => backupFile.text(),
+      onSetGeneralSettings: vi.fn(),
+      onSetAIConfig: vi.fn(),
+      onReplaceShortcuts: vi.fn(),
+      onShowSuccess: vi.fn(),
+      onShowError,
+      storage: new MemoryStorage(),
+    });
+
+    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
+    expect(onShowError).not.toHaveBeenCalled();
   });
 });
