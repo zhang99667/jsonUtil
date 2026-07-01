@@ -1,3 +1,5 @@
+import { collectChunkLoadErrorMessages } from './chunkLoadRecoveryMessages';
+
 const DYNAMIC_IMPORT_ERROR_PATTERNS = [
   'failed to fetch dynamically imported module',
   'error loading dynamically imported module',
@@ -9,13 +11,7 @@ const DYNAMIC_IMPORT_ERROR_PATTERNS = [
 ];
 
 const getErrorMessage = (error: unknown): string => {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  if (error && typeof error === 'object' && 'message' in error) {
-    const message = (error as { message?: unknown }).message;
-    return typeof message === 'string' ? message : '';
-  }
-  return '';
+  return collectChunkLoadErrorMessages(error).join('\n');
 };
 
 export const isDynamicImportLoadError = (error: unknown): boolean => {

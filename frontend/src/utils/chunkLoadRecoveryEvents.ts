@@ -1,10 +1,14 @@
 import { shouldPromptChunkLoadRecovery } from './chunkLoadRecovery';
-import type {
-  ChunkLoadRecoveryEventTarget,
-  GlobalErrorLikeEvent,
-  PromiseRejectionLikeEvent,
-  VitePreloadErrorEvent,
-} from './chunkLoadRecoveryEventTypes';
+import { getChunkLoadResourceTargetUrl } from './chunkLoadRecoveryResourceTargets';
+import type { ChunkLoadRecoveryEventTarget, GlobalErrorLikeEvent, PromiseRejectionLikeEvent, VitePreloadErrorEvent } from './chunkLoadRecoveryEventTypes';
+
+const getGlobalErrorPayload = (event: GlobalErrorLikeEvent): unknown => {
+  const error = event.error ?? event.message;
+  if (error) return error;
+
+  const targetUrl = getChunkLoadResourceTargetUrl(event.target);
+  return targetUrl ? `Failed to load module script: ${targetUrl}` : undefined;
+};
 
 export const installChunkLoadRecoveryListeners = (
   target: ChunkLoadRecoveryEventTarget,
@@ -36,8 +40,7 @@ export const installChunkLoadRecoveryListeners = (
 
   const handleGlobalError = (event: Event) => {
     const errorEvent = event as GlobalErrorLikeEvent;
-    const error = errorEvent.error ?? errorEvent.message;
-    if (!shouldPromptChunkLoadRecovery('global-error', error)) return;
+    if (!shouldPromptChunkLoadRecovery('global-error', getGlobalErrorPayload(errorEvent))) return;
 
     event.preventDefault();
     promptRefreshOnce();
