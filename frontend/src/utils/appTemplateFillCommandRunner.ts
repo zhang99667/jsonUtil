@@ -3,6 +3,7 @@ import {
   buildAppTemplateFillQualityDelta,
   type AppTemplateFillQualitySummaryModule,
 } from './appTemplateFillQualityDelta';
+import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { applyTemplate } from './transformations';
 
 interface AppTemplateFillCommandInput {
@@ -59,6 +60,8 @@ export const runAppTemplateFillCommand = async (
     effects.onUpdateActiveFileContent(merged);
     effects.onShowSuccess(summaryModule ? '占位符已回填，质量对比已更新' : '模板已应用');
   } catch (error: unknown) {
+    if (dispatchChunkLoadRecoveryEvent(error)) return;
+
     effects.onSetTemplateApplyQualityDelta('');
     const message = error instanceof Error ? error.message : '模板应用失败';
     effects.onShowError(message);

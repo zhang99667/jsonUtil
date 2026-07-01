@@ -67,4 +67,12 @@ describe('chunkLoadRecovery', () => {
     )).toBe(true);
     expect(shouldPromptChunkLoadRecovery('global-error', 'ResizeObserver loop completed')).toBe(false);
   });
+
+  it('手动 catch 只对动态 import 失败提示刷新', () => {
+    expect(shouldPromptChunkLoadRecovery(
+      'manual-catch',
+      new TypeError('Failed to fetch dynamically imported module: /assets/aiService-old.js')
+    )).toBe(true);
+    expect(shouldPromptChunkLoadRecovery('manual-catch', new Error('AI Key 无效'))).toBe(false);
+  });
 });

@@ -6,6 +6,8 @@ export const appRecoveryRuntimeMaintainabilityBudgets = [
   runtimeBudget('frontend/src/utils/chunkLoadRecovery.ts', 50, 'chunk 加载失败识别应保持纯字符串归一化和模式匹配'),
   runtimeBudget('frontend/src/utils/chunkLoadRecoveryMessages.ts', 45, 'chunk 加载错误文本提取应保持纯递归读取和循环保护，不承载恢复策略'),
   runtimeBudget('frontend/src/utils/chunkLoadRecoveryResourceTargets.ts', 35, 'chunk 资源错误 target 判断应只识别构建产物 JS/CSS URL，避免普通图片加载失败误触发刷新'),
+  runtimeBudget('frontend/src/utils/chunkLoadRecoveryDispatch.ts', 35, '手动 catch 内的 chunk 恢复派发应只做错误识别、事件创建和 dispatch，不承载业务提示'),
+  runtimeBudget('frontend/src/utils/chunkLoadRecoveryEventPayloads.ts', 35, 'chunk 恢复事件 payload 提取应保持纯事件字段归一化，不承载监听安装逻辑'),
   runtimeBudget('frontend/src/utils/chunkLoadRecoveryEvents.ts', 70, 'chunk 恢复事件安装应只负责监听、阻止默认错误和一次性刷新提示'),
   runtimeBudget('frontend/src/utils/chunkLoadRecoveryEventTypes.ts', 35, 'chunk 恢复事件 target 与事件载荷契约应独立维护，避免事件安装实现被类型声明撑大'),
   runtimeBudget('frontend/src/components/AppUpdateToastContent.tsx', 70, '新版本提示 Toast 应只负责展示版本信息和透传查看、刷新、关闭动作'),

@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { CHUNK_LOAD_RECOVERY_EVENT } from './chunkLoadRecoveryEventTypes';
+import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { installChunkLoadRecoveryListeners } from './chunkLoadRecoveryEvents';
 
 type Listener = (event: Event) => void;
@@ -15,6 +17,12 @@ const createFakeTarget = () => {
     },
     removeEventListener: (type: string, listener: Listener) => {
       getListeners(type).delete(listener);
+    },
+    dispatchEvent: (event: Event) => {
+      for (const listener of getListeners(event.type)) {
+        listener(event);
+      }
+      return !event.defaultPrevented;
     },
   };
 
@@ -43,12 +51,14 @@ describe('chunkLoadRecoveryEvents', () => {
     expect(fakeTarget.listenerCount('vite:preloadError')).toBe(1);
     expect(fakeTarget.listenerCount('unhandledrejection')).toBe(1);
     expect(fakeTarget.listenerCount('error')).toBe(1);
+    expect(fakeTarget.listenerCount(CHUNK_LOAD_RECOVERY_EVENT)).toBe(1);
 
     cleanup();
 
     expect(fakeTarget.listenerCount('vite:preloadError')).toBe(0);
     expect(fakeTarget.listenerCount('unhandledrejection')).toBe(0);
     expect(fakeTarget.listenerCount('error')).toBe(0);
+    expect(fakeTarget.listenerCount(CHUNK_LOAD_RECOVERY_EVENT)).toBe(0);
   });
 
   it('Vite preloadError 无 payload 时提示刷新并阻止默认错误传播', () => {
@@ -121,6 +131,27 @@ describe('chunkLoadRecoveryEvents', () => {
 
     expect(imageEvent.preventDefault).not.toHaveBeenCalled();
     expect(chunkScriptEvent.preventDefault).toHaveBeenCalledTimes(1);
+    expect(promptRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('手动 catch 派发的 chunk 恢复事件会触发刷新提示', () => {
+    const fakeTarget = createFakeTarget();
+    const promptRefresh = vi.fn();
+    installChunkLoadRecoveryListeners(fakeTarget.target, promptRefresh);
+
+    const businessHandled = dispatchChunkLoadRecoveryEvent(new Error('JSON 解析失败'), fakeTarget.target);
+    const chunkHandled = dispatchChunkLoadRecoveryEvent(
+      new TypeError('Failed to fetch dynamically imported module: /assets/aiService-old.js'),
+      fakeTarget.target
+    );
+    const duplicatedHandled = dispatchChunkLoadRecoveryEvent(
+      new TypeError('Failed to fetch dynamically imported module: /assets/summary-old.js'),
+      fakeTarget.target
+    );
+
+    expect(businessHandled).toBe(false);
+    expect(chunkHandled).toBe(true);
+    expect(duplicatedHandled).toBe(true);
     expect(promptRefresh).toHaveBeenCalledTimes(1);
   });
 });

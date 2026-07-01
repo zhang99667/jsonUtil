@@ -1,5 +1,6 @@
 import type { AIConfig, GeneralSettings, ShortcutConfig } from '../types';
 import type { AppBackupPayload, ApplyAppBackupResult } from './appBackup';
+import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { getDetailedErrorMessage } from './errors';
 
 interface AppSettingsBackupCommandInput {
@@ -69,6 +70,8 @@ export const runAppExportSettingsBackupCommand = async (
     });
     effects.onShowSuccess('配置备份已导出，未包含 AI Key');
   } catch (error) {
+    if (dispatchChunkLoadRecoveryEvent(error)) return;
+
     effects.onShowError(getDetailedErrorMessage(error, '导出配置备份失败'));
   }
 };
@@ -89,6 +92,8 @@ export const runAppImportSettingsBackupCommand = async (
     notifyAppBackupImported();
     effects.onShowSuccess('配置备份已导入，AI Key 已保留');
   } catch (error) {
+    if (dispatchChunkLoadRecoveryEvent(error)) return;
+
     effects.onShowError(error instanceof Error ? error.message : '导入配置备份失败');
   }
 };

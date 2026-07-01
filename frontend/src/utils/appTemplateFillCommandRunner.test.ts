@@ -1,8 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { isPlaceholderFillTemplateJson } from './appWorkflowHelpers';
 import { buildAppTemplateFillQualityDelta } from './appTemplateFillQualityDelta';
+import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { applyTemplate } from './transformations';
 import { runAppTemplateFillCommand } from './appTemplateFillCommandRunner';
+
+vi.mock('./chunkLoadRecoveryDispatch', () => ({
+  dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
+}));
 
 vi.mock('./transformations', async importOriginal => ({
   ...await importOriginal<typeof import('./transformations')>(),
@@ -50,6 +55,7 @@ describe('appTemplateFillCommandRunner', () => {
     vi.mocked(applyTemplate).mockReturnValue('{"merged":true}');
     vi.mocked(buildAppTemplateFillQualityDelta).mockReturnValue('质量变化: +1');
     vi.mocked(isPlaceholderFillTemplateJson).mockReturnValue(false);
+    vi.mocked(dispatchChunkLoadRecoveryEvent).mockReturnValue(false);
   });
 
   it('应用普通模板时更新 SOURCE 并清空质量 delta', async () => {
@@ -65,6 +71,20 @@ describe('appTemplateFillCommandRunner', () => {
     expect(effects.currentSourceText).toBe('{"merged":true}');
     expect(effects.onUpdateActiveFileContent).toHaveBeenCalledWith('{"merged":true}');
     expect(effects.onShowSuccess).toHaveBeenCalledWith('模板已应用');
+  });
+
+  it('质量摘要模块 chunk 失效时交给统一刷新恢复', async () => {
+    const effects = createEffects();
+    const error = new TypeError('Failed to fetch dynamically imported module: /assets/transformSummary-old.js');
+    vi.mocked(isPlaceholderFillTemplateJson).mockReturnValue(true);
+    vi.mocked(dispatchChunkLoadRecoveryEvent).mockReturnValue(true);
+    effects.loadSummaryModule.mockRejectedValue(error);
+
+    await runTemplate(effects, '{"templateVersion":"1.0","placeholders":{}}');
+
+    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
+    expect(effects.onSetTemplateApplyQualityDelta).not.toHaveBeenCalled();
+    expect(effects.onShowError).not.toHaveBeenCalled();
   });
 
   it('占位符回填模板会生成质量 delta', async () => {

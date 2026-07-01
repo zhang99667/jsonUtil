@@ -6,6 +6,7 @@ import {
 import {
   buildAppAsyncTransformPolicy,
 } from '../utils/appAsyncPolicy';
+import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import {
   getFreshAppAsyncTransformResult,
   type AppAsyncTransformResult,
@@ -64,6 +65,11 @@ export const useAppAsyncTransform = ({
         })
         .catch(error => {
           if (isCancelled || transformRequestIdRef.current !== requestId) return;
+          if (dispatchChunkLoadRecoveryEvent(error)) {
+            setIsOutputTransforming(false);
+            return;
+          }
+
           console.warn('异步转换处理失败:', error);
           setAsyncTransformResult({
             input,
