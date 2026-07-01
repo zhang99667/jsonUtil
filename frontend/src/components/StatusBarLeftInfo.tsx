@@ -1,25 +1,7 @@
 import React from 'react';
-import type { FileTab } from '../types';
-import type { StatusBarBadgeState } from '../utils/statusBarState';
-import type { StatusBarSourceValidationAction } from '../utils/statusBarSourceValidationActionTypes';
-import { StatusBarActiveFileBadge } from './StatusBarActiveFileBadge';
 import { StatusBarContentMetrics } from './StatusBarContentMetrics';
-import { StatusBarSaveStatusBadge } from './StatusBarSaveStatusBadge';
-import { StatusBarSourceValidationBadge } from './StatusBarSourceValidationBadge';
-
-interface StatusBarLeftInfoProps {
-  activeContentLength: number;
-  byteSizeText: string;
-  totalLines: number;
-  maxColumns: number;
-  isStatsLimited: boolean;
-  cursorLine?: number;
-  cursorColumn?: number;
-  activeFile: FileTab | null;
-  saveStatus: StatusBarBadgeState;
-  sourceValidationStatus: StatusBarBadgeState;
-  sourceValidationAction: StatusBarSourceValidationAction;
-}
+import type { StatusBarLeftInfoProps } from './StatusBarLeftInfoTypes';
+import { StatusBarStatusBadges } from './StatusBarStatusBadges';
 
 export const StatusBarLeftInfo: React.FC<StatusBarLeftInfoProps> = ({
   activeContentLength,
@@ -44,11 +26,11 @@ export const StatusBarLeftInfo: React.FC<StatusBarLeftInfoProps> = ({
       cursorLine={cursorLine}
       cursorColumn={cursorColumn}
     />
-    <StatusBarActiveFileBadge activeFile={activeFile} />
-    <StatusBarSaveStatusBadge status={saveStatus} />
-    <StatusBarSourceValidationBadge
-      status={sourceValidationStatus}
-      action={sourceValidationAction}
+    <StatusBarStatusBadges
+      activeFile={activeFile}
+      saveStatus={saveStatus}
+      sourceValidationStatus={sourceValidationStatus}
+      sourceValidationAction={sourceValidationAction}
     />
   </div>
 );
