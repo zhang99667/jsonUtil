@@ -8,5 +8,7 @@ export const transformSummaryInsightMaintainabilityBudgets = [
   summaryInsightBudget('frontend/src/utils/transformReportNestedFieldGroups.ts', 85, '深度解析嵌套字段 Top 分组应复用独立 helper，避免 CMD 字段和资源字段重复 Map/排序逻辑'),
   summaryInsightBudget('frontend/src/utils/transformReportRecordInsights.ts', 170, '深度解析记录洞察字段构建应保持独立纯函数，避免内部 CMD、资源 URL、ext 和 Base64 后缀线索回流到报告聚合文件'),
   ...transformSummaryInsightSchemaMaintainabilityBudgets,
-  summaryInsightBudget('frontend/src/utils/transformTroubleshootingRecipe.ts', 220, '深度解析排查 recipe 应保持纯数据组装，避免回流到报告聚合文件'),
+  summaryInsightBudget('frontend/src/utils/transformTroubleshootingRecipe.ts', 115, '深度解析排查 recipe 入口只组装最终 recipe 对象，步骤编排和类型契约保持独立'),
+  summaryInsightBudget('frontend/src/utils/transformTroubleshootingRecipeSteps.ts', 130, '深度解析排查 recipe 步骤编排只维护步骤启用条件和依赖关系'),
+  summaryInsightBudget('frontend/src/utils/transformTroubleshootingRecipeTypes.ts', 55, '深度解析排查 recipe 类型契约应独立维护，避免入口文件因导出类型继续膨胀'),
 ];
