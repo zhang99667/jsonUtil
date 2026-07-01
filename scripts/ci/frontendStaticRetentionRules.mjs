@@ -54,6 +54,7 @@ export const requiredStaticRetentionSnippets = [
   { file: '.github/workflows/ci.yml', snippets: [
     'run: node scripts/ci/check-maintainability-budgets.mjs',
     'run: node --test scripts/ci/*.test.mjs',
+    'run: node scripts/ci/check-chunk-load-recovery-catches.mjs',
     'run: node scripts/ci/check-frontend-static-retention.mjs',
     'run: node scripts/ci/check-ai-governance.mjs',
   ] },

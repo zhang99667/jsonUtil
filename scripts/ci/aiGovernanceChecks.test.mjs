@@ -45,6 +45,9 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'npm run build',
     'npm run check:preloads',
     'node scripts/ci/check-deploy-shell-syntax.mjs',
+    'node scripts/ci/check-chunk-load-recovery-catches.mjs',
+    'dispatchChunkLoadRecoveryEvent',
+    '手动懒加载',
     'REMOTE_SCRIPT heredoc',
     'workflow run',
     'node scripts/ci/check-frontend-static-retention.mjs',
@@ -72,6 +75,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'scripts/ci/check-deploy-shell-syntax.mjs',
     'scripts/ci/check-frontend-static-retention.mjs',
     'scripts/ci/check-production-frontend-assets.mjs',
+    'scripts/ci/check-chunk-load-recovery-catches.mjs',
     'scripts/ci/check-maintainability-budgets.mjs',
   ].forEach(file => writeFixtureFile(rootDir, file, sharedReferences));
 
@@ -190,6 +194,9 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(codexRule.contains.includes('skills/jsonutils-maintainer/SKILL.md'), true);
   [claudeRule, codexRule, playbookRule, skillRule].forEach((rule) => {
     assert.equal(rule.contains.includes('node scripts/ci/check-deploy-shell-syntax.mjs'), true);
+    assert.equal(rule.contains.includes('node scripts/ci/check-chunk-load-recovery-catches.mjs'), true);
+    assert.equal(rule.contains.includes('dispatchChunkLoadRecoveryEvent'), true);
+    assert.equal(rule.contains.includes('手动懒加载'), true);
     assert.equal(rule.contains.includes('REMOTE_SCRIPT heredoc'), true);
     assert.equal(rule.contains.includes('workflow run'), true);
     assert.equal(rule.contains.includes('Content-Type'), true);

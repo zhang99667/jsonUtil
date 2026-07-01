@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **手动懒加载恢复门禁**: 新增 `check-chunk-load-recovery-catches` AST 检查并接入本地 CI、AI Playbook、Codex skill 和 Claude guide，后续新增手动 `import()` catch 若缺少 `dispatchChunkLoadRecoveryEvent` 会直接报出文件和行号
 - **手动懒加载失败统一恢复**: AI 修复、设置测试、配置备份、模板回填、异步类型生成和新手引导等手动 `import()` catch 路径命中旧 chunk 失效时，会复用“页面资源已更新”的刷新恢复提示，不再误展示业务错误或原始构建产物 URL
 - **旧 chunk 错误识别加固**: 动态 import 失败识别会递归读取错误对象中的 `cause`、`reason`、`error`、`detail`、`payload` 和 `errors[]` 包装，并在全局资源错误只有 `/assets/*.js|css` URL 时提示刷新，减少浏览器或事件层二次封装后暴露原始 chunk 报错的概率
 - **深度解析报告复制 Action 分层**: 将报告级复制里的 reportView guard、成功文案包装、路径/CMD 特殊文案和 CMD 对比上下文抽到 `transformReportPanelReportCopyActions`，主 workflow 回归动作编排并补充诊断/质量/recipe 成功路径测试
