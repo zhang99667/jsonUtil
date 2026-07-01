@@ -3,15 +3,14 @@ const BUTTON_ACTIVE_CLASS = 'bg-editor-active border-brand-primary/60 text-white
 const BUTTON_INACTIVE_CLASS = 'bg-editor-sidebar border-transparent text-gray-400 hover:bg-editor-hover hover:text-gray-200 hover:border-gray-600';
 const BUTTON_COLLAPSED_CLASS = 'justify-center px-2';
 
-interface ButtonClassOptions {
-  isActive: boolean;
-  isCollapsed: boolean;
-}
+interface ButtonClassOptions { isActive: boolean; isCollapsed: boolean; }
 
-interface CollapsedA11y {
-  ariaLabel?: string;
-  title?: string;
-}
+interface CollapsedA11y { ariaLabel?: string; title?: string; }
+
+const getCollapsedButtonA11y = (label: string, ariaSuffix: string, titleSuffix: string): CollapsedA11y => ({
+  ariaLabel: `${label}${ariaSuffix}`,
+  title: `${label}${titleSuffix}`,
+});
 
 export const getActionPanelButtonClassName = ({
   isActive,
@@ -26,24 +25,22 @@ export const getActionPanelToolButtonA11y = (
   label: string,
   isActive: boolean,
   isCollapsed: boolean,
-): CollapsedA11y => {
-  if (!isCollapsed) return {};
-
-  return {
-    ariaLabel: `${label}${isActive ? '，当前模式' : ''}`,
-    title: `${label}${isActive ? '（当前）' : ''}`,
-  };
-};
+): CollapsedA11y => (
+  isCollapsed ? getCollapsedButtonA11y(
+    label,
+    isActive ? '，当前模式' : '',
+    isActive ? '（当前）' : '',
+  ) : {}
+);
 
 export const getActionPanelPanelButtonA11y = (
   label: string,
   isOpen: boolean,
   isCollapsed: boolean,
-): CollapsedA11y => {
-  if (!isCollapsed) return {};
-
-  return {
-    ariaLabel: `${label}${isOpen ? '，已打开' : '，未打开'}`,
-    title: `${label}${isOpen ? '（已打开）' : ''}`,
-  };
-};
+): CollapsedA11y => (
+  isCollapsed ? getCollapsedButtonA11y(
+    label,
+    isOpen ? '，已打开' : '，未打开',
+    isOpen ? '（已打开）' : '',
+  ) : {}
+);

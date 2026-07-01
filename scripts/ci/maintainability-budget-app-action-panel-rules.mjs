@@ -30,7 +30,7 @@ export const appActionPanelMaintainabilityBudgets = [
   actionPanelBudget('frontend/src/utils/actionPanelPanelItems.ts', 90, '工具栏面板入口配置应保持纯元数据，新增面板只追加配置并补测试'),
   actionPanelBudget('frontend/src/utils/actionPanelSmartSuggestionState.ts', 40, '工具栏智能建议状态 helper 应只维护 tone、来源标签和可见动作规则'),
   actionPanelBudget('frontend/src/utils/actionPanelFileActions.ts', 55, '工具栏文件操作 helper 应只维护文件按钮 title 与 AI 修复按钮状态矩阵'),
-  actionPanelBudget('frontend/src/utils/actionPanelButtonState.ts', 55, '工具栏按钮状态 helper 应只维护通用 class 和折叠态可访问文案矩阵'),
+  actionPanelBudget('frontend/src/utils/actionPanelButtonState.ts', 52, '工具栏按钮状态 helper 应只维护通用 class 和折叠态可访问文案矩阵，可访问文案后缀统一复用本地 helper'),
   actionPanelBudget('frontend/src/utils/actionPanelEntryButtonState.ts', 20, '工具栏入口按钮状态兼容出口应只聚合工具/面板入口状态 helper 和类型导出'),
   actionPanelBudget('frontend/src/utils/actionPanelToolEntryButtonState.ts', 35, '工具栏转换工具入口状态 helper 应只维护工具模式 a11y、当前 badge 和图标状态'),
   actionPanelBudget('frontend/src/utils/actionPanelPanelEntryButtonState.ts', 35, '工具栏面板入口状态 helper 应只维护面板开关 a11y、打开 badge 和图标状态'),
