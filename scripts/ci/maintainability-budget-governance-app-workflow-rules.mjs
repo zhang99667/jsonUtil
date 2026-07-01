@@ -1,3 +1,4 @@
+import { governanceAppWorkflowCommandMaintainabilityBudgets } from './maintainability-budget-governance-app-workflow-command-rules.mjs';
 import { governanceAppWorkflowStateMaintainabilityBudgets } from './maintainability-budget-governance-app-workflow-state-rules.mjs';
 
 export const governanceAppWorkflowMaintainabilityBudgets = [
@@ -12,15 +13,11 @@ export const governanceAppWorkflowMaintainabilityBudgets = [
     reason: 'App AI 修复预算规则应保持短表，新增 AI 工作流 helper 先按 hook/helper 分层',
   },
   {
-    file: 'scripts/ci/maintainability-budget-app-workflow-command-rules.mjs',
-    maxLines: 30,
-    reason: 'App 命令工作流预算规则应保持短表，新增命令继续按动作域拆分',
+    file: 'scripts/ci/maintainability-budget-governance-app-workflow-command-rules.mjs',
+    maxLines: 20,
+    reason: 'App 命令预算治理规则应独立维护 command/core/template/panel 子表预算',
   },
-  {
-    file: 'scripts/ci/maintainability-budget-app-workflow-settings-backup-rules.mjs',
-    maxLines: 15,
-    reason: '设置备份命令预算规则应独立维护 hook、导出、导入和类型契约预算',
-  },
+  ...governanceAppWorkflowCommandMaintainabilityBudgets,
   {
     file: 'scripts/ci/maintainability-budget-app-workflow-save-rules.mjs',
     maxLines: 30,

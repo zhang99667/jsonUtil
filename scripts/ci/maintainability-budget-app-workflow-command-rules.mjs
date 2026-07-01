@@ -1,25 +1,11 @@
+import { appWorkflowCommandCoreMaintainabilityBudgets } from './maintainability-budget-app-workflow-command-core-rules.mjs';
+import { appWorkflowCommandPanelMaintainabilityBudgets } from './maintainability-budget-app-workflow-command-panel-rules.mjs';
+import { appWorkflowCommandTemplateMaintainabilityBudgets } from './maintainability-budget-app-workflow-command-template-rules.mjs';
 import { appWorkflowSettingsBackupMaintainabilityBudgets } from './maintainability-budget-app-workflow-settings-backup-rules.mjs';
 
 export const appWorkflowCommandMaintainabilityBudgets = [
-  { file: 'frontend/src/utils/appAutoSaveTogglePlan.ts', maxLines: 55, reason: '自动保存开关计划 helper 只维护可用性校验、下一状态和 toast 文案' },
-  { file: 'frontend/src/utils/appAutoSaveTogglePlan.test.ts', maxLines: 70, reason: '自动保存开关计划测试只锁定无文件、无句柄、开启和关闭四种路径' },
-  { file: 'frontend/src/hooks/useAppCopyCommands.ts', maxLines: 65, reason: '复制命令 hook 只接 SOURCE/PREVIEW 文本和复制 runner，副作用分支留在可测 helper' },
-  { file: 'frontend/src/utils/appCopyCommandRunner.ts', maxLines: 85, reason: '复制命令 runner 只维护空态、处理中、复制、toast 和打点语义' },
+  ...appWorkflowCommandCoreMaintainabilityBudgets,
   ...appWorkflowSettingsBackupMaintainabilityBudgets,
-  { file: 'frontend/src/hooks/useAppSmartSuggestionCommands.ts', maxLines: 95, reason: '智能建议命令 hook 只装配模式、面板和 toast 副作用，计划逻辑留在 runner/helper' },
-  { file: 'frontend/src/hooks/useAppSmartSuggestionCommands.test.ts', maxLines: 120, reason: '智能建议命令 hook 测试只锁定 runner 输入和调用方 effects 接线' },
-  { file: 'frontend/src/utils/appSmartSuggestionCommandRunner.ts', maxLines: 95, reason: '智能建议命令 runner 只执行计划副作用顺序和埋点语义' },
-  { file: 'frontend/src/hooks/useAppTemplateFillCommand.ts', maxLines: 75, reason: '模板填充命令 hook 只装配动态 summary loader、ref 和 toast effects，执行顺序留在 runner' },
-  { file: 'frontend/src/utils/appTemplateFillCommandRunner.ts', maxLines: 85, reason: '模板填充命令 runner 只维护模板应用、占位符质量 delta、SOURCE 竞态保护和提示语义' },
-  { file: 'frontend/src/utils/appTemplateFillCommandRunner.test.ts', maxLines: 120, reason: '模板填充命令 runner 测试只锁定普通模板、占位符质量 delta、SOURCE 竞态和错误文案' },
-  { file: 'frontend/src/utils/appTemplateFillCommandRunnerTestFixture.ts', maxLines: 90, reason: '模板填充命令 runner 测试 fixture 只维护模块 mock、默认 effects 和执行包装' },
-  { file: 'frontend/src/utils/appTemplateFillTargetError.ts', maxLines: 45, reason: '模板填充目标错误 helper 只维护面板状态、SOURCE 语言和校验结果文案' },
-  { file: 'frontend/src/utils/appTemplateFillTargetError.test.ts', maxLines: 70, reason: '模板填充目标错误测试只锁定空 SOURCE、非 JSON、校验失败和成功分支' },
-  { file: 'frontend/src/utils/appTemplateFillQualityDelta.ts', maxLines: 65, reason: '模板填充质量 delta helper 只维护回填前后深度解析快照和 delta 文本构造' },
-  { file: 'frontend/src/utils/appTemplateFillQualityDelta.test.ts', maxLines: 70, reason: '模板填充质量 delta 测试只锁定前后 SOURCE 快照构造和 summary 模块调用' },
-  { file: 'frontend/src/hooks/useAppToolPanelCommands.ts', maxLines: 310, reason: '主应用工具面板命令 hook 只维护面板开关、外部请求信号、changelog 监听和报告入口动作，继续增长时按面板域拆分' },
-  { file: 'frontend/src/utils/appToolPanelCommandPlans.ts', maxLines: 120, reason: '工具面板命令计划 helper 只维护请求 ID、面板事件名、SOURCE Scheme 判断和 Changelog 状态归一化' },
-  { file: 'frontend/src/utils/appToolPanelCommandPlans.test.ts', maxLines: 120, reason: '工具面板命令计划测试只锁定请求构造、事件名、Scheme 判断、Changelog 和模板请求边界' },
-  { file: 'frontend/src/hooks/useAppToolPanelCommands.test.ts', maxLines: 190, reason: '工具面板命令测试只锁定面板开关、请求 ID 自增、changelog 事件和报告入口动作' },
-  { file: 'frontend/src/hooks/useAppToolPanelCommandsTestFixture.ts', maxLines: 150, reason: '工具面板命令测试 fixture 只维护 React hook mock、窗口事件 stub 和 state setter 捕获' },
+  ...appWorkflowCommandTemplateMaintainabilityBudgets,
+  ...appWorkflowCommandPanelMaintainabilityBudgets,
 ];
