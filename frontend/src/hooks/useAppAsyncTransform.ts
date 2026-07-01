@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TransformMode } from '../types';
 import { buildAppAsyncTransformPolicy } from '../utils/appAsyncPolicy';
-import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { buildAppAsyncTransformSnapshot } from '../utils/appAsyncTransformSnapshot';
+import { startAppAsyncTransformPromiseTask } from '../utils/appAsyncTransformPromiseTask';
 import {
   buildAppAsyncTransformWorkerRequest,
   type AppAsyncTransformWorkerResponse,
@@ -13,7 +13,6 @@ import {
   getFreshAppAsyncTransformResult,
   type AppAsyncTransformResult,
 } from '../utils/appAsyncTransformState';
-import { performTransformAsync } from '../utils/transformations';
 
 interface UseAppAsyncTransformOptions {
   input: string;
@@ -55,31 +54,13 @@ export const useAppAsyncTransform = ({
     setAsyncTransformResult(null);
 
     if (!shouldUseTransformWorker) {
-      let isCancelled = false;
-      performTransformAsync(transformSnapshot.input, transformSnapshot.mode)
-        .then(output => {
-          if (isCancelled || transformRequestIdRef.current !== requestId) return;
-          setAsyncTransformResult(buildAppAsyncTransformResult({
-            snapshot: transformSnapshot,
-            output,
-          }));
-          setIsOutputTransforming(false);
-        })
-        .catch(error => {
-          if (isCancelled || transformRequestIdRef.current !== requestId) return;
-          if (dispatchChunkLoadRecoveryEvent(error)) {
-            setIsOutputTransforming(false);
-            return;
-          }
-
-          console.warn('异步转换处理失败:', error);
-          setAsyncTransformResult(buildAppAsyncTransformFallbackResult(transformSnapshot));
-          setIsOutputTransforming(false);
-        });
-
-      return () => {
-        isCancelled = true;
-      };
+      return startAppAsyncTransformPromiseTask({
+        requestId,
+        snapshot: transformSnapshot,
+        isCurrentRequest: currentRequestId => transformRequestIdRef.current === currentRequestId,
+        onSetAsyncTransformResult: setAsyncTransformResult,
+        onSetOutputTransforming: setIsOutputTransforming,
+      });
     }
 
     const worker = new Worker(new URL('../workers/transform.worker.ts', import.meta.url), { type: 'module' });
