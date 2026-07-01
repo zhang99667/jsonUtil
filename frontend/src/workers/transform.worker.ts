@@ -1,24 +1,11 @@
 import { TransformMode } from '../types';
-import type { TransformContext } from '../types';
 import { deepParseWithContext, parseJsonInput, performTransform } from '../utils/transformations';
 import { parseJsonLines } from '../utils/jsonLines';
 import { jsonValueToTypeScriptDeclaration } from '../utils/jsonToTypeScript';
-
-interface TransformWorkerRequest {
-  id: number;
-  input: string;
-  mode: TransformMode;
-  options?: {
-    autoExpandScheme?: boolean;
-  };
-}
-
-export interface TransformWorkerResponse {
-  id: number;
-  output: string;
-  context?: TransformContext;
-  error?: string;
-}
+import type {
+  AppAsyncTransformWorkerRequest,
+  AppAsyncTransformWorkerResponse,
+} from '../utils/appAsyncTransformWorkerMessages';
 
 const performWorkerJsonToTypeScriptTransform = (input: string): string => {
   const parsed = parseJsonInput(input);
@@ -29,7 +16,7 @@ const performWorkerJsonToTypeScriptTransform = (input: string): string => {
   return jsonValueToTypeScriptDeclaration(value, { includeSummary: true });
 };
 
-self.onmessage = (event: MessageEvent<TransformWorkerRequest>) => {
+self.onmessage = (event: MessageEvent<AppAsyncTransformWorkerRequest>) => {
   const { id, input, mode, options } = event.data;
 
   try {
@@ -37,7 +24,7 @@ self.onmessage = (event: MessageEvent<TransformWorkerRequest>) => {
       const result = deepParseWithContext(input, {
         autoExpandScheme: options?.autoExpandScheme,
       });
-      const response: TransformWorkerResponse = {
+      const response: AppAsyncTransformWorkerResponse = {
         id,
         output: result.output,
         context: result.context,
@@ -47,7 +34,7 @@ self.onmessage = (event: MessageEvent<TransformWorkerRequest>) => {
     }
 
     if (mode === TransformMode.JSON_TO_TYPESCRIPT) {
-      const response: TransformWorkerResponse = {
+      const response: AppAsyncTransformWorkerResponse = {
         id,
         output: performWorkerJsonToTypeScriptTransform(input),
       };
@@ -55,13 +42,13 @@ self.onmessage = (event: MessageEvent<TransformWorkerRequest>) => {
       return;
     }
 
-    const response: TransformWorkerResponse = {
+    const response: AppAsyncTransformWorkerResponse = {
       id,
       output: performTransform(input, mode),
     };
     self.postMessage(response);
   } catch (error) {
-    const response: TransformWorkerResponse = {
+    const response: AppAsyncTransformWorkerResponse = {
       id,
       output: input,
       error: error instanceof Error ? error.message : String(error),

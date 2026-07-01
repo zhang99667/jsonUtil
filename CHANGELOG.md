@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.260 (2026-07-01) - 异步 Worker 消息分层
+### 🚀 优化与改进
+- **Worker 消息契约**: 将异步转换 Worker 的请求/响应类型和请求构造抽成共享 helper，hook 与 worker 共用同一份消息边界
+- **Worker 请求回归覆盖**: 新增 Worker 请求构造单测，锁定 requestId、snapshot 输入和 `autoExpandScheme` 透传，降低后续调整大文件转换链路的回归风险
+
 ## v1.8.259 (2026-07-01) - 异步转换身份分层
 ### 🚀 优化与改进
 - **异步转换 Snapshot**: 将异步转换的 `input`、`mode` 和 `autoExpandScheme` 身份对象抽成独立 helper，成功结果、fallback 和 freshness 校验统一围绕同一个 snapshot 传递

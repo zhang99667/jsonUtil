@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TransformMode, type TransformContext } from '../types';
+import { TransformMode } from '../types';
 import { buildAppAsyncTransformPolicy } from '../utils/appAsyncPolicy';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { buildAppAsyncTransformSnapshot } from '../utils/appAsyncTransformSnapshot';
+import {
+  buildAppAsyncTransformWorkerRequest,
+  type AppAsyncTransformWorkerResponse,
+} from '../utils/appAsyncTransformWorkerMessages';
 import {
   buildAppAsyncTransformFallbackResult,
   buildAppAsyncTransformResult,
@@ -80,12 +84,7 @@ export const useAppAsyncTransform = ({
 
     const worker = new Worker(new URL('../workers/transform.worker.ts', import.meta.url), { type: 'module' });
 
-    worker.onmessage = (event: MessageEvent<{
-      id: number;
-      output: string;
-      context?: TransformContext;
-      error?: string;
-    }>) => {
+    worker.onmessage = (event: MessageEvent<AppAsyncTransformWorkerResponse>) => {
       if (event.data.id !== requestId || transformRequestIdRef.current !== requestId) return;
       if (event.data.error) {
         console.warn('大文件转换 Worker 处理失败:', event.data.error);
@@ -106,12 +105,7 @@ export const useAppAsyncTransform = ({
       setIsOutputTransforming(false);
     };
 
-    worker.postMessage({
-      id: requestId,
-      input: transformSnapshot.input,
-      mode: transformSnapshot.mode,
-      options: { autoExpandScheme: transformSnapshot.autoExpandScheme },
-    });
+    worker.postMessage(buildAppAsyncTransformWorkerRequest(requestId, transformSnapshot));
 
     return () => {
       worker.terminate();
