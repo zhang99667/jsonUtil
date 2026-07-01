@@ -1,6 +1,9 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **Scheme 弹窗预算规则分层**: 将 Scheme viewer 预算清单拆为组件与支撑子表，入口只负责聚合，避免继续拆弹窗展示面板时让治理规则本身贴线
+- **Scheme CMD 摘要面板分层**: 将 CMD Schema、Top Schema、参数 keys、cmd/ext/Base64 内部线索展示抽到 `SchemeViewerCommandSummaryPanel`，主弹窗只保留摘要数据装配，降低后续 CMD 展示规则扩展时误碰编辑和二维码链路的风险
+- **Scheme 运行时占位符面板分层**: 将运行时占位符分组和路径明细展示抽到 `SchemeViewerRuntimePlaceholdersPanel`，主弹窗继续瘦身并把占位符 UI 纳入独立预算，降低后续占位符说明扩展时误碰解码、复制和编辑链路的风险
 - **Scheme 弹窗 Base64 面板分层**: 将内部 Base64 元信息展示抽到 `SchemeViewerBase64MetaPanel`，并把弹窗 metadata 构造与质量样式映射拆成纯 helper，worker 与弹窗复用同一摘要规则，`SchemeViewerModal.tsx` 纳入可维护性预算防止回涨
 - **主应用工具面板 Controller 分层**: 将 JSONPath、结构导航、Schema、Scheme、模板和深度解析面板的懒加载 props 装配下沉到 `AppToolPanelsController`，`App.tsx` 继续回归顶层状态编排并退出预算临界区
 - **主应用 SOURCE 输入分层**: 将 SOURCE 输入清洗、智能建议清空、AI 修复摘要快照和活动文件同步收敛到 `useAppSourceInputCommands`，主应用入口继续瘦身并降低输入状态机回流风险
