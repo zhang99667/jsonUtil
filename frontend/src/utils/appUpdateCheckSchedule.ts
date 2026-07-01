@@ -1,27 +1,6 @@
-type AppUpdateCheckCallback = () => void | Promise<void>;
+import type { InstallAppUpdateCheckScheduleInput } from './appUpdateCheckScheduleTypes';
 
-interface AppUpdateCheckWindowTarget {
-  setTimeout(callback: AppUpdateCheckCallback, delayMs: number): number;
-  clearTimeout(timer: number): void;
-  setInterval(callback: AppUpdateCheckCallback, delayMs: number): number;
-  clearInterval(timer: number): void;
-  addEventListener(type: 'focus', listener: () => void): void;
-  removeEventListener(type: 'focus', listener: () => void): void;
-}
-
-interface AppUpdateCheckDocumentTarget {
-  readonly visibilityState: DocumentVisibilityState;
-  addEventListener(type: 'visibilitychange', listener: () => void): void;
-  removeEventListener(type: 'visibilitychange', listener: () => void): void;
-}
-
-interface InstallAppUpdateCheckScheduleInput {
-  checkForUpdate: AppUpdateCheckCallback;
-  windowTarget: AppUpdateCheckWindowTarget;
-  documentTarget: AppUpdateCheckDocumentTarget;
-  initialDelayMs: number;
-  intervalMs: number;
-}
+export type { InstallAppUpdateCheckScheduleInput } from './appUpdateCheckScheduleTypes';
 
 export const installAppUpdateCheckSchedule = ({
   checkForUpdate,
