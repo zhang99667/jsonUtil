@@ -18,9 +18,34 @@ describe('chunkLoadRecovery', () => {
     expect(isDynamicImportLoadError(new Error('ChunkLoadError: Loading chunk 42 failed.'))).toBe(true);
   });
 
+  it('识别被外层事件或 cause 包装的动态 import 错误', () => {
+    expect(isDynamicImportLoadError({
+      reason: new TypeError('Failed to fetch dynamically imported module: /assets/SchemeViewerModal-old.js'),
+    })).toBe(true);
+    expect(isDynamicImportLoadError({
+      error: {
+        cause: new Error('ChunkLoadError: Loading chunk scheme-viewer failed.'),
+      },
+    })).toBe(true);
+    expect(isDynamicImportLoadError({
+      detail: {
+        payload: {
+          errors: [new Error('Unable to preload CSS for /assets/panel-old.css')],
+        },
+      },
+    })).toBe(true);
+  });
+
   it('不误判普通业务错误', () => {
     expect(isDynamicImportLoadError(new Error('JSON 解析失败'))).toBe(false);
     expect(isDynamicImportLoadError(null)).toBe(false);
+  });
+
+  it('读取循环包装对象时不会误判或递归溢出', () => {
+    const errorLike: { message: string; cause?: unknown } = { message: 'JSON 解析失败' };
+    errorLike.cause = errorLike;
+
+    expect(isDynamicImportLoadError(errorLike)).toBe(false);
   });
 
   it('Vite preloadError 无 payload 时仍提示刷新', () => {

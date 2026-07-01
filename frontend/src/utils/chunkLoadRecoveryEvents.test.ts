@@ -104,4 +104,23 @@ describe('chunkLoadRecoveryEvents', () => {
     expect(fallbackChunkEvent.preventDefault).toHaveBeenCalledTimes(1);
     expect(promptRefresh).toHaveBeenCalledTimes(1);
   });
+
+  it('全局资源加载事件只有 target URL 时也触发刷新提示', () => {
+    const fakeTarget = createFakeTarget();
+    const promptRefresh = vi.fn();
+    installChunkLoadRecoveryListeners(fakeTarget.target, promptRefresh);
+    const imageEvent = createEvent({
+      target: { src: 'https://jsonutils.markz.fun/assets/logo-old.png' },
+    });
+    const chunkScriptEvent = createEvent({
+      target: { src: 'https://jsonutils.markz.fun/assets/SchemeViewerModal-old.js' },
+    });
+
+    fakeTarget.emit('error', imageEvent);
+    fakeTarget.emit('error', chunkScriptEvent);
+
+    expect(imageEvent.preventDefault).not.toHaveBeenCalled();
+    expect(chunkScriptEvent.preventDefault).toHaveBeenCalledTimes(1);
+    expect(promptRefresh).toHaveBeenCalledTimes(1);
+  });
 });
