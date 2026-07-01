@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **主应用工具面板 Controller 分层**: 将 JSONPath、结构导航、Schema、Scheme、模板和深度解析面板的懒加载 props 装配下沉到 `AppToolPanelsController`，`App.tsx` 继续回归顶层状态编排并退出预算临界区
+- **主应用 SOURCE 输入分层**: 将 SOURCE 输入清洗、智能建议清空、AI 修复摘要快照和活动文件同步收敛到 `useAppSourceInputCommands`，主应用入口继续瘦身并降低输入状态机回流风险
 - **深度解析 Section Model 分层**: 将报告内容区可见性、占位符工具栏、优先处理项和下一步行动的纯派生下沉到 `transformReportPanelSectionModel`，主面板继续保留真实状态与 handler wiring，降低后续扩展报告 section 时的耦合
 - **深度解析面板 Frame 分层**: 将主报告面板的 DraggablePanel 默认布局和 footer 装配下沉到 `TransformReportPanelFrame`，主面板继续聚焦状态、复制 workflow 和内容 wiring，并退出可维护性预算 near-list
 - **占位符 Section 类型契约复用**: 占位符 rows list 导出可复用行级 props 契约，Section 类型入口不再重复声明 `Omit<placeholder>` 结构，降低深度解析占位符区域继续扩展时的类型同步成本
