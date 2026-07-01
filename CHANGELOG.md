@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **工具栏折叠态文案收敛**: 将工具栏工具按钮和面板入口按钮的折叠态 aria/title 文案拼装复用本地 helper，保持现有可访问输出不变，同时收紧 `actionPanelButtonState` 预算
 - **展开记录 cmdHandler 动作分层**: 将深度解析展开记录头部里的 CMD 结构复制、对比包复制和 cmdHandler 对比入口下沉到 `transformReportRecordCmdActionButtons`，主动作区只保留通用复制、定位和 Scheme 打开装配
 - **展开记录动作按钮壳复用**: 新增 `TransformReportRecordActionButton` 复用深度解析记录头部与路径行里的动作按钮壳，保留原有 `data-tour` 测试锚点和点击语义，同时减少复制、定位、Scheme 打开按钮样式重复
 - **展开记录头部动作区分层**: 将深度解析展开记录头部里的复制、cmdHandler 对比、定位和 Scheme 打开按钮拆到 `TransformReportRecordHeaderActions`，主头部组件只保留来源 badge、路径和动作区装配，降低后续扩展记录操作时的回流风险
