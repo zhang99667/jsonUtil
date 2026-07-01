@@ -1,26 +1,13 @@
 import { isDynamicImportLoadError } from './chunkLoadRecovery';
+import { createChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatchEvent';
 import {
-  CHUNK_LOAD_RECOVERY_EVENT,
-  type ManualChunkLoadRecoveryEvent,
-} from './chunkLoadRecoveryEventTypes';
-
-interface ChunkLoadRecoveryDispatchTarget {
-  dispatchEvent(event: Event): boolean;
-}
-
-const getDefaultDispatchTarget = (): ChunkLoadRecoveryDispatchTarget | undefined => (
-  typeof window === 'undefined' ? undefined : window
-);
-
-const createChunkLoadRecoveryEvent = (error: unknown): ManualChunkLoadRecoveryEvent => {
-  const event = new Event(CHUNK_LOAD_RECOVERY_EVENT, { cancelable: true }) as ManualChunkLoadRecoveryEvent;
-  Object.defineProperty(event, 'payload', { value: error });
-  return event;
-};
+  getDefaultChunkLoadRecoveryDispatchTarget,
+  type ChunkLoadRecoveryDispatchTarget,
+} from './chunkLoadRecoveryDispatchTarget';
 
 export const dispatchChunkLoadRecoveryEvent = (
   error: unknown,
-  target = getDefaultDispatchTarget(),
+  target = getDefaultChunkLoadRecoveryDispatchTarget(),
 ): boolean => {
   if (!target || !isDynamicImportLoadError(error)) return false;
 
