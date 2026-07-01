@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { TransformReportRecord } from '../utils/transformSummary';
 import { SourceLabelBadge } from './TransformReportPanelAtoms';
 import { TransformReportRecordHeader } from './TransformReportRecordHeader';
+import { TransformReportRecordHeaderActions } from './TransformReportRecordHeaderActions';
 
 interface ElementLike {
   type?: unknown;
@@ -40,6 +41,12 @@ const findByType = (node: unknown, type: unknown): ElementLike[] => {
   return matches.concat(findByType(node.props.children, type));
 };
 
+const renderHeaderActions = (tree: unknown): unknown => {
+  const actionNode = findByType(tree, TransformReportRecordHeaderActions)[0];
+  if (!actionNode) throw new Error('记录头部应装配动作区');
+  return TransformReportRecordHeaderActions(actionNode.props as Parameters<typeof TransformReportRecordHeaderActions>[0]);
+};
+
 const record = {
   path: '$.cmd',
   sourceLabel: 'scheme',
@@ -63,22 +70,23 @@ describe('TransformReportRecordHeader', () => {
       onOpenSchemeValue: vi.fn(),
     };
     const tree = TransformReportRecordHeader(props);
-    const text = collectText(tree);
+    const actions = renderHeaderActions(tree);
+    const text = `${collectText(tree)}${collectText(actions)}`;
 
     expect(text).toContain('$.cmd');
     expect(text).toContain('不可逆');
     expect(text).toContain('复制聚焦 CMD');
     expect(findByType(tree, SourceLabelBadge)[0].props.label).toBe('scheme');
-    expect(findByDataTour(tree, 'transform-report-copy-cmd-structure')[0].props.title)
+    expect(findByDataTour(actions, 'transform-report-copy-cmd-structure')[0].props.title)
       .toBe('复制按当前筛选命中的内部路径裁剪后的 cmdParams');
 
-    (findByDataTour(tree, 'transform-report-copy-path')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-copy-original-value')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-copy-cmd-structure')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-copy-cmd-comparison-package')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-open-cmd-comparison')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-locate-path')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-open-scheme')[0].props.onClick as () => void)();
+    (findByDataTour(actions, 'transform-report-copy-path')[0].props.onClick as () => void)();
+    (findByDataTour(actions, 'transform-report-copy-original-value')[0].props.onClick as () => void)();
+    (findByDataTour(actions, 'transform-report-copy-cmd-structure')[0].props.onClick as () => void)();
+    (findByDataTour(actions, 'transform-report-copy-cmd-comparison-package')[0].props.onClick as () => void)();
+    (findByDataTour(actions, 'transform-report-open-cmd-comparison')[0].props.onClick as () => void)();
+    (findByDataTour(actions, 'transform-report-locate-path')[0].props.onClick as () => void)();
+    (findByDataTour(actions, 'transform-report-open-scheme')[0].props.onClick as () => void)();
 
     expect(props.onCopyPath).toHaveBeenCalledWith('$.cmd');
     expect(props.onCopyOriginalValue).toHaveBeenCalledWith('baiduboxapp://v1/open?uid=1');
@@ -98,11 +106,12 @@ describe('TransformReportRecordHeader', () => {
       onCopyCmdComparisonPackage: vi.fn(),
       onToggleCmdComparison: vi.fn(),
     });
+    const actions = renderHeaderActions(tree);
 
-    expect(findByDataTour(tree, 'transform-report-copy-cmd-structure')).toHaveLength(0);
-    expect(findByDataTour(tree, 'transform-report-copy-cmd-comparison-package')).toHaveLength(0);
-    expect(findByDataTour(tree, 'transform-report-open-cmd-comparison')).toHaveLength(0);
-    expect(findByDataTour(tree, 'transform-report-locate-path')).toHaveLength(0);
-    expect(findByDataTour(tree, 'transform-report-open-scheme')).toHaveLength(0);
+    expect(findByDataTour(actions, 'transform-report-copy-cmd-structure')).toHaveLength(0);
+    expect(findByDataTour(actions, 'transform-report-copy-cmd-comparison-package')).toHaveLength(0);
+    expect(findByDataTour(actions, 'transform-report-open-cmd-comparison')).toHaveLength(0);
+    expect(findByDataTour(actions, 'transform-report-locate-path')).toHaveLength(0);
+    expect(findByDataTour(actions, 'transform-report-open-scheme')).toHaveLength(0);
   });
 });

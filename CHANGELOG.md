@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **展开记录头部动作区分层**: 将深度解析展开记录头部里的复制、cmdHandler 对比、定位和 Scheme 打开按钮拆到 `TransformReportRecordHeaderActions`，主头部组件只保留来源 badge、路径和动作区装配，降低后续扩展记录操作时的回流风险
 - **深度解析指标按钮分层**: 将深度解析顶部指标栏里重复的计数/快捷入口按钮样式抽到 `transformReportSummaryMetricButtons`，主指标栏只保留指标顺序、条件展示和动作装配，降低后续新增诊断指标时的样式复制成本
 - **可维护性预算候选资产化**: 预算检查新增高使用率候选输出，并支持 `--top` 与 `--threshold` 控制候选池，方便 AI 后续从脚本结果直接选择重构切面，减少人工筛选预算清单的成本
 - **状态栏左侧信息分层**: 将文件、保存和 SOURCE 校验 badge 组合抽到 `StatusBarStatusBadges`，并把左侧信息 props 拆成 type-only 契约，左侧容器继续只负责布局和指标/状态装配，降低后续扩展状态栏时的耦合

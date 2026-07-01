@@ -8,8 +8,13 @@ export const transformPanelRecordSectionMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/components/TransformReportRecordHeader.tsx',
-    maxLines: 130,
-    reason: '深度解析展开记录头部应只负责路径状态、复制、定位和 Scheme 打开动作',
+    maxLines: 70,
+    reason: '深度解析展开记录头部应只负责来源、路径和右侧动作区装配',
+  },
+  {
+    file: 'frontend/src/components/TransformReportRecordHeaderActions.tsx',
+    maxLines: 125,
+    reason: '深度解析展开记录头部动作区应集中治理复制、cmdHandler 对比、定位和 Scheme 打开按钮矩阵',
   },
   {
     file: 'frontend/src/components/TransformReportRecordBadges.tsx',
