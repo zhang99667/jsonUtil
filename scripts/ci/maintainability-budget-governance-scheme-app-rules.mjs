@@ -12,6 +12,11 @@ export const governanceSchemeAppMaintainabilityBudgets = [
     reason: 'Scheme 预算规则聚合入口应只负责组合子领域规则',
   },
   {
+    file: 'scripts/ci/maintainability-budget-scheme-viewer-rules.mjs',
+    maxLines: 70,
+    reason: 'Scheme 弹窗预算规则应保持短表，继续拆分主弹窗、展示面板和 worker helper',
+  },
+  {
     file: 'scripts/ci/maintainability-budget-scheme-core-rules.mjs',
     maxLines: 40,
     reason: 'Scheme 核心预算规则应保持短表，新增核心债务需优先拆解',
