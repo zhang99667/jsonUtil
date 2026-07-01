@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { SchemeCommandSummaryInfo } from '../utils/schemeMetadata';
+import { SchemeViewerCommandInsightBadges } from './SchemeViewerCommandInsightBadges';
+import { SchemeViewerCommandParamBadges } from './SchemeViewerCommandParamBadges';
+import { SchemeViewerCommandSchemaBadges } from './SchemeViewerCommandSchemaBadges';
 import { SchemeViewerCommandSummaryPanel } from './SchemeViewerCommandSummaryPanel';
 
 interface ElementLike {
@@ -24,6 +27,9 @@ const collectText = (node: unknown): string => {
 };
 
 const findByTourOrNull = (node: unknown, dataTour: string): ElementLike | null => {
+  if (Array.isArray(node)) {
+    return node.map(child => findByTourOrNull(child, dataTour)).find(Boolean) || null;
+  }
   if (!isElementLike(node)) return null;
   if (node.props['data-tour'] === dataTour) return node;
   const children = node.props.children;
@@ -31,6 +37,15 @@ const findByTourOrNull = (node: unknown, dataTour: string): ElementLike | null =
     return children.map(child => findByTourOrNull(child, dataTour)).find(Boolean) || null;
   }
   return findByTourOrNull(children, dataTour);
+};
+
+const findByTypeOrNull = (node: unknown, type: unknown): ElementLike | null => {
+  if (Array.isArray(node)) {
+    return node.map(child => findByTypeOrNull(child, type)).find(Boolean) || null;
+  }
+  if (!isElementLike(node)) return null;
+  if (node.type === type) return node;
+  return findByTypeOrNull(node.props.children, type);
 };
 
 const buildCommandSummary = (
@@ -67,50 +82,28 @@ describe('SchemeViewerCommandSummaryPanel', () => {
   });
 
   it('渲染 CMD Schema、Top Schema、参数和嵌套线索', () => {
+    const commandSummaryInfo = buildCommandSummary();
     const tree = SchemeViewerCommandSummaryPanel({
-      commandSummaryInfo: buildCommandSummary(),
+      commandSummaryInfo,
     });
     const text = collectText(tree);
 
     expect(findByTourOrNull(tree, 'scheme-command-summary')).toBeTruthy();
-    expect(findByTourOrNull(tree, 'scheme-command-schema-count')).toBeTruthy();
-    expect(findByTourOrNull(tree, 'scheme-top-command-schemas')).toBeTruthy();
     expect(text).toContain('CMD 结构');
-    expect(text).toContain('cmdSchema=baiduboxapp://v7/vendor/ad/prerender');
-    expect(text).toContain('Schema · 2');
-    expect(text).toContain('baiduboxapp://v7/vendor/ad/prerender ×2');
-    expect(text).toContain('cmdParams · 8');
-    expect(text).toContain('skuId');
-    expect(text).toContain('+1');
-    expect(text).toContain('cmd解析: cmd, panel_scheme, button_cmd, feed_cmd +1');
-    expect(text).toContain('ext解析: ext_info');
-    expect(text).toContain('Base64 后缀: os, ip');
-  });
-
-  it('隐藏为空的 CMD 线索并截断 Top Schema 展示', () => {
-    const longSchema = `baiduboxapp://v7/${'x'.repeat(80)}`;
-    const tree = SchemeViewerCommandSummaryPanel({
-      commandSummaryInfo: buildCommandSummary({
-        commandSchema: undefined,
-        paramCount: 0,
-        paramKeys: [],
-        commandSchemaCount: 1,
-        topCommandSchemas: [{
-          schema: longSchema,
-          count: 1,
-          paths: ['$'],
-          hasMorePaths: true,
-        }],
-        commandFields: [],
-        extFields: [],
-        base64SuffixFields: [],
-      }),
+    expect(findByTypeOrNull(tree, SchemeViewerCommandSchemaBadges)?.props).toMatchObject({
+      commandSchema: commandSummaryInfo.commandSchema,
+      commandSchemaCount: commandSummaryInfo.commandSchemaCount,
+      topCommandSchemas: commandSummaryInfo.topCommandSchemas,
     });
-    const text = collectText(tree);
-
-    expect(text).not.toContain('cmdSchema=');
-    expect(text).not.toContain('cmdParams');
-    expect(text).not.toContain('cmd解析');
-    expect(text).toContain(`${longSchema.slice(0, 42)}... ×1`);
+    expect(findByTypeOrNull(tree, SchemeViewerCommandParamBadges)?.props).toMatchObject({
+      paramCount: commandSummaryInfo.paramCount,
+      paramKeys: commandSummaryInfo.paramKeys,
+    });
+    expect(findByTypeOrNull(tree, SchemeViewerCommandInsightBadges)?.props).toMatchObject({
+      commandFields: commandSummaryInfo.commandFields,
+      extFields: commandSummaryInfo.extFields,
+      base64SuffixFields: commandSummaryInfo.base64SuffixFields,
+    });
   });
+
 });

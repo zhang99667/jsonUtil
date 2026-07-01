@@ -49,7 +49,7 @@ describe('chunkLoadRecoveryEvents', () => {
     expect(fakeTarget.listenerCount('unhandledrejection')).toBe(0);
   });
 
-  it('Vite preloadError 无 payload 时提示刷新且保留默认错误传播', () => {
+  it('Vite preloadError 无 payload 时提示刷新并阻止默认错误传播', () => {
     const fakeTarget = createFakeTarget();
     const promptRefresh = vi.fn();
     installChunkLoadRecoveryListeners(fakeTarget.target, promptRefresh);
@@ -59,8 +59,8 @@ describe('chunkLoadRecoveryEvents', () => {
     fakeTarget.emit('vite:preloadError', firstEvent);
     fakeTarget.emit('vite:preloadError', secondEvent);
 
-    expect(firstEvent.preventDefault).not.toHaveBeenCalled();
-    expect(secondEvent.preventDefault).not.toHaveBeenCalled();
+    expect(firstEvent.preventDefault).toHaveBeenCalledTimes(1);
+    expect(secondEvent.preventDefault).toHaveBeenCalledTimes(1);
     expect(promptRefresh).toHaveBeenCalledTimes(1);
   });
 
