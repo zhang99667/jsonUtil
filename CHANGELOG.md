@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.265 (2026-07-01) - Schema 编辑器反馈分层
+### 🚀 优化与改进
+- **Schema Feedback Helper**: 将 `App.tsx` 中 JSON Schema invalid warning 和编辑器诊断高亮映射抽成纯 helper，主入口继续回归状态接线
+- **Schema Feedback 覆盖**: 新增单测锁定 invalid、valid/null 和 SOURCE 不可定位三种路径，保护 warning 与 Monaco 诊断高亮的 App 层契约
+
 ## v1.8.264 (2026-07-01) - 转换上下文持久化分层
 ### 🚀 优化与改进
 - **Context 持久化 Hook**: 将 `App.tsx` 中 deep format context 写回当前 Tab 或 fallback ref 的副作用抽成独立 hook，主入口继续回归状态接线
