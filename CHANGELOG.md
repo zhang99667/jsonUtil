@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.255 (2026-07-01) - 发布版本可见性修正
+### 🏗️ 架构与基础设施
+- **前端版本递增**: 将前端包版本递增到 `v1.8.255`，让状态栏、更新检测和 `version.json` 能准确反映本轮已上线的维护性改动
+- **版本一致性门禁**: 新增发布前版本一致性检查，校验 `frontend/package.json`、`package-lock.json` 和 CHANGELOG 顶部版本一致，降低上线后版本展示停留在旧号的风险
+
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
 - **异步转换结果构造分层**: 将 `useAppAsyncTransform` 中 Promise/Worker 成功和 fallback 的结果对象构造抽到 `appAsyncTransformState` 纯 helper，hook 回归异步编排与取消保护，并用直测锁定 context 与 fallback 输出结构

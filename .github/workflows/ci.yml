@@ -39,6 +39,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Version consistency
+        working-directory: .
+        run: node scripts/ci/check-version-consistency.mjs
+
       - name: Type check
         run: npm run typecheck
 

@@ -20,6 +20,9 @@ require_cmd() {
 require_cmd npm
 require_cmd node
 
+log "检查前端发布版本一致性"
+node "$ROOT_DIR/scripts/ci/check-version-consistency.mjs"
+
 log "构建前端 dist"
 (
   cd "$FRONTEND_DIR"
