@@ -35,18 +35,20 @@ const createEvent = (fields: Record<string, unknown> = {}) => ({
 }) as unknown as Event & { preventDefault: ReturnType<typeof vi.fn> };
 
 describe('chunkLoadRecoveryEvents', () => {
-  it('安装并清理 Vite preload 与 Promise rejection 监听', () => {
+  it('安装并清理 Vite preload、Promise rejection 与全局 error 监听', () => {
     const fakeTarget = createFakeTarget();
 
     const cleanup = installChunkLoadRecoveryListeners(fakeTarget.target, vi.fn());
 
     expect(fakeTarget.listenerCount('vite:preloadError')).toBe(1);
     expect(fakeTarget.listenerCount('unhandledrejection')).toBe(1);
+    expect(fakeTarget.listenerCount('error')).toBe(1);
 
     cleanup();
 
     expect(fakeTarget.listenerCount('vite:preloadError')).toBe(0);
     expect(fakeTarget.listenerCount('unhandledrejection')).toBe(0);
+    expect(fakeTarget.listenerCount('error')).toBe(0);
   });
 
   it('Vite preloadError 无 payload 时提示刷新并阻止默认错误传播', () => {
@@ -78,6 +80,28 @@ describe('chunkLoadRecoveryEvents', () => {
 
     expect(businessEvent.preventDefault).not.toHaveBeenCalled();
     expect(chunkEvent.preventDefault).toHaveBeenCalledTimes(1);
+    expect(promptRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('全局 error 命中动态 import 失败时触发刷新提示', () => {
+    const fakeTarget = createFakeTarget();
+    const promptRefresh = vi.fn();
+    installChunkLoadRecoveryListeners(fakeTarget.target, promptRefresh);
+    const businessEvent = createEvent({ message: 'ResizeObserver loop completed' });
+    const chunkEvent = createEvent({
+      error: new TypeError('Importing a module script failed.'),
+    });
+    const fallbackChunkEvent = createEvent({
+      message: 'Failed to fetch dynamically imported module: /assets/SchemeViewerModal-old.js',
+    });
+
+    fakeTarget.emit('error', businessEvent);
+    fakeTarget.emit('error', chunkEvent);
+    fakeTarget.emit('error', fallbackChunkEvent);
+
+    expect(businessEvent.preventDefault).not.toHaveBeenCalled();
+    expect(chunkEvent.preventDefault).toHaveBeenCalledTimes(1);
+    expect(fallbackChunkEvent.preventDefault).toHaveBeenCalledTimes(1);
     expect(promptRefresh).toHaveBeenCalledTimes(1);
   });
 });

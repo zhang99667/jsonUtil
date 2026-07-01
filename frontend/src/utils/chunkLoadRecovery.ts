@@ -23,7 +23,7 @@ export const isDynamicImportLoadError = (error: unknown): boolean => {
   return DYNAMIC_IMPORT_ERROR_PATTERNS.some(pattern => message.includes(pattern));
 };
 
-export type ChunkLoadRecoverySource = 'vite-preload' | 'promise-rejection';
+export type ChunkLoadRecoverySource = 'vite-preload' | 'promise-rejection' | 'global-error';
 
 export const shouldPromptChunkLoadRecovery = (
   source: ChunkLoadRecoverySource,

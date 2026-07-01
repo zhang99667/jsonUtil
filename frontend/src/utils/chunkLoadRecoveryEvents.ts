@@ -1,19 +1,10 @@
 import { shouldPromptChunkLoadRecovery } from './chunkLoadRecovery';
-
-type ChunkLoadRecoveryListener = (event: Event) => void;
-
-interface ChunkLoadRecoveryEventTarget {
-  addEventListener(type: string, listener: ChunkLoadRecoveryListener): void;
-  removeEventListener(type: string, listener: ChunkLoadRecoveryListener): void;
-}
-
-interface VitePreloadErrorEvent extends Event {
-  payload?: unknown;
-}
-
-interface PromiseRejectionLikeEvent extends Event {
-  reason?: unknown;
-}
+import type {
+  ChunkLoadRecoveryEventTarget,
+  GlobalErrorLikeEvent,
+  PromiseRejectionLikeEvent,
+  VitePreloadErrorEvent,
+} from './chunkLoadRecoveryEventTypes';
 
 export const installChunkLoadRecoveryListeners = (
   target: ChunkLoadRecoveryEventTarget,
@@ -43,11 +34,22 @@ export const installChunkLoadRecoveryListeners = (
     promptRefreshOnce();
   };
 
+  const handleGlobalError = (event: Event) => {
+    const errorEvent = event as GlobalErrorLikeEvent;
+    const error = errorEvent.error ?? errorEvent.message;
+    if (!shouldPromptChunkLoadRecovery('global-error', error)) return;
+
+    event.preventDefault();
+    promptRefreshOnce();
+  };
+
   target.addEventListener('vite:preloadError', handlePreloadError);
   target.addEventListener('unhandledrejection', handleUnhandledRejection);
+  target.addEventListener('error', handleGlobalError);
 
   return () => {
     target.removeEventListener('vite:preloadError', handlePreloadError);
     target.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    target.removeEventListener('error', handleGlobalError);
   };
 };
