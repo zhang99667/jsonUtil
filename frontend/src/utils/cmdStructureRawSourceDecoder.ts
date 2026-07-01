@@ -11,6 +11,7 @@ import {
   toCmdStructureJsonValue,
   tryParseRawCmdJsonString,
 } from './cmdStructureRawJsonValue';
+import { parseCmdStructureRawQueryParams } from './cmdStructureRawQueryParams';
 
 interface JsonObject {
   [key: string]: JsonValue;
@@ -87,27 +88,6 @@ const parseFastStructuredValue = (value: JsonValue, key: string, depth: number):
   return result;
 };
 
-const parseFastQueryParams = (queryString: string, depth: number): JsonObject => {
-  const normalizedQuery = queryString.replace(/^\?/, '');
-  const params = new URLSearchParams(normalizedQuery);
-  const result: JsonObject = {};
-
-  params.forEach((value, key) => {
-    const parsedValue = parseFastCmdValue(value, key, depth + 1);
-    const existing = result[key];
-    if (existing === undefined) {
-      result[key] = parsedValue;
-      return;
-    }
-
-    result[key] = Array.isArray(existing)
-      ? [...existing, parsedValue]
-      : [existing, parsedValue];
-  });
-
-  return result;
-};
-
 const parseFastCmdSource = (source: string, depth = 0): NormalizedCmdStructure | null => {
   if (depth > RAW_CMD_DECODE_MAX_DEPTH) return null;
 
@@ -117,7 +97,7 @@ const parseFastCmdSource = (source: string, depth = 0): NormalizedCmdStructure |
   if (!schema) {
     if (QUERY_PAIR_RE.test(decoded)) {
       return {
-        cmdParams: parseFastQueryParams(decoded, depth + 1),
+        cmdParams: parseCmdStructureRawQueryParams(decoded, depth + 1, parseFastCmdValue),
         source: decoded,
       };
     }
@@ -137,7 +117,7 @@ const parseFastCmdSource = (source: string, depth = 0): NormalizedCmdStructure |
 
   return {
     cmdSchema: schema,
-    cmdParams: query ? parseFastQueryParams(query, depth + 1) : {},
+    cmdParams: query ? parseCmdStructureRawQueryParams(query, depth + 1, parseFastCmdValue) : {},
     source: decoded,
   };
 };
