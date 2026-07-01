@@ -19,6 +19,7 @@ import { useAppSaveCommands } from './hooks/useAppSaveCommands';
 import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
+import { useAppTransformContextPersistence } from './hooks/useAppTransformContextPersistence';
 import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import { useAppSourceValidation } from './hooks/useAppSourceValidation';
 import { useAppTemplateFillCommand } from './hooks/useAppTemplateFillCommand';
@@ -188,20 +189,12 @@ const App: React.FC = () => {
     output,
   } = transformOutputState;
 
-  // 保存深度格式化上下文到文件（副作用独立处理）
-  useEffect(() => {
-    if (activeDeepFormatResult) {
-      if (activeFileId) {
-        setFiles(prev => prev.map(f =>
-          f.id === activeFileId
-            ? { ...f, transformContext: activeDeepFormatResult.context }
-            : f
-        ));
-      } else {
-        fallbackContextRef.current = activeDeepFormatResult.context;
-      }
-    }
-  }, [activeDeepFormatResult, activeFileId, setFiles]);
+  useAppTransformContextPersistence({
+    activeDeepFormatResult,
+    activeFileId,
+    fallbackContextRef,
+    onSetFiles: setFiles,
+  });
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const { previewValidation, handleOutputChange } = useAppPreviewOutputSync({
