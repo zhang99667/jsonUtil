@@ -31,6 +31,7 @@ export const installChunkLoadRecoveryListeners = (
     const preloadEvent = event as VitePreloadErrorEvent;
     if (!shouldPromptChunkLoadRecovery('vite-preload', preloadEvent.payload)) return;
 
+    event.preventDefault();
     promptRefreshOnce();
   };
 

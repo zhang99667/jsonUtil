@@ -30,14 +30,4 @@ export const schemeViewerShellComponentMaintainabilityBudgets = [
     120,
     'Scheme 运行时占位符面板测试只覆盖空态、分组、明细上限和预览截断'
   ),
-  schemeViewerShellComponentBudget(
-    'SchemeViewerCommandSummaryPanel.tsx',
-    115,
-    'Scheme CMD 结构摘要面板只负责 schema、参数和内部线索展示，提取规则留在 metadata helper'
-  ),
-  schemeViewerShellComponentBudget(
-    'SchemeViewerCommandSummaryPanel.test.tsx',
-    130,
-    'Scheme CMD 结构摘要面板测试只覆盖空态、schema、参数上限和内部线索展示'
-  ),
 ];
