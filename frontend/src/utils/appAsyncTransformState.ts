@@ -13,6 +13,14 @@ export interface AppAsyncTransformResult {
   context?: TransformContext;
 }
 
+interface AppAsyncTransformResultInput {
+  input: string;
+  mode: TransformMode;
+  autoExpandScheme: boolean;
+  output: string;
+  context?: TransformContext;
+}
+
 export interface AppOutputResolutionInput {
   isUpdatingFromOutput: boolean;
   pendingOutputValue: string;
@@ -27,6 +35,31 @@ export interface AppOutputResolution {
   output: string;
   shouldClearPendingOutput: boolean;
 }
+
+export const buildAppAsyncTransformResult = ({
+  input,
+  mode,
+  autoExpandScheme,
+  output,
+  context,
+}: AppAsyncTransformResultInput): AppAsyncTransformResult => ({
+  input,
+  mode,
+  autoExpandScheme,
+  output,
+  ...(context ? { context } : {}),
+});
+
+export const buildAppAsyncTransformFallbackResult = (
+  input: string,
+  mode: TransformMode,
+  autoExpandScheme: boolean
+): AppAsyncTransformResult => buildAppAsyncTransformResult({
+  input,
+  mode,
+  autoExpandScheme,
+  output: input,
+});
 
 export const getFreshAppAsyncTransformResult = (
   result: AppAsyncTransformResult | null,
