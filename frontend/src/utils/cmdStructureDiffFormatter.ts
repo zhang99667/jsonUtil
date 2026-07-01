@@ -1,4 +1,3 @@
-import type { JsonValue } from '../types';
 import type {
   CmdStructureDiff,
   CmdStructureDiffContext,
@@ -8,37 +7,7 @@ import {
   appendCmdStructurePathDiffLines,
   formatCmdStructureSourceValue,
 } from './cmdStructureDiffReportSections';
-
-interface JsonObject {
-  [key: string]: JsonValue;
-}
-
-const isRecord = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-export const stringifyCmdStructureValue = (value: JsonValue): string | undefined => {
-  if (!isRecord(value) && !Array.isArray(value)) {
-    return JSON.stringify(value);
-  }
-
-  const normalize = (item: JsonValue): JsonValue => {
-    if (Array.isArray(item)) return item.map(normalize);
-    if (!isRecord(item)) return item;
-
-    return Object.keys(item).sort().reduce<JsonObject>((result, key) => {
-      result[key] = normalize(item[key]);
-      return result;
-    }, {});
-  };
-
-  return JSON.stringify(normalize(value));
-};
-
-const formatValue = (value: JsonValue): string => {
-  const text = stringifyCmdStructureValue(value) || String(value);
-  return text.length > 160 ? `${text.slice(0, 160)}...` : text;
-};
+import { formatCmdStructureValuePreview } from './cmdStructureValueFormatter';
 
 export const formatCmdStructureDiff = (
   diff: CmdStructureDiff,
@@ -80,7 +49,7 @@ export const formatCmdStructureDiff = (
   if (diff.valueDiffs.length > 0) {
     lines.push(`- 值不一致 ${diff.valueDiffs.length} 个:`);
     diff.valueDiffs.slice(0, 20).forEach(item => {
-      lines.push(`  - ${item.path}: actual=${formatValue(item.actual)} expected=${formatValue(item.expected)}`);
+      lines.push(`  - ${item.path}: actual=${formatCmdStructureValuePreview(item.actual)} expected=${formatCmdStructureValuePreview(item.expected)}`);
     });
     if (diff.valueDiffs.length > 20) lines.push(`  - ... 还有 ${diff.valueDiffs.length - 20} 个`);
   }

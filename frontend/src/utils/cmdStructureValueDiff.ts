@@ -1,6 +1,6 @@
 import type { JsonValue } from '../types';
 import { isStructuredSourceEquivalent } from './cmdStructureSourceEquivalence';
-import { stringifyCmdStructureValue } from './cmdStructureDiffFormatter';
+import { stringifyCmdStructureValue } from './cmdStructureValueFormatter';
 import type {
   CmdStructureValueComparison,
   CmdStructureValueDiff,
