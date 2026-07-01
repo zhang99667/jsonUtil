@@ -11,7 +11,10 @@ import type { SchemeViewerParamSection } from '../utils/schemeViewerDiagnostics'
 import { SchemeViewerBase64MetaPanel } from './SchemeViewerBase64MetaPanel';
 import { SchemeViewerCommandSummaryPanel } from './SchemeViewerCommandSummaryPanel';
 import { SchemeViewerDecodeLayersPanel } from './SchemeViewerDecodeLayersPanel';
+import { SchemeViewerDecodeWarningsPanel } from './SchemeViewerDecodeWarningsPanel';
 import { SchemeViewerDiagnosticsPanel } from './SchemeViewerDiagnosticsPanel';
+import { SchemeViewerDiagnosticsQualityCard } from './SchemeViewerDiagnosticsQualityCard';
+import { SchemeViewerDiagnosticsSummaryBar } from './SchemeViewerDiagnosticsSummaryBar';
 import { SchemeViewerParamSectionsPanel } from './SchemeViewerParamSectionsPanel';
 import { SchemeViewerParamStagesPanel } from './SchemeViewerParamStagesPanel';
 import { SchemeViewerRuntimePlaceholdersPanel } from './SchemeViewerRuntimePlaceholdersPanel';
@@ -52,20 +55,6 @@ const findByTypeOrNull = (node: unknown, type: unknown): ElementLike | null => {
   if (!isElementLike(node)) return null;
   if (node.type === type) return node;
   return findByTypeOrNull(node.props.children, type);
-};
-
-const findButtonsByText = (node: unknown, label: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(child => findButtonsByText(child, label));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === 'button' && collectText(node).includes(label) ? [node] : [];
-  return matches.concat(findButtonsByText(node.props.children, label));
-};
-
-const clickElement = (node: ElementLike) => {
-  const onClick = node.props.onClick;
-  if (typeof onClick !== 'function') throw new Error('expected clickable element');
-  onClick();
 };
 
 const qualitySummary: SchemeQualitySummary = {
@@ -174,16 +163,15 @@ describe('SchemeViewerDiagnosticsPanel', () => {
   it('折叠态渲染摘要并透传展开回调', () => {
     const onToggleExpanded = vi.fn();
     const tree = renderPanel({ isExpanded: false, onToggleExpanded });
-    const text = collectText(tree);
+    const summaryBar = findByTypeOrNull(tree, SchemeViewerDiagnosticsSummaryBar);
 
     expect(findByTour(tree, 'scheme-diagnostics-panel')).toHaveLength(1);
-    expect(text).toContain('解析完成');
-    expect(text).toContain('CMD · 1');
-    expect(text).toContain('展开详情');
+    expect(summaryBar?.props).toMatchObject({
+      isExpanded: false,
+      onToggleExpanded,
+      schemeQualitySummary: qualitySummary,
+    });
     expect(findByTour(tree, 'scheme-quality-summary')).toHaveLength(0);
-
-    clickElement(findButtonsByText(tree, '展开详情')[0]);
-    expect(onToggleExpanded).toHaveBeenCalledTimes(1);
   });
 
   it('展开态渲染质量摘要、警告和操作按钮', () => {
@@ -195,20 +183,18 @@ describe('SchemeViewerDiagnosticsPanel', () => {
       onCopyQualitySummary,
       onCopyQualitySnapshot,
     });
-    const text = collectText(tree);
+    const qualityCard = findByTypeOrNull(tree, SchemeViewerDiagnosticsQualityCard);
+    const warningsPanel = findByTypeOrNull(tree, SchemeViewerDecodeWarningsPanel);
 
-    expect(findByTour(tree, 'scheme-quality-summary')).toHaveLength(1);
-    expect(text).toContain('已识别 CMD、参数和可复制结构');
-    expect(text).toContain('性能保护 · 跳过 2');
-    expect(text).toContain('$.large');
-
-    clickElement(findByTour(tree, 'scheme-inspect-original')[0]);
-    clickElement(findByTour(tree, 'scheme-copy-quality-summary')[0]);
-    clickElement(findByTour(tree, 'scheme-copy-quality-snapshot')[0]);
-
-    expect(onInspectOriginal).toHaveBeenCalledTimes(1);
-    expect(onCopyQualitySummary).toHaveBeenCalledTimes(1);
-    expect(onCopyQualitySnapshot).toHaveBeenCalledTimes(1);
+    expect(qualityCard?.props).toMatchObject({
+      schemeQualitySummary: qualitySummary,
+      canInspectOriginal: true,
+      onInspectOriginal,
+      onCopyQualitySummary,
+      onCopyQualitySnapshot,
+    });
+    expect(warningsPanel?.props.decodeWarnings).toBe(decodeWarnings);
+    expect(collectText(tree)).toContain('Scheme:');
   });
 
   it('透传各个诊断子面板的数据', () => {
