@@ -34,4 +34,12 @@ describe('chunkLoadRecovery', () => {
     )).toBe(true);
     expect(shouldPromptChunkLoadRecovery('promise-rejection', new Error('JSON 解析失败'))).toBe(false);
   });
+
+  it('全局 error 只对动态 import 失败提示刷新', () => {
+    expect(shouldPromptChunkLoadRecovery(
+      'global-error',
+      'Importing a module script failed.'
+    )).toBe(true);
+    expect(shouldPromptChunkLoadRecovery('global-error', 'ResizeObserver loop completed')).toBe(false);
+  });
 });
