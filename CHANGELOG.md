@@ -1,6 +1,7 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **原始 CMD Query 解析分层**: 将 `cmdStructureRawSourceDecoder` 中的 query 参数遍历和重复 key 聚合抽到 `cmdStructureRawQueryParams`，保留递归 value 解码回调，降低 raw CMD 快速结构化解码继续扩展时的耦合
 - **CMD 值展示规则分层**: 将 CMD 结构 diff 里的稳定值序列化和预览截断抽到 `cmdStructureValueFormatter`，diff 报告入口只保留报告顺序和差异类型分发，并补充 key 排序与截断边界直测
 - **文件关闭离页保护分层**: 将 `useAppFileCloseGuard` 中的 `beforeunload` 浏览器离页拦截拆到 `useAppBeforeUnloadGuard`，主 hook 只保留 pending 关闭编排，并把新 hook 与测试纳入可维护性预算
 - **工具栏折叠态文案收敛**: 将工具栏工具按钮和面板入口按钮的折叠态 aria/title 文案拼装复用本地 helper，保持现有可访问输出不变，同时收紧 `actionPanelButtonState` 预算
