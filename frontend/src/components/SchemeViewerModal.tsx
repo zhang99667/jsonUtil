@@ -25,23 +25,13 @@ import {
 import {
   buildSchemeDiagnosticSummaryItems,
   buildSchemeViewerParamSections,
-  getSchemeViewerParamCount,
-  getSchemeViewerParamEntries,
   hasSchemeDiagnosticDetails,
   sumSchemeSkippedDecodeCount,
 } from '../utils/schemeViewerDiagnostics';
 import { buildSchemeViewerActionTitles } from '../utils/schemeViewerActionTitles';
 import {
   formatSchemeCopySizeLabel,
-  formatSchemeLayerSizeLabel,
-  formatSchemeParamStageValue,
-  formatSchemeParamTooltipValue,
-  formatSchemeParamValue,
   formatSchemeTooltipValue,
-  getSchemeLayerAfterContent,
-  getSchemeLayerReversibleLabel,
-  schemeLayerTypeLabels,
-  schemeParamStageSourceLabels,
 } from '../utils/schemeViewerFormatters';
 import {
   buildSchemeViewerDecodeMetadata,
@@ -54,6 +44,9 @@ import {
 } from '../utils/schemeViewerQualityStyles';
 import { SchemeViewerBase64MetaPanel } from './SchemeViewerBase64MetaPanel';
 import { SchemeViewerCommandSummaryPanel } from './SchemeViewerCommandSummaryPanel';
+import { SchemeViewerDecodeLayersPanel } from './SchemeViewerDecodeLayersPanel';
+import { SchemeViewerParamSectionsPanel } from './SchemeViewerParamSectionsPanel';
+import { SchemeViewerParamStagesPanel } from './SchemeViewerParamStagesPanel';
 import { SchemeViewerRuntimePlaceholdersPanel } from './SchemeViewerRuntimePlaceholdersPanel';
 
 const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
@@ -998,178 +991,17 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 </div>
               )}
 
-              {/* 参数来源 */}
-              {paramSections.length > 0 && (
-                <div data-tour="scheme-param-sections" className="flex flex-col gap-1.5">
-                  {paramSections.map(section => {
-                    const entries = getSchemeViewerParamEntries(section.params);
+              <SchemeViewerParamSectionsPanel paramSections={paramSections} />
 
-                    return (
-                      <div key={section.title} className="flex items-start gap-2 text-xs">
-                        <span className="shrink-0 text-gray-500 bg-editor-bg px-2 py-0.5 rounded">
-                          {section.title} · {getSchemeViewerParamCount(section.params)}
-                        </span>
-                        <div className="flex flex-wrap gap-1 min-w-0">
-                          {entries.slice(0, 6).map(([key, paramValue]) => (
-                            <span
-                              key={key}
-                              className="bg-editor-bg text-gray-300 px-2 py-0.5 rounded font-mono max-w-full truncate"
-                              title={`${key}=${formatSchemeParamTooltipValue(paramValue)}`}
-                            >
-                              {key}={formatSchemeParamValue(paramValue)}
-                            </span>
-                          ))}
-                          {entries.length > 6 && (
-                            <span className="text-gray-500 px-1 py-0.5">
-                              +{entries.length - 6}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Query 参数分层解析 */}
-              {paramStages.length > 0 && (
-                <div data-tour="scheme-param-stages" className="flex flex-col gap-1.5 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="shrink-0 text-cyan-300 bg-cyan-900/30 border border-cyan-700/50 px-2 py-0.5 rounded">
-                      参数分层 · {paramStages.length}
-                    </span>
-                    <span className="text-gray-500">
-                      Raw → URL Decode → JSON/CMD 解析 → 重新编码
-                    </span>
-                  </div>
-                  <div className="grid gap-1">
-                    {paramStages.slice(0, 6).map(stage => {
-                      const title = [
-                        `${stage.path} (${schemeParamStageSourceLabels[stage.source]})`,
-                        '',
-                        'Raw:',
-                        formatSchemeTooltipValue(stage.raw, 320),
-                        '',
-                        'URL Decode:',
-                        formatSchemeTooltipValue(stage.urlDecoded, 320),
-                        '',
-                        'JSON/CMD 解析:',
-                        formatSchemeTooltipValue(stage.parsed, 320),
-                        '',
-                        '重新编码:',
-                        formatSchemeTooltipValue(stage.reencoded, 320),
-                        stage.repairHint ? `\n修复提示: ${stage.repairHint}` : '',
-                      ].filter(Boolean).join('\n');
-
-                      return (
-                        <div
-                          key={`${stage.source}:${stage.path}`}
-                          data-tour="scheme-param-stage"
-                          className="flex flex-wrap items-center gap-1 rounded border border-editor-border bg-editor-bg/70 px-2 py-1"
-                          title={title}
-                        >
-                          <span className="rounded bg-editor-sidebar px-2 py-0.5 text-cyan-200">
-                            {schemeParamStageSourceLabels[stage.source]}
-                          </span>
-                          <span className="rounded bg-gray-800 px-2 py-0.5 font-mono text-gray-200">
-                            {stage.path}
-                          </span>
-                          <span className="rounded bg-editor-sidebar px-2 py-0.5 font-mono text-gray-300">
-                            {stage.key}
-                          </span>
-                          <span className="text-gray-500">
-                            {formatSchemeLayerSizeLabel(stage.raw)} → {formatSchemeLayerSizeLabel(stage.parsed)}
-                          </span>
-                          {stage.repairHint && (
-                            <span className="rounded bg-amber-900/30 px-2 py-0.5 text-amber-200">
-                              {stage.repairHint}
-                            </span>
-                          )}
-                          <span className={stage.reversible
-                            ? 'rounded bg-emerald-900/20 px-2 py-0.5 text-emerald-200'
-                            : 'rounded bg-amber-900/30 px-2 py-0.5 text-amber-200'}
-                          >
-                            {stage.reversible ? '可重新编码' : '需确认'}
-                          </span>
-                          <span className="min-w-0 truncate text-gray-500">
-                            {formatSchemeParamStageValue(stage.urlDecoded)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                    {paramStages.length > 6 && (
-                      <div className="text-xs text-gray-500">
-                        还有 {paramStages.length - 6} 个参数分层未展示
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              <SchemeViewerParamStagesPanel paramStages={paramStages} />
 
               <SchemeViewerBase64MetaPanel base64MetaInfo={base64MetaInfo} />
 
-              {/* 解码层级 */}
-              {decodeResult.layers.length > 0 && (
-                <div data-tour="scheme-decode-layers" className="flex flex-col gap-1.5 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500 flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      解析链路 · {decodeResult.layers.length} 层
-                    </span>
-                    <span className="rounded bg-editor-bg px-2 py-0.5 font-mono text-gray-400">
-                      原始 → {decodeResult.isJson ? 'JSON' : '文本'}
-                    </span>
-                  </div>
-                  <div className="grid gap-1">
-                    {decodeResult.layers.map((layer, index) => {
-                      const afterContent = getSchemeLayerAfterContent(decodeResult.layers, index, decodeResult.decoded);
-                      const title = [
-                        layer.description,
-                        `输入: ${formatSchemeLayerSizeLabel(layer.before)}`,
-                        `输出: ${formatSchemeLayerSizeLabel(afterContent)}`,
-                        `类型: ${schemeLayerTypeLabels[layer.type]}`,
-                        `模式: ${getSchemeLayerReversibleLabel(layer)}`,
-                        '',
-                        '输入预览:',
-                        formatSchemeTooltipValue(layer.before, 260),
-                        '',
-                        '输出预览:',
-                        formatSchemeTooltipValue(afterContent || '', 260),
-                      ].join('\n');
-
-                      return (
-                        <div
-                          key={`${layer.type}:${index}:${layer.description}`}
-                          data-tour="scheme-decode-layer"
-                          className="flex flex-wrap items-center gap-1 rounded border border-editor-border bg-editor-bg/70 px-2 py-1"
-                          title={title}
-                        >
-                          <span className="rounded bg-gray-800 px-1.5 py-0.5 font-mono text-gray-300">
-                            {index + 1}
-                          </span>
-                          <span className="rounded bg-emerald-900/40 px-2 py-0.5 font-medium text-emerald-300">
-                            {layer.description}
-                          </span>
-                          <span className="rounded bg-editor-sidebar px-2 py-0.5 font-mono text-cyan-200">
-                            {schemeLayerTypeLabels[layer.type]}
-                          </span>
-                          <span className={layer.reversible === false
-                            ? 'rounded bg-amber-900/30 px-2 py-0.5 text-amber-200'
-                            : 'rounded bg-emerald-900/20 px-2 py-0.5 text-emerald-200'}
-                          >
-                            {getSchemeLayerReversibleLabel(layer)}
-                          </span>
-                          <span className="text-gray-500">
-                            {formatSchemeLayerSizeLabel(layer.before)} → {formatSchemeLayerSizeLabel(afterContent)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <SchemeViewerDecodeLayersPanel
+                layers={decodeResult.layers}
+                decodedContent={decodeResult.decoded}
+                isJson={decodeResult.isJson}
+              />
                 </div>
               )}
             </div>

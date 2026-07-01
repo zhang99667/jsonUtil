@@ -1,6 +1,8 @@
 # 更新日志 (Changelog)
 ## v1.8.254 (2026-06-20) - JSON Lines 多样本 Schema
 ### 🚀 优化与改进
+- **Scheme 参数与链路诊断面板分层**: 将参数来源、参数分层解析证据和解码链路展示拆到 `SchemeViewerParamSectionsPanel`、`SchemeViewerParamStagesPanel` 与 `SchemeViewerDecodeLayersPanel`，主弹窗继续瘦身并保留原有参数预览、修复提示、可回写状态和层级证据语义
+- **Scheme Viewer 组件预算再分层**: 将 Scheme viewer 组件预算拆为 shell/detail 子表，新增参数诊断面板时规则入口只负责聚合，避免治理表本身随着展示面板扩展再次贴线
 - **Scheme 弹窗预算规则分层**: 将 Scheme viewer 预算清单拆为组件与支撑子表，入口只负责聚合，避免继续拆弹窗展示面板时让治理规则本身贴线
 - **Scheme CMD 摘要面板分层**: 将 CMD Schema、Top Schema、参数 keys、cmd/ext/Base64 内部线索展示抽到 `SchemeViewerCommandSummaryPanel`，主弹窗只保留摘要数据装配，降低后续 CMD 展示规则扩展时误碰编辑和二维码链路的风险
 - **Scheme 运行时占位符面板分层**: 将运行时占位符分组和路径明细展示抽到 `SchemeViewerRuntimePlaceholdersPanel`，主弹窗继续瘦身并把占位符 UI 纳入独立预算，降低后续占位符说明扩展时误碰解码、复制和编辑链路的风险
