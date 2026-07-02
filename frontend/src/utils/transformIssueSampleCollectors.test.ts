@@ -4,48 +4,11 @@ import {
   collectRuntimePlaceholderIssueSamples,
   collectTransformIssueSamples,
 } from './transformIssueSampleCollectors';
-import type { TransformReportView } from './transformSummary';
-
-const createReportView = (
-  overrides: Partial<TransformReportView> = {}
-): TransformReportView => ({
-  records: [],
-  cmdStructureRecords: [],
-  warnings: [],
-  unresolvedCandidates: [],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
-  filteredRecordCount: 0,
-  filteredWarningCount: 0,
-  filteredUnresolvedCount: 0,
-  filteredPlaceholderCount: 0,
-  filteredSchemeParamStageCount: 0,
-  filteredSchemeParamStageRepairHintCount: 0,
-  filteredNonReversibleParamStageCount: 0,
-  filteredCmdStructureCount: 0,
-  filteredNestedCommandFieldCount: 0,
-  filteredNestedResourceFieldCount: 0,
-  totalRecordCount: 0,
-  totalWarningCount: 0,
-  totalUnresolvedCount: 0,
-  totalPlaceholderCount: 0,
-  totalSchemeParamStageCount: 0,
-  totalSchemeParamStageRepairHintCount: 0,
-  totalNonReversibleParamStageCount: 0,
-  totalCmdStructureCount: 0,
-  totalNestedCommandFieldCount: 0,
-  totalNestedResourceFieldCount: 0,
-  isRecordTruncated: false,
-  isCmdStructureTruncated: false,
-  isWarningTruncated: false,
-  isUnresolvedTruncated: false,
-  isPlaceholderTruncated: false,
-  ...overrides,
-});
+import { createIssueSampleReportView } from './transformIssueSampleCollectorsTestFixture';
 
 describe('transformIssueSampleCollectors', () => {
   it('只收集带原始值的运行时占位符样本', () => {
-    const samples = collectRuntimePlaceholderIssueSamples(createReportView({
+    const samples = collectRuntimePlaceholderIssueSamples(createIssueSampleReportView({
       runtimePlaceholders: [
         {
           path: '$.a',
@@ -77,7 +40,7 @@ describe('transformIssueSampleCollectors', () => {
   });
 
   it('按 unresolved、runtime placeholder、warning 顺序收集样本', () => {
-    const samples = collectTransformIssueSamples(createReportView({
+    const samples = collectTransformIssueSamples(createIssueSampleReportView({
       unresolvedCandidates: [{
         path: '$.url',
         sourceLabel: 'url',
@@ -116,7 +79,7 @@ describe('transformIssueSampleCollectors', () => {
   });
 
   it('根据视图计数构建样本导出摘要', () => {
-    const summary = buildTransformIssueSampleSummary(createReportView({
+    const summary = buildTransformIssueSampleSummary(createIssueSampleReportView({
       unresolvedCandidates: [{ path: '$.x', originalValue: '1', message: 'x', length: 1, preview: '1', reasonLabel: '未解析', reasonLevel: 'info', nextAction: '检查' }],
       warnings: [{ type: 'string_decode_skipped', path: '$.w', originalValue: 'w', message: '跳过', length: 1, limit: 10, reasonLabel: '跳过', nextAction: '忽略' }],
       filteredUnresolvedCount: 2,
