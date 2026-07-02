@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransformReportRecord } from './transformSummary';
 import {
-  actualCandidate,
   buildWorkflow,
+} from './transformReportPanelCopyWorkflowTestFixture';
+import { actualCandidate } from './transformReportPanelCopyWorkflowTestData';
+import {
   getCmdComparisonMocks,
   getTransformSummaryMocks,
-} from './transformReportPanelCopyWorkflowTestFixture';
+} from './transformReportPanelCopyWorkflowTestMocks';
 
 const cmdComparison = getCmdComparisonMocks();
 const transformSummary = getTransformSummaryMocks();

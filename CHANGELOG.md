@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.309 (2026-07-02) - Copy Workflow Fixture 数据分层
+### 🚀 优化与改进
+- **Fixture 数据拆分**: 将深度解析复制 workflow 测试里的默认 report、reportView、CMD 候选和 guarded action 列表抽成独立测试数据文件
+- **Mock 边界拆分**: 将 summary、copy metrics 和 CMD 对比 mock 独立维护，主 fixture 回归默认 state/effects 与 workflow 构建职责
+
 ## v1.8.308 (2026-07-02) - Template Fill Command Runner 测试分层
 ### 🚀 优化与改进
 - **Runner 测试分层**: 将 Template Fill Command runner 的成功路径和失败恢复路径拆成独立 spec，降低单测文件阅读负担
