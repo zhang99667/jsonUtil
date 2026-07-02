@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useRef, type MutableRefObject } from 'react';
 import {
   TransformMode,
   type FileTab,
   type TransformContext,
   type ValidationResult,
 } from '../types';
-import { ASYNC_VALIDATION_THRESHOLD } from '../utils/appAsyncPolicy';
 import { executeAppPreviewOutputSync } from '../utils/appPreviewOutputSyncRunner';
-import {
-  cleanJsonInput,
-  validateJsonForEditor,
-} from '../utils/jsonValidation';
+import { useAppPreviewValidation } from './useAppPreviewValidation';
 
 interface UseAppPreviewOutputSyncInput {
   previewText: string;
@@ -46,15 +42,17 @@ export const useAppPreviewOutputSync = ({
   onUpdateActiveFileContent,
 }: UseAppPreviewOutputSyncInput) => {
   const outputChangeTimer = useRef<NodeJS.Timeout | null>(null);
-  const previewValidationRequestIdRef = useRef(0);
   const outputSyncRequestIdRef = useRef(0);
-  const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
+  const {
+    previewValidation,
+    setPreviewValidation,
+    updatePreviewValidation,
+  } = useAppPreviewValidation({ validateJsonMaybeAsync });
 
   useEffect(() => () => {
     if (outputChangeTimer.current) {
       clearTimeout(outputChangeTimer.current);
     }
-    previewValidationRequestIdRef.current++;
     outputSyncRequestIdRef.current++;
   }, []);
 
@@ -67,31 +65,6 @@ export const useAppPreviewOutputSync = ({
     isUpdatingFromOutput.current = false;
     pendingOutputValue.current = '';
   }, [isUpdatingFromOutput, pendingOutputValue]);
-
-  const updatePreviewValidation = useCallback((previewText: string) => {
-    if (!previewText.trim()) {
-      previewValidationRequestIdRef.current++;
-      setPreviewValidation({ isValid: true });
-      return;
-    }
-
-    const cleanValue = cleanJsonInput(previewText);
-    const requestId = ++previewValidationRequestIdRef.current;
-    if (cleanValue.length >= ASYNC_VALIDATION_THRESHOLD) {
-      setPreviewValidation({ isValid: true });
-      validateJsonMaybeAsync(cleanValue, { requireContainer: true }).then(result => {
-        if (requestId === previewValidationRequestIdRef.current) {
-          setPreviewValidation(result);
-        }
-      });
-      return;
-    }
-
-    const result = validateJsonForEditor(cleanValue, { requireContainer: true });
-    if (requestId === previewValidationRequestIdRef.current) {
-      setPreviewValidation(result);
-    }
-  }, [validateJsonMaybeAsync]);
 
   useEffect(() => {
     if (isUpdatingFromOutput.current) return;
