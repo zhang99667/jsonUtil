@@ -1,4 +1,11 @@
 # 更新日志 (Changelog)
+## v1.8.325 (2026-07-02) - Scheme Query 单参数回写分层
+### 🚀 优化与改进
+- **单参数回写分层**: 将 query-string layer 里的 raw URL 参数和日志字段回写拆到 `schemeQueryLayerSingleParamEncoding`
+- **URL 参数判定修正**: 单个 `url=https://...?...` 也按 raw URL 参数回写，带 `LOG ` 前缀时不再退回普通 JSON 编码
+- **入口职责收敛**: `schemeQueryLayerEncoding` 保留 JSON 解析、前缀 query 和兜底 query 序列化编排
+- **回写测试补强**: 新增 raw URL 单参数回写用例，保护 URL 参数形态和 query 合并行为
+
 ## v1.8.324 (2026-07-02) - CMD Raw JSON Value 分层
 ### 🚀 优化与改进
 - **JSON Value 分层**: 将原始 CMD unknown 到 `JsonValue` 的递归转换拆到 `cmdStructureRawJsonValueCoercion`

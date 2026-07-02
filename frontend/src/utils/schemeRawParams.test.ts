@@ -47,4 +47,12 @@ describe('schemeRawParams', () => {
       value: 'https://example.com/a?b=1&c=2',
     });
   });
+
+  it('识别不包含外层分隔符的单个未编码 URL 参数', () => {
+    expect(getSingleRawUrlParam('url=https://example.com/a?b=1', options)).toEqual({
+      rawKey: 'url',
+      key: 'url',
+      value: 'https://example.com/a?b=1',
+    });
+  });
 });

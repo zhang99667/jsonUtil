@@ -45,7 +45,6 @@ export const getSingleRawUrlParam = (
   options: SchemeRawParamOptions
 ): SingleRawUrlParam | null => {
   const source = normalizeQueryString(stripQueryPrefix(queryString));
-  if (!QUERY_PAIR_DELIMITER_RE.test(source)) return null;
 
   const equalIndex = source.indexOf('=');
   if (equalIndex <= 0) return null;
