@@ -37,21 +37,13 @@ export const executeAppPreviewOutputSync = async ({
     if (shouldValidatePreviewOutputBeforeSync(mode)) {
       const validation = await validateJsonMaybeAsync(previewText);
       if (!validation.isValid) {
-        return {
-          status: 'invalid',
-          validation,
-        };
+        return { status: 'invalid', validation };
       }
     }
 
     return {
       status: 'synced',
-      nextSource: resolveAppPreviewOutputSource({
-        previewText,
-        mode,
-        originalInput,
-        context,
-      }),
+      nextSource: resolveAppPreviewOutputSource({ previewText, mode, originalInput, context }),
     };
   } catch {
     return createPreviewOutputSyncFailedResult();
