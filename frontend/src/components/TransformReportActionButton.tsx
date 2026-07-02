@@ -29,18 +29,14 @@ export const TransformReportActionButton: React.FC<TransformReportActionButtonPr
   tone,
   onClick,
   'data-tour': dataTour,
-}) => {
-  const resolvedTone: TransformReportActionButtonTone = tone || 'copy';
-
-  return (
-    <button
-      type="button"
-      data-tour={dataTour}
-      onClick={onClick}
-      className={className || getTransformReportActionButtonClassName(resolvedTone)}
-      title={title}
-    >
-      {children}
-    </button>
-  );
-};
+}) => (
+  <button
+    type="button"
+    data-tour={dataTour}
+    onClick={onClick}
+    className={className || getTransformReportActionButtonClassName(tone)}
+    title={title}
+  >
+    {children}
+  </button>
+);
