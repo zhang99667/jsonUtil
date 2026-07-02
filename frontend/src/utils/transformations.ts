@@ -424,7 +424,9 @@ const unescapeString = (input: string): string => {
   }
 };
 
-const cnToUnicode = (input: string): string => {
+const unicodeEscapePattern = /\\u([\dA-Fa-f]{4})/gi;
+
+const unicodeEncode = (input: string): string => {
   return input.split('').map(char => {
     const code = char.charCodeAt(0);
     return code > 255
@@ -433,8 +435,8 @@ const cnToUnicode = (input: string): string => {
   }).join('');
 };
 
-const unicodeToCn = (input: string): string => {
-  return input.replace(/\\u([\dA-Fa-f]{4})/gi, (_, grp) => {
+const unicodeDecode = (input: string): string => {
+  return input.replace(unicodeEscapePattern, (_, grp) => {
     return String.fromCharCode(parseInt(grp, 16));
   });
 };
@@ -447,18 +449,11 @@ const containsUnicodeEscape = (str: string): boolean => {
 
 const tryUnicodeDecode = (str: string): string => {
   if (!containsUnicodeEscape(str)) return str;
-  return str.replace(/\\u([\dA-Fa-f]{4})/gi, (_, grp) => {
-    return String.fromCharCode(parseInt(grp, 16));
-  });
+  return unicodeDecode(str);
 };
 
-const unicodeEncode = (str: string): string => {
-  return str.split('').map(char => {
-    const code = char.charCodeAt(0);
-    return code > 255
-      ? '\\u' + code.toString(16).toUpperCase().padStart(4, '0')
-      : char;
-  }).join('');
+const safeDecodeURIComponent = (input: string): string => {
+  try { return decodeURIComponent(input); } catch { return input; }
 };
 
 // ============ Base64 编解码工具函数 ============
@@ -1154,12 +1149,10 @@ export const performTransform = (input: string, mode: TransformMode): string => 
       case TransformMode.ESCAPE: return escapeString(input);
       case TransformMode.UNESCAPE: return unescapeString(input);
 
-      case TransformMode.UNICODE_TO_CN: return unicodeToCn(input);
-      case TransformMode.CN_TO_UNICODE: return cnToUnicode(input);
+      case TransformMode.UNICODE_TO_CN: return unicodeDecode(input);
+      case TransformMode.CN_TO_UNICODE: return unicodeEncode(input);
       case TransformMode.URL_ENCODE: return encodeURIComponent(input);
-      case TransformMode.URL_DECODE: {
-        try { return decodeURIComponent(input); } catch { return input; }
-      }
+      case TransformMode.URL_DECODE: return safeDecodeURIComponent(input);
       case TransformMode.BASE64_ENCODE: return base64Encode(input);
       case TransformMode.BASE64_DECODE: return base64Decode(input);
       case TransformMode.SORT_KEYS: {
@@ -1331,11 +1324,9 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
       case TransformMode.ESCAPE: return unescapeString(output);
       case TransformMode.UNESCAPE: return escapeString(output);
 
-      case TransformMode.UNICODE_TO_CN: return cnToUnicode(output);
-      case TransformMode.CN_TO_UNICODE: return unicodeToCn(output);
-      case TransformMode.URL_ENCODE: {
-        try { return decodeURIComponent(output); } catch { return output; }
-      }
+      case TransformMode.UNICODE_TO_CN: return unicodeEncode(output);
+      case TransformMode.CN_TO_UNICODE: return unicodeDecode(output);
+      case TransformMode.URL_ENCODE: return safeDecodeURIComponent(output);
       case TransformMode.URL_DECODE: return encodeURIComponent(output);
       case TransformMode.BASE64_ENCODE: return base64Decode(output);
       case TransformMode.BASE64_DECODE: return base64Encode(output);

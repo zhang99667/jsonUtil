@@ -266,6 +266,10 @@ describe('performTransform', () => {
       const result = performTransform('hello世界', TransformMode.CN_TO_UNICODE);
       expect(result).toBe('hello\\u4E16\\u754C');
     });
+
+    it('代理对按 UTF-16 code unit 编码', () => {
+      expect(performTransform('😀', TransformMode.CN_TO_UNICODE)).toBe('\\uD83D\\uDE00');
+    });
   });
 
   describe('URL_ENCODE / URL_DECODE 模式', () => {
