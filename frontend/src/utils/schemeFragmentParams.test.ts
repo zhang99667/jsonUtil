@@ -38,6 +38,25 @@ describe('schemeFragmentParams', () => {
     expect(getFragmentParamSource(encodedFragment, decodeUrl)).toBe('cmd=1&from=hash');
   });
 
+  it('支持问号后带多余 & 的 fragment 参数源', () => {
+    expect(getFragmentParamSourceInfo('/detail?&cmd=1&from=hash', decodeUrl)).toEqual({
+      source: '&cmd=1&from=hash',
+      prefix: '/detail?',
+    });
+  });
+
+  it('支持裸 query 参数源并保持嵌入参数优先级', () => {
+    expect(getFragmentParamSourceInfo('cmd=1', decodeUrl)).toEqual({
+      source: 'cmd=1',
+      prefix: '',
+    });
+    expect(getFragmentParamSourceInfo('cmd=1&from=hash', decodeUrl)).toEqual({
+      source: 'from=hash',
+      prefix: 'cmd=1&',
+    });
+    expect(getFragmentParamSourceInfo('section-one', decodeUrl)).toBeNull();
+  });
+
   it('只把 fragment 形态中的可解析参数串识别为 decodable', () => {
     expect(isDecodableFragmentParamString('#/detail?cmd=1&from=hash', {
       decodeUrl,
