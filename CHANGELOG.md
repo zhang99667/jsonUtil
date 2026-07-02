@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.299 (2026-07-02) - Schema 预算规则分层
+### 🚀 优化与改进
+- **Schema 规则拆表**: 将深度解析 schema 维护预算拆成 command/origin 与 resource 两个子规则文件，原入口回归聚合职责
+- **治理预算补齐**: 为新增 schema 子规则文件补充治理自检预算，并同步收紧 schema 聚合入口预算
+
 ## v1.8.298 (2026-07-02) - 工具面板 React Test Helper 分层
 ### 🚀 优化与改进
 - **React Mock Helper**: 将工具面板命令测试 fixture 中的 React hook mock、effect 清理和 state setter 捕获抽成独立 test helper
