@@ -79,6 +79,35 @@ describe('transformReportFilters', () => {
     expect(filtered.nestedResourceFieldCount).toBe(1);
   });
 
+  it('同时裁剪内部 CMD 与资源字段时保留完整搜索字段和计数', () => {
+    const record = createRecord({
+      nestedCommandSearchFields: [
+        { path: '$.cmd.first', preview: 'shared target one' },
+        { path: '$.cmd.second', preview: 'shared target two' },
+      ],
+      nestedResourceSearchFields: [
+        { path: '$.res.first', preview: 'shared target one' },
+        { path: '$.res.second', preview: 'shared target two' },
+      ],
+      nestedCommandFieldCount: 2,
+      nestedResourceFieldCount: 2,
+    });
+
+    const filtered = buildFilteredRecordView(record, 'shared target', filterOptions);
+    expect(filtered.nestedCommandFields).toEqual([
+      { path: '$.cmd.first', preview: 'shared target one' },
+    ]);
+    expect(filtered.nestedResourceFields).toEqual([
+      { path: '$.res.first', preview: 'shared target one' },
+    ]);
+    expect(filtered.nestedCommandSearchFields).toHaveLength(2);
+    expect(filtered.nestedResourceSearchFields).toHaveLength(2);
+    expect(filtered.indexedNestedCommandFieldCount).toBe(2);
+    expect(filtered.indexedNestedResourceFieldCount).toBe(2);
+    expect(filtered.hasMoreNestedCommandFields).toBe(true);
+    expect(filtered.hasMoreNestedResourceFields).toBe(true);
+  });
+
   it('筛选内部路径时收敛 decodedPaths 并清空未命中的内部 CMD 字段', () => {
     const record = createRecord({
       decodedSearchPaths: [
@@ -88,7 +117,11 @@ describe('transformReportFilters', () => {
       nestedCommandSearchFields: [
         { path: '$.cmd.third', preview: 'third value' },
       ],
+      nestedResourceSearchFields: [
+        { path: '$.cmd.image', preview: 'image value' },
+      ],
       nestedCommandFieldCount: 1,
+      nestedResourceFieldCount: 1,
     });
 
     const filtered = buildFilteredRecordView(record, 'second', filterOptions);
@@ -96,6 +129,7 @@ describe('transformReportFilters', () => {
       { path: '$.cmd.second', preview: 'second value' },
     ]);
     expect(filtered.nestedCommandFields).toEqual([]);
+    expect(filtered.nestedResourceFields).toEqual([]);
     expect(filtered.hasMoreDecodedPaths).toBe(false);
   });
 
