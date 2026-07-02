@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.306 (2026-07-02) - Copy Workflow 测试职责分层
+### 🚀 优化与改进
+- **测试职责拆分**: 将深度解析复制 workflow 的报告级、状态/模板和行级 CMD 复制断言拆成独立 spec，主测试回归 pending guard 与完整报告基础行为
+- **测试预算收紧**: 为拆分后的 Copy Workflow spec 补充独立维护预算，并把原大测试从高使用率候选中移除
+
 ## v1.8.305 (2026-07-02) - Scheme 结构化载荷规范化分层
 ### 🚀 优化与改进
 - **规范化 Helper**: 将 JSON 字符串字面量、JSON 斜杠转义、Unicode ASCII 转义和 quote 类载荷规范化顺序抽成独立纯 helper
