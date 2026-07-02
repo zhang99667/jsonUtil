@@ -6,7 +6,9 @@ const appComponentBudget = (file, maxLines, reason) => ({
 
 export const appComponentMaintainabilityBudgets = [
   appComponentBudget('AppConfirmDialogs.tsx', 140, '主工作台确认弹窗组件只装配确认文案和回调，业务状态应留在 App 或纯 helper'),
-  appComponentBudget('EditorHeaderActions.tsx', 210, '编辑器头部按钮组件只承载 SOURCE/PREVIEW 展示动作，业务判断应继续留在 App 派生状态'),
+  appComponentBudget('EditorHeaderActions.tsx', 160, '编辑器头部按钮组只承载 SOURCE/PREVIEW 展示动作，业务判断和按钮壳应继续留在派生状态或专用组件'),
+  appComponentBudget('EditorHeaderActionButton.tsx', 80, '编辑器头部按钮壳只承载通用 button、图标路径和可访问性属性映射'),
+  appComponentBudget('EditorHeaderActions.test.tsx', 130, '编辑器头部按钮测试只锁定 tour、标题、禁用和 pressed 语义，避免重复覆盖编辑器装配细节'),
   appComponentBudget('AppToolPanelsController.tsx', 210, '主工作台工具面板 controller 只负责 App 顶层状态到懒加载面板 props 的等价装配'),
   appComponentBudget('AppToolPanelsController.test.tsx', 210, '工具面板 controller 测试应只覆盖 props 透传、关闭动作和 SOURCE 写入回调'),
   appComponentBudget('AppLazyToolPanels.tsx', 65, '主工作台懒加载工具面板组件只负责 lazy 面板装配，类型契约和状态语义应留在独立模块或 App'),
