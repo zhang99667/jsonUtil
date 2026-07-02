@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.279 (2026-07-02) - 报告视图复制 Workflow 分层
+### 🚀 优化与改进
+- **ReportView 复制 Workflow**: 将深度解析报告中的筛选结果、诊断摘要、质量快照、归档包、排查 recipe 和协作报告复制动作抽成独立 workflow helper
+- **复制组合层收敛**: 原报告级复制入口回归完整报告、reportView 复制、质量基线和路径/CMD 列表复制组合，并同步收紧可维护性预算
+
 ## v1.8.278 (2026-07-02) - Scheme 参数 Pair 扫描分层
 ### 🚀 优化与改进
 - **Scheme 参数 Pair Helper**: 将 Scheme 参数解码阶段中的 query pair 扫描、key/value 解码和 24 条上限控制抽成独立 helper，来源入口回归 query/hash/log-field 编排
