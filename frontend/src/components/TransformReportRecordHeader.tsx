@@ -2,27 +2,16 @@ import React from 'react';
 import type { TransformReportRecord } from '../utils/transformSummary';
 import { SourceLabelBadge } from './TransformReportPanelAtoms';
 import { TransformReportRecordHeaderActions } from './TransformReportRecordHeaderActions';
+import type { TransformReportRecordActions } from './TransformReportRecordSectionContracts';
 
 interface TransformReportRecordHeaderProps {
   record: TransformReportRecord;
-  onCopyPath: (path: string, successMessage?: string) => void | Promise<void>;
-  onCopyOriginalValue: (value: string, successMessage?: string) => void | Promise<void>;
-  onCopyCmdStructure: (record: TransformReportRecord) => void | Promise<void>;
-  onCopyCmdComparisonPackage: (record: TransformReportRecord) => void | Promise<void>;
-  onToggleCmdComparison: (record: TransformReportRecord) => void;
-  onLocatePath?: (path: string) => void;
-  onOpenSchemeValue?: (value: string) => void;
+  actions: TransformReportRecordActions;
 }
 
 export const TransformReportRecordHeader: React.FC<TransformReportRecordHeaderProps> = ({
   record,
-  onCopyPath,
-  onCopyOriginalValue,
-  onCopyCmdStructure,
-  onCopyCmdComparisonPackage,
-  onToggleCmdComparison,
-  onLocatePath,
-  onOpenSchemeValue,
+  actions,
 }) => {
   return (
     <div className="flex items-center justify-between gap-2">
@@ -34,13 +23,7 @@ export const TransformReportRecordHeader: React.FC<TransformReportRecordHeaderPr
       </div>
       <TransformReportRecordHeaderActions
         record={record}
-        onCopyPath={onCopyPath}
-        onCopyOriginalValue={onCopyOriginalValue}
-        onCopyCmdStructure={onCopyCmdStructure}
-        onCopyCmdComparisonPackage={onCopyCmdComparisonPackage}
-        onToggleCmdComparison={onToggleCmdComparison}
-        onLocatePath={onLocatePath}
-        onOpenSchemeValue={onOpenSchemeValue}
+        actions={actions}
       />
     </div>
   );

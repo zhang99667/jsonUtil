@@ -1,18 +1,12 @@
 import React from 'react';
 import type { TransformReportRecord } from '../utils/transformSummary';
 import { formatDecodedPathCount } from './TransformReportPanelAtoms';
+import type { TransformReportRecordPathActions } from './TransformReportRecordSectionContracts';
 import type { TransformReportRecordPathRowsProps } from './TransformReportRecordPathRows';
-
-export interface TransformReportRecordPathSectionCallbacks {
-  onCopyPath: (path: string, successMessage?: string) => void | Promise<void>;
-  onCopyDecodedPathValue: (text: string) => void | Promise<void>;
-  onLocatePath?: (path: string) => void;
-  onOpenSchemeValue?: (value: string) => void;
-}
 
 export const buildNestedCommandPathSectionProps = (
   record: TransformReportRecord,
-  callbacks: TransformReportRecordPathSectionCallbacks
+  callbacks: TransformReportRecordPathActions
 ): TransformReportRecordPathRowsProps | null => (
   record.nestedCommandFields.length > 0
     ? {
@@ -44,7 +38,7 @@ export const buildNestedCommandPathSectionProps = (
 
 export const buildNestedResourcePathSectionProps = (
   record: TransformReportRecord,
-  callbacks: TransformReportRecordPathSectionCallbacks
+  callbacks: TransformReportRecordPathActions
 ): TransformReportRecordPathRowsProps | null => (
   record.nestedResourceFields?.length
     ? {
@@ -77,7 +71,7 @@ export const buildNestedResourcePathSectionProps = (
 
 export const buildDecodedPathSectionProps = (
   record: TransformReportRecord,
-  callbacks: TransformReportRecordPathSectionCallbacks
+  callbacks: TransformReportRecordPathActions
 ): TransformReportRecordPathRowsProps | null => (
   record.decodedPaths.length > 0
     ? {
@@ -110,7 +104,7 @@ export const buildDecodedPathSectionProps = (
 
 export const buildTransformReportRecordPathSections = (
   record: TransformReportRecord,
-  callbacks: TransformReportRecordPathSectionCallbacks
+  callbacks: TransformReportRecordPathActions
 ): TransformReportRecordPathRowsProps[] => (
   [
     buildNestedCommandPathSectionProps(record, callbacks),

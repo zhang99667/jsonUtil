@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TransformReportRecord } from '../utils/transformSummary';
+import { TransformReportCmdComparisonPanel } from './TransformReportCmdComparisonPanel';
 import { TransformReportCmdHandlerSummary } from './TransformReportCmdHandlerSummary';
 import { TransformReportCommandSchemaRows } from './TransformReportCommandSchemaRows';
 import { TransformReportRecordBadges } from './TransformReportRecordBadges';
@@ -90,15 +91,7 @@ const record: TransformReportRecord = {
 };
 
 const buildSection = (overrides: Partial<Parameters<typeof TransformReportRecordsSection>[0]> = {}) => {
-  const props = {
-    records: [record],
-    filteredRecordCount: 3,
-    isRecordTruncated: true,
-    cmdComparisonRecordPath: null,
-    cmdComparisonActualCandidate: null,
-    cmdComparisonExpectedText: '',
-    cmdComparisonIgnoreExtraPaths: false,
-    getCmdComparisonCandidateRecords: vi.fn(() => [record]),
+  const actions = {
     onCopyPath: vi.fn(),
     onCopyOriginalValue: vi.fn(),
     onCopyDecodedPathValue: vi.fn(),
@@ -109,9 +102,22 @@ const buildSection = (overrides: Partial<Parameters<typeof TransformReportRecord
     onSwitchCmdComparisonCandidate: vi.fn(),
     onCmdComparisonExpectedTextChange: vi.fn(),
     onCmdComparisonIgnoreExtraPathsChange: vi.fn(),
-    onFilter: vi.fn(),
     onLocatePath: vi.fn(),
     onOpenSchemeValue: vi.fn(),
+  };
+  const props = {
+    records: [record],
+    filteredRecordCount: 3,
+    isRecordTruncated: true,
+    actions,
+    cmdComparison: {
+      recordPath: null,
+      actualCandidate: null,
+      expectedText: '',
+      ignoreExtraPaths: false,
+      getCandidateRecords: vi.fn(() => [record]),
+    },
+    onFilter: vi.fn(),
     ...overrides,
   };
 
@@ -132,23 +138,14 @@ describe('TransformReportRecordsSection', () => {
     const headers = findByType(tree, TransformReportRecordHeader);
     expect(headers).toHaveLength(1);
     expect(headers[0].props.record).toBe(record);
-    expect(headers[0].props.onCopyPath).toBe(props.onCopyPath);
-    expect(headers[0].props.onCopyOriginalValue).toBe(props.onCopyOriginalValue);
-    expect(headers[0].props.onCopyCmdStructure).toBe(props.onCopyCmdStructure);
-    expect(headers[0].props.onCopyCmdComparisonPackage).toBe(props.onCopyCmdComparisonPackage);
-    expect(headers[0].props.onToggleCmdComparison).toBe(props.onToggleCmdComparison);
-    expect(headers[0].props.onLocatePath).toBe(props.onLocatePath);
-    expect(headers[0].props.onOpenSchemeValue).toBe(props.onOpenSchemeValue);
+    expect(headers[0].props.actions).toBe(props.actions);
     const badges = findByType(tree, TransformReportRecordBadges);
     expect(badges).toHaveLength(1);
     expect(badges[0].props.record).toBe(record);
     const pathSections = findByType(tree, TransformReportRecordPathSections);
     expect(pathSections).toHaveLength(1);
     expect(pathSections[0].props.record).toBe(record);
-    expect(pathSections[0].props.onCopyPath).toBe(props.onCopyPath);
-    expect(pathSections[0].props.onCopyDecodedPathValue).toBe(props.onCopyDecodedPathValue);
-    expect(pathSections[0].props.onLocatePath).toBe(props.onLocatePath);
-    expect(pathSections[0].props.onOpenSchemeValue).toBe(props.onOpenSchemeValue);
+    expect(pathSections[0].props.actions).toBe(props.actions);
     const cmdHandlerSummary = findByType(tree, TransformReportCmdHandlerSummary);
     expect(cmdHandlerSummary).toHaveLength(1);
     expect(cmdHandlerSummary[0].props.record).toBe(record);
@@ -156,8 +153,51 @@ describe('TransformReportRecordsSection', () => {
     const commandSchemaRows = findByType(tree, TransformReportCommandSchemaRows);
     expect(commandSchemaRows).toHaveLength(1);
     expect(commandSchemaRows[0].props.rows).toBe(record.commandSchemaRows);
-    expect(commandSchemaRows[0].props.onCopyPath).toBe(props.onCopyPath);
-    expect(commandSchemaRows[0].props.onCopyDecodedPathValue).toBe(props.onCopyDecodedPathValue);
-    expect(commandSchemaRows[0].props.onLocatePath).toBe(props.onLocatePath);
+    expect(commandSchemaRows[0].props.actions).toBe(props.actions);
+  });
+
+  it('只在当前记录展开 CMD 对比并按记录路径过滤候选', () => {
+    const getCandidateRecords = vi.fn(() => [record]);
+    const { tree } = buildSection({
+      cmdComparison: {
+        recordPath: record.path,
+        actualCandidate: {
+          id: '$.candidate',
+          recordPath: record.path,
+          label: '$.candidate',
+          sourceLabel: 'SOURCE[1]',
+          actual: { result: { cmdSchema: 'baiduboxapp://v1/open', cmdParams: {} } },
+        },
+        expectedText: '{"result":{}}',
+        ignoreExtraPaths: true,
+        getCandidateRecords,
+      },
+    });
+    const panels = findByType(tree, TransformReportCmdComparisonPanel);
+
+    expect(panels).toHaveLength(1);
+    expect(panels[0].props.candidateRecords).toEqual([record]);
+    expect(panels[0].props.activeCandidate).toMatchObject({ recordPath: record.path });
+    expect(panels[0].props.expectedText).toBe('{"result":{}}');
+    expect(panels[0].props.ignoreExtraPaths).toBe(true);
+    expect(getCandidateRecords).toHaveBeenCalledTimes(1);
+
+    const mismatch = buildSection({
+      cmdComparison: {
+        recordPath: record.path,
+        actualCandidate: {
+          id: '$.other',
+          recordPath: '$.other',
+          label: '$.other',
+          sourceLabel: 'SOURCE[2]',
+          actual: { result: { cmdSchema: 'baiduboxapp://v1/other', cmdParams: {} } },
+        },
+        expectedText: '',
+        ignoreExtraPaths: false,
+        getCandidateRecords: vi.fn(() => []),
+      },
+    });
+
+    expect(findByType(mismatch.tree, TransformReportCmdComparisonPanel)[0].props.activeCandidate).toBeNull();
   });
 });

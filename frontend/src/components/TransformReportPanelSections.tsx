@@ -22,11 +22,8 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
   issueTriageItems,
   sectionVisibility,
   placeholderToolbarState,
-  cmdComparisonRecordPath,
-  cmdComparisonActualCandidate,
-  cmdComparisonExpectedText,
-  cmdComparisonIgnoreExtraPaths,
-  getCmdComparisonCandidateRecords,
+  recordActions,
+  recordCmdComparison,
   onFilter,
   onOpenFirstCmdComparison,
   onOpenPlaceholderFillTemplate,
@@ -34,18 +31,6 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
   onCopyPlaceholderReport,
   onRunNextAction,
   onRunIssueTriageAction,
-  onCopyPath,
-  onCopyOriginalValue,
-  onCopyDecodedPathValue,
-  onCopyCmdStructure,
-  onCopyCmdComparisonPackage,
-  onToggleCmdComparison,
-  onCopyCmdComparisonDiff,
-  onSwitchCmdComparisonCandidate,
-  onCmdComparisonExpectedTextChange,
-  onCmdComparisonIgnoreExtraPathsChange,
-  onLocatePath,
-  onOpenSchemeValue,
 }) => (
   <div className="flex flex-col gap-3">
     <TransformReportSummarySection
@@ -77,24 +62,9 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
         records={reportView.records}
         filteredRecordCount={reportView.filteredRecordCount}
         isRecordTruncated={reportView.isRecordTruncated}
-        cmdComparisonRecordPath={cmdComparisonRecordPath}
-        cmdComparisonActualCandidate={cmdComparisonActualCandidate}
-        cmdComparisonExpectedText={cmdComparisonExpectedText}
-        cmdComparisonIgnoreExtraPaths={cmdComparisonIgnoreExtraPaths}
-        getCmdComparisonCandidateRecords={getCmdComparisonCandidateRecords}
-        onCopyPath={onCopyPath}
-        onCopyOriginalValue={onCopyOriginalValue}
-        onCopyDecodedPathValue={onCopyDecodedPathValue}
-        onCopyCmdStructure={onCopyCmdStructure}
-        onCopyCmdComparisonPackage={onCopyCmdComparisonPackage}
-        onToggleCmdComparison={onToggleCmdComparison}
-        onCopyCmdComparisonDiff={onCopyCmdComparisonDiff}
-        onSwitchCmdComparisonCandidate={onSwitchCmdComparisonCandidate}
-        onCmdComparisonExpectedTextChange={onCmdComparisonExpectedTextChange}
-        onCmdComparisonIgnoreExtraPathsChange={onCmdComparisonIgnoreExtraPathsChange}
+        actions={recordActions}
+        cmdComparison={recordCmdComparison}
         onFilter={onFilter}
-        onLocatePath={onLocatePath}
-        onOpenSchemeValue={onOpenSchemeValue}
       />
     )}
 
@@ -103,10 +73,10 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
         unresolvedCandidates={reportView.unresolvedCandidates}
         filteredUnresolvedCount={reportView.filteredUnresolvedCount}
         isUnresolvedTruncated={reportView.isUnresolvedTruncated}
-        onCopyPath={onCopyPath}
-        onCopyOriginalValue={onCopyOriginalValue}
-        onLocatePath={onLocatePath}
-        onOpenSchemeValue={onOpenSchemeValue}
+        onCopyPath={recordActions.onCopyPath}
+        onCopyOriginalValue={recordActions.onCopyOriginalValue}
+        onLocatePath={recordActions.onLocatePath}
+        onOpenSchemeValue={recordActions.onOpenSchemeValue}
       />
     )}
 
@@ -122,10 +92,10 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
         }}
         onFilter={onFilter}
         rows={{
-          onCopyPath,
-          onCopyOriginalValue,
-          onLocatePath,
-          onOpenSchemeValue,
+          onCopyPath: recordActions.onCopyPath,
+          onCopyOriginalValue: recordActions.onCopyOriginalValue,
+          onLocatePath: recordActions.onLocatePath,
+          onOpenSchemeValue: recordActions.onOpenSchemeValue,
         }}
       />
     )}
@@ -135,10 +105,10 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
         warnings={reportView.warnings}
         filteredWarningCount={reportView.filteredWarningCount}
         isWarningTruncated={reportView.isWarningTruncated}
-        onCopyPath={onCopyPath}
-        onCopyOriginalValue={onCopyOriginalValue}
-        onLocatePath={onLocatePath}
-        onOpenSchemeValue={onOpenSchemeValue}
+        onCopyPath={recordActions.onCopyPath}
+        onCopyOriginalValue={recordActions.onCopyOriginalValue}
+        onLocatePath={recordActions.onLocatePath}
+        onOpenSchemeValue={recordActions.onOpenSchemeValue}
       />
     )}
 

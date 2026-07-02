@@ -1,19 +1,16 @@
 import React from 'react';
 import type { TransformReportRecord } from '../utils/transformSummary';
 import { TransformReportActionButton } from './TransformReportActionButton';
+import type { TransformReportRecordActions } from './TransformReportRecordSectionContracts';
 
 interface TransformReportRecordCmdActionButtonsInput {
   record: TransformReportRecord;
-  onCopyCmdStructure: (record: TransformReportRecord) => void | Promise<void>;
-  onCopyCmdComparisonPackage: (record: TransformReportRecord) => void | Promise<void>;
-  onToggleCmdComparison: (record: TransformReportRecord) => void;
+  actions: TransformReportRecordActions;
 }
 
 export const renderTransformReportRecordCmdActionButtons = ({
   record,
-  onCopyCmdStructure,
-  onCopyCmdComparisonPackage,
-  onToggleCmdComparison,
+  actions,
 }: TransformReportRecordCmdActionButtonsInput): React.ReactNode => {
   const hasFocusedCmdStructure = Boolean(record.cmdStructureFocusPaths?.length);
   const cmdStructureTitle = hasFocusedCmdStructure
@@ -26,14 +23,14 @@ export const renderTransformReportRecordCmdActionButtons = ({
       <TransformReportActionButton
         data-tour="transform-report-copy-cmd-structure"
         title={cmdStructureTitle}
-        onClick={() => { void onCopyCmdStructure(record); }}
+        onClick={() => { void actions.onCopyCmdStructure(record); }}
       >
         {cmdStructureLabel}
       </TransformReportActionButton>
       <TransformReportActionButton
         data-tour="transform-report-copy-cmd-comparison-package"
         title="复制可直接用于 cmd:diff -- --stdin 的 actual/expected 对比包"
-        onClick={() => { void onCopyCmdComparisonPackage(record); }}
+        onClick={() => { void actions.onCopyCmdComparisonPackage(record); }}
       >
         复制对比包
       </TransformReportActionButton>
@@ -41,7 +38,7 @@ export const renderTransformReportRecordCmdActionButtons = ({
         data-tour="transform-report-open-cmd-comparison"
         tone="compare"
         title="粘贴内部 cmdHandler 输出并在页面内查看差异"
-        onClick={() => onToggleCmdComparison(record)}
+        onClick={() => actions.onToggleCmdComparison(record)}
       >
         对比 cmdHandler
       </TransformReportActionButton>

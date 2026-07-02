@@ -1,14 +1,9 @@
 import type {
   TransformContextReport,
-  TransformReportRecord,
   TransformReportView,
 } from '../utils/transformSummary';
 import type { PlaceholderFillSummary } from '../utils/transformReportPlaceholderFillSummary';
 import type { TransformReportSectionVisibility } from '../utils/transformReportSectionVisibility';
-import type {
-  CmdComparisonCandidateInput,
-  RankedCmdComparisonCandidate,
-} from '../utils/transformReportCmdComparison';
 import type { TransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
 import type {
   TransformReportIssueTriageAction,
@@ -16,6 +11,10 @@ import type {
   TransformReportNextAction,
   TransformReportNextActionItem,
 } from '../utils/transformReportActionItems';
+import type {
+  TransformReportRecordActions,
+  TransformReportRecordCmdComparisonState,
+} from './TransformReportRecordSectionContracts';
 
 export interface TransformReportPanelSectionsProps {
   report: TransformContextReport;
@@ -31,11 +30,8 @@ export interface TransformReportPanelSectionsProps {
   issueTriageItems: TransformReportIssueTriageItem[];
   sectionVisibility: TransformReportSectionVisibility;
   placeholderToolbarState: TransformReportPlaceholderToolbarState | null;
-  cmdComparisonRecordPath: string | null;
-  cmdComparisonActualCandidate: CmdComparisonCandidateInput | null;
-  cmdComparisonExpectedText: string;
-  cmdComparisonIgnoreExtraPaths: boolean;
-  getCmdComparisonCandidateRecords: () => TransformReportRecord[];
+  recordActions: TransformReportRecordActions;
+  recordCmdComparison: TransformReportRecordCmdComparisonState;
   onFilter: (query: string) => void;
   onOpenFirstCmdComparison: () => void;
   onOpenPlaceholderFillTemplate: () => void;
@@ -43,16 +39,4 @@ export interface TransformReportPanelSectionsProps {
   onCopyPlaceholderReport: () => void | Promise<void>;
   onRunNextAction: (action: TransformReportNextAction) => void;
   onRunIssueTriageAction: (action: TransformReportIssueTriageAction) => void;
-  onCopyPath: (path: string, successMessage?: string) => void | Promise<void>;
-  onCopyOriginalValue: (value: string, successMessage?: string) => void | Promise<void>;
-  onCopyDecodedPathValue: (text: string) => void | Promise<void>;
-  onCopyCmdStructure: (record: TransformReportRecord) => void | Promise<void>;
-  onCopyCmdComparisonPackage: (record: TransformReportRecord) => void | Promise<void>;
-  onToggleCmdComparison: (record: TransformReportRecord) => void;
-  onCopyCmdComparisonDiff: (record: TransformReportRecord) => void | Promise<void>;
-  onSwitchCmdComparisonCandidate: (candidate: RankedCmdComparisonCandidate) => void;
-  onCmdComparisonExpectedTextChange: (text: string) => void;
-  onCmdComparisonIgnoreExtraPathsChange: (ignoreExtraPaths: boolean) => void;
-  onLocatePath?: (path: string) => void;
-  onOpenSchemeValue?: (value: string) => void;
 }

@@ -42,9 +42,11 @@ describe('TransformReportCommandSchemaRows', () => {
     const tree = TransformReportCommandSchemaRows({
       recordPath: '$.cmd',
       rows,
-      onCopyPath,
-      onCopyDecodedPathValue,
-      onLocatePath,
+      actions: {
+        onCopyPath,
+        onCopyDecodedPathValue,
+        onLocatePath,
+      },
     });
 
     expect(collectText(tree)).toContain(`CMD Schema路径 · 显示 ${COMMAND_SCHEMA_ROW_DISPLAY_LIMIT}/${rows.length} 条`);
