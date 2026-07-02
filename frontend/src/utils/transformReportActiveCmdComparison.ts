@@ -50,20 +50,20 @@ export const getCmdComparisonCandidateRecords = ({
   []
 );
 
-export const buildActiveCmdComparisonReportText = (state: ActiveCmdComparisonState): string => {
-  if (!state.expectedText.trim()) return '';
+const resolveActiveCmdComparisonRecord = (state: ActiveCmdComparisonState): TransformReportRecord | null => (
+  state.expectedText.trim() ? findActiveCmdComparisonRecord(state) : null
+);
 
-  const record = findActiveCmdComparisonRecord(state);
+export const buildActiveCmdComparisonReportText = (state: ActiveCmdComparisonState): string => {
+  const record = resolveActiveCmdComparisonRecord(state);
   if (!record) return '';
 
   return buildCmdComparisonReportText(record, state.expectedText, state.ignoreExtraPaths, state.actualCandidate);
 };
 
 export const buildActiveCmdComparisonCandidateText = (state: ActiveCmdComparisonState): string => {
-  if (!state.recordPath || !state.expectedText.trim()) return '';
-
-  const activeRecord = findActiveCmdComparisonRecord(state);
-  if (!activeRecord) return '';
+  const activeRecord = resolveActiveCmdComparisonRecord(state);
+  if (!activeRecord || !state.recordPath) return '';
 
   const activeCandidateId = state.actualCandidate?.id || state.recordPath;
   const comparisonState = buildCmdComparisonPanelState(

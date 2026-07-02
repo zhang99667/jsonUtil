@@ -72,15 +72,9 @@ export const switchTransformReportCmdComparisonCandidate = (
 export const updateTransformReportCmdComparisonExpectedText = (
   state: TransformReportCmdComparisonState,
   expectedText: string
-): TransformReportCmdComparisonState => ({
-  ...state,
-  expectedText,
-});
+): TransformReportCmdComparisonState => ({ ...state, expectedText });
 
 export const updateTransformReportCmdComparisonIgnoreExtraPaths = (
   state: TransformReportCmdComparisonState,
   ignoreExtraPaths: boolean
-): TransformReportCmdComparisonState => ({
-  ...state,
-  ignoreExtraPaths,
-});
+): TransformReportCmdComparisonState => ({ ...state, ignoreExtraPaths });
