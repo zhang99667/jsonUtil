@@ -40,6 +40,32 @@ describe('useAppToolPanelCommands', () => {
     expect(onTrackToolEvent).toHaveBeenCalledWith('JSONPATH_CLOSE', 'panel');
   });
 
+  it.each([
+    ['结构树', 'handleToggleJsonTree', 'isJsonTreePanelOpen', 'STRUCTURE_NAV_OPEN', 'STRUCTURE_NAV_CLOSE', true, false],
+    ['JSON 对比', 'handleToggleJsonCompare', 'isJsonComparePanelOpen', 'JSON_COMPARE_OPEN', 'JSON_COMPARE_CLOSE', false, false],
+    ['Schema', 'handleToggleJsonSchema', 'isJsonSchemaPanelOpen', 'SCHEMA_PANEL_OPEN', 'SCHEMA_PANEL_CLOSE', false, false],
+    ['Scheme', 'handleToggleSchemeDecode', 'isSchemeDecodeOpen', 'SCHEME_PANEL_OPEN', 'SCHEME_PANEL_CLOSE', false, false],
+    ['模板填充', 'handleToggleTemplateFill', 'isTemplatePanelOpen', 'TEMPLATE_PANEL_OPEN', 'TEMPLATE_PANEL_CLOSE', false, true],
+  ] as const)('%s 面板开关使用独立状态和事件', (_title, commandName, stateKey, openEventName, closeEventName, requireDeepFormat, clearsTemplateDelta) => {
+    const openFixture = useToolPanelCommandsFixture();
+    openFixture.commands[commandName]();
+
+    expect(openFixture.stateSetters[stateKey]).toHaveBeenCalledWith(true);
+    expect(openFixture.onTrackToolEvent).toHaveBeenCalledWith(openEventName, 'panel');
+    if (requireDeepFormat) {
+      expect(openFixture.onSetMode).toHaveBeenCalledWith(TransformMode.DEEP_FORMAT);
+    } else {
+      expect(openFixture.onSetMode).not.toHaveBeenCalled();
+    }
+    if (clearsTemplateDelta) expect(openFixture.stateSetters.templateApplyQualityDelta).toHaveBeenCalledWith('');
+
+    const closeFixture = useToolPanelCommandsFixture({ mode: TransformMode.DEEP_FORMAT }, { [stateKey]: true });
+    closeFixture.commands[commandName]();
+
+    expect(closeFixture.stateSetters[stateKey]).toHaveBeenCalledWith(false);
+    expect(closeFixture.onTrackToolEvent).toHaveBeenCalledWith(closeEventName, 'panel');
+  });
+
   it('JSONPath 定位会生成递增请求并收起报告面板', () => {
     const { commands, onSetHighlightRange, onSetMode, onTrackToolEvent } = useToolPanelCommandsFixture();
 
