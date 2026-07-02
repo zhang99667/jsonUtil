@@ -136,22 +136,22 @@
 
 .app-button--primary {
   --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
-    0 8px 18px rgba(0, 122, 204, 0.16);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 8px 18px rgba(0, 0, 0, 0.2);
 
-  background: linear-gradient(180deg, #1487c9 0%, #0a68a5 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, rgba(55, 69, 88, 0.98) 0%, rgba(36, 46, 60, 0.98) 100%);
+  color: #f8fafc;
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .app-button--primary:hover {
   --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
-    0 10px 22px rgba(0, 122, 204, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 10px 22px rgba(0, 0, 0, 0.24);
 
-  background: linear-gradient(180deg, #1992d5 0%, #0b75b7 100%);
+  background: linear-gradient(180deg, rgba(66, 82, 104, 0.98) 0%, rgba(44, 56, 72, 0.98) 100%);
   box-shadow: var(--app-button-rest-shadow);
 }
 
@@ -320,7 +320,7 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.2),
     0 8px 16px rgba(0, 0, 0, 0.18);
 
-  background: linear-gradient(180deg, rgba(66, 80, 98, 0.98) 0%, rgba(43, 54, 68, 0.98) 100%) !important;
+  background: linear-gradient(180deg, rgba(55, 69, 88, 0.98) 0%, rgba(36, 46, 60, 0.98) 100%) !important;
   border: 0 !important;
   border-radius: 999px !important;
   color: #f9fafb !important;
@@ -334,7 +334,7 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.2),
     0 10px 20px rgba(0, 0, 0, 0.22);
 
-  background: linear-gradient(180deg, rgba(76, 92, 112, 0.98) 0%, rgba(51, 65, 81, 0.98) 100%) !important;
+  background: linear-gradient(180deg, rgba(66, 82, 104, 0.98) 0%, rgba(44, 56, 72, 0.98) 100%) !important;
   border: 0 !important;
   box-shadow: var(--app-button-rest-shadow) !important;
 }
@@ -347,7 +347,7 @@
 
 .json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,
 .json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible {
-  background: linear-gradient(180deg, rgba(76, 92, 112, 0.98) 0%, rgba(51, 65, 81, 0.98) 100%) !important;
+  background: linear-gradient(180deg, rgba(66, 82, 104, 0.98) 0%, rgba(44, 56, 72, 0.98) 100%) !important;
   border: 0 !important;
   filter: brightness(1.04) !important;
   box-shadow: var(--app-button-rest-shadow) !important;

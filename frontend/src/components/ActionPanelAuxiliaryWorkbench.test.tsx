@@ -62,6 +62,8 @@ describe('ActionPanelAuxiliaryWorkbench', () => {
     expect(debugButtons).toHaveLength(1);
     expect(debugButtons[0].props['aria-pressed']).toBe(true);
     expect(debugButtons[0].props.className).toContain('bg-editor-active');
+    expect(debugButtons[0].props.className).toContain('shadow-[inset_3px_0_0_rgba(96,165,250,0.72)]');
+    expect(debugButtons[0].props.className).not.toContain('ring-');
 
     const handleClick = debugButtons[0].props.onClick;
     expect(typeof handleClick).toBe('function');

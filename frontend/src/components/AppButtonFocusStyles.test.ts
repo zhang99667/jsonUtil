@@ -40,12 +40,26 @@ describe('App button focus styles', () => {
     expect(focusRule).not.toContain('inset 0 -2px');
   });
 
+  it('主按钮不再使用高饱和蓝色按钮底和外框阴影', () => {
+    const buttonRule = getRuleBody(appCss, '.app-button--primary');
+    const toastButtonRule = getRuleBody(releaseToastCss, '.app-release-toast__button--primary');
+
+    expect(buttonRule).toContain('rgba(55, 69, 88, 0.98)');
+    expect(buttonRule).not.toContain('#1487c9');
+    expect(buttonRule).not.toContain('rgba(0, 122, 204');
+    expect(toastButtonRule).toContain('rgba(55, 69, 88, 0.98)');
+    expect(toastButtonRule).not.toContain('#1487c9');
+    expect(toastButtonRule).not.toContain('rgba(0, 122, 204');
+  });
+
   it('版本弹窗确认按钮是无外框胶囊按钮', () => {
     const buttonRule = getRuleBody(appCss, '.changelog-modal__confirm-button');
     const focusRule = getRuleBody(appCss, '.changelog-modal__confirm-button:focus-visible');
 
     expect(buttonRule).toContain('border-radius: 999px');
     expect(buttonRule).toContain('min-width: 84px');
+    expect(buttonRule).not.toContain('#1487c9');
+    expect(buttonRule).not.toContain('rgba(0, 122, 204');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow) !important');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');

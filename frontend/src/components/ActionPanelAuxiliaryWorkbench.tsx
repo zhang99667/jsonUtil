@@ -35,7 +35,7 @@ export const ActionPanelAuxiliaryWorkbench: React.FC<ActionPanelAuxiliaryWorkben
           onClick={() => onSmartSuggestionAction('response-inspection')}
           aria-pressed={isDebugActive}
           title="低频排查入口：切到嵌套解析并打开 Response 报告"
-          className={`min-h-[42px] rounded-lg border px-2 py-1.5 text-left transition-all active:scale-95 ${isDebugActive ? 'border-brand-primary/50 bg-editor-active text-white ring-1 ring-brand-primary/30' : 'border-editor-border bg-editor-sidebar/70 text-gray-300 hover:border-gray-600 hover:bg-editor-hover hover:text-gray-100'}`}
+          className={`min-h-[42px] rounded-lg border px-2 py-1.5 text-left transition-all active:scale-95 ${isDebugActive ? 'border-transparent bg-editor-active text-white shadow-[inset_3px_0_0_rgba(96,165,250,0.72)]' : 'border-editor-border bg-editor-sidebar/70 text-gray-300 hover:border-gray-600 hover:bg-editor-hover hover:text-gray-100'}`}
         >
           <span className="flex items-center gap-2">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-white/10 bg-editor-bg/70 text-gray-400">

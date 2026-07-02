@@ -24,7 +24,7 @@ describe('Driver tour button styles', () => {
       '.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn,'
     );
 
-    expect(buttonRule).toContain('rgba(66, 80, 98, 0.98)');
+    expect(buttonRule).toContain('rgba(55, 69, 88, 0.98)');
     expect(buttonRule).toContain('border-radius: 999px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
@@ -35,7 +35,7 @@ describe('Driver tour button styles', () => {
       '.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,'
     );
 
-    expect(focusRule).toContain('rgba(76, 92, 112, 0.98)');
+    expect(focusRule).toContain('rgba(66, 82, 104, 0.98)');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow) !important');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');

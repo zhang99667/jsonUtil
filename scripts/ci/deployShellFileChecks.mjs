@@ -24,6 +24,10 @@ export const checkDeployShellFiles = (rootDir, files, runner) => {
     for (const heredoc of collectScriptHeredocs(content)) {
       const label = `${file}:${heredoc.marker}:${heredoc.startLine}`;
       checkedHeredocs.push(label);
+      if (heredoc.endLine === null) {
+        failures.push(`${label}: heredoc 未闭合，缺少结束标记 ${heredoc.marker}`);
+        continue;
+      }
       const failure = checkBashSyntax(runner, label, ['-n'], { encoding: 'utf8', input: heredoc.content });
       if (failure) failures.push(failure);
     }
