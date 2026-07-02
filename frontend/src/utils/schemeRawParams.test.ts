@@ -55,4 +55,9 @@ describe('schemeRawParams', () => {
       value: 'https://example.com/a?b=1',
     });
   });
+
+  it('空 key 和未知 key 不会被识别为单个原始参数', () => {
+    expect(getSingleRawStructuredParam('= {"a":1}', options)).toBeNull();
+    expect(getSingleRawUrlParam('unknown=https://example.com/a', options)).toBeNull();
+  });
 });
