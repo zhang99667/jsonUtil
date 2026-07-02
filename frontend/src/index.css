@@ -79,7 +79,7 @@
   color: #93c5fd !important;
 }
 
-/* 深色工作台按钮：主状态只靠填充和轻阴影表达，键盘焦点只提亮当前按钮表面。 */
+/* 深色工作台按钮：按钮状态靠填充和轻阴影表达，键盘焦点不再套外框。 */
 :where(button, [role="button"]) {
   -webkit-tap-highlight-color: transparent;
 }
@@ -94,6 +94,8 @@
 
 :where(button, [role="button"]):focus-visible {
   outline: none !important;
+  filter: brightness(1.05) saturate(1.02);
+  box-shadow: var(--app-button-rest-shadow, none) !important;
 }
 
 .app-button {

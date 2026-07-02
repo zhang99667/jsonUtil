@@ -20,6 +20,15 @@ const getRuleBody = (css: string, selector: string): string => {
 };
 
 describe('App button focus styles', () => {
+  it('全局按钮键盘焦点会压掉 Tailwind ring 选中框', () => {
+    const focusRule = getRuleBody(appCss, ':where(button, [role="button"]):focus-visible');
+
+    expect(focusRule).toContain('filter: brightness(1.05) saturate(1.02)');
+    expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow, none) !important');
+    expect(focusRule).not.toContain('ring');
+    expect(focusRule).not.toContain('outline: auto');
+  });
+
   it('全局 app-button 键盘焦点不再绘制额外外框或光晕', () => {
     const focusRule = getRuleBody(appCss, '.app-button:focus-visible');
 

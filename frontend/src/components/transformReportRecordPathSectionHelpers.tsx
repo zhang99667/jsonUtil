@@ -4,10 +4,8 @@ import type { TransformReportRecordPathActions } from './TransformReportRecordSe
 import type { TransformReportRecordPathRowsProps } from './TransformReportRecordPathRows';
 
 type PathSectionBaseProps = Omit<TransformReportRecordPathRowsProps, 'rows'>;
-type PathSectionRowStyles = Pick<
-  TransformReportRecordPathRowsProps,
-  'rowClassName' | 'pathClassName' | 'valueClassName'
->;
+type PathSectionStaticProps = Omit<PathSectionBaseProps, keyof TransformReportRecordPathActions | keyof PathSectionRowStyles>;
+type PathSectionRowStyles = Pick<TransformReportRecordPathRowsProps, 'rowClassName' | 'pathClassName' | 'valueClassName'>;
 
 export const pathSectionStyles = {
   command: {
@@ -36,9 +34,19 @@ export const pickCopyLocateActions = (callbacks: TransformReportRecordPathAction
 export const buildPathSectionProps = (
   rows: TransformReportDecodedPath[] | undefined,
   props: PathSectionBaseProps
-): TransformReportRecordPathRowsProps | null => (
-  rows?.length ? { ...props, rows } : null
-);
+): TransformReportRecordPathRowsProps | null => (rows?.length ? { ...props, rows } : null);
+
+export const buildStyledPathSectionProps = (
+  rows: TransformReportDecodedPath[] | undefined,
+  callbacks: TransformReportRecordPathActions,
+  style: keyof typeof pathSectionStyles,
+  includeSchemeAction: boolean,
+  props: PathSectionStaticProps
+): TransformReportRecordPathRowsProps | null => buildPathSectionProps(rows, {
+  ...props,
+  ...pathSectionStyles[style],
+  ...(includeSchemeAction ? callbacks : pickCopyLocateActions(callbacks)),
+});
 
 export const buildIndexedMoreContent = (
   shouldShow: boolean,
@@ -46,13 +54,13 @@ export const buildIndexedMoreContent = (
   indexedCount: number,
   visibleCount: number,
   indexedSuffix: string
-): React.ReactNode => (
-  shouldShow
-    ? (
-        <>
-          {leadContent}
-          {indexedCount > visibleCount && <span>，已索引 {indexedCount} {indexedSuffix}</span>}
-        </>
-      )
-    : undefined
-);
+): React.ReactNode => {
+  if (!shouldShow) return undefined;
+
+  return (
+    <>
+      {leadContent}
+      {indexedCount > visibleCount && <span>，已索引 {indexedCount} {indexedSuffix}</span>}
+    </>
+  );
+};
