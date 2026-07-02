@@ -4,8 +4,13 @@ import { transformSummaryRecordTypesMaintainabilityBudgets } from './maintainabi
 export const transformSummaryTypesMaintainabilityBudgets = [
   {
     file: 'frontend/src/utils/transformSummaryTypes.ts',
-    maxLines: 135,
-    reason: '深度解析核心报告和视图类型入口只维护报告聚合、视图契约和类型 re-export，记录类型继续放在专用文件',
+    maxLines: 105,
+    reason: '深度解析核心报告类型入口只维护报告聚合和类型 re-export，记录与视图类型继续放在专用文件',
+  },
+  {
+    file: 'frontend/src/utils/transformSummaryViewTypes.ts',
+    maxLines: 70,
+    reason: '深度解析视图类型只维护过滤统计、截断状态和视图记录集合契约',
   },
   ...transformSummaryRecordTypesMaintainabilityBudgets,
   ...transformSummaryArtifactTypesMaintainabilityBudgets,
