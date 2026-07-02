@@ -1,7 +1,5 @@
 import { useCallback, useState } from 'react';
 import { TransformMode, type HighlightRange } from '../types';
-import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
-import { getStandaloneSourceSchemeValue } from '../utils/appToolPanelCommandPlans';
 import {
   APP_TOOL_PANEL_TOGGLE_COMMANDS as PANEL_TOGGLE_COMMANDS,
   runPanelToggleCommand,
@@ -10,6 +8,7 @@ import {
 } from '../utils/appToolPanelToggleCommand';
 import { useAppChangelogCommands } from './useAppChangelogCommands';
 import { useAppSettingsModalCommands } from './useAppSettingsModalCommands';
+import { useAppToolPanelActionCommands } from './useAppToolPanelActionCommands';
 import { useAppToolPanelRequestCommands } from './useAppToolPanelRequestCommands';
 
 type TrackPanelEvent = (eventName: string, category: string) => void;
@@ -107,65 +106,31 @@ export const useAppToolPanelCommands = ({
     );
   }, [isTemplatePanelOpen, togglePanelState]);
 
-  const handleLocateJsonPath = useCallback((query: string) => {
-    const request = requestJsonPathQuery(query);
-    if (!request) return;
-
-    if (mode !== TransformMode.DEEP_FORMAT) {
-      onSetMode(TransformMode.DEEP_FORMAT);
-    }
-
-    onSetHighlightRange(null);
-    setIsJsonPathPanelOpen(true);
-    closeTransformReportPanel();
-    onTrackToolEvent('JSONPATH_LOCATE', 'panel');
-  }, [closeTransformReportPanel, mode, onSetHighlightRange, onSetMode, onTrackToolEvent, requestJsonPathQuery]);
-
-  const handleLocateJsonPathResultInStructure = useCallback((item: JsonPathQueryItem) => {
-    requestJsonTreeFocus(item);
-    setIsJsonTreePanelOpen(true);
-    closeTransformReportPanel();
-    onTrackToolEvent('STRUCTURE_NAV_LOCATE', 'panel');
-  }, [closeTransformReportPanel, onTrackToolEvent, requestJsonTreeFocus]);
-
-  const openStandaloneSchemePanel = useCallback((value: string, eventName: string) => {
-    if (!value) return;
-
-    requestSchemeInput(value);
-    setIsSchemeDecodeOpen(true);
-    closeTransformReportPanel();
-    onTrackToolEvent(eventName, 'panel');
-  }, [closeTransformReportPanel, onTrackToolEvent, requestSchemeInput]);
-
-  const handleOpenSchemeFromReport = useCallback((value: string) => {
-    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_REPORT');
-  }, [openStandaloneSchemePanel]);
-
-  const handleOpenSchemeFromStructure = useCallback((value: string) => {
-    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_STRUCTURE');
-    setIsJsonTreePanelOpen(false);
-  }, [openStandaloneSchemePanel]);
-
-  const handleOpenSchemeFromSourceStatus = useCallback((value: string) => {
-    openStandaloneSchemePanel(value, 'SCHEME_OPEN_FROM_SOURCE_STATUS');
-  }, [openStandaloneSchemePanel]);
-
-  const handleOpenSourceSchemeInput = useCallback(() => {
-    const value = getStandaloneSourceSchemeValue(sourceText);
-    if (!value) return;
-
-    handleOpenSchemeFromSourceStatus(value);
-  }, [handleOpenSchemeFromSourceStatus, sourceText]);
-
-  const handleOpenTemplateFillFromReport = useCallback((template: string) => {
-    const request = requestTemplateFill(template);
-    if (!request) return;
-
-    setTemplateApplyQualityDelta('');
-    setIsTemplatePanelOpen(true);
-    closeTransformReportPanel();
-    onTrackToolEvent('TEMPLATE_OPEN_FROM_REPORT', 'panel');
-  }, [closeTransformReportPanel, onTrackToolEvent, requestTemplateFill]);
+  const {
+    handleLocateJsonPath,
+    handleLocateJsonPathResultInStructure,
+    handleOpenSchemeFromReport,
+    handleOpenSchemeFromSourceStatus,
+    handleOpenSchemeFromStructure,
+    handleOpenSourceSchemeInput,
+    handleOpenTemplateFillFromReport,
+  } = useAppToolPanelActionCommands({
+    closeTransformReportPanel,
+    mode,
+    onSetHighlightRange,
+    onSetMode,
+    onTrackToolEvent,
+    requestJsonPathQuery,
+    requestJsonTreeFocus,
+    requestSchemeInput,
+    requestTemplateFill,
+    setIsJsonPathPanelOpen,
+    setIsJsonTreePanelOpen,
+    setIsSchemeDecodeOpen,
+    setIsTemplatePanelOpen,
+    setTemplateApplyQualityDelta,
+    sourceText,
+  });
 
   const handleCloseJsonPathPanel = useCallback(() => {
     setIsJsonPathPanelOpen(false);
