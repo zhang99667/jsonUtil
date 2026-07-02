@@ -158,6 +158,48 @@
   box-shadow: var(--app-button-rest-shadow);
 }
 
+.changelog-modal__confirm-button {
+  --app-button-rest-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+    0 8px 18px rgba(0, 0, 0, 0.22);
+
+  background: linear-gradient(180deg, rgba(71, 82, 98, 0.96) 0%, rgba(47, 55, 68, 0.96) 100%);
+  color: #f3f4f6;
+  min-width: 76px;
+  box-shadow: var(--app-button-rest-shadow);
+}
+
+.changelog-modal__confirm-button::after {
+  background: rgba(34, 211, 238, 0.72);
+  border-radius: 999px;
+  bottom: 5px;
+  content: '';
+  height: 2px;
+  left: 14px;
+  opacity: 0;
+  position: absolute;
+  right: 14px;
+  transform: scaleX(0.48);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.changelog-modal__confirm-button:hover {
+  background: linear-gradient(180deg, rgba(82, 94, 112, 0.98) 0%, rgba(54, 64, 78, 0.98) 100%);
+  color: #ffffff;
+}
+
+.changelog-modal__confirm-button:focus-visible {
+  filter: none;
+  box-shadow: var(--app-button-rest-shadow) !important;
+}
+
+.changelog-modal__confirm-button:hover::after,
+.changelog-modal__confirm-button:focus-visible::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
 .app-button--secondary {
   background: rgba(255, 255, 255, 0.055);
   color: #d1d5db;
