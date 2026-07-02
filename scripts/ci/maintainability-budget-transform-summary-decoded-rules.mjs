@@ -1,13 +1,18 @@
 export const transformSummaryDecodedMaintainabilityBudgets = [
   {
     file: 'frontend/src/utils/transformReportDecodedPaths.ts',
-    maxLines: 180,
-    reason: '深度解析 decoded 路径收集应保持纯函数模块，搜索索引逻辑应留在独立模块',
+    maxLines: 145,
+    reason: '深度解析 decoded 路径报告映射应保持纯函数模块，递归叶子遍历应留在独立 walker',
+  },
+  {
+    file: 'frontend/src/utils/transformReportDecodedLeafWalker.ts',
+    maxLines: 75,
+    reason: '深度解析 decoded 叶子遍历应统一维护空数组、空对象和 JSONPath 拼接边界',
   },
   {
     file: 'frontend/src/utils/transformReportDecodedSearchData.ts',
-    maxLines: 140,
-    reason: '深度解析 decoded 搜索索引构建应保持纯函数模块，避免回流到路径复制模块',
+    maxLines: 100,
+    reason: '深度解析 decoded 搜索索引构建应保持纯函数模块，递归叶子遍历应留在独立 walker',
   },
   {
     file: 'frontend/src/utils/transformReportDecodedValue.ts',

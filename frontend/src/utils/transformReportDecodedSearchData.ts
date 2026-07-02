@@ -1,10 +1,7 @@
 import type { JsonValue } from '../types';
+import type { TransformDecodedLeaf } from './transformReportDecodedLeafWalker';
+import { walkTransformDecodedLeaves } from './transformReportDecodedLeafWalker';
 import type { TransformReportDecodedPath } from './transformSummary';
-import {
-  appendTransformJsonPathIndex,
-  appendTransformJsonPathKey,
-} from './transformReportJsonPath';
-import { formatJsonValuePreview } from './transformValuePreview';
 
 const DEFAULT_DECODED_SEARCH_TEXT_LIMIT = 20_000;
 const DEFAULT_DECODED_SEARCH_PATH_LIMIT = 1_000;
@@ -23,20 +20,18 @@ export interface TransformDecodedSearchData {
 
 const pushDecodedSearchText = (
   state: DecodedSearchTextCollectState,
-  path: string,
-  value: JsonValue,
-  preview = formatJsonValuePreview(value, 80)
+  leaf: TransformDecodedLeaf
 ) => {
   if (state.rows.length < state.rowLimit) {
     state.rows.push({
-      path,
-      preview,
-      value,
+      path: leaf.path,
+      preview: leaf.preview,
+      value: leaf.value,
     });
   }
 
   if (state.remainingLength > 0) {
-    const part = `${path} ${preview}`;
+    const part = `${leaf.path} ${leaf.preview}`;
     const nextPart = part.length > state.remainingLength
       ? part.slice(0, state.remainingLength)
       : part;
@@ -46,40 +41,14 @@ const pushDecodedSearchText = (
 };
 
 const collectDecodedSearchText = (
-  value: JsonValue,
-  currentPath: string,
+  decodedValue: JsonValue,
+  recordPath: string,
   state: DecodedSearchTextCollectState
 ) => {
-  if (state.remainingLength <= 0 && state.rows.length >= state.rowLimit) return;
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      pushDecodedSearchText(state, currentPath, value, '数组 0 项');
-      return;
-    }
-
-    for (let index = 0; index < value.length; index++) {
-      collectDecodedSearchText(value[index], appendTransformJsonPathIndex(currentPath, index), state);
-      if (state.remainingLength <= 0 && state.rows.length >= state.rowLimit) return;
-    }
-    return;
-  }
-
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value);
-    if (entries.length === 0) {
-      pushDecodedSearchText(state, currentPath, value, '对象: 空');
-      return;
-    }
-
-    for (const [key, item] of entries) {
-      collectDecodedSearchText(item, appendTransformJsonPathKey(currentPath, key), state);
-      if (state.remainingLength <= 0 && state.rows.length >= state.rowLimit) return;
-    }
-    return;
-  }
-
-  pushDecodedSearchText(state, currentPath, value);
+  walkTransformDecodedLeaves(decodedValue, recordPath, leaf => {
+    pushDecodedSearchText(state, leaf);
+    return state.remainingLength > 0 || state.rows.length < state.rowLimit;
+  });
 };
 
 export const buildTransformDecodedSearchData = (
