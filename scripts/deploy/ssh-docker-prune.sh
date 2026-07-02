@@ -3,38 +3,16 @@
 
 set -Eeuo pipefail
 
-SSH_HOST="${SSH_HOST:-39.97.237.248}"
-SSH_USER="${SSH_USER:-markz}"
-SSH_PORT="${SSH_PORT:-22}"
-SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
-REMOTE_APP_DIR="${REMOTE_APP_DIR:-/home/markz/apps/jsonUtil}"
-SSH_SERVER_ALIVE_INTERVAL="${SSH_SERVER_ALIVE_INTERVAL:-15}"
-SSH_SERVER_ALIVE_COUNT_MAX="${SSH_SERVER_ALIVE_COUNT_MAX:-10}"
+DEPLOY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DEPLOY_SCRIPT_DIR/ssh-common.sh"
+
+init_ssh_deploy_defaults
 REMOTE_DOCKER_PRUNE_APPLY="${REMOTE_DOCKER_PRUNE_APPLY:-false}"
 REMOTE_DOCKER_PRUNE_CONFIRM="${REMOTE_DOCKER_PRUNE_CONFIRM:-}"
 REMOTE_DOCKER_PRUNE_CONTAINERS="${REMOTE_DOCKER_PRUNE_CONTAINERS:-true}"
 REMOTE_DOCKER_PRUNE_BUILDER="${REMOTE_DOCKER_PRUNE_BUILDER:-true}"
 REMOTE_DOCKER_PRUNE_IMAGES="${REMOTE_DOCKER_PRUNE_IMAGES:-true}"
 REMOTE_DOCKER_PRUNE_CONFIRM_ARG="${REMOTE_DOCKER_PRUNE_CONFIRM:-__empty__}"
-
-SSH_BASE_OPTS=(
-  -i "$SSH_KEY"
-  -p "$SSH_PORT"
-  -o StrictHostKeyChecking=accept-new
-  -o ServerAliveInterval="$SSH_SERVER_ALIVE_INTERVAL"
-  -o ServerAliveCountMax="$SSH_SERVER_ALIVE_COUNT_MAX"
-)
-
-log() {
-  printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
-}
-
-require_cmd() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    printf '缺少命令: %s\n' "$1" >&2
-    exit 1
-  fi
-}
 
 require_cmd ssh
 

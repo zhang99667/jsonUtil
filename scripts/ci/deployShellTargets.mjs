@@ -5,6 +5,7 @@ export const DEFAULT_DEPLOY_SHELL_FILES = [
   'scripts/ci/local-ci.sh',
   'scripts/deploy/frontend-legacy-assets.sh',
   'scripts/deploy/remote-docker-compose-deploy.sh',
+  'scripts/deploy/ssh-common.sh',
   'scripts/deploy/ssh-disk-health.sh',
   'scripts/deploy/ssh-docker-compose-deploy.sh',
   'scripts/deploy/ssh-docker-prune.sh',
@@ -13,7 +14,4 @@ export const DEFAULT_DEPLOY_SHELL_FILES = [
   'scripts/deploy/verify-public-deploy.sh',
 ];
 
-export const DEFAULT_GITHUB_WORKFLOW_FILES = [
-  '.github/workflows/ci.yml',
-  '.github/workflows/deploy.yml',
-];
+export const DEFAULT_GITHUB_WORKFLOW_FILES = ['.github/workflows/ci.yml', '.github/workflows/deploy.yml'];
