@@ -969,7 +969,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
                 <button
                   type="button"
                   onClick={() => handleSelectNode(node)}
-                  className="min-w-0 flex flex-1 items-center gap-2 rounded px-1 py-0.5 text-left transition-colors hover:bg-editor-active focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="min-w-0 flex flex-1 items-center gap-2 rounded px-1 py-0.5 text-left transition-colors hover:bg-editor-active focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
                   title={`选中并定位 ${node.path}`}
                 >
                   <span className="max-w-[160px] shrink-0 truncate font-mono text-[11px] font-semibold text-gray-100">
@@ -986,7 +986,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
                 <button
                   type="button"
                   onClick={() => void handleCopyPath(node.path)}
-                  className="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-gray-500 opacity-0 transition-colors hover:bg-editor-active hover:text-emerald-200 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-gray-500 opacity-0 transition-colors hover:bg-editor-active hover:text-emerald-200 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
                   title={`复制路径 ${node.path}`}
                   aria-label={`复制路径 ${node.path}`}
                 >
@@ -1079,7 +1079,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             <details ref={copyResultsMenuRef} className="relative shrink-0">
               <summary
                 data-tour="structure-nav-copy-search-results-menu"
-                className="w-12 list-none rounded border border-editor-border px-2 py-1.5 text-center text-xs text-gray-300 transition-colors hover:bg-editor-hover focus:outline-none focus:ring-1 focus:ring-emerald-400 [&::-webkit-details-marker]:hidden"
+                className="w-12 list-none rounded border border-editor-border px-2 py-1.5 text-center text-xs text-gray-300 transition-colors hover:bg-editor-hover focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 [&::-webkit-details-marker]:hidden"
                 title="复制当前筛选结果"
                 aria-label="复制当前筛选结果"
               >
@@ -1159,7 +1159,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
                     type="button"
                     data-tour="structure-nav-search-history-item"
                     onClick={() => handleFillSearchHistory(item)}
-                    className="min-w-0 truncate px-2 py-1 font-mono text-[11px] text-gray-300 transition-colors hover:text-emerald-100 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    className="min-w-0 truncate px-2 py-1 font-mono text-[11px] text-gray-300 transition-colors hover:text-emerald-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
                     title={`${item}\n点击填入结构搜索`}
                     aria-label={`填入结构搜索历史：${item}`}
                   >
@@ -1168,7 +1168,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveSearchHistory(item)}
-                    className="shrink-0 rounded-r px-1 py-1 text-gray-500 opacity-0 transition-colors hover:text-red-300 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-red-400 group-hover/history-item:opacity-100"
+                    className="shrink-0 rounded-r px-1 py-1 text-gray-500 opacity-0 transition-colors hover:text-red-300 focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400 group-hover/history-item:opacity-100"
                     title={`删除结构搜索历史：${item}`}
                     aria-label={`删除结构搜索历史：${item}`}
                   >
@@ -1180,7 +1180,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
             <button
               type="button"
               onClick={handleClearSearchHistory}
-              className="shrink-0 rounded px-1.5 py-1 text-gray-500 transition-colors hover:bg-editor-hover hover:text-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-400"
+              className="shrink-0 rounded px-1.5 py-1 text-gray-500 transition-colors hover:bg-editor-hover hover:text-gray-300 focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-400"
               title="清空结构搜索历史"
               aria-label="清空结构搜索历史"
             >

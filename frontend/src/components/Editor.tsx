@@ -548,7 +548,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
               onClick={() => setIsLocked(!isLocked)}
               aria-label={lockToggleTitle}
               aria-pressed={!isLocked}
-              className={`editor-header-action flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border focus:outline-none focus:ring-2 focus:ring-emerald-400/70 ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
+              className={`editor-header-action flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
               title={lockToggleTitle}
             >
               {isLocked ? (

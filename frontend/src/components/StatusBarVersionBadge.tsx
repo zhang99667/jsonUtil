@@ -16,7 +16,7 @@ export const StatusBarVersionBadge: React.FC<StatusBarVersionBadgeProps> = ({
         data-tour="statusbar-version"
         type="button"
         onClick={onOpenChangelog}
-        className={`${VERSION_BADGE_CLASS_NAME} transition-colors hover:bg-white/25 hover:text-white focus:outline-none focus:ring-1 focus:ring-white`}
+        className={`${VERSION_BADGE_CLASS_NAME} transition-colors hover:bg-white/25 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-white`}
         title="当前版本，点击查看更新日志"
         aria-label={`查看版本更新，当前版本 ${APP_VERSION_LABEL}`}
       >
