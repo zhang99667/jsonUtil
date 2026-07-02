@@ -79,6 +79,14 @@
   color: #93c5fd !important;
 }
 
+/* Monaco 快捷键提示只做说明，不参与鼠标命中，避免遮挡搜索框关闭按钮 */
+.context-view.monaco-component:has(.workbench-hover-container),
+.context-view.monaco-component:has(.workbench-hover),
+.workbench-hover-container,
+.workbench-hover {
+  pointer-events: none !important;
+}
+
 
 /* Moved to src */
 .jsonpath-highlight {
