@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { defineConfig, loadEnv, type UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { getManualChunkName } from './config/chunkStrategy';
@@ -13,6 +14,18 @@ const packageJson = readJsonFile<{ version?: string }>(new URL('./package.json',
 const packageVersion = packageJson.version || '0.0.0';
 const changelogMarkdown = readTextFileSafely(new URL('../CHANGELOG.md', import.meta.url));
 const frontendChangelogMarkdown = extractRecentChangelogMarkdown(changelogMarkdown, 12);
+
+const createMonacoStaticAssetsPlugin = () => ({
+  name: 'jsonutils-monaco-static-assets',
+  apply: 'build' as const,
+  closeBundle() {
+    const sourceDir = path.resolve(__dirname, 'node_modules/monaco-editor/min/vs');
+    const targetDir = path.resolve(__dirname, 'dist/monaco/vs');
+    fs.rmSync(targetDir, { recursive: true, force: true });
+    fs.mkdirSync(path.dirname(targetDir), { recursive: true });
+    fs.cpSync(sourceDir, targetDir, { recursive: true });
+  },
+});
 
 type VitestCompatibleUserConfig = UserConfig & {
   test?: {
@@ -39,7 +52,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), createVersionManifestPlugin({
       version: packageVersion,
       changelogMarkdown,
-    })],
+    }), createMonacoStaticAssetsPlugin()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
