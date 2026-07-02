@@ -88,6 +88,31 @@ test('部署 Shell 语法检查会单独校验脚本 heredoc', () => {
   });
 });
 
+test('部署 Shell 语法检查会报告未闭合脚本 heredoc', () => {
+  withTempRoot((rootDir) => {
+    let heredocSyntaxCheckCount = 0;
+    writeFixtureFile(rootDir, 'scripts/deploy/deploy.sh', [
+      'ssh host <<\'REMOTE_SCRIPT\'',
+      'echo ok',
+    ].join('\n'));
+
+    const report = checkDeployShellSyntax(rootDir, {
+      files: ['scripts/deploy/deploy.sh'],
+      workflowFiles: [],
+      runner: (command, args, options = {}) => {
+        if (options.input !== undefined) heredocSyntaxCheckCount += 1;
+        return fixtureRunner(command, args, options);
+      },
+    });
+
+    assert.deepEqual(report.checkedHeredocs, ['scripts/deploy/deploy.sh:REMOTE_SCRIPT:2']);
+    assert.deepEqual(report.failures, [
+      'scripts/deploy/deploy.sh:REMOTE_SCRIPT:2: heredoc 未闭合，缺少结束标记 REMOTE_SCRIPT',
+    ]);
+    assert.equal(heredocSyntaxCheckCount, 0);
+  });
+});
+
 test('部署 Shell 语法检查会报告缺失脚本', () => {
   withTempRoot((rootDir) => {
     const report = checkDeployShellSyntax(rootDir, {

@@ -571,7 +571,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             onClick={toggleWordWrap}
             aria-label="自动换行"
             aria-pressed={isWordWrapEnabled}
-            className={`editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${isWordWrapEnabled ? 'bg-brand-primary text-white border-brand-primary' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
+            className={`editor-header-action flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors border ${isWordWrapEnabled ? 'border-transparent bg-editor-active text-white shadow-[inset_0_-1px_0_rgba(96,165,250,0.78)]' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
             title={isWordWrapEnabled ? '自动换行已开启，点击关闭' : '自动换行已关闭，点击开启'}
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>

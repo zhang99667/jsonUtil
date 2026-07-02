@@ -17,6 +17,9 @@ describe('actionPanelButtonState', () => {
     });
 
     expect(activeExpanded).toContain('bg-editor-active');
+    expect(activeExpanded).toContain('shadow-[inset_3px_0_0_rgba(96,165,250,0.72)]');
+    expect(activeExpanded).not.toContain('ring-');
+    expect(activeExpanded).not.toContain('border-brand-primary');
     expect(activeExpanded).not.toContain('justify-center');
     expect(inactiveCollapsed).toContain('bg-editor-sidebar');
     expect(inactiveCollapsed).toContain('justify-center');

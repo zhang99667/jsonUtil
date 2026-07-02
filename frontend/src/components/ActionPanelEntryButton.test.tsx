@@ -59,6 +59,8 @@ describe('ActionPanelEntryButton', () => {
     expect(tree.props['data-tour']).toBe('format-button');
     expect(tree.props['aria-pressed']).toBe(true);
     expect(tree.props.className).toContain('bg-editor-active');
+    expect(tree.props.className).toContain('shadow-[inset_3px_0_0_rgba(96,165,250,0.72)]');
+    expect(tree.props.className).not.toContain('ring-');
     expect(tree.props.title).toBeUndefined();
     expect(collectText(tree)).toContain('格式化');
     expect(findByType(tree, ActionPanelEntryIconSlot)[0].props.state).toMatchObject({

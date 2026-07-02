@@ -2,6 +2,17 @@ const SCRIPT_HEREDOC_PATTERN = /<<-?\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*SCRIPT[A-Za
 
 const isHeredocEnd = (line, marker) => line === marker || line.replace(/^\t+/, '') === marker;
 
+const readHeredocBody = (lines, marker, startIndex) => {
+  const bodyLines = [];
+  for (let index = startIndex; index < lines.length; index += 1) {
+    if (isHeredocEnd(lines[index], marker)) {
+      return { endLine: index + 1, content: `${bodyLines.join('\n')}\n` };
+    }
+    bodyLines.push(lines[index]);
+  }
+  return { endLine: null, content: `${bodyLines.join('\n')}\n` };
+};
+
 export const collectScriptHeredocs = (content) => {
   const lines = content.split(/\r?\n/);
   const heredocs = [];
@@ -12,22 +23,12 @@ export const collectScriptHeredocs = (content) => {
 
     while (match) {
       const marker = match[2];
-      const bodyLines = [];
-      let endLine = -1;
-
-      for (let bodyIndex = index + 1; bodyIndex < lines.length; bodyIndex += 1) {
-        if (isHeredocEnd(lines[bodyIndex], marker)) {
-          endLine = bodyIndex + 1;
-          break;
-        }
-        bodyLines.push(lines[bodyIndex]);
-      }
+      const body = readHeredocBody(lines, marker, index + 1);
 
       heredocs.push({
         marker,
         startLine: index + 2,
-        endLine,
-        content: `${bodyLines.join('\n')}\n`,
+        ...body,
       });
 
       match = SCRIPT_HEREDOC_PATTERN.exec(lines[index]);

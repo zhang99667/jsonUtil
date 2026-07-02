@@ -41,3 +41,19 @@ test('部署 Shell heredoc 提取支持带 tab 缩进的结束标记', () => {
   assert.equal(heredocs[0].endLine, 3);
   assert.equal(heredocs[0].content, 'echo ok\n');
 });
+
+test('部署 Shell heredoc 提取会标记未闭合脚本片段', () => {
+  const heredocs = collectScriptHeredocs([
+    'ssh host <<\'REMOTE_SCRIPT\'',
+    'echo ok',
+  ].join('\n'));
+
+  assert.deepEqual(heredocs, [
+    {
+      marker: 'REMOTE_SCRIPT',
+      startLine: 2,
+      endLine: null,
+      content: 'echo ok\n',
+    },
+  ]);
+});
