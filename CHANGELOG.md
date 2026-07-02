@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.293 (2026-07-02) - CMD Schema Origin 提取分层
+### 🚀 优化与改进
+- **Origin 提取 Helper**: 将 CMD Schema origin 的协议、域名和转义斜杠归一化抽成独立纯 helper，分组草稿入口回归去重、计数和截断职责
+- **Origin 预算收紧**: 为 origin 提取 helper 补充可维护性预算，并把 origin draft 预算降到聚合层范围，防止解析规则回流
+
 ## v1.8.292 (2026-07-02) - 筛选视图 Nested Patch 分层
 ### 🚀 优化与改进
 - **筛选 Patch 分层**: 将深度解析报告筛选中的 nested command/resource 字段 patch 抽成独立纯 helper，视图 patch 入口回归 decoded path 和字段组合职责

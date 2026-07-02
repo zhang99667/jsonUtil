@@ -13,7 +13,7 @@ import type {
   TransformReportRecord,
 } from './transformSummaryTypes';
 
-export { getCommandSchemaOrigin } from './transformReportCommandSchemaOriginGroupDrafts';
+export { getCommandSchemaOrigin } from './transformReportCommandSchemaOrigin';
 
 export const buildTopCommandSchemaOriginGroups = (
   records: TransformReportRecord[],
