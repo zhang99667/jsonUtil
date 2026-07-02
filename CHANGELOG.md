@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.295 (2026-07-02) - CMD Schema Origin Draft State 分层
+### 🚀 优化与改进
+- **Draft State Helper**: 将 CMD Schema origin 草稿状态、Set 去重和可见 schema 截断逻辑抽成独立纯 helper，聚合入口回归 occurrence 遍历和 origin 路由
+- **Origin 截断回归**: 补充 schema 展示截断但唯一 schema 总数和 hasMoreSchemas 保持准确的回归测试，并同步收紧 origin draft 预算
+
 ## v1.8.294 (2026-07-02) - 工具栏工具组类型分层
 ### 🚀 优化与改进
 - **工具组类型拆分**: 将工具栏转换按钮的 icon id、按钮项和分组契约抽成独立类型文件，工具组配置回归纯元数据职责

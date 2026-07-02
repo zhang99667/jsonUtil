@@ -129,4 +129,36 @@ describe('transformReportCommandSchemaGroups', () => {
       },
     ]);
   });
+
+  it('origin schema 展示截断时保留唯一 schema 总数', () => {
+    const records = [
+      {
+        path: '$.feed',
+        commandSchema: 'baiduboxapp://feed/detail',
+        commandSchemaRows: [
+          { schema: 'baiduboxapp://feed/panel', path: '$.feed.panel', source: 'cmd=1' },
+          { schema: 'baiduboxapp://feed/tab', path: '$.feed.tab', source: 'cmd=2' },
+          { schema: 'baiduboxapp://feed/landing', path: '$.feed.landing', source: 'cmd=3' },
+          { schema: 'baiduboxapp://feed/profile', path: '$.feed.profile', source: 'cmd=4' },
+          { schema: 'baiduboxapp://feed/panel', path: '$.feed.duplicatePanel', source: 'cmd=5' },
+        ],
+      },
+    ] as unknown as TransformReportRecord[];
+
+    expect(buildTopCommandSchemaOriginGroups(records)).toEqual([
+      {
+        origin: 'baiduboxapp://feed',
+        count: 6,
+        schemaCount: 5,
+        recordCount: 1,
+        schemas: [
+          'baiduboxapp://feed/detail',
+          'baiduboxapp://feed/panel',
+          'baiduboxapp://feed/tab',
+          'baiduboxapp://feed/landing',
+        ],
+        hasMoreSchemas: true,
+      },
+    ]);
+  });
 });
