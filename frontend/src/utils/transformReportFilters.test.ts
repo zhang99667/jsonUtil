@@ -115,6 +115,24 @@ describe('transformReportFilters', () => {
     expect(filtered.cmdStructureFocusLabel).toBe('CMD Schema');
   });
 
+  it('多类明细同时命中时优先聚焦内部 CMD 字段', () => {
+    const record = createRecord({
+      decodedSearchPaths: [
+        { path: '$.cmd.decoded', preview: 'shared target' },
+      ],
+      nestedCommandSearchFields: [
+        { path: '$.cmd.nested', preview: 'shared target' },
+      ],
+      commandSchemaRows: [
+        { path: '$.cmd.schema', schema: 'baiduboxapp://shared/target' },
+      ],
+    });
+
+    const filtered = buildFilteredRecordView(record, 'shared', filterOptions);
+    expect(filtered.cmdStructureFocusPaths).toEqual(['$.cmd.nested']);
+    expect(filtered.cmdStructureFocusLabel).toBe('内部 CMD 字段');
+  });
+
   it('短字段名不扫描整段原始 CMD，明显 URL/编码片段允许兜底', () => {
     expect(shouldSearchLongSourceValue('url')).toBe(false);
     expect(shouldSearchLongSourceValue('https://m.baidu.com')).toBe(true);
