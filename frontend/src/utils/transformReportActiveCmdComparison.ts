@@ -4,11 +4,7 @@ import {
   formatCmdComparisonCandidateText,
   type CmdComparisonCandidateInput,
 } from './transformReportCmdComparison';
-import type {
-  TransformContextReport,
-  TransformReportRecord,
-  TransformReportView,
-} from './transformSummary';
+import type { TransformContextReport, TransformReportRecord, TransformReportView } from './transformSummary';
 
 interface ActiveCmdComparisonSources {
   report: TransformContextReport | null;
@@ -56,9 +52,9 @@ const resolveActiveCmdComparisonRecord = (state: ActiveCmdComparisonState): Tran
 
 export const buildActiveCmdComparisonReportText = (state: ActiveCmdComparisonState): string => {
   const record = resolveActiveCmdComparisonRecord(state);
-  if (!record) return '';
-
-  return buildCmdComparisonReportText(record, state.expectedText, state.ignoreExtraPaths, state.actualCandidate);
+  return record
+    ? buildCmdComparisonReportText(record, state.expectedText, state.ignoreExtraPaths, state.actualCandidate)
+    : '';
 };
 
 export const buildActiveCmdComparisonCandidateText = (state: ActiveCmdComparisonState): string => {
