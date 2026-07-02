@@ -146,6 +146,14 @@ describe('useAppToolPanelCommands', () => {
     );
   });
 
+  it('关闭 changelog 时只收起更新日志弹窗', () => {
+    const { commands } = useToolPanelCommandsFixture();
+
+    commands.handleCloseChangelog();
+
+    expect(stateSetters.isChangelogModalOpen).toHaveBeenCalledWith(false);
+  });
+
   it('关闭 JSONPath 面板时同步清理高亮', () => {
     const { commands, onSetHighlightRange } = useToolPanelCommandsFixture();
 
