@@ -23,27 +23,17 @@ export interface SchemeRawParamOptions {
   isJsonValue: (value: string) => boolean;
 }
 
-export const getSingleRawStructuredParam = (
+interface SingleRawParamParts {
+  source: string;
+  rawKey: string;
+  key: string;
+  rawValue: string;
+}
+
+const getSingleRawParamParts = (
   queryString: string,
   options: SchemeRawParamOptions
-): SingleRawStructuredParam | null => {
-  const source = normalizeQueryString(stripQueryPrefix(queryString));
-  if (!QUERY_PAIR_DELIMITER_RE.test(source)) return null;
-
-  const equalIndex = source.indexOf('=');
-  if (equalIndex <= 0) return null;
-
-  const key = options.decodeKey(source.slice(0, equalIndex));
-  if (!key || !options.isKnownParamName(key)) return null;
-
-  const value = options.decodeValue(source.slice(equalIndex + 1));
-  return options.isJsonValue(value) ? { key, value } : null;
-};
-
-export const getSingleRawUrlParam = (
-  queryString: string,
-  options: SchemeRawParamOptions
-): SingleRawUrlParam | null => {
+): SingleRawParamParts | null => {
   const source = normalizeQueryString(stripQueryPrefix(queryString));
 
   const equalIndex = source.indexOf('=');
@@ -53,9 +43,34 @@ export const getSingleRawUrlParam = (
   const key = options.decodeKey(rawKey);
   if (!key || !options.isKnownParamName(key)) return null;
 
-  const rawValue = source.slice(equalIndex + 1);
-  if (!options.isUrlValue(rawValue)) return null;
+  return {
+    source,
+    rawKey,
+    key,
+    rawValue: source.slice(equalIndex + 1),
+  };
+};
 
-  const value = options.decodeValue(rawValue);
-  return options.isUrlValue(value) ? { rawKey, key, value } : null;
+export const getSingleRawStructuredParam = (
+  queryString: string,
+  options: SchemeRawParamOptions
+): SingleRawStructuredParam | null => {
+  const parts = getSingleRawParamParts(queryString, options);
+  if (!parts || !QUERY_PAIR_DELIMITER_RE.test(parts.source)) return null;
+
+  const value = options.decodeValue(parts.rawValue);
+  return options.isJsonValue(value) ? { key: parts.key, value } : null;
+};
+
+export const getSingleRawUrlParam = (
+  queryString: string,
+  options: SchemeRawParamOptions
+): SingleRawUrlParam | null => {
+  const parts = getSingleRawParamParts(queryString, options);
+  if (!parts) return null;
+
+  if (!options.isUrlValue(parts.rawValue)) return null;
+
+  const value = options.decodeValue(parts.rawValue);
+  return options.isUrlValue(value) ? { rawKey: parts.rawKey, key: parts.key, value } : null;
 };
