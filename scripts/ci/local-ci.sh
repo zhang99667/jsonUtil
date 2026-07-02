@@ -5,130 +5,40 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-log() {
-  printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$1"
-}
+# shellcheck source=scripts/ci/local-ci-lib.sh
+source "$ROOT_DIR/scripts/ci/local-ci-lib.sh"
 
-use_project_java_home() {
-  if [[ -n "${JAVA_HOME:-}" ]]; then
-    log "Backend: using preset JAVA_HOME=$JAVA_HOME"
-    return
-  fi
-
-  if [[ "$(uname -s)" == "Darwin" ]] && command -v /usr/libexec/java_home >/dev/null 2>&1; then
-    local java_home
-    if java_home="$(/usr/libexec/java_home -v 17 2>/dev/null)"; then
-      export JAVA_HOME="$java_home"
-      export PATH="$JAVA_HOME/bin:$PATH"
-      log "Backend: selected Java 17 at $JAVA_HOME"
-    fi
-  fi
-}
-
-log "Frontend: install dependencies"
-cd "$ROOT_DIR/frontend"
-npm ci
-
-log "Governance: version consistency"
-cd "$ROOT_DIR"
-node scripts/ci/check-version-consistency.mjs
-
-log "Frontend: typecheck"
-cd "$ROOT_DIR/frontend"
-npm run typecheck
-
-log "Frontend: lint"
-npm run lint
-
-log "Frontend: dependency security audit"
-npm run audit:security
-
-log "Frontend: unit tests"
-npm test
-
-log "Governance: Node script unit tests"
-cd "$ROOT_DIR"
-node --test scripts/ci/*.test.mjs
-
-log "Governance: chunk load recovery catch audit"
-node scripts/ci/check-chunk-load-recovery-catches.mjs
-
-log "Frontend: scheme corpus baseline"
-cd "$ROOT_DIR/frontend"
-npm run corpus:scheme
-
-log "Frontend: scheme corpus quality snapshot"
-npm run corpus:snapshot:check
-
-log "Frontend: scheme performance budget"
-npm run perf:scheme -- --iterations 3 --strict
-
-log "Frontend: JSONPath performance budget"
-npm run perf:jsonpath -- --iterations 3 --strict
-
-log "Frontend: production build"
-npm run build
-
-log "Frontend: preload boundary check"
-npm run check:preloads
-
-log "Governance: frontend static asset retention"
-cd "$ROOT_DIR"
-node scripts/ci/check-frontend-static-retention.mjs
-
-log "Governance: deploy shell syntax"
-node scripts/ci/check-deploy-shell-syntax.mjs
-
-log "Frontend: browser Worker E2E performance budget"
-cd "$ROOT_DIR/frontend"
-PLAYWRIGHT_PREBUILT=1 npm run perf:e2e
-
-log "Frontend: E2E smoke tests"
-PLAYWRIGHT_PREBUILT=1 npm run test:e2e
-
-log "Governance: backend API matrix"
-cd "$ROOT_DIR"
-node scripts/ci/check-backend-api-matrix.mjs
-
-log "Governance: AI playbook and skill links"
-node scripts/ci/check-ai-governance.mjs
-
-log "Governance: maintainability budgets"
-node scripts/ci/check-maintainability-budgets.mjs
+run_in_frontend "Frontend: install dependencies" npm ci
+run_in_root "Governance: version consistency" node scripts/ci/check-version-consistency.mjs
+run_in_frontend "Frontend: typecheck" npm run typecheck
+run_in_frontend "Frontend: lint" npm run lint
+run_in_frontend "Frontend: dependency security audit" env npm_config_registry=https://registry.npmjs.org npm run audit:security
+run_in_frontend "Frontend: unit tests" npm test
+run_in_root "Governance: Node script unit tests" node --test scripts/ci/*.test.mjs
+run_in_root "Governance: chunk load recovery catch audit" node scripts/ci/check-chunk-load-recovery-catches.mjs
+run_in_frontend "Frontend: scheme corpus baseline" npm run corpus:scheme
+run_in_frontend "Frontend: scheme corpus quality snapshot" npm run corpus:snapshot:check
+run_in_frontend "Frontend: scheme performance budget" npm run perf:scheme -- --iterations 3 --strict
+run_in_frontend "Frontend: JSONPath performance budget" npm run perf:jsonpath -- --iterations 3 --strict
+run_in_frontend "Frontend: production build" npm run build
+run_in_frontend "Frontend: preload boundary check" npm run check:preloads
+run_in_root "Governance: frontend static asset retention" node scripts/ci/check-frontend-static-retention.mjs
+run_in_root "Governance: deploy shell syntax" node scripts/ci/check-deploy-shell-syntax.mjs
+run_in_frontend "Frontend: browser Worker E2E performance budget" env PLAYWRIGHT_PREBUILT=1 npm run perf:e2e
+run_in_frontend "Frontend: E2E smoke tests" env PLAYWRIGHT_PREBUILT=1 npm run test:e2e
+run_in_root "Governance: backend API matrix" node scripts/ci/check-backend-api-matrix.mjs
+run_in_root "Governance: AI playbook and skill links" node scripts/ci/check-ai-governance.mjs
+run_in_root "Governance: maintainability budgets" node scripts/ci/check-maintainability-budgets.mjs
 
 use_project_java_home
 
-log "Backend: Maven test"
-cd "$ROOT_DIR/backend"
-if command -v mvn >/dev/null 2>&1; then
-  mvn -B test
-else
-  log "Backend: local mvn not found, using Maven Docker image"
-  docker run --rm \
-    -v "$ROOT_DIR/backend:/workspace" \
-    -v "$HOME/.m2:/root/.m2" \
-    -w /workspace \
-    maven:3.9-eclipse-temurin-17 \
-    mvn -B test
-fi
+run_backend_maven "Backend: Maven test" test
+run_backend_maven "Backend: Maven package" package -DskipTests
 
-log "Backend: Maven package"
-if command -v mvn >/dev/null 2>&1; then
-  mvn -B package -DskipTests
-else
-  docker run --rm \
-    -v "$ROOT_DIR/backend:/workspace" \
-    -v "$HOME/.m2:/root/.m2" \
-    -w /workspace \
-    maven:3.9-eclipse-temurin-17 \
-    mvn -B package -DskipTests
-fi
-
-log "Docker: compose config"
-cd "$ROOT_DIR"
-POSTGRES_PASSWORD=ci-postgres-password \
-SPRING_DATASOURCE_PASSWORD=ci-postgres-password \
-JWT_SECRET=ci-jwt-secret-for-compose-validation \
-docker compose -f docker-compose.yml config
+run_in_root "Docker: compose config" env \
+  POSTGRES_PASSWORD=ci-postgres-password \
+  SPRING_DATASOURCE_PASSWORD=ci-postgres-password \
+  JWT_SECRET=ci-jwt-secret-for-compose-validation \
+  docker compose -f docker-compose.yml config
 
 log "Local CI finished"

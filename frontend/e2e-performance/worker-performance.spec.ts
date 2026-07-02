@@ -95,6 +95,10 @@ const fillSourceEditor = async (page: Page, value: string) => {
   await fillMonacoEditor(page, sourceEditor, value);
 };
 
+const expectSchemeDecodeComplete = async (page: Page) => {
+  await expect(page.locator('[data-tour="scheme-decode-status"]')).toHaveText(/层解码|无需解码/, { timeout: 20_000 });
+};
+
 const installHangingWorker = async (page: Page, terminateCounterName: string) => {
   await page.evaluate((counterName) => {
     Object.defineProperty(window, counterName, {
@@ -247,9 +251,10 @@ test('Scheme Worker 连续大 response 解析进入预算', async ({ page }) => 
 
   const startedAt = performance.now();
   await input.fill(firstResponse);
-  await expect(page.locator('[data-tour="scheme-command-summary"]')).toContainText('CMD 结构', { timeout: 20_000 });
+  await expectSchemeDecodeComplete(page);
+  await expect(page.locator('[data-tour="scheme-diagnostics-panel"]')).toContainText('CMD · 1', { timeout: 20_000 });
   await input.fill(secondResponse);
-  await expect(page.locator('[data-tour="scheme-decode-status"]')).toHaveText(/层解码|无需解码/, { timeout: 20_000 });
+  await expectSchemeDecodeComplete(page);
   await page.locator('[data-tour="scheme-copy-decoded"]').click();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || ''))
     .toContain('perf-second');
@@ -279,7 +284,7 @@ test('已加载面板关闭后切换大输入进入预算', async ({ page }) => 
   await page.getByRole('button', { name: '关闭 JSON 结构导航' }).click();
   await expect(page.locator('[data-tour="structure-nav-panel"]')).toBeHidden();
 
-  await page.getByRole('button', { name: '嵌套解析' }).click();
+  await page.locator('[data-tour="deep-format-btn"]').click();
   await expect(page.locator('[data-tour="transform-report-button"]')).toBeVisible({ timeout: 20_000 });
   await page.locator('[data-tour="transform-report-button"]').click();
   await expect(page.locator('[data-tour="transform-report-panel"]')).toBeVisible();

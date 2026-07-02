@@ -39,6 +39,7 @@ interface Window {
 }
 
 interface ImportMetaEnv {
+    readonly DEV?: boolean;
     readonly PROD?: boolean;
     readonly VITE_APP_VERSION?: string;
     readonly VITE_APP_CHANGELOG?: string;

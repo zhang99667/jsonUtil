@@ -1,7 +1,8 @@
 export const infraDeployRuntimeMaintainabilityBudgets = [
   { file: '.github/scripts/docker-build-with-retry.sh', maxLines: 40, reason: 'Docker 构建重试脚本应保持单一职责' },
   { file: 'frontend/docker-entrypoint.d/40-sync-static-assets.sh', maxLines: 45, reason: '前端静态资源入口脚本应只负责产物同步和旧资源清理' },
-  { file: 'scripts/ci/local-ci.sh', maxLines: 150, reason: '本地 CI 入口应只串联关键门禁，继续增长时拆分阶段脚本' },
+  { file: 'scripts/ci/local-ci-lib.sh', maxLines: 70, reason: '本地 CI helper 应只承载日志、目录切换和 Maven fallback 机制' },
+  { file: 'scripts/ci/local-ci.sh', maxLines: 90, reason: '本地 CI 入口应只串联关键门禁，继续增长时拆分阶段脚本' },
   { file: 'scripts/deploy/frontend-legacy-assets.sh', maxLines: 100, reason: '前端旧 assets 迁移 helper 应只负责备份、回填和临时目录清理' },
   { file: 'scripts/deploy/remote-docker-compose-deploy.sh', maxLines: 180, reason: '远端 Compose 部署脚本应只负责配置校验、构建启动和健康检查' },
   { file: 'scripts/deploy/ssh-disk-health.sh', maxLines: 190, reason: '磁盘巡检脚本应聚焦空间诊断和清理建议' },
