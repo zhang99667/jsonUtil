@@ -2,6 +2,7 @@ const actionPanelBudget = (file, maxLines, reason) => ({ file, maxLines, reason 
 
 export const appActionPanelMaintainabilityBudgets = [
   actionPanelBudget('frontend/src/components/ActionPanel.tsx', 200, '主工具栏应只负责交互装配、引导触发和状态汇总，顶部栏、工具组、面板组、滚动条、图标和低频入口继续拆到独立模块'),
+  actionPanelBudget('frontend/src/components/ActionPanelSettingsButton.tsx', 35, '工具栏设置入口按钮应只负责按钮壳、可访问标题、图标和折叠态文案'),
   actionPanelBudget('frontend/src/components/ActionPanelHeader.tsx', 55, '工具栏顶部栏应只维护标题、折叠按钮和可访问语义'),
   actionPanelBudget('frontend/src/components/ActionPanelSectionTitle.tsx', 30, '工具栏分组标题应只维护折叠态空渲染和首组间距'),
   actionPanelBudget('frontend/src/components/ActionPanelToolGroups.tsx', 60, '工具栏转换工具分组应只负责配置遍历、图标装配和模式切换透传'),
