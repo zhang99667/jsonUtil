@@ -221,7 +221,7 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="app-button app-button--primary px-3 py-1.5 text-xs"
+            className="app-button changelog-modal__confirm-button px-3 py-1.5 text-xs"
           >
             知道了
           </button>
