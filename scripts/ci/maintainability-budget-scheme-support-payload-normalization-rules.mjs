@@ -11,7 +11,7 @@ export const schemeSupportPayloadNormalizationMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/utils/schemeStructuredPayloadNormalization.ts',
-    maxLines: 90,
-    reason: 'Scheme 结构化载荷归一化顺序应集中维护，避免 detect/actionable/decode 主流程重复分支',
+    maxLines: 80,
+    reason: 'Scheme 结构化载荷归一化规则表应集中维护顺序，避免 detect/actionable/decode 主流程重复分支',
   },
 ];

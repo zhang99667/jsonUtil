@@ -22,55 +22,48 @@ export interface SchemeStructuredPayloadNormalization {
   layer?: SchemeStructuredPayloadDecodeLayerMeta;
 }
 
+interface SchemeStructuredPayloadNormalizationRule {
+  source: SchemeStructuredPayloadNormalizationSource;
+  normalize: (value: string, options: SchemeStructuredPayloadNormalizationOptions) => string | null;
+  layer?: SchemeStructuredPayloadDecodeLayerMeta;
+  quotePayload?: boolean;
+}
+
+const structuredPayloadNormalizationRules: SchemeStructuredPayloadNormalizationRule[] = [
+  {
+    source: 'json-string',
+    normalize: (value, options) => options.tryParseJsonStringPayload?.(value) ?? null,
+    layer: { type: 'json', description: 'JSON 字符串字面量解析' },
+  },
+  {
+    source: 'json-escaped-slash',
+    normalize: (value, options) => tryNormalizeJsonEscapedSlashPayload(value, options.looksLikeStructuredPayload),
+    layer: { type: 'json-escaped-slash', description: 'JSON 斜杠转义还原' },
+  },
+  {
+    source: 'json-unicode-ascii',
+    normalize: (value, options) => tryNormalizeJsonUnicodeAsciiPayload(value, options.looksLikeStructuredPayload),
+    layer: { type: 'json-unicode-ascii', description: 'JSON Unicode ASCII 转义还原', reversible: false },
+  },
+  { source: 'json-escaped-quote', normalize: tryNormalizeJsonEscapedQuotePayload, quotePayload: true },
+  { source: 'html-json-quote', normalize: tryNormalizeHtmlJsonQuotePayload, quotePayload: true },
+];
+
 export const getFirstSchemeStructuredPayloadNormalization = (
   value: string,
   options: SchemeStructuredPayloadNormalizationOptions
 ): SchemeStructuredPayloadNormalization | null => {
   const trimmed = value.trim();
-  const jsonStringPayload = options.tryParseJsonStringPayload?.(trimmed) ?? null;
-  if (jsonStringPayload !== null) {
-    return {
-      source: 'json-string',
-      value: jsonStringPayload,
-      layer: {
-        type: 'json',
-        description: 'JSON 字符串字面量解析',
-      },
-    };
+  for (const rule of structuredPayloadNormalizationRules) {
+    if (rule.quotePayload && options.includeQuotePayloads === false) continue;
+
+    const normalized = rule.normalize(trimmed, options);
+    if (normalized !== null) {
+      return rule.layer
+        ? { source: rule.source, value: normalized, layer: rule.layer }
+        : { source: rule.source, value: normalized };
+    }
   }
-
-  const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(trimmed, options.looksLikeStructuredPayload);
-  if (escapedSlashPayload !== null) {
-    return {
-      source: 'json-escaped-slash',
-      value: escapedSlashPayload,
-      layer: {
-        type: 'json-escaped-slash',
-        description: 'JSON 斜杠转义还原',
-      },
-    };
-  }
-
-  const unicodeAsciiPayload = tryNormalizeJsonUnicodeAsciiPayload(trimmed, options.looksLikeStructuredPayload);
-  if (unicodeAsciiPayload !== null) {
-    return {
-      source: 'json-unicode-ascii',
-      value: unicodeAsciiPayload,
-      layer: {
-        type: 'json-unicode-ascii',
-        description: 'JSON Unicode ASCII 转义还原',
-        reversible: false,
-      },
-    };
-  }
-
-  if (options.includeQuotePayloads === false) return null;
-
-  const escapedQuotePayload = tryNormalizeJsonEscapedQuotePayload(trimmed);
-  if (escapedQuotePayload !== null) return { source: 'json-escaped-quote', value: escapedQuotePayload };
-
-  const htmlJsonPayload = tryNormalizeHtmlJsonQuotePayload(trimmed);
-  if (htmlJsonPayload !== null) return { source: 'html-json-quote', value: htmlJsonPayload };
 
   return null;
 };
