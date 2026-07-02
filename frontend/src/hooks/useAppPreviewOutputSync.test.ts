@@ -4,7 +4,7 @@ import {
   invalidResult,
   previewSyncMocks,
   resetPreviewOutputSyncTestFixture,
-  resolveAppPreviewOutputSourceMock,
+  executeAppPreviewOutputSyncMock,
   useHookInput,
 } from './useAppPreviewOutputSyncTestFixture';
 
@@ -24,12 +24,12 @@ describe('useAppPreviewOutputSync', () => {
 
     await vi.advanceTimersByTimeAsync(400);
 
-    expect(result.validateJsonMaybeAsync).toHaveBeenCalledWith('{"a":2}');
-    expect(resolveAppPreviewOutputSourceMock).toHaveBeenCalledWith({
+    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledWith({
       previewText: '{"a":2}',
       mode: TransformMode.FORMAT,
       originalInput: '{"a":1}',
       context: null,
+      validateJsonMaybeAsync: result.validateJsonMaybeAsync,
     });
     expect(result.onSetInput).toHaveBeenCalledWith('next-source');
     expect(result.inputRef.current).toBe('next-source');
@@ -44,6 +44,10 @@ describe('useAppPreviewOutputSync', () => {
 
   it('格式化类 PREVIEW 校验失败时不覆盖 SOURCE', async () => {
     const result = useHookInput(vi.fn(async () => invalidResult));
+    vi.mocked(executeAppPreviewOutputSyncMock).mockResolvedValueOnce({
+      status: 'invalid',
+      validation: invalidResult,
+    });
 
     result.handleOutputChange('{bad');
     await vi.advanceTimersByTimeAsync(400);
@@ -62,8 +66,8 @@ describe('useAppPreviewOutputSync', () => {
     result.handleOutputChange('{"a":3}');
     await vi.advanceTimersByTimeAsync(400);
 
-    expect(resolveAppPreviewOutputSourceMock).toHaveBeenCalledTimes(1);
-    expect(resolveAppPreviewOutputSourceMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledTimes(1);
+    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledWith(expect.objectContaining({
       previewText: '{"a":3}',
     }));
     expect(result.onSetInput).toHaveBeenCalledTimes(1);

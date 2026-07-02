@@ -6,10 +6,7 @@ import {
   type ValidationResult,
 } from '../types';
 import { ASYNC_VALIDATION_THRESHOLD } from '../utils/appAsyncPolicy';
-import {
-  resolveAppPreviewOutputSource,
-  shouldValidatePreviewOutputBeforeSync,
-} from '../utils/appPreviewOutputSync';
+import { executeAppPreviewOutputSync } from '../utils/appPreviewOutputSyncRunner';
 import {
   cleanJsonInput,
   validateJsonForEditor,
@@ -98,27 +95,25 @@ export const useAppPreviewOutputSync = ({
       outputChangeTimer.current = null;
 
       const syncOutputToSource = async () => {
-        if (shouldValidatePreviewOutputBeforeSync(mode)) {
-          const validation = await validateJsonMaybeAsync(previewText);
-          if (outputSyncRequestId !== outputSyncRequestIdRef.current) return;
-          if (!validation.isValid) {
-            setPreviewValidation(validation);
-            isUpdatingFromOutput.current = false;
-            pendingOutputValue.current = '';
-            return;
-          }
-        }
-
-        if (outputSyncRequestId !== outputSyncRequestIdRef.current) return;
-
         const currentFile = files.find(file => file.id === activeFileId);
-        const nextSource = resolveAppPreviewOutputSource({
+        const syncResult = await executeAppPreviewOutputSync({
           previewText,
           mode,
           originalInput: inputRef.current,
           context: currentFile?.transformContext || fallbackContextRef.current,
+          validateJsonMaybeAsync,
         });
 
+        if (outputSyncRequestId !== outputSyncRequestIdRef.current) return;
+
+        if (syncResult.status === 'invalid') {
+          setPreviewValidation(syncResult.validation);
+          isUpdatingFromOutput.current = false;
+          pendingOutputValue.current = '';
+          return;
+        }
+
+        const nextSource = syncResult.nextSource;
         onSetInput(nextSource);
         inputRef.current = nextSource;
         onUpdateActiveFileContent(nextSource);

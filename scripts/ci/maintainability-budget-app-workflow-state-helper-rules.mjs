@@ -10,6 +10,8 @@ export const appWorkflowStateHelperMaintainabilityBudgets = [
   { file: 'frontend/src/hooks/useAppPreviewOutputSyncTestFixture.ts', maxLines: 100, reason: 'PREVIEW 反向同步 hook 测试 fixture 只集中 React mock、校验 mock 和默认 hook 输入构建' },
   { file: 'frontend/src/utils/appPreviewOutputSync.ts', maxLines: 50, reason: 'PREVIEW 反向同步纯 helper 只维护校验模式判断和 source 还原选择' },
   { file: 'frontend/src/utils/appPreviewOutputSync.test.ts', maxLines: 70, reason: 'PREVIEW 反向同步 helper 测试只锁定校验模式、context 回写和无 context fallback' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncRunner.ts', maxLines: 70, reason: 'PREVIEW 反向同步 runner 只维护同步前校验和 source 回写结果，不持有 React 状态' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncRunner.test.ts', maxLines: 80, reason: 'PREVIEW 反向同步 runner 测试只锁定 invalid、synced 和非格式化跳过校验路径' },
   { file: 'frontend/src/hooks/useAppLazyPanelLoadState.ts', maxLines: 60, reason: '懒加载面板 loaded hook 只装配 open 状态、粘性合并和依赖列表' },
   { file: 'frontend/src/hooks/useAppLazyPanelLoadState.test.ts', maxLines: 90, reason: '懒加载面板 loaded hook 测试只锁定默认初始化、打开后加载和关闭后粘性保留' },
 ];
