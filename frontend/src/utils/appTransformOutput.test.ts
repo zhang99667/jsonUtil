@@ -74,6 +74,22 @@ describe('appTransformOutput', () => {
     expect(state.shouldClearPendingOutput).toBe(false);
   });
 
+  it('PREVIEW 被删空时保留空草稿而不是恢复派生输出', () => {
+    const state = buildAppTransformOutputState({
+      input: '{"a":1}',
+      mode: TransformMode.FORMAT,
+      autoExpandScheme: false,
+      shouldUseAsyncTransform: false,
+      currentAsyncTransformResult: null,
+      isUpdatingFromOutput: true,
+      pendingOutputValue: '',
+    });
+
+    expect(performTransform).not.toHaveBeenCalled();
+    expect(state.output).toBe('');
+    expect(state.shouldClearPendingOutput).toBe(false);
+  });
+
   it('异步深度格式化结果带 context 时优先作为 active deep result', () => {
     const context = createContext();
     const currentAsyncTransformResult: AppAsyncTransformResult = {

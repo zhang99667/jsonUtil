@@ -86,7 +86,7 @@ export const resolveAppOutputValue = ({
   currentAsyncTransformResult,
   getFallbackOutput,
 }: AppOutputResolutionInput): AppOutputResolution => {
-  if (isUpdatingFromOutput && pendingOutputValue) {
+  if (isUpdatingFromOutput) {
     return {
       output: pendingOutputValue,
       shouldClearPendingOutput: false,

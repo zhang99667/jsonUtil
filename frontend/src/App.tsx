@@ -238,7 +238,7 @@ const App: React.FC = () => {
     aiRepairSummary,
     handleApplyAiRepairResult,
     handleCloseAiRepairSummary,
-    handleInputChange,
+    handleInputChange: handleRawInputChange,
   } = useAppSourceInputCommands({
     sourceText: input,
     mode,
@@ -248,6 +248,20 @@ const App: React.FC = () => {
     onSetSmartSuggestionOrigin: setSmartSuggestionOrigin,
     onUpdateActiveFileContent: updateActiveFileContent,
   });
+  const cancelPreviewDraft = useCallback(() => {
+    isUpdatingFromOutput.current = false;
+    pendingOutputValue.current = '';
+  }, []);
+  const handleInputChange = useCallback((nextValue: string) => {
+    cancelPreviewDraft();
+    handleRawInputChange(nextValue);
+  }, [cancelPreviewDraft, handleRawInputChange]);
+  const lastPreviewDraftFileIdRef = useRef(activeFileId);
+  useEffect(() => {
+    if (lastPreviewDraftFileIdRef.current === activeFileId) return;
+    lastPreviewDraftFileIdRef.current = activeFileId;
+    cancelPreviewDraft();
+  }, [activeFileId, cancelPreviewDraft]);
 
   // 光标位置状态（用于状态栏显示）
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
@@ -369,9 +383,10 @@ const App: React.FC = () => {
   });
 
   const handleModeChange = useCallback((nextMode: TransformMode) => {
+    cancelPreviewDraft();
     setMode(nextMode);
     trackCurrentToolEvent(nextMode, 'transform_mode');
-  }, [setMode, trackCurrentToolEvent]);
+  }, [cancelPreviewDraft, setMode, trackCurrentToolEvent]);
 
   const handleToggleAutoSave = useCallback(() => {
     const plan = buildAppAutoSaveTogglePlan({

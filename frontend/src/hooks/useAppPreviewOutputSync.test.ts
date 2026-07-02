@@ -45,10 +45,7 @@ describe('useAppPreviewOutputSync', () => {
 
   it('格式化类 PREVIEW 校验失败时不覆盖 SOURCE', async () => {
     const result = useHookInput(vi.fn(async () => invalidResult));
-    vi.mocked(executeAppPreviewOutputSyncMock).mockResolvedValueOnce({
-      status: 'invalid',
-      validation: invalidResult,
-    });
+    vi.mocked(executeAppPreviewOutputSyncMock).mockResolvedValueOnce({ status: 'invalid', validation: invalidResult });
 
     result.handleOutputChange('{bad');
     await vi.advanceTimersByTimeAsync(400);
@@ -56,8 +53,21 @@ describe('useAppPreviewOutputSync', () => {
     expect(previewSyncMocks.setPreviewValidation).toHaveBeenCalledWith(invalidResult);
     expect(result.onSetInput).not.toHaveBeenCalled();
     expect(result.onUpdateActiveFileContent).not.toHaveBeenCalled();
+    expect(result.pendingOutputValue.current).toBe('{bad');
+    expect(result.isUpdatingFromOutput.current).toBe(true);
+  });
+
+  it('PREVIEW 删空后同步失败时保留空草稿', async () => {
+    const result = useHookInput(vi.fn(async () => invalidResult));
+    vi.mocked(executeAppPreviewOutputSyncMock).mockResolvedValueOnce({ status: 'invalid', validation: invalidResult });
+
+    result.handleOutputChange('');
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(previewSyncMocks.setPreviewValidation).toHaveBeenCalledWith(invalidResult);
+    expect(result.onSetInput).not.toHaveBeenCalled();
     expect(result.pendingOutputValue.current).toBe('');
-    expect(result.isUpdatingFromOutput.current).toBe(false);
+    expect(result.isUpdatingFromOutput.current).toBe(true);
   });
 
   it('连续编辑时只同步最后一次 PREVIEW 内容', async () => {
