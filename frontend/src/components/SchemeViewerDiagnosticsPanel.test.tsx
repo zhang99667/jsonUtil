@@ -18,8 +18,8 @@ import { SchemeViewerDiagnosticsSummaryBar } from './SchemeViewerDiagnosticsSumm
 import { SchemeViewerParamSectionsPanel } from './SchemeViewerParamSectionsPanel';
 import { SchemeViewerParamStagesPanel } from './SchemeViewerParamStagesPanel';
 import { SchemeViewerRuntimePlaceholdersPanel } from './SchemeViewerRuntimePlaceholdersPanel';
+import { SchemeViewerSchemeInfoRow } from './SchemeViewerSchemeInfoRow';
 import {
-  collectText,
   findByTour,
   findByTypeOrNull,
 } from './schemeViewerElementTestHelpers';
@@ -161,7 +161,11 @@ describe('SchemeViewerDiagnosticsPanel', () => {
       onCopyQualitySnapshot,
     });
     expect(warningsPanel?.props.decodeWarnings).toBe(decodeWarnings);
-    expect(collectText(tree)).toContain('Scheme:');
+    expect(findByTypeOrNull(tree, SchemeViewerSchemeInfoRow)?.props.schemeInfo).toMatchObject({
+      protocol: 'baiduboxapp:',
+      host: 'v7',
+      path: '/vendor/ad/prerender',
+    });
   });
 
   it('透传各个诊断子面板的数据', () => {
