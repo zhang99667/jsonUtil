@@ -1,32 +1,17 @@
-import type { TransformWarning } from '../types';
 import type { AppVersionMetadata } from './appVersion';
+import type { TransformIssueSampleExportItem } from './transformSummaryIssueSampleItemTypes';
 import type { TransformIssueSampleExportSummary } from './transformSummaryIssueSampleSummaryTypes';
 import type { TransformSuggestedCommand } from './transformSuggestedCommands';
+
+export type {
+  TransformIssueSampleExportItem,
+  TransformIssueSampleType,
+} from './transformSummaryIssueSampleItemTypes';
 
 export type {
   TransformIssueSampleExportSummary,
   TransformIssueSampleExportSummaryBucket,
 } from './transformSummaryIssueSampleSummaryTypes';
-
-export type TransformIssueSampleType = 'unresolved' | 'runtime_placeholder' | 'warning';
-
-export interface TransformIssueSampleExportItem {
-  type: TransformIssueSampleType;
-  path: string;
-  sourceLabel?: string;
-  originalValue: string;
-  redactionHint?: string;
-  reasonLabel: string;
-  nextAction?: string;
-  message?: string;
-  detectedType?: string;
-  reasonLevel?: 'info' | 'warning';
-  length?: number;
-  limit?: number;
-  value?: string;
-  sourcePath?: string;
-  warningType?: TransformWarning['type'];
-}
 
 export interface TransformIssueSampleExport {
   schemaVersion: 1;
