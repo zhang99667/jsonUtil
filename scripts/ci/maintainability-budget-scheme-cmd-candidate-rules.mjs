@@ -1,6 +1,9 @@
 export const schemeCmdCandidateMaintainabilityBudgets = [
   { file: 'frontend/src/utils/cmdStructureCandidates.ts', maxLines: 65, reason: 'CMD actual 候选入口应只编排 raw CMD 解码和结构化候选扫描 helper' },
-  { file: 'frontend/src/utils/cmdStructureDecodedCandidates.ts', maxLines: 110, reason: 'CMD 已解码候选扫描应独立维护 actual 归一化、路径拼接和去重' },
+  { file: 'frontend/src/utils/cmdStructureDecodedCandidates.ts', maxLines: 85, reason: 'CMD 已解码候选扫描应只维护递归遍历和候选 append 去重' },
+  { file: 'frontend/src/utils/cmdStructureCandidateTypes.ts', maxLines: 25, reason: 'CMD 候选类型契约应独立维护，避免扫描和入口 helper 因类型声明回涨' },
+  { file: 'frontend/src/utils/cmdStructureCandidateActual.ts', maxLines: 45, reason: 'CMD actual 归一化应独立维护 cmdParams 必选和 schema/source 字符串过滤' },
+  { file: 'frontend/src/utils/cmdStructureCandidatePath.ts', maxLines: 20, reason: 'CMD 候选路径拼接应独立维护普通 key、特殊 key 和数组路径格式' },
   { file: 'frontend/src/utils/cmdStructureRawSource.ts', maxLines: 120, reason: '原始 response 中的 CMD 候选扫描与排序选择应保持短小，避免快速解码流程回流' },
   { file: 'frontend/src/utils/cmdStructureRawSourceDecoder.ts', maxLines: 150, reason: '原始 CMD 快速结构化解码应聚焦 source/URL 递归流程，JSON 值处理和 query 聚合继续沉淀到独立 helper' },
   { file: 'frontend/src/utils/cmdStructureRawQueryParams.ts', maxLines: 60, reason: '原始 CMD query 参数解析应独立维护 URLSearchParams 遍历、重复 key 聚合和 value parser 透传' },

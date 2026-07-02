@@ -1,8 +1,8 @@
 import type { JsonValue } from '../types';
+import { toCmdStructureCandidateActual } from './cmdStructureCandidateActual';
+import type { CmdStructureCandidateInput } from './cmdStructureCandidateTypes';
 import {
   collectDecodedCmdStructureCandidates,
-  toCmdStructureCandidateActual,
-  type CmdStructureCandidateInput,
 } from './cmdStructureDecodedCandidates';
 import {
   collectRawCmdCandidates,
@@ -10,7 +10,7 @@ import {
 } from './cmdStructureRawSource';
 import type { RawCmdCandidate } from './cmdStructureRawSource';
 
-export type { CmdStructureCandidateInput } from './cmdStructureDecodedCandidates';
+export type { CmdStructureCandidateInput } from './cmdStructureCandidateTypes';
 
 export const collectActualCmdStructureCandidates = (value: JsonValue): CmdStructureCandidateInput[] => {
   const candidates: CmdStructureCandidateInput[] = [];
