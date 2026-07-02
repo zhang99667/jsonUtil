@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.300 (2026-07-02) - Issue Sample Item 类型分层
+### 🚀 优化与改进
+- **Item 类型拆分**: 将深度解析问题样本的单条 item 字段契约抽成独立类型文件，导出对象入口回归 export/options 与兼容 re-export 职责
+- **Artifact 预算收紧**: 为 Issue Sample item 类型补充独立预算，并把原问题样本导出入口预算降到轻量契约范围
+
 ## v1.8.299 (2026-07-02) - Schema 预算规则分层
 ### 🚀 优化与改进
 - **Schema 规则拆表**: 将深度解析 schema 维护预算拆成 command/origin 与 resource 两个子规则文件，原入口回归聚合职责
