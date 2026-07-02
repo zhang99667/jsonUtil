@@ -1,4 +1,8 @@
 import React from 'react';
+import {
+  AppResizeSeparator,
+  resizeHandleBaseClassName,
+} from './AppResizeSeparator';
 
 interface AppSidebarResizeHandleProps {
   isVisible: boolean;
@@ -31,17 +35,14 @@ export const AppSidebarResizeHandle: React.FC<AppSidebarResizeHandleProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div
-      data-tour="sidebar-resize-handle"
-      role="separator"
-      aria-label="调整工具栏宽度"
-      aria-orientation="vertical"
-      aria-valuemin={minWidth}
-      aria-valuemax={maxWidth}
-      aria-valuenow={Math.round(sidebarWidth)}
-      aria-valuetext={`工具栏宽度 ${Math.round(sidebarWidth)} 像素`}
-      tabIndex={0}
-      className={`absolute top-0 bottom-0 w-1 hover:bg-brand-primary focus-visible:bg-brand-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/70 cursor-col-resize z-20 transition-colors delay-100 ${isResizing ? 'bg-brand-primary' : 'bg-transparent'}`}
+    <AppResizeSeparator
+      tourId="sidebar-resize-handle"
+      ariaLabel="调整工具栏宽度"
+      valueMin={minWidth}
+      valueMax={maxWidth}
+      valueNow={Math.round(sidebarWidth)}
+      valueText={`工具栏宽度 ${Math.round(sidebarWidth)} 像素`}
+      className={`absolute top-0 bottom-0 w-1 ${resizeHandleBaseClassName} ${isResizing ? 'bg-brand-primary' : 'bg-transparent'}`}
       style={{ left: sidebarWidth - 2 }}
       onMouseDown={onMouseDown}
       onKeyDown={onKeyDown}
@@ -58,17 +59,14 @@ export const AppPaneResizeHandle: React.FC<AppPaneResizeHandleProps> = ({
   onMouseDown,
   onKeyDown,
 }) => (
-  <div
-    data-tour="editor-pane-resize-handle"
-    role="separator"
-    aria-label="调整 SOURCE 和 PREVIEW 宽度"
-    aria-orientation="vertical"
-    aria-valuemin={minPercent}
-    aria-valuemax={maxPercent}
-    aria-valuenow={Math.round(leftPaneWidthPercent)}
-    aria-valuetext={`SOURCE 宽度 ${Math.round(leftPaneWidthPercent)}%`}
-    tabIndex={0}
-    className={`w-1 hover:bg-brand-primary focus-visible:bg-brand-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/70 cursor-col-resize z-20 flex-shrink-0 transition-colors delay-100 ${isResizing ? 'bg-brand-primary' : 'bg-editor-sidebar'}`}
+  <AppResizeSeparator
+    tourId="editor-pane-resize-handle"
+    ariaLabel="调整 SOURCE 和 PREVIEW 宽度"
+    valueMin={minPercent}
+    valueMax={maxPercent}
+    valueNow={Math.round(leftPaneWidthPercent)}
+    valueText={`SOURCE 宽度 ${Math.round(leftPaneWidthPercent)}%`}
+    className={`w-1 flex-shrink-0 ${resizeHandleBaseClassName} ${isResizing ? 'bg-brand-primary' : 'bg-editor-sidebar'}`}
     onMouseDown={onMouseDown}
     onKeyDown={onKeyDown}
     title="拖拽或用方向键调整 SOURCE/PREVIEW 宽度"
