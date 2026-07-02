@@ -1,10 +1,7 @@
 import { vi } from 'vitest';
 import { TransformMode, type ValidationResult } from '../types';
 import { useAppPreviewOutputSync } from './useAppPreviewOutputSync';
-import {
-  resolveAppPreviewOutputSource,
-  shouldValidatePreviewOutputBeforeSync,
-} from '../utils/appPreviewOutputSync';
+import { executeAppPreviewOutputSync } from '../utils/appPreviewOutputSyncRunner';
 
 const mocks = vi.hoisted(() => ({
   setPreviewValidation: vi.fn(),
@@ -22,10 +19,12 @@ vi.mock('react', async importOriginal => ({
   useState: mocks.useState,
 }));
 
-vi.mock('../utils/appPreviewOutputSync', async importOriginal => ({
-  ...await importOriginal<typeof import('../utils/appPreviewOutputSync')>(),
-  resolveAppPreviewOutputSource: vi.fn(() => 'next-source'),
-  shouldValidatePreviewOutputBeforeSync: vi.fn(() => true),
+vi.mock('../utils/appPreviewOutputSyncRunner', async importOriginal => ({
+  ...await importOriginal<typeof import('../utils/appPreviewOutputSyncRunner')>(),
+  executeAppPreviewOutputSync: vi.fn(async () => ({
+    status: 'synced',
+    nextSource: 'next-source',
+  })),
 }));
 
 vi.mock('../utils/jsonValidation', async importOriginal => ({
@@ -37,7 +36,7 @@ vi.mock('../utils/jsonValidation', async importOriginal => ({
 export const validResult: ValidationResult = { isValid: true };
 export const invalidResult: ValidationResult = { isValid: false, error: 'preview invalid' };
 export const previewSyncMocks = mocks;
-export const resolveAppPreviewOutputSourceMock = resolveAppPreviewOutputSource;
+export const executeAppPreviewOutputSyncMock = executeAppPreviewOutputSync;
 
 export const resetPreviewOutputSyncTestFixture = () => {
   vi.useFakeTimers();
@@ -46,8 +45,10 @@ export const resetPreviewOutputSyncTestFixture = () => {
   mocks.useEffect.mockImplementation(() => undefined);
   mocks.useRef.mockImplementation((initialValue: unknown) => ({ current: initialValue }));
   mocks.useState.mockImplementation((initialValue: unknown) => [initialValue, mocks.setPreviewValidation]);
-  vi.mocked(resolveAppPreviewOutputSource).mockReturnValue('next-source');
-  vi.mocked(shouldValidatePreviewOutputBeforeSync).mockReturnValue(true);
+  vi.mocked(executeAppPreviewOutputSync).mockResolvedValue({
+    status: 'synced',
+    nextSource: 'next-source',
+  });
 };
 
 export const useHookInput = (validateJsonMaybeAsync = vi.fn(async () => validResult)) => {

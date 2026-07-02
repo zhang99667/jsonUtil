@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.319 (2026-07-02) - PREVIEW 回写 Runner 分层
+### 🚀 优化与改进
+- **回写 Runner 分层**: 将 PREVIEW 编辑防抖后的同步前校验和 SOURCE 回写结果生成拆到 `appPreviewOutputSyncRunner`
+- **Hook 职责收敛**: `useAppPreviewOutputSync` 保留编辑暂存、requestId 失效、防抖调度和延迟解锁，减少嵌套异步回写逻辑
+- **回写测试补强**: 新增 runner 单测覆盖非法 JSON 不覆盖 SOURCE、格式化回写和非格式化跳过校验路径，并同步维护预算
+
 ## v1.8.318 (2026-07-02) - 资源类型草稿状态分层
 ### 🚀 优化与改进
 - **资源类型草稿分层**: 将深度解析资源类型分组里的草稿状态、schema 去重和展示上限规则拆到 `transformReportResourceTypeGroupDraftState`
