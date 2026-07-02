@@ -160,32 +160,63 @@ const appendRepairRuleLabel = (
   label: string
 ): string[] => (shouldAppend ? [...ruleLabels, label] : ruleLabels);
 
+interface JsonStringScanState {
+  inString: boolean;
+  quote: string;
+  escaped: boolean;
+}
+
+const createJsonStringScanState = (): JsonStringScanState => ({
+  inString: false,
+  quote: '',
+  escaped: false,
+});
+
+const enterJsonStringIfQuote = (
+  state: JsonStringScanState,
+  char: string,
+  allowedQuotes: string
+): boolean => {
+  if (!allowedQuotes.includes(char)) return false;
+
+  state.inString = true;
+  state.quote = char;
+  state.escaped = false;
+  return true;
+};
+
+const advanceJsonStringScanState = (state: JsonStringScanState, char: string) => {
+  if (state.escaped) {
+    state.escaped = false;
+    return;
+  }
+
+  if (char === '\\') {
+    state.escaped = true;
+    return;
+  }
+
+  if (char === state.quote) {
+    state.inString = false;
+    state.quote = '';
+  }
+};
+
 const stripJsonComments = (source: string): string => {
   let output = '';
-  let inString = false;
-  let quote = '';
-  let escaped = false;
+  const stringState = createJsonStringScanState();
 
   for (let index = 0; index < source.length; index++) {
     const char = source[index];
     const next = source[index + 1];
 
-    if (inString) {
+    if (stringState.inString) {
       output += char;
-      if (escaped) {
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (char === quote) {
-        inString = false;
-        quote = '';
-      }
+      advanceJsonStringScanState(stringState, char);
       continue;
     }
 
-    if (char === '"' || char === "'") {
-      inString = true;
-      quote = char;
+    if (enterJsonStringIfQuote(stringState, char, '"\'')) {
       output += char;
       continue;
     }
@@ -214,29 +245,18 @@ const stripJsonComments = (source: string): string => {
 
 const removeTrailingCommas = (source: string): string => {
   let output = '';
-  let inString = false;
-  let quote = '';
-  let escaped = false;
+  const stringState = createJsonStringScanState();
 
   for (let index = 0; index < source.length; index++) {
     const char = source[index];
 
-    if (inString) {
+    if (stringState.inString) {
       output += char;
-      if (escaped) {
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (char === quote) {
-        inString = false;
-        quote = '';
-      }
+      advanceJsonStringScanState(stringState, char);
       continue;
     }
 
-    if (char === '"' || char === "'") {
-      inString = true;
-      quote = char;
+    if (enterJsonStringIfQuote(stringState, char, '"\'')) {
       output += char;
       continue;
     }
@@ -269,26 +289,18 @@ const convertSingleQuotedStrings = (source: string): string => (
 
 const quoteBareObjectKeys = (source: string): string => {
   let output = '';
-  let inString = false;
-  let escaped = false;
+  const stringState = createJsonStringScanState();
 
   for (let index = 0; index < source.length; index++) {
     const char = source[index];
 
-    if (inString) {
+    if (stringState.inString) {
       output += char;
-      if (escaped) {
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (char === '"') {
-        inString = false;
-      }
+      advanceJsonStringScanState(stringState, char);
       continue;
     }
 
-    if (char === '"') {
-      inString = true;
+    if (enterJsonStringIfQuote(stringState, char, '"')) {
       output += char;
       continue;
     }
@@ -320,35 +332,20 @@ const quoteBareObjectKeys = (source: string): string => {
 
 const escapeRawControlsInDoubleQuotedStrings = (source: string): string => {
   let output = '';
-  let inString = false;
-  let escaped = false;
+  const stringState = createJsonStringScanState();
 
   for (let index = 0; index < source.length; index++) {
     const char = source[index];
 
-    if (!inString) {
+    if (!stringState.inString) {
       output += char;
-      if (char === '"') {
-        inString = true;
-      }
+      enterJsonStringIfQuote(stringState, char, '"');
       continue;
     }
 
-    if (escaped) {
+    if (stringState.escaped || char === '\\' || char === '"') {
       output += char;
-      escaped = false;
-      continue;
-    }
-
-    if (char === '\\') {
-      output += char;
-      escaped = true;
-      continue;
-    }
-
-    if (char === '"') {
-      output += char;
-      inString = false;
+      advanceJsonStringScanState(stringState, char);
       continue;
     }
 

@@ -70,6 +70,26 @@ describe('fixJsonWithAI', () => {
     });
   });
 
+  it('本地修复不会移除字符串内的注释符和尾随逗号样式文本', () => {
+    expect(repairJsonLocally(
+      '{url:"https://example.com/a//b", block:"/* keep */", tail:",]", brace:",}", ok:true,}'
+    )).toBe(
+      '{"url":"https://example.com/a//b","block":"/* keep */","tail":",]","brace":",}","ok":true}'
+    );
+  });
+
+  it('本地修复不会被字符串内的转义引号和注释符提前截断', () => {
+    expect(repairJsonLocally(
+      '{text:"before \\"// still text\\" after", ok:true}'
+    )).toBe('{"text":"before \\"// still text\\" after","ok":true}');
+  });
+
+  it('本地修复不会给字符串内容里的裸 key 文本补引号', () => {
+    expect(repairJsonLocally(
+      '{text:"literal {bare:1, next:2}", ok:true}'
+    )).toBe('{"text":"literal {bare:1, next:2}","ok":true}');
+  });
+
   it('本地可修复时不会调用 AI 接口', async () => {
     const fetchImpl = vi.fn();
 
