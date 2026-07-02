@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.308 (2026-07-02) - Template Fill Command Runner 测试分层
+### 🚀 优化与改进
+- **Runner 测试分层**: 将 Template Fill Command runner 的成功路径和失败恢复路径拆成独立 spec，降低单测文件阅读负担
+- **断言 Helper**: 抽出 SOURCE 写回、质量 delta 和错误提示断言 helper，并同步收紧维护预算
+
 ## v1.8.307 (2026-07-02) - Preview 反向同步测试 Fixture 分层
 ### 🚀 优化与改进
 - **Hook 测试 Fixture**: 将 PREVIEW 反向同步 hook 测试中的 React mock、校验 mock 和默认 hook 输入构建抽成独立 fixture
