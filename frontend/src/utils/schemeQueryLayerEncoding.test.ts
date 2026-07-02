@@ -68,6 +68,39 @@ describe('schemeQueryLayerEncoding', () => {
     )).toBe('params: encoded({"a":2}),');
   });
 
+  it('回写单个 raw URL 参数时保留原始 URL 参数形态', () => {
+    const content = JSON.stringify({
+      url: {
+        sku: '202',
+        store: 'new',
+      },
+    });
+
+    expect(encodeQueryStringLayerContent(
+      content,
+      'url=https://example.com/landing?sku=101&store=old',
+      getPrefixedQueryString,
+      createOptions(),
+      encodeWithLayers
+    )).toBe('url=https://example.com/landing?sku=202&store=new');
+  });
+
+  it('回写带前缀的单个 raw URL 参数时保留前缀', () => {
+    const content = JSON.stringify({
+      url: {
+        sku: '202',
+      },
+    });
+
+    expect(encodeQueryStringLayerContent(
+      content,
+      'LOG url=https://example.com/landing?sku=101',
+      getPrefixedQueryString,
+      createOptions(),
+      encodeWithLayers
+    )).toBe('LOG url=https://example.com/landing?sku=202');
+  });
+
   it('非 JSON 对象内容不参与 query-string 回写', () => {
     expect(encodeQueryStringLayerContent(
       'not json',
