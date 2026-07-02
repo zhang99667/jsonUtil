@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.296 (2026-07-02) - Issue Sample Summary 类型分层
+### 🚀 优化与改进
+- **Summary 类型拆分**: 将深度解析问题样本导出中的 summary 计数桶抽成独立类型文件，导出对象类型回归样本和 options 契约
+- **Artifact 预算收紧**: 为 Issue Sample summary 类型补充独立预算，并把原问题样本类型预算降到轻量契约范围
+
 ## v1.8.295 (2026-07-02) - CMD Schema Origin Draft State 分层
 ### 🚀 优化与改进
 - **Draft State Helper**: 将 CMD Schema origin 草稿状态、Set 去重和可见 schema 截断逻辑抽成独立纯 helper，聚合入口回归 occurrence 遍历和 origin 路由
