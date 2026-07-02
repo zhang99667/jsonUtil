@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.320 (2026-07-02) - Changelog 命令 Hook 分层
+### 🚀 优化与改进
+- **Changelog Hook 分层**: 将更新日志弹窗状态、打开关闭命令和全局打开事件监听拆到 `useAppChangelogCommands`
+- **工具面板 Hook 瘦身**: `useAppToolPanelCommands` 回归面板开关、外部请求信号和报告入口动作，减少全局事件监听细节耦合
+- **测试与预算同步**: 补充关闭更新日志弹窗断言，并收紧工具面板命令 hook 维护预算
+
 ## v1.8.319 (2026-07-02) - PREVIEW 回写 Runner 分层
 ### 🚀 优化与改进
 - **回写 Runner 分层**: 将 PREVIEW 编辑防抖后的同步前校验和 SOURCE 回写结果生成拆到 `appPreviewOutputSyncRunner`

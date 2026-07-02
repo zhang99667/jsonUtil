@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { TransformMode, type HighlightRange } from '../types';
-import { APP_CHANGELOG_OPEN_EVENT, type AppChangelogOpenDetail } from '../utils/appEvents';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
 import {
-  buildChangelogOpenState,
   buildJsonPathQueryRequest,
   buildJsonTreeFocusRequest,
   buildSchemeInputRequest,
@@ -15,6 +13,7 @@ import {
   type SchemeInputRequest,
   type TemplateFillRequest,
 } from '../utils/appToolPanelCommandPlans';
+import { useAppChangelogCommands } from './useAppChangelogCommands';
 
 export type SettingsTab = 'shortcuts' | 'ai' | 'general';
 
@@ -45,9 +44,13 @@ export const useAppToolPanelCommands = ({
   const [templateFillRequest, setTemplateFillRequest] = useState<TemplateFillRequest | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
-  const [isChangelogModalOpen, setIsChangelogModalOpen] = useState(false);
-  const [changelogSourceMarkdown, setChangelogSourceMarkdown] = useState<string | null>(null);
-  const [changelogHighlightedVersion, setChangelogHighlightedVersion] = useState<string | null>(null);
+  const {
+    changelogHighlightedVersion,
+    changelogSourceMarkdown,
+    handleCloseChangelog,
+    handleOpenChangelog,
+    isChangelogModalOpen,
+  } = useAppChangelogCommands();
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [templateApplyQualityDelta, setTemplateApplyQualityDelta] = useState('');
@@ -170,29 +173,6 @@ export const useAppToolPanelCommands = ({
 
     handleOpenSchemeFromSourceStatus(value);
   }, [handleOpenSchemeFromSourceStatus, sourceText]);
-
-  const handleOpenChangelog = useCallback((detail?: AppChangelogOpenDetail) => {
-    const state = buildChangelogOpenState(detail);
-    setChangelogSourceMarkdown(state.sourceMarkdown);
-    setChangelogHighlightedVersion(state.highlightedVersion);
-    setIsChangelogModalOpen(true);
-  }, []);
-
-  const handleCloseChangelog = useCallback(() => {
-    setIsChangelogModalOpen(false);
-  }, []);
-
-  useEffect(() => {
-    const handleChangelogOpen = (event: Event) => {
-      const detail = event instanceof CustomEvent
-        ? event.detail as AppChangelogOpenDetail | undefined
-        : undefined;
-      handleOpenChangelog(detail);
-    };
-
-    window.addEventListener(APP_CHANGELOG_OPEN_EVENT, handleChangelogOpen);
-    return () => window.removeEventListener(APP_CHANGELOG_OPEN_EVENT, handleChangelogOpen);
-  }, [handleOpenChangelog]);
 
   const handleOpenTemplateFillFromReport = useCallback((template: string) => {
     const plan = buildTemplateFillRequest(templateFillRequestIdRef.current, template);
