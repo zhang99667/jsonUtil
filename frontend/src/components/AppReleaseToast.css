@@ -64,10 +64,8 @@
 }
 
 .app-release-toast__button:focus-visible {
-  filter: brightness(1.05);
-  box-shadow:
-    var(--app-button-rest-shadow),
-    0 0 18px rgba(56, 189, 248, 0.18);
+  filter: brightness(1.06) saturate(1.02);
+  box-shadow: var(--app-button-rest-shadow);
 }
 
 .app-release-toast__button--primary {
