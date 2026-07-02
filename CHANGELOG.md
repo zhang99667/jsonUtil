@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.369 (2026-07-03) - 报告记录类型职责收敛
+### 🏗️ 架构与基础设施
+- **报告记录类型拆分**: 将 decoded path 和 command schema row 类型从记录类型入口拆到独立类型文件，记录类型入口只保留 record、warning 和 unresolved candidate 契约，并同步更新维护预算
+
 ## v1.8.368 (2026-07-03) - 工具面板动作命令收敛
 ### 🏗️ 架构与基础设施
 - **工具面板 action hook 拆分**: 将 JSONPath 定位、结构树聚焦、Scheme 独立打开和模板填充入口从主工具面板 hook 拆到独立 action commands，主 hook 只保留面板状态、toggle 装配和子命令聚合，并同步收紧维护预算

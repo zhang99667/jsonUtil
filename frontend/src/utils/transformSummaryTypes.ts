@@ -81,6 +81,9 @@ export interface TransformReportViewOptions {
 export type {
   TransformReportCommandSchemaRow,
   TransformReportDecodedPath,
+} from './transformSummaryDecodedPathTypes';
+
+export type {
   TransformReportRecord,
   TransformReportUnresolvedCandidate,
   TransformReportWarning,
