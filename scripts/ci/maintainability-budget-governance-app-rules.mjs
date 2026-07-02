@@ -41,9 +41,11 @@ export const governanceAppMaintainabilityBudgets = [
   },
   {
     file: 'scripts/ci/maintainability-budget-app-status-rules.mjs',
-    maxLines: 30,
-    reason: 'App 状态栏预算规则应保持短表，状态栏继续增长时按状态域拆分',
+    maxLines: 15,
+    reason: 'App 状态栏预算入口应只组合组件和 helper 子表',
   },
+  { file: 'scripts/ci/maintainability-budget-app-status-component-rules.mjs', maxLines: 25, reason: 'App 状态栏组件预算规则应独立维护展示组件预算' },
+  { file: 'scripts/ci/maintainability-budget-app-status-helper-rules.mjs', maxLines: 25, reason: 'App 状态栏 helper 预算规则应独立维护状态派生和类型契约预算' },
   { file: 'scripts/ci/maintainability-budget-governance-app-workflow-rules.mjs', maxLines: 55, reason: 'App 工作流预算治理规则应独立维护工作流子表预算' },
   {
     file: 'scripts/ci/maintainability-budget-governance-app-rules.mjs',
