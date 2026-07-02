@@ -6,6 +6,11 @@ import {
   resetPreviewOutputSyncTestFixture,
   useHookInput,
 } from './useAppPreviewOutputSyncTestFixture';
+import {
+  advancePreviewSyncDebounce,
+  expectOutputDraft,
+  expectSourceUnchanged,
+} from './useAppPreviewOutputSyncTestAssertions';
 
 describe('useAppPreviewOutputSync failure path', () => {
   beforeEach(() => {
@@ -17,12 +22,10 @@ describe('useAppPreviewOutputSync failure path', () => {
     vi.mocked(executeAppPreviewOutputSyncMock).mockRejectedValueOnce(new Error('sync failed'));
 
     result.handleOutputChange('{"a":2}');
-    await vi.advanceTimersByTimeAsync(400);
+    await advancePreviewSyncDebounce();
 
     expect(previewSyncMocks.setPreviewValidation).toHaveBeenCalledWith(PREVIEW_OUTPUT_SYNC_FAILED);
-    expect(result.onSetInput).not.toHaveBeenCalled();
-    expect(result.onUpdateActiveFileContent).not.toHaveBeenCalled();
-    expect(result.pendingOutputValue.current).toBe('{"a":2}');
-    expect(result.isUpdatingFromOutput.current).toBe(true);
+    expectSourceUnchanged(result);
+    expectOutputDraft(result, '{"a":2}', true);
   });
 });

@@ -1,14 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TransformMode } from '../types';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  invalidResult,
   previewSyncMocks,
   resetPreviewOutputSyncTestFixture,
   executeAppPreviewOutputSyncMock,
   validateJsonForEditorMock,
   useHookInput,
-  outputDraft,
 } from './useAppPreviewOutputSyncTestFixture';
+import * as previewSync from './useAppPreviewOutputSyncTestAssertions';
 
 describe('useAppPreviewOutputSync', () => {
   beforeEach(() => {
@@ -20,48 +18,42 @@ describe('useAppPreviewOutputSync', () => {
 
     result.handleOutputChange('{"a":2}');
 
-    expect(outputDraft(result)).toEqual(['{"a":2}', true]);
-    expect(result.onSetInput).not.toHaveBeenCalled();
+    previewSync.expectOutputDraft(result, '{"a":2}', true);
+    previewSync.expectSourceUnchanged(result);
 
-    await vi.advanceTimersByTimeAsync(400);
+    await previewSync.advancePreviewSyncDebounce();
 
-    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledWith(expect.objectContaining({
-      previewText: '{"a":2}', mode: TransformMode.FORMAT,
-      validateJsonMaybeAsync: result.validateJsonMaybeAsync,
-    }));
+    previewSync.expectPreviewSyncRequest(executeAppPreviewOutputSyncMock, result, '{"a":2}');
     expect(result.onSetInput).toHaveBeenCalledWith('next-source');
     expect(result.inputRef.current).toBe('next-source');
     expect(result.onUpdateActiveFileContent).toHaveBeenCalledWith('next-source');
-    expect(outputDraft(result)).toEqual(['{"a":2}', true]);
+    previewSync.expectOutputDraft(result, '{"a":2}', true);
 
-    await vi.advanceTimersByTimeAsync(600);
+    await previewSync.advancePreviewUnlockDelay();
 
-    expect(outputDraft(result)).toEqual(['', false]);
+    previewSync.expectOutputDraft(result, '', false);
   });
 
   it('格式化类 PREVIEW 校验失败时不覆盖 SOURCE', async () => {
-    const result = useHookInput(vi.fn(async () => invalidResult));
-    vi.mocked(executeAppPreviewOutputSyncMock).mockResolvedValueOnce({ status: 'invalid', validation: invalidResult });
+    const result = previewSync.useInvalidPreviewSyncInput();
 
     result.handleOutputChange('{bad');
-    await vi.advanceTimersByTimeAsync(400);
+    await previewSync.advancePreviewSyncDebounce();
 
-    expect(previewSyncMocks.setPreviewValidation).toHaveBeenCalledWith(invalidResult);
-    expect(result.onSetInput).not.toHaveBeenCalled();
-    expect(result.onUpdateActiveFileContent).not.toHaveBeenCalled();
-    expect(outputDraft(result)).toEqual(['{bad', true]);
+    previewSync.expectInvalidPreviewValidation();
+    previewSync.expectSourceUnchanged(result);
+    previewSync.expectOutputDraft(result, '{bad', true);
   });
 
   it('PREVIEW 删空后同步失败时保留空草稿', async () => {
-    const result = useHookInput(vi.fn(async () => invalidResult));
-    vi.mocked(executeAppPreviewOutputSyncMock).mockResolvedValueOnce({ status: 'invalid', validation: invalidResult });
+    const result = previewSync.useInvalidPreviewSyncInput();
 
     result.handleOutputChange('');
-    await vi.advanceTimersByTimeAsync(400);
+    await previewSync.advancePreviewSyncDebounce();
 
-    expect(previewSyncMocks.setPreviewValidation).toHaveBeenCalledWith(invalidResult);
+    previewSync.expectInvalidPreviewValidation();
     expect(result.onSetInput).not.toHaveBeenCalled();
-    expect(outputDraft(result)).toEqual(['', true]);
+    previewSync.expectOutputDraft(result, '', true);
   });
 
   it('连续编辑时只同步最后一次 PREVIEW 内容', async () => {
@@ -69,10 +61,10 @@ describe('useAppPreviewOutputSync', () => {
 
     result.handleOutputChange('{"a":2}');
     result.handleOutputChange('{"a":3}');
-    await vi.advanceTimersByTimeAsync(400);
+    await previewSync.advancePreviewSyncDebounce();
 
     expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledTimes(1);
-    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledWith(expect.objectContaining({ previewText: '{"a":3}' }));
+    previewSync.expectPreviewSyncRequest(executeAppPreviewOutputSyncMock, result, '{"a":3}');
     expect(result.onSetInput).toHaveBeenCalledTimes(1);
   });
 
