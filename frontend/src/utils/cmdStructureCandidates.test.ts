@@ -50,4 +50,66 @@ describe('cmdStructureCandidates', () => {
       commandSchema: 'baiduboxapp://v1/nested',
     });
   });
+
+  it('结构化扫描保留数组和特殊 key 路径，并跳过缺少 cmdParams 的对象', () => {
+    const candidates = collectActualCmdStructureCandidates({
+      list: [
+        {
+          'cmd-key': {
+            cmdSchema: 'baiduboxapp://v1/special',
+            cmdParams: {
+              token: 'abc',
+            },
+            source: 'baiduboxapp://v1/special?token=abc',
+          },
+        },
+        {
+          cmdSchema: 'baiduboxapp://v1/missing-params',
+        },
+      ],
+    });
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toMatchObject({
+      id: '$.list[0]["cmd-key"]',
+      label: '$.list[0]["cmd-key"]',
+      sourceLabel: 'cmd-key',
+      commandSchema: 'baiduboxapp://v1/special',
+      actual: {
+        cmdSchema: 'baiduboxapp://v1/special',
+        cmdParams: {
+          token: 'abc',
+        },
+        source: 'baiduboxapp://v1/special?token=abc',
+      },
+    });
+  });
+
+  it('根结构化候选仅保留字符串 schema 和 source 字段', () => {
+    expect(collectActualCmdStructureCandidates(null)).toEqual([]);
+
+    const candidates = collectActualCmdStructureCandidates({
+      cmdSchema: 123,
+      cmdParams: {
+        stable: 'ok',
+      },
+      source: {
+        raw: true,
+      },
+    });
+
+    expect(candidates).toEqual([
+      {
+        id: '$',
+        label: '$',
+        sourceLabel: undefined,
+        commandSchema: undefined,
+        actual: {
+          cmdParams: {
+            stable: 'ok',
+          },
+        },
+      },
+    ]);
+  });
 });

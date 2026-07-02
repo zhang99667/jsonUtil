@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.280 (2026-07-02) - CMD 候选扫描分层
+### 🚀 优化与改进
+- **CMD Actual 候选扫描 Helper**: 将 CMD actual 候选中的已解码结构扫描、路径拼接、actual 归一化和去重抽成独立 helper，入口回归 raw CMD 解码与扫描编排
+- **CMD 预算规则分层**: 将 CMD 预算治理拆成 candidate/raw 与 diff/value 子表，并补充根候选、特殊 key、数组路径和非字符串 schema/source 的回归覆盖
+
 ## v1.8.279 (2026-07-02) - 报告视图复制 Workflow 分层
 ### 🚀 优化与改进
 - **ReportView 复制 Workflow**: 将深度解析报告中的筛选结果、诊断摘要、质量快照、归档包、排查 recipe 和协作报告复制动作抽成独立 workflow helper
