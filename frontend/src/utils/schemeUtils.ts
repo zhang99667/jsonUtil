@@ -49,17 +49,11 @@ import {
 } from './schemeFragmentParams';
 import {
   isJsonString,
-  normalizeHtmlJsonQuoteCandidate,
-  normalizeJsonEscapedQuoteCandidate,
   tryNormalizeHtmlJsonQuotePayload,
-  tryNormalizeJsonEscapedQuotePayload,
   tryParseJson,
   tryParseJsonWithMeta,
 } from './schemeJsonPayloads';
-import {
-  tryNormalizeJsonEscapedSlashPayload,
-  tryNormalizeJsonUnicodeAsciiPayload,
-} from './schemeEscapedPayloads';
+import { getFirstSchemeStructuredPayloadNormalization } from './schemeStructuredPayloadNormalization';
 import {
   buildSchemeStructuredDecodeWarnings,
   createSchemeStructuredDecodeState,
@@ -192,10 +186,7 @@ const isStructuredBase64Value = (value: string): boolean => {
 
 const isDecodableParamValue = (value: string): boolean => (
   isRuntimePlaceholder(value) ||
-  tryNormalizeJsonEscapedSlashPayload(value, looksLikeStructuredPayload) !== null ||
-  tryNormalizeJsonUnicodeAsciiPayload(value, looksLikeStructuredPayload) !== null ||
-  tryNormalizeJsonEscapedQuotePayload(value) !== null ||
-  tryNormalizeHtmlJsonQuotePayload(value) !== null ||
+  getFirstSchemeStructuredPayloadNormalization(value, { looksLikeStructuredPayload }) !== null ||
   hasUrlEncoding(value) ||
   isUrl(value) ||
   isJwt(value) ||
@@ -281,29 +272,12 @@ export function detectSchemeType(str: string): SchemeType {
   if (!str || typeof str !== 'string') return 'plain';
 
   const trimmed = str.trim();
-  const jsonStringPayload = tryParseJsonStringPayload(trimmed);
-  if (jsonStringPayload !== null) {
-    return detectSchemeType(jsonStringPayload);
-  }
-
-  const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(trimmed, looksLikeStructuredPayload);
-  if (escapedSlashPayload !== null) {
-    return detectSchemeType(escapedSlashPayload);
-  }
-
-  const unicodeAsciiPayload = tryNormalizeJsonUnicodeAsciiPayload(trimmed, looksLikeStructuredPayload);
-  if (unicodeAsciiPayload !== null) {
-    return detectSchemeType(unicodeAsciiPayload);
-  }
-
-  const escapedQuotePayload = tryNormalizeJsonEscapedQuotePayload(trimmed);
-  if (escapedQuotePayload !== null) {
-    return detectSchemeType(escapedQuotePayload);
-  }
-
-  const htmlJsonPayload = tryNormalizeHtmlJsonQuotePayload(trimmed);
-  if (htmlJsonPayload !== null) {
-    return detectSchemeType(htmlJsonPayload);
+  const normalizedPayload = getFirstSchemeStructuredPayloadNormalization(trimmed, {
+    looksLikeStructuredPayload,
+    tryParseJsonStringPayload,
+  });
+  if (normalizedPayload !== null) {
+    return detectSchemeType(normalizedPayload.value);
   }
 
   // 优先级顺序很重要
@@ -633,42 +607,23 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
   let paramStages: SchemeParamDecodeStage[] = [];
 
   while (depth < maxDepth) {
-    const jsonStringPayload = tryParseJsonStringPayload(current);
-    if (jsonStringPayload !== null) {
-      layers.push({
-        type: 'json',
+    const normalizedPayload = getFirstSchemeStructuredPayloadNormalization(current, {
+      includeQuotePayloads: false,
+      looksLikeStructuredPayload,
+      tryParseJsonStringPayload,
+    });
+    if (normalizedPayload?.layer) {
+      const layer: DecodeLayer = {
+        type: normalizedPayload.layer.type,
         before: current,
-        after: jsonStringPayload,
-        description: 'JSON 字符串字面量解析',
-      });
-      current = jsonStringPayload;
-      depth++;
-      continue;
-    }
-
-    const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(current, looksLikeStructuredPayload);
-    if (escapedSlashPayload !== null) {
-      layers.push({
-        type: 'json-escaped-slash',
-        before: current,
-        after: escapedSlashPayload,
-        description: 'JSON 斜杠转义还原',
-      });
-      current = escapedSlashPayload;
-      depth++;
-      continue;
-    }
-
-    const unicodeAsciiPayload = tryNormalizeJsonUnicodeAsciiPayload(current, looksLikeStructuredPayload);
-    if (unicodeAsciiPayload !== null) {
-      layers.push({
-        type: 'json-unicode-ascii',
-        before: current,
-        after: unicodeAsciiPayload,
-        description: 'JSON Unicode ASCII 转义还原',
-        reversible: false,
-      });
-      current = unicodeAsciiPayload;
+        after: normalizedPayload.value,
+        description: normalizedPayload.layer.description,
+      };
+      if (normalizedPayload.layer.reversible !== undefined) {
+        layer.reversible = normalizedPayload.layer.reversible;
+      }
+      layers.push(layer);
+      current = normalizedPayload.value;
       depth++;
       continue;
     }
