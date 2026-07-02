@@ -24,21 +24,20 @@ describe('Driver tour button styles', () => {
       '.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn,'
     );
 
-    expect(buttonRule).toContain('rgba(75, 85, 99, 0.98)');
+    expect(buttonRule).toContain('rgba(66, 80, 98, 0.98)');
+    expect(buttonRule).toContain('border-radius: 999px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
   });
 
-  it('引导按钮键盘焦点不再绘制厚底线选中框', () => {
+  it('引导按钮键盘焦点不再绘制描边或厚底线选中框', () => {
     const focusRule = getRuleBody(
       '.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,'
     );
-    const accentRule = getRuleBody(
-      '.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:hover::after,'
-    );
 
-    expect(focusRule).toContain('inset 0 0 0 1px rgba(255, 255, 255, 0.14)');
+    expect(focusRule).toContain('0 0 18px rgba(56, 189, 248, 0.18)');
+    expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(focusRule).not.toContain('inset 0 -2px');
-    expect(accentRule).toContain('opacity: 1');
+    expect(css).not.toContain('driver-popover-next-btn::after');
   });
 });
