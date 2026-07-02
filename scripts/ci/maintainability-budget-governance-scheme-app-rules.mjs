@@ -17,7 +17,7 @@ export const governanceSchemeAppMaintainabilityBudgets = [
   schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-diagnostics-component-rules.mjs', 25, 'Scheme 诊断组件预算规则应独立成短表，避免详情规则表继续贴线'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-support-rules.mjs', 45, 'Scheme 弹窗支撑预算规则应保持短表，worker 和 helper 规则继续和组件规则分开治理'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-core-rules.mjs', 40, 'Scheme 核心预算规则应保持短表，新增核心债务需优先拆解'),
-  schemeAppGovernanceBudget('maintainability-budget-scheme-core-param-rules.mjs', 20, 'Scheme 参数分层预算规则应独立成短表，避免核心规则表继续贴边'),
+  schemeAppGovernanceBudget('maintainability-budget-scheme-core-param-rules.mjs', 25, 'Scheme 参数分层预算规则应保持短表，允许 builder/pair/source 三个核心入口并列治理'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-core-helper-rules.mjs', 35, 'Scheme 核心 helper 预算规则应独立成短表，避免核心规则表继续贴边'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-cmd-rules.mjs', 25, 'CMD 结构预算规则应保持短表，格式化和解析预算继续分开治理'),
   ...governanceSchemeSupportMaintainabilityBudgets,

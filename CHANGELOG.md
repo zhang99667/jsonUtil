@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.278 (2026-07-02) - Scheme 参数 Pair 扫描分层
+### 🚀 优化与改进
+- **Scheme 参数 Pair Helper**: 将 Scheme 参数解码阶段中的 query pair 扫描、key/value 解码和 24 条上限控制抽成独立 helper，来源入口回归 query/hash/log-field 编排
+- **Hash 剩余额度覆盖**: 新增回归用例锁定 query 已占 23 条时 hash 只补剩余 1 条的行为，并同步收紧 Scheme 参数阶段预算
+
 ## v1.8.277 (2026-07-02) - 质量基线复制分层
 ### 🚀 优化与改进
 - **质量基线 Workflow 分层**: 将深度解析报告复制中的设为基线、复制质量对比和清除基线动作抽成独立 workflow helper，报告复制入口回归报告级动作编排
