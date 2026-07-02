@@ -19,11 +19,7 @@ export const PREVIEW_OUTPUT_SYNC_FAILED: ValidationResult = {
 
 export type AppPreviewOutputSyncRunnerResult =
   | {
-    status: 'invalid';
-    validation: ValidationResult;
-  }
-  | {
-    status: 'failed';
+    status: 'invalid' | 'failed';
     validation: ValidationResult;
   }
   | {
