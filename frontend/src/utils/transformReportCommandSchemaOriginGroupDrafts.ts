@@ -1,4 +1,5 @@
 import type { CommandSchemaOccurrence, CommandSchemaOccurrenceKind } from './transformReportCommandSchemaOccurrences';
+import { getCommandSchemaOrigin } from './transformReportCommandSchemaOrigin';
 
 export interface CommandSchemaOriginGroupDraft {
   origin: string;
@@ -8,18 +9,6 @@ export interface CommandSchemaOriginGroupDraft {
   visibleSchemas: string[];
   hasMoreSchemas: boolean;
 }
-
-export const getCommandSchemaOrigin = (schema: string): string => {
-  const trimmed = schema.trim().replace(/\\\//g, '/');
-  const protocolRelativeMatch = trimmed.match(/^\/\/([^/?#\s]+)/);
-  if (protocolRelativeMatch) return `//${protocolRelativeMatch[1]}`;
-
-  const absoluteMatch = trimmed.match(/^([A-Za-z][A-Za-z0-9+.-]*:)\/\/([^/?#\s]+)/);
-  if (absoluteMatch) return `${absoluteMatch[1]}//${absoluteMatch[2]}`;
-
-  const protocolMatch = trimmed.match(/^([A-Za-z][A-Za-z0-9+.-]*:)/);
-  return protocolMatch ? protocolMatch[1] : trimmed;
-};
 
 const createCommandSchemaOriginGroupDraft = (origin: string): CommandSchemaOriginGroupDraft => ({
   origin,
