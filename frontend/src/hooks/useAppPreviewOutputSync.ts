@@ -58,6 +58,16 @@ export const useAppPreviewOutputSync = ({
     outputSyncRequestIdRef.current++;
   }, []);
 
+  const cancelOutputDraft = useCallback(() => {
+    if (outputChangeTimer.current) {
+      clearTimeout(outputChangeTimer.current);
+      outputChangeTimer.current = null;
+    }
+    outputSyncRequestIdRef.current++;
+    isUpdatingFromOutput.current = false;
+    pendingOutputValue.current = '';
+  }, [isUpdatingFromOutput, pendingOutputValue]);
+
   const updatePreviewValidation = useCallback((previewText: string) => {
     if (!previewText.trim()) {
       previewValidationRequestIdRef.current++;
@@ -150,6 +160,7 @@ export const useAppPreviewOutputSync = ({
   ]);
 
   return {
+    cancelOutputDraft,
     previewValidation,
     handleOutputChange,
   };

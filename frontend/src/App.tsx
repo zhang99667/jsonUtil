@@ -198,7 +198,7 @@ const App: React.FC = () => {
   });
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
-  const { previewValidation, handleOutputChange } = useAppPreviewOutputSync({
+  const { cancelOutputDraft, previewValidation, handleOutputChange } = useAppPreviewOutputSync({
     previewText: output,
     files,
     activeFileId,
@@ -248,20 +248,16 @@ const App: React.FC = () => {
     onSetSmartSuggestionOrigin: setSmartSuggestionOrigin,
     onUpdateActiveFileContent: updateActiveFileContent,
   });
-  const cancelPreviewDraft = useCallback(() => {
-    isUpdatingFromOutput.current = false;
-    pendingOutputValue.current = '';
-  }, []);
   const handleInputChange = useCallback((nextValue: string) => {
-    cancelPreviewDraft();
+    cancelOutputDraft();
     handleRawInputChange(nextValue);
-  }, [cancelPreviewDraft, handleRawInputChange]);
+  }, [cancelOutputDraft, handleRawInputChange]);
   const lastPreviewDraftFileIdRef = useRef(activeFileId);
   useEffect(() => {
     if (lastPreviewDraftFileIdRef.current === activeFileId) return;
     lastPreviewDraftFileIdRef.current = activeFileId;
-    cancelPreviewDraft();
-  }, [activeFileId, cancelPreviewDraft]);
+    cancelOutputDraft();
+  }, [activeFileId, cancelOutputDraft]);
 
   // 光标位置状态（用于状态栏显示）
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
@@ -383,10 +379,10 @@ const App: React.FC = () => {
   });
 
   const handleModeChange = useCallback((nextMode: TransformMode) => {
-    cancelPreviewDraft();
+    cancelOutputDraft();
     setMode(nextMode);
     trackCurrentToolEvent(nextMode, 'transform_mode');
-  }, [cancelPreviewDraft, setMode, trackCurrentToolEvent]);
+  }, [cancelOutputDraft, setMode, trackCurrentToolEvent]);
 
   const handleToggleAutoSave = useCallback(() => {
     const plan = buildAppAutoSaveTogglePlan({
