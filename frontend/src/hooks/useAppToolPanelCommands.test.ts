@@ -47,10 +47,7 @@ describe('useAppToolPanelCommands', () => {
 
     expect(onSetMode).toHaveBeenCalledWith(TransformMode.DEEP_FORMAT);
     expect(onSetHighlightRange).toHaveBeenCalledWith(null);
-    expect(stateSetters.jsonPathQueryRequest).toHaveBeenCalledWith({
-      id: 1,
-      query: '$.data[0]',
-    });
+    expect(stateSetters.jsonPathQueryRequest).toHaveBeenCalledWith({ id: 1, query: '$.data[0]' });
     expect(stateSetters.isJsonPathPanelOpen).toHaveBeenCalledWith(true);
     expect(stateSetters.isTransformReportOpen).toHaveBeenCalledWith(false);
     expect(onTrackToolEvent).toHaveBeenCalledWith('JSONPATH_LOCATE', 'panel');
@@ -66,11 +63,7 @@ describe('useAppToolPanelCommands', () => {
       value: 'https://example.com',
     });
 
-    expect(stateSetters.jsonTreeFocusRequest).toHaveBeenCalledWith({
-      id: 1,
-      path: '$.data[0].url',
-      pointer: '/data/0/url',
-    });
+    expect(stateSetters.jsonTreeFocusRequest).toHaveBeenCalledWith({ id: 1, path: '$.data[0].url', pointer: '/data/0/url' });
     expect(stateSetters.isJsonTreePanelOpen).toHaveBeenCalledWith(true);
     expect(stateSetters.isTransformReportOpen).toHaveBeenCalledWith(false);
     expect(onTrackToolEvent).toHaveBeenCalledWith('STRUCTURE_NAV_LOCATE', 'panel');
@@ -82,14 +75,8 @@ describe('useAppToolPanelCommands', () => {
     commands.handleOpenSchemeFromReport('baiduboxapp://v1/open');
     commands.requestSchemeInput('baiduboxapp://v2/open');
 
-    expect(stateSetters.schemeInputRequest).toHaveBeenNthCalledWith(1, {
-      id: 1,
-      value: 'baiduboxapp://v1/open',
-    });
-    expect(stateSetters.schemeInputRequest).toHaveBeenNthCalledWith(2, {
-      id: 2,
-      value: 'baiduboxapp://v2/open',
-    });
+    expect(stateSetters.schemeInputRequest).toHaveBeenNthCalledWith(1, { id: 1, value: 'baiduboxapp://v1/open' });
+    expect(stateSetters.schemeInputRequest).toHaveBeenNthCalledWith(2, { id: 2, value: 'baiduboxapp://v2/open' });
     expect(stateSetters.isSchemeDecodeOpen).toHaveBeenCalledWith(true);
     expect(stateSetters.isTransformReportOpen).toHaveBeenCalledWith(false);
     expect(onTrackToolEvent).toHaveBeenCalledWith('SCHEME_OPEN_FROM_REPORT', 'panel');
@@ -99,10 +86,7 @@ describe('useAppToolPanelCommands', () => {
     const valid = useToolPanelCommandsFixture({ sourceText: ' baiduboxapp://v1/open ' });
     valid.commands.handleOpenSourceSchemeInput();
 
-    expect(valid.stateSetters.schemeInputRequest).toHaveBeenCalledWith({
-      id: 1,
-      value: 'baiduboxapp://v1/open',
-    });
+    expect(valid.stateSetters.schemeInputRequest).toHaveBeenCalledWith({ id: 1, value: 'baiduboxapp://v1/open' });
 
     const invalid = useToolPanelCommandsFixture({ sourceText: 'plain text' });
     invalid.commands.handleOpenSourceSchemeInput();
@@ -116,10 +100,7 @@ describe('useAppToolPanelCommands', () => {
     commands.handleOpenTemplateFillFromReport('{{url}}');
 
     expect(stateSetters.templateApplyQualityDelta).toHaveBeenCalledWith('');
-    expect(stateSetters.templateFillRequest).toHaveBeenCalledWith({
-      id: 1,
-      template: '{{url}}',
-    });
+    expect(stateSetters.templateFillRequest).toHaveBeenCalledWith({ id: 1, template: '{{url}}' });
     expect(stateSetters.isTemplatePanelOpen).toHaveBeenCalledWith(true);
     expect(stateSetters.isTransformReportOpen).toHaveBeenCalledWith(false);
     expect(onTrackToolEvent).toHaveBeenCalledWith('TEMPLATE_OPEN_FROM_REPORT', 'panel');
@@ -127,10 +108,7 @@ describe('useAppToolPanelCommands', () => {
 
   it('监听 changelog 打开事件并在清理时移除监听', () => {
     const { listeners } = useToolPanelCommandsFixture();
-    const detail = {
-      version: '1.8.254',
-      changelogMarkdown: '  ## 更新  ',
-    };
+    const detail = { version: '1.8.254', changelogMarkdown: '  ## 更新  ' };
 
     listeners.get(APP_CHANGELOG_OPEN_EVENT)?.(
       new CustomEvent(APP_CHANGELOG_OPEN_EVENT, { detail }) as Event
