@@ -5,5 +5,5 @@ export const transformReportIssueCollectorMaintainabilityBudgets = [
   issueCollectorBudget('frontend/src/utils/transformIssueSampleSummary.ts', 35, '深度解析问题样本 summary 只维护三类样本 copied、filtered、total 和 truncated 计数'),
   issueCollectorBudget('frontend/src/utils/transformIssueSampleCollectors.test.ts', 105, '深度解析问题样本 collector 测试只锁定样本筛选和收集顺序'),
   issueCollectorBudget('frontend/src/utils/transformIssueSampleSummary.test.ts', 70, '深度解析问题样本 summary 测试只锁定 copied、filtered、total 和 truncated 计数'),
-  issueCollectorBudget('frontend/src/utils/transformIssueSampleCollectorsTestFixture.ts', 45, '深度解析问题样本 collector 测试 fixture 只维护 TransformReportView 默认字段'),
+  issueCollectorBudget('frontend/src/utils/transformReportViewTestFixture.ts', 45, '深度解析通用测试 fixture 只维护 TransformReportView 默认字段'),
 ];

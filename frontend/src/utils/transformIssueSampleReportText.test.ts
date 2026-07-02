@@ -1,51 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { formatTransformIssueSampleReportText } from './transformIssueSampleReportText';
-import type { TransformReportView } from './transformSummary';
-
-const buildReportView = (
-  overrides: Partial<TransformReportView> = {}
-): TransformReportView => ({
-  records: [],
-  cmdStructureRecords: [],
-  warnings: [],
-  unresolvedCandidates: [],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
-  filteredRecordCount: 0,
-  filteredWarningCount: 0,
-  filteredUnresolvedCount: 0,
-  filteredPlaceholderCount: 0,
-  filteredCmdStructureCount: 0,
-  filteredNestedCommandFieldCount: 0,
-  filteredNestedResourceFieldCount: 0,
-  filteredSchemeParamStageCount: 0,
-  filteredSchemeParamStageRepairHintCount: 0,
-  filteredNonReversibleParamStageCount: 0,
-  totalRecordCount: 0,
-  totalWarningCount: 0,
-  totalUnresolvedCount: 0,
-  totalPlaceholderCount: 0,
-  totalCmdStructureCount: 0,
-  totalNestedCommandFieldCount: 0,
-  totalNestedResourceFieldCount: 0,
-  totalSchemeParamStageCount: 0,
-  totalSchemeParamStageRepairHintCount: 0,
-  totalNonReversibleParamStageCount: 0,
-  isRecordTruncated: false,
-  isWarningTruncated: false,
-  isUnresolvedTruncated: false,
-  isPlaceholderTruncated: false,
-  isCmdStructureTruncated: false,
-  ...overrides,
-});
+import { createTransformReportView } from './transformReportViewTestFixture';
 
 describe('transformIssueSampleReportText', () => {
   it('没有问题样本时返回空文本', () => {
-    expect(formatTransformIssueSampleReportText(buildReportView())).toBe('');
+    expect(formatTransformIssueSampleReportText(createTransformReportView())).toBe('');
   });
 
   it('格式化未展开、占位符和跳过样本', () => {
-    const text = formatTransformIssueSampleReportText(buildReportView({
+    const text = formatTransformIssueSampleReportText(createTransformReportView({
       filteredUnresolvedCount: 2,
       totalUnresolvedCount: 3,
       filteredPlaceholderCount: 1,

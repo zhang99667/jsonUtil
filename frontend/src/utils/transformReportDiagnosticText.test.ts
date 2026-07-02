@@ -3,12 +3,12 @@ import { APP_VERSION_LABEL } from './appVersion';
 import type {
   TransformContextReport,
   TransformReportRecord,
-  TransformReportView,
 } from './transformSummary';
 import {
   formatTransformDiagnosticSummaryText,
   formatTransformReportViewText,
 } from './transformReportDiagnosticText';
+import { createTransformReportView } from './transformReportViewTestFixture';
 import {
   appendDiagnosticSummaryRecommendationSection,
   appendDiagnosticSummarySampleSections,
@@ -33,43 +33,6 @@ const createReport = (
   unresolvedCandidates: [],
   runtimePlaceholderGroups: [],
   runtimePlaceholders: [],
-  ...overrides,
-});
-
-const createView = (
-  overrides: Partial<TransformReportView> = {}
-): TransformReportView => ({
-  records: [],
-  cmdStructureRecords: [],
-  warnings: [],
-  unresolvedCandidates: [],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
-  filteredRecordCount: 0,
-  filteredWarningCount: 0,
-  filteredUnresolvedCount: 0,
-  filteredPlaceholderCount: 0,
-  filteredSchemeParamStageCount: 0,
-  filteredSchemeParamStageRepairHintCount: 0,
-  filteredNonReversibleParamStageCount: 0,
-  filteredCmdStructureCount: 0,
-  filteredNestedCommandFieldCount: 0,
-  filteredNestedResourceFieldCount: 0,
-  totalRecordCount: 0,
-  totalWarningCount: 0,
-  totalUnresolvedCount: 0,
-  totalPlaceholderCount: 0,
-  totalSchemeParamStageCount: 0,
-  totalSchemeParamStageRepairHintCount: 0,
-  totalNonReversibleParamStageCount: 0,
-  totalCmdStructureCount: 0,
-  totalNestedCommandFieldCount: 0,
-  totalNestedResourceFieldCount: 0,
-  isRecordTruncated: false,
-  isCmdStructureTruncated: false,
-  isWarningTruncated: false,
-  isUnresolvedTruncated: false,
-  isPlaceholderTruncated: false,
   ...overrides,
 });
 
@@ -100,7 +63,7 @@ const createRecord = (
 
 describe('transformReportDiagnosticText', () => {
   it('格式化筛选报告空态', () => {
-    expect(formatTransformReportViewText(createReport(), createView(), '  ')).toBe([
+    expect(formatTransformReportViewText(createReport(), createTransformReportView(), '  ')).toBe([
       '深度解析: 展开 1 处',
       `工具版本: ${APP_VERSION_LABEL}`,
       '筛选: 全部',
@@ -120,7 +83,7 @@ describe('transformReportDiagnosticText', () => {
       isDecodedPathCountTruncated: true,
     });
 
-    const text = formatTransformReportViewText(createReport(), createView({
+    const text = formatTransformReportViewText(createReport(), createTransformReportView({
       records: [record],
       filteredRecordCount: 2,
       totalRecordCount: 3,
@@ -190,7 +153,7 @@ describe('transformReportDiagnosticText', () => {
       },
     });
 
-    const text = formatTransformDiagnosticSummaryText(report, createView({
+    const text = formatTransformDiagnosticSummaryText(report, createTransformReportView({
       records: [record],
       runtimePlaceholderGroups: [{
         value: '__CONVERT_CMD__',
@@ -298,7 +261,7 @@ describe('transformReportDiagnosticText', () => {
       nextAction: '单独排查',
     }));
 
-    const text = formatTransformDiagnosticSummaryText(report, createView({
+    const text = formatTransformDiagnosticSummaryText(report, createTransformReportView({
       unresolvedCandidates,
       warnings,
       filteredUnresolvedCount: 6,
@@ -330,7 +293,7 @@ describe('transformReportDiagnosticText', () => {
       },
     });
 
-    const text = formatTransformDiagnosticSummaryText(createReport(), createView({
+    const text = formatTransformDiagnosticSummaryText(createReport(), createTransformReportView({
       records: [record],
       filteredRecordCount: 1,
       totalRecordCount: 1,
@@ -346,7 +309,7 @@ describe('transformReportDiagnosticText', () => {
 
   it('诊断摘要样例 section 不输出原始值、预览和内部消息', () => {
     const lines: string[] = [];
-    appendDiagnosticSummarySampleSections(lines, createView({
+    appendDiagnosticSummarySampleSections(lines, createTransformReportView({
       unresolvedCandidates: [{
         path: '$.raw',
         sourceLabel: 'extraParam',
@@ -386,7 +349,7 @@ describe('transformReportDiagnosticText', () => {
 
   it('诊断摘要建议 section 覆盖全部风险动作和空态建议', () => {
     const riskLines: string[] = [];
-    appendDiagnosticSummaryRecommendationSection(riskLines, createView({
+    appendDiagnosticSummaryRecommendationSection(riskLines, createTransformReportView({
       filteredWarningCount: 1,
       filteredUnresolvedCount: 1,
       filteredPlaceholderCount: 1,
@@ -402,7 +365,7 @@ describe('transformReportDiagnosticText', () => {
     expect(riskText).toContain('- 存在不可回写参数层，复制回写前需确认该字段是否只用于只读排查');
 
     const emptyLines: string[] = [];
-    appendDiagnosticSummaryRecommendationSection(emptyLines, createView());
+    appendDiagnosticSummaryRecommendationSection(emptyLines, createTransformReportView());
     expect(emptyLines.join('\n')).toContain('- 当前筛选未发现跳过、待检查或运行时占位符，可重点核对 CMD Schema 与业务预期是否一致');
   });
 });

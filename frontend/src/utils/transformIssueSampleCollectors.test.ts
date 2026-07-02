@@ -3,11 +3,11 @@ import {
   collectRuntimePlaceholderIssueSamples,
   collectTransformIssueSamples,
 } from './transformIssueSampleCollectors';
-import { createIssueSampleReportView } from './transformIssueSampleCollectorsTestFixture';
+import { createTransformReportView } from './transformReportViewTestFixture';
 
 describe('transformIssueSampleCollectors', () => {
   it('只收集带原始值的运行时占位符样本', () => {
-    const samples = collectRuntimePlaceholderIssueSamples(createIssueSampleReportView({
+    const samples = collectRuntimePlaceholderIssueSamples(createTransformReportView({
       runtimePlaceholders: [
         {
           path: '$.a',
@@ -39,7 +39,7 @@ describe('transformIssueSampleCollectors', () => {
   });
 
   it('按 unresolved、runtime placeholder、warning 顺序收集样本', () => {
-    const samples = collectTransformIssueSamples(createIssueSampleReportView({
+    const samples = collectTransformIssueSamples(createTransformReportView({
       unresolvedCandidates: [{
         path: '$.url',
         sourceLabel: 'url',

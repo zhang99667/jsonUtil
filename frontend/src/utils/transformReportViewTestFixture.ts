@@ -1,6 +1,6 @@
 import type { TransformReportView } from './transformSummary';
 
-export const createIssueSampleReportView = (
+export const createTransformReportView = (
   overrides: Partial<TransformReportView> = {}
 ): TransformReportView => ({
   records: [],

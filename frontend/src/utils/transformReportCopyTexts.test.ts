@@ -3,13 +3,13 @@ import { APP_VERSION_LABEL } from './appVersion';
 import type {
   TransformContextReport,
   TransformReportRecord,
-  TransformReportView,
 } from './transformSummary';
 import {
   formatTransformCmdStructureReportText,
   formatTransformPathValueReportText,
   formatTransformPlaceholderReportText,
 } from './transformReportCopyTexts';
+import { createTransformReportView } from './transformReportViewTestFixture';
 
 const createReport = (
   overrides: Partial<TransformContextReport> = {}
@@ -24,43 +24,6 @@ const createReport = (
   unresolvedCandidates: [],
   runtimePlaceholderGroups: [],
   runtimePlaceholders: [],
-  ...overrides,
-});
-
-const createView = (
-  overrides: Partial<TransformReportView> = {}
-): TransformReportView => ({
-  records: [],
-  cmdStructureRecords: [],
-  warnings: [],
-  unresolvedCandidates: [],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
-  filteredRecordCount: 0,
-  filteredWarningCount: 0,
-  filteredUnresolvedCount: 0,
-  filteredPlaceholderCount: 0,
-  filteredSchemeParamStageCount: 0,
-  filteredSchemeParamStageRepairHintCount: 0,
-  filteredNonReversibleParamStageCount: 0,
-  filteredCmdStructureCount: 0,
-  filteredNestedCommandFieldCount: 0,
-  filteredNestedResourceFieldCount: 0,
-  totalRecordCount: 0,
-  totalWarningCount: 0,
-  totalUnresolvedCount: 0,
-  totalPlaceholderCount: 0,
-  totalSchemeParamStageCount: 0,
-  totalSchemeParamStageRepairHintCount: 0,
-  totalNonReversibleParamStageCount: 0,
-  totalCmdStructureCount: 0,
-  totalNestedCommandFieldCount: 0,
-  totalNestedResourceFieldCount: 0,
-  isRecordTruncated: false,
-  isCmdStructureTruncated: false,
-  isWarningTruncated: false,
-  isUnresolvedTruncated: false,
-  isPlaceholderTruncated: false,
   ...overrides,
 });
 
@@ -100,7 +63,7 @@ describe('transformReportCopyTexts', () => {
       indexedDecodedPathCount: 3,
     });
 
-    expect(formatTransformPathValueReportText(createView({
+    expect(formatTransformPathValueReportText(createTransformReportView({
       records: [record],
       filteredRecordCount: 2,
       isRecordTruncated: true,
@@ -125,7 +88,7 @@ describe('transformReportCopyTexts', () => {
       indexedDecodedPathCount: 3,
     });
 
-    expect(formatTransformPathValueReportText(createView({
+    expect(formatTransformPathValueReportText(createTransformReportView({
       records: [record],
       filteredRecordCount: 1,
     }))).toBe('$.cmd.params.panel_cmd = "baiduboxapp://x"');
@@ -149,7 +112,7 @@ describe('transformReportCopyTexts', () => {
       getCmdStructureCopyText: () => '{"result":{"cmdParams":{"params":{"id":1}}}}',
     });
 
-    const text = formatTransformCmdStructureReportText(createReport(), createView({
+    const text = formatTransformCmdStructureReportText(createReport(), createTransformReportView({
       cmdStructureRecords: [record],
       filteredCmdStructureCount: 3,
       isCmdStructureTruncated: true,
@@ -169,9 +132,9 @@ describe('transformReportCopyTexts', () => {
   });
 
   it('格式化 CMD 结构复制文本的空态和无可见参数键摘要', () => {
-    expect(formatTransformCmdStructureReportText(createReport(), createView(), '')).toBe('');
+    expect(formatTransformCmdStructureReportText(createReport(), createTransformReportView(), '')).toBe('');
 
-    const text = formatTransformCmdStructureReportText(createReport(), createView({
+    const text = formatTransformCmdStructureReportText(createReport(), createTransformReportView({
       cmdStructureRecords: [createRecord({
         commandParamCount: 2,
         getCmdStructureCopyText: () => '{"cmdParams":{"a":1,"b":2}}',
@@ -184,7 +147,7 @@ describe('transformReportCopyTexts', () => {
   });
 
   it('格式化占位符复制文本的空态', () => {
-    expect(formatTransformPlaceholderReportText(createReport(), createView({
+    expect(formatTransformPlaceholderReportText(createReport(), createTransformReportView({
       filteredPlaceholderCount: 0,
       totalPlaceholderCount: 2,
     }), 'missing')).toBe([
@@ -199,7 +162,7 @@ describe('transformReportCopyTexts', () => {
   });
 
   it('格式化占位符复制文本的明细和截断提示', () => {
-    const text = formatTransformPlaceholderReportText(createReport(), createView({
+    const text = formatTransformPlaceholderReportText(createReport(), createTransformReportView({
       runtimePlaceholderGroups: [{
         value: '__CONVERT_CMD__',
         description: '运行时转换 CMD',
