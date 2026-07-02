@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.307 (2026-07-02) - Preview 反向同步测试 Fixture 分层
+### 🚀 优化与改进
+- **Hook 测试 Fixture**: 将 PREVIEW 反向同步 hook 测试中的 React mock、校验 mock 和默认 hook 输入构建抽成独立 fixture
+- **测试预算收紧**: 为 Preview 输出同步 fixture 补充独立维护预算，并把原 hook 测试降回行为断言职责
+
 ## v1.8.306 (2026-07-02) - Copy Workflow 测试职责分层
 ### 🚀 优化与改进
 - **测试职责拆分**: 将深度解析复制 workflow 的报告级、状态/模板和行级 CMD 复制断言拆成独立 spec，主测试回归 pending guard 与完整报告基础行为
