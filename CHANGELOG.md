@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.281 (2026-07-02) - CMD 候选 Helper 再分层
+### 🚀 优化与改进
+- **CMD Candidate Helper 分层**: 将 CMD 候选类型、actual 归一化和路径拼接拆成独立纯 helper，decoded scanner 回归递归遍历和候选去重
+- **CMD Candidate 预算收紧**: 为类型、actual 和 path helper 补充可维护性预算，并把 decoded scanner 的预算降到扫描职责范围
+
 ## v1.8.280 (2026-07-02) - CMD 候选扫描分层
 ### 🚀 优化与改进
 - **CMD Actual 候选扫描 Helper**: 将 CMD actual 候选中的已解码结构扫描、路径拼接、actual 归一化和去重抽成独立 helper，入口回归 raw CMD 解码与扫描编排
