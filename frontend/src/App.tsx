@@ -199,6 +199,7 @@ const App: React.FC = () => {
 
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true });
   const { previewValidation, handleOutputChange } = useAppPreviewOutputSync({
+    previewText: output,
     files,
     activeFileId,
     mode,

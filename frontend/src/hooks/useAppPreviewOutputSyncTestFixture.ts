@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 import { TransformMode, type ValidationResult } from '../types';
 import { useAppPreviewOutputSync } from './useAppPreviewOutputSync';
 import { executeAppPreviewOutputSync } from '../utils/appPreviewOutputSyncRunner';
+import { validateJsonForEditor } from '../utils/jsonValidation';
 
 const mocks = vi.hoisted(() => ({
   setPreviewValidation: vi.fn(),
@@ -37,12 +38,15 @@ export const validResult: ValidationResult = { isValid: true };
 export const invalidResult: ValidationResult = { isValid: false, error: 'preview invalid' };
 export const previewSyncMocks = mocks;
 export const executeAppPreviewOutputSyncMock = executeAppPreviewOutputSync;
+export const validateJsonForEditorMock = validateJsonForEditor;
 
 export const resetPreviewOutputSyncTestFixture = () => {
   vi.useFakeTimers();
   vi.clearAllMocks();
   mocks.useCallback.mockImplementation((callback: unknown) => callback);
-  mocks.useEffect.mockImplementation(() => undefined);
+  mocks.useEffect.mockImplementation((effect: () => unknown) => {
+    effect();
+  });
   mocks.useRef.mockImplementation((initialValue: unknown) => ({ current: initialValue }));
   mocks.useState.mockImplementation((initialValue: unknown) => [initialValue, mocks.setPreviewValidation]);
   vi.mocked(executeAppPreviewOutputSync).mockResolvedValue({
@@ -51,7 +55,10 @@ export const resetPreviewOutputSyncTestFixture = () => {
   });
 };
 
-export const useHookInput = (validateJsonMaybeAsync = vi.fn(async () => validResult)) => {
+export const useHookInput = (
+  validateJsonMaybeAsync = vi.fn(async () => validResult),
+  previewText = ''
+) => {
   const inputRef = { current: '{"a":1}' };
   const fallbackContextRef = { current: null };
   const isUpdatingFromOutput = { current: false };
@@ -60,6 +67,7 @@ export const useHookInput = (validateJsonMaybeAsync = vi.fn(async () => validRes
   const onUpdateActiveFileContent = vi.fn();
 
   const hook = useAppPreviewOutputSync({
+    previewText,
     files: [],
     activeFileId: null,
     mode: TransformMode.FORMAT,
