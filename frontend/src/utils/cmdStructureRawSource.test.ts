@@ -31,6 +31,19 @@ describe('cmdStructureRawSource', () => {
     ]);
   });
 
+  it('收集原始 CMD 候选时复用安全 JSONPath 表达特殊 key', () => {
+    const candidates: RawCmdCandidate[] = [];
+
+    collectRawCmdCandidates({
+      data: {
+        'action.cmd': 'baiduboxapp://v1/panel?tab=reward',
+      },
+    }, candidates);
+
+    expect(candidates[0]?.path).toBe('$.data["action.cmd"]');
+    expect(candidates[0]?.sourceLabel).toBe('action.cmd');
+  });
+
   it('解码 URL 编码的 JSON 参数为结构化 cmdParams', () => {
     const params = {
       phone: '13718164578',
