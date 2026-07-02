@@ -4,9 +4,7 @@ import { formatDecodedPathCount } from './TransformReportPanelAtoms';
 import type { TransformReportRecordPathActions } from './TransformReportRecordSectionContracts';
 import {
   buildIndexedMoreContent,
-  buildPathSectionProps,
-  pathSectionStyles,
-  pickCopyLocateActions,
+  buildStyledPathSectionProps,
 } from './transformReportRecordPathSectionHelpers';
 import type { TransformReportRecordPathRowsProps } from './TransformReportRecordPathRows';
 
@@ -14,7 +12,7 @@ export const buildNestedCommandPathSectionProps = (
   record: TransformReportRecord,
   callbacks: TransformReportRecordPathActions
 ): TransformReportRecordPathRowsProps | null => (
-  buildPathSectionProps(record.nestedCommandFields, {
+  buildStyledPathSectionProps(record.nestedCommandFields, callbacks, 'command', true, {
     title: '内部CMD字段',
     countLabel: `${record.nestedCommandFieldCount} 个`,
     rowKeyPrefix: `${record.path}:cmd-field`,
@@ -24,8 +22,6 @@ export const buildNestedCommandPathSectionProps = (
     copyValueDataTour: 'transform-report-copy-nested-cmd-value',
     locateDataTour: 'transform-report-locate-nested-cmd-path',
     schemeDataTour: 'transform-report-open-nested-cmd-scheme',
-    ...pathSectionStyles.command,
-    ...callbacks,
     moreContent: buildIndexedMoreContent(
       record.hasMoreNestedCommandFields,
       '还有更多内部 CMD 字段未展示',
@@ -40,7 +36,7 @@ export const buildNestedResourcePathSectionProps = (
   record: TransformReportRecord,
   callbacks: TransformReportRecordPathActions
 ): TransformReportRecordPathRowsProps | null => (
-  buildPathSectionProps(record.nestedResourceFields, {
+  buildStyledPathSectionProps(record.nestedResourceFields, callbacks, 'resource', false, {
     title: '静态资源字段',
     countLabel: `${record.nestedResourceFieldCount || 0} 个`,
     rowKeyPrefix: `${record.path}:resource-field`,
@@ -49,8 +45,6 @@ export const buildNestedResourcePathSectionProps = (
     copyPathDataTour: 'transform-report-copy-nested-resource-path',
     copyValueDataTour: 'transform-report-copy-nested-resource-value',
     locateDataTour: 'transform-report-locate-nested-resource-path',
-    ...pathSectionStyles.resource,
-    ...pickCopyLocateActions(callbacks),
     moreContent: buildIndexedMoreContent(
       Boolean(record.hasMoreNestedResourceFields),
       '还有更多静态资源字段未展示',
@@ -65,7 +59,7 @@ export const buildDecodedPathSectionProps = (
   record: TransformReportRecord,
   callbacks: TransformReportRecordPathActions
 ): TransformReportRecordPathRowsProps | null => (
-  buildPathSectionProps(record.decodedPaths, {
+  buildStyledPathSectionProps(record.decodedPaths, callbacks, 'decoded', false, {
     title: '内部路径',
     countLabel: `${formatDecodedPathCount(record)} 条`,
     rowKeyPrefix: record.path,
@@ -74,8 +68,6 @@ export const buildDecodedPathSectionProps = (
     copyValueDataTour: 'transform-report-copy-decoded-value',
     locateDataTour: 'transform-report-locate-decoded-path',
     moreDataTour: 'transform-report-more-decoded-paths',
-    ...pathSectionStyles.decoded,
-    ...pickCopyLocateActions(callbacks),
     moreContent: buildIndexedMoreContent(
       record.hasMoreDecodedPaths,
       <>还有更多内部路径未展示，总计 {formatDecodedPathCount(record)} 条</>,
