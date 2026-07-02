@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildWorkflow,
-  qualitySnapshot,
 } from './transformReportPanelCopyWorkflowTestFixture';
+import { qualitySnapshot } from './transformReportPanelCopyWorkflowTestData';
 
 describe('transformReportPanelCopyWorkflow state actions', () => {
   beforeEach(() => {

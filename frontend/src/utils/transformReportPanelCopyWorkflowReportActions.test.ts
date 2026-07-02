@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildWorkflow,
-  getCopyMetricsMocks,
-  getTransformSummaryMocks,
+} from './transformReportPanelCopyWorkflowTestFixture';
+import {
   report,
   reportView,
-} from './transformReportPanelCopyWorkflowTestFixture';
+} from './transformReportPanelCopyWorkflowTestData';
+import {
+  getCopyMetricsMocks,
+  getTransformSummaryMocks,
+} from './transformReportPanelCopyWorkflowTestMocks';
 
 const transformSummary = getTransformSummaryMocks();
 const copyMetrics = getCopyMetricsMocks();

@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  activeContext,
   buildWorkflow,
-  getTransformSummaryMocks,
-  guardedReportViewActionNames,
 } from './transformReportPanelCopyWorkflowTestFixture';
+import {
+  activeContext,
+  guardedReportViewActionNames,
+} from './transformReportPanelCopyWorkflowTestData';
+import { getTransformSummaryMocks } from './transformReportPanelCopyWorkflowTestMocks';
 
 const transformSummary = getTransformSummaryMocks();
 

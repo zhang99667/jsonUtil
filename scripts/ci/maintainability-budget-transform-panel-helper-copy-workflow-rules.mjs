@@ -14,5 +14,7 @@ export const transformPanelHelperCopyWorkflowMaintainabilityBudgets = [
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowReportActions.test.ts', 75, '深度解析报告级复制动作单测应只覆盖归档、协作报告、诊断和质量快照复制行为'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowStateActions.test.ts', 70, '深度解析复制 workflow 状态动作单测应只覆盖质量基线和模板填充入口保护'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowInlineActions.test.ts', 75, '深度解析行级复制动作单测应只覆盖路径复制、CMD 差异和 CMD 对比包行为'),
-  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowTestFixture.ts', 150, '深度解析复制 workflow 测试 fixture 应集中 mock、默认 state/effects 和 guarded action 列表'),
+  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowTestFixture.ts', 75, '深度解析复制 workflow 测试 fixture 应只维护默认 state/effects 和 workflow 构建'),
+  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowTestData.ts', 55, '深度解析复制 workflow 测试数据应只维护默认 report、reportView、候选结构和 guarded action 列表'),
+  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowTestMocks.ts', 55, '深度解析复制 workflow 测试 mock 应只维护 summary、copy metrics 和 CMD 对比模块替身'),
 ];
