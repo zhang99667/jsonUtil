@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildTransformIssueSampleSummary } from './transformIssueSampleSummary';
-import { createIssueSampleReportView } from './transformIssueSampleCollectorsTestFixture';
+import { createTransformReportView } from './transformReportViewTestFixture';
 
 describe('transformIssueSampleSummary', () => {
   it('根据视图计数构建样本导出摘要', () => {
-    const summary = buildTransformIssueSampleSummary(createIssueSampleReportView({
+    const summary = buildTransformIssueSampleSummary(createTransformReportView({
       unresolvedCandidates: [{
         path: '$.x',
         originalValue: '1',
