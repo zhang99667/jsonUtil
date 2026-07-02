@@ -5,11 +5,7 @@ import {
   type TransformContext,
   type ValidationResult,
 } from '../types';
-import {
-  createPreviewOutputSyncFailedResult,
-  executeAppPreviewOutputSync,
-  type AppPreviewOutputSyncRunnerResult,
-} from '../utils/appPreviewOutputSyncRunner';
+import { runAppPreviewOutputSyncRequest } from '../utils/appPreviewOutputSyncRequest';
 import {
   beginPreviewOutputDraft,
   clearPreviewOutputDraft,
@@ -93,19 +89,15 @@ export const useAppPreviewOutputSync = ({
       outputChangeTimer.current = null;
 
       const syncOutputToSource = async () => {
-        const currentFile = files.find(file => file.id === activeFileId);
-        let syncResult: AppPreviewOutputSyncRunnerResult;
-        try {
-          syncResult = await executeAppPreviewOutputSync({
-            previewText,
-            mode,
-            originalInput: inputRef.current,
-            context: currentFile?.transformContext || fallbackContextRef.current,
-            validateJsonMaybeAsync,
-          });
-        } catch {
-          syncResult = createPreviewOutputSyncFailedResult();
-        }
+        const syncResult = await runAppPreviewOutputSyncRequest({
+          previewText,
+          files,
+          activeFileId,
+          mode,
+          originalInput: inputRef.current,
+          fallbackContext: fallbackContextRef.current,
+          validateJsonMaybeAsync,
+        });
 
         if (outputSyncRequestId !== outputSyncRequestIdRef.current) return;
 
