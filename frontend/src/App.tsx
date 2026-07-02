@@ -714,6 +714,7 @@ const App: React.FC = () => {
           isProcessing={isProcessing}
           isOutputTransforming={isOutputTransforming}
           aiRepairSummary={aiRepairSummary}
+          activeEditor={activeEditor}
           sourceValidation={validation}
           previewValidation={previewValidation}
           sourceErrorLocation={sourceErrorLocation}
