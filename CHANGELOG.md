@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.298 (2026-07-02) - 工具面板 React Test Helper 分层
+### 🚀 优化与改进
+- **React Mock Helper**: 将工具面板命令测试 fixture 中的 React hook mock、effect 清理和 state setter 捕获抽成独立 test helper
+- **Fixture 预算收紧**: 为 React test helper 补充独立预算，并把原工具面板 fixture 预算降到 hook 装配范围
+
 ## v1.8.297 (2026-07-02) - Copy Workflow State 类型分层
 ### 🚀 优化与改进
 - **State 类型拆分**: 将深度解析面板复制 workflow 的 state 和质量基线契约抽成独立类型文件，主 workflow 契约回归 effects 与 handler 分组职责
