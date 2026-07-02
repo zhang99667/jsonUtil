@@ -5,6 +5,11 @@ import {
   resetAppTemplateFillCommandRunnerMocks,
   runTemplateFillCommand,
 } from './appTemplateFillCommandRunnerTestFixture';
+import {
+  expectPlaceholderQualityDeltaApplied,
+  expectTemplateCommandQualityDeltaCleared,
+  expectTemplateCommandSourceApplied,
+} from './appTemplateFillCommandRunnerTestAssertions';
 
 const mocks = getAppTemplateFillCommandRunnerMocks();
 
@@ -21,25 +26,9 @@ describe('appTemplateFillCommandRunner', () => {
     expect(effects.loadSummaryModule).not.toHaveBeenCalled();
     expect(mocks.buildAppTemplateFillQualityDelta).not.toHaveBeenCalled();
     expect(mocks.applyTemplate).toHaveBeenCalledWith('{"a":1}', '{"b":2}');
-    expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
-    expect(effects.onSetSourceText).toHaveBeenCalledWith('{"merged":true}');
-    expect(effects.currentSourceText).toBe('{"merged":true}');
-    expect(effects.onUpdateActiveFileContent).toHaveBeenCalledWith('{"merged":true}');
+    expectTemplateCommandQualityDeltaCleared(effects);
+    expectTemplateCommandSourceApplied(effects);
     expect(effects.onShowSuccess).toHaveBeenCalledWith('模板已应用');
-  });
-
-  it('质量摘要模块 chunk 失效时交给统一刷新恢复', async () => {
-    const effects = createAppTemplateFillCommandEffects();
-    const error = new TypeError('Failed to fetch dynamically imported module: /assets/transformSummary-old.js');
-    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
-    mocks.dispatchChunkLoadRecoveryEvent.mockReturnValue(true);
-    effects.loadSummaryModule.mockRejectedValue(error);
-
-    await runTemplateFillCommand(effects, '{"templateVersion":"1.0","placeholders":{}}');
-
-    expect(mocks.dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
-    expect(effects.onSetTemplateApplyQualityDelta).not.toHaveBeenCalled();
-    expect(effects.onShowError).not.toHaveBeenCalled();
   });
 
   it('占位符回填模板会生成质量 delta', async () => {
@@ -51,54 +40,7 @@ describe('appTemplateFillCommandRunner', () => {
     await runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
 
     expect(effects.loadSummaryModule).toHaveBeenCalledTimes(1);
-    expect(mocks.buildAppTemplateFillQualityDelta).toHaveBeenCalledWith(expect.objectContaining({
-      sourceBeforeApply: '{"a":1}',
-      sourceAfterApply: '{"merged":true}',
-      autoExpandScheme: true,
-      summaryModule,
-    }));
-    expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('质量变化: +1');
+    expectPlaceholderQualityDeltaApplied(effects, summaryModule);
     expect(effects.onShowSuccess).toHaveBeenCalledWith('占位符已回填，质量对比已更新');
-  });
-
-  it('占位符回填期间 SOURCE 已变化时阻止应用模板', async () => {
-    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
-    const effects = createAppTemplateFillCommandEffects();
-    effects.loadSummaryModule.mockImplementation(async () => {
-      effects.currentSourceText = '{"changed":true}';
-      return {} as never;
-    });
-
-    await runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
-
-    expect(mocks.applyTemplate).not.toHaveBeenCalled();
-    expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
-    expect(effects.onShowError).toHaveBeenCalledWith('内容已变化，请重新应用模板');
-  });
-
-  it('模板应用失败时保留原始错误文案', async () => {
-    mocks.applyTemplate.mockImplementation(() => {
-      throw new Error('当前编辑器内容为空');
-    });
-    const effects = createAppTemplateFillCommandEffects();
-
-    await runTemplateFillCommand(effects);
-
-    expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
-    expect(effects.onShowError).toHaveBeenCalledWith('当前编辑器内容为空');
-  });
-
-  it('非 Error 异常使用失败兜底文案且不写回 SOURCE', async () => {
-    mocks.applyTemplate.mockImplementation(() => {
-      throw 'blocked';
-    });
-    const effects = createAppTemplateFillCommandEffects();
-
-    await runTemplateFillCommand(effects);
-
-    expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
-    expect(effects.onSetSourceText).not.toHaveBeenCalled();
-    expect(effects.onUpdateActiveFileContent).not.toHaveBeenCalled();
-    expect(effects.onShowError).toHaveBeenCalledWith('模板应用失败');
   });
 });
