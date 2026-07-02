@@ -1,9 +1,9 @@
 import type { JsonValue } from '../types';
-import { formatDecodedPathCopyValue, formatJsonValuePreview } from './transformValuePreview';
+import type { TransformDecodedLeaf } from './transformReportDecodedLeafWalker';
+import { walkTransformDecodedLeaves } from './transformReportDecodedLeafWalker';
+import { formatDecodedPathCopyValue } from './transformValuePreview';
 import type { TransformReportDecodedPath } from './transformSummary';
 import {
-  appendTransformJsonPathIndex,
-  appendTransformJsonPathKey,
   joinTransformJsonPath,
 } from './transformReportJsonPath';
 
@@ -36,13 +36,11 @@ export interface TransformDecodedPathData {
 }
 
 const createDecodedPathRow = (
-  path: string,
-  value: JsonValue,
-  preview = formatJsonValuePreview(value, 80)
+  leaf: TransformDecodedLeaf
 ): DecodedPathCollectRow => ({
-  path,
-  preview,
-  valueText: formatDecodedPathCopyValue(value),
+  path: leaf.path,
+  preview: leaf.preview,
+  valueText: formatDecodedPathCopyValue(leaf.value),
 });
 
 const rebaseDecodedPathRow = (
@@ -78,41 +76,14 @@ const pushDecodedPath = (
   state.hasMore = true;
 };
 
-const collectDecodedLeafPaths = (
-  value: JsonValue,
-  currentPath: string,
+const collectDecodedPathRows = (
+  decodedValue: JsonValue,
   state: DecodedPathCollectState
 ) => {
-  if (state.isCountTruncated) return;
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      pushDecodedPath(state, createDecodedPathRow(currentPath, value, '数组 0 项'));
-      return;
-    }
-
-    for (let index = 0; index < value.length; index++) {
-      collectDecodedLeafPaths(value[index], appendTransformJsonPathIndex(currentPath, index), state);
-      if (state.isCountTruncated) return;
-    }
-    return;
-  }
-
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value);
-    if (entries.length === 0) {
-      pushDecodedPath(state, createDecodedPathRow(currentPath, value, '对象: 空'));
-      return;
-    }
-
-    for (const [key, item] of entries) {
-      collectDecodedLeafPaths(item, appendTransformJsonPathKey(currentPath, key), state);
-      if (state.isCountTruncated) return;
-    }
-    return;
-  }
-
-  pushDecodedPath(state, createDecodedPathRow(currentPath, value));
+  walkTransformDecodedLeaves(decodedValue, '$', leaf => {
+    pushDecodedPath(state, createDecodedPathRow(leaf));
+    return !state.isCountTruncated;
+  });
 };
 
 export const buildTransformDecodedPaths = (
@@ -137,7 +108,7 @@ export const buildTransformDecodedPaths = (
     countLimit: DEFAULT_DECODED_PATH_COUNT_LIMIT,
     isCountTruncated: false,
   };
-  collectDecodedLeafPaths(decodedValue, '$', state);
+  collectDecodedPathRows(decodedValue, state);
 
   return {
     decodedPaths: state.rows.map(row => rebaseDecodedPathRow(recordPath, row)),

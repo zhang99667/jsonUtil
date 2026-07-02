@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.367 (2026-07-03) - decoded leaf walker 职责收敛
+### 🏗️ 架构与基础设施
+- **decoded leaf 遍历复用**: 将深度解析内部路径和搜索索引共用的 leaf、空数组、空对象递归遍历拆到独立 walker，两个调用方只保留路径报告映射和搜索文本拼装职责，并同步收紧维护预算
+
 ## v1.8.366 (2026-07-03) - 问题样本 collector 职责收敛
 ### 🏗️ 架构与基础设施
 - **问题样本 collector 瘦身**: 将样本导出摘要计数拆到独立 summary helper，并把测试默认 `TransformReportView` 移到 fixture，collector 主体只保留 unresolved、runtime placeholder 和 warning 样本映射
