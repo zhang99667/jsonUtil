@@ -13,6 +13,12 @@ import type { AppLazyToolPanelsProps } from './AppLazyToolPanelsTypes';
 
 export type { AppLazyToolPanelsProps } from './AppLazyToolPanelsTypes';
 
+const renderLazyPanelSlot = (isLoaded: boolean, children: React.ReactNode) => (
+  <AppLazyPanelSlot isLoaded={isLoaded}>
+    {children}
+  </AppLazyPanelSlot>
+);
+
 export const AppLazyToolPanels: React.FC<AppLazyToolPanelsProps> = ({
   lazyPanelsLoaded,
   jsonPathPanel,
@@ -24,32 +30,15 @@ export const AppLazyToolPanels: React.FC<AppLazyToolPanelsProps> = ({
   templatePanel,
 }) => (
   <>
-    <AppLazyPanelSlot isLoaded={lazyPanelsLoaded.jsonPath}>
-      <LazyJsonPathPanel {...jsonPathPanel} />
-    </AppLazyPanelSlot>
-
-    <AppLazyPanelSlot isLoaded={lazyPanelsLoaded.jsonTree}>
-      <LazyJsonTreePanel {...jsonTreePanel} />
-    </AppLazyPanelSlot>
-
-    <AppLazyPanelSlot isLoaded={lazyPanelsLoaded.jsonCompare}>
-      <LazyJsonComparePanel {...jsonComparePanel} />
-    </AppLazyPanelSlot>
-
-    <AppLazyPanelSlot isLoaded={lazyPanelsLoaded.jsonSchema}>
-      <LazyJsonSchemaPanel {...jsonSchemaPanel} />
-    </AppLazyPanelSlot>
-
-    <AppLazyPanelSlot isLoaded={lazyPanelsLoaded.transformReport}>
+    {renderLazyPanelSlot(lazyPanelsLoaded.jsonPath, <LazyJsonPathPanel {...jsonPathPanel} />)}
+    {renderLazyPanelSlot(lazyPanelsLoaded.jsonTree, <LazyJsonTreePanel {...jsonTreePanel} />)}
+    {renderLazyPanelSlot(lazyPanelsLoaded.jsonCompare, <LazyJsonComparePanel {...jsonComparePanel} />)}
+    {renderLazyPanelSlot(lazyPanelsLoaded.jsonSchema, <LazyJsonSchemaPanel {...jsonSchemaPanel} />)}
+    {renderLazyPanelSlot(
+      lazyPanelsLoaded.transformReport,
       <LazyTransformReportPanel {...transformReportPanel} />
-    </AppLazyPanelSlot>
-
-    <AppLazyPanelSlot isLoaded={lazyPanelsLoaded.scheme}>
-      <LazySchemeViewerModal {...schemePanel} />
-    </AppLazyPanelSlot>
-
-    <AppLazyPanelSlot isLoaded={lazyPanelsLoaded.template}>
-      <LazyTemplateFillPanel {...templatePanel} />
-    </AppLazyPanelSlot>
+    )}
+    {renderLazyPanelSlot(lazyPanelsLoaded.scheme, <LazySchemeViewerModal {...schemePanel} />)}
+    {renderLazyPanelSlot(lazyPanelsLoaded.template, <LazyTemplateFillPanel {...templatePanel} />)}
   </>
 );
