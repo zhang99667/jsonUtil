@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.305 (2026-07-02) - Scheme 结构化载荷规范化分层
+### 🚀 优化与改进
+- **规范化 Helper**: 将 JSON 字符串字面量、JSON 斜杠转义、Unicode ASCII 转义和 quote 类载荷规范化顺序抽成独立纯 helper
+- **Scheme 主流程瘦身**: detect/actionable/decode 复用同一规范化入口，并为新 helper 补充单测和维护预算
+
 ## v1.8.304 (2026-07-02) - Base64 Meta Badge 模型分层
 ### 🚀 优化与改进
 - **Badge 模型 Helper**: 将 Scheme 内部 Base64 元信息的头部、后缀、跳过片段、解码参数和剩余数量展示模型抽成独立 helper

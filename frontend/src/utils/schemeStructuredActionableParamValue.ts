@@ -1,11 +1,4 @@
-import {
-  tryNormalizeHtmlJsonQuotePayload,
-  tryNormalizeJsonEscapedQuotePayload,
-} from './schemeJsonPayloads';
-import {
-  tryNormalizeJsonEscapedSlashPayload,
-  tryNormalizeJsonUnicodeAsciiPayload,
-} from './schemeEscapedPayloads';
+import { getFirstSchemeStructuredPayloadNormalization } from './schemeStructuredPayloadNormalization';
 
 export interface SchemeStructuredActionableParamValueOptions {
   base64Decode: (value: string) => string;
@@ -36,29 +29,12 @@ export const isStructuredActionableParamValue = (
   const trimmed = value.trim();
   if (!trimmed) return false;
 
-  const jsonStringPayload = options.tryParseJsonStringPayload(trimmed);
-  if (jsonStringPayload !== null) {
-    return options.shouldExposeNormalizedValue(jsonStringPayload, depth + 1);
-  }
-
-  const escapedSlashPayload = tryNormalizeJsonEscapedSlashPayload(trimmed, options.looksLikeStructuredPayload);
-  if (escapedSlashPayload !== null) {
-    return options.shouldExposeNormalizedValue(escapedSlashPayload, depth + 1);
-  }
-
-  const unicodeAsciiPayload = tryNormalizeJsonUnicodeAsciiPayload(trimmed, options.looksLikeStructuredPayload);
-  if (unicodeAsciiPayload !== null) {
-    return options.shouldExposeNormalizedValue(unicodeAsciiPayload, depth + 1);
-  }
-
-  const escapedQuotePayload = tryNormalizeJsonEscapedQuotePayload(trimmed);
-  if (escapedQuotePayload !== null) {
-    return options.shouldExposeNormalizedValue(escapedQuotePayload, depth + 1);
-  }
-
-  const htmlJsonPayload = tryNormalizeHtmlJsonQuotePayload(trimmed);
-  if (htmlJsonPayload !== null) {
-    return options.shouldExposeNormalizedValue(htmlJsonPayload, depth + 1);
+  const normalizedPayload = getFirstSchemeStructuredPayloadNormalization(trimmed, {
+    looksLikeStructuredPayload: options.looksLikeStructuredPayload,
+    tryParseJsonStringPayload: options.tryParseJsonStringPayload,
+  });
+  if (normalizedPayload !== null) {
+    return options.shouldExposeNormalizedValue(normalizedPayload.value, depth + 1);
   }
 
   if (options.isUrl(trimmed)) return options.isActionableUrl(trimmed, depth + 1);

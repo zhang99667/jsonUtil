@@ -1,6 +1,8 @@
+import { governanceSchemeSupportPayloadMaintainabilityBudgets } from './maintainability-budget-governance-scheme-support-payload-rules.mjs';
 import { governanceSchemeStructuredQueryMaintainabilityBudgets } from './maintainability-budget-governance-scheme-structured-query-rules.mjs';
 
 export const governanceSchemeSupportMaintainabilityBudgets = [
+  ...governanceSchemeSupportPayloadMaintainabilityBudgets,
   ...governanceSchemeStructuredQueryMaintainabilityBudgets,
   {
     file: 'scripts/ci/maintainability-budget-scheme-support-rules.mjs',
@@ -23,9 +25,9 @@ export const governanceSchemeSupportMaintainabilityBudgets = [
     reason: 'Scheme 日志字段预算规则应保持短表，新增日志语法规则先按 syntax/types 分层',
   },
   {
-    file: 'scripts/ci/maintainability-budget-scheme-support-payload-rules.mjs',
-    maxLines: 40,
-    reason: 'Scheme payload helper 预算规则应保持短表，新增载荷规则先评估主流程拆分',
+    file: 'scripts/ci/maintainability-budget-governance-scheme-support-payload-rules.mjs',
+    maxLines: 25,
+    reason: 'Scheme support payload 治理预算规则应独立成短表，避免 support 治理入口继续贴边',
   },
   {
     file: 'scripts/ci/maintainability-budget-scheme-support-query-rules.mjs',
