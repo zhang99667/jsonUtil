@@ -1,9 +1,11 @@
 import type {
-  JsonValue,
   TransformSchemeParamStageSummary,
   TransformWarning,
 } from '../types';
-import type { TransformReportResourceType } from './transformSummaryGroupTypes';
+import type {
+  TransformReportCommandSchemaRow,
+  TransformReportDecodedPath,
+} from './transformSummaryDecodedPathTypes';
 
 export interface TransformReportRecord {
   path: string;
@@ -45,22 +47,6 @@ export interface TransformReportRecord {
   stepCount: number;
   hasNonReversibleScheme: boolean;
   schemeParamStageSummary?: TransformSchemeParamStageSummary;
-}
-
-export interface TransformReportDecodedPath {
-  path: string;
-  preview: string;
-  copyText?: string;
-  value?: JsonValue;
-  sourceValue?: JsonValue;
-  resourceType?: TransformReportResourceType;
-  resourceTypeLabel?: string;
-}
-
-export interface TransformReportCommandSchemaRow {
-  schema: string;
-  path: string;
-  source?: string;
 }
 
 export interface TransformReportWarning {
