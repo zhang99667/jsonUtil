@@ -1,22 +1,12 @@
-export interface TransformReportPlaceholderToolbarStateInput {
-  filteredPlaceholderCount: number;
-  isPlaceholderTruncated: boolean;
-  hasTemplateFillTarget: boolean;
-  hasPlaceholderFillTemplate: boolean;
-  isFilterPending: boolean;
-  formatTemplateFillTitle: (readyTitle: string) => string;
-}
+import type {
+  TransformReportPlaceholderToolbarState,
+  TransformReportPlaceholderToolbarStateInput,
+} from './transformReportPlaceholderToolbarStateTypes';
 
-export interface TransformReportPlaceholderToolbarState {
-  filteredPlaceholderCount: number;
-  isPlaceholderTruncated: boolean;
-  canShowOpenTemplateFill: boolean;
-  isPlaceholderFillTemplateDisabled: boolean;
-  isCopyPlaceholderReportDisabled: boolean;
-  openTemplateFillTitle: string;
-  copyTemplateTitle: string;
-  copyPlaceholderReportTitle: string;
-}
+export type {
+  TransformReportPlaceholderToolbarState,
+  TransformReportPlaceholderToolbarStateInput,
+} from './transformReportPlaceholderToolbarStateTypes';
 
 export const buildTransformReportPlaceholderToolbarState = ({
   filteredPlaceholderCount,
