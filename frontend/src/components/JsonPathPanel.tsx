@@ -11,6 +11,7 @@ import { getJsonPathScenarioExamples } from '../utils/jsonPathExamples';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
 import { normalizeJsonPathQueryInput } from '../utils/jsonPathInput';
 import { formatJsonPathValueForPreview } from '../utils/jsonPathPreview';
+import { shouldStopNestedScrollPropagation } from '../utils/nestedScrollPropagation';
 import {
     getDurationBucket,
     getTextSizeBucket,
@@ -515,6 +516,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         ));
     };
 
+    const handleNestedScrollWheel = (event: React.WheelEvent<HTMLElement>) => {
+        const target = event.currentTarget;
+        if (shouldStopNestedScrollPropagation(target.scrollHeight, target.clientHeight)) {
+            event.stopPropagation();
+        }
+    };
+
     const copyQueryResults = async () => {
         if (queryValues.length === 0) return;
 
@@ -583,11 +591,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             defaultPosition={{ x: 100, y: 100 }}
             defaultSize={{ width: 600, height: 400 }}
             minSize={{ width: 400, height: 300 }}
-            resizeDirections={['width']}
             dataTour="jsonpath-panel"
         >
             {/* 面板内容 */}
-            <div className="p-4 flex-1 flex flex-col min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+            <div className="p-4 flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:hidden">
                 {/* 查询输入框 */}
                 <div className="mb-3">
                     <div className="flex gap-2">
@@ -664,7 +671,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 {favorites.length > 0 && (
                     <div data-tour="jsonpath-favorites" className="mb-3 flex-shrink-0">
                         <div className="text-xs text-gray-500 mb-2">常用收藏:</div>
-                        <div className="space-y-1 max-h-24 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+                        <div
+                            onWheel={handleNestedScrollWheel}
+                            className="space-y-1 max-h-24 overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:hidden"
+                        >
                             {favorites.map(item => (
                                 <div key={item} className="relative group">
                                     <button
@@ -871,7 +881,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 {queryResultPreviewItems.length > 0 && (
                     <div
                         data-tour="jsonpath-results"
-                        className="mb-3 max-h-28 flex-shrink-0 overflow-y-auto rounded border border-editor-border bg-editor-bg/60 p-1 space-y-1 [&::-webkit-scrollbar]:hidden"
+                        onWheel={handleNestedScrollWheel}
+                        className="mb-3 max-h-28 flex-shrink-0 overflow-y-auto overscroll-contain rounded border border-editor-border bg-editor-bg/60 p-1 space-y-1 [&::-webkit-scrollbar]:hidden"
                     >
                         {queryResultPreviewItems.map(item => (
                             <div
@@ -950,7 +961,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                         <div
                             ref={historyListRef}
                             onScroll={handleScroll}
-                            className="max-h-28 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:hidden"
+                            onWheel={handleNestedScrollWheel}
+                            className="max-h-28 overflow-y-auto overscroll-contain space-y-1 [&::-webkit-scrollbar]:hidden"
                         >
                             {history.map((item, idx) => (
                                 <div key={idx} className="relative group">
