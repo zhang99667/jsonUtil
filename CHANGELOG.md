@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.302 (2026-07-02) - Workflow Run 文本 Helper 分层
+### 🚀 优化与改进
+- **Workflow 文本 Helper**: 将 GitHub workflow run 块里的缩进、inline quote 和 Actions 表达式归一化抽成独立 helper
+- **部署检查预算收紧**: 为 workflow run 文本 helper 补充独立预算，并把 run 块提取入口降到扫描职责范围
+
 ## v1.8.301 (2026-07-02) - 工具栏面板入口类型分层
 ### 🚀 优化与改进
 - **面板类型拆分**: 将工具栏面板入口的 item id、icon id 和 item 契约抽成独立类型文件，配置入口回归纯元数据职责

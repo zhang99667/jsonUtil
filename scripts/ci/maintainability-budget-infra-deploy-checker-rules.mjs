@@ -6,5 +6,6 @@ export const infraDeployCheckerMaintainabilityBudgets = [
   { file: 'scripts/ci/deployShellSyntaxRunner.mjs', maxLines: 35, reason: '部署脚本 bash -n runner 应只负责执行和失败格式化' },
   { file: 'scripts/ci/deployShellTargets.mjs', maxLines: 25, reason: '部署脚本检查目标列表应只维护 shell 文件和 workflow 文件清单' },
   { file: 'scripts/ci/deployShellHeredocs.mjs', maxLines: 45, reason: '部署脚本 heredoc 提取应只识别脚本 marker 和正文边界' },
-  { file: 'scripts/ci/githubWorkflowRunBlocks.mjs', maxLines: 60, reason: 'GitHub workflow run 提取应只处理 inline run、块状 run 和 Actions 表达式占位' },
+  { file: 'scripts/ci/githubWorkflowRunBlockText.mjs', maxLines: 35, reason: 'GitHub workflow run 文本 helper 应只维护缩进、inline quote 和 Actions 表达式归一化' },
+  { file: 'scripts/ci/githubWorkflowRunBlocks.mjs', maxLines: 55, reason: 'GitHub workflow run 提取入口应只处理 inline run、块状 run 和 startLine 记录' },
 ];
