@@ -68,25 +68,17 @@ describe('appTransformOutput', () => {
     expect(state.shouldClearPendingOutput).toBe(true);
   });
 
-  it('PREVIEW 正在回写时优先展示 pending 输出且不清空暂存', () => {
+  it.each([
+    ['正在回写', '{"a":2}', '{"a":2}'],
+    ['被删空', '', ''],
+  ])('PREVIEW %s时优先展示草稿且不清空暂存', (_, pendingOutputValue, expectedOutput) => {
     const state = buildOutputState({
       isUpdatingFromOutput: true,
-      pendingOutputValue: '{"a":2}',
+      pendingOutputValue,
     });
 
     expect(performTransform).not.toHaveBeenCalled();
-    expect(state.output).toBe('{"a":2}');
-    expect(state.shouldClearPendingOutput).toBe(false);
-  });
-
-  it('PREVIEW 被删空时保留空草稿而不是恢复派生输出', () => {
-    const state = buildOutputState({
-      isUpdatingFromOutput: true,
-      pendingOutputValue: '',
-    });
-
-    expect(performTransform).not.toHaveBeenCalled();
-    expect(state.output).toBe('');
+    expect(state.output).toBe(expectedOutput);
     expect(state.shouldClearPendingOutput).toBe(false);
   });
 
