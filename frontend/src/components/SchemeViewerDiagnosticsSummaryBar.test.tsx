@@ -1,35 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SchemeQualitySummary } from '../utils/schemeQualitySummary';
 import { SchemeViewerDiagnosticsSummaryBar } from './SchemeViewerDiagnosticsSummaryBar';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findButtonsByText = (node: unknown, label: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(child => findButtonsByText(child, label));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === 'button' && collectText(node).includes(label) ? [node] : [];
-  return matches.concat(findButtonsByText(node.props.children, label));
-};
+import { collectText, findByTypeAndText, type ElementLike } from './schemeViewerElementTestHelpers';
 
 const clickElement = (node: ElementLike) => {
   const onClick = node.props.onClick;
@@ -63,7 +35,7 @@ describe('SchemeViewerDiagnosticsSummaryBar', () => {
     expect(text).toContain('解码层 · 2');
     expect(text).toContain('展开详情');
 
-    clickElement(findButtonsByText(tree, '展开详情')[0]);
+    clickElement(findByTypeAndText(tree, 'button', '展开详情')[0]);
     expect(onToggleExpanded).toHaveBeenCalledTimes(1);
   });
 
