@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 import { TransformMode } from '../types';
 import { useAppToolPanelCommands } from './useAppToolPanelCommands';
+import { installToolPanelCommandWindowStubs } from './useAppToolPanelCommandsWindowTestHelper';
 
 const reactMocks = vi.hoisted(() => ({
   useCallback: vi.fn(),
@@ -40,19 +41,6 @@ const STATE_KEYS = [
 type StateKey = typeof STATE_KEYS[number];
 type StateOverrides = Partial<Record<StateKey, unknown>>;
 type StateSetters = Partial<Record<StateKey, ReturnType<typeof vi.fn>>>;
-
-interface FakeCustomEventInit<T> {
-  detail?: T;
-}
-
-class FakeCustomEvent<T = unknown> extends Event {
-  detail: T | undefined;
-
-  constructor(type: string, init: FakeCustomEventInit<T> = {}) {
-    super(type);
-    this.detail = init.detail;
-  }
-}
 
 export let cleanupEffect: (() => void) | undefined;
 export let stateSetters: StateSetters = {};
@@ -101,14 +89,7 @@ export const useToolPanelCommandsFixture = (
   options: Partial<Parameters<typeof useAppToolPanelCommands>[0]> = {},
   stateOverrides: StateOverrides = {},
 ) => {
-  const eventListeners = new Map<string, EventListener>();
-  vi.stubGlobal('CustomEvent', FakeCustomEvent);
-  vi.stubGlobal('window', {
-    addEventListener: vi.fn((type: string, listener: EventListener) => {
-      eventListeners.set(type, listener);
-    }),
-    removeEventListener: vi.fn(),
-  });
+  const eventListeners = installToolPanelCommandWindowStubs();
   installReactMocks(stateOverrides);
 
   const onSetMode = vi.fn();

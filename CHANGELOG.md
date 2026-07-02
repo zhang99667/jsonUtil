@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.286 (2026-07-02) - 工具面板测试 Fixture 分层
+### 🚀 优化与改进
+- **窗口事件测试 Helper**: 将工具面板命令 fixture 中的 CustomEvent 和 window listener stub 抽成独立 test-only helper，主 fixture 回归 React hook mock 与状态捕获
+- **Fixture 预算收紧**: 为窗口事件 helper 补充可维护性预算，并把工具面板命令 fixture 预算降到测试装配职责范围
+
 ## v1.8.285 (2026-07-02) - 报告路径区块配置分层
 ### 🚀 优化与改进
 - **路径区块配置 Helper**: 将深度解析记录里的内部 CMD、静态资源和内部路径区块配置抽成独立 helper，组件入口只负责渲染编排
