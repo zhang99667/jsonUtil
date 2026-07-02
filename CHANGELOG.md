@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.313 (2026-07-02) - 深度解析动作按钮统一
+### 🚀 优化与改进
+- **动作按钮统一**: 将深度解析报告里的复制、定位、Scheme 打开和 cmdHandler 对比按钮收敛到 `TransformReportActionButton`
+- **重复样式下沉**: 抽出报告动作按钮 tone 样式，减少记录头部、路径行、占位符、未展开线索和跳过记录区的 className 重复
+- **维护预算同步**: 更新深度解析报告动作按钮预算规则，避免继续检查已删除的 record 专用按钮壳
+
 ## v1.8.312 (2026-07-02) - 本地 CI 入口 helper 分层
 ### 🚀 优化与改进
 - **CI Helper 分层**: 将本地 CI 的日志、目录切换和 Maven Docker fallback 机制抽到 `local-ci-lib.sh`，主入口回归门禁顺序编排

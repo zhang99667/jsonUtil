@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TransformReportUnresolvedCandidate } from '../utils/transformSummary';
+import { TransformReportActionButton } from './TransformReportActionButton';
 import { SourceLabelBadge } from './TransformReportPanelAtoms';
 
 interface TransformReportUnresolvedSectionProps {
@@ -46,41 +47,35 @@ export const TransformReportUnresolvedSection: React.FC<TransformReportUnresolve
                 {candidate.detectedType}
               </span>
             )}
-            <button
-              type="button"
+            <TransformReportActionButton
               data-tour="transform-report-unresolved-copy-path"
               onClick={() => { void onCopyPath(candidate.path); }}
-              className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
             >
               复制路径
-            </button>
-            <button
-              type="button"
+            </TransformReportActionButton>
+            <TransformReportActionButton
               data-tour="transform-report-copy-unresolved-value"
               onClick={() => { void onCopyOriginalValue(candidate.originalValue); }}
-              className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
             >
               复制原始值
-            </button>
+            </TransformReportActionButton>
             {onLocatePath && (
-              <button
-                type="button"
+              <TransformReportActionButton
                 data-tour="transform-report-locate-unresolved-path"
                 onClick={() => onLocatePath(candidate.path)}
-                className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                tone="locate"
               >
                 定位
-              </button>
+              </TransformReportActionButton>
             )}
             {onOpenSchemeValue && (
-              <button
-                type="button"
+              <TransformReportActionButton
                 data-tour="transform-report-open-unresolved-scheme"
                 onClick={() => onOpenSchemeValue(candidate.originalValue)}
-                className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                tone="scheme"
               >
                 Scheme 打开
-              </button>
+              </TransformReportActionButton>
             )}
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TransformReportWarning } from '../utils/transformSummary';
+import { TransformReportActionButton } from './TransformReportActionButton';
 import { SourceLabelBadge } from './TransformReportPanelAtoms';
 
 interface TransformReportWarningsSectionProps {
@@ -41,41 +42,35 @@ export const TransformReportWarningsSection: React.FC<TransformReportWarningsSec
             </span>
           </div>
           <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
-            <button
-              type="button"
+            <TransformReportActionButton
               data-tour="transform-report-warning-copy-path"
               onClick={() => { void onCopyPath(warning.path); }}
-              className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
             >
               复制路径
-            </button>
-            <button
-              type="button"
+            </TransformReportActionButton>
+            <TransformReportActionButton
               data-tour="transform-report-warning-copy-value"
               onClick={() => { void onCopyOriginalValue(warning.originalValue); }}
-              className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
             >
               复制原始值
-            </button>
+            </TransformReportActionButton>
             {onLocatePath && (
-              <button
-                type="button"
+              <TransformReportActionButton
                 data-tour="transform-report-locate-warning-path"
                 onClick={() => onLocatePath(warning.path)}
-                className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                tone="locate"
               >
                 定位
-              </button>
+              </TransformReportActionButton>
             )}
             {onOpenSchemeValue && (
-              <button
-                type="button"
+              <TransformReportActionButton
                 data-tour="transform-report-open-warning-scheme"
                 onClick={() => onOpenSchemeValue(warning.originalValue)}
-                className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+                tone="scheme"
               >
                 Scheme 打开
-              </button>
+              </TransformReportActionButton>
             )}
           </div>
         </div>
