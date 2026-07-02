@@ -39,4 +39,9 @@ export const governanceAppWorkflowMaintainabilityBudgets = [
     maxLines: 35,
     reason: 'App 工作流支撑 helper 预算规则应保持短表，新增建议或文案 helper 先按领域分层',
   },
+  {
+    file: 'scripts/ci/maintainability-budget-app-workflow-support-smart-suggestion-rules.mjs',
+    maxLines: 35,
+    reason: 'App 智能建议支撑预算规则应独立维护建议 builder、特殊计划和静态矩阵预算',
+  },
 ];

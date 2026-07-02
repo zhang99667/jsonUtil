@@ -7,6 +7,7 @@ import {
   getAppSmartSuggestionStaticResult,
   type AppSmartSuggestionEffect,
 } from './appSmartSuggestionActionConfig';
+import { buildAppSmartSuggestionSchemePanelPlan } from './appSmartSuggestionSchemePlan';
 
 export type { AppSmartSuggestionEffect } from './appSmartSuggestionActionConfig';
 
@@ -55,25 +56,7 @@ export const buildAppSmartSuggestionActionPlan = ({
   }
 
   if (actionId === 'scheme-panel') {
-    const source = sourceText.trim();
-    if (!source) {
-      return {
-        eventName,
-        status: 'skipped',
-        nextMode,
-        effects: [],
-        errorMessage: 'SOURCE 为空，暂无可解析内容',
-      };
-    }
-
-    return {
-      eventName,
-      status: 'success',
-      nextMode,
-      effects: ['open-scheme-panel', 'close-transform-report'],
-      schemeInputValue: source,
-      successMessage: '已填入 Scheme 解析',
-    };
+    return buildAppSmartSuggestionSchemePanelPlan({ eventName, nextMode, sourceText });
   }
 
   const staticResult = getAppSmartSuggestionStaticResult(actionId);

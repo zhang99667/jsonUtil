@@ -1,14 +1,7 @@
+import { appWorkflowSupportSmartSuggestionMaintainabilityBudgets } from './maintainability-budget-app-workflow-support-smart-suggestion-rules.mjs';
+
 export const appWorkflowSupportMaintainabilityBudgets = [
-  {
-    file: 'frontend/src/utils/appSmartSuggestionActions.ts',
-    maxLines: 100,
-    reason: '智能输入建议点击策略应保持纯计划输出，副作用留在 App 主入口执行',
-  },
-  {
-    file: 'frontend/src/utils/appSmartSuggestionActionConfig.ts',
-    maxLines: 80,
-    reason: '智能输入建议静态动作矩阵应集中维护，避免回流到计划 builder',
-  },
+  ...appWorkflowSupportSmartSuggestionMaintainabilityBudgets,
   {
     file: 'frontend/src/utils/appActionLabels.ts',
     maxLines: 90,
