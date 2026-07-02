@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, useReducer } from 'react';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
@@ -25,6 +25,10 @@ import {
     parseStoredJsonPathList,
     removeJsonPathListItem
 } from '../utils/jsonPathLists';
+import {
+    initialJsonPathPanelQueryState,
+    jsonPathPanelQueryStateReducer,
+} from '../utils/jsonPathPanelQueryState';
 
 const MAX_VISIBLE_QUERY_RESULTS = 100;
 const JSONPATH_ERROR_MESSAGE_ID = 'jsonpath-error-message';
@@ -96,7 +100,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     onLocateStructure
 }) => {
     const [query, setQuery] = useState<string>('$');
-    const [error, setError] = useState<string>('');
     const [history, setHistory] = useState<string[]>(() => {
         return parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY));
     });
@@ -104,17 +107,23 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         return parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY));
     });
 
-    // 查询结果状态
-    const [queryRanges, setQueryRanges] = useState<HighlightRange[]>([]);
-    const [queryValues, setQueryValues] = useState<unknown[]>([]);
-    const [queryItems, setQueryItems] = useState<JsonPathQueryItem[]>([]);
-    const [currentResultIndex, setCurrentResultIndex] = useState<number>(0);
-    const [totalResults, setTotalResults] = useState<number>(0);
-    const [isResultLimited, setIsResultLimited] = useState<boolean>(false);
-    const [resultLimit, setResultLimit] = useState<number>(0);
-    const [emptyResultQuery, setEmptyResultQuery] = useState<string>('');
-    const [isQuerying, setIsQuerying] = useState<boolean>(false);
-    const [cancelledQuery, setCancelledQuery] = useState<string>('');
+    const [queryState, dispatchQueryState] = useReducer(
+        jsonPathPanelQueryStateReducer,
+        initialJsonPathPanelQueryState
+    );
+    const {
+        error,
+        queryRanges,
+        queryValues,
+        queryItems,
+        currentResultIndex,
+        totalResults,
+        isResultLimited,
+        resultLimit,
+        emptyResultQuery,
+        isQuerying,
+        cancelledQuery,
+    } = queryState;
     const workerRef = useRef<Worker | null>(null);
     const requestIdRef = useRef(0);
     const activeQueryRef = useRef('');
@@ -215,17 +224,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         requestIdRef.current++;
         activeQueryRef.current = '';
         activeQueryStartedAtRef.current = null;
-        setError('');
-        setIsQuerying(false);
-        setCancelledQuery('');
-        setQueryRanges([]);
-        setQueryValues([]);
-        setQueryItems([]);
-        setTotalResults(0);
-        setIsResultLimited(false);
-        setResultLimit(0);
-        setEmptyResultQuery('');
-        setCurrentResultIndex(0);
+        dispatchQueryState({ type: 'reset' });
         onHighlightRange(null);
     }, [onHighlightRange]);
 
@@ -235,26 +234,22 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const handleQuery = useCallback((overrideQuery?: string) => {
         const startedAt = performance.now();
-        setError('');
-        setCancelledQuery('');
+        dispatchQueryState({ type: 'prepare' });
         const normalizedQueryInput = normalizeJsonPathQueryInput(overrideQuery ?? query);
         const queryPath = normalizedQueryInput.query;
-        setEmptyResultQuery('');
 
         if (isDataPreparing) {
-            setError('深度格式化仍在处理，请稍后查询');
+            dispatchQueryState({ type: 'skipped', error: '深度格式化仍在处理，请稍后查询' });
             trackJsonPathQueryEvent('skipped', startedAt);
             return;
         }
 
         if (!queryPath) {
-            setError('请输入 JSONPath 表达式或字段名');
-            setQueryRanges([]);
-            setQueryValues([]);
-            setQueryItems([]);
-            setTotalResults(0);
-            setEmptyResultQuery('');
-            setCurrentResultIndex(0);
+            dispatchQueryState({
+                type: 'skipped',
+                error: '请输入 JSONPath 表达式或字段名',
+                clearResults: true,
+            });
             onHighlightRange(null);
             trackJsonPathQueryEvent('skipped', startedAt);
             return;
@@ -266,7 +261,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
         // 校验 JSON 数据有效性
         if (!jsonData || !jsonData.trim()) {
-            setError('请先在左侧输入 JSON 数据');
+            dispatchQueryState({ type: 'skipped', error: '请先在左侧输入 JSON 数据' });
             trackJsonPathQueryEvent('skipped', startedAt);
             return;
         }
@@ -277,14 +272,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         workerRef.current = worker;
         activeQueryRef.current = queryPath;
         activeQueryStartedAtRef.current = startedAt;
-        setIsQuerying(true);
-        setQueryRanges([]);
-        setQueryValues([]);
-        setQueryItems([]);
-        setTotalResults(0);
-        setIsResultLimited(false);
-        setResultLimit(0);
-        setCurrentResultIndex(0);
+        dispatchQueryState({ type: 'start' });
         onHighlightRange(null);
 
         worker.onmessage = (event: MessageEvent<{
@@ -302,48 +290,35 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             if (workerRef.current === worker) {
                 workerRef.current = null;
             }
-            setIsQuerying(false);
             activeQueryRef.current = '';
             const queryStartedAt = activeQueryStartedAtRef.current ?? startedAt;
             activeQueryStartedAtRef.current = null;
 
             if (event.data.error) {
-                setError(event.data.error);
-                setQueryRanges([]);
-                setQueryValues([]);
-                setQueryItems([]);
-                setTotalResults(0);
-                setIsResultLimited(false);
-                setResultLimit(0);
-                setEmptyResultQuery('');
-                setCurrentResultIndex(0);
+                dispatchQueryState({ type: 'failed', error: event.data.error });
                 onHighlightRange(null);
                 trackJsonPathQueryEvent('error', queryStartedAt);
                 return;
             }
 
             if (event.data.totalResults === 0) {
-                setQueryRanges([]);
-                setQueryValues([]);
-                setQueryItems([]);
-                setTotalResults(0);
-                setIsResultLimited(false);
-                setResultLimit(0);
-                setEmptyResultQuery(queryPath);
-                setCurrentResultIndex(0);
+                dispatchQueryState({ type: 'empty', query: queryPath });
                 onHighlightRange(null);
                 trackJsonPathQueryEvent('success', queryStartedAt);
                 return;
             }
 
-            setQueryRanges(event.data.ranges);
-            setQueryValues(event.data.values);
-            setQueryItems(event.data.items || []);
-            setTotalResults(event.data.totalResults);
-            setIsResultLimited(event.data.isLimited);
-            setResultLimit(event.data.resultLimit);
-            setEmptyResultQuery('');
-            setCurrentResultIndex(0);
+            dispatchQueryState({
+                type: 'success',
+                payload: {
+                    ranges: event.data.ranges,
+                    values: event.data.values,
+                    items: event.data.items || [],
+                    totalResults: event.data.totalResults,
+                    isLimited: event.data.isLimited,
+                    resultLimit: event.data.resultLimit,
+                },
+            });
             onHighlightRange(event.data.ranges[0] || null);
 
             // 添加到历史记录（去重）
@@ -357,19 +332,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             if (workerRef.current === worker) {
                 workerRef.current = null;
             }
-            setIsQuerying(false);
             activeQueryRef.current = '';
             const queryStartedAt = activeQueryStartedAtRef.current ?? startedAt;
             activeQueryStartedAtRef.current = null;
-            setError(`JSONPath 查询错误: ${event.message}`);
-            setQueryRanges([]);
-            setQueryValues([]);
-            setQueryItems([]);
-            setTotalResults(0);
-            setIsResultLimited(false);
-            setResultLimit(0);
-            setEmptyResultQuery('');
-            setCurrentResultIndex(0);
+            dispatchQueryState({ type: 'failed', error: `JSONPath 查询错误: ${event.message}` });
             onHighlightRange(null);
             trackJsonPathQueryEvent('error', queryStartedAt);
         };
@@ -395,17 +361,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         requestIdRef.current++;
         activeQueryRef.current = '';
         activeQueryStartedAtRef.current = null;
-        setIsQuerying(false);
-        setError('');
-        setCancelledQuery(cancelledQueryPath);
-        setQueryRanges([]);
-        setQueryValues([]);
-        setQueryItems([]);
-        setTotalResults(0);
-        setIsResultLimited(false);
-        setResultLimit(0);
-        setEmptyResultQuery('');
-        setCurrentResultIndex(0);
+        dispatchQueryState({ type: 'cancelled', query: cancelledQueryPath });
         onHighlightRange(null);
         trackJsonPathQueryEvent('cancelled', queryStartedAt);
         showSuccess('已取消查询', 1600);
@@ -426,7 +382,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         const navigableResultCount = queryRanges.length;
         if (navigableResultCount === 0 || isQuerying) return;
         const newIndex = currentResultIndex === 0 ? navigableResultCount - 1 : currentResultIndex - 1;
-        setCurrentResultIndex(newIndex);
+        dispatchQueryState({ type: 'focus', index: newIndex });
         onHighlightRange(queryRanges[newIndex] || null);
     };
 
@@ -435,7 +391,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         const navigableResultCount = queryRanges.length;
         if (navigableResultCount === 0 || isQuerying) return;
         const newIndex = currentResultIndex === navigableResultCount - 1 ? 0 : currentResultIndex + 1;
-        setCurrentResultIndex(newIndex);
+        dispatchQueryState({ type: 'focus', index: newIndex });
         onHighlightRange(queryRanges[newIndex] || null);
     };
 
@@ -502,7 +458,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const fillAndRunQuery = (queryPath: string) => {
         setQuery(queryPath);
-        setCancelledQuery('');
+        dispatchQueryState({ type: 'prepare' });
         handleQuery(queryPath);
     };
 
@@ -550,7 +506,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const focusQueryResult = (index: number) => {
         if (isQuerying || queryRanges.length === 0 || index < 0 || index >= queryRanges.length) return;
 
-        setCurrentResultIndex(index);
+        dispatchQueryState({ type: 'focus', index });
         onHighlightRange(queryRanges[index] || null);
     };
 
@@ -605,7 +561,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             value={query}
                             onChange={(e) => {
                                 setQuery(e.target.value);
-                                setCancelledQuery('');
+                                dispatchQueryState({ type: 'clearCancelled' });
                             }}
                             onKeyDown={handleKeyDown}
                             placeholder="输入 JSONPath 表达式或字段名"
