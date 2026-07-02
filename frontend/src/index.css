@@ -42,7 +42,6 @@
   --brand-hover: #0062a3;
   --brand-danger: #dc2626;
   /* Error Red */
-  --app-focus-halo: 0 0 18px rgba(56, 189, 248, 0.22);
 }
 
 /* Monaco 提示层：保留诊断、Scheme 图标和字段说明，统一成暗色工作台样式 */
@@ -80,7 +79,7 @@
   color: #93c5fd !important;
 }
 
-/* 深色工作台按钮：主状态只靠填充和轻阴影表达，键盘焦点使用低饱和光晕。 */
+/* 深色工作台按钮：主状态只靠填充和轻阴影表达，键盘焦点只提亮当前按钮表面。 */
 :where(button, [role="button"]) {
   -webkit-tap-highlight-color: transparent;
 }
@@ -125,10 +124,8 @@
 }
 
 .app-button:focus-visible {
-  filter: brightness(1.05);
-  box-shadow:
-    var(--app-button-rest-shadow),
-    var(--app-focus-halo) !important;
+  filter: brightness(1.06) saturate(1.02);
+  box-shadow: var(--app-button-rest-shadow) !important;
 }
 
 .app-button:active {
@@ -177,10 +174,8 @@
 .changelog-modal__confirm-button:focus-visible {
   background: linear-gradient(180deg, rgba(75, 91, 111, 0.98) 0%, rgba(45, 58, 73, 0.98) 100%);
   color: #ffffff;
-  filter: brightness(1.03);
-  box-shadow:
-    var(--app-button-rest-shadow),
-    0 0 18px rgba(56, 189, 248, 0.18) !important;
+  filter: brightness(1.06);
+  box-shadow: var(--app-button-rest-shadow) !important;
 }
 
 .app-button--secondary {
@@ -302,10 +297,10 @@
 
 .json-helper-tour-popover .driver-popover-footer button:focus-visible,
 .json-helper-feature-tour-popover .driver-popover-footer button:focus-visible {
-  filter: none !important;
-  box-shadow:
-    var(--app-button-rest-shadow, 0 0 0 0 transparent),
-    0 0 16px rgba(56, 189, 248, 0.16) !important;
+  background: rgba(255, 255, 255, 0.085) !important;
+  color: #ffffff !important;
+  filter: brightness(1.04) !important;
+  box-shadow: var(--app-button-rest-shadow, 0 0 0 0 transparent) !important;
   outline: none !important;
 }
 
@@ -350,11 +345,10 @@
 
 .json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,
 .json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible {
+  background: linear-gradient(180deg, rgba(76, 92, 112, 0.98) 0%, rgba(51, 65, 81, 0.98) 100%) !important;
   border: 0 !important;
-  filter: none !important;
-  box-shadow:
-    var(--app-button-rest-shadow),
-    0 0 18px rgba(56, 189, 248, 0.18) !important;
+  filter: brightness(1.04) !important;
+  box-shadow: var(--app-button-rest-shadow) !important;
 }
 
 .json-helper-tour-popover .driver-popover-close-btn,

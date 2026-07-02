@@ -35,7 +35,9 @@ describe('Driver tour button styles', () => {
       '.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,'
     );
 
-    expect(focusRule).toContain('0 0 18px rgba(56, 189, 248, 0.18)');
+    expect(focusRule).toContain('rgba(76, 92, 112, 0.98)');
+    expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow) !important');
+    expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(focusRule).not.toContain('inset 0 -2px');
     expect(css).not.toContain('driver-popover-next-btn::after');
