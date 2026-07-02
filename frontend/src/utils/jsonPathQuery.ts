@@ -135,7 +135,7 @@ const toHighlightRange = (
   const pointerInfo = pointers[pointer];
   if (!pointerInfo) return null;
 
-  const loc = pointerInfo.value || pointerInfo.key;
+  const loc = pointerInfo.key || pointerInfo.value;
   if (!loc) return null;
 
   const endLoc = pointerInfo.valueEnd || pointerInfo.keyEnd || loc;

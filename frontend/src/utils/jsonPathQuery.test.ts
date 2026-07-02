@@ -92,6 +92,31 @@ describe('queryJsonPathRanges', () => {
     ]);
   });
 
+  it('对象字段命中时高亮范围包含 key 行', () => {
+    const jsonData = JSON.stringify({
+      data: {
+        '100': {
+          itemlist: {
+            policies: {
+              auto_refresh_interval: '3000',
+            },
+          },
+        },
+      },
+    }, null, 2);
+
+    const result = queryJsonPathRanges(jsonData, '$..policies');
+    const range = result.ranges[0];
+    const startLine = jsonData.split('\n')[range.startLine - 1];
+
+    expect(result.totalResults).toBe(1);
+    expect(result.items[0]).toMatchObject({
+      path: '$.data["100"].itemlist.policies',
+      pointer: '/data/100/itemlist/policies',
+    });
+    expect(startLine.slice(range.startColumn - 1)).toMatch(/^"policies": \{/);
+  });
+
   it('查询 k/v 形态值时返回业务标签', () => {
     const jsonData = JSON.stringify({
       extra: [
