@@ -12,6 +12,7 @@ import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { TabBar } from './TabBar';
 import { LazySchemeViewerModal } from './appLazyPanels';
+import { buildEditorTabViewStateHandlers } from './editorTabViewStateHandlers';
 
 const ASYNC_SCHEME_SCAN_THRESHOLD = 200_000;
 
@@ -293,6 +294,19 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   };
   const isWordWrapEnabled = wordWrap === 'on';
 
+  const {
+    handleTabClick,
+    handleCloseFile,
+    handleNewTab,
+  } = buildEditorTabViewStateHandlers({
+    activeFileId,
+    saveEditorViewState: () => editorRef.current?.saveViewState(),
+    onSaveViewState,
+    onTabClick,
+    onCloseFile,
+    onNewTab,
+  });
+
   const handleLocateError = useCallback(() => {
     if (!editorRef.current || !monaco || !errorLocation) return;
 
@@ -453,23 +467,15 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
   }, [value, originalValue, monaco]);
 
-  // 记录上一个 activeFileId，用于切换标签时保存旧标签的视图状态
+  // 记录上一个 activeFileId，用于切换标签时恢复新标签的视图状态
   const prevActiveFileIdRef = useRef<string | null | undefined>(activeFileId);
 
-  // 标签切换时保存旧标签的 viewState，恢复新标签的 viewState
+  // 标签切换前已同步保存旧标签 viewState，这里只负责恢复新标签，避免保存到错误 Tab。
   useEffect(() => {
     const editor = editorRef.current;
-    if (!editor || !onSaveViewState) return;
+    if (!editor) return;
 
     const prevId = prevActiveFileIdRef.current;
-
-    // 保存旧标签的视图状态（光标位置、滚动位置等）
-    if (prevId && prevId !== activeFileId) {
-      const viewState = editor.saveViewState();
-      if (viewState) {
-        onSaveViewState(prevId, viewState);
-      }
-    }
 
     // 恢复新标签的视图状态
     if (activeFileId && activeFileId !== prevId && restoreViewState) {
@@ -480,7 +486,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
 
     prevActiveFileIdRef.current = activeFileId;
-  }, [activeFileId, onSaveViewState, restoreViewState]);
+  }, [activeFileId, restoreViewState]);
 
 
   // 新文件打开时自动滚动标签栏
@@ -513,9 +519,9 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             <TabBar
               files={files}
               activeFileId={activeFileId || null}
-              onTabClick={onTabClick}
-              onCloseFile={onCloseFile}
-              onNewTab={onNewTab}
+              onTabClick={handleTabClick}
+              onCloseFile={handleCloseFile}
+              onNewTab={handleNewTab}
               tabsContainerRef={tabsContainerRef}
               onScroll={handleScroll}
               showScrollbar={showScrollbar}

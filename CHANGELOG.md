@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.329 (2026-07-02) - Tab 光标位置隔离修复
+### 🐛 Bug 修复
+- **Tab 光标隔离**: 切换、新建或关闭当前 Tab 前先保存当前 Monaco viewState，避免回到旧 Tab 时跳到其他 Tab 的行号
+- **恢复链路收敛**: 标签切换后的 effect 只负责恢复目标 Tab 视图状态，不再用旧 Tab ID 保存当前 editor 状态
+- **边界测试补齐**: 新增 tab viewState handler 单测，覆盖切换、当前 Tab 点击、新建、关闭和无 viewState 的保护路径
+
 ## v1.8.328 (2026-07-02) - Transform Report 记录区绑定分层
 ### 🚀 优化与改进
 - **记录区绑定分层**: 新增 `transformReportRecordSectionBindings`，集中装配记录区复制、定位、Scheme 和 CMD 对比交互
