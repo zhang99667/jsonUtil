@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.352 (2026-07-03) - 编解码工具函数收敛
+### 🏗️ 架构与基础设施
+- **Unicode/URL helper 瘦身**: 复用统一 Unicode encode/decode 和安全 URL decode helper，减少正反向转换中的重复函数体和 try/catch 样板
+
 ## v1.8.351 (2026-07-03) - PREVIEW 回写结果收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 回写 runner 瘦身**: 收敛 invalid/synced 结果对象返回样板，保持校验、回写和失败兜底语义不变
