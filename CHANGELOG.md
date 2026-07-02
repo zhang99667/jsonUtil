@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.289 (2026-07-02) - 工具面板 State Fixture 分层
+### 🚀 优化与改进
+- **State Fixture Helper**: 将工具面板命令测试 fixture 中的 state key 清单、override 判断和初始值读取抽成独立 test helper，fixture 主体回归 React hook mock 与命令装配
+- **工具面板预算收紧**: 为新增 state test helper 补充可维护性预算，拆出命令面板测试预算表，并把工具面板命令 fixture 预算降到 React mock 装配职责范围
+
 ## v1.8.288 (2026-07-02) - SchemeViewer 测试 Helper 分层
 ### 🚀 优化与改进
 - **React 树测试 Helper**: 将 SchemeViewer 多个组件测试重复的文本收集、data-tour 查找和组件类型查找抽成共享 test helper，测试主体回归业务断言
