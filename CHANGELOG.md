@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.314 (2026-07-02) - Scheme 诊断协议信息行分层
+### 🚀 优化与改进
+- **诊断容器瘦身**: 将 Scheme 详情里的 protocol、host 和 path 展示抽成 `SchemeViewerSchemeInfoRow`，诊断面板回归子面板装配职责
+- **组件测试补齐**: 为协议信息行补充空态、字段展示和路径 title 截断回看测试，降低后续 UI 调整回归风险
+- **维护预算同步**: 将新的 Scheme 协议信息行组件和测试纳入可维护性预算，避免小组件继续无约束膨胀
+
 ## v1.8.313 (2026-07-02) - 深度解析动作按钮统一
 ### 🚀 优化与改进
 - **动作按钮统一**: 将深度解析报告里的复制、定位、Scheme 打开和 cmdHandler 对比按钮收敛到 `TransformReportActionButton`
