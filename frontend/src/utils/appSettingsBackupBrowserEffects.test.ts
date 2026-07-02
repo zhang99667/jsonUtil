@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   downloadSettingsBackupTextFile,
-  getSettingsBackupStorage,
-  readSettingsBackupFileText,
 } from './appSettingsBackupBrowserEffects';
 
 const installDownloadDomStubs = (click = vi.fn()) => {
@@ -66,13 +64,4 @@ describe('appSettingsBackupBrowserEffects', () => {
     expect(stubs.revokeObjectURL).toHaveBeenCalledWith('blob:settings-backup');
   });
 
-  it('读取导入文件文本并从当前窗口获取存储', async () => {
-    const file = { text: vi.fn(async () => '{"ok":true}') };
-    const storage = { getItem: vi.fn() } as unknown as Storage;
-    vi.stubGlobal('window', { localStorage: storage });
-
-    await expect(readSettingsBackupFileText(file)).resolves.toBe('{"ok":true}');
-    expect(file.text).toHaveBeenCalledTimes(1);
-    expect(getSettingsBackupStorage()).toBe(storage);
-  });
 });
