@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type {
   TransformContextReport,
   TransformReportRecord,
-  TransformReportView,
 } from './transformSummary';
 import {
   buildTransformReportPanelCopyAvailability,
@@ -10,41 +9,7 @@ import {
   buildTransformReportPanelPlaceholderFillState,
   buildTransformReportPanelQualityState,
 } from './transformReportPanelDerivedValues';
-
-const createView = (overrides: Partial<TransformReportView> = {}): TransformReportView => ({
-  records: [],
-  cmdStructureRecords: [],
-  warnings: [],
-  unresolvedCandidates: [],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
-  filteredRecordCount: 0,
-  filteredWarningCount: 0,
-  filteredUnresolvedCount: 0,
-  filteredPlaceholderCount: 0,
-  filteredSchemeParamStageCount: 0,
-  filteredSchemeParamStageRepairHintCount: 0,
-  filteredNonReversibleParamStageCount: 0,
-  filteredCmdStructureCount: 0,
-  filteredNestedCommandFieldCount: 0,
-  filteredNestedResourceFieldCount: 0,
-  totalRecordCount: 0,
-  totalWarningCount: 0,
-  totalUnresolvedCount: 0,
-  totalPlaceholderCount: 0,
-  totalSchemeParamStageCount: 0,
-  totalSchemeParamStageRepairHintCount: 0,
-  totalNonReversibleParamStageCount: 0,
-  totalCmdStructureCount: 0,
-  totalNestedCommandFieldCount: 0,
-  totalNestedResourceFieldCount: 0,
-  isRecordTruncated: false,
-  isCmdStructureTruncated: false,
-  isWarningTruncated: false,
-  isUnresolvedTruncated: false,
-  isPlaceholderTruncated: false,
-  ...overrides,
-});
+import { createTransformReportView } from './transformReportViewTestFixture';
 
 const createReport = (): TransformContextReport => ({
   coverage: {
@@ -79,7 +44,7 @@ describe('transformReportPanelDerivedValues', () => {
       hasFocusedCmdStructureCopyItems: false,
     });
 
-    expect(buildTransformReportPanelCopyAvailability(createView({
+    expect(buildTransformReportPanelCopyAvailability(createTransformReportView({
       records: [pathRecord('$.a')],
       filteredCmdStructureCount: 1,
       cmdStructureRecords: [{ cmdStructureFocusPaths: ['$.cmd'] } as TransformReportRecord],
@@ -107,13 +72,13 @@ describe('transformReportPanelDerivedValues', () => {
   it('组合质量快照和基线 delta 文本', () => {
     const baselineState = buildTransformReportPanelQualityState(
       createReport(),
-      createView(),
+      createTransformReportView(),
       '',
       null
     );
     const qualityState = buildTransformReportPanelQualityState(
       createReport(),
-      createView({
+      createTransformReportView({
         filteredCmdStructureCount: 1,
         totalCmdStructureCount: 1,
       }),

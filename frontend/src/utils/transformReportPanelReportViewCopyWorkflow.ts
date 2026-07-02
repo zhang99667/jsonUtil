@@ -51,6 +51,13 @@ const buildReportViewCopyAction = (
   });
 };
 
+const withCmdComparisonContext = (
+  effects: TransformReportPanelCopyWorkflowEffects,
+  formatText: typeof formatTransformCollaborationReportText
+): ReportViewCopyFormatter => (report, reportView, query) => (
+  formatText(report, reportView, query, buildReportCopyCmdComparisonContext(effects))
+);
+
 export const buildTransformReportPanelReportViewCopyWorkflow = (
   state: TransformReportPanelCopyWorkflowState,
   effects: TransformReportPanelCopyWorkflowEffects,
@@ -75,12 +82,7 @@ export const buildTransformReportPanelReportViewCopyWorkflow = (
     copyArchivePackage: buildReportViewCopyAction(state, copyPanelText, {
       label: '归档包',
       errorLogMessage: '复制深度解析归档包失败:',
-      formatText: (report, reportView, query) => formatTransformArchivePackageJsonText(
-        report,
-        reportView,
-        query,
-        buildReportCopyCmdComparisonContext(effects)
-      ),
+      formatText: withCmdComparisonContext(effects, formatTransformArchivePackageJsonText),
     }),
     copyTroubleshootingRecipe: buildReportViewCopyAction(state, copyPanelText, {
       label: '排查 recipe',
@@ -90,12 +92,7 @@ export const buildTransformReportPanelReportViewCopyWorkflow = (
     copyCollaborationReport: buildReportViewCopyAction(state, copyPanelText, {
       label: '排查报告',
       errorLogMessage: '复制协作排查报告失败:',
-      formatText: (report, reportView, query) => formatTransformCollaborationReportText(
-        report,
-        reportView,
-        query,
-        buildReportCopyCmdComparisonContext(effects)
-      ),
+      formatText: withCmdComparisonContext(effects, formatTransformCollaborationReportText),
     }),
   };
 };

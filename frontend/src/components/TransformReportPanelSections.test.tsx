@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import type {
   TransformContextReport,
   TransformReportRecord,
-  TransformReportView,
+  TransformReportUnresolvedCandidate,
+  TransformReportWarning,
 } from '../utils/transformSummary';
+import { createTransformReportView } from '../utils/transformReportViewTestFixture';
 import type { TransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
 import { TransformReportEmptyState } from './TransformReportEmptyState';
 import { TransformReportFilterBar } from './TransformReportFilterBar';
@@ -79,21 +81,34 @@ const findByType = (node: unknown, type: unknown): ElementLike[] => {
 
 const report = { summaryText: '解析完成' } as TransformContextReport;
 const record = { path: '$.a' } as TransformReportRecord;
-const reportView = {
+const unresolvedCandidate: TransformReportUnresolvedCandidate = {
+  path: '$.todo',
+  originalValue: 'todo',
+  message: '待检查',
+  length: 4,
+  preview: 'todo',
+  reasonLabel: '未解析',
+  reasonLevel: 'info',
+  nextAction: '检查原始值',
+};
+const warning: TransformReportWarning = {
+  type: 'string_decode_skipped',
+  path: '$.warn',
+  originalValue: 'warn',
+  message: '跳过',
+  length: 4,
+  limit: 10,
+  reasonLabel: '跳过',
+  nextAction: '缩小样本',
+};
+const reportView = createTransformReportView({
   records: [record],
-  unresolvedCandidates: [{ path: '$.todo' }],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
-  warnings: [{ path: '$.warn' }],
+  unresolvedCandidates: [unresolvedCandidate],
+  warnings: [warning],
   filteredRecordCount: 1,
   filteredUnresolvedCount: 1,
-  filteredPlaceholderCount: 0,
   filteredWarningCount: 1,
-  isRecordTruncated: false,
-  isUnresolvedTruncated: false,
-  isPlaceholderTruncated: false,
-  isWarningTruncated: false,
-} as unknown as TransformReportView;
+});
 const placeholderToolbarState = {
   filteredPlaceholderCount: 0,
   isPlaceholderTruncated: false,

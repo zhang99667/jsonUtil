@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type {
   TransformContextReport,
-  TransformReportView,
 } from '../utils/transformSummary';
+import { createTransformReportView } from '../utils/transformReportViewTestFixture';
 import type { TransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
 import { TransformReportPanelContent } from './TransformReportPanelContent';
 import { TransformReportPanelSections } from './TransformReportPanelSections';
@@ -42,21 +42,7 @@ const collectText = (node: unknown): string => {
 };
 
 const report = { summaryText: '解析完成' } as TransformContextReport;
-const reportView = {
-  records: [],
-  unresolvedCandidates: [],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
-  warnings: [],
-  filteredRecordCount: 0,
-  filteredUnresolvedCount: 0,
-  filteredPlaceholderCount: 0,
-  filteredWarningCount: 0,
-  isRecordTruncated: false,
-  isUnresolvedTruncated: false,
-  isPlaceholderTruncated: false,
-  isWarningTruncated: false,
-} as unknown as TransformReportView;
+const reportView = createTransformReportView();
 const placeholderToolbarState = {
   filteredPlaceholderCount: 0,
   isPlaceholderTruncated: false,
