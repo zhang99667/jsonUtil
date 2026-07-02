@@ -6,6 +6,7 @@ import {
   buildUrlParamDecodeStages,
   formatPlaceholderPathSegment,
 } from './schemeParamDecodeStages';
+import { buildParamDecodeStagesFromPairs } from './schemeParamDecodeStagePairs';
 
 const createOptions = () => ({
   decodeKey: decodeQueryComponent,
@@ -79,6 +80,38 @@ describe('schemeParamDecodeStages', () => {
         urlDecoded: 'feed',
       }),
     ]);
+  });
+
+  it('query 达到上限前只补齐剩余 hash 参数容量', () => {
+    const query = Array.from({ length: 23 }, (_, index) => `q${index}=v${index}`).join('&');
+    const stages = buildUrlParamDecodeStages(
+      `baiduboxapp://v1/open?${query}#tab=feed&extra=ignored`,
+      10,
+      createOptions()
+    );
+
+    expect(stages).toHaveLength(24);
+    expect(stages[22]).toMatchObject({ path: '$.q22', source: 'query' });
+    expect(stages[23]).toMatchObject({ path: '$._hash.tab', source: 'hash' });
+  });
+
+  it('pair 扫描跳过缺失 key 或等号的参数', () => {
+    const stages = buildParamDecodeStagesFromPairs(
+      '=empty&lonely&encoded%20key=value&plain=ok',
+      'query',
+      '$',
+      10,
+      createOptions()
+    );
+
+    expect(stages).toHaveLength(2);
+    expect(stages[0]).toMatchObject({
+      path: '$["encoded key"]',
+      key: 'encoded key',
+      raw: 'value',
+      urlDecoded: 'value',
+    });
+    expect(stages[1]).toMatchObject({ path: '$.plain', key: 'plain' });
   });
 
   it('格式化可读和不可读路径段', () => {

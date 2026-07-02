@@ -1,56 +1,19 @@
 import type { SchemeParamDecodeStage } from './schemeTypes';
-import { normalizeQueryString, splitQueryPairs, stripQueryPrefix } from './schemeQuerySyntax';
 import { createUrl } from './schemeUrlShapes';
+import { createParamDecodeStage } from './schemeParamDecodeStageBuilder';
 import {
-  createParamDecodeStage,
-  type SchemeParamDecodeStageBuilderOptions,
-} from './schemeParamDecodeStageBuilder';
+  buildParamDecodeStagesFromPairs,
+  DEFAULT_SCHEME_PARAM_STAGE_LIMIT,
+  type SchemeParamDecodeStagePairsOptions,
+} from './schemeParamDecodeStagePairs';
 
-const DEFAULT_SCHEME_PARAM_STAGE_LIMIT = 24;
+export { formatPlaceholderPathSegment } from './schemeParamDecodeStageBuilder';
 
-interface SchemeParamDecodeStagesOptions extends SchemeParamDecodeStageBuilderOptions {
-  decodeKey: (value: string) => string;
-  decodeValue: (value: string) => string;
+export interface SchemeParamDecodeStagesOptions extends SchemeParamDecodeStagePairsOptions {
   getFragmentParamSource: (value: string) => string | null;
   getPrefixedQueryString: (value: string) => { queryString: string } | null;
   parseLogFieldParamString: (value: string) => { key: string; value: string } | null;
 }
-
-export { formatPlaceholderPathSegment } from './schemeParamDecodeStageBuilder';
-
-const buildParamDecodeStagesFromPairs = (
-  queryString: string,
-  source: SchemeParamDecodeStage['source'],
-  pathPrefix: string,
-  maxDepth: number,
-  options: SchemeParamDecodeStagesOptions
-): SchemeParamDecodeStage[] => {
-  const stages: SchemeParamDecodeStage[] = [];
-  const normalized = normalizeQueryString(stripQueryPrefix(queryString));
-
-  for (const pair of splitQueryPairs(normalized)) {
-    if (stages.length >= DEFAULT_SCHEME_PARAM_STAGE_LIMIT) break;
-
-    const equalIndex = pair.indexOf('=');
-    if (equalIndex <= 0) continue;
-
-    const key = options.decodeKey(pair.slice(0, equalIndex));
-    if (!key) continue;
-
-    const rawValue = pair.slice(equalIndex + 1);
-    stages.push(createParamDecodeStage(
-      key,
-      rawValue,
-      options.decodeValue(rawValue),
-      source,
-      pathPrefix,
-      maxDepth,
-      options
-    ));
-  }
-
-  return stages;
-};
 
 export const buildQueryStringParamDecodeStages = (
   queryString: string,
