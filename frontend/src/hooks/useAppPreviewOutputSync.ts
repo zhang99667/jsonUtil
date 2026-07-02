@@ -33,6 +33,15 @@ interface UseAppPreviewOutputSyncInput {
 const PREVIEW_SYNC_DEBOUNCE_MS = 400;
 const PREVIEW_SYNC_UNLOCK_DELAY_MS = 600;
 
+const invalidatePendingPreviewOutputSync = (
+  outputChangeTimer: MutableRefObject<NodeJS.Timeout | null>,
+  outputSyncRequestIdRef: MutableRefObject<number>
+) => {
+  clearTimeout(outputChangeTimer.current ?? undefined);
+  outputChangeTimer.current = null;
+  outputSyncRequestIdRef.current++;
+};
+
 export const useAppPreviewOutputSync = ({
   previewText,
   files,
@@ -55,18 +64,11 @@ export const useAppPreviewOutputSync = ({
   } = useAppPreviewValidation({ validateJsonMaybeAsync });
 
   useEffect(() => () => {
-    if (outputChangeTimer.current) {
-      clearTimeout(outputChangeTimer.current);
-    }
-    outputSyncRequestIdRef.current++;
+    invalidatePendingPreviewOutputSync(outputChangeTimer, outputSyncRequestIdRef);
   }, []);
 
   const cancelOutputDraft = useCallback(() => {
-    if (outputChangeTimer.current) {
-      clearTimeout(outputChangeTimer.current);
-      outputChangeTimer.current = null;
-    }
-    outputSyncRequestIdRef.current++;
+    invalidatePendingPreviewOutputSync(outputChangeTimer, outputSyncRequestIdRef);
     clearPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue);
   }, [isUpdatingFromOutput, pendingOutputValue]);
 
@@ -80,11 +82,8 @@ export const useAppPreviewOutputSync = ({
     beginPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue, previewText);
     updatePreviewValidation(previewText);
 
-    if (outputChangeTimer.current) {
-      clearTimeout(outputChangeTimer.current);
-    }
-
-    const outputSyncRequestId = ++outputSyncRequestIdRef.current;
+    invalidatePendingPreviewOutputSync(outputChangeTimer, outputSyncRequestIdRef);
+    const outputSyncRequestId = outputSyncRequestIdRef.current;
     outputChangeTimer.current = setTimeout(() => {
       outputChangeTimer.current = null;
 
