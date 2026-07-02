@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.304 (2026-07-02) - Base64 Meta Badge 模型分层
+### 🚀 优化与改进
+- **Badge 模型 Helper**: 将 Scheme 内部 Base64 元信息的头部、后缀、跳过片段、解码参数和剩余数量展示模型抽成独立 helper
+- **SchemeViewer 预算收紧**: 为 Base64 meta badge helper 补充预算，并把面板组件降到布局和 badge 渲染职责范围
+
 ## v1.8.303 (2026-07-02) - 结构化 Query 路径游标分层
 ### 🚀 优化与改进
 - **路径游标 Helper**: 将结构化 Query 赋值中的数组追加、索引数组和对象 key 中间段推进抽成独立纯 helper
