@@ -42,8 +42,8 @@
   --brand-hover: #0062a3;
   --brand-danger: #dc2626;
   /* Error Red */
-  --app-focus-line: rgba(219, 234, 254, 0.72);
-  --app-focus-line-muted: rgba(219, 234, 254, 0.46);
+  --app-focus-line: rgba(241, 245, 249, 0.72);
+  --app-focus-line-muted: rgba(226, 232, 240, 0.36);
 }
 
 /* Monaco 提示层：保留诊断、Scheme 图标和字段说明，统一成暗色工作台样式 */
@@ -106,8 +106,10 @@
   --app-button-rest-shadow: 0 0 0 0 transparent;
 
   align-items: center;
-  border: 1px solid transparent;
+  appearance: none;
+  border: 0;
   border-radius: 6px;
+  box-sizing: border-box;
   display: inline-flex;
   font-weight: 600;
   justify-content: center;
@@ -127,15 +129,15 @@
 .app-button::after {
   background: transparent;
   border-radius: 999px;
-  bottom: 2px;
+  bottom: 3px;
   content: '';
-  height: 2px;
-  left: 8px;
+  height: 1px;
+  left: 10px;
   opacity: 0;
   pointer-events: none;
   position: absolute;
-  right: 8px;
-  transform: scaleX(0.36);
+  right: 10px;
+  transform: scaleX(0.32);
   transform-origin: center;
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
@@ -160,13 +162,13 @@
 }
 
 .app-button--primary {
-  --app-button-focus-accent: rgba(255, 255, 255, 0.68);
+  --app-button-focus-accent: rgba(255, 255, 255, 0.62);
   --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 8px 18px rgba(0, 122, 204, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 7px 16px rgba(0, 122, 204, 0.2);
 
-  background: linear-gradient(180deg, #1587cc 0%, #0870b3 100%);
-  border-color: transparent;
+  background: linear-gradient(180deg, #147fc2 0%, #0967a8 100%);
   color: #ffffff;
   box-shadow: var(--app-button-rest-shadow);
 }
@@ -174,29 +176,26 @@
 .app-button--primary:hover {
   --app-button-rest-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 10px 22px rgba(0, 122, 204, 0.24);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 9px 20px rgba(0, 122, 204, 0.24);
 
-  background: linear-gradient(180deg, #1997df 0%, #0b7dc5 100%);
-  border-color: transparent;
+  background: linear-gradient(180deg, #168bd4 0%, #0a73bb 100%);
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .app-button--secondary {
   background: rgba(255, 255, 255, 0.055);
-  border-color: transparent;
   color: #d1d5db;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
 }
 
 .app-button--secondary:hover {
   background: rgba(255, 255, 255, 0.085);
-  border-color: transparent;
   color: #ffffff;
 }
 
 .app-button--ghost {
   background: transparent;
-  border-color: transparent;
   color: #9ca3af;
 }
 
@@ -209,10 +208,10 @@
   --app-button-focus-accent: rgba(255, 255, 255, 0.68);
   --app-button-rest-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
     0 8px 18px rgba(220, 38, 38, 0.18);
 
   background: linear-gradient(180deg, #d43737 0%, #b91c1c 100%);
-  border-color: transparent;
   color: #ffffff;
   box-shadow: var(--app-button-rest-shadow);
 }
@@ -220,10 +219,10 @@
 .app-button--danger:hover {
   --app-button-rest-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
     0 10px 22px rgba(220, 38, 38, 0.24);
 
   background: linear-gradient(180deg, #e04444 0%, #c42323 100%);
-  border-color: transparent;
   box-shadow: var(--app-button-rest-shadow);
 }
 
@@ -276,7 +275,7 @@
   --app-button-rest-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
 
   background: rgba(255, 255, 255, 0.055) !important;
-  border: 1px solid transparent !important;
+  border: 0 !important;
   border-radius: 6px !important;
   box-sizing: border-box !important;
   color: #d1d5db !important;
@@ -298,7 +297,7 @@
 
 .json-helper-tour-popover .driver-popover-footer button:focus:not(:focus-visible),
 .json-helper-feature-tour-popover .driver-popover-footer button:focus:not(:focus-visible) {
-  border-color: transparent !important;
+  border: 0 !important;
   box-shadow: var(--app-button-rest-shadow) !important;
   outline: none !important;
 }
@@ -307,15 +306,15 @@
 .json-helper-feature-tour-popover .driver-popover-footer button::after {
   background: transparent !important;
   border-radius: 999px !important;
-  bottom: 2px !important;
+  bottom: 3px !important;
   content: '' !important;
-  height: 2px !important;
-  left: 8px !important;
+  height: 1px !important;
+  left: 10px !important;
   opacity: 0 !important;
   pointer-events: none !important;
   position: absolute !important;
-  right: 8px !important;
-  transform: scaleX(0.36) !important;
+  right: 10px !important;
+  transform: scaleX(0.32) !important;
   transform-origin: center !important;
   transition: opacity 0.16s ease, transform 0.16s ease !important;
 }
@@ -345,11 +344,12 @@
 .json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn {
   --app-button-focus-accent: rgba(255, 255, 255, 0.68);
   --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 8px 18px rgba(0, 122, 204, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 7px 16px rgba(0, 122, 204, 0.2);
 
-  background: linear-gradient(180deg, #1587cc 0%, #0870b3 100%) !important;
-  border-color: transparent !important;
+  background: linear-gradient(180deg, #147fc2 0%, #0967a8 100%) !important;
+  border: 0 !important;
   color: #ffffff !important;
   box-shadow: var(--app-button-rest-shadow) !important;
 }
@@ -358,22 +358,23 @@
 .json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:hover {
   --app-button-rest-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 10px 22px rgba(0, 122, 204, 0.24);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 9px 20px rgba(0, 122, 204, 0.24);
 
-  background: linear-gradient(180deg, #1997df 0%, #0b7dc5 100%) !important;
-  border-color: transparent !important;
+  background: linear-gradient(180deg, #168bd4 0%, #0a73bb 100%) !important;
+  border: 0 !important;
   box-shadow: var(--app-button-rest-shadow) !important;
 }
 
 .json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus:not(:focus-visible),
 .json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus:not(:focus-visible) {
-  border-color: transparent !important;
+  border: 0 !important;
   box-shadow: var(--app-button-rest-shadow) !important;
 }
 
 .json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,
 .json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible {
-  border-color: transparent !important;
+  border: 0 !important;
   box-shadow: var(--app-button-rest-shadow) !important;
 }
 
