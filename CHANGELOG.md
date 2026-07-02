@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.328 (2026-07-02) - Transform Report 记录区绑定分层
+### 🚀 优化与改进
+- **记录区绑定分层**: 新增 `transformReportRecordSectionBindings`，集中装配记录区复制、定位、Scheme 和 CMD 对比交互
+- **主面板瘦身**: `TransformReportPanel` 移除记录区 action 与 CMD 对比状态桥接细节，保留上下文、报告和 footer 编排
+- **绑定边界补测**: 覆盖首个 CMD 对比打开、actual 候选切换、可选入口和候选记录惰性读取，降低后续拆分回归风险
+
 ## v1.8.327 (2026-07-02) - Transform Report 记录区 Action 契约分层
 ### 🚀 优化与改进
 - **记录区 Action 契约分层**: 新增 `TransformReportRecordSectionContracts`，集中维护记录区复制、定位、Scheme 和 CMD 对比动作类型
