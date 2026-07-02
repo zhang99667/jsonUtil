@@ -6,10 +6,15 @@ import {
   type ValidationResult,
 } from '../types';
 import {
+  createPreviewOutputSyncFailedResult,
   executeAppPreviewOutputSync,
-  PREVIEW_OUTPUT_SYNC_FAILED,
   type AppPreviewOutputSyncRunnerResult,
 } from '../utils/appPreviewOutputSyncRunner';
+import {
+  beginPreviewOutputDraft,
+  clearPreviewOutputDraft,
+  keepPreviewOutputDraft,
+} from '../utils/appPreviewOutputDraft';
 import { useAppPreviewValidation } from './useAppPreviewValidation';
 
 interface UseAppPreviewOutputSyncInput {
@@ -66,8 +71,7 @@ export const useAppPreviewOutputSync = ({
       outputChangeTimer.current = null;
     }
     outputSyncRequestIdRef.current++;
-    isUpdatingFromOutput.current = false;
-    pendingOutputValue.current = '';
+    clearPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue);
   }, [isUpdatingFromOutput, pendingOutputValue]);
 
   useEffect(() => {
@@ -77,8 +81,7 @@ export const useAppPreviewOutputSync = ({
   }, [isUpdatingFromOutput, previewText, updatePreviewValidation]);
 
   const handleOutputChange = useCallback((previewText: string) => {
-    pendingOutputValue.current = previewText;
-    isUpdatingFromOutput.current = true;
+    beginPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue, previewText);
     updatePreviewValidation(previewText);
 
     if (outputChangeTimer.current) {
@@ -101,17 +104,14 @@ export const useAppPreviewOutputSync = ({
             validateJsonMaybeAsync,
           });
         } catch {
-          syncResult = {
-            status: 'failed',
-            validation: PREVIEW_OUTPUT_SYNC_FAILED,
-          };
+          syncResult = createPreviewOutputSyncFailedResult();
         }
 
         if (outputSyncRequestId !== outputSyncRequestIdRef.current) return;
 
         if (syncResult.status !== 'synced') {
           setPreviewValidation(syncResult.validation);
-          pendingOutputValue.current = previewText;
+          keepPreviewOutputDraft(pendingOutputValue, previewText);
           return;
         }
 
@@ -122,8 +122,7 @@ export const useAppPreviewOutputSync = ({
 
         setTimeout(() => {
           if (!outputChangeTimer.current && outputSyncRequestId === outputSyncRequestIdRef.current) {
-            isUpdatingFromOutput.current = false;
-            pendingOutputValue.current = '';
+            clearPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue);
           }
         }, PREVIEW_SYNC_UNLOCK_DELAY_MS);
       };

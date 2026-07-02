@@ -18,14 +18,13 @@ export const PREVIEW_OUTPUT_SYNC_FAILED: ValidationResult = {
 };
 
 export type AppPreviewOutputSyncRunnerResult =
-  | {
-    status: 'invalid' | 'failed';
-    validation: ValidationResult;
-  }
-  | {
-    status: 'synced';
-    nextSource: string;
-  };
+  | { status: 'invalid' | 'failed'; validation: ValidationResult }
+  | { status: 'synced'; nextSource: string };
+
+export const createPreviewOutputSyncFailedResult = (): AppPreviewOutputSyncRunnerResult => ({
+  status: 'failed',
+  validation: PREVIEW_OUTPUT_SYNC_FAILED,
+});
 
 export const executeAppPreviewOutputSync = async ({
   previewText,
@@ -55,9 +54,6 @@ export const executeAppPreviewOutputSync = async ({
       }),
     };
   } catch {
-    return {
-      status: 'failed',
-      validation: PREVIEW_OUTPUT_SYNC_FAILED,
-    };
+    return createPreviewOutputSyncFailedResult();
   }
 };
