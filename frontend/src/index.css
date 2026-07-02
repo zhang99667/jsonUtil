@@ -42,6 +42,8 @@
   --brand-hover: #0062a3;
   --brand-danger: #dc2626;
   /* Error Red */
+  --app-focus-line: rgba(147, 197, 253, 0.68);
+  --app-focus-line-muted: rgba(147, 197, 253, 0.5);
 }
 
 /* Monaco 提示层：保留诊断、Scheme 图标和字段说明，统一成暗色工作台样式 */
@@ -96,8 +98,7 @@
   outline: none !important;
   box-shadow:
     var(--app-button-rest-shadow, 0 0 0 0 transparent),
-    inset 0 -2px 0 rgba(125, 211, 252, 0.58),
-    0 2px 10px rgba(0, 122, 204, 0.1) !important;
+    inset 0 -1px 0 var(--app-focus-line-muted) !important;
 }
 
 .app-button {
@@ -111,6 +112,7 @@
   justify-content: center;
   line-height: 1.2;
   outline: none;
+  overflow: hidden;
   position: relative;
   transition:
     background-color 0.16s ease,
@@ -120,16 +122,34 @@
     transform 0.16s ease;
 }
 
+.app-button::after {
+  background: transparent;
+  border-radius: 999px;
+  bottom: 3px;
+  content: '';
+  height: 1px;
+  left: 6px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 6px;
+  transform: scaleX(0.45);
+  transform-origin: center;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
 .app-button:focus:not(:focus-visible) {
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .app-button:focus-visible {
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow:
-    var(--app-button-rest-shadow),
-    inset 0 -2px 0 rgba(125, 211, 252, 0.72),
-    0 2px 12px rgba(0, 122, 204, 0.12) !important;
+  box-shadow: var(--app-button-rest-shadow) !important;
+}
+
+.app-button:focus::after {
+  background: var(--app-focus-line);
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .app-button:active {
@@ -245,6 +265,7 @@
   font-size: 12px !important;
   font-weight: 600 !important;
   line-height: 1.2 !important;
+  overflow: hidden !important;
   padding: 7px 10px !important;
   outline: none !important;
   position: relative !important;
@@ -259,14 +280,34 @@
   outline: none !important;
 }
 
+.json-helper-tour-popover .driver-popover-footer button::after,
+.json-helper-feature-tour-popover .driver-popover-footer button::after {
+  background: transparent !important;
+  border-radius: 999px !important;
+  bottom: 3px !important;
+  content: '' !important;
+  height: 1px !important;
+  left: 6px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 6px !important;
+  transform: scaleX(0.45) !important;
+  transform-origin: center !important;
+  transition: opacity 0.16s ease, transform 0.16s ease !important;
+}
+
 .json-helper-tour-popover .driver-popover-footer button:focus-visible,
 .json-helper-feature-tour-popover .driver-popover-footer button:focus-visible {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  box-shadow:
-    var(--app-button-rest-shadow, 0 0 0 0 transparent),
-    inset 0 -2px 0 rgba(125, 211, 252, 0.62),
-    0 2px 10px rgba(0, 122, 204, 0.1) !important;
+  box-shadow: var(--app-button-rest-shadow, 0 0 0 0 transparent) !important;
   outline: none !important;
+}
+
+.json-helper-tour-popover .driver-popover-footer button:focus::after,
+.json-helper-feature-tour-popover .driver-popover-footer button:focus::after {
+  background: var(--app-focus-line-muted) !important;
+  opacity: 1 !important;
+  transform: scaleX(1) !important;
 }
 
 .json-helper-tour-popover .driver-popover-footer button:hover,
@@ -301,6 +342,12 @@
 
 .json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus:not(:focus-visible),
 .json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus:not(:focus-visible) {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: var(--app-button-rest-shadow) !important;
+}
+
+.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,
+.json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible {
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: var(--app-button-rest-shadow) !important;
 }
