@@ -1,0 +1,32 @@
+export const deployStaticRetentionSnippets = [
+  { file: 'scripts/deploy/frontend-legacy-assets.sh', snippets: [
+    'FRONTEND_LEGACY_ASSET_RETENTION_ENABLED',
+    'compose cp "$service:$static_root/assets/."',
+    'compose cp "$FRONTEND_LEGACY_ASSET_BACKUP_DIR/assets/."',
+  ] },
+  { file: 'scripts/deploy/remote-docker-compose-deploy.sh', snippets: [
+    '. "$APP_DIR/scripts/deploy/frontend-legacy-assets.sh"',
+    'trap cleanup_frontend_legacy_assets EXIT',
+    'backup_frontend_legacy_assets',
+    'restore_frontend_legacy_assets',
+  ] },
+  { file: 'scripts/deploy/ssh-docker-compose-deploy.sh', snippets: [
+    'DEFAULT_PUBLIC_BASE_URL="${DEFAULT_PUBLIC_BASE_URL:-https://jsonutils.markz.fun}"',
+    'PUBLIC_VERIFY_INSECURE_TLS="${PUBLIC_VERIFY_INSECURE_TLS:-false}"',
+    'PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="${PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS:-$PUBLIC_VERIFY_INSECURE_TLS}"',
+    'local public_base_url="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}"',
+    'local legacy_assets_file',
+    'local legacy_capture_status=0',
+    'node "$ROOT_DIR/scripts/ci/check-production-frontend-assets.mjs" "$public_base_url" --print-paths',
+    'legacy_capture_status=$?',
+    '部署前公网前端静态资源捕获失败，且未产出任何旧资源路径',
+    'PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}"',
+  ] },
+  { file: 'scripts/deploy/verify-public-deploy.sh', snippets: [
+    'DEFAULT_PUBLIC_BASE_URL="${DEFAULT_PUBLIC_BASE_URL:-https://jsonutils.markz.fun}"',
+    'PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}"',
+    'PUBLIC_VERIFY_INSECURE_TLS="${PUBLIC_VERIFY_INSECURE_TLS:-false}"',
+    'PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="${PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS:-$PUBLIC_VERIFY_INSECURE_TLS}"',
+    'CURL_TLS_ARG=""',
+  ] },
+];
