@@ -1,22 +1,10 @@
+const governanceAiBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
+
 export const governanceAiMaintainabilityBudgets = [
-  {
-    file: 'scripts/ci/check-ai-governance.mjs',
-    maxLines: 45,
-    reason: 'AI 治理检查 CLI 应只负责执行报告和输出错误，规则与收集逻辑放在独立模块',
-  },
-  {
-    file: 'scripts/ci/aiGovernanceChecks.mjs',
-    maxLines: 80,
-    reason: 'AI 治理缺失收集应只负责文件内容检查和 report 组装，规则构造放在独立模块',
-  },
-  {
-    file: 'scripts/ci/aiGovernanceRules.mjs',
-    maxLines: 100,
-    reason: 'AI 治理规则构造应集中维护必需文件和关键引用清单，便于单测覆盖',
-  },
-  {
-    file: 'scripts/ci/aiGovernanceReferenceGroups.mjs',
-    maxLines: 40,
-    reason: 'AI 治理公共引用组应独立维护，避免规则构造文件随着关键词增长而回涨',
-  },
+  governanceAiBudget('scripts/ci/check-ai-governance.mjs', 45, 'AI 治理检查 CLI 应只负责执行报告和输出错误，规则与收集逻辑放在独立模块'),
+  governanceAiBudget('scripts/ci/aiGovernanceChecks.mjs', 80, 'AI 治理缺失收集应只负责文件内容检查和 report 组装，规则构造放在独立模块'),
+  governanceAiBudget('scripts/ci/aiGovernanceRules.mjs', 75, 'AI 治理引用规则入口应只负责组合文档入口和 skill 引用规则'),
+  governanceAiBudget('scripts/ci/aiGovernanceRequiredFiles.mjs', 35, 'AI 治理必需文件清单应独立维护基础入口和 Codex skill 展开规则'),
+  governanceAiBudget('scripts/ci/aiGovernanceCodexSkillReferenceRules.mjs', 45, 'AI 治理 Codex skill 引用规则应独立维护 lint、构建、部署和子 Agent 关键字'),
+  governanceAiBudget('scripts/ci/aiGovernanceReferenceGroups.mjs', 40, 'AI 治理公共引用组应独立维护，避免规则构造文件随着关键词增长而回涨'),
 ];
