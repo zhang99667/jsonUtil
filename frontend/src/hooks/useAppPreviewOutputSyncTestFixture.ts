@@ -37,50 +37,46 @@ export const previewSyncMocks = mocks;
 export const executeAppPreviewOutputSyncMock = executeAppPreviewOutputSync;
 export const validateJsonForEditorMock = validateJsonForEditor;
 
+const createHookRefs = () => ({
+  inputRef: { current: '{"a":1}' },
+  fallbackContextRef: { current: null },
+  isUpdatingFromOutput: { current: false },
+  pendingOutputValue: { current: '' },
+});
+
+const createHookCallbacks = () => ({
+  onSetInput: vi.fn(),
+  onUpdateActiveFileContent: vi.fn(),
+});
+
 export const resetPreviewOutputSyncTestFixture = () => {
   vi.useFakeTimers();
   vi.clearAllMocks();
   mocks.useCallback.mockImplementation((callback: unknown) => callback);
-  mocks.useEffect.mockImplementation((effect: () => unknown) => {
-    effect();
-  });
+  mocks.useEffect.mockImplementation((effect: () => unknown) => effect());
   mocks.useRef.mockImplementation((initialValue: unknown) => ({ current: initialValue }));
   mocks.useState.mockImplementation((initialValue: unknown) => [initialValue, mocks.setPreviewValidation]);
   vi.mocked(executeAppPreviewOutputSync).mockResolvedValue(mocks.syncedResult);
 };
 
-export const useHookInput = (
-  validateJsonMaybeAsync = vi.fn(async () => validResult),
-  previewText = ''
-) => {
-  const inputRef = { current: '{"a":1}' };
-  const fallbackContextRef = { current: null };
-  const isUpdatingFromOutput = { current: false };
-  const pendingOutputValue = { current: '' };
-  const onSetInput = vi.fn();
-  const onUpdateActiveFileContent = vi.fn();
+export const useHookInput = (validateJsonMaybeAsync = vi.fn(async () => validResult), previewText = '') => {
+  const refs = createHookRefs();
+  const callbacks = createHookCallbacks();
 
   const hook = useAppPreviewOutputSync({
     previewText,
     files: [],
     activeFileId: null,
     mode: TransformMode.FORMAT,
-    inputRef,
-    fallbackContextRef,
-    isUpdatingFromOutput,
-    pendingOutputValue,
+    ...refs,
     validateJsonMaybeAsync,
-    onSetInput,
-    onUpdateActiveFileContent,
+    ...callbacks,
   });
 
   return {
     ...hook,
-    inputRef,
-    isUpdatingFromOutput,
-    onSetInput,
-    onUpdateActiveFileContent,
-    pendingOutputValue,
+    ...refs,
+    ...callbacks,
     validateJsonMaybeAsync,
   };
 };
