@@ -1,70 +1,33 @@
-import type { TransformContextSummary } from './transformContextSummary';
+import {
+  buildTransformReportPlaceholderCoverage,
+  buildTransformReportSuccessCoverage,
+  buildTransformReportUnresolvedCoverage,
+  buildTransformReportWarningCoverage,
+} from './transformReportCoverageDetails';
+import { buildTransformReportCoverageScore } from './transformReportCoverageScore';
+import type {
+  TransformReportCoverage,
+  TransformReportCoverageSummary,
+} from './transformReportCoverageTypes';
 
-export interface TransformReportCoverage {
-  score: number;
-  label: string;
-  level: 'success' | 'info' | 'warning';
-  description: string;
-  items: string[];
-}
+export type { TransformReportCoverage } from './transformReportCoverageTypes';
 
 export const buildTransformReportCoverage = (
-  summary: Pick<TransformContextSummary, 'recordCount' | 'unresolvedCount' | 'warningCount' | 'placeholderCount'>
+  summary: TransformReportCoverageSummary
 ): TransformReportCoverage => {
-  const attentionCount = summary.unresolvedCount + summary.warningCount;
-  const totalCount = summary.recordCount + attentionCount;
-  const score = totalCount === 0
-    ? 100
-    : Math.round((summary.recordCount / totalCount) * 100);
+  const score = buildTransformReportCoverageScore(summary);
 
   if (summary.warningCount > 0) {
-    return {
-      score,
-      label: `解析覆盖 ${score}%`,
-      level: 'warning',
-      description: `有 ${summary.warningCount} 条内容被性能保护跳过，真实 response 可能仍有未展开字段。`,
-      items: [
-        '优先查看跳过记录，必要时复制路径定位源字段',
-        '超长字段可单独粘贴到 Scheme 面板继续拆解',
-      ],
-    };
+    return buildTransformReportWarningCoverage(score, summary.warningCount);
   }
 
   if (summary.unresolvedCount > 0) {
-    return {
-      score,
-      label: `解析覆盖 ${score}%`,
-      level: 'info',
-      description: `还有 ${summary.unresolvedCount} 条疑似结构化内容未完全展开，需要判断是普通文本还是规则缺口。`,
-      items: [
-        '优先看未展开线索的原因标签和下一步建议',
-        '如果字段应继续拆解，可保留原始值补充解析样本',
-      ],
-    };
+    return buildTransformReportUnresolvedCoverage(score, summary.unresolvedCount);
   }
 
   if (summary.placeholderCount > 0) {
-    return {
-      score,
-      label: summary.recordCount > 0
-        ? `结构解析完成 · 占位符 ${summary.placeholderCount}`
-        : `运行时占位符 ${summary.placeholderCount}`,
-      level: 'info',
-      description: `已展开当前可解析结构，但仍有 ${summary.placeholderCount} 个运行时占位符需要服务端或客户端替换。`,
-      items: [
-        '占位符不是解析失败，可筛选占位符查看待替换字段',
-        '复制来源路径可回到原始 CMD/Scheme 字段排查',
-      ],
-    };
+    return buildTransformReportPlaceholderCoverage(score, summary);
   }
 
-  return {
-    score,
-    label: `解析覆盖 ${score}%`,
-    level: 'success',
-    description: summary.recordCount > 0
-      ? '本次未发现待检查线索、性能跳过或运行时占位符。'
-      : '本次没有需要展开的嵌套字符串。',
-    items: [],
-  };
+  return buildTransformReportSuccessCoverage(score, summary.recordCount);
 };
