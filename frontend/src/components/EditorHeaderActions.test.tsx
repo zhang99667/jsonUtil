@@ -49,6 +49,7 @@ describe('EditorHeaderActions', () => {
       editorUiState: buildEditorUiState({
         hasSourceContent: false,
         isAutoSaveActive: true,
+        canUseAutoSave: false,
       }),
       hasActiveFile: true,
       onPasteSource: vi.fn(),
@@ -67,6 +68,7 @@ describe('EditorHeaderActions', () => {
     const autoSaveButton = getByActionTour(tree, 'auto-save');
     expect(html).toContain('aria-label="自动保存当前文件"');
     expect(html).toContain('aria-pressed="true"');
+    expect(autoSaveButton.props.className).toContain('bg-status-success-bg');
     expect(autoSaveButton.props.onClick).toBe(onToggleAutoSave);
   });
 
