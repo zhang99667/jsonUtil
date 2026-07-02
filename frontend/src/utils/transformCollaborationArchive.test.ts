@@ -3,10 +3,10 @@ import { APP_VERSION_METADATA } from './appVersion';
 import type {
   TransformContextReport,
   TransformReportRecord,
-  TransformReportView,
 } from './transformSummary';
 import { buildTransformArchivePackage } from './transformArchivePackage';
 import { formatTransformCollaborationReportText } from './transformCollaborationReport';
+import { createTransformReportView } from './transformReportViewTestFixture';
 
 const createRecord = (
   overrides: Partial<TransformReportRecord> = {}
@@ -31,43 +31,6 @@ const createRecord = (
   nestedBase64SuffixFieldCount: 0,
   stepCount: 1,
   hasNonReversibleScheme: false,
-  ...overrides,
-});
-
-const createView = (
-  overrides: Partial<TransformReportView> = {}
-): TransformReportView => ({
-  records: [],
-  cmdStructureRecords: [],
-  warnings: [],
-  unresolvedCandidates: [],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
-  filteredRecordCount: 0,
-  filteredWarningCount: 0,
-  filteredUnresolvedCount: 0,
-  filteredPlaceholderCount: 0,
-  filteredSchemeParamStageCount: 0,
-  filteredSchemeParamStageRepairHintCount: 0,
-  filteredNonReversibleParamStageCount: 0,
-  filteredCmdStructureCount: 0,
-  filteredNestedCommandFieldCount: 0,
-  filteredNestedResourceFieldCount: 0,
-  totalRecordCount: 0,
-  totalWarningCount: 0,
-  totalUnresolvedCount: 0,
-  totalPlaceholderCount: 0,
-  totalSchemeParamStageCount: 0,
-  totalSchemeParamStageRepairHintCount: 0,
-  totalNonReversibleParamStageCount: 0,
-  totalCmdStructureCount: 0,
-  totalNestedCommandFieldCount: 0,
-  totalNestedResourceFieldCount: 0,
-  isRecordTruncated: false,
-  isCmdStructureTruncated: false,
-  isWarningTruncated: false,
-  isUnresolvedTruncated: false,
-  isPlaceholderTruncated: false,
   ...overrides,
 });
 
@@ -99,7 +62,7 @@ describe('transformCollaborationArchive', () => {
     const reportText = formatTransformCollaborationReportText(createReport({
       records: [record],
       cmdStructureCount: 1,
-    }), createView({
+    }), createTransformReportView({
       records: [record],
       cmdStructureRecords: [record],
       filteredRecordCount: 1,
@@ -116,7 +79,7 @@ describe('transformCollaborationArchive', () => {
   });
 
   it('归档包组装安全清单、协作报告和推荐文件名', () => {
-    const archivePackage = buildTransformArchivePackage(createReport(), createView(), '', {
+    const archivePackage = buildTransformArchivePackage(createReport(), createTransformReportView(), '', {
       sampleName: 'reward-response',
       cmdComparisonReportText: 'CMD 结构差异报告',
       cmdComparisonCandidateText: 'actual 候选',

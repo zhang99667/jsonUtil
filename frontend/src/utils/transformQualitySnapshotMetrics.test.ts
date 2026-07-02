@@ -1,18 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { TransformReportView } from './transformSummary';
 import {
   buildQualitySnapshotFiltered,
   buildQualitySnapshotTotals,
   buildQualitySnapshotTruncation,
 } from './transformQualitySnapshotMetrics';
+import { createTransformReportView } from './transformReportViewTestFixture';
 
-const buildReportView = (): TransformReportView => ({
-  records: [],
-  cmdStructureRecords: [],
-  warnings: [],
-  unresolvedCandidates: [],
-  runtimePlaceholderGroups: [],
-  runtimePlaceholders: [],
+const buildReportView = () => createTransformReportView({
   filteredRecordCount: 11,
   filteredWarningCount: 12,
   filteredUnresolvedCount: 13,
