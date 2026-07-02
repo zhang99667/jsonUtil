@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { AIProvider, type AIConfig } from '../types';
-import type { AppAiRepairRuntime } from './appAiRepairCommandRunnerTypes';
+import type { AppAiRepairRuntime, RunAppAiRepairCommandInput } from './appAiRepairCommandRunnerTypes';
 
 export const aiConfig: AIConfig = {
   provider: AIProvider.GEMINI,
@@ -12,17 +12,26 @@ export const createAiRepairSummary = () => ({
   changed: true,
   repairMethod: 'local' as const,
   localRuleLabels: ['本地规则'],
-  beforeLength: 6,
-  afterLength: 7,
-  beforeLines: 1,
-  afterLines: 1,
-  addedChars: 1,
-  removedChars: 0,
-  changedChunks: 1,
+  beforeLength: 6, afterLength: 7,
+  beforeLines: 1, afterLines: 1,
+  addedChars: 1, removedChars: 0, changedChunks: 1,
   rootDescription: '对象 1 个键',
-  previewItems: [],
-  isPreviewTruncated: false,
-  isDiffSkipped: false,
+  previewItems: [], isPreviewTruncated: false, isDiffSkipped: false,
+});
+
+export const createAiRepairInput = (
+  overrides: Partial<RunAppAiRepairCommandInput> = {},
+): RunAppAiRepairCommandInput => ({
+  sourceText: '{ok:1}',
+  aiConfig,
+  aiRepairSnapshotRef: { current: null },
+  startedAt: 12,
+  ...overrides,
+});
+
+export const createFailingAiRepairRuntime = (error: unknown): AppAiRepairRuntime => ({
+  fixJsonWithRepairDetails: vi.fn(() => Promise.reject(error)),
+  buildAiRepairSummary: vi.fn(() => createAiRepairSummary()),
 });
 
 export const createAiRepairEffects = (runtime?: AppAiRepairRuntime) => ({
