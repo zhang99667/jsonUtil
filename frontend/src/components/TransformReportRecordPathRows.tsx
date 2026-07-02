@@ -5,7 +5,7 @@ import {
   type TransformReportRecordPathRowProps,
 } from './TransformReportRecordPathRow';
 
-interface TransformReportRecordPathRowsProps
+export interface TransformReportRecordPathRowsProps
   extends Omit<TransformReportRecordPathRowProps, 'row'> {
   title: string;
   rows: TransformReportDecodedPath[];
