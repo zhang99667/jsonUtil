@@ -7,6 +7,14 @@ import { TransformReportRecordsSection } from './TransformReportRecordsSection';
 import { TransformReportSummarySection } from './TransformReportSummarySection';
 import { TransformReportUnresolvedSection } from './TransformReportUnresolvedSection';
 import { TransformReportWarningsSection } from './TransformReportWarningsSection';
+import type { TransformReportRecordActions } from './TransformReportRecordSectionContracts';
+
+const pickValueRowActions = (recordActions: TransformReportRecordActions) => ({
+  onCopyPath: recordActions.onCopyPath,
+  onCopyOriginalValue: recordActions.onCopyOriginalValue,
+  onLocatePath: recordActions.onLocatePath,
+  onOpenSchemeValue: recordActions.onOpenSchemeValue,
+});
 
 export const TransformReportPanelSections: React.FC<TransformReportPanelSectionsProps> = ({
   report,
@@ -73,10 +81,7 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
         unresolvedCandidates={reportView.unresolvedCandidates}
         filteredUnresolvedCount={reportView.filteredUnresolvedCount}
         isUnresolvedTruncated={reportView.isUnresolvedTruncated}
-        onCopyPath={recordActions.onCopyPath}
-        onCopyOriginalValue={recordActions.onCopyOriginalValue}
-        onLocatePath={recordActions.onLocatePath}
-        onOpenSchemeValue={recordActions.onOpenSchemeValue}
+        {...pickValueRowActions(recordActions)}
       />
     )}
 
@@ -91,12 +96,7 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
           onCopyPlaceholderReport,
         }}
         onFilter={onFilter}
-        rows={{
-          onCopyPath: recordActions.onCopyPath,
-          onCopyOriginalValue: recordActions.onCopyOriginalValue,
-          onLocatePath: recordActions.onLocatePath,
-          onOpenSchemeValue: recordActions.onOpenSchemeValue,
-        }}
+        rows={pickValueRowActions(recordActions)}
       />
     )}
 
@@ -105,10 +105,7 @@ export const TransformReportPanelSections: React.FC<TransformReportPanelSections
         warnings={reportView.warnings}
         filteredWarningCount={reportView.filteredWarningCount}
         isWarningTruncated={reportView.isWarningTruncated}
-        onCopyPath={recordActions.onCopyPath}
-        onCopyOriginalValue={recordActions.onCopyOriginalValue}
-        onLocatePath={recordActions.onLocatePath}
-        onOpenSchemeValue={recordActions.onOpenSchemeValue}
+        {...pickValueRowActions(recordActions)}
       />
     )}
 

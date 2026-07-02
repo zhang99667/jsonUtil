@@ -10,6 +10,7 @@ import type { TransformReportPlaceholderToolbarState } from '../utils/transformR
 import { TransformReportEmptyState } from './TransformReportEmptyState';
 import { TransformReportFilterBar } from './TransformReportFilterBar';
 import { TransformReportPanelSections } from './TransformReportPanelSections';
+import type { TransformReportPanelSectionsProps } from './TransformReportPanelSectionsTypes';
 import { TransformReportPlaceholdersSection } from './TransformReportPlaceholdersSection';
 import { TransformReportRecordsSection } from './TransformReportRecordsSection';
 import { TransformReportSummarySection } from './TransformReportSummarySection';
@@ -121,8 +122,8 @@ const placeholderToolbarState = {
 } satisfies TransformReportPlaceholderToolbarState;
 
 const buildProps = (
-  overrides: Partial<Parameters<typeof TransformReportPanelSections>[0]> = {}
-): Parameters<typeof TransformReportPanelSections>[0] => ({
+  overrides: Partial<TransformReportPanelSectionsProps> = {}
+): TransformReportPanelSectionsProps => ({
   report,
   reportView,
   query: 'CMD',
@@ -193,24 +194,28 @@ describe('TransformReportPanelSections', () => {
     expect(findByType(tree, TransformReportEmptyState)).toHaveLength(1);
   });
 
-  it('向记录和占位符分区透传复制、定位和模板回调', () => {
+  it('向记录和明细分区透传复制、定位和模板回调', () => {
     const onFilter = vi.fn();
     const onCopyPlaceholderReport = vi.fn();
     const onOpenPlaceholderFillTemplate = vi.fn();
+    const recordActions = buildProps().recordActions;
     const tree = TransformReportPanelSections(buildProps({
       onFilter,
       onCopyPlaceholderReport,
       onOpenPlaceholderFillTemplate,
+      recordActions,
       sectionVisibility: {
         showRecords: true,
-        showUnresolved: false,
+        showUnresolved: true,
         showPlaceholders: true,
-        showWarnings: false,
+        showWarnings: true,
         showEmptyState: false,
       },
     }));
     const records = findByType(tree, TransformReportRecordsSection)[0];
+    const unresolved = findByType(tree, TransformReportUnresolvedSection)[0];
     const placeholders = findByType(tree, TransformReportPlaceholdersSection)[0];
+    const warnings = findByType(tree, TransformReportWarningsSection)[0];
 
     expect(records.props.records).toBe(reportView.records);
     expect(records.props.onFilter).toBe(onFilter);
@@ -223,5 +228,12 @@ describe('TransformReportPanelSections', () => {
     expect(toolbar.onOpenPlaceholderFillTemplate).toBe(onOpenPlaceholderFillTemplate);
     expect(toolbar.onCopyPlaceholderReport).toBe(onCopyPlaceholderReport);
     expect(placeholders.props.onFilter).toBe(onFilter);
+    expect(unresolved.props.onCopyOriginalValue).toBe(recordActions.onCopyOriginalValue);
+    expect(placeholders.props.rows).toMatchObject({
+      onCopyPath: recordActions.onCopyPath,
+      onLocatePath: recordActions.onLocatePath,
+      onOpenSchemeValue: recordActions.onOpenSchemeValue,
+    });
+    expect(warnings.props.onCopyPath).toBe(recordActions.onCopyPath);
   });
 });
