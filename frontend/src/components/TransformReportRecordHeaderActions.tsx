@@ -1,6 +1,6 @@
 import React from 'react';
 import type { TransformReportRecord } from '../utils/transformSummary';
-import { TransformReportRecordActionButton } from './TransformReportRecordActionButton';
+import { TransformReportActionButton } from './TransformReportActionButton';
 import { renderTransformReportRecordCmdActionButtons } from './transformReportRecordCmdActionButtons';
 
 interface TransformReportRecordHeaderActionsProps {
@@ -13,8 +13,6 @@ interface TransformReportRecordHeaderActionsProps {
   onLocatePath?: (path: string) => void;
   onOpenSchemeValue?: (value: string) => void;
 }
-
-const cyanActionClassName = 'text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors';
 
 export const TransformReportRecordHeaderActions: React.FC<TransformReportRecordHeaderActionsProps> = ({
   record,
@@ -33,44 +31,41 @@ export const TransformReportRecordHeaderActions: React.FC<TransformReportRecordH
           不可逆
         </span>
       )}
-      <TransformReportRecordActionButton
+      <TransformReportActionButton
         data-tour="transform-report-copy-path"
-        className={cyanActionClassName}
         onClick={() => { void onCopyPath(record.path); }}
       >
         复制路径
-      </TransformReportRecordActionButton>
-      <TransformReportRecordActionButton
+      </TransformReportActionButton>
+      <TransformReportActionButton
         data-tour="transform-report-copy-original-value"
-        className={cyanActionClassName}
         onClick={() => { void onCopyOriginalValue(record.originalValue); }}
       >
         复制原始值
-      </TransformReportRecordActionButton>
+      </TransformReportActionButton>
       {record.hasCmdStructure && renderTransformReportRecordCmdActionButtons({
         record,
-        className: cyanActionClassName,
         onCopyCmdStructure,
         onCopyCmdComparisonPackage,
         onToggleCmdComparison,
       })}
       {onLocatePath && (
-        <TransformReportRecordActionButton
+        <TransformReportActionButton
           data-tour="transform-report-locate-path"
-          className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+          tone="locate"
           onClick={() => onLocatePath(record.path)}
         >
           定位
-        </TransformReportRecordActionButton>
+        </TransformReportActionButton>
       )}
       {onOpenSchemeValue && (
-        <TransformReportRecordActionButton
+        <TransformReportActionButton
           data-tour="transform-report-open-scheme"
-          className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+          tone="scheme"
           onClick={() => onOpenSchemeValue(record.originalValue)}
         >
           Scheme 打开
-        </TransformReportRecordActionButton>
+        </TransformReportActionButton>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TransformReportRuntimePlaceholder } from '../utils/transformRuntimePlaceholderTypes';
+import { TransformReportActionButton } from './TransformReportActionButton';
 
 export interface TransformReportPlaceholderRowActionsProps {
   placeholder: TransformReportRuntimePlaceholder;
@@ -17,61 +18,52 @@ export const TransformReportPlaceholderRowActions: React.FC<TransformReportPlace
   onOpenSchemeValue,
 }) => (
   <>
-    <button
-      type="button"
+    <TransformReportActionButton
       data-tour="transform-report-copy-placeholder-path"
       onClick={() => { void onCopyPath(placeholder.path); }}
-      className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
     >
       复制路径
-    </button>
+    </TransformReportActionButton>
     {onLocatePath && (
-      <button
-        type="button"
+      <TransformReportActionButton
         data-tour="transform-report-locate-placeholder-path"
         onClick={() => onLocatePath(placeholder.path)}
-        className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+        tone="locate"
       >
         定位
-      </button>
+      </TransformReportActionButton>
     )}
-    <button
-      type="button"
+    <TransformReportActionButton
       data-tour="transform-report-copy-placeholder-source-path"
       onClick={() => { void onCopyPath(placeholder.sourcePath, '已复制来源路径'); }}
-      className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
     >
       复制来源
-    </button>
+    </TransformReportActionButton>
     {onLocatePath && (
-      <button
-        type="button"
+      <TransformReportActionButton
         data-tour="transform-report-locate-placeholder-source"
         onClick={() => onLocatePath(placeholder.sourcePath)}
-        className="text-gray-400 hover:text-emerald-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+        tone="locate"
       >
         定位来源
-      </button>
+      </TransformReportActionButton>
     )}
     {placeholder.sourceOriginalValue && (
-      <button
-        type="button"
+      <TransformReportActionButton
         data-tour="transform-report-copy-placeholder-source-value"
         onClick={() => { void onCopyOriginalValue(placeholder.sourceOriginalValue || '', '已复制来源值'); }}
-        className="text-gray-400 hover:text-cyan-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
       >
         复制来源值
-      </button>
+      </TransformReportActionButton>
     )}
     {onOpenSchemeValue && placeholder.sourceOriginalValue && (
-      <button
-        type="button"
+      <TransformReportActionButton
         data-tour="transform-report-open-placeholder-source-scheme"
         onClick={() => onOpenSchemeValue(placeholder.sourceOriginalValue || '')}
-        className="text-gray-400 hover:text-violet-200 bg-editor-bg border border-editor-border px-2 py-0.5 rounded transition-colors"
+        tone="scheme"
       >
         Scheme 打开来源
-      </button>
+      </TransformReportActionButton>
     )}
   </>
 );

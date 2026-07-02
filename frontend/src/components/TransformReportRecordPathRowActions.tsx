@@ -2,7 +2,7 @@ import React from 'react';
 import type { TransformReportDecodedPath } from '../utils/transformSummary';
 import { getDecodedPathSchemeInput } from '../utils/transformReportDecodedSchemeInput';
 import { getTransformDecodedPathCopyText } from '../utils/transformReportCopyPayloads';
-import { TransformReportRecordActionButton } from './TransformReportRecordActionButton';
+import { TransformReportActionButton } from './TransformReportActionButton';
 
 export interface TransformReportRecordPathRowActionsProps {
   row: TransformReportDecodedPath;
@@ -24,37 +24,35 @@ export const TransformReportRecordPathRowActions: React.FC<TransformReportRecord
 
   return (
     <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
-      <TransformReportRecordActionButton
+      <TransformReportActionButton
         data-tour={copyPathDataTour}
         onClick={() => { void onCopyPath(row.path); }}
-        className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
       >
         复制路径
-      </TransformReportRecordActionButton>
-      <TransformReportRecordActionButton
+      </TransformReportActionButton>
+      <TransformReportActionButton
         data-tour={copyValueDataTour}
         onClick={() => { void onCopyDecodedPathValue(getTransformDecodedPathCopyText(row)); }}
-        className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
       >
         复制片段
-      </TransformReportRecordActionButton>
+      </TransformReportActionButton>
       {onOpenSchemeValue && schemeInput && schemeDataTour && (
-        <TransformReportRecordActionButton
+        <TransformReportActionButton
           data-tour={schemeDataTour}
           onClick={() => onOpenSchemeValue(schemeInput)}
-          className="text-gray-400 hover:text-violet-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+          tone="scheme"
         >
           Scheme 打开
-        </TransformReportRecordActionButton>
+        </TransformReportActionButton>
       )}
       {onLocatePath && (
-        <TransformReportRecordActionButton
+        <TransformReportActionButton
           data-tour={locateDataTour}
           onClick={() => onLocatePath(row.path)}
-          className="text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
+          tone="locate"
         >
           定位
-        </TransformReportRecordActionButton>
+        </TransformReportActionButton>
       )}
     </div>
   );
