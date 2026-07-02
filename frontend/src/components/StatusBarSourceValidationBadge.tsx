@@ -8,7 +8,7 @@ interface StatusBarSourceValidationBadgeProps {
 }
 
 const BASE_CLASS_NAME = 'shrink-0 px-1.5 py-0.5 rounded font-bold leading-none';
-const BUTTON_CLASS_NAME = `${BASE_CLASS_NAME} transition-colors hover:ring-1 hover:ring-white/70 focus:outline-none focus:ring-1 focus:ring-white`;
+const BUTTON_CLASS_NAME = `${BASE_CLASS_NAME} transition-colors hover:ring-1 hover:ring-white/70 focus:outline-none focus-visible:ring-1 focus-visible:ring-white`;
 
 export const StatusBarSourceValidationBadge: React.FC<StatusBarSourceValidationBadgeProps> = ({
   status,

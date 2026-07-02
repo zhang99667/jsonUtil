@@ -532,7 +532,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                     <button
                         type="button"
                         onClick={() => window.open('https://docs.apifox.com/doc-5725287', '_blank', 'noopener,noreferrer')}
-                        className="rounded text-gray-400 transition-colors hover:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/70"
+                        className="rounded text-gray-400 transition-colors hover:text-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
                         title="学习 JSONPath 语法"
                         aria-label="学习 JSONPath 语法"
                     >
@@ -648,7 +648,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                             e.stopPropagation();
                                             setFavorites(prev => removeJsonPathListItem(prev, item));
                                         }}
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-400/70 transition-all"
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-all"
                                         title={`移除收藏：${item}`}
                                         aria-label={`移除收藏：${item}`}
                                     >
@@ -747,7 +747,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 type="button"
                                 data-tour="jsonpath-empty-clear"
                                 onClick={clearQueryInput}
-                                className="shrink-0 rounded border border-amber-400/40 px-2 py-0.5 text-xs text-amber-100 transition-colors hover:border-amber-300 hover:bg-amber-400/10 focus:outline-none focus:ring-2 focus:ring-amber-300/60"
+                                className="shrink-0 rounded border border-amber-400/40 px-2 py-0.5 text-xs text-amber-100 transition-colors hover:border-amber-300 hover:bg-amber-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
                                 title="清空当前 JSONPath 查询"
                                 aria-label="清空当前 JSONPath 查询"
                             >
@@ -853,7 +853,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                     type="button"
                                     data-tour="jsonpath-result-preview"
                                     onClick={() => focusQueryResult(item.index)}
-                                    className="min-w-0 flex-1 rounded px-2 py-1 text-left focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                    className="min-w-0 flex-1 rounded px-2 py-1 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
                                     title={`${item.sourceLabel ? `${item.sourceLabel} ` : ''}${item.path}\n${item.text}`}
                                     aria-label={`定位第 ${item.index + 1} 个 JSONPath 结果：${item.path}`}
                                 >
@@ -881,7 +881,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                         type="button"
                                         data-tour="jsonpath-locate-structure"
                                         onClick={() => locateStructureResult(item.index)}
-                                        className="m-1 shrink-0 rounded p-1 text-cyan-200/70 transition-colors hover:bg-cyan-500/15 hover:text-cyan-100 focus:outline-none focus:ring-1 focus:ring-cyan-300"
+                                        className="m-1 shrink-0 rounded p-1 text-cyan-200/70 transition-colors hover:bg-cyan-500/15 hover:text-cyan-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"
                                         title={`在结构导航中定位 ${item.path}`}
                                         aria-label={`在结构导航中定位第 ${item.index + 1} 个 JSONPath 结果：${item.path}`}
                                     >
@@ -942,7 +942,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                             e.stopPropagation();
                                             setHistory(prev => prev.filter((_, i) => i !== idx));
                                         }}
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-400/70 transition-all"
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-all"
                                         title={`删除历史记录：${item}`}
                                         aria-label={`删除历史记录：${item}`}
                                     >

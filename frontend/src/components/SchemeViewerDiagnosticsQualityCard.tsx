@@ -38,7 +38,7 @@ export const SchemeViewerDiagnosticsQualityCard: React.FC<SchemeViewerDiagnostic
               data-tour="scheme-inspect-original"
               type="button"
               onClick={onInspectOriginal}
-              className="rounded border border-emerald-500/40 bg-emerald-600/20 px-2 py-0.5 text-xs text-emerald-100 transition-colors hover:bg-emerald-500/30 focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
+              className="rounded border border-emerald-500/40 bg-emerald-600/20 px-2 py-0.5 text-xs text-emerald-100 transition-colors hover:bg-emerald-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40"
               title="将原始值送入 SOURCE 并打开深度解析报告"
               aria-label="用原始值排查，将原始值送入 SOURCE 并打开深度解析报告"
             >
@@ -49,7 +49,7 @@ export const SchemeViewerDiagnosticsQualityCard: React.FC<SchemeViewerDiagnostic
             data-tour="scheme-copy-quality-summary"
             type="button"
             onClick={onCopyQualitySummary}
-            className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
+            className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-current/30"
             title="复制当前 Scheme 解析质量摘要"
             aria-label="复制质量摘要，复制当前 Scheme 解析质量摘要"
           >
@@ -59,7 +59,7 @@ export const SchemeViewerDiagnosticsQualityCard: React.FC<SchemeViewerDiagnostic
             data-tour="scheme-copy-quality-snapshot"
             type="button"
             onClick={onCopyQualitySnapshot}
-            className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30"
+            className="rounded border border-current/20 px-2 py-0.5 text-xs text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-current/30"
             title={copyQualitySnapshotTitle}
             aria-label={`复制质量快照，${copyQualitySnapshotTitle}`}
           >

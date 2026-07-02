@@ -20,7 +20,7 @@ export const SchemeViewerDiagnosticsSummaryBar: React.FC<SchemeViewerDiagnostics
     <button
       type="button"
       onClick={onToggleExpanded}
-      className="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus:outline-none focus:ring-2 focus:ring-emerald-300/30"
+      className="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/30"
       aria-expanded={isExpanded}
       aria-controls="scheme-diagnostics-detail"
       title={isExpanded ? '收起 Scheme 解析详情' : '展开 Scheme 解析详情'}
@@ -47,7 +47,7 @@ export const SchemeViewerDiagnosticsSummaryBar: React.FC<SchemeViewerDiagnostics
     <button
       type="button"
       onClick={onToggleExpanded}
-      className="shrink-0 rounded bg-editor-active px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-border hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/30"
+      className="shrink-0 rounded bg-editor-active px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-editor-border hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/30"
       aria-expanded={isExpanded}
       aria-controls="scheme-diagnostics-detail"
     >
