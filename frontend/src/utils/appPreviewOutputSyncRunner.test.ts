@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TransformMode, type ValidationResult } from '../types';
-import { executeAppPreviewOutputSync } from './appPreviewOutputSyncRunner';
+import {
+  executeAppPreviewOutputSync,
+  PREVIEW_OUTPUT_SYNC_FAILED,
+} from './appPreviewOutputSyncRunner';
 
 const validResult: ValidationResult = { isValid: true };
 const invalidResult: ValidationResult = { isValid: false, error: 'preview invalid' };
@@ -36,6 +39,23 @@ describe('appPreviewOutputSyncRunner', () => {
     expect(result).toEqual({
       status: 'synced',
       nextSource: 'while(1);{"a":2}',
+    });
+  });
+
+  it('格式化类 PREVIEW 校验异常时返回 failed 结果', async () => {
+    const validateJsonMaybeAsync = vi.fn(async () => {
+      throw new Error('validation worker crashed');
+    });
+
+    await expect(executeAppPreviewOutputSync({
+      previewText: '{"a":2}',
+      mode: TransformMode.FORMAT,
+      originalInput: '{"a":1}',
+      context: null,
+      validateJsonMaybeAsync,
+    })).resolves.toEqual({
+      status: 'failed',
+      validation: PREVIEW_OUTPUT_SYNC_FAILED,
     });
   });
 

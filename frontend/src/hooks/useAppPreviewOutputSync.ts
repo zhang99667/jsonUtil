@@ -5,7 +5,11 @@ import {
   type TransformContext,
   type ValidationResult,
 } from '../types';
-import { executeAppPreviewOutputSync } from '../utils/appPreviewOutputSyncRunner';
+import {
+  executeAppPreviewOutputSync,
+  PREVIEW_OUTPUT_SYNC_FAILED,
+  type AppPreviewOutputSyncRunnerResult,
+} from '../utils/appPreviewOutputSyncRunner';
 import { useAppPreviewValidation } from './useAppPreviewValidation';
 
 interface UseAppPreviewOutputSyncInput {
@@ -87,17 +91,25 @@ export const useAppPreviewOutputSync = ({
 
       const syncOutputToSource = async () => {
         const currentFile = files.find(file => file.id === activeFileId);
-        const syncResult = await executeAppPreviewOutputSync({
-          previewText,
-          mode,
-          originalInput: inputRef.current,
-          context: currentFile?.transformContext || fallbackContextRef.current,
-          validateJsonMaybeAsync,
-        });
+        let syncResult: AppPreviewOutputSyncRunnerResult;
+        try {
+          syncResult = await executeAppPreviewOutputSync({
+            previewText,
+            mode,
+            originalInput: inputRef.current,
+            context: currentFile?.transformContext || fallbackContextRef.current,
+            validateJsonMaybeAsync,
+          });
+        } catch {
+          syncResult = {
+            status: 'failed',
+            validation: PREVIEW_OUTPUT_SYNC_FAILED,
+          };
+        }
 
         if (outputSyncRequestId !== outputSyncRequestIdRef.current) return;
 
-        if (syncResult.status === 'invalid') {
+        if (syncResult.status !== 'synced') {
           setPreviewValidation(syncResult.validation);
           pendingOutputValue.current = previewText;
           return;

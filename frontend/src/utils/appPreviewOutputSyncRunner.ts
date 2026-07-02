@@ -12,9 +12,18 @@ export interface AppPreviewOutputSyncRunnerInput {
   validateJsonMaybeAsync: (value: string) => Promise<ValidationResult>;
 }
 
+export const PREVIEW_OUTPUT_SYNC_FAILED: ValidationResult = {
+  isValid: false,
+  error: 'PREVIEW 回写失败，请检查当前内容后重试',
+};
+
 export type AppPreviewOutputSyncRunnerResult =
   | {
     status: 'invalid';
+    validation: ValidationResult;
+  }
+  | {
+    status: 'failed';
     validation: ValidationResult;
   }
   | {
@@ -29,23 +38,30 @@ export const executeAppPreviewOutputSync = async ({
   context,
   validateJsonMaybeAsync,
 }: AppPreviewOutputSyncRunnerInput): Promise<AppPreviewOutputSyncRunnerResult> => {
-  if (shouldValidatePreviewOutputBeforeSync(mode)) {
-    const validation = await validateJsonMaybeAsync(previewText);
-    if (!validation.isValid) {
-      return {
-        status: 'invalid',
-        validation,
-      };
+  try {
+    if (shouldValidatePreviewOutputBeforeSync(mode)) {
+      const validation = await validateJsonMaybeAsync(previewText);
+      if (!validation.isValid) {
+        return {
+          status: 'invalid',
+          validation,
+        };
+      }
     }
-  }
 
-  return {
-    status: 'synced',
-    nextSource: resolveAppPreviewOutputSource({
-      previewText,
-      mode,
-      originalInput,
-      context,
-    }),
-  };
+    return {
+      status: 'synced',
+      nextSource: resolveAppPreviewOutputSource({
+        previewText,
+        mode,
+        originalInput,
+        context,
+      }),
+    };
+  } catch {
+    return {
+      status: 'failed',
+      validation: PREVIEW_OUTPUT_SYNC_FAILED,
+    };
+  }
 };
