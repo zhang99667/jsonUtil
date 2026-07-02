@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.322 (2026-07-02) - CMD Raw 扫描器分层
+### 🚀 优化与改进
+- **Raw 扫描器分层**: 将原始 response CMD 候选的递归扫描逻辑拆到 `cmdStructureRawCollector`
+- **入口职责收敛**: `cmdStructureRawSource` 保留候选收集、优先级排序和解码选择编排，继续兼容原有导出
+- **预算治理同步**: 新增扫描器独立维护预算，并收紧 raw source 聚合入口预算，避免扫描细节回流
+
 ## v1.8.321 (2026-07-02) - 设置弹窗命令 Hook 分层
 ### 🚀 优化与改进
 - **设置命令分层**: 将设置弹窗打开状态、初始页签和设置入口命令拆到 `useAppSettingsModalCommands`
