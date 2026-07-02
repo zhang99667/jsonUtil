@@ -1,6 +1,12 @@
 import type { TransformWarning } from '../types';
 import type { AppVersionMetadata } from './appVersion';
+import type { TransformIssueSampleExportSummary } from './transformSummaryIssueSampleSummaryTypes';
 import type { TransformSuggestedCommand } from './transformSuggestedCommands';
+
+export type {
+  TransformIssueSampleExportSummary,
+  TransformIssueSampleExportSummaryBucket,
+} from './transformSummaryIssueSampleSummaryTypes';
 
 export type TransformIssueSampleType = 'unresolved' | 'runtime_placeholder' | 'warning';
 
@@ -28,26 +34,7 @@ export interface TransformIssueSampleExport {
   tool: AppVersionMetadata;
   filter: string;
   suggestedCommands: TransformSuggestedCommand[];
-  summary: {
-    unresolved: {
-      copied: number;
-      filtered: number;
-      total: number;
-      truncated: boolean;
-    };
-    runtimePlaceholders: {
-      copied: number;
-      filtered: number;
-      total: number;
-      truncated: boolean;
-    };
-    warnings: {
-      copied: number;
-      filtered: number;
-      total: number;
-      truncated: boolean;
-    };
-  };
+  summary: TransformIssueSampleExportSummary;
   samples: TransformIssueSampleExportItem[];
 }
 
