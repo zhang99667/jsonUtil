@@ -110,29 +110,32 @@ export const repairJsonLocallyWithReport = (input: string): LocalJsonRepairRepor
     const withoutTrailingCommas = removeTrailingCommas(base.value);
     appendCandidate(
       withoutTrailingCommas,
-      withoutTrailingCommas === base.value
-        ? base.ruleLabels
-        : [...base.ruleLabels, '移除尾随逗号']
+      appendRepairRuleLabel(
+        base.ruleLabels,
+        withoutTrailingCommas !== base.value,
+        '移除尾随逗号'
+      )
     );
 
     const looseNormalized = normalizeLooseJsonSyntax(base.value);
+    const looseRuleLabels = appendRepairRuleLabel(
+      base.ruleLabels,
+      looseNormalized !== base.value,
+      '修正常见 JS 对象写法'
+    );
     appendCandidate(
       looseNormalized,
-      looseNormalized === base.value
-        ? base.ruleLabels
-        : [...base.ruleLabels, '修正常见 JS 对象写法']
+      looseRuleLabels
     );
 
     const looseWithoutTrailingCommas = removeTrailingCommas(looseNormalized);
     appendCandidate(
       looseWithoutTrailingCommas,
-      looseWithoutTrailingCommas === looseNormalized
-        ? looseNormalized === base.value ? base.ruleLabels : [...base.ruleLabels, '修正常见 JS 对象写法']
-        : [
-          ...base.ruleLabels,
-          ...(looseNormalized === base.value ? [] : ['修正常见 JS 对象写法']),
-          '移除尾随逗号',
-        ]
+      appendRepairRuleLabel(
+        looseRuleLabels,
+        looseWithoutTrailingCommas !== looseNormalized,
+        '移除尾随逗号'
+      )
     );
   });
 
@@ -150,6 +153,12 @@ export const repairJsonLocallyWithReport = (input: string): LocalJsonRepairRepor
 
   return null;
 };
+
+const appendRepairRuleLabel = (
+  ruleLabels: string[],
+  shouldAppend: boolean,
+  label: string
+): string[] => (shouldAppend ? [...ruleLabels, label] : ruleLabels);
 
 const stripJsonComments = (source: string): string => {
   let output = '';
