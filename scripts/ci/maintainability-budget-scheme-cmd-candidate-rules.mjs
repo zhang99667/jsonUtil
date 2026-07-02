@@ -12,6 +12,7 @@ export const schemeCmdCandidateMaintainabilityBudgets = [
   { file: 'frontend/src/utils/cmdStructureRawUrl.test.ts', maxLines: 55, reason: '原始 CMD URL helper 测试只锁定 schema、query 和非 URL 空态' },
   { file: 'frontend/src/utils/cmdStructureRawQueryParams.ts', maxLines: 60, reason: '原始 CMD query 参数解析应独立维护 URLSearchParams 遍历、重复 key 聚合和 value parser 透传' },
   { file: 'frontend/src/utils/cmdStructureRawQueryParams.test.ts', maxLines: 70, reason: '原始 CMD query 参数解析测试只锁定问号前缀、parser 深度透传和重复 key 聚合' },
-  { file: 'frontend/src/utils/cmdStructureRawJsonValue.ts', maxLines: 60, reason: '原始 CMD JSON 值解析与 unknown 到 JsonValue 转换应保持独立纯函数，避免快速解码流程膨胀' },
+  { file: 'frontend/src/utils/cmdStructureRawJsonValue.ts', maxLines: 45, reason: '原始 CMD JSON 字符串解析入口应聚焦直接解析、URL 解码和兼容导出' },
+  { file: 'frontend/src/utils/cmdStructureRawJsonValueCoercion.ts', maxLines: 45, reason: '原始 CMD unknown 到 JsonValue 递归转换应独立维护 primitive、数组和对象分支' },
   { file: 'frontend/src/utils/cmdStructureRawSourceGuards.ts', maxLines: 80, reason: '原始 CMD 字段优先级、source 形态和结构化字段判断应保持纯 guard helper，避免解码流程回流' },
 ];

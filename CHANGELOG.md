@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.324 (2026-07-02) - CMD Raw JSON Value 分层
+### 🚀 优化与改进
+- **JSON Value 分层**: 将原始 CMD unknown 到 `JsonValue` 的递归转换拆到 `cmdStructureRawJsonValueCoercion`
+- **解析入口收敛**: `cmdStructureRawJsonValue` 聚焦 JSON 字符串直接解析、URL 解码解析和兼容导出
+- **预算治理同步**: 为 coercion helper 补充独立预算，并收紧 JSON 字符串解析入口预算
+
 ## v1.8.323 (2026-07-02) - CMD Raw URL Helper 分层
 ### 🚀 优化与改进
 - **URL Helper 分层**: 将原始 CMD URL 的 schema 和 query 提取逻辑拆到 `cmdStructureRawUrl`
