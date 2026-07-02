@@ -1,6 +1,13 @@
 import { vi } from 'vitest';
 import { TransformMode } from '../types';
 import { useAppToolPanelCommands } from './useAppToolPanelCommands';
+import {
+  hasToolPanelCommandStateOverride,
+  readToolPanelCommandInitialState,
+  TOOL_PANEL_COMMAND_STATE_KEYS,
+  type ToolPanelCommandStateOverrides,
+  type ToolPanelCommandStateSetters,
+} from './useAppToolPanelCommandsStateTestHelper';
 import { installToolPanelCommandWindowStubs } from './useAppToolPanelCommandsWindowTestHelper';
 
 const reactMocks = vi.hoisted(() => ({
@@ -18,44 +25,10 @@ vi.mock('react', async importOriginal => ({
   useState: reactMocks.useState,
 }));
 
-const STATE_KEYS = [
-  'isJsonPathPanelOpen',
-  'isJsonTreePanelOpen',
-  'isJsonComparePanelOpen',
-  'isJsonSchemaPanelOpen',
-  'jsonPathQueryRequest',
-  'jsonTreeFocusRequest',
-  'schemeInputRequest',
-  'templateFillRequest',
-  'isSettingsModalOpen',
-  'settingsInitialTab',
-  'isChangelogModalOpen',
-  'changelogSourceMarkdown',
-  'changelogHighlightedVersion',
-  'isSchemeDecodeOpen',
-  'isTemplatePanelOpen',
-  'templateApplyQualityDelta',
-  'isTransformReportOpen',
-] as const;
-
-type StateKey = typeof STATE_KEYS[number];
-type StateOverrides = Partial<Record<StateKey, unknown>>;
-type StateSetters = Partial<Record<StateKey, ReturnType<typeof vi.fn>>>;
-
 export let cleanupEffect: (() => void) | undefined;
-export let stateSetters: StateSetters = {};
+export let stateSetters: ToolPanelCommandStateSetters = {};
 
-const hasOwn = (value: object, key: PropertyKey): boolean => (
-  Object.prototype.hasOwnProperty.call(value, key)
-);
-
-const readInitialState = (initialState: unknown): unknown => (
-  typeof initialState === 'function'
-    ? (initialState as () => unknown)()
-    : initialState
-);
-
-const installReactMocks = (stateOverrides: StateOverrides) => {
+const installReactMocks = (stateOverrides: ToolPanelCommandStateOverrides) => {
   let stateIndex = 0;
   let refIndex = 0;
   const refs = [
@@ -75,19 +48,19 @@ const installReactMocks = (stateOverrides: StateOverrides) => {
   });
   reactMocks.useRef.mockImplementation((initialValue: unknown) => refs[refIndex++] ?? { current: initialValue });
   reactMocks.useState.mockImplementation((initialState: unknown) => {
-    const key = STATE_KEYS[stateIndex++];
+    const key = TOOL_PANEL_COMMAND_STATE_KEYS[stateIndex++];
     const setter = vi.fn();
     stateSetters[key] = setter;
-    const value = hasOwn(stateOverrides, key)
+    const value = hasToolPanelCommandStateOverride(stateOverrides, key)
       ? stateOverrides[key]
-      : readInitialState(initialState);
+      : readToolPanelCommandInitialState(initialState);
     return [value, setter];
   });
 };
 
 export const useToolPanelCommandsFixture = (
   options: Partial<Parameters<typeof useAppToolPanelCommands>[0]> = {},
-  stateOverrides: StateOverrides = {},
+  stateOverrides: ToolPanelCommandStateOverrides = {},
 ) => {
   const eventListeners = installToolPanelCommandWindowStubs();
   installReactMocks(stateOverrides);
