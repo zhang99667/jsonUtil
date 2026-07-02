@@ -14,8 +14,7 @@ import {
   type TemplateFillRequest,
 } from '../utils/appToolPanelCommandPlans';
 import { useAppChangelogCommands } from './useAppChangelogCommands';
-
-export type SettingsTab = 'shortcuts' | 'ai' | 'general';
+import { useAppSettingsModalCommands } from './useAppSettingsModalCommands';
 
 type TrackPanelEvent = (eventName: string, category: string) => void;
 
@@ -42,8 +41,13 @@ export const useAppToolPanelCommands = ({
   const [jsonTreeFocusRequest, setJsonTreeFocusRequest] = useState<JsonTreeFocusRequest | null>(null);
   const [schemeInputRequest, setSchemeInputRequest] = useState<SchemeInputRequest | null>(null);
   const [templateFillRequest, setTemplateFillRequest] = useState<TemplateFillRequest | null>(null);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
+  const {
+    handleOpenAiSettings,
+    handleOpenSettingsPanel,
+    isSettingsModalOpen,
+    setIsSettingsModalOpen,
+    settingsInitialTab,
+  } = useAppSettingsModalCommands({ onTrackToolEvent });
   const {
     changelogHighlightedVersion,
     changelogSourceMarkdown,
@@ -108,17 +112,6 @@ export const useAppToolPanelCommands = ({
     setIsTemplatePanelOpen(nextOpen);
     onTrackToolEvent(getPanelToggleEventName(nextOpen, 'TEMPLATE_PANEL_OPEN', 'TEMPLATE_PANEL_CLOSE'), 'panel');
   }, [isTemplatePanelOpen, onTrackToolEvent]);
-
-  const handleOpenSettingsPanel = useCallback(() => {
-    setSettingsInitialTab('shortcuts');
-    setIsSettingsModalOpen(true);
-    onTrackToolEvent('SETTINGS_OPEN', 'panel');
-  }, [onTrackToolEvent]);
-
-  const handleOpenAiSettings = useCallback(() => {
-    setSettingsInitialTab('ai');
-    setIsSettingsModalOpen(true);
-  }, []);
 
   const handleLocateJsonPath = useCallback((query: string) => {
     const plan = buildJsonPathQueryRequest(jsonPathQueryRequestIdRef.current, query);

@@ -1,6 +1,7 @@
 const commandPanelTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const appWorkflowCommandPanelTestMaintainabilityBudgets = [
+  commandPanelTestBudget('frontend/src/hooks/useAppSettingsModalCommands.test.ts', 70, '设置弹窗命令测试只锁定普通设置入口、AI 设置入口和埋点边界'),
   commandPanelTestBudget('frontend/src/hooks/useAppToolPanelCommands.test.ts', 190, '工具面板命令测试只锁定面板开关、请求 ID 自增、changelog 事件和报告入口动作'),
   commandPanelTestBudget('frontend/src/hooks/useAppToolPanelCommandsTestFixture.ts', 70, '工具面板命令测试 fixture 只维护窗口 stub、默认 hook 入参和测试句柄返回'),
   commandPanelTestBudget('frontend/src/hooks/useAppToolPanelCommandsReactTestHelper.ts', 70, '工具面板命令 React 测试 helper 只维护 hook mock、effect 清理和 state setter 捕获'),
