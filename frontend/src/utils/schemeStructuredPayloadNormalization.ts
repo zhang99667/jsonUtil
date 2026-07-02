@@ -1,33 +1,18 @@
-import type { DecodeLayer } from './schemeTypes';
 import { tryNormalizeHtmlJsonQuotePayload, tryNormalizeJsonEscapedQuotePayload } from './schemeJsonPayloads';
 import {
-  type LooksLikeStructuredPayload,
   tryNormalizeJsonEscapedSlashPayload,
   tryNormalizeJsonUnicodeAsciiPayload,
 } from './schemeEscapedPayloads';
-
-type SchemeStructuredPayloadNormalizationSource = 'json-string' | 'json-escaped-slash' | 'json-unicode-ascii' | 'json-escaped-quote' | 'html-json-quote';
-
-type SchemeStructuredPayloadDecodeLayerMeta = Pick<DecodeLayer, 'type' | 'description' | 'reversible'>;
-
-export interface SchemeStructuredPayloadNormalizationOptions {
-  includeQuotePayloads?: boolean;
-  looksLikeStructuredPayload: LooksLikeStructuredPayload;
-  tryParseJsonStringPayload?: (value: string) => string | null;
-}
-
-export interface SchemeStructuredPayloadNormalization {
-  source: SchemeStructuredPayloadNormalizationSource;
-  value: string;
-  layer?: SchemeStructuredPayloadDecodeLayerMeta;
-}
-
-interface SchemeStructuredPayloadNormalizationRule {
-  source: SchemeStructuredPayloadNormalizationSource;
-  normalize: (value: string, options: SchemeStructuredPayloadNormalizationOptions) => string | null;
-  layer?: SchemeStructuredPayloadDecodeLayerMeta;
-  quotePayload?: boolean;
-}
+import type {
+  SchemeStructuredPayloadNormalization,
+  SchemeStructuredPayloadNormalizationOptions,
+  SchemeStructuredPayloadNormalizationRule,
+} from './schemeStructuredPayloadNormalizationTypes';
+export type {
+  SchemeStructuredPayloadNormalization,
+  SchemeStructuredPayloadNormalizationOptions,
+  SchemeStructuredPayloadNormalizationSource,
+} from './schemeStructuredPayloadNormalizationTypes';
 
 const structuredPayloadNormalizationRules: SchemeStructuredPayloadNormalizationRule[] = [
   {

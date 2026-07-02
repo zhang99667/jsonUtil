@@ -6,7 +6,7 @@ export const governanceSchemeSupportPayloadMaintainabilityBudgets = [
   },
   {
     file: 'scripts/ci/maintainability-budget-scheme-support-payload-normalization-rules.mjs',
-    maxLines: 25,
+    maxLines: 35,
     reason: 'Scheme payload 归一化预算规则应独立成短表，避免 payload 主规则继续贴边',
   },
 ];
