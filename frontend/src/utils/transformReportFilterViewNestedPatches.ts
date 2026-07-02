@@ -1,55 +1,54 @@
 import type { TransformReportFilterOptions } from './transformReportFilters';
-import type { TransformReportRecord } from './transformSummary';
+import type { TransformReportDecodedPath, TransformReportRecord } from './transformSummary';
 import type { TransformReportFilterViewMatches } from './transformReportFilterViewMatches';
 
 export type TransformReportFilterViewPatch = Partial<TransformReportRecord>;
 
+type NestedFieldPatchBuilder = (matchedFields: TransformReportDecodedPath[], visibleFields: TransformReportDecodedPath[], hasMore: boolean) => TransformReportFilterViewPatch;
+
+const buildNestedFieldPatch = (
+  matchedFields: TransformReportDecodedPath[],
+  hasDecodedPathMatches: boolean,
+  fieldLimit: number,
+  buildPatch: NestedFieldPatchBuilder
+): TransformReportFilterViewPatch => (
+  matchedFields.length > 0
+    ? buildPatch(matchedFields, matchedFields.slice(0, fieldLimit), matchedFields.length > fieldLimit)
+    : hasDecodedPathMatches ? buildPatch([], [], false) : {}
+);
+
+const buildCommandFieldPatch: NestedFieldPatchBuilder = (matchedFields, visibleFields, hasMore) => ({
+  nestedCommandSearchFields: matchedFields,
+  nestedCommandFields: visibleFields,
+  nestedCommandFieldCount: matchedFields.length,
+  indexedNestedCommandFieldCount: matchedFields.length,
+  hasMoreNestedCommandFields: hasMore,
+});
+
+const buildResourceFieldPatch: NestedFieldPatchBuilder = (matchedFields, visibleFields, hasMore) => ({
+  nestedResourceSearchFields: matchedFields,
+  nestedResourceFields: visibleFields,
+  nestedResourceFieldCount: matchedFields.length,
+  indexedNestedResourceFieldCount: matchedFields.length,
+  hasMoreNestedResourceFields: hasMore,
+});
+
 export const buildNestedCommandFieldPatch = (
   matches: TransformReportFilterViewMatches,
   options: TransformReportFilterOptions
-): TransformReportFilterViewPatch => {
-  if (matches.nestedCommandFields.length > 0) {
-    return {
-      nestedCommandSearchFields: matches.nestedCommandFields,
-      nestedCommandFields: matches.nestedCommandFields.slice(0, options.nestedCommandFieldLimit),
-      nestedCommandFieldCount: matches.nestedCommandFields.length,
-      indexedNestedCommandFieldCount: matches.nestedCommandFields.length,
-      hasMoreNestedCommandFields: matches.nestedCommandFields.length > options.nestedCommandFieldLimit,
-    };
-  }
-
-  return matches.decodedPaths.length > 0
-    ? {
-        nestedCommandSearchFields: [],
-        nestedCommandFields: [],
-        nestedCommandFieldCount: 0,
-        indexedNestedCommandFieldCount: 0,
-        hasMoreNestedCommandFields: false,
-      }
-    : {};
-};
+): TransformReportFilterViewPatch => buildNestedFieldPatch(
+  matches.nestedCommandFields,
+  matches.decodedPaths.length > 0,
+  options.nestedCommandFieldLimit,
+  buildCommandFieldPatch
+);
 
 export const buildNestedResourceFieldPatch = (
   matches: TransformReportFilterViewMatches,
   options: TransformReportFilterOptions
-): TransformReportFilterViewPatch => {
-  if (matches.nestedResourceFields.length > 0) {
-    return {
-      nestedResourceSearchFields: matches.nestedResourceFields,
-      nestedResourceFields: matches.nestedResourceFields.slice(0, options.nestedCommandFieldLimit),
-      nestedResourceFieldCount: matches.nestedResourceFields.length,
-      indexedNestedResourceFieldCount: matches.nestedResourceFields.length,
-      hasMoreNestedResourceFields: matches.nestedResourceFields.length > options.nestedCommandFieldLimit,
-    };
-  }
-
-  return matches.decodedPaths.length > 0
-    ? {
-        nestedResourceSearchFields: [],
-        nestedResourceFields: [],
-        nestedResourceFieldCount: 0,
-        indexedNestedResourceFieldCount: 0,
-        hasMoreNestedResourceFields: false,
-      }
-    : {};
-};
+): TransformReportFilterViewPatch => buildNestedFieldPatch(
+  matches.nestedResourceFields,
+  matches.decodedPaths.length > 0,
+  options.nestedCommandFieldLimit,
+  buildResourceFieldPatch
+);
