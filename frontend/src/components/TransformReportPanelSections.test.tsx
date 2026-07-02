@@ -127,11 +127,27 @@ const buildProps = (
     showEmptyState: false,
   },
   placeholderToolbarState,
-  cmdComparisonRecordPath: null,
-  cmdComparisonActualCandidate: null,
-  cmdComparisonExpectedText: '',
-  cmdComparisonIgnoreExtraPaths: false,
-  getCmdComparisonCandidateRecords: vi.fn(() => []),
+  recordActions: {
+    onCopyPath: vi.fn(),
+    onCopyOriginalValue: vi.fn(),
+    onCopyDecodedPathValue: vi.fn(),
+    onCopyCmdStructure: vi.fn(),
+    onCopyCmdComparisonPackage: vi.fn(),
+    onToggleCmdComparison: vi.fn(),
+    onCopyCmdComparisonDiff: vi.fn(),
+    onSwitchCmdComparisonCandidate: vi.fn(),
+    onCmdComparisonExpectedTextChange: vi.fn(),
+    onCmdComparisonIgnoreExtraPathsChange: vi.fn(),
+    onLocatePath: vi.fn(),
+    onOpenSchemeValue: vi.fn(),
+  },
+  recordCmdComparison: {
+    recordPath: null,
+    actualCandidate: null,
+    expectedText: '',
+    ignoreExtraPaths: false,
+    getCandidateRecords: vi.fn(() => []),
+  },
   onFilter: vi.fn(),
   onOpenFirstCmdComparison: vi.fn(),
   onOpenPlaceholderFillTemplate: vi.fn(),
@@ -139,18 +155,6 @@ const buildProps = (
   onCopyPlaceholderReport: vi.fn(),
   onRunNextAction: vi.fn(),
   onRunIssueTriageAction: vi.fn(),
-  onCopyPath: vi.fn(),
-  onCopyOriginalValue: vi.fn(),
-  onCopyDecodedPathValue: vi.fn(),
-  onCopyCmdStructure: vi.fn(),
-  onCopyCmdComparisonPackage: vi.fn(),
-  onToggleCmdComparison: vi.fn(),
-  onCopyCmdComparisonDiff: vi.fn(),
-  onSwitchCmdComparisonCandidate: vi.fn(),
-  onCmdComparisonExpectedTextChange: vi.fn(),
-  onCmdComparisonIgnoreExtraPathsChange: vi.fn(),
-  onLocatePath: vi.fn(),
-  onOpenSchemeValue: vi.fn(),
   ...overrides,
 });
 
@@ -195,7 +199,8 @@ describe('TransformReportPanelSections', () => {
 
     expect(records.props.records).toBe(reportView.records);
     expect(records.props.onFilter).toBe(onFilter);
-    expect(records.props.onLocatePath).toBeDefined();
+    expect(records.props.actions).toBeDefined();
+    expect(records.props.cmdComparison).toBeDefined();
     const toolbar = placeholders.props.toolbar as {
       onOpenPlaceholderFillTemplate: () => void;
       onCopyPlaceholderReport: () => void;

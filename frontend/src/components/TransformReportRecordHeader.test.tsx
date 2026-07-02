@@ -59,52 +59,63 @@ const record = {
 
 describe('TransformReportRecordHeader', () => {
   it('展示记录头部状态并转发复制、定位、Scheme 和 cmdHandler 动作', () => {
-    const props = {
-      record,
+    const actions = {
       onCopyPath: vi.fn(),
       onCopyOriginalValue: vi.fn(),
+      onCopyDecodedPathValue: vi.fn(),
       onCopyCmdStructure: vi.fn(),
       onCopyCmdComparisonPackage: vi.fn(),
       onToggleCmdComparison: vi.fn(),
+      onCopyCmdComparisonDiff: vi.fn(),
+      onSwitchCmdComparisonCandidate: vi.fn(),
+      onCmdComparisonExpectedTextChange: vi.fn(),
+      onCmdComparisonIgnoreExtraPathsChange: vi.fn(),
       onLocatePath: vi.fn(),
       onOpenSchemeValue: vi.fn(),
     };
-    const tree = TransformReportRecordHeader(props);
-    const actions = renderHeaderActions(tree);
-    const text = `${collectText(tree)}${collectText(actions)}`;
+    const tree = TransformReportRecordHeader({ record, actions });
+    const actionTree = renderHeaderActions(tree);
+    const text = `${collectText(tree)}${collectText(actionTree)}`;
 
     expect(text).toContain('$.cmd');
     expect(text).toContain('不可逆');
     expect(text).toContain('复制聚焦 CMD');
     expect(findByType(tree, SourceLabelBadge)[0].props.label).toBe('scheme');
-    expect(findByDataTour(actions, 'transform-report-copy-cmd-structure')[0].props.title)
+    expect(findByDataTour(actionTree, 'transform-report-copy-cmd-structure')[0].props.title)
       .toBe('复制按当前筛选命中的内部路径裁剪后的 cmdParams');
 
-    (findByDataTour(actions, 'transform-report-copy-path')[0].props.onClick as () => void)();
-    (findByDataTour(actions, 'transform-report-copy-original-value')[0].props.onClick as () => void)();
-    (findByDataTour(actions, 'transform-report-copy-cmd-structure')[0].props.onClick as () => void)();
-    (findByDataTour(actions, 'transform-report-copy-cmd-comparison-package')[0].props.onClick as () => void)();
-    (findByDataTour(actions, 'transform-report-open-cmd-comparison')[0].props.onClick as () => void)();
-    (findByDataTour(actions, 'transform-report-locate-path')[0].props.onClick as () => void)();
-    (findByDataTour(actions, 'transform-report-open-scheme')[0].props.onClick as () => void)();
+    (findByDataTour(actionTree, 'transform-report-copy-path')[0].props.onClick as () => void)();
+    (findByDataTour(actionTree, 'transform-report-copy-original-value')[0].props.onClick as () => void)();
+    (findByDataTour(actionTree, 'transform-report-copy-cmd-structure')[0].props.onClick as () => void)();
+    (findByDataTour(actionTree, 'transform-report-copy-cmd-comparison-package')[0].props.onClick as () => void)();
+    (findByDataTour(actionTree, 'transform-report-open-cmd-comparison')[0].props.onClick as () => void)();
+    (findByDataTour(actionTree, 'transform-report-locate-path')[0].props.onClick as () => void)();
+    (findByDataTour(actionTree, 'transform-report-open-scheme')[0].props.onClick as () => void)();
 
-    expect(props.onCopyPath).toHaveBeenCalledWith('$.cmd');
-    expect(props.onCopyOriginalValue).toHaveBeenCalledWith('baiduboxapp://v1/open?uid=1');
-    expect(props.onCopyCmdStructure).toHaveBeenCalledWith(record);
-    expect(props.onCopyCmdComparisonPackage).toHaveBeenCalledWith(record);
-    expect(props.onToggleCmdComparison).toHaveBeenCalledWith(record);
-    expect(props.onLocatePath).toHaveBeenCalledWith('$.cmd');
-    expect(props.onOpenSchemeValue).toHaveBeenCalledWith('baiduboxapp://v1/open?uid=1');
+    expect(actions.onCopyPath).toHaveBeenCalledWith('$.cmd');
+    expect(actions.onCopyOriginalValue).toHaveBeenCalledWith('baiduboxapp://v1/open?uid=1');
+    expect(actions.onCopyCmdStructure).toHaveBeenCalledWith(record);
+    expect(actions.onCopyCmdComparisonPackage).toHaveBeenCalledWith(record);
+    expect(actions.onToggleCmdComparison).toHaveBeenCalledWith(record);
+    expect(actions.onLocatePath).toHaveBeenCalledWith('$.cmd');
+    expect(actions.onOpenSchemeValue).toHaveBeenCalledWith('baiduboxapp://v1/open?uid=1');
   });
 
   it('没有 cmdHandler 结构时隐藏 cmdHandler 操作', () => {
     const tree = TransformReportRecordHeader({
       record: { ...record, hasCmdStructure: false, cmdStructureFocusPaths: [] },
-      onCopyPath: vi.fn(),
-      onCopyOriginalValue: vi.fn(),
-      onCopyCmdStructure: vi.fn(),
-      onCopyCmdComparisonPackage: vi.fn(),
-      onToggleCmdComparison: vi.fn(),
+      actions: {
+        onCopyPath: vi.fn(),
+        onCopyOriginalValue: vi.fn(),
+        onCopyDecodedPathValue: vi.fn(),
+        onCopyCmdStructure: vi.fn(),
+        onCopyCmdComparisonPackage: vi.fn(),
+        onToggleCmdComparison: vi.fn(),
+        onCopyCmdComparisonDiff: vi.fn(),
+        onSwitchCmdComparisonCandidate: vi.fn(),
+        onCmdComparisonExpectedTextChange: vi.fn(),
+        onCmdComparisonIgnoreExtraPathsChange: vi.fn(),
+      },
     });
     const actions = renderHeaderActions(tree);
 

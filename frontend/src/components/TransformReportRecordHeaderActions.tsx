@@ -1,28 +1,17 @@
 import React from 'react';
 import type { TransformReportRecord } from '../utils/transformSummary';
 import { TransformReportActionButton } from './TransformReportActionButton';
+import type { TransformReportRecordActions } from './TransformReportRecordSectionContracts';
 import { renderTransformReportRecordCmdActionButtons } from './transformReportRecordCmdActionButtons';
 
 interface TransformReportRecordHeaderActionsProps {
   record: TransformReportRecord;
-  onCopyPath: (path: string, successMessage?: string) => void | Promise<void>;
-  onCopyOriginalValue: (value: string, successMessage?: string) => void | Promise<void>;
-  onCopyCmdStructure: (record: TransformReportRecord) => void | Promise<void>;
-  onCopyCmdComparisonPackage: (record: TransformReportRecord) => void | Promise<void>;
-  onToggleCmdComparison: (record: TransformReportRecord) => void;
-  onLocatePath?: (path: string) => void;
-  onOpenSchemeValue?: (value: string) => void;
+  actions: TransformReportRecordActions;
 }
 
 export const TransformReportRecordHeaderActions: React.FC<TransformReportRecordHeaderActionsProps> = ({
   record,
-  onCopyPath,
-  onCopyOriginalValue,
-  onCopyCmdStructure,
-  onCopyCmdComparisonPackage,
-  onToggleCmdComparison,
-  onLocatePath,
-  onOpenSchemeValue,
+  actions,
 }) => {
   return (
     <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
@@ -33,36 +22,34 @@ export const TransformReportRecordHeaderActions: React.FC<TransformReportRecordH
       )}
       <TransformReportActionButton
         data-tour="transform-report-copy-path"
-        onClick={() => { void onCopyPath(record.path); }}
+        onClick={() => { void actions.onCopyPath(record.path); }}
       >
         复制路径
       </TransformReportActionButton>
       <TransformReportActionButton
         data-tour="transform-report-copy-original-value"
-        onClick={() => { void onCopyOriginalValue(record.originalValue); }}
+        onClick={() => { void actions.onCopyOriginalValue(record.originalValue); }}
       >
         复制原始值
       </TransformReportActionButton>
       {record.hasCmdStructure && renderTransformReportRecordCmdActionButtons({
         record,
-        onCopyCmdStructure,
-        onCopyCmdComparisonPackage,
-        onToggleCmdComparison,
+        actions,
       })}
-      {onLocatePath && (
+      {actions.onLocatePath && (
         <TransformReportActionButton
           data-tour="transform-report-locate-path"
           tone="locate"
-          onClick={() => onLocatePath(record.path)}
+          onClick={() => actions.onLocatePath?.(record.path)}
         >
           定位
         </TransformReportActionButton>
       )}
-      {onOpenSchemeValue && (
+      {actions.onOpenSchemeValue && (
         <TransformReportActionButton
           data-tour="transform-report-open-scheme"
           tone="scheme"
-          onClick={() => onOpenSchemeValue(record.originalValue)}
+          onClick={() => actions.onOpenSchemeValue?.(record.originalValue)}
         >
           Scheme 打开
         </TransformReportActionButton>

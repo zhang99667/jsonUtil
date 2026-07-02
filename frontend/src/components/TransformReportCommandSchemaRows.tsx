@@ -1,21 +1,18 @@
 import React from 'react';
 import type { TransformReportCommandSchemaRow } from '../utils/transformSummary';
 import { COMMAND_SCHEMA_ROW_DISPLAY_LIMIT } from './TransformReportPanelAtoms';
+import type { TransformReportRecordPathActions } from './TransformReportRecordSectionContracts';
 
 interface TransformReportCommandSchemaRowsProps {
   recordPath: string;
   rows: TransformReportCommandSchemaRow[];
-  onCopyPath: (path: string) => void | Promise<void>;
-  onCopyDecodedPathValue: (text: string) => void | Promise<void>;
-  onLocatePath?: (path: string) => void;
+  actions: TransformReportRecordPathActions;
 }
 
 export const TransformReportCommandSchemaRows: React.FC<TransformReportCommandSchemaRowsProps> = ({
   recordPath,
   rows,
-  onCopyPath,
-  onCopyDecodedPathValue,
-  onLocatePath,
+  actions,
 }) => (
   <div data-tour="transform-report-command-schema-rows" className="mt-1.5 flex flex-col gap-1">
     <div className="text-gray-500">
@@ -40,7 +37,7 @@ export const TransformReportCommandSchemaRows: React.FC<TransformReportCommandSc
           <button
             type="button"
             data-tour="transform-report-copy-command-schema-path"
-            onClick={() => { void onCopyPath(row.path); }}
+            onClick={() => { void actions.onCopyPath(row.path); }}
             className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
           >
             复制路径
@@ -48,16 +45,16 @@ export const TransformReportCommandSchemaRows: React.FC<TransformReportCommandSc
           <button
             type="button"
             data-tour="transform-report-copy-command-schema-row"
-            onClick={() => { void onCopyDecodedPathValue(`${row.path} = ${JSON.stringify(row.schema)}`); }}
+            onClick={() => { void actions.onCopyDecodedPathValue(`${row.path} = ${JSON.stringify(row.schema)}`); }}
             className="text-gray-400 hover:text-cyan-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
           >
             复制片段
           </button>
-          {onLocatePath && (
+          {actions.onLocatePath && (
             <button
               type="button"
               data-tour="transform-report-locate-command-schema-path"
-              onClick={() => onLocatePath(row.path)}
+              onClick={() => actions.onLocatePath?.(row.path)}
               className="text-gray-400 hover:text-emerald-200 border border-editor-border px-2 py-0.5 rounded transition-colors"
             >
               定位

@@ -67,10 +67,12 @@ describe('TransformReportRecordPathSections', () => {
   it('编排内部 CMD、资源、内部路径和预览行', () => {
     const props = {
       record,
-      onCopyPath: vi.fn(),
-      onCopyDecodedPathValue: vi.fn(),
-      onLocatePath: vi.fn(),
-      onOpenSchemeValue: vi.fn(),
+      actions: {
+        onCopyPath: vi.fn(),
+        onCopyDecodedPathValue: vi.fn(),
+        onLocatePath: vi.fn(),
+        onOpenSchemeValue: vi.fn(),
+      },
     };
     const tree = TransformReportRecordPathSections(props);
     const pathRows = findByType(tree, TransformReportRecordPathRows);
@@ -84,12 +86,12 @@ describe('TransformReportRecordPathSections', () => {
     ]);
     expect(pathRows.map(row => row.props.countLabel)).toEqual(['2 个', '2 个', '2+ 条']);
     expect(pathRows[0].props.rows).toBe(record.nestedCommandFields);
-    expect(pathRows[0].props.onOpenSchemeValue).toBe(props.onOpenSchemeValue);
+    expect(pathRows[0].props.onOpenSchemeValue).toBe(props.actions.onOpenSchemeValue);
     expect(pathRows[1].props.rows).toBe(record.nestedResourceFields);
     expect(pathRows[2].props.rows).toBe(record.decodedPaths);
-    expect(pathRows[2].props.onCopyPath).toBe(props.onCopyPath);
-    expect(pathRows[2].props.onCopyDecodedPathValue).toBe(props.onCopyDecodedPathValue);
-    expect(pathRows[2].props.onLocatePath).toBe(props.onLocatePath);
+    expect(pathRows[2].props.onCopyPath).toBe(props.actions.onCopyPath);
+    expect(pathRows[2].props.onCopyDecodedPathValue).toBe(props.actions.onCopyDecodedPathValue);
+    expect(pathRows[2].props.onLocatePath).toBe(props.actions.onLocatePath);
     expect(collectText(pathRows[0].props.moreContent)).toContain('已索引 3 个');
     expect(collectText(pathRows[1].props.moreContent)).toContain('已索引 3 个');
     expect(collectText(pathRows[2].props.moreContent)).toContain('总计 2+ 条');
@@ -104,8 +106,10 @@ describe('TransformReportRecordPathSections', () => {
         nestedCommandFields: [],
         nestedResourceFields: [],
       },
-      onCopyPath: vi.fn(),
-      onCopyDecodedPathValue: vi.fn(),
+      actions: {
+        onCopyPath: vi.fn(),
+        onCopyDecodedPathValue: vi.fn(),
+      },
     });
 
     expect(findByType(tree, TransformReportRecordPathRows)).toHaveLength(0);

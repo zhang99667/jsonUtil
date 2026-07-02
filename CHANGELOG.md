@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.327 (2026-07-02) - Transform Report 记录区 Action 契约分层
+### 🚀 优化与改进
+- **记录区 Action 契约分层**: 新增 `TransformReportRecordSectionContracts`，集中维护记录区复制、定位、Scheme 和 CMD 对比动作类型
+- **Props 收敛**: `TransformReportRecordsSection` 和 `TransformReportPanelSections` 改为传递 `recordActions` 与 `recordCmdComparison`，减少十多个平铺回调透传
+- **对比边界补测**: 补充 CMD 对比 active candidate 按记录路径过滤用例，保护候选列表只在展开记录时读取
+
 ## v1.8.326 (2026-07-02) - 工具面板请求 Hook 分层
 ### 🚀 优化与改进
 - **请求 Hook 分层**: 将 JSONPath、结构树、Scheme 和模板填充请求状态与递增 ID 抽到 `useAppToolPanelRequestCommands`

@@ -2,28 +2,18 @@ import React from 'react';
 import type { TransformReportRecord } from '../utils/transformSummary';
 import { buildTransformReportRecordPathSections } from './transformReportRecordPathSectionConfigs';
 import { TransformReportRecordPathRows } from './TransformReportRecordPathRows';
+import type { TransformReportRecordPathActions } from './TransformReportRecordSectionContracts';
 
 interface TransformReportRecordPathSectionsProps {
   record: TransformReportRecord;
-  onCopyPath: (path: string, successMessage?: string) => void | Promise<void>;
-  onCopyDecodedPathValue: (text: string) => void | Promise<void>;
-  onLocatePath?: (path: string) => void;
-  onOpenSchemeValue?: (value: string) => void;
+  actions: TransformReportRecordPathActions;
 }
 
 export const TransformReportRecordPathSections: React.FC<TransformReportRecordPathSectionsProps> = ({
   record,
-  onCopyPath,
-  onCopyDecodedPathValue,
-  onLocatePath,
-  onOpenSchemeValue,
+  actions,
 }) => {
-  const sections = buildTransformReportRecordPathSections(record, {
-    onCopyPath,
-    onCopyDecodedPathValue,
-    onLocatePath,
-    onOpenSchemeValue,
-  });
+  const sections = buildTransformReportRecordPathSections(record, actions);
 
   return (
     <>
