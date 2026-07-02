@@ -105,6 +105,19 @@ describe('appAsyncTransformState', () => {
     });
 
     expect(resolveAppOutputValue({
+      isUpdatingFromOutput: true,
+      pendingOutputValue: '',
+      mode: TransformMode.FORMAT,
+      activeDeepFormatResult: null,
+      shouldUseAsyncTransform: false,
+      currentAsyncTransformResult: null,
+      getFallbackOutput: () => 'fallback',
+    })).toEqual({
+      output: '',
+      shouldClearPendingOutput: false,
+    });
+
+    expect(resolveAppOutputValue({
       isUpdatingFromOutput: false,
       pendingOutputValue: '',
       mode: TransformMode.DEEP_FORMAT,

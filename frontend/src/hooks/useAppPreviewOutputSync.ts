@@ -116,8 +116,7 @@ export const useAppPreviewOutputSync = ({
 
         if (syncResult.status === 'invalid') {
           setPreviewValidation(syncResult.validation);
-          isUpdatingFromOutput.current = false;
-          pendingOutputValue.current = '';
+          pendingOutputValue.current = previewText;
           return;
         }
 
