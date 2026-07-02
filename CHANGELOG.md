@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.290 (2026-07-02) - Transform Summary 记录类型分层
+### 🚀 优化与改进
+- **记录类型拆分**: 将深度解析报告中的 record、decoded path、warning 和 unresolved candidate 类型抽到独立类型文件，核心 summary 类型入口回归报告聚合与视图契约
+- **Summary 类型预算收紧**: 为新增 record types 文件补充可维护性预算，并把 transform summary 类型入口预算降到 facade 职责范围
+
 ## v1.8.289 (2026-07-02) - 工具面板 State Fixture 分层
 ### 🚀 优化与改进
 - **State Fixture Helper**: 将工具面板命令测试 fixture 中的 state key 清单、override 判断和初始值读取抽成独立 test helper，fixture 主体回归 React hook mock 与命令装配
