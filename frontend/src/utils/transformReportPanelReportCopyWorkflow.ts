@@ -14,6 +14,7 @@ import {
   copyPathValueReportText,
   copyReportViewText,
 } from './transformReportPanelReportCopyActions';
+import { buildTransformReportPanelQualityBaselineWorkflow } from './transformReportPanelQualityBaselineWorkflow';
 import type {
   TransformReportPanelCopyTextRunner,
   TransformReportPanelCopyWorkflowEffects,
@@ -64,31 +65,6 @@ export const buildTransformReportPanelReportCopyWorkflow = (
       errorLogMessage: '复制深度解析质量快照失败:',
       formatText: formatTransformQualitySnapshotJsonText,
     });
-  };
-
-  const setQualityBaseline = () => {
-    if (!state.qualitySnapshot || state.isFilterPending) return;
-
-    effects.setQualityBaseline({
-      snapshot: state.qualitySnapshot,
-      filter: state.deferredQuery.trim() || '全部',
-    });
-    effects.showStatusSuccess('已设为临时质量基线', { duration: 1600 });
-  };
-
-  const copyQualityBaselineDelta = async () => {
-    if (!state.qualityBaselineDeltaText || state.isFilterPending) return;
-
-    await copyPanelText({
-      text: state.qualityBaselineDeltaText,
-      successMessage: text => formatCopySuccessMessage('质量对比', text),
-      errorLogMessage: '复制深度解析质量对比失败:',
-    });
-  };
-
-  const clearQualityBaseline = () => {
-    effects.setQualityBaseline(null);
-    effects.showStatusSuccess('临时质量基线已清除', { duration: 1600 });
   };
 
   const copyArchivePackage = async () => {
@@ -144,9 +120,7 @@ export const buildTransformReportPanelReportCopyWorkflow = (
     copyFilteredReport,
     copyDiagnosticSummary,
     copyQualitySnapshot,
-    setQualityBaseline,
-    copyQualityBaselineDelta,
-    clearQualityBaseline,
+    ...buildTransformReportPanelQualityBaselineWorkflow(state, effects, copyPanelText),
     copyArchivePackage,
     copyTroubleshootingRecipe,
     copyPathValueReport,
