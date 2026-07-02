@@ -1,37 +1,18 @@
 import type { JsonValue } from '../types';
+import { appendCmdStructureCandidatePathKey } from './cmdStructureCandidatePath';
+import {
+  appendRawCmdStringCandidate,
+  isRawCmdCandidateRecord,
+  sortRawCmdCandidatesByPriority,
+  type RawCmdCandidate,
+} from './cmdStructureRawCandidates';
 import { decodeRawCmdCandidate } from './cmdStructureRawSourceDecoder';
 import type { NormalizedCmdStructure } from './cmdStructureRawSourceDecoder';
-import {
-  getRawCmdFieldPriority,
-  looksLikeRawCmdSource,
-} from './cmdStructureRawSourceGuards';
 
 export { decodeRawCmdCandidate } from './cmdStructureRawSourceDecoder';
 export type { NormalizedCmdStructure } from './cmdStructureRawSourceDecoder';
+export type { RawCmdCandidate } from './cmdStructureRawCandidates';
 export { normalizeRawSourceString } from './cmdStructureRawSourceGuards';
-
-interface JsonObject {
-  [key: string]: JsonValue;
-}
-
-export interface RawCmdCandidate {
-  source: string;
-  priority: number;
-  depth: number;
-  order: number;
-  path: string;
-  sourceLabel?: string;
-}
-
-const isRecord = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-const appendPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
 
 export const collectRawCmdCandidates = (
   value: JsonValue,
@@ -42,18 +23,7 @@ export const collectRawCmdCandidates = (
   path = '$'
 ) => {
   if (typeof value === 'string') {
-    const priority = getRawCmdFieldPriority(key);
-    if (priority > 0 && looksLikeRawCmdSource(value)) {
-      candidates.push({
-        source: value,
-        priority,
-        depth,
-        order: orderRef.value,
-        path,
-        sourceLabel: key === '$' ? undefined : key,
-      });
-      orderRef.value += 1;
-    }
+    appendRawCmdStringCandidate(value, candidates, key, depth, orderRef, path);
     return;
   }
 
@@ -69,7 +39,7 @@ export const collectRawCmdCandidates = (
     return;
   }
 
-  if (!isRecord(value)) return;
+  if (!isRawCmdCandidateRecord(value)) return;
 
   Object.entries(value).forEach(([childKey, item]) => {
     collectRawCmdCandidates(
@@ -78,7 +48,7 @@ export const collectRawCmdCandidates = (
       childKey,
       depth + 1,
       orderRef,
-      appendPathKey(path, childKey)
+      appendCmdStructureCandidatePathKey(path, childKey)
     );
   });
 };
@@ -88,11 +58,7 @@ export const findRawResponseCmdStructure = (value: JsonValue): NormalizedCmdStru
   collectRawCmdCandidates(value, candidates);
   if (candidates.length === 0) return null;
 
-  const orderedCandidates = candidates.sort((left, right) => (
-    right.priority - left.priority ||
-    left.depth - right.depth ||
-    left.order - right.order
-  ));
+  const orderedCandidates = sortRawCmdCandidatesByPriority(candidates);
 
   for (const candidate of orderedCandidates) {
     const structure = decodeRawCmdCandidate(candidate.source);

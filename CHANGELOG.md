@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.315 (2026-07-02) - CMD Raw 候选排序分层
+### 🚀 优化与改进
+- **Raw 候选 Helper**: 将原始 response CMD 候选类型和优先级排序规则抽到 `cmdStructureRawCandidates`，扫描入口只保留递归收集和解码选择
+- **路径规则复用**: 原始 CMD 候选路径改为复用 `cmdStructureCandidatePath`，统一普通 key、特殊 key 和数组路径格式
+- **测试补强**: 为原始 CMD 候选收集补充特殊 key JSONPath 用例，保护可复制路径不被后续重构破坏
+
 ## v1.8.314 (2026-07-02) - Scheme 诊断协议信息行分层
 ### 🚀 优化与改进
 - **诊断容器瘦身**: 将 Scheme 详情里的 protocol、host 和 path 展示抽成 `SchemeViewerSchemeInfoRow`，诊断面板回归子面板装配职责
