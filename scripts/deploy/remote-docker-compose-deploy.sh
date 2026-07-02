@@ -19,11 +19,13 @@ log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
+fail() {
+  printf '%s\n' "$1" >&2
+  exit 1
+}
+
 require_cmd() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    printf '缺少命令: %s\n' "$1" >&2
-    exit 1
-  fi
+  command -v "$1" >/dev/null 2>&1 || fail "缺少命令: $1"
 }
 
 compose() {
@@ -32,8 +34,7 @@ compose() {
   elif command -v docker-compose >/dev/null 2>&1; then
     docker-compose -f "$COMPOSE_FILE" "$@"
   else
-    printf '缺少 docker compose 或 docker-compose\n' >&2
-    exit 1
+    fail '缺少 docker compose 或 docker-compose'
   fi
 }
 
@@ -58,14 +59,7 @@ health_check_url() {
 }
 
 is_unsigned_int() {
-  case "$1" in
-    ''|*[!0-9]*)
-      return 1
-      ;;
-    *)
-      return 0
-      ;;
-  esac
+  [[ "$1" =~ ^[0-9]+$ ]]
 }
 
 check_disk_watermark() {
@@ -113,24 +107,13 @@ require_cmd curl
 . "$APP_DIR/scripts/deploy/frontend-legacy-assets.sh"
 trap cleanup_frontend_legacy_assets EXIT
 
-if [ ! -f "$COMPOSE_FILE" ]; then
-  printf '未找到 compose 文件: %s/%s\n' "$APP_DIR" "$COMPOSE_FILE" >&2
-  exit 1
-fi
-
-if [ ! -f .env ]; then
-  printf '缺少 .env，请先复制 deploy.env.example 到远程应用目录并配置生产密钥\n' >&2
-  exit 1
-fi
-
-if grep -Eq '^(POSTGRES_PASSWORD|SPRING_DATASOURCE_PASSWORD|JWT_SECRET)=change-me' .env; then
-  printf '.env 中存在未替换的示例密钥，请先更新 POSTGRES_PASSWORD、SPRING_DATASOURCE_PASSWORD 和 JWT_SECRET\n' >&2
-  exit 1
-fi
+[ -f "$COMPOSE_FILE" ] || fail "未找到 compose 文件: $APP_DIR/$COMPOSE_FILE"
+[ -f .env ] || fail '缺少 .env，请先复制 deploy.env.example 到远程应用目录并配置生产密钥'
+! grep -Eq '^(POSTGRES_PASSWORD|SPRING_DATASOURCE_PASSWORD|JWT_SECRET)=change-me' .env \
+  || fail '.env 中存在未替换的示例密钥，请先更新 POSTGRES_PASSWORD、SPRING_DATASOURCE_PASSWORD 和 JWT_SECRET'
 
 if grep -Eq '^ADMIN_BOOTSTRAP_ENABLED=true$' .env && grep -Eq '^ADMIN_BOOTSTRAP_PASSWORD=change-me' .env; then
-  printf '.env 已启用管理员初始化，但 ADMIN_BOOTSTRAP_PASSWORD 仍为示例值\n' >&2
-  exit 1
+  fail '.env 已启用管理员初始化，但 ADMIN_BOOTSTRAP_PASSWORD 仍为示例值'
 fi
 
 check_disk_watermark "$APP_DIR"
