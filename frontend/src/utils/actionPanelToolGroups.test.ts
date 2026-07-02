@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TransformMode } from '../types';
-import {
-  ACTION_PANEL_TOOL_GROUPS,
-  ACTION_PANEL_TOOL_ICON_IDS,
-} from './actionPanelToolGroups';
+import { ACTION_PANEL_TOOL_ICON_IDS } from './actionPanelToolGroupTypes';
+import { ACTION_PANEL_TOOL_GROUPS } from './actionPanelToolGroups';
 
 const flattenToolModes = () => (
   ACTION_PANEL_TOOL_GROUPS.flatMap(group => group.items.map(item => item.mode))

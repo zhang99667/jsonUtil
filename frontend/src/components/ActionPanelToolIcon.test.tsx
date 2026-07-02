@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTION_PANEL_TOOL_ICON_IDS,
   type ActionPanelToolIconId,
-} from '../utils/actionPanelToolGroups';
+} from '../utils/actionPanelToolGroupTypes';
 import { ActionPanelToolIcon } from './ActionPanelToolIcon';
 
 interface ElementLike {

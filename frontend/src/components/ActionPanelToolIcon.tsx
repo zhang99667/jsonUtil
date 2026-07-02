@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ActionPanelToolIconId } from '../utils/actionPanelToolGroups';
+import type { ActionPanelToolIconId } from '../utils/actionPanelToolGroupTypes';
 
 interface ActionPanelToolIconProps {
   iconId: ActionPanelToolIconId;
