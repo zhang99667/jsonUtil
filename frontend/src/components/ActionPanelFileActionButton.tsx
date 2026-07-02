@@ -1,19 +1,17 @@
-import React from 'react';
-import { ActionType } from '../types';
+import type { FC, ReactNode } from 'react';
+import type { ActionType } from '../types';
 import { getActionPanelFileButtonTitle } from '../utils/actionPanelFileActions';
+import type { ActionPanelFileOperationItem } from '../utils/actionPanelFileOperationItems';
 
-interface ActionPanelFileActionButtonProps {
-  action: ActionType;
-  label: string;
-  icon: React.ReactNode;
-  dataTour: string;
+interface ActionPanelFileActionButtonProps extends ActionPanelFileOperationItem {
+  icon: ReactNode;
   isCollapsed: boolean;
   onAction: (action: ActionType) => void;
 }
 
 const fileActionButtonClassName = 'w-full bg-editor-sidebar hover:bg-editor-hover border border-editor-border text-gray-300 text-xs font-medium px-4 py-3 rounded-xl transition-all flex items-center gap-2 group justify-center active:scale-95 mb-3';
 
-export const ActionPanelFileActionButton: React.FC<ActionPanelFileActionButtonProps> = ({
+export const ActionPanelFileActionButton: FC<ActionPanelFileActionButtonProps> = ({
   action,
   label,
   icon,
