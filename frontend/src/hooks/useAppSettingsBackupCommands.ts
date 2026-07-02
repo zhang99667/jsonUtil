@@ -3,8 +3,13 @@ import type { AIConfig, GeneralSettings, ShortcutConfig } from '../types';
 import {
   runAppExportSettingsBackupCommand,
   runAppImportSettingsBackupCommand,
-  type AppSettingsBackupTextFile,
 } from '../utils/appSettingsBackupCommandRunner';
+import {
+  downloadSettingsBackupTextFile,
+  getSettingsBackupStorage,
+  loadAppBackupModule,
+  readSettingsBackupFileText,
+} from '../utils/appSettingsBackupBrowserEffects';
 import { showError, showSuccess } from '../utils/toast';
 
 interface UseAppSettingsBackupCommandsInput {
@@ -15,28 +20,6 @@ interface UseAppSettingsBackupCommandsInput {
   onSetAIConfig: (config: AIConfig) => void;
   onReplaceShortcuts: (shortcuts: ShortcutConfig) => void;
 }
-
-const loadAppBackupModule = () => import('../utils/appBackup');
-
-const downloadSettingsBackupTextFile = ({
-  text,
-  fileName,
-  mimeType,
-}: AppSettingsBackupTextFile) => {
-  const blob = new Blob([text], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  try {
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-};
 
 export const useAppSettingsBackupCommands = ({
   generalSettings,
@@ -62,13 +45,13 @@ export const useAppSettingsBackupCommands = ({
     aiConfig,
     {
       onLoadBackupModule: loadAppBackupModule,
-      onReadFileText: (backupFile) => backupFile.text(),
+      onReadFileText: readSettingsBackupFileText,
       onSetGeneralSettings,
       onSetAIConfig,
       onReplaceShortcuts,
       onShowSuccess: showSuccess,
       onShowError: showError,
-      storage: window.localStorage,
+      storage: getSettingsBackupStorage(),
     },
   ), [aiConfig, onReplaceShortcuts, onSetAIConfig, onSetGeneralSettings]);
 
