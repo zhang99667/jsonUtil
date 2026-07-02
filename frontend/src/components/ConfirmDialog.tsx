@@ -106,8 +106,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   if (!isOpen) return null;
 
   const confirmClassName = variant === 'danger'
-    ? 'bg-red-600 text-white hover:bg-red-500 focus:ring-red-400'
-    : 'bg-brand-primary text-white hover:bg-emerald-500 focus:ring-emerald-400';
+    ? 'app-button--danger'
+    : 'app-button--primary';
 
   return (
     <div
@@ -141,13 +141,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <button
             ref={cancelButtonRef}
             onClick={onCancel}
-            className="rounded border border-editor-border px-3 py-1.5 text-sm text-gray-300 transition-colors hover:bg-editor-hover hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+            className="app-button app-button--secondary px-3 py-1.5 text-sm"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            className={`rounded px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 ${confirmClassName}`}
+            className={`app-button px-3 py-1.5 text-sm ${confirmClassName}`}
           >
             {confirmLabel}
           </button>

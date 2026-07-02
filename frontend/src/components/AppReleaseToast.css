@@ -51,25 +51,27 @@
 }
 
 .app-release-toast__button:focus-visible {
-  outline: 2px solid rgba(110, 231, 183, 0.9);
-  outline-offset: 2px;
+  box-shadow:
+    0 0 0 1px rgba(125, 211, 252, 0.42),
+    0 0 0 4px rgba(14, 165, 233, 0.14);
+  outline: none;
 }
 
 .app-release-toast__button--primary {
-  border: 1px solid var(--brand-primary, #007acc);
-  background: var(--brand-primary, #007acc);
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  background: linear-gradient(180deg, #1486c8 0%, #09659c 100%);
   color: #ffffff;
 }
 
 .app-release-toast__button--primary:hover {
-  background: #059669;
-  border-color: #059669;
+  background: linear-gradient(180deg, #1b9ade 0%, #0b73b0 100%);
+  border-color: rgba(125, 211, 252, 0.44);
 }
 
 .app-release-toast__button--secondary {
-  border: 1px solid rgba(0, 122, 204, 0.7);
+  border: 1px solid rgba(125, 211, 252, 0.28);
   background: transparent;
-  color: #a7f3d0;
+  color: #bfdbfe;
 }
 
 .app-release-toast__button--secondary:hover,

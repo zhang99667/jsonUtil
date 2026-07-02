@@ -153,7 +153,7 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
             type="button"
             aria-label="关闭版本更新"
             onClick={onClose}
-            className="rounded border border-editor-border p-1.5 text-gray-300 transition-colors hover:bg-editor-hover hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className="app-button app-button--ghost p-1.5"
           >
             <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor">
               <path d="M5 5l10 10M15 5L5 15" strokeWidth={1.8} strokeLinecap="round" />
@@ -221,7 +221,7 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            className="app-button app-button--primary px-3 py-1.5 text-xs"
           >
             知道了
           </button>
