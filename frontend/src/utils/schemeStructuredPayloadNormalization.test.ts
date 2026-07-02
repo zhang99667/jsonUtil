@@ -68,4 +68,15 @@ describe('schemeStructuredPayloadNormalization', () => {
   it('可关闭 quote 类规范化以保持递归解码 layer 行为稳定', () => {
     expect(normalize('{\\"a\\":1}', false)).toBeNull();
   });
+
+  it('关闭 quote 类规范化时仍保留前置结构化载荷规则', () => {
+    expect(normalize(JSON.stringify('cmd=%7B%22a%22%3A1%7D'), false)).toMatchObject({
+      source: 'json-string',
+      value: 'cmd=%7B%22a%22%3A1%7D',
+    });
+    expect(normalize('baiduboxapp:\\/\\/v1\\/open?cmd=%7B%7D', false)).toMatchObject({
+      source: 'json-escaped-slash',
+      value: 'baiduboxapp://v1/open?cmd=%7B%7D',
+    });
+  });
 });
