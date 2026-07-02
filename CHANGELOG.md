@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.321 (2026-07-02) - 设置弹窗命令 Hook 分层
+### 🚀 优化与改进
+- **设置命令分层**: 将设置弹窗打开状态、初始页签和设置入口命令拆到 `useAppSettingsModalCommands`
+- **工具面板 Hook 收敛**: `useAppToolPanelCommands` 保留面板联动和请求信号，减少设置弹窗状态细节耦合
+- **测试与预算补齐**: 新增设置入口和 AI 设置入口单测，并同步维护预算与治理预算
+
 ## v1.8.320 (2026-07-02) - Changelog 命令 Hook 分层
 ### 🚀 优化与改进
 - **Changelog Hook 分层**: 将更新日志弹窗状态、打开关闭命令和全局打开事件监听拆到 `useAppChangelogCommands`
