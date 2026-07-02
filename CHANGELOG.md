@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.330 (2026-07-02) - 空 PREVIEW 校验状态清理
+### 🐛 Bug 修复
+- **空 PREVIEW 错误清理**: PREVIEW 派生输出为空时立即重置校验状态，避免 SOURCE 清空后右上角残留旧 JSON 错误
+- **校验状态复用修正**: `useAppPreviewOutputSync` 监听派生 `previewText`，仅在非 PREVIEW 手动回写中同步校验
+- **回归测试补齐**: 补充空派生 PREVIEW 清理旧校验错误用例，保护空编辑区不再误报
+
 ## v1.8.329 (2026-07-02) - Tab 光标位置隔离修复
 ### 🐛 Bug 修复
 - **Tab 光标隔离**: 切换、新建或关闭当前 Tab 前先保存当前 Monaco viewState，避免回到旧 Tab 时跳到其他 Tab 的行号

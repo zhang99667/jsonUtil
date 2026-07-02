@@ -5,6 +5,7 @@ import {
   previewSyncMocks,
   resetPreviewOutputSyncTestFixture,
   executeAppPreviewOutputSyncMock,
+  validateJsonForEditorMock,
   useHookInput,
 } from './useAppPreviewOutputSyncTestFixture';
 
@@ -71,5 +72,12 @@ describe('useAppPreviewOutputSync', () => {
       previewText: '{"a":3}',
     }));
     expect(result.onSetInput).toHaveBeenCalledTimes(1);
+  });
+
+  it('派生 PREVIEW 为空时立即清理旧校验错误', () => {
+    useHookInput(undefined, '');
+
+    expect(previewSyncMocks.setPreviewValidation).toHaveBeenCalledWith({ isValid: true });
+    expect(validateJsonForEditorMock).not.toHaveBeenCalled();
   });
 });

@@ -13,6 +13,7 @@ import {
 } from '../utils/jsonValidation';
 
 interface UseAppPreviewOutputSyncInput {
+  previewText: string;
   files: FileTab[];
   activeFileId: string | null;
   mode: TransformMode;
@@ -32,6 +33,7 @@ const PREVIEW_SYNC_DEBOUNCE_MS = 400;
 const PREVIEW_SYNC_UNLOCK_DELAY_MS = 600;
 
 export const useAppPreviewOutputSync = ({
+  previewText,
   files,
   activeFileId,
   mode,
@@ -80,6 +82,12 @@ export const useAppPreviewOutputSync = ({
       setPreviewValidation(result);
     }
   }, [validateJsonMaybeAsync]);
+
+  useEffect(() => {
+    if (isUpdatingFromOutput.current) return;
+
+    updatePreviewValidation(previewText);
+  }, [isUpdatingFromOutput, previewText, updatePreviewValidation]);
 
   const handleOutputChange = useCallback((previewText: string) => {
     pendingOutputValue.current = previewText;
