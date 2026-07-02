@@ -42,7 +42,7 @@
   --brand-hover: #0062a3;
   --brand-danger: #dc2626;
   /* Error Red */
-  --app-focus-halo: rgba(125, 211, 252, 0.18);
+  --app-focus-accent: rgba(125, 211, 252, 0.34);
   --app-focus-inset: rgba(255, 255, 255, 0.18);
 }
 
@@ -126,11 +126,11 @@
 }
 
 .app-button:focus-visible {
-  filter: brightness(1.05);
+  filter: brightness(1.04);
   box-shadow:
     var(--app-button-rest-shadow),
     inset 0 0 0 1px var(--app-focus-inset),
-    0 0 0 2px var(--app-focus-halo) !important;
+    inset 0 -2px 0 var(--app-focus-accent) !important;
 }
 
 .app-button:active {
@@ -190,8 +190,12 @@
 }
 
 .changelog-modal__confirm-button:focus-visible {
+  background: linear-gradient(180deg, rgba(82, 94, 112, 0.98) 0%, rgba(54, 64, 78, 0.98) 100%);
+  color: #ffffff;
   filter: none;
-  box-shadow: var(--app-button-rest-shadow) !important;
+  box-shadow:
+    var(--app-button-rest-shadow),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
 }
 
 .changelog-modal__confirm-button:hover::after,
@@ -319,11 +323,11 @@
 
 .json-helper-tour-popover .driver-popover-footer button:focus-visible,
 .json-helper-feature-tour-popover .driver-popover-footer button:focus-visible {
-  filter: brightness(1.05) !important;
+  filter: brightness(1.04) !important;
   box-shadow:
     var(--app-button-rest-shadow, 0 0 0 0 transparent),
     inset 0 0 0 1px var(--app-focus-inset),
-    0 0 0 2px var(--app-focus-halo) !important;
+    inset 0 -2px 0 var(--app-focus-accent) !important;
   outline: none !important;
 }
 
@@ -368,7 +372,10 @@
 .json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,
 .json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible {
   border: 0 !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
+  box-shadow:
+    var(--app-button-rest-shadow),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 -2px 0 rgba(125, 211, 252, 0.36) !important;
 }
 
 .json-helper-tour-popover .driver-popover-close-btn,

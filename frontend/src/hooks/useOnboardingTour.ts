@@ -41,6 +41,9 @@ export const useOnboardingTour = () => {
                 showButtons: ['next', 'previous', 'close'],
                 // 使用驱动器自带的平滑滚动，避免手动滚动导致的高亮错位
                 smoothScroll: true,
+                // 小控件引导不再贴着按钮画大框，减少“被选中”的压迫感
+                stagePadding: 4,
+                stageRadius: 7,
                 // 自定义样式类
                 popoverClass: 'json-helper-tour-popover',
                 steps: [

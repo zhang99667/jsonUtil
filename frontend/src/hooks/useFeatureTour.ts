@@ -265,7 +265,8 @@ export const useFeatureTour = () => {
             showButtons: ['next', 'previous', 'close'],
             smoothScroll: false, // 禁用平滑滚动以避免定位问题
             animate: false,      // 禁用动画以提高稳定性
-            stagePadding: 5,     // 增加高亮区域内边距
+            stagePadding: 3,     // 小按钮目标只保留轻量留白，避免像被套上选中框
+            stageRadius: 7,
             popoverClass: 'json-helper-feature-tour-popover',
             steps: config.steps,
             onDestroyStarted: () => {
