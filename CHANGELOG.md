@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.291 (2026-07-02) - Transform Summary Artifact 类型分层
+### 🚀 优化与改进
+- **Artifact 类型拆分**: 将问题样本、占位符回填、质量快照和归档包类型拆成独立类型文件，artifact 类型入口回归兼容 re-export 职责
+- **Artifact 类型预算收紧**: 为新增 artifact types 文件补充独立预算，并把原 artifact 类型入口预算降到 facade 范围
+
 ## v1.8.290 (2026-07-02) - Transform Summary 记录类型分层
 ### 🚀 优化与改进
 - **记录类型拆分**: 将深度解析报告中的 record、decoded path、warning 和 unresolved candidate 类型抽到独立类型文件，核心 summary 类型入口回归报告聚合与视图契约
