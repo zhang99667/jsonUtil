@@ -4,6 +4,12 @@ export interface ActionPanelScrollState {
   clientHeight: number;
 }
 
+export const EMPTY_ACTION_PANEL_SCROLL_STATE: ActionPanelScrollState = {
+  scrollTop: 0,
+  scrollHeight: 0,
+  clientHeight: 0,
+};
+
 export interface ActionPanelScrollbarThumbState {
   thumbHeight: number;
   thumbTop: number;
