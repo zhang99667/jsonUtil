@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import {
+  EMPTY_ACTION_PANEL_SCROLL_STATE,
   getActionPanelDragScrollTop,
   getActionPanelScrollbarThumbState,
-  type ActionPanelScrollState,
 } from '../utils/actionPanelScrollbar';
 
 interface UseActionPanelScrollbarOptions {
@@ -15,21 +15,14 @@ export const useActionPanelScrollbar = ({
   onScrollFrame,
 }: UseActionPanelScrollbarOptions) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scrollState, setScrollState] = useState<ActionPanelScrollState>({
-    scrollTop: 0,
-    scrollHeight: 0,
-    clientHeight: 0,
-  });
-  const [showScrollbar, setShowScrollbar] = useState(false);
+  const [scrollState, setScrollState] = useState(EMPTY_ACTION_PANEL_SCROLL_STATE);
   const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [startScrollTop, setStartScrollTop] = useState(0);
+  const dragStartRef = useRef({ y: 0, scrollTop: 0 });
 
   const updateScrollState = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    setShowScrollbar(container.scrollHeight > container.clientHeight);
     setScrollState({
       scrollTop: container.scrollTop,
       scrollHeight: container.scrollHeight,
@@ -60,18 +53,22 @@ export const useActionPanelScrollbar = ({
 
   const handleScrollbarMouseDown = useCallback((event: ReactMouseEvent) => {
     setIsDragging(true);
-    setStartY(event.pageY);
-    setStartScrollTop(scrollState.scrollTop);
+    dragStartRef.current = {
+      y: event.pageY,
+      scrollTop: containerRef.current?.scrollTop ?? scrollState.scrollTop,
+    };
     event.preventDefault();
   }, [scrollState.scrollTop]);
 
   useEffect(() => {
+    if (!isDragging) return;
+
     const handleMouseMove = (event: MouseEvent) => {
-      if (!isDragging || !containerRef.current) return;
+      if (!containerRef.current) return;
 
       containerRef.current.scrollTop = getActionPanelDragScrollTop({
-        startScrollTop,
-        deltaY: event.pageY - startY,
+        startScrollTop: dragStartRef.current.scrollTop,
+        deltaY: event.pageY - dragStartRef.current.y,
         scrollHeight: scrollState.scrollHeight,
         clientHeight: scrollState.clientHeight,
       });
@@ -81,22 +78,20 @@ export const useActionPanelScrollbar = ({
       setIsDragging(false);
     };
 
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, scrollState.clientHeight, scrollState.scrollHeight, startScrollTop, startY]);
+  }, [isDragging, scrollState.clientHeight, scrollState.scrollHeight]);
 
   return {
     containerRef,
     handleScroll,
     handleScrollbarMouseDown,
-    showScrollbar,
+    showScrollbar: scrollState.scrollHeight > scrollState.clientHeight,
     ...getActionPanelScrollbarThumbState(scrollState),
   };
 };
