@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.326 (2026-07-02) - 工具面板请求 Hook 分层
+### 🚀 优化与改进
+- **请求 Hook 分层**: 将 JSONPath、结构树、Scheme 和模板填充请求状态与递增 ID 抽到 `useAppToolPanelRequestCommands`
+- **主 Hook 收敛**: `useAppToolPanelCommands` 回归面板开关、模式切换和跨面板编排，减少请求构造细节耦合
+- **预算治理同步**: 为请求 Hook 补充独立维护预算，并收紧工具面板命令主 Hook 预算
+
 ## v1.8.325 (2026-07-02) - Scheme Query 单参数回写分层
 ### 🚀 优化与改进
 - **单参数回写分层**: 将 query-string layer 里的 raw URL 参数和日志字段回写拆到 `schemeQueryLayerSingleParamEncoding`
