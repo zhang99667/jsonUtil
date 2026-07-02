@@ -5,15 +5,7 @@ import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import {
   buildTransformContextReport,
   buildTransformReportView,
-  buildTransformQualitySnapshot,
-  formatTransformIssueRegressionTemplateText,
-  formatTransformIssueSampleJsonText,
-  formatTransformIssueSampleReportText,
-  formatTransformQualitySnapshotDeltaText,
-  buildTransformPlaceholderFillTemplate,
-  getTransformPathValueCopyRows,
 } from '../utils/transformSummary';
-import { buildPlaceholderFillSummary } from '../utils/transformReportPlaceholderFillSummary';
 import {
   createInitialTransformReportCmdComparisonState,
   resetTransformReportCmdComparisonState,
@@ -28,7 +20,6 @@ import {
   buildTransformReportCopyTitles,
   getTransformPlaceholderFillTemplateTitle,
 } from '../utils/transformReportCopyTitles';
-import { buildTransformReportSectionVisibility } from '../utils/transformReportSectionVisibility';
 import {
   buildTransformReportFooterActionHandlers,
   buildTransformReportFooterActions,
@@ -41,6 +32,12 @@ import {
   type TransformReportQualityBaseline,
 } from '../utils/transformReportPanelCopyWorkflow';
 import { buildTransformReportPanelSectionModel } from '../utils/transformReportPanelSectionModel';
+import {
+  buildTransformReportPanelCopyAvailability,
+  buildTransformReportPanelIssueCopyTexts,
+  buildTransformReportPanelPlaceholderFillState,
+  buildTransformReportPanelQualityState,
+} from '../utils/transformReportPanelDerivedValues';
 import { TransformReportPanelContent } from './TransformReportPanelContent';
 import { TransformReportPanelFrame } from './TransformReportPanelFrame';
 import { buildTransformReportRecordSectionBindings } from './transformReportRecordSectionBindings';
@@ -84,54 +81,33 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   const fullReportView = useMemo(() => (
     report ? buildTransformReportView(report, '') : null
   ), [report]);
-  const hasPathValueCopyItems = useMemo(() => (
-    Boolean(reportView?.records.some(record => (
-      getTransformPathValueCopyRows(record).length > 0
-    )))
+  const {
+    hasPathValueCopyItems,
+    hasCmdStructureCopyItems,
+    hasFocusedCmdStructureCopyItems,
+  } = useMemo(() => (
+    buildTransformReportPanelCopyAvailability(reportView)
   ), [reportView]);
-  const hasCmdStructureCopyItems = useMemo(() => (
-    Boolean(reportView && reportView.filteredCmdStructureCount > 0)
-  ), [reportView]);
-  const hasFocusedCmdStructureCopyItems = useMemo(() => (
-    Boolean(reportView?.cmdStructureRecords.some(record => record.cmdStructureFocusPaths?.length))
-  ), [reportView]);
-  const issueSampleCopyText = useMemo(() => (
-    reportView ? formatTransformIssueSampleReportText(reportView, deferredQuery) : ''
+  const {
+    issueSampleCopyText,
+    issueSampleJsonCopyText,
+    redactedIssueSampleJsonCopyText,
+    issueRegressionTemplateCopyText,
+  } = useMemo(() => (
+    buildTransformReportPanelIssueCopyTexts(reportView, deferredQuery)
   ), [deferredQuery, reportView]);
-  const issueSampleJsonCopyText = useMemo(() => (
-    reportView ? formatTransformIssueSampleJsonText(reportView, { filter: deferredQuery }) : ''
-  ), [deferredQuery, reportView]);
-  const redactedIssueSampleJsonCopyText = useMemo(() => (
-    reportView ? formatTransformIssueSampleJsonText(reportView, {
-      redactSensitiveValues: true,
-      filter: deferredQuery,
-    }) : ''
-  ), [deferredQuery, reportView]);
-  const issueRegressionTemplateCopyText = useMemo(() => (
-    reportView ? formatTransformIssueRegressionTemplateText(reportView, {
-      redactSensitiveValues: true,
-      filter: deferredQuery,
-    }) : ''
-  ), [deferredQuery, reportView]);
-  const placeholderFillTemplate = useMemo(() => (
-    reportView
-      ? buildTransformPlaceholderFillTemplate(reportView, deferredQuery, fullReportView || reportView)
-      : null
+  const {
+    placeholderFillTemplateSummary,
+    placeholderFillTemplateJsonText,
+  } = useMemo(() => (
+    buildTransformReportPanelPlaceholderFillState(reportView, fullReportView, deferredQuery)
   ), [deferredQuery, fullReportView, reportView]);
-  const placeholderFillTemplateSummary = useMemo(() => (
-    buildPlaceholderFillSummary(placeholderFillTemplate)
-  ), [placeholderFillTemplate]);
-  const placeholderFillTemplateJsonText = useMemo(() => (
-    placeholderFillTemplate ? JSON.stringify(placeholderFillTemplate, null, 2) : ''
-  ), [placeholderFillTemplate]);
-  const qualitySnapshot = useMemo(() => (
-    report && reportView ? buildTransformQualitySnapshot(report, reportView, deferredQuery) : null
-  ), [deferredQuery, report, reportView]);
-  const qualityBaselineDeltaText = useMemo(() => (
-    qualityBaseline && qualitySnapshot
-      ? formatTransformQualitySnapshotDeltaText(qualityBaseline.snapshot, qualitySnapshot)
-      : ''
-  ), [qualityBaseline, qualitySnapshot]);
+  const {
+    qualitySnapshot,
+    qualityBaselineDeltaText,
+  } = useMemo(() => (
+    buildTransformReportPanelQualityState(report, reportView, deferredQuery, qualityBaseline)
+  ), [deferredQuery, qualityBaseline, report, reportView]);
   const hasReportView = Boolean(reportView);
   const copyTitles = buildTransformReportCopyTitles({
     hasReportView,
