@@ -14,6 +14,8 @@ export const appComponentMaintainabilityBudgets = [
   appComponentBudget('AppLazyPanelSlot.tsx', 30, '主工作台懒加载面板插槽只承载 loaded 判断和空 fallback Suspense 包裹'),
   appComponentBudget('AppLazyShellModals.tsx', 60, '主工作台全局懒加载弹窗壳只负责 settings/changelog 装配，不承载业务状态'),
   appComponentBudget('AppResizeHandles.tsx', 90, '主工作台调整手柄组件只承载 ARIA、样式和事件转发，尺寸状态应留在 App'),
+  appComponentBudget('AppResizeSeparator.tsx', 60, '主工作台 resize separator 只承载公共 ARIA、样式、鼠标和键盘事件透传'),
+  appComponentBudget('AppResizeHandles.test.tsx', 90, '主工作台调整手柄测试只锁定隐藏状态、ARIA 数值和定位样式'),
   appComponentBudget('AppWorkspaceOverlays.tsx', 25, '主工作台遮罩层组件只负责交互遮罩组和 Toast 宿主装配，文件/布局状态应留在 App'),
   appComponentBudget('AppInteractionOverlays.tsx', 25, '主工作台交互遮罩组只负责 resize 捕获层和文件拖拽浮层条件装配'),
   appComponentBudget('AppResizeCaptureOverlay.tsx', 20, '主工作台 resize 捕获层只承载全屏鼠标捕获样式，不承载布局状态'),
