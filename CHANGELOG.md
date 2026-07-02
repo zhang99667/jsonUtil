@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.364 (2026-07-03) - CMD 结构源职责收敛
+### 🏗️ 架构与基础设施
+- **CMD 结构源入口瘦身**: 将命令参数摘要和 cmdHandler 兼容复制文本拆到独立纯 helper，`transformReportCmdStructureSource` 只保留记录筛选、schema 提取和结构源组合，并收紧三块维护预算
+
 ## v1.8.363 (2026-07-03) - Fragment 参数源识别收敛
 ### 🏗️ 架构与基础设施
 - **Fragment 参数策略拆分**: 将 hash route、嵌入参数和裸参数三类 fragment 参数源识别拆到独立纯函数模块，主入口只保留 decode fallback 和可解析性判断，并补齐 `?&cmd=`、裸参数及普通锚点文本边界测试

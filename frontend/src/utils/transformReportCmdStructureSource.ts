@@ -1,23 +1,19 @@
 import type { JsonValue, PathTransformRecord } from '../types';
-import { buildFocusedJsonValue } from './jsonPathFocus';
-import {
-  formatCmdHandlerCompatibleResult,
-  getSchemeCommandSchemaFromUrl,
-} from './schemeMetadata';
+import { getSchemeCommandSchemaFromUrl } from './schemeMetadata';
 import { getTransformSchemeDecodedValue } from './transformReportDecodedValue';
+export {
+  buildTransformCommandParamSummary,
+  type TransformReportCommandParamSummary,
+} from './transformReportCommandParamSummary';
+export {
+  createTransformRecordCmdStructureCopyTextGetter,
+} from './transformReportCmdStructureCopyText';
 
 export interface TransformReportCmdStructureSource {
   decodedValue: JsonValue;
   commandSchema?: string;
   source: string;
 }
-
-export interface TransformReportCommandParamSummary {
-  commandParamCount?: number;
-  commandParamKeys?: string[];
-}
-
-const DEFAULT_COMMAND_PARAM_KEY_LIMIT = 8;
 
 export const getTransformRecordCommandSchema = (
   record: PathTransformRecord
@@ -50,34 +46,4 @@ export const getTransformRecordCmdStructureSource = (
     ...(commandSchema ? { commandSchema } : {}),
     source: record.originalValue,
   };
-};
-
-export const buildTransformCommandParamSummary = (
-  cmdParams: JsonValue,
-  keyLimit = DEFAULT_COMMAND_PARAM_KEY_LIMIT
-): TransformReportCommandParamSummary => {
-  if (!cmdParams || typeof cmdParams !== 'object' || Array.isArray(cmdParams)) {
-    return {};
-  }
-
-  const keys = Object.keys(cmdParams);
-  return {
-    commandParamCount: keys.length,
-    commandParamKeys: keys.slice(0, keyLimit),
-  };
-};
-
-export const createTransformRecordCmdStructureCopyTextGetter = (
-  source: TransformReportCmdStructureSource,
-  basePath: string
-): ((focusedFieldPaths?: string[]) => string) => (focusedFieldPaths) => {
-  const focusedValue = focusedFieldPaths?.length
-    ? buildFocusedJsonValue(source.decodedValue, basePath, focusedFieldPaths)
-    : null;
-
-  return formatCmdHandlerCompatibleResult(
-    JSON.stringify(focusedValue || source.decodedValue),
-    source.commandSchema,
-    source.source
-  );
 };
