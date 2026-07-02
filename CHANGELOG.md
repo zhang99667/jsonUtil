@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.297 (2026-07-02) - Copy Workflow State 类型分层
+### 🚀 优化与改进
+- **State 类型拆分**: 将深度解析面板复制 workflow 的 state 和质量基线契约抽成独立类型文件，主 workflow 契约回归 effects 与 handler 分组职责
+- **Copy Workflow 预算收紧**: 为 state 类型文件补充独立预算，并把主复制 workflow 类型预算降到轻量契约范围
+
 ## v1.8.296 (2026-07-02) - Issue Sample Summary 类型分层
 ### 🚀 优化与改进
 - **Summary 类型拆分**: 将深度解析问题样本导出中的 summary 计数桶抽成独立类型文件，导出对象类型回归样本和 options 契约

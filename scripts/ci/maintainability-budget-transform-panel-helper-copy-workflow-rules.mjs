@@ -2,7 +2,8 @@ const copyWorkflowBudget = (file, maxLines, reason) => ({ file, maxLines, reason
 
 export const transformPanelHelperCopyWorkflowMaintainabilityBudgets = [
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflow.ts', 45, '深度解析面板复制 workflow 入口应只组合报告级、占位符样本和行级 CMD 复制子模块'),
-  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowTypes.ts', 130, '深度解析面板复制 workflow 契约应集中描述状态、effects 和分组 handler 类型'),
+  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowStateTypes.ts', 45, '深度解析面板复制 workflow state 和质量基线契约独立维护，避免主 workflow 契约继续膨胀'),
+  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowTypes.ts', 110, '深度解析面板复制 workflow 契约只维护 effects、handler 和分组 handler 类型'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelReportCopyWorkflow.ts', 90, '深度解析报告级复制 workflow 应只组合完整报告、reportView 复制、质量基线和特殊列表复制入口'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelReportViewCopyWorkflow.ts', 120, '深度解析 reportView 复制 workflow 应独立维护筛选、诊断、质量快照、归档包和协作报告动作'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelQualityBaselineWorkflow.ts', 70, '深度解析质量基线 workflow 应独立维护设为基线、复制对比和清除动作'),
