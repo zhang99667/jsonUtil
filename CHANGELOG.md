@@ -3,6 +3,7 @@
 ### 🏗️ 架构与基础设施
 - **CMD 对比状态瘦身**: 收敛 active record 解析和对比设置更新逻辑，减少空输入守卫和状态 setter 样板
 - **报告按钮组件瘦身**: `TransformReportActionButton` 复用默认 tone 入口，去掉额外中间状态
+- **Scheme 组件测试瘦身**: 质量摘要卡片复用 Scheme 元素测试 helper，删除本地遍历样板
 - **维护预算回收**: `transformReportCmdComparisonController` 和 `transformReportActiveCmdComparison` 退出高使用率候选，CMD 对比工具函数更聚焦状态转移语义
 
 ## v1.8.347 (2026-07-03) - 按钮焦点框视觉重绘
