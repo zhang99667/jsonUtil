@@ -647,7 +647,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                         ...localGeneralSettings,
                                         autoExpandSchemeInDeepFormat: !localGeneralSettings.autoExpandSchemeInDeepFormat,
                                     })}
-                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-editor-bg ${
+                                    className={`app-switch relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
                                         localGeneralSettings.autoExpandSchemeInDeepFormat ? 'bg-emerald-500' : 'bg-gray-600'
                                     }`}
                                 >
@@ -722,14 +722,14 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                     setShortcutConflictNotice('');
                                     onResetShortcuts();
                                 }}
-                                className="text-xs text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1.5 px-3 py-2 rounded hover:bg-editor-hover"
+                                className="app-button app-button--ghost flex items-center gap-1.5 px-3 py-2 text-xs hover:text-red-300"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                 恢复默认设置
                             </button>
                             <button
                                 onClick={onClose}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
+                                className="app-button app-button--primary px-6 py-2 text-sm"
                             >
                                 完成
                             </button>
@@ -738,7 +738,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         <>
                             <button
                                 onClick={onClose}
-                                className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2 rounded hover:bg-editor-hover"
+                                className="app-button app-button--ghost px-4 py-2 text-sm"
                             >
                                 取消
                             </button>
@@ -749,13 +749,13 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                     disabled={isTestingAI}
                                     title={aiTestButtonTitle}
                                     aria-label={aiTestButtonLabel}
-                                    className="text-sm text-gray-300 border border-editor-border px-4 py-2 rounded hover:text-white hover:border-emerald-500 hover:bg-editor-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="app-button app-button--secondary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {isTestingAI ? '测试中...' : '测试连接'}
                                 </button>
                                 <button
                                     onClick={handleSaveAI}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
+                                    className="app-button app-button--primary px-6 py-2 text-sm"
                                 >
                                     保存设置
                                 </button>
@@ -765,13 +765,13 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         <>
                             <button
                                 onClick={onClose}
-                                className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2 rounded hover:bg-editor-hover"
+                                className="app-button app-button--ghost px-4 py-2 text-sm"
                             >
                                 取消
                             </button>
                             <button
                                 onClick={handleSaveGeneral}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
+                                className="app-button app-button--primary px-6 py-2 text-sm"
                             >
                                 保存设置
                             </button>
