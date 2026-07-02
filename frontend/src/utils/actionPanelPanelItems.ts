@@ -1,27 +1,10 @@
-export type ActionPanelPanelItemId =
-  | 'jsonPath'
-  | 'jsonCompare'
-  | 'jsonTree'
-  | 'jsonSchema'
-  | 'scheme'
-  | 'template';
+import type { ActionPanelPanelItem } from './actionPanelPanelItemTypes';
 
-export type ActionPanelPanelIconId =
-  | 'search'
-  | 'compare'
-  | 'structure'
-  | 'schema'
-  | 'link'
-  | 'template';
-
-export interface ActionPanelPanelItem {
-  id: ActionPanelPanelItemId;
-  label: string;
-  iconId: ActionPanelPanelIconId;
-  iconClass: string;
-  hoverIconClass: string;
-  dataTour: string;
-}
+export type {
+  ActionPanelPanelIconId,
+  ActionPanelPanelItem,
+  ActionPanelPanelItemId,
+} from './actionPanelPanelItemTypes';
 
 export const ACTION_PANEL_PANEL_GROUP = {
   title: '查询 / 解析',
