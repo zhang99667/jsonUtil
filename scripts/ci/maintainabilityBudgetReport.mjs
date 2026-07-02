@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { collectUntrackedBudgetRuleFailures } from './maintainabilityBudgetRuleFiles.mjs';
 import {
   buildHighUsageSummaries,
   buildNearLimitSummaries,
@@ -24,11 +25,6 @@ const isNearLimitUsage = ({ lineCount, maxLines }) => {
     lineCount / maxLines >= NEAR_LIMIT_USAGE_RATIO;
 };
 
-const getBudgetRuleFiles = (rootDir) => fs
-  .readdirSync(path.join(rootDir, 'scripts/ci'))
-  .filter(file => file.startsWith('maintainability-budget-') && file.endsWith('.mjs'))
-  .map(file => `scripts/ci/${file}`);
-
 export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {}) => {
   const failures = [];
   const summaries = [];
@@ -36,11 +32,7 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
   const nearLimitUsages = [];
   const budgetedFiles = new Set(budgets.map(budget => budget.file));
 
-  for (const budgetRuleFile of getBudgetRuleFiles(rootDir)) {
-    if (!budgetedFiles.has(budgetRuleFile)) {
-      failures.push(`${budgetRuleFile}: 预算规则文件未纳入自检预算`);
-    }
-  }
+  failures.push(...collectUntrackedBudgetRuleFailures(rootDir, budgetedFiles));
 
   for (const budget of budgets) {
     const filePath = path.join(rootDir, budget.file);
