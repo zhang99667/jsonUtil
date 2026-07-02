@@ -12,6 +12,7 @@ export const governanceSchemeAppMaintainabilityBudgets = [
   schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-rules.mjs', 70, 'Scheme 弹窗预算规则入口应只聚合组件与支撑子表'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-component-rules.mjs', 30, 'Scheme 弹窗组件预算规则入口应只聚合 shell/command/detail 子表'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-shell-component-rules.mjs', 55, 'Scheme 弹窗 shell 组件预算规则应保持短表，新增主容器或一级展示区优先归组'),
+  schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-shell-test-rules.mjs', 40, 'Scheme 弹窗 shell 测试预算规则应独立治理共享 helper 和展示面板测试'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-command-component-rules.mjs', 35, 'Scheme 弹窗 CMD 组件预算规则应保持短表，schema、参数和内部线索 badge 分开治理'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-detail-component-rules.mjs', 45, 'Scheme 弹窗详情组件预算规则应保持短表，新增诊断细节面板优先归组'),
   schemeAppGovernanceBudget('maintainability-budget-scheme-viewer-diagnostics-component-rules.mjs', 25, 'Scheme 诊断组件预算规则应独立成短表，避免详情规则表继续贴线'),

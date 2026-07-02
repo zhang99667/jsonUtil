@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.288 (2026-07-02) - SchemeViewer 测试 Helper 分层
+### 🚀 优化与改进
+- **React 树测试 Helper**: 将 SchemeViewer 多个组件测试重复的文本收集、data-tour 查找和组件类型查找抽成共享 test helper，测试主体回归业务断言
+- **SchemeViewer 测试预算收紧**: 为共享 test helper 补充可维护性预算，拆出 shell 测试预算表，并下调 Base64、Runtime 占位符、参数明细、解码链路、CMD 摘要和诊断容器测试预算
+
 ## v1.8.287 (2026-07-02) - AI 治理规则分层
 ### 🚀 优化与改进
 - **AI Governance 规则拆分**: 将 AI 协作治理中的必需文件清单和 Codex skill 引用规则拆成独立 helper，主规则入口回归引用组合
