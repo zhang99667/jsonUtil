@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.272 (2026-07-02) - SOURCE 编辑器 Props 分层
+### 🚀 优化与改进
+- **SOURCE Props Helper**: 将 SOURCE CodeEditor 的文件、路径、校验和 warning 映射抽成纯 helper，组件只保留错误修复 slot 和头部动作装配
+- **SOURCE 映射覆盖**: 新增单测锁定活动文件、校验失败、空活动文件和校验通过的编辑器 props 映射，并同步收紧 SOURCE 编辑器预算
+
 ## v1.8.271 (2026-07-02) - 工具栏按钮状态分层
 ### 🚀 优化与改进
 - **按钮状态 Helper 分层**: 将工具栏按钮 class 拼装和折叠态 a11y 文案拆成独立纯 helper，原状态入口只保留兼容 re-export
