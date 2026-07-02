@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.287 (2026-07-02) - AI 治理规则分层
+### 🚀 优化与改进
+- **AI Governance 规则拆分**: 将 AI 协作治理中的必需文件清单和 Codex skill 引用规则拆成独立 helper，主规则入口回归引用组合
+- **AI 预算收紧**: 为新增治理 helper 补充可维护性预算，并把 AI governance 规则入口预算降到组合职责范围
+
 ## v1.8.286 (2026-07-02) - 工具面板测试 Fixture 分层
 ### 🚀 优化与改进
 - **窗口事件测试 Helper**: 将工具面板命令 fixture 中的 CustomEvent 和 window listener stub 抽成独立 test-only helper，主 fixture 回归 React hook mock 与状态捕获
