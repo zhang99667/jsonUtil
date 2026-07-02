@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  invalidResult,
   previewSyncMocks,
   resetPreviewOutputSyncTestFixture,
   useHookInput,
-  validResult,
 } from './useAppPreviewOutputSyncTestFixture';
+import { invalidResult, validResult } from './useAppPreviewOutputSyncTestData';
 
 const longJson = `{"value":"${'x'.repeat(200_000)}"}`;
 const flushValidationPromises = async () => {

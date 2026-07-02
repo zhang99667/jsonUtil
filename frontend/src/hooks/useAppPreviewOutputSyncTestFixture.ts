@@ -1,8 +1,9 @@
 import { vi } from 'vitest';
-import { TransformMode, type ValidationResult } from '../types';
+import { TransformMode } from '../types';
 import { useAppPreviewOutputSync } from './useAppPreviewOutputSync';
 import { executeAppPreviewOutputSync } from '../utils/appPreviewOutputSyncRunner';
 import { validateJsonForEditor } from '../utils/jsonValidation';
+import { validResult } from './useAppPreviewOutputSyncTestData';
 
 const mocks = vi.hoisted(() => ({
   setPreviewValidation: vi.fn(),
@@ -32,8 +33,6 @@ vi.mock('../utils/jsonValidation', async importOriginal => ({
   validateJsonForEditor: vi.fn(() => ({ isValid: true })),
 }));
 
-export const validResult: ValidationResult = { isValid: true };
-export const invalidResult: ValidationResult = { isValid: false, error: 'preview invalid' };
 export const previewSyncMocks = mocks;
 export const executeAppPreviewOutputSyncMock = executeAppPreviewOutputSync;
 export const validateJsonForEditorMock = validateJsonForEditor;
@@ -85,5 +84,3 @@ export const useHookInput = (
     validateJsonMaybeAsync,
   };
 };
-
-export const outputDraft = (result: ReturnType<typeof useHookInput>) => [result.pendingOutputValue.current, result.isUpdatingFromOutput.current];

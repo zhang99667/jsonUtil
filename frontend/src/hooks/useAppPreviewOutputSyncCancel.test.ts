@@ -1,9 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   executeAppPreviewOutputSyncMock,
   resetPreviewOutputSyncTestFixture,
   useHookInput,
 } from './useAppPreviewOutputSyncTestFixture';
+import {
+  advancePreviewSyncDebounce,
+  expectOutputDraft,
+} from './useAppPreviewOutputSyncTestAssertions';
 
 describe('useAppPreviewOutputSync cancel', () => {
   beforeEach(() => {
@@ -15,10 +19,9 @@ describe('useAppPreviewOutputSync cancel', () => {
 
     result.handleOutputChange('{"a":2}');
     result.cancelOutputDraft();
-    await vi.advanceTimersByTimeAsync(400);
+    await advancePreviewSyncDebounce();
 
-    expect(result.pendingOutputValue.current).toBe('');
-    expect(result.isUpdatingFromOutput.current).toBe(false);
+    expectOutputDraft(result, '', false);
     expect(executeAppPreviewOutputSyncMock).not.toHaveBeenCalled();
     expect(result.onSetInput).not.toHaveBeenCalled();
   });
