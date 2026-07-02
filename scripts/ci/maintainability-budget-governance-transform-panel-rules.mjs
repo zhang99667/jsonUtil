@@ -39,4 +39,9 @@ export const governanceTransformPanelMaintainabilityBudgets = [
     maxLines: 30,
     reason: '深度解析报告问题样本预算规则应保持短表，新增 issue helper 先评估职责边界',
   },
+  {
+    file: 'scripts/ci/maintainability-budget-transform-report-issue-collector-rules.mjs',
+    maxLines: 20,
+    reason: '深度解析报告问题样本 collector 预算规则应保持短表，不承载其他 issue helper',
+  },
 ];
