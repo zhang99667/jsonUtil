@@ -1,4 +1,5 @@
 const MAX_RESULT_PREVIEW_LENGTH = 240;
+const MAX_COMPACT_RESULT_PREVIEW_LENGTH = 96;
 const MAX_TOKEN_PREVIEW_LENGTH = 32;
 const MAX_DETAILED_PREVIEW_TOTAL_LENGTH = 1200;
 const MAX_DETAILED_PREVIEW_STRING_LENGTH = 512;
@@ -115,4 +116,23 @@ export const formatJsonPathValueForPreview = (value: unknown): string => {
   }
 
   return compactText(stringifyJsonValue(value, true));
+};
+
+/**
+ * 查询面板结果列表只保留轻量预览，避免对象结构摘要抢占垂直空间。
+ */
+export const formatJsonPathValueForCompactPreview = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return compactText(value, MAX_COMPACT_RESULT_PREVIEW_LENGTH);
+  }
+
+  if (Array.isArray(value)) {
+    return `数组(${value.length})`;
+  }
+
+  if (value !== null && typeof value === 'object') {
+    return `对象(${Object.keys(value as Record<string, unknown>).length})`;
+  }
+
+  return compactText(stringifyJsonValue(value), MAX_COMPACT_RESULT_PREVIEW_LENGTH);
 };

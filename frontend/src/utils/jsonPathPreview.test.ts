@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { formatJsonPathValueForPreview } from './jsonPathPreview';
+import {
+  formatJsonPathValueForCompactPreview,
+  formatJsonPathValueForPreview,
+} from './jsonPathPreview';
 
 describe('formatJsonPathValueForPreview', () => {
   it('短字符串保持原样展示', () => {
@@ -50,5 +53,19 @@ describe('formatJsonPathValueForPreview', () => {
 
     expect(preview).toContain('数组(20):');
     expect(preview).toContain('0, 1, 2');
+  });
+
+  it('紧凑预览中对象和数组只展示数量，避免结果列表展开结构', () => {
+    expect(formatJsonPathValueForCompactPreview({
+      auto_refresh_interval: '3000',
+      auto_clear_cache_limit: '200',
+    })).toBe('对象(2)');
+    expect(formatJsonPathValueForCompactPreview([1, 2, 3])).toBe('数组(3)');
+  });
+
+  it('紧凑预览保留字符串和基础值的短文本', () => {
+    expect(formatJsonPathValueForCompactPreview('x'.repeat(120))).toHaveLength(99);
+    expect(formatJsonPathValueForCompactPreview(12)).toBe('12');
+    expect(formatJsonPathValueForCompactPreview(null)).toBe('null');
   });
 });
