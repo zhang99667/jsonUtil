@@ -3,17 +3,18 @@ import type {
   StructuredQueryParamContainer,
   StructuredQueryValue,
 } from './schemeStructuredQueryTypes';
+import { assignQueryLeaf } from './schemeStructuredQueryAssignNodes';
 import {
-  assignQueryLeaf,
-  createNestedContainer,
-} from './schemeStructuredQueryAssignNodes';
+  resolveStructuredQueryPathCursor,
+  type StructuredQueryPathCursor,
+} from './schemeStructuredQueryAssignPathCursor';
 
 export const assignStructuredQueryPath = (
   result: StructuredQueryParamContainer,
   segments: QueryKeySegment[],
   value: StructuredQueryValue
 ) => {
-  let current: StructuredQueryParamContainer | StructuredQueryValue[] = result;
+  let current: StructuredQueryPathCursor = result;
 
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
@@ -23,30 +24,8 @@ export const assignStructuredQueryPath = (
       return;
     }
 
-    const nextContainer = createNestedContainer(segments[i + 1]);
-
-    if (segment === null) {
-      if (!Array.isArray(current)) return;
-      current.push(nextContainer);
-      current = nextContainer as StructuredQueryParamContainer | StructuredQueryValue[];
-      continue;
-    }
-
-    if (typeof segment === 'number') {
-      if (!Array.isArray(current)) return;
-      const existing = current[segment];
-      if (!existing || typeof existing !== 'object') {
-        current[segment] = nextContainer;
-      }
-      current = current[segment] as StructuredQueryParamContainer | StructuredQueryValue[];
-      continue;
-    }
-
-    if (Array.isArray(current)) return;
-    const existing = current[segment];
-    if (!existing || typeof existing !== 'object') {
-      current[segment] = nextContainer;
-    }
-    current = current[segment] as StructuredQueryParamContainer | StructuredQueryValue[];
+    const nextCursor = resolveStructuredQueryPathCursor(current, segment, segments[i + 1]);
+    if (!nextCursor) return;
+    current = nextCursor;
   }
 };

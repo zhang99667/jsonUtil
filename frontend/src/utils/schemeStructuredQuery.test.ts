@@ -47,6 +47,21 @@ describe('schemeStructuredQuery', () => {
     });
   });
 
+  it('中间段已有对象时不因后续数组索引强行替换', () => {
+    const result: StructuredQueryParamContainer = {
+      items: { locked: 'yes' },
+      tags: 'old',
+    };
+
+    assignQueryParam(result, 'items[0].id', '1');
+    assignQueryParam(result, 'tags[].id', '2');
+
+    expect(result).toEqual({
+      items: { locked: 'yes' },
+      tags: [{ id: '2' }],
+    });
+  });
+
   it('按原始 query 风格回写点号和括号结构化参数', () => {
     expect(buildQueryStringFromObject({
       items: [
