@@ -16,17 +16,11 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-type ErrorBoundaryInstance = ErrorBoundary & {
-  props: ErrorBoundaryProps;
-  setState: (state: ErrorBoundaryState) => void;
-};
-
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false, error: null };
+  declare readonly props: ErrorBoundaryProps;
+  declare setState: (state: ErrorBoundaryState) => void;
 
-  private getInstance(): ErrorBoundaryInstance {
-    return this as unknown as ErrorBoundaryInstance;
-  }
+  state: ErrorBoundaryState = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
@@ -40,7 +34,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   /** 重置错误状态，重新渲染子组件 */
   handleReset = (): void => {
-    this.getInstance().setState({
+    this.setState({
       hasError: false,
       error: null,
     });
@@ -48,7 +42,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   handleReload = (): void => {
     try {
-      this.getInstance().props.onBeforeReload?.();
+      this.props.onBeforeReload?.();
     } catch (error) {
       console.warn('刷新前保存工作区草稿失败', error);
     }
@@ -86,7 +80,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       );
     }
 
-    return this.getInstance().props.children;
+    return this.props.children;
   }
 }
 
