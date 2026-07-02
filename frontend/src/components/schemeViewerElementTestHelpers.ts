@@ -39,3 +39,11 @@ export const findByTypeOrNull = (node: unknown, type: unknown): ElementLike | nu
   if (node.type === type) return node;
   return findByTypeOrNull(node.props.children, type);
 };
+
+export const findByTypeAndText = (node: unknown, type: unknown, label: string): ElementLike[] => {
+  if (Array.isArray(node)) return node.flatMap(child => findByTypeAndText(child, type, label));
+  if (!isElementLike(node)) return [];
+
+  const matches = node.type === type && collectText(node).includes(label) ? [node] : [];
+  return matches.concat(findByTypeAndText(node.props.children, type, label));
+};

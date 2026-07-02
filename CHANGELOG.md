@@ -6,7 +6,7 @@
 - **交互反馈统一**: 鼠标点击继续保持无残留框，键盘导航保留低干扰可见焦点
 ### 🏗️ 架构与基础设施
 - **PREVIEW 测试夹具瘦身**: 拆出同步测试数据和共享断言，减少 PREVIEW 回写测试重复样板
-- **测试预算回收**: PREVIEW 同步测试、夹具、`appTransformOutput`、`useAppToolPanelCommands` 和 SOURCE 编辑器 props 用例退出高使用率候选
+- **测试预算回收**: PREVIEW 同步测试、夹具、`appTransformOutput`、`useAppToolPanelCommands`、SOURCE 编辑器 props 和 Scheme 诊断摘要用例退出高使用率候选
 - **部署脚本瘦身**: 收敛远端 Docker Compose 部署脚本的错误出口、命令检查和整数校验写法
 - **部署预算清零**: `remote-docker-compose-deploy.sh` 退出高使用率候选，维护预算不再出现 88% 以上文件
 - **工作台组件分层**: 将编辑工作台的 SOURCE/PREVIEW pane props 分发抽成 builder，主组件更聚焦布局和光标门控
