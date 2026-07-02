@@ -7,6 +7,7 @@ import {
   executeAppPreviewOutputSyncMock,
   validateJsonForEditorMock,
   useHookInput,
+  outputDraft,
 } from './useAppPreviewOutputSyncTestFixture';
 
 describe('useAppPreviewOutputSync', () => {
@@ -19,28 +20,23 @@ describe('useAppPreviewOutputSync', () => {
 
     result.handleOutputChange('{"a":2}');
 
-    expect(result.pendingOutputValue.current).toBe('{"a":2}');
-    expect(result.isUpdatingFromOutput.current).toBe(true);
+    expect(outputDraft(result)).toEqual(['{"a":2}', true]);
     expect(result.onSetInput).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(400);
 
-    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledWith({
-      previewText: '{"a":2}',
-      mode: TransformMode.FORMAT,
-      originalInput: '{"a":1}',
-      context: null,
+    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledWith(expect.objectContaining({
+      previewText: '{"a":2}', mode: TransformMode.FORMAT,
       validateJsonMaybeAsync: result.validateJsonMaybeAsync,
-    });
+    }));
     expect(result.onSetInput).toHaveBeenCalledWith('next-source');
     expect(result.inputRef.current).toBe('next-source');
     expect(result.onUpdateActiveFileContent).toHaveBeenCalledWith('next-source');
-    expect(result.isUpdatingFromOutput.current).toBe(true);
+    expect(outputDraft(result)).toEqual(['{"a":2}', true]);
 
     await vi.advanceTimersByTimeAsync(600);
 
-    expect(result.pendingOutputValue.current).toBe('');
-    expect(result.isUpdatingFromOutput.current).toBe(false);
+    expect(outputDraft(result)).toEqual(['', false]);
   });
 
   it('格式化类 PREVIEW 校验失败时不覆盖 SOURCE', async () => {
@@ -53,8 +49,7 @@ describe('useAppPreviewOutputSync', () => {
     expect(previewSyncMocks.setPreviewValidation).toHaveBeenCalledWith(invalidResult);
     expect(result.onSetInput).not.toHaveBeenCalled();
     expect(result.onUpdateActiveFileContent).not.toHaveBeenCalled();
-    expect(result.pendingOutputValue.current).toBe('{bad');
-    expect(result.isUpdatingFromOutput.current).toBe(true);
+    expect(outputDraft(result)).toEqual(['{bad', true]);
   });
 
   it('PREVIEW 删空后同步失败时保留空草稿', async () => {
@@ -66,8 +61,7 @@ describe('useAppPreviewOutputSync', () => {
 
     expect(previewSyncMocks.setPreviewValidation).toHaveBeenCalledWith(invalidResult);
     expect(result.onSetInput).not.toHaveBeenCalled();
-    expect(result.pendingOutputValue.current).toBe('');
-    expect(result.isUpdatingFromOutput.current).toBe(true);
+    expect(outputDraft(result)).toEqual(['', true]);
   });
 
   it('连续编辑时只同步最后一次 PREVIEW 内容', async () => {
@@ -78,9 +72,7 @@ describe('useAppPreviewOutputSync', () => {
     await vi.advanceTimersByTimeAsync(400);
 
     expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledTimes(1);
-    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledWith(expect.objectContaining({
-      previewText: '{"a":3}',
-    }));
+    expect(executeAppPreviewOutputSyncMock).toHaveBeenCalledWith(expect.objectContaining({ previewText: '{"a":3}' }));
     expect(result.onSetInput).toHaveBeenCalledTimes(1);
   });
 

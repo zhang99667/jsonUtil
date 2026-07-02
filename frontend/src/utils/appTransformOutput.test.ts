@@ -18,6 +18,20 @@ const createContext = (warnings: TransformContext['warnings'] = []): TransformCo
   originalIndentation: 2,
 });
 
+type TransformOutputInput = Parameters<typeof buildAppTransformOutputState>[0];
+const buildOutputState = (overrides: Partial<TransformOutputInput> = {}) => (
+  buildAppTransformOutputState({
+    input: '{"a":1}',
+    mode: TransformMode.FORMAT,
+    autoExpandScheme: false,
+    shouldUseAsyncTransform: false,
+    currentAsyncTransformResult: null,
+    isUpdatingFromOutput: false,
+    pendingOutputValue: '',
+    ...overrides,
+  })
+);
+
 describe('appTransformOutput', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,14 +52,10 @@ describe('appTransformOutput', () => {
       context,
     });
 
-    const state = buildAppTransformOutputState({
+    const state = buildOutputState({
       input: '{"data":"..."}',
       mode: TransformMode.DEEP_FORMAT,
       autoExpandScheme: true,
-      shouldUseAsyncTransform: false,
-      currentAsyncTransformResult: null,
-      isUpdatingFromOutput: false,
-      pendingOutputValue: '',
     });
 
     expect(deepParseWithContext).toHaveBeenCalledWith('{"data":"..."}', { autoExpandScheme: true });
@@ -59,12 +69,7 @@ describe('appTransformOutput', () => {
   });
 
   it('PREVIEW 正在回写时优先展示 pending 输出且不清空暂存', () => {
-    const state = buildAppTransformOutputState({
-      input: '{"a":1}',
-      mode: TransformMode.FORMAT,
-      autoExpandScheme: false,
-      shouldUseAsyncTransform: false,
-      currentAsyncTransformResult: null,
+    const state = buildOutputState({
       isUpdatingFromOutput: true,
       pendingOutputValue: '{"a":2}',
     });
@@ -75,12 +80,7 @@ describe('appTransformOutput', () => {
   });
 
   it('PREVIEW 被删空时保留空草稿而不是恢复派生输出', () => {
-    const state = buildAppTransformOutputState({
-      input: '{"a":1}',
-      mode: TransformMode.FORMAT,
-      autoExpandScheme: false,
-      shouldUseAsyncTransform: false,
-      currentAsyncTransformResult: null,
+    const state = buildOutputState({
       isUpdatingFromOutput: true,
       pendingOutputValue: '',
     });
@@ -100,14 +100,11 @@ describe('appTransformOutput', () => {
       context,
     };
 
-    const state = buildAppTransformOutputState({
-      input: '{"a":1}',
+    const state = buildOutputState({
       mode: TransformMode.DEEP_FORMAT,
       autoExpandScheme: true,
       shouldUseAsyncTransform: true,
       currentAsyncTransformResult,
-      isUpdatingFromOutput: false,
-      pendingOutputValue: '',
     });
 
     expect(deepParseWithContext).not.toHaveBeenCalled();
@@ -119,14 +116,9 @@ describe('appTransformOutput', () => {
   });
 
   it('异步转换未完成时展示占位并保留 PREVIEW 暂存', () => {
-    const state = buildAppTransformOutputState({
-      input: '{"a":1}',
+    const state = buildOutputState({
       mode: TransformMode.JSON_TO_TYPESCRIPT,
-      autoExpandScheme: false,
       shouldUseAsyncTransform: true,
-      currentAsyncTransformResult: null,
-      isUpdatingFromOutput: false,
-      pendingOutputValue: '',
     });
 
     expect(performTransform).not.toHaveBeenCalled();
@@ -135,14 +127,8 @@ describe('appTransformOutput', () => {
   });
 
   it('普通转换模式回退到同步转换结果并清理暂存', () => {
-    const state = buildAppTransformOutputState({
-      input: '{"a":1}',
+    const state = buildOutputState({
       mode: TransformMode.MINIFY,
-      autoExpandScheme: false,
-      shouldUseAsyncTransform: false,
-      currentAsyncTransformResult: null,
-      isUpdatingFromOutput: false,
-      pendingOutputValue: '',
     });
 
     expect(performTransform).toHaveBeenCalledWith('{"a":1}', TransformMode.MINIFY);

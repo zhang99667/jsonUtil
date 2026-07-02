@@ -6,6 +6,7 @@ import { validateJsonForEditor } from '../utils/jsonValidation';
 
 const mocks = vi.hoisted(() => ({
   setPreviewValidation: vi.fn(),
+  syncedResult: { status: 'synced' as const, nextSource: 'next-source' },
   useCallback: vi.fn(),
   useEffect: vi.fn(),
   useRef: vi.fn(),
@@ -22,10 +23,7 @@ vi.mock('react', async importOriginal => ({
 
 vi.mock('../utils/appPreviewOutputSyncRunner', async importOriginal => ({
   ...await importOriginal<typeof import('../utils/appPreviewOutputSyncRunner')>(),
-  executeAppPreviewOutputSync: vi.fn(async () => ({
-    status: 'synced',
-    nextSource: 'next-source',
-  })),
+  executeAppPreviewOutputSync: vi.fn(async () => mocks.syncedResult),
 }));
 
 vi.mock('../utils/jsonValidation', async importOriginal => ({
@@ -49,10 +47,7 @@ export const resetPreviewOutputSyncTestFixture = () => {
   });
   mocks.useRef.mockImplementation((initialValue: unknown) => ({ current: initialValue }));
   mocks.useState.mockImplementation((initialValue: unknown) => [initialValue, mocks.setPreviewValidation]);
-  vi.mocked(executeAppPreviewOutputSync).mockResolvedValue({
-    status: 'synced',
-    nextSource: 'next-source',
-  });
+  vi.mocked(executeAppPreviewOutputSync).mockResolvedValue(mocks.syncedResult);
 };
 
 export const useHookInput = (
@@ -90,3 +85,5 @@ export const useHookInput = (
     validateJsonMaybeAsync,
   };
 };
+
+export const outputDraft = (result: ReturnType<typeof useHookInput>) => [result.pendingOutputValue.current, result.isUpdatingFromOutput.current];
