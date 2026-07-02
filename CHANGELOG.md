@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.292 (2026-07-02) - 筛选视图 Nested Patch 分层
+### 🚀 优化与改进
+- **筛选 Patch 分层**: 将深度解析报告筛选中的 nested command/resource 字段 patch 抽成独立纯 helper，视图 patch 入口回归 decoded path 和字段组合职责
+- **筛选预算收紧**: 为 nested patch helper 补充可维护性预算，并把原 filter view patch 入口预算降到组合层范围
+
 ## v1.8.291 (2026-07-02) - Transform Summary Artifact 类型分层
 ### 🚀 优化与改进
 - **Artifact 类型拆分**: 将问题样本、占位符回填、质量快照和归档包类型拆成独立类型文件，artifact 类型入口回归兼容 re-export 职责
