@@ -19,8 +19,8 @@ export const schemeViewerShellComponentMaintainabilityBudgets = [
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerBase64MetaPanel.tsx',
-    80,
-    'Scheme 内部 Base64 元信息面板只负责只读展示，提取和格式化规则应留在 utils'
+    55,
+    'Scheme 内部 Base64 元信息面板只负责布局和 badge 渲染，展示模型与格式化规则应留在 utils'
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerRuntimePlaceholdersPanel.tsx',
