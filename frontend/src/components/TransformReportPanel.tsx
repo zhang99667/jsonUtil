@@ -13,17 +13,10 @@ import {
   buildTransformPlaceholderFillTemplate,
   getTransformPathValueCopyRows,
 } from '../utils/transformSummary';
-import type { TransformReportRecord } from '../utils/transformSummary';
 import { buildPlaceholderFillSummary } from '../utils/transformReportPlaceholderFillSummary';
-import type { RankedCmdComparisonCandidate } from '../utils/transformReportCmdComparison';
 import {
-  buildOpenFirstTransformReportCmdComparisonPlan,
   createInitialTransformReportCmdComparisonState,
   resetTransformReportCmdComparisonState,
-  switchTransformReportCmdComparisonCandidate,
-  toggleTransformReportCmdComparisonRecord,
-  updateTransformReportCmdComparisonExpectedText,
-  updateTransformReportCmdComparisonIgnoreExtraPaths,
 } from '../utils/transformReportCmdComparisonController';
 import {
   buildActiveCmdComparisonCandidateText as buildActiveCmdComparisonCandidateTextForPanel,
@@ -50,10 +43,7 @@ import {
 import { buildTransformReportPanelSectionModel } from '../utils/transformReportPanelSectionModel';
 import { TransformReportPanelContent } from './TransformReportPanelContent';
 import { TransformReportPanelFrame } from './TransformReportPanelFrame';
-import type {
-  TransformReportRecordActions,
-  TransformReportRecordCmdComparisonState,
-} from './TransformReportRecordSectionContracts';
+import { buildTransformReportRecordSectionBindings } from './transformReportRecordSectionBindings';
 
 interface TransformReportPanelProps {
   isOpen: boolean;
@@ -215,65 +205,20 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     buildActiveCmdComparisonCandidateText,
   });
 
-  const handleToggleCmdComparison = (record: TransformReportRecord) => {
-    setCmdComparisonState(currentState => toggleTransformReportCmdComparisonRecord(currentState, record));
-  };
-
-  const handleOpenFirstCmdComparison = () => {
-    const plan = buildOpenFirstTransformReportCmdComparisonPlan(
-      cmdComparisonState,
-      reportView?.cmdStructureRecords[0]
-    );
-    if (!plan) return;
-
-    setQuery(plan.query);
-    setCmdComparisonState(plan.state);
-  };
-
-  const handleSwitchCmdComparisonCandidate = (candidate: RankedCmdComparisonCandidate) => {
-    const plan = switchTransformReportCmdComparisonCandidate(cmdComparisonState, candidate);
-    setQuery(plan.query);
-    setCmdComparisonState(plan.state);
-  };
-
-  const handleLocatePath = (path: string) => {
-    if (!onLocatePath) return;
-
-    onLocatePath(path);
-    toast.success('已填入 JSONPath 查询', { duration: 1600 });
-  };
-
-  const handleOpenSchemeValue = (value: string) => {
-    if (!onOpenSchemeValue) return;
-
-    onOpenSchemeValue(value);
-    toast.success('已填入 Scheme 解析', { duration: 1600 });
-  };
-  const recordActions = {
-    onCopyPath: copyWorkflow.copyPath,
-    onCopyOriginalValue: copyWorkflow.copyOriginalValue,
-    onCopyDecodedPathValue: copyWorkflow.copyDecodedPathValue,
-    onCopyCmdStructure: copyWorkflow.copyCmdStructure,
-    onCopyCmdComparisonPackage: copyWorkflow.copyCmdComparisonPackage,
-    onToggleCmdComparison: handleToggleCmdComparison,
-    onCopyCmdComparisonDiff: copyWorkflow.copyCmdComparisonDiff,
-    onSwitchCmdComparisonCandidate: handleSwitchCmdComparisonCandidate,
-    onCmdComparisonExpectedTextChange: (expectedText: string) => setCmdComparisonState(currentState => (
-      updateTransformReportCmdComparisonExpectedText(currentState, expectedText)
-    )),
-    onCmdComparisonIgnoreExtraPathsChange: (ignoreExtraPaths: boolean) => setCmdComparisonState(currentState => (
-      updateTransformReportCmdComparisonIgnoreExtraPaths(currentState, ignoreExtraPaths)
-    )),
-    ...(onLocatePath ? { onLocatePath: handleLocatePath } : {}),
-    ...(onOpenSchemeValue ? { onOpenSchemeValue: handleOpenSchemeValue } : {}),
-  } satisfies TransformReportRecordActions;
-  const recordCmdComparison = {
-    recordPath: cmdComparisonState.recordPath,
-    actualCandidate: cmdComparisonState.actualCandidate,
-    expectedText: cmdComparisonState.expectedText,
-    ignoreExtraPaths: cmdComparisonState.ignoreExtraPaths,
+  const {
+    openFirstCmdComparison,
+    recordActions,
+    recordCmdComparison,
+  } = buildTransformReportRecordSectionBindings({
+    copyWorkflow,
+    cmdComparisonState,
+    setCmdComparisonState,
+    setQuery,
+    firstCmdStructureRecord: reportView?.cmdStructureRecords[0],
     getCandidateRecords: () => getCmdComparisonCandidateRecordsForPanel(activeCmdComparisonState),
-  } satisfies TransformReportRecordCmdComparisonState;
+    onLocatePath,
+    onOpenSchemeValue,
+  });
 
   const sectionModel = buildTransformReportPanelSectionModel({
     report,
@@ -297,7 +242,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
   } = sectionModel;
   const { runIssueTriageAction, runNextAction } = buildTransformReportActionRunners({
     setQuery,
-    openFirstCmdComparison: handleOpenFirstCmdComparison,
+    openFirstCmdComparison,
     openPlaceholderFillTemplate: copyWorkflow.openPlaceholderFillTemplate,
     copyArchivePackage: copyWorkflow.copyArchivePackage,
     copyCollaborationReport: copyWorkflow.copyCollaborationReport,
@@ -364,7 +309,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
         recordActions={recordActions}
         recordCmdComparison={recordCmdComparison}
         onFilter={setQuery}
-        onOpenFirstCmdComparison={handleOpenFirstCmdComparison}
+        onOpenFirstCmdComparison={openFirstCmdComparison}
         onOpenPlaceholderFillTemplate={copyWorkflow.openPlaceholderFillTemplate}
         onCopyPlaceholderFillTemplate={copyWorkflow.copyPlaceholderFillTemplate}
         onCopyPlaceholderReport={copyWorkflow.copyPlaceholderReport}
