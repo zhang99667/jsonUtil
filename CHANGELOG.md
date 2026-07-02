@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.310 (2026-07-02) - 生产资源 CLI 参数分层
+### 🚀 优化与改进
+- **CLI Flag Helper**: 将公网前端资源巡检的 `--print-paths`、`--extra-asset(s)` flag 识别抽成独立 helper，主参数入口回归遍历和合并职责
+- **预算治理拆分**: 为 CLI 参数/flag 规则补充独立预算子表，避免生产资源巡检预算规则继续贴近上限
+
 ## v1.8.309 (2026-07-02) - Copy Workflow Fixture 数据分层
 ### 🚀 优化与改进
 - **Fixture 数据拆分**: 将深度解析复制 workflow 测试里的默认 report、reportView、CMD 候选和 guarded action 列表抽成独立测试数据文件
