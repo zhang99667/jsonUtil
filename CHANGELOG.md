@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.303 (2026-07-02) - 结构化 Query 路径游标分层
+### 🚀 优化与改进
+- **路径游标 Helper**: 将结构化 Query 赋值中的数组追加、索引数组和对象 key 中间段推进抽成独立纯 helper
+- **Scheme 预算收紧**: 为路径游标 helper 补充独立预算，并把原路径赋值入口降到循环和叶子赋值职责范围
+
 ## v1.8.302 (2026-07-02) - Workflow Run 文本 Helper 分层
 ### 🚀 优化与改进
 - **Workflow 文本 Helper**: 将 GitHub workflow run 块里的缩进、inline quote 和 Actions 表达式归一化抽成独立 helper
