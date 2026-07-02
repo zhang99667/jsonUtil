@@ -7,6 +7,7 @@ import {
   safeDecodeURIComponent,
   URL_LIKE_RE,
 } from './cmdStructureRawSourceGuards';
+import { parseRawCmdUrlParts } from './cmdStructureRawUrl';
 import {
   toCmdStructureJsonValue,
   tryParseRawCmdJsonString,
@@ -28,17 +29,6 @@ const RAW_CMD_DECODE_MAX_DEPTH = 10;
 const isRecord = (value: JsonValue): value is JsonObject => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
-
-const getUrlCmdSchema = (source: string): string | undefined => {
-  if (!URL_LIKE_RE.test(source)) return undefined;
-
-  try {
-    const url = new URL(source);
-    return `${url.protocol}//${url.host}${url.pathname}`;
-  } catch {
-    return source.split(/[?#]/)[0] || undefined;
-  }
-};
 
 const parseFastCmdValue = (value: string, key: string, depth: number): JsonValue => {
   if (depth > RAW_CMD_DECODE_MAX_DEPTH) return value;
@@ -93,8 +83,8 @@ const parseFastCmdSource = (source: string, depth = 0): NormalizedCmdStructure |
 
   const normalized = normalizeRawSourceString(source);
   const decoded = URL_LIKE_RE.test(normalized) ? normalized : safeDecodeURIComponent(normalized);
-  const schema = getUrlCmdSchema(decoded);
-  if (!schema) {
+  const urlParts = parseRawCmdUrlParts(decoded);
+  if (!urlParts) {
     if (QUERY_PAIR_RE.test(decoded)) {
       return {
         cmdParams: parseCmdStructureRawQueryParams(decoded, depth + 1, parseFastCmdValue),
@@ -104,20 +94,9 @@ const parseFastCmdSource = (source: string, depth = 0): NormalizedCmdStructure |
     return null;
   }
 
-  let query = '';
-  try {
-    const url = new URL(decoded);
-    query = url.search;
-  } catch {
-    const queryIndex = decoded.indexOf('?');
-    const hashIndex = decoded.indexOf('#');
-    const endIndex = hashIndex >= 0 ? hashIndex : decoded.length;
-    query = queryIndex >= 0 ? decoded.slice(queryIndex + 1, endIndex) : '';
-  }
-
   return {
-    cmdSchema: schema,
-    cmdParams: query ? parseCmdStructureRawQueryParams(query, depth + 1, parseFastCmdValue) : {},
+    cmdSchema: urlParts.schema,
+    cmdParams: urlParts.query ? parseCmdStructureRawQueryParams(urlParts.query, depth + 1, parseFastCmdValue) : {},
     source: decoded,
   };
 };

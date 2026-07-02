@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.323 (2026-07-02) - CMD Raw URL Helper 分层
+### 🚀 优化与改进
+- **URL Helper 分层**: 将原始 CMD URL 的 schema 和 query 提取逻辑拆到 `cmdStructureRawUrl`
+- **Decoder 职责收敛**: `cmdStructureRawSourceDecoder` 聚焦递归解码、JSON 展开和 query 参数结构化编排
+- **测试与预算补齐**: 新增 URL helper 单测，并收紧 decoder 维护预算，防止 URL 细节回流
+
 ## v1.8.322 (2026-07-02) - CMD Raw 扫描器分层
 ### 🚀 优化与改进
 - **Raw 扫描器分层**: 将原始 response CMD 候选的递归扫描逻辑拆到 `cmdStructureRawCollector`
