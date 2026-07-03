@@ -1,6 +1,4 @@
-interface MutableValueRef<T> {
-  current: T;
-}
+import type { MutableValueRef } from './mutableValueRef';
 
 export const beginPreviewOutputDraft = (
   isUpdatingFromOutput: MutableValueRef<boolean>,
