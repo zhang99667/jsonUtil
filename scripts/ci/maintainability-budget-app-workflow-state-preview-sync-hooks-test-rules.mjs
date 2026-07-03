@@ -1,5 +1,6 @@
 export const appWorkflowStatePreviewSyncHookTestMaintainabilityBudgets = [
   { file: 'frontend/src/hooks/useAppPreviewOutputDraftScheduler.test.ts', maxLines: 60, reason: 'PREVIEW 草稿调度 hook 测试只锁定清理函数和 scheduler 装配' },
+  { file: 'frontend/src/hooks/useAppPreviewDraftFileChangeReset.test.ts', maxLines: 60, reason: 'PREVIEW 草稿文件切换重置测试只锁定首次渲染、同文件和切换文件取消行为' },
   { file: 'frontend/src/hooks/useAppPreviewOutputChangeHandler.test.ts', maxLines: 80, reason: 'PREVIEW 输出变更 handler 测试只锁定草稿、校验和任务调度装配' },
   { file: 'frontend/src/hooks/useAppPreviewOutputSyncScheduler.test.ts', maxLines: 125, reason: 'PREVIEW 反向同步 scheduler 测试只锁定防抖、晚到任务、取消卸载和延迟解锁时序' },
   { file: 'frontend/src/hooks/useAppPreviewOutputSync.test.ts', maxLines: 95, reason: 'PREVIEW 反向同步 hook 测试只锁定防抖回写、连续编辑失效、延迟解锁和非法内容不覆盖 SOURCE' },
