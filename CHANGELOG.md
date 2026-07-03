@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.464 (2026-07-03) - 智能建议来源重置 Hook 拆分
+### 🏗️ 架构与基础设施
+- **App 智能建议来源降噪**: 将剪贴板智能建议来源在 SOURCE 改动或建议失效时的清理规则抽成 `useAppSmartSuggestionOriginReset`，`App.tsx` 只保留当前文本、建议存在性和来源状态装配，并补充 hook 测试固定无来源、来源保留和来源失效行为
+
 ## v1.8.463 (2026-07-03) - PREVIEW 草稿文件切换重置 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App PREVIEW 草稿降噪**: 将活动 Tab 变化时取消 PREVIEW 草稿的文件 ID 记忆和副作用抽成 `useAppPreviewDraftFileChangeReset`，`App.tsx` 只保留当前文件与取消命令装配，并补充 hook 测试固定首次渲染、同文件和切换文件行为

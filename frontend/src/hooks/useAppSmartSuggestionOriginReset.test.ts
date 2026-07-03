@@ -1,0 +1,59 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAppSmartSuggestionOriginReset } from './useAppSmartSuggestionOriginReset';
+
+const reactMocks = vi.hoisted(() => ({
+  useEffect: vi.fn(),
+}));
+
+vi.mock('react', async importOriginal => ({
+  ...await importOriginal<typeof import('react')>(),
+  useEffect: reactMocks.useEffect,
+}));
+
+const createInput = (
+  overrides: Partial<Parameters<typeof useAppSmartSuggestionOriginReset>[0]> = {}
+) => ({
+  sourceText: 'baiduboxapp://v1/open',
+  hasSmartSuggestion: true,
+    smartSuggestionOrigin: 'clipboard' as const,
+  smartSuggestionOriginTextRef: { current: 'baiduboxapp://v1/open' },
+  onSetSmartSuggestionOrigin: vi.fn(),
+  ...overrides,
+});
+
+describe('useAppSmartSuggestionOriginReset', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    reactMocks.useEffect.mockImplementation((effect: () => void) => effect());
+  });
+
+  it('没有智能建议来源时不清理来源状态', () => {
+    const input = createInput({ smartSuggestionOrigin: null });
+
+    useAppSmartSuggestionOriginReset(input);
+
+    expect(input.smartSuggestionOriginTextRef.current).toBe('baiduboxapp://v1/open');
+    expect(input.onSetSmartSuggestionOrigin).not.toHaveBeenCalled();
+  });
+
+  it('来源文本仍有智能建议时保留来源状态', () => {
+    const input = createInput();
+
+    useAppSmartSuggestionOriginReset(input);
+
+    expect(input.smartSuggestionOriginTextRef.current).toBe('baiduboxapp://v1/open');
+    expect(input.onSetSmartSuggestionOrigin).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { sourceText: 'edited text', hasSmartSuggestion: true },
+    { sourceText: 'baiduboxapp://v1/open', hasSmartSuggestion: false },
+  ])('来源失效时清理来源状态: %o', overrides => {
+    const input = createInput(overrides);
+
+    useAppSmartSuggestionOriginReset(input);
+
+    expect(input.smartSuggestionOriginTextRef.current).toBe('');
+    expect(input.onSetSmartSuggestionOrigin).toHaveBeenCalledWith(null);
+  });
+});

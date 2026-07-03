@@ -12,6 +12,8 @@ export const appWorkflowSourceMaintainabilityBudgets = [
   { file: 'frontend/src/hooks/useAppSchemeInspectSourceCommand.ts', maxLines: 80, reason: 'Scheme 排查 SOURCE hook 只维护 Scheme 原始值替换、面板复位回调接入和打点语义' },
   { file: 'frontend/src/hooks/useAppClearSourceCommands.ts', maxLines: 70, reason: '清空 SOURCE hook 只维护确认弹窗状态、清空写入、提示和打点' },
   { file: 'frontend/src/hooks/useAppSourceApplyEffects.ts', maxLines: 90, reason: 'SOURCE 应用副作用 hook 只维护写入 SOURCE、Scheme 面板复位和剪贴板智能建议来源' },
+  { file: 'frontend/src/hooks/useAppSmartSuggestionOriginReset.ts', maxLines: 40, reason: '智能建议来源重置 hook 只维护来源文本、建议存在性和来源状态清理' },
+  { file: 'frontend/src/hooks/useAppSmartSuggestionOriginReset.test.ts', maxLines: 75, reason: '智能建议来源重置测试只锁定无来源、来源保留和来源失效行为' },
   { file: 'frontend/src/utils/appSourceReplacementCommandTypes.ts', maxLines: 55, reason: 'SOURCE 替换命令契约只维护计划分发、pending 确认和打点类型' },
   { file: 'frontend/src/utils/appSourceReplacementCommandHelpers.ts', maxLines: 100, reason: 'SOURCE 替换 command helper 只维护计划分发、pending 确认和取消打点共用语义' },
 ];
