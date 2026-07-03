@@ -98,7 +98,7 @@ const App: React.FC = () => {
     cancelOutputDraftRef.current?.();
   }, []);
 
-  // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
+  // 文件系统状态 (Hook)
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
     createNewTab, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
@@ -109,7 +109,6 @@ const App: React.FC = () => {
     inputRef,
     mode,
     setMode,
-    output: '', // 初始为空，后面会更新
     onBeforeSourceWorkspaceChange: handleBeforeFileSystemSourceChange,
   });
 

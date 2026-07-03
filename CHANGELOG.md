@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.473 (2026-07-03) - 文件系统 Hook 契约收缩
+### 🏗️ 架构与基础设施
+- **文件系统 Hook 瘦身**: 移除 `useFileSystem` 未使用的 `output` 入参和单文件拖拽包装返回值，调用侧只保留实际消费的 `openDroppedFiles`，减少无效 API 面和测试夹具噪音
+
 ## v1.8.472 (2026-07-03) - 更新检测测试隔离加固
 ### 🏗️ 架构与基础设施
 - **更新检测测试隔离**: `appUpdateCheckEffects` 测试改为在 `afterEach` 统一清理 mock 和全局 `fetch` stub，避免 manifest 请求断言失败时污染后续测试
