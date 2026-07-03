@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.454 (2026-07-03) - 智能建议视图模型拆分
+### 🏗️ 架构与基础设施
+- **工具栏智能建议降噪**: 将主动作、折叠态可访问文案、来源标签、tone 样式和展开态动作裁剪抽成 `actionPanelSmartSuggestionViewModel`，组件只保留折叠/展开渲染分支，并补充纯 helper 测试覆盖空态与来源文案
+
 ## v1.8.453 (2026-07-03) - PREVIEW 输出变更 Handler 拆分
 ### 🏗️ 架构与基础设施
 - **PREVIEW 输出变更降噪**: 将输出编辑时的草稿开始、即时校验和同步任务调度抽成 `runAppPreviewOutputChange`，Hook 只保留 `useCallback` 依赖装配，并补充 helper 测试固定调度入参
