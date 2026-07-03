@@ -5,6 +5,11 @@ export const transformPanelHelperFooterWorkflowActionMaintainabilityBudgets = [
     reason: '深度解析报告 footer 操作入口应只保留操作顺序编排，action 生成放在 builder 模块',
   },
   {
+    file: 'frontend/src/utils/transformReportPanelFooterModel.ts',
+    maxLines: 110,
+    reason: '深度解析报告 footer model 应只组合 footer actions 和固定 copy workflow handler 映射',
+  },
+  {
     file: 'frontend/src/utils/transformReportFooterActionBuilders.ts',
     maxLines: 70,
     reason: '深度解析报告 footer 配置化、筛选和 CMD action 生成规则应保持纯函数模块',

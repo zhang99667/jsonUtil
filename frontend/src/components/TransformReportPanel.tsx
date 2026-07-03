@@ -21,10 +21,6 @@ import {
   getTransformPlaceholderFillTemplateTitle,
 } from '../utils/transformReportCopyTitles';
 import {
-  buildTransformReportFooterActionHandlers,
-  buildTransformReportFooterActions,
-} from '../utils/transformReportFooterActions';
-import {
   buildTransformReportActionRunners,
 } from '../utils/transformReportActionItems';
 import {
@@ -38,6 +34,7 @@ import {
   buildTransformReportPanelPlaceholderFillState,
   buildTransformReportPanelQualityState,
 } from '../utils/transformReportPanelDerivedValues';
+import { buildTransformReportPanelFooterModel } from '../utils/transformReportPanelFooterModel';
 import { TransformReportPanelContent } from './TransformReportPanelContent';
 import { TransformReportPanelFrame } from './TransformReportPanelFrame';
 import { buildTransformReportRecordSectionBindings } from './transformReportRecordSectionBindings';
@@ -224,8 +221,8 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     copyCollaborationReport: copyWorkflow.copyCollaborationReport,
     copyQualitySnapshot: copyWorkflow.copyQualitySnapshot,
   });
-  const footerActions = buildTransformReportFooterActions({
-    hasQuery: Boolean(query.trim()),
+  const { footerActions, footerActionHandlers } = buildTransformReportPanelFooterModel({
+    query,
     hasReportView,
     isFilterPending,
     hasQualitySnapshot: Boolean(qualitySnapshot),
@@ -240,24 +237,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     hasIssueRegressionTemplateCopyText: Boolean(issueRegressionTemplateCopyText),
     hasActiveContext: Boolean(activeContext),
     copyTitles,
-  });
-  const footerActionHandlers = buildTransformReportFooterActionHandlers({
-    copyFilteredReport: copyWorkflow.copyFilteredReport,
-    copyCollaborationReport: copyWorkflow.copyCollaborationReport,
-    copyDiagnosticSummary: copyWorkflow.copyDiagnosticSummary,
-    copyQualitySnapshot: copyWorkflow.copyQualitySnapshot,
-    setQualityBaseline: copyWorkflow.setQualityBaseline,
-    copyQualityBaselineDelta: copyWorkflow.copyQualityBaselineDelta,
-    clearQualityBaseline: copyWorkflow.clearQualityBaseline,
-    copyArchivePackage: copyWorkflow.copyArchivePackage,
-    copyTroubleshootingRecipe: copyWorkflow.copyTroubleshootingRecipe,
-    copyPathValueReport: copyWorkflow.copyPathValueReport,
-    copyCmdStructureReport: copyWorkflow.copyCmdStructureReport,
-    copyIssueSamples: copyWorkflow.copyIssueSamples,
-    copyIssueSampleJson: copyWorkflow.copyIssueSampleJson,
-    copyRedactedIssueSampleJson: copyWorkflow.copyRedactedIssueSampleJson,
-    copyIssueRegressionTemplate: copyWorkflow.copyIssueRegressionTemplate,
-    copyFullReport: copyWorkflow.copyReport,
+    copyWorkflow,
   });
 
   return (

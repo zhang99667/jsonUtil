@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.418 (2026-07-03) - 深度解析 Footer 模型拆分
+### 🏗️ 架构与基础设施
+- **主面板降压**: 将深度解析面板 footer 操作状态和 copy workflow handler 映射抽成独立 footer model，主面板只保留状态、报告派生和内容 wiring
+
 ## v1.8.417 (2026-07-03) - 深度解析面板模型拆分
 ### 🏗️ 架构与基础设施
 - **Section Model 降压**: 将深度解析面板的占位符回填状态和问题行动状态拆成两个纯 helper，原 section view-model 回归为可见性、占位符模型和行动模型编排
