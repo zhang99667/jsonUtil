@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.448 (2026-07-03) - PREVIEW 输出变更任务装配收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 输出变更降噪**: 将 PREVIEW 输出变更里的同步任务创建和调度抽成 `scheduleAppPreviewOutputChangeTask`，handler 只保留草稿开始、即时校验和任务调度入口，并把 PREVIEW 同步 utils 预算拆成运行时/测试子表
+
 ## v1.8.447 (2026-07-03) - 工具栏滚动状态读取收敛
 ### 🏗️ 架构与基础设施
 - **工具栏滚动条降噪**: 将工具栏自定义滚动条的容器滚动状态读取抽成 `actionPanelScrollbarDom` helper，hook 只保留 ResizeObserver、rAF 刷新、拖拽状态和全局鼠标监听装配

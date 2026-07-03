@@ -1,15 +1,14 @@
 import { useCallback } from 'react';
 import { beginPreviewOutputDraft } from '../utils/appPreviewOutputDraft';
-import { createAppPreviewOutputSyncTask } from '../utils/appPreviewOutputSyncTask';
-import type { ValidationResult } from '../types';
-import type { UseAppPreviewOutputSyncInput } from './useAppPreviewOutputSyncTypes';
+import { scheduleAppPreviewOutputChangeTask } from '../utils/appPreviewOutputChangeTask';
+import type { AppPreviewOutputSyncTaskInput } from '../utils/appPreviewOutputSyncTaskTypes';
+import type { MutableValueRef } from '../utils/mutableValueRef';
 
 type PreviewOutputSyncTask = (isCurrent: () => boolean) => Promise<boolean>;
-type PreviewOutputChangeHandlerFields = Pick<UseAppPreviewOutputSyncInput, 'files' | 'activeFileId' | 'mode' | 'inputRef' | 'fallbackContextRef' | 'isUpdatingFromOutput' | 'pendingOutputValue' | 'validateJsonMaybeAsync' | 'onSetInput' | 'onUpdateActiveFileContent'>;
 
 interface UseAppPreviewOutputChangeHandlerInput
-  extends PreviewOutputChangeHandlerFields {
-  setPreviewValidation: (validation: ValidationResult) => void;
+  extends Omit<AppPreviewOutputSyncTaskInput, 'previewText'> {
+  isUpdatingFromOutput: MutableValueRef<boolean>;
   updatePreviewValidation: (previewText: string) => void;
   scheduleOutputSync: (task: PreviewOutputSyncTask) => void;
 }
@@ -32,7 +31,7 @@ export const useAppPreviewOutputChangeHandler = ({
   beginPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue, previewText);
   updatePreviewValidation(previewText);
 
-  scheduleOutputSync(createAppPreviewOutputSyncTask({
+  scheduleAppPreviewOutputChangeTask({
     previewText,
     files,
     activeFileId,
@@ -44,7 +43,8 @@ export const useAppPreviewOutputChangeHandler = ({
     setPreviewValidation,
     onSetInput,
     onUpdateActiveFileContent,
-  }));
+    scheduleOutputSync,
+  });
 }, [
   activeFileId,
   fallbackContextRef,
