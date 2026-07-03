@@ -9,8 +9,8 @@ import { runAppPreviewOutputSyncRequest } from '../utils/appPreviewOutputSyncReq
 import {
   beginPreviewOutputDraft,
   clearPreviewOutputDraft,
-  keepPreviewOutputDraft,
 } from '../utils/appPreviewOutputDraft';
+import { applyAppPreviewOutputSyncResult } from '../utils/appPreviewOutputSyncResult';
 import { useAppPreviewValidation } from './useAppPreviewValidation';
 
 interface UseAppPreviewOutputSyncInput {
@@ -100,16 +100,16 @@ export const useAppPreviewOutputSync = ({
 
         if (outputSyncRequestId !== outputSyncRequestIdRef.current) return;
 
-        if (syncResult.status !== 'synced') {
-          setPreviewValidation(syncResult.validation);
-          keepPreviewOutputDraft(pendingOutputValue, previewText);
-          return;
-        }
-
-        const nextSource = syncResult.nextSource;
-        onSetInput(nextSource);
-        inputRef.current = nextSource;
-        onUpdateActiveFileContent(nextSource);
+        const didSync = applyAppPreviewOutputSyncResult({
+          syncResult,
+          previewText,
+          inputRef,
+          pendingOutputValue,
+          setPreviewValidation,
+          onSetInput,
+          onUpdateActiveFileContent,
+        });
+        if (!didSync) return;
 
         setTimeout(() => {
           if (!outputChangeTimer.current && outputSyncRequestId === outputSyncRequestIdRef.current) {
