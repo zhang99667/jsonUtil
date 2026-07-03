@@ -19,8 +19,13 @@ export const schemeViewerShellComponentMaintainabilityBudgets = [
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerFooterActionList.tsx',
-    135,
-    'Scheme 弹窗底部动作列表只负责动作显隐、禁用态、tone 与 aria/title 透传'
+    35,
+    'Scheme 弹窗底部动作列表只负责过滤并渲染动作 item，动作定义不得回流'
+  ),
+  schemeViewerShellComponentBudget(
+    'schemeViewerFooterActionItems.tsx',
+    180,
+    'Scheme 弹窗底部动作 item builder 只负责动作显隐、禁用态、tone 与 aria/title 透传'
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerFooterActionIcons.tsx',
