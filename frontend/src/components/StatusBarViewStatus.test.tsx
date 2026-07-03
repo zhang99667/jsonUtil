@@ -42,7 +42,7 @@ const localProcessingStatus: LocalProcessingStatus = {
 };
 
 describe('StatusBarViewStatus', () => {
-  it('展示本地处理状态、当前视图和版本按钮', () => {
+  it('展示本地处理状态、视图模式和版本按钮', () => {
     const onOpenChangelog = vi.fn();
     const tree = StatusBarViewStatus({
       localProcessingStatus,
@@ -90,11 +90,11 @@ describe('StatusBarLocalProcessingBadge', () => {
 });
 
 describe('StatusBarModeBadge', () => {
-  it('展示深度格式化视图和嵌套展开说明', () => {
+  it('只展示视图模式本身和嵌套展开说明', () => {
     const tree = StatusBarModeBadge({ mode: TransformMode.DEEP_FORMAT });
     const text = collectText(tree);
 
-    expect(text).toContain('当前视图:');
+    expect(text).not.toContain('当前视图:');
     expect(text).toContain('深度格式化');
     expect(text).toContain('自动展开多层嵌套的 JSON 字符串');
   });

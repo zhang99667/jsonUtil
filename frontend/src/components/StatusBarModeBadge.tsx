@@ -8,7 +8,6 @@ interface StatusBarModeBadgeProps {
 
 export const StatusBarModeBadge: React.FC<StatusBarModeBadgeProps> = ({ mode }) => (
   <>
-    <span className="shrink-0 opacity-80">当前视图:</span>
     <span className="bg-white text-brand-primary px-1.5 py-0.5 rounded font-bold text-[11px] shadow-sm leading-none">
       {STATUS_BAR_MODE_LABELS[mode]}
     </span>
