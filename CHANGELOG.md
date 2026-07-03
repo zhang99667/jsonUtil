@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.456 (2026-07-03) - App 工具事件 telemetry Hook 拆分
+### 🏗️ 架构与基础设施
+- **App 顶层编排降噪**: 将工具事件打点里的输入大小分桶、耗时分桶和 `trackToolEvent` 调用抽成 `useAppToolTelemetry`，`App.tsx` 只保留 telemetry hook 装配，并补充默认状态、耗时和 `inputRef` 当前值测试
+
 ## v1.8.455 (2026-07-03) - 文件系统独立草稿规则拆分
 ### 🏗️ 架构与基础设施
 - **文件系统 Hook 降噪**: 将无活动标签输入转未保存 Untitled 草稿的规则抽成 `workspaceStandaloneDraftFile` 纯 helper，`useFileSystem` 只保留打开文件和新建标签前的调用装配，并补充草稿跳过与生成测试
