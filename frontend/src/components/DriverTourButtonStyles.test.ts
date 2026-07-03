@@ -41,10 +41,13 @@ describe('Driver tour button styles', () => {
     );
 
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow');
-    expect(focusAccentRule).toContain('inset 0 0 0 1px rgba(226, 232, 240, 0.24)');
+    expect(focusAccentRule).toContain('box-shadow: none');
+    expect(focusAccentRule).toContain('opacity: 0.38');
+    expect(focusAccentRule).toContain('transform: translateX(0)');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(focusRule).not.toContain('inset 0 -2px');
+    expect(focusAccentRule).not.toContain('inset 0 0 0 1px');
     expect(css).not.toContain('driver-popover-next-btn::after');
   });
 

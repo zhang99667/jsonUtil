@@ -49,14 +49,16 @@
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button::before {
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.22), rgba(226, 232, 240, 0));
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   content: '';
-  inset: 1px;
+  inset: 1px auto 1px 1px;
   opacity: 0;
   pointer-events: none;
   position: absolute;
-  transition: opacity 0.16s ease, box-shadow 0.16s ease;
+  transform: translateX(-6px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  width: 16px;
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible) {
@@ -76,7 +78,8 @@
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:hover::before {
-  opacity: 0.4;
+  opacity: 0.28;
+  transform: translateX(0);
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible {
@@ -88,10 +91,9 @@
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible::before {
-  box-shadow:
-    inset 0 0 0 1px rgba(226, 232, 240, 0.24),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-  opacity: 1;
+  box-shadow: none;
+  opacity: 0.38;
+  transform: translateX(0);
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn {
