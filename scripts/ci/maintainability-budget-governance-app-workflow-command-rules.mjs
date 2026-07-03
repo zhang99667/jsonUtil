@@ -2,7 +2,8 @@ const governanceCommandBudget = (file, maxLines, reason) => ({ file, maxLines, r
 
 export const governanceAppWorkflowCommandMaintainabilityBudgets = [
   governanceCommandBudget('scripts/ci/maintainability-budget-app-workflow-command-rules.mjs', 20, 'App 命令工作流预算入口应只组合 core、设置备份、模板填充和工具面板子表'),
-  governanceCommandBudget('scripts/ci/maintainability-budget-app-workflow-command-core-rules.mjs', 20, 'App 命令核心预算规则应只维护自动保存、复制和智能建议命令预算'),
+  governanceCommandBudget('scripts/ci/maintainability-budget-app-workflow-command-core-rules.mjs', 20, 'App 命令核心预算规则应只组合自动保存子表并维护复制和智能建议命令预算'),
+  governanceCommandBudget('scripts/ci/maintainability-budget-app-workflow-command-auto-save-rules.mjs', 20, '自动保存命令预算规则应独立维护计划 helper、hook 和对应测试预算'),
   governanceCommandBudget('scripts/ci/maintainability-budget-app-workflow-settings-backup-rules.mjs', 20, '设置备份命令预算规则应独立维护 hook、adapter、拆分测试和类型契约预算'),
   governanceCommandBudget('scripts/ci/maintainability-budget-app-workflow-command-template-rules.mjs', 15, '模板填充命令预算入口应只组合 shell、runner 和 support 子表'),
   governanceCommandBudget('scripts/ci/maintainability-budget-app-workflow-command-template-shell-rules.mjs', 15, '模板填充命令 shell 预算规则应独立维护 hook、effects helper 和 effects 测试预算'),

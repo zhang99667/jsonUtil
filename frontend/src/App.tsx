@@ -30,6 +30,7 @@ import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import { useAppSourceValidation } from './hooks/useAppSourceValidation';
 import { useAppTemplateFillCommand } from './hooks/useAppTemplateFillCommand';
 import { useAppPrimaryActionCommand } from './hooks/useAppPrimaryActionCommand';
+import { useAppAutoSaveToggleCommand } from './hooks/useAppAutoSaveToggleCommand';
 import { useAppSourceInputCommands } from './hooks/useAppSourceInputCommands';
 import { useAppToolPanelCommands } from './hooks/useAppToolPanelCommands';
 import {
@@ -57,7 +58,6 @@ import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFeedback';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
 import { buildAppEditorUiState } from './utils/appEditorUiState';
-import { buildAppAutoSaveTogglePlan } from './utils/appAutoSaveTogglePlan';
 import { getContentSizeSummary } from './utils/appWorkflowHelpers';
 import { setLegacyJsonPathValue } from './utils/appLegacyJsonPath';
 import {
@@ -371,21 +371,12 @@ const App: React.FC = () => {
     trackCurrentToolEvent(nextMode, 'transform_mode');
   }, [setModeWithPreviewDraftCancel, trackCurrentToolEvent]);
 
-  const handleToggleAutoSave = useCallback(() => {
-    const plan = buildAppAutoSaveTogglePlan({
-      hasActiveFile: Boolean(activeFileId),
-      activeFileHasHandle: Boolean(activeFile?.handle),
-      isAutoSaveEnabled,
-    });
-
-    if (plan.type === 'error') {
-      showError(plan.message);
-      return;
-    }
-
-    setIsAutoSaveEnabled(plan.nextEnabled);
-    showSuccess(plan.message);
-  }, [activeFileId, activeFile, isAutoSaveEnabled, setIsAutoSaveEnabled]);
+  const { handleToggleAutoSave } = useAppAutoSaveToggleCommand({
+    hasActiveFile: Boolean(activeFileId),
+    activeFileHasHandle: Boolean(activeFile?.handle),
+    isAutoSaveEnabled,
+    onSetAutoSaveEnabled: setIsAutoSaveEnabled,
+  });
 
   // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({
