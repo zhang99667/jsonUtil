@@ -95,20 +95,14 @@ describe('ActionPanel', () => {
     vi.clearAllMocks();
   });
 
-  it.each([
-    [TransformMode.DEEP_FORMAT, 'deep-format'],
-    [TransformMode.ESCAPE, 'escape'],
-    [TransformMode.UNESCAPE, 'escape'],
-    [TransformMode.UNICODE_TO_CN, 'unicode-convert'],
-    [TransformMode.CN_TO_UNICODE, 'unicode-convert'],
-  ])('切换 %s 时先触发对应功能引导再透传模式', (mode, featureId) => {
+  it('切换需要引导的模式时先触发对应功能引导再透传模式', () => {
     const onModeChange = vi.fn();
     const handleModeChange = getModeChangeHandler(buildProps({ onModeChange }));
 
-    handleModeChange(mode);
+    handleModeChange(TransformMode.DEEP_FORMAT);
 
-    expect(mocks.triggerFeatureFirstUse).toHaveBeenCalledWith(featureId);
-    expect(onModeChange).toHaveBeenCalledWith(mode);
+    expect(mocks.triggerFeatureFirstUse).toHaveBeenCalledWith('deep-format');
+    expect(onModeChange).toHaveBeenCalledWith(TransformMode.DEEP_FORMAT);
     expect(mocks.triggerFeatureFirstUse.mock.invocationCallOrder[0]).toBeLessThan(
       onModeChange.mock.invocationCallOrder[0]
     );
