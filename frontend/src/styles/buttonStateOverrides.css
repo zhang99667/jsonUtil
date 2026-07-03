@@ -1,0 +1,41 @@
+/* 按钮最终态覆盖：必须在 Tailwind utilities 之后导入，避免 focus ring 回潮成选中框。 */
+:where(button, [role="button"]):focus {
+  outline: none !important;
+}
+
+:where(button, [role="button"]):focus:not(:focus-visible) {
+  box-shadow: var(--app-button-rest-shadow, none) !important;
+}
+
+:where(button, [role="button"]):focus-visible {
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
+
+  outline: none !important;
+  filter: brightness(1.04) saturate(1.01);
+  box-shadow: var(--app-button-rest-shadow, none) !important;
+}
+
+.app-button:focus-visible {
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
+
+  box-shadow: var(--app-button-rest-shadow, none) !important;
+}
+
+.app-button.app-button--primary,
+.app-button.changelog-modal__confirm-button {
+  --app-button-rest-shadow: none;
+
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-button.app-button--primary:focus-visible,
+.app-button.changelog-modal__confirm-button:focus-visible {
+  background: linear-gradient(180deg, rgba(88, 101, 118, 0.78) 0%, rgba(57, 68, 82, 0.8) 100%) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}

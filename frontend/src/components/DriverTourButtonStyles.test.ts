@@ -24,7 +24,7 @@ describe('Driver tour button styles', () => {
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn'
     );
 
-    expect(buttonRule).toContain('background: rgba(255, 255, 255, 0.085) !important');
+    expect(buttonRule).toContain('background: linear-gradient(180deg, rgba(76, 88, 104, 0.68) 0%, rgba(49, 59, 72, 0.72) 100%) !important');
     expect(buttonRule).toContain('--app-button-rest-shadow: none');
     expect(buttonRule).toContain('box-shadow: none !important');
     expect(buttonRule).toContain('border: 0 !important');
