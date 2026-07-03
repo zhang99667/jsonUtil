@@ -4,6 +4,7 @@ import {
   getActionPanelDragScrollTop,
   getActionPanelScrollbarThumbState,
 } from '../utils/actionPanelScrollbar';
+import { readActionPanelScrollState } from '../utils/actionPanelScrollbarDom';
 import { useRafCallback } from './useRafCallback';
 import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
@@ -26,11 +27,7 @@ export const useActionPanelScrollbar = ({
     const container = containerRef.current;
     if (!container) return;
 
-    setScrollState({
-      scrollTop: container.scrollTop,
-      scrollHeight: container.scrollHeight,
-      clientHeight: container.clientHeight,
-    });
+    setScrollState(readActionPanelScrollState(container));
   }, []);
 
   useEffect(() => {
