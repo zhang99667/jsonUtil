@@ -10,11 +10,6 @@ import {
   createInitialTransformReportCmdComparisonState,
   resetTransformReportCmdComparisonState,
 } from '../utils/transformReportCmdComparisonController';
-import {
-  buildActiveCmdComparisonCandidateText as buildActiveCmdComparisonCandidateTextForPanel,
-  buildActiveCmdComparisonReportText as buildActiveCmdComparisonReportTextForPanel,
-  getCmdComparisonCandidateRecords as getCmdComparisonCandidateRecordsForPanel,
-} from '../utils/transformReportActiveCmdComparison';
 import { formatTransformReportFooterSummary } from '../utils/transformReportFooterSummary';
 import {
   buildTransformReportCopyTitles,
@@ -23,10 +18,8 @@ import {
 import {
   buildTransformReportActionRunners,
 } from '../utils/transformReportActionItems';
-import {
-  buildTransformReportPanelCopyWorkflow,
-  type TransformReportQualityBaseline,
-} from '../utils/transformReportPanelCopyWorkflow';
+import type { TransformReportQualityBaseline } from '../utils/transformReportPanelCopyWorkflow';
+import { buildTransformReportPanelCopyWorkflowModel } from '../utils/transformReportPanelCopyWorkflowModel';
 import { buildTransformReportPanelSectionModel } from '../utils/transformReportPanelSectionModel';
 import {
   buildTransformReportPanelCopyAvailability,
@@ -133,49 +126,40 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     toast.error(getClipboardErrorMessage(error), { duration: 2000 });
   };
 
-  const activeCmdComparisonState = {
-    ...cmdComparisonState,
-    report,
-    reportView,
+  const {
+    copyWorkflow,
+    getCmdComparisonCandidateRecords,
+  } = buildTransformReportPanelCopyWorkflowModel({
+    copyWorkflowState: {
+      activeContext,
+      report,
+      reportView,
+      deferredQuery,
+      isFilterPending,
+      qualitySnapshot,
+      qualityBaselineDeltaText,
+      placeholderFillTemplateJsonText,
+      issueSampleCopyText,
+      issueSampleJsonCopyText,
+      redactedIssueSampleJsonCopyText,
+      issueRegressionTemplateCopyText,
+      hasPathValueCopyItems,
+      hasCmdStructureCopyItems,
+      hasFocusedCmdStructureCopyItems,
+      cmdComparisonExpectedText: cmdComparisonState.expectedText,
+      cmdComparisonIgnoreExtraPaths: cmdComparisonState.ignoreExtraPaths,
+      cmdComparisonActualCandidate: cmdComparisonState.actualCandidate,
+    },
+    cmdComparisonState,
     fullReportView,
-  };
-
-  const buildActiveCmdComparisonReportText = (): string => {
-    return buildActiveCmdComparisonReportTextForPanel(activeCmdComparisonState);
-  };
-
-  const buildActiveCmdComparisonCandidateText = (): string => {
-    return buildActiveCmdComparisonCandidateTextForPanel(activeCmdComparisonState);
-  };
-
-  const copyWorkflow = buildTransformReportPanelCopyWorkflow({
-    activeContext,
-    report,
-    reportView,
-    deferredQuery,
-    isFilterPending,
-    qualitySnapshot,
-    qualityBaselineDeltaText,
-    placeholderFillTemplateJsonText,
-    issueSampleCopyText,
-    issueSampleJsonCopyText,
-    redactedIssueSampleJsonCopyText,
-    issueRegressionTemplateCopyText,
-    hasPathValueCopyItems,
-    hasCmdStructureCopyItems,
-    hasFocusedCmdStructureCopyItems,
-    cmdComparisonExpectedText: cmdComparisonState.expectedText,
-    cmdComparisonIgnoreExtraPaths: cmdComparisonState.ignoreExtraPaths,
-    cmdComparisonActualCandidate: cmdComparisonState.actualCandidate,
-  }, {
-    copyText,
-    showSuccess: (message, toastOptions) => toast.success(message, toastOptions),
-    showError: showCopyError,
-    setQualityBaseline,
-    showStatusSuccess: (message, toastOptions) => toast.success(message, toastOptions),
-    openTemplateFill: onOpenTemplateFill,
-    buildActiveCmdComparisonReportText,
-    buildActiveCmdComparisonCandidateText,
+    effects: {
+      copyText,
+      showSuccess: (message, toastOptions) => toast.success(message, toastOptions),
+      showError: showCopyError,
+      setQualityBaseline,
+      showStatusSuccess: (message, toastOptions) => toast.success(message, toastOptions),
+      openTemplateFill: onOpenTemplateFill,
+    },
   });
 
   const {
@@ -188,7 +172,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     setCmdComparisonState,
     setQuery,
     firstCmdStructureRecord: reportView?.cmdStructureRecords[0],
-    getCandidateRecords: () => getCmdComparisonCandidateRecordsForPanel(activeCmdComparisonState),
+    getCandidateRecords: getCmdComparisonCandidateRecords,
     onLocatePath,
     onOpenSchemeValue,
   });

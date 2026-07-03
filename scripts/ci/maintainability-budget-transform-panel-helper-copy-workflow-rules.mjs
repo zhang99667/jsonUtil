@@ -2,6 +2,7 @@ const copyWorkflowBudget = (file, maxLines, reason) => ({ file, maxLines, reason
 
 export const transformPanelHelperCopyWorkflowMaintainabilityBudgets = [
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflow.ts', 45, '深度解析面板复制 workflow 入口应只组合报告级、占位符样本和行级 CMD 复制子模块'),
+  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowModel.ts', 70, '深度解析面板复制 workflow model 应只装配 active CMD 对比上下文、workflow 和候选记录 getter'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowStateTypes.ts', 45, '深度解析面板复制 workflow state 和质量基线契约独立维护，避免主 workflow 契约继续膨胀'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowTypes.ts', 110, '深度解析面板复制 workflow 契约只维护 effects、handler 和分组 handler 类型'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelReportCopyWorkflow.ts', 90, '深度解析报告级复制 workflow 应只组合完整报告、reportView 复制、质量基线和特殊列表复制入口'),
@@ -11,6 +12,7 @@ export const transformPanelHelperCopyWorkflowMaintainabilityBudgets = [
   copyWorkflowBudget('frontend/src/utils/transformReportPanelTemplateCopyWorkflow.ts', 120, '深度解析占位符和问题样本复制 workflow 应保持独立，避免回流主面板'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelInlineCopyWorkflow.ts', 110, '深度解析行级路径、原始值和 CMD 对比复制 workflow 应保持独立小模块'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflow.test.ts', 70, '深度解析复制 workflow 主单测应只保留 pending guard 和完整报告基础行为断言'),
+  copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowModel.test.ts', 130, '深度解析复制 workflow model 单测应覆盖 active CMD 文本注入、候选记录 getter 和全量视图回退'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowReportActions.test.ts', 75, '深度解析报告级复制动作单测应只覆盖归档、协作报告、诊断和质量快照复制行为'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowStateActions.test.ts', 70, '深度解析复制 workflow 状态动作单测应只覆盖质量基线和模板填充入口保护'),
   copyWorkflowBudget('frontend/src/utils/transformReportPanelCopyWorkflowInlineActions.test.ts', 75, '深度解析行级复制动作单测应只覆盖路径复制、CMD 差异和 CMD 对比包行为'),
