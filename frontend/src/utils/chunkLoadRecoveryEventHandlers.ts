@@ -26,26 +26,19 @@ const promptIfRecoverable = (
   promptRefreshOnce();
 };
 
+const createRecoveryHandler = <TEvent extends Event>(
+  source: ChunkLoadRecoverySource,
+  readPayload: (event: TEvent) => unknown,
+  promptRefreshOnce: () => void
+) => (event: Event) => {
+  promptIfRecoverable(event, source, readPayload(event as TEvent), promptRefreshOnce);
+};
+
 export const createChunkLoadRecoveryHandlers = (
   promptRefreshOnce: () => void
 ): ChunkLoadRecoveryHandlers => ({
-  handlePreloadError: (event: Event) => {
-    const preloadEvent = event as VitePreloadErrorEvent;
-    promptIfRecoverable(event, 'vite-preload', preloadEvent.payload, promptRefreshOnce);
-  },
-
-  handleUnhandledRejection: (event: Event) => {
-    const rejectionEvent = event as PromiseRejectionLikeEvent;
-    promptIfRecoverable(event, 'promise-rejection', rejectionEvent.reason, promptRefreshOnce);
-  },
-
-  handleGlobalError: (event: Event) => {
-    const errorEvent = event as GlobalErrorLikeEvent;
-    promptIfRecoverable(event, 'global-error', getGlobalErrorPayload(errorEvent), promptRefreshOnce);
-  },
-
-  handleManualRecovery: (event: Event) => {
-    const recoveryEvent = event as ManualChunkLoadRecoveryEvent;
-    promptIfRecoverable(event, 'manual-catch', getManualRecoveryPayload(recoveryEvent), promptRefreshOnce);
-  },
+  handlePreloadError: createRecoveryHandler<VitePreloadErrorEvent>('vite-preload', event => event.payload, promptRefreshOnce),
+  handleUnhandledRejection: createRecoveryHandler<PromiseRejectionLikeEvent>('promise-rejection', event => event.reason, promptRefreshOnce),
+  handleGlobalError: createRecoveryHandler<GlobalErrorLikeEvent>('global-error', getGlobalErrorPayload, promptRefreshOnce),
+  handleManualRecovery: createRecoveryHandler<ManualChunkLoadRecoveryEvent>('manual-catch', getManualRecoveryPayload, promptRefreshOnce),
 });
