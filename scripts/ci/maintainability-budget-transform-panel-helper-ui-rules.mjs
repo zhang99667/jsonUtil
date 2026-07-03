@@ -3,7 +3,9 @@ const panelUiBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 export const transformPanelHelperUiMaintainabilityBudgets = [
   panelUiBudget('frontend/src/utils/transformReportCopyTitles.ts', 100, '深度解析报告复制入口 title 矩阵应保持纯函数和集中测试'),
   panelUiBudget('frontend/src/utils/transformReportPanelHelpers.ts', 40, '深度解析报告 UI helper 入口应只保留兼容导出，复制指标和占位符摘要留在专用 helper'),
-  panelUiBudget('frontend/src/utils/transformReportPanelSectionModel.ts', 110, '深度解析报告 section view-model 应只组合可见性、占位符工具栏和行动项纯派生，状态与 handler wiring 留在主面板'),
+  panelUiBudget('frontend/src/utils/transformReportPanelSectionModel.ts', 75, '深度解析报告 section view-model 应只组合可见性、占位符模型和行动模型，状态与 handler wiring 留在主面板'),
+  panelUiBudget('frontend/src/utils/transformReportPanelPlaceholderModel.ts', 55, '深度解析报告占位符面板模型应只维护回填入口和工具栏状态派生'),
+  panelUiBudget('frontend/src/utils/transformReportPanelActionModel.ts', 75, '深度解析报告行动模型应只维护问题优先级、triage 和下一步动作派生'),
   panelUiBudget('frontend/src/utils/transformReportFooterSummary.ts', 60, '深度解析报告 footer 汇总文案应保持纯函数和集中测试'),
   panelUiBudget('frontend/src/utils/transformReportPlaceholderToolbarState.ts', 35, '深度解析占位符工具栏状态入口应只保留纯派生和兼容类型导出'),
   panelUiBudget('frontend/src/utils/transformReportPlaceholderToolbarStateTypes.ts', 30, '深度解析占位符工具栏状态类型契约应独立维护输入和输出结构'),
