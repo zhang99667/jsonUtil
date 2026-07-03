@@ -13,6 +13,7 @@ import {
     getNextUntitledName,
     getWorkspaceTabCloseResult,
 } from '../utils/workspaceFileTabs';
+import { getFilesWithStandaloneDraft } from '../utils/workspaceStandaloneDraftFile';
 import { applyWorkspaceSourceState } from '../utils/workspaceSourceState';
 
 interface UseFileSystemProps {
@@ -232,7 +233,15 @@ export const useFileSystem = ({
 
         if (openedFiles.length === 0) return;
 
-        const nextFiles = [...getFilesWithStandaloneDraft(files), ...openedFiles];
+        const nextFiles = [
+            ...getFilesWithStandaloneDraft({
+                files,
+                activeFileId,
+                input,
+                createId: generateUUID,
+            }),
+            ...openedFiles,
+        ];
         const activeFile = openedFiles[openedFiles.length - 1];
 
         setFiles(nextFiles);
@@ -242,25 +251,6 @@ export const useFileSystem = ({
         if (openedFiles.length > 1) {
             toast.success(`已打开 ${openedFiles.length} 个文件`, { duration: 2000 });
         }
-    };
-
-    const getFilesWithStandaloneDraft = (baseFiles: FileTab[]): FileTab[] => {
-        if (activeFileId || input.length === 0) {
-            return baseFiles;
-        }
-
-        // 无文件输入在切换到新内容前先转成未保存标签，避免用户草稿被覆盖
-        const draftFile: FileTab = {
-            id: generateUUID(),
-            name: getNextUntitledName(baseFiles),
-            content: input,
-            savedContent: '',
-            handle: undefined,
-            isDirty: true,
-            mode: TransformMode.NONE,
-        };
-
-        return [...baseFiles, draftFile];
     };
 
     // 同步输入变更到活动文件
@@ -295,7 +285,12 @@ export const useFileSystem = ({
     }, [input, activeFileId, files, isAutoSaveEnabled]);
 
     const createNewTab = () => {
-        const nextFiles = getFilesWithStandaloneDraft(files);
+        const nextFiles = getFilesWithStandaloneDraft({
+            files,
+            activeFileId,
+            input,
+            createId: generateUUID,
+        });
         const newFileId = generateUUID();
         const newFileName = getNextUntitledName(nextFiles);
 

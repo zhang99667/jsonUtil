@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.455 (2026-07-03) - 文件系统独立草稿规则拆分
+### 🏗️ 架构与基础设施
+- **文件系统 Hook 降噪**: 将无活动标签输入转未保存 Untitled 草稿的规则抽成 `workspaceStandaloneDraftFile` 纯 helper，`useFileSystem` 只保留打开文件和新建标签前的调用装配，并补充草稿跳过与生成测试
+
 ## v1.8.454 (2026-07-03) - 智能建议视图模型拆分
 ### 🏗️ 架构与基础设施
 - **工具栏智能建议降噪**: 将主动作、折叠态可访问文案、来源标签、tone 样式和展开态动作裁剪抽成 `actionPanelSmartSuggestionViewModel`，组件只保留折叠/展开渲染分支，并补充纯 helper 测试覆盖空态与来源文案
