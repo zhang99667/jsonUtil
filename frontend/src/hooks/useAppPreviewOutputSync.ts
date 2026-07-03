@@ -1,7 +1,6 @@
-import { useCallback, useEffect } from 'react';
-import { clearPreviewOutputDraft } from '../utils/appPreviewOutputDraft';
+import { useEffect } from 'react';
 import { useAppPreviewValidation } from './useAppPreviewValidation';
-import { useAppPreviewOutputSyncScheduler } from './useAppPreviewOutputSyncScheduler';
+import { useAppPreviewOutputDraftScheduler } from './useAppPreviewOutputDraftScheduler';
 import { useAppPreviewOutputChangeHandler } from './useAppPreviewOutputChangeHandler';
 import type { UseAppPreviewOutputSyncInput } from './useAppPreviewOutputSyncTypes';
 
@@ -24,12 +23,9 @@ export const useAppPreviewOutputSync = ({
     updatePreviewValidation,
   } = useAppPreviewValidation({ validateJsonMaybeAsync });
 
-  const clearOutputDraft = useCallback(() => {
-    clearPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue);
-  }, [isUpdatingFromOutput, pendingOutputValue]);
-
-  const { cancelOutputDraft, scheduleOutputSync } = useAppPreviewOutputSyncScheduler({
-    clearOutputDraft,
+  const { cancelOutputDraft, scheduleOutputSync } = useAppPreviewOutputDraftScheduler({
+    isUpdatingFromOutput,
+    pendingOutputValue,
   });
 
   useEffect(() => {

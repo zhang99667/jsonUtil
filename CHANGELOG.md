@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.446 (2026-07-03) - PREVIEW 草稿调度 Hook 拆分
+### 🏗️ 架构与基础设施
+- **PREVIEW 同步装配降噪**: 将 PREVIEW 草稿清理和同步 scheduler 装配抽成 `useAppPreviewOutputDraftScheduler`，反向同步主 hook 只保留校验状态、外部 PREVIEW 校验和输出变更 handler 组合，并把 PREVIEW 同步 hooks 预算拆成运行时/测试子表
+
 ## v1.8.445 (2026-07-03) - 通用滚动条 DOM 分支收敛
 ### 🏗️ 架构与基础设施
 - **滚动条方向读写降噪**: 将通用自定义滚动条的横纵向指标读取、指针位置选择和滚动位置写回抽成 `customScrollbarDom` helper，hook 只保留状态、监听和拖拽调度
