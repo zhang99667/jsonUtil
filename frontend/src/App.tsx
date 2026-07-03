@@ -25,6 +25,7 @@ import {
   useAppPreviewSafeModeSetter,
   useAppPreviewSafeSourceSetter,
 } from './hooks/useAppPreviewSafeSetters';
+import { useAppActiveFileModeSync } from './hooks/useAppActiveFileModeSync';
 import { useAppTransformContextPersistence } from './hooks/useAppTransformContextPersistence';
 import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import { useAppSourceValidation } from './hooks/useAppSourceValidation';
@@ -412,14 +413,11 @@ const App: React.FC = () => {
   // 功能级引导 (Hook)
   const { triggerFeatureFirstUse } = useFeatureTour();
 
-  // 同步模式变更到活动文件
-  useEffect(() => {
-    if (activeFileId) {
-      setFiles(prev => prev.map(f =>
-        f.id === activeFileId ? { ...f, mode } : f
-      ));
-    }
-  }, [mode, activeFileId]);
+  useAppActiveFileModeSync({
+    activeFileId,
+    mode,
+    onSetFiles: setFiles,
+  });
 
   const smartSuggestion = useMemo(() => getSmartInputSuggestion(input), [input]);
 
