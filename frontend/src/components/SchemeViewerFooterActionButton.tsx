@@ -1,6 +1,6 @@
 import React from 'react';
 
-type SchemeViewerFooterActionTone = 'neutral' | 'primary' | 'success' | 'warning';
+export type SchemeViewerFooterActionTone = 'neutral' | 'primary' | 'success' | 'warning';
 
 interface SchemeViewerFooterActionButtonProps {
   dataTour: string;

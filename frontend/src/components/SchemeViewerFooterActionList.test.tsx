@@ -21,9 +21,9 @@ const actionTitles: SchemeViewerActionTitles = {
   applyEdit: '应用修改',
 };
 
-const renderActionList = (
+const createActionListProps = (
   overrides: Partial<SchemeViewerFooterActionListProps> = {}
-) => SchemeViewerFooterActionList({
+): SchemeViewerFooterActionListProps => ({
   canCancelDecode: false,
   onCancelDecode: vi.fn(),
   showQRCode: false,
@@ -49,6 +49,10 @@ const renderActionList = (
   actionTitles,
   ...overrides,
 });
+
+const renderActionList = (
+  overrides: Partial<SchemeViewerFooterActionListProps> = {}
+) => SchemeViewerFooterActionList(createActionListProps(overrides));
 
 describe('SchemeViewerFooterActionList', () => {
   it('渲染常用动作并透传回调、title 和 aria', () => {
