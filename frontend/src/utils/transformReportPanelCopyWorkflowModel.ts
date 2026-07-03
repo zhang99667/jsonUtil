@@ -3,31 +3,14 @@ import {
   buildActiveCmdComparisonReportText,
   getCmdComparisonCandidateRecords,
 } from './transformReportActiveCmdComparison';
-import type { TransformReportCmdComparisonState } from './transformReportCmdComparisonController';
-import {
-  buildTransformReportPanelCopyWorkflow,
-  type TransformReportPanelCopyWorkflow,
-  type TransformReportPanelCopyWorkflowEffects,
-  type TransformReportPanelCopyWorkflowState,
-} from './transformReportPanelCopyWorkflow';
-import type { TransformReportRecord, TransformReportView } from './transformSummary';
+import { buildTransformReportPanelCopyWorkflow } from './transformReportPanelCopyWorkflow';
+import { buildTransformReportPanelActiveCmdComparisonState } from './transformReportPanelActiveCmdComparisonState';
+import type {
+  TransformReportPanelCopyWorkflowModel,
+  TransformReportPanelCopyWorkflowModelInput,
+} from './transformReportPanelCopyWorkflowModelTypes';
 
-export type TransformReportPanelCopyWorkflowModelEffects = Omit<
-  TransformReportPanelCopyWorkflowEffects,
-  'buildActiveCmdComparisonReportText' | 'buildActiveCmdComparisonCandidateText'
->;
-
-interface TransformReportPanelCopyWorkflowModelInput {
-  copyWorkflowState: TransformReportPanelCopyWorkflowState;
-  cmdComparisonState: TransformReportCmdComparisonState;
-  fullReportView: TransformReportView | null;
-  effects: TransformReportPanelCopyWorkflowModelEffects;
-}
-
-interface TransformReportPanelCopyWorkflowModel {
-  copyWorkflow: TransformReportPanelCopyWorkflow;
-  getCmdComparisonCandidateRecords: () => TransformReportRecord[];
-}
+export type { TransformReportPanelCopyWorkflowModelEffects } from './transformReportPanelCopyWorkflowModelTypes';
 
 export const buildTransformReportPanelCopyWorkflowModel = ({
   copyWorkflowState,
@@ -35,12 +18,11 @@ export const buildTransformReportPanelCopyWorkflowModel = ({
   fullReportView,
   effects,
 }: TransformReportPanelCopyWorkflowModelInput): TransformReportPanelCopyWorkflowModel => {
-  const activeCmdComparisonState = {
-    ...cmdComparisonState,
-    report: copyWorkflowState.report,
-    reportView: copyWorkflowState.reportView,
+  const activeCmdComparisonState = buildTransformReportPanelActiveCmdComparisonState({
+    copyWorkflowState,
+    cmdComparisonState,
     fullReportView,
-  };
+  });
 
   return {
     copyWorkflow: buildTransformReportPanelCopyWorkflow(copyWorkflowState, {
