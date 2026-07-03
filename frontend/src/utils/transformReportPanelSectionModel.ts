@@ -1,16 +1,16 @@
 import type { TransformContextReport, TransformReportView } from './transformSummary';
-import { buildTransformReportPlaceholderToolbarState } from './transformReportPlaceholderToolbarState';
-import type { TransformReportPlaceholderToolbarState } from './transformReportPlaceholderToolbarState';
-import { buildTransformReportSectionVisibility } from './transformReportSectionVisibility';
-import type { TransformReportSectionVisibility } from './transformReportSectionVisibility';
 import {
-  buildTransformReportIssueTriageItems,
-  buildTransformReportNextActionItems,
-} from './transformReportActionItems';
-import type {
-  TransformReportIssueTriageItem,
-  TransformReportNextActionItem,
-} from './transformReportActionItems';
+  buildTransformReportPanelPlaceholderModel,
+  type TransformReportPanelPlaceholderModel,
+} from './transformReportPanelPlaceholderModel';
+import {
+  buildTransformReportPanelActionModel,
+  type TransformReportPanelActionModel,
+} from './transformReportPanelActionModel';
+import {
+  buildTransformReportSectionVisibility,
+  type TransformReportSectionVisibility,
+} from './transformReportSectionVisibility';
 
 interface TransformReportPanelSectionModelInput {
   report: TransformContextReport | null;
@@ -24,14 +24,9 @@ interface TransformReportPanelSectionModelInput {
   qualitySnapshotTitle: string;
 }
 
-export interface TransformReportPanelSectionModel {
-  placeholderFillPanelTitle: string;
-  canOpenPlaceholderFill: boolean;
-  placeholderToolbarState: TransformReportPlaceholderToolbarState | null;
+export interface TransformReportPanelSectionModel
+  extends TransformReportPanelPlaceholderModel, TransformReportPanelActionModel {
   sectionVisibility: TransformReportSectionVisibility;
-  issuePriorityCount: number;
-  issueTriageItems: TransformReportIssueTriageItem[];
-  nextActions: TransformReportNextActionItem[];
 }
 
 export const buildTransformReportPanelSectionModel = ({
@@ -45,48 +40,27 @@ export const buildTransformReportPanelSectionModel = ({
   collaborationReportTitle,
   qualitySnapshotTitle,
 }: TransformReportPanelSectionModelInput): TransformReportPanelSectionModel => {
-  const placeholderFillPanelTitle = formatPlaceholderFillTitle('把运行时占位符回填模板填入模板填充面板');
-  const canOpenPlaceholderFill = Boolean(hasTemplateFillTarget && hasPlaceholderFillTemplate && !isFilterPending);
-  const placeholderToolbarState = reportView ? buildTransformReportPlaceholderToolbarState({
-    filteredPlaceholderCount: reportView.filteredPlaceholderCount,
-    isPlaceholderTruncated: reportView.isPlaceholderTruncated,
+  const placeholderModel = buildTransformReportPanelPlaceholderModel({
+    reportView,
+    isFilterPending,
     hasTemplateFillTarget,
     hasPlaceholderFillTemplate,
+    formatPlaceholderFillTitle,
+  });
+  const actionModel = buildTransformReportPanelActionModel({
+    report,
+    reportView,
     isFilterPending,
-    formatTemplateFillTitle: formatPlaceholderFillTitle,
-  }) : null;
-  const sectionVisibility = buildTransformReportSectionVisibility(reportView);
-  const issuePriorityCount = report
-    ? report.summary.unresolvedCount + report.summary.warningCount + report.summary.placeholderCount
-    : 0;
-  const issueTriageItems = report ? buildTransformReportIssueTriageItems({
-    warningCount: report.summary.warningCount,
-    unresolvedCount: report.summary.unresolvedCount,
-    placeholderCount: report.summary.placeholderCount,
-    canOpenPlaceholderFill,
-    placeholderFillTitle: placeholderFillPanelTitle,
-  }) : [];
-  const nextActions = buildTransformReportNextActionItems({
-    hasReport: Boolean(report),
-    hasReportView: Boolean(reportView),
-    hasFilteredCmdStructure: Boolean(reportView?.filteredCmdStructureCount),
-    hasPlaceholders: Boolean(report?.summary.placeholderCount),
-    issuePriorityCount,
-    canOpenPlaceholderFill,
-    isFilterPending,
-    placeholderFillTitle: placeholderFillPanelTitle,
+    canOpenPlaceholderFill: placeholderModel.canOpenPlaceholderFill,
+    placeholderFillTitle: placeholderModel.placeholderFillPanelTitle,
     archivePackageTitle,
     collaborationReportTitle,
     qualitySnapshotTitle,
   });
 
   return {
-    placeholderFillPanelTitle,
-    canOpenPlaceholderFill,
-    placeholderToolbarState,
-    sectionVisibility,
-    issuePriorityCount,
-    issueTriageItems,
-    nextActions,
+    ...placeholderModel,
+    ...actionModel,
+    sectionVisibility: buildTransformReportSectionVisibility(reportView),
   };
 };
