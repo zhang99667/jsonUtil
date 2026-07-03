@@ -42,8 +42,8 @@ describe('Driver tour button styles', () => {
 
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow');
     expect(focusAccentRule).toContain('box-shadow: none');
-    expect(focusAccentRule).toContain('opacity: 0.38');
-    expect(focusAccentRule).toContain('transform: translateX(0)');
+    expect(focusAccentRule).toContain('opacity: 1');
+    expect(focusAccentRule).toContain('transform: scaleX(1)');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(focusRule).not.toContain('inset 0 -2px');
@@ -62,5 +62,14 @@ describe('Driver tour button styles', () => {
     expect(focusRule).toContain('border: 0 !important');
     expect(focusRule).toContain('outline: none !important');
     expect(focusAccentRule).toContain('opacity: 0');
+  });
+
+  it('鼠标悬停引导按钮不会显示类似选中框的辅助光效', () => {
+    const hoverAccentRule = getRuleBody(
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:hover::before'
+    );
+
+    expect(hoverAccentRule).toContain('opacity: 0');
+    expect(hoverAccentRule).toContain('transform: scaleX(0.58)');
   });
 });

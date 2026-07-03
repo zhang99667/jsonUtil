@@ -33,9 +33,12 @@ describe('App button focus styles', () => {
 
   it('全局 app-button 键盘焦点不再绘制额外外框或光晕', () => {
     const focusRule = getRuleBody(appCss, '.app-button:focus-visible');
+    const focusAccentRule = getRuleBody(appCss, '.app-button:focus-visible::after');
 
     expect(focusRule).toContain('filter: brightness(1.06) saturate(1.02)');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow) !important');
+    expect(focusAccentRule).toContain('opacity: 1');
+    expect(focusAccentRule).toContain('transform: scaleX(1)');
     expect(focusRule).not.toContain('--app-focus-halo');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
@@ -67,6 +70,14 @@ describe('App button focus styles', () => {
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(appCss).not.toContain('changelog-modal__confirm-button::after');
+  });
+
+  it('鼠标点击 app-button 不会留下内部焦点细线', () => {
+    const focusRule = getRuleBody(appCss, '.app-button:focus:not(:focus-visible)');
+    const focusAccentRule = getRuleBody(appCss, '.app-button:focus:not(:focus-visible)::after');
+
+    expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow)');
+    expect(focusAccentRule).toContain('opacity: 0');
   });
 
   it('版本更新 Toast 按钮焦点不再绘制额外外框或厚底线', () => {
