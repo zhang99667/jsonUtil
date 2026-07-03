@@ -22,7 +22,6 @@ interface UseFileSystemProps {
     inputRef: React.MutableRefObject<string>;
     mode: TransformMode;
     setMode: (mode: TransformMode) => void;
-    output: string;
     onBeforeSourceWorkspaceChange?: () => void;
 }
 
@@ -52,7 +51,6 @@ export const useFileSystem = ({
     inputRef,
     mode,
     setMode,
-    output,
     onBeforeSourceWorkspaceChange,
 }: UseFileSystemProps) => {
     const [restoredDraft] = useState(() => loadWorkspaceDraftSnapshot());
@@ -475,10 +473,6 @@ export const useFileSystem = ({
         await openTextFileEntries(fileList.map(file => ({ file })));
     };
 
-    const openDroppedFile = async (file: File) => {
-        await openDroppedFiles([file]);
-    };
-
     const closeFile = (id: string) => {
         const closeResult = getWorkspaceTabCloseResult(files, id);
         if (!closeResult) return;
@@ -518,7 +512,6 @@ export const useFileSystem = ({
         setIsAutoSaveEnabled,
         createNewTab,
         openFile,
-        openDroppedFile,
         openDroppedFiles,
         saveFile,
         saveSourceAs,

@@ -46,7 +46,6 @@ const createHookInput = (events: string[], files: FileTab[], activeFileId: strin
   inputRef: { current: 'old' },
   mode: TransformMode.NONE,
   setMode: vi.fn(() => events.push('mode')),
-  output: '',
   onBeforeSourceWorkspaceChange: vi.fn(() => events.push('before')),
 });
 
