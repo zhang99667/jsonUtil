@@ -1,10 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ValidationResult } from '../types';
-import { ASYNC_VALIDATION_THRESHOLD } from '../utils/appAsyncPolicy';
-import {
-  cleanJsonInput,
-  startJsonValidation,
-} from '../utils/jsonValidation';
+import { runAppSourceValidationRequest } from '../utils/appSourceValidationRequest';
 
 interface UseAppSourceValidationInput {
   input: string;
@@ -20,22 +16,13 @@ export const useAppSourceValidation = ({
   const sourceValidationRequestIdRef = useRef(0);
 
   useEffect(() => {
-    let validationTask: ReturnType<typeof startJsonValidation> | null = null;
+    let validationTask: ReturnType<typeof runAppSourceValidationRequest> = null;
     const timeoutId = setTimeout(() => {
-      if (input && input.trim()) {
-        const cleanInput = cleanJsonInput(input);
-        const requestId = ++sourceValidationRequestIdRef.current;
-        validationTask = startJsonValidation(cleanInput, ASYNC_VALIDATION_THRESHOLD, { requireContainer: true });
-        validationTask.promise.then(result => {
-          if (requestId === sourceValidationRequestIdRef.current) {
-            onSetValidation(result);
-          }
-        });
-        return;
-      }
-
-      sourceValidationRequestIdRef.current++;
-      onSetValidation({ isValid: true });
+      validationTask = runAppSourceValidationRequest({
+        input,
+        requestIdRef: sourceValidationRequestIdRef,
+        onSetValidation,
+      });
     }, SOURCE_VALIDATION_DEBOUNCE_MS);
 
     return () => {

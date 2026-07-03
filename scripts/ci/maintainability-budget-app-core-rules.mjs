@@ -2,6 +2,7 @@ import { appFileCloseMaintainabilityBudgets } from './maintainability-budget-app
 import { appFileSystemMaintainabilityBudgets } from './maintainability-budget-app-file-system-rules.mjs';
 import { appInteractionHookMaintainabilityBudgets } from './maintainability-budget-app-interaction-hook-rules.mjs';
 import { appLayoutMaintainabilityBudgets } from './maintainability-budget-app-layout-rules.mjs';
+import { appSourceValidationMaintainabilityBudgets } from './maintainability-budget-app-source-validation-rules.mjs';
 
 export const appCoreMaintainabilityBudgets = [
   {
@@ -23,9 +24,5 @@ export const appCoreMaintainabilityBudgets = [
     reason: '主应用文件拖拽 hook 只维护拖拽计数和文件投递事件，业务处理留在调用方',
   },
   ...appFileCloseMaintainabilityBudgets,
-  {
-    file: 'frontend/src/hooks/useAppSourceValidation.ts',
-    maxLines: 55,
-    reason: '主应用 SOURCE 校验 hook 应只维护输入防抖、旧请求取消和校验结果防串写',
-  },
+  ...appSourceValidationMaintainabilityBudgets,
 ];
