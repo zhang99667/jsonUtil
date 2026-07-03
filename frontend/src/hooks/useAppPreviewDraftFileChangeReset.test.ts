@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAppPreviewDraftFileChangeReset } from './useAppPreviewDraftFileChangeReset';
+import { shouldCancelPreviewDraftOnFileChange, useAppPreviewDraftFileChangeReset } from './useAppPreviewDraftFileChangeReset';
 
 const reactMocks = vi.hoisted(() => ({
   useEffect: vi.fn(),
@@ -11,6 +11,17 @@ vi.mock('react', async importOriginal => ({
   useEffect: reactMocks.useEffect,
   useRef: reactMocks.useRef,
 }));
+
+describe('shouldCancelPreviewDraftOnFileChange', () => {
+  it.each([
+    ['file-a', 'file-a', false],
+    ['file-a', 'file-b', true],
+    [null, 'file-a', true],
+    ['file-a', null, true],
+  ])('previous=%s next=%s 时返回 %s', (previous, next, expected) => {
+    expect(shouldCancelPreviewDraftOnFileChange(previous, next)).toBe(expected);
+  });
+});
 
 describe('useAppPreviewDraftFileChangeReset', () => {
   beforeEach(() => {
@@ -27,29 +38,14 @@ describe('useAppPreviewDraftFileChangeReset', () => {
     expect(onCancelOutputDraft).not.toHaveBeenCalled();
   });
 
-  it('活动文件未变化时不重复取消 PREVIEW 草稿', () => {
+  it('活动文件变化时更新记录并取消 PREVIEW 草稿', () => {
     const lastFileRef = { current: 'file-a' };
     const onCancelOutputDraft = vi.fn();
     reactMocks.useRef.mockReturnValue(lastFileRef);
 
-    useAppPreviewDraftFileChangeReset({ activeFileId: 'file-a', onCancelOutputDraft });
+    useAppPreviewDraftFileChangeReset({ activeFileId: 'file-b', onCancelOutputDraft });
 
-    expect(onCancelOutputDraft).not.toHaveBeenCalled();
-    expect(lastFileRef.current).toBe('file-a');
-  });
-
-  it.each([
-    { previous: 'file-a', next: 'file-b' },
-    { previous: null, next: 'file-a' },
-    { previous: 'file-a', next: null },
-  ])('活动文件在 $previous 和 $next 之间变化时取消 PREVIEW 草稿', ({ previous, next }) => {
-    const lastFileRef = { current: previous };
-    const onCancelOutputDraft = vi.fn();
-    reactMocks.useRef.mockReturnValue(lastFileRef);
-
-    useAppPreviewDraftFileChangeReset({ activeFileId: next, onCancelOutputDraft });
-
-    expect(lastFileRef.current).toBe(next);
+    expect(lastFileRef.current).toBe('file-b');
     expect(onCancelOutputDraft).toHaveBeenCalledTimes(1);
   });
 });
