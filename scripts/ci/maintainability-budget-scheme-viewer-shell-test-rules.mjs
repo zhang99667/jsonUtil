@@ -7,8 +7,13 @@ const schemeViewerShellTestBudget = (file, maxLines, reason) => ({
 export const schemeViewerShellTestMaintainabilityBudgets = [
   schemeViewerShellTestBudget(
     'SchemeViewerFooterActions.test.tsx',
-    170,
-    'Scheme 弹窗底部操作栏测试只覆盖按钮显隐、禁用态和回调透传'
+    85,
+    'Scheme 弹窗底部外壳测试只覆盖状态、关闭入口和动作列表装配'
+  ),
+  schemeViewerShellTestBudget(
+    'SchemeViewerFooterActionList.test.tsx',
+    130,
+    'Scheme 弹窗底部动作列表测试只覆盖按钮显隐、禁用态、aria/title 和回调透传'
   ),
   schemeViewerShellTestBudget(
     'schemeViewerElementTestHelpers.ts',

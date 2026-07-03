@@ -14,12 +14,22 @@ export const schemeViewerShellComponentMaintainabilityBudgets = [
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerFooterActions.tsx',
-    200,
-    'Scheme 弹窗底部操作栏只负责按钮显示条件和回调透传，按钮壳、复制、二维码和应用逻辑不得回流'
+    55,
+    'Scheme 弹窗底部外壳只负责状态文字、关闭按钮和动作列表装配，动作显隐和图标不得回流'
+  ),
+  schemeViewerShellComponentBudget(
+    'SchemeViewerFooterActionList.tsx',
+    135,
+    'Scheme 弹窗底部动作列表只负责动作显隐、禁用态、tone 与 aria/title 透传'
+  ),
+  schemeViewerShellComponentBudget(
+    'SchemeViewerFooterActionIcons.tsx',
+    40,
+    'Scheme 弹窗底部动作图标只保存现有 SVG 片段，避免图标噪音撑大动作列表'
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerFooterActionButton.tsx',
-    70,
+    65,
     'Scheme 弹窗底部按钮壳只维护共享样式、图标壳、禁用态和 aria/title 透传'
   ),
   schemeViewerShellComponentBudget(
