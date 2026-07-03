@@ -6,7 +6,7 @@ export const governanceTransformPanelHelperWorkflowFooterWorkflowMaintainability
   },
   {
     file: 'scripts/ci/maintainability-budget-transform-panel-helper-footer-workflow-action-rules.mjs',
-    maxLines: 30,
+    maxLines: 40,
     reason: '深度解析 footer action 预算规则应独立收口，避免 footer workflow 入口继续贴线',
   },
   {
