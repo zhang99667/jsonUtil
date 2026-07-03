@@ -29,8 +29,7 @@ import {
   useAppSourceReplacementCommands,
   type AppSmartSuggestionOrigin,
 } from './hooks/useAppSourceReplacementCommands';
-import { useLayout } from './hooks/useLayout';
-import { getPaneKeyboardResizePercent, getSidebarKeyboardResizeWidth } from './hooks/layoutKeyboardResize';
+import { useAppLayoutController } from './hooks/useAppLayoutController';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import { AppConfirmDialogs } from './components/AppConfirmDialogs';
@@ -90,28 +89,13 @@ const App: React.FC = () => {
   // 界面布局状态 (Hook) - 移到前面避免依赖问题
   const appRef = useRef<HTMLDivElement>(null);
   const {
-    sidebarWidth, setSidebarWidth,
+    sidebarWidth,
     isSidebarCollapsed, setIsSidebarCollapsed,
-    leftPaneWidthPercent, setLeftPaneWidthPercent,
+    leftPaneWidthPercent,
     isResizingSidebar, isResizingPane,
-    startResizingSidebar, startResizingPane
-  } = useLayout(appRef);
-
-  const handleSidebarResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    const nextWidth = getSidebarKeyboardResizeWidth(sidebarWidth, event.key, event.shiftKey);
-    if (nextWidth === null) return;
-
-    event.preventDefault();
-    setSidebarWidth(nextWidth);
-  }, [setSidebarWidth, sidebarWidth]);
-
-  const handlePaneResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    const nextPercent = getPaneKeyboardResizePercent(leftPaneWidthPercent, event.key, event.shiftKey);
-    if (nextPercent === null) return;
-
-    event.preventDefault();
-    setLeftPaneWidthPercent(nextPercent);
-  }, [leftPaneWidthPercent, setLeftPaneWidthPercent]);
+    startResizingSidebar, startResizingPane,
+    handleSidebarResizeKeyDown, handlePaneResizeKeyDown
+  } = useAppLayoutController(appRef);
 
   // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
   const {

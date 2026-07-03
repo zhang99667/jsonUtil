@@ -1,20 +1,17 @@
 import { appFileCloseMaintainabilityBudgets } from './maintainability-budget-app-file-close-rules.mjs';
+import { appLayoutMaintainabilityBudgets } from './maintainability-budget-app-layout-rules.mjs';
 
 export const appCoreMaintainabilityBudgets = [
   {
     file: 'frontend/src/App.tsx',
-    maxLines: 980,
-    reason: '主应用编排文件应只负责顶层状态和组件装配，PREVIEW 同步、SOURCE 校验、模板填充、工具面板命令、文件关闭保护、懒加载 loaded 状态和派生状态不得回流',
+    maxLines: 960,
+    reason: '主应用编排文件应只负责顶层状态和组件装配，PREVIEW 同步、SOURCE 校验、模板填充、工具面板命令、文件关闭保护、布局键盘控制、懒加载 loaded 状态和派生状态不得回流',
   },
+  ...appLayoutMaintainabilityBudgets,
   {
     file: 'frontend/src/hooks/useAppAsyncTransform.ts',
     maxLines: 145,
     reason: '主应用异步转换 hook 应只保留 Worker/Promise 编排，纯状态决策继续放在 utils',
-  },
-  {
-    file: 'frontend/src/hooks/layoutKeyboardResize.ts',
-    maxLines: 80,
-    reason: '布局键盘调整 helper 应保持纯计算，避免夹带组件状态',
   },
   {
     file: 'frontend/src/hooks/useAppFileDrop.ts',
