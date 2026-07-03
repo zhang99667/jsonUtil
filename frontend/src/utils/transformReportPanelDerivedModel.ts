@@ -1,8 +1,8 @@
 import {
-  buildTransformReportCopyTitles,
   getTransformPlaceholderFillTemplateTitle,
   type TransformReportCopyTitles,
 } from './transformReportCopyTitles';
+import { buildTransformReportPanelCopyTitles } from './transformReportPanelCopyTitleState';
 import {
   buildTransformReportPanelCopyAvailability,
   buildTransformReportPanelIssueCopyTexts,
@@ -62,19 +62,13 @@ export const buildTransformReportPanelDerivedModel = ({
     qualityBaseline
   );
   const hasReportView = Boolean(reportView);
-  const copyTitles = buildTransformReportCopyTitles({
+  const copyTitles = buildTransformReportPanelCopyTitles({
     hasReportView,
     isFilterPending,
-    hasFilteredReport: hasReportView,
-    hasQualityBaselineDeltaText: Boolean(qualityState.qualityBaselineDeltaText),
-    hasPathValueCopyItems: copyAvailability.hasPathValueCopyItems,
-    hasCmdStructureCopyItems: copyAvailability.hasCmdStructureCopyItems,
-    hasFocusedCmdStructureCopyItems: copyAvailability.hasFocusedCmdStructureCopyItems,
-    hasIssueSampleCopyText: Boolean(issueCopyTexts.issueSampleCopyText),
-    hasIssueSampleJsonCopyText: Boolean(issueCopyTexts.issueSampleJsonCopyText),
-    hasRedactedIssueSampleJsonCopyText: Boolean(issueCopyTexts.redactedIssueSampleJsonCopyText),
-    hasIssueRegressionTemplateCopyText: Boolean(issueCopyTexts.issueRegressionTemplateCopyText),
     hasActiveContext,
+    copyAvailability,
+    issueCopyTexts,
+    qualityState,
   });
   const getPanelPlaceholderFillTemplateTitle = (readyTitle: string): string => (
     getTransformPlaceholderFillTemplateTitle(
