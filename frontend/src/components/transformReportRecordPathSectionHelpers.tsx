@@ -1,4 +1,3 @@
-import React from 'react';
 import type { TransformReportDecodedPath } from '../utils/transformSummary';
 import type { TransformReportRecordPathActions } from './TransformReportRecordSectionContracts';
 import type { TransformReportRecordPathRowsProps } from './TransformReportRecordPathRows';
@@ -47,20 +46,3 @@ export const buildStyledPathSectionProps = (
   ...pathSectionStyles[style],
   ...(includeSchemeAction ? callbacks : pickCopyLocateActions(callbacks)),
 });
-
-export const buildIndexedMoreContent = (
-  shouldShow: boolean,
-  leadContent: React.ReactNode,
-  indexedCount: number,
-  visibleCount: number,
-  indexedSuffix: string
-): React.ReactNode => {
-  if (!shouldShow) return undefined;
-
-  return (
-    <>
-      {leadContent}
-      {indexedCount > visibleCount && <span>，已索引 {indexedCount} {indexedSuffix}</span>}
-    </>
-  );
-};

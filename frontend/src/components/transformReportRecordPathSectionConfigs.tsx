@@ -2,8 +2,8 @@ import React from 'react';
 import type { TransformReportRecord } from '../utils/transformSummary';
 import { formatDecodedPathCount } from './TransformReportPanelAtoms';
 import type { TransformReportRecordPathActions } from './TransformReportRecordSectionContracts';
+import { buildIndexedMoreContent } from './transformReportRecordPathMoreContent';
 import {
-  buildIndexedMoreContent,
   buildStyledPathSectionProps,
 } from './transformReportRecordPathSectionHelpers';
 import type { TransformReportRecordPathRowsProps } from './TransformReportRecordPathRows';
