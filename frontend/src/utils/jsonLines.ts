@@ -1,4 +1,5 @@
 import type { JsonValue } from '../types';
+import { formatUnknownError } from './errors';
 
 const JSON_LINE_PREFIX_RE = /^[{\["tfn\-\d]/;
 const JSON_LINE_STRUCTURAL_FRAGMENT_RE = /^(?:[\[{]|[\]}],?)$/;
@@ -38,7 +39,7 @@ export const parseJsonLinesDetailed = (input: string): JsonLinesDiagnostic => {
         columnOffset: line.search(/\S/),
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatUnknownError(error);
       return {
         records: null,
         error: `JSON Lines 第 ${lineIndex + 1} 行解析错误: ${message}`,

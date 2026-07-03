@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.396 (2026-07-03) - 前端错误消息格式收敛
+### 🏗️ 架构与基础设施
+- **错误格式复用扩展**: 将 AI 修复、JSONPath、JSON Lines、Schema、结构树和语义对比等模块的等价异常消息提取逻辑统一复用 `formatUnknownError`，减少重复 catch 分支并保持原始错误文案语义
+
 ## v1.8.395 (2026-07-03) - Worker 错误消息格式收敛
 ### 🏗️ 架构与基础设施
 - **Worker 错误格式复用**: 新增 `formatUnknownError` 保留底层异常原文语义，并统一 JSONPath、JSON Tree、Scheme 扫描、Scheme 解码和转换 worker 的错误回包格式，减少重复 catch 分支表达式

@@ -3,6 +3,7 @@ import {
   diffCmdStructures,
   parseCmdStructureJson,
 } from './cmdStructureDiff';
+import { formatUnknownError } from './errors';
 import {
   assertRecognizableCmdComparisonExpected,
 } from './transformReportCmdComparisonHelpers';
@@ -106,7 +107,7 @@ export const buildCmdComparisonPanelState = (
     return {
       diffReportText: '',
       diffSummary: null,
-      errorText: error instanceof Error ? error.message : String(error),
+      errorText: formatUnknownError(error),
       candidateRecommendations: [],
     };
   }

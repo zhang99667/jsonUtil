@@ -1,4 +1,5 @@
 import type { JsonObject, JsonValue } from '../types';
+import { formatUnknownError } from './errors';
 import { parseJsonLines } from './jsonLines';
 import { encodeJsonPointerSegment } from './jsonPointer';
 
@@ -90,7 +91,7 @@ export const parseJsonForSemanticDiff = (source: string): JsonValue => {
     const jsonLines = parseJsonLines(source);
     if (jsonLines) return jsonLines;
 
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatUnknownError(error);
     throw new Error(`JSON 解析失败: ${message}`);
   }
 };

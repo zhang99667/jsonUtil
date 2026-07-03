@@ -2,6 +2,7 @@ import Ajv, { type AnySchema, type ErrorObject } from 'ajv';
 import Ajv2019 from 'ajv/dist/2019';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
+import { formatUnknownError } from './errors';
 import { isLikelyJsonLinesInput, parseJsonLinesDetailed } from './jsonLines';
 
 export type JsonSchemaValidationStatus = 'empty' | 'valid' | 'invalid' | 'input-error' | 'schema-error';
@@ -47,7 +48,7 @@ const parseJson = (
   try {
     return { value: JSON.parse(value), sourceKind: 'json' };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatUnknownError(error);
 
     if (options.allowJsonLines && isLikelyJsonLinesInput(value)) {
       const jsonLines = parseJsonLinesDetailed(value);
@@ -342,7 +343,7 @@ export const validateJsonAgainstSchema = (
       issuePathList: getIssuePathList(allIssues),
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatUnknownError(error);
     return {
       status: 'schema-error',
       isValid: false,

@@ -14,6 +14,7 @@ import {
 } from '../types.ts';
 import type { DecodeLayer, SchemeParamDecodeStage, SchemePlaceholder, SchemeType } from './schemeTypes.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
+import { formatUnknownError } from './errors.ts';
 import { formatHarSourceLabel, trimSourceLabel, HAR_SOURCE_LABEL_PREFIX } from './sourceLabels.ts';
 
 import {
@@ -278,7 +279,7 @@ export const validateJson = (input: string): ValidationResult => {
     if (jsonLines.records) return { isValid: true };
     if (jsonLines.error) return { isValid: false, error: jsonLines.error };
 
-    const message = e instanceof Error ? e.message : String(e);
+    const message = formatUnknownError(e);
     return { isValid: false, error: message };
   }
 };
