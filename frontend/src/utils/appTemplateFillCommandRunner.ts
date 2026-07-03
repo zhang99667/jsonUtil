@@ -12,7 +12,7 @@ interface AppTemplateFillCommandInput {
   autoExpandScheme: boolean;
 }
 
-interface AppTemplateFillCommandEffects {
+export interface AppTemplateFillCommandEffects {
   getCurrentSourceText: () => string;
   setCurrentSourceText: (value: string) => void;
   loadSummaryModule: () => Promise<AppTemplateFillQualitySummaryModule>;

@@ -1,18 +1,17 @@
-import { useCallback, useMemo, type MutableRefObject } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { ValidationResult } from '../types';
-import { showError, showSuccess } from '../utils/toast';
+import {
+  createAppTemplateFillCommandEffects,
+  type AppTemplateFillCommandEffectsInput,
+} from '../utils/appTemplateFillCommandEffects';
 import { getAppTemplateFillTargetError } from '../utils/appTemplateFillTargetError';
 import { runAppTemplateFillCommand } from '../utils/appTemplateFillCommandRunner';
 
-interface UseAppTemplateFillCommandInput {
+interface UseAppTemplateFillCommandInput extends AppTemplateFillCommandEffectsInput {
   sourceText: string;
-  inputRef: MutableRefObject<string>;
   autoExpandScheme: boolean;
   validation: ValidationResult;
   isTemplatePanelOpen: boolean;
-  onSetSourceText: (value: string) => void;
-  onUpdateActiveFileContent: (value: string) => void;
-  onSetTemplateApplyQualityDelta: (value: string) => void;
 }
 
 export const useAppTemplateFillCommand = ({
@@ -31,17 +30,11 @@ export const useAppTemplateFillCommand = ({
     validation,
   }), [isTemplatePanelOpen, sourceText, validation]);
 
-  const templateFillEffects = useMemo(() => ({
-    getCurrentSourceText: () => inputRef.current,
-    setCurrentSourceText: (value: string) => {
-      inputRef.current = value;
-    },
-    loadSummaryModule: () => import('../utils/transformSummary'),
+  const templateFillEffects = useMemo(() => createAppTemplateFillCommandEffects({
+    inputRef,
     onSetSourceText,
     onUpdateActiveFileContent,
     onSetTemplateApplyQualityDelta,
-    onShowError: showError,
-    onShowSuccess: showSuccess,
   }), [
     inputRef,
     onSetSourceText,
