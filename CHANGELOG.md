@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.409 (2026-07-03) - Scheme 诊断 helper 职责拆分
+### 🏗️ 架构与基础设施
+- **诊断 helper 降压**: 将 Scheme 弹窗诊断 helper 拆成参数来源、摘要 chips 和详情可见性三个纯函数模块，旧入口保留 re-export 兼容，并同步收紧各模块维护预算
+
 ## v1.8.408 (2026-07-03) - Scheme 测试遍历 helper 收敛
 ### 🏗️ 架构与基础设施
 - **测试 helper 复用**: 将 Scheme Footer 测试里用于渲染无 Hook 函数组件的文本收集和 `data-tour` 查找能力收敛到共享 React element 测试 helper，删除本地重复遍历逻辑，降低后续组件抽取时的测试维护成本
