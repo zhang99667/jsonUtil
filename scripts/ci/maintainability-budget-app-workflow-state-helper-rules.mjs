@@ -9,4 +9,6 @@ export const appWorkflowStateHelperMaintainabilityBudgets = [
   { file: 'frontend/src/utils/appTransformOutput.test.ts', maxLines: 160, reason: 'App 转换输出派生测试只锁定 deep format、异步占位和 PREVIEW 暂存优先级' },
   { file: 'frontend/src/hooks/useAppLazyPanelLoadState.ts', maxLines: 60, reason: '懒加载面板 loaded hook 只装配 open 状态、粘性合并和依赖列表' },
   { file: 'frontend/src/hooks/useAppLazyPanelLoadState.test.ts', maxLines: 90, reason: '懒加载面板 loaded hook 测试只锁定默认初始化、打开后加载和关闭后粘性保留' },
+  { file: 'frontend/src/hooks/useAppSettingsState.ts', maxLines: 50, reason: 'App 设置状态 hook 只维护通用设置和 AI 设置的加载与本地持久化' },
+  { file: 'frontend/src/hooks/useAppSettingsState.test.ts', maxLines: 85, reason: 'App 设置状态测试只锁定设置加载、返回状态和本地持久化 key' },
 ];
