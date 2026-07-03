@@ -53,54 +53,23 @@ const renderFooter = (
 });
 
 describe('SchemeViewerFooterActions', () => {
-  it('渲染基础状态和常用操作，并透传点击回调', () => {
-    const onToggleQRCode = vi.fn();
-    const onCopyOriginal = vi.fn();
-    const tree = renderFooter({ onToggleQRCode, onCopyOriginal });
-    const text = collectRenderedText(tree);
+  it('渲染解码状态、关闭入口和动作列表', () => {
+    const tree = renderFooter();
 
-    expect(text).toContain('2 层解码');
-    expect(text).toContain('二维码');
-    expect(text).toContain('复制原始值');
-    expect(text).toContain('复制解码结果');
-
-    const qrCodeButton = findRenderedByTour(tree, 'scheme-qrcode-button')[0];
-    expect(qrCodeButton.props.disabled).toBe(false);
-    clickElement(qrCodeButton);
-    clickElement(findRenderedByTour(tree, 'scheme-copy-original')[0]);
-
-    expect(onToggleQRCode).toHaveBeenCalledTimes(1);
-    expect(onCopyOriginal).toHaveBeenCalledTimes(1);
+    expect(collectRenderedText(tree)).toContain('2 层解码');
+    expect(collectRenderedText(tree)).toContain('关闭');
+    expect(findRenderedByTour(tree, 'scheme-footer-actions')).toHaveLength(1);
+    expect(findRenderedByTour(tree, 'scheme-qrcode-button')).toHaveLength(1);
   });
 
-  it('按能力展示可选操作', () => {
-    const tree = renderFooter({
-      canCancelDecode: true,
-      hasCommandSummary: true,
-      canCopyCmdStructure: true,
-      isJsonResult: true,
-      canCopyPathValues: true,
-      isStandalone: true,
-      hasDecodeLayers: true,
-      canCopySerializedContent: true,
-      canShowApplyEdit: true,
-      canApplyEdit: true,
-    });
+  it('关闭按钮保留独立回调和可访问提示', () => {
+    const onClose = vi.fn();
+    const tree = renderFooter({ onClose });
+    const closeButton = findRenderedByTour(tree, 'scheme-close-button')[0];
 
-    expect(findRenderedByTour(tree, 'scheme-cancel-decode')).toHaveLength(1);
-    expect(findRenderedByTour(tree, 'scheme-copy-cmd-structure')).toHaveLength(1);
-    expect(findRenderedByTour(tree, 'scheme-copy-path-values')).toHaveLength(1);
-    expect(findRenderedByTour(tree, 'scheme-copy-serialized')).toHaveLength(1);
-    expect(findRenderedByTour(tree, 'scheme-apply-edit')).toHaveLength(1);
-  });
-
-  it('禁用不可用的二维码和解码复制操作', () => {
-    const tree = renderFooter({
-      canShowQRCode: false,
-      canCopyDecoded: false,
-    });
-
-    expect(findRenderedByTour(tree, 'scheme-qrcode-button')[0].props.disabled).toBe(true);
-    expect(findRenderedByTour(tree, 'scheme-copy-decoded')[0].props.disabled).toBe(true);
+    expect(closeButton.props.title).toBe('关闭 Scheme 解析');
+    expect(closeButton.props['aria-label']).toBe('关闭 Scheme 解析');
+    clickElement(closeButton);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

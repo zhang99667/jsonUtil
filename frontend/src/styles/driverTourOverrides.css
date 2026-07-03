@@ -25,7 +25,6 @@
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button {
   all: unset;
-  --driver-button-focus-accent: rgba(203, 213, 225, 0.46);
   --app-button-rest-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
 
   align-items: center !important;
@@ -42,25 +41,10 @@
   justify-content: center !important;
   line-height: 1.2 !important;
   outline: none !important;
-  overflow: hidden !important;
   padding: 7px 11px !important;
   position: relative !important;
   text-shadow: none !important;
   transition: background-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease, filter 0.16s ease, transform 0.16s ease !important;
-}
-
-:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button::before {
-  background: linear-gradient(90deg, transparent, var(--driver-button-focus-accent), transparent);
-  border-radius: inherit;
-  content: '';
-  height: 1px;
-  inset: auto 12px 3px 12px;
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  transform: scaleX(0.58);
-  transform-origin: center;
-  transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible) {
@@ -69,37 +53,21 @@
   outline: none !important;
 }
 
-:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible)::before {
-  opacity: 0;
-}
-
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:hover {
   background: rgba(255, 255, 255, 0.085) !important;
   border-color: transparent !important;
   color: #ffffff !important;
 }
 
-:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:hover::before {
-  opacity: 0;
-  transform: scaleX(0.58);
-}
-
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible {
-  background: rgba(255, 255, 255, 0.085) !important;
+  background: rgba(255, 255, 255, 0.095) !important;
   box-shadow: var(--app-button-rest-shadow, 0 0 0 0 transparent) !important;
   color: #ffffff !important;
   filter: brightness(1.025) !important;
   outline: none !important;
 }
 
-:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible::before {
-  box-shadow: none;
-  opacity: 1;
-  transform: scaleX(1);
-}
-
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn {
-  --driver-button-focus-accent: rgba(226, 232, 240, 0.5);
   --app-button-rest-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 -1px 0 rgba(0, 0, 0, 0.18),

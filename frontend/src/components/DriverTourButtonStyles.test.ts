@@ -32,31 +32,22 @@ describe('Driver tour button styles', () => {
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
   });
 
-  it('引导按钮键盘焦点只保留内侧细光，不再绘制外框', () => {
+  it('引导按钮键盘焦点只靠填充反馈，不再绘制外框或内侧线条', () => {
     const buttonRule = getRuleBody(
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button'
-    );
-    const accentBaseRule = getRuleBody(
-      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button::before'
     );
     const focusRule = getRuleBody(
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible'
     );
-    const focusAccentRule = getRuleBody(
-      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible::before'
-    );
 
-    expect(buttonRule).toContain('--driver-button-focus-accent: rgba(203, 213, 225, 0.46)');
-    expect(accentBaseRule).toContain('height: 1px');
+    expect(buttonRule).not.toContain('--driver-button-focus-accent');
+    expect(focusRule).toContain('background: rgba(255, 255, 255, 0.095) !important');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow');
-    expect(focusAccentRule).toContain('box-shadow: none');
-    expect(focusAccentRule).toContain('opacity: 1');
-    expect(focusAccentRule).toContain('transform: scaleX(1)');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(focusRule).not.toContain('inset 0 -2px');
-    expect(focusAccentRule).not.toContain('inset 0 0 0 1px');
     expect(css).not.toContain('rgba(94, 234, 212');
+    expect(css).not.toContain('driver-popover-footer button::before');
     expect(css).not.toContain('driver-popover-next-btn::after');
   });
 
@@ -64,21 +55,10 @@ describe('Driver tour button styles', () => {
     const focusRule = getRuleBody(
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible)'
     );
-    const focusAccentRule = getRuleBody(
-      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible)::before'
-    );
 
     expect(focusRule).toContain('border: 0 !important');
     expect(focusRule).toContain('outline: none !important');
-    expect(focusAccentRule).toContain('opacity: 0');
-  });
-
-  it('鼠标悬停引导按钮不会显示类似选中框的辅助光效', () => {
-    const hoverAccentRule = getRuleBody(
-      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:hover::before'
-    );
-
-    expect(hoverAccentRule).toContain('opacity: 0');
-    expect(hoverAccentRule).toContain('transform: scaleX(0.58)');
+    expect(css).not.toContain('focus:not(:focus-visible)::before');
+    expect(css).not.toContain('button:hover::before');
   });
 });
