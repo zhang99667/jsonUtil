@@ -10,5 +10,7 @@ export const governanceAppWorkflowStateMaintainabilityBudgets = [
   stateGovernanceBudget('scripts/ci/maintainability-budget-app-workflow-state-preview-sync-hooks-rules.mjs', 15, 'App PREVIEW 同步 hooks 预算入口应只组合运行时和测试子表'),
   stateGovernanceBudget('scripts/ci/maintainability-budget-app-workflow-state-preview-sync-hooks-runtime-rules.mjs', 15, 'App PREVIEW 同步 hooks 运行时预算规则应维护 hook 与 scheduler 预算'),
   stateGovernanceBudget('scripts/ci/maintainability-budget-app-workflow-state-preview-sync-hooks-test-rules.mjs', 20, 'App PREVIEW 同步 hooks 测试预算规则应维护行为测试与夹具预算'),
-  stateGovernanceBudget('scripts/ci/maintainability-budget-app-workflow-state-preview-sync-utils-rules.mjs', 20, 'App PREVIEW 同步 utils 预算规则应维护 request、task、runner 和 result helper 预算'),
+  stateGovernanceBudget('scripts/ci/maintainability-budget-app-workflow-state-preview-sync-utils-rules.mjs', 15, 'App PREVIEW 同步 utils 预算入口应只组合运行时和测试子表'),
+  stateGovernanceBudget('scripts/ci/maintainability-budget-app-workflow-state-preview-sync-utils-runtime-rules.mjs', 15, 'App PREVIEW 同步 utils 运行时预算规则应维护 request、task、runner 和 result helper 预算'),
+  stateGovernanceBudget('scripts/ci/maintainability-budget-app-workflow-state-preview-sync-utils-test-rules.mjs', 15, 'App PREVIEW 同步 utils 测试预算规则应维护 request、task、runner 和 result 测试预算'),
 ];
