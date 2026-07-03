@@ -25,6 +25,7 @@ describe('App button focus styles', () => {
 
     expect(focusRule).toContain('--tw-ring-offset-shadow: 0 0 #0000 !important');
     expect(focusRule).toContain('--tw-ring-shadow: 0 0 #0000 !important');
+    expect(focusRule).toContain('--tw-ring-color: transparent !important');
     expect(focusRule).toContain('filter: brightness(1.05) saturate(1.02)');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow, none) !important');
     expect(focusRule).not.toContain('focus-visible:ring');
@@ -50,10 +51,14 @@ describe('App button focus styles', () => {
     const buttonRule = getRuleBody(appCss, '.app-button--primary');
     const toastButtonRule = getRuleBody(releaseToastCss, '.app-release-toast__button--primary');
 
-    expect(buttonRule).toContain('rgba(55, 69, 88, 0.98)');
+    expect(buttonRule).toContain('rgba(48, 57, 70, 0.98)');
+    expect(buttonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
+    expect(buttonRule).not.toContain('0 8px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
-    expect(toastButtonRule).toContain('rgba(55, 69, 88, 0.98)');
+    expect(toastButtonRule).toContain('rgba(48, 57, 70, 0.98)');
+    expect(toastButtonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
+    expect(toastButtonRule).not.toContain('0 8px');
     expect(toastButtonRule).not.toContain('#1487c9');
     expect(toastButtonRule).not.toContain('rgba(0, 122, 204');
   });
@@ -64,10 +69,13 @@ describe('App button focus styles', () => {
 
     expect(buttonRule).toContain('border-radius: 7px');
     expect(buttonRule).toContain('min-width: 76px');
-    expect(buttonRule).toContain('rgba(52, 63, 78, 0.98)');
+    expect(buttonRule).toContain('rgba(45, 54, 66, 0.98)');
+    expect(buttonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.24)');
     expect(buttonRule).not.toContain('999px');
+    expect(buttonRule).not.toContain('0 10px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
+    expect(focusRule).toContain('--tw-ring-color: transparent !important');
     expect(focusRule).toContain('filter: brightness(1.04)');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow) !important');
     expect(focusRule).not.toContain('0 0 18px');
@@ -86,6 +94,7 @@ describe('App button focus styles', () => {
     const focusRule = getRuleBody(releaseToastCss, '.app-release-toast__button:focus-visible');
 
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow)');
+    expect(focusRule).toContain('--tw-ring-color: transparent !important');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 -2px');
   });
