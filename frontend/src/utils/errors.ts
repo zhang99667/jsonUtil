@@ -29,6 +29,13 @@ export const getErrorMessage = (
 };
 
 /**
+ * 保留底层错误原文，适合 worker 或日志通道直接回传异常信息。
+ */
+export const formatUnknownError = (error: unknown): string => (
+  error instanceof Error ? error.message : String(error)
+);
+
+/**
  * 将操作上下文和底层错误原因组合成更可操作的提示。
  */
 export const getDetailedErrorMessage = (

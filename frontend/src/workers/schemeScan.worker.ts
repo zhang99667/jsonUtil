@@ -1,3 +1,4 @@
+import { formatUnknownError } from '../utils/errors';
 import { scanSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
 
 interface SchemeScanWorkerRequest {
@@ -31,7 +32,7 @@ self.onmessage = (event: MessageEvent<SchemeScanWorkerRequest>) => {
       locations: [],
       isLimited: false,
       limit: 0,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatUnknownError(error),
     };
     self.postMessage(response);
   }

@@ -3,6 +3,7 @@ import {
   type BuildJsonTreeModelOptions,
   type JsonTreeModel,
 } from '../utils/jsonTreeModel';
+import { formatUnknownError } from '../utils/errors';
 
 interface JsonTreeWorkerRequest {
   id: number;
@@ -29,7 +30,7 @@ self.onmessage = (event: MessageEvent<JsonTreeWorkerRequest>) => {
     const response: JsonTreeWorkerResponse = {
       id,
       model: null,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatUnknownError(error),
     };
     self.postMessage(response);
   }

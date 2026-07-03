@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.395 (2026-07-03) - Worker 错误消息格式收敛
+### 🏗️ 架构与基础设施
+- **Worker 错误格式复用**: 新增 `formatUnknownError` 保留底层异常原文语义，并统一 JSONPath、JSON Tree、Scheme 扫描、Scheme 解码和转换 worker 的错误回包格式，减少重复 catch 分支表达式
+
 ## v1.8.394 (2026-07-03) - Chunk 恢复事件处理收敛
 ### 🏗️ 架构与基础设施
 - **Chunk 恢复 Handler 收敛**: 将 Vite preload、Promise rejection、全局 error 和手动 catch 的恢复事件处理统一到共享 handler 工厂，减少重复分支并补充 payload 读取回归测试，保护旧 chunk 加载失败时的刷新提示链路

@@ -1,3 +1,4 @@
+import { formatUnknownError } from '../utils/errors';
 import { deepDecodeScheme } from '../utils/schemeUtils';
 import type { SchemeDecodeResult } from '../utils/schemeTypes';
 import {
@@ -33,7 +34,7 @@ self.onmessage = (event: MessageEvent<SchemeDecodeWorkerRequest>) => {
   } catch (error) {
     const response: SchemeDecodeWorkerResponse = {
       id,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatUnknownError(error),
     };
     self.postMessage(response);
   }
