@@ -8,5 +8,7 @@ export const infraStaticRetentionMaintainabilityBudgets = [
   staticRetentionBudget('scripts/ci/frontendStaticRetentionComposeRules.mjs', 25, '静态资源保留 Compose 规则表应只维护环境变量和 volume 片段'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionDeployRules.mjs', 45, '静态资源保留部署规则表应只维护旧资源备份、恢复和公网巡检片段'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionWorkflowRules.mjs', 40, '静态资源保留 workflow 规则表应只维护 CI 和发布复查片段'),
-  staticRetentionBudget('scripts/ci/frontendStaticRetentionScenario.mjs', 95, '静态资源保留场景应只维护临时发布 fixture、入口执行和产物断言'),
+  staticRetentionBudget('scripts/ci/frontendStaticRetentionFixture.mjs', 45, '静态资源保留 fixture 应只维护当前产物、近期旧 hash 和过期旧 hash 的临时目录构造'),
+  staticRetentionBudget('scripts/ci/frontendStaticRetentionOutputAssertions.mjs', 35, '静态资源保留输出断言应只维护必要产物存在性和过期旧 hash 清理检查'),
+  staticRetentionBudget('scripts/ci/frontendStaticRetentionScenario.mjs', 55, '静态资源保留场景应只维护临时目录生命周期、入口执行和失败聚合'),
 ];
