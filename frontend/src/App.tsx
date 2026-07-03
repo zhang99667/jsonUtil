@@ -19,6 +19,7 @@ import { useAppSaveCommands } from './hooks/useAppSaveCommands';
 import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
+import { useAppToolTelemetry } from './hooks/useAppToolTelemetry';
 import {
   useAppPreviewSafeModeSetter,
   useAppPreviewSafeSourceSetter,
@@ -51,12 +52,6 @@ import {
   startJsonValidation,
 } from './utils/jsonValidation';
 import { initGoogleAnalytics } from './utils/analytics';
-import {
-  getDurationBucket,
-  getTextSizeBucket,
-  trackToolEvent,
-  type ToolEventStatus,
-} from './utils/productTelemetry';
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFeedback';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
@@ -290,21 +285,7 @@ const App: React.FC = () => {
     });
   }, []);
 
-  const trackCurrentToolEvent = useCallback((
-    eventName: string,
-    category: string,
-    status: ToolEventStatus = 'success',
-    startedAt?: number
-  ) => {
-    const durationMs = typeof startedAt === 'number' ? performance.now() - startedAt : 0;
-    trackToolEvent({
-      eventName,
-      category,
-      status,
-      inputSizeBucket: getTextSizeBucket(inputRef.current),
-      durationBucket: getDurationBucket(durationMs),
-    });
-  }, []);
+  const trackCurrentToolEvent = useAppToolTelemetry({ inputRef });
 
   const {
     changelogHighlightedVersion,
