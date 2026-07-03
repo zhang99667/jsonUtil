@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.458 (2026-07-03) - 主动作命令 Hook 拆分
+### 🏗️ 架构与基础设施
+- **App 主动作分发降噪**: 将 AI 修复、保存、打开文件和新建标签的顶层动作路由抽成 `useAppPrimaryActionCommand` 与 `runAppPrimaryActionCommand`，`App.tsx` 只保留命令装配，并补充 hook 测试固定动作分发和文件动作埋点语义
+
 ## v1.8.457 (2026-07-03) - 访客统计 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App 启动副作用降噪**: 将前台访问统计里的 GA 初始化、`/api/visitor/ping` 上报和失败静默处理抽成 `useAppVisitorTracking`，`App.tsx` 只保留启动 hook 装配，并补充 hook 测试固定 GA 参数、ping 地址和失败静默行为

@@ -29,6 +29,7 @@ import { useAppTransformContextPersistence } from './hooks/useAppTransformContex
 import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import { useAppSourceValidation } from './hooks/useAppSourceValidation';
 import { useAppTemplateFillCommand } from './hooks/useAppTemplateFillCommand';
+import { useAppPrimaryActionCommand } from './hooks/useAppPrimaryActionCommand';
 import { useAppSourceInputCommands } from './hooks/useAppSourceInputCommands';
 import { useAppToolPanelCommands } from './hooks/useAppToolPanelCommands';
 import {
@@ -517,32 +518,13 @@ const App: React.FC = () => {
     onSetTemplateApplyQualityDelta: setTemplateApplyQualityDelta,
   });
 
-  const handleAction = useCallback(async (action: ActionType) => {
-    if (action === ActionType.AI_FIX) {
-      await handleAiRepair();
-      return;
-    }
-
-    if (action === ActionType.SAVE) {
-      await handleToolbarSave();
-      return;
-    }
-
-    const startedAt = performance.now();
-    if (action === ActionType.OPEN) {
-      await openFile();
-      trackCurrentToolEvent(action, 'file', 'success', startedAt);
-    } else if (action === ActionType.NEW_TAB) {
-      createNewTab();
-      trackCurrentToolEvent(action, 'file', 'success', startedAt);
-    }
-  }, [
-    createNewTab,
-    handleAiRepair,
-    handleToolbarSave,
-    openFile,
-    trackCurrentToolEvent,
-  ]);
+  const { handleAction } = useAppPrimaryActionCommand({
+    onAiRepair: handleAiRepair,
+    onToolbarSave: handleToolbarSave,
+    onOpenFile: openFile,
+    onCreateNewTab: createNewTab,
+    onTrackToolEvent: trackCurrentToolEvent,
+  });
 
   const { handleSmartSuggestionAction } = useAppSmartSuggestionCommands({
     currentMode: mode,
