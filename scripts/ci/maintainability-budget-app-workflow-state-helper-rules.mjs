@@ -5,7 +5,7 @@ export const appWorkflowStateHelperMaintainabilityBudgets = [
   { file: 'frontend/src/hooks/useAppTransformContextPersistence.test.ts', maxLines: 110, reason: 'App 转换上下文持久化测试只锁定无结果、有 Tab 和无 Tab 三种写入路径' },
   { file: 'frontend/src/utils/appTransformOutput.ts', maxLines: 115, reason: 'App 转换输出派生 helper 只维护 deep format、异步结果和 PREVIEW 暂存输出优先级' },
   { file: 'frontend/src/utils/appTransformOutput.test.ts', maxLines: 160, reason: 'App 转换输出派生测试只锁定 deep format、异步占位和 PREVIEW 暂存优先级' },
-  { file: 'frontend/src/hooks/useAppPreviewOutputSync.ts', maxLines: 170, reason: 'PREVIEW 反向同步 hook 只维护编辑暂存、校验 requestId、防抖回写和解锁时序' },
+  { file: 'frontend/src/hooks/useAppPreviewOutputSync.ts', maxLines: 155, reason: 'PREVIEW 反向同步 hook 只维护编辑暂存、校验 requestId、防抖回写和解锁时序' },
   { file: 'frontend/src/hooks/useAppPreviewOutputSync.test.ts', maxLines: 95, reason: 'PREVIEW 反向同步 hook 测试只锁定防抖回写、连续编辑失效、延迟解锁和非法内容不覆盖 SOURCE' },
   { file: 'frontend/src/hooks/useAppPreviewOutputSyncTestFixture.ts', maxLines: 100, reason: 'PREVIEW 反向同步 hook 测试 fixture 只集中 React mock、校验 mock 和默认 hook 输入构建' },
   { file: 'frontend/src/utils/appPreviewOutputSync.ts', maxLines: 50, reason: 'PREVIEW 反向同步纯 helper 只维护校验模式判断和 source 还原选择' },
@@ -14,6 +14,8 @@ export const appWorkflowStateHelperMaintainabilityBudgets = [
   { file: 'frontend/src/utils/appPreviewOutputSyncRequest.test.ts', maxLines: 95, reason: 'PREVIEW 反向同步 request 测试只锁定 Tab 上下文优先、fallback 和异常失败结果' },
   { file: 'frontend/src/utils/appPreviewOutputSyncRunner.ts', maxLines: 70, reason: 'PREVIEW 反向同步 runner 只维护同步前校验和 source 回写结果，不持有 React 状态' },
   { file: 'frontend/src/utils/appPreviewOutputSyncRunner.test.ts', maxLines: 80, reason: 'PREVIEW 反向同步 runner 测试只锁定 invalid、synced 和非格式化跳过校验路径' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncResult.ts', maxLines: 55, reason: 'PREVIEW 反向同步结果 helper 只维护失败草稿保留和成功回写副作用' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncResult.test.ts', maxLines: 65, reason: 'PREVIEW 反向同步结果测试只锁定失败保留草稿和成功写回 SOURCE' },
   { file: 'frontend/src/hooks/useAppLazyPanelLoadState.ts', maxLines: 60, reason: '懒加载面板 loaded hook 只装配 open 状态、粘性合并和依赖列表' },
   { file: 'frontend/src/hooks/useAppLazyPanelLoadState.test.ts', maxLines: 90, reason: '懒加载面板 loaded hook 测试只锁定默认初始化、打开后加载和关闭后粘性保留' },
 ];
