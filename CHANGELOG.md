@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.469 (2026-07-03) - 工具面板开关 Handler 去重
+### 🏗️ 架构与基础设施
+- **面板开关装配收敛**: `useAppToolPanelToggleHandlers` 抽出模块内通用 `usePanelToggleHandler`，六个面板开关保持独立 `useCallback` 和固定 hook 顺序，同时移除重复装配代码并将文件从 102 行降至 88 行
+
 ## v1.8.468 (2026-07-03) - 工具面板命令聚合降噪
 ### 🏗️ 架构与基础设施
 - **工具面板聚合瘦身**: `useAppToolPanelCommands` 改为保留子 hook 返回对象并统一展开，减少重复拆装的样板代码，主 hook 从 165 行降至 106 行，并把可维护性预算收紧到 130 行

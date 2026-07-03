@@ -11,6 +11,7 @@ import {
 type TrackPanelEvent = (eventName: string, category: string) => void;
 type TogglePanelOpenInput = Omit<PanelToggleCommandInput, 'mode' | 'onSetMode' | 'onTrackToolEvent'>;
 type PanelOpenSetter = (nextOpen: boolean) => void;
+type TogglePanelOpen = (input: TogglePanelOpenInput) => void;
 
 interface UseAppToolPanelToggleHandlersInput {
   mode: TransformMode;
@@ -30,6 +31,16 @@ interface UseAppToolPanelToggleHandlersInput {
   onClearTemplateApplyQualityDelta: () => void;
   onTrackToolEvent: TrackPanelEvent;
 }
+
+const usePanelToggleHandler = (
+  togglePanelOpen: TogglePanelOpen,
+  command: PanelToggleCommandConfig,
+  isOpen: boolean,
+  setPanelOpen: TogglePanelOpenInput['setPanelOpen'],
+  beforeToggle?: TogglePanelOpenInput['beforeToggle']
+) => useCallback(() => {
+  togglePanelOpen({ ...command, isOpen, setPanelOpen, beforeToggle });
+}, [beforeToggle, command, isOpen, setPanelOpen, togglePanelOpen]);
 
 export const useAppToolPanelToggleHandlers = ({
   mode,
@@ -53,43 +64,18 @@ export const useAppToolPanelToggleHandlers = ({
     runPanelToggleCommand({ ...input, mode, onSetMode, onTrackToolEvent });
   }, [mode, onSetMode, onTrackToolEvent]);
 
-  const togglePanelState = useCallback((
-    command: PanelToggleCommandConfig,
-    isOpen: boolean,
-    setPanelOpen: TogglePanelOpenInput['setPanelOpen'],
-    beforeToggle?: TogglePanelOpenInput['beforeToggle']
-  ) => {
-    togglePanelOpen({ ...command, isOpen, setPanelOpen, beforeToggle });
-  }, [togglePanelOpen]);
-
-  const handleToggleJsonPath = useCallback(() => {
-    togglePanelState(PANEL_TOGGLE_COMMANDS.jsonPath, isJsonPathPanelOpen, onSetJsonPathPanelOpen);
-  }, [isJsonPathPanelOpen, onSetJsonPathPanelOpen, togglePanelState]);
-
-  const handleToggleJsonTree = useCallback(() => {
-    togglePanelState(PANEL_TOGGLE_COMMANDS.jsonTree, isJsonTreePanelOpen, onSetJsonTreePanelOpen);
-  }, [isJsonTreePanelOpen, onSetJsonTreePanelOpen, togglePanelState]);
-
-  const handleToggleJsonCompare = useCallback(() => {
-    togglePanelState(PANEL_TOGGLE_COMMANDS.jsonCompare, isJsonComparePanelOpen, onSetJsonComparePanelOpen);
-  }, [isJsonComparePanelOpen, onSetJsonComparePanelOpen, togglePanelState]);
-
-  const handleToggleJsonSchema = useCallback(() => {
-    togglePanelState(PANEL_TOGGLE_COMMANDS.jsonSchema, isJsonSchemaPanelOpen, onSetJsonSchemaPanelOpen);
-  }, [isJsonSchemaPanelOpen, onSetJsonSchemaPanelOpen, togglePanelState]);
-
-  const handleToggleSchemeDecode = useCallback(() => {
-    togglePanelState(PANEL_TOGGLE_COMMANDS.schemeDecode, isSchemeDecodeOpen, onSetSchemeDecodeOpen);
-  }, [isSchemeDecodeOpen, onSetSchemeDecodeOpen, togglePanelState]);
-
-  const handleToggleTemplateFill = useCallback(() => {
-    togglePanelState(
-      PANEL_TOGGLE_COMMANDS.templateFill,
-      isTemplatePanelOpen,
-      onSetTemplatePanelOpen,
-      onClearTemplateApplyQualityDelta
-    );
-  }, [isTemplatePanelOpen, onClearTemplateApplyQualityDelta, onSetTemplatePanelOpen, togglePanelState]);
+  const handleToggleJsonPath = usePanelToggleHandler(togglePanelOpen, PANEL_TOGGLE_COMMANDS.jsonPath, isJsonPathPanelOpen, onSetJsonPathPanelOpen);
+  const handleToggleJsonTree = usePanelToggleHandler(togglePanelOpen, PANEL_TOGGLE_COMMANDS.jsonTree, isJsonTreePanelOpen, onSetJsonTreePanelOpen);
+  const handleToggleJsonCompare = usePanelToggleHandler(togglePanelOpen, PANEL_TOGGLE_COMMANDS.jsonCompare, isJsonComparePanelOpen, onSetJsonComparePanelOpen);
+  const handleToggleJsonSchema = usePanelToggleHandler(togglePanelOpen, PANEL_TOGGLE_COMMANDS.jsonSchema, isJsonSchemaPanelOpen, onSetJsonSchemaPanelOpen);
+  const handleToggleSchemeDecode = usePanelToggleHandler(togglePanelOpen, PANEL_TOGGLE_COMMANDS.schemeDecode, isSchemeDecodeOpen, onSetSchemeDecodeOpen);
+  const handleToggleTemplateFill = usePanelToggleHandler(
+    togglePanelOpen,
+    PANEL_TOGGLE_COMMANDS.templateFill,
+    isTemplatePanelOpen,
+    onSetTemplatePanelOpen,
+    onClearTemplateApplyQualityDelta
+  );
 
   return {
     handleToggleJsonCompare,
