@@ -37,6 +37,7 @@ import { useAppPrimaryActionCommand } from './hooks/useAppPrimaryActionCommand';
 import { useAppAutoSaveToggleCommand } from './hooks/useAppAutoSaveToggleCommand';
 import { useAppSchemeEditCommand } from './hooks/useAppSchemeEditCommand';
 import { useAppPanelLayoutResetCommand } from './hooks/useAppPanelLayoutResetCommand';
+import { useAppEditorValidationLocations } from './hooks/useAppEditorValidationLocations';
 import { useAppSourceInputCommands } from './hooks/useAppSourceInputCommands';
 import { useAppToolPanelCommands } from './hooks/useAppToolPanelCommands';
 import {
@@ -51,10 +52,7 @@ import { AppLazyShellModals } from './components/AppLazyShellModals';
 import { AppStatusBarController } from './components/AppStatusBarController';
 import { AppToolPanelsController } from './components/AppToolPanelsController';
 import ErrorBoundary from './components/ErrorBoundary';
-import {
-  getJsonValidationErrorLocation,
-  startJsonValidation,
-} from './utils/jsonValidation';
+import { startJsonValidation } from './utils/jsonValidation';
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFeedback';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
@@ -220,16 +218,6 @@ const App: React.FC = () => {
     onCancelOutputDraft: cancelOutputDraft,
     onSetSourceText: setInput,
   });
-  const [sourceErrorLocateSignal, setSourceErrorLocateSignal] = useState(0);
-  const sourceErrorLocation = useMemo(
-    () => validation.isValid ? null : getJsonValidationErrorLocation(input, validation.error),
-    [input, validation]
-  );
-  const previewErrorLocation = useMemo(
-    () => previewValidation.isValid ? null : getJsonValidationErrorLocation(output, previewValidation.error),
-    [output, previewValidation]
-  );
-
   const [highlightRange, setHighlightRange] = useState<HighlightRange | null>(null);
   const [jsonSchemaValidationResult, setJsonSchemaValidationResult] = useState<JsonSchemaValidationResult | null>(null);
   const {
@@ -241,6 +229,18 @@ const App: React.FC = () => {
   );
 
   const [activeEditor, setActiveEditor] = useState<'SOURCE' | 'PREVIEW' | null>(null);
+  const {
+    sourceErrorLocation,
+    previewErrorLocation,
+    sourceErrorLocateSignal,
+    handleLocateSourceErrorFromStatus,
+  } = useAppEditorValidationLocations({
+    sourceText: input,
+    previewText: output,
+    sourceValidation: validation,
+    previewValidation,
+    onSetActiveEditor: setActiveEditor,
+  });
   const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<AppSmartSuggestionOrigin | null>(null);
   const {
     aiRepairSnapshotRef,
@@ -544,12 +544,6 @@ const App: React.FC = () => {
     pendingSchemaExampleText,
     pendingSchemeInspectSourceText,
   });
-  const handleLocateSourceErrorFromStatus = useCallback(() => {
-    if (!sourceErrorLocation) return;
-    setActiveEditor('SOURCE');
-    setSourceErrorLocateSignal(signal => signal + 1);
-  }, [sourceErrorLocation]);
-
   return (
     <ErrorBoundary onBeforeReload={flushWorkspaceDraft}>
     <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
