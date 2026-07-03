@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.408 (2026-07-03) - Scheme 测试遍历 helper 收敛
+### 🏗️ 架构与基础设施
+- **测试 helper 复用**: 将 Scheme Footer 测试里用于渲染无 Hook 函数组件的文本收集和 `data-tour` 查找能力收敛到共享 React element 测试 helper，删除本地重复遍历逻辑，降低后续组件抽取时的测试维护成本
+- **记录绑定 fixture 拆分**: 将深度解析记录绑定测试中的 copy workflow、状态 spy 和默认 bindings 装配拆成独立 fixture，并收紧测试与 fixture 双预算，避免用例文件继续堆叠夹具代码
+
 ## v1.8.407 (2026-07-03) - Scheme 底部按钮壳与按钮焦点降噪
 ### 🏗️ 架构与基础设施
 - **Scheme Footer 降压**: 将 Scheme 弹窗底部操作按钮的共享样式、图标壳、禁用态和 aria/title 透传抽到独立按钮组件，底部操作栏回归按钮显示条件和回调透传职责，并同步收紧维护预算

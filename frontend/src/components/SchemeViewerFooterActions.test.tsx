@@ -1,42 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SchemeViewerActionTitles } from '../utils/schemeViewerActionTitles';
+import type { ElementLike } from './schemeViewerElementTestHelpers';
+import { collectRenderedText, findRenderedByTour } from './schemeViewerRenderedElementTestHelpers';
 import { SchemeViewerFooterActions } from './SchemeViewerFooterActions';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const renderFunctionElement = (node: ElementLike): unknown | null => (
-  typeof node.type === 'function' ? node.type(node.props) : null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(renderFunctionElement(node) ?? node.props.children);
-  return '';
-};
-
-const findByTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(child => findByTour(child, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const renderedNode = renderFunctionElement(node);
-  if (renderedNode) return findByTour(renderedNode, dataTour);
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByTour(node.props.children, dataTour));
-};
 
 const clickElement = (node: ElementLike) => {
   const onClick = node.props.onClick;
@@ -91,17 +57,17 @@ describe('SchemeViewerFooterActions', () => {
     const onToggleQRCode = vi.fn();
     const onCopyOriginal = vi.fn();
     const tree = renderFooter({ onToggleQRCode, onCopyOriginal });
-    const text = collectText(tree);
+    const text = collectRenderedText(tree);
 
     expect(text).toContain('2 层解码');
     expect(text).toContain('二维码');
     expect(text).toContain('复制原始值');
     expect(text).toContain('复制解码结果');
 
-    const qrCodeButton = findByTour(tree, 'scheme-qrcode-button')[0];
+    const qrCodeButton = findRenderedByTour(tree, 'scheme-qrcode-button')[0];
     expect(qrCodeButton.props.disabled).toBe(false);
     clickElement(qrCodeButton);
-    clickElement(findByTour(tree, 'scheme-copy-original')[0]);
+    clickElement(findRenderedByTour(tree, 'scheme-copy-original')[0]);
 
     expect(onToggleQRCode).toHaveBeenCalledTimes(1);
     expect(onCopyOriginal).toHaveBeenCalledTimes(1);
@@ -121,11 +87,11 @@ describe('SchemeViewerFooterActions', () => {
       canApplyEdit: true,
     });
 
-    expect(findByTour(tree, 'scheme-cancel-decode')).toHaveLength(1);
-    expect(findByTour(tree, 'scheme-copy-cmd-structure')).toHaveLength(1);
-    expect(findByTour(tree, 'scheme-copy-path-values')).toHaveLength(1);
-    expect(findByTour(tree, 'scheme-copy-serialized')).toHaveLength(1);
-    expect(findByTour(tree, 'scheme-apply-edit')).toHaveLength(1);
+    expect(findRenderedByTour(tree, 'scheme-cancel-decode')).toHaveLength(1);
+    expect(findRenderedByTour(tree, 'scheme-copy-cmd-structure')).toHaveLength(1);
+    expect(findRenderedByTour(tree, 'scheme-copy-path-values')).toHaveLength(1);
+    expect(findRenderedByTour(tree, 'scheme-copy-serialized')).toHaveLength(1);
+    expect(findRenderedByTour(tree, 'scheme-apply-edit')).toHaveLength(1);
   });
 
   it('禁用不可用的二维码和解码复制操作', () => {
@@ -134,7 +100,7 @@ describe('SchemeViewerFooterActions', () => {
       canCopyDecoded: false,
     });
 
-    expect(findByTour(tree, 'scheme-qrcode-button')[0].props.disabled).toBe(true);
-    expect(findByTour(tree, 'scheme-copy-decoded')[0].props.disabled).toBe(true);
+    expect(findRenderedByTour(tree, 'scheme-qrcode-button')[0].props.disabled).toBe(true);
+    expect(findRenderedByTour(tree, 'scheme-copy-decoded')[0].props.disabled).toBe(true);
   });
 });
