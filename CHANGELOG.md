@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.429 (2026-07-03) - 主应用布局 Controller 拆分
+### 🏗️ 架构与基础设施
+- **布局职责降压**: 将主应用侧栏和分栏键盘 resize wiring 抽成 `useAppLayoutController`，App 只保留布局状态消费和组件装配，并新增布局 controller 单测与独立预算表
+
 ## v1.8.428 (2026-07-03) - PREVIEW 同步任务拆分
 ### 🏗️ 架构与基础设施
 - **同步任务降压**: 将 PREVIEW 反向同步的 request、失效检查和结果应用串联抽成 task helper，hook 只保留草稿暂存、校验触发和 scheduler wiring，并补充任务快照与失效保护单测
