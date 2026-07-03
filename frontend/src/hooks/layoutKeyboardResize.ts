@@ -4,7 +4,7 @@ import {
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
   clampLayoutValue,
-} from './useLayout';
+} from './layoutResize';
 
 const SIDEBAR_KEYBOARD_RESIZE_STEP = 16;
 const PANE_KEYBOARD_RESIZE_STEP = 5;

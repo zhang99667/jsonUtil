@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AppEditorSplitPanes } from './AppEditorSplitPanes';
 import { AppPaneResizeHandle } from './AppResizeHandles';
-import { LEFT_PANE_MAX_PERCENT, LEFT_PANE_MIN_PERCENT } from '../hooks/useLayout';
+import { LEFT_PANE_MAX_PERCENT, LEFT_PANE_MIN_PERCENT } from '../hooks/layoutResize';
 
 interface ElementLike {
   type?: unknown;
