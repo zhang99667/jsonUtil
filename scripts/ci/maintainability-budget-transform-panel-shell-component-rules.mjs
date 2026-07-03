@@ -5,7 +5,8 @@ const shellComponentBudget = (file, maxLines, reason) => ({
 });
 
 export const transformPanelShellComponentMaintainabilityBudgets = [
-  shellComponentBudget('TransformReportPanel.tsx', 260, '深度解析报告主面板应只负责状态、报告视图、派生模型调用、workflow model 和内容 wiring，记录区 action 绑定、复制/导出 workflow、footer model、面板 shell、内容区渲染、顶部总览、空态、Top 分布、展开记录、未展开线索、运行时占位符和跳过记录展示不得回流'),
+  shellComponentBudget('TransformReportPanel.tsx', 210, '深度解析报告主面板应只负责 workflow model、动作绑定、footer model 和内容 wiring，报告视图状态不得回流'),
+  shellComponentBudget('useTransformReportPanelViewModel.ts', 115, '深度解析报告 ViewModel hook 应只维护面板打开状态、筛选延迟、报告视图和派生模型组合'),
   shellComponentBudget('TransformReportPanelFrame.tsx', 60, '深度解析报告 frame 应只维护 DraggablePanel 默认布局、标题和 footer 装配，状态与内容 wiring 留在主面板'),
   shellComponentBudget('TransformReportPanelContent.tsx', 45, '深度解析报告内容区壳组件只负责滚动容器、无报告提示和 sections 装配分流，section 细节不得回流'),
   shellComponentBudget('TransformReportPanelSections.tsx', 145, '深度解析报告 sections 组件只负责总览、筛选、记录、未展开、占位符、告警和空态装配，记录动作通过契约对象注入'),

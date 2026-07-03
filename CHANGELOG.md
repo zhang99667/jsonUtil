@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.438 (2026-07-03) - 报告面板 ViewModel Hook 拆分
+### 🏗️ 架构与基础设施
+- **报告面板降压**: 将深度解析报告面板的打开态、筛选延迟、报告视图和派生模型组合抽成 `useTransformReportPanelViewModel`，主面板回归 workflow、动作和内容装配
+
 ## v1.8.437 (2026-07-03) - PREVIEW 输出变更 Handler 拆分
 ### 🏗️ 架构与基础设施
 - **PREVIEW 同步降压**: 将 PREVIEW 编辑时的草稿开始、即时校验和同步任务调度抽成 `useAppPreviewOutputChangeHandler`，反向同步主 hook 回归校验状态、取消清理和 handler 装配
