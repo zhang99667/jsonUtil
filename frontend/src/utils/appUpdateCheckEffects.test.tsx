@@ -1,11 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import toast from 'react-hot-toast';
 import { AppUpdateToastContent } from '../components/AppUpdateToastContent';
-import {
-  APP_UPDATE_TOAST_ID,
-  fetchAppVersionManifest,
-  showAppUpdateToast,
-} from './appUpdateCheckEffects';
+import { APP_UPDATE_TOAST_ID, fetchAppVersionManifest, showAppUpdateToast } from './appUpdateCheckEffects';
 import { VERSION_MANIFEST_PATH } from './appVersion';
 
 vi.mock('react-hot-toast', () => ({
@@ -26,6 +22,11 @@ const manifest = {
 };
 
 describe('appUpdateCheckEffects', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('展示固定 id 的更新提示并装配按钮副作用', () => {
     showAppUpdateToast(manifest);
 
@@ -35,8 +36,7 @@ describe('appUpdateCheckEffects', () => {
       position: 'top-center',
     });
 
-    const renderToast = vi.mocked(toast.custom).mock.calls[0][0];
-    const toastElement = renderToast({
+    const toastElement = vi.mocked(toast.custom).mock.calls[0][0]({
       id: 'toast-1',
       visible: true,
       type: 'custom',
@@ -63,10 +63,6 @@ describe('appUpdateCheckEffects', () => {
 
     await expect(fetchAppVersionManifest()).resolves.toEqual(manifest);
     await expect(fetchAppVersionManifest()).resolves.toBeNull();
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(VERSION_MANIFEST_PATH), {
-      cache: 'no-store',
-    });
-
-    vi.unstubAllGlobals();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(VERSION_MANIFEST_PATH), { cache: 'no-store' });
   });
 });
