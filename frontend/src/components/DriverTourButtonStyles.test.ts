@@ -24,10 +24,12 @@ describe('Driver tour button styles', () => {
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn'
     );
 
-    expect(buttonRule).toContain('rgba(61, 74, 91, 0.98)');
+    expect(buttonRule).toContain('rgba(48, 57, 70, 0.98)');
+    expect(buttonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
     expect(buttonRule).toContain('border: 0 !important');
     expect(buttonRule).toContain('border-radius: 7px');
     expect(buttonRule).not.toContain('999px');
+    expect(buttonRule).not.toContain('0 8px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
   });
@@ -42,6 +44,7 @@ describe('Driver tour button styles', () => {
 
     expect(buttonRule).not.toContain('--driver-button-focus-accent');
     expect(focusRule).toContain('background: rgba(255, 255, 255, 0.095) !important');
+    expect(focusRule).toContain('--tw-ring-color: transparent !important');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');

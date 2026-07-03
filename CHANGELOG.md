@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.413 (2026-07-03) - 按钮选中框视觉收敛
+### 🎨 UI/UE 优化
+- **按钮状态重设计**: 将主应用、版本更新 Toast 和 Driver 引导弹窗的主按钮改成低投影实体面，显式清理 Tailwind ring 变量，避免“知道了”等按钮出现高饱和蓝底和突兀选中框
+
+## v1.8.412 (2026-07-03) - Scheme 诊断摘要职责拆分
+### 🏗️ 架构与基础设施
+- **诊断摘要降压**: 将 Scheme 弹窗诊断摘要拆成门面、item builder 和类型文件，保留外部 `schemeViewerDiagnostics` API 不变，并补强摘要 key/title、空来源过滤和 Scheme fallback 单测
+- **Viewer 支撑预算拆表**: 将 Scheme Viewer 诊断门面、摘要和展示 helper 的预算规则拆到独立 Viewer 支撑表，降低主支撑预算表维护噪音
+
 ## v1.8.411 (2026-07-03) - Scheme Footer 动作配置化
 ### 🏗️ 架构与基础设施
 - **Footer 动作配置化**: 将 Scheme 弹窗底部按钮显隐、禁用态、tone、aria/title 和图标透传收敛为独立 item builder，列表组件回归过滤和渲染职责，并补充 builder 顺序与 tone 单测
