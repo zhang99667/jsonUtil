@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.427 (2026-07-03) - 复制 Workflow Model 契约拆分
+### 🏗️ 架构与基础设施
+- **复制模型降压**: 将深度解析复制 workflow model 的输入输出契约和 active CMD 对比上下文拼装拆成独立模块，主入口只保留 workflow 装配、active CMD 文本注入和候选记录 getter
+
 ## v1.8.426 (2026-07-03) - 深度解析行动模型契约拆分
 ### 🏗️ 架构与基础设施
 - **Action Model 降压**: 将深度解析面板行动模型的输入输出契约和纯状态派生拆成独立模块，主 action model 只负责 triage/next-action item 装配，section model 回归占位符、行动和可见性组合
