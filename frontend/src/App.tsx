@@ -19,6 +19,7 @@ import { useAppSaveCommands } from './hooks/useAppSaveCommands';
 import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
+import { useAppPreviewDraftFileChangeReset } from './hooks/useAppPreviewDraftFileChangeReset';
 import { useAppToolTelemetry } from './hooks/useAppToolTelemetry';
 import { useAppVisitorTracking } from './hooks/useAppVisitorTracking';
 import {
@@ -260,12 +261,10 @@ const App: React.FC = () => {
     cancelOutputDraft();
     handleRawInputChange(nextValue);
   }, [cancelOutputDraft, handleRawInputChange]);
-  const lastPreviewDraftFileIdRef = useRef(activeFileId);
-  useEffect(() => {
-    if (lastPreviewDraftFileIdRef.current === activeFileId) return;
-    lastPreviewDraftFileIdRef.current = activeFileId;
-    cancelOutputDraft();
-  }, [activeFileId, cancelOutputDraft]);
+  useAppPreviewDraftFileChangeReset({
+    activeFileId,
+    onCancelOutputDraft: cancelOutputDraft,
+  });
 
   // 光标位置状态（用于状态栏显示）
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });

@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.463 (2026-07-03) - PREVIEW 草稿文件切换重置 Hook 拆分
+### 🏗️ 架构与基础设施
+- **App PREVIEW 草稿降噪**: 将活动 Tab 变化时取消 PREVIEW 草稿的文件 ID 记忆和副作用抽成 `useAppPreviewDraftFileChangeReset`，`App.tsx` 只保留当前文件与取消命令装配，并补充 hook 测试固定首次渲染、同文件和切换文件行为
+
 ## v1.8.462 (2026-07-03) - 面板布局重置命令 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App 面板布局重置降噪**: 将浮动面板布局重置的布局缓存清理、全局重置通知和成功提示抽成 `useAppPanelLayoutResetCommand`，`App.tsx` 只保留设置弹窗命令装配，并补充 hook 测试固定重置副作用
