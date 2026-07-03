@@ -1,14 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { applyLayoutKeyboardResize } from './layoutKeyboardResize';
 import { useAppLayoutController } from './useAppLayoutController';
 import { useLayout } from './useLayout';
 
-const reactMocks = vi.hoisted(() => ({
-  useCallback: vi.fn(),
-}));
+const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn() }));
 
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
+}));
+
+vi.mock('./layoutKeyboardResize', async importOriginal => ({
+  ...await importOriginal<typeof import('./layoutKeyboardResize')>(),
+  applyLayoutKeyboardResize: vi.fn(),
 }));
 
 vi.mock('./useLayout', async importOriginal => ({
@@ -45,42 +49,32 @@ describe('useAppLayoutController', () => {
   it('透传 useLayout 状态并提供键盘调整 handler', () => {
     const result = useAppLayoutController({ current: null });
 
-    expect(result.sidebarWidth).toBe(220);
-    expect(result.leftPaneWidthPercent).toBe(50);
-    expect(result.startResizingSidebar).toBe(layout.startResizingSidebar);
+    expect(result).toMatchObject({
+      sidebarWidth: 220,
+      leftPaneWidthPercent: 50,
+      startResizingSidebar: layout.startResizingSidebar,
+    });
     expect(typeof result.handleSidebarResizeKeyDown).toBe('function');
     expect(typeof result.handlePaneResizeKeyDown).toBe('function');
   });
 
-  it('侧栏支持键盘调整宽度并阻止默认行为', () => {
+  it('键盘调整委托给 resize helper', () => {
     const result = useAppLayoutController({ current: null });
-    const event = createKeyboardEvent('ArrowRight');
+    const sidebarEvent = createKeyboardEvent('ArrowRight');
+    const paneEvent = createKeyboardEvent('ArrowLeft', true);
 
-    result.handleSidebarResizeKeyDown(event as never);
+    result.handleSidebarResizeKeyDown(sidebarEvent as never);
+    result.handlePaneResizeKeyDown(paneEvent as never);
 
-    expect(event.preventDefault).toHaveBeenCalledTimes(1);
-    expect(layout.setSidebarWidth).toHaveBeenCalledWith(236);
-  });
-
-  it('分栏支持 Shift 键加速调整并阻止默认行为', () => {
-    const result = useAppLayoutController({ current: null });
-    const event = createKeyboardEvent('ArrowLeft', true);
-
-    result.handlePaneResizeKeyDown(event as never);
-
-    expect(event.preventDefault).toHaveBeenCalledTimes(1);
-    expect(layout.setLeftPaneWidthPercent).toHaveBeenCalledWith(40);
-  });
-
-  it('无关按键不触发布局更新', () => {
-    const result = useAppLayoutController({ current: null });
-    const event = createKeyboardEvent('Tab');
-
-    result.handleSidebarResizeKeyDown(event as never);
-    result.handlePaneResizeKeyDown(event as never);
-
-    expect(event.preventDefault).not.toHaveBeenCalled();
-    expect(layout.setSidebarWidth).not.toHaveBeenCalled();
-    expect(layout.setLeftPaneWidthPercent).not.toHaveBeenCalled();
+    expect(applyLayoutKeyboardResize).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      event: sidebarEvent,
+      currentValue: layout.sidebarWidth,
+      onResize: layout.setSidebarWidth,
+    }));
+    expect(applyLayoutKeyboardResize).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      event: paneEvent,
+      currentValue: layout.leftPaneWidthPercent,
+      onResize: layout.setLeftPaneWidthPercent,
+    }));
   });
 });

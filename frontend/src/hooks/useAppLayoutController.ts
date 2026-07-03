@@ -1,5 +1,6 @@
 import { useCallback, type KeyboardEvent, type RefObject } from 'react';
 import {
+  applyLayoutKeyboardResize,
   getPaneKeyboardResizePercent,
   getSidebarKeyboardResizeWidth,
 } from './layoutKeyboardResize';
@@ -15,19 +16,21 @@ export const useAppLayoutController = (appRef: RefObject<HTMLDivElement>) => {
   } = layout;
 
   const handleSidebarResizeKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-    const nextWidth = getSidebarKeyboardResizeWidth(sidebarWidth, event.key, event.shiftKey);
-    if (nextWidth === null) return;
-
-    event.preventDefault();
-    setSidebarWidth(nextWidth);
+    applyLayoutKeyboardResize({
+      event,
+      currentValue: sidebarWidth,
+      getNextValue: getSidebarKeyboardResizeWidth,
+      onResize: setSidebarWidth,
+    });
   }, [setSidebarWidth, sidebarWidth]);
 
   const handlePaneResizeKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-    const nextPercent = getPaneKeyboardResizePercent(leftPaneWidthPercent, event.key, event.shiftKey);
-    if (nextPercent === null) return;
-
-    event.preventDefault();
-    setLeftPaneWidthPercent(nextPercent);
+    applyLayoutKeyboardResize({
+      event,
+      currentValue: leftPaneWidthPercent,
+      getNextValue: getPaneKeyboardResizePercent,
+      onResize: setLeftPaneWidthPercent,
+    });
   }, [leftPaneWidthPercent, setLeftPaneWidthPercent]);
 
   return {
