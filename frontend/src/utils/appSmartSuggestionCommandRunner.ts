@@ -1,6 +1,10 @@
 import { TransformMode } from '../types';
 import type { SmartSuggestionActionId } from './smartInputSuggestion';
 import { buildAppSmartSuggestionActionPlan } from './appSmartSuggestionActions';
+import {
+  runAppSmartSuggestionPlanEffects,
+  type AppSmartSuggestionPlanEffectHandlers,
+} from './appSmartSuggestionPlanEffects';
 import type { ToolEventStatus } from './productTelemetry';
 
 export type AppSmartSuggestionTrackEvent = (
@@ -16,15 +20,9 @@ interface AppSmartSuggestionCommandInput {
   sourceText: string;
 }
 
-export interface AppSmartSuggestionCommandEffects {
+export interface AppSmartSuggestionCommandEffects extends AppSmartSuggestionPlanEffectHandlers {
   onRunAiFix: () => void;
   onSetMode: (mode: TransformMode) => void;
-  onClearHighlight: () => void;
-  onOpenSchemeInput: (value: string) => void;
-  onSetSchemePanelOpen: (isOpen: boolean) => void;
-  onSetTransformReportOpen: (isOpen: boolean) => void;
-  onSetJsonTreePanelOpen: (isOpen: boolean) => void;
-  onSetJsonSchemaPanelOpen: (isOpen: boolean) => void;
   onShowError: (message: string) => void;
   onShowSuccess: (message: string) => void;
   onTrackToolEvent: AppSmartSuggestionTrackEvent;
@@ -53,25 +51,7 @@ export const runAppSmartSuggestionCommand = (
     return;
   }
 
-  if (plan.effects.includes('clear-highlight')) {
-    effects.onClearHighlight();
-  }
-  if (plan.effects.includes('open-scheme-panel') && plan.schemeInputValue !== undefined) {
-    effects.onOpenSchemeInput(plan.schemeInputValue);
-  }
-  if (plan.effects.includes('open-scheme-panel')) {
-    effects.onSetSchemePanelOpen(true);
-  }
-  if (plan.effects.includes('close-transform-report')) {
-    effects.onSetTransformReportOpen(false);
-  }
-  if (plan.effects.includes('open-json-tree-panel')) {
-    effects.onSetJsonTreePanelOpen(true);
-  }
-  if (plan.effects.includes('open-json-schema-panel')) {
-    effects.onSetJsonSchemaPanelOpen(true);
-  }
-
+  runAppSmartSuggestionPlanEffects(plan, effects);
   if (plan.successMessage) {
     effects.onShowSuccess(plan.successMessage);
   }
