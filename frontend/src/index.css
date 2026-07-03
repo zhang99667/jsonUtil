@@ -79,7 +79,7 @@
   color: #93c5fd !important;
 }
 
-/* 深色工作台按钮：按钮状态靠填充和内部细线表达，键盘焦点不再套外框。 */
+/* 深色工作台按钮：按钮状态靠填充和亮度表达，键盘焦点不再套外框。 */
 :where(button, [role="button"]) {
   -webkit-tap-highlight-color: transparent;
 }
@@ -142,37 +142,38 @@
 }
 
 .app-button--primary {
-  --app-button-rest-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --app-button-rest-shadow: none;
 
-  background: linear-gradient(180deg, rgba(52, 61, 73, 0.98) 0%, rgba(38, 46, 55, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(76, 88, 104, 0.66) 0%, rgba(49, 59, 72, 0.7) 100%);
   color: #f8fafc;
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .app-button--primary:hover {
-  --app-button-rest-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+  --app-button-rest-shadow: none;
 
-  background: linear-gradient(180deg, rgba(59, 70, 84, 0.98) 0%, rgba(43, 52, 63, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(88, 101, 118, 0.76) 0%, rgba(57, 68, 82, 0.78) 100%);
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .changelog-modal__confirm-button {
-  --app-button-rest-shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --app-button-rest-shadow: none;
 
-  background: linear-gradient(180deg, rgba(52, 61, 73, 0.98) 0%, rgba(38, 46, 55, 0.98) 100%);
+  background: rgba(255, 255, 255, 0.075) !important;
+  border: 0 !important;
   border-radius: 6px;
-  color: #f3f4f6;
+  color: #e5e7eb !important;
   min-width: 72px;
   outline: none;
-  box-shadow: var(--app-button-rest-shadow);
+  box-shadow: none !important;
 }
 
 .changelog-modal__confirm-button:hover {
-  --app-button-rest-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+  --app-button-rest-shadow: none;
 
-  background: linear-gradient(180deg, rgba(59, 70, 84, 0.98) 0%, rgba(43, 52, 63, 0.98) 100%);
-  color: #ffffff;
-  box-shadow: var(--app-button-rest-shadow);
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
 }
 
 .changelog-modal__confirm-button:focus-visible {
@@ -180,10 +181,11 @@
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-color: transparent !important;
 
-  background: linear-gradient(180deg, rgba(59, 70, 84, 0.98) 0%, rgba(43, 52, 63, 0.98) 100%);
-  color: #ffffff;
-  filter: brightness(1.04);
-  box-shadow: var(--app-button-rest-shadow) !important;
+  background: rgba(255, 255, 255, 0.13) !important;
+  border: 0 !important;
+  color: #ffffff !important;
+  filter: brightness(1.04) saturate(1.01);
+  box-shadow: none !important;
 }
 
 .app-button--secondary {

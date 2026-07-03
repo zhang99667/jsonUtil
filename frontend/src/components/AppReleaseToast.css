@@ -73,17 +73,17 @@
 }
 
 .app-release-toast__button--primary {
-  --app-button-rest-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --app-button-rest-shadow: none;
 
-  background: linear-gradient(180deg, rgba(52, 61, 73, 0.98) 0%, rgba(38, 46, 55, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(76, 88, 104, 0.66) 0%, rgba(49, 59, 72, 0.7) 100%);
   color: #f8fafc;
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .app-release-toast__button--primary:hover {
-  --app-button-rest-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+  --app-button-rest-shadow: none;
 
-  background: linear-gradient(180deg, rgba(59, 70, 84, 0.98) 0%, rgba(43, 52, 63, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(88, 101, 118, 0.76) 0%, rgba(57, 68, 82, 0.78) 100%);
   box-shadow: var(--app-button-rest-shadow);
 }
 

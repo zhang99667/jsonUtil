@@ -48,18 +48,18 @@ describe('App button focus styles', () => {
     expect(appCss).not.toContain('rgba(94, 234, 212');
   });
 
-  it('主按钮不再使用高饱和蓝色按钮底和外框阴影', () => {
+  it('主按钮不再使用高饱和蓝色按钮底和选中框阴影', () => {
     const buttonRule = getRuleBody(appCss, '.app-button--primary');
     const toastButtonRule = getRuleBody(releaseToastCss, '.app-release-toast__button--primary');
 
-    expect(buttonRule).toContain('rgba(52, 61, 73, 0.98)');
-    expect(buttonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
+    expect(buttonRule).toContain('rgba(76, 88, 104, 0.66)');
+    expect(buttonRule).toContain('--app-button-rest-shadow: none');
     expect(buttonRule).not.toContain('inset 0');
     expect(buttonRule).not.toContain('0 8px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
-    expect(toastButtonRule).toContain('rgba(52, 61, 73, 0.98)');
-    expect(toastButtonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
+    expect(toastButtonRule).toContain('rgba(76, 88, 104, 0.66)');
+    expect(toastButtonRule).toContain('--app-button-rest-shadow: none');
     expect(toastButtonRule).not.toContain('inset 0');
     expect(toastButtonRule).not.toContain('0 8px');
     expect(toastButtonRule).not.toContain('#1487c9');
@@ -72,16 +72,18 @@ describe('App button focus styles', () => {
 
     expect(buttonRule).toContain('border-radius: 6px');
     expect(buttonRule).toContain('min-width: 72px');
-    expect(buttonRule).toContain('rgba(52, 61, 73, 0.98)');
-    expect(buttonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.24)');
+    expect(buttonRule).toContain('background: rgba(255, 255, 255, 0.075) !important');
+    expect(buttonRule).toContain('border: 0 !important');
+    expect(buttonRule).toContain('box-shadow: none !important');
     expect(buttonRule).not.toContain('999px');
     expect(buttonRule).not.toContain('inset 0');
     expect(buttonRule).not.toContain('0 10px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
     expect(focusRule).toContain('--tw-ring-color: transparent !important');
-    expect(focusRule).toContain('filter: brightness(1.04)');
-    expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow) !important');
+    expect(focusRule).toContain('background: rgba(255, 255, 255, 0.13) !important');
+    expect(focusRule).toContain('filter: brightness(1.04) saturate(1.01)');
+    expect(focusRule).toContain('box-shadow: none !important');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(appCss).not.toContain('changelog-modal__confirm-button::after');
@@ -120,9 +122,9 @@ describe('App button focus styles', () => {
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:hover'
     );
 
-    expect(nextButtonRule).toContain('rgba(52, 61, 73, 0.98)');
+    expect(nextButtonRule).toContain('background: rgba(255, 255, 255, 0.085) !important');
     expect(nextButtonRule).toContain('border: 0 !important');
-    expect(nextButtonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
+    expect(nextButtonRule).toContain('box-shadow: none !important');
     expect(nextButtonRule).not.toContain('inset 0');
     expect(nextButtonRule).not.toContain('#1487c9');
     expect(nextButtonRule).not.toContain('rgba(0, 122, 204');

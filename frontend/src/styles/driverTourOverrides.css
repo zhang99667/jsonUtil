@@ -72,28 +72,28 @@
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn {
-  --app-button-rest-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --app-button-rest-shadow: none;
 
-  background: linear-gradient(180deg, rgba(52, 61, 73, 0.98) 0%, rgba(38, 46, 55, 0.98) 100%) !important;
+  background: rgba(255, 255, 255, 0.085) !important;
   border: 0 !important;
   border-radius: 7px !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
+  box-shadow: none !important;
   color: #f9fafb !important;
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:hover,
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:focus-visible {
-  --app-button-rest-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+  --app-button-rest-shadow: none;
 
-  background: linear-gradient(180deg, rgba(59, 70, 84, 0.98) 0%, rgba(43, 52, 63, 0.98) 100%) !important;
+  background: rgba(255, 255, 255, 0.13) !important;
   border: 0 !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
-  filter: brightness(1.02) !important;
+  box-shadow: none !important;
+  filter: brightness(1.04) saturate(1.01) !important;
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:focus:not(:focus-visible) {
   border: 0 !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
+  box-shadow: none !important;
 }
 
 :where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-close-btn {
