@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.459 (2026-07-03) - 自动保存开关命令 Hook 拆分
+### 🏗️ 架构与基础设施
+- **App 自动保存开关降噪**: 将自动保存开关的计划判断、状态写入和 Toast 副作用接线抽成 `useAppAutoSaveToggleCommand`，`App.tsx` 只保留文件状态与 setter 装配，并补充 hook 测试固定无文件、无句柄和成功开启三条路径
+
 ## v1.8.458 (2026-07-03) - 主动作命令 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App 主动作分发降噪**: 将 AI 修复、保存、打开文件和新建标签的顶层动作路由抽成 `useAppPrimaryActionCommand` 与 `runAppPrimaryActionCommand`，`App.tsx` 只保留命令装配，并补充 hook 测试固定动作分发和文件动作埋点语义
