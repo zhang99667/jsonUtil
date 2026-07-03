@@ -18,6 +18,7 @@ import { useAppCopyCommands } from './hooks/useAppCopyCommands';
 import { useAppSaveCommands } from './hooks/useAppSaveCommands';
 import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
+import { useAppSmartSuggestionOriginReset } from './hooks/useAppSmartSuggestionOriginReset';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
 import { useAppPreviewDraftFileChangeReset } from './hooks/useAppPreviewDraftFileChangeReset';
 import { useAppToolTelemetry } from './hooks/useAppToolTelemetry';
@@ -418,13 +419,13 @@ const App: React.FC = () => {
 
   const smartSuggestion = useMemo(() => getSmartInputSuggestion(input), [input]);
 
-  useEffect(() => {
-    if (!smartSuggestionOrigin) return;
-    if (input === smartSuggestionOriginTextRef.current && smartSuggestion) return;
-
-    smartSuggestionOriginTextRef.current = '';
-    setSmartSuggestionOrigin(null);
-  }, [input, smartSuggestion, smartSuggestionOrigin]);
+  useAppSmartSuggestionOriginReset({
+    sourceText: input,
+    hasSmartSuggestion: Boolean(smartSuggestion),
+    smartSuggestionOrigin,
+    smartSuggestionOriginTextRef,
+    onSetSmartSuggestionOrigin: setSmartSuggestionOrigin,
+  });
 
   useAppSourceValidation({ input, onSetValidation: setValidation });
 
