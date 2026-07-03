@@ -1,6 +1,6 @@
 import React from 'react';
 import { TransformMode, ActionType } from '../types';
-import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
+import { useFeatureTour } from '../hooks/useFeatureTour';
 import { useActionPanelScrollbar } from '../hooks/useActionPanelScrollbar';
 import { ActionPanelAuxiliaryWorkbench } from './ActionPanelAuxiliaryWorkbench';
 import { ActionPanelFileOperations } from './ActionPanelFileOperations';
@@ -13,6 +13,7 @@ import { ActionPanelScrollbar } from './ActionPanelScrollbar';
 import { ActionPanelSettingsButton } from './ActionPanelSettingsButton';
 import { ActionPanelSmartSuggestion } from './ActionPanelSmartSuggestion';
 import { ActionPanelToolGroups } from './ActionPanelToolGroups';
+import { getActionPanelModeFeatureTour } from '../utils/actionPanelModeFeatureTour';
 import type { SmartInputSuggestion, SmartSuggestionActionId } from '../utils/smartInputSuggestion';
 
 export interface ActionPanelProps {
@@ -88,13 +89,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   // 处理模式切换并触发功能引导
   const handleModeChange = (mode: TransformMode) => {
-    // 触发相应的功能引导
-    if (mode === TransformMode.DEEP_FORMAT) {
-      triggerFeatureFirstUse(FeatureId.DEEP_FORMAT);
-    } else if (mode === TransformMode.ESCAPE || mode === TransformMode.UNESCAPE) {
-      triggerFeatureFirstUse(FeatureId.ESCAPE);
-    } else if (mode === TransformMode.UNICODE_TO_CN || mode === TransformMode.CN_TO_UNICODE) {
-      triggerFeatureFirstUse(FeatureId.UNICODE_CONVERT);
+    const featureId = getActionPanelModeFeatureTour(mode);
+    if (featureId) {
+      triggerFeatureFirstUse(featureId);
     }
 
     // 调用原始的 onModeChange
