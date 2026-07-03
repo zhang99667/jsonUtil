@@ -4,11 +4,15 @@ import {
   getCustomScrollbarDragScrollPos,
   getCustomScrollbarThumbMetrics,
 } from '../utils/customScrollbar';
+import {
+  getCustomScrollbarPointerPos,
+  readCustomScrollbarMetrics,
+  setCustomScrollbarScrollPos,
+  type CustomScrollbarOrientation,
+} from '../utils/customScrollbarDom';
 import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
-type Orientation = 'vertical' | 'horizontal';
-
-export const useCustomScrollbar = (orientation: Orientation = 'vertical', dependency?: unknown) => {
+export const useCustomScrollbar = (orientation: CustomScrollbarOrientation = 'vertical', dependency?: unknown) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [metrics, setMetrics] = useState(EMPTY_CUSTOM_SCROLLBAR_METRICS);
   const [isDragging, setIsDragging] = useState(false);
@@ -18,14 +22,7 @@ export const useCustomScrollbar = (orientation: Orientation = 'vertical', depend
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    if (orientation === 'vertical') {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      setMetrics({ scrollPos: scrollTop, scrollSize: scrollHeight, clientSize: clientHeight });
-      return;
-    }
-
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    setMetrics({ scrollPos: scrollLeft, scrollSize: scrollWidth, clientSize: clientWidth });
+    setMetrics(readCustomScrollbarMetrics(container, orientation));
   }, [orientation]);
 
   useEffect(() => {
@@ -46,7 +43,7 @@ export const useCustomScrollbar = (orientation: Orientation = 'vertical', depend
   const handleMouseDown = (event: MouseEvent) => {
     setIsDragging(true);
     dragStartRef.current = {
-      pointerPos: orientation === 'vertical' ? event.pageY : event.pageX,
+      pointerPos: getCustomScrollbarPointerPos(event.nativeEvent, orientation),
       scrollPos: metrics.scrollPos,
     };
     event.preventDefault();
@@ -56,7 +53,7 @@ export const useCustomScrollbar = (orientation: Orientation = 'vertical', depend
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    const currentPos = orientation === 'vertical' ? event.pageY : event.pageX;
+    const currentPos = getCustomScrollbarPointerPos(event, orientation);
     const nextScrollPos = getCustomScrollbarDragScrollPos({
       startScrollPos: dragStartRef.current.scrollPos,
       delta: currentPos - dragStartRef.current.pointerPos,
@@ -64,12 +61,7 @@ export const useCustomScrollbar = (orientation: Orientation = 'vertical', depend
       clientSize: metrics.clientSize,
     });
 
-    if (orientation === 'vertical') {
-      container.scrollTop = nextScrollPos;
-      return;
-    }
-
-    container.scrollLeft = nextScrollPos;
+    setCustomScrollbarScrollPos(container, orientation, nextScrollPos);
   }, [metrics.clientSize, metrics.scrollSize, orientation]);
 
   const stopDragging = useCallback(() => {
