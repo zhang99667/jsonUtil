@@ -5,6 +5,7 @@ import {
   stringifyJsonPointerValue,
 } from './jsonPointer';
 import { parseJsonLinesWithMetadata } from './jsonLines';
+import { formatUnknownError } from './errors';
 
 export type JsonTreeNodeKind = 'object' | 'array' | 'string' | 'number' | 'boolean' | 'null';
 
@@ -311,7 +312,7 @@ export const parseJsonTreeSource = (source: string): JsonValue => {
       return jsonLines.map(record => record.value) as JsonValue;
     }
 
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatUnknownError(error);
     throw new Error(`JSON 结构解析失败: ${message}`);
   }
 };

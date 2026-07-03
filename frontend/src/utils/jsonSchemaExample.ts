@@ -1,3 +1,4 @@
+import { formatUnknownError } from './errors';
 import { validateJsonAgainstSchema, type JsonSchemaValidationResult } from './jsonSchemaValidation';
 
 export interface JsonSchemaExampleResult {
@@ -1034,7 +1035,7 @@ export const generateJsonSchemaExampleText = (schemaText: string): JsonSchemaExa
   try {
     schema = JSON.parse(schemaText);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatUnknownError(error);
     return { error: `Schema 不是合法 JSON: ${message}` };
   }
 

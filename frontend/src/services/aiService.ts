@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { AIConfig, AIProvider } from "../types";
+import { formatUnknownError } from "../utils/errors";
 import { base64Decode } from "../utils/schemeUtils";
 
 export const AI_REPAIR_TIMEOUT_MS = 30_000;
@@ -603,7 +604,7 @@ export const fixJsonWithRepairDetails = async (
   } catch (error: unknown) {
     console.error("Error calling AI API:", error);
 
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = formatUnknownError(error);
 
     // 如果已经是我们自定义的错误信息，直接抛出
     if (
@@ -642,7 +643,7 @@ export const testAIConnection = async (
       allowLocalRepair: false,
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = formatUnknownError(error);
     if (errorMessage === AI_REPAIR_TIMEOUT_MESSAGE) {
       throw new Error(AI_CONNECTION_TEST_TIMEOUT_MESSAGE);
     }

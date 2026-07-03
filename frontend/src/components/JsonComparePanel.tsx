@@ -11,6 +11,7 @@ import {
 } from '../utils/jsonSemanticDiff';
 import { copyText, getClipboardErrorMessage, readClipboardText } from '../utils/clipboard';
 import { formatByteSize, getDocumentStats } from '../utils/documentStats';
+import { formatUnknownError } from '../utils/errors';
 import { showError, showSuccess } from '../utils/toast';
 
 interface JsonComparePanelProps {
@@ -72,7 +73,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
     } catch (error) {
       return {
         result: null,
-        error: error instanceof Error ? error.message : String(error),
+        error: formatUnknownError(error),
       };
     }
   }, [compareText, ignoredPaths, isOpen, sourceText]);
@@ -98,7 +99,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
       setCompareText(formatted);
       showSuccess(`对比 JSON 已格式化（${formatSizeLabel(formatted)}）`);
     } catch (error) {
-      showError(error instanceof Error ? error.message : String(error));
+      showError(formatUnknownError(error));
     }
   };
 

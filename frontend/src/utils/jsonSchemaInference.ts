@@ -1,3 +1,4 @@
+import { formatUnknownError } from './errors';
 import { isLikelyJsonLinesInput, parseJsonLinesDetailed } from './jsonLines';
 
 export interface JsonSchemaInferenceResult {
@@ -432,7 +433,7 @@ const parseSchemaSource = (jsonText: string): ParsedSchemaSource | { error: stri
       sourceKind: 'json',
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatUnknownError(error);
 
     if (isLikelyJsonLinesInput(jsonText)) {
       const jsonLines = parseJsonLinesDetailed(jsonText);

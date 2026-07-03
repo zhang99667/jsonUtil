@@ -1,4 +1,5 @@
 import { TransformMode, type JsonValue } from '../types';
+import { formatUnknownError } from './errors';
 
 export interface ImportedTextFile {
   content: string;
@@ -337,7 +338,7 @@ const toPayloadBody = (
         ...(truncated.truncated ? { truncated: true } : {}),
       };
     } catch (error) {
-      const parseError = error instanceof Error ? error.message : String(error);
+      const parseError = formatUnknownError(error);
       return {
         kind: 'text',
         text,

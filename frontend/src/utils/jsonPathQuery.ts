@@ -2,6 +2,7 @@ import { JSONPath } from 'jsonpath-plus';
 import { parse as parseJsonSourceMap } from 'json-source-map';
 import type { HighlightRange, JsonValue } from '../types';
 import { getBusinessLabelForField } from './businessLabels';
+import { formatUnknownError } from './errors';
 import { decodeJsonPointerSegment, encodeJsonPointerSegment } from './jsonPointer';
 import { parseJsonLinesWithMetadata, type JsonLineRecord } from './jsonLines';
 import { deepParseWithContext } from './transformations';
@@ -79,7 +80,7 @@ const parseJsonPathSource = (
       };
     }
 
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatUnknownError(error);
     throw new Error(`JSON 解析错误: ${message}`);
   }
 };
@@ -237,7 +238,7 @@ export const queryJsonPathRanges = (
     if (error instanceof JsonPathResultLimitReached) {
       isLimited = true;
     } else {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatUnknownError(error);
       throw new Error(`JSONPath 查询错误: ${message}`);
     }
   }

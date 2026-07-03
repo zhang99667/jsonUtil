@@ -12,6 +12,7 @@ import {
 } from '../utils/schemeUtils';
 import { QRCodeCanvas } from 'qrcode.react';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import { formatUnknownError } from '../utils/errors';
 import { formatPrimaryCmdHandlerCompatibleResult } from '../utils/schemeMetadata';
 import {
   buildSchemeQualitySummary,
@@ -342,7 +343,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       JSON.parse(editedContent);
       return '';
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatUnknownError(error);
       return `JSON 内容格式有误: ${message}`;
     }
   }, [decodeResult.isJson, editedContent, isPristineDecodedContent]);
