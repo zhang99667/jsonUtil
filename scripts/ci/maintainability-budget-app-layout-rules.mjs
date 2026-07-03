@@ -11,8 +11,18 @@ export const appLayoutMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/hooks/useLayout.ts',
-    maxLines: 60,
+    maxLines: 55,
     reason: '底层布局 hook 只维护拖拽 resize 状态和全局鼠标监听，尺寸计算留在纯 helper',
+  },
+  {
+    file: 'frontend/src/hooks/useWindowMouseDragListeners.ts',
+    maxLines: 35,
+    reason: '窗口鼠标拖拽监听 hook 只负责 mousemove/mouseup 挂载和清理，不承载拖拽计算',
+  },
+  {
+    file: 'frontend/src/hooks/useWindowMouseDragListeners.test.ts',
+    maxLines: 65,
+    reason: '窗口鼠标拖拽监听测试只锁定未激活不挂载和 cleanup 移除监听',
   },
   {
     file: 'frontend/src/hooks/layoutResize.ts',
