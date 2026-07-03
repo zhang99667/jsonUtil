@@ -4,7 +4,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from 'react';
-import { getPaneMouseResizePercent, getSidebarMouseResizeWidth } from './layoutResize';
+import { updateLayoutResizeDrag } from './layoutResizeDragUpdate';
 import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
 interface UseLayoutResizeDragInput {
@@ -36,18 +36,15 @@ export const useLayoutResizeDrag = ({
   }, [setIsResizingPane, setIsResizingSidebar]);
 
   const handleMouseMove = useCallback((event: MouseEvent) => {
-    if (isResizingSidebar) {
-      setSidebarWidth(getSidebarMouseResizeWidth(event.clientX));
-    }
-    if (isResizingPane && appRef.current) {
-      const appRect = appRef.current.getBoundingClientRect();
-      setLeftPaneWidthPercent(getPaneMouseResizePercent({
-        clientX: event.clientX,
-        appLeft: appRect.left,
-        appWidth: appRect.width,
-        sidebarWidth,
-      }));
-    }
+    updateLayoutResizeDrag({
+      clientX: event.clientX,
+      appElement: appRef.current,
+      sidebarWidth,
+      isResizingSidebar,
+      isResizingPane,
+      setSidebarWidth,
+      setLeftPaneWidthPercent,
+    });
   }, [
     appRef,
     isResizingPane,

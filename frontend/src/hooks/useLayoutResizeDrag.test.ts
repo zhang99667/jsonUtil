@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { updateLayoutResizeDrag } from './layoutResizeDragUpdate';
 import { useLayoutResizeDrag } from './useLayoutResizeDrag';
 import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
@@ -9,13 +10,19 @@ vi.mock('react', async importOriginal => ({
   useCallback: reactMocks.useCallback,
 }));
 
+vi.mock('./layoutResizeDragUpdate', () => ({
+  updateLayoutResizeDrag: vi.fn(),
+}));
+
 vi.mock('./useWindowMouseDragListeners', async importOriginal => ({
   ...await importOriginal<typeof import('./useWindowMouseDragListeners')>(),
   useWindowMouseDragListeners: vi.fn(),
 }));
 
+const appRef = { current: null };
+
 const createInput = (overrides = {}) => ({
-  appRef: { current: null },
+  appRef,
   sidebarWidth: 220,
   isResizingSidebar: false,
   isResizingPane: false,
@@ -27,8 +34,6 @@ const createInput = (overrides = {}) => ({
 });
 
 const getListeners = () => vi.mocked(useWindowMouseDragListeners).mock.calls.at(-1)?.[0];
-const moveMouse = (clientX: number) => getListeners()?.onMouseMove({ clientX } as MouseEvent);
-const appRefWithRect = { current: { getBoundingClientRect: () => ({ left: 10, width: 1010 }) } };
 
 describe('useLayoutResizeDrag', () => {
   beforeEach(() => {
@@ -57,31 +62,16 @@ describe('useLayoutResizeDrag', () => {
     expect(input.setIsResizingPane).toHaveBeenCalledWith(false);
   });
 
-  it('拖拽侧栏时按鼠标位置更新侧栏宽度', () => {
-    const input = createInput({ isResizingSidebar: true });
+  it('鼠标移动时委托拖拽更新 helper', () => {
+    const input = createInput({ isResizingPane: true });
     useLayoutResizeDrag(input);
-    moveMouse(260);
+    getListeners()?.onMouseMove({ clientX: 620 } as MouseEvent);
 
-    expect(input.setSidebarWidth).toHaveBeenCalledWith(260);
-    expect(input.setLeftPaneWidthPercent).not.toHaveBeenCalled();
-  });
-
-  it('拖拽分栏时按编辑区相对位置更新左右比例', () => {
-    const input = createInput({
+    expect(updateLayoutResizeDrag).toHaveBeenCalledWith(expect.objectContaining({
+      clientX: 620,
+      appElement: appRef.current,
+      sidebarWidth: input.sidebarWidth,
       isResizingPane: true,
-      sidebarWidth: 210,
-      appRef: appRefWithRect,
-    });
-    useLayoutResizeDrag(input);
-    moveMouse(620);
-
-    expect(input.setLeftPaneWidthPercent).toHaveBeenCalledWith(50);
-    expect(input.setSidebarWidth).not.toHaveBeenCalled();
-
-    const missingRefInput = createInput({ isResizingPane: true });
-    useLayoutResizeDrag(missingRefInput);
-    moveMouse(620);
-
-    expect(missingRefInput.setLeftPaneWidthPercent).not.toHaveBeenCalled();
+    }));
   });
 });

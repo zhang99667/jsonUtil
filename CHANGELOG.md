@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.450 (2026-07-03) - 布局鼠标拖拽更新分发拆分
+### 🏗️ 架构与基础设施
+- **布局拖拽降噪**: 将侧栏与分栏 mousemove 更新分发抽成 `updateLayoutResizeDrag`，`useLayoutResizeDrag` 只保留开始/停止拖拽、callback 装配和窗口监听，并补充独立 helper 测试覆盖侧栏、分栏和缺少容器兜底
+
 ## v1.8.449 (2026-07-03) - SOURCE 校验请求职责拆分
 ### 🏗️ 架构与基础设施
 - **SOURCE 校验降噪**: 将 SOURCE 输入清洗、容器校验启动、requestId 防串写和空输入恢复抽成 `runAppSourceValidationRequest`，hook 只保留防抖和未完成任务清理，并新增独立预算表覆盖校验 hook 与请求 helper
