@@ -16,6 +16,11 @@ export const schemeViewerShellTestMaintainabilityBudgets = [
     'Scheme Viewer 测试 React 树 helper 只负责文本收集和按 data-tour/type 查找'
   ),
   schemeViewerShellTestBudget(
+    'schemeViewerRenderedElementTestHelpers.ts',
+    45,
+    'Scheme Viewer rendered 测试 helper 只负责显式渲染无 Hook 函数组件后的文本收集和 data-tour 查找'
+  ),
+  schemeViewerShellTestBudget(
     'SchemeViewerBase64MetaPanel.test.tsx',
     75,
     'Scheme 内部 Base64 元信息面板测试只覆盖展示截断、数量和空态'

@@ -1,70 +1,13 @@
-import type { Dispatch, SetStateAction } from 'react';
 import toast from 'react-hot-toast';
 import { describe, expect, it, vi } from 'vitest';
-import type { TransformReportPanelCopyWorkflow } from '../utils/transformReportPanelCopyWorkflow';
 import type { RankedCmdComparisonCandidate } from '../utils/transformReportCmdComparison';
-import {
-  createInitialTransformReportCmdComparisonState,
-  type TransformReportCmdComparisonState,
-} from '../utils/transformReportCmdComparisonController';
-import type { TransformReportRecord } from '../utils/transformSummary';
-import { buildTransformReportRecordSectionBindings } from './transformReportRecordSectionBindings';
+import { buildBindings, buildCopyWorkflow, record } from './transformReportRecordSectionBindingsTestFixture';
 
 vi.mock('react-hot-toast', () => ({
   default: {
     success: vi.fn(),
   },
 }));
-
-const record = { path: '$.cmd' } as TransformReportRecord;
-
-const buildCopyWorkflow = (): TransformReportPanelCopyWorkflow => ({
-  copyPath: vi.fn(),
-  copyOriginalValue: vi.fn(),
-  copyDecodedPathValue: vi.fn(),
-  copyCmdStructure: vi.fn(),
-  copyCmdComparisonPackage: vi.fn(),
-  copyCmdComparisonDiff: vi.fn(),
-} as unknown as TransformReportPanelCopyWorkflow);
-
-const createStateSpy = <T>(initialState: T) => {
-  let state = initialState;
-  const setState = vi.fn((nextState: SetStateAction<T>) => {
-    state = typeof nextState === 'function'
-      ? (nextState as (currentState: T) => T)(state)
-      : nextState;
-  });
-
-  return {
-    getState: () => state,
-    setState: setState as Dispatch<SetStateAction<T>>,
-  };
-};
-
-const buildBindings = (
-  overrides: Partial<Parameters<typeof buildTransformReportRecordSectionBindings>[0]> = {}
-) => {
-  const cmdComparisonState = overrides.cmdComparisonState ||
-    createInitialTransformReportCmdComparisonState();
-  const cmdStateSpy = createStateSpy<TransformReportCmdComparisonState>(cmdComparisonState);
-  const queryStateSpy = createStateSpy('');
-  const getCandidateRecords = vi.fn(() => [record]);
-
-  return {
-    cmdStateSpy,
-    queryStateSpy,
-    getCandidateRecords,
-    bindings: buildTransformReportRecordSectionBindings({
-      copyWorkflow: buildCopyWorkflow(),
-      cmdComparisonState,
-      setCmdComparisonState: cmdStateSpy.setState,
-      setQuery: queryStateSpy.setState,
-      firstCmdStructureRecord: record,
-      getCandidateRecords,
-      ...overrides,
-    }),
-  };
-};
 
 describe('buildTransformReportRecordSectionBindings', () => {
   it('打开首个 CMD 对比时设置筛选词并清空当前候选', () => {
