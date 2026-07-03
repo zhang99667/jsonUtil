@@ -33,6 +33,7 @@ import { useAppTemplateFillCommand } from './hooks/useAppTemplateFillCommand';
 import { useAppPrimaryActionCommand } from './hooks/useAppPrimaryActionCommand';
 import { useAppAutoSaveToggleCommand } from './hooks/useAppAutoSaveToggleCommand';
 import { useAppSchemeEditCommand } from './hooks/useAppSchemeEditCommand';
+import { useAppPanelLayoutResetCommand } from './hooks/useAppPanelLayoutResetCommand';
 import { useAppSourceInputCommands } from './hooks/useAppSourceInputCommands';
 import { useAppToolPanelCommands } from './hooks/useAppToolPanelCommands';
 import {
@@ -49,7 +50,6 @@ import { AppToolPanelsController } from './components/AppToolPanelsController';
 import ErrorBoundary from './components/ErrorBoundary';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
-import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
 import {
   getJsonValidationErrorLocation,
   startJsonValidation,
@@ -534,11 +534,7 @@ const App: React.FC = () => {
     onPreviewChange: handleOutputChange,
   });
 
-  const handleResetPanelLayout = useCallback(() => {
-    resetFloatingPanelLayoutStorage();
-    notifyFloatingPanelLayoutReset();
-    showSuccess('浮动面板布局已恢复默认');
-  }, []);
+  const { handleResetPanelLayout } = useAppPanelLayoutResetCommand();
 
   const editorUiState = buildAppEditorUiState({
     sourceText: input,
