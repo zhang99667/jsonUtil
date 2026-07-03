@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.467 (2026-07-03) - 工具面板开关 Hook 拆分
+### 🏗️ 架构与基础设施
+- **工具面板命令降噪**: 将 JSONPath、结构树、对比、Schema、Scheme 和模板填充的开关命令装配抽成 `useAppToolPanelToggleHandlers`，`useAppToolPanelCommands` 只保留面板状态和子命令聚合，并收紧对应可维护性预算避免开关逻辑回流
+
 ## v1.8.466 (2026-07-03) - 编辑器错误定位 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App 错误定位降噪**: 将 SOURCE/PREVIEW 校验错误定位、状态栏定位 SOURCE 错误和定位信号递增抽成 `useAppEditorValidationLocations`，`App.tsx` 只消费定位结果和定位命令，并补充 hook 测试固定 valid 空态、双侧定位计算和状态栏定位信号行为

@@ -1,9 +1,10 @@
 import { appWorkflowCommandPanelTestMaintainabilityBudgets } from './maintainability-budget-app-workflow-command-panel-test-rules.mjs';
 const commandPanelBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 export const appWorkflowCommandPanelMaintainabilityBudgets = [
-  commandPanelBudget('frontend/src/hooks/useAppToolPanelCommands.ts', 230, '主应用工具面板命令 hook 只维护面板状态、开关命令装配和子命令聚合，请求 ID 与具体动作编排不得回流'),
+  commandPanelBudget('frontend/src/hooks/useAppToolPanelCommands.ts', 180, '主应用工具面板命令 hook 只维护面板状态和子命令聚合，开关命令装配不得回流'),
   commandPanelBudget('frontend/src/hooks/useAppToolPanelActionCommands.ts', 170, '工具面板动作命令 hook 只维护 JSONPath 定位、Scheme 打开和模板填充的跨面板编排'),
   commandPanelBudget('frontend/src/hooks/useAppToolPanelRequestCommands.ts', 90, '工具面板请求命令 hook 只维护 JSONPath、结构树、Scheme 和模板填充请求状态与递增 ID'),
+  commandPanelBudget('frontend/src/hooks/useAppToolPanelToggleHandlers.ts', 115, '工具面板开关 hook 只维护面板 toggle handler、深度解析兜底和开关事件装配'),
   commandPanelBudget('frontend/src/hooks/useAppSettingsModalCommands.ts', 55, '主应用设置弹窗命令 hook 只维护初始页签、打开关闭状态和设置入口埋点'),
   commandPanelBudget('frontend/src/hooks/useAppChangelogCommands.ts', 65, '主应用 changelog 命令 hook 只维护更新日志弹窗状态、打开关闭命令和全局打开事件监听'),
   commandPanelBudget('frontend/src/utils/appToolPanelCommandPlans.ts', 120, '工具面板命令计划 helper 只维护请求 ID、面板事件名、SOURCE Scheme 判断和 Changelog 状态归一化'),
