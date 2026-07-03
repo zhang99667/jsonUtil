@@ -5,12 +5,11 @@ import {
   type TransformContext,
   type ValidationResult,
 } from '../types';
-import { runAppPreviewOutputSyncRequest } from '../utils/appPreviewOutputSyncRequest';
 import {
   beginPreviewOutputDraft,
   clearPreviewOutputDraft,
 } from '../utils/appPreviewOutputDraft';
-import { applyAppPreviewOutputSyncResult } from '../utils/appPreviewOutputSyncResult';
+import { createAppPreviewOutputSyncTask } from '../utils/appPreviewOutputSyncTask';
 import { useAppPreviewValidation } from './useAppPreviewValidation';
 import { useAppPreviewOutputSyncScheduler } from './useAppPreviewOutputSyncScheduler';
 
@@ -68,29 +67,19 @@ export const useAppPreviewOutputSync = ({
     beginPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue, previewText);
     updatePreviewValidation(previewText);
 
-    scheduleOutputSync(async (isCurrent) => {
-      const syncResult = await runAppPreviewOutputSyncRequest({
-        previewText,
-        files,
-        activeFileId,
-        mode,
-        originalInput: inputRef.current,
-        fallbackContext: fallbackContextRef.current,
-        validateJsonMaybeAsync,
-      });
-
-      if (!isCurrent()) return false;
-
-      return applyAppPreviewOutputSyncResult({
-        syncResult,
-        previewText,
-        inputRef,
-        pendingOutputValue,
-        setPreviewValidation,
-        onSetInput,
-        onUpdateActiveFileContent,
-      });
-    });
+    scheduleOutputSync(createAppPreviewOutputSyncTask({
+      previewText,
+      files,
+      activeFileId,
+      mode,
+      inputRef,
+      fallbackContextRef,
+      pendingOutputValue,
+      validateJsonMaybeAsync,
+      setPreviewValidation,
+      onSetInput,
+      onUpdateActiveFileContent,
+    }));
   }, [
     activeFileId,
     fallbackContextRef,
@@ -102,6 +91,7 @@ export const useAppPreviewOutputSync = ({
     onUpdateActiveFileContent,
     pendingOutputValue,
     scheduleOutputSync,
+    setPreviewValidation,
     updatePreviewValidation,
     validateJsonMaybeAsync,
   ]);

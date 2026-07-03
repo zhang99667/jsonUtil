@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.428 (2026-07-03) - PREVIEW 同步任务拆分
+### 🏗️ 架构与基础设施
+- **同步任务降压**: 将 PREVIEW 反向同步的 request、失效检查和结果应用串联抽成 task helper，hook 只保留草稿暂存、校验触发和 scheduler wiring，并补充任务快照与失效保护单测
+
 ## v1.8.427 (2026-07-03) - 复制 Workflow Model 契约拆分
 ### 🏗️ 架构与基础设施
 - **复制模型降压**: 将深度解析复制 workflow model 的输入输出契约和 active CMD 对比上下文拼装拆成独立模块，主入口只保留 workflow 装配、active CMD 文本注入和候选记录 getter
