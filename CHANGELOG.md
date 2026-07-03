@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.452 (2026-07-03) - 新版本检测副作用拆分
+### 🏗️ 架构与基础设施
+- **更新检测降噪**: 将新版本提示 Toast 和 `version.json` 拉取抽成 `appUpdateCheckEffects`，`useAppUpdateCheck` 只保留生产环境生命周期、活跃态检查和调度装配，并补充副作用 helper 测试覆盖固定 Toast id 与 no-store manifest 请求
+
 ## v1.8.451 (2026-07-03) - 布局键盘调整应用流程收敛
 ### 🏗️ 架构与基础设施
 - **布局键盘调整降噪**: 将键盘 resize 的 next 值计算、`preventDefault` 和状态写入流程集中到 `applyLayoutKeyboardResize`，controller 只保留 sidebar/pane 当前值与 setter 装配，并让 controller 测试回归透传与委托边界
