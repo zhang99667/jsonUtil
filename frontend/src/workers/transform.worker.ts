@@ -1,4 +1,5 @@
 import { TransformMode } from '../types';
+import { formatUnknownError } from '../utils/errors';
 import { deepParseWithContext, parseJsonInput, performTransform } from '../utils/transformations';
 import { parseJsonLines } from '../utils/jsonLines';
 import { jsonValueToTypeScriptDeclaration } from '../utils/jsonToTypeScript';
@@ -51,7 +52,7 @@ self.onmessage = (event: MessageEvent<AppAsyncTransformWorkerRequest>) => {
     const response: AppAsyncTransformWorkerResponse = {
       id,
       output: input,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatUnknownError(error),
     };
     self.postMessage(response);
   }

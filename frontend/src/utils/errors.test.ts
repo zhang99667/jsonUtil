@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDetailedErrorMessage, getErrorMessage, isAbortError } from './errors';
+import { formatUnknownError, getDetailedErrorMessage, getErrorMessage, isAbortError } from './errors';
 
 describe('getErrorMessage', () => {
   it('优先展示 Error 中的具体原因', () => {
@@ -23,6 +23,20 @@ describe('getDetailedErrorMessage', () => {
 
   it('没有底层原因时使用兜底文案', () => {
     expect(getDetailedErrorMessage(undefined, '保存文件失败')).toBe('保存文件失败');
+  });
+});
+
+describe('formatUnknownError', () => {
+  it('保持 Error.message 原样返回', () => {
+    expect(formatUnknownError(new Error('权限已失效'))).toBe('权限已失效');
+    expect(formatUnknownError(new Error(''))).toBe('');
+  });
+
+  it('非 Error 值使用 String 转换', () => {
+    expect(formatUnknownError('blocked')).toBe('blocked');
+    expect(formatUnknownError(null)).toBe('null');
+    expect(formatUnknownError(undefined)).toBe('undefined');
+    expect(formatUnknownError({ code: 500 })).toBe('[object Object]');
   });
 });
 

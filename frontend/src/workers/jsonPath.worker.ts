@@ -1,4 +1,5 @@
 import type { HighlightRange } from '../types';
+import { formatUnknownError } from '../utils/errors';
 import { queryJsonPathRanges, type JsonPathQueryItem } from '../utils/jsonPathQuery';
 
 interface JsonPathWorkerRequest {
@@ -46,7 +47,7 @@ self.onmessage = (event: MessageEvent<JsonPathWorkerRequest>) => {
       totalResults: 0,
       isLimited: false,
       resultLimit: 0,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatUnknownError(error),
     };
     self.postMessage(response);
   }
