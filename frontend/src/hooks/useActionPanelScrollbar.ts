@@ -4,6 +4,7 @@ import {
   getActionPanelDragScrollTop,
   getActionPanelScrollbarThumbState,
 } from '../utils/actionPanelScrollbar';
+import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
 interface UseActionPanelScrollbarOptions {
   isCollapsed: boolean;
@@ -60,32 +61,26 @@ export const useActionPanelScrollbar = ({
     event.preventDefault();
   }, [scrollState.scrollTop]);
 
-  useEffect(() => {
-    if (!isDragging) return;
+  const handleDragMouseMove = useCallback((event: MouseEvent) => {
+    if (!containerRef.current) return;
 
-    const handleMouseMove = (event: MouseEvent) => {
-      if (!containerRef.current) return;
+    containerRef.current.scrollTop = getActionPanelDragScrollTop({
+      startScrollTop: dragStartRef.current.scrollTop,
+      deltaY: event.pageY - dragStartRef.current.y,
+      scrollHeight: scrollState.scrollHeight,
+      clientHeight: scrollState.clientHeight,
+    });
+  }, [scrollState.clientHeight, scrollState.scrollHeight]);
 
-      containerRef.current.scrollTop = getActionPanelDragScrollTop({
-        startScrollTop: dragStartRef.current.scrollTop,
-        deltaY: event.pageY - dragStartRef.current.y,
-        scrollHeight: scrollState.scrollHeight,
-        clientHeight: scrollState.clientHeight,
-      });
-    };
+  const stopDragging = useCallback(() => {
+    setIsDragging(false);
+  }, []);
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, scrollState.clientHeight, scrollState.scrollHeight]);
+  useWindowMouseDragListeners({
+    isActive: isDragging,
+    onMouseMove: handleDragMouseMove,
+    onMouseUp: stopDragging,
+  });
 
   return {
     containerRef,

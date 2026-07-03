@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect, type RefObject } from 'react';
+import { useState, useCallback, type RefObject } from 'react';
 import { getPaneMouseResizePercent, getSidebarMouseResizeWidth } from './layoutResize';
+import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
 export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
     const [sidebarWidth, setSidebarWidth] = useState(220);
@@ -10,10 +11,10 @@ export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
 
     const startResizingSidebar = () => setIsResizingSidebar(true);
     const startResizingPane = () => setIsResizingPane(true);
-    const stopResizing = () => {
+    const stopResizing = useCallback(() => {
         setIsResizingSidebar(false);
         setIsResizingPane(false);
-    };
+    }, []);
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (isResizingSidebar) {
@@ -30,17 +31,11 @@ export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
         }
     }, [isResizingSidebar, isResizingPane, sidebarWidth, appRef]);
 
-    // 仅在拖拽状态下挂载全局鼠标事件监听器，避免非拖拽时的无效监听开销
-    useEffect(() => {
-        if (!isResizingSidebar && !isResizingPane) return;
-
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', stopResizing);
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', stopResizing);
-        };
-    }, [isResizingSidebar, isResizingPane, handleMouseMove]);
+    useWindowMouseDragListeners({
+        isActive: isResizingSidebar || isResizingPane,
+        onMouseMove: handleMouseMove,
+        onMouseUp: stopResizing,
+    });
 
     return {
         sidebarWidth,

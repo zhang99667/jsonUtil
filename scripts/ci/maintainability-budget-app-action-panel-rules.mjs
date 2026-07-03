@@ -32,7 +32,7 @@ export const appActionPanelMaintainabilityBudgets = [
   actionPanelBudget('frontend/src/components/ActionPanelAiFixIcon.tsx', 35, '工具栏 AI 修复图标只维护 idle/loading 两种图标状态'),
   actionPanelBudget('frontend/src/components/ActionPanelPanelIcon.tsx', 70, '工具栏面板入口图标组件只维护面板类型到图标的映射，增长时按图标类型拆分'),
   actionPanelBudget('frontend/src/components/ActionPanelToolIcon.tsx', 100, '工具栏图标组件只维护工具模式到图标的映射，增长时按图标类型拆分'),
-  actionPanelBudget('frontend/src/hooks/useActionPanelScrollbar.ts', 120, '工具栏自定义滚动条 hook 应只维护容器监听和拖拽状态，纯计算继续放在 utils'),
+  actionPanelBudget('frontend/src/hooks/useActionPanelScrollbar.ts', 105, '工具栏自定义滚动条 hook 应只维护容器监听和拖拽状态，纯计算和全局鼠标监听继续下沉'),
   actionPanelBudget('frontend/src/utils/actionPanelScrollbar.ts', 60, '工具栏滚动条 helper 应只维护 thumb 和拖拽滚动计算，复杂交互继续放在 hook'),
   actionPanelBudget('frontend/src/utils/actionPanelToolGroupTypes.ts', 45, '工具栏转换按钮类型和 icon id 契约应独立维护，避免配置文件因类型声明回涨'),
   actionPanelBudget('frontend/src/utils/actionPanelToolGroups.ts', 55, '工具栏转换按钮配置应保持纯元数据，新增工具只追加配置并补测试'),

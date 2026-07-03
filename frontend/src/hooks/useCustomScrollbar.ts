@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
 type Orientation = 'vertical' | 'horizontal';
 
@@ -52,36 +53,30 @@ export const useCustomScrollbar = (orientation: Orientation = 'vertical', depend
         e.preventDefault();
     };
 
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isDragging || !scrollContainerRef.current) return;
+    const handleDragMouseMove = useCallback((e: MouseEvent) => {
+        if (!scrollContainerRef.current) return;
 
-            const currentPos = orientation === 'vertical' ? e.pageY : e.pageX;
-            const delta = currentPos - startPos;
-            const scrollRatio = scrollSize / clientSize;
-            const newScrollPos = startScrollPos + delta * scrollRatio;
+        const currentPos = orientation === 'vertical' ? e.pageY : e.pageX;
+        const delta = currentPos - startPos;
+        const scrollRatio = scrollSize / clientSize;
+        const newScrollPos = startScrollPos + delta * scrollRatio;
 
-            if (orientation === 'vertical') {
-                scrollContainerRef.current.scrollTop = newScrollPos;
-            } else {
-                scrollContainerRef.current.scrollLeft = newScrollPos;
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsDragging(false);
-        };
-
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
+        if (orientation === 'vertical') {
+            scrollContainerRef.current.scrollTop = newScrollPos;
+        } else {
+            scrollContainerRef.current.scrollLeft = newScrollPos;
         }
+    }, [clientSize, orientation, scrollSize, startPos, startScrollPos]);
 
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, startPos, startScrollPos, scrollSize, clientSize, orientation]);
+    const stopDragging = useCallback(() => {
+        setIsDragging(false);
+    }, []);
+
+    useWindowMouseDragListeners({
+        isActive: isDragging,
+        onMouseMove: handleDragMouseMove,
+        onMouseUp: stopDragging,
+    });
 
     const rawThumbSize = (clientSize / scrollSize) * 100;
     // Minimum size 5% or dynamic calculation if needed (Editor used dynamic)
