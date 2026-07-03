@@ -1,32 +1,6 @@
-import type {
-  FileTab,
-  TransformContext,
-  TransformMode,
-  ValidationResult,
-} from '../types';
 import { runAppPreviewOutputSyncRequest } from './appPreviewOutputSyncRequest';
 import { applyAppPreviewOutputSyncResult } from './appPreviewOutputSyncResult';
-
-interface MutableValueRef<T> {
-  current: T;
-}
-
-export interface AppPreviewOutputSyncTaskInput {
-  previewText: string;
-  files: FileTab[];
-  activeFileId: string | null;
-  mode: TransformMode;
-  inputRef: MutableValueRef<string>;
-  fallbackContextRef: MutableValueRef<TransformContext | null>;
-  pendingOutputValue: MutableValueRef<string>;
-  validateJsonMaybeAsync: (
-    value: string,
-    options?: { requireContainer?: boolean }
-  ) => Promise<ValidationResult>;
-  setPreviewValidation: (validation: ValidationResult) => void;
-  onSetInput: (value: string) => void;
-  onUpdateActiveFileContent: (value: string) => void;
-}
+import type { AppPreviewOutputSyncTaskInput } from './appPreviewOutputSyncTaskTypes';
 
 export const createAppPreviewOutputSyncTask = ({
   previewText,

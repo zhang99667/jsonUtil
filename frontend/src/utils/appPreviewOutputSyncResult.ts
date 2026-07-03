@@ -1,10 +1,7 @@
 import type { ValidationResult } from '../types';
 import type { AppPreviewOutputSyncRunnerResult } from './appPreviewOutputSyncRunner';
+import type { MutableValueRef } from './mutableValueRef';
 import { keepPreviewOutputDraft } from './appPreviewOutputDraft';
-
-interface MutableValueRef<T> {
-  current: T;
-}
 
 interface AppPreviewOutputSyncResultInput {
   syncResult: AppPreviewOutputSyncRunnerResult;
