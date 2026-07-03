@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.460 (2026-07-03) - 活动文件模式同步 Hook 拆分
+### 🏗️ 架构与基础设施
+- **App 文件模式同步降噪**: 将当前转换模式写回活动 Tab 的副作用抽成 `useAppActiveFileModeSync`，`App.tsx` 只保留 `activeFileId`、`mode` 和 `setFiles` 装配，并补充 hook 测试固定无活动 Tab 跳过与仅更新当前 Tab 行为
+
 ## v1.8.459 (2026-07-03) - 自动保存开关命令 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App 自动保存开关降噪**: 将自动保存开关的计划判断、状态写入和 Toast 副作用接线抽成 `useAppAutoSaveToggleCommand`，`App.tsx` 只保留文件状态与 setter 装配，并补充 hook 测试固定无文件、无句柄和成功开启三条路径
