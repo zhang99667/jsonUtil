@@ -37,6 +37,8 @@ if (highUsageSummaries.length > 0) {
     console.log(`> ${summary}`);
   }
 }
-for (const summary of summaries) {
-  console.log(`- ${summary}`);
+if (reportOptions.printAllSummaries !== false) {
+  for (const summary of summaries) {
+    console.log(`- ${summary}`);
+  }
 }
