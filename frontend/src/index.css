@@ -142,47 +142,35 @@
 }
 
 .app-button--primary {
-  --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.16),
-    0 1px 2px rgba(0, 0, 0, 0.22);
+  --app-button-rest-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
 
-  background: linear-gradient(180deg, rgba(48, 57, 70, 0.98) 0%, rgba(35, 42, 52, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(52, 61, 73, 0.98) 0%, rgba(38, 46, 55, 0.98) 100%);
   color: #f8fafc;
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .app-button--primary:hover {
-  --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.16),
-    0 2px 6px rgba(0, 0, 0, 0.24);
+  --app-button-rest-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
 
-  background: linear-gradient(180deg, rgba(56, 67, 82, 0.98) 0%, rgba(40, 49, 61, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(59, 70, 84, 0.98) 0%, rgba(43, 52, 63, 0.98) 100%);
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .changelog-modal__confirm-button {
-  --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 1px 2px rgba(0, 0, 0, 0.24);
+  --app-button-rest-shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
 
-  background: linear-gradient(180deg, rgba(45, 54, 66, 0.98) 0%, rgba(33, 40, 50, 0.98) 100%);
-  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(52, 61, 73, 0.98) 0%, rgba(38, 46, 55, 0.98) 100%);
+  border-radius: 6px;
   color: #f3f4f6;
-  min-width: 76px;
+  min-width: 72px;
   outline: none;
   box-shadow: var(--app-button-rest-shadow);
 }
 
 .changelog-modal__confirm-button:hover {
-  --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 2px 6px rgba(0, 0, 0, 0.24);
+  --app-button-rest-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
 
-  background: linear-gradient(180deg, rgba(54, 65, 80, 0.98) 0%, rgba(39, 49, 61, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(59, 70, 84, 0.98) 0%, rgba(43, 52, 63, 0.98) 100%);
   color: #ffffff;
   box-shadow: var(--app-button-rest-shadow);
 }
@@ -192,7 +180,7 @@
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-color: transparent !important;
 
-  background: linear-gradient(180deg, rgba(54, 65, 80, 0.98) 0%, rgba(39, 49, 61, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(59, 70, 84, 0.98) 0%, rgba(43, 52, 63, 0.98) 100%);
   color: #ffffff;
   filter: brightness(1.04);
   box-shadow: var(--app-button-rest-shadow) !important;
@@ -201,7 +189,7 @@
 .app-button--secondary {
   background: rgba(255, 255, 255, 0.055);
   color: #d1d5db;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  box-shadow: none;
 }
 
 .app-button--secondary:hover {

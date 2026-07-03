@@ -1,9 +1,7 @@
+import { transformSummaryCollaborationMaintainabilityBudgets } from './maintainability-budget-transform-summary-collaboration-rules.mjs';
+
 export const transformSummaryArchiveMaintainabilityBudgets = [
-  {
-    file: 'frontend/src/utils/transformCollaborationReport.ts',
-    maxLines: 130,
-    reason: '深度解析协作排查报告应保持纯文本编排模块，避免协作材料文案回流到报告聚合文件',
-  },
+  ...transformSummaryCollaborationMaintainabilityBudgets,
   {
     file: 'frontend/src/utils/transformArchivePackage.ts',
     maxLines: 125,
