@@ -43,6 +43,8 @@ export const appActionPanelMaintainabilityBudgets = [
   actionPanelBudget('frontend/src/utils/actionPanelModeFeatureTour.ts', 25, '工具栏模式引导映射应保持纯函数，组件只负责触发回调'),
   actionPanelBudget('frontend/src/utils/actionPanelModeFeatureTour.test.ts', 50, '工具栏模式引导映射测试只覆盖模式到 FeatureId 的矩阵和无引导模式空态'),
   actionPanelBudget('frontend/src/utils/actionPanelSmartSuggestionState.ts', 40, '工具栏智能建议状态 helper 应只维护 tone、来源标签和可见动作规则'),
+  actionPanelBudget('frontend/src/utils/actionPanelSmartSuggestionViewModel.ts', 50, '工具栏智能建议视图模型只维护主动作、折叠态文案和展开态动作聚合'),
+  actionPanelBudget('frontend/src/utils/actionPanelSmartSuggestionViewModel.test.ts', 70, '工具栏智能建议视图模型测试只覆盖空态、来源文案和动作裁剪'),
   actionPanelBudget('frontend/src/utils/actionPanelFileActions.ts', 55, '工具栏文件操作 helper 应只维护文件按钮 title 与 AI 修复按钮状态矩阵'),
   actionPanelBudget('frontend/src/utils/actionPanelButtonState.ts', 15, '工具栏按钮状态兼容出口应只聚合按钮 class 和折叠态 a11y helper'),
   actionPanelBudget('frontend/src/utils/actionPanelButtonClassName.ts', 35, '工具栏按钮 class helper 应只维护通用、激活、非激活和折叠态样式拼装'),
