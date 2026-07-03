@@ -1,0 +1,135 @@
+/* Driver.js 样式会动态加载，本文件必须在 driver.css 之后加载。 */
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) {
+  background: var(--editor-sidebar) !important;
+  border: 1px solid rgba(148, 163, 184, 0.14) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.38) !important;
+  color: var(--editor-fg) !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-title {
+  color: #ffffff !important;
+  font-size: 16px !important;
+  letter-spacing: 0 !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-description {
+  color: #d1d5db !important;
+  font-size: 13px !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-progress-text {
+  color: #8b949e !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button {
+  all: unset;
+  --app-button-rest-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+
+  align-items: center !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  box-shadow: var(--app-button-rest-shadow) !important;
+  box-sizing: border-box !important;
+  color: #d1d5db !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  justify-content: center !important;
+  line-height: 1.2 !important;
+  outline: none !important;
+  overflow: hidden !important;
+  padding: 7px 11px !important;
+  position: relative !important;
+  text-shadow: none !important;
+  transition: background-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease, filter 0.16s ease, transform 0.16s ease !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button::before {
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  content: '';
+  inset: 1px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 0.16s ease, box-shadow 0.16s ease;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible) {
+  border: 0 !important;
+  box-shadow: var(--app-button-rest-shadow) !important;
+  outline: none !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible)::before {
+  opacity: 0;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:hover {
+  background: rgba(255, 255, 255, 0.085) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:hover::before {
+  opacity: 0.4;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible {
+  background: rgba(255, 255, 255, 0.085) !important;
+  box-shadow: var(--app-button-rest-shadow, 0 0 0 0 transparent) !important;
+  color: #ffffff !important;
+  filter: brightness(1.03) !important;
+  outline: none !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible::before {
+  box-shadow:
+    inset 0 0 0 1px rgba(226, 232, 240, 0.24),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn {
+  --app-button-rest-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 8px 16px rgba(0, 0, 0, 0.18);
+
+  background: linear-gradient(180deg, rgba(61, 74, 91, 0.98) 0%, rgba(38, 48, 61, 0.98) 100%) !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  box-shadow: var(--app-button-rest-shadow) !important;
+  color: #f9fafb !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:hover,
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:focus-visible {
+  --app-button-rest-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 10px 20px rgba(0, 0, 0, 0.22);
+
+  background: linear-gradient(180deg, rgba(72, 87, 106, 0.98) 0%, rgba(45, 57, 72, 0.98) 100%) !important;
+  border: 0 !important;
+  box-shadow: var(--app-button-rest-shadow) !important;
+  filter: brightness(1.02) !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:focus:not(:focus-visible) {
+  border: 0 !important;
+  box-shadow: var(--app-button-rest-shadow) !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-close-btn {
+  color: #9ca3af !important;
+}
+
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-close-btn:hover,
+:where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-close-btn:focus-visible {
+  color: #ffffff !important;
+}

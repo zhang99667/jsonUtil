@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const css = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../styles/driverTourOverrides.css', import.meta.url), 'utf8');
 
 const getRuleBody = (selector: string): string => {
   const selectorStart = css.indexOf(selector);
@@ -21,25 +21,43 @@ const getRuleBody = (selector: string): string => {
 describe('Driver tour button styles', () => {
   it('引导主按钮不复用高饱和蓝色主按钮视觉', () => {
     const buttonRule = getRuleBody(
-      '.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn,'
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn'
     );
 
-    expect(buttonRule).toContain('rgba(55, 69, 88, 0.98)');
-    expect(buttonRule).toContain('border-radius: 999px');
+    expect(buttonRule).toContain('rgba(61, 74, 91, 0.98)');
+    expect(buttonRule).toContain('border: 0 !important');
+    expect(buttonRule).toContain('border-radius: 7px');
+    expect(buttonRule).not.toContain('999px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
   });
 
-  it('引导按钮键盘焦点不再绘制描边或厚底线选中框', () => {
+  it('引导按钮键盘焦点只保留内侧细光，不再绘制外框', () => {
     const focusRule = getRuleBody(
-      '.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,'
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible'
+    );
+    const focusAccentRule = getRuleBody(
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible::before'
     );
 
-    expect(focusRule).toContain('rgba(66, 82, 104, 0.98)');
-    expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow) !important');
+    expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow');
+    expect(focusAccentRule).toContain('inset 0 0 0 1px rgba(226, 232, 240, 0.24)');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(focusRule).not.toContain('inset 0 -2px');
     expect(css).not.toContain('driver-popover-next-btn::after');
+  });
+
+  it('鼠标点击焦点不会留下选中框', () => {
+    const focusRule = getRuleBody(
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible)'
+    );
+    const focusAccentRule = getRuleBody(
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus:not(:focus-visible)::before'
+    );
+
+    expect(focusRule).toContain('border: 0 !important');
+    expect(focusRule).toContain('outline: none !important');
+    expect(focusAccentRule).toContain('opacity: 0');
   });
 });

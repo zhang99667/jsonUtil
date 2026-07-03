@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import type { DriveStep, Driver } from 'driver.js';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
+import { loadDriverTour } from '../utils/driverTourLoader';
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 
 // 定义所有支持引导的功能
@@ -193,12 +194,6 @@ const FEATURE_TOURS: Record<FeatureId, FeatureTourConfig> = {
 
 const STORAGE_KEY_PREFIX = 'json-helper-feature-tour-';
 
-const loadDriver = async () => {
-    await import('driver.js/dist/driver.css');
-    const module = await import('driver.js');
-    return module.driver;
-};
-
 export const useFeatureTour = () => {
     const driverInstanceRef = useRef<Driver | null>(null);
     const isMountedRef = useRef(true);
@@ -247,9 +242,9 @@ export const useFeatureTour = () => {
             driverInstanceRef.current = null;
         }
 
-        let createDriver: Awaited<ReturnType<typeof loadDriver>>;
+        let createDriver: Awaited<ReturnType<typeof loadDriverTour>>;
         try {
-            createDriver = await loadDriver();
+            createDriver = await loadDriverTour();
         } catch (error) {
             if (dispatchChunkLoadRecoveryEvent(error)) return;
 

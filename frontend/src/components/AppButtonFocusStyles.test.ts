@@ -52,12 +52,13 @@ describe('App button focus styles', () => {
     expect(toastButtonRule).not.toContain('rgba(0, 122, 204');
   });
 
-  it('版本弹窗确认按钮是无外框胶囊按钮', () => {
+  it('版本弹窗确认按钮是低圆角无外框实体按钮', () => {
     const buttonRule = getRuleBody(appCss, '.changelog-modal__confirm-button');
     const focusRule = getRuleBody(appCss, '.changelog-modal__confirm-button:focus-visible');
 
-    expect(buttonRule).toContain('border-radius: 999px');
-    expect(buttonRule).toContain('min-width: 84px');
+    expect(buttonRule).toContain('border-radius: 7px');
+    expect(buttonRule).toContain('min-width: 76px');
+    expect(buttonRule).not.toContain('999px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow) !important');
@@ -72,5 +73,12 @@ describe('App button focus styles', () => {
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow)');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 -2px');
+  });
+
+  it('版本更新 Toast 容器不再使用旧蓝色描边', () => {
+    const toastRule = getRuleBody(releaseToastCss, '.app-release-toast');
+
+    expect(toastRule).toContain('rgba(148, 163, 184, 0.16)');
+    expect(toastRule).not.toContain('rgba(0, 122, 204');
   });
 });
