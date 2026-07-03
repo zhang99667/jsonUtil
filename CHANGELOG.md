@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.461 (2026-07-03) - Scheme 编辑命令 Hook 拆分
+### 🏗️ 架构与基础设施
+- **App Scheme 编辑降噪**: 将 Scheme 编辑回写 PREVIEW 的 JSON Pointer/旧 JSONPath 分支、格式化输出和错误提示抽成 `useAppSchemeEditCommand`，`App.tsx` 只保留 PREVIEW 文本与变更回调装配，并补充 hook 测试固定成功与失败路径
+
 ## v1.8.460 (2026-07-03) - 活动文件模式同步 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App 文件模式同步降噪**: 将当前转换模式写回活动 Tab 的副作用抽成 `useAppActiveFileModeSync`，`App.tsx` 只保留 `activeFileId`、`mode` 和 `setFiles` 装配，并补充 hook 测试固定无活动 Tab 跳过与仅更新当前 Tab 行为

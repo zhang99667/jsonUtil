@@ -32,6 +32,7 @@ import { useAppSourceValidation } from './hooks/useAppSourceValidation';
 import { useAppTemplateFillCommand } from './hooks/useAppTemplateFillCommand';
 import { useAppPrimaryActionCommand } from './hooks/useAppPrimaryActionCommand';
 import { useAppAutoSaveToggleCommand } from './hooks/useAppAutoSaveToggleCommand';
+import { useAppSchemeEditCommand } from './hooks/useAppSchemeEditCommand';
 import { useAppSourceInputCommands } from './hooks/useAppSourceInputCommands';
 import { useAppToolPanelCommands } from './hooks/useAppToolPanelCommands';
 import {
@@ -46,11 +47,9 @@ import { AppLazyShellModals } from './components/AppLazyShellModals';
 import { AppStatusBarController } from './components/AppStatusBarController';
 import { AppToolPanelsController } from './components/AppToolPanelsController';
 import ErrorBoundary from './components/ErrorBoundary';
-import { getDetailedErrorMessage } from './utils/errors';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './utils/panelLayout';
-import { setJsonPointerValue } from './utils/jsonPointer';
 import {
   getJsonValidationErrorLocation,
   startJsonValidation,
@@ -60,7 +59,6 @@ import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFee
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
 import { buildAppEditorUiState } from './utils/appEditorUiState';
 import { getContentSizeSummary } from './utils/appWorkflowHelpers';
-import { setLegacyJsonPathValue } from './utils/appLegacyJsonPath';
 import {
   ASYNC_VALIDATION_THRESHOLD,
 } from './utils/appAsyncPolicy';
@@ -531,24 +529,10 @@ const App: React.FC = () => {
     onTrackToolEvent: trackCurrentToolEvent,
   });
 
-  // 处理 Scheme 编辑：将修改后的值应用到 JSON 对应路径
-  const handleSchemeEdit = useCallback((jsonPath: string, newValue: string, pointer?: string) => {
-    try {
-      const parsed: unknown = JSON.parse(output);
-      const updatedRoot = pointer !== undefined
-        ? setJsonPointerValue(parsed, pointer, newValue)
-        : setLegacyJsonPathValue(parsed, jsonPath, newValue);
-
-      // 格式化并触发更新
-      const updatedOutput = JSON.stringify(updatedRoot, null, 2);
-      handleOutputChange(updatedOutput);
-
-      showSuccess('Scheme 修改已应用');
-    } catch (err) {
-      console.error('Failed to apply scheme edit:', err);
-      showError(getDetailedErrorMessage(err, '应用修改失败'));
-    }
-  }, [output, handleOutputChange]);
+  const { handleSchemeEdit } = useAppSchemeEditCommand({
+    previewText: output,
+    onPreviewChange: handleOutputChange,
+  });
 
   const handleResetPanelLayout = useCallback(() => {
     resetFloatingPanelLayoutStorage();
