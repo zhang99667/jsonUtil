@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.449 (2026-07-03) - SOURCE 校验请求职责拆分
+### 🏗️ 架构与基础设施
+- **SOURCE 校验降噪**: 将 SOURCE 输入清洗、容器校验启动、requestId 防串写和空输入恢复抽成 `runAppSourceValidationRequest`，hook 只保留防抖和未完成任务清理，并新增独立预算表覆盖校验 hook 与请求 helper
+
 ## v1.8.448 (2026-07-03) - PREVIEW 输出变更任务装配收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 输出变更降噪**: 将 PREVIEW 输出变更里的同步任务创建和调度抽成 `scheduleAppPreviewOutputChangeTask`，handler 只保留草稿开始、即时校验和任务调度入口，并把 PREVIEW 同步 utils 预算拆成运行时/测试子表
