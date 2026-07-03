@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.475 (2026-07-03) - 主动作 Hook 类型契约收缩
+### 🏗️ 架构与基础设施
+- **主动作 Hook 瘦身**: `useAppPrimaryActionCommand` 直接复用 runner effects 类型作为输入契约，只保留可选 `now` 覆盖项，减少命令回调字段的重复声明并收紧源码预算
+
 ## v1.8.474 (2026-07-03) - 主动作测试样板收敛
 ### 🏗️ 架构与基础设施
 - **命令 Hook 测试降噪**: `useAppPrimaryActionCommand` 文件动作测试改为参数化用例，`useAppPanelLayoutResetCommand` 测试收敛重复导入，并同步收紧对应可维护性预算

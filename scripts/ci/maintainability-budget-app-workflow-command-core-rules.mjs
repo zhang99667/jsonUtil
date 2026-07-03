@@ -6,7 +6,7 @@ export const appWorkflowCommandCoreMaintainabilityBudgets = [
   ...appWorkflowCommandAutoSaveMaintainabilityBudgets,
   commandCoreBudget('frontend/src/hooks/useAppCopyCommands.ts', 65, '复制命令 hook 只接 SOURCE/PREVIEW 文本和复制 runner，副作用分支留在可测 helper'),
   commandCoreBudget('frontend/src/utils/appCopyCommandRunner.ts', 85, '复制命令 runner 只维护空态、处理中、复制、toast 和打点语义'),
-  commandCoreBudget('frontend/src/hooks/useAppPrimaryActionCommand.ts', 52, '主动作命令 hook 只装配 AI 修复、保存、打开和新建标签 runner'),
+  commandCoreBudget('frontend/src/hooks/useAppPrimaryActionCommand.ts', 47, '主动作命令 hook 只装配 AI 修复、保存、打开和新建标签 runner'),
   commandCoreBudget('frontend/src/hooks/useAppPrimaryActionCommand.test.ts', 75, '主动作命令 hook 测试只锁定动作分发和文件动作埋点'),
   commandCoreBudget('frontend/src/utils/appPrimaryActionCommandRunner.ts', 60, '主动作命令 runner 只维护动作分发、文件动作开始时间和埋点语义'),
   commandCoreBudget('frontend/src/hooks/useAppPanelLayoutResetCommand.ts', 25, '浮动面板布局重置 hook 只维护布局缓存清理、重置通知和成功提示'),

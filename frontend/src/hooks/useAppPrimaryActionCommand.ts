@@ -5,12 +5,7 @@ import {
   type AppPrimaryActionCommandEffects,
 } from '../utils/appPrimaryActionCommandRunner';
 
-interface UseAppPrimaryActionCommandInput {
-  onAiRepair: AppPrimaryActionCommandEffects['onAiRepair'];
-  onToolbarSave: AppPrimaryActionCommandEffects['onToolbarSave'];
-  onOpenFile: AppPrimaryActionCommandEffects['onOpenFile'];
-  onCreateNewTab: () => void;
-  onTrackToolEvent: AppPrimaryActionCommandEffects['onTrackToolEvent'];
+interface UseAppPrimaryActionCommandInput extends Omit<AppPrimaryActionCommandEffects, 'now'> {
   now?: () => number;
 }
 
