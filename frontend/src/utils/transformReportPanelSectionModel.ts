@@ -1,33 +1,17 @@
-import type { TransformContextReport, TransformReportView } from './transformSummary';
 import {
   buildTransformReportPanelPlaceholderModel,
-  type TransformReportPanelPlaceholderModel,
 } from './transformReportPanelPlaceholderModel';
-import {
-  buildTransformReportPanelActionModel,
-  type TransformReportPanelActionModel,
-} from './transformReportPanelActionModel';
-import {
-  buildTransformReportSectionVisibility,
-  type TransformReportSectionVisibility,
-} from './transformReportSectionVisibility';
+import { buildTransformReportPanelActionModel } from './transformReportPanelActionModel';
+import { buildTransformReportSectionVisibility } from './transformReportSectionVisibility';
+import type {
+  TransformReportPanelSectionModel,
+  TransformReportPanelSectionModelInput,
+} from './transformReportPanelSectionModelTypes';
 
-interface TransformReportPanelSectionModelInput {
-  report: TransformContextReport | null;
-  reportView: TransformReportView | null;
-  isFilterPending: boolean;
-  hasTemplateFillTarget: boolean;
-  hasPlaceholderFillTemplate: boolean;
-  formatPlaceholderFillTitle: (readyTitle: string) => string;
-  archivePackageTitle: string;
-  collaborationReportTitle: string;
-  qualitySnapshotTitle: string;
-}
-
-export interface TransformReportPanelSectionModel
-  extends TransformReportPanelPlaceholderModel, TransformReportPanelActionModel {
-  sectionVisibility: TransformReportSectionVisibility;
-}
+export type {
+  TransformReportPanelSectionModel,
+  TransformReportPanelSectionModelInput,
+} from './transformReportPanelSectionModelTypes';
 
 export const buildTransformReportPanelSectionModel = ({
   report,
