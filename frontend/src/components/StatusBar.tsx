@@ -65,7 +65,7 @@ export const StatusBar: React.FC<StatusBarProps> = (props) => {
         sourceValidationAction={statusBarViewModel.sourceValidationAction}
       />
 
-      {/* 右侧：当前视图模式与版本号 */}
+      {/* 右侧：视图模式与版本号 */}
       <StatusBarViewStatus
         localProcessingStatus={statusBarViewModel.localProcessingStatus}
         mode={mode}
