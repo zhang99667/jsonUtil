@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.470 (2026-07-03) - 主动作命令装配简化
+### 🏗️ 架构与基础设施
+- **主动作 Hook 降噪**: `useAppPrimaryActionCommand` 去掉仅用于传递 effects 的 `useMemo` 中间层，`handleAction` 直接把当前回调集合传给 runner，测试同步移除 `useMemo` mock，并收紧主动作 hook 与测试预算
+
 ## v1.8.469 (2026-07-03) - 工具面板开关 Handler 去重
 ### 🏗️ 架构与基础设施
 - **面板开关装配收敛**: `useAppToolPanelToggleHandlers` 抽出模块内通用 `usePanelToggleHandler`，六个面板开关保持独立 `useCallback` 和固定 hook 顺序，同时移除重复装配代码并将文件从 102 行降至 88 行

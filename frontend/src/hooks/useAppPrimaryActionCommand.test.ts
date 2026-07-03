@@ -2,12 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionType } from '../types';
 import { useAppPrimaryActionCommand } from './useAppPrimaryActionCommand';
 
-const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn(), useMemo: vi.fn() }));
+const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn() }));
 
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
-  useMemo: reactMocks.useMemo,
 }));
 
 const createCallbacks = () => ({
@@ -22,7 +21,6 @@ describe('useAppPrimaryActionCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-    reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
   });
 
   it('把 AI 修复和保存动作交给对应命令', async () => {
