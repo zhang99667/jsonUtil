@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.462 (2026-07-03) - 面板布局重置命令 Hook 拆分
+### 🏗️ 架构与基础设施
+- **App 面板布局重置降噪**: 将浮动面板布局重置的布局缓存清理、全局重置通知和成功提示抽成 `useAppPanelLayoutResetCommand`，`App.tsx` 只保留设置弹窗命令装配，并补充 hook 测试固定重置副作用
+
 ## v1.8.461 (2026-07-03) - Scheme 编辑命令 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App Scheme 编辑降噪**: 将 Scheme 编辑回写 PREVIEW 的 JSON Pointer/旧 JSONPath 分支、格式化输出和错误提示抽成 `useAppSchemeEditCommand`，`App.tsx` 只保留 PREVIEW 文本与变更回调装配，并补充 hook 测试固定成功与失败路径
