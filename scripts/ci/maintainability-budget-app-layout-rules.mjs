@@ -11,8 +11,18 @@ export const appLayoutMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/hooks/useLayout.ts',
-    maxLines: 70,
-    reason: '底层布局 hook 只维护拖拽 resize 状态、全局鼠标监听和布局尺寸 clamp',
+    maxLines: 60,
+    reason: '底层布局 hook 只维护拖拽 resize 状态和全局鼠标监听，尺寸计算留在纯 helper',
+  },
+  {
+    file: 'frontend/src/hooks/layoutResize.ts',
+    maxLines: 55,
+    reason: '布局鼠标拖拽 helper 应保持纯计算，避免夹带组件状态',
+  },
+  {
+    file: 'frontend/src/hooks/layoutResize.test.ts',
+    maxLines: 55,
+    reason: '布局鼠标拖拽 helper 测试只锁定 clamp、侧栏宽度和分栏百分比计算',
   },
   {
     file: 'frontend/src/hooks/layoutKeyboardResize.ts',

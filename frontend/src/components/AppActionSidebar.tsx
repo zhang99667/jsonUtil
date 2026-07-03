@@ -4,7 +4,7 @@ import {
   AppSidebarActionPanel,
   type AppSidebarActionPanelProps,
 } from './AppSidebarActionPanel';
-import { SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH } from '../hooks/useLayout';
+import { SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH } from '../hooks/layoutResize';
 
 interface AppActionSidebarProps extends AppSidebarActionPanelProps {
   isResizing: boolean;

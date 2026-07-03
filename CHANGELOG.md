@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.432 (2026-07-03) - 布局拖拽计算拆分
+### 🏗️ 架构与基础设施
+- **布局 resize 降耦**: 将侧栏和分栏鼠标拖拽计算抽成 `layoutResize` 纯 helper，`useLayout` 只保留拖拽状态和全局事件监听，补齐边界收敛单测
+
 ## v1.8.431 (2026-07-03) - 状态栏 Controller 拆分
 ### 🏗️ 架构与基础设施
 - **状态栏装配降压**: 将 SOURCE/PREVIEW 活跃内容统计和状态栏 props 装配抽成 `AppStatusBarController`，App 只保留光标、错误定位和顶层状态，状态栏统计继续使用大输入扫描上限保护
