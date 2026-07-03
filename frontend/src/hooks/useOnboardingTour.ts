@@ -1,13 +1,8 @@
 import { useEffect } from 'react';
 import type { Driver } from 'driver.js';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
+import { loadDriverTour } from '../utils/driverTourLoader';
 import { safeReadStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
-
-const loadDriver = async () => {
-    await import('driver.js/dist/driver.css');
-    const module = await import('driver.js');
-    return module.driver;
-};
 
 export const useOnboardingTour = () => {
     useEffect(() => {
@@ -24,9 +19,9 @@ export const useOnboardingTour = () => {
 
         // 延迟启动引导，确保 DOM 已完全加载
         const timer = setTimeout(async () => {
-            let createDriver: Awaited<ReturnType<typeof loadDriver>>;
+            let createDriver: Awaited<ReturnType<typeof loadDriverTour>>;
             try {
-                createDriver = await loadDriver();
+                createDriver = await loadDriverTour();
             } catch (error) {
                 if (dispatchChunkLoadRecoveryEvent(error)) return;
 

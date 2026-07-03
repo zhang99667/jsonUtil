@@ -4,7 +4,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
-  border: 1px solid rgba(0, 122, 204, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 0.5rem;
   background: var(--editor-sidebar, #252526);
   color: #ffffff;

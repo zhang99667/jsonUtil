@@ -162,9 +162,9 @@
     0 10px 22px rgba(0, 0, 0, 0.24);
 
   background: linear-gradient(180deg, rgba(64, 78, 96, 0.98) 0%, rgba(38, 49, 63, 0.98) 100%);
-  border-radius: 999px;
+  border-radius: 7px;
   color: #f3f4f6;
-  min-width: 84px;
+  min-width: 76px;
   box-shadow: var(--app-button-rest-shadow);
 }
 
@@ -234,135 +234,6 @@
   box-shadow:
     0 0 0 1px rgba(125, 211, 252, 0.42),
     0 0 0 4px rgba(14, 165, 233, 0.14);
-}
-
-.json-helper-tour-popover,
-.json-helper-feature-tour-popover {
-  background: var(--editor-sidebar) !important;
-  border: 1px solid rgba(148, 163, 184, 0.2) !important;
-  border-radius: 8px !important;
-  color: var(--editor-fg) !important;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.38) !important;
-}
-
-.json-helper-tour-popover .driver-popover-title,
-.json-helper-feature-tour-popover .driver-popover-title {
-  color: #ffffff !important;
-  font-size: 16px !important;
-  letter-spacing: 0 !important;
-}
-
-.json-helper-tour-popover .driver-popover-description,
-.json-helper-feature-tour-popover .driver-popover-description {
-  color: #d1d5db !important;
-  font-size: 13px !important;
-}
-
-.json-helper-tour-popover .driver-popover-progress-text,
-.json-helper-feature-tour-popover .driver-popover-progress-text {
-  color: #8b949e !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-}
-
-.json-helper-tour-popover .driver-popover-footer button,
-.json-helper-feature-tour-popover .driver-popover-footer button {
-  all: unset;
-  --app-button-rest-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-
-  background: rgba(255, 255, 255, 0.055) !important;
-  border: 0 !important;
-  border-radius: 6px !important;
-  box-sizing: border-box !important;
-  color: #d1d5db !important;
-  cursor: pointer !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  justify-content: center !important;
-  line-height: 1.2 !important;
-  overflow: hidden !important;
-  padding: 7px 10px !important;
-  outline: none !important;
-  position: relative !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
-  text-shadow: none !important;
-  transition: background-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease, filter 0.16s ease, transform 0.16s ease !important;
-}
-
-.json-helper-tour-popover .driver-popover-footer button:focus:not(:focus-visible),
-.json-helper-feature-tour-popover .driver-popover-footer button:focus:not(:focus-visible) {
-  border: 0 !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
-  outline: none !important;
-}
-
-.json-helper-tour-popover .driver-popover-footer button:focus-visible,
-.json-helper-feature-tour-popover .driver-popover-footer button:focus-visible {
-  background: rgba(255, 255, 255, 0.085) !important;
-  color: #ffffff !important;
-  filter: brightness(1.04) !important;
-  box-shadow: var(--app-button-rest-shadow, 0 0 0 0 transparent) !important;
-  outline: none !important;
-}
-
-.json-helper-tour-popover .driver-popover-footer button:hover,
-.json-helper-feature-tour-popover .driver-popover-footer button:hover {
-  background: rgba(255, 255, 255, 0.085) !important;
-  border-color: transparent !important;
-  color: #ffffff !important;
-}
-
-.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn,
-.json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn {
-  --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 8px 16px rgba(0, 0, 0, 0.18);
-
-  background: linear-gradient(180deg, rgba(55, 69, 88, 0.98) 0%, rgba(36, 46, 60, 0.98) 100%) !important;
-  border: 0 !important;
-  border-radius: 999px !important;
-  color: #f9fafb !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
-}
-
-.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:hover,
-.json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:hover {
-  --app-button-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 10px 20px rgba(0, 0, 0, 0.22);
-
-  background: linear-gradient(180deg, rgba(66, 82, 104, 0.98) 0%, rgba(44, 56, 72, 0.98) 100%) !important;
-  border: 0 !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
-}
-
-.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus:not(:focus-visible),
-.json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus:not(:focus-visible) {
-  border: 0 !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
-}
-
-.json-helper-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible,
-.json-helper-feature-tour-popover .driver-popover-footer .driver-popover-next-btn:focus-visible {
-  background: linear-gradient(180deg, rgba(66, 82, 104, 0.98) 0%, rgba(44, 56, 72, 0.98) 100%) !important;
-  border: 0 !important;
-  filter: brightness(1.04) !important;
-  box-shadow: var(--app-button-rest-shadow) !important;
-}
-
-.json-helper-tour-popover .driver-popover-close-btn,
-.json-helper-feature-tour-popover .driver-popover-close-btn {
-  color: #9ca3af !important;
-}
-
-.json-helper-tour-popover .driver-popover-close-btn:hover,
-.json-helper-feature-tour-popover .driver-popover-close-btn:hover,
-.json-helper-tour-popover .driver-popover-close-btn:focus-visible,
-.json-helper-feature-tour-popover .driver-popover-close-btn:focus-visible {
-  color: #ffffff !important;
 }
 
 /* Monaco 快捷键提示只做说明，不参与鼠标命中，避免遮挡搜索框关闭按钮 */
