@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.474 (2026-07-03) - 主动作测试样板收敛
+### 🏗️ 架构与基础设施
+- **命令 Hook 测试降噪**: `useAppPrimaryActionCommand` 文件动作测试改为参数化用例，`useAppPanelLayoutResetCommand` 测试收敛重复导入，并同步收紧对应可维护性预算
+
 ## v1.8.473 (2026-07-03) - 文件系统 Hook 契约收缩
 ### 🏗️ 架构与基础设施
 - **文件系统 Hook 瘦身**: 移除 `useFileSystem` 未使用的 `output` 入参和单文件拖拽包装返回值，调用侧只保留实际消费的 `openDroppedFiles`，减少无效 API 面和测试夹具噪音
