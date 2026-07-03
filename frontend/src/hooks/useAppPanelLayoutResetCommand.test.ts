@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  notifyFloatingPanelLayoutReset,
-  resetFloatingPanelLayoutStorage,
-} from '../utils/panelLayout';
+import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from '../utils/panelLayout';
 import { showSuccess } from '../utils/toast';
 import { useAppPanelLayoutResetCommand } from './useAppPanelLayoutResetCommand';
 

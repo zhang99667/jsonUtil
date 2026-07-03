@@ -17,6 +17,11 @@ const createCallbacks = () => ({
   onTrackToolEvent: vi.fn(),
 });
 
+const fileActionCases = [
+  { action: ActionType.OPEN, effect: 'onOpenFile', now: 321 },
+  { action: ActionType.NEW_TAB, effect: 'onCreateNewTab', now: 654 },
+] as const;
+
 describe('useAppPrimaryActionCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,24 +41,14 @@ describe('useAppPrimaryActionCommand', () => {
     expect(callbacks.onTrackToolEvent).not.toHaveBeenCalled();
   });
 
-  it('打开文件成功后记录文件事件耗时起点', async () => {
+  it.each(fileActionCases)('$action 成功后记录文件事件耗时起点', async ({ action, effect, now }) => {
     const callbacks = createCallbacks();
-    const { handleAction } = useAppPrimaryActionCommand({ ...callbacks, now: () => 321 });
+    const { handleAction } = useAppPrimaryActionCommand({ ...callbacks, now: () => now });
 
-    await handleAction(ActionType.OPEN);
+    await handleAction(action);
 
-    expect(callbacks.onOpenFile).toHaveBeenCalledTimes(1);
-    expect(callbacks.onTrackToolEvent).toHaveBeenCalledWith(ActionType.OPEN, 'file', 'success', 321);
-  });
-
-  it('新建标签后记录文件事件耗时起点', async () => {
-    const callbacks = createCallbacks();
-    const { handleAction } = useAppPrimaryActionCommand({ ...callbacks, now: () => 654 });
-
-    await handleAction(ActionType.NEW_TAB);
-
-    expect(callbacks.onCreateNewTab).toHaveBeenCalledTimes(1);
-    expect(callbacks.onTrackToolEvent).toHaveBeenCalledWith(ActionType.NEW_TAB, 'file', 'success', 654);
+    expect(callbacks[effect]).toHaveBeenCalledTimes(1);
+    expect(callbacks.onTrackToolEvent).toHaveBeenCalledWith(action, 'file', 'success', now);
   });
 
   it('忽略暂未接入的动作', async () => {
