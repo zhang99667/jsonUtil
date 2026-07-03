@@ -1,6 +1,5 @@
-import { useState, useCallback, type RefObject } from 'react';
-import { getPaneMouseResizePercent, getSidebarMouseResizeWidth } from './layoutResize';
-import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
+import { useState, type RefObject } from 'react';
+import { useLayoutResizeDrag } from './useLayoutResizeDrag';
 
 export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
     const [sidebarWidth, setSidebarWidth] = useState(220);
@@ -9,32 +8,18 @@ export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
     const [isResizingSidebar, setIsResizingSidebar] = useState(false);
     const [isResizingPane, setIsResizingPane] = useState(false);
 
-    const startResizingSidebar = () => setIsResizingSidebar(true);
-    const startResizingPane = () => setIsResizingPane(true);
-    const stopResizing = useCallback(() => {
-        setIsResizingSidebar(false);
-        setIsResizingPane(false);
-    }, []);
-
-    const handleMouseMove = useCallback((e: MouseEvent) => {
-        if (isResizingSidebar) {
-            setSidebarWidth(getSidebarMouseResizeWidth(e.clientX));
-        }
-        if (isResizingPane && appRef.current) {
-            const appRect = appRef.current.getBoundingClientRect();
-            setLeftPaneWidthPercent(getPaneMouseResizePercent({
-                clientX: e.clientX,
-                appLeft: appRect.left,
-                appWidth: appRect.width,
-                sidebarWidth,
-            }));
-        }
-    }, [isResizingSidebar, isResizingPane, sidebarWidth, appRef]);
-
-    useWindowMouseDragListeners({
-        isActive: isResizingSidebar || isResizingPane,
-        onMouseMove: handleMouseMove,
-        onMouseUp: stopResizing,
+    const {
+        startResizingSidebar,
+        startResizingPane,
+    } = useLayoutResizeDrag({
+        appRef,
+        sidebarWidth,
+        isResizingSidebar,
+        isResizingPane,
+        setSidebarWidth,
+        setLeftPaneWidthPercent,
+        setIsResizingSidebar,
+        setIsResizingPane,
     });
 
     return {
@@ -47,6 +32,6 @@ export const useLayout = (appRef: RefObject<HTMLDivElement>) => {
         isResizingSidebar,
         isResizingPane,
         startResizingSidebar,
-        startResizingPane
+        startResizingPane,
     };
 };

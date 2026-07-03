@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.436 (2026-07-03) - 布局拖拽 Hook 拆分
+### 🏗️ 架构与基础设施
+- **布局 Hook 降压**: 将侧栏和分栏鼠标拖拽的开始/停止、mousemove 更新和窗口监听装配抽成 `useLayoutResizeDrag`，`useLayout` 回归布局状态容器并收紧维护预算
+
 ## v1.8.435 (2026-07-03) - 报告面板派生模型拆分
 ### 🏗️ 架构与基础设施
 - **深度解析报告降噪**: 将报告面板的复制可用性、问题样本、占位符回填、质量快照和复制标题组合抽成 `buildTransformReportPanelDerivedModel`，主组件只保留状态、workflow 和渲染 wiring
