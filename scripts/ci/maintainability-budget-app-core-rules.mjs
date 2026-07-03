@@ -1,4 +1,5 @@
 import { appFileCloseMaintainabilityBudgets } from './maintainability-budget-app-file-close-rules.mjs';
+import { appInteractionHookMaintainabilityBudgets } from './maintainability-budget-app-interaction-hook-rules.mjs';
 import { appLayoutMaintainabilityBudgets } from './maintainability-budget-app-layout-rules.mjs';
 
 export const appCoreMaintainabilityBudgets = [
@@ -7,6 +8,7 @@ export const appCoreMaintainabilityBudgets = [
     maxLines: 960,
     reason: '主应用编排文件应只负责顶层状态和组件装配，PREVIEW 同步、SOURCE 校验、模板填充、工具面板命令、文件关闭保护、布局键盘控制、懒加载 loaded 状态和派生状态不得回流',
   },
+  ...appInteractionHookMaintainabilityBudgets,
   ...appLayoutMaintainabilityBudgets,
   {
     file: 'frontend/src/hooks/useAppAsyncTransform.ts',

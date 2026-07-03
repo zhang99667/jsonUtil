@@ -4,6 +4,7 @@ import {
   getActionPanelDragScrollTop,
   getActionPanelScrollbarThumbState,
 } from '../utils/actionPanelScrollbar';
+import { useRafCallback } from './useRafCallback';
 import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
 interface UseActionPanelScrollbarOptions {
@@ -19,6 +20,7 @@ export const useActionPanelScrollbar = ({
   const [scrollState, setScrollState] = useState(EMPTY_ACTION_PANEL_SCROLL_STATE);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ y: 0, scrollTop: 0 });
+  const scheduleScrollFrame = useRafCallback(onScrollFrame);
 
   const updateScrollState = useCallback(() => {
     const container = containerRef.current;
@@ -46,11 +48,9 @@ export const useActionPanelScrollbar = ({
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
 
-    requestAnimationFrame(() => {
-      onScrollFrame();
-    });
+    scheduleScrollFrame();
     updateScrollState();
-  }, [onScrollFrame, updateScrollState]);
+  }, [scheduleScrollFrame, updateScrollState]);
 
   const handleScrollbarMouseDown = useCallback((event: ReactMouseEvent) => {
     setIsDragging(true);
