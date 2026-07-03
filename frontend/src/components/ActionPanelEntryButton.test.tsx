@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ActionPanelButtonBadge } from './ActionPanelButtonBadge';
 import { ActionPanelEntryButton } from './ActionPanelEntryButton';
+import { ActionPanelEntryButtonContent } from './ActionPanelEntryButtonContent';
 import { ActionPanelEntryIconSlot } from './ActionPanelEntryIconSlot';
 
 interface ElementLike {
@@ -62,15 +62,13 @@ describe('ActionPanelEntryButton', () => {
     expect(tree.props.className).toContain('shadow-[inset_3px_0_0_rgba(96,165,250,0.72)]');
     expect(tree.props.className).not.toContain('ring-');
     expect(tree.props.title).toBeUndefined();
-    expect(collectText(tree)).toContain('格式化');
+    expect(findByType(tree, ActionPanelEntryButtonContent)[0].props).toMatchObject({
+      label: '格式化',
+      badge: { label: '当前', dataTour: 'active-mode-badge' },
+    });
     expect(findByType(tree, ActionPanelEntryIconSlot)[0].props.state).toMatchObject({
       iconWrapperClassName: 'transition-colors text-blue-400',
     });
-    expect(findByType(tree, ActionPanelButtonBadge)[0].props).toMatchObject({
-      label: '当前',
-      dataTour: 'active-mode-badge',
-    });
-
     const handleClick = tree.props.onClick;
     expect(typeof handleClick).toBe('function');
     if (typeof handleClick !== 'function') throw new Error('入口按钮应透传点击回调');
@@ -98,6 +96,6 @@ describe('ActionPanelEntryButton', () => {
     expect(tree.props.title).toBe('格式化');
     expect(tree.props.className).toContain('justify-center');
     expect(collectText(tree)).not.toContain('格式化');
-    expect(findByType(tree, ActionPanelButtonBadge)).toHaveLength(0);
+    expect(findByType(tree, ActionPanelEntryButtonContent)).toHaveLength(0);
   });
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActionPanelButtonBadge } from './ActionPanelButtonBadge';
+import { ActionPanelEntryButtonContent } from './ActionPanelEntryButtonContent';
 import { ActionPanelEntryIconSlot } from './ActionPanelEntryIconSlot';
 import { getActionPanelButtonClassName } from '../utils/actionPanelButtonState';
 import type { ActionPanelEntryButtonState } from '../utils/actionPanelEntryButtonState';
@@ -31,16 +31,7 @@ export const ActionPanelEntryButton: React.FC<ActionPanelEntryButtonProps> = ({
   >
     <ActionPanelEntryIconSlot state={state.iconState}>{icon}</ActionPanelEntryIconSlot>
     {!isCollapsed && (
-      <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-        <span className="truncate">{label}</span>
-        {state.entryProps.badge && (
-          <ActionPanelButtonBadge
-            label={state.entryProps.badge.label}
-            dataTour={state.entryProps.badge.dataTour}
-            ariaHidden={state.entryProps.badge.ariaHidden}
-          />
-        )}
-      </span>
+      <ActionPanelEntryButtonContent label={label} badge={state.entryProps.badge} />
     )}
   </button>
 );
