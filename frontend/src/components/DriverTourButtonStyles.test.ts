@@ -33,6 +33,12 @@ describe('Driver tour button styles', () => {
   });
 
   it('引导按钮键盘焦点只保留内侧细光，不再绘制外框', () => {
+    const buttonRule = getRuleBody(
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button'
+    );
+    const accentBaseRule = getRuleBody(
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button::before'
+    );
     const focusRule = getRuleBody(
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible'
     );
@@ -40,6 +46,8 @@ describe('Driver tour button styles', () => {
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer button:focus-visible::before'
     );
 
+    expect(buttonRule).toContain('--driver-button-focus-accent: rgba(203, 213, 225, 0.46)');
+    expect(accentBaseRule).toContain('height: 1px');
     expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow');
     expect(focusAccentRule).toContain('box-shadow: none');
     expect(focusAccentRule).toContain('opacity: 1');
@@ -48,6 +56,7 @@ describe('Driver tour button styles', () => {
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(focusRule).not.toContain('inset 0 -2px');
     expect(focusAccentRule).not.toContain('inset 0 0 0 1px');
+    expect(css).not.toContain('rgba(94, 234, 212');
     expect(css).not.toContain('driver-popover-next-btn::after');
   });
 

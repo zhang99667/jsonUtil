@@ -15,17 +15,24 @@ const isElementLike = (node: unknown): node is ElementLike => (
   (node as ElementLike).props !== null
 );
 
+const renderFunctionElement = (node: ElementLike): unknown | null => (
+  typeof node.type === 'function' ? node.type(node.props) : null
+);
+
 const collectText = (node: unknown): string => {
   if (node === null || node === undefined || typeof node === 'boolean') return '';
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
+  if (isElementLike(node)) return collectText(renderFunctionElement(node) ?? node.props.children);
   return '';
 };
 
 const findByTour = (node: unknown, dataTour: string): ElementLike[] => {
   if (Array.isArray(node)) return node.flatMap(child => findByTour(child, dataTour));
   if (!isElementLike(node)) return [];
+
+  const renderedNode = renderFunctionElement(node);
+  if (renderedNode) return findByTour(renderedNode, dataTour);
 
   const matches = node.props['data-tour'] === dataTour ? [node] : [];
   return matches.concat(findByTour(node.props.children, dataTour));

@@ -14,8 +14,13 @@ export const schemeViewerShellComponentMaintainabilityBudgets = [
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerFooterActions.tsx',
-    240,
-    'Scheme 弹窗底部操作栏只负责按钮展示和回调透传，复制、二维码和应用逻辑应留在主弹窗状态层'
+    200,
+    'Scheme 弹窗底部操作栏只负责按钮显示条件和回调透传，按钮壳、复制、二维码和应用逻辑不得回流'
+  ),
+  schemeViewerShellComponentBudget(
+    'SchemeViewerFooterActionButton.tsx',
+    70,
+    'Scheme 弹窗底部按钮壳只维护共享样式、图标壳、禁用态和 aria/title 透传'
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerBase64MetaPanel.tsx',
