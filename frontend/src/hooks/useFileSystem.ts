@@ -9,6 +9,7 @@ import {
     loadWorkspaceDraftSnapshot,
     saveWorkspaceDraftSnapshot,
 } from '../utils/workspaceDraft';
+import { applyWorkspaceSourceState } from '../utils/workspaceSourceState';
 
 interface UseFileSystemProps {
     input: string;
@@ -17,6 +18,7 @@ interface UseFileSystemProps {
     mode: TransformMode;
     setMode: (mode: TransformMode) => void;
     output: string;
+    onBeforeSourceWorkspaceChange?: () => void;
 }
 
 interface OpenTextFileEntry {
@@ -62,7 +64,8 @@ export const useFileSystem = ({
     inputRef,
     mode,
     setMode,
-    output
+    output,
+    onBeforeSourceWorkspaceChange,
 }: UseFileSystemProps) => {
     const [restoredDraft] = useState(() => loadWorkspaceDraftSnapshot());
     const shouldSkipInitialDraftPersistRef = useRef(Boolean(restoredDraft));
@@ -77,6 +80,17 @@ export const useFileSystem = ({
     });
     const hasShownDraftPersistWarningRef = useRef(false);
 
+    const applySourceState = useCallback((content: string, nextMode?: TransformMode) => {
+        applyWorkspaceSourceState({
+            content,
+            mode: nextMode,
+            inputRef,
+            onBeforeSourceWorkspaceChange,
+            setInput,
+            setMode,
+        });
+    }, [inputRef, onBeforeSourceWorkspaceChange, setInput, setMode]);
+
     useEffect(() => {
         const draft = restoredDraft;
         if (!draft) return;
@@ -86,20 +100,16 @@ export const useFileSystem = ({
             : null;
 
         if (activeRestoredFile) {
-            setInput(activeRestoredFile.content);
-            inputRef.current = activeRestoredFile.content;
-            setMode(activeRestoredFile.mode || TransformMode.NONE);
+            applySourceState(activeRestoredFile.content, activeRestoredFile.mode || TransformMode.NONE);
             toast.success('已恢复上次未保存标签', { duration: 2000 });
             return;
         }
 
         if (draft.standaloneInput) {
-            setInput(draft.standaloneInput);
-            inputRef.current = draft.standaloneInput;
-            setMode(draft.standaloneMode || TransformMode.NONE);
+            applySourceState(draft.standaloneInput, draft.standaloneMode || TransformMode.NONE);
             toast.success('已恢复上次未保存草稿', { duration: 2000 });
         }
-    }, [inputRef, restoredDraft, setInput, setMode]);
+    }, [applySourceState, restoredDraft]);
 
     const persistWorkspaceDraft = useCallback((snapshot: ReturnType<typeof buildWorkspaceDraftSnapshot>, silent = false) => {
         const saved = saveWorkspaceDraftSnapshot(snapshot);
@@ -191,8 +201,7 @@ export const useFileSystem = ({
 
         setFiles(prev => [...prev, newFile]);
         setActiveFileId(newFileId);
-        setInput(content);
-        inputRef.current = content;
+        applySourceState(content);
     };
 
     const openTextFileEntries = async (entries: OpenTextFileEntry[]) => {
@@ -241,9 +250,7 @@ export const useFileSystem = ({
 
         setFiles(nextFiles);
         setActiveFileId(activeFile.id);
-        setInput(activeFile.content);
-        inputRef.current = activeFile.content;
-        setMode(activeFile.mode || TransformMode.NONE);
+        applySourceState(activeFile.content, activeFile.mode || TransformMode.NONE);
 
         if (openedFiles.length > 1) {
             toast.success(`已打开 ${openedFiles.length} 个文件`, { duration: 2000 });
@@ -317,11 +324,7 @@ export const useFileSystem = ({
 
         setFiles([...nextFiles, newFile]);
         setActiveFileId(newFileId);
-        setInput('');
-        inputRef.current = '';
-
-        // 重置视图模式
-        setMode(TransformMode.NONE);
+        applySourceState('', TransformMode.NONE);
     };
 
     const openFile = async () => {
@@ -466,8 +469,7 @@ export const useFileSystem = ({
                     ));
                 } else {
                     // 当保存的是 Preview 内容时，同步更新 Source 内容和状态
-                    setInput(content);
-                    inputRef.current = content;
+                    applySourceState(content);
                     setFiles(prev => prev.map(f =>
                         f.id === activeFileId ? { ...f, content: content, savedContent: content, isDirty: false } : f
                     ));
@@ -515,15 +517,11 @@ export const useFileSystem = ({
                     nextFile = newFiles[newFiles.length - 1];
                 }
                 setActiveFileId(nextFile.id);
-                setInput(nextFile.content);
-                inputRef.current = nextFile.content; // 同步 Ref 状态
-                setMode(nextFile.mode ?? TransformMode.NONE); // 恢复该标签的模式
+                applySourceState(nextFile.content, nextFile.mode ?? TransformMode.NONE);
             } else {
                 // 无打开文件
                 setActiveFileId(null);
-                setInput('');
-                inputRef.current = ''; // 同步 Ref 状态
-                setMode(TransformMode.NONE);
+                applySourceState('', TransformMode.NONE);
             }
         }
     };
@@ -532,9 +530,7 @@ export const useFileSystem = ({
         const file = files.find(f => f.id === id);
         if (file) {
             setActiveFileId(id);
-            setInput(file.content);
-            inputRef.current = file.content; // 同步 Ref 状态
-            setMode(file.mode ?? TransformMode.NONE); // 恢复该标签保存的模式
+            applySourceState(file.content, file.mode ?? TransformMode.NONE);
         }
     };
 

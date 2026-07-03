@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.443 (2026-07-03) - 文件系统 PREVIEW 待回写取消边界
+### 🐛 Bug 修复
+- **文件切换回写保护**: 将文件系统的打开、切换、新建、关闭和保存 PREVIEW 回 SOURCE 入口统一接入工作区 SOURCE 状态 helper，替换 SOURCE/Mode 前先取消 PREVIEW 待同步草稿，补齐 activeFileId 不变化时的旧回写风险
+
 ## v1.8.442 (2026-07-03) - PREVIEW 待回写取消边界收敛
 ### 🐛 Bug 修复
 - **PREVIEW 待回写保护**: 将命令入口的模式切换和 SOURCE 替换统一接入 `useAppPreviewSafeSetters`，执行前先取消 PREVIEW 待同步草稿，降低旧预览编辑晚到回写导致 SOURCE/模式回弹的风险
