@@ -4,7 +4,7 @@ import { showSuccess, showError } from './utils/toast';
 import { AppActionSidebar } from './components/AppActionSidebar';
 import { AppEditorWorkspace } from './components/AppEditorWorkspace';
 import { AppWorkspaceOverlays } from './components/AppWorkspaceOverlays';
-import { TransformMode, ActionType, ValidationResult, AIConfig, HighlightRange, GeneralSettings, TransformContext } from './types';
+import { TransformMode, ActionType, ValidationResult, HighlightRange, TransformContext } from './types';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useAppChunkLoadRecovery } from './hooks/useAppChunkLoadRecovery';
@@ -17,6 +17,7 @@ import { useAppAiRepairCommand } from './hooks/useAppAiRepairCommand';
 import { useAppCopyCommands } from './hooks/useAppCopyCommands';
 import { useAppSaveCommands } from './hooks/useAppSaveCommands';
 import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
+import { useAppSettingsState } from './hooks/useAppSettingsState';
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import { useAppSmartSuggestionOriginReset } from './hooks/useAppSmartSuggestionOriginReset';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
@@ -50,8 +51,6 @@ import { AppLazyShellModals } from './components/AppLazyShellModals';
 import { AppStatusBarController } from './components/AppStatusBarController';
 import { AppToolPanelsController } from './components/AppToolPanelsController';
 import ErrorBoundary from './components/ErrorBoundary';
-import { safeSetStorageItem } from './utils/storage';
-import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
 import {
   getJsonValidationErrorLocation,
   startJsonValidation,
@@ -116,12 +115,12 @@ const App: React.FC = () => {
     onBeforeSourceWorkspaceChange: handleBeforeFileSystemSourceChange,
   });
 
-  // 通用设置状态 + localStorage 持久化（需在 deepFormatResult 之前声明）
-  const [generalSettings, setGeneralSettings] = useState<GeneralSettings>(loadGeneralSettings);
-
-  useEffect(() => {
-    safeSetStorageItem(GENERAL_SETTINGS_STORAGE_KEY, JSON.stringify(generalSettings));
-  }, [generalSettings]);
+  const {
+    generalSettings,
+    setGeneralSettings,
+    aiConfig,
+    setAiConfig,
+  } = useAppSettingsState();
 
   const activeFile = useMemo(
     () => activeFileId ? files.find(file => file.id === activeFileId) || null : null,
@@ -269,12 +268,6 @@ const App: React.FC = () => {
 
   // 光标位置状态（用于状态栏显示）
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 1, column: 1 });
-
-  const [aiConfig, setAiConfig] = useState<AIConfig>(loadAIConfig);
-
-  useEffect(() => {
-    safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
-  }, [aiConfig]);
 
   useAppVisitorTracking({ measurementId: import.meta.env.VITE_GA_MEASUREMENT_ID });
 
