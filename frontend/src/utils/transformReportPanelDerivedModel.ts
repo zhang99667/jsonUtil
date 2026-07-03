@@ -1,0 +1,97 @@
+import {
+  buildTransformReportCopyTitles,
+  getTransformPlaceholderFillTemplateTitle,
+  type TransformReportCopyTitles,
+} from './transformReportCopyTitles';
+import {
+  buildTransformReportPanelCopyAvailability,
+  buildTransformReportPanelIssueCopyTexts,
+  buildTransformReportPanelPlaceholderFillState,
+  buildTransformReportPanelQualityState,
+  type TransformReportPanelCopyAvailability,
+  type TransformReportPanelIssueCopyTexts,
+  type TransformReportPanelPlaceholderFillState,
+  type TransformReportPanelQualityState,
+} from './transformReportPanelDerivedValues';
+import type { TransformReportQualityBaseline } from './transformReportPanelCopyWorkflow';
+import type {
+  TransformContextReport,
+  TransformReportView,
+} from './transformSummary';
+
+export interface TransformReportPanelDerivedModelInput {
+  report: TransformContextReport | null;
+  reportView: TransformReportView | null;
+  fullReportView: TransformReportView | null;
+  deferredQuery: string;
+  isFilterPending: boolean;
+  qualityBaseline: TransformReportQualityBaseline | null;
+  hasActiveContext: boolean;
+}
+
+export interface TransformReportPanelDerivedModel
+  extends TransformReportPanelCopyAvailability,
+    TransformReportPanelIssueCopyTexts,
+    TransformReportPanelPlaceholderFillState,
+    TransformReportPanelQualityState {
+  hasReportView: boolean;
+  copyTitles: TransformReportCopyTitles;
+  getPanelPlaceholderFillTemplateTitle: (readyTitle: string) => string;
+}
+
+export const buildTransformReportPanelDerivedModel = ({
+  report,
+  reportView,
+  fullReportView,
+  deferredQuery,
+  isFilterPending,
+  qualityBaseline,
+  hasActiveContext,
+}: TransformReportPanelDerivedModelInput): TransformReportPanelDerivedModel => {
+  const copyAvailability = buildTransformReportPanelCopyAvailability(reportView);
+  const issueCopyTexts = buildTransformReportPanelIssueCopyTexts(reportView, deferredQuery);
+  const placeholderFillState = buildTransformReportPanelPlaceholderFillState(
+    reportView,
+    fullReportView,
+    deferredQuery
+  );
+  const qualityState = buildTransformReportPanelQualityState(
+    report,
+    reportView,
+    deferredQuery,
+    qualityBaseline
+  );
+  const hasReportView = Boolean(reportView);
+  const copyTitles = buildTransformReportCopyTitles({
+    hasReportView,
+    isFilterPending,
+    hasFilteredReport: hasReportView,
+    hasQualityBaselineDeltaText: Boolean(qualityState.qualityBaselineDeltaText),
+    hasPathValueCopyItems: copyAvailability.hasPathValueCopyItems,
+    hasCmdStructureCopyItems: copyAvailability.hasCmdStructureCopyItems,
+    hasFocusedCmdStructureCopyItems: copyAvailability.hasFocusedCmdStructureCopyItems,
+    hasIssueSampleCopyText: Boolean(issueCopyTexts.issueSampleCopyText),
+    hasIssueSampleJsonCopyText: Boolean(issueCopyTexts.issueSampleJsonCopyText),
+    hasRedactedIssueSampleJsonCopyText: Boolean(issueCopyTexts.redactedIssueSampleJsonCopyText),
+    hasIssueRegressionTemplateCopyText: Boolean(issueCopyTexts.issueRegressionTemplateCopyText),
+    hasActiveContext,
+  });
+  const getPanelPlaceholderFillTemplateTitle = (readyTitle: string): string => (
+    getTransformPlaceholderFillTemplateTitle(
+      readyTitle,
+      Boolean(placeholderFillState.placeholderFillTemplateJsonText),
+      placeholderFillState.placeholderFillTemplateSummary,
+      isFilterPending
+    )
+  );
+
+  return {
+    ...copyAvailability,
+    ...issueCopyTexts,
+    ...placeholderFillState,
+    ...qualityState,
+    hasReportView,
+    copyTitles,
+    getPanelPlaceholderFillTemplateTitle,
+  };
+};

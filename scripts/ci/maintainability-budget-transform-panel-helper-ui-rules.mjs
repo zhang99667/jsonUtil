@@ -2,6 +2,7 @@ const panelUiBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const transformPanelHelperUiMaintainabilityBudgets = [
   panelUiBudget('frontend/src/utils/transformReportCopyTitles.ts', 100, '深度解析报告复制入口 title 矩阵应保持纯函数和集中测试'),
+  panelUiBudget('frontend/src/utils/transformReportPanelDerivedModel.ts', 110, '深度解析报告派生模型应只组合复制可用性、问题样本、占位符、质量快照和标题文案，状态与副作用留在主面板'),
   panelUiBudget('frontend/src/utils/transformReportPanelHelpers.ts', 40, '深度解析报告 UI helper 入口应只保留兼容导出，复制指标和占位符摘要留在专用 helper'),
   panelUiBudget('frontend/src/utils/transformReportPanelSectionModel.ts', 75, '深度解析报告 section view-model 应只组合可见性、占位符模型和行动模型，状态与 handler wiring 留在主面板'),
   panelUiBudget('frontend/src/utils/transformReportPanelPlaceholderModel.ts', 55, '深度解析报告占位符面板模型应只维护回填入口和工具栏状态派生'),

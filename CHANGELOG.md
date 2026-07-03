@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.435 (2026-07-03) - 报告面板派生模型拆分
+### 🏗️ 架构与基础设施
+- **深度解析报告降噪**: 将报告面板的复制可用性、问题样本、占位符回填、质量快照和复制标题组合抽成 `buildTransformReportPanelDerivedModel`，主组件只保留状态、workflow 和渲染 wiring
+
 ## v1.8.434 (2026-07-03) - 鼠标拖拽监听收敛
 ### 🏗️ 架构与基础设施
 - **拖拽监听降重**: 新增 `useWindowMouseDragListeners` 统一 window mousemove/mouseup 挂载和清理，布局调整、工具栏滚动条和通用滚动条复用同一套监听生命周期
