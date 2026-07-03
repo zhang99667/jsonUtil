@@ -1,25 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TransformMode } from '../types';
-import { beginPreviewOutputDraft } from '../utils/appPreviewOutputDraft';
-import { createAppPreviewOutputSyncTask } from '../utils/appPreviewOutputSyncTask';
+import { runAppPreviewOutputChange } from '../utils/appPreviewOutputChangeHandler';
 import { useAppPreviewOutputChangeHandler } from './useAppPreviewOutputChangeHandler';
 
 const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn() }));
-const task = vi.hoisted(() => vi.fn());
 
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
 }));
 
-vi.mock('../utils/appPreviewOutputDraft', async importOriginal => ({
-  ...await importOriginal<typeof import('../utils/appPreviewOutputDraft')>(),
-  beginPreviewOutputDraft: vi.fn(),
-}));
-
-vi.mock('../utils/appPreviewOutputSyncTask', async importOriginal => ({
-  ...await importOriginal<typeof import('../utils/appPreviewOutputSyncTask')>(),
-  createAppPreviewOutputSyncTask: vi.fn(() => task),
+vi.mock('../utils/appPreviewOutputChangeHandler', async importOriginal => ({
+  ...await importOriginal<typeof import('../utils/appPreviewOutputChangeHandler')>(),
+  runAppPreviewOutputChange: vi.fn(),
 }));
 
 const createInput = () => ({
@@ -44,23 +37,17 @@ describe('useAppPreviewOutputChangeHandler', () => {
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
   });
 
-  it('开始草稿、即时校验并调度同步任务', () => {
+  it('将 PREVIEW 输出变更转发给 helper', () => {
     const input = createInput();
     const handleOutputChange = useAppPreviewOutputChangeHandler(input);
 
     handleOutputChange('{"a":2}');
 
-    expect(beginPreviewOutputDraft).toHaveBeenCalledWith(
-      input.isUpdatingFromOutput,
-      input.pendingOutputValue,
-      '{"a":2}'
-    );
-    expect(input.updatePreviewValidation).toHaveBeenCalledWith('{"a":2}');
-    expect(createAppPreviewOutputSyncTask).toHaveBeenCalledWith(expect.objectContaining({
+    expect(runAppPreviewOutputChange).toHaveBeenCalledWith(expect.objectContaining({
       previewText: '{"a":2}',
       inputRef: input.inputRef,
       pendingOutputValue: input.pendingOutputValue,
+      scheduleOutputSync: input.scheduleOutputSync,
     }));
-    expect(input.scheduleOutputSync).toHaveBeenCalledWith(task);
   });
 });

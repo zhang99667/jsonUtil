@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.453 (2026-07-03) - PREVIEW 输出变更 Handler 拆分
+### 🏗️ 架构与基础设施
+- **PREVIEW 输出变更降噪**: 将输出编辑时的草稿开始、即时校验和同步任务调度抽成 `runAppPreviewOutputChange`，Hook 只保留 `useCallback` 依赖装配，并补充 helper 测试固定调度入参
+
 ## v1.8.452 (2026-07-03) - 新版本检测副作用拆分
 ### 🏗️ 架构与基础设施
 - **更新检测降噪**: 将新版本提示 Toast 和 `version.json` 拉取抽成 `appUpdateCheckEffects`，`useAppUpdateCheck` 只保留生产环境生命周期、活跃态检查和调度装配，并补充副作用 helper 测试覆盖固定 Toast id 与 no-store manifest 请求
