@@ -12,6 +12,7 @@ export const governanceAppMaintainabilityBudgets = [
   governanceAppBudget('scripts/ci/maintainability-budget-app-file-system-rules.mjs', 20, 'App 文件系统预算规则应只维护文件系统 hook 和 SOURCE 状态 helper 预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-source-validation-rules.mjs', 15, 'App SOURCE 校验预算规则应只维护 hook、请求 helper 和对应测试预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-interaction-hook-rules.mjs', 20, 'App 交互基础 hook 预算规则应只维护共享交互 hook 和测试预算'),
+  governanceAppBudget('scripts/ci/maintainability-budget-app-telemetry-hook-rules.mjs', 20, 'App telemetry hook 预算规则应只维护打点类 hook 和测试预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-layout-rules.mjs', 45, 'App 布局预算规则应独立维护 controller、底层 hook、resize helper 和共享拖拽监听预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-file-close-rules.mjs', 25, 'App 文件关闭保护预算规则应维护 hook 和关闭决策 helper 预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-component-rules.mjs', 40, 'App 展示组件预算规则应保持短表，避免混入主入口和工作流预算'),
