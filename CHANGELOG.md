@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.468 (2026-07-03) - 工具面板命令聚合降噪
+### 🏗️ 架构与基础设施
+- **工具面板聚合瘦身**: `useAppToolPanelCommands` 改为保留子 hook 返回对象并统一展开，减少重复拆装的样板代码，主 hook 从 165 行降至 106 行，并把可维护性预算收紧到 130 行
+
 ## v1.8.467 (2026-07-03) - 工具面板开关 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **工具面板命令降噪**: 将 JSONPath、结构树、对比、Schema、Scheme 和模板填充的开关命令装配抽成 `useAppToolPanelToggleHandlers`，`useAppToolPanelCommands` 只保留面板状态和子命令聚合，并收紧对应可维护性预算避免开关逻辑回流
