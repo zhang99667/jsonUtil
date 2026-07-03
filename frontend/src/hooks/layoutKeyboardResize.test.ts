@@ -1,8 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  applyLayoutKeyboardResize,
   getPaneKeyboardResizePercent,
   getSidebarKeyboardResizeWidth,
 } from './layoutKeyboardResize';
+
+const createKeyboardEvent = (key: string, shiftKey = false) => ({
+  key,
+  shiftKey,
+  preventDefault: vi.fn(),
+});
 
 describe('layoutKeyboardResize', () => {
   it('按方向键调整侧栏宽度', () => {
@@ -30,5 +37,35 @@ describe('layoutKeyboardResize', () => {
     expect(getPaneKeyboardResizePercent(21, 'ArrowLeft', false)).toBe(20);
     expect(getPaneKeyboardResizePercent(79, 'ArrowRight', false)).toBe(80);
     expect(getPaneKeyboardResizePercent(50, 'Tab', false)).toBeNull();
+  });
+
+  it('应用键盘调整时阻止默认行为并写入 next 值', () => {
+    const event = createKeyboardEvent('ArrowRight');
+    const onResize = vi.fn();
+
+    expect(applyLayoutKeyboardResize({
+      event,
+      currentValue: 220,
+      getNextValue: getSidebarKeyboardResizeWidth,
+      onResize,
+    })).toBe(true);
+
+    expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    expect(onResize).toHaveBeenCalledWith(236);
+  });
+
+  it('无关按键不会阻止默认行为或写入状态', () => {
+    const event = createKeyboardEvent('Tab');
+    const onResize = vi.fn();
+
+    expect(applyLayoutKeyboardResize({
+      event,
+      currentValue: 220,
+      getNextValue: getSidebarKeyboardResizeWidth,
+      onResize,
+    })).toBe(false);
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(onResize).not.toHaveBeenCalled();
   });
 });

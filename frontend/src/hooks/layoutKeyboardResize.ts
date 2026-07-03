@@ -9,6 +9,19 @@ import {
 const SIDEBAR_KEYBOARD_RESIZE_STEP = 16;
 const PANE_KEYBOARD_RESIZE_STEP = 5;
 
+interface LayoutKeyboardResizeEvent {
+  key: string;
+  shiftKey: boolean;
+  preventDefault: () => void;
+}
+
+interface ApplyLayoutKeyboardResizeInput {
+  event: LayoutKeyboardResizeEvent;
+  currentValue: number;
+  getNextValue: (currentValue: number, key: string, shiftKey: boolean) => number | null;
+  onResize: (nextValue: number) => void;
+}
+
 const getKeyboardResizeValue = (
   currentValue: number,
   key: string,
@@ -49,3 +62,17 @@ export const getPaneKeyboardResizePercent = (
     LEFT_PANE_MAX_PERCENT
   )
 );
+
+export const applyLayoutKeyboardResize = ({
+  event,
+  currentValue,
+  getNextValue,
+  onResize,
+}: ApplyLayoutKeyboardResizeInput): boolean => {
+  const nextValue = getNextValue(currentValue, event.key, event.shiftKey);
+  if (nextValue === null) return false;
+
+  event.preventDefault();
+  onResize(nextValue);
+  return true;
+};

@@ -12,5 +12,6 @@ export const appLayoutMaintainabilityBudgets = [
   layoutBudget('frontend/src/hooks/useWindowMouseDragListeners.test.ts', 65, '窗口鼠标拖拽监听测试只锁定未激活不挂载和 cleanup 移除监听'),
   layoutBudget('frontend/src/hooks/layoutResize.ts', 55, '布局鼠标拖拽 helper 应保持纯计算，避免夹带组件状态'),
   layoutBudget('frontend/src/hooks/layoutResize.test.ts', 55, '布局鼠标拖拽 helper 测试只锁定 clamp、侧栏宽度和分栏百分比计算'),
-  layoutBudget('frontend/src/hooks/layoutKeyboardResize.ts', 80, '布局键盘调整 helper 应保持纯计算，避免夹带组件状态'),
+  layoutBudget('frontend/src/hooks/layoutKeyboardResize.ts', 95, '布局键盘调整 helper 应集中维护按键计算和 preventDefault/状态写入分发，不承载 React 生命周期'),
+  layoutBudget('frontend/src/hooks/layoutKeyboardResize.test.ts', 80, '布局键盘调整测试只锁定按键计算、边界收敛和状态写入分发'),
 ];

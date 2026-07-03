@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.451 (2026-07-03) - 布局键盘调整应用流程收敛
+### 🏗️ 架构与基础设施
+- **布局键盘调整降噪**: 将键盘 resize 的 next 值计算、`preventDefault` 和状态写入流程集中到 `applyLayoutKeyboardResize`，controller 只保留 sidebar/pane 当前值与 setter 装配，并让 controller 测试回归透传与委托边界
+
 ## v1.8.450 (2026-07-03) - 布局鼠标拖拽更新分发拆分
 ### 🏗️ 架构与基础设施
 - **布局拖拽降噪**: 将侧栏与分栏 mousemove 更新分发抽成 `updateLayoutResizeDrag`，`useLayoutResizeDrag` 只保留开始/停止拖拽、callback 装配和窗口监听，并补充独立 helper 测试覆盖侧栏、分栏和缺少容器兜底
