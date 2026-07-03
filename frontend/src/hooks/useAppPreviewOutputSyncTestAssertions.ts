@@ -6,11 +6,15 @@ import {
   useHookInput,
 } from './useAppPreviewOutputSyncTestFixture';
 import { invalidResult } from './useAppPreviewOutputSyncTestData';
+import {
+  PREVIEW_SYNC_DEBOUNCE_MS,
+  PREVIEW_SYNC_UNLOCK_DELAY_MS,
+} from './useAppPreviewOutputSyncScheduler';
 
 type PreviewOutputSyncHookInput = ReturnType<typeof useHookInput>;
 
-export const advancePreviewSyncDebounce = () => vi.advanceTimersByTimeAsync(400);
-export const advancePreviewUnlockDelay = () => vi.advanceTimersByTimeAsync(600);
+export const advancePreviewSyncDebounce = () => vi.advanceTimersByTimeAsync(PREVIEW_SYNC_DEBOUNCE_MS);
+export const advancePreviewUnlockDelay = () => vi.advanceTimersByTimeAsync(PREVIEW_SYNC_UNLOCK_DELAY_MS);
 
 export const expectOutputDraft = (
   result: PreviewOutputSyncHookInput,

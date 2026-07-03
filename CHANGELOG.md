@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.424 (2026-07-03) - PREVIEW 同步调度拆分
+### 🏗️ 架构与基础设施
+- **同步时序降压**: 将 PREVIEW 反向同步的 debounce、requestId 失效、取消和延迟解锁抽成 scheduler hook，主同步 hook 回归暂存、校验、request 和结果应用
+
 ## v1.8.423 (2026-07-03) - 复制工作流模型测试夹具拆分
 ### 🏗️ 架构与基础设施
 - **测试夹具降压**: 将深度解析复制 workflow model 的 CMD 记录、workflow mock 和 model 构建入口抽成专用 fixture，测试文件回归行为断言
