@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const appCss = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
 const releaseToastCss = readFileSync(new URL('./AppReleaseToast.css', import.meta.url), 'utf8');
+const driverTourCss = readFileSync(new URL('../styles/driverTourOverrides.css', import.meta.url), 'utf8');
 
 const getRuleBody = (css: string, selector: string): string => {
   const selectorStart = css.indexOf(selector);
@@ -51,13 +52,15 @@ describe('App button focus styles', () => {
     const buttonRule = getRuleBody(appCss, '.app-button--primary');
     const toastButtonRule = getRuleBody(releaseToastCss, '.app-release-toast__button--primary');
 
-    expect(buttonRule).toContain('rgba(48, 57, 70, 0.98)');
+    expect(buttonRule).toContain('rgba(52, 61, 73, 0.98)');
     expect(buttonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
+    expect(buttonRule).not.toContain('inset 0');
     expect(buttonRule).not.toContain('0 8px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
-    expect(toastButtonRule).toContain('rgba(48, 57, 70, 0.98)');
+    expect(toastButtonRule).toContain('rgba(52, 61, 73, 0.98)');
     expect(toastButtonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
+    expect(toastButtonRule).not.toContain('inset 0');
     expect(toastButtonRule).not.toContain('0 8px');
     expect(toastButtonRule).not.toContain('#1487c9');
     expect(toastButtonRule).not.toContain('rgba(0, 122, 204');
@@ -67,11 +70,12 @@ describe('App button focus styles', () => {
     const buttonRule = getRuleBody(appCss, '.changelog-modal__confirm-button');
     const focusRule = getRuleBody(appCss, '.changelog-modal__confirm-button:focus-visible');
 
-    expect(buttonRule).toContain('border-radius: 7px');
-    expect(buttonRule).toContain('min-width: 76px');
-    expect(buttonRule).toContain('rgba(45, 54, 66, 0.98)');
+    expect(buttonRule).toContain('border-radius: 6px');
+    expect(buttonRule).toContain('min-width: 72px');
+    expect(buttonRule).toContain('rgba(52, 61, 73, 0.98)');
     expect(buttonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.24)');
     expect(buttonRule).not.toContain('999px');
+    expect(buttonRule).not.toContain('inset 0');
     expect(buttonRule).not.toContain('0 10px');
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
@@ -104,5 +108,24 @@ describe('App button focus styles', () => {
 
     expect(toastRule).toContain('rgba(148, 163, 184, 0.16)');
     expect(toastRule).not.toContain('rgba(0, 122, 204');
+  });
+
+  it('Driver 引导下一步按钮不再使用蓝绿描边或内部选中框', () => {
+    const nextButtonRule = getRuleBody(
+      driverTourCss,
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn'
+    );
+    const nextFocusRule = getRuleBody(
+      driverTourCss,
+      ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:hover'
+    );
+
+    expect(nextButtonRule).toContain('rgba(52, 61, 73, 0.98)');
+    expect(nextButtonRule).toContain('border: 0 !important');
+    expect(nextButtonRule).toContain('0 1px 2px rgba(0, 0, 0, 0.22)');
+    expect(nextButtonRule).not.toContain('inset 0');
+    expect(nextButtonRule).not.toContain('#1487c9');
+    expect(nextButtonRule).not.toContain('rgba(0, 122, 204');
+    expect(nextFocusRule).not.toContain('inset 0');
   });
 });
