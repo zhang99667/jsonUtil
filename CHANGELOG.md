@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.457 (2026-07-03) - 访客统计 Hook 拆分
+### 🏗️ 架构与基础设施
+- **App 启动副作用降噪**: 将前台访问统计里的 GA 初始化、`/api/visitor/ping` 上报和失败静默处理抽成 `useAppVisitorTracking`，`App.tsx` 只保留启动 hook 装配，并补充 hook 测试固定 GA 参数、ping 地址和失败静默行为
+
 ## v1.8.456 (2026-07-03) - App 工具事件 telemetry Hook 拆分
 ### 🏗️ 架构与基础设施
 - **App 顶层编排降噪**: 将工具事件打点里的输入大小分桶、耗时分桶和 `trackToolEvent` 调用抽成 `useAppToolTelemetry`，`App.tsx` 只保留 telemetry hook 装配，并补充默认状态、耗时和 `inputRef` 当前值测试

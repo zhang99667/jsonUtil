@@ -20,6 +20,7 @@ import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupComman
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
 import { useAppToolTelemetry } from './hooks/useAppToolTelemetry';
+import { useAppVisitorTracking } from './hooks/useAppVisitorTracking';
 import {
   useAppPreviewSafeModeSetter,
   useAppPreviewSafeSourceSetter,
@@ -51,7 +52,6 @@ import {
   getJsonValidationErrorLocation,
   startJsonValidation,
 } from './utils/jsonValidation';
-import { initGoogleAnalytics } from './utils/analytics';
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFeedback';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
@@ -276,14 +276,7 @@ const App: React.FC = () => {
     safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
   }, [aiConfig]);
 
-  // 访客统计打点 (仅统计前台页面访问)
-  useEffect(() => {
-    initGoogleAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
-
-    fetch('/api/visitor/ping').catch(() => {
-      // 静默失败，不影响用户体验
-    });
-  }, []);
+  useAppVisitorTracking({ measurementId: import.meta.env.VITE_GA_MEASUREMENT_ID });
 
   const trackCurrentToolEvent = useAppToolTelemetry({ inputRef });
 
