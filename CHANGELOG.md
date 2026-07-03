@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.444 (2026-07-03) - 文件系统标签决策收敛
+### 🏗️ 架构与基础设施
+- **文件系统标签决策降噪**: 将 Untitled 编号和关闭标签后的右侧优先选择规则抽成 `workspaceFileTabs` 纯 helper，文件系统 hook 只负责状态写入和文件 API 编排
+
 ## v1.8.443 (2026-07-03) - 文件系统 PREVIEW 待回写取消边界
 ### 🐛 Bug 修复
 - **文件切换回写保护**: 将文件系统的打开、切换、新建、关闭和保存 PREVIEW 回 SOURCE 入口统一接入工作区 SOURCE 状态 helper，替换 SOURCE/Mode 前先取消 PREVIEW 待同步草稿，补齐 activeFileId 不变化时的旧回写风险

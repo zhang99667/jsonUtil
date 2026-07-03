@@ -9,6 +9,10 @@ import {
     loadWorkspaceDraftSnapshot,
     saveWorkspaceDraftSnapshot,
 } from '../utils/workspaceDraft';
+import {
+    getNextUntitledName,
+    getWorkspaceTabCloseResult,
+} from '../utils/workspaceFileTabs';
 import { applyWorkspaceSourceState } from '../utils/workspaceSourceState';
 
 interface UseFileSystemProps {
@@ -39,23 +43,6 @@ const generateUUID = () => {
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
-};
-
-const getNextUntitledName = (files: FileTab[]): string => {
-    // VSCode 风格命名: 找到最小的未使用编号
-    const existingNumbers = files
-        .map(f => {
-            const match = f.name.match(/^Untitled-(\d+)$/);
-            return match ? parseInt(match[1], 10) : null;
-        })
-        .filter((n): n is number => n !== null);
-
-    let newNumber = 1;
-    while (existingNumbers.includes(newNumber)) {
-        newNumber++;
-    }
-
-    return `Untitled-${newNumber}`;
 };
 
 export const useFileSystem = ({
@@ -498,28 +485,15 @@ export const useFileSystem = ({
     };
 
     const closeFile = (id: string) => {
-        // 找到被关闭标签的索引
-        const closedIndex = files.findIndex(f => f.id === id);
-        if (closedIndex < 0) return;
+        const closeResult = getWorkspaceTabCloseResult(files, id);
+        if (!closeResult) return;
 
-        const newFiles = files.filter(f => f.id !== id);
-        setFiles(newFiles);
-
+        setFiles(closeResult.remainingFiles);
         if (id === activeFileId) {
-            if (newFiles.length > 0) {
-                // VS Code 行为：优先切换到右侧的下一个标签，如果没有则切换到左侧的前一个标签
-                let nextFile;
-                if (closedIndex < newFiles.length) {
-                    // 右侧还有标签，切换到右侧的下一个（索引保持不变，因为当前标签被移除）
-                    nextFile = newFiles[closedIndex];
-                } else {
-                    // 右侧没有标签了，切换到左侧的最后一个
-                    nextFile = newFiles[newFiles.length - 1];
-                }
-                setActiveFileId(nextFile.id);
-                applySourceState(nextFile.content, nextFile.mode ?? TransformMode.NONE);
+            if (closeResult.nextActiveFile) {
+                setActiveFileId(closeResult.nextActiveFile.id);
+                applySourceState(closeResult.nextActiveFile.content, closeResult.nextActiveFile.mode ?? TransformMode.NONE);
             } else {
-                // 无打开文件
                 setActiveFileId(null);
                 applySourceState('', TransformMode.NONE);
             }
