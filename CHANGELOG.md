@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.447 (2026-07-03) - 工具栏滚动状态读取收敛
+### 🏗️ 架构与基础设施
+- **工具栏滚动条降噪**: 将工具栏自定义滚动条的容器滚动状态读取抽成 `actionPanelScrollbarDom` helper，hook 只保留 ResizeObserver、rAF 刷新、拖拽状态和全局鼠标监听装配
+
 ## v1.8.446 (2026-07-03) - PREVIEW 草稿调度 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **PREVIEW 同步装配降噪**: 将 PREVIEW 草稿清理和同步 scheduler 装配抽成 `useAppPreviewOutputDraftScheduler`，反向同步主 hook 只保留校验状态、外部 PREVIEW 校验和输出变更 handler 组合，并把 PREVIEW 同步 hooks 预算拆成运行时/测试子表
