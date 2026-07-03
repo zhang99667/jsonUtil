@@ -1,42 +1,14 @@
+const layoutBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
+
 export const appLayoutMaintainabilityBudgets = [
-  {
-    file: 'frontend/src/hooks/useAppLayoutController.ts',
-    maxLines: 55,
-    reason: '主应用布局 controller 只装配 useLayout 状态和键盘 resize handler',
-  },
-  {
-    file: 'frontend/src/hooks/useAppLayoutController.test.ts',
-    maxLines: 90,
-    reason: '主应用布局 controller 测试只锁定布局状态透传和键盘 resize 行为',
-  },
-  {
-    file: 'frontend/src/hooks/useLayout.ts',
-    maxLines: 55,
-    reason: '底层布局 hook 只维护拖拽 resize 状态和全局鼠标监听，尺寸计算留在纯 helper',
-  },
-  {
-    file: 'frontend/src/hooks/useWindowMouseDragListeners.ts',
-    maxLines: 35,
-    reason: '窗口鼠标拖拽监听 hook 只负责 mousemove/mouseup 挂载和清理，不承载拖拽计算',
-  },
-  {
-    file: 'frontend/src/hooks/useWindowMouseDragListeners.test.ts',
-    maxLines: 65,
-    reason: '窗口鼠标拖拽监听测试只锁定未激活不挂载和 cleanup 移除监听',
-  },
-  {
-    file: 'frontend/src/hooks/layoutResize.ts',
-    maxLines: 55,
-    reason: '布局鼠标拖拽 helper 应保持纯计算，避免夹带组件状态',
-  },
-  {
-    file: 'frontend/src/hooks/layoutResize.test.ts',
-    maxLines: 55,
-    reason: '布局鼠标拖拽 helper 测试只锁定 clamp、侧栏宽度和分栏百分比计算',
-  },
-  {
-    file: 'frontend/src/hooks/layoutKeyboardResize.ts',
-    maxLines: 80,
-    reason: '布局键盘调整 helper 应保持纯计算，避免夹带组件状态',
-  },
+  layoutBudget('frontend/src/hooks/useAppLayoutController.ts', 55, '主应用布局 controller 只装配 useLayout 状态和键盘 resize handler'),
+  layoutBudget('frontend/src/hooks/useAppLayoutController.test.ts', 90, '主应用布局 controller 测试只锁定布局状态透传和键盘 resize 行为'),
+  layoutBudget('frontend/src/hooks/useLayout.ts', 45, '底层布局 hook 只维护布局状态和拖拽 hook 装配，鼠标监听与尺寸计算不得回流'),
+  layoutBudget('frontend/src/hooks/useLayoutResizeDrag.ts', 80, '布局鼠标拖拽 hook 只维护开始/停止拖拽、mousemove 更新和窗口监听装配'),
+  layoutBudget('frontend/src/hooks/useLayoutResizeDrag.test.ts', 100, '布局鼠标拖拽 hook 测试只锁定开始/停止、激活状态和鼠标更新行为'),
+  layoutBudget('frontend/src/hooks/useWindowMouseDragListeners.ts', 35, '窗口鼠标拖拽监听 hook 只负责 mousemove/mouseup 挂载和清理，不承载拖拽计算'),
+  layoutBudget('frontend/src/hooks/useWindowMouseDragListeners.test.ts', 65, '窗口鼠标拖拽监听测试只锁定未激活不挂载和 cleanup 移除监听'),
+  layoutBudget('frontend/src/hooks/layoutResize.ts', 55, '布局鼠标拖拽 helper 应保持纯计算，避免夹带组件状态'),
+  layoutBudget('frontend/src/hooks/layoutResize.test.ts', 55, '布局鼠标拖拽 helper 测试只锁定 clamp、侧栏宽度和分栏百分比计算'),
+  layoutBudget('frontend/src/hooks/layoutKeyboardResize.ts', 80, '布局键盘调整 helper 应保持纯计算，避免夹带组件状态'),
 ];
