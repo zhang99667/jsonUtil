@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { TransformMode, type HighlightRange } from '../types';
+import type { TransformMode, HighlightRange } from '../types';
 import { useAppChangelogCommands } from './useAppChangelogCommands';
 import { useAppSettingsModalCommands } from './useAppSettingsModalCommands';
 import { useAppToolPanelActionCommands } from './useAppToolPanelActionCommands';
@@ -27,30 +27,9 @@ export const useAppToolPanelCommands = ({
   const [isJsonTreePanelOpen, setIsJsonTreePanelOpen] = useState(false);
   const [isJsonComparePanelOpen, setIsJsonComparePanelOpen] = useState(false);
   const [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen] = useState(false);
-  const {
-    jsonPathQueryRequest,
-    jsonTreeFocusRequest,
-    requestJsonPathQuery,
-    requestJsonTreeFocus,
-    requestSchemeInput,
-    requestTemplateFill,
-    schemeInputRequest,
-    templateFillRequest,
-  } = useAppToolPanelRequestCommands();
-  const {
-    handleOpenAiSettings,
-    handleOpenSettingsPanel,
-    isSettingsModalOpen,
-    setIsSettingsModalOpen,
-    settingsInitialTab,
-  } = useAppSettingsModalCommands({ onTrackToolEvent });
-  const {
-    changelogHighlightedVersion,
-    changelogSourceMarkdown,
-    handleCloseChangelog,
-    handleOpenChangelog,
-    isChangelogModalOpen,
-  } = useAppChangelogCommands();
+  const panelRequests = useAppToolPanelRequestCommands();
+  const settingsCommands = useAppSettingsModalCommands({ onTrackToolEvent });
+  const changelogCommands = useAppChangelogCommands();
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [templateApplyQualityDelta, setTemplateApplyQualityDelta] = useState('');
@@ -58,14 +37,7 @@ export const useAppToolPanelCommands = ({
 
   const closeTransformReportPanel = useCallback(() => setIsTransformReportOpen(false), []);
 
-  const {
-    handleToggleJsonCompare,
-    handleToggleJsonPath,
-    handleToggleJsonSchema,
-    handleToggleJsonTree,
-    handleToggleSchemeDecode,
-    handleToggleTemplateFill,
-  } = useAppToolPanelToggleHandlers({
+  const toggleHandlers = useAppToolPanelToggleHandlers({
     mode,
     isJsonPathPanelOpen,
     isJsonTreePanelOpen,
@@ -84,24 +56,16 @@ export const useAppToolPanelCommands = ({
     onTrackToolEvent,
   });
 
-  const {
-    handleLocateJsonPath,
-    handleLocateJsonPathResultInStructure,
-    handleOpenSchemeFromReport,
-    handleOpenSchemeFromSourceStatus,
-    handleOpenSchemeFromStructure,
-    handleOpenSourceSchemeInput,
-    handleOpenTemplateFillFromReport,
-  } = useAppToolPanelActionCommands({
+  const actionCommands = useAppToolPanelActionCommands({
     closeTransformReportPanel,
     mode,
     onSetHighlightRange,
     onSetMode,
     onTrackToolEvent,
-    requestJsonPathQuery,
-    requestJsonTreeFocus,
-    requestSchemeInput,
-    requestTemplateFill,
+    requestJsonPathQuery: panelRequests.requestJsonPathQuery,
+    requestJsonTreeFocus: panelRequests.requestJsonTreeFocus,
+    requestSchemeInput: panelRequests.requestSchemeInput,
+    requestTemplateFill: panelRequests.requestTemplateFill,
     setIsJsonPathPanelOpen,
     setIsJsonTreePanelOpen,
     setIsSchemeDecodeOpen,
@@ -116,50 +80,27 @@ export const useAppToolPanelCommands = ({
   }, [onSetHighlightRange]);
 
   return {
-    changelogHighlightedVersion,
-    changelogSourceMarkdown,
-    handleCloseChangelog,
+    ...changelogCommands,
     handleCloseJsonPathPanel,
-    handleLocateJsonPath,
-    handleLocateJsonPathResultInStructure,
-    handleOpenAiSettings,
-    handleOpenChangelog,
-    handleOpenSchemeFromReport,
-    handleOpenSchemeFromSourceStatus,
-    handleOpenSchemeFromStructure,
-    handleOpenSettingsPanel,
-    handleOpenSourceSchemeInput,
-    handleOpenTemplateFillFromReport,
-    handleToggleJsonCompare,
-    handleToggleJsonPath,
-    handleToggleJsonSchema,
-    handleToggleJsonTree,
-    requestSchemeInput,
-    handleToggleSchemeDecode,
-    handleToggleTemplateFill,
-    isChangelogModalOpen,
+    ...actionCommands,
+    ...settingsCommands,
+    ...toggleHandlers,
     isJsonComparePanelOpen,
     isJsonPathPanelOpen,
     isJsonSchemaPanelOpen,
     isJsonTreePanelOpen,
     isSchemeDecodeOpen,
-    isSettingsModalOpen,
     isTemplatePanelOpen,
     isTransformReportOpen,
-    jsonPathQueryRequest,
-    jsonTreeFocusRequest,
-    schemeInputRequest,
     setIsJsonComparePanelOpen,
     setIsJsonPathPanelOpen,
     setIsJsonSchemaPanelOpen,
     setIsJsonTreePanelOpen,
     setIsSchemeDecodeOpen,
-    setIsSettingsModalOpen,
     setIsTemplatePanelOpen,
     setIsTransformReportOpen,
     setTemplateApplyQualityDelta,
-    settingsInitialTab,
     templateApplyQualityDelta,
-    templateFillRequest,
+    ...panelRequests,
   };
 };

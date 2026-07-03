@@ -1,7 +1,7 @@
 import { appWorkflowCommandPanelTestMaintainabilityBudgets } from './maintainability-budget-app-workflow-command-panel-test-rules.mjs';
 const commandPanelBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 export const appWorkflowCommandPanelMaintainabilityBudgets = [
-  commandPanelBudget('frontend/src/hooks/useAppToolPanelCommands.ts', 180, '主应用工具面板命令 hook 只维护面板状态和子命令聚合，开关命令装配不得回流'),
+  commandPanelBudget('frontend/src/hooks/useAppToolPanelCommands.ts', 130, '主应用工具面板命令 hook 只维护面板状态和子命令对象聚合，开关与动作细节不得回流'),
   commandPanelBudget('frontend/src/hooks/useAppToolPanelActionCommands.ts', 170, '工具面板动作命令 hook 只维护 JSONPath 定位、Scheme 打开和模板填充的跨面板编排'),
   commandPanelBudget('frontend/src/hooks/useAppToolPanelRequestCommands.ts', 90, '工具面板请求命令 hook 只维护 JSONPath、结构树、Scheme 和模板填充请求状态与递增 ID'),
   commandPanelBudget('frontend/src/hooks/useAppToolPanelToggleHandlers.ts', 115, '工具面板开关 hook 只维护面板 toggle handler、深度解析兜底和开关事件装配'),
