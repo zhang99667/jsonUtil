@@ -14,6 +14,18 @@ vi.mock('../utils/toast', () => ({
   showSuccess: vi.fn(),
 }));
 
+const formattedJson = (value: unknown) => JSON.stringify(value, null, 2);
+
+const useSchemeEditFixture = (previewText: string) => {
+  const onPreviewChange = vi.fn();
+  const { handleSchemeEdit } = useAppSchemeEditCommand({
+    previewText,
+    onPreviewChange,
+  });
+
+  return { handleSchemeEdit, onPreviewChange };
+};
+
 describe('useAppSchemeEditCommand', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
@@ -28,38 +40,26 @@ describe('useAppSchemeEditCommand', () => {
   });
 
   it('优先按 JSON Pointer 精确写回 PREVIEW', () => {
-    const onPreviewChange = vi.fn();
-    const { handleSchemeEdit } = useAppSchemeEditCommand({
-      previewText: '{"data":{"url":"old"}}',
-      onPreviewChange,
-    });
+    const { handleSchemeEdit, onPreviewChange } = useSchemeEditFixture('{"data":{"url":"old"}}');
 
     handleSchemeEdit('$.data.url', 'new', '/data/url');
 
-    expect(onPreviewChange).toHaveBeenCalledWith('{\n  "data": {\n    "url": "new"\n  }\n}');
+    expect(onPreviewChange).toHaveBeenCalledWith(formattedJson({ data: { url: 'new' } }));
     expect(showSuccess).toHaveBeenCalledWith('Scheme 修改已应用');
     expect(showError).not.toHaveBeenCalled();
   });
 
   it('没有 pointer 时兼容旧 JSONPath 写回', () => {
-    const onPreviewChange = vi.fn();
-    const { handleSchemeEdit } = useAppSchemeEditCommand({
-      previewText: '{"list":[{"url":"old"}]}',
-      onPreviewChange,
-    });
+    const { handleSchemeEdit, onPreviewChange } = useSchemeEditFixture('{"list":[{"url":"old"}]}');
 
     handleSchemeEdit('$.list[0].url', 'new');
 
-    expect(onPreviewChange).toHaveBeenCalledWith('{\n  "list": [\n    {\n      "url": "new"\n    }\n  ]\n}');
+    expect(onPreviewChange).toHaveBeenCalledWith(formattedJson({ list: [{ url: 'new' }] }));
     expect(showSuccess).toHaveBeenCalledWith('Scheme 修改已应用');
   });
 
   it('PREVIEW 无法解析时保留原内容并提示错误', () => {
-    const onPreviewChange = vi.fn();
-    const { handleSchemeEdit } = useAppSchemeEditCommand({
-      previewText: '{bad json',
-      onPreviewChange,
-    });
+    const { handleSchemeEdit, onPreviewChange } = useSchemeEditFixture('{bad json');
 
     handleSchemeEdit('$.data.url', 'new', '/data/url');
 
@@ -70,11 +70,7 @@ describe('useAppSchemeEditCommand', () => {
   });
 
   it('JSON Pointer 写入失败时不回退旧 JSONPath', () => {
-    const onPreviewChange = vi.fn();
-    const { handleSchemeEdit } = useAppSchemeEditCommand({
-      previewText: '{"items":["old"]}',
-      onPreviewChange,
-    });
+    const { handleSchemeEdit, onPreviewChange } = useSchemeEditFixture('{"items":["old"]}');
 
     handleSchemeEdit('$.items[0]', 'new', '/items/bad');
 

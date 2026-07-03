@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.471 (2026-07-03) - Scheme 编辑测试夹具收敛
+### 🏗️ 架构与基础设施
+- **Scheme 编辑测试降噪**: `useAppSchemeEditCommand` 测试抽出本地夹具和结构化 JSON 期望值，减少重复 hook 装配和手写格式化字符串，并收紧对应测试预算
+
 ## v1.8.470 (2026-07-03) - 主动作命令装配简化
 ### 🏗️ 架构与基础设施
 - **主动作 Hook 降噪**: `useAppPrimaryActionCommand` 去掉仅用于传递 effects 的 `useMemo` 中间层，`handleAction` 直接把当前回调集合传给 runner，测试同步移除 `useMemo` mock，并收紧主动作 hook 与测试预算
