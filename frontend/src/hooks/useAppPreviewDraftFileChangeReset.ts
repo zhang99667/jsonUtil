@@ -5,6 +5,9 @@ interface UseAppPreviewDraftFileChangeResetOptions {
   onCancelOutputDraft: () => void;
 }
 
+export const shouldCancelPreviewDraftOnFileChange = (previousFileId: string | null, nextFileId: string | null): boolean =>
+  previousFileId !== nextFileId;
+
 export const useAppPreviewDraftFileChangeReset = ({
   activeFileId,
   onCancelOutputDraft,
@@ -12,7 +15,7 @@ export const useAppPreviewDraftFileChangeReset = ({
   const lastPreviewDraftFileIdRef = useRef(activeFileId);
 
   useEffect(() => {
-    if (lastPreviewDraftFileIdRef.current === activeFileId) return;
+    if (!shouldCancelPreviewDraftOnFileChange(lastPreviewDraftFileIdRef.current, activeFileId)) return;
 
     lastPreviewDraftFileIdRef.current = activeFileId;
     onCancelOutputDraft();

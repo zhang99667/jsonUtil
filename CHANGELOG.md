@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.476 (2026-07-03) - PREVIEW 草稿切换判断提纯
+### 🏗️ 架构与基础设施
+- **PREVIEW 草稿重置提纯**: `useAppPreviewDraftFileChangeReset` 抽出文件切换判断函数，测试改为纯判断矩阵加 Hook 接线校验，减少 React mock 覆盖面并收紧对应测试预算
+
 ## v1.8.475 (2026-07-03) - 主动作 Hook 类型契约收缩
 ### 🏗️ 架构与基础设施
 - **主动作 Hook 瘦身**: `useAppPrimaryActionCommand` 直接复用 runner effects 类型作为输入契约，只保留可选 `now` 覆盖项，减少命令回调字段的重复声明并收紧源码预算
