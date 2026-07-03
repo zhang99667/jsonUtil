@@ -34,10 +34,9 @@ import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import { AppConfirmDialogs } from './components/AppConfirmDialogs';
 import { AppLazyShellModals } from './components/AppLazyShellModals';
+import { AppStatusBarController } from './components/AppStatusBarController';
 import { AppToolPanelsController } from './components/AppToolPanelsController';
 import ErrorBoundary from './components/ErrorBoundary';
-import { StatusBar } from './components/StatusBar';
-import { getDocumentStats } from './utils/documentStats';
 import { getDetailedErrorMessage } from './utils/errors';
 import { safeSetStorageItem } from './utils/storage';
 import { AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY, loadAIConfig, loadGeneralSettings } from './utils/appSettings';
@@ -63,7 +62,6 @@ import { getContentSizeSummary } from './utils/appWorkflowHelpers';
 import { setLegacyJsonPathValue } from './utils/appLegacyJsonPath';
 import {
   ASYNC_VALIDATION_THRESHOLD,
-  DOCUMENT_STATS_SCAN_LIMIT,
 } from './utils/appAsyncPolicy';
 import { buildAppTransformOutputState } from './utils/appTransformOutput';
 
@@ -427,11 +425,6 @@ const App: React.FC = () => {
     }
   }, [mode, activeFileId]);
 
-  // 计算文档统计信息（根据当前焦点区域）
-  const documentStats = useMemo(() => {
-    const content = activeEditor === 'PREVIEW' ? output : input;
-    return getDocumentStats(content, { maxScanLength: DOCUMENT_STATS_SCAN_LIMIT });
-  }, [input, output, activeEditor]);
   const smartSuggestion = useMemo(() => getSmartInputSuggestion(input), [input]);
 
   useEffect(() => {
@@ -795,14 +788,10 @@ const App: React.FC = () => {
         />
       </div>
 
-      {/* 底部状态栏 */}
-      <StatusBar
-        inputLength={input.length}
-        activeContentLength={documentStats.characterCount}
-        activeContentByteLength={documentStats.utf8ByteLength}
-        totalLines={documentStats.totalLines}
-        maxColumns={documentStats.maxColumns}
-        isStatsLimited={documentStats.isLimited}
+      <AppStatusBarController
+        sourceText={input}
+        previewText={output}
+        activeEditor={activeEditor}
         mode={mode}
         activeFileId={activeFileId}
         files={files}
@@ -811,11 +800,9 @@ const App: React.FC = () => {
         isOutputTransforming={isOutputTransforming}
         isAiRepairing={isProcessing}
         isAiConfigured={Boolean(aiConfig.apiKey.trim())}
-        hasSourceContent={editorUiState.hasSourceContent}
-        isSourceJsonCandidate={editorUiState.isSourceJsonCandidate}
-        sourceStandaloneDeepFormatKind={editorUiState.sourceStandaloneDeepFormatKind}
+        editorUiState={editorUiState}
         onOpenSourceSchemeInput={handleOpenSourceSchemeInput}
-        onOpenChangelog={() => handleOpenChangelog()}
+        onOpenChangelog={handleOpenChangelog}
         sourceValidation={validation}
         sourceValidationLocation={sourceErrorLocation}
         onLocateSourceError={handleLocateSourceErrorFromStatus}
