@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.442 (2026-07-03) - PREVIEW 待回写取消边界收敛
+### 🐛 Bug 修复
+- **PREVIEW 待回写保护**: 将命令入口的模式切换和 SOURCE 替换统一接入 `useAppPreviewSafeSetters`，执行前先取消 PREVIEW 待同步草稿，降低旧预览编辑晚到回写导致 SOURCE/模式回弹的风险
+
 ## v1.8.441 (2026-07-03) - 报告复制标题状态收敛
 ### 🏗️ 架构与基础设施
 - **报告标题矩阵降噪**: 将深度解析报告面板的复制标题布尔矩阵抽成 `buildTransformReportPanelCopyTitleState`，派生模型只负责组合复制可用性、问题样本、占位符和质量状态

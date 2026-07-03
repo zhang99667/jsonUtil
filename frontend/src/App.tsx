@@ -19,6 +19,10 @@ import { useAppSaveCommands } from './hooks/useAppSaveCommands';
 import { useAppSettingsBackupCommands } from './hooks/useAppSettingsBackupCommands';
 import { useAppSmartSuggestionCommands } from './hooks/useAppSmartSuggestionCommands';
 import { useAppPreviewOutputSync } from './hooks/useAppPreviewOutputSync';
+import {
+  useAppPreviewSafeModeSetter,
+  useAppPreviewSafeSourceSetter,
+} from './hooks/useAppPreviewSafeSetters';
 import { useAppTransformContextPersistence } from './hooks/useAppTransformContextPersistence';
 import { useAppLazyPanelLoadState } from './hooks/useAppLazyPanelLoadState';
 import { useAppSourceValidation } from './hooks/useAppSourceValidation';
@@ -193,6 +197,14 @@ const App: React.FC = () => {
     onSetInput: setInput,
     onUpdateActiveFileContent: updateActiveFileContent,
   });
+  const setModeWithPreviewDraftCancel = useAppPreviewSafeModeSetter({
+    onCancelOutputDraft: cancelOutputDraft,
+    onSetMode: setMode,
+  });
+  const setSourceTextWithPreviewDraftCancel = useAppPreviewSafeSourceSetter({
+    onCancelOutputDraft: cancelOutputDraft,
+    onSetSourceText: setInput,
+  });
   const [sourceErrorLocateSignal, setSourceErrorLocateSignal] = useState(0);
   const sourceErrorLocation = useMemo(
     () => validation.isValid ? null : getJsonValidationErrorLocation(input, validation.error),
@@ -225,8 +237,8 @@ const App: React.FC = () => {
     sourceText: input,
     mode,
     inputRef,
-    onSetSourceText: setInput,
-    onSetMode: setMode,
+    onSetSourceText: setSourceTextWithPreviewDraftCancel,
+    onSetMode: setModeWithPreviewDraftCancel,
     onSetSmartSuggestionOrigin: setSmartSuggestionOrigin,
     onUpdateActiveFileContent: updateActiveFileContent,
   });
@@ -323,7 +335,7 @@ const App: React.FC = () => {
   } = useAppToolPanelCommands({
     mode,
     sourceText: input,
-    onSetMode: setMode,
+    onSetMode: setModeWithPreviewDraftCancel,
     onSetHighlightRange: setHighlightRange,
     onTrackToolEvent: trackCurrentToolEvent,
   });
@@ -361,10 +373,9 @@ const App: React.FC = () => {
   });
 
   const handleModeChange = useCallback((nextMode: TransformMode) => {
-    cancelOutputDraft();
-    setMode(nextMode);
+    setModeWithPreviewDraftCancel(nextMode);
     trackCurrentToolEvent(nextMode, 'transform_mode');
-  }, [cancelOutputDraft, setMode, trackCurrentToolEvent]);
+  }, [setModeWithPreviewDraftCancel, trackCurrentToolEvent]);
 
   const handleToggleAutoSave = useCallback(() => {
     const plan = buildAppAutoSaveTogglePlan({
@@ -445,7 +456,7 @@ const App: React.FC = () => {
     aiConfig,
     aiRepairSnapshotRef,
     onApplyFixedJson: handleApplyAiRepairResult,
-    onSetMode: setMode,
+    onSetMode: setModeWithPreviewDraftCancel,
     onOpenAiSettings: handleOpenAiSettings,
     onTriggerFeatureFirstUse: () => triggerFeatureFirstUse(FeatureId.AI_FIX),
     onTrackToolEvent: trackCurrentToolEvent,
@@ -478,7 +489,7 @@ const App: React.FC = () => {
     isOutputTransforming,
     smartSuggestionOriginTextRef,
     onInputChange: handleInputChange,
-    onSetMode: setMode,
+    onSetMode: setModeWithPreviewDraftCancel,
     onSetHighlightRange: setHighlightRange,
     onSetJsonPathPanelOpen: setIsJsonPathPanelOpen,
     onSetTransformReportOpen: setIsTransformReportOpen,
@@ -508,7 +519,7 @@ const App: React.FC = () => {
     autoExpandScheme,
     validation,
     isTemplatePanelOpen,
-    onSetSourceText: setInput,
+    onSetSourceText: setSourceTextWithPreviewDraftCancel,
     onUpdateActiveFileContent: updateActiveFileContent,
     onSetTemplateApplyQualityDelta: setTemplateApplyQualityDelta,
   });
@@ -546,7 +557,7 @@ const App: React.FC = () => {
     onRunAiFix: () => {
       void handleAction(ActionType.AI_FIX);
     },
-    onSetMode: setMode,
+    onSetMode: setModeWithPreviewDraftCancel,
     onSetHighlightRange: setHighlightRange,
     onOpenSchemeInput: requestSchemeInput,
     onSetSchemePanelOpen: setIsSchemeDecodeOpen,
@@ -761,7 +772,7 @@ const App: React.FC = () => {
           isTemplatePanelOpen={isTemplatePanelOpen}
           templateApplyQualityDelta={templateApplyQualityDelta}
           templateTargetError={templateTargetError}
-          onSetSourceText={setInput}
+          onSetSourceText={setSourceTextWithPreviewDraftCancel}
           onUpdateActiveFileContent={updateActiveFileContent}
           onSetJsonTreePanelOpen={setIsJsonTreePanelOpen}
           onSetJsonComparePanelOpen={setIsJsonComparePanelOpen}
