@@ -9,6 +9,7 @@ export const governanceAppMaintainabilityBudgets = [
   governanceAppBudget('scripts/ci/maintainability-budget-app-action-panel-rules.mjs', 65, 'App 工具栏预算规则应保持短表，新增工具栏子模块先拆配置或图标预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-rules.mjs', 40, 'App 预算规则聚合入口应只负责组合子领域规则'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-core-rules.mjs', 35, 'App 主入口和交互边界预算规则应保持短表'),
+  governanceAppBudget('scripts/ci/maintainability-budget-app-file-system-rules.mjs', 20, 'App 文件系统预算规则应只维护文件系统 hook 和 SOURCE 状态 helper 预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-interaction-hook-rules.mjs', 20, 'App 交互基础 hook 预算规则应只维护共享交互 hook 和测试预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-layout-rules.mjs', 45, 'App 布局预算规则应独立维护 controller、底层 hook、resize helper 和共享拖拽监听预算'),
   governanceAppBudget('scripts/ci/maintainability-budget-app-file-close-rules.mjs', 25, 'App 文件关闭保护预算规则应维护 hook 和关闭决策 helper 预算'),

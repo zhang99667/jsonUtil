@@ -81,6 +81,7 @@ const App: React.FC = () => {
 
   // 使用 Ref 暂存待处理的输出值
   const pendingOutputValue = useRef<string>('');
+  const cancelOutputDraftRef = useRef<(() => void) | null>(null);
 
   // 当前转换模式
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
@@ -99,13 +100,23 @@ const App: React.FC = () => {
     handleSidebarResizeKeyDown, handlePaneResizeKeyDown
   } = useAppLayoutController(appRef);
 
+  const handleBeforeFileSystemSourceChange = useCallback(() => {
+    cancelOutputDraftRef.current?.();
+  }, []);
+
   // 文件系统状态 (Hook) - 移到前面，因为 output 需要使用 activeFileId 和 setFiles
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
     createNewTab, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
     saveViewState, flushWorkspaceDraft
   } = useFileSystem({
-    input, setInput, inputRef, mode, setMode, output: '' // 初始为空，后面会更新
+    input,
+    setInput,
+    inputRef,
+    mode,
+    setMode,
+    output: '', // 初始为空，后面会更新
+    onBeforeSourceWorkspaceChange: handleBeforeFileSystemSourceChange,
   });
 
   // 通用设置状态 + localStorage 持久化（需在 deepFormatResult 之前声明）
@@ -197,6 +208,14 @@ const App: React.FC = () => {
     onSetInput: setInput,
     onUpdateActiveFileContent: updateActiveFileContent,
   });
+  useEffect(() => {
+    cancelOutputDraftRef.current = cancelOutputDraft;
+    return () => {
+      if (cancelOutputDraftRef.current === cancelOutputDraft) {
+        cancelOutputDraftRef.current = null;
+      }
+    };
+  }, [cancelOutputDraft]);
   const setModeWithPreviewDraftCancel = useAppPreviewSafeModeSetter({
     onCancelOutputDraft: cancelOutputDraft,
     onSetMode: setMode,
