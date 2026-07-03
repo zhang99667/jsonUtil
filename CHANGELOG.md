@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.437 (2026-07-03) - PREVIEW 输出变更 Handler 拆分
+### 🏗️ 架构与基础设施
+- **PREVIEW 同步降压**: 将 PREVIEW 编辑时的草稿开始、即时校验和同步任务调度抽成 `useAppPreviewOutputChangeHandler`，反向同步主 hook 回归校验状态、取消清理和 handler 装配
+
 ## v1.8.436 (2026-07-03) - 布局拖拽 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **布局 Hook 降压**: 将侧栏和分栏鼠标拖拽的开始/停止、mousemove 更新和窗口监听装配抽成 `useLayoutResizeDrag`，`useLayout` 回归布局状态容器并收紧维护预算
