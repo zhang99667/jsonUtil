@@ -11,4 +11,6 @@ export const appWorkflowStateHelperMaintainabilityBudgets = [
   { file: 'frontend/src/hooks/useAppLazyPanelLoadState.test.ts', maxLines: 90, reason: '懒加载面板 loaded hook 测试只锁定默认初始化、打开后加载和关闭后粘性保留' },
   { file: 'frontend/src/hooks/useAppSettingsState.ts', maxLines: 50, reason: 'App 设置状态 hook 只维护通用设置和 AI 设置的加载与本地持久化' },
   { file: 'frontend/src/hooks/useAppSettingsState.test.ts', maxLines: 85, reason: 'App 设置状态测试只锁定设置加载、返回状态和本地持久化 key' },
+  { file: 'frontend/src/hooks/useAppEditorValidationLocations.ts', maxLines: 60, reason: 'App 编辑器错误定位 hook 只维护 SOURCE/PREVIEW 定位派生和状态栏定位信号' },
+  { file: 'frontend/src/hooks/useAppEditorValidationLocations.test.ts', maxLines: 110, reason: 'App 编辑器错误定位测试只锁定定位计算、valid 空态和状态栏定位信号' },
 ];
