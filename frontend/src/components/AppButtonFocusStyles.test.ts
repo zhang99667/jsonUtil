@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const appCss = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+const indexEntrySource = readFileSync(new URL('../index.tsx', import.meta.url), 'utf8');
+const indexHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const finalButtonStateCss = readFileSync(new URL('../styles/buttonStateOverrides.css', import.meta.url), 'utf8');
 const releaseToastCss = readFileSync(new URL('./AppReleaseToast.css', import.meta.url), 'utf8');
 const driverTourCss = readFileSync(new URL('../styles/driverTourOverrides.css', import.meta.url), 'utf8');
 
@@ -21,6 +24,15 @@ const getRuleBody = (css: string, selector: string): string => {
 };
 
 describe('App button focus styles', () => {
+  it('主应用只从入口脚本加载样式，并最后导入按钮状态覆盖层', () => {
+    const indexCssImport = "import './index.css';";
+    const buttonStateImport = "import './styles/buttonStateOverrides.css';";
+
+    expect(indexHtml).not.toContain('/src/index.css');
+    expect(indexEntrySource.indexOf(indexCssImport)).toBeGreaterThanOrEqual(0);
+    expect(indexEntrySource.indexOf(buttonStateImport)).toBeGreaterThan(indexEntrySource.indexOf(indexCssImport));
+  });
+
   it('全局按钮键盘焦点会压掉 Tailwind ring 选中框', () => {
     const focusRule = getRuleBody(appCss, ':where(button, [role="button"]):focus-visible');
 
@@ -71,8 +83,9 @@ describe('App button focus styles', () => {
     const focusRule = getRuleBody(appCss, '.changelog-modal__confirm-button:focus-visible');
 
     expect(buttonRule).toContain('border-radius: 6px');
-    expect(buttonRule).toContain('min-width: 72px');
-    expect(buttonRule).toContain('background: rgba(255, 255, 255, 0.075) !important');
+    expect(buttonRule).toContain('min-height: 28px');
+    expect(buttonRule).toContain('min-width: 76px');
+    expect(buttonRule).toContain('background: linear-gradient(180deg, rgba(76, 88, 104, 0.68) 0%, rgba(49, 59, 72, 0.72) 100%) !important');
     expect(buttonRule).toContain('border: 0 !important');
     expect(buttonRule).toContain('box-shadow: none !important');
     expect(buttonRule).not.toContain('999px');
@@ -81,12 +94,28 @@ describe('App button focus styles', () => {
     expect(buttonRule).not.toContain('#1487c9');
     expect(buttonRule).not.toContain('rgba(0, 122, 204');
     expect(focusRule).toContain('--tw-ring-color: transparent !important');
-    expect(focusRule).toContain('background: rgba(255, 255, 255, 0.13) !important');
+    expect(focusRule).toContain('background: linear-gradient(180deg, rgba(88, 101, 118, 0.78) 0%, rgba(57, 68, 82, 0.8) 100%) !important');
     expect(focusRule).toContain('filter: brightness(1.04) saturate(1.01)');
     expect(focusRule).toContain('box-shadow: none !important');
     expect(focusRule).not.toContain('0 0 18px');
     expect(focusRule).not.toContain('inset 0 0 0 1px');
     expect(appCss).not.toContain('changelog-modal__confirm-button::after');
+  });
+
+  it('按钮最终覆盖层兜住后置 Tailwind ring 工具类', () => {
+    const focusRule = getRuleBody(finalButtonStateCss, ':where(button, [role="button"]):focus-visible');
+    const confirmFocusRule = getRuleBody(
+      finalButtonStateCss,
+      '.app-button.app-button--primary:focus-visible'
+    );
+
+    expect(focusRule).toContain('--tw-ring-offset-shadow: 0 0 #0000 !important');
+    expect(focusRule).toContain('--tw-ring-shadow: 0 0 #0000 !important');
+    expect(focusRule).toContain('box-shadow: var(--app-button-rest-shadow, none) !important');
+    expect(confirmFocusRule).toContain('background: linear-gradient(180deg, rgba(88, 101, 118, 0.78)');
+    expect(confirmFocusRule).toContain('box-shadow: none !important');
+    expect(finalButtonStateCss).not.toContain('#1487c9');
+    expect(finalButtonStateCss).not.toContain('rgba(0, 122, 204');
   });
 
   it('鼠标点击 app-button 不会留下选中框或内部焦点线', () => {
@@ -122,7 +151,7 @@ describe('App button focus styles', () => {
       ':where(.driver-popover, .json-helper-tour-popover, .json-helper-feature-tour-popover) .driver-popover-footer .driver-popover-next-btn:hover'
     );
 
-    expect(nextButtonRule).toContain('background: rgba(255, 255, 255, 0.085) !important');
+    expect(nextButtonRule).toContain('background: linear-gradient(180deg, rgba(76, 88, 104, 0.68) 0%, rgba(49, 59, 72, 0.72) 100%) !important');
     expect(nextButtonRule).toContain('border: 0 !important');
     expect(nextButtonRule).toContain('box-shadow: none !important');
     expect(nextButtonRule).not.toContain('inset 0');

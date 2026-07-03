@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.425 (2026-07-03) - 按钮选中框最终态覆盖
+### 🎨 UI/UE 优化
+- **按钮状态收口**: 将按钮 focus ring 兜底覆盖拆成最后导入的独立样式层，并把版本弹窗和 Driver 引导主按钮统一成无描边深色实体面，避免 Tailwind ring 或旧蓝绿主按钮样式回潮
+
 ## v1.8.424 (2026-07-03) - PREVIEW 同步调度拆分
 ### 🏗️ 架构与基础设施
 - **同步时序降压**: 将 PREVIEW 反向同步的 debounce、requestId 失效、取消和延迟解锁抽成 scheduler hook，主同步 hook 回归暂存、校验、request 和结果应用
