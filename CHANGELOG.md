@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.472 (2026-07-03) - 更新检测测试隔离加固
+### 🏗️ 架构与基础设施
+- **更新检测测试隔离**: `appUpdateCheckEffects` 测试改为在 `afterEach` 统一清理 mock 和全局 `fetch` stub，避免 manifest 请求断言失败时污染后续测试
+
 ## v1.8.471 (2026-07-03) - Scheme 编辑测试夹具收敛
 ### 🏗️ 架构与基础设施
 - **Scheme 编辑测试降噪**: `useAppSchemeEditCommand` 测试抽出本地夹具和结构化 JSON 期望值，减少重复 hook 装配和手写格式化字符串，并收紧对应测试预算
