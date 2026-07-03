@@ -1,0 +1,18 @@
+export const appWorkflowStatePreviewSyncMaintainabilityBudgets = [
+  { file: 'frontend/src/hooks/useAppPreviewOutputSync.ts', maxLines: 135, reason: 'PREVIEW 反向同步 hook 只维护编辑暂存、校验触发、request 装配和结果应用' },
+  { file: 'frontend/src/hooks/useAppPreviewOutputSyncScheduler.ts', maxLines: 90, reason: 'PREVIEW 反向同步 scheduler hook 只维护防抖、requestId 失效、取消和延迟解锁时序' },
+  { file: 'frontend/src/hooks/useAppPreviewOutputSyncScheduler.test.ts', maxLines: 125, reason: 'PREVIEW 反向同步 scheduler 测试只锁定防抖、晚到任务、取消卸载和延迟解锁时序' },
+  { file: 'frontend/src/hooks/useAppPreviewOutputSync.test.ts', maxLines: 95, reason: 'PREVIEW 反向同步 hook 测试只锁定防抖回写、连续编辑失效、延迟解锁和非法内容不覆盖 SOURCE' },
+  { file: 'frontend/src/hooks/useAppPreviewOutputSyncCancel.test.ts', maxLines: 70, reason: 'PREVIEW 反向同步取消测试只锁定取消和卸载不会晚到覆盖 SOURCE' },
+  { file: 'frontend/src/hooks/useAppPreviewOutputSyncFailure.test.ts', maxLines: 50, reason: 'PREVIEW 反向同步失败测试只锁定异常不覆盖 SOURCE 且保留草稿' },
+  { file: 'frontend/src/hooks/useAppPreviewOutputSyncTestFixture.ts', maxLines: 100, reason: 'PREVIEW 反向同步 hook 测试 fixture 只集中 React mock、校验 mock 和默认 hook 输入构建' },
+  { file: 'frontend/src/hooks/useAppPreviewOutputSyncTestAssertions.ts', maxLines: 70, reason: 'PREVIEW 反向同步测试断言只维护 fake timer 推进和草稿/SOURCE/请求断言' },
+  { file: 'frontend/src/utils/appPreviewOutputSync.ts', maxLines: 50, reason: 'PREVIEW 反向同步纯 helper 只维护校验模式判断和 source 还原选择' },
+  { file: 'frontend/src/utils/appPreviewOutputSync.test.ts', maxLines: 70, reason: 'PREVIEW 反向同步 helper 测试只锁定校验模式、context 回写和无 context fallback' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncRequest.ts', maxLines: 60, reason: 'PREVIEW 反向同步 request helper 只维护上下文选择、runner 调用和异常兜底' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncRequest.test.ts', maxLines: 95, reason: 'PREVIEW 反向同步 request 测试只锁定 Tab 上下文优先、fallback 和异常失败结果' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncRunner.ts', maxLines: 70, reason: 'PREVIEW 反向同步 runner 只维护同步前校验和 source 回写结果，不持有 React 状态' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncRunner.test.ts', maxLines: 80, reason: 'PREVIEW 反向同步 runner 测试只锁定 invalid、synced 和非格式化跳过校验路径' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncResult.ts', maxLines: 55, reason: 'PREVIEW 反向同步结果 helper 只维护失败草稿保留和成功回写副作用' },
+  { file: 'frontend/src/utils/appPreviewOutputSyncResult.test.ts', maxLines: 65, reason: 'PREVIEW 反向同步结果测试只锁定失败保留草稿和成功写回 SOURCE' },
+];
