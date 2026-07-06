@@ -7,6 +7,7 @@ import type {
 } from '../utils/transformSummary';
 import { createTransformReportView } from '../utils/transformReportViewTestFixture';
 import type { TransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
+import { findByType } from './componentElementTestHelpers';
 import { TransformReportEmptyState } from './TransformReportEmptyState';
 import { TransformReportFilterBar } from './TransformReportFilterBar';
 import { TransformReportPanelSections } from './TransformReportPanelSections';
@@ -58,27 +59,6 @@ vi.mock('./TransformReportEmptyState', () => ({
     <section data-mock="empty" {...props} />
   ),
 }));
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
 
 const report = { summaryText: '解析完成' } as TransformContextReport;
 const record = { path: '$.a' } as TransformReportRecord;

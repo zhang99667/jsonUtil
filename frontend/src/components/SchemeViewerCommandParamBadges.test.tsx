@@ -1,26 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SchemeViewerCommandParamBadges } from './SchemeViewerCommandParamBadges';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
+import { collectText } from './schemeViewerElementTestHelpers';
 
 describe('SchemeViewerCommandParamBadges', () => {
   it('渲染参数数量、前 6 个 key 和剩余数量', () => {
