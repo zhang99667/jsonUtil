@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { assertElementLike, collectText, findByType } from './componentElementTestHelpers';
+import { createJsonPathResultPreviewItem } from './JsonPathPanelResultPreviewItemTestData';
 import { JsonPathPanelResultPreviewRowContent } from './JsonPathPanelResultPreviewRowContent';
-import { createJsonPathResultPreviewItem } from './JsonPathPanelResultPreviewTestFixture';
 
 const renderRowContent = (
   overrides: Partial<Parameters<typeof createJsonPathResultPreviewItem>[0]> = {}
