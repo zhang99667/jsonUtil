@@ -4,6 +4,7 @@ import type {
 } from '../utils/transformSummary';
 import { createTransformReportView } from '../utils/transformReportViewTestFixture';
 import type { TransformReportPlaceholderToolbarState } from '../utils/transformReportPlaceholderToolbarState';
+import { collectText, findByType } from './componentElementTestHelpers';
 import { TransformReportPanelContent } from './TransformReportPanelContent';
 import { TransformReportPanelSections } from './TransformReportPanelSections';
 
@@ -12,34 +13,6 @@ vi.mock('./TransformReportPanelSections', () => ({
     <section data-mock="sections" {...props} />
   ),
 }));
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
-
-const collectText = (node: unknown): string => {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (!isElementLike(node)) return '';
-  return collectText(node.props.children);
-};
 
 const report = { summaryText: '解析完成' } as TransformContextReport;
 const reportView = createTransformReportView();
