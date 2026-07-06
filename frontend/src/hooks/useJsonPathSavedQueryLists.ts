@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
-  addJsonPathListItem,
-  removeJsonPathListItem,
-} from '../utils/jsonPathLists';
+  addJsonPathHistoryItem,
+  clearJsonPathHistory,
+  removeJsonPathFavorite,
+  removeJsonPathHistoryItem,
+  toggleJsonPathFavorite,
+} from '../utils/jsonPathSavedQueryListActions';
 import {
   clearStoredJsonPathHistory,
   loadJsonPathSavedQueryLists,
@@ -48,31 +51,26 @@ export const useJsonPathSavedQueryLists = (
   }, []);
 
   const addHistoryItem = useCallback((query: string) => {
-    setLists(prev => ({ ...prev, history: addJsonPathListItem(prev.history, query) }));
+    setLists(prev => addJsonPathHistoryItem(prev, query));
   }, []);
 
   const clearHistory = useCallback(() => {
-    setLists(prev => ({ ...prev, history: [] }));
+    setLists(clearJsonPathHistory);
     clearStoredJsonPathHistory();
   }, []);
 
   const removeFavorite = useCallback((query: string) => {
-    setLists(prev => ({ ...prev, favorites: removeJsonPathListItem(prev.favorites, query) }));
+    setLists(prev => removeJsonPathFavorite(prev, query));
   }, []);
 
   const removeHistoryItem = useCallback((index: number) => {
-    setLists(prev => ({ ...prev, history: prev.history.filter((_, itemIndex) => itemIndex !== index) }));
+    setLists(prev => removeJsonPathHistoryItem(prev, index));
   }, []);
 
   const toggleFavorite = useCallback(() => {
     if (!normalizedQuery) return;
 
-    setLists(prev => ({
-      ...prev,
-      favorites: prev.favorites.includes(normalizedQuery)
-        ? removeJsonPathListItem(prev.favorites, normalizedQuery)
-        : addJsonPathListItem(prev.favorites, normalizedQuery),
-    }));
+    setLists(prev => toggleJsonPathFavorite(prev, normalizedQuery));
   }, [normalizedQuery]);
 
   return {

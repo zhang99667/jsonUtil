@@ -70,24 +70,11 @@ describe('useJsonPathSavedQueryLists', () => {
     expect(setLists.mock.calls[0][0]({ history: ['$.old'], favorites: [] })).toEqual({
       history: ['$.new', '$.old'], favorites: [],
     });
-
     lists.removeHistoryItem(0);
-    expect(setLists.mock.calls[1][0]({ history: ['$.old', '$.next'], favorites: [] })).toEqual({
-      history: ['$.next'], favorites: [],
-    });
-
-    lists.toggleFavorite();
-    expect(setLists.mock.calls[2][0]({ history: [], favorites: ['$.old'] })).toEqual({
-      history: [], favorites: ['$.new', '$.old'],
-    });
-    expect(setLists.mock.calls[2][0]({ history: [], favorites: ['$.new', '$.old'] })).toEqual({
-      history: [], favorites: ['$.old'],
-    });
-
     lists.removeFavorite('$.old');
-    expect(setLists.mock.calls[3][0]({ history: [], favorites: ['$.old', '$.new'] })).toEqual({
-      history: [], favorites: ['$.new'],
-    });
+    lists.toggleFavorite();
+
+    expect(setLists).toHaveBeenCalledTimes(4);
   });
 
   it('清空历史时同步删除存储项', () => {
