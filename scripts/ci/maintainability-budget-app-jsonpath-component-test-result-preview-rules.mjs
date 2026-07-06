@@ -1,0 +1,9 @@
+const appJsonPathComponentTestResultPreviewBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
+
+export const appJsonPathComponentTestResultPreviewMaintainabilityBudgets = [
+  appJsonPathComponentTestResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreview.test.tsx', 85, 'JSONPath 结果预览测试只锁定空态、结果列表装配和提示状态透传'),
+  appJsonPathComponentTestResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreviewList.test.tsx', 65, 'JSONPath 结果预览列表测试只锁定结果行映射、选中态和回调透传'),
+  appJsonPathComponentTestResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreviewMessages.test.tsx', 50, 'JSONPath 结果预览提示测试只锁定隐藏结果数量和命中上限文案'),
+  appJsonPathComponentTestResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreviewRow.test.tsx', 60, 'JSONPath 结果预览行测试只锁定路径来源值展示、点击下标和结构定位入口装配'),
+  appJsonPathComponentTestResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreviewLocateButton.test.tsx', 55, 'JSONPath 结果预览结构定位按钮测试只锁定按钮属性、隐藏图标和点击下标'),
+];

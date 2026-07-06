@@ -1,7 +1,7 @@
 import React from 'react';
 import type { JsonPathResultPreviewItem } from '../utils/jsonPathPanelPreviewItems';
+import { JsonPathPanelResultPreviewList } from './JsonPathPanelResultPreviewList';
 import { JsonPathPanelResultPreviewMessages } from './JsonPathPanelResultPreviewMessages';
-import { JsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewRow';
 
 interface JsonPathPanelResultPreviewProps {
     previewItems: JsonPathResultPreviewItem[];
@@ -38,16 +38,13 @@ export const JsonPathPanelResultPreview: React.FC<JsonPathPanelResultPreviewProp
             onWheel={onWheel}
             className="mb-3 max-h-24 flex-shrink-0 overflow-y-auto overscroll-contain rounded border border-editor-border bg-editor-bg/60 p-1 space-y-1 [&::-webkit-scrollbar]:hidden"
         >
-            {previewItems.map(item => (
-                <JsonPathPanelResultPreviewRow
-                    key={item.index}
-                    item={item}
-                    isActive={item.index === currentResultIndex}
-                    showLocateStructure={showLocateStructure}
-                    onFocusResult={onFocusResult}
-                    onLocateStructureResult={onLocateStructureResult}
-                />
-            ))}
+            <JsonPathPanelResultPreviewList
+                previewItems={previewItems}
+                currentResultIndex={currentResultIndex}
+                showLocateStructure={showLocateStructure}
+                onFocusResult={onFocusResult}
+                onLocateStructureResult={onLocateStructureResult}
+            />
             <JsonPathPanelResultPreviewMessages
                 hiddenResultCount={hiddenResultCount}
                 maxVisibleResultCount={maxVisibleResultCount}

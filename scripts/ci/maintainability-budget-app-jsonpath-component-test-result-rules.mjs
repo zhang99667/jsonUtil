@@ -1,13 +1,7 @@
-const appJsonPathComponentTestResultBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
+import { appJsonPathComponentTestResultPreviewMaintainabilityBudgets } from './maintainability-budget-app-jsonpath-component-test-result-preview-rules.mjs';
+import { appJsonPathComponentTestResultToolbarMaintainabilityBudgets } from './maintainability-budget-app-jsonpath-component-test-result-toolbar-rules.mjs';
 
 export const appJsonPathComponentTestResultMaintainabilityBudgets = [
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultPreview.test.tsx', 85, 'JSONPath 结果预览测试只锁定空态、结果行装配和提示状态透传'),
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultPreviewMessages.test.tsx', 50, 'JSONPath 结果预览提示测试只锁定隐藏结果数量和命中上限文案'),
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultPreviewRow.test.tsx', 60, 'JSONPath 结果预览行测试只锁定路径来源值展示、点击下标和结构定位入口装配'),
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultPreviewLocateButton.test.tsx', 55, 'JSONPath 结果预览结构定位按钮测试只锁定按钮属性、隐藏图标和点击下标'),
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultToolbar.test.tsx', 60, 'JSONPath 结果工具条测试只锁定状态组件和动作列表接线'),
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultToolbarStatus.test.tsx', 55, 'JSONPath 结果工具条状态测试只锁定计数文案、命中上限提示和无障碍状态属性'),
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultToolbarActionList.test.tsx', 95, 'JSONPath 结果工具条动作列表测试只锁定按钮配置、禁用态、图标组件和点击接线'),
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultToolbarIcon.test.tsx', 55, 'JSONPath 结果工具条图标测试只锁定 SVG 外壳和复合图标路径数量'),
-  appJsonPathComponentTestResultBudget('frontend/src/components/JsonPathPanelResultToolbarTestFixture.ts', 55, 'JSONPath 结果工具条测试夹具只维护默认 props、回调和渲染 helper'),
+  ...appJsonPathComponentTestResultPreviewMaintainabilityBudgets,
+  ...appJsonPathComponentTestResultToolbarMaintainabilityBudgets,
 ];
