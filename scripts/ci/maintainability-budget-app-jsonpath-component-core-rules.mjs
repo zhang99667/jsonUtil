@@ -2,7 +2,8 @@ const appJsonPathComponentCoreBudget = (file, maxLines, reason) => ({ file, maxL
 
 export const appJsonPathComponentCoreMaintainabilityBudgets = [
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanel.tsx', 630, 'JSONPath 面板组件继续承载 worker、面板状态和区域装配，复制格式化、结果工具条、预览项派生、结果预览、导航、查询建议、查询输入、保存查询、状态提示和标题文案等逻辑应下沉到 helper/子组件'),
-  appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelQueryInput.tsx', 110, 'JSONPath 查询输入子组件只维护输入框、收藏入口、查询/取消按钮和查询状态提示渲染'),
+  appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelQueryInput.tsx', 90, 'JSONPath 查询输入子组件只维护输入框、收藏入口和查询状态提示渲染'),
+  appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelQueryActionButtons.tsx', 55, 'JSONPath 查询动作按钮只维护查询、取消和隐藏说明的按钮状态'),
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelFavoriteToggleButton.tsx', 45, 'JSONPath 收藏按钮只维护星标状态、按钮样式和无障碍标签'),
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelResultPreview.tsx', 70, 'JSONPath 结果预览子组件只维护可见结果列表、滚动容器和命中上限提示渲染'),
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelResultPreviewRow.tsx', 80, 'JSONPath 结果预览行只维护单条路径和值展示、选中态和结构定位入口'),
