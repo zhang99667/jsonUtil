@@ -1,6 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo, useReducer } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useJsonPathPanelTour } from '../hooks/useJsonPathPanelTour';
+import {
+    useJsonPathPanelQueryRunner,
+    type JsonPathPanelExternalQueryRequest,
+} from '../hooks/useJsonPathPanelQueryRunner';
 import { useJsonPathSavedQueryLists } from '../hooks/useJsonPathSavedQueryLists';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { JsonPathPanelQueryInput } from './JsonPathPanelQueryInput';
@@ -15,23 +19,12 @@ import { copyText } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { getJsonPathScenarioExamples } from '../utils/jsonPathExamples';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
-import { normalizeJsonPathQueryInput } from '../utils/jsonPathInput';
 import {
     runJsonPathPathValueCopyCommand,
     runJsonPathValueCopyCommand,
 } from '../utils/jsonPathPanelCopyCommand';
 import { buildJsonPathResultPreviewItems } from '../utils/jsonPathPanelPreviewItems';
 import { shouldStopNestedScrollPropagation } from '../utils/nestedScrollPropagation';
-import {
-    getDurationBucket,
-    getTextSizeBucket,
-    trackToolEvent,
-    type ToolEventStatus,
-} from '../utils/productTelemetry';
-import {
-    initialJsonPathPanelQueryState,
-    jsonPathPanelQueryStateReducer,
-} from '../utils/jsonPathPanelQueryState';
 import { buildJsonPathPanelUiState } from '../utils/jsonPathPanelUiState';
 import {
     getJsonPathResultFocusIndex,
@@ -54,10 +47,7 @@ interface JsonPathPanelProps {
     deepFormat?: boolean;
     autoExpandScheme?: boolean;
     isDataPreparing?: boolean;
-    externalQueryRequest?: {
-        id: number;
-        query: string;
-    } | null;
+    externalQueryRequest?: JsonPathPanelExternalQueryRequest | null;
     isOpen: boolean;
     onClose: () => void;
     onHighlightRange: (range: HighlightRange | null) => void;
@@ -88,10 +78,25 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         toggleFavorite,
     } = useJsonPathSavedQueryLists(normalizedQuery);
 
-    const [queryState, dispatchQueryState] = useReducer(
-        jsonPathPanelQueryStateReducer,
-        initialJsonPathPanelQueryState
-    );
+    const {
+        queryState,
+        clearCancelledQuery,
+        focusResult: applyFocusedResult,
+        handleCancelQuery,
+        handleQuery,
+        resetQueryState,
+    } = useJsonPathPanelQueryRunner({
+        query,
+        jsonData,
+        deepFormat,
+        autoExpandScheme,
+        isDataPreparing,
+        externalQueryRequest,
+        isOpen,
+        onSetQuery: setQuery,
+        onAddHistoryItem: addHistoryItem,
+        onHighlightRange,
+    });
     const {
         error,
         queryRanges,
@@ -105,11 +110,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         isQuerying,
         cancelledQuery,
     } = queryState;
-    const workerRef = useRef<Worker | null>(null);
-    const requestIdRef = useRef(0);
-    const activeQueryRef = useRef('');
-    const activeQueryStartedAtRef = useRef<number | null>(null);
-    const externalQueryIdRef = useRef<number | null>(null);
     const queryInputRef = useRef<HTMLInputElement | null>(null);
     useJsonPathPanelTour(isOpen);
 
@@ -122,187 +122,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         thumbOffset: thumbTop,
         showScrollbar,
     } = useCustomScrollbar('vertical', history.length);
-
-    useEffect(() => {
-        return () => {
-            workerRef.current?.terminate();
-            activeQueryStartedAtRef.current = null;
-        };
-    }, []);
-
-    const trackJsonPathQueryEvent = useCallback((status: ToolEventStatus, startedAt: number) => {
-        const durationMs = typeof performance === 'undefined' ? -1 : performance.now() - startedAt;
-        trackToolEvent({
-            eventName: 'JSONPATH_QUERY',
-            category: 'jsonpath',
-            status,
-            inputSizeBucket: getTextSizeBucket(jsonData),
-            durationBucket: getDurationBucket(durationMs),
-        });
-    }, [jsonData]);
-
-    const resetQueryState = useCallback(() => {
-        workerRef.current?.terminate();
-        workerRef.current = null;
-        requestIdRef.current++;
-        activeQueryRef.current = '';
-        activeQueryStartedAtRef.current = null;
-        dispatchQueryState({ type: 'reset' });
-        onHighlightRange(null);
-    }, [onHighlightRange]);
-
-    useEffect(() => {
-        resetQueryState();
-    }, [jsonData, deepFormat, autoExpandScheme, isOpen, resetQueryState]);
-
-    const handleQuery = useCallback((overrideQuery?: string) => {
-        const startedAt = performance.now();
-        dispatchQueryState({ type: 'prepare' });
-        const normalizedQueryInput = normalizeJsonPathQueryInput(overrideQuery ?? query);
-        const queryPath = normalizedQueryInput.query;
-
-        if (isDataPreparing) {
-            dispatchQueryState({ type: 'skipped', error: '深度格式化仍在处理，请稍后查询' });
-            trackJsonPathQueryEvent('skipped', startedAt);
-            return;
-        }
-
-        if (!queryPath) {
-            dispatchQueryState({
-                type: 'skipped',
-                error: '请输入 JSONPath 表达式或字段名',
-                clearResults: true,
-            });
-            onHighlightRange(null);
-            trackJsonPathQueryEvent('skipped', startedAt);
-            return;
-        }
-
-        if (normalizedQueryInput.isFieldNameShortcut) {
-            setQuery(queryPath);
-        }
-
-        // 校验 JSON 数据有效性
-        if (!jsonData || !jsonData.trim()) {
-            dispatchQueryState({ type: 'skipped', error: '请先在左侧输入 JSON 数据' });
-            trackJsonPathQueryEvent('skipped', startedAt);
-            return;
-        }
-
-        workerRef.current?.terminate();
-        const requestId = ++requestIdRef.current;
-        const worker = new Worker(new URL('../workers/jsonPath.worker.ts', import.meta.url), { type: 'module' });
-        workerRef.current = worker;
-        activeQueryRef.current = queryPath;
-        activeQueryStartedAtRef.current = startedAt;
-        dispatchQueryState({ type: 'start' });
-        onHighlightRange(null);
-
-        worker.onmessage = (event: MessageEvent<{
-            id: number;
-            ranges: HighlightRange[];
-            values: unknown[];
-            items: JsonPathQueryItem[];
-            totalResults: number;
-            isLimited: boolean;
-            resultLimit: number;
-            error?: string;
-        }>) => {
-            if (event.data.id !== requestId) return;
-            worker.terminate();
-            if (workerRef.current === worker) {
-                workerRef.current = null;
-            }
-            activeQueryRef.current = '';
-            const queryStartedAt = activeQueryStartedAtRef.current ?? startedAt;
-            activeQueryStartedAtRef.current = null;
-
-            if (event.data.error) {
-                dispatchQueryState({ type: 'failed', error: event.data.error });
-                onHighlightRange(null);
-                trackJsonPathQueryEvent('error', queryStartedAt);
-                return;
-            }
-
-            if (event.data.totalResults === 0) {
-                dispatchQueryState({ type: 'empty', query: queryPath });
-                onHighlightRange(null);
-                trackJsonPathQueryEvent('success', queryStartedAt);
-                return;
-            }
-
-            dispatchQueryState({
-                type: 'success',
-                payload: {
-                    ranges: event.data.ranges,
-                    values: event.data.values,
-                    items: event.data.items || [],
-                    totalResults: event.data.totalResults,
-                    isLimited: event.data.isLimited,
-                    resultLimit: event.data.resultLimit,
-                },
-            });
-            onHighlightRange(event.data.ranges[0] || null);
-
-            addHistoryItem(queryPath);
-            trackJsonPathQueryEvent('success', queryStartedAt);
-        };
-
-        worker.onerror = (event) => {
-            if (requestIdRef.current !== requestId) return;
-            worker.terminate();
-            if (workerRef.current === worker) {
-                workerRef.current = null;
-            }
-            activeQueryRef.current = '';
-            const queryStartedAt = activeQueryStartedAtRef.current ?? startedAt;
-            activeQueryStartedAtRef.current = null;
-            dispatchQueryState({ type: 'failed', error: `JSONPath 查询错误: ${event.message}` });
-            onHighlightRange(null);
-            trackJsonPathQueryEvent('error', queryStartedAt);
-        };
-
-        worker.postMessage({
-            id: requestId,
-            jsonData,
-            query: queryPath,
-            options: {
-                deepFormat,
-                autoExpandScheme,
-            },
-        });
-    }, [addHistoryItem, autoExpandScheme, deepFormat, isDataPreparing, jsonData, onHighlightRange, query, trackJsonPathQueryEvent]);
-
-    const handleCancelQuery = useCallback(() => {
-        if (!isQuerying || !workerRef.current) return;
-
-        const cancelledQueryPath = activeQueryRef.current || query.trim();
-        const queryStartedAt = activeQueryStartedAtRef.current ?? performance.now();
-        workerRef.current.terminate();
-        workerRef.current = null;
-        requestIdRef.current++;
-        activeQueryRef.current = '';
-        activeQueryStartedAtRef.current = null;
-        dispatchQueryState({ type: 'cancelled', query: cancelledQueryPath });
-        onHighlightRange(null);
-        trackJsonPathQueryEvent('cancelled', queryStartedAt);
-        showSuccess('已取消查询', 1600);
-    }, [isQuerying, onHighlightRange, query, trackJsonPathQueryEvent]);
-
-    // 从解析报告等外部入口进入时，自动填入路径并触发一次查询。
-    useEffect(() => {
-        if (!externalQueryRequest || !isOpen || isDataPreparing) return;
-        if (externalQueryIdRef.current === externalQueryRequest.id) return;
-
-        externalQueryIdRef.current = externalQueryRequest.id;
-        setQuery(externalQueryRequest.query);
-        handleQuery(externalQueryRequest.query);
-    }, [externalQueryRequest, handleQuery, isDataPreparing, isOpen]);
-
-    const applyFocusedResult = (index: number) => {
-        dispatchQueryState({ type: 'focus', index });
-        onHighlightRange(queryRanges[index] || null);
-    };
 
     const navigateResult = (direction: 'previous' | 'next') => {
         const nextIndex = getJsonPathResultNavigationIndex({
@@ -338,7 +157,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const handleQueryInputChange = (nextQuery: string) => {
         setQuery(nextQuery);
-        dispatchQueryState({ type: 'clearCancelled' });
+        clearCancelledQuery();
     };
 
     const clearQueryInput = () => {
@@ -371,7 +190,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const fillAndRunQuery = (queryPath: string) => {
         setQuery(queryPath);
-        dispatchQueryState({ type: 'prepare' });
         handleQuery(queryPath);
     };
 
