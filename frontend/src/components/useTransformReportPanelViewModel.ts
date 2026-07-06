@@ -54,6 +54,7 @@ export const useTransformReportPanelViewModel = ({
   const deferredQuery = useDeferredValue(query);
   const isFilterPending = query !== deferredQuery;
   const activeContext = isOpen ? context : null;
+  const hasActiveContext = Boolean(activeContext);
   const report = useMemo(() => (
     activeContext ? buildTransformContextReport(activeContext) : null
   ), [activeContext]);
@@ -77,9 +78,9 @@ export const useTransformReportPanelViewModel = ({
       deferredQuery,
       isFilterPending,
       qualityBaseline,
-      hasActiveContext: Boolean(activeContext),
+      hasActiveContext,
     })
-  ), [activeContext, deferredQuery, fullReportView, isFilterPending, qualityBaseline, report, reportView]);
+  ), [deferredQuery, fullReportView, hasActiveContext, isFilterPending, qualityBaseline, report, reportView]);
 
   return {
     activeContext,

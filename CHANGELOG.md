@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.539 (2026-07-06) - 深度解析 ViewModel 派生依赖收敛
+### 🏗️ 架构与基础设施
+- **ViewModel 派生依赖收口**: 深度解析面板 view model 显式区分 active context 对象和 `hasActiveContext` 布尔状态，让派生模型 memo 只依赖布尔可用性，同时保留上下文对象身份触发筛选重置的语义
+
 ## v1.8.538 (2026-07-06) - ActionPanel 滚动条 Hook 收敛
 ### 🏗️ 架构与基础设施
 - **工具栏滚动条复用通用 Hook**: `useActionPanelScrollbar` 改为适配 `useCustomScrollbar`，删除专用滚动计算和 DOM 读取 helper，并保留滚动时引导刷新调度与初始尺寸读取测试

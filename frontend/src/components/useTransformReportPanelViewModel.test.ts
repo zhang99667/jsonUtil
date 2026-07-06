@@ -92,6 +92,15 @@ describe('useTransformReportPanelViewModel', () => {
       qualityBaseline: null,
       hasActiveContext: true,
     });
+    expect(reactMocks.useMemo).toHaveBeenLastCalledWith(expect.any(Function), [
+      'CMD-deferred',
+      fixtures.fullReportView,
+      true,
+      true,
+      null,
+      fixtures.report,
+      fixtures.reportView,
+    ]);
     expect(result.activeContext).toBe(context);
     expect(result.reportView).toBe(fixtures.reportView);
     expect(result.fullReportView).toBe(fixtures.fullReportView);
