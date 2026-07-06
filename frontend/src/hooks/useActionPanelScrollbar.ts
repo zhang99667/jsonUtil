@@ -14,9 +14,9 @@ export const useActionPanelScrollbar = ({
   const {
     scrollContainerRef: containerRef,
     handleScroll: handleCustomScrollbarScroll,
-    handleMouseDown,
-    thumbSize,
-    thumbOffset,
+    handleMouseDown: onMouseDown,
+    thumbSize: thumbHeight,
+    thumbOffset: thumbTop,
     showScrollbar,
   } = useCustomScrollbar('vertical', isCollapsed);
   const scheduleScrollFrame = useRafCallback(onScrollFrame);
@@ -31,9 +31,9 @@ export const useActionPanelScrollbar = ({
     handleScroll,
     scrollbarProps: {
       showScrollbar,
-      thumbHeight: thumbSize,
-      thumbTop: thumbOffset,
-      onMouseDown: handleMouseDown,
+      thumbHeight,
+      thumbTop,
+      onMouseDown,
     },
   };
 };
