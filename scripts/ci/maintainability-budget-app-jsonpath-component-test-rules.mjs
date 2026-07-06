@@ -1,0 +1,6 @@
+const appJsonPathComponentTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
+
+export const appJsonPathComponentTestMaintainabilityBudgets = [
+  appJsonPathComponentTestBudget('frontend/src/components/JsonPathPanelResultToolbar.test.tsx', 75, 'JSONPath 结果工具条测试只锁定状态文案、工具按钮接线和查询中禁用态'),
+  appJsonPathComponentTestBudget('frontend/src/components/JsonPathPanelSavedQueryList.test.tsx', 65, 'JSONPath 保存查询列表测试只锁定列表容器、行 props 和选择删除回调'),
+];
