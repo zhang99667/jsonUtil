@@ -522,6 +522,7 @@ export const fixJsonWithRepairDetails = async (
 
   const timeoutMs = options.timeoutMs ?? AI_REPAIR_TIMEOUT_MS;
   const fetchImpl = options.fetchImpl ?? fetch;
+  let aiRequestUrl = '';
 
   try {
     // Gemini 接口调用
@@ -553,9 +554,10 @@ export const fixJsonWithRepairDetails = async (
 
     // OpenAI 兼容接口调用 (OpenAI, Qwen, GLM, DeepSeek, Custom)
     const baseUrl = getOpenAICompatibleBaseUrl(config);
+    aiRequestUrl = buildChatCompletionsUrl(baseUrl);
     const abortController = new AbortController();
 
-    const response = await withTimeout(fetchImpl(buildChatCompletionsUrl(baseUrl), {
+    const response = await withTimeout(fetchImpl(aiRequestUrl, {
       method: 'POST',
       signal: abortController.signal,
       headers: {
@@ -580,17 +582,7 @@ export const fixJsonWithRepairDetails = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-
-      // 根据 HTTP 状态码提供更友好的错误信息
-      if (response.status === 401) {
-        throw new Error('API Key 无效，请检查配置');
-      } else if (response.status === 429) {
-        throw new Error('API 调用频率超限，请稍后重试');
-      } else if (response.status >= 500) {
-        throw new Error('AI 服务暂时不可用，请稍后重试');
-      }
-
-      throw new Error(`API 错误 (${response.status}): ${errorText}`);
+      throw new Error(formatAiHttpErrorMessage(response.status, errorText));
     }
 
     const data = await response.json();
@@ -610,6 +602,7 @@ export const fixJsonWithRepairDetails = async (
     if (
       errorMessage.includes('API Key') ||
       errorMessage.includes('API 错误') ||
+      errorMessage.includes('API 地址') ||
       errorMessage.includes('服务') ||
       errorMessage.includes('AI 返回内容') ||
       errorMessage.includes(AI_SENSITIVE_INPUT_MESSAGE) ||
@@ -624,7 +617,7 @@ export const fixJsonWithRepairDetails = async (
 
     // 网络错误
     if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
-      throw new Error('网络连接失败，请检查网络后重试');
+      throw new Error(formatAiNetworkErrorMessage(aiRequestUrl, errorMessage));
     }
 
     // 其他未知错误
@@ -691,6 +684,40 @@ const getOpenAICompatibleBaseUrl = (config: AIConfig): string => {
 const buildChatCompletionsUrl = (baseUrl: string): string => {
   // 兼容用户从平台复制 Base URL 时带尾部斜杠的情况，避免拼出 //chat/completions。
   return `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+};
+
+const formatAiHttpErrorMessage = (status: number, errorText: string): string => {
+  const detail = extractAiErrorDetail(errorText);
+  const suffix = detail ? `：${detail}` : '';
+
+  if (status === 401) return `API Key 无效或无权限${suffix}`;
+  if (status === 404) return `API 地址不存在 (404)${suffix}。请确认 Base URL 已填写到 OpenAI-compatible 版本路径，例如 https://example.com/v1`;
+  if (status === 429) return `API 调用频率超限，请稍后重试${suffix}`;
+  if (status >= 500) return `AI 服务暂时不可用，请稍后重试${suffix}`;
+
+  return `API 错误 (${status})${suffix}`;
+};
+
+const extractAiErrorDetail = (errorText: string): string => {
+  const trimmed = errorText.trim();
+  if (!trimmed) return '';
+
+  try {
+    const data = JSON.parse(trimmed) as { error?: { message?: unknown } | string; message?: unknown };
+    const message = typeof data.error === 'object' && data.error
+      ? data.error.message
+      : data.message ?? data.error;
+    if (typeof message === 'string' && message.trim()) return message.trim();
+  } catch {
+    // 非 JSON 错误体继续使用原始文本摘要。
+  }
+
+  return trimmed.length > 240 ? `${trimmed.slice(0, 240)}...` : trimmed;
+};
+
+const formatAiNetworkErrorMessage = (requestUrl: string, errorMessage: string): string => {
+  const target = requestUrl ? `请求地址：${requestUrl}。` : '';
+  return `网络连接失败：浏览器未拿到 AI 服务响应。${target}可能原因：内网/VPN/零信任未登录、网关或 CORS 拦截、证书异常，或 Base URL 无法从当前浏览器访问。原始错误：${errorMessage}`;
 };
 
 const tryNormalizeJson = (candidate: string): string | null => {

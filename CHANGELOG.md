@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.525 (2026-07-06) - AI 连接测试错误提示细化
+### 🐛 Bug 修复
+- **AI 连接测试诊断增强**: OpenAI-compatible 请求失败时透出服务端错误详情和 request id；浏览器 fetch 级失败时提示未拿到 HTTP 响应、请求地址及内网/VPN/零信任/CORS/证书等排查方向
+
 ## v1.8.524 (2026-07-06) - 回滚 AI Base URL 根路径容错
 ### 🧹 体验调整
 - **Base URL 配置回归标准语义**: 回滚自定义 AI 根域名自动补齐 `/v1` 的容错逻辑，OpenAI-compatible Base URL 继续要求用户填写到版本路径层级
