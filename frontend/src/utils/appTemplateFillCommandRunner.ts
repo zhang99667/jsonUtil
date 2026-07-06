@@ -1,5 +1,5 @@
 import { isPlaceholderFillTemplateJson } from './appWorkflowHelpers';
-import { getAppTemplateFillSuccessMessage } from './appTemplateFillCommandMessages';
+import { commitAppTemplateFillCommandResult } from './appTemplateFillCommandResult';
 import { tryBuildAppTemplateFillQualityDelta, type AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
 import { loadAppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySummary';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
@@ -59,11 +59,7 @@ export const runAppTemplateFillCommand = async (
       })
       : '';
 
-    effects.onSetTemplateApplyQualityDelta(qualityDelta);
-    effects.onSetSourceText(merged);
-    effects.setCurrentSourceText(merged);
-    effects.onUpdateActiveFileContent(merged);
-    effects.onShowSuccess(getAppTemplateFillSuccessMessage(shouldLoadSummary, qualityDelta));
+    commitAppTemplateFillCommandResult({ effects, merged, shouldLoadSummary, qualityDelta });
   } catch (error: unknown) {
     if (dispatchChunkLoadRecoveryEvent(error)) return;
 
