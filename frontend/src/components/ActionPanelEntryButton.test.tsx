@@ -2,35 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ActionPanelEntryButton } from './ActionPanelEntryButton';
 import { ActionPanelEntryButtonContent } from './ActionPanelEntryButtonContent';
 import { ActionPanelEntryIconSlot } from './ActionPanelEntryIconSlot';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
+import { assertElementLike, clickElement, collectText, findByType } from './componentElementTestHelpers';
 
 const renderButton = (overrides: Partial<Parameters<typeof ActionPanelEntryButton>[0]> = {}) => ActionPanelEntryButton({
   label: '格式化',
@@ -53,8 +25,7 @@ describe('ActionPanelEntryButton', () => {
     const onClick = vi.fn();
     const tree = renderButton({ onClick });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelEntryButton 应返回 React 元素');
+    assertElementLike(tree, 'ActionPanelEntryButton 应返回 React 元素');
     expect(tree.type).toBe('button');
     expect(tree.props['data-tour']).toBe('format-button');
     expect(tree.props['aria-pressed']).toBe(true);
@@ -69,10 +40,7 @@ describe('ActionPanelEntryButton', () => {
     expect(findByType(tree, ActionPanelEntryIconSlot)[0].props.state).toMatchObject({
       iconWrapperClassName: 'transition-colors text-blue-400',
     });
-    const handleClick = tree.props.onClick;
-    expect(typeof handleClick).toBe('function');
-    if (typeof handleClick !== 'function') throw new Error('入口按钮应透传点击回调');
-    handleClick();
+    clickElement(tree);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
@@ -90,8 +58,7 @@ describe('ActionPanelEntryButton', () => {
       },
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelEntryButton 应返回 React 元素');
+    assertElementLike(tree, 'ActionPanelEntryButton 应返回 React 元素');
     expect(tree.props['aria-label']).toBe('格式化');
     expect(tree.props.title).toBe('格式化');
     expect(tree.props.className).toContain('justify-center');

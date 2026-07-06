@@ -3,9 +3,9 @@ import { TransformMode, type FileTab } from '../types';
 import { useFileSystem } from './useFileSystem';
 
 const reactMocks = vi.hoisted(() => ({
-  useCallback: vi.fn(),
-  useEffect: vi.fn(),
-  useRef: vi.fn(),
+  useCallback: vi.fn((callback: unknown) => callback),
+  useEffect: vi.fn(() => undefined),
+  useRef: vi.fn((value: unknown) => ({ current: value })),
   useState: vi.fn(),
 }));
 
@@ -71,9 +71,6 @@ const expectSourceStateApplied = ({ input, events }: FileSystemScenario, content
 describe('useFileSystem', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-    reactMocks.useEffect.mockImplementation(() => undefined);
-    reactMocks.useRef.mockImplementation((value: unknown) => ({ current: value }));
   });
 
   it('切换标签替换 SOURCE 和模式前先触发 before-change', () => {

@@ -6,8 +6,8 @@ const mocks = vi.hoisted(() => ({
   runAppSmartSuggestionCommand: vi.fn(),
   showError: vi.fn(),
   showSuccess: vi.fn(),
-  useCallback: vi.fn(),
-  useMemo: vi.fn(),
+  useCallback: vi.fn((callback: unknown) => callback),
+  useMemo: vi.fn((factory: () => unknown) => factory()),
 }));
 
 vi.mock('react', async importOriginal => ({
@@ -40,8 +40,6 @@ const createCallbacks = () => ({
 describe('useAppSmartSuggestionCommands', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.useMemo.mockImplementation((factory: () => unknown) => factory());
-    mocks.useCallback.mockImplementation((callback: unknown) => callback);
   });
 
   it('把智能建议动作输入和调用方 effects 交给 runner', () => {

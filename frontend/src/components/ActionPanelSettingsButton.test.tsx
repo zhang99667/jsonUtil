@@ -1,41 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ActionPanelSettingsButton } from './ActionPanelSettingsButton';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const assertElementLike = (node: unknown): ElementLike => {
-  if (!isElementLike(node)) {
-    throw new Error('expected React element-like node');
-  }
-  return node;
-};
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
+import { assertElementLike, clickElement, collectText, findByType } from './componentElementTestHelpers';
 
 describe('ActionPanelSettingsButton', () => {
   it('展开态展示设置文案并透传点击', () => {
@@ -53,9 +18,7 @@ describe('ActionPanelSettingsButton', () => {
     expect(button.props.title).toBe('设置');
     expect(collectText(button)).toContain('设置');
 
-    const onClick = button.props.onClick;
-    if (typeof onClick !== 'function') throw new Error('expected clickable settings button');
-    onClick();
+    clickElement(button);
 
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });

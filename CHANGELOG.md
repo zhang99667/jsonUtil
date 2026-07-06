@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.510 (2026-07-06) - 组件与 Hook 测试样板收敛
+### 🏗️ 架构与基础设施
+- **组件测试 Helper 迁移**: `AppUpdateToastContent` 与 ActionPanel 入口相关测试复用统一 element-like helper，移除本地文本收集、节点查找和点击样板
+- **Hook 测试 Mock 收敛**: 多个 App hook 测试把 React `useCallback` / `useMemo` 默认 mock 行为前移到 hoisted mock 定义处，减少每个用例前重复初始化噪音
+- **文件系统测试降噪**: `useFileSystem` 测试复用 React mock 默认实现，保留 SOURCE/Mode 写回顺序断言并降低测试样板
+
 ## v1.8.509 (2026-07-06) - PREVIEW 夹具与预算规则表收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 测试夹具去重**: `appPreviewOutputSyncTestFixture` 新增 flat input factory，nested task 与 change task 复用同一份默认输入，并让 override 类型跟随同步任务分桶结构
