@@ -53,26 +53,18 @@ describe('appTemplateFillCommandRunner failures', () => {
     expectSourceChangedTemplateBlocked(effects);
   });
 
-  it('模板应用失败时保留原始错误文案', async () => {
+  it.each([
+    ['模板应用失败时保留原始错误文案', new Error('当前编辑器内容为空'), '当前编辑器内容为空', false],
+    ['非 Error 异常使用失败兜底文案且不写回 SOURCE', 'blocked', '模板应用失败', true],
+  ])('%s', async (_, thrownError, message, shouldKeepSourceUntouched) => {
     mocks.applyTemplate.mockImplementation(() => {
-      throw new Error('当前编辑器内容为空');
+      throw thrownError;
     });
     const effects = createAppTemplateFillCommandEffects();
 
     await runTemplateFillCommand(effects);
 
-    expectTemplateCommandFailure(effects, '当前编辑器内容为空');
-  });
-
-  it('非 Error 异常使用失败兜底文案且不写回 SOURCE', async () => {
-    mocks.applyTemplate.mockImplementation(() => {
-      throw 'blocked';
-    });
-    const effects = createAppTemplateFillCommandEffects();
-
-    await runTemplateFillCommand(effects);
-
-    expectTemplateCommandFailure(effects, '模板应用失败');
-    expectTemplateCommandSourceUntouched(effects);
+    expectTemplateCommandFailure(effects, message);
+    if (shouldKeepSourceUntouched) expectTemplateCommandSourceUntouched(effects);
   });
 });
