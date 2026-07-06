@@ -32,9 +32,5 @@ export const setCustomScrollbarScrollPos = (
   orientation: CustomScrollbarOrientation,
   scrollPos: number
 ) => {
-  if (orientation === 'vertical') {
-    container.scrollTop = scrollPos;
-  } else {
-    container.scrollLeft = scrollPos;
-  }
+  container[orientation === 'vertical' ? 'scrollTop' : 'scrollLeft'] = scrollPos;
 };
