@@ -1,11 +1,11 @@
 import type { ActionPanelScrollState } from './actionPanelScrollbar';
+import { readCustomScrollbarMetrics } from './customScrollbarDom';
 
 type ActionPanelScrollContainer = Pick<HTMLDivElement, 'scrollTop' | 'scrollHeight' | 'clientHeight'>;
 
 export const readActionPanelScrollState = (
   container: ActionPanelScrollContainer
-): ActionPanelScrollState => ({
-  scrollTop: container.scrollTop,
-  scrollHeight: container.scrollHeight,
-  clientHeight: container.clientHeight,
-});
+): ActionPanelScrollState => {
+  const { scrollPos, scrollSize, clientSize } = readCustomScrollbarMetrics(container, 'vertical');
+  return { scrollTop: scrollPos, scrollHeight: scrollSize, clientHeight: clientSize };
+};

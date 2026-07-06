@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.506 (2026-07-06) - 滚动条与组件测试 Helper 收敛
+### 🏗️ 架构与基础设施
+- **ActionPanel 滚动条复用**: `actionPanelScrollbarDom` 和拖拽计算委托通用滚动条 helper，保留原侧栏 thumb 语义，同时让滚动 DOM 读取具备按方向收窄的类型边界
+- **组件测试 Helper 去重**: `useAppChunkLoadRecovery` 与 `AppSidebarActionPanel` 测试复用统一 element-like helper，移除本地重复遍历和点击样板
+
 ## v1.8.505 (2026-07-06) - 模板填充 Hook Effects 收敛
 ### 🏗️ 架构与基础设施
 - **模板填充 Effects 稳定化**: `useAppTemplateFillCommand` 改为 memo 化模板填充 runner effects，再执行应用模板回调，对齐主动作命令 hook 的 effects 装配方式，减少点击时临时对象组装并将 hook 从 52 行降到 44 行
