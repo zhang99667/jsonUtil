@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.481 (2026-07-06) - 主动作命令 Runner 补测
+### 🏗️ 架构与基础设施
+- **主动作命令分层**: `useAppPrimaryActionCommand` 测试聚焦 Hook 到 runner 的委托，新增 `appPrimaryActionCommandRunner` 单测直接覆盖 AI/保存分发、文件动作埋点和未接入动作空转，并避免未接入动作提前读取耗时起点
+
 ## v1.8.480 (2026-07-06) - 交互预算规则分层
 ### 🏗️ 架构与基础设施
 - **交互预算规则分层**: 将通用 scrollbar hook、纯计算 helper、DOM helper 和对应测试预算拆到 `maintainability-budget-app-interaction-scrollbar-rules`，交互 hook 预算入口只保留 PREVIEW setter、telemetry、RAF 和子表聚合
