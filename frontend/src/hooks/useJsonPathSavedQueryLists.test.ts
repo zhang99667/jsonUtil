@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearStoredJsonPathHistory, loadJsonPathSavedQueryLists, saveJsonPathFavorites, saveJsonPathHistory } from '../utils/jsonPathSavedQueryStorage';
-import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
+import { clearStoredJsonPathHistory, loadJsonPathSavedQueryLists } from '../utils/jsonPathSavedQueryStorage';
 import { useJsonPathSavedQueryLists } from './useJsonPathSavedQueryLists';
+import { useJsonPathSavedQueryListStorageSync } from './useJsonPathSavedQueryListStorageSync';
 
 const reactMocks = vi.hoisted(() => ({
   useCallback: vi.fn(),
@@ -20,27 +20,18 @@ vi.mock('../utils/jsonPathSavedQueryStorage', async importOriginal => ({
   ...await importOriginal<typeof import('../utils/jsonPathSavedQueryStorage')>(),
   clearStoredJsonPathHistory: vi.fn(),
   loadJsonPathSavedQueryLists: vi.fn(),
-  saveJsonPathFavorites: vi.fn(),
-  saveJsonPathHistory: vi.fn(),
+}));
+
+vi.mock('./useJsonPathSavedQueryListStorageSync', () => ({
+  useJsonPathSavedQueryListStorageSync: vi.fn(),
 }));
 
 describe('useJsonPathSavedQueryLists', () => {
   let setLists: ReturnType<typeof vi.fn>;
-  let backupImportedHandler: (() => void) | null = null;
 
   beforeEach(() => {
     vi.clearAllMocks();
     setLists = vi.fn();
-    backupImportedHandler = null;
-
-    vi.stubGlobal('window', {
-      addEventListener: vi.fn((eventName: string, handler: () => void) => {
-        if (eventName === APP_BACKUP_IMPORTED_EVENT) {
-          backupImportedHandler = handler;
-        }
-      }),
-      removeEventListener: vi.fn(),
-    });
 
     vi.mocked(loadJsonPathSavedQueryLists).mockReturnValue({ history: ['$.history'], favorites: ['$.favorite'] });
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
@@ -53,14 +44,17 @@ describe('useJsonPathSavedQueryLists', () => {
     });
   });
 
-  it('从本地存储初始化收藏和历史，并持久化当前列表', () => {
+  it('从本地存储初始化收藏和历史，并接通存储同步', () => {
     const lists = useJsonPathSavedQueryLists('$.favorite');
 
     expect(lists.history).toEqual(['$.history']);
     expect(lists.favorites).toEqual(['$.favorite']);
     expect(lists.isCurrentQueryFavorite).toBe(true);
-    expect(saveJsonPathHistory).toHaveBeenCalledWith(['$.history']);
-    expect(saveJsonPathFavorites).toHaveBeenCalledWith(['$.favorite']);
+    expect(useJsonPathSavedQueryListStorageSync).toHaveBeenCalledWith({
+      history: ['$.history'],
+      favorites: ['$.favorite'],
+      onBackupImported: setLists,
+    });
   });
 
   it('提供历史和收藏的增删操作', () => {
@@ -88,14 +82,12 @@ describe('useJsonPathSavedQueryLists', () => {
     expect(clearStoredJsonPathHistory).toHaveBeenCalledTimes(1);
   });
 
-  it('配置备份导入后刷新已挂载面板中的列表', () => {
-    vi.mocked(loadJsonPathSavedQueryLists)
-      .mockReturnValueOnce({ history: ['$.history'], favorites: ['$.favorite'] })
-      .mockReturnValueOnce({ history: ['$.importedHistory'], favorites: ['$.importedFavorite'] });
+  it('空查询不会切换收藏状态', () => {
+    const lists = useJsonPathSavedQueryLists('');
 
-    useJsonPathSavedQueryLists('$.favorite');
-    backupImportedHandler?.();
+    lists.toggleFavorite();
 
-    expect(setLists).toHaveBeenCalledWith({ history: ['$.importedHistory'], favorites: ['$.importedFavorite'] });
+    expect(lists.isCurrentQueryFavorite).toBe(false);
+    expect(setLists).not.toHaveBeenCalled();
   });
 });
