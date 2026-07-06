@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
-import { JsonTreeArrayTablePreviewPanel } from './JsonTreeArrayTablePreviewPanel';
 import { JsonTreeGraphPanel } from './JsonTreeGraphPanel';
+import { JsonTreeSelectedNodeDetailsPanel } from './JsonTreeSelectedNodeDetailsPanel';
 import type { JsonTreeArrayTablePreview, JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
 import {
   buildJsonTreeGraphView,
@@ -22,7 +22,6 @@ import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
   getJsonStringSemanticHints,
   isJsonStringSemanticHintActionable,
-  type JsonStringSemanticHint,
 } from '../utils/jsonValueSemantics';
 import { jsonValueToTypeScriptDeclaration } from '../utils/jsonToTypeScript';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
@@ -35,6 +34,11 @@ import {
 import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import { showError, showSuccess } from '../utils/toast';
 import { formatJsonPathRecursiveFieldQuery } from '../utils/jsonPathInput';
+import {
+  getJsonTreeKindClassName,
+  isJsonTreeArrayIndexKeyLabel,
+  JSON_TREE_KIND_LABELS,
+} from '../utils/jsonTreePresentation';
 
 interface JsonTreePanelProps {
   jsonData: string;
@@ -61,15 +65,6 @@ interface JsonTreeModelState {
 type JsonTreeKindFilter = JsonTreeNode['kind'] | 'all';
 type JsonTreePanelViewMode = 'list' | 'graph';
 
-const KIND_LABELS: Record<JsonTreeNode['kind'], string> = {
-  object: '对象',
-  array: '数组',
-  string: '字符串',
-  number: '数字',
-  boolean: '布尔',
-  null: '空值',
-};
-
 const KIND_FILTER_OPTIONS: Array<{ value: JsonTreeKindFilter; label: string }> = [
   { value: 'all', label: '全部类型' },
   { value: 'object', label: '对象' },
@@ -79,38 +74,6 @@ const KIND_FILTER_OPTIONS: Array<{ value: JsonTreeKindFilter; label: string }> =
   { value: 'boolean', label: '布尔' },
   { value: 'null', label: '空值' },
 ];
-
-const getKindClassName = (kind: JsonTreeNode['kind']): string => {
-  if (kind === 'object') return 'border-blue-500/30 bg-blue-500/10 text-blue-200';
-  if (kind === 'array') return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200';
-  if (kind === 'string') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200';
-  if (kind === 'number') return 'border-amber-500/30 bg-amber-500/10 text-amber-200';
-  if (kind === 'boolean') return 'border-violet-500/30 bg-violet-500/10 text-violet-200';
-  return 'border-gray-500/30 bg-gray-500/10 text-gray-300';
-};
-
-const getJsonPointerDisplayValue = (jsonPointer: string): string => (
-  jsonPointer || '(root)'
-);
-
-const getSemanticHintClassName = (kind: JsonStringSemanticHint['kind']): string => {
-  if (kind === 'url') return 'border-sky-500/30 bg-sky-500/10 text-sky-100';
-  if (kind === 'scheme') return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100';
-  if (kind === 'jwt') return 'border-indigo-500/30 bg-indigo-500/10 text-indigo-100';
-  if (kind === 'base64') return 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-100';
-  if (kind === 'email') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100';
-  if (kind === 'phone') return 'border-lime-500/30 bg-lime-500/10 text-lime-100';
-  if (kind === 'uuid') return 'border-slate-400/30 bg-slate-400/10 text-slate-100';
-  if (kind === 'timestamp') return 'border-yellow-500/30 bg-yellow-500/10 text-yellow-100';
-  if (kind === 'hash') return 'border-stone-400/30 bg-stone-400/10 text-stone-100';
-  if (kind === 'date' || kind === 'date-time') return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
-  if (kind === 'resource-image') return 'border-pink-500/30 bg-pink-500/10 text-pink-100';
-  if (kind === 'resource-video') return 'border-red-500/30 bg-red-500/10 text-red-100';
-  if (kind === 'resource-lottie') return 'border-purple-500/30 bg-purple-500/10 text-purple-100';
-  if (kind === 'resource-audio') return 'border-teal-500/30 bg-teal-500/10 text-teal-100';
-  if (kind === 'resource-package') return 'border-orange-500/30 bg-orange-500/10 text-orange-100';
-  return 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-100';
-};
 
 const escapeRegExp = (value: string): string => (
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -160,10 +123,6 @@ const getVisibleNodes = (
     && (!hasTypeFilter || node.kind === kindFilter)
   ));
 };
-
-const isArrayIndexKeyLabel = (value: string): boolean => (
-  /^\[\d+\]$/.test(value)
-);
 
 export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   jsonData,
@@ -330,7 +289,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   }, [selectedNode?.keyLabel, selectedNode?.path, selectedStringValue]);
   const canOpenSelectedSemanticValue = selectedStringValue !== null &&
     selectedSemanticHints.some(isJsonStringSemanticHintActionable);
-  const canQuerySelectedField = Boolean(selectedNode && selectedNode.path !== '$' && !isArrayIndexKeyLabel(selectedNode.keyLabel));
+  const canQuerySelectedField = Boolean(selectedNode && selectedNode.path !== '$' && !isJsonTreeArrayIndexKeyLabel(selectedNode.keyLabel));
 
   useEffect(() => {
     if (!isOpen || !modelState.model) return;
@@ -438,7 +397,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       const parentNode = node.parentPath ? nodes.find(item => item.path === node.parentPath) : null;
       const rootName = node.path === '$'
         ? 'Root'
-        : isArrayIndexKeyLabel(node.keyLabel)
+        : isJsonTreeArrayIndexKeyLabel(node.keyLabel)
           ? `${parentNode?.keyLabel || 'Root'}Item`
           : node.keyLabel;
       const declaration = jsonValueToTypeScriptDeclaration(nodeValue, {
@@ -548,7 +507,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   };
 
   const handleQuerySelectedField = (node: JsonTreeNode) => {
-    if (node.path === '$' || isArrayIndexKeyLabel(node.keyLabel)) return;
+    if (node.path === '$' || isJsonTreeArrayIndexKeyLabel(node.keyLabel)) return;
 
     handleLocatePath(formatJsonPathRecursiveFieldQuery(node.keyLabel));
     showSuccess('已填入同名字段查询');
@@ -571,128 +530,25 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     if (!selectedNode || modelState.isLoading || modelState.error || !jsonData.trim()) return null;
 
     return (
-      <div className="shrink-0 border-b border-editor-border bg-editor-bg/50 px-3 py-2 text-xs text-gray-300">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] leading-none ${getKindClassName(selectedNode.kind)}`}>
-            {KIND_LABELS[selectedNode.kind]}
-          </span>
-          <span className="min-w-0 flex-1 truncate font-mono text-gray-100" title={selectedNode.path}>
-            {selectedNode.path}
-          </span>
-          <span className="shrink-0 text-gray-500">
-            子节点 {selectedNode.childCount}
-          </span>
-        </div>
-        <div className="mt-2 grid grid-cols-[72px_minmax(0,1fr)] gap-x-2 gap-y-1 text-[11px]">
-          <span className="text-gray-500">Pointer</span>
-          <span className="truncate font-mono text-cyan-100" title={selectedNode.jsonPointer || '根节点 JSON Pointer 为空字符串'}>
-            {getJsonPointerDisplayValue(selectedNode.jsonPointer)}
-          </span>
-          <span className="text-gray-500">预览</span>
-          <span className="truncate font-mono text-gray-300" title={selectedNode.valuePreview}>
-            {selectedNode.valuePreview}
-          </span>
-          {selectedSemanticHints.length > 0 && (
-            <>
-              <span className="text-gray-500">语义</span>
-              <span data-tour="structure-nav-semantic-hints" className="flex min-w-0 flex-wrap items-center gap-1">
-                {selectedSemanticHints.map(hint => (
-                  <span
-                    key={`${hint.kind}-${hint.detail}`}
-                    className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded border px-1.5 py-0.5 ${getSemanticHintClassName(hint.kind)}`}
-                    title={hint.detail}
-                  >
-                    <span className="shrink-0">{hint.label}</span>
-                    <span className="min-w-0 truncate font-mono text-[10px] opacity-80">{hint.detail}</span>
-                  </span>
-                ))}
-              </span>
-            </>
-          )}
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void handleCopyPath(selectedNode.path)}
-            className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-emerald-100"
-          >
-            PATH
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyPointer(selectedNode)}
-            className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-cyan-100"
-          >
-            Pointer
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyNodeValue(selectedNode, false)}
-            className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-blue-100"
-          >
-            复制值
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyNodeValue(selectedNode, true)}
-            className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-violet-100"
-          >
-            格式化值
-          </button>
-          {canQuerySelectedField && (
-            <button
-              type="button"
-              data-tour="structure-nav-query-same-field"
-              onClick={() => handleQuerySelectedField(selectedNode)}
-              aria-label={`查询同名字段：${selectedNode.keyLabel}`}
-              className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-100 transition-colors hover:border-emerald-400/60 hover:bg-emerald-500/20"
-              title={`用 ${formatJsonPathRecursiveFieldQuery(selectedNode.keyLabel)} 查询全局同名字段`}
-            >
-              同名字段
-            </button>
-          )}
-          {canOpenSelectedSemanticValue && (
-            <button
-              type="button"
-              data-tour="structure-nav-open-semantic-value"
-              onClick={handleOpenSelectedSemanticValue}
-              aria-label="继续解析当前语义字符串"
-              className="rounded border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-100 transition-colors hover:border-cyan-400/60 hover:bg-cyan-500/20"
-              title="把当前字符串原始值填入 Scheme/编码解析面板继续排查"
-            >
-              继续解析
-            </button>
-          )}
-          {selectedNode.isContainer && (
-            <button
-              type="button"
-              data-tour="structure-nav-copy-subtree"
-              onClick={() => void handleCopyNodeSubtree(selectedNode)}
-              className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-amber-100"
-            >
-              子树
-            </button>
-          )}
-          {selectedNode.isContainer && (
-            <button
-              type="button"
-              data-tour="structure-nav-copy-typescript"
-              onClick={() => void handleCopyNodeTypeScript(selectedNode)}
-              className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-sky-100"
-            >
-              TS 类型
-            </button>
-          )}
-        </div>
-        <JsonTreeArrayTablePreviewPanel
-          sourcePreview={selectedArrayTablePreview}
-          preview={visibleArrayTablePreview}
-          tableColumnFilter={tableColumnFilter}
-          onTableColumnFilterChange={setTableColumnFilter}
-          onCopyTableJson={handleCopyArrayTableJson}
-          onCopyTableCsv={handleCopyArrayTableCsv}
-        />
-      </div>
+      <JsonTreeSelectedNodeDetailsPanel
+        selectedNode={selectedNode}
+        selectedSemanticHints={selectedSemanticHints}
+        selectedArrayTablePreview={selectedArrayTablePreview}
+        visibleArrayTablePreview={visibleArrayTablePreview}
+        tableColumnFilter={tableColumnFilter}
+        canQuerySelectedField={canQuerySelectedField}
+        canOpenSelectedSemanticValue={canOpenSelectedSemanticValue}
+        onCopyPath={(path) => void handleCopyPath(path)}
+        onCopyPointer={(node) => void handleCopyPointer(node)}
+        onCopyNodeValue={(node, pretty) => void handleCopyNodeValue(node, pretty)}
+        onCopyNodeSubtree={(node) => void handleCopyNodeSubtree(node)}
+        onCopyNodeTypeScript={(node) => void handleCopyNodeTypeScript(node)}
+        onQuerySelectedField={handleQuerySelectedField}
+        onOpenSelectedSemanticValue={handleOpenSelectedSemanticValue}
+        onTableColumnFilterChange={setTableColumnFilter}
+        onCopyTableJson={handleCopyArrayTableJson}
+        onCopyTableCsv={handleCopyArrayTableCsv}
+      />
     );
   };
 
@@ -792,8 +648,8 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
                   <span className="max-w-[160px] shrink-0 truncate font-mono text-[11px] font-semibold text-gray-100">
                     {renderHighlightedText(node.keyLabel, searchHighlightTokens)}
                   </span>
-                  <span className={`shrink-0 rounded border px-1 py-0.5 text-[10px] leading-none ${getKindClassName(node.kind)}`}>
-                    {KIND_LABELS[node.kind]}
+                  <span className={`shrink-0 rounded border px-1 py-0.5 text-[10px] leading-none ${getJsonTreeKindClassName(node.kind)}`}>
+                    {JSON_TREE_KIND_LABELS[node.kind]}
                   </span>
                   <span className="min-w-0 truncate font-mono text-[11px] text-gray-400">
                     {renderHighlightedText(node.valuePreview, searchHighlightTokens)}
