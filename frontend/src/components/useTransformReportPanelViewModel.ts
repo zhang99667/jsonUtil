@@ -57,12 +57,11 @@ export const useTransformReportPanelViewModel = ({
   const report = useMemo(() => (
     activeContext ? buildTransformContextReport(activeContext) : null
   ), [activeContext]);
-  const reportContextTimestamp = activeContext?.timestamp ?? 0;
 
   useEffect(() => {
     setQuery('');
     setCmdComparisonState(resetTransformReportCmdComparisonState());
-  }, [reportContextTimestamp]);
+  }, [activeContext]);
 
   const reportView = useMemo(() => (
     report ? buildTransformReportView(report, deferredQuery) : null

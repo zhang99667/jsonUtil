@@ -98,7 +98,7 @@ describe('useTransformReportPanelViewModel', () => {
     expect(result.hasPathValueCopyItems).toBe(true);
   });
 
-  it('关闭时跳过报告构建，并用空时间戳重置筛选状态', () => {
+  it('关闭时跳过报告构建，并用空上下文重置筛选状态', () => {
     const result = useTransformReportPanelViewModel({ isOpen: false, context: createContext() });
 
     expect(buildTransformContextReport).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('useTransformReportPanelViewModel', () => {
       fullReportView: null,
       hasActiveContext: false,
     }));
-    expect(reactMocks.useEffect).toHaveBeenCalledWith(expect.any(Function), [0]);
+    expect(reactMocks.useEffect).toHaveBeenCalledWith(expect.any(Function), [null]);
     expect(reactMocks.setQuery).toHaveBeenCalledWith('');
     expect(reactMocks.setCmdComparisonState).toHaveBeenCalledWith({
       actualCandidate: null,
@@ -118,5 +118,17 @@ describe('useTransformReportPanelViewModel', () => {
       recordPath: null,
     });
     expect(result.report).toBeNull();
+  });
+
+  it('用上下文对象身份作为重置依赖，避免同时间戳报告串用筛选状态', () => {
+    const firstContext = createContext(123);
+    const nextContext = createContext(123);
+
+    useTransformReportPanelViewModel({ isOpen: true, context: firstContext });
+    useTransformReportPanelViewModel({ isOpen: true, context: nextContext });
+
+    expect(firstContext).not.toBe(nextContext);
+    expect(reactMocks.useEffect).toHaveBeenNthCalledWith(1, expect.any(Function), [firstContext]);
+    expect(reactMocks.useEffect).toHaveBeenNthCalledWith(2, expect.any(Function), [nextContext]);
   });
 });
