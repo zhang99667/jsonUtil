@@ -1,5 +1,11 @@
 import { vi } from 'vitest';
 import { runAppTemplateFillCommand } from './appTemplateFillCommandRunner';
+import { createAppTemplateFillCommandEffects } from './appTemplateFillCommandEffectsFixture';
+
+export {
+  createAppTemplateFillCommandEffects,
+  type AppTemplateFillCommandEffectsFixture,
+} from './appTemplateFillCommandEffectsFixture';
 
 const mocks = vi.hoisted(() => ({
   dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
@@ -33,24 +39,6 @@ vi.mock('./appTemplateFillQualityDelta', () => ({
   },
 }));
 
-const createEffectsBase = () => ({
-  currentSourceText: '{"a":1}',
-  getCurrentSourceText: vi.fn(function getCurrentSourceText(this: { currentSourceText: string }) {
-    return this.currentSourceText;
-  }),
-  setCurrentSourceText: vi.fn(function setCurrentSourceText(this: { currentSourceText: string }, value: string) {
-    this.currentSourceText = value;
-  }),
-  loadSummaryModule: vi.fn(async () => ({}) as never),
-  onSetSourceText: vi.fn(),
-  onUpdateActiveFileContent: vi.fn(),
-  onSetTemplateApplyQualityDelta: vi.fn(),
-  onShowError: vi.fn(),
-  onShowSuccess: vi.fn(),
-});
-
-export type AppTemplateFillCommandEffectsFixture = ReturnType<typeof createEffectsBase>;
-
 export const getAppTemplateFillCommandRunnerMocks = () => mocks;
 
 export const resetAppTemplateFillCommandRunnerMocks = () => {
@@ -60,13 +48,6 @@ export const resetAppTemplateFillCommandRunnerMocks = () => {
   mocks.isPlaceholderFillTemplateJson.mockReturnValue(false);
   mocks.dispatchChunkLoadRecoveryEvent.mockReturnValue(false);
 };
-
-export const createAppTemplateFillCommandEffects = (
-  overrides: Partial<AppTemplateFillCommandEffectsFixture> = {}
-) => ({
-  ...createEffectsBase(),
-  ...overrides,
-});
 
 export const runTemplateFillCommand = (
   effects = createAppTemplateFillCommandEffects(),
