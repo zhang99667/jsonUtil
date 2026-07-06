@@ -1,34 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TransformReportRecord } from '../utils/transformSummary';
+import { collectText, findByTour } from './componentElementTestHelpers';
 import { TransformReportRecordBadges } from './TransformReportRecordBadges';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByDataTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByDataTour(item, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByDataTour(node.props.children, dataTour));
-};
 
 const record = {
   path: '$.cmd',
@@ -50,9 +23,9 @@ describe('TransformReportRecordBadges', () => {
     expect(text).toContain('资源URL 3');
     expect(text).toContain('聚焦复制');
     expect(text).toContain('cmdSchema=baiduboxapp://v1/open');
-    expect(findByDataTour(tree, 'transform-report-record-badges')).toHaveLength(1);
-    expect(findByDataTour(tree, 'transform-report-record-insights')).toHaveLength(1);
-    expect(findByDataTour(tree, 'transform-report-record-badges')[0].props.children)
+    expect(findByTour(tree, 'transform-report-record-badges')).toHaveLength(1);
+    expect(findByTour(tree, 'transform-report-record-insights')).toHaveLength(1);
+    expect(findByTour(tree, 'transform-report-record-badges')[0].props.children)
       .toBeDefined();
   });
 
@@ -68,7 +41,7 @@ describe('TransformReportRecordBadges', () => {
     });
 
     expect(collectText(tree)).toBe('JSON 字符串');
-    expect(findByDataTour(tree, 'transform-report-record-badges')).toHaveLength(1);
-    expect(findByDataTour(tree, 'transform-report-record-insights')).toHaveLength(0);
+    expect(findByTour(tree, 'transform-report-record-badges')).toHaveLength(1);
+    expect(findByTour(tree, 'transform-report-record-insights')).toHaveLength(0);
   });
 });
