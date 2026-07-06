@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AppEditorUiState } from '../utils/appEditorUiState';
 import { PreviewEditorHeaderActions, SourceEditorHeaderActions } from './EditorHeaderActions';
-import { isElementLike, type ElementLike } from './schemeViewerElementTestHelpers';
+import { findByTour, type ElementLike } from './componentElementTestHelpers';
 
 const buildEditorUiState = (overrides: Partial<AppEditorUiState> = {}): AppEditorUiState => ({
   hasSourceContent: true,
@@ -28,16 +28,8 @@ const buildEditorUiState = (overrides: Partial<AppEditorUiState> = {}): AppEdito
   ...overrides,
 });
 
-const findByActionTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(child => findByActionTour(child, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props.dataTour === dataTour ? [node] : [];
-  return matches.concat(findByActionTour(node.props.children, dataTour));
-};
-
 const getByActionTour = (tree: unknown, dataTour: string): ElementLike => {
-  const node = findByActionTour(tree, dataTour)[0];
+  const node = findByTour(tree, dataTour)[0];
   if (!node) throw new Error(`缺少 data-tour=${dataTour} 的节点`);
   return node;
 };
@@ -102,7 +94,7 @@ describe('EditorHeaderActions', () => {
     });
     const html = renderToStaticMarkup(tree);
 
-    expect(findByActionTour(tree, 'transform-report-button')).toHaveLength(0);
+    expect(findByTour(tree, 'transform-report-button')).toHaveLength(0);
     expect(html).not.toContain('data-tour="transform-report-button"');
     expect(html).toContain('title="复制 PREVIEW"');
   });

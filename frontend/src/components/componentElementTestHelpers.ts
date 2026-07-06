@@ -38,7 +38,7 @@ export const findByType = (node: unknown, type: unknown): ElementLike[] => (
 );
 
 export const findByTour = (node: unknown, dataTour: string): ElementLike[] => (
-  findElements(node, element => element.props['data-tour'] === dataTour)
+  findElements(node, element => element.props['data-tour'] === dataTour || element.props.dataTour === dataTour)
 );
 
 export const findByTourOrNull = (node: unknown, dataTour: string): ElementLike | null => (
