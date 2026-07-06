@@ -2,6 +2,7 @@ import React from 'react';
 import type { JsonPathPanelUiState } from '../utils/jsonPathPanelUiState';
 import { JsonPathPanelFavoriteToggleButton } from './JsonPathPanelFavoriteToggleButton';
 import { JsonPathPanelQueryActionButtons } from './JsonPathPanelQueryActionButtons';
+import { JsonPathPanelQueryStatus } from './JsonPathPanelQueryStatus';
 
 type JsonPathPanelQueryInputUiState = Pick<
     JsonPathPanelUiState,
@@ -71,15 +72,6 @@ export const JsonPathPanelQueryInput: React.FC<JsonPathPanelQueryInputProps> = (
                 onCancelQuery={onCancelQuery}
             />
         </div>
-        {(isQuerying || uiState.showCancelledQuery) && (
-            <div
-                data-tour="jsonpath-query-status"
-                role="status"
-                aria-live="polite"
-                className="mt-2 text-xs text-gray-500"
-            >
-                {isQuerying ? '查询中...' : '已取消查询'}
-            </div>
-        )}
+        <JsonPathPanelQueryStatus isQuerying={isQuerying} showCancelledQuery={uiState.showCancelledQuery} />
     </div>
 );
