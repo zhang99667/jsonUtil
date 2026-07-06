@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.527 (2026-07-06) - 组件测试 Helper 复用
+### 🏗️ 架构与基础设施
+- **组件测试样板收敛**: `ActionPanel`、`AppActionSidebar` 与 `AppEditorSplitPanes` 测试复用统一 element-like helper，移除本地重复节点查找与类型守卫逻辑
+
 ## v1.8.526 (2026-07-06) - PREVIEW 变更输入类型收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 输出变更类型单源化**: 输出变更 handler 输入改由运行输入类型派生，移除 refs/applyEffects 重复类型搬运，让同步链路类型边界更轻量并脱离预算热点

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { TransformMode } from '../types';
 import { ActionPanel, type ActionPanelProps } from './ActionPanel';
 import { ActionPanelToolGroups } from './ActionPanelToolGroups';
+import { findByType } from './componentElementTestHelpers';
 
 const mocks = vi.hoisted(() => ({
   refreshTour: vi.fn(),
@@ -32,27 +33,6 @@ vi.mock('../hooks/useActionPanelScrollbar', () => ({
     thumbTop: 0,
   }),
 }));
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
 
 const buildProps = (overrides: Partial<ActionPanelProps> = {}): ActionPanelProps => ({
   activeMode: TransformMode.FORMAT,
