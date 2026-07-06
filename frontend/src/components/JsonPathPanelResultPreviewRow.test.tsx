@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { assertElementLike, clickElement, collectText, findByTour, findByType } from './componentElementTestHelpers';
+import { JsonPathPanelResultPreviewLocateButton } from './JsonPathPanelResultPreviewLocateButton';
 import { JsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewRow';
 
 const previewItem = {
@@ -45,15 +46,10 @@ describe('JsonPathPanelResultPreviewRow', () => {
   it('按需展示结构定位入口', () => {
     const onLocateStructureResult = vi.fn();
     const tree = renderRow({ showLocateStructure: true, onLocateStructureResult });
-    const locateButton = findByTour(tree, 'jsonpath-locate-structure')[0];
+    const locateButton = findByType(tree, JsonPathPanelResultPreviewLocateButton)[0];
 
-    expect(locateButton.props.title).toBe('结构定位标题来自 item');
-    expect(locateButton.props['aria-label']).toBe('结构定位文案来自 item');
-
-    clickElement(locateButton);
-    expect(onLocateStructureResult).toHaveBeenCalledWith(2);
-    expect(findByType(locateButton, 'svg')[0].props['aria-hidden']).toBe('true');
-
-    expect(findByTour(renderRow({ showLocateStructure: false }), 'jsonpath-locate-structure')).toHaveLength(0);
+    expect(locateButton.props.item).toBe(previewItem);
+    expect(locateButton.props.onLocateStructureResult).toBe(onLocateStructureResult);
+    expect(findByType(renderRow({ showLocateStructure: false }), JsonPathPanelResultPreviewLocateButton)).toHaveLength(0);
   });
 });
