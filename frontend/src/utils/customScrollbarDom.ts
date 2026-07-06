@@ -13,18 +13,12 @@ export const readCustomScrollbarMetrics = (
   container: CustomScrollbarContainer,
   orientation: CustomScrollbarOrientation
 ): CustomScrollbarMetricsInput => {
-  if (orientation === 'vertical') {
-    return {
-      scrollPos: container.scrollTop,
-      scrollSize: container.scrollHeight,
-      clientSize: container.clientHeight,
-    };
-  }
+  const isVertical = orientation === 'vertical';
 
   return {
-    scrollPos: container.scrollLeft,
-    scrollSize: container.scrollWidth,
-    clientSize: container.clientWidth,
+    scrollPos: isVertical ? container.scrollTop : container.scrollLeft,
+    scrollSize: isVertical ? container.scrollHeight : container.scrollWidth,
+    clientSize: isVertical ? container.clientHeight : container.clientWidth,
   };
 };
 
@@ -40,8 +34,7 @@ export const setCustomScrollbarScrollPos = (
 ) => {
   if (orientation === 'vertical') {
     container.scrollTop = scrollPos;
-    return;
+  } else {
+    container.scrollLeft = scrollPos;
   }
-
-  container.scrollLeft = scrollPos;
 };
