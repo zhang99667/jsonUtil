@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.515 (2026-07-06) - PREVIEW 同步输入桥接收口
+### 🏗️ 架构与基础设施
+- **PREVIEW 同步桥接瘦身**: 删除只负责平铺字段分桶的 `appPreviewOutputSyncTaskInput` helper 和形状单测，调度入口直接构造 request、refs 与 applyEffects，同步测试夹具从 75 行降到 65 行
+
 ## v1.8.514 (2026-07-06) - 滚动条 DOM 轴字段收敛
 ### 🏗️ 架构与基础设施
 - **滚动条 DOM Helper 可读性**: `customScrollbarDom` 将按数组下标访问的轴字段改为命名字段映射，保留垂直/水平滚动语义并把文件从 36 行压到 35 行

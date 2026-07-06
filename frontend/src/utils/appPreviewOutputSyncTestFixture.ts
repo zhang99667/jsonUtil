@@ -1,6 +1,5 @@
 import { vi } from 'vitest';
 import { TransformMode, type TransformContext } from '../types';
-import { buildAppPreviewOutputSyncTaskInput } from './appPreviewOutputSyncTaskInput';
 import type {
   AppPreviewOutputChangeTaskInput,
   AppPreviewOutputSyncTaskFlatInput,
@@ -42,9 +41,18 @@ export const createPreviewOutputSyncTaskFlatInput = ({
 
 export const createPreviewOutputSyncTaskInput = (
   overrides: PreviewOutputSyncInputOverrides = {}
-): AppPreviewOutputSyncTaskInput => buildAppPreviewOutputSyncTaskInput(
-  createPreviewOutputSyncTaskFlatInput(overrides)
-);
+): AppPreviewOutputSyncTaskInput => {
+  const {
+    previewText, files, activeFileId, mode, validateJsonMaybeAsync,
+    inputRef, fallbackContextRef, pendingOutputValue,
+    setPreviewValidation, onSetInput, onUpdateActiveFileContent,
+  } = createPreviewOutputSyncTaskFlatInput(overrides);
+  return {
+    request: { previewText, files, activeFileId, mode, validateJsonMaybeAsync },
+    refs: { inputRef, fallbackContextRef, pendingOutputValue },
+    applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
+  };
+};
 
 export const createPreviewOutputChangeTaskInput = ({
   scheduleOutputSync,
