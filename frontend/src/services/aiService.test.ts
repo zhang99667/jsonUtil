@@ -185,11 +185,35 @@ describe('fixJsonWithAI', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it('API Key 无效时返回友好错误', async () => {
-    const fetchImpl = vi.fn(async () => new Response('unauthorized', { status: 401 }));
+  it('API Key 无效时返回服务端错误详情', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        message: '无效的令牌 (request id: 2026070616260016238841890515307)',
+      },
+    }), { status: 401 }));
 
     await expect(fixJsonWithAI('{bad}', customConfig, { fetchImpl }))
-      .rejects.toThrow('API Key 无效，请检查配置');
+      .rejects.toThrow('API Key 无效或无权限：无效的令牌 (request id: 2026070616260016238841890515307)');
+  });
+
+  it('API 地址错误时提示检查 Base URL 版本路径', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        message: 'not found',
+      },
+    }), { status: 404 }));
+
+    await expect(fixJsonWithAI('{bad}', customConfig, { fetchImpl }))
+      .rejects.toThrow('API 地址不存在 (404)：not found。请确认 Base URL 已填写到 OpenAI-compatible 版本路径');
+  });
+
+  it('浏览器未拿到响应时返回可排查的网络错误', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+
+    await expect(fixJsonWithAI('{bad}', customConfig, { fetchImpl }))
+      .rejects.toThrow('网络连接失败：浏览器未拿到 AI 服务响应。请求地址：https://mock-ai.test/v1/chat/completions');
   });
 
   it('接口长时间无响应时超时并终止请求', async () => {
