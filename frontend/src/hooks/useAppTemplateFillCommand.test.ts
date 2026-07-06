@@ -6,11 +6,13 @@ import { showError, showSuccess } from '../utils/toast';
 
 const reactMocks = vi.hoisted(() => ({
   useCallback: vi.fn(),
+  useMemo: vi.fn(),
 }));
 
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
+  useMemo: reactMocks.useMemo,
 }));
 
 vi.mock('../utils/appTemplateFillCommandRunner', () => ({
@@ -43,6 +45,7 @@ describe('useAppTemplateFillCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
+    reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
   });
 
   it('暴露模板目标错误', () => {
@@ -50,7 +53,7 @@ describe('useAppTemplateFillCommand', () => {
     expect(useAppTemplateFillCommand(createHookInput({ validation: invalidValidation })).templateTargetError).toBe('当前 SOURCE JSON 无效: bad json');
   });
 
-  it('应用模板时把当前 SOURCE 快照和点击期 effects 传给 runner', async () => {
+  it('应用模板时把当前 SOURCE 快照和模板 effects 传给 runner', async () => {
     const input = createHookInput();
     const { handleApplyTemplate } = useAppTemplateFillCommand(input);
 

@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.505 (2026-07-06) - 模板填充 Hook Effects 收敛
+### 🏗️ 架构与基础设施
+- **模板填充 Effects 稳定化**: `useAppTemplateFillCommand` 改为 memo 化模板填充 runner effects，再执行应用模板回调，对齐主动作命令 hook 的 effects 装配方式，减少点击时临时对象组装并将 hook 从 52 行降到 44 行
+
 ## v1.8.504 (2026-07-06) - 主动作命令 Hook Effects 收敛
 ### 🏗️ 架构与基础设施
 - **主动作 Effects 稳定化**: `useAppPrimaryActionCommand` 改为先 memo 化 runner effects 再执行动作回调，对齐复制、保存和智能建议命令 hook 的装配方式，减少点击时临时对象组装并降低 hook 行数
