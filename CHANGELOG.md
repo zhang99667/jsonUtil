@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.480 (2026-07-06) - 交互预算规则分层
+### 🏗️ 架构与基础设施
+- **交互预算规则分层**: 将通用 scrollbar hook、纯计算 helper、DOM helper 和对应测试预算拆到 `maintainability-budget-app-interaction-scrollbar-rules`，交互 hook 预算入口只保留 PREVIEW setter、telemetry、RAF 和子表聚合
+
 ## v1.8.479 (2026-07-06) - 文件系统测试断言收敛
 ### 🏗️ 架构与基础设施
 - **文件系统测试降噪**: `useFileSystem` 测试抽出本地 `expectSourceStateApplied` 断言 helper，统一校验 before-change、SOURCE 写入、mode 写入和事件顺序，并收紧对应测试预算
