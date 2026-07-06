@@ -29,6 +29,8 @@ export const useCustomScrollbar = (orientation: CustomScrollbarOrientation = 've
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    updateScrollDimensions();
+
     const resizeObserver = new ResizeObserver(updateScrollDimensions);
     resizeObserver.observe(container);
     Array.from(container.children).forEach(child => resizeObserver.observe(child as Element));
