@@ -1,39 +1,28 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from '../utils/panelLayout';
-import { showSuccess } from '../utils/toast';
+import { describe, expect, it, vi } from 'vitest';
+import { runAppPanelLayoutResetCommand } from '../utils/appPanelLayoutResetCommandRunner';
 import { useAppPanelLayoutResetCommand } from './useAppPanelLayoutResetCommand';
 
 const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn() }));
+const runnerMocks = vi.hoisted(() => ({ runAppPanelLayoutResetCommand: vi.fn() }));
 
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
 }));
 
-vi.mock('../utils/panelLayout', () => ({
-  notifyFloatingPanelLayoutReset: vi.fn(),
-  resetFloatingPanelLayoutStorage: vi.fn(),
+vi.mock('../utils/appPanelLayoutResetCommandRunner', async importOriginal => ({
+  ...await importOriginal<typeof import('../utils/appPanelLayoutResetCommandRunner')>(),
+  runAppPanelLayoutResetCommand: runnerMocks.runAppPanelLayoutResetCommand,
 }));
 
-vi.mock('../utils/toast', () => ({
-  showSuccess: vi.fn(),
-}));
+reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
 
 describe('useAppPanelLayoutResetCommand', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-  });
-
-  it('重置浮动面板布局并提示成功', () => {
+  it('把重置动作交给 runner', () => {
     const { handleResetPanelLayout } = useAppPanelLayoutResetCommand();
 
     handleResetPanelLayout();
 
-    expect(resetFloatingPanelLayoutStorage).toHaveBeenCalledTimes(1);
-    expect(notifyFloatingPanelLayoutReset).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(resetFloatingPanelLayoutStorage).mock.invocationCallOrder[0])
-      .toBeLessThan(vi.mocked(notifyFloatingPanelLayoutReset).mock.invocationCallOrder[0]);
-    expect(showSuccess).toHaveBeenCalledWith('浮动面板布局已恢复默认');
+    expect(runAppPanelLayoutResetCommand).toHaveBeenCalledTimes(1);
   });
 });
