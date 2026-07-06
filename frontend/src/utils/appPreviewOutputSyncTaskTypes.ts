@@ -1,7 +1,4 @@
-import type {
-  TransformContext,
-  ValidationResult,
-} from '../types';
+import type { TransformContext, ValidationResult } from '../types';
 import type { AppPreviewOutputSyncRequestInput } from './appPreviewOutputSyncRequest';
 import type { MutableValueRef } from './mutableValueRef';
 
@@ -29,3 +26,12 @@ export interface AppPreviewOutputSyncTaskApplyEffects {
   onSetInput: (value: string) => void;
   onUpdateActiveFileContent: (value: string) => void;
 }
+
+export type AppPreviewOutputSyncTaskFlatInput =
+  AppPreviewOutputSyncTaskRequest
+  & AppPreviewOutputSyncTaskRefs
+  & AppPreviewOutputSyncTaskApplyEffects;
+
+export type AppPreviewOutputChangeTaskInput = AppPreviewOutputSyncTaskFlatInput & {
+  scheduleOutputSync: (task: PreviewOutputSyncTask) => void;
+};

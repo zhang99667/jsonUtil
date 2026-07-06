@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.501 (2026-07-06) - PREVIEW 同步输入映射收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 输入分桶复用**: 新增 `appPreviewOutputSyncTaskInput` 统一平铺同步输入到 request、refs、applyEffects 的显式映射，调度任务和测试夹具复用同一类型边界，并补充映射单测避免期望值自引用
+
 ## v1.8.500 (2026-07-06) - 组件测试 Helper 通用化
 ### 🏗️ 架构与基础设施
 - **ActionPanel 测试去重**: 抽出 `componentElementTestHelpers` 统一 React 树断言、文本收集和节点查找，`schemeViewerElementTestHelpers` 保留兼容导出，ActionPanel 相关测试移除重复 helper 定义
