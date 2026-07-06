@@ -17,13 +17,14 @@ export const runAppSourceValidationRequest = ({
   requestIdRef,
   onSetValidation,
 }: AppSourceValidationRequestInput): ReturnType<typeof startJsonValidation> | null => {
-  if (!input || !input.trim()) {
+  const cleanInput = cleanJsonInput(input);
+
+  if (!cleanInput.trim()) {
     requestIdRef.current += 1;
     onSetValidation({ isValid: true });
     return null;
   }
 
-  const cleanInput = cleanJsonInput(input);
   const requestId = ++requestIdRef.current;
   const validationTask = startJsonValidation(cleanInput, ASYNC_VALIDATION_THRESHOLD, {
     requireContainer: true,

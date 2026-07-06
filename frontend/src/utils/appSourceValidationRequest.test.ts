@@ -9,7 +9,7 @@ import {
 
 vi.mock('./jsonValidation', async importOriginal => ({
   ...await importOriginal<typeof import('./jsonValidation')>(),
-  cleanJsonInput: vi.fn((value: string) => value.trim()),
+  cleanJsonInput: vi.fn((value: string) => value.replace(/[\u200B-\u200D\uFEFF]/g, '')),
   startJsonValidation: vi.fn(),
 }));
 
@@ -44,14 +44,14 @@ describe('appSourceValidationRequest', () => {
     const onSetValidation = vi.fn();
 
     const task = runAppSourceValidationRequest({
-      input: '  {"a":1}  ',
+      input: '\uFEFF  {"a":1}\u200B  ',
       requestIdRef,
       onSetValidation,
     });
     await task?.promise;
 
-    expect(cleanJsonInput).toHaveBeenCalledWith('  {"a":1}  ');
-    expect(startJsonValidation).toHaveBeenCalledWith('{"a":1}', ASYNC_VALIDATION_THRESHOLD, {
+    expect(cleanJsonInput).toHaveBeenCalledWith('\uFEFF  {"a":1}\u200B  ');
+    expect(startJsonValidation).toHaveBeenCalledWith('  {"a":1}  ', ASYNC_VALIDATION_THRESHOLD, {
       requireContainer: true,
     });
     expect(requestIdRef.current).toBe(1);
@@ -63,13 +63,14 @@ describe('appSourceValidationRequest', () => {
     const onSetValidation = vi.fn();
 
     const task = runAppSourceValidationRequest({
-      input: '   ',
+      input: ' \u200B  ',
       requestIdRef,
       onSetValidation,
     });
 
     expect(task).toBeNull();
     expect(requestIdRef.current).toBe(4);
+    expect(cleanJsonInput).toHaveBeenCalledWith(' \u200B  ');
     expect(startJsonValidation).not.toHaveBeenCalled();
     expect(onSetValidation).toHaveBeenCalledWith({ isValid: true });
   });
