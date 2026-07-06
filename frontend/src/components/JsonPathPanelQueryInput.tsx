@@ -1,5 +1,6 @@
 import React from 'react';
 import type { JsonPathPanelUiState } from '../utils/jsonPathPanelUiState';
+import { JsonPathPanelFavoriteToggleButton } from './JsonPathPanelFavoriteToggleButton';
 
 type JsonPathPanelQueryInputUiState = Pick<
     JsonPathPanelUiState,
@@ -54,23 +55,12 @@ export const JsonPathPanelQueryInput: React.FC<JsonPathPanelQueryInputProps> = (
                 aria-describedby={uiState.queryInputDescriptionId}
                 className="flex-1 bg-editor-bg text-gray-200 text-sm px-3 py-2 rounded border border-editor-border focus:border-emerald-500 focus:outline-none font-mono"
             />
-            <button
-                type="button"
-                data-tour="jsonpath-favorite-toggle"
-                onClick={onToggleFavorite}
+            <JsonPathPanelFavoriteToggleButton
+                isFavorite={isCurrentQueryFavorite}
                 disabled={!normalizedQuery}
-                className={`px-2.5 py-2 rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    isCurrentQueryFavorite
-                        ? 'bg-amber-500/15 border-amber-400 text-amber-300 hover:bg-amber-500/25'
-                        : 'bg-editor-bg border-editor-border text-gray-400 hover:text-amber-300 hover:border-amber-400'
-                }`}
                 title={uiState.favoriteToggleTitle}
-                aria-label={uiState.favoriteToggleTitle}
-            >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill={isCurrentQueryFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m11.48 3.5 2.47 5.02 5.54.8-4.01 3.91.95 5.52-4.95-2.6-4.95 2.6.95-5.52-4.01-3.91 5.54-.8 2.47-5.02Z" />
-                </svg>
-            </button>
+                onToggle={onToggleFavorite}
+            />
             <button
                 type="button"
                 data-tour="jsonpath-query-button"
