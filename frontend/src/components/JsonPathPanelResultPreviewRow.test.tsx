@@ -4,9 +4,14 @@ import { JsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewRow';
 
 const previewItem = {
   index: 2,
+  displayIndex: 3,
   path: '$.data.items[0]',
   sourceLabel: 'SOURCE',
   text: '"value"',
+  title: '预览按钮标题来自 item',
+  focusAriaLabel: '预览按钮文案来自 item',
+  locateTitle: '结构定位标题来自 item',
+  locateAriaLabel: '结构定位文案来自 item',
 };
 
 const renderRow = (
@@ -30,8 +35,8 @@ describe('JsonPathPanelResultPreviewRow', () => {
     expect(collectText(tree)).toContain('SOURCE');
     expect(collectText(tree)).toContain('$.data.items[0]');
     expect(collectText(tree)).toContain('"value"');
-    expect(focusButton.props.title).toBe('SOURCE $.data.items[0]\n"value"');
-    expect(focusButton.props['aria-label']).toBe('定位第 3 个 JSONPath 结果：$.data.items[0]');
+    expect(focusButton.props.title).toBe('预览按钮标题来自 item');
+    expect(focusButton.props['aria-label']).toBe('预览按钮文案来自 item');
 
     clickElement(focusButton);
     expect(onFocusResult).toHaveBeenCalledWith(2);
@@ -41,6 +46,9 @@ describe('JsonPathPanelResultPreviewRow', () => {
     const onLocateStructureResult = vi.fn();
     const tree = renderRow({ showLocateStructure: true, onLocateStructureResult });
     const locateButton = findByTour(tree, 'jsonpath-locate-structure')[0];
+
+    expect(locateButton.props.title).toBe('结构定位标题来自 item');
+    expect(locateButton.props['aria-label']).toBe('结构定位文案来自 item');
 
     clickElement(locateButton);
     expect(onLocateStructureResult).toHaveBeenCalledWith(2);
