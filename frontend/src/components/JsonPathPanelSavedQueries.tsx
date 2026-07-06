@@ -1,5 +1,5 @@
 import React from 'react';
-import { JsonPathPanelSavedQueryRow } from './JsonPathPanelSavedQueryRow';
+import { JsonPathPanelSavedQueryList } from './JsonPathPanelSavedQueryList';
 
 interface JsonPathPanelSavedQueriesProps {
     favorites: string[];
@@ -36,23 +36,17 @@ export const JsonPathPanelSavedQueries: React.FC<JsonPathPanelSavedQueriesProps>
         {favorites.length > 0 && (
             <div data-tour="jsonpath-favorites" className="mb-3 flex-shrink-0">
                 <div className="text-xs text-gray-500 mb-2">常用收藏:</div>
-                <div
-                    onWheel={onNestedWheel}
+                <JsonPathPanelSavedQueryList
+                    items={favorites}
+                    tone="favorite"
                     className="space-y-1 max-h-24 overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:hidden"
-                >
-                    {favorites.map(item => (
-                        <JsonPathPanelSavedQueryRow
-                            key={item}
-                            item={item}
-                            tone="favorite"
-                            dataTour="jsonpath-favorite-item"
-                            selectLabel={`填入并查询收藏：${item}`}
-                            removeLabel={`移除收藏：${item}`}
-                            onSelect={() => onSelectQuery(item)}
-                            onRemove={() => onRemoveFavorite(item)}
-                        />
-                    ))}
-                </div>
+                    dataTour="jsonpath-favorite-item"
+                    selectLabelPrefix="填入并查询收藏："
+                    removeLabelPrefix="移除收藏："
+                    onWheel={onNestedWheel}
+                    onSelectQuery={onSelectQuery}
+                    onRemoveQuery={onRemoveFavorite}
+                />
             </div>
         )}
 
@@ -70,25 +64,19 @@ export const JsonPathPanelSavedQueries: React.FC<JsonPathPanelSavedQueriesProps>
                         清空
                     </button>
                 </div>
-                <div
-                    ref={historyListRef}
+                <JsonPathPanelSavedQueryList
+                    items={history}
+                    tone="history"
+                    className="max-h-28 overflow-y-auto overscroll-contain space-y-1 [&::-webkit-scrollbar]:hidden"
+                    dataTour="jsonpath-history-item"
+                    selectLabelPrefix="填入并查询历史记录："
+                    removeLabelPrefix="删除历史记录："
+                    listRef={historyListRef}
                     onScroll={onHistoryScroll}
                     onWheel={onNestedWheel}
-                    className="max-h-28 overflow-y-auto overscroll-contain space-y-1 [&::-webkit-scrollbar]:hidden"
-                >
-                    {history.map((item, index) => (
-                        <JsonPathPanelSavedQueryRow
-                            key={index}
-                            item={item}
-                            tone="history"
-                            dataTour="jsonpath-history-item"
-                            selectLabel={`填入并查询历史记录：${item}`}
-                            removeLabel={`删除历史记录：${item}`}
-                            onSelect={() => onSelectQuery(item)}
-                            onRemove={() => onRemoveHistory(index)}
-                        />
-                    ))}
-                </div>
+                    onSelectQuery={onSelectQuery}
+                    onRemoveQuery={(_, index) => onRemoveHistory(index)}
+                />
 
                 {showHistoryScrollbar && (
                     <div className="absolute right-0 top-[36px] bottom-0 w-[3px] z-10 opacity-0 group-hover/history:opacity-100 transition-opacity duration-200">
