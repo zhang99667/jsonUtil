@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.603 (2026-07-07) - JSONPath 工具条测试夹具收敛
+### 🏗️ 架构与基础设施
+- **JSONPath 测试夹具去重**: 将结果工具条和动作列表测试重复的默认 props、回调和渲染 helper 收敛到共享测试夹具，降低工具条测试文件 near-limit 压力并保持按钮配置覆盖不变
+
 ## v1.8.602 (2026-07-07) - JSONPath Helper 预算拆分
 ### 🏗️ 架构与基础设施
 - **JSONPath 治理预算瘦身**: 将 helper 维护预算拆成 core 与 saved-query 子表，入口预算只保留组合职责，并补充治理预算覆盖，避免后续 JSONPath helper 条目扩展继续挤爆总表

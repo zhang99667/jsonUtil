@@ -6,29 +6,14 @@ import {
 } from './JsonPathPanelResultToolbarActionList';
 import { JsonPathPanelResultToolbarButton } from './JsonPathPanelResultToolbarButton';
 import { JsonPathPanelResultToolbarIcon } from './JsonPathPanelResultToolbarIcon';
-
-const buildActionListProps = (
-  overrides: Partial<Parameters<typeof JsonPathPanelResultToolbarActionList>[0]> = {}
-) => ({
-  isQuerying: false,
-  canCopyValues: true,
-  canCopyPathValues: true,
-  copyButtonLabel: '复制值',
-  copyPathValueButtonLabel: '复制路径和值',
-  onCopyValues: vi.fn(),
-  onCopyPathValues: vi.fn(),
-  onPrevious: vi.fn(),
-  onNext: vi.fn(),
-  ...overrides,
-});
-
-const renderActionList = (
-  overrides: Partial<Parameters<typeof JsonPathPanelResultToolbarActionList>[0]> = {}
-) => JsonPathPanelResultToolbarActionList(buildActionListProps(overrides));
+import {
+  buildJsonPathPanelResultToolbarActionListProps,
+  renderJsonPathPanelResultToolbarActionList,
+} from './JsonPathPanelResultToolbarTestFixture';
 
 describe('JsonPathPanelResultToolbarActionList', () => {
   it('按固定顺序生成工具按钮配置和禁用态', () => {
-    const actions = buildJsonPathPanelResultToolbarActionItems(buildActionListProps({
+    const actions = buildJsonPathPanelResultToolbarActionItems(buildJsonPathPanelResultToolbarActionListProps({
       canCopyValues: false,
     }));
 
@@ -47,7 +32,7 @@ describe('JsonPathPanelResultToolbarActionList', () => {
   });
 
   it('查询中禁用所有工具按钮', () => {
-    const actions = buildJsonPathPanelResultToolbarActionItems(buildActionListProps({
+    const actions = buildJsonPathPanelResultToolbarActionItems(buildJsonPathPanelResultToolbarActionListProps({
       isQuerying: true,
     }));
 
@@ -59,7 +44,7 @@ describe('JsonPathPanelResultToolbarActionList', () => {
     const onCopyPathValues = vi.fn();
     const onPrevious = vi.fn();
     const onNext = vi.fn();
-    const tree = renderActionList({
+    const tree = renderJsonPathPanelResultToolbarActionList({
       onCopyValues,
       onCopyPathValues,
       onPrevious,
