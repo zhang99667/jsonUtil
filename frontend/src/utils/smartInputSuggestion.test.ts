@@ -7,6 +7,13 @@ describe('getSmartInputSuggestion', () => {
     expect(getSmartInputSuggestion('   ')).toBeNull();
   });
 
+  it.each([
+    ['JSON', '\u200B{"id":1}\u200B', 'json-modeling'],
+    ['业务 Scheme', '\u200Bbaiduboxapp://v1/open\u200B', 'standalone-scheme'],
+  ])('清理不可见字符后识别%s', (_, sourceText, expectedId) => {
+    expect(getSmartInputSuggestion(sourceText)?.id).toBe(expectedId);
+  });
+
   it('合法 JSON 内含业务 Scheme 时推荐嵌套解析', () => {
     const scheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
     const suggestion = getSmartInputSuggestion(JSON.stringify({

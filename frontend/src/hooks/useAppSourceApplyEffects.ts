@@ -1,6 +1,6 @@
 import { useCallback, type MutableRefObject } from 'react';
 import { TransformMode, type HighlightRange } from '../types';
-import { cleanJsonInput } from '../utils/jsonValidation';
+import { normalizeSmartSuggestionText } from '../utils/smartSuggestionText';
 import { getSmartInputSuggestion } from '../utils/smartInputSuggestion';
 import { getSourceUpdateSuccessMessage } from '../utils/appWorkflowHelpers';
 import { showSuccess } from '../utils/toast';
@@ -49,7 +49,7 @@ export const useAppSourceApplyEffects = ({
 
   const applySourceTextFromClipboard = useCallback((text: string, successMessage: string) => {
     applySourceText(text, successMessage);
-    const clipboardSourceText = cleanJsonInput(text);
+    const clipboardSourceText = normalizeSmartSuggestionText(text);
     if (getSmartInputSuggestion(clipboardSourceText)) {
       smartSuggestionOriginTextRef.current = clipboardSourceText;
       onSetSmartSuggestionOrigin('clipboard');

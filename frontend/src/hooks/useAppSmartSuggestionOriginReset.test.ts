@@ -31,6 +31,7 @@ describe('useAppSmartSuggestionOriginReset', () => {
     { name: '没有智能建议来源时', overrides: { smartSuggestionOrigin: null } },
     { name: '来源文本仍有智能建议时', overrides: {} },
     { name: '来源文本仅包含不可见字符差异时', overrides: { sourceText: '\uFEFFbaiduboxapp://v1/open\u200B' } },
+    { name: '来源文本仅包含首尾空白差异时', overrides: { sourceText: '  baiduboxapp://v1/open\n' } },
   ])('$name保留来源状态', ({ overrides }) => {
     const input = createInput(overrides);
 
