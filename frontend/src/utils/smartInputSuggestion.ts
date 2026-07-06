@@ -1,6 +1,7 @@
 import { TransformMode } from '../types';
 import { parseJsonLinesDetailed } from './jsonLines';
 import { detectSchemeType, isActionableSchemeUrl, isUrl, shouldExposeSchemeValue } from './schemeUtils';
+import { normalizeSmartSuggestionText } from './smartSuggestionText';
 
 export type SmartSuggestionActionId =
   | 'response-inspection'
@@ -323,7 +324,7 @@ const buildStandaloneSuggestion = (source: string): SmartInputSuggestion | null 
 };
 
 export const getSmartInputSuggestion = (sourceText: string): SmartInputSuggestion | null => {
-  const source = sourceText.trim();
+  const source = normalizeSmartSuggestionText(sourceText);
   if (!source) return null;
 
   const sample = source.slice(0, MAX_TEXT_SCAN_LENGTH);
