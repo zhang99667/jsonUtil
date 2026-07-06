@@ -3,6 +3,7 @@ import type { TransformReportCmdComparisonState } from './transformReportCmdComp
 import type { TransformReportPanelCopyWorkflowEffects, TransformReportPanelCopyWorkflowState } from './transformReportPanelCopyWorkflow';
 import { buildTransformReportPanelCopyWorkflowModel } from './transformReportPanelCopyWorkflowModel';
 import type { TransformContextReport, TransformReportRecord, TransformReportView } from './transformSummary';
+import { createTransformReportViewWithRecords } from './transformReportViewTestFixture';
 
 type ModelEffects = Omit<
   TransformReportPanelCopyWorkflowEffects,
@@ -32,20 +33,15 @@ const createCmdRecord = (path: string, id: number, hasCmdStructure = true): Tran
   cmdStructureCopyText: createCmdJson(id),
 } as TransformReportRecord);
 
-const createReportView = (records: TransformReportRecord[]): TransformReportView => ({
-  records,
-  cmdStructureRecords: records.filter(record => record.hasCmdStructure),
-} as TransformReportView);
-
 export const currentRecord = createCmdRecord('$.current', 1);
 export const betterRecord = createCmdRecord('$.better', 2);
-export const emptyReportView = createReportView([]);
+export const emptyReportView = createTransformReportViewWithRecords([]);
 
 const plainRecord = createCmdRecord('$.plain', 3, false);
 const expectedText = createCmdJson(2);
 const report = { records: [plainRecord, currentRecord, betterRecord] } as TransformContextReport;
-const reportView = createReportView([currentRecord]);
-const fullReportView = createReportView([currentRecord, betterRecord]);
+const reportView = createTransformReportViewWithRecords([currentRecord]);
+const fullReportView = createTransformReportViewWithRecords([currentRecord, betterRecord]);
 
 const buildCopyWorkflowState = (
   overrides: Partial<TransformReportPanelCopyWorkflowState> = {}

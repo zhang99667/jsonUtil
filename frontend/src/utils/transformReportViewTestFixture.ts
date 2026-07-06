@@ -1,4 +1,4 @@
-import type { TransformReportView } from './transformSummary';
+import type { TransformReportRecord, TransformReportView } from './transformSummary';
 
 export const createTransformReportView = (
   overrides: Partial<TransformReportView> = {}
@@ -35,4 +35,12 @@ export const createTransformReportView = (
   isUnresolvedTruncated: false,
   isPlaceholderTruncated: false,
   ...overrides,
+});
+
+export const createTransformReportViewWithRecords = (
+  records: TransformReportRecord[]
+): TransformReportView => createTransformReportView({
+  // 仅设置记录集合；计数/截断语义测试应显式覆盖对应字段。
+  records,
+  cmdStructureRecords: records.filter(record => record.hasCmdStructure),
 });
