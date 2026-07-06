@@ -1,4 +1,5 @@
 import { governanceAppJsonPathMaintainabilityBudgets } from './maintainability-budget-governance-app-jsonpath-rules.mjs';
+import { governanceAppStructureNavMaintainabilityBudgets } from './maintainability-budget-governance-app-structure-nav-rules.mjs';
 
 const governanceAppShellBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
@@ -25,6 +26,7 @@ export const governanceAppShellMaintainabilityBudgets = [
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-status-rules.mjs', 15, 'App 状态栏预算入口应只组合组件和 helper 子表'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-status-component-rules.mjs', 25, 'App 状态栏组件预算规则应独立维护展示组件预算'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-status-helper-rules.mjs', 25, 'App 状态栏 helper 预算规则应独立维护状态派生和类型契约预算'),
-  governanceAppShellBudget('scripts/ci/maintainability-budget-app-structure-nav-rules.mjs', 15, '结构导航预算规则应只维护主面板、拆出的子组件和对应测试预算'),
+  governanceAppShellBudget('scripts/ci/maintainability-budget-governance-app-structure-nav-rules.mjs', 20, '结构导航治理预算规则应集中维护结构导航预算文件的治理条目'),
+  ...governanceAppStructureNavMaintainabilityBudgets,
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-template-fill-rules.mjs', 15, '模板填充面板预算规则应只维护面板、纯模型和模型测试预算'),
 ];
