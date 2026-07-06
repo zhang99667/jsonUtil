@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActionType } from '../types';
 import {
   runAppPrimaryActionCommand,
@@ -19,16 +19,9 @@ export const useAppPrimaryActionCommand = ({
   onTrackToolEvent,
   now = getCurrentPerformanceTime,
 }: UseAppPrimaryActionCommandInput) => {
-  const handleAction = useCallback((action: ActionType) => (
-    runAppPrimaryActionCommand(action, {
-      now,
-      onAiRepair,
-      onCreateNewTab,
-      onOpenFile,
-      onToolbarSave,
-      onTrackToolEvent,
-    })
-  ), [
+  const primaryActionEffects = useMemo<AppPrimaryActionCommandEffects>(() => ({
+    now, onAiRepair, onCreateNewTab, onOpenFile, onToolbarSave, onTrackToolEvent,
+  }), [
     now,
     onAiRepair,
     onCreateNewTab,
@@ -36,6 +29,10 @@ export const useAppPrimaryActionCommand = ({
     onToolbarSave,
     onTrackToolEvent,
   ]);
+
+  const handleAction = useCallback((action: ActionType) => (
+    runAppPrimaryActionCommand(action, primaryActionEffects)
+  ), [primaryActionEffects]);
 
   return { handleAction };
 };
