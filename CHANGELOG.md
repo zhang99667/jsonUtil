@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.494 (2026-07-06) - 状态栏测试 helper 复用
+### 🏗️ 架构与基础设施
+- **状态栏测试降噪**: `AppStatusBarController.test` 复用组件测试通用 `isElementLike` helper，移除本地重复 DOM-like 类型守卫，并同步收紧状态栏 controller 测试维护预算
+
 ## v1.8.493 (2026-07-06) - 深度报告视图测试夹具复用
 ### 🏗️ 架构与基础设施
 - **ReportView 测试 Builder**: 在 `transformReportViewTestFixture` 补充 records 视图构建 helper，active CMD 对比和复制 workflow model 测试复用同一份 `records` / `cmdStructureRecords` 装配逻辑

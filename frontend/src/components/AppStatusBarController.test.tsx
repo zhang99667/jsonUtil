@@ -3,6 +3,7 @@ import { TransformMode, type FileTab } from '../types';
 import { AppStatusBarController } from './AppStatusBarController';
 import type { AppStatusBarActiveEditor } from './AppStatusBarControllerTypes';
 import { StatusBar } from './StatusBar';
+import { isElementLike } from './schemeViewerElementTestHelpers';
 
 const reactMocks = vi.hoisted(() => ({
   useMemo: vi.fn(),
@@ -12,19 +13,6 @@ vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useMemo: reactMocks.useMemo,
 }));
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
 
 const activeFile: FileTab = {
   id: 'file-1',

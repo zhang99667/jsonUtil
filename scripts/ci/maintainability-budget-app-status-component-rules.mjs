@@ -3,7 +3,7 @@ const statusComponentBudget = (file, maxLines, reason) => ({ file, maxLines, rea
 export const appStatusComponentMaintainabilityBudgets = [
   statusComponentBudget('frontend/src/components/AppStatusBarController.tsx', 90, '状态栏 App controller 只负责活跃内容统计和 StatusBar props 装配'),
   statusComponentBudget('frontend/src/components/AppStatusBarControllerTypes.ts', 45, '状态栏 App controller 类型契约应独立维护，避免装配组件被 props 声明撑大'),
-  statusComponentBudget('frontend/src/components/AppStatusBarController.test.tsx', 125, '状态栏 App controller 测试只锁定 SOURCE/PREVIEW 统计、SOURCE 长度和更新日志回调包装'),
+  statusComponentBudget('frontend/src/components/AppStatusBarController.test.tsx', 115, '状态栏 App controller 测试只锁定 SOURCE/PREVIEW 统计、SOURCE 长度和更新日志回调包装'),
   statusComponentBudget('frontend/src/components/StatusBar.tsx', 95, '状态栏组件应只负责 view model 调用和左/右状态区装配，状态派生留在纯 helper'),
   statusComponentBudget('frontend/src/components/StatusBarLeftInfo.tsx', 45, '状态栏左侧信息组件应只负责内容统计与状态 badge 组装配，具体展示交给子组件'),
   statusComponentBudget('frontend/src/components/StatusBarLeftInfoTypes.ts', 35, '状态栏左侧信息类型契约应独立维护，避免展示组件被 props 声明撑大'),
