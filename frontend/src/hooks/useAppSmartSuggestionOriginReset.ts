@@ -1,5 +1,6 @@
 import { useEffect, type MutableRefObject } from 'react';
 
+import { cleanJsonInput } from '../utils/jsonValidation';
 import type { AppSmartSuggestionOrigin } from './useAppSourceApplyEffects';
 
 interface UseAppSmartSuggestionOriginResetOptions {
@@ -19,7 +20,7 @@ export const useAppSmartSuggestionOriginReset = ({
 }: UseAppSmartSuggestionOriginResetOptions): void => {
   useEffect(() => {
     if (!smartSuggestionOrigin) return;
-    if (sourceText === smartSuggestionOriginTextRef.current && hasSmartSuggestion) return;
+    if (cleanJsonInput(sourceText) === smartSuggestionOriginTextRef.current && hasSmartSuggestion) return;
 
     smartSuggestionOriginTextRef.current = '';
     onSetSmartSuggestionOrigin(null);
