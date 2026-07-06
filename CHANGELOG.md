@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.534 (2026-07-06) - App 与路径组件测试 Helper 复用
+### 🏗️ 架构与基础设施
+- **测试遍历工具继续去重**: App 懒加载面板、工作区浮层、状态栏视图和深度解析路径行组件测试统一复用 `componentElementTestHelpers`，移除本地重复的 element-like、文本收集和节点查找逻辑
+
 ## v1.8.533 (2026-07-06) - 深度解析组件测试 Helper 复用
 ### 🏗️ 架构与基础设施
 - **组件测试遍历工具去重**: 深度解析 Records、Summary、Warnings、Placeholder 和 Coverage 组件测试统一复用 `componentElementTestHelpers`，移除本地重复的 element-like、文本收集和节点查找逻辑
