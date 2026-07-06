@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.486 (2026-07-06) - PREVIEW 草稿切换测试收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 草稿切换降噪**: 移除仅用于测试的 `shouldCancelPreviewDraftOnFileChange` 导出，把文件切换判断收回 `useAppPreviewDraftFileChangeReset` 内部，测试改为直接覆盖首次渲染、同文件、跨文件和 null 切换的 hook 行为矩阵
+
 ## v1.8.485 (2026-07-06) - Scheme 编辑命令 Runner 分层
 ### 🏗️ 架构与基础设施
 - **Scheme 编辑命令分层**: 抽出 `appSchemeEditCommandRunner` 统一维护 PREVIEW 写回、成功提示和失败提示，`useAppSchemeEditCommand` 只负责把当前 PREVIEW 与编辑参数委托给 runner，测试同步拆成 hook 接线和 runner 行为两层
