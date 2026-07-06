@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { assertElementLike, findByTour, findByType } from './componentElementTestHelpers';
 import { JsonPathPanelResultPreview } from './JsonPathPanelResultPreview';
+import { JsonPathPanelResultPreviewList } from './JsonPathPanelResultPreviewList';
 import { JsonPathPanelResultPreviewMessages } from './JsonPathPanelResultPreviewMessages';
-import { JsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewRow';
 
 const previewItems = [
   {
@@ -54,12 +54,15 @@ describe('JsonPathPanelResultPreview', () => {
   it('装配结果行和预览提示状态', () => {
     const onWheel = vi.fn();
     const tree = assertElementLike(renderPreview({ onWheel }));
-    const rows = findByType(tree, JsonPathPanelResultPreviewRow);
+    const list = findByType(tree, JsonPathPanelResultPreviewList)[0];
     const messages = findByType(tree, JsonPathPanelResultPreviewMessages)[0];
 
     expect(findByTour(tree, 'jsonpath-results')[0].props.onWheel).toBe(onWheel);
-    expect(rows.map(row => row.props.isActive)).toEqual([false, true]);
-    expect(rows.map(row => row.props.item)).toEqual(previewItems);
+    expect(list.props).toMatchObject({
+      previewItems,
+      currentResultIndex: 2,
+      showLocateStructure: true,
+    });
     expect(messages.props).toMatchObject({
       hiddenResultCount: 4,
       maxVisibleResultCount: 5,
