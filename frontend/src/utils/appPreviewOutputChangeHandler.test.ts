@@ -2,10 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { beginPreviewOutputDraft } from './appPreviewOutputDraft';
 import { scheduleAppPreviewOutputChangeTask } from './appPreviewOutputChangeTask';
 import { runAppPreviewOutputChange } from './appPreviewOutputChangeHandler';
-import {
-  PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT,
-  createPreviewOutputChangeHandlerInput,
-} from './appPreviewOutputSyncTestFixture';
+import { createPreviewOutputChangeHandlerInput } from './appPreviewOutputChangeHandlerTestFixture';
+import { PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT } from './appPreviewOutputSyncTestFixture';
 
 vi.mock('./appPreviewOutputDraft', async importOriginal => ({
   ...await importOriginal<typeof import('./appPreviewOutputDraft')>(),
