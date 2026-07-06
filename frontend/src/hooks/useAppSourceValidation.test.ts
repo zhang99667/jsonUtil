@@ -46,12 +46,25 @@ describe('useAppSourceValidation', () => {
     }));
   });
 
-  it('清理 effect 时取消已启动但未完成的校验任务', async () => {
+  it('空 SOURCE 输入立即启动校验以清理旧错误', () => {
+    const onSetValidation = vi.fn();
+
+    useAppSourceValidation({ input: ' \u200B  ', onSetValidation });
+
+    expect(runAppSourceValidationRequest).toHaveBeenCalledWith(expect.objectContaining({
+      input: ' \u200B  ',
+      onSetValidation,
+    }));
+  });
+
+  it('清理 effect 时取消已启动任务并失效旧结果', async () => {
     const validationTask = {
       promise: new Promise<ValidationResult>(() => undefined),
       cancel: vi.fn(),
     };
+    const requestIdRef = { current: 7 };
     let cleanup: (() => void) | undefined;
+    mocks.useRef.mockReturnValue(requestIdRef);
     vi.mocked(runAppSourceValidationRequest).mockReturnValue(validationTask);
     mocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
       const result = effect();
@@ -63,5 +76,6 @@ describe('useAppSourceValidation', () => {
     cleanup?.();
 
     expect(validationTask.cancel).toHaveBeenCalledTimes(1);
+    expect(requestIdRef.current).toBe(8);
   });
 });
