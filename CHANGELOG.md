@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.497 (2026-07-06) - 自定义滚动条 DOM Helper 简化
+### 🏗️ 架构与基础设施
+- **滚动条 DOM Helper 降噪**: `customScrollbarDom` 复用横纵向布尔选择读取滚动指标，写回逻辑去掉早退分支，并同步收紧滚动条 DOM helper 维护预算
+
 ## v1.8.496 (2026-07-06) - PREVIEW Handler 测试夹具拆分
 ### 🏗️ 架构与基础设施
 - **PREVIEW Fixture 分层**: 拆出 `appPreviewOutputChangeHandlerTestFixture` 承接 handler 专属草稿和校验输入，`appPreviewOutputSyncTestFixture` 回归 sync/task 输入构建职责，并同步收紧两个测试夹具维护预算
