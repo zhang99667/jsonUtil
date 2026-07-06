@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.523 (2026-07-06) - AI Base URL 根路径兼容
+### 🐛 Bug 修复
+- **OpenAI 兼容 Base URL 容错**: 自定义 AI Base URL 只填写域名根路径时自动补齐 `/v1`，避免 OneAPI/Comate 这类 OpenAI-compatible 服务被错误请求到 `/chat/completions`
+
 ## v1.8.522 (2026-07-06) - PREVIEW 输出变更链路分组收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 变更输入分组化**: 输出变更 handler/task 统一复用 `request / refs / applyEffects` 分组结构，移除 flat task 输入和重复字段重组，保持取消、失败和 SOURCE 写回测试覆盖
