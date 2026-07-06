@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { clickElement, collectText, findByTour, findByType } from './componentElementTestHelpers';
+import { clickElement, findByTour, findByType } from './componentElementTestHelpers';
 import { JsonPathPanelQueryActionButtons } from './JsonPathPanelQueryActionButtons';
+import { JsonPathPanelQueryRunButton } from './JsonPathPanelQueryRunButton';
 
 const renderActions = (
   overrides: Partial<Parameters<typeof JsonPathPanelQueryActionButtons>[0]> = {}
@@ -15,32 +16,28 @@ const renderActions = (
 });
 
 describe('JsonPathPanelQueryActionButtons', () => {
-  it('空闲时只渲染可点击查询按钮和隐藏说明', () => {
+  it('装配查询运行按钮并透传状态和说明属性', () => {
     const onRunQuery = vi.fn();
-    const tree = renderActions({ onRunQuery });
-    const queryButton = findByTour(tree, 'jsonpath-query-button')[0];
-    const description = findByType(tree, 'span')[0];
+    const tree = renderActions({ isDataPreparing: true, onRunQuery });
+    const runButton = findByType(tree, JsonPathPanelQueryRunButton)[0];
 
-    expect(queryButton.props.disabled).toBe(false);
-    expect(queryButton.props.title).toBe('执行 JSONPath 查询');
-    expect(queryButton.props['aria-describedby']).toBe('jsonpath-query-desc');
-    expect(collectText(queryButton)).toBe('查询');
-    expect(description.props).toMatchObject({ id: 'jsonpath-query-desc', className: 'sr-only' });
-    expect(collectText(description)).toBe('执行 JSONPath 查询');
+    expect(runButton.props).toMatchObject({
+      isQuerying: false,
+      isDataPreparing: true,
+      title: '执行 JSONPath 查询',
+      descriptionId: 'jsonpath-query-desc',
+      onRunQuery,
+    });
     expect(findByTour(tree, 'jsonpath-cancel-query')).toHaveLength(0);
-
-    clickElement(queryButton);
-    expect(onRunQuery).toHaveBeenCalledTimes(1);
   });
 
   it('查询中禁用查询按钮并显示取消按钮', () => {
     const onCancelQuery = vi.fn();
     const tree = renderActions({ isQuerying: true, onCancelQuery });
-    const queryButton = findByTour(tree, 'jsonpath-query-button')[0];
+    const runButton = findByType(tree, JsonPathPanelQueryRunButton)[0];
     const cancelButton = findByTour(tree, 'jsonpath-cancel-query')[0];
 
-    expect(queryButton.props.disabled).toBe(true);
-    expect(collectText(queryButton)).toBe('查询中...');
+    expect(runButton.props.isQuerying).toBe(true);
     expect(cancelButton.props.title).toBe('停止当前 JSONPath 查询');
     expect(cancelButton.props['aria-label']).toBe('取消 JSONPath 查询，停止当前正在执行的查询');
 
@@ -51,7 +48,7 @@ describe('JsonPathPanelQueryActionButtons', () => {
   it('数据准备中禁用查询按钮但不展示取消按钮', () => {
     const tree = renderActions({ isDataPreparing: true });
 
-    expect(findByTour(tree, 'jsonpath-query-button')[0].props.disabled).toBe(true);
+    expect(findByType(tree, JsonPathPanelQueryRunButton)[0].props.isDataPreparing).toBe(true);
     expect(findByTour(tree, 'jsonpath-cancel-query')).toHaveLength(0);
   });
 });
