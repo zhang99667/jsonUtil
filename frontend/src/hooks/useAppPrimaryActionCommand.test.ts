@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionType } from '../types';
-import { runAppPrimaryActionCommand } from '../utils/appPrimaryActionCommandRunner';
 import { useAppPrimaryActionCommand } from './useAppPrimaryActionCommand';
 
 const reactMocks = vi.hoisted(() => ({
@@ -40,13 +39,6 @@ describe('useAppPrimaryActionCommand', () => {
 
     await handleAction(ActionType.SAVE);
 
-    expect(runAppPrimaryActionCommand).toHaveBeenCalledWith(ActionType.SAVE, {
-      now,
-      onAiRepair: callbacks.onAiRepair,
-      onCreateNewTab: callbacks.onCreateNewTab,
-      onOpenFile: callbacks.onOpenFile,
-      onToolbarSave: callbacks.onToolbarSave,
-      onTrackToolEvent: callbacks.onTrackToolEvent,
-    });
+    expect(runnerMocks.runAppPrimaryActionCommand).toHaveBeenCalledWith(ActionType.SAVE, { now, ...callbacks });
   });
 });

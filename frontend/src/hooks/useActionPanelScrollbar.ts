@@ -5,6 +5,7 @@ import {
   getActionPanelScrollbarThumbState,
 } from '../utils/actionPanelScrollbar';
 import { readActionPanelScrollState } from '../utils/actionPanelScrollbarDom';
+import { getCustomScrollbarPointerPos, setCustomScrollbarScrollPos } from '../utils/customScrollbarDom';
 import { useRafCallback } from './useRafCallback';
 import { useWindowMouseDragListeners } from './useWindowMouseDragListeners';
 
@@ -20,7 +21,7 @@ export const useActionPanelScrollbar = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollState, setScrollState] = useState(EMPTY_ACTION_PANEL_SCROLL_STATE);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef({ y: 0, scrollTop: 0 });
+  const dragStartRef = useRef({ pointerPos: 0, scrollTop: 0 });
   const scheduleScrollFrame = useRafCallback(onScrollFrame);
 
   const updateScrollState = useCallback(() => {
@@ -52,21 +53,22 @@ export const useActionPanelScrollbar = ({
   const handleScrollbarMouseDown = useCallback((event: ReactMouseEvent) => {
     setIsDragging(true);
     dragStartRef.current = {
-      y: event.pageY,
+      pointerPos: getCustomScrollbarPointerPos(event.nativeEvent, 'vertical'),
       scrollTop: containerRef.current?.scrollTop ?? scrollState.scrollTop,
     };
     event.preventDefault();
   }, [scrollState.scrollTop]);
 
   const handleDragMouseMove = useCallback((event: MouseEvent) => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    containerRef.current.scrollTop = getActionPanelDragScrollTop({
+    setCustomScrollbarScrollPos(container, 'vertical', getActionPanelDragScrollTop({
       startScrollTop: dragStartRef.current.scrollTop,
-      deltaY: event.pageY - dragStartRef.current.y,
+      deltaY: getCustomScrollbarPointerPos(event, 'vertical') - dragStartRef.current.pointerPos,
       scrollHeight: scrollState.scrollHeight,
       clientHeight: scrollState.clientHeight,
-    });
+    }));
   }, [scrollState.clientHeight, scrollState.scrollHeight]);
 
   const stopDragging = useCallback(() => {
