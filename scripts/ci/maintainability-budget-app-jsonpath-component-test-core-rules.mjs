@@ -5,5 +5,6 @@ export const appJsonPathComponentTestCoreMaintainabilityBudgets = [
   appJsonPathComponentTestCoreBudget('frontend/src/components/JsonPathPanelQueryActionButtons.test.tsx', 70, 'JSONPath 查询动作按钮测试只锁定查询、取消、准备中禁用和隐藏说明'),
   appJsonPathComponentTestCoreBudget('frontend/src/components/JsonPathPanelQueryStatus.test.tsx', 50, 'JSONPath 查询状态测试只锁定空闲隐藏、查询中和已取消文案优先级'),
   appJsonPathComponentTestCoreBudget('frontend/src/components/JsonPathPanelResultPreviewRow.test.tsx', 70, 'JSONPath 结果预览行测试只锁定路径来源值展示、点击下标和结构定位入口'),
-  appJsonPathComponentTestCoreBudget('frontend/src/components/JsonPathPanelResultToolbar.test.tsx', 75, 'JSONPath 结果工具条测试只锁定状态文案、工具按钮接线和查询中禁用态'),
+  appJsonPathComponentTestCoreBudget('frontend/src/components/JsonPathPanelResultToolbar.test.tsx', 60, 'JSONPath 结果工具条测试只锁定状态文案和动作列表接线'),
+  appJsonPathComponentTestCoreBudget('frontend/src/components/JsonPathPanelResultToolbarActionList.test.tsx', 95, 'JSONPath 结果工具条动作列表测试只锁定按钮配置、禁用态、图标和点击接线'),
 ];
