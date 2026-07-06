@@ -5,15 +5,10 @@ import { APP_UPDATE_TOAST_ID, fetchAppVersionManifest, showAppUpdateToast } from
 import { VERSION_MANIFEST_PATH } from './appVersion';
 
 vi.mock('react-hot-toast', () => ({
-  default: {
-    custom: vi.fn(),
-    dismiss: vi.fn(),
-  },
+  default: { custom: vi.fn(), dismiss: vi.fn() },
 }));
 
-vi.mock('../components/AppUpdateToastContent', () => ({
-  AppUpdateToastContent: vi.fn(() => null),
-}));
+vi.mock('../components/AppUpdateToastContent', () => ({ AppUpdateToastContent: vi.fn(() => null) }));
 
 const manifest = {
   name: 'JSONUtils' as const,
@@ -55,13 +50,17 @@ describe('appUpdateCheckEffects', () => {
     });
   });
 
-  it('以 no-store 请求版本 manifest，失败状态返回空结果', async () => {
+  it('以 no-store 请求版本 manifest，请求失败时返回空结果', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => manifest })
-      .mockResolvedValueOnce({ ok: false, json: async () => ({}) });
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      .mockRejectedValueOnce(new Error('network error'))
+      .mockResolvedValueOnce({ ok: true, json: async () => { throw new Error('invalid json'); } });
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(fetchAppVersionManifest()).resolves.toEqual(manifest);
+    await expect(fetchAppVersionManifest()).resolves.toBeNull();
+    await expect(fetchAppVersionManifest()).resolves.toBeNull();
     await expect(fetchAppVersionManifest()).resolves.toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(VERSION_MANIFEST_PATH), { cache: 'no-store' });
   });

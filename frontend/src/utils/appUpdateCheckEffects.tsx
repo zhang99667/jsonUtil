@@ -25,6 +25,10 @@ export const showAppUpdateToast = (manifest: AppVersionManifest) => {
 };
 
 export const fetchAppVersionManifest = async (): Promise<unknown | null> => {
-  const response = await fetch(getAppVersionManifestUrl(), { cache: 'no-store' });
-  return response.ok ? response.json() : null;
+  try {
+    const response = await fetch(getAppVersionManifestUrl(), { cache: 'no-store' });
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
 };
