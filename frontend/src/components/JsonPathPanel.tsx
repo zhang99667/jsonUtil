@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, useReducer } from 'react';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
-import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
+import { useJsonPathPanelTour } from '../hooks/useJsonPathPanelTour';
 import { useJsonPathSavedQueryLists } from '../hooks/useJsonPathSavedQueryLists';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { JsonPathPanelQueryInput } from './JsonPathPanelQueryInput';
@@ -105,6 +105,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     const activeQueryStartedAtRef = useRef<number | null>(null);
     const externalQueryIdRef = useRef<number | null>(null);
     const queryInputRef = useRef<HTMLInputElement | null>(null);
+    useJsonPathPanelTour(isOpen);
 
     // 自定义滚动条 Hook
     const {
@@ -115,44 +116,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         thumbOffset: thumbTop,
         showScrollbar,
     } = useCustomScrollbar('vertical', history.length);
-
-    // 功能级引导
-    const { triggerFeatureFirstUse, refreshTour } = useFeatureTour();
-    const hasTriggeredTour = useRef(false);
-
-    // 首次打开时触发引导(仅触发一次)
-    useEffect(() => {
-        if (isOpen && !hasTriggeredTour.current) {
-            hasTriggeredTour.current = true;
-            triggerFeatureFirstUse(FeatureId.JSONPATH);
-        }
-    }, [isOpen, triggerFeatureFirstUse]);
-
-    // 监听面板打开时刷新引导位置
-    useEffect(() => {
-        if (isOpen) {
-            refreshTour();
-        }
-    }, [isOpen, refreshTour]);
-
-    // ESC 关闭面板（仅当焦点在面板内时）
-    useEffect(() => {
-        const handleEscKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) {
-                // 查找面板 DOM 元素
-                const panelElement = document.querySelector('[data-tour="jsonpath-panel"]');
-                // 检查焦点是否在面板内部
-                if (panelElement && panelElement.contains(document.activeElement)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onClose();
-                }
-            }
-        };
-
-        document.addEventListener('keydown', handleEscKey);
-        return () => document.removeEventListener('keydown', handleEscKey);
-    }, [isOpen, onClose]);
 
     useEffect(() => {
         return () => {

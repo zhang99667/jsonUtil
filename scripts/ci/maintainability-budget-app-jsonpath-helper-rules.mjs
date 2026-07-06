@@ -11,5 +11,7 @@ export const appJsonPathHelperMaintainabilityBudgets = [
   appJsonPathHelperBudget('frontend/src/utils/jsonPathPanelNavigation.test.ts', 85, 'JSONPath 面板导航测试只锁定循环导航、禁用态和聚焦索引边界'),
   appJsonPathHelperBudget('frontend/src/hooks/useJsonPathSavedQueryLists.ts', 95, 'JSONPath 保存查询 hook 只维护收藏/历史初始化、持久化和增删操作'),
   appJsonPathHelperBudget('frontend/src/hooks/useJsonPathSavedQueryLists.test.ts', 125, 'JSONPath 保存查询 hook 测试只锁定初始化持久化、导入刷新和列表 updater'),
+  appJsonPathHelperBudget('frontend/src/hooks/useJsonPathPanelTour.ts', 35, 'JSONPath 面板引导 hook 只维护首次打开引导和打开后刷新位置'),
+  appJsonPathHelperBudget('frontend/src/hooks/useJsonPathPanelTour.test.ts', 65, 'JSONPath 面板引导 hook 测试只锁定首次打开、重复打开和关闭态'),
   appJsonPathHelperBudget('frontend/src/utils/jsonPathPanelPresets.ts', 25, 'JSONPath 面板 preset 常量只维护默认示例和 Response 常用查询'),
 ];
