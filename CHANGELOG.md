@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.599 (2026-07-07) - JSONPath 预算治理分层
+### 🏗️ 架构与基础设施
+- **JSONPath 维护预算分层**: 将 JSONPath 组件预算拆成 panel、result preview、result toolbar 子表，并将治理规则拆成组件 runtime/test 与 helper 子表，避免预算规则文件继续成为后续拆分瓶颈
+
 ## v1.8.598 (2026-07-07) - JSONPath 工具条图标拆分
 ### 🏗️ 架构与基础设施
 - **JSONPath 结果工具条瘦身**: 将复制、复制路径和值、上下结果导航的 SVG 图标拆成独立图标组件，动作列表继续聚焦按钮配置、禁用态和点击接线
