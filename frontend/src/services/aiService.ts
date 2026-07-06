@@ -690,7 +690,18 @@ const getOpenAICompatibleBaseUrl = (config: AIConfig): string => {
 
 const buildChatCompletionsUrl = (baseUrl: string): string => {
   // 兼容用户从平台复制 Base URL 时带尾部斜杠的情况，避免拼出 //chat/completions。
-  return `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+  return `${ensureOpenAICompatibleVersionPath(baseUrl)}/chat/completions`;
+};
+
+const ensureOpenAICompatibleVersionPath = (baseUrl: string): string => {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+
+  try {
+    const url = new URL(normalizedBaseUrl);
+    return url.pathname.replace(/\/+$/, '') ? normalizedBaseUrl : `${url.origin}/v1`;
+  } catch {
+    return normalizedBaseUrl;
+  }
 };
 
 const tryNormalizeJson = (candidate: string): string | null => {
