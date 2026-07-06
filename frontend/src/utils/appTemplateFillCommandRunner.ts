@@ -1,26 +1,13 @@
 import { isPlaceholderFillTemplateJson } from './appWorkflowHelpers';
 import { commitAppTemplateFillCommandResult } from './appTemplateFillCommandResult';
-import { tryBuildAppTemplateFillQualityDelta, type AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
+import { tryBuildAppTemplateFillQualityDelta } from './appTemplateFillQualityDelta';
+import type {
+  AppTemplateFillCommandEffects,
+  AppTemplateFillCommandInput,
+} from './appTemplateFillCommandRunnerTypes';
 import { loadAppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySummary';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { applyTemplate } from './transformations';
-
-interface AppTemplateFillCommandInput {
-  sourceBeforeApply: string;
-  templateJson: string;
-  autoExpandScheme: boolean;
-}
-
-export interface AppTemplateFillCommandEffects {
-  getCurrentSourceText: () => string;
-  setCurrentSourceText: (value: string) => void;
-  loadSummaryModule: () => Promise<AppTemplateFillQualitySummaryModule>;
-  onSetSourceText: (value: string) => void;
-  onUpdateActiveFileContent: (value: string) => void;
-  onSetTemplateApplyQualityDelta: (value: string) => void;
-  onShowError: (message: string) => void;
-  onShowSuccess: (message: string) => void;
-}
 
 const abortTemplateFillIfSourceChanged = (sourceBeforeApply: string, effects: AppTemplateFillCommandEffects): boolean => {
   if (effects.getCurrentSourceText() === sourceBeforeApply) return false;
