@@ -3,6 +3,7 @@ import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { JsonPathPanelResultPreview } from './JsonPathPanelResultPreview';
+import { JsonPathPanelResultToolbar } from './JsonPathPanelResultToolbar';
 import { JsonPathPanelSuggestions } from './JsonPathPanelSuggestions';
 import type { HighlightRange } from '../types';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
@@ -675,78 +676,22 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                     </div>
                 )}
 
-                {/* 结果计数器和导航控件 (VS Code 风格) */}
-                {totalResults > 0 && queryRanges.length > 0 && (
-                    <div className="mb-1 p-1 bg-editor-sidebar border border-editor-border rounded flex items-center justify-between">
-                        <div
-                            id={JSONPATH_RESULT_STATUS_ID}
-                            role="status"
-                            aria-live="polite"
-                            aria-atomic="true"
-                            className="flex items-center gap-2"
-                        >
-                            <span className="text-xs text-gray-400">结果:</span>
-                            <span className="text-sm font-mono text-emerald-400 font-semibold">
-                                {currentResultIndex + 1} / {queryRanges.length}
-                            </span>
-                            {isResultLimited && (
-                                <span className="text-[11px] text-amber-300">
-                                    命中超过 {resultLimit}，已提前停止
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={copyQueryResults}
-                                disabled={isQuerying || queryValues.length === 0}
-                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={panelUiState.copyButtonLabel}
-                                aria-label={panelUiState.copyButtonLabel}
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                            </button>
-                            <button
-                                data-tour="jsonpath-copy-path-values"
-                                onClick={copyQueryResultPaths}
-                                disabled={isQuerying || queryItems.length === 0}
-                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={panelUiState.copyPathValueButtonLabel}
-                                aria-label={panelUiState.copyPathValueButtonLabel}
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M8 4h8l4 4v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 4v4h4" />
-                                </svg>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={goToPrevious}
-                                disabled={isQuerying}
-                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="上一个结果 (Shift+Enter)"
-                                aria-label="上一个结果 (Shift+Enter)"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={goToNext}
-                                disabled={isQuerying}
-                                className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="下一个结果 (Enter)"
-                                aria-label="下一个结果 (Enter)"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                )}
+                <JsonPathPanelResultToolbar
+                    currentResultIndex={currentResultIndex}
+                    resultCount={queryRanges.length}
+                    isResultLimited={isResultLimited}
+                    resultLimit={resultLimit}
+                    isQuerying={isQuerying}
+                    canCopyValues={queryValues.length > 0}
+                    canCopyPathValues={queryItems.length > 0}
+                    copyButtonLabel={panelUiState.copyButtonLabel}
+                    copyPathValueButtonLabel={panelUiState.copyPathValueButtonLabel}
+                    resultStatusId={JSONPATH_RESULT_STATUS_ID}
+                    onCopyValues={copyQueryResults}
+                    onCopyPathValues={copyQueryResultPaths}
+                    onPrevious={goToPrevious}
+                    onNext={goToNext}
+                />
 
                 <JsonPathPanelResultPreview
                     previewItems={queryResultPreviewItems}
