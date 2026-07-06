@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.528 (2026-07-06) - 编辑器组件测试 Fixture 复用
+### 🏗️ 架构与基础设施
+- **编辑区测试样板收敛**: SOURCE/PREVIEW 编辑器与 Pane 测试复用统一 element-like helper 和编辑器 props fixture，移除本地重复类型守卫与 UI 状态夹具
+
 ## v1.8.527 (2026-07-06) - 组件测试 Helper 复用
 ### 🏗️ 架构与基础设施
 - **组件测试样板收敛**: `ActionPanel`、`AppActionSidebar` 与 `AppEditorSplitPanes` 测试复用统一 element-like helper，移除本地重复节点查找与类型守卫逻辑

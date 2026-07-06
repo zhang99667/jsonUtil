@@ -1,77 +1,18 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { CodeEditor } from './Editor';
 import { PreviewEditorHeaderActions } from './EditorHeaderActions';
-import { AppPreviewCodeEditor, type AppPreviewCodeEditorProps } from './AppPreviewCodeEditor';
-import type { AppEditorUiState } from '../utils/appEditorUiState';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const editorUiState: AppEditorUiState = {
-  hasSourceContent: true,
-  hasPreviewContent: true,
-  isPreviewSameAsSource: false,
-  isSourceJsonCandidate: true,
-  sourceStandaloneDeepFormatKind: null,
-  canUseAutoSave: true,
-  isAutoSaveActive: false,
-  autoSaveTitle: '自动保存',
-  autoSaveAriaLabel: '自动保存',
-  copySourceTitle: '复制 SOURCE',
-  clearSourceTitle: '清空 SOURCE',
-  sourceAiRepairTitle: '使用 AI 修复 SOURCE JSON',
-  transformReportTitle: '深度解析报告',
-  applyPreviewTitle: '应用 PREVIEW',
-  copyPreviewTitle: '复制 PREVIEW',
-  clearSourceConfirmMessage: '',
-  pasteSourceConfirmMessage: '',
-  applyPreviewConfirmMessage: '',
-  applySchemaExampleConfirmMessage: '',
-  schemeInspectConfirmMessage: '',
-};
-
-const buildProps = (overrides: Partial<AppPreviewCodeEditorProps> = {}): AppPreviewCodeEditorProps => ({
-  output: '{"a":1}',
-  isOutputTransforming: false,
-  previewValidation: { isValid: false, error: 'Preview error' },
-  previewErrorLocation: { line: 1, column: 6 },
-  deepFormatWarning: 'deep warning',
-  deepFormatInfo: 'deep info',
-  hasTransformReportContext: true,
-  highlightRange: {
-    startLine: 1,
-    startColumn: 1,
-    endLine: 1,
-    endColumn: 8,
-  },
-  editorUiState,
-  onOutputChange: vi.fn(),
-  onPreviewFocus: vi.fn(),
-  onCursorPositionChange: vi.fn(),
-  onOpenTransformReport: vi.fn(),
-  onApplyPreviewToSource: vi.fn(),
-  onCopyPreview: vi.fn(),
-  onSchemeEdit: vi.fn(),
-  ...overrides,
-});
+import { AppPreviewCodeEditor } from './AppPreviewCodeEditor';
+import { buildAppPreviewCodeEditorTestProps } from './AppPreviewCodeEditorTestFixture';
+import { assertElementLike } from './componentElementTestHelpers';
 
 describe('AppPreviewCodeEditor', () => {
   it('装配 PREVIEW CodeEditor 的校验、提示、高亮和头部动作参数', () => {
-    const props = buildProps();
-    const tree = AppPreviewCodeEditor(props);
+    const props = buildAppPreviewCodeEditorTestProps();
+    const tree = assertElementLike(
+      AppPreviewCodeEditor(props),
+      'AppPreviewCodeEditor 应返回 React 元素'
+    );
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('AppPreviewCodeEditor 应返回 React 元素');
     expect(tree.type).toBe(CodeEditor);
     expect(tree.props.label).toBe('PREVIEW');
     expect(tree.props.value).toBe('{"a":1}');
@@ -88,9 +29,10 @@ describe('AppPreviewCodeEditor', () => {
     expect(tree.props.highlightRange).toEqual(props.highlightRange);
     expect(tree.props.onSchemeEdit).toBe(props.onSchemeEdit);
 
-    const headerActions = tree.props.headerActions;
-    expect(isElementLike(headerActions)).toBe(true);
-    if (!isElementLike(headerActions)) throw new Error('PREVIEW 头部动作应为 React 元素');
+    const headerActions = assertElementLike(
+      tree.props.headerActions,
+      'PREVIEW 头部动作应为 React 元素'
+    );
     expect(headerActions.type).toBe(PreviewEditorHeaderActions);
     expect(headerActions.props.editorUiState).toBe(props.editorUiState);
     expect(headerActions.props.isOutputTransforming).toBe(false);
@@ -102,20 +44,22 @@ describe('AppPreviewCodeEditor', () => {
   });
 
   it('在预览有效或转换中时同步只读切换和错误状态', () => {
-    const validTree = AppPreviewCodeEditor(buildProps({
-      isOutputTransforming: true,
-      previewValidation: { isValid: true },
-      deepFormatInfo: undefined,
-    }));
+    const validTree = assertElementLike(
+      AppPreviewCodeEditor(buildAppPreviewCodeEditorTestProps({
+        isOutputTransforming: true,
+        previewValidation: { isValid: true },
+        deepFormatInfo: undefined,
+      })),
+      'AppPreviewCodeEditor 应返回 React 元素'
+    );
 
-    expect(isElementLike(validTree)).toBe(true);
-    if (!isElementLike(validTree)) throw new Error('AppPreviewCodeEditor 应返回 React 元素');
     expect(validTree.props.error).toBeUndefined();
     expect(validTree.props.canToggleReadOnly).toBe(false);
 
-    const headerActions = validTree.props.headerActions;
-    expect(isElementLike(headerActions)).toBe(true);
-    if (!isElementLike(headerActions)) throw new Error('PREVIEW 头部动作应为 React 元素');
+    const headerActions = assertElementLike(
+      validTree.props.headerActions,
+      'PREVIEW 头部动作应为 React 元素'
+    );
     expect(headerActions.props.isOutputTransforming).toBe(true);
     expect(headerActions.props.showTransformReportButton).toBe(false);
   });
