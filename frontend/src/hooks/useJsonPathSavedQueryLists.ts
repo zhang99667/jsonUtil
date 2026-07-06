@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
   addJsonPathListItem,
-  JSONPATH_FAVORITES_STORAGE_KEY,
-  JSONPATH_HISTORY_STORAGE_KEY,
-  parseStoredJsonPathList,
   removeJsonPathListItem,
 } from '../utils/jsonPathLists';
-import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import {
+  clearStoredJsonPathHistory,
+  loadJsonPathSavedQueryLists,
+  saveJsonPathFavorites,
+  saveJsonPathHistory,
+} from '../utils/jsonPathSavedQueryStorage';
 
 export interface UseJsonPathSavedQueryListsResult {
   history: string[];
@@ -23,27 +25,22 @@ export interface UseJsonPathSavedQueryListsResult {
 export const useJsonPathSavedQueryLists = (
   normalizedQuery: string
 ): UseJsonPathSavedQueryListsResult => {
-  const [history, setHistory] = useState<string[]>(() => (
-    parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY))
-  ));
-  const [favorites, setFavorites] = useState<string[]>(() => (
-    parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY))
-  ));
+  const [lists, setLists] = useState(loadJsonPathSavedQueryLists);
+  const { history, favorites } = lists;
 
   useEffect(() => {
-    safeSetStorageItem(JSONPATH_HISTORY_STORAGE_KEY, JSON.stringify(history));
+    saveJsonPathHistory(history);
   }, [history]);
 
   useEffect(() => {
-    safeSetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+    saveJsonPathFavorites(favorites);
   }, [favorites]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleBackupImported = () => {
-      setHistory(parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY)));
-      setFavorites(parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY)));
+      setLists(loadJsonPathSavedQueryLists());
     };
 
     window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
@@ -51,30 +48,31 @@ export const useJsonPathSavedQueryLists = (
   }, []);
 
   const addHistoryItem = useCallback((query: string) => {
-    setHistory(prev => addJsonPathListItem(prev, query));
+    setLists(prev => ({ ...prev, history: addJsonPathListItem(prev.history, query) }));
   }, []);
 
   const clearHistory = useCallback(() => {
-    setHistory([]);
-    safeRemoveStorageItem(JSONPATH_HISTORY_STORAGE_KEY);
+    setLists(prev => ({ ...prev, history: [] }));
+    clearStoredJsonPathHistory();
   }, []);
 
   const removeFavorite = useCallback((query: string) => {
-    setFavorites(prev => removeJsonPathListItem(prev, query));
+    setLists(prev => ({ ...prev, favorites: removeJsonPathListItem(prev.favorites, query) }));
   }, []);
 
   const removeHistoryItem = useCallback((index: number) => {
-    setHistory(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+    setLists(prev => ({ ...prev, history: prev.history.filter((_, itemIndex) => itemIndex !== index) }));
   }, []);
 
   const toggleFavorite = useCallback(() => {
     if (!normalizedQuery) return;
 
-    setFavorites(prev => (
-      prev.includes(normalizedQuery)
-        ? removeJsonPathListItem(prev, normalizedQuery)
-        : addJsonPathListItem(prev, normalizedQuery)
-    ));
+    setLists(prev => ({
+      ...prev,
+      favorites: prev.favorites.includes(normalizedQuery)
+        ? removeJsonPathListItem(prev.favorites, normalizedQuery)
+        : addJsonPathListItem(prev.favorites, normalizedQuery),
+    }));
   }, [normalizedQuery]);
 
   return {

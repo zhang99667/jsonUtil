@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.583 (2026-07-07) - JSONPath 保存查询 Storage 收敛
+### 🏗️ 架构与基础设施
+- **JSONPath 保存查询存储收敛**: 新增保存查询 storage helper，统一 Hook 和配置备份中的历史/收藏读写、导入归一化与 JSON 数组写入口径，减少 storage key 和序列化逻辑散落
+
 ## v1.8.582 (2026-07-07) - JSONPath 面板引导 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **JSONPath 面板生命周期瘦身**: 将首次打开引导和打开后刷新位置下沉到独立 Hook，并移除面板内重复 Escape 监听，继续复用 DraggablePanel 的统一关闭逻辑

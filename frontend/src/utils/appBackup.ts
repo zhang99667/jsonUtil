@@ -12,11 +12,10 @@ import {
   sanitizeAIConfigForBackup,
 } from './appSettings';
 import {
-  JSONPATH_FAVORITES_STORAGE_KEY,
-  JSONPATH_HISTORY_STORAGE_KEY,
-  normalizeJsonPathList,
-  parseStoredJsonPathList,
-} from './jsonPathLists';
+  loadJsonPathSavedQueryLists,
+  normalizeJsonPathSavedQueryLists,
+  writeJsonPathSavedQueryLists,
+} from './jsonPathSavedQueryStorage';
 import {
   JSON_SCHEMA_LIBRARY_STORAGE_KEY,
   parseJsonSchemaLibrary,
@@ -146,10 +145,7 @@ export const buildAppBackup = ({
         DEFAULT_SHORTCUTS
       )),
     },
-    jsonPath: {
-      history: parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY, storage)),
-      favorites: parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY, storage)),
-    },
+    jsonPath: loadJsonPathSavedQueryLists(storage),
     jsonSchema: {
       library: parseJsonSchemaLibrary(safeGetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY, storage)),
     },
@@ -207,8 +203,7 @@ export const applyAppBackupContent = (
   };
   const nextGeneralSettings = normalizeGeneralSettings(settings.general);
   const nextShortcuts = normalizeShortcutConfig(settings.shortcuts);
-  const history = normalizeJsonPathList(jsonPath.history);
-  const favorites = normalizeJsonPathList(jsonPath.favorites);
+  const jsonPathLists = normalizeJsonPathSavedQueryLists(jsonPath);
   const schemaLibrary = parseJsonSchemaLibrary(JSON.stringify(jsonSchema.library || []));
   const structureSearchHistory = normalizeJsonTreeSearchHistory(structureNav.searchHistory);
   const templateFill = normalizeTemplateFillConfig(payload.templateFill);
@@ -218,8 +213,7 @@ export const applyAppBackupContent = (
   writeJson(storage, GENERAL_SETTINGS_STORAGE_KEY, nextGeneralSettings);
   writeJson(storage, AI_CONFIG_STORAGE_KEY, nextAIConfig);
   writeJson(storage, SHORTCUTS_STORAGE_KEY, nextShortcuts);
-  writeJson(storage, JSONPATH_HISTORY_STORAGE_KEY, history);
-  writeJson(storage, JSONPATH_FAVORITES_STORAGE_KEY, favorites);
+  writeJsonPathSavedQueryLists(storage, jsonPathLists);
   storage.setItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY, serializeJsonSchemaLibrary(schemaLibrary));
   writeJson(storage, JSON_TREE_SEARCH_HISTORY_STORAGE_KEY, structureSearchHistory);
   writeJson(storage, TEMPLATE_FILL_STORAGE_KEY, templateFill);
@@ -254,8 +248,8 @@ export const applyAppBackupContent = (
     aiConfig: nextAIConfig,
     shortcuts: nextShortcuts,
     importedCounts: {
-      jsonPathHistory: history.length,
-      jsonPathFavorites: favorites.length,
+      jsonPathHistory: jsonPathLists.history.length,
+      jsonPathFavorites: jsonPathLists.favorites.length,
       structureSearchHistory: structureSearchHistory.length,
       jsonSchemaLibrary: schemaLibrary.length,
       panelLayouts,
