@@ -11,6 +11,7 @@ import {
 
 const cmdComparison = getCmdComparisonMocks();
 const transformSummary = getTransformSummaryMocks();
+const cmdRecord = { path: '$.cmd' } as unknown as TransformReportRecord;
 
 describe('transformReportPanelCopyWorkflow inline actions', () => {
   beforeEach(() => {
@@ -26,14 +27,22 @@ describe('transformReportPanelCopyWorkflow inline actions', () => {
     expect(effects.showSuccess).toHaveBeenCalledWith('已复制自定义路径', { duration: 1600 });
   });
 
+  it('路径复制失败透出路径错误日志', async () => {
+    const failure = new Error('copy failed');
+    const { effects, workflow } = buildWorkflow({}, { copyText: vi.fn(async () => { throw failure; }) });
+
+    await workflow.copyPath('$.data[0]');
+
+    expect(effects.showError).toHaveBeenCalledWith('复制深度解析路径失败:', failure);
+  });
+
   it('CMD 差异复制透传 expected、忽略额外路径和候选结构', async () => {
-    const record = { path: '$.cmd' } as unknown as TransformReportRecord;
     const { effects, workflow } = buildWorkflow();
 
-    await workflow.copyCmdComparisonDiff(record);
+    await workflow.copyCmdComparisonDiff(cmdRecord);
 
     expect(cmdComparison.buildCmdComparisonReportText).toHaveBeenCalledWith(
-      record,
+      cmdRecord,
       'expected-cmd',
       true,
       actualCandidate
@@ -46,7 +55,7 @@ describe('transformReportPanelCopyWorkflow inline actions', () => {
     vi.mocked(transformSummary.formatTransformCmdStructureComparisonPackageText).mockReturnValueOnce('');
     const { effects, workflow } = buildWorkflow();
 
-    await workflow.copyCmdComparisonPackage({ path: '$.cmd' } as unknown as TransformReportRecord);
+    await workflow.copyCmdComparisonPackage(cmdRecord);
 
     expect(effects.copyText).not.toHaveBeenCalled();
     expect(effects.showSuccess).not.toHaveBeenCalled();
