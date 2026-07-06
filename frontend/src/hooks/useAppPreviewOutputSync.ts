@@ -35,19 +35,12 @@ export const useAppPreviewOutputSync = ({
   }, [isUpdatingFromOutput, previewText, updatePreviewValidation]);
 
   const handleOutputChange = useAppPreviewOutputChangeHandler({
-    activeFileId,
-    fallbackContextRef,
-    files,
-    inputRef,
     isUpdatingFromOutput,
-    mode,
-    onSetInput,
-    onUpdateActiveFileContent,
-    pendingOutputValue,
     scheduleOutputSync,
-    setPreviewValidation,
     updatePreviewValidation,
-    validateJsonMaybeAsync,
+    request: { files, activeFileId, mode, validateJsonMaybeAsync },
+    refs: { inputRef, fallbackContextRef, pendingOutputValue },
+    applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
   });
 
   return {

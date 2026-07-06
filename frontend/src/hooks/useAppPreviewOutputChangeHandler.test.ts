@@ -29,10 +29,12 @@ describe('useAppPreviewOutputChangeHandler', () => {
     handleOutputChange(PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT);
 
     expect(runAppPreviewOutputChange).toHaveBeenCalledWith(expect.objectContaining({
-      previewText: PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT,
-      inputRef: input.inputRef,
-      pendingOutputValue: input.pendingOutputValue,
       scheduleOutputSync: input.scheduleOutputSync,
+      request: expect.objectContaining({ previewText: PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT }),
+      refs: expect.objectContaining({
+        inputRef: input.refs.inputRef,
+        pendingOutputValue: input.refs.pendingOutputValue,
+      }),
     }));
   });
 });

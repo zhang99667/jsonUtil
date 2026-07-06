@@ -17,9 +17,9 @@ describe('appPreviewOutputChangeTask', () => {
     scheduleAppPreviewOutputChangeTask(input);
 
     expect(createAppPreviewOutputSyncTask).toHaveBeenCalledWith(expect.objectContaining({
-      request: expect.objectContaining({ previewText: input.previewText }),
-      refs: expect.objectContaining({ inputRef: input.inputRef }),
-      applyEffects: expect.objectContaining({ onSetInput: input.onSetInput }),
+      request: expect.objectContaining({ previewText: input.request.previewText }),
+      refs: expect.objectContaining({ inputRef: input.refs.inputRef }),
+      applyEffects: expect.objectContaining({ onSetInput: input.applyEffects.onSetInput }),
     }));
     expect(input.scheduleOutputSync).toHaveBeenCalledWith(syncTask);
   });
