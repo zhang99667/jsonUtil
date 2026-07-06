@@ -2,7 +2,7 @@
   "name": "json-helper-ai-fix",
   "productName": "JSONUtils - 专业版",
   "private": true,
-  "version": "1.8.566",
+  "version": "1.8.567",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {

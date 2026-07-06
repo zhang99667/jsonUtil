@@ -1,6 +1,5 @@
 import {
   getTransformPlaceholderFillTemplateTitle,
-  type TransformReportCopyTitles,
 } from './transformReportCopyTitles';
 import { buildTransformReportPanelCopyTitles } from './transformReportPanelCopyTitleState';
 import {
@@ -8,36 +7,16 @@ import {
   buildTransformReportPanelIssueCopyTexts,
   buildTransformReportPanelPlaceholderFillState,
   buildTransformReportPanelQualityState,
-  type TransformReportPanelCopyAvailability,
-  type TransformReportPanelIssueCopyTexts,
-  type TransformReportPanelPlaceholderFillState,
-  type TransformReportPanelQualityState,
 } from './transformReportPanelDerivedValues';
-import type { TransformReportQualityBaseline } from './transformReportPanelCopyWorkflow';
 import type {
-  TransformContextReport,
-  TransformReportView,
-} from './transformSummary';
+  TransformReportPanelDerivedModel,
+  TransformReportPanelDerivedModelInput,
+} from './transformReportPanelDerivedModelTypes';
 
-export interface TransformReportPanelDerivedModelInput {
-  report: TransformContextReport | null;
-  reportView: TransformReportView | null;
-  fullReportView: TransformReportView | null;
-  deferredQuery: string;
-  isFilterPending: boolean;
-  qualityBaseline: TransformReportQualityBaseline | null;
-  hasActiveContext: boolean;
-}
-
-export interface TransformReportPanelDerivedModel
-  extends TransformReportPanelCopyAvailability,
-    TransformReportPanelIssueCopyTexts,
-    TransformReportPanelPlaceholderFillState,
-    TransformReportPanelQualityState {
-  hasReportView: boolean;
-  copyTitles: TransformReportCopyTitles;
-  getPanelPlaceholderFillTemplateTitle: (readyTitle: string) => string;
-}
+export type {
+  TransformReportPanelDerivedModel,
+  TransformReportPanelDerivedModelInput,
+} from './transformReportPanelDerivedModelTypes';
 
 export const buildTransformReportPanelDerivedModel = ({
   report,
