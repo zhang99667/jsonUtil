@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.517 (2026-07-06) - PREVIEW 同步测试夹具收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 同步夹具单源化**: 测试夹具改为直接生成 request、refs 与 applyEffects 的标准结构，flat 输入只从标准结构展开，减少字段拆装样板并让夹具从 65 行降到 63 行
+
 ## v1.8.516 (2026-07-06) - PREVIEW 同步类型边界收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 同步类型单源化**: `AppPreviewOutputSyncTaskInput` 作为 request、refs 与 applyEffects 的唯一结构来源，refs/effects 类型从主输入派生，类型文件从 36 行降到 31 行并脱离预算上限
