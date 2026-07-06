@@ -15,6 +15,8 @@ export const governanceAppShellMaintainabilityBudgets = [
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-rules.mjs', 15, 'JSONPath 面板预算入口应只组合组件和 helper 子表'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-component-rules.mjs', 15, 'JSONPath 组件预算规则应只维护面板和子组件预算'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-component-runtime-rules.mjs', 15, 'JSONPath 运行时组件预算规则应只维护面板和子组件预算'),
+  governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-component-core-rules.mjs', 15, 'JSONPath 核心组件预算规则应只维护面板、输入和结果区条目'),
+  governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-component-support-rules.mjs', 15, 'JSONPath 支撑组件预算规则应只维护保存查询和辅助提示条目'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-component-test-rules.mjs', 10, 'JSONPath 组件测试预算规则应只维护组件测试条目'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-helper-rules.mjs', 25, 'JSONPath helper 预算规则应维护复制、预览、UI 状态、导航、保存查询、storage 和面板引导预算'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-recovery-rules.mjs', 25, 'App 发布恢复预算入口应只组合运行时恢复和版本检测子表'),
