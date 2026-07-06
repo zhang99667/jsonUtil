@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.540 (2026-07-06) - SOURCE 校验空态清理
+### 🐛 Bug 修复
+- **SOURCE 校验空态**: SOURCE 校验请求先清理零宽字符再判断空输入，避免只包含不可见字符的内容误启动异步校验任务；同步修正单测 mock，让 `cleanJsonInput` 行为贴近真实实现
+
 ## v1.8.539 (2026-07-06) - 深度解析 ViewModel 派生依赖收敛
 ### 🏗️ 架构与基础设施
 - **ViewModel 派生依赖收口**: 深度解析面板 view model 显式区分 active context 对象和 `hasActiveContext` 布尔状态，让派生模型 memo 只依赖布尔可用性，同时保留上下文对象身份触发筛选重置的语义
