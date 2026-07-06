@@ -1,9 +1,12 @@
 import { createAppPreviewOutputSyncTask } from './appPreviewOutputSyncTask';
-import type { AppPreviewOutputSyncTaskApplyEffects, AppPreviewOutputSyncTaskRefs, AppPreviewOutputSyncTaskRequest } from './appPreviewOutputSyncTaskTypes';
+import type {
+  AppPreviewOutputSyncTaskApplyEffects,
+  AppPreviewOutputSyncTaskRefs,
+  AppPreviewOutputSyncTaskRequest,
+  PreviewOutputSyncTask,
+} from './appPreviewOutputSyncTaskTypes';
 
-type PreviewOutputSyncTask = (isCurrent: () => boolean) => Promise<boolean>;
-
-type AppPreviewOutputChangeTaskInput = AppPreviewOutputSyncTaskRequest
+export type AppPreviewOutputChangeTaskInput = AppPreviewOutputSyncTaskRequest
   & AppPreviewOutputSyncTaskRefs
   & AppPreviewOutputSyncTaskApplyEffects
   & { scheduleOutputSync: (task: PreviewOutputSyncTask) => void };

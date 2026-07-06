@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TransformMode } from '../types';
 import { runAppPreviewOutputChange } from '../utils/appPreviewOutputChangeHandler';
+import {
+  PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT,
+  createPreviewOutputChangeHandlerInput,
+} from '../utils/appPreviewOutputSyncTestFixture';
 import { useAppPreviewOutputChangeHandler } from './useAppPreviewOutputChangeHandler';
 
 const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn() }));
@@ -15,22 +18,6 @@ vi.mock('../utils/appPreviewOutputChangeHandler', async importOriginal => ({
   runAppPreviewOutputChange: vi.fn(),
 }));
 
-const createInput = () => ({
-  files: [],
-  activeFileId: null,
-  mode: TransformMode.FORMAT,
-  inputRef: { current: '{"a":1}' },
-  fallbackContextRef: { current: null },
-  isUpdatingFromOutput: { current: false },
-  pendingOutputValue: { current: '' },
-  validateJsonMaybeAsync: vi.fn(),
-  onSetInput: vi.fn(),
-  onUpdateActiveFileContent: vi.fn(),
-  setPreviewValidation: vi.fn(),
-  updatePreviewValidation: vi.fn(),
-  scheduleOutputSync: vi.fn(),
-});
-
 describe('useAppPreviewOutputChangeHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,13 +25,13 @@ describe('useAppPreviewOutputChangeHandler', () => {
   });
 
   it('将 PREVIEW 输出变更转发给 helper', () => {
-    const input = createInput();
+    const input = createPreviewOutputChangeHandlerInput();
     const handleOutputChange = useAppPreviewOutputChangeHandler(input);
 
-    handleOutputChange('{"a":2}');
+    handleOutputChange(PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT);
 
     expect(runAppPreviewOutputChange).toHaveBeenCalledWith(expect.objectContaining({
-      previewText: '{"a":2}',
+      previewText: PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT,
       inputRef: input.inputRef,
       pendingOutputValue: input.pendingOutputValue,
       scheduleOutputSync: input.scheduleOutputSync,

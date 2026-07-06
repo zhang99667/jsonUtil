@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.490 (2026-07-06) - PREVIEW 同步测试夹具收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 同步测试夹具**: 抽出 `appPreviewOutputSyncTestFixture` 统一构建 request、refs、effects、task 和 handler 输入，四个 PREVIEW 输出同步测试不再重复手写相同装配样板
+
 ## v1.8.489 (2026-07-06) - 智能建议命令预算拆分
 ### 🏗️ 架构与基础设施
 - **命令预算分层**: 新增 `maintainability-budget-app-workflow-command-smart-suggestion-rules` 承接智能建议命令 hook、runner 和计划副作用预算，`command-core` 回归复制、主动作、面板重置等核心命令预算，减少命令预算入口继续贴线的风险
