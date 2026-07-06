@@ -14,8 +14,6 @@ vi.mock('../utils/toast', () => ({
   showSuccess: vi.fn(),
 }));
 
-const formattedJson = (value: unknown) => JSON.stringify(value, null, 2);
-
 const useSchemeEditFixture = (previewText: string) => {
   const onPreviewChange = vi.fn();
   const { handleSchemeEdit } = useAppSchemeEditCommand({
@@ -39,26 +37,17 @@ describe('useAppSchemeEditCommand', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('优先按 JSON Pointer 精确写回 PREVIEW', () => {
+  it('应用 Scheme 修改后写回 PREVIEW 并提示成功', () => {
     const { handleSchemeEdit, onPreviewChange } = useSchemeEditFixture('{"data":{"url":"old"}}');
 
     handleSchemeEdit('$.data.url', 'new', '/data/url');
 
-    expect(onPreviewChange).toHaveBeenCalledWith(formattedJson({ data: { url: 'new' } }));
+    expect(onPreviewChange).toHaveBeenCalledWith(JSON.stringify({ data: { url: 'new' } }, null, 2));
     expect(showSuccess).toHaveBeenCalledWith('Scheme 修改已应用');
     expect(showError).not.toHaveBeenCalled();
   });
 
-  it('没有 pointer 时兼容旧 JSONPath 写回', () => {
-    const { handleSchemeEdit, onPreviewChange } = useSchemeEditFixture('{"list":[{"url":"old"}]}');
-
-    handleSchemeEdit('$.list[0].url', 'new');
-
-    expect(onPreviewChange).toHaveBeenCalledWith(formattedJson({ list: [{ url: 'new' }] }));
-    expect(showSuccess).toHaveBeenCalledWith('Scheme 修改已应用');
-  });
-
-  it('PREVIEW 无法解析时保留原内容并提示错误', () => {
+  it('应用失败时保留原内容并提示错误', () => {
     const { handleSchemeEdit, onPreviewChange } = useSchemeEditFixture('{bad json');
 
     handleSchemeEdit('$.data.url', 'new', '/data/url');
@@ -67,15 +56,5 @@ describe('useAppSchemeEditCommand', () => {
     expect(showSuccess).not.toHaveBeenCalled();
     expect(showError).toHaveBeenCalledWith(expect.stringContaining('应用修改失败'));
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to apply scheme edit:', expect.any(SyntaxError));
-  });
-
-  it('JSON Pointer 写入失败时不回退旧 JSONPath', () => {
-    const { handleSchemeEdit, onPreviewChange } = useSchemeEditFixture('{"items":["old"]}');
-
-    handleSchemeEdit('$.items[0]', 'new', '/items/bad');
-
-    expect(onPreviewChange).not.toHaveBeenCalled();
-    expect(showSuccess).not.toHaveBeenCalled();
-    expect(showError).toHaveBeenCalledWith(expect.stringContaining('应用修改失败：非法数组下标'));
   });
 });

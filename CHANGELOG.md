@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.477 (2026-07-06) - Scheme 编辑写回逻辑提纯
+### 🏗️ 架构与基础设施
+- **Scheme 编辑职责拆分**: 抽出 `applySchemeEditToPreviewText` 纯 helper 负责 PREVIEW JSON 解析、Pointer/旧 JSONPath 写回和格式化输出，Hook 只保留成功写回与错误提示副作用
+
 ## v1.8.476 (2026-07-03) - PREVIEW 草稿切换判断提纯
 ### 🏗️ 架构与基础设施
 - **PREVIEW 草稿重置提纯**: `useAppPreviewDraftFileChangeReset` 抽出文件切换判断函数，测试改为纯判断矩阵加 Hook 接线校验，减少 React mock 覆盖面并收紧对应测试预算
