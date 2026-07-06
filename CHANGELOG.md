@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.600 (2026-07-07) - JSONPath 保存查询同步 Hook 拆分
+### 🏗️ 架构与基础设施
+- **JSONPath 保存查询瘦身**: 将历史/收藏持久化和备份导入刷新拆成独立 storage sync hook，主保存查询 hook 继续聚焦列表状态、收藏历史操作和存储同步接线
+
 ## v1.8.599 (2026-07-07) - JSONPath 预算治理分层
 ### 🏗️ 架构与基础设施
 - **JSONPath 维护预算分层**: 将 JSONPath 组件预算拆成 panel、result preview、result toolbar 子表，并将治理规则拆成组件 runtime/test 与 helper 子表，避免预算规则文件继续成为后续拆分瓶颈

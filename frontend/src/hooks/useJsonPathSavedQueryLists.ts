@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
-import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
+import { useCallback, useState } from 'react';
 import {
   addJsonPathHistoryItem,
   clearJsonPathHistory,
@@ -10,9 +9,8 @@ import {
 import {
   clearStoredJsonPathHistory,
   loadJsonPathSavedQueryLists,
-  saveJsonPathFavorites,
-  saveJsonPathHistory,
 } from '../utils/jsonPathSavedQueryStorage';
+import { useJsonPathSavedQueryListStorageSync } from './useJsonPathSavedQueryListStorageSync';
 
 export interface UseJsonPathSavedQueryListsResult {
   history: string[];
@@ -31,24 +29,11 @@ export const useJsonPathSavedQueryLists = (
   const [lists, setLists] = useState(loadJsonPathSavedQueryLists);
   const { history, favorites } = lists;
 
-  useEffect(() => {
-    saveJsonPathHistory(history);
-  }, [history]);
-
-  useEffect(() => {
-    saveJsonPathFavorites(favorites);
-  }, [favorites]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleBackupImported = () => {
-      setLists(loadJsonPathSavedQueryLists());
-    };
-
-    window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
-    return () => window.removeEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
-  }, []);
+  useJsonPathSavedQueryListStorageSync({
+    history,
+    favorites,
+    onBackupImported: setLists,
+  });
 
   const addHistoryItem = useCallback((query: string) => {
     setLists(prev => addJsonPathHistoryItem(prev, query));
