@@ -4,7 +4,7 @@ import type {
   AppPreviewOutputSyncTaskApplyEffects,
   AppPreviewOutputSyncTaskRefs,
   AppPreviewOutputSyncTaskRequest,
-  PreviewOutputSyncTask,
+  SchedulePreviewOutputSync,
 } from './appPreviewOutputSyncTaskTypes';
 import type { MutableValueRef } from './mutableValueRef';
 
@@ -14,7 +14,7 @@ export interface AppPreviewOutputChangeHandlerInput
     AppPreviewOutputSyncTaskApplyEffects {
   isUpdatingFromOutput: MutableValueRef<boolean>;
   updatePreviewValidation: (previewText: string) => void;
-  scheduleOutputSync: (task: PreviewOutputSyncTask) => void;
+  scheduleOutputSync: SchedulePreviewOutputSync;
 }
 
 interface RunAppPreviewOutputChangeInput

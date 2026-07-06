@@ -3,6 +3,7 @@ import type { AppPreviewOutputSyncRequestInput } from './appPreviewOutputSyncReq
 import type { MutableValueRef } from './mutableValueRef';
 
 export type PreviewOutputSyncTask = (isCurrent: () => boolean) => Promise<boolean>;
+export type SchedulePreviewOutputSync = (task: PreviewOutputSyncTask) => void;
 
 export type AppPreviewOutputSyncTaskRequest = Omit<
   AppPreviewOutputSyncRequestInput,
@@ -32,6 +33,4 @@ export type AppPreviewOutputSyncTaskFlatInput =
   & AppPreviewOutputSyncTaskRefs
   & AppPreviewOutputSyncTaskApplyEffects;
 
-export type AppPreviewOutputChangeTaskInput = AppPreviewOutputSyncTaskFlatInput & {
-  scheduleOutputSync: (task: PreviewOutputSyncTask) => void;
-};
+export type AppPreviewOutputChangeTaskInput = AppPreviewOutputSyncTaskFlatInput & { scheduleOutputSync: SchedulePreviewOutputSync };

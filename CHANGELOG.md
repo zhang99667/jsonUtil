@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.507 (2026-07-06) - PREVIEW 同步调度类型收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 调度类型复用**: 新增 `SchedulePreviewOutputSync` 统一 PREVIEW 同步任务调度函数签名，scheduler、change handler 与测试夹具复用同一类型边界，避免重复维护调度函数形状并保持同步时序逻辑不变
+
 ## v1.8.506 (2026-07-06) - 滚动条与组件测试 Helper 收敛
 ### 🏗️ 架构与基础设施
 - **ActionPanel 滚动条复用**: `actionPanelScrollbarDom` 和拖拽计算委托通用滚动条 helper，保留原侧栏 thumb 语义，同时让滚动 DOM 读取具备按方向收窄的类型边界
