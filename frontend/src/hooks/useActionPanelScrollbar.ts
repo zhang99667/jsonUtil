@@ -64,8 +64,9 @@ export const useActionPanelScrollbar = ({
     if (!container) return;
 
     setCustomScrollbarScrollPos(container, 'vertical', getActionPanelDragScrollTop({
-      startScrollTop: dragStartRef.current.scrollTop,
-      deltaY: getCustomScrollbarPointerPos(event, 'vertical') - dragStartRef.current.pointerPos,
+      scrollTop: dragStartRef.current.scrollTop,
+      startPointerY: dragStartRef.current.pointerPos,
+      currentPointerY: getCustomScrollbarPointerPos(event, 'vertical'),
       scrollHeight: scrollState.scrollHeight,
       clientHeight: scrollState.clientHeight,
     }));

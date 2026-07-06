@@ -36,18 +36,18 @@ export const getActionPanelScrollbarViewState = ({
   };
 };
 
-export interface ActionPanelDragScrollInput {
-  startScrollTop: number;
-  deltaY: number;
-  scrollHeight: number;
-  clientHeight: number;
+export interface ActionPanelDragScrollInput extends ActionPanelScrollState {
+  startPointerY: number;
+  currentPointerY: number;
 }
 
 export const getActionPanelDragScrollTop = ({
-  startScrollTop,
-  deltaY,
+  scrollTop,
+  startPointerY,
+  currentPointerY,
   scrollHeight,
   clientHeight,
 }: ActionPanelDragScrollInput): number => getCustomScrollbarDragScrollPos({
-  startScrollPos: startScrollTop, delta: deltaY, scrollSize: scrollHeight, clientSize: clientHeight,
+  startScrollPos: scrollTop, delta: currentPointerY - startPointerY,
+  scrollSize: scrollHeight, clientSize: clientHeight,
 });
