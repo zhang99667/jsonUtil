@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.493 (2026-07-06) - 深度报告视图测试夹具复用
+### 🏗️ 架构与基础设施
+- **ReportView 测试 Builder**: 在 `transformReportViewTestFixture` 补充 records 视图构建 helper，active CMD 对比和复制 workflow model 测试复用同一份 `records` / `cmdStructureRecords` 装配逻辑
+
 ## v1.8.492 (2026-07-06) - 文件系统测试场景收敛
 ### 🏗️ 架构与基础设施
 - **文件系统 Hook 测试降噪**: `useFileSystem.test` 抽出本地场景 helper，统一 React state mock、输入回调和 hook 调用样板，三个 SOURCE 写回入口测试只保留文件场景、动作和关键顺序断言

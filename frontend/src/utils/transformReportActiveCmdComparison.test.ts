@@ -9,8 +9,8 @@ import {
 import type {
   TransformContextReport,
   TransformReportRecord,
-  TransformReportView,
 } from './transformSummary';
+import { createTransformReportViewWithRecords } from './transformReportViewTestFixture';
 
 const createCmdRecord = (
   path: string,
@@ -31,11 +31,6 @@ const createCmdRecord = (
   ...overrides,
 } as TransformReportRecord);
 
-const createReportView = (records: TransformReportRecord[]): TransformReportView => ({
-  records,
-  cmdStructureRecords: records.filter(record => record.hasCmdStructure),
-} as TransformReportView);
-
 const expectedText = JSON.stringify({
   result: {
     cmdSchema: 'baiduboxapp://v1/open',
@@ -53,15 +48,15 @@ describe('transformReportActiveCmdComparison', () => {
     expect(findActiveCmdComparisonRecord({
       recordPath: '$.view',
       report: { records: [reportRecord] } as TransformContextReport,
-      reportView: createReportView([viewRecord]),
-      fullReportView: createReportView([fullRecord]),
+      reportView: createTransformReportViewWithRecords([viewRecord]),
+      fullReportView: createTransformReportViewWithRecords([fullRecord]),
     })).toBe(viewRecord);
 
     expect(findActiveCmdComparisonRecord({
       recordPath: '$.full',
       report: { records: [reportRecord] } as TransformContextReport,
-      reportView: createReportView([viewRecord]),
-      fullReportView: createReportView([fullRecord]),
+      reportView: createTransformReportViewWithRecords([viewRecord]),
+      fullReportView: createTransformReportViewWithRecords([fullRecord]),
     })).toBe(fullRecord);
   });
 
@@ -71,8 +66,8 @@ describe('transformReportActiveCmdComparison', () => {
 
     expect(getCmdComparisonCandidateRecords({
       report: { records: [cmdRecord, plainRecord] } as TransformContextReport,
-      reportView: createReportView([]),
-      fullReportView: createReportView([]),
+      reportView: createTransformReportViewWithRecords([]),
+      fullReportView: createTransformReportViewWithRecords([]),
     })).toEqual([cmdRecord]);
   });
 
@@ -80,7 +75,7 @@ describe('transformReportActiveCmdComparison', () => {
     const currentRecord = createCmdRecord('$.current', { id: 1 });
     const betterRecord = createCmdRecord('$.better', { id: 2 });
     const report = { records: [currentRecord, betterRecord] } as TransformContextReport;
-    const reportView = createReportView([currentRecord]);
+    const reportView = createTransformReportViewWithRecords([currentRecord]);
 
     const state = {
       recordPath: '$.current',
@@ -89,7 +84,7 @@ describe('transformReportActiveCmdComparison', () => {
       actualCandidate: null,
       report,
       reportView,
-      fullReportView: createReportView([currentRecord, betterRecord]),
+      fullReportView: createTransformReportViewWithRecords([currentRecord, betterRecord]),
     };
 
     expect(buildActiveCmdComparisonReportText(state)).toContain('CMD 结构差异报告');
