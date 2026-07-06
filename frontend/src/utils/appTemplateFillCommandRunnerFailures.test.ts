@@ -33,6 +33,17 @@ describe('appTemplateFillCommandRunner failures', () => {
     expect(effects.onShowError).not.toHaveBeenCalled();
   });
 
+  it('质量摘要模块加载失败时仍应用占位符模板', async () => {
+    const effects = createAppTemplateFillCommandEffects();
+    effects.loadSummaryModule.mockRejectedValue(new Error('summary failed'));
+
+    await runPlaceholderTemplateFillCommand(effects);
+
+    expectTemplateCommandQualityDeltaCleared(effects);
+    expectTemplateCommandSourceApplied(effects);
+    expect(effects.onShowSuccess).toHaveBeenCalledWith('占位符已回填，质量对比暂不可用');
+  });
+
   it('质量 delta 构建失败时仍应用占位符模板', async () => {
     const effects = createAppTemplateFillCommandEffects();
     mocks.buildAppTemplateFillQualityDelta.mockImplementation(() => {
