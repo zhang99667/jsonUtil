@@ -1,6 +1,6 @@
 import { useEffect, type MutableRefObject } from 'react';
 
-import { normalizeSmartSuggestionText } from '../utils/smartSuggestionText';
+import { shouldKeepSmartSuggestionOrigin } from '../utils/smartSuggestionText';
 import type { AppSmartSuggestionOrigin } from './useAppSourceApplyEffects';
 
 interface UseAppSmartSuggestionOriginResetOptions {
@@ -20,7 +20,7 @@ export const useAppSmartSuggestionOriginReset = ({
 }: UseAppSmartSuggestionOriginResetOptions): void => {
   useEffect(() => {
     if (!smartSuggestionOrigin) return;
-    if (normalizeSmartSuggestionText(sourceText) === smartSuggestionOriginTextRef.current && hasSmartSuggestion) return;
+    if (shouldKeepSmartSuggestionOrigin(sourceText, hasSmartSuggestion, smartSuggestionOriginTextRef.current)) return;
 
     smartSuggestionOriginTextRef.current = '';
     onSetSmartSuggestionOrigin(null);
