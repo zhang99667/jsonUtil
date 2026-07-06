@@ -49,11 +49,11 @@ describe('useActionPanelScrollbar', () => {
     expect(scrollbarMocks.useCustomScrollbar).toHaveBeenCalledWith('vertical', true);
     expect(scrollbarMocks.useRafCallback).toHaveBeenCalledWith(onScrollFrame);
     expect(result.containerRef).toBe(scrollbarMocks.containerRef);
-    expect(result.handleScrollbarMouseDown).toBe(scrollbarMocks.handleMouseDown);
-    expect(result.scrollbarViewState).toEqual({
+    expect(result.scrollbarProps).toEqual({
       showScrollbar: true,
       thumbHeight: 36,
       thumbTop: 24,
+      onMouseDown: scrollbarMocks.handleMouseDown,
     });
   });
 

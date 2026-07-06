@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   refreshTour: vi.fn(),
   triggerFeatureFirstUse: vi.fn(),
   handleScroll: vi.fn(),
-  handleScrollbarMouseDown: vi.fn(),
 }));
 
 vi.mock('../hooks/useFeatureTour', () => ({
@@ -27,8 +26,12 @@ vi.mock('../hooks/useActionPanelScrollbar', () => ({
   useActionPanelScrollbar: () => ({
     containerRef: { current: null },
     handleScroll: mocks.handleScroll,
-    handleScrollbarMouseDown: mocks.handleScrollbarMouseDown,
-    scrollbarViewState: { showScrollbar: false, thumbHeight: 0, thumbTop: 0 },
+    scrollbarProps: {
+      showScrollbar: false,
+      thumbHeight: 0,
+      thumbTop: 0,
+      onMouseDown: vi.fn(),
+    },
   }),
 }));
 
