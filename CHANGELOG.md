@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.530 (2026-07-06) - 深度解析模板复制 Workflow 收敛
+### 🏗️ 架构与基础设施
+- **模板复制动作去样板**: 深度解析面板的占位符模板、问题样本、样本 JSON、脱敏样本和回归模板复制动作复用本地 guarded copy helper，并补齐 text/success/error/pending guard 矩阵测试
+
 ## v1.8.529 (2026-07-06) - ActionPanel 滚动条状态收敛
 ### 🏗️ 架构与基础设施
 - **滚动条视图状态单源化**: `ActionPanel` 自定义滚动条的展示、thumb 高度和位置统一由纯函数派生，hook 与组件只传递单个 view state，保留原显示阈值、拖拽公式和刷新时机

@@ -8,6 +8,27 @@ import type {
   TransformReportPanelTemplateCopyWorkflow,
 } from './transformReportPanelCopyWorkflowTypes';
 
+interface GuardedTemplateCopyActionInput {
+  getText: () => string;
+  successMessage: string;
+  errorLogMessage: string;
+}
+
+const buildGuardedTemplateCopyAction = (
+  state: TransformReportPanelCopyWorkflowState,
+  copyPanelText: TransformReportPanelCopyTextRunner,
+  {
+    getText,
+    successMessage,
+    errorLogMessage,
+  }: GuardedTemplateCopyActionInput
+) => async () => {
+  const text = getText();
+  if (!text || state.isFilterPending) return;
+
+  await copyPanelText({ text, successMessage, errorLogMessage });
+};
+
 export const buildTransformReportPanelTemplateCopyWorkflow = (
   state: TransformReportPanelCopyWorkflowState,
   effects: TransformReportPanelCopyWorkflowEffects,
@@ -25,16 +46,6 @@ export const buildTransformReportPanelTemplateCopyWorkflow = (
     });
   };
 
-  const copyPlaceholderFillTemplate = async () => {
-    if (!state.placeholderFillTemplateJsonText || state.isFilterPending) return;
-
-    await copyPanelText({
-      text: state.placeholderFillTemplateJsonText,
-      successMessage: '已复制占位符回填模板',
-      errorLogMessage: '复制深度解析占位符回填模板失败:',
-    });
-  };
-
   const openPlaceholderFillTemplate = () => {
     if (!state.placeholderFillTemplateJsonText || state.isFilterPending || !effects.openTemplateFill) return;
 
@@ -42,53 +53,33 @@ export const buildTransformReportPanelTemplateCopyWorkflow = (
     effects.showStatusSuccess('已填入模板填充', { duration: 1600 });
   };
 
-  const copyIssueSamples = async () => {
-    if (!state.issueSampleCopyText || state.isFilterPending) return;
-
-    await copyPanelText({
-      text: state.issueSampleCopyText,
-      successMessage: '已复制问题样本',
-      errorLogMessage: '复制深度解析问题样本失败:',
-    });
-  };
-
-  const copyIssueSampleJson = async () => {
-    if (!state.issueSampleJsonCopyText || state.isFilterPending) return;
-
-    await copyPanelText({
-      text: state.issueSampleJsonCopyText,
-      successMessage: '已复制样本 JSON',
-      errorLogMessage: '复制深度解析样本 JSON 失败:',
-    });
-  };
-
-  const copyRedactedIssueSampleJson = async () => {
-    if (!state.redactedIssueSampleJsonCopyText || state.isFilterPending) return;
-
-    await copyPanelText({
-      text: state.redactedIssueSampleJsonCopyText,
-      successMessage: '已复制脱敏样本 JSON',
-      errorLogMessage: '复制深度解析脱敏样本 JSON 失败:',
-    });
-  };
-
-  const copyIssueRegressionTemplate = async () => {
-    if (!state.issueRegressionTemplateCopyText || state.isFilterPending) return;
-
-    await copyPanelText({
-      text: state.issueRegressionTemplateCopyText,
-      successMessage: '已复制回归模板',
-      errorLogMessage: '复制深度解析回归模板失败:',
-    });
-  };
-
   return {
     copyPlaceholderReport,
-    copyPlaceholderFillTemplate,
+    copyPlaceholderFillTemplate: buildGuardedTemplateCopyAction(state, copyPanelText, {
+      getText: () => state.placeholderFillTemplateJsonText,
+      successMessage: '已复制占位符回填模板',
+      errorLogMessage: '复制深度解析占位符回填模板失败:',
+    }),
     openPlaceholderFillTemplate,
-    copyIssueSamples,
-    copyIssueSampleJson,
-    copyRedactedIssueSampleJson,
-    copyIssueRegressionTemplate,
+    copyIssueSamples: buildGuardedTemplateCopyAction(state, copyPanelText, {
+      getText: () => state.issueSampleCopyText,
+      successMessage: '已复制问题样本',
+      errorLogMessage: '复制深度解析问题样本失败:',
+    }),
+    copyIssueSampleJson: buildGuardedTemplateCopyAction(state, copyPanelText, {
+      getText: () => state.issueSampleJsonCopyText,
+      successMessage: '已复制样本 JSON',
+      errorLogMessage: '复制深度解析样本 JSON 失败:',
+    }),
+    copyRedactedIssueSampleJson: buildGuardedTemplateCopyAction(state, copyPanelText, {
+      getText: () => state.redactedIssueSampleJsonCopyText,
+      successMessage: '已复制脱敏样本 JSON',
+      errorLogMessage: '复制深度解析脱敏样本 JSON 失败:',
+    }),
+    copyIssueRegressionTemplate: buildGuardedTemplateCopyAction(state, copyPanelText, {
+      getText: () => state.issueRegressionTemplateCopyText,
+      successMessage: '已复制回归模板',
+      errorLogMessage: '复制深度解析回归模板失败:',
+    }),
   };
 };
