@@ -11,35 +11,7 @@ import { TransformReportIssueTriagePanel } from './TransformReportIssueTriagePan
 import { TransformReportNextActionsPanel } from './TransformReportNextActionsPanel';
 import { TransformReportSummaryMetricsBar } from './TransformReportSummaryMetricsBar';
 import { TransformReportSummarySection } from './TransformReportSummarySection';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
+import { collectText, findByType } from './componentElementTestHelpers';
 
 const buildReport = (): TransformContextReport => ({
   summaryText: '深度解析: 展开 3',

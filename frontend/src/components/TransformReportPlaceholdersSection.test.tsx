@@ -8,43 +8,7 @@ import { TransformReportPlaceholderRow } from './TransformReportPlaceholderRow';
 import { TransformReportPlaceholderRowsList } from './TransformReportPlaceholderRowsList';
 import { TransformReportPlaceholderToolbar } from './TransformReportPlaceholderToolbar';
 import { TransformReportPlaceholdersSection } from './TransformReportPlaceholdersSection';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByDataTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByDataTour(item, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByDataTour(node.props.children, dataTour));
-};
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
+import { clickElement, collectText, findByTour, findByType } from './componentElementTestHelpers';
 
 const group: TransformReportRuntimePlaceholderGroup = {
   value: '__UID__',
@@ -183,9 +147,9 @@ describe('TransformReportPlaceholderToolbar', () => {
     expect(text).toContain('运行时占位符 · 3');
     expect(text).toContain('仅显示前 1 条');
 
-    (findByDataTour(tree, 'transform-report-open-placeholder-fill-template')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-copy-placeholder-fill-template')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-copy-placeholders')[0].props.onClick as () => void)();
+    clickElement(findByTour(tree, 'transform-report-open-placeholder-fill-template')[0]);
+    clickElement(findByTour(tree, 'transform-report-copy-placeholder-fill-template')[0]);
+    clickElement(findByTour(tree, 'transform-report-copy-placeholders')[0]);
 
     expect(onOpenPlaceholderFillTemplate).toHaveBeenCalledTimes(1);
     expect(onCopyPlaceholderFillTemplate).toHaveBeenCalledTimes(1);
