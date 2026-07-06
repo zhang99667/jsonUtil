@@ -1,5 +1,6 @@
 import React from 'react';
 import type { JsonPathResultPreviewItem } from '../utils/jsonPathPanelPreviewItems';
+import { JsonPathPanelResultPreviewMessages } from './JsonPathPanelResultPreviewMessages';
 import { JsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewRow';
 
 interface JsonPathPanelResultPreviewProps {
@@ -47,16 +48,13 @@ export const JsonPathPanelResultPreview: React.FC<JsonPathPanelResultPreviewProp
                     onLocateStructureResult={onLocateStructureResult}
                 />
             ))}
-            {hiddenResultCount > 0 && (
-                <div className="px-2 py-1 text-[11px] text-gray-500">
-                    仅显示前 {maxVisibleResultCount} 项，复制按钮可导出已返回的 {copiedResultCount} 项
-                </div>
-            )}
-            {isResultLimited && (
-                <div className="px-2 py-1 text-[11px] text-amber-300">
-                    为保护性能，命中超过 {resultLimit} 项后已提前停止
-                </div>
-            )}
+            <JsonPathPanelResultPreviewMessages
+                hiddenResultCount={hiddenResultCount}
+                maxVisibleResultCount={maxVisibleResultCount}
+                copiedResultCount={copiedResultCount}
+                isResultLimited={isResultLimited}
+                resultLimit={resultLimit}
+            />
         </div>
     );
 };
