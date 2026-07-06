@@ -35,18 +35,16 @@ export const buildAppTemplateFillQualityDelta = ({
   autoExpandScheme,
   summaryModule,
 }: AppTemplateFillQualityDeltaInput): string => {
-  const beforeSnapshot = buildAppTemplateFillQualitySnapshot(
-    sourceBeforeApply,
-    autoExpandScheme,
-    summaryModule
-  );
-  const afterSnapshot = buildAppTemplateFillQualitySnapshot(
-    sourceAfterApply,
+  const buildSnapshot = (source: string) => buildAppTemplateFillQualitySnapshot(
+    source,
     autoExpandScheme,
     summaryModule
   );
 
-  return summaryModule.formatTransformQualitySnapshotDeltaText(beforeSnapshot, afterSnapshot);
+  return summaryModule.formatTransformQualitySnapshotDeltaText(
+    buildSnapshot(sourceBeforeApply),
+    buildSnapshot(sourceAfterApply)
+  );
 };
 
 export const tryBuildAppTemplateFillQualityDelta = (input: AppTemplateFillQualityDeltaInput): string => {
