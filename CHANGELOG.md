@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.508 (2026-07-06) - 组件与 Footer 测试夹具收敛
+### 🏗️ 架构与基础设施
+- **组件测试 Helper 复用**: `TransformReportPanelContent`、`TransformReportNextActionsPanel` 与 `AppFileDropOverlay` 测试复用统一 element-like helper，移除本地文本收集和节点查找样板
+- **Footer 标题 Fixture 去重**: 新增 `transformReportFooterActionTestFixture` 统一 footer action 测试标题矩阵，避免三处重复维护 14 字段复制标题对象
+
 ## v1.8.507 (2026-07-06) - PREVIEW 同步调度类型收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 调度类型复用**: 新增 `SchedulePreviewOutputSync` 统一 PREVIEW 同步任务调度函数签名，scheduler、change handler 与测试夹具复用同一类型边界，避免重复维护调度函数形状并保持同步时序逻辑不变
