@@ -8,6 +8,7 @@ import { appJsonPathMaintainabilityBudgets } from './maintainability-budget-app-
 import { appRecoveryMaintainabilityBudgets } from './maintainability-budget-app-recovery-rules.mjs';
 import { appShellMaintainabilityBudgets } from './maintainability-budget-app-shell-rules.mjs';
 import { appStatusMaintainabilityBudgets } from './maintainability-budget-app-status-rules.mjs';
+import { appTemplateFillMaintainabilityBudgets } from './maintainability-budget-app-template-fill-rules.mjs';
 import { appWorkflowMaintainabilityBudgets } from './maintainability-budget-app-workflow-rules.mjs';
 
 export const appMaintainabilityBudgets = [
@@ -21,5 +22,6 @@ export const appMaintainabilityBudgets = [
   ...appRecoveryMaintainabilityBudgets,
   ...appShellMaintainabilityBudgets,
   ...appStatusMaintainabilityBudgets,
+  ...appTemplateFillMaintainabilityBudgets,
   ...appWorkflowMaintainabilityBudgets,
 ];
