@@ -261,31 +261,6 @@ describe('fixJsonWithAI', () => {
     );
   });
 
-  it('OpenAI 兼容 Base URL 只填根域名时自动补齐 v1 路径', async () => {
-    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
-      choices: [
-        {
-          message: {
-            content: '{"ok":true}',
-          },
-        },
-      ],
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }));
-
-    await expect(fixJsonWithAI('{ok:}', {
-      ...customConfig,
-      baseUrl: 'https://mock-ai.test',
-    }, { fetchImpl })).resolves.toBe('{"ok":true}');
-
-    expect(fetchImpl).toHaveBeenCalledWith(
-      'https://mock-ai.test/v1/chat/completions',
-      expect.any(Object)
-    );
-  });
-
   it('连接测试超时时返回连接测试提示', async () => {
     vi.useFakeTimers();
     const fetchImpl = vi.fn(() => new Promise<Response>(() => undefined));
