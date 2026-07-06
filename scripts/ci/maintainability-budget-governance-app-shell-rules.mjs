@@ -25,4 +25,5 @@ export const governanceAppShellMaintainabilityBudgets = [
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-status-rules.mjs', 15, 'App 状态栏预算入口应只组合组件和 helper 子表'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-status-component-rules.mjs', 25, 'App 状态栏组件预算规则应独立维护展示组件预算'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-status-helper-rules.mjs', 25, 'App 状态栏 helper 预算规则应独立维护状态派生和类型契约预算'),
+  governanceAppShellBudget('scripts/ci/maintainability-budget-app-template-fill-rules.mjs', 15, '模板填充面板预算规则应只维护面板、纯模型和模型测试预算'),
 ];

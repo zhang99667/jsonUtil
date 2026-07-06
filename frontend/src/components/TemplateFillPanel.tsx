@@ -5,8 +5,14 @@ import { validateJson } from '../utils/transformations';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { TEMPLATE_FILL_STORAGE_KEY, loadTemplateFillConfig } from '../utils/appSettings';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
-import { formatByteSize, getDocumentStats } from '../utils/documentStats';
 import { safeSetStorageItem } from '../utils/storage';
+import {
+  buildPlaceholderTemplateSummary,
+  formatTemplateSizeLabel,
+  parsePlaceholderTemplateDraft,
+  updatePlaceholderReplacement,
+  type PlaceholderTemplateDetail,
+} from '../utils/templateFillPanelModel';
 import toast from 'react-hot-toast';
 
 interface TemplateFillPanelProps {
@@ -18,180 +24,6 @@ interface TemplateFillPanelProps {
   initialTemplateKey?: number;
   applyQualityDelta?: string;
 }
-
-const formatTemplateSizeLabel = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
-
-interface PlaceholderTemplateSummary {
-  total: number;
-  filled: number;
-  suggested: number;
-  pending: number;
-}
-
-interface PlaceholderTemplateSource {
-  sourcePath: string;
-  sourceLabel?: string;
-  sourceOriginalPreview?: string;
-}
-
-interface PlaceholderTemplateSuggestion {
-  replacement: string;
-  sourcePath: string;
-  sourceLabel?: string;
-  reason?: string;
-}
-
-interface PlaceholderTemplateDetail {
-  value: string;
-  replacement: string;
-  description?: string;
-  suggestion?: PlaceholderTemplateSuggestion;
-  sources: PlaceholderTemplateSource[];
-}
-
-interface PlaceholderTemplateDraft {
-  placeholders: Record<string, string>;
-  placeholderDetails: PlaceholderTemplateDetail[];
-}
-
-const PLACEHOLDER_FILL_TEMPLATE_KIND = 'json-helper-runtime-placeholder-fill-template';
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-const readString = (record: Record<string, unknown>, key: string): string | undefined => (
-  typeof record[key] === 'string' ? record[key] : undefined
-);
-
-const readPlaceholderSources = (value: unknown): PlaceholderTemplateSource[] => {
-  if (!Array.isArray(value)) return [];
-
-  return value.flatMap(source => {
-    if (!isRecord(source)) return [];
-
-    const sourcePath = readString(source, 'sourcePath');
-    if (!sourcePath) return [];
-
-    return [{
-      sourcePath,
-      ...(readString(source, 'sourceLabel') ? { sourceLabel: readString(source, 'sourceLabel') } : {}),
-      ...(readString(source, 'sourceOriginalPreview') ? { sourceOriginalPreview: readString(source, 'sourceOriginalPreview') } : {}),
-    }];
-  });
-};
-
-const readPlaceholderSuggestion = (value: unknown): PlaceholderTemplateSuggestion | undefined => {
-  if (!isRecord(value)) return undefined;
-
-  const replacement = readString(value, 'replacement');
-  const sourcePath = readString(value, 'sourcePath');
-  if (!replacement || !sourcePath) return undefined;
-
-  return {
-    replacement,
-    sourcePath,
-    ...(readString(value, 'sourceLabel') ? { sourceLabel: readString(value, 'sourceLabel') } : {}),
-    ...(readString(value, 'reason') ? { reason: readString(value, 'reason') } : {}),
-  };
-};
-
-const parsePlaceholderTemplateDraft = (templateText: string): PlaceholderTemplateDraft | null => {
-  if (!templateText.trim()) return null;
-
-  try {
-    const parsed = JSON.parse(templateText) as unknown;
-    if (!isRecord(parsed) || parsed.kind !== PLACEHOLDER_FILL_TEMPLATE_KIND) return null;
-    if (!isRecord(parsed.placeholders)) return null;
-
-    const placeholders = Object.fromEntries(
-      Object.entries(parsed.placeholders).filter((entry): entry is [string, string] => (
-        typeof entry[1] === 'string'
-      ))
-    );
-    const detailRows = Array.isArray(parsed.placeholderDetails)
-      ? parsed.placeholderDetails.flatMap(detail => {
-        if (!isRecord(detail)) return [];
-
-        const value = readString(detail, 'value');
-        if (!value) return [];
-
-        return [{
-          value,
-          replacement: readString(detail, 'replacement') ?? placeholders[value] ?? '',
-          ...(readString(detail, 'description') ? { description: readString(detail, 'description') } : {}),
-          ...(readPlaceholderSuggestion(detail.suggestion) ? { suggestion: readPlaceholderSuggestion(detail.suggestion) } : {}),
-          sources: readPlaceholderSources(detail.sources),
-        }];
-      })
-      : [];
-    const details = detailRows.length > 0
-      ? detailRows
-      : Object.entries(placeholders).map(([value, replacement]) => ({
-        value,
-        replacement,
-        sources: [],
-      }));
-
-    if (details.length === 0) return null;
-
-    return {
-      placeholders,
-      placeholderDetails: details,
-    };
-  } catch {
-    return null;
-  }
-};
-
-const buildPlaceholderTemplateSummary = (templateText: string): PlaceholderTemplateSummary | null => {
-  const draft = parsePlaceholderTemplateDraft(templateText);
-  if (!draft) return null;
-
-  const total = draft.placeholderDetails.length;
-  const filled = draft.placeholderDetails.filter(detail => detail.replacement.trim().length > 0).length;
-  const suggested = draft.placeholderDetails.filter(detail => Boolean(detail.suggestion)).length;
-
-  return {
-    total,
-    filled,
-    suggested,
-    pending: Math.max(total - filled, 0),
-  };
-};
-
-const updatePlaceholderReplacement = (
-  templateText: string,
-  placeholderValue: string,
-  replacement: string
-): string => {
-  const parsed = JSON.parse(templateText) as unknown;
-  if (!isRecord(parsed) || parsed.kind !== PLACEHOLDER_FILL_TEMPLATE_KIND) return templateText;
-  if (!isRecord(parsed.placeholders)) return templateText;
-
-  const placeholders = {
-    ...parsed.placeholders,
-    [placeholderValue]: replacement,
-  };
-  const placeholderDetails = Array.isArray(parsed.placeholderDetails)
-    ? parsed.placeholderDetails.map(detail => {
-      if (!isRecord(detail) || detail.value !== placeholderValue) return detail;
-      return {
-        ...detail,
-        replacement,
-      };
-    })
-    : parsed.placeholderDetails;
-
-  return JSON.stringify({
-    ...parsed,
-    placeholders,
-    ...(Array.isArray(placeholderDetails) ? { placeholderDetails } : {}),
-  }, null, 2);
-};
 
 export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   isOpen,
