@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.495 (2026-07-06) - PREVIEW 同步任务测试期望收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 同步测试降噪**: `appPreviewOutputSyncTestFixture` 补充同步任务期望输入 builder，`appPreviewOutputChangeTask.test` 复用同一份 request / refs / applyEffects 映射，测试断言聚焦调度契约
+
 ## v1.8.494 (2026-07-06) - 状态栏测试 helper 复用
 ### 🏗️ 架构与基础设施
 - **状态栏测试降噪**: `AppStatusBarController.test` 复用组件测试通用 `isElementLike` helper，移除本地重复 DOM-like 类型守卫，并同步收紧状态栏 controller 测试维护预算
