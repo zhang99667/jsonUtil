@@ -2,35 +2,35 @@ import type { CustomScrollbarMetricsInput } from './customScrollbar';
 
 export type CustomScrollbarOrientation = 'vertical' | 'horizontal';
 
-type CustomScrollbarContainer = Pick<
-  HTMLDivElement,
-  'scrollTop' | 'scrollLeft' | 'scrollHeight' | 'scrollWidth' | 'clientHeight' | 'clientWidth'
->;
+const CUSTOM_SCROLLBAR_AXIS_FIELDS = {
+  vertical: ['scrollTop', 'scrollHeight', 'clientHeight', 'pageY'],
+  horizontal: ['scrollLeft', 'scrollWidth', 'clientWidth', 'pageX'],
+} as const;
 
-type CustomScrollbarPointerEvent = Pick<MouseEvent, 'pageX' | 'pageY'>;
+type CustomScrollbarAxisFields = typeof CUSTOM_SCROLLBAR_AXIS_FIELDS[CustomScrollbarOrientation];
+type CustomScrollbarContainer = Pick<HTMLDivElement, CustomScrollbarAxisFields[0 | 1 | 2]>;
 
 export const readCustomScrollbarMetrics = (
   container: CustomScrollbarContainer,
   orientation: CustomScrollbarOrientation
 ): CustomScrollbarMetricsInput => {
-  const isVertical = orientation === 'vertical';
-
+  const [scrollPosField, scrollSizeField, clientSizeField] = CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation];
   return {
-    scrollPos: isVertical ? container.scrollTop : container.scrollLeft,
-    scrollSize: isVertical ? container.scrollHeight : container.scrollWidth,
-    clientSize: isVertical ? container.clientHeight : container.clientWidth,
+    scrollPos: container[scrollPosField],
+    scrollSize: container[scrollSizeField],
+    clientSize: container[clientSizeField],
   };
 };
 
 export const getCustomScrollbarPointerPos = (
-  event: CustomScrollbarPointerEvent,
+  event: Pick<MouseEvent, CustomScrollbarAxisFields[3]>,
   orientation: CustomScrollbarOrientation
-) => orientation === 'vertical' ? event.pageY : event.pageX;
+) => event[CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation][3]];
 
 export const setCustomScrollbarScrollPos = (
   container: Pick<HTMLDivElement, 'scrollTop' | 'scrollLeft'>,
   orientation: CustomScrollbarOrientation,
   scrollPos: number
 ) => {
-  container[orientation === 'vertical' ? 'scrollTop' : 'scrollLeft'] = scrollPos;
+  container[CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation][0]] = scrollPos;
 };
