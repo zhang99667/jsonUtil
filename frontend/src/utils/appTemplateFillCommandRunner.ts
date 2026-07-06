@@ -32,8 +32,7 @@ export const runAppTemplateFillCommand = async (
   effects: AppTemplateFillCommandEffects
 ) => {
   try {
-    const shouldBuildQualityDelta = isPlaceholderFillTemplateJson(templateJson);
-    const summaryModule = shouldBuildQualityDelta
+    const summaryModule = isPlaceholderFillTemplateJson(templateJson)
       ? await effects.loadSummaryModule()
       : null;
 
@@ -44,17 +43,16 @@ export const runAppTemplateFillCommand = async (
     }
 
     const merged = applyTemplate(sourceBeforeApply, templateJson);
-    if (summaryModule) {
-      effects.onSetTemplateApplyQualityDelta(buildAppTemplateFillQualityDelta({
+    const qualityDelta = summaryModule
+      ? buildAppTemplateFillQualityDelta({
         sourceBeforeApply,
         sourceAfterApply: merged,
         autoExpandScheme,
         summaryModule,
-      }));
-    } else {
-      effects.onSetTemplateApplyQualityDelta('');
-    }
+      })
+      : '';
 
+    effects.onSetTemplateApplyQualityDelta(qualityDelta);
     effects.onSetSourceText(merged);
     effects.setCurrentSourceText(merged);
     effects.onUpdateActiveFileContent(merged);
