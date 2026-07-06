@@ -34,6 +34,7 @@ import {
     initialJsonPathPanelQueryState,
     jsonPathPanelQueryStateReducer,
 } from '../utils/jsonPathPanelQueryState';
+import { buildJsonPathPanelUiState } from '../utils/jsonPathPanelUiState';
 
 const MAX_VISIBLE_QUERY_RESULTS = 100;
 const JSONPATH_ERROR_MESSAGE_ID = 'jsonpath-error-message';
@@ -413,28 +414,23 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         [queryItems]
     );
     const scenarioExamples = useMemo(() => getJsonPathScenarioExamples(jsonData), [jsonData]);
-    const hiddenResultCount = Math.max(queryItems.length - queryResultPreviewItems.length, 0);
-    const copyButtonLabel = isResultLimited ? '复制已返回结果' : '复制全部结果';
-    const copyPathValueButtonLabel = isResultLimited ? '复制已返回路径和值' : '复制路径和值';
-    const showEmptyResult = Boolean(emptyResultQuery) && !error && !isQuerying && totalResults === 0;
-    const showCancelledQuery = Boolean(cancelledQuery) && !error && !isQuerying && totalResults === 0;
-    const queryInputDescriptionId = error
-        ? JSONPATH_ERROR_MESSAGE_ID
-        : totalResults > 0 && queryRanges.length > 0
-            ? JSONPATH_RESULT_STATUS_ID
-            : undefined;
-    const favoriteToggleTitle = !normalizedQuery
-        ? '请输入 JSONPath 表达式或字段名后可收藏'
-        : isCurrentQueryFavorite
-            ? '取消收藏当前查询'
-            : '收藏当前查询';
-    const queryButtonTitle = (() => {
-        if (isDataPreparing) return '深度格式化仍在处理，请稍后查询';
-        if (isQuerying) return 'JSONPath 查询正在运行，可取消后重新查询';
-        if (!normalizedQuery) return '请输入 JSONPath 表达式或字段名后查询';
-        if (!jsonData.trim()) return '请先在 SOURCE 输入 JSON 数据';
-        return '执行 JSONPath 查询';
-    })();
+    const panelUiState = buildJsonPathPanelUiState({
+        normalizedQuery,
+        isCurrentQueryFavorite,
+        isResultLimited,
+        emptyResultQuery,
+        cancelledQuery,
+        error,
+        isQuerying,
+        totalResults,
+        navigableResultCount: queryRanges.length,
+        isDataPreparing,
+        hasJsonData: Boolean(jsonData.trim()),
+        queryItemsCount: queryItems.length,
+        previewItemsCount: queryResultPreviewItems.length,
+        errorMessageId: JSONPATH_ERROR_MESSAGE_ID,
+        resultStatusId: JSONPATH_RESULT_STATUS_ID,
+    });
 
     const fillAndRunQuery = (queryPath: string) => {
         setQuery(queryPath);
@@ -547,7 +543,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             placeholder="输入 JSONPath 表达式或字段名"
                             aria-label="JSONPath 表达式"
                             aria-invalid={Boolean(error)}
-                            aria-describedby={queryInputDescriptionId}
+                            aria-describedby={panelUiState.queryInputDescriptionId}
                             className="flex-1 bg-editor-bg text-gray-200 text-sm px-3 py-2 rounded border border-editor-border focus:border-emerald-500 focus:outline-none font-mono"
                         />
                         <button
@@ -559,8 +555,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                     ? 'bg-amber-500/15 border-amber-400 text-amber-300 hover:bg-amber-500/25'
                                     : 'bg-editor-bg border-editor-border text-gray-400 hover:text-amber-300 hover:border-amber-400'
                             }`}
-                            title={favoriteToggleTitle}
-                            aria-label={favoriteToggleTitle}
+                            title={panelUiState.favoriteToggleTitle}
+                            aria-label={panelUiState.favoriteToggleTitle}
                         >
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill={isCurrentQueryFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m11.48 3.5 2.47 5.02 5.54.8-4.01 3.91.95 5.52-4.95-2.6-4.95 2.6.95-5.52-4.01-3.91 5.54-.8 2.47-5.02Z" />
@@ -571,13 +567,13 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             onClick={() => handleQuery()}
                             disabled={isQuerying || isDataPreparing}
                             className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={queryButtonTitle}
+                            title={panelUiState.queryButtonTitle}
                             aria-describedby={JSONPATH_QUERY_BUTTON_DESCRIPTION_ID}
                         >
                             {isQuerying ? '查询中...' : '查询'}
                         </button>
                         <span id={JSONPATH_QUERY_BUTTON_DESCRIPTION_ID} className="sr-only">
-                            {queryButtonTitle}
+                            {panelUiState.queryButtonTitle}
                         </span>
                         {isQuerying && (
                             <button
@@ -591,7 +587,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                             </button>
                         )}
                     </div>
-                    {(isQuerying || showCancelledQuery) && (
+                    {(isQuerying || panelUiState.showCancelledQuery) && (
                         <div
                             data-tour="jsonpath-query-status"
                             role="status"
@@ -714,7 +710,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 )}
 
                 {/* 查询空状态 */}
-                {showEmptyResult && (
+                {panelUiState.showEmptyResult && (
                     <div
                         data-tour="jsonpath-empty"
                         role="status"
@@ -765,8 +761,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 onClick={copyQueryResults}
                                 disabled={isQuerying || queryValues.length === 0}
                                 className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={copyButtonLabel}
-                                aria-label={copyButtonLabel}
+                                title={panelUiState.copyButtonLabel}
+                                aria-label={panelUiState.copyButtonLabel}
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -777,8 +773,8 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 onClick={copyQueryResultPaths}
                                 disabled={isQuerying || queryItems.length === 0}
                                 className="p-1 text-gray-400 hover:text-white hover:bg-editor-hover rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={copyPathValueButtonLabel}
-                                aria-label={copyPathValueButtonLabel}
+                                title={panelUiState.copyPathValueButtonLabel}
+                                aria-label={panelUiState.copyPathValueButtonLabel}
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M8 4h8l4 4v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z" />
@@ -872,7 +868,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                                 )}
                             </div>
                         ))}
-                        {hiddenResultCount > 0 && (
+                        {panelUiState.hiddenResultCount > 0 && (
                             <div className="px-2 py-1 text-[11px] text-gray-500">
                                 仅显示前 {MAX_VISIBLE_QUERY_RESULTS} 项，复制按钮可导出已返回的 {queryValues.length} 项
                             </div>
