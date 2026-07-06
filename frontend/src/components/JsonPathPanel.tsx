@@ -5,6 +5,7 @@ import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { JsonPathPanelQueryInput } from './JsonPathPanelQueryInput';
 import { JsonPathPanelResultPreview } from './JsonPathPanelResultPreview';
 import { JsonPathPanelResultToolbar } from './JsonPathPanelResultToolbar';
+import { JsonPathPanelSavedQueries } from './JsonPathPanelSavedQueries';
 import { JsonPathPanelSuggestions } from './JsonPathPanelSuggestions';
 import type { HighlightRange } from '../types';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
@@ -400,6 +401,14 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         safeRemoveStorageItem(JSONPATH_HISTORY_STORAGE_KEY);
     };
 
+    const removeFavorite = (item: string) => {
+        setFavorites(prev => removeJsonPathListItem(prev, item));
+    };
+
+    const removeHistoryItem = (index: number) => {
+        setHistory(prev => prev.filter((_, i) => i !== index));
+    };
+
     const clearQueryInput = () => {
         setQuery('');
         resetQueryState();
@@ -542,44 +551,21 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                     onCancelQuery={handleCancelQuery}
                 />
 
-                {/* 收藏查询 */}
-                {favorites.length > 0 && (
-                    <div data-tour="jsonpath-favorites" className="mb-3 flex-shrink-0">
-                        <div className="text-xs text-gray-500 mb-2">常用收藏:</div>
-                        <div
-                            onWheel={handleNestedScrollWheel}
-                            className="space-y-1 max-h-24 overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:hidden"
-                        >
-                            {favorites.map(item => (
-                                <div key={item} className="relative group">
-                                    <button
-                                        data-tour="jsonpath-favorite-item"
-                                        onClick={() => fillAndRunQuery(item)}
-                                        className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-amber-100 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7 border border-amber-500/20"
-                                        title={`${item}\n点击填入并查询`}
-                                        aria-label={`填入并查询收藏：${item}`}
-                                    >
-                                        {item}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setFavorites(prev => removeJsonPathListItem(prev, item));
-                                        }}
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-all"
-                                        title={`移除收藏：${item}`}
-                                        aria-label={`移除收藏：${item}`}
-                                    >
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                <JsonPathPanelSavedQueries
+                    favorites={favorites}
+                    history={history}
+                    historyListRef={historyListRef}
+                    showHistoryScrollbar={showScrollbar}
+                    historyThumbHeight={thumbHeight}
+                    historyThumbTop={thumbTop}
+                    onSelectQuery={fillAndRunQuery}
+                    onRemoveFavorite={removeFavorite}
+                    onRemoveHistory={removeHistoryItem}
+                    onClearHistory={clearHistory}
+                    onHistoryScroll={handleScroll}
+                    onNestedWheel={handleNestedScrollWheel}
+                    onHistoryScrollbarMouseDown={handleScrollbarMouseDown}
+                />
 
                 <JsonPathPanelSuggestions
                     scenarioExamples={scenarioExamples}
@@ -657,71 +643,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                     onFocusResult={focusQueryResult}
                     onLocateStructureResult={locateStructureResult}
                 />
-
-                {/* 查询历史 */}
-                {history.length > 0 && (
-                    <div data-tour="jsonpath-history" className="border-t border-editor-border pt-2 mt-1 flex-shrink-0 relative group/history">
-                        <div className="flex items-center justify-between mb-2 flex-shrink-0">
-                            <div className="text-xs text-gray-500">查询历史:</div>
-                            <button
-                                onClick={clearHistory}
-                                className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-                                title="清空 JSONPath 查询历史"
-                                aria-label="清空 JSONPath 查询历史"
-                            >
-                                清空
-                            </button>
-                        </div>
-                        <div
-                            ref={historyListRef}
-                            onScroll={handleScroll}
-                            onWheel={handleNestedScrollWheel}
-                            className="max-h-28 overflow-y-auto overscroll-contain space-y-1 [&::-webkit-scrollbar]:hidden"
-                        >
-                            {history.map((item, idx) => (
-                                <div key={idx} className="relative group">
-                                    <button
-                                        data-tour="jsonpath-history-item"
-                                        onClick={() => fillAndRunQuery(item)}
-                                        className="w-full text-left text-xs px-2 py-1.5 bg-editor-bg text-gray-300 rounded hover:bg-editor-hover transition-colors font-mono truncate pr-7"
-                                        title={`${item}\n点击填入并查询`}
-                                        aria-label={`填入并查询历史记录：${item}`}
-                                    >
-                                        {item}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setHistory(prev => prev.filter((_, i) => i !== idx));
-                                        }}
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-editor-active opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-all"
-                                        title={`删除历史记录：${item}`}
-                                        aria-label={`删除历史记录：${item}`}
-                                    >
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* 自定义滚动条 */}
-                        {showScrollbar && (
-                            <div className="absolute right-0 top-[36px] bottom-0 w-[3px] z-10 opacity-0 group-hover/history:opacity-100 transition-opacity duration-200">
-                                <div
-                                    className="w-full bg-scrollbar-bg hover:bg-scrollbar-hover rounded-full cursor-pointer relative"
-                                    style={{
-                                        height: `${thumbHeight}%`,
-                                        top: `${thumbTop}%`
-                                    }}
-                                    onMouseDown={handleScrollbarMouseDown}
-                                />
-                            </div>
-                        )}
-                    </div>
-                )}
 
                 {/* 操作提示 */}
                 <div className="mt-3 text-xs text-gray-500 italic">
