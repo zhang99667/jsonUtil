@@ -6,13 +6,11 @@ import { showError, showSuccess } from '../utils/toast';
 
 const reactMocks = vi.hoisted(() => ({
   useCallback: vi.fn(),
-  useMemo: vi.fn(),
 }));
 
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
-  useMemo: reactMocks.useMemo,
 }));
 
 vi.mock('../utils/appTemplateFillCommandRunner', () => ({
@@ -45,7 +43,6 @@ describe('useAppTemplateFillCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-    reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
   });
 
   it('暴露模板目标错误', () => {
