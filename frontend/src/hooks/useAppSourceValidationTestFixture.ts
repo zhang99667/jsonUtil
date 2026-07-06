@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, vi } from 'vitest';
 import type { ValidationResult } from '../types';
 import { runAppSourceValidationRequest } from '../utils/appSourceValidationRequest';
-import { SOURCE_VALIDATION_DEBOUNCE_MS, useAppSourceValidation } from './useAppSourceValidation';
+import { SOURCE_VALIDATION_DEBOUNCE_MS } from '../utils/appSourceValidationScheduler';
+import { useAppSourceValidation } from './useAppSourceValidation';
 
 const mocks = vi.hoisted(() => ({
   useEffect: vi.fn(),

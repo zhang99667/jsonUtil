@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.558 (2026-07-06) - SOURCE 校验调度职责拆分
+### 🏗️ 架构与基础设施
+- **SOURCE 校验 Hook 瘦身**: 将防抖调度、空态即时校验和 cleanup 失效逻辑下沉到普通 util，hook 本体只保留 React ref/effect 接线，降低维护预算压力
+
 ## v1.8.557 (2026-07-06) - SOURCE 校验 Hook 测试夹具拆分
 ### 🏗️ 架构与基础设施
 - **SOURCE 校验测试分层**: 将 React hook mock、fake timer、cleanup 捕获和请求 mock reset 下沉到专用 fixture，测试文件聚焦防抖、空输入和 cleanup 行为断言
