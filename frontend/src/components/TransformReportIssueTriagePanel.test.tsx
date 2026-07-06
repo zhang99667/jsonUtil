@@ -1,34 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TransformReportIssueTriageItem } from '../utils/transformReportActionItems';
+import { clickElement, collectText, findByTour } from './componentElementTestHelpers';
 import { TransformReportIssueTriagePanel } from './TransformReportIssueTriagePanel';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByDataTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByDataTour(item, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByDataTour(node.props.children, dataTour));
-};
 
 const issueTriageItems: TransformReportIssueTriageItem[] = [{
   key: 'warning',
@@ -65,9 +38,9 @@ describe('TransformReportIssueTriagePanel', () => {
     expect(text).toContain('跳过 2');
     expect(text).toContain('占位符 1');
 
-    (findByDataTour(tree, 'transform-report-triage-all')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-triage-action-warning')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'transform-report-triage-action-placeholder')[0].props.onClick as () => void)();
+    clickElement(findByTour(tree, 'transform-report-triage-all')[0]);
+    clickElement(findByTour(tree, 'transform-report-triage-action-warning')[0]);
+    clickElement(findByTour(tree, 'transform-report-triage-action-placeholder')[0]);
 
     expect(onFilter).toHaveBeenCalledWith('待处理');
     expect(onRunIssueTriageAction).toHaveBeenCalledWith('filter-warning');

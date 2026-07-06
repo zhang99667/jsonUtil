@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.511 (2026-07-06) - 报告组件测试 Helper 迁移
+### 🏗️ 架构与基础设施
+- **报告组件测试去重**: `TransformReportRecordBadges`、`TransformReportEmptyState`、`TransformReportIssueTriagePanel` 与 `TransformReportCoverageItems` 测试复用统一 element-like helper，移除本地文本收集、节点查找和点击样板
+
 ## v1.8.510 (2026-07-06) - 组件与 Hook 测试样板收敛
 ### 🏗️ 架构与基础设施
 - **组件测试 Helper 迁移**: `AppUpdateToastContent` 与 ActionPanel 入口相关测试复用统一 element-like helper，移除本地文本收集、节点查找和点击样板
