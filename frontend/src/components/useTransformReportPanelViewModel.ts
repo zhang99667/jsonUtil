@@ -1,12 +1,10 @@
 import {
   useDeferredValue,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
 import {
   createInitialTransformReportCmdComparisonState,
-  resetTransformReportCmdComparisonState,
 } from '../utils/transformReportCmdComparisonController';
 import {
   buildTransformReportPanelDerivedModel,
@@ -19,6 +17,7 @@ import type {
   TransformReportPanelViewModel,
   TransformReportPanelViewModelInput,
 } from './TransformReportPanelViewModelTypes';
+import { useTransformReportPanelResetEffect } from './useTransformReportPanelResetEffect';
 
 export const useTransformReportPanelViewModel = ({
   isOpen,
@@ -35,11 +34,12 @@ export const useTransformReportPanelViewModel = ({
     activeContext ? buildTransformContextReport(activeContext) : null
   ), [activeContext]);
 
-  useEffect(() => {
-    setQuery('');
-    setCmdComparisonState(resetTransformReportCmdComparisonState());
-    setQualityBaseline(null);
-  }, [activeContext]);
+  useTransformReportPanelResetEffect({
+    activeContext,
+    setQuery,
+    setCmdComparisonState,
+    setQualityBaseline,
+  });
 
   const reportView = useMemo(() => (
     report ? buildTransformReportView(report, deferredQuery) : null
