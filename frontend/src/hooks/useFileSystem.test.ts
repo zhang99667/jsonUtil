@@ -17,19 +17,11 @@ vi.mock('react', async importOriginal => ({
   useState: reactMocks.useState,
 }));
 
-const toastMocks = vi.hoisted(() => {
-  const toast = vi.fn() as ReturnType<typeof vi.fn> & {
-    error: ReturnType<typeof vi.fn>;
-    success: ReturnType<typeof vi.fn>;
-  };
-  toast.error = vi.fn();
-  toast.success = vi.fn();
-  return { toast };
-});
-
-vi.mock('react-hot-toast', () => ({
-  default: toastMocks.toast,
+const toastMocks = vi.hoisted(() => ({
+  toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }),
 }));
+
+vi.mock('react-hot-toast', () => ({ default: toastMocks.toast }));
 
 const createFile = (id: string, content: string, mode = TransformMode.NONE): FileTab => ({
   id,
@@ -65,6 +57,17 @@ const mockReactState = (files: FileTab[], activeFileId: string) => {
   });
 };
 
+type HookInput = ReturnType<typeof createHookInput>;
+
+const expectSourceStateApplied = (input: HookInput, events: string[], content: string, mode?: TransformMode) => {
+  expect(input.onBeforeSourceWorkspaceChange).toHaveBeenCalledTimes(1);
+  expect(input.setInput).toHaveBeenCalledWith(content);
+  expect(input.inputRef.current).toBe(content);
+  if (mode === undefined) expect(input.setMode).not.toHaveBeenCalled();
+  else expect(input.setMode).toHaveBeenCalledWith(mode);
+  expect(events).toEqual(mode === undefined ? ['before', 'input'] : ['before', 'input', 'mode']);
+};
+
 describe('useFileSystem', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -85,11 +88,7 @@ describe('useFileSystem', () => {
     const fileSystem = useFileSystem(input);
     fileSystem.switchTab('file-2');
 
-    expect(input.onBeforeSourceWorkspaceChange).toHaveBeenCalledTimes(1);
-    expect(input.setInput).toHaveBeenCalledWith('{"b":2}');
-    expect(input.inputRef.current).toBe('{"b":2}');
-    expect(input.setMode).toHaveBeenCalledWith(TransformMode.DEEP_FORMAT);
-    expect(events).toEqual(['before', 'input', 'mode']);
+    expectSourceStateApplied(input, events, '{"b":2}', TransformMode.DEEP_FORMAT);
   });
 
   it('新建标签清空 SOURCE 和模式前先触发 before-change', () => {
@@ -101,11 +100,7 @@ describe('useFileSystem', () => {
     const fileSystem = useFileSystem(input);
     fileSystem.createNewTab();
 
-    expect(input.onBeforeSourceWorkspaceChange).toHaveBeenCalledTimes(1);
-    expect(input.setInput).toHaveBeenCalledWith('');
-    expect(input.inputRef.current).toBe('');
-    expect(input.setMode).toHaveBeenCalledWith(TransformMode.NONE);
-    expect(events).toEqual(['before', 'input', 'mode']);
+    expectSourceStateApplied(input, events, '', TransformMode.NONE);
   });
 
   it('保存 PREVIEW 到文件时先触发 before-change 再写回 SOURCE', async () => {
@@ -123,10 +118,6 @@ describe('useFileSystem', () => {
 
     expect(result).toBe(true);
     expect(writable.write).toHaveBeenCalledWith('{"preview":true}');
-    expect(input.onBeforeSourceWorkspaceChange).toHaveBeenCalledTimes(1);
-    expect(input.setInput).toHaveBeenCalledWith('{"preview":true}');
-    expect(input.inputRef.current).toBe('{"preview":true}');
-    expect(input.setMode).not.toHaveBeenCalled();
-    expect(events).toEqual(['before', 'input']);
+    expectSourceStateApplied(input, events, '{"preview":true}');
   });
 });

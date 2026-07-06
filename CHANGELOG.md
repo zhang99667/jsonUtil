@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.479 (2026-07-06) - 文件系统测试断言收敛
+### 🏗️ 架构与基础设施
+- **文件系统测试降噪**: `useFileSystem` 测试抽出本地 `expectSourceStateApplied` 断言 helper，统一校验 before-change、SOURCE 写入、mode 写入和事件顺序，并收紧对应测试预算
+
 ## v1.8.478 (2026-07-06) - 测试夹具与草稿规则降噪
 ### 🏗️ 架构与基础设施
 - **布局测试夹具收敛**: 抽出 `layoutKeyboardResizeTestHelper` 统一键盘事件 mock，`layoutKeyboardResize` 和 `useAppLayoutController` 测试不再重复手写 `preventDefault` 夹具
