@@ -2,11 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
   clearStoredJsonPathHistory,
-  loadJsonPathSavedQueryLists,
   saveJsonPathFavorites,
   saveJsonPathHistory,
 } from '../utils/jsonPathSavedQueryStorage';
-import { useJsonPathSavedQueryListStorageSync } from './useJsonPathSavedQueryListStorageSync';
+import { createJsonPathSavedQueryListStorageSyncTestHarness } from './useJsonPathSavedQueryListStorageSyncTestHarness';
 
 const reactMocks = vi.hoisted(() => ({ useEffect: vi.fn() }));
 
@@ -24,45 +23,22 @@ vi.mock('../utils/jsonPathSavedQueryStorage', async importOriginal => ({
 }));
 
 describe('useJsonPathSavedQueryListStorageSync', () => {
-  let backupImportedHandler: (() => void) | null = null;
-  let cleanup: (() => void) | undefined;
-
-  const useRenderSync = (overrides: Partial<Parameters<typeof useJsonPathSavedQueryListStorageSync>[0]> = {}) => useJsonPathSavedQueryListStorageSync({
-    history: [],
-    favorites: [],
-    onBackupImported: vi.fn(),
-    ...overrides,
-  });
+  const harness = createJsonPathSavedQueryListStorageSyncTestHarness(reactMocks);
 
   beforeEach(() => {
     vi.clearAllMocks();
-    backupImportedHandler = null;
-    cleanup = undefined;
-
-    vi.stubGlobal('window', {
-      addEventListener: vi.fn((eventName: string, handler: () => void) => {
-        if (eventName === APP_BACKUP_IMPORTED_EVENT) backupImportedHandler = handler;
-      }),
-      removeEventListener: vi.fn(),
-    });
-
-    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
-      const effectCleanup = effect();
-      if (typeof effectCleanup === 'function') cleanup = effectCleanup;
-      return effectCleanup;
-    });
-    vi.mocked(loadJsonPathSavedQueryLists).mockReturnValue({ history: ['$.importedHistory'], favorites: ['$.importedFavorite'] });
+    harness.reset();
   });
 
   it('持久化当前历史和收藏列表', () => {
-    useRenderSync({ history: ['$.history'], favorites: ['$.favorite'] });
+    harness.useRenderSync({ history: ['$.history'], favorites: ['$.favorite'] });
 
     expect(saveJsonPathHistory).toHaveBeenCalledWith(['$.history']);
     expect(saveJsonPathFavorites).toHaveBeenCalledWith(['$.favorite']);
   });
 
   it('空历史时清理历史存储项', () => {
-    useRenderSync({ history: [] });
+    harness.useRenderSync({ history: [] });
 
     expect(clearStoredJsonPathHistory).toHaveBeenCalledTimes(1);
     expect(saveJsonPathHistory).not.toHaveBeenCalled();
@@ -71,23 +47,24 @@ describe('useJsonPathSavedQueryListStorageSync', () => {
   it('配置备份导入后从存储刷新列表', () => {
     const onBackupImported = vi.fn();
 
-    useRenderSync({ onBackupImported }); backupImportedHandler?.();
+    harness.useRenderSync({ onBackupImported });
+    harness.triggerBackupImported();
 
     expect(onBackupImported).toHaveBeenCalledWith({ history: ['$.importedHistory'], favorites: ['$.importedFavorite'] });
   });
 
   it('卸载时移除备份导入监听', () => {
-    useRenderSync();
-    cleanup?.();
+    harness.useRenderSync();
+    harness.runCleanup();
 
-    expect(window.removeEventListener).toHaveBeenCalledWith(APP_BACKUP_IMPORTED_EVENT, backupImportedHandler);
+    expect(window.removeEventListener).toHaveBeenCalledWith(APP_BACKUP_IMPORTED_EVENT, harness.backupImportedHandler);
   });
 
   it('无 window 环境下不注册备份导入监听', () => {
     vi.unstubAllGlobals();
 
-    useRenderSync();
+    harness.useRenderSync();
 
-    expect(backupImportedHandler).toBeNull();
+    expect(harness.backupImportedHandler).toBeNull();
   });
 });
