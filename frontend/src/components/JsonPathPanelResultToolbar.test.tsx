@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { collectText, findByType } from './componentElementTestHelpers';
+import { findByType } from './componentElementTestHelpers';
 import { JsonPathPanelResultToolbar } from './JsonPathPanelResultToolbar';
 import { JsonPathPanelResultToolbarActionList } from './JsonPathPanelResultToolbarActionList';
+import { JsonPathPanelResultToolbarStatus } from './JsonPathPanelResultToolbarStatus';
 
 const renderToolbar = (
   overrides: Partial<Parameters<typeof JsonPathPanelResultToolbar>[0]> = {}
@@ -28,22 +29,24 @@ describe('JsonPathPanelResultToolbar', () => {
     expect(renderToolbar({ resultCount: 0 })).toBeNull();
   });
 
-  it('渲染结果状态并透传工具按钮参数', () => {
+  it('透传结果状态和工具按钮参数', () => {
     const callbacks = {
       onCopyValues: vi.fn(),
       onCopyPathValues: vi.fn(),
       onPrevious: vi.fn(),
       onNext: vi.fn(),
     };
-    const tree = renderToolbar({
-      isResultLimited: true,
-      resultLimit: 2,
-      ...callbacks,
-    });
+    const tree = renderToolbar({ isResultLimited: true, resultLimit: 2, ...callbacks });
+    const status = findByType(tree, JsonPathPanelResultToolbarStatus)[0];
     const actionList = findByType(tree, JsonPathPanelResultToolbarActionList)[0];
 
-    expect(collectText(tree)).toContain('2 / 3');
-    expect(collectText(tree)).toContain('命中超过 2，已提前停止');
+    expect(status.props).toMatchObject({
+      currentResultIndex: 1,
+      resultCount: 3,
+      isResultLimited: true,
+      resultLimit: 2,
+      resultStatusId: 'jsonpath-result-status',
+    });
     expect(actionList.props).toMatchObject({
       isQuerying: false,
       canCopyValues: true,
