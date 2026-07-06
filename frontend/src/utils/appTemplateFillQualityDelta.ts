@@ -48,3 +48,11 @@ export const buildAppTemplateFillQualityDelta = ({
 
   return summaryModule.formatTransformQualitySnapshotDeltaText(beforeSnapshot, afterSnapshot);
 };
+
+export const tryBuildAppTemplateFillQualityDelta = (input: AppTemplateFillQualityDeltaInput): string => {
+  try {
+    return buildAppTemplateFillQualityDelta(input);
+  } catch {
+    return '';
+  }
+};

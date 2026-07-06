@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { deepParseWithContext } from './transformations';
 import {
   buildAppTemplateFillQualityDelta,
+  tryBuildAppTemplateFillQualityDelta,
   type AppTemplateFillQualitySummaryModule,
 } from './appTemplateFillQualityDelta';
 
@@ -45,5 +46,19 @@ describe('appTemplateFillQualityDelta', () => {
     expect(summaryModule.buildTransformReportView).toHaveBeenCalledTimes(2);
     expect(summaryModule.buildTransformQualitySnapshot).toHaveBeenCalledTimes(2);
     expect(summaryModule.formatTransformQualitySnapshotDeltaText).toHaveBeenCalledTimes(1);
+  });
+
+  it('质量 delta 构建异常时返回空文本', () => {
+    const summaryModule = createSummaryModule();
+    vi.mocked(deepParseWithContext).mockImplementationOnce(() => {
+      throw new Error('parse failed');
+    });
+
+    expect(tryBuildAppTemplateFillQualityDelta({
+      sourceBeforeApply: '{"before":true}',
+      sourceAfterApply: '{"after":true}',
+      autoExpandScheme: true,
+      summaryModule,
+    })).toBe('');
   });
 });

@@ -8,7 +8,9 @@ import {
 } from './appTemplateFillCommandRunnerTestFixture';
 import {
   expectSourceChangedTemplateBlocked,
+  expectTemplateCommandQualityDeltaCleared,
   expectTemplateCommandFailure,
+  expectTemplateCommandSourceApplied,
   expectTemplateCommandSourceUntouched,
 } from './appTemplateFillCommandRunnerTestAssertions';
 
@@ -51,6 +53,19 @@ describe('appTemplateFillCommandRunner failures', () => {
 
     expect(effects.loadSummaryModule).not.toHaveBeenCalled();
     expectSourceChangedTemplateBlocked(effects);
+  });
+
+  it('质量 delta 构建失败时仍应用占位符模板', async () => {
+    const effects = createAppTemplateFillCommandEffects();
+    mocks.buildAppTemplateFillQualityDelta.mockImplementation(() => {
+      throw new Error('quality failed');
+    });
+    await runPlaceholderTemplateFillCommand(effects);
+
+    expectTemplateCommandQualityDeltaCleared(effects);
+    expectTemplateCommandSourceApplied(effects);
+    expect(effects.onShowError).not.toHaveBeenCalled();
+    expect(effects.onShowSuccess).toHaveBeenCalledWith('占位符已回填，质量对比暂不可用');
   });
 
   it.each([
