@@ -4,27 +4,7 @@ import {
   type ActionPanelToolIconId,
 } from '../utils/actionPanelToolGroupTypes';
 import { ActionPanelToolIcon } from './ActionPanelToolIcon';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (typeof node === 'string') return node;
-  if (typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (!isElementLike(node)) return '';
-  return collectText(node.props.children);
-};
+import { assertElementLike, collectText } from './componentElementTestHelpers';
 
 const TEXT_ICON_LABELS: Partial<Record<ActionPanelToolIconId, string>> = {
   escape: '\\n',
@@ -43,7 +23,7 @@ describe('ActionPanelToolIcon', () => {
     ACTION_PANEL_TOOL_ICON_IDS.forEach(iconId => {
       const icon = ActionPanelToolIcon({ iconId });
 
-      expect(isElementLike(icon)).toBe(true);
+      expect(assertElementLike(icon)).toBeTruthy();
     });
   });
 
@@ -62,10 +42,9 @@ describe('ActionPanelToolIcon', () => {
     svgIconIds.forEach(iconId => {
       const icon = ActionPanelToolIcon({ iconId });
 
-      expect(isElementLike(icon)).toBe(true);
-      if (!isElementLike(icon)) throw new Error('工具栏 SVG 图标应返回 React 元素');
-      expect(icon.type).toBe('svg');
-      expect(icon.props.children).toMatchObject({
+      const element = assertElementLike(icon, '工具栏 SVG 图标应返回 React 元素');
+      expect(element.type).toBe('svg');
+      expect(element.props.children).toMatchObject({
         type: 'path',
       });
     });

@@ -1,17 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AppPaneResizeHandle, AppSidebarResizeHandle } from './AppResizeHandles';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
+import { assertElementLike } from './componentElementTestHelpers';
 
 describe('AppResizeHandles', () => {
   it('侧栏隐藏时不渲染 resize handle', () => {
@@ -39,15 +28,14 @@ describe('AppResizeHandles', () => {
       onKeyDown,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('侧栏 resize handle 应返回 React 元素');
-    expect(tree.props.tourId).toBe('sidebar-resize-handle');
-    expect(tree.props.valueNow).toBe(322);
-    expect(tree.props.valueText).toBe('工具栏宽度 322 像素');
-    expect(tree.props.style).toEqual({ left: 319.6 });
-    expect(tree.props.className).toContain('bg-brand-primary');
-    expect(tree.props.onMouseDown).toBe(onMouseDown);
-    expect(tree.props.onKeyDown).toBe(onKeyDown);
+    const handle = assertElementLike(tree, '侧栏 resize handle 应返回 React 元素');
+    expect(handle.props.tourId).toBe('sidebar-resize-handle');
+    expect(handle.props.valueNow).toBe(322);
+    expect(handle.props.valueText).toBe('工具栏宽度 322 像素');
+    expect(handle.props.style).toEqual({ left: 319.6 });
+    expect(handle.props.className).toContain('bg-brand-primary');
+    expect(handle.props.onMouseDown).toBe(onMouseDown);
+    expect(handle.props.onKeyDown).toBe(onKeyDown);
   });
 
   it('分栏 resize handle 透传百分比 ARIA 和空闲样式', () => {
@@ -60,13 +48,12 @@ describe('AppResizeHandles', () => {
       onKeyDown: vi.fn(),
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('分栏 resize handle 应返回 React 元素');
-    expect(tree.props.tourId).toBe('editor-pane-resize-handle');
-    expect(tree.props.valueMin).toBe(25);
-    expect(tree.props.valueMax).toBe(75);
-    expect(tree.props.valueNow).toBe(42);
-    expect(tree.props.valueText).toBe('SOURCE 宽度 42%');
-    expect(tree.props.className).toContain('bg-editor-sidebar');
+    const handle = assertElementLike(tree, '分栏 resize handle 应返回 React 元素');
+    expect(handle.props.tourId).toBe('editor-pane-resize-handle');
+    expect(handle.props.valueMin).toBe(25);
+    expect(handle.props.valueMax).toBe(75);
+    expect(handle.props.valueNow).toBe(42);
+    expect(handle.props.valueText).toBe('SOURCE 宽度 42%');
+    expect(handle.props.className).toContain('bg-editor-sidebar');
   });
 });

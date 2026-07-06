@@ -1,17 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ActionPanelSectionTitle } from './ActionPanelSectionTitle';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
+import { assertElementLike } from './componentElementTestHelpers';
 
 describe('ActionPanelSectionTitle', () => {
   it('折叠态不占用列表标题空间', () => {
@@ -28,9 +17,8 @@ describe('ActionPanelSectionTitle', () => {
       isFirst: true,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelSectionTitle 应返回 React 元素');
-    expect(tree.props.children).toBe('预览 / 输出');
-    expect(tree.props.className).toContain('mt-2');
+    const title = assertElementLike(tree, 'ActionPanelSectionTitle 应返回 React 元素');
+    expect(title.props.children).toBe('预览 / 输出');
+    expect(title.props.className).toContain('mt-2');
   });
 });

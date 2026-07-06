@@ -3,7 +3,7 @@ import { TransformMode } from '../types';
 import type { ActionPanelEntryButtonState } from '../utils/actionPanelEntryButtonState';
 import { ActionPanelEntryButton } from './ActionPanelEntryButton';
 import { ActionPanelToolButton } from './ActionPanelToolButton';
-import { assertElementLike, type ElementLike } from './componentElementTestHelpers';
+import { assertElementLike, clickElement, type ElementLike } from './componentElementTestHelpers';
 
 const getButtonState = (node: ElementLike) => node.props.state as ActionPanelEntryButtonState;
 
@@ -45,10 +45,7 @@ describe('ActionPanelToolButton', () => {
       iconInnerClassName: 'text-blue-400',
     });
 
-    const handleClick = tree.props.onClick;
-    expect(typeof handleClick).toBe('function');
-    if (typeof handleClick !== 'function') throw new Error('工具按钮应透传点击回调');
-    handleClick();
+    clickElement(tree);
     expect(onClick).toHaveBeenCalledWith(TransformMode.FORMAT);
   });
 

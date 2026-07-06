@@ -2,19 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ActionPanelEntryButtonState } from '../utils/actionPanelEntryButtonState';
 import { ActionPanelEntryButton } from './ActionPanelEntryButton';
 import { ActionPanelPanelButton } from './ActionPanelPanelButton';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
+import { assertElementLike, clickElement, type ElementLike } from './componentElementTestHelpers';
 
 const getButtonState = (node: ElementLike) => node.props.state as ActionPanelEntryButtonState;
 
@@ -35,13 +23,12 @@ describe('ActionPanelPanelButton', () => {
     const onClick = vi.fn();
     const tree = renderButton({ onClick });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelPanelButton 应返回 React 元素');
-    expect(tree.type).toBe(ActionPanelEntryButton);
-    expect(tree.props.dataTour).toBe('json-tree-button');
-    expect(tree.props.isCollapsed).toBe(false);
-    expect(tree.props.label).toBe('结构导航');
-    const state = getButtonState(tree);
+    const button = assertElementLike(tree, 'ActionPanelPanelButton 应返回 React 元素');
+    expect(button.type).toBe(ActionPanelEntryButton);
+    expect(button.props.dataTour).toBe('json-tree-button');
+    expect(button.props.isCollapsed).toBe(false);
+    expect(button.props.label).toBe('结构导航');
+    const state = getButtonState(button);
     expect(state.entryProps).toMatchObject({
       isActive: true,
       title: undefined,
@@ -55,10 +42,7 @@ describe('ActionPanelPanelButton', () => {
       iconWrapperClassName: 'transition-colors text-cyan-300',
     });
 
-    const handleClick = tree.props.onClick;
-    expect(typeof handleClick).toBe('function');
-    if (typeof handleClick !== 'function') throw new Error('面板按钮应透传点击回调');
-    handleClick();
+    clickElement(button);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
@@ -68,12 +52,11 @@ describe('ActionPanelPanelButton', () => {
       isCollapsed: true,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelPanelButton 应返回 React 元素');
-    const state = getButtonState(tree);
+    const button = assertElementLike(tree, 'ActionPanelPanelButton 应返回 React 元素');
+    const state = getButtonState(button);
     expect(state.entryProps.ariaLabel).toBe('结构导航，未打开');
     expect(state.entryProps.title).toBe('结构导航');
-    expect(tree.props.isCollapsed).toBe(true);
+    expect(button.props.isCollapsed).toBe(true);
     expect(state.entryProps.badge).toBeUndefined();
   });
 });
