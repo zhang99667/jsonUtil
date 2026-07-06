@@ -1,29 +1,20 @@
 import { isPlaceholderFillTemplateJson } from './appWorkflowHelpers';
+import { buildAppTemplateFillCommandResult } from './appTemplateFillCommandBuildResult';
 import { commitAppTemplateFillCommandResult } from './appTemplateFillCommandResult';
-import { tryBuildAppTemplateFillQualityDelta } from './appTemplateFillQualityDelta';
 import type {
   AppTemplateFillCommandEffects,
   AppTemplateFillCommandInput,
 } from './appTemplateFillCommandRunnerTypes';
+import { abortTemplateFillIfSourceChanged } from './appTemplateFillCommandSourceGuard';
 import { loadAppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySummary';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
-import { applyTemplate } from './transformations';
-
-const abortTemplateFillIfSourceChanged = (sourceBeforeApply: string, effects: AppTemplateFillCommandEffects): boolean => {
-  if (effects.getCurrentSourceText() === sourceBeforeApply) return false;
-  effects.onSetTemplateApplyQualityDelta('');
-  effects.onShowError('内容已变化，请重新应用模板');
-  return true;
-};
 
 export const runAppTemplateFillCommand = async (
-  {
-    sourceBeforeApply,
-    templateJson,
-    autoExpandScheme,
-  }: AppTemplateFillCommandInput,
+  input: AppTemplateFillCommandInput,
   effects: AppTemplateFillCommandEffects
 ) => {
+  const { sourceBeforeApply, templateJson, autoExpandScheme } = input;
+
   try {
     if (abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
 
@@ -36,15 +27,12 @@ export const runAppTemplateFillCommand = async (
 
     if (shouldLoadSummary && abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
 
-    const merged = applyTemplate(sourceBeforeApply, templateJson);
-    const qualityDelta = summaryModule
-      ? tryBuildAppTemplateFillQualityDelta({
-        sourceBeforeApply,
-        sourceAfterApply: merged,
-        autoExpandScheme,
-        summaryModule,
-      })
-      : '';
+    const { merged, qualityDelta } = buildAppTemplateFillCommandResult({
+      sourceBeforeApply,
+      templateJson,
+      autoExpandScheme,
+      summaryModule,
+    });
 
     commitAppTemplateFillCommandResult({ effects, merged, shouldLoadSummary, qualityDelta });
   } catch (error: unknown) {
