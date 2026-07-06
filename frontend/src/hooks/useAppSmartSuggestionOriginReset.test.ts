@@ -15,7 +15,7 @@ const createInput = (
 ) => ({
   sourceText: 'baiduboxapp://v1/open',
   hasSmartSuggestion: true,
-    smartSuggestionOrigin: 'clipboard' as const,
+  smartSuggestionOrigin: 'clipboard' as const,
   smartSuggestionOriginTextRef: { current: 'baiduboxapp://v1/open' },
   onSetSmartSuggestionOrigin: vi.fn(),
   ...overrides,
@@ -27,17 +27,12 @@ describe('useAppSmartSuggestionOriginReset', () => {
     reactMocks.useEffect.mockImplementation((effect: () => void) => effect());
   });
 
-  it('没有智能建议来源时不清理来源状态', () => {
-    const input = createInput({ smartSuggestionOrigin: null });
-
-    useAppSmartSuggestionOriginReset(input);
-
-    expect(input.smartSuggestionOriginTextRef.current).toBe('baiduboxapp://v1/open');
-    expect(input.onSetSmartSuggestionOrigin).not.toHaveBeenCalled();
-  });
-
-  it('来源文本仍有智能建议时保留来源状态', () => {
-    const input = createInput();
+  it.each([
+    { name: '没有智能建议来源时', overrides: { smartSuggestionOrigin: null } },
+    { name: '来源文本仍有智能建议时', overrides: {} },
+    { name: '来源文本仅包含不可见字符差异时', overrides: { sourceText: '\uFEFFbaiduboxapp://v1/open\u200B' } },
+  ])('$name保留来源状态', ({ overrides }) => {
+    const input = createInput(overrides);
 
     useAppSmartSuggestionOriginReset(input);
 
