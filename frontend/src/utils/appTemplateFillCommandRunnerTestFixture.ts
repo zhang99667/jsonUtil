@@ -68,3 +68,8 @@ export const runTemplateFillCommand = (
   { sourceBeforeApply: '{"a":1}', templateJson, autoExpandScheme: true },
   effects
 );
+
+export const runPlaceholderTemplateFillCommand = (effects = createAppTemplateFillCommandEffects()) => {
+  mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
+  return runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
+};

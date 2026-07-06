@@ -3,9 +3,11 @@ import {
   createAppTemplateFillCommandEffects,
   getAppTemplateFillCommandRunnerMocks,
   resetAppTemplateFillCommandRunnerMocks,
+  runPlaceholderTemplateFillCommand,
   runTemplateFillCommand,
 } from './appTemplateFillCommandRunnerTestFixture';
 import {
+  expectSourceChangedTemplateBlocked,
   expectTemplateCommandFailure,
   expectTemplateCommandSourceUntouched,
 } from './appTemplateFillCommandRunnerTestAssertions';
@@ -20,11 +22,10 @@ describe('appTemplateFillCommandRunner failures', () => {
   it('质量摘要模块 chunk 失效时交给统一刷新恢复', async () => {
     const effects = createAppTemplateFillCommandEffects();
     const error = new TypeError('Failed to fetch dynamically imported module: /assets/transformSummary-old.js');
-    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
     mocks.dispatchChunkLoadRecoveryEvent.mockReturnValue(true);
     effects.loadSummaryModule.mockRejectedValue(error);
 
-    await runTemplateFillCommand(effects, '{"templateVersion":"1.0","placeholders":{}}');
+    await runPlaceholderTemplateFillCommand(effects);
 
     expect(mocks.dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
     expect(effects.onSetTemplateApplyQualityDelta).not.toHaveBeenCalled();
@@ -32,28 +33,24 @@ describe('appTemplateFillCommandRunner failures', () => {
   });
 
   it('占位符回填期间 SOURCE 已变化时阻止应用模板', async () => {
-    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
     const effects = createAppTemplateFillCommandEffects();
     effects.loadSummaryModule.mockImplementation(async () => {
       effects.currentSourceText = '{"changed":true}';
       return {} as never;
     });
 
-    await runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
+    await runPlaceholderTemplateFillCommand(effects);
 
-    expect(mocks.applyTemplate).not.toHaveBeenCalled();
-    expectTemplateCommandFailure(effects, '内容已变化，请重新应用模板');
+    expectSourceChangedTemplateBlocked(effects);
   });
 
   it('命令开始时 SOURCE 已变化则不加载质量摘要模块', async () => {
-    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
     const effects = createAppTemplateFillCommandEffects({ currentSourceText: '{"changed":true}' });
 
-    await runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
+    await runPlaceholderTemplateFillCommand(effects);
 
     expect(effects.loadSummaryModule).not.toHaveBeenCalled();
-    expect(mocks.applyTemplate).not.toHaveBeenCalled();
-    expectTemplateCommandFailure(effects, '内容已变化，请重新应用模板');
+    expectSourceChangedTemplateBlocked(effects);
   });
 
   it('模板应用失败时保留原始错误文案', async () => {
