@@ -33,14 +33,14 @@ describe('buildTransformReportPanelSectionModel', () => {
       isFilterPending: false,
       hasTemplateFillTarget: true,
       hasPlaceholderFillTemplate: true,
-      formatPlaceholderFillTitle: title => `ready:${title}`,
+      placeholderFillTemplateSummary: null,
       archivePackageTitle: '复制归档包',
       collaborationReportTitle: '复制协作报告',
       qualitySnapshotTitle: '复制质量快照',
     });
 
     expect(model).toMatchObject({
-      placeholderFillPanelTitle: 'ready:把运行时占位符回填模板填入模板填充面板',
+      placeholderFillPanelTitle: '把运行时占位符回填模板填入模板填充面板',
       canOpenPlaceholderFill: true,
       issuePriorityCount: 4,
       placeholderToolbarState: {
@@ -76,7 +76,7 @@ describe('buildTransformReportPanelSectionModel', () => {
       isFilterPending: true,
       hasTemplateFillTarget: true,
       hasPlaceholderFillTemplate: false,
-      formatPlaceholderFillTitle: title => title,
+      placeholderFillTemplateSummary: null,
       archivePackageTitle: '复制归档包',
       collaborationReportTitle: '复制协作报告',
       qualitySnapshotTitle: '复制质量快照',

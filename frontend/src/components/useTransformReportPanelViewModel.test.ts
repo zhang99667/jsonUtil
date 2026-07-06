@@ -26,7 +26,6 @@ const fixtures = vi.hoisted(() => ({
     qualitySnapshot: null,
     qualityBaselineDeltaText: '',
     copyTitles: {},
-    getPanelPlaceholderFillTemplateTitle: (title: string) => title,
   },
 }));
 

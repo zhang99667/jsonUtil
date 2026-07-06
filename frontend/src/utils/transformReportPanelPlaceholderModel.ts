@@ -1,4 +1,5 @@
 import type { TransformReportView } from './transformSummary';
+import { getPlaceholderFillTemplateTitle, type PlaceholderFillSummary } from './transformReportPlaceholderFillSummary';
 import { buildTransformReportPlaceholderToolbarState } from './transformReportPlaceholderToolbarState';
 import type { TransformReportPlaceholderToolbarState } from './transformReportPlaceholderToolbarState';
 
@@ -7,7 +8,7 @@ interface TransformReportPanelPlaceholderModelInput {
   isFilterPending: boolean;
   hasTemplateFillTarget: boolean;
   hasPlaceholderFillTemplate: boolean;
-  formatPlaceholderFillTitle: (readyTitle: string) => string;
+  placeholderFillTemplateSummary: PlaceholderFillSummary | null;
 }
 
 export interface TransformReportPanelPlaceholderModel {
@@ -21,9 +22,10 @@ export const buildTransformReportPanelPlaceholderModel = ({
   isFilterPending,
   hasTemplateFillTarget,
   hasPlaceholderFillTemplate,
-  formatPlaceholderFillTitle,
+  placeholderFillTemplateSummary,
 }: TransformReportPanelPlaceholderModelInput): TransformReportPanelPlaceholderModel => {
-  const placeholderFillPanelTitle = formatPlaceholderFillTitle('把运行时占位符回填模板填入模板填充面板');
+  const getTemplateFillTitle = (readyTitle: string): string => getPlaceholderFillTemplateTitle(readyTitle, hasPlaceholderFillTemplate, placeholderFillTemplateSummary, isFilterPending);
+  const placeholderFillPanelTitle = getTemplateFillTitle('把运行时占位符回填模板填入模板填充面板');
   const canOpenPlaceholderFill = Boolean(hasTemplateFillTarget && hasPlaceholderFillTemplate && !isFilterPending);
   const placeholderToolbarState = reportView ? buildTransformReportPlaceholderToolbarState({
     filteredPlaceholderCount: reportView.filteredPlaceholderCount,
@@ -31,7 +33,7 @@ export const buildTransformReportPanelPlaceholderModel = ({
     hasTemplateFillTarget,
     hasPlaceholderFillTemplate,
     isFilterPending,
-    formatTemplateFillTitle: formatPlaceholderFillTitle,
+    formatTemplateFillTitle: getTemplateFillTitle,
   }) : null;
 
   return {

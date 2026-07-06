@@ -14,18 +14,23 @@ describe('buildTransformReportPanelPlaceholderModel', () => {
       isFilterPending: false,
       hasTemplateFillTarget: true,
       hasPlaceholderFillTemplate: true,
-      formatPlaceholderFillTitle: title => `ready:${title}`,
+      placeholderFillTemplateSummary: {
+        total: 3,
+        filled: 1,
+        suggested: 1,
+        pending: 2,
+      },
     });
 
     expect(model).toMatchObject({
-      placeholderFillPanelTitle: 'ready:把运行时占位符回填模板填入模板填充面板',
+      placeholderFillPanelTitle: '把运行时占位符回填模板填入模板填充面板（已预填 1/3，候选 1，待补 2）',
       canOpenPlaceholderFill: true,
       placeholderToolbarState: {
         filteredPlaceholderCount: 2,
         isPlaceholderTruncated: true,
         canShowOpenTemplateFill: true,
         isPlaceholderFillTemplateDisabled: false,
-        openTemplateFillTitle: 'ready:把当前筛选下的运行时占位符回填模板填入模板填充面板',
+        openTemplateFillTitle: '把当前筛选下的运行时占位符回填模板填入模板填充面板（已预填 1/3，候选 1，待补 2）',
       },
     });
   });
@@ -36,7 +41,7 @@ describe('buildTransformReportPanelPlaceholderModel', () => {
       isFilterPending: true,
       hasTemplateFillTarget: true,
       hasPlaceholderFillTemplate: true,
-      formatPlaceholderFillTitle: title => title,
+      placeholderFillTemplateSummary: null,
     });
 
     expect(model).toMatchObject({

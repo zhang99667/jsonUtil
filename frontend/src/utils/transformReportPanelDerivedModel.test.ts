@@ -62,7 +62,7 @@ describe('transformReportPanelDerivedModel', () => {
     expect(model.copyTitles.fullReport).toBe('复制完整深度解析报告');
   });
 
-  it('集中派生复制可用性和占位符标题', () => {
+  it('集中派生复制可用性和占位符数据', () => {
     const model = buildTransformReportPanelDerivedModel(createInput({
       report: createReport(),
       reportView: createTransformReportView({
@@ -78,8 +78,7 @@ describe('transformReportPanelDerivedModel', () => {
     expect(model.hasCmdStructureCopyItems).toBe(true);
     expect(model.hasFocusedCmdStructureCopyItems).toBe(true);
     expect(model.copyTitles.cmdStructures).toBe('复制按当前筛选聚焦后的 cmdHandler 风格 CMD 结构');
-    expect(model.getPanelPlaceholderFillTemplateTitle('打开模板回填'))
-      .toBe('当前筛选没有可用的运行时占位符回填模板');
+    expect(model.placeholderFillTemplateJsonText).toBe('');
   });
 
   it('保留质量基线 delta 对复制标题的影响', () => {
