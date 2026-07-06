@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.538 (2026-07-06) - ActionPanel 滚动条 Hook 收敛
+### 🏗️ 架构与基础设施
+- **工具栏滚动条复用通用 Hook**: `useActionPanelScrollbar` 改为适配 `useCustomScrollbar`，删除专用滚动计算和 DOM 读取 helper，并保留滚动时引导刷新调度与初始尺寸读取测试
+
 ## v1.8.537 (2026-07-06) - 深度解析交互测试 Helper 复用
 ### 🏗️ 架构与基础设施
 - **深度解析交互测试去样板**: CMD 对比、记录头部、总览指标、未展开线索和 Top 分布测试复用共享 element-like、文本收集、data-tour 查找与点击 helper，清理重复遍历逻辑和 onClick cast
