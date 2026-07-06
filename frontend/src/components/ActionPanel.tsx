@@ -71,9 +71,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     containerRef,
     handleScroll,
     handleScrollbarMouseDown,
-    showScrollbar,
-    thumbHeight,
-    thumbTop,
+    scrollbarViewState,
   } = useActionPanelScrollbar({
     isCollapsed,
     onScrollFrame: refreshTour,
@@ -153,9 +151,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       </div>
 
       <ActionPanelScrollbar
-        showScrollbar={showScrollbar}
-        thumbHeight={thumbHeight}
-        thumbTop={thumbTop}
+        {...scrollbarViewState}
         onMouseDown={handleScrollbarMouseDown}
       />
     </div>

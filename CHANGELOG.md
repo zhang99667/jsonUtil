@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.529 (2026-07-06) - ActionPanel 滚动条状态收敛
+### 🏗️ 架构与基础设施
+- **滚动条视图状态单源化**: `ActionPanel` 自定义滚动条的展示、thumb 高度和位置统一由纯函数派生，hook 与组件只传递单个 view state，保留原显示阈值、拖拽公式和刷新时机
+
 ## v1.8.528 (2026-07-06) - 编辑器组件测试 Fixture 复用
 ### 🏗️ 架构与基础设施
 - **编辑区测试样板收敛**: SOURCE/PREVIEW 编辑器与 Pane 测试复用统一 element-like helper 和编辑器 props fixture，移除本地重复类型守卫与 UI 状态夹具

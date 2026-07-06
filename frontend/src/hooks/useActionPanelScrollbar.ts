@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouse
 import {
   EMPTY_ACTION_PANEL_SCROLL_STATE,
   getActionPanelDragScrollTop,
-  getActionPanelScrollbarThumbState,
+  getActionPanelScrollbarViewState,
 } from '../utils/actionPanelScrollbar';
 import { readActionPanelScrollState } from '../utils/actionPanelScrollbarDom';
 import { getCustomScrollbarPointerPos, setCustomScrollbarScrollPos } from '../utils/customScrollbarDom';
@@ -85,7 +85,6 @@ export const useActionPanelScrollbar = ({
     containerRef,
     handleScroll,
     handleScrollbarMouseDown,
-    showScrollbar: scrollState.scrollHeight > scrollState.clientHeight,
-    ...getActionPanelScrollbarThumbState(scrollState),
+    scrollbarViewState: getActionPanelScrollbarViewState(scrollState),
   };
 };

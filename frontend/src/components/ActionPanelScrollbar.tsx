@@ -1,9 +1,7 @@
 import React from 'react';
+import type { ActionPanelScrollbarViewState } from '../utils/actionPanelScrollbar';
 
-interface ActionPanelScrollbarProps {
-  showScrollbar: boolean;
-  thumbHeight: number;
-  thumbTop: number;
+interface ActionPanelScrollbarProps extends ActionPanelScrollbarViewState {
   onMouseDown: (event: React.MouseEvent<HTMLDivElement>) => void;
 }
 

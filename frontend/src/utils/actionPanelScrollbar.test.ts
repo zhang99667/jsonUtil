@@ -1,36 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import {
   getActionPanelDragScrollTop,
-  getActionPanelScrollbarThumbState,
+  getActionPanelScrollbarViewState,
 } from './actionPanelScrollbar';
 
 describe('actionPanelScrollbar', () => {
-  it('按容器滚动比例计算自定义滚动条 thumb', () => {
-    expect(getActionPanelScrollbarThumbState({
+  it('按容器滚动比例计算自定义滚动条展示状态', () => {
+    expect(getActionPanelScrollbarViewState({
       scrollTop: 250,
       scrollHeight: 1000,
       clientHeight: 250,
     })).toEqual({
+      showScrollbar: true,
       thumbHeight: 25,
       thumbTop: 25,
     });
   });
 
   it('容器尺寸无效时返回空 thumb 状态', () => {
-    expect(getActionPanelScrollbarThumbState({
+    expect(getActionPanelScrollbarViewState({
       scrollTop: 0,
       scrollHeight: 0,
       clientHeight: 250,
     })).toEqual({
+      showScrollbar: false,
       thumbHeight: 0,
       thumbTop: 0,
     });
 
-    expect(getActionPanelScrollbarThumbState({
+    expect(getActionPanelScrollbarViewState({
       scrollTop: 0,
       scrollHeight: 1000,
       clientHeight: 0,
     })).toEqual({
+      showScrollbar: true,
       thumbHeight: 0,
       thumbTop: 0,
     });

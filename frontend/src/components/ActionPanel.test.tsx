@@ -28,9 +28,7 @@ vi.mock('../hooks/useActionPanelScrollbar', () => ({
     containerRef: { current: null },
     handleScroll: mocks.handleScroll,
     handleScrollbarMouseDown: mocks.handleScrollbarMouseDown,
-    showScrollbar: false,
-    thumbHeight: 0,
-    thumbTop: 0,
+    scrollbarViewState: { showScrollbar: false, thumbHeight: 0, thumbTop: 0 },
   }),
 }));
 

@@ -12,21 +12,25 @@ export const EMPTY_ACTION_PANEL_SCROLL_STATE: ActionPanelScrollState = {
   clientHeight: 0,
 };
 
-export interface ActionPanelScrollbarThumbState {
+export interface ActionPanelScrollbarViewState {
+  showScrollbar: boolean;
   thumbHeight: number;
   thumbTop: number;
 }
 
-export const getActionPanelScrollbarThumbState = ({
+export const getActionPanelScrollbarViewState = ({
   scrollTop,
   scrollHeight,
   clientHeight,
-}: ActionPanelScrollState): ActionPanelScrollbarThumbState => {
+}: ActionPanelScrollState): ActionPanelScrollbarViewState => {
+  const showScrollbar = scrollHeight > clientHeight;
+
   if (scrollHeight <= 0 || clientHeight <= 0) {
-    return { thumbHeight: 0, thumbTop: 0 };
+    return { showScrollbar, thumbHeight: 0, thumbTop: 0 };
   }
 
   return {
+    showScrollbar,
     thumbHeight: (clientHeight / scrollHeight) * 100,
     thumbTop: (scrollTop / scrollHeight) * 100,
   };
