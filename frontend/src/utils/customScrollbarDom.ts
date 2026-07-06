@@ -3,34 +3,33 @@ import type { CustomScrollbarMetricsInput } from './customScrollbar';
 export type CustomScrollbarOrientation = 'vertical' | 'horizontal';
 
 const CUSTOM_SCROLLBAR_AXIS_FIELDS = {
-  vertical: ['scrollTop', 'scrollHeight', 'clientHeight', 'pageY'],
-  horizontal: ['scrollLeft', 'scrollWidth', 'clientWidth', 'pageX'],
+  vertical: { scrollPos: 'scrollTop', scrollSize: 'scrollHeight', clientSize: 'clientHeight', pointerPos: 'pageY' },
+  horizontal: { scrollPos: 'scrollLeft', scrollSize: 'scrollWidth', clientSize: 'clientWidth', pointerPos: 'pageX' },
 } as const;
 
 type CustomScrollbarAxisFields<Orientation extends CustomScrollbarOrientation> = typeof CUSTOM_SCROLLBAR_AXIS_FIELDS[Orientation];
-type CustomScrollbarContainer<Orientation extends CustomScrollbarOrientation> = Pick<HTMLDivElement, CustomScrollbarAxisFields<Orientation>[0 | 1 | 2]>;
 
 export const readCustomScrollbarMetrics = <Orientation extends CustomScrollbarOrientation>(
-  container: CustomScrollbarContainer<Orientation>,
+  container: Pick<HTMLDivElement, CustomScrollbarAxisFields<Orientation>['scrollPos' | 'scrollSize' | 'clientSize']>,
   orientation: Orientation
 ): CustomScrollbarMetricsInput => {
-  const [scrollPosField, scrollSizeField, clientSizeField] = CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation];
+  const { scrollPos, scrollSize, clientSize } = CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation];
   return {
-    scrollPos: container[scrollPosField],
-    scrollSize: container[scrollSizeField],
-    clientSize: container[clientSizeField],
+    scrollPos: container[scrollPos],
+    scrollSize: container[scrollSize],
+    clientSize: container[clientSize],
   };
 };
 
 export const getCustomScrollbarPointerPos = <Orientation extends CustomScrollbarOrientation>(
-  event: Pick<MouseEvent, CustomScrollbarAxisFields<Orientation>[3]>,
+  event: Pick<MouseEvent, CustomScrollbarAxisFields<Orientation>['pointerPos']>,
   orientation: Orientation
-) => event[CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation][3]];
+) => event[CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation].pointerPos];
 
-export const setCustomScrollbarScrollPos = (
-  container: Pick<HTMLDivElement, 'scrollTop' | 'scrollLeft'>,
-  orientation: CustomScrollbarOrientation,
+export const setCustomScrollbarScrollPos = <Orientation extends CustomScrollbarOrientation>(
+  container: Pick<HTMLDivElement, CustomScrollbarAxisFields<Orientation>['scrollPos']>,
+  orientation: Orientation,
   scrollPos: number
 ) => {
-  container[CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation][0]] = scrollPos;
+  container[CUSTOM_SCROLLBAR_AXIS_FIELDS[orientation].scrollPos] = scrollPos;
 };
