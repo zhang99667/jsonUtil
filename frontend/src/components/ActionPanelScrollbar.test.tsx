@@ -1,18 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ActionPanelScrollbar } from './ActionPanelScrollbar';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
+import { assertElementLike } from './componentElementTestHelpers';
 
 describe('ActionPanelScrollbar', () => {
   it('隐藏时不渲染滚动条壳', () => {
@@ -33,11 +21,8 @@ describe('ActionPanelScrollbar', () => {
       onMouseDown,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelScrollbar 应返回 React 元素');
-    const thumb = tree.props.children;
-    expect(isElementLike(thumb)).toBe(true);
-    if (!isElementLike(thumb)) throw new Error('滚动条 thumb 应返回 React 元素');
+    const scrollbar = assertElementLike(tree, 'ActionPanelScrollbar 应返回 React 元素');
+    const thumb = assertElementLike(scrollbar.props.children, '滚动条 thumb 应返回 React 元素');
     expect(thumb.props.style).toEqual({ height: '36%', top: '24%' });
     expect(thumb.props.onMouseDown).toBe(onMouseDown);
   });

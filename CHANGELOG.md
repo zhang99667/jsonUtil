@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.513 (2026-07-06) - ActionPanel 与工作区测试 Helper 迁移
+### 🏗️ 架构与基础设施
+- **ActionPanel 测试去重**: 按钮 badge、面板按钮、工具按钮、工具图标、分组标题与滚动条测试复用统一 element-like helper，移除本地元素守卫和文本收集样板
+- **工作区测试去重**: Resize 句柄、捕获层和 Toast 宿主测试复用统一元素断言 helper，减少组件测试里的重复类型守卫逻辑
+
 ## v1.8.512 (2026-07-06) - 状态栏与报告子组件测试 Helper 迁移
 ### 🏗️ 架构与基础设施
 - **状态栏测试去重**: `StatusBarVersionBadge`、`StatusBarSourceValidationBadge`、`StatusBarSaveStatusBadge` 与 `StatusBarActiveFileBadge` 测试复用统一 element-like helper，移除本地元素守卫和文本收集样板
