@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.512 (2026-07-06) - 状态栏与报告子组件测试 Helper 迁移
+### 🏗️ 架构与基础设施
+- **状态栏测试去重**: `StatusBarVersionBadge`、`StatusBarSourceValidationBadge`、`StatusBarSaveStatusBadge` 与 `StatusBarActiveFileBadge` 测试复用统一 element-like helper，移除本地元素守卫和文本收集样板
+- **报告子组件测试去重**: Scheme 警告、CMD 摘要、CMD Schema 行、路径操作和占位符操作测试复用统一文本收集、`data-tour` 查找与点击 helper，减少重复遍历逻辑
+
 ## v1.8.511 (2026-07-06) - 报告组件测试 Helper 迁移
 ### 🏗️ 架构与基础设施
 - **报告组件测试去重**: `TransformReportRecordBadges`、`TransformReportEmptyState`、`TransformReportIssueTriagePanel` 与 `TransformReportCoverageItems` 测试复用统一 element-like helper，移除本地文本收集、节点查找和点击样板
