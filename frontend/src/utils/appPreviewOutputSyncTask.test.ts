@@ -15,17 +15,23 @@ vi.mock('./appPreviewOutputSyncResult', () => ({
 }));
 
 const createTaskInput = () => ({
-  previewText: '{"a":2}',
-  files: [],
-  activeFileId: null,
-  mode: TransformMode.FORMAT,
-  inputRef: { current: '{"a":1}' },
-  fallbackContextRef: { current: null as TransformContext | null },
-  pendingOutputValue: { current: '' },
-  validateJsonMaybeAsync: vi.fn(),
-  setPreviewValidation: vi.fn(),
-  onSetInput: vi.fn(),
-  onUpdateActiveFileContent: vi.fn(),
+  request: {
+    previewText: '{"a":2}',
+    files: [],
+    activeFileId: null,
+    mode: TransformMode.FORMAT,
+    validateJsonMaybeAsync: vi.fn(),
+  },
+  refs: {
+    inputRef: { current: '{"a":1}' },
+    fallbackContextRef: { current: null as TransformContext | null },
+    pendingOutputValue: { current: '' },
+  },
+  applyEffects: {
+    setPreviewValidation: vi.fn(),
+    onSetInput: vi.fn(),
+    onUpdateActiveFileContent: vi.fn(),
+  },
 });
 
 describe('createAppPreviewOutputSyncTask', () => {
@@ -40,8 +46,8 @@ describe('createAppPreviewOutputSyncTask', () => {
     const fallbackContext = { timestamp: 100 } as TransformContext;
     const task = createAppPreviewOutputSyncTask(input);
 
-    input.inputRef.current = '{"latest":true}';
-    input.fallbackContextRef.current = fallbackContext;
+    input.refs.inputRef.current = '{"latest":true}';
+    input.refs.fallbackContextRef.current = fallbackContext;
 
     await expect(task(() => true)).resolves.toBe(true);
 
@@ -51,9 +57,9 @@ describe('createAppPreviewOutputSyncTask', () => {
     }));
     expect(applyAppPreviewOutputSyncResult).toHaveBeenCalledWith(expect.objectContaining({
       syncResult: syncedResult,
-      previewText: input.previewText,
-      inputRef: input.inputRef,
-      pendingOutputValue: input.pendingOutputValue,
+      previewText: input.request.previewText,
+      inputRef: input.refs.inputRef,
+      pendingOutputValue: input.refs.pendingOutputValue,
     }));
   });
 
