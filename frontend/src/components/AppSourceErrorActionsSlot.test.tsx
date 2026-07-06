@@ -1,19 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AppSourceErrorActionsSlot } from './AppSourceErrorActionsSlot';
+import { assertElementLike } from './componentElementTestHelpers';
 import { SourceEditorErrorActions } from './SourceEditorErrorActions';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
 
 describe('AppSourceErrorActionsSlot', () => {
   it('SOURCE 有内容且校验无效时装配 AI 修复按钮', () => {
@@ -26,10 +14,9 @@ describe('AppSourceErrorActionsSlot', () => {
       onRepair,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('AppSourceErrorActionsSlot 应返回 React 元素');
-    expect(tree.type).toBe(SourceEditorErrorActions);
-    expect(tree.props).toMatchObject({
+    const root = assertElementLike(tree, 'AppSourceErrorActionsSlot 应返回 React 元素');
+    expect(root.type).toBe(SourceEditorErrorActions);
+    expect(root.props).toMatchObject({
       repairTitle: '使用 AI 修复 SOURCE JSON',
       isProcessing: true,
       onRepair,
