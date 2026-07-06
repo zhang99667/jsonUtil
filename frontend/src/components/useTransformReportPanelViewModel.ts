@@ -3,46 +3,22 @@ import {
   useEffect,
   useMemo,
   useState,
-  type Dispatch,
-  type SetStateAction,
 } from 'react';
-import type { TransformContext } from '../types';
 import {
   createInitialTransformReportCmdComparisonState,
   resetTransformReportCmdComparisonState,
-  type TransformReportCmdComparisonState,
 } from '../utils/transformReportCmdComparisonController';
-import type { TransformReportQualityBaseline } from '../utils/transformReportPanelCopyWorkflow';
 import {
   buildTransformReportPanelDerivedModel,
-  type TransformReportPanelDerivedModel,
 } from '../utils/transformReportPanelDerivedModel';
 import {
   buildTransformContextReport,
   buildTransformReportView,
-  type TransformContextReport,
-  type TransformReportView,
 } from '../utils/transformSummary';
-
-interface TransformReportPanelViewModelInput {
-  isOpen: boolean;
-  context: TransformContext | null;
-}
-
-export interface TransformReportPanelViewModel extends TransformReportPanelDerivedModel {
-  activeContext: TransformContext | null;
-  query: string;
-  setQuery: Dispatch<SetStateAction<string>>;
-  cmdComparisonState: TransformReportCmdComparisonState;
-  setCmdComparisonState: Dispatch<SetStateAction<TransformReportCmdComparisonState>>;
-  qualityBaseline: TransformReportQualityBaseline | null;
-  setQualityBaseline: Dispatch<SetStateAction<TransformReportQualityBaseline | null>>;
-  deferredQuery: string;
-  isFilterPending: boolean;
-  report: TransformContextReport | null;
-  reportView: TransformReportView | null;
-  fullReportView: TransformReportView | null;
-}
+import type {
+  TransformReportPanelViewModel,
+  TransformReportPanelViewModelInput,
+} from './TransformReportPanelViewModelTypes';
 
 export const useTransformReportPanelViewModel = ({
   isOpen,
@@ -50,7 +26,7 @@ export const useTransformReportPanelViewModel = ({
 }: TransformReportPanelViewModelInput): TransformReportPanelViewModel => {
   const [query, setQuery] = useState('');
   const [cmdComparisonState, setCmdComparisonState] = useState(createInitialTransformReportCmdComparisonState);
-  const [qualityBaseline, setQualityBaseline] = useState<TransformReportQualityBaseline | null>(null);
+  const [qualityBaseline, setQualityBaseline] = useState<TransformReportPanelViewModel['qualityBaseline']>(null);
   const deferredQuery = useDeferredValue(query);
   const isFilterPending = query !== deferredQuery;
   const activeContext = isOpen ? context : null;
