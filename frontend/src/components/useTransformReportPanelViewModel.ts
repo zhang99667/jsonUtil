@@ -62,6 +62,7 @@ export const useTransformReportPanelViewModel = ({
   useEffect(() => {
     setQuery('');
     setCmdComparisonState(resetTransformReportCmdComparisonState());
+    setQualityBaseline(null);
   }, [activeContext]);
 
   const reportView = useMemo(() => (

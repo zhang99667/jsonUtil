@@ -126,6 +126,7 @@ describe('useTransformReportPanelViewModel', () => {
       ignoreExtraPaths: false,
       recordPath: null,
     });
+    expect(reactMocks.setQualityBaseline).toHaveBeenCalledWith(null);
     expect(result.report).toBeNull();
   });
 
@@ -139,5 +140,6 @@ describe('useTransformReportPanelViewModel', () => {
     expect(firstContext).not.toBe(nextContext);
     expect(reactMocks.useEffect).toHaveBeenNthCalledWith(1, expect.any(Function), [firstContext]);
     expect(reactMocks.useEffect).toHaveBeenNthCalledWith(2, expect.any(Function), [nextContext]);
+    expect(reactMocks.setQualityBaseline).toHaveBeenCalledTimes(2);
   });
 });

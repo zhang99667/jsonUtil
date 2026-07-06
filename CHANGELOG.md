@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.546 (2026-07-06) - 深度解析质量基线重置
+### 🐛 Bug 修复
+- **质量基线防串用**: 深度解析面板切换报告上下文时同步清空临时质量基线，避免旧报告的质量快照继续参与新报告对比和复制
+
 ## v1.8.545 (2026-07-06) - ActionPanel 滚动条 Props 收敛
 ### 🏗️ 架构与基础设施
 - **滚动条适配层收口**: `useActionPanelScrollbar` 直接返回 `ActionPanelScrollbar` 所需 props，`ActionPanel` 不再手动拼接 view state 和拖拽回调，减少组件层适配样板
