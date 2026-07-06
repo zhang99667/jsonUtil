@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import type { ValidationResult } from '../types';
 import {
   createAppTemplateFillCommandEffects,
@@ -24,11 +24,11 @@ export const useAppTemplateFillCommand = ({
   onUpdateActiveFileContent,
   onSetTemplateApplyQualityDelta,
 }: UseAppTemplateFillCommandInput) => {
-  const templateTargetError = useMemo(() => getAppTemplateFillTargetError({
+  const templateTargetError = getAppTemplateFillTargetError({
     isTemplatePanelOpen,
     sourceText,
     validation,
-  }), [isTemplatePanelOpen, sourceText, validation]);
+  });
 
   const handleApplyTemplate = useCallback((templateJson: string) => runAppTemplateFillCommand({
     autoExpandScheme,

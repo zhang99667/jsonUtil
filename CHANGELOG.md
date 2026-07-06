@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.491 (2026-07-06) - 模板填充目标错误计算简化
+### 🏗️ 架构与基础设施
+- **模板填充 Hook 降噪**: `useAppTemplateFillCommand` 直接调用轻量目标错误纯函数，移除额外 `useMemo` 依赖和测试里的 React memo mock，降低 Hook 装配复杂度
+
 ## v1.8.490 (2026-07-06) - PREVIEW 同步测试夹具收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 同步测试夹具**: 抽出 `appPreviewOutputSyncTestFixture` 统一构建 request、refs、effects、task 和 handler 输入，四个 PREVIEW 输出同步测试不再重复手写相同装配样板
