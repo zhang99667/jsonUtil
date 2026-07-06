@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { assertElementLike, clickElement, findByTour, findByType } from './componentElementTestHelpers';
+import { assertElementLike, findByType } from './componentElementTestHelpers';
+import { JsonPathPanelResultPreviewFocusButton } from './JsonPathPanelResultPreviewFocusButton';
 import { JsonPathPanelResultPreviewLocateButton } from './JsonPathPanelResultPreviewLocateButton';
 import { createJsonPathResultPreviewItem } from './JsonPathPanelResultPreviewItemTestData';
-import { JsonPathPanelResultPreviewRowContent } from './JsonPathPanelResultPreviewRowContent';
 import { renderJsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewTestFixture';
 
 describe('JsonPathPanelResultPreviewRow', () => {
@@ -10,15 +10,11 @@ describe('JsonPathPanelResultPreviewRow', () => {
     const onFocusResult = vi.fn();
     const previewItem = createJsonPathResultPreviewItem();
     const tree = assertElementLike(renderJsonPathPanelResultPreviewRow({ item: previewItem, isActive: true, onFocusResult }));
-    const focusButton = findByTour(tree, 'jsonpath-result-preview')[0];
+    const focusButton = findByType(tree, JsonPathPanelResultPreviewFocusButton)[0];
 
     expect(tree.props.className).toContain('border-emerald-500/40');
-    expect(focusButton.props.title).toBe('预览按钮标题来自 item');
-    expect(focusButton.props['aria-label']).toBe('预览按钮文案来自 item');
-    expect(findByType(tree, JsonPathPanelResultPreviewRowContent)[0].props.item).toBe(previewItem);
-
-    clickElement(focusButton);
-    expect(onFocusResult).toHaveBeenCalledWith(2);
+    expect(focusButton.props.item).toBe(previewItem);
+    expect(focusButton.props.onFocusResult).toBe(onFocusResult);
   });
 
   it('按需展示结构定位入口', () => {
