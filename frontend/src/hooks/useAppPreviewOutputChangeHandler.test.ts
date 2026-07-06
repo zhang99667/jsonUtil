@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runAppPreviewOutputChange } from '../utils/appPreviewOutputChangeHandler';
-import {
-  PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT,
-  createPreviewOutputChangeHandlerInput,
-} from '../utils/appPreviewOutputSyncTestFixture';
+import { createPreviewOutputChangeHandlerInput } from '../utils/appPreviewOutputChangeHandlerTestFixture';
+import { PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT } from '../utils/appPreviewOutputSyncTestFixture';
 import { useAppPreviewOutputChangeHandler } from './useAppPreviewOutputChangeHandler';
 
 const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn() }));

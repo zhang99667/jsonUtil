@@ -1,6 +1,5 @@
 import { vi } from 'vitest';
 import { TransformMode, type TransformContext } from '../types';
-import type { AppPreviewOutputChangeHandlerInput } from './appPreviewOutputChangeHandler';
 import type { AppPreviewOutputChangeTaskInput } from './appPreviewOutputChangeTask';
 import type {
   AppPreviewOutputSyncTaskApplyEffects,
@@ -9,7 +8,6 @@ import type {
   AppPreviewOutputSyncTaskRequest,
   PreviewOutputSyncTask,
 } from './appPreviewOutputSyncTaskTypes';
-import type { MutableValueRef } from './mutableValueRef';
 
 export const PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT = '{"a":2}';
 export const PREVIEW_OUTPUT_SYNC_SOURCE_TEXT = '{"a":1}';
@@ -22,11 +20,6 @@ type PreviewOutputSyncInputOverrides = {
 
 type PreviewOutputChangeTaskInputOverrides = PreviewOutputSyncInputOverrides & {
   scheduleOutputSync?: (task: PreviewOutputSyncTask) => void;
-};
-
-type PreviewOutputChangeHandlerInputOverrides = PreviewOutputChangeTaskInputOverrides & {
-  isUpdatingFromOutput?: MutableValueRef<boolean>;
-  updatePreviewValidation?: (previewText: string) => void;
 };
 
 export const createPreviewOutputSyncTaskInput = ({
@@ -79,18 +72,3 @@ export const buildExpectedPreviewOutputSyncTaskInput = ({
   refs: { inputRef, fallbackContextRef, pendingOutputValue },
   applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
 });
-
-export const createPreviewOutputChangeHandlerInput = ({
-  isUpdatingFromOutput,
-  updatePreviewValidation,
-  ...taskOverrides
-}: PreviewOutputChangeHandlerInputOverrides = {}): AppPreviewOutputChangeHandlerInput => {
-  const { previewText, ...handlerInput } = createPreviewOutputChangeTaskInput(taskOverrides);
-  void previewText;
-
-  return {
-    ...handlerInput,
-    isUpdatingFromOutput: isUpdatingFromOutput ?? { current: false },
-    updatePreviewValidation: updatePreviewValidation ?? vi.fn(),
-  };
-};

@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.496 (2026-07-06) - PREVIEW Handler 测试夹具拆分
+### 🏗️ 架构与基础设施
+- **PREVIEW Fixture 分层**: 拆出 `appPreviewOutputChangeHandlerTestFixture` 承接 handler 专属草稿和校验输入，`appPreviewOutputSyncTestFixture` 回归 sync/task 输入构建职责，并同步收紧两个测试夹具维护预算
+
 ## v1.8.495 (2026-07-06) - PREVIEW 同步任务测试期望收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 同步测试降噪**: `appPreviewOutputSyncTestFixture` 补充同步任务期望输入 builder，`appPreviewOutputChangeTask.test` 复用同一份 request / refs / applyEffects 映射，测试断言聚焦调度契约
