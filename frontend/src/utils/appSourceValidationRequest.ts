@@ -2,6 +2,7 @@ import type { ValidationResult } from '../types';
 import { ASYNC_VALIDATION_THRESHOLD } from './appAsyncPolicy';
 import {
   cleanJsonInput,
+  isCleanJsonInputEmpty,
   startJsonValidation,
 } from './jsonValidation';
 import type { MutableValueRef } from './mutableValueRef';
@@ -19,7 +20,7 @@ export const runAppSourceValidationRequest = ({
 }: AppSourceValidationRequestInput): ReturnType<typeof startJsonValidation> | null => {
   const cleanInput = cleanJsonInput(input);
 
-  if (!cleanInput.trim()) {
+  if (isCleanJsonInputEmpty(cleanInput)) {
     requestIdRef.current += 1;
     onSetValidation({ isValid: true });
     return null;

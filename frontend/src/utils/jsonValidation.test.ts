@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cleanJsonInput,
   getJsonValidationErrorLocation,
+  isCleanJsonInputEmpty,
   isJsonContainerCandidate,
   validateJsonForEditor,
 } from './jsonValidation';
@@ -11,6 +12,7 @@ describe('jsonValidation', () => {
     const result = validateJsonForEditor('\uFEFF{"name":"json"}\u200B');
 
     expect(cleanJsonInput('\uFEFF{"ok":true}\u200B')).toBe('{"ok":true}');
+    expect(isCleanJsonInputEmpty(cleanJsonInput(' \u200B  '))).toBe(true);
     expect(result).toEqual({ isValid: true });
   });
 

@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
 import type { ValidationResult } from '../types';
 import { runAppSourceValidationRequest } from '../utils/appSourceValidationRequest';
-import { cleanJsonInput } from '../utils/jsonValidation';
+import { cleanJsonInput, isCleanJsonInputEmpty } from '../utils/jsonValidation';
 
 interface UseAppSourceValidationInput {
   input: string;
   onSetValidation: (result: ValidationResult) => void;
 }
 
-const SOURCE_VALIDATION_DEBOUNCE_MS = 500;
+export const SOURCE_VALIDATION_DEBOUNCE_MS = 500;
 
 export const useAppSourceValidation = ({ input, onSetValidation }: UseAppSourceValidationInput): void => {
   const sourceValidationRequestIdRef = useRef(0);
@@ -27,7 +27,7 @@ export const useAppSourceValidation = ({ input, onSetValidation }: UseAppSourceV
       validationTask?.cancel();
     };
 
-    if (!cleanJsonInput(input).trim()) {
+    if (isCleanJsonInputEmpty(cleanJsonInput(input))) {
       runValidation();
       return invalidateValidation;
     }
