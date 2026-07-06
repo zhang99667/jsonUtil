@@ -7,6 +7,7 @@ import {
   buildTransformReportActionRunners,
 } from '../utils/transformReportActionItems';
 import { buildTransformReportPanelCopyWorkflowModel } from '../utils/transformReportPanelCopyWorkflowModel';
+import { buildTransformReportPanelCopyWorkflowState } from '../utils/transformReportPanelCopyWorkflowState';
 import { buildTransformReportPanelSectionModel } from '../utils/transformReportPanelSectionModel';
 import { buildTransformReportPanelFooterModel } from '../utils/transformReportPanelFooterModel';
 import { TransformReportPanelContent } from './TransformReportPanelContent';
@@ -41,26 +42,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     copyWorkflow,
     getCmdComparisonCandidateRecords,
   } = buildTransformReportPanelCopyWorkflowModel({
-    copyWorkflowState: {
-      activeContext: model.activeContext,
-      report: model.report,
-      reportView: model.reportView,
-      deferredQuery: model.deferredQuery,
-      isFilterPending: model.isFilterPending,
-      qualitySnapshot: model.qualitySnapshot,
-      qualityBaselineDeltaText: model.qualityBaselineDeltaText,
-      placeholderFillTemplateJsonText: model.placeholderFillTemplateJsonText,
-      issueSampleCopyText: model.issueSampleCopyText,
-      issueSampleJsonCopyText: model.issueSampleJsonCopyText,
-      redactedIssueSampleJsonCopyText: model.redactedIssueSampleJsonCopyText,
-      issueRegressionTemplateCopyText: model.issueRegressionTemplateCopyText,
-      hasPathValueCopyItems: model.hasPathValueCopyItems,
-      hasCmdStructureCopyItems: model.hasCmdStructureCopyItems,
-      hasFocusedCmdStructureCopyItems: model.hasFocusedCmdStructureCopyItems,
-      cmdComparisonExpectedText: model.cmdComparisonState.expectedText,
-      cmdComparisonIgnoreExtraPaths: model.cmdComparisonState.ignoreExtraPaths,
-      cmdComparisonActualCandidate: model.cmdComparisonState.actualCandidate,
-    },
+    copyWorkflowState: buildTransformReportPanelCopyWorkflowState(model),
     cmdComparisonState: model.cmdComparisonState,
     fullReportView: model.fullReportView,
     effects: {
