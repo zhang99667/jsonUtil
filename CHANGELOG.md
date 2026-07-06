@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.503 (2026-07-06) - 组件测试查找 Helper 收敛
+### 🏗️ 架构与基础设施
+- **测试元素遍历复用**: `componentElementTestHelpers` 抽出内部 `findElements` 统一 React 元素树递归查找逻辑，`findByType` 与 `findByTour` 保持原导出契约但不再各自维护同构遍历
+
 ## v1.8.502 (2026-07-06) - 滚动条 DOM 轴字段收敛
 ### 🏗️ 架构与基础设施
 - **滚动条方向映射复用**: `customScrollbarDom` 使用统一轴字段表驱动横纵向滚动指标读取、指针坐标选择和滚动位置写回，并从同一映射推导 DOM 输入类型，减少方向分支重复

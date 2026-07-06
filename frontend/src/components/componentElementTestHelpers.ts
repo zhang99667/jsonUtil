@@ -27,21 +27,19 @@ export const collectText = (node: unknown): string => {
   return '';
 };
 
-export const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(child => findByType(child, type));
+const findElements = (node: unknown, matchesElement: (element: ElementLike) => boolean): ElementLike[] => {
+  if (Array.isArray(node)) return node.flatMap(child => findElements(child, matchesElement));
   if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
+  return (matchesElement(node) ? [node] : []).concat(findElements(node.props.children, matchesElement));
 };
 
-export const findByTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(child => findByTour(child, dataTour));
-  if (!isElementLike(node)) return [];
+export const findByType = (node: unknown, type: unknown): ElementLike[] => (
+  findElements(node, element => element.type === type)
+);
 
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByTour(node.props.children, dataTour));
-};
+export const findByTour = (node: unknown, dataTour: string): ElementLike[] => (
+  findElements(node, element => element.props['data-tour'] === dataTour)
+);
 
 export const findByTourOrNull = (node: unknown, dataTour: string): ElementLike | null => (
   findByTour(node, dataTour)[0] || null
