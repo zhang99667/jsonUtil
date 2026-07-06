@@ -4,27 +4,7 @@ import { ActionPanelAiFixButton } from './ActionPanelAiFixButton';
 import { ActionPanelFileActionIcon } from './ActionPanelFileActionIcon';
 import { ActionPanelFileActionButton } from './ActionPanelFileActionButton';
 import { ActionPanelFileOperations } from './ActionPanelFileOperations';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
+import { findByType } from './componentElementTestHelpers';
 
 describe('ActionPanelFileOperations', () => {
   it('装配打开和保存两个普通文件按钮', () => {

@@ -3,19 +3,7 @@ import { TransformMode } from '../types';
 import type { ActionPanelEntryButtonState } from '../utils/actionPanelEntryButtonState';
 import { ActionPanelEntryButton } from './ActionPanelEntryButton';
 import { ActionPanelToolButton } from './ActionPanelToolButton';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
+import { assertElementLike, type ElementLike } from './componentElementTestHelpers';
 
 const getButtonState = (node: ElementLike) => node.props.state as ActionPanelEntryButtonState;
 
@@ -34,10 +22,11 @@ const renderButton = (overrides: Partial<Parameters<typeof ActionPanelToolButton
 describe('ActionPanelToolButton', () => {
   it('展开态装配通用按钮壳、当前标识并透传模式点击', () => {
     const onClick = vi.fn();
-    const tree = renderButton({ onClick });
+    const tree = assertElementLike(
+      renderButton({ onClick }),
+      'ActionPanelToolButton 应返回 React 元素'
+    );
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelToolButton 应返回 React 元素');
     expect(tree.type).toBe(ActionPanelEntryButton);
     expect(tree.props.dataTour).toBe('format-button');
     expect(tree.props.isCollapsed).toBe(false);
@@ -64,13 +53,14 @@ describe('ActionPanelToolButton', () => {
   });
 
   it('折叠态隐藏标签并保留可访问名称', () => {
-    const tree = renderButton({
-      isActive: false,
-      isCollapsed: true,
-    });
+    const tree = assertElementLike(
+      renderButton({
+        isActive: false,
+        isCollapsed: true,
+      }),
+      'ActionPanelToolButton 应返回 React 元素'
+    );
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelToolButton 应返回 React 元素');
     const state = getButtonState(tree);
     expect(state.entryProps.ariaLabel).toBe('格式化');
     expect(state.entryProps.title).toBe('格式化');

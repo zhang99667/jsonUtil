@@ -3,16 +3,13 @@ import type { SmartInputSuggestion, SmartSuggestionAction } from '../utils/smart
 import { ActionPanelSmartSuggestion } from './ActionPanelSmartSuggestion';
 import { ActionPanelSmartSuggestionActionButton } from './ActionPanelSmartSuggestionActionButton';
 import { ActionPanelSmartSuggestionIcon } from './ActionPanelSmartSuggestionIcon';
-import { findByTour, findByTypeOrNull, isElementLike, type ElementLike } from './schemeViewerElementTestHelpers';
+import {
+  findByTour,
+  findByType,
+  findByTypeOrNull,
+  type ElementLike,
+} from './componentElementTestHelpers';
 import { ActionPanelSmartSuggestionHeader } from './ActionPanelSmartSuggestionHeader';
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(child => findByType(child, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
 
 const suggestion: SmartInputSuggestion = {
   id: 'json-with-cmd',

@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.500 (2026-07-06) - 组件测试 Helper 通用化
+### 🏗️ 架构与基础设施
+- **ActionPanel 测试去重**: 抽出 `componentElementTestHelpers` 统一 React 树断言、文本收集和节点查找，`schemeViewerElementTestHelpers` 保留兼容导出，ActionPanel 相关测试移除重复 helper 定义
+
 ## v1.8.499 (2026-07-06) - 模板回填命令 Runner 简化
 ### 🏗️ 架构与基础设施
 - **模板回填状态写入收敛**: `appTemplateFillCommandRunner` 内联一次性判断并统一质量 delta 写入口，减少成功路径分支噪音并收紧 runner 维护预算
