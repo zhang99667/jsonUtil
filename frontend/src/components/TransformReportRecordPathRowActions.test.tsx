@@ -1,25 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { clickElement, findByTour } from './componentElementTestHelpers';
 import { TransformReportRecordPathRowActions } from './TransformReportRecordPathRowActions';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByDataTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByDataTour(item, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByDataTour(node.props.children, dataTour));
-};
 
 describe('TransformReportRecordPathRowActions', () => {
   it('转发复制、定位和 Scheme 打开动作', () => {
@@ -43,10 +24,10 @@ describe('TransformReportRecordPathRowActions', () => {
       onOpenSchemeValue,
     });
 
-    (findByDataTour(tree, 'copy-path')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'copy-value')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'locate')[0].props.onClick as () => void)();
-    (findByDataTour(tree, 'open-scheme')[0].props.onClick as () => void)();
+    clickElement(findByTour(tree, 'copy-path')[0]);
+    clickElement(findByTour(tree, 'copy-value')[0]);
+    clickElement(findByTour(tree, 'locate')[0]);
+    clickElement(findByTour(tree, 'open-scheme')[0]);
 
     expect(onCopyPath).toHaveBeenCalledWith('$.cmd.jump_url');
     expect(onCopyDecodedPathValue).toHaveBeenCalledWith('$.cmd.jump_url = "baiduboxapp://v1/jump"');
@@ -68,9 +49,9 @@ describe('TransformReportRecordPathRowActions', () => {
       onCopyDecodedPathValue: vi.fn(),
     });
 
-    expect(findByDataTour(tree, 'copy-path')).toHaveLength(1);
-    expect(findByDataTour(tree, 'copy-value')).toHaveLength(1);
-    expect(findByDataTour(tree, 'locate')).toHaveLength(0);
-    expect(findByDataTour(tree, 'open-scheme')).toHaveLength(0);
+    expect(findByTour(tree, 'copy-path')).toHaveLength(1);
+    expect(findByTour(tree, 'copy-value')).toHaveLength(1);
+    expect(findByTour(tree, 'locate')).toHaveLength(0);
+    expect(findByTour(tree, 'open-scheme')).toHaveLength(0);
   });
 });

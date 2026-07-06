@@ -1,18 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { StatusBarBadgeState } from '../utils/statusBarState';
+import { assertElementLike } from './componentElementTestHelpers';
 import { StatusBarSaveStatusBadge } from './StatusBarSaveStatusBadge';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
 
 const status: StatusBarBadgeState = {
   label: '未保存',
@@ -22,10 +11,11 @@ const status: StatusBarBadgeState = {
 
 describe('StatusBarSaveStatusBadge', () => {
   it('展示保存状态文案、样式和提示', () => {
-    const tree = StatusBarSaveStatusBadge({ status });
+    const tree = assertElementLike(
+      StatusBarSaveStatusBadge({ status }),
+      'StatusBarSaveStatusBadge 应返回 React 元素'
+    );
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('StatusBarSaveStatusBadge 应返回 React 元素');
     expect(tree.props['data-tour']).toBe('save-status');
     expect(tree.props.className).toContain('bg-yellow-100');
     expect(tree.props.title).toBe(status.title);

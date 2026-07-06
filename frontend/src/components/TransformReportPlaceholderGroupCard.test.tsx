@@ -1,34 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TransformReportRuntimePlaceholderGroup } from '../utils/transformRuntimePlaceholderTypes';
+import { clickElement, collectText, findByTour } from './componentElementTestHelpers';
 import { TransformReportPlaceholderGroupCard } from './TransformReportPlaceholderGroupCard';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByDataTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByDataTour(item, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByDataTour(node.props.children, dataTour));
-};
 
 const group: TransformReportRuntimePlaceholderGroup = {
   value: '__UID__',
@@ -64,7 +37,7 @@ describe('TransformReportPlaceholderGroupCard', () => {
     expect(text).toContain('还有 1 个来源');
     expect(text).not.toContain('$.extra.uid');
 
-    (findByDataTour(tree, 'transform-report-filter-placeholder-group')[0].props.onClick as () => void)();
+    clickElement(findByTour(tree, 'transform-report-filter-placeholder-group')[0]);
 
     expect(onFilter).toHaveBeenCalledWith('__UID__');
   });
