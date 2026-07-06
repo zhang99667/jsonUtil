@@ -18,40 +18,38 @@ type PreviewOutputChangeTaskInputOverrides = PreviewOutputSyncInputOverrides & {
   scheduleOutputSync?: SchedulePreviewOutputSync;
 };
 
-export const createPreviewOutputSyncTaskFlatInput = ({
+export const createPreviewOutputSyncTaskInput = ({
   request,
   refs,
   applyEffects,
-}: PreviewOutputSyncInputOverrides = {}): AppPreviewOutputSyncTaskFlatInput => ({
-  previewText: PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT,
-  files: [],
-  activeFileId: null,
-  mode: TransformMode.FORMAT,
-  validateJsonMaybeAsync: vi.fn(),
-  ...request,
-  inputRef: { current: PREVIEW_OUTPUT_SYNC_SOURCE_TEXT },
-  fallbackContextRef: { current: null as TransformContext | null },
-  pendingOutputValue: { current: '' },
-  ...refs,
-  setPreviewValidation: vi.fn(),
-  onSetInput: vi.fn(),
-  onUpdateActiveFileContent: vi.fn(),
-  ...applyEffects,
+}: PreviewOutputSyncInputOverrides = {}): AppPreviewOutputSyncTaskInput => ({
+  request: {
+    previewText: PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT,
+    files: [],
+    activeFileId: null,
+    mode: TransformMode.FORMAT,
+    validateJsonMaybeAsync: vi.fn(),
+    ...request,
+  },
+  refs: {
+    inputRef: { current: PREVIEW_OUTPUT_SYNC_SOURCE_TEXT },
+    fallbackContextRef: { current: null as TransformContext | null },
+    pendingOutputValue: { current: '' },
+    ...refs,
+  },
+  applyEffects: {
+    setPreviewValidation: vi.fn(),
+    onSetInput: vi.fn(),
+    onUpdateActiveFileContent: vi.fn(),
+    ...applyEffects,
+  },
 });
 
-export const createPreviewOutputSyncTaskInput = (
+export const createPreviewOutputSyncTaskFlatInput = (
   overrides: PreviewOutputSyncInputOverrides = {}
-): AppPreviewOutputSyncTaskInput => {
-  const {
-    previewText, files, activeFileId, mode, validateJsonMaybeAsync,
-    inputRef, fallbackContextRef, pendingOutputValue,
-    setPreviewValidation, onSetInput, onUpdateActiveFileContent,
-  } = createPreviewOutputSyncTaskFlatInput(overrides);
-  return {
-    request: { previewText, files, activeFileId, mode, validateJsonMaybeAsync },
-    refs: { inputRef, fallbackContextRef, pendingOutputValue },
-    applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
-  };
+): AppPreviewOutputSyncTaskFlatInput => {
+  const { request, refs, applyEffects } = createPreviewOutputSyncTaskInput(overrides);
+  return { ...request, ...refs, ...applyEffects };
 };
 
 export const createPreviewOutputChangeTaskInput = ({
