@@ -7,7 +7,7 @@ export const appJsonPathComponentCoreMaintainabilityBudgets = [
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelQueryStatus.tsx', 35, 'JSONPath 查询状态提示只维护查询中、已取消和空闲隐藏渲染'),
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelFavoriteToggleButton.tsx', 45, 'JSONPath 收藏按钮只维护星标状态、按钮样式和无障碍标签'),
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelResultPreview.tsx', 70, 'JSONPath 结果预览子组件只维护可见结果列表、滚动容器和命中上限提示渲染'),
-  appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelResultPreviewRow.tsx', 80, 'JSONPath 结果预览行只维护单条路径和值展示、选中态和结构定位入口'),
+  appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelResultPreviewRow.tsx', 75, 'JSONPath 结果预览行只维护单条路径和值展示、选中态和结构定位入口'),
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelResultToolbar.tsx', 110, 'JSONPath 结果工具条子组件只维护结果计数、复制按钮和前后导航按钮渲染'),
   appJsonPathComponentCoreBudget('frontend/src/components/JsonPathPanelResultToolbarButton.tsx', 35, 'JSONPath 结果工具条按钮壳只维护图标按钮样式、标题和无障碍标签'),
 ];
