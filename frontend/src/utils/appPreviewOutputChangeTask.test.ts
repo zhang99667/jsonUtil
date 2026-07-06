@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TransformMode } from '../types';
 import { createAppPreviewOutputSyncTask } from './appPreviewOutputSyncTask';
 import { scheduleAppPreviewOutputChangeTask } from './appPreviewOutputChangeTask';
+import { createPreviewOutputChangeTaskInput } from './appPreviewOutputSyncTestFixture';
 
 const syncTask = vi.hoisted(() => vi.fn());
 
@@ -12,34 +12,23 @@ vi.mock('./appPreviewOutputSyncTask', async importOriginal => ({
 
 describe('appPreviewOutputChangeTask', () => {
   it('创建 PREVIEW 同步任务并交给 scheduler', () => {
-    const scheduleOutputSync = vi.fn();
-    const inputRef = { current: '{"a":1}' };
-    const pendingOutputValue = { current: '' };
-    const fallbackContextRef = { current: null };
-    const setPreviewValidation = vi.fn();
-    const onSetInput = vi.fn();
-    const onUpdateActiveFileContent = vi.fn();
+    const input = createPreviewOutputChangeTaskInput();
 
-    scheduleAppPreviewOutputChangeTask({
-      previewText: '{"a":2}',
-      files: [],
-      activeFileId: null,
-      mode: TransformMode.FORMAT,
-      inputRef,
-      fallbackContextRef,
-      pendingOutputValue,
-      validateJsonMaybeAsync: vi.fn(),
-      setPreviewValidation,
-      onSetInput,
-      onUpdateActiveFileContent,
-      scheduleOutputSync,
-    });
+    scheduleAppPreviewOutputChangeTask(input);
 
     expect(createAppPreviewOutputSyncTask).toHaveBeenCalledWith({
-      request: expect.objectContaining({ previewText: '{"a":2}' }),
-      refs: { inputRef, fallbackContextRef, pendingOutputValue },
-      applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
+      request: expect.objectContaining({ previewText: input.previewText }),
+      refs: {
+        inputRef: input.inputRef,
+        fallbackContextRef: input.fallbackContextRef,
+        pendingOutputValue: input.pendingOutputValue,
+      },
+      applyEffects: {
+        setPreviewValidation: input.setPreviewValidation,
+        onSetInput: input.onSetInput,
+        onUpdateActiveFileContent: input.onUpdateActiveFileContent,
+      },
     });
-    expect(scheduleOutputSync).toHaveBeenCalledWith(syncTask);
+    expect(input.scheduleOutputSync).toHaveBeenCalledWith(syncTask);
   });
 });

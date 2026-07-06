@@ -4,10 +4,9 @@ import type {
   AppPreviewOutputSyncTaskApplyEffects,
   AppPreviewOutputSyncTaskRefs,
   AppPreviewOutputSyncTaskRequest,
+  PreviewOutputSyncTask,
 } from './appPreviewOutputSyncTaskTypes';
 import type { MutableValueRef } from './mutableValueRef';
-
-type PreviewOutputSyncTask = (isCurrent: () => boolean) => Promise<boolean>;
 
 export interface AppPreviewOutputChangeHandlerInput
   extends Omit<AppPreviewOutputSyncTaskRequest, 'previewText'>,

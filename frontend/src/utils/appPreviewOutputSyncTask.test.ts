@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TransformMode, type TransformContext } from '../types';
+import type { TransformContext } from '../types';
 import { runAppPreviewOutputSyncRequest } from './appPreviewOutputSyncRequest';
 import { applyAppPreviewOutputSyncResult } from './appPreviewOutputSyncResult';
 import { createAppPreviewOutputSyncTask } from './appPreviewOutputSyncTask';
+import { createPreviewOutputSyncTaskInput } from './appPreviewOutputSyncTestFixture';
 
 const syncedResult = { status: 'synced' as const, nextSource: 'next-source' };
 
@@ -14,26 +15,6 @@ vi.mock('./appPreviewOutputSyncResult', () => ({
   applyAppPreviewOutputSyncResult: vi.fn(() => true),
 }));
 
-const createTaskInput = () => ({
-  request: {
-    previewText: '{"a":2}',
-    files: [],
-    activeFileId: null,
-    mode: TransformMode.FORMAT,
-    validateJsonMaybeAsync: vi.fn(),
-  },
-  refs: {
-    inputRef: { current: '{"a":1}' },
-    fallbackContextRef: { current: null as TransformContext | null },
-    pendingOutputValue: { current: '' },
-  },
-  applyEffects: {
-    setPreviewValidation: vi.fn(),
-    onSetInput: vi.fn(),
-    onUpdateActiveFileContent: vi.fn(),
-  },
-});
-
 describe('createAppPreviewOutputSyncTask', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,7 +23,7 @@ describe('createAppPreviewOutputSyncTask', () => {
   });
 
   it('执行时读取最新 SOURCE 和 fallback context 快照', async () => {
-    const input = createTaskInput();
+    const input = createPreviewOutputSyncTaskInput();
     const fallbackContext = { timestamp: 100 } as TransformContext;
     const task = createAppPreviewOutputSyncTask(input);
 
@@ -64,7 +45,7 @@ describe('createAppPreviewOutputSyncTask', () => {
   });
 
   it('request 已失效时不应用同步结果', async () => {
-    const input = createTaskInput();
+    const input = createPreviewOutputSyncTaskInput();
     const task = createAppPreviewOutputSyncTask(input);
 
     await expect(task(() => false)).resolves.toBe(false);

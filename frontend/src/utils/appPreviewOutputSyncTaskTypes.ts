@@ -5,6 +5,8 @@ import type {
 import type { AppPreviewOutputSyncRequestInput } from './appPreviewOutputSyncRequest';
 import type { MutableValueRef } from './mutableValueRef';
 
+export type PreviewOutputSyncTask = (isCurrent: () => boolean) => Promise<boolean>;
+
 export type AppPreviewOutputSyncTaskRequest = Omit<
   AppPreviewOutputSyncRequestInput,
   'originalInput' | 'fallbackContext'
