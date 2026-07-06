@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearStoredJsonPathHistory, loadJsonPathSavedQueryLists } from '../utils/jsonPathSavedQueryStorage';
+import { loadJsonPathSavedQueryLists } from '../utils/jsonPathSavedQueryStorage';
 import { useJsonPathSavedQueryLists } from './useJsonPathSavedQueryLists';
 import { useJsonPathSavedQueryListStorageSync } from './useJsonPathSavedQueryListStorageSync';
 
@@ -18,7 +18,6 @@ vi.mock('react', async importOriginal => ({
 
 vi.mock('../utils/jsonPathSavedQueryStorage', async importOriginal => ({
   ...await importOriginal<typeof import('../utils/jsonPathSavedQueryStorage')>(),
-  clearStoredJsonPathHistory: vi.fn(),
   loadJsonPathSavedQueryLists: vi.fn(),
 }));
 
@@ -71,7 +70,7 @@ describe('useJsonPathSavedQueryLists', () => {
     expect(setLists).toHaveBeenCalledTimes(4);
   });
 
-  it('清空历史时同步删除存储项', () => {
+  it('清空历史时仅更新列表状态', () => {
     const lists = useJsonPathSavedQueryLists('$.favorite');
 
     lists.clearHistory();
@@ -79,7 +78,6 @@ describe('useJsonPathSavedQueryLists', () => {
     expect(setLists.mock.calls[0][0]({ history: ['$.old'], favorites: ['$.favorite'] })).toEqual({
       history: [], favorites: ['$.favorite'],
     });
-    expect(clearStoredJsonPathHistory).toHaveBeenCalledTimes(1);
   });
 
   it('空查询不会切换收藏状态', () => {

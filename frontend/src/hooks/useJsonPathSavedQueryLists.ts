@@ -7,7 +7,6 @@ import {
   toggleJsonPathFavorite,
 } from '../utils/jsonPathSavedQueryListActions';
 import {
-  clearStoredJsonPathHistory,
   loadJsonPathSavedQueryLists,
 } from '../utils/jsonPathSavedQueryStorage';
 import { useJsonPathSavedQueryListStorageSync } from './useJsonPathSavedQueryListStorageSync';
@@ -41,7 +40,6 @@ export const useJsonPathSavedQueryLists = (
 
   const clearHistory = useCallback(() => {
     setLists(clearJsonPathHistory);
-    clearStoredJsonPathHistory();
   }, []);
 
   const removeFavorite = useCallback((query: string) => {
