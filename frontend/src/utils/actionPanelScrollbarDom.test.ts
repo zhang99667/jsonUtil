@@ -7,7 +7,7 @@ describe('actionPanelScrollbarDom', () => {
       scrollTop: 120,
       scrollHeight: 800,
       clientHeight: 240,
-    })).toEqual({
+    } as HTMLDivElement)).toEqual({
       scrollTop: 120,
       scrollHeight: 800,
       clientHeight: 240,

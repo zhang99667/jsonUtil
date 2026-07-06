@@ -1,28 +1,21 @@
 import { beginPreviewOutputDraft } from './appPreviewOutputDraft';
 import { scheduleAppPreviewOutputChangeTask } from './appPreviewOutputChangeTask';
 import type {
-  AppPreviewOutputSyncTaskApplyEffects,
   AppPreviewOutputSyncTaskInput,
-  AppPreviewOutputSyncTaskRefs,
   AppPreviewOutputSyncTaskRequest,
   SchedulePreviewOutputSync,
 } from './appPreviewOutputSyncTaskTypes';
 import type { MutableValueRef } from './mutableValueRef';
 
-export interface AppPreviewOutputChangeHandlerInput {
-  request: Omit<AppPreviewOutputSyncTaskRequest, 'previewText'>;
-  refs: AppPreviewOutputSyncTaskRefs;
-  applyEffects: AppPreviewOutputSyncTaskApplyEffects;
+export type RunAppPreviewOutputChangeInput = AppPreviewOutputSyncTaskInput & {
   isUpdatingFromOutput: MutableValueRef<boolean>;
   updatePreviewValidation: (previewText: string) => void;
   scheduleOutputSync: SchedulePreviewOutputSync;
-}
+};
 
-export interface RunAppPreviewOutputChangeInput extends AppPreviewOutputSyncTaskInput {
-  isUpdatingFromOutput: MutableValueRef<boolean>;
-  updatePreviewValidation: (previewText: string) => void;
-  scheduleOutputSync: SchedulePreviewOutputSync;
-}
+export type AppPreviewOutputChangeHandlerInput = Omit<RunAppPreviewOutputChangeInput, 'request'> & {
+  request: Omit<AppPreviewOutputSyncTaskRequest, 'previewText'>;
+};
 
 export const runAppPreviewOutputChange = ({
   request,
