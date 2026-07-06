@@ -1,7 +1,8 @@
 const appJsonPathComponentInputBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const appJsonPathComponentInputMaintainabilityBudgets = [
-  appJsonPathComponentInputBudget('frontend/src/components/JsonPathPanelQueryInput.tsx', 65, 'JSONPath 查询输入子组件只维护输入框、收藏入口、查询动作和状态提示装配'),
+  appJsonPathComponentInputBudget('frontend/src/components/JsonPathPanelQueryInput.tsx', 40, 'JSONPath 查询输入子组件只维护控件行和状态提示装配'),
+  appJsonPathComponentInputBudget('frontend/src/components/JsonPathPanelQueryInputControls.tsx', 75, 'JSONPath 查询输入控件行只维护输入框、收藏入口和查询动作装配'),
   appJsonPathComponentInputBudget('frontend/src/components/JsonPathPanelQueryInputField.tsx', 40, 'JSONPath 查询输入框只维护原生输入框属性、输入变化和键盘事件接线'),
   appJsonPathComponentInputBudget('frontend/src/components/JsonPathPanelQueryActionButtons.tsx', 40, 'JSONPath 查询动作按钮只维护运行按钮和取消按钮装配'),
   appJsonPathComponentInputBudget('frontend/src/components/JsonPathPanelQueryRunButton.tsx', 45, 'JSONPath 查询运行按钮只维护查询按钮状态、隐藏说明和无障碍关联'),

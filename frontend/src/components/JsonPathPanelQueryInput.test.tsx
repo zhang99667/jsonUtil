@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { findByType } from './componentElementTestHelpers';
-import { JsonPathPanelFavoriteToggleButton } from './JsonPathPanelFavoriteToggleButton';
-import { JsonPathPanelQueryActionButtons } from './JsonPathPanelQueryActionButtons';
 import { JsonPathPanelQueryInput } from './JsonPathPanelQueryInput';
-import { JsonPathPanelQueryInputField } from './JsonPathPanelQueryInputField';
+import { JsonPathPanelQueryInputControls } from './JsonPathPanelQueryInputControls';
 import { JsonPathPanelQueryStatus } from './JsonPathPanelQueryStatus';
 
 const renderQueryInput = (
@@ -32,41 +30,28 @@ const renderQueryInput = (
 });
 
 describe('JsonPathPanelQueryInput', () => {
-  it('只负责装配输入框、收藏按钮、查询按钮和状态提示', () => {
+  it('只负责装配控件行和状态提示', () => {
+    const activeUiState = {
+      queryInputDescriptionId: 'jsonpath-query-desc',
+      favoriteToggleTitle: '取消收藏当前查询',
+      queryButtonTitle: '查询准备中',
+      showCancelledQuery: true,
+    };
     const tree = renderQueryInput({
       normalizedQuery: '',
-      isCurrentQueryFavorite: true,
       isQuerying: true,
-      isDataPreparing: true,
-      error: 'JSONPath 语法错误',
-      uiState: {
-        queryInputDescriptionId: 'jsonpath-query-desc',
-        favoriteToggleTitle: '取消收藏当前查询',
-        queryButtonTitle: '查询准备中',
-        showCancelledQuery: true,
-      },
+      uiState: activeUiState,
     });
-    const input = findByType(tree, JsonPathPanelQueryInputField)[0];
-    const favorite = findByType(tree, JsonPathPanelFavoriteToggleButton)[0];
-    const actions = findByType(tree, JsonPathPanelQueryActionButtons)[0];
+    const controls = findByType(tree, JsonPathPanelQueryInputControls)[0];
     const status = findByType(tree, JsonPathPanelQueryStatus)[0];
 
-    expect(input.props).toMatchObject({
+    expect(controls.props).toMatchObject({
       query: '$.store',
-      error: 'JSONPath 语法错误',
-      descriptionId: 'jsonpath-query-desc',
-    });
-    expect(favorite.props).toMatchObject({
-      isFavorite: true,
-      disabled: true,
-      title: '取消收藏当前查询',
-    });
-    expect(actions.props).toMatchObject({
+      normalizedQuery: '',
       isQuerying: true,
-      isDataPreparing: true,
-      queryButtonTitle: '查询准备中',
       queryButtonDescriptionId: 'jsonpath-query-button-desc',
     });
+    expect(controls.props.uiState).toBe(activeUiState);
     expect(status.props).toMatchObject({
       isQuerying: true,
       showCancelledQuery: true,
