@@ -1,40 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AppUpdateToastContent } from './AppUpdateToastContent';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
-
-const clickElement = (node: ElementLike) => {
-  const onClick = node.props.onClick;
-  if (typeof onClick !== 'function') throw new Error('expected clickable element');
-  onClick();
-};
+import { assertElementLike, clickElement, collectText, findByType } from './componentElementTestHelpers';
 
 const manifest = {
   name: 'JSONUtils' as const,
@@ -56,8 +22,7 @@ describe('AppUpdateToastContent', () => {
       onDismiss,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('AppUpdateToastContent 应返回 React 元素');
+    assertElementLike(tree, 'AppUpdateToastContent 应返回 React 元素');
     expect(tree.props['data-tour']).toBe('app-update-toast');
     expect(tree.props.className).toBe('app-release-toast');
     expect(collectText(tree)).toContain('发现新版本 v1.8.255');

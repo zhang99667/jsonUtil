@@ -5,8 +5,8 @@ import { runAppTemplateFillCommand } from '../utils/appTemplateFillCommandRunner
 import { showError, showSuccess } from '../utils/toast';
 
 const reactMocks = vi.hoisted(() => ({
-  useCallback: vi.fn(),
-  useMemo: vi.fn(),
+  useCallback: vi.fn((callback: unknown) => callback),
+  useMemo: vi.fn((factory: () => unknown) => factory()),
 }));
 
 vi.mock('react', async importOriginal => ({
@@ -44,8 +44,6 @@ const createHookInput = (overrides: Partial<Parameters<typeof useAppTemplateFill
 describe('useAppTemplateFillCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-    reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
   });
 
   it('暴露模板目标错误', () => {

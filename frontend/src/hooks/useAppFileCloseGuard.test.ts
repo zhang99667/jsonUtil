@@ -8,8 +8,8 @@ const beforeUnloadMocks = vi.hoisted(() => ({
 
 const reactMocks = vi.hoisted(() => ({
   setPendingCloseFileId: vi.fn(),
-  useCallback: vi.fn(),
-  useMemo: vi.fn(),
+  useCallback: vi.fn((callback: unknown) => callback),
+  useMemo: vi.fn((factory: () => unknown) => factory()),
   useState: vi.fn(),
 }));
 
@@ -55,8 +55,6 @@ const useGuardFixture = (
 describe('useAppFileCloseGuard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-    reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
   });
 
   it('存在脏文件时把未保存状态同步给 beforeunload guard', () => {

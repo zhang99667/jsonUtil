@@ -3,8 +3,8 @@ import { getJsonValidationErrorLocation } from '../utils/jsonValidation';
 import { useAppEditorValidationLocations } from './useAppEditorValidationLocations';
 
 const reactMocks = vi.hoisted(() => ({
-  useCallback: vi.fn(),
-  useMemo: vi.fn(),
+  useCallback: vi.fn((callback: unknown) => callback),
+  useMemo: vi.fn((factory: () => unknown) => factory()),
   useState: vi.fn(),
 }));
 
@@ -33,8 +33,6 @@ const createOptions = (
 describe('useAppEditorValidationLocations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-    reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
     reactMocks.useState.mockReturnValue([0, vi.fn()]);
     vi.mocked(getJsonValidationErrorLocation)
       .mockReturnValueOnce({ line: 2, column: 4 })
