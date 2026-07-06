@@ -32,34 +32,34 @@ const createFile = (id: string, content: string, mode = TransformMode.NONE): Fil
   mode,
 });
 
-const createHookInput = (events: string[], files: FileTab[], activeFileId: string) => ({
-  input: files.find(file => file.id === activeFileId)?.content ?? '',
-  setInput: vi.fn(() => events.push('input')),
-  inputRef: { current: 'old' },
-  mode: TransformMode.NONE,
-  setMode: vi.fn(() => events.push('mode')),
-  onBeforeSourceWorkspaceChange: vi.fn(() => events.push('before')),
-});
-
-const mockReactState = (files: FileTab[], activeFileId: string) => {
+const useFileSystemScenario = (files: FileTab[], activeFileId = 'file-1') => {
+  const events: string[] = [];
   let stateIndex = 0;
-  const setFiles = vi.fn();
-  const setActiveFileId = vi.fn();
-  const setIsAutoSaveEnabled = vi.fn();
   reactMocks.useState.mockImplementation(() => {
     const values = [
       [null, vi.fn()],
-      [files, setFiles],
-      [activeFileId, setActiveFileId],
-      [false, setIsAutoSaveEnabled],
+      [files, vi.fn()],
+      [activeFileId, vi.fn()],
+      [false, vi.fn()],
     ];
     return values[stateIndex++] ?? [null, vi.fn()];
   });
+
+  const input = {
+    input: files.find(file => file.id === activeFileId)?.content ?? '',
+    setInput: vi.fn(() => events.push('input')),
+    inputRef: { current: 'old' },
+    mode: TransformMode.NONE,
+    setMode: vi.fn(() => events.push('mode')),
+    onBeforeSourceWorkspaceChange: vi.fn(() => events.push('before')),
+  };
+
+  return { events, input, fileSystem: useFileSystem(input) };
 };
 
-type HookInput = ReturnType<typeof createHookInput>;
+type FileSystemScenario = ReturnType<typeof useFileSystemScenario>;
 
-const expectSourceStateApplied = (input: HookInput, events: string[], content: string, mode?: TransformMode) => {
+const expectSourceStateApplied = ({ input, events }: FileSystemScenario, content: string, mode?: TransformMode) => {
   expect(input.onBeforeSourceWorkspaceChange).toHaveBeenCalledTimes(1);
   expect(input.setInput).toHaveBeenCalledWith(content);
   expect(input.inputRef.current).toBe(content);
@@ -77,47 +77,37 @@ describe('useFileSystem', () => {
   });
 
   it('切换标签替换 SOURCE 和模式前先触发 before-change', () => {
-    const events: string[] = [];
-    const files = [
+    const scenario = useFileSystemScenario([
       createFile('file-1', '{"a":1}'),
       createFile('file-2', '{"b":2}', TransformMode.DEEP_FORMAT),
-    ];
-    mockReactState(files, 'file-1');
-    const input = createHookInput(events, files, 'file-1');
+    ]);
 
-    const fileSystem = useFileSystem(input);
-    fileSystem.switchTab('file-2');
+    scenario.fileSystem.switchTab('file-2');
 
-    expectSourceStateApplied(input, events, '{"b":2}', TransformMode.DEEP_FORMAT);
+    expectSourceStateApplied(scenario, '{"b":2}', TransformMode.DEEP_FORMAT);
   });
 
   it('新建标签清空 SOURCE 和模式前先触发 before-change', () => {
-    const events: string[] = [];
-    const files = [createFile('file-1', '{"a":1}', TransformMode.DEEP_FORMAT)];
-    mockReactState(files, 'file-1');
-    const input = createHookInput(events, files, 'file-1');
+    const scenario = useFileSystemScenario([
+      createFile('file-1', '{"a":1}', TransformMode.DEEP_FORMAT),
+    ]);
 
-    const fileSystem = useFileSystem(input);
-    fileSystem.createNewTab();
+    scenario.fileSystem.createNewTab();
 
-    expectSourceStateApplied(input, events, '', TransformMode.NONE);
+    expectSourceStateApplied(scenario, '', TransformMode.NONE);
   });
 
   it('保存 PREVIEW 到文件时先触发 before-change 再写回 SOURCE', async () => {
-    const events: string[] = [];
     const writable = { write: vi.fn(), close: vi.fn() };
-    const files = [{
+    const scenario = useFileSystemScenario([{
       ...createFile('file-1', '{"a":1}'),
       handle: { createWritable: vi.fn().mockResolvedValue(writable) } as unknown as FileSystemFileHandle,
-    }];
-    mockReactState(files, 'file-1');
-    const input = createHookInput(events, files, 'file-1');
+    }]);
 
-    const fileSystem = useFileSystem(input);
-    const result = await fileSystem.saveFile('{"preview":true}');
+    const result = await scenario.fileSystem.saveFile('{"preview":true}');
 
     expect(result).toBe(true);
     expect(writable.write).toHaveBeenCalledWith('{"preview":true}');
-    expectSourceStateApplied(input, events, '{"preview":true}');
+    expectSourceStateApplied(scenario, '{"preview":true}');
   });
 });

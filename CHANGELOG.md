@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.492 (2026-07-06) - 文件系统测试场景收敛
+### 🏗️ 架构与基础设施
+- **文件系统 Hook 测试降噪**: `useFileSystem.test` 抽出本地场景 helper，统一 React state mock、输入回调和 hook 调用样板，三个 SOURCE 写回入口测试只保留文件场景、动作和关键顺序断言
+
 ## v1.8.491 (2026-07-06) - 模板填充目标错误计算简化
 ### 🏗️ 架构与基础设施
 - **模板填充 Hook 降噪**: `useAppTemplateFillCommand` 直接调用轻量目标错误纯函数，移除额外 `useMemo` 依赖和测试里的 React memo mock，降低 Hook 装配复杂度
