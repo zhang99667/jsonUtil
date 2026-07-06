@@ -1,4 +1,5 @@
 import React from 'react';
+import { JsonPathPanelQueryRunButton } from './JsonPathPanelQueryRunButton';
 
 interface JsonPathPanelQueryActionButtonsProps {
     isQuerying: boolean;
@@ -18,20 +19,13 @@ export const JsonPathPanelQueryActionButtons: React.FC<JsonPathPanelQueryActionB
     onCancelQuery,
 }) => (
     <>
-        <button
-            type="button"
-            data-tour="jsonpath-query-button"
-            onClick={onRunQuery}
-            disabled={isQuerying || isDataPreparing}
-            className="px-4 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        <JsonPathPanelQueryRunButton
+            isQuerying={isQuerying}
+            isDataPreparing={isDataPreparing}
             title={queryButtonTitle}
-            aria-describedby={queryButtonDescriptionId}
-        >
-            {isQuerying ? '查询中...' : '查询'}
-        </button>
-        <span id={queryButtonDescriptionId} className="sr-only">
-            {queryButtonTitle}
-        </span>
+            descriptionId={queryButtonDescriptionId}
+            onRunQuery={onRunQuery}
+        />
         {isQuerying && (
             <button
                 type="button"
