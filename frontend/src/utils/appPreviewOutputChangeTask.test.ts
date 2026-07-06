@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createAppPreviewOutputSyncTask } from './appPreviewOutputSyncTask';
 import { scheduleAppPreviewOutputChangeTask } from './appPreviewOutputChangeTask';
-import { createPreviewOutputChangeTaskInput } from './appPreviewOutputSyncTestFixture';
+import {
+  buildExpectedPreviewOutputSyncTaskInput,
+  createPreviewOutputChangeTaskInput,
+} from './appPreviewOutputSyncTestFixture';
 
 const syncTask = vi.hoisted(() => vi.fn());
 
@@ -16,19 +19,9 @@ describe('appPreviewOutputChangeTask', () => {
 
     scheduleAppPreviewOutputChangeTask(input);
 
-    expect(createAppPreviewOutputSyncTask).toHaveBeenCalledWith({
-      request: expect.objectContaining({ previewText: input.previewText }),
-      refs: {
-        inputRef: input.inputRef,
-        fallbackContextRef: input.fallbackContextRef,
-        pendingOutputValue: input.pendingOutputValue,
-      },
-      applyEffects: {
-        setPreviewValidation: input.setPreviewValidation,
-        onSetInput: input.onSetInput,
-        onUpdateActiveFileContent: input.onUpdateActiveFileContent,
-      },
-    });
+    expect(createAppPreviewOutputSyncTask).toHaveBeenCalledWith(
+      buildExpectedPreviewOutputSyncTaskInput(input)
+    );
     expect(input.scheduleOutputSync).toHaveBeenCalledWith(syncTask);
   });
 });

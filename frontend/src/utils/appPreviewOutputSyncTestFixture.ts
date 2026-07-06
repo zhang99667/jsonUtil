@@ -70,6 +70,16 @@ export const createPreviewOutputChangeTaskInput = ({
   };
 };
 
+export const buildExpectedPreviewOutputSyncTaskInput = ({
+  previewText, files, activeFileId, mode, validateJsonMaybeAsync,
+  inputRef, fallbackContextRef, pendingOutputValue,
+  setPreviewValidation, onSetInput, onUpdateActiveFileContent,
+}: AppPreviewOutputChangeTaskInput): AppPreviewOutputSyncTaskInput => ({
+  request: { previewText, files, activeFileId, mode, validateJsonMaybeAsync },
+  refs: { inputRef, fallbackContextRef, pendingOutputValue },
+  applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
+});
+
 export const createPreviewOutputChangeHandlerInput = ({
   isUpdatingFromOutput,
   updatePreviewValidation,
