@@ -30,26 +30,22 @@ export const useAppTemplateFillCommand = ({
     validation,
   }), [isTemplatePanelOpen, sourceText, validation]);
 
-  const templateFillEffects = useMemo(() => createAppTemplateFillCommandEffects({
-    inputRef,
-    onSetSourceText,
-    onUpdateActiveFileContent,
-    onSetTemplateApplyQualityDelta,
-  }), [
-    inputRef,
-    onSetSourceText,
-    onSetTemplateApplyQualityDelta,
-    onUpdateActiveFileContent,
-  ]);
-
   const handleApplyTemplate = useCallback((templateJson: string) => runAppTemplateFillCommand({
     autoExpandScheme,
     sourceBeforeApply: sourceText,
     templateJson,
-  }, templateFillEffects), [
-    sourceText,
+  }, createAppTemplateFillCommandEffects({
+    inputRef,
+    onSetSourceText,
+    onUpdateActiveFileContent,
+    onSetTemplateApplyQualityDelta,
+  })), [
     autoExpandScheme,
-    templateFillEffects,
+    inputRef,
+    onSetSourceText,
+    onSetTemplateApplyQualityDelta,
+    onUpdateActiveFileContent,
+    sourceText,
   ]);
 
   return { handleApplyTemplate, templateTargetError };
