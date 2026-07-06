@@ -14,7 +14,7 @@ export const useActionPanelScrollbar = ({
   const {
     scrollContainerRef: containerRef,
     handleScroll: handleCustomScrollbarScroll,
-    handleMouseDown: handleScrollbarMouseDown,
+    handleMouseDown,
     thumbSize,
     thumbOffset,
     showScrollbar,
@@ -29,11 +29,11 @@ export const useActionPanelScrollbar = ({
   return {
     containerRef,
     handleScroll,
-    handleScrollbarMouseDown,
-    scrollbarViewState: {
+    scrollbarProps: {
       showScrollbar,
       thumbHeight: thumbSize,
       thumbTop: thumbOffset,
+      onMouseDown: handleMouseDown,
     },
   };
 };

@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.545 (2026-07-06) - ActionPanel 滚动条 Props 收敛
+### 🏗️ 架构与基础设施
+- **滚动条适配层收口**: `useActionPanelScrollbar` 直接返回 `ActionPanelScrollbar` 所需 props，`ActionPanel` 不再手动拼接 view state 和拖拽回调，减少组件层适配样板
+
 ## v1.8.544 (2026-07-06) - 模板回填失败矩阵收敛
 ### 🏗️ 架构与基础设施
 - **模板应用失败测试矩阵化**: 模板回填失败测试用参数化用例覆盖 Error 原文透传和非 Error 兜底文案，移除重复的异常 mock、命令执行和失败断言样板
