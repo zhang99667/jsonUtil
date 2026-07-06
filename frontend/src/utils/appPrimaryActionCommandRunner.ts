@@ -35,11 +35,12 @@ export const runAppPrimaryActionCommand = async (
     return;
   }
 
-  const startedAt = effects.now();
   if (action === ActionType.OPEN) {
+    const startedAt = effects.now();
     await effects.onOpenFile();
     trackFileAction(action, startedAt, effects);
   } else if (action === ActionType.NEW_TAB) {
+    const startedAt = effects.now();
     effects.onCreateNewTab();
     trackFileAction(action, startedAt, effects);
   }
