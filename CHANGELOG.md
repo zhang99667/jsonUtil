@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.487 (2026-07-06) - 模板填充命令装配简化
+### 🏗️ 架构与基础设施
+- **模板填充 Hook 降噪**: `useAppTemplateFillCommand` 不再在渲染期 memo 一层命令 effects，改为应用模板点击时直接构造 runner effects，Hook 只保留目标错误计算和命令触发职责
+- **面板重置 Hook 降噪**: `useAppPanelLayoutResetCommand` 直接返回无参 runner，移除只做转调的匿名包装和测试里的 React mock
+
 ## v1.8.486 (2026-07-06) - PREVIEW 草稿切换测试收敛
 ### 🏗️ 架构与基础设施
 - **PREVIEW 草稿切换降噪**: 移除仅用于测试的 `shouldCancelPreviewDraftOnFileChange` 导出，把文件切换判断收回 `useAppPreviewDraftFileChangeReset` 内部，测试改为直接覆盖首次渲染、同文件、跨文件和 null 切换的 hook 行为矩阵

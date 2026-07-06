@@ -53,7 +53,7 @@ describe('useAppTemplateFillCommand', () => {
     expect(useAppTemplateFillCommand(createHookInput({ validation: invalidValidation })).templateTargetError).toBe('当前 SOURCE JSON 无效: bad json');
   });
 
-  it('应用模板时把当前 SOURCE 快照和 effects 传给 runner', async () => {
+  it('应用模板时把当前 SOURCE 快照和点击期 effects 传给 runner', async () => {
     const input = createHookInput();
     const { handleApplyTemplate } = useAppTemplateFillCommand(input);
 
