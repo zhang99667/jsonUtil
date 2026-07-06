@@ -15,7 +15,7 @@ import {
     formatJsonPathValuesForCopy,
     getJsonPathCopyCountLabel,
 } from '../utils/jsonPathPanelCopy';
-import { formatJsonPathValueForCompactPreview } from '../utils/jsonPathPreview';
+import { buildJsonPathResultPreviewItems } from '../utils/jsonPathPanelPreviewItems';
 import { shouldStopNestedScrollPropagation } from '../utils/nestedScrollPropagation';
 import {
     getDurationBucket,
@@ -408,14 +408,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
 
     const normalizedQuery = query.trim();
     const isCurrentQueryFavorite = normalizedQuery ? favorites.includes(normalizedQuery) : false;
-    const queryResultPreviewItems = useMemo(() => {
-        return queryItems.slice(0, MAX_VISIBLE_QUERY_RESULTS).map((item, index) => ({
-            index,
-            path: item.path,
-            sourceLabel: item.sourceLabel,
-            text: formatJsonPathValueForCompactPreview(item.value),
-        }));
-    }, [queryItems]);
+    const queryResultPreviewItems = useMemo(
+        () => buildJsonPathResultPreviewItems(queryItems, MAX_VISIBLE_QUERY_RESULTS),
+        [queryItems]
+    );
     const scenarioExamples = useMemo(() => getJsonPathScenarioExamples(jsonData), [jsonData]);
     const hiddenResultCount = Math.max(queryItems.length - queryResultPreviewItems.length, 0);
     const copyButtonLabel = isResultLimited ? '复制已返回结果' : '复制全部结果';
