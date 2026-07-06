@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  JSONPATH_FAVORITES_STORAGE_KEY,
-  JSONPATH_HISTORY_STORAGE_KEY,
-} from '../utils/jsonPathLists';
-import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import { clearStoredJsonPathHistory, loadJsonPathSavedQueryLists, saveJsonPathFavorites, saveJsonPathHistory } from '../utils/jsonPathSavedQueryStorage';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { useJsonPathSavedQueryLists } from './useJsonPathSavedQueryLists';
 
@@ -20,20 +16,21 @@ vi.mock('react', async importOriginal => ({
   useState: reactMocks.useState,
 }));
 
-vi.mock('../utils/storage', async importOriginal => ({
-  ...await importOriginal<typeof import('../utils/storage')>(),
-  safeGetStorageItem: vi.fn(),
-  safeRemoveStorageItem: vi.fn(),
-  safeSetStorageItem: vi.fn(),
+vi.mock('../utils/jsonPathSavedQueryStorage', async importOriginal => ({
+  ...await importOriginal<typeof import('../utils/jsonPathSavedQueryStorage')>(),
+  clearStoredJsonPathHistory: vi.fn(),
+  loadJsonPathSavedQueryLists: vi.fn(),
+  saveJsonPathFavorites: vi.fn(),
+  saveJsonPathHistory: vi.fn(),
 }));
 
 describe('useJsonPathSavedQueryLists', () => {
-  const setters: Array<ReturnType<typeof vi.fn>> = [];
+  let setLists: ReturnType<typeof vi.fn>;
   let backupImportedHandler: (() => void) | null = null;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    setters.length = 0;
+    setLists = vi.fn();
     backupImportedHandler = null;
 
     vi.stubGlobal('window', {
@@ -45,20 +42,14 @@ describe('useJsonPathSavedQueryLists', () => {
       removeEventListener: vi.fn(),
     });
 
-    vi.mocked(safeGetStorageItem).mockImplementation(key => {
-      if (key === JSONPATH_HISTORY_STORAGE_KEY) return JSON.stringify(['$.history']);
-      if (key === JSONPATH_FAVORITES_STORAGE_KEY) return JSON.stringify(['$.favorite']);
-      return null;
-    });
+    vi.mocked(loadJsonPathSavedQueryLists).mockReturnValue({ history: ['$.history'], favorites: ['$.favorite'] });
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
     reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => effect());
     reactMocks.useState.mockImplementation((initializer: unknown) => {
       const value = typeof initializer === 'function'
         ? (initializer as () => unknown)()
         : initializer;
-      const setter = vi.fn();
-      setters.push(setter);
-      return [value, setter];
+      return [value, setLists];
     });
   });
 
@@ -68,31 +59,35 @@ describe('useJsonPathSavedQueryLists', () => {
     expect(lists.history).toEqual(['$.history']);
     expect(lists.favorites).toEqual(['$.favorite']);
     expect(lists.isCurrentQueryFavorite).toBe(true);
-    expect(safeSetStorageItem).toHaveBeenCalledWith(
-      JSONPATH_HISTORY_STORAGE_KEY,
-      JSON.stringify(['$.history'])
-    );
-    expect(safeSetStorageItem).toHaveBeenCalledWith(
-      JSONPATH_FAVORITES_STORAGE_KEY,
-      JSON.stringify(['$.favorite'])
-    );
+    expect(saveJsonPathHistory).toHaveBeenCalledWith(['$.history']);
+    expect(saveJsonPathFavorites).toHaveBeenCalledWith(['$.favorite']);
   });
 
   it('提供历史和收藏的增删操作', () => {
     const lists = useJsonPathSavedQueryLists('$.new');
 
     lists.addHistoryItem('$.new');
-    expect(setters[0].mock.calls[0][0](['$.old'])).toEqual(['$.new', '$.old']);
+    expect(setLists.mock.calls[0][0]({ history: ['$.old'], favorites: [] })).toEqual({
+      history: ['$.new', '$.old'], favorites: [],
+    });
 
     lists.removeHistoryItem(0);
-    expect(setters[0].mock.calls[1][0](['$.old', '$.next'])).toEqual(['$.next']);
+    expect(setLists.mock.calls[1][0]({ history: ['$.old', '$.next'], favorites: [] })).toEqual({
+      history: ['$.next'], favorites: [],
+    });
 
     lists.toggleFavorite();
-    expect(setters[1].mock.calls[0][0](['$.old'])).toEqual(['$.new', '$.old']);
-    expect(setters[1].mock.calls[0][0](['$.new', '$.old'])).toEqual(['$.old']);
+    expect(setLists.mock.calls[2][0]({ history: [], favorites: ['$.old'] })).toEqual({
+      history: [], favorites: ['$.new', '$.old'],
+    });
+    expect(setLists.mock.calls[2][0]({ history: [], favorites: ['$.new', '$.old'] })).toEqual({
+      history: [], favorites: ['$.old'],
+    });
 
     lists.removeFavorite('$.old');
-    expect(setters[1].mock.calls[1][0](['$.old', '$.new'])).toEqual(['$.new']);
+    expect(setLists.mock.calls[3][0]({ history: [], favorites: ['$.old', '$.new'] })).toEqual({
+      history: [], favorites: ['$.new'],
+    });
   });
 
   it('清空历史时同步删除存储项', () => {
@@ -100,21 +95,20 @@ describe('useJsonPathSavedQueryLists', () => {
 
     lists.clearHistory();
 
-    expect(setters[0]).toHaveBeenCalledWith([]);
-    expect(safeRemoveStorageItem).toHaveBeenCalledWith(JSONPATH_HISTORY_STORAGE_KEY);
+    expect(setLists.mock.calls[0][0]({ history: ['$.old'], favorites: ['$.favorite'] })).toEqual({
+      history: [], favorites: ['$.favorite'],
+    });
+    expect(clearStoredJsonPathHistory).toHaveBeenCalledTimes(1);
   });
 
   it('配置备份导入后刷新已挂载面板中的列表', () => {
-    vi.mocked(safeGetStorageItem).mockImplementation(key => {
-      if (key === JSONPATH_HISTORY_STORAGE_KEY) return JSON.stringify(['$.importedHistory']);
-      if (key === JSONPATH_FAVORITES_STORAGE_KEY) return JSON.stringify(['$.importedFavorite']);
-      return null;
-    });
+    vi.mocked(loadJsonPathSavedQueryLists)
+      .mockReturnValueOnce({ history: ['$.history'], favorites: ['$.favorite'] })
+      .mockReturnValueOnce({ history: ['$.importedHistory'], favorites: ['$.importedFavorite'] });
 
     useJsonPathSavedQueryLists('$.favorite');
     backupImportedHandler?.();
 
-    expect(setters[0]).toHaveBeenCalledWith(['$.importedHistory']);
-    expect(setters[1]).toHaveBeenCalledWith(['$.importedFavorite']);
+    expect(setLists).toHaveBeenCalledWith({ history: ['$.importedHistory'], favorites: ['$.importedFavorite'] });
   });
 });

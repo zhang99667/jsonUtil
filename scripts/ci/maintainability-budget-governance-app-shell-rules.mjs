@@ -14,7 +14,7 @@ export const governanceAppShellMaintainabilityBudgets = [
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-component-rules.mjs', 40, 'App 展示组件预算规则应保持短表，避免混入主入口和工作流预算'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-rules.mjs', 15, 'JSONPath 面板预算入口应只组合组件和 helper 子表'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-component-rules.mjs', 15, 'JSONPath 组件预算规则应只维护面板和子组件预算'),
-  governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-helper-rules.mjs', 25, 'JSONPath helper 预算规则应维护复制、预览、UI 状态、导航、保存查询和面板引导 helper 预算'),
+  governanceAppShellBudget('scripts/ci/maintainability-budget-app-jsonpath-helper-rules.mjs', 25, 'JSONPath helper 预算规则应维护复制、预览、UI 状态、导航、保存查询、storage 和面板引导预算'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-recovery-rules.mjs', 25, 'App 发布恢复预算入口应只组合运行时恢复和版本检测子表'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-recovery-runtime-rules.mjs', 40, 'App 发布恢复运行时预算规则应保持短表，继续增长时按事件监听和 UI 兜底拆分'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-recovery-update-rules.mjs', 20, 'App 发布恢复版本检测预算入口应只组合 core 和 schedule 子表'),
