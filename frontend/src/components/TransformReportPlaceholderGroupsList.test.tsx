@@ -1,28 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TransformReportRuntimePlaceholderGroup } from '../utils/transformRuntimePlaceholderTypes';
+import { assertElementLike, findByType } from './componentElementTestHelpers';
 import { TransformReportPlaceholderGroupCard } from './TransformReportPlaceholderGroupCard';
 import { TransformReportPlaceholderGroupsList } from './TransformReportPlaceholderGroupsList';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
 
 const groups: TransformReportRuntimePlaceholderGroup[] = [
   {
@@ -57,10 +37,9 @@ describe('TransformReportPlaceholderGroupsList', () => {
       onFilter,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('TransformReportPlaceholderGroupsList 应返回 React 元素');
-    expect(tree.props['data-tour']).toBe('transform-report-placeholder-groups');
-    const cards = findByType(tree, TransformReportPlaceholderGroupCard);
+    const root = assertElementLike(tree, 'TransformReportPlaceholderGroupsList 应返回 React 元素');
+    expect(root.props['data-tour']).toBe('transform-report-placeholder-groups');
+    const cards = findByType(root, TransformReportPlaceholderGroupCard);
     expect(cards).toHaveLength(2);
     expect(cards[0].props.group).toBe(groups[0]);
     expect(cards[0].props.onFilter).toBe(onFilter);

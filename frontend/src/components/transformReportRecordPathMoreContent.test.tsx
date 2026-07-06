@@ -1,26 +1,7 @@
 import React from 'react';
 import { describe, expect, it } from 'vitest';
+import { collectText } from './componentElementTestHelpers';
 import { buildIndexedMoreContent } from './transformReportRecordPathMoreContent';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
 
 describe('buildIndexedMoreContent', () => {
   it('无需展示更多提示时返回空内容', () => {
