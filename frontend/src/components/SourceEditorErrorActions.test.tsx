@@ -1,17 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { assertElementLike } from './componentElementTestHelpers';
 import { SourceEditorErrorActions } from './SourceEditorErrorActions';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
 
 describe('SourceEditorErrorActions', () => {
   it('渲染 SOURCE 错误态 AI 修复按钮并透传点击事件', () => {
@@ -22,16 +11,15 @@ describe('SourceEditorErrorActions', () => {
       onRepair,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('SourceEditorErrorActions 应返回 React 元素');
+    const root = assertElementLike(tree, 'SourceEditorErrorActions 应返回 React 元素');
 
-    expect(tree.props['data-tour']).toBe('source-error-ai-fix');
-    expect(tree.props.title).toBe('使用 AI 修复 SOURCE JSON');
-    expect(tree.props['aria-label']).toBe('使用 AI 修复 SOURCE JSON');
-    expect(tree.props.disabled).toBe(false);
-    expect(tree.props.children).toBe('修复');
+    expect(root.props['data-tour']).toBe('source-error-ai-fix');
+    expect(root.props.title).toBe('使用 AI 修复 SOURCE JSON');
+    expect(root.props['aria-label']).toBe('使用 AI 修复 SOURCE JSON');
+    expect(root.props.disabled).toBe(false);
+    expect(root.props.children).toBe('修复');
 
-    const onClick = tree.props.onClick;
+    const onClick = root.props.onClick;
     expect(typeof onClick).toBe('function');
     if (typeof onClick !== 'function') throw new Error('修复按钮应透传 onClick');
     onClick();
@@ -45,8 +33,7 @@ describe('SourceEditorErrorActions', () => {
       onRepair: vi.fn(),
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('SourceEditorErrorActions 应返回 React 元素');
-    expect(tree.props.disabled).toBe(true);
+    const root = assertElementLike(tree, 'SourceEditorErrorActions 应返回 React 元素');
+    expect(root.props.disabled).toBe(true);
   });
 });

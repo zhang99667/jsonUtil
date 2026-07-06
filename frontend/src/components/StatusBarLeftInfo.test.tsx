@@ -6,43 +6,7 @@ import { StatusBarLeftInfo } from './StatusBarLeftInfo';
 import { StatusBarSaveStatusBadge } from './StatusBarSaveStatusBadge';
 import { StatusBarSourceValidationBadge } from './StatusBarSourceValidationBadge';
 import { StatusBarStatusBadges } from './StatusBarStatusBadges';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByDataTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByDataTour(item, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByDataTour(node.props.children, dataTour));
-};
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
+import { collectText, findByTour, findByType } from './componentElementTestHelpers';
 
 const activeFile: FileTab = {
   id: 'file-1',
@@ -165,7 +129,7 @@ describe('StatusBarContentMetrics', () => {
     expect(text).toContain('Size: 256 B');
     expect(text).toContain('Ln 3, Col 9');
     expect(text).toContain('12 行, 80 列');
-    expect(findByDataTour(tree, 'statusbar-byte-size')[0].props.title).toBe('当前聚焦内容的 UTF-8 字节数');
+    expect(findByTour(tree, 'statusbar-byte-size')[0].props.title).toBe('当前聚焦内容的 UTF-8 字节数');
   });
 
   it('采样统计时展示简化行列和大文件字节提示', () => {
@@ -179,6 +143,6 @@ describe('StatusBarContentMetrics', () => {
 
     const text = collectText(tree);
     expect(text).toContain('行列统计已简化');
-    expect(findByDataTour(tree, 'statusbar-byte-size')[0].props.title).toBe('大文件只估算已扫描内容的 UTF-8 字节数');
+    expect(findByTour(tree, 'statusbar-byte-size')[0].props.title).toBe('大文件只估算已扫描内容的 UTF-8 字节数');
   });
 });

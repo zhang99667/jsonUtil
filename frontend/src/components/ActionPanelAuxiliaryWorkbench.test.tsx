@@ -1,35 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TransformMode } from '../types';
 import { ActionPanelAuxiliaryWorkbench } from './ActionPanelAuxiliaryWorkbench';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByDataTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByDataTour(item, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByDataTour(node.props.children, dataTour));
-};
+import { assertElementLike, collectText, findByTour } from './componentElementTestHelpers';
 
 describe('ActionPanelAuxiliaryWorkbench', () => {
   it('折叠态隐藏低频辅助入口', () => {
@@ -50,15 +22,14 @@ describe('ActionPanelAuxiliaryWorkbench', () => {
       onSmartSuggestionAction,
     });
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelAuxiliaryWorkbench 应返回 React 元素');
-    expect(tree.type).toBe('details');
-    expect(tree.props['data-tour']).toBe('auxiliary-workbench');
-    expect(collectText(tree)).toContain('更多 / 实验');
-    expect(collectText(tree)).toContain('高级排查');
-    expect(collectText(tree)).toContain('低频复盘');
+    const root = assertElementLike(tree, 'ActionPanelAuxiliaryWorkbench 应返回 React 元素');
+    expect(root.type).toBe('details');
+    expect(root.props['data-tour']).toBe('auxiliary-workbench');
+    expect(collectText(root)).toContain('更多 / 实验');
+    expect(collectText(root)).toContain('高级排查');
+    expect(collectText(root)).toContain('低频复盘');
 
-    const debugButtons = findByDataTour(tree, 'workbench-debug-recipe');
+    const debugButtons = findByTour(root, 'workbench-debug-recipe');
     expect(debugButtons).toHaveLength(1);
     expect(debugButtons[0].props['aria-pressed']).toBe(true);
     expect(debugButtons[0].props.className).toContain('bg-editor-active');
@@ -79,7 +50,7 @@ describe('ActionPanelAuxiliaryWorkbench', () => {
       onSmartSuggestionAction: vi.fn(),
     });
 
-    const debugButtons = findByDataTour(tree, 'workbench-debug-recipe');
+    const debugButtons = findByTour(tree, 'workbench-debug-recipe');
     expect(debugButtons).toHaveLength(1);
     expect(debugButtons[0].props['aria-pressed']).toBe(false);
     expect(debugButtons[0].props.className).toContain('border-editor-border');
