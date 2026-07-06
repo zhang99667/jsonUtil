@@ -3,12 +3,13 @@ import { ActionType } from '../types';
 import { runAppPrimaryActionCommand } from '../utils/appPrimaryActionCommandRunner';
 import { useAppPrimaryActionCommand } from './useAppPrimaryActionCommand';
 
-const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn() }));
+const reactMocks = vi.hoisted(() => ({ useCallback: vi.fn(), useMemo: vi.fn() }));
 const runnerMocks = vi.hoisted(() => ({ runAppPrimaryActionCommand: vi.fn(() => Promise.resolve()) }));
 
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
+  useMemo: reactMocks.useMemo,
 }));
 
 vi.mock('../utils/appPrimaryActionCommandRunner', async importOriginal => ({
@@ -28,6 +29,7 @@ describe('useAppPrimaryActionCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
+    reactMocks.useMemo.mockImplementation((factory: () => unknown) => factory());
   });
 
   it('把动作和当前 effects 交给 runner', async () => {

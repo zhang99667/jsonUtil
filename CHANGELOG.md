@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.504 (2026-07-06) - 主动作命令 Hook Effects 收敛
+### 🏗️ 架构与基础设施
+- **主动作 Effects 稳定化**: `useAppPrimaryActionCommand` 改为先 memo 化 runner effects 再执行动作回调，对齐复制、保存和智能建议命令 hook 的装配方式，减少点击时临时对象组装并降低 hook 行数
+
 ## v1.8.503 (2026-07-06) - 组件测试查找 Helper 收敛
 ### 🏗️ 架构与基础设施
 - **测试元素遍历复用**: `componentElementTestHelpers` 抽出内部 `findElements` 统一 React 元素树递归查找逻辑，`findByType` 与 `findByTour` 保持原导出契约但不再各自维护同构遍历
