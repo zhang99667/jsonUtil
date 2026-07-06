@@ -15,6 +15,10 @@ describe('appPreviewOutputChangeTask', () => {
     const scheduleOutputSync = vi.fn();
     const inputRef = { current: '{"a":1}' };
     const pendingOutputValue = { current: '' };
+    const fallbackContextRef = { current: null };
+    const setPreviewValidation = vi.fn();
+    const onSetInput = vi.fn();
+    const onUpdateActiveFileContent = vi.fn();
 
     scheduleAppPreviewOutputChangeTask({
       previewText: '{"a":2}',
@@ -22,20 +26,20 @@ describe('appPreviewOutputChangeTask', () => {
       activeFileId: null,
       mode: TransformMode.FORMAT,
       inputRef,
-      fallbackContextRef: { current: null },
+      fallbackContextRef,
       pendingOutputValue,
       validateJsonMaybeAsync: vi.fn(),
-      setPreviewValidation: vi.fn(),
-      onSetInput: vi.fn(),
-      onUpdateActiveFileContent: vi.fn(),
+      setPreviewValidation,
+      onSetInput,
+      onUpdateActiveFileContent,
       scheduleOutputSync,
     });
 
-    expect(createAppPreviewOutputSyncTask).toHaveBeenCalledWith(expect.objectContaining({
-      previewText: '{"a":2}',
-      inputRef,
-      pendingOutputValue,
-    }));
+    expect(createAppPreviewOutputSyncTask).toHaveBeenCalledWith({
+      request: expect.objectContaining({ previewText: '{"a":2}' }),
+      refs: { inputRef, fallbackContextRef, pendingOutputValue },
+      applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
+    });
     expect(scheduleOutputSync).toHaveBeenCalledWith(syncTask);
   });
 });

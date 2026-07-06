@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.484 (2026-07-06) - PREVIEW 同步任务入参分层
+### 🏗️ 架构与基础设施
+- **PREVIEW 同步入参降维**: `createAppPreviewOutputSyncTask` 改用 `request`、`refs` 和 `applyEffects` 三段输入区分请求快照、运行时 ref 和写回副作用，`appPreviewOutputChangeTask` 固定平铺字段到同步任务输入的适配边界，降低 PREVIEW 反向同步链路继续膨胀的风险
+
 ## v1.8.483 (2026-07-06) - 面板布局重置命令分层
 ### 🏗️ 架构与基础设施
 - **面板布局重置分层**: 抽出 `appPanelLayoutResetCommandRunner` 统一维护布局缓存清理、面板重置通知和成功提示顺序，`useAppPanelLayoutResetCommand` 只保留 React 回调装配，测试同步拆成 hook 接线和 runner 副作用顺序两层

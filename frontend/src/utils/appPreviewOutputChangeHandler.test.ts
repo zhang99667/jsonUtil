@@ -45,6 +45,7 @@ describe('appPreviewOutputChangeHandler', () => {
     expect(scheduleAppPreviewOutputChangeTask).toHaveBeenCalledWith(expect.objectContaining({
       previewText: '{"a":2}',
       inputRef: input.inputRef,
+      fallbackContextRef: input.fallbackContextRef,
       pendingOutputValue: input.pendingOutputValue,
       scheduleOutputSync: input.scheduleOutputSync,
     }));

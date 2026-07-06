@@ -3,37 +3,25 @@ import { applyAppPreviewOutputSyncResult } from './appPreviewOutputSyncResult';
 import type { AppPreviewOutputSyncTaskInput } from './appPreviewOutputSyncTaskTypes';
 
 export const createAppPreviewOutputSyncTask = ({
-  previewText,
-  files,
-  activeFileId,
-  mode,
-  inputRef,
-  fallbackContextRef,
-  pendingOutputValue,
-  validateJsonMaybeAsync,
-  setPreviewValidation,
-  onSetInput,
-  onUpdateActiveFileContent,
+  request,
+  refs,
+  applyEffects,
 }: AppPreviewOutputSyncTaskInput) => async (isCurrent: () => boolean): Promise<boolean> => {
+  const { inputRef, fallbackContextRef, pendingOutputValue } = refs;
+
   const syncResult = await runAppPreviewOutputSyncRequest({
-    previewText,
-    files,
-    activeFileId,
-    mode,
+    ...request,
     originalInput: inputRef.current,
     fallbackContext: fallbackContextRef.current,
-    validateJsonMaybeAsync,
   });
 
   if (!isCurrent()) return false;
 
   return applyAppPreviewOutputSyncResult({
     syncResult,
-    previewText,
+    previewText: request.previewText,
     inputRef,
     pendingOutputValue,
-    setPreviewValidation,
-    onSetInput,
-    onUpdateActiveFileContent,
+    ...applyEffects,
   });
 };
