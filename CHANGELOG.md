@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.488 (2026-07-06) - App 治理预算子表拆分
+### 🏗️ 架构与基础设施
+- **App 治理预算分层**: 新增 `maintainability-budget-governance-app-shell-rules` 承接工具栏、文件系统、交互、恢复和状态栏等非 workflow/editor 子域预算，`governance-app-rules` 收敛为 editor/workflow/shell 聚合入口，降低治理表继续贴线风险
+
 ## v1.8.487 (2026-07-06) - 模板填充命令装配简化
 ### 🏗️ 架构与基础设施
 - **模板填充 Hook 降噪**: `useAppTemplateFillCommand` 不再在渲染期 memo 一层命令 effects，改为应用模板点击时直接构造 runner effects，Hook 只保留目标错误计算和命令触发职责
