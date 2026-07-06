@@ -1,4 +1,11 @@
 # 更新日志 (Changelog)
+## v1.8.622 (2026-07-07) - JSONPath 查询 Runner 拆分
+### 🐛 Bug 修复
+- **JSONPath 查询稳定性**: 连续查询或取消后旧 worker 消息晚到时会被 requestId guard 忽略，避免过期结果覆盖当前状态
+
+### 🏗️ 架构与基础设施
+- **JSONPath 面板瘦身**: 将查询 reducer、worker 生命周期、取消和外部查询请求抽到 `useJsonPathPanelQueryRunner`，面板组件只保留输入、保存查询、导航、复制和区域装配，并补充 fake worker 单测
+
 ## v1.8.621 (2026-07-07) - JSONPath 结果状态拆分
 ### 🏗️ 架构与基础设施
 - **JSONPath UI 状态瘦身**: 将查询结果区的隐藏数量、复制文案、空结果和取消状态判断拆到独立 result state helper，原 UI state 只负责组合结果状态、输入描述和按钮标题，并将 UI helper 预算拆成独立子表
