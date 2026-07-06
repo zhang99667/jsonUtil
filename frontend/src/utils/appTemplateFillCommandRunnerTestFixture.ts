@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
   applyTemplate: vi.fn(() => '{"merged":true}'),
   isPlaceholderFillTemplateJson: vi.fn(() => false),
-  buildAppTemplateFillQualityDelta: vi.fn(() => '质量变化: +1'),
+  buildAppTemplateFillQualityDelta: vi.fn((_input: unknown) => '质量变化: +1'),
 }));
 
 vi.mock('./chunkLoadRecoveryDispatch', () => ({
@@ -24,6 +24,13 @@ vi.mock('./appWorkflowHelpers', async importOriginal => ({
 
 vi.mock('./appTemplateFillQualityDelta', () => ({
   buildAppTemplateFillQualityDelta: mocks.buildAppTemplateFillQualityDelta,
+  tryBuildAppTemplateFillQualityDelta: (input: unknown) => {
+    try {
+      return mocks.buildAppTemplateFillQualityDelta(input);
+    } catch {
+      return '';
+    }
+  },
 }));
 
 const createEffectsBase = () => ({

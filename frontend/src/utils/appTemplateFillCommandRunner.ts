@@ -1,5 +1,5 @@
 import { isPlaceholderFillTemplateJson } from './appWorkflowHelpers';
-import { buildAppTemplateFillQualityDelta, type AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
+import { tryBuildAppTemplateFillQualityDelta, type AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { applyTemplate } from './transformations';
 
@@ -38,15 +38,21 @@ export const runAppTemplateFillCommand = async (
   try {
     if (abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
 
-    const summaryModule = isPlaceholderFillTemplateJson(templateJson)
-      ? await effects.loadSummaryModule()
+    const shouldLoadSummary = isPlaceholderFillTemplateJson(templateJson);
+    let isSummaryChunkRecoveryHandled = false;
+    const summaryModule = shouldLoadSummary
+      ? await effects.loadSummaryModule().catch(error => {
+        isSummaryChunkRecoveryHandled = dispatchChunkLoadRecoveryEvent(error);
+        return null;
+      })
       : null;
+    if (isSummaryChunkRecoveryHandled) return;
 
-    if (summaryModule && abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
+    if (shouldLoadSummary && abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
 
     const merged = applyTemplate(sourceBeforeApply, templateJson);
     const qualityDelta = summaryModule
-      ? buildAppTemplateFillQualityDelta({
+      ? tryBuildAppTemplateFillQualityDelta({
         sourceBeforeApply,
         sourceAfterApply: merged,
         autoExpandScheme,
@@ -58,7 +64,10 @@ export const runAppTemplateFillCommand = async (
     effects.onSetSourceText(merged);
     effects.setCurrentSourceText(merged);
     effects.onUpdateActiveFileContent(merged);
-    effects.onShowSuccess(summaryModule ? '占位符已回填，质量对比已更新' : '模板已应用');
+    const successMessage = shouldLoadSummary
+      ? qualityDelta ? '占位符已回填，质量对比已更新' : '占位符已回填，质量对比暂不可用'
+      : '模板已应用';
+    effects.onShowSuccess(successMessage);
   } catch (error: unknown) {
     if (dispatchChunkLoadRecoveryEvent(error)) return;
 
