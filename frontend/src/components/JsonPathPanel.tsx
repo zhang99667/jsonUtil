@@ -35,28 +35,16 @@ import {
     jsonPathPanelQueryStateReducer,
 } from '../utils/jsonPathPanelQueryState';
 import { buildJsonPathPanelUiState } from '../utils/jsonPathPanelUiState';
+import {
+    getJsonPathResultFocusIndex,
+    getJsonPathResultNavigationIndex,
+} from '../utils/jsonPathPanelNavigation';
+import { JSONPATH_EXAMPLES, RESPONSE_JSONPATH_PRESETS } from '../utils/jsonPathPanelPresets';
 
 const MAX_VISIBLE_QUERY_RESULTS = 100;
 const JSONPATH_ERROR_MESSAGE_ID = 'jsonpath-error-message';
 const JSONPATH_RESULT_STATUS_ID = 'jsonpath-result-status';
 const JSONPATH_QUERY_BUTTON_DESCRIPTION_ID = 'jsonpath-query-button-description';
-
-const JSONPATH_EXAMPLES = [
-    { label: '根节点', query: '$' },
-    { label: '所有属性', query: '$.*' },
-    { label: '数组第一项', query: '$[0]' },
-    { label: '递归搜索', query: '$..name' },
-    { label: '过滤条件', query: '$[?(@.age > 18)]' },
-];
-
-const RESPONSE_JSONPATH_PRESETS = [
-    { label: 'action_cmd', query: '$..action_cmd' },
-    { label: 'button_cmd', query: '$..button_cmd' },
-    { label: 'scheme', query: '$..scheme' },
-    { label: 'url', query: '$..url' },
-    { label: 'params', query: '$..params' },
-    { label: 'traceId', query: '$..traceId' },
-];
 
 interface JsonPathPanelProps {
     jsonData: string;
@@ -362,23 +350,25 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         handleQuery(externalQueryRequest.query);
     }, [externalQueryRequest, handleQuery, isDataPreparing, isOpen]);
 
-    // 导航到上一个结果
-    const goToPrevious = () => {
-        const navigableResultCount = queryRanges.length;
-        if (navigableResultCount === 0 || isQuerying) return;
-        const newIndex = currentResultIndex === 0 ? navigableResultCount - 1 : currentResultIndex - 1;
-        dispatchQueryState({ type: 'focus', index: newIndex });
-        onHighlightRange(queryRanges[newIndex] || null);
+    const applyFocusedResult = (index: number) => {
+        dispatchQueryState({ type: 'focus', index });
+        onHighlightRange(queryRanges[index] || null);
     };
 
-    // 导航到下一个结果
-    const goToNext = () => {
-        const navigableResultCount = queryRanges.length;
-        if (navigableResultCount === 0 || isQuerying) return;
-        const newIndex = currentResultIndex === navigableResultCount - 1 ? 0 : currentResultIndex + 1;
-        dispatchQueryState({ type: 'focus', index: newIndex });
-        onHighlightRange(queryRanges[newIndex] || null);
+    const navigateResult = (direction: 'previous' | 'next') => {
+        const nextIndex = getJsonPathResultNavigationIndex({
+            currentIndex: currentResultIndex,
+            resultCount: queryRanges.length,
+            direction,
+            isDisabled: isQuerying,
+        });
+        if (nextIndex === null) return;
+        applyFocusedResult(nextIndex);
     };
+
+    const goToPrevious = () => navigateResult('previous');
+
+    const goToNext = () => navigateResult('next');
 
     // 处理键盘快捷键
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -480,10 +470,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     };
 
     const focusQueryResult = (index: number) => {
-        if (isQuerying || queryRanges.length === 0 || index < 0 || index >= queryRanges.length) return;
+        const focusIndex = getJsonPathResultFocusIndex(index, queryRanges.length, isQuerying);
+        if (focusIndex === null) return;
 
-        dispatchQueryState({ type: 'focus', index });
-        onHighlightRange(queryRanges[index] || null);
+        applyFocusedResult(focusIndex);
     };
 
     const locateStructureResult = (index: number) => {
