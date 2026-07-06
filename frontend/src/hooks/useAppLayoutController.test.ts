@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyLayoutKeyboardResize } from './layoutKeyboardResize';
+import { createLayoutKeyboardEvent } from './layoutKeyboardResizeTestHelper';
 import { useAppLayoutController } from './useAppLayoutController';
 import { useLayout } from './useLayout';
 
@@ -33,12 +34,6 @@ const layout = {
   startResizingPane: vi.fn(),
 };
 
-const createKeyboardEvent = (key: string, shiftKey = false) => ({
-  key,
-  shiftKey,
-  preventDefault: vi.fn(),
-});
-
 describe('useAppLayoutController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -60,8 +55,8 @@ describe('useAppLayoutController', () => {
 
   it('键盘调整委托给 resize helper', () => {
     const result = useAppLayoutController({ current: null });
-    const sidebarEvent = createKeyboardEvent('ArrowRight');
-    const paneEvent = createKeyboardEvent('ArrowLeft', true);
+    const sidebarEvent = createLayoutKeyboardEvent('ArrowRight');
+    const paneEvent = createLayoutKeyboardEvent('ArrowLeft', true);
 
     result.handleSidebarResizeKeyDown(sidebarEvent as never);
     result.handlePaneResizeKeyDown(paneEvent as never);

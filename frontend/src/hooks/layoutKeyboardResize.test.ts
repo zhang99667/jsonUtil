@@ -4,12 +4,7 @@ import {
   getPaneKeyboardResizePercent,
   getSidebarKeyboardResizeWidth,
 } from './layoutKeyboardResize';
-
-const createKeyboardEvent = (key: string, shiftKey = false) => ({
-  key,
-  shiftKey,
-  preventDefault: vi.fn(),
-});
+import { createLayoutKeyboardEvent } from './layoutKeyboardResizeTestHelper';
 
 describe('layoutKeyboardResize', () => {
   it('按方向键调整侧栏宽度', () => {
@@ -40,7 +35,7 @@ describe('layoutKeyboardResize', () => {
   });
 
   it('应用键盘调整时阻止默认行为并写入 next 值', () => {
-    const event = createKeyboardEvent('ArrowRight');
+    const event = createLayoutKeyboardEvent('ArrowRight');
     const onResize = vi.fn();
 
     expect(applyLayoutKeyboardResize({
@@ -55,7 +50,7 @@ describe('layoutKeyboardResize', () => {
   });
 
   it('无关按键不会阻止默认行为或写入状态', () => {
-    const event = createKeyboardEvent('Tab');
+    const event = createLayoutKeyboardEvent('Tab');
     const onResize = vi.fn();
 
     expect(applyLayoutKeyboardResize({
