@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { findByType } from './componentElementTestHelpers';
+import { createJsonPathResultPreviewItems } from './JsonPathPanelResultPreviewItemTestData';
 import { JsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewRow';
-import { createJsonPathResultPreviewItems, renderJsonPathPanelResultPreviewList } from './JsonPathPanelResultPreviewTestFixture';
+import { renderJsonPathPanelResultPreviewList } from './JsonPathPanelResultPreviewTestFixture';
 
 describe('JsonPathPanelResultPreviewList', () => {
   it('装配结果行、选中态和交互回调', () => {

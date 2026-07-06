@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { assertElementLike, clickElement, findByTour, findByType } from './componentElementTestHelpers';
 import { JsonPathPanelResultPreviewLocateButton } from './JsonPathPanelResultPreviewLocateButton';
+import { createJsonPathResultPreviewItem } from './JsonPathPanelResultPreviewItemTestData';
 import { JsonPathPanelResultPreviewRowContent } from './JsonPathPanelResultPreviewRowContent';
-import { createJsonPathResultPreviewItem, renderJsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewTestFixture';
+import { renderJsonPathPanelResultPreviewRow } from './JsonPathPanelResultPreviewTestFixture';
 
 describe('JsonPathPanelResultPreviewRow', () => {
   it('渲染聚焦按钮状态，并把点击映射到结果下标', () => {

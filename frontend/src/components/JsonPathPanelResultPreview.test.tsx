@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { assertElementLike, findByTour, findByType } from './componentElementTestHelpers';
+import { createJsonPathResultPreviewItems } from './JsonPathPanelResultPreviewItemTestData';
 import { JsonPathPanelResultPreviewList } from './JsonPathPanelResultPreviewList';
 import { JsonPathPanelResultPreviewMessages } from './JsonPathPanelResultPreviewMessages';
-import { createJsonPathResultPreviewItems, renderJsonPathPanelResultPreview } from './JsonPathPanelResultPreviewTestFixture';
+import { renderJsonPathPanelResultPreview } from './JsonPathPanelResultPreviewTestFixture';
 
 describe('JsonPathPanelResultPreview', () => {
   it('无预览项时不渲染容器', () => {
