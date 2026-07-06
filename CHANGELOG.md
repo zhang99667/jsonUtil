@@ -1,7 +1,7 @@
 # 更新日志 (Changelog)
-## v1.8.523 (2026-07-06) - AI Base URL 根路径兼容
-### 🐛 Bug 修复
-- **OpenAI 兼容 Base URL 容错**: 自定义 AI Base URL 只填写域名根路径时自动补齐 `/v1`，避免 OneAPI/Comate 这类 OpenAI-compatible 服务被错误请求到 `/chat/completions`
+## v1.8.524 (2026-07-06) - 回滚 AI Base URL 根路径容错
+### 🧹 体验调整
+- **Base URL 配置回归标准语义**: 回滚自定义 AI 根域名自动补齐 `/v1` 的容错逻辑，OpenAI-compatible Base URL 继续要求用户填写到版本路径层级
 
 ## v1.8.522 (2026-07-06) - PREVIEW 输出变更链路分组收敛
 ### 🏗️ 架构与基础设施
