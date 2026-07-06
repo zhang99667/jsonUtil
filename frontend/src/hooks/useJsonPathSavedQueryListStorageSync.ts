@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import {
+  clearStoredJsonPathHistory,
   loadJsonPathSavedQueryLists,
   saveJsonPathFavorites,
   saveJsonPathHistory,
@@ -19,6 +20,11 @@ export const useJsonPathSavedQueryListStorageSync = ({
   onBackupImported,
 }: UseJsonPathSavedQueryListStorageSyncOptions): void => {
   useEffect(() => {
+    if (history.length === 0) {
+      clearStoredJsonPathHistory();
+      return;
+    }
+
     saveJsonPathHistory(history);
   }, [history]);
 

@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
-import { loadJsonPathSavedQueryLists, saveJsonPathFavorites, saveJsonPathHistory } from '../utils/jsonPathSavedQueryStorage';
+import {
+  clearStoredJsonPathHistory,
+  loadJsonPathSavedQueryLists,
+  saveJsonPathFavorites,
+  saveJsonPathHistory,
+} from '../utils/jsonPathSavedQueryStorage';
 import { useJsonPathSavedQueryListStorageSync } from './useJsonPathSavedQueryListStorageSync';
 
 const reactMocks = vi.hoisted(() => ({ useEffect: vi.fn() }));
@@ -12,6 +17,7 @@ vi.mock('react', async importOriginal => ({
 
 vi.mock('../utils/jsonPathSavedQueryStorage', async importOriginal => ({
   ...await importOriginal<typeof import('../utils/jsonPathSavedQueryStorage')>(),
+  clearStoredJsonPathHistory: vi.fn(),
   loadJsonPathSavedQueryLists: vi.fn(),
   saveJsonPathFavorites: vi.fn(),
   saveJsonPathHistory: vi.fn(),
@@ -53,6 +59,13 @@ describe('useJsonPathSavedQueryListStorageSync', () => {
 
     expect(saveJsonPathHistory).toHaveBeenCalledWith(['$.history']);
     expect(saveJsonPathFavorites).toHaveBeenCalledWith(['$.favorite']);
+  });
+
+  it('空历史时清理历史存储项', () => {
+    useRenderSync({ history: [] });
+
+    expect(clearStoredJsonPathHistory).toHaveBeenCalledTimes(1);
+    expect(saveJsonPathHistory).not.toHaveBeenCalled();
   });
 
   it('配置备份导入后从存储刷新列表', () => {
