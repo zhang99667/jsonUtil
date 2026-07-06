@@ -5,29 +5,24 @@ import type { MutableValueRef } from './mutableValueRef';
 export type PreviewOutputSyncTask = (isCurrent: () => boolean) => Promise<boolean>;
 export type SchedulePreviewOutputSync = (task: PreviewOutputSyncTask) => void;
 
-export type AppPreviewOutputSyncTaskRequest = Omit<
-  AppPreviewOutputSyncRequestInput,
-  'originalInput' | 'fallbackContext'
->;
+export type AppPreviewOutputSyncTaskRequest = Omit<AppPreviewOutputSyncRequestInput, 'originalInput' | 'fallbackContext'>;
 
 export interface AppPreviewOutputSyncTaskInput {
   request: AppPreviewOutputSyncTaskRequest;
-  refs: AppPreviewOutputSyncTaskRefs;
-  applyEffects: AppPreviewOutputSyncTaskApplyEffects;
+  refs: {
+    inputRef: MutableValueRef<string>;
+    fallbackContextRef: MutableValueRef<TransformContext | null>;
+    pendingOutputValue: MutableValueRef<string>;
+  };
+  applyEffects: {
+    setPreviewValidation: (validation: ValidationResult) => void;
+    onSetInput: (value: string) => void;
+    onUpdateActiveFileContent: (value: string) => void;
+  };
 }
 
-export interface AppPreviewOutputSyncTaskRefs {
-  inputRef: MutableValueRef<string>;
-  fallbackContextRef: MutableValueRef<TransformContext | null>;
-  pendingOutputValue: MutableValueRef<string>;
-}
-
-export interface AppPreviewOutputSyncTaskApplyEffects {
-  setPreviewValidation: (validation: ValidationResult) => void;
-  onSetInput: (value: string) => void;
-  onUpdateActiveFileContent: (value: string) => void;
-}
-
+export type AppPreviewOutputSyncTaskRefs = AppPreviewOutputSyncTaskInput['refs'];
+export type AppPreviewOutputSyncTaskApplyEffects = AppPreviewOutputSyncTaskInput['applyEffects'];
 export type AppPreviewOutputSyncTaskFlatInput =
   AppPreviewOutputSyncTaskRequest
   & AppPreviewOutputSyncTaskRefs

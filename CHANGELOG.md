@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.516 (2026-07-06) - PREVIEW 同步类型边界收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 同步类型单源化**: `AppPreviewOutputSyncTaskInput` 作为 request、refs 与 applyEffects 的唯一结构来源，refs/effects 类型从主输入派生，类型文件从 36 行降到 31 行并脱离预算上限
+
 ## v1.8.515 (2026-07-06) - PREVIEW 同步输入桥接收口
 ### 🏗️ 架构与基础设施
 - **PREVIEW 同步桥接瘦身**: 删除只负责平铺字段分桶的 `appPreviewOutputSyncTaskInput` helper 和形状单测，调度入口直接构造 request、refs 与 applyEffects，同步测试夹具从 75 行降到 65 行
