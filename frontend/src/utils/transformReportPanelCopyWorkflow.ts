@@ -1,7 +1,7 @@
 import {
   runTransformReportCopyText,
-  type TransformReportCopyTextOptions,
 } from './transformReportCopyActionRunner';
+import type { TransformReportCopyTextOptions } from './transformReportCopyActionRunnerTypes';
 import { buildTransformReportPanelInlineCopyWorkflow } from './transformReportPanelInlineCopyWorkflow';
 import { buildTransformReportPanelReportCopyWorkflow } from './transformReportPanelReportCopyWorkflow';
 import { buildTransformReportPanelTemplateCopyWorkflow } from './transformReportPanelTemplateCopyWorkflow';

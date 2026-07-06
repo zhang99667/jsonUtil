@@ -4,7 +4,7 @@ import type {
 import type {
   TransformReportCopyTextEffects,
   TransformReportCopyTextOptions,
-} from './transformReportCopyActionRunner';
+} from './transformReportCopyActionRunnerTypes';
 import type {
   TransformReportPanelCopyWorkflowState,
   TransformReportQualityBaseline,
