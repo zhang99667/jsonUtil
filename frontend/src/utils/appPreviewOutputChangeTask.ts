@@ -3,13 +3,7 @@ import type { AppPreviewOutputChangeTaskInput } from './appPreviewOutputSyncTask
 
 export const scheduleAppPreviewOutputChangeTask = ({
   scheduleOutputSync,
-  previewText, files, activeFileId, mode, validateJsonMaybeAsync,
-  inputRef, fallbackContextRef, pendingOutputValue,
-  setPreviewValidation, onSetInput, onUpdateActiveFileContent,
+  ...syncInput
 }: AppPreviewOutputChangeTaskInput) => {
-  scheduleOutputSync(createAppPreviewOutputSyncTask({
-    request: { previewText, files, activeFileId, mode, validateJsonMaybeAsync },
-    refs: { inputRef, fallbackContextRef, pendingOutputValue },
-    applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
-  }));
+  scheduleOutputSync(createAppPreviewOutputSyncTask(syncInput));
 };

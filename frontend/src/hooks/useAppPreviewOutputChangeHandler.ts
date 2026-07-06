@@ -5,35 +5,20 @@ import {
 } from '../utils/appPreviewOutputChangeHandler';
 
 export const useAppPreviewOutputChangeHandler = ({
-  files,
-  activeFileId,
-  mode,
-  inputRef,
-  fallbackContextRef,
+  request: { files, activeFileId, mode, validateJsonMaybeAsync },
+  refs: { inputRef, fallbackContextRef, pendingOutputValue },
+  applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
   isUpdatingFromOutput,
-  pendingOutputValue,
-  validateJsonMaybeAsync,
-  onSetInput,
-  onUpdateActiveFileContent,
-  setPreviewValidation,
   updatePreviewValidation,
   scheduleOutputSync,
 }: AppPreviewOutputChangeHandlerInput) => useCallback((previewText: string) => {
   runAppPreviewOutputChange({
-    previewText,
-    files,
-    activeFileId,
-    mode,
-    inputRef,
-    fallbackContextRef,
     isUpdatingFromOutput,
-    pendingOutputValue,
-    validateJsonMaybeAsync,
-    setPreviewValidation,
-    updatePreviewValidation,
-    onSetInput,
-    onUpdateActiveFileContent,
     scheduleOutputSync,
+    updatePreviewValidation,
+    request: { previewText, files, activeFileId, mode, validateJsonMaybeAsync },
+    refs: { inputRef, fallbackContextRef, pendingOutputValue },
+    applyEffects: { setPreviewValidation, onSetInput, onUpdateActiveFileContent },
   });
 }, [
   activeFileId,

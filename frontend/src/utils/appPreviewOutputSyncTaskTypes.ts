@@ -23,9 +23,7 @@ export interface AppPreviewOutputSyncTaskInput {
 
 export type AppPreviewOutputSyncTaskRefs = AppPreviewOutputSyncTaskInput['refs'];
 export type AppPreviewOutputSyncTaskApplyEffects = AppPreviewOutputSyncTaskInput['applyEffects'];
-export type AppPreviewOutputSyncTaskFlatInput =
-  AppPreviewOutputSyncTaskRequest
-  & AppPreviewOutputSyncTaskRefs
-  & AppPreviewOutputSyncTaskApplyEffects;
 
-export type AppPreviewOutputChangeTaskInput = AppPreviewOutputSyncTaskFlatInput & { scheduleOutputSync: SchedulePreviewOutputSync };
+export type AppPreviewOutputChangeTaskInput = AppPreviewOutputSyncTaskInput & {
+  scheduleOutputSync: SchedulePreviewOutputSync;
+};

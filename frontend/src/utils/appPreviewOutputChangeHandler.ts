@@ -2,40 +2,43 @@ import { beginPreviewOutputDraft } from './appPreviewOutputDraft';
 import { scheduleAppPreviewOutputChangeTask } from './appPreviewOutputChangeTask';
 import type {
   AppPreviewOutputSyncTaskApplyEffects,
+  AppPreviewOutputSyncTaskInput,
   AppPreviewOutputSyncTaskRefs,
   AppPreviewOutputSyncTaskRequest,
   SchedulePreviewOutputSync,
 } from './appPreviewOutputSyncTaskTypes';
 import type { MutableValueRef } from './mutableValueRef';
 
-export interface AppPreviewOutputChangeHandlerInput
-  extends Omit<AppPreviewOutputSyncTaskRequest, 'previewText'>,
-    AppPreviewOutputSyncTaskRefs,
-    AppPreviewOutputSyncTaskApplyEffects {
+export interface AppPreviewOutputChangeHandlerInput {
+  request: Omit<AppPreviewOutputSyncTaskRequest, 'previewText'>;
+  refs: AppPreviewOutputSyncTaskRefs;
+  applyEffects: AppPreviewOutputSyncTaskApplyEffects;
   isUpdatingFromOutput: MutableValueRef<boolean>;
   updatePreviewValidation: (previewText: string) => void;
   scheduleOutputSync: SchedulePreviewOutputSync;
 }
 
-interface RunAppPreviewOutputChangeInput
-  extends AppPreviewOutputChangeHandlerInput {
-  previewText: string;
+export interface RunAppPreviewOutputChangeInput extends AppPreviewOutputSyncTaskInput {
+  isUpdatingFromOutput: MutableValueRef<boolean>;
+  updatePreviewValidation: (previewText: string) => void;
+  scheduleOutputSync: SchedulePreviewOutputSync;
 }
 
 export const runAppPreviewOutputChange = ({
-  previewText,
+  request,
+  refs,
+  applyEffects,
   isUpdatingFromOutput,
-  pendingOutputValue,
   updatePreviewValidation,
   scheduleOutputSync,
-  ...taskInput
 }: RunAppPreviewOutputChangeInput) => {
-  beginPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue, previewText);
+  const { previewText } = request;
+  beginPreviewOutputDraft(isUpdatingFromOutput, refs.pendingOutputValue, previewText);
   updatePreviewValidation(previewText);
   scheduleAppPreviewOutputChangeTask({
-    ...taskInput,
-    previewText,
-    pendingOutputValue,
+    request,
+    refs,
+    applyEffects,
     scheduleOutputSync,
   });
 };

@@ -2,7 +2,6 @@ import { vi } from 'vitest';
 import { TransformMode, type TransformContext } from '../types';
 import type {
   AppPreviewOutputChangeTaskInput,
-  AppPreviewOutputSyncTaskFlatInput,
   AppPreviewOutputSyncTaskInput,
   SchedulePreviewOutputSync,
 } from './appPreviewOutputSyncTaskTypes';
@@ -45,19 +44,12 @@ export const createPreviewOutputSyncTaskInput = ({
   },
 });
 
-export const createPreviewOutputSyncTaskFlatInput = (
-  overrides: PreviewOutputSyncInputOverrides = {}
-): AppPreviewOutputSyncTaskFlatInput => {
-  const { request, refs, applyEffects } = createPreviewOutputSyncTaskInput(overrides);
-  return { ...request, ...refs, ...applyEffects };
-};
-
 export const createPreviewOutputChangeTaskInput = ({
   scheduleOutputSync,
   ...syncOverrides
 }: PreviewOutputChangeTaskInputOverrides = {}): AppPreviewOutputChangeTaskInput => {
   return {
-    ...createPreviewOutputSyncTaskFlatInput(syncOverrides),
+    ...createPreviewOutputSyncTaskInput(syncOverrides),
     scheduleOutputSync: scheduleOutputSync ?? vi.fn(),
   };
 };

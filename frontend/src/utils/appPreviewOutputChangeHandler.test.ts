@@ -2,8 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { beginPreviewOutputDraft } from './appPreviewOutputDraft';
 import { scheduleAppPreviewOutputChangeTask } from './appPreviewOutputChangeTask';
 import { runAppPreviewOutputChange } from './appPreviewOutputChangeHandler';
-import { createPreviewOutputChangeHandlerInput } from './appPreviewOutputChangeHandlerTestFixture';
-import { PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT } from './appPreviewOutputSyncTestFixture';
+import { createPreviewOutputChangeTaskInput, PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT } from './appPreviewOutputSyncTestFixture';
 
 vi.mock('./appPreviewOutputDraft', async importOriginal => ({
   ...await importOriginal<typeof import('./appPreviewOutputDraft')>(),
@@ -17,22 +16,21 @@ vi.mock('./appPreviewOutputChangeTask', async importOriginal => ({
 
 describe('appPreviewOutputChangeHandler', () => {
   it('开始草稿、即时校验并调度同步任务', () => {
-    const input = createPreviewOutputChangeHandlerInput();
+    const input = { ...createPreviewOutputChangeTaskInput(), isUpdatingFromOutput: { current: false }, updatePreviewValidation: vi.fn() };
 
-    runAppPreviewOutputChange({ ...input, previewText: PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT });
+    runAppPreviewOutputChange(input);
 
     expect(beginPreviewOutputDraft).toHaveBeenCalledWith(
       input.isUpdatingFromOutput,
-      input.pendingOutputValue,
+      input.refs.pendingOutputValue,
       PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT
     );
     expect(input.updatePreviewValidation).toHaveBeenCalledWith(PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT);
-    expect(scheduleAppPreviewOutputChangeTask).toHaveBeenCalledWith(expect.objectContaining({
-      previewText: PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT,
-      inputRef: input.inputRef,
-      fallbackContextRef: input.fallbackContextRef,
-      pendingOutputValue: input.pendingOutputValue,
+    expect(scheduleAppPreviewOutputChangeTask).toHaveBeenCalledWith({
+      request: input.request,
+      refs: input.refs,
+      applyEffects: input.applyEffects,
       scheduleOutputSync: input.scheduleOutputSync,
-    }));
+    });
   });
 });
