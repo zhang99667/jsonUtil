@@ -6,7 +6,7 @@ import type {
   AppPreviewOutputSyncTaskInput,
   AppPreviewOutputSyncTaskRefs,
   AppPreviewOutputSyncTaskRequest,
-  PreviewOutputSyncTask,
+  SchedulePreviewOutputSync,
 } from './appPreviewOutputSyncTaskTypes';
 
 export const PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT = '{"a":2}';
@@ -19,7 +19,7 @@ type PreviewOutputSyncInputOverrides = {
 };
 
 type PreviewOutputChangeTaskInputOverrides = PreviewOutputSyncInputOverrides & {
-  scheduleOutputSync?: (task: PreviewOutputSyncTask) => void;
+  scheduleOutputSync?: SchedulePreviewOutputSync;
 };
 
 export const createPreviewOutputSyncTaskInput = ({

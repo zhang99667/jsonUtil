@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, type MutableRefObject } from 'react';
-
-type PreviewOutputSyncTask = (isCurrent: () => boolean) => Promise<boolean>;
+import type { PreviewOutputSyncTask } from '../utils/appPreviewOutputSyncTaskTypes';
 
 interface UseAppPreviewOutputSyncSchedulerInput {
   clearOutputDraft: () => void;
