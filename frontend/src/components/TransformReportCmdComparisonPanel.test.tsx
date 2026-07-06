@@ -2,38 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import type { JsonValue } from '../types';
 import type { CmdComparisonDiffSummary } from '../utils/transformReportCmdComparison';
 import type { TransformReportRecord } from '../utils/transformSummary';
+import { clickElement, collectText, findByTour } from './componentElementTestHelpers';
 import {
   TransformReportCmdComparisonPanel,
   formatCmdComparisonDiffSummaryLabel,
 } from './TransformReportCmdComparisonPanel';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByDataTour = (node: unknown, dataTour: string): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByDataTour(item, dataTour));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.props['data-tour'] === dataTour ? [node] : [];
-  return matches.concat(findByDataTour(node.props.children, dataTour));
-};
 
 const createCmdRecord = (
   path: string,
@@ -96,15 +69,16 @@ describe('TransformReportCmdComparisonPanel', () => {
     expect(text).toContain('存在差异');
     expect(text).toContain('可能拿错 actual');
 
-    const copyButton = findByDataTour(tree, 'transform-report-copy-cmd-comparison-diff')[0];
+    const copyButton = findByTour(tree, 'transform-report-copy-cmd-comparison-diff')[0];
     expect(copyButton.props.disabled).toBe(false);
-    (copyButton.props.onClick as () => void)();
+    clickElement(copyButton);
     expect(onCopyDiff).toHaveBeenCalledWith(currentRecord);
 
-    const betterCandidateButton = findByDataTour(tree, 'transform-report-cmd-candidate')
+    const betterCandidateButton = findByTour(tree, 'transform-report-cmd-candidate')
       .find(button => button.props.disabled !== true);
     expect(betterCandidateButton).toBeTruthy();
-    (betterCandidateButton?.props.onClick as () => void)();
+    if (!betterCandidateButton) throw new Error('应存在可切换候选');
+    clickElement(betterCandidateButton);
     expect(onSwitchCandidate.mock.calls[0][0]).toMatchObject({
       id: '$.better',
       recordPath: '$.better',
@@ -127,8 +101,8 @@ describe('TransformReportCmdComparisonPanel', () => {
     });
 
     expect(collectText(tree)).toContain('把内部 cmdHandler 的解析结果');
-    expect(findByDataTour(tree, 'transform-report-copy-cmd-comparison-diff')[0].props.disabled).toBe(true);
-    expect(findByDataTour(tree, 'transform-report-cmd-candidate')).toEqual([]);
+    expect(findByTour(tree, 'transform-report-copy-cmd-comparison-diff')[0].props.disabled).toBe(true);
+    expect(findByTour(tree, 'transform-report-cmd-candidate')).toEqual([]);
   });
 
   it('格式化一致但忽略额外路径的摘要文案', () => {

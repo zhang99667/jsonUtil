@@ -1,18 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TransformContextReport } from '../utils/transformSummary';
+import { collectText, isElementLike, type ElementLike } from './componentElementTestHelpers';
 import { TransformReportTopDistributions } from './TransformReportTopDistributions';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
 
 const findButtons = (node: unknown): ElementLike[] => {
   if (Array.isArray(node)) return node.flatMap(findButtons);
@@ -20,14 +9,6 @@ const findButtons = (node: unknown): ElementLike[] => {
 
   const matches = node.props.type === 'button' ? [node] : [];
   return matches.concat(findButtons(node.props.children));
-};
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
 };
 
 describe('TransformReportTopDistributions', () => {
