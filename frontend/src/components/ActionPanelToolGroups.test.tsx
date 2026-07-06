@@ -2,27 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TransformMode } from '../types';
 import { ActionPanelToolButton } from './ActionPanelToolButton';
 import { ActionPanelToolGroups } from './ActionPanelToolGroups';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
+import { findByType } from './componentElementTestHelpers';
 
 describe('ActionPanelToolGroups', () => {
   it('渲染所有工具按钮并标记当前模式', () => {

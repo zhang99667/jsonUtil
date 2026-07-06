@@ -1,33 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ActionPanelHeader } from './ActionPanelHeader';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
-
-const collectText = (node: unknown): string => {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (!isElementLike(node)) return '';
-  return collectText(node.props.children);
-};
+import { collectText, findByType } from './componentElementTestHelpers';
 
 describe('ActionPanelHeader', () => {
   it('展开态展示工具箱标题并保留折叠按钮语义', () => {

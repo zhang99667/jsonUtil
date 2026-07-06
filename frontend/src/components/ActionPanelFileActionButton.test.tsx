@@ -1,26 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ActionType } from '../types';
 import { ActionPanelFileActionButton } from './ActionPanelFileActionButton';
-
-interface ElementLike {
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
+import { assertElementLike, collectText } from './componentElementTestHelpers';
 
 const renderButton = (
   overrides: Partial<Parameters<typeof ActionPanelFileActionButton>[0]> = {},
@@ -37,10 +18,11 @@ const renderButton = (
 describe('ActionPanelFileActionButton', () => {
   it('展开态展示标签并透传 action 点击', () => {
     const onAction = vi.fn();
-    const tree = renderButton({ onAction });
+    const tree = assertElementLike(
+      renderButton({ onAction }),
+      'ActionPanelFileActionButton 应返回 React 元素'
+    );
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelFileActionButton 应返回 React 元素');
     expect(tree.props['data-tour']).toBe('open-file-button');
     expect(tree.props['aria-label']).toBe('打开文件');
     expect(tree.props.title).toBeUndefined();
@@ -54,10 +36,11 @@ describe('ActionPanelFileActionButton', () => {
   });
 
   it('折叠态隐藏标签并保留 title', () => {
-    const tree = renderButton({ isCollapsed: true });
+    const tree = assertElementLike(
+      renderButton({ isCollapsed: true }),
+      'ActionPanelFileActionButton 应返回 React 元素'
+    );
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('ActionPanelFileActionButton 应返回 React 元素');
     expect(tree.props.title).toBe('打开文件');
     expect(tree.props.className).toContain('px-2');
     expect(collectText(tree)).not.toContain('打开文件');
