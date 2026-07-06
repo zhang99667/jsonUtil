@@ -5,6 +5,7 @@ import {
   JsonPathPanelResultToolbarActionList,
 } from './JsonPathPanelResultToolbarActionList';
 import { JsonPathPanelResultToolbarButton } from './JsonPathPanelResultToolbarButton';
+import { JsonPathPanelResultToolbarIcon } from './JsonPathPanelResultToolbarIcon';
 
 const buildActionListProps = (
   overrides: Partial<Parameters<typeof JsonPathPanelResultToolbarActionList>[0]> = {}
@@ -73,11 +74,11 @@ describe('JsonPathPanelResultToolbarActionList', () => {
       '下一个结果 (Enter)',
     ]);
     expect(buttons[1].props.dataTour).toBe('jsonpath-copy-path-values');
-    expect(findByType(tree, 'svg').map(icon => icon.props.viewBox)).toEqual([
-      '0 0 24 24',
-      '0 0 24 24',
-      '0 0 24 24',
-      '0 0 24 24',
+    expect(findByType(tree, JsonPathPanelResultToolbarIcon).map(icon => icon.props.icon)).toEqual([
+      'copyValues',
+      'copyPathValues',
+      'previous',
+      'next',
     ]);
 
     buttons.forEach(clickElement);
