@@ -45,6 +45,17 @@ describe('appTemplateFillCommandRunner failures', () => {
     expectTemplateCommandFailure(effects, '内容已变化，请重新应用模板');
   });
 
+  it('命令开始时 SOURCE 已变化则不加载质量摘要模块', async () => {
+    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
+    const effects = createAppTemplateFillCommandEffects({ currentSourceText: '{"changed":true}' });
+
+    await runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
+
+    expect(effects.loadSummaryModule).not.toHaveBeenCalled();
+    expect(mocks.applyTemplate).not.toHaveBeenCalled();
+    expectTemplateCommandFailure(effects, '内容已变化，请重新应用模板');
+  });
+
   it('模板应用失败时保留原始错误文案', async () => {
     mocks.applyTemplate.mockImplementation(() => {
       throw new Error('当前编辑器内容为空');

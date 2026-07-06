@@ -1,8 +1,5 @@
 import { isPlaceholderFillTemplateJson } from './appWorkflowHelpers';
-import {
-  buildAppTemplateFillQualityDelta,
-  type AppTemplateFillQualitySummaryModule,
-} from './appTemplateFillQualityDelta';
+import { buildAppTemplateFillQualityDelta, type AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { applyTemplate } from './transformations';
 
@@ -23,6 +20,13 @@ export interface AppTemplateFillCommandEffects {
   onShowSuccess: (message: string) => void;
 }
 
+const abortTemplateFillIfSourceChanged = (sourceBeforeApply: string, effects: AppTemplateFillCommandEffects): boolean => {
+  if (effects.getCurrentSourceText() === sourceBeforeApply) return false;
+  effects.onSetTemplateApplyQualityDelta('');
+  effects.onShowError('内容已变化，请重新应用模板');
+  return true;
+};
+
 export const runAppTemplateFillCommand = async (
   {
     sourceBeforeApply,
@@ -32,15 +36,13 @@ export const runAppTemplateFillCommand = async (
   effects: AppTemplateFillCommandEffects
 ) => {
   try {
+    if (abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
+
     const summaryModule = isPlaceholderFillTemplateJson(templateJson)
       ? await effects.loadSummaryModule()
       : null;
 
-    if (summaryModule && effects.getCurrentSourceText() !== sourceBeforeApply) {
-      effects.onSetTemplateApplyQualityDelta('');
-      effects.onShowError('内容已变化，请重新应用模板');
-      return;
-    }
+    if (summaryModule && abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
 
     const merged = applyTemplate(sourceBeforeApply, templateJson);
     const qualityDelta = summaryModule
