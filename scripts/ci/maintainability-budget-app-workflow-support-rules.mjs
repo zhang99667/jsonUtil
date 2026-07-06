@@ -17,4 +17,9 @@ export const appWorkflowSupportMaintainabilityBudgets = [
     maxLines: 100,
     reason: '主应用 helper 应保持纯函数和少量编排辅助，不承载 React 状态',
   },
+  {
+    file: 'frontend/src/utils/memoryStorageTestHelper.ts',
+    maxLines: 35,
+    reason: '本地存储测试夹具只维护内存版 Storage 行为，避免各测试重复实现',
+  },
 ];

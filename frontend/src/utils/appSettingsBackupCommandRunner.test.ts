@@ -8,6 +8,7 @@ import {
   runAppExportSettingsBackupCommand,
   runAppImportSettingsBackupCommand,
 } from './appSettingsBackupCommandRunner';
+import { MemoryStorage } from './memoryStorageTestHelper';
 
 vi.mock('./chunkLoadRecoveryDispatch', () => ({
   dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
@@ -26,34 +27,6 @@ const aiConfig: AIConfig = {
 const backupPayload = {
   exportedAt: '2026-06-29T12:34:56.789Z',
 } as AppBackupPayload;
-
-class MemoryStorage implements Storage {
-  private data = new Map<string, string>();
-
-  get length() {
-    return this.data.size;
-  }
-
-  clear(): void {
-    this.data.clear();
-  }
-
-  getItem(key: string): string | null {
-    return this.data.get(key) ?? null;
-  }
-
-  key(index: number): string | null {
-    return Array.from(this.data.keys())[index] ?? null;
-  }
-
-  removeItem(key: string): void {
-    this.data.delete(key);
-  }
-
-  setItem(key: string, value: string): void {
-    this.data.set(key, value);
-  }
-}
 
 describe('appSettingsBackupCommandRunner', () => {
   beforeEach(() => {

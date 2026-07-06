@@ -15,34 +15,7 @@ import {
   serializeJsonSchemaLibrary,
 } from './jsonSchemaLibrary';
 import { JSON_TREE_SEARCH_HISTORY_STORAGE_KEY } from './jsonTreeSearchHistory';
-
-class MemoryStorage implements Storage {
-  private data = new Map<string, string>();
-
-  get length() {
-    return this.data.size;
-  }
-
-  clear(): void {
-    this.data.clear();
-  }
-
-  getItem(key: string): string | null {
-    return this.data.get(key) ?? null;
-  }
-
-  key(index: number): string | null {
-    return Array.from(this.data.keys())[index] ?? null;
-  }
-
-  removeItem(key: string): void {
-    this.data.delete(key);
-  }
-
-  setItem(key: string, value: string): void {
-    this.data.set(key, value);
-  }
-}
+import { MemoryStorage } from './memoryStorageTestHelper';
 
 describe('app backup', () => {
   it('构建配置备份时不导出 AI Key', () => {
