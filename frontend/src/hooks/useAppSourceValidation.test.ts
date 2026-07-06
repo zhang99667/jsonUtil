@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ValidationResult } from '../types';
 import { runAppSourceValidationRequest } from '../utils/appSourceValidationRequest';
-import { useAppSourceValidation } from './useAppSourceValidation';
+import { SOURCE_VALIDATION_DEBOUNCE_MS, useAppSourceValidation } from './useAppSourceValidation';
 
 const mocks = vi.hoisted(() => ({
   useEffect: vi.fn(),
@@ -38,7 +38,7 @@ describe('useAppSourceValidation', () => {
 
     expect(runAppSourceValidationRequest).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(SOURCE_VALIDATION_DEBOUNCE_MS);
 
     expect(runAppSourceValidationRequest).toHaveBeenCalledWith(expect.objectContaining({
       input: '  {"a":1}  ',
@@ -72,7 +72,7 @@ describe('useAppSourceValidation', () => {
     });
 
     useAppSourceValidation({ input: '{"a":1}', onSetValidation: vi.fn() });
-    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(SOURCE_VALIDATION_DEBOUNCE_MS);
     cleanup?.();
 
     expect(validationTask.cancel).toHaveBeenCalledTimes(1);

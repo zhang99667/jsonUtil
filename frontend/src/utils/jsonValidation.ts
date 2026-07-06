@@ -22,6 +22,8 @@ const JSON_ERROR_POSITION_RE = /position\s+(\d+)/i;
 
 export const cleanJsonInput = (value: string): string => value.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
+export const isCleanJsonInputEmpty = (cleanValue: string): boolean => cleanValue.trim().length === 0;
+
 const positionToLocation = (value: string, position: number): JsonErrorLocation => {
   const safePosition = Math.max(0, Math.min(position, value.length));
   let line = 1;
@@ -109,7 +111,7 @@ export const isJsonContainerCandidate = (value: string): boolean => {
 
 export const validateJsonForEditor = (value: string, options: JsonValidationOptions = {}): ValidationResult => {
   const cleanValue = cleanJsonInput(value);
-  if (!cleanValue.trim()) return { isValid: true };
+  if (isCleanJsonInputEmpty(cleanValue)) return { isValid: true };
   if (options.requireContainer && !isJsonContainerCandidate(cleanValue)) return { isValid: true };
 
   return validateJson(cleanValue);
