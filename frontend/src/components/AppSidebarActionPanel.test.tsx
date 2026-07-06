@@ -2,27 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ActionPanel } from './ActionPanel';
 import { AppSidebarActionPanel, type AppSidebarActionPanelProps } from './AppSidebarActionPanel';
 import { ActionType, TransformMode } from '../types';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
+import { assertElementLike, findByType } from './componentElementTestHelpers';
 
 const buildProps = (overrides: Partial<AppSidebarActionPanelProps> = {}): AppSidebarActionPanelProps => ({
   activeMode: TransformMode.FORMAT,
@@ -54,10 +34,8 @@ const buildProps = (overrides: Partial<AppSidebarActionPanelProps> = {}): AppSid
 describe('AppSidebarActionPanel', () => {
   it('按侧栏宽度装配 ActionPanel 并透传工具状态', () => {
     const props = buildProps();
-    const tree = AppSidebarActionPanel(props);
+    const tree = assertElementLike(AppSidebarActionPanel(props), 'AppSidebarActionPanel 应返回 React 元素');
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('AppSidebarActionPanel 应返回 React 元素');
     expect(tree.props['data-tour']).toBe('toolbar');
     expect(tree.props.style).toEqual({ width: 312 });
 
@@ -70,10 +48,11 @@ describe('AppSidebarActionPanel', () => {
   });
 
   it('折叠时使用固定窄宽度', () => {
-    const tree = AppSidebarActionPanel(buildProps({ isCollapsed: true, sidebarWidth: 420 }));
+    const tree = assertElementLike(
+      AppSidebarActionPanel(buildProps({ isCollapsed: true, sidebarWidth: 420 })),
+      'AppSidebarActionPanel 应返回 React 元素'
+    );
 
-    expect(isElementLike(tree)).toBe(true);
-    if (!isElementLike(tree)) throw new Error('AppSidebarActionPanel 应返回 React 元素');
     expect(tree.props.style).toEqual({ width: 64 });
   });
 

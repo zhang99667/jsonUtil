@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { clickElement, collectText, findByType } from '../components/componentElementTestHelpers';
 import { useAppChunkLoadRecovery } from './useAppChunkLoadRecovery';
-
-interface ElementLike {
-  type?: unknown;
-  props: Record<string, unknown>;
-}
 
 const mocks = vi.hoisted(() => ({
   installChunkLoadRecoveryListeners: vi.fn(),
@@ -26,36 +22,6 @@ vi.mock('react-hot-toast', () => ({
 vi.mock('../utils/chunkLoadRecoveryEvents', () => ({
   installChunkLoadRecoveryListeners: mocks.installChunkLoadRecoveryListeners,
 }));
-
-const isElementLike = (node: unknown): node is ElementLike => (
-  typeof node === 'object' &&
-  node !== null &&
-  'props' in node &&
-  typeof (node as ElementLike).props === 'object' &&
-  (node as ElementLike).props !== null
-);
-
-const collectText = (node: unknown): string => {
-  if (node === null || node === undefined || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join('');
-  if (isElementLike(node)) return collectText(node.props.children);
-  return '';
-};
-
-const findByType = (node: unknown, type: unknown): ElementLike[] => {
-  if (Array.isArray(node)) return node.flatMap(item => findByType(item, type));
-  if (!isElementLike(node)) return [];
-
-  const matches = node.type === type ? [node] : [];
-  return matches.concat(findByType(node.props.children, type));
-};
-
-const clickElement = (node: ElementLike) => {
-  const onClick = node.props.onClick;
-  if (typeof onClick !== 'function') throw new Error('expected clickable element');
-  onClick();
-};
 
 describe('useAppChunkLoadRecovery', () => {
   beforeEach(() => {
