@@ -1,4 +1,4 @@
-import type { AppTemplateFillCommandEffects } from './appTemplateFillCommandRunner';
+import type { AppTemplateFillCommandEffects } from './appTemplateFillCommandRunnerTypes';
 import { showError, showSuccess } from './toast';
 
 interface SourceTextRef {
