@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, useReducer } from 'react';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useFeatureTour, FeatureId } from '../hooks/useFeatureTour';
+import { useJsonPathSavedQueryLists } from '../hooks/useJsonPathSavedQueryLists';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { JsonPathPanelQueryInput } from './JsonPathPanelQueryInput';
 import { JsonPathPanelResultPreview } from './JsonPathPanelResultPreview';
@@ -9,10 +10,8 @@ import { JsonPathPanelSavedQueries } from './JsonPathPanelSavedQueries';
 import { JsonPathPanelStatusMessages } from './JsonPathPanelStatusMessages';
 import { JsonPathPanelSuggestions } from './JsonPathPanelSuggestions';
 import type { HighlightRange } from '../types';
-import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
-import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 import { getJsonPathScenarioExamples } from '../utils/jsonPathExamples';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
 import { normalizeJsonPathQueryInput } from '../utils/jsonPathInput';
@@ -29,13 +28,6 @@ import {
     trackToolEvent,
     type ToolEventStatus,
 } from '../utils/productTelemetry';
-import {
-    addJsonPathListItem,
-    JSONPATH_FAVORITES_STORAGE_KEY,
-    JSONPATH_HISTORY_STORAGE_KEY,
-    parseStoredJsonPathList,
-    removeJsonPathListItem
-} from '../utils/jsonPathLists';
 import {
     initialJsonPathPanelQueryState,
     jsonPathPanelQueryStateReducer,
@@ -78,12 +70,17 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     onLocateStructure
 }) => {
     const [query, setQuery] = useState<string>('$');
-    const [history, setHistory] = useState<string[]>(() => {
-        return parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY));
-    });
-    const [favorites, setFavorites] = useState<string[]>(() => {
-        return parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY));
-    });
+    const normalizedQuery = query.trim();
+    const {
+        history,
+        favorites,
+        isCurrentQueryFavorite,
+        addHistoryItem,
+        clearHistory,
+        removeFavorite,
+        removeHistoryItem,
+        toggleFavorite,
+    } = useJsonPathSavedQueryLists(normalizedQuery);
 
     const [queryState, dispatchQueryState] = useReducer(
         jsonPathPanelQueryStateReducer,
@@ -156,27 +153,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         document.addEventListener('keydown', handleEscKey);
         return () => document.removeEventListener('keydown', handleEscKey);
     }, [isOpen, onClose]);
-
-    // 保存历史记录到 localStorage
-    useEffect(() => {
-        safeSetStorageItem(JSONPATH_HISTORY_STORAGE_KEY, JSON.stringify(history));
-    }, [history]);
-
-    // 保存收藏查询到 localStorage
-    useEffect(() => {
-        safeSetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
-    }, [favorites]);
-
-    // 配置备份导入后同步刷新已挂载面板中的收藏和历史
-    useEffect(() => {
-        const handleBackupImported = () => {
-            setHistory(parseStoredJsonPathList(safeGetStorageItem(JSONPATH_HISTORY_STORAGE_KEY)));
-            setFavorites(parseStoredJsonPathList(safeGetStorageItem(JSONPATH_FAVORITES_STORAGE_KEY)));
-        };
-
-        window.addEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
-        return () => window.removeEventListener(APP_BACKUP_IMPORTED_EVENT, handleBackupImported);
-    }, []);
 
     useEffect(() => {
         return () => {
@@ -299,8 +275,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
             });
             onHighlightRange(event.data.ranges[0] || null);
 
-            // 添加到历史记录（去重）
-            setHistory(prev => addJsonPathListItem(prev, queryPath));
+            addHistoryItem(queryPath);
             trackJsonPathQueryEvent('success', queryStartedAt);
         };
 
@@ -327,7 +302,7 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
                 autoExpandScheme,
             },
         });
-    }, [autoExpandScheme, deepFormat, isDataPreparing, jsonData, onHighlightRange, query, trackJsonPathQueryEvent]);
+    }, [addHistoryItem, autoExpandScheme, deepFormat, isDataPreparing, jsonData, onHighlightRange, query, trackJsonPathQueryEvent]);
 
     const handleCancelQuery = useCallback(() => {
         if (!isQuerying || !workerRef.current) return;
@@ -397,26 +372,11 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         dispatchQueryState({ type: 'clearCancelled' });
     };
 
-    const clearHistory = () => {
-        setHistory([]);
-        safeRemoveStorageItem(JSONPATH_HISTORY_STORAGE_KEY);
-    };
-
-    const removeFavorite = (item: string) => {
-        setFavorites(prev => removeJsonPathListItem(prev, item));
-    };
-
-    const removeHistoryItem = (index: number) => {
-        setHistory(prev => prev.filter((_, i) => i !== index));
-    };
-
     const clearQueryInput = () => {
         setQuery('');
         resetQueryState();
     };
 
-    const normalizedQuery = query.trim();
-    const isCurrentQueryFavorite = normalizedQuery ? favorites.includes(normalizedQuery) : false;
     const queryResultPreviewItems = useMemo(
         () => buildJsonPathResultPreviewItems(queryItems, MAX_VISIBLE_QUERY_RESULTS),
         [queryItems]
@@ -444,16 +404,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         setQuery(queryPath);
         dispatchQueryState({ type: 'prepare' });
         handleQuery(queryPath);
-    };
-
-    const toggleFavorite = () => {
-        if (!normalizedQuery) return;
-
-        setFavorites(prev => (
-            isCurrentQueryFavorite
-                ? removeJsonPathListItem(prev, normalizedQuery)
-                : addJsonPathListItem(prev, normalizedQuery)
-        ));
     };
 
     const handleNestedScrollWheel = (event: React.WheelEvent<HTMLElement>) => {
