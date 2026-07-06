@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.509 (2026-07-06) - PREVIEW 夹具与预算规则表收敛
+### 🏗️ 架构与基础设施
+- **PREVIEW 测试夹具去重**: `appPreviewOutputSyncTestFixture` 新增 flat input factory，nested task 与 change task 复用同一份默认输入，并让 override 类型跟随同步任务分桶结构
+- **Scheme 预算规则表驱动**: `maintainability-budget-scheme-support-viewer-rules` 改为数据表映射预算对象，保留原规则值并降低治理配置噪音
+
 ## v1.8.508 (2026-07-06) - 组件与 Footer 测试夹具收敛
 ### 🏗️ 架构与基础设施
 - **组件测试 Helper 复用**: `TransformReportPanelContent`、`TransformReportNextActionsPanel` 与 `AppFileDropOverlay` 测试复用统一 element-like helper，移除本地文本收集和节点查找样板
