@@ -24,20 +24,20 @@ const createSummaryModule = (): AppTemplateFillQualitySummaryModule => ({
   formatTransformQualitySnapshotDeltaText: vi.fn(() => '质量变化: +1'),
 }) as unknown as AppTemplateFillQualitySummaryModule;
 
+const createQualityDeltaInput = (summaryModule = createSummaryModule()) => ({
+  sourceBeforeApply: '{"before":true}',
+  sourceAfterApply: '{"after":true}',
+  autoExpandScheme: true,
+  summaryModule,
+});
+
 describe('appTemplateFillQualityDelta', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => vi.clearAllMocks());
 
   it('为占位符回填前后 SOURCE 构建质量 delta', () => {
     const summaryModule = createSummaryModule();
 
-    const deltaText = buildAppTemplateFillQualityDelta({
-      sourceBeforeApply: '{"before":true}',
-      sourceAfterApply: '{"after":true}',
-      autoExpandScheme: true,
-      summaryModule,
-    });
+    const deltaText = buildAppTemplateFillQualityDelta(createQualityDeltaInput(summaryModule));
 
     expect(deltaText).toBe('质量变化: +1');
     expect(deepParseWithContext).toHaveBeenNthCalledWith(1, '{"before":true}', { autoExpandScheme: true });
@@ -54,11 +54,6 @@ describe('appTemplateFillQualityDelta', () => {
       throw new Error('parse failed');
     });
 
-    expect(tryBuildAppTemplateFillQualityDelta({
-      sourceBeforeApply: '{"before":true}',
-      sourceAfterApply: '{"after":true}',
-      autoExpandScheme: true,
-      summaryModule,
-    })).toBe('');
+    expect(tryBuildAppTemplateFillQualityDelta(createQualityDeltaInput(summaryModule))).toBe('');
   });
 });
