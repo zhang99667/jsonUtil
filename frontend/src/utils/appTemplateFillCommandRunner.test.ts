@@ -3,6 +3,7 @@ import {
   createAppTemplateFillCommandEffects,
   getAppTemplateFillCommandRunnerMocks,
   resetAppTemplateFillCommandRunnerMocks,
+  runPlaceholderTemplateFillCommand,
   runTemplateFillCommand,
 } from './appTemplateFillCommandRunnerTestFixture';
 import {
@@ -32,12 +33,11 @@ describe('appTemplateFillCommandRunner', () => {
   });
 
   it('占位符回填模板会生成质量 delta', async () => {
-    mocks.isPlaceholderFillTemplateJson.mockReturnValue(true);
     const summaryModule = { marker: 'summary' } as never;
     const effects = createAppTemplateFillCommandEffects();
     effects.loadSummaryModule.mockResolvedValue(summaryModule);
 
-    await runTemplateFillCommand(effects, '{"kind":"json-helper-runtime-placeholder-fill-template"}');
+    await runPlaceholderTemplateFillCommand(effects);
 
     expect(effects.loadSummaryModule).toHaveBeenCalledTimes(1);
     expectPlaceholderQualityDeltaApplied(effects, summaryModule);

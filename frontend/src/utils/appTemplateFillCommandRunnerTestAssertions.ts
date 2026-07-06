@@ -36,6 +36,13 @@ export const expectTemplateCommandFailure = (
   expect(effects.onShowError).toHaveBeenCalledWith(message);
 };
 
+export const expectSourceChangedTemplateBlocked = (
+  effects: AppTemplateFillCommandEffectsFixture
+) => {
+  expect(mocks.applyTemplate).not.toHaveBeenCalled();
+  expectTemplateCommandFailure(effects, '内容已变化，请重新应用模板');
+};
+
 export const expectPlaceholderQualityDeltaApplied = (
   effects: AppTemplateFillCommandEffectsFixture,
   summaryModule: never
