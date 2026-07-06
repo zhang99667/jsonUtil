@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.489 (2026-07-06) - 智能建议命令预算拆分
+### 🏗️ 架构与基础设施
+- **命令预算分层**: 新增 `maintainability-budget-app-workflow-command-smart-suggestion-rules` 承接智能建议命令 hook、runner 和计划副作用预算，`command-core` 回归复制、主动作、面板重置等核心命令预算，减少命令预算入口继续贴线的风险
+
 ## v1.8.488 (2026-07-06) - App 治理预算子表拆分
 ### 🏗️ 架构与基础设施
 - **App 治理预算分层**: 新增 `maintainability-budget-governance-app-shell-rules` 承接工具栏、文件系统、交互、恢复和状态栏等非 workflow/editor 子域预算，`governance-app-rules` 收敛为 editor/workflow/shell 聚合入口，降低治理表继续贴线风险
