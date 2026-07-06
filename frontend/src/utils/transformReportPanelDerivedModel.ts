@@ -1,6 +1,3 @@
-import {
-  getTransformPlaceholderFillTemplateTitle,
-} from './transformReportCopyTitles';
 import { buildTransformReportPanelCopyTitles } from './transformReportPanelCopyTitleState';
 import {
   buildTransformReportPanelCopyAvailability,
@@ -49,14 +46,6 @@ export const buildTransformReportPanelDerivedModel = ({
     issueCopyTexts,
     qualityState,
   });
-  const getPanelPlaceholderFillTemplateTitle = (readyTitle: string): string => (
-    getTransformPlaceholderFillTemplateTitle(
-      readyTitle,
-      Boolean(placeholderFillState.placeholderFillTemplateJsonText),
-      placeholderFillState.placeholderFillTemplateSummary,
-      isFilterPending
-    )
-  );
 
   return {
     ...copyAvailability,
@@ -65,6 +54,5 @@ export const buildTransformReportPanelDerivedModel = ({
     ...qualityState,
     hasReportView,
     copyTitles,
-    getPanelPlaceholderFillTemplateTitle,
   };
 };

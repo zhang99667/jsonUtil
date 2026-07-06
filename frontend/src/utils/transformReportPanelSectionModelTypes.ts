@@ -1,5 +1,6 @@
 import type { TransformReportPanelActionModel } from './transformReportPanelActionModelTypes';
 import type { TransformReportPanelPlaceholderModel } from './transformReportPanelPlaceholderModel';
+import type { PlaceholderFillSummary } from './transformReportPlaceholderFillSummary';
 import type { TransformReportSectionVisibility } from './transformReportSectionVisibility';
 import type { TransformContextReport, TransformReportView } from './transformSummary';
 
@@ -9,7 +10,7 @@ export interface TransformReportPanelSectionModelInput {
   isFilterPending: boolean;
   hasTemplateFillTarget: boolean;
   hasPlaceholderFillTemplate: boolean;
-  formatPlaceholderFillTitle: (readyTitle: string) => string;
+  placeholderFillTemplateSummary: PlaceholderFillSummary | null;
   archivePackageTitle: string;
   collaborationReportTitle: string;
   qualitySnapshotTitle: string;

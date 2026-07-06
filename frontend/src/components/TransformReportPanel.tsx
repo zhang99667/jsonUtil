@@ -76,7 +76,7 @@ export const TransformReportPanel: React.FC<TransformReportPanelProps> = ({
     isFilterPending: model.isFilterPending,
     hasTemplateFillTarget: Boolean(onOpenTemplateFill),
     hasPlaceholderFillTemplate: Boolean(model.placeholderFillTemplateJsonText),
-    formatPlaceholderFillTitle: model.getPanelPlaceholderFillTemplateTitle,
+    placeholderFillTemplateSummary: model.placeholderFillTemplateSummary,
     archivePackageTitle: model.copyTitles.archivePackage,
     collaborationReportTitle: model.copyTitles.collaborationReport,
     qualitySnapshotTitle: model.copyTitles.qualitySnapshot,

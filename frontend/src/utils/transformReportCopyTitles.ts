@@ -1,8 +1,4 @@
 import { getReportCopyTitle } from './transformReportCopyTitleHelpers';
-import {
-  getPlaceholderFillTemplateTitle,
-  type PlaceholderFillSummary,
-} from './transformReportPlaceholderFillSummary';
 
 export interface TransformReportCopyTitleState {
   hasReportView: boolean;
@@ -68,12 +64,3 @@ export const buildTransformReportCopyTitles = (
   issueRegressionTemplate: getPanelReportCopyTitle(state, state.hasIssueRegressionTemplateCopyText, '复制当前筛选下的脱敏 Vitest TODO 回归模板', '当前筛选没有可生成回归模板的问题样本'),
   fullReport: state.hasActiveContext ? '复制完整深度解析报告' : '暂无深度解析报告可复制',
 });
-
-export const getTransformPlaceholderFillTemplateTitle = (
-  readyTitle: string,
-  hasTemplateJsonText: boolean,
-  summary: PlaceholderFillSummary | null,
-  isFilterPending: boolean
-): string => (
-  getPlaceholderFillTemplateTitle(readyTitle, hasTemplateJsonText, summary, isFilterPending)
-);

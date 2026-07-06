@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildTransformReportCopyTitles,
-  getTransformPlaceholderFillTemplateTitle,
   type TransformReportCopyTitleState,
 } from './transformReportCopyTitles';
 
@@ -51,16 +50,5 @@ describe('transformReportCopyTitles', () => {
     expect(titles.cmdStructures).toBe('复制按当前筛选聚焦后的 cmdHandler 风格 CMD 结构');
     expect(titles.issueRegressionTemplate).toBe('当前筛选没有可生成回归模板的问题样本');
     expect(titles.fullReport).toBe('暂无深度解析报告可复制');
-  });
-
-  it('生成占位符回填模板标题', () => {
-    expect(getTransformPlaceholderFillTemplateTitle('打开模板回填', true, {
-      total: 3,
-      filled: 1,
-      suggested: 1,
-      pending: 2,
-    }, false)).toBe('打开模板回填（已预填 1/3，候选 1，待补 2）');
-    expect(getTransformPlaceholderFillTemplateTitle('打开模板回填', false, null, false))
-      .toBe('当前筛选没有可用的运行时占位符回填模板');
   });
 });

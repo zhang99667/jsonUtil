@@ -19,7 +19,7 @@ export const buildTransformReportPanelSectionModel = ({
   isFilterPending,
   hasTemplateFillTarget,
   hasPlaceholderFillTemplate,
-  formatPlaceholderFillTitle,
+  placeholderFillTemplateSummary,
   archivePackageTitle,
   collaborationReportTitle,
   qualitySnapshotTitle,
@@ -29,7 +29,7 @@ export const buildTransformReportPanelSectionModel = ({
     isFilterPending,
     hasTemplateFillTarget,
     hasPlaceholderFillTemplate,
-    formatPlaceholderFillTitle,
+    placeholderFillTemplateSummary,
   });
   const actionModel = buildTransformReportPanelActionModel({
     report,

@@ -27,8 +27,7 @@ export interface TransformReportPanelDerivedModel
   extends TransformReportPanelCopyAvailability,
     TransformReportPanelIssueCopyTexts,
     TransformReportPanelPlaceholderFillState,
-    TransformReportPanelQualityState {
+  TransformReportPanelQualityState {
   hasReportView: boolean;
   copyTitles: TransformReportCopyTitles;
-  getPanelPlaceholderFillTemplateTitle: (readyTitle: string) => string;
 }
