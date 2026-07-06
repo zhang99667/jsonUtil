@@ -1,5 +1,7 @@
 import { isPlaceholderFillTemplateJson } from './appWorkflowHelpers';
+import { getAppTemplateFillSuccessMessage } from './appTemplateFillCommandMessages';
 import { tryBuildAppTemplateFillQualityDelta, type AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
+import { loadAppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySummary';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { applyTemplate } from './transformations';
 
@@ -39,14 +41,11 @@ export const runAppTemplateFillCommand = async (
     if (abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
 
     const shouldLoadSummary = isPlaceholderFillTemplateJson(templateJson);
-    let isSummaryChunkRecoveryHandled = false;
-    const summaryModule = shouldLoadSummary
-      ? await effects.loadSummaryModule().catch(error => {
-        isSummaryChunkRecoveryHandled = dispatchChunkLoadRecoveryEvent(error);
-        return null;
-      })
-      : null;
-    if (isSummaryChunkRecoveryHandled) return;
+    const { summaryModule, isChunkRecoveryHandled } = await loadAppTemplateFillQualitySummaryModule({
+      shouldLoadSummary,
+      loadSummaryModule: effects.loadSummaryModule,
+    });
+    if (isChunkRecoveryHandled) return;
 
     if (shouldLoadSummary && abortTemplateFillIfSourceChanged(sourceBeforeApply, effects)) return;
 
@@ -64,10 +63,7 @@ export const runAppTemplateFillCommand = async (
     effects.onSetSourceText(merged);
     effects.setCurrentSourceText(merged);
     effects.onUpdateActiveFileContent(merged);
-    const successMessage = shouldLoadSummary
-      ? qualityDelta ? '占位符已回填，质量对比已更新' : '占位符已回填，质量对比暂不可用'
-      : '模板已应用';
-    effects.onShowSuccess(successMessage);
+    effects.onShowSuccess(getAppTemplateFillSuccessMessage(shouldLoadSummary, qualityDelta));
   } catch (error: unknown) {
     if (dispatchChunkLoadRecoveryEvent(error)) return;
 
