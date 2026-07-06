@@ -11,16 +11,15 @@ import { JsonPathPanelStatusMessages } from './JsonPathPanelStatusMessages';
 import { JsonPathPanelSuggestions } from './JsonPathPanelSuggestions';
 import { JsonPathPanelTitle } from './JsonPathPanelTitle';
 import type { HighlightRange } from '../types';
-import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import { copyText } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { getJsonPathScenarioExamples } from '../utils/jsonPathExamples';
 import type { JsonPathQueryItem } from '../utils/jsonPathQuery';
 import { normalizeJsonPathQueryInput } from '../utils/jsonPathInput';
 import {
-    formatJsonPathItemsForCopy,
-    formatJsonPathValuesForCopy,
-    getJsonPathCopyCountLabel,
-} from '../utils/jsonPathPanelCopy';
+    runJsonPathPathValueCopyCommand,
+    runJsonPathValueCopyCommand,
+} from '../utils/jsonPathPanelCopyCommand';
 import { buildJsonPathResultPreviewItems } from '../utils/jsonPathPanelPreviewItems';
 import { shouldStopNestedScrollPropagation } from '../utils/nestedScrollPropagation';
 import {
@@ -43,6 +42,12 @@ const MAX_VISIBLE_QUERY_RESULTS = 100;
 const JSONPATH_ERROR_MESSAGE_ID = 'jsonpath-error-message';
 const JSONPATH_RESULT_STATUS_ID = 'jsonpath-result-status';
 const JSONPATH_QUERY_BUTTON_DESCRIPTION_ID = 'jsonpath-query-button-description';
+const JSONPATH_COPY_COMMAND_EFFECTS = {
+    copyText,
+    onShowSuccess: showSuccess,
+    onShowError: showError,
+    onLogWarning: (message: string, error: unknown) => console.warn(message, error),
+};
 
 interface JsonPathPanelProps {
     jsonData: string;
@@ -378,27 +383,17 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     };
 
     const copyQueryResults = async () => {
-        if (queryValues.length === 0) return;
-
-        try {
-            await copyText(formatJsonPathValuesForCopy(queryValues));
-            showSuccess(`查询结果已复制（${getJsonPathCopyCountLabel(queryValues.length, isResultLimited)}）`);
-        } catch (error) {
-            console.warn('复制 JSONPath 查询结果失败:', error);
-            showError(getClipboardErrorMessage(error, '复制查询结果失败'));
-        }
+        await runJsonPathValueCopyCommand({
+            values: queryValues,
+            isResultLimited,
+        }, JSONPATH_COPY_COMMAND_EFFECTS);
     };
 
     const copyQueryResultPaths = async () => {
-        if (queryItems.length === 0) return;
-
-        try {
-            await copyText(formatJsonPathItemsForCopy(queryItems));
-            showSuccess(`查询路径和值已复制（${getJsonPathCopyCountLabel(queryItems.length, isResultLimited)}）`);
-        } catch (error) {
-            console.warn('复制 JSONPath 查询路径和值失败:', error);
-            showError(getClipboardErrorMessage(error, '复制查询路径和值失败'));
-        }
+        await runJsonPathPathValueCopyCommand({
+            items: queryItems,
+            isResultLimited,
+        }, JSONPATH_COPY_COMMAND_EFFECTS);
     };
 
     const focusQueryResult = (index: number) => {
