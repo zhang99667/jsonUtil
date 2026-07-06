@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.602 (2026-07-07) - JSONPath Helper 预算拆分
+### 🏗️ 架构与基础设施
+- **JSONPath 治理预算瘦身**: 将 helper 维护预算拆成 core 与 saved-query 子表，入口预算只保留组合职责，并补充治理预算覆盖，避免后续 JSONPath helper 条目扩展继续挤爆总表
+
 ## v1.8.601 (2026-07-07) - JSONPath 历史清理边界收敛
 ### 🏗️ 架构与基础设施
 - **JSONPath 保存查询收口**: 将空历史删除本地存储的规则归口到 storage sync hook，主保存查询 hook 只负责状态更新和动作接线，并补充空历史清理测试覆盖
