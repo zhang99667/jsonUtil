@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.478 (2026-07-06) - 测试夹具与草稿规则降噪
+### 🏗️ 架构与基础设施
+- **布局测试夹具收敛**: 抽出 `layoutKeyboardResizeTestHelper` 统一键盘事件 mock，`layoutKeyboardResize` 和 `useAppLayoutController` 测试不再重复手写 `preventDefault` 夹具
+- **草稿规则测试表驱动**: `workspaceStandaloneDraftFile` 跳过创建草稿的分支改为参数化用例，减少重复调用样板并让新增跳过条件更容易维护
+
 ## v1.8.477 (2026-07-06) - Scheme 编辑写回逻辑提纯
 ### 🏗️ 架构与基础设施
 - **Scheme 编辑职责拆分**: 抽出 `applySchemeEditToPreviewText` 纯 helper 负责 PREVIEW JSON 解析、Pointer/旧 JSONPath 写回和格式化输出，Hook 只保留成功写回与错误提示副作用

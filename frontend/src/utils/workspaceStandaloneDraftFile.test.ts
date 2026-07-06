@@ -12,20 +12,17 @@ const createFile = (id: string, name = `${id}.json`): FileTab => ({
 });
 
 describe('workspaceStandaloneDraftFile', () => {
-  it('已有活动标签或空输入时不创建草稿标签', () => {
+  it.each([
+    ['已有活动标签', 'file-1', '{"draft":true}'],
+    ['空输入', null, ''],
+  ])('%s时不创建草稿标签', (_caseName, activeFileId, input) => {
     const files = [createFile('file-1')];
     const createId = vi.fn(() => 'draft-id');
 
     expect(getFilesWithStandaloneDraft({
       files,
-      activeFileId: 'file-1',
-      input: '{"draft":true}',
-      createId,
-    })).toBe(files);
-    expect(getFilesWithStandaloneDraft({
-      files,
-      activeFileId: null,
-      input: '',
+      activeFileId,
+      input,
       createId,
     })).toBe(files);
     expect(createId).not.toHaveBeenCalled();
