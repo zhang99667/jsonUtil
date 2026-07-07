@@ -1,3 +1,5 @@
+import { AI_GOVERNANCE_CUSTOM_AI_ENTRY_DIRS, AI_GOVERNANCE_CUSTOM_AI_ENTRY_FILES } from './aiGovernanceDiscoveryPatterns.mjs';
+
 export const AI_GOVERNANCE_DOC_REFERENCE_RULES = [
   {
     file: 'docs/AI-CONFIG-INTEGRATION.md',
@@ -8,6 +10,7 @@ export const AI_GOVERNANCE_DOC_REFERENCE_RULES = [
       'docs/AI-GOVERNANCE-DECISIONS.md',
       '.claude/ai-tools-guide.md',
       '.codex/skills/jsonutils-maintainer/SKILL.md', 'MCP 配置', '.cursor/rules',
+      ...AI_GOVERNANCE_CUSTOM_AI_ENTRY_FILES,
       'node scripts/ci/check-ai-governance.mjs',
       '显式豁免',
     ],
@@ -21,7 +24,7 @@ export const AI_GOVERNANCE_DOC_REFERENCE_RULES = [
       '.codex/README.md',
       'docs/AI-ASSET-REGISTRY.md',
       'docs/AI-GOVERNANCE-DECISIONS.md',
-      '.cursorrules', '.cursor/rules', 'MCP 配置',
+      '.cursorrules', ...AI_GOVERNANCE_CUSTOM_AI_ENTRY_FILES, ...AI_GOVERNANCE_CUSTOM_AI_ENTRY_DIRS, 'MCP 配置',
       '.comate/rules/code-style.md',
       'docs/AI-CONFIG-INTEGRATION.md',
       'docs/AI-ENGINEERING-PLAYBOOK.md',

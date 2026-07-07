@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { extractFencedCodeBlocks } from './aiGovernanceCodexSkillCommandBlocks.mjs';
 
-const FENCED_CODE_BLOCK_PATTERN = /```[^\n]*\n([\s\S]*?)```/g;
 const NPM_RUN_SCRIPT_PATTERN = /(?:^|\s)npm\s+run\s+([^\s`]+)\b/gm;
 const FRONTEND_PACKAGE_FILE = 'frontend/package.json';
 
 const extractFencedNpmRunScripts = content => [
-  ...new Set([...content.matchAll(FENCED_CODE_BLOCK_PATTERN)]
-    .flatMap(match => [...match[1].matchAll(NPM_RUN_SCRIPT_PATTERN)].map(commandMatch => commandMatch[1]))),
+  ...new Set(extractFencedCodeBlocks(content)
+    .flatMap(block => [...block.matchAll(NPM_RUN_SCRIPT_PATTERN)].map(commandMatch => commandMatch[1]))),
 ];
 
 const readFrontendScripts = (rootDir) => {

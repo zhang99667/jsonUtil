@@ -13,7 +13,7 @@
 - 表格里登记的资产必须属于必需文件、自动发现资产或已存在的显式豁免文件；删除或移出治理面的资产要同步移除登记，避免留下陈旧账本。
 - 工具入口保持薄入口，权威规则优先沉淀到 `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`。
 - 本机私有配置只允许作为显式豁免登记，不承载项目级规则、skills 或验证流程。
-- 新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 或 `rules/ai-*.md` 资产时，先更新本文，再补治理规则或豁免说明。
+- 新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 或 `rules/ai-*.md` 资产时，先更新本文，再补治理规则或豁免说明。
 
 ## 责任与状态约定
 
@@ -34,7 +34,7 @@
 | `docs/AI-CONFIG-INTEGRATION.md` | 分层说明 | 说明入口、rules、skills、本机配置和显式豁免关系 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-TOOLS-SETUP.md` | 工具索引 | 说明各 AI 工具入口、同步边界和必跑检查 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-ASSET-REGISTRY.md` | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
-| `.github/PULL_REQUEST_TEMPLATE.md` | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
+| `.github/PULL_REQUEST_TEMPLATE.md` | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Copilot 根入口、Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
 
 ## 工具入口与可迁移技能
 
@@ -43,7 +43,7 @@
 | `.claude/README.md` | 目录索引 | 说明 Claude 配置目录边界，必须指向 Playbook 和治理命令 | 必需文件、Claude README 引用规则、自动发现规则 |
 | `.claude/ai-tools-guide.md` | 工具说明 | 说明 Claude、Codex、Copilot、Cursor、Comate 如何复用同一套规范，并保持共享核心规则片段同源 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.codex/README.md` | 目录索引 | 说明 Codex 项目资产边界和旧 chunk / 部署验证入口，并保持共享核心规则片段同源 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
-| `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 保留与目录一致的 frontmatter name、必读文件、工作流、常用验证命令和重点边界 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
+| `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 保留与目录一致的 frontmatter name、必读文件、工作流、常用验证命令和重点边界，并确保命令块里的工作目录与脚本可达 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
 | `.github/copilot-instructions.md` | 工具薄入口 | GitHub Copilot 仓库级 instructions，转发到主规范、Playbook 和 skill，并保持共享核心规则片段同源 | 必需文件、工具入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.cursorrules` | 工具薄入口 | Cursor 入口，与 `.comate/rules/code-style.md` 保持共享核心片段 | 必需文件、工具入口引用规则、同源片段漂移检查 |
 | `.comate/rules/code-style.md` | 工具薄入口 | Comate 入口，与 `.cursorrules` 保持共享核心片段 | 必需文件、工具入口引用规则、同源片段漂移检查 |

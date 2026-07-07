@@ -163,6 +163,8 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '.cursor/mcp.json',
     '.cursor/rules',
     '.vscode/mcp.json',
+    '.github/copilot-instructions.md',
+    'Copilot 根入口',
     '.github/instructions',
     '.github/prompts',
     '.github/agents',
