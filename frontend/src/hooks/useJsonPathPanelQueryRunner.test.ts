@@ -61,6 +61,22 @@ describe('useJsonPathPanelQueryRunner', () => {
     });
   });
 
+  it('空 JSON 下字段名快捷输入先同步查询框且不启动 worker', () => {
+    const { dispatch, input, runner } = renderRunner({
+      query: 'traceId',
+      jsonData: '  ',
+    });
+
+    runner.handleQuery();
+
+    expect(input.onSetQuery).toHaveBeenCalledWith('$..traceId');
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'skipped',
+      error: '请先在左侧输入 JSON 数据',
+    });
+    expect(input.createWorker).not.toHaveBeenCalled();
+  });
+
   it('查询成功时写入结果、聚焦第一项并记录历史', () => {
     const { dispatch, input, runner, workers } = renderRunner();
     runner.handleQuery();
