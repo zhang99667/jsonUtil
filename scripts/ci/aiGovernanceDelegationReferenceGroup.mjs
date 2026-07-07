@@ -1,3 +1,5 @@
+import { SUBAGENT_OUTPUT_TEMPLATE_REFERENCES } from './aiGovernanceDelegationOutputReferenceGroup.mjs';
+
 export const SUBAGENT_DELEGATION_REFERENCES = [
   '子 Agent 委派',
   '主线程负责',
@@ -7,4 +9,5 @@ export const SUBAGENT_DELEGATION_REFERENCES = [
   '期望输出',
   '未覆盖风险',
   '收窄',
+  ...SUBAGENT_OUTPUT_TEMPLATE_REFERENCES,
 ];

@@ -5,5 +5,8 @@ export const AI_EVOLUTION_LOOP_REFERENCES = [
   '验证方式',
   '适用边界',
   '规则/skill 回写',
+  '决策记录',
+  '回写追踪',
+  '锁定测试',
   '治理校验',
 ];
