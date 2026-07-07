@@ -21,25 +21,6 @@ export const buildAiGovernanceEntryReferenceRules = codexSkillFiles => [
   { file: 'rules/code-style.md', contains: CODE_STYLE_GOVERNANCE_REFERENCES },
   CLAUDE_README_REFERENCE_RULE,
   {
-    file: '.claude/ai-tools-guide.md',
-    contains: [
-      'AGENTS.md',
-      ...codexSkillFiles,
-      'docs/AI-ENGINEERING-PLAYBOOK.md',
-      ...RUNTIME_GOVERNANCE_REFERENCES,
-    ],
-  },
-  {
-    file: '.codex/README.md',
-    contains: [
-      'AGENTS.md',
-      '.claude/ai-tools-guide.md',
-      ...CORE_ENTRY_REFERENCES,
-      ...RUNTIME_GOVERNANCE_REFERENCES,
-      ...codexSkillFiles.map(file => file.replace('.codex/', '')),
-    ],
-  },
-  {
     file: 'docs/AI-ENGINEERING-PLAYBOOK.md',
     contains: [
       'AGENTS.md',

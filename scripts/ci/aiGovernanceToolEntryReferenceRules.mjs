@@ -2,8 +2,9 @@ import {
   CORE_ENTRY_REFERENCES,
   RUNTIME_GOVERNANCE_REFERENCES,
 } from './aiGovernanceRuntimeReferenceGroups.mjs';
+import { AI_ENTRY_SHARED_SNIPPET_FILES } from './aiGovernanceSharedEntrySnippets.mjs';
 
-const TOOL_ENTRY_BASE_REFERENCES = [
+const THIN_ENTRY_BASE_REFERENCES = [
   'AGENTS.md',
   'CLAUDE.md',
   'docs/AI-ASSET-REGISTRY.md',
@@ -12,16 +13,24 @@ const TOOL_ENTRY_BASE_REFERENCES = [
   'node scripts/ci/check-maintainability-budgets.mjs',
 ];
 
-const buildToolEntryRule = (file, peerFile) => ({
+const buildCodexSkillMirrorPaths = codexSkillFiles => codexSkillFiles
+  .map(file => file.replace('.codex/', ''));
+
+const buildThinEntryExtraReferences = (file, codexSkillFiles) => ({
+  '.claude/ai-tools-guide.md': codexSkillFiles,
+  '.codex/README.md': ['.claude/ai-tools-guide.md', ...buildCodexSkillMirrorPaths(codexSkillFiles)],
+  '.cursorrules': ['.comate/rules/code-style.md'],
+  '.comate/rules/code-style.md': ['.cursorrules'],
+}[file] ?? []);
+
+const buildThinEntryRule = (file, codexSkillFiles) => ({
   file,
   contains: [
-    ...TOOL_ENTRY_BASE_REFERENCES,
-    ...(peerFile ? [peerFile] : []),
+    ...THIN_ENTRY_BASE_REFERENCES,
+    ...buildThinEntryExtraReferences(file, codexSkillFiles),
   ],
 });
 
-export const buildAiGovernanceToolEntryReferenceRules = () => [
-  buildToolEntryRule('.github/copilot-instructions.md'),
-  buildToolEntryRule('.cursorrules', '.comate/rules/code-style.md'),
-  buildToolEntryRule('.comate/rules/code-style.md', '.cursorrules'),
-];
+export const buildAiGovernanceToolEntryReferenceRules = codexSkillFiles => (
+  AI_ENTRY_SHARED_SNIPPET_FILES.map(file => buildThinEntryRule(file, codexSkillFiles))
+);

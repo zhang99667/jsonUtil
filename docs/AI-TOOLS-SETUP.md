@@ -71,7 +71,7 @@ node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 ## 防漂移清单
 
 - `AGENTS.md` 和 `CLAUDE.md` 的 AI 协作章节必须保持一致。
-- `.cursorrules` 和 `.comate/rules/code-style.md` 的核心规则片段必须保持一致。
+- `.github/copilot-instructions.md`、`.codex/README.md`、`.claude/ai-tools-guide.md`、`.cursorrules` 和 `.comate/rules/code-style.md` 的共享核心规则片段必须保持一致。
 - `.github/copilot-instructions.md` 只能作为薄入口，关键规则仍以主规范、Playbook 和 skill 为准；新增 `.github/instructions/**/*.instructions.md` 路径级指令时也必须进入治理清单、引用规则或显式豁免。
 - `.codex/skills/*/SKILL.md` 必须保留 frontmatter、必读文件、工作流、常用验证命令和重点边界。
 - `.claude/`、`.codex/`、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入 `docs/AI-ASSET-REGISTRY.md`、治理清单、引用规则或显式豁免。

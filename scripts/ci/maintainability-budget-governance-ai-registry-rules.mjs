@@ -2,7 +2,8 @@ import { governanceAiDecisionMaintainabilityBudgets } from './maintainability-bu
 const governanceAiRegistryBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 export const governanceAiRegistryMaintainabilityBudgets = [
   governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistryConstants.mjs', 10, 'AI 治理资产注册表常量应独立维护注册表路径并避免循环 import'),
-  governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistryEvidence.mjs', 65, 'AI 治理资产注册表证据标记应独立维护认可词表和实际来源匹配逻辑'),
+  governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceMarkers.mjs', 35, 'AI 治理资产注册表证据标记词表应独立维护认可标记、分隔解析和未知标记识别'),
+  governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistryEvidence.mjs', 40, 'AI 治理资产注册表证据来源反查应独立维护认可标记到实际治理集合的匹配逻辑'),
   governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistrySemanticEvidence.mjs', 30, 'AI 治理资产注册表语义证据规则应独立维护自动发现资产的非发现证据要求'),
   governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistryRowEvidenceFailures.mjs', 35, 'AI 治理资产注册表行证据失败规则应独立维护单行必填、证据来源和语义证据失败'),
   governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceSources.mjs', 80, 'AI 治理资产注册表证据来源集合应独立维护预算、引用、章节、skill 和同源漂移来源映射'),

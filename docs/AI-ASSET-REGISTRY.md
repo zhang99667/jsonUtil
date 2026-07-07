@@ -41,10 +41,10 @@
 | 资产 | 类型 | 维护契约 | 治理证据 |
 | --- | --- | --- | --- |
 | `.claude/README.md` | 目录索引 | 说明 Claude 配置目录边界，必须指向 Playbook 和治理命令 | 必需文件、Claude README 引用规则、自动发现规则 |
-| `.claude/ai-tools-guide.md` | 工具说明 | 说明 Claude、Codex、Copilot、Cursor、Comate 如何复用同一套规范 | 必需文件、入口引用规则、自动发现规则 |
-| `.codex/README.md` | 目录索引 | 说明 Codex 项目资产边界和旧 chunk / 部署验证入口 | 必需文件、入口引用规则、自动发现规则 |
+| `.claude/ai-tools-guide.md` | 工具说明 | 说明 Claude、Codex、Copilot、Cursor、Comate 如何复用同一套规范，并保持共享核心规则片段同源 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
+| `.codex/README.md` | 目录索引 | 说明 Codex 项目资产边界和旧 chunk / 部署验证入口，并保持共享核心规则片段同源 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 保留与目录一致的 frontmatter name、必读文件、工作流、常用验证命令和重点边界 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
-| `.github/copilot-instructions.md` | 工具薄入口 | GitHub Copilot 仓库级 instructions，转发到主规范、Playbook 和 skill | 必需文件、工具入口引用规则、自动发现规则 |
+| `.github/copilot-instructions.md` | 工具薄入口 | GitHub Copilot 仓库级 instructions，转发到主规范、Playbook 和 skill，并保持共享核心规则片段同源 | 必需文件、工具入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.cursorrules` | 工具薄入口 | Cursor 入口，与 `.comate/rules/code-style.md` 保持共享核心片段 | 必需文件、工具入口引用规则、同源片段漂移检查 |
 | `.comate/rules/code-style.md` | 工具薄入口 | Comate 入口，与 `.cursorrules` 保持共享核心片段 | 必需文件、工具入口引用规则、同源片段漂移检查 |
 

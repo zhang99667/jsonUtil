@@ -14,6 +14,6 @@ export const buildAiGovernanceReferenceRules = (codexSkillFiles) => [
   AI_GOVERNANCE_DECISION_REFERENCE_RULE,
   AI_GOVERNANCE_ASSET_REGISTRY_REFERENCE_RULE,
   AI_GOVERNANCE_PULL_REQUEST_TEMPLATE_REFERENCE_RULE,
-  ...buildAiGovernanceToolEntryReferenceRules(),
+  ...buildAiGovernanceToolEntryReferenceRules(codexSkillFiles),
   ...buildCodexSkillReferenceRules(codexSkillFiles),
 ];
