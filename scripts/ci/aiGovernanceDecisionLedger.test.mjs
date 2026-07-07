@@ -10,7 +10,7 @@ const buildDecisionLedgerFixtureContent = ({
   trigger = '重复踩坑',
   counterexample = '只写关键词',
   boundary = 'AI rules 和治理脚本',
-  backfill = '`docs/AI-ASSET-REGISTRY.md`',
+  backfill = '`docs/AI-ASSET-REGISTRY.md`, `CHANGELOG.md`',
   tests = '`node --test scripts/ci/aiGovernanceChecks.test.mjs`',
 } = {}) => [
   '# AI 治理决策记录',
@@ -19,6 +19,11 @@ const buildDecisionLedgerFixtureContent = ({
   '| --- | --- | --- | --- | --- | --- | --- |',
   `| ${date} | ${decision} | ${trigger} | ${counterexample} | ${boundary} | ${backfill} | ${tests} |`,
 ].join('\n');
+
+const writeDecisionLedgerBackfillFiles = (rootDir) => {
+  writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+  writeFixtureFile(rootDir, 'CHANGELOG.md', 'log');
+};
 
 test('AI 治理决策账本会报告缺少结构化表格', () => {
   withAiGovernanceTempRoot((rootDir) => {
@@ -37,7 +42,7 @@ test('AI 治理决策账本会报告缺少结构化表格', () => {
 
 test('AI 治理决策账本会报告缺少回写路径和锁定测试命令', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+    writeDecisionLedgerBackfillFiles(rootDir);
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
       backfill: '只写自然语言',
       tests: '人工看过',
@@ -45,6 +50,7 @@ test('AI 治理决策账本会报告缺少回写路径和锁定测试命令', ()
 
     assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
       'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 回写追踪必须包含反引号路径',
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 回写追踪必须包含 `CHANGELOG.md`',
       'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 锁定测试必须包含可执行命令',
     ]);
   });
@@ -52,10 +58,11 @@ test('AI 治理决策账本会报告缺少回写路径和锁定测试命令', ()
 
 test('AI 治理决策账本会报告不存在的回写路径', () => {
   withAiGovernanceTempRoot((rootDir) => {
+    writeDecisionLedgerBackfillFiles(rootDir);
     writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'check');
     writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
-      backfill: '`docs/AI-MISSING.md`',
+      backfill: '`docs/AI-MISSING.md`, `CHANGELOG.md`',
     }));
 
     assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
@@ -64,9 +71,23 @@ test('AI 治理决策账本会报告不存在的回写路径', () => {
   });
 });
 
+test('AI 治理决策账本会报告回写追踪缺少 CHANGELOG', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeDecisionLedgerBackfillFiles(rootDir);
+    writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      backfill: '`docs/AI-ASSET-REGISTRY.md`',
+    }));
+
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 回写追踪必须包含 `CHANGELOG.md`',
+    ]);
+  });
+});
+
 test('AI 治理决策账本会报告不存在的锁定测试命令路径', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+    writeDecisionLedgerBackfillFiles(rootDir);
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
       tests: '`node --test scripts/ci/missing-check.test.mjs`',
     }));
@@ -79,7 +100,7 @@ test('AI 治理决策账本会报告不存在的锁定测试命令路径', () =>
 
 test('AI 治理决策账本会报告未被 CI 脚本单测覆盖的锁定测试', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+    writeDecisionLedgerBackfillFiles(rootDir);
     writeFixtureFile(rootDir, 'tests/ai-governance.test.mjs', 'test');
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
       tests: '`node --test tests/ai-governance.test.mjs`',
@@ -93,15 +114,15 @@ test('AI 治理决策账本会报告未被 CI 脚本单测覆盖的锁定测试'
 
 test('AI 治理决策账本会报告日期顺序倒置', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+    writeDecisionLedgerBackfillFiles(rootDir);
     writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', [
       '# AI 治理决策记录',
       '',
       '| 日期 | 决策 | 触发条件 | 反例 | 适用边界 | 回写追踪 | 锁定测试 |',
       '| --- | --- | --- | --- | --- | --- | --- |',
-      '| 2026-07-07 | 旧记录 | 触发 | 反例 | 边界 | `docs/AI-ASSET-REGISTRY.md` | `node --test scripts/ci/aiGovernanceChecks.test.mjs` |',
-      '| 2026-07-08 | 新记录 | 触发 | 反例 | 边界 | `docs/AI-ASSET-REGISTRY.md` | `node --test scripts/ci/aiGovernanceChecks.test.mjs` |',
+      '| 2026-07-07 | 旧记录 | 触发 | 反例 | 边界 | `docs/AI-ASSET-REGISTRY.md`, `CHANGELOG.md` | `node --test scripts/ci/aiGovernanceChecks.test.mjs` |',
+      '| 2026-07-08 | 新记录 | 触发 | 反例 | 边界 | `docs/AI-ASSET-REGISTRY.md`, `CHANGELOG.md` | `node --test scripts/ci/aiGovernanceChecks.test.mjs` |',
     ].join('\n'));
 
     assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
@@ -112,7 +133,7 @@ test('AI 治理决策账本会报告日期顺序倒置', () => {
 
 test('AI 治理决策账本会报告缺少回归或负向测试命令', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+    writeDecisionLedgerBackfillFiles(rootDir);
     writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'check');
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
       tests: '`node scripts/ci/check-ai-governance.mjs`',

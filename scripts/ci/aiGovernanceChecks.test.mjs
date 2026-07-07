@@ -180,12 +180,13 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     sharedReferences,
   ].join('\n'));
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
+  writeFixtureFile(rootDir, 'CHANGELOG.md', sharedReferences);
   writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', [
     '# AI 治理决策记录',
     '',
     '| 日期 | 决策 | 触发条件 | 反例 | 适用边界 | 回写追踪 | 锁定测试 |',
     '| --- | --- | --- | --- | --- | --- | --- |',
-    '| 2026-07-07 | 沉淀治理决策 | 重复踩坑 | 只写关键词 | AI rules 和治理脚本 | `docs/AI-ASSET-REGISTRY.md`, `scripts/ci/check-ai-governance.mjs` | `node --test scripts/ci/aiGovernanceChecks.test.mjs`; `node scripts/ci/check-ai-governance.mjs` |',
+    '| 2026-07-07 | 沉淀治理决策 | 重复踩坑 | 只写关键词 | AI rules 和治理脚本 | `docs/AI-ASSET-REGISTRY.md`, `scripts/ci/check-ai-governance.mjs`, `CHANGELOG.md` | `node --test scripts/ci/aiGovernanceChecks.test.mjs`; `node scripts/ci/check-ai-governance.mjs` |',
   ].join('\n'));
   writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
     sharedReferences,
@@ -333,6 +334,8 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(aiRegistryRule.contains.includes('referenceRules.file'), true);
   assert.equal(aiRegistryRule.contains.includes('显式豁免'), true);
   assert.equal(prTemplateRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
+  assert.equal(prTemplateRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
+  assert.equal(prTemplateRule.contains.includes('CHANGELOG.md'), true);
   assert.equal(prTemplateRule.contains.includes('负向测试'), true);
   assert.equal(copilotRule.contains.includes('AGENTS.md'), true);
   assert.equal(cursorRule.contains.includes('.comate/rules/code-style.md'), true);

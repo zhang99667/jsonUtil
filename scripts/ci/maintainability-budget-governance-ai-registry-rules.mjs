@@ -1,4 +1,3 @@
-import { governanceAiDecisionMaintainabilityBudgets } from './maintainability-budget-governance-ai-decision-rules.mjs';
 import { governanceAiRegistryEvidenceMaintainabilityBudgets } from './maintainability-budget-governance-ai-registry-evidence-rules.mjs';
 const governanceAiRegistryBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 export const governanceAiRegistryMaintainabilityBudgets = [
@@ -8,5 +7,4 @@ export const governanceAiRegistryMaintainabilityBudgets = [
   governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistry.mjs', 55, 'AI 治理资产注册表检查应独立维护必需文件、发现资产和显式豁免集合'),
   governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistryFailures.mjs', 40, 'AI 治理资产注册表失败汇总应独立维护缺登记、重复登记和陈旧登记错误'),
   governanceAiRegistryBudget('scripts/ci/aiGovernanceAssetRegistryRows.mjs', 60, 'AI 治理资产注册表 Markdown 表格解析应独立维护目标表头、路径、类型、维护契约、治理证据和重复登记抽取'),
-  ...governanceAiDecisionMaintainabilityBudgets,
 ];

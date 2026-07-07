@@ -34,7 +34,7 @@
 | `docs/AI-CONFIG-INTEGRATION.md` | 分层说明 | 说明入口、rules、skills、本机配置和显式豁免关系 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-TOOLS-SETUP.md` | 工具索引 | 说明各 AI 工具入口、同步边界和必跑检查 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-ASSET-REGISTRY.md` | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
-| `.github/PULL_REQUEST_TEMPLATE.md` | 人工门禁 | 要求 PR 说明 AI 资产注册表、治理校验、负向测试和显式豁免处理 | 必需文件、PR 模板引用规则 |
+| `.github/PULL_REQUEST_TEMPLATE.md` | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、负向测试和显式豁免处理 | 必需文件、PR 模板引用规则 |
 
 ## 工具入口与可迁移技能
 

@@ -32,6 +32,7 @@ Closes #(issue)
 ## AI 协作资产
 <!-- 修改 AI 入口、rules、skills、docs/AI-*.md、rules/ai-*.md 或本机配置豁免时勾选 -->
 - [ ] 已更新 `docs/AI-ASSET-REGISTRY.md` 中的资产登记、职责或显式豁免说明
+- [ ] 已更新 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，确保规则/skill/治理脚本变更可从决策账本与发布说明双向追溯
 - [ ] 已补充 `node scripts/ci/check-ai-governance.mjs` 覆盖的引用规则、资产发现规则或负向测试
 - [ ] 本机私有配置没有承载项目级 rules、skills 或验证流程；如需保留，已写明显式豁免理由
 
