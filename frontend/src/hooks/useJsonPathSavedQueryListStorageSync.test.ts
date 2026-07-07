@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
-import {
-  clearStoredJsonPathHistory,
-  saveJsonPathFavorites,
-  saveJsonPathHistory,
-} from '../utils/jsonPathSavedQueryStorage';
+import { clearStoredJsonPathHistory, saveJsonPathFavorites, saveJsonPathHistory } from '../utils/jsonPathSavedQueryStorage';
 import { createJsonPathSavedQueryListStorageSyncTestHarness } from './useJsonPathSavedQueryListStorageSyncTestHarness';
 
 const reactMocks = vi.hoisted(() => ({ useEffect: vi.fn() }));
@@ -57,14 +52,12 @@ describe('useJsonPathSavedQueryListStorageSync', () => {
     harness.useRenderSync();
     harness.runCleanup();
 
-    expect(window.removeEventListener).toHaveBeenCalledWith(APP_BACKUP_IMPORTED_EVENT, harness.backupImportedHandler);
+    harness.expectBackupImportedListenerRemoved();
   });
 
   it('无 window 环境下不注册备份导入监听', () => {
-    vi.unstubAllGlobals();
+    harness.useRenderSyncWithoutWindow();
 
-    harness.useRenderSync();
-
-    expect(harness.backupImportedHandler).toBeNull();
+    harness.expectNoBackupImportedListener();
   });
 });
