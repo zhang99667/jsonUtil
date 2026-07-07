@@ -25,7 +25,7 @@ const FILE_REFERENCE_EVIDENCE_MARKERS = [
   'PR 模板引用规则', 'Claude README 引用规则', 'skill 引用规则',
 ];
 
-const splitEvidenceMarkers = evidence => evidence
+export const splitEvidenceMarkers = evidence => evidence
   .split(/[、，,；;|]/)
   .map(marker => marker.trim())
   .filter(Boolean);
