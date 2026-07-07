@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.638 (2026-07-07) - 模板填充质量快照拆分
+### 🏗️ 架构与基础设施
+- **模板填充质量链路瘦身**: 将单份 SOURCE 的深度解析质量快照构建抽到 `appTemplateFillQualitySnapshot`，delta helper 只负责编排回填前后快照对比和异常降级，summary 加载链路也改为依赖快照契约类型
+
 ## v1.8.637 (2026-07-07) - 模板填充草稿 Readers 拆分
 ### 🏗️ 架构与基础设施
 - **占位符草稿模型瘦身**: 将回填模板详情行、候选和来源字段的容错读取拆到 `placeholderFillTemplateDraftReaders`，主模型继续聚焦草稿解析、摘要统计和 replacement 更新，并补充无效候选忽略测试

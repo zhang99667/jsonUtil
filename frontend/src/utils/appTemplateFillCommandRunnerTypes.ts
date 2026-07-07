@@ -1,4 +1,4 @@
-import type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
+import type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySnapshot';
 
 export interface AppTemplateFillCommandInput {
   sourceBeforeApply: string;

@@ -1,12 +1,9 @@
-import { deepParseWithContext } from './transformations';
+import {
+  buildAppTemplateFillQualitySnapshot,
+  type AppTemplateFillQualitySummaryModule,
+} from './appTemplateFillQualitySnapshot';
 
-export type AppTemplateFillQualitySummaryModule = Pick<
-  typeof import('./transformSummary'),
-  | 'buildTransformContextReport'
-  | 'buildTransformQualitySnapshot'
-  | 'buildTransformReportView'
-  | 'formatTransformQualitySnapshotDeltaText'
->;
+export type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySnapshot';
 
 interface AppTemplateFillQualityDeltaInput {
   sourceBeforeApply: string;
@@ -15,31 +12,17 @@ interface AppTemplateFillQualityDeltaInput {
   summaryModule: AppTemplateFillQualitySummaryModule;
 }
 
-const buildAppTemplateFillQualitySnapshot = (
-  source: string,
-  autoExpandScheme: boolean,
-  summaryModule: AppTemplateFillQualitySummaryModule
-) => {
-  const { context } = deepParseWithContext(source, { autoExpandScheme });
-  const report = summaryModule.buildTransformContextReport(context);
-  return summaryModule.buildTransformQualitySnapshot(
-    report,
-    summaryModule.buildTransformReportView(report, ''),
-    ''
-  );
-};
-
 export const buildAppTemplateFillQualityDelta = ({
   sourceBeforeApply,
   sourceAfterApply,
   autoExpandScheme,
   summaryModule,
 }: AppTemplateFillQualityDeltaInput): string => {
-  const buildSnapshot = (source: string) => buildAppTemplateFillQualitySnapshot(
+  const buildSnapshot = (source: string) => buildAppTemplateFillQualitySnapshot({
     source,
     autoExpandScheme,
-    summaryModule
-  );
+    summaryModule,
+  });
 
   return summaryModule.formatTransformQualitySnapshotDeltaText(
     buildSnapshot(sourceBeforeApply),

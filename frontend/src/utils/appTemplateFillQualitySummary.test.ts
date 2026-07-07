@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
+import type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySnapshot';
 import { loadAppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySummary';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 
