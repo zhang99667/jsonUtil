@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransformContext } from '../types';
-import {
-  buildTransformContextReport,
-  buildTransformReportView,
-} from '../utils/transformSummary';
 import { buildTransformReportPanelDerivedModel } from '../utils/transformReportPanelDerivedModel';
+import { useTransformReportPanelReportViews } from './useTransformReportPanelReportViews';
 import { useTransformReportPanelViewModel } from './useTransformReportPanelViewModel';
 
 const fixtures = vi.hoisted(() => ({
@@ -47,15 +44,29 @@ vi.mock('react', async importOriginal => ({
   useState: reactMocks.useState,
 }));
 
-vi.mock('../utils/transformSummary', () => ({
-  buildTransformContextReport: vi.fn(() => fixtures.report),
-  buildTransformReportView: vi.fn((_: unknown, query: string) => (
-    query ? fixtures.reportView : fixtures.fullReportView
-  )),
-}));
-
 vi.mock('../utils/transformReportPanelDerivedModel', () => ({
   buildTransformReportPanelDerivedModel: vi.fn(() => fixtures.derivedModel),
+}));
+
+vi.mock('./useTransformReportPanelReportViews', () => ({
+  useTransformReportPanelReportViews: vi.fn(({
+    activeContext,
+  }: {
+    activeContext: TransformContext | null;
+    deferredQuery: string;
+  }) => (
+    activeContext
+      ? {
+        report: fixtures.report,
+        reportView: fixtures.reportView,
+        fullReportView: fixtures.fullReportView,
+      }
+      : {
+        report: null,
+        reportView: null,
+        fullReportView: null,
+      }
+  )),
 }));
 
 const createContext = (timestamp = 123): TransformContext => ({
@@ -79,9 +90,10 @@ describe('useTransformReportPanelViewModel', () => {
     const context = createContext();
     const result = useTransformReportPanelViewModel({ isOpen: true, context });
 
-    expect(buildTransformContextReport).toHaveBeenCalledWith(context);
-    expect(buildTransformReportView).toHaveBeenNthCalledWith(1, fixtures.report, 'CMD-deferred');
-    expect(buildTransformReportView).toHaveBeenNthCalledWith(2, fixtures.report, '');
+    expect(useTransformReportPanelReportViews).toHaveBeenCalledWith({
+      activeContext: context,
+      deferredQuery: 'CMD-deferred',
+    });
     expect(buildTransformReportPanelDerivedModel).toHaveBeenCalledWith({
       report: fixtures.report,
       reportView: fixtures.reportView,
@@ -109,8 +121,10 @@ describe('useTransformReportPanelViewModel', () => {
   it('关闭时跳过报告构建，并用空上下文重置筛选状态', () => {
     const result = useTransformReportPanelViewModel({ isOpen: false, context: createContext() });
 
-    expect(buildTransformContextReport).not.toHaveBeenCalled();
-    expect(buildTransformReportView).not.toHaveBeenCalled();
+    expect(useTransformReportPanelReportViews).toHaveBeenCalledWith({
+      activeContext: null,
+      deferredQuery: 'CMD-deferred',
+    });
     expect(buildTransformReportPanelDerivedModel).toHaveBeenCalledWith(expect.objectContaining({
       report: null,
       reportView: null,
