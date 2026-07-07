@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.713 (2026-07-08) - AI 治理测试夹具单源化
+### 🏗️ 架构与基础设施
+- **AI 治理测试夹具单源化**: 将 AI 治理测试的临时仓库和注册表表格构造统一到 `aiGovernanceTestFixtures.mjs`，减少主测试、引用规则、章节、决策账本和 skill 契约测试的重复脚手架
+- **薄入口必需文件单源化**: `aiGovernanceRequiredFiles.mjs` 复用 `AI_ENTRY_SHARED_SNIPPET_FILES`，让五类工具薄入口的必需文件、同源片段和引用规则共用同一文件集合
+- **证据来源描述符单源化**: 新增 `aiGovernanceAssetRegistryEvidenceSourceDescriptors.mjs`，让资产注册表认可词表、文件引用分组、发现规则分组和来源反查共用同一 descriptor
+
 ## v1.8.712 (2026-07-08) - 薄入口引用规则单源化
 ### 🏗️ 架构与基础设施
 - **薄入口引用规则单源化**: 将 Claude 工具指南、Codex README、Copilot、Cursor 和 Comate 的引用规则统一到 `aiGovernanceToolEntryReferenceRules.mjs`，共享资产注册表、预算和发布验证基线

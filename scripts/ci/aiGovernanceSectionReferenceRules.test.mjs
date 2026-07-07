@@ -1,30 +1,13 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { test } from 'node:test';
 
 import { collectMissingAiGovernanceReferences } from './aiGovernanceChecks.mjs';
-
-const withTempRoot = (run) => {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-ai-governance-sections-'));
-  try {
-    return run(rootDir);
-  } finally {
-    fs.rmSync(rootDir, { recursive: true, force: true });
-  }
-};
-
-const writeFixtureFile = (rootDir, file, content) => {
-  const filePath = path.join(rootDir, file);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, content);
-};
+import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const codexSkillFiles = ['.codex/skills/jsonutils-maintainer/SKILL.md'];
 
 test('AI 治理章节引用检查会报告关键词落错章节', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
       '### 0. 判断子 Agent 委派',
       '子 Agent 委派',
@@ -58,7 +41,7 @@ test('AI 治理章节引用检查会报告关键词落错章节', () => {
 });
 
 test('AI 治理章节引用检查会忽略代码块里的伪标题', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
       '### 0. 判断子 Agent 委派',
       '```bash',
@@ -86,7 +69,7 @@ test('AI 治理章节引用检查会忽略代码块里的伪标题', () => {
 });
 
 test('AI 治理章节引用检查会报告 AI 安全边界落错章节', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
       '### 3. 编码约束',
       '本地规则优先',

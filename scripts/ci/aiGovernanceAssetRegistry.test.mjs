@@ -5,12 +5,12 @@ import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetReg
 import {
   buildRegistryTableFixture,
   registryRow,
-  withAssetRegistryTempRoot,
+  withAiGovernanceTempRoot,
   writeFixtureFile,
-} from './aiGovernanceAssetRegistryTestFixtures.mjs';
+} from './aiGovernanceTestFixtures.mjs';
 
 test('AI 治理资产注册表会报告缺少表格登记的必需文件和显式豁免', () => {
-  withAssetRegistryTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'AGENTS.md', '入口');
     writeFixtureFile(rootDir, '.claude/settings.local.json', '{}');
     writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
@@ -38,7 +38,7 @@ test('AI 治理资产注册表会报告缺少表格登记的必需文件和显�
 });
 
 test('AI 治理资产注册表会报告重复登记', () => {
-  withAssetRegistryTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', buildRegistryTableFixture([
       registryRow('AGENTS.md', { contract: '首次登记', type: '项目入口' }),
       registryRow('AGENTS.md', { contract: '重复登记', type: '项目入口' }),
@@ -57,7 +57,7 @@ test('AI 治理资产注册表会报告重复登记', () => {
 });
 
 test('AI 治理资产注册表会报告缺少类型、维护契约或治理证据', () => {
-  withAssetRegistryTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', buildRegistryTableFixture([
       registryRow('AGENTS.md', { type: '' }),
       registryRow('CLAUDE.md', { contract: '', type: '项目入口' }),

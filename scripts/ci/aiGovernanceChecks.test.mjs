@@ -1,7 +1,4 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { test } from 'node:test';
 
 import {
@@ -24,21 +21,12 @@ import {
   AI_ENTRY_SHARED_SNIPPET_FILES,
   AI_ENTRY_SHARED_SNIPPETS,
 } from './aiGovernanceSharedEntrySnippets.mjs';
-
-const withTempRoot = (run) => {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-ai-governance-'));
-  try {
-    return run(rootDir);
-  } finally {
-    fs.rmSync(rootDir, { recursive: true, force: true });
-  }
-};
-
-const writeFixtureFile = (rootDir, file, content) => {
-  const filePath = path.join(rootDir, file);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, content);
-};
+import {
+  buildRegistryTableFixture,
+  registryRow,
+  withAiGovernanceTempRoot,
+  writeFixtureFile,
+} from './aiGovernanceTestFixtures.mjs';
 
 const buildSkillFixtureContent = ({
   frontmatter = [
@@ -61,22 +49,6 @@ const buildSkillFixtureContent = ({
   '# JSONUtils Maintainer',
   '',
   ...sections.flatMap(section => [section, sectionBodies?.[section] ?? body, '']),
-].join('\n');
-
-const registryRow = (file, fields = {}) => ({
-  contract: '已登记',
-  evidence: '必需文件',
-  file,
-  type: '测试资产',
-  ...fields,
-});
-
-const buildRegistryTableFixture = rows => [
-  '| 资产 | 类型 | 维护契约 | 治理证据 |',
-  '| --- | --- | --- | --- |',
-  ...rows.map(({ file, type, contract, evidence }) => (
-    `| \`${file}\` | ${type} | ${contract} | ${evidence} |`
-  )),
 ].join('\n');
 
 const buildRegistryFixtureContent = files => [
@@ -198,31 +170,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '显式豁免',
   ].join('\n');
 
-  const governanceFixtureFiles = [
-    'AGENTS.md',
-    'CLAUDE.md',
-    'rules/code-style.md',
-    'docs/AI-ENGINEERING-PLAYBOOK.md',
-    'docs/AI-GOVERNANCE-DECISIONS.md',
-    'docs/AI-CONFIG-INTEGRATION.md',
-    'docs/AI-TOOLS-SETUP.md',
-    'docs/AI-ASSET-REGISTRY.md',
-    '.claude/README.md',
-    '.claude/ai-tools-guide.md',
-    '.github/copilot-instructions.md',
-    '.github/PULL_REQUEST_TEMPLATE.md',
-    '.codex/README.md',
-    '.cursorrules',
-    '.comate/rules/code-style.md',
-    skillFile,
-    'scripts/ci/check-ai-governance.mjs',
-    'scripts/ci/check-deploy-shell-syntax.mjs',
-    'scripts/ci/check-frontend-static-retention.mjs',
-    'scripts/ci/check-production-frontend-assets.mjs',
-    'scripts/ci/check-chunk-load-recovery-catches.mjs',
-    'scripts/ci/check-version-consistency.mjs',
-    'scripts/ci/check-maintainability-budgets.mjs',
-  ];
+  const governanceFixtureFiles = buildAiGovernanceRequiredFiles([skillFile]);
 
   governanceFixtureFiles.forEach(file => writeFixtureFile(rootDir, file, sharedReferences));
   writeFixtureFile(rootDir, 'AGENTS.md', [sharedReferences, mirroredAgentSection].join('\n'));
@@ -261,13 +209,13 @@ const writeMinimalGovernanceFixture = (rootDir) => {
 };
 
 test('AI 治理文件检查会报告缺失文件', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     assert.deepEqual(collectMissingAiGovernanceFiles(rootDir, ['AGENTS.md']), ['AGENTS.md']);
   });
 });
 
 test('AI 治理资产发现会跳过显式豁免并报告未治理资产', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.claude/settings.local.json', '{}');
     writeFixtureFile(rootDir, '.claude/new-agent-guide.md', '新 AI 协作说明');
     writeFixtureFile(rootDir, '.github/instructions/review.instructions.md', '新 Copilot 路径级指令');
@@ -290,7 +238,7 @@ test('AI 治理资产发现会跳过显式豁免并报告未治理资产', () =>
 });
 
 test('AI 治理 CI 契约会报告自动化入口缺少治理命令', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.github/workflows/ci.yml', [
       'steps:',
       '  - name: Version consistency',
@@ -309,7 +257,7 @@ test('AI 治理 CI 契约会报告自动化入口缺少治理命令', () => {
 });
 
 test('AI 治理 CI 契约不接受注释或 echo 里的治理命令', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.github/workflows/ci.yml', [
       'steps:',
       '  - name: Version consistency',
@@ -358,6 +306,7 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   const delegationSection = playbookRule.sections.find(section => section.sectionTitle === '### 0. 判断子 Agent 委派');
   const codingSection = playbookRule.sections.find(section => section.sectionTitle === '### 3. 编码约束');
   const evolutionSection = playbookRule.sections.find(section => section.sectionTitle === '### 5. 规则进化闭环');
+  const thinEntryRules = [claudeRule, codexRule, copilotRule, cursorRule, comateRule];
 
   assert.equal(requiredFiles.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
@@ -372,9 +321,10 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(requiredFiles.includes('scripts/ci/check-version-consistency.mjs'), true);
   assert.equal(requiredFiles.includes('scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(skillRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
-  assert.equal(copilotRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
-  assert.equal(cursorRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
-  assert.equal(comateRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
+  thinEntryRules.forEach((rule) => {
+    assert.equal(rule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
+    assert.equal(rule.contains.includes('node scripts/ci/check-maintainability-budgets.mjs'), true);
+  });
   assert.equal(agentsEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(claudeEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(claudeReadmeRule.contains.includes('docs/AI-ENGINEERING-PLAYBOOK.md'), true);
@@ -408,15 +358,11 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(prTemplateRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(prTemplateRule.contains.includes('负向测试'), true);
   assert.equal(copilotRule.contains.includes('AGENTS.md'), true);
-  assert.equal(copilotRule.contains.includes('node scripts/ci/check-maintainability-budgets.mjs'), true);
   assert.equal(cursorRule.contains.includes('.comate/rules/code-style.md'), true);
   assert.equal(comateRule.contains.includes('.cursorrules'), true);
   assert.equal(delegationSection.contains.includes('下一步建议：'), true);
   assert.equal(codingSection.contains.includes('敏感内容不外泄'), true);
   assert.equal(evolutionSection.contains.includes('锁定测试'), true);
-  [cursorRule, comateRule].forEach((rule) => {
-    assert.equal(rule.contains.includes('node scripts/ci/check-maintainability-budgets.mjs'), true);
-  });
   [claudeRule, codexRule, copilotRule, cursorRule, comateRule, playbookRule, skillRule].forEach((rule) => {
     assert.equal(rule.contains.includes('node scripts/ci/check-deploy-shell-syntax.mjs'), true);
     assert.equal(rule.contains.includes('node scripts/ci/check-chunk-load-recovery-catches.mjs'), true);
@@ -469,7 +415,7 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
 });
 
 test('AI 治理缺少项目级 Codex skill 时会报告', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'AGENTS.md', 'ok');
 
     assert.deepEqual(collectMissingAiGovernanceReferences(rootDir, [], []), [
@@ -479,7 +425,7 @@ test('AI 治理缺少项目级 Codex skill 时会报告', () => {
 });
 
 test('AI 治理 lint 脚本检查会报告错误覆盖范围', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({
       scripts: { lint: 'eslint "src/**/*.{ts,tsx}" --quiet' },
     }));
@@ -491,7 +437,7 @@ test('AI 治理 lint 脚本检查会报告错误覆盖范围', () => {
 });
 
 test('AI 治理 lint 脚本检查接受 src 和 config 覆盖范围', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({
       scripts: { lint: 'eslint "{src,config}/**/*.{ts,tsx}" --quiet' },
     }));
@@ -501,7 +447,7 @@ test('AI 治理 lint 脚本检查接受 src 和 config 覆盖范围', () => {
 });
 
 test('AI 治理完整报告在最小合格仓库中通过', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeMinimalGovernanceFixture(rootDir);
 
     const report = buildAiGovernanceReport(rootDir);
@@ -513,7 +459,7 @@ test('AI 治理完整报告在最小合格仓库中通过', () => {
 });
 
 test('AI 治理完整报告会报告未纳入治理清单的新 AI 资产', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeMinimalGovernanceFixture(rootDir);
     writeFixtureFile(rootDir, '.codex/notes.md', '临时 AI 协作笔记');
     writeFixtureFile(rootDir, '.github/instructions/review.instructions.md', '临时 Copilot 路径级指令');
