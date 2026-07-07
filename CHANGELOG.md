@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.634 (2026-07-07) - JSONPath 结果行类名拆分
+### 🏗️ 架构与基础设施
+- **JSONPath 结果预览瘦身**: 将结果预览行的基础布局、选中态和悬停态 className 派生抽成 `JsonPathPanelResultPreviewRowClassName` 纯 helper，收窄 RowContent 展示字段类型，行组件继续只负责聚焦按钮和结构定位入口装配，并补充类名状态测试
+
 ## v1.8.633 (2026-07-07) - 模板填充占位符模型拆分
 ### 🏗️ 架构与基础设施
 - **模板填充模型瘦身**: 将占位符回填模板的类型、解析、摘要和 replacement 更新迁移到 `templateFillPlaceholderDraftModel`，`templateFillPanelModel` 保留大小文案和兼容导出，降低后续模板填充逻辑继续挤入同一文件的风险

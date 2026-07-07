@@ -1,8 +1,13 @@
 import React from 'react';
 import type { JsonPathResultPreviewItem } from '../utils/jsonPathPanelPreviewItems';
 
+type JsonPathPanelResultPreviewRowContentItem = Pick<
+    JsonPathResultPreviewItem,
+    'displayIndex' | 'sourceLabel' | 'path' | 'text'
+>;
+
 interface JsonPathPanelResultPreviewRowContentProps {
-    item: JsonPathResultPreviewItem;
+    item: JsonPathPanelResultPreviewRowContentItem;
 }
 
 export const JsonPathPanelResultPreviewRowContent: React.FC<JsonPathPanelResultPreviewRowContentProps> = ({ item }) => (
