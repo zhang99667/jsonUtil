@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { JsonTreeGraphPanel } from './JsonTreeGraphPanel';
+import { JsonTreeSearchHistoryPanel } from './JsonTreeSearchHistoryPanel';
 import { JsonTreeSelectedNodeDetailsPanel } from './JsonTreeSelectedNodeDetailsPanel';
+import { JsonTreeToolbar, type JsonTreeKindFilter, type JsonTreePanelViewMode } from './JsonTreeToolbar';
 import type { JsonTreeArrayTablePreview, JsonTreeModel, JsonTreeNode } from '../utils/jsonTreeModel';
 import {
   buildJsonTreeGraphView,
@@ -61,19 +63,6 @@ interface JsonTreeModelState {
   error: string;
   isLoading: boolean;
 }
-
-type JsonTreeKindFilter = JsonTreeNode['kind'] | 'all';
-type JsonTreePanelViewMode = 'list' | 'graph';
-
-const KIND_FILTER_OPTIONS: Array<{ value: JsonTreeKindFilter; label: string }> = [
-  { value: 'all', label: '全部类型' },
-  { value: 'object', label: '对象' },
-  { value: 'array', label: '数组' },
-  { value: 'string', label: '字符串' },
-  { value: 'number', label: '数字' },
-  { value: 'boolean', label: '布尔' },
-  { value: 'null', label: '空值' },
-];
 
 const escapeRegExp = (value: string): string => (
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -700,167 +689,31 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       }
     >
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center gap-2 border-b border-editor-border px-3 py-2">
-          <input
-            ref={searchInputRef}
-            data-tour="structure-nav-search"
-            type="text"
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            onKeyDown={handleSearchInputKeyDown}
-            placeholder="搜索路径、字段或值"
-            aria-label="搜索 JSON 结构"
-            className="min-w-0 flex-1 rounded border border-editor-border bg-editor-bg px-2 py-1.5 font-mono text-xs text-gray-200 outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500"
-          />
-          <select
-            data-tour="structure-nav-kind-filter"
-            value={kindFilter}
-            onChange={(event) => setKindFilter(event.target.value as JsonTreeKindFilter)}
-            aria-label="筛选节点类型"
-            className="w-24 shrink-0 rounded border border-editor-border bg-editor-bg px-2 py-1.5 text-xs text-gray-200 outline-none transition-colors focus:border-emerald-500"
-            title="按节点类型筛选"
-          >
-            {KIND_FILTER_OPTIONS.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <div
-            role="group"
-            aria-label="结构导航视图"
-            className="flex shrink-0 overflow-hidden rounded border border-editor-border"
-          >
-            {(['list', 'graph'] as const).map(mode => (
-              <button
-                key={mode}
-                type="button"
-                data-tour={`structure-nav-view-${mode}`}
-                onClick={() => setViewMode(mode)}
-                aria-pressed={viewMode === mode}
-                className={`px-2 py-1.5 text-xs transition-colors ${
-                  viewMode === mode
-                    ? 'bg-brand-primary text-white'
-                    : 'bg-editor-bg text-gray-400 hover:bg-editor-hover hover:text-gray-200'
-                }`}
-              >
-                {mode === 'list' ? '列表' : '图谱'}
-              </button>
-            ))}
-          </div>
-          {hasActiveFilter && visibleNodes.length > 0 ? (
-            <details ref={copyResultsMenuRef} className="relative shrink-0">
-              <summary
-                data-tour="structure-nav-copy-search-results-menu"
-                className="w-12 list-none rounded border border-editor-border px-2 py-1.5 text-center text-xs text-gray-300 transition-colors hover:bg-editor-hover focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 [&::-webkit-details-marker]:hidden"
-                title="复制当前筛选结果"
-                aria-label="复制当前筛选结果"
-              >
-                结果
-              </summary>
-              <div className="absolute right-0 top-full z-20 mt-1 w-32 rounded border border-editor-border bg-editor-sidebar py-1 text-xs shadow-xl shadow-black/30">
-                <button
-                  type="button"
-                  data-tour="structure-nav-copy-search-results"
-                  onClick={() => void handleCopySearchResultsJson()}
-                  className="block w-full px-2 py-1.5 text-left text-gray-300 transition-colors hover:bg-editor-hover hover:text-emerald-100"
-                >
-                  JSON 清单
-                </button>
-                <button
-                  type="button"
-                  data-tour="structure-nav-copy-search-results-markdown"
-                  onClick={() => void handleCopySearchResultsMarkdown()}
-                  className="block w-full px-2 py-1.5 text-left text-gray-300 transition-colors hover:bg-editor-hover hover:text-cyan-100"
-                >
-                  Markdown 摘要
-                </button>
-                <button
-                  type="button"
-                  data-tour="structure-nav-copy-search-results-csv"
-                  onClick={() => void handleCopySearchResultsCsv()}
-                  className="block w-full px-2 py-1.5 text-left text-gray-300 transition-colors hover:bg-editor-hover hover:text-amber-100"
-                >
-                  CSV 摘要
-                </button>
-              </div>
-            </details>
-          ) : (
-            <button
-              type="button"
-              data-tour="structure-nav-copy-search-results"
-              disabled
-              className="w-12 rounded border border-editor-border px-2 py-1.5 text-center text-xs text-gray-300 opacity-50"
-              title="有搜索或类型筛选结果后可复制"
-            >
-              结果
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleExpandAll}
-            disabled={nodes.length === 0}
-            className="rounded border border-editor-border px-2 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
-            title="展开全部容器节点"
-          >
-            展开
-          </button>
-          <button
-            type="button"
-            onClick={handleCollapseAll}
-            disabled={nodes.length === 0}
-            className="rounded border border-editor-border px-2 py-1.5 text-xs text-gray-300 transition-colors hover:bg-editor-hover disabled:cursor-not-allowed disabled:opacity-50"
-            title="折叠到根节点"
-          >
-            折叠
-          </button>
-        </div>
+        <JsonTreeToolbar
+          searchInputRef={searchInputRef}
+          copyResultsMenuRef={copyResultsMenuRef}
+          searchText={searchText}
+          kindFilter={kindFilter}
+          viewMode={viewMode}
+          hasCopyableResults={hasActiveFilter && visibleNodes.length > 0}
+          canExpandCollapse={nodes.length > 0}
+          onSearchTextChange={setSearchText}
+          onSearchInputKeyDown={handleSearchInputKeyDown}
+          onKindFilterChange={setKindFilter}
+          onViewModeChange={setViewMode}
+          onCopySearchResultsJson={() => { void handleCopySearchResultsJson(); }}
+          onCopySearchResultsMarkdown={() => { void handleCopySearchResultsMarkdown(); }}
+          onCopySearchResultsCsv={() => { void handleCopySearchResultsCsv(); }}
+          onExpandAll={handleExpandAll}
+          onCollapseAll={handleCollapseAll}
+        />
 
-        {searchHistory.length > 0 && (
-          <div
-            data-tour="structure-nav-search-history"
-            className="flex shrink-0 items-center gap-2 border-b border-editor-border bg-editor-bg/60 px-3 py-1.5 text-[11px]"
-          >
-            <span className="shrink-0 text-gray-500">最近</span>
-            <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-              {searchHistory.map(item => (
-                <span
-                  key={item}
-                  className="group/history-item inline-flex max-w-[180px] shrink-0 items-center rounded border border-editor-border bg-editor-sidebar text-gray-300 transition-colors hover:border-emerald-500/40 hover:bg-editor-hover"
-                >
-                  <button
-                    type="button"
-                    data-tour="structure-nav-search-history-item"
-                    onClick={() => handleFillSearchHistory(item)}
-                    className="min-w-0 truncate px-2 py-1 font-mono text-[11px] text-gray-300 transition-colors hover:text-emerald-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
-                    title={`${item}\n点击填入结构搜索`}
-                    aria-label={`填入结构搜索历史：${item}`}
-                  >
-                    {item}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSearchHistory(item)}
-                    className="shrink-0 rounded-r px-1 py-1 text-gray-500 opacity-0 transition-colors hover:text-red-300 focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400 group-hover/history-item:opacity-100"
-                    title={`删除结构搜索历史：${item}`}
-                    aria-label={`删除结构搜索历史：${item}`}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={handleClearSearchHistory}
-              className="shrink-0 rounded px-1.5 py-1 text-gray-500 transition-colors hover:bg-editor-hover hover:text-gray-300 focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-400"
-              title="清空结构搜索历史"
-              aria-label="清空结构搜索历史"
-            >
-              清空
-            </button>
-          </div>
-        )}
+        <JsonTreeSearchHistoryPanel
+          searchHistory={searchHistory}
+          onFillSearchHistory={handleFillSearchHistory}
+          onRemoveSearchHistory={handleRemoveSearchHistory}
+          onClearSearchHistory={handleClearSearchHistory}
+        />
 
         {renderSelectedNodeDetails()}
         {renderBody()}
