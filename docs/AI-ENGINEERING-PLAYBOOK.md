@@ -62,7 +62,7 @@
 每次代码改动至少完成：
 
 - 运行和改动范围匹配的测试或说明无法运行的原因。
-- 用户可见或准备上线的改动先递增 patch 版本并新开顶部 CHANGELOG 版本区块，运行 `node scripts/ci/check-version-consistency.mjs`，避免一个版本堆积几十条提交。
+- 用户可见或准备上线的改动先递增 `frontend/package.json` patch 版本、同步 `frontend/package-lock.json`，并新开顶部 `CHANGELOG.md` 版本区块，运行 `node scripts/ci/check-version-consistency.mjs`，避免一个版本堆积几十条提交。
 - 涉及前端 TypeScript 源码时运行 `npm run lint` 或说明未运行原因。
 - 涉及手动 `import()`、懒加载 helper、`dispatchChunkLoadRecoveryEvent` 或发布恢复 catch 时运行 `node scripts/ci/check-chunk-load-recovery-catches.mjs`，确认旧 chunk 加载失败不会被业务 catch 吞掉。
 - 涉及 `scripts/deploy/*.sh`、`.github/scripts/*.sh`、`scripts/ci/local-ci.sh` 或 `.github/workflows/*.yml` 的 `workflow run` 块时运行 `node scripts/ci/check-deploy-shell-syntax.mjs`，先用 `bash -n` 拦截发布脚本语法错误，并单独检查 `REMOTE_SCRIPT heredoc` 这类远端脚本片段。
@@ -78,6 +78,7 @@
 - 遇到重复踩坑、用户纠偏、子 Agent 协作失效、验证门禁缺口或优秀实践可复用时，先做复盘沉淀，明确触发条件、反例、验证方式和适用边界。
 - 能被后续 AI 复用的经验必须做规则/skill 回写：项目通用流程写入本 Playbook，Codex 项目技能写入 `.codex/skills/jsonutils-maintainer/SKILL.md`，跨工具说明同步到 `.claude/ai-tools-guide.md` 或入口文档。
 - 规则改动必须配套治理校验：能用 `check-ai-governance` 锁定的关键词、文件引用或命令要同步加入脚本和测试，不能只依赖人工记忆。
+- 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name` 和 `description`，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可验证的散文。
 - 不把一次性偏好、临时绕路或未验证猜测沉淀为规则；沉淀前先确认它能减少未来错误，并且不会和现有规范冲突。
 
 ## AI 资产维护
@@ -90,3 +91,4 @@
 
 新增 AI 工具或流程时，优先更新本文件和 `.claude/ai-tools-guide.md`，避免同一规则散落在多个地方。
 修改 AI 入口、Playbook 或 skill 后，运行 `node scripts/ci/check-ai-governance.mjs` 确认关键引用没有断链。
+新增或调整 `.codex/skills/*/SKILL.md` 时，同一条治理校验还会检查 skill frontmatter 和核心章节契约。

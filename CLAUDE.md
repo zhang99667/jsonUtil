@@ -30,7 +30,7 @@ AI Playbook 包含：
 - 跨模块排查、影响面分析、复杂重构或多条验证链路并行时，先判断是否需要子 Agent 委派；只读调查交给 explorer，限定写入交给 worker，构建/测试复核交给 verifier。
 - 主线程负责拆分边界、保护上下文、整合证据和最终验证；子 Agent 输出结论、证据定位、修改文件和未覆盖风险，不回传大段中间日志。
 - 如果当前工具不可委派，主线程应收窄 `rg`、测试和日志输出，继续按 `docs/AI-ENGINEERING-PLAYBOOK.md` 完成本地闭环。
-- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，再按 Playbook 做规则/skill 回写，并运行治理校验锁定关键引用。
+- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，再按 Playbook 做规则/skill 回写，并运行 `node scripts/ci/check-ai-governance.mjs` 锁定关键引用和 skill 契约。
 
 ---
 
@@ -155,7 +155,7 @@ json-助手-&-ai-修复/
 - `[Chore]`: 构建/工具链更新
 - `[LOG]`: 更新日志
 
-**重要**: 每次代码修改必须同步更新 `CHANGELOG.md`
+**重要**: 每次代码修改必须同步更新 `CHANGELOG.md`。用户可见、准备上线或会触发前端构建的改动需要同步递增 `frontend/package.json` 和 `frontend/package-lock.json`，并运行 `node scripts/ci/check-version-consistency.mjs`。
 
 **示例**:
 ```bash

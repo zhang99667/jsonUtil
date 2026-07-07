@@ -6,6 +6,7 @@ import { test } from 'node:test';
 
 import {
   buildAiGovernanceReport,
+  collectCodexSkillContractFailures,
   collectFrontendLintScriptFailures,
   collectMissingAiGovernanceFiles,
   collectMissingAiGovernanceReferences,
@@ -31,6 +32,28 @@ const writeFixtureFile = (rootDir, file, content) => {
   fs.writeFileSync(filePath, content);
 };
 
+const buildSkillFixtureContent = ({
+  frontmatter = [
+    'name: jsonutils-maintainer',
+    'description: JSONUtils 项目维护技能。',
+  ].join('\n'),
+  sections = [
+    '## 必读文件',
+    '## 工作流',
+    '## 常用验证命令',
+    '## 重点边界',
+  ],
+  body = '',
+} = {}) => [
+  '---',
+  frontmatter,
+  '---',
+  '',
+  '# JSONUtils Maintainer',
+  '',
+  ...sections.flatMap(section => [section, body, '']),
+].join('\n');
+
 const writeMinimalGovernanceFixture = (rootDir) => {
   const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
   const sharedReferences = [
@@ -53,6 +76,11 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'node scripts/ci/check-frontend-static-retention.mjs',
     'node scripts/ci/check-production-frontend-assets.mjs',
     'node scripts/ci/check-maintainability-budgets.mjs',
+    'node scripts/ci/check-ai-governance.mjs',
+    'node scripts/ci/check-version-consistency.mjs',
+    'frontend/package.json',
+    'frontend/package-lock.json',
+    'CHANGELOG.md',
     'git diff --check',
     'Content-Type',
     'fallback 成 HTML',
@@ -85,6 +113,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'scripts/ci/check-chunk-load-recovery-catches.mjs',
     'scripts/ci/check-maintainability-budgets.mjs',
   ].forEach(file => writeFixtureFile(rootDir, file, sharedReferences));
+  writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({ body: sharedReferences }));
 
   writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({
     scripts: { lint: 'eslint "{src,config}/**/*.{ts,tsx}" --quiet' },
@@ -209,6 +238,66 @@ test('AI 治理引用检查会报告缺失的规则进化闭环', () => {
   });
 });
 
+test('AI 治理引用检查会报告入口文档缺失治理命令', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'AGENTS.md', [
+      'rules/code-style.md',
+      'docs/AI-ENGINEERING-PLAYBOOK.md',
+      '复盘沉淀',
+      '规则/skill 回写',
+      '治理校验',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{
+        file: 'AGENTS.md',
+        contains: [
+          'rules/code-style.md',
+          'docs/AI-ENGINEERING-PLAYBOOK.md',
+          'node scripts/ci/check-ai-governance.mjs',
+        ],
+      }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      'AGENTS.md: 缺少 "node scripts/ci/check-ai-governance.mjs"',
+    ]);
+  });
+});
+
+test('AI 治理引用检查会报告入口文档缺失版本闭环文件', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'CLAUDE.md', [
+      'rules/code-style.md',
+      'docs/AI-ENGINEERING-PLAYBOOK.md',
+      'node scripts/ci/check-ai-governance.mjs',
+      'node scripts/ci/check-version-consistency.mjs',
+      'frontend/package.json',
+      'CHANGELOG.md',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{
+        file: 'CLAUDE.md',
+        contains: [
+          'node scripts/ci/check-version-consistency.mjs',
+          'frontend/package.json',
+          'frontend/package-lock.json',
+          'CHANGELOG.md',
+        ],
+      }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      'CLAUDE.md: 缺少 "frontend/package-lock.json"',
+    ]);
+  });
+});
+
 test('AI 治理文件检查会报告缺失文件', () => {
   withTempRoot((rootDir) => {
     assert.deepEqual(collectMissingAiGovernanceFiles(rootDir, ['AGENTS.md']), ['AGENTS.md']);
@@ -226,18 +315,71 @@ test('AI 治理 skill 发现只收集技能目录下的 SKILL.md', () => {
   });
 });
 
+test('AI 治理 skill 契约会报告缺失 frontmatter', () => {
+  withTempRoot((rootDir) => {
+    const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
+    writeFixtureFile(rootDir, skillFile, [
+      '# JSONUtils Maintainer',
+      '## 必读文件',
+      '## 工作流',
+      '## 常用验证命令',
+      '## 重点边界',
+    ].join('\n'));
+
+    assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
+      '.codex/skills/jsonutils-maintainer/SKILL.md: 缺少 skill frontmatter',
+    ]);
+  });
+});
+
+test('AI 治理 skill 契约会报告缺失 frontmatter 字段', () => {
+  withTempRoot((rootDir) => {
+    const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
+    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+      frontmatter: 'name: jsonutils-maintainer',
+    }));
+
+    assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
+      '.codex/skills/jsonutils-maintainer/SKILL.md: frontmatter 缺少 description',
+    ]);
+  });
+});
+
+test('AI 治理 skill 契约会报告缺失核心章节', () => {
+  withTempRoot((rootDir) => {
+    const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
+    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+      sections: ['## 必读文件', '## 工作流', '## 重点边界'],
+    }));
+
+    assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
+      '.codex/skills/jsonutils-maintainer/SKILL.md: 缺少 ## 常用验证命令 章节',
+    ]);
+  });
+});
+
 test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () => {
   const skillFiles = ['.codex/skills/jsonutils-maintainer/SKILL.md'];
   const requiredFiles = buildAiGovernanceRequiredFiles(skillFiles);
   const referenceRules = buildAiGovernanceReferenceRules(skillFiles);
+  const agentsEntryRule = referenceRules.find(rule => rule.file === 'AGENTS.md');
+  const claudeEntryRule = referenceRules.find(rule => rule.file === 'CLAUDE.md');
   const claudeRule = referenceRules.find(rule => rule.file === '.claude/ai-tools-guide.md');
   const codexRule = referenceRules.find(rule => rule.file === '.codex/README.md');
   const playbookRule = referenceRules.find(rule => rule.file === 'docs/AI-ENGINEERING-PLAYBOOK.md');
   const skillRule = referenceRules.find(rule => rule.file === skillFiles[0]);
 
   assert.equal(requiredFiles.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(agentsEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(claudeEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
+  ['node scripts/ci/check-version-consistency.mjs', 'frontend/package.json', 'frontend/package-lock.json', 'CHANGELOG.md']
+    .forEach((expectedText) => {
+      assert.equal(agentsEntryRule.contains.includes(expectedText), true);
+      assert.equal(claudeEntryRule.contains.includes(expectedText), true);
+    });
   assert.equal(claudeRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(codexRule.contains.includes('skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(codexRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   [claudeRule, codexRule, playbookRule, skillRule].forEach((rule) => {
     assert.equal(rule.contains.includes('node scripts/ci/check-deploy-shell-syntax.mjs'), true);
     assert.equal(rule.contains.includes('node scripts/ci/check-chunk-load-recovery-catches.mjs'), true);
@@ -260,6 +402,10 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
     assert.equal(rule.contains.includes('复盘沉淀'), true);
     assert.equal(rule.contains.includes('规则/skill 回写'), true);
     assert.equal(rule.contains.includes('治理校验'), true);
+    assert.equal(rule.contains.includes('node scripts/ci/check-version-consistency.mjs'), true);
+    assert.equal(rule.contains.includes('frontend/package.json'), true);
+    assert.equal(rule.contains.includes('frontend/package-lock.json'), true);
+    assert.equal(rule.contains.includes('CHANGELOG.md'), true);
   });
 });
 
@@ -302,6 +448,7 @@ test('AI 治理完整报告在最小合格仓库中通过', () => {
     const report = buildAiGovernanceReport(rootDir);
 
     assert.deepEqual(report.missingFiles, []);
+    assert.deepEqual(report.skillContractFailures, []);
     assert.deepEqual(report.missingReferences, []);
   });
 });

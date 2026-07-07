@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.696 (2026-07-07) - AI 协作治理契约
+### 🏗️ 架构与基础设施
+- **AI 协作治理补齐 skill 结构契约**: `check-ai-governance` 新增项目级 Codex skill frontmatter 和核心章节检查，要求 `.codex/skills/*/SKILL.md` 保留 `name`、`description`、必读文件、工作流、常用验证命令和重点边界；AGENTS/CLAUDE 入口文档同步写入明确治理命令，避免规则/skill 回写后缺少可执行校验或迁移后不可触发
+- **AI 协作治理锁定版本发布闭环**: 新增版本与 CHANGELOG 引用组，入口文档、Playbook、Codex skill 和跨工具说明会被治理脚本要求同时包含 `frontend/package.json`、`frontend/package-lock.json`、`CHANGELOG.md` 与 `check-version-consistency`，避免可上线改动漏升版本或漏写发布说明
+
 ## v1.8.695 (2026-07-07) - AI 规则进化闭环
 ### 🏗️ 架构与基础设施
 - **AI 协作资产增加进化闭环**: Playbook、Codex skill、AI 工具说明和入口文档新增复盘沉淀、规则/skill 回写与治理校验要求，重复踩坑、用户纠偏、验证缺口或可复用实践需要沉淀到 rules/skills 等长期资产；`check-ai-governance` 同步锁定规则进化关键词，避免协作经验只停留在单次对话里

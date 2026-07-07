@@ -5,12 +5,10 @@ import {
   CHUNK_LOAD_RECOVERY_CATCH_REFERENCES,
   PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
   SUBAGENT_DELEGATION_REFERENCES,
+  VERSION_CHANGELOG_REFERENCES,
 } from './aiGovernanceReferenceGroups.mjs';
 
-const CORE_ENTRY_REFERENCES = [
-  'rules/code-style.md',
-  'docs/AI-ENGINEERING-PLAYBOOK.md',
-];
+const CORE_ENTRY_REFERENCES = ['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'node scripts/ci/check-ai-governance.mjs'];
 
 const RUNTIME_GOVERNANCE_REFERENCES = [
   ...SUBAGENT_DELEGATION_REFERENCES,
@@ -18,6 +16,7 @@ const RUNTIME_GOVERNANCE_REFERENCES = [
   ...CHUNK_LOAD_RECOVERY_CATCH_REFERENCES,
   ...AI_SAFETY_BOUNDARY_REFERENCES,
   ...AI_EVOLUTION_LOOP_REFERENCES,
+  ...VERSION_CHANGELOG_REFERENCES,
   'node scripts/ci/check-frontend-static-retention.mjs',
   ...PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
 ];
@@ -29,6 +28,7 @@ export const buildAiGovernanceEntryReferenceRules = (codexSkillFiles) => [
       ...CORE_ENTRY_REFERENCES,
       ...SUBAGENT_DELEGATION_REFERENCES,
       ...AI_EVOLUTION_LOOP_REFERENCES,
+      ...VERSION_CHANGELOG_REFERENCES,
     ],
   },
   {
@@ -37,6 +37,7 @@ export const buildAiGovernanceEntryReferenceRules = (codexSkillFiles) => [
       ...CORE_ENTRY_REFERENCES,
       ...SUBAGENT_DELEGATION_REFERENCES,
       ...AI_EVOLUTION_LOOP_REFERENCES,
+      ...VERSION_CHANGELOG_REFERENCES,
     ],
   },
   { file: 'rules/code-style.md', contains: AI_EVOLUTION_LOOP_REFERENCES },
