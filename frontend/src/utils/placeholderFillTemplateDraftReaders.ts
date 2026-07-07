@@ -3,10 +3,7 @@ import type {
   PlaceholderTemplateSource,
   PlaceholderTemplateSuggestion,
 } from './placeholderFillTemplateContract';
-
-export const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
+import { isRecord } from './placeholderFillTemplateRecord';
 
 const readString = (record: Record<string, unknown>, key: string): string | undefined => (
   typeof record[key] === 'string' ? record[key] : undefined

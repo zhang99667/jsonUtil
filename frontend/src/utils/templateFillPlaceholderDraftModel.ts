@@ -4,10 +4,8 @@ import {
   type PlaceholderTemplateDraft,
   type PlaceholderTemplateSummary,
 } from './placeholderFillTemplateContract';
-import {
-  isRecord,
-  parsePlaceholderTemplateDetails,
-} from './placeholderFillTemplateDraftReaders';
+import { parsePlaceholderTemplateDetails } from './placeholderFillTemplateDraftReaders';
+import { isRecord } from './placeholderFillTemplateRecord';
 
 export {
   PLACEHOLDER_FILL_TEMPLATE_KIND,
@@ -17,6 +15,7 @@ export {
   type PlaceholderTemplateSuggestion,
   type PlaceholderTemplateSummary,
 } from './placeholderFillTemplateContract';
+export { updatePlaceholderReplacement } from './placeholderFillTemplateReplacement';
 
 export const parsePlaceholderTemplateDraft = (templateText: string): PlaceholderTemplateDraft | null => {
   if (!templateText.trim()) return null;
@@ -65,34 +64,4 @@ export const buildPlaceholderTemplateSummary = (templateText: string): Placehold
     suggested,
     pending: Math.max(total - filled, 0),
   };
-};
-
-export const updatePlaceholderReplacement = (
-  templateText: string,
-  placeholderValue: string,
-  replacement: string
-): string => {
-  const parsed = JSON.parse(templateText) as unknown;
-  if (!isRecord(parsed) || parsed.kind !== PLACEHOLDER_FILL_TEMPLATE_KIND) return templateText;
-  if (!isRecord(parsed.placeholders)) return templateText;
-
-  const placeholders = {
-    ...parsed.placeholders,
-    [placeholderValue]: replacement,
-  };
-  const placeholderDetails = Array.isArray(parsed.placeholderDetails)
-    ? parsed.placeholderDetails.map(detail => {
-      if (!isRecord(detail) || detail.value !== placeholderValue) return detail;
-      return {
-        ...detail,
-        replacement,
-      };
-    })
-    : parsed.placeholderDetails;
-
-  return JSON.stringify({
-    ...parsed,
-    placeholders,
-    ...(Array.isArray(placeholderDetails) ? { placeholderDetails } : {}),
-  }, null, 2);
 };
