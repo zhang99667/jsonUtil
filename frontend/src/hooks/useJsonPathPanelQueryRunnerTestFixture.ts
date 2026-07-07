@@ -1,15 +1,10 @@
 import { vi } from 'vitest';
 import type { HighlightRange } from '../types';
-import type { JsonPathQueryWorker } from '../utils/jsonPathPanelQueryWorker';
+import type { JsonPathQueryWorker, JsonPathWorkerResponse } from '../utils/jsonPathPanelQueryWorker';
 import { initialJsonPathPanelQueryState } from '../utils/jsonPathPanelQueryState';
 import { useJsonPathPanelQueryRunner } from './useJsonPathPanelQueryRunner';
 
-export const range: HighlightRange = {
-  startLine: 1,
-  startColumn: 2,
-  endLine: 1,
-  endColumn: 8,
-};
+export const range: HighlightRange = { startLine: 1, startColumn: 2, endLine: 1, endColumn: 8 };
 
 export class FakeJsonPathWorker implements JsonPathQueryWorker {
   onmessage: JsonPathQueryWorker['onmessage'] = null;
@@ -25,6 +20,21 @@ export class FakeJsonPathWorker implements JsonPathQueryWorker {
     this.onerror?.({ message } as ErrorEvent);
   }
 }
+
+export const emitJsonPathWorkerSuccess = (
+  worker: FakeJsonPathWorker,
+  id: number,
+  overrides: Partial<JsonPathWorkerResponse> = {}
+) => worker.emitMessage({
+  id,
+  ranges: [range],
+  values: ['Ada'],
+  items: [{ path: '$.name', pointer: '/name', range, value: 'Ada' }],
+  totalResults: 1,
+  isLimited: false,
+  resultLimit: 1000,
+  ...overrides,
+});
 
 export interface JsonPathQueryRunnerReactMocks {
   useCallback: ReturnType<typeof vi.fn>;
@@ -65,14 +75,9 @@ export const useJsonPathQueryRunnerForTest = (
 
   const input = createDefaultInput(inputOverrides);
   const runner = useJsonPathPanelQueryRunner(input);
+  const workers = () => vi.mocked(input.createWorker).mock.results.map(result => result.value as FakeJsonPathWorker);
   dispatch.mockClear();
   (input.onHighlightRange as ReturnType<typeof vi.fn>).mockClear();
 
-  return {
-    cleanups,
-    dispatch,
-    input,
-    runner,
-    workers: () => vi.mocked(input.createWorker).mock.results.map(result => result.value as FakeJsonPathWorker),
-  };
+  return { cleanups, dispatch, input, runner, workers };
 };

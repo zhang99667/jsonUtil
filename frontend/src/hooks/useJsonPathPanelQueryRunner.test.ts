@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { trackToolEvent } from '../utils/productTelemetry';
 import { showSuccess } from '../utils/toast';
 import {
+  emitJsonPathWorkerSuccess,
   range,
   useJsonPathQueryRunnerForTest,
 } from './useJsonPathPanelQueryRunnerTestFixture';
@@ -66,15 +67,7 @@ describe('useJsonPathPanelQueryRunner', () => {
     runner.handleQuery();
     const request = workers()[0].postMessage.mock.calls[0][0];
 
-    workers()[0].emitMessage({
-      id: request.id,
-      ranges: [range],
-      values: ['Ada'],
-      items: [{ path: '$.name', pointer: '/name', range, value: 'Ada' }],
-      totalResults: 1,
-      isLimited: false,
-      resultLimit: 1000,
-    });
+    emitJsonPathWorkerSuccess(workers()[0], request.id);
 
     expect(workers()[0].terminate).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
@@ -92,14 +85,9 @@ describe('useJsonPathPanelQueryRunner', () => {
     runner.handleQuery('$.first');
     runner.handleQuery('$.second');
     const staleRequest = workers()[0].postMessage.mock.calls[0][0];
-    workers()[0].emitMessage({
-      id: staleRequest.id,
-      ranges: [range],
+    emitJsonPathWorkerSuccess(workers()[0], staleRequest.id, {
       values: ['old'],
       items: [],
-      totalResults: 1,
-      isLimited: false,
-      resultLimit: 1000,
     });
 
     expect(workers()[0].terminate).toHaveBeenCalledTimes(1);
@@ -115,14 +103,9 @@ describe('useJsonPathPanelQueryRunner', () => {
     runner.handleQuery('$.slow');
 
     runner.handleCancelQuery();
-    workers()[0].emitMessage({
-      id: 1,
-      ranges: [range],
+    emitJsonPathWorkerSuccess(workers()[0], 1, {
       values: ['late'],
       items: [],
-      totalResults: 1,
-      isLimited: false,
-      resultLimit: 1000,
     });
 
     expect(workers()[0].terminate).toHaveBeenCalledTimes(1);
