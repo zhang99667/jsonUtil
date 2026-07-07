@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { collectSkillNpmScriptContractFailures } from './aiGovernanceCodexSkillNpmScriptContract.mjs';
 import { collectSkillReferenceContractFailures } from './aiGovernanceCodexSkillReferenceContract.mjs';
 import { collectSkillSectionContentFailures } from './aiGovernanceCodexSkillSectionContract.mjs';
 import { collectSkillStructureContractFailures } from './aiGovernanceCodexSkillStructureContract.mjs';
@@ -14,6 +15,7 @@ export const collectCodexSkillContractFailures = (rootDir, codexSkillFiles) => (
       ...collectSkillStructureContractFailures(file, content),
       ...collectSkillSectionContentFailures(file, content),
       ...collectSkillReferenceContractFailures(rootDir, file, content),
+      ...collectSkillNpmScriptContractFailures(rootDir, file, content),
     ];
   })
 );
