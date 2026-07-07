@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.642 (2026-07-07) - JSONPath 查询决策拆分
+### 🏗️ 架构与基础设施
+- **JSONPath 查询 runner 瘦身**: 将查询归一化、跳过原因和字段名快捷输入同步决策抽成 `jsonPathPanelQueryRunDecision` 纯 helper，runner hook 继续聚焦 worker 生命周期、结果写回和取消逻辑，并补充决策单测锁定空数据与深度格式化中的顺序差异
+
 ## v1.8.641 (2026-07-07) - 模板填充字段 Reader 拆分
 ### 🏗️ 架构与基础设施
 - **占位符回填 readers 瘦身**: 将 source、suggestion 和字符串字段容错读取抽到 `placeholderFillTemplateFieldReaders`，详情 reader 只保留行组装和无效详情过滤，降低后续模板字段兼容逻辑继续堆叠的风险

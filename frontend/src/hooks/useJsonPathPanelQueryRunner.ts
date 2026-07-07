@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import type { HighlightRange } from '../types';
-import { normalizeJsonPathQueryInput } from '../utils/jsonPathInput';
+import { buildJsonPathPanelQueryRunDecision } from '../utils/jsonPathPanelQueryRunDecision';
 import { trackJsonPathQueryEvent } from '../utils/jsonPathPanelQueryTelemetry';
 import {
   buildJsonPathQuerySuccessPayload,
@@ -102,32 +102,21 @@ export const useJsonPathPanelQueryRunner = ({
   const handleQuery = useCallback((overrideQuery?: string) => {
     const startedAt = performance.now();
     dispatchQueryState({ type: 'prepare' });
-    const normalizedQueryInput = normalizeJsonPathQueryInput(overrideQuery ?? query);
-    const queryPath = normalizedQueryInput.query;
+    const queryDecision = buildJsonPathPanelQueryRunDecision({
+      queryInput: overrideQuery ?? query,
+      jsonData,
+      isDataPreparing,
+    });
+    const queryPath = queryDecision.queryPath;
 
-    if (isDataPreparing) {
-      dispatchQueryState({ type: 'skipped', error: '深度格式化仍在处理，请稍后查询' });
-      trackQueryEvent('skipped', startedAt);
-      return;
+    if (queryDecision.syncQueryPath) {
+      onSetQuery(queryDecision.syncQueryPath);
     }
 
-    if (!queryPath) {
-      dispatchQueryState({
-        type: 'skipped',
-        error: '请输入 JSONPath 表达式或字段名',
-        clearResults: true,
-      });
-      onHighlightRange(null);
-      trackQueryEvent('skipped', startedAt);
-      return;
-    }
-
-    if (normalizedQueryInput.isFieldNameShortcut) {
-      onSetQuery(queryPath);
-    }
-
-    if (!jsonData || !jsonData.trim()) {
-      dispatchQueryState({ type: 'skipped', error: '请先在左侧输入 JSON 数据' });
+    if (queryDecision.skip) {
+      const { clearHighlight, ...skipAction } = queryDecision.skip;
+      dispatchQueryState({ type: 'skipped', ...skipAction });
+      if (clearHighlight) onHighlightRange(null);
       trackQueryEvent('skipped', startedAt);
       return;
     }
