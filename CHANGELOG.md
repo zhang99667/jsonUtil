@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.640 (2026-07-07) - 模板填充展示块拆分
+### 🏗️ 架构与基础设施
+- **模板填充面板瘦身**: 将占位符 replacement 摘要和最近回填质量变化展示抽成独立组件，主面板继续聚焦模板状态、校验、持久化和操作接线，并补充组件测试锁定 `data-tour`、文案和复制回调
+
 ## v1.8.639 (2026-07-07) - 模板填充 Replacement Writer 拆分
 ### 🏗️ 架构与基础设施
 - **占位符回填模型瘦身**: 将 replacement 写回逻辑抽到 `placeholderFillTemplateReplacement`，`templateFillPlaceholderDraftModel` 只保留草稿解析、摘要统计和兼容导出，并用独立 record guard 复用 JSON 对象窄化判断
