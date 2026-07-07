@@ -149,6 +149,27 @@ const missingReferenceCases = [
     contains: ['docs/AI-GOVERNANCE-DECISIONS.md'],
     expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
   },
+  {
+    name: 'AI 治理引用检查会报告 PR 模板缺失自定义 AI 入口',
+    file: '.github/PULL_REQUEST_TEMPLATE.md',
+    content: lines(['docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', 'CHANGELOG.md', 'node scripts/ci/check-ai-governance.mjs', '.github/prompts', '.github/agents', '负向测试', '显式豁免']),
+    contains: ['.github/prompts', '.github/agents', '.github/chatmodes'],
+    expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 ".github/chatmodes"',
+  },
+  {
+    name: 'AI 治理引用检查会报告配置分层说明缺失决策账本',
+    file: 'docs/AI-CONFIG-INTEGRATION.md',
+    content: lines(['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-ASSET-REGISTRY.md', '显式豁免']),
+    contains: ['docs/AI-GOVERNANCE-DECISIONS.md'],
+    expected: 'docs/AI-CONFIG-INTEGRATION.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
+  },
+  {
+    name: 'AI 治理引用检查会报告工具索引缺失决策账本',
+    file: 'docs/AI-TOOLS-SETUP.md',
+    content: lines(['docs/AI-CONFIG-INTEGRATION.md', 'docs/AI-ASSET-REGISTRY.md', 'node scripts/ci/check-ai-governance.mjs']),
+    contains: ['docs/AI-GOVERNANCE-DECISIONS.md'],
+    expected: 'docs/AI-TOOLS-SETUP.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
+  },
 ];
 
 missingReferenceCases.forEach(({ name, file, content, contains, expected }) => {
