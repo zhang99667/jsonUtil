@@ -1,4 +1,19 @@
 # 更新日志 (Changelog)
+## v1.8.712 (2026-07-08) - 薄入口引用规则单源化
+### 🏗️ 架构与基础设施
+- **薄入口引用规则单源化**: 将 Claude 工具指南、Codex README、Copilot、Cursor 和 Comate 的引用规则统一到 `aiGovernanceToolEntryReferenceRules.mjs`，共享资产注册表、预算和发布验证基线
+
+## v1.8.711 (2026-07-08) - 工具入口共享片段漂移锁
+### 🏗️ 架构与基础设施
+- **薄入口共享片段门禁**: 将 Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的发布、子 Agent、安全与规则进化核心规则纳入同源片段漂移检查
+- **同源契约测试拆分**: 新增 `aiGovernanceMirroredEntryContract.test.mjs`，把 AGENTS/CLAUDE 章节漂移和工具薄入口共享片段负例从主治理测试中拆出
+- **工具索引同步**: 更新 `docs/AI-TOOLS-SETUP.md` 防漂移清单，明确五类工具薄入口共享核心规则片段必须保持一致
+- **决策账本测试拆分**: 新增 `aiGovernanceDecisionLedger.test.mjs`，将决策记录结构、路径、CI 覆盖和日期顺序负例从主治理测试中拆出，并收紧主测试预算
+- **证据来源测试拆分**: 新增 `aiGovernanceAssetRegistryEvidenceSources.test.mjs`，将注册表证据来源反查和正向来源匹配从证据标记测试中拆出
+- **注册表测试夹具复用**: 新增 `aiGovernanceAssetRegistryTestFixtures.mjs` 并拆出陈旧登记负例，收紧注册表结构、证据和语义测试预算
+- **引用规则测试拆分**: 新增 `aiGovernanceReferenceRules.test.mjs` 与 `aiGovernanceSectionReferenceRules.test.mjs`，将入口、发布、安全、委派和章节引用负例从主治理测试中拆出
+- **证据标记词表拆分**: 新增 `aiGovernanceAssetRegistryEvidenceMarkers.mjs`，将注册表证据认可、分隔解析和未知标记识别从来源反查逻辑中拆出
+
 ## v1.8.710 (2026-07-08) - AI 治理预算入口分层
 ### 🏗️ 架构与基础设施
 - **AI 引用预算拆分**: 将 AI 治理引用规则预算移入 `maintainability-budget-governance-ai-reference-rules.mjs`，并把引用组预算继续拆到 `maintainability-budget-governance-ai-reference-group-rules.mjs`，让 AI 治理预算入口只负责聚合核心、引用、契约、注册表和测试子表
