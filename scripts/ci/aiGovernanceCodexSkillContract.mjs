@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { collectSkillSectionContentFailures } from './aiGovernanceCodexSkillSectionContract.mjs';
 
 const CODEX_SKILL_FRONTMATTER_FIELDS = ['name', 'description'];
 const CODEX_SKILL_REQUIRED_SECTIONS = [
@@ -33,6 +34,8 @@ export const collectCodexSkillContractFailures = (rootDir, codexSkillFiles) => {
     CODEX_SKILL_REQUIRED_SECTIONS.forEach((sectionTitle) => {
       if (!content.includes(sectionTitle)) failures.push(`${file}: 缺少 ${sectionTitle} 章节`);
     });
+
+    failures.push(...collectSkillSectionContentFailures(file, content));
   });
 
   return failures;
