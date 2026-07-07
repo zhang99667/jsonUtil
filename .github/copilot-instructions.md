@@ -25,6 +25,6 @@
 - 部署 shell、GitHub shell helper、本地 CI 或 `.github/workflows/*.yml` 的 `workflow run` 块改动后运行 `node scripts/ci/check-deploy-shell-syntax.mjs`，覆盖 `REMOTE_SCRIPT heredoc`。
 - 手动懒加载 `import()`、相关 catch 或 `dispatchChunkLoadRecoveryEvent` 改动后运行 `node scripts/ci/check-chunk-load-recovery-catches.mjs`。
 - 前端 Docker、Compose、Nginx 或静态资源发布策略改动后运行 `node scripts/ci/check-frontend-static-retention.mjs`；公网发布后运行 `node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun`，确认 JS/CSS `Content-Type`、缺失资源没有 fallback 成 HTML，并递归检查 CSS `url(...)` 与 CSS `@import` 链路；旧 chunk 反馈追加 `--extra-asset`。
-- 规则沉淀必须来自复盘沉淀，写清触发条件、反例、验证方式和适用边界，留下决策记录、回写追踪和锁定测试，再做规则/skill 回写和治理校验。
+- 规则沉淀必须来自复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，再做规则/skill 回写和治理校验。
 
 本机私有配置不承载协作规则；需要共享的经验应沉淀到 Playbook、rules、入口文档或 `.codex/skills/jsonutils-maintainer/SKILL.md`。

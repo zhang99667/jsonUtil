@@ -88,7 +88,7 @@
 
 - 遇到重复踩坑、用户纠偏、子 Agent 协作失效、验证门禁缺口或优秀实践可复用时，先做复盘沉淀，明确触发条件、反例、验证方式和适用边界。
 - 能被后续 AI 复用的经验必须做规则/skill 回写：项目通用流程写入本 Playbook，Codex 项目技能写入 `.codex/skills/jsonutils-maintainer/SKILL.md`，跨工具说明同步到 `.claude/ai-tools-guide.md` 或入口文档。
-- 规则回写必须留下决策记录、回写追踪和锁定测试：决策记录说明为什么沉淀，回写追踪列出同步到哪些入口或 skill，锁定测试说明由哪个治理脚本、单测或预算规则防止退化。
+- 规则回写必须写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试：决策记录说明为什么沉淀，回写追踪列出同步到哪些入口或 skill，锁定测试说明由哪个治理脚本、单测或预算规则防止退化。
 - 规则改动必须配套治理校验：能用 `check-ai-governance` 锁定的关键词、文件引用或命令要同步加入脚本和测试，不能只依赖人工记忆。
 - 同源入口文档必须成对维护：AGENTS/CLAUDE 的 AI 协作章节、Cursor/Comate 的核心规则片段由治理脚本做漂移检查，避免一边更新、一边残留旧语义。
 - 新增 AI 助手入口或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
@@ -107,6 +107,7 @@
 - `docs/AI-CONFIG-INTEGRATION.md`: AI 入口和规范分层说明。
 - `docs/AI-TOOLS-SETUP.md`: AI 工具配置状态和维护清单。
 - `docs/AI-ASSET-REGISTRY.md`: AI 协作资产、治理门禁和显式豁免文件的可审计账本。
+- `docs/AI-GOVERNANCE-DECISIONS.md`: AI rules、skills 和治理门禁变更的决策记录、回写追踪与锁定测试账本。
 - `docs/AI-ENGINEERING-PLAYBOOK.md`: 跨 AI 工具共享的执行闭环。
 
 新增 AI 工具或流程时，优先更新本文件和 `.claude/ai-tools-guide.md`，避免同一规则散落在多个地方。

@@ -37,6 +37,9 @@ const splitEvidenceMarkers = evidence => evidence
 export const hasRecognizedGovernanceEvidence = evidence => splitEvidenceMarkers(evidence)
   .some(marker => AI_GOVERNANCE_ASSET_REGISTRY_EVIDENCE_MARKERS.includes(marker));
 
+export const collectUnknownGovernanceEvidenceMarkers = evidence => splitEvidenceMarkers(evidence)
+  .filter(marker => !AI_GOVERNANCE_ASSET_REGISTRY_EVIDENCE_MARKERS.includes(marker));
+
 const buildEvidenceSourceChecks = context => [
   { marker: '必需文件', files: context.requiredFiles },
   { marker: '自动发现规则', files: context.discoveredFiles },

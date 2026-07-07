@@ -3,6 +3,7 @@ export const AI_GOVERNANCE_ENTRY_FILES = [
   'CLAUDE.md',
   'rules/code-style.md',
   'docs/AI-ENGINEERING-PLAYBOOK.md',
+  'docs/AI-GOVERNANCE-DECISIONS.md',
   'docs/AI-CONFIG-INTEGRATION.md',
   'docs/AI-TOOLS-SETUP.md',
   'docs/AI-ASSET-REGISTRY.md',
