@@ -4,7 +4,6 @@ import {
   formatTemplateSizeLabel,
   parsePlaceholderTemplateDraft,
   PLACEHOLDER_FILL_TEMPLATE_KIND,
-  updatePlaceholderReplacement,
 } from './templateFillPanelModel';
 
 const createTemplateText = () => JSON.stringify({
@@ -110,24 +109,6 @@ describe('templateFillPanelModel', () => {
       kind: PLACEHOLDER_FILL_TEMPLATE_KIND,
       placeholders: { count: 1 },
     }))).toBeNull();
-  });
-
-  it('更新 replacement 时同步 placeholders 和详情行', () => {
-    const updated = JSON.parse(updatePlaceholderReplacement(createTemplateText(), '__UID__', '10086'));
-
-    expect(updated.placeholders.__UID__).toBe('10086');
-    expect(updated.placeholders.__TOKEN__).toBe('old-token');
-    expect(updated.placeholderDetails.find((detail: { value: string }) => detail.value === '__UID__')).toMatchObject({
-      value: '__UID__',
-      replacement: '10086',
-      description: '用户 ID',
-    });
-  });
-
-  it('非回填模板 replacement 更新保持原文不变', () => {
-    const templateText = JSON.stringify({ hello: 'world' });
-
-    expect(updatePlaceholderReplacement(templateText, '__UID__', '10086')).toBe(templateText);
   });
 
   it('格式化模板大小文案', () => {
