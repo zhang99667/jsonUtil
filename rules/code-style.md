@@ -260,6 +260,7 @@ git commit -m "[Feature]优化专项-UI UE"
 - 只有重复踩坑、用户纠偏、验证缺口或可复用实践适合做复盘沉淀；一次性偏好和未验证猜测不要写成长期规则。
 - 规则变更要说明触发条件、反例、适用边界和验证方式，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，并同步完成 `docs/AI-ENGINEERING-PLAYBOOK.md`、项目入口或 Codex skill 的规则/skill 回写。
 - 新增或修改 `.codex/skills/*/SKILL.md` 时，必须保留 frontmatter `name`/`description`，且 `name` 必须等于 skill 目录名，并保留 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 四个核心章节。
+- `.codex/skills/*/SKILL.md` 中反引号包裹的具体项目路径和 fenced code block 里的 `node ...mjs` 验证脚本必须真实存在，由 `node scripts/ci/check-ai-governance.mjs` 反查，避免 skill 迁移后留下不可执行引用。
 - AI 治理、版本一致性、脚本单测和可维护性预算命令必须保留在 GitHub Actions `run:` 与 `scripts/ci/local-ci.sh` 的 `run_in_root` 可执行入口，并由 `node scripts/ci/check-ai-governance.mjs` 反查。
 - `scripts/ci/aiGovernance*.mjs` 与 `scripts/ci/aiGovernance*.test.mjs` 都必须纳入可维护性预算，新增治理 helper 或测试时同步登记预算子表。
 - 影响 AI 协作资产的改动必须运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验；新增 `.claude/`、`.codex/`、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 协作资产时，需要同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免。

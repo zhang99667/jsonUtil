@@ -1,4 +1,20 @@
 # 更新日志 (Changelog)
+## v1.8.709 (2026-07-08) - AI 资产发现拆分
+### 🏗️ 架构与基础设施
+- **资产发现文件收集拆分**: 将 AI 协作资产发现中的递归文件收集和路径归一化拆到 `aiGovernanceAssetFileCollector.mjs`，让 `aiGovernanceDiscoveredAssets.mjs` 聚焦发现范围、显式豁免和未治理资产提示
+- **资产发现预算收紧**: 新增文件收集 helper 独立预算，并收紧主资产发现脚本预算，避免后续新增目录扫描逻辑继续堆在同一文件
+
+## v1.8.708 (2026-07-08) - Skill 与资产引用契约
+### 🏗️ 架构与基础设施
+- **Skill 引用可达性门禁**: `check-ai-governance` 新增 Codex skill 引用契约，反查 skill 中反引号项目路径和 fenced `node ...mjs` 验证脚本是否真实存在
+- **Skill 引用负向测试**: 新增不存在文档路径和不存在验证脚本的负例，证明 skill 迁移、重命名或清理脚本后不会留下不可执行引用
+- **资产注册表硬引用**: Copilot、Cursor、Comate 和 Codex skill 引用规则强制指向 `docs/AI-ASSET-REGISTRY.md`，新增 AI 入口或 skill 时先看到登记职责
+- **Skill 契约测试拆分**: 将 skill 发现、frontmatter、章节和引用可达性负例拆到 `aiGovernanceSkillContract.test.mjs`，并收紧主治理测试预算
+- **Skill 契约聚合拆分**: 将 Codex skill frontmatter 与核心章节存在性校验拆到 `aiGovernanceCodexSkillStructureContract.mjs`，让主 skill contract 回到读取与聚合职责
+- **决策账本解析拆分**: 将 AI 治理决策账本 Markdown 表格解析拆到 `aiGovernanceDecisionLedgerTable.mjs`，让主账本检查聚焦日期、回写路径和锁定测试语义
+- **CI 契约命令收集拆分**: 将 GitHub Actions run 块和本地 CI `run_in_root` 命令抽取拆到 `aiGovernanceCiCommandCollectors.mjs`，让主 CI 契约只维护必需命令比对
+- **Skill 规则回写**: Playbook、编码规范、项目 skill 和资产注册表同步说明 skill 引用必须可达，避免规则只停留在人工维护习惯里
+
 ## v1.8.707 (2026-07-08) - AI 治理 CI 契约
 ### 🏗️ 架构与基础设施
 - **CI 治理契约门禁**: `check-ai-governance` 新增 GitHub Actions 与本地 CI 契约检查，要求版本一致性、脚本单测、AI governance 和可维护性预算命令必须出现在可执行自动化入口
