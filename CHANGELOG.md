@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.645 (2026-07-07) - JSONPath Runner 测试夹具收敛
+### 🏗️ 架构与基础设施
+- **JSONPath 查询测试瘦身**: 将 worker 成功响应构造收敛到 `useJsonPathPanelQueryRunnerTestFixture`，减少 runner 主测试中的协议字段重复，让成功、过期消息和取消分支更聚焦场景意图
+
 ## v1.8.644 (2026-07-07) - 模板填充状态提示拆分
 ### 🏗️ 架构与基础设施
 - **模板填充面板瘦身**: 将模板 JSON 校验错误和 SOURCE 错误提示抽成 `TemplateFillStatusAlerts` 展示组件，主面板继续聚焦模板状态、持久化和操作接线，并补充组件测试锁定空模板隐藏策略
