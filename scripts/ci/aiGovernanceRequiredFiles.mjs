@@ -5,7 +5,9 @@ export const AI_GOVERNANCE_ENTRY_FILES = [
   'docs/AI-ENGINEERING-PLAYBOOK.md',
   'docs/AI-CONFIG-INTEGRATION.md',
   'docs/AI-TOOLS-SETUP.md',
+  'docs/AI-ASSET-REGISTRY.md',
   '.github/copilot-instructions.md',
+  '.github/PULL_REQUEST_TEMPLATE.md',
   '.claude/README.md',
   '.claude/ai-tools-guide.md',
   '.codex/README.md',
@@ -14,6 +16,7 @@ export const AI_GOVERNANCE_ENTRY_FILES = [
 ];
 
 export const AI_GOVERNANCE_CHECK_FILES = [
+  'scripts/ci/check-ai-governance.mjs',
   'scripts/ci/check-deploy-shell-syntax.mjs',
   'scripts/ci/check-frontend-static-retention.mjs',
   'scripts/ci/check-production-frontend-assets.mjs',

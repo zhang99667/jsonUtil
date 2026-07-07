@@ -15,6 +15,7 @@
 | Comate | `.comate/rules/code-style.md` | 薄入口，和 Cursor 保持共享核心片段 |
 | 跨工具执行闭环 | `docs/AI-ENGINEERING-PLAYBOOK.md` | 子 Agent 委派、验证矩阵、规则进化和治理校验的权威文档 |
 | 配置分层说明 | `docs/AI-CONFIG-INTEGRATION.md` | 说明入口、rules、skills、本机配置和显式豁免的关系 |
+| AI 资产注册表 | `docs/AI-ASSET-REGISTRY.md` | 登记关键协作资产、治理门禁和显式豁免文件 |
 
 ## 必读顺序
 
@@ -26,7 +27,7 @@ AI 助手开始修改代码前，应优先读取：
 4. 任务相关源码、测试和部署脚本
 5. `CHANGELOG.md`
 
-涉及 Codex 项目维护流程时，再读取 `.codex/README.md` 和 `.codex/skills/jsonutils-maintainer/SKILL.md`。涉及跨工具入口变更时，同时检查 `.claude/README.md`、`.claude/ai-tools-guide.md`、`.github/copilot-instructions.md`、`.cursorrules` 和 `.comate/rules/code-style.md`。
+涉及 Codex 项目维护流程时，再读取 `.codex/README.md` 和 `.codex/skills/jsonutils-maintainer/SKILL.md`。涉及跨工具入口变更时，同时检查 `.claude/README.md`、`.claude/ai-tools-guide.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.comate/rules/code-style.md` 和 `docs/AI-ASSET-REGISTRY.md`。
 
 ## 维护要求
 
@@ -36,7 +37,7 @@ AI 助手开始修改代码前，应优先读取：
 2. 把权威规则写入 `rules/code-style.md` 或 `docs/AI-ENGINEERING-PLAYBOOK.md`。
 3. 将 Codex 可迁移流程同步到 `.codex/skills/jsonutils-maintainer/SKILL.md`。
 4. 入口文件只保留必要引用，不复制长规则。
-5. 补 `check-ai-governance` 引用规则或负向测试，让漂移可被发现。
+5. 更新 `docs/AI-ASSET-REGISTRY.md`，再补 `check-ai-governance` 引用规则或负向测试，让漂移可被发现。
 
 本机私有配置不承载协作规则。`.claude/settings.local.json` 这类文件若存在，只能作为本机配置或显式豁免；需要共享的流程必须迁移到入口文档、Playbook、rules 或 skill。
 
@@ -73,12 +74,13 @@ node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 - `.cursorrules` 和 `.comate/rules/code-style.md` 的核心规则片段必须保持一致。
 - `.github/copilot-instructions.md` 只能作为薄入口，关键规则仍以主规范、Playbook 和 skill 为准；新增 `.github/instructions/**/*.instructions.md` 路径级指令时也必须进入治理清单、引用规则或显式豁免。
 - `.codex/skills/*/SKILL.md` 必须保留 frontmatter、必读文件、工作流、常用验证命令和重点边界。
-- `.claude/`、`.codex/`、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入治理清单、引用规则或显式豁免。
+- `.claude/`、`.codex/`、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入 `docs/AI-ASSET-REGISTRY.md`、治理清单、引用规则或显式豁免。
 - CHANGELOG 和版本文件必须通过 `check-version-consistency` 校验。
 
 ## 相关文档
 
 - `docs/AI-CONFIG-INTEGRATION.md`: AI 配置分层和显式豁免说明。
+- `docs/AI-ASSET-REGISTRY.md`: AI 协作资产账本和治理门禁登记。
 - `docs/AI-ENGINEERING-PLAYBOOK.md`: AI 工程协作闭环。
 - `rules/code-style.md`: 编码规范、提交规范和 CHANGELOG 要求。
 - `.claude/ai-tools-guide.md`: 跨工具适配说明。

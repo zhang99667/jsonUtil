@@ -260,7 +260,7 @@ git commit -m "[Feature]优化专项-UI UE"
 - 只有重复踩坑、用户纠偏、验证缺口或可复用实践适合做复盘沉淀；一次性偏好和未验证猜测不要写成长期规则。
 - 规则变更要说明触发条件、反例、适用边界和验证方式，留下决策记录、回写追踪和锁定测试，并同步完成 `docs/AI-ENGINEERING-PLAYBOOK.md`、项目入口或 Codex skill 的规则/skill 回写。
 - 新增或修改 `.codex/skills/*/SKILL.md` 时，必须保留 frontmatter `name`/`description`，并保留 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 四个核心章节。
-- 影响 AI 协作资产的改动必须运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验；新增 `.claude/`、`.codex/`、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 协作资产时，需要纳入治理清单、引用规则或显式豁免。
+- 影响 AI 协作资产的改动必须运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验；新增 `.claude/`、`.codex/`、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 协作资产时，需要同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免。
 
 ### 更新格式
 

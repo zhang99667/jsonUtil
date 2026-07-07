@@ -20,6 +20,7 @@ import {
   collectUngovernedAiGovernanceAssets,
   discoverAiGovernanceAssetFiles,
 } from './aiGovernanceDiscoveredAssets.mjs';
+import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
 import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
 
 const withTempRoot = (run) => {
@@ -58,6 +59,14 @@ const buildSkillFixtureContent = ({
   '# JSONUtils Maintainer',
   '',
   ...sections.flatMap(section => [section, sectionBodies?.[section] ?? body, '']),
+].join('\n');
+
+const buildRegistryFixtureContent = files => [
+  '# AI 协作资产注册表',
+  '',
+  '| 资产 | 类型 | 维护契约 | 治理证据 |',
+  '| --- | --- | --- | --- |',
+  ...files.map(file => `| \`${file}\` | 测试资产 | 已登记 | 测试证据 |`),
 ].join('\n');
 
 const completeSkillSectionBodies = {
@@ -121,8 +130,10 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'docs/AI-ENGINEERING-PLAYBOOK.md',
     'docs/AI-CONFIG-INTEGRATION.md',
     'docs/AI-TOOLS-SETUP.md',
+    'docs/AI-ASSET-REGISTRY.md',
     '.codex/skills/jsonutils-maintainer/SKILL.md',
     'skills/jsonutils-maintainer/SKILL.md',
+    '.github/PULL_REQUEST_TEMPLATE.md',
     '.claude/settings.local.json',
     'git status --short --branch',
     'npm run lint',
@@ -179,33 +190,39 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '规则/skill 回写',
     '决策记录',
     '回写追踪',
+    '负向测试',
     '锁定测试',
     '治理校验',
     '本机私有配置',
     '显式豁免',
   ].join('\n');
 
-  [
+  const governanceFixtureFiles = [
     'AGENTS.md',
     'CLAUDE.md',
     'rules/code-style.md',
     'docs/AI-ENGINEERING-PLAYBOOK.md',
     'docs/AI-CONFIG-INTEGRATION.md',
     'docs/AI-TOOLS-SETUP.md',
+    'docs/AI-ASSET-REGISTRY.md',
     '.claude/README.md',
     '.claude/ai-tools-guide.md',
     '.github/copilot-instructions.md',
+    '.github/PULL_REQUEST_TEMPLATE.md',
     '.codex/README.md',
     '.cursorrules',
     '.comate/rules/code-style.md',
     skillFile,
+    'scripts/ci/check-ai-governance.mjs',
     'scripts/ci/check-deploy-shell-syntax.mjs',
     'scripts/ci/check-frontend-static-retention.mjs',
     'scripts/ci/check-production-frontend-assets.mjs',
     'scripts/ci/check-chunk-load-recovery-catches.mjs',
     'scripts/ci/check-version-consistency.mjs',
     'scripts/ci/check-maintainability-budgets.mjs',
-  ].forEach(file => writeFixtureFile(rootDir, file, sharedReferences));
+  ];
+
+  governanceFixtureFiles.forEach(file => writeFixtureFile(rootDir, file, sharedReferences));
   writeFixtureFile(rootDir, 'AGENTS.md', [sharedReferences, mirroredAgentSection].join('\n'));
   writeFixtureFile(rootDir, 'CLAUDE.md', [sharedReferences, mirroredAgentSection].join('\n'));
   writeFixtureFile(rootDir, '.cursorrules', [sharedReferences, ...toolEntrySharedSnippets].join('\n'));
@@ -218,6 +235,10 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     sharedReferences,
     '### 5. 规则进化闭环',
     sharedReferences,
+  ].join('\n'));
+  writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
+    sharedReferences,
+    buildRegistryFixtureContent(governanceFixtureFiles),
   ].join('\n'));
   writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({ body: sharedReferences }));
 
@@ -723,6 +744,100 @@ test('AI 治理资产发现会跳过显式豁免并报告未治理资产', () =>
   });
 });
 
+test('AI 治理资产注册表会报告缺少表格登记的必需文件和显式豁免', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'AGENTS.md', '入口');
+    writeFixtureFile(rootDir, '.claude/settings.local.json', '{}');
+    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
+      '`AGENTS.md` 只在正文出现不算表格登记',
+      '| 文件 | 类型 | 维护契约 |',
+      '| --- | --- | --- |',
+      '| `CLAUDE.md` | 项目入口 | 非目标表头不算登记 |',
+      '| 资产 | 类型 | 维护契约 | 治理证据 |',
+      '| --- | --- | --- | --- |',
+      '| `docs/AI-ASSET-REGISTRY.md` | 资产账本 | 已登记 | 测试证据 |',
+    ].join('\n'));
+
+    const failures = collectAiGovernanceAssetRegistryFailures(rootDir, [
+      'AGENTS.md',
+      'CLAUDE.md',
+      'docs/AI-ASSET-REGISTRY.md',
+    ]);
+
+    assert.deepEqual(failures, [
+      'docs/AI-ASSET-REGISTRY.md: 缺少 AI 资产表格登记 `.claude/settings.local.json`',
+      'docs/AI-ASSET-REGISTRY.md: 缺少 AI 资产表格登记 `AGENTS.md`',
+      'docs/AI-ASSET-REGISTRY.md: 缺少 AI 资产表格登记 `CLAUDE.md`',
+    ]);
+  });
+});
+
+test('AI 治理资产注册表会报告重复登记', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
+      '| 资产 | 类型 | 维护契约 | 治理证据 |',
+      '| --- | --- | --- | --- |',
+      '| `AGENTS.md` | 项目入口 | 首次登记 | 测试证据 |',
+      '| `AGENTS.md` | 项目入口 | 重复登记 | 测试证据 |',
+      '| `docs/AI-ASSET-REGISTRY.md` | 资产账本 | 已登记 | 测试证据 |',
+    ].join('\n'));
+
+    const failures = collectAiGovernanceAssetRegistryFailures(rootDir, [
+      'AGENTS.md',
+      'docs/AI-ASSET-REGISTRY.md',
+    ]);
+
+    assert.deepEqual(failures, [
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `AGENTS.md` 重复',
+    ]);
+  });
+});
+
+test('AI 治理资产注册表会报告陈旧资产登记', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
+      '| 资产 | 类型 | 维护契约 | 治理证据 |',
+      '| --- | --- | --- | --- |',
+      '| `AGENTS.md` | 项目入口 | 已登记 | 测试证据 |',
+      '| `docs/AI-ASSET-REGISTRY.md` | 资产账本 | 已登记 | 测试证据 |',
+      '| `docs/AI-REMOVED.md` | 陈旧资产 | 已移除但仍登记 | 测试证据 |',
+    ].join('\n'));
+
+    const failures = collectAiGovernanceAssetRegistryFailures(rootDir, [
+      'AGENTS.md',
+      'docs/AI-ASSET-REGISTRY.md',
+    ]);
+
+    assert.deepEqual(failures, [
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `docs/AI-REMOVED.md` 已陈旧或未纳入治理集合',
+    ]);
+  });
+});
+
+test('AI 治理资产注册表会报告缺少类型、维护契约或治理证据', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
+      '| 资产 | 类型 | 维护契约 | 治理证据 |',
+      '| --- | --- | --- | --- |',
+      '| `AGENTS.md` |  | 已登记 | 测试证据 |',
+      '| `CLAUDE.md` | 项目入口 |  | 测试证据 |',
+      '| `docs/AI-ASSET-REGISTRY.md` | 资产账本 | 已登记 |  |',
+    ].join('\n'));
+
+    const failures = collectAiGovernanceAssetRegistryFailures(rootDir, [
+      'AGENTS.md',
+      'CLAUDE.md',
+      'docs/AI-ASSET-REGISTRY.md',
+    ]);
+
+    assert.deepEqual(failures, [
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `AGENTS.md` 缺少类型',
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `CLAUDE.md` 缺少维护契约',
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `docs/AI-ASSET-REGISTRY.md` 缺少治理证据',
+    ]);
+  });
+});
+
 test('AI 治理 skill 发现只收集技能目录下的 SKILL.md', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.codex/skills/jsonutils-maintainer/SKILL.md', 'skill');
@@ -818,6 +933,8 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   const codexRule = referenceRules.find(rule => rule.file === '.codex/README.md');
   const aiConfigRule = referenceRules.find(rule => rule.file === 'docs/AI-CONFIG-INTEGRATION.md');
   const aiToolsRule = referenceRules.find(rule => rule.file === 'docs/AI-TOOLS-SETUP.md');
+  const aiRegistryRule = referenceRules.find(rule => rule.file === 'docs/AI-ASSET-REGISTRY.md');
+  const prTemplateRule = referenceRules.find(rule => rule.file === '.github/PULL_REQUEST_TEMPLATE.md');
   const copilotRule = referenceRules.find(rule => rule.file === '.github/copilot-instructions.md');
   const cursorRule = referenceRules.find(rule => rule.file === '.cursorrules');
   const comateRule = referenceRules.find(rule => rule.file === '.comate/rules/code-style.md');
@@ -830,11 +947,14 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(requiredFiles.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-TOOLS-SETUP.md'), true);
+  assert.equal(requiredFiles.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(requiredFiles.includes('.github/copilot-instructions.md'), true);
+  assert.equal(requiredFiles.includes('.github/PULL_REQUEST_TEMPLATE.md'), true);
   assert.equal(requiredFiles.includes('.claude/README.md'), true);
   assert.equal(requiredFiles.includes('.cursorrules'), true);
   assert.equal(requiredFiles.includes('.comate/rules/code-style.md'), true);
   assert.equal(requiredFiles.includes('scripts/ci/check-version-consistency.mjs'), true);
+  assert.equal(requiredFiles.includes('scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(agentsEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(claudeEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(claudeReadmeRule.contains.includes('docs/AI-ENGINEERING-PLAYBOOK.md'), true);
@@ -851,9 +971,15 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(codexRule.contains.includes('skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(codexRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiConfigRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(aiConfigRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(aiConfigRule.contains.includes('显式豁免'), true);
   assert.equal(aiToolsRule.contains.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
+  assert.equal(aiToolsRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(aiToolsRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(aiRegistryRule.contains.includes('scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(aiRegistryRule.contains.includes('显式豁免'), true);
+  assert.equal(prTemplateRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
+  assert.equal(prTemplateRule.contains.includes('负向测试'), true);
   assert.equal(copilotRule.contains.includes('AGENTS.md'), true);
   assert.equal(copilotRule.contains.includes('node scripts/ci/check-maintainability-budgets.mjs'), true);
   assert.equal(cursorRule.contains.includes('.comate/rules/code-style.md'), true);

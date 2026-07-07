@@ -1,4 +1,5 @@
 import { collectCodexSkillContractFailures } from './aiGovernanceCodexSkillContract.mjs';
+import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
 import { collectUngovernedAiGovernanceAssets } from './aiGovernanceDiscoveredAssets.mjs';
 import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
 import {
@@ -26,6 +27,7 @@ export const buildAiGovernanceReport = (rootDir) => {
     ],
     skillContractFailures: collectCodexSkillContractFailures(rootDir, codexSkillFiles),
     missingReferences: [
+      ...collectAiGovernanceAssetRegistryFailures(rootDir, requiredFiles),
       ...collectMissingAiGovernanceReferences(rootDir, referenceRules, codexSkillFiles),
       ...collectMirroredEntryContractFailures(rootDir),
       ...collectFrontendLintScriptFailures(rootDir),
