@@ -94,7 +94,7 @@
 - AI 治理 helper 和测试都要有预算所有权：新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，避免治理代码和锁定测试继续膨胀。
 - 同源入口文档必须成对维护：AGENTS/CLAUDE 的 AI 协作章节、Cursor/Comate 的核心规则片段由治理脚本做漂移检查，避免一边更新、一边残留旧语义。
 - Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的薄入口共享核心规则片段由治理脚本统一检查；新增跨工具核心要求时先更新共享片段，再同步所有薄入口，避免不同助手看到不同版本的发布、委派、安全或规则进化要求。
-- 新增 AI 助手入口或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
+- 新增 AI 助手入口、项目级 MCP 配置或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
 - 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name` 和 `description`，且 `name` 必须等于 skill 目录名，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可验证的散文。
 - 项目级 Codex skill 的具体项目路径和 fenced `node ...mjs` 验证脚本必须可解析到真实文件；新增或迁移 skill 引用后运行 `node scripts/ci/check-ai-governance.mjs`，避免 skill 看似完整但实际不可执行。
 - 不把一次性偏好、临时绕路或未验证猜测沉淀为规则；沉淀前先确认它能减少未来错误，并且不会和现有规范冲突。
@@ -107,6 +107,7 @@
 - `.claude/ai-tools-guide.md`: AI 工具适配说明。
 - `.claude/settings.local.json`: 本机私有配置，仅作为显式豁免文件存在，不承载项目级 rules、skills 或验证流程。
 - `.codex/skills/jsonutils-maintainer/SKILL.md`: Codex 可迁移的项目维护技能模板。
+- `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`: 项目级 MCP 配置，只按精确文件发现，不递归 `.cursor` 或 `.vscode` 目录。
 - `.github/copilot-instructions.md`: GitHub Copilot 仓库级薄入口，必须转发到主规范、Playbook 和治理命令。
 - `docs/AI-CONFIG-INTEGRATION.md`: AI 入口和规范分层说明。
 - `docs/AI-TOOLS-SETUP.md`: AI 工具配置状态和维护清单。
@@ -118,4 +119,4 @@
 修改 AI 入口、Playbook 或 skill 后，运行 `node scripts/ci/check-ai-governance.mjs` 确认关键引用没有断链。
 新增或调整 `.codex/skills/*/SKILL.md` 时，同一条治理校验还会检查 skill frontmatter 和核心章节契约。
 新增、移动或显式豁免 AI 协作资产时，还必须更新 `docs/AI-ASSET-REGISTRY.md`，让资产职责、维护契约和豁免边界可被人工审计。
-新增 `.claude/`、`.codex/`、`.comate/` 下的 AI 协作资产，或新增 `.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md`、`rules/ai-*.md` 协作文档时，同一条治理校验还会检查它是否已纳入必需文件、引用规则或显式豁免。
+新增 `.claude/`、`.codex/`、`.comate/` 下的 AI 协作资产，或新增 `.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md`、`rules/ai-*.md` 协作文档时，同一条治理校验还会检查它是否已纳入必需文件、引用规则或显式豁免。

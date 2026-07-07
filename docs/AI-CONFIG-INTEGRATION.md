@@ -4,13 +4,14 @@
 
 ## 分层原则
 
-AI 协作资产按职责分为四层：
+AI 协作资产按职责分层维护：
 
 | 层级 | 代表文件 | 职责 |
 | --- | --- | --- |
 | 项目入口 | `AGENTS.md`、`CLAUDE.md` | 让 AI 助手快速理解项目结构、技术栈、常见任务和协作边界 |
 | 权威规范 | `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md`、`docs/AI-ASSET-REGISTRY.md`、`docs/AI-GOVERNANCE-DECISIONS.md` | 维护编码规范、验证闭环、规则/skill 回写、资产账本、决策账本和收尾门禁 |
-| 工具入口 | `.claude/ai-tools-guide.md`、`.codex/README.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.comate/rules/code-style.md` | 针对不同 AI 工具提供薄入口，转发到权威规范 |
+| 工具入口 | `.claude/ai-tools-guide.md`、`.codex/README.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.cursor/rules/**/*.mdc`、`.comate/rules/code-style.md` | 针对不同 AI 工具提供薄入口，转发到权威规范 |
+| 工具配置 | `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json` | 管理项目级 MCP server 能力边界，按精确文件进入治理，不递归 IDE 配置目录 |
 | 可迁移技能 | `.codex/skills/jsonutils-maintainer/SKILL.md` | 将项目维护流程封装为可复用 skill，方便 Codex 在类似任务中稳定触发 |
 
 原则是“权威规则只沉淀一处，工具入口只做路由和关键提醒”。如果某条经验要长期生效，优先写入 `docs/AI-ENGINEERING-PLAYBOOK.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`，再让入口文档引用它。
@@ -54,7 +55,7 @@ node scripts/ci/check-maintainability-budgets.mjs
 - `.codex/skills/*/SKILL.md` 是否保留可迁移契约。
 - 必需文件、自动发现资产和显式豁免文件是否登记到 `docs/AI-ASSET-REGISTRY.md`。
 - `docs/AI-*.md` 索引是否能指向 `docs/AI-GOVERNANCE-DECISIONS.md`，避免决策账本游离在入口之外。
-- `.claude/`、`.codex/`、`.comate/`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增资产是否进入治理清单、引用规则或显式豁免。
+- `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增资产是否进入治理清单、引用规则或显式豁免。
 
 ## 维护流程
 

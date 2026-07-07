@@ -156,6 +156,13 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '治理校验',
     '本机私有配置',
     '显式豁免',
+    'MCP 配置',
+    '可维护性预算',
+    '.mcp.json',
+    '.cursor/mcp.json',
+    '.cursor/rules',
+    '.vscode/mcp.json',
+    '.github/instructions',
     '.github/prompts',
     '.github/agents',
     '.github/chatmodes',
@@ -301,10 +308,14 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(aiConfigRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(aiConfigRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(aiConfigRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
+  assert.equal(aiConfigRule.contains.includes('MCP 配置'), true);
+  assert.equal(aiConfigRule.contains.includes('.cursor/rules'), true);
   assert.equal(aiConfigRule.contains.includes('显式豁免'), true);
   assert.equal(aiToolsRule.contains.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
   assert.equal(aiToolsRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(aiToolsRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
+  assert.equal(aiToolsRule.contains.includes('MCP 配置'), true);
+  assert.equal(aiToolsRule.contains.includes('.cursor/rules'), true);
   assert.equal(aiToolsRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiRegistryRule.contains.includes('scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiRegistryRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
@@ -314,6 +325,13 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(prTemplateRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(prTemplateRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
   assert.equal(prTemplateRule.contains.includes('CHANGELOG.md'), true);
+  assert.equal(prTemplateRule.contains.includes('node scripts/ci/check-maintainability-budgets.mjs'), true);
+  assert.equal(prTemplateRule.contains.includes('可维护性预算'), true);
+  assert.equal(prTemplateRule.contains.includes('.mcp.json'), true);
+  assert.equal(prTemplateRule.contains.includes('.cursor/mcp.json'), true);
+  assert.equal(prTemplateRule.contains.includes('.cursor/rules'), true);
+  assert.equal(prTemplateRule.contains.includes('.vscode/mcp.json'), true);
+  assert.equal(prTemplateRule.contains.includes('.github/instructions'), true);
   assert.equal(prTemplateRule.contains.includes('.github/prompts'), true);
   assert.equal(prTemplateRule.contains.includes('.github/agents'), true);
   assert.equal(prTemplateRule.contains.includes('.github/chatmodes'), true);
@@ -423,10 +441,14 @@ test('AI 治理完整报告会报告未纳入治理清单的新 AI 资产', () =
   withAiGovernanceTempRoot((rootDir) => {
     writeMinimalGovernanceFixture(rootDir);
     writeFixtureFile(rootDir, '.codex/notes.md', '临时 AI 协作笔记');
+    writeFixtureFile(rootDir, '.cursor/mcp.json', '临时 Cursor MCP 配置');
+    writeFixtureFile(rootDir, '.cursor/rules/review.mdc', '临时 Cursor 项目规则');
     writeFixtureFile(rootDir, '.github/instructions/review.instructions.md', '临时 Copilot 路径级指令');
     writeFixtureFile(rootDir, '.github/prompts/review.prompt.md', '临时 Copilot prompt file');
     writeFixtureFile(rootDir, '.github/agents/planner.agent.md', '临时 VS Code custom agent');
     writeFixtureFile(rootDir, '.github/chatmodes/legacy.chatmode.md', '临时 VS Code chat mode');
+    writeFixtureFile(rootDir, '.mcp.json', '临时项目 MCP 配置');
+    writeFixtureFile(rootDir, '.vscode/mcp.json', '临时 VS Code MCP 配置');
     writeFixtureFile(rootDir, 'docs/AI-EXPERIMENT.md', '临时 AI 协作试验文档');
     writeFixtureFile(rootDir, 'rules/AI-EXPERIMENT.md', '临时 AI 规则文档');
 
@@ -434,10 +456,14 @@ test('AI 治理完整报告会报告未纳入治理清单的新 AI 资产', () =
 
     assert.deepEqual(report.missingFiles, [
       '.codex/notes.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.cursor/mcp.json: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.cursor/rules/review.mdc: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       '.github/agents/planner.agent.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       '.github/chatmodes/legacy.chatmode.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       '.github/instructions/review.instructions.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       '.github/prompts/review.prompt.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.mcp.json: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.vscode/mcp.json: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       'docs/AI-EXPERIMENT.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       'rules/AI-EXPERIMENT.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
     ]);
