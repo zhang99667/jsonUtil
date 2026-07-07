@@ -30,9 +30,15 @@ AI 工具使用指南，包含:
 
 ## 相关文件
 
+- `AGENTS.md` - Codex、OpenAI Codex CLI 和通用 coding agent 的项目入口
 - `/CLAUDE.md` - Claude Code/Ducc 的主要项目指引文件
+- `rules/code-style.md` - 编码风格、提交格式和 CHANGELOG 要求
+- `docs/AI-ENGINEERING-PLAYBOOK.md` - AI 工程闭环、规则/skill 回写和治理校验流程
+- `.claude/ai-tools-guide.md` - Claude/Ducc 等工具适配说明
 - `/.cursorrules` - Cursor AI 的规则文件
 - `/ARCHITECTURE.md` - 详细架构文档
+
+修改本目录内提交到 Git 的 AI 文档后，运行 `node scripts/ci/check-ai-governance.mjs` 确认入口引用没有漂移。
 
 ---
 

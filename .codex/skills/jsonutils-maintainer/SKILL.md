@@ -65,4 +65,6 @@ mvn test
 - 大输入处理优先走 worker、采样、预算和降级提示。
 - AI 修复能力必须明确本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
 - AI 协作规则自身也要可进化：新增或修正流程后同步 Playbook、入口文档和本 skill，并通过 `node scripts/ci/check-ai-governance.mjs` 做治理校验，避免只靠人工记忆传递。
+- AGENTS/CLAUDE、Cursor/Comate 这类同源入口要成对更新；AI 协作章节和核心规则片段由治理脚本做漂移检查。
+- 新增 `.claude/`、`.codex/`、`.comate/` 下的 AI 协作资产时，必须纳入治理清单或显式豁免，防止 rules/skills 资产游离在门禁之外。
 - 项目级 Codex skill 不是普通 Markdown 笔记；必须保持 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 结构，方便后续 agent 按固定入口执行。

@@ -3,7 +3,7 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildAiGovernanceReport } from './aiGovernanceChecks.mjs';
+import { buildAiGovernanceReport } from './aiGovernanceReport.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const report = buildAiGovernanceReport(rootDir);

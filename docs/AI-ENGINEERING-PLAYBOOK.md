@@ -90,6 +90,8 @@
 - 能被后续 AI 复用的经验必须做规则/skill 回写：项目通用流程写入本 Playbook，Codex 项目技能写入 `.codex/skills/jsonutils-maintainer/SKILL.md`，跨工具说明同步到 `.claude/ai-tools-guide.md` 或入口文档。
 - 规则回写必须留下决策记录、回写追踪和锁定测试：决策记录说明为什么沉淀，回写追踪列出同步到哪些入口或 skill，锁定测试说明由哪个治理脚本、单测或预算规则防止退化。
 - 规则改动必须配套治理校验：能用 `check-ai-governance` 锁定的关键词、文件引用或命令要同步加入脚本和测试，不能只依赖人工记忆。
+- 同源入口文档必须成对维护：AGENTS/CLAUDE 的 AI 协作章节、Cursor/Comate 的核心规则片段由治理脚本做漂移检查，避免一边更新、一边残留旧语义。
+- 新增 AI 助手入口或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
 - 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name` 和 `description`，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可验证的散文。
 - 不把一次性偏好、临时绕路或未验证猜测沉淀为规则；沉淀前先确认它能减少未来错误，并且不会和现有规范冲突。
 
@@ -97,6 +99,7 @@
 
 - `AGENTS.md`: Codex、OpenAI Codex CLI 和通用 coding agent 的项目入口。
 - `CLAUDE.md`: Claude Code / Ducc 的项目入口。
+- `.claude/README.md`: Claude/Ducc 配置目录索引，必须指向主入口、Playbook 和治理命令。
 - `.claude/ai-tools-guide.md`: AI 工具适配说明。
 - `.codex/skills/jsonutils-maintainer/SKILL.md`: Codex 可迁移的项目维护技能模板。
 - `docs/AI-ENGINEERING-PLAYBOOK.md`: 跨 AI 工具共享的执行闭环。
@@ -104,3 +107,4 @@
 新增 AI 工具或流程时，优先更新本文件和 `.claude/ai-tools-guide.md`，避免同一规则散落在多个地方。
 修改 AI 入口、Playbook 或 skill 后，运行 `node scripts/ci/check-ai-governance.mjs` 确认关键引用没有断链。
 新增或调整 `.codex/skills/*/SKILL.md` 时，同一条治理校验还会检查 skill frontmatter 和核心章节契约。
+新增 `.claude/`、`.codex/`、`.comate/` 下的 AI 协作资产时，同一条治理校验还会检查它是否已纳入必需文件、引用规则或显式豁免。

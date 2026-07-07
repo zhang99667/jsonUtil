@@ -1,4 +1,12 @@
 # 更新日志 (Changelog)
+## v1.8.699 (2026-07-07) - AI 治理章节约束
+### 🏗️ 架构与基础设施
+- **Playbook 章节级引用校验**: `check-ai-governance` 新增 Markdown 章节引用检查，要求子 Agent 委派关键词必须落在 `### 0. 判断子 Agent 委派`，规则进化关键词必须落在 `### 5. 规则进化闭环`；补充章节内缺字段负向测试，避免关键词散落在文件其它位置也能通过 AI 治理门禁
+- **Claude 目录索引纳入治理**: `.claude/README.md` 进入 AI 治理必需文件和引用规则，要求目录索引指向 AGENTS/CLAUDE、编码规范、Playbook、工具指南和 `check-ai-governance`；补齐测试覆盖，避免已提交的 AI 工具目录说明游离在治理网之外
+- **同源入口漂移检查**: `check-ai-governance` 新增 AGENTS/CLAUDE AI 协作章节镜像校验和 Cursor/Comate 核心规则共享片段校验，Playbook 与项目 skill 同步写入成对维护要求，避免多工具入口一边更新、一边残留旧语义
+- **AI 资产发现治理**: `check-ai-governance` 新增 `.claude`、`.codex`、`.comate` 和根入口的 AI 协作资产发现，未进入必需文件/引用规则且未显式豁免的新增文件会直接失败，避免后续新增 rules、skills 或工具说明后绕过治理网
+- **AI 治理报告组装解耦**: 将 `check-ai-governance` 的报告组装拆到 `aiGovernanceReport`，`aiGovernanceChecks` 回到文件发现和缺失收集职责，并收紧维护预算，给后续 rules/skills 治理扩展预留空间
+
 ## v1.8.698 (2026-07-07) - AI 协作契约加固
 ### 🏗️ 架构与基础设施
 - **子 Agent 输出模板治理化**: Playbook、入口文档、跨工具说明和项目 Codex skill 新增 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`固定回传模板；AI 治理词表拆出输出模板引用组并补负向测试，防止委派结果退回散文式结论、缺少可追溯证据或验证记录

@@ -1,0 +1,34 @@
+import { collectCodexSkillContractFailures } from './aiGovernanceCodexSkillContract.mjs';
+import { collectUngovernedAiGovernanceAssets } from './aiGovernanceDiscoveredAssets.mjs';
+import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
+import {
+  collectFrontendLintScriptFailures,
+  collectMissingAiGovernanceFiles,
+  collectMissingAiGovernanceReferences,
+  discoverCodexSkillFiles,
+} from './aiGovernanceChecks.mjs';
+import {
+  buildAiGovernanceReferenceRules,
+  buildAiGovernanceRequiredFiles,
+} from './aiGovernanceRules.mjs';
+
+export const buildAiGovernanceReport = (rootDir) => {
+  const codexSkillFiles = discoverCodexSkillFiles(rootDir);
+  const requiredFiles = buildAiGovernanceRequiredFiles(codexSkillFiles);
+  const referenceRules = buildAiGovernanceReferenceRules(codexSkillFiles);
+
+  return {
+    requiredFiles,
+    referenceRules,
+    missingFiles: [
+      ...collectMissingAiGovernanceFiles(rootDir, requiredFiles),
+      ...collectUngovernedAiGovernanceAssets(rootDir, requiredFiles),
+    ],
+    skillContractFailures: collectCodexSkillContractFailures(rootDir, codexSkillFiles),
+    missingReferences: [
+      ...collectMissingAiGovernanceReferences(rootDir, referenceRules, codexSkillFiles),
+      ...collectMirroredEntryContractFailures(rootDir),
+      ...collectFrontendLintScriptFailures(rootDir),
+    ],
+  };
+};
