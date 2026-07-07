@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ValidationResult } from '../types';
 import { ASYNC_VALIDATION_THRESHOLD } from './appAsyncPolicy';
 import { runAppSourceValidationRequest } from './appSourceValidationRequest';
+import {
+  createPendingValidationTask,
+  createResolvedValidationTask,
+  createSourceValidationRequestInput,
+  invalidSourceValidationResult,
+  validSourceValidationResult,
+} from './appSourceValidationRequestTestFixture';
 import {
   cleanJsonInput,
   startJsonValidation,
@@ -13,41 +19,21 @@ vi.mock('./jsonValidation', async importOriginal => ({
   startJsonValidation: vi.fn(),
 }));
 
-const validResult: ValidationResult = { isValid: true };
-const invalidResult: ValidationResult = { isValid: false, error: 'source invalid' };
-
-const createValidationTask = (result: ValidationResult = validResult) => ({
-  promise: Promise.resolve(result),
-  cancel: vi.fn(),
-});
-
-const createPendingValidationTask = () => {
-  let resolvePromise: (result: ValidationResult) => void = () => undefined;
-  const task = {
-    promise: new Promise<ValidationResult>(resolve => {
-      resolvePromise = resolve;
-    }),
-    cancel: vi.fn(),
-  };
-
-  return { task, resolvePromise };
-};
-
 describe('appSourceValidationRequest', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(startJsonValidation).mockReturnValue(createValidationTask());
+    vi.mocked(startJsonValidation).mockReturnValue(createResolvedValidationTask());
   });
 
   it('清理 SOURCE 输入后启动容器校验并写回当前请求结果', async () => {
     const requestIdRef = { current: 0 };
     const onSetValidation = vi.fn();
 
-    const task = runAppSourceValidationRequest({
+    const task = runAppSourceValidationRequest(createSourceValidationRequestInput({
       input: '\uFEFF  {"a":1}\u200B  ',
       requestIdRef,
       onSetValidation,
-    });
+    }));
     await task?.promise;
 
     expect(cleanJsonInput).toHaveBeenCalledWith('\uFEFF  {"a":1}\u200B  ');
@@ -55,18 +41,18 @@ describe('appSourceValidationRequest', () => {
       requireContainer: true,
     });
     expect(requestIdRef.current).toBe(1);
-    expect(onSetValidation).toHaveBeenCalledWith(validResult);
+    expect(onSetValidation).toHaveBeenCalledWith(validSourceValidationResult);
   });
 
   it('空 SOURCE 输入恢复为有效状态且不启动校验任务', () => {
     const requestIdRef = { current: 3 };
     const onSetValidation = vi.fn();
 
-    const task = runAppSourceValidationRequest({
+    const task = runAppSourceValidationRequest(createSourceValidationRequestInput({
       input: ' \u200B  ',
       requestIdRef,
       onSetValidation,
-    });
+    }));
 
     expect(task).toBeNull();
     expect(requestIdRef.current).toBe(4);
@@ -84,15 +70,25 @@ describe('appSourceValidationRequest', () => {
       .mockReturnValueOnce(firstValidation.task)
       .mockReturnValueOnce(secondValidation.task);
 
-    runAppSourceValidationRequest({ input: '{"a":1}', requestIdRef, onSetValidation });
-    runAppSourceValidationRequest({ input: '{"a":2}', requestIdRef, onSetValidation });
+    runAppSourceValidationRequest(createSourceValidationRequestInput({
+      input: '{"a":1}',
+      requestIdRef,
+      onSetValidation,
+    }));
+    runAppSourceValidationRequest(createSourceValidationRequestInput({
+      input: '{"a":2}',
+      requestIdRef,
+      onSetValidation,
+    }));
 
-    firstValidation.resolvePromise(invalidResult);
+    expect(requestIdRef.current).toBe(2);
+
+    firstValidation.resolvePromise(invalidSourceValidationResult);
     await firstValidation.task.promise;
-    expect(onSetValidation).not.toHaveBeenCalledWith(invalidResult);
+    expect(onSetValidation).not.toHaveBeenCalledWith(invalidSourceValidationResult);
 
-    secondValidation.resolvePromise(validResult);
+    secondValidation.resolvePromise(validSourceValidationResult);
     await secondValidation.task.promise;
-    expect(onSetValidation).toHaveBeenCalledWith(validResult);
+    expect(onSetValidation).toHaveBeenCalledWith(validSourceValidationResult);
   });
 });
