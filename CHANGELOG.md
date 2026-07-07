@@ -1,4 +1,12 @@
 # 更新日志 (Changelog)
+## v1.8.717 (2026-07-08) - AI 入口发现加固
+### 🏗️ 架构与基础设施
+- **GitHub AI 入口清单单源化**: PR 模板引用规则复用 AI 资产发现中的自定义入口目录清单，补齐 `.github/instructions` 人审提醒并防止同类入口再次漏同步
+- **AI 治理预算人审提醒**: PR 模板新增 AI 治理 helper/test 的可维护性预算 checklist，并由引用规则负例锁定预算命令提醒
+- **Cursor 项目规则发现**: `check-ai-governance` 自动发现 `.cursor/rules/**/*.mdc`，防止 Cursor 项目级规则文件绕过资产注册表、引用规则或显式豁免
+- **MCP 配置精确发现**: `check-ai-governance` 自动发现 `.mcp.json`、`.cursor/mcp.json` 与 `.vscode/mcp.json`，同时锁定不递归 `.cursor` / `.vscode` 私有配置目录
+- **跨工具索引同步**: 配置分层、工具索引、Claude 工具指南和 Codex skill 同步 Cursor rules 入口说明，让新增规则资产的治理边界可追溯
+
 ## v1.8.716 (2026-07-08) - 决策账本入口加固
 ### 🏗️ 架构与基础设施
 - **决策账本入口提升**: `docs/AI-CONFIG-INTEGRATION.md` 与 `docs/AI-TOOLS-SETUP.md` 将 `docs/AI-GOVERNANCE-DECISIONS.md` 提升为一等治理入口，避免后续维护者只看资产注册表而遗漏决策记录

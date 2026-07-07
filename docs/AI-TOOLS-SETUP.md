@@ -11,7 +11,8 @@
 | Claude 配置目录 | `.claude/README.md`、`.claude/ai-tools-guide.md` | README 说明目录边界，guide 说明跨工具使用方式 |
 | Codex 项目资产 | `.codex/README.md`、`.codex/skills/jsonutils-maintainer/SKILL.md` | README 解释 Codex 目录，skill 沉淀可迁移维护流程 |
 | GitHub Copilot | `.github/copilot-instructions.md` | 仓库级 Copilot instructions 薄入口，转发到主规范和 Playbook |
-| Cursor | `.cursorrules` | 薄入口，转发到主规范和 Playbook |
+| Cursor | `.cursorrules`、`.cursor/rules/**/*.mdc` | 薄入口，转发到主规范和 Playbook |
+| MCP 配置 | `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json` | 项目级 MCP server 能力边界，精确文件进入治理，不递归 IDE 配置目录 |
 | Comate | `.comate/rules/code-style.md` | 薄入口，和 Cursor 保持共享核心片段 |
 | 跨工具执行闭环 | `docs/AI-ENGINEERING-PLAYBOOK.md` | 子 Agent 委派、验证矩阵、规则进化和治理校验的权威文档 |
 | 配置分层说明 | `docs/AI-CONFIG-INTEGRATION.md` | 说明入口、rules、skills、本机配置和显式豁免的关系 |
@@ -28,7 +29,7 @@ AI 助手开始修改代码前，应优先读取：
 4. 任务相关源码、测试和部署脚本
 5. `CHANGELOG.md`
 
-涉及 Codex 项目维护流程时，再读取 `.codex/README.md` 和 `.codex/skills/jsonutils-maintainer/SKILL.md`。涉及跨工具入口变更时，同时检查 `.claude/README.md`、`.claude/ai-tools-guide.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.comate/rules/code-style.md`、`docs/AI-ASSET-REGISTRY.md` 和 `docs/AI-GOVERNANCE-DECISIONS.md`。
+涉及 Codex 项目维护流程时，再读取 `.codex/README.md` 和 `.codex/skills/jsonutils-maintainer/SKILL.md`。涉及跨工具入口或 MCP 配置变更时，同时检查 `.claude/README.md`、`.claude/ai-tools-guide.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.cursor/rules/**/*.mdc`、`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`、`.comate/rules/code-style.md`、`docs/AI-ASSET-REGISTRY.md` 和 `docs/AI-GOVERNANCE-DECISIONS.md`。
 
 ## 维护要求
 
@@ -76,7 +77,7 @@ node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 - `.github/copilot-instructions.md`、`.codex/README.md`、`.claude/ai-tools-guide.md`、`.cursorrules` 和 `.comate/rules/code-style.md` 的共享核心规则片段必须保持一致。
 - `.github/copilot-instructions.md` 只能作为薄入口，关键规则仍以主规范、Playbook 和 skill 为准；新增 `.github/instructions/**/*.instructions.md` 路径级指令、`.github/prompts/**/*.prompt.md` prompt file、`.github/agents/**/*.agent.md` custom agent 或 `.github/chatmodes/**/*.chatmode.md` legacy chat mode 时也必须进入治理清单、引用规则或显式豁免。
 - `.codex/skills/*/SKILL.md` 必须保留 frontmatter、必读文件、工作流、常用验证命令和重点边界。
-- `.claude/`、`.codex/`、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入 `docs/AI-ASSET-REGISTRY.md`、治理清单、引用规则或显式豁免。
+- `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入 `docs/AI-ASSET-REGISTRY.md`、治理清单、引用规则或显式豁免。
 - rules、skills 或治理脚本变更必须能从 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md` 反查触发原因与锁定测试。
 - CHANGELOG 和版本文件必须通过 `check-version-consistency` 校验。
 

@@ -1,13 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { collectFilesRecursively } from './aiGovernanceAssetFileCollector.mjs';
-import { AI_GOVERNANCE_DISCOVERY_PATTERN_DIRS } from './aiGovernanceDiscoveryPatterns.mjs';
+import {
+  AI_GOVERNANCE_DISCOVERY_PATTERN_DIRS,
+  AI_GOVERNANCE_MCP_CONFIG_FILES,
+} from './aiGovernanceDiscoveryPatterns.mjs';
 
 const AI_GOVERNANCE_DISCOVERY_ROOT_FILES = [
   'AGENTS.md',
   'CLAUDE.md',
   '.cursorrules',
   '.github/copilot-instructions.md',
+  ...AI_GOVERNANCE_MCP_CONFIG_FILES,
 ];
 
 const AI_GOVERNANCE_DISCOVERY_DIRS = [

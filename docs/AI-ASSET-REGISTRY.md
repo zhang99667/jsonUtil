@@ -13,7 +13,7 @@
 - 表格里登记的资产必须属于必需文件、自动发现资产或已存在的显式豁免文件；删除或移出治理面的资产要同步移除登记，避免留下陈旧账本。
 - 工具入口保持薄入口，权威规则优先沉淀到 `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`。
 - 本机私有配置只允许作为显式豁免登记，不承载项目级规则、skills 或验证流程。
-- 新增 `.claude/`、`.codex/`、`.comate/`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 或 `rules/ai-*.md` 资产时，先更新本文，再补治理规则或豁免说明。
+- 新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 或 `rules/ai-*.md` 资产时，先更新本文，再补治理规则或豁免说明。
 
 ## 责任与状态约定
 
@@ -34,7 +34,7 @@
 | `docs/AI-CONFIG-INTEGRATION.md` | 分层说明 | 说明入口、rules、skills、本机配置和显式豁免关系 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-TOOLS-SETUP.md` | 工具索引 | 说明各 AI 工具入口、同步边界和必跑检查 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-ASSET-REGISTRY.md` | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
-| `.github/PULL_REQUEST_TEMPLATE.md` | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、负向测试、显式豁免以及 prompt/custom agent/chatmode 入口处理 | 必需文件、PR 模板引用规则 |
+| `.github/PULL_REQUEST_TEMPLATE.md` | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
 
 ## 工具入口与可迁移技能
 
@@ -69,7 +69,7 @@
 
 ## 更新流程
 
-1. 新增 AI 入口、rules、skills、`docs/AI-*.md` 或 `rules/ai-*.md` 时，先判断它是协作资产、本机私有配置还是临时实验。
+1. 新增 AI 入口、rules、skills、项目级 MCP 配置、`docs/AI-*.md` 或 `rules/ai-*.md` 时，先判断它是协作资产、本机私有配置还是临时实验。
 2. 协作资产写入上方对应表格，并纳入必需文件、引用规则或自动发现规则。
 3. 本机私有配置写入显式豁免表格，并说明为什么不能承载共享规则。
 4. 补负向测试，证明漏登记、漏引用或错误豁免会被 `check-ai-governance` 拦住。
