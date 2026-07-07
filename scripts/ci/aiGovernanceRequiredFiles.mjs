@@ -1,4 +1,5 @@
 import { AI_ENTRY_SHARED_SNIPPET_FILES } from './aiGovernanceSharedEntrySnippets.mjs';
+import { AI_GOVERNANCE_CI_COMMAND_FILES } from './aiGovernanceCiCommandDescriptors.mjs';
 
 const AI_GOVERNANCE_CORE_ENTRY_FILES = [
   'AGENTS.md',
@@ -16,13 +17,11 @@ const AI_GOVERNANCE_CORE_ENTRY_FILES = [
 export const AI_GOVERNANCE_ENTRY_FILES = [...AI_GOVERNANCE_CORE_ENTRY_FILES, ...AI_ENTRY_SHARED_SNIPPET_FILES];
 
 export const AI_GOVERNANCE_CHECK_FILES = [
-  'scripts/ci/check-ai-governance.mjs',
   'scripts/ci/check-deploy-shell-syntax.mjs',
   'scripts/ci/check-frontend-static-retention.mjs',
   'scripts/ci/check-production-frontend-assets.mjs',
   'scripts/ci/check-chunk-load-recovery-catches.mjs',
-  'scripts/ci/check-version-consistency.mjs',
-  'scripts/ci/check-maintainability-budgets.mjs',
+  ...AI_GOVERNANCE_CI_COMMAND_FILES,
 ];
 
 export const buildAiGovernanceRequiredFiles = (codexSkillFiles) => [

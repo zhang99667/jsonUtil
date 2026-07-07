@@ -1,4 +1,11 @@
 # 更新日志 (Changelog)
+## v1.8.714 (2026-07-08) - AI 治理契约补强
+### 🏗️ 架构与基础设施
+- **证据来源上下文契约**: `EVIDENCE_SOURCE_DESCRIPTORS` 派生来源 `contextKey` 清单，资产注册表在证据反查前先校验上下文 Set 完整性，避免新增证据来源时因漏接来源集合而静默退化
+- **CI 必跑命令单源化**: 新增 `aiGovernanceCiCommandDescriptors.mjs`，让 AI 治理 CI 契约、workflow 测试夹具和 local-ci 测试夹具共用同一组必跑命令描述符
+- **必需文件清单复用**: `aiGovernanceRequiredFiles.mjs` 从 CI 命令描述符派生治理脚本清单，避免新增必跑命令后遗漏必需文件治理面
+- **注册表证据预算拆分**: 将资产注册表 evidence descriptor、来源反查和语义证据 helper 预算移入 `maintainability-budget-governance-ai-registry-evidence-rules.mjs`，让注册表预算父表脱离 15/15 贴线状态
+
 ## v1.8.713 (2026-07-08) - AI 治理测试夹具单源化
 ### 🏗️ 架构与基础设施
 - **AI 治理测试夹具单源化**: 将 AI 治理测试的临时仓库和注册表表格构造统一到 `aiGovernanceTestFixtures.mjs`，减少主测试、引用规则、章节、决策账本和 skill 契约测试的重复脚手架

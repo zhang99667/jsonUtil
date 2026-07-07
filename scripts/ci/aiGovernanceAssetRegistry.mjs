@@ -13,7 +13,7 @@ const hasFile = (rootDir, file) => fs.existsSync(path.join(rootDir, file));
 
 const uniqueSorted = files => [...new Set(files)].sort();
 
-const buildRegistryEvidenceContext = (rootDir, requiredFiles, referenceRules) => {
+export const buildRegistryEvidenceContext = (rootDir, requiredFiles, referenceRules) => {
   const discoveredFiles = discoverAiGovernanceAssetFiles(rootDir);
   const exemptFiles = AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES.filter(file => hasFile(rootDir, file));
   const expectedRegistryFiles = uniqueSorted([...requiredFiles, ...discoveredFiles, ...exemptFiles]);

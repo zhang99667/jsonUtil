@@ -2,10 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
-import {
-  AI_GOVERNANCE_ASSET_REGISTRY_EVIDENCE_MARKERS,
-  EVIDENCE_SOURCE_DESCRIPTORS,
-} from './aiGovernanceAssetRegistryEvidenceMarkers.mjs';
+import { AI_GOVERNANCE_ASSET_REGISTRY_EVIDENCE_MARKERS, EVIDENCE_SOURCE_CONTEXT_KEYS, EVIDENCE_SOURCE_DESCRIPTORS } from './aiGovernanceAssetRegistryEvidenceMarkers.mjs';
 import {
   buildRegistryTableFixture,
   registryRow,
@@ -15,8 +12,10 @@ import {
 
 test('AI 治理资产注册表证据分组都会进入认可词表', () => {
   const groupedMarkers = EVIDENCE_SOURCE_DESCRIPTORS.map(([marker]) => marker);
+  const groupedContextKeys = [...new Set(EVIDENCE_SOURCE_DESCRIPTORS.map(([, contextKey]) => contextKey))];
 
   assert.deepEqual(AI_GOVERNANCE_ASSET_REGISTRY_EVIDENCE_MARKERS, groupedMarkers);
+  assert.deepEqual(EVIDENCE_SOURCE_CONTEXT_KEYS, groupedContextKeys);
 });
 
 test('AI 治理资产注册表会报告治理证据未命中认可标记', () => {
