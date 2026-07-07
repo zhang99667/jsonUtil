@@ -15,6 +15,8 @@ export const parseMaintainabilityBudgetCliArgs = (args) => {
   const options = {};
 
   for (let index = 0; index < args.length; index += 1) {
+    if (args[index] === '--no-all') options.printAllSummaries = false;
+
     const top = getFlagValue(args, index, '--top');
     if (top) {
       const highUsageLimit = parseNumberOption(top[0], Math.floor);

@@ -1,9 +1,6 @@
 const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const getMarkdownHeadingLevel = (heading) => {
-  const match = heading.match(/^(#{1,6})\s+/);
-  return match ? match[1].length : null;
-};
+const getMarkdownHeadingLevel = heading => heading.match(/^(#{1,6})\s+/)?.[1].length ?? null;
 
 const findMarkdownHeadingStart = (content, sectionTitle) => {
   const pattern = new RegExp(`(^|\\n)${escapeRegExp(sectionTitle)}(?:\\n|$)`);
@@ -18,14 +15,16 @@ export const getMarkdownSectionContent = (content, sectionTitle) => {
 
   const bodyStart = sectionStart + sectionTitle.length;
   const remainingContent = content.slice(bodyStart);
-  const headingMatcher = /\n(#{1,6})\s+[^\n]+/g;
-  let nextHeadingMatch = headingMatcher.exec(remainingContent);
+  const lines = remainingContent.split('\n');
+  let offset = 0;
+  let isInFence = false;
 
-  while (nextHeadingMatch) {
-    if (nextHeadingMatch[1].length <= sectionLevel) {
-      return remainingContent.slice(0, nextHeadingMatch.index);
-    }
-    nextHeadingMatch = headingMatcher.exec(remainingContent);
+  for (const line of lines) {
+    if (/^\s*(```|~~~)/.test(line)) isInFence = !isInFence;
+
+    const headingMatch = !isInFence && line.match(/^(#{1,6})\s+/);
+    if (headingMatch && headingMatch[1].length <= sectionLevel) return remainingContent.slice(0, offset);
+    offset += line.length + 1;
   }
 
   return remainingContent;

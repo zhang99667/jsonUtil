@@ -91,7 +91,7 @@ const buildDecisionLedgerFixtureContent = ({
   counterexample = '只写关键词',
   boundary = 'AI rules 和治理脚本',
   backfill = '`docs/AI-ASSET-REGISTRY.md`',
-  tests = '`node scripts/ci/check-ai-governance.mjs`',
+  tests = '`node --test scripts/ci/aiGovernanceChecks.test.mjs`',
 } = {}) => [
   '# AI 治理决策记录',
   '',
@@ -271,9 +271,10 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '### 5. 规则进化闭环',
     sharedReferences,
   ].join('\n'));
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
   writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
     backfill: '`docs/AI-ASSET-REGISTRY.md`, `scripts/ci/check-ai-governance.mjs`',
-    tests: '`node scripts/ci/check-ai-governance.mjs`',
+    tests: '`node --test scripts/ci/aiGovernanceChecks.test.mjs`; `node scripts/ci/check-ai-governance.mjs`',
   }));
   writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
     sharedReferences,
@@ -695,6 +696,34 @@ test('AI 治理章节引用检查会报告关键词落错章节', () => {
   });
 });
 
+test('AI 治理章节引用检查会忽略代码块里的伪标题', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
+      '### 0. 判断子 Agent 委派',
+      '```bash',
+      '# 代码块里的标题样文本',
+      '```',
+      '下一步建议：',
+      '### 1. 定义变更边界',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{
+        file: 'docs/AI-ENGINEERING-PLAYBOOK.md',
+        contains: ['下一步建议：'],
+        sections: [{
+          sectionTitle: '### 0. 判断子 Agent 委派',
+          contains: ['下一步建议：'],
+        }],
+      }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, []);
+  });
+});
+
 test('AI 治理章节引用检查会报告 AI 安全边界落错章节', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
@@ -816,6 +845,7 @@ test('AI 治理决策账本会报告缺少回写路径和锁定测试命令', ()
 test('AI 治理决策账本会报告不存在的回写路径', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'check');
+    writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
       backfill: '`docs/AI-MISSING.md`',
     }));
@@ -830,11 +860,25 @@ test('AI 治理决策账本会报告不存在的锁定测试命令路径', () =>
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
-      tests: '`node scripts/ci/missing-check.mjs`',
+      tests: '`node --test scripts/ci/missing-check.test.mjs`',
     }));
 
     assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
-      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 锁定测试命令路径不存在 `scripts/ci/missing-check.mjs`',
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 锁定测试命令路径不存在 `scripts/ci/missing-check.test.mjs`',
+    ]);
+  });
+});
+
+test('AI 治理决策账本会报告缺少回归或负向测试命令', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+    writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'check');
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      tests: '`node scripts/ci/check-ai-governance.mjs`',
+    }));
+
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 锁定测试必须包含 `node --test ...test.mjs` 回归或负向测试命令',
     ]);
   });
 });
@@ -1079,6 +1123,23 @@ test('AI 治理 skill 契约会报告缺失核心章节', () => {
   });
 });
 
+test('AI 治理 skill 契约会忽略正文里的伪章节标题', () => {
+  withTempRoot((rootDir) => {
+    const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
+    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+      sections: ['## 必读文件', '## 常用验证命令', '## 重点边界'],
+      sectionBodies: {
+        ...completeSkillSectionBodies,
+        '## 必读文件': `${completeSkillSectionBodies['## 必读文件']}\n正文提到 ## 工作流 不是章节标题`,
+      },
+    }));
+
+    assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
+      '.codex/skills/jsonutils-maintainer/SKILL.md: 缺少 ## 工作流 章节',
+    ]);
+  });
+});
+
 test('AI 治理 skill 契约会报告核心章节缺少关键内容', () => {
   withTempRoot((rootDir) => {
     const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
@@ -1155,6 +1216,7 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(codexRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiDecisionRule.contains.includes('回写追踪'), true);
   assert.equal(aiDecisionRule.contains.includes('锁定测试'), true);
+  assert.equal(aiDecisionRule.contains.includes('node --test'), true);
   assert.equal(aiDecisionRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiConfigRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(aiConfigRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);

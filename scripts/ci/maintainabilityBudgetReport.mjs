@@ -41,12 +41,13 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
   const summaries = [];
   const usages = [];
   const nearLimitUsages = [];
-  const budgetedFiles = new Set(budgets.map(budget => budget.file));
+  const normalizedBudgets = budgets.map(budget => ({ ...budget, file: path.posix.normalize(budget.file).replace(/^\.\//, '') }));
+  const budgetedFiles = new Set(normalizedBudgets.map(budget => budget.file));
 
-  failures.push(...collectDuplicateBudgetFailures(budgets));
+  failures.push(...collectDuplicateBudgetFailures(normalizedBudgets));
   failures.push(...collectUntrackedBudgetRuleFailures(rootDir, budgetedFiles));
 
-  for (const budget of budgets) {
+  for (const budget of normalizedBudgets) {
     const filePath = path.join(rootDir, budget.file);
     if (!fs.existsSync(filePath)) {
       failures.push(`${budget.file}: 文件不存在，无法检查预算`);
@@ -57,12 +58,8 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
     const usage = { ...budget, lineCount };
     usages.push(usage);
     summaries.push(formatBudgetUsage(usage));
-    if (isNearLimitUsage(usage)) {
-      nearLimitUsages.push(usage);
-    }
-    if (lineCount > budget.maxLines) {
-      failures.push(`${budget.file}: ${lineCount}/${budget.maxLines} 行，${budget.reason}`);
-    }
+    if (isNearLimitUsage(usage)) nearLimitUsages.push(usage);
+    if (lineCount > budget.maxLines) failures.push(`${budget.file}: ${lineCount}/${budget.maxLines} 行，${budget.reason}`);
   }
 
   const nearLimitSummaries = buildNearLimitSummaries(nearLimitUsages);

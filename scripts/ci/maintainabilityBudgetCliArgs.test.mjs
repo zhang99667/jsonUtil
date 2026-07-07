@@ -18,3 +18,9 @@ test('可维护性预算 CLI 参数支持空格写法和关闭候选输出', () 
     printAllSummaries: false,
   });
 });
+
+test('可维护性预算 CLI 参数支持单独关闭全量输出', () => {
+  assert.deepEqual(parseMaintainabilityBudgetCliArgs(['--no-all']), {
+    printAllSummaries: false,
+  });
+});

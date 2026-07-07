@@ -7,6 +7,7 @@ export const AI_GOVERNANCE_DECISION_REFERENCE_RULE = {
     '回写追踪',
     '锁定测试',
     'docs/AI-ASSET-REGISTRY.md',
+    'node --test',
     'node scripts/ci/check-ai-governance.mjs',
   ],
 };

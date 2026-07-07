@@ -1,3 +1,5 @@
+import { getMarkdownSectionContent } from './aiGovernanceSectionReferences.mjs';
+
 const CODEX_SKILL_SECTION_CONTENT_REQUIREMENTS = [
   {
     sectionTitle: '## 必读文件',
@@ -17,21 +19,9 @@ const CODEX_SKILL_SECTION_CONTENT_REQUIREMENTS = [
   },
 ];
 
-const getSkillSectionContent = (content, sectionTitle) => {
-  const sectionStart = content.indexOf(sectionTitle);
-  if (sectionStart === -1) return null;
-
-  const bodyStart = sectionStart + sectionTitle.length;
-  const remainingContent = content.slice(bodyStart);
-  const nextSectionMatch = remainingContent.match(/\n## [^\n]+/);
-  return nextSectionMatch
-    ? remainingContent.slice(0, nextSectionMatch.index)
-    : remainingContent;
-};
-
 export const collectSkillSectionContentFailures = (file, content) => (
   CODEX_SKILL_SECTION_CONTENT_REQUIREMENTS.flatMap(({ sectionTitle, contains }) => {
-    const sectionContent = getSkillSectionContent(content, sectionTitle);
+    const sectionContent = getMarkdownSectionContent(content, sectionTitle);
     if (sectionContent === null) return [];
 
     return contains

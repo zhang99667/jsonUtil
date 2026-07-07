@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { extractBacktickReferences, extractExecutableCommands, extractNodeCommandPaths } from './aiGovernanceDecisionLedgerReferences.mjs';
+import * as decisionLedgerReferences from './aiGovernanceDecisionLedgerReferences.mjs';
 
 export const AI_GOVERNANCE_DECISION_LEDGER_FILE = 'docs/AI-GOVERNANCE-DECISIONS.md';
 
@@ -10,8 +10,7 @@ const parseTableCells = line => line.trim().replace(/^\|/, '').replace(/\|$/, ''
 
 const isSeparatorRow = cells => cells.every(cell => /^:?-{3,}:?$/.test(cell));
 const isDecisionHeaderRow = cells => DECISION_LEDGER_HEADER_CELLS.every((cell, index) => cells[index] === cell);
-const hasPathReference = text => extractBacktickReferences(text).length > 0;
-const hasExecutableCommand = text => extractExecutableCommands(text).length > 0;
+const hasPathReference = text => decisionLedgerReferences.extractBacktickReferences(text).length > 0;
 const hasIsoDate = text => /^\d{4}-\d{2}-\d{2}$/.test(text);
 
 const parseDecisionRows = (content) => {
@@ -45,14 +44,20 @@ const collectRowFailures = (rootDir, row, index) => {
     .map(cell => `${label} 缺少${cell}`);
   if (missingCells.length > 0) return missingCells;
 
+  const executableCommands = decisionLedgerReferences.extractExecutableCommands(row['锁定测试']);
+  const regressionTestCommands = decisionLedgerReferences.extractNodeRegressionTestCommandPaths(row['锁定测试']);
+
   return [
     ...(!hasIsoDate(row['日期']) ? [`${label} 日期必须使用 YYYY-MM-DD`] : []),
     ...(!hasPathReference(row['回写追踪']) ? [`${label} 回写追踪必须包含反引号路径`] : []),
-    ...extractBacktickReferences(row['回写追踪'])
+    ...decisionLedgerReferences.extractBacktickReferences(row['回写追踪'])
       .filter(file => !fs.existsSync(path.join(rootDir, file)))
       .map(file => `${label} 回写追踪路径不存在 \`${file}\``),
-    ...(!hasExecutableCommand(row['锁定测试']) ? [`${label} 锁定测试必须包含可执行命令`] : []),
-    ...extractNodeCommandPaths(row['锁定测试'])
+    ...(executableCommands.length === 0 ? [`${label} 锁定测试必须包含可执行命令`] : []),
+    ...(executableCommands.length > 0 && regressionTestCommands.length === 0
+      ? [`${label} 锁定测试必须包含 \`node --test ...test.mjs\` 回归或负向测试命令`]
+      : []),
+    ...decisionLedgerReferences.extractNodeCommandPaths(row['锁定测试'])
       .filter(file => !fs.existsSync(path.join(rootDir, file)))
       .map(file => `${label} 锁定测试命令路径不存在 \`${file}\``),
   ];

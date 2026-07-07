@@ -86,7 +86,7 @@ test('可维护性预算报告会报告重复登记', () => {
     writeLines(rootDir, 'src/owned.js', 3);
 
     const report = buildMaintainabilityBudgetReport(rootDir, [
-      { file: 'src/owned.js', maxLines: 5, reason: 'first owner' },
+      { file: './src/owned.js', maxLines: 5, reason: 'first owner' },
       { file: 'src/owned.js', maxLines: 8, reason: 'second owner' },
     ]);
 
