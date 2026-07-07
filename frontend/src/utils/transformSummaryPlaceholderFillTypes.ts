@@ -1,4 +1,5 @@
 import type { AppVersionMetadata } from './appVersion';
+import type { PlaceholderFillTemplateKind } from './placeholderFillTemplateContract';
 
 export interface TransformPlaceholderFillTemplateSource {
   sourcePath: string;
@@ -26,7 +27,7 @@ export interface TransformPlaceholderFillTemplateDetail {
 
 export interface TransformPlaceholderFillTemplate {
   schemaVersion: 1;
-  kind: 'json-helper-runtime-placeholder-fill-template';
+  kind: PlaceholderFillTemplateKind;
   tool: AppVersionMetadata;
   filter: string;
   summary: {

@@ -1,4 +1,5 @@
 import { APP_VERSION_METADATA } from './appVersion';
+import { PLACEHOLDER_FILL_TEMPLATE_KIND } from './placeholderFillTemplateContract';
 import { buildPlaceholderReplacementSuggestions } from './transformPlaceholderSuggestions';
 import type {
   TransformPlaceholderFillTemplate,
@@ -20,7 +21,7 @@ export const buildTransformPlaceholderFillTemplate = (
 
   return {
     schemaVersion: 1,
-    kind: 'json-helper-runtime-placeholder-fill-template',
+    kind: PLACEHOLDER_FILL_TEMPLATE_KIND,
     tool: APP_VERSION_METADATA,
     filter: formatPlaceholderFillTemplateFilter(filter),
     summary: {

@@ -15,6 +15,7 @@ import {
 import type { DecodeLayer, SchemeParamDecodeStage, SchemePlaceholder, SchemeType } from './schemeTypes.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
 import { formatUnknownError } from './errors.ts';
+import { PLACEHOLDER_FILL_TEMPLATE_KIND } from './placeholderFillTemplateContract.ts';
 import { formatHarSourceLabel, trimSourceLabel, HAR_SOURCE_LABEL_PREFIX } from './sourceLabels.ts';
 
 import {
@@ -1175,8 +1176,6 @@ export const performTransform = (input: string, mode: TransformMode): string => 
 };
 
 // ============ 模板填充（深度合并 / 占位符回填） ============
-
-const PLACEHOLDER_FILL_TEMPLATE_KIND = 'json-helper-runtime-placeholder-fill-template';
 
 const isJsonObject = (value: JsonValue): value is JsonObject => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)

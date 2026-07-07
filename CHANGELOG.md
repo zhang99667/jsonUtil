@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.636 (2026-07-07) - 模板填充占位符契约收敛
+### 🏗️ 架构与基础设施
+- **占位符模板契约单源化**: 将占位符回填模板 kind 常量和 `PlaceholderTemplate*` 类型收敛到 `placeholderFillTemplateContract`，解析、工作流识别、模板生成和深度合并复用同一契约，降低字符串漂移风险
+
 ## v1.8.635 (2026-07-07) - TransformReport 报告视图 Hook 拆分
 ### 🏗️ 架构与基础设施
 - **深度解析面板 ViewModel 瘦身**: 将 `report`、过滤视图和完整视图构建抽成 `useTransformReportPanelReportViews`，主 ViewModel 继续聚焦 query、CMD 对比、质量基线和派生模型组合，并补充报告视图 hook 测试
