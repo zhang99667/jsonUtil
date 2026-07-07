@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { assertElementLike, collectText, findByType } from './componentElementTestHelpers';
-import { createJsonPathResultPreviewItem } from './JsonPathPanelResultPreviewItemTestData';
 import { JsonPathPanelResultPreviewRowContent } from './JsonPathPanelResultPreviewRowContent';
 
+const rowContentItem = {
+  displayIndex: 3,
+  sourceLabel: 'SOURCE',
+  path: '$.data.items[0]',
+  text: '"value"',
+};
+
 const renderRowContent = (
-  overrides: Partial<Parameters<typeof createJsonPathResultPreviewItem>[0]> = {}
+  overrides: Partial<typeof rowContentItem> = {}
 ) => JsonPathPanelResultPreviewRowContent({
-  item: createJsonPathResultPreviewItem(overrides),
+  item: {
+    ...rowContentItem,
+    ...overrides,
+  },
 });
 
 describe('JsonPathPanelResultPreviewRowContent', () => {
