@@ -150,11 +150,11 @@ const missingReferenceCases = [
     expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
   },
   {
-    name: 'AI 治理引用检查会报告 PR 模板缺失自定义 AI 入口',
+    name: 'AI 治理引用检查会报告 PR 模板缺失 Copilot 根入口',
     file: '.github/PULL_REQUEST_TEMPLATE.md',
-    content: lines(['docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', 'CHANGELOG.md', 'node scripts/ci/check-ai-governance.mjs', '.github/instructions', '.github/prompts', '.github/agents', '.github/chatmodes', '负向测试', '显式豁免']),
-    contains: ['.cursor/rules', '.github/instructions', '.github/prompts', '.github/agents', '.github/chatmodes'],
-    expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 ".cursor/rules"',
+    content: lines(['docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', 'CHANGELOG.md', 'node scripts/ci/check-ai-governance.mjs', '.cursor/rules', '.github/instructions', '.github/prompts', '.github/agents', '.github/chatmodes', '负向测试', '显式豁免']),
+    contains: ['.github/copilot-instructions.md', '.cursor/rules', '.github/instructions', '.github/prompts', '.github/agents', '.github/chatmodes'],
+    expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 ".github/copilot-instructions.md"',
   },
   {
     name: 'AI 治理引用检查会报告 PR 模板缺失预算提醒',
@@ -178,11 +178,11 @@ const missingReferenceCases = [
     expected: 'docs/AI-CONFIG-INTEGRATION.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
   },
   {
-    name: 'AI 治理引用检查会报告配置分层说明缺失 Cursor rules 入口',
+    name: 'AI 治理引用检查会报告配置分层说明缺失 Copilot 根入口',
     file: 'docs/AI-CONFIG-INTEGRATION.md',
-    content: lines(['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', '显式豁免']),
-    contains: ['.cursor/rules'],
-    expected: 'docs/AI-CONFIG-INTEGRATION.md: 缺少 ".cursor/rules"',
+    content: lines(['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', '.cursor/rules', '显式豁免']),
+    contains: ['.github/copilot-instructions.md'],
+    expected: 'docs/AI-CONFIG-INTEGRATION.md: 缺少 ".github/copilot-instructions.md"',
   },
   {
     name: 'AI 治理引用检查会报告工具索引缺失决策账本',
@@ -192,11 +192,11 @@ const missingReferenceCases = [
     expected: 'docs/AI-TOOLS-SETUP.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
   },
   {
-    name: 'AI 治理引用检查会报告工具索引缺失 Cursor rules 入口',
-    file: 'docs/AI-TOOLS-SETUP.md',
-    content: lines(['docs/AI-CONFIG-INTEGRATION.md', 'docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', '.cursorrules', 'node scripts/ci/check-ai-governance.mjs']),
-    contains: ['.cursor/rules'],
-    expected: 'docs/AI-TOOLS-SETUP.md: 缺少 ".cursor/rules"',
+    name: 'AI 治理引用检查会报告资产注册表缺失 Copilot 根入口人审契约',
+    file: 'docs/AI-ASSET-REGISTRY.md',
+    content: lines(['AGENTS.md', 'CLAUDE.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-GOVERNANCE-DECISIONS.md', '.codex/skills/jsonutils-maintainer/SKILL.md', 'scripts/ci/check-ai-governance.mjs', 'scripts/ci/aiGovernanceAssetRegistryEvidence.mjs', 'referenceRules.file', '治理证据', '显式豁免']),
+    contains: ['Copilot 根入口'],
+    expected: 'docs/AI-ASSET-REGISTRY.md: 缺少 "Copilot 根入口"',
   },
 ];
 

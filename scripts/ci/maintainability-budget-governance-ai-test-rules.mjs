@@ -15,5 +15,6 @@ export const governanceAiTestMaintainabilityBudgets = [
   governanceAiTestBudget('scripts/ci/aiGovernanceReferenceRules.test.mjs', 220, 'AI 治理引用规则测试应独立维护入口、发布、安全和委派引用负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceSectionReferenceRules.test.mjs', 135, 'AI 治理章节引用规则测试应独立维护章节定位和代码块伪标题负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceChecks.test.mjs', 650, 'AI 治理主测试文件应显式纳入预算，新增场景优先评估按决策账本、CI 或引用规则契约拆分'),
+  governanceAiTestBudget('scripts/ci/aiGovernanceSkillCommandContract.test.mjs', 95, 'AI 治理 skill 命令契约测试应独立维护 fenced cd 和 npm run 可达性负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceSkillContract.test.mjs', 260, 'AI 治理 skill 契约测试应独立维护 skill 发现、frontmatter、章节和引用可达性负例'),
 ];

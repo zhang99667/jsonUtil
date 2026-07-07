@@ -10,6 +10,7 @@ export const AI_GOVERNANCE_ASSET_REGISTRY_REFERENCE_RULE = {
     'scripts/ci/aiGovernanceAssetRegistryEvidence.mjs',
     'referenceRules.file',
     '治理证据',
+    'Copilot 根入口',
     '显式豁免',
   ],
 };

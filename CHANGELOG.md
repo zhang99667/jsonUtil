@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.719 (2026-07-08) - Copilot 治理入口锁定
+### 🏗️ 架构与基础设施
+- **Copilot 根入口治理锁**: PR 模板、配置说明、Playbook 和资产注册表显式要求 `.github/copilot-instructions.md`，避免仓库级 Copilot instructions 修改只靠自动发现而缺少人审与文档枚举提醒
+- **Skill 工作目录可达性**: Codex skill 契约新增 fenced `cd <dir>` 工作目录反查，并将命令块测试拆出独立预算，避免 skill 验证命令因目录重命名而静默失效
+
 ## v1.8.718 (2026-07-08) - AI 资产治理来源修正
 ### 🏗️ 架构与基础设施
 - **引用规则治理来源**: `check-ai-governance` 的未治理资产报告同步认可 `referenceRules.file`，避免已接入引用规则的新增 AI 资产仍被误报为未纳入治理
