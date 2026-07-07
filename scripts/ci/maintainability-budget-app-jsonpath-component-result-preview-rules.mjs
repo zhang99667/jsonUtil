@@ -1,7 +1,8 @@
 const appJsonPathComponentResultPreviewBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const appJsonPathComponentResultPreviewMaintainabilityBudgets = [
-  appJsonPathComponentResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreview.tsx', 65, 'JSONPath 结果预览子组件只维护可见结果列表、滚动容器和提示组件装配'),
+  appJsonPathComponentResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreview.tsx', 65, 'JSONPath 结果预览子组件只维护空态、可见结果列表和提示组件装配'),
+  appJsonPathComponentResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreviewFrame.tsx', 35, 'JSONPath 结果预览外框只维护滚动容器、data-tour、滚轮事件和子内容透传'),
   appJsonPathComponentResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreviewList.tsx', 50, 'JSONPath 结果预览列表只维护结果行映射、选中态和交互回调透传'),
   appJsonPathComponentResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreviewMessages.tsx', 45, 'JSONPath 结果预览提示只维护隐藏结果数量和命中上限提示渲染'),
   appJsonPathComponentResultPreviewBudget('frontend/src/components/JsonPathPanelResultPreviewRow.tsx', 40, 'JSONPath 结果预览行只维护选中态、聚焦按钮和结构定位入口装配'),

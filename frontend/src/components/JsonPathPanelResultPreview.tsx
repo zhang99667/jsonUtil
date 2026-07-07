@@ -1,5 +1,6 @@
 import React from 'react';
 import type { JsonPathResultPreviewItem } from '../utils/jsonPathPanelPreviewItems';
+import { JsonPathPanelResultPreviewFrame } from './JsonPathPanelResultPreviewFrame';
 import { JsonPathPanelResultPreviewList } from './JsonPathPanelResultPreviewList';
 import { JsonPathPanelResultPreviewMessages } from './JsonPathPanelResultPreviewMessages';
 
@@ -33,11 +34,7 @@ export const JsonPathPanelResultPreview: React.FC<JsonPathPanelResultPreviewProp
     if (previewItems.length === 0) return null;
 
     return (
-        <div
-            data-tour="jsonpath-results"
-            onWheel={onWheel}
-            className="mb-3 max-h-24 flex-shrink-0 overflow-y-auto overscroll-contain rounded border border-editor-border bg-editor-bg/60 p-1 space-y-1 [&::-webkit-scrollbar]:hidden"
-        >
+        <JsonPathPanelResultPreviewFrame onWheel={onWheel}>
             <JsonPathPanelResultPreviewList
                 previewItems={previewItems}
                 currentResultIndex={currentResultIndex}
@@ -52,6 +49,6 @@ export const JsonPathPanelResultPreview: React.FC<JsonPathPanelResultPreviewProp
                 isResultLimited={isResultLimited}
                 resultLimit={resultLimit}
             />
-        </div>
+        </JsonPathPanelResultPreviewFrame>
     );
 };
