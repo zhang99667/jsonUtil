@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.643 (2026-07-07) - JSONPath Runner 跳过分支测试拆分
+### 🏗️ 架构与基础设施
+- **JSONPath 查询测试瘦身**: 将 runner 的准备中、空查询和空数据跳过分支拆到独立测试文件，主 runner 测试回到 worker 生命周期主题，并补齐跳过分支的 hook 级集成断言
+
 ## v1.8.642 (2026-07-07) - JSONPath 查询决策拆分
 ### 🏗️ 架构与基础设施
 - **JSONPath 查询 runner 瘦身**: 将查询归一化、跳过原因和字段名快捷输入同步决策抽成 `jsonPathPanelQueryRunDecision` 纯 helper，runner hook 继续聚焦 worker 生命周期、结果写回和取消逻辑，并补充决策单测锁定空数据与深度格式化中的顺序差异
