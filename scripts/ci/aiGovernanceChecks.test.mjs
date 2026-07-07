@@ -11,10 +11,6 @@ import {
   buildAiGovernanceReferenceRules,
   buildAiGovernanceRequiredFiles,
 } from './aiGovernanceRules.mjs';
-import {
-  collectUngovernedAiGovernanceAssets,
-  discoverAiGovernanceAssetFiles,
-} from './aiGovernanceDiscoveredAssets.mjs';
 import { collectAiGovernanceCiContractFailures } from './aiGovernanceCiContract.mjs';
 import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReferenceGroups.mjs';
 import {
@@ -160,6 +156,9 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '治理校验',
     '本机私有配置',
     '显式豁免',
+    '.github/prompts',
+    '.github/agents',
+    '.github/chatmodes',
   ].join('\n');
 
   const governanceFixtureFiles = buildAiGovernanceRequiredFiles([skillFile]);
@@ -204,29 +203,6 @@ const writeMinimalGovernanceFixture = (rootDir) => {
 test('AI 治理文件检查会报告缺失文件', () => {
   withAiGovernanceTempRoot((rootDir) => {
     assert.deepEqual(collectMissingAiGovernanceFiles(rootDir, ['AGENTS.md']), ['AGENTS.md']);
-  });
-});
-
-test('AI 治理资产发现会跳过显式豁免并报告未治理资产', () => {
-  withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, '.claude/settings.local.json', '{}');
-    writeFixtureFile(rootDir, '.claude/new-agent-guide.md', '新 AI 协作说明');
-    writeFixtureFile(rootDir, '.github/instructions/review.instructions.md', '新 Copilot 路径级指令');
-    writeFixtureFile(rootDir, 'docs/AI-NEW-WORKFLOW.md', '新 AI 协作流程');
-    writeFixtureFile(rootDir, 'rules/ai-review-rules.md', '新 AI 规则');
-
-    assert.deepEqual(discoverAiGovernanceAssetFiles(rootDir), [
-      '.claude/new-agent-guide.md',
-      '.github/instructions/review.instructions.md',
-      'docs/AI-NEW-WORKFLOW.md',
-      'rules/ai-review-rules.md',
-    ]);
-    assert.deepEqual(collectUngovernedAiGovernanceAssets(rootDir, []), [
-      '.claude/new-agent-guide.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
-      '.github/instructions/review.instructions.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
-      'docs/AI-NEW-WORKFLOW.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
-      'rules/ai-review-rules.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
-    ]);
   });
 });
 
@@ -324,9 +300,11 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(aiDecisionRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiConfigRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(aiConfigRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
+  assert.equal(aiConfigRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
   assert.equal(aiConfigRule.contains.includes('显式豁免'), true);
   assert.equal(aiToolsRule.contains.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
   assert.equal(aiToolsRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
+  assert.equal(aiToolsRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
   assert.equal(aiToolsRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiRegistryRule.contains.includes('scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiRegistryRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
@@ -336,6 +314,9 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(prTemplateRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(prTemplateRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
   assert.equal(prTemplateRule.contains.includes('CHANGELOG.md'), true);
+  assert.equal(prTemplateRule.contains.includes('.github/prompts'), true);
+  assert.equal(prTemplateRule.contains.includes('.github/agents'), true);
+  assert.equal(prTemplateRule.contains.includes('.github/chatmodes'), true);
   assert.equal(prTemplateRule.contains.includes('负向测试'), true);
   assert.equal(copilotRule.contains.includes('AGENTS.md'), true);
   assert.equal(cursorRule.contains.includes('.comate/rules/code-style.md'), true);
@@ -443,6 +424,9 @@ test('AI 治理完整报告会报告未纳入治理清单的新 AI 资产', () =
     writeMinimalGovernanceFixture(rootDir);
     writeFixtureFile(rootDir, '.codex/notes.md', '临时 AI 协作笔记');
     writeFixtureFile(rootDir, '.github/instructions/review.instructions.md', '临时 Copilot 路径级指令');
+    writeFixtureFile(rootDir, '.github/prompts/review.prompt.md', '临时 Copilot prompt file');
+    writeFixtureFile(rootDir, '.github/agents/planner.agent.md', '临时 VS Code custom agent');
+    writeFixtureFile(rootDir, '.github/chatmodes/legacy.chatmode.md', '临时 VS Code chat mode');
     writeFixtureFile(rootDir, 'docs/AI-EXPERIMENT.md', '临时 AI 协作试验文档');
     writeFixtureFile(rootDir, 'rules/AI-EXPERIMENT.md', '临时 AI 规则文档');
 
@@ -450,7 +434,10 @@ test('AI 治理完整报告会报告未纳入治理清单的新 AI 资产', () =
 
     assert.deepEqual(report.missingFiles, [
       '.codex/notes.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.github/agents/planner.agent.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.github/chatmodes/legacy.chatmode.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       '.github/instructions/review.instructions.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.github/prompts/review.prompt.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       'docs/AI-EXPERIMENT.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       'rules/AI-EXPERIMENT.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
     ]);

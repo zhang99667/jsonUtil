@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { collectFilesRecursively } from './aiGovernanceAssetFileCollector.mjs';
+import { AI_GOVERNANCE_DISCOVERY_PATTERN_DIRS } from './aiGovernanceDiscoveryPatterns.mjs';
 
 const AI_GOVERNANCE_DISCOVERY_ROOT_FILES = [
   'AGENTS.md',
@@ -13,12 +14,6 @@ const AI_GOVERNANCE_DISCOVERY_DIRS = [
   '.claude',
   '.codex',
   '.comate',
-];
-
-const AI_GOVERNANCE_DISCOVERY_PATTERN_DIRS = [
-  { dir: '.github/instructions', pattern: /^\.github\/instructions\/.+\.instructions\.md$/ },
-  { dir: 'docs', pattern: /^docs\/AI-[^/]+\.md$/ },
-  { dir: 'rules', pattern: /^rules\/(?:AI|ai)-[^/]+\.md$/ },
 ];
 
 export const AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES = [

@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.716 (2026-07-08) - 决策账本入口加固
+### 🏗️ 架构与基础设施
+- **决策账本入口提升**: `docs/AI-CONFIG-INTEGRATION.md` 与 `docs/AI-TOOLS-SETUP.md` 将 `docs/AI-GOVERNANCE-DECISIONS.md` 提升为一等治理入口，避免后续维护者只看资产注册表而遗漏决策记录
+- **AI 文档引用门禁**: `aiGovernanceDocReferenceRules.mjs` 新增强制引用决策账本，并补充负向测试锁定两个 AI 索引文档的账本入口
+- **新型 AI 资产发现**: `check-ai-governance` 自动发现 `.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md` 与 `.github/chatmodes/**/*.chatmode.md`，防止 Copilot prompt files 和 VS Code custom agents 绕过资产注册表
+- **发现模式预算拆分**: 将 AI 协作资产目录/正则模式移入 `aiGovernanceDiscoveryPatterns.mjs`，让主发现器继续只负责文件收集、显式豁免和未治理资产报告
+- **资产发现测试拆分**: 新增 `aiGovernanceDiscoveredAssets.test.mjs` 承载发现器路径匹配与显式豁免负例，主治理测试只保留完整报告集成校验
+- **PR 人审入口补齐**: PR 模板的 AI 协作资产注释补齐 `.github/prompts`、`.github/agents` 与 `.github/chatmodes`，并由引用规则负例锁定
+
 ## v1.8.715 (2026-07-08) - AI 治理预算归位
 ### 🏗️ 架构与基础设施
 - **决策账本预算归位**: 将 `governanceAiDecisionMaintainabilityBudgets` 从注册表预算子表提升到 AI 治理预算入口，避免决策账本预算所有权继续依赖注册表预算链路
