@@ -75,7 +75,6 @@ export const useAppSourceInputCommands = ({
   }, [inputRef, onSetSourceText, onUpdateActiveFileContent]);
 
   return {
-    aiRepairSnapshotRef,
     aiRepairSummary,
     handleApplyAiRepairResult,
     handleCloseAiRepairSummary: clearAiRepairSummary,

@@ -6,6 +6,7 @@ import {
   GENERAL_SETTINGS_STORAGE_KEY,
   loadAIConfig,
   loadGeneralSettings,
+  normalizeAIConfig,
 } from '../utils/appSettings';
 import { safeSetStorageItem } from '../utils/storage';
 
@@ -25,7 +26,7 @@ export const useAppSettingsState = (): UseAppSettingsStateResult => {
   }, [generalSettings]);
 
   useEffect(() => {
-    safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(aiConfig));
+    safeSetStorageItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(normalizeAIConfig(aiConfig)));
   }, [aiConfig]);
 
   return {

@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppSettingsState } from './useAppSettingsState';
 import {
-  AI_CONFIG_STORAGE_KEY,
-  GENERAL_SETTINGS_STORAGE_KEY,
-  loadAIConfig,
-  loadGeneralSettings,
+  AI_CONFIG_STORAGE_KEY, GENERAL_SETTINGS_STORAGE_KEY,
+  loadAIConfig, loadGeneralSettings,
 } from '../utils/appSettings';
 import { safeSetStorageItem } from '../utils/storage';
 
@@ -37,6 +35,9 @@ vi.mock('../utils/storage', async importOriginal => ({
   safeSetStorageItem: vi.fn(),
 }));
 
+const expectStorageWrite = (key: string, value: unknown) =>
+  expect(safeSetStorageItem).toHaveBeenCalledWith(key, JSON.stringify(value));
+
 describe('useAppSettingsState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -44,9 +45,7 @@ describe('useAppSettingsState', () => {
     settingsMocks.loadAIConfig.mockReturnValue(settingsMocks.aiConfig);
     reactMocks.useEffect.mockImplementation((effect: () => void) => effect());
     reactMocks.useState.mockImplementation((initializer: unknown) => {
-      const value = typeof initializer === 'function'
-        ? (initializer as () => unknown)()
-        : initializer;
+      const value = typeof initializer === 'function' ? (initializer as () => unknown)() : initializer;
 
       return [value, vi.fn()];
     });
@@ -59,13 +58,27 @@ describe('useAppSettingsState', () => {
     expect(loadAIConfig).toHaveBeenCalledTimes(1);
     expect(state.generalSettings).toBe(settingsMocks.generalSettings);
     expect(state.aiConfig).toBe(settingsMocks.aiConfig);
-    expect(safeSetStorageItem).toHaveBeenCalledWith(
-      GENERAL_SETTINGS_STORAGE_KEY,
-      JSON.stringify(settingsMocks.generalSettings)
-    );
-    expect(safeSetStorageItem).toHaveBeenCalledWith(
-      AI_CONFIG_STORAGE_KEY,
-      JSON.stringify(settingsMocks.aiConfig)
-    );
+    expectStorageWrite(GENERAL_SETTINGS_STORAGE_KEY, settingsMocks.generalSettings);
+    expectStorageWrite(AI_CONFIG_STORAGE_KEY, settingsMocks.aiConfig);
+  });
+
+  it('持久化 AI 配置前会复用统一归一化逻辑', () => {
+    const dirtyAIConfig = {
+      provider: 'gemini',
+      apiKey: '  secret  ',
+      model: '  gemini-2.0-flash  ',
+      baseUrl: '  https://generativelanguage.googleapis.com  ',
+    };
+
+    settingsMocks.loadAIConfig.mockReturnValue(dirtyAIConfig);
+
+    useAppSettingsState();
+
+    expectStorageWrite(AI_CONFIG_STORAGE_KEY, {
+      provider: 'gemini',
+      apiKey: 'secret',
+      model: 'gemini-2.0-flash',
+      baseUrl: 'https://generativelanguage.googleapis.com',
+    });
   });
 });
