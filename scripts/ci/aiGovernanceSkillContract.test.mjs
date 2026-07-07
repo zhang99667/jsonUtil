@@ -204,3 +204,50 @@ test('AI 治理 skill 契约会报告不存在的验证脚本引用', () => {
     ]);
   });
 });
+
+test('AI 治理 skill 契约接受存在的 fenced npm run 脚本', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({
+      scripts: { build: 'vite build', test: 'vitest run' },
+    }));
+    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+      sectionBodies: {
+        ...completeSkillSectionBodies,
+        '## 常用验证命令': [
+          completeSkillSectionBodies['## 常用验证命令'],
+          '```bash',
+          'cd frontend',
+          'npm run build',
+          'npm run test -- src/utils/schemeUtils.test.ts',
+          '```',
+        ].join('\n'),
+      },
+    }));
+
+    assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), []);
+  });
+});
+
+test('AI 治理 skill 契约会报告不存在的 fenced npm run 脚本', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({
+      scripts: { build: 'vite build' },
+    }));
+    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+      sectionBodies: {
+        ...completeSkillSectionBodies,
+        '## 常用验证命令': [
+          completeSkillSectionBodies['## 常用验证命令'],
+          '```bash',
+          'cd frontend',
+          'npm run missing-script -- --strict',
+          '```',
+        ].join('\n'),
+      },
+    }));
+
+    assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
+      `${skillFile}: npm 脚本不存在 \`missing-script\``,
+    ]);
+  });
+});

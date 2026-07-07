@@ -10,6 +10,7 @@ export const governanceAiTestMaintainabilityBudgets = [
   governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceSources.test.mjs', 135, 'AI 治理资产注册表证据来源测试应独立维护来源反查和正向来源匹配'),
   governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistrySemanticEvidence.test.mjs', 65, 'AI 治理资产注册表语义证据测试应独立维护自动发现资产不能只靠发现规则的负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceDecisionLedger.test.mjs', 170, 'AI 治理决策账本测试应独立维护结构、路径、CI 覆盖和日期顺序负例'),
+  governanceAiTestBudget('scripts/ci/aiGovernanceExemptAssetContract.test.mjs', 55, 'AI 治理显式豁免契约测试应独立维护本机配置边界负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceMirroredEntryContract.test.mjs', 90, 'AI 治理同源入口契约测试应独立维护章节和共享片段漂移负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceReferenceRules.test.mjs', 220, 'AI 治理引用规则测试应独立维护入口、发布、安全和委派引用负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceSectionReferenceRules.test.mjs', 135, 'AI 治理章节引用规则测试应独立维护章节定位和代码块伪标题负例'),

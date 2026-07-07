@@ -50,3 +50,7 @@ export const collectUngovernedAiGovernanceAssets = (rootDir, governedFiles) => {
     .filter(file => !governedFileSet.has(file))
     .map(file => `${file}: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免`);
 };
+
+export const buildGovernedAiGovernanceAssetFiles = (requiredFiles, referenceRules) => (
+  [...new Set([...requiredFiles, ...referenceRules.map(rule => rule.file)])]
+);

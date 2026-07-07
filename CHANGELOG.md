@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.718 (2026-07-08) - AI 资产治理来源修正
+### 🏗️ 架构与基础设施
+- **引用规则治理来源**: `check-ai-governance` 的未治理资产报告同步认可 `referenceRules.file`，避免已接入引用规则的新增 AI 资产仍被误报为未纳入治理
+- **显式豁免内容契约**: 新增本机配置豁免检查，阻止 `.claude/settings.local.json` 等显式豁免文件承载共享 rules、skills 或治理命令
+- **Skill npm 命令可达性**: Codex skill 契约新增 fenced `npm run ...` 脚本反查，避免前端脚本重命名后 skill 里的验证命令继续静默失效
+
 ## v1.8.717 (2026-07-08) - AI 入口发现加固
 ### 🏗️ 架构与基础设施
 - **GitHub AI 入口清单单源化**: PR 模板引用规则复用 AI 资产发现中的自定义入口目录清单，补齐 `.github/instructions` 人审提醒并防止同类入口再次漏同步

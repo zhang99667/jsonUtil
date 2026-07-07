@@ -6,6 +6,7 @@ import {
   collectMissingAiGovernanceFiles,
   collectMissingAiGovernanceReferences,
 } from './aiGovernanceChecks.mjs';
+import { buildGovernedAiGovernanceAssetFiles } from './aiGovernanceDiscoveredAssets.mjs';
 import { buildAiGovernanceReport } from './aiGovernanceReport.mjs';
 import {
   buildAiGovernanceReferenceRules,
@@ -391,6 +392,16 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
     assert.equal(rule.contains.includes('frontend/package-lock.json'), true);
     assert.equal(rule.contains.includes('CHANGELOG.md'), true);
   });
+});
+
+test('AI 治理报告会把引用规则文件视为已治理资产', () => {
+  assert.deepEqual(
+    buildGovernedAiGovernanceAssetFiles(
+      ['AGENTS.md'],
+      [{ file: 'docs/AI-EXPERIMENT.md', contains: ['node scripts/ci/check-ai-governance.mjs'] }]
+    ),
+    ['AGENTS.md', 'docs/AI-EXPERIMENT.md']
+  );
 });
 
 test('AI 治理缺少项目级 Codex skill 时会报告', () => {
