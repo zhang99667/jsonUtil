@@ -3,6 +3,8 @@ import { SimpleEditor } from './SimpleEditor';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { TemplateFillFooterActions } from './TemplateFillFooterActions';
 import { TemplateFillPlaceholderForm } from './TemplateFillPlaceholderForm';
+import { TemplateFillPlaceholderSummary } from './TemplateFillPlaceholderSummary';
+import { TemplateFillQualityDeltaPanel } from './TemplateFillQualityDeltaPanel';
 import { validateJson } from '../utils/transformations';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { TEMPLATE_FILL_STORAGE_KEY, loadTemplateFillConfig } from '../utils/appSettings';
@@ -155,18 +157,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
         </div>
 
         {placeholderTemplateSummary && (
-          <div
-            data-tour="template-fill-placeholder-summary"
-            className="rounded border border-violet-800/40 bg-violet-950/25 px-2.5 py-1.5 text-xs text-violet-100"
-          >
-            回填模板: replacement {placeholderTemplateSummary.filled}/{placeholderTemplateSummary.total}
-            {placeholderTemplateSummary.suggested > 0 && (
-              <span> · 候选 {placeholderTemplateSummary.suggested}</span>
-            )}
-            {placeholderTemplateSummary.pending > 0 && (
-              <span> · 待补 {placeholderTemplateSummary.pending}</span>
-            )}
-          </div>
+          <TemplateFillPlaceholderSummary summary={placeholderTemplateSummary} />
         )}
 
         {placeholderTemplateDraft && (
@@ -208,27 +199,10 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
         )}
 
         {applyQualityDelta && (
-          <div
-            data-tour="template-fill-quality-delta"
-            className="rounded border border-emerald-800/40 bg-emerald-950/20 px-2.5 py-2 text-xs text-emerald-100"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="font-medium">最近回填质量变化</div>
-              <button
-                type="button"
-                data-tour="template-fill-copy-quality-delta"
-                onClick={handleCopyQualityDelta}
-                title="复制最近回填质量变化"
-                aria-label="复制质量对比，复制最近回填质量变化"
-                className="shrink-0 rounded border border-emerald-800/60 bg-editor-bg px-2 py-0.5 text-emerald-100 transition-colors hover:bg-emerald-900/30"
-              >
-                复制质量对比
-              </button>
-            </div>
-            <pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap font-mono text-[10px] leading-relaxed text-emerald-50/90">
-              {applyQualityDelta}
-            </pre>
-          </div>
+          <TemplateFillQualityDeltaPanel
+            qualityDelta={applyQualityDelta}
+            onCopy={handleCopyQualityDelta}
+          />
         )}
 
         {/* 操作提示 */}
