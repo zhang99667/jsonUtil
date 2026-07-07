@@ -60,6 +60,8 @@ const collectRowFailures = (rootDir, row, index) => {
     ...decisionLedgerReferences.extractNodeCommandPaths(row['锁定测试'])
       .filter(file => !fs.existsSync(path.join(rootDir, file)))
       .map(file => `${label} 锁定测试命令路径不存在 \`${file}\``),
+    ...regressionTestCommands.filter(file => !decisionLedgerReferences.isCiCoveredNodeRegressionTestPath(file))
+      .map(file => `${label} 锁定测试命令未纳入 CI 脚本单测集合 \`${file}\``),
   ];
 };
 

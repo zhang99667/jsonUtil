@@ -8,7 +8,7 @@ export const getBudgetRuleFiles = (rootDir) => fs
 
 export const getAiGovernanceBudgetRequiredFiles = (rootDir) => fs
   .readdirSync(path.join(rootDir, 'scripts/ci'))
-  .filter(file => (file === 'check-ai-governance.mjs' || file.startsWith('aiGovernance')) && !file.endsWith('.test.mjs'))
+  .filter(file => file === 'check-ai-governance.mjs' || file.startsWith('aiGovernance'))
   .map(file => `scripts/ci/${file}`);
 
 export const collectUntrackedBudgetRuleFailures = (rootDir, budgetedFiles) => (
