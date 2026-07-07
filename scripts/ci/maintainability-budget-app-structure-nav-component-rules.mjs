@@ -8,5 +8,6 @@ export const appStructureNavComponentMaintainabilityBudgets = [
   appStructureNavComponentBudget('frontend/src/components/JsonTreeSelectedNodeDetailsPanel.tsx', 220, '结构导航选中节点详情面板只维护节点摘要、语义提示、复制动作和表格预览装配'),
   appStructureNavComponentBudget('frontend/src/components/JsonTreeGraphPanel.tsx', 180, '结构导航图谱面板只维护 SVG 渲染、节点配色、边路径和图谱节点选择入口'),
   appStructureNavComponentBudget('frontend/src/components/JsonTreeNodeListPanel.tsx', 150, '结构导航列表组件只维护节点行渲染、展开态、选中态、搜索高亮和 PATH 复制入口'),
+  appStructureNavComponentBudget('frontend/src/components/JsonTreePanelFooter.tsx', 60, '结构导航底部状态栏只维护加载态、匹配数量、容器数量和截断摘要文案'),
   appStructureNavComponentBudget('frontend/src/components/JsonTreeArrayTablePreviewPanel.tsx', 120, '结构导航数组表格预览组件只维护表格摘要、列筛选、空列态和 JSON/CSV 复制入口'),
 ];
