@@ -2,7 +2,7 @@ const governanceAiTestBudget = (file, maxLines, reason) => ({ file, maxLines, re
 
 export const governanceAiTestMaintainabilityBudgets = [
   governanceAiTestBudget('scripts/ci/maintainability-budget-governance-ai-test-rules.mjs', 20, 'AI 治理测试预算规则应独立维护治理测试文件和本规则表自身预算'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistryTestFixtures.mjs', 45, 'AI 治理资产注册表测试 fixture 应独立维护临时目录和表格行构造，避免测试重复搭脚手架'),
+  governanceAiTestBudget('scripts/ci/aiGovernanceTestFixtures.mjs', 45, 'AI 治理测试 fixture 应独立维护临时目录和注册表表格构造，避免测试重复搭脚手架'),
   governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistry.test.mjs', 95, 'AI 治理资产注册表测试应独立维护登记结构必填和重复登记负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistryStaleEntries.test.mjs', 50, 'AI 治理资产注册表陈旧登记测试应独立维护已移除资产负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistryEvidence.test.mjs', 60, 'AI 治理资产注册表证据测试应独立维护证据认可和未知标记负例'),

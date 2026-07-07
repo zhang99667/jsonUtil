@@ -1,25 +1,8 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { test } from 'node:test';
 
 import { collectMissingAiGovernanceReferences } from './aiGovernanceChecks.mjs';
-
-const withTempRoot = (run) => {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-ai-governance-references-'));
-  try {
-    return run(rootDir);
-  } finally {
-    fs.rmSync(rootDir, { recursive: true, force: true });
-  }
-};
-
-const writeFixtureFile = (rootDir, file, content) => {
-  const filePath = path.join(rootDir, file);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, content);
-};
+import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const codexSkillFiles = ['.codex/skills/jsonutils-maintainer/SKILL.md'];
 const lines = values => values.join('\n');
@@ -163,7 +146,7 @@ const missingReferenceCases = [
 
 missingReferenceCases.forEach(({ name, file, content, contains, expected }) => {
   test(name, () => {
-    withTempRoot((rootDir) => {
+    withAiGovernanceTempRoot((rootDir) => {
       writeFixtureFile(rootDir, file, content);
 
       assert.deepEqual(collectMissingAiGovernanceReferences(

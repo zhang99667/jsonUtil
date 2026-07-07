@@ -1,26 +1,9 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { test } from 'node:test';
 
 import { collectCodexSkillContractFailures } from './aiGovernanceCodexSkillContract.mjs';
 import { discoverCodexSkillFiles } from './aiGovernanceChecks.mjs';
-
-const withTempRoot = (run) => {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-ai-skill-contract-'));
-  try {
-    return run(rootDir);
-  } finally {
-    fs.rmSync(rootDir, { recursive: true, force: true });
-  }
-};
-
-const writeFixtureFile = (rootDir, file, content) => {
-  const filePath = path.join(rootDir, file);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, content);
-};
+import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const buildSkillFixtureContent = ({
   frontmatter = [
@@ -78,7 +61,7 @@ const completeSkillSectionBodies = {
 const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
 
 test('AI 治理 skill 发现只收集技能目录下的 SKILL.md', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, 'skill');
     writeFixtureFile(rootDir, '.codex/skills/not-a-skill.txt', 'ignore');
 
@@ -87,7 +70,7 @@ test('AI 治理 skill 发现只收集技能目录下的 SKILL.md', () => {
 });
 
 test('AI 治理 skill 契约会报告缺失 frontmatter', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, [
       '# JSONUtils Maintainer',
       '## 必读文件',
@@ -107,7 +90,7 @@ test('AI 治理 skill 契约会报告缺失 frontmatter', () => {
 });
 
 test('AI 治理 skill 契约会报告缺失 frontmatter 字段', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
       frontmatter: 'name: jsonutils-maintainer',
       sectionBodies: completeSkillSectionBodies,
@@ -120,7 +103,7 @@ test('AI 治理 skill 契约会报告缺失 frontmatter 字段', () => {
 });
 
 test('AI 治理 skill 契约会报告 frontmatter name 与目录不一致', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
       frontmatter: [
         'name: stale-skill',
@@ -136,7 +119,7 @@ test('AI 治理 skill 契约会报告 frontmatter name 与目录不一致', () =
 });
 
 test('AI 治理 skill 契约会报告缺失核心章节', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
       sections: ['## 必读文件', '## 工作流', '## 重点边界'],
       sectionBodies: completeSkillSectionBodies,
@@ -149,7 +132,7 @@ test('AI 治理 skill 契约会报告缺失核心章节', () => {
 });
 
 test('AI 治理 skill 契约会忽略正文里的伪章节标题', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
       sections: ['## 必读文件', '## 常用验证命令', '## 重点边界'],
       sectionBodies: {
@@ -165,7 +148,7 @@ test('AI 治理 skill 契约会忽略正文里的伪章节标题', () => {
 });
 
 test('AI 治理 skill 契约会报告核心章节缺少关键内容', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
       sectionBodies: {
         ...completeSkillSectionBodies,
@@ -188,7 +171,7 @@ test('AI 治理 skill 契约会报告核心章节缺少关键内容', () => {
 });
 
 test('AI 治理 skill 契约会报告不存在的项目路径引用', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
       sectionBodies: {
         ...completeSkillSectionBodies,
@@ -203,7 +186,7 @@ test('AI 治理 skill 契约会报告不存在的项目路径引用', () => {
 });
 
 test('AI 治理 skill 契约会报告不存在的验证脚本引用', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
       sectionBodies: {
         ...completeSkillSectionBodies,

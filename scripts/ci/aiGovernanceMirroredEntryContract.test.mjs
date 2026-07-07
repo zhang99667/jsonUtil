@@ -1,7 +1,4 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { test } from 'node:test';
 
 import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
@@ -9,21 +6,7 @@ import {
   AI_ENTRY_SHARED_SNIPPET_FILES,
   AI_ENTRY_SHARED_SNIPPETS,
 } from './aiGovernanceSharedEntrySnippets.mjs';
-
-const withTempRoot = (run) => {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-ai-mirrored-entry-'));
-  try {
-    return run(rootDir);
-  } finally {
-    fs.rmSync(rootDir, { recursive: true, force: true });
-  }
-};
-
-const writeFixtureFile = (rootDir, file, content) => {
-  const filePath = path.join(rootDir, file);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, content);
-};
+import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const mirroredAgentSection = [
   '## AI 协作与子 Agent 委派',
@@ -43,7 +26,7 @@ const writeMirroredEntryFixture = (rootDir) => {
 };
 
 test('AI 治理同源入口检查会报告 AGENTS 与 CLAUDE 协作章节漂移', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeMirroredEntryFixture(rootDir);
     writeFixtureFile(rootDir, 'CLAUDE.md', mirroredAgentSection.replace('下一步建议：', ''));
 
@@ -54,7 +37,7 @@ test('AI 治理同源入口检查会报告 AGENTS 与 CLAUDE 协作章节漂移'
 });
 
 test('AI 治理同源入口检查会报告工具入口共享核心片段漂移', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeMirroredEntryFixture(rootDir);
     writeFixtureFile(rootDir, '.github/copilot-instructions.md', AI_ENTRY_SHARED_SNIPPETS.slice(1).join('\n'));
 
@@ -65,7 +48,7 @@ test('AI 治理同源入口检查会报告工具入口共享核心片段漂移',
 });
 
 test('AI 治理同源入口检查接受所有工具入口共享核心片段', () => {
-  withTempRoot((rootDir) => {
+  withAiGovernanceTempRoot((rootDir) => {
     writeMirroredEntryFixture(rootDir);
 
     assert.deepEqual(collectMirroredEntryContractFailures(rootDir), []);

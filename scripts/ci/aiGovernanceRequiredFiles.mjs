@@ -1,4 +1,6 @@
-export const AI_GOVERNANCE_ENTRY_FILES = [
+import { AI_ENTRY_SHARED_SNIPPET_FILES } from './aiGovernanceSharedEntrySnippets.mjs';
+
+const AI_GOVERNANCE_CORE_ENTRY_FILES = [
   'AGENTS.md',
   'CLAUDE.md',
   'rules/code-style.md',
@@ -7,14 +9,11 @@ export const AI_GOVERNANCE_ENTRY_FILES = [
   'docs/AI-CONFIG-INTEGRATION.md',
   'docs/AI-TOOLS-SETUP.md',
   'docs/AI-ASSET-REGISTRY.md',
-  '.github/copilot-instructions.md',
   '.github/PULL_REQUEST_TEMPLATE.md',
   '.claude/README.md',
-  '.claude/ai-tools-guide.md',
-  '.codex/README.md',
-  '.cursorrules',
-  '.comate/rules/code-style.md',
 ];
+
+export const AI_GOVERNANCE_ENTRY_FILES = [...AI_GOVERNANCE_CORE_ENTRY_FILES, ...AI_ENTRY_SHARED_SNIPPET_FILES];
 
 export const AI_GOVERNANCE_CHECK_FILES = [
   'scripts/ci/check-ai-governance.mjs',
