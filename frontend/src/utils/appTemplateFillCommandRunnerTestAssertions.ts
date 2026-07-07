@@ -1,57 +1,43 @@
 import { expect } from 'vitest';
-import {
-  getAppTemplateFillCommandRunnerMocks,
-  type AppTemplateFillCommandEffectsFixture,
-} from './appTemplateFillCommandRunnerTestFixture';
+import { getAppTemplateFillCommandRunnerMocks, type AppTemplateFillCommandEffectsFixture } from './appTemplateFillCommandRunnerTestFixture';
 
 const mocks = getAppTemplateFillCommandRunnerMocks();
 
-export const expectTemplateCommandQualityDeltaCleared = (
-  effects: AppTemplateFillCommandEffectsFixture
-) => {
+export const expectTemplateCommandQualityDeltaCleared = (effects: AppTemplateFillCommandEffectsFixture) => {
   expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('');
 };
 
-export const expectTemplateCommandSourceApplied = (
-  effects: AppTemplateFillCommandEffectsFixture,
-  value = '{"merged":true}'
-) => {
+export const expectTemplateCommandSourceApplied = (effects: AppTemplateFillCommandEffectsFixture, value = '{"merged":true}') => {
   expect(effects.onSetSourceText).toHaveBeenCalledWith(value);
   expect(effects.currentSourceText).toBe(value);
   expect(effects.onUpdateActiveFileContent).toHaveBeenCalledWith(value);
 };
 
-export const expectTemplateCommandSourceUntouched = (
-  effects: AppTemplateFillCommandEffectsFixture
-) => {
+export const expectTemplateCommandSourceUntouched = (effects: AppTemplateFillCommandEffectsFixture) => {
   expect(effects.onSetSourceText).not.toHaveBeenCalled();
   expect(effects.onUpdateActiveFileContent).not.toHaveBeenCalled();
 };
 
-export const expectTemplateCommandFailure = (
-  effects: AppTemplateFillCommandEffectsFixture,
-  message: string
-) => {
+export const expectTemplateCommandFailure = (effects: AppTemplateFillCommandEffectsFixture, message: string) => {
   expectTemplateCommandQualityDeltaCleared(effects);
   expect(effects.onShowError).toHaveBeenCalledWith(message);
 };
 
-export const expectSourceChangedTemplateBlocked = (
-  effects: AppTemplateFillCommandEffectsFixture
-) => {
+export const expectPlaceholderTemplateAppliedWithoutDelta = (effects: AppTemplateFillCommandEffectsFixture) => {
+  expectTemplateCommandQualityDeltaCleared(effects);
+  expectTemplateCommandSourceApplied(effects);
+  expect(effects.onShowError).not.toHaveBeenCalled();
+  expect(effects.onShowSuccess).toHaveBeenCalledWith('占位符已回填，质量对比暂不可用');
+};
+
+export const expectSourceChangedTemplateBlocked = (effects: AppTemplateFillCommandEffectsFixture) => {
   expect(mocks.applyTemplate).not.toHaveBeenCalled();
   expectTemplateCommandFailure(effects, '内容已变化，请重新应用模板');
 };
 
-export const expectPlaceholderQualityDeltaApplied = (
-  effects: AppTemplateFillCommandEffectsFixture,
-  summaryModule: never
-) => {
+export const expectPlaceholderQualityDeltaApplied = (effects: AppTemplateFillCommandEffectsFixture, summaryModule: never) => {
   expect(mocks.buildAppTemplateFillQualityDelta).toHaveBeenCalledWith(expect.objectContaining({
-    sourceBeforeApply: '{"a":1}',
-    sourceAfterApply: '{"merged":true}',
-    autoExpandScheme: true,
-    summaryModule,
+    sourceBeforeApply: '{"a":1}', sourceAfterApply: '{"merged":true}', autoExpandScheme: true, summaryModule,
   }));
   expect(effects.onSetTemplateApplyQualityDelta).toHaveBeenCalledWith('质量变化: +1');
 };
