@@ -1,241 +1,39 @@
-# JSONUtils 专业版 - Cursor AI 规则
+# JSONUtils Cursor AI 入口
 
-## 📖 完整规范文档
+本文件是 Cursor 的薄入口，完整规范以仓库主文档为准，避免多份 AI 规则长期漂移。
 
-**详细的编码规范请参考**: `rules/code-style.md`
+## 必读文件
 
-本文件提供快速参考和 Cursor AI 特定的配置。
+- `AGENTS.md`: Codex 和通用 coding agent 项目入口。
+- `CLAUDE.md`: Claude Code / Ducc 项目入口。
+- `rules/code-style.md`: 完整编码规范、提交规范、CHANGELOG 与 AI 规则资产要求。
+- `docs/AI-ENGINEERING-PLAYBOOK.md`: 跨 AI 工具共享的执行闭环。
+- `ARCHITECTURE.md`: 涉及前后端边界、部署和数据流时阅读。
+- `.comate/rules/code-style.md`: Comate 薄入口，需与本文件保持同源引用。
 
----
+## 执行闭环
 
-## 项目上下文
+- 先按 `rules/code-style.md` 和 `docs/AI-ENGINEERING-PLAYBOOK.md` 判断变更边界、验证方式和收尾检查。
+- 用户可见、准备上线或会触发前端构建的改动需要递增 `frontend/package.json`，同步 `frontend/package-lock.json`，更新 `CHANGELOG.md` 顶部版本区块，并运行 `node scripts/ci/check-version-consistency.mjs`。
+- 跨模块排查、复杂重构或多条验证链路并行时先做子 Agent 委派判断；委派任务说明读写范围、排除项、期望输出和未覆盖风险，主线程负责拆分边界、整合证据和最终验证；不可委派时收窄 `rg`、测试和日志输出。
+- AI 修复和外部模型能力必须坚持本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
+- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，再完成规则/skill 回写与治理校验。
 
-JSON 处理工具，包含前后端分离架构和 Electron 桌面应用。
-
-### 技术栈
-- **前端**: React 19 + TypeScript + Vite 6 + Tailwind CSS + Monaco Editor
-- **后端**: Spring Boot 3.x + Java 17 + MySQL
-- **桌面**: Electron
-- **AI**: Google Gemini API
-
-### 关键文档
-- `rules/code-style.md` - **完整编码规范** ⭐
-- `CLAUDE.md` - Claude Code/Ducc 项目指引
-- `ARCHITECTURE.md` - 详细架构说明
-
----
-
-## 快速规范参考
-
-### 代码风格要点
-
-**TypeScript/React**:
-- 函数组件 + Hooks
-- 避免 `any`，使用明确类型
-- 文件命名: 组件 PascalCase，工具 camelCase
-- 导入顺序: React → 第三方库 → 项目模块 → 样式
-
-**Java/Spring Boot**:
-- 分层架构: Controller → Service → Repository
-- RESTful API 设计
-- 统一响应格式
-
-**注释规范**:
-⚠️ **所有注释必须使用中文** (参考 `rules/code-style.md`)
-
-### Git 提交规范
-
-格式: `[类型]简短描述`
-
-类型标签:
-```
-[Feature]  - 新功能
-[FIXBUG]   - Bug 修复
-[Refactor] - 重构
-[Docs]     - 文档更新
-[Style]    - 样式/格式调整
-[Chore]    - 构建/工具/配置
-[LOG]      - 更新日志
-```
-
-示例:
-```bash
-git commit -m "[Feature]添加流量统计页面"
-git commit -m "[FIXBUG]修复预览同步问题"
-```
-
-⚠️ **重要**: 代码修改时必须同步更新 `CHANGELOG.md` (详见 `rules/code-style.md`)
-
----
-
-## 文件组织
-
-新增功能时的文件位置:
-```
-frontend/src/admin/pages/XxxPage.tsx        # 前端页面
-frontend/src/admin/services/xxx.ts          # API 服务
-backend/.../controller/XxxController.java   # 后端控制器
-backend/.../service/XxxService.java         # 业务逻辑
-backend/.../dto/response/XxxDTO.java        # 数据对象
-```
-
-Admin 路由配置位置: `frontend/src/admin/App.tsx` 中的 `items` 数组和 `renderContent` 函数
-
----
-
-## 错误处理
-
-**前端**: try-catch + Toast/Message 提示 + 控制台日志
-**后端**: 自定义异常 + 全局异常处理器 + 日志记录
-
----
-
-## 性能优化
-
-- React: `useMemo`/`useCallback`、代码分割、虚拟滚动
-- 数据库: 索引、分页、避免 N+1 查询
-- 打包: Tree-shaking、按需加载、资源压缩
-
----
-
-## 安全注意事项
-
-- API Key 使用环境变量，不提交到 Git
-- 用户输入进行转义，防止 XSS
-- 使用参数化查询，防止 SQL 注入
-- Spring Security + JWT 认证
-
----
-
-## 常用命令
+## 必跑治理命令
 
 ```bash
-# 前端开发
-cd frontend
-npm install
-npm run dev              # 启动开发服务器
-npm run build            # 生产构建
-npm run electron:dev     # Electron 开发模式
-
-# 后端开发
-cd backend
-mvn spring-boot:run      # 启动服务
-mvn clean package        # 打包
-
-# Docker
-docker-compose up -d               # 启动
-docker-compose down                # 停止
-docker-compose logs -f [service]   # 查看日志
+node scripts/ci/check-ai-governance.mjs
+node scripts/ci/check-maintainability-budgets.mjs
 ```
 
----
+发布、懒加载和静态资源相关改动还要按范围运行：
 
-## Cursor AI 特定配置
-
-### 代码补全优先级
-1. 遵循项目现有代码模式
-2. 参考 `rules/code-style.md` 中的规范
-3. 保持与周围代码风格一致
-
-### 重构建议
-- 优先建议符合项目架构的重构方案
-- 保持向后兼容性
-- 考虑性能影响
-
-### 注释生成
-- 自动生成中文注释
-- 包含参数和返回值说明
-- 解释复杂逻辑和边界条件
-
----
-
-## 最佳实践
-
-### 组件设计
-```typescript
-// ✅ 好的做法
-function Editor() {
-  return (
-    <div>
-      <Toolbar />
-      <CodeEditor />
-      <StatusBar />
-    </div>
-  );
-}
-
-// ❌ 不好的做法 - 单个组件过于复杂
-function MegaComponent() {
-  // 100+ 行代码...
-}
+```bash
+node scripts/ci/check-deploy-shell-syntax.mjs
+node scripts/ci/check-chunk-load-recovery-catches.mjs
+node scripts/ci/check-frontend-static-retention.mjs
+node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
+# 用户反馈旧 chunk URL 时追加: --extra-asset https://jsonutils.markz.fun/assets/xxx.js
 ```
 
-### API 调用
-```typescript
-// ✅ 好的做法
-try {
-  const result = await apiCall();
-  toast.success('操作成功');
-  return result;
-} catch (error) {
-  toast.error(error.message || '操作失败');
-  console.error('Error:', error);
-}
-```
-
-### Java 控制器
-```java
-// ✅ 好的做法
-@RestController
-@RequestMapping("/api/admin/xxx")
-@RequiredArgsConstructor
-public class XxxController {
-    private final XxxService xxxService;
-
-    @GetMapping
-    public ResponseEntity<?> getList() {
-        // 简洁的控制器逻辑
-        return ResponseEntity.ok(xxxService.getList());
-    }
-}
-```
-
----
-
-## 测试指南
-
-- 新功能添加测试用例
-- 修改功能确保现有测试通过
-- API 修改更新文档
-
----
-
-## 故障排查
-
-### Monaco Editor 问题
-- 加载慢: 使用 CDN + 按需加载
-- 大文件卡顿: 限制文件大小或虚拟滚动
-
-### AI 服务问题
-- API 调用失败: 检查 API Key、网络、配额
-
-### Electron 打包问题
-- 清理并重装依赖: `rm -rf node_modules && npm install`
-- 检查 Node.js 版本兼容性
-
----
-
-## 参考资源
-
-- [React 文档](https://react.dev/)
-- [TypeScript 手册](https://www.typescriptlang.org/docs/)
-- [Spring Boot 指南](https://spring.io/guides)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Ant Design](https://ant.design/)
-
----
-
-💡 **提示**:
-- 完整的编码规范请查看 `rules/code-style.md`
-- 项目架构详情请查看 `ARCHITECTURE.md`
-- AI 助手使用指引请查看 `CLAUDE.md`
+手动懒加载 `import()`、相关 catch 或 `dispatchChunkLoadRecoveryEvent` 改动必须保护旧 chunk 失效刷新恢复能力；部署脚本检查覆盖 `REMOTE_SCRIPT heredoc` 和 `.github/workflows/*.yml` 的 `workflow run`；公网资源巡检必须确认 JS/CSS `Content-Type`，防止缺失资源 fallback 成 HTML，并递归检查 CSS `url(...)` 与 CSS `@import` 链路。

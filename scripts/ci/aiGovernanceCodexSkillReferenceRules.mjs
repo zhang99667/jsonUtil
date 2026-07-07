@@ -1,12 +1,4 @@
-import {
-  DEPLOY_SHELL_SYNTAX_REFERENCES,
-  AI_EVOLUTION_LOOP_REFERENCES,
-  AI_SAFETY_BOUNDARY_REFERENCES,
-  CHUNK_LOAD_RECOVERY_CATCH_REFERENCES,
-  PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
-  SUBAGENT_DELEGATION_REFERENCES,
-  VERSION_CHANGELOG_REFERENCES,
-} from './aiGovernanceReferenceGroups.mjs';
+import { RUNTIME_GOVERNANCE_REFERENCES } from './aiGovernanceRuntimeReferenceGroups.mjs';
 
 export const buildCodexSkillReferenceRules = (codexSkillFiles) => (
   codexSkillFiles.map(file => ({
@@ -19,15 +11,8 @@ export const buildCodexSkillReferenceRules = (codexSkillFiles) => (
       'npm run typecheck',
       'npm run build',
       'npm run check:preloads',
-      ...SUBAGENT_DELEGATION_REFERENCES,
-      ...DEPLOY_SHELL_SYNTAX_REFERENCES,
-      ...CHUNK_LOAD_RECOVERY_CATCH_REFERENCES,
-      ...AI_SAFETY_BOUNDARY_REFERENCES,
-      ...AI_EVOLUTION_LOOP_REFERENCES,
-      ...VERSION_CHANGELOG_REFERENCES,
-      'node scripts/ci/check-frontend-static-retention.mjs',
+      ...RUNTIME_GOVERNANCE_REFERENCES,
       'node scripts/ci/check-maintainability-budgets.mjs',
-      ...PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
     ],
   }))
 );
