@@ -20,6 +20,8 @@ export const EVIDENCE_SOURCE_DESCRIPTORS = [
   ['skill 引用规则', 'referenceRuleFiles'],
 ];
 
+export const EVIDENCE_SOURCE_CONTEXT_KEYS = [...new Set(EVIDENCE_SOURCE_DESCRIPTORS.map(([, contextKey]) => contextKey))];
+
 const markersForContext = contextKey => EVIDENCE_SOURCE_DESCRIPTORS
   .filter(([, descriptorContextKey]) => descriptorContextKey === contextKey)
   .map(([marker]) => marker);

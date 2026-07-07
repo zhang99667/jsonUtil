@@ -1,10 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { CI_COMMAND_COLLECTORS } from './aiGovernanceCiCommandCollectors.mjs';
-
-const REQUIRED_AI_GOVERNANCE_CI_COMMANDS = ['node scripts/ci/check-version-consistency.mjs',
-  'node --test scripts/ci/*.test.mjs', 'node scripts/ci/check-ai-governance.mjs',
-  'node scripts/ci/check-maintainability-budgets.mjs'];
+import { REQUIRED_AI_GOVERNANCE_CI_COMMANDS } from './aiGovernanceCiCommandDescriptors.mjs';
 
 export const collectAiGovernanceCiContractFailures = (rootDir) => (
   Object.entries(CI_COMMAND_COLLECTORS).flatMap(([file, collectCommands]) => {

@@ -22,6 +22,12 @@ import {
   AI_ENTRY_SHARED_SNIPPETS,
 } from './aiGovernanceSharedEntrySnippets.mjs';
 import {
+  AI_GOVERNANCE_CI_COMMAND_FILES,
+  REQUIRED_AI_GOVERNANCE_CI_COMMANDS,
+  buildAiGovernanceCiWorkflowFixture,
+  buildAiGovernanceLocalCiFixture,
+} from './aiGovernanceCiCommandDescriptors.mjs';
+import {
   buildRegistryTableFixture,
   registryRow,
   withAiGovernanceTempRoot,
@@ -66,24 +72,10 @@ const mirroredAgentSection = [
   '- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，再按 Playbook 做规则/skill 回写，并运行 `node scripts/ci/check-ai-governance.mjs` 锁定关键引用和 skill 契约。',
 ].join('\n');
 
-const ciGovernanceWorkflow = [
-  'steps:',
-  '  - name: Version consistency',
-  '    run: node scripts/ci/check-version-consistency.mjs',
-  '  - name: Node script unit tests',
-  '    run: node --test scripts/ci/*.test.mjs',
-  '  - name: AI governance coverage',
-  '    run: node scripts/ci/check-ai-governance.mjs',
-  '  - name: Maintainability budgets',
-  '    run: node scripts/ci/check-maintainability-budgets.mjs',
-].join('\n');
-
-const ciGovernanceLocalCi = [
-  'run_in_root "Governance: version consistency" node scripts/ci/check-version-consistency.mjs',
-  'run_in_root "Governance: Node script unit tests" node --test scripts/ci/*.test.mjs',
-  'run_in_root "Governance: AI playbook and skill links" node scripts/ci/check-ai-governance.mjs',
-  'run_in_root "Governance: maintainability budgets" node scripts/ci/check-maintainability-budgets.mjs',
-].join('\n');
+const ciGovernanceWorkflow = buildAiGovernanceCiWorkflowFixture();
+const ciGovernanceLocalCi = buildAiGovernanceLocalCiFixture();
+const aiGovernanceCiCommand = REQUIRED_AI_GOVERNANCE_CI_COMMANDS
+  .find(command => command.includes('check-ai-governance.mjs'));
 
 const writeMinimalGovernanceFixture = (rootDir) => {
   const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
@@ -239,19 +231,11 @@ test('AI 治理资产发现会跳过显式豁免并报告未治理资产', () =>
 
 test('AI 治理 CI 契约会报告自动化入口缺少治理命令', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, '.github/workflows/ci.yml', [
-      'steps:',
-      '  - name: Version consistency',
-      '    run: node scripts/ci/check-version-consistency.mjs',
-      '  - name: Node script unit tests',
-      '    run: node --test scripts/ci/*.test.mjs',
-      '  - name: Maintainability budgets',
-      '    run: node scripts/ci/check-maintainability-budgets.mjs',
-    ].join('\n'));
+    writeFixtureFile(rootDir, '.github/workflows/ci.yml', buildAiGovernanceCiWorkflowFixture(aiGovernanceCiCommand));
     writeFixtureFile(rootDir, 'scripts/ci/local-ci.sh', ciGovernanceLocalCi);
 
     assert.deepEqual(collectAiGovernanceCiContractFailures(rootDir), [
-      '.github/workflows/ci.yml: 缺少 AI 治理自动化命令 "node scripts/ci/check-ai-governance.mjs"',
+      `.github/workflows/ci.yml: 缺少 AI 治理自动化命令 "${aiGovernanceCiCommand}"`,
     ]);
   });
 });
@@ -259,27 +243,19 @@ test('AI 治理 CI 契约会报告自动化入口缺少治理命令', () => {
 test('AI 治理 CI 契约不接受注释或 echo 里的治理命令', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.github/workflows/ci.yml', [
-      'steps:',
-      '  - name: Version consistency',
-      '    run: node scripts/ci/check-version-consistency.mjs',
-      '  - name: Node script unit tests',
-      '    run: node --test scripts/ci/*.test.mjs',
+      buildAiGovernanceCiWorkflowFixture(aiGovernanceCiCommand),
       '  - name: Fake AI governance',
-      '    run: echo "node scripts/ci/check-ai-governance.mjs"',
-      '  - name: Maintainability budgets',
-      '    run: node scripts/ci/check-maintainability-budgets.mjs',
+      `    run: echo "${aiGovernanceCiCommand}"`,
     ].join('\n'));
     writeFixtureFile(rootDir, 'scripts/ci/local-ci.sh', [
-      'run_in_root "Governance: version consistency" node scripts/ci/check-version-consistency.mjs',
-      'run_in_root "Governance: Node script unit tests" node --test scripts/ci/*.test.mjs',
-      '# run_in_root "Governance: AI" node scripts/ci/check-ai-governance.mjs',
-      'echo "node scripts/ci/check-ai-governance.mjs"',
-      'run_in_root "Governance: maintainability budgets" node scripts/ci/check-maintainability-budgets.mjs',
+      buildAiGovernanceLocalCiFixture(aiGovernanceCiCommand),
+      `# run_in_root "Governance: AI" ${aiGovernanceCiCommand}`,
+      `echo "${aiGovernanceCiCommand}"`,
     ].join('\n'));
 
     assert.deepEqual(collectAiGovernanceCiContractFailures(rootDir), [
-      '.github/workflows/ci.yml: 缺少 AI 治理自动化命令 "node scripts/ci/check-ai-governance.mjs"',
-      'scripts/ci/local-ci.sh: 缺少 AI 治理自动化命令 "node scripts/ci/check-ai-governance.mjs"',
+      `.github/workflows/ci.yml: 缺少 AI 治理自动化命令 "${aiGovernanceCiCommand}"`,
+      `scripts/ci/local-ci.sh: 缺少 AI 治理自动化命令 "${aiGovernanceCiCommand}"`,
     ]);
   });
 });
@@ -320,6 +296,7 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(requiredFiles.includes('.comate/rules/code-style.md'), true);
   assert.equal(requiredFiles.includes('scripts/ci/check-version-consistency.mjs'), true);
   assert.equal(requiredFiles.includes('scripts/ci/check-ai-governance.mjs'), true);
+  AI_GOVERNANCE_CI_COMMAND_FILES.forEach(file => assert.equal(requiredFiles.includes(file), true));
   assert.equal(skillRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   thinEntryRules.forEach((rule) => {
     assert.equal(rule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);

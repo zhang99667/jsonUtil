@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
+import { buildRegistryEvidenceContext, collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
+import { EVIDENCE_SOURCE_CONTEXT_KEYS } from './aiGovernanceAssetRegistryEvidenceMarkers.mjs';
 import {
   buildRegistryTableFixture,
   registryRow,
@@ -9,6 +10,14 @@ import {
   writeFixtureFile,
 } from './aiGovernanceTestFixtures.mjs';
 import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReferenceGroups.mjs';
+
+test('AI 治理资产注册表证据来源描述符都有 Set 上下文', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    const context = buildRegistryEvidenceContext(rootDir, ['AGENTS.md'], [{ file: 'AGENTS.md' }]);
+
+    assert.deepEqual(EVIDENCE_SOURCE_CONTEXT_KEYS.filter(key => !(context[key] instanceof Set)), []);
+  });
+});
 
 test('AI 治理资产注册表会报告治理证据缺少实际来源支持', () => {
   withAiGovernanceTempRoot((rootDir) => {

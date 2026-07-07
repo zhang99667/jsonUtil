@@ -1,4 +1,5 @@
 import { AI_GOVERNANCE_ASSET_REGISTRY_FILE } from './aiGovernanceAssetRegistryConstants.mjs';
+import { collectMissingEvidenceSourceContextKeys } from './aiGovernanceAssetRegistryEvidence.mjs';
 import { buildRegistryRowEvidenceFailures } from './aiGovernanceAssetRegistryRowEvidenceFailures.mjs';
 
 const buildDuplicateRegistryFailures = duplicateFiles => [...new Set(duplicateFiles)]
@@ -20,8 +21,15 @@ const buildMissingRegistryFailures = (registryRows, evidenceContext) => (
   })
 );
 
-export const buildAiGovernanceAssetRegistryFailures = ({ duplicateFiles, evidenceContext, registryRows }) => [
-  ...buildDuplicateRegistryFailures(duplicateFiles),
-  ...buildStaleRegistryFailures(registryRows, evidenceContext.expectedRegistryFiles),
-  ...buildMissingRegistryFailures(registryRows, evidenceContext),
-];
+const buildEvidenceSourceContextFailures = evidenceContext => collectMissingEvidenceSourceContextKeys(evidenceContext)
+  .map(contextKey => `${AI_GOVERNANCE_ASSET_REGISTRY_FILE}: AI 资产注册表证据来源集合缺少 \`${contextKey}\``);
+
+export const buildAiGovernanceAssetRegistryFailures = ({ duplicateFiles, evidenceContext, registryRows }) => {
+  const evidenceSourceContextFailures = buildEvidenceSourceContextFailures(evidenceContext);
+  return [
+    ...buildDuplicateRegistryFailures(duplicateFiles),
+    ...buildStaleRegistryFailures(registryRows, evidenceContext.expectedRegistryFiles),
+    ...evidenceSourceContextFailures,
+    ...(evidenceSourceContextFailures.length > 0 ? [] : buildMissingRegistryFailures(registryRows, evidenceContext)),
+  ];
+};

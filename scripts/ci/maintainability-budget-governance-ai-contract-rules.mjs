@@ -4,6 +4,7 @@ export const governanceAiContractMaintainabilityBudgets = [
   governanceAiContractBudget('scripts/ci/maintainability-budget-governance-ai-contract-rules.mjs', 20, 'AI 治理契约预算规则应独立维护 CI、同源入口、章节和 skill 契约子表'),
   governanceAiContractBudget('scripts/ci/aiGovernanceCiContract.mjs', 25, 'AI 治理 CI 契约检查应只维护必需治理命令和自动化入口比对'),
   governanceAiContractBudget('scripts/ci/aiGovernanceCiCommandCollectors.mjs', 25, 'AI 治理 CI 命令收集器应独立维护 GitHub Actions run 块和本地 CI run_in_root 抽取'),
+  governanceAiContractBudget('scripts/ci/aiGovernanceCiCommandDescriptors.mjs', 45, 'AI 治理 CI 命令描述符应单源维护必跑命令和自动化入口测试夹具标签'),
   governanceAiContractBudget('scripts/ci/aiGovernanceMirroredEntryContracts.mjs', 75, 'AI 治理同源入口契约应独立维护镜像章节和共享片段漂移检查'),
   governanceAiContractBudget('scripts/ci/aiGovernanceSharedEntrySnippets.mjs', 20, 'AI 治理工具入口共享片段应独立维护跨工具核心规则和覆盖文件清单'),
   governanceAiContractBudget('scripts/ci/aiGovernanceSectionReferences.mjs', 50, 'AI 治理章节引用检查应独立维护 Markdown 章节抽取和章节内关键词校验'),
