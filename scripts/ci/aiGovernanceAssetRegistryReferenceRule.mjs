@@ -4,6 +4,7 @@ export const AI_GOVERNANCE_ASSET_REGISTRY_REFERENCE_RULE = {
     'AGENTS.md',
     'CLAUDE.md',
     'docs/AI-ENGINEERING-PLAYBOOK.md',
+    'docs/AI-GOVERNANCE-DECISIONS.md',
     '.codex/skills/jsonutils-maintainer/SKILL.md',
     'scripts/ci/check-ai-governance.mjs',
     'scripts/ci/aiGovernanceAssetRegistryEvidence.mjs',

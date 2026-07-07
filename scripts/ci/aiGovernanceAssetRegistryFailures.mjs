@@ -1,5 +1,5 @@
 import { AI_GOVERNANCE_ASSET_REGISTRY_FILE } from './aiGovernanceAssetRegistryConstants.mjs';
-import { collectUnsupportedGovernanceEvidence, hasRecognizedGovernanceEvidence } from './aiGovernanceAssetRegistryEvidence.mjs';
+import { collectUnknownGovernanceEvidenceMarkers, collectUnsupportedGovernanceEvidence, hasRecognizedGovernanceEvidence } from './aiGovernanceAssetRegistryEvidence.mjs';
 
 const buildDuplicateRegistryFailures = duplicateFiles => [...new Set(duplicateFiles)]
   .map(file => `${AI_GOVERNANCE_ASSET_REGISTRY_FILE}: AI 资产登记 \`${file}\` 重复`);
@@ -21,6 +21,8 @@ const buildMissingRegistryFailures = (registryRows, evidenceContext) => (
     if (!hasRecognizedGovernanceEvidence(row.evidence)) {
       return [`${AI_GOVERNANCE_ASSET_REGISTRY_FILE}: AI 资产登记 \`${file}\` 治理证据未命中认可标记`];
     }
+    const unknownMarkers = collectUnknownGovernanceEvidenceMarkers(row.evidence);
+    if (unknownMarkers.length > 0) return unknownMarkers.map(marker => `${AI_GOVERNANCE_ASSET_REGISTRY_FILE}: AI 资产登记 \`${file}\` 治理证据包含未认可标记 \`${marker}\``);
     return collectUnsupportedGovernanceEvidence(file, row.evidence, evidenceContext)
       .map(marker => `${AI_GOVERNANCE_ASSET_REGISTRY_FILE}: AI 资产登记 \`${file}\` 治理证据 \`${marker}\` 缺少实际来源支持`);
   })

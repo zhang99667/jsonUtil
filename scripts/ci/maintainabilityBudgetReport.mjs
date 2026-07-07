@@ -25,6 +25,17 @@ const isNearLimitUsage = ({ lineCount, maxLines }) => {
     lineCount / maxLines >= NEAR_LIMIT_USAGE_RATIO;
 };
 
+const collectDuplicateBudgetFailures = (budgets) => {
+  const seenFiles = new Set();
+  return budgets.flatMap(({ file }) => {
+    if (!seenFiles.has(file)) {
+      seenFiles.add(file);
+      return [];
+    }
+    return [`${file}: 可维护性预算重复登记`];
+  });
+};
+
 export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {}) => {
   const failures = [];
   const summaries = [];
@@ -32,6 +43,7 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
   const nearLimitUsages = [];
   const budgetedFiles = new Set(budgets.map(budget => budget.file));
 
+  failures.push(...collectDuplicateBudgetFailures(budgets));
   failures.push(...collectUntrackedBudgetRuleFailures(rootDir, budgetedFiles));
 
   for (const budget of budgets) {

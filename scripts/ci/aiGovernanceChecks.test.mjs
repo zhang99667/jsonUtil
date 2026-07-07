@@ -21,6 +21,7 @@ import {
   discoverAiGovernanceAssetFiles,
 } from './aiGovernanceDiscoveredAssets.mjs';
 import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
+import { collectAiGovernanceDecisionLedgerFailures } from './aiGovernanceDecisionLedger.mjs';
 import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
 
 const withTempRoot = (run) => {
@@ -83,6 +84,22 @@ const buildRegistryFixtureContent = files => [
   buildRegistryTableFixture(files.map(file => registryRow(file))),
 ].join('\n');
 
+const buildDecisionLedgerFixtureContent = ({
+  date = '2026-07-07',
+  decision = '沉淀治理决策',
+  trigger = '重复踩坑',
+  counterexample = '只写关键词',
+  boundary = 'AI rules 和治理脚本',
+  backfill = '`docs/AI-ASSET-REGISTRY.md`',
+  tests = '`node scripts/ci/check-ai-governance.mjs`',
+} = {}) => [
+  '# AI 治理决策记录',
+  '',
+  '| 日期 | 决策 | 触发条件 | 反例 | 适用边界 | 回写追踪 | 锁定测试 |',
+  '| --- | --- | --- | --- | --- | --- | --- |',
+  `| ${date} | ${decision} | ${trigger} | ${counterexample} | ${boundary} | ${backfill} | ${tests} |`,
+].join('\n');
+
 const completeSkillSectionBodies = {
   '## 必读文件': [
     'AGENTS.md',
@@ -119,14 +136,14 @@ const mirroredAgentSection = [
   '- 跨模块排查、影响面分析、复杂重构或多条验证链路并行时，先判断是否需要子 Agent 委派；委派任务说明读写范围、排除项、期望输出和未覆盖风险，只读调查交给 explorer，限定写入交给 worker，构建/测试复核交给 verifier。',
   '- 主线程负责拆分边界、保护上下文、整合证据和最终验证；子 Agent 输出使用 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`固定模板，不回传大段中间日志。',
   '- 如果当前工具不可委派，主线程应收窄 `rg`、测试和日志输出，继续按 `docs/AI-ENGINEERING-PLAYBOOK.md` 完成本地闭环。',
-  '- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，留下决策记录、回写追踪和锁定测试，再按 Playbook 做规则/skill 回写，并运行 `node scripts/ci/check-ai-governance.mjs` 锁定关键引用和 skill 契约。',
+  '- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，再按 Playbook 做规则/skill 回写，并运行 `node scripts/ci/check-ai-governance.mjs` 锁定关键引用和 skill 契约。',
 ].join('\n');
 
 const toolEntrySharedSnippets = [
   '- 用户可见、准备上线或会触发前端构建的改动需要递增 `frontend/package.json`，同步 `frontend/package-lock.json`，更新 `CHANGELOG.md` 顶部版本区块，并运行 `node scripts/ci/check-version-consistency.mjs`。',
   '- 跨模块排查、复杂重构或多条验证链路并行时先做子 Agent 委派判断；委派任务说明读写范围、排除项、期望输出和未覆盖风险，子 Agent 输出使用 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`固定模板，主线程负责拆分边界、整合证据和最终验证；不可委派时收窄 `rg`、测试和日志输出。',
   '- AI 修复和外部模型能力必须坚持本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。',
-  '- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，留下决策记录、回写追踪和锁定测试，再完成规则/skill 回写与治理校验。',
+  '- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，再完成规则/skill 回写与治理校验。',
 ];
 
 const writeMinimalGovernanceFixture = (rootDir) => {
@@ -142,6 +159,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '.github/copilot-instructions.md',
     'rules/code-style.md',
     'docs/AI-ENGINEERING-PLAYBOOK.md',
+    'docs/AI-GOVERNANCE-DECISIONS.md',
     'docs/AI-CONFIG-INTEGRATION.md',
     'docs/AI-TOOLS-SETUP.md',
     'docs/AI-ASSET-REGISTRY.md',
@@ -218,6 +236,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'CLAUDE.md',
     'rules/code-style.md',
     'docs/AI-ENGINEERING-PLAYBOOK.md',
+    'docs/AI-GOVERNANCE-DECISIONS.md',
     'docs/AI-CONFIG-INTEGRATION.md',
     'docs/AI-TOOLS-SETUP.md',
     'docs/AI-ASSET-REGISTRY.md',
@@ -252,6 +271,10 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '### 5. 规则进化闭环',
     sharedReferences,
   ].join('\n'));
+  writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+    backfill: '`docs/AI-ASSET-REGISTRY.md`, `scripts/ci/check-ai-governance.mjs`',
+    tests: '`node scripts/ci/check-ai-governance.mjs`',
+  }));
   writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
     sharedReferences,
     buildRegistryFixtureContent(governanceFixtureFiles),
@@ -760,6 +783,62 @@ test('AI 治理资产发现会跳过显式豁免并报告未治理资产', () =>
   });
 });
 
+test('AI 治理决策账本会报告缺少结构化表格', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', [
+      '# AI 治理决策记录',
+      '| 日期 | 决策 |',
+      '| --- | --- |',
+      '| 2026-07-07 | 不完整记录 |',
+    ].join('\n'));
+
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
+      'docs/AI-GOVERNANCE-DECISIONS.md: 缺少决策记录表格',
+    ]);
+  });
+});
+
+test('AI 治理决策账本会报告缺少回写路径和锁定测试命令', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      backfill: '只写自然语言',
+      tests: '人工看过',
+    }));
+
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 回写追踪必须包含反引号路径',
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 锁定测试必须包含可执行命令',
+    ]);
+  });
+});
+
+test('AI 治理决策账本会报告不存在的回写路径', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'check');
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      backfill: '`docs/AI-MISSING.md`',
+    }));
+
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 回写追踪路径不存在 `docs/AI-MISSING.md`',
+    ]);
+  });
+});
+
+test('AI 治理决策账本会报告不存在的锁定测试命令路径', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      tests: '`node scripts/ci/missing-check.mjs`',
+    }));
+
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 锁定测试命令路径不存在 `scripts/ci/missing-check.mjs`',
+    ]);
+  });
+});
+
 test('AI 治理资产注册表会报告缺少表格登记的必需文件和显式豁免', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'AGENTS.md', '入口');
@@ -862,6 +941,24 @@ test('AI 治理资产注册表会报告治理证据未命中认可标记', () =>
 
     assert.deepEqual(failures, [
       'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `AGENTS.md` 治理证据未命中认可标记',
+    ]);
+  });
+});
+
+test('AI 治理资产注册表会报告混入的未认可治理证据标记', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', buildRegistryTableFixture([
+      registryRow('AGENTS.md', { evidence: '必需文件、人工看过', type: '项目入口' }),
+      registryRow('docs/AI-ASSET-REGISTRY.md', { type: '资产账本' }),
+    ]));
+
+    const failures = collectAiGovernanceAssetRegistryFailures(rootDir, [
+      'AGENTS.md',
+      'docs/AI-ASSET-REGISTRY.md',
+    ]);
+
+    assert.deepEqual(failures, [
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `AGENTS.md` 治理证据包含未认可标记 `人工看过`',
     ]);
   });
 });
@@ -1015,6 +1112,7 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   const claudeReadmeRule = referenceRules.find(rule => rule.file === '.claude/README.md');
   const claudeRule = referenceRules.find(rule => rule.file === '.claude/ai-tools-guide.md');
   const codexRule = referenceRules.find(rule => rule.file === '.codex/README.md');
+  const aiDecisionRule = referenceRules.find(rule => rule.file === 'docs/AI-GOVERNANCE-DECISIONS.md');
   const aiConfigRule = referenceRules.find(rule => rule.file === 'docs/AI-CONFIG-INTEGRATION.md');
   const aiToolsRule = referenceRules.find(rule => rule.file === 'docs/AI-TOOLS-SETUP.md');
   const aiRegistryRule = referenceRules.find(rule => rule.file === 'docs/AI-ASSET-REGISTRY.md');
@@ -1031,6 +1129,7 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(requiredFiles.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-TOOLS-SETUP.md'), true);
+  assert.equal(requiredFiles.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(requiredFiles.includes('.github/copilot-instructions.md'), true);
   assert.equal(requiredFiles.includes('.github/PULL_REQUEST_TEMPLATE.md'), true);
@@ -1054,6 +1153,9 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(codexRule.contains.includes('.claude/ai-tools-guide.md'), true);
   assert.equal(codexRule.contains.includes('skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(codexRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(aiDecisionRule.contains.includes('回写追踪'), true);
+  assert.equal(aiDecisionRule.contains.includes('锁定测试'), true);
+  assert.equal(aiDecisionRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiConfigRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(aiConfigRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(aiConfigRule.contains.includes('显式豁免'), true);
@@ -1061,6 +1163,7 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(aiToolsRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(aiToolsRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiRegistryRule.contains.includes('scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(aiRegistryRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
   assert.equal(aiRegistryRule.contains.includes('scripts/ci/aiGovernanceAssetRegistryEvidence.mjs'), true);
   assert.equal(aiRegistryRule.contains.includes('referenceRules.file'), true);
   assert.equal(aiRegistryRule.contains.includes('显式豁免'), true);

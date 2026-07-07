@@ -3,7 +3,6 @@ import { governanceAiMaintainabilityBudgets } from './maintainability-budget-gov
 const checkerBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceCheckerMaintainabilityBudgets = [
-  checkerBudget('scripts/ci/maintainability-budget-governance-ai-rules.mjs', 35, 'AI 治理预算子表应独立维护治理 CLI、检查器和引用组预算'),
   ...governanceAiMaintainabilityBudgets,
   checkerBudget('scripts/ci/check-chunk-load-recovery-catches.mjs', 35, 'chunk 恢复 catch 检查 CLI 应只负责报告输出，AST 扫描逻辑放在独立 helper'),
   checkerBudget('scripts/ci/chunkLoadRecoveryCatchAudit.mjs', 170, 'chunk 恢复 catch AST 检查应只维护动态 import 识别和 dispatch 缺失报告'),
