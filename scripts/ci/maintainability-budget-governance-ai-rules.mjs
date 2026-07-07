@@ -1,9 +1,12 @@
+import { governanceAiRegistryMaintainabilityBudgets } from './maintainability-budget-governance-ai-registry-rules.mjs';
+
 const governanceAiBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiMaintainabilityBudgets = [
   governanceAiBudget('scripts/ci/check-ai-governance.mjs', 45, 'AI 治理检查 CLI 应只负责执行报告和输出错误，规则与收集逻辑放在独立模块'),
   governanceAiBudget('scripts/ci/aiGovernanceChecks.mjs', 65, 'AI 治理缺失收集应只负责文件内容检查，report 组装和规则构造放在独立模块'),
   governanceAiBudget('scripts/ci/aiGovernanceReport.mjs', 45, 'AI 治理报告组装应独立维护 required files、引用规则和各类失败列表汇总'),
+  ...governanceAiRegistryMaintainabilityBudgets,
   governanceAiBudget('scripts/ci/aiGovernanceDiscoveredAssets.mjs', 70, 'AI 治理资产发现应独立维护助手入口目录扫描、显式豁免和未治理资产报告'),
   governanceAiBudget('scripts/ci/aiGovernanceMirroredEntryContracts.mjs', 75, 'AI 治理同源入口契约应独立维护镜像章节和共享片段漂移检查'),
   governanceAiBudget('scripts/ci/aiGovernanceSectionReferences.mjs', 50, 'AI 治理章节引用检查应独立维护 Markdown 章节抽取和章节内关键词校验'),
@@ -12,6 +15,8 @@ export const governanceAiMaintainabilityBudgets = [
   governanceAiBudget('scripts/ci/aiGovernanceRules.mjs', 75, 'AI 治理引用规则入口应只负责组合文档入口和 skill 引用规则'),
   governanceAiBudget('scripts/ci/aiGovernanceEntryReferenceRules.mjs', 60, 'AI 治理入口文档引用规则应集中维护入口、Playbook、README 和工具说明的关键引用'),
   governanceAiBudget('scripts/ci/aiGovernanceDocReferenceRules.mjs', 35, 'AI 治理 docs/AI 文档引用规则应独立维护历史说明与当前治理入口的关键引用'),
+  governanceAiBudget('scripts/ci/aiGovernanceAssetRegistryReferenceRule.mjs', 20, 'AI 治理资产注册表引用规则应独立维护账本自身的关键引用'),
+  governanceAiBudget('scripts/ci/aiGovernancePullRequestTemplateReferenceRule.mjs', 15, 'AI 治理 PR 模板引用规则应独立维护人工审计 checklist 的关键项'),
   governanceAiBudget('scripts/ci/aiGovernanceClaudeReadmeReferenceRule.mjs', 20, 'AI 治理 Claude 目录 README 引用规则应独立维护目录索引的最小治理入口'),
   governanceAiBudget('scripts/ci/aiGovernancePlaybookSectionRules.mjs', 25, 'AI 治理 Playbook 章节引用规则应独立维护章节标题和章节内关键词映射'),
   governanceAiBudget('scripts/ci/aiGovernanceToolEntryReferenceRules.mjs', 30, 'AI 治理工具薄入口引用规则应独立维护 Cursor 和 Comate 的同源入口契约'),

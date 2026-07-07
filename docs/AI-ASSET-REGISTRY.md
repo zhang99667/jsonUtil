@@ -1,0 +1,72 @@
+# AI 协作资产注册表
+
+本文是 AI 协作资产的人工账本。`node scripts/ci/check-ai-governance.mjs` 会校验必需文件、自动发现资产和已存在的显式豁免文件是否都在本文登记，避免 rules、skills、工具入口或本机配置边界变成无人维护的隐性资产。
+
+## 登记规则
+
+- 协作资产必须说明职责、权威来源和验证方式。
+- 每个资产路径必须以反引号写在 `资产 | 类型 | 维护契约 | 治理证据` 表格的 `资产` 列中，且 `类型`、`维护契约` 和 `治理证据` 不可为空；正文里随手提到路径或放进其它表格不算登记。
+- 同一个资产只能登记一次；重复登记会让维护责任和豁免边界变得含糊。
+- 表格里登记的资产必须属于必需文件、自动发现资产或已存在的显式豁免文件；删除或移出治理面的资产要同步移除登记，避免留下陈旧账本。
+- 工具入口保持薄入口，权威规则优先沉淀到 `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`。
+- 本机私有配置只允许作为显式豁免登记，不承载项目级规则、skills 或验证流程。
+- 新增 `.claude/`、`.codex/`、`.comate/`、`.github/instructions/**/*.instructions.md`、`docs/AI-*.md` 或 `rules/ai-*.md` 资产时，先更新本文，再补治理规则或豁免说明。
+
+## 责任与状态约定
+
+- 维护责任: 项目维护者负责最终判断；AI 助手修改资产时必须同步本注册表、CHANGELOG 和匹配的治理测试。
+- 状态分类: 协作资产、工具薄入口、可迁移技能、治理门禁、显式豁免。没有状态说明的 AI 相关文件不应进入长期维护面。
+- 治理证据: 每个资产至少需要被必需文件、引用规则、自动发现规则、负向测试或显式豁免之一覆盖；核心入口优先同时具备自动检查和人工 PR checklist。
+- 豁免边界: 显式豁免只说明为什么不承载共享规则，不等于允许长期配置漂移。
+
+## 协作入口与权威规则
+
+| 资产 | 类型 | 维护契约 | 治理证据 |
+| --- | --- | --- | --- |
+| `AGENTS.md` | 项目入口 | Codex 和通用 coding agent 入口，AI 协作章节与 `CLAUDE.md` 保持同源 | 必需文件、入口引用规则、同源章节漂移检查 |
+| `CLAUDE.md` | 项目入口 | Claude Code / Ducc 入口，AI 协作章节与 `AGENTS.md` 保持同源 | 必需文件、入口引用规则、同源章节漂移检查 |
+| `rules/code-style.md` | 权威规则 | 编码规范、提交规范、CHANGELOG 和 AI 资产治理规则来源 | 必需文件、入口引用规则、版本一致性检查引用 |
+| `docs/AI-ENGINEERING-PLAYBOOK.md` | 权威流程 | 子 Agent 委派、验证矩阵、规则进化和治理校验闭环 | 必需文件、入口引用规则、章节级引用检查 |
+| `docs/AI-CONFIG-INTEGRATION.md` | 分层说明 | 说明入口、rules、skills、本机配置和显式豁免关系 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-TOOLS-SETUP.md` | 工具索引 | 说明各 AI 工具入口、同步边界和必跑检查 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-ASSET-REGISTRY.md` | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
+| `.github/PULL_REQUEST_TEMPLATE.md` | 人工门禁 | 要求 PR 说明 AI 资产注册表、治理校验、负向测试和显式豁免处理 | 必需文件、PR 模板引用规则 |
+
+## 工具入口与可迁移技能
+
+| 资产 | 类型 | 维护契约 | 治理证据 |
+| --- | --- | --- | --- |
+| `.claude/README.md` | 目录索引 | 说明 Claude 配置目录边界，必须指向 Playbook 和治理命令 | 必需文件、Claude README 引用规则、自动发现规则 |
+| `.claude/ai-tools-guide.md` | 工具说明 | 说明 Claude、Codex、Copilot、Cursor、Comate 如何复用同一套规范 | 必需文件、入口引用规则、自动发现规则 |
+| `.codex/README.md` | 目录索引 | 说明 Codex 项目资产边界和旧 chunk / 部署验证入口 | 必需文件、入口引用规则、自动发现规则 |
+| `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 保留 frontmatter、必读文件、工作流、常用验证命令和重点边界 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
+| `.github/copilot-instructions.md` | 工具薄入口 | GitHub Copilot 仓库级 instructions，转发到主规范、Playbook 和 skill | 必需文件、工具入口引用规则、自动发现规则 |
+| `.cursorrules` | 工具薄入口 | Cursor 入口，与 `.comate/rules/code-style.md` 保持共享核心片段 | 必需文件、工具入口引用规则、同源片段漂移检查 |
+| `.comate/rules/code-style.md` | 工具薄入口 | Comate 入口，与 `.cursorrules` 保持共享核心片段 | 必需文件、工具入口引用规则、同源片段漂移检查 |
+
+## 本机配置与显式豁免
+
+| 资产 | 类型 | 维护契约 | 治理证据 |
+| --- | --- | --- | --- |
+| `.claude/.gitignore` | 显式豁免 | 只维护本机配置目录的忽略规则，不承载协作规范 | 显式豁免列表、资产注册表结构化校验 |
+| `.claude/settings.local.json` | 显式豁免 | 本机私有配置，不承载项目级 rules、skills 或验证流程 | 显式豁免列表、资产注册表结构化校验 |
+
+## 治理门禁
+
+| 资产 | 类型 | 维护契约 | 治理证据 |
+| --- | --- | --- | --- |
+| `scripts/ci/check-ai-governance.mjs` | AI 治理入口 | 聚合文件存在、引用规则、同源入口、skill 契约和资产注册表检查 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/check-version-consistency.mjs` | 发布门禁 | 校验前端版本、锁文件和 CHANGELOG 顶部版本区块 | 必需文件、运行时引用规则、可维护性预算 |
+| `scripts/ci/check-maintainability-budgets.mjs` | 可维护性门禁 | 校验模块行数预算，防止治理脚本继续堆成大文件 | 必需文件、运行时引用规则、可维护性预算 |
+| `scripts/ci/check-deploy-shell-syntax.mjs` | 部署门禁 | 校验部署 shell、workflow run 和 REMOTE_SCRIPT heredoc 语法 | 必需文件、发布引用规则、可维护性预算 |
+| `scripts/ci/check-chunk-load-recovery-catches.mjs` | 运行时门禁 | 校验手动懒加载 catch 和 `dispatchChunkLoadRecoveryEvent` 恢复能力 | 必需文件、运行时引用规则、可维护性预算 |
+| `scripts/ci/check-frontend-static-retention.mjs` | 静态资源门禁 | 校验前端发布保留近期旧 hash 资产 | 必需文件、发布引用规则、可维护性预算 |
+| `scripts/ci/check-production-frontend-assets.mjs` | 公网巡检 | 校验 JS/CSS `Content-Type`、CSS `url(...)`、CSS `@import` 和 fallback 成 HTML 风险 | 必需文件、发布引用规则、可维护性预算 |
+
+## 更新流程
+
+1. 新增 AI 入口、rules、skills、`docs/AI-*.md` 或 `rules/ai-*.md` 时，先判断它是协作资产、本机私有配置还是临时实验。
+2. 协作资产写入上方对应表格，并纳入必需文件、引用规则或自动发现规则。
+3. 本机私有配置写入显式豁免表格，并说明为什么不能承载共享规则。
+4. 补负向测试，证明漏登记、漏引用或错误豁免会被 `check-ai-governance` 拦住。
+5. 运行 `node scripts/ci/check-ai-governance.mjs`、`node scripts/ci/check-maintainability-budgets.mjs` 和 `git diff --check`。

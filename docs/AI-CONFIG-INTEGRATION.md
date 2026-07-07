@@ -9,7 +9,7 @@ AI 协作资产按职责分为四层：
 | 层级 | 代表文件 | 职责 |
 | --- | --- | --- |
 | 项目入口 | `AGENTS.md`、`CLAUDE.md` | 让 AI 助手快速理解项目结构、技术栈、常见任务和协作边界 |
-| 权威规范 | `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md` | 维护编码规范、验证闭环、规则/skill 回写和收尾门禁 |
+| 权威规范 | `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md`、`docs/AI-ASSET-REGISTRY.md` | 维护编码规范、验证闭环、规则/skill 回写、资产账本和收尾门禁 |
 | 工具入口 | `.claude/ai-tools-guide.md`、`.codex/README.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.comate/rules/code-style.md` | 针对不同 AI 工具提供薄入口，转发到权威规范 |
 | 可迁移技能 | `.codex/skills/jsonutils-maintainer/SKILL.md` | 将项目维护流程封装为可复用 skill，方便 Codex 在类似任务中稳定触发 |
 
@@ -22,6 +22,8 @@ AI 协作资产按职责分为四层：
 `docs/AI-ENGINEERING-PLAYBOOK.md` 是 AI 工程闭环的权威来源。涉及子 Agent 委派、验证命令、规则进化、skill 回写、治理校验和显式豁免时，以该文件为准。
 
 `.codex/skills/jsonutils-maintainer/SKILL.md` 是 Codex 项目维护技能模板。它不替代 Playbook，而是把必读文件、工作流、常用验证命令和重点边界压缩成可迁移入口。
+
+`docs/AI-ASSET-REGISTRY.md` 是 AI 协作资产账本。新增入口、rules、skills、治理门禁或显式豁免文件时，先在注册表登记职责和维护契约，再补自动发现、必需文件或引用规则。
 
 `.claude/ai-tools-guide.md` 是跨工具说明。它面向 Claude Code、Ducc、Codex、GitHub Copilot、Cursor、Comate 等工具说明如何进入同一套规范。
 
@@ -48,6 +50,7 @@ node scripts/ci/check-maintainability-budgets.mjs
 - 入口文档是否引用权威规范和关键验证命令。
 - AGENTS/CLAUDE、Cursor/Comate 这类同源入口是否漂移。
 - `.codex/skills/*/SKILL.md` 是否保留可迁移契约。
+- 必需文件、自动发现资产和显式豁免文件是否登记到 `docs/AI-ASSET-REGISTRY.md`。
 - `.claude/`、`.codex/`、`.comate/`、`.github/instructions/**/*.instructions.md`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增资产是否进入治理清单、引用规则或显式豁免。
 
 ## 维护流程
@@ -55,7 +58,7 @@ node scripts/ci/check-maintainability-budgets.mjs
 新增 AI 工具或入口时：
 
 1. 先判断它是协作资产、本机私有配置，还是一次性说明。
-2. 协作资产进入必需文件清单和引用规则。
+2. 协作资产先登记到 `docs/AI-ASSET-REGISTRY.md`，再进入必需文件清单和引用规则。
 3. 本机私有配置进入显式豁免，并在文档里说明边界。
 4. 可复用经验写入 Playbook 或 skill，再同步薄入口。
 5. 补治理脚本或负向测试，让后续漂移被 CI 拦住。

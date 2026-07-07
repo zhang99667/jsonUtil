@@ -134,6 +134,15 @@ GitHub Copilot 使用仓库级 instructions 薄入口，继续转发到 `AGENTS.
 - 必跑治理命令
 - 防漂移清单
 
+### docs/AI-ASSET-REGISTRY.md
+**目标用户**: 维护 AI 协作资产、治理门禁和显式豁免边界的开发者与 AI 助手
+
+**内容包括**:
+- 关键 AI 协作入口和权威规则
+- 工具薄入口和可迁移 skill
+- 本机私有配置的显式豁免理由
+- 治理门禁和更新流程
+
 ## 使用建议
 
 ### 对于 AI 助手
@@ -227,6 +236,7 @@ GitHub Copilot 使用仓库级 instructions 薄入口，继续转发到 `AGENTS.
 - [ARCHITECTURE.md](../ARCHITECTURE.md) - 详细架构说明
 - [AI 配置整合说明](../docs/AI-CONFIG-INTEGRATION.md) - AI 入口、rules、skills 和显式豁免关系
 - [AI 工具配置状态](../docs/AI-TOOLS-SETUP.md) - 当前 AI 工具入口和防漂移清单
+- [AI 协作资产注册表](../docs/AI-ASSET-REGISTRY.md) - AI 资产账本、治理门禁和显式豁免登记
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - 贡献指南
 - [CHANGELOG.md](../CHANGELOG.md) - 版本历史
 

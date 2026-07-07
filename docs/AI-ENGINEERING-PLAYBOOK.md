@@ -106,9 +106,11 @@
 - `.github/copilot-instructions.md`: GitHub Copilot 仓库级薄入口，必须转发到主规范、Playbook 和治理命令。
 - `docs/AI-CONFIG-INTEGRATION.md`: AI 入口和规范分层说明。
 - `docs/AI-TOOLS-SETUP.md`: AI 工具配置状态和维护清单。
+- `docs/AI-ASSET-REGISTRY.md`: AI 协作资产、治理门禁和显式豁免文件的可审计账本。
 - `docs/AI-ENGINEERING-PLAYBOOK.md`: 跨 AI 工具共享的执行闭环。
 
 新增 AI 工具或流程时，优先更新本文件和 `.claude/ai-tools-guide.md`，避免同一规则散落在多个地方。
 修改 AI 入口、Playbook 或 skill 后，运行 `node scripts/ci/check-ai-governance.mjs` 确认关键引用没有断链。
 新增或调整 `.codex/skills/*/SKILL.md` 时，同一条治理校验还会检查 skill frontmatter 和核心章节契约。
+新增、移动或显式豁免 AI 协作资产时，还必须更新 `docs/AI-ASSET-REGISTRY.md`，让资产职责、维护契约和豁免边界可被人工审计。
 新增 `.claude/`、`.codex/`、`.comate/` 下的 AI 协作资产，或新增 `.github/instructions/**/*.instructions.md`、`docs/AI-*.md`、`rules/ai-*.md` 协作文档时，同一条治理校验还会检查它是否已纳入必需文件、引用规则或显式豁免。

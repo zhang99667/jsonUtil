@@ -4,6 +4,7 @@ export const AI_GOVERNANCE_DOC_REFERENCE_RULES = [
     contains: [
       'rules/code-style.md',
       'docs/AI-ENGINEERING-PLAYBOOK.md',
+      'docs/AI-ASSET-REGISTRY.md',
       '.claude/ai-tools-guide.md',
       '.codex/skills/jsonutils-maintainer/SKILL.md',
       'node scripts/ci/check-ai-governance.mjs',
@@ -17,6 +18,7 @@ export const AI_GOVERNANCE_DOC_REFERENCE_RULES = [
       'CLAUDE.md',
       '.claude/README.md',
       '.codex/README.md',
+      'docs/AI-ASSET-REGISTRY.md',
       '.cursorrules',
       '.comate/rules/code-style.md',
       'docs/AI-CONFIG-INTEGRATION.md',
