@@ -22,7 +22,8 @@ description: JSONUtils 项目维护技能。用于优化性能、重构可维护
 4. 明确成功标准：性能预算、解析 corpus、类型检查、构建门禁或交互测试。
 5. 做最小可验证改动，不做无关大重构。
 6. 用户可见或准备上线的改动先递增 patch 版本并在 `CHANGELOG.md` 顶部新开版本区块，避免一个版本堆积几十条提交。
-7. 运行匹配范围的验证命令，并在最终回复中说明结果。
+7. 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，完成复盘沉淀，并把稳定经验做规则/skill 回写。
+8. 运行匹配范围的验证命令，并在最终回复中说明结果。
 
 ## 常用验证命令
 
@@ -61,4 +62,5 @@ mvn test
 - 前端 Docker/Compose/Nginx 发布改动要保护旧 hash assets，并用公网资源巡检校验 JS/CSS `Content-Type`、CSS `url(...)` 二级资源和 CSS `@import` 链路，避免长时间打开页面后懒加载 chunk 404 或缺失 chunk fallback 成 HTML。
 - 部署 shell、GitHub shell helper、本地 CI 入口或 `.github/workflows/*.yml` 的 `workflow run` 块改动后先跑 `node scripts/ci/check-deploy-shell-syntax.mjs`，避免外层脚本、内联 run 和 `REMOTE_SCRIPT heredoc` 远端片段语法错误进入上线链路。
 - 大输入处理优先走 worker、采样、预算和降级提示。
-- AI 修复能力必须明确本地规则优先、用户手动触发、敏感内容不外泄。
+- AI 修复能力必须明确本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
+- AI 协作规则自身也要可进化：新增或修正流程后同步 Playbook、入口文档和本 skill，并通过 `node scripts/ci/check-ai-governance.mjs` 做治理校验，避免只靠人工记忆传递。

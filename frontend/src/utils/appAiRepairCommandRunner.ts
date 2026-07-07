@@ -1,5 +1,6 @@
 import { ActionType, TransformMode } from '../types';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
+import { isAbortError } from './errors';
 import {
   buildAppAiRepairApplyResult,
   getAppAiRepairErrorFeedback,
@@ -28,22 +29,33 @@ export const runAppAiRepairCommand = async (
     return;
   }
 
+  if (input.signal?.aborted) {
+    effects.onTrackToolEvent(ActionType.AI_FIX, 'ai', 'cancelled', input.startedAt);
+    return;
+  }
+
   effects.onSetRepairing(true);
   try {
     const { fixJsonWithRepairDetails, buildAiRepairSummary } = await effects.onLoadRuntime();
-    const repairResult = await fixJsonWithRepairDetails(input.sourceText, input.aiConfig);
+    const repairResult = await fixJsonWithRepairDetails(input.sourceText, input.aiConfig, {
+      signal: input.signal,
+    });
     const applyResult = buildAppAiRepairApplyResult({
       sourceText: input.sourceText,
       repairResult,
       buildAiRepairSummary,
     });
 
-    input.aiRepairSnapshotRef.current = applyResult.fixedJson;
     effects.onApplyFixedJson(applyResult.fixedJson, applyResult.summary);
     effects.onSetMode(TransformMode.FORMAT);
     effects.onShowSuccess(applyResult.successMessage);
     effects.onTrackToolEvent(ActionType.AI_FIX, 'ai', 'success', input.startedAt);
   } catch (error) {
+    if (isAppAiRepairCancelled(input.signal, error)) {
+      effects.onTrackToolEvent(ActionType.AI_FIX, 'ai', 'cancelled', input.startedAt);
+      return;
+    }
+
     if (dispatchChunkLoadRecoveryEvent(error)) {
       effects.onTrackToolEvent(ActionType.AI_FIX, 'ai', 'error', input.startedAt);
       return;
@@ -57,3 +69,7 @@ export const runAppAiRepairCommand = async (
     effects.onSetRepairing(false);
   }
 };
+
+const isAppAiRepairCancelled = (signal: AbortSignal | undefined, error: unknown): boolean => (
+  signal?.aborted === true || isAbortError(error)
+);

@@ -20,19 +20,19 @@ export type AppAiRepairSummaryBuilder = (
 ) => AiRepairSummary;
 
 export interface AppAiRepairRuntime {
-  fixJsonWithRepairDetails: (sourceText: string, aiConfig: AIConfig) => Promise<FixJsonResult>;
+  fixJsonWithRepairDetails: (
+    sourceText: string,
+    aiConfig: AIConfig,
+    options?: { signal?: AbortSignal },
+  ) => Promise<FixJsonResult>;
   buildAiRepairSummary: AppAiRepairSummaryBuilder;
-}
-
-export interface AppAiRepairSnapshotRef {
-  current: string | null;
 }
 
 export interface RunAppAiRepairCommandInput {
   sourceText: string;
   aiConfig: AIConfig;
-  aiRepairSnapshotRef: AppAiRepairSnapshotRef;
   startedAt: number;
+  signal?: AbortSignal;
 }
 
 export interface RunAppAiRepairCommandEffects {

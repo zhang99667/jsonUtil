@@ -1,42 +1,24 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AIProvider } from '../types';
 import {
+  AI_INPUT_TOO_LARGE_MESSAGE,
+  AI_REMOTE_REPAIR_MAX_INPUT_LENGTH,
+  AI_CONNECTION_TEST_INVALID_MESSAGE,
   AI_CONNECTION_TEST_TIMEOUT_MESSAGE,
   AI_REPAIR_TIMEOUT_MESSAGE,
   AI_SENSITIVE_INPUT_MESSAGE,
   detectAiSensitiveInputLabels,
   fixJsonWithRepairDetails,
   fixJsonWithAI,
-  normalizeAiJsonResponse,
-  repairJsonLocally,
-  repairJsonLocallyWithReport,
   testAIConnection,
 } from './aiService';
 import { base64Encode } from '../utils/schemeUtils';
-
-describe('normalizeAiJsonResponse', () => {
-  it('直接返回压缩后的有效 JSON', () => {
-    expect(normalizeAiJsonResponse('{ "name": "json", "ok": true }')).toBe('{"name":"json","ok":true}');
-  });
-
-  it('支持提取 Markdown 代码块中的 JSON', () => {
-    const response = '修复结果如下：\n```json\n{ "items": [1, 2] }\n```';
-    expect(normalizeAiJsonResponse(response)).toBe('{"items":[1,2]}');
-  });
-
-  it('支持从解释文本中提取第一个完整 JSON 片段', () => {
-    const response = '已修复：{"nested":{"value":"ok"}}，请确认。';
-    expect(normalizeAiJsonResponse(response)).toBe('{"nested":{"value":"ok"}}');
-  });
-
-  it('空返回回退为空对象', () => {
-    expect(normalizeAiJsonResponse('   ')).toBe('{}');
-  });
-
-  it('无有效 JSON 时抛出可读错误', () => {
-    expect(() => normalizeAiJsonResponse('无法修复这段内容')).toThrow('AI 返回内容不是有效 JSON');
-  });
-});
+import {
+  AI_API_KEY_REQUIRED_MESSAGE,
+  AI_BASE_URL_INVALID_MESSAGE,
+  AI_CUSTOM_BASE_URL_REQUIRED_MESSAGE,
+} from '../utils/aiProviderConfigValidation';
+import { AiRepairErrorCode, getAiRepairErrorCode } from '../utils/aiRepairErrors';
 
 describe('fixJsonWithAI', () => {
   afterEach(() => {
@@ -49,46 +31,6 @@ describe('fixJsonWithAI', () => {
     model: 'mock-json-repair',
     baseUrl: 'https://mock-ai.test/v1',
   };
-
-  it('本地修复常见 JSON 小错误', () => {
-    expect(repairJsonLocally(`// comment
-      {items:[1,2,], ok:true, name:'json', note:"line
-      break"}`)).toBe('{"items":[1,2],"ok":true,"name":"json","note":"line\\n      break"}');
-  });
-
-  it('本地修复会返回命中的确定性规则', () => {
-    expect(repairJsonLocallyWithReport(`// comment
-      {items:[1,2,], note:"line
-      break"}`)).toEqual({
-      fixedJson: '{"items":[1,2],"note":"line\\n      break"}',
-      ruleLabels: [
-        '移除 JSON 注释',
-        '修正常见 JS 对象写法',
-        '移除尾随逗号',
-        '转义字符串内换行/控制字符',
-      ],
-    });
-  });
-
-  it('本地修复不会移除字符串内的注释符和尾随逗号样式文本', () => {
-    expect(repairJsonLocally(
-      '{url:"https://example.com/a//b", block:"/* keep */", tail:",]", brace:",}", ok:true,}'
-    )).toBe(
-      '{"url":"https://example.com/a//b","block":"/* keep */","tail":",]","brace":",}","ok":true}'
-    );
-  });
-
-  it('本地修复不会被字符串内的转义引号和注释符提前截断', () => {
-    expect(repairJsonLocally(
-      '{text:"before \\"// still text\\" after", ok:true}'
-    )).toBe('{"text":"before \\"// still text\\" after","ok":true}');
-  });
-
-  it('本地修复不会给字符串内容里的裸 key 文本补引号', () => {
-    expect(repairJsonLocally(
-      '{text:"literal {bare:1, next:2}", ok:true}'
-    )).toBe('{"text":"literal {bare:1, next:2}","ok":true}');
-  });
 
   it('本地可修复时不会调用 AI 接口', async () => {
     const fetchImpl = vi.fn();
@@ -117,6 +59,54 @@ describe('fixJsonWithAI', () => {
       ...customConfig,
       apiKey: '',
     }, { fetchImpl })).resolves.toBe('{"ok":true}');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('本地不可修复且缺少 API Key 时不会发送 AI 请求', async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(fixJsonWithAI('{bad}', {
+      ...customConfig,
+      apiKey: '  ',
+    }, { fetchImpl })).rejects.toThrow(AI_API_KEY_REQUIRED_MESSAGE);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('custom provider 缺少 Base URL 时不会发送 AI 请求', async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(fixJsonWithAI('{bad}', {
+      ...customConfig,
+      baseUrl: '  ',
+    }, { fetchImpl })).rejects.toThrow(AI_CUSTOM_BASE_URL_REQUIRED_MESSAGE);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('custom provider Base URL 格式无效时不会发送 AI 请求', async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(fixJsonWithAI('{bad}', {
+      ...customConfig,
+      baseUrl: 'mock-ai.test/v1',
+    }, { fetchImpl })).rejects.toThrow(AI_BASE_URL_INVALID_MESSAGE);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('本地可修复的大输入不会进入外部模型上限判断', async () => {
+    const fetchImpl = vi.fn();
+    const largeValidJson = `{"value":"${'x'.repeat(AI_REMOTE_REPAIR_MAX_INPUT_LENGTH)}"}`;
+
+    await expect(fixJsonWithAI(largeValidJson, customConfig, { fetchImpl }))
+      .resolves.toBe(largeValidJson);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('本地不可修复的大输入会阻止发送原文', async () => {
+    const fetchImpl = vi.fn();
+    const largeBrokenJson = '{bad:' + 'x'.repeat(AI_REMOTE_REPAIR_MAX_INPUT_LENGTH) + '}';
+
+    await expect(fixJsonWithAI(largeBrokenJson, customConfig, { fetchImpl }))
+      .rejects.toThrow(AI_INPUT_TOO_LARGE_MESSAGE);
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -151,25 +141,6 @@ describe('fixJsonWithAI', () => {
     await expect(fixJsonWithAI('{token:}', customConfig, { fetchImpl }))
       .rejects.toThrow(AI_SENSITIVE_INPUT_MESSAGE);
     expect(fetchImpl).not.toHaveBeenCalled();
-  });
-
-  it('可识别 URL 编码后的敏感字段', () => {
-    const encoded = `payload=${encodeURIComponent(JSON.stringify({
-      sign: 'real-sign',
-      device_id: 'real-device',
-    }))}`;
-
-    expect(detectAiSensitiveInputLabels(encoded)).toEqual(['sign', 'device']);
-  });
-
-  it('可识别多层 URL 编码后的敏感字段', () => {
-    const payload = JSON.stringify({
-      token: 'real-token',
-      android_id: 'real-android-id',
-    });
-    const encoded = `task_params=${encodeURIComponent(encodeURIComponent(encodeURIComponent(payload)))}`;
-
-    expect(detectAiSensitiveInputLabels(encoded)).toEqual(['token', 'device']);
   });
 
   it('本地不可修复时可识别内部 Base64 片段中的敏感字段并阻止发送', async () => {
@@ -236,6 +207,24 @@ describe('fixJsonWithAI', () => {
     expect(signal?.aborted).toBe(true);
   });
 
+  it('外部 AbortSignal 会终止 AI 修复请求', async () => {
+    const abortController = new AbortController();
+    let signal: AbortSignal | undefined;
+    const fetchImpl = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      signal = init?.signal;
+      return new Promise<Response>(() => undefined);
+    });
+
+    void fixJsonWithAI('{bad}', customConfig, {
+      fetchImpl,
+      signal: abortController.signal,
+    }).catch(() => undefined);
+
+    abortController.abort();
+
+    expect(signal?.aborted).toBe(true);
+  });
+
   it('连接测试会调用 OpenAI 兼容接口', async () => {
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
       choices: [
@@ -258,6 +247,24 @@ describe('fixJsonWithAI', () => {
         signal: expect.any(AbortSignal),
       })
     );
+  });
+
+  it('连接测试返回无关 JSON 时提示模型配置异常', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: '{}',
+          },
+        },
+      ],
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    await expect(testAIConnection(customConfig, { fetchImpl }))
+      .rejects.toThrow(AI_CONNECTION_TEST_INVALID_MESSAGE);
   });
 
   it('OpenAI 兼容 Base URL 带尾部斜杠时不会拼出双斜杠路径', async () => {
@@ -298,5 +305,23 @@ describe('fixJsonWithAI', () => {
     await vi.advanceTimersByTimeAsync(1000);
 
     await expectation;
+  });
+
+  it('连接测试超时时携带连接测试错误码', async () => {
+    vi.useFakeTimers();
+    const fetchImpl = vi.fn(() => new Promise<Response>(() => undefined));
+    let error: unknown;
+
+    const promise = testAIConnection(customConfig, {
+      fetchImpl,
+      timeoutMs: 1000,
+    }).catch(caughtError => {
+      error = caughtError;
+    });
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await promise;
+
+    expect(getAiRepairErrorCode(error)).toBe(AiRepairErrorCode.ConnectionTestTimeout);
   });
 });

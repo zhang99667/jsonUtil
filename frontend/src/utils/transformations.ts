@@ -228,25 +228,24 @@ const isJsonContainerValue = (value: JsonValue): boolean => (
   typeof value === 'object' && value !== null
 );
 
-const isRootUrlEncodedJsonInput = (input: string): boolean => {
+const getDecodedRootUrlEncodedInput = (input: string): string | null => {
   const trimmed = input.trim();
-  if (!trimmed || detectSchemeType(trimmed) !== 'url-encoded') return false;
+  if (!trimmed || detectSchemeType(trimmed) !== 'url-encoded') return null;
 
   const decoded = urlDecode(trimmed);
-  if (decoded === trimmed) return false;
+  return decoded === trimmed ? null : decoded;
+};
 
+const isRootUrlEncodedJsonInput = (input: string): boolean => {
+  const decoded = getDecodedRootUrlEncodedInput(input);
+  if (!decoded) return false;
   const parsed = parseJsonInput(decoded);
   return parsed ? isJsonContainerValue(parsed.value) : false;
 };
 
 const isRootUrlEncodedSchemeInput = (input: string): boolean => {
-  const trimmed = input.trim();
-  if (!trimmed || detectSchemeType(trimmed) !== 'url-encoded') return false;
-
-  const decoded = urlDecode(trimmed);
-  if (decoded === trimmed) return false;
-
-  return ROOT_SCHEME_TYPES.has(detectSchemeType(decoded));
+  const decoded = getDecodedRootUrlEncodedInput(input);
+  return decoded ? ROOT_SCHEME_TYPES.has(detectSchemeType(decoded)) : false;
 };
 
 export const getStandaloneDeepFormatInputKind = (value: string): StandaloneDeepFormatInputKind | null => {
@@ -267,6 +266,18 @@ export const isStandaloneDeepFormatInput = (value: string): boolean => (
 const wrapJsonContent = (content: string, wrapper: JsonInputWrapper): string => (
   `${wrapper.prefix}${content}${wrapper.suffix}`
 );
+
+const stringifyJsonOrLinesInput = (
+  input: string,
+  stringifyJson: (value: JsonValue) => string,
+  stringifyJsonLinesValue: (records: JsonValue[]) => string
+): string => {
+  const parsed = parseJsonInput(input);
+  if (parsed) return stringifyJson(parsed.value);
+
+  const jsonLines = parseJsonLines(input);
+  return jsonLines ? stringifyJsonLinesValue(jsonLines) : input;
+};
 
 export const validateJson = (input: string): ValidationResult => {
   if (typeof input !== 'string' || !input.trim()) return { isValid: true };
@@ -328,19 +339,11 @@ export const detectLanguage = (input: string): string => {
 };
 
 // 核心转换逻辑
-const formatJson = (input: string): string => {
-  try {
-    const parsed = parseJsonInput(input);
-    if (parsed) return JSON.stringify(parsed.value, null, 2);
-
-    throw new Error('未找到可格式化的 JSON 内容');
-  } catch (e) {
-    const jsonLines = parseJsonLines(input);
-    if (jsonLines) return JSON.stringify(jsonLines, null, 2);
-
-    return input;
-  }
-};
+const formatJson = (input: string): string => stringifyJsonOrLinesInput(
+  input,
+  value => JSON.stringify(value, null, 2),
+  records => JSON.stringify(records, null, 2)
+);
 
 const inverseFormattedJson = (output: string, originalInput?: string): string => {
   const originalWrappedJson = originalInput ? parseWrappedJsonInput(originalInput) : null;
@@ -374,19 +377,11 @@ const deepFormatJson = (input: string): string => {
   }
 };
 
-const minifyJson = (input: string): string => {
-  try {
-    const parsed = parseJsonInput(input);
-    if (parsed) return JSON.stringify(parsed.value);
-
-    throw new Error('未找到可压缩的 JSON 内容');
-  } catch (e) {
-    const jsonLines = parseJsonLines(input);
-    if (jsonLines) return stringifyJsonLines(jsonLines);
-
-    return input;
-  }
-};
+const minifyJson = (input: string): string => stringifyJsonOrLinesInput(
+  input,
+  value => JSON.stringify(value),
+  stringifyJsonLines
+);
 
 export const performTransformAsync = async (input: string, mode: TransformMode): Promise<string> => {
   if (mode !== TransformMode.JSON_TO_TYPESCRIPT) {
@@ -646,6 +641,26 @@ export function deepParseWithContext(
     });
   };
 
+  const addStringDecodeWarning = (
+    type: 'string_decode_skipped' | 'string_decode_budget_exceeded',
+    path: string,
+    value: string,
+    message: string,
+    limit: number,
+    sourceLabel?: string
+  ) => {
+    context.warnings = context.warnings || [];
+    context.warnings.push({
+      type,
+      path,
+      sourceLabel,
+      originalValue: value,
+      message,
+      length: value.length,
+      limit,
+    });
+  };
+
     const processValue = (
       value: JsonValue,
       currentPath: string,
@@ -656,31 +671,27 @@ export function deepParseWithContext(
 
       if (typeof value === 'string') {
         if (value.length > maxStringDecodeLength) {
-          context.warnings = context.warnings || [];
-          context.warnings.push({
-            type: 'string_decode_skipped',
-            path: currentPath,
-            sourceLabel,
-            originalValue: value,
-            message: '字符串过长，已跳过递归展开以保护性能',
-            length: value.length,
-            limit: maxStringDecodeLength,
-          });
+          addStringDecodeWarning(
+            'string_decode_skipped',
+            currentPath,
+            value,
+            '字符串过长，已跳过递归展开以保护性能',
+            maxStringDecodeLength,
+            sourceLabel
+          );
           return value;
         }
 
         totalStringDecodeLength += value.length;
         if (totalStringDecodeLength > maxTotalStringDecodeLength) {
-          context.warnings = context.warnings || [];
-          context.warnings.push({
-            type: 'string_decode_budget_exceeded',
-            path: currentPath,
-            sourceLabel,
-            originalValue: value,
-            message: '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
-            length: value.length,
-            limit: maxTotalStringDecodeLength,
-          });
+          addStringDecodeWarning(
+            'string_decode_budget_exceeded',
+            currentPath,
+            value,
+            '累计字符串解析预算已用尽，已跳过递归展开以保护性能',
+            maxTotalStringDecodeLength,
+            sourceLabel
+          );
           return value;
         }
 
@@ -691,6 +702,14 @@ export function deepParseWithContext(
         const shouldDecodeSchemeAtPath = Boolean(
           options?.autoExpandScheme || (context.sourceFormat === 'scheme' && currentPath === '$')
         );
+        const recordSteps = (recordedSteps: TransformStep[]) => {
+          context.records.set(currentPath, {
+            path: currentPath,
+            steps: [...recordedSteps],
+            originalValue: value,
+            sourceLabel,
+          });
+        };
 
         if (shouldDecodeSchemeAtPath && isRuntimePlaceholder(current)) {
           addSchemeRuntimePlaceholders(currentPath, deepDecodeScheme(current).placeholders, sourceLabel, value);
@@ -759,13 +778,7 @@ export function deepParseWithContext(
                     ...(schemeParamStageSummary ? { schemeParamStageSummary } : {}),
                   });
 
-                  context.records.set(currentPath, {
-                    path: currentPath,
-                    steps: [...steps],
-                    originalValue: value,
-                    sourceLabel,
-                  });
-
+                  recordSteps(steps);
                   return processedSchemeValue;
                 }
               } catch {
@@ -813,12 +826,7 @@ export function deepParseWithContext(
 
                 // 记录该路径的转换
                 if (steps.length > 0) {
-                  context.records.set(currentPath, {
-                    path: currentPath,
-                    steps: [...steps],
-                    originalValue: value,
-                    sourceLabel,
-                  });
+                  recordSteps(steps);
                 }
 
                 // 递归处理解析后的对象
@@ -835,12 +843,7 @@ export function deepParseWithContext(
 
         // 即使只有 Unicode 解码，也需要记录
         if (steps.length > 0 && !context.records.has(currentPath)) {
-          context.records.set(currentPath, {
-            path: currentPath,
-            steps,
-            originalValue: value,
-            sourceLabel,
-          });
+          recordSteps(steps);
         }
 
         if (shouldDecodeSchemeAtPath && unresolvedCandidate) {
@@ -1137,6 +1140,12 @@ const sortJsonKeys = (value: JsonValue): JsonValue => {
   return sorted;
 };
 
+const sortJsonInput = (input: string): string => stringifyJsonOrLinesInput(
+  input,
+  value => JSON.stringify(sortJsonKeys(value), null, 2),
+  records => stringifyJsonLines(records.map(sortJsonKeys))
+);
+
 // --- 双向转换逻辑 ---
 
 // 正向转换 (Input -> Output)
@@ -1157,17 +1166,7 @@ export const performTransform = (input: string, mode: TransformMode): string => 
       case TransformMode.URL_DECODE: return safeDecodeURIComponent(input);
       case TransformMode.BASE64_ENCODE: return base64Encode(input);
       case TransformMode.BASE64_DECODE: return base64Decode(input);
-      case TransformMode.SORT_KEYS: {
-        try {
-          const parsed = parseJsonInput(input);
-          if (!parsed) throw new Error('未找到可排序的 JSON 内容');
-
-          return JSON.stringify(sortJsonKeys(parsed.value), null, 2);
-        } catch {
-          const jsonLines = parseJsonLines(input);
-          return jsonLines ? stringifyJsonLines(jsonLines.map(sortJsonKeys)) : input;
-        }
-      }
+      case TransformMode.SORT_KEYS: return sortJsonInput(input);
       default: return input;
     }
   } catch (e) {

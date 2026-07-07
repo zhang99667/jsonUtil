@@ -242,7 +242,6 @@ const App: React.FC = () => {
   });
   const [smartSuggestionOrigin, setSmartSuggestionOrigin] = useState<AppSmartSuggestionOrigin | null>(null);
   const {
-    aiRepairSnapshotRef,
     aiRepairSummary,
     handleApplyAiRepairResult,
     handleCloseAiRepairSummary,
@@ -427,7 +426,6 @@ const App: React.FC = () => {
   } = useAppAiRepairCommand({
     sourceText: input,
     aiConfig,
-    aiRepairSnapshotRef,
     onApplyFixedJson: handleApplyAiRepairResult,
     onSetMode: setModeWithPreviewDraftCancel,
     onOpenAiSettings: handleOpenAiSettings,

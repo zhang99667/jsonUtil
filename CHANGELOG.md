@@ -1,4 +1,193 @@
 # 更新日志 (Changelog)
+## v1.8.695 (2026-07-07) - AI 规则进化闭环
+### 🏗️ 架构与基础设施
+- **AI 协作资产增加进化闭环**: Playbook、Codex skill、AI 工具说明和入口文档新增复盘沉淀、规则/skill 回写与治理校验要求，重复踩坑、用户纠偏、验证缺口或可复用实践需要沉淀到 rules/skills 等长期资产；`check-ai-governance` 同步锁定规则进化关键词，避免协作经验只停留在单次对话里
+
+## v1.8.694 (2026-07-07) - AI 响应片段扫描预算
+### 🏗️ 架构与基础设施
+- **AI 响应 normalizer 增加病态输出防御**: `normalizeAiJsonResponse` 对解释文本中的自由 JSON 片段扫描增加文本窗口和字符预算，直接 JSON 与 Markdown 代码块继续优先解析，避免模型返回大量未闭合括号或超长垃圾解释时触发过度扫描拖慢前端，并补充超长前缀 fenced JSON 与未闭合括号回归测试
+
+## v1.8.693 (2026-07-07) - AI Provider SDK 错误分类
+### 🐛 Bug 修复
+- **AI Provider SDK 错误提示更可操作**: 新增 `aiRepairProviderStatusError` 归一 SDK 异常中的 `status/statusCode/code` 或消息状态码，Gemini 等 SDK 抛出的 401/403、404、429 和 5xx 会映射为结构化 provider 错误码和可读中文提示；已识别的 provider 业务错误不再重复输出 `console.error`，未知 SDK 异常仍保留脱敏摘要日志
+
+## v1.8.692 (2026-07-07) - AI Provider 请求运行时收敛
+### 🏗️ 架构与基础设施
+- **AI Provider 超时与取消控制收敛**: 新增 `aiRepairProviderRequestRuntime` 统一管理 provider 请求的外部 `AbortSignal` 桥接、超时 abort 和完成后的监听释放，`aiRepairProviderClient` 回到 provider 路由与错误归一化职责，避免设置连接测试或多次修复时残留父级 abort 监听，并补充成功、失败、超时和父级已取消场景回归测试
+
+## v1.8.691 (2026-07-07) - AI 修复 SOURCE 变更竞态保护
+### 🐛 Bug 修复
+- **AI 修复不再晚到覆盖用户新输入**: `useAppAiRepairCommand` 会记录发起修复时的 SOURCE 快照，SOURCE 文本变化时主动 abort 进行中的修复请求，并在修复结果应用前再次确认当前 SOURCE 仍等于请求快照；`runAppAiRepairCommand` 不再直接写 AI 摘要快照，快照只在受保护的应用结果路径更新，避免旧修复结果、成功 toast 或摘要状态在用户继续编辑后晚到污染当前内容
+
+## v1.8.690 (2026-07-07) - App AI 修复取消链路
+### 🐛 Bug 修复
+- **主应用 AI 修复请求支持生命周期取消**: `useAppAiRepairCommand` 为每次修复创建 `AbortController`，组件卸载时主动 abort，重复触发时复用进行中保护；`runAppAiRepairCommand` 将 `AbortSignal` 透传给 `fixJsonWithRepairDetails`，取消场景只记录 `cancelled` telemetry，不再弹出超时/失败 toast 或打开 AI 设置
+
+## v1.8.689 (2026-07-07) - AI Base URL 契约收紧
+### 🐛 Bug 修复
+- **AI Provider Base URL 配置更可诊断**: 设置保存和请求前校验都会拒绝非 `http(s)` 绝对 Base URL，自定义 provider 仍保留必填校验；OpenAI-compatible 请求 URL 改用 URL API 在路径层拼接 `/chat/completions` 并保留 query，避免无效地址或带 query 的代理地址被字符串拼接成不可预期请求；ERNIE 设置提示同步对齐当前 Bearer/OpenAI-compatible 接口契约
+
+## v1.8.688 (2026-07-07) - AI Provider 截断响应守卫
+### 🐛 Bug 修复
+- **AI 修复不再使用被截断或拦截的 provider 文本**: OpenAI-compatible 响应会识别 `finish_reason: length/content_filter`，Gemini 响应会识别 `MAX_TOKENS/SAFETY` 等截断或安全拦截结束状态，并统一抛出可读的非法响应提示，避免部分 JSON 或安全过滤结果继续进入 normalizer 写回编辑器
+
+## v1.8.687 (2026-07-07) - AI 错误脱敏引号值补强
+### 🐛 Bug 修复
+- **AI Provider 回显敏感值脱敏更完整**: `redactAiErrorDetail` 将敏感字段名清单收敛为可维护模式，并新增带引号字段值脱敏分支，覆盖 `password: "my secret value"`、`cookie="a=b; c=d"`、`auth="Bearer raw token"` 等包含空格或分号的回显，避免旧的无引号正则只隐藏首段 token
+
+## v1.8.686 (2026-07-07) - AI 错误摘要边界统一
+### 🐛 Bug 修复
+- **AI Provider 长错误提示更可控**: 新增通用 `formatAiErrorDetailSummary`，HTTP 错误、网络错误和未知 provider/SDK 错误统一先脱敏再截断摘要，避免上游返回超长错误对象时把大段内容塞进 UI 或 console，同时继续保留状态码、请求地址和关键诊断前缀
+
+## v1.8.685 (2026-07-07) - AI 响应候选选择收紧
+### 🐛 Bug 修复
+- **AI 响应解释文本更少误抓示例 JSON**: `normalizeAiJsonResponse` 在普通解释文本中会优先采用最后一个顶层有效 JSON 片段，同时扫描时跳过已捕获外层范围里的嵌套片段；保留直接 JSON 和 Markdown 代码块的原有行为，避免模型先复述原始示例再给修复结果时把前面的示例写回编辑器
+
+## v1.8.684 (2026-07-07) - AI 修复错误码基建
+### 🏗️ 架构与基础设施
+- **AI 错误分类结构化**: 新增 `AiRepairErrorCode` / `AiRepairError` 轻量错误基建，配置校验、敏感输入拦截、provider HTTP/网络/超时、空响应、非法响应和连接测试错误都会保留原中文 message 并附带机器可读 code；App 修复反馈优先按 code 判断是否打开 AI 设置，减少跨层依赖中文字符串片段的漂移风险
+
+## v1.8.683 (2026-07-07) - AI 连接测试主动取消
+### 🐛 Bug 修复
+- **AI 请求支持外部取消信号**: `fixJsonWithAI`、`testAIConnection` 和 `requestAiRepairProviderText` 贯通外部 `AbortSignal`，设置弹窗在关闭、切换 provider、修改配置或重新测试连接时会主动 abort 旧连接测试，避免旧请求继续占用连接或晚到结果干扰当前配置状态
+
+## v1.8.682 (2026-07-07) - AI Provider 响应内容数组兼容
+### 🐛 Bug 修复
+- **OpenAI-compatible 响应读取更兼容**: `readOpenAICompatibleRepairText` 现在支持 `message.content` 为 text parts 数组的响应结构，会提取非空 `text` 片段并跳过空/非文本片段，避免部分兼容网关返回数组内容时被误判为 `AI 返回内容为空`
+
+## v1.8.681 (2026-07-07) - AI Base URL 端点容错
+### 🐛 Bug 修复
+- **OpenAI-compatible Base URL 更宽容**: `buildChatCompletionsUrl` 现在同时接受版本 Base URL 和完整 `/chat/completions` 端点，自动裁剪首尾空白和尾部斜杠，避免用户从 provider 文档复制完整端点时拼出重复 `/chat/completions/chat/completions` 路径；404 提示也同步说明两种可用填写方式
+
+## v1.8.680 (2026-07-07) - AI Provider 日志噪声收敛
+### 🐛 Bug 修复
+- **AI Provider 预期错误不再刷 console.error**: `aiRepairProviderClient` 只对未知 provider 异常输出脱敏错误日志，已归一化的 API Key/API 地址/响应格式/网络/超时等用户可预期错误继续抛给 UI，但不再重复制造控制台错误噪声，保留真正未知 SDK 异常的排查信号
+
+## v1.8.679 (2026-07-07) - AI Gemini 超时取消接入
+### 🐛 Bug 修复
+- **Gemini 超时会终止客户端请求**: `requestGeminiRepairText` 支持传入 `AbortSignal` 并透传给 `@google/genai` 的 `generateContent.config.abortSignal`，`aiRepairProviderClient` 的 Gemini 分支超时时会像 OpenAI-compatible 分支一样调用 `AbortController.abort()`，减少超时后底层请求继续占用浏览器连接的风险
+
+## v1.8.678 (2026-07-07) - AI 空白响应契约收紧
+### 🐛 Bug 修复
+- **AI 空白响应不再误当空对象**: `normalizeAiJsonResponse` 对空白模型响应统一抛出 `AI 返回内容不是有效 JSON`，不再兜底写入 `{}`；模型明确返回 `{}` 时仍按合法 JSON 保留，避免未来 provider 绕过空响应校验时重新出现“空响应假成功”
+
+## v1.8.677 (2026-07-07) - AI Provider 错误分类收敛
+### 🐛 Bug 修复
+- **AI Provider 错误提示更稳定**: `aiRepairProviderClient` 将已知业务错误和浏览器网络错误识别收敛为命名 predicate，并复用 `isAbortError` 处理 AbortError；网络错误匹配改为大小写无关并覆盖 Safari 风格 `Load failed`，避免部分浏览器连接失败时退化成泛化的 `AI 修复失败`
+
+## v1.8.676 (2026-07-07) - AI Provider 切换状态重置
+### 🐛 Bug 修复
+- **AI Provider 切换不再复用旧平台配置**: 新增 `buildAIConfigForProviderChange`，设置弹窗切换 provider 时会清空旧 API Key/Base URL，并把模型名重置为新 provider 默认模型，避免 Gemini/OpenAI-compatible 之间切换后把旧 key、旧模型或旧网关误用于新平台请求
+
+## v1.8.675 (2026-07-07) - AI Provider 错误脱敏字段对齐
+### 🐛 Bug 修复
+- **AI 错误回显脱敏更完整**: `redactAiErrorDetail` 的敏感字段覆盖范围与 AI 外发请求拦截策略对齐，新增 `sign/signature/sig`、`cookie`、`authorization/auth`、`device_id/android_id/imei/idfa/oaid/cuid` 和 `akey` 等字段回显脱敏，避免网关错误详情把签名、Cookie 或设备标识带到 UI/日志
+
+## v1.8.674 (2026-07-07) - AI Provider 错误详情长度兜底
+### 🐛 Bug 修复
+- **AI 错误提示长度更可控**: OpenAI-compatible provider 的 JSON 错误 `message` 与非 JSON 错误体统一经过脱敏和 240 字符摘要截断，避免网关返回超长 JSON message 时把大段响应塞进 UI/日志，同时保留状态码和可诊断前缀
+
+## v1.8.673 (2026-07-07) - AI 错误脱敏工具独立
+### 🏗️ 架构与基础设施
+- **AI 错误脱敏依赖方向更清晰**: 将 provider 错误详情脱敏常量与 `redactAiErrorDetail` 从 OpenAI transport 中抽到 `aiProviderErrorRedaction` 通用 util，OpenAI-compatible transport、provider client 和测试统一依赖中性工具，避免 Gemini/provider 编排层为了日志安全反向依赖 OpenAI 协议模块
+
+## v1.8.672 (2026-07-07) - AI 网络错误地址脱敏
+### 🐛 Bug 修复
+- **AI 网络错误请求地址更安全**: `formatAiNetworkErrorMessage` 在展示请求地址前会复用 provider 错误脱敏规则，隐藏 Base URL query 中的 `api_key`、token、secret 等疑似密钥，避免自定义代理地址或网关参数在网络失败提示里泄露
+
+## v1.8.671 (2026-07-07) - AI Provider 日志脱敏
+### 🐛 Bug 修复
+- **AI 调用日志不再输出原始错误对象**: `aiRepairProviderClient` 捕获 provider 异常时只向 console 输出脱敏后的错误摘要，并让后续错误归一化复用同一份脱敏文本，避免 Gemini SDK、网关或浏览器错误对象把 `api_key` / `sk-...` 等敏感配置留在控制台
+
+## v1.8.670 (2026-07-07) - AI Provider 错误详情脱敏
+### 🐛 Bug 修复
+- **AI 错误提示避免泄露密钥**: OpenAI-compatible provider 的 HTTP 错误详情和网络错误原始消息会隐藏 `api_key`、Bearer token、access token、secret/password 以及 `sk-...` 形式的疑似密钥，保留状态码与可诊断上下文的同时避免网关回显把敏感配置带到 UI 错误提示里
+
+## v1.8.669 (2026-07-07) - AI 请求配置校验收敛
+### 🐛 Bug 修复
+- **AI Provider 配置校验统一**: 新增 `aiProviderConfigValidation` 共享保存校验与请求前校验，设置弹窗和 `fixJsonWithAI` 复用同一套 custom Base URL 规则；绕过 UI 直接调用 AI 修复时，缺少 API Key 或自定义 Base URL 会在请求前失败且不会外发错误配置
+
+## v1.8.668 (2026-07-07) - AI Provider 默认值收敛
+### 🐛 Bug 修复
+- **AI 模型默认值跟随 provider**: 新增 `aiProviderDefaults` 作为 provider 默认模型与 Base URL 的单一来源，设置弹窗 placeholder、OpenAI-compatible transport 和 `normalizeAIConfig` 统一读取同一份默认表；非 Gemini provider 模型名留空时会回退对应 provider 默认模型，不再误写为 `gemini-2.0-flash`
+
+## v1.8.667 (2026-07-07) - AI 配置持久化归一化
+### 🐛 Bug 修复
+- **AI 设置保存更干净**: `useAppSettingsState` 写入本地存储前会复用 `normalizeAIConfig` 归一化 AI 配置，避免保存阶段把 API Key、模型名或 Base URL 的首尾空白继续写回 localStorage，让设置加载、备份导入和运行时请求保持同一份干净配置
+
+## v1.8.666 (2026-07-07) - AI 配置加载归一化
+### 🐛 Bug 修复
+- **AI 设置入口更干净**: `normalizeAIConfig` 加载配置时会裁剪 API Key、模型名和 Base URL 空白，模型名裁剪后为空才回退默认模型，让设置状态、备份导入和 provider 请求看到一致的干净配置
+
+## v1.8.665 (2026-07-07) - AI Provider 配置裁剪
+### 🐛 Bug 修复
+- **AI 请求配置更宽容**: Gemini 和 OpenAI-compatible transport 在真正发起请求前会裁剪 API Key 与模型名空白，避免用户从控制台复制配置时带入空格或换行导致“配置校验通过但 provider 鉴权/模型选择失败”
+
+## v1.8.664 (2026-07-07) - AI Provider Choices 读取增强
+### 🐛 Bug 修复
+- **OpenAI-compatible 多候选响应更稳**: 读取 provider 响应时会跳过空白或非文本 choice，选择第一条非空 `message.content`，避免第一条候选为空、后续候选有效时被误判为 `AI 返回内容为空`
+
+## v1.8.663 (2026-07-07) - AI Provider 响应结构兜底
+### 🐛 Bug 修复
+- **OpenAI-compatible 响应结构更稳**: 合法 JSON 但不是对象结构的响应（如 `null`、数组）现在会归一为 `AI 返回内容为空`，避免缺失 `choices` 时漏出底层 TypeError，让 provider 协议异常继续保持可读可诊断
+
+## v1.8.662 (2026-07-07) - AI Provider 非 JSON 响应提示
+### 🐛 Bug 修复
+- **OpenAI-compatible 响应格式更可诊断**: 200 OK 响应体不是 JSON 时会抛出 `AI 返回内容格式不是 JSON，请检查 Base URL 或模型服务配置`，避免网关 HTML、代理错误页或 Base URL 指错时落入难懂的底层 JSON 解析异常
+
+## v1.8.661 (2026-07-07) - AI 连接测试语义校验
+### 🐛 Bug 修复
+- **连接测试不再只看有效 JSON**: 新增 `aiRepairConnectionTest` 语义校验，测试连接时必须把 `{connection:true}` 修复为包含 `connection: true` 的 JSON 才算成功，避免 provider 返回 `{}` 或无关 JSON 时误报连接可用
+
+## v1.8.660 (2026-07-07) - AI Provider 空响应边界收紧
+### 🐛 Bug 修复
+- **AI 空响应不再假成功**: 新增 `aiRepairProviderResponse` 统一校验 provider 文本响应，OpenAI-compatible 缺少 `choices[0].message.content`、Gemini 缺少 `response.text` 或返回空白文本时会抛出可读错误，不再静默写入 `{}`；模型明确返回 `{}` 的不可恢复结果仍保持兼容
+
+## v1.8.659 (2026-07-07) - AI 本地修复单引号扫描增强
+### 🐛 Bug 修复
+- **本地修复字符串扫描更稳**: 将单引号字符串转换从全局正则替换改为字符串感知扫描，只转换真实的单引号字符串，不再误改双引号内容中的 apostrophe 文本，并补充转义单引号回归测试，提升本地规则命中率、减少不必要的外部 AI 调用
+
+## v1.8.658 (2026-07-07) - AI 响应候选容错增强
+### 🐛 Bug 修复
+- **AI 响应规范化更鲁棒**: `aiRepairResponseNormalizer` 现在会遍历多个 Markdown 代码块和正文中的平衡 JSON 片段，跳过模型先复述的非法 JSON 候选后继续查找有效修复结果，避免“先坏后好”的回复被误判为不可用
+
+## v1.8.657 (2026-07-07) - AI 修复 Prompt 契约收敛
+### 🏗️ 架构与基础设施
+- **AI Prompt 契约统一**: 将 Gemini 和 OpenAI-compatible 共用的 JSON 修复系统约束、用户输入模板和完整 prompt 构建收敛到 `aiRepairPrompt`，避免不同 provider 的“只返回压缩 JSON、禁止 Markdown/解释、不可恢复返回空对象”规则漂移，并补充 prompt contract 单测锁定输出边界
+
+## v1.8.656 (2026-07-07) - AI Provider Client 编排拆分
+### 🏗️ 架构与基础设施
+- **AI Provider 调用编排收敛**: 将 Gemini/OpenAI-compatible 的 provider 选择、外部请求超时、OpenAI-compatible abort 和网络错误归一化拆到 `aiRepairProviderClient`，`aiService` 继续瘦身为本地修复、请求策略、provider 文本请求和响应规范化编排，并补充 provider client 单测锁定路由、网络错误地址和超时终止
+
+## v1.8.655 (2026-07-07) - AI 本地修复内核拆分
+### 🏗️ 架构与基础设施
+- **本地优先修复内核收敛**: 将 JSON 注释剥离、尾随逗号移除、常见 JS 对象写法修正、字符串控制字符转义和规则命中报告拆到 `aiLocalJsonRepair`，`aiService` 继续保留兼容导出并瘦身为 AI 修复编排层，新增本地修复单测锁定字符串注释、尾随逗号和裸 key 边界
+
+## v1.8.654 (2026-07-07) - AI 响应规范化拆分
+### 🏗️ 架构与基础设施
+- **AI 输出清洗收敛**: 将模型返回的有效 JSON 压缩、Markdown 代码块提取、解释文本 JSON 片段提取和非法响应兜底错误拆到 `aiRepairResponseNormalizer`，`aiService` 继续保留兼容导出并进一步聚焦修复流程编排，新增响应规范化单测覆盖字符串括号片段与非法 JSON 兜底
+
+## v1.8.653 (2026-07-07) - AI Gemini 传输层拆分
+### 🏗️ 架构与基础设施
+- **Gemini Provider 协议收敛**: 将 Gemini 修复 prompt、默认模型和 `GoogleGenAI` SDK 调用拆到 `aiRepairGeminiTransport`，让 `aiService` 不再直接依赖 provider SDK 构造细节，并补充 Gemini transport 单测锁定 prompt、模型选择、SDK 入参和空响应兜底
+
+## v1.8.652 (2026-07-07) - AI Provider 传输层拆分
+### 🏗️ 架构与基础设施
+- **AI Provider 协议收敛**: 将 OpenAI-compatible 的请求构造、默认模型、响应读取、HTTP 错误详情和网络错误提示拆到 `aiRepairOpenAiTransport`，`aiService` 继续聚焦本地优先、请求策略、超时和结果规范化编排，并补充 provider 传输单测锁定 Base URL、模型选择和错误格式
+
+## v1.8.651 (2026-07-07) - AI 修复请求策略拆分
+### 🏗️ 架构与基础设施
+- **AI 修复请求策略收敛**: 将敏感字段识别、URL/Base64 解码扫描和外部模型输入上限拆到 `aiRepairRequestPolicy` 纯 helper，`aiService` 只保留本地修复与 provider 调用编排；新增大输入不外发测试，避免本地不可修复的大文本直接送往 AI provider
+
+## v1.8.650 (2026-07-07) - AI 安全边界治理门禁
+### 🏗️ 架构与基础设施
+- **AI 治理门禁增强**: 将本地规则优先、用户手动触发、敏感内容不外泄和可验证闭环纳入 `check-ai-governance` 公共引用组，覆盖 Playbook、Codex skill、Codex README 和 Claude 工具说明，防止 AI 修复边界在后续维护中漂移
+
+## v1.8.649 (2026-07-07) - 转换入口解析流程收敛
+### 🏗️ 架构与基础设施
+- **转换工具瘦身**: 将格式化、压缩和排序复用的 JSON/JSON Lines 解析降级流程收敛为统一 helper，并合并根 URL 编码输入探测与深度解析 warning/record 写入模板，降低后续转换模式继续堆叠重复分支的风险
+- **流量服务瘦身**: 抽取统计时间窗口、limit 判断、分页、百分比计算、分布聚合和会话时长桶构建 helper，减少 `TrafficService` 中地区、设备、浏览器和来源统计的重复分支
+
 ## v1.8.648 (2026-07-07) - SOURCE 校验请求测试夹具拆分
 ### 🏗️ 架构与基础设施
 - **SOURCE 校验测试瘦身**: 将默认请求入参、同步/异步校验任务和固定校验结果抽到 `appSourceValidationRequestTestFixture`，测试主体继续保留清洗启动、空输入恢复和旧请求晚到保护断言

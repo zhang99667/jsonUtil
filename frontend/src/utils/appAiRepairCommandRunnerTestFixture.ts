@@ -24,7 +24,6 @@ export const createAiRepairInput = (
 ): RunAppAiRepairCommandInput => ({
   sourceText: '{ok:1}',
   aiConfig,
-  aiRepairSnapshotRef: { current: null },
   startedAt: 12,
   ...overrides,
 });

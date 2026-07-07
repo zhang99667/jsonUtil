@@ -1,5 +1,6 @@
 import { AIProvider, DEFAULT_GENERAL_SETTINGS } from '../types';
 import type { AIConfig, GeneralSettings, TemplateFillConfig } from '../types';
+import { getAIProviderDefaultModel } from './aiProviderDefaults';
 import { isRecord, parseJsonWithFallback, safeGetStorageItem } from './storage';
 
 export const GENERAL_SETTINGS_STORAGE_KEY = 'json-helper-general-settings';
@@ -9,7 +10,7 @@ export const TEMPLATE_FILL_STORAGE_KEY = 'json-helper-template-fill';
 export const DEFAULT_AI_CONFIG: AIConfig = {
   provider: AIProvider.GEMINI,
   apiKey: '',
-  model: 'gemini-2.0-flash',
+  model: getAIProviderDefaultModel(AIProvider.GEMINI),
 };
 
 export const normalizeGeneralSettings = (value: unknown): GeneralSettings => {
@@ -46,14 +47,32 @@ export const normalizeAIConfig = (
   const provider = Object.values(AIProvider).includes(value.provider as AIProvider)
     ? value.provider as AIProvider
     : fallback.provider;
+  const fallbackModel = provider === fallback.provider && fallback.model.trim()
+    ? fallback.model.trim()
+    : getAIProviderDefaultModel(provider);
 
   return {
     provider,
-    apiKey: typeof value.apiKey === 'string' ? value.apiKey : fallback.apiKey,
+    apiKey: typeof value.apiKey === 'string' ? value.apiKey.trim() : fallback.apiKey,
     model: typeof value.model === 'string' && value.model.trim()
-      ? value.model
-      : fallback.model,
-    baseUrl: typeof value.baseUrl === 'string' ? value.baseUrl : fallback.baseUrl,
+      ? value.model.trim()
+      : fallbackModel,
+    baseUrl: typeof value.baseUrl === 'string' ? value.baseUrl.trim() : fallback.baseUrl,
+  };
+};
+
+export const buildAIConfigForProviderChange = (
+  config: AIConfig,
+  provider: AIProvider
+): AIConfig => {
+  const normalizedConfig = normalizeAIConfig(config);
+  if (provider === normalizedConfig.provider) return normalizedConfig;
+
+  return {
+    provider,
+    apiKey: '',
+    model: getAIProviderDefaultModel(provider),
+    baseUrl: '',
   };
 };
 

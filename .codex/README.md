@@ -19,4 +19,6 @@
 - 公网发布后运行 `node scripts/ci/check-production-frontend-assets.mjs <baseUrl>`，确认当前入口 HTML、main/admin JS、CSS `url(...)` 引用和 CSS `@import` 链路里的静态资源都能访问，并校验 JS/CSS `Content-Type` 没有被 fallback 成 HTML 伪装成成功。
 - 用户反馈旧 chunk URL 时，给公网资源巡检追加 `--extra-asset <url-or-path>` 纳入同一轮 404 和 MIME 诊断。
 - 跨模块排查、复杂重构或多条验证链路并行时先做子 Agent 委派判断；主线程负责拆分边界、整合证据和最终验证。
+- AI 修复和外部模型能力必须坚持本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
+- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，再按 Playbook 做规则/skill 回写，并运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验。
 - 修改本目录后，同步更新 `.claude/ai-tools-guide.md`，保持 Claude Code 与 Codex 的上下文一致。

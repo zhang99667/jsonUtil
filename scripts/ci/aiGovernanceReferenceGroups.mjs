@@ -24,3 +24,16 @@ export const CHUNK_LOAD_RECOVERY_CATCH_REFERENCES = [
   'dispatchChunkLoadRecoveryEvent',
   '手动懒加载',
 ];
+
+export const AI_SAFETY_BOUNDARY_REFERENCES = [
+  '本地规则优先',
+  '用户手动触发',
+  '敏感内容不外泄',
+  '可验证闭环',
+];
+
+export const AI_EVOLUTION_LOOP_REFERENCES = [
+  '复盘沉淀',
+  '规则/skill 回写',
+  '治理校验',
+];

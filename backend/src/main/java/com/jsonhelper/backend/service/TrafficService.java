@@ -6,11 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.Duration;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,20 +21,22 @@ public class TrafficService {
     private final VisitLogRepository visitLogRepository;
     private final GeoService geoService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final List<String> DURATION_BUCKET_NAMES = List.of(
+            "0-10秒", "10-30秒", "30秒-1分钟", "1-3分钟", "3-10分钟", "10分钟以上"
+    );
 
     /**
      * 获取流量概览数据
      * @param days 统计天数 (7天/30天等)
      */
     public TrafficOverviewDTO getOverview(int days) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
-        long totalPv = visitLogRepository.countTotalPv(start, now);
-        long totalUv = visitLogRepository.countTotalUv(start, now);
-        long todayPv = visitLogRepository.countTotalPv(todayStart, now);
-        long todayUv = visitLogRepository.countTotalUv(todayStart, now);
+        long totalPv = visitLogRepository.countTotalPv(timeWindow.start(), timeWindow.end());
+        long totalUv = visitLogRepository.countTotalUv(timeWindow.start(), timeWindow.end());
+        long todayPv = visitLogRepository.countTotalPv(todayStart, timeWindow.end());
+        long todayUv = visitLogRepository.countTotalUv(todayStart, timeWindow.end());
 
         double avgDailyPv = days > 0 ? (double) totalPv / days : 0;
         double avgDailyUv = days > 0 ? (double) totalUv / days : 0;
@@ -54,17 +57,16 @@ public class TrafficService {
      * @param days 统计天数
      */
     public List<DailyTrendDTO> getDailyTrend(int days) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> pvData = visitLogRepository.countDailyPv(start, now);
-        List<Object[]> uvData = visitLogRepository.countDailyUv(start, now);
+        List<Object[]> pvData = visitLogRepository.countDailyPv(timeWindow.start(), timeWindow.end());
+        List<Object[]> uvData = visitLogRepository.countDailyUv(timeWindow.start(), timeWindow.end());
 
         // 将UV数据转换为Map便于查找
         Map<String, Long> uvMap = new HashMap<>();
         for (Object[] row : uvData) {
             String date = formatDate(row[0]);
-            Long uv = ((Number) row[1]).longValue();
+            Long uv = rowCount(row);
             uvMap.put(date, uv);
         }
 
@@ -82,7 +84,7 @@ public class TrafficService {
         // 填充PV数据
         for (Object[] row : pvData) {
             String date = formatDate(row[0]);
-            Long pv = ((Number) row[1]).longValue();
+            Long pv = rowCount(row);
             if (resultMap.containsKey(date)) {
                 resultMap.get(date).setPv(pv);
             }
@@ -104,14 +106,13 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<IpStatsDTO> getTopIps(int days, int limit) {
-        if (limit <= 0) {
+        if (hasNoLimit(limit)) {
             return Collections.emptyList();
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> data = visitLogRepository.countByIpTopN(start, now, PageRequest.of(0, limit));
+        List<Object[]> data = visitLogRepository.countByIpTopN(timeWindow.start(), timeWindow.end(), PageRequest.of(0, limit));
 
         return data.stream()
                 .map(row -> {
@@ -120,7 +121,7 @@ public class TrafficService {
 
                     return IpStatsDTO.builder()
                             .ip(ip)
-                            .count(((Number) row[1]).longValue())
+                            .count(rowCount(row))
                             .region(geoInfo.getRegionForStats())
                             .build();
                 })
@@ -133,19 +134,18 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<PathStatsDTO> getTopPaths(int days, int limit) {
-        if (limit <= 0) {
+        if (hasNoLimit(limit)) {
             return Collections.emptyList();
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> data = visitLogRepository.countByPathTopN(start, now, PageRequest.of(0, limit));
+        List<Object[]> data = visitLogRepository.countByPathTopN(timeWindow.start(), timeWindow.end(), PageRequest.of(0, limit));
 
         return data.stream()
                 .map(row -> PathStatsDTO.builder()
                         .path((String) row[0])
-                        .count(((Number) row[1]).longValue())
+                        .count(rowCount(row))
                         .build())
                 .collect(Collectors.toList());
     }
@@ -155,16 +155,15 @@ public class TrafficService {
      * @param days 统计天数
      */
     public List<HourlyStatsDTO> getHourlyDistribution(int days) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> data = visitLogRepository.countByHour(start, now);
+        List<Object[]> data = visitLogRepository.countByHour(timeWindow.start(), timeWindow.end());
 
         // 创建24小时的完整列表
         Map<Integer, Long> hourMap = new HashMap<>();
         for (Object[] row : data) {
             Integer hour = ((Number) row[0]).intValue();
-            Long count = ((Number) row[1]).longValue();
+            Long count = rowCount(row);
             hourMap.put(hour, count);
         }
 
@@ -185,43 +184,29 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<GeoStatsDTO> getGeoDistribution(int days, int limit) {
-        if (limit <= 0) {
+        if (hasNoLimit(limit)) {
             return Collections.emptyList();
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> ipCounts = visitLogRepository.countByIpInRange(start, now);
+        List<Object[]> ipCounts = visitLogRepository.countByIpInRange(timeWindow.start(), timeWindow.end());
 
         if (ipCounts.isEmpty()) {
             return Collections.emptyList();
         }
 
         // 先按IP在数据库聚合，再按访问次数累加地区，避免重复解析相同IP
-        Map<String, Long> regionCountMap = new HashMap<>();
-        long total = 0;
-        for (Object[] row : ipCounts) {
-            String ip = (String) row[0];
-            long count = ((Number) row[1]).longValue();
-            GeoService.GeoInfo geoInfo = geoService.parseIp(ip);
-            String region = geoInfo.getRegionForStats();
-            regionCountMap.merge(region, count, Long::sum);
-            total += count;
-        }
+        DistributionCounts regionCounts = aggregateDistributionCounts(
+                ipCounts,
+                ip -> geoService.parseIp(ip).getRegionForStats()
+        );
 
-        final long finalTotal = Math.max(total, 1);
-
-        // 转换为DTO并排序
-        return regionCountMap.entrySet().stream()
-                .map(entry -> GeoStatsDTO.builder()
-                        .region(entry.getKey())
-                        .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
-                        .build())
-                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
-                .limit(limit)
-                .collect(Collectors.toList());
+        return buildDistributionStats(regionCounts, limit, (region, count, percentage) -> GeoStatsDTO.builder()
+                .region(region)
+                .count(count)
+                .percentage(percentage)
+                .build());
     }
 
     /**
@@ -230,42 +215,27 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<DeviceStatsDTO> getDeviceDistribution(int days, int limit) {
-        if (limit <= 0) {
+        if (hasNoLimit(limit)) {
             return Collections.emptyList();
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> userAgentCounts = visitLogRepository.countByUserAgentInRange(start, now);
+        List<Object[]> userAgentCounts = visitLogRepository.countByUserAgentInRange(timeWindow.start(), timeWindow.end());
 
         if (userAgentCounts.isEmpty()) {
             return Collections.emptyList();
         }
 
         // 先按UA在数据库聚合，再按访问次数累加设备类型
-        Map<String, Long> deviceCountMap = new HashMap<>();
-        long total = 0;
-        for (Object[] row : userAgentCounts) {
-            String userAgent = (String) row[0];
-            long count = ((Number) row[1]).longValue();
-            String device = parseDeviceType(userAgent);
-            deviceCountMap.merge(device, count, Long::sum);
-            total += count;
-        }
+        DistributionCounts deviceCounts = aggregateDistributionCounts(userAgentCounts, this::parseDeviceType);
 
-        final long finalTotal = Math.max(total, 1);
-
-        return deviceCountMap.entrySet().stream()
-                .map(entry -> DeviceStatsDTO.builder()
-                        .device(entry.getKey())
-                        .browser(null)
-                        .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
-                        .build())
-                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
-                .limit(limit)
-                .collect(Collectors.toList());
+        return buildDistributionStats(deviceCounts, limit, (device, count, percentage) -> DeviceStatsDTO.builder()
+                .device(device)
+                .browser(null)
+                .count(count)
+                .percentage(percentage)
+                .build());
     }
 
     /**
@@ -274,42 +244,27 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<DeviceStatsDTO> getBrowserDistribution(int days, int limit) {
-        if (limit <= 0) {
+        if (hasNoLimit(limit)) {
             return Collections.emptyList();
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> userAgentCounts = visitLogRepository.countByUserAgentInRange(start, now);
+        List<Object[]> userAgentCounts = visitLogRepository.countByUserAgentInRange(timeWindow.start(), timeWindow.end());
 
         if (userAgentCounts.isEmpty()) {
             return Collections.emptyList();
         }
 
         // 先按UA在数据库聚合，再按访问次数累加浏览器类型
-        Map<String, Long> browserCountMap = new HashMap<>();
-        long total = 0;
-        for (Object[] row : userAgentCounts) {
-            String userAgent = (String) row[0];
-            long count = ((Number) row[1]).longValue();
-            String browser = parseBrowser(userAgent);
-            browserCountMap.merge(browser, count, Long::sum);
-            total += count;
-        }
+        DistributionCounts browserCounts = aggregateDistributionCounts(userAgentCounts, this::parseBrowser);
 
-        final long finalTotal = Math.max(total, 1);
-
-        return browserCountMap.entrySet().stream()
-                .map(entry -> DeviceStatsDTO.builder()
-                        .device(null)
-                        .browser(entry.getKey())
-                        .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
-                        .build())
-                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
-                .limit(limit)
-                .collect(Collectors.toList());
+        return buildDistributionStats(browserCounts, limit, (browser, count, percentage) -> DeviceStatsDTO.builder()
+                .device(null)
+                .browser(browser)
+                .count(count)
+                .percentage(percentage)
+                .build());
     }
 
     /**
@@ -318,42 +273,27 @@ public class TrafficService {
      * @param limit 返回条数
      */
     public List<RefererStatsDTO> getRefererDistribution(int days, int limit) {
-        if (limit <= 0) {
+        if (hasNoLimit(limit)) {
             return Collections.emptyList();
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> refererCounts = visitLogRepository.countByRefererInRange(start, now);
+        List<Object[]> refererCounts = visitLogRepository.countByRefererInRange(timeWindow.start(), timeWindow.end());
 
         if (refererCounts.isEmpty()) {
             return Collections.emptyList();
         }
 
         // 先按Referer在数据库聚合，再按访问次数累加来源分类
-        Map<String, Long> sourceCountMap = new HashMap<>();
-        long total = 0;
-        for (Object[] row : refererCounts) {
-            String referer = (String) row[0];
-            long count = ((Number) row[1]).longValue();
-            String source = parseRefererSource(referer);
-            sourceCountMap.merge(source, count, Long::sum);
-            total += count;
-        }
+        DistributionCounts sourceCounts = aggregateDistributionCounts(refererCounts, this::parseRefererSource);
 
-        final long finalTotal = Math.max(total, 1);
-
-        return sourceCountMap.entrySet().stream()
-                .map(entry -> RefererStatsDTO.builder()
-                        .source(entry.getKey())
-                        .domain(null)
-                        .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
-                        .build())
-                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
-                .limit(limit)
-                .collect(Collectors.toList());
+        return buildDistributionStats(sourceCounts, limit, (source, count, percentage) -> RefererStatsDTO.builder()
+                .source(source)
+                .domain(null)
+                .count(count)
+                .percentage(percentage)
+                .build());
     }
 
     /**
@@ -362,23 +302,16 @@ public class TrafficService {
      * @param days 统计天数
      */
     public List<SessionStatsDTO> getSessionDurationStats(int days) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<VisitLogRepository.SessionVisitEvent> events = visitLogRepository.findSessionVisitEvents(start, now);
+        List<VisitLogRepository.SessionVisitEvent> events = visitLogRepository.findSessionVisitEvents(timeWindow.start(), timeWindow.end());
 
         if (events.isEmpty()) {
             return getEmptyDurationStats();
         }
 
         // 时长统计桶
-        Map<String, Long> durationBuckets = new LinkedHashMap<>();
-        durationBuckets.put("0-10秒", 0L);
-        durationBuckets.put("10-30秒", 0L);
-        durationBuckets.put("30秒-1分钟", 0L);
-        durationBuckets.put("1-3分钟", 0L);
-        durationBuckets.put("3-10分钟", 0L);
-        durationBuckets.put("10分钟以上", 0L);
+        Map<String, Long> durationBuckets = createDurationBuckets();
 
         int totalSessions = 0;
 
@@ -417,15 +350,74 @@ public class TrafficService {
             totalSessions++;
         }
 
-        final int finalTotal = Math.max(totalSessions, 1);
+        return buildSessionStats(durationBuckets, totalSessions);
+    }
 
+    private TimeWindow currentTimeWindow(int days) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        return new TimeWindow(start, now);
+    }
+
+    private boolean hasNoLimit(int limit) {
+        return limit <= 0;
+    }
+
+    private DistributionCounts aggregateDistributionCounts(List<Object[]> rows, Function<String, String> categoryResolver) {
+        Map<String, Long> countMap = new HashMap<>();
+        long total = 0;
+        for (Object[] row : rows) {
+            String rawValue = (String) row[0];
+            long count = rowCount(row);
+            String category = categoryResolver.apply(rawValue);
+            countMap.merge(category, count, Long::sum);
+            total += count;
+        }
+        return new DistributionCounts(countMap, total);
+    }
+
+    private <T> List<T> buildDistributionStats(
+            DistributionCounts distributionCounts,
+            int limit,
+            DistributionStatsFactory<T> factory
+    ) {
+        long total = Math.max(distributionCounts.total(), 1);
+        return distributionCounts.counts().entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(limit)
+                .map(entry -> factory.create(
+                        entry.getKey(),
+                        entry.getValue(),
+                        calculatePercentage(entry.getValue(), total)
+                ))
+                .collect(Collectors.toList());
+    }
+
+    private Map<String, Long> createDurationBuckets() {
+        Map<String, Long> durationBuckets = new LinkedHashMap<>();
+        for (String bucketName : DURATION_BUCKET_NAMES) {
+            durationBuckets.put(bucketName, 0L);
+        }
+        return durationBuckets;
+    }
+
+    private List<SessionStatsDTO> buildSessionStats(Map<String, Long> durationBuckets, long totalSessions) {
+        long total = Math.max(totalSessions, 1);
         return durationBuckets.entrySet().stream()
                 .map(entry -> SessionStatsDTO.builder()
                         .durationRange(entry.getKey())
                         .count(entry.getValue())
-                        .percentage(Math.round(entry.getValue() * 10000.0 / finalTotal) / 100.0)
+                        .percentage(calculatePercentage(entry.getValue(), total))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private long rowCount(Object[] row) {
+        return ((Number) row[1]).longValue();
+    }
+
+    private double calculatePercentage(long count, long total) {
+        return Math.round(count * 10000.0 / total) / 100.0;
     }
 
     /**
@@ -460,14 +452,7 @@ public class TrafficService {
      * 返回空的时长统计
      */
     private List<SessionStatsDTO> getEmptyDurationStats() {
-        return Arrays.asList(
-                SessionStatsDTO.builder().durationRange("0-10秒").count(0).percentage(0).build(),
-                SessionStatsDTO.builder().durationRange("10-30秒").count(0).percentage(0).build(),
-                SessionStatsDTO.builder().durationRange("30秒-1分钟").count(0).percentage(0).build(),
-                SessionStatsDTO.builder().durationRange("1-3分钟").count(0).percentage(0).build(),
-                SessionStatsDTO.builder().durationRange("3-10分钟").count(0).percentage(0).build(),
-                SessionStatsDTO.builder().durationRange("10分钟以上").count(0).percentage(0).build()
-        );
+        return buildSessionStats(createDurationBuckets(), 0);
     }
 
     /**
@@ -598,5 +583,16 @@ public class TrafficService {
             return (String) dateObj;
         }
         return dateObj.toString();
+    }
+
+    private record TimeWindow(LocalDateTime start, LocalDateTime end) {
+    }
+
+    private record DistributionCounts(Map<String, Long> counts, long total) {
+    }
+
+    @FunctionalInterface
+    private interface DistributionStatsFactory<T> {
+        T create(String name, long count, double percentage);
     }
 }

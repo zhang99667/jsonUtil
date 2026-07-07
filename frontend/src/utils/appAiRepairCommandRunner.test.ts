@@ -32,13 +32,12 @@ describe('appAiRepairCommandRunner', () => {
     expect(effects.onLoadRuntime).not.toHaveBeenCalled();
   });
 
-  it('修复成功时写入快照、应用结果并切回格式化模式', async () => {
+  it('修复成功时应用结果并切回格式化模式', async () => {
     const effects = createAiRepairEffects();
     const input = createAiRepairInput({ startedAt: 12 });
 
     await runAppAiRepairCommand(input, effects);
 
-    expect(input.aiRepairSnapshotRef.current).toBe('{"ok":1}');
     expect(effects.onApplyFixedJson).toHaveBeenCalledWith('{"ok":1}', expect.objectContaining({
       rootDescription: '对象 1 个键',
     }));

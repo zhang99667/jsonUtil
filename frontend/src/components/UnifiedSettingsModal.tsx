@@ -1,6 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider, GeneralSettings } from '../types';
+import { buildAIConfigForProviderChange } from '../utils/appSettings';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
+import { getAIProviderBaseUrlPlaceholder, getAIProviderDefaultModel } from '../utils/aiProviderDefaults';
+import {
+    getAIProviderConfigValidationError,
+    getAIProviderRequestValidationError,
+} from '../utils/aiProviderConfigValidation';
 
 interface UnifiedSettingsModalProps {
     isOpen: boolean;
@@ -73,9 +79,17 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     const wasOpenRef = useRef(false);
     const importBackupInputRef = useRef<HTMLInputElement | null>(null);
     const aiConfigVersionRef = useRef(0);
+    const aiTestAbortControllerRef = useRef<AbortController | null>(null);
+
+    const abortAIConnectionTest = useCallback(() => {
+        aiTestAbortControllerRef.current?.abort();
+        aiTestAbortControllerRef.current = null;
+        setIsTestingAI(false);
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
+            abortAIConnectionTest();
             wasOpenRef.current = true;
             previousActiveElementRef.current = document.activeElement instanceof HTMLElement
                 ? document.activeElement
@@ -90,6 +104,8 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
         if (!wasOpenRef.current) return;
 
+        aiConfigVersionRef.current++;
+        abortAIConnectionTest();
         wasOpenRef.current = false;
         const previousActiveElement = previousActiveElementRef.current;
         previousActiveElementRef.current = null;
@@ -101,7 +117,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         }, 0);
 
         return () => window.clearTimeout(restoreTimer);
-    }, [isOpen]);
+    }, [isOpen, abortAIConnectionTest]);
 
     useEffect(() => {
         if (!isOpen || recordingAction) return;
@@ -156,13 +172,14 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
+            abortAIConnectionTest();
             aiConfigVersionRef.current++;
             setLocalAIConfig(aiConfig);
             setLocalGeneralSettings(generalSettings);
             setAiTestResult(null);
             setShortcutConflictNotice('');
         }
-    }, [isOpen, aiConfig, generalSettings]);
+    }, [isOpen, aiConfig, generalSettings, abortAIConnectionTest]);
 
     useEffect(() => {
         if (isOpen) {
@@ -231,16 +248,8 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
     if (!isOpen) return null;
 
-    const getAIConfigValidationError = (config: AIConfig): string => {
-        if (config.provider === AIProvider.CUSTOM && !config.baseUrl?.trim()) {
-            return '自定义 AI 提供商需要填写 Base URL';
-        }
-
-        return '';
-    };
-
     const handleSaveAI = () => {
-        const validationError = getAIConfigValidationError(localAIConfig);
+        const validationError = getAIProviderConfigValidationError(localAIConfig);
         if (validationError) {
             setAiTestResult({ type: 'error', message: validationError });
             return;
@@ -252,24 +261,36 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
     const updateLocalAIConfig = (patch: Partial<AIConfig>) => {
         aiConfigVersionRef.current++;
+        abortAIConnectionTest();
         setAiTestResult(null);
         setLocalAIConfig(prev => ({ ...prev, ...patch }));
     };
 
+    const handleAIProviderChange = (provider: AIProvider) => {
+        aiConfigVersionRef.current++;
+        abortAIConnectionTest();
+        setAiTestResult(null);
+        setLocalAIConfig(prev => buildAIConfigForProviderChange(prev, provider));
+    };
+
     const handleTestAIConnection = async () => {
-        const validationError = getAIConfigValidationError(localAIConfig);
+        const validationError = getAIProviderRequestValidationError(localAIConfig);
         if (validationError) {
             setAiTestResult({ type: 'error', message: validationError });
             return;
         }
 
+        abortAIConnectionTest();
+        aiConfigVersionRef.current++;
         const testVersion = aiConfigVersionRef.current;
+        const abortController = new AbortController();
+        aiTestAbortControllerRef.current = abortController;
         setIsTestingAI(true);
         setAiTestResult(null);
 
         try {
             const { testAIConnection } = await import('../services/aiService');
-            await testAIConnection(localAIConfig);
+            await testAIConnection(localAIConfig, { signal: abortController.signal });
             if (testVersion === aiConfigVersionRef.current) {
                 setAiTestResult({ type: 'success', message: '连接测试通过' });
             }
@@ -281,7 +302,10 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                 setAiTestResult({ type: 'error', message });
             }
         } finally {
-            setIsTestingAI(false);
+            if (testVersion === aiConfigVersionRef.current) {
+                aiTestAbortControllerRef.current = null;
+                setIsTestingAI(false);
+            }
         }
     };
 
@@ -526,7 +550,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">AI 提供商</label>
                             <select
                                 value={localAIConfig.provider}
-                                onChange={(e) => updateLocalAIConfig({ provider: e.target.value as AIProvider })}
+                                onChange={(e) => handleAIProviderChange(e.target.value as AIProvider)}
                                 className="w-full bg-editor-bg border border-editor-border text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5"
                             >
                                 <option value={AIProvider.GEMINI}>Google Gemini</option>
@@ -558,14 +582,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                 type="text"
                                 value={localAIConfig.model}
                                 onChange={(e) => updateLocalAIConfig({ model: e.target.value })}
-                                placeholder={
-                                    localAIConfig.provider === AIProvider.GEMINI ? "gemini-2.0-flash" :
-                                        localAIConfig.provider === AIProvider.QWEN ? "qwen-max" :
-                                            localAIConfig.provider === AIProvider.ERNIE ? "ernie-4.0-8k" :
-                                                localAIConfig.provider === AIProvider.GLM ? "glm-4" :
-                                                    localAIConfig.provider === AIProvider.DEEPSEEK ? "deepseek-chat" :
-                                                        "gpt-4o-mini"
-                                }
+                                placeholder={getAIProviderDefaultModel(localAIConfig.provider)}
                                 className="w-full bg-editor-bg border border-editor-border text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5 placeholder-gray-600"
                             />
                         </div>
@@ -580,14 +597,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                     type="text"
                                     value={localAIConfig.baseUrl || ''}
                                     onChange={(e) => updateLocalAIConfig({ baseUrl: e.target.value })}
-                                    placeholder={
-                                        localAIConfig.provider === AIProvider.OPENAI ? "https://api.openai.com/v1" :
-                                            localAIConfig.provider === AIProvider.QWEN ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
-                                                localAIConfig.provider === AIProvider.ERNIE ? "https://aip.baidubce.com/rpc/2.0/ai_custom/v1" :
-                                                    localAIConfig.provider === AIProvider.GLM ? "https://open.bigmodel.cn/api/paas/v4" :
-                                                        localAIConfig.provider === AIProvider.DEEPSEEK ? "https://api.deepseek.com/v1" :
-                                                            "https://your-api-endpoint.com/v1"
-                                    }
+                                    placeholder={getAIProviderBaseUrlPlaceholder(localAIConfig.provider)}
                                     className="w-full bg-editor-bg border border-editor-border text-gray-200 text-sm rounded focus:border-emerald-500 focus:outline-none block p-2.5 placeholder-gray-600"
                                 />
                             </div>
@@ -598,7 +608,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded p-3">
                                 <p className="text-xs text-emerald-300 leading-relaxed">
                                     {localAIConfig.provider === AIProvider.QWEN && '💡 通义千问支持 OpenAI 兼容接口，请确保使用正确的 API Key 和 Base URL'}
-                                    {localAIConfig.provider === AIProvider.ERNIE && '💡 文心一言需要使用百度智能云的 API Key 和 Secret Key'}
+                                    {localAIConfig.provider === AIProvider.ERNIE && '💡 文心一言当前走 OpenAI 兼容接口，请填写可用于 Bearer 鉴权的 API Key 和 Base URL'}
                                     {localAIConfig.provider === AIProvider.GLM && '💡 智谱AI 支持 OpenAI 兼容接口，请使用您的 API Key'}
                                     {localAIConfig.provider === AIProvider.DEEPSEEK && '💡 DeepSeek 使用 OpenAI 兼容接口，支持高性价比的推理服务'}
                                 </p>

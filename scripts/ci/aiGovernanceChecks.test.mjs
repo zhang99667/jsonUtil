@@ -62,6 +62,13 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '子 Agent 委派',
     '主线程负责',
     '拆分边界',
+    '本地规则优先',
+    '用户手动触发',
+    '敏感内容不外泄',
+    '可验证闭环',
+    '复盘沉淀',
+    '规则/skill 回写',
+    '治理校验',
   ].join('\n');
 
   [
@@ -163,6 +170,45 @@ test('AI 治理引用检查会报告缺失的 CSS import 巡检语义', () => {
   });
 });
 
+test('AI 治理引用检查会报告缺失的 AI 安全边界', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
+      '本地规则优先',
+      '用户手动触发',
+      '可验证闭环',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{ file: 'docs/AI-ENGINEERING-PLAYBOOK.md', contains: ['敏感内容不外泄'] }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      'docs/AI-ENGINEERING-PLAYBOOK.md: 缺少 "敏感内容不外泄"',
+    ]);
+  });
+});
+
+test('AI 治理引用检查会报告缺失的规则进化闭环', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
+      '复盘沉淀',
+      '治理校验',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{ file: 'docs/AI-ENGINEERING-PLAYBOOK.md', contains: ['规则/skill 回写'] }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      'docs/AI-ENGINEERING-PLAYBOOK.md: 缺少 "规则/skill 回写"',
+    ]);
+  });
+});
+
 test('AI 治理文件检查会报告缺失文件', () => {
   withTempRoot((rootDir) => {
     assert.deepEqual(collectMissingAiGovernanceFiles(rootDir, ['AGENTS.md']), ['AGENTS.md']);
@@ -207,6 +253,13 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
     assert.equal(rule.contains.includes('子 Agent 委派'), true);
     assert.equal(rule.contains.includes('主线程负责'), true);
     assert.equal(rule.contains.includes('拆分边界'), true);
+    assert.equal(rule.contains.includes('本地规则优先'), true);
+    assert.equal(rule.contains.includes('用户手动触发'), true);
+    assert.equal(rule.contains.includes('敏感内容不外泄'), true);
+    assert.equal(rule.contains.includes('可验证闭环'), true);
+    assert.equal(rule.contains.includes('复盘沉淀'), true);
+    assert.equal(rule.contains.includes('规则/skill 回写'), true);
+    assert.equal(rule.contains.includes('治理校验'), true);
   });
 });
 

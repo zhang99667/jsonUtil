@@ -5,6 +5,7 @@ import {
   getAppAiRepairSkipMessage,
   getAppAiRepairSuccessMessage,
 } from './appAiRepairCommand';
+import { AiRepairErrorCode, createAiRepairError } from './aiRepairErrors';
 
 describe('appAiRepairCommand', () => {
   it('识别空 SOURCE 跳过智能修复', () => {
@@ -19,11 +20,15 @@ describe('appAiRepairCommand', () => {
   });
 
   it('将 API Key 错误映射为设置入口提示', () => {
-    expect(getAppAiRepairErrorFeedback(new Error('API Key 未配置'))).toEqual({
+    expect(getAppAiRepairErrorFeedback(
+      createAiRepairError(AiRepairErrorCode.ApiKeyRequired, 'API Key 未配置')
+    )).toEqual({
       message: '请先配置 AI API Key',
       shouldOpenAiSettings: true,
     });
-    expect(getAppAiRepairErrorFeedback(new Error('API Key 无效'))).toEqual({
+    expect(getAppAiRepairErrorFeedback(
+      createAiRepairError(AiRepairErrorCode.ProviderAuth, 'API Key 无效')
+    )).toEqual({
       message: 'API Key 无效',
       shouldOpenAiSettings: true,
     });

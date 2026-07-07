@@ -1,5 +1,6 @@
 import type { FixJsonResult } from '../services/aiService';
 import type { AiRepairSummary } from './aiRepairSummary';
+import { AiRepairErrorCode, getAiRepairErrorCode } from './aiRepairErrors';
 
 export interface AppAiRepairErrorFeedback {
   message: string;
@@ -35,9 +36,16 @@ export const getAppAiRepairSuccessMessage = (repairMethod: FixJsonResult['repair
 
 export const getAppAiRepairErrorFeedback = (error: unknown): AppAiRepairErrorFeedback => {
   const rawMessage = error instanceof Error ? error.message : 'AI 修复失败';
+  const errorCode = getAiRepairErrorCode(error);
+  const isApiKeyRequired = errorCode === AiRepairErrorCode.ApiKeyRequired
+    || rawMessage.includes('API Key 未配置');
+  const shouldOpenAiSettings = errorCode
+    ? errorCode === AiRepairErrorCode.ApiKeyRequired || errorCode === AiRepairErrorCode.ProviderAuth
+    : rawMessage.includes('API Key');
+
   return {
-    message: rawMessage.includes('API Key 未配置') ? '请先配置 AI API Key' : rawMessage,
-    shouldOpenAiSettings: rawMessage.includes('API Key'),
+    message: isApiKeyRequired ? '请先配置 AI API Key' : rawMessage,
+    shouldOpenAiSettings,
   };
 };
 

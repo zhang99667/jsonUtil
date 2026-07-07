@@ -255,6 +255,12 @@ git commit -m "[Feature]优化专项-UI UE"
 - 顶部版本区块最多保留 8 条列表项；超过时必须新开下一个 patch 版本，避免一个版本下堆积几十条提交。
 - 提交前运行 `node scripts/ci/check-version-consistency.mjs`，校验包版本、锁文件、CHANGELOG 顶部版本和顶部条目数量。
 
+### AI 规则资产更新
+
+- 只有重复踩坑、用户纠偏、验证缺口或可复用实践适合做复盘沉淀；一次性偏好和未验证猜测不要写成长期规则。
+- 规则变更要说明触发条件、适用边界和验证方式，并同步完成 `docs/AI-ENGINEERING-PLAYBOOK.md`、项目入口或 Codex skill 的规则/skill 回写。
+- 影响 AI 协作资产的改动必须运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验，确认关键引用没有漂移。
+
 ### 更新格式
 
 ```markdown
