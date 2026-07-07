@@ -1,10 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { collectCodexSkillContractFailures } from './aiGovernanceCodexSkillContract.mjs';
-import {
-  buildAiGovernanceReferenceRules,
-  buildAiGovernanceRequiredFiles,
-} from './aiGovernanceRules.mjs';
+import { collectSectionReferenceFailures } from './aiGovernanceSectionReferences.mjs';
 
 export { collectCodexSkillContractFailures };
 
@@ -38,9 +35,10 @@ export const collectMissingAiGovernanceReferences = (
     }
 
     const content = fs.readFileSync(filePath, 'utf8');
-    rule.contains.forEach((expectedText) => {
+    rule.contains?.forEach((expectedText) => {
       if (!content.includes(expectedText)) missingReferences.push(`${rule.file}: 缺少 "${expectedText}"`);
     });
+    missingReferences.push(...collectSectionReferenceFailures(rule.file, content, rule.sections));
   }
   return missingReferences;
 };
@@ -50,21 +48,4 @@ export const collectFrontendLintScriptFailures = (rootDir) => {
   return frontendPackage.scripts?.lint === 'eslint "{src,config}/**/*.{ts,tsx}" --quiet'
     ? []
     : ['frontend/package.json: lint 脚本未覆盖 src 和 config TypeScript 源码'];
-};
-
-export const buildAiGovernanceReport = (rootDir) => {
-  const codexSkillFiles = discoverCodexSkillFiles(rootDir);
-  const requiredFiles = buildAiGovernanceRequiredFiles(codexSkillFiles);
-  const referenceRules = buildAiGovernanceReferenceRules(codexSkillFiles);
-
-  return {
-    requiredFiles,
-    referenceRules,
-    missingFiles: collectMissingAiGovernanceFiles(rootDir, requiredFiles),
-    skillContractFailures: collectCodexSkillContractFailures(rootDir, codexSkillFiles),
-    missingReferences: [
-      ...collectMissingAiGovernanceReferences(rootDir, referenceRules, codexSkillFiles),
-      ...collectFrontendLintScriptFailures(rootDir),
-    ],
-  };
 };

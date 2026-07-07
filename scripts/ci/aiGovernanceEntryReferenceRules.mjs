@@ -4,6 +4,8 @@ import {
   ENTRY_GOVERNANCE_REFERENCES,
   RUNTIME_GOVERNANCE_REFERENCES,
 } from './aiGovernanceRuntimeReferenceGroups.mjs';
+import { CLAUDE_README_REFERENCE_RULE } from './aiGovernanceClaudeReadmeReferenceRule.mjs';
+import { PLAYBOOK_SECTION_REFERENCE_RULES } from './aiGovernancePlaybookSectionRules.mjs';
 
 const buildAgentEntryRule = file => ({
   file,
@@ -17,6 +19,7 @@ export const buildAiGovernanceEntryReferenceRules = codexSkillFiles => [
   buildAgentEntryRule('AGENTS.md'),
   buildAgentEntryRule('CLAUDE.md'),
   { file: 'rules/code-style.md', contains: CODE_STYLE_GOVERNANCE_REFERENCES },
+  CLAUDE_README_REFERENCE_RULE,
   {
     file: '.claude/ai-tools-guide.md',
     contains: [
@@ -48,5 +51,6 @@ export const buildAiGovernanceEntryReferenceRules = codexSkillFiles => [
       'git diff --check',
       'node scripts/ci/check-maintainability-budgets.mjs',
     ],
+    sections: PLAYBOOK_SECTION_REFERENCE_RULES,
   },
 ];
