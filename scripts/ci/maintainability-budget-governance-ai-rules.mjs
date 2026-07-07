@@ -11,6 +11,7 @@ export const governanceAiMaintainabilityBudgets = [
   governanceAiBudget('scripts/ci/aiGovernanceCodexSkillSectionContract.mjs', 50, 'AI 治理 Codex skill 章节内容契约应独立维护每个核心章节的最小关键引用'),
   governanceAiBudget('scripts/ci/aiGovernanceRules.mjs', 75, 'AI 治理引用规则入口应只负责组合文档入口和 skill 引用规则'),
   governanceAiBudget('scripts/ci/aiGovernanceEntryReferenceRules.mjs', 60, 'AI 治理入口文档引用规则应集中维护入口、Playbook、README 和工具说明的关键引用'),
+  governanceAiBudget('scripts/ci/aiGovernanceDocReferenceRules.mjs', 35, 'AI 治理 docs/AI 文档引用规则应独立维护历史说明与当前治理入口的关键引用'),
   governanceAiBudget('scripts/ci/aiGovernanceClaudeReadmeReferenceRule.mjs', 20, 'AI 治理 Claude 目录 README 引用规则应独立维护目录索引的最小治理入口'),
   governanceAiBudget('scripts/ci/aiGovernancePlaybookSectionRules.mjs', 25, 'AI 治理 Playbook 章节引用规则应独立维护章节标题和章节内关键词映射'),
   governanceAiBudget('scripts/ci/aiGovernanceToolEntryReferenceRules.mjs', 30, 'AI 治理工具薄入口引用规则应独立维护 Cursor 和 Comate 的同源入口契约'),

@@ -1,267 +1,63 @@
-# AI 配置文件整合说明
+# AI 配置整合说明
 
-## 📚 文档层次结构
+本文说明项目 AI 协作资产的分层关系。目标是让规则、skills、入口文档和治理脚本形成同一套可进化系统，避免多个工具各写一份旧规范后逐渐漂移。
 
-项目的 AI 和编码规范文档现已整合为清晰的层次结构，避免重复，各司其职。
+## 分层原则
 
-### 文档架构图
+AI 协作资产按职责分为四层：
 
-```
-                         项目规范文档体系
-                                │
-                ┌───────────────┼───────────────┐
-                │               │               │
-        ┌───────▼──────┐  ┌────▼────┐  ┌───────▼────────┐
-        │ CLAUDE.md    │  │ rules/  │  │ .cursorrules   │
-        │ (项目理解)   │  │ (权威)  │  │ (快速参考)     │
-        └──────────────┘  └─────────┘  └────────────────┘
-```
+| 层级 | 代表文件 | 职责 |
+| --- | --- | --- |
+| 项目入口 | `AGENTS.md`、`CLAUDE.md` | 让 AI 助手快速理解项目结构、技术栈、常见任务和协作边界 |
+| 权威规范 | `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md` | 维护编码规范、验证闭环、规则/skill 回写和收尾门禁 |
+| 工具入口 | `.claude/ai-tools-guide.md`、`.codex/README.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.comate/rules/code-style.md` | 针对不同 AI 工具提供薄入口，转发到权威规范 |
+| 可迁移技能 | `.codex/skills/jsonutils-maintainer/SKILL.md` | 将项目维护流程封装为可复用 skill，方便 Codex 在类似任务中稳定触发 |
 
----
+原则是“权威规则只沉淀一处，工具入口只做路由和关键提醒”。如果某条经验要长期生效，优先写入 `docs/AI-ENGINEERING-PLAYBOOK.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`，再让入口文档引用它。
 
-## 📖 各文件定位
+## 权威关系
 
-### 1. `rules/code-style.md` ⭐ **权威规范**
+`rules/code-style.md` 是编码规范、提交格式和 CHANGELOG 规则的权威来源。涉及代码风格、注释、Git 提交和版本说明时，以该文件为准。
 
-**性质**: 项目编码规范的**唯一权威来源**
+`docs/AI-ENGINEERING-PLAYBOOK.md` 是 AI 工程闭环的权威来源。涉及子 Agent 委派、验证命令、规则进化、skill 回写、治理校验和显式豁免时，以该文件为准。
 
-**内容**:
-- ✅ 详细的代码风格规范
-- ✅ Git 提交格式规定
-- ✅ CHANGELOG 更新要求
-- ✅ 中文注释规范
-- ✅ 文件组织规范
-- ✅ 技术栈版本要求
+`.codex/skills/jsonutils-maintainer/SKILL.md` 是 Codex 项目维护技能模板。它不替代 Playbook，而是把必读文件、工作流、常用验证命令和重点边界压缩成可迁移入口。
 
-**适用对象**:
-- 所有开发人员（人类）
-- 所有 AI 编程助手
-- 代码审查标准
+`.claude/ai-tools-guide.md` 是跨工具说明。它面向 Claude Code、Ducc、Codex、GitHub Copilot、Cursor、Comate 等工具说明如何进入同一套规范。
 
-**维护**:
-- 这是最详细、最权威的规范文档
-- 任何编码规范的变更都应该在这里更新
-- 其他文档应引用此文件而非重复内容
+## 本机配置与显式豁免
 
----
+`.claude/settings.local.json` 属于本机私有配置，不是协作资产。它可能包含本机路径、临时权限或个人工具偏好，因此仅作为显式豁免文件存在。
 
-### 2. `CLAUDE.md` - Claude Code/Ducc 项目指引
+不要把项目级 rules、skills、验证流程或长期协作约定写入 `.claude/settings.local.json`。需要共享的内容应迁移到 `AGENTS.md`、`CLAUDE.md`、`rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md`、`.claude/ai-tools-guide.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`。
 
-**性质**: AI 助手的**项目理解和任务指引**
+新增本机私有配置时，必须明确它是否进入 Git、是否属于协作资产、是否需要显式豁免。没有明确边界的 AI 配置文件不应默认提交。
 
-**侧重点**:
-- 📋 项目背景和目标
-- 🏗️ 架构和模块说明
-- 🔍 核心功能详解
-- 📝 常见任务的分步操作
-- 🔧 故障排查指南
-- 💡 AI 助手使用建议
+## 治理校验
 
-**与 code-style.md 的关系**:
-- 引用 `rules/code-style.md` 作为详细规范
-- 提供快速参考和项目上下文
-- 侧重"为什么"和"如何做"，而非"怎么写"
+修改 AI 入口、rules、skills、Playbook 或 `docs/AI-*.md` 后，运行：
 
-**适用场景**:
-- Claude Code 对话式编程
-- Ducc 任务理解
-- 需要深度理解项目时
-
----
-
-### 3. `.cursorrules` - Cursor AI 快速参考
-
-**性质**: Cursor AI 的**实时编码规则**
-
-**侧重点**:
-- ⚡ 快速规范查找
-- 🎯 常用最佳实践
-- 🚀 常用命令速查
-- 💡 Cursor 特定优化
-
-**与 code-style.md 的关系**:
-- 明确引用 `rules/code-style.md`
-- 提供精简版规范
-- 适合快速查阅和实时提示
-
-**适用场景**:
-- Cursor AI 实时代码建议
-- 快速查阅规范
-- 编码时的即时参考
-
----
-
-## 🔄 文件关系说明
-
-### 权威层级
-
-```
-rules/code-style.md (权威规范)
-        │
-        ├── 被引用 → CLAUDE.md (深度指引)
-        │
-        └── 被引用 → .cursorrules (快速参考)
+```bash
+node scripts/ci/check-ai-governance.mjs
+node scripts/ci/check-maintainability-budgets.mjs
 ```
 
-### 信息流向
+`check-ai-governance` 会检查：
 
-```
-详细规范 (code-style.md)
-    ↓
-中等详细 (CLAUDE.md) - 添加项目上下文和任务指引
-    ↓
-精简参考 (.cursorrules) - 提取关键规则和速查信息
-```
+- 必需 AI 协作资产是否存在。
+- 入口文档是否引用权威规范和关键验证命令。
+- AGENTS/CLAUDE、Cursor/Comate 这类同源入口是否漂移。
+- `.codex/skills/*/SKILL.md` 是否保留可迁移契约。
+- `.claude/`、`.codex/`、`.comate/`、`.github/instructions/**/*.instructions.md`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增资产是否进入治理清单、引用规则或显式豁免。
 
----
+## 维护流程
 
-## 📋 内容分工
+新增 AI 工具或入口时：
 
-| 主题 | rules/code-style.md | CLAUDE.md | .cursorrules |
-|------|---------------------|-----------|--------------|
-| **代码风格详情** | ✅ 完整详细 | 📌 引用 + 要点 | 📌 引用 + 速查 |
-| **Git 提交规范** | ✅ 权威定义 | 📄 引用 + 示例 | 📄 引用 + 格式 |
-| **CHANGELOG 规范** | ✅ 详细要求 | 📌 引用 | 📌 引用 |
-| **项目架构说明** | ❌ | ✅ 详细说明 | 📝 简要概述 |
-| **功能模块介绍** | ❌ | ✅ 详细介绍 | ❌ |
-| **常见任务指引** | ❌ | ✅ 分步操作 | 📝 命令速查 |
-| **故障排查** | ❌ | ✅ 详细方案 | 📝 快速提示 |
-| **最佳实践示例** | 📝 少量示例 | ✅ 丰富示例 | 📝 关键示例 |
-| **文件组织规范** | ✅ 权威规定 | 📄 引用 | 📄 引用 |
-| **注释规范** | ✅ 详细规定 | 📌 强调中文 | 📌 强调中文 |
+1. 先判断它是协作资产、本机私有配置，还是一次性说明。
+2. 协作资产进入必需文件清单和引用规则。
+3. 本机私有配置进入显式豁免，并在文档里说明边界。
+4. 可复用经验写入 Playbook 或 skill，再同步薄入口。
+5. 补治理脚本或负向测试，让后续漂移被 CI 拦住。
 
-**图例**:
-- ✅ 主要内容所在
-- 📌 引用 + 核心要点
-- 📄 引用 + 简化说明
-- 📝 精简或示例
-- ❌ 不涉及
-
----
-
-## 🎯 使用指南
-
-### 对于开发者（人类）
-
-**首次了解项目**:
-1. 阅读 `README.md` 了解项目
-2. 查看 `ARCHITECTURE.md` 理解架构
-3. **精读 `rules/code-style.md` 掌握编码规范**
-
-**日常开发**:
-- 编码规范查询 → `rules/code-style.md`
-- 提交格式查询 → `rules/code-style.md`
-- 架构和模块理解 → `ARCHITECTURE.md` 或 `CLAUDE.md`
-
-**使用 AI 助手时**:
-- 提醒 AI 遵循 `rules/code-style.md`
-- AI 会自动读取 `CLAUDE.md` 或 `.cursorrules`
-
----
-
-### 对于 AI 助手
-
-**Claude Code/Ducc**:
-1. 自动读取 `CLAUDE.md` 获取项目上下文
-2. 遇到编码规范问题时，查阅 `rules/code-style.md`
-3. 生成代码前确认符合两份文档的要求
-
-**Cursor AI**:
-1. 自动读取 `.cursorrules` 作为实时规则
-2. 需要详细规范时，查阅 `rules/code-style.md`
-3. 实时代码建议遵循快速参考规则
-
-**所有 AI 助手的原则**:
-⚠️ `rules/code-style.md` 是权威规范，如有冲突以它为准
-
----
-
-## 🔧 维护建议
-
-### 更新优先级
-
-1. **规范变更**:
-   - ✅ 必须更新: `rules/code-style.md`
-   - 📝 可选更新: `CLAUDE.md` 和 `.cursorrules` (如果有相关引用)
-
-2. **项目架构变更**:
-   - ✅ 必须更新: `ARCHITECTURE.md`
-   - ✅ 必须更新: `CLAUDE.md`
-   - 📝 可选更新: `.cursorrules` (如果影响文件组织)
-
-3. **新增功能**:
-   - ✅ 必须更新: `CHANGELOG.md`
-   - 📝 可选更新: `CLAUDE.md` (如果是重要功能模块)
-
-4. **工具链变更**:
-   - 📝 可选更新: `.cursorrules` (常用命令部分)
-
-### 避免重复的原则
-
-1. **规范内容**:
-   - 详细规范只写在 `rules/code-style.md`
-   - 其他文档用"参考 rules/code-style.md"引用
-   - 只提供必要的快速参考摘要
-
-2. **架构内容**:
-   - 详细架构写在 `ARCHITECTURE.md`
-   - `CLAUDE.md` 可以提供更面向 AI 的解读
-   - `.cursorrules` 只提供简要概述
-
-3. **更新同步**:
-   - 规范变更 → 检查所有引用点
-   - 避免信息不一致
-   - 定期审查文档一致性
-
----
-
-## ✅ 整合效果
-
-### 优点
-
-1. **清晰的层次** - 权威规范 → 详细指引 → 快速参考
-2. **避免重复** - 通过引用而非复制内容
-3. **易于维护** - 规范变更只需更新一处
-4. **适配不同场景** - 深度理解 vs 快速查询
-5. **保持一致性** - 所有文档指向同一规范源
-
-### 文件大小优化
-
-**整合前**:
-- `.cursorrules`: 7.8 KB (包含大量重复规范)
-
-**整合后**:
-- `.cursorrules`: 约 5 KB (精简，引用 code-style.md)
-- `CLAUDE.md`: 约 9 KB (添加引用说明)
-
-**节省**: 减少重复，提高可维护性
-
----
-
-## 📌 快速记忆口诀
-
-```
-编码规范看 code-style ⭐
-项目理解读 CLAUDE 📖
-快速查询用 cursorrules ⚡
-架构设计找 ARCHITECTURE 🏗️
-版本历史查 CHANGELOG 📝
-```
-
----
-
-## 🔗 相关文档
-
-- `rules/code-style.md` - 权威编码规范
-- `CLAUDE.md` - AI 助手项目指引
-- `.cursorrules` - Cursor AI 快速规则
-- `ARCHITECTURE.md` - 详细架构说明
-- `CHANGELOG.md` - 版本更新日志
-- `README.md` - 项目介绍
-
----
-
-**更新日期**: 2025-02-25
-**维护者**: 项目开发团队
-
-💡 **提示**: 本文档说明了 AI 配置文件的整合逻辑，帮助理解各文档的定位和关系。
+如果只是临时实验记录，不要放进 AI 协作资产目录；需要保留时应标注状态，并在稳定后转成规则、skill 或删除。
