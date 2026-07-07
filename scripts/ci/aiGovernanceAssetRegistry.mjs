@@ -6,6 +6,7 @@ import {
 } from './aiGovernanceDiscoveredAssets.mjs';
 import { AI_GOVERNANCE_ASSET_REGISTRY_FILE } from './aiGovernanceAssetRegistryConstants.mjs';
 import { buildAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistryFailures.mjs';
+import { buildRegistryEvidenceSourceSets } from './aiGovernanceAssetRegistryEvidenceSources.mjs';
 import { parseAiGovernanceAssetRegistryRows } from './aiGovernanceAssetRegistryRows.mjs';
 
 const hasFile = (rootDir, file) => fs.existsSync(path.join(rootDir, file));
@@ -15,12 +16,14 @@ const uniqueSorted = files => [...new Set(files)].sort();
 const buildRegistryEvidenceContext = (rootDir, requiredFiles, referenceRules) => {
   const discoveredFiles = discoverAiGovernanceAssetFiles(rootDir);
   const exemptFiles = AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES.filter(file => hasFile(rootDir, file));
+  const expectedRegistryFiles = uniqueSorted([...requiredFiles, ...discoveredFiles, ...exemptFiles]);
   return {
     discoveredFiles: new Set(discoveredFiles),
     exemptFiles: new Set(exemptFiles),
-    expectedRegistryFiles: uniqueSorted([...requiredFiles, ...discoveredFiles, ...exemptFiles]),
+    expectedRegistryFiles,
     referenceRuleFiles: new Set(referenceRules.map(rule => rule.file)),
     requiredFiles: new Set(requiredFiles),
+    ...buildRegistryEvidenceSourceSets({ discoveredFiles, expectedRegistryFiles, referenceRules }),
   };
 };
 

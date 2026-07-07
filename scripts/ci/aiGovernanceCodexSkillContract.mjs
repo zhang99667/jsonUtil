@@ -16,6 +16,9 @@ const collectMissingSkillFrontmatterFields = (frontmatter) => (
     .filter(field => !(new RegExp(`^${field}:\\s*\\S`, 'm')).test(frontmatter))
 );
 
+const extractFrontmatterName = frontmatter => frontmatter.match(/^name:\s*(\S+)/m)?.[1];
+const getSkillDirectoryName = file => file.split('/').at(-2);
+
 export const collectCodexSkillContractFailures = (rootDir, codexSkillFiles) => {
   const failures = [];
 
@@ -28,8 +31,15 @@ export const collectCodexSkillContractFailures = (rootDir, codexSkillFiles) => {
     if (!frontmatterMatch) {
       failures.push(`${file}: 缺少 skill frontmatter`);
     } else {
-      collectMissingSkillFrontmatterFields(frontmatterMatch[1])
+      const frontmatter = frontmatterMatch[1];
+      const skillName = extractFrontmatterName(frontmatter);
+      const directoryName = getSkillDirectoryName(file);
+
+      collectMissingSkillFrontmatterFields(frontmatter)
         .forEach(field => failures.push(`${file}: frontmatter 缺少 ${field}`));
+      if (skillName && skillName !== directoryName) {
+        failures.push(`${file}: frontmatter name 必须等于 skill 目录名 ${directoryName}`);
+      }
     }
 
     CODEX_SKILL_REQUIRED_SECTIONS.forEach((sectionTitle) => {

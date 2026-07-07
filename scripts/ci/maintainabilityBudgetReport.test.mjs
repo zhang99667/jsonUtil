@@ -58,9 +58,11 @@ test('可维护性预算报告会突出接近上限的文件', () => {
   });
 });
 
-test('可维护性预算报告会收集缺失文件、超预算和未纳入自检的规则表', () => {
+test('可维护性预算报告会收集缺失文件、超预算、未自检规则表和未预算 AI 治理脚本', () => {
   withBudgetFixture((rootDir) => {
     writeLines(rootDir, 'src/over.js', 6);
+    writeLines(rootDir, 'scripts/ci/aiGovernanceLooseHelper.mjs', 1);
+    writeLines(rootDir, 'scripts/ci/aiGovernanceLooseHelper.test.mjs', 1);
     writeLines(rootDir, 'scripts/ci/maintainability-budget-untracked-rules.mjs', 1);
 
     const report = buildMaintainabilityBudgetReport(rootDir, [
@@ -75,6 +77,7 @@ test('可维护性预算报告会收集缺失文件、超预算和未纳入自�
     assert.deepEqual(report.highUsageSummaries, []);
     assert.deepEqual(report.failures, [
       'scripts/ci/maintainability-budget-untracked-rules.mjs: 预算规则文件未纳入自检预算',
+      'scripts/ci/aiGovernanceLooseHelper.mjs: AI 治理脚本未纳入可维护性预算',
       'src/over.js: 6/5 行，too large',
       'src/missing.js: 文件不存在，无法检查预算',
     ]);
