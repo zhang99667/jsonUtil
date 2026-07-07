@@ -1,4 +1,5 @@
 import { governanceAiContractMaintainabilityBudgets } from './maintainability-budget-governance-ai-contract-rules.mjs';
+import { governanceAiDecisionMaintainabilityBudgets } from './maintainability-budget-governance-ai-decision-rules.mjs';
 import { governanceAiReferenceMaintainabilityBudgets } from './maintainability-budget-governance-ai-reference-rules.mjs';
 import { governanceAiRegistryMaintainabilityBudgets } from './maintainability-budget-governance-ai-registry-rules.mjs';
 import { governanceAiTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-test-rules.mjs';
@@ -11,6 +12,7 @@ export const governanceAiMaintainabilityBudgets = [
   governanceAiBudget('scripts/ci/aiGovernanceReport.mjs', 45, 'AI 治理报告组装应独立维护 required files、引用规则和各类失败列表汇总'),
   ...governanceAiRegistryMaintainabilityBudgets,
   ...governanceAiContractMaintainabilityBudgets,
+  ...governanceAiDecisionMaintainabilityBudgets,
   ...governanceAiTestMaintainabilityBudgets,
   ...governanceAiReferenceMaintainabilityBudgets,
   governanceAiBudget('scripts/ci/aiGovernanceAssetFileCollector.mjs', 25, 'AI 治理资产文件收集器应独立维护递归文件收集和路径归一化'),

@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.715 (2026-07-08) - AI 治理预算归位
+### 🏗️ 架构与基础设施
+- **决策账本预算归位**: 将 `governanceAiDecisionMaintainabilityBudgets` 从注册表预算子表提升到 AI 治理预算入口，避免决策账本预算所有权继续依赖注册表预算链路
+- **决策发布追踪契约**: 决策账本校验新增 `CHANGELOG.md` 回写要求，确保每条 AI 治理决策都能从发布说明反查
+- **PR 人审追踪提醒**: PR 模板的 AI 协作资产 checklist 补齐 `docs/AI-GOVERNANCE-DECISIONS.md` 与 `CHANGELOG.md` 联动提醒，并由引用规则负例锁定
+
 ## v1.8.714 (2026-07-08) - AI 治理契约补强
 ### 🏗️ 架构与基础设施
 - **证据来源上下文契约**: `EVIDENCE_SOURCE_DESCRIPTORS` 派生来源 `contextKey` 清单，资产注册表在证据反查前先校验上下文 Set 完整性，避免新增证据来源时因漏接来源集合而静默退化

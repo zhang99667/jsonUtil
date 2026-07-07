@@ -142,6 +142,13 @@ const missingReferenceCases = [
     contains: ['下一步建议：'],
     expected: 'docs/AI-ENGINEERING-PLAYBOOK.md: 缺少 "下一步建议："',
   },
+  {
+    name: 'AI 治理引用检查会报告 PR 模板缺失决策账本追踪',
+    file: '.github/PULL_REQUEST_TEMPLATE.md',
+    content: lines(['docs/AI-ASSET-REGISTRY.md', 'node scripts/ci/check-ai-governance.mjs', '负向测试', '显式豁免', 'CHANGELOG.md']),
+    contains: ['docs/AI-GOVERNANCE-DECISIONS.md'],
+    expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
+  },
 ];
 
 missingReferenceCases.forEach(({ name, file, content, contains, expected }) => {
