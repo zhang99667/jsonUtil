@@ -6,6 +6,7 @@ export const appTemplateFillMaintainabilityBudgets = [
   appTemplateFillBudget('frontend/src/components/TemplateFillFooterActions.test.tsx', 120, '模板填充底部操作测试只锁定按钮文案、禁用态、title、aria 和点击回调'),
   appTemplateFillBudget('frontend/src/components/TemplateFillPlaceholderForm.tsx', 100, '模板填充占位符表单只维护占位符行、replacement 输入、候选采用和来源文案渲染'),
   appTemplateFillBudget('frontend/src/components/TemplateFillPlaceholderForm.test.tsx', 110, '模板填充占位符表单测试只锁定行渲染、候选禁用态、replacement 输入和采用候选回调'),
-  appTemplateFillBudget('frontend/src/utils/templateFillPanelModel.ts', 220, '模板填充模型 helper 只维护回填模板草稿解析、摘要统计、replacement 更新和大小文案'),
+  appTemplateFillBudget('frontend/src/utils/templateFillPanelModel.ts', 25, '模板填充面板模型门面只维护模板大小文案和占位符回填模型兼容导出'),
+  appTemplateFillBudget('frontend/src/utils/templateFillPlaceholderDraftModel.ts', 210, '模板填充占位符回填模型只维护草稿解析、摘要统计、replacement 更新和占位符类型契约'),
   appTemplateFillBudget('frontend/src/utils/templateFillPanelModel.test.ts', 160, '模板填充模型测试只锁定回填模板解析兼容性、摘要统计、replacement 更新和大小文案'),
 ];
