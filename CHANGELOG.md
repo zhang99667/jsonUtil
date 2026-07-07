@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.637 (2026-07-07) - 模板填充草稿 Readers 拆分
+### 🏗️ 架构与基础设施
+- **占位符草稿模型瘦身**: 将回填模板详情行、候选和来源字段的容错读取拆到 `placeholderFillTemplateDraftReaders`，主模型继续聚焦草稿解析、摘要统计和 replacement 更新，并补充无效候选忽略测试
+
 ## v1.8.636 (2026-07-07) - 模板填充占位符契约收敛
 ### 🏗️ 架构与基础设施
 - **占位符模板契约单源化**: 将占位符回填模板 kind 常量和 `PlaceholderTemplate*` 类型收敛到 `placeholderFillTemplateContract`，解析、工作流识别、模板生成和深度合并复用同一契约，降低字符串漂移风险
