@@ -5,15 +5,16 @@ import {
   resetAppTemplateFillCommandRunnerMocks,
   runPlaceholderTemplateFillCommand,
   runTemplateFillCommand,
+  type AppTemplateFillCommandEffectsFixture,
 } from './appTemplateFillCommandRunnerTestFixture';
 import {
-  expectTemplateCommandQualityDeltaCleared,
+  expectPlaceholderTemplateAppliedWithoutDelta,
   expectTemplateCommandFailure,
-  expectTemplateCommandSourceApplied,
   expectTemplateCommandSourceUntouched,
 } from './appTemplateFillCommandRunnerTestAssertions';
 
 const mocks = getAppTemplateFillCommandRunnerMocks();
+type PlaceholderFailureSetup = (effects: AppTemplateFillCommandEffectsFixture) => void;
 
 describe('appTemplateFillCommandRunner failures', () => {
   beforeEach(() => {
@@ -33,28 +34,22 @@ describe('appTemplateFillCommandRunner failures', () => {
     expect(effects.onShowError).not.toHaveBeenCalled();
   });
 
-  it('质量摘要模块加载失败时仍应用占位符模板', async () => {
+  it.each<[string, PlaceholderFailureSetup]>([
+    ['质量摘要模块加载失败时仍应用占位符模板', effects => {
+      effects.loadSummaryModule.mockRejectedValue(new Error('summary failed'));
+    }],
+    ['质量 delta 构建失败时仍应用占位符模板', () => {
+      mocks.buildAppTemplateFillQualityDelta.mockImplementation(() => {
+        throw new Error('quality failed');
+      });
+    }],
+  ])('%s', async (_, setupFailure) => {
     const effects = createAppTemplateFillCommandEffects();
-    effects.loadSummaryModule.mockRejectedValue(new Error('summary failed'));
+    setupFailure(effects);
 
     await runPlaceholderTemplateFillCommand(effects);
 
-    expectTemplateCommandQualityDeltaCleared(effects);
-    expectTemplateCommandSourceApplied(effects);
-    expect(effects.onShowSuccess).toHaveBeenCalledWith('占位符已回填，质量对比暂不可用');
-  });
-
-  it('质量 delta 构建失败时仍应用占位符模板', async () => {
-    const effects = createAppTemplateFillCommandEffects();
-    mocks.buildAppTemplateFillQualityDelta.mockImplementation(() => {
-      throw new Error('quality failed');
-    });
-    await runPlaceholderTemplateFillCommand(effects);
-
-    expectTemplateCommandQualityDeltaCleared(effects);
-    expectTemplateCommandSourceApplied(effects);
-    expect(effects.onShowError).not.toHaveBeenCalled();
-    expect(effects.onShowSuccess).toHaveBeenCalledWith('占位符已回填，质量对比暂不可用');
+    expectPlaceholderTemplateAppliedWithoutDelta(effects);
   });
 
   it.each([
