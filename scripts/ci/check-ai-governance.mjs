@@ -8,10 +8,19 @@ import { buildAiGovernanceReport } from './aiGovernanceChecks.mjs';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const report = buildAiGovernanceReport(rootDir);
 
-if (report.missingFiles.length > 0 || report.missingReferences.length > 0) {
+if (
+  report.missingFiles.length > 0 ||
+  report.skillContractFailures.length > 0 ||
+  report.missingReferences.length > 0
+) {
   if (report.missingFiles.length > 0) {
     console.error('AI 协作资产缺少以下文件:');
     report.missingFiles.forEach(file => console.error(`- ${file}`));
+  }
+
+  if (report.skillContractFailures.length > 0) {
+    console.error('AI 协作 skill 契约缺少以下内容:');
+    report.skillContractFailures.forEach(message => console.error(`- ${message}`));
   }
 
   if (report.missingReferences.length > 0) {

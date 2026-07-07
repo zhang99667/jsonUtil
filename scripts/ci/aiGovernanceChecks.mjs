@@ -1,9 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { collectCodexSkillContractFailures } from './aiGovernanceCodexSkillContract.mjs';
 import {
   buildAiGovernanceReferenceRules,
   buildAiGovernanceRequiredFiles,
 } from './aiGovernanceRules.mjs';
+
+export { collectCodexSkillContractFailures };
 
 export const discoverCodexSkillFiles = (rootDir) => {
   const codexSkillsDir = path.join(rootDir, '.codex/skills');
@@ -58,6 +61,7 @@ export const buildAiGovernanceReport = (rootDir) => {
     requiredFiles,
     referenceRules,
     missingFiles: collectMissingAiGovernanceFiles(rootDir, requiredFiles),
+    skillContractFailures: collectCodexSkillContractFailures(rootDir, codexSkillFiles),
     missingReferences: [
       ...collectMissingAiGovernanceReferences(rootDir, referenceRules, codexSkillFiles),
       ...collectFrontendLintScriptFailures(rootDir),

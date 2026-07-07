@@ -13,11 +13,7 @@ export const DEPLOY_SHELL_SYNTAX_REFERENCES = [
   'workflow run',
 ];
 
-export const SUBAGENT_DELEGATION_REFERENCES = [
-  '子 Agent 委派',
-  '主线程负责',
-  '拆分边界',
-];
+export const SUBAGENT_DELEGATION_REFERENCES = ['子 Agent 委派', '主线程负责', '拆分边界'];
 
 export const CHUNK_LOAD_RECOVERY_CATCH_REFERENCES = [
   'node scripts/ci/check-chunk-load-recovery-catches.mjs',
@@ -32,8 +28,11 @@ export const AI_SAFETY_BOUNDARY_REFERENCES = [
   '可验证闭环',
 ];
 
-export const AI_EVOLUTION_LOOP_REFERENCES = [
-  '复盘沉淀',
-  '规则/skill 回写',
-  '治理校验',
+export const AI_EVOLUTION_LOOP_REFERENCES = ['复盘沉淀', '规则/skill 回写', '治理校验'];
+
+export const VERSION_CHANGELOG_REFERENCES = [
+  'node scripts/ci/check-version-consistency.mjs',
+  'frontend/package.json',
+  'frontend/package-lock.json',
+  'CHANGELOG.md',
 ];
