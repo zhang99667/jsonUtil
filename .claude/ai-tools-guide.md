@@ -50,19 +50,14 @@ Cursor AI 的规则文件现在是薄入口，负责转发到主规范和 AI 工
 - 修改 AI 入口后运行 `node scripts/ci/check-ai-governance.mjs`
 
 ### 4. GitHub Copilot
-**配置文件**: 无需特殊配置
+**配置文件**: `.github/copilot-instructions.md`
 
-GitHub Copilot 会根据:
-- 项目中的现有代码模式
-- 注释和文档
-- 文件结构和命名
+GitHub Copilot 使用仓库级 instructions 薄入口，继续转发到 `AGENTS.md`、`CLAUDE.md`、`rules/code-style.md` 和 `docs/AI-ENGINEERING-PLAYBOOK.md`。
 
-自动学习并提供建议。
-
-**优化建议**:
-- 为关键函数添加清晰的注释
-- 保持代码风格一致
-- 使用有意义的变量和函数名
+**使用方式**:
+- Copilot Chat / agent 任务先读取 `.github/copilot-instructions.md`
+- 入口文件只保留关键路由和边界，不复制完整规则
+- 修改 Copilot 入口后运行 `node scripts/ci/check-ai-governance.mjs`
 
 ### 5. Comate (百度代码助手)
 **配置文件**: `.comate/` 目录
@@ -120,6 +115,24 @@ GitHub Copilot 会根据:
 - 跨工具共享
 - 强调可验证闭环
 - 适合长期维护和交接
+
+### docs/AI-CONFIG-INTEGRATION.md
+**目标用户**: 维护 AI 入口、rules、skills 和本机配置边界的开发者与 AI 助手
+
+**内容包括**:
+- AI 协作资产分层
+- 权威规范与工具薄入口关系
+- 本机私有配置和显式豁免边界
+- `docs/AI-*.md` 进入治理网的维护流程
+
+### docs/AI-TOOLS-SETUP.md
+**目标用户**: 需要快速确认当前 AI 工具入口和防漂移清单的维护者
+
+**内容包括**:
+- 当前 AI 工具入口状态
+- 必读顺序和维护要求
+- 必跑治理命令
+- 防漂移清单
 
 ## 使用建议
 
@@ -211,9 +224,11 @@ GitHub Copilot 会根据:
 
 ## 相关资源
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - 详细架构说明
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - 贡献指南
-- [CHANGELOG.md](./CHANGELOG.md) - 版本历史
+- [ARCHITECTURE.md](../ARCHITECTURE.md) - 详细架构说明
+- [AI 配置整合说明](../docs/AI-CONFIG-INTEGRATION.md) - AI 入口、rules、skills 和显式豁免关系
+- [AI 工具配置状态](../docs/AI-TOOLS-SETUP.md) - 当前 AI 工具入口和防漂移清单
+- [CONTRIBUTING.md](../CONTRIBUTING.md) - 贡献指南
+- [CHANGELOG.md](../CHANGELOG.md) - 版本历史
 
 ---
 

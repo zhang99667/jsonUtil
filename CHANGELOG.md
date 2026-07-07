@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.700 (2026-07-07) - AI 文档资产治理
+### 🏗️ 架构与基础设施
+- **AI 文档进入治理网**: `check-ai-governance` 新增 `docs/AI-*.md` 与 `rules/ai-*.md` 资产发现，并将 `docs/AI-CONFIG-INTEGRATION.md`、`docs/AI-TOOLS-SETUP.md` 纳入必需文件和引用规则，新增 docs/rules 侧未治理资产负向测试，避免 AI 协作文档绕过 rules/skills 治理闭环
+- **AI 配置说明去旧化**: 将早期一次性 AI 配置完成总结改为当前可维护索引，明确入口文档、权威 rules、Playbook、Codex skill、本机私有配置和显式豁免的分层关系，减少旧状态和重复规范继续误导后续 agent
+- **本机配置豁免边界可发现**: `.claude/README.md`、Playbook、代码规范和项目 skill 同步说明 `.claude/settings.local.json` 只作为本机私有配置显式豁免，项目级 rules、skills 和验证流程必须迁移到共享协作资产
+- **AI 安全边界章节化**: Playbook 的 `### 3. 编码约束` 新增章节级 AI 安全边界校验，要求本地规则优先、手动触发、敏感内容不外泄和可验证闭环必须落在编码约束章节内，避免关键词散落其它章节也能通过治理门禁
+- **GitHub Copilot 入口治理化**: 新增 `.github/copilot-instructions.md` 作为 Copilot 仓库级薄入口，并纳入 AI 治理必需文件、资产发现和工具入口引用规则，避免 Copilot 单独依赖隐式代码模式或复制旧规范
+- **Copilot 路径级指令防游离**: AI 资产发现新增 `.github/instructions/**/*.instructions.md` 模式和负向测试，后续为特定目录补 Copilot path-specific instructions 时必须进入治理清单、引用规则或显式豁免
+
 ## v1.8.699 (2026-07-07) - AI 治理章节约束
 ### 🏗️ 架构与基础设施
 - **Playbook 章节级引用校验**: `check-ai-governance` 新增 Markdown 章节引用检查，要求子 Agent 委派关键词必须落在 `### 0. 判断子 Agent 委派`，规则进化关键词必须落在 `### 5. 规则进化闭环`；补充章节内缺字段负向测试，避免关键词散落在文件其它位置也能通过 AI 治理门禁

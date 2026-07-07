@@ -115,10 +115,15 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '.claude/README.md',
     '.cursorrules',
     '.comate/rules/code-style.md',
+    '.codex/README.md',
+    '.github/copilot-instructions.md',
     'rules/code-style.md',
     'docs/AI-ENGINEERING-PLAYBOOK.md',
+    'docs/AI-CONFIG-INTEGRATION.md',
+    'docs/AI-TOOLS-SETUP.md',
     '.codex/skills/jsonutils-maintainer/SKILL.md',
     'skills/jsonutils-maintainer/SKILL.md',
+    '.claude/settings.local.json',
     'git status --short --branch',
     'npm run lint',
     'npm run typecheck',
@@ -176,6 +181,8 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '回写追踪',
     '锁定测试',
     '治理校验',
+    '本机私有配置',
+    '显式豁免',
   ].join('\n');
 
   [
@@ -183,8 +190,11 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'CLAUDE.md',
     'rules/code-style.md',
     'docs/AI-ENGINEERING-PLAYBOOK.md',
+    'docs/AI-CONFIG-INTEGRATION.md',
+    'docs/AI-TOOLS-SETUP.md',
     '.claude/README.md',
     '.claude/ai-tools-guide.md',
+    '.github/copilot-instructions.md',
     '.codex/README.md',
     '.cursorrules',
     '.comate/rules/code-style.md',
@@ -203,6 +213,8 @@ const writeMinimalGovernanceFixture = (rootDir) => {
   writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
     sharedReferences,
     '### 0. 判断子 Agent 委派',
+    sharedReferences,
+    '### 3. 编码约束',
     sharedReferences,
     '### 5. 规则进化闭环',
     sharedReferences,
@@ -623,6 +635,39 @@ test('AI 治理章节引用检查会报告关键词落错章节', () => {
   });
 });
 
+test('AI 治理章节引用检查会报告 AI 安全边界落错章节', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
+      '### 3. 编码约束',
+      '本地规则优先',
+      '用户手动触发',
+      '可验证闭环',
+      '测试',
+      '脚本',
+      '可复核日志',
+      '### 5. 规则进化闭环',
+      '敏感内容不外泄',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{
+        file: 'docs/AI-ENGINEERING-PLAYBOOK.md',
+        contains: ['敏感内容不外泄'],
+        sections: [{
+          sectionTitle: '### 3. 编码约束',
+          contains: ['敏感内容不外泄'],
+        }],
+      }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      'docs/AI-ENGINEERING-PLAYBOOK.md: ### 3. 编码约束 缺少 "敏感内容不外泄"',
+    ]);
+  });
+});
+
 test('AI 治理同源入口检查会报告 AGENTS 与 CLAUDE 协作章节漂移', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'AGENTS.md', mirroredAgentSection);
@@ -659,12 +704,21 @@ test('AI 治理资产发现会跳过显式豁免并报告未治理资产', () =>
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.claude/settings.local.json', '{}');
     writeFixtureFile(rootDir, '.claude/new-agent-guide.md', '新 AI 协作说明');
+    writeFixtureFile(rootDir, '.github/instructions/review.instructions.md', '新 Copilot 路径级指令');
+    writeFixtureFile(rootDir, 'docs/AI-NEW-WORKFLOW.md', '新 AI 协作流程');
+    writeFixtureFile(rootDir, 'rules/ai-review-rules.md', '新 AI 规则');
 
     assert.deepEqual(discoverAiGovernanceAssetFiles(rootDir), [
       '.claude/new-agent-guide.md',
+      '.github/instructions/review.instructions.md',
+      'docs/AI-NEW-WORKFLOW.md',
+      'rules/ai-review-rules.md',
     ]);
     assert.deepEqual(collectUngovernedAiGovernanceAssets(rootDir, []), [
       '.claude/new-agent-guide.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.github/instructions/review.instructions.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      'docs/AI-NEW-WORKFLOW.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      'rules/ai-review-rules.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
     ]);
   });
 });
@@ -762,14 +816,21 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   const claudeReadmeRule = referenceRules.find(rule => rule.file === '.claude/README.md');
   const claudeRule = referenceRules.find(rule => rule.file === '.claude/ai-tools-guide.md');
   const codexRule = referenceRules.find(rule => rule.file === '.codex/README.md');
+  const aiConfigRule = referenceRules.find(rule => rule.file === 'docs/AI-CONFIG-INTEGRATION.md');
+  const aiToolsRule = referenceRules.find(rule => rule.file === 'docs/AI-TOOLS-SETUP.md');
+  const copilotRule = referenceRules.find(rule => rule.file === '.github/copilot-instructions.md');
   const cursorRule = referenceRules.find(rule => rule.file === '.cursorrules');
   const comateRule = referenceRules.find(rule => rule.file === '.comate/rules/code-style.md');
   const playbookRule = referenceRules.find(rule => rule.file === 'docs/AI-ENGINEERING-PLAYBOOK.md');
   const skillRule = referenceRules.find(rule => rule.file === skillFiles[0]);
   const delegationSection = playbookRule.sections.find(section => section.sectionTitle === '### 0. 判断子 Agent 委派');
+  const codingSection = playbookRule.sections.find(section => section.sectionTitle === '### 3. 编码约束');
   const evolutionSection = playbookRule.sections.find(section => section.sectionTitle === '### 5. 规则进化闭环');
 
   assert.equal(requiredFiles.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(requiredFiles.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
+  assert.equal(requiredFiles.includes('docs/AI-TOOLS-SETUP.md'), true);
+  assert.equal(requiredFiles.includes('.github/copilot-instructions.md'), true);
   assert.equal(requiredFiles.includes('.claude/README.md'), true);
   assert.equal(requiredFiles.includes('.cursorrules'), true);
   assert.equal(requiredFiles.includes('.comate/rules/code-style.md'), true);
@@ -778,6 +839,8 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(claudeEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(claudeReadmeRule.contains.includes('docs/AI-ENGINEERING-PLAYBOOK.md'), true);
   assert.equal(claudeReadmeRule.contains.includes('.claude/ai-tools-guide.md'), true);
+  assert.equal(claudeReadmeRule.contains.includes('.claude/settings.local.json'), true);
+  assert.equal(claudeReadmeRule.contains.includes('显式豁免'), true);
   ['node scripts/ci/check-version-consistency.mjs', 'frontend/package.json', 'frontend/package-lock.json', 'CHANGELOG.md']
     .forEach((expectedText) => {
       assert.equal(agentsEntryRule.contains.includes(expectedText), true);
@@ -787,14 +850,21 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(codexRule.contains.includes('.claude/ai-tools-guide.md'), true);
   assert.equal(codexRule.contains.includes('skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(codexRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(aiConfigRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(aiConfigRule.contains.includes('显式豁免'), true);
+  assert.equal(aiToolsRule.contains.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
+  assert.equal(aiToolsRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(copilotRule.contains.includes('AGENTS.md'), true);
+  assert.equal(copilotRule.contains.includes('node scripts/ci/check-maintainability-budgets.mjs'), true);
   assert.equal(cursorRule.contains.includes('.comate/rules/code-style.md'), true);
   assert.equal(comateRule.contains.includes('.cursorrules'), true);
   assert.equal(delegationSection.contains.includes('下一步建议：'), true);
+  assert.equal(codingSection.contains.includes('敏感内容不外泄'), true);
   assert.equal(evolutionSection.contains.includes('锁定测试'), true);
   [cursorRule, comateRule].forEach((rule) => {
     assert.equal(rule.contains.includes('node scripts/ci/check-maintainability-budgets.mjs'), true);
   });
-  [claudeRule, codexRule, cursorRule, comateRule, playbookRule, skillRule].forEach((rule) => {
+  [claudeRule, codexRule, copilotRule, cursorRule, comateRule, playbookRule, skillRule].forEach((rule) => {
     assert.equal(rule.contains.includes('node scripts/ci/check-deploy-shell-syntax.mjs'), true);
     assert.equal(rule.contains.includes('node scripts/ci/check-chunk-load-recovery-catches.mjs'), true);
     assert.equal(rule.contains.includes('dispatchChunkLoadRecoveryEvent'), true);
@@ -893,11 +963,17 @@ test('AI 治理完整报告会报告未纳入治理清单的新 AI 资产', () =
   withTempRoot((rootDir) => {
     writeMinimalGovernanceFixture(rootDir);
     writeFixtureFile(rootDir, '.codex/notes.md', '临时 AI 协作笔记');
+    writeFixtureFile(rootDir, '.github/instructions/review.instructions.md', '临时 Copilot 路径级指令');
+    writeFixtureFile(rootDir, 'docs/AI-EXPERIMENT.md', '临时 AI 协作试验文档');
+    writeFixtureFile(rootDir, 'rules/AI-EXPERIMENT.md', '临时 AI 规则文档');
 
     const report = buildAiGovernanceReport(rootDir);
 
     assert.deepEqual(report.missingFiles, [
       '.codex/notes.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      '.github/instructions/review.instructions.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      'docs/AI-EXPERIMENT.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
+      'rules/AI-EXPERIMENT.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
     ]);
   });
 });

@@ -15,11 +15,12 @@ const buildToolEntryRule = (file, peerFile) => ({
   file,
   contains: [
     ...TOOL_ENTRY_BASE_REFERENCES,
-    peerFile,
+    ...(peerFile ? [peerFile] : []),
   ],
 });
 
 export const buildAiGovernanceToolEntryReferenceRules = () => [
+  buildToolEntryRule('.github/copilot-instructions.md'),
   buildToolEntryRule('.cursorrules', '.comate/rules/code-style.md'),
   buildToolEntryRule('.comate/rules/code-style.md', '.cursorrules'),
 ];

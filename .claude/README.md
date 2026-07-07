@@ -17,6 +17,7 @@ AI 工具使用指南，包含:
 
 - **memory/**: AI 的持久化记忆文件 (跨会话保留)
 - **settings.json**: 用户特定设置 (不提交到 Git)
+- **settings.local.json**: 本机私有配置，当前仅作为显式豁免文件存在，不承载项目协作规则
 - **session-history/**: 会话历史 (不提交到 Git)
 - **ai-tools-guide.md**: AI 工具使用文档 (提交到 Git)
 
@@ -25,6 +26,7 @@ AI 工具使用指南，包含:
 - ✅ **提交**: 文档文件 (*.md)
 - ✅ **提交**: 记忆文件 (memory/)
 - ❌ **忽略**: 用户设置 (settings.json)
+- ❌ **显式豁免**: 本机私有配置 (.claude/settings.local.json)，不要把项目级 rules、skills 或验证流程写入该文件
 - ❌ **忽略**: 会话历史 (session-history/)
 - ❌ **忽略**: 临时文件 (tmp/, *.log)
 
