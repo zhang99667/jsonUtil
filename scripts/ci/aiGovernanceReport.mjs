@@ -27,7 +27,7 @@ export const buildAiGovernanceReport = (rootDir) => {
     ],
     skillContractFailures: collectCodexSkillContractFailures(rootDir, codexSkillFiles),
     missingReferences: [
-      ...collectAiGovernanceAssetRegistryFailures(rootDir, requiredFiles),
+      ...collectAiGovernanceAssetRegistryFailures(rootDir, requiredFiles, referenceRules),
       ...collectMissingAiGovernanceReferences(rootDir, referenceRules, codexSkillFiles),
       ...collectMirroredEntryContractFailures(rootDir),
       ...collectFrontendLintScriptFailures(rootDir),
