@@ -7,8 +7,8 @@
 - 协作资产必须说明职责、权威来源和验证方式。
 - 每个资产路径必须以反引号写在 `资产 | 类型 | 维护契约 | 治理证据` 表格的 `资产` 列中，且 `类型`、`维护契约` 和 `治理证据` 不可为空；正文里随手提到路径或放进其它表格不算登记。
 - `治理证据` 的每个分隔片段都必须是认可标记，例如 `必需文件`、`入口引用规则`、`自动发现规则`、`资产发现规则`、`Codex skill 契约检查`、`资产注册表结构化校验`、`显式豁免列表`、`可维护性预算` 或发布/运行时引用规则；“人工看过”这类无法指向门禁的自由文本不算有效证据，也不能混在有效标记旁边。
-- `必需文件`、`自动发现规则`、`资产发现规则` 和 `显式豁免列表` 会反查实际治理集合；不能把自动发现资产伪装成必需文件，也不能把协作资产伪装成本机豁免。
-- 入口、docs/AI、工具入口、PR 模板、Claude README 和 skill 的文件级引用规则证据会反查实际 `referenceRules.file`；不能只在注册表里写“引用规则”却不接入治理脚本。
+- `必需文件`、`自动发现规则`、`资产发现规则`、`显式豁免列表`、`可维护性预算` 和结构化/契约类证据会反查实际治理集合；不能把自动发现资产伪装成必需文件，也不能把协作资产伪装成本机豁免、预算登记、章节检查或 skill 契约。
+- 入口、docs/AI、工具入口、PR 模板、Claude README 和 skill 的文件级引用规则证据会反查实际 `referenceRules.file`，发布/运行时这类目标引用证据会反查实际被引用的脚本路径；不能只在注册表里写“引用规则”却不接入治理脚本。
 - 同一个资产只能登记一次；重复登记会让维护责任和豁免边界变得含糊。
 - 表格里登记的资产必须属于必需文件、自动发现资产或已存在的显式豁免文件；删除或移出治理面的资产要同步移除登记，避免留下陈旧账本。
 - 工具入口保持薄入口，权威规则优先沉淀到 `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`。
@@ -43,7 +43,7 @@
 | `.claude/README.md` | 目录索引 | 说明 Claude 配置目录边界，必须指向 Playbook 和治理命令 | 必需文件、Claude README 引用规则、自动发现规则 |
 | `.claude/ai-tools-guide.md` | 工具说明 | 说明 Claude、Codex、Copilot、Cursor、Comate 如何复用同一套规范 | 必需文件、入口引用规则、自动发现规则 |
 | `.codex/README.md` | 目录索引 | 说明 Codex 项目资产边界和旧 chunk / 部署验证入口 | 必需文件、入口引用规则、自动发现规则 |
-| `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 保留 frontmatter、必读文件、工作流、常用验证命令和重点边界 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
+| `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 保留与目录一致的 frontmatter name、必读文件、工作流、常用验证命令和重点边界 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
 | `.github/copilot-instructions.md` | 工具薄入口 | GitHub Copilot 仓库级 instructions，转发到主规范、Playbook 和 skill | 必需文件、工具入口引用规则、自动发现规则 |
 | `.cursorrules` | 工具薄入口 | Cursor 入口，与 `.comate/rules/code-style.md` 保持共享核心片段 | 必需文件、工具入口引用规则、同源片段漂移检查 |
 | `.comate/rules/code-style.md` | 工具薄入口 | Comate 入口，与 `.cursorrules` 保持共享核心片段 | 必需文件、工具入口引用规则、同源片段漂移检查 |

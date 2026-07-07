@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { collectUntrackedBudgetRuleFailures } from './maintainabilityBudgetRuleFiles.mjs';
+import { collectUnbudgetedAiGovernanceScriptFailures, collectUntrackedBudgetRuleFailures } from './maintainabilityBudgetRuleFiles.mjs';
 import {
   buildHighUsageSummaries,
   buildNearLimitSummaries,
@@ -46,6 +46,7 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
 
   failures.push(...collectDuplicateBudgetFailures(normalizedBudgets));
   failures.push(...collectUntrackedBudgetRuleFailures(rootDir, budgetedFiles));
+  failures.push(...collectUnbudgetedAiGovernanceScriptFailures(rootDir, budgetedFiles));
 
   for (const budget of normalizedBudgets) {
     const filePath = path.join(rootDir, budget.file);

@@ -23,7 +23,7 @@ description: JSONUtils 项目维护技能。用于优化性能、重构可维护
 5. 做最小可验证改动，不做无关大重构。
 6. 用户可见或准备上线的改动先递增 `frontend/package.json` patch 版本，同步 `frontend/package-lock.json`，并在 `CHANGELOG.md` 顶部新开版本区块，避免一个版本堆积几十条提交。
 7. 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，完成复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，并把稳定经验做规则/skill 回写。
-8. 修改 `.codex/skills/*/SKILL.md` 时保留 frontmatter `name`/`description` 和四个核心章节，确保 skill 仍可发现、可迁移、可验证。
+8. 修改 `.codex/skills/*/SKILL.md` 时保留 frontmatter `name`/`description`（`name` 必须等于 skill 目录名）和四个核心章节，确保 skill 仍可发现、可迁移、可验证。
 9. 运行匹配范围的验证命令，并在最终回复中说明结果。
 
 ## 常用验证命令

@@ -25,16 +25,19 @@ const MIRRORED_SNIPPET_CONTRACTS = [
   },
 ];
 
+export const MIRRORED_AGENT_SECTION_FILES = [
+  ...new Set(MIRRORED_AGENT_SECTION_CONTRACTS.flatMap(({ sourceFile, targetFile }) => [sourceFile, targetFile])),
+];
+export const MIRRORED_TOOL_ENTRY_SNIPPET_FILES = [
+  ...new Set(MIRRORED_SNIPPET_CONTRACTS.flatMap(({ files }) => files)),
+];
+
 const readGovernanceFile = (rootDir, file) => {
   const filePath = path.join(rootDir, file);
   return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null;
 };
 
-const normalizeMirroredText = value => value
-  .split('\n')
-  .map(line => line.trimEnd())
-  .join('\n')
-  .trim();
+const normalizeMirroredText = value => value.split('\n').map(line => line.trimEnd()).join('\n').trim();
 
 const collectMirroredSectionFailures = (rootDir, contracts) => contracts.flatMap((contract) => {
   const sourceContent = readGovernanceFile(rootDir, contract.sourceFile);
