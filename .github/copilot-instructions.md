@@ -8,6 +8,7 @@
 - `CLAUDE.md`: Claude Code / Ducc 项目入口，与 `AGENTS.md` 保持同源 AI 协作章节。
 - `rules/code-style.md`: 编码规范、提交格式、CHANGELOG 和 AI 协作资产治理要求。
 - `docs/AI-ENGINEERING-PLAYBOOK.md`: 子 Agent 委派、验证矩阵、规则/skill 回写和治理校验流程。
+- `docs/AI-ASSET-REGISTRY.md`: AI 协作资产、治理证据和显式豁免账本，新增入口或 skill 前先同步登记。
 - `.codex/skills/jsonutils-maintainer/SKILL.md`: Codex 可迁移项目维护技能。
 
 ## 工作要求

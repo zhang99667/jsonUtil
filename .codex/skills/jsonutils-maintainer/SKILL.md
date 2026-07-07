@@ -12,7 +12,8 @@ description: JSONUtils 项目维护技能。用于优化性能、重构可维护
 1. `AGENTS.md`: Codex 项目入口和模块说明。
 2. `rules/code-style.md`: 代码风格、提交格式和 CHANGELOG 要求。
 3. `docs/AI-ENGINEERING-PLAYBOOK.md`: AI 自闭环执行流程。
-4. 与任务相关的源码、测试和文档。
+4. `docs/AI-ASSET-REGISTRY.md`: AI 协作资产、治理证据和显式豁免账本。
+5. 与任务相关的源码、测试和文档。
 
 ## 工作流
 
@@ -70,3 +71,4 @@ mvn test
 - AGENTS/CLAUDE、Cursor/Comate 这类同源入口要成对更新；AI 协作章节和核心规则片段由治理脚本做漂移检查。
 - 新增 `.claude/`、`.codex/`、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 下的 AI 协作资产时，必须同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免，防止 rules/skills 文档游离在门禁之外。
 - 项目级 Codex skill 不是普通 Markdown 笔记；必须保持 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 结构，方便后续 agent 按固定入口执行。
+- 项目级 Codex skill 中反引号包裹的具体项目路径和 fenced `node ...mjs` 验证脚本必须真实存在，迁移或重命名后用 `node scripts/ci/check-ai-governance.mjs` 反查，避免 skill 引用失效。

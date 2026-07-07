@@ -95,6 +95,7 @@
 - 同源入口文档必须成对维护：AGENTS/CLAUDE 的 AI 协作章节、Cursor/Comate 的核心规则片段由治理脚本做漂移检查，避免一边更新、一边残留旧语义。
 - 新增 AI 助手入口或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
 - 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name` 和 `description`，且 `name` 必须等于 skill 目录名，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可验证的散文。
+- 项目级 Codex skill 的具体项目路径和 fenced `node ...mjs` 验证脚本必须可解析到真实文件；新增或迁移 skill 引用后运行 `node scripts/ci/check-ai-governance.mjs`，避免 skill 看似完整但实际不可执行。
 - 不把一次性偏好、临时绕路或未验证猜测沉淀为规则；沉淀前先确认它能减少未来错误，并且不会和现有规范冲突。
 
 ## AI 资产维护

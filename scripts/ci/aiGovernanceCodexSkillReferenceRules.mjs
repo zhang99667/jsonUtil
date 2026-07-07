@@ -7,6 +7,7 @@ export const buildCodexSkillReferenceRules = (codexSkillFiles) => (
       'AGENTS.md',
       'rules/code-style.md',
       'docs/AI-ENGINEERING-PLAYBOOK.md',
+      'docs/AI-ASSET-REGISTRY.md',
       'npm run lint',
       'npm run typecheck',
       'npm run build',

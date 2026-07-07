@@ -8,6 +8,7 @@
 - `CLAUDE.md`: Claude Code / Ducc 项目入口。
 - `rules/code-style.md`: 完整编码规范、提交规范、CHANGELOG 与 AI 规则资产要求。
 - `docs/AI-ENGINEERING-PLAYBOOK.md`: 跨 AI 工具共享的执行闭环。
+- `docs/AI-ASSET-REGISTRY.md`: AI 协作资产、治理证据和显式豁免账本，新增入口或 skill 前先同步登记。
 - `ARCHITECTURE.md`: 涉及前后端边界、部署和数据流时阅读。
 - `.comate/rules/code-style.md`: Comate 薄入口，需与本文件保持同源引用。
 

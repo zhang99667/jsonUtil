@@ -1,41 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { DECISION_LEDGER_HEADER_CELLS, parseDecisionRows } from './aiGovernanceDecisionLedgerTable.mjs';
 import * as decisionLedgerReferences from './aiGovernanceDecisionLedgerReferences.mjs';
 
 export const AI_GOVERNANCE_DECISION_LEDGER_FILE = 'docs/AI-GOVERNANCE-DECISIONS.md';
 
-const DECISION_LEDGER_HEADER_CELLS = ['日期', '决策', '触发条件', '反例', '适用边界', '回写追踪', '锁定测试'];
-
-const parseTableCells = line => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
-
-const isSeparatorRow = cells => cells.every(cell => /^:?-{3,}:?$/.test(cell));
-const isDecisionHeaderRow = cells => DECISION_LEDGER_HEADER_CELLS.every((cell, index) => cells[index] === cell);
 const hasPathReference = text => decisionLedgerReferences.extractBacktickReferences(text).length > 0;
 const hasIsoDate = text => /^\d{4}-\d{2}-\d{2}$/.test(text);
-
-const parseDecisionRows = (content) => {
-  const rows = [];
-  let isDecisionTable = false;
-  let hasDecisionTable = false;
-
-  content.split(/\r?\n/).forEach((line) => {
-    if (!line.trim().startsWith('|')) {
-      isDecisionTable = false;
-      return;
-    }
-
-    const cells = parseTableCells(line);
-    if (isDecisionHeaderRow(cells)) {
-      isDecisionTable = true;
-      hasDecisionTable = true;
-      return;
-    }
-    if (!isDecisionTable || isSeparatorRow(cells)) return;
-    rows.push(Object.fromEntries(DECISION_LEDGER_HEADER_CELLS.map((cell, index) => [cell, cells[index] ?? ''])));
-  });
-
-  return { hasDecisionTable, rows };
-};
 
 const collectRowFailures = (rootDir, row, index) => {
   const label = `${AI_GOVERNANCE_DECISION_LEDGER_FILE}: 第 ${index + 1} 条决策记录`;

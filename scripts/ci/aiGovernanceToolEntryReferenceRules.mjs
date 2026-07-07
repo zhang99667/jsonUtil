@@ -6,6 +6,7 @@ import {
 const TOOL_ENTRY_BASE_REFERENCES = [
   'AGENTS.md',
   'CLAUDE.md',
+  'docs/AI-ASSET-REGISTRY.md',
   ...CORE_ENTRY_REFERENCES,
   ...RUNTIME_GOVERNANCE_REFERENCES,
   'node scripts/ci/check-maintainability-budgets.mjs',
