@@ -1,13 +1,11 @@
-import { vi } from 'vitest';
+import { expect, vi } from 'vitest';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { loadJsonPathSavedQueryLists } from '../utils/jsonPathSavedQueryStorage';
 import { useJsonPathSavedQueryListStorageSync } from './useJsonPathSavedQueryListStorageSync';
 
 type StorageSyncOptions = Parameters<typeof useJsonPathSavedQueryListStorageSync>[0];
 
-interface ReactEffectMock {
-  useEffect: ReturnType<typeof vi.fn>;
-}
+interface ReactEffectMock { useEffect: ReturnType<typeof vi.fn>; }
 
 export const createJsonPathSavedQueryListStorageSyncTestHarness = (reactMocks: ReactEffectMock) => {
   let backupImportedHandler: (() => void) | null = null;
@@ -19,15 +17,16 @@ export const createJsonPathSavedQueryListStorageSyncTestHarness = (reactMocks: R
     onBackupImported: vi.fn(),
     ...overrides,
   });
+  const useRenderSyncWithoutWindow = (overrides: Partial<StorageSyncOptions> = {}) => {
+    vi.unstubAllGlobals();
+    useRenderSync(overrides);
+  };
 
   const reset = () => {
-    backupImportedHandler = null;
-    cleanup = undefined;
+    backupImportedHandler = null; cleanup = undefined;
 
     vi.stubGlobal('window', {
-      addEventListener: vi.fn((eventName: string, handler: () => void) => {
-        if (eventName === APP_BACKUP_IMPORTED_EVENT) backupImportedHandler = handler;
-      }),
+      addEventListener: vi.fn((eventName: string, handler: () => void) => eventName === APP_BACKUP_IMPORTED_EVENT && (backupImportedHandler = handler)),
       removeEventListener: vi.fn(),
     });
 
@@ -40,12 +39,12 @@ export const createJsonPathSavedQueryListStorageSyncTestHarness = (reactMocks: R
   };
 
   return {
-    get backupImportedHandler() {
-      return backupImportedHandler;
-    },
+    expectBackupImportedListenerRemoved: () => expect(window.removeEventListener).toHaveBeenCalledWith(APP_BACKUP_IMPORTED_EVENT, backupImportedHandler),
+    expectNoBackupImportedListener: () => expect(backupImportedHandler).toBeNull(),
     reset,
     runCleanup: () => cleanup?.(),
     triggerBackupImported: () => backupImportedHandler?.(),
     useRenderSync,
+    useRenderSyncWithoutWindow,
   };
 };
