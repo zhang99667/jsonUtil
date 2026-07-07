@@ -59,6 +59,9 @@ const writeMinimalGovernanceFixture = (rootDir) => {
   const sharedReferences = [
     'AGENTS.md',
     'CLAUDE.md',
+    '.claude/ai-tools-guide.md',
+    '.cursorrules',
+    '.comate/rules/code-style.md',
     'rules/code-style.md',
     'docs/AI-ENGINEERING-PLAYBOOK.md',
     '.codex/skills/jsonutils-maintainer/SKILL.md',
@@ -90,11 +93,23 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '子 Agent 委派',
     '主线程负责',
     '拆分边界',
+    '读写范围',
+    '排除项',
+    '期望输出',
+    '未覆盖风险',
+    '收窄',
     '本地规则优先',
     '用户手动触发',
     '敏感内容不外泄',
     '可验证闭环',
+    '测试',
+    '脚本',
+    '可复核日志',
     '复盘沉淀',
+    '触发条件',
+    '反例',
+    '验证方式',
+    '适用边界',
     '规则/skill 回写',
     '治理校验',
   ].join('\n');
@@ -106,11 +121,14 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'docs/AI-ENGINEERING-PLAYBOOK.md',
     '.claude/ai-tools-guide.md',
     '.codex/README.md',
+    '.cursorrules',
+    '.comate/rules/code-style.md',
     skillFile,
     'scripts/ci/check-deploy-shell-syntax.mjs',
     'scripts/ci/check-frontend-static-retention.mjs',
     'scripts/ci/check-production-frontend-assets.mjs',
     'scripts/ci/check-chunk-load-recovery-catches.mjs',
+    'scripts/ci/check-version-consistency.mjs',
     'scripts/ci/check-maintainability-budgets.mjs',
   ].forEach(file => writeFixtureFile(rootDir, file, sharedReferences));
   writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({ body: sharedReferences }));
@@ -219,6 +237,29 @@ test('AI 治理引用检查会报告缺失的 AI 安全边界', () => {
   });
 });
 
+test('AI 治理引用检查会报告缺失的 AI 证据形态', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
+      '本地规则优先',
+      '用户手动触发',
+      '敏感内容不外泄',
+      '可验证闭环',
+      '测试',
+      '脚本',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{ file: 'docs/AI-ENGINEERING-PLAYBOOK.md', contains: ['可复核日志'] }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      'docs/AI-ENGINEERING-PLAYBOOK.md: 缺少 "可复核日志"',
+    ]);
+  });
+});
+
 test('AI 治理引用检查会报告缺失的规则进化闭环', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
@@ -234,6 +275,29 @@ test('AI 治理引用检查会报告缺失的规则进化闭环', () => {
 
     assert.deepEqual(failures, [
       'docs/AI-ENGINEERING-PLAYBOOK.md: 缺少 "规则/skill 回写"',
+    ]);
+  });
+});
+
+test('AI 治理引用检查会报告缺失规则沉淀质量门槛', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'rules/code-style.md', [
+      '复盘沉淀',
+      '触发条件',
+      '验证方式',
+      '适用边界',
+      '规则/skill 回写',
+      '治理校验',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{ file: 'rules/code-style.md', contains: ['反例'] }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      'rules/code-style.md: 缺少 "反例"',
     ]);
   });
 });
@@ -294,6 +358,75 @@ test('AI 治理引用检查会报告入口文档缺失版本闭环文件', () =>
 
     assert.deepEqual(failures, [
       'CLAUDE.md: 缺少 "frontend/package-lock.json"',
+    ]);
+  });
+});
+
+test('AI 治理引用检查会报告 Cursor 入口缺失 Comate 同源入口', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, '.cursorrules', [
+      'AGENTS.md',
+      'CLAUDE.md',
+      'rules/code-style.md',
+      'docs/AI-ENGINEERING-PLAYBOOK.md',
+      'node scripts/ci/check-ai-governance.mjs',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{ file: '.cursorrules', contains: ['.comate/rules/code-style.md'] }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      '.cursorrules: 缺少 ".comate/rules/code-style.md"',
+    ]);
+  });
+});
+
+test('AI 治理引用检查会报告 Comate 入口缺失版本锁文件', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, '.comate/rules/code-style.md', [
+      'frontend/package.json',
+      'CHANGELOG.md',
+      'node scripts/ci/check-version-consistency.mjs',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{
+        file: '.comate/rules/code-style.md',
+        contains: ['frontend/package.json', 'frontend/package-lock.json', 'CHANGELOG.md'],
+      }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      '.comate/rules/code-style.md: 缺少 "frontend/package-lock.json"',
+    ]);
+  });
+});
+
+test('AI 治理引用检查会报告缺失子 Agent 委派细节', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
+      '子 Agent 委派',
+      '主线程负责',
+      '拆分边界',
+      '读写范围',
+      '排除项',
+      '期望输出',
+      '收窄',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{ file: 'docs/AI-ENGINEERING-PLAYBOOK.md', contains: ['未覆盖风险'] }],
+      ['.codex/skills/jsonutils-maintainer/SKILL.md']
+    );
+
+    assert.deepEqual(failures, [
+      'docs/AI-ENGINEERING-PLAYBOOK.md: 缺少 "未覆盖风险"',
     ]);
   });
 });
@@ -366,10 +499,15 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   const claudeEntryRule = referenceRules.find(rule => rule.file === 'CLAUDE.md');
   const claudeRule = referenceRules.find(rule => rule.file === '.claude/ai-tools-guide.md');
   const codexRule = referenceRules.find(rule => rule.file === '.codex/README.md');
+  const cursorRule = referenceRules.find(rule => rule.file === '.cursorrules');
+  const comateRule = referenceRules.find(rule => rule.file === '.comate/rules/code-style.md');
   const playbookRule = referenceRules.find(rule => rule.file === 'docs/AI-ENGINEERING-PLAYBOOK.md');
   const skillRule = referenceRules.find(rule => rule.file === skillFiles[0]);
 
   assert.equal(requiredFiles.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(requiredFiles.includes('.cursorrules'), true);
+  assert.equal(requiredFiles.includes('.comate/rules/code-style.md'), true);
+  assert.equal(requiredFiles.includes('scripts/ci/check-version-consistency.mjs'), true);
   assert.equal(agentsEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(claudeEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   ['node scripts/ci/check-version-consistency.mjs', 'frontend/package.json', 'frontend/package-lock.json', 'CHANGELOG.md']
@@ -378,9 +516,15 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
       assert.equal(claudeEntryRule.contains.includes(expectedText), true);
     });
   assert.equal(claudeRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(codexRule.contains.includes('.claude/ai-tools-guide.md'), true);
   assert.equal(codexRule.contains.includes('skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(codexRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
-  [claudeRule, codexRule, playbookRule, skillRule].forEach((rule) => {
+  assert.equal(cursorRule.contains.includes('.comate/rules/code-style.md'), true);
+  assert.equal(comateRule.contains.includes('.cursorrules'), true);
+  [cursorRule, comateRule].forEach((rule) => {
+    assert.equal(rule.contains.includes('node scripts/ci/check-maintainability-budgets.mjs'), true);
+  });
+  [claudeRule, codexRule, cursorRule, comateRule, playbookRule, skillRule].forEach((rule) => {
     assert.equal(rule.contains.includes('node scripts/ci/check-deploy-shell-syntax.mjs'), true);
     assert.equal(rule.contains.includes('node scripts/ci/check-chunk-load-recovery-catches.mjs'), true);
     assert.equal(rule.contains.includes('dispatchChunkLoadRecoveryEvent'), true);
@@ -395,11 +539,23 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
     assert.equal(rule.contains.includes('子 Agent 委派'), true);
     assert.equal(rule.contains.includes('主线程负责'), true);
     assert.equal(rule.contains.includes('拆分边界'), true);
+    assert.equal(rule.contains.includes('读写范围'), true);
+    assert.equal(rule.contains.includes('排除项'), true);
+    assert.equal(rule.contains.includes('期望输出'), true);
+    assert.equal(rule.contains.includes('未覆盖风险'), true);
+    assert.equal(rule.contains.includes('收窄'), true);
     assert.equal(rule.contains.includes('本地规则优先'), true);
     assert.equal(rule.contains.includes('用户手动触发'), true);
     assert.equal(rule.contains.includes('敏感内容不外泄'), true);
     assert.equal(rule.contains.includes('可验证闭环'), true);
+    assert.equal(rule.contains.includes('测试'), true);
+    assert.equal(rule.contains.includes('脚本'), true);
+    assert.equal(rule.contains.includes('可复核日志'), true);
     assert.equal(rule.contains.includes('复盘沉淀'), true);
+    assert.equal(rule.contains.includes('触发条件'), true);
+    assert.equal(rule.contains.includes('反例'), true);
+    assert.equal(rule.contains.includes('验证方式'), true);
+    assert.equal(rule.contains.includes('适用边界'), true);
     assert.equal(rule.contains.includes('规则/skill 回写'), true);
     assert.equal(rule.contains.includes('治理校验'), true);
     assert.equal(rule.contains.includes('node scripts/ci/check-version-consistency.mjs'), true);

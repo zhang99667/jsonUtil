@@ -1,46 +1,22 @@
 import {
-  DEPLOY_SHELL_SYNTAX_REFERENCES,
-  AI_EVOLUTION_LOOP_REFERENCES,
-  AI_SAFETY_BOUNDARY_REFERENCES,
-  CHUNK_LOAD_RECOVERY_CATCH_REFERENCES,
-  PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
-  SUBAGENT_DELEGATION_REFERENCES,
-  VERSION_CHANGELOG_REFERENCES,
-} from './aiGovernanceReferenceGroups.mjs';
+  CODE_STYLE_GOVERNANCE_REFERENCES,
+  CORE_ENTRY_REFERENCES,
+  ENTRY_GOVERNANCE_REFERENCES,
+  RUNTIME_GOVERNANCE_REFERENCES,
+} from './aiGovernanceRuntimeReferenceGroups.mjs';
 
-const CORE_ENTRY_REFERENCES = ['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'node scripts/ci/check-ai-governance.mjs'];
+const buildAgentEntryRule = file => ({
+  file,
+  contains: [
+    ...CORE_ENTRY_REFERENCES,
+    ...ENTRY_GOVERNANCE_REFERENCES,
+  ],
+});
 
-const RUNTIME_GOVERNANCE_REFERENCES = [
-  ...SUBAGENT_DELEGATION_REFERENCES,
-  ...DEPLOY_SHELL_SYNTAX_REFERENCES,
-  ...CHUNK_LOAD_RECOVERY_CATCH_REFERENCES,
-  ...AI_SAFETY_BOUNDARY_REFERENCES,
-  ...AI_EVOLUTION_LOOP_REFERENCES,
-  ...VERSION_CHANGELOG_REFERENCES,
-  'node scripts/ci/check-frontend-static-retention.mjs',
-  ...PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
-];
-
-export const buildAiGovernanceEntryReferenceRules = (codexSkillFiles) => [
-  {
-    file: 'AGENTS.md',
-    contains: [
-      ...CORE_ENTRY_REFERENCES,
-      ...SUBAGENT_DELEGATION_REFERENCES,
-      ...AI_EVOLUTION_LOOP_REFERENCES,
-      ...VERSION_CHANGELOG_REFERENCES,
-    ],
-  },
-  {
-    file: 'CLAUDE.md',
-    contains: [
-      ...CORE_ENTRY_REFERENCES,
-      ...SUBAGENT_DELEGATION_REFERENCES,
-      ...AI_EVOLUTION_LOOP_REFERENCES,
-      ...VERSION_CHANGELOG_REFERENCES,
-    ],
-  },
-  { file: 'rules/code-style.md', contains: AI_EVOLUTION_LOOP_REFERENCES },
+export const buildAiGovernanceEntryReferenceRules = codexSkillFiles => [
+  buildAgentEntryRule('AGENTS.md'),
+  buildAgentEntryRule('CLAUDE.md'),
+  { file: 'rules/code-style.md', contains: CODE_STYLE_GOVERNANCE_REFERENCES },
   {
     file: '.claude/ai-tools-guide.md',
     contains: [
@@ -54,6 +30,7 @@ export const buildAiGovernanceEntryReferenceRules = (codexSkillFiles) => [
     file: '.codex/README.md',
     contains: [
       'AGENTS.md',
+      '.claude/ai-tools-guide.md',
       ...CORE_ENTRY_REFERENCES,
       ...RUNTIME_GOVERNANCE_REFERENCES,
       ...codexSkillFiles.map(file => file.replace('.codex/', '')),
