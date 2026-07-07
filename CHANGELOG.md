@@ -1,4 +1,12 @@
 # 更新日志 (Changelog)
+## v1.8.707 (2026-07-08) - AI 治理 CI 契约
+### 🏗️ 架构与基础设施
+- **CI 治理契约门禁**: `check-ai-governance` 新增 GitHub Actions 与本地 CI 契约检查，要求版本一致性、脚本单测、AI governance 和可维护性预算命令必须出现在可执行自动化入口
+- **CI 契约负向测试**: 新增 workflow 缺少 `node scripts/ci/check-ai-governance.mjs` 以及注释/`echo` 冒充命令的负例，证明治理命令被移除时会被单测和总治理门禁拦住
+- **决策锁定测试入 CI**: AI 治理决策账本要求 `node --test ...test.mjs` 锁定测试位于 `scripts/ci/*.test.mjs`，避免决策记录登记了 CI 不会执行的测试
+- **契约预算拆分**: 将 CI、同源入口、章节和 Codex skill 等 contract 类治理脚本预算拆到独立规则表，避免 AI 治理主预算表继续贴线
+- **治理测试预算所有权**: `aiGovernance*.test.mjs` 也纳入可维护性预算兜底，避免治理 helper 被预算约束而测试大文件继续无上限膨胀
+
 ## v1.8.706 (2026-07-08) - Codex Skill 目录名契约
 ### 🏗️ 架构与基础设施
 - **Skill 名称目录对齐**: Codex skill 契约要求 frontmatter `name` 与 `.codex/skills/<name>/SKILL.md` 目录名一致，避免迁移、复制或重命名时目录和声明漂移

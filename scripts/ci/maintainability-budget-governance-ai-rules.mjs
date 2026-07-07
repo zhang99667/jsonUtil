@@ -1,4 +1,6 @@
+import { governanceAiContractMaintainabilityBudgets } from './maintainability-budget-governance-ai-contract-rules.mjs';
 import { governanceAiRegistryMaintainabilityBudgets } from './maintainability-budget-governance-ai-registry-rules.mjs';
+import { governanceAiTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-test-rules.mjs';
 
 const governanceAiBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
@@ -7,11 +9,9 @@ export const governanceAiMaintainabilityBudgets = [
   governanceAiBudget('scripts/ci/aiGovernanceChecks.mjs', 65, 'AI 治理缺失收集应只负责文件内容检查，report 组装和规则构造放在独立模块'),
   governanceAiBudget('scripts/ci/aiGovernanceReport.mjs', 45, 'AI 治理报告组装应独立维护 required files、引用规则和各类失败列表汇总'),
   ...governanceAiRegistryMaintainabilityBudgets,
+  ...governanceAiContractMaintainabilityBudgets,
+  ...governanceAiTestMaintainabilityBudgets,
   governanceAiBudget('scripts/ci/aiGovernanceDiscoveredAssets.mjs', 70, 'AI 治理资产发现应独立维护助手入口目录扫描、显式豁免和未治理资产报告'),
-  governanceAiBudget('scripts/ci/aiGovernanceMirroredEntryContracts.mjs', 75, 'AI 治理同源入口契约应独立维护镜像章节和共享片段漂移检查'),
-  governanceAiBudget('scripts/ci/aiGovernanceSectionReferences.mjs', 50, 'AI 治理章节引用检查应独立维护 Markdown 章节抽取和章节内关键词校验'),
-  governanceAiBudget('scripts/ci/aiGovernanceCodexSkillContract.mjs', 55, 'AI 治理 Codex skill 契约检查应独立维护 frontmatter 与核心章节校验'),
-  governanceAiBudget('scripts/ci/aiGovernanceCodexSkillSectionContract.mjs', 50, 'AI 治理 Codex skill 章节内容契约应独立维护每个核心章节的最小关键引用'),
   governanceAiBudget('scripts/ci/aiGovernanceRules.mjs', 75, 'AI 治理引用规则入口应只负责组合文档入口和 skill 引用规则'),
   governanceAiBudget('scripts/ci/aiGovernanceEntryReferenceRules.mjs', 60, 'AI 治理入口文档引用规则应集中维护入口、Playbook、README 和工具说明的关键引用'),
   governanceAiBudget('scripts/ci/aiGovernanceDocReferenceRules.mjs', 35, 'AI 治理 docs/AI 文档引用规则应独立维护历史说明与当前治理入口的关键引用'),

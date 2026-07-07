@@ -10,3 +10,5 @@ export const extractNodeCommandPaths = text => extractExecutableCommands(text)
 export const extractNodeRegressionTestCommandPaths = text => extractExecutableCommands(text)
   .map(command => command.match(/^node\s+--test\s+([^\s]+\.test\.mjs)(?:\s+.*)?$/)?.[1])
   .filter(Boolean);
+
+export const isCiCoveredNodeRegressionTestPath = file => /^scripts\/ci\/[^/]+\.test\.mjs$/.test(file);
