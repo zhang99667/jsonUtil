@@ -7,5 +7,6 @@ export const appStructureNavTestMaintainabilityBudgets = [
   appStructureNavTestBudget('frontend/src/components/JsonTreeSelectedNodeDetailsPanel.test.tsx', 180, '结构导航选中节点详情测试只锁定基础操作、语义提示、容器动作和表格预览接线'),
   appStructureNavTestBudget('frontend/src/components/JsonTreeGraphPanel.test.tsx', 160, '结构导航图谱面板测试只锁定摘要、截断态、选中态、点击和键盘确认装配'),
   appStructureNavTestBudget('frontend/src/components/JsonTreeNodeListPanel.test.tsx', 130, '结构导航列表测试只锁定行渲染、选中态、展开态、叶子节点、高亮文本和 PATH 复制回调'),
+  appStructureNavTestBudget('frontend/src/components/JsonTreePanelFooter.test.tsx', 80, '结构导航底部状态栏测试只锁定加载、空模型、筛选匹配、截断和操作提示文案'),
   appStructureNavTestBudget('frontend/src/components/JsonTreeArrayTablePreviewPanel.test.tsx', 110, '结构导航数组表格预览测试只锁定装配、筛选回调、复制回调和空列禁用态'),
 ];

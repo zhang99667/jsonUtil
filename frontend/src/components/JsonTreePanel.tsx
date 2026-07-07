@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { JsonTreeGraphPanel } from './JsonTreeGraphPanel';
 import { JsonTreeNodeListPanel } from './JsonTreeNodeListPanel';
+import { JsonTreePanelFooter } from './JsonTreePanelFooter';
 import { JsonTreeSearchHistoryPanel } from './JsonTreeSearchHistoryPanel';
 import { JsonTreeSelectedNodeDetailsPanel } from './JsonTreeSelectedNodeDetailsPanel';
 import { JsonTreeToolbar, type JsonTreeKindFilter, type JsonTreePanelViewMode } from './JsonTreeToolbar';
@@ -583,16 +584,13 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
       minSize={{ width: 460, height: 340 }}
       dataTour="structure-nav-panel"
       footer={
-        <div className="flex min-w-0 flex-1 items-center justify-between gap-3 text-xs text-gray-400">
-          <span className="truncate">
-            {modelState.isLoading
-              ? '结构导航解析中...'
-              : modelState.model
-                ? `${hasActiveFilter ? `${visibleNodes.length}/${modelState.model.totalNodes} 个匹配` : `${modelState.model.totalNodes} 个节点`} / ${containerCount} 个容器${modelState.model.isLimited ? `，已按 ${modelState.model.maxNodes} 节点上限截断` : ''}`
-              : '结构导航'}
-          </span>
-          <span className="shrink-0">点击节点可定位，PATH 可复制路径</span>
-        </div>
+        <JsonTreePanelFooter
+          isLoading={modelState.isLoading}
+          model={modelState.model}
+          hasActiveFilter={hasActiveFilter}
+          visibleNodeCount={visibleNodes.length}
+          containerCount={containerCount}
+        />
       }
     >
       <div className="flex min-h-0 flex-1 flex-col">
