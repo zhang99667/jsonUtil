@@ -6,6 +6,8 @@ export const AI_GOVERNANCE_ASSET_REGISTRY_REFERENCE_RULE = {
     'docs/AI-ENGINEERING-PLAYBOOK.md',
     '.codex/skills/jsonutils-maintainer/SKILL.md',
     'scripts/ci/check-ai-governance.mjs',
+    'scripts/ci/aiGovernanceAssetRegistryEvidence.mjs',
+    'referenceRules.file',
     '治理证据',
     '显式豁免',
   ],
