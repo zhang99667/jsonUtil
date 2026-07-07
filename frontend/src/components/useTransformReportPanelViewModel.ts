@@ -9,14 +9,11 @@ import {
 import {
   buildTransformReportPanelDerivedModel,
 } from '../utils/transformReportPanelDerivedModel';
-import {
-  buildTransformContextReport,
-  buildTransformReportView,
-} from '../utils/transformSummary';
 import type {
   TransformReportPanelViewModel,
   TransformReportPanelViewModelInput,
 } from './TransformReportPanelViewModelTypes';
+import { useTransformReportPanelReportViews } from './useTransformReportPanelReportViews';
 import { useTransformReportPanelResetEffect } from './useTransformReportPanelResetEffect';
 
 export const useTransformReportPanelViewModel = ({
@@ -30,9 +27,10 @@ export const useTransformReportPanelViewModel = ({
   const isFilterPending = query !== deferredQuery;
   const activeContext = isOpen ? context : null;
   const hasActiveContext = Boolean(activeContext);
-  const report = useMemo(() => (
-    activeContext ? buildTransformContextReport(activeContext) : null
-  ), [activeContext]);
+  const { report, reportView, fullReportView } = useTransformReportPanelReportViews({
+    activeContext,
+    deferredQuery,
+  });
 
   useTransformReportPanelResetEffect({
     activeContext,
@@ -41,12 +39,6 @@ export const useTransformReportPanelViewModel = ({
     setQualityBaseline,
   });
 
-  const reportView = useMemo(() => (
-    report ? buildTransformReportView(report, deferredQuery) : null
-  ), [report, deferredQuery]);
-  const fullReportView = useMemo(() => (
-    report ? buildTransformReportView(report, '') : null
-  ), [report]);
   const derivedModel = useMemo(() => (
     buildTransformReportPanelDerivedModel({
       report,

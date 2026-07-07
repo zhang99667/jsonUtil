@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.635 (2026-07-07) - TransformReport 报告视图 Hook 拆分
+### 🏗️ 架构与基础设施
+- **深度解析面板 ViewModel 瘦身**: 将 `report`、过滤视图和完整视图构建抽成 `useTransformReportPanelReportViews`，主 ViewModel 继续聚焦 query、CMD 对比、质量基线和派生模型组合，并补充报告视图 hook 测试
+
 ## v1.8.634 (2026-07-07) - JSONPath 结果行类名拆分
 ### 🏗️ 架构与基础设施
 - **JSONPath 结果预览瘦身**: 将结果预览行的基础布局、选中态和悬停态 className 派生抽成 `JsonPathPanelResultPreviewRowClassName` 纯 helper，收窄 RowContent 展示字段类型，行组件继续只负责聚焦按钮和结构定位入口装配，并补充类名状态测试
