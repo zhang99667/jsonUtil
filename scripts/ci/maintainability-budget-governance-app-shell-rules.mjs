@@ -28,5 +28,6 @@ export const governanceAppShellMaintainabilityBudgets = [
   governanceAppShellBudget('scripts/ci/maintainability-budget-app-status-helper-rules.mjs', 25, 'App 状态栏 helper 预算规则应独立维护状态派生和类型契约预算'),
   governanceAppShellBudget('scripts/ci/maintainability-budget-governance-app-structure-nav-rules.mjs', 20, '结构导航治理预算规则应集中维护结构导航预算文件的治理条目'),
   ...governanceAppStructureNavMaintainabilityBudgets,
-  governanceAppShellBudget('scripts/ci/maintainability-budget-app-template-fill-rules.mjs', 15, '模板填充面板预算规则应只维护面板、底部操作、占位符表单、占位符模型门面和对应测试预算'),
+  governanceAppShellBudget('scripts/ci/maintainability-budget-app-template-fill-rules.mjs', 15, '模板填充面板预算规则应只维护面板、底部操作、占位符表单和模型预算子表组合'),
+  governanceAppShellBudget('scripts/ci/maintainability-budget-app-template-fill-model-rules.mjs', 15, '模板填充模型预算规则应只维护模型门面、契约、readers 和模型测试预算'),
 ];

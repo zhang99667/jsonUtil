@@ -36,6 +36,9 @@ const createTemplateText = () => JSON.stringify({
     },
     {
       value: '__TOKEN__',
+      suggestion: {
+        replacement: 'missing-source',
+      },
       sources: [],
     },
     { value: '', replacement: 'skip empty value' },
