@@ -1,4 +1,4 @@
-import type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualityDelta';
+import type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySnapshot';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 
 interface AppTemplateFillQualitySummaryLoadInput {

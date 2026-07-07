@@ -1,7 +1,5 @@
-import {
-  type AppTemplateFillQualitySummaryModule,
-  tryBuildAppTemplateFillQualityDelta,
-} from './appTemplateFillQualityDelta';
+import { tryBuildAppTemplateFillQualityDelta } from './appTemplateFillQualityDelta';
+import type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySnapshot';
 import { applyTemplate } from './transformations';
 
 interface AppTemplateFillCommandBuildResultInput {
