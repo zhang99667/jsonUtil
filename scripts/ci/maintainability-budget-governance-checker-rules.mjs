@@ -12,6 +12,6 @@ export const governanceCheckerMaintainabilityBudgets = [
   checkerBudget('scripts/ci/maintainabilityBudgetReport.mjs', 80, '预算报告 helper 应集中维护行数统计、预算使用率收集和临界摘要'),
   checkerBudget('scripts/ci/maintainabilityBudgetRuleFiles.mjs', 35, '预算规则文件 helper 应只维护规则表枚举和未纳入自检失败收集'),
   checkerBudget('scripts/ci/maintainabilityBudgetUsageSummaries.mjs', 55, '预算 usage 摘要 helper 应只维护 near/high usage 排序和格式化'),
-  checkerBudget('scripts/ci/maintainabilityBudgetCliArgs.mjs', 45, '预算检查 CLI 参数解析应独立维护 top 和 threshold 选项'),
+  checkerBudget('scripts/ci/maintainabilityBudgetCliArgs.mjs', 45, '预算检查 CLI 参数解析应独立维护 top、threshold 和 no-all 选项'),
   checkerBudget('scripts/ci/maintainability-budget-rules.mjs', 40, '预算规则聚合入口应只负责组合领域规则'),
 ];
