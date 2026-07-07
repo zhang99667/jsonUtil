@@ -1,4 +1,13 @@
 # 更新日志 (Changelog)
+## v1.8.710 (2026-07-08) - AI 治理预算入口分层
+### 🏗️ 架构与基础设施
+- **AI 引用预算拆分**: 将 AI 治理引用规则预算移入 `maintainability-budget-governance-ai-reference-rules.mjs`，并把引用组预算继续拆到 `maintainability-budget-governance-ai-reference-group-rules.mjs`，让 AI 治理预算入口只负责聚合核心、引用、契约、注册表和测试子表
+- **治理自检预算瘦身**: 将治理自检预算表改为 helper 短表写法，并把新增 AI 引用预算子表纳入自检预算，避免预算规则文件游离在门禁之外
+- **资产注册表测试拆分**: 将 AI 资产注册表登记、证据来源和陈旧资产负例拆到 `aiGovernanceAssetRegistry.test.mjs`，主治理测试预算同步收紧到 1200 行
+- **自动发现资产语义锁**: 新增 `aiGovernanceAssetRegistrySemanticEvidence.mjs`，要求自动发现到的非豁免 AI 协作资产必须具备发现规则以外的治理证据，避免新增 rules/docs 只登记不接入语义门禁
+- **注册表治理热区拆分**: 将资产注册表单行证据失败和决策账本预算拆到独立 helper/预算子表，降低新增语义锁后注册表失败汇总和注册表预算表的贴线风险
+- **资产注册表证据测试拆分**: 将证据认可、来源反查和正向来源匹配测试拆到 `aiGovernanceAssetRegistryEvidence.test.mjs`，让资产注册表结构测试回到登记完整性和陈旧资产边界
+
 ## v1.8.709 (2026-07-08) - AI 资产发现拆分
 ### 🏗️ 架构与基础设施
 - **资产发现文件收集拆分**: 将 AI 协作资产发现中的递归文件收集和路径归一化拆到 `aiGovernanceAssetFileCollector.mjs`，让 `aiGovernanceDiscoveredAssets.mjs` 聚焦发现范围、显式豁免和未治理资产提示
