@@ -1,20 +1,16 @@
+import { governanceAiContractTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-contract-test-rules.mjs';
+import { governanceAiReferenceTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-reference-test-rules.mjs';
+import { governanceAiRegistryTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-registry-test-rules.mjs';
 const governanceAiTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
-
 export const governanceAiTestMaintainabilityBudgets = [
-  governanceAiTestBudget('scripts/ci/maintainability-budget-governance-ai-test-rules.mjs', 20, 'AI 治理测试预算规则应独立维护治理测试文件和本规则表自身预算'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceTestFixtures.mjs', 45, 'AI 治理测试 fixture 应独立维护临时目录和注册表表格构造，避免测试重复搭脚手架'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceDiscoveredAssets.test.mjs', 50, 'AI 治理资产发现测试应独立维护新增协作资产路径和显式豁免负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistry.test.mjs', 95, 'AI 治理资产注册表测试应独立维护登记结构必填和重复登记负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistryStaleEntries.test.mjs', 50, 'AI 治理资产注册表陈旧登记测试应独立维护已移除资产负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistryEvidence.test.mjs', 60, 'AI 治理资产注册表证据测试应独立维护证据认可和未知标记负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceSources.test.mjs', 135, 'AI 治理资产注册表证据来源测试应独立维护来源反查和正向来源匹配'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceAssetRegistrySemanticEvidence.test.mjs', 65, 'AI 治理资产注册表语义证据测试应独立维护自动发现资产不能只靠发现规则的负例'),
+  governanceAiTestBudget('scripts/ci/maintainability-budget-governance-ai-test-rules.mjs', 25, 'AI 治理测试预算聚合入口应只组合核心、注册表、引用和契约测试子表'),
+  governanceAiTestBudget('scripts/ci/maintainability-budget-governance-ai-registry-test-rules.mjs', 20, 'AI 治理注册表测试预算子表应独立维护注册表结构、证据、资产发现和语义测试预算'),
+  governanceAiTestBudget('scripts/ci/maintainability-budget-governance-ai-reference-test-rules.mjs', 15, 'AI 治理引用测试预算子表应独立维护测试入口、主题化负例数据和章节规则测试预算'),
+  governanceAiTestBudget('scripts/ci/maintainability-budget-governance-ai-contract-test-rules.mjs', 15, 'AI 治理契约测试预算子表应独立维护豁免、同源和 skill 契约测试预算'),
+  governanceAiTestBudget('scripts/ci/aiGovernanceTestFixtures.mjs', 70, 'AI 治理测试 fixture 应独立维护临时目录、注册表表格构造和常用失败收集脚手架'),
   governanceAiTestBudget('scripts/ci/aiGovernanceDecisionLedger.test.mjs', 170, 'AI 治理决策账本测试应独立维护结构、路径、CI 覆盖和日期顺序负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceExemptAssetContract.test.mjs', 55, 'AI 治理显式豁免契约测试应独立维护本机配置边界负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceMirroredEntryContract.test.mjs', 90, 'AI 治理同源入口契约测试应独立维护章节和共享片段漂移负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceReferenceRules.test.mjs', 220, 'AI 治理引用规则测试应独立维护入口、发布、安全和委派引用负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceSectionReferenceRules.test.mjs', 135, 'AI 治理章节引用规则测试应独立维护章节定位和代码块伪标题负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceChecks.test.mjs', 650, 'AI 治理主测试文件应显式纳入预算，新增场景优先评估按决策账本、CI 或引用规则契约拆分'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceSkillCommandContract.test.mjs', 95, 'AI 治理 skill 命令契约测试应独立维护 fenced cd 和 npm run 可达性负例'),
-  governanceAiTestBudget('scripts/ci/aiGovernanceSkillContract.test.mjs', 260, 'AI 治理 skill 契约测试应独立维护 skill 发现、frontmatter、章节和引用可达性负例'),
+  ...governanceAiRegistryTestMaintainabilityBudgets,
+  ...governanceAiReferenceTestMaintainabilityBudgets,
+  ...governanceAiContractTestMaintainabilityBudgets,
 ];

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES } from './aiGovernanceDiscoveredAssets.mjs';
+import { AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES } from './aiGovernanceDiscoverySources.mjs';
 
 export const AI_GOVERNANCE_EXEMPT_FORBIDDEN_MARKERS = [
   'AGENTS.md',

@@ -5,6 +5,7 @@ import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetReg
 import { buildAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistryFailures.mjs';
 import {
   buildRegistryTableFixture,
+  collectRegistryFailuresForRows,
   registryRow,
   withAiGovernanceTempRoot,
   writeFixtureFile,
@@ -50,13 +51,10 @@ test('AI 治理资产注册表会报告证据来源上下文缺失', () => {
 
 test('AI 治理资产注册表会报告重复登记', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', buildRegistryTableFixture([
+    const failures = collectRegistryFailuresForRows(rootDir, [
       registryRow('AGENTS.md', { contract: '首次登记', type: '项目入口' }),
       registryRow('AGENTS.md', { contract: '重复登记', type: '项目入口' }),
-      registryRow('docs/AI-ASSET-REGISTRY.md', { type: '资产账本' }),
-    ]));
-
-    const failures = collectAiGovernanceAssetRegistryFailures(rootDir, [
+    ], [
       'AGENTS.md',
       'docs/AI-ASSET-REGISTRY.md',
     ]);
@@ -69,17 +67,15 @@ test('AI 治理资产注册表会报告重复登记', () => {
 
 test('AI 治理资产注册表会报告缺少类型、维护契约或治理证据', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', buildRegistryTableFixture([
+    const failures = collectRegistryFailuresForRows(rootDir, [
       registryRow('AGENTS.md', { type: '' }),
       registryRow('CLAUDE.md', { contract: '', type: '项目入口' }),
       registryRow('docs/AI-ASSET-REGISTRY.md', { evidence: '', type: '资产账本' }),
-    ]));
-
-    const failures = collectAiGovernanceAssetRegistryFailures(rootDir, [
+    ], [
       'AGENTS.md',
       'CLAUDE.md',
       'docs/AI-ASSET-REGISTRY.md',
-    ]);
+    ], [], { includeRegistryAssetRow: false });
 
     assert.deepEqual(failures, [
       'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `AGENTS.md` 缺少类型',
