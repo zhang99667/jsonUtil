@@ -6,6 +6,36 @@ import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFi
 
 const codexSkillFiles = ['.codex/skills/jsonutils-maintainer/SKILL.md'];
 
+test('AI 治理章节引用检查会报告决策账本不在 Playbook 必读顺序', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
+      '## 必读顺序',
+      'AGENTS.md',
+      'rules/code-style.md',
+      'docs/AI-ASSET-REGISTRY.md',
+      '## 标准执行闭环',
+      'docs/AI-GOVERNANCE-DECISIONS.md',
+    ].join('\n'));
+
+    const failures = collectMissingAiGovernanceReferences(
+      rootDir,
+      [{
+        file: 'docs/AI-ENGINEERING-PLAYBOOK.md',
+        contains: ['docs/AI-GOVERNANCE-DECISIONS.md'],
+        sections: [{
+          sectionTitle: '## 必读顺序',
+          contains: ['docs/AI-GOVERNANCE-DECISIONS.md'],
+        }],
+      }],
+      codexSkillFiles
+    );
+
+    assert.deepEqual(failures, [
+      'docs/AI-ENGINEERING-PLAYBOOK.md: ## 必读顺序 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
+    ]);
+  });
+});
+
 test('AI 治理章节引用检查会报告关键词落错章节', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
