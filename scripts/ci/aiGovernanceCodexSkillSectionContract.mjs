@@ -3,7 +3,7 @@ import { getMarkdownSectionContent } from './aiGovernanceSectionReferences.mjs';
 const CODEX_SKILL_SECTION_CONTENT_REQUIREMENTS = [
   {
     sectionTitle: '## 必读文件',
-    contains: ['AGENTS.md', 'rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-ASSET-REGISTRY.md'],
+    contains: ['AGENTS.md', 'rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md'],
   },
   {
     sectionTitle: '## 工作流',

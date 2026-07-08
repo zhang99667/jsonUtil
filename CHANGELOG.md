@@ -4,6 +4,8 @@
 - **安全审计 registry 固定**: `audit:security` 显式使用官方 npm registry，避免 CI 因镜像站不支持 npm audit endpoint 而误报失败
 - **E2E smoke 断言对齐**: 修正 AI mock Base URL、JSONPath 结构摘要和 JSON Lines 错误提示断言，让 CI E2E 覆盖当前 UI 行为
 - **E2E 性能输入稳定性**: Browser Worker 性能用例优先通过 Monaco 实例写入大文本，避免 CI runner 上键盘注入大 JSON 偶发超时
+- **决策账本多测试路径反查**: AI 治理决策账本会校验 `node --test` 命令中的每个测试路径，避免后续回归文件写错仍通过治理门禁
+- **决策账本前置必读锁定**: Playbook 和 Codex skill 将 AI 治理决策账本纳入前置阅读，并用章节引用与 skill 契约防止历史反例入口漂移
 
 ## v1.8.719 (2026-07-08) - Copilot 治理入口锁定
 ### 🏗️ 架构与基础设施

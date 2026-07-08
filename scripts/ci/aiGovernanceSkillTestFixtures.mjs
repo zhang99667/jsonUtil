@@ -6,6 +6,7 @@ export const COMPLETE_CODEX_SKILL_SECTION_BODIES = {
     'rules/code-style.md',
     'docs/AI-ENGINEERING-PLAYBOOK.md',
     'docs/AI-ASSET-REGISTRY.md',
+    'docs/AI-GOVERNANCE-DECISIONS.md',
   ].join('\n'),
   '## 工作流': [
     'git status --short --branch',

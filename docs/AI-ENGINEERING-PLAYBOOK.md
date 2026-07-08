@@ -13,9 +13,11 @@
 
 1. `AGENTS.md` 或 `CLAUDE.md`: 获取项目结构、技术栈、常见任务路径。
 2. `rules/code-style.md`: 获取编码风格、提交规范和 CHANGELOG 规则。
-3. `ARCHITECTURE.md`: 涉及前后端边界、部署、数据流时阅读。
-4. 相关源码和测试: 先找同类实现，再做最小改动。
-5. `CHANGELOG.md`: 修改代码后补充用户可理解的变更记录。
+3. `docs/AI-ASSET-REGISTRY.md`: 涉及 AI 协作资产、工具入口、rules 或 skills 时确认登记和治理证据。
+4. `docs/AI-GOVERNANCE-DECISIONS.md`: 涉及规则沉淀、skill 契约或治理脚本变化时确认历史决策、反例和锁定测试。
+5. `ARCHITECTURE.md`: 涉及前后端边界、部署、数据流时阅读。
+6. 相关源码和测试: 先找同类实现，再做最小改动。
+7. `CHANGELOG.md`: 修改代码后补充用户可理解的变更记录。
 
 ## 标准执行闭环
 

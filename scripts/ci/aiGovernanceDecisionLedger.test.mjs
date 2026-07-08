@@ -98,6 +98,20 @@ test('AI 治理决策账本会报告不存在的锁定测试命令路径', () =>
   });
 });
 
+test('AI 治理决策账本会报告多测试命令中的后续缺失路径', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeDecisionLedgerBackfillFiles(rootDir);
+    writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      tests: '`node --test scripts/ci/aiGovernanceChecks.test.mjs scripts/ci/missing-second.test.mjs`',
+    }));
+
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 锁定测试命令路径不存在 `scripts/ci/missing-second.test.mjs`',
+    ]);
+  });
+});
+
 test('AI 治理决策账本会报告未被 CI 脚本单测覆盖的锁定测试', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeDecisionLedgerBackfillFiles(rootDir);
@@ -134,9 +148,9 @@ test('AI 治理决策账本会报告日期顺序倒置', () => {
 test('AI 治理决策账本会报告缺少回归或负向测试命令', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeDecisionLedgerBackfillFiles(rootDir);
-    writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'check');
+    writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
-      tests: '`node scripts/ci/check-ai-governance.mjs`',
+      tests: '`node scripts/ci/aiGovernanceChecks.test.mjs`',
     }));
 
     assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [

@@ -180,6 +180,9 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     writeFixtureFile(rootDir, file, [sharedReferences, ...AI_ENTRY_SHARED_SNIPPETS].join('\n'));
   });
   writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
+    '## 必读顺序',
+    'docs/AI-ASSET-REGISTRY.md',
+    'docs/AI-GOVERNANCE-DECISIONS.md',
     sharedReferences,
     '### 0. 判断子 Agent 委派',
     sharedReferences,

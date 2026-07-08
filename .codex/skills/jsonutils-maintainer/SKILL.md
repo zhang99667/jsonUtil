@@ -13,7 +13,8 @@ description: JSONUtils 项目维护技能。用于优化性能、重构可维护
 2. `rules/code-style.md`: 代码风格、提交格式和 CHANGELOG 要求。
 3. `docs/AI-ENGINEERING-PLAYBOOK.md`: AI 自闭环执行流程。
 4. `docs/AI-ASSET-REGISTRY.md`: AI 协作资产、治理证据和显式豁免账本。
-5. 与任务相关的源码、测试和文档。
+5. `docs/AI-GOVERNANCE-DECISIONS.md`: AI rules、skills 和治理门禁的决策记录、回写追踪与锁定测试。
+6. 与任务相关的源码、测试和文档。
 
 ## 工作流
 
