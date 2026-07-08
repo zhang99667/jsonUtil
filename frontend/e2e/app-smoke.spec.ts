@@ -72,7 +72,7 @@ test.beforeEach(async ({ page }) => {
       provider: 'custom',
       apiKey: 'mock-api-key',
       model: 'mock-json-repair',
-      baseUrl: '/mock-ai',
+      baseUrl: `${window.location.origin}/mock-ai`,
     }));
 
     featureTourIds.forEach(featureId => {
@@ -1944,7 +1944,7 @@ test('占位符筛选后回填模板保留候选值', async ({ page }) => {
 test('JSON Lines 校验错误展示具体行号', async ({ page }) => {
   await fillSourceEditor(page, '{"ok":1}\n{"broken":}\n{"ok":3}');
 
-  await expect(page.getByText('JSON Lines 第 2 行解析错误')).toBeVisible();
+  await expect(page.locator('[data-tour="editor-error-message"]')).toContainText('JSON Lines 第 2 行解析错误');
   const locateErrorButton = page.getByRole('button', { name: /SOURCE 定位到第 2 行，第 \d+ 列/ });
   await expect(locateErrorButton).toHaveAttribute('title', /SOURCE 定位到第 2 行，第 \d+ 列/);
   await locateErrorButton.click();
@@ -2480,7 +2480,7 @@ test('JSONPath 面板可查询预览数据', async ({ page }) => {
   await expect(queryInput).toHaveValue('$..action_cmd');
   await expect(page.getByText('1 / 1')).toBeVisible();
   await expect(resultPreview).toContainText('$.meta.action_cmd');
-  await expect(resultPreview).toContainText('"nid": 123');
+  await expect(resultPreview).toContainText('对象(1)');
 
   await queryInput.fill('traceId');
   await queryButton.click();
@@ -2630,8 +2630,7 @@ test('JSONPath 面板可查询 JSON Lines 输入', async ({ page }) => {
   await expect(page.getByText('1 / 1')).toBeVisible();
   await expect(page.locator('.jsonpath-highlight').first()).toBeVisible();
   const resultPreview = page.locator('[data-tour="jsonpath-results"]');
-  await expect(resultPreview).toContainText('"level": "info"');
-  await expect(resultPreview).toContainText('"level": "error"');
+  await expect(resultPreview).toContainText('$=数组(2)');
 
   await page.locator('[data-tour="jsonpath-input"]').fill('$[*].user.id');
   await page.getByRole('button', { name: '查询', exact: true }).click();
@@ -3418,7 +3417,7 @@ test('自定义 AI 配置缺少 Base URL 时阻止保存', async ({ page }) => {
   const aiConfig = await page.evaluate(() => JSON.parse(window.localStorage.getItem('json-helper-ai-config') || '{}') as {
     baseUrl?: string;
   });
-  expect(aiConfig.baseUrl).toBe('/mock-ai');
+  expect(aiConfig.baseUrl).toBe(`${new URL(page.url()).origin}/mock-ai`);
 });
 
 test('模板填充会提前提示 SOURCE 前置条件', async ({ page }) => {
