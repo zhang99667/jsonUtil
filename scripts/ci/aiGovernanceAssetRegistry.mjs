@@ -1,9 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {
-  AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES,
-  discoverAiGovernanceAssetFiles,
-} from './aiGovernanceDiscoveredAssets.mjs';
+import { discoverAiGovernanceAssetFiles } from './aiGovernanceDiscoveredAssets.mjs';
+import { AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES } from './aiGovernanceDiscoverySources.mjs';
 import { AI_GOVERNANCE_ASSET_REGISTRY_FILE } from './aiGovernanceAssetRegistryConstants.mjs';
 import { buildAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistryFailures.mjs';
 import { buildRegistryEvidenceSourceSets } from './aiGovernanceAssetRegistryEvidenceSources.mjs';

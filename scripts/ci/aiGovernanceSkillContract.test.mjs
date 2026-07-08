@@ -3,69 +3,21 @@ import { test } from 'node:test';
 
 import { collectCodexSkillContractFailures } from './aiGovernanceCodexSkillContract.mjs';
 import { discoverCodexSkillFiles } from './aiGovernanceChecks.mjs';
+import {
+  buildCodexSkillFixtureContent,
+  CODEX_SKILL_TEST_FILE,
+  COMPLETE_CODEX_SKILL_SECTION_BODIES,
+} from './aiGovernanceSkillTestFixtures.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
-const buildSkillFixtureContent = ({
-  frontmatter = [
-    'name: jsonutils-maintainer',
-    'description: JSONUtils 项目维护技能。',
-  ].join('\n'),
-  sections = [
-    '## 必读文件',
-    '## 工作流',
-    '## 常用验证命令',
-    '## 重点边界',
-  ],
-  sectionBodies,
-} = {}) => [
-  '---',
-  frontmatter,
-  '---',
-  '',
-  '# JSONUtils Maintainer',
-  '',
-  ...sections.flatMap(section => [section, sectionBodies?.[section] ?? '', '']),
-].join('\n');
-
-const completeSkillSectionBodies = {
-  '## 必读文件': [
-    'AGENTS.md',
-    'rules/code-style.md',
-    'docs/AI-ENGINEERING-PLAYBOOK.md',
-    'docs/AI-ASSET-REGISTRY.md',
-  ].join('\n'),
-  '## 工作流': [
-    'git status --short --branch',
-    '子 Agent 委派',
-    'frontend/package.json',
-    'CHANGELOG.md',
-    '规则/skill 回写',
-    '决策记录',
-    '回写追踪',
-    '锁定测试',
-  ].join('\n'),
-  '## 常用验证命令': [
-    'node scripts/ci/check-version-consistency.mjs',
-    'node scripts/ci/check-ai-governance.mjs',
-    'node scripts/ci/check-maintainability-budgets.mjs',
-    'npm run build',
-  ].join('\n'),
-  '## 重点边界': [
-    'dispatchChunkLoadRecoveryEvent',
-    'Content-Type',
-    '本地规则优先',
-    'node scripts/ci/check-ai-governance.mjs',
-  ].join('\n'),
-};
-
-const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
+const skillFile = CODEX_SKILL_TEST_FILE;
 
 test('AI 治理 skill 发现只收集技能目录下的 SKILL.md', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, skillFile, 'skill');
+    writeFixtureFile(rootDir, CODEX_SKILL_TEST_FILE, 'skill');
     writeFixtureFile(rootDir, '.codex/skills/not-a-skill.txt', 'ignore');
 
-    assert.deepEqual(discoverCodexSkillFiles(rootDir), [skillFile]);
+    assert.deepEqual(discoverCodexSkillFiles(rootDir), [CODEX_SKILL_TEST_FILE]);
   });
 });
 
@@ -74,13 +26,13 @@ test('AI 治理 skill 契约会报告缺失 frontmatter', () => {
     writeFixtureFile(rootDir, skillFile, [
       '# JSONUtils Maintainer',
       '## 必读文件',
-      completeSkillSectionBodies['## 必读文件'],
+      COMPLETE_CODEX_SKILL_SECTION_BODIES['## 必读文件'],
       '## 工作流',
-      completeSkillSectionBodies['## 工作流'],
+      COMPLETE_CODEX_SKILL_SECTION_BODIES['## 工作流'],
       '## 常用验证命令',
-      completeSkillSectionBodies['## 常用验证命令'],
+      COMPLETE_CODEX_SKILL_SECTION_BODIES['## 常用验证命令'],
       '## 重点边界',
-      completeSkillSectionBodies['## 重点边界'],
+      COMPLETE_CODEX_SKILL_SECTION_BODIES['## 重点边界'],
     ].join('\n'));
 
     assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
@@ -91,9 +43,9 @@ test('AI 治理 skill 契约会报告缺失 frontmatter', () => {
 
 test('AI 治理 skill 契约会报告缺失 frontmatter 字段', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       frontmatter: 'name: jsonutils-maintainer',
-      sectionBodies: completeSkillSectionBodies,
+      sectionBodies: COMPLETE_CODEX_SKILL_SECTION_BODIES,
     }));
 
     assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
@@ -104,12 +56,12 @@ test('AI 治理 skill 契约会报告缺失 frontmatter 字段', () => {
 
 test('AI 治理 skill 契约会报告 frontmatter name 与目录不一致', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       frontmatter: [
         'name: stale-skill',
         'description: JSONUtils 项目维护技能。',
       ].join('\n'),
-      sectionBodies: completeSkillSectionBodies,
+      sectionBodies: COMPLETE_CODEX_SKILL_SECTION_BODIES,
     }));
 
     assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
@@ -120,9 +72,9 @@ test('AI 治理 skill 契约会报告 frontmatter name 与目录不一致', () =
 
 test('AI 治理 skill 契约会报告缺失核心章节', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       sections: ['## 必读文件', '## 工作流', '## 重点边界'],
-      sectionBodies: completeSkillSectionBodies,
+      sectionBodies: COMPLETE_CODEX_SKILL_SECTION_BODIES,
     }));
 
     assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
@@ -133,11 +85,11 @@ test('AI 治理 skill 契约会报告缺失核心章节', () => {
 
 test('AI 治理 skill 契约会忽略正文里的伪章节标题', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       sections: ['## 必读文件', '## 常用验证命令', '## 重点边界'],
       sectionBodies: {
-        ...completeSkillSectionBodies,
-        '## 必读文件': `${completeSkillSectionBodies['## 必读文件']}\n正文提到 ## 工作流 不是章节标题`,
+        ...COMPLETE_CODEX_SKILL_SECTION_BODIES,
+        '## 必读文件': `${COMPLETE_CODEX_SKILL_SECTION_BODIES['## 必读文件']}\n正文提到 ## 工作流 不是章节标题`,
       },
     }));
 
@@ -149,9 +101,9 @@ test('AI 治理 skill 契约会忽略正文里的伪章节标题', () => {
 
 test('AI 治理 skill 契约会报告核心章节缺少关键内容', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       sectionBodies: {
-        ...completeSkillSectionBodies,
+        ...COMPLETE_CODEX_SKILL_SECTION_BODIES,
         '## 工作流': [
           'git status --short --branch',
           'frontend/package.json',
@@ -172,10 +124,10 @@ test('AI 治理 skill 契约会报告核心章节缺少关键内容', () => {
 
 test('AI 治理 skill 契约会报告不存在的项目路径引用', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       sectionBodies: {
-        ...completeSkillSectionBodies,
-        '## 必读文件': `${completeSkillSectionBodies['## 必读文件']}\n- \`docs/AI-MISSING.md\``,
+        ...COMPLETE_CODEX_SKILL_SECTION_BODIES,
+        '## 必读文件': `${COMPLETE_CODEX_SKILL_SECTION_BODIES['## 必读文件']}\n- \`docs/AI-MISSING.md\``,
       },
     }));
 
@@ -187,11 +139,11 @@ test('AI 治理 skill 契约会报告不存在的项目路径引用', () => {
 
 test('AI 治理 skill 契约会报告不存在的验证脚本引用', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       sectionBodies: {
-        ...completeSkillSectionBodies,
+        ...COMPLETE_CODEX_SKILL_SECTION_BODIES,
         '## 常用验证命令': [
-          completeSkillSectionBodies['## 常用验证命令'],
+          COMPLETE_CODEX_SKILL_SECTION_BODIES['## 常用验证命令'],
           '```bash',
           'node scripts/ci/missing-skill-check.mjs',
           '```',

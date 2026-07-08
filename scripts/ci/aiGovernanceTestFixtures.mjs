@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
 
 export const withAiGovernanceTempRoot = (run) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-ai-governance-'));
@@ -32,3 +33,19 @@ export const buildRegistryTableFixture = rows => [
     `| \`${file}\` | ${type} | ${contract} | ${evidence} |`
   )),
 ].join('\n');
+
+export const collectRegistryFailuresForRows = (
+  rootDir,
+  rows,
+  requiredFiles,
+  referenceRules = [],
+  { includeRegistryAssetRow = true } = {}
+) => {
+  const registryRows = includeRegistryAssetRow
+    ? [...rows, registryRow('docs/AI-ASSET-REGISTRY.md', { type: '资产账本' })]
+    : rows;
+
+  writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', buildRegistryTableFixture(registryRows));
+
+  return collectAiGovernanceAssetRegistryFailures(rootDir, requiredFiles, referenceRules);
+};
