@@ -87,7 +87,38 @@ const fillMonacoEditor = async (page: Page, editor: Locator, value: string) => {
   await page.keyboard.press(selectAllShortcut);
   await page.keyboard.press(selectAllShortcut);
   await page.keyboard.press('Backspace');
-  await page.keyboard.insertText(value);
+  const isValueInjected = await editor.evaluate((node, text) => {
+    type MonacoCodeEditor = {
+      focus: () => void;
+      getDomNode: () => HTMLElement | null;
+      getValue: () => string;
+      setValue: (newValue: string) => void;
+    };
+
+    const monacoApi = (window as unknown as {
+      monaco?: {
+        editor?: {
+          getEditors?: () => readonly MonacoCodeEditor[];
+        };
+      };
+    }).monaco;
+    const targetEditor = monacoApi?.editor?.getEditors?.().find(item => {
+      const editorNode = item.getDomNode();
+      return editorNode === node || Boolean(editorNode?.contains(node)) || node.contains(editorNode);
+    });
+
+    if (!targetEditor) {
+      return false;
+    }
+
+    targetEditor.setValue(text);
+    targetEditor.focus();
+    return targetEditor.getValue() === text;
+  }, value);
+
+  if (!isValueInjected) {
+    await page.keyboard.insertText(value);
+  }
 };
 
 const fillSourceEditor = async (page: Page, value: string) => {
