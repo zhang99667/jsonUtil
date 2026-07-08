@@ -2,7 +2,7 @@
   "name": "json-helper-ai-fix",
   "productName": "JSONUtils - 专业版",
   "private": true,
-  "version": "1.8.719",
+  "version": "1.8.720",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -13,7 +13,7 @@
     "test:e2e": "playwright test",
     "lint": "eslint \"{src,config}/**/*.{ts,tsx}\" --quiet",
     "lint:report": "eslint \"{src,config}/**/*.{ts,tsx}\"",
-    "audit:security": "npm audit --audit-level=moderate",
+    "audit:security": "npm audit --audit-level=moderate --registry=https://registry.npmjs.org",
     "typecheck": "tsc --noEmit",
     "check:preloads": "node scripts/check-main-preloads.mjs",
     "corpus:scheme": "vitest run src/utils/schemeCorpus.test.ts",

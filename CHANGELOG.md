@@ -1,4 +1,8 @@
 # 更新日志 (Changelog)
+## v1.8.720 (2026-07-08) - CI 安全审计恢复
+### 🏗️ 架构与基础设施
+- **安全审计 registry 固定**: `audit:security` 显式使用官方 npm registry，避免 CI 因镜像站不支持 npm audit endpoint 而误报失败
+
 ## v1.8.719 (2026-07-08) - Copilot 治理入口锁定
 ### 🏗️ 架构与基础设施
 - **Copilot 根入口治理锁**: PR 模板、配置说明、Playbook 和资产注册表显式要求 `.github/copilot-instructions.md`，避免仓库级 Copilot instructions 修改只靠自动发现而缺少人审与文档枚举提醒
