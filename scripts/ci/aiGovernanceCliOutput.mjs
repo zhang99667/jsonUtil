@@ -1,6 +1,7 @@
 const FAILURE_GROUPS = [
   ['missingFiles', 'AI 协作资产缺少以下文件:'],
   ['skillContractFailures', 'AI 协作 skill 契约缺少以下内容:'],
+  ['contractFailures', 'AI 协作治理契约失败:'],
   ['missingReferences', 'AI 协作资产缺少以下关键引用:'],
 ];
 

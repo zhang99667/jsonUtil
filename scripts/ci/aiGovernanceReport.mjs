@@ -1,5 +1,6 @@
 import { buildAiGovernanceReportContext } from './aiGovernanceReportContext.mjs';
 import {
+  collectAiGovernanceContractFailures,
   collectAiGovernanceMissingFileFailures,
   collectAiGovernanceReferenceFailures,
   collectAiGovernanceSkillContractFailures,
@@ -13,6 +14,7 @@ export const buildAiGovernanceReport = (rootDir) => {
     referenceRules: context.referenceRules,
     missingFiles: collectAiGovernanceMissingFileFailures(rootDir, context),
     skillContractFailures: collectAiGovernanceSkillContractFailures(rootDir, context),
+    contractFailures: collectAiGovernanceContractFailures(rootDir, context),
     missingReferences: collectAiGovernanceReferenceFailures(rootDir, context),
   };
 };

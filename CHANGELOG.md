@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.727 (2026-07-09) - AI 安全证据治理契约
+### 🏗️ 架构与基础设施
+- **AI 安全证据契约**: `check-ai-governance` 反查 AI 修复外部模型安全边界的关键前端测试，防止本地优先、敏感内容拦截和错误脱敏证据只停留在文档关键词
+- **治理报告失败分组**: `check-ai-governance --json` 将契约失败从缺引用中拆出为 `contractFailures`，让 CI artifact 和子 Agent 能区分缺文件、skill 契约、治理契约和引用缺失
+- **AI 安全跳过门禁**: AI 安全证据契约会拦截关键安全用例被 `it.skip`、`test.skip`、`it.todo` 或 `test.todo` 静默跳过，避免测试标题存在但证据不可执行
+
 ## v1.8.726 (2026-07-09) - AI 治理报告可消费化
 ### 🏗️ 架构与基础设施
 - **工具索引必读顺序门禁**: `check-ai-governance` 对 `docs/AI-TOOLS-SETUP.md` 的 `## 必读顺序` 增加章节级检查，确保资产注册表和决策账本不会只停留在章节外引用

@@ -19,7 +19,7 @@ test('AI 治理完整报告会包含脚本可达性失败', () => {
     writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'console.log("ok");');
     writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceLooseHelper.mjs', 'export const loose = true;');
     writeFixtureFile(rootDir, 'frontend/package.json', frontendPackageFixture);
-    assert.equal(buildAiGovernanceReport(rootDir).missingReferences.includes(orphanHelperFailure), true);
+    assert.equal(buildAiGovernanceReport(rootDir).contractFailures.includes(orphanHelperFailure), true);
   });
 });
 

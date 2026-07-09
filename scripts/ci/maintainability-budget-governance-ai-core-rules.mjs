@@ -4,6 +4,8 @@ export const governanceAiCoreMaintainabilityBudgets = [
   governanceAiCoreBudget('scripts/ci/maintainability-budget-governance-ai-core-rules.mjs', 20, 'AI 治理核心预算子表应独立维护 CLI、报告和资产发现基础预算'),
   governanceAiCoreBudget('scripts/ci/check-ai-governance.mjs', 45, 'AI 治理检查 CLI 应只负责执行报告和输出错误，规则与收集逻辑放在独立模块'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceCliOutput.mjs', 45, 'AI 治理 CLI 输出 helper 应独立维护人读报告和 JSON 摘要格式'),
+  governanceAiCoreBudget('scripts/ci/aiGovernanceAiSafetyEvidence.mjs', 65, 'AI 治理 AI 修复安全证据 helper 应只维护关键测试文件、证据片段和 skip/todo 反查'),
+  governanceAiCoreBudget('scripts/ci/aiGovernanceContractFailures.mjs', 45, 'AI 治理契约失败聚合器应独立维护非引用类治理契约分组'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceChecks.mjs', 65, 'AI 治理缺失收集应只负责文件内容检查，report 组装和规则构造放在独立模块'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceReport.mjs', 25, 'AI 治理报告组装应只组合上下文与失败列表'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceReportContext.mjs', 20, 'AI 治理报告上下文应独立维护 skill、required files、reference rules 和 governed files 构造'),
