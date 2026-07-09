@@ -15,6 +15,33 @@ import { LazySchemeViewerModal } from './appLazyPanels';
 import { buildEditorTabViewStateHandlers } from './editorTabViewStateHandlers';
 
 const ASYNC_SCHEME_SCAN_THRESHOLD = 200_000;
+const READ_ONLY_UNLOCK_PROMPT_MARGIN = 12;
+const READ_ONLY_UNLOCK_PROMPT_WIDTH = 96;
+const READ_ONLY_UNLOCK_PROMPT_GAP = 8;
+const READ_ONLY_UNLOCK_PROMPT_HIDE_DELAY_MS = 5_000;
+
+export interface ReadOnlyUnlockPromptPosition {
+  top: number;
+  left: number;
+}
+
+export const getReadOnlyUnlockPromptPosition = (
+  anchorPosition: { top: number; left: number } | null,
+  editorWidth: number,
+  contentLeft: number
+): ReadOnlyUnlockPromptPosition => {
+  const top = Math.max(READ_ONLY_UNLOCK_PROMPT_MARGIN, anchorPosition?.top ?? 32);
+  const baseLeft = anchorPosition?.left ?? contentLeft + 14;
+  const maxLeft = Math.max(
+    READ_ONLY_UNLOCK_PROMPT_MARGIN,
+    editorWidth - READ_ONLY_UNLOCK_PROMPT_WIDTH - READ_ONLY_UNLOCK_PROMPT_MARGIN
+  );
+
+  return {
+    top,
+    left: Math.min(Math.max(baseLeft, READ_ONLY_UNLOCK_PROMPT_MARGIN), maxLeft),
+  };
+};
 
 type MonacoJsonDefaults = {
   json?: {
@@ -75,10 +102,14 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const [language, setLanguage] = useState<string>('plaintext');
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
   const [isLocked, setIsLocked] = useState<boolean>(true);
+  const [readOnlyUnlockPrompt, setReadOnlyUnlockPrompt] = useState<ReadOnlyUnlockPromptPosition | null>(null);
   const monaco = useMonaco();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const decorationsCollectionRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const diagnosticDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
+  const readOnlyUnlockPromptTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const effectiveReadOnlyRef = useRef<boolean>(false);
+  const canToggleReadOnlyRef = useRef<boolean>(canToggleReadOnly);
 
   // Scheme 检测状态
   const [schemeLocations, setSchemeLocations] = useState<SchemeLocation[]>([]);
@@ -256,6 +287,81 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     : '';
   const copyErrorLabel = `${label} 复制错误信息`;
   const schemeCountLabel = `${label} 中发现 ${schemeLocations.length} 个可点击 Scheme/CMD 字段`;
+
+  useEffect(() => {
+    effectiveReadOnlyRef.current = effectiveReadOnly;
+    canToggleReadOnlyRef.current = canToggleReadOnly;
+  }, [canToggleReadOnly, effectiveReadOnly]);
+
+  const clearReadOnlyUnlockPromptTimer = useCallback(() => {
+    if (readOnlyUnlockPromptTimerRef.current === null) return;
+    window.clearTimeout(readOnlyUnlockPromptTimerRef.current);
+    readOnlyUnlockPromptTimerRef.current = null;
+  }, []);
+
+  const hideReadOnlyUnlockPrompt = useCallback(() => {
+    clearReadOnlyUnlockPromptTimer();
+    setReadOnlyUnlockPrompt(null);
+  }, [clearReadOnlyUnlockPromptTimer]);
+
+  const showReadOnlyUnlockPrompt = useCallback(() => {
+    const editorInstance = editorRef.current;
+    if (!editorInstance || !effectiveReadOnlyRef.current || !canToggleReadOnlyRef.current) return;
+
+    window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        const latestEditor = editorRef.current;
+        if (!latestEditor || !effectiveReadOnlyRef.current || !canToggleReadOnlyRef.current) return;
+
+        const layoutInfo = latestEditor.getLayoutInfo();
+        const editorDomNode = latestEditor.getDomNode();
+        const readOnlyMessageNode = editorDomNode?.querySelector<HTMLElement>('.monaco-editor-overlaymessage');
+        let anchorPosition: { top: number; left: number } | null = null;
+
+        if (editorDomNode && readOnlyMessageNode) {
+          const editorRect = editorDomNode.getBoundingClientRect();
+          const messageRect = readOnlyMessageNode.getBoundingClientRect();
+          anchorPosition = {
+            top: messageRect.top - editorRect.top,
+            left: messageRect.right - editorRect.left + READ_ONLY_UNLOCK_PROMPT_GAP,
+          };
+        } else {
+          const cursorPosition = latestEditor.getPosition();
+          const visiblePosition = cursorPosition
+            ? latestEditor.getScrolledVisiblePosition(cursorPosition)
+            : null;
+          anchorPosition = visiblePosition
+            ? { top: visiblePosition.top - 4, left: visiblePosition.left + 14 }
+            : null;
+        }
+
+        setReadOnlyUnlockPrompt(getReadOnlyUnlockPromptPosition(
+          anchorPosition,
+          layoutInfo.width,
+          layoutInfo.contentLeft
+        ));
+        clearReadOnlyUnlockPromptTimer();
+        readOnlyUnlockPromptTimerRef.current = window.setTimeout(() => {
+          setReadOnlyUnlockPrompt(null);
+          readOnlyUnlockPromptTimerRef.current = null;
+        }, READ_ONLY_UNLOCK_PROMPT_HIDE_DELAY_MS);
+      });
+    });
+  }, [clearReadOnlyUnlockPromptTimer]);
+
+  const unlockReadOnlyEditor = useCallback(() => {
+    if (!canToggleReadOnly) return;
+    setIsLocked(false);
+    hideReadOnlyUnlockPrompt();
+    requestAnimationFrame(() => editorRef.current?.focus());
+  }, [canToggleReadOnly, hideReadOnlyUnlockPrompt]);
+
+  useEffect(() => {
+    if (effectiveReadOnly && canToggleReadOnly) return;
+    hideReadOnlyUnlockPrompt();
+  }, [canToggleReadOnly, effectiveReadOnly, hideReadOnlyUnlockPrompt]);
+
+  useEffect(() => hideReadOnlyUnlockPrompt, [hideReadOnlyUnlockPrompt]);
 
   // 变更处理（含只读保护）
   const handleEditorChange = (val: string | undefined) => {
@@ -545,7 +651,10 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             <button
               data-tour="editor-lock"
               type="button"
-              onClick={() => setIsLocked(!isLocked)}
+              onClick={() => {
+                setIsLocked(!isLocked);
+                hideReadOnlyUnlockPrompt();
+              }}
               aria-label={lockToggleTitle}
               aria-pressed={!isLocked}
               className={`editor-header-action flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors border focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 ${!isLocked ? 'bg-red-900/30 text-red-300 border-red-900/50' : 'text-gray-400 border-transparent hover:bg-editor-border'}`}
@@ -660,6 +769,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
               onFocus?.();
             });
 
+            editor.onDidAttemptReadOnlyEdit(showReadOnlyUnlockPrompt);
+
             // 监听 glyph margin 点击事件（scheme 图标）
             // 使用 ref 访问最新的 schemeLocations，避免闭包捕获旧值
             editor.onMouseDown((e) => {
@@ -715,6 +826,9 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             hideCursorInOverviewRuler: true,
             renderLineHighlight: 'all',
             glyphMargin: schemeLocations.length > 0, // 有 scheme 时显示 glyph margin
+            readOnlyMessage: {
+              value: canToggleReadOnly ? '只读预览，可点旁边“解锁”编辑。' : '当前编辑器为只读。',
+            },
           }}
           loading={
             <div className="h-full w-full flex items-center justify-center text-editor-fg-dim text-xs">
@@ -722,6 +836,32 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             </div>
           }
         />
+        {readOnlyUnlockPrompt && effectiveReadOnly && canToggleReadOnly && (
+          <div
+            data-tour="editor-readonly-unlock-prompt"
+            className="absolute z-[10050] flex items-center rounded-md border border-sky-400/45 bg-editor-sidebar/95 p-1 text-xs text-gray-200 shadow-[0_12px_28px_rgba(0,0,0,0.42)] backdrop-blur"
+            style={{
+              top: readOnlyUnlockPrompt.top,
+              left: readOnlyUnlockPrompt.left,
+            }}
+            role="status"
+            aria-label="只读预览，可解锁编辑"
+            aria-live="polite"
+          >
+            <button
+              type="button"
+              onClick={unlockReadOnlyEditor}
+              className="flex items-center gap-1 rounded border border-sky-500/55 bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-medium text-sky-100 transition-colors hover:border-sky-300/70 hover:bg-sky-500/25"
+              title={`${label} 解锁编辑`}
+              aria-label={`${label} 解锁编辑`}
+            >
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+              </svg>
+              解锁
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Scheme 解析弹窗 */}

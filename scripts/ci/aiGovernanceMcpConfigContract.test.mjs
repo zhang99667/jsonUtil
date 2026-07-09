@@ -17,7 +17,6 @@ test('AI 治理 MCP 配置契约会报告非法 JSON', () => {
 test('AI 治理 MCP 配置契约会报告缺少 server map', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.cursor/mcp.json', JSON.stringify({ inputs: [] }));
-
     assert.deepEqual(collectMcpConfigContractFailures(rootDir), [
       '.cursor/mcp.json: MCP 配置必须包含 mcpServers 或 servers 对象',
     ]);

@@ -24,7 +24,7 @@ const writeDecisionLedgerBackfillFiles = (rootDir) => {
   writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
   writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', 'ledger');
   writeFixtureFile(rootDir, 'CHANGELOG.md', 'log');
-  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', "test('fixture', () => {});");
   writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'check');
 };
 

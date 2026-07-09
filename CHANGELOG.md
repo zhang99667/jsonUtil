@@ -1,4 +1,16 @@
 # 更新日志 (Changelog)
+## v1.8.731 (2026-07-09) - AI 治理证据、MCP 契约与只读解锁
+### 🎨 UI/UE 优化
+- **只读编辑解锁提示**: PREVIEW 只读编辑器触发输入时会在光标旁显示解锁按钮，避免用户误以为预览区不可编辑
+
+### 🐛 Bug 修复
+- **公开域名路由**: 将 `zhangjihao.markz.fun` 明确绑定到主站 Nginx server_name，并用部署门禁拦截公开域名误落后台入口
+
+### 🏗️ 架构与基础设施
+- **决策锁定测试活跃门禁**: `check-ai-governance` 会打开 AI 治理决策账本引用的 `node --test ...test.mjs` 文件，拦截空测试、只剩 `skip`、`todo` 或 `.only` 的弱锁定证据
+- **MCP Server Map 单源门禁**: `check-ai-governance` 拦截项目级 MCP 配置同时写入 `mcpServers` 和 `servers`，避免不同工具读取不同 server map 造成执行边界歧义
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随决策锁定测试活跃证据和 MCP server map 单源契约升级到 `0.1.12`，让后续 agent 记录规则沉淀和建设 MCP 时保留可执行边界
+
 ## v1.8.730 (2026-07-09) - AI 治理日期边界
 ### 🏗️ 架构与基础设施
 - **治理日期未来值门禁**: `check-ai-governance` 拦截 AI 资产注册表最近复核日期和 AI 治理决策账本日期写入未来值，避免审计证据用未来时间冒充已复核或已决策
