@@ -8,5 +8,5 @@ export const governanceAiMcpContractTestMaintainabilityBudgets = [
   mcpContractTestBudget('scripts/ci/aiGovernanceMcpConfigRuntimeContract.test.mjs', 55, 'AI 治理 MCP 运行时契约测试应独立维护命令和路径负例'),
   mcpContractTestBudget('scripts/mcp/jsonutils-governance-server.test.mjs', 95, 'JSONUtils 治理 MCP server 测试应只锁定资源、固定命令和 framing'),
   mcpContractTestBudget('scripts/mcp/jsonutils-governance-context.test.mjs', 80, 'JSONUtils 治理上下文测试应只锁定报告组合、版本和决策摘要'),
-  mcpContractTestBudget('scripts/mcp/jsonutils-governance-stdio.test.mjs', 110, 'JSONUtils 治理 MCP stdio 测试应只锁定项目配置启动、framing 和工具清单'),
+  mcpContractTestBudget('scripts/mcp/jsonutils-governance-stdio.test.mjs', 120, 'JSONUtils 治理 MCP stdio 测试应只锁定项目配置启动、framing、工具清单、资源读取和上下文工具'),
 ];

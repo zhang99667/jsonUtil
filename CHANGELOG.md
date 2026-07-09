@@ -1,4 +1,17 @@
 # 更新日志 (Changelog)
+## v1.8.740 (2026-07-10) - 装箱单域名缓存隔离
+### 🐛 Bug 修复
+- **装箱单域名入口恢复**: `zhangjihao.markz.fun` 根路径显式返回装箱单首页并禁用入口缓存，`/admin.html` 命中时清理本域缓存后临时回到 `/index.html`，避免旧后台入口缓存继续误导浏览器
+
+### 🏗️ 架构与基础设施
+- **外部业务域名公网巡检**: 部署后默认请求 `zhangjihao.markz.fun/` 和 `/admin.html`，要求命中装箱单页面且不能出现后台标题，防止 JSONUtils 发布再次影响同机业务域名
+
+## v1.8.739 (2026-07-10) - MCP stdio 上下文链路锁定
+### 🏗️ 架构与基础设施
+- **MCP stdio 上下文链路**: 真实 stdio 测试从 `.mcp.json` 启动 `jsonutils-governance` 后新增资源读取和 `ai_governance_context` 调用断言，锁住后续 agent 通过 MCP 获取治理上下文的端到端链路
+- **AI 治理生产链路可达性**: `aiGovernance*.mjs` 生产契约、规则、引用和失败收集 helper 必须进入 `check-ai-governance` 生产 import 图，仅测试支撑文件允许 test-only，防止治理规则只存在于单测里
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随 MCP stdio 上下文链路验证和治理 helper 生产链路收紧升级到 `0.1.16`
+
 ## v1.8.738 (2026-07-10) - 装箱单后台路径隔离
 ### 🐛 Bug 修复
 - **装箱单域名路径恢复**: `zhangjihao.markz.fun/admin.html` 临时重定向到 `/index.html`，避免浏览器旧后台跳转缓存把外部业务域名卡在 JSONUtils 后台保留路径

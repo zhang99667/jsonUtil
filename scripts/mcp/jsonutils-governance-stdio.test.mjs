@@ -64,7 +64,17 @@ const createFrameReader = (stream, getStderr) => {
   };
 };
 
-test('MCP config starts governance server over stdio and lists tools', async (t) => {
+const request = async (child, readFrame, id, method, params, timeoutMs = 5000) => {
+  child.stdin.write(frame({
+    jsonrpc: '2.0',
+    id,
+    method,
+    ...(params ? { params } : {}),
+  }));
+  return readFrame(timeoutMs);
+};
+
+test('MCP config starts governance server over stdio and serves context', async (t) => {
   const server = readServerConfig();
   const child = spawn(server.command, server.args ?? [], {
     cwd: rootDir,
@@ -77,15 +87,28 @@ test('MCP config starts governance server over stdio and lists tools', async (t)
   t.after(() => child.kill());
 
   const readFrame = createFrameReader(child.stdout, () => stderr);
-  child.stdin.write(frame({ jsonrpc: '2.0', id: 1, method: 'initialize' }));
-  const initialized = await readFrame();
+  const initialized = await request(child, readFrame, 1, 'initialize');
   assert.equal(initialized.result.serverInfo.name, 'jsonutils-governance');
 
-  child.stdin.write(frame({ jsonrpc: '2.0', id: 2, method: 'tools/list' }));
-  const tools = await readFrame();
+  const tools = await request(child, readFrame, 2, 'tools/list');
   assert.deepEqual(tools.result.tools.map(tool => tool.name), [
     'ai_governance_report',
     'maintainability_budget_report',
     'ai_governance_context',
   ]);
+
+  const registry = await request(child, readFrame, 3, 'resources/read', {
+    uri: 'jsonutils://ai-governance/asset-registry',
+  });
+  assert.match(registry.result.contents[0].text, /# AI 协作资产注册表/);
+
+  const contextResult = await request(child, readFrame, 4, 'tools/call', {
+    name: 'ai_governance_context',
+    arguments: { top: 1 },
+  }, 30000);
+  const context = JSON.parse(contextResult.result.content[0].text);
+  assert.equal(context.reportType, 'jsonutils-governance-context');
+  assert.equal(context.ok, true);
+  assert.ok(context.project.latestDecision?.decision);
+  assert.ok(context.nextCommands.includes('node scripts/ci/check-ai-governance.mjs'));
 });
