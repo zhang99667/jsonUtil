@@ -1,4 +1,5 @@
 import { isIsoCalendarDate } from './aiGovernanceIsoDate.mjs';
+import { collectFutureIsoDateFailures } from './aiGovernanceDateBounds.mjs';
 
 const prefix = file => `AI 资产登记 \`${file}\``;
 
@@ -33,5 +34,5 @@ export const collectRegistryClassificationFailures = (file, row) => {
   if (!ALLOWED_REVIEW_CADENCES.has(row.reviewCadence)) return [`${prefix(file)} 复核节奏未纳入约定分类 \`${row.reviewCadence}\``];
   if (!row.reviewDate) return [`${prefix(file)} 缺少最近复核日期`];
   if (!isIsoCalendarDate(row.reviewDate)) return [`${prefix(file)} 最近复核日期必须使用有效 YYYY-MM-DD，实际 \`${row.reviewDate}\``];
-  return collectCombinationFailures(file, row);
+  return [...collectFutureIsoDateFailures(prefix(file), '最近复核日期', row.reviewDate), ...collectCombinationFailures(file, row)];
 };

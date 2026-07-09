@@ -16,6 +16,8 @@ test('可维护性预算 CLI 支持 JSON 摘要输出', () => {
   const report = JSON.parse(output);
 
   assert.equal(report.ok, true);
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.reportType, 'maintainability-budget');
   assert.equal(report.counts.failures, 0);
   assert.equal(report.failures.length, 0);
   assert.equal(report.counts.budgets > 0, true);
@@ -39,6 +41,8 @@ test('可维护性预算 JSON 摘要会保留失败和分组计数', () => {
   });
 
   assert.equal(report.ok, false);
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.reportType, 'maintainability-budget');
   assert.equal(report.counts.budgets, 2);
   assert.equal(report.counts.failures, 1);
   assert.equal(report.counts.highUsageSummaries, 1);

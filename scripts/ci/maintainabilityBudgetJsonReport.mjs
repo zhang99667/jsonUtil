@@ -1,5 +1,7 @@
 export const hasMaintainabilityBudgetFailures = report => report.failures.length > 0;
 
+const JSON_REPORT_SCHEMA_VERSION = 1;
+
 export const toMaintainabilityBudgetJsonReport = (
   report,
   { options = {}, totalBudgets = report.summaries.length } = {}
@@ -8,6 +10,8 @@ export const toMaintainabilityBudgetJsonReport = (
   const { failures, summaries, nearLimitSummaries, highUsageSummaries } = report;
   const { usageItems = [], nearLimitItems = [], highUsageItems = [] } = report;
   return {
+    schemaVersion: JSON_REPORT_SCHEMA_VERSION,
+    reportType: 'maintainability-budget',
     ok: !hasMaintainabilityBudgetFailures(report),
     counts: {
       budgets: totalBudgets,

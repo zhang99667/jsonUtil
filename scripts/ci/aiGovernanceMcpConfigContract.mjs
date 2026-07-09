@@ -2,9 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { AI_GOVERNANCE_MCP_CONFIG_FILES } from './aiGovernanceDiscoveryPatterns.mjs';
 import { collectMcpConfigRuntimeFailures } from './aiGovernanceMcpConfigRuntimeContract.mjs';
+import { collectMcpSensitiveValueFailures } from './aiGovernanceMcpSensitiveValues.mjs';
 
-const SENSITIVE_KEY_PATTERN = /(token|secret|password|api[_-]?key|access[_-]?key|credential)/i;
-const VARIABLE_REFERENCE_PATTERN = /^(\$\{[^}]+\}|\$[A-Z_][A-Z0-9_]*)$/;
 const SERVER_MAP_KEYS = ['mcpServers', 'servers'];
 
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -37,20 +36,6 @@ const collectServerMapFailures = (file, config) => {
   });
 };
 
-const collectSensitiveValueFailures = (file, value, trail = []) => {
-  if (Array.isArray(value)) return value.flatMap((item, index) => collectSensitiveValueFailures(file, item, [...trail, String(index)]));
-  if (!isObject(value)) return [];
-
-  return Object.entries(value).flatMap(([key, child]) => {
-    const childTrail = [...trail, key];
-    const keyPath = childTrail.join('.');
-    if (SENSITIVE_KEY_PATTERN.test(key) && typeof child === 'string' && !VARIABLE_REFERENCE_PATTERN.test(child)) {
-      return [`${file}: 敏感字段 "${keyPath}" 不能写入明文值，请改用环境变量引用`];
-    }
-    return collectSensitiveValueFailures(file, child, childTrail);
-  });
-};
-
 export const collectMcpConfigContractFailures = rootDir => (
   AI_GOVERNANCE_MCP_CONFIG_FILES.flatMap((file) => {
     const content = readOptionalFile(rootDir, file);
@@ -64,7 +49,7 @@ export const collectMcpConfigContractFailures = rootDir => (
     if (!isObject(config)) return [`${file}: MCP 配置根节点必须是对象`];
     return [
       ...collectServerMapFailures(file, config),
-      ...collectSensitiveValueFailures(file, config),
+      ...collectMcpSensitiveValueFailures(file, config),
       ...collectMcpConfigRuntimeFailures(rootDir, file, config),
     ];
   })
