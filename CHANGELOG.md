@@ -1,4 +1,10 @@
 # 更新日志 (Changelog)
+## v1.8.724 (2026-07-09) - MCP 配置治理契约
+### 🏗️ 架构与基础设施
+- **MCP 配置契约门禁**: `check-ai-governance` 会校验项目级 MCP 配置为合法 JSON，包含 `mcpServers` 或 `servers`，阻止敏感字段明文，并拦截 shell 包装命令、绝对路径、上跳路径和缺失本地脚本
+- **MCP 契约预算分层**: 将 MCP 配置与运行时契约预算拆入独立子表，避免通用 AI 契约预算入口贴线后阻塞后续规则演进
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随 MCP 配置结构、敏感字段与命令路径契约升级到 `0.1.7`，让后续本机迁移或复核能识别 MCP 治理边界
+
 ## v1.8.723 (2026-07-09) - Skill 发布追踪契约
 ### 🏗️ 架构与基础设施
 - **Skill 发布追踪门禁**: `check-ai-governance` 要求 Codex skill 当前 `name` 与 `version` 出现在 `CHANGELOG.md` 同一条记录中，避免可迁移 skill 版本缺少发布证据

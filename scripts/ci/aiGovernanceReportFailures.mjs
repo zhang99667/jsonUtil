@@ -5,6 +5,7 @@ import { collectAiGovernanceDecisionLedgerFailures } from './aiGovernanceDecisio
 import { collectUngovernedAiGovernanceAssets } from './aiGovernanceDiscoveredAssets.mjs';
 import { collectAiGovernanceExemptAssetContractFailures } from './aiGovernanceExemptAssetContract.mjs';
 import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
+import { collectMcpConfigContractFailures } from './aiGovernanceMcpConfigContract.mjs';
 import { collectAiGovernanceProjectFactFailures } from './aiGovernanceProjectFactsContract.mjs';
 import { collectAiGovernanceScriptReachabilityFailures } from './aiGovernanceScriptReachability.mjs';
 import {
@@ -33,6 +34,7 @@ export const collectAiGovernanceReferenceFailures = (rootDir, context) => [
   ...collectAiGovernanceExemptAssetContractFailures(rootDir),
   ...collectAiGovernanceProjectFactFailures(rootDir),
   ...collectAiGovernanceScriptReachabilityFailures(rootDir),
+  ...collectMcpConfigContractFailures(rootDir),
   ...collectMissingAiGovernanceReferences(rootDir, context.referenceRules, context.codexSkillFiles),
   ...collectMirroredEntryContractFailures(rootDir),
   ...collectFrontendLintScriptFailures(rootDir),

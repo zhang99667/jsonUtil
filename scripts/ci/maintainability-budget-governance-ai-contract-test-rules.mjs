@@ -1,3 +1,4 @@
+import { governanceAiMcpContractTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-mcp-contract-test-rules.mjs';
 const governanceAiContractTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiContractTestMaintainabilityBudgets = [
@@ -9,4 +10,5 @@ export const governanceAiContractTestMaintainabilityBudgets = [
   governanceAiContractTestBudget('scripts/ci/aiGovernanceSkillCommandContract.test.mjs', 80, 'AI 治理 skill 命令契约测试应独立维护 fenced cd 和 npm run 可达性负例'),
   governanceAiContractTestBudget('scripts/ci/aiGovernanceSkillContract.test.mjs', 185, 'AI 治理 skill 契约测试应独立维护 skill 发现、frontmatter 元数据、章节和引用可达性负例'),
   governanceAiContractTestBudget('scripts/ci/aiGovernanceSkillReleaseContract.test.mjs', 45, 'AI 治理 skill 发布契约测试应独立维护 CHANGELOG 追踪负例'),
+  ...governanceAiMcpContractTestMaintainabilityBudgets,
 ];

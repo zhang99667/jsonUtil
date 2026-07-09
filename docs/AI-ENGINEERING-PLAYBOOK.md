@@ -102,6 +102,7 @@
 - 共享核心规则片段必须带权威来源文件和锚点，并由 `node scripts/ci/check-ai-governance.mjs` 反查来源内容，避免薄入口复制了短句却丢失 `rules/code-style.md`、Playbook 或 skill 中的完整规则。
 - 工具薄入口只保留当前执行约束和权威文档链接，不维护独立更新记录；历史追踪统一放在 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，避免薄入口时间线漂移。
 - 新增 AI 助手入口、项目级 MCP 配置或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
+- 项目级 MCP 配置必须保持可审计：配置文件使用合法 JSON，包含 `mcpServers` 或 `servers`，不通过 shell 包装命令、绝对路径、上跳路径或缺失本地脚本隐藏执行边界，敏感字段只能使用环境变量引用。
 - AI 资产注册表的每行登记必须维护真实有效的 `YYYY-MM-DD` 最近复核日期；变更资产、责任人、复核节奏或治理证据时同步更新日期，但不引入自动到期提醒。
 - 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name`、`description`、`version` 和 `tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组；当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可追踪、不可验证的散文。
 - 项目级 Codex skill 的具体项目路径、fenced `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须可解析到真实目标；新增或迁移 skill 引用后运行 `node scripts/ci/check-ai-governance.mjs`，避免 skill 看似完整但实际不可执行。
