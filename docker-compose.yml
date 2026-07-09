@@ -40,6 +40,7 @@ services:
       - STATIC_ASSET_RETENTION_DAYS=${STATIC_ASSET_RETENTION_DAYS:-14}
     volumes:
       - frontend-static:/usr/share/nginx/html
+      - ${ZHANGJIHAO_STATIC_ROOT:-/home/markz/code/jihao}:/usr/share/nginx/zhangjihao:ro
       - /www/server/panel/vhost/cert/39.97.237.248:/etc/nginx/ssl:ro
     depends_on:
       - app-backend

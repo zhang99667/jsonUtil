@@ -1,4 +1,12 @@
 # 更新日志 (Changelog)
+## v1.8.734 (2026-07-10) - 装箱单域名独立路由
+### 🐛 Bug 修复
+- **装箱单域名恢复**: 为 `zhangjihao.markz.fun` 增加独立 Nginx server block，挂载远端装箱单静态目录，避免同机 80/443 默认路由落到 JSONUtils 后台
+- **未知域名隔离**: HTTPS 默认 server 返回 421，不再让未匹配域名自动进入后台入口
+
+### 🏗️ 架构与基础设施
+- **跨站路由门禁**: 静态资源门禁要求装箱单域名绑定独立静态目录，并拦截它被写回 JSONUtils 主站或后台 server_name
+
 ## v1.8.733 (2026-07-10) - 域名隔离修复
 ### 🐛 Bug 修复
 - **外部业务域名隔离**: 从 JSONUtils 生产 Nginx server_name 移除 `zhangjihao.markz.fun`，避免发布 JSONUtils 时接管装箱单等外部业务域名
