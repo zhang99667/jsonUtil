@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
 import {
+  AI_ENTRY_SHARED_SNIPPET_DESCRIPTORS,
   AI_ENTRY_SHARED_SNIPPET_FILES,
   AI_ENTRY_SHARED_SNIPPETS,
 } from './aiGovernanceSharedEntrySnippets.mjs';
@@ -23,6 +24,13 @@ const writeMirroredEntryFixture = (rootDir) => {
   AI_ENTRY_SHARED_SNIPPET_FILES.forEach((file) => {
     writeFixtureFile(rootDir, file, AI_ENTRY_SHARED_SNIPPETS.join('\n'));
   });
+  new Set(AI_ENTRY_SHARED_SNIPPET_DESCRIPTORS.map(({ authorityFile }) => authorityFile))
+    .forEach((file) => {
+      const anchors = AI_ENTRY_SHARED_SNIPPET_DESCRIPTORS
+        .filter(({ authorityFile }) => authorityFile === file)
+        .flatMap(({ authorityContains }) => authorityContains);
+      writeFixtureFile(rootDir, file, anchors.join('\n'));
+    });
 };
 
 test('AI 治理同源入口检查会报告 AGENTS 与 CLAUDE 协作章节漂移', () => {
@@ -43,6 +51,19 @@ test('AI 治理同源入口检查会报告工具入口共享核心片段漂移',
 
     assert.deepEqual(collectMirroredEntryContractFailures(rootDir), [
       `.github/copilot-instructions.md: 缺少同源入口片段 "${AI_ENTRY_SHARED_SNIPPETS[0]}"`,
+    ]);
+  });
+});
+
+test('AI 治理同源入口检查会报告共享片段缺少权威来源锚点', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeMirroredEntryFixture(rootDir);
+    writeFixtureFile(rootDir, 'rules/code-style.md', 'frontend/package.json');
+
+    assert.deepEqual(collectMirroredEntryContractFailures(rootDir), [
+      'rules/code-style.md: 同源入口片段权威来源缺少 "frontend/package-lock.json"',
+      'rules/code-style.md: 同源入口片段权威来源缺少 "CHANGELOG.md"',
+      'rules/code-style.md: 同源入口片段权威来源缺少 "node scripts/ci/check-version-consistency.mjs"',
     ]);
   });
 });

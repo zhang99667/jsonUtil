@@ -5,6 +5,7 @@ export const governanceAiSkillContractMaintainabilityBudgets = [
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillCommandBlocks.mjs', 10, 'AI 治理 Codex skill 命令块抽取应独立复用 fenced code block 解析'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillDirectoryContract.mjs', 35, 'AI 治理 Codex skill 目录契约应独立维护 fenced cd 工作目录可达性校验'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillFrontmatterContract.mjs', 40, 'AI 治理 Codex skill frontmatter 契约应独立维护 name、description、version 和 tags 元数据校验'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillReleaseContract.mjs', 35, 'AI 治理 Codex skill 发布契约应独立维护 name 与 version 的 CHANGELOG 追踪校验'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillStructureContract.mjs', 30, 'AI 治理 Codex skill 结构契约应独立维护 frontmatter 边界和核心章节存在性校验'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillReferenceContract.mjs', 35, 'AI 治理 Codex skill 引用契约应独立维护项目路径和验证脚本存在性校验'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillNpmScriptContract.mjs', 35, 'AI 治理 Codex skill npm 脚本契约应独立维护 fenced npm run 可达性校验'),
