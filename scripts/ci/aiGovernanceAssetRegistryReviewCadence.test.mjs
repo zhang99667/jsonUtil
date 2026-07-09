@@ -24,3 +24,21 @@ test('AI 治理资产注册表会报告缺少复核节奏或未知复核节奏',
     ]);
   });
 });
+
+test('AI 治理资产注册表会报告缺少最近复核日期或格式错误', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    const failures = collectRegistryFailuresForRows(rootDir, [
+      registryRow('AGENTS.md', { reviewDate: '' }),
+      registryRow('CLAUDE.md', { reviewDate: '2026/07/09' }),
+    ], [
+      'AGENTS.md',
+      'CLAUDE.md',
+      'docs/AI-ASSET-REGISTRY.md',
+    ]);
+
+    assert.deepEqual(failures, [
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `AGENTS.md` 缺少最近复核日期',
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `CLAUDE.md` 最近复核日期必须使用 YYYY-MM-DD，实际 `2026/07/09`',
+    ]);
+  });
+});

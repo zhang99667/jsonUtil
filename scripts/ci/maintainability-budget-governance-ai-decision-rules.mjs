@@ -2,7 +2,7 @@ const governanceAiDecisionBudget = (file, maxLines, reason) => ({ file, maxLines
 
 export const governanceAiDecisionMaintainabilityBudgets = [
   governanceAiDecisionBudget('scripts/ci/maintainability-budget-governance-ai-decision-rules.mjs', 15, 'AI 治理决策账本预算规则应独立维护决策账本检查和引用 helper 预算'),
-  governanceAiDecisionBudget('scripts/ci/aiGovernanceDecisionLedger.mjs', 60, 'AI 治理决策账本检查应只组合文件读取、日期顺序、回写路径和锁定测试校验'),
+  governanceAiDecisionBudget('scripts/ci/aiGovernanceDecisionLedger.mjs', 60, 'AI 治理决策账本检查应只组合文件读取、日期顺序、弱占位、回写路径和锁定测试校验'),
   governanceAiDecisionBudget('scripts/ci/aiGovernanceDecisionLedgerTable.mjs', 35, 'AI 治理决策账本表格解析应独立维护目标表头、分隔行和决策记录抽取'),
   governanceAiDecisionBudget('scripts/ci/aiGovernanceDecisionLedgerReferences.mjs', 20, 'AI 治理决策账本引用 helper 应独立维护反引号路径和命令解析'),
   governanceAiDecisionBudget('scripts/ci/aiGovernanceDecisionReferenceRule.mjs', 15, 'AI 治理决策账本引用规则应独立维护账本自身的关键引用'),

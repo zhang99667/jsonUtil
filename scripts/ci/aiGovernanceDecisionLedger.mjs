@@ -6,12 +6,16 @@ import * as decisionLedgerReferences from './aiGovernanceDecisionLedgerReference
 export const AI_GOVERNANCE_DECISION_LEDGER_FILE = 'docs/AI-GOVERNANCE-DECISIONS.md';
 
 const hasIsoDate = text => /^\d{4}-\d{2}-\d{2}$/.test(text);
+const AUDITED_NARRATIVE_CELLS = ['触发条件', '反例', '适用边界'];
+const WEAK_PLACEHOLDER_VALUES = new Set(['TODO', 'TBD', 'N/A', '无', '待补充', '人工看过']);
+
+const collectWeakNarrativeFailures = (row, label) => AUDITED_NARRATIVE_CELLS
+  .filter(cell => WEAK_PLACEHOLDER_VALUES.has(row[cell]))
+  .map(cell => `${label} ${cell}不能使用弱占位内容 \`${row[cell]}\``);
 
 const collectRowFailures = (rootDir, row, index) => {
   const label = `${AI_GOVERNANCE_DECISION_LEDGER_FILE}: 第 ${index + 1} 条决策记录`;
-  const missingCells = DECISION_LEDGER_HEADER_CELLS
-    .filter(cell => !row[cell])
-    .map(cell => `${label} 缺少${cell}`);
+  const missingCells = DECISION_LEDGER_HEADER_CELLS.filter(cell => !row[cell]).map(cell => `${label} 缺少${cell}`);
   if (missingCells.length > 0) return missingCells;
 
   const executableCommands = decisionLedgerReferences.extractExecutableCommands(row['锁定测试']);
@@ -20,12 +24,14 @@ const collectRowFailures = (rootDir, row, index) => {
 
   return [
     ...(!hasIsoDate(row['日期']) ? [`${label} 日期必须使用 YYYY-MM-DD`] : []),
+    ...collectWeakNarrativeFailures(row, label),
     ...(backfillReferences.length === 0 ? [`${label} 回写追踪必须包含反引号路径`] : []),
     ...(!backfillReferences.includes('CHANGELOG.md') ? [`${label} 回写追踪必须包含 \`CHANGELOG.md\``] : []),
     ...backfillReferences
       .filter(file => !fs.existsSync(path.join(rootDir, file)))
       .map(file => `${label} 回写追踪路径不存在 \`${file}\``),
     ...(executableCommands.length === 0 ? [`${label} 锁定测试必须包含可执行命令`] : []),
+    ...(!executableCommands.includes('node scripts/ci/check-ai-governance.mjs') ? [`${label} 锁定测试必须包含 \`node scripts/ci/check-ai-governance.mjs\``] : []),
     ...(executableCommands.length > 0 && regressionTestCommands.length === 0
       ? [`${label} 锁定测试必须包含 \`node --test ...test.mjs\` 回归或负向测试命令`]
       : []),
