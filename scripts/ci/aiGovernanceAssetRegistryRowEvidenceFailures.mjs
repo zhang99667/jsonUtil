@@ -1,9 +1,12 @@
 import { collectUnknownGovernanceEvidenceMarkers, collectUnsupportedGovernanceEvidence, hasRecognizedGovernanceEvidence } from './aiGovernanceAssetRegistryEvidence.mjs';
+import { collectRegistryClassificationFailures } from './aiGovernanceAssetRegistryClassifications.mjs';
 import { collectMissingDiscoveredAssetSemanticEvidence } from './aiGovernanceAssetRegistrySemanticEvidence.mjs';
 
 const prefix = file => `AI 资产登记 \`${file}\``;
 
 export const buildRegistryRowEvidenceFailures = (file, row, evidenceContext) => {
+  const classificationFailures = collectRegistryClassificationFailures(file, row);
+  if (classificationFailures.length > 0) return classificationFailures;
   if (!row.type) return [`${prefix(file)} 缺少类型`];
   if (!row.contract) return [`${prefix(file)} 缺少维护契约`];
   if (!row.evidence) return [`${prefix(file)} 缺少治理证据`];
