@@ -42,10 +42,11 @@ test('AI 治理决策账本会报告缺少结构化表格', () => {
   });
 });
 
-test('AI 治理决策账本会报告缺少回写路径和锁定测试命令', () => {
+test('AI 治理决策账本会报告非法日期、缺少回写路径和锁定测试命令', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeDecisionLedgerBackfillFiles(rootDir);
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      date: '2026-02-31',
       trigger: 'TODO',
       counterexample: '无',
       boundary: 'TBD',
@@ -54,6 +55,7 @@ test('AI 治理决策账本会报告缺少回写路径和锁定测试命令', ()
     }));
 
     assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), [
+      'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 日期必须使用有效 YYYY-MM-DD',
       'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 触发条件不能使用弱占位内容 `TODO`',
       'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 反例不能使用弱占位内容 `无`',
       'docs/AI-GOVERNANCE-DECISIONS.md: 第 1 条决策记录 适用边界不能使用弱占位内容 `TBD`',

@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DECISION_LEDGER_HEADER_CELLS, parseDecisionRows } from './aiGovernanceDecisionLedgerTable.mjs';
 import * as decisionLedgerReferences from './aiGovernanceDecisionLedgerReferences.mjs';
+import { isIsoCalendarDate } from './aiGovernanceIsoDate.mjs';
 
 export const AI_GOVERNANCE_DECISION_LEDGER_FILE = 'docs/AI-GOVERNANCE-DECISIONS.md';
 
-const hasIsoDate = text => /^\d{4}-\d{2}-\d{2}$/.test(text);
 const AUDITED_NARRATIVE_CELLS = ['触发条件', '反例', '适用边界'];
 const WEAK_PLACEHOLDER_VALUES = new Set(['TODO', 'TBD', 'N/A', '无', '待补充', '人工看过']);
 
@@ -23,7 +23,7 @@ const collectRowFailures = (rootDir, row, index) => {
   const backfillReferences = decisionLedgerReferences.extractBacktickReferences(row['回写追踪']);
 
   return [
-    ...(!hasIsoDate(row['日期']) ? [`${label} 日期必须使用 YYYY-MM-DD`] : []),
+    ...(!isIsoCalendarDate(row['日期']) ? [`${label} 日期必须使用有效 YYYY-MM-DD`] : []),
     ...collectWeakNarrativeFailures(row, label),
     ...(backfillReferences.length === 0 ? [`${label} 回写追踪必须包含反引号路径`] : []),
     ...(!backfillReferences.includes('CHANGELOG.md') ? [`${label} 回写追踪必须包含 \`CHANGELOG.md\``] : []),
@@ -44,7 +44,7 @@ const collectRowFailures = (rootDir, row, index) => {
 };
 
 const collectDateOrderFailures = rows => rows.flatMap((row, index) => (
-  index > 0 && hasIsoDate(row['日期']) && hasIsoDate(rows[index - 1]['日期']) && row['日期'] > rows[index - 1]['日期'] ? [`${AI_GOVERNANCE_DECISION_LEDGER_FILE}: 第 ${index + 1} 条决策记录 日期必须不晚于上一条记录`] : []
+  index > 0 && isIsoCalendarDate(row['日期']) && isIsoCalendarDate(rows[index - 1]['日期']) && row['日期'] > rows[index - 1]['日期'] ? [`${AI_GOVERNANCE_DECISION_LEDGER_FILE}: 第 ${index + 1} 条决策记录 日期必须不晚于上一条记录`] : []
 ));
 
 export const collectAiGovernanceDecisionLedgerFailures = (rootDir) => {
