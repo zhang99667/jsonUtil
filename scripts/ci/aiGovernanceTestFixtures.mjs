@@ -22,15 +22,18 @@ export const registryRow = (file, fields = {}) => ({
   contract: '已登记',
   evidence: '必需文件',
   file,
+  owner: '项目维护者',
+  reviewCadence: '变更时复核',
+  status: '协作资产',
   type: '测试资产',
   ...fields,
 });
 
 export const buildRegistryTableFixture = rows => [
-  '| 资产 | 类型 | 维护契约 | 治理证据 |',
-  '| --- | --- | --- | --- |',
-  ...rows.map(({ file, type, contract, evidence }) => (
-    `| \`${file}\` | ${type} | ${contract} | ${evidence} |`
+  '| 资产 | 状态 | 责任人 | 复核节奏 | 类型 | 维护契约 | 治理证据 |',
+  '| --- | --- | --- | --- | --- | --- | --- |',
+  ...rows.map(({ file, status, owner, reviewCadence, type, contract, evidence }) => (
+    `| \`${file}\` | ${status} | ${owner} | ${reviewCadence} | ${type} | ${contract} | ${evidence} |`
   )),
 ].join('\n');
 

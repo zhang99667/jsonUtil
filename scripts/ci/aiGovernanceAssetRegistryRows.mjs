@@ -1,4 +1,4 @@
-const REGISTRY_HEADER_CELLS = ['资产', '类型', '维护契约', '治理证据'];
+const REGISTRY_HEADER_CELLS = ['资产', '状态', '责任人', '复核节奏', '类型', '维护契约', '治理证据'];
 
 const parseTableCells = line => line
   .trim()
@@ -37,9 +37,12 @@ export const parseAiGovernanceAssetRegistryRows = (content) => {
 
     if (rows.has(file)) duplicateFiles.push(file);
     rows.set(file, {
-      type: cells[1],
-      contract: cells[2],
-      evidence: cells.slice(3).join(' | ').trim(),
+      status: cells[1],
+      owner: cells[2],
+      reviewCadence: cells[3],
+      type: cells[4],
+      contract: cells[5],
+      evidence: cells.slice(6).join(' | ').trim(),
     });
   });
 
