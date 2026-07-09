@@ -97,7 +97,7 @@
 - CI 和 local-ci 必须固定运行 `node scripts/ci/write-ai-governance-artifacts.mjs`，产出治理 JSON、预算 JSON、治理 context 快照和 summary，避免 `--json` 能力只停留在手工命令里。
 - `.github/workflows/ai-governance.yml` 必须保留 weekly `schedule`、`workflow_dispatch`、治理脚本单测、MCP 测试、固定 artifact 产出和上传步骤，让 AI 资产在长期不改代码时也能被定时巡检。
 - AI 治理 helper 和测试都要有预算所有权：新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，避免治理代码和锁定测试继续膨胀。
-- AI 治理 helper 还要有调用所有权：新增 `scripts/ci/aiGovernance*.mjs` 非测试脚本时，必须能从 `scripts/ci/check-ai-governance.mjs` 生产链路或 `scripts/ci/*.test.mjs` 测试链路的静态 import 图到达，避免只登记预算却无人执行。
+- AI 治理 helper 还要有调用所有权：新增 `scripts/ci/aiGovernance*.mjs` 非测试脚本时，生产契约、规则、引用和失败收集 helper 必须能从 `scripts/ci/check-ai-governance.mjs` 生产链路静态 import 图到达；只有 `*TestFixtures.mjs` 和 `*MissingCases.mjs` 这类测试支撑文件允许只被 `scripts/ci/*.test.mjs` 覆盖，避免治理规则只停留在测试里。
 - 同源入口文档必须成对维护：AGENTS/CLAUDE 的 AI 协作章节、Cursor/Comate 的核心规则片段由治理脚本做漂移检查，避免一边更新、一边残留旧语义。
 - 项目事实不能只靠入口文档人工同步：数据库和关键主版本事实必须从后端配置、前后端依赖、前端 lock 和 Compose 文件反查到 AGENTS、CLAUDE 与 `rules/code-style.md`，由 `node scripts/ci/check-ai-governance.mjs` 锁住旧事实漂移。
 - Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的薄入口共享核心规则片段由治理脚本统一检查；新增跨工具核心要求时先更新共享片段，再同步所有薄入口，避免不同助手看到不同版本的发布、委派、安全或规则进化要求。
@@ -106,7 +106,7 @@
 - 新增 AI 助手入口、项目级 MCP 配置或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
 - 项目级 MCP 配置必须保持可审计：配置文件使用合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map，每个 server 至少声明 `command` 或 `url`，不通过 shell 包装命令、绝对路径、上跳路径或缺失本地脚本隐藏执行边界，敏感字段以及 URL、args、header 字符串里的 token、password、api key 和 authorization 值只能使用环境变量引用。
 - `jsonutils-governance` 本地 MCP server 只能暴露只读治理资源和固定治理报告/上下文工具；新增上下文 helper 时必须纳入必需文件、资产注册表、单测和可维护性预算，不开放任意 shell 或通用文件读取入口。
-- MCP server 改动不能只做函数级测试；`node --test scripts/mcp/*.test.mjs` 必须覆盖从项目级 `.mcp.json` 启动真实 stdio 进程、发送 framed 请求并验证工具清单，避免 command/args、stdout 污染或 framing 断裂进入 CI。
+- MCP server 改动不能只做函数级测试；`node --test scripts/mcp/*.test.mjs` 必须覆盖从项目级 `.mcp.json` 启动真实 stdio 进程、发送 framed 请求、验证工具清单、读取治理资源并调用 `ai_governance_context`，避免 command/args、stdout 污染、framing 断裂或上下文工具失效进入 CI。
 - AI 资产注册表的每行登记必须维护真实有效且不晚于当前日期的 `YYYY-MM-DD` 最近复核日期；变更资产、责任人、复核节奏或治理证据时同步更新日期，但不引入自动到期提醒。
 - 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name`、`description`、`version` 和 `tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组；当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可追踪、不可验证的散文。
 - 项目级 Codex skill 的具体项目路径、fenced `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须可解析到真实目标；新增或迁移 skill 引用后运行 `node scripts/ci/check-ai-governance.mjs`，避免 skill 看似完整但实际不可执行。

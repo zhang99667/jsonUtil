@@ -27,6 +27,8 @@ export const deployStaticRetentionSnippets = [
     'PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}"',
     'PUBLIC_VERIFY_INSECURE_TLS="${PUBLIC_VERIFY_INSECURE_TLS:-false}"',
     'PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="${PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS:-$PUBLIC_VERIFY_INSECURE_TLS}"',
+    'PUBLIC_EXTERNAL_ROUTE_CHECKS="${PUBLIC_EXTERNAL_ROUTE_CHECKS-https://zhangjihao.markz.fun/|智能装箱单生成器|JSON Utils - 后台管理,https://zhangjihao.markz.fun/admin.html|智能装箱单生成器|JSON Utils - 后台管理}"',
+    'verify_external_route_checks',
     'CURL_TLS_ARG=""',
   ] },
 ];

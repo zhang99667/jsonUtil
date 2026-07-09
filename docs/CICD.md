@@ -119,7 +119,7 @@ bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
 
 前端容器会把镜像内 `/opt/jsonutils-dist` 覆盖同步到持久化卷 `frontend-static:/usr/share/nginx/html`，入口 HTML 和 `version.json` 每次启动更新，近期旧 `assets/*` hash 文件默认保留 14 天，降低用户长时间打开旧页面后点击懒加载面板时请求旧 chunk 失败的概率。保留天数可通过 `STATIC_ASSET_RETENTION_DAYS` 调整，设置为 `0` 可关闭自动清理。
 
-本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://jsonutils.markz.fun`，确保按主站域名记录首页和后台入口的静态资源；可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
+本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://jsonutils.markz.fun`，确保按主站域名记录首页和后台入口的静态资源；同时默认 smoke `zhangjihao.markz.fun/` 和 `/admin.html`，确认同机外部业务域名没有落回 JSONUtils 后台。可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
 
 ```bash
 PUBLIC_BASE_URL=https://jsonutils.markz.fun \

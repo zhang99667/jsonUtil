@@ -14,6 +14,7 @@ PUBLIC_VERIFY_TIMEOUT="${PUBLIC_VERIFY_TIMEOUT:-10}"
 PUBLIC_VERIFY_INSECURE_TLS="${PUBLIC_VERIFY_INSECURE_TLS:-false}"
 PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED="${PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED:-true}"
 PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="${PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS:-$PUBLIC_VERIFY_INSECURE_TLS}"
+PUBLIC_EXTERNAL_ROUTE_CHECKS="${PUBLIC_EXTERNAL_ROUTE_CHECKS-https://zhangjihao.markz.fun/|智能装箱单生成器|JSON Utils - 后台管理,https://zhangjihao.markz.fun/admin.html|智能装箱单生成器|JSON Utils - 后台管理}"
 EXPECTED_APP_VERSION="${EXPECTED_APP_VERSION:-}"
 
 log() {
@@ -21,14 +22,7 @@ log() {
 }
 
 require_cmd() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    printf '缺少命令: %s\n' "$1" >&2
-    exit 1
-  fi
-}
-
-normalize_base_url() {
-  printf '%s' "${1%/}"
+  command -v "$1" >/dev/null 2>&1 || { printf '缺少命令: %s\n' "$1" >&2; exit 1; }
 }
 
 extract_json_string() {
@@ -45,6 +39,32 @@ read_expected_version() {
   sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ROOT_DIR/frontend/package.json" | head -n 1
 }
 
+verify_external_route_checks() {
+  if [ -z "$PUBLIC_EXTERNAL_ROUTE_CHECKS" ]; then
+    return 0
+  fi
+
+  local route_checks=()
+  local route_check route_url expected_text forbidden_text route_body
+  IFS=',' read -r -a route_checks <<< "$PUBLIC_EXTERNAL_ROUTE_CHECKS"
+
+  for route_check in "${route_checks[@]}"; do
+    IFS='|' read -r route_url expected_text forbidden_text <<< "$route_check"
+    [ -n "$route_url" ] || continue
+
+    route_body="$(curl $CURL_TLS_ARG -fsSL -H 'Cache-Control: no-cache' --max-time "$PUBLIC_VERIFY_TIMEOUT" "$route_url" 2>/dev/null || true)"
+    if [ -n "$expected_text" ] && ! grep -Fq "$expected_text" <<< "$route_body"; then
+      printf '外部域名验证失败: %s 缺少期望文本 "%s"\n' "$route_url" "$expected_text" >&2
+      return 1
+    fi
+    if [ -n "$forbidden_text" ] && grep -Fq "$forbidden_text" <<< "$route_body"; then
+      printf '外部域名验证失败: %s 命中禁止文本 "%s"\n' "$route_url" "$forbidden_text" >&2
+      return 1
+    fi
+    log "外部域名验证通过: $route_url"
+  done
+}
+
 require_cmd curl
 
 CURL_TLS_ARG=""
@@ -52,7 +72,7 @@ if [ "$PUBLIC_VERIFY_INSECURE_TLS" = "true" ]; then
   CURL_TLS_ARG="-k"
 fi
 
-PUBLIC_BASE_URL="$(normalize_base_url "$PUBLIC_BASE_URL")"
+PUBLIC_BASE_URL="${PUBLIC_BASE_URL%/}"
 EXPECTED_APP_VERSION="$(read_expected_version)"
 
 if [ -z "$EXPECTED_APP_VERSION" ]; then
@@ -78,6 +98,7 @@ while [ "$attempt" -le "$PUBLIC_VERIFY_RETRIES" ]; do
 
   if [ "$last_version" = "$EXPECTED_APP_VERSION" ] && [ "$last_health" = "pong" ]; then
     log "公网验证通过: version=v$last_version, health=$last_health"
+    verify_external_route_checks
     if [ "$PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED" != "false" ]; then
       require_cmd node
       log "验证公网前端静态资源"
