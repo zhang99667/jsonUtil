@@ -10,5 +10,5 @@ export const infraDeployRuntimeMaintainabilityBudgets = [
   { file: 'scripts/deploy/ssh-docker-prune.sh', maxLines: 180, reason: 'Docker 清理脚本应聚焦安全清理和可回滚提示' },
   { file: 'scripts/deploy/ssh-prebuilt-frontend-deploy.sh', maxLines: 70, reason: '预构建前端部署脚本应保持轻量包装' },
   { file: 'scripts/deploy/ssh-prune-dev-artifacts.sh', maxLines: 160, reason: '开发产物清理脚本应聚焦候选识别和交互确认' },
-  { file: 'scripts/deploy/verify-public-deploy.sh', maxLines: 120, reason: '公网部署验证脚本应只校验版本、健康检查和前端静态资源可达性' },
+  { file: 'scripts/deploy/verify-public-deploy.sh', maxLines: 135, reason: '公网部署验证脚本应只校验版本、健康检查、外部域名无跳转和前端静态资源可达性' },
 ];

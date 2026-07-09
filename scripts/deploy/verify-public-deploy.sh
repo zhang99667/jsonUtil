@@ -45,14 +45,26 @@ verify_external_route_checks() {
   fi
 
   local route_checks=()
-  local route_check route_url expected_text forbidden_text route_body
+  local route_check route_url expected_text forbidden_text route_body route_status route_redirect
+  local route_body_file route_meta
   IFS=',' read -r -a route_checks <<< "$PUBLIC_EXTERNAL_ROUTE_CHECKS"
 
   for route_check in "${route_checks[@]}"; do
     IFS='|' read -r route_url expected_text forbidden_text <<< "$route_check"
     [ -n "$route_url" ] || continue
 
-    route_body="$(curl $CURL_TLS_ARG -fsSL -H 'Cache-Control: no-cache' --max-time "$PUBLIC_VERIFY_TIMEOUT" "$route_url" 2>/dev/null || true)"
+    route_body_file="$(mktemp)"
+    route_meta="$(curl $CURL_TLS_ARG -sS -H 'Cache-Control: no-cache' --max-time "$PUBLIC_VERIFY_TIMEOUT" \
+      -o "$route_body_file" -w '%{http_code}|%{redirect_url}' "$route_url" 2>/dev/null || true)"
+    route_body="$(cat "$route_body_file")"
+    rm -f "$route_body_file"
+    route_status="${route_meta%%|*}"
+    route_redirect="${route_meta#*|}"
+    case "$route_status" in
+      2*) ;;
+      3*) printf '外部域名验证失败: %s 不应跳转到 "%s"\n' "$route_url" "$route_redirect" >&2; return 1 ;;
+      *) printf '外部域名验证失败: %s HTTP 状态异常 "%s"\n' "$route_url" "${route_status:-ERR}" >&2; return 1 ;;
+    esac
     if [ -n "$expected_text" ] && ! grep -Fq "$expected_text" <<< "$route_body"; then
       printf '外部域名验证失败: %s 缺少期望文本 "%s"\n' "$route_url" "$expected_text" >&2
       return 1

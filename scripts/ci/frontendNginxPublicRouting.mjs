@@ -4,9 +4,7 @@ import path from 'node:path';
 export const nginxRoutingConfigFile = 'frontend/nginx.conf';
 export const publicFrontendHosts = ['jsonutils.markz.fun', 'markz.fun', 'www.markz.fun'];
 export const localHealthHosts = ['localhost', '127.0.0.1'];
-export const externalFrontendRoutes = [
-  { host: 'zhangjihao.markz.fun', root: '/usr/share/nginx/zhangjihao' },
-];
+export const externalFrontendRoutes = [{ host: 'zhangjihao.markz.fun', root: '/usr/share/nginx/zhangjihao' }];
 
 const readNames = block => (block.match(/^\s*server_name\s+([^;]+);/m)?.[1] || '').trim().split(/\s+/).filter(Boolean);
 const listensOn = (block, port) => new RegExp(`^\\s*listen\\s+${port}\\b`, 'm').test(block);
@@ -14,7 +12,10 @@ const routesToAdmin = block => block.includes('https://$host/admin.html') ||
   block.includes('return 301 /admin.html;') ||
   block.includes('try_files $uri $uri/ /admin.html;');
 const hasAll = (block, snippets) => snippets.every(snippet => block.includes(snippet));
-const protectsExternalAdminEntrypoint = block => hasAll(block, ['location = /admin.html', 'return 302 /index.html;', 'Clear-Site-Data "\\"cache\\""']);
+const redirectsHtmlEntrypoint = block => /^\s*return\s+30[1278]\s+\/(?:admin|index)\.html;/m.test(block);
+const protectsExternalAdminEntrypoint = block => hasAll(block, [
+  'location = /admin.html', 'try_files /admin.html /index.html =404;', 'Clear-Site-Data "\\"cache\\""',
+]) && !redirectsHtmlEntrypoint(block);
 const protectsExternalRootEntrypoint = block => hasAll(block, ['location = /', 'try_files /index.html =404;']);
 const unionNames = blocks => new Set(blocks.flatMap(readNames));
 
@@ -78,7 +79,7 @@ export const collectNginxPublicRoutingFailures = (
       : []),
     ...(!externalHttpsBlocks.some(block => readNames(block).includes(host) &&
       block.includes(root) && protectsExternalAdminEntrypoint(block))
-      ? [`${file}: 外部域名 ${host} 必须显式清理 /admin.html 缓存并临时重定向到 /index.html，避免后台入口污染业务域名`]
+      ? [`${file}: 外部域名 ${host} 必须直接服务 /admin.html 或本域 /index.html，避免后台入口跳转污染业务域名`]
       : []),
     ...(jsonutilsHttpsNames.has(host) ? [`${file}: 外部域名 ${host} 不能绑定到 JSONUtils 主站或后台 server_name`] : []),
   ]);
