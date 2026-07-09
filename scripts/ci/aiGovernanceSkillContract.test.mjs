@@ -50,6 +50,27 @@ test('AI 治理 skill 契约会报告缺失 frontmatter 字段', () => {
 
     assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
       `${skillFile}: frontmatter 缺少 description`,
+      `${skillFile}: frontmatter 缺少 version`,
+      `${skillFile}: frontmatter 缺少 tags`,
+    ]);
+  });
+});
+
+test('AI 治理 skill 契约会报告 frontmatter 元数据格式错误', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
+      frontmatter: [
+        'name: jsonutils-maintainer',
+        'description: JSONUtils 项目维护技能。',
+        'version: latest',
+        'tags: governance',
+      ].join('\n'),
+      sectionBodies: COMPLETE_CODEX_SKILL_SECTION_BODIES,
+    }));
+
+    assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
+      `${skillFile}: frontmatter version 必须使用 x.y.z 格式`,
+      `${skillFile}: frontmatter tags 必须是非空数组`,
     ]);
   });
 });
@@ -60,6 +81,8 @@ test('AI 治理 skill 契约会报告 frontmatter name 与目录不一致', () =
       frontmatter: [
         'name: stale-skill',
         'description: JSONUtils 项目维护技能。',
+        'version: 0.1.0',
+        'tags: [jsonutils, governance, maintenance]',
       ].join('\n'),
       sectionBodies: COMPLETE_CODEX_SKILL_SECTION_BODIES,
     }));

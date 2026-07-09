@@ -36,6 +36,8 @@ export const buildCodexSkillFixtureContent = ({
   frontmatter = [
     'name: jsonutils-maintainer',
     'description: JSONUtils 项目维护技能。',
+    'version: 0.1.0',
+    'tags: [jsonutils, governance, maintenance]',
   ].join('\n'),
   sections = Object.keys(COMPLETE_CODEX_SKILL_SECTION_BODIES),
   sectionBodies = COMPLETE_CODEX_SKILL_SECTION_BODIES,

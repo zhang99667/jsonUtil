@@ -52,7 +52,7 @@ AI Playbook 包含：
 
 **后端**:
 - Spring Boot 3.x + Java 17+
-- Spring Data JPA + MySQL/H2
+- Spring Data JPA + PostgreSQL
 - Spring Security + JWT 认证
 
 **AI 服务**:
@@ -298,8 +298,8 @@ VITE_GEMINI_MODEL=gemini-2.0-flash-exp
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/jsonhelper
-    username: root
+    url: jdbc:postgresql://localhost:5432/jsonhelper
+    username: postgres
     password: your_password
   jpa:
     hibernate:
