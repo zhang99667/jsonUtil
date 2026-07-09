@@ -35,6 +35,8 @@ const buildSkillFixtureContent = ({
   frontmatter = [
     'name: jsonutils-maintainer',
     'description: JSONUtils 项目维护技能。',
+    'version: 0.1.0',
+    'tags: [jsonutils, governance, maintenance]',
   ].join('\n'),
   sections = [
     '## 必读文件',

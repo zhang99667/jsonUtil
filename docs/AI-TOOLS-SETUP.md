@@ -76,7 +76,7 @@ node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 - `AGENTS.md` 和 `CLAUDE.md` 的 AI 协作章节必须保持一致。
 - `.github/copilot-instructions.md`、`.codex/README.md`、`.claude/ai-tools-guide.md`、`.cursorrules` 和 `.comate/rules/code-style.md` 的共享核心规则片段必须保持一致。
 - `.github/copilot-instructions.md` 只能作为薄入口，关键规则仍以主规范、Playbook 和 skill 为准；新增 `.github/instructions/**/*.instructions.md` 路径级指令、`.github/prompts/**/*.prompt.md` prompt file、`.github/agents/**/*.agent.md` custom agent 或 `.github/chatmodes/**/*.chatmode.md` legacy chat mode 时也必须进入治理清单、引用规则或显式豁免。
-- `.codex/skills/*/SKILL.md` 必须保留 frontmatter、必读文件、工作流、常用验证命令和重点边界。
+- `.codex/skills/*/SKILL.md` 必须保留 frontmatter `name`、`description`、`version`、`tags`、必读文件、工作流、常用验证命令和重点边界。
 - `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入 `docs/AI-ASSET-REGISTRY.md`、治理清单、引用规则或显式豁免。
 - rules、skills 或治理脚本变更必须能从 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md` 反查触发原因与锁定测试。
 - CHANGELOG 和版本文件必须通过 `check-version-consistency` 校验。
