@@ -2,10 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { collectUnbudgetedAiGovernanceScriptFailures, collectUntrackedBudgetRuleFailures } from './maintainabilityBudgetRuleFiles.mjs';
 import {
-  buildHighUsageSummaries,
-  buildNearLimitSummaries,
-  formatBudgetUsage,
-} from './maintainabilityBudgetUsageSummaries.mjs';
+  buildHighUsageItems,
+  buildNearLimitUsageItems,
+  toBudgetUsageItem,
+} from './maintainabilityBudgetUsageItems.mjs';
+import { buildHighUsageSummaries, buildNearLimitSummaries, formatBudgetUsage } from './maintainabilityBudgetUsageSummaries.mjs';
 
 export const NEAR_LIMIT_REMAINING_LINES = 5;
 export const NEAR_LIMIT_USAGE_RATIO = 0.9;
@@ -65,6 +66,17 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
 
   const nearLimitSummaries = buildNearLimitSummaries(nearLimitUsages);
   const highUsageSummaries = buildHighUsageSummaries(usages, options);
+  const usageItems = usages.map(toBudgetUsageItem);
+  const nearLimitItems = buildNearLimitUsageItems(nearLimitUsages);
+  const highUsageItems = buildHighUsageItems(usages, options);
 
-  return { failures, summaries, nearLimitSummaries, highUsageSummaries };
+  return {
+    failures,
+    summaries,
+    nearLimitSummaries,
+    highUsageSummaries,
+    usageItems,
+    nearLimitItems,
+    highUsageItems,
+  };
 };

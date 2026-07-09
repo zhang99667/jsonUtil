@@ -7,15 +7,16 @@ const getFlagValue = (args, index, flag) => {
 
 const parseNumberOption = (value, normalize) => {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
-  return normalize(parsed);
+  return Number.isFinite(parsed) && parsed > 0 ? normalize(parsed) : undefined;
 };
 
 export const parseMaintainabilityBudgetCliArgs = (args) => {
   const options = {};
 
   for (let index = 0; index < args.length; index += 1) {
-    if (args[index] === '--no-all') options.printAllSummaries = false;
+    const arg = args[index];
+    if (arg === '--json') options.outputJson = true;
+    if (arg === '--no-all') options.printAllSummaries = false;
 
     const top = getFlagValue(args, index, '--top');
     if (top) {

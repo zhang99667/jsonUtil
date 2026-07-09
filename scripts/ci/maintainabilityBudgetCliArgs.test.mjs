@@ -24,3 +24,11 @@ test('可维护性预算 CLI 参数支持单独关闭全量输出', () => {
     printAllSummaries: false,
   });
 });
+
+test('可维护性预算 CLI 参数支持 JSON 输出', () => {
+  assert.deepEqual(parseMaintainabilityBudgetCliArgs(['--json', '--top=3']), {
+    highUsageLimit: 3,
+    outputJson: true,
+    printAllSummaries: false,
+  });
+});

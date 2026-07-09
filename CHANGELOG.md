@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.729 (2026-07-09) - 可维护性预算可消费化
+### 🏗️ 架构与基础设施
+- **预算门禁 JSON 输出**: `check-maintainability-budgets --json` 输出机器可消费的通过状态、失败计数、near/high usage 分组和结构化预算明细，方便 CI artifact、子 Agent 和审计脚本稳定复用预算证据
+- **项目版本事实扩展**: `check-ai-governance` 反查 Ant Design 与 @monaco-editor/react 主版本，并拦截 `最新` 这类不可验证版本说明进入 AI 入口规范
+
 ## v1.8.728 (2026-07-09) - AI 治理预算分层
 ### 🏗️ 架构与基础设施
 - **治理报告预算分层**: 将 AI 治理报告 CLI、输出、上下文、失败收集和契约失败分组预算拆入报告子表，避免核心预算入口重新贴线

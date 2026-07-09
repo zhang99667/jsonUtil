@@ -20,8 +20,9 @@
 | 构建工具 | Vite | 6.x |
 | 语言 | TypeScript | 5.x |
 | UI 组件库 | Tailwind CSS | 3.x |
-| 编辑器 | Monaco Editor | 最新 |
-| 桌面封装 | Electron | 最新 |
+| 管理后台 UI | Ant Design | 6.x |
+| 编辑器封装 | @monaco-editor/react | 4.x |
+| 桌面封装 | Electron | 未固定依赖版本 |
 
 ### 后端 (backend/)
 
@@ -36,7 +37,7 @@
 
 | 类型 | 技术 |
 |------|------|
-| UI 组件库 | Ant Design |
+| UI 组件库 | Ant Design 6 |
 | 路由 | 状态驱动（非 React Router） |
 
 ---

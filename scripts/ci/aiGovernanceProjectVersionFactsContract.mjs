@@ -1,14 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-
-const VERSION_FACTS = [
-  { name: 'React', sourceFile: 'frontend/package.json', packageName: 'react', source: content => npmMajor(content, 'react'), targets: [['AGENTS.md', 'React '], ['CLAUDE.md', 'React '], ['rules/code-style.md', '| 框架 | React | ']] },
-  { name: 'Vite', sourceFile: 'frontend/package.json', packageName: 'vite', source: content => npmMajor(content, 'vite'), targets: [['AGENTS.md', 'Vite '], ['CLAUDE.md', 'Vite '], ['rules/code-style.md', '| 构建工具 | Vite | ']] },
-  { name: 'TypeScript', sourceFile: 'frontend/package.json', packageName: 'typescript', source: content => npmMajor(content, 'typescript'), targets: [['AGENTS.md', 'TypeScript '], ['CLAUDE.md', 'TypeScript '], ['rules/code-style.md', '| 语言 | TypeScript | ']] },
-  { name: 'Tailwind CSS', sourceFile: 'frontend/package.json', packageName: 'tailwindcss', source: content => npmMajor(content, 'tailwindcss'), targets: [['AGENTS.md', 'Tailwind CSS '], ['CLAUDE.md', 'Tailwind CSS '], ['rules/code-style.md', '| UI 组件库 | Tailwind CSS | ']] },
-  { name: 'Spring Boot', sourceFile: 'backend/pom.xml', source: content => springBootMajor(content), targets: [['AGENTS.md', 'Spring Boot '], ['CLAUDE.md', 'Spring Boot '], ['rules/code-style.md', '| 框架 | Spring Boot | ']] },
-  { name: 'Java', sourceFile: 'backend/pom.xml', source: content => javaMajor(content), targets: [['AGENTS.md', 'Java '], ['CLAUDE.md', 'Java '], ['rules/code-style.md', '| 语言 | Java | ']] },
-];
+import { UNVERIFIABLE_VERSION_FACTS, VERSION_FACTS } from './aiGovernanceProjectVersionFactRules.mjs';
 
 const readExistingFile = (rootDir, file) => {
   const filePath = path.join(rootDir, file);
@@ -29,6 +21,11 @@ const packageLockMajor = (rootDir, packageName) => {
 
 const springBootMajor = content => majorFromVersion(content.match(/<artifactId>spring-boot-starter-parent<\/artifactId>[\s\S]*?<version>([^<]+)<\/version>/)?.[1]);
 const javaMajor = content => majorFromVersion(content.match(/<java\.version>([^<]+)<\/java\.version>/)?.[1]);
+const sourceMajor = (content, fact) => ({
+  javaMajor: () => javaMajor(content),
+  npm: () => npmMajor(content, fact.packageName),
+  springBootMajor: () => springBootMajor(content),
+})[fact.sourceKind]?.() ?? null;
 
 const findVersionMentions = (content, prefix) => {
   const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -47,12 +44,17 @@ const collectTargetFailures = (rootDir, fact, major) => fact.targets.flatMap(([f
   return [...missing, ...stale];
 });
 
+const collectUnverifiableVersionFactFailures = rootDir => UNVERIFIABLE_VERSION_FACTS.flatMap(({ file, snippet, message }) => {
+  const content = readExistingFile(rootDir, file);
+  return content?.includes(snippet) ? [message] : [];
+});
+
 export const collectAiGovernanceProjectVersionFactFailures = (rootDir) => VERSION_FACTS.flatMap((fact) => {
   const content = readExistingFile(rootDir, fact.sourceFile);
   if (content === null) return [];
-  const major = fact.source(content);
+  const major = sourceMajor(content, fact);
   if (major === null) return [];
   const lockMajor = fact.packageName ? packageLockMajor(rootDir, fact.packageName) : major;
   const lockFailures = lockMajor === major ? [] : [`frontend/package-lock.json: ${fact.name} 版本事实与 frontend/package.json 不一致，期望主版本 ${major}，实际 ${lockMajor ?? 'missing'}`];
   return [...lockFailures, ...collectTargetFailures(rootDir, fact, major)];
-});
+}).concat(collectUnverifiableVersionFactFailures(rootDir));

@@ -47,9 +47,9 @@ AI Playbook 包含：
 - React 19 + TypeScript 5
 - Vite 6 (构建工具)
 - Tailwind CSS 3 (主应用样式)
-- Ant Design (管理后台 UI)
-- Monaco Editor (代码编辑器)
-- Electron (桌面应用封装)
+- Ant Design 6 (管理后台 UI)
+- @monaco-editor/react 4 (Monaco Editor 代码编辑器)
+- Electron 桌面封装入口（当前未固定 Electron 依赖版本）
 
 **后端**:
 - Spring Boot 3.x + Java 17+
