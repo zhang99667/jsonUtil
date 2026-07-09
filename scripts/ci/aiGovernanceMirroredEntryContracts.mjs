@@ -15,19 +15,12 @@ const MIRRORED_AGENT_SECTION_CONTRACTS = [
   },
 ];
 
-const MIRRORED_SNIPPET_CONTRACTS = [
-  {
-    files: AI_ENTRY_SHARED_SNIPPET_FILES,
-    snippets: AI_ENTRY_SHARED_SNIPPETS,
-  },
-];
+const THIN_ENTRY_HISTORY_HEADINGS = ['## 更新记录', '## 变更记录', '## Changelog', '## CHANGELOG'];
 
 export const MIRRORED_AGENT_SECTION_FILES = [
   ...new Set(MIRRORED_AGENT_SECTION_CONTRACTS.flatMap(({ sourceFile, targetFile }) => [sourceFile, targetFile])),
 ];
-export const MIRRORED_TOOL_ENTRY_SNIPPET_FILES = [
-  ...new Set(MIRRORED_SNIPPET_CONTRACTS.flatMap(({ files }) => files)),
-];
+export const MIRRORED_TOOL_ENTRY_SNIPPET_FILES = AI_ENTRY_SHARED_SNIPPET_FILES;
 
 const readGovernanceFile = (rootDir, file) => {
   const filePath = path.join(rootDir, file);
@@ -50,18 +43,24 @@ const collectMirroredSectionFailures = (rootDir, contracts) => contracts.flatMap
     : [`${contract.targetFile}: ${contract.targetSectionTitle} 与 ${contract.sourceFile} 的 ${contract.sourceSectionTitle} 不一致`];
 });
 
-const collectMirroredSnippetFailures = (rootDir, contracts) => contracts.flatMap(contract => (
-  contract.files.flatMap((file) => {
-    const content = readGovernanceFile(rootDir, file);
-    if (content === null) return [];
+const collectMirroredSnippetFailures = rootDir => MIRRORED_TOOL_ENTRY_SNIPPET_FILES.flatMap((file) => {
+  const content = readGovernanceFile(rootDir, file);
+  if (content === null) return [];
 
-    return contract.snippets
-      .filter(snippet => !content.includes(snippet))
-      .map(snippet => `${file}: 缺少同源入口片段 "${snippet}"`);
-  })
-));
+  return AI_ENTRY_SHARED_SNIPPETS
+    .filter(snippet => !content.includes(snippet))
+    .map(snippet => `${file}: 缺少同源入口片段 "${snippet}"`);
+});
+
+const collectThinEntryHistoryFailures = rootDir => MIRRORED_TOOL_ENTRY_SNIPPET_FILES.flatMap((file) => {
+  const content = readGovernanceFile(rootDir, file);
+  return content === null ? [] : THIN_ENTRY_HISTORY_HEADINGS
+    .filter(heading => content.includes(heading))
+    .map(heading => `${file}: 工具薄入口不应维护独立更新记录 "${heading}"，请使用 docs/AI-GOVERNANCE-DECISIONS.md 和 CHANGELOG.md`);
+});
 
 export const collectMirroredEntryContractFailures = (rootDir) => [
   ...collectMirroredSectionFailures(rootDir, MIRRORED_AGENT_SECTION_CONTRACTS),
-  ...collectMirroredSnippetFailures(rootDir, MIRRORED_SNIPPET_CONTRACTS),
+  ...collectMirroredSnippetFailures(rootDir),
+  ...collectThinEntryHistoryFailures(rootDir),
 ];

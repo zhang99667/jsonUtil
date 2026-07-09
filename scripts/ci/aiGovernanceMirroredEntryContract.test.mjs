@@ -47,6 +47,17 @@ test('AI 治理同源入口检查会报告工具入口共享核心片段漂移',
   });
 });
 
+test('AI 治理同源入口检查会报告工具薄入口独立更新记录', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeMirroredEntryFixture(rootDir);
+    writeFixtureFile(rootDir, '.claude/ai-tools-guide.md', `${AI_ENTRY_SHARED_SNIPPETS.join('\n')}\n## 更新记录\n- old`);
+
+    assert.deepEqual(collectMirroredEntryContractFailures(rootDir), [
+      '.claude/ai-tools-guide.md: 工具薄入口不应维护独立更新记录 "## 更新记录"，请使用 docs/AI-GOVERNANCE-DECISIONS.md 和 CHANGELOG.md',
+    ]);
+  });
+});
+
 test('AI 治理同源入口检查接受所有工具入口共享核心片段', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeMirroredEntryFixture(rootDir);

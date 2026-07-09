@@ -12,6 +12,7 @@
 - 同一个资产只能登记一次；重复登记会让维护责任和豁免边界变得含糊。
 - 表格里登记的资产必须属于必需文件、自动发现资产或已存在的显式豁免文件；删除或移出治理面的资产要同步移除登记，避免留下陈旧账本。
 - 工具入口保持薄入口，权威规则优先沉淀到 `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`。
+- 工具薄入口不得维护独立更新记录，历史追踪统一由 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md` 承载。
 - 本机私有配置只允许作为显式豁免登记，不承载项目级规则、skills 或验证流程。
 - 新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 或 `rules/ai-*.md` 资产时，先更新本文，再补治理规则或豁免说明。
 

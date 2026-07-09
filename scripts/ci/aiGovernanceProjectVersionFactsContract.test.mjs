@@ -6,16 +6,13 @@ import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFi
 
 const packageFixture = { dependencies: { react: '^19.2.0' }, devDependencies: { tailwindcss: '^3.4.17', typescript: '~5.8.2', vite: '^6.2.0' } };
 
-const lockFixture = {
-  packages: Object.fromEntries([
-    ['react', '19.2.3'],
-    ['tailwindcss', '3.4.17'],
-    ['typescript', '5.8.3'],
-    ['vite', '6.4.3'],
-  ].map(([name, version]) => [`node_modules/${name}`, { version }])),
-};
-
+const frontendLockVersions = [
+  ['react', '19.2.3'], ['tailwindcss', '3.4.17'],
+  ['typescript', '5.8.3'], ['vite', '6.4.3'],
+];
+const lockFixture = { packages: Object.fromEntries(frontendLockVersions.map(([name, version]) => [`node_modules/${name}`, { version }])) };
 const pomFixture = '<artifactId>spring-boot-starter-parent</artifactId>\n<version>3.2.3</version>\n<java.version>17</java.version>';
+const rulesFixture = '| 框架 | React | 19.x |\n| 构建工具 | Vite | 6.x |\n| 语言 | TypeScript | 5.x |\n| UI 组件库 | Tailwind CSS | 3.x |\n| 框架 | Spring Boot | 3.x |\n| 语言 | Java | 17+ |';
 
 const writeVersionSources = (rootDir) => {
   writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify(packageFixture));
@@ -26,14 +23,7 @@ const writeVersionSources = (rootDir) => {
 const writeVersionTargets = (rootDir, override = {}) => {
   writeFixtureFile(rootDir, 'AGENTS.md', override.AGENTS ?? 'React 19 + TypeScript 5\nVite 6\nTailwind CSS 3\nSpring Boot 3.x + Java 17+');
   writeFixtureFile(rootDir, 'CLAUDE.md', override.CLAUDE ?? 'React 19 + TypeScript 5\nVite 6\nTailwind CSS 3\nSpring Boot 3.x + Java 17+');
-  writeFixtureFile(rootDir, 'rules/code-style.md', override.rules ?? [
-    '| 框架 | React | 19.x |',
-    '| 构建工具 | Vite | 6.x |',
-    '| 语言 | TypeScript | 5.x |',
-    '| UI 组件库 | Tailwind CSS | 3.x |',
-    '| 框架 | Spring Boot | 3.x |',
-    '| 语言 | Java | 17+ |',
-  ].join('\n'));
+  writeFixtureFile(rootDir, 'rules/code-style.md', override.rules ?? rulesFixture);
 };
 
 test('AI 治理项目版本事实契约接受入口声明与依赖一致', () => {
