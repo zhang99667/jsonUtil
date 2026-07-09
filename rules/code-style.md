@@ -273,7 +273,7 @@ git commit -m "[Feature]优化专项-UI UE"
 - `AGENTS.md` 和 `CLAUDE.md` 作为首读核心入口，必须直接引用 `docs/AI-ASSET-REGISTRY.md`，不能只靠 Playbook 间接跳转到资产账本。
 - `docs/AI-ASSET-REGISTRY.md` 的每条资产登记必须维护真实有效且不晚于当前日期的 `YYYY-MM-DD` 最近复核日期；它只作为审计证据，不承担到期提醒或自动调度。
 - 影响 AI 协作资产的改动必须运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验；新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 协作资产时，需要同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免。
-- 项目级 MCP 配置必须是合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map；`command` 不能使用 shell 包装命令或绝对路径，仓库内脚本参数必须存在，敏感字段以及 URL、args、header 字符串里的 token、secret、password、api key 或 authorization 值不能写明文，应使用 `$ENV_NAME` 或 `${ENV_NAME}` 这类环境变量引用。
+- 项目级 MCP 配置必须是合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map；每个 server 至少声明 `command` 或 `url`，`command` 不能使用 shell 包装命令或绝对路径，仓库内脚本参数必须存在，敏感字段以及 URL、args、header 字符串里的 token、secret、password、api key 或 authorization 值不能写明文，应使用 `$ENV_NAME` 或 `${ENV_NAME}` 这类环境变量引用。
 
 ### 更新格式
 

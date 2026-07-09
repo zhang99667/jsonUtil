@@ -15,6 +15,7 @@ run_in_frontend "Frontend: lint" npm run lint
 run_in_frontend "Frontend: dependency security audit" env npm_config_registry=https://registry.npmjs.org npm run audit:security
 run_in_frontend "Frontend: unit tests" npm test
 run_in_root "Governance: Node script unit tests" node --test scripts/ci/*.test.mjs
+run_in_root "Governance: MCP server unit tests" node --test scripts/mcp/*.test.mjs
 run_in_root "Governance: chunk load recovery catch audit" node scripts/ci/check-chunk-load-recovery-catches.mjs
 run_in_frontend "Frontend: scheme corpus baseline" npm run corpus:scheme
 run_in_frontend "Frontend: scheme corpus quality snapshot" npm run corpus:snapshot:check

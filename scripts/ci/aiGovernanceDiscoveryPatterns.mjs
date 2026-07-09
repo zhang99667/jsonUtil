@@ -3,6 +3,7 @@ export const AI_GOVERNANCE_CUSTOM_AI_ENTRY_DIRS = ['.github/instructions', '.git
 export const AI_GOVERNANCE_MCP_CONFIG_FILES = ['.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json'];
 
 export const AI_GOVERNANCE_DISCOVERY_PATTERN_DIRS = [
+  { dir: 'scripts/mcp', pattern: /^scripts\/mcp\/(?!.*\.test\.mjs$).+\.mjs$/ },
   { dir: '.cursor/rules', pattern: /^\.cursor\/rules\/.+\.mdc$/ },
   { dir: '.github/instructions', pattern: /^\.github\/instructions\/.+\.instructions\.md$/ },
   { dir: '.github/prompts', pattern: /^\.github\/prompts\/.+\.prompt\.md$/ },

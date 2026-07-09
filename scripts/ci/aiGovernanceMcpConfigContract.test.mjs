@@ -26,13 +26,26 @@ test('AI 治理 MCP 配置契约会报告缺少 server map', () => {
 test('AI 治理 MCP 配置契约会报告 server 字段类型错误', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.vscode/mcp.json', JSON.stringify({
-      servers: { local: { command: 1, args: ['ok', 2], env: [] } },
+      servers: { local: { command: 1, url: 2, args: ['ok', 2], env: [] } },
     }));
 
     assert.deepEqual(collectMcpConfigContractFailures(rootDir), [
       '.vscode/mcp.json: servers.local.command 必须是字符串',
+      '.vscode/mcp.json: servers.local.url 必须是字符串',
       '.vscode/mcp.json: servers.local.args 必须是字符串数组',
       '.vscode/mcp.json: servers.local.env 必须是对象',
+    ]);
+  });
+});
+
+test('AI 治理 MCP 配置契约会报告缺少启动入口', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, '.mcp.json', JSON.stringify({
+      mcpServers: { empty: { env: { SAFE: 'ok' } } },
+    }));
+
+    assert.deepEqual(collectMcpConfigContractFailures(rootDir), [
+      '.mcp.json: mcpServers.empty 必须声明 command 或 url',
     ]);
   });
 });
@@ -41,7 +54,7 @@ test('AI 治理 MCP 配置契约会报告敏感字段明文值', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.mcp.json', JSON.stringify({
       mcpServers: {
-        github: { env: { GITHUB_TOKEN: 'ghp_plaintext', SAFE_TOKEN: '${GITHUB_TOKEN}' } },
+        github: { command: 'node', env: { GITHUB_TOKEN: 'ghp_plaintext', SAFE_TOKEN: '${GITHUB_TOKEN}' } },
       },
     }));
 

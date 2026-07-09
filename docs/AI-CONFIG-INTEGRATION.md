@@ -11,7 +11,7 @@ AI 协作资产按职责分层维护：
 | 项目入口 | `AGENTS.md`、`CLAUDE.md` | 让 AI 助手快速理解项目结构、技术栈、常见任务和协作边界 |
 | 权威规范 | `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md`、`docs/AI-ASSET-REGISTRY.md`、`docs/AI-GOVERNANCE-DECISIONS.md` | 维护编码规范、验证闭环、规则/skill 回写、资产账本、决策账本和收尾门禁 |
 | 工具入口 | `.claude/ai-tools-guide.md`、`.codex/README.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.cursor/rules/**/*.mdc`、`.comate/rules/code-style.md` | 针对不同 AI 工具提供薄入口，转发到权威规范 |
-| 工具配置 | `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json` | 管理项目级 MCP server 能力边界，按精确文件进入治理，并校验 JSON 结构、命令路径和敏感字段 |
+| 工具配置 | `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`、`scripts/mcp/jsonutils-governance-server.mjs` | 管理项目级 MCP server 能力边界，按精确文件进入治理，并校验 JSON 结构、命令路径和敏感字段 |
 | 可迁移技能 | `.codex/skills/jsonutils-maintainer/SKILL.md` | 将项目维护流程封装为可复用 skill，方便 Codex 在类似任务中稳定触发 |
 
 原则是“权威规则只沉淀一处，工具入口只做路由和关键提醒”。如果某条经验要长期生效，优先写入 `docs/AI-ENGINEERING-PLAYBOOK.md` 或 `.codex/skills/jsonutils-maintainer/SKILL.md`，再让入口文档引用它。
@@ -56,7 +56,8 @@ node scripts/ci/check-maintainability-budgets.mjs
 - 必需文件、自动发现资产和显式豁免文件是否登记到 `docs/AI-ASSET-REGISTRY.md`。
 - `docs/AI-*.md` 索引是否能指向 `docs/AI-GOVERNANCE-DECISIONS.md`，避免决策账本游离在入口之外。
 - `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增资产是否进入治理清单、引用规则或显式豁免。
-- 项目级 MCP 配置是否为合法 JSON，是否声明 `mcpServers` 或 `servers`，是否避免 shell 包装命令、仓库外路径、缺失脚本和敏感字段明文。
+- 项目级 MCP 配置是否为合法 JSON，是否声明 `mcpServers` 或 `servers`，每个 server 是否声明 `command` 或 `url`，是否避免 shell 包装命令、仓库外路径、缺失脚本和敏感字段明文。
+- 本地治理 MCP server 是否保持只读资源、固定治理报告工具和无任意 shell 执行边界。
 
 ## 维护流程
 

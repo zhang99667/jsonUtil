@@ -3,6 +3,7 @@ const ciCommandDescriptor = (command, workflowName, localCiLabel) => ({ command,
 export const AI_GOVERNANCE_CI_COMMAND_DESCRIPTORS = [
   ciCommandDescriptor('node scripts/ci/check-version-consistency.mjs', 'Version consistency', 'Governance: version consistency'),
   ciCommandDescriptor('node --test scripts/ci/*.test.mjs', 'Node script unit tests', 'Governance: Node script unit tests'),
+  ciCommandDescriptor('node --test scripts/mcp/*.test.mjs', 'MCP server unit tests', 'Governance: MCP server unit tests'),
   ciCommandDescriptor('node scripts/ci/check-ai-governance.mjs', 'AI governance coverage', 'Governance: AI playbook and skill links'),
   ciCommandDescriptor('node scripts/ci/check-maintainability-budgets.mjs', 'Maintainability budgets', 'Governance: maintainability budgets'),
 ];

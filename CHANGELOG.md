@@ -1,4 +1,17 @@
 # 更新日志 (Changelog)
+## v1.8.733 (2026-07-10) - 域名隔离修复
+### 🐛 Bug 修复
+- **外部业务域名隔离**: 从 JSONUtils 生产 Nginx server_name 移除 `zhangjihao.markz.fun`，避免发布 JSONUtils 时接管装箱单等外部业务域名
+
+### 🏗️ 架构与基础设施
+- **域名路由门禁**: `check-frontend-static-retention` 改为明确拦截 `zhangjihao.markz.fun` 被写入 JSONUtils server_name，防止同类域名串线问题再次回归
+
+## v1.8.732 (2026-07-10) - 本地治理 MCP
+### 🏗️ 架构与基础设施
+- **本地治理 MCP**: 新增 `jsonutils-governance` MCP server，通过 `.mcp.json` 暴露 AI Playbook、资产注册表、决策账本和固定治理报告工具
+- **MCP 资产治理**: 将 `.mcp.json` 与 `scripts/mcp/jsonutils-governance-server.mjs` 纳入 AI 资产注册表、自动发现、CI/local-ci 测试入口、可维护性预算和锁定测试
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随本地治理 MCP server 升级到 `0.1.13`，让后续 agent 可通过 MCP 快速读取治理上下文和报告
+
 ## v1.8.731 (2026-07-09) - AI 治理证据、MCP 契约与只读解锁
 ### 🎨 UI/UE 优化
 - **只读编辑解锁提示**: PREVIEW 只读编辑器触发输入时会在光标旁显示解锁按钮，避免用户误以为预览区不可编辑

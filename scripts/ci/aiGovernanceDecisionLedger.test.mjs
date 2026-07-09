@@ -136,6 +136,18 @@ test('AI 治理决策账本会报告未被 CI 脚本单测覆盖的锁定测试'
   });
 });
 
+test('AI 治理决策账本接受 MCP server 单测作为 CI 覆盖的锁定测试', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeDecisionLedgerBackfillFiles(rootDir);
+    writeFixtureFile(rootDir, 'scripts/mcp/jsonutils-governance-server.test.mjs', "test('fixture', () => {});");
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      tests: '`node --test scripts/mcp/jsonutils-governance-server.test.mjs`; `node scripts/ci/check-ai-governance.mjs`',
+    }));
+
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), []);
+  });
+});
+
 test('AI 治理决策账本会报告日期顺序倒置', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeDecisionLedgerBackfillFiles(rootDir);

@@ -14,7 +14,9 @@ const readOptionalFile = (rootDir, file) => fs.existsSync(path.join(rootDir, fil
 const collectKnownFieldFailures = (file, mapKey, serverName, server) => {
   const prefix = `${mapKey}.${serverName}`;
   return [
+    !('command' in server) && !('url' in server) ? `${file}: ${prefix} 必须声明 command 或 url` : null,
     'command' in server && typeof server.command !== 'string' ? `${file}: ${prefix}.command 必须是字符串` : null,
+    'url' in server && typeof server.url !== 'string' ? `${file}: ${prefix}.url 必须是字符串` : null,
     'args' in server && (!Array.isArray(server.args) || server.args.some(arg => typeof arg !== 'string')) ? `${file}: ${prefix}.args 必须是字符串数组` : null,
     'env' in server && !isObject(server.env) ? `${file}: ${prefix}.env 必须是对象` : null,
   ].filter(Boolean);

@@ -13,6 +13,7 @@ const DISCOVERED_ASSET_FIXTURE_FILES = [
   ['.mcp.json', '{}'],
   ['.vscode/mcp.json', '{}'],
   ['.vscode/settings.json', '{}'],
+  ['scripts/mcp/jsonutils-governance-server.mjs', 'console.log("mcp");'],
   ['docs/AI-NEW-WORKFLOW.md', '新 AI 协作流程'],
   ['rules/ai-review-rules.md', '新 AI 规则'],
 ];
@@ -29,6 +30,7 @@ export const EXPECTED_DISCOVERED_AI_GOVERNANCE_ASSETS = [
   '.vscode/mcp.json',
   'docs/AI-NEW-WORKFLOW.md',
   'rules/ai-review-rules.md',
+  'scripts/mcp/jsonutils-governance-server.mjs',
 ];
 
 export const writeDiscoveredAssetFixtureFiles = rootDir => (
