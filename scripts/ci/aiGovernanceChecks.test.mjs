@@ -118,6 +118,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'frontend/package.json',
     'frontend/package-lock.json',
     'CHANGELOG.md',
+    'jsonutils-maintainer 0.1.0',
     'git diff --check',
     'Content-Type',
     'fallback 成 HTML',

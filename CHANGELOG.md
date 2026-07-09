@@ -1,4 +1,11 @@
 # 更新日志 (Changelog)
+## v1.8.723 (2026-07-09) - Skill 发布追踪契约
+### 🏗️ 架构与基础设施
+- **Skill 发布追踪门禁**: `check-ai-governance` 要求 Codex skill 当前 `name` 与 `version` 出现在 `CHANGELOG.md` 同一条记录中，避免可迁移 skill 版本缺少发布证据
+- **CHANGELOG 结构门禁**: `check-version-consistency` 校验顶部版本区块的规范分类标题和 `- **标题**: 描述` 条目格式，避免裸 bullet 或自定义分类降低发布说明可读性
+- **薄入口权威源门禁**: `check-ai-governance` 为工具薄入口共享片段增加权威来源文件和锚点反查，避免短入口硬编码约束脱离完整规则
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随发布追踪、CHANGELOG 结构与薄入口权威源契约升级到 `0.1.6`，让后续本机迁移或复核能判断规则包版本
+
 ## v1.8.722 (2026-07-09) - 项目事实治理门禁
 ### 🏗️ 架构与基础设施
 - **项目事实一致性门禁**: `check-ai-governance` 从后端配置、Compose、Maven、前端依赖和 lock 文件反查数据库与关键主版本事实，防止 AGENTS / CLAUDE / rules 再次漂移到旧技术栈

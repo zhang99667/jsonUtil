@@ -5,6 +5,7 @@ import {
   AI_ENTRY_SHARED_SNIPPET_FILES,
   AI_ENTRY_SHARED_SNIPPETS,
 } from './aiGovernanceSharedEntrySnippets.mjs';
+import { collectSharedEntrySnippetAuthorityFailures } from './aiGovernanceSharedEntryAuthorityContract.mjs';
 
 const MIRRORED_AGENT_SECTION_CONTRACTS = [
   {
@@ -60,6 +61,7 @@ const collectThinEntryHistoryFailures = rootDir => MIRRORED_TOOL_ENTRY_SNIPPET_F
 });
 
 export const collectMirroredEntryContractFailures = (rootDir) => [
+  ...collectSharedEntrySnippetAuthorityFailures(rootDir),
   ...collectMirroredSectionFailures(rootDir, MIRRORED_AGENT_SECTION_CONTRACTS),
   ...collectMirroredSnippetFailures(rootDir),
   ...collectThinEntryHistoryFailures(rootDir),

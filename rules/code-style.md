@@ -252,21 +252,23 @@ git commit -m "[Feature]优化专项-UI UE"
 
 - 用户可见、准备上线或会触发前端构建的改动，先递增 `frontend/package.json` 的 patch 版本，并同步 `frontend/package-lock.json`。
 - 同步在 `CHANGELOG.md` 顶部新建对应版本区块，只记录本次发布内容，不要把多轮提交长期追加到同一个版本。
+- 顶部版本区块必须包含规范分类标题，例如 `### 🏗️ 架构与基础设施`，列表项使用 `- **功能名称**: 功能描述`，避免裸 bullet 或自定义分类进入发布说明。
 - 顶部版本区块最多保留 8 条列表项；超过时必须新开下一个 patch 版本，避免一个版本下堆积几十条提交。
-- 提交前运行 `node scripts/ci/check-version-consistency.mjs`，校验包版本、锁文件、CHANGELOG 顶部版本和顶部条目数量。
+- 提交前运行 `node scripts/ci/check-version-consistency.mjs`，校验包版本、锁文件、CHANGELOG 顶部版本、顶部条目数量和发布说明结构。
 
 ### AI 规则资产更新
 
 - 只有重复踩坑、用户纠偏、验证缺口或可复用实践适合做复盘沉淀；一次性偏好和未验证猜测不要写成长期规则。
 - 规则变更要说明触发条件、反例、适用边界和验证方式，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，并同步完成 `docs/AI-ENGINEERING-PLAYBOOK.md`、项目入口或 Codex skill 的规则/skill 回写。
 - 决策账本的触发条件、反例和适用边界不能整格使用弱占位；锁定测试必须同时包含 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`。
-- 新增或修改 `.codex/skills/*/SKILL.md` 时，必须保留 frontmatter `name`/`description`/`version`/`tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组，并保留 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 四个核心章节。
+- 新增或修改 `.codex/skills/*/SKILL.md` 时，必须保留 frontmatter `name`/`description`/`version`/`tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组；当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，并保留 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 四个核心章节。
 - `.codex/skills/*/SKILL.md` 中反引号包裹的具体项目路径、fenced code block 里的 `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须真实存在，由 `node scripts/ci/check-ai-governance.mjs` 反查，避免 skill 迁移后留下不可执行引用。
 - AI 治理、版本一致性、脚本单测和可维护性预算命令必须保留在 GitHub Actions `run:` 与 `scripts/ci/local-ci.sh` 的 `run_in_root` 可执行入口，并由 `node scripts/ci/check-ai-governance.mjs` 反查。
 - `scripts/ci/aiGovernance*.mjs` 与 `scripts/ci/aiGovernance*.test.mjs` 都必须纳入可维护性预算，新增治理 helper 或测试时同步登记预算子表。
 - `scripts/ci/aiGovernance*.mjs` 非测试 helper 还必须能从 `scripts/ci/check-ai-governance.mjs` 或 `scripts/ci/*.test.mjs` 静态 import 图到达，避免预算合规但无人调用的孤儿治理脚本。
 - AGENTS、CLAUDE 和 `rules/code-style.md` 的技术栈事实必须与真实配置一致；数据库和关键主版本事实由 `node scripts/ci/check-ai-governance.mjs` 从后端配置、前后端依赖、前端 lock 和 Compose 文件反查，避免入口文档继续传播旧事实。
 - Claude 工具指南、Codex README、Copilot、Cursor 和 Comate 这类工具薄入口不得维护独立更新记录；变更历史统一写入 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`。
+- 工具薄入口共享片段必须声明权威来源文件和锚点，由 `node scripts/ci/check-ai-governance.mjs` 反查来源内容，避免薄入口硬编码约束脱离 `rules/code-style.md`、Playbook 或 skill。
 - `docs/AI-ASSET-REGISTRY.md` 的每条资产登记必须维护真实有效的 `YYYY-MM-DD` 最近复核日期；它只作为审计证据，不承担到期提醒或自动调度。
 - 影响 AI 协作资产的改动必须运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验；新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 协作资产时，需要同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免。
 

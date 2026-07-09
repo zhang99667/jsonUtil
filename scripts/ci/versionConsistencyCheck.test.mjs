@@ -38,7 +38,7 @@ const writeVersionFixture = ({
 }) => {
   const changelogItems = Array.from(
     { length: changelogItemCount },
-    (_, index) => `- 版本说明 ${index + 1}`
+    (_, index) => `- **版本说明 ${index + 1}**: 描述`
   ).join('\n');
 
   writeFile(rootDir, 'frontend/package.json', JSON.stringify({ version: packageVersion }));
@@ -48,7 +48,7 @@ const writeVersionFixture = ({
       '': { version: rootLockVersion },
     },
   }));
-  writeFile(rootDir, 'CHANGELOG.md', `# 更新日志\n## v${changelogVersion} (2026-07-01)\n${changelogItems}\n`);
+  writeFile(rootDir, 'CHANGELOG.md', `# 更新日志\n## v${changelogVersion} (2026-07-01)\n### 🏗️ 架构与基础设施\n${changelogItems}\n`);
 };
 
 test('提取 CHANGELOG 顶部版本时兼容 v 前缀', () => {
@@ -60,14 +60,38 @@ test('只统计 CHANGELOG 顶部版本区块的列表项', () => {
   const markdown = [
     '# 更新日志',
     '## v1.8.256 (2026-07-01)',
-    '- 当前版本 1',
-    '- 当前版本 2',
+    '### 🏗️ 架构与基础设施',
+    '- **当前版本 1**: 描述',
+    '- **当前版本 2**: 描述',
     '',
     '## v1.8.255 (2026-07-01)',
     '- 历史版本 1',
   ].join('\n');
 
   assert.equal(countChangelogListItems(extractTopChangelogSection(markdown)), 2);
+});
+
+test('顶部版本区块缺少分类或条目格式错误时报告结构失败', () => {
+  withTempRoot((rootDir) => {
+    writeVersionFixture({ rootDir });
+    writeFile(rootDir, 'CHANGELOG.md', [
+      '# 更新日志',
+      '## v1.8.256 (2026-07-01)',
+      '- 裸条目',
+      '### 自定义分类',
+      '- **缺少冒号** 描述',
+    ].join('\n'));
+
+    const report = buildVersionConsistencyReport(rootDir);
+
+    assert.deepEqual(report.failures.map(failure => failure.label), [
+      'CHANGELOG.md 顶部版本分类',
+      'CHANGELOG.md 顶部版本条目格式',
+      'CHANGELOG.md 顶部版本条目格式',
+      'CHANGELOG.md 顶部版本分类',
+    ]);
+    assert.match(formatVersionConsistencyFailures(report), /- \*\*标题\*\*: 描述/);
+  });
 });
 
 test('版本一致时不报告失败', () => {
@@ -123,6 +147,20 @@ test('顶部版本区块条目过多时要求新开 patch 版本', () => {
       formatVersionConsistencyFailures(report),
       new RegExp(`CHANGELOG\\.md 顶部版本条目数: ${TOP_CHANGELOG_ITEM_LIMIT + 1} 条`)
     );
+  });
+});
+
+test('顶部版本区块缺少条目时报告数量失败', () => {
+  withTempRoot((rootDir) => {
+    writeVersionFixture({ rootDir });
+    writeFile(rootDir, 'CHANGELOG.md', '# 更新日志\n## v1.8.256 (2026-07-01)\n### 🏗️ 架构与基础设施\n');
+
+    const report = buildVersionConsistencyReport(rootDir);
+
+    assert.deepEqual(report.failures.map(failure => failure.label), [
+      'CHANGELOG.md 顶部版本条目数',
+    ]);
+    assert.match(formatVersionConsistencyFailures(report), /至少 1 条/);
   });
 });
 

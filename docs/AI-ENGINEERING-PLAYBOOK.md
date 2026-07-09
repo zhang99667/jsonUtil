@@ -75,7 +75,7 @@
 每次代码改动至少完成：
 
 - 运行和改动范围匹配的测试或说明无法运行的原因。
-- 用户可见或准备上线的改动先递增 `frontend/package.json` patch 版本、同步 `frontend/package-lock.json`，并新开顶部 `CHANGELOG.md` 版本区块，运行 `node scripts/ci/check-version-consistency.mjs`，避免一个版本堆积几十条提交。
+- 用户可见或准备上线的改动先递增 `frontend/package.json` patch 版本、同步 `frontend/package-lock.json`，并新开顶部 `CHANGELOG.md` 版本区块，保持规范分类标题和 `- **标题**: 描述` 条目，运行 `node scripts/ci/check-version-consistency.mjs`，避免一个版本堆积几十条提交或裸 bullet 进入发布说明。
 - 涉及前端 TypeScript 源码时运行 `npm run lint` 或说明未运行原因。
 - 涉及手动 `import()`、懒加载 helper、`dispatchChunkLoadRecoveryEvent` 或发布恢复 catch 时运行 `node scripts/ci/check-chunk-load-recovery-catches.mjs`，确认旧 chunk 加载失败不会被业务 catch 吞掉。
 - 涉及 `scripts/deploy/*.sh`、`.github/scripts/*.sh`、`scripts/ci/local-ci.sh` 或 `.github/workflows/*.yml` 的 `workflow run` 块时运行 `node scripts/ci/check-deploy-shell-syntax.mjs`，先用 `bash -n` 拦截发布脚本语法错误，并单独检查 `REMOTE_SCRIPT heredoc` 这类远端脚本片段。
@@ -99,10 +99,11 @@
 - 同源入口文档必须成对维护：AGENTS/CLAUDE 的 AI 协作章节、Cursor/Comate 的核心规则片段由治理脚本做漂移检查，避免一边更新、一边残留旧语义。
 - 项目事实不能只靠入口文档人工同步：数据库和关键主版本事实必须从后端配置、前后端依赖、前端 lock 和 Compose 文件反查到 AGENTS、CLAUDE 与 `rules/code-style.md`，由 `node scripts/ci/check-ai-governance.mjs` 锁住旧事实漂移。
 - Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的薄入口共享核心规则片段由治理脚本统一检查；新增跨工具核心要求时先更新共享片段，再同步所有薄入口，避免不同助手看到不同版本的发布、委派、安全或规则进化要求。
+- 共享核心规则片段必须带权威来源文件和锚点，并由 `node scripts/ci/check-ai-governance.mjs` 反查来源内容，避免薄入口复制了短句却丢失 `rules/code-style.md`、Playbook 或 skill 中的完整规则。
 - 工具薄入口只保留当前执行约束和权威文档链接，不维护独立更新记录；历史追踪统一放在 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，避免薄入口时间线漂移。
 - 新增 AI 助手入口、项目级 MCP 配置或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
 - AI 资产注册表的每行登记必须维护真实有效的 `YYYY-MM-DD` 最近复核日期；变更资产、责任人、复核节奏或治理证据时同步更新日期，但不引入自动到期提醒。
-- 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name`、`description`、`version` 和 `tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可追踪、不可验证的散文。
+- 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name`、`description`、`version` 和 `tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组；当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可追踪、不可验证的散文。
 - 项目级 Codex skill 的具体项目路径、fenced `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须可解析到真实目标；新增或迁移 skill 引用后运行 `node scripts/ci/check-ai-governance.mjs`，避免 skill 看似完整但实际不可执行。
 - 不把一次性偏好、临时绕路或未验证猜测沉淀为规则；沉淀前先确认它能减少未来错误，并且不会和现有规范冲突。
 
