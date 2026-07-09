@@ -1,6 +1,6 @@
+import { governanceAiMcpContractMaintainabilityBudgets } from './maintainability-budget-governance-ai-mcp-contract-rules.mjs';
 import { governanceAiSkillContractMaintainabilityBudgets } from './maintainability-budget-governance-ai-skill-contract-rules.mjs';
 const governanceAiContractBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
-
 export const governanceAiContractMaintainabilityBudgets = [
   governanceAiContractBudget('scripts/ci/maintainability-budget-governance-ai-contract-rules.mjs', 20, 'AI 治理契约预算规则应独立维护 CI、同源入口、章节和 skill 契约子表'),
   governanceAiContractBudget('scripts/ci/maintainability-budget-governance-ai-skill-contract-rules.mjs', 15, 'AI 治理 skill 契约预算子表应独立维护 Codex skill 结构、引用和命令可达性预算'),
@@ -14,5 +14,6 @@ export const governanceAiContractMaintainabilityBudgets = [
   governanceAiContractBudget('scripts/ci/aiGovernanceProjectVersionFactsContract.mjs', 65, 'AI 治理项目版本事实契约应独立维护依赖和 lock 版本到入口文档的漂移检查'),
   governanceAiContractBudget('scripts/ci/aiGovernanceSharedEntrySnippets.mjs', 45, 'AI 治理工具入口共享片段应独立维护跨工具核心规则、权威来源和覆盖文件清单'),
   governanceAiContractBudget('scripts/ci/aiGovernanceSectionReferences.mjs', 50, 'AI 治理章节引用检查应独立维护 Markdown 章节抽取和章节内关键词校验'),
+  ...governanceAiMcpContractMaintainabilityBudgets,
   ...governanceAiSkillContractMaintainabilityBudgets,
 ];
