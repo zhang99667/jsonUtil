@@ -8,6 +8,7 @@ export const governanceAiTestMaintainabilityBudgets = [
   governanceAiTestBudget('scripts/ci/maintainability-budget-governance-ai-reference-test-rules.mjs', 15, 'AI 治理引用测试预算子表应独立维护测试入口、主题化负例数据和章节规则测试预算'),
   governanceAiTestBudget('scripts/ci/maintainability-budget-governance-ai-contract-test-rules.mjs', 15, 'AI 治理契约测试预算子表应独立维护豁免、同源和 skill 契约测试预算'),
   governanceAiTestBudget('scripts/ci/aiGovernanceTestFixtures.mjs', 70, 'AI 治理测试 fixture 应独立维护临时目录、注册表表格构造和常用失败收集脚手架'),
+  governanceAiTestBudget('scripts/ci/aiGovernanceCliOutput.test.mjs', 35, 'AI 治理 CLI 输出测试应独立维护 JSON 摘要可解析性断言'),
   governanceAiTestBudget('scripts/ci/aiGovernanceDecisionLedger.test.mjs', 170, 'AI 治理决策账本测试应独立维护结构、路径、CI 覆盖和日期顺序负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceIsoDate.test.mjs', 25, 'AI 治理日期 helper 测试应独立维护闰年、月日边界和格式负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceScriptReachability.test.mjs', 45, 'AI 治理脚本可达性测试应独立维护孤儿 helper 与 import 图覆盖负例'),

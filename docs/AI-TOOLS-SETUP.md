@@ -25,9 +25,11 @@ AI 助手开始修改代码前，应优先读取：
 
 1. `AGENTS.md` 或 `CLAUDE.md`
 2. `rules/code-style.md`
-3. `docs/AI-ENGINEERING-PLAYBOOK.md`
-4. 任务相关源码、测试和部署脚本
-5. `CHANGELOG.md`
+3. `docs/AI-ASSET-REGISTRY.md`
+4. `docs/AI-GOVERNANCE-DECISIONS.md`
+5. `docs/AI-ENGINEERING-PLAYBOOK.md`
+6. 任务相关源码、测试和部署脚本
+7. `CHANGELOG.md`
 
 涉及 Codex 项目维护流程时，再读取 `.codex/README.md` 和 `.codex/skills/jsonutils-maintainer/SKILL.md`。涉及跨工具入口或 MCP 配置变更时，同时检查 `.claude/README.md`、`.claude/ai-tools-guide.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.cursor/rules/**/*.mdc`、`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`、`.comate/rules/code-style.md`、`docs/AI-ASSET-REGISTRY.md` 和 `docs/AI-GOVERNANCE-DECISIONS.md`。
 
@@ -53,6 +55,8 @@ node scripts/ci/check-ai-governance.mjs
 node scripts/ci/check-maintainability-budgets.mjs
 git diff --check
 ```
+
+需要给 CI artifact、子 Agent 或审计脚本消费结构化结果时，运行 `node scripts/ci/check-ai-governance.mjs --json`。
 
 准备提交或发布前，还要按变更范围运行：
 

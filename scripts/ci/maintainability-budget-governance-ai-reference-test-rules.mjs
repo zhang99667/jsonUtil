@@ -5,4 +5,5 @@ export const governanceAiReferenceTestMaintainabilityBudgets = [
   governanceAiReferenceTestBudget('scripts/ci/aiGovernanceReferenceCoreMissingCases.mjs', 125, 'AI 治理核心引用负例应独立维护发布、安全、规则进化和委派引用用例'),
   governanceAiReferenceTestBudget('scripts/ci/aiGovernanceReferenceEntryMissingCases.mjs', 125, 'AI 治理入口引用负例应独立维护入口文档、PR 模板、docs/AI 和注册表用例'),
   governanceAiReferenceTestBudget('scripts/ci/aiGovernanceSectionReferenceRules.test.mjs', 135, 'AI 治理章节引用规则测试应独立维护章节定位和代码块伪标题负例'),
+  governanceAiReferenceTestBudget('scripts/ci/aiGovernanceToolsSetupSectionRules.test.mjs', 40, 'AI 治理工具索引章节测试应独立维护必读顺序防漂移负例'),
 ];
