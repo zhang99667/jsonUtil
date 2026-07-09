@@ -207,6 +207,7 @@ server {
     listen 443 ssl http2;
     server_name zhangjihao.markz.fun;
     root /usr/share/nginx/zhangjihao;
+    location = /admin.html { return 302 /index.html; }
     location / { try_files $uri $uri/ /index.html; }
 }
 
@@ -265,6 +266,23 @@ test('Nginx 公开域名路由检查会拦截外部业务域名被 JSONUtils 接
 
     assert.deepEqual(collectNginxPublicRoutingFailures(rootDir), [
       'frontend/nginx.conf: 外部域名 zhangjihao.markz.fun 不能绑定到 JSONUtils 主站或后台 server_name',
+    ]);
+  });
+});
+
+test('Nginx 公开域名路由检查会拦截外部业务域名缺少后台入口隔离', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(
+      rootDir,
+      'frontend/nginx.conf',
+      nginxConfig(
+        'jsonutils.markz.fun markz.fun www.markz.fun',
+        'jsonutils.markz.fun markz.fun www.markz.fun'
+      ).replace('    location = /admin.html { return 302 /index.html; }\n', '')
+    );
+
+    assert.deepEqual(collectNginxPublicRoutingFailures(rootDir), [
+      'frontend/nginx.conf: 外部域名 zhangjihao.markz.fun 必须显式将 /admin.html 临时重定向到 /index.html，避免后台入口缓存污染业务域名',
     ]);
   });
 });

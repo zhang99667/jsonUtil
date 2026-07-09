@@ -14,6 +14,7 @@ import {
   buildAiGovernanceRequiredFiles,
 } from './aiGovernanceRules.mjs';
 import { collectAiGovernanceCiContractFailures } from './aiGovernanceCiContract.mjs';
+import { AI_GOVERNANCE_SCHEDULED_WORKFLOW } from './aiGovernanceScheduledWorkflowContract.mjs';
 import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReferenceGroups.mjs';
 import {
   AI_ENTRY_SHARED_SNIPPET_FILES,
@@ -74,6 +75,22 @@ const mirroredAgentSection = [
 
 const ciGovernanceWorkflow = buildAiGovernanceCiWorkflowFixture();
 const ciGovernanceLocalCi = buildAiGovernanceLocalCiFixture();
+const scheduledGovernanceWorkflow = [
+  'on:',
+  '  schedule:',
+  "    - cron: '17 3 * * 1'",
+  '  workflow_dispatch:',
+  'jobs:',
+  '  ai-governance:',
+  '    steps:',
+  '      - run: node scripts/ci/check-version-consistency.mjs',
+  '      - run: node --test scripts/ci/*.test.mjs',
+  '      - run: node --test scripts/mcp/*.test.mjs',
+  '      - run: node scripts/ci/write-ai-governance-artifacts.mjs',
+  '      - uses: actions/upload-artifact@v7',
+  '        with:',
+  '          path: artifacts/ai-governance',
+].join('\n');
 const aiGovernanceCiCommand = REQUIRED_AI_GOVERNANCE_CI_COMMANDS
   .find(command => command.includes('check-ai-governance.mjs'));
 
@@ -230,6 +247,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
   ].join('\n'));
   writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({ body: sharedReferences }));
   writeFixtureFile(rootDir, '.github/workflows/ci.yml', ciGovernanceWorkflow);
+  writeFixtureFile(rootDir, AI_GOVERNANCE_SCHEDULED_WORKFLOW, scheduledGovernanceWorkflow);
   writeFixtureFile(rootDir, 'scripts/ci/local-ci.sh', ciGovernanceLocalCi);
 
   writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({

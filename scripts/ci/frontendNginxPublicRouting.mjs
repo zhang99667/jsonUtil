@@ -13,6 +13,8 @@ const listensOn = (block, port) => new RegExp(`^\\s*listen\\s+${port}\\b`, 'm').
 const routesToAdmin = block => block.includes('https://$host/admin.html') ||
   block.includes('return 301 /admin.html;') ||
   block.includes('try_files $uri $uri/ /admin.html;');
+const protectsExternalAdminEntrypoint = block =>
+  block.includes('location = /admin.html') && block.includes('return 302 /index.html;');
 const unionNames = blocks => new Set(blocks.flatMap(readNames));
 
 export const extractNginxServerBlocks = (content) => {
@@ -54,8 +56,9 @@ export const collectNginxPublicRoutingFailures = (
   const publicHttpNames = unionNames(blocks.filter(block => listensOn(block, 80) && block.includes('https://$host$request_uri')));
   const publicHttpsNames = unionNames(blocks.filter(block => listensOn(block, 443) && block.includes('try_files $uri $uri/ /index.html;')));
   const adminNames = unionNames(blocks.filter(routesToAdmin));
-  const externalHttpsNames = unionNames(blocks.filter(block => listensOn(block, 443) &&
-    externalFrontendRoutes.some(route => block.includes(route.root))));
+  const externalHttpsBlocks = blocks.filter(block => listensOn(block, 443) &&
+    externalFrontendRoutes.some(route => block.includes(route.root)));
+  const externalHttpsNames = unionNames(externalHttpsBlocks);
   const jsonutilsHttpsNames = unionNames(blocks.filter(block => listensOn(block, 443) &&
     !externalFrontendRoutes.some(route => block.includes(route.root)) &&
     (routesToAdmin(block) || block.includes('try_files $uri $uri/ /index.html;'))));
@@ -68,6 +71,10 @@ export const collectNginxPublicRoutingFailures = (
   const externalHostFailures = externalFrontendRoutes.flatMap(({ host, root }) => [
     ...(!publicHttpNames.has(host) ? [`${file}: 外部域名 ${host} 未绑定到 HTTPS 跳转 server_name`] : []),
     ...(!externalHttpsNames.has(host) ? [`${file}: 外部域名 ${host} 未绑定到独立静态目录 ${root}`] : []),
+    ...(!externalHttpsBlocks.some(block => readNames(block).includes(host) &&
+      block.includes(root) && protectsExternalAdminEntrypoint(block))
+      ? [`${file}: 外部域名 ${host} 必须显式将 /admin.html 临时重定向到 /index.html，避免后台入口缓存污染业务域名`]
+      : []),
     ...(jsonutilsHttpsNames.has(host) ? [`${file}: 外部域名 ${host} 不能绑定到 JSONUtils 主站或后台 server_name`] : []),
   ]);
 

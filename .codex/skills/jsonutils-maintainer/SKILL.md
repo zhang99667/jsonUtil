@@ -1,7 +1,7 @@
 ---
 name: jsonutils-maintainer
 description: JSONUtils 项目维护技能。用于优化性能、重构可维护性较差的模块、补充 Scheme/CMD 解析能力、维护前后端测试门禁、更新 AI 协作规范和部署排查流程。
-version: 0.1.13
+version: 0.1.14
 tags: [jsonutils, governance, ai-infra, maintenance]
 ---
 
@@ -42,7 +42,8 @@ node scripts/ci/check-frontend-static-retention.mjs
 node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 # 用户反馈旧 chunk URL 时追加: --extra-asset https://jsonutils.markz.fun/assets/xxx.js
 node scripts/ci/check-maintainability-budgets.mjs
-node --test scripts/mcp/jsonutils-governance-server.test.mjs
+node scripts/ci/write-ai-governance-artifacts.mjs
+node --test scripts/mcp/*.test.mjs
 ```
 
 ```bash
@@ -72,6 +73,7 @@ mvn test
 - AI 修复能力必须明确本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
 - AI 协作规则自身也要可进化：新增或修正流程后同步 Playbook、入口文档和本 skill，并通过 `node scripts/ci/check-ai-governance.mjs` 做治理校验，避免只靠人工记忆传递。
 - AI 治理、版本一致性、脚本单测和可维护性预算命令必须留在 GitHub Actions `run:` 与 `scripts/ci/local-ci.sh` 的 `run_in_root` 可执行入口，由 `check-ai-governance` 反查，不能只放在注释或 `echo` 里。
+- `.github/workflows/ai-governance.yml` 必须保留 weekly schedule、workflow_dispatch、治理脚本单测、MCP 测试和 artifact 上传，用定时巡检覆盖长期不改文件时的 AI 资产漂移风险。
 - 新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，治理 helper 和锁定测试都不能游离在预算所有权之外。
 - 新增 `scripts/ci/aiGovernance*.mjs` 非测试 helper 时还要接入 `check-ai-governance` 生产链路或 `scripts/ci/*.test.mjs` 测试链路，避免预算合规但无人调用的孤儿治理脚本。
 - AGENTS/CLAUDE 这类同源入口要成对更新；Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的薄入口共享核心规则片段由治理脚本做漂移检查，并在共享片段描述中保留权威来源文件和锚点，避免薄入口硬编码内容脱离权威规则。
@@ -82,6 +84,6 @@ mvn test
 - AI 资产注册表每条登记都要维护真实有效且不晚于当前日期的 `YYYY-MM-DD` 最近复核日期；修改资产行时同步更新日期，但不把它扩展成自动提醒系统。
 - 新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、项目级 MCP 配置（根 MCP、Cursor MCP、VS Code MCP）、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 下的 AI 协作资产时，必须同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免，防止 rules/skills 文档游离在门禁之外。
 - 项目级 MCP 配置必须是合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map；每个 server 至少声明 `command` 或 `url`，`command`、`args`、`env` 等常见字段要保持可执行结构，不能用 shell 包装命令或绝对路径，仓库内脚本参数必须存在，token、secret、password、api key、authorization 等敏感字段及 URL/args/header 字符串中的敏感值只能写环境变量引用，不能提交明文。
-- `.mcp.json` 默认暴露 `jsonutils-governance` 本地 MCP server；该 server 只能提供只读治理资源和固定治理报告工具，禁止扩展成任意 shell 或通用文件读取入口。
+- `.mcp.json` 默认暴露 `jsonutils-governance` 本地 MCP server；该 server 只能提供只读治理资源和固定治理报告/上下文工具，禁止扩展成任意 shell 或通用文件读取入口。
 - 项目级 Codex skill 不是普通 Markdown 笔记；必须保持 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 结构，且当前 frontmatter `name` 与 `version` 要能从 `CHANGELOG.md` 同一条记录追溯，方便后续 agent 按固定入口执行并判断迁移版本。
 - 项目级 Codex skill 中反引号包裹的具体项目路径、fenced `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须真实存在，迁移或重命名后用 `node scripts/ci/check-ai-governance.mjs` 反查，避免 skill 引用失效。

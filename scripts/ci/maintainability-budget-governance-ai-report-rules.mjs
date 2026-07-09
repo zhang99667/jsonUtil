@@ -8,4 +8,5 @@ export const governanceAiReportMaintainabilityBudgets = [
   governanceAiReportBudget('scripts/ci/aiGovernanceReport.mjs', 25, 'AI 治理报告组装应只组合上下文与失败列表'),
   governanceAiReportBudget('scripts/ci/aiGovernanceReportContext.mjs', 20, 'AI 治理报告上下文应独立维护 skill、required files、reference rules 和 governed files 构造'),
   governanceAiReportBudget('scripts/ci/aiGovernanceReportFailures.mjs', 45, 'AI 治理报告失败收集应独立维护文件缺失、skill 契约和引用缺失列表'),
+  governanceAiReportBudget('scripts/ci/write-ai-governance-artifacts.mjs', 100, 'AI 治理产物脚本应只写固定 JSON 报告、context 快照和 summary'),
 ];

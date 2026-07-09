@@ -4,7 +4,7 @@ import {
   stripInlineQuote,
 } from './githubWorkflowRunBlockText.mjs';
 
-const RUN_LINE_PATTERN = /^(\s*)run:\s*(.*)$/;
+const RUN_LINE_PATTERN = /^(\s*)(?:-\s*)?run:\s*(.*)$/;
 
 export { normalizeGithubWorkflowShell } from './githubWorkflowRunBlockText.mjs';
 

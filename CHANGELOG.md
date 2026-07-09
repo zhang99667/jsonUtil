@@ -1,4 +1,26 @@
 # 更新日志 (Changelog)
+## v1.8.738 (2026-07-10) - 装箱单后台路径隔离
+### 🐛 Bug 修复
+- **装箱单域名路径恢复**: `zhangjihao.markz.fun/admin.html` 临时重定向到 `/index.html`，避免浏览器旧后台跳转缓存把外部业务域名卡在 JSONUtils 后台保留路径
+
+### 🏗️ 架构与基础设施
+- **外部域名保留入口门禁**: Nginx 路由门禁要求外部业务域名显式保护 `/admin.html`，防止后台入口兜底污染独立站点
+
+## v1.8.737 (2026-07-10) - 资产注册表分类契约分层
+### 🏗️ 架构与基础设施
+- **资产注册表分类契约分层**: 将状态、责任人和复核节奏组合语义拆入 `aiGovernanceAssetRegistryClassificationCombinations.mjs`，让分类 helper 回到枚举和日期校验职责，降低后续扩展资产登记字段时的预算压力
+
+## v1.8.736 (2026-07-10) - 治理 MCP 上下文快照
+### 🏗️ 架构与基础设施
+- **治理上下文快照**: `jsonutils-governance` MCP server 新增 `ai_governance_context` 工具，组合治理 JSON、预算 JSON、版本、最新决策和下一步命令，方便后续 AI 助手快速接入当前治理状态
+- **Context helper 治理闭环**: 新增 `scripts/mcp/jsonutils-governance-context.mjs` 与单测，并纳入 AI 必需文件、资产注册表和可维护性预算，避免 MCP 辅助脚本游离在治理之外
+- **治理报告 CI 产物**: 新增 `scripts/ci/write-ai-governance-artifacts.mjs`，在 CI 和 local-ci 中固定产出 AI 治理报告、可维护性预算报告、治理 context 快照和 Step Summary
+- **MCP stdio 冒烟**: 新增真实进程级 MCP stdio 测试，从 `.mcp.json` 启动 `jsonutils-governance` server 并验证初始化、framing 和工具清单
+- **定时治理巡检**: 新增 `AI Governance` scheduled workflow，每周固定运行治理测试、MCP 测试、治理 artifact 产出并上传报告，避免 AI 资产长期不改时静默漂移
+- **必需文件清单分层**: 将检查类必需文件拆入 `aiGovernanceRequiredCheckFiles.mjs`，释放主必需文件组合入口的行数预算，让后续新增治理入口不先撞维护上限
+- **决策账本契约分层**: 将单条决策记录的弱占位、回写和锁定测试校验拆入 `aiGovernanceDecisionLedgerRowContract.mjs`，让账本入口回到文件读取、表格解析和日期顺序组合职责
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随治理 MCP 上下文快照升级到 `0.1.14`，让后续 agent 可通过 MCP 获取更紧凑的项目维护上下文
+
 ## v1.8.735 (2026-07-10) - 本机健康检查路由
 ### 🐛 Bug 修复
 - **本机健康检查恢复**: 主站 HTTPS server_name 明确包含 `localhost` 和 `127.0.0.1`，避免未知域名 421 隔离策略误伤远端部署健康检查

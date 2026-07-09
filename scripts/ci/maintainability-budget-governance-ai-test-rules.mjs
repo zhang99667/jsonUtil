@@ -15,6 +15,7 @@ export const governanceAiTestMaintainabilityBudgets = [
   governanceAiTestBudget('scripts/ci/aiGovernanceDateBounds.test.mjs', 70, 'AI 治理日期边界测试应独立维护未来日期、资产注册表和决策账本负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceIsoDate.test.mjs', 25, 'AI 治理日期 helper 测试应独立维护闰年、月日边界和格式负例'),
   governanceAiTestBudget('scripts/ci/aiGovernanceScriptReachability.test.mjs', 45, 'AI 治理脚本可达性测试应独立维护孤儿 helper 与 import 图覆盖负例'),
+  governanceAiTestBudget('scripts/ci/write-ai-governance-artifacts.test.mjs', 80, 'AI 治理产物脚本测试应只锁定固定报告、context 和 summary 写入'),
   governanceAiTestBudget('scripts/ci/aiGovernanceChecks.test.mjs', 650, 'AI 治理主测试文件应显式纳入预算，新增场景优先评估按决策账本、CI 或引用规则契约拆分'),
   ...governanceAiRegistryTestMaintainabilityBudgets,
   ...governanceAiReferenceTestMaintainabilityBudgets,
