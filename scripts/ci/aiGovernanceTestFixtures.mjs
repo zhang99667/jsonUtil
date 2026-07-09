@@ -24,16 +24,17 @@ export const registryRow = (file, fields = {}) => ({
   file,
   owner: '项目维护者',
   reviewCadence: '变更时复核',
+  reviewDate: '2026-07-09',
   status: '协作资产',
   type: '测试资产',
   ...fields,
 });
 
 export const buildRegistryTableFixture = rows => [
-  '| 资产 | 状态 | 责任人 | 复核节奏 | 类型 | 维护契约 | 治理证据 |',
-  '| --- | --- | --- | --- | --- | --- | --- |',
-  ...rows.map(({ file, status, owner, reviewCadence, type, contract, evidence }) => (
-    `| \`${file}\` | ${status} | ${owner} | ${reviewCadence} | ${type} | ${contract} | ${evidence} |`
+  '| 资产 | 状态 | 责任人 | 复核节奏 | 最近复核 | 类型 | 维护契约 | 治理证据 |',
+  '| --- | --- | --- | --- | --- | --- | --- | --- |',
+  ...rows.map(({ file, status, owner, reviewCadence, reviewDate, type, contract, evidence }) => (
+    `| \`${file}\` | ${status} | ${owner} | ${reviewCadence} | ${reviewDate} | ${type} | ${contract} | ${evidence} |`
   )),
 ].join('\n');
 
