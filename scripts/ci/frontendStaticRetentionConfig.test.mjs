@@ -204,14 +204,14 @@ server {
 }
 `;
 
-test('Nginx 公开域名路由检查会保护 zhangjihao 主站别名', () => {
+test('Nginx 公开域名路由检查会保护 JSONUtils 主站别名', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(
       rootDir,
       'frontend/nginx.conf',
       nginxConfig(
-        'jsonutils.markz.fun markz.fun www.markz.fun zhangjihao.markz.fun',
-        'jsonutils.markz.fun markz.fun www.markz.fun zhangjihao.markz.fun'
+        'jsonutils.markz.fun markz.fun www.markz.fun',
+        'jsonutils.markz.fun markz.fun www.markz.fun'
       )
     );
 
@@ -225,16 +225,33 @@ test('Nginx 公开域名路由检查会拦截公开域名落入后台', () => {
       rootDir,
       'frontend/nginx.conf',
       nginxConfig(
-        'jsonutils.markz.fun markz.fun www.markz.fun',
-        'jsonutils.markz.fun markz.fun www.markz.fun',
-        'admin.markz.fun zhangjihao.markz.fun'
+        'jsonutils.markz.fun markz.fun',
+        'jsonutils.markz.fun markz.fun',
+        'admin.markz.fun www.markz.fun'
       )
     );
 
     assert.deepEqual(collectNginxPublicRoutingFailures(rootDir), [
-      'frontend/nginx.conf: 公开域名 zhangjihao.markz.fun 未绑定到主站 HTTP 跳转 server_name',
-      'frontend/nginx.conf: 公开域名 zhangjihao.markz.fun 未绑定到主站 HTTPS server_name',
-      'frontend/nginx.conf: 公开域名 zhangjihao.markz.fun 不能绑定到后台 server_name',
+      'frontend/nginx.conf: 公开域名 www.markz.fun 未绑定到主站 HTTP 跳转 server_name',
+      'frontend/nginx.conf: 公开域名 www.markz.fun 未绑定到主站 HTTPS server_name',
+      'frontend/nginx.conf: 公开域名 www.markz.fun 不能绑定到后台 server_name',
+    ]);
+  });
+});
+
+test('Nginx 公开域名路由检查会拦截外部业务域名被 JSONUtils 接管', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(
+      rootDir,
+      'frontend/nginx.conf',
+      nginxConfig(
+        'jsonutils.markz.fun markz.fun www.markz.fun zhangjihao.markz.fun',
+        'jsonutils.markz.fun markz.fun www.markz.fun'
+      )
+    );
+
+    assert.deepEqual(collectNginxPublicRoutingFailures(rootDir), [
+      'frontend/nginx.conf: 外部域名 zhangjihao.markz.fun 不能绑定到 JSONUtils server_name',
     ]);
   });
 });

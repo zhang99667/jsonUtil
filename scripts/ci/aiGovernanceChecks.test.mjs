@@ -165,6 +165,8 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'MCP 配置',
     '可维护性预算',
     '.mcp.json',
+    'scripts/mcp/jsonutils-governance-server.mjs',
+    'jsonutils-governance',
     '.cursor/mcp.json',
     '.cursor/rules',
     '.vscode/mcp.json',
@@ -179,6 +181,14 @@ const writeMinimalGovernanceFixture = (rootDir) => {
   const governanceFixtureFiles = buildAiGovernanceRequiredFiles([skillFile]);
 
   governanceFixtureFiles.forEach(file => writeFixtureFile(rootDir, file, sharedReferences));
+  writeFixtureFile(rootDir, '.mcp.json', JSON.stringify({
+    mcpServers: {
+      'jsonutils-governance': {
+        command: 'node',
+        args: ['scripts/mcp/jsonutils-governance-server.mjs'],
+      },
+    },
+  }));
   writeFixtureFile(rootDir, 'AGENTS.md', [sharedReferences, mirroredAgentSection].join('\n'));
   writeFixtureFile(rootDir, 'CLAUDE.md', [sharedReferences, mirroredAgentSection].join('\n'));
   AI_ENTRY_SHARED_SNIPPET_FILES.forEach((file) => {
@@ -495,7 +505,6 @@ test('AI 治理完整报告会报告未纳入治理清单的新 AI 资产', () =
       '.github/chatmodes/legacy.chatmode.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       '.github/instructions/review.instructions.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       '.github/prompts/review.prompt.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
-      '.mcp.json: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       '.vscode/mcp.json: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       'docs/AI-EXPERIMENT.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',
       'rules/AI-EXPERIMENT.md: AI 协作资产未纳入治理清单，请加入必需文件/引用规则或显式豁免',

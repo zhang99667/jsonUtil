@@ -63,6 +63,10 @@ jobs:
         working-directory: .
         run: node --test scripts/ci/*.test.mjs
 
+      - name: MCP server unit tests
+        working-directory: .
+        run: node --test scripts/mcp/*.test.mjs
+
       - name: Chunk load recovery catch audit
         working-directory: .
         run: node scripts/ci/check-chunk-load-recovery-catches.mjs

@@ -1,7 +1,7 @@
 ---
 name: jsonutils-maintainer
 description: JSONUtils 项目维护技能。用于优化性能、重构可维护性较差的模块、补充 Scheme/CMD 解析能力、维护前后端测试门禁、更新 AI 协作规范和部署排查流程。
-version: 0.1.12
+version: 0.1.13
 tags: [jsonutils, governance, ai-infra, maintenance]
 ---
 
@@ -42,6 +42,7 @@ node scripts/ci/check-frontend-static-retention.mjs
 node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 # 用户反馈旧 chunk URL 时追加: --extra-asset https://jsonutils.markz.fun/assets/xxx.js
 node scripts/ci/check-maintainability-budgets.mjs
+node --test scripts/mcp/jsonutils-governance-server.test.mjs
 ```
 
 ```bash
@@ -80,6 +81,7 @@ mvn test
 - `CHANGELOG.md` 顶部版本区块必须保留规范分类标题和 `- **标题**: 描述` 条目格式，由 `node scripts/ci/check-version-consistency.mjs` 统一校验版本、条目数量和结构。
 - AI 资产注册表每条登记都要维护真实有效且不晚于当前日期的 `YYYY-MM-DD` 最近复核日期；修改资产行时同步更新日期，但不把它扩展成自动提醒系统。
 - 新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、项目级 MCP 配置（根 MCP、Cursor MCP、VS Code MCP）、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 下的 AI 协作资产时，必须同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免，防止 rules/skills 文档游离在门禁之外。
-- 项目级 MCP 配置必须是合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map；`command`、`args`、`env` 等常见字段要保持可执行结构，不能用 shell 包装命令或绝对路径，仓库内脚本参数必须存在，token、secret、password、api key、authorization 等敏感字段及 URL/args/header 字符串中的敏感值只能写环境变量引用，不能提交明文。
+- 项目级 MCP 配置必须是合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map；每个 server 至少声明 `command` 或 `url`，`command`、`args`、`env` 等常见字段要保持可执行结构，不能用 shell 包装命令或绝对路径，仓库内脚本参数必须存在，token、secret、password、api key、authorization 等敏感字段及 URL/args/header 字符串中的敏感值只能写环境变量引用，不能提交明文。
+- `.mcp.json` 默认暴露 `jsonutils-governance` 本地 MCP server；该 server 只能提供只读治理资源和固定治理报告工具，禁止扩展成任意 shell 或通用文件读取入口。
 - 项目级 Codex skill 不是普通 Markdown 笔记；必须保持 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 结构，且当前 frontmatter `name` 与 `version` 要能从 `CHANGELOG.md` 同一条记录追溯，方便后续 agent 按固定入口执行并判断迁移版本。
 - 项目级 Codex skill 中反引号包裹的具体项目路径、fenced `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须真实存在，迁移或重命名后用 `node scripts/ci/check-ai-governance.mjs` 反查，避免 skill 引用失效。

@@ -21,6 +21,8 @@ export const AI_GOVERNANCE_CHECK_FILES = [
   'scripts/ci/check-frontend-static-retention.mjs',
   'scripts/ci/check-production-frontend-assets.mjs',
   'scripts/ci/check-chunk-load-recovery-catches.mjs',
+  '.mcp.json',
+  'scripts/mcp/jsonutils-governance-server.mjs',
   ...AI_GOVERNANCE_CI_COMMAND_FILES,
 ];
 

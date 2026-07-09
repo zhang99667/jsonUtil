@@ -16,4 +16,4 @@ export const extractNodeCommandPaths = text => extractExecutableCommands(text).f
 export const extractNodeRegressionTestCommandPaths = text => extractExecutableCommands(text)
   .flatMap(command => extractNodeCommandPathTokens(command, true));
 
-export const isCiCoveredNodeRegressionTestPath = file => /^scripts\/ci\/[^/]+\.test\.mjs$/.test(file);
+export const isCiCoveredNodeRegressionTestPath = file => /^scripts\/(?:ci|mcp)\/[^/]+\.test\.mjs$/.test(file);

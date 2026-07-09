@@ -31,12 +31,12 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `AGENTS.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 项目入口 | Codex 和通用 coding agent 入口，AI 协作章节与 `CLAUDE.md` 保持同源，并直接指向资产注册表 | 必需文件、入口引用规则、同源章节漂移检查 |
 | `CLAUDE.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 项目入口 | Claude Code / Ducc 入口，AI 协作章节与 `AGENTS.md` 保持同源，并直接指向资产注册表 | 必需文件、入口引用规则、同源章节漂移检查 |
-| `rules/code-style.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-09 | 权威规则 | 编码规范、提交规范、CHANGELOG 和 AI 资产治理规则来源 | 必需文件、入口引用规则、版本一致性检查引用 |
-| `docs/AI-ENGINEERING-PLAYBOOK.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-09 | 权威流程 | 子 Agent 委派、验证矩阵、规则进化和治理校验闭环 | 必需文件、入口引用规则、章节级引用检查 |
-| `docs/AI-GOVERNANCE-DECISIONS.md` | 决策账本 | 项目维护者 | 变更时复核 | 2026-07-09 | 决策账本 | 记录 AI rules、skills 和治理脚本变更的触发条件、反例、回写追踪和锁定测试，并要求回写追踪包含账本自身 | 必需文件、docs/AI 引用规则、资产发现规则 |
-| `docs/AI-CONFIG-INTEGRATION.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 分层说明 | 说明入口、rules、skills、本机配置和显式豁免关系 | 必需文件、docs/AI 引用规则、资产发现规则 |
-| `docs/AI-TOOLS-SETUP.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具索引 | 说明各 AI 工具入口、同步边界和必跑检查 | 必需文件、docs/AI 引用规则、资产发现规则 |
-| `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
+| `rules/code-style.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-10 | 权威规则 | 编码规范、提交规范、CHANGELOG 和 AI 资产治理规则来源 | 必需文件、入口引用规则、版本一致性检查引用 |
+| `docs/AI-ENGINEERING-PLAYBOOK.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-10 | 权威流程 | 子 Agent 委派、验证矩阵、规则进化和治理校验闭环 | 必需文件、入口引用规则、章节级引用检查 |
+| `docs/AI-GOVERNANCE-DECISIONS.md` | 决策账本 | 项目维护者 | 变更时复核 | 2026-07-10 | 决策账本 | 记录 AI rules、skills 和治理脚本变更的触发条件、反例、回写追踪和锁定测试，并要求回写追踪包含账本自身 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-CONFIG-INTEGRATION.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 分层说明 | 说明入口、rules、skills、本机配置和显式豁免关系 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-TOOLS-SETUP.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 工具索引 | 说明各 AI 工具入口、同步边界和必跑检查 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
 | `.github/PULL_REQUEST_TEMPLATE.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Copilot 根入口、Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
 
 ## 工具入口与可迁移技能
@@ -46,7 +46,9 @@
 | `.claude/README.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 目录索引 | 说明 Claude 配置目录边界，必须指向 Playbook、资产注册表和治理命令 | 必需文件、Claude README 引用规则、自动发现规则 |
 | `.claude/ai-tools-guide.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具说明 | 说明 Claude、Codex、Copilot、Cursor、Comate 如何复用同一套规范，并保持共享核心规则片段同源且可反查权威来源 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.codex/README.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 目录索引 | 说明 Codex 项目资产边界和旧 chunk / 部署验证入口，并保持共享核心规则片段同源且可反查权威来源 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
-| `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 项目维护者 | 变更时复核 | 2026-07-09 | 可迁移技能 | 保留与目录一致的 frontmatter name、可追踪 version、可检索 tags、必读文件、工作流、常用验证命令和重点边界，当前 name/version 必须可从 CHANGELOG 同行追溯，并确保命令块里的工作目录与脚本可达 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
+| `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 项目维护者 | 变更时复核 | 2026-07-10 | 可迁移技能 | 保留与目录一致的 frontmatter name、可追踪 version、可检索 tags、必读文件、工作流、常用验证命令和重点边界，当前 name/version 必须可从 CHANGELOG 同行追溯，并确保命令块里的工作目录与脚本可达 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
+| `.mcp.json` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 项目级 MCP 配置 | 暴露 `jsonutils-governance` 本地 MCP server，配置只使用 `node` 直连仓库内脚本，不携带明文凭据或 shell 包装命令 | 必需文件、自动发现规则、资产注册表结构化校验 |
+| `scripts/mcp/jsonutils-governance-server.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 服务 | 只读暴露 AI Playbook、资产注册表、决策账本和 maintainer skill，并只提供固定治理报告工具，不开放任意 shell | 必需文件、自动发现规则、资产注册表结构化校验、可维护性预算 |
 | `.github/copilot-instructions.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | GitHub Copilot 仓库级 instructions，转发到主规范、Playbook 和 skill，并保持共享核心规则片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.cursorrules` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | Cursor 入口，与 `.comate/rules/code-style.md` 保持共享核心片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查 |
 | `.comate/rules/code-style.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | Comate 入口，与 `.cursorrules` 保持共享核心片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查 |

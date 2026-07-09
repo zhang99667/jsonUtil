@@ -13,6 +13,7 @@
 | GitHub Copilot | `.github/copilot-instructions.md` | 仓库级 Copilot instructions 薄入口，转发到主规范和 Playbook |
 | Cursor | `.cursorrules`、`.cursor/rules/**/*.mdc` | 薄入口，转发到主规范和 Playbook |
 | MCP 配置 | `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json` | 项目级 MCP server 能力边界，精确文件进入治理，并校验 JSON 结构、命令路径和敏感字段 |
+| 本地治理 MCP | `scripts/mcp/jsonutils-governance-server.mjs` | 只读暴露 AI 治理文档和固定 JSON 报告工具，供支持 MCP 的 AI 助手快速获取治理上下文 |
 | Comate | `.comate/rules/code-style.md` | 薄入口，和 Cursor 保持共享核心片段 |
 | 跨工具执行闭环 | `docs/AI-ENGINEERING-PLAYBOOK.md` | 子 Agent 委派、验证矩阵、规则进化和治理校验的权威文档 |
 | 配置分层说明 | `docs/AI-CONFIG-INTEGRATION.md` | 说明入口、rules、skills、本机配置和显式豁免的关系 |
@@ -53,6 +54,7 @@ AI 助手开始修改代码前，应优先读取：
 ```bash
 node scripts/ci/check-ai-governance.mjs
 node scripts/ci/check-maintainability-budgets.mjs
+node --test scripts/mcp/*.test.mjs
 git diff --check
 ```
 
@@ -82,7 +84,7 @@ node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 - `.github/copilot-instructions.md` 只能作为薄入口，关键规则仍以主规范、Playbook 和 skill 为准；新增 `.github/instructions/**/*.instructions.md` 路径级指令、`.github/prompts/**/*.prompt.md` prompt file、`.github/agents/**/*.agent.md` custom agent 或 `.github/chatmodes/**/*.chatmode.md` legacy chat mode 时也必须进入治理清单、引用规则或显式豁免。
 - `.codex/skills/*/SKILL.md` 必须保留 frontmatter `name`、`description`、`version`、`tags`、必读文件、工作流、常用验证命令和重点边界。
 - `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入 `docs/AI-ASSET-REGISTRY.md`、治理清单、引用规则或显式豁免。
-- MCP 配置必须声明 `mcpServers` 或 `servers`，避免 shell 包装命令、绝对路径、上跳路径、缺失本地脚本和敏感字段明文。
+- MCP 配置必须声明 `mcpServers` 或 `servers`，避免 shell 包装命令、绝对路径、上跳路径、缺失本地脚本和敏感字段明文；`jsonutils-governance` server 只能暴露只读资源和固定治理报告工具。
 - rules、skills 或治理脚本变更必须能从 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md` 反查触发原因与锁定测试，且决策账本回写追踪必须包含账本自身。
 - CHANGELOG 和版本文件必须通过 `check-version-consistency` 校验。
 
