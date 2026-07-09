@@ -201,7 +201,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '',
     '| 日期 | 决策 | 触发条件 | 反例 | 适用边界 | 回写追踪 | 锁定测试 |',
     '| --- | --- | --- | --- | --- | --- | --- |',
-    '| 2026-07-07 | 沉淀治理决策 | 重复踩坑 | 只写关键词 | AI rules 和治理脚本 | `docs/AI-ASSET-REGISTRY.md`, `scripts/ci/check-ai-governance.mjs`, `CHANGELOG.md` | `node --test scripts/ci/aiGovernanceChecks.test.mjs`; `node scripts/ci/check-ai-governance.mjs` |',
+    '| 2026-07-07 | 沉淀治理决策 | 重复踩坑 | 只写关键词 | AI rules 和治理脚本 | `docs/AI-ASSET-REGISTRY.md`, `docs/AI-GOVERNANCE-DECISIONS.md`, `scripts/ci/check-ai-governance.mjs`, `CHANGELOG.md` | `node --test scripts/ci/aiGovernanceChecks.test.mjs`; `node scripts/ci/check-ai-governance.mjs` |',
   ].join('\n'));
   writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', [
     sharedReferences,
@@ -297,6 +297,8 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   });
   assert.equal(agentsEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(claudeEntryRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(agentsEntryRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
+  assert.equal(claudeEntryRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(claudeReadmeRule.contains.includes('docs/AI-ENGINEERING-PLAYBOOK.md'), true);
   assert.equal(claudeReadmeRule.contains.includes('.claude/ai-tools-guide.md'), true);
   assert.equal(claudeReadmeRule.contains.includes('.claude/settings.local.json'), true);

@@ -4,9 +4,16 @@ export const AI_GOVERNANCE_REFERENCE_ENTRY_MISSING_CASES = [
   {
     name: 'AI 治理引用检查会报告入口文档缺失治理命令',
     file: 'AGENTS.md',
-    content: lines(['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', '复盘沉淀', '规则/skill 回写', '治理校验']),
+    content: lines(['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-ASSET-REGISTRY.md', '复盘沉淀', '规则/skill 回写', '治理校验']),
     contains: ['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'node scripts/ci/check-ai-governance.mjs'],
     expected: 'AGENTS.md: 缺少 "node scripts/ci/check-ai-governance.mjs"',
+  },
+  {
+    name: 'AI 治理引用检查会报告入口文档缺失资产注册表',
+    file: 'CLAUDE.md',
+    content: lines(['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'node scripts/ci/check-ai-governance.mjs']),
+    contains: ['docs/AI-ASSET-REGISTRY.md'],
+    expected: 'CLAUDE.md: 缺少 "docs/AI-ASSET-REGISTRY.md"',
   },
   {
     name: 'AI 治理引用检查会报告入口文档缺失版本闭环文件',

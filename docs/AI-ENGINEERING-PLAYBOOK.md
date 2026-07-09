@@ -91,7 +91,7 @@
 - 遇到重复踩坑、用户纠偏、子 Agent 协作失效、验证门禁缺口或优秀实践可复用时，先做复盘沉淀，明确触发条件、反例、验证方式和适用边界。
 - 能被后续 AI 复用的经验必须做规则/skill 回写：项目通用流程写入本 Playbook，Codex 项目技能写入 `.codex/skills/jsonutils-maintainer/SKILL.md`，跨工具说明同步到 `.claude/ai-tools-guide.md` 或入口文档。
 - 规则回写必须写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试：决策记录说明为什么沉淀，回写追踪列出同步到哪些入口或 skill，锁定测试说明由哪个治理脚本、单测或预算规则防止退化。
-- 决策账本的触发条件、反例和适用边界不能整格使用弱占位；锁定测试必须同时包含 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`，证明局部负例和聚合治理门禁都覆盖到。
+- 决策账本的触发条件、反例和适用边界不能整格使用弱占位；回写追踪必须包含 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，锁定测试必须同时包含 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`，证明局部负例、账本自追踪和聚合治理门禁都覆盖到。
 - 规则改动必须配套治理校验：能用 `check-ai-governance` 锁定的关键词、文件引用或命令要同步加入脚本和测试，不能只依赖人工记忆。
 - AI 治理、版本一致性、脚本单测和可维护性预算命令必须保留在 GitHub Actions `run:` 与 `scripts/ci/local-ci.sh` 的 `run_in_root` 可执行入口，并由 `check-ai-governance` 反查，避免门禁只存在于注释、`echo` 或手动习惯。
 - AI 治理 helper 和测试都要有预算所有权：新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，避免治理代码和锁定测试继续膨胀。
@@ -110,8 +110,8 @@
 
 ## AI 资产维护
 
-- `AGENTS.md`: Codex、OpenAI Codex CLI 和通用 coding agent 的项目入口。
-- `CLAUDE.md`: Claude Code / Ducc 的项目入口。
+- `AGENTS.md`: Codex、OpenAI Codex CLI 和通用 coding agent 的项目入口，必须直接指向 `docs/AI-ASSET-REGISTRY.md`。
+- `CLAUDE.md`: Claude Code / Ducc 的项目入口，必须直接指向 `docs/AI-ASSET-REGISTRY.md`。
 - `.claude/README.md`: Claude/Ducc 配置目录索引，必须指向主入口、Playbook 和治理命令。
 - `.claude/ai-tools-guide.md`: AI 工具适配说明。
 - `.claude/settings.local.json`: 本机私有配置，仅作为显式豁免文件存在，不承载项目级 rules、skills 或验证流程。

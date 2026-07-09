@@ -1,7 +1,7 @@
 ---
 name: jsonutils-maintainer
 description: JSONUtils 项目维护技能。用于优化性能、重构可维护性较差的模块、补充 Scheme/CMD 解析能力、维护前后端测试门禁、更新 AI 协作规范和部署排查流程。
-version: 0.1.7
+version: 0.1.8
 tags: [jsonutils, governance, ai-infra, maintenance]
 ---
 
@@ -27,7 +27,7 @@ tags: [jsonutils, governance, ai-infra, maintenance]
 5. 做最小可验证改动，不做无关大重构。
 6. 用户可见或准备上线的改动先递增 `frontend/package.json` patch 版本，同步 `frontend/package-lock.json`，并在 `CHANGELOG.md` 顶部新开版本区块，避免一个版本堆积几十条提交。
 7. 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，完成复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，并把稳定经验做规则/skill 回写。
-8. 决策账本记录不能用弱占位冒充触发条件、反例或适用边界；锁定测试同时写入 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`。
+8. 决策账本记录不能用弱占位冒充触发条件、反例或适用边界；回写追踪同时包含 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`；锁定测试同时写入 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`。
 9. 修改 `.codex/skills/*/SKILL.md` 时保留 frontmatter `name`/`description`/`version`/`tags`（`name` 必须等于 skill 目录名，`version` 使用 `x.y.z`，`tags` 使用非空数组），当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，并保留四个核心章节，确保 skill 仍可发现、可迁移、可版本化、可验证。
 10. 运行匹配范围的验证命令，并在最终回复中说明结果。
 
@@ -74,6 +74,7 @@ mvn test
 - 新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，治理 helper 和锁定测试都不能游离在预算所有权之外。
 - 新增 `scripts/ci/aiGovernance*.mjs` 非测试 helper 时还要接入 `check-ai-governance` 生产链路或 `scripts/ci/*.test.mjs` 测试链路，避免预算合规但无人调用的孤儿治理脚本。
 - AGENTS/CLAUDE 这类同源入口要成对更新；Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的薄入口共享核心规则片段由治理脚本做漂移检查，并在共享片段描述中保留权威来源文件和锚点，避免薄入口硬编码内容脱离权威规则。
+- AGENTS/CLAUDE 作为首读核心入口必须直接引用 `docs/AI-ASSET-REGISTRY.md`，新增资产治理规则不能只留在 Playbook 或工具薄入口里。
 - AGENTS、CLAUDE 和 `rules/code-style.md` 的技术栈事实要与真实配置对齐；数据库和关键主版本事实由 `check-ai-governance` 从后端配置、前后端依赖、前端 lock 和 Compose 文件反查，避免旧技术栈说明误导后续 agent。
 - Claude 工具指南、Codex README、Copilot、Cursor 和 Comate 这类工具薄入口不得维护独立更新记录；变更历史统一落到 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`。
 - `CHANGELOG.md` 顶部版本区块必须保留规范分类标题和 `- **标题**: 描述` 条目格式，由 `node scripts/ci/check-version-consistency.mjs` 统一校验版本、条目数量和结构。

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { collectDecisionLedgerBackfillFailures } from './aiGovernanceDecisionLedgerBackfillContract.mjs';
 import { DECISION_LEDGER_HEADER_CELLS, parseDecisionRows } from './aiGovernanceDecisionLedgerTable.mjs';
 import * as decisionLedgerReferences from './aiGovernanceDecisionLedgerReferences.mjs';
 import { isIsoCalendarDate } from './aiGovernanceIsoDate.mjs';
@@ -20,16 +21,11 @@ const collectRowFailures = (rootDir, row, index) => {
 
   const executableCommands = decisionLedgerReferences.extractExecutableCommands(row['锁定测试']);
   const regressionTestCommands = decisionLedgerReferences.extractNodeRegressionTestCommandPaths(row['锁定测试']);
-  const backfillReferences = decisionLedgerReferences.extractBacktickReferences(row['回写追踪']);
 
   return [
     ...(!isIsoCalendarDate(row['日期']) ? [`${label} 日期必须使用有效 YYYY-MM-DD`] : []),
     ...collectWeakNarrativeFailures(row, label),
-    ...(backfillReferences.length === 0 ? [`${label} 回写追踪必须包含反引号路径`] : []),
-    ...(!backfillReferences.includes('CHANGELOG.md') ? [`${label} 回写追踪必须包含 \`CHANGELOG.md\``] : []),
-    ...backfillReferences
-      .filter(file => !fs.existsSync(path.join(rootDir, file)))
-      .map(file => `${label} 回写追踪路径不存在 \`${file}\``),
+    ...collectDecisionLedgerBackfillFailures(rootDir, row, label, AI_GOVERNANCE_DECISION_LEDGER_FILE),
     ...(executableCommands.length === 0 ? [`${label} 锁定测试必须包含可执行命令`] : []),
     ...(!executableCommands.includes('node scripts/ci/check-ai-governance.mjs') ? [`${label} 锁定测试必须包含 \`node scripts/ci/check-ai-governance.mjs\``] : []),
     ...(executableCommands.length > 0 && regressionTestCommands.length === 0

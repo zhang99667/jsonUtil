@@ -79,7 +79,7 @@ node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 - `.codex/skills/*/SKILL.md` 必须保留 frontmatter `name`、`description`、`version`、`tags`、必读文件、工作流、常用验证命令和重点边界。
 - `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入 `docs/AI-ASSET-REGISTRY.md`、治理清单、引用规则或显式豁免。
 - MCP 配置必须声明 `mcpServers` 或 `servers`，避免 shell 包装命令、绝对路径、上跳路径、缺失本地脚本和敏感字段明文。
-- rules、skills 或治理脚本变更必须能从 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md` 反查触发原因与锁定测试。
+- rules、skills 或治理脚本变更必须能从 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md` 反查触发原因与锁定测试，且决策账本回写追踪必须包含账本自身。
 - CHANGELOG 和版本文件必须通过 `check-version-consistency` 校验。
 
 ## 相关文档
