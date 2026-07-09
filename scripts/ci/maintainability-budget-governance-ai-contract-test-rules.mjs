@@ -5,6 +5,7 @@ const governanceAiContractTestBudget = (file, maxLines, reason) => ({ file, maxL
 
 export const governanceAiContractTestMaintainabilityBudgets = [
   governanceAiContractTestBudget('scripts/ci/aiGovernanceExemptAssetContract.test.mjs', 55, 'AI 治理显式豁免契约测试应独立维护本机配置边界负例'),
+  governanceAiContractTestBudget('scripts/ci/aiGovernanceScheduledWorkflowContract.test.mjs', 75, 'AI 治理定时 workflow 测试应独立维护 schedule、命令和 artifact 负例'),
   governanceAiContractTestBudget('scripts/ci/aiGovernanceMirroredEntryContract.test.mjs', 90, 'AI 治理同源入口契约测试应独立维护章节和共享片段漂移负例'),
   ...governanceAiMcpContractTestMaintainabilityBudgets,
   ...governanceAiProjectContractTestMaintainabilityBudgets,

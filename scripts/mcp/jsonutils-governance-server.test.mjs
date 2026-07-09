@@ -35,6 +35,7 @@ test('MCP server lists governance resources and tools', () => {
   assert.deepEqual(listJsonutilsGovernanceTools().tools.map(tool => tool.name), [
     'ai_governance_report',
     'maintainability_budget_report',
+    'ai_governance_context',
   ]);
 });
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// 为 AI 助手暴露只读治理上下文和固定治理报告工具。
+// 为 AI 助手暴露只读治理上下文和固定治理报告/上下文工具。
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { buildJsonutilsGovernanceContext } from './jsonutils-governance-context.mjs';
 
 const SERVER_NAME = 'jsonutils-governance';
 const SERVER_VERSION = '0.1.0';
@@ -42,7 +43,19 @@ const budgetReportTool = {
   },
 };
 
-const tools = [governanceReportTool, budgetReportTool];
+const governanceContextTool = {
+  name: 'ai_governance_context',
+  description: 'Build a compact JSON context snapshot for AI governance onboarding.',
+  inputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      top: { type: 'integer', minimum: 1, maximum: 20, default: 5 },
+    },
+  },
+};
+
+const tools = [governanceReportTool, budgetReportTool, governanceContextTool];
 
 const runNodeScript = (script, args = []) => new Promise((resolve) => {
   execFile(process.execPath, [script, ...args], {
@@ -66,7 +79,7 @@ const readResource = (uri, cwd = rootDir) => {
   };
 };
 
-const normalizeTop = value => Math.min(50, Math.max(1, Number.isInteger(value) ? value : 10));
+const normalizeTop = (value, max = 50, fallback = 10) => Math.min(max, Math.max(1, Number.isInteger(value) ? value : fallback));
 
 export const listJsonutilsGovernanceResources = () => ({
   resources: resources.map(({ file, ...resource }) => resource),
@@ -75,6 +88,14 @@ export const listJsonutilsGovernanceResources = () => ({
 export const listJsonutilsGovernanceTools = () => ({ tools });
 
 export const callJsonutilsGovernanceTool = async (name, args = {}, runScript = runNodeScript) => {
+  if (name === governanceContextTool.name) {
+    const context = await buildJsonutilsGovernanceContext({ top: normalizeTop(args.top, 20, 5), runScript });
+    return {
+      content: [{ type: 'text', text: JSON.stringify(context, null, 2) }],
+      isError: !context.ok,
+    };
+  }
+
   const commandArgs = name === budgetReportTool.name
     ? ['--json', '--no-all', '--top', String(normalizeTop(args.top))]
     : ['--json'];

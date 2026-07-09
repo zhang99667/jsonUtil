@@ -265,6 +265,7 @@ git commit -m "[Feature]优化专项-UI UE"
 - 新增或修改 `.codex/skills/*/SKILL.md` 时，必须保留 frontmatter `name`/`description`/`version`/`tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组；当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，并保留 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 四个核心章节。
 - `.codex/skills/*/SKILL.md` 中反引号包裹的具体项目路径、fenced code block 里的 `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须真实存在，由 `node scripts/ci/check-ai-governance.mjs` 反查，避免 skill 迁移后留下不可执行引用。
 - AI 治理、版本一致性、脚本单测和可维护性预算命令必须保留在 GitHub Actions `run:` 与 `scripts/ci/local-ci.sh` 的 `run_in_root` 可执行入口，并由 `node scripts/ci/check-ai-governance.mjs` 反查。
+- `.github/workflows/ai-governance.yml` 必须保留 weekly schedule、workflow_dispatch、治理脚本单测、MCP 测试和 artifact 上传，用定时巡检覆盖长期不改文件时的 AI 资产漂移风险。
 - `scripts/ci/aiGovernance*.mjs` 与 `scripts/ci/aiGovernance*.test.mjs` 都必须纳入可维护性预算，新增治理 helper 或测试时同步登记预算子表。
 - `scripts/ci/aiGovernance*.mjs` 非测试 helper 还必须能从 `scripts/ci/check-ai-governance.mjs` 或 `scripts/ci/*.test.mjs` 静态 import 图到达，避免预算合规但无人调用的孤儿治理脚本。
 - AGENTS、CLAUDE 和 `rules/code-style.md` 的技术栈事实必须与真实配置一致；数据库和关键主版本事实由 `node scripts/ci/check-ai-governance.mjs` 从后端配置、前后端依赖、前端 lock 和 Compose 文件反查，避免入口文档继续传播旧事实。
@@ -273,7 +274,7 @@ git commit -m "[Feature]优化专项-UI UE"
 - `AGENTS.md` 和 `CLAUDE.md` 作为首读核心入口，必须直接引用 `docs/AI-ASSET-REGISTRY.md`，不能只靠 Playbook 间接跳转到资产账本。
 - `docs/AI-ASSET-REGISTRY.md` 的每条资产登记必须维护真实有效且不晚于当前日期的 `YYYY-MM-DD` 最近复核日期；它只作为审计证据，不承担到期提醒或自动调度。
 - 影响 AI 协作资产的改动必须运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验；新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 协作资产时，需要同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免。
-- 项目级 MCP 配置必须是合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map；每个 server 至少声明 `command` 或 `url`，`command` 不能使用 shell 包装命令或绝对路径，仓库内脚本参数必须存在，敏感字段以及 URL、args、header 字符串里的 token、secret、password、api key 或 authorization 值不能写明文，应使用 `$ENV_NAME` 或 `${ENV_NAME}` 这类环境变量引用。
+- 项目级 MCP 配置必须是合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map；每个 server 至少声明 `command` 或 `url`，`command` 不能使用 shell 包装命令或绝对路径，仓库内脚本参数必须存在，敏感字段以及 URL、args、header 字符串里的 token、secret、password、api key 或 authorization 值不能写明文，应使用 `$ENV_NAME` 或 `${ENV_NAME}` 这类环境变量引用。`jsonutils-governance` 本地 MCP server 只能暴露只读治理资源和固定治理报告/上下文工具，不能扩展成任意 shell 或通用文件读取入口。
 
 ### 更新格式
 

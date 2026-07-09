@@ -21,6 +21,20 @@ test('GitHub workflow run 提取会跳过 defaults.run 配置块', () => {
   ]);
 });
 
+test('GitHub workflow run 提取支持步骤列表内的单行 run', () => {
+  const blocks = collectGithubWorkflowRunBlocks([
+    'steps:',
+    '  - run: npm test',
+    '  - name: Build',
+    '    run: npm run build',
+  ].join('\n'));
+
+  assert.deepEqual(blocks, [
+    { startLine: 2, content: 'npm test\n' },
+    { startLine: 4, content: 'npm run build\n' },
+  ]);
+});
+
 test('GitHub workflow run 提取会解析多行脚本块并反缩进', () => {
   const blocks = collectGithubWorkflowRunBlocks([
     'steps:',

@@ -13,5 +13,6 @@ export const governanceAiReferenceMaintainabilityBudgets = [
   governanceAiReferenceBudget('scripts/ci/aiGovernancePlaybookSectionRules.mjs', 25, 'AI 治理文档章节引用规则应独立维护 Playbook 和工具索引的章节内关键词映射'),
   governanceAiReferenceBudget('scripts/ci/aiGovernanceToolEntryReferenceRules.mjs', 50, 'AI 治理工具薄入口引用规则应独立维护五类薄入口的共享基线和工具特定 peer 契约'),
   governanceAiReferenceBudget('scripts/ci/aiGovernanceRequiredFiles.mjs', 35, 'AI 治理必需文件清单应独立维护基础入口和 Codex skill 展开规则'),
+  governanceAiReferenceBudget('scripts/ci/aiGovernanceRequiredCheckFiles.mjs', 25, 'AI 治理检查类必需文件清单应独立维护 CI、发布和 MCP 检查入口'),
   governanceAiReferenceBudget('scripts/ci/aiGovernanceCodexSkillReferenceRules.mjs', 25, 'AI 治理 Codex skill 引用规则应独立维护 lint、构建、部署和子 Agent 关键字'),
 ];

@@ -1,0 +1,46 @@
+name: AI Governance
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ai-governance:
+    name: AI Governance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Version consistency
+        run: node scripts/ci/check-version-consistency.mjs
+
+      - name: Node script unit tests
+        run: node --test scripts/ci/*.test.mjs
+
+      - name: MCP server unit tests
+        run: node --test scripts/mcp/*.test.mjs
+
+      - name: AI governance artifacts
+        run: node scripts/ci/write-ai-governance-artifacts.mjs
+
+      - name: Upload AI governance artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ai-governance-reports
+          path: artifacts/ai-governance
+          if-no-files-found: warn
+          retention-days: 14

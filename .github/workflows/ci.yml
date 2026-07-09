@@ -67,6 +67,19 @@ jobs:
         working-directory: .
         run: node --test scripts/mcp/*.test.mjs
 
+      - name: AI governance artifacts
+        working-directory: .
+        run: node scripts/ci/write-ai-governance-artifacts.mjs
+
+      - name: Upload AI governance artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ai-governance-reports
+          path: artifacts/ai-governance
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Chunk load recovery catch audit
         working-directory: .
         run: node scripts/ci/check-chunk-load-recovery-catches.mjs

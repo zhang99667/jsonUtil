@@ -6,6 +6,7 @@ import { collectAiGovernanceExemptAssetContractFailures } from './aiGovernanceEx
 import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
 import { collectMcpConfigContractFailures } from './aiGovernanceMcpConfigContract.mjs';
 import { collectAiGovernanceProjectFactFailures } from './aiGovernanceProjectFactsContract.mjs';
+import { collectAiGovernanceScheduledWorkflowFailures } from './aiGovernanceScheduledWorkflowContract.mjs';
 import { collectAiGovernanceScriptReachabilityFailures } from './aiGovernanceScriptReachability.mjs';
 import { collectFrontendLintScriptFailures } from './aiGovernanceChecks.mjs';
 
@@ -20,6 +21,7 @@ const CONTRACT_FAILURE_COLLECTORS = [
   collectAiGovernanceExemptAssetContractFailures,
   collectAiGovernanceAiSafetyEvidenceFailures,
   collectAiGovernanceProjectFactFailures,
+  collectAiGovernanceScheduledWorkflowFailures,
   collectAiGovernanceScriptReachabilityFailures,
   collectMcpConfigContractFailures,
   collectMirroredEntryContractFailures,

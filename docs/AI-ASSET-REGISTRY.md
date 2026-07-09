@@ -38,6 +38,7 @@
 | `docs/AI-TOOLS-SETUP.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 工具索引 | 说明各 AI 工具入口、同步边界和必跑检查 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
 | `.github/PULL_REQUEST_TEMPLATE.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Copilot 根入口、Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
+| `.github/workflows/ai-governance.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-10 | 定时治理 | 每周运行 AI 治理脚本单测、MCP 测试和治理 artifact 产出，保留手动触发入口，防止 AI 资产长期不改时静默漂移 | 必需文件、资产注册表结构化校验 |
 
 ## 工具入口与可迁移技能
 
@@ -48,7 +49,8 @@
 | `.codex/README.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 目录索引 | 说明 Codex 项目资产边界和旧 chunk / 部署验证入口，并保持共享核心规则片段同源且可反查权威来源 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 项目维护者 | 变更时复核 | 2026-07-10 | 可迁移技能 | 保留与目录一致的 frontmatter name、可追踪 version、可检索 tags、必读文件、工作流、常用验证命令和重点边界，当前 name/version 必须可从 CHANGELOG 同行追溯，并确保命令块里的工作目录与脚本可达 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
 | `.mcp.json` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 项目级 MCP 配置 | 暴露 `jsonutils-governance` 本地 MCP server，配置只使用 `node` 直连仓库内脚本，不携带明文凭据或 shell 包装命令 | 必需文件、自动发现规则、资产注册表结构化校验 |
-| `scripts/mcp/jsonutils-governance-server.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 服务 | 只读暴露 AI Playbook、资产注册表、决策账本和 maintainer skill，并只提供固定治理报告工具，不开放任意 shell | 必需文件、自动发现规则、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-server.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 服务 | 只读暴露 AI Playbook、资产注册表、决策账本和 maintainer skill，并只提供固定治理报告/上下文工具，不开放任意 shell | 必需文件、自动发现规则、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-context.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 组合固定治理/预算 JSON 报告、版本、最新决策和下一步命令，产出给 AI 助手消费的紧凑上下文快照 | 必需文件、自动发现规则、资产注册表结构化校验、可维护性预算 |
 | `.github/copilot-instructions.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | GitHub Copilot 仓库级 instructions，转发到主规范、Playbook 和 skill，并保持共享核心规则片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.cursorrules` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | Cursor 入口，与 `.comate/rules/code-style.md` 保持共享核心片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查 |
 | `.comate/rules/code-style.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | Comate 入口，与 `.cursorrules` 保持共享核心片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查 |
@@ -65,6 +67,7 @@
 | 资产 | 状态 | 责任人 | 复核节奏 | 最近复核 | 类型 | 维护契约 | 治理证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `scripts/ci/check-ai-governance.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-09 | AI 治理入口 | 聚合文件存在、引用规则、同源入口与薄入口权威源、MCP 配置契约、AI 修复安全证据与跳过检测、项目事实与版本事实、skill 契约、skill 引用契约、CI 契约和资产注册表检查，并支持人读与 JSON 摘要失败分组 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/write-ai-governance-artifacts.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-10 | CI 产物 | 在 CI 和 local-ci 中固定写出 AI 治理 JSON、可维护性预算 JSON、治理 context 快照和 Markdown summary，供 artifact、Step Summary 和子 Agent 复用 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/check-version-consistency.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-09 | 发布门禁 | 校验前端版本、锁文件、CHANGELOG 顶部版本区块、条目数量和发布说明结构 | 必需文件、运行时引用规则、可维护性预算 |
 | `scripts/ci/check-maintainability-budgets.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-09 | 可维护性门禁 | 校验模块行数预算，防止治理脚本继续堆成大文件 | 必需文件、运行时引用规则、可维护性预算 |
 | `scripts/ci/check-deploy-shell-syntax.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-09 | 部署门禁 | 校验部署 shell、workflow run 和 REMOTE_SCRIPT heredoc 语法 | 必需文件、发布引用规则、可维护性预算 |
