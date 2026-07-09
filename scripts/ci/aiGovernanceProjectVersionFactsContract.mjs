@@ -24,13 +24,10 @@ const npmMajor = (content, packageName) => {
 
 const packageLockMajor = (rootDir, packageName) => {
   const content = readExistingFile(rootDir, 'frontend/package-lock.json');
-  return content === null
-    ? null
-    : majorFromVersion(JSON.parse(content).packages?.[`node_modules/${packageName}`]?.version);
+  return content && majorFromVersion(JSON.parse(content).packages?.[`node_modules/${packageName}`]?.version);
 };
 
 const springBootMajor = content => majorFromVersion(content.match(/<artifactId>spring-boot-starter-parent<\/artifactId>[\s\S]*?<version>([^<]+)<\/version>/)?.[1]);
-
 const javaMajor = content => majorFromVersion(content.match(/<java\.version>([^<]+)<\/java\.version>/)?.[1]);
 
 const findVersionMentions = (content, prefix) => {
@@ -50,16 +47,12 @@ const collectTargetFailures = (rootDir, fact, major) => fact.targets.flatMap(([f
   return [...missing, ...stale];
 });
 
-const collectLockFailures = (rootDir, fact, major) => {
-  if (!fact.packageName) return [];
-  const lockMajor = packageLockMajor(rootDir, fact.packageName);
-  if (lockMajor === major) return [];
-  return [`frontend/package-lock.json: ${fact.name} 版本事实与 frontend/package.json 不一致，期望主版本 ${major}，实际 ${lockMajor ?? 'missing'}`];
-};
 export const collectAiGovernanceProjectVersionFactFailures = (rootDir) => VERSION_FACTS.flatMap((fact) => {
   const content = readExistingFile(rootDir, fact.sourceFile);
   if (content === null) return [];
   const major = fact.source(content);
   if (major === null) return [];
-  return [...collectLockFailures(rootDir, fact, major), ...collectTargetFailures(rootDir, fact, major)];
+  const lockMajor = fact.packageName ? packageLockMajor(rootDir, fact.packageName) : major;
+  const lockFailures = lockMajor === major ? [] : [`frontend/package-lock.json: ${fact.name} 版本事实与 frontend/package.json 不一致，期望主版本 ${major}，实际 ${lockMajor ?? 'missing'}`];
+  return [...lockFailures, ...collectTargetFailures(rootDir, fact, major)];
 });
