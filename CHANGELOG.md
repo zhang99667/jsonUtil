@@ -1,4 +1,11 @@
 # 更新日志 (Changelog)
+## v1.8.730 (2026-07-09) - AI 治理日期边界
+### 🏗️ 架构与基础设施
+- **治理日期未来值门禁**: `check-ai-governance` 拦截 AI 资产注册表最近复核日期和 AI 治理决策账本日期写入未来值，避免审计证据用未来时间冒充已复核或已决策
+- **治理 JSON Schema 契约**: `check-ai-governance --json` 与 `check-maintainability-budgets --json` 输出 `schemaVersion` 和 `reportType`，方便 CI artifact、子 Agent 和审计脚本稳定识别报告格式
+- **MCP 明文凭据字符串门禁**: `check-ai-governance` 拦截项目级 MCP 配置里藏在 URL query、CLI args 或 header 字符串中的 token、api key 和 authorization 明文，要求统一使用环境变量引用
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随治理日期未来值和 MCP 敏感字符串契约升级到 `0.1.10`，让后续 agent 在复核 AI 资产时保留日期与凭据边界
+
 ## v1.8.729 (2026-07-09) - 可维护性预算可消费化
 ### 🏗️ 架构与基础设施
 - **预算门禁 JSON 输出**: `check-maintainability-budgets --json` 输出机器可消费的通过状态、失败计数、near/high usage 分组和结构化预算明细，方便 CI artifact、子 Agent 和审计脚本稳定复用预算证据

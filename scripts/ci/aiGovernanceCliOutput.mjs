@@ -5,9 +5,13 @@ const FAILURE_GROUPS = [
   ['missingReferences', 'AI 协作资产缺少以下关键引用:'],
 ];
 
+const JSON_REPORT_SCHEMA_VERSION = 1;
+
 export const hasAiGovernanceFailures = report => FAILURE_GROUPS.some(([key]) => report[key].length > 0);
 
 export const toAiGovernanceJsonReport = report => ({
+  schemaVersion: JSON_REPORT_SCHEMA_VERSION,
+  reportType: 'ai-governance',
   ok: !hasAiGovernanceFailures(report),
   counts: {
     requiredFiles: report.requiredFiles.length,

@@ -12,6 +12,8 @@ test('AI 治理 CLI 支持 JSON 摘要输出', () => {
   const report = JSON.parse(output);
 
   assert.equal(report.ok, true);
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.reportType, 'ai-governance');
   assert.equal(report.counts.missingFiles, 0);
   assert.equal(report.counts.skillContractFailures, 0);
   assert.equal(report.counts.contractFailures, 0);
@@ -33,6 +35,8 @@ test('AI 治理 CLI JSON 会单独输出契约失败分组', () => {
   });
 
   assert.equal(report.ok, false);
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.reportType, 'ai-governance');
   assert.equal(report.counts.contractFailures, 1);
   assert.equal(report.counts.missingReferences, 0);
   assert.deepEqual(report.failures.contractFailures, ['scripts/ci/example.mjs: 治理契约失败']);

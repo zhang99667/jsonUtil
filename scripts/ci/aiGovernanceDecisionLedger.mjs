@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { collectDecisionLedgerBackfillFailures } from './aiGovernanceDecisionLedgerBackfillContract.mjs';
+import { collectFutureIsoDateFailures } from './aiGovernanceDateBounds.mjs';
 import { DECISION_LEDGER_HEADER_CELLS, parseDecisionRows } from './aiGovernanceDecisionLedgerTable.mjs';
 import * as decisionLedgerReferences from './aiGovernanceDecisionLedgerReferences.mjs';
 import { isIsoCalendarDate } from './aiGovernanceIsoDate.mjs';
@@ -24,6 +25,7 @@ const collectRowFailures = (rootDir, row, index) => {
 
   return [
     ...(!isIsoCalendarDate(row['日期']) ? [`${label} 日期必须使用有效 YYYY-MM-DD`] : []),
+    ...collectFutureIsoDateFailures(label, '日期', row['日期']),
     ...collectWeakNarrativeFailures(row, label),
     ...collectDecisionLedgerBackfillFailures(rootDir, row, label, AI_GOVERNANCE_DECISION_LEDGER_FILE),
     ...(executableCommands.length === 0 ? [`${label} 锁定测试必须包含可执行命令`] : []),
