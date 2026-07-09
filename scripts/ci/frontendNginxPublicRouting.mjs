@@ -3,6 +3,7 @@ import path from 'node:path';
 
 export const nginxRoutingConfigFile = 'frontend/nginx.conf';
 export const publicFrontendHosts = ['jsonutils.markz.fun', 'markz.fun', 'www.markz.fun'];
+export const localHealthHosts = ['localhost', '127.0.0.1'];
 export const externalFrontendRoutes = [
   { host: 'zhangjihao.markz.fun', root: '/usr/share/nginx/zhangjihao' },
 ];
@@ -61,6 +62,9 @@ export const collectNginxPublicRoutingFailures = (
   const adminHostFailures = hosts
     .filter(host => adminNames.has(host))
     .map(host => `${file}: 公开域名 ${host} 不能绑定到后台 server_name`);
+  const localHealthFailures = localHealthHosts
+    .filter(host => !publicHttpsNames.has(host))
+    .map(host => `${file}: 本机健康检查域名 ${host} 未绑定到主站 HTTPS server_name`);
   const externalHostFailures = externalFrontendRoutes.flatMap(({ host, root }) => [
     ...(!publicHttpNames.has(host) ? [`${file}: 外部域名 ${host} 未绑定到 HTTPS 跳转 server_name`] : []),
     ...(!externalHttpsNames.has(host) ? [`${file}: 外部域名 ${host} 未绑定到独立静态目录 ${root}`] : []),
@@ -71,6 +75,7 @@ export const collectNginxPublicRoutingFailures = (
     ...collectMissingHostFailures(file, hosts, publicHttpNames, '主站 HTTP 跳转 server_name'),
     ...collectMissingHostFailures(file, hosts, publicHttpsNames, '主站 HTTPS server_name'),
     ...adminHostFailures,
+    ...localHealthFailures,
     ...externalHostFailures,
   ];
 };
