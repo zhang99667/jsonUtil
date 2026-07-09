@@ -60,7 +60,7 @@
 
 | 资产 | 状态 | 责任人 | 复核节奏 | 类型 | 维护契约 | 治理证据 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `scripts/ci/check-ai-governance.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | AI 治理入口 | 聚合文件存在、引用规则、同源入口、skill 契约、skill 引用契约、CI 契约和资产注册表检查 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/check-ai-governance.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | AI 治理入口 | 聚合文件存在、引用规则、同源入口、项目事实与版本事实、skill 契约、skill 引用契约、CI 契约和资产注册表检查 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/check-version-consistency.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 发布门禁 | 校验前端版本、锁文件和 CHANGELOG 顶部版本区块 | 必需文件、运行时引用规则、可维护性预算 |
 | `scripts/ci/check-maintainability-budgets.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 可维护性门禁 | 校验模块行数预算，防止治理脚本继续堆成大文件 | 必需文件、运行时引用规则、可维护性预算 |
 | `scripts/ci/check-deploy-shell-syntax.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 部署门禁 | 校验部署 shell、workflow run 和 REMOTE_SCRIPT heredoc 语法 | 必需文件、发布引用规则、可维护性预算 |

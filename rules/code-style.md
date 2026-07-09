@@ -263,6 +263,7 @@ git commit -m "[Feature]优化专项-UI UE"
 - `.codex/skills/*/SKILL.md` 中反引号包裹的具体项目路径、fenced code block 里的 `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须真实存在，由 `node scripts/ci/check-ai-governance.mjs` 反查，避免 skill 迁移后留下不可执行引用。
 - AI 治理、版本一致性、脚本单测和可维护性预算命令必须保留在 GitHub Actions `run:` 与 `scripts/ci/local-ci.sh` 的 `run_in_root` 可执行入口，并由 `node scripts/ci/check-ai-governance.mjs` 反查。
 - `scripts/ci/aiGovernance*.mjs` 与 `scripts/ci/aiGovernance*.test.mjs` 都必须纳入可维护性预算，新增治理 helper 或测试时同步登记预算子表。
+- AGENTS、CLAUDE 和 `rules/code-style.md` 的技术栈事实必须与真实配置一致；数据库和关键主版本事实由 `node scripts/ci/check-ai-governance.mjs` 从后端配置、前后端依赖、前端 lock 和 Compose 文件反查，避免入口文档继续传播旧事实。
 - 影响 AI 协作资产的改动必须运行 `node scripts/ci/check-ai-governance.mjs` 做治理校验；新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 协作资产时，需要同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免。
 
 ### 更新格式

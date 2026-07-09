@@ -43,9 +43,9 @@ AI Playbook 包含：
 ### 技术栈
 
 **前端**:
-- React 19 + TypeScript
+- React 19 + TypeScript 5
 - Vite 6 (构建工具)
-- Tailwind CSS (主应用样式)
+- Tailwind CSS 3 (主应用样式)
 - Ant Design (管理后台 UI)
 - Monaco Editor (代码编辑器)
 - Electron (桌面应用封装)
