@@ -1,15 +1,7 @@
-import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
-import { collectAiGovernanceCiContractFailures } from './aiGovernanceCiContract.mjs';
 import { collectCodexSkillContractFailures } from './aiGovernanceCodexSkillContract.mjs';
-import { collectAiGovernanceDecisionLedgerFailures } from './aiGovernanceDecisionLedger.mjs';
+import { collectAiGovernanceContractFailures } from './aiGovernanceContractFailures.mjs';
 import { collectUngovernedAiGovernanceAssets } from './aiGovernanceDiscoveredAssets.mjs';
-import { collectAiGovernanceExemptAssetContractFailures } from './aiGovernanceExemptAssetContract.mjs';
-import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
-import { collectMcpConfigContractFailures } from './aiGovernanceMcpConfigContract.mjs';
-import { collectAiGovernanceProjectFactFailures } from './aiGovernanceProjectFactsContract.mjs';
-import { collectAiGovernanceScriptReachabilityFailures } from './aiGovernanceScriptReachability.mjs';
 import {
-  collectFrontendLintScriptFailures,
   collectMissingAiGovernanceFiles,
   collectMissingAiGovernanceReferences,
 } from './aiGovernanceChecks.mjs';
@@ -23,19 +15,8 @@ export const collectAiGovernanceSkillContractFailures = (rootDir, context) => (
   collectCodexSkillContractFailures(rootDir, context.codexSkillFiles)
 );
 
-export const collectAiGovernanceReferenceFailures = (rootDir, context) => [
-  ...collectAiGovernanceAssetRegistryFailures(
-    rootDir,
-    context.requiredFiles,
-    context.referenceRules,
-  ),
-  ...collectAiGovernanceCiContractFailures(rootDir),
-  ...collectAiGovernanceDecisionLedgerFailures(rootDir),
-  ...collectAiGovernanceExemptAssetContractFailures(rootDir),
-  ...collectAiGovernanceProjectFactFailures(rootDir),
-  ...collectAiGovernanceScriptReachabilityFailures(rootDir),
-  ...collectMcpConfigContractFailures(rootDir),
-  ...collectMissingAiGovernanceReferences(rootDir, context.referenceRules, context.codexSkillFiles),
-  ...collectMirroredEntryContractFailures(rootDir),
-  ...collectFrontendLintScriptFailures(rootDir),
-];
+export { collectAiGovernanceContractFailures };
+
+export const collectAiGovernanceReferenceFailures = (rootDir, context) => (
+  collectMissingAiGovernanceReferences(rootDir, context.referenceRules, context.codexSkillFiles)
+);

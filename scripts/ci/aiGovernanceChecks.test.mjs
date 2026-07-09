@@ -7,6 +7,7 @@ import {
   collectMissingAiGovernanceReferences,
 } from './aiGovernanceChecks.mjs';
 import { buildGovernedAiGovernanceAssetFiles } from './aiGovernanceDiscoveredAssets.mjs';
+import { AI_SAFETY_EVIDENCE_FILES } from './aiGovernanceAiSafetyEvidence.mjs';
 import { buildAiGovernanceReport } from './aiGovernanceReport.mjs';
 import {
   buildAiGovernanceReferenceRules,
@@ -182,6 +183,9 @@ const writeMinimalGovernanceFixture = (rootDir) => {
   writeFixtureFile(rootDir, 'CLAUDE.md', [sharedReferences, mirroredAgentSection].join('\n'));
   AI_ENTRY_SHARED_SNIPPET_FILES.forEach((file) => {
     writeFixtureFile(rootDir, file, [sharedReferences, ...AI_ENTRY_SHARED_SNIPPETS].join('\n'));
+  });
+  AI_SAFETY_EVIDENCE_FILES.forEach(({ file, snippets }) => {
+    writeFixtureFile(rootDir, file, snippets.join('\n'));
   });
   writeFixtureFile(rootDir, 'docs/AI-ENGINEERING-PLAYBOOK.md', [
     '## 必读顺序',
@@ -461,6 +465,7 @@ test('AI 治理完整报告在最小合格仓库中通过', () => {
 
     assert.deepEqual(report.missingFiles, []);
     assert.deepEqual(report.skillContractFailures, []);
+    assert.deepEqual(report.contractFailures, []);
     assert.deepEqual(report.missingReferences, []);
   });
 });
