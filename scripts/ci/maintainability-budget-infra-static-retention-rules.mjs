@@ -3,6 +3,7 @@ const staticRetentionBudget = (file, maxLines, reason) => ({ file, maxLines, rea
 export const infraStaticRetentionMaintainabilityBudgets = [
   staticRetentionBudget('scripts/ci/check-frontend-static-retention.mjs', 45, '前端静态资源保留校验 CLI 应只组合配置检查、发布场景和输出'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionConfig.mjs', 35, '静态资源保留配置检查应只负责加载规则并收集缺失项'),
+  staticRetentionBudget('scripts/ci/frontendNginxPublicRouting.mjs', 65, 'Nginx 公开域名路由契约应只维护 server_name 解析和主站/后台归属检查'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionRules.mjs', 25, '静态资源保留规则入口应只聚合 Docker、Compose、部署和 workflow 子规则表'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionDockerRules.mjs', 25, '静态资源保留 Docker 规则表应只维护镜像入口片段'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionComposeRules.mjs', 25, '静态资源保留 Compose 规则表应只维护环境变量和 volume 片段'),

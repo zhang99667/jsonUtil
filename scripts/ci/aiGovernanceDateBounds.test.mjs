@@ -33,7 +33,7 @@ test('AI 治理决策账本会报告未来决策日期', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-ASSET-REGISTRY.md', 'registry');
     writeFixtureFile(rootDir, 'CHANGELOG.md', 'log');
-    writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
+    writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', "test('fixture', () => {});");
     writeFixtureFile(rootDir, 'scripts/ci/check-ai-governance.mjs', 'check');
     writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', [
       '| 日期 | 决策 | 触发条件 | 反例 | 适用边界 | 回写追踪 | 锁定测试 |',

@@ -23,6 +23,7 @@ const collectKnownFieldFailures = (file, mapKey, serverName, server) => {
 const collectServerMapFailures = (file, config) => {
   const presentKeys = SERVER_MAP_KEYS.filter(key => key in config);
   if (presentKeys.length === 0) return [`${file}: MCP 配置必须包含 mcpServers 或 servers 对象`];
+  if (presentKeys.length > 1) return [`${file}: MCP 配置只能包含 mcpServers 或 servers 其中一个 server map，避免工具读取边界歧义`];
 
   return presentKeys.flatMap((mapKey) => {
     const servers = config[mapKey];

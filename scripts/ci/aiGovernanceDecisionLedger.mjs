@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { collectDecisionLedgerBackfillFailures } from './aiGovernanceDecisionLedgerBackfillContract.mjs';
+import { collectDecisionLedgerActiveTestFailures } from './aiGovernanceDecisionLedgerTestEvidence.mjs';
 import { collectFutureIsoDateFailures } from './aiGovernanceDateBounds.mjs';
 import { DECISION_LEDGER_HEADER_CELLS, parseDecisionRows } from './aiGovernanceDecisionLedgerTable.mjs';
 import * as decisionLedgerReferences from './aiGovernanceDecisionLedgerReferences.mjs';
@@ -22,6 +23,7 @@ const collectRowFailures = (rootDir, row, index) => {
 
   const executableCommands = decisionLedgerReferences.extractExecutableCommands(row['锁定测试']);
   const regressionTestCommands = decisionLedgerReferences.extractNodeRegressionTestCommandPaths(row['锁定测试']);
+  const ciCoveredRegressionTestCommands = regressionTestCommands.filter(decisionLedgerReferences.isCiCoveredNodeRegressionTestPath);
 
   return [
     ...(!isIsoCalendarDate(row['日期']) ? [`${label} 日期必须使用有效 YYYY-MM-DD`] : []),
@@ -38,6 +40,7 @@ const collectRowFailures = (rootDir, row, index) => {
       .map(file => `${label} 锁定测试命令路径不存在 \`${file}\``),
     ...regressionTestCommands.filter(file => !decisionLedgerReferences.isCiCoveredNodeRegressionTestPath(file))
       .map(file => `${label} 锁定测试命令未纳入 CI 脚本单测集合 \`${file}\``),
+    ...collectDecisionLedgerActiveTestFailures(rootDir, label, ciCoveredRegressionTestCommands),
   ];
 };
 

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import { collectStaticRetentionConfigFailures } from './frontendStaticRetentionConfig.mjs';
+import { collectNginxPublicRoutingFailures } from './frontendNginxPublicRouting.mjs';
 
 const withTempRoot = (run) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-static-config-'));
@@ -178,6 +179,62 @@ test('静态资源保留配置检查会保护 GitHub workflow 发布复查链路
       '.github/workflows/deploy.yml: 缺少 "legacy_capture_status=$?"',
       '.github/workflows/deploy.yml: 缺少 "Failed to capture legacy frontend assets and no asset paths were produced."',
       '.github/workflows/deploy.yml: 缺少 "FRONTEND_ASSET_VERIFY_EXTRA_PATHS: ${{ env.LEGACY_FRONTEND_ASSETS }}"',
+    ]);
+  });
+});
+
+const nginxConfig = (publicHttpHosts, publicHttpsHosts, adminHosts = 'admin.markz.fun') => `
+server {
+    listen 80;
+    server_name ${publicHttpHosts};
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${adminHosts};
+    location = / { return 301 /admin.html; }
+    location / { try_files $uri $uri/ /admin.html; }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${publicHttpsHosts};
+    location / { try_files $uri $uri/ /index.html; }
+}
+`;
+
+test('Nginx 公开域名路由检查会保护 zhangjihao 主站别名', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(
+      rootDir,
+      'frontend/nginx.conf',
+      nginxConfig(
+        'jsonutils.markz.fun markz.fun www.markz.fun zhangjihao.markz.fun',
+        'jsonutils.markz.fun markz.fun www.markz.fun zhangjihao.markz.fun'
+      )
+    );
+
+    assert.deepEqual(collectNginxPublicRoutingFailures(rootDir), []);
+  });
+});
+
+test('Nginx 公开域名路由检查会拦截公开域名落入后台', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(
+      rootDir,
+      'frontend/nginx.conf',
+      nginxConfig(
+        'jsonutils.markz.fun markz.fun www.markz.fun',
+        'jsonutils.markz.fun markz.fun www.markz.fun',
+        'admin.markz.fun zhangjihao.markz.fun'
+      )
+    );
+
+    assert.deepEqual(collectNginxPublicRoutingFailures(rootDir), [
+      'frontend/nginx.conf: 公开域名 zhangjihao.markz.fun 未绑定到主站 HTTP 跳转 server_name',
+      'frontend/nginx.conf: 公开域名 zhangjihao.markz.fun 未绑定到主站 HTTPS server_name',
+      'frontend/nginx.conf: 公开域名 zhangjihao.markz.fun 不能绑定到后台 server_name',
     ]);
   });
 });

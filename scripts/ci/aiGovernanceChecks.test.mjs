@@ -205,7 +205,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'docs/AI-GOVERNANCE-DECISIONS.md',
     sharedReferences,
   ].join('\n'));
-  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', "test('fixture', () => {});");
   writeFixtureFile(rootDir, 'CHANGELOG.md', sharedReferences);
   writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', [
     '# AI 治理决策记录',

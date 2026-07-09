@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { collectNginxPublicRoutingFailures } from './frontendNginxPublicRouting.mjs';
 import {
   requiredStaticRetentionSnippets,
   staticRetentionEntrypointFile,
@@ -7,7 +8,11 @@ import {
 
 export { staticRetentionEntrypointFile };
 
-export const collectStaticRetentionConfigFailures = (rootDir, rules = requiredStaticRetentionSnippets) => {
+export const collectStaticRetentionConfigFailures = (
+  rootDir,
+  rules = requiredStaticRetentionSnippets,
+  options = { includeNginxRouting: rules === requiredStaticRetentionSnippets }
+) => {
   const failures = [];
   for (const rule of rules) {
     const filePath = path.join(rootDir, rule.file);
@@ -23,5 +28,6 @@ export const collectStaticRetentionConfigFailures = (rootDir, rules = requiredSt
       }
     });
   }
+  if (options.includeNginxRouting) failures.push(...collectNginxPublicRoutingFailures(rootDir));
   return failures;
 };
