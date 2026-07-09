@@ -26,7 +26,7 @@ AI 协作资产按职责分层维护：
 
 `docs/AI-ASSET-REGISTRY.md` 是 AI 协作资产账本。新增入口、rules、skills、治理门禁或显式豁免文件时，先在注册表登记职责和维护契约，再补自动发现、必需文件或引用规则。
 
-`docs/AI-GOVERNANCE-DECISIONS.md` 是 AI rules、skills 和治理门禁的决策账本。规则沉淀、skill 契约或治理脚本变化时，需要写清触发条件、反例、回写追踪和锁定测试，并同步 `CHANGELOG.md`。
+`docs/AI-GOVERNANCE-DECISIONS.md` 是 AI rules、skills 和治理门禁的决策账本。规则沉淀、skill 契约或治理脚本变化时，需要写清触发条件、反例、回写追踪和锁定测试；回写追踪必须同时包含决策账本自身和 `CHANGELOG.md`。
 
 `.claude/ai-tools-guide.md` 是跨工具说明。它面向 Claude Code、Ducc、Codex、GitHub Copilot、Cursor、Comate 等工具说明如何进入同一套规范。
 

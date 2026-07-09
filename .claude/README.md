@@ -36,6 +36,7 @@ AI 工具使用指南，包含:
 - `/CLAUDE.md` - Claude Code/Ducc 的主要项目指引文件
 - `rules/code-style.md` - 编码风格、提交格式和 CHANGELOG 要求
 - `docs/AI-ENGINEERING-PLAYBOOK.md` - AI 工程闭环、规则/skill 回写和治理校验流程
+- `docs/AI-ASSET-REGISTRY.md` - AI 协作资产、治理证据和显式豁免账本
 - `.claude/ai-tools-guide.md` - Claude/Ducc 等工具适配说明
 - `/.cursorrules`、`/.cursor/rules/**/*.mdc` - Cursor AI 的薄入口和项目规则文件
 - `/.mcp.json`、`/.cursor/mcp.json`、`/.vscode/mcp.json` - 项目级 MCP 配置，按精确文件纳入治理

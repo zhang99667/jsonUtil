@@ -1,4 +1,12 @@
 # 更新日志 (Changelog)
+## v1.8.725 (2026-07-09) - 决策账本自追踪契约
+### 🏗️ 架构与基础设施
+- **决策账本自追踪门禁**: `check-ai-governance` 要求每条 AI 治理决策的回写追踪同时包含 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，避免规则沉淀缺少账本自证
+- **核心入口资产账本直链**: `AGENTS.md`、`CLAUDE.md` 和 Claude 目录索引直接指向 `docs/AI-ASSET-REGISTRY.md`，并由入口引用规则锁定，避免首读入口只靠 Playbook 间接跳转
+- **历史决策追踪补齐**: 补齐少数早期治理记录的决策账本回写路径，让旧记录也满足新的自追踪契约
+- **决策账本预算解压**: 将回写追踪校验拆入独立 helper，让决策账本主检查器从贴线状态回到可继续演进的维护空间
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随决策账本自追踪与核心入口资产账本直链契约升级到 `0.1.8`，让后续本机迁移或复核能识别账本回写边界
+
 ## v1.8.724 (2026-07-09) - MCP 配置治理契约
 ### 🏗️ 架构与基础设施
 - **MCP 配置契约门禁**: `check-ai-governance` 会校验项目级 MCP 配置为合法 JSON，包含 `mcpServers` 或 `servers`，阻止敏感字段明文，并拦截 shell 包装命令、绝对路径、上跳路径和缺失本地脚本

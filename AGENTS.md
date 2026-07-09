@@ -6,6 +6,7 @@
 
 **项目的详细编码规范请参考**: `rules/code-style.md` ⭐
 **AI 工程闭环请参考**: `docs/AI-ENGINEERING-PLAYBOOK.md`
+**AI 协作资产账本请参考**: `docs/AI-ASSET-REGISTRY.md`
 
 该文件包含：
 - 详细的代码风格规范

@@ -11,6 +11,7 @@ import {
 export const CORE_ENTRY_REFERENCES = [
   'rules/code-style.md',
   'docs/AI-ENGINEERING-PLAYBOOK.md',
+  'docs/AI-ASSET-REGISTRY.md',
   'node scripts/ci/check-ai-governance.mjs',
 ];
 
