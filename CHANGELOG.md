@@ -1,4 +1,9 @@
 # 更新日志 (Changelog)
+## v1.8.726 (2026-07-09) - AI 治理报告可消费化
+### 🏗️ 架构与基础设施
+- **工具索引必读顺序门禁**: `check-ai-governance` 对 `docs/AI-TOOLS-SETUP.md` 的 `## 必读顺序` 增加章节级检查，确保资产注册表和决策账本不会只停留在章节外引用
+- **治理报告 JSON 输出**: `check-ai-governance --json` 输出机器可消费的摘要和失败分组，方便 CI artifact、子 Agent 和审计脚本复用同一份治理证据
+
 ## v1.8.725 (2026-07-09) - 决策账本自追踪契约
 ### 🏗️ 架构与基础设施
 - **决策账本自追踪门禁**: `check-ai-governance` 要求每条 AI 治理决策的回写追踪同时包含 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，避免规则沉淀缺少账本自证

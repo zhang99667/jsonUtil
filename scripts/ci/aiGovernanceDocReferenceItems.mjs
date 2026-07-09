@@ -32,4 +32,5 @@ export const AI_TOOLS_SETUP_REFERENCES = [
   'docs/AI-CONFIG-INTEGRATION.md',
   'docs/AI-ENGINEERING-PLAYBOOK.md',
   'node scripts/ci/check-ai-governance.mjs',
+  '--json',
 ];

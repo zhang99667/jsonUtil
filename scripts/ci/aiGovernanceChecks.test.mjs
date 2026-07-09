@@ -112,6 +112,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     'node scripts/ci/check-production-frontend-assets.mjs',
     'node scripts/ci/check-maintainability-budgets.mjs',
     'node scripts/ci/check-ai-governance.mjs',
+    '--json',
     'scripts/ci/aiGovernanceAssetRegistryEvidence.mjs',
     'referenceRules.file',
     'node scripts/ci/check-version-consistency.mjs',
@@ -192,6 +193,12 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '### 3. 编码约束',
     sharedReferences,
     '### 5. 规则进化闭环',
+    sharedReferences,
+  ].join('\n'));
+  writeFixtureFile(rootDir, 'docs/AI-TOOLS-SETUP.md', [
+    '## 必读顺序',
+    'docs/AI-ASSET-REGISTRY.md',
+    'docs/AI-GOVERNANCE-DECISIONS.md',
     sharedReferences,
   ].join('\n'));
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceChecks.test.mjs', 'test');

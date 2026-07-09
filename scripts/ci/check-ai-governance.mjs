@@ -3,35 +3,22 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  formatAiGovernanceJsonReport,
+  hasAiGovernanceFailures,
+  printAiGovernanceHumanReport,
+} from './aiGovernanceCliOutput.mjs';
 import { buildAiGovernanceReport } from './aiGovernanceReport.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const report = buildAiGovernanceReport(rootDir);
+const outputJson = process.argv.includes('--json');
 
-if (
-  report.missingFiles.length > 0 ||
-  report.skillContractFailures.length > 0 ||
-  report.missingReferences.length > 0
-) {
-  if (report.missingFiles.length > 0) {
-    console.error('AI 协作资产缺少以下文件:');
-    report.missingFiles.forEach(file => console.error(`- ${file}`));
-  }
+if (outputJson) process.stdout.write(formatAiGovernanceJsonReport(report));
 
-  if (report.skillContractFailures.length > 0) {
-    console.error('AI 协作 skill 契约缺少以下内容:');
-    report.skillContractFailures.forEach(message => console.error(`- ${message}`));
-  }
-
-  if (report.missingReferences.length > 0) {
-    console.error('AI 协作资产缺少以下关键引用:');
-    report.missingReferences.forEach(message => console.error(`- ${message}`));
-  }
-
+if (hasAiGovernanceFailures(report)) {
+  if (!outputJson) printAiGovernanceHumanReport(report);
   process.exit(1);
 }
 
-console.log(
-  `AI 协作治理校验通过，共 ${report.requiredFiles.length} 个关键文件、` +
-  `${report.referenceRules.length} 组引用规则。`
-);
+if (!outputJson) printAiGovernanceHumanReport(report);
