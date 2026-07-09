@@ -186,7 +186,7 @@ test('静态资源保留配置检查会保护 GitHub workflow 发布复查链路
 const nginxConfig = (publicHttpHosts, publicHttpsHosts, adminHosts = 'admin.markz.fun') => `
 server {
     listen 80;
-    server_name ${publicHttpHosts};
+    server_name ${publicHttpHosts} localhost 127.0.0.1;
     return 301 https://$host$request_uri;
 }
 
@@ -212,7 +212,7 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name ${publicHttpsHosts};
+    server_name ${publicHttpsHosts} localhost 127.0.0.1;
     location / { try_files $uri $uri/ /index.html; }
 }
 `;
