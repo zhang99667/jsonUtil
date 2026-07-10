@@ -1,31 +1,17 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { test } from 'node:test';
 
+import {
+  withJsonutilsGovernanceMcpTempRoot,
+  writeJsonutilsGovernanceMcpFixtureFile,
+} from '../ci/jsonutilsGovernanceMcpTestFixtures.mjs';
 import { buildJsonutilsGovernanceContext } from './jsonutils-governance-context.mjs';
 
-const withTempRoot = async (run) => {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-context-'));
-  try {
-    return await run(rootDir);
-  } finally {
-    fs.rmSync(rootDir, { recursive: true, force: true });
-  }
-};
-
-const writeFile = (rootDir, file, content) => {
-  const filePath = path.join(rootDir, file);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, content);
-};
-
 test('governance context combines reports, project version and latest decision', async () => {
-  await withTempRoot(async (rootDir) => {
-    writeFile(rootDir, 'frontend/package.json', JSON.stringify({ name: 'json-helper-ai-fix', version: '1.2.3' }));
-    writeFile(rootDir, 'CHANGELOG.md', '# 更新日志\n## v1.2.3 (2026-07-10) - Context\n');
-    writeFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', [
+  await withJsonutilsGovernanceMcpTempRoot(async (rootDir) => {
+    writeJsonutilsGovernanceMcpFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({ name: 'json-helper-ai-fix', version: '1.2.3' }));
+    writeJsonutilsGovernanceMcpFixtureFile(rootDir, 'CHANGELOG.md', '# 更新日志\n## v1.2.3 (2026-07-10) - Context\n');
+    writeJsonutilsGovernanceMcpFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', [
       '# AI 治理决策记录',
       '| 日期 | 决策 | 触发条件 | 反例 | 适用边界 | 回写追踪 | 锁定测试 |',
       '| --- | --- | --- | --- | --- | --- | --- |',
@@ -36,7 +22,11 @@ test('governance context combines reports, project version and latest decision',
     const runScript = async (script, args) => {
       calls.push([script, args]);
       const stdout = script.includes('check-ai-governance')
-        ? JSON.stringify({ ok: true, counts: { requiredFiles: 2 }, failures: { missingFiles: [] } })
+        ? JSON.stringify({
+          ok: true,
+          counts: { requiredFiles: 2, referenceRules: 1 },
+          failures: { missingFiles: [], skillContractFailures: [], contractFailures: [], missingReferences: [] },
+        })
         : JSON.stringify({
           ok: true,
           counts: { budgets: 1 },
@@ -50,6 +40,7 @@ test('governance context combines reports, project version and latest decision',
     assert.equal(context.reportType, 'jsonutils-governance-context');
     assert.equal(context.project.version, '1.2.3');
     assert.deepEqual(context.project.latestDecision, { date: '2026-07-10', decision: '建立上下文快照' });
+    assert.equal(context.maturityScorecard.nextFocus.id, 'maintainability-headroom');
     assert.deepEqual(context.maintainability.highUsage.map(item => item.file), ['scripts/a.mjs']);
     assert.deepEqual(calls.map(([script]) => script), [
       'scripts/ci/check-ai-governance.mjs',

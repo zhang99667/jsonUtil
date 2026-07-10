@@ -3,12 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { buildJsonutilsGovernanceContextFromReports } from '../mcp/jsonutils-governance-context.mjs';
+import { collectAiGovernanceArtifactFreshnessFailures } from './writeAiGovernanceArtifactFreshness.mjs';
+import { buildAiGovernanceArtifactPayloads } from './writeAiGovernanceArtifactPayloads.mjs';
 
 const DEFAULT_ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const DEFAULT_OUT_DIR = 'artifacts/ai-governance';
 
-const normalizeCount = (value, fallback) => (Number.isInteger(value) && value > 0 ? value : fallback);
 const writeJson = (file, value) => fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 
 const runJsonReport = (rootDir, script, args) => {
@@ -27,61 +27,63 @@ const runJsonReport = (rootDir, script, args) => {
   }
 };
 
-const buildSummary = context => [
-  '### AI Governance',
-  `- Project: ${context.project.name} ${context.project.version}`,
-  `- Governance: ${context.governance.ok ? 'pass' : 'fail'}`,
-  `- Maintainability: ${context.maintainability.ok ? 'pass' : 'fail'}`,
-  `- Latest decision: ${context.project.latestDecision?.date ?? '-'} ${context.project.latestDecision?.decision ?? '-'}`,
-  `- High usage: ${context.maintainability.highUsage.map(item => item.file).join(', ') || 'none'}`,
-  '',
-].join('\n');
-
 export const writeAiGovernanceArtifacts = ({
   rootDir = DEFAULT_ROOT_DIR,
   outDir = DEFAULT_OUT_DIR,
   summaryFile = process.env.GITHUB_STEP_SUMMARY,
   top = 35,
   contextTop = 5,
+  now = () => new Date(),
   runReport = (script, args) => runJsonReport(rootDir, script, args),
 } = {}) => {
-  const outputDir = path.resolve(rootDir, outDir);
-  const budgetTop = normalizeCount(top, 35);
-  const contextLimit = normalizeCount(contextTop, 5);
-  fs.mkdirSync(outputDir, { recursive: true });
+  const result = buildAiGovernanceArtifactPayloads({ rootDir, outDir, top, contextTop, now, runReport });
+  fs.mkdirSync(result.outputDir, { recursive: true });
+  writeJson(result.files.governance, result.artifacts.governance);
+  writeJson(result.files.maintainability, result.artifacts.maintainability);
+  writeJson(result.files.context, result.artifacts.context);
+  writeJson(result.files.scorecard, result.artifacts.scorecard);
+  fs.writeFileSync(result.files.summary, result.artifacts.summary);
+  if (summaryFile) fs.appendFileSync(summaryFile, result.artifacts.summary);
 
-  const governance = runReport('scripts/ci/check-ai-governance.mjs', ['--json']);
-  const budget = runReport('scripts/ci/check-maintainability-budgets.mjs', ['--json', '--no-all', '--top', String(budgetTop)]);
-  const context = buildJsonutilsGovernanceContextFromReports({
-    rootDir,
-    top: contextLimit,
-    governanceReport: governance.report,
-    budgetReport: budget.report,
-  });
-
-  const files = {
-    governance: path.join(outputDir, 'ai-governance-report.json'),
-    maintainability: path.join(outputDir, 'maintainability-budget-report.json'),
-    context: path.join(outputDir, 'jsonutils-governance-context.json'),
-    summary: path.join(outputDir, 'summary.md'),
-  };
-  const summary = buildSummary(context);
-  writeJson(files.governance, governance.report);
-  writeJson(files.maintainability, budget.report);
-  writeJson(files.context, context);
-  fs.writeFileSync(files.summary, summary);
-  if (summaryFile) fs.appendFileSync(summaryFile, summary);
-
-  return {
-    ok: context.ok && governance.exitCode === 0 && budget.exitCode === 0,
-    context,
-    files,
-    outputDir,
-  };
+  return result;
 };
 
+export const checkAiGovernanceArtifactsFreshness = (options = {}) => {
+  const result = buildAiGovernanceArtifactPayloads({
+    rootDir: DEFAULT_ROOT_DIR,
+    outDir: DEFAULT_OUT_DIR,
+    ...options,
+    runReport: options.runReport ?? ((script, args) => runJsonReport(options.rootDir ?? DEFAULT_ROOT_DIR, script, args)),
+  });
+  const freshnessFailures = collectAiGovernanceArtifactFreshnessFailures(result);
+  return { ...result, freshnessFailures, ok: result.ok && freshnessFailures.length === 0 };
+};
+
+export const buildAiGovernanceArtifactFreshnessReport = (result, rootDir = DEFAULT_ROOT_DIR) => ({
+  schemaVersion: 1,
+  reportType: 'ai-governance-artifact-freshness',
+  ok: result.ok,
+  generatedAt: result.generatedAt,
+  outputDir: path.relative(rootDir, result.outputDir),
+  checkedArtifacts: Object.fromEntries(
+    Object.entries(result.files).map(([id, file]) => [id, path.relative(rootDir, file)]),
+  ),
+  failures: (result.freshnessFailures ?? []).map(failure => ({
+    ...failure,
+    file: path.relative(rootDir, failure.file),
+  })),
+});
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const result = writeAiGovernanceArtifacts();
-  console.log(`AI governance artifacts written to ${path.relative(process.cwd(), result.outputDir)}`);
+  const shouldCheck = process.argv.includes('--check');
+  const shouldJson = process.argv.includes('--json');
+  const result = shouldCheck ? checkAiGovernanceArtifactsFreshness() : writeAiGovernanceArtifacts();
+  if (shouldJson && shouldCheck) {
+    console.log(JSON.stringify(buildAiGovernanceArtifactFreshnessReport(result), null, 2));
+  } else {
+    const action = shouldCheck ? 'checked' : 'written to';
+    console.log(`AI governance artifacts ${action} ${path.relative(process.cwd(), result.outputDir)}`);
+    result.freshnessFailures?.forEach(failure => console.error(`${failure.id}: ${failure.reason} (${failure.file})`));
+  }
   if (!result.ok) process.exitCode = 1;
 }

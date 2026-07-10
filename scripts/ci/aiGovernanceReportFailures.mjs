@@ -20,3 +20,10 @@ export { collectAiGovernanceContractFailures };
 export const collectAiGovernanceReferenceFailures = (rootDir, context) => (
   collectMissingAiGovernanceReferences(rootDir, context.referenceRules, context.codexSkillFiles)
 );
+
+export const buildAiGovernanceFailureGroups = (rootDir, context) => ({
+  missingFiles: collectAiGovernanceMissingFileFailures(rootDir, context),
+  skillContractFailures: collectAiGovernanceSkillContractFailures(rootDir, context),
+  contractFailures: collectAiGovernanceContractFailures(rootDir, context),
+  missingReferences: collectAiGovernanceReferenceFailures(rootDir, context),
+});

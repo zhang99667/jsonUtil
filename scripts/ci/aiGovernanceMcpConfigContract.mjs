@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AI_GOVERNANCE_MCP_CONFIG_FILES } from './aiGovernanceDiscoveryPatterns.mjs';
+import { AI_GOVERNANCE_MCP_CONFIG_FILES } from './aiGovernanceDiscoveryEntries.mjs';
 import { collectMcpConfigRuntimeFailures } from './aiGovernanceMcpConfigRuntimeContract.mjs';
 import { collectMcpSensitiveValueFailures } from './aiGovernanceMcpSensitiveValues.mjs';
 

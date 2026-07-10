@@ -1,4 +1,4 @@
-import { AI_GOVERNANCE_MCP_CONFIG_FILES } from './aiGovernanceDiscoveryPatterns.mjs';
+import { AI_GOVERNANCE_MCP_CONFIG_FILES } from './aiGovernanceDiscoveryEntries.mjs';
 
 export const AI_GOVERNANCE_DISCOVERY_ROOT_FILES = [
   'AGENTS.md',

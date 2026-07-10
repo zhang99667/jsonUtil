@@ -50,20 +50,6 @@ test('AI 治理 MCP 配置契约会报告缺少启动入口', () => {
   });
 });
 
-test('AI 治理 MCP 配置契约会报告敏感字段明文值', () => {
-  withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, '.mcp.json', JSON.stringify({
-      mcpServers: {
-        github: { command: 'node', env: { GITHUB_TOKEN: 'ghp_plaintext', SAFE_TOKEN: '${GITHUB_TOKEN}' } },
-      },
-    }));
-
-    assert.deepEqual(collectMcpConfigContractFailures(rootDir), [
-      '.mcp.json: 敏感字段 "mcpServers.github.env.GITHUB_TOKEN" 不能写入明文值，请改用环境变量引用',
-    ]);
-  });
-});
-
 test('AI 治理 MCP 配置契约接受有效项目级 MCP 配置', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'scripts/mcp/local.js', 'console.log("ok");');

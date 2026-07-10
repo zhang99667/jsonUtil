@@ -1,21 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import {
+  writePostgreSqlSources,
+  writePostgreSqlTargets,
+} from './aiGovernanceProjectDatabaseFactTestFixtures.mjs';
 import { collectAiGovernanceProjectFactFailures } from './aiGovernanceProjectFactsContract.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
-
-const writePostgreSqlSources = (rootDir) => {
-  writeFixtureFile(rootDir, 'backend/src/main/resources/application.yml', 'jdbc:postgresql://localhost:5432/jsonhelper\norg.postgresql.Driver\nPostgreSQLDialect');
-  writeFixtureFile(rootDir, 'backend/pom.xml', '<artifactId>postgresql</artifactId>');
-  writeFixtureFile(rootDir, 'docker-compose.yml', 'image: postgres:16\nSPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/jsonhelper');
-  writeFixtureFile(rootDir, 'docker-compose.local.yml', 'image: postgres:16\nSPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/jsonhelper');
-};
-
-const writePostgreSqlTargets = (rootDir) => {
-  writeFixtureFile(rootDir, 'AGENTS.md', 'Spring Data JPA + PostgreSQL');
-  writeFixtureFile(rootDir, 'CLAUDE.md', 'Spring Data JPA + PostgreSQL');
-  writeFixtureFile(rootDir, 'rules/code-style.md', '| 数据库 | PostgreSQL | - |');
-};
 
 test('AI 治理项目事实契约接受入口数据库事实与配置一致', () => {
   withAiGovernanceTempRoot((rootDir) => {

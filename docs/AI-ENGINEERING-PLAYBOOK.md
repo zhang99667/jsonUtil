@@ -80,6 +80,7 @@
 - 涉及手动 `import()`、懒加载 helper、`dispatchChunkLoadRecoveryEvent` 或发布恢复 catch 时运行 `node scripts/ci/check-chunk-load-recovery-catches.mjs`，确认旧 chunk 加载失败不会被业务 catch 吞掉。
 - 涉及 `scripts/deploy/*.sh`、`.github/scripts/*.sh`、`scripts/ci/local-ci.sh` 或 `.github/workflows/*.yml` 的 `workflow run` 块时运行 `node scripts/ci/check-deploy-shell-syntax.mjs`，先用 `bash -n` 拦截发布脚本语法错误，并单独检查 `REMOTE_SCRIPT heredoc` 这类远端脚本片段。
 - 涉及前端 Docker、Compose、Nginx 或发布静态资源时运行 `node scripts/ci/check-frontend-static-retention.mjs`。
+- 同机外部业务域名的 Nginx 改动不能只验证 HTTP 200；`/admin.html` 这类历史后台路径要用本域 `/index.html` 承接、清理本域缓存，并用一次性裸域 query 绕过浏览器对 `/` 的旧 301 精确缓存，再把地址栏归位到裸域。
 - 公网资源巡检不能只看 2xx；`node scripts/ci/check-production-frontend-assets.mjs <baseUrl>` 还会校验 JS/CSS `Content-Type`，并递归检查 CSS `url(...)` 二级资源和 CSS `@import` 链路，防止缺失 chunk fallback 成 HTML。排查用户反馈的旧 chunk URL 时，追加 `--extra-asset <url-or-path>` 纳入同一轮递归巡检。
 - 涉及大模块或新增 helper 时运行 `node scripts/ci/check-maintainability-budgets.mjs`。
 - 更新 `CHANGELOG.md` 当前版本区块。
@@ -94,10 +95,11 @@
 - 决策账本的触发条件、反例和适用边界不能整格使用弱占位；回写追踪必须包含 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，锁定测试必须同时包含 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`，且引用的测试文件必须保留普通可执行 `test(...)` 或 `it(...)` 用例，不能只剩 `skip`、`todo`、`.only` 或空文件，证明局部负例、账本自追踪和聚合治理门禁都覆盖到。
 - 规则改动必须配套治理校验：能用 `check-ai-governance` 锁定的关键词、文件引用或命令要同步加入脚本和测试，不能只依赖人工记忆。
 - AI 治理、版本一致性、脚本单测和可维护性预算命令必须保留在 GitHub Actions `run:` 与 `scripts/ci/local-ci.sh` 的 `run_in_root` 可执行入口，并由 `check-ai-governance` 反查，避免门禁只存在于注释、`echo` 或手动习惯。
-- CI 和 local-ci 必须固定运行 `node scripts/ci/write-ai-governance-artifacts.mjs`，产出治理 JSON、预算 JSON、治理 context 快照和 summary，避免 `--json` 能力只停留在手工命令里。
+- CI 和 local-ci 必须固定运行 `node scripts/ci/write-ai-governance-artifacts.mjs`，产出治理 JSON、预算 JSON、带 `generatedAt` 的治理成熟度 scorecard、治理 context 快照和 summary，避免 `--json` 能力只停留在手工命令里；读取已有 artifact 前先用 `node scripts/ci/write-ai-governance-artifacts.mjs --check` 查新鲜度，失败后重跑产物脚本。
 - `.github/workflows/ai-governance.yml` 必须保留 weekly `schedule`、`workflow_dispatch`、治理脚本单测、MCP 测试、固定 artifact 产出和上传步骤，让 AI 资产在长期不改代码时也能被定时巡检。
 - AI 治理 helper 和测试都要有预算所有权：新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，避免治理代码和锁定测试继续膨胀。
 - AI 治理 helper 还要有调用所有权：新增 `scripts/ci/aiGovernance*.mjs` 非测试脚本时，生产契约、规则、引用和失败收集 helper 必须能从 `scripts/ci/check-ai-governance.mjs` 生产链路静态 import 图到达；只有 `*TestFixtures.mjs` 和 `*MissingCases.mjs` 这类测试支撑文件允许只被 `scripts/ci/*.test.mjs` 覆盖，避免治理规则只停留在测试里。
+- 治理报告、MCP context 和 CI artifact 需要保留成熟度 scorecard 与 `nextFocus`，让后续 agent 基于确定性缺口排序处理规则、skill、MCP 和维护余量问题，而不是重新人工猜测优先级。
 - 同源入口文档必须成对维护：AGENTS/CLAUDE 的 AI 协作章节、Cursor/Comate 的核心规则片段由治理脚本做漂移检查，避免一边更新、一边残留旧语义。
 - 项目事实不能只靠入口文档人工同步：数据库和关键主版本事实必须从后端配置、前后端依赖、前端 lock 和 Compose 文件反查到 AGENTS、CLAUDE 与 `rules/code-style.md`，由 `node scripts/ci/check-ai-governance.mjs` 锁住旧事实漂移。
 - Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的薄入口共享核心规则片段由治理脚本统一检查；新增跨工具核心要求时先更新共享片段，再同步所有薄入口，避免不同助手看到不同版本的发布、委派、安全或规则进化要求。
@@ -105,8 +107,8 @@
 - 工具薄入口只保留当前执行约束和权威文档链接，不维护独立更新记录；历史追踪统一放在 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，避免薄入口时间线漂移。
 - 新增 AI 助手入口、项目级 MCP 配置或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
 - 项目级 MCP 配置必须保持可审计：配置文件使用合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map，每个 server 至少声明 `command` 或 `url`，不通过 shell 包装命令、绝对路径、上跳路径或缺失本地脚本隐藏执行边界，敏感字段以及 URL、args、header 字符串里的 token、password、api key 和 authorization 值只能使用环境变量引用。
-- `jsonutils-governance` 本地 MCP server 只能暴露只读治理资源和固定治理报告/上下文工具；新增上下文 helper 时必须纳入必需文件、资产注册表、单测和可维护性预算，不开放任意 shell 或通用文件读取入口。
-- MCP server 改动不能只做函数级测试；`node --test scripts/mcp/*.test.mjs` 必须覆盖从项目级 `.mcp.json` 启动真实 stdio 进程、发送 framed 请求、验证工具清单、读取治理资源并调用 `ai_governance_context`，避免 command/args、stdout 污染、framing 断裂或上下文工具失效进入 CI。
+- `jsonutils-governance` 本地 MCP server 只能暴露只读治理资源和固定治理报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot、validation plan 工具；新增 MCP 工具或上下文 helper 时必须纳入必需文件、资产注册表、单测和可维护性预算，不开放任意 shell 或通用文件读取入口。
+- MCP server 改动不能只做函数级测试；`node --test scripts/mcp/*.test.mjs` 必须覆盖从项目级 `.mcp.json` 启动真实 stdio 进程、发送 framed 请求、验证工具清单、读取治理资源并调用 `ai_governance_context`、`ai_governance_scorecard`、`ai_asset_inventory`、`ai_decision_summary`、`ai_handoff_brief`、`ai_worktree_snapshot` 和 `ai_validation_plan`，避免 command/args、stdout 污染、framing 断裂或上下文工具失效进入 CI。
 - AI 资产注册表的每行登记必须维护真实有效且不晚于当前日期的 `YYYY-MM-DD` 最近复核日期；变更资产、责任人、复核节奏或治理证据时同步更新日期，但不引入自动到期提醒。
 - 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name`、`description`、`version` 和 `tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组；当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可追踪、不可验证的散文。
 - 项目级 Codex skill 的具体项目路径、fenced `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须可解析到真实目标；新增或迁移 skill 引用后运行 `node scripts/ci/check-ai-governance.mjs`，避免 skill 看似完整但实际不可执行。
@@ -121,7 +123,17 @@
 - `.claude/settings.local.json`: 本机私有配置，仅作为显式豁免文件存在，不承载项目级 rules、skills 或验证流程。
 - `.codex/skills/jsonutils-maintainer/SKILL.md`: Codex 可迁移的项目维护技能模板。
 - `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`: 项目级 MCP 配置，只按精确文件发现，不递归 `.cursor` 或 `.vscode` 目录。
-- `scripts/mcp/jsonutils-governance-server.mjs`: JSONUtils 本地治理 MCP server，只读暴露 AI 治理文档和固定报告/上下文工具。
+- `scripts/mcp/jsonutils-governance-server.mjs`: JSONUtils 本地治理 MCP server，只读暴露 AI 治理文档和固定报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot、validation plan 工具。
+- `scripts/mcp/jsonutils-governance-tool-definitions.mjs`: JSONUtils 治理 MCP 固定工具定义 helper，维护工具名称、顺序和 input schema。
+- `scripts/mcp/jsonutils-governance-tools.mjs`: JSONUtils 治理 MCP 固定工具分发 helper，维护固定脚本调用、scorecard 和 context 调用。
+- `scripts/mcp/jsonutils-governance-report-tool.mjs`: JSONUtils 治理 MCP report helper，组合固定治理报告和预算报告，保证 report 与 scorecard 焦点同源。
+- `scripts/mcp/jsonutils-governance-scorecard-tool.mjs`: JSONUtils 治理 MCP scorecard helper，复用治理 context 输出固定 scorecard 载荷。
+- `scripts/mcp/jsonutils-governance-assets.mjs`: JSONUtils 治理 MCP asset inventory helper，复用资产注册表解析器输出 bounded 结构化资产清单。
+- `scripts/mcp/jsonutils-governance-decisions.mjs`: JSONUtils 治理 MCP decisions helper，bounded 输出最近治理决策和锁定命令。
+- `scripts/mcp/jsonutils-governance-handoff.mjs`: JSONUtils 治理 MCP handoff helper，组合治理焦点、AI 基建清零状态、最新决策、worktree snapshot 和交接风险。
+- `scripts/mcp/jsonutils-governance-validation-plan.mjs`: JSONUtils 治理 MCP validation plan helper，根据完整 changed-file 集合匹配建议验证命令，并 bounded 返回命中规则和样本覆盖范围。
+- `scripts/mcp/jsonutils-governance-worktree.mjs`: JSONUtils 治理 MCP worktree helper，固定维护 `git status --porcelain=v1 --branch` 的结构化 snapshot。
+- `scripts/mcp/jsonutils-governance-resources.mjs`: JSONUtils 治理 MCP 资源目录 helper，固定维护只读资源 URI、文件映射和读取边界。
 - `scripts/mcp/jsonutils-governance-context.mjs`: JSONUtils 治理上下文 helper，组合固定治理/预算 JSON 报告、版本、最新决策和下一步命令。
 - `.github/copilot-instructions.md`: GitHub Copilot 仓库级薄入口，必须转发到主规范、Playbook 和治理命令。
 - `.github/workflows/ai-governance.yml`: AI 治理定时巡检 workflow，固定产出治理 artifact 并保留手动触发入口。
@@ -130,7 +142,7 @@
 - `docs/AI-ASSET-REGISTRY.md`: AI 协作资产、治理门禁和显式豁免文件的可审计账本。
 - `docs/AI-GOVERNANCE-DECISIONS.md`: AI rules、skills 和治理门禁变更的决策记录、回写追踪与锁定测试账本。
 - `docs/AI-ENGINEERING-PLAYBOOK.md`: 跨 AI 工具共享的执行闭环。
-- `scripts/ci/write-ai-governance-artifacts.mjs`: AI 治理 CI/local-ci 产物入口，固定输出治理报告、预算报告、context 快照和 summary。
+- `scripts/ci/write-ai-governance-artifacts.mjs`: AI 治理 CI/local-ci 产物入口，固定输出治理报告、预算报告、带 `generatedAt` 的 context/scorecard 快照和 summary，并提供 `--check` 查旧产物漂移。
 
 新增 AI 工具或流程时，优先更新本文件和 `.claude/ai-tools-guide.md`，避免同一规则散落在多个地方。
 修改 AI 入口、Playbook 或 skill 后，运行 `node scripts/ci/check-ai-governance.mjs` 确认关键引用没有断链。

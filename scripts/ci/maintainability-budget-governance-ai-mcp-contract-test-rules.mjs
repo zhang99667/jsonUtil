@@ -1,12 +1,12 @@
+import { governanceAiMcpConfigContractTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-mcp-config-contract-test-rules.mjs';
+import { governanceAiMcpConfigRuntimeTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-mcp-config-runtime-test-rules.mjs';
+import { governanceAiMcpServerTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-mcp-server-test-rules.mjs';
+
 const mcpContractTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiMcpContractTestMaintainabilityBudgets = [
-  mcpContractTestBudget('scripts/ci/maintainability-budget-governance-ai-mcp-contract-test-rules.mjs', 15, 'AI 治理 MCP 契约测试预算子表应只维护 MCP 配置、运行时和本地 server/context/stdio 测试条目'),
-  mcpContractTestBudget('scripts/ci/aiGovernanceMcpConfigContract.test.mjs', 85, 'AI 治理 MCP 配置契约测试应独立维护 JSON 结构、启动入口和敏感字段负例'),
-  mcpContractTestBudget('scripts/ci/aiGovernanceMcpServerMapContract.test.mjs', 25, 'AI 治理 MCP server map 测试应独立维护 mcpServers/servers 单源负例'),
-  mcpContractTestBudget('scripts/ci/aiGovernanceMcpSensitiveValues.test.mjs', 65, 'AI 治理 MCP 敏感值测试应独立维护 URL、args、header 和环境变量负例'),
-  mcpContractTestBudget('scripts/ci/aiGovernanceMcpConfigRuntimeContract.test.mjs', 55, 'AI 治理 MCP 运行时契约测试应独立维护命令和路径负例'),
-  mcpContractTestBudget('scripts/mcp/jsonutils-governance-server.test.mjs', 95, 'JSONUtils 治理 MCP server 测试应只锁定资源、固定命令和 framing'),
-  mcpContractTestBudget('scripts/mcp/jsonutils-governance-context.test.mjs', 80, 'JSONUtils 治理上下文测试应只锁定报告组合、版本和决策摘要'),
-  mcpContractTestBudget('scripts/mcp/jsonutils-governance-stdio.test.mjs', 120, 'JSONUtils 治理 MCP stdio 测试应只锁定项目配置启动、framing、工具清单、资源读取和上下文工具'),
+  mcpContractTestBudget('scripts/ci/maintainability-budget-governance-ai-mcp-contract-test-rules.mjs', 15, 'AI 治理 MCP 契约测试预算子表应只组合 MCP 配置、runtime 和 server/stdio 测试预算子表'),
+  ...governanceAiMcpConfigContractTestMaintainabilityBudgets,
+  ...governanceAiMcpConfigRuntimeTestMaintainabilityBudgets,
+  ...governanceAiMcpServerTestMaintainabilityBudgets,
 ];

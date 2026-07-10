@@ -11,7 +11,7 @@ AI 协作资产按职责分层维护：
 | 项目入口 | `AGENTS.md`、`CLAUDE.md` | 让 AI 助手快速理解项目结构、技术栈、常见任务和协作边界 |
 | 权威规范 | `rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md`、`docs/AI-ASSET-REGISTRY.md`、`docs/AI-GOVERNANCE-DECISIONS.md` | 维护编码规范、验证闭环、规则/skill 回写、资产账本、决策账本和收尾门禁 |
 | 工具入口 | `.claude/ai-tools-guide.md`、`.codex/README.md`、`.github/copilot-instructions.md`、`.cursorrules`、`.cursor/rules/**/*.mdc`、`.comate/rules/code-style.md` | 针对不同 AI 工具提供薄入口，转发到权威规范 |
-| 工具配置 | `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`、`scripts/mcp/*.mjs` | 管理项目级 MCP server 和固定上下文工具能力边界，按精确文件或 MCP 脚本发现规则进入治理，并校验 JSON 结构、命令路径和敏感字段 |
+| 工具配置 | `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`、`scripts/mcp/*.mjs` | 管理项目级 MCP server 和固定 MCP 工具能力边界，按精确文件或 MCP 脚本发现规则进入治理，并校验 JSON 结构、命令路径和敏感字段 |
 | 自动化门禁 | `.github/workflows/ai-governance.yml`、`.github/workflows/ci.yml`、`scripts/ci/local-ci.sh` | 运行 CI、local-ci 和定时 AI 治理巡检，固定产出治理 artifact 并反查关键命令 |
 | 可迁移技能 | `.codex/skills/jsonutils-maintainer/SKILL.md` | 将项目维护流程封装为可复用 skill，方便 Codex 在类似任务中稳定触发 |
 
@@ -58,7 +58,7 @@ node scripts/ci/check-maintainability-budgets.mjs
 - `docs/AI-*.md` 索引是否能指向 `docs/AI-GOVERNANCE-DECISIONS.md`，避免决策账本游离在入口之外。
 - `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增资产是否进入治理清单、引用规则或显式豁免。
 - 项目级 MCP 配置是否为合法 JSON，是否声明 `mcpServers` 或 `servers`，每个 server 是否声明 `command` 或 `url`，是否避免 shell 包装命令、仓库外路径、缺失脚本和敏感字段明文。
-- 本地治理 MCP server 是否保持只读资源、固定治理报告/上下文工具和无任意 shell 执行边界。
+- 本地治理 MCP server 是否保持只读资源、固定治理报告/scorecard/上下文/asset inventory/decision summary/handoff brief/artifact freshness/worktree snapshot/validation plan 工具和无任意 shell 执行边界。
 - CI 和 local-ci 是否固定运行 AI 治理产物脚本，避免治理 JSON 与预算 JSON 只停留在手工调试命令里。
 - 定时 AI 治理 workflow 是否保留 schedule、workflow_dispatch、治理脚本单测、MCP 测试和 artifact 上传。
 

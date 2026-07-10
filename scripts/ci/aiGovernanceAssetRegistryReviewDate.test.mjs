@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { collectRegistryFailuresForRows, registryRow, withAiGovernanceTempRoot } from './aiGovernanceTestFixtures.mjs';
+
+test('AI 治理资产注册表会报告缺少最近复核日期或格式错误', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    const failures = collectRegistryFailuresForRows(rootDir, [
+      registryRow('AGENTS.md', { reviewDate: '' }),
+      registryRow('CLAUDE.md', { reviewDate: '2026/07/09' }),
+      registryRow('rules/code-style.md', { reviewDate: '2026-02-31' }),
+    ], [
+      'AGENTS.md',
+      'CLAUDE.md',
+      'rules/code-style.md',
+      'docs/AI-ASSET-REGISTRY.md',
+    ]);
+
+    assert.deepEqual(failures, [
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `AGENTS.md` 缺少最近复核日期',
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `CLAUDE.md` 最近复核日期必须使用有效 YYYY-MM-DD，实际 `2026/07/09`',
+      'docs/AI-ASSET-REGISTRY.md: AI 资产登记 `rules/code-style.md` 最近复核日期必须使用有效 YYYY-MM-DD，实际 `2026-02-31`',
+    ]);
+  });
+});

@@ -1,0 +1,23 @@
+import {
+  AI_EVOLUTION_LOOP_REFERENCES,
+  SUBAGENT_DELEGATION_REFERENCES,
+  VERSION_CHANGELOG_REFERENCES,
+} from './aiGovernanceReferenceGroups.mjs';
+
+export const CORE_ENTRY_REFERENCES = [
+  'rules/code-style.md',
+  'docs/AI-ENGINEERING-PLAYBOOK.md',
+  'docs/AI-ASSET-REGISTRY.md',
+  'node scripts/ci/check-ai-governance.mjs',
+];
+
+export const ENTRY_GOVERNANCE_REFERENCES = [
+  ...SUBAGENT_DELEGATION_REFERENCES,
+  ...AI_EVOLUTION_LOOP_REFERENCES,
+  ...VERSION_CHANGELOG_REFERENCES,
+];
+
+export const CODE_STYLE_GOVERNANCE_REFERENCES = [
+  ...AI_EVOLUTION_LOOP_REFERENCES,
+  ...VERSION_CHANGELOG_REFERENCES,
+];

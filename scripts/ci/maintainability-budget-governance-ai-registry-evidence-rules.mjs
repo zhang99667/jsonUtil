@@ -1,8 +1,10 @@
 const governanceAiRegistryEvidenceBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiRegistryEvidenceMaintainabilityBudgets = [
-  governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceSourceDescriptors.mjs', 35, 'AI 治理资产注册表证据来源描述符应独立维护 marker 到来源集合的单源映射'),
-  governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceMarkers.mjs', 30, 'AI 治理资产注册表证据标记词表应独立维护认可标记、分隔解析和未知标记识别'),
+  governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceSourceDescriptors.mjs', 25, 'AI 治理资产注册表证据来源描述符应独立维护 marker 到来源集合的单源数据'),
+  governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceMarkerGroups.mjs', 25, 'AI 治理资产注册表证据来源分组应独立维护 context key、发现类和引用类 marker 派生'),
+  governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceMarkers.mjs', 20, 'AI 治理资产注册表证据标记入口应只兼容导出 marker 分组、来源描述符和解析 helper'),
+  governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistryEvidenceMarkerParsing.mjs', 20, 'AI 治理资产注册表证据标记解析 helper 应独立维护分隔解析、认可标记和未知标记识别'),
   governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistryEvidence.mjs', 40, 'AI 治理资产注册表证据来源反查应独立维护描述符到实际治理集合的匹配逻辑'),
   governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistrySemanticEvidence.mjs', 30, 'AI 治理资产注册表语义证据规则应独立维护自动发现资产的非发现证据要求'),
   governanceAiRegistryEvidenceBudget('scripts/ci/aiGovernanceAssetRegistryRowEvidenceFailures.mjs', 35, 'AI 治理资产注册表行证据失败规则应独立维护单行必填、证据来源和语义证据失败'),

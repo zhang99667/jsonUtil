@@ -1,3 +1,5 @@
+const referenceRuleEvidenceMarkers = ['入口引用规则', 'docs/AI 引用规则', '工具入口引用规则', 'PR 模板引用规则', 'Claude README 引用规则', 'skill 引用规则'];
+
 export const EVIDENCE_SOURCE_DESCRIPTORS = [
   ['必需文件', 'requiredFiles'],
   ['发布引用规则', 'releaseReferenceFiles'],
@@ -12,20 +14,5 @@ export const EVIDENCE_SOURCE_DESCRIPTORS = [
   ['版本一致性检查引用', 'versionConsistencyReferenceFiles'],
   ['自动发现规则', 'discoveredFiles'],
   ['资产发现规则', 'discoveredFiles'],
-  ['入口引用规则', 'referenceRuleFiles'],
-  ['docs/AI 引用规则', 'referenceRuleFiles'],
-  ['工具入口引用规则', 'referenceRuleFiles'],
-  ['PR 模板引用规则', 'referenceRuleFiles'],
-  ['Claude README 引用规则', 'referenceRuleFiles'],
-  ['skill 引用规则', 'referenceRuleFiles'],
+  ...referenceRuleEvidenceMarkers.map(marker => [marker, 'referenceRuleFiles']),
 ];
-
-export const EVIDENCE_SOURCE_CONTEXT_KEYS = [...new Set(EVIDENCE_SOURCE_DESCRIPTORS.map(([, contextKey]) => contextKey))];
-
-const markersForContext = contextKey => EVIDENCE_SOURCE_DESCRIPTORS
-  .filter(([, descriptorContextKey]) => descriptorContextKey === contextKey)
-  .map(([marker]) => marker);
-
-export const DISCOVERY_ONLY_EVIDENCE_MARKERS = markersForContext('discoveredFiles');
-export const FILE_REFERENCE_EVIDENCE_MARKERS = markersForContext('referenceRuleFiles');
-export const AI_GOVERNANCE_ASSET_REGISTRY_EVIDENCE_MARKERS = EVIDENCE_SOURCE_DESCRIPTORS.map(([marker]) => marker);

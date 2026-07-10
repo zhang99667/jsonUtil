@@ -1,118 +1,23 @@
 #!/usr/bin/env node
-// 为 AI 助手暴露只读治理上下文和固定治理报告/上下文工具。
+// 为 AI 助手暴露只读治理资源和固定治理工具。
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { buildJsonutilsGovernanceContext } from './jsonutils-governance-context.mjs';
+import {
+  listJsonutilsGovernanceResources,
+  readJsonutilsGovernanceResource,
+} from './jsonutils-governance-resources.mjs';
+import {
+  callJsonutilsGovernanceTool,
+  listJsonutilsGovernanceTools,
+} from './jsonutils-governance-tools.mjs';
 
 const SERVER_NAME = 'jsonutils-governance';
 const SERVER_VERSION = '0.1.0';
 const PROTOCOL_VERSION = '2024-11-05';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-const resources = [
-  ['jsonutils://ai-governance/playbook', 'AI Engineering Playbook', 'docs/AI-ENGINEERING-PLAYBOOK.md'],
-  ['jsonutils://ai-governance/asset-registry', 'AI Asset Registry', 'docs/AI-ASSET-REGISTRY.md'],
-  ['jsonutils://ai-governance/decisions', 'AI Governance Decisions', 'docs/AI-GOVERNANCE-DECISIONS.md'],
-  ['jsonutils://ai-governance/maintainer-skill', 'JSONUtils Maintainer Skill', '.codex/skills/jsonutils-maintainer/SKILL.md'],
-].map(([uri, name, file]) => ({
-  uri,
-  name,
-  description: `JSONUtils ${name}`,
-  mimeType: 'text/markdown',
-  file,
-}));
-
-const governanceReportTool = {
-  name: 'ai_governance_report',
-  description: 'Run check-ai-governance and return its machine-readable JSON report.',
-  inputSchema: { type: 'object', additionalProperties: false, properties: {} },
-};
-
-const budgetReportTool = {
-  name: 'maintainability_budget_report',
-  description: 'Run check-maintainability-budgets with JSON output and a bounded top list.',
-  inputSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      top: { type: 'integer', minimum: 1, maximum: 50, default: 10 },
-    },
-  },
-};
-
-const governanceContextTool = {
-  name: 'ai_governance_context',
-  description: 'Build a compact JSON context snapshot for AI governance onboarding.',
-  inputSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      top: { type: 'integer', minimum: 1, maximum: 20, default: 5 },
-    },
-  },
-};
-
-const tools = [governanceReportTool, budgetReportTool, governanceContextTool];
-
-const runNodeScript = (script, args = []) => new Promise((resolve) => {
-  execFile(process.execPath, [script, ...args], {
-    cwd: rootDir,
-    maxBuffer: 1024 * 1024 * 20,
-  }, (error, stdout, stderr) => {
-    resolve({ exitCode: error?.code ?? 0, stdout, stderr });
-  });
-});
-
-const readResource = (uri, cwd = rootDir) => {
-  const resource = resources.find(item => item.uri === uri);
-  if (!resource) throw new Error(`Unknown resource: ${uri}`);
-  const filePath = path.join(cwd, resource.file);
-  return {
-    contents: [{
-      uri,
-      mimeType: resource.mimeType,
-      text: fs.readFileSync(filePath, 'utf8'),
-    }],
-  };
-};
-
-const normalizeTop = (value, max = 50, fallback = 10) => Math.min(max, Math.max(1, Number.isInteger(value) ? value : fallback));
-
-export const listJsonutilsGovernanceResources = () => ({
-  resources: resources.map(({ file, ...resource }) => resource),
-});
-
-export const listJsonutilsGovernanceTools = () => ({ tools });
-
-export const callJsonutilsGovernanceTool = async (name, args = {}, runScript = runNodeScript) => {
-  if (name === governanceContextTool.name) {
-    const context = await buildJsonutilsGovernanceContext({ top: normalizeTop(args.top, 20, 5), runScript });
-    return {
-      content: [{ type: 'text', text: JSON.stringify(context, null, 2) }],
-      isError: !context.ok,
-    };
-  }
-
-  const commandArgs = name === budgetReportTool.name
-    ? ['--json', '--no-all', '--top', String(normalizeTop(args.top))]
-    : ['--json'];
-  const script = name === budgetReportTool.name
-    ? 'scripts/ci/check-maintainability-budgets.mjs'
-    : name === governanceReportTool.name
-      ? 'scripts/ci/check-ai-governance.mjs'
-      : null;
-  if (!script) throw new Error(`Unknown tool: ${name}`);
-
-  const result = await runScript(script, commandArgs);
-  const text = [result.stdout, result.stderr].filter(Boolean).join('\n').trim();
-  return {
-    content: [{ type: 'text', text }],
-    isError: result.exitCode !== 0,
-  };
-};
+export { callJsonutilsGovernanceTool, listJsonutilsGovernanceResources, listJsonutilsGovernanceTools };
 
 export const handleJsonutilsGovernanceRequest = async (message, options = {}) => {
   const { method, params, id } = message;
@@ -121,7 +26,7 @@ export const handleJsonutilsGovernanceRequest = async (message, options = {}) =>
     : method === 'resources/list'
       ? listJsonutilsGovernanceResources()
       : method === 'resources/read'
-        ? readResource(params?.uri, options.rootDir ?? rootDir)
+        ? readJsonutilsGovernanceResource(params?.uri, options.rootDir ?? rootDir)
         : method === 'tools/list'
           ? listJsonutilsGovernanceTools()
           : method === 'tools/call'
