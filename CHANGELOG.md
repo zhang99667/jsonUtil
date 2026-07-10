@@ -1,11 +1,86 @@
 # 更新日志 (Changelog)
-## v1.8.742 (2026-07-10) - 装箱单后台路径归位
+## v1.8.748 (2026-07-10) - MCP 资产清单工具
+### 🏗️ 架构与基础设施
+- **MCP 资产清单工具**: `jsonutils-governance` MCP server 新增固定 `ai_asset_inventory` 工具，bounded 返回 AI 资产注册表的结构化资产、类型/状态/责任人计数和治理证据，并将 `jsonutils-maintainer` skill 升级到 `0.1.26`
+- **Scorecard 治理产物热点识别**: 成熟度 scorecard 将 `write-ai-governance-artifacts*` 和 `writeAiGovernanceArtifact*` 纳入 AI 基建候选，避免治理产物链路贴近预算上限时被误报为普通热点
+- **MCP info 预算分层**: 将 MCP report、scorecard、asset inventory 和 decision 这类信息工具的 runtime/test 预算拆入独立子表，让父表重新回到组合职责
+- **AI 治理产物测试拆分**: 将 `write-ai-governance-artifacts` 的固定报告 fixture 和 Step Summary 文本契约拆到独立测试支撑文件，主测试回到产物落盘职责，成熟度 scorecard 焦点推进到下一个 MCP tools 热点
+- **MCP 工具定义分层**: 将 `jsonutils-governance` 固定工具名称、顺序和 input schema 迁入 `jsonutils-governance-tool-definitions.mjs`，tools 入口只保留固定命令和 payload 分发职责
+- **MCP server 测试拆分**: 将 Content-Length frame parser 用例从 `jsonutils-governance-server.test.mjs` 拆到独立测试，server 测试回到工具清单契约，让成熟度焦点继续推进
+- **资产证据 marker 分组**: 将资产注册表证据来源中重复映射到 `referenceRuleFiles` 的 marker 合并为引用规则 marker 分组，减少描述符表重复并保留来源反查语义
+- **AI 基建候选清零**: 将 Codex skill 契约收集器顺序抽为独立 helper，并把 ISO 日期 helper 测试改为数据驱动样例，让 scorecard 的 AI 基建候选降为 0；维护余量维度、MCP handoff 和 validation plan 同步输出结构化清零/覆盖状态，validation plan 用完整 changed-file 集合匹配命令并 bounded 返回样本，避免后续 agent 解析中文文案或漏跑未采样文件的门禁
+
+## v1.8.747 (2026-07-10) - 治理 MCP 验证计划
+### 🏗️ 架构与基础设施
+- **治理 MCP Validation Plan**: `jsonutils-governance` MCP server 新增固定 `ai_validation_plan` 工具，根据当前 bounded worktree 文件集合返回建议验证命令、命中规则和未分类文件，帮助后续 agent 接手时少漏跑门禁
+- **MCP stdio 测试分层**: 将 handoff、decision 和 validation 真实 stdio 断言拆入独立测试，并复用 tool call helper，让 AI 基建预算候选清零，给后续 MCP 工具扩展留下测试余量
+- **MCP report 焦点一致性**: `ai_governance_report` 改为复用完整治理上下文的成熟度 scorecard 和 nextCommands，避免 report 与 `ai_governance_scorecard` 给出不同下一步焦点
+- **MCP 必需文件清单分层**: 将 MCP 配置和固定 helper 必需文件拆入独立清单，避免新增治理 MCP 工具时持续挤压检查类必需文件预算
+- **MCP Scorecard helper 分层**: 将 `ai_governance_scorecard` 载荷组装拆入专用 helper，让固定工具入口回到 schema 和 dispatch 职责，降低后续 MCP 工具扩展成本
+- **外部域名 Smoke 稳定性**: 公网部署 smoke 的恢复 query 断言避开逗号分隔符，防止 `history.replaceState(...)` 片段被拆成伪 URL 后误报外部域名验证失败
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随治理 MCP validation plan 升级到 `0.1.25`
+- **MCP helper 测试预算分层**: 将 MCP helper 测试预算拆入独立子表，避免 server 测试预算父表继续承载 report、decision、handoff、validation、worktree、resources 和 context 测试条目
+
+## v1.8.746 (2026-07-10) - 装箱单旧跳转缓存旁路
+### 🐛 Bug 修复
+- **装箱单旧 301 缓存旁路**: `zhangjihao.markz.fun/admin.html` 改为用本域 `/index.html` 承接，清理缓存后跳到一次性裸域 query，绕过浏览器对 `/` 的旧永久跳转缓存，再把地址栏归位到裸域
+
+### 🏗️ 架构与基础设施
+- **外部域名缓存门禁**: Nginx 路由门禁和公网部署 smoke 同时锁定 `/admin.html` 旧路径绕行、根路径 query 清理和禁止后台标题，避免只校验 200 正文时漏掉用户可感知的地址栏污染
+- **AI Scorecard 焦点语义**: 治理成熟度 scorecard 在 AI 基建预算候选清零时，不再把普通业务维护热点伪装成 AI 基建下一步，避免后续 agent 目标跑偏
+- **治理 MCP Scorecard 工具**: `jsonutils-governance` MCP server 新增固定 `ai_governance_scorecard` 工具，将固定工具命令断言拆入 `jsonutils-governance-tools.test.mjs`，并把 stdio/client 预算迁入独立子表，方便后续 agent 直接获取成熟度焦点而不解析完整 context
+- **治理 MCP Worktree Snapshot**: `jsonutils-governance` MCP server 新增固定 `ai_worktree_snapshot` 工具，结构化返回当前分支、ahead/behind、脏文件计数和受限文件样本，帮助后续 agent 在提交、推送或接手前先看清工作区状态
+- **治理 MCP Handoff Brief**: 新增固定 `ai_handoff_brief` 工具，组合最新决策、成熟度焦点、worktree snapshot 和交接风险，减少上下文压缩或 MCP-only 接手时漏看关键状态
+- **治理 MCP Decision Summary**: 新增固定 `ai_decision_summary` 工具，复用决策账本表格解析器，bounded 返回最近治理决策、回写文件和锁定命令，帮助后续 agent 快速理解规则演进脉络
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随外部业务域名旧 301 缓存旁路经验、治理 MCP scorecard、worktree snapshot、handoff brief 和 decision summary 升级到 `0.1.24`
+
+## v1.8.745 (2026-07-10) - 装箱单 HTTP 后台路径归位
+### 🐛 Bug 修复
+- **装箱单 HTTP 旧入口归位**: `http://zhangjihao.markz.fun/admin.html` 不再保留后台历史路径跳到 HTTPS `/admin.html`，改为直接归位到 HTTPS 裸域，减少浏览器旧跳转缓存继续把业务域名带到 admin 路径的概率
+
+### 🏗️ 架构与基础设施
+- **外部域名 HTTP 门禁**: Nginx 路由门禁新增外部业务域名 HTTP `/admin.html` 裸域归位检查，并补充缺失归位与继续保留 `$request_uri` 的负例，避免后续发布再次强化后台历史路径
+- **AI 治理产物新鲜度**: `write-ai-governance-artifacts` 将报告载荷、summary 文本和旧产物 freshness 比较拆入独立 helper，context/scorecard/summary 写入 `generatedAt`，并新增 `--check` 拦截本地或子 Agent 读取过期治理 artifact
+- **治理 MCP freshness 工具**: `jsonutils-governance` MCP server 新增固定 `ai_governance_artifact_freshness` 工具，调用 `write-ai-governance-artifacts --check --json` 返回机器可读 freshness 报告，避免支持 MCP 的 agent 只能靠 shell 命令确认旧 artifact
+- **治理 MCP 工具分层**: 将固定工具 schema、固定脚本调用和 `ai_governance_context` 调用迁入 `jsonutils-governance-tools.mjs`，让 MCP server 入口只维护 resources、JSON-RPC 分发和 stdio framing
+- **AI 核心测试预算分层**: 将 fixture、CLI、日期、脚本可达性和 artifact 测试预算迁入 `maintainability-budget-governance-ai-core-support-test-rules.mjs`，让核心测试预算父表只负责组合主题子表
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随治理 artifact freshness 和核心支撑测试预算分层升级到 `0.1.19`
+
+## v1.8.744 (2026-07-10) - AI 治理维护余量推进
+### 🏗️ 架构与基础设施
+- **AI 治理 CLI 输出分层**: 将 JSON 报告 schema/counts/failures 输出拆入 `aiGovernanceJsonReport.mjs`，将人读 console 输出拆入 `aiGovernanceHumanReport.mjs`，`aiGovernanceCliOutput.mjs` 只保留兼容导出
+- **资产注册表 marker 解析分层**: 将证据 marker 分隔解析、认可标记判断和未知标记识别拆入 `aiGovernanceAssetRegistryEvidenceMarkerParsing.mjs`，让 marker 入口只保留兼容导出
+- **Skill 契约测试分层**: 将 frontmatter 缺失/字段缺失和 name 与目录一致性负例分别拆入 missing/name 测试，将完整 skill 章节正文拆入 `aiGovernanceSkillSectionTestFixtures.mjs`，将正文伪章节标题负例拆入 `aiGovernanceSkillSectionPseudoTitle.test.mjs`，将发布契约的 CHANGELOG 读取和 name/version 同行匹配拆入 `aiGovernanceCodexSkillReleaseTrace.mjs`，并将 skill contract/frontmatter 测试预算分成核心和 frontmatter 子表
+- **MCP runtime 契约分层**: 将 MCP 配置 args 路径检查和 server command/cwd 检查拆入 runtime helper，并将 MCP config 预算迁入独立子表，将运行时配置 JSON 和本地脚本写入拆入 `aiGovernanceMcpConfigRuntimeFileTestFixtures.mjs`，让 runtime 契约入口只负责遍历 server map、测试断言 fixture 只负责失败编排
+- **资产注册表解析与失败分层**: 将资产注册表行字段映射拆入 `aiGovernanceAssetRegistryRowFields.mjs`，将重复登记/陈旧登记失败构造拆入 `aiGovernanceAssetRegistryLifecycleFailures.mjs`，将缺登记/证据来源上下文失败构造拆入 `aiGovernanceAssetRegistryCoverageFailures.mjs`，并将 registry core/failure 预算迁入子表，让行解析和失败汇总入口各自只保留编排职责
+- **资产注册表测试分层**: 将资产注册表证据来源正向匹配用例拆入 `aiGovernanceAssetRegistryEvidenceSourceMatches.test.mjs`，将缺登记和证据上下文缺失负例拆入 `aiGovernanceAssetRegistryCoverage.test.mjs`，将资产发现期望清单拆入 `aiGovernanceDiscoveredAssetExpectedTestFixtures.mjs`，并将证据/发现/语义测试预算迁入子表，让注册表主测试只维护重复登记和行必填字段
+- **成熟度 Scorecard 分层**: 将成熟度 scorecard 的维度构造、预算热点和 AI 基建候选派生分别拆入 dimensions / hotspots helper，主 scorecard 入口只保留 schema、分数、状态和 nextFocus 组装
+- **测试 fixture、工具索引与事实解析复用**: `docs/AI-TOOLS-SETUP.md` 引用项复用 discovery 自定义入口合并导出，项目事实契约测试将 PostgreSQL 来源/目标写入拆入 `aiGovernanceProjectDatabaseFactTestFixtures.mjs`，项目版本事实契约将 package/pom/lock 来源解析和入口文档目标扫描拆入 sources/targets helper，AI 安全证据测试将缺失和跳过负例拆入独立测试并迁入安全测试预算子表，决策账本表格解析复用 `aiGovernanceMarkdownTableRows.mjs`，锁定测试内容检查拆入 `aiGovernanceDecisionLedgerActiveTestContent.mjs`，工具薄入口共享片段缺失与独立历史记录检查拆入 snippet/history helper 并纳入入口契约预算，入口核心引用组拆入 `aiGovernanceEntryCoreReferenceGroups.mjs` 让 runtime 引用组只保留运行时闭环组合
+
+## v1.8.743 (2026-07-10) - 装箱单后台路径归位
 ### 🐛 Bug 修复
 - **装箱单地址栏归位**: `zhangjihao.markz.fun/admin.html` 在直出装箱单页面和清理本域缓存的同时注入地址栏归位脚本，修复浏览器旧 301 缓存导致裸域反复显示后台路径的问题
 
 ### 🏗️ 架构与基础设施
 - **外部域名归位门禁**: Nginx 路由门禁要求外部业务域名 `/admin.html` 同时具备直出、清缓存和地址栏归位能力，公网部署 smoke 也会校验归位脚本是否真实生效，避免同机 JSONUtils 后台入口再次污染业务域名
-- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随外部业务域名后台路径归位经验升级到 `0.1.17`
+- **MCP server 资源目录分层**: 将 `jsonutils-governance` 的只读资源 URI、文件映射和读取边界拆入独立 resources helper，并将 context 的项目版本、CHANGELOG、最新决策读取和报告摘要分别拆入 project-summary / report-summary helper，server 入口继续只负责固定工具、JSON-RPC 分发和 stdio framing
+- **MCP resources 测试分层**: 将治理 MCP 资源清单和只读文件读取边界断言拆入 `jsonutils-governance-resources.test.mjs`，并单源维护 MCP 测试临时 root fixture，收紧 server 测试预算，让 server 测试只覆盖固定工具、命令白名单和 framing
+- **AI 治理 CLI 输出分层**: 将治理失败分组 key 与人读标题拆入 `aiGovernanceFailureGroupDescriptors.mjs`，将成熟度 scorecard 的维度构造、预算热点和 AI 基建候选派生分别拆入 dimensions / hotspots helper，让 JSON 摘要、人读输出和成熟度 scorecard 共享稳定分层，降低后续新增失败类型或焦点策略时的同步成本
+- **AI 治理预算分层**: 将 `check-ai-governance` CLI、JSON 输出和失败分组描述符预算迁入 report-cli 子表，并将 MCP 配置契约、配置运行时测试、docs/AI 引用项与引用支撑预算分别拆入独立子表，避免 report runtime、MCP contract test 和引用入口继续承载过多细节
+- **资产注册表测试分层**: 将资产注册表证据来源正向匹配用例拆入 `aiGovernanceAssetRegistryEvidenceSourceMatches.test.mjs`，让来源反查测试只维护上下文完整性和缺来源负例
+- **AI 治理契约分层**: 将同源入口工具薄入口 collector 拆入 `aiGovernanceMirroredToolEntryContracts.mjs`，将工具索引引用项拆入 `aiGovernanceToolsSetupReferenceItems.mjs` 并复用 discovery 自定义入口合并导出，将资产注册表证据来源分组派生拆入 `aiGovernanceAssetRegistryEvidenceMarkerGroups.mjs`，将 MCP env 敏感字段负例归入 `aiGovernanceMcpSensitiveValues.test.mjs`，将 Codex skill 发布追踪测试的 skill/CHANGELOG fixture 拆入 `aiGovernanceSkillReleaseTestFixtures.mjs`，将 skill 章节契约负例拆入 `aiGovernanceSkillSectionContract.test.mjs`，将决策账本测试证据用例改为复用共享账本 fixture，将 AI 修复安全证据测试的文件写入和 snippet 查询脚手架拆入 `aiGovernanceAiSafetyEvidenceTestFixtures.mjs`，并将 MCP runtime 测试配置和失败断言脚手架拆入 `aiGovernanceMcpConfigRuntimeTestFixtures.mjs`
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随外部业务域名后台路径归位经验升级到 `0.1.18`
+
+## v1.8.742 (2026-07-10) - AI 治理成熟度评分
+### 🏗️ 架构与基础设施
+- **AI 治理成熟度 Scorecard**: 新增 `ai-governance-maturity-scorecard`，从治理报告和预算报告生成维度状态、分数和下一步焦点，并优先推荐 AI 基建预算热点与高使用率候选；同时拆分 scorecard scoring helper、焦点与状态契约测试，帮助后续 agent 处理规则、skill、MCP 和维护余量缺口
+- **治理上下文与产物扩展**: `check-ai-governance --json`、MCP `ai_governance_context` 和 `write-ai-governance-artifacts` 固定透出 scorecard，并写出 `ai-governance-scorecard.json`；报告 failure groups builder、MCP context builder、stdio client 与 framing helper 分层，保持真实 server 链路可验证
+- **Skill 契约测试分层**: 将 frontmatter 元数据负例拆入 `aiGovernanceSkillFrontmatterContract.test.mjs`，并把 Codex skill 内容读取和命令契约预算拆到独立 helper/子表，收紧原 skill 契约测试与入口预算，让 scorecard 的下一步焦点能逐步消化 AI 基建热点
+- **脚本可达性测试分层**: 将生产 import 图和测试支撑边界负例拆入 `aiGovernanceScriptReachabilityImportGraph.test.mjs`，将完整报告聚合负例拆入 `aiGovernanceScriptReachabilityReport.test.mjs`，并把本地 import 图收集器拆入独立 helper，降低脚本可达性测试与实现的维护水位
+- **AI 治理预算分层**: 将核心治理测试预算迁入 `maintainability-budget-governance-ai-core-test-rules.mjs`，拆分自动化契约、引用入口、项目事实数据库契约、决策账本生产、MCP server/stdio 测试预算、资产注册表最近复核日期测试和公网路由门禁解析，让预算聚合入口回到组合职责
+- **同源入口测试分层**: 将工具薄入口共享片段、权威来源和历史记录负例拆入 `aiGovernanceMirroredEntryToolContract.test.mjs`，并用共享 fixture 降低重复脚手架
+- **章节、决策账本与发现入口分层**: 将子 Agent 委派章节、代码块伪标题、决策账本锁定测试命令和引用入口负例拆入独立测试文件，拆出决策账本测试/生产预算子表、引用解析 helper、discovery 精确入口清单和发现预算子表，降低章节引用、决策账本和资产发现配置维护水位
+- **Codex skill 版本推进**: `jsonutils-maintainer` skill 随 AI 治理成熟度 scorecard、测试分层和预算分层升级到 `0.1.17`
 
 ## v1.8.741 (2026-07-10) - 装箱单后台路径直出
 ### 🐛 Bug 修复

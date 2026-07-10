@@ -1,7 +1,7 @@
 ---
 name: jsonutils-maintainer
 description: JSONUtils 项目维护技能。用于优化性能、重构可维护性较差的模块、补充 Scheme/CMD 解析能力、维护前后端测试门禁、更新 AI 协作规范和部署排查流程。
-version: 0.1.17
+version: 0.1.26
 tags: [jsonutils, governance, ai-infra, maintenance]
 ---
 
@@ -43,6 +43,7 @@ node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 # 用户反馈旧 chunk URL 时追加: --extra-asset https://jsonutils.markz.fun/assets/xxx.js
 node scripts/ci/check-maintainability-budgets.mjs
 node scripts/ci/write-ai-governance-artifacts.mjs
+node scripts/ci/write-ai-governance-artifacts.mjs --check
 node --test scripts/mcp/*.test.mjs
 ```
 
@@ -68,7 +69,7 @@ mvn test
 - 首屏性能优化要用构建产物和 preload 检查证明，不凭感觉判断。
 - 手动懒加载 `import()` 或相关 catch 改动要运行 `node scripts/ci/check-chunk-load-recovery-catches.mjs`，并通过 `dispatchChunkLoadRecoveryEvent` 保留旧 chunk 失效刷新恢复能力。
 - 前端 Docker/Compose/Nginx 发布改动要保护旧 hash assets，并用公网资源巡检校验 JS/CSS `Content-Type`、CSS `url(...)` 二级资源和 CSS `@import` 链路，避免长时间打开页面后懒加载 chunk 404 或缺失 chunk fallback 成 HTML。
-- 同机外部业务域名的 Nginx 改动不能只验证 HTTP 200；`/admin.html` 这类历史后台路径要同时直出业务页面、清理本域缓存并把地址栏归位到裸域，部署 smoke 需要锁住可执行证据，避免旧 301 缓存继续误导用户。
+- 同机外部业务域名的 Nginx 改动不能只验证 HTTP 200；`/admin.html` 这类历史后台路径要用本域 `/index.html` 承接、清理本域缓存，并用一次性裸域 query 绕过浏览器对 `/` 的旧 301 精确缓存，再把地址栏归位到裸域，部署 smoke 需要锁住可执行证据。
 - 部署 shell、GitHub shell helper、本地 CI 入口或 `.github/workflows/*.yml` 的 `workflow run` 块改动后先跑 `node scripts/ci/check-deploy-shell-syntax.mjs`，避免外层脚本、内联 run 和 `REMOTE_SCRIPT heredoc` 远端片段语法错误进入上线链路。
 - 大输入处理优先走 worker、采样、预算和降级提示。
 - AI 修复能力必须明确本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
@@ -77,6 +78,7 @@ mvn test
 - `.github/workflows/ai-governance.yml` 必须保留 weekly schedule、workflow_dispatch、治理脚本单测、MCP 测试和 artifact 上传，用定时巡检覆盖长期不改文件时的 AI 资产漂移风险。
 - 新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，治理 helper 和锁定测试都不能游离在预算所有权之外。
 - 新增 `scripts/ci/aiGovernance*.mjs` 非测试 helper 时还要接入调用所有权：生产契约、规则、引用和失败收集 helper 必须进入 `check-ai-governance` 生产 import 图；只有 `*TestFixtures.mjs` 和 `*MissingCases.mjs` 测试支撑文件允许 test-only。
+- AI 治理 JSON、MCP context 和 artifact 产物需要保留成熟度 scorecard 与 nextFocus，让后续 agent 先处理明确的规则、skill、MCP 或预算缺口；读取已有 `artifacts/ai-governance/*` 前先运行 `node scripts/ci/write-ai-governance-artifacts.mjs --check`，失败后重跑产物脚本，避免旧 summary/context 误导判断。
 - AGENTS/CLAUDE 这类同源入口要成对更新；Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的薄入口共享核心规则片段由治理脚本做漂移检查，并在共享片段描述中保留权威来源文件和锚点，避免薄入口硬编码内容脱离权威规则。
 - AGENTS/CLAUDE 作为首读核心入口必须直接引用 `docs/AI-ASSET-REGISTRY.md`，新增资产治理规则不能只留在 Playbook 或工具薄入口里。
 - AGENTS、CLAUDE 和 `rules/code-style.md` 的技术栈事实要与真实配置对齐；数据库和关键主版本事实由 `check-ai-governance` 从后端配置、前后端依赖、前端 lock 和 Compose 文件反查，避免旧技术栈说明误导后续 agent。
@@ -85,7 +87,7 @@ mvn test
 - AI 资产注册表每条登记都要维护真实有效且不晚于当前日期的 `YYYY-MM-DD` 最近复核日期；修改资产行时同步更新日期，但不把它扩展成自动提醒系统。
 - 新增 `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、项目级 MCP 配置（根 MCP、Cursor MCP、VS Code MCP）、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`.comate/`、`docs/AI-*.md` 或 `rules/ai-*.md` 下的 AI 协作资产时，必须同步 `docs/AI-ASSET-REGISTRY.md`，并纳入治理清单、引用规则或显式豁免，防止 rules/skills 文档游离在门禁之外。
 - 项目级 MCP 配置必须是合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map；每个 server 至少声明 `command` 或 `url`，`command`、`args`、`env` 等常见字段要保持可执行结构，不能用 shell 包装命令或绝对路径，仓库内脚本参数必须存在，token、secret、password、api key、authorization 等敏感字段及 URL/args/header 字符串中的敏感值只能写环境变量引用，不能提交明文。
-- `.mcp.json` 默认暴露 `jsonutils-governance` 本地 MCP server；该 server 只能提供只读治理资源和固定治理报告/上下文工具，禁止扩展成任意 shell 或通用文件读取入口。
-- MCP server 或 context helper 改动后，`node --test scripts/mcp/*.test.mjs` 必须覆盖真实 stdio 启动、工具清单、治理资源读取和 `ai_governance_context` 调用，避免后续 agent 拿不到治理上下文。
+- `.mcp.json` 默认暴露 `jsonutils-governance` 本地 MCP server；该 server 只能提供只读治理资源和固定治理报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot 与 validation plan 工具，禁止扩展成任意 shell 或通用文件读取入口。
+- MCP server 或 context helper 改动后，`node --test scripts/mcp/*.test.mjs` 必须覆盖真实 stdio 启动、工具清单、治理资源读取和 `ai_governance_context` / `ai_governance_scorecard` / `ai_asset_inventory` / `ai_decision_summary` / `ai_handoff_brief` / `ai_worktree_snapshot` / `ai_validation_plan` 调用，避免后续 agent 拿不到治理上下文、成熟度焦点、资产清单、决策脉络、交接摘要、工作区状态或建议验证命令。
 - 项目级 Codex skill 不是普通 Markdown 笔记；必须保持 `## 必读文件`、`## 工作流`、`## 常用验证命令`、`## 重点边界` 结构，且当前 frontmatter `name` 与 `version` 要能从 `CHANGELOG.md` 同一条记录追溯，方便后续 agent 按固定入口执行并判断迁移版本。
 - 项目级 Codex skill 中反引号包裹的具体项目路径、fenced `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须真实存在，迁移或重命名后用 `node scripts/ci/check-ai-governance.mjs` 反查，避免 skill 引用失效。

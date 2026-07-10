@@ -14,7 +14,7 @@
 | 定时 AI 治理 | `.github/workflows/ai-governance.yml` | 每周运行治理脚本单测、MCP 测试和治理 artifact 产出，并保留手动触发 |
 | Cursor | `.cursorrules`、`.cursor/rules/**/*.mdc` | 薄入口，转发到主规范和 Playbook |
 | MCP 配置 | `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json` | 项目级 MCP server 能力边界，精确文件进入治理，并校验 JSON 结构、命令路径和敏感字段 |
-| 本地治理 MCP | `scripts/mcp/jsonutils-governance-server.mjs`、`scripts/mcp/jsonutils-governance-context.mjs` | 只读暴露 AI 治理文档、固定 JSON 报告和紧凑上下文快照，供支持 MCP 的 AI 助手快速获取治理状态 |
+| 本地治理 MCP | `scripts/mcp/jsonutils-governance-server.mjs`、`scripts/mcp/jsonutils-governance-tool-definitions.mjs`、`scripts/mcp/jsonutils-governance-tools.mjs`、`scripts/mcp/jsonutils-governance-report-tool.mjs`、`scripts/mcp/jsonutils-governance-scorecard-tool.mjs`、`scripts/mcp/jsonutils-governance-assets.mjs`、`scripts/mcp/jsonutils-governance-context.mjs`、`scripts/mcp/jsonutils-governance-decisions.mjs`、`scripts/mcp/jsonutils-governance-handoff.mjs`、`scripts/mcp/jsonutils-governance-validation-plan.mjs`、`scripts/mcp/jsonutils-governance-worktree.mjs` | 只读暴露 AI 治理文档、固定 JSON 报告、固定成熟度 scorecard、紧凑上下文快照、asset inventory、decision summary、handoff brief、artifact freshness 状态、worktree snapshot 和 validation plan，handoff 会直接带出 AI 基建清零状态，validation plan 用完整 changed-file 集合匹配命令并标明 bounded 样本覆盖范围，固定工具定义与分发拆开维护，固定治理报告与 scorecard 使用同源焦点，供支持 MCP 的 AI 助手快速获取治理状态、资产清单与建议验证命令 |
 | Comate | `.comate/rules/code-style.md` | 薄入口，和 Cursor 保持共享核心片段 |
 | 跨工具执行闭环 | `docs/AI-ENGINEERING-PLAYBOOK.md` | 子 Agent 委派、验证矩阵、规则进化和治理校验的权威文档 |
 | 配置分层说明 | `docs/AI-CONFIG-INTEGRATION.md` | 说明入口、rules、skills、本机配置和显式豁免的关系 |
@@ -60,7 +60,7 @@ node --test scripts/mcp/*.test.mjs
 git diff --check
 ```
 
-需要给 CI artifact、子 Agent 或审计脚本消费结构化结果时，运行 `node scripts/ci/write-ai-governance-artifacts.mjs`；它会写出治理 JSON、预算 JSON、治理 context 快照和 Markdown summary。单独调试治理报告时可运行 `node scripts/ci/check-ai-governance.mjs --json`。
+需要给 CI artifact、子 Agent 或审计脚本消费结构化结果时，运行 `node scripts/ci/write-ai-governance-artifacts.mjs`；它会写出治理 JSON、预算 JSON、带 `generatedAt` 的成熟度 scorecard、治理 context 快照和 Markdown summary。读取已有 `artifacts/ai-governance/*` 前可先运行 `node scripts/ci/write-ai-governance-artifacts.mjs --check`，确认产物没有落后于当前治理报告；单独调试治理报告时可运行 `node scripts/ci/check-ai-governance.mjs --json`。
 
 准备提交或发布前，还要按变更范围运行：
 
@@ -87,7 +87,7 @@ node scripts/ci/check-production-frontend-assets.mjs https://jsonutils.markz.fun
 - `.codex/skills/*/SKILL.md` 必须保留 frontmatter `name`、`description`、`version`、`tags`、必读文件、工作流、常用验证命令和重点边界。
 - `.github/workflows/ai-governance.yml` 必须保留 weekly schedule、workflow_dispatch、治理脚本单测、MCP 测试和 artifact 上传。
 - `.claude/`、`.codex/`、`.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.comate/`、`docs/AI-*.md` 和 `rules/ai-*.md` 新增协作资产必须进入 `docs/AI-ASSET-REGISTRY.md`、治理清单、引用规则或显式豁免。
-- MCP 配置必须声明 `mcpServers` 或 `servers`，避免 shell 包装命令、绝对路径、上跳路径、缺失本地脚本和敏感字段明文；`jsonutils-governance` server 只能暴露只读资源和固定治理报告/上下文工具。
+- MCP 配置必须声明 `mcpServers` 或 `servers`，避免 shell 包装命令、绝对路径、上跳路径、缺失本地脚本和敏感字段明文；`jsonutils-governance` server 只能暴露只读资源和固定治理报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot 与 validation plan 工具。
 - rules、skills 或治理脚本变更必须能从 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md` 反查触发原因与锁定测试，且决策账本回写追踪必须包含账本自身。
 - CHANGELOG 和版本文件必须通过 `check-version-consistency` 校验。
 

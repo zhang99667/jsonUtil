@@ -49,8 +49,21 @@
 | `.codex/README.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 目录索引 | 说明 Codex 项目资产边界和旧 chunk / 部署验证入口，并保持共享核心规则片段同源且可反查权威来源 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.codex/skills/jsonutils-maintainer/SKILL.md` | 可迁移技能 | 项目维护者 | 变更时复核 | 2026-07-10 | 可迁移技能 | 保留与目录一致的 frontmatter name、可追踪 version、可检索 tags、必读文件、工作流、常用验证命令和重点边界，当前 name/version 必须可从 CHANGELOG 同行追溯，并确保命令块里的工作目录与脚本可达 | Codex skill 契约检查、skill 引用规则、自动发现规则 |
 | `.mcp.json` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 项目级 MCP 配置 | 暴露 `jsonutils-governance` 本地 MCP server，配置只使用 `node` 直连仓库内脚本，不携带明文凭据或 shell 包装命令 | 必需文件、自动发现规则、资产注册表结构化校验 |
-| `scripts/mcp/jsonutils-governance-server.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 服务 | 只读暴露 AI Playbook、资产注册表、决策账本和 maintainer skill，并只提供固定治理报告/上下文工具，不开放任意 shell | 必需文件、自动发现规则、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-server.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 服务 | 只读暴露 AI Playbook、资产注册表、决策账本和 maintainer skill，并只提供固定治理报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot 和 validation plan 工具，不开放任意 shell | 必需文件、自动发现规则、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-tool-definitions.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 独立维护固定治理报告、预算报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot 和 validation plan 工具名称、顺序和 input schema | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-tools.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 独立维护固定治理报告、预算报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot 和 validation plan 工具分发与固定脚本调用，server 只调用该 helper | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-report-tool.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 组合固定治理报告和预算报告，把 `ai_governance_report` 的成熟度 scorecard 与 `ai_governance_scorecard` 保持同源，不开放任意 shell | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-scorecard-tool.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 复用治理 context 构造固定 `ai_governance_scorecard` 载荷，保证 scorecard schema 与 context 同源，不开放任意 shell | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-assets.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 复用资产注册表 Markdown 表解析器，bounded 输出 AI 协作资产清单、状态/类型/责任人计数和治理证据，不开放任意路径读取 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-decisions.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 复用决策账本 Markdown 表解析器，bounded 输出最近治理决策、回写文件和锁定命令，供 MCP agent 快速理解规则演进脉络 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-handoff.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 独立组合治理上下文、成熟度焦点、AI 基建清零状态、worktree snapshot 和交接风险，产出 bounded handoff brief，不新增任意命令或文件读取能力 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-validation-plan.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 根据完整 changed-file 集合匹配建议验证命令，同时 bounded 返回命中规则、样本覆盖范围和未分类文件，不执行命令或开放任意 shell | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-worktree.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 独立维护固定 `git status --porcelain=v1 --branch` worktree snapshot、分支 ahead/behind 解析和受限文件样本，不读取文件内容或开放任意 git 命令 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-resources.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 独立维护治理 MCP 的只读资源 URI、文件映射和读取边界，server 只调用该 helper，不开放任意路径读取 | 必需文件、自动发现规则、资产注册表结构化校验、可维护性预算 |
 | `scripts/mcp/jsonutils-governance-context.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 组合固定治理/预算 JSON 报告、版本、最新决策和下一步命令，产出给 AI 助手消费的紧凑上下文快照 | 必需文件、自动发现规则、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-context-builder.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 独立维护治理 context schema 装配，项目摘要和报告摘要由专用 helper 提供 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-project-summary.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 独立读取项目 package、CHANGELOG 顶部版本和决策账本最新记录，供治理 context 复用 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-report-summary.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 独立维护治理失败计数、预算热点、成熟度 scorecard 和下一步命令摘要，供治理 context 复用 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `.github/copilot-instructions.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | GitHub Copilot 仓库级 instructions，转发到主规范、Playbook 和 skill，并保持共享核心规则片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.cursorrules` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | Cursor 入口，与 `.comate/rules/code-style.md` 保持共享核心片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查 |
 | `.comate/rules/code-style.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-09 | 工具薄入口 | Comate 入口，与 `.cursorrules` 保持共享核心片段同源且可反查权威来源 | 必需文件、工具入口引用规则、同源片段漂移检查 |
@@ -67,7 +80,7 @@
 | 资产 | 状态 | 责任人 | 复核节奏 | 最近复核 | 类型 | 维护契约 | 治理证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `scripts/ci/check-ai-governance.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-09 | AI 治理入口 | 聚合文件存在、引用规则、同源入口与薄入口权威源、MCP 配置契约、AI 修复安全证据与跳过检测、项目事实与版本事实、skill 契约、skill 引用契约、CI 契约和资产注册表检查，并支持人读与 JSON 摘要失败分组 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/write-ai-governance-artifacts.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-10 | CI 产物 | 在 CI 和 local-ci 中固定写出 AI 治理 JSON、可维护性预算 JSON、治理 context 快照和 Markdown summary，供 artifact、Step Summary 和子 Agent 复用 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/write-ai-governance-artifacts.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-10 | CI 产物 | 在 CI 和 local-ci 中固定写出 AI 治理 JSON、可维护性预算 JSON、带生成时间的治理 context/scorecard 快照和 Markdown summary，并提供 `--check` 拦截旧产物漂移 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/check-version-consistency.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-09 | 发布门禁 | 校验前端版本、锁文件、CHANGELOG 顶部版本区块、条目数量和发布说明结构 | 必需文件、运行时引用规则、可维护性预算 |
 | `scripts/ci/check-maintainability-budgets.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-09 | 可维护性门禁 | 校验模块行数预算，防止治理脚本继续堆成大文件 | 必需文件、运行时引用规则、可维护性预算 |
 | `scripts/ci/check-deploy-shell-syntax.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-09 | 部署门禁 | 校验部署 shell、workflow run 和 REMOTE_SCRIPT heredoc 语法 | 必需文件、发布引用规则、可维护性预算 |

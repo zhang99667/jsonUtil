@@ -326,6 +326,10 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(requiredFiles.includes('.claude/README.md'), true);
   assert.equal(requiredFiles.includes('.cursorrules'), true);
   assert.equal(requiredFiles.includes('.comate/rules/code-style.md'), true);
+  assert.equal(requiredFiles.includes('.mcp.json'), true);
+  assert.equal(requiredFiles.includes('scripts/mcp/jsonutils-governance-report-tool.mjs'), true);
+  assert.equal(requiredFiles.includes('scripts/mcp/jsonutils-governance-scorecard-tool.mjs'), true);
+  assert.equal(requiredFiles.includes('scripts/mcp/jsonutils-governance-assets.mjs'), true);
   assert.equal(requiredFiles.includes('scripts/ci/check-version-consistency.mjs'), true);
   assert.equal(requiredFiles.includes('scripts/ci/check-ai-governance.mjs'), true);
   AI_GOVERNANCE_CI_COMMAND_FILES.forEach(file => assert.equal(requiredFiles.includes(file), true));
