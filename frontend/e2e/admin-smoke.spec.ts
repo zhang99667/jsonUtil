@@ -140,3 +140,21 @@ test('后台图表依赖只在流量统计页按需加载', async ({ page }) => 
       assets.some(name => name.includes('vendor-antv-g2'));
   }).toBe(true);
 });
+
+test('流量接口局部失败时保留其他统计结果', async ({ page }) => {
+  await page.route('**/api/admin/traffic/geo-distribution*', async route => {
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 500, message: '地区统计暂不可用', data: null }),
+    });
+  });
+
+  await page.goto('/admin.html');
+  await page.getByRole('menuitem', { name: '流量统计' }).click();
+
+  await expect(page.getByText('部分数据不可用')).toBeVisible();
+  await expect(page.getByText('工具使用洞察')).toBeVisible();
+  await expect(page.getByText('Desktop')).toBeVisible();
+  await expect(page.getByText('Chrome')).toBeVisible();
+});

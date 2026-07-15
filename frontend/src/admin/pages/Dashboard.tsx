@@ -1,41 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Row, Col, Statistic, Spin, Typography } from 'antd';
+import { Row, Col, Statistic, Spin, Typography, theme } from 'antd';
 import { UserOutlined, PayCircleOutlined, ThunderboltOutlined, EyeOutlined, TeamOutlined, DashboardOutlined } from '@ant-design/icons';
 import { getStatistics, Statistics } from '../services/stats';
+import { gradients } from '../styles/theme';
 
 const { Title } = Typography;
-
-/** 英雄卡片通用样式 */
-const heroCardBase: React.CSSProperties = {
-    borderRadius: 16,
-    padding: 28,
-    position: 'relative',
-    overflow: 'hidden',
-    color: '#fff',
-};
-
-/** 英雄卡片右上角装饰图标样式 */
-const heroIconStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    fontSize: 40,
-    opacity: 0.2,
-    color: '#fff',
-};
-
-/** 今日流量内嵌白色卡片样式 */
-const trafficCardBase: React.CSSProperties = {
-    background: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-};
 
 const Dashboard: React.FC = () => {
     const [stats, setStats] = useState<Statistics | null>(null);
     const [loading, setLoading] = useState(true);
     const statsRequestIdRef = useRef(0);
+    const { token } = theme.useToken();
+    const heroCardBase: React.CSSProperties = {
+        borderRadius: 16,
+        padding: 28,
+        position: 'relative',
+        overflow: 'hidden',
+        color: token.colorTextLightSolid,
+    };
+    const heroIconStyle: React.CSSProperties = {
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        fontSize: 40,
+        opacity: 0.2,
+        color: token.colorTextLightSolid,
+    };
+    const heroValueStyle: React.CSSProperties = {
+        color: token.colorTextLightSolid,
+        fontSize: 32,
+        fontWeight: 700,
+    };
+    const trafficCardBase: React.CSSProperties = {
+        background: token.colorBgContainer,
+        borderRadius: token.borderRadiusLG,
+        padding: 24,
+        boxShadow: token.boxShadowTertiary,
+    };
 
     useEffect(() => {
         const requestId = ++statsRequestIdRef.current;
@@ -92,14 +93,14 @@ const Dashboard: React.FC = () => {
                     <div
                         style={{
                             ...heroCardBase,
-                            background: 'linear-gradient(135deg, #5B6EF5 0%, #8B9CF7 100%)',
+                            background: gradients.blue,
                         }}
                     >
                         <UserOutlined style={heroIconStyle} />
                         <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 8 }}>总用户数</div>
                         <Statistic
                             value={stats?.totalUsers || 0}
-                            valueStyle={{ color: '#fff', fontSize: 32, fontWeight: 700 }}
+                            valueStyle={heroValueStyle}
                         />
                     </div>
                 </Col>
@@ -109,14 +110,14 @@ const Dashboard: React.FC = () => {
                     <div
                         style={{
                             ...heroCardBase,
-                            background: 'linear-gradient(135deg, #7C5BF5 0%, #A78BFA 100%)',
+                            background: gradients.violet,
                         }}
                     >
                         <ThunderboltOutlined style={heroIconStyle} />
                         <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 8 }}>活跃订阅</div>
                         <Statistic
                             value={stats?.activeSubscriptions || 0}
-                            valueStyle={{ color: '#fff', fontSize: 32, fontWeight: 700 }}
+                            valueStyle={heroValueStyle}
                         />
                     </div>
                 </Col>
@@ -126,7 +127,7 @@ const Dashboard: React.FC = () => {
                     <div
                         style={{
                             ...heroCardBase,
-                            background: 'linear-gradient(135deg, #10B981 0%, #6EE7B7 100%)',
+                            background: gradients.emerald,
                         }}
                     >
                         <PayCircleOutlined style={heroIconStyle} />
@@ -134,7 +135,7 @@ const Dashboard: React.FC = () => {
                         <Statistic
                             value={stats?.totalRevenue || 0}
                             precision={2}
-                            valueStyle={{ color: '#fff', fontSize: 32, fontWeight: 700 }}
+                            valueStyle={heroValueStyle}
                         />
                     </div>
                 </Col>
@@ -144,11 +145,11 @@ const Dashboard: React.FC = () => {
             <div
                 style={{
                     marginTop: 28,
-                    borderLeft: '3px solid #5B6EF5',
+                    borderLeft: `3px solid ${token.colorPrimary}`,
                     paddingLeft: 12,
                     fontSize: 16,
                     fontWeight: 600,
-                    color: '#1A1D2E',
+                    color: token.colorText,
                 }}
             >
                 今日流量
@@ -161,7 +162,7 @@ const Dashboard: React.FC = () => {
                         <Statistic
                             title="浏览量 (PV)"
                             value={stats?.todayPv || 0}
-                            prefix={<EyeOutlined style={{ color: '#5B6EF5' }} />}
+                            prefix={<EyeOutlined style={{ color: token.colorPrimary }} />}
                             valueStyle={{ fontSize: 28 }}
                         />
                     </div>
@@ -173,7 +174,7 @@ const Dashboard: React.FC = () => {
                         <Statistic
                             title="访客数 (UV)"
                             value={stats?.todayUv || 0}
-                            prefix={<TeamOutlined style={{ color: '#10B981' }} />}
+                            prefix={<TeamOutlined style={{ color: token.colorSuccess }} />}
                             valueStyle={{ fontSize: 28 }}
                         />
                     </div>

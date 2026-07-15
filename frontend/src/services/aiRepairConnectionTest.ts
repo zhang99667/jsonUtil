@@ -1,4 +1,5 @@
 import { AiRepairErrorCode, createAiRepairError } from '../utils/aiRepairErrors';
+import { isRecord } from '../utils/storage';
 
 export const AI_CONNECTION_TEST_INPUT = '{connection:true}';
 export const AI_CONNECTION_TEST_INVALID_MESSAGE = 'AI 连接测试返回内容不符合预期，请检查模型配置';
@@ -16,7 +17,3 @@ export const assertAiConnectionTestResult = (fixedJson: string): void => {
     throw createAiRepairError(AiRepairErrorCode.ConnectionTestInvalid, AI_CONNECTION_TEST_INVALID_MESSAGE);
   }
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-);

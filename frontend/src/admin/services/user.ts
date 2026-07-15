@@ -77,10 +77,3 @@ export const updateUser = async (id: number, data: UpdateUserParams) => {
 export const deleteUser = async (id: number) => {
     return request.delete(`/admin/users/${id}`);
 };
-
-/**
- * 切换用户启用/禁用状态
- */
-export const toggleUserEnabled = async (id: number) => {
-    return request.put(`/admin/users/${id}/toggle-enabled`);
-};
