@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider, GeneralSettings } from '../types';
 import { buildAIConfigForProviderChange } from '../utils/appSettings';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
+import { getErrorMessage } from '../utils/errors';
 import { getAIProviderBaseUrlPlaceholder, getAIProviderDefaultModel } from '../utils/aiProviderDefaults';
 import {
     getAIProviderConfigValidationError,
@@ -297,7 +298,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         } catch (error: unknown) {
             if (dispatchChunkLoadRecoveryEvent(error)) return;
 
-            const message = error instanceof Error ? error.message : '连接测试失败';
+            const message = getErrorMessage(error, '连接测试失败');
             if (testVersion === aiConfigVersionRef.current) {
                 setAiTestResult({ type: 'error', message });
             }
@@ -556,7 +557,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                 <option value={AIProvider.GEMINI}>Google Gemini</option>
                                 <option value={AIProvider.OPENAI}>OpenAI</option>
                                 <option value={AIProvider.QWEN}>阿里云 - 通义千问 (Qwen)</option>
-                                <option value={AIProvider.ERNIE}>百度 - 文心一言 (ERNIE)</option>
                                 <option value={AIProvider.GLM}>智谱AI - ChatGLM</option>
                                 <option value={AIProvider.DEEPSEEK}>DeepSeek</option>
                                 <option value={AIProvider.CUSTOM}>自定义 (OpenAI Compatible)</option>
@@ -608,7 +608,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded p-3">
                                 <p className="text-xs text-emerald-300 leading-relaxed">
                                     {localAIConfig.provider === AIProvider.QWEN && '💡 通义千问支持 OpenAI 兼容接口，请确保使用正确的 API Key 和 Base URL'}
-                                    {localAIConfig.provider === AIProvider.ERNIE && '💡 文心一言当前走 OpenAI 兼容接口，请填写可用于 Bearer 鉴权的 API Key 和 Base URL'}
                                     {localAIConfig.provider === AIProvider.GLM && '💡 智谱AI 支持 OpenAI 兼容接口，请使用您的 API Key'}
                                     {localAIConfig.provider === AIProvider.DEEPSEEK && '💡 DeepSeek 使用 OpenAI 兼容接口，支持高性价比的推理服务'}
                                 </p>

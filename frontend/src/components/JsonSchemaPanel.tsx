@@ -27,7 +27,7 @@ import {
   upsertJsonSchemaLibraryItem,
   type JsonSchemaLibraryItem,
 } from '../utils/jsonSchemaLibrary';
-import { safeGetStorageItem, safeSetStorageItem } from '../utils/storage';
+import { parseJsonWithFallback, safeGetStorageItem, safeSetStorageItem } from '../utils/storage';
 import { showError, showSuccess } from '../utils/toast';
 import {
   getDurationBucket,
@@ -138,12 +138,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   const canCopyIssueChecklist = Boolean(result?.issues.length);
   const parsedJsonData = useMemo((): unknown | undefined => {
     if (!result?.issues.length) return undefined;
-
-    try {
-      return JSON.parse(jsonData);
-    } catch {
-      return undefined;
-    }
+    return parseJsonWithFallback<unknown | undefined>(jsonData, undefined);
   }, [jsonData, result?.issues.length]);
 
   const handleSchemaChange = useCallback((value: string) => {
@@ -155,9 +150,18 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     onValidationResult?.(null);
   }, [onValidationResult]);
 
-  const persistSchemaLibrary = useCallback((items: JsonSchemaLibraryItem[]) => {
+  const persistSchemaLibrary = useCallback((items: JsonSchemaLibraryItem[]): boolean => {
+    const saved = safeSetStorageItem(
+      JSON_SCHEMA_LIBRARY_STORAGE_KEY,
+      serializeJsonSchemaLibrary(items),
+    );
+    if (!saved) {
+      showError('保存 Schema 收藏失败，请检查浏览器存储空间');
+      return false;
+    }
+
     setSchemaLibrary(items);
-    safeSetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY, serializeJsonSchemaLibrary(items));
+    return true;
   }, []);
 
   const handleValidate = useCallback(() => {
@@ -365,7 +369,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
     if (!schemaText.trim()) return;
 
     const nextLibrary = upsertJsonSchemaLibraryItem(schemaLibrary, schemaText);
-    persistSchemaLibrary(nextLibrary);
+    if (!persistSchemaLibrary(nextLibrary)) return;
     showSuccess(`已收藏 Schema: ${nextLibrary[0]?.name || '未命名 Schema'}`);
   }, [persistSchemaLibrary, schemaLibrary, schemaText]);
 
@@ -376,7 +380,7 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
   }, [handleSchemaChange]);
 
   const handleRemoveSchema = useCallback((itemId: string) => {
-    persistSchemaLibrary(removeJsonSchemaLibraryItem(schemaLibrary, itemId));
+    if (!persistSchemaLibrary(removeJsonSchemaLibraryItem(schemaLibrary, itemId))) return;
     showSuccess('已删除 Schema 收藏');
   }, [persistSchemaLibrary, schemaLibrary]);
 
@@ -436,7 +440,15 @@ export const JsonSchemaPanel: React.FC<JsonSchemaPanelProps> = ({
         return;
       }
 
-      persistSchemaLibrary(importResult.items);
+      if (!persistSchemaLibrary(importResult.items)) {
+        trackToolEvent({
+          eventName: 'SCHEMA_LIBRARY_IMPORT',
+          category: 'schema',
+          status: 'error',
+          inputSizeBucket: getTextSizeBucket(text),
+        });
+        return;
+      }
       trackToolEvent({
         eventName: 'SCHEMA_LIBRARY_IMPORT',
         category: 'schema',

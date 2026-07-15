@@ -6,7 +6,6 @@ import { TemplateFillPlaceholderForm } from './TemplateFillPlaceholderForm';
 import { TemplateFillPlaceholderSummary } from './TemplateFillPlaceholderSummary';
 import { TemplateFillQualityDeltaPanel } from './TemplateFillQualityDeltaPanel';
 import { TemplateFillStatusAlerts } from './TemplateFillStatusAlerts';
-import { validateJson } from '../utils/transformations';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { TEMPLATE_FILL_STORAGE_KEY, loadTemplateFillConfig } from '../utils/appSettings';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
@@ -16,6 +15,7 @@ import {
   formatTemplateSizeLabel,
   parsePlaceholderTemplateDraft,
   updatePlaceholderReplacement,
+  validateTemplateJson,
   type PlaceholderTemplateDetail,
 } from '../utils/templateFillPanelModel';
 import toast from 'react-hot-toast';
@@ -43,10 +43,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   const [template, setTemplate] = useState<string>(() => loadTemplateFillConfig().template);
 
   // 实时 JSON 校验
-  const validation = useMemo(() => {
-    if (!template.trim()) return { isValid: true };
-    return validateJson(template);
-  }, [template]);
+  const validation = useMemo(() => validateTemplateJson(template), [template]);
   const placeholderTemplateSummary = useMemo(() => (
     buildPlaceholderTemplateSummary(template)
   ), [template]);

@@ -1,5 +1,6 @@
 import { TransformMode, type JsonValue } from '../types';
 import { formatUnknownError } from './errors';
+import { isRecord, parseJsonWithFallback } from './storage';
 
 export interface ImportedTextFile {
   content: string;
@@ -76,10 +77,6 @@ const MAX_HAR_PAYLOAD_ENTRIES = 200;
 const MAX_HAR_BODY_TEXT_CHARS = 200_000;
 const EMPTY_HAR_URL_LABEL = '(empty url)';
 
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
 const isHarFileName = (fileName: string): boolean => (
   fileName.trim().toLowerCase().endsWith('.har')
 );
@@ -127,7 +124,7 @@ const looksLikeJson = (value: string): boolean => {
   return trimmed.startsWith('{') || trimmed.startsWith('[');
 };
 
-const decodeBase64Text = (value: string): string | null => {
+const decodeHarBase64TextLossy = (value: string): string | null => {
   try {
     const binary = globalThis.atob(value);
     const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
@@ -312,7 +309,7 @@ const toPayloadBody = (
   if (typeof rawText !== 'string' || rawText.length === 0) return undefined;
 
   const decodedText = encoding === 'base64'
-    ? decodeBase64Text(rawText)
+    ? decodeHarBase64TextLossy(rawText)
     : rawText;
 
   if (encoding === 'base64' && decodedText === null) {
@@ -422,13 +419,7 @@ const toPayloadEntry = (entry: unknown, index: number): HarPayloadEntry | null =
 };
 
 export const extractHarPayloads = (harText: string): HarPayloadExport | null => {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(harText);
-  } catch {
-    return null;
-  }
-
+  const parsed = parseJsonWithFallback<unknown>(harText, null);
   const entries = getHarEntries(parsed);
   if (!entries) return null;
 

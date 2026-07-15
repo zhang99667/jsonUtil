@@ -1,3 +1,5 @@
+import { tryDecodeURIComponent } from './schemeQueryDecoding';
+
 export interface SensitiveIssueSample {
   path: string;
   sourcePath?: string;
@@ -18,8 +20,8 @@ const SENSITIVE_SAMPLE_KEYWORDS = [
   'authorization',
   'android_id',
   'device_id',
-  'baiduid',
-  'baidu_id',
+  'sampleid',
+  'sample_id',
   'password',
   'passwd',
   'session',
@@ -36,13 +38,9 @@ const SENSITIVE_SAMPLE_KEYWORDS = [
 const decodeForSensitiveSearch = (value: string): string => {
   let current = value;
   for (let index = 0; index < 2; index++) {
-    try {
-      const decoded = decodeURIComponent(current.replace(/\+/g, ' '));
-      if (decoded === current) break;
-      current = decoded;
-    } catch {
-      break;
-    }
+    const decoded = tryDecodeURIComponent(current.replace(/\+/g, ' '));
+    if (decoded === null || decoded === current) break;
+    current = decoded;
   }
   return current;
 };

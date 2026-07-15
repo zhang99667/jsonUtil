@@ -7,7 +7,6 @@ const AI_PROVIDER_DEFAULT_MODELS: Record<AIProvider, string> = {
   [AIProvider.GEMINI]: 'gemini-2.0-flash',
   [AIProvider.OPENAI]: 'gpt-4o-mini',
   [AIProvider.QWEN]: 'qwen-max',
-  [AIProvider.ERNIE]: 'ernie-4.0-8k',
   [AIProvider.GLM]: 'glm-4',
   [AIProvider.DEEPSEEK]: 'deepseek-chat',
   [AIProvider.CUSTOM]: 'gpt-4o-mini',
@@ -16,7 +15,6 @@ const AI_PROVIDER_DEFAULT_MODELS: Record<AIProvider, string> = {
 const AI_PROVIDER_DEFAULT_BASE_URLS: Partial<Record<AIProvider, string>> = {
   [AIProvider.OPENAI]: OPENAI_COMPATIBLE_FALLBACK_BASE_URL,
   [AIProvider.QWEN]: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-  [AIProvider.ERNIE]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1',
   [AIProvider.GLM]: 'https://open.bigmodel.cn/api/paas/v4',
   [AIProvider.DEEPSEEK]: 'https://api.deepseek.com/v1',
 };

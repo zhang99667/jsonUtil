@@ -1,21 +1,6 @@
-import {
-  buildJsonTreeModel,
-  type BuildJsonTreeModelOptions,
-  type JsonTreeModel,
-} from '../utils/jsonTreeModel';
+import { buildJsonTreeModel } from '../utils/jsonTreeModel';
 import { formatUnknownError } from '../utils/errors';
-
-interface JsonTreeWorkerRequest {
-  id: number;
-  jsonData: string;
-  options?: BuildJsonTreeModelOptions;
-}
-
-export interface JsonTreeWorkerResponse {
-  id: number;
-  model: JsonTreeModel | null;
-  error?: string;
-}
+import type { JsonTreeWorkerRequest, JsonTreeWorkerResponse } from '../utils/jsonTreeWorker';
 
 self.onmessage = (event: MessageEvent<JsonTreeWorkerRequest>) => {
   const { id, jsonData, options } = event.data;

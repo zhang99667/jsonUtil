@@ -69,7 +69,6 @@ export enum AIProvider {
   GEMINI = 'gemini',
   OPENAI = 'openai',
   QWEN = 'qwen',
-  ERNIE = 'ernie',
   GLM = 'glm',
   DEEPSEEK = 'deepseek',
   CUSTOM = 'custom'
@@ -158,14 +157,15 @@ export interface TransformStep {
   type: TransformStepType;
   // 可选：保存原始细节用于精确还原
   originalEncoding?: string;  // 如 'utf-8'
-  originalPadding?: boolean;  // Base64 是否有 padding
+  originalPadding?: boolean;  // Base64 是否有填充符
   originalScheme?: string;    // 原始 CMD/Scheme 字符串
   originalSchemeType?: 'query-string' | 'url' | 'base64'; // 当前支持独立 CMD、URL Scheme 和 Base64 JSON 展开
   originalSchemeReversible?: boolean; // 当前编码层是否支持安全反向还原
   originalSchemeStringLiteral?: boolean; // 原始 Scheme 外层是否为 JSON 字符串字面量
   originalSchemeEscapedSlash?: boolean; // 原始 Scheme 是否包含 JSON 风格的斜杠转义
+  schemeHeaderDisplayKey?: string; // 根 Scheme 在预览中承载协议头的展示字段
   decodedSchemeValue?: JsonValue; // 原始串对应的展开结果，用于无编辑时精确还原
-  schemeParamStageSummary?: TransformSchemeParamStageSummary; // Query 参数分层的脱敏摘要，不能包含原始参数值
+  schemeParamStageSummary?: TransformSchemeParamStageSummary; // 查询参数分层的脱敏摘要，不能包含原始参数值
 }
 
 // 单个路径的转换记录
@@ -213,7 +213,7 @@ export interface JsonInputWrapper {
 // 整个转换的上下文
 export interface TransformContext {
   mode: TransformMode;
-  records: Map<string, PathTransformRecord>;  // path -> record
+  records: Map<string, PathTransformRecord>;  // 路径到转换记录的映射
   timestamp: number;
   originalIndentation: number | string;  // 原始缩进（用于还原格式）
   sourceFormat?: 'json' | 'jsonl' | 'scheme';  // 根输入格式，用于深度格式化后回写

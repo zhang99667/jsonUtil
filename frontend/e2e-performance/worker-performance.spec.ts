@@ -167,7 +167,7 @@ const getTerminateCount = async (page: Page, terminateCounterName: string): Prom
 
 const buildLargeResponse = (marker: string, paddingSize = 70_000): string => {
   const landingUrl = `https://example.com/landing?sku=${marker}&bd_vid=${marker}`;
-  const rootScheme = `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}&from=${marker}`;
+  const rootScheme = `sampleapp://v1/browser/open?url=${encodeURIComponent(landingUrl)}&from=${marker}`;
   const response = {
     errno: 0,
     errmsg: '',

@@ -1,6 +1,6 @@
 
 import { validateJson, performInverseTransform } from './src/utils/transformations.ts';
-// Mock TransformMode locally
+// 在本地模拟 TransformMode。
 enum TransformMode {
     NONE = 'NONE',
     FORMAT = 'FORMAT',

@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useId, useMemo } from 'react';
 import { APP_VERSION_LABEL, normalizeAppVersion } from '../utils/appVersion';
 import {
   APP_CHANGELOG_ENTRIES,
   parseChangelog,
   type ChangelogEntry,
 } from '../utils/changelog';
+import { NativeDialog } from './NativeDialog';
 
 interface ChangelogModalProps {
   isOpen: boolean;
@@ -28,120 +29,30 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
   sourceMarkdown,
   highlightedVersion,
 }) => {
-  const dialogPanelRef = useRef<HTMLDivElement | null>(null);
-  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const previousActiveElementRef = useRef<HTMLElement | null>(null);
-  const wasOpenRef = useRef(false);
+  const titleId = useId();
   const entries = useMemo(() => getEntries(sourceMarkdown), [sourceMarkdown]);
   const normalizedHighlightedVersion = highlightedVersion
     ? normalizeAppVersion(highlightedVersion)
     : entries[0]?.version || null;
   const isRemoteChangelog = Boolean(sourceMarkdown?.trim());
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (event.key !== 'Tab') return;
-
-      const focusableElements: HTMLElement[] = dialogPanelRef.current
-        ? Array.from(dialogPanelRef.current.querySelectorAll(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        )).filter((element): element is HTMLElement => (
-          element instanceof HTMLElement && element.offsetParent !== null
-        ))
-        : [];
-
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      if (!firstElement || !lastElement) return;
-
-      if (!dialogPanelRef.current?.contains(document.activeElement)) {
-        event.preventDefault();
-        firstElement.focus();
-        return;
-      }
-
-      if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement.focus();
-        return;
-      }
-
-      if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      wasOpenRef.current = true;
-      previousActiveElementRef.current = document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-
-      const focusTimer = window.setTimeout(() => {
-        closeButtonRef.current?.focus();
-      }, 0);
-
-      return () => window.clearTimeout(focusTimer);
-    }
-
-    if (!wasOpenRef.current) return;
-
-    wasOpenRef.current = false;
-    const previousActiveElement = previousActiveElementRef.current;
-    previousActiveElementRef.current = null;
-    if (!previousActiveElement?.isConnected) return;
-
-    const restoreTimer = window.setTimeout(() => {
-      previousActiveElement.focus();
-    }, 0);
-
-    return () => window.clearTimeout(restoreTimer);
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
+    <NativeDialog
+      isOpen={isOpen}
+      onRequestClose={onClose}
       data-tour="changelog-modal"
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="changelog-modal-title"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
+      className="w-[calc(100%-2rem)] max-w-[760px] overflow-visible border-0 bg-transparent p-0 text-left backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+      aria-labelledby={titleId}
     >
       <div
-        ref={dialogPanelRef}
-        className="flex max-h-[82vh] w-full max-w-[760px] flex-col overflow-hidden rounded-lg border border-editor-border bg-editor-sidebar shadow-2xl"
+        className="flex max-h-[82vh] w-full flex-col overflow-hidden rounded-lg border border-editor-border bg-editor-sidebar shadow-2xl"
       >
         <div className="flex items-start justify-between gap-4 border-b border-editor-border px-5 py-4">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase text-brand-accent">
               {isRemoteChangelog ? '线上版本' : `当前版本 ${APP_VERSION_LABEL}`}
             </p>
-            <h2 id="changelog-modal-title" className="mt-1 text-lg font-semibold text-white">
+            <h2 id={titleId} className="mt-1 text-lg font-semibold text-white">
               版本更新
             </h2>
             <p className="mt-1 text-xs text-gray-400">
@@ -149,8 +60,8 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
             </p>
           </div>
           <button
-            ref={closeButtonRef}
             type="button"
+            autoFocus
             aria-label="关闭版本更新"
             onClick={onClose}
             className="app-button app-button--ghost p-1.5"
@@ -227,6 +138,6 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </NativeDialog>
   );
 };

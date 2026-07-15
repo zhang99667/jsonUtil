@@ -4,6 +4,7 @@ import {
   formatTemplateSizeLabel,
   parsePlaceholderTemplateDraft,
   PLACEHOLDER_FILL_TEMPLATE_KIND,
+  validateTemplateJson,
 } from './templateFillPanelModel';
 
 const createTemplateText = () => JSON.stringify({
@@ -113,5 +114,23 @@ describe('templateFillPanelModel', () => {
 
   it('格式化模板大小文案', () => {
     expect(formatTemplateSizeLabel('中文ab')).toBe('4 字符 / 8 B');
+  });
+
+  it('模板操作只接受单个标准 JSON 值', () => {
+    expect(validateTemplateJson('')).toEqual({ isValid: true });
+    expect(validateTemplateJson('{"ok":true}')).toEqual({ isValid: true });
+
+    for (const input of [
+      '{"a":1}\n{"b":2}',
+      'const response = {"code":0};',
+      'callback({"code":0});',
+      '```json\n{"code":0}\n```',
+      '{\n  // 标准 JSON 不允许注释\n  "code": 0\n}',
+      "{name:'JSONUtils',}",
+    ]) {
+      const result = validateTemplateJson(input);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBeTruthy();
+    }
   });
 });

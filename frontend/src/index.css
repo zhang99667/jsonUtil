@@ -3,32 +3,32 @@
 @tailwind utilities;
 
 :root {
-  /* VS Code Dark Theme Colors */
+  /* VS Code 暗色主题颜色 */
   --editor-bg: #1e1e1e;
   --editor-sidebar: #252526;
-  /* Side bar background */
+  /* 侧栏背景 */
   --editor-header: #2d2d2d;
-  /* Tab header background */
+  /* 标签栏背景 */
   --editor-border: #333333;
-  /* Borders */
+  /* 边框 */
   --editor-hover: #2a2d2e;
-  /* List hover */
+  /* 列表悬停 */
   --editor-active: #37373d;
-  /* List active / selection */
+  /* 列表激活或选中 */
 
-  /* Text Colors */
+  /* 文本颜色 */
   --editor-fg: #cccccc;
-  /* Primary text */
+  /* 主要文本 */
   --editor-fg-sub: #969696;
-  /* Secondary text/icons */
+  /* 次要文本和图标 */
   --editor-fg-dim: #666666;
-  /* Dimmed text/placeholders */
+  /* 弱化文本和占位符 */
 
-  /* Scrollbar */
+  /* 滚动条 */
   --scrollbar-bg: #424242;
   --scrollbar-hover: #4f4f4f;
 
-  /* Status Colors */
+  /* 状态颜色 */
   --status-error-bg: #3c1515;
   --status-error-border: rgba(127, 29, 29, 0.5);
   --status-error-text: #fca5a5;
@@ -38,10 +38,10 @@
   --status-success-text: #4ade80;
 
   --brand-primary: #007acc;
-  /* VS Code Blue */
+  /* VS Code 蓝色 */
   --brand-hover: #0062a3;
   --brand-danger: #dc2626;
-  /* Error Red */
+  /* 错误红色 */
 }
 
 /* Monaco 提示层：保留诊断、Scheme 图标和字段说明，统一成暗色工作台样式 */
@@ -262,9 +262,6 @@
 .workbench-hover {
   pointer-events: none !important;
 }
-
-
-/* Moved to src */
 .jsonpath-highlight {
   background-color: rgba(234, 179, 8, 0.2) !important;
 }
@@ -428,7 +425,7 @@ body {
   padding: 0;
 }
 
-/* Custom Scrollbar to match VS Code */
+/* 与 VS Code 风格一致的自定义滚动条 */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

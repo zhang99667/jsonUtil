@@ -10,12 +10,12 @@ const DYNAMIC_IMPORT_ERROR_PATTERNS = [
   'chunkloaderror',
 ];
 
-const getErrorMessage = (error: unknown): string => {
+const collectChunkLoadErrorMessageText = (error: unknown): string => {
   return collectChunkLoadErrorMessages(error).join('\n');
 };
 
 export const isDynamicImportLoadError = (error: unknown): boolean => {
-  const message = getErrorMessage(error).toLowerCase();
+  const message = collectChunkLoadErrorMessageText(error).toLowerCase();
   return DYNAMIC_IMPORT_ERROR_PATTERNS.some(pattern => message.includes(pattern));
 };
 

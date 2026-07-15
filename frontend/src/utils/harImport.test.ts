@@ -20,7 +20,7 @@ describe('harImport', () => {
             status: 200,
             content: {
               mimeType: 'application/json',
-              text: '{"ok":true,"cmd":"baiduboxapp://v1/open"}',
+              text: '{"ok":true,"cmd":"sampleapp://v1/open"}',
             },
           },
         },
@@ -82,7 +82,7 @@ describe('harImport', () => {
           kind: 'json',
           value: {
             ok: true,
-            cmd: 'baiduboxapp://v1/open',
+            cmd: 'sampleapp://v1/open',
           },
         },
       },

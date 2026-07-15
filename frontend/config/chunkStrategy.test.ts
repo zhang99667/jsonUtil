@@ -31,6 +31,7 @@ describe('chunkStrategy', () => {
     expect(getManualChunkName('/repo/node_modules/vite/preload-helper.js')).toBe('vendor-runtime');
     expect(getManualChunkName('/repo/node_modules/@emotion/react/dist/index.js')).toBe('vendor-style-runtime');
     expect(getManualChunkName('/repo/node_modules/dayjs/dayjs.min.js')).toBe('vendor-utils');
+    expect(getManualChunkName('/repo/node_modules/fast-deep-equal/index.js')).toBe('vendor-misc');
     expect(getManualChunkName('/repo/node_modules/unknown-lib/index.js')).toBe('vendor-misc');
     expect(getManualChunkName('/repo/src/main.tsx')).toBeUndefined();
   });

@@ -15,6 +15,34 @@ export const DEFAULT_SHORTCUTS: ShortcutConfig = {
 
 export const SHORTCUT_ACTIONS = Object.keys(DEFAULT_SHORTCUTS) as ShortcutAction[];
 
+type ShortcutHandlers = Record<ShortcutAction, () => void>;
+
+const matchesShortcut = (event: KeyboardEvent, shortcut: ShortcutKey): boolean => {
+  if (!shortcut.key) return false;
+
+  return (
+    event.key.toLowerCase() === shortcut.key.toLowerCase() &&
+    event.metaKey === shortcut.meta &&
+    event.ctrlKey === shortcut.ctrl &&
+    event.shiftKey === shortcut.shift &&
+    event.altKey === shortcut.alt
+  );
+};
+
+export const handleShortcutKeyDown = (
+  event: KeyboardEvent,
+  shortcuts: ShortcutConfig,
+  handlers: ShortcutHandlers
+): void => {
+  for (const action of SHORTCUT_ACTIONS) {
+    if (!matchesShortcut(event, shortcuts[action])) continue;
+
+    event.preventDefault();
+    if (!event.repeat) handlers[action]();
+    return;
+  }
+};
+
 const isShortcutKey = (value: unknown): value is ShortcutKey => {
   if (!isRecord(value)) return false;
 

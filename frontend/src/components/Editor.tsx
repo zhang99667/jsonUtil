@@ -1,20 +1,26 @@
 
 
-import React, { Suspense, useEffect, useState, useRef, useCallback } from 'react';
+import React, { Suspense, useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
 import type { editor } from 'monaco-editor';
 import { EditorProps, HighlightRange } from '../types';
 import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { computeLineDiff, shouldSkipLineDiff } from '../utils/diffUtils';
-import { scanSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
+import type { SchemeLocation } from '../utils/schemeScanner';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
+import { useEditorSchemeScan } from '../hooks/useEditorSchemeScan';
 import { TabBar } from './TabBar';
 import { LazySchemeViewerModal } from './appLazyPanels';
 import { buildEditorTabViewStateHandlers } from './editorTabViewStateHandlers';
+import {
+  canApplyEditorSchemeModal,
+  createClosedEditorSchemeModal,
+  createOpenEditorSchemeModal,
+  shouldCloseEditorSchemeModal,
+} from './editorSchemeModalState';
 
-const ASYNC_SCHEME_SCAN_THRESHOLD = 200_000;
 const READ_ONLY_UNLOCK_PROMPT_MARGIN = 12;
 const READ_ONLY_UNLOCK_PROMPT_WIDTH = 96;
 const READ_ONLY_UNLOCK_PROMPT_GAP = 8;
@@ -55,19 +61,11 @@ type MonacoJsonDefaults = {
   };
 };
 
-// 扩展 EditorProps 以支持 scheme 修改回调
+// 扩展 EditorProps 以支持 Scheme 修改回调
 interface ExtendedEditorProps extends EditorProps {
   enableSchemeScan?: boolean;
   errorActions?: React.ReactNode;
   onSchemeEdit?: (path: string, newValue: string, pointer?: string) => void;
-}
-
-interface SchemeScanWorkerResponse {
-  id: number;
-  locations: SchemeLocation[];
-  isLimited: boolean;
-  limit: number;
-  error?: string;
 }
 
 export const CodeEditor: React.FC<ExtendedEditorProps> = ({
@@ -112,17 +110,16 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const canToggleReadOnlyRef = useRef<boolean>(canToggleReadOnly);
 
   // Scheme 检测状态
-  const [schemeLocations, setSchemeLocations] = useState<SchemeLocation[]>([]);
-  const [schemeScanWarning, setSchemeScanWarning] = useState<string>('');
-  const schemeLocationsRef = useRef<SchemeLocation[]>([]); // 用于 onMount 闭包访问最新值
+  const {
+    schemeLocations,
+    schemeScanWarning,
+    schemeLocationsRef,
+    schemeLocationsSourceRef,
+  } = useEditorSchemeScan(value, {
+    enabled: Boolean((enableSchemeScan || onSchemeEdit) && language === 'json'),
+  });
   const schemeDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
-  const [schemeModal, setSchemeModal] = useState<{
-    isOpen: boolean;
-    path: string;
-    pointer: string;
-    value: string;
-    label?: string;
-  }>({ isOpen: false, path: '', pointer: '', value: '' });
+  const [schemeModal, setSchemeModal] = useState(createClosedEditorSchemeModal);
   const [hasLoadedSchemeModal, setHasLoadedSchemeModal] = useState(false);
 
 
@@ -149,69 +146,16 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
   }, [schemeModal.isOpen]);
 
-  // 检测 JSON 中的 scheme 字符串；SOURCE 只读打开，PREVIEW 可按回调回写。
   useEffect(() => {
-    if ((enableSchemeScan || onSchemeEdit) && language === 'json' && value) {
-      let worker: Worker | null = null;
-      let isCancelled = false;
+    setSchemeModal(current => (
+      shouldCloseEditorSchemeModal(current, value)
+        ? createClosedEditorSchemeModal()
+        : current
+    ));
+  }, [value]);
 
-      const applyLocations = (locations: SchemeLocation[]) => {
-        if (isCancelled) return;
-        setSchemeLocations(locations);
-        setSchemeScanWarning('');
-        schemeLocationsRef.current = locations; // 同步到 ref
-      };
-
-      const applyScanResult = (
-        locations: SchemeLocation[],
-        isLimited: boolean,
-        limit: number
-      ) => {
-        if (isCancelled) return;
-        setSchemeLocations(locations);
-        setSchemeScanWarning(isLimited ? `Scheme 图标已显示前 ${limit} 个，后续结果已跳过` : '');
-        schemeLocationsRef.current = locations;
-      };
-
-      // 防抖检测 - 增加延迟避免频繁计算
-      const timer = setTimeout(() => {
-        if (value.length >= ASYNC_SCHEME_SCAN_THRESHOLD) {
-          worker = new Worker(new URL('../workers/schemeScan.worker.ts', import.meta.url), { type: 'module' });
-          worker.onmessage = (event: MessageEvent<SchemeScanWorkerResponse>) => {
-            worker?.terminate();
-            worker = null;
-            if (event.data.error) {
-              console.warn('大文件 Scheme 扫描 Worker 处理失败:', event.data.error);
-            }
-            applyScanResult(event.data.locations, event.data.isLimited, event.data.limit);
-          };
-          worker.onerror = (event) => {
-            worker?.terminate();
-            worker = null;
-            console.warn('大文件 Scheme 扫描 Worker 运行失败:', event.message);
-            applyLocations([]);
-          };
-          worker.postMessage({ id: 1, jsonString: value });
-          return;
-        }
-
-        const result = scanSchemesInJson(value);
-        applyScanResult(result.locations, result.isLimited, result.limit);
-      }, 500); // 从 300ms 增加到 500ms
-      return () => {
-        isCancelled = true;
-        clearTimeout(timer);
-        worker?.terminate();
-      };
-    } else {
-      setSchemeLocations([]);
-      setSchemeScanWarning('');
-      schemeLocationsRef.current = [];
-    }
-  }, [value, language, enableSchemeScan, onSchemeEdit]);
-
-  // 渲染 scheme 图标装饰器
-  useEffect(() => {
+  // 渲染 Scheme 图标装饰器
+  useLayoutEffect(() => {
     if (!editorRef.current || !monaco || schemeLocations.length === 0) {
       // 清除旧装饰器
       if (schemeDecorationsRef.current) {
@@ -243,14 +187,10 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   }, [schemeLocations, monaco]);
 
   const openSchemeLocation = useCallback((location: SchemeLocation) => {
-    setSchemeModal({
-      isOpen: true,
-      path: location.path,
-      pointer: location.pointer,
-      value: location.value,
-      label: location.label,
-    });
-  }, []);
+    const source = schemeLocationsSourceRef.current;
+    if (!source) return;
+    setSchemeModal(createOpenEditorSchemeModal(location, source));
+  }, [schemeLocationsSourceRef]);
 
   const findSchemeLocationAtPosition = useCallback((lineNumber: number, column: number) => (
     schemeLocationsRef.current.find(loc => {
@@ -261,13 +201,13 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     })
   ), []);
 
-  // 处理 scheme 编辑应用
+  // 处理 Scheme 编辑应用
   const handleSchemeApply = useCallback((newValue: string) => {
-    if (onSchemeEdit && schemeModal.path) {
+    if (onSchemeEdit && canApplyEditorSchemeModal(schemeModal, value)) {
       onSchemeEdit(schemeModal.path, newValue, schemeModal.pointer);
     }
-    setSchemeModal({ isOpen: false, path: '', pointer: '', value: '' });
-  }, [onSchemeEdit, schemeModal.path, schemeModal.pointer]);
+    setSchemeModal(createClosedEditorSchemeModal());
+  }, [onSchemeEdit, schemeModal, value]);
 
   const editorWarning = [warning, schemeScanWarning].filter(Boolean).join('；');
 
@@ -520,7 +460,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
   }, [highlightRange, monaco]);
 
-  // 版本控制脏检查 (Dirty Diff) 装饰器
+  // 版本控制未保存差异装饰器
   const diffDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
 
   useEffect(() => {
@@ -534,7 +474,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       return;
     }
 
-    // 大文件跳过行级脏 Diff，避免主线程长时间比较。
+    // 大文件跳过行级未保存差异，避免主线程长时间比较。
     if (shouldSkipLineDiff(originalValue, value)) {
       if (diffDecorationsRef.current) {
         diffDecorationsRef.current.clear();
@@ -542,7 +482,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       return;
     }
 
-    // 防抖计算 Diff
+    // 防抖计算差异
     const timer = setTimeout(() => {
       const diffs = computeLineDiff(originalValue, value);
       const decorations: editor.IModelDeltaDecoration[] = [];
@@ -576,7 +516,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   // 记录上一个 activeFileId，用于切换标签时恢复新标签的视图状态
   const prevActiveFileIdRef = useRef<string | null | undefined>(activeFileId);
 
-  // 标签切换前已同步保存旧标签 viewState，这里只负责恢复新标签，避免保存到错误 Tab。
+  // 标签切换前已同步保存旧标签的 `viewState`，这里只负责恢复新标签，避免保存到错误标签页。
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -755,7 +695,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           language={language}
           theme="vs-dark"
           value={value}
-          onMount={(editor) => {
+          onMount={(editor, monacoApi) => {
             editorRef.current = editor;
 
             // 监听光标位置变化
@@ -771,7 +711,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
             editor.onDidAttemptReadOnlyEdit(showReadOnlyUnlockPrompt);
 
-            // 监听 glyph margin 点击事件（scheme 图标）
+            // 监听图标边栏点击事件（Scheme 图标）
             // 使用 ref 访问最新的 schemeLocations，避免闭包捕获旧值
             editor.onMouseDown((e) => {
               const position = e.target.position;
@@ -783,11 +723,10 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
                 }
               }
 
-              // MouseTargetType.GUTTER_GLYPH_MARGIN = 2
-              if (e.target.type === 2) {
+              if (e.target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
                 const lineNumber = position?.lineNumber;
                 if (lineNumber) {
-                  // 直接使用 ref 获取最新的 locations
+                  // 直接使用 Ref 获取最新的位置列表
                   const location = schemeLocationsRef.current.find(loc => loc.line === lineNumber);
                   if (location) {
                     openSchemeLocation(location);
@@ -825,7 +764,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             overviewRulerBorder: false,
             hideCursorInOverviewRuler: true,
             renderLineHighlight: 'all',
-            glyphMargin: schemeLocations.length > 0, // 有 scheme 时显示 glyph margin
+            glyphMargin: schemeLocations.length > 0, // 存在 Scheme 时显示图标边栏
             readOnlyMessage: {
               value: canToggleReadOnly ? '只读预览，可点旁边“解锁”编辑。' : '当前编辑器为只读。',
             },
@@ -869,7 +808,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
         <Suspense fallback={null}>
           <LazySchemeViewerModal
             isOpen={schemeModal.isOpen}
-            onClose={() => setSchemeModal({ isOpen: false, path: '', pointer: '', value: '' })}
+            onClose={() => setSchemeModal(createClosedEditorSchemeModal())}
             path={schemeModal.path}
             value={schemeModal.value}
             sourceLabel={schemeModal.label}

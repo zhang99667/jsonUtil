@@ -20,7 +20,7 @@ export interface DraggablePanelProps {
   icon: ReactNode;
   /** 头部额外内容（如 path 标签），显示在标题后、关闭按钮前 */
   headerExtra?: ReactNode;
-  /** localStorage 存储的 key 前缀 */
+  /** localStorage 的存储键前缀 */
   storageKey: string;
   /** 默认位置 */
   defaultPosition?: { x: number; y: number };
