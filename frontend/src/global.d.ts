@@ -1,5 +1,4 @@
-// File System Access API 类型声明
-// https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API
+// 补齐浏览器尚未统一提供的文件系统访问类型。
 
 interface FilePickerAcceptType {
     description?: string;
@@ -18,22 +17,9 @@ interface SaveFilePickerOptions {
     excludeAcceptAllOption?: boolean;
 }
 
-interface FileSystemWritableFileStream extends WritableStream {
-    write(data: string | BufferSource | Blob): Promise<void>;
-    seek(position: number): Promise<void>;
-    truncate(size: number): Promise<void>;
-}
-
-interface FileSystemFileHandle {
-    readonly kind: 'file';
-    readonly name: string;
-    getFile(): Promise<File>;
-    createWritable(): Promise<FileSystemWritableFileStream>;
-}
-
 interface Window {
-    showOpenFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
-    showSaveFilePicker(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
+    showOpenFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
+    showSaveFilePicker?(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
     dataLayer: unknown[][];
     gtag: (...args: unknown[]) => void;
 }

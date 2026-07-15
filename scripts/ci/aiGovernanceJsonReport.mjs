@@ -15,6 +15,7 @@ export const toAiGovernanceJsonReport = report => ({
     ...Object.fromEntries(AI_GOVERNANCE_FAILURE_GROUPS.map(([key]) => [key, report[key].length])),
   },
   failures: Object.fromEntries(AI_GOVERNANCE_FAILURE_GROUPS.map(([key]) => [key, report[key]])),
+  evolutionEvals: report.evolutionEvalReport,
   maturityScorecard: report.maturityScorecard,
 });
 

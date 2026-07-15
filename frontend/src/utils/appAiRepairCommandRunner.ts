@@ -37,9 +37,11 @@ export const runAppAiRepairCommand = async (
   effects.onSetRepairing(true);
   try {
     const { fixJsonWithRepairDetails, buildAiRepairSummary } = await effects.onLoadRuntime();
+    input.signal?.throwIfAborted();
     const repairResult = await fixJsonWithRepairDetails(input.sourceText, input.aiConfig, {
       signal: input.signal,
     });
+    input.signal?.throwIfAborted();
     const applyResult = buildAppAiRepairApplyResult({
       sourceText: input.sourceText,
       repairResult,

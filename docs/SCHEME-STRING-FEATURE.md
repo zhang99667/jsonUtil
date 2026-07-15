@@ -2,17 +2,17 @@
 
 ## 当前实现状态
 
-本文最早用于描述“转换路径记录 + Scheme 字符串解析”的设计方案。当前代码已在此基础上演进为复杂 response / CMD / Scheme 解析工作台，核心能力包括：
+本文最早用于描述“转换路径记录 + Scheme 字符串解析”的设计方案。当前代码已在此基础上演进为复杂响应、CMD 和 Scheme 解析工作台，核心能力包括：
 
 - `deepParseWithContext()` 和 `inverseWithContext()` 已用于深度格式化和预览回写，负责记录转换路径并尽量保持原格式还原。
-- `schemeUtils.ts` 支持 URL/Scheme/CMD/Base64/JWT 等字符串递归解码，默认深度已覆盖真实广告 response 中的多层跳转链路。
-- `SchemeViewerModal.tsx` 支持整段 JSON response 粘贴、Worker 解码、Top CMD Schema 摘要、运行时占位符聚合、Base64 后缀元信息、cmdHandler 风格复制和不含原始值的质量快照 JSON。
+- `schemeUtils.ts` 支持 URL/Scheme/CMD/Base64/JWT 等字符串递归解码，默认深度已覆盖真实广告响应中的多层跳转链路。
+- `SchemeViewerModal.tsx` 支持整段 JSON 响应粘贴、Worker 解码、Top CMD Schema 摘要、运行时占位符聚合、Base64 后缀元信息、cmdHandler 风格复制和不含原始值的质量快照 JSON。
 - `schemePathValues.ts` 承接 Scheme 面板“复制路径和值”的 JSONPath 生成、空容器保留和截断文案，避免这类纯逻辑继续堆在组件中。
 - `TransformReportPanel.tsx` 支持深度解析报告、质量快照、诊断摘要、问题样本、占位符回填模板、cmdHandler 页面内对比和聚焦复制。
-- `frontend/fixtures/scheme-corpus/` 已保存脱敏真实 response、质量 snapshot baseline 和 cmdHandler expected 子集。
+- `frontend/fixtures/scheme-corpus/` 已保存脱敏真实响应、质量快照基线和 cmdHandler 预期子集。
 - `npm run corpus:scheme` 已接入 GitHub Actions 的 `Scheme corpus baseline` 独立门禁，用于防止主 CMD Schema、Top 热点 Schema、占位符、扫描位置和关键参数路径退化。
 
-后续新增 Scheme/CMD 能力时，优先补充脱敏 corpus 和 expected baseline，再修改解析规则。
+后续新增 Scheme/CMD 能力时，优先补充脱敏语料和预期基线，再修改解析规则。
 
 ## 核心问题
 
@@ -112,7 +112,7 @@ interface TransformStep {
       | 'unescape' | 'escape';
   // 可选：保存原始细节用于精确还原
   originalEncoding?: string;  // 如 'utf-8', 'gbk'
-  originalPadding?: boolean;  // Base64 是否有 padding
+  originalPadding?: boolean;  // Base64 是否有填充符
 }
 
 // 单个路径的转换记录
@@ -125,7 +125,7 @@ interface PathTransformRecord {
 // 整个转换的上下文
 interface TransformContext {
   mode: TransformMode;
-  records: Map<string, PathTransformRecord>;  // path -> record
+  records: Map<string, PathTransformRecord>;  // 路径到转换记录的映射
   timestamp: number;
 }
 
@@ -319,7 +319,7 @@ function applyInverseStep(value: any, step: TransformStep): any {
 
 ## 实现计划
 
-### Phase 1：基础架构 (修复线上问题) ✅ 优先
+### 阶段 1：基础架构（修复线上问题）✅ 优先
 
 **目标**：建立转换路径记录机制，修复深度格式化还原问题
 
@@ -345,7 +345,7 @@ frontend/src/App.tsx                     # 适配新的转换 API
 
 3. **适配 App.tsx**
    - 存储 `TransformContext` 到组件状态
-   - 在 `handleOutputChange` 中传入 context 进行还原
+   - 在 `handleOutputChange` 中传入上下文进行还原
 
 **验证场景**：
 - [x] 嵌套 JSON 字符串的还原
@@ -353,12 +353,12 @@ frontend/src/App.tsx                     # 适配新的转换 API
 - [x] 混合场景（JSON + Unicode）的还原
 - [x] 用户修改后的精确还原
 
-### Phase 2：扩展到 Scheme 解析
+### 阶段 2：扩展到 Scheme 解析
 
-**目标**：基于 Phase 1 架构，支持 Deep Link 等 Scheme 字符串
+**目标**：基于阶段 1 架构，支持深度链接（Deep Link）等 Scheme 字符串
 
 **新增 TransformStep 类型**：
-- `scheme_extract` - 提取 scheme 和 payload
+- `scheme_extract` - 提取协议和载荷
 - `url_decode` - URL 解码
 - `base64_decode` - Base64 解码
 - `jwt_decode` - JWT 解析
@@ -391,10 +391,10 @@ frontend/src/App.tsx                     # 适配新的转换 API
 
 ### 典型场景
 
-1. **Data URI** - `data:image/png;base64,...` / `data:application/json,...`
-2. **Deep Link** - `myapp://path?param=<encoded_json>`
-3. **Callback URL** - `https://...?data=<url_encoded_json>`
-4. **JWT Token** - `eyJhbGciOiJIUzI1NiIs...` (Header.Payload.Signature)
+1. **数据 URI（Data URI）** - `data:image/png;base64,...` / `data:application/json,...`
+2. **深度链接（Deep Link）** - `myapp://path?param=<encoded_json>`
+3. **回调 URL（Callback URL）** - `https://...?data=<url_encoded_json>`
+4. **JWT 令牌** - `eyJhbGciOiJIUzI1NiIs...`（头部.载荷.签名）
 5. **自定义协议** - `custom-scheme://...`
 
 ---
@@ -432,15 +432,15 @@ interface SchemeInfo {
   mimeType?: string;      // 如 "image/png", "application/json"
   encoding?: string;      // 如 "base64", "utf-8"
   payload: string;        // 实际数据部分
-  nested?: SchemeInfo;    // 嵌套的 scheme（递归）
+  nested?: SchemeInfo;    // 嵌套协议（递归）
 }
 ```
 
 检测优先级：
-1. Data URI: `/^data:([^;,]+)?(?:;([^,]+))?,(.*)$/`
+1. 数据 URI（Data URI）: `/^data:([^;,]+)?(?:;([^,]+))?,(.*)$/`
 2. JWT: `/^eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/`
-3. URL with params: `/^[a-z][a-z0-9+.-]*:\/\//i`
-4. URL encoded: `/%[0-9A-Fa-f]{2}/`
+3. 带参数 URL: `/^[a-z][a-z0-9+.-]*:\/\//i`
+4. URL 编码内容: `/%[0-9A-Fa-f]{2}/`
 5. Base64: `/^[A-Za-z0-9+/]+=*$/` (长度 > 20)
 
 #### 2. 编解码引擎 (CodecEngine)
@@ -496,14 +496,14 @@ function deepDecodeScheme(input: string, maxDepth = 5): DecodedResult {
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ 🔗 Scheme String Viewer                                    [×]  │
+│ 🔗 Scheme 字符串查看器                                     [×]  │
 ├─────────────────────────────────────────────────────────────────┤
 │ 路径: $.callback                                                │
 │ 原始长度: 156 字符                                               │
 ├─────────────────────────────────────────────────────────────────┤
 │ 解码层级:                                                       │
-│   Layer 1: URL Encoded → URL Decoded                            │
-│   Layer 2: JSON String → JSON Object                            │
+│   第 1 层：URL 编码 → URL 解码                                  │
+│   第 2 层：JSON 字符串 → JSON 对象                              │
 ├─────────────────────────────────────────────────────────────────┤
 │ 解码结果 (可编辑):                                               │
 │ ┌─────────────────────────────────────────────────────────────┐ │
@@ -582,7 +582,7 @@ function smartEncode(edited: string, layers: DecodeLayer[]): string {
 
 ## 技术实现规划
 
-### Phase 1：基础能力 (MVP) ✅ 已完成
+### 阶段 1：基础能力（MVP）✅ 已完成
 
 **目标**：支持最常见的编码类型
 
@@ -601,7 +601,7 @@ frontend/src/index.css                      # 修改 - 图标样式
 frontend/src/App.tsx                        # 修改 - 处理编辑应用
 ```
 
-### Phase 2：交互优化 ✅ 已完成
+### 阶段 2：交互优化 ✅ 已完成
 
 **目标**：提升用户体验
 
@@ -612,12 +612,12 @@ frontend/src/App.tsx                        # 修改 - 处理编辑应用
 - [x] 支持复制解码结果
 - [x] 支持编辑后应用修改（按原编码逆向还原）
 
-### Phase 3：待实现
+### 阶段 3：待实现
 
 **目标**：覆盖更多场景
 
 - [ ] 自定义 scheme 规则配置
-- [ ] 支持 Protobuf Base64 解析（需 schema）
+- [ ] 支持 Protobuf Base64 解析（需 Schema）
 - [ ] 支持压缩格式（gzip base64）
 
 ---
@@ -635,12 +635,12 @@ frontend/src/App.tsx                        # 修改 - 处理编辑应用
 
 **解码过程**：
 ```
-1. 检测: URL with encoded params
-2. URL Decode: eyJ1c2VySWQiOjEyMywiYWN0aW9uIjoicHVyY2hhc2UifQ==
-3. 检测: Base64
-4. Base64 Decode: {"userId":123,"action":"purchase"}
-5. 检测: JSON
-6. JSON Parse: { userId: 123, action: "purchase" }
+1. 检测：包含编码参数的 URL
+2. URL 解码：eyJ1c2VySWQiOjEyMywiYWN0aW9uIjoicHVyY2hhc2UifQ==
+3. 检测：Base64
+4. Base64 解码：{"userId":123,"action":"purchase"}
+5. 检测：JSON
+6. JSON 解析：{ userId: 123, action: "purchase" }
 ```
 
 **输出**：
@@ -685,10 +685,10 @@ frontend/src/App.tsx                        # 修改 - 处理编辑应用
 
 **解码层级**：
 ```
-Layer 0: Original URL string
-Layer 1: URL Decode → {"token":"eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYWRtaW4ifQ.signature"}
-Layer 2: JSON Parse → { token: "eyJhbGciOiJIUzI1NiJ9..." }
-Layer 3: JWT Decode (payload) → { user: "admin" }
+第 0 层：原始 URL 字符串
+第 1 层：URL 解码 → {"token":"eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYWRtaW4ifQ.signature"}
+第 2 层：JSON 解析 → { token: "eyJhbGciOiJIUzI1NiJ9..." }
+第 3 层：JWT 解码（载荷）→ { user: "admin" }
 ```
 
 ---
@@ -700,7 +700,7 @@ Layer 3: JWT Decode (payload) → { user: "admin" }
 | 误判普通字符串为 Base64 | 设置最小长度阈值 + 结合上下文判断 |
 | 解码后内容过大导致卡顿 | 限制解码深度 + 大内容懒加载 |
 | 二进制 Base64 无法展示 | 检测 MIME 类型，非文本类型只显示元信息 |
-| 编码还原后与原始不完全一致 | 记录原始编码细节（如大小写、padding） |
+| 编码还原后与原始不完全一致 | 记录原始编码细节（如大小写、填充符） |
 
 ---
 
@@ -712,7 +712,7 @@ Layer 3: JWT Decode (payload) → { user: "admin" }
 // App.tsx
 const [transformContext, setTransformContext] = useState<TransformContext | null>(null);
 
-// 正向转换时保存 context
+// 正向转换时保存上下文
 const output = useMemo(() => {
   if (mode === TransformMode.DEEP_FORMAT) {
     const result = deepParseWithContext(input);
@@ -722,7 +722,7 @@ const output = useMemo(() => {
   return performTransform(input, mode);
 }, [input, mode]);
 
-// 反向转换时使用 context
+// 反向转换时使用上下文
 const handleOutputChange = (newVal: string) => {
   if (transformContext) {
     const restored = inverseWithContext(newVal, transformContext);
@@ -734,7 +734,7 @@ const handleOutputChange = (newVal: string) => {
 **优点**：简单直接，无额外依赖  
 **缺点**：刷新页面后丢失
 
-### 方案 B：与文件 Tab 绑定
+### 方案 B：与文件标签页绑定
 
 将 `TransformContext` 存储在 `FileTab` 结构中：
 
@@ -745,8 +745,8 @@ interface FileTab {
 }
 ```
 
-**优点**：切换 Tab 时保留上下文  
-**缺点**：增加 Tab 状态复杂度
+**优点**：切换标签页时保留上下文
+**缺点**：增加标签页状态复杂度
 
 ### 推荐：方案 A + 按需持久化
 
@@ -758,19 +758,19 @@ interface FileTab {
 ## 已确认的决策
 
 1. ✅ **先修复线上问题**，再扩展 Scheme 解析
-2. ✅ **聚焦 Deep Link 场景**，图片类暂不考虑
+2. ✅ **聚焦深度链接（Deep Link）场景**，图片类暂不考虑
 3. ✅ **转换路径记录**是核心架构
 
 ## 待确认
 
 1. 是否需要持久化 `TransformContext`？（文件关闭后是否保留？）
-2. Phase 1 完成后，Scheme 解析的 UI 交互方式？
+2. 阶段 1 完成后，Scheme 解析的 UI 交互方式？
 
 ---
 
 ## 下一步
 
-请确认方案后，我将开始 **Phase 1** 实现：
+请确认方案后，我将开始**阶段 1**实现：
 
 1. 在 `types.ts` 新增类型定义
 2. 重构 `transformations.ts` 核心逻辑

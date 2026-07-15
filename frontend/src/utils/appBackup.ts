@@ -3,19 +3,17 @@ import {
   AI_CONFIG_STORAGE_KEY,
   GENERAL_SETTINGS_STORAGE_KEY,
   TEMPLATE_FILL_STORAGE_KEY,
-  loadAIConfig,
-  loadGeneralSettings,
-  loadTemplateFillConfig,
   normalizeAIConfig,
   normalizeGeneralSettings,
   normalizeTemplateFillConfig,
   sanitizeAIConfigForBackup,
 } from './appSettings';
+import { normalizeJsonPathSavedQueryLists } from './jsonPathSavedQueryStorage';
 import {
-  loadJsonPathSavedQueryLists,
-  normalizeJsonPathSavedQueryLists,
-  writeJsonPathSavedQueryLists,
-} from './jsonPathSavedQueryStorage';
+  JSONPATH_FAVORITES_STORAGE_KEY,
+  JSONPATH_HISTORY_STORAGE_KEY,
+  parseStoredJsonPathList,
+} from './jsonPathLists';
 import {
   JSON_SCHEMA_LIBRARY_STORAGE_KEY,
   parseJsonSchemaLibrary,
@@ -29,10 +27,21 @@ import {
 } from './jsonTreeSearchHistory';
 import { FLOATING_PANEL_STORAGE_KEYS } from './panelLayout';
 import { DEFAULT_SHORTCUTS, SHORTCUTS_STORAGE_KEY, normalizeShortcutConfig } from './shortcuts';
-import { isFiniteNumber, isRecord, parseJsonWithFallback, safeGetStorageItem } from './storage';
+import { isRecord, parseJsonWithFallback } from './storage';
+import {
+  applyAppBackupStorageMutations,
+  type AppBackupStorageMutation,
+} from './appBackupStorageMutations';
+import {
+  APP_BACKUP_APP_ID,
+  APP_BACKUP_VERSION,
+  isPanelPosition,
+  isPanelSize,
+  parseAppBackupPayload,
+  shouldApplyPanelLayout,
+} from './appBackupFormat';
 
-export const APP_BACKUP_APP_ID = 'jsonutils-pro';
-export const APP_BACKUP_VERSION = 1;
+export { APP_BACKUP_APP_ID, APP_BACKUP_VERSION } from './appBackupFormat';
 export const APP_BACKUP_IMPORTED_EVENT = 'json-helper-settings-backup-imported';
 
 export interface PanelLayoutBackupItem {
@@ -67,7 +76,7 @@ export interface AppBackupPayload {
 }
 
 export interface BuildAppBackupOptions {
-  storage?: Storage;
+  storage: Storage;
   now?: () => Date;
   generalSettings?: GeneralSettings;
   aiConfig?: AIConfig;
@@ -88,26 +97,16 @@ export interface ApplyAppBackupResult {
   };
 }
 
-const isPanelPosition = (value: unknown): value is { x: number; y: number } => {
-  return isRecord(value) && isFiniteNumber(value.x) && isFiniteNumber(value.y);
-};
-
-const isPanelSize = (value: unknown): value is { width: number; height: number } => {
-  return isRecord(value) && isFiniteNumber(value.width) && isFiniteNumber(value.height);
-};
+const readJsonStorageValue = <T>(storage: Storage, key: string, fallback: T): T => (
+  parseJsonWithFallback(storage.getItem(key), fallback)
+);
 
 const readPanelLayout = (storage: Storage): Record<string, PanelLayoutBackupItem> => {
   const layout: Record<string, PanelLayoutBackupItem> = {};
 
   for (const key of FLOATING_PANEL_STORAGE_KEYS) {
-    const position = parseJsonWithFallback<unknown>(
-      safeGetStorageItem(`${key}-position`, storage),
-      null
-    );
-    const size = parseJsonWithFallback<unknown>(
-      safeGetStorageItem(`${key}-size`, storage),
-      null
-    );
+    const position = readJsonStorageValue<unknown>(storage, `${key}-position`, null);
+    const size = readJsonStorageValue<unknown>(storage, `${key}-size`, null);
     const item: PanelLayoutBackupItem = {};
 
     if (isPanelPosition(position)) {
@@ -125,32 +124,37 @@ const readPanelLayout = (storage: Storage): Record<string, PanelLayoutBackupItem
 };
 
 export const buildAppBackup = ({
-  storage = localStorage,
+  storage,
   now = () => new Date(),
   generalSettings,
   aiConfig,
   shortcuts,
-}: BuildAppBackupOptions = {}): AppBackupPayload => {
-  const templateFill = loadTemplateFillConfig(storage);
+}: BuildAppBackupOptions): AppBackupPayload => {
+  const templateFill = normalizeTemplateFillConfig(
+    readJsonStorageValue<unknown>(storage, TEMPLATE_FILL_STORAGE_KEY, {})
+  );
 
   return {
     app: APP_BACKUP_APP_ID,
     version: APP_BACKUP_VERSION,
     exportedAt: now().toISOString(),
     settings: {
-      general: normalizeGeneralSettings(generalSettings ?? loadGeneralSettings(storage)),
-      ai: sanitizeAIConfigForBackup(aiConfig ?? loadAIConfig(storage)),
-      shortcuts: normalizeShortcutConfig(shortcuts ?? parseJsonWithFallback<unknown>(
-        safeGetStorageItem(SHORTCUTS_STORAGE_KEY, storage),
-        DEFAULT_SHORTCUTS
-      )),
+      general: normalizeGeneralSettings(generalSettings
+        ?? readJsonStorageValue<unknown>(storage, GENERAL_SETTINGS_STORAGE_KEY, {})),
+      ai: sanitizeAIConfigForBackup(normalizeAIConfig(aiConfig
+        ?? readJsonStorageValue<unknown>(storage, AI_CONFIG_STORAGE_KEY, {}))),
+      shortcuts: normalizeShortcutConfig(shortcuts
+        ?? readJsonStorageValue<unknown>(storage, SHORTCUTS_STORAGE_KEY, DEFAULT_SHORTCUTS)),
     },
-    jsonPath: loadJsonPathSavedQueryLists(storage),
+    jsonPath: {
+      history: parseStoredJsonPathList(storage.getItem(JSONPATH_HISTORY_STORAGE_KEY)),
+      favorites: parseStoredJsonPathList(storage.getItem(JSONPATH_FAVORITES_STORAGE_KEY)),
+    },
     jsonSchema: {
-      library: parseJsonSchemaLibrary(safeGetStorageItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY, storage)),
+      library: parseJsonSchemaLibrary(storage.getItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY)),
     },
     structureNav: {
-      searchHistory: parseStoredJsonTreeSearchHistory(safeGetStorageItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY, storage)),
+      searchHistory: parseStoredJsonTreeSearchHistory(storage.getItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY)),
     },
     templateFill,
     panelLayout: readPanelLayout(storage),
@@ -161,36 +165,24 @@ export const serializeAppBackup = (payload: AppBackupPayload): string => {
   return `${JSON.stringify(payload, null, 2)}\n`;
 };
 
-const parseAppBackupPayload = (content: string): Record<string, unknown> => {
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw new Error('备份文件不是合法 JSON');
-  }
-
-  if (!isRecord(parsed) || parsed.app !== APP_BACKUP_APP_ID || parsed.version !== APP_BACKUP_VERSION) {
-    throw new Error('备份文件不是 JSONUtils 配置备份');
-  }
-
-  return parsed;
-};
-
 const getRecord = (value: unknown): Record<string, unknown> => {
   return isRecord(value) ? value : {};
 };
 
-const writeJson = (storage: Storage, key: string, value: unknown) => {
-  storage.setItem(key, JSON.stringify(value));
+const serializeJsonStorageValue = (value: unknown): string => {
+  const serialized = JSON.stringify(value);
+  if (serialized === undefined) {
+    throw new Error('配置备份包含无法保存的值');
+  }
+  return serialized;
 };
 
 export const applyAppBackupContent = (
   content: string,
-  storage: Storage = localStorage,
-  currentAIConfig: AIConfig = loadAIConfig(storage)
+  storage: Storage,
+  currentAIConfig: AIConfig
 ): ApplyAppBackupResult => {
-  const payload = parseAppBackupPayload(content);
+  const { payload, capabilities } = parseAppBackupPayload(content);
   const settings = getRecord(payload.settings);
   const jsonPath = getRecord(payload.jsonPath);
   const jsonSchema = getRecord(payload.jsonSchema);
@@ -198,50 +190,79 @@ export const applyAppBackupContent = (
   const importedAIConfig = normalizeAIConfig(settings.ai);
   const nextAIConfig: AIConfig = {
     ...importedAIConfig,
-    // API Key 属于敏感信息，导入时保留当前环境的配置。
+    // 接口密钥属于敏感信息，导入时保留当前环境的配置。
     apiKey: currentAIConfig.apiKey,
   };
   const nextGeneralSettings = normalizeGeneralSettings(settings.general);
   const nextShortcuts = normalizeShortcutConfig(settings.shortcuts);
   const jsonPathLists = normalizeJsonPathSavedQueryLists(jsonPath);
-  const schemaLibrary = parseJsonSchemaLibrary(JSON.stringify(jsonSchema.library || []));
-  const structureSearchHistory = normalizeJsonTreeSearchHistory(structureNav.searchHistory);
+  const schemaLibrary = capabilities.jsonSchema
+    ? parseJsonSchemaLibrary(JSON.stringify(jsonSchema.library))
+    : null;
+  const structureSearchHistory = capabilities.structureNav
+    ? normalizeJsonTreeSearchHistory(structureNav.searchHistory)
+    : null;
   const templateFill = normalizeTemplateFillConfig(payload.templateFill);
   const panelLayout = getRecord(payload.panelLayout);
+  const storageMutations: AppBackupStorageMutation[] = [
+    { key: GENERAL_SETTINGS_STORAGE_KEY, value: serializeJsonStorageValue(nextGeneralSettings) },
+    { key: AI_CONFIG_STORAGE_KEY, value: serializeJsonStorageValue(nextAIConfig) },
+    { key: SHORTCUTS_STORAGE_KEY, value: serializeJsonStorageValue(nextShortcuts) },
+    { key: JSONPATH_HISTORY_STORAGE_KEY, value: serializeJsonStorageValue(jsonPathLists.history) },
+    { key: JSONPATH_FAVORITES_STORAGE_KEY, value: serializeJsonStorageValue(jsonPathLists.favorites) },
+  ];
+  if (schemaLibrary) {
+    storageMutations.push({
+      key: JSON_SCHEMA_LIBRARY_STORAGE_KEY,
+      value: serializeJsonSchemaLibrary(schemaLibrary),
+    });
+  }
+  if (structureSearchHistory) {
+    storageMutations.push({
+      key: JSON_TREE_SEARCH_HISTORY_STORAGE_KEY,
+      value: serializeJsonStorageValue(structureSearchHistory),
+    });
+  }
+  storageMutations.push({
+    key: TEMPLATE_FILL_STORAGE_KEY,
+    value: serializeJsonStorageValue(templateFill),
+  });
   let panelLayouts = 0;
 
-  writeJson(storage, GENERAL_SETTINGS_STORAGE_KEY, nextGeneralSettings);
-  writeJson(storage, AI_CONFIG_STORAGE_KEY, nextAIConfig);
-  writeJson(storage, SHORTCUTS_STORAGE_KEY, nextShortcuts);
-  writeJsonPathSavedQueryLists(storage, jsonPathLists);
-  storage.setItem(JSON_SCHEMA_LIBRARY_STORAGE_KEY, serializeJsonSchemaLibrary(schemaLibrary));
-  writeJson(storage, JSON_TREE_SEARCH_HISTORY_STORAGE_KEY, structureSearchHistory);
-  writeJson(storage, TEMPLATE_FILL_STORAGE_KEY, templateFill);
-
   for (const key of FLOATING_PANEL_STORAGE_KEYS) {
+    if (!shouldApplyPanelLayout(key, capabilities, panelLayout)) continue;
+
     const item = getRecord(panelLayout[key]);
     const position = item.position;
     const size = item.size;
     let hasLayout = false;
 
     if (isPanelPosition(position)) {
-      writeJson(storage, `${key}-position`, position);
+      storageMutations.push({
+        key: `${key}-position`,
+        value: serializeJsonStorageValue(position),
+      });
       hasLayout = true;
     } else {
-      storage.removeItem(`${key}-position`);
+      storageMutations.push({ key: `${key}-position`, value: null });
     }
 
     if (isPanelSize(size)) {
-      writeJson(storage, `${key}-size`, size);
+      storageMutations.push({
+        key: `${key}-size`,
+        value: serializeJsonStorageValue(size),
+      });
       hasLayout = true;
     } else {
-      storage.removeItem(`${key}-size`);
+      storageMutations.push({ key: `${key}-size`, value: null });
     }
 
     if (hasLayout) {
       panelLayouts += 1;
     }
   }
+
+  applyAppBackupStorageMutations(storage, storageMutations);
 
   return {
     generalSettings: nextGeneralSettings,
@@ -250,8 +271,8 @@ export const applyAppBackupContent = (
     importedCounts: {
       jsonPathHistory: jsonPathLists.history.length,
       jsonPathFavorites: jsonPathLists.favorites.length,
-      structureSearchHistory: structureSearchHistory.length,
-      jsonSchemaLibrary: schemaLibrary.length,
+      structureSearchHistory: structureSearchHistory?.length ?? 0,
+      jsonSchemaLibrary: schemaLibrary?.length ?? 0,
       panelLayouts,
       hasTemplate: Boolean(templateFill.template.trim()),
     },

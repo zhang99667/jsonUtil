@@ -24,7 +24,7 @@ export const encodeSingleRawUrlParamContent = (
   if (!singleRawUrlParam) return null;
 
   const keys = Object.keys(editedParams);
-  if (keys.length !== 1 || !Object.prototype.hasOwnProperty.call(editedParams, singleRawUrlParam.key)) {
+  if (keys.length !== 1 || !Object.hasOwn(editedParams, singleRawUrlParam.key)) {
     return null;
   }
 
@@ -46,7 +46,7 @@ export const encodeSingleLogFieldParamContent = (
   if (!logFieldParam) return null;
 
   const keys = Object.keys(editedParams);
-  if (keys.length !== 1 || !Object.prototype.hasOwnProperty.call(editedParams, logFieldParam.key)) {
+  if (keys.length !== 1 || !Object.hasOwn(editedParams, logFieldParam.key)) {
     return null;
   }
 

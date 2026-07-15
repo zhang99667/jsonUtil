@@ -19,7 +19,8 @@ export const buildJsonutilsHandoffBrief = async ({
     buildJsonutilsWorktreeSnapshot({ maxFiles, includeAllFiles: true, runStatus }),
   ]);
   const scorecard = context.maturityScorecard;
-  const aiInfraStatus = scorecard?.nextFocus?.details?.maintainabilityHotspots;
+  const maintainabilityDimension = scorecard?.dimensions?.find(({ id }) => id === 'maintainability-headroom');
+  const aiInfraStatus = maintainabilityDimension?.details?.maintainabilityHotspots;
   const validationPlan = buildJsonutilsValidationPlanFromWorktree(worktree);
   const { allFiles, ...publicWorktree } = worktree;
   return {

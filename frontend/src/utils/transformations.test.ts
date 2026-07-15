@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TransformMode } from '../types';
+import { TransformMode, type TransformContext } from '../types';
 import {
   validateJson,
   detectLanguage,
@@ -8,8 +8,6 @@ import {
   performTransformAsync,
   deepParseWithContext,
   inverseWithContext,
-  deepMergeTemplate,
-  applyTemplate,
   getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput,
 } from './transformations';
@@ -529,6 +527,7 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$')?.steps[0]).toMatchObject({
       type: 'scheme_decode',
       originalSchemeType: 'url',
+      schemeHeaderDisplayKey: '__scheme__',
     });
     expect(result.context.records.get('$')?.steps[0].schemeParamStageSummary).toMatchObject({
       total: 1,
@@ -557,10 +556,47 @@ describe('deepParseWithContext', () => {
       },
       type: 1,
     });
+    expect(parsed.__scheme__).toBe('baiduboxapp://v7/vendor/ad/makePhoneCall');
     expect(result.context.runtimePlaceholders?.[0]).toMatchObject({
       value: '__TIMESTAMP__',
     });
     expect(inverseWithContext(result.output, result.context)).toBe(scheme);
+  });
+
+  it('根广告 Scheme 展开后保留可编辑协议头', () => {
+    const scheme = `baiduboxapp://v7/vendor/ad/immersiveVideo?params=${encodeURIComponent(JSON.stringify({
+      lp_params: {
+        popover: { show_time: 8 },
+      },
+    }))}&style=${encodeURIComponent(JSON.stringify({ menumode: '2' }))}`;
+
+    const result = deepParseWithContext(scheme, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed).toMatchObject({
+      __scheme__: 'baiduboxapp://v7/vendor/ad/immersiveVideo',
+      params: {
+        lp_params: {
+          popover: { show_time: 8 },
+        },
+      },
+      style: { menumode: '2' },
+    });
+
+    parsed.__scheme__ = 'baiduboxapp://v7/vendor/ad/immersiveVideoV2';
+    parsed.params.lp_params.popover.show_time = 9;
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
+    const restoredResult = deepParseWithContext(restored, { autoExpandScheme: true });
+
+    expect(restored.startsWith('baiduboxapp://v7/vendor/ad/immersiveVideoV2?')).toBe(true);
+    expect(JSON.parse(restoredResult.output)).toMatchObject({
+      __scheme__: 'baiduboxapp://v7/vendor/ad/immersiveVideoV2',
+      params: {
+        lp_params: {
+          popover: { show_time: 9 },
+        },
+      },
+    });
   });
 
   it('根输入为 Scheme 时不受自动展开设置关闭影响', () => {
@@ -1084,6 +1120,22 @@ describe('deepParseWithContext', () => {
 });
 
 describe('inverseWithContext 精确还原', () => {
+  it('兼容历史 Base64 解码记录中的 UTF-8 文本', () => {
+    const context: TransformContext = {
+      mode: TransformMode.DEEP_FORMAT,
+      records: new Map([['$', {
+        path: '$',
+        originalValue: base64Encode('你好'),
+        steps: [{ type: 'base64_decode' }],
+      }]]),
+      timestamp: 0,
+      originalIndentation: 2,
+      sourceFormat: 'scheme',
+    };
+
+    expect(inverseWithContext(JSON.stringify('你好'), context)).toBe(base64Encode('你好'));
+  });
+
   it('嵌套 JSON 可还原', () => {
     const inner = JSON.stringify({ nested: true });
     const input = JSON.stringify({ data: inner });
@@ -1101,6 +1153,21 @@ describe('inverseWithContext 精确还原', () => {
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
 
     const restored = inverseWithContext(output, context);
+    expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('仅调整已展开 CMD 对象的键顺序时仍恢复原始字符串', () => {
+    const input = JSON.stringify({
+      action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    parsed.action_cmd = {
+      from: parsed.action_cmd.from,
+      cmd: parsed.action_cmd.cmd,
+    };
+
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), context);
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));
   });
 
@@ -1268,147 +1335,5 @@ describe('inverseWithContext 精确还原', () => {
 
     const restored = inverseWithContext(output, context);
     expect(restored).toBe(input);
-  });
-});
-
-// ============ deepMergeTemplate 测试 ============
-
-describe('deepMergeTemplate', () => {
-  it('标量覆盖：模板的标量值覆盖目标同名字段', () => {
-    const target = { name: '旧值', age: 20 };
-    const template = { name: '新值' };
-    const result = deepMergeTemplate(target, template);
-    expect(result).toEqual({ name: '新值', age: 20 });
-  });
-
-  it('嵌套递归合并：深层对象递归合并', () => {
-    const target = {
-      user: {
-        name: '张三',
-        address: {
-          city: '北京',
-          zip: '100000',
-        },
-      },
-    };
-    const template = {
-      user: {
-        address: {
-          city: '上海',
-        },
-      },
-    };
-    const result = deepMergeTemplate(target, template);
-    // 深层字段被覆盖，同层级其他字段保留
-    expect(result).toEqual({
-      user: {
-        name: '张三',
-        address: {
-          city: '上海',
-          zip: '100000',
-        },
-      },
-    });
-  });
-
-  it('数组整体替换：模板数组替换目标数组', () => {
-    const target = { tags: [1, 2, 3] };
-    const template = { tags: ['a', 'b'] };
-    const result = deepMergeTemplate(target, template);
-    // 数组不逐项合并，直接用模板数组覆盖
-    expect(result).toEqual({ tags: ['a', 'b'] });
-  });
-
-  it('目标独有字段保留', () => {
-    const target = { a: 1, b: 2, c: 3 };
-    const template = { a: 10 };
-    const result = deepMergeTemplate(target, template);
-    // 模板未涉及的字段 b、c 保留不变
-    expect(result).toEqual({ a: 10, b: 2, c: 3 });
-  });
-
-  it('模板独有字段添加', () => {
-    const target = { a: 1 };
-    const template = { b: 2, c: 3 };
-    const result = deepMergeTemplate(target, template);
-    // 模板中独有的 b、c 被添加到结果中
-    expect(result).toEqual({ a: 1, b: 2, c: 3 });
-  });
-});
-
-// ============ applyTemplate 测试 ============
-
-describe('applyTemplate', () => {
-  it('正常流程：合并后返回格式化 JSON', () => {
-    const input = JSON.stringify({ name: '旧值', keep: true });
-    const template = JSON.stringify({ name: '新值', extra: 42 });
-    const result = applyTemplate(input, template);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual({ name: '新值', keep: true, extra: 42 });
-    // 输出应为格式化的 JSON（包含换行缩进）
-    expect(result).toContain('\n');
-  });
-
-  it('支持占位符回填模板替换当前 JSON 字符串内容', () => {
-    const input = JSON.stringify({
-      button_cmd: '__CONVERT_CMD__',
-      nested: {
-        panel_cmd: 'prefix-__WEBPANEL_CMD__-suffix',
-        keep: '__EMPTY__',
-      },
-      list: ['__CONVERT_CMD__'],
-    });
-    const template = JSON.stringify({
-      schemaVersion: 1,
-      kind: 'json-helper-runtime-placeholder-fill-template',
-      placeholders: {
-        __CONVERT_CMD__: 'baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"',
-        __WEBPANEL_CMD__: 'nadcorevendor://vendor/ad/rewardWebPanel',
-        __EMPTY__: '',
-      },
-      placeholderDetails: [],
-    });
-    const result = applyTemplate(input, template);
-    const parsed = JSON.parse(result);
-
-    expect(parsed).toEqual({
-      button_cmd: 'baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"',
-      nested: {
-        panel_cmd: 'prefix-nadcorevendor://vendor/ad/rewardWebPanel-suffix',
-        keep: '__EMPTY__',
-      },
-      list: ['baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"'],
-    });
-  });
-
-  it('占位符回填模板没有填写 replacement 时抛错', () => {
-    const template = JSON.stringify({
-      schemaVersion: 1,
-      kind: 'json-helper-runtime-placeholder-fill-template',
-      placeholders: {
-        __CONVERT_CMD__: '',
-      },
-      placeholderDetails: [],
-    });
-
-    expect(() => applyTemplate('{"button_cmd":"__CONVERT_CMD__"}', template)).toThrow(
-      '占位符回填模板缺少 replacement'
-    );
-  });
-
-  it('空输入抛错', () => {
-    expect(() => applyTemplate('   ', '{"a":1}')).toThrow('当前编辑器内容为空');
-  });
-
-  it('空模板抛错', () => {
-    expect(() => applyTemplate('{"a":1}', '   ')).toThrow('模板内容为空');
-  });
-
-  it('非法 JSON 输入抛错', () => {
-    expect(() => applyTemplate('{invalid}', '{"a":1}')).toThrow('当前编辑器内容不是合法的 JSON');
-  });
-
-  it('非法 JSON 模板抛错', () => {
-    expect(() => applyTemplate('{"a":1}', '{invalid}')).toThrow('模板内容不是合法的 JSON');
   });
 });

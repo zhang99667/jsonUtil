@@ -1,3 +1,5 @@
+import { isRecord, parseJsonWithFallback } from './storage';
+
 export interface JsonSchemaLibraryItem {
   id: string;
   name: string;
@@ -30,10 +32,6 @@ export const JSON_SCHEMA_LIBRARY_EXPORT_SOURCE = 'JSON_SCHEMA_LIBRARY_EXPORT';
 export const JSON_SCHEMA_LIBRARY_STORAGE_KEY = 'json-schema-panel-library';
 
 const MAX_SCHEMA_NAME_LENGTH = 64;
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
 
 const normalizeSchemaText = (schemaText: string): string => schemaText.trim();
 
@@ -164,7 +162,9 @@ const looksLikeJsonSchemaObject = (value: Record<string, unknown>): boolean => (
     .some(key => key in value)
 );
 
-const isImportableJsonSchemaValue = (value: unknown): boolean => (
+type ImportableJsonSchemaValue = boolean | Record<string, unknown>;
+
+const isImportableJsonSchemaValue = (value: unknown): value is ImportableJsonSchemaValue => (
   typeof value === 'boolean' || (isRecord(value) && looksLikeJsonSchemaObject(value))
 );
 
@@ -175,11 +175,12 @@ const createImportableJsonSchemaLibraryItem = (
   const normalizedSchemaText = normalizeSchemaText(schemaText);
   if (!normalizedSchemaText) return null;
 
-  try {
-    if (!isImportableJsonSchemaValue(JSON.parse(normalizedSchemaText))) return null;
-  } catch {
-    return null;
-  }
+  const parsed = parseJsonWithFallback<ImportableJsonSchemaValue | null>(
+    normalizedSchemaText,
+    null,
+    isImportableJsonSchemaValue
+  );
+  if (parsed === null) return null;
 
   return createJsonSchemaLibraryItem(normalizedSchemaText, now);
 };
@@ -233,13 +234,7 @@ export const importJsonSchemaLibrary = (
   importText: string,
   now: number = Date.now()
 ): JsonSchemaLibraryImportResult | null => {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(importText);
-  } catch {
-    return null;
-  }
-
+  const parsed = parseJsonWithFallback<unknown>(importText, null);
   const schemaTexts = collectImportSchemaTexts(parsed);
   if (schemaTexts.length === 0) return null;
 

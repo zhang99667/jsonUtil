@@ -54,6 +54,7 @@ describe('appTemplateFillCommandRunner failures', () => {
 
   it.each([
     ['模板应用失败时保留原始错误文案', new Error('当前编辑器内容为空'), '当前编辑器内容为空', false],
+    ['空白 Error 异常使用失败兜底文案', new Error('   '), '模板应用失败', true],
     ['非 Error 异常使用失败兜底文案且不写回 SOURCE', 'blocked', '模板应用失败', true],
   ])('%s', async (_, thrownError, message, shouldKeepSourceUntouched) => {
     mocks.applyTemplate.mockImplementation(() => {

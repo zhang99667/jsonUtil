@@ -5,6 +5,7 @@ const governanceAppWorkflowBudget = (file, maxLines, reason) => ({ file, maxLine
 
 export const governanceAppWorkflowMaintainabilityBudgets = [
   governanceAppWorkflowBudget('scripts/ci/maintainability-budget-app-workflow-rules.mjs', 25, 'App 工作流预算聚合入口应只组合动作域、状态和支撑子表'),
+  governanceAppWorkflowBudget('scripts/ci/maintainability-budget-app-settings-backup-rules.mjs', 15, '配置备份预算规则应只维护入口、补偿边界和相关测试的短表'),
   governanceAppWorkflowBudget('scripts/ci/maintainability-budget-app-workflow-ai-rules.mjs', 45, 'App AI 修复预算规则应保持短表，新增 AI 工作流 helper 先按 hook/helper 分层'),
   governanceAppWorkflowBudget('scripts/ci/maintainability-budget-governance-app-workflow-command-rules.mjs', 25, 'App 命令预算治理规则应独立维护 command/core/smart/template/panel 子表预算'),
   ...governanceAppWorkflowCommandMaintainabilityBudgets,

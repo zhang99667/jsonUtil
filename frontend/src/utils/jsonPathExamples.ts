@@ -1,4 +1,6 @@
 import { formatJsonPathRecursiveFieldQuery } from './jsonPathInput';
+import { appendJsonPathIndex, appendJsonPathKey, isJsonPathIdentifier } from './jsonPathSegments';
+import { isRecord, parseJsonWithFallback } from './storage';
 
 export interface JsonPathScenarioExample {
   id: string;
@@ -26,7 +28,6 @@ const MAX_EXAMPLE_PARSE_LENGTH = 320_000;
 const MAX_SCENARIO_EXAMPLES = 6;
 const MAX_TRAVERSE_NODES = 1_200;
 const MAX_ARRAY_SAMPLE_RECORDS = 12;
-const JSONPATH_IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 const PRIORITY_FIELD_NAMES = [
   'id',
   'name',
@@ -41,30 +42,16 @@ const PRIORITY_FIELD_NAMES = [
   'traceId',
 ];
 
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
 const tryParseJsonContainer = (jsonText: string): unknown | null => {
   if (jsonText.length > MAX_EXAMPLE_PARSE_LENGTH) return null;
   const source = jsonText.trim();
   if (!source) return null;
 
-  try {
-    return JSON.parse(source);
-  } catch {
-    return null;
-  }
+  return parseJsonWithFallback<unknown>(source, null);
 };
 
-const formatJsonPathChild = (basePath: string, key: string): string => (
-  JSONPATH_IDENTIFIER_RE.test(key)
-    ? `${basePath}.${key}`
-    : `${basePath}[${JSON.stringify(key)}]`
-);
-
 const formatJsonPathFilterProperty = (key: string): string => (
-  JSONPATH_IDENTIFIER_RE.test(key) ? `@.${key}` : `@[${JSON.stringify(key)}]`
+  isJsonPathIdentifier(key) ? `@.${key}` : `@[${JSON.stringify(key)}]`
 );
 
 const formatPathLabel = (path: string): string => (
@@ -105,7 +92,11 @@ const collectObjectArrayCandidates = (root: unknown): ObjectArrayCandidate[] => 
       }
 
       current.value.slice(0, 30).forEach((item, index) => {
-        stack.push({ value: item, path: `${current.path}[${index}]`, depth: current.depth + 1 });
+        stack.push({
+          value: item,
+          path: appendJsonPathIndex(current.path, index),
+          depth: current.depth + 1,
+        });
       });
       continue;
     }
@@ -117,7 +108,7 @@ const collectObjectArrayCandidates = (root: unknown): ObjectArrayCandidate[] => 
         .forEach(([key, child]) => {
           stack.push({
             value: child,
-            path: formatJsonPathChild(current.path, key),
+            path: appendJsonPathKey(current.path, key),
             depth: current.depth + 1,
           });
         });
@@ -276,7 +267,7 @@ export const getJsonPathScenarioExamples = (jsonText: string): JsonPathScenarioE
       examples.push({
         id: `pick-${primaryCandidate.path}-${fieldExample.key}`,
         label: `提取 ${fieldExample.key}`,
-        query: formatJsonPathChild(primaryCandidate.itemPath, fieldExample.key),
+        query: appendJsonPathKey(primaryCandidate.itemPath, fieldExample.key),
         description: `从 ${formatPathLabel(primaryCandidate.path)} 批量提取 ${fieldExample.key}`,
       });
     }

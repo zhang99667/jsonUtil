@@ -39,6 +39,7 @@ import { safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '.
 import { showError, showSuccess } from '../utils/toast';
 import { formatJsonPathRecursiveFieldQuery } from '../utils/jsonPathInput';
 import { isJsonTreeArrayIndexKeyLabel } from '../utils/jsonTreePresentation';
+import { useJsonTreeModel } from '../hooks/useJsonTreeModel';
 
 interface JsonTreePanelProps {
   jsonData: string;
@@ -48,18 +49,6 @@ interface JsonTreePanelProps {
   onClose: () => void;
   onLocatePath: (path: string) => void;
   onOpenSchemeValue: (value: string) => void;
-}
-
-interface JsonTreeWorkerResponse {
-  id: number;
-  model: JsonTreeModel | null;
-  error?: string;
-}
-
-interface JsonTreeModelState {
-  model: JsonTreeModel | null;
-  error: string;
-  isLoading: boolean;
 }
 
 const getVisibleNodes = (
@@ -93,8 +82,6 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
 }) => {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const copyResultsMenuRef = useRef<HTMLDetailsElement | null>(null);
-  const workerRef = useRef<Worker | null>(null);
-  const requestIdRef = useRef(0);
   const externalFocusRequestIdRef = useRef<number | null>(null);
   const [searchText, setSearchText] = useState('');
   const [searchHistory, setSearchHistory] = useState<string[]>(() => (
@@ -105,68 +92,9 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   const [viewMode, setViewMode] = useState<JsonTreePanelViewMode>('list');
   const [selectedPath, setSelectedPath] = useState('$');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['$']));
-  const [modelState, setModelState] = useState<JsonTreeModelState>({
-    model: null,
-    error: '',
-    isLoading: false,
+  const modelState = useJsonTreeModel(jsonData, {
+    enabled: isOpen && !isDataPreparing,
   });
-
-  useEffect(() => {
-    if (!isOpen || isDataPreparing || !jsonData.trim()) {
-      workerRef.current?.terminate();
-      workerRef.current = null;
-      requestIdRef.current += 1;
-      setModelState({ model: null, error: '', isLoading: false });
-      return;
-    }
-
-    workerRef.current?.terminate();
-    const requestId = ++requestIdRef.current;
-    const worker = new Worker(new URL('../workers/jsonTree.worker.ts', import.meta.url), { type: 'module' });
-    workerRef.current = worker;
-    setModelState({ model: null, error: '', isLoading: true });
-
-    worker.onmessage = (event: MessageEvent<JsonTreeWorkerResponse>) => {
-      if (event.data.id !== requestId || requestIdRef.current !== requestId) return;
-      worker.terminate();
-      if (workerRef.current === worker) {
-        workerRef.current = null;
-      }
-
-      setModelState({
-        model: event.data.model,
-        error: event.data.error || '',
-        isLoading: false,
-      });
-    };
-
-    worker.onerror = (event) => {
-      if (requestIdRef.current !== requestId) return;
-      worker.terminate();
-      if (workerRef.current === worker) {
-        workerRef.current = null;
-      }
-
-      setModelState({
-        model: null,
-        error: `JSON 结构解析失败: ${event.message}`,
-        isLoading: false,
-      });
-    };
-
-    worker.postMessage({
-      id: requestId,
-      jsonData,
-    });
-
-    return () => {
-      requestIdRef.current += 1;
-      worker.terminate();
-      if (workerRef.current === worker) {
-        workerRef.current = null;
-      }
-    };
-  }, [isDataPreparing, isOpen, jsonData]);
 
   useEffect(() => {
     safeSetStorageItem(JSON_TREE_SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(searchHistory));

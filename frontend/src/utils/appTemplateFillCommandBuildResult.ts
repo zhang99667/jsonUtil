@@ -1,6 +1,6 @@
 import { tryBuildAppTemplateFillQualityDelta } from './appTemplateFillQualityDelta';
 import type { AppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySnapshot';
-import { applyTemplate } from './transformations';
+import { applyTemplate } from './jsonTemplate';
 
 interface AppTemplateFillCommandBuildResultInput {
   sourceBeforeApply: string;

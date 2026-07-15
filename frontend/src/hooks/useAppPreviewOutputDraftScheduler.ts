@@ -5,15 +5,17 @@ import { useAppPreviewOutputSyncScheduler } from './useAppPreviewOutputSyncSched
 interface UseAppPreviewOutputDraftSchedulerInput {
   isUpdatingFromOutput: MutableRefObject<boolean>;
   pendingOutputValue: MutableRefObject<string>;
+  onBeforeSync: () => void;
 }
 
 export const useAppPreviewOutputDraftScheduler = ({
   isUpdatingFromOutput,
   pendingOutputValue,
+  onBeforeSync,
 }: UseAppPreviewOutputDraftSchedulerInput) => {
   const clearOutputDraft = useCallback(() => {
     clearPreviewOutputDraft(isUpdatingFromOutput, pendingOutputValue);
   }, [isUpdatingFromOutput, pendingOutputValue]);
 
-  return useAppPreviewOutputSyncScheduler({ clearOutputDraft });
+  return useAppPreviewOutputSyncScheduler({ clearOutputDraft, onBeforeSync });
 };

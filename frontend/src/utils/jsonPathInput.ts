@@ -1,21 +1,16 @@
+import { decodeJsonPointerSegment } from './jsonPointer';
+import { isJsonPathIdentifier } from './jsonPathSegments';
+import { isRecord } from './storage';
+
 export interface JsonPathQueryNormalization {
   query: string;
   isFieldNameShortcut: boolean;
 }
 
 const FIELD_NAME_SHORTCUT_RE = /^[\p{L}\p{N}_$-][\p{L}\p{N}_$.-]*$/u;
-const JSONPATH_IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
-
-const decodeJsonPointerSegment = (segment: string): string => (
-  segment.replace(/~1/g, '/').replace(/~0/g, '~')
-);
 
 const isJsonPointerArrayIndex = (segment: string): boolean => (
   /^(0|[1-9]\d*)$/.test(segment)
-);
-
-const isJsonPointerObjectValue = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
 
 const getJsonPointerSegments = (pointer: string): string[] => (
@@ -26,7 +21,7 @@ const getJsonPointerSegments = (pointer: string): string[] => (
 );
 
 export const formatJsonPathRecursiveFieldQuery = (fieldName: string): string => (
-  JSONPATH_IDENTIFIER_RE.test(fieldName)
+  isJsonPathIdentifier(fieldName)
     ? `$..${fieldName}`
     : /['"]/.test(fieldName)
       ? `$..[?(@property == ${JSON.stringify(fieldName)})]`
@@ -48,7 +43,7 @@ export const getJsonPointerLastFieldName = (pointer: string, rootValue?: unknown
         continue;
       }
 
-      if (isJsonPointerObjectValue(current)) {
+      if (isRecord(current)) {
         lastFieldName = segment;
         current = current[segment];
         continue;

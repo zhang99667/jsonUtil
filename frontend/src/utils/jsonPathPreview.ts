@@ -104,7 +104,7 @@ const formatStructuredPreview = (value: unknown): string => {
 };
 
 /**
- * 小结果保留 JSON 明细，大对象/大数组只展示结构摘要，避免结果面板为根节点 stringify 整段 response。
+ * 小结果保留 JSON 明细，大对象/大数组只展示结构摘要，避免结果面板为根节点字符串化整段响应。
  */
 export const formatJsonPathValueForPreview = (value: unknown): string => {
   if (typeof value === 'string') {

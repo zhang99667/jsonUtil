@@ -1,17 +1,40 @@
 package com.jsonhelper.backend.repository;
 
 import com.jsonhelper.backend.entity.VisitLog;
+import jakarta.persistence.QueryHint;
+import org.hibernate.jpa.HibernateHints;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Repository
 public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
+
+    interface DateCount {
+        LocalDate getDate();
+
+        long getCount();
+    }
+
+    interface GroupCount {
+        String getLabel();
+
+        long getCount();
+    }
+
+    interface HourCount {
+        int getHour();
+
+        long getCount();
+    }
 
     interface SessionVisitEvent {
         String getIp();
@@ -27,7 +50,7 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
 
     long countByCreatedAtAfter(LocalDateTime start);
 
-    // ============ Traffic Statistics Methods ============
+    // ============ 流量统计查询方法 ============
 
     /**
      * 统计指定日期范围内的总PV
@@ -42,82 +65,75 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
     long countTotalUv(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 按日期统计每日PV趋势（使用原生SQL，兼容PostgreSQL）
-     * 返回: [日期, PV数量]
+     * 按日期统计每日 PV 趋势（使用原生 SQL，兼容 PostgreSQL）
      */
-    @Query(value = "SELECT DATE(created_at) as date, COUNT(*) as pv " +
+    @Query(value = "SELECT DATE(created_at) AS date, COUNT(*) AS count " +
            "FROM visit_logs WHERE created_at >= :start AND created_at < :end " +
            "GROUP BY DATE(created_at) ORDER BY date", nativeQuery = true)
-    List<Object[]> countDailyPv(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<DateCount> countDailyPv(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 按日期统计每日UV趋势（使用原生SQL，兼容PostgreSQL）
-     * 返回: [日期, UV数量]
+     * 按日期统计每日 UV 趋势（使用原生 SQL，兼容 PostgreSQL）
      */
-    @Query(value = "SELECT DATE(created_at) as date, COUNT(DISTINCT ip) as uv " +
+    @Query(value = "SELECT DATE(created_at) AS date, COUNT(DISTINCT ip) AS count " +
            "FROM visit_logs WHERE created_at >= :start AND created_at < :end " +
            "GROUP BY DATE(created_at) ORDER BY date", nativeQuery = true)
-    List<Object[]> countDailyUv(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<DateCount> countDailyUv(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 按IP统计访问次数排行（TOP N）
-     * 返回: [IP, 访问次数]
+     * 按 IP 统计访问次数排行
      */
-    @Query("SELECT v.ip, COUNT(v) as cnt FROM VisitLog v " +
+    @Query("SELECT v.ip AS label, COUNT(v) AS count FROM VisitLog v " +
            "WHERE v.createdAt >= :start AND v.createdAt < :end " +
-           "GROUP BY v.ip ORDER BY cnt DESC")
-    List<Object[]> countByIpTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
+           "GROUP BY v.ip ORDER BY COUNT(v) DESC")
+    List<GroupCount> countByIpTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
 
     /**
-     * 按IP聚合访问次数（用于地理位置统计，避免逐条访问记录解析IP）
-     * 返回: [IP, 访问次数]
+     * 按 IP 聚合访问次数（用于地理位置统计，避免逐条访问记录解析 IP）
      */
-    @Query("SELECT v.ip, COUNT(v) as cnt FROM VisitLog v " +
+    @Query("SELECT v.ip AS label, COUNT(v) AS count FROM VisitLog v " +
            "WHERE v.createdAt >= :start AND v.createdAt < :end " +
            "GROUP BY v.ip")
-    List<Object[]> countByIpInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<GroupCount> countByIpInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 按User-Agent聚合访问次数（用于设备/浏览器统计，避免逐条解析重复UA）
-     * 返回: [User-Agent, 访问次数]
+     * 按用户代理聚合访问次数，避免逐条解析重复设备信息
      */
-    @Query("SELECT v.userAgent, COUNT(v) as cnt FROM VisitLog v " +
+    @Query("SELECT v.userAgent AS label, COUNT(v) AS count FROM VisitLog v " +
            "WHERE v.createdAt >= :start AND v.createdAt < :end " +
            "GROUP BY v.userAgent")
-    List<Object[]> countByUserAgentInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<GroupCount> countByUserAgentInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 按Referer聚合访问次数（用于来源统计，避免逐条解析重复来源）
-     * 返回: [Referer, 访问次数]
+     * 按来源地址聚合访问次数，避免逐条解析重复来源
      */
-    @Query("SELECT v.referer, COUNT(v) as cnt FROM VisitLog v " +
+    @Query("SELECT v.referer AS label, COUNT(v) AS count FROM VisitLog v " +
            "WHERE v.createdAt >= :start AND v.createdAt < :end " +
            "GROUP BY v.referer")
-    List<Object[]> countByRefererInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<GroupCount> countByRefererInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
      * 按路径统计访问次数排行
-     * 返回: [路径, 访问次数]
      */
-    @Query("SELECT v.path, COUNT(v) as cnt FROM VisitLog v " +
+    @Query("SELECT v.path AS label, COUNT(v) AS count FROM VisitLog v " +
            "WHERE v.createdAt >= :start AND v.createdAt < :end " +
-           "GROUP BY v.path ORDER BY cnt DESC")
-    List<Object[]> countByPathTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
+           "GROUP BY v.path ORDER BY COUNT(v) DESC")
+    List<GroupCount> countByPathTopN(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
 
     /**
-     * 按小时统计访问分布（24小时，使用原生SQL，兼容PostgreSQL）
-     * 返回: [小时(0-23), 访问次数]
+     * 按小时统计访问分布（使用原生 SQL，兼容 PostgreSQL）
      */
-    @Query(value = "SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as cnt " +
+    @Query(value = "SELECT CAST(EXTRACT(HOUR FROM created_at) AS integer) AS hour, COUNT(*) AS count " +
            "FROM visit_logs WHERE created_at >= :start AND created_at < :end " +
            "GROUP BY EXTRACT(HOUR FROM created_at) ORDER BY hour", nativeQuery = true)
-    List<Object[]> countByHour(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<HourCount> countByHour(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
-     * 查询指定时间范围内的会话计算事件（仅取必要字段，避免加载完整访问记录）
+     * 流式查询指定时间范围内的会话计算事件；调用方必须关闭返回流
      */
     @Query("SELECT v.ip AS ip, v.createdAt AS createdAt FROM VisitLog v " +
            "WHERE v.createdAt >= :start AND v.createdAt < :end AND v.ip IS NOT NULL " +
            "ORDER BY v.ip ASC, v.createdAt ASC")
-    List<SessionVisitEvent> findSessionVisitEvents(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    @QueryHints(@QueryHint(name = HibernateHints.HINT_FETCH_SIZE, value = "1000"))
+    Stream<SessionVisitEvent> streamSessionVisitEvents(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

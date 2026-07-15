@@ -15,7 +15,7 @@ const skillFile = CODEX_SKILL_TEST_FILE;
 test('AI 治理 skill 发现只收集技能目录下的 SKILL.md', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, CODEX_SKILL_TEST_FILE, 'skill');
-    writeFixtureFile(rootDir, '.codex/skills/not-a-skill.txt', 'ignore');
+    writeFixtureFile(rootDir, '.agents/skills/not-a-skill.txt', 'ignore');
 
     assert.deepEqual(discoverCodexSkillFiles(rootDir), [CODEX_SKILL_TEST_FILE]);
   });

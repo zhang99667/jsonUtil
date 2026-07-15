@@ -6,6 +6,7 @@ import { createAppPreviewOutputSyncTask } from './appPreviewOutputSyncTask';
 import { createPreviewOutputSyncTaskInput } from './appPreviewOutputSyncTestFixture';
 
 const syncedResult = { status: 'synced' as const, nextSource: 'next-source' };
+const signal = new AbortController().signal;
 
 vi.mock('./appPreviewOutputSyncRequest', () => ({
   runAppPreviewOutputSyncRequest: vi.fn(async () => syncedResult),
@@ -30,7 +31,7 @@ describe('createAppPreviewOutputSyncTask', () => {
     input.refs.inputRef.current = '{"latest":true}';
     input.refs.fallbackContextRef.current = fallbackContext;
 
-    await expect(task(() => true)).resolves.toBe(true);
+    await expect(task(() => true, signal)).resolves.toBe(true);
 
     expect(runAppPreviewOutputSyncRequest).toHaveBeenCalledWith(expect.objectContaining({
       originalInput: '{"latest":true}',
@@ -48,7 +49,7 @@ describe('createAppPreviewOutputSyncTask', () => {
     const input = createPreviewOutputSyncTaskInput();
     const task = createAppPreviewOutputSyncTask(input);
 
-    await expect(task(() => false)).resolves.toBe(false);
+    await expect(task(() => false, signal)).resolves.toBe(false);
 
     expect(runAppPreviewOutputSyncRequest).toHaveBeenCalledTimes(1);
     expect(applyAppPreviewOutputSyncResult).not.toHaveBeenCalled();

@@ -32,7 +32,7 @@ export const AI_GOVERNANCE_REFERENCE_DOCS_MISSING_CASES = [
   {
     name: 'AI 治理引用检查会报告资产注册表缺失 Copilot 根入口人审契约',
     file: 'docs/AI-ASSET-REGISTRY.md',
-    content: lines(['AGENTS.md', 'CLAUDE.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-GOVERNANCE-DECISIONS.md', '.codex/skills/jsonutils-maintainer/SKILL.md', 'scripts/ci/check-ai-governance.mjs', 'scripts/ci/aiGovernanceAssetRegistryEvidence.mjs', 'referenceRules.file', '治理证据', '显式豁免']),
+    content: lines(['AGENTS.md', 'CLAUDE.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-GOVERNANCE-DECISIONS.md', '.agents/skills/jsonutils-maintainer/SKILL.md', 'scripts/ci/check-ai-governance.mjs', 'scripts/ci/aiGovernanceAssetRegistryEvidence.mjs', 'referenceRules.file', '治理证据', '显式豁免']),
     contains: ['Copilot 根入口'],
     expected: 'docs/AI-ASSET-REGISTRY.md: 缺少 "Copilot 根入口"',
   },

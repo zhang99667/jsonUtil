@@ -133,7 +133,7 @@ export const buildWorkspaceDraftSnapshot = ({
 };
 
 export const loadWorkspaceDraftSnapshot = (
-  storage: Storage = localStorage
+  storage?: Storage
 ): WorkspaceDraftSnapshot | null => (
   parseWorkspaceDraftSnapshot(safeGetStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, storage))
 );
@@ -148,7 +148,7 @@ const estimateWorkspaceDraftStorageChars = (snapshot: WorkspaceDraftSnapshot): n
 
 export const saveWorkspaceDraftSnapshot = (
   snapshot: WorkspaceDraftSnapshot | null,
-  storage: Storage = localStorage,
+  storage?: Storage,
   maxStorageChars = WORKSPACE_DRAFT_MAX_STORAGE_CHARS
 ): boolean => {
   if (!snapshot) {
@@ -156,13 +156,11 @@ export const saveWorkspaceDraftSnapshot = (
   }
 
   if (estimateWorkspaceDraftStorageChars(snapshot) > maxStorageChars) {
-    safeRemoveStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, storage);
     return false;
   }
 
   const serialized = JSON.stringify(snapshot);
   if (serialized.length > maxStorageChars) {
-    safeRemoveStorageItem(WORKSPACE_DRAFT_STORAGE_KEY, storage);
     return false;
   }
 

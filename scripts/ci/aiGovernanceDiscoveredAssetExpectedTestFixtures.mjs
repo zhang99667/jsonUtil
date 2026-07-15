@@ -1,5 +1,9 @@
 export const EXPECTED_DISCOVERED_AI_GOVERNANCE_ASSETS = [
+  '.agents/plugins/marketplace.json',
   '.claude/new-agent-guide.md',
+  '.codex/agents/reviewer.toml',
+  '.codex/hooks.json',
+  '.codex/hooks/session-start.mjs',
   '.cursor/mcp.json',
   '.cursor/rules/review.mdc',
   '.github/agents/planner.agent.md',
@@ -9,6 +13,7 @@ export const EXPECTED_DISCOVERED_AI_GOVERNANCE_ASSETS = [
   '.mcp.json',
   '.vscode/mcp.json',
   'docs/AI-NEW-WORKFLOW.md',
+  'plugins/example-plugin/.codex-plugin/plugin.json',
   'rules/ai-review-rules.md',
   'scripts/mcp/jsonutils-governance-server.mjs',
 ];

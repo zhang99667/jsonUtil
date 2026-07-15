@@ -1,4 +1,5 @@
 import { base64Decode, decodeJwt, isBase64, isJwt } from './schemeUtils';
+import { urlDecode } from './schemeQueryDecoding';
 
 export type JsonStringSemanticKind =
   | 'url'
@@ -243,7 +244,8 @@ const getUrlForSemanticScan = (value: string): URL | null => {
 
 const getResourceDetail = (url: URL): string => {
   const segments = url.pathname.split('/').filter(Boolean);
-  return decodeURIComponent(segments.at(-1) || url.hostname || '资源');
+  const detail = segments.at(-1) || url.hostname || '资源';
+  return urlDecode(detail);
 };
 
 const getResourceSemanticHint = (

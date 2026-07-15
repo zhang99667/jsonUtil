@@ -1,10 +1,13 @@
 package com.jsonhelper.backend.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "subscriptions")
 public class Subscription {
@@ -17,7 +20,7 @@ public class Subscription {
     private Long userId;
 
     @Column(nullable = false)
-    private String status; // ACTIVE, EXPIRED
+    private String status; // 状态取值：ACTIVE 表示有效，EXPIRED 表示已过期
 
     @Column(name = "expire_time")
     private LocalDateTime expireTime;

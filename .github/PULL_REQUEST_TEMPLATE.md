@@ -35,6 +35,8 @@ Closes #(issue)
 - [ ] 已更新 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，确保规则/skill/治理脚本变更可从决策账本与发布说明双向追溯
 - [ ] 已补充 `node scripts/ci/check-ai-governance.mjs` 覆盖的引用规则、资产发现规则或负向测试
 - [ ] 新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时，已同步可维护性预算并运行 `node scripts/ci/check-maintainability-budgets.mjs`
+- [ ] 新增或修改的 AI 资产已进入提交；本地运行了 `node scripts/ci/check-ai-asset-distribution.mjs --index`，CI 用 `--head` 证明所测提交可被 clone
+- [ ] 项目插件只通过 `node scripts/ci/manage-project-plugins.mjs --check` 只读诊断；未把 marketplace、Git index 或个人安装状态描述成自动同步
 - [ ] 本机私有配置没有承载项目级 rules、skills 或验证流程；如需保留，已写明显式豁免理由
 
 ## 截图

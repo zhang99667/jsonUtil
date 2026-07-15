@@ -1,4 +1,4 @@
-import type { JsonValue } from '../types';
+import type { JsonObject, JsonValue } from '../types';
 import {
   isStructuredCmdField,
   looksLikeRawCmdSource,
@@ -13,10 +13,7 @@ import {
   tryParseRawCmdJsonString,
 } from './cmdStructureRawJsonValue';
 import { parseCmdStructureRawQueryParams } from './cmdStructureRawQueryParams';
-
-interface JsonObject {
-  [key: string]: JsonValue;
-}
+import { isJsonObject } from './jsonValueGuards';
 
 export interface NormalizedCmdStructure {
   cmdSchema?: string;
@@ -25,10 +22,6 @@ export interface NormalizedCmdStructure {
 }
 
 const RAW_CMD_DECODE_MAX_DEPTH = 10;
-
-const isRecord = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
 
 const parseFastCmdValue = (value: string, key: string, depth: number): JsonValue => {
   if (depth > RAW_CMD_DECODE_MAX_DEPTH) return value;
@@ -69,7 +62,7 @@ const parseFastStructuredValue = (value: JsonValue, key: string, depth: number):
     return value.map(item => parseFastStructuredValue(item, key, depth + 1));
   }
 
-  if (!isRecord(value)) return value;
+  if (!isJsonObject(value)) return value;
 
   const result: JsonObject = {};
   Object.entries(value).forEach(([childKey, item]) => {

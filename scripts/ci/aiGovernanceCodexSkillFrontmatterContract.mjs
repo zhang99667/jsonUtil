@@ -1,24 +1,32 @@
-const CODEX_SKILL_FRONTMATTER_FIELDS = ['name', 'description', 'version', 'tags'];
+import { collectUnexpectedSkillFrontmatterFailures, extractSkillMetadataBlock, extractSkillMetadataField, unquoteSkillMetadataValue } from './aiGovernanceCodexSkillMetadata.mjs';
+
+const CODEX_SKILL_FRONTMATTER_FIELDS = ['name', 'description', 'metadata'];
+const CODEX_SKILL_METADATA_FIELDS = ['version', 'tags'];
 
 const hasFrontmatterField = (frontmatter, field) => (
-  new RegExp(`^${field}:\\s*\\S`, 'm').test(frontmatter)
+  new RegExp(`^${field}:[ \\t]*\\S`, 'm').test(frontmatter)
 );
 
 const extractFrontmatterField = (frontmatter, field) => (
   frontmatter.match(new RegExp(`^${field}:\\s*(.+)$`, 'm'))?.[1]?.trim()
 );
 
-const getSkillDirectoryName = file => file.split('/').at(-2);
-
 export const collectSkillFrontmatterContractFailures = (file, frontmatter) => {
   const skillName = extractFrontmatterField(frontmatter, 'name');
-  const skillVersion = extractFrontmatterField(frontmatter, 'version');
-  const skillTags = extractFrontmatterField(frontmatter, 'tags');
-  const directoryName = getSkillDirectoryName(file);
+  const metadata = extractSkillMetadataBlock(frontmatter);
+  const skillVersion = unquoteSkillMetadataValue(extractSkillMetadataField(frontmatter, 'version'));
+  const skillTags = extractSkillMetadataField(frontmatter, 'tags');
+  const directoryName = file.split('/').at(-2);
   return [
     ...CODEX_SKILL_FRONTMATTER_FIELDS
-      .filter(field => !hasFrontmatterField(frontmatter, field))
+      .filter(field => field === 'metadata' ? !metadata : !hasFrontmatterField(frontmatter, field))
       .map(field => `${file}: frontmatter 缺少 ${field}`),
+    ...collectUnexpectedSkillFrontmatterFailures(file, frontmatter),
+    ...(metadata
+      ? CODEX_SKILL_METADATA_FIELDS
+        .filter(field => !extractSkillMetadataField(frontmatter, field))
+        .map(field => `${file}: frontmatter metadata 缺少 ${field}`)
+      : []),
     ...(skillName && skillName !== directoryName
       ? [`${file}: frontmatter name 必须等于 skill 目录名 ${directoryName}`]
       : []),

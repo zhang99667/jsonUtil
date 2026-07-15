@@ -1,4 +1,4 @@
-import type { JsonValue } from '../types';
+import type { JsonObject, JsonValue } from '../types';
 import type { AppVersionMetadata } from './appVersion';
 import type { CmdStructureCandidateInput } from './cmdStructureCandidates';
 import { countCmdStructurePathBranches } from './cmdStructurePathBranches';
@@ -10,6 +10,8 @@ import {
   compareCmdStructureValues,
   type CmdStructureValueDiff,
 } from './cmdStructureValueDiff';
+import { isJsonObject } from './jsonValueGuards';
+import { parseJsonWithFallback } from './storage';
 
 export {
   collectActualCmdStructureCandidates,
@@ -26,10 +28,6 @@ export {
 export type {
   CmdStructureValueDiff,
 } from './cmdStructureValueDiff';
-
-interface JsonObject {
-  [key: string]: JsonValue;
-}
 
 export interface CmdStructureDiff {
   schemaDiff: { actual?: string; expected?: string } | null;
@@ -63,17 +61,9 @@ export interface RankCmdStructureCandidatesOptions extends CmdStructureDiffOptio
   limit?: number;
 }
 
-const isRecord = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+const parseJsonCandidate = (candidate: string): JsonValue | undefined => (
+  parseJsonWithFallback<JsonValue | undefined>(candidate, undefined)
 );
-
-const parseJsonCandidate = (candidate: string): JsonValue | undefined => {
-  try {
-    return JSON.parse(candidate) as JsonValue;
-  } catch {
-    return undefined;
-  }
-};
 
 const normalizeCmdHandlerTreeLine = (line: string): string => (
   line.trim().replace(/([\[{])\s*\d+\s+items?\s*$/i, '$1')
@@ -233,24 +223,24 @@ export const parseCmdStructureJson = (text: string, label = '输入'): JsonValue
 };
 
 const findCmdStructure = (value: JsonValue): NormalizedCmdStructure | null => {
-  if (!isRecord(value)) return null;
+  if (!isJsonObject(value)) return null;
 
-  if (isRecord(value.result)) {
+  if (isJsonObject(value.result)) {
     const result = findCmdStructure(value.result);
     if (result) return result;
   }
 
-  if (isRecord(value.data)) {
+  if (isJsonObject(value.data)) {
     const result = findCmdStructure(value.data);
     if (result) return result;
   }
 
-  if (isRecord(value['解析结果'])) {
+  if (isJsonObject(value['解析结果'])) {
     const result = findCmdStructure(value['解析结果']);
     if (result) return result;
   }
 
-  if (Object.prototype.hasOwnProperty.call(value, 'cmdParams')) {
+  if (Object.hasOwn(value, 'cmdParams')) {
     return {
       cmdSchema: typeof value.cmdSchema === 'string' ? value.cmdSchema : undefined,
       cmdParams: value.cmdParams,

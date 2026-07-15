@@ -92,11 +92,21 @@ jobs:
           npm run check:preloads
 
       - name: Setup SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ inputs.host }}
+          SSH_KEY: ${{ runner.temp }}/deploy_key
+          SSH_PORT: ${{ inputs.port }}
+          SSH_USER: ${{ inputs.user }}
+          REMOTE_APP_DIR: ${{ inputs.app_dir }}
         run: |
+          . scripts/deploy/ssh-common.sh
+          init_ssh_deploy_defaults
+          validate_ssh_deploy_target
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "${{ inputs.port }}" "${{ inputs.host }}" >> ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$SSH_KEY"
+          chmod 600 "$SSH_KEY"
+          ssh-keyscan -p "$SSH_PORT" -- "$SSH_HOST" >> ~/.ssh/known_hosts
 
       - name: Capture legacy frontend assets
         if: ${{ inputs.public_verify_enabled == 'true' }}
@@ -133,51 +143,20 @@ jobs:
           echo "Captured $count legacy frontend assets."
           printf 'LEGACY_FRONTEND_ASSETS=%s\n' "$legacy_assets" >> "$GITHUB_ENV"
 
-      - name: Prepare remote directory
-        run: |
-          ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" \
-            -o ServerAliveInterval="${SSH_SERVER_ALIVE_INTERVAL}" \
-            -o ServerAliveCountMax="${SSH_SERVER_ALIVE_COUNT_MAX}" \
-            "${{ inputs.user }}@${{ inputs.host }}" \
-            "command -v rsync >/dev/null && command -v docker >/dev/null && command -v curl >/dev/null && (docker compose version >/dev/null 2>&1 || command -v docker-compose >/dev/null) && mkdir -p '${{ inputs.app_dir }}'"
-
-      - name: Sync source to remote
-        env:
-          SYNC_FRONTEND_DIST: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
-        run: |
-          rsync_excludes=(
-            --exclude-from='scripts/deploy/rsync-excludes.txt'
-          )
-
-          if [ "$SYNC_FRONTEND_DIST" != "true" ]; then
-            rsync_excludes+=(--exclude='frontend/dist/')
-          fi
-
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -p ${{ inputs.port }} -o ServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL} -o ServerAliveCountMax=${SSH_SERVER_ALIVE_COUNT_MAX}" \
-            "${rsync_excludes[@]}" \
-            ./ "${{ inputs.user }}@${{ inputs.host }}:${{ inputs.app_dir }}/"
-
       - name: Deploy docker compose
         env:
-          DEPLOY_MODE: ${{ inputs.deploy_mode }}
+          SSH_HOST: ${{ inputs.host }}
+          SSH_USER: ${{ inputs.user }}
+          SSH_PORT: ${{ inputs.port }}
+          SSH_KEY: ${{ runner.temp }}/deploy_key
+          REMOTE_APP_DIR: ${{ inputs.app_dir }}
           HEALTH_CHECK_URLS: ${{ inputs.health_check_urls }}
-        run: |
-          frontend_dockerfile='Dockerfile'
-          compose_services=''
-          compose_no_deps='false'
-
-          if [ "$DEPLOY_MODE" = "prebuilt-frontend" ]; then
-            frontend_dockerfile='Dockerfile.prebuilt'
-            compose_services='app-frontend'
-            compose_no_deps='true'
-          fi
-
-          ssh -i ~/.ssh/deploy_key -p "${{ inputs.port }}" \
-            -o ServerAliveInterval="${SSH_SERVER_ALIVE_INTERVAL}" \
-            -o ServerAliveCountMax="${SSH_SERVER_ALIVE_COUNT_MAX}" \
-            "${{ inputs.user }}@${{ inputs.host }}" \
-            "cd '${{ inputs.app_dir }}' && HEALTH_CHECK_URLS='$HEALTH_CHECK_URLS' FRONTEND_DOCKERFILE='$frontend_dockerfile' COMPOSE_SERVICES='$compose_services' COMPOSE_NO_DEPS='$compose_no_deps' DEPLOY_DISK_CHECK_ENABLED='$DEPLOY_DISK_CHECK_ENABLED' DEPLOY_DISK_WARN_USED_PERCENT='$DEPLOY_DISK_WARN_USED_PERCENT' DEPLOY_DISK_MAX_USED_PERCENT='$DEPLOY_DISK_MAX_USED_PERCENT' bash scripts/deploy/remote-docker-compose-deploy.sh"
+          SYNC_FRONTEND_DIST: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
+          FRONTEND_DOCKERFILE: ${{ inputs.deploy_mode == 'prebuilt-frontend' && 'Dockerfile.prebuilt' || 'Dockerfile' }}
+          COMPOSE_SERVICES: ${{ inputs.deploy_mode == 'prebuilt-frontend' && 'app-frontend' || '' }}
+          COMPOSE_NO_DEPS: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
+          PUBLIC_VERIFY_ENABLED: 'false'
+        run: bash scripts/deploy/ssh-docker-compose-deploy.sh
 
       - name: Verify public deploy
         if: ${{ inputs.public_verify_enabled == 'true' }}

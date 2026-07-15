@@ -1,9 +1,6 @@
 import { formatByteSize, getDocumentStats } from './documentStats';
 import { PLACEHOLDER_FILL_TEMPLATE_KIND } from './placeholderFillTemplateContract';
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
+import { isRecord } from './storage';
 
 export const getContentSizeSummary = (content: string): string => {
   const stats = getDocumentStats(content);

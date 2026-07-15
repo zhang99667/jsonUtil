@@ -40,6 +40,10 @@ describe('appAiRepairCommand', () => {
       message: 'AI 修复失败',
       shouldOpenAiSettings: false,
     });
+    expect(getAppAiRepairErrorFeedback(new Error('   '))).toEqual({
+      message: 'AI 修复失败',
+      shouldOpenAiSettings: false,
+    });
   });
 
   it('组装修复应用结果和摘要参数', () => {

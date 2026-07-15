@@ -1,11 +1,15 @@
 export const AI_GOVERNANCE_MCP_FILES = [
   '.mcp.json',
   'scripts/mcp/jsonutils-governance-server.mjs',
+  'scripts/mcp/jsonutils-governance-jsonrpc.mjs',
   'scripts/mcp/jsonutils-governance-tool-definitions.mjs',
+  'scripts/mcp/jsonutils-governance-tool-input.mjs',
   'scripts/mcp/jsonutils-governance-tools.mjs',
   'scripts/mcp/jsonutils-governance-report-tool.mjs',
   'scripts/mcp/jsonutils-governance-scorecard-tool.mjs',
   'scripts/mcp/jsonutils-governance-assets.mjs',
+  'scripts/mcp/jsonutils-governance-evaluations.mjs',
+  'scripts/mcp/jsonutils-governance-evaluation-outcomes.mjs',
   'scripts/mcp/jsonutils-governance-resources.mjs',
   'scripts/mcp/jsonutils-governance-context.mjs',
   'scripts/mcp/jsonutils-governance-context-builder.mjs',
@@ -14,5 +18,6 @@ export const AI_GOVERNANCE_MCP_FILES = [
   'scripts/mcp/jsonutils-governance-report-summary.mjs',
   'scripts/mcp/jsonutils-governance-handoff.mjs',
   'scripts/mcp/jsonutils-governance-validation-plan.mjs',
+  'scripts/mcp/jsonutils-governance-validation-rules.mjs',
   'scripts/mcp/jsonutils-governance-worktree.mjs',
 ];

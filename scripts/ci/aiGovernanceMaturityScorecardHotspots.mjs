@@ -2,11 +2,13 @@ const AI_INFRA_PATTERN = /^(scripts\/ci\/(aiGovernance|write-ai-governance-artif
 
 const hotspotFile = hotspot => hotspot?.file ?? 'unknown';
 const isAiInfraHotspot = item => AI_INFRA_PATTERN.test(hotspotFile(item));
+const isAiInfraCandidate = item => isAiInfraHotspot(item) && (item.remainingLines <= 5 || item.usageRatio >= 0.85);
 
 export const buildMaintainabilityHotspotSummary = (report) => {
   const highUsage = report?.items?.highUsage ?? [];
-  const risky = highUsage.filter(item => item.remainingLines <= 2 || item.usageRatio >= 0.95);
-  const aiCandidates = highUsage.filter(isAiInfraHotspot);
+  const factCandidates = report?.items?.scorecardCandidates ?? highUsage;
+  const risky = factCandidates.filter(item => item.remainingLines <= 2 || item.usageRatio >= 0.95);
+  const aiCandidates = factCandidates.filter(isAiInfraCandidate);
   const aiRisky = risky.filter(isAiInfraHotspot);
   const priorityHotspot = aiRisky[0] ?? aiCandidates[0] ?? risky[0];
   return {

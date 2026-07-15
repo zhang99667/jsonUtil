@@ -15,14 +15,14 @@ export const runAppExportSettingsBackupCommand = async (
 ) => {
   try {
     const { buildAppBackup, serializeAppBackup } = await effects.onLoadBackupModule();
-    const backup = buildAppBackup(input);
+    const backup = buildAppBackup({ ...input, storage: effects.onGetStorage() });
 
     effects.onDownloadTextFile({
       text: serializeAppBackup(backup),
       fileName: buildAppSettingsBackupFileName(backup.exportedAt),
       mimeType: 'application/json',
     });
-    effects.onShowSuccess('配置备份已导出，未包含 AI Key');
+    effects.onShowSuccess('配置备份下载已开始，未包含 AI Key');
   } catch (error) {
     if (dispatchChunkLoadRecoveryEvent(error)) return;
 

@@ -52,7 +52,10 @@ import { AppLazyShellModals } from './components/AppLazyShellModals';
 import { AppStatusBarController } from './components/AppStatusBarController';
 import { AppToolPanelsController } from './components/AppToolPanelsController';
 import ErrorBoundary from './components/ErrorBoundary';
-import { startJsonValidation } from './utils/jsonValidation';
+import {
+  startJsonValidation,
+  type ValidateJsonMaybeAsync,
+} from './utils/jsonValidation';
 import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFeedback';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
@@ -80,7 +83,7 @@ const App: React.FC = () => {
   // 当前转换模式
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
 
-  // 当没有打开文件时，使用 Ref 存储转换上下文（避免无 Tab 场景下丢失 context）
+  // 当没有打开文件时，使用 Ref 存储转换上下文（避免无标签页场景下丢失上下文）
   const fallbackContextRef = useRef<TransformContext | null>(null);
 
   // 界面布局状态 (Hook) - 移到前面避免依赖问题
@@ -149,10 +152,7 @@ const App: React.FC = () => {
     autoExpandScheme,
   });
 
-  const validateJsonMaybeAsync = useCallback((
-    value: string,
-    options?: { requireContainer?: boolean }
-  ): Promise<ValidationResult> => {
+  const validateJsonMaybeAsync = useCallback<ValidateJsonMaybeAsync>((value, options) => {
     return startJsonValidation(value, ASYNC_VALIDATION_THRESHOLD, options).promise;
   }, []);
 
@@ -424,6 +424,7 @@ const App: React.FC = () => {
     isAiRepairing: isProcessing,
     handleAiRepair,
   } = useAppAiRepairCommand({
+    activeFileId,
     sourceText: input,
     aiConfig,
     onApplyFixedJson: handleApplyAiRepairResult,
@@ -455,6 +456,7 @@ const App: React.FC = () => {
     handleConfirmClearSource,
     handleCancelClearSource,
   } = useAppSourceReplacementCommands({
+    activeFileId,
     input,
     output,
     isOutputTransforming,

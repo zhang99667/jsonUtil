@@ -5,7 +5,7 @@ import { collectMissingAiGovernanceReferences } from './aiGovernanceChecks.mjs';
 import { AI_TOOLS_SETUP_SECTION_REFERENCE_RULES } from './aiGovernancePlaybookSectionRules.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
-const codexSkillFiles = ['.codex/skills/jsonutils-maintainer/SKILL.md'];
+const codexSkillFiles = ['.agents/skills/jsonutils-maintainer/SKILL.md'];
 
 test('AI 治理章节引用检查会报告工具索引必读顺序缺失决策账本', () => {
   withAiGovernanceTempRoot((rootDir) => {

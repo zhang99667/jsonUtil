@@ -134,20 +134,23 @@ describe('workspaceDraft', () => {
     expect(values.has(WORKSPACE_DRAFT_STORAGE_KEY)).toBe(false);
   });
 
-  it('保存草稿时会限制本地存储体积', () => {
+  it.each([
+    ['预估', 'x'.repeat(10_001), 10_000],
+    ['序列化', '\\"'.repeat(750), 2_600],
+  ])('%s超限时保留最后一份成功快照', (_, standaloneInput, maxStorageChars) => {
     const { storage, values } = createStorage();
     values.set(WORKSPACE_DRAFT_STORAGE_KEY, '{"old":true}');
 
     const snapshot = buildWorkspaceDraftSnapshot({
       files: [],
       activeFileId: null,
-      standaloneInput: 'x'.repeat(10_001),
+      standaloneInput,
       standaloneMode: TransformMode.NONE,
       now: () => 789,
     });
 
-    expect(saveWorkspaceDraftSnapshot(snapshot, storage, 10_000)).toBe(false);
-    expect(values.has(WORKSPACE_DRAFT_STORAGE_KEY)).toBe(false);
+    expect(saveWorkspaceDraftSnapshot(snapshot, storage, maxStorageChars)).toBe(false);
+    expect(values.get(WORKSPACE_DRAFT_STORAGE_KEY)).toBe('{"old":true}');
   });
 
   it('草稿体积在上限内时会写入本地存储', () => {

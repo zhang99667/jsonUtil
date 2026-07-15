@@ -8,12 +8,14 @@ import {
 
 describe('formatFileSize', () => {
   it('格式化字节大小', () => {
+    expect(formatFileSize(0)).toBe('0 B');
     expect(formatFileSize(512)).toBe('512 B');
   });
 
-  it('格式化 KB 和 MB', () => {
+  it('格式化 KB、MB 和 TB', () => {
     expect(formatFileSize(1536)).toBe('1.5 KB');
     expect(formatFileSize(2 * 1024 * 1024)).toBe('2 MB');
+    expect(formatFileSize(1024 ** 4)).toBe('1 TB');
   });
 });
 

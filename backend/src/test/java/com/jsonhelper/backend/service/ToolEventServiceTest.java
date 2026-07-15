@@ -11,11 +11,16 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionAttribute;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -35,14 +40,15 @@ class ToolEventServiceTest {
     }
 
     @Test
-    void recordEventNormalizesUnsafeFieldsAndBuckets() {
-        ToolEventRequest request = new ToolEventRequest();
-        request.setEventName("AI FIX!");
-        request.setCategory("ai repair");
-        request.setStatus("bad-status");
-        request.setInputSizeBucket("bad-size");
-        request.setDurationBucket("2_10s");
-        request.setSource("web/main");
+    void recordEventPersistsValidatedFieldsWithoutRewriting() {
+        ToolEventRequest request = new ToolEventRequest(
+                "AI_FIX",
+                "ai_repair",
+                "error",
+                "10_50kb",
+                "2_10s",
+                "web"
+        );
 
         toolEventService.recordEvent(request);
 
@@ -50,12 +56,12 @@ class ToolEventServiceTest {
         verify(toolEventRepository).save(eventCaptor.capture());
         ToolEvent event = eventCaptor.getValue();
 
-        assertEquals("AI_FIX_", event.getEventName());
+        assertEquals("AI_FIX", event.getEventName());
         assertEquals("ai_repair", event.getCategory());
-        assertEquals("success", event.getStatus());
-        assertEquals("unknown", event.getInputSizeBucket());
+        assertEquals("error", event.getStatus());
+        assertEquals("10_50kb", event.getInputSizeBucket());
         assertEquals("2_10s", event.getDurationBucket());
-        assertEquals("web_main", event.getSource());
+        assertEquals("web", event.getSource());
     }
 
     @Test
@@ -89,6 +95,19 @@ class ToolEventServiceTest {
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(toolEventRepository).countByEventNameSince(any(LocalDateTime.class), pageableCaptor.capture());
         assertEquals(5, pageableCaptor.getValue().getPageSize());
+    }
+
+    @Test
+    void getStatsUsesReadOnlyRepeatableReadSnapshot() throws NoSuchMethodException {
+        TransactionAttribute attribute = new AnnotationTransactionAttributeSource()
+                .getTransactionAttribute(
+                        ToolEventService.class.getMethod("getStats", int.class, int.class),
+                        ToolEventService.class
+                );
+
+        assertNotNull(attribute);
+        assertTrue(attribute.isReadOnly());
+        assertEquals(TransactionDefinition.ISOLATION_REPEATABLE_READ, attribute.getIsolationLevel());
     }
 
     private static class TestGroupCount implements ToolEventRepository.GroupCount {

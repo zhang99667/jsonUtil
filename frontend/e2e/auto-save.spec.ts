@@ -62,6 +62,126 @@ test('自动保存成功后清除标签未保存状态', async ({ page }) => {
   await expect(page.locator('[data-tour="save-status"]')).toHaveText('自动保存已同步');
 });
 
+test('自动保存挂起时手动保存排队并最终落盘最新内容', async ({ page }) => {
+  await page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    let writeCount = 0;
+    let releaseFirstWrite = () => undefined;
+
+    Object.defineProperty(window, '__releaseFirstAutoSaveWrite', {
+      configurable: true,
+      value: () => releaseFirstWrite(),
+    });
+    Object.defineProperty(window, 'showOpenFilePicker', {
+      configurable: true,
+      value: async () => [{
+        name: 'autosave-queue.json',
+        getFile: async () => new File(['{"saved":1}'], 'autosave-queue.json', { type: 'application/json' }),
+        createWritable: async () => ({
+          write: async (content: string) => {
+            writeCount += 1;
+            writes.push(`开始:${String(content)}`);
+            if (writeCount === 1) {
+              await new Promise<void>(resolve => {
+                releaseFirstWrite = resolve;
+              });
+            }
+            writes.push(`完成:${String(content)}`);
+          },
+          close: async () => undefined,
+        }),
+      }],
+    });
+  });
+
+  await page.locator('[data-tour="open-file-button"]').click();
+  await expect(page.getByText('autosave-queue.json').first()).toBeVisible();
+  await page.locator('[data-tour="auto-save"]').click();
+
+  await fillSourceEditor(page, '{"saved":2}');
+  await expect.poll(async () => page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    return writes.at(-1) ?? null;
+  })).toBe('开始:{"saved":2}');
+
+  await fillSourceEditor(page, '{"saved":3}');
+  await page.locator('[data-tour="save-file-button"]').click();
+  await page.waitForTimeout(200);
+  await expect.poll(async () => page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    return writes.includes('开始:{"saved":3}');
+  })).toBe(false);
+
+  await page.evaluate(() => {
+    (window as unknown as { __releaseFirstAutoSaveWrite: () => void }).__releaseFirstAutoSaveWrite();
+  });
+  await expect.poll(async () => page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    return writes.at(-1) ?? null;
+  })).toBe('完成:{"saved":3}');
+  await expect(page.locator('[data-tour="save-status"]')).toHaveText('自动保存已同步');
+});
+
+test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', async ({ page }) => {
+  await page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    let releasePreviewWrite = () => undefined;
+    Object.defineProperty(window, '__releasePreviewWrite', {
+      configurable: true,
+      value: () => releasePreviewWrite(),
+    });
+    Object.defineProperty(window, 'showOpenFilePicker', {
+      configurable: true,
+      value: async () => [{
+        name: 'autosave-preview.json',
+        getFile: async () => new File(['{"saved":1}'], 'autosave-preview.json', {
+          type: 'application/json',
+        }),
+        createWritable: async () => ({
+          write: async (content: string) => {
+            writes.push(`开始:${String(content)}`);
+            await new Promise<void>(resolve => {
+              releasePreviewWrite = resolve;
+            });
+            writes.push(`完成:${String(content)}`);
+          },
+          close: async () => undefined,
+        }),
+      }],
+    });
+  });
+
+  await page.locator('[data-tour="open-file-button"]').click();
+  await expect(page.getByText('autosave-preview.json').first()).toBeVisible();
+  await page.getByRole('button', { name: '格式化' }).click();
+  await page.locator('[data-tour="auto-save"]').click();
+  await fillSourceEditor(page, '{"saved":2}');
+
+  await page.locator('[data-tour="preview-editor"] .monaco-editor').first().click();
+  await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+S`);
+  await expect.poll(async () => page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    return writes.filter(write => write.startsWith('开始:')).length;
+  })).toBe(1);
+  await expect.poll(async () => page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    return writes.find(write => write.startsWith('开始:')) ?? '';
+  })).toContain('"saved": 2');
+
+  await page.waitForTimeout(1200);
+  await expect.poll(async () => page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    return writes.filter(write => write.startsWith('开始:')).length;
+  })).toBe(1);
+  await page.evaluate(() => {
+    (window as unknown as { __releasePreviewWrite: () => void }).__releasePreviewWrite();
+  });
+  await expect.poll(async () => page.evaluate(() => {
+    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
+    return writes.filter(write => write.startsWith('完成:')).length;
+  })).toBe(1);
+});
+
 test('自动保存开关提供明确反馈', async ({ page }) => {
   await page.locator('[data-tour="auto-save"]').click();
   await expect(page.getByText('请先打开或保存文件后再启用自动保存')).toBeVisible();

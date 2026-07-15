@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildToolEventInsights, buildToolEventWeeklyReport } from './toolEventInsights';
+import { buildToolEventInsights, buildToolEventWeeklyReport, formatAdminCount } from './toolEventInsights';
 import type { ToolEventStats } from '../services/traffic';
 
 const baseStats = (overrides: Partial<ToolEventStats> = {}): ToolEventStats => ({
@@ -15,6 +15,10 @@ const baseStats = (overrides: Partial<ToolEventStats> = {}): ToolEventStats => (
 });
 
 describe('toolEventInsights', () => {
+    it('统一按中文数字分组格式化管理后台计数', () => {
+        expect(formatAdminCount(1_234_567)).toBe('1,234,567');
+    });
+
     it('空数据给出埋点覆盖提示', () => {
         expect(buildToolEventInsights(null)).toEqual({
             totalEvents: 0,

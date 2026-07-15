@@ -25,3 +25,14 @@ test('AI 治理 skill 发布契约接受 CHANGELOG 中的当前版本追踪', ()
     assert.deepEqual(collectCodexSkillContractFailures(rootDir, [SKILL_RELEASE_TEST_FILE]), []);
   });
 });
+
+test('AI 治理 skill 发布契约拒绝同行其它 skill 的版本串线', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeSkillReleaseFixture(rootDir, 'jsonutils-maintainer 0.1.0、jsonutils-ai-infra-evolver 0.2.0');
+
+    assert.match(
+      collectCodexSkillContractFailures(rootDir, [SKILL_RELEASE_TEST_FILE]).join('\n'),
+      /jsonutils-maintainer 发布追踪/,
+    );
+  });
+});

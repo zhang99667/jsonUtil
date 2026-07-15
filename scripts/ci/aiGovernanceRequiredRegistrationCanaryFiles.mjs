@@ -1,0 +1,30 @@
+// Registration canary 从 launch packet 到仓外 anchor/disclosure 纯验证层的完整必需资产。
+import { AI_GOVERNANCE_REQUIRED_REGISTRATION_SNAPSHOT_FILES } from './aiGovernanceRequiredRegistrationSnapshotFiles.mjs';
+
+export const AI_GOVERNANCE_REQUIRED_REGISTRATION_CANARY_FILES = [
+  'scripts/ci/aiGovernanceRequiredRegistrationCanaryFiles.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryPacket.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryResult.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryReview.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpoint.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryDsseEnvelope.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryAnchorReceipt.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryDisclosureAuthorization.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryDisclosureConsumption.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryCaseDescriptors.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryAnchorCaseDescriptors.mjs',
+  'scripts/ci/review-ai-registration-canary-results.mjs',
+  'scripts/ci/prepare-ai-registration-canary.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryPacket.test.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryResult.test.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpoint.test.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryAnchorTestFixtures.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryAnchorReceipt.test.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryDisclosureAuthorization.test.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryDisclosureRedteam.test.mjs',
+  'scripts/ci/maintainability-budget-governance-ai-registration-result-rules.mjs',
+  'scripts/ci/maintainability-budget-governance-ai-registration-result-test-rules.mjs',
+  'scripts/ci/maintainability-budget-governance-ai-registration-anchor-rules.mjs',
+  'scripts/ci/maintainability-budget-governance-ai-registration-anchor-test-rules.mjs',
+  ...AI_GOVERNANCE_REQUIRED_REGISTRATION_SNAPSHOT_FILES,
+];

@@ -6,6 +6,7 @@ const governanceReport = {
   ok: true,
   counts: { requiredFiles: 28, referenceRules: 16 },
   failures: { missingFiles: [], skillContractFailures: [], contractFailures: [], missingReferences: [] },
+  evolutionEvals: { ok: true, counts: { cases: 13, outcomes: 13, pass: 13, partial: 0, fail: 0, coveredCases: 13 }, coverage: { outcomes: { percent: 100 } }, ledgerChain: { status: 'pass' }, nextFocus: { nextAction: '保持真实 outcome 记录' } },
 };
 
 test('AI 治理成熟度 scorecard 结构化标记 AI 基建候选清零状态', () => {

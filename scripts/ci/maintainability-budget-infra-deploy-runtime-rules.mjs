@@ -5,6 +5,7 @@ export const infraDeployRuntimeMaintainabilityBudgets = [
   { file: 'scripts/ci/local-ci.sh', maxLines: 90, reason: '本地 CI 入口应只串联关键门禁，继续增长时拆分阶段脚本' },
   { file: 'scripts/deploy/frontend-legacy-assets.sh', maxLines: 100, reason: '前端旧 assets 迁移 helper 应只负责备份、回填和临时目录清理' },
   { file: 'scripts/deploy/remote-docker-compose-deploy.sh', maxLines: 180, reason: '远端 Compose 部署脚本应只负责配置校验、构建启动和健康检查' },
+  { file: 'scripts/deploy/ssh-common.sh', maxLines: 75, reason: 'SSH 共享 helper 只维护连接默认值、部署目标校验、固定远端 Bash 入口和基础日志命令' },
   { file: 'scripts/deploy/ssh-disk-health.sh', maxLines: 190, reason: '磁盘巡检脚本应聚焦空间诊断和清理建议' },
   { file: 'scripts/deploy/ssh-docker-compose-deploy.sh', maxLines: 170, reason: '本机 SSH 部署脚本应只负责编排同步、远端执行和公网复查' },
   { file: 'scripts/deploy/ssh-docker-prune.sh', maxLines: 180, reason: 'Docker 清理脚本应聚焦安全清理和可回滚提示' },

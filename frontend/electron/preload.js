@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    // Add any API you want to expose to the renderer here
+    // 在此声明允许渲染进程访问的 API。
 });

@@ -41,7 +41,7 @@ public class CorsConfig {
             "Access-Control-Request-Headers"
         ));
         
-        // 允许发送凭证（cookies, authorization headers）
+        // 允许发送凭证（Cookie、授权请求头）
         configuration.setAllowCredentials(true);
         
         // 预检请求缓存时间

@@ -24,8 +24,8 @@ test('governance report tool returns full-context scorecard focus', async () => 
 
   const report = JSON.parse(response.content[0].text);
   assert.equal(report.reportType, 'ai-governance');
-  assert.equal(report.maturityScorecard.status, 'pass');
-  assert.equal(report.maturityScorecard.nextFocus, null);
+  assert.equal(report.maturityScorecard.status, 'unknown');
+  assert.equal(report.maturityScorecard.nextFocus.id, 'behavior-quality');
   assert.deepEqual(calls, [
     ['scripts/ci/check-ai-governance.mjs', ['--json']],
     ['scripts/ci/check-maintainability-budgets.mjs', ['--json', '--no-all', '--top', '8']],

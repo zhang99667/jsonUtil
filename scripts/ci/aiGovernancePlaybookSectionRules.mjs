@@ -17,3 +17,8 @@ export const PLAYBOOK_SECTION_REFERENCE_RULES = [
 export const AI_TOOLS_SETUP_SECTION_REFERENCE_RULES = [
   sectionRule('## 必读顺序', REQUIRED_LEDGER_READING_REFERENCES),
 ];
+
+export const AI_EVOLUTION_PLAYBOOK_SECTION_REFERENCE_RULES = [
+  sectionRule('### 结果账本', ['schemaVersion: 2', 'trial-receipts.jsonl', '即时重放', 'legacy']),
+  sectionRule('## Skill 评测', ['同一任务', '隔离可写工作区', 'execution transcript', '前后状态快照', '`unavailable`']),
+];

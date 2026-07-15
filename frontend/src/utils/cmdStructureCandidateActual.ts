@@ -1,9 +1,10 @@
 import type { JsonValue } from '../types';
 import type { CmdStructureCandidateObject } from './cmdStructureCandidateTypes';
+import { isJsonObject } from './jsonValueGuards';
 
-export const isCmdStructureCandidateObject = (value: JsonValue): value is CmdStructureCandidateObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
+export const isCmdStructureCandidateObject: (
+  value: JsonValue
+) => value is CmdStructureCandidateObject = isJsonObject;
 
 export const toCmdStructureCandidateActual = (value: {
   cmdSchema?: JsonValue;
@@ -16,7 +17,7 @@ export const toCmdStructureCandidateActual = (value: {
 });
 
 export const getCmdStructureCandidateActual = (value: JsonValue): CmdStructureCandidateObject | null => (
-  isCmdStructureCandidateObject(value) && Object.prototype.hasOwnProperty.call(value, 'cmdParams')
+  isCmdStructureCandidateObject(value) && Object.hasOwn(value, 'cmdParams')
     ? toCmdStructureCandidateActual(value as {
         cmdSchema?: JsonValue;
         cmdParams: JsonValue;

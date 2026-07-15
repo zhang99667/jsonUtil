@@ -1,5 +1,6 @@
 import {
   scoreScorecardDimensions,
+  selectScorecardNextFocus,
   summarizeScorecardStatus,
 } from './aiGovernanceMaturityScorecardScoring.mjs';
 import { buildAiGovernanceMaturityScorecardDimensions } from './aiGovernanceMaturityScorecardDimensions.mjs';
@@ -13,7 +14,7 @@ export const buildAiGovernanceMaturityScorecard = reports => {
     reportType: 'ai-governance-maturity-scorecard',
     score: scoreScorecardDimensions(dimensions),
     status: summarizeScorecardStatus(dimensions),
-    nextFocus: dimensions.find(item => ['fail', 'warn', 'unknown'].includes(item.status)) ?? null,
+    nextFocus: selectScorecardNextFocus(dimensions),
     dimensions,
   };
 };

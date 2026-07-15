@@ -1,4 +1,5 @@
 import request from './request';
+import { triggerBlobDownload } from '../../utils/browserFileSave';
 
 /**
  * 文件管理相关类型定义
@@ -53,14 +54,7 @@ export const downloadFile = async (fileId: number, fileName: string): Promise<vo
         responseType: 'blob',
     });
     const blob = new Blob([response as unknown as BlobPart]);
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    triggerBlobDownload(blob, fileName);
 };
 
 /**

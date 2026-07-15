@@ -3,14 +3,12 @@ import type { ValidationResult } from '../types';
 import { ASYNC_VALIDATION_THRESHOLD } from '../utils/appAsyncPolicy';
 import {
   cleanJsonInput,
+  type ValidateJsonMaybeAsync,
   validateJsonForEditor,
 } from '../utils/jsonValidation';
 
 interface UseAppPreviewValidationInput {
-  validateJsonMaybeAsync: (
-    value: string,
-    options?: { requireContainer?: boolean }
-  ) => Promise<ValidationResult>;
+  validateJsonMaybeAsync: ValidateJsonMaybeAsync;
 }
 
 const PREVIEW_VALIDATION_FAILED: ValidationResult = {
@@ -22,24 +20,34 @@ export const useAppPreviewValidation = ({
   validateJsonMaybeAsync,
 }: UseAppPreviewValidationInput) => {
   const previewValidationRequestIdRef = useRef(0);
+  const previewValidationAbortControllerRef = useRef<AbortController | null>(null);
   const [previewValidation, setPreviewValidation] = useState<ValidationResult>({ isValid: true });
 
-  useEffect(() => () => {
+  const cancelPreviewValidation = useCallback(() => {
     previewValidationRequestIdRef.current++;
+    previewValidationAbortControllerRef.current?.abort();
+    previewValidationAbortControllerRef.current = null;
   }, []);
 
+  useEffect(() => cancelPreviewValidation, [cancelPreviewValidation]);
+
   const updatePreviewValidation = useCallback((previewText: string) => {
+    cancelPreviewValidation();
     if (!previewText.trim()) {
-      previewValidationRequestIdRef.current++;
       setPreviewValidation({ isValid: true });
       return;
     }
 
     const cleanValue = cleanJsonInput(previewText);
-    const requestId = ++previewValidationRequestIdRef.current;
+    const requestId = previewValidationRequestIdRef.current;
     if (cleanValue.length >= ASYNC_VALIDATION_THRESHOLD) {
+      const abortController = new AbortController();
+      previewValidationAbortControllerRef.current = abortController;
       setPreviewValidation({ isValid: true });
-      validateJsonMaybeAsync(cleanValue, { requireContainer: true })
+      validateJsonMaybeAsync(cleanValue, {
+        requireContainer: true,
+        signal: abortController.signal,
+      })
         .then(result => {
           if (requestId === previewValidationRequestIdRef.current) {
             setPreviewValidation(result);
@@ -49,6 +57,11 @@ export const useAppPreviewValidation = ({
           if (requestId === previewValidationRequestIdRef.current) {
             setPreviewValidation(PREVIEW_VALIDATION_FAILED);
           }
+        })
+        .finally(() => {
+          if (previewValidationAbortControllerRef.current === abortController) {
+            previewValidationAbortControllerRef.current = null;
+          }
         });
       return;
     }
@@ -57,9 +70,10 @@ export const useAppPreviewValidation = ({
     if (requestId === previewValidationRequestIdRef.current) {
       setPreviewValidation(result);
     }
-  }, [validateJsonMaybeAsync]);
+  }, [cancelPreviewValidation, validateJsonMaybeAsync]);
 
   return {
+    cancelPreviewValidation,
     previewValidation,
     setPreviewValidation,
     updatePreviewValidation,

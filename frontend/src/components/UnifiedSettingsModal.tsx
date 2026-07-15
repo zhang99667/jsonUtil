@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider, GeneralSettings } from '../types';
 import { buildAIConfigForProviderChange } from '../utils/appSettings';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
+import { getErrorMessage } from '../utils/errors';
 import { getAIProviderBaseUrlPlaceholder, getAIProviderDefaultModel } from '../utils/aiProviderDefaults';
 import {
     getAIProviderConfigValidationError,
@@ -297,7 +298,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         } catch (error: unknown) {
             if (dispatchChunkLoadRecoveryEvent(error)) return;
 
-            const message = error instanceof Error ? error.message : '连接测试失败';
+            const message = getErrorMessage(error, '连接测试失败');
             if (testVersion === aiConfigVersionRef.current) {
                 setAiTestResult({ type: 'error', message });
             }

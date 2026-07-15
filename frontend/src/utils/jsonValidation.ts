@@ -1,108 +1,45 @@
 import type { ValidationResult } from '../types';
+import { formatUnknownError } from './errors';
+import { isRecord as isUnknownRecord } from './storage';
 import { validateJson } from './transformations';
-
-interface JsonErrorLocation {
-  line: number;
-  column: number;
-}
+export { getJsonValidationErrorLocation } from './jsonValidationErrorLocation';
 
 interface JsonValidationTask {
   promise: Promise<ValidationResult>;
   cancel: () => void;
 }
 
-interface JsonValidationOptions {
+export interface JsonValidationOptions {
   requireContainer?: boolean;
+  signal?: AbortSignal;
 }
 
+export type ValidateJsonMaybeAsync = (
+  value: string,
+  options?: JsonValidationOptions
+) => Promise<ValidationResult>;
+
 const VALIDATION_WORKER_ERROR_PREFIX = 'JSON 校验失败';
-const JSON_LINES_ERROR_RE = /JSON Lines 第\s*(\d+)\s*行解析错误/;
-const JSON_ERROR_LINE_COLUMN_RE = /line\s+(\d+)\s+column\s+(\d+)/i;
-const JSON_ERROR_POSITION_RE = /position\s+(\d+)/i;
+const VALIDATION_WORKER_REQUEST_ID = 1;
+export const JSON_VALIDATION_WORKER_TIMEOUT_MS = 10_000;
+
+const createValidationWorkerError = (detail: string): ValidationResult => ({
+  isValid: false,
+  error: `${VALIDATION_WORKER_ERROR_PREFIX}: ${detail}`,
+});
+
+const createValidationAbortError = (): DOMException => (
+  new DOMException('JSON 校验已取消', 'AbortError')
+);
+
+const isValidationResult = (value: unknown): value is ValidationResult => {
+  if (!isUnknownRecord(value) || typeof value.isValid !== 'boolean') return false;
+  return value.error === undefined || typeof value.error === 'string';
+};
 
 export const cleanJsonInput = (value: string): string => value.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
 export const isCleanJsonInputEmpty = (cleanValue: string): boolean => cleanValue.trim().length === 0;
-
-const positionToLocation = (value: string, position: number): JsonErrorLocation => {
-  const safePosition = Math.max(0, Math.min(position, value.length));
-  let line = 1;
-  let column = 1;
-
-  for (let index = 0; index < safePosition; index++) {
-    const char = value[index];
-    if (char === '\n') {
-      line += 1;
-      column = 1;
-    } else {
-      column += 1;
-    }
-  }
-
-  return { line, column };
-};
-
-const getJsonLineColumnOffset = (line: string): number => {
-  const offset = line.search(/\S/);
-  return offset >= 0 ? offset : 0;
-};
-
-/**
- * 从浏览器/Node JSON.parse 错误文案中提取编辑器定位信息。
- * 不同运行时错误格式不同，因此同时兼容 line/column、position 与 JSON Lines 行号。
- */
-export const getJsonValidationErrorLocation = (
-  value: string,
-  error?: string
-): JsonErrorLocation | null => {
-  if (!error) return null;
-
-  const jsonLinesMatch = error.match(JSON_LINES_ERROR_RE);
-  if (jsonLinesMatch) {
-    const line = Number(jsonLinesMatch[1]);
-    if (!Number.isFinite(line) || line < 1) return null;
-
-    const sourceLine = value.split(/\r?\n/)[line - 1] || '';
-    const columnOffset = getJsonLineColumnOffset(sourceLine);
-    const nestedLineColumnMatch = error.match(JSON_ERROR_LINE_COLUMN_RE);
-    if (nestedLineColumnMatch) {
-      return {
-        line,
-        column: columnOffset + Number(nestedLineColumnMatch[2]),
-      };
-    }
-
-    const nestedPositionMatch = error.match(JSON_ERROR_POSITION_RE);
-    if (nestedPositionMatch) {
-      const trimmedLine = sourceLine.trim();
-      const location = positionToLocation(trimmedLine, Number(nestedPositionMatch[1]));
-      return {
-        line,
-        column: columnOffset + location.column,
-      };
-    }
-
-    return {
-      line,
-      column: columnOffset + 1,
-    };
-  }
-
-  const lineColumnMatch = error.match(JSON_ERROR_LINE_COLUMN_RE);
-  if (lineColumnMatch) {
-    return {
-      line: Number(lineColumnMatch[1]),
-      column: Number(lineColumnMatch[2]),
-    };
-  }
-
-  const positionMatch = error.match(JSON_ERROR_POSITION_RE);
-  if (positionMatch) {
-    return positionToLocation(value, Number(positionMatch[1]));
-  }
-
-  return null;
-};
 
 export const isJsonContainerCandidate = (value: string): boolean => {
   const trimmedStart = cleanJsonInput(value).trimStart();
@@ -123,6 +60,14 @@ export const startJsonValidation = (
   options: JsonValidationOptions = {}
 ): JsonValidationTask => {
   const cleanValue = cleanJsonInput(value);
+  const { signal } = options;
+
+  if (signal?.aborted) {
+    return {
+      promise: Promise.reject(signal.reason ?? createValidationAbortError()),
+      cancel: () => undefined,
+    };
+  }
 
   if (cleanValue.length < asyncThreshold) {
     return {
@@ -138,37 +83,86 @@ export const startJsonValidation = (
     };
   }
 
-  const worker = new Worker(new URL('../workers/validation.worker.ts', import.meta.url), { type: 'module' });
-  let settled = false;
+  let worker: Worker;
+  try {
+    worker = new Worker(new URL('../workers/validation.worker.ts', import.meta.url), { type: 'module' });
+  } catch (error) {
+    return {
+      promise: Promise.resolve(createValidationWorkerError(formatUnknownError(error))),
+      cancel: () => undefined,
+    };
+  }
 
-  const promise = new Promise<ValidationResult>(resolve => {
-    worker.onmessage = (event: MessageEvent<{
-      validation: ValidationResult;
-    }>) => {
-      settled = true;
-      worker.terminate();
-      resolve(event.data.validation);
+  let settled = false;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let removeAbortListener = () => undefined;
+  const stopWorker = (): boolean => {
+    if (settled) return false;
+    settled = true;
+    if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId);
+    removeAbortListener();
+    worker.onmessage = null;
+    worker.onerror = null;
+    worker.terminate();
+    return true;
+  };
+
+  let cancelValidation = () => undefined;
+  const promise = new Promise<ValidationResult>((resolve, reject) => {
+    const finish = (result: ValidationResult) => {
+      if (stopWorker()) resolve(result);
+    };
+
+    const abortValidation = () => {
+      if (stopWorker()) {
+        reject(signal?.reason ?? createValidationAbortError());
+      }
+    };
+    cancelValidation = abortValidation;
+
+    if (signal) {
+      signal.addEventListener('abort', abortValidation, { once: true });
+      removeAbortListener = () => signal.removeEventListener('abort', abortValidation);
+      if (signal.aborted) {
+        abortValidation();
+        return;
+      }
+    }
+
+    worker.onmessage = (event: MessageEvent<unknown>) => {
+      const response = event.data;
+      if (!isUnknownRecord(response) || typeof response.id !== 'number') {
+        finish(createValidationWorkerError('Worker 响应格式无效'));
+        return;
+      }
+      if (response.id !== VALIDATION_WORKER_REQUEST_ID) {
+        finish(createValidationWorkerError('Worker 响应标识不匹配'));
+        return;
+      }
+      if (!isValidationResult(response.validation)) {
+        finish(createValidationWorkerError('Worker 响应格式无效'));
+        return;
+      }
+      finish(response.validation);
     };
 
     worker.onerror = (event) => {
-      settled = true;
-      worker.terminate();
-      resolve({
-        isValid: false,
-        error: `${VALIDATION_WORKER_ERROR_PREFIX}: ${event.message}`,
-      });
+      finish(createValidationWorkerError(event.message));
     };
 
-    worker.postMessage({ id: 1, input: cleanValue });
+    timeoutId = globalThis.setTimeout(() => {
+      finish(createValidationWorkerError('Worker 响应超时'));
+    }, JSON_VALIDATION_WORKER_TIMEOUT_MS);
+
+    try {
+      worker.postMessage({ id: VALIDATION_WORKER_REQUEST_ID, input: cleanValue });
+    } catch (error) {
+      finish(createValidationWorkerError(formatUnknownError(error)));
+    }
   });
 
   return {
     promise,
-    cancel: () => {
-      if (!settled) {
-        settled = true;
-        worker.terminate();
-      }
-    },
+    cancel: cancelValidation,
   };
 };

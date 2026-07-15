@@ -1,0 +1,227 @@
+{
+  "skill_name": "jsonutils-ai-infra-evolver",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "只读审计本仓库 rules、skills、MCP 是否形成观察→评测→学习→回写→验证闭环，给出一个机器可读、最小可落地的补强方案，不要改业务代码。",
+      "expected_output": "区分静态治理与行为效果，优先提出 eval/outcome/provenance，并保留只读和隐私边界。",
+      "files": [],
+      "assertions": [
+        "明确区分静态治理与行为有效性",
+        "方案包含可复现 eval case 与 outcome lineage",
+        "保留固定只读 MCP 和敏感数据保护边界",
+        "给出与当前仓库资产相连的最小纵切而非重复造规则"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "上次 Agent 修改治理 MCP 后漏跑真实 stdio 测试，请复盘并给出从 failure signal 到规则回写和实际验证结果的完整闭环。",
+      "expected_output": "先补协议/行为 case，再用 v3 outcome 绑定 receipt、即时重放和真实 stdio validation，并以 sequence/hash/direct supersession 追加记录；无法校验的 trace 保持 unverified。",
+      "files": [],
+      "assertions": [
+        "先补失败 case 或负例",
+        "区分计划命令与实际 validation result",
+        "要求 MCP 保持标准协议和固定只读边界",
+        "v1 outcome 只作为 legacy 且不计分",
+        "deterministic receipt 必须由 checker 即时重放",
+        "deterministic receipt 只记录单 trial 并绑定当前 worktree manifest",
+        "source-state v2 只排除 outcome/receipt 双 ledger 且不混入 HEAD，非 ledger 源变化必须使旧结果 stale",
+        "fixed runner 不写账；deterministic writer 默认 preview，只允许本地维护者显式 --write 并经锁、journal 和 receipt-first 恢复，禁止手改 JSONL 或 CI/hook 写入",
+        "未验信 trace writer 默认 preview，只接受闭字段脱敏 observation 并派生 receipt v2/outcome v3；仅本地显式 --write，且永不提升 confirmed、scored 或 behavior coverage",
+        "receipt v2 trace 在可信 host adapter 与固定 policy 验证前保持 unverified",
+        "Codex JSONL fixture 只算 component-only，完整候选需联合 terminal、EOF、exit、配对和零 drop",
+        "固定 policy 必须实际断言工具、结果结构键、禁用能力和 revision，不能只绑定 digest",
+        "模型、人工或 hybrid 的 fail/partial 保持可见但不计 confirmed coverage",
+        "已有 outcome 与 receipt Git 基线只允许尾部追加，缺基线时保持 unknown",
+        "首个 v3 previousHash 锚定全部 pre-v3 精确非空行，后续只绑定直接前一个精确 v3 行",
+        "v3 sequence 等于物理非空行序且激活后拒绝 v1/v2 降级",
+        "v3 previousOutcomeId 只指同 lineage 直接前序，feedback disposition 使用 open、resolved 或 none",
+        "不得把项目紧凑 JSON/hash chain 宣称为 JCS、transparency log 或可信 attestation",
+        "同 workflow 的 signer job、detached subject 和仓内 policy 仍是 component-only，仓外 identity 与真实 bundle 未验证前不得计分",
+        "component-boundary case 不进入 behavior coverage 分母，也不得拥有 active outcome",
+        "Codex adapter 只能纯投影，仓库 CLI 只允许空认证根下的 keyless preflight，descriptor 不可执行且 artifact verifier 拒绝 callback",
+        "validation 使用空 HOME/CODEX_HOME，双 ledger 只证明检查终点一致，不冒充 OS 级期间只读",
+        "真实 run 必须由仓外 controller 隔离 key-bearing Codex 与待测 MCP 的 UID/PID 信任域，未落地前不调模型或写 outcome",
+        "external-controller topology plan 必须闭字段、绑定 host expected digests、隔离 trust/UID/namespace 且保持 dry-run；plan-valid 仍不等于 runtime-isolated",
+        "项目插件的本机安装副本三 workload runtime probe 只是 credential/snapshot 子集自报，not-run 或 passed-subset 都不得升级为六角色 runtime 信任或 outcome",
+        "项目 Agent profile 静态契约和个人 MCP 配置安全插件都只是 component evidence，不得自证 behavior outcome",
+        "用户级静态 http_headers 即使写成环境变量外形也按风险处理，安全审计不得返回配置值或派生信息",
+        "top 或 limit 只能裁剪展示，不能改变全局 scorecard 事实"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "给 JSON 格式化页面增加一个复制按钮并补单测。",
+      "expected_output": "识别为普通产品功能，不使用 AI 基建演进流程，转回常规项目维护技能。",
+      "files": [],
+      "assertions": [
+        "明确说明本 skill 不适用",
+        "不创建 eval/outcome/MCP/rules 资产",
+        "建议使用常规 jsonutils-maintainer 工作流"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "要对 jsonutils-maintainer 做 with-skill / without-skill A/B，任务包含实际代码修改，但当前共享工作树已有其他人改动。请设计可审计的评测方法。",
+      "expected_output": "两组使用同一任务与 fixture，在隔离可写工作区执行实施断言，保留脱敏 transcript 和前后快照，缺失指标不伪造。",
+      "files": [],
+      "assertions": [
+        "A/B 使用同一任务、fixture 和环境",
+        "实施型断言在隔离可写工作区执行",
+        "保留脱敏 execution transcript 与前后状态快照",
+        "token、timing 或 tool-call 不可用时明确记录 unavailable"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "项目 .mcp.json 声明了治理 server，但当前 Codex 任务返回 unknown MCP server。请设计修复与评测闭环，不调用外部模型。",
+      "expected_output": "把注册/发现与工具选择拆开，先记录脱敏 signal 和独立 case，再用新任务中的 3 次 paired baseline/candidate canary 验证项目插件安装候选。",
+      "files": [],
+      "assertions": [
+        "不把注册前置失败写成 mcp-fixed-tool-selection outcome",
+        "新增或复用独立 registration/discovery case",
+        "feedback producer 不自动写 outcome、receipt 或长期规则",
+        "baseline/candidate 共用 task、fixture 和基础环境并各执行至少 3 次",
+        "train、validation 与 holdout 互斥且 grader 字段不暴露给 candidate",
+        "新任务实际发现工具前，实验和指标保持 blocked/unavailable"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "给项目增加 Codex hook，让每个任务更稳定遵守 AI 治理流程；当前任务无法热加载新 hook。请给出最小实现与证据分层。",
+      "expected_output": "先建 behavior/component 两个代表 case，只实现单一只读 SessionStart advisory，并把信任、隐私、非阻断和新任务验证边界锁进负例。",
+      "files": [],
+      "assertions": [
+        "项目和当前 hook 定义都需要显式信任，不使用 bypass trust",
+        "首版只允许 SessionStart startup 或 resume，不新增其它 lifecycle 事件",
+        "runtime 不读取 prompt、transcript、环境值或用户配置，不联网、不写文件、不阻断",
+        "配置、/hooks 可见、脚本直跑和单测都只算 component evidence",
+        "真实新任务触发前 behavior outcome 保持 unknown"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "registration canary 已规划 baseline/candidate 各 3 次，但 fixture/environment 未封存、当前任务也不能热加载个人 MCP 插件。请在不调用模型的前提下建设下一步可执行交接。",
+      "expected_output": "先建 component case，再生成相互隔离且绑定当前快照的 Agent/grader/host launch packet；真实 fresh-task trial 前继续保持 blocked/unavailable。",
+      "files": [],
+      "assertions": [
+        "Agent 投影不含 arm、treatment、plugin 状态、expectedOutcome 或 graders",
+        "grader 投影不含 arm，host 才持有 unblind 映射",
+        "host 绑定 case、experiment、MCP、hook、worktree、ledger 端点和同一 base environment digest",
+        "baseline 要求项目 plugin disabled，candidate 要求 enabled，执行顺序预先交替",
+        "每次 trial 需要 fresh task 与仓外 single-use lease，禁止 resume 和同 trial 择优重试",
+        "packet/component case 不提升 behavior coverage，不关闭 signal 或生成 outcome"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "仓外 host 已回收 registration canary 的六条外部 JSON 结果。请设计盲评、grade commitment、揭盲与指标预览闭环，但当前没有可信 signer，也不能修改 experiment 或 evidence ledger。",
+      "expected_output": "先闭字段摄取并在无 host/lease/arm 条件下评分，六条 grade 计算 commitment 后才用 host-only record 揭盲；未验信结果只产出 component preview。",
+      "files": [],
+      "assertions": [
+        "blind 阶段拒绝 arm、trial、执行顺序、plugin 状态和 caller verdict",
+        "infrastructure-invalid 与 behavior fail 分开，不能缩小行为分母",
+        "六条 blind grade 在揭盲前按 alias 排序并固定 grade-set digest",
+        "unblind 校验 single-use lease、fresh task、无 retry、执行顺序、plugin 和 packet/ledger bindings",
+        "没有受保护 signer 时固定 external-json-unverified、component-only、trustedSigners=0",
+        "passPower3（pass^3）未版本化且 timing/cost 未可信采集时保持 unavailable",
+        "不得自动修改 experiment、feedback、receipt 或 outcome"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "registration canary 已完成六条 blind grade 和本地 grade-set seal。请补强揭盲前的结果替换边界，但当前没有仓外 signer、透明日志或可信时间，不得调用模型或写 evidence ledger。",
+      "expected_output": "生成只绑定盲态 grade set 与当前上下文的 detached checkpoint request，明确要求仓外有状态 anchor；本地 digest、自签名或自报时间不能冒充 precommit proof。",
+      "files": [],
+      "assertions": [
+        "checkpoint request 绑定 grade-set 精确字节、六条 alias/result/grade digest、case/experiment/policy、fixture/environment 与 rubric",
+        "request 不含 host disclosure、arm、trial、pair、order、plugin、treatment 或 lease",
+        "拒绝 caller verified、自报 timestamp、混合 fixture/environment/rubric、partial set 与 digest 漂移",
+        "unblind 只接受闭字段原始输入并内部重建 review，拒绝 caller review、跨 grade-set/experiment 嫁接与 outcome/writeback 权限升级",
+        "仓库不生成、读取或持久化 signer 私钥，也不接收调用方 trust map",
+        "本地 reseal 或结构校验通过仍固定 external-anchor-required、trustedSigners=0、phase ordering 与 non-replaceability 未验证",
+        "不关闭 signal、不修改 experiment/feedback/receipt/outcome、不增加 behavior coverage或解除 writeback blocked"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "detached checkpoint 已有，但外部控制面还没有可复用的 anchor receipt、单次 disclosure grant 和 consumption verifier。请对标当前 SCITT/Sigstore/in-toto 边界继续建设，同时不能在仓内造 signer 或状态库。",
+      "expected_output": "先建 anchor 与 disclosure 两个 component case，再实现闭字段 DSSE/in-toto receipt、脱敏 host commitment、authorization/redemption/consumption 状态链；没有外部 first-write-wins/CAS/witness 时诚实保持 unwitnessed。",
+      "files": [],
+      "assertions": [
+        "anchor 绑定 checkpoint 精确 UTF-8 字节、派生 batch key 与 absent→anchored 0→1",
+        "disclosure commitment 只保存排序 blind alias 与 host packet/run-record digest",
+        "grant 和 consume 分别固定 anchored→authorized 1→2、authorized→consumed 2→3；稳定 state key 不含 grant/nonce，角色比较真实 Ed25519 SPKI 指纹",
+        "拒绝双 anchor、双 grant、双 consume、状态回滚、跨批嫁接、角色 key 复用与 caller verified",
+        "生产模块不生成/读取私钥、不保存状态、不释放 host disclosure、不写 ledger或扩展只读 MCP",
+        "caller 公钥验签最多是 signature-verified-unwitnessed，隐藏 fork、身份、inclusion、non-equivocation 与 at-most-once 仍未验证",
+        "Sigstore bundle 不称作 RFC 9942 SCITT receipt，component case 不关闭 signal、不增加 behavior coverage或解除 writeback"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "registration canary 仍因 sealed-snapshot-not-created 停在 6 planned / 0 executed。请在不调用模型、不使用凭据且不把本地 chmod 冒充外部不可变性的前提下，建设下一条执行前纵切。",
+      "expected_output": "先建 component case，再用 hermetic Git、稳定 descriptor、owner-only mode 和增量上限生成 checkout 外 snapshot，从实际字节重建 revision，并以有界脱敏 stdio 调用 scorecard；模型/写账未请求但 absence 未验证，外部状态保持 false/blocked。",
+      "files": [],
+      "assertions": [
+        "snapshot 来源只允许排除 ambient Git 配置的 index 与未忽略 untracked 普通非 symlink 文件，敏感大文件、容量和 TOCTOU 漂移 fail closed",
+        "manifest 标记 repository-source-unreviewed，保存精确 executable bits、deleted entry 和两个 revision-excluded ledger",
+        "无 Git verifier 用稳定 descriptor 重枚举 exact set、复核实际 0400|executableBits 文件、0500 目录和 0400 manifest，再增量重建原 revision",
+        "live/snapshot 三视图必须一致并绑定 ledger checkpoints，但组合 CLI 只公开域分离 projection digests",
+        "snapshot MCP 私有 HOME/CODEX_HOME/TMP 末态必须为空并保留；有界 client 校验 JSON-RPC/id、双轨结果与脱敏错误，stderr 只返 count/nonEmpty，descendant/home cleanup 未验证",
+        "owner-only chmod 不称 immutable，caller environment digest 不称环境已封存，无 Git ledger prefix 保持 not-applicable",
+        "模型和写账均未请求但 absence 未验证；current task registry、runtime isolation、trial execution 和 outcome eligibility 保持 false",
+        "不修改 experiment planned/blocked/unavailable，不关闭 signal、不增加 behavior coverage"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "sealed snapshot 已存在，本机只有 macOS Seatbelt、没有可用容器 daemon、独立 UID/PID namespace 或外部 signer。请在不调用模型和不读取真实凭据的前提下，建设下一条 runtime 证据纵切。",
+      "expected_output": "先建 component case，再由项目插件的 checkout 外本机安装副本用控制组运行 zero-model Seatbelt sentinel，并让仓内 verifier 独立复核闭字段 report；通过后仍保持同 UID subset 和 registration blocked。",
+      "files": [],
+      "assertions": [
+        "每个 secret、live checkout、snapshot、network 和 process-info deny 都有 baseline 控制组",
+        "host expected bindings 独立绑定 snapshot revision/manifest/tree、controller/child/Node/launcher/policy/nonce、Seatbelt 与 Codex binary/code identity/version/help",
+        "Codex 的 keyless --version 与 sandbox --help 也经 Seatbelt 执行，并核验固定 OpenAI Team ID、identifier、hardened runtime 与 designated requirement",
+        "report 不包含路径、PID、命令、stdout/stderr、canary 正文或真实凭据，并在失败时不自动重试",
+        "仓内 verifier 把 source-state digest 与 snapshot tree binding 分开，并锁 observation/claim boolean、nullable SHA-256 与有界 residual count，拒绝路径、对象或数组侧信道",
+        "真实 source snapshot 从不接受 chmod/write/unlink 探针，write/chmod 控制组只攻击 disposable mirror，前后摘要一致且 cleanup 有界",
+        "profile parse、DAC-only 或普通非零退出不得冒充 Seatbelt deny；report 只保存布尔、摘要和固定 failure id",
+        "通过最多是 component-subset-observed；immutable mount、PID/user namespace、controller/signer、模型 absence、当前 registry 和 outcome 全部未验证",
+        "不为 component case 写 outcome，不关闭 signal，不修改 6 planned / 0 executed experiment，也不直接启动 registration trial"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "外部 Linux 控制器给出了绑定七个角色 UID/namespace 的闭字段 host record，并附 controller signer 与 witness 的 Ed25519 DSSE 签名。仓库当前只能拿到调用方传入的公钥 policy；请建设可复用的 runtime preflight verifier，但不得把签名数学正确冒充受保护身份、透明日志或 behavior outcome。",
+      "expected_output": "先建 component case 和 stdin-only verifier；caller policy 只报告 signature-verified-unprotected-policy，root-owned path check 也不能排除 Node pre-runtime 注入，任何仓内结果都不得解锁 runtime preflight。",
+      "files": [],
+      "assertions": [
+        "host record、DSSE payload 和 expected bindings 都使用有界精确紧凑闭字段，绑定 snapshot、controller/Codex/MCP/validation/sanitizer/signer/witness 工件与 policy digest",
+        "controller、Codex、MCP、validation、sanitizer、signer、witness 的 trust domain、UID/GID、空 supplementary groups 与 runtime namespace 必须逐角色唯一，并锁只读 snapshot、空认证根、无共享可写面和固定负向观察",
+        "caller 直接构造或传入普通 policy 时即使 signer/witness 双签都正确也固定 signature-verified-unprotected-policy、trustedSigners=0、runtimePreflightVerified=false",
+        "policy path checker 只接受 checkout 外绝对 realpath、root-owned 文件和祖先链、无 group/other write、当前 verifier 不可写、稳定 stat 与 expected SHA-256，但结果只能标 candidate",
+        "trusted signer 与 witness 使用不同 Ed25519 SPKI，签名、identity、binding、role key reuse、重复 UID/namespace、producer overclaim 或 policy 漂移均 fail closed",
+        "NODE_OPTIONS pre-runtime 注入负例证明仓内 Node 可伪造 fs/path metadata，因此 trustPolicyProtected、verifierRuntimeProtected、runtimePreflightVerified、trustedSigners 和 registrationPreflightEligible 始终 false",
+        "stable state key 排除 caller nonce，challenge 由 state key、launcher-owned run nonce 与 attempt 域分离派生；当前 stdin expected bindings 仍只是 caller claim",
+        "下一层必须由 checkout 外受保护 launcher/service 固定 clean env、Node/verifier bundle、policy path/digest、run nonce 与 non-caller expected bindings",
+        "只有 digest-bound inclusion/consistency 字段时，inclusion、consistency、at-most-once 与 non-equivocation 全部保持 false，不称 RFC 9942 receipt 或 transparency log",
+        "component case 不写 outcome、不关闭 signal、不修改 6 planned / 0 executed experiment，也不直接启动 registration trial"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "为 JSONUtils 新建一个 AI 基建插件。脚手架默认会写到个人 marketplace，团队成员还误以为仓库里的 marketplace 会在 clone/open 后自动安装；请决定权威源码、团队安装流程与可信 runtime 分别放在哪里。",
+      "expected_output": "说明仓库只包含插件子包而不是整体变成插件；把 marketplace、插件源码、manifest、skill、MCP、测试和版本作为项目资产入库，以只读 doctor 和显式 apply 交付团队安装，同时不把项目所有权或安装冒充 registration/runtime trust。",
+      "files": [],
+      "assertions": [
+        "项目专属 AI 基建不得只存在个人目录",
+        "项目 marketplace 使用仓内相对 source 并纳入治理",
+        "不得把 marketplace 目录描述为 clone/open 自动安装或自动同步",
+        "团队安装先只读诊断，只有显式授权才修改用户状态，且不得覆盖异源或删除个人 selector",
+        "个人 marketplace 或 cache 不得成为 source of truth",
+        "项目所有权不升级 signer、runtime、registration 或 behavior outcome"
+      ]
+    }
+  ]
+}

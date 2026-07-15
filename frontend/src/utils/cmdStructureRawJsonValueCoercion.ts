@@ -1,8 +1,4 @@
-import type { JsonValue } from '../types';
-
-interface JsonObject {
-  [key: string]: JsonValue;
-}
+import type { JsonObject, JsonValue } from '../types';
 
 export const toCmdStructureJsonValue = (value: unknown): JsonValue => {
   if (typeof value === 'string') return value;

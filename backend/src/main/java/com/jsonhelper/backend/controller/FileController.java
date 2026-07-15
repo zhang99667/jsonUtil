@@ -3,10 +3,10 @@ package com.jsonhelper.backend.controller;
 import com.jsonhelper.backend.dto.response.Result;
 import com.jsonhelper.backend.entity.UploadFile;
 import com.jsonhelper.backend.service.FileService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.PathResource;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriUtils;
 
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -31,17 +29,17 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/admin/files")
+@RequiredArgsConstructor
 public class FileController {
 
-    @Autowired
-    private FileService fileService;
+    private final FileService fileService;
 
     /** 日期格式化器，用于将 LocalDateTime 格式化为前端期望的字符串 */
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 获取文件列表（分页 + 搜索）
-     * 前端传入 page 从 1 开始，需要转换为 Spring 的 0-indexed
+     * 前端传入的页码从 1 开始，需要转换为 Spring 使用的从 0 开始页码
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -81,19 +79,18 @@ public class FileController {
     @GetMapping("/{id}/download")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long id) {
-        UploadFile uploadFile = fileService.getFileById(id);
-        Path filePath = Paths.get(uploadFile.getStoragePath());
-        Resource resource = new PathResource(filePath);
-
-        // 对文件名进行 URL 编码，支持中文文件名
-        String encodedFileName = URLEncoder.encode(uploadFile.getFileName(), StandardCharsets.UTF_8)
-                .replace("+", "%20");
+        FileService.FileDownload download = fileService.getFileDownload(id);
+        // Spring 6.1 的 UTF-8 兼容文件名会破坏特殊字符边界，因此只让它生成安全的 ASCII 参数。
+        String contentDisposition = ContentDisposition.attachment()
+                .filename("download")
+                .build()
+                + "; filename*=UTF-8''"
+                + UriUtils.encode(download.fileName(), StandardCharsets.UTF_8);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename*=UTF-8''" + encodedFileName)
-                .body(resource);
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .body(download.resource());
     }
 
     /**

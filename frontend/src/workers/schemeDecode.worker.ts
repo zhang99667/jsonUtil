@@ -1,22 +1,12 @@
 import { formatUnknownError } from '../utils/errors';
 import { deepDecodeScheme } from '../utils/schemeUtils';
-import type { SchemeDecodeResult } from '../utils/schemeTypes';
 import {
   buildSchemeViewerDecodeMetadata,
-  type SchemeViewerDecodeMetadata,
 } from '../utils/schemeViewerDecodeMetadata';
-
-interface SchemeDecodeWorkerRequest {
-  id: number;
-  input: string;
-}
-
-interface SchemeDecodeWorkerResponse {
-  id: number;
-  result?: SchemeDecodeResult;
-  metadata?: SchemeViewerDecodeMetadata;
-  error?: string;
-}
+import type {
+  SchemeDecodeWorkerRequest,
+  SchemeDecodeWorkerResponse,
+} from '../utils/schemeViewerDecodeWorker';
 
 self.onmessage = (event: MessageEvent<SchemeDecodeWorkerRequest>) => {
   const { id, input } = event.data;

@@ -40,12 +40,11 @@ export const startAppAsyncTransformPromiseTask = ({
     })
     .catch(error => {
       if (!isActiveRequest()) return;
-      if (dispatchChunkLoadRecoveryEvent(error)) {
-        onSetOutputTransforming(false);
-        return;
+      const isRecoveryDispatched = dispatchChunkLoadRecoveryEvent(error);
+      if (!isRecoveryDispatched) {
+        onWarn('异步转换处理失败:', error);
       }
 
-      onWarn('异步转换处理失败:', error);
       onSetAsyncTransformResult(buildAppAsyncTransformFallbackResult(snapshot));
       onSetOutputTransforming(false);
     });

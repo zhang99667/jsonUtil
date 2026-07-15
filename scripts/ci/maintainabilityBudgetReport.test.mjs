@@ -102,7 +102,7 @@ test('可维护性预算报告会报告重复登记', () => {
 
 test('可维护性预算报告支持控制高使用率候选数量和阈值', () => {
   withBudgetFixture((rootDir) => {
-    writeLines(rootDir, 'src/a.js', 81);
+    writeLines(rootDir, 'src/a.js', 86);
     writeLines(rootDir, 'src/b.js', 90);
     writeLines(rootDir, 'src/c.js', 70);
 
@@ -117,6 +117,10 @@ test('可维护性预算报告支持控制高使用率候选数量和阈值', ()
 
     assert.deepEqual(report.highUsageSummaries, [
       'src/b.js: 90/100，使用率 90.0%，剩余 10 行',
+    ]);
+    assert.deepEqual(report.scorecardCandidateItems.map(item => item.file), [
+      'src/b.js',
+      'src/a.js',
     ]);
   });
 });

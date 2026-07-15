@@ -5,6 +5,7 @@ interface WorkspaceStandaloneDraftInput {
   files: FileTab[];
   activeFileId: string | null;
   input: string;
+  mode: TransformMode;
   createId: () => string;
 }
 
@@ -12,6 +13,7 @@ export const getFilesWithStandaloneDraft = ({
   files,
   activeFileId,
   input,
+  mode,
   createId,
 }: WorkspaceStandaloneDraftInput): FileTab[] => {
   if (activeFileId || input.length === 0) {
@@ -27,7 +29,7 @@ export const getFilesWithStandaloneDraft = ({
       savedContent: '',
       handle: undefined,
       isDirty: true,
-      mode: TransformMode.NONE,
+      mode,
     },
   ];
 };

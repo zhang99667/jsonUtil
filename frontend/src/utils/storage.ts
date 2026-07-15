@@ -7,14 +7,14 @@ export const isFiniteNumber = (value: unknown): value is number => {
 };
 
 export const parseJsonWithFallback = <T>(
-  stored: string | null,
+  source: string | null,
   fallback: T,
   isValid?: (value: unknown) => value is T
 ): T => {
-  if (!stored) return fallback;
+  if (!source) return fallback;
 
   try {
-    const parsed: unknown = JSON.parse(stored);
+    const parsed: unknown = JSON.parse(source);
     if (isValid && !isValid(parsed)) {
       return fallback;
     }
@@ -29,12 +29,14 @@ export interface SafeStorageReadResult {
   ok: boolean;
 }
 
+const resolveStorage = (storage?: Storage): Storage => storage ?? globalThis.localStorage;
+
 export const safeReadStorageItem = (
   key: string,
-  storage: Storage = localStorage
+  storage?: Storage
 ): SafeStorageReadResult => {
   try {
-    return { value: storage.getItem(key), ok: true };
+    return { value: resolveStorage(storage).getItem(key), ok: true };
   } catch (error) {
     console.warn(`读取本地存储失败: ${key}`, error);
     return { value: null, ok: false };
@@ -43,7 +45,7 @@ export const safeReadStorageItem = (
 
 export const safeGetStorageItem = (
   key: string,
-  storage: Storage = localStorage
+  storage?: Storage
 ): string | null => {
   return safeReadStorageItem(key, storage).value;
 };
@@ -51,10 +53,10 @@ export const safeGetStorageItem = (
 export const safeSetStorageItem = (
   key: string,
   value: string,
-  storage: Storage = localStorage
+  storage?: Storage
 ): boolean => {
   try {
-    storage.setItem(key, value);
+    resolveStorage(storage).setItem(key, value);
     return true;
   } catch (error) {
     console.warn(`写入本地存储失败: ${key}`, error);
@@ -64,10 +66,10 @@ export const safeSetStorageItem = (
 
 export const safeRemoveStorageItem = (
   key: string,
-  storage: Storage = localStorage
+  storage?: Storage
 ): boolean => {
   try {
-    storage.removeItem(key);
+    resolveStorage(storage).removeItem(key);
     return true;
   } catch (error) {
     console.warn(`删除本地存储失败: ${key}`, error);

@@ -32,8 +32,14 @@ test('AI 治理 skill 契约会报告缺失 frontmatter 字段', () => {
 
     assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
       `${skillFile}: frontmatter 缺少 description`,
-      `${skillFile}: frontmatter 缺少 version`,
-      `${skillFile}: frontmatter 缺少 tags`,
+      `${skillFile}: frontmatter 缺少 metadata`,
+    ]);
+
+    writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
+      frontmatter: 'name: jsonutils-maintainer\ndescription: JSONUtils 项目维护技能。\nmetadata:\n  version: "0.1.0"',
+    }));
+    assert.deepEqual(collectCodexSkillContractFailures(rootDir, [skillFile]), [
+      `${skillFile}: frontmatter metadata 缺少 tags`,
     ]);
   });
 });

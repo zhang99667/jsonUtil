@@ -1,16 +1,9 @@
 import type { JsonValue } from '../types';
 import { normalizeRawSourceString } from './cmdStructureRawSource';
-
-interface JsonObject {
-  [key: string]: JsonValue;
-}
-
-const isRecord = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
+import { isJsonObject } from './jsonValueGuards';
 
 const getStructuredSourceValue = (value: JsonValue): string | undefined => (
-  isRecord(value) && typeof value.source === 'string'
+  isJsonObject(value) && typeof value.source === 'string'
     ? normalizeRawSourceString(value.source)
     : undefined
 );

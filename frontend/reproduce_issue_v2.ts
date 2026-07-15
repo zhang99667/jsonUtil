@@ -1,4 +1,4 @@
-// Copied logic from src/utils/transformations.ts to avoid import issues
+// 复用 src/utils/transformations.ts 的逻辑，避免导入问题。
 
 const TransformMode = {
     NONE: 'NONE',

@@ -20,3 +20,5 @@ export const deindentBlock = (lines) => {
 
 export const normalizeGithubWorkflowShell = (content) =>
   content.replace(GITHUB_EXPRESSION_PATTERN, '__GITHUB_EXPR__');
+
+export const containsGithubActionsExpression = (content) => content.includes('${{');

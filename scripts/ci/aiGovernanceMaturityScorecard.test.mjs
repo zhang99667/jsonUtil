@@ -6,21 +6,23 @@ test('AI 治理成熟度 scorecard 会把预算热点标成下一步焦点', () 
   const governanceReport = {
     ok: true, counts: { requiredFiles: 28, referenceRules: 16 },
     failures: { missingFiles: [], skillContractFailures: [], contractFailures: [], missingReferences: [] },
+    evolutionEvals: { ok: true, counts: { cases: 13, outcomes: 13, pass: 13, partial: 0, fail: 0, coveredCases: 13 }, coverage: { outcomes: { percent: 100 } }, ledgerChain: { status: 'pass' }, nextFocus: { nextAction: '保持真实 outcome 记录' } },
   };
   const highUsage = [
     { file: 'frontend/src/tight.ts', remainingLines: 1, usageRatio: 0.98 },
     { file: 'scripts/ci/aiGovernanceReferenceEntryMissingCases.mjs', remainingLines: 9, usageRatio: 0.92 },
     { file: 'scripts/ci/maintainability-budget-governance-ai-test-rules.mjs', remainingLines: 2, usageRatio: 0.96 },
     { file: 'scripts/ci/write-ai-governance-artifacts.test.mjs', remainingLines: 9, usageRatio: 0.89 },
+    { file: 'scripts/mcp/jsonutils-governance-stable.mjs', remainingLines: 12, usageRatio: 0.84 },
   ];
   const scorecard = buildAiGovernanceMaturityScorecard({
     governanceReport,
-    budgetReport: { ok: true, items: { highUsage } },
+    budgetReport: { ok: true, items: { highUsage: highUsage.slice(0, 1), scorecardCandidates: highUsage } },
   });
 
   assert.equal(scorecard.reportType, 'ai-governance-maturity-scorecard');
   assert.equal(scorecard.status, 'warn');
-  assert.equal(scorecard.score, 88);
+  assert.equal(scorecard.score, 90);
   assert.equal(scorecard.nextFocus.id, 'maintainability-headroom');
   assert.match(scorecard.nextFocus.nextAction, /maintainability-budget-governance-ai-test-rules\.mjs/);
   assert.match(scorecard.nextFocus.evidence, /3 个 AI 基建候选/);

@@ -1,3 +1,4 @@
+import { decodeQueryComponent } from './schemeQueryDecoding';
 import { splitQueryPairs } from './schemeQuerySyntax';
 import { parseStructuredQueryKey } from './schemeStructuredQueryKeys';
 
@@ -5,15 +6,6 @@ export interface StructuredQueryRootStyle {
   objectStyle: 'dot' | 'bracket';
   useEmptyArray: boolean;
 }
-
-const decodeQueryComponent = (str: string): string => {
-  const normalized = str.replace(/\+/g, ' ');
-  try {
-    return decodeURIComponent(normalized);
-  } catch {
-    return normalized;
-  }
-};
 
 export const getStructuredQueryRootStyles = (
   queryString: string

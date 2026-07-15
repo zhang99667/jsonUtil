@@ -1,6 +1,10 @@
 import path from 'node:path';
 import { buildJsonutilsGovernanceContextFromReports } from '../mcp/jsonutils-governance-context.mjs';
 import { buildAiGovernanceArtifactSummary } from './writeAiGovernanceArtifactSummary.mjs';
+import {
+  AI_GOVERNANCE_ATTESTATION_SUBJECT_FILE,
+  buildAiGovernanceAttestationSubject,
+} from './writeAiGovernanceAttestationSubject.mjs';
 
 const normalizeCount = (value, fallback) => (Number.isInteger(value) && value > 0 ? value : fallback);
 const buildGeneratedAt = (now) => {
@@ -28,12 +32,23 @@ export const buildAiGovernanceArtifactPayloads = ({
     budgetReport: budget.report,
   });
   const generatedAt = buildGeneratedAt(now);
+  const governanceArtifact = { ...governance.report, maturityScorecard: context.maturityScorecard };
+  const artifacts = {
+    governance: governanceArtifact,
+    evolution: governance.report.evolutionEvals,
+    maintainability: budget.report,
+    context: { generatedAt, ...context },
+    scorecard: { generatedAt, ...context.maturityScorecard },
+    summary: buildAiGovernanceArtifactSummary(context, { generatedAt }),
+  };
   const files = {
     governance: path.join(outputDir, 'ai-governance-report.json'),
+    evolution: path.join(outputDir, 'ai-evolution-eval-report.json'),
     maintainability: path.join(outputDir, 'maintainability-budget-report.json'),
     context: path.join(outputDir, 'jsonutils-governance-context.json'),
     scorecard: path.join(outputDir, 'ai-governance-scorecard.json'),
     summary: path.join(outputDir, 'summary.md'),
+    attestationSubject: path.join(outputDir, AI_GOVERNANCE_ATTESTATION_SUBJECT_FILE),
   };
   return {
     ok: context.ok && governance.exitCode === 0 && budget.exitCode === 0,
@@ -42,11 +57,9 @@ export const buildAiGovernanceArtifactPayloads = ({
     files,
     outputDir,
     artifacts: {
-      governance: governance.report,
-      maintainability: budget.report,
-      context: { generatedAt, ...context },
-      scorecard: { generatedAt, ...context.maturityScorecard },
-      summary: buildAiGovernanceArtifactSummary(context, { generatedAt }),
+      ...artifacts,
+      attestationSubject: buildAiGovernanceAttestationSubject({ rootDir, generatedAt, artifacts }),
     },
+    rootDir,
   };
 };

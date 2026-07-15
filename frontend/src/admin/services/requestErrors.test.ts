@@ -6,6 +6,7 @@ import {
     isAuthExpiredStatus,
     readAdminResponseMessage,
     resolveAdminRequestErrorMessage,
+    shouldInvalidateAdminSession,
 } from './requestErrors';
 
 describe('getAdminResultErrorMessage', () => {
@@ -87,5 +88,39 @@ describe('isAuthExpiredStatus', () => {
         expect(isAuthExpiredStatus(401)).toBe(true);
         expect(isAuthExpiredStatus(403)).toBe(true);
         expect(isAuthExpiredStatus(500)).toBe(false);
+    });
+});
+
+describe('shouldInvalidateAdminSession', () => {
+    it('只有当前会话发出的鉴权失败才使令牌失效', () => {
+        expect(shouldInvalidateAdminSession(
+            401,
+            { Authorization: 'Bearer current-token' },
+            'current-token'
+        )).toBe(true);
+        expect(shouldInvalidateAdminSession(401, {}, 'current-token')).toBe(false);
+        expect(shouldInvalidateAdminSession(
+            403,
+            { Authorization: 'Bearer stale-token' },
+            'current-token'
+        )).toBe(false);
+        expect(shouldInvalidateAdminSession(
+            500,
+            { Authorization: 'Bearer current-token' },
+            'current-token'
+        )).toBe(false);
+    });
+
+    it('兼容请求头读取接口并忽略非字符串值', () => {
+        expect(shouldInvalidateAdminSession(
+            401,
+            { get: () => 'Bearer current-token' },
+            'current-token'
+        )).toBe(true);
+        expect(shouldInvalidateAdminSession(
+            401,
+            { get: () => ['Bearer current-token'] },
+            'current-token'
+        )).toBe(false);
     });
 });

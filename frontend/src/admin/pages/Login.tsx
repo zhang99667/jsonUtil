@@ -9,12 +9,7 @@ interface LoginProps {
     onLogin: () => void;
 }
 
-/** 登录接口响应数据 */
-interface LoginResponse {
-    token?: string;
-}
-
-/** 入场动画关键帧，组件挂载时注入到 head */
+/** 入场动画关键帧，组件挂载时注入到页面头部 */
 const KEYFRAMES_STYLE_ID = 'login-slide-up-keyframes';
 const ensureKeyframes = () => {
     if (document.getElementById(KEYFRAMES_STYLE_ID)) return;
@@ -36,6 +31,9 @@ const ensureKeyframes = () => {
 };
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const isSubmittingRef = React.useRef(false);
+
     /* 确保入场动画关键帧已注入 */
     React.useEffect(() => {
         ensureKeyframes();
@@ -43,15 +41,30 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     /** 提交登录表单 */
     const onFinish = async (values: LoginFormValues) => {
+        if (isSubmittingRef.current) return;
+
+        isSubmittingRef.current = true;
+        setIsSubmitting(true);
         try {
-            const res = await login(values) as LoginResponse;
-            if (res.token) {
-                safeSetStorageItem('token', res.token);
-                message.success('登录成功');
-                onLogin();
+            const res = await login(values);
+            const token = typeof res?.token === 'string' ? res.token.trim() : '';
+            if (!token) {
+                message.error('登录响应缺少认证令牌，请重试');
+                return;
             }
+
+            if (!safeSetStorageItem('token', token)) {
+                message.error('无法保存登录状态，请检查浏览器存储权限后重试');
+                return;
+            }
+
+            message.success('登录成功');
+            onLogin();
         } catch (error) {
             // 错误由拦截器统一处理
+        } finally {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
         }
     };
 
@@ -86,7 +99,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         marginBottom: 32,
                     }}
                 >
-                    {/* Logo SVG — JSON 大括号 */}
+                    {/* 标识图形——JSON 大括号 */}
                     <svg
                         width="48"
                         height="48"
@@ -171,6 +184,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         <Button
                             type="primary"
                             htmlType="submit"
+                            loading={isSubmitting}
+                            disabled={isSubmitting}
                             style={{
                                 width: '100%',
                                 height: 46,

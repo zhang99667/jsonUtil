@@ -3,6 +3,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
 
+const PRODUCTION_IMPORT_FIXTURES = Object.freeze({
+  'scripts/ci/check-ai-asset-distribution.mjs': "import './aiGovernanceAssetDistribution.mjs';",
+  'scripts/ci/aiGovernanceAssetDistribution.mjs': "import './aiGovernanceAssetDistributionFiles.mjs';\nimport './aiGovernanceAssetDistributionGitEvidence.mjs';",
+  'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs': "import './aiGovernanceEvolutionDeterministicOutcomeWriter.mjs';",
+  'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeWriter.mjs': "import './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';",
+  'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs': "import './aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.mjs';",
+  'scripts/ci/aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.mjs': "import './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';",
+  'scripts/ci/check-ai-validation-whitespace.mjs': "import './aiGovernanceValidationWhitespace.mjs';",
+  'scripts/ci/aiGovernanceValidationWhitespace.mjs': "import './aiGovernanceValidationChangedSet.mjs';",
+});
+
 export const withAiGovernanceTempRoot = (run) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-ai-governance-'));
   try {
@@ -16,6 +27,10 @@ export const writeFixtureFile = (rootDir, file, content) => {
   const filePath = path.join(rootDir, file);
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content);
+};
+
+export const writeGovernanceProductionImportFixtures = (rootDir, files, fallback) => {
+  files.forEach(file => writeFixtureFile(rootDir, file, PRODUCTION_IMPORT_FIXTURES[file] ?? fallback));
 };
 
 export const registryRow = (file, fields = {}) => ({

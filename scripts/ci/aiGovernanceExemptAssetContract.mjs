@@ -9,7 +9,7 @@ export const AI_GOVERNANCE_EXEMPT_FORBIDDEN_MARKERS = [
   'docs/AI-ENGINEERING-PLAYBOOK.md',
   'docs/AI-ASSET-REGISTRY.md',
   'docs/AI-GOVERNANCE-DECISIONS.md',
-  '.codex/skills',
+  '.agents/skills',
   'node scripts/ci/check-ai-governance.mjs',
   'node scripts/ci/check-maintainability-budgets.mjs',
   '规则/skill 回写',

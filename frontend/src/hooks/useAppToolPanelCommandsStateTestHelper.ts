@@ -30,7 +30,7 @@ export type ToolPanelCommandStateSetters = Partial<Record<
 export const hasToolPanelCommandStateOverride = (
   overrides: ToolPanelCommandStateOverrides,
   key: ToolPanelCommandStateKey,
-): boolean => Object.prototype.hasOwnProperty.call(overrides, key);
+): boolean => Object.hasOwn(overrides, key);
 
 export const readToolPanelCommandInitialState = (initialState: unknown): unknown => (
   typeof initialState === 'function'

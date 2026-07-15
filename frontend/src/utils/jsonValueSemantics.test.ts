@@ -172,6 +172,33 @@ describe('jsonValueSemantics', () => {
     ]));
   });
 
+  it('解码合法资源文件名并对畸形百分号编码保留原文', () => {
+    expect(getJsonStringSemanticHints('https://static.example.com/%E4%B8%AD%E6%96%87.png')).toEqual([
+      {
+        kind: 'url',
+        label: 'URL',
+        detail: 'static.example.com/%E4%B8%AD%E6%96%87.png',
+      },
+      {
+        kind: 'resource-image',
+        label: '图片资源',
+        detail: '中文.png',
+      },
+    ]);
+    expect(getJsonStringSemanticHints('https://static.example.com/%E0%A4%A.png')).toEqual([
+      {
+        kind: 'url',
+        label: 'URL',
+        detail: 'static.example.com/%E0%A4%A.png',
+      },
+      {
+        kind: 'resource-image',
+        label: '图片资源',
+        detail: '%E0%A4%A.png',
+      },
+    ]);
+  });
+
   it('识别 JWT 和 Base64 结构化内容但不展示解码明文', () => {
     const jwt = [
       encodeBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' })),

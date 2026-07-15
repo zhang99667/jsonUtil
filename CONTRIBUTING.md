@@ -9,7 +9,7 @@
 - Node.js 18+ (推荐 LTS 版本)
 - Java 17+
 - Maven 3.8+
-- MySQL 8.0+ (可选，开发可用 H2)
+- PostgreSQL 14+
 
 ### 快速开始
 
@@ -33,8 +33,15 @@
    ```
 
 4. **访问应用**
-   - 主应用: http://localhost:5173
-   - 管理后台: http://localhost:5173/admin.html
+   - 主应用: http://localhost:3000
+   - 管理后台: http://localhost:3000/admin.html
+
+### AI 协作资产与项目插件
+
+- `.agents/skills/`、rules、MCP、hooks、evals、`.agents/plugins/` 和 `plugins/` 都是项目资产，必须进入 Git；仓库不是插件，只有 `plugins/<name>/` 是插件包。
+- 修改 AI 资产后先运行 `node scripts/ci/check-ai-asset-distribution.mjs --workspace`。门禁覆盖项目资产、AI 治理实现/测试、eval 数据及 CI/local-ci 控制面；准备提交时暂存目标文件，再运行 `node scripts/ci/check-ai-asset-distribution.mjs --index`，PR 与定时 CI 使用 `--head`（完整命令：`node scripts/ci/check-ai-asset-distribution.mjs --head`）。index/HEAD 直接比较当前普通文件的原始字节、Git blob 类型和执行位；只有 HEAD 视图能证明其他维护者从所测提交 clone 后可获得当前版本。
+- `node scripts/ci/manage-project-plugins.mjs --check` 是诊断模式，不执行 marketplace/plugin add/remove/enable/disable 或 lock 写入。`.agents/plugins/marketplace.json` 只是项目内插件目录清单/索引文件，不会自动安装；只有维护者明确同意时才运行 `--apply`，并在完成后新建任务。
+- 用户级 Codex cache、marketplace 注册和启用状态不是项目权威源，也不能作为 CI 成功条件。具体流程见 `docs/AI-TOOLS-SETUP.md` 和 `docs/AI-ENGINEERING-PLAYBOOK.md`。
 
 ---
 
@@ -50,45 +57,26 @@
 
 ### 提交规范
 
-使用 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
+使用项目约定的 `[Type]简短中文描述` 格式，与 `rules/code-style.md` 保持一致：
 
 ```
-<type>(<scope>): <subject>
-
-[optional body]
-
-[optional footer]
+[Type]简短描述
 ```
 
 **Type 类型**：
 | Type | 说明 |
 |------|------|
-| `feat` | 新功能 |
-| `fix` | Bug 修复 |
-| `docs` | 文档更新 |
-| `style` | 代码格式（不影响逻辑） |
-| `refactor` | 代码重构 |
-| `perf` | 性能优化 |
-| `test` | 测试相关 |
-| `chore` | 构建/工具链 |
-
-**Scope 范围**（可选）：
-- `frontend` - 前端主应用
-- `admin` - 管理后台
-- `backend` - 后端服务
-- `traffic` - 流量统计模块
-- `editor` - 编辑器相关
-- `ai` - AI 功能
+| `[Feature]` | 新功能 |
+| `[FIXBUG]` | Bug 修复 |
+| `[Refactor]` | 代码重构 |
+| `[Docs]` | 文档更新 |
+| `[Style]` | 样式或格式调整 |
+| `[Chore]` | 构建/工具链 |
+| `[LOG]` | 更新日志 |
 
 **示例**：
 ```
-feat(traffic): 添加地区分布统计功能
-
-- 新增 GeoService 实现 IP 地理位置解析
-- 添加 /api/admin/traffic/geo-distribution 接口
-- 前端新增地区分布图表展示
-
-Closes #123
+[Feature]添加地区分布统计功能
 ```
 
 ---
@@ -181,8 +169,8 @@ mvn test
 
 2. **开发并提交**
    ```bash
-   git add .
-   git commit -m "feat: add my feature"
+   git add <目标文件>
+   git commit -m "[Feature]添加功能"
    ```
 
 3. **同步最新代码**
@@ -272,7 +260,7 @@ json-助手-&-ai-修复/
 │       └── utils/
 ├── .comate/
 │   └── rules/
-│       └── code-style.mdr  # AI 编码规范
+│       └── code-style.md   # AI 工具薄入口
 ├── ARCHITECTURE.md         # 架构说明
 ├── CONTRIBUTING.md         # 本文档
 └── README.md
@@ -284,6 +272,6 @@ json-助手-&-ai-修复/
 
 - 查看 [ARCHITECTURE.md](./ARCHITECTURE.md) 了解项目架构
 - 查看 [CHANGELOG.md](./CHANGELOG.md) 了解版本历史
-- 查看 `.comate/rules/code-style.mdr` 了解编码规范
+- 查看 `rules/code-style.md` 了解权威编码规范，`.comate/rules/code-style.md` 仅作 Comate 薄入口
 
 如有问题，请创建 Issue 讨论。

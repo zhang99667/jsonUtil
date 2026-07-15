@@ -4,6 +4,7 @@ import type {
   AppSettingsBackupReadableFile,
   AppSettingsBackupTextFile,
 } from './appSettingsBackupCommandRunnerTypes';
+import { triggerTextDownload } from './browserFileSave';
 
 type AppSettingsBackupModule = AppSettingsBackupExportModule & AppSettingsBackupImportModule;
 
@@ -20,17 +21,5 @@ export const downloadSettingsBackupTextFile = ({
   fileName,
   mimeType,
 }: AppSettingsBackupTextFile): void => {
-  const blob = new Blob([text], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  try {
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-  } finally {
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
+  triggerTextDownload({ text, fileName, mimeType });
 };

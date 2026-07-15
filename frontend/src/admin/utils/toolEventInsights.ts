@@ -99,9 +99,9 @@ const formatPeriodLabel = (days: number): string => (
     days <= 1 ? '今日' : `近 ${days} 天`
 );
 
-const formatCount = (count: number): string => (
-    count.toLocaleString('zh-CN')
-);
+const ADMIN_COUNT_FORMATTER = new Intl.NumberFormat('zh-CN');
+
+export const formatAdminCount = (count: number): string => ADMIN_COUNT_FORMATTER.format(count);
 
 const getTopGroup = (items: ToolEventGroupItem[] = []): ToolEventGroupItem | null => (
     items.length > 0 ? items[0] : null
@@ -161,7 +161,7 @@ export const buildToolEventWeeklyReport = (
         focusItems.push({
             key: 'slow',
             title: '慢操作偏多',
-            description: `${formatCount(insights.slowEvents)} 次操作超过 2 秒，优先关注大 response 解析和 Worker 调度。`,
+            description: `${formatAdminCount(insights.slowEvents)} 次操作超过 2 秒，优先关注大 response 解析和 Worker 调度。`,
             tone: 'warning',
         });
         actionItems.push('对慢操作集中的功能补充性能预算或拆分 Worker 任务');
@@ -171,7 +171,7 @@ export const buildToolEventWeeklyReport = (
         focusItems.push({
             key: 'large-input',
             title: '大输入占比较高',
-            description: `${formatCount(insights.largeInputEvents)} 次输入超过 50KB，需要持续观察解析取消率和首屏响应。`,
+            description: `${formatAdminCount(insights.largeInputEvents)} 次输入超过 50KB，需要持续观察解析取消率和首屏响应。`,
             tone: 'warning',
         });
         actionItems.push('把高频大输入样本脱敏沉淀到 corpus 或浏览器性能预算');
@@ -202,27 +202,27 @@ export const buildToolEventWeeklyReport = (
 
     return {
         periodLabel,
-        headline: `${periodLabel}共 ${formatCount(totalEvents)} 次工具事件，${insights.recommendation}。`,
+        headline: `${periodLabel}共 ${formatAdminCount(totalEvents)} 次工具事件，${insights.recommendation}。`,
         metrics: [
             {
                 key: 'total',
                 label: '工具事件',
-                value: formatCount(totalEvents),
-                helper: `成功 ${formatCount(stats.successEvents || 0)} / 失败 ${formatCount(stats.failedEvents || 0)}`,
+                value: formatAdminCount(totalEvents),
+                helper: `成功 ${formatAdminCount(stats.successEvents || 0)} / 失败 ${formatAdminCount(stats.failedEvents || 0)}`,
                 tone: 'info',
             },
             {
                 key: 'top',
                 label: '高频功能',
                 value: topEvent ? topEventLabel : '-',
-                helper: topEvent ? `${formatCount(topEvent.count)} 次 · ${topEvent.percentage}%` : '暂无排行',
+                helper: topEvent ? `${formatAdminCount(topEvent.count)} 次 · ${topEvent.percentage}%` : '暂无排行',
                 tone: topEvent && topEvent.percentage >= 50 ? 'warning' : 'info',
             },
             {
                 key: 'failure',
                 label: '失败率',
                 value: `${stats.failureRate || 0}%`,
-                helper: `${formatCount(stats.failedEvents || 0)} 次失败`,
+                helper: `${formatAdminCount(stats.failedEvents || 0)} 次失败`,
                 tone: (stats.failureRate || 0) >= 5 ? 'danger' : 'success',
             },
             {

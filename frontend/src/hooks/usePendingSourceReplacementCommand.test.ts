@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AppSourceReplacementTarget } from '../utils/appSourceReplacementCommandTypes';
 import { usePendingSourceReplacementCommand } from './usePendingSourceReplacementCommand';
 
 const reactMocks = vi.hoisted(() => ({
@@ -20,15 +21,29 @@ vi.mock('react', async importOriginal => ({
 
 vi.mock('../utils/toast', () => toastMocks);
 
-const useCommandFixture = (pendingText: string | null = 'preview') => {
-  reactMocks.useState.mockReturnValue([pendingText, reactMocks.setPendingText]);
+const DEFAULT_TARGET: AppSourceReplacementTarget = {
+  activeFileId: 'file-a',
+  sourceText: 'source-a',
+};
+
+const useCommandFixture = (
+  pendingText: string | null = 'preview',
+  currentTarget: AppSourceReplacementTarget = DEFAULT_TARGET,
+  pendingTarget: AppSourceReplacementTarget = DEFAULT_TARGET,
+) => {
+  const pendingRequest = pendingText === null
+    ? null
+    : { text: pendingText, target: pendingTarget };
+  reactMocks.useState.mockReturnValue([pendingRequest, reactMocks.setPendingText]);
 
   const onApply = vi.fn();
   const onTrackToolEvent = vi.fn();
+  const sourceTargetRef = { current: currentTarget };
   const command = usePendingSourceReplacementCommand({
     eventName: 'PREVIEW_APPLY_TO_SOURCE',
     category: 'editor',
     confirmSuccessMessage: '已用 PREVIEW 替换 SOURCE',
+    sourceTargetRef,
     onApply,
     onTrackToolEvent,
   });
@@ -49,7 +64,10 @@ describe('usePendingSourceReplacementCommand', () => {
       { startedAt: 123 },
     );
 
-    expect(reactMocks.setPendingText).toHaveBeenCalledWith('next source');
+    expect(reactMocks.setPendingText).toHaveBeenCalledWith({
+      text: 'next source',
+      target: DEFAULT_TARGET,
+    });
     expect(onTrackToolEvent).not.toHaveBeenCalled();
   });
 
@@ -70,6 +88,25 @@ describe('usePendingSourceReplacementCommand', () => {
     );
   });
 
+  it('异步请求返回时目标已变化则拒绝应用', () => {
+    const currentTarget = { activeFileId: 'file-b', sourceText: 'source-b' };
+    const { command, onApply, onTrackToolEvent } = useCommandFixture(null, currentTarget);
+
+    command.handleRequest(
+      { action: 'apply', text: 'next source', successMessage: '已直接应用' },
+      { startedAt: 124, target: DEFAULT_TARGET },
+    );
+
+    expect(onApply).not.toHaveBeenCalled();
+    expect(toastMocks.showError).toHaveBeenCalledWith('SOURCE 已变化，请重新操作');
+    expect(onTrackToolEvent).toHaveBeenCalledWith(
+      'PREVIEW_APPLY_TO_SOURCE',
+      'editor',
+      'skipped',
+      124,
+    );
+  });
+
   it('请求需要确认且按跳过记录的计划时保留特殊打点语义', () => {
     const { command, onTrackToolEvent } = useCommandFixture(null);
 
@@ -78,7 +115,10 @@ describe('usePendingSourceReplacementCommand', () => {
       { startedAt: 456, shouldTrackConfirmAsSkipped: true },
     );
 
-    expect(reactMocks.setPendingText).toHaveBeenCalledWith('scheme source');
+    expect(reactMocks.setPendingText).toHaveBeenCalledWith({
+      text: 'scheme source',
+      target: DEFAULT_TARGET,
+    });
     expect(onTrackToolEvent).toHaveBeenCalledWith(
       'PREVIEW_APPLY_TO_SOURCE',
       'editor',
@@ -120,6 +160,44 @@ describe('usePendingSourceReplacementCommand', () => {
       'PREVIEW_APPLY_TO_SOURCE',
       'editor',
       'success',
+      expect.any(Number),
+    );
+  });
+
+  it('当前目标与 pending 快照值相同但对象不同时仍可确认', () => {
+    const currentTarget = { ...DEFAULT_TARGET };
+    const pendingTarget = { ...DEFAULT_TARGET };
+    const { command, onApply } = useCommandFixture(
+      'next source',
+      currentTarget,
+      pendingTarget,
+    );
+
+    command.handleConfirm();
+
+    expect(currentTarget).not.toBe(pendingTarget);
+    expect(onApply).toHaveBeenCalledWith('next source', '已用 PREVIEW 替换 SOURCE');
+    expect(reactMocks.setPendingText).toHaveBeenCalledWith(null);
+  });
+
+  it.each([
+    ['活动标签已切换', { activeFileId: 'file-b', sourceText: 'source-a' }],
+    ['当前标签内容已编辑', { activeFileId: 'file-a', sourceText: 'edited' }],
+  ])('%s 时拒绝旧 pending 替换', (_scenario, currentTarget) => {
+    const { command, onApply, onTrackToolEvent } = useCommandFixture(
+      'next source',
+      currentTarget,
+    );
+
+    command.handleConfirm();
+
+    expect(onApply).not.toHaveBeenCalled();
+    expect(reactMocks.setPendingText).toHaveBeenCalledWith(null);
+    expect(toastMocks.showError).toHaveBeenCalledWith('SOURCE 已变化，请重新操作');
+    expect(onTrackToolEvent).toHaveBeenCalledWith(
+      'PREVIEW_APPLY_TO_SOURCE',
+      'editor',
+      'skipped',
       expect.any(Number),
     );
   });

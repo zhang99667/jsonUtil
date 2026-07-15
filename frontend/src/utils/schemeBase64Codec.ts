@@ -43,6 +43,11 @@ export const decodeNormalizedBase64 = (normalized: string): string | null => {
   }
 };
 
+export const decodeBase64Text = (input: string): string | null => {
+  const normalized = normalizeBase64Input(input);
+  return normalized ? decodeNormalizedBase64(normalized) : null;
+};
+
 export const decodeNormalizedBase64ReadablePrefix = (normalized: string): string | null => {
   try {
     const bytes = binaryStringToBytes(atob(normalized));

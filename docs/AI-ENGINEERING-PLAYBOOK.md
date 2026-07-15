@@ -21,12 +21,16 @@
 
 ## 标准执行闭环
 
+AI 基建的项目 source of truth、插件包边界、workspace/index/HEAD 分发证据与 lifecycle 授权以 `rules/code-style.md` 的“AI 规则资产更新”为准；`.agents/plugins/marketplace.json` 是索引，`plugins/` 才承载插件包。这些项目资产或安装状态都不自动证明 registration/runtime/signer trust。
+
 ### 0. 判断子 Agent 委派
 
 - 遇到跨模块排查、影响面分析、复杂重构或多条验证链路并行时，先判断是否需要子 Agent 委派。
 - 主线程负责拆分边界、保护上下文、整合证据和最终验证；只读调查可交给 explorer，限定写入可交给 worker，构建、测试或日志复核可交给 verifier。
+- Codex 优先使用 `.codex/agents/explorer.toml`、`worker.toml`、`verifier.toml` 三个项目 profile；不得临时增加未审计 profile、model、MCP 或 skills 扩权字段。
 - 委派任务必须说明读写范围、排除项、期望输出和未覆盖风险；子 Agent 只回传结论、证据定位、修改文件和验证结果，避免堆叠大段中间输出。
 - 子 Agent 回传必须使用固定模板，包含 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`；worker 任务必须填写 `修改文件：`，证据需给出可追溯路径、行号、命令或日志定位。
+- explorer 必须保持 `read-only`；worker 只有收到父任务写入白名单才可写；verifier 的 `workspace-write` 只允许验证命令生成临时/忽略产物，失败时只诊断，不修改源码、规则、配置、账本或版本后重跑制造假绿。
 - 如果当前工具不可委派，主线程应收窄 `rg`、测试和日志输出，继续完成本地闭环。
 
 ```text
@@ -59,7 +63,17 @@
 | 前端组件交互 | 相关 Vitest 单测，必要时跑 `npm run test:e2e` |
 | 后端 API | `mvn test`，并检查 `docs/BACKEND-API-MATRIX.md` |
 | 部署脚本 | `node scripts/ci/check-deploy-shell-syntax.mjs`、`node scripts/ci/check-frontend-static-retention.mjs`；公网发布后运行 `node scripts/ci/check-production-frontend-assets.mjs <baseUrl>` 或远端健康检查脚本，确认深层 chunk、CSS `url(...)` 二级资源、CSS `@import` 链路可达且 JS/CSS `Content-Type` 正确 |
-| AI 协作资产 | `node scripts/ci/check-ai-governance.mjs` |
+| AI 协作资产 | `node scripts/ci/check-ai-governance.mjs`；本地 `node scripts/ci/check-ai-asset-distribution.mjs --workspace|--index`，CI `--head` |
+| Codex Agent profiles | `node --test scripts/ci/aiGovernanceCodexAgentProfiles.test.mjs`、`node scripts/ci/run-ai-evolution-cases.mjs --case codex-project-agent-profile-boundary --json` |
+| Codex project hook | `node --test scripts/ci/aiGovernanceCodexHooks.test.mjs`、`node scripts/ci/run-ai-evolution-cases.mjs --case codex-project-session-start-hook-boundary --json`；真实触发只能在新任务另行观察 |
+| MCP registration sealed snapshot | `node --test scripts/ci/aiGovernanceRegistrationCanarySealedSnapshot.test.mjs scripts/ci/mcpLineDelimitedStdioClient.test.mjs scripts/ci/aiGovernanceRegistrationCanarySnapshotPreflight.test.mjs`、`node scripts/ci/run-ai-evolution-cases.mjs --case mcp-registration-canary-sealed-snapshot-boundary --json`；锁 hermetic Git、稳定 descriptor、owner-only mode、失败 retention、有界脱敏 stdio、projection digest 与 snapshot scorecard；模型/写账未请求但 absence 未验证，也不证明 immutable host、环境封存或当前任务注册 |
+| Codex Seatbelt sentinel | `node --test scripts/ci/aiGovernanceCodexExternalControllerSeatbeltSentinel.test.mjs`；锁 Codex code identity/Seatbelt、source 零变更、disposable mirror、binding 与 cleanup，同 UID 仍只算 component |
+| Attested runtime preflight | `node --test scripts/ci/aiGovernanceCodexExternalControllerAttestedPreflight.test.mjs`、对应 component case；锁双角色 DSSE、七角色 UID/GID/namespace、派生 state/challenge 与 pre-runtime 注入，仓内 Node/path candidate 永不解锁 registration |
+| MCP registration canary packet | `node --test scripts/ci/aiGovernanceRegistrationCanaryPacket.test.mjs`、`node scripts/ci/run-ai-evolution-cases.mjs --case mcp-registration-canary-launch-packet-boundary --json`；只证明盲分启动包，不证明实际注册 |
+| MCP registration canary result | `node --test scripts/ci/aiGovernanceRegistrationCanaryResult.test.mjs`、`node scripts/ci/run-ai-evolution-cases.mjs --case mcp-registration-canary-result-ingestion-boundary --json`；只证明摄取、盲评、commitment 和揭盲预览边界，不证明外部执行真实性 |
+| MCP registration grade checkpoint | `node --test scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpoint.test.mjs`、`node scripts/ci/run-ai-evolution-cases.mjs --case mcp-registration-canary-grade-checkpoint-request-boundary --json`；只证明外部锚定 request 的内容绑定，不证明已在揭盲前锚定 |
+| MCP registration anchor receipt | `node --test scripts/ci/aiGovernanceRegistrationCanaryAnchorReceipt.test.mjs`、`node scripts/ci/run-ai-evolution-cases.mjs --case mcp-registration-canary-anchor-receipt-boundary --json`；只证明精确 DSSE/状态/可观察分叉边界，不证明仓外身份、inclusion 或 first-write-wins |
+| MCP registration disclosure authorization | `node --test scripts/ci/aiGovernanceRegistrationCanaryDisclosureAuthorization.test.mjs scripts/ci/aiGovernanceRegistrationCanaryDisclosureRedteam.test.mjs`、`node scripts/ci/run-ai-evolution-cases.mjs --case mcp-registration-canary-disclosure-authorization-boundary --json`；只证明 blind grade/checkpoint/Agent-grader-host 投影绑定、host commitment 与 anchor→authorized→consumed 链，缺共享 CAS/witness 时不证明 at-most-once |
 | 可维护性预算 | `node scripts/ci/check-maintainability-budgets.mjs` |
 
 ### 3. 编码约束
@@ -84,13 +98,18 @@
 - 公网资源巡检不能只看 2xx；`node scripts/ci/check-production-frontend-assets.mjs <baseUrl>` 还会校验 JS/CSS `Content-Type`，并递归检查 CSS `url(...)` 二级资源和 CSS `@import` 链路，防止缺失 chunk fallback 成 HTML。排查用户反馈的旧 chunk URL 时，追加 `--extra-asset <url-or-path>` 纳入同一轮递归巡检。
 - 涉及大模块或新增 helper 时运行 `node scripts/ci/check-maintainability-budgets.mjs`。
 - 更新 `CHANGELOG.md` 当前版本区块。
-- 用 `git diff --check` 检查空白错误。
+- 用 `node scripts/ci/check-ai-validation-whitespace.mjs` 检查 staged、worktree 与 untracked 三种视图的空白错误。
 - 最终汇报列出已验证命令和仍未覆盖的风险。
 
 ### 5. 规则进化闭环
 
+- AI 协作基建的行为评测、outcome lineage、反馈学习和批准回写以 `docs/AI-EVOLUTION-PLAYBOOK.md` 为权威流程；静态资产、引用和契约通过不等于行为有效。
+- 重复失败或用户纠偏先转为 `evals/ai-governance/cases.json` 中的脱敏 case，实际执行后才把 outcome、provenance 和 validation result 追加到 `evals/ai-governance/outcomes.jsonl`；Git 基线历史行不得删除、修改或重排，不伪造 token、耗时、commit 或未运行的验证。
+- 运行 `node scripts/ci/check-ai-evolution-evals.mjs` 校验 receipt/trace/proof/policy、Git 前缀、v3 chain 与 replay。`component-boundary` 不进 behavior 分母。topology、旧 Docker probe、同 UID Seatbelt、caller-policy 双签名和仓内 Node 的 root-owned path check 都只是 component；只有后续 checkout 外受保护 launcher/service 固定 verifier runtime、clean env、policy 与 non-caller bindings 后，才可在独立 case 评估解除隔离前置，task registry/Agent outcome 仍需真实 trial。
+- Codex project hook 只用 `.codex/hooks.json` 的单一 `SessionStart` `startup|resume` advisory：固定 10 秒 timeout，runtime 只校验三份项目入口并返回固定有界 context，不读 prompt、transcript、环境、用户配置，不联网、不写文件、不阻断。项目必须 trusted，非 managed hook 还需审阅当前定义；不得用 `--dangerously-bypass-hook-trust` 作为常规流程。配置、`/hooks` 可见和合成测试只证明 component，真实新任务触发前 behavior 保持 unknown。
+- Registration canary 的投影隔离、外部 trial 前置和 `blind|seal|checkpoint|unblind` 审查以 `docs/AI-EVOLUTION-PLAYBOOK.md` 为准；component preview 不能自动升级为 behavior 证据或写账权限。
 - 遇到重复踩坑、用户纠偏、子 Agent 协作失效、验证门禁缺口或优秀实践可复用时，先做复盘沉淀，明确触发条件、反例、验证方式和适用边界。
-- 能被后续 AI 复用的经验必须做规则/skill 回写：项目通用流程写入本 Playbook，Codex 项目技能写入 `.codex/skills/jsonutils-maintainer/SKILL.md`，跨工具说明同步到 `.claude/ai-tools-guide.md` 或入口文档。
+- 能被后续 AI 复用的经验必须做规则/skill 回写：项目通用流程写入本 Playbook，Codex 项目技能写入 `.agents/skills/jsonutils-maintainer/SKILL.md`，跨工具说明同步到 `.claude/ai-tools-guide.md` 或入口文档。
 - 规则回写必须写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试：决策记录说明为什么沉淀，回写追踪列出同步到哪些入口或 skill，锁定测试说明由哪个治理脚本、单测或预算规则防止退化。
 - 决策账本的触发条件、反例和适用边界不能整格使用弱占位；回写追踪必须包含 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，锁定测试必须同时包含 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`，且引用的测试文件必须保留普通可执行 `test(...)` 或 `it(...)` 用例，不能只剩 `skip`、`todo`、`.only` 或空文件，证明局部负例、账本自追踪和聚合治理门禁都覆盖到。
 - 规则改动必须配套治理校验：能用 `check-ai-governance` 锁定的关键词、文件引用或命令要同步加入脚本和测试，不能只依赖人工记忆。
@@ -99,7 +118,8 @@
 - `.github/workflows/ai-governance.yml` 必须保留 weekly `schedule`、`workflow_dispatch`、治理脚本单测、MCP 测试、固定 artifact 产出和上传步骤，让 AI 资产在长期不改代码时也能被定时巡检。
 - AI 治理 helper 和测试都要有预算所有权：新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，避免治理代码和锁定测试继续膨胀。
 - AI 治理 helper 还要有调用所有权：新增 `scripts/ci/aiGovernance*.mjs` 非测试脚本时，生产契约、规则、引用和失败收集 helper 必须能从 `scripts/ci/check-ai-governance.mjs` 生产链路静态 import 图到达；只有 `*TestFixtures.mjs` 和 `*MissingCases.mjs` 这类测试支撑文件允许只被 `scripts/ci/*.test.mjs` 覆盖，避免治理规则只停留在测试里。
-- 治理报告、MCP context 和 CI artifact 需要保留成熟度 scorecard 与 `nextFocus`，让后续 agent 基于确定性缺口排序处理规则、skill、MCP 和维护余量问题，而不是重新人工猜测优先级。
+- 治理报告、MCP context 和 CI artifact 需要保留成熟度 scorecard 与可执行 `nextFocus`，让后续 agent 基于确定性缺口排序处理规则、skill、MCP 和维护余量问题，而不是重新人工猜测优先级。依赖仓外管理平面、独立身份或 signer/witness 的工作另列 `blockedFocus`、阻断范围与恢复前置；blocker 继续可见，但不得永久覆盖不依赖它的仓内可执行焦点。
+- 机器报告必须把全局聚合事实与 bounded 展示样本分开；`top` / `limit` 只能限制返回明细，不能改变全局候选数、清零状态、scorecard 或 handoff 结论。
 - 同源入口文档必须成对维护：AGENTS/CLAUDE 的 AI 协作章节、Cursor/Comate 的核心规则片段由治理脚本做漂移检查，避免一边更新、一边残留旧语义。
 - 项目事实不能只靠入口文档人工同步：数据库和关键主版本事实必须从后端配置、前后端依赖、前端 lock 和 Compose 文件反查到 AGENTS、CLAUDE 与 `rules/code-style.md`，由 `node scripts/ci/check-ai-governance.mjs` 锁住旧事实漂移。
 - Copilot、Codex README、Claude 工具指南、Cursor 和 Comate 的薄入口共享核心规则片段由治理脚本统一检查；新增跨工具核心要求时先更新共享片段，再同步所有薄入口，避免不同助手看到不同版本的发布、委派、安全或规则进化要求。
@@ -107,10 +127,10 @@
 - 工具薄入口只保留当前执行约束和权威文档链接，不维护独立更新记录；历史追踪统一放在 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`，避免薄入口时间线漂移。
 - 新增 AI 助手入口、项目级 MCP 配置或工具配置目录文件时，必须纳入 AI 治理清单；本机私有配置和非协作资产要进入显式豁免列表，避免新增 rules/skills 资产游离在门禁之外。
 - 项目级 MCP 配置必须保持可审计：配置文件使用合法 JSON，且只能包含 `mcpServers` 或 `servers` 其中一个 server map，每个 server 至少声明 `command` 或 `url`，不通过 shell 包装命令、绝对路径、上跳路径或缺失本地脚本隐藏执行边界，敏感字段以及 URL、args、header 字符串里的 token、password、api key 和 authorization 值只能使用环境变量引用。
-- `jsonutils-governance` 本地 MCP server 只能暴露只读治理资源和固定治理报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot、validation plan 工具；新增 MCP 工具或上下文 helper 时必须纳入必需文件、资产注册表、单测和可维护性预算，不开放任意 shell 或通用文件读取入口。
-- MCP server 改动不能只做函数级测试；`node --test scripts/mcp/*.test.mjs` 必须覆盖从项目级 `.mcp.json` 启动真实 stdio 进程、发送 framed 请求、验证工具清单、读取治理资源并调用 `ai_governance_context`、`ai_governance_scorecard`、`ai_asset_inventory`、`ai_decision_summary`、`ai_handoff_brief`、`ai_worktree_snapshot` 和 `ai_validation_plan`，避免 command/args、stdout 污染、framing 断裂或上下文工具失效进入 CI。
+- `jsonutils-governance` 本地 MCP server 只能暴露只读治理资源和固定治理报告、scorecard、上下文、asset inventory、evaluation summary、decision summary、handoff brief、artifact freshness、worktree snapshot、validation plan 工具；工具必须保留只读 annotations、output schema 和结构化输出，新增 helper 必须纳入必需文件、资产注册表、单测和可维护性预算，不开放任意 shell 或通用文件读取入口。
+- MCP server 改动不能只做函数级测试；`node --test scripts/mcp/*.test.mjs` 必须覆盖从项目级 `.mcp.json` 启动真实 stdio 进程、按官方 newline-delimited JSON-RPC 发送消息与协商版本、验证无 `Content-Length` header、工具清单、只读 annotations、治理资源和 `ai_governance_context` / `ai_governance_scorecard` / `ai_asset_inventory` / `ai_evaluation_summary` / `ai_decision_summary` / `ai_handoff_brief` / `ai_worktree_snapshot` / `ai_validation_plan` 真实调用，避免 command/args、stdout 污染或协议分帧断裂进入 CI。
 - AI 资产注册表的每行登记必须维护真实有效且不晚于当前日期的 `YYYY-MM-DD` 最近复核日期；变更资产、责任人、复核节奏或治理证据时同步更新日期，但不引入自动到期提醒。
-- 项目级 Codex skill 必须保留可迁移契约：frontmatter 至少包含 `name`、`description`、`version` 和 `tags`，且 `name` 必须等于 skill 目录名、`version` 使用 `x.y.z` 格式、`tags` 使用非空数组；当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，正文保留 `## 必读文件`、`## 工作流`、`## 常用验证命令` 和 `## 重点边界`，避免经验沉淀退化成不可触发、不可追踪、不可验证的散文。
+- 项目级 Codex skill 只以 `.agents/skills/` 为源码，并保留可迁移契约：frontmatter 包含 `name`、`description`、`metadata.version` 和 `metadata.tags`，`agents/openai.yaml` 包含显示名、25-64 字符短描述和引用 `$<skill-name>` 的默认提示；当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同行追踪，正文保留四个核心章节。禁止在 `.codex/skills/` 放同名副本，避免重复注入或不可追踪的散文。
 - 项目级 Codex skill 的具体项目路径、fenced `cd <dir>` 工作目录、`node ...mjs` 验证脚本和 `npm run ...` 脚本必须可解析到真实目标；新增或迁移 skill 引用后运行 `node scripts/ci/check-ai-governance.mjs`，避免 skill 看似完整但实际不可执行。
 - 不把一次性偏好、临时绕路或未验证猜测沉淀为规则；沉淀前先确认它能减少未来错误，并且不会和现有规范冲突。
 
@@ -121,17 +141,22 @@
 - `.claude/README.md`: Claude/Ducc 配置目录索引，必须指向主入口、Playbook 和治理命令。
 - `.claude/ai-tools-guide.md`: AI 工具适配说明。
 - `.claude/settings.local.json`: 本机私有配置，仅作为显式豁免文件存在，不承载项目级 rules、skills 或验证流程。
-- `.codex/skills/jsonutils-maintainer/SKILL.md`: Codex 可迁移的项目维护技能模板。
+- `.agents/skills/jsonutils-maintainer/SKILL.md`: Codex 可迁移的项目维护技能模板。
+- `.agents/skills/jsonutils-ai-infra-evolver/SKILL.md`: rules、skills、MCP、evals 与反馈学习的专用演进 skill。
+- `.codex/hooks.json`、`.codex/hooks/session-start-governance.mjs`: 只读 `SessionStart` 治理 handoff；信任、component/behavior 分层和能力面由专用契约锁定。
 - `.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`: 项目级 MCP 配置，只按精确文件发现，不递归 `.cursor` 或 `.vscode` 目录。
-- `scripts/mcp/jsonutils-governance-server.mjs`: JSONUtils 本地治理 MCP server，只读暴露 AI 治理文档和固定报告、scorecard、上下文、asset inventory、decision summary、handoff brief、artifact freshness、worktree snapshot、validation plan 工具。
+- `scripts/mcp/jsonutils-governance-server.mjs`: JSONUtils 本地治理 MCP server，只读暴露 AI 治理文档和固定报告、scorecard、上下文、asset inventory、evaluation summary、decision summary、handoff brief、artifact freshness、worktree snapshot、validation plan 工具。
+- `scripts/mcp/jsonutils-governance-jsonrpc.mjs`: JSON-RPC 2.0 请求校验、notification 边界和脱敏标准错误 helper，非法 JSON 值不得杀死 stdio 进程。
 - `scripts/mcp/jsonutils-governance-tool-definitions.mjs`: JSONUtils 治理 MCP 固定工具定义 helper，维护工具名称、顺序和 input schema。
+- `scripts/mcp/jsonutils-governance-tool-input.mjs`: JSONUtils 治理 MCP 工具参数校验 helper，拒绝未知工具、额外字段和越界输入并返回 `-32602`。
 - `scripts/mcp/jsonutils-governance-tools.mjs`: JSONUtils 治理 MCP 固定工具分发 helper，维护固定脚本调用、scorecard 和 context 调用。
 - `scripts/mcp/jsonutils-governance-report-tool.mjs`: JSONUtils 治理 MCP report helper，组合固定治理报告和预算报告，保证 report 与 scorecard 焦点同源。
 - `scripts/mcp/jsonutils-governance-scorecard-tool.mjs`: JSONUtils 治理 MCP scorecard helper，复用治理 context 输出固定 scorecard 载荷。
 - `scripts/mcp/jsonutils-governance-assets.mjs`: JSONUtils 治理 MCP asset inventory helper，复用资产注册表解析器输出 bounded 结构化资产清单。
+- `scripts/mcp/jsonutils-governance-evaluations.mjs`: JSONUtils 治理 MCP evaluation helper，bounded 输出 case 覆盖、脱敏 outcome provenance 和实际验证计数。
 - `scripts/mcp/jsonutils-governance-decisions.mjs`: JSONUtils 治理 MCP decisions helper，bounded 输出最近治理决策和锁定命令。
 - `scripts/mcp/jsonutils-governance-handoff.mjs`: JSONUtils 治理 MCP handoff helper，组合治理焦点、AI 基建清零状态、最新决策、worktree snapshot 和交接风险。
-- `scripts/mcp/jsonutils-governance-validation-plan.mjs`: JSONUtils 治理 MCP validation plan helper，根据完整 changed-file 集合匹配建议验证命令，并 bounded 返回命中规则和样本覆盖范围。
+- `scripts/mcp/jsonutils-governance-validation-plan.mjs` 与 `jsonutils-governance-validation-rules.mjs`: 以逐文件完整 changed set 和固定命令 ID 单源推导建议、人工复核和未分类摘要；MCP 不执行命令，bounded 样本不改全局事实。
 - `scripts/mcp/jsonutils-governance-worktree.mjs`: JSONUtils 治理 MCP worktree helper，固定维护 `git status --porcelain=v1 --branch` 的结构化 snapshot。
 - `scripts/mcp/jsonutils-governance-resources.mjs`: JSONUtils 治理 MCP 资源目录 helper，固定维护只读资源 URI、文件映射和读取边界。
 - `scripts/mcp/jsonutils-governance-context.mjs`: JSONUtils 治理上下文 helper，组合固定治理/预算 JSON 报告、版本、最新决策和下一步命令。
@@ -142,10 +167,13 @@
 - `docs/AI-ASSET-REGISTRY.md`: AI 协作资产、治理门禁和显式豁免文件的可审计账本。
 - `docs/AI-GOVERNANCE-DECISIONS.md`: AI rules、skills 和治理门禁变更的决策记录、回写追踪与锁定测试账本。
 - `docs/AI-ENGINEERING-PLAYBOOK.md`: 跨 AI 工具共享的执行闭环。
-- `scripts/ci/write-ai-governance-artifacts.mjs`: AI 治理 CI/local-ci 产物入口，固定输出治理报告、预算报告、带 `generatedAt` 的 context/scorecard 快照和 summary，并提供 `--check` 查旧产物漂移。
+- `docs/AI-EVOLUTION-PLAYBOOK.md`: AI 协作基建的评测、outcome、feedback、provenance 和批准回写闭环。
+- `evals/ai-governance/cases.json`、`trace-policies.json`、`outcomes.jsonl` 与 `trial-receipts.jsonl`: 版本化 case、registration blind-result policy、v3 chained outcome、receipt v1 fixed replay、v2 observable trace 和 v3 DSSE proof 数据面。
+- `scripts/ci/check-ai-evolution-evals.mjs`: 行为评测数据面契约门禁。
+- `scripts/ci/write-ai-governance-artifacts.mjs`: 固定输出治理/预算/context/scorecard/summary 与 component-only attestation subject，并用 `--check` 查漂移。
 
 新增 AI 工具或流程时，优先更新本文件和 `.claude/ai-tools-guide.md`，避免同一规则散落在多个地方。
 修改 AI 入口、Playbook 或 skill 后，运行 `node scripts/ci/check-ai-governance.mjs` 确认关键引用没有断链。
-新增或调整 `.codex/skills/*/SKILL.md` 时，同一条治理校验还会检查 skill frontmatter 元数据和核心章节契约。
+新增或调整 `.agents/skills/*/SKILL.md` 时，同一条治理校验还会检查官方 metadata、`agents/openai.yaml` 和核心章节契约。
 新增、移动或显式豁免 AI 协作资产时，还必须更新 `docs/AI-ASSET-REGISTRY.md`，让资产职责、维护契约和豁免边界可被人工审计。
 新增 `.claude/`、`.codex/`、`.comate/` 下的 AI 协作资产，或新增 `.cursor/rules/**/*.mdc`、MCP 配置（`.mcp.json`、`.cursor/mcp.json`、`.vscode/mcp.json`）、`.github/copilot-instructions.md`、`.github/instructions/**/*.instructions.md`、`.github/prompts/**/*.prompt.md`、`.github/agents/**/*.agent.md`、`.github/chatmodes/**/*.chatmode.md`、`docs/AI-*.md`、`rules/ai-*.md` 协作文档时，同一条治理校验还会检查它是否已纳入必需文件、引用规则或显式豁免。

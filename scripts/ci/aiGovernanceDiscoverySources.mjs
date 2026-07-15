@@ -9,9 +9,11 @@ export const AI_GOVERNANCE_DISCOVERY_ROOT_FILES = [
 ];
 
 export const AI_GOVERNANCE_DISCOVERY_DIRS = [
+  '.agents',
   '.claude',
   '.codex',
   '.comate',
+  'plugins',
 ];
 
 export const AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES = [

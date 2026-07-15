@@ -35,6 +35,7 @@ export const useAppSettingsBackupCommands = ({
     shortcuts,
   }, {
     onLoadBackupModule: loadAppBackupModule,
+    onGetStorage: getSettingsBackupStorage,
     onDownloadTextFile: downloadSettingsBackupTextFile,
     onShowSuccess: showSuccess,
     onShowError: showError,
@@ -51,7 +52,7 @@ export const useAppSettingsBackupCommands = ({
       onReplaceShortcuts,
       onShowSuccess: showSuccess,
       onShowError: showError,
-      storage: getSettingsBackupStorage(),
+      onGetStorage: getSettingsBackupStorage,
     },
   ), [aiConfig, onReplaceShortcuts, onSetAIConfig, onSetGeneralSettings]);
 

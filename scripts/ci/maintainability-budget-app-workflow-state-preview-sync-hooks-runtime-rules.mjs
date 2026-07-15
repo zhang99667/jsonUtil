@@ -1,4 +1,5 @@
 export const appWorkflowStatePreviewSyncHookRuntimeMaintainabilityBudgets = [
+  { file: 'frontend/src/hooks/useAppPreviewValidation.ts', maxLines: 85, reason: 'PREVIEW 校验 hook 只维护请求失效、AbortController 生命周期和校验状态写回' },
   { file: 'frontend/src/hooks/useAppPreviewOutputSync.ts', maxLines: 70, reason: 'PREVIEW 反向同步 hook 只维护派生校验、取消清理和输出变更 handler 装配' },
   { file: 'frontend/src/hooks/useAppPreviewOutputSyncTypes.ts', maxLines: 35, reason: 'PREVIEW 反向同步 hook 类型契约应独立维护，避免副作用流程被 props 声明撑大' },
   { file: 'frontend/src/hooks/useAppPreviewDraftFileChangeReset.ts', maxLines: 25, reason: 'PREVIEW 草稿文件切换重置 hook 只维护活动文件变化检测和取消草稿副作用' },

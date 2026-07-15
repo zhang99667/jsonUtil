@@ -1,13 +1,16 @@
 package com.jsonhelper.backend.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 /**
  * 上传文件实体
  */
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "upload_files")
 public class UploadFile {
@@ -17,7 +20,7 @@ public class UploadFile {
     private Long id;
 
     /** 文件名 */
-    @Column(name = "file_name", nullable = false)
+    @Column(name = "file_name", nullable = false, length = 500)
     private String fileName;
 
     /** 文件大小（字节） */
@@ -29,7 +32,7 @@ public class UploadFile {
     private String fileType;
 
     /** 文件存储路径 */
-    @Column(name = "storage_path", nullable = false)
+    @Column(name = "storage_path", nullable = false, length = 1000)
     private String storagePath;
 
     /** 上传者用户名 */

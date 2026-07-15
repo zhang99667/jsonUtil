@@ -36,7 +36,6 @@ const ANT_DESIGN_CHART_PACKAGES = new Set([
 const JSON_SCHEMA_PACKAGES = new Set([
   'ajv',
   'ajv-formats',
-  'fast-deep-equal',
   'fast-uri',
   'json-schema-traverse',
   'require-from-string',

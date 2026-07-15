@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": "1.0.0",
+  "updatedAt": "2026-07-11",
+  "experiments": [
+    {
+      "id": "mcp-project-registration-canary",
+      "caseRef": {
+        "id": "mcp-project-registration-discovery",
+        "caseVersion": 1,
+        "subjectVersion": "1.0.0"
+      },
+      "originSignalId": "mcp-project-registration-unavailable-20260711",
+      "design": {
+        "type": "paired-ab",
+        "repetitions": 3,
+        "splits": {
+          "train": ["mcp-newline-version-negotiation"],
+          "validation": ["mcp-project-registration-discovery"],
+          "holdout": ["mcp-fixed-tool-selection"]
+        },
+        "arms": [
+          { "id": "baseline", "treatment": "project-config-only" },
+          { "id": "candidate", "treatment": "project-plugin-registration" }
+        ],
+        "sharedBindings": {
+          "task": { "status": "bound", "source": "case-input" },
+          "fixture": { "status": "unavailable", "reasonCode": "sealed-snapshot-not-created" },
+          "environment": { "status": "unavailable", "reasonCode": "sealed-snapshot-not-created" }
+        },
+        "blinding": {
+          "agentProjection": ["input.request", "input.context"],
+          "graderProjection": ["expectedOutcome", "graders"],
+          "candidateCanReadGrader": false
+        },
+        "trialPlan": [
+          { "id": "mcp-registration-p1-baseline", "pair": 1, "arm": "baseline", "status": "planned", "receiptId": null },
+          { "id": "mcp-registration-p1-candidate", "pair": 1, "arm": "candidate", "status": "planned", "receiptId": null },
+          { "id": "mcp-registration-p2-baseline", "pair": 2, "arm": "baseline", "status": "planned", "receiptId": null },
+          { "id": "mcp-registration-p2-candidate", "pair": 2, "arm": "candidate", "status": "planned", "receiptId": null },
+          { "id": "mcp-registration-p3-baseline", "pair": 3, "arm": "baseline", "status": "planned", "receiptId": null },
+          { "id": "mcp-registration-p3-candidate", "pair": 3, "arm": "candidate", "status": "planned", "receiptId": null }
+        ]
+      },
+      "execution": {
+        "status": "blocked",
+        "reasonCode": "new-task-required",
+        "modelInvoked": false,
+        "automaticLedgerWrites": false
+      },
+      "metrics": {
+        "passAt1": { "status": "unavailable", "reasonCode": "trials-not-executed" },
+        "passPower3": { "status": "unavailable", "reasonCode": "trials-not-executed" },
+        "meanScore": { "status": "unavailable", "reasonCode": "trials-not-executed" },
+        "standardDeviation": { "status": "unavailable", "reasonCode": "trials-not-executed" },
+        "pairedDelta": { "status": "unavailable", "reasonCode": "trials-not-executed" },
+        "timing": { "status": "unavailable", "reasonCode": "trials-not-executed" },
+        "cost": { "status": "unavailable", "reasonCode": "trials-not-executed" }
+      }
+    }
+  ]
+}

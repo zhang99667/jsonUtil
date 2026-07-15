@@ -1,3 +1,5 @@
+import { parseJsonWithFallback } from '../../utils/storage';
+
 interface AdminResultLike {
     code?: unknown;
     message?: unknown;
@@ -35,13 +37,9 @@ const getRecordMessage = (data: unknown): string | null => {
         || normalizeMessage(result.error);
 };
 
-const parseJsonText = (text: string): unknown | null => {
-    try {
-        return JSON.parse(text) as unknown;
-    } catch {
-        return null;
-    }
-};
+const parseJsonText = (text: string): unknown | null => (
+    parseJsonWithFallback<unknown>(text, null)
+);
 
 const getStatusFallbackMessage = (status?: number): string => {
     switch (status) {
@@ -89,6 +87,27 @@ export const isAdminRequestError = (error: unknown): error is AdminRequestError 
 
 export const isAuthExpiredStatus = (status?: number): boolean => (
     status === 401 || status === 403
+);
+
+const readAuthorizationHeader = (headers: unknown): string | null => {
+    if (!isRecord(headers)) return null;
+
+    if (typeof headers.get === 'function') {
+        return normalizeMessage(headers.get.call(headers, 'Authorization'));
+    }
+
+    return normalizeMessage(headers.Authorization)
+        || normalizeMessage(headers.authorization);
+};
+
+export const shouldInvalidateAdminSession = (
+    status: number | undefined,
+    requestHeaders: unknown,
+    currentToken: string | null
+): boolean => (
+    isAuthExpiredStatus(status)
+    && Boolean(currentToken)
+    && readAuthorizationHeader(requestHeaders) === `Bearer ${currentToken}`
 );
 
 export const getAdminResultErrorMessage = (

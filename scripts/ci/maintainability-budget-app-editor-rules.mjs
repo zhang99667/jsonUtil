@@ -1,3 +1,5 @@
+import { appEditorSchemeMaintainabilityBudgets } from './maintainability-budget-app-editor-scheme-rules.mjs';
+
 export const appEditorMaintainabilityBudgets = [
   {
     file: 'frontend/src/components/AppEditorWorkspace.tsx',
@@ -14,4 +16,5 @@ export const appEditorMaintainabilityBudgets = [
     maxLines: 45,
     reason: 'AI 修复摘要槽位只负责懒加载摘要条和事件透传，不承载修复业务逻辑',
   },
+  ...appEditorSchemeMaintainabilityBudgets,
 ];

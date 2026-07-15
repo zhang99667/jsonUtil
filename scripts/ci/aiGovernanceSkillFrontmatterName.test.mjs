@@ -16,8 +16,9 @@ test('AI 治理 skill 契约会报告 frontmatter name 与目录不一致', () =
       frontmatter: [
         'name: stale-skill',
         'description: JSONUtils 项目维护技能。',
-        'version: 0.1.0',
-        'tags: [jsonutils, governance, maintenance]',
+        'metadata:',
+        '  version: "0.1.0"',
+        '  tags: [jsonutils, governance, maintenance]',
       ].join('\n'),
     }));
 

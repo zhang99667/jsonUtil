@@ -1,6 +1,9 @@
 const appStructureNavTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const appStructureNavTestMaintainabilityBudgets = [
+  appStructureNavTestBudget('frontend/src/hooks/useJsonTreeModel.test.ts', 230, '结构导航模型测试只锁定线程构造、发送、响应、错误、清理和首个终态语义'),
+  appStructureNavTestBudget('frontend/src/utils/jsonTreeModel.test.ts', 510, '结构导航综合模型测试只锁定搜索、复制、表格预览、图谱和既有节点语义'),
+  appStructureNavTestBudget('frontend/src/utils/jsonTreeTraversal.test.ts', 80, '结构导航遍历测试只锁定宽数组与宽对象不会越过节点预算提前读取属性值'),
   appStructureNavTestBudget('frontend/src/components/JsonTreeToolbar.test.tsx', 110, '结构导航工具栏测试只锁定搜索、类型筛选、视图切换、复制菜单装配和展开折叠状态'),
   appStructureNavTestBudget('frontend/src/components/JsonTreeCopySearchResultsMenu.test.tsx', 70, '结构导航搜索结果复制菜单测试只锁定启用/禁用状态、可访问文案和三种复制回调'),
   appStructureNavTestBudget('frontend/src/components/JsonTreeSearchHistoryPanel.test.tsx', 60, '结构导航搜索历史条测试只锁定空态、历史填入、删除和清空回调'),

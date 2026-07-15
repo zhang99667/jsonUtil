@@ -12,7 +12,7 @@ export const FLOATING_PANEL_STORAGE_KEYS = [
 ] as const;
 
 export const resetFloatingPanelLayoutStorage = (
-  storage: Storage = localStorage,
+  storage?: Storage,
   keys: readonly string[] = FLOATING_PANEL_STORAGE_KEYS
 ) => {
   keys.forEach(key => {

@@ -18,7 +18,7 @@ const trimDecodedSuffixQueryPayload = (decoded: string): string => {
   const trimmed = decoded.trim();
   if (!/^[?&]?[A-Za-z_$][\w$.[\]-]*=/.test(trimmed)) return decoded;
 
-  // 真实 extraParam 后缀可能在 query 前缀后继续拼接 JSON 残片，直接按 & 拆会污染最后一个参数。
+  // 真实 `extraParam` 后缀可能在查询参数前缀后继续拼接 JSON 残片，直接按 & 拆会污染最后一个参数。
   const jsonFragmentIndex = trimmed.search(/","[A-Za-z_$][\w$]*":/);
   return jsonFragmentIndex > 0 ? trimmed.slice(0, jsonFragmentIndex) : decoded;
 };
@@ -33,7 +33,7 @@ export const parsePrefixedBase64Suffix = (
   const compact = suffix.trim().replace(/\s+/g, '');
   if (!compact) return null;
 
-  // 真实 extraParam 后缀常带少量内部头字符，跳过后可解出 query-string。
+  // 真实 `extraParam` 后缀常带少量内部头字符，跳过后可解出查询字符串。
   for (let offset = 0; offset <= 12 && offset < compact.length; offset++) {
     const candidate = compact.slice(offset);
     const normalized = normalizeBase64Input(candidate);

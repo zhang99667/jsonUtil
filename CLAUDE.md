@@ -29,9 +29,13 @@ AI Playbook 包含：
 ## AI 协作与子 Agent 委派
 
 - 跨模块排查、影响面分析、复杂重构或多条验证链路并行时，先判断是否需要子 Agent 委派；委派任务说明读写范围、排除项、期望输出和未覆盖风险，只读调查交给 explorer，限定写入交给 worker，构建/测试复核交给 verifier。
+- Codex 委派优先使用 `.codex/agents/` 的固定 explorer、worker、verifier；explorer 只读，worker 只写父任务白名单，verifier 的可写 sandbox 只服务验证临时/忽略产物且不得修改源码。
 - 主线程负责拆分边界、保护上下文、整合证据和最终验证；子 Agent 输出使用 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`固定模板，不回传大段中间日志。
 - 如果当前工具不可委派，主线程应收窄 `rg`、测试和日志输出，继续按 `docs/AI-ENGINEERING-PLAYBOOK.md` 完成本地闭环。
 - 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，再按 Playbook 做规则/skill 回写，并运行 `node scripts/ci/check-ai-governance.mjs` 锁定关键引用和 skill 契约。
+- 涉及 rules、skills、MCP、evals 或治理成熟度时，同时读取 `docs/AI-EVOLUTION-PLAYBOOK.md`；先建代表 case，只记录脱敏且可追溯的真实 outcome，没有 outcome 时保持 unknown，不用静态契约分数冒充行为效果。
+- Codex 项目 lifecycle 只允许 `.codex/hooks.json` 注册单一只读 `SessionStart` advisory；项目与当前 hook 定义都需显式信任，禁止用 bypass trust、其它事件、prompt/transcript/环境读取、网络、写入或阻断扩权。配置与单测只算 component evidence，新任务真实触发前 behavior 保持 unknown。
+- JSONUtils AI 基建必须入库并以项目为 source of truth；仓库不是 plugin，只有 `plugins/<name>/` 是插件包。`.agents/plugins/marketplace.json` 不会自动安装：先运行 `manage-project-plugins.mjs --check`，明确同意后才 `--apply`；不得覆盖个人状态，安装也不证明 task/runtime/signer trust。
 
 ---
 
@@ -289,7 +293,7 @@ docker-compose up -d
 ### 前端 `.env.local`
 
 ```env
-# Gemini AI API Configuration
+# Gemini AI API 配置
 VITE_GEMINI_API_KEY=your_api_key_here
 VITE_GEMINI_MODEL=gemini-2.0-flash-exp
 ```

@@ -1,4 +1,6 @@
 import { getDetailedErrorMessage, isAbortError } from './errors';
+import { writeTextToFileHandleQueued } from './browserFileHandleWrite';
+import { triggerTextDownload } from './browserFileSave';
 import { showError, showSuccess } from './toast';
 
 interface PreviewSaveFileInput {
@@ -15,35 +17,38 @@ export const savePreviewTextAsJsonFile = async ({
     return false;
   }
 
+  let usedDownloadFallback = false;
+
   try {
-    if (window.showSaveFilePicker) {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: 'preview_result.json',
-        types: [{
-          description: 'JSON File',
-          accept: { 'application/json': ['.json'] },
-        }],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(previewText);
-      await writable.close();
+    if (typeof window.showSaveFilePicker === 'function') {
+      let handle: FileSystemFileHandle;
+      try {
+        handle = await window.showSaveFilePicker({
+          suggestedName: 'preview_result.json',
+          types: [{
+            description: 'JSON 文件',
+            accept: { 'application/json': ['.json'] },
+          }],
+        });
+      } catch (error) {
+        if (isAbortError(error)) return false;
+        throw error;
+      }
+
+      await writeTextToFileHandleQueued(handle, previewText);
     } else {
       // 兼容不支持 File System Access API 的浏览器。
-      const blob = new Blob([previewText], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'preview_result.json';
-      link.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      triggerTextDownload({
+        text: previewText,
+        fileName: 'preview_result.json',
+        mimeType: 'application/json',
+      });
+      usedDownloadFallback = true;
     }
-    showSuccess('已保存预览结果');
+    showSuccess(usedDownloadFallback ? '已开始下载预览结果' : '已保存预览结果');
     return true;
   } catch (error) {
-    if (isAbortError(error)) {
-      return false;
-    }
-    console.error('Failed to save preview:', error);
+    console.error('保存预览结果失败:', error);
     showError(getDetailedErrorMessage(error, '保存预览结果失败'));
     return false;
   }

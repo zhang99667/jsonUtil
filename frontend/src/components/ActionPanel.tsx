@@ -91,15 +91,11 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       triggerFeatureFirstUse(featureId);
     }
 
-    // 调用原始的 onModeChange
     onModeChange(mode);
   };
 
-  // 自动触发发现式引导 - 已移除 (根据用户反馈，仅在点击时触发或在主引导中介绍)
-  // 之前的 IntersectionObserver 逻辑已删除，恢复为被动触发模式
   return (
     <div className="h-full bg-editor-bg border-r border-editor-bg relative group/sidebar">
-      {/* ... (container and top bar unchanged) ... */}
       <div
         id="action-panel-content"
         ref={containerRef}

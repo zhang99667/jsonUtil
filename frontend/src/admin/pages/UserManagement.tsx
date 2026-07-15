@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-    Form, Input, Button, Select, message, Card as AntCard, Row, Col, Typography,
+    Form, Input, Button, Select, message, Card as AntCard, Typography,
     Table, Modal, Popconfirm, Switch, Tag, Space
 } from 'antd';
 import {
@@ -11,9 +11,10 @@ import {
 import type { CardProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-    addUser, getUserList, updateUser, deleteUser, toggleUserEnabled,
+    addUser, getUserList, updateUser, deleteUser,
     UserRecord, AddUserParams, UpdateUserParams
 } from '../services/user';
+import { AdminListQuery, resolveAvailableListQuery } from '../utils/listQuery';
 
 const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
 const { Title } = Typography;
@@ -44,8 +45,6 @@ const UserManagement: React.FC = () => {
         pageSize: DEFAULT_PAGE_SIZE,
         total: 0,
     });
-    /** 搜索关键词 */
-    const [searchKeyword, setSearchKeyword] = useState('');
     /** 编辑弹窗是否可见 */
     const [editModalVisible, setEditModalVisible] = useState(false);
     /** 当前编辑的用户 */
@@ -55,22 +54,63 @@ const UserManagement: React.FC = () => {
     /** 添加用户折叠状态 */
     const [showAddForm, setShowAddForm] = useState(false);
     const userListRequestIdRef = useRef(0);
+    const latestUserListQueryRef = useRef<AdminListQuery>({
+        page: 1,
+        pageSize: DEFAULT_PAGE_SIZE,
+        keyword: '',
+    });
+    const userListMountedRef = useRef(false);
+    const pendingEnabledUserIdsRef = useRef(new Set<number>());
+    const [pendingEnabledUserIds, setPendingEnabledUserIds] = useState<ReadonlySet<number>>(() => new Set());
 
     // ==================== 数据获取 ====================
 
     /**
      * 获取用户列表
      */
-    const fetchUserList = useCallback(async (page = 1, size = DEFAULT_PAGE_SIZE, keyword = searchKeyword) => {
+    const fetchUserList = useCallback(async (query: AdminListQuery) => {
+        if (!userListMountedRef.current) {
+            return;
+        }
+
+        latestUserListQueryRef.current = query;
         const requestId = ++userListRequestIdRef.current;
+        const isCurrentRequest = () => (
+            userListMountedRef.current && requestId === userListRequestIdRef.current
+        );
         setLoading(true);
         try {
-            // 后端分页从 0 开始，前端从 1 开始
-            const result = await getUserList(page - 1, size, keyword || undefined);
-            // 只允许最新一次列表请求更新页面，避免快速搜索/翻页时旧响应回写。
-            if (requestId !== userListRequestIdRef.current) {
-                return;
+            let resolvedQuery = query;
+            let result: Awaited<ReturnType<typeof getUserList>>;
+            while (true) {
+                // 后端分页从 0 开始，前端从 1 开始。
+                result = await getUserList(
+                    resolvedQuery.page - 1,
+                    resolvedQuery.pageSize,
+                    resolvedQuery.keyword || undefined,
+                );
+                // 只允许最新一次列表请求更新页面，避免快速搜索/翻页时旧响应回写。
+                if (!isCurrentRequest()) {
+                    return;
+                }
+
+                const availableQuery = resolveAvailableListQuery(
+                    resolvedQuery,
+                    result.totalElements,
+                );
+                if (availableQuery === resolvedQuery) {
+                    break;
+                }
+                // 页码只会向第一页收敛；并发删除继续缩小总数时会再次校正。
+                resolvedQuery = availableQuery;
+                latestUserListQueryRef.current = resolvedQuery;
             }
+
+            latestUserListQueryRef.current = {
+                ...resolvedQuery,
+                page: result.number + 1,
+                pageSize: result.size,
+            };
             setUserList(result.content);
             setPagination({
                 current: result.number + 1,
@@ -78,24 +118,34 @@ const UserManagement: React.FC = () => {
                 total: result.totalElements,
             });
         } catch {
-            if (requestId !== userListRequestIdRef.current) {
+            if (!isCurrentRequest()) {
                 return;
             }
-            // 错误已由 request 拦截器统一处理
+            // 错误已由请求拦截器统一处理
         } finally {
-            if (requestId === userListRequestIdRef.current) {
+            if (isCurrentRequest()) {
                 setLoading(false);
             }
         }
-    }, [searchKeyword]);
+    }, []);
+
+    /** 使用操作完成时的最新查询条件刷新列表 */
+    const refreshLatestUserList = useCallback((
+        updateQuery?: (query: AdminListQuery) => AdminListQuery,
+    ) => {
+        const latestQuery = latestUserListQueryRef.current;
+        return fetchUserList(updateQuery ? updateQuery(latestQuery) : latestQuery);
+    }, [fetchUserList]);
 
     /** 组件挂载时加载数据 */
     useEffect(() => {
-        fetchUserList();
+        userListMountedRef.current = true;
+        void fetchUserList(latestUserListQueryRef.current);
         return () => {
+            userListMountedRef.current = false;
             userListRequestIdRef.current += 1;
         };
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [fetchUserList]);
 
     // ==================== 事件处理 ====================
 
@@ -108,8 +158,8 @@ const UserManagement: React.FC = () => {
             message.success('用户添加成功');
             addForm.resetFields();
             setShowAddForm(false);
-            // 刷新列表
-            fetchUserList(1);
+            // 新用户可能改变排序首项，保留最新搜索条件并回到第一页。
+            void refreshLatestUserList((query) => ({ ...query, page: 1 }));
         } catch {
             // 错误已由拦截器处理
         }
@@ -119,15 +169,22 @@ const UserManagement: React.FC = () => {
      * 搜索用户
      */
     const handleSearch = (value: string) => {
-        setSearchKeyword(value);
-        fetchUserList(1, pagination.pageSize, value);
+        void fetchUserList({
+            ...latestUserListQueryRef.current,
+            page: 1,
+            keyword: value,
+        });
     };
 
     /**
      * 表格分页变化
      */
     const handleTableChange = (page: number, pageSize: number) => {
-        fetchUserList(page, pageSize);
+        void fetchUserList({
+            ...latestUserListQueryRef.current,
+            page,
+            pageSize,
+        });
     };
 
     /**
@@ -167,8 +224,7 @@ const UserManagement: React.FC = () => {
             setEditModalVisible(false);
             setEditingUser(null);
             editForm.resetFields();
-            // 刷新当前页
-            fetchUserList(pagination.current, pagination.pageSize);
+            void refreshLatestUserList();
         } catch {
             // 表单验证失败或接口错误
         } finally {
@@ -183,27 +239,32 @@ const UserManagement: React.FC = () => {
         try {
             await deleteUser(id);
             message.success('用户已删除');
-            // 如果删除后当前页为空，回退到上一页
-            const newTotal = pagination.total - 1;
-            const maxPage = Math.max(1, Math.ceil(newTotal / pagination.pageSize));
-            const targetPage = Math.min(pagination.current, maxPage);
-            fetchUserList(targetPage, pagination.pageSize);
+            // 服务端最新总数会在列表请求中决定是否回退末页。
+            void refreshLatestUserList();
         } catch {
             // 错误已由拦截器处理
         }
     };
 
     /**
-     * 切换用户启用/禁用状态
+     * 设置用户启用/禁用状态
      */
-    const handleToggleEnabled = async (record: UserRecord) => {
+    const handleSetEnabled = async (id: number, enabled: boolean) => {
+        if (pendingEnabledUserIdsRef.current.has(id)) return;
+
+        pendingEnabledUserIdsRef.current.add(id);
+        setPendingEnabledUserIds(new Set(pendingEnabledUserIdsRef.current));
         try {
-            await toggleUserEnabled(record.id);
-            message.success(record.enabled ? '用户已禁用' : '用户已启用');
-            // 刷新当前页
-            fetchUserList(pagination.current, pagination.pageSize);
+            await updateUser(id, { enabled });
+            message.success(enabled ? '用户已启用' : '用户已禁用');
+            await refreshLatestUserList();
         } catch {
             // 错误已由拦截器处理
+        } finally {
+            pendingEnabledUserIdsRef.current.delete(id);
+            if (userListMountedRef.current) {
+                setPendingEnabledUserIds(new Set(pendingEnabledUserIdsRef.current));
+            }
         }
     };
 
@@ -255,7 +316,8 @@ const UserManagement: React.FC = () => {
                     checked={enabled}
                     checkedChildren="启用"
                     unCheckedChildren="禁用"
-                    onChange={() => handleToggleEnabled(record)}
+                    loading={pendingEnabledUserIds.has(record.id)}
+                    onChange={(nextEnabled) => void handleSetEnabled(record.id, nextEnabled)}
                 />
             ),
         },
@@ -344,7 +406,7 @@ const UserManagement: React.FC = () => {
                 <div style={{ display: 'flex', gap: 8 }}>
                     <Button
                         icon={<ReloadOutlined />}
-                        onClick={() => fetchUserList(pagination.current, pagination.pageSize)}
+                        onClick={() => { void refreshLatestUserList(); }}
                     >
                         刷新
                     </Button>

@@ -2,7 +2,10 @@ import { vi } from 'vitest';
 import { TransformMode } from '../types';
 import { useAppPreviewOutputSync } from './useAppPreviewOutputSync';
 import { executeAppPreviewOutputSync } from '../utils/appPreviewOutputSyncRunner';
-import { validateJsonForEditor } from '../utils/jsonValidation';
+import {
+  type ValidateJsonMaybeAsync,
+  validateJsonForEditor,
+} from '../utils/jsonValidation';
 import { validResult } from './useAppPreviewOutputSyncTestData';
 
 const mocks = vi.hoisted(() => ({
@@ -59,7 +62,10 @@ export const resetPreviewOutputSyncTestFixture = () => {
   vi.mocked(executeAppPreviewOutputSync).mockResolvedValue(mocks.syncedResult);
 };
 
-export const useHookInput = (validateJsonMaybeAsync = vi.fn(async () => validResult), previewText = '') => {
+export const useHookInput = (
+  validateJsonMaybeAsync: ValidateJsonMaybeAsync = vi.fn(async () => validResult),
+  previewText = ''
+) => {
   const refs = createHookRefs();
   const callbacks = createHookCallbacks();
 

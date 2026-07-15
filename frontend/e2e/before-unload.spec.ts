@@ -117,6 +117,7 @@ test('关闭未保存标签使用应用内确认', async ({ page }) => {
 
   const confirmDialog = page.locator('[data-tour="confirm-dialog"]');
   await expect(confirmDialog).toBeVisible();
+  await expect(confirmDialog).toHaveJSProperty('open', true);
   await expect(confirmDialog).toContainText('关闭未保存标签');
   await expect(confirmDialog).toContainText('Untitled-1');
   await expect(page.getByRole('button', { name: '继续编辑' })).toBeFocused();
@@ -146,6 +147,8 @@ test('关闭未保存标签使用应用内确认', async ({ page }) => {
 test('无文件草稿打开文件时保留原草稿', async ({ page }) => {
   await installOpenPickerMock(page, 'opened.json', '{"opened":1}');
   await fillSourceEditor(page, '{"draft":"open"}');
+  await page.locator('[data-tour="deep-format-btn"]').click();
+  await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
 
   await page.locator('[data-tour="open-file-button"]').click();
@@ -157,8 +160,102 @@ test('无文件草稿打开文件时保留原草稿', async ({ page }) => {
 
   await editorTabs.getByText('Untitled-1').click();
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"open"');
+  await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(editorTabs.getByRole('button', { name: /^关闭未保存标签 / })).toHaveCount(1);
   await expect.poll(() => isBeforeUnloadPrevented(page)).toBe(true);
+});
+
+test('后发打开请求先完成时旧请求不抢回活动内容', async ({ page }) => {
+  await page.evaluate(() => {
+    let requestCount = 0;
+    let finishSlowRead: ((file: File) => void) | undefined;
+    Object.defineProperty(window, '__slowOpenReady', {
+      configurable: true,
+      get: () => Boolean(finishSlowRead),
+    });
+    Object.defineProperty(window, '__finishSlowOpen', {
+      configurable: true,
+      value: () => finishSlowRead?.(new File(['{"slow":1}'], 'slow.json', {
+        type: 'application/json',
+      })),
+    });
+    Object.defineProperty(window, 'showOpenFilePicker', {
+      configurable: true,
+      value: async () => {
+        requestCount += 1;
+        if (requestCount === 1) {
+          return [{
+            getFile: () => new Promise<File>(resolve => {
+              finishSlowRead = resolve;
+            }),
+          }];
+        }
+        return [{
+          getFile: async () => new File(['{"fast":2}'], 'fast.json', {
+            type: 'application/json',
+          }),
+        }];
+      },
+    });
+  });
+
+  const openButton = page.locator('[data-tour="open-file-button"]');
+  await openButton.click();
+  await expect.poll(() => page.evaluate(() => (
+    (window as unknown as { __slowOpenReady: boolean }).__slowOpenReady
+  ))).toBe(true);
+  await openButton.click();
+
+  const editorTabs = page.locator('[data-tour="editor-tabs"]');
+  await expect(editorTabs.getByText('fast.json')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"fast":2');
+  await page.evaluate(() => {
+    (window as unknown as { __finishSlowOpen: () => void }).__finishSlowOpen();
+  });
+
+  await expect(editorTabs.getByText('slow.json')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"fast":2');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).not.toContainText('"slow":1');
+});
+
+test('文件读取期间切换模式时保留当前草稿和模式', async ({ page }) => {
+  await page.evaluate(() => {
+    let finishRead: ((file: File) => void) | undefined;
+    Object.defineProperty(window, '__modeOpenReady', {
+      configurable: true,
+      get: () => Boolean(finishRead),
+    });
+    Object.defineProperty(window, '__finishModeOpen', {
+      configurable: true,
+      value: () => finishRead?.(new File(['{"opened":1}'], 'mode-opened.json', {
+        type: 'application/json',
+      })),
+    });
+    Object.defineProperty(window, 'showOpenFilePicker', {
+      configurable: true,
+      value: async () => [{
+        getFile: () => new Promise<File>(resolve => {
+          finishRead = resolve;
+        }),
+      }],
+    });
+  });
+  await fillSourceEditor(page, '{"draft":"mode-change"}');
+
+  await page.locator('[data-tour="open-file-button"]').click();
+  await expect.poll(() => page.evaluate(() => (
+    (window as unknown as { __modeOpenReady: boolean }).__modeOpenReady
+  ))).toBe(true);
+  await page.locator('[data-tour="deep-format-btn"]').click();
+  await page.evaluate(() => {
+    (window as unknown as { __finishModeOpen: () => void }).__finishModeOpen();
+  });
+
+  const editorTabs = page.locator('[data-tour="editor-tabs"]');
+  await expect(editorTabs.getByText('Untitled-1')).toBeVisible();
+  await expect(editorTabs.getByText('mode-opened.json')).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"draft":"mode-change"');
+  await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('无文件草稿批量打开文件时保留原草稿', async ({ page }) => {

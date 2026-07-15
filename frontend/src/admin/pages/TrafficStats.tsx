@@ -1,5 +1,5 @@
-import React, { Suspense, lazy, useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Row, Col, Card as AntCard, Spin, Table, Segmented, Progress, Tooltip, Typography, Tag } from 'antd';
+import React, { Suspense, lazy, useState, useCallback, useMemo } from 'react';
+import { Row, Col, Card as AntCard, Spin, Table, Segmented, Progress, Tooltip, Typography, Tag, theme } from 'antd';
 import {
     EyeOutlined,
     TeamOutlined,
@@ -19,37 +19,24 @@ import {
 const { Title } = Typography;
 import type { CardProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import {
-    getTrafficOverview,
-    getTrafficTrend,
-    getTopIps,
-    getTopPaths,
-    getHourlyStats,
-    getGeoDistribution,
-    getDeviceDistribution,
-    getBrowserDistribution,
-    getRefererDistribution,
-    getSessionDuration,
-    getToolEventStats,
-    TrafficOverview,
-    TrendItem,
+import { DistributionList, DistributionListCard } from '../components/DistributionListCard';
+import { useTrafficStatsData } from '../hooks/useTrafficStatsData';
+import type {
     TopIpItem,
     TopPathItem,
-    HourlyItem,
     GeoStatsItem,
-    DeviceStatsItem,
-    RefererStatsItem,
-    SessionStatsItem,
-    ToolEventStats,
     ToolEventGroupItem,
 } from '../services/traffic';
 import {
     buildToolEventInsights,
     buildToolEventWeeklyReport,
+    formatAdminCount,
     type ToolEventWeeklyTone,
 } from '../utils/toolEventInsights';
+import { chartThemeColors, gradients } from '../styles/theme';
 
 const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
+const RANK_BADGE_GRADIENTS = [gradients.blue, gradients.violet, gradients.emerald] as const;
 
 const LazyColumn = lazy(async () => {
     const { Column } = await import('@ant-design/charts');
@@ -72,104 +59,24 @@ const ChartFallback: React.FC<{ height: number }> = ({ height }) => (
 
 const TrafficStats: React.FC = () => {
     const [days, setDays] = useState<number>(1); // 默认今日
-    const [loading, setLoading] = useState(true);
-    const [overview, setOverview] = useState<TrafficOverview | null>(null);
-    const [trend, setTrend] = useState<TrendItem[]>([]);
-    const [topIps, setTopIps] = useState<TopIpItem[]>([]);
-    const [topPaths, setTopPaths] = useState<TopPathItem[]>([]);
-    const [hourlyStats, setHourlyStats] = useState<HourlyItem[]>([]);
-    const [geoStats, setGeoStats] = useState<GeoStatsItem[]>([]);
-    const [deviceStats, setDeviceStats] = useState<DeviceStatsItem[]>([]);
-    const [browserStats, setBrowserStats] = useState<DeviceStatsItem[]>([]);
-    const [refererStats, setRefererStats] = useState<RefererStatsItem[]>([]);
-    const [sessionStats, setSessionStats] = useState<SessionStatsItem[]>([]);
-    const [toolEventStats, setToolEventStats] = useState<ToolEventStats | null>(null);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const requestIdRef = useRef(0);
+    const { token } = theme.useToken();
+    const {
+        loading,
+        overview,
+        trend,
+        topIps,
+        topPaths,
+        hourlyStats,
+        geoStats,
+        deviceStats,
+        browserStats,
+        refererStats,
+        sessionStats,
+        toolEventStats,
+        failedSections,
+    } = useTrafficStatsData(days);
 
     const isToday = days === 1;
-
-    // 统一图表配色
-    const themeColors = {
-        primary: '#5B6EF5',
-        secondary: '#7C5BF5',
-        success: '#10B981',
-        warning: '#F59E0B',
-        danger: '#EF4444',
-        info: '#8B9CF7',
-        muted: '#9CA3BE',
-    };
-
-    const fetchAllData = useCallback(async () => {
-        const requestId = ++requestIdRef.current;
-        setLoading(true);
-        try {
-            const [
-                overviewData,
-                trendData,
-                ipsData,
-                pathsData,
-                hourlyData,
-                geoData,
-                deviceData,
-                browserData,
-                refererData,
-                sessionData,
-                toolEventData,
-            ] = await Promise.all([
-                getTrafficOverview(days),
-                getTrafficTrend(days),
-                getTopIps(days, 10),
-                getTopPaths(days, 10),
-                getHourlyStats(days),
-                getGeoDistribution(days, 15),
-                getDeviceDistribution(days, 10),
-                getBrowserDistribution(days, 10),
-                getRefererDistribution(days, 10),
-                getSessionDuration(days),
-                getToolEventStats(days, 10),
-            ]);
-            // 只允许最新一次请求更新页面，避免快速切换统计范围时旧响应回写。
-            if (requestId !== requestIdRef.current) {
-                return;
-            }
-            setOverview(overviewData);
-            setTrend(trendData);
-            setTopIps(ipsData);
-            setTopPaths(pathsData);
-            setHourlyStats(hourlyData);
-            setGeoStats(geoData);
-            setDeviceStats(deviceData);
-            setBrowserStats(browserData);
-            setRefererStats(refererData);
-            setSessionStats(sessionData);
-            setToolEventStats(toolEventData);
-        } catch (error) {
-            if (requestId !== requestIdRef.current) {
-                return;
-            }
-            console.error('Failed to fetch traffic data:', error);
-        } finally {
-            if (requestId === requestIdRef.current) {
-                setLoading(false);
-            }
-        }
-    }, [days]);
-
-    useEffect(() => {
-        fetchAllData();
-        // 今日模式：每5分钟自动刷新
-        if (isToday) {
-            intervalRef.current = setInterval(fetchAllData, 5 * 60 * 1000);
-        }
-        return () => {
-            requestIdRef.current += 1;
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
-            }
-        };
-    }, [fetchAllData, isToday]);
 
     /**
      * 渲染排名徽章
@@ -177,46 +84,24 @@ const TrafficStats: React.FC = () => {
      */
     const renderRankBadge = (index: number) => {
         const rank = index + 1;
-        if (index === 0) {
-            return (
-                <span style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 20, height: 20, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #5B6EF5, #8B9CF7)',
-                    color: '#fff', fontSize: 11, fontWeight: 600,
-                }}>
-                    {rank}
-                </span>
-            );
+        const background = RANK_BADGE_GRADIENTS[index];
+        if (!background) {
+            return <span style={{ color: chartThemeColors.muted, fontSize: 13 }}>{rank}</span>;
         }
-        if (index === 1) {
-            return (
-                <span style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 20, height: 20, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #7C5BF5, #A78BFA)',
-                    color: '#fff', fontSize: 11, fontWeight: 600,
-                }}>
-                    {rank}
-                </span>
-            );
-        }
-        if (index === 2) {
-            return (
-                <span style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 20, height: 20, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #10B981, #6EE7B7)',
-                    color: '#fff', fontSize: 11, fontWeight: 600,
-                }}>
-                    {rank}
-                </span>
-            );
-        }
-        return <span style={{ color: '#9CA3BE', fontSize: 13 }}>{rank}</span>;
+
+        return (
+            <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 20, height: 20, borderRadius: '50%',
+                background,
+                color: token.colorTextLightSolid, fontSize: 11, fontWeight: 600,
+            }}>
+                {rank}
+            </span>
+        );
     };
 
-    // IP排行表格列配置
+    // 访问地址排行表格列配置
     const ipColumns: ColumnsType<TopIpItem> = [
         {
             title: '排名',
@@ -248,7 +133,7 @@ const TrafficStats: React.FC = () => {
             key: 'count',
             width: 100,
             align: 'right',
-            render: (count: number) => count.toLocaleString(),
+            render: (count: number) => formatAdminCount(count),
         },
     ];
 
@@ -277,7 +162,7 @@ const TrafficStats: React.FC = () => {
             key: 'count',
             width: 100,
             align: 'right',
-            render: (count: number) => count.toLocaleString(),
+            render: (count: number) => formatAdminCount(count),
         },
     ];
 
@@ -295,12 +180,6 @@ const TrafficStats: React.FC = () => {
         const item = hourlyStats.find(h => h.hour === hour);
         return { hour: `${hour}:00`, count: item?.count || 0 };
     }), [hourlyStats]);
-
-    // 地区分布条形图数据（取前10）
-    const geoBarData = useMemo(() => geoStats.slice(0, 10).map(item => ({
-        region: item.region,
-        count: item.count,
-    })).reverse(), [geoStats]); // 反转让最高的在上面
 
     const toolEventLabelMap = useMemo<Record<string, string>>(() => ({
         FORMAT: '格式化',
@@ -368,10 +247,10 @@ const TrafficStats: React.FC = () => {
     );
 
     const getWeeklyToneColor = (tone: ToolEventWeeklyTone): string => {
-        if (tone === 'success') return themeColors.success;
-        if (tone === 'warning') return themeColors.warning;
-        if (tone === 'danger') return themeColors.danger;
-        return themeColors.primary;
+        if (tone === 'success') return chartThemeColors.success;
+        if (tone === 'warning') return chartThemeColors.warning;
+        if (tone === 'danger') return chartThemeColors.danger;
+        return chartThemeColors.primary;
     };
 
     const getWeeklyToneBackground = (tone: ToolEventWeeklyTone): string => {
@@ -382,34 +261,20 @@ const TrafficStats: React.FC = () => {
     };
 
     const renderToolEventList = (items: ToolEventGroupItem[], color: string) => {
-        if (items.length === 0) {
-            return (
-                <div style={{ textAlign: 'center', color: '#9CA3BE', padding: 24 }}>
-                    暂无工具事件数据
-                </div>
-            );
-        }
-
         return (
-            <div style={{ display: 'grid', gap: 12 }}>
-                {items.map(item => (
-                    <div key={item.label}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
-                            <span style={{ color: '#1A1D2E', fontSize: 13 }}>{getToolEventLabel(item.label)}</span>
-                            <span style={{ color: '#9CA3BE', fontSize: 13 }}>
-                                {item.count.toLocaleString()} ({item.percentage}%)
-                            </span>
-                        </div>
-                        <Progress
-                            percent={item.percentage}
-                            showInfo={false}
-                            strokeColor={color}
-                            trailColor="#F0F1F5"
-                            size="small"
-                        />
-                    </div>
-                ))}
-            </div>
+            <DistributionList
+                items={items.map(item => ({
+                    key: item.label,
+                    label: getToolEventLabel(item.label),
+                    count: item.count,
+                    percentage: item.percentage,
+                }))}
+                strokeColor={color}
+                emptyText="暂无工具事件数据"
+                itemGap={12}
+                labelGap={12}
+                emptyPadding={24}
+            />
         );
     };
 
@@ -451,7 +316,7 @@ const TrafficStats: React.FC = () => {
             key: 'count',
             width: 100,
             align: 'right',
-            render: (count: number) => count.toLocaleString(),
+            render: (count: number) => formatAdminCount(count),
         },
         {
             title: '占比',
@@ -497,6 +362,11 @@ const TrafficStats: React.FC = () => {
                             <Tag color="purple">实时 · 5分钟刷新</Tag>
                         </>
                     )}
+                    {failedSections.length > 0 && (
+                        <Tooltip title={`${failedSections.length} 项数据加载失败，已保留其他成功结果`}>
+                            <Tag color="orange" icon={<WarningOutlined />}>部分数据不可用</Tag>
+                        </Tooltip>
+                    )}
                 </div>
                 <Segmented
                     options={[
@@ -535,7 +405,7 @@ const TrafficStats: React.FC = () => {
                                 {isToday ? '今日浏览量 (PV)' : `${days}天总浏览量`}
                             </div>
                             <div style={{ color: '#1A1D2E', fontSize: 26, fontWeight: 600, lineHeight: 1.2 }}>
-                                {(isToday ? (overview?.todayPv || 0) : (overview?.totalPv || 0)).toLocaleString()}
+                                {formatAdminCount(isToday ? (overview?.todayPv || 0) : (overview?.totalPv || 0))}
                             </div>
                         </div>
                     </div>
@@ -564,7 +434,7 @@ const TrafficStats: React.FC = () => {
                                 {isToday ? '今日访客数 (UV)' : `${days}天总访客数`}
                             </div>
                             <div style={{ color: '#1A1D2E', fontSize: 26, fontWeight: 600, lineHeight: 1.2 }}>
-                                {(isToday ? (overview?.todayUv || 0) : (overview?.totalUv || 0)).toLocaleString()}
+                                {formatAdminCount(isToday ? (overview?.todayUv || 0) : (overview?.totalUv || 0))}
                             </div>
                         </div>
                     </div>
@@ -595,7 +465,7 @@ const TrafficStats: React.FC = () => {
                             <div style={{ color: '#1A1D2E', fontSize: 26, fontWeight: 600, lineHeight: 1.2 }}>
                                 {isToday
                                     ? (overview?.todayUv ? (overview.todayPv / overview.todayUv).toFixed(1) : '0')
-                                    : (overview?.avgDailyPv || 0).toLocaleString()
+                                    : formatAdminCount(overview?.avgDailyPv || 0)
                                 }
                                 {isToday && <span style={{ color: '#9CA3BE', fontSize: 14, fontWeight: 400, marginLeft: 2 }}>页</span>}
                             </div>
@@ -626,7 +496,7 @@ const TrafficStats: React.FC = () => {
                                 {isToday ? '独立IP数' : '日均UV'}
                             </div>
                             <div style={{ color: '#1A1D2E', fontSize: 26, fontWeight: 600, lineHeight: 1.2 }}>
-                                {(isToday ? topIps.length : (overview?.avgDailyUv || 0)).toLocaleString()}
+                                {formatAdminCount(isToday ? topIps.length : (overview?.avgDailyUv || 0))}
                             </div>
                         </div>
                     </div>
@@ -635,7 +505,7 @@ const TrafficStats: React.FC = () => {
 
             {/* 工具使用洞察 */}
             <Card
-                title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><BarChartOutlined style={{ marginRight: 8, color: themeColors.success }} />工具使用洞察</span>}
+                title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><BarChartOutlined style={{ marginRight: 8, color: chartThemeColors.success }} />工具使用洞察</span>}
                 bordered={false}
                 style={{ marginTop: 16, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
             >
@@ -643,13 +513,13 @@ const TrafficStats: React.FC = () => {
                     <Col xs={24} md={6}>
                         <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 4 }}>工具事件</div>
                         <div style={{ color: '#1A1D2E', fontSize: 28, fontWeight: 600, lineHeight: 1.2 }}>
-                            {(toolEventStats?.totalEvents || 0).toLocaleString()}
+                            {formatAdminCount(toolEventStats?.totalEvents || 0)}
                         </div>
                     </Col>
                     <Col xs={24} md={6}>
                         <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 4 }}>失败事件</div>
                         <div style={{ color: toolEventStats?.failedEvents ? '#EF4444' : '#10B981', fontSize: 28, fontWeight: 600, lineHeight: 1.2 }}>
-                            {(toolEventStats?.failedEvents || 0).toLocaleString()}
+                            {formatAdminCount(toolEventStats?.failedEvents || 0)}
                         </div>
                     </Col>
                     <Col xs={24} md={6}>
@@ -665,7 +535,7 @@ const TrafficStats: React.FC = () => {
                         </div>
                         {toolEventInsights.topEventCount > 0 && (
                             <div style={{ color: '#9CA3BE', fontSize: 12, marginTop: 4 }}>
-                                {toolEventInsights.topEventCount.toLocaleString()} 次 · {toolEventInsights.topEventPercentage}%
+                                {formatAdminCount(toolEventInsights.topEventCount)} 次 · {toolEventInsights.topEventPercentage}%
                             </div>
                         )}
                     </Col>
@@ -683,7 +553,7 @@ const TrafficStats: React.FC = () => {
                                 {toolEventInsights.largeInputPercentage}%
                             </div>
                             <div style={{ color: '#9CA3BE', fontSize: 12 }}>
-                                {toolEventInsights.largeInputEvents.toLocaleString()} 次 · 50KB 以上
+                                {formatAdminCount(toolEventInsights.largeInputEvents)} 次 · 50KB 以上
                             </div>
                         </div>
                     </Col>
@@ -699,7 +569,7 @@ const TrafficStats: React.FC = () => {
                                 {toolEventInsights.slowPercentage}%
                             </div>
                             <div style={{ color: '#9CA3BE', fontSize: 12 }}>
-                                {toolEventInsights.slowEvents.toLocaleString()} 次 · 2 秒以上
+                                {formatAdminCount(toolEventInsights.slowEvents)} 次 · 2 秒以上
                             </div>
                         </div>
                     </Col>
@@ -712,7 +582,7 @@ const TrafficStats: React.FC = () => {
                             minHeight: 92,
                         }}>
                             <div style={{ color: '#5A607F', fontSize: 13, marginBottom: 8 }}>
-                                <WarningOutlined style={{ marginRight: 6, color: themeColors.warning }} />
+                                <WarningOutlined style={{ marginRight: 6, color: chartThemeColors.warning }} />
                                 建议动作
                             </div>
                             <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, lineHeight: 1.5 }}>
@@ -826,7 +696,7 @@ const TrafficStats: React.FC = () => {
                                             height: 18,
                                             borderRadius: '50%',
                                             background: 'rgba(91,110,245,0.12)',
-                                            color: themeColors.primary,
+                                            color: chartThemeColors.primary,
                                             fontSize: 11,
                                             fontWeight: 600,
                                             flexShrink: 0,
@@ -844,15 +714,15 @@ const TrafficStats: React.FC = () => {
                 <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
                     <Col xs={24} lg={8}>
                         <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>高频功能</div>
-                        {renderToolEventList(toolEventStats?.topEvents || [], themeColors.primary)}
+                        {renderToolEventList(toolEventStats?.topEvents || [], chartThemeColors.primary)}
                     </Col>
                     <Col xs={24} lg={8}>
                         <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>输入大小</div>
-                        {renderToolEventList(toolEventStats?.inputSizeDistribution || [], themeColors.info)}
+                        {renderToolEventList(toolEventStats?.inputSizeDistribution || [], chartThemeColors.info)}
                     </Col>
                     <Col xs={24} lg={8}>
                         <div style={{ color: '#1A1D2E', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>耗时分布</div>
-                        {renderToolEventList(toolEventStats?.durationDistribution || [], themeColors.warning)}
+                        {renderToolEventList(toolEventStats?.durationDistribution || [], chartThemeColors.warning)}
                     </Col>
                 </Row>
             </Card>
@@ -873,16 +743,16 @@ const TrafficStats: React.FC = () => {
                             group={true}
                             height={260}
                             columnWidthRatio={0.5}
-                            scale={{ color: { range: [themeColors.primary, themeColors.success] } }}
+                            scale={{ color: { range: [chartThemeColors.primary, chartThemeColors.success] } }}
                             style={{ radiusTopLeft: 4, radiusTopRight: 4 }}
                             axis={{
                                 x: { title: false, line: { style: { stroke: '#E8EAF2' } }, tick: { style: { stroke: '#E8EAF2' } } },
-                                y: { title: false, labelFormatter: (v: number) => v.toLocaleString(), grid: { line: { style: { stroke: '#F0F1F5', lineDash: [3, 3] } } } },
+                                y: { title: false, labelFormatter: formatAdminCount, grid: { line: { style: { stroke: '#F0F1F5', lineDash: [3, 3] } } } },
                             }}
                             legend={{ position: 'top-right', itemName: { style: { fill: '#5A607F' } } }}
                             tooltip={{
                                 title: (d: { date: string }) => d.date,
-                                items: [{ channel: 'y', valueFormatter: (v: number) => v.toLocaleString() }],
+                                items: [{ channel: 'y', valueFormatter: formatAdminCount }],
                             }}
                             interaction={{ elementHighlight: { background: true } }}
                         />
@@ -892,7 +762,7 @@ const TrafficStats: React.FC = () => {
 
             {/* 地区分布 - 只保留表格 */}
             <Card
-                title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><EnvironmentOutlined style={{ marginRight: 8, color: themeColors.primary }} />访客地区分布</span>}
+                title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><EnvironmentOutlined style={{ marginRight: 8, color: chartThemeColors.primary }} />访客地区分布</span>}
                 bordered={false}
                 style={{ marginTop: 16, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
             >
@@ -909,7 +779,7 @@ const TrafficStats: React.FC = () => {
             <Row gutter={16} style={{ marginTop: 16 }}>
                 <Col xs={24} lg={12}>
                     <Card
-                        title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><GlobalOutlined style={{ marginRight: 8, color: themeColors.primary }} />IP访问排行</span>}
+                        title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><GlobalOutlined style={{ marginRight: 8, color: chartThemeColors.primary }} />IP访问排行</span>}
                         bordered={false}
                         style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                     >
@@ -924,7 +794,7 @@ const TrafficStats: React.FC = () => {
                 </Col>
                 <Col xs={24} lg={12} style={{ marginTop: 16 }} className="lg:mt-0">
                     <Card
-                        title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><LinkOutlined style={{ marginRight: 8, color: themeColors.secondary }} />路径访问排行</span>}
+                        title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><LinkOutlined style={{ marginRight: 8, color: chartThemeColors.secondary }} />路径访问排行</span>}
                         bordered={false}
                         style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                     >
@@ -943,7 +813,7 @@ const TrafficStats: React.FC = () => {
             <Card
                 title={
                     <span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}>
-                        <ClockCircleOutlined style={{ marginRight: 8, color: themeColors.info }} />
+                        <ClockCircleOutlined style={{ marginRight: 8, color: chartThemeColors.info }} />
                         24小时访问分布
                         {isToday && (
                             <span style={{ fontWeight: 'normal', fontSize: 12, color: '#9CA3BE', marginLeft: 12 }}>
@@ -962,15 +832,15 @@ const TrafficStats: React.FC = () => {
                         yField="count"
                         height={220}
                         columnWidthRatio={0.5}
-                        color={(datum: { isCurrent: boolean }) => datum.isCurrent ? themeColors.primary : themeColors.info}
+                        color={(datum: { isCurrent: boolean }) => datum.isCurrent ? chartThemeColors.primary : chartThemeColors.info}
                         style={{ radiusTopLeft: 4, radiusTopRight: 4 }}
                         axis={{
                             x: { title: false, labelAutoRotate: false, line: { style: { stroke: '#E8EAF2' } } },
-                            y: { title: false, labelFormatter: (v: number) => v.toLocaleString(), grid: { line: { style: { stroke: '#F0F1F5', lineDash: [3, 3] } } } },
+                            y: { title: false, labelFormatter: formatAdminCount, grid: { line: { style: { stroke: '#F0F1F5', lineDash: [3, 3] } } } },
                         }}
                         tooltip={{
                             title: (d: { hour: string }) => `${d.hour} - ${parseInt(d.hour) + 1}:00`,
-                            items: [{ channel: 'y', name: '访问量', valueFormatter: (v: number) => v.toLocaleString() }],
+                            items: [{ channel: 'y', name: '访问量', valueFormatter: formatAdminCount }],
                         }}
                         interaction={{ elementHighlight: { background: true } }}
                     />
@@ -980,132 +850,80 @@ const TrafficStats: React.FC = () => {
             {/* 设备和浏览器分布 - 使用进度条列表，数据少时更清晰 */}
             <Row gutter={16} style={{ marginTop: 16 }}>
                 <Col xs={24} lg={12}>
-                    <Card
-                        title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><LaptopOutlined style={{ marginRight: 8, color: themeColors.primary }} />设备类型分布</span>}
-                        bordered={false}
-                        style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                    >
-                        {deviceStats.length > 0 ? (
-                            <div style={{ padding: '8px 0' }}>
-                                {deviceStats.map((item, index) => (
-                                    <div key={item.device} style={{ marginBottom: index < deviceStats.length - 1 ? 16 : 0 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                            <span style={{ color: '#1A1D2E', fontSize: 13 }}>{item.device || '未知'}</span>
-                                            <span style={{ color: '#9CA3BE', fontSize: 13 }}>{item.count.toLocaleString()} ({item.percentage}%)</span>
-                                        </div>
-                                        <Progress
-                                            percent={item.percentage}
-                                            showInfo={false}
-                                            strokeColor={themeColors.primary}
-                                            trailColor="#F0F1F5"
-                                            size="small"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div style={{ textAlign: 'center', color: '#9CA3BE', padding: 40 }}>
-                                暂无设备数据
-                            </div>
+                    <DistributionListCard
+                        title={(
+                            <span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}>
+                                <LaptopOutlined style={{ marginRight: 8, color: chartThemeColors.primary }} />
+                                设备类型分布
+                            </span>
                         )}
-                    </Card>
+                        items={deviceStats.map(item => ({
+                            key: item.device || '未知',
+                            label: item.device || '未知',
+                            count: item.count,
+                            percentage: item.percentage,
+                        }))}
+                        strokeColor={chartThemeColors.primary}
+                        emptyText={failedSections.includes('deviceStats') ? '设备数据暂不可用' : '暂无设备数据'}
+                    />
                 </Col>
                 <Col xs={24} lg={12} style={{ marginTop: 16 }} className="lg:mt-0">
-                    <Card
-                        title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><ChromeOutlined style={{ marginRight: 8, color: themeColors.secondary }} />浏览器分布</span>}
-                        bordered={false}
-                        style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                    >
-                        {browserStats.length > 0 ? (
-                            <div style={{ padding: '8px 0' }}>
-                                {browserStats.map((item, index) => (
-                                    <div key={item.browser} style={{ marginBottom: index < browserStats.length - 1 ? 16 : 0 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                            <span style={{ color: '#1A1D2E', fontSize: 13 }}>{item.browser || '未知'}</span>
-                                            <span style={{ color: '#9CA3BE', fontSize: 13 }}>{item.count.toLocaleString()} ({item.percentage}%)</span>
-                                        </div>
-                                        <Progress
-                                            percent={item.percentage}
-                                            showInfo={false}
-                                            strokeColor={themeColors.secondary}
-                                            trailColor="#F0F1F5"
-                                            size="small"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div style={{ textAlign: 'center', color: '#9CA3BE', padding: 40 }}>
-                                暂无浏览器数据
-                            </div>
+                    <DistributionListCard
+                        title={(
+                            <span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}>
+                                <ChromeOutlined style={{ marginRight: 8, color: chartThemeColors.secondary }} />
+                                浏览器分布
+                            </span>
                         )}
-                    </Card>
+                        items={browserStats.map(item => ({
+                            key: item.browser || '未知',
+                            label: item.browser || '未知',
+                            count: item.count,
+                            percentage: item.percentage,
+                        }))}
+                        strokeColor={chartThemeColors.secondary}
+                        emptyText={failedSections.includes('browserStats') ? '浏览器数据暂不可用' : '暂无浏览器数据'}
+                    />
                 </Col>
             </Row>
 
             {/* 来源统计和停留时长 - 使用进度条列表 */}
             <Row gutter={16} style={{ marginTop: 16 }}>
                 <Col xs={24} lg={12}>
-                    <Card
-                        title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><ShareAltOutlined style={{ marginRight: 8, color: themeColors.info }} />访问来源分布</span>}
-                        bordered={false}
-                        style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                    >
-                        {refererStats.length > 0 ? (
-                            <div style={{ padding: '8px 0' }}>
-                                {refererStats.map((item, index) => (
-                                    <div key={item.source} style={{ marginBottom: index < refererStats.length - 1 ? 16 : 0 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                            <span style={{ color: '#1A1D2E', fontSize: 13 }}>{item.source}</span>
-                                            <span style={{ color: '#9CA3BE', fontSize: 13 }}>{item.count.toLocaleString()} ({item.percentage}%)</span>
-                                        </div>
-                                        <Progress
-                                            percent={item.percentage}
-                                            showInfo={false}
-                                            strokeColor={themeColors.info}
-                                            trailColor="#F0F1F5"
-                                            size="small"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div style={{ textAlign: 'center', color: '#9CA3BE', padding: 40 }}>
-                                暂无来源数据
-                            </div>
+                    <DistributionListCard
+                        title={(
+                            <span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}>
+                                <ShareAltOutlined style={{ marginRight: 8, color: chartThemeColors.info }} />
+                                访问来源分布
+                            </span>
                         )}
-                    </Card>
+                        items={refererStats.map(item => ({
+                            key: item.source,
+                            label: item.source,
+                            count: item.count,
+                            percentage: item.percentage,
+                        }))}
+                        strokeColor={chartThemeColors.info}
+                        emptyText={failedSections.includes('refererStats') ? '来源数据暂不可用' : '暂无来源数据'}
+                    />
                 </Col>
                 <Col xs={24} lg={12} style={{ marginTop: 16 }} className="lg:mt-0">
-                    <Card
-                        title={<span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}><FieldTimeOutlined style={{ marginRight: 8, color: themeColors.warning }} />停留时长分布</span>}
-                        bordered={false}
-                        style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                    >
-                        {sessionStats.length > 0 ? (
-                            <div style={{ padding: '8px 0' }}>
-                                {sessionStats.map((item, index) => (
-                                    <div key={item.durationRange} style={{ marginBottom: index < sessionStats.length - 1 ? 16 : 0 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                            <span style={{ color: '#1A1D2E', fontSize: 13 }}>{item.durationRange}</span>
-                                            <span style={{ color: '#9CA3BE', fontSize: 13 }}>{item.count.toLocaleString()} ({item.percentage}%)</span>
-                                        </div>
-                                        <Progress
-                                            percent={item.percentage}
-                                            showInfo={false}
-                                            strokeColor={themeColors.warning}
-                                            trailColor="#F0F1F5"
-                                            size="small"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div style={{ textAlign: 'center', color: '#9CA3BE', padding: 40 }}>
-                                暂无停留数据
-                            </div>
+                    <DistributionListCard
+                        title={(
+                            <span style={{ fontSize: 15, fontWeight: 600, color: '#1A1D2E' }}>
+                                <FieldTimeOutlined style={{ marginRight: 8, color: chartThemeColors.warning }} />
+                                停留时长分布
+                            </span>
                         )}
-                    </Card>
+                        items={sessionStats.map(item => ({
+                            key: item.durationRange,
+                            label: item.durationRange,
+                            count: item.count,
+                            percentage: item.percentage,
+                        }))}
+                        strokeColor={chartThemeColors.warning}
+                        emptyText={failedSections.includes('sessionStats') ? '停留数据暂不可用' : '暂无停留数据'}
+                    />
                 </Col>
             </Row>
         </div>

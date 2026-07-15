@@ -1,11 +1,13 @@
 export type ToolEventStatus = 'success' | 'error' | 'skipped' | 'cancelled';
+export type ToolInputSizeBucket = 'empty' | 'lt_10kb' | '10_50kb' | '50_250kb' | '250kb_1mb' | 'gt_1mb' | 'unknown';
+export type ToolDurationBucket = 'instant' | 'lt_100ms' | '100_500ms' | '500ms_2s' | '2_10s' | 'gt_10s' | 'unknown';
 
 export interface ToolEventPayload {
   eventName: string;
   category: string;
   status?: ToolEventStatus;
-  inputSizeBucket?: string;
-  durationBucket?: string;
+  inputSizeBucket?: ToolInputSizeBucket;
+  durationBucket?: ToolDurationBucket;
   source?: string;
 }
 
@@ -26,7 +28,7 @@ export const shouldEnableToolEventTelemetry = (): boolean => {
   return import.meta.env.PROD === true;
 };
 
-export const getTextSizeBucket = (text: string): string => {
+export const getTextSizeBucket = (text: string): ToolInputSizeBucket => {
   if (text.length === 0) return 'empty';
   if (text.length >= 1024 * 1024) return 'gt_1mb';
 
@@ -38,7 +40,7 @@ export const getTextSizeBucket = (text: string): string => {
   return 'gt_1mb';
 };
 
-export const getDurationBucket = (durationMs: number): string => {
+export const getDurationBucket = (durationMs: number): ToolDurationBucket => {
   if (!Number.isFinite(durationMs) || durationMs < 0) return 'unknown';
   if (durationMs === 0) return 'instant';
   if (durationMs < 100) return 'lt_100ms';

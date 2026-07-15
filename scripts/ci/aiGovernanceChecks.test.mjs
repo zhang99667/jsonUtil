@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { test } from 'node:test';
 
-import {
-  collectFrontendLintScriptFailures,
-  collectMissingAiGovernanceFiles,
-  collectMissingAiGovernanceReferences,
-} from './aiGovernanceChecks.mjs';
+import { collectFrontendLintScriptFailures, collectMissingAiGovernanceFiles, collectMissingAiGovernanceReferences } from './aiGovernanceChecks.mjs';
 import { buildGovernedAiGovernanceAssetFiles } from './aiGovernanceDiscoveredAssets.mjs';
+import { AI_GOVERNANCE_CODEX_AGENT_PROFILE_FILES } from './aiGovernanceCodexAgentProfiles.mjs';
+import { CODEX_SESSION_START_HOOK_FILES } from './aiGovernanceCodexHooks.mjs';
 import { AI_SAFETY_EVIDENCE_FILES } from './aiGovernanceAiSafetyEvidence.mjs';
 import { buildAiGovernanceReport } from './aiGovernanceReport.mjs';
 import {
@@ -14,7 +13,10 @@ import {
   buildAiGovernanceRequiredFiles,
 } from './aiGovernanceRules.mjs';
 import { collectAiGovernanceCiContractFailures } from './aiGovernanceCiContract.mjs';
-import { AI_GOVERNANCE_SCHEDULED_WORKFLOW } from './aiGovernanceScheduledWorkflowContract.mjs';
+import {
+  AI_GOVERNANCE_GITHUB_ATTESTATION_POLICY,
+  AI_GOVERNANCE_SCHEDULED_WORKFLOW,
+} from './aiGovernanceScheduledWorkflowContract.mjs';
 import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReferenceGroups.mjs';
 import {
   AI_ENTRY_SHARED_SNIPPET_FILES,
@@ -26,19 +28,22 @@ import {
   buildAiGovernanceCiWorkflowFixture,
   buildAiGovernanceLocalCiFixture,
 } from './aiGovernanceCiCommandDescriptors.mjs';
+import { AI_GOVERNANCE_CHECKS_SHARED_REFERENCE_FIXTURE } from './aiGovernanceChecksSharedReferenceTestFixtures.mjs';
 import {
   buildRegistryTableFixture,
   registryRow,
   withAiGovernanceTempRoot,
   writeFixtureFile,
+  writeGovernanceProductionImportFixtures,
 } from './aiGovernanceTestFixtures.mjs';
 
 const buildSkillFixtureContent = ({
   frontmatter = [
     'name: jsonutils-maintainer',
     'description: JSONUtils 项目维护技能。',
-    'version: 0.1.0',
-    'tags: [jsonutils, governance, maintenance]',
+    'metadata:',
+    '  version: "0.1.0"',
+    '  tags: [jsonutils, governance, maintenance]',
   ].join('\n'),
   sections = [
     '## 必读文件',
@@ -75,129 +80,144 @@ const mirroredAgentSection = [
 
 const ciGovernanceWorkflow = buildAiGovernanceCiWorkflowFixture();
 const ciGovernanceLocalCi = buildAiGovernanceLocalCiFixture();
-const scheduledGovernanceWorkflow = [
-  'on:',
-  '  schedule:',
-  "    - cron: '17 3 * * 1'",
-  '  workflow_dispatch:',
-  'jobs:',
-  '  ai-governance:',
-  '    steps:',
-  '      - run: node scripts/ci/check-version-consistency.mjs',
-  '      - run: node --test scripts/ci/*.test.mjs',
-  '      - run: node --test scripts/mcp/*.test.mjs',
-  '      - run: node scripts/ci/write-ai-governance-artifacts.mjs',
-  '      - uses: actions/upload-artifact@v7',
-  '        with:',
-  '          path: artifacts/ai-governance',
-].join('\n');
+const scheduledGovernanceWorkflow = fs.readFileSync(
+  new URL('../../.github/workflows/ai-governance.yml', import.meta.url),
+  'utf8',
+);
 const aiGovernanceCiCommand = REQUIRED_AI_GOVERNANCE_CI_COMMANDS
   .find(command => command.includes('check-ai-governance.mjs'));
 
 const writeMinimalGovernanceFixture = (rootDir) => {
-  const skillFile = '.codex/skills/jsonutils-maintainer/SKILL.md';
-  const sharedReferences = [
-    'AGENTS.md',
-    'CLAUDE.md',
-    '.claude/ai-tools-guide.md',
-    '.claude/README.md',
-    '.cursorrules',
-    '.comate/rules/code-style.md',
-    '.codex/README.md',
-    '.github/copilot-instructions.md',
-    'rules/code-style.md',
-    'docs/AI-ENGINEERING-PLAYBOOK.md',
-    'docs/AI-GOVERNANCE-DECISIONS.md',
-    'docs/AI-CONFIG-INTEGRATION.md',
-    'docs/AI-TOOLS-SETUP.md',
-    'docs/AI-ASSET-REGISTRY.md',
-    '.codex/skills/jsonutils-maintainer/SKILL.md',
+  const skillFile = '.agents/skills/jsonutils-maintainer/SKILL.md';
+  const aiInfraSkillFile = '.agents/skills/jsonutils-ai-infra-evolver/SKILL.md';
+  const sharedReferences = AI_GOVERNANCE_CHECKS_SHARED_REFERENCE_FIXTURE;
+  const skillExcludedReferences = new Set([
     'skills/jsonutils-maintainer/SKILL.md',
-    '.github/PULL_REQUEST_TEMPLATE.md',
     '.claude/settings.local.json',
-    'git status --short --branch',
-    'npm run lint',
-    'npm run typecheck',
-    'npm run build',
-    'npm run check:preloads',
-    'node scripts/ci/check-deploy-shell-syntax.mjs',
-    'node scripts/ci/check-chunk-load-recovery-catches.mjs',
-    'dispatchChunkLoadRecoveryEvent',
-    '手动懒加载',
-    'REMOTE_SCRIPT heredoc',
-    'workflow run',
-    'node scripts/ci/check-frontend-static-retention.mjs',
-    'node scripts/ci/check-production-frontend-assets.mjs',
-    'node scripts/ci/check-maintainability-budgets.mjs',
-    'node scripts/ci/check-ai-governance.mjs',
-    '--json',
     'scripts/ci/aiGovernanceAssetRegistryEvidence.mjs',
-    'referenceRules.file',
-    'node scripts/ci/check-version-consistency.mjs',
-    'frontend/package.json',
-    'frontend/package-lock.json',
-    'CHANGELOG.md',
-    'jsonutils-maintainer 0.1.0',
-    'git diff --check',
-    'Content-Type',
-    'fallback 成 HTML',
-    'CSS `url(...)`',
-    'CSS `@import`',
-    '--extra-asset',
-    '子 Agent 委派',
-    '主线程负责',
-    '拆分边界',
-    '读写范围',
-    '排除项',
-    '期望输出',
-    '未覆盖风险',
-    '收窄',
-    '任务：',
-    '结论：',
-    '证据：',
-    '修改文件：',
-    '验证：',
-    '未覆盖：',
-    '下一步建议：',
-    '本地规则优先',
-    '用户手动触发',
-    '敏感内容不外泄',
-    '可验证闭环',
-    '测试',
-    '脚本',
-    '可复核日志',
-    '复盘沉淀',
-    '触发条件',
-    '反例',
-    '验证方式',
-    '适用边界',
-    '规则/skill 回写',
-    '决策记录',
-    '回写追踪',
-    '负向测试',
-    '锁定测试',
-    '治理校验',
-    '本机私有配置',
-    '显式豁免',
-    'MCP 配置',
-    '可维护性预算',
-    '.mcp.json',
-    'scripts/mcp/jsonutils-governance-server.mjs',
-    'jsonutils-governance',
     '.cursor/mcp.json',
     '.cursor/rules',
     '.vscode/mcp.json',
-    '.github/copilot-instructions.md',
-    'Copilot 根入口',
     '.github/instructions',
     '.github/prompts',
     '.github/agents',
     '.github/chatmodes',
-  ].join('\n');
+  ]);
+  const skillSharedReferences = sharedReferences.split('\n').filter(line => !skillExcludedReferences.has(line)).map(line => (
+    line.includes('/') || /(?:\.md|\.json|\.mjs)$/.test(line) ? `\`${line}\`` : line
+  )).join('\n');
 
-  const governanceFixtureFiles = buildAiGovernanceRequiredFiles([skillFile]);
+  const governanceFixtureFiles = buildAiGovernanceRequiredFiles([skillFile, aiInfraSkillFile]);
+  const maintainerSectionBodies = {
+    '## 必读文件': '- `AGENTS.md`\n- `rules/code-style.md`\n- `docs/AI-ENGINEERING-PLAYBOOK.md`',
+    '## 按任务读取': 'ai_asset_inventory\n`docs/AI-ASSET-REGISTRY.md`',
+    '## 工作流': skillSharedReferences,
+    '## 常用验证命令': skillSharedReferences,
+    '## 重点边界': skillSharedReferences,
+  };
+  const aiInfraSectionBodies = {
+    '## 必读文件': '- `AGENTS.md`\n- `rules/code-style.md`\n- `docs/AI-ENGINEERING-PLAYBOOK.md`\n- `docs/AI-EVOLUTION-PLAYBOOK.md`',
+    '## 按任务读取': 'ai_asset_inventory\n`docs/AI-ASSET-REGISTRY.md`',
+    '## 工作流': `${skillSharedReferences}\neval case\n真实 outcome\n批准回写\n同一任务\n隔离可写工作区\nexecution transcript\n前后状态快照\ndeterministic-case\ncomponent-only\nschemaVersion 3\nchain.sequence\nchain.previousHash\nsupersession.previousOutcomeId\nfeedbackDisposition\ntrial receipt\n即时重放\nlegacy`,
+    '## 常用验证命令': `${skillSharedReferences}\nnode scripts/ci/run-ai-evolution-cases.mjs\nnode --test scripts/mcp/*.test.mjs`,
+    '## 重点边界': `${skillSharedReferences}\nnewline-delimited JSON-RPC\nunknown/warn\n只读\n敏感`,
+  };
 
-  governanceFixtureFiles.forEach(file => writeFixtureFile(rootDir, file, sharedReferences));
+  writeGovernanceProductionImportFixtures(rootDir, governanceFixtureFiles, sharedReferences);
+  fs.cpSync(new URL('../../.agents', import.meta.url), `${rootDir}/.agents`, { recursive: true });
+  fs.cpSync(new URL('../../plugins', import.meta.url), `${rootDir}/plugins`, { recursive: true });
+  for (const file of [
+    'scripts/ci/aiGovernanceRequiredProjectPluginFiles.mjs',
+    'scripts/ci/aiGovernanceProjectPlugins.mjs',
+    'scripts/ci/aiGovernanceProjectPlugins.test.mjs',
+    'scripts/ci/maintainability-budget-governance-ai-project-plugin-rules.mjs',
+  ]) fs.copyFileSync(new URL(`../../${file}`, import.meta.url), `${rootDir}/${file}`);
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRequiredRegistrationSnapshotFiles.mjs',
+    "import './aiGovernanceRegistrationCanarySealedSnapshot.mjs';\nimport './aiGovernanceRegistrationCanarySnapshotPreflight.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanarySealedSnapshot.mjs',
+    "import './aiGovernanceEvolutionSealedWorktreeManifest.mjs';\nimport './aiGovernanceEvolutionWorktreeRevision.mjs';\nimport './aiGovernanceRegistrationCanarySnapshotSource.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanarySnapshotPreflight.mjs',
+    "import './aiGovernanceEvolutionSealedWorktreeManifest.mjs';\nimport './mcpLineDelimitedStdioClient.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanarySnapshotSource.mjs',
+    "import './aiGovernanceEvolutionSealedWorktreeManifest.mjs';\nimport './aiGovernanceEvolutionSnapshotPrimitives.mjs';\nimport './aiGovernanceHermeticGitInventory.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceEvolutionSealedWorktreeManifest.mjs',
+    "import './aiGovernanceEvolutionSnapshotPrimitives.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceEvolutionWorktreeRevision.mjs',
+    "import './aiGovernanceEvolutionSealedWorktreeManifest.mjs';\nimport './aiGovernanceHermeticGitInventory.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceEvolutionCodexCaseDescriptors.mjs',
+    "import './aiGovernanceRegistrationCanaryCaseDescriptors.mjs';\nimport './aiGovernanceRequiredCodexRuntimeFiles.mjs';\nimport './aiGovernanceCodexExternalControllerAttestedCaseDescriptors.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRequiredCodexRuntimeFiles.mjs',
+    "import './aiGovernanceRequiredCodexRuntimeTrustFiles.mjs';\nimport './aiGovernanceCodexExternalControllerTopology.mjs';\nimport './aiGovernanceCodexExternalControllerRuntimeProbe.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRequiredCodexRuntimeTrustFiles.mjs',
+    "import './aiGovernanceCodexExternalControllerSeatbeltSentinel.mjs';\nimport './aiGovernanceCodexExternalControllerAttestedPreflight.mjs';\nimport './aiGovernanceCodexExternalControllerRuntimePolicy.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceCodexExternalControllerSeatbeltSentinel.mjs',
+    "import './aiGovernanceCodexExternalControllerSeatbeltReportShape.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryCaseDescriptors.mjs',
+    "import './aiGovernanceRegistrationCanaryGradeCheckpoint.mjs';\nimport './aiGovernanceRegistrationCanaryAnchorCaseDescriptors.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryAnchorCaseDescriptors.mjs',
+    "import './aiGovernanceRegistrationCanaryAnchorReceipt.mjs';\nimport './aiGovernanceRegistrationCanaryDisclosureConsumption.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryDisclosureConsumption.mjs',
+    "import './aiGovernanceRegistrationCanaryDisclosureAuthorization.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryDisclosureAuthorization.mjs',
+    "import './aiGovernanceRegistrationCanaryDsseEnvelope.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRequiredEvolutionLearningFiles.mjs',
+    "import './aiGovernanceRequiredRegistrationCanaryFiles.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRequiredRegistrationCanaryFiles.mjs',
+    "import './aiGovernanceRequiredRegistrationSnapshotFiles.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryAnchorReceipt.test.mjs',
+    "import './aiGovernanceRegistrationCanaryAnchorTestFixtures.mjs';\ntest('fixture', () => {});");
+  CODEX_SESSION_START_HOOK_FILES.forEach((file) => {
+    writeFixtureFile(rootDir, file, fs.readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8'));
+  });
+  AI_GOVERNANCE_CODEX_AGENT_PROFILE_FILES.forEach((file) => {
+    writeFixtureFile(rootDir, file, fs.readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8'));
+  });
+  writeFixtureFile(
+    rootDir,
+    'scripts/ci/check-ai-governance.mjs',
+    `import './aiGovernanceAssetDistribution.mjs';\nimport './aiGovernanceCodexAgentProfiles.mjs';\nimport './aiGovernanceCodexAgentCaseDescriptors.mjs';\nimport './aiGovernanceCodexHooks.mjs';\nimport './aiGovernanceCodexHookCaseDescriptors.mjs';\nimport './aiGovernanceEvolutionOutcomeChain.mjs';\nimport './aiGovernanceEvolutionTrace.mjs';\nimport './aiGovernanceEvolutionTraceOutcomes.mjs';\nimport './aiGovernanceEvolutionTracePolicies.mjs';\nimport './aiGovernanceEvolutionTraceProof.mjs';\nimport './aiGovernanceCodexExecCaptureRuntime.mjs';\nimport './aiGovernanceCodexExecTraceAdapter.mjs';\nimport './aiGovernanceCodexExecTraceProjection.mjs';\nimport './aiGovernanceCodexFixedMcpTrialProfile.mjs';\nimport './aiGovernanceCodexFixedMcpTrialPreflight.mjs';\nimport './aiGovernanceCodexFixedMcpTrialCapture.mjs';\nimport './aiGovernanceCodexFixedMcpTrialLedger.mjs';\nimport './aiGovernanceCodexFixedMcpTrial.mjs';\nimport './aiGovernanceCodexExternalControllerTopology.mjs';\nimport './aiGovernanceCodexExternalControllerRuntimeProbe.mjs';\nimport './aiGovernanceEvolutionCodexCaseDescriptors.mjs';\nimport './aiGovernanceEvolutionFeedbackInbox.mjs';\nimport './aiGovernanceEvolutionExperiments.mjs';\nimport './aiGovernanceEvolutionLearningReport.mjs';\nimport './aiGovernanceEvolutionSuiteReport.mjs';\nimport './aiGovernanceRegistrationCanaryPacket.mjs';\nimport './aiGovernanceRegistrationCanaryResult.mjs';\nimport './aiGovernanceRegistrationCanaryReview.mjs';\nimport './aiGovernanceRequiredEvolutionLearningFiles.mjs';\nimport './aiGovernanceRequiredEvolutionFiles.mjs';\nimport './aiGovernanceProjectPlugins.mjs';\nimport './aiGovernanceRequiredProjectPluginFiles.mjs';\n${sharedReferences}`
+  );
+  writeFixtureFile(rootDir, 'scripts/ci/run-ai-codex-fixed-mcp-trial.mjs', "import('./aiGovernanceCodexFixedMcpTrialCli.mjs');");
+  writeFixtureFile(rootDir, '.agents/skills/jsonutils-maintainer/evals/evals.json', fs.readFileSync(
+    new URL('../../.agents/skills/jsonutils-maintainer/evals/evals.json', import.meta.url),
+    'utf8',
+  ));
+  writeFixtureFile(rootDir, '.agents/skills/jsonutils-ai-infra-evolver/evals/evals.json', JSON.stringify({
+    skill_name: 'jsonutils-ai-infra-evolver',
+    evals: [{
+      id: 1,
+      prompt: '审计 AI 协作基建闭环',
+      expected_output: '输出可验证的最小演进方案',
+      files: [],
+      assertions: ['区分静态治理与行为效果'],
+    }],
+  }));
+  ['jsonutils-maintainer', 'jsonutils-ai-infra-evolver'].forEach((name) => {
+    const file = `.agents/skills/${name}/agents/openai.yaml`;
+    writeFixtureFile(rootDir, file, fs.readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8'));
+  });
+  writeFixtureFile(rootDir, 'evals/ai-governance/cases.json', fs.readFileSync(
+    new URL('../../evals/ai-governance/cases.json', import.meta.url),
+    'utf8',
+  ));
+  writeFixtureFile(rootDir, 'evals/ai-governance/outcomes.jsonl', '');
+  writeFixtureFile(rootDir, 'evals/ai-governance/trial-receipts.jsonl', '');
+  writeFixtureFile(rootDir, 'evals/ai-governance/feedback-inbox.jsonl', fs.readFileSync(
+    new URL('../../evals/ai-governance/feedback-inbox.jsonl', import.meta.url),
+    'utf8',
+  ));
+  writeFixtureFile(rootDir, 'evals/ai-governance/experiments.json', fs.readFileSync(
+    new URL('../../evals/ai-governance/experiments.json', import.meta.url),
+    'utf8',
+  ));
+  writeFixtureFile(rootDir, 'evals/ai-governance/trace-policies.json', fs.readFileSync(
+    new URL('../../evals/ai-governance/trace-policies.json', import.meta.url),
+    'utf8',
+  ));
+  writeFixtureFile(rootDir, AI_GOVERNANCE_GITHUB_ATTESTATION_POLICY, fs.readFileSync(
+    new URL('../../evals/ai-governance/github-attestation-policy.json', import.meta.url),
+    'utf8',
+  ));
   writeFixtureFile(rootDir, '.mcp.json', JSON.stringify({
     mcpServers: {
       'jsonutils-governance': {
@@ -226,6 +246,22 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     '### 5. 规则进化闭环',
     sharedReferences,
   ].join('\n'));
+  writeFixtureFile(rootDir, 'docs/AI-EVOLUTION-PLAYBOOK.md', [
+    sharedReferences,
+    'scripts/ci/run-ai-evolution-cases.mjs',
+    'evals/ai-governance/trial-receipts.jsonl',
+    '### 结果账本',
+    'schemaVersion: 2',
+    'trial-receipts.jsonl',
+    '即时重放',
+    'legacy',
+    '## Skill 评测',
+    '同一任务',
+    '隔离可写工作区',
+    'execution transcript',
+    '前后状态快照',
+    '`unavailable`',
+  ].join('\n'));
   writeFixtureFile(rootDir, 'docs/AI-TOOLS-SETUP.md', [
     '## 必读顺序',
     'docs/AI-ASSET-REGISTRY.md',
@@ -245,7 +281,17 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     sharedReferences,
     buildRegistryFixtureContent(governanceFixtureFiles),
   ].join('\n'));
-  writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({ body: sharedReferences }));
+  writeFixtureFile(rootDir, skillFile, buildSkillFixtureContent({ sectionBodies: maintainerSectionBodies }));
+  writeFixtureFile(rootDir, aiInfraSkillFile, buildSkillFixtureContent({
+    frontmatter: [
+      'name: jsonutils-ai-infra-evolver',
+      'description: JSONUtils AI 协作基建演进技能。',
+      'metadata:',
+      '  version: "0.1.0"',
+      '  tags: [jsonutils, ai-infra, evals]',
+    ].join('\n'),
+    sectionBodies: aiInfraSectionBodies,
+  }));
   writeFixtureFile(rootDir, '.github/workflows/ci.yml', ciGovernanceWorkflow);
   writeFixtureFile(rootDir, AI_GOVERNANCE_SCHEDULED_WORKFLOW, scheduledGovernanceWorkflow);
   writeFixtureFile(rootDir, 'scripts/ci/local-ci.sh', ciGovernanceLocalCi);
@@ -253,6 +299,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
   writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({
     scripts: { lint: 'eslint "{src,config}/**/*.{ts,tsx}" --quiet' },
   }));
+  writeFixtureFile(rootDir, 'frontend/package-lock.json', '{}');
 };
 
 test('AI 治理文件检查会报告缺失文件', () => {
@@ -292,8 +339,18 @@ test('AI 治理 CI 契约不接受注释或 echo 里的治理命令', () => {
   });
 });
 
+test('AI 治理 CI 契约要求 checkout 保留账本审计所需的完整历史', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeFixtureFile(rootDir, '.github/workflows/ci.yml', ciGovernanceWorkflow.replace('fetch-depth: 0', 'fetch-depth: 1'));
+    writeFixtureFile(rootDir, 'scripts/ci/local-ci.sh', ciGovernanceLocalCi);
+    assert.deepEqual(collectAiGovernanceCiContractFailures(rootDir), [
+      '.github/workflows/ci.yml: checkout 必须保留完整 Git 历史',
+    ]);
+  });
+});
+
 test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () => {
-  const skillFiles = ['.codex/skills/jsonutils-maintainer/SKILL.md'];
+  const skillFiles = ['.agents/skills/jsonutils-maintainer/SKILL.md', '.agents/skills/jsonutils-ai-infra-evolver/SKILL.md'];
   const requiredFiles = buildAiGovernanceRequiredFiles(skillFiles);
   const referenceRules = buildAiGovernanceReferenceRules(skillFiles);
   const agentsEntryRule = referenceRules.find(rule => rule.file === 'AGENTS.md');
@@ -316,7 +373,7 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   const evolutionSection = playbookRule.sections.find(section => section.sectionTitle === '### 5. 规则进化闭环');
   const thinEntryRules = [claudeRule, codexRule, copilotRule, cursorRule, comateRule];
 
-  assert.equal(requiredFiles.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(requiredFiles.includes('.agents/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-CONFIG-INTEGRATION.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-TOOLS-SETUP.md'), true);
   assert.equal(requiredFiles.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
@@ -332,6 +389,9 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
   assert.equal(requiredFiles.includes('scripts/mcp/jsonutils-governance-assets.mjs'), true);
   assert.equal(requiredFiles.includes('scripts/ci/check-version-consistency.mjs'), true);
   assert.equal(requiredFiles.includes('scripts/ci/check-ai-governance.mjs'), true);
+  assert.equal(requiredFiles.includes('evals/ai-governance/README.md'), true);
+  assert.equal(requiredFiles.includes('.codex/hooks.json'), true);
+  assert.equal(requiredFiles.includes('scripts/ci/aiGovernanceEvolutionOutcomeChain.mjs'), true);
   AI_GOVERNANCE_CI_COMMAND_FILES.forEach(file => assert.equal(requiredFiles.includes(file), true));
   assert.equal(skillRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   thinEntryRules.forEach((rule) => {
@@ -351,15 +411,15 @@ test('AI 治理规则构造会展开 skill 路径和发布资源关键词', () =
       assert.equal(agentsEntryRule.contains.includes(expectedText), true);
       assert.equal(claudeEntryRule.contains.includes(expectedText), true);
     });
-  assert.equal(claudeRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(claudeRule.contains.includes('.agents/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(codexRule.contains.includes('.claude/ai-tools-guide.md'), true);
-  assert.equal(codexRule.contains.includes('skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(codexRule.contains.includes('.agents/skills/jsonutils-ai-infra-evolver/SKILL.md'), true);
   assert.equal(codexRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
   assert.equal(aiDecisionRule.contains.includes('回写追踪'), true);
   assert.equal(aiDecisionRule.contains.includes('锁定测试'), true);
   assert.equal(aiDecisionRule.contains.includes('node --test'), true);
   assert.equal(aiDecisionRule.contains.includes('node scripts/ci/check-ai-governance.mjs'), true);
-  assert.equal(aiConfigRule.contains.includes('.codex/skills/jsonutils-maintainer/SKILL.md'), true);
+  assert.equal(aiConfigRule.contains.includes('.agents/skills/jsonutils-maintainer/SKILL.md'), true);
   assert.equal(aiConfigRule.contains.includes('docs/AI-ASSET-REGISTRY.md'), true);
   assert.equal(aiConfigRule.contains.includes('docs/AI-GOVERNANCE-DECISIONS.md'), true);
   assert.equal(aiConfigRule.contains.includes('MCP 配置'), true);
@@ -462,7 +522,7 @@ test('AI 治理缺少项目级 Codex skill 时会报告', () => {
     writeFixtureFile(rootDir, 'AGENTS.md', 'ok');
 
     assert.deepEqual(collectMissingAiGovernanceReferences(rootDir, [], []), [
-      '.codex/skills: 缺少项目级 Codex skill',
+      '.agents/skills: 缺少项目级 Codex skill',
     ]);
   });
 });

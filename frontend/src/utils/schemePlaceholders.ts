@@ -1,4 +1,5 @@
 import type { SchemePlaceholder, SchemePlaceholderGroup } from './schemeTypes';
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 
 type PlaceholderValue =
   | string
@@ -23,10 +24,6 @@ const RUNTIME_PLACEHOLDER_DESCRIPTIONS: Record<string, string> = {
   __CALLBACK_URL__: '回调 URL 占位符，监测链路会在运行时替换',
 };
 
-const formatPlaceholderPathSegment = (key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key) ? `.${key}` : `[${JSON.stringify(key)}]`
-);
-
 export const isRuntimePlaceholder = (value: string): boolean => (
   RUNTIME_PLACEHOLDER_RE.test(value.trim())
 );
@@ -47,12 +44,14 @@ export const collectRuntimePlaceholders = (
   }
 
   if (Array.isArray(value)) {
-    return value.flatMap((item, index) => collectRuntimePlaceholders(item, `${path}[${index}]`));
+    return value.flatMap((item, index) => (
+      collectRuntimePlaceholders(item, appendJsonPathIndex(path, index))
+    ));
   }
 
   if (value && typeof value === 'object') {
     return Object.entries(value).flatMap(([key, item]) => (
-      collectRuntimePlaceholders(item, `${path}${formatPlaceholderPathSegment(key)}`)
+      collectRuntimePlaceholders(item, appendJsonPathKey(path, key))
     ));
   }
 

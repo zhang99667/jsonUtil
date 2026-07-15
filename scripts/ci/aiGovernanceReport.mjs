@@ -7,6 +7,7 @@ export const buildAiGovernanceReport = (rootDir) => {
   return {
     requiredFiles: context.requiredFiles,
     referenceRules: context.referenceRules,
+    evolutionEvalReport: context.evolutionEvalReport,
     ...failureGroups,
     maturityScorecard: buildAiGovernanceMaturityScorecard({ governanceReport: { ...failureGroups, ...context } }),
   };

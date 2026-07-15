@@ -40,6 +40,7 @@ describe('appSettingsBackupCommandRunner', () => {
   });
 
   it('导出配置备份时动态加载备份模块并下载文本文件', async () => {
+    const storage = new MemoryStorage();
     const buildAppBackup = vi.fn(() => backupPayload);
     const serializeAppBackup = vi.fn(() => '{"app":"jsonutils-pro"}\n');
     const onDownloadTextFile = vi.fn();
@@ -52,19 +53,25 @@ describe('appSettingsBackupCommandRunner', () => {
       shortcuts: DEFAULT_SHORTCUTS,
     }, {
       onLoadBackupModule: async () => ({ buildAppBackup, serializeAppBackup }),
+      onGetStorage: () => storage,
       onDownloadTextFile,
       onShowSuccess,
       onShowError,
     });
 
-    expect(buildAppBackup).toHaveBeenCalledWith({ generalSettings, aiConfig, shortcuts: DEFAULT_SHORTCUTS });
+    expect(buildAppBackup).toHaveBeenCalledWith({
+      generalSettings,
+      aiConfig,
+      shortcuts: DEFAULT_SHORTCUTS,
+      storage,
+    });
     expect(serializeAppBackup).toHaveBeenCalledWith(backupPayload);
     expect(onDownloadTextFile).toHaveBeenCalledWith({
       text: '{"app":"jsonutils-pro"}\n',
       fileName: 'jsonutils-backup-2026-06-29T12-34-56-789Z.json',
       mimeType: 'application/json',
     });
-    expect(onShowSuccess).toHaveBeenCalledWith('配置备份已导出，未包含 AI Key');
+    expect(onShowSuccess).toHaveBeenCalledWith('配置备份下载已开始，未包含 AI Key');
     expect(onShowError).not.toHaveBeenCalled();
   });
 
@@ -79,6 +86,7 @@ describe('appSettingsBackupCommandRunner', () => {
       onLoadBackupModule: async () => {
         throw new Error('模块加载失败');
       },
+      onGetStorage: vi.fn(),
       onDownloadTextFile: vi.fn(),
       onShowSuccess: vi.fn(),
       onShowError,
@@ -100,6 +108,7 @@ describe('appSettingsBackupCommandRunner', () => {
       onLoadBackupModule: async () => {
         throw error;
       },
+      onGetStorage: vi.fn(),
       onDownloadTextFile: vi.fn(),
       onShowSuccess: vi.fn(),
       onShowError,
@@ -107,6 +116,36 @@ describe('appSettingsBackupCommandRunner', () => {
 
     expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
     expect(onShowError).not.toHaveBeenCalled();
+  });
+
+  it('浏览器拒绝访问本地存储时不导出不完整备份', async () => {
+    const storageError = new Error('浏览器拒绝访问本地存储');
+    const buildAppBackup = vi.fn(() => backupPayload);
+    const serializeAppBackup = vi.fn(() => '{}');
+    const onDownloadTextFile = vi.fn();
+    const onShowSuccess = vi.fn();
+    const onShowError = vi.fn();
+
+    await runAppExportSettingsBackupCommand({
+      generalSettings,
+      aiConfig,
+      shortcuts: DEFAULT_SHORTCUTS,
+    }, {
+      onLoadBackupModule: async () => ({ buildAppBackup, serializeAppBackup }),
+      onGetStorage: () => {
+        throw storageError;
+      },
+      onDownloadTextFile,
+      onShowSuccess,
+      onShowError,
+    });
+
+    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(storageError);
+    expect(onShowError).toHaveBeenCalledWith('导出配置备份失败：浏览器拒绝访问本地存储');
+    expect(buildAppBackup).not.toHaveBeenCalled();
+    expect(serializeAppBackup).not.toHaveBeenCalled();
+    expect(onDownloadTextFile).not.toHaveBeenCalled();
+    expect(onShowSuccess).not.toHaveBeenCalled();
   });
 
   it('导入配置备份后同步设置状态、快捷键和导入事件', async () => {
@@ -144,7 +183,7 @@ describe('appSettingsBackupCommandRunner', () => {
       onReplaceShortcuts,
       onShowSuccess,
       onShowError: vi.fn(),
-      storage,
+      onGetStorage: () => storage,
     });
 
     expect(file.text).toHaveBeenCalledTimes(1);
@@ -156,26 +195,36 @@ describe('appSettingsBackupCommandRunner', () => {
     expect(onShowSuccess).toHaveBeenCalledWith('配置备份已导入，AI Key 已保留');
   });
 
-  it('导入失败时沿用备份解析错误文案', async () => {
+  it('导入失败时沿用错误文案且不执行成功副作用', async () => {
     const onShowError = vi.fn();
+    const notifyAppBackupImported = vi.fn();
+    const onSetGeneralSettings = vi.fn();
+    const onSetAIConfig = vi.fn();
+    const onReplaceShortcuts = vi.fn();
+    const onShowSuccess = vi.fn();
 
     await runAppImportSettingsBackupCommand({ text: async () => '{}' }, aiConfig, {
       onLoadBackupModule: async () => ({
         applyAppBackupContent: () => {
           throw new Error('备份文件不是 JSONUtils 配置备份');
         },
-        notifyAppBackupImported: vi.fn(),
+        notifyAppBackupImported,
       }),
       onReadFileText: backupFile => backupFile.text(),
-      onSetGeneralSettings: vi.fn(),
-      onSetAIConfig: vi.fn(),
-      onReplaceShortcuts: vi.fn(),
-      onShowSuccess: vi.fn(),
+      onSetGeneralSettings,
+      onSetAIConfig,
+      onReplaceShortcuts,
+      onShowSuccess,
       onShowError,
-      storage: new MemoryStorage(),
+      onGetStorage: () => new MemoryStorage(),
     });
 
     expect(onShowError).toHaveBeenCalledWith('备份文件不是 JSONUtils 配置备份');
+    expect(notifyAppBackupImported).not.toHaveBeenCalled();
+    expect(onSetGeneralSettings).not.toHaveBeenCalled();
+    expect(onSetAIConfig).not.toHaveBeenCalled();
+    expect(onReplaceShortcuts).not.toHaveBeenCalled();
+    expect(onShowSuccess).not.toHaveBeenCalled();
   });
 
   it('导入模块 chunk 失效时不展示备份解析错误', async () => {
@@ -193,10 +242,49 @@ describe('appSettingsBackupCommandRunner', () => {
       onReplaceShortcuts: vi.fn(),
       onShowSuccess: vi.fn(),
       onShowError,
-      storage: new MemoryStorage(),
+      onGetStorage: () => new MemoryStorage(),
     });
 
     expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
     expect(onShowError).not.toHaveBeenCalled();
+  });
+
+  it('浏览器拒绝访问本地存储时在命令边界内展示错误', async () => {
+    const applyAppBackupContent = vi.fn();
+    const notifyAppBackupImported = vi.fn();
+    const onSetGeneralSettings = vi.fn();
+    const onSetAIConfig = vi.fn();
+    const onReplaceShortcuts = vi.fn();
+    const onShowSuccess = vi.fn();
+    const onShowError = vi.fn();
+    const storageError = new Error('浏览器拒绝访问本地存储');
+    const onGetStorage = vi.fn(() => {
+      throw storageError;
+    });
+
+    await expect(runAppImportSettingsBackupCommand({ text: async () => '{}' }, aiConfig, {
+      onLoadBackupModule: async () => ({
+        applyAppBackupContent,
+        notifyAppBackupImported,
+      }),
+      onReadFileText: backupFile => backupFile.text(),
+      onSetGeneralSettings,
+      onSetAIConfig,
+      onReplaceShortcuts,
+      onShowSuccess,
+      onShowError,
+      onGetStorage,
+    })).resolves.toBeUndefined();
+
+    expect(onShowError).toHaveBeenCalledWith('浏览器拒绝访问本地存储');
+    expect(onShowError).toHaveBeenCalledTimes(1);
+    expect(onGetStorage).toHaveBeenCalledTimes(1);
+    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(storageError);
+    expect(applyAppBackupContent).not.toHaveBeenCalled();
+    expect(notifyAppBackupImported).not.toHaveBeenCalled();
+    expect(onSetGeneralSettings).not.toHaveBeenCalled();
+    expect(onSetAIConfig).not.toHaveBeenCalled();
+    expect(onReplaceShortcuts).not.toHaveBeenCalled();
+    expect(onShowSuccess).not.toHaveBeenCalled();
   });
 });

@@ -5,7 +5,8 @@ import com.jsonhelper.backend.repository.VisitLogRepository;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -13,10 +14,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class TrafficFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private VisitLogRepository visitLogRepository;
+    private final VisitLogRepository visitLogRepository;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
@@ -27,16 +29,17 @@ public class TrafficFilter extends OncePerRequestFilter {
 
         if (shouldLogTraffic(path)) {
             try {
-                VisitLog log = new VisitLog();
-                log.setIp(getClientIp(request));
-                log.setPath(path);
-                log.setMethod(request.getMethod());
-                log.setUserAgent(getUserAgent(request));
-                log.setReferer(getReferer(request));
-                visitLogRepository.save(log);
+                VisitLog visitLog = new VisitLog();
+                visitLog.setIp(request.getRemoteAddr());
+                visitLog.setPath(path);
+                visitLog.setMethod(request.getMethod());
+                visitLog.setUserAgent(getUserAgent(request));
+                visitLog.setReferer(getReferer(request));
+                visitLogRepository.save(visitLog);
             } catch (Exception e) {
-                // Log and swallow to prevent request failure
-                System.err.println("Failed to log traffic: " + e.getMessage());
+                // 流量统计是旁路能力，持久化失败不能阻断正常请求。
+                log.warn("流量记录失败，请求继续处理，异常类型: {}", e.getClass().getSimpleName());
+                log.debug("流量记录失败详情", e);
             }
         }
 
@@ -53,24 +56,6 @@ public class TrafficFilter extends OncePerRequestFilter {
                 && !path.startsWith("/api/stats")
                 && !path.equals("/api/health")
                 && !path.startsWith("/api/visitor/events");
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        // If multiple IPs, take the first one
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip;
     }
 
     private String getUserAgent(HttpServletRequest request) {

@@ -15,8 +15,13 @@ export const appCoreMaintainabilityBudgets = [
   ...appLayoutMaintainabilityBudgets,
   {
     file: 'frontend/src/hooks/useAppAsyncTransform.ts',
-    maxLines: 145,
-    reason: '主应用异步转换 hook 应只保留 Worker/Promise 编排，纯状态决策继续放在 utils',
+    maxLines: 160,
+    reason: '主应用异步转换 hook 只维护 Worker/Promise 编排、单次终态与有界等待，纯状态决策继续放在 utils',
+  },
+  {
+    file: 'frontend/src/hooks/useAppAsyncTransform.test.ts',
+    maxLines: 315,
+    reason: '异步转换 hook 测试集中锁定 Worker 构造、发送、超时、协议异常、结算、回收和晚到回调边界',
   },
   {
     file: 'frontend/src/hooks/useAppFileDrop.ts',

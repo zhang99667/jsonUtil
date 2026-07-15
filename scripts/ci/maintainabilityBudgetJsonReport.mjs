@@ -8,7 +8,9 @@ export const toMaintainabilityBudgetJsonReport = (
 ) => {
   const includeAllSummaries = options.printAllSummaries !== false;
   const { failures, summaries, nearLimitSummaries, highUsageSummaries } = report;
-  const { usageItems = [], nearLimitItems = [], highUsageItems = [] } = report;
+  const {
+    usageItems = [], nearLimitItems = [], highUsageItems = [], scorecardCandidateItems = [],
+  } = report;
   return {
     schemaVersion: JSON_REPORT_SCHEMA_VERSION,
     reportType: 'maintainability-budget',
@@ -20,6 +22,7 @@ export const toMaintainabilityBudgetJsonReport = (
       printedSummaries: includeAllSummaries ? summaries.length : 0,
       nearLimitSummaries: nearLimitSummaries.length,
       highUsageSummaries: highUsageSummaries.length,
+      scorecardCandidates: scorecardCandidateItems.length,
     },
     failures,
     summaries: {
@@ -31,6 +34,7 @@ export const toMaintainabilityBudgetJsonReport = (
       all: includeAllSummaries ? usageItems : [],
       nearLimit: nearLimitItems,
       highUsage: highUsageItems,
+      scorecardCandidates: scorecardCandidateItems,
     },
   };
 };

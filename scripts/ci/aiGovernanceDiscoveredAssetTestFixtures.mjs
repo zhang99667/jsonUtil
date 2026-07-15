@@ -1,8 +1,12 @@
 import { writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const DISCOVERED_ASSET_FIXTURE_FILES = [
+  ['.agents/plugins/marketplace.json', '{"name":"fixture"}'],
   ['.claude/settings.local.json', '{}'],
   ['.claude/new-agent-guide.md', '新 AI 协作说明'],
+  ['.codex/agents/reviewer.toml', 'name = "reviewer"'],
+  ['.codex/hooks.json', '{"hooks":{}}'],
+  ['.codex/hooks/session-start.mjs', 'process.stdout.write("{}\\n");'],
   ['.cursor/mcp.json', '{}'],
   ['.cursor/settings.json', '{}'],
   ['.cursor/rules/review.mdc', '新 Cursor 项目规则'],
@@ -16,6 +20,7 @@ const DISCOVERED_ASSET_FIXTURE_FILES = [
   ['scripts/mcp/jsonutils-governance-server.mjs', 'console.log("mcp");'],
   ['docs/AI-NEW-WORKFLOW.md', '新 AI 协作流程'],
   ['rules/ai-review-rules.md', '新 AI 规则'],
+  ['plugins/example-plugin/.codex-plugin/plugin.json', '{"name":"example-plugin"}'],
 ];
 
 export const writeDiscoveredAssetFixtureFiles = rootDir => (

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "policies": [
+    {
+      "id": "mcp-project-registration-discovery",
+      "version": "1.0.0",
+      "caseId": "mcp-project-registration-discovery",
+      "adapter": {
+        "id": "codex-exec-jsonl",
+        "version": "1.2.0"
+      },
+      "requiredMcp": {
+        "name": "jsonutils-governance/ai_governance_scorecard",
+        "resultKeys": [
+          "maturityScorecard.nextFocus.id"
+        ]
+      },
+      "forbiddenEventTypes": [
+        "command.call",
+        "command.result",
+        "file.change",
+        "capability.use"
+      ],
+      "requireUnchangedRevision": true
+    },
+    {
+      "id": "mcp-fixed-tool-selection",
+      "version": "1.1.0",
+      "caseId": "mcp-fixed-tool-selection",
+      "adapter": {
+        "id": "codex-exec-jsonl",
+        "version": "1.2.0"
+      },
+      "requiredMcp": {
+        "name": "jsonutils-governance/ai_governance_scorecard",
+        "resultKeys": [
+          "maturityScorecard.nextFocus.id"
+        ]
+      },
+      "forbiddenEventTypes": [
+        "command.call",
+        "command.result",
+        "file.change",
+        "capability.use"
+      ],
+      "requireUnchangedRevision": true
+    }
+  ]
+}

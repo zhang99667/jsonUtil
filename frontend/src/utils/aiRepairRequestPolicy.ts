@@ -1,4 +1,6 @@
 import { base64Decode } from './schemeUtils';
+import { decodeBase64Text, isReadableDecodedText } from './schemeBase64Codec';
+import { tryDecodeURIComponent } from './schemeQueryDecoding';
 import { AiRepairErrorCode, createAiRepairError } from './aiRepairErrors';
 
 export const AI_REMOTE_REPAIR_MAX_INPUT_LENGTH = 200_000;
@@ -26,49 +28,9 @@ export interface AiRepairRequestPolicy {
   rejectionMessage: string | null;
 }
 
-const safeDecodeURIComponent = (value: string): string | null => {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return null;
-  }
-};
-
-const normalizeBase64Candidate = (value: string): string | null => {
-  const compact = value.trim().replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
-  if (!compact || compact.length % 4 === 1 || !/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) {
-    return null;
-  }
-  const firstPaddingIndex = compact.indexOf('=');
-  if (firstPaddingIndex !== -1 && /[^=]/.test(compact.slice(firstPaddingIndex))) {
-    return null;
-  }
-
-  const paddingLength = (4 - (compact.length % 4)) % 4;
-  return compact + '='.repeat(paddingLength);
-};
-
-const isReadableSensitiveDecodedText = (value: string): boolean => {
-  if (!value.trim()) return false;
-  const controlChars = value.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g);
-  return !controlChars || controlChars.length / value.length < 0.05;
-};
-
 const safeBase64Decode = (value: string): string | null => {
-  const normalized = normalizeBase64Candidate(value);
-  if (!normalized) return null;
-
-  try {
-    const binary = atob(normalized);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index++) {
-      bytes[index] = binary.charCodeAt(index);
-    }
-    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    return isReadableSensitiveDecodedText(decoded) ? decoded : null;
-  } catch {
-    return null;
-  }
+  const decoded = decodeBase64Text(value);
+  return decoded !== null && isReadableDecodedText(decoded) ? decoded : null;
 };
 
 const appendSensitiveScanText = (texts: string[], value: string | null | undefined): boolean => {
@@ -86,7 +48,7 @@ const appendUrlDecodedScanTexts = (texts: string[], value: string) => {
   appendSensitiveScanText(texts, current);
 
   for (let index = 0; index < SENSITIVE_URL_DECODE_ROUNDS; index++) {
-    const decoded = safeDecodeURIComponent(current);
+    const decoded = tryDecodeURIComponent(current);
     if (!decoded || decoded === current) break;
     if (!appendSensitiveScanText(texts, decoded)) break;
     current = decoded;

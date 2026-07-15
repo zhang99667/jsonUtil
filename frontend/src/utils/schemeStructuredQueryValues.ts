@@ -1,6 +1,4 @@
-export const isPlainObject = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
+export { isRecord as isPlainObject } from './storage';
 
 export const stringifyParamValue = (value: unknown): string => {
   if (typeof value === 'string') return value;

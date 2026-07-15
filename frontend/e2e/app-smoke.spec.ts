@@ -880,11 +880,34 @@ test('状态栏版本号可打开版本更新日志', async ({ page }) => {
 
   const changelogDialog = page.getByRole('dialog', { name: '版本更新' });
   await expect(changelogDialog).toBeVisible();
+  await expect(changelogDialog).toHaveJSProperty('open', true);
   await expect(changelogDialog).toContainText('当前版本');
   await expect(changelogDialog).toContainText('版本更新');
 
-  await changelogDialog.getByRole('button', { name: '关闭版本更新' }).click();
+  const closeButton = changelogDialog.getByRole('button', { name: '关闭版本更新' });
+  const confirmButton = changelogDialog.getByRole('button', { name: '知道了' });
+  await expect(closeButton).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(confirmButton).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(closeButton).toBeFocused();
+
+  await closeButton.click();
   await expect(changelogDialog).toBeHidden();
+  await expect(versionBadge).toBeFocused();
+
+  await versionBadge.click();
+  await expect(changelogDialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(changelogDialog).toBeHidden();
+  await expect(versionBadge).toBeFocused();
+
+  await versionBadge.click();
+  await changelogDialog.getByRole('heading', { name: '版本更新' }).click();
+  await expect(changelogDialog).toBeVisible();
+  await page.mouse.click(1, 1);
+  await expect(changelogDialog).toBeHidden();
+  await expect(versionBadge).toBeFocused();
 });
 
 test('检测到线上新版本时提示刷新', async ({ page }) => {
@@ -2326,11 +2349,13 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
   const exportedBackup = JSON.parse(await readFile(downloadPath!, 'utf-8')) as {
     settings: { ai: { apiKey: string } };
     jsonPath: { favorites: string[] };
+    jsonSchema: { library: unknown[] };
     structureNav: { searchHistory: string[] };
     templateFill: { template: string };
   };
   expect(exportedBackup.settings.ai.apiKey).toBe('');
   expect(exportedBackup.jsonPath.favorites).toEqual(['$.exported']);
+  expect(exportedBackup.jsonSchema.library).toEqual([]);
   expect(exportedBackup.structureNav.searchHistory).toEqual(['cmdSchema']);
   expect(exportedBackup.templateFill.template).toBe('{"before":1}');
 
@@ -2351,6 +2376,9 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
     jsonPath: {
       history: ['$.imported'],
       favorites: ['$.importedFavorite'],
+    },
+    jsonSchema: {
+      library: [],
     },
     structureNav: {
       searchHistory: [' importedField ', 'phone', 'phone'],
@@ -2776,6 +2804,7 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
     '{"cmd":{"nid":456,"title":"标题"},"from":"feed"}'
   );
   const schemePanel = page.locator('[data-tour="scheme-panel"]');
+  await expect(schemePanel.getByText('JSON 有效', { exact: true })).toBeVisible();
   await expectElementInside(page.locator('[data-tour="scheme-copy-serialized"]'), schemePanel);
   await expectElementInside(page.locator('[data-tour="scheme-apply-edit"]'), schemePanel);
   await expect(page.locator('[data-tour="scheme-copy-serialized"]')).toHaveAttribute('aria-label', '复制序列化结果，复制当前编辑内容重新编码后的结果');
@@ -2787,7 +2816,7 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   expect(serializedResult).toContain('from=feed');
 
   await fillMonacoEditor(page, page.locator('[data-tour="scheme-result"] .monaco-editor').first(), '{"cmd":');
-  await expect(page.getByText('Invalid JSON')).toBeVisible();
+  await expect(schemePanel.getByText('JSON 无效', { exact: true })).toBeVisible();
   await expect(qualitySummary).toContainText('JSON 异常');
   await expect(page.locator('[data-tour="scheme-json-edit-error"]')).toContainText('JSON 内容格式有误');
   await expect(page.locator('[data-tour="scheme-copy-serialized"]')).toHaveAttribute('title', '请先修正解码结果中的 JSON 错误');
@@ -3029,7 +3058,7 @@ test('Scheme 面板整段 Response 超长字段展示性能保护提示', async 
   expect(decodedResult).toContain('"ok": true');
 });
 
-test('Scheme 面板大 Response 解析中可取消', async ({ page }) => {
+test('Scheme 面板大 Response 关闭或取消时会终止后台线程', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(window, '__schemeWorkerTerminateCount', {
       value: 0,
@@ -3062,13 +3091,33 @@ test('Scheme 面板大 Response 解析中可取消', async ({ page }) => {
   await expect(page.locator('[data-tour="scheme-cancel-decode"]')).toBeVisible();
   await expect(page.locator('[data-tour="scheme-decode-status"]')).toHaveText('解析中...');
 
+  await page.locator('[data-tour="scheme-close-button"]').click();
+  await expect(page.locator('[data-tour="scheme-panel"]')).toHaveCount(0);
+  await expect.poll(async () => page.evaluate(() => (
+    (window as unknown as { __schemeWorkerTerminateCount: number }).__schemeWorkerTerminateCount
+  ))).toBeGreaterThan(0);
+  const terminateCountAfterClose = await page.evaluate(() => (
+    (window as unknown as { __schemeWorkerTerminateCount: number }).__schemeWorkerTerminateCount
+  ));
+
+  await page.locator('[data-tour="scheme-button"]').click();
+  await expect(page.locator('[data-tour="scheme-cancel-decode"]')).toBeVisible();
+  await expect(page.locator('[data-tour="scheme-decode-status"]')).toHaveText('解析中...');
   await page.locator('[data-tour="scheme-cancel-decode"]').click();
 
   await expect(page.locator('[data-tour="scheme-decode-status"]')).toHaveText('已取消解析');
   await expect(page.locator('[data-tour="scheme-cancel-decode"]')).toHaveCount(0);
   await expect.poll(async () => page.evaluate(() => (
     (window as unknown as { __schemeWorkerTerminateCount: number }).__schemeWorkerTerminateCount
-  ))).toBeGreaterThan(0);
+  ))).toBeGreaterThan(terminateCountAfterClose);
+
+  await page.locator('[data-tour="scheme-close-button"]').click();
+  await expect(page.locator('[data-tour="scheme-panel"]')).toHaveCount(0);
+  await page.locator('[data-tour="scheme-button"]').click();
+  await expect(page.locator('[data-tour="scheme-cancel-decode"]')).toBeVisible();
+  await expect(page.locator('[data-tour="scheme-decode-status"]')).toHaveText('解析中...');
+  await page.locator('[data-tour="scheme-close-button"]').click();
+  await expect(page.locator('[data-tour="scheme-panel"]')).toHaveCount(0);
 });
 
 test('Scheme 面板可复制特殊 key 来源路径', async ({ page }) => {
@@ -3537,6 +3586,7 @@ test('文件标签支持键盘切换和关闭语义', async ({ page }) => {
   await secondTab.press('Delete');
   await expect(secondTab).toHaveCount(0);
   await expect(firstTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"first":true');
 
   await firstTab.press('Enter');
   await expect(firstTab).toHaveAttribute('aria-selected', 'true');
@@ -3568,6 +3618,8 @@ test('文件打开后可修改并保存下载', async ({ page }) => {
   const downloadPath = await download.path();
   expect(downloadPath).not.toBeNull();
   await expect(readFile(downloadPath!, 'utf-8')).resolves.toBe(savedContent);
+  await expect(page.getByText('已开始下载；浏览器无法确认文件是否已落盘，当前内容仍标记为未保存')).toBeVisible();
+  await expect(page.getByRole('button', { name: '关闭未保存标签 sample.json' })).toBeVisible();
 });
 
 test('打开 HAR 文件会提取请求响应 body 为派生 JSON', async ({ page }) => {
@@ -3620,6 +3672,9 @@ test('打开 HAR 文件会提取请求响应 body 为派生 JSON', async ({ page
   await expect(page.getByText('已从 HAR 提取 1/2 条请求/响应 body')).toBeVisible();
   await expect(page.locator('[data-tour="deep-format-btn"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('HAR_PAYLOAD_EXPORT');
+  await expect(page.getByRole('button', {
+    name: '关闭未保存标签 network.har.payloads.json',
+  })).toBeVisible();
 
   await page.locator('[data-tour="copy-source"]').click();
   const copiedSource = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
@@ -3667,25 +3722,35 @@ test('取消打开文件不会输出失败日志', async ({ page }) => {
   await page.locator('[data-tour="open-file-button"]').click();
 
   await expect(page.getByText('读取文件失败')).toHaveCount(0);
-  expect(consoleMessages.filter(message => message.includes('File open') || message.includes('Failed to open file'))).toEqual([]);
+  expect(consoleMessages.filter(message => message.includes('打开文件失败') || message.includes('读取文件失败'))).toEqual([]);
 });
 
-test('打开文件句柄读取失败会展示具体原因', async ({ page }) => {
+test('部分文件句柄读取失败时反馈原因并保留成功文件', async ({ page }) => {
   await page.evaluate(() => {
     Object.defineProperty(window, 'showOpenFilePicker', {
       configurable: true,
-      value: async () => [{
-        name: 'blocked.json',
-        getFile: async () => {
-          throw new Error('文件权限已失效');
+      value: async () => [
+        {
+          name: 'blocked.json',
+          getFile: async () => {
+            throw new Error('文件权限已失效');
+          },
         },
-      }],
+        {
+          name: 'opened.json',
+          getFile: async () => new File(['{"opened":true}'], 'opened.json', {
+            type: 'application/json',
+          }),
+        },
+      ],
     });
   });
 
   await page.locator('[data-tour="open-file-button"]').click();
 
   await expect(page.getByText('打开文件失败：文件权限已失效')).toBeVisible();
+  await expect(page.getByText('opened.json').first()).toBeVisible();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"opened":true');
 });
 
 test('取消保存预览不会提示失败', async ({ page }) => {

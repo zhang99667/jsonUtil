@@ -11,18 +11,34 @@ import {
   callJsonutilsGovernanceTool,
   listJsonutilsGovernanceTools,
 } from './jsonutils-governance-tools.mjs';
+import {
+  assertJsonutilsGovernanceMethodParams,
+  inspectJsonRpcRequest,
+  JsonRpcInvalidParamsError,
+  jsonRpcInternalError,
+  jsonRpcInvalidParams,
+  jsonRpcInvalidRequest,
+  jsonRpcParseError,
+} from './jsonutils-governance-jsonrpc.mjs';
+import { JsonutilsGovernanceToolInputError } from './jsonutils-governance-tool-input.mjs';
 
 const SERVER_NAME = 'jsonutils-governance';
-const SERVER_VERSION = '0.1.0';
-const PROTOCOL_VERSION = '2024-11-05';
+const SERVER_VERSION = '0.3.0';
+const SUPPORTED_PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2024-11-05'];
+const LATEST_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0];
+export const MAX_MCP_MESSAGE_BYTES = 1024 * 1024;
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 export { callJsonutilsGovernanceTool, listJsonutilsGovernanceResources, listJsonutilsGovernanceTools };
 
 export const handleJsonutilsGovernanceRequest = async (message, options = {}) => {
   const { method, params, id } = message;
+  assertJsonutilsGovernanceMethodParams(method, params);
+  const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(params?.protocolVersion)
+    ? params.protocolVersion
+    : LATEST_PROTOCOL_VERSION;
   const result = method === 'initialize'
-    ? { protocolVersion: PROTOCOL_VERSION, capabilities: { resources: {}, tools: {} }, serverInfo: { name: SERVER_NAME, version: SERVER_VERSION } }
+    ? { protocolVersion, capabilities: { resources: {}, tools: {} }, serverInfo: { name: SERVER_NAME, version: SERVER_VERSION } }
     : method === 'resources/list'
       ? listJsonutilsGovernanceResources()
       : method === 'resources/read'
@@ -30,52 +46,77 @@ export const handleJsonutilsGovernanceRequest = async (message, options = {}) =>
         : method === 'tools/list'
           ? listJsonutilsGovernanceTools()
           : method === 'tools/call'
-            ? await callJsonutilsGovernanceTool(params?.name, params?.arguments ?? {}, options.runScript)
+            ? await callJsonutilsGovernanceTool(
+              params?.name,
+              params && Object.hasOwn(params, 'arguments') ? params.arguments : {},
+              options.runScript,
+            )
             : method === 'ping'
               ? {}
               : null;
 
   if (result !== null) return { jsonrpc: '2.0', id, result };
-  return { jsonrpc: '2.0', id, error: { code: -32601, message: `Method not found: ${method}` } };
+  return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Method not found' } };
 };
 
-const writeMessage = (message) => {
-  const body = JSON.stringify(message);
-  process.stdout.write(`Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`);
-};
+export const serializeMcpMessage = message => `${JSON.stringify(message)}\n`;
+
+const writeMessage = message => process.stdout.write(serializeMcpMessage(message));
+const writeParseError = () => writeMessage(jsonRpcParseError());
 
 const handleMessage = async (message) => {
-  if (message.method?.startsWith('notifications/')) return;
+  const request = inspectJsonRpcRequest(message);
+  if (!request.valid) {
+    writeMessage(jsonRpcInvalidRequest(message));
+    return;
+  }
   try {
-    writeMessage(await handleJsonutilsGovernanceRequest(message));
+    const response = await handleJsonutilsGovernanceRequest(message);
+    if (!request.isNotification) writeMessage(response);
   } catch (error) {
-    writeMessage({
-      jsonrpc: '2.0',
-      id: message.id,
-      error: { code: -32000, message: error instanceof Error ? error.message : String(error) },
-    });
+    if (request.isNotification) return;
+    if (error instanceof JsonRpcInvalidParamsError || error instanceof JsonutilsGovernanceToolInputError) {
+      writeMessage(jsonRpcInvalidParams(request.id));
+      return;
+    }
+    writeMessage(jsonRpcInternalError(request.id));
   }
 };
 
-export const createMcpFrameParser = (onMessage) => {
+export const createMcpLineParser = (onMessage, onParseError = () => {}) => {
   let buffer = Buffer.alloc(0);
   return (chunk) => {
-    buffer = Buffer.concat([buffer, chunk]);
+    buffer = Buffer.concat([buffer, Buffer.from(chunk)]);
+    if (buffer.length > MAX_MCP_MESSAGE_BYTES && buffer.indexOf(0x0a) === -1) {
+      buffer = Buffer.alloc(0);
+      onParseError();
+      return;
+    }
     while (true) {
-      const headerEnd = buffer.indexOf('\r\n\r\n');
-      if (headerEnd === -1) return;
-      const header = buffer.subarray(0, headerEnd).toString('utf8');
-      const length = Number(header.match(/Content-Length:\s*(\d+)/i)?.[1]);
-      const bodyStart = headerEnd + 4;
-      if (!Number.isFinite(length) || buffer.length < bodyStart + length) return;
-      const body = buffer.subarray(bodyStart, bodyStart + length).toString('utf8');
-      buffer = buffer.subarray(bodyStart + length);
-      onMessage(JSON.parse(body));
+      const lineEnd = buffer.indexOf(0x0a);
+      if (lineEnd === -1) return;
+      let line = buffer.subarray(0, lineEnd);
+      buffer = buffer.subarray(lineEnd + 1);
+      if (line.at(-1) === 0x0d) line = line.subarray(0, -1);
+      if (line.length === 0) continue;
+      if (line.length > MAX_MCP_MESSAGE_BYTES) {
+        onParseError();
+        continue;
+      }
+      try {
+        onMessage(JSON.parse(line.toString('utf8')));
+      } catch {
+        onParseError();
+      }
     }
   };
 };
 
+export const startJsonutilsGovernanceServer = () => {
+  const parseLine = createMcpLineParser(handleMessage, writeParseError);
+  process.stdin.on('data', parseLine);
+};
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const parseFrame = createMcpFrameParser(handleMessage);
-  process.stdin.on('data', parseFrame);
+  startJsonutilsGovernanceServer();
 }

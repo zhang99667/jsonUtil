@@ -9,16 +9,31 @@ export const installAppUpdateCheckSchedule = ({
   initialDelayMs,
   intervalMs,
 }: InstallAppUpdateCheckScheduleInput): (() => void) => {
-  const initialTimer = windowTarget.setTimeout(checkForUpdate, initialDelayMs);
-  const intervalTimer = windowTarget.setInterval(checkForUpdate, intervalMs);
-  const handleVisibilityChange = () => {
-    if (documentTarget.visibilityState === 'visible') {
-      void checkForUpdate();
+  // 所有触发源共享单飞门闩，避免旧请求倒序覆盖已提示版本。
+  let checkInFlight = false;
+  const finishCheck = () => {
+    checkInFlight = false;
+  };
+  const triggerCheck = () => {
+    if (checkInFlight) return;
+    checkInFlight = true;
+    try {
+      const result = checkForUpdate();
+      if (result) void result.then(finishCheck, finishCheck);
+      else finishCheck();
+    } catch {
+      finishCheck();
     }
   };
-  const handleFocus = () => {
-    void checkForUpdate();
+
+  const initialTimer = windowTarget.setTimeout(triggerCheck, initialDelayMs);
+  const intervalTimer = windowTarget.setInterval(triggerCheck, intervalMs);
+  const handleVisibilityChange = () => {
+    if (documentTarget.visibilityState === 'visible') {
+      triggerCheck();
+    }
   };
+  const handleFocus = triggerCheck;
 
   documentTarget.addEventListener('visibilitychange', handleVisibilityChange);
   windowTarget.addEventListener('focus', handleFocus);

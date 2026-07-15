@@ -81,14 +81,14 @@ describe('queryJsonPathRanges', () => {
       pointer: item.pointer,
       value: item.value,
     }))).toEqual([
-      { path: '$.nested["quote\\"key"]', pointer: '/nested/quote"key', value: 'double' },
+      { path: '$.nested[?(@property === "quote\\"key")]', pointer: '/nested/quote"key', value: 'double' },
     ]);
     expect(queryJsonPathRanges(jsonData, formatJsonPathRecursiveFieldQuery("single'key")).items.map(item => ({
       path: item.path,
       pointer: item.pointer,
       value: item.value,
     }))).toEqual([
-      { path: '$.nested["single\'key"]', pointer: "/nested/single'key", value: 'single' },
+      { path: `$.nested[?(@property === "single'key")]`, pointer: "/nested/single'key", value: 'single' },
     ]);
   });
 

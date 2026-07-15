@@ -7,7 +7,10 @@ import {
   parseUrl,
   urlDecode,
 } from './schemeUtils';
+import { appendJsonPathKey } from './jsonPathSegments';
 import { findSchemePrefixedQueryString } from './schemePrefixedQuery';
+import { decodeQueryComponentOrOriginal as decodeQueryComponent } from './schemeQueryDecoding';
+import { isRecord as isPlainObject, parseJsonWithFallback } from './storage';
 
 export interface Base64MetaEntry {
   key: string;
@@ -291,18 +294,8 @@ const PRIMARY_COMMAND_FIELD_PRIORITIES = new Map<string, number>([
 const COMMAND_SCHEMA_SUMMARY_LIMIT = 6;
 const COMMAND_SCHEMA_SUMMARY_PATH_LIMIT = 3;
 
-const isPlainObject = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
 const dedupe = (values: string[]): string[] => (
   Array.from(new Set(values)).filter(Boolean)
-);
-
-const appendJsonPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
 );
 
 const isCmdInsightField = (key: string): boolean => {
@@ -395,7 +388,7 @@ export const getSchemeInsightFieldCopyText = (
 ): string => {
   if (row.copyText !== undefined) return row.copyText;
 
-  const value = Object.prototype.hasOwnProperty.call(row, 'value')
+  const value = Object.hasOwn(row, 'value')
     ? row.value
     : row.preview;
   return `${row.path} = ${formatInsightFieldCopyText(value)}`;
@@ -560,14 +553,6 @@ const normalizeSourceString = (value: string): string => {
   return current;
 };
 
-const decodeQueryComponent = (value: string): string => {
-  try {
-    return decodeURIComponent(value.replace(/\+/g, ' '));
-  } catch {
-    return value;
-  }
-};
-
 const mergeSourceValue = (
   existing: SourceShape | undefined,
   value: SourceShape
@@ -581,24 +566,15 @@ const tryParseJsonSource = (value: string): SourceShape | null => {
   const trimmed = value.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
 
-  try {
-    const parsed = JSON.parse(trimmed) as unknown;
-    return normalizeSourceShape(parsed);
-  } catch {
-    return null;
-  }
+  return normalizeSourceShape(parseJsonWithFallback<unknown>(trimmed, null));
 };
 
 const tryParseJsonStringSource = (value: string): string | null => {
   const trimmed = value.trim();
   if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) return null;
 
-  try {
-    const parsed = JSON.parse(trimmed) as unknown;
-    return typeof parsed === 'string' ? parsed : null;
-  } catch {
-    return null;
-  }
+  const parsed = parseJsonWithFallback<unknown>(trimmed, null);
+  return typeof parsed === 'string' ? parsed : null;
 };
 
 const normalizeSourceShape = (value: unknown): SourceShape => {
@@ -813,11 +789,7 @@ const tryParseRawJsonSource = (source?: string): unknown | null => {
   const trimmed = source?.trim();
   if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) return null;
 
-  try {
-    return JSON.parse(trimmed) as unknown;
-  } catch {
-    return null;
-  }
+  return parseJsonWithFallback<unknown>(trimmed, null);
 };
 
 const getRawSourceChild = (source: unknown, key: string, index?: number): unknown => {

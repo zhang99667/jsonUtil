@@ -305,7 +305,7 @@ describe('buildSchemePlaceholderGroups', () => {
 
 describe('isBase64', () => {
   it('有效的 Base64 字符串', () => {
-    // btoa('{"key":"value"}') = 'eyJrZXkiOiJ2YWx1ZSJ9'
+    // 下方值为 btoa 对对象文本的编码结果。
     const encoded = btoa('{"key":"value"}');
     expect(isBase64(encoded)).toBe(true);
   });

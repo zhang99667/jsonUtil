@@ -41,7 +41,7 @@ const buildNestedInsightSearchFields = (
   .slice(0, DEFAULT_NESTED_COMMAND_FIELD_SEARCH_LIMIT)
   .map(row => {
     const path = joinTransformJsonPath(recordPath, row.path);
-    if (Object.prototype.hasOwnProperty.call(row, 'value')) {
+    if (Object.hasOwn(row, 'value')) {
       return {
         path,
         preview: row.preview,

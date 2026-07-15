@@ -4,6 +4,7 @@ import {
   getOpenAICompatibleDefaultBaseUrl,
 } from '../utils/aiProviderDefaults';
 import { AiRepairErrorCode, createAiRepairError } from '../utils/aiRepairErrors';
+import { isRecord } from '../utils/storage';
 import {
   formatAiErrorDetailSummary,
   redactAiErrorDetail,
@@ -96,9 +97,7 @@ export const readOpenAICompatibleRepairText = async (response: Response): Promis
 
 const isOpenAICompatibleRepairResponseBody = (
   value: unknown
-): value is OpenAICompatibleRepairResponseBody => (
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-);
+): value is OpenAICompatibleRepairResponseBody => isRecord(value);
 
 const readFirstOpenAICompatibleChoiceText = (
   data: OpenAICompatibleRepairResponseBody

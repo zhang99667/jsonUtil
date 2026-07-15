@@ -9,8 +9,13 @@ const schemeViewerShellComponentBudget = (file, maxLines, reason) => ({
 export const schemeViewerShellComponentMaintainabilityBudgets = [
   schemeViewerShellComponentBudget(
     'SchemeViewerModal.tsx',
-    1220,
-    'Scheme 弹窗主组件应继续拆出纯展示面板、worker helper 和状态 helper，避免诊断 UI 继续回流主文件'
+    850,
+    'Scheme 弹窗主组件只负责编辑、复制和子面板组装，后台解码与二维码容量规则不得回流'
+  ),
+  schemeViewerShellComponentBudget(
+    'SchemeViewerQRCodePanel.tsx',
+    165,
+    'Scheme 二维码面板只负责类型切换、容量提示和下载入口，字节与 Unicode 边界留在纯函数'
   ),
   schemeViewerShellComponentBudget(
     'SchemeViewerFooterActions.tsx',

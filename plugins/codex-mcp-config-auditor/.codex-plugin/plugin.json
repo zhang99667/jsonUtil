@@ -1,0 +1,23 @@
+{
+  "name": "codex-mcp-config-auditor",
+  "version": "0.2.1",
+  "description": "审计 Codex MCP 静态敏感头，不返回配置值。",
+  "author": {
+    "name": "JSONUtils project"
+  },
+  "interface": {
+    "displayName": "Codex MCP 配置审计器",
+    "shortDescription": "不回传配置值的静态敏感 MCP 头审计。",
+    "longDescription": "只读取当前用户固定的 Codex 配置路径，并报告有界的服务器标识符、字段路径、风险码和固定修复文本。它绝不返回配置值、哈希、长度、预览、原始解析错误或环境值。",
+    "developerName": "JSONUtils project",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read"
+    ],
+    "defaultPrompt": [
+      "审计我的 Codex MCP 配置中的敏感静态头。",
+      "显示不含配置值的 MCP 凭据修复发现。"
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

@@ -13,7 +13,7 @@ describe('schemePathValues', () => {
     });
   });
 
-  it('对特殊 key 使用 bracket JSONPath 表达式', () => {
+  it('对特殊 key 使用可执行 JSONPath 表达式', () => {
     const result = buildSchemePathValuesForCopy(JSON.stringify({
       'a.b': {
         'x/y': {
@@ -25,7 +25,7 @@ describe('schemePathValues', () => {
 
     expect(result?.text).toBe([
       '$["a.b"]["x/y"]["tilde~key"] = 1',
-      '$["quote\\"key"] = "value"',
+      '$[?(@property === "quote\\"key")] = "value"',
     ].join('\n'));
   });
 

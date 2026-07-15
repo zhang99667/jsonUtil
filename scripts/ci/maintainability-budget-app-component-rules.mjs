@@ -24,4 +24,6 @@ export const appComponentMaintainabilityBudgets = [
   appComponentBudget('AppToastHost.tsx', 25, '主应用 Toast 宿主只承载全局 toast 位置和展示偏移配置'),
   appComponentBudget('AppFileDropOverlay.tsx', 35, '主工作台文件拖拽浮层只承载释放提示图标和文案，不承载拖拽状态'),
   appComponentBudget('appLazyPanels.ts', 80, '主应用懒加载注册应保持纯加载边界，不夹带业务状态'),
+  appComponentBudget('JsonSchemaPanel.tsx', 880, 'JSON Schema 主面板已贴近拆分阈值，后续增长应先抽离收藏、推断或结果展示职责'),
+  appComponentBudget('JsonSchemaPanelStorageFailure.test.tsx', 165, 'Schema 收藏存储边界测试只锁定失败零提交、遥测状态和成功提交顺序'),
 ];

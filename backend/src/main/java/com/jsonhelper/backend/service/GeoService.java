@@ -8,10 +8,16 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
 public class GeoService {
+
+    private static final Pattern IPV4_LITERAL = Pattern.compile("[0-9]{1,3}(?:\\.[0-9]{1,3}){3}");
+    private static final Pattern IPV6_LITERAL = Pattern.compile("[0-9A-Fa-f:][0-9A-Fa-f:.]*");
+    private static final Pattern IPV6_ZONE = Pattern.compile("[A-Za-z0-9_.-]{1,64}");
 
     private Searcher searcher;
     private byte[] cBuff;
@@ -19,7 +25,7 @@ public class GeoService {
     @PostConstruct
     public void init() {
         try {
-            // 从 classpath 加载 ip2region_v4.xdb 数据文件
+            // 从类路径加载 ip2region_v4.xdb 数据文件
             ClassPathResource resource = new ClassPathResource("ip2region_v4.xdb");
             try (InputStream is = resource.getInputStream()) {
                 cBuff = is.readAllBytes();
@@ -75,33 +81,60 @@ public class GeoService {
         if (ip == null || ip.isEmpty()) {
             return true;
         }
-        
-        // localhost
-        if ("localhost".equalsIgnoreCase(ip) || "127.0.0.1".equals(ip) || "::1".equals(ip)) {
+
+        if ("localhost".equalsIgnoreCase(ip)) {
             return true;
         }
-        
-        // 内网IP段
-        // 10.0.0.0 - 10.255.255.255
-        // 172.16.0.0 - 172.31.255.255
-        // 192.168.0.0 - 192.168.255.255
-        if (ip.startsWith("10.") || ip.startsWith("192.168.")) {
-            return true;
+
+        InetAddress address = parseIpLiteral(ip);
+        return address != null && (address.isAnyLocalAddress()
+                || address.isLoopbackAddress()
+                || address.isLinkLocalAddress()
+                || address.isSiteLocalAddress()
+                || isUniqueLocalIpv6(address));
+    }
+
+    private static InetAddress parseIpLiteral(String ip) {
+        String candidate = stripIpv6Zone(ip);
+        if (candidate == null) {
+            return null;
         }
-        
-        if (ip.startsWith("172.")) {
-            try {
-                String[] parts = ip.split("\\.");
-                int second = Integer.parseInt(parts[1]);
-                if (second >= 16 && second <= 31) {
-                    return true;
-                }
-            } catch (Exception e) {
-                // 忽略解析错误
+
+        try {
+            if (IPV4_LITERAL.matcher(candidate).matches()) {
+                long value = Searcher.checkIP(candidate);
+                return InetAddress.getByAddress(new byte[] {
+                        (byte) (value >>> 24), (byte) (value >>> 16),
+                        (byte) (value >>> 8), (byte) value
+                });
             }
+            // 只向 JDK 解析器传入已筛选的 IPv6 字面量候选，避免触发 DNS。
+            if (candidate.indexOf(':') >= 0 && IPV6_LITERAL.matcher(candidate).matches()) {
+                return InetAddress.getByName(candidate);
+            }
+        } catch (Exception ignored) {
+            return null;
         }
-        
-        return false;
+        return null;
+    }
+
+    private static String stripIpv6Zone(String input) {
+        int zoneIndex = input.indexOf('%');
+        if (zoneIndex < 0) {
+            return input;
+        }
+
+        String address = input.substring(0, zoneIndex);
+        String zone = input.substring(zoneIndex + 1);
+        // 作用域只参与输入校验，不交给 JDK 查询本机网卡。
+        return address.indexOf(':') >= 0
+                && zoneIndex == input.lastIndexOf('%')
+                && IPV6_ZONE.matcher(zone).matches() ? address : null;
+    }
+
+    private static boolean isUniqueLocalIpv6(InetAddress address) {
+        byte[] bytes = address.getAddress();
+        return bytes.length == 16 && (bytes[0] & 0xfe) == 0xfc;
     }
 
     /**

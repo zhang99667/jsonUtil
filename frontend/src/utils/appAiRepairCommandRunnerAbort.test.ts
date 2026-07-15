@@ -81,4 +81,44 @@ describe('appAiRepairCommandRunner abort handling', () => {
     expect(dispatchChunkLoadRecoveryEvent).not.toHaveBeenCalled();
     expect(effects.onTrackToolEvent).toHaveBeenCalledWith(ActionType.AI_FIX, 'ai', 'cancelled', 17);
   });
+
+  it.each(['runtime 加载后', 'service 返回后'] as const)(
+    '%s取消时不应应用修复结果',
+    async cancelAt => {
+      const abortController = new AbortController();
+      const repairResult = {
+        fixedJson: '{"ok":1}',
+        repairMethod: 'local' as const,
+        localRuleLabels: ['本地规则'],
+      };
+      const runtime = {
+        fixJsonWithRepairDetails: vi.fn(async () => repairResult),
+        buildAiRepairSummary: vi.fn(() => createAiRepairSummary()),
+      };
+      const effects = createAiRepairEffects(runtime);
+      if (cancelAt === 'runtime 加载后') {
+        effects.onLoadRuntime.mockImplementation(async () => {
+          abortController.abort();
+          return runtime;
+        });
+      } else {
+        runtime.fixJsonWithRepairDetails.mockImplementation(async () => {
+          abortController.abort();
+          return repairResult;
+        });
+      }
+
+      await runAppAiRepairCommand(createAiRepairInput({
+        startedAt: 18,
+        signal: abortController.signal,
+      }), effects);
+
+      if (cancelAt === 'runtime 加载后') expect(runtime.fixJsonWithRepairDetails).not.toHaveBeenCalled();
+      expect(effects.onApplyFixedJson).not.toHaveBeenCalled();
+      expect(effects.onShowSuccess).not.toHaveBeenCalled();
+      expect(effects.onTrackToolEvent).toHaveBeenCalledWith(ActionType.AI_FIX, 'ai', 'cancelled', 18);
+      expect(effects.onSetRepairing).toHaveBeenNthCalledWith(1, true);
+      expect(effects.onSetRepairing).toHaveBeenLastCalledWith(false);
+    },
+  );
 });

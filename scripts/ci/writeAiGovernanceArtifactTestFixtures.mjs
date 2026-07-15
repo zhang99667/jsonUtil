@@ -8,6 +8,8 @@ export const prepareAiGovernanceArtifactProject = (
 ) => {
   writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({ name: 'json-helper-ai-fix', version: '1.8.736' }));
   writeFixtureFile(rootDir, 'CHANGELOG.md', '# 更新日志\n## v1.8.736 (2026-07-10) - 治理 MCP 上下文快照\n');
+  writeFixtureFile(rootDir, 'evals/ai-governance/outcomes.jsonl', '{"fixture":"outcome"}\n');
+  writeFixtureFile(rootDir, 'evals/ai-governance/trial-receipts.jsonl', '{"fixture":"receipt"}\n');
   writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', [
     '# AI 治理决策记录',
     '| 日期 | 决策 | 触发条件 | 反例 | 适用边界 | 回写追踪 | 锁定测试 |',
@@ -19,7 +21,20 @@ export const prepareAiGovernanceArtifactProject = (
 export const createAiGovernanceArtifactRunReport = (calls = []) => (script, args) => {
   calls.push([script, args]);
   if (script.includes('check-ai-governance')) {
-    return { exitCode: 0, report: { ok: true, counts: { requiredFiles: 3, referenceRules: 2 }, failures: {} } };
+    return {
+      exitCode: 0,
+      report: {
+        ok: true,
+        counts: { requiredFiles: 3, referenceRules: 2 },
+        failures: {},
+        evolutionEvals: {
+          reportType: 'ai-governance-evolution-evals',
+          ok: true,
+          counts: { cases: 13, outcomes: 1, coveredCases: 1 },
+          coverage: { outcomes: { percent: 8 } },
+        },
+      },
+    };
   }
   return {
     exitCode: 0,

@@ -1,13 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanJsonInput,
   getJsonValidationErrorLocation,
   isCleanJsonInputEmpty,
   isJsonContainerCandidate,
+  startJsonValidation,
   validateJsonForEditor,
 } from './jsonValidation';
 
 describe('jsonValidation', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('清理零宽字符后再校验 JSON', () => {
     const result = validateJsonForEditor('\uFEFF{"name":"json"}\u200B');
 
@@ -60,5 +65,88 @@ describe('jsonValidation', () => {
     );
 
     expect(location).toEqual({ line: 2, column: 8 });
+  });
+
+  it('Worker 创建失败时返回可控的校验结果', async () => {
+    class FailingWorker {
+      constructor() {
+        throw new Error('Worker 不可用');
+      }
+    }
+    vi.stubGlobal('Worker', FailingWorker);
+
+    const task = startJsonValidation('{"large":true}', 0);
+
+    await expect(task.promise).resolves.toEqual({
+      isValid: false,
+      error: 'JSON 校验失败: Worker 不可用',
+    });
+    expect(() => task.cancel()).not.toThrow();
+  });
+
+  it('Worker 发送失败时终止任务并返回校验结果', async () => {
+    const terminate = vi.fn();
+    class PostMessageFailingWorker {
+      onmessage = null;
+      onerror = null;
+      terminate = terminate;
+
+      postMessage() {
+        throw new Error('消息发送失败');
+      }
+    }
+    vi.stubGlobal('Worker', PostMessageFailingWorker);
+
+    const task = startJsonValidation('{"large":true}', 0);
+
+    await expect(task.promise).resolves.toEqual({
+      isValid: false,
+      error: 'JSON 校验失败: 消息发送失败',
+    });
+    expect(terminate).toHaveBeenCalledTimes(1);
+  });
+
+  it('预取消信号不创建 Worker 并返回 AbortError', async () => {
+    let constructionCount = 0;
+    class CountingWorker {
+      onmessage = null;
+      onerror = null;
+
+      constructor() {
+        constructionCount++;
+      }
+
+      postMessage() {}
+      terminate() {}
+    }
+    vi.stubGlobal('Worker', CountingWorker);
+    const controller = new AbortController();
+    controller.abort();
+
+    const task = startJsonValidation('{"large":true}', 0, { signal: controller.signal });
+
+    await expect(task.promise).rejects.toMatchObject({ name: 'AbortError' });
+    expect(constructionCount).toBe(0);
+  });
+
+  it('AbortSignal 中止校验时只终止一次 Worker', async () => {
+    const terminate = vi.fn();
+    class PendingWorker {
+      onmessage = null;
+      onerror = null;
+      terminate = terminate;
+
+      postMessage() {}
+    }
+    vi.stubGlobal('Worker', PendingWorker);
+    const controller = new AbortController();
+    const task = startJsonValidation('{"large":true}', 0, { signal: controller.signal });
+    const rejection = task.promise.catch(error => error);
+
+    controller.abort();
+    task.cancel();
+
+    expect(terminate).toHaveBeenCalledTimes(1);
+    await expect(rejection).resolves.toMatchObject({ name: 'AbortError' });
   });
 });

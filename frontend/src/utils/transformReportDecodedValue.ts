@@ -1,4 +1,5 @@
 import type { JsonValue, PathTransformRecord, TransformStep } from '../types';
+import { parseJsonWithFallback } from './storage';
 import { formatJsonValuePreview } from './transformValuePreview';
 
 export const getTransformSchemeDecodedValue = (steps: TransformStep[]): JsonValue | undefined => {
@@ -20,11 +21,7 @@ export const getTransformSchemeDecodedPreview = (steps: TransformStep[]): string
 export const getTransformJsonParseDecodedValue = (record: PathTransformRecord): JsonValue | undefined => {
   if (!record.steps.some(step => step.type === 'json_parse')) return undefined;
 
-  try {
-    return JSON.parse(record.originalValue) as JsonValue;
-  } catch {
-    return undefined;
-  }
+  return parseJsonWithFallback<JsonValue | undefined>(record.originalValue, undefined);
 };
 
 export const getTransformJsonParseDecodedPreview = (record: PathTransformRecord): string | undefined => {

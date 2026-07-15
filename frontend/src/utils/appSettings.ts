@@ -27,7 +27,7 @@ export const normalizeGeneralSettings = (value: unknown): GeneralSettings => {
   };
 };
 
-export const loadGeneralSettings = (storage: Storage = localStorage): GeneralSettings => {
+export const loadGeneralSettings = (storage?: Storage): GeneralSettings => {
   return normalizeGeneralSettings(
     parseJsonWithFallback<unknown>(
       safeGetStorageItem(GENERAL_SETTINGS_STORAGE_KEY, storage),
@@ -76,7 +76,7 @@ export const buildAIConfigForProviderChange = (
   };
 };
 
-export const loadAIConfig = (storage: Storage = localStorage): AIConfig => {
+export const loadAIConfig = (storage?: Storage): AIConfig => {
   return normalizeAIConfig(
     parseJsonWithFallback<unknown>(
       safeGetStorageItem(AI_CONFIG_STORAGE_KEY, storage),
@@ -98,7 +98,7 @@ export const normalizeTemplateFillConfig = (value: unknown): TemplateFillConfig 
   };
 };
 
-export const loadTemplateFillConfig = (storage: Storage = localStorage): TemplateFillConfig => {
+export const loadTemplateFillConfig = (storage?: Storage): TemplateFillConfig => {
   return normalizeTemplateFillConfig(
     parseJsonWithFallback<unknown>(
       safeGetStorageItem(TEMPLATE_FILL_STORAGE_KEY, storage),
