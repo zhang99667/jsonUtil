@@ -11,11 +11,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TrafficFilterTest {
@@ -27,8 +29,7 @@ class TrafficFilterTest {
 
     @BeforeEach
     void setUp() {
-        trafficFilter = new TrafficFilter();
-        ReflectionTestUtils.setField(trafficFilter, "visitLogRepository", visitLogRepository);
+        trafficFilter = new TrafficFilter(visitLogRepository);
     }
 
     @Test
@@ -42,10 +43,11 @@ class TrafficFilterTest {
     }
 
     @Test
-    void visitorPingStillPersistsVisitLog() throws Exception {
+    void visitorPingUsesContainerResolvedRemoteAddress() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/visitor/ping");
+        request.setRemoteAddr("198.51.100.24");
         request.addHeader("User-Agent", "JUnit");
-        request.addHeader("X-Forwarded-For", "203.0.113.10, 10.0.0.1");
+        request.addHeader("X-Forwarded-For", "203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         trafficFilter.doFilter(request, response, new MockFilterChain());
@@ -55,7 +57,20 @@ class TrafficFilterTest {
         VisitLog log = logCaptor.getValue();
         assertEquals("/api/visitor/ping", log.getPath());
         assertEquals("GET", log.getMethod());
-        assertEquals("203.0.113.10", log.getIp());
+        assertEquals("198.51.100.24", log.getIp());
         assertEquals("JUnit", log.getUserAgent());
+    }
+
+    @Test
+    void persistenceFailureDoesNotInterruptRequest() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/visitor/ping");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+        when(visitLogRepository.save(any(VisitLog.class)))
+                .thenThrow(new RuntimeException("测试用持久化异常"));
+
+        trafficFilter.doFilter(request, response, filterChain);
+
+        assertSame(request, filterChain.getRequest());
     }
 }

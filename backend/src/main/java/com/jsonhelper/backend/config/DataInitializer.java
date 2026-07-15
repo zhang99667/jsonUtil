@@ -2,24 +2,26 @@ package com.jsonhelper.backend.config;
 
 import com.jsonhelper.backend.entity.User;
 import com.jsonhelper.backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class DataInitializer implements CommandLineRunner {
 
-    private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
+    private static final String ADMIN_ROLE = "ADMIN";
+    private static final String INVALID_EXISTING_ACCOUNT_MESSAGE = "管理员初始化失败：同名账号不是已启用管理员";
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /** 是否允许通过环境变量创建首个管理员账号 */
     @Value("${admin.bootstrap.enabled:false}")
@@ -37,35 +39,58 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (!bootstrapEnabled) {
-            logger.info("Admin bootstrap is disabled");
+            log.info("管理员初始化未启用");
             return;
         }
 
         String username = bootstrapUsername == null ? "" : bootstrapUsername.trim();
-        String password = bootstrapPassword == null ? "" : bootstrapPassword.trim();
+        String password = bootstrapPassword == null ? "" : bootstrapPassword;
+        String passwordForValidation = password.strip();
 
-        if (username.isEmpty() || password.isEmpty()) {
+        if (username.isEmpty() || passwordForValidation.isEmpty()) {
             throw new IllegalStateException("已启用管理员初始化，但 ADMIN_BOOTSTRAP_USERNAME 或 ADMIN_BOOTSTRAP_PASSWORD 未配置");
         }
 
-        if (password.length() < 8 || password.startsWith("change-me")) {
+        if (password.length() < 8 || passwordForValidation.startsWith("change-me")) {
             throw new IllegalStateException("管理员初始化密码不符合要求，请配置至少 8 位且非示例值的 ADMIN_BOOTSTRAP_PASSWORD");
         }
 
-        userRepository.findByUsername(username).ifPresentOrElse(
-                user -> {
-                    // 用户已存在，不重置密码，直接跳过
-                    logger.info("Bootstrap admin user already exists");
-                },
-                () -> {
-                    // 用户不存在时，按显式配置创建管理员，避免默认口令进入生产环境
-                    User user = new User();
-                    user.setUsername(username);
-                    user.setPasswordHash(passwordEncoder.encode(password));
-                    user.setEmail(bootstrapEmail);
-                    user.setRole("ADMIN");
-                    userRepository.save(user);
-                    logger.info("Bootstrap admin user created");
-                });
+        Optional<User> existingUser = userRepository.findByUsername(username);
+        if (existingUser.isPresent()) {
+            requireEnabledAdmin(existingUser.get());
+            log.info("管理员初始化已跳过：已存在可用管理员");
+            return;
+        }
+
+        // 直接依赖数据库唯一约束裁决多实例竞态，并立即刷新以在当前调用内暴露冲突。
+        User user = new User();
+        user.setUsername(username);
+        user.setPasswordHash(passwordEncoder.encode(password));
+        user.setEmail(bootstrapEmail);
+        user.setRole(ADMIN_ROLE);
+        user.setEnabled(true);
+        try {
+            userRepository.saveAndFlush(user);
+            log.info("管理员初始化完成");
+        } catch (DataIntegrityViolationException conflict) {
+            Optional<User> concurrentUser = userRepository.findByUsername(username);
+            if (concurrentUser.isEmpty()) {
+                throw conflict;
+            }
+            if (!isEnabledAdmin(concurrentUser.get())) {
+                throw new IllegalStateException(INVALID_EXISTING_ACCOUNT_MESSAGE, conflict);
+            }
+            log.info("管理员初始化已跳过：并发实例已完成初始化");
+        }
+    }
+
+    private void requireEnabledAdmin(User user) {
+        if (!isEnabledAdmin(user)) {
+            throw new IllegalStateException(INVALID_EXISTING_ACCOUNT_MESSAGE);
+        }
+    }
+
+    private boolean isEnabledAdmin(User user) {
+        return ADMIN_ROLE.equals(user.getRole()) && Boolean.TRUE.equals(user.getEnabled());
     }
 }
