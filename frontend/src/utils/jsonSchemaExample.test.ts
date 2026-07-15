@@ -72,6 +72,28 @@ describe('jsonSchemaExample', () => {
     expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
   });
 
+  it('本地 $ref 复用 JSON Pointer 转义和数组下标语义', () => {
+    const schemaText = JSON.stringify({
+      $defs: {
+        'a/b~c': { const: { nested: ['value'] } },
+        values: [{ const: 'first' }],
+      },
+      type: 'object',
+      required: ['escaped', 'indexed'],
+      properties: {
+        escaped: { $ref: '#/$defs/a~1b~0c' },
+        indexed: { $ref: '#/$defs/values/0' },
+      },
+    });
+    const result = generateJsonSchemaExampleText(schemaText);
+
+    expect(JSON.parse(result.exampleText || '{}')).toEqual({
+      escaped: { nested: ['value'] },
+      indexed: 'first',
+    });
+    expect(validateJsonAgainstSchema(result.exampleText || '', schemaText).status).toBe('valid');
+  });
+
   it('支持动态对象 Schema 的 patternProperties 和 additionalProperties', () => {
     const schemaText = JSON.stringify({
       $schema: 'https://json-schema.org/draft/2020-12/schema',

@@ -12,30 +12,30 @@ describe('transformReportCommandSchemaGroups', () => {
     const records = [
       {
         path: '$.first',
-        commandSchema: 'baiduboxapp://feed/detail',
+        commandSchema: 'sampleapp://feed/detail',
         commandSchemaRows: [
-          { schema: 'baiduboxapp://feed/detail', path: '$.first.cmdSchema', source: 'cmd=1' },
-          { schema: 'baiduboxapp://feed/panel', path: '$.first.panel', source: 'cmd=2' },
+          { schema: 'sampleapp://feed/detail', path: '$.first.cmdSchema', source: 'cmd=1' },
+          { schema: 'sampleapp://feed/panel', path: '$.first.panel', source: 'cmd=2' },
         ],
       },
       {
         path: '$.second',
         commandSchemaRows: [
-          { schema: 'baiduboxapp://feed/detail', path: '$.second.cmdSchema', source: 'cmd=3' },
+          { schema: 'sampleapp://feed/detail', path: '$.second.cmdSchema', source: 'cmd=3' },
         ],
       },
     ] as unknown as TransformReportRecord[];
 
     expect(buildTopCommandSchemaGroups(records, { limit: 2, pathLimit: 2 })).toEqual([
       {
-        schema: 'baiduboxapp://feed/detail',
+        schema: 'sampleapp://feed/detail',
         count: 3,
         recordCount: 2,
         paths: ['$.first', '$.first.cmdSchema'],
         hasMorePaths: true,
       },
       {
-        schema: 'baiduboxapp://feed/panel',
+        schema: 'sampleapp://feed/panel',
         count: 1,
         recordCount: 1,
         paths: ['$.first.panel'],
@@ -96,35 +96,35 @@ describe('transformReportCommandSchemaGroups', () => {
   it('归并 schema origin 并兼容转义斜杠和协议形态', () => {
     expect(getCommandSchemaOrigin('https:\\/\\/example.com/path?a=1')).toBe('https://example.com');
     expect(getCommandSchemaOrigin('//cdn.example.com/a.png')).toBe('//cdn.example.com');
-    expect(getCommandSchemaOrigin('baiduboxapp://feed/detail')).toBe('baiduboxapp://feed');
+    expect(getCommandSchemaOrigin('sampleapp://feed/detail')).toBe('sampleapp://feed');
     expect(getCommandSchemaOrigin('tel:123456')).toBe('tel:');
 
     const records = [
       {
         path: '$.first',
-        commandSchema: 'baiduboxapp://feed/detail',
+        commandSchema: 'sampleapp://feed/detail',
         commandSchemaRows: [
-          { schema: 'baiduboxapp://feed/panel', path: '$.first.panel', source: 'cmd=1' },
-          { schema: 'baiduboxapp://other/detail', path: '$.first.other', source: 'cmd=2' },
+          { schema: 'sampleapp://feed/panel', path: '$.first.panel', source: 'cmd=1' },
+          { schema: 'sampleapp://other/detail', path: '$.first.other', source: 'cmd=2' },
         ],
       },
     ] as unknown as TransformReportRecord[];
 
     expect(buildTopCommandSchemaOriginGroups(records)).toEqual([
       {
-        origin: 'baiduboxapp://feed',
+        origin: 'sampleapp://feed',
         count: 2,
         schemaCount: 2,
         recordCount: 1,
-        schemas: ['baiduboxapp://feed/detail', 'baiduboxapp://feed/panel'],
+        schemas: ['sampleapp://feed/detail', 'sampleapp://feed/panel'],
         hasMoreSchemas: false,
       },
       {
-        origin: 'baiduboxapp://other',
+        origin: 'sampleapp://other',
         count: 1,
         schemaCount: 1,
         recordCount: 1,
-        schemas: ['baiduboxapp://other/detail'],
+        schemas: ['sampleapp://other/detail'],
         hasMoreSchemas: false,
       },
     ]);
@@ -134,28 +134,28 @@ describe('transformReportCommandSchemaGroups', () => {
     const records = [
       {
         path: '$.feed',
-        commandSchema: 'baiduboxapp://feed/detail',
+        commandSchema: 'sampleapp://feed/detail',
         commandSchemaRows: [
-          { schema: 'baiduboxapp://feed/panel', path: '$.feed.panel', source: 'cmd=1' },
-          { schema: 'baiduboxapp://feed/tab', path: '$.feed.tab', source: 'cmd=2' },
-          { schema: 'baiduboxapp://feed/landing', path: '$.feed.landing', source: 'cmd=3' },
-          { schema: 'baiduboxapp://feed/profile', path: '$.feed.profile', source: 'cmd=4' },
-          { schema: 'baiduboxapp://feed/panel', path: '$.feed.duplicatePanel', source: 'cmd=5' },
+          { schema: 'sampleapp://feed/panel', path: '$.feed.panel', source: 'cmd=1' },
+          { schema: 'sampleapp://feed/tab', path: '$.feed.tab', source: 'cmd=2' },
+          { schema: 'sampleapp://feed/landing', path: '$.feed.landing', source: 'cmd=3' },
+          { schema: 'sampleapp://feed/profile', path: '$.feed.profile', source: 'cmd=4' },
+          { schema: 'sampleapp://feed/panel', path: '$.feed.duplicatePanel', source: 'cmd=5' },
         ],
       },
     ] as unknown as TransformReportRecord[];
 
     expect(buildTopCommandSchemaOriginGroups(records)).toEqual([
       {
-        origin: 'baiduboxapp://feed',
+        origin: 'sampleapp://feed',
         count: 6,
         schemaCount: 5,
         recordCount: 1,
         schemas: [
-          'baiduboxapp://feed/detail',
-          'baiduboxapp://feed/panel',
-          'baiduboxapp://feed/tab',
-          'baiduboxapp://feed/landing',
+          'sampleapp://feed/detail',
+          'sampleapp://feed/panel',
+          'sampleapp://feed/tab',
+          'sampleapp://feed/landing',
         ],
         hasMoreSchemas: true,
       },

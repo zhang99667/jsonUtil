@@ -5,7 +5,6 @@ import {
   normalizeJsonPathSavedQueryLists,
   saveJsonPathFavorites,
   saveJsonPathHistory,
-  writeJsonPathSavedQueryLists,
 } from './jsonPathSavedQueryStorage';
 import { MemoryStorage } from './memoryStorageTestHelper';
 
@@ -43,15 +42,4 @@ describe('jsonPathSavedQueryStorage', () => {
     });
   });
 
-  it('备份导入写入时保持 JSON 数组格式', () => {
-    const storage = new MemoryStorage();
-
-    writeJsonPathSavedQueryLists(storage, {
-      history: ['$.history'],
-      favorites: ['$.favorite'],
-    });
-
-    expect(JSON.parse(storage.getItem('jsonpath-query-history') || '[]')).toEqual(['$.history']);
-    expect(JSON.parse(storage.getItem('jsonpath-query-favorites') || '[]')).toEqual(['$.favorite']);
-  });
 });

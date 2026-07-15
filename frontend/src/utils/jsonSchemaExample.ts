@@ -1,5 +1,28 @@
 import { formatUnknownError } from './errors';
+import { getJsonPointerValue } from './jsonPointer';
+import {
+  generateNumberExample,
+  getIntegerValue,
+  getNumberValue,
+  getUniqueNumberExample,
+} from './jsonSchemaExampleNumbers';
+import {
+  cloneJsonValue,
+  generateStringExample,
+  getEnumValueAt,
+  getPatternMatcher,
+  getUniqueStringExample,
+  serializeExampleValue,
+  type JsonSchemaNode,
+} from './jsonSchemaExamplePrimitives';
+import {
+  findAvailablePropertyKey,
+  getPatternPropertyKeyCandidates,
+  getPropertyNameCandidates,
+  isPropertyNameAllowed,
+} from './jsonSchemaExamplePropertyNames';
 import { validateJsonAgainstSchema, type JsonSchemaValidationResult } from './jsonSchemaValidation';
+import { isRecord } from './storage';
 
 export interface JsonSchemaExampleResult {
   exampleText?: string;
@@ -7,7 +30,6 @@ export interface JsonSchemaExampleResult {
 }
 
 type JsonSchemaType = 'array' | 'boolean' | 'integer' | 'null' | 'number' | 'object' | 'string';
-type JsonSchemaNode = boolean | Record<string, unknown>;
 
 interface ExampleContext {
   rootSchema: unknown;
@@ -19,106 +41,15 @@ const MAX_EXAMPLE_DEPTH = 8;
 const DEFAULT_ARRAY_EXAMPLE_ITEMS = 3;
 const MAX_ARRAY_CONSTRAINT_EXAMPLE_ITEMS = 8;
 const MAX_OBJECT_EXAMPLE_PROPERTIES = 80;
-const COMMON_DYNAMIC_PROPERTY_KEYS = [
-  'key',
-  'name',
-  'value',
-  'extra',
-  'meta_key',
-  'x-key',
-  'field',
-  'a',
-  'A',
-  '1',
-];
-const COMMON_STRING_PATTERN_CANDIDATES = [
-  'string',
-  'key',
-  'value',
-  'abc',
-  'ABC',
-  'A1',
-  'id-1',
-  'ORD-1',
-  '2026-01-01',
-  'user@example.com',
-];
-const COMMON_SHORT_STRING_CANDIDATES = [
-  'A',
-  'B',
-  'C',
-  'D',
-  'E',
-  'F',
-  'G',
-  'H',
-  'a',
-  'b',
-  'c',
-  'd',
-  'e',
-  'f',
-  'g',
-  'h',
-  '0',
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-];
-const UPPERCASE_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const LOWERCASE_LETTERS = 'abcdefghijklmnopqrstuvwxyz';
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-const isJsonSerializableValue = (value: unknown): boolean => {
-  if (value === null) return true;
-  if (['string', 'number', 'boolean'].includes(typeof value)) return Number.isFinite(value as number) || typeof value !== 'number';
-  if (Array.isArray(value)) return value.every(isJsonSerializableValue);
-  if (isRecord(value)) return Object.values(value).every(isJsonSerializableValue);
-  return false;
-};
-
-const cloneJsonValue = (value: unknown): unknown => (
-  isJsonSerializableValue(value) ? JSON.parse(JSON.stringify(value)) : undefined
-);
-
-const getNumberValue = (schema: Record<string, unknown>, key: string): number | undefined => {
-  const value = schema[key];
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-};
-
-const getIntegerValue = (schema: Record<string, unknown>, key: string): number | undefined => {
-  const value = getNumberValue(schema, key);
-  return typeof value === 'number' ? Math.trunc(value) : undefined;
-};
-
-const decodeJsonPointerSegment = (segment: string): string => (
-  segment.replace(/~1/g, '/').replace(/~0/g, '~')
-);
 
 const resolveLocalRef = (rootSchema: unknown, ref: string): unknown => {
-  if (ref === '#') return rootSchema;
-  if (!ref.startsWith('#/')) return undefined;
+  if (ref !== '#' && !ref.startsWith('#/')) return undefined;
 
-  return ref
-    .slice(2)
-    .split('/')
-    .map(decodeJsonPointerSegment)
-    .reduce<unknown>((current, segment) => {
-      if (current === undefined) return undefined;
-      if (Array.isArray(current)) {
-        const index = Number(segment);
-        return Number.isInteger(index) ? current[index] : undefined;
-      }
-      if (isRecord(current)) return current[segment];
-      return undefined;
-    }, rootSchema);
+  try {
+    return getJsonPointerValue(rootSchema, ref.slice(1));
+  } catch {
+    return undefined;
+  }
 };
 
 const getPrimaryType = (schema: Record<string, unknown>): JsonSchemaType | undefined => {
@@ -242,322 +173,6 @@ const getPropertyNamesSchema = (schema: Record<string, unknown>): JsonSchemaNode
 };
 
 const uniqueKeys = (keys: string[]): string[] => [...new Set(keys)].slice(0, MAX_OBJECT_EXAMPLE_PROPERTIES);
-
-const stripRegexAnchors = (pattern: string): string => (
-  pattern.replace(/^\^/, '').replace(/\$$/, '')
-);
-
-const repeatToken = (token: string, countText?: string): string => (
-  token.repeat(Math.max(Number(countText) || 1, 1))
-);
-
-const inferTextFromPattern = (pattern: string): string => {
-  let text = stripRegexAnchors(pattern);
-  text = text.replace(/\(([^|()]+)\|[^()]+\)/g, '$1');
-  text = text.replace(/\\d\{(\d+)\}/g, (_match, count: string) => repeatToken('1', count));
-  text = text.replace(/\[0-9]\{(\d+)\}/g, (_match, count: string) => repeatToken('1', count));
-  text = text.replace(/\[A-Z]\{(\d+)\}/g, (_match, count: string) => repeatToken('A', count));
-  text = text.replace(/\[a-z]\{(\d+)\}/g, (_match, count: string) => repeatToken('a', count));
-  text = text.replace(/\[A-Za-z]\{(\d+)\}/g, (_match, count: string) => repeatToken('a', count));
-  text = text.replace(/\[A-Za-z0-9]\{(\d+)\}/g, (_match, count: string) => repeatToken('a', count));
-  text = text.replace(/\\w\{(\d+)\}/g, (_match, count: string) => repeatToken('a', count));
-  text = text.replace(/\[a-z]\+/gi, 'key');
-  text = text.replace(/\[a-z_]\+/gi, 'key');
-  text = text.replace(/\[a-z-]\+/gi, 'key');
-  text = text.replace(/\[A-Z]\+/g, 'KEY');
-  text = text.replace(/\[0-9]\+/g, '1');
-  text = text.replace(/\[A-Za-z]\+/g, 'key');
-  text = text.replace(/\[A-Za-z0-9]\+/g, 'key1');
-  text = text.replace(/\\d\+/g, '1');
-  text = text.replace(/\\w\+/g, 'key');
-  text = text.replace(/\\S\+/g, 'key');
-  text = text.replace(/\.\+/g, 'key');
-  text = text.replace(/\\d/g, '1');
-  text = text.replace(/\\w/g, 'a');
-  text = text.replace(/\[0-9]/g, '1');
-  text = text.replace(/\[A-Z]/g, 'A');
-  text = text.replace(/\[a-z]/gi, 'a');
-  text = text.replace(/\[A-Za-z]/g, 'a');
-  text = text.replace(/\[A-Za-z0-9]/g, 'a');
-  text = text.replace(/[?*+]/g, '');
-  text = text.replace(/\{(\d+)\}/g, '');
-  text = text.replace(/\{(\d+),\d*}/g, '');
-  text = text.replace(/\\([.^$*+?()[\]{}|/-])/g, '$1');
-
-  return text || 'string';
-};
-
-const inferKeyFromPattern = (pattern: string): string => {
-  const key = inferTextFromPattern(pattern).replace(/[^A-Za-z0-9_-]/g, '');
-  return key || 'key';
-};
-
-const getPatternMatcher = (pattern: string): ((value: string) => boolean) => {
-  try {
-    const regex = new RegExp(pattern);
-    return value => regex.test(value);
-  } catch {
-    return () => false;
-  }
-};
-
-const getStringEnumValues = (value: unknown): string[] => (
-  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
-);
-
-const isPropertyNameAllowed = (key: string, schema: JsonSchemaNode | undefined): boolean => {
-  if (schema === undefined || schema === true) return true;
-  if (schema === false || !isRecord(schema)) return false;
-
-  const type = schema.type;
-  if (
-    (typeof type === 'string' && type !== 'string') ||
-    (Array.isArray(type) && !type.includes('string'))
-  ) {
-    return false;
-  }
-
-  if (typeof schema.const === 'string' && key !== schema.const) return false;
-
-  const enumValues = getStringEnumValues(schema.enum);
-  if (enumValues.length > 0 && !enumValues.includes(key)) return false;
-
-  const minLength = getIntegerValue(schema, 'minLength');
-  if (typeof minLength === 'number' && key.length < minLength) return false;
-
-  const maxLength = getIntegerValue(schema, 'maxLength');
-  if (typeof maxLength === 'number' && key.length > maxLength) return false;
-
-  if (typeof schema.pattern === 'string' && !getPatternMatcher(schema.pattern)(key)) return false;
-
-  return true;
-};
-
-const getPropertyNameCandidates = (propertyNamesSchema: JsonSchemaNode | undefined): string[] => {
-  if (!isRecord(propertyNamesSchema)) return COMMON_DYNAMIC_PROPERTY_KEYS;
-
-  if (typeof propertyNamesSchema.const === 'string') return [propertyNamesSchema.const];
-
-  const enumValues = getStringEnumValues(propertyNamesSchema.enum);
-  if (enumValues.length > 0) return enumValues;
-
-  if (typeof propertyNamesSchema.pattern === 'string') {
-    return [
-      inferKeyFromPattern(propertyNamesSchema.pattern),
-      ...COMMON_DYNAMIC_PROPERTY_KEYS,
-    ];
-  }
-
-  return COMMON_DYNAMIC_PROPERTY_KEYS;
-};
-
-const getPatternPropertyKeyCandidates = (
-  pattern: string,
-  propertyNamesSchema: JsonSchemaNode | undefined
-): string[] => ([
-  inferKeyFromPattern(pattern),
-  ...getPropertyNameCandidates(propertyNamesSchema),
-  ...COMMON_DYNAMIC_PROPERTY_KEYS,
-]);
-
-const findAvailablePropertyKey = (
-  candidates: string[],
-  usedKeys: Set<string>,
-  isAllowed: (key: string) => boolean
-): string | undefined => (
-  [...new Set(candidates)].find(key => !usedKeys.has(key) && isAllowed(key))
-);
-
-const serializeExampleValue = (value: unknown): string => JSON.stringify(value);
-
-const getEnumValueAt = (schema: Record<string, unknown>, index: number): unknown => {
-  const enumValues = schema.enum;
-  if (!Array.isArray(enumValues) || index >= enumValues.length) return undefined;
-
-  return cloneJsonValue(enumValues[index]);
-};
-
-const isStringExampleAllowed = (value: string, schema: Record<string, unknown>): boolean => {
-  const minLength = getIntegerValue(schema, 'minLength');
-  if (typeof minLength === 'number' && value.length < minLength) return false;
-
-  const maxLength = getIntegerValue(schema, 'maxLength');
-  if (typeof maxLength === 'number' && value.length > maxLength) return false;
-
-  if (typeof schema.pattern === 'string' && !getPatternMatcher(schema.pattern)(value)) return false;
-
-  return true;
-};
-
-const getShiftedCharacter = (characters: string, currentCharacter: string, index: number): string => {
-  const currentIndex = characters.indexOf(currentCharacter);
-  const nextIndex = currentIndex >= 0
-    ? (currentIndex + index) % characters.length
-    : (index - 1) % characters.length;
-  const shiftedCharacter = characters[nextIndex];
-
-  return shiftedCharacter === currentCharacter
-    ? characters[(nextIndex + 1) % characters.length]
-    : shiftedCharacter;
-};
-
-const getAlphabeticStringVariant = (value: string, index: number): string | undefined => {
-  if (!value) return undefined;
-  const lastCharacter = value[value.length - 1];
-
-  if (/^[A-Z]+$/.test(value)) {
-    return `${value.slice(0, -1)}${getShiftedCharacter(UPPERCASE_LETTERS, lastCharacter, index)}`;
-  }
-
-  if (/^[a-z]+$/.test(value)) {
-    return `${value.slice(0, -1)}${getShiftedCharacter(LOWERCASE_LETTERS, lastCharacter, index)}`;
-  }
-
-  return undefined;
-};
-
-const getUniqueStringExample = (
-  value: string,
-  schema: Record<string, unknown>,
-  index: number
-): string | undefined => {
-  const maxLength = getIntegerValue(schema, 'maxLength');
-  const hasPatternConstraint = typeof schema.pattern === 'string';
-  const shouldTryConstrainedVariants = hasPatternConstraint ||
-    value.length <= 1 ||
-    (typeof maxLength === 'number' && `${value}${index + 1}`.length > maxLength);
-  const numericSuffixMatch = value.match(/^(.*?)(\d+)$/);
-  const incrementedNumericSuffix = numericSuffixMatch
-    ? `${numericSuffixMatch[1]}${Number(numericSuffixMatch[2]) + index}`
-    : '';
-  const constrainedCandidates = shouldTryConstrainedVariants
-    ? [
-      getAlphabeticStringVariant(value, index),
-      ...COMMON_SHORT_STRING_CANDIDATES,
-    ]
-    : [];
-  const candidates = [
-    incrementedNumericSuffix,
-    ...constrainedCandidates,
-    `${value}${index + 1}`,
-    `${value}-${index + 1}`,
-    `value${index + 1}`,
-    `key${index + 1}`,
-    String(index + 1),
-  ].filter((candidate): candidate is string => Boolean(candidate) && candidate !== value);
-
-  return candidates.find(candidate => isStringExampleAllowed(candidate, schema));
-};
-
-const generateStringExample = (schema: Record<string, unknown>): string => {
-  const format = typeof schema.format === 'string' ? schema.format : '';
-  const base = (() => {
-    if (format === 'email') return 'user@example.com';
-    if (['uri', 'url', 'iri'].includes(format)) return 'https://example.com';
-    if (format === 'date-time') return '2026-01-01T00:00:00.000Z';
-    if (format === 'date') return '2026-01-01';
-    if (format === 'time') return '12:00:00';
-    if (format === 'uuid') return '550e8400-e29b-41d4-a716-446655440000';
-    if (format === 'ipv4') return '127.0.0.1';
-    if (format === 'ipv6') return '2001:db8::1';
-    return 'string';
-  })();
-
-  const minLength = Math.max(getIntegerValue(schema, 'minLength') || 0, 0);
-  const maxLength = getIntegerValue(schema, 'maxLength');
-  let value = base.length >= minLength ? base : `${base}${'x'.repeat(minLength - base.length)}`;
-
-  if (typeof maxLength === 'number' && maxLength >= 0 && value.length > maxLength) {
-    const fallbackLength = Math.max(Math.min(maxLength, Math.max(minLength, 1)), 0);
-    value = 'x'.repeat(fallbackLength);
-  }
-
-  if (typeof schema.pattern === 'string') {
-    const patternCandidate = inferTextFromPattern(schema.pattern);
-    const matchedCandidate = [
-      patternCandidate,
-      value,
-      ...COMMON_STRING_PATTERN_CANDIDATES,
-    ].find(candidate => isStringExampleAllowed(candidate, schema));
-    if (matchedCandidate) return matchedCandidate;
-  }
-
-  return value;
-};
-
-const isNumberExampleAllowed = (
-  value: number,
-  schema: Record<string, unknown>,
-  integerOnly: boolean
-): boolean => {
-  if (!Number.isFinite(value)) return false;
-  if (integerOnly && !Number.isInteger(value)) return false;
-
-  const minimum = getNumberValue(schema, 'minimum');
-  if (typeof minimum === 'number' && value < minimum) return false;
-
-  const exclusiveMinimum = getNumberValue(schema, 'exclusiveMinimum');
-  if (typeof exclusiveMinimum === 'number' && value <= exclusiveMinimum) return false;
-
-  const maximum = getNumberValue(schema, 'maximum');
-  if (typeof maximum === 'number' && value > maximum) return false;
-
-  const exclusiveMaximum = getNumberValue(schema, 'exclusiveMaximum');
-  if (typeof exclusiveMaximum === 'number' && value >= exclusiveMaximum) return false;
-
-  const multipleOf = getNumberValue(schema, 'multipleOf');
-  if (typeof multipleOf === 'number' && multipleOf > 0) {
-    const quotient = value / multipleOf;
-    if (Math.abs(quotient - Math.round(quotient)) > Number.EPSILON * 100) return false;
-  }
-
-  return true;
-};
-
-const generateNumberExample = (schema: Record<string, unknown>, integerOnly: boolean): number => {
-  const minimum = getNumberValue(schema, 'minimum');
-  const exclusiveMinimum = getNumberValue(schema, 'exclusiveMinimum');
-  const maximum = getNumberValue(schema, 'maximum');
-  const exclusiveMaximum = getNumberValue(schema, 'exclusiveMaximum');
-  const multipleOf = getNumberValue(schema, 'multipleOf');
-
-  let value = typeof minimum === 'number' ? minimum : 1;
-  if (typeof exclusiveMinimum === 'number') value = exclusiveMinimum + (integerOnly ? 1 : 0.1);
-  if (integerOnly) value = Math.ceil(value);
-
-  if (typeof multipleOf === 'number' && multipleOf > 0) {
-    value = Math.ceil(value / multipleOf) * multipleOf;
-    if (integerOnly) value = Math.ceil(value);
-  }
-
-  if (typeof maximum === 'number' && value > maximum) value = integerOnly ? Math.floor(maximum) : maximum;
-  if (typeof exclusiveMaximum === 'number' && value >= exclusiveMaximum) {
-    value = integerOnly ? Math.floor(exclusiveMaximum - 1) : exclusiveMaximum - 0.1;
-  }
-
-  return integerOnly ? Math.trunc(value) : Number(value.toFixed(4));
-};
-
-const getUniqueNumberExample = (
-  value: number,
-  schema: Record<string, unknown>,
-  index: number,
-  integerOnly: boolean
-): number | undefined => {
-  const multipleOf = getNumberValue(schema, 'multipleOf');
-  const step = typeof multipleOf === 'number' && multipleOf > 0
-    ? multipleOf
-    : integerOnly
-      ? 1
-      : 0.1;
-  const candidates = [
-    value + step * index,
-    value + step * (index + 1),
-    value - step * index,
-  ].map(candidate => (integerOnly ? Math.trunc(candidate) : Number(candidate.toFixed(4))));
-
-  return candidates.find(candidate => isNumberExampleAllowed(candidate, schema, integerOnly));
-};
 
 const mergeAllOfExamples = (examples: unknown[]): unknown => {
   const objectExamples = examples.filter(isRecord);

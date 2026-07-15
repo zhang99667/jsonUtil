@@ -6,7 +6,7 @@ describe('transformReportCommandSchemaOccurrences', () => {
   it('从记录 schema、schema 行和资源字段收集导航与资源 occurrence', () => {
     const records = [{
       path: '$.record',
-      commandSchema: 'baiduboxapp://feed/detail',
+      commandSchema: 'sampleapp://feed/detail',
       commandSchemaRows: [
         { schema: 'https://cdn.example.com/a.png', path: '$.record.imageUrl' },
         { schema: '', path: '$.record.empty' },
@@ -25,7 +25,7 @@ describe('transformReportCommandSchemaOccurrences', () => {
 
     expect(collectCommandSchemaOccurrences(records)).toEqual([
       {
-        schema: 'baiduboxapp://feed/detail',
+        schema: 'sampleapp://feed/detail',
         path: '$.record',
         recordPath: '$.record',
         kind: 'navigation',

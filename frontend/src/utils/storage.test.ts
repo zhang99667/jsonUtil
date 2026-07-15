@@ -26,6 +26,10 @@ describe('parseJsonWithFallback', () => {
 
     expect(parseJsonWithFallback('null', fallback, isRecord)).toBe(fallback);
   });
+
+  it('保留合法 JSON 的 null 值', () => {
+    expect(parseJsonWithFallback<unknown | undefined>('null', undefined)).toBeNull();
+  });
 });
 
 describe('storage guards', () => {

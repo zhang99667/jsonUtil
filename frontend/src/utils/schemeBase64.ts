@@ -1,7 +1,6 @@
 import {
-  decodeNormalizedBase64,
+  decodeBase64Text,
   isReadableDecodedText,
-  normalizeBase64Input,
 } from './schemeBase64Codec';
 import { decodePrefixedBase64JsonFragment } from './schemeBase64PrefixedJson';
 import type {
@@ -22,12 +21,9 @@ export const decodeBase64WithMeta = (
   input: string,
   options: SchemeBase64DecodeOptions = {}
 ): Base64DecodeResult | null => {
-  const normalized = normalizeBase64Input(input);
-  if (normalized) {
-    const decoded = decodeNormalizedBase64(normalized);
-    if (decoded !== null) {
-      return { decoded, reversible: true };
-    }
+  const decoded = decodeBase64Text(input);
+  if (decoded !== null) {
+    return { decoded, reversible: true };
   }
 
   const prefixedJson = decodePrefixedBase64JsonFragment(input, options);
@@ -49,7 +45,7 @@ export const isBase64 = (
   const decodedResult = decodeBase64WithMeta(trimmed, options);
   if (decodedResult && options.looksLikeStructuredPayload?.(decodedResult.decoded)) return true;
 
-  // 排除 key=value 格式：Base64 的 = 只能作为末尾 padding。
+  // 排除 key=value 格式：Base64 的 = 只能作为末尾填充符。
   const equalSignIndex = trimmed.indexOf('=');
   if (equalSignIndex !== -1) {
     const afterEqual = trimmed.substring(equalSignIndex + 1);

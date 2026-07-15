@@ -3,6 +3,7 @@ import { parse as parseJsonSourceMap } from 'json-source-map';
 import type { HighlightRange, JsonValue } from '../types';
 import { getBusinessLabelForField } from './businessLabels';
 import { formatUnknownError } from './errors';
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 import { decodeJsonPointerSegment, encodeJsonPointerSegment } from './jsonPointer';
 import { parseJsonLinesWithMetadata, type JsonLineRecord } from './jsonLines';
 import { deepParseWithContext } from './transformations';
@@ -85,12 +86,6 @@ const parseJsonPathSource = (
   }
 };
 
-const appendJsonPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
-
 const getMatchMeta = (
   root: JsonValue,
   pointer: string
@@ -107,7 +102,7 @@ const getMatchMeta = (
     const isLast = index === tokens.length - 1;
 
     if (Array.isArray(current)) {
-      path = `${path}[${token}]`;
+      path = appendJsonPathIndex(path, Number(token));
       current = current[Number(token)];
       continue;
     }

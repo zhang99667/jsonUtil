@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  appendJsonPointerSegment,
   decodeJsonPointerSegment,
   encodeJsonPointerSegment,
   getJsonPointerValue,
@@ -11,6 +12,8 @@ describe('jsonPointer helpers', () => {
   it('编码和解码 JSON Pointer segment', () => {
     expect(encodeJsonPointerSegment('a/b~c')).toBe('a~1b~0c');
     expect(decodeJsonPointerSegment('a~1b~0c')).toBe('a/b~c');
+    expect(appendJsonPointerSegment('/root', 'a/b~c')).toBe('/root/a~1b~0c');
+    expect(appendJsonPointerSegment('', '')).toBe('/');
   });
 
   it('按 JSON Pointer 读取和序列化值', () => {

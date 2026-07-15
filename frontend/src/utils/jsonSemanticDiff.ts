@@ -1,7 +1,9 @@
-import type { JsonObject, JsonValue } from '../types';
+import type { JsonValue } from '../types';
 import { formatUnknownError } from './errors';
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 import { parseJsonLines } from './jsonLines';
-import { encodeJsonPointerSegment } from './jsonPointer';
+import { appendJsonPointerSegment } from './jsonPointer';
+import { isJsonObject } from './jsonValueGuards';
 
 export type JsonSemanticDiffKind = 'added' | 'removed' | 'changed';
 
@@ -33,21 +35,6 @@ export interface CompareJsonSemanticOptions {
 
 const DEFAULT_MAX_DIFFS = 500;
 const PREVIEW_MAX_LENGTH = 120;
-
-const isJsonRecord = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-const appendJsonPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
-
-const appendJsonPathIndex = (path: string, index: number): string => `${path}[${index}]`;
-const appendJsonPointerSegment = (pointer: string, segment: string): string => (
-  `${pointer}/${encodeJsonPointerSegment(segment)}`
-);
 
 const getValuePreview = (value: JsonValue | undefined): string | undefined => {
   if (value === undefined) return undefined;
@@ -172,8 +159,8 @@ export const compareJsonSemanticValues = (
       return;
     }
 
-    if (isJsonRecord(left) || isJsonRecord(right)) {
-      if (!isJsonRecord(left) || !isJsonRecord(right)) {
+    if (isJsonObject(left) || isJsonObject(right)) {
+      if (!isJsonObject(left) || !isJsonObject(right)) {
         pushDiff('changed', path, pointer, left, right);
         return;
       }
@@ -184,8 +171,8 @@ export const compareJsonSemanticValues = (
         const childPath = appendJsonPathKey(path, key);
         const childPointer = appendJsonPointerSegment(pointer, key);
         if (isIgnoredDiffPath(childPath, ignoredPaths)) continue;
-        const hasLeft = Object.prototype.hasOwnProperty.call(left, key);
-        const hasRight = Object.prototype.hasOwnProperty.call(right, key);
+        const hasLeft = Object.hasOwn(left, key);
+        const hasRight = Object.hasOwn(right, key);
         if (!hasLeft) {
           pushDiff('added', childPath, childPointer, undefined, right[key]);
         } else if (!hasRight) {

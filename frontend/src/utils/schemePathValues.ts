@@ -1,3 +1,5 @@
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
+
 export const DEFAULT_SCHEME_PATH_VALUE_COPY_ROW_LIMIT = 500;
 
 interface SchemePathValueCollectState {
@@ -15,12 +17,6 @@ export interface SchemePathValueCopyResult {
 export interface SchemePathValueCopyOptions {
   limit?: number;
 }
-
-const formatJsonPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
 
 const formatJsonPathValue = (value: unknown): string => {
   if (typeof value === 'string') return JSON.stringify(value);
@@ -54,7 +50,7 @@ const collectSchemePathValues = (
     }
 
     for (let index = 0; index < value.length; index++) {
-      collectSchemePathValues(value[index], `${path}[${index}]`, state);
+      collectSchemePathValues(value[index], appendJsonPathIndex(path, index), state);
       if (state.isTruncated) return;
     }
     return;
@@ -68,7 +64,7 @@ const collectSchemePathValues = (
     }
 
     for (const [key, item] of entries) {
-      collectSchemePathValues(item, formatJsonPathKey(path, key), state);
+      collectSchemePathValues(item, appendJsonPathKey(path, key), state);
       if (state.isTruncated) return;
     }
     return;

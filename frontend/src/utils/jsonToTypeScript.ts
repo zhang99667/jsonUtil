@@ -1,4 +1,5 @@
 import type { JsonObject, JsonValue } from '../types';
+import { isJsonObject } from './jsonValueGuards';
 
 export interface JsonToTypeScriptOptions {
   rootName?: string;
@@ -55,10 +56,6 @@ const PRIMITIVE_ORDER: Record<PrimitiveTypeName, number> = {
   boolean: 2,
   null: 3,
 };
-
-const isJsonObject = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
 
 const toWords = (value: string): string[] => {
   const words = value

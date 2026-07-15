@@ -1,9 +1,11 @@
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
+import { isRecord } from './storage';
 
 export const encodeJsonPointerSegment = (segment: string): string => (
   segment.replace(/~/g, '~0').replace(/\//g, '~1')
+);
+
+export const appendJsonPointerSegment = (pointer: string, segment: string): string => (
+  `${pointer}/${encodeJsonPointerSegment(segment)}`
 );
 
 export const decodeJsonPointerSegment = (segment: string): string => (
@@ -47,7 +49,7 @@ export const getJsonPointerValue = (
       continue;
     }
 
-    if (isRecord(current) && Object.prototype.hasOwnProperty.call(current, segment)) {
+    if (isRecord(current) && Object.hasOwn(current, segment)) {
       current = current[segment];
       continue;
     }

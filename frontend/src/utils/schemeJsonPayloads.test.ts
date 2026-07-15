@@ -33,8 +33,8 @@ describe('schemeJsonPayloads', () => {
   });
 
   it('还原 JSON 片段中的反斜杠引号和转义斜杠', () => {
-    expect(normalizeJsonEscapedQuoteCandidate('{\\"url\\":\\"https:\\/\\/m.baidu.com\\"}'))
-      .toBe('{"url":"https://m.baidu.com"}');
+    expect(normalizeJsonEscapedQuoteCandidate('{\\"url\\":\\"https:\\/\\/m.example.com\\"}'))
+      .toBe('{"url":"https://m.example.com"}');
     expect(tryNormalizeJsonEscapedQuotePayload('{\\"title\\":\\"标题\\"}'))
       .toBe('{"title":"标题"}');
   });

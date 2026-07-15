@@ -36,11 +36,3 @@ export const saveJsonPathFavorites = (favorites: string[], storage?: Storage): b
 export const clearStoredJsonPathHistory = (storage?: Storage): boolean => (
   safeRemoveStorageItem(JSONPATH_HISTORY_STORAGE_KEY, storage)
 );
-
-export const writeJsonPathSavedQueryLists = (
-  storage: Storage,
-  lists: JsonPathSavedQueryLists
-): void => {
-  storage.setItem(JSONPATH_HISTORY_STORAGE_KEY, JSON.stringify(lists.history));
-  storage.setItem(JSONPATH_FAVORITES_STORAGE_KEY, JSON.stringify(lists.favorites));
-};

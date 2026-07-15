@@ -57,12 +57,6 @@ export const buildJsonPathWorkerRequest = ({
   },
 });
 
-export const isStaleJsonPathWorkerMessage = (
-  responseId: number,
-  requestId: number,
-  currentRequestId: number
-) => responseId !== requestId || currentRequestId !== requestId;
-
 export const buildJsonPathQuerySuccessPayload = (response: JsonPathWorkerResponse) => ({
   ranges: response.ranges,
   values: response.values,

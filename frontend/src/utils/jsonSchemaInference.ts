@@ -1,5 +1,7 @@
 import { formatUnknownError } from './errors';
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 import { isLikelyJsonLinesInput, parseJsonLinesDetailed } from './jsonLines';
+import { isRecord } from './storage';
 
 export interface JsonSchemaInferenceResult {
   schemaText?: string;
@@ -83,10 +85,6 @@ const ARRAY_SAMPLE_TAIL_ITEMS = 8;
 const ARRAY_SAMPLE_MIDDLE_ITEMS = 4;
 const MAX_ARRAY_SPARSE_FIELD_SCAN_ITEMS = 200;
 
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
 const shouldIncludeRequired = (options: JsonSchemaInferenceOptions): boolean => (
   options.requiredMode !== 'loose'
 );
@@ -103,14 +101,6 @@ const uniqueTypes = (types: JsonSchemaType[]): JsonSchemaType[] => {
 
   return [...new Set(normalized)].sort();
 };
-
-const appendJsonPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
-
-const appendJsonPathIndex = (path: string, index: number): string => `${path}[${index}]`;
 
 const addArraySampleIndex = (
   indices: Set<number>,

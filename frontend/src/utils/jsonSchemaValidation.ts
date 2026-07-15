@@ -3,7 +3,10 @@ import Ajv2019 from 'ajv/dist/2019';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import { formatUnknownError } from './errors';
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 import { isLikelyJsonLinesInput, parseJsonLinesDetailed } from './jsonLines';
+import { appendJsonPointerSegment, decodeJsonPointerSegment } from './jsonPointer';
+import { isRecord } from './storage';
 
 export type JsonSchemaValidationStatus = 'empty' | 'valid' | 'invalid' | 'input-error' | 'schema-error';
 
@@ -33,10 +36,6 @@ export interface JsonSchemaValidationResult {
 }
 
 const MAX_VISIBLE_SCHEMA_ISSUES = 20;
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
 
 type ParsedJsonSourceKind = 'json' | 'json-lines';
 
@@ -68,22 +67,6 @@ const parseJson = (
   }
 };
 
-const decodeJsonPointerSegment = (segment: string): string => (
-  segment.replace(/~1/g, '/').replace(/~0/g, '~')
-);
-
-const encodeJsonPointerSegment = (segment: string): string => (
-  segment.replace(/~/g, '~0').replace(/\//g, '~1')
-);
-
-const appendJsonPointerSegment = (pointer: string, segment: string): string => (
-  `${pointer}/${encodeJsonPointerSegment(segment)}`
-);
-
-const escapeJsonPathKey = (key: string): string => (
-  key.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-);
-
 export const jsonPointerToJsonPath = (pointer: string): string => {
   if (!pointer) return '$';
 
@@ -93,12 +76,9 @@ export const jsonPointerToJsonPath = (pointer: string): string => {
     .map(decodeJsonPointerSegment)
     .reduce((path, segment) => {
       if (/^(0|[1-9]\d*)$/.test(segment)) {
-        return `${path}[${segment}]`;
+        return appendJsonPathIndex(path, Number(segment));
       }
-      if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(segment)) {
-        return `${path}.${segment}`;
-      }
-      return `${path}["${escapeJsonPathKey(segment)}"]`;
+      return appendJsonPathKey(path, segment);
     }, '$');
 };
 
