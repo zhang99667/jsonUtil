@@ -16,14 +16,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,8 +35,7 @@ class TrafficServiceTest {
     @Mock
     private VisitLogRepository visitLogRepository;
 
-    @Mock
-    private GeoService geoService;
+    private StubGeoService geoService;
 
     private TrafficService trafficService;
 
@@ -41,17 +43,33 @@ class TrafficServiceTest {
         return new TestSessionVisitEvent(ip, createdAt);
     }
 
+    private static VisitLogRepository.GroupCount valueCount(String value, long count) {
+        return new TestGroupCount(value, count);
+    }
+
+    private record TestGroupCount(String value, long count) implements VisitLogRepository.GroupCount {
+        @Override
+        public String getLabel() {
+            return value;
+        }
+
+        @Override
+        public long getCount() {
+            return count;
+        }
+    }
+
     @BeforeEach
     void setUp() {
+        geoService = new StubGeoService();
         trafficService = new TrafficService(visitLogRepository, geoService);
     }
 
     @Test
     void getTopIpsPassesLimitToRepositoryPageable() {
         when(visitLogRepository.countByIpTopN(any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class)))
-                .thenReturn(List.<Object[]>of(new Object[] { "127.0.0.1", 3L }));
-        when(geoService.parseIp("127.0.0.1"))
-                .thenReturn(new GeoService.GeoInfo("本地/内网", "本地/内网", "本地/内网"));
+                .thenReturn(List.of(valueCount("127.0.0.1", 3L)));
+        geoService.addResult("127.0.0.1", new GeoService.GeoInfo("本地/内网", "本地/内网", "本地/内网"));
 
         List<IpStatsDTO> result = trafficService.getTopIps(7, 5);
 
@@ -68,7 +86,7 @@ class TrafficServiceTest {
     @Test
     void getTopPathsPassesLimitToRepositoryPageable() {
         when(visitLogRepository.countByPathTopN(any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class)))
-                .thenReturn(List.<Object[]>of(new Object[] { "/admin.html", 8L }));
+                .thenReturn(List.of(valueCount("/admin.html", 8L)));
 
         List<PathStatsDTO> result = trafficService.getTopPaths(30, 3);
 
@@ -87,20 +105,19 @@ class TrafficServiceTest {
         assertTrue(trafficService.getTopIps(7, 0).isEmpty());
         assertTrue(trafficService.getTopPaths(7, -1).isEmpty());
 
-        verifyNoInteractions(visitLogRepository, geoService);
+        verifyNoInteractions(visitLogRepository);
+        assertEquals(0, geoService.totalCalls());
     }
 
     @Test
     void getGeoDistributionAggregatesByIpCountBeforeParsingRegion() {
         when(visitLogRepository.countByIpInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.<Object[]>of(
-                        new Object[] { "10.0.0.1", 3L },
-                        new Object[] { "8.8.8.8", 2L }
+                .thenReturn(List.of(
+                        valueCount("10.0.0.1", 3L),
+                        valueCount("8.8.8.8", 2L)
                 ));
-        when(geoService.parseIp("10.0.0.1"))
-                .thenReturn(new GeoService.GeoInfo("本地/内网", "本地/内网", "本地/内网"));
-        when(geoService.parseIp("8.8.8.8"))
-                .thenReturn(new GeoService.GeoInfo("美国", "美国", "美国"));
+        geoService.addResult("10.0.0.1", new GeoService.GeoInfo("本地/内网", "本地/内网", "本地/内网"));
+        geoService.addResult("8.8.8.8", new GeoService.GeoInfo("美国", "美国", "美国"));
 
         List<GeoStatsDTO> result = trafficService.getGeoDistribution(7, 10);
 
@@ -112,8 +129,8 @@ class TrafficServiceTest {
         assertEquals(2L, result.get(1).getCount());
         assertEquals(40.0, result.get(1).getPercentage());
 
-        verify(geoService, times(1)).parseIp("10.0.0.1");
-        verify(geoService, times(1)).parseIp("8.8.8.8");
+        assertEquals(1, geoService.callsFor("10.0.0.1"));
+        assertEquals(1, geoService.callsFor("8.8.8.8"));
     }
 
     @Test
@@ -122,15 +139,16 @@ class TrafficServiceTest {
         assertTrue(trafficService.getBrowserDistribution(7, -1).isEmpty());
         assertTrue(trafficService.getRefererDistribution(7, 0).isEmpty());
 
-        verifyNoInteractions(visitLogRepository, geoService);
+        verifyNoInteractions(visitLogRepository);
+        assertEquals(0, geoService.totalCalls());
     }
 
     @Test
     void getDeviceDistributionAggregatesByUserAgentCountBeforeParsingDevice() {
         when(visitLogRepository.countByUserAgentInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.<Object[]>of(
-                        new Object[] { "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", 3L },
-                        new Object[] { "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148", 2L }
+                .thenReturn(List.of(
+                        valueCount("Mozilla/5.0 (Windows NT 10.0; Win64; x64)", 3L),
+                        valueCount("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148", 2L)
                 ));
 
         List<DeviceStatsDTO> result = trafficService.getDeviceDistribution(7, 10);
@@ -147,17 +165,17 @@ class TrafficServiceTest {
     @Test
     void getBrowserDistributionAggregatesByUserAgentCountBeforeParsingBrowser() {
         when(visitLogRepository.countByUserAgentInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.<Object[]>of(
-                        new Object[] {
+                .thenReturn(List.of(
+                        valueCount(
                                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                                         + "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                                 4L
-                        },
-                        new Object[] {
+                        ),
+                        valueCount(
                                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) "
                                         + "Gecko/20100101 Firefox/125.0",
                                 1L
-                        }
+                        )
                 ));
 
         List<DeviceStatsDTO> result = trafficService.getBrowserDistribution(7, 10);
@@ -174,9 +192,9 @@ class TrafficServiceTest {
     @Test
     void getRefererDistributionAggregatesByRefererCountBeforeParsingSource() {
         when(visitLogRepository.countByRefererInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.<Object[]>of(
-                        new Object[] { null, 3L },
-                        new Object[] { "https://github.com/example", 2L }
+                .thenReturn(List.of(
+                        valueCount(null, 3L),
+                        valueCount("https://github.com/example", 2L)
                 ));
 
         List<RefererStatsDTO> result = trafficService.getRefererDistribution(7, 10);
@@ -191,16 +209,37 @@ class TrafficServiceTest {
     }
 
     @Test
+    void getRefererDistributionOnlyClassifiesTrustedHostNames() {
+        when(visitLogRepository.countByRefererInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(
+                        valueCount("https://evil.example/path?next=https://jsonutils.markz.fun", 1L),
+                        valueCount("https://github.com.evil.example/path", 1L),
+                        valueCount("https://evil.example/path/github.com", 1L),
+                        valueCount("https://notso.com/path", 1L),
+                        valueCount("https://github.com/openai", 2L)
+                ));
+
+        List<RefererStatsDTO> result = trafficService.getRefererDistribution(7, 10);
+        Map<String, Long> countsBySource = new HashMap<>();
+        result.forEach(item -> countsBySource.put(item.getSource(), item.getCount()));
+
+        assertEquals(4L, countsBySource.get("外部链接"));
+        assertEquals(2L, countsBySource.get("技术社区"));
+        assertEquals(2, countsBySource.size());
+    }
+
+    @Test
     void getSessionDurationStatsUsesOrderedLightweightEvents() {
         LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
-        when(visitLogRepository.findSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(
+        AtomicBoolean streamClosed = new AtomicBoolean();
+        when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Stream.of(
                         sessionEvent("10.0.0.1", base),
                         sessionEvent("10.0.0.1", base.plusSeconds(5)),
                         sessionEvent("10.0.0.1", base.plusMinutes(40)),
                         sessionEvent("10.0.0.2", base.plusMinutes(1)),
                         sessionEvent("10.0.0.2", base.plusMinutes(4))
-                ));
+                ).onClose(() -> streamClosed.set(true)));
 
         List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
 
@@ -214,6 +253,39 @@ class TrafficServiceTest {
         assertEquals("3-10分钟", result.get(4).getDurationRange());
         assertEquals(1L, result.get(4).getCount());
         assertEquals(33.33, result.get(4).getPercentage());
+        assertTrue(streamClosed.get());
+    }
+
+    @Test
+    void getSessionDurationStatsStartsNewSessionAfterThirtyMinutes() {
+        LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
+        when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Stream.of(
+                        sessionEvent("10.0.0.1", base),
+                        sessionEvent("10.0.0.1", base.plusMinutes(30).plusSeconds(1))
+                ));
+
+        List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
+
+        assertEquals(2L, result.get(1).getCount());
+        assertEquals(100.0, result.get(1).getPercentage());
+        assertEquals(0L, result.get(5).getCount());
+    }
+
+    @Test
+    void getSessionDurationStatsKeepsSessionAtThirtyMinuteBoundary() {
+        LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
+        when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Stream.of(
+                        sessionEvent("10.0.0.1", base),
+                        sessionEvent("10.0.0.1", base.plusMinutes(30))
+                ));
+
+        List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
+
+        assertEquals(0L, result.get(1).getCount());
+        assertEquals(1L, result.get(5).getCount());
+        assertEquals(100.0, result.get(5).getPercentage());
     }
 
     private static class TestSessionVisitEvent implements VisitLogRepository.SessionVisitEvent {
@@ -233,6 +305,29 @@ class TrafficServiceTest {
         @Override
         public LocalDateTime getCreatedAt() {
             return createdAt;
+        }
+    }
+
+    private static class StubGeoService extends GeoService {
+        private final Map<String, GeoInfo> results = new HashMap<>();
+        private final Map<String, Integer> calls = new HashMap<>();
+
+        void addResult(String ip, GeoInfo result) {
+            results.put(ip, result);
+        }
+
+        int callsFor(String ip) {
+            return calls.getOrDefault(ip, 0);
+        }
+
+        int totalCalls() {
+            return calls.values().stream().mapToInt(Integer::intValue).sum();
+        }
+
+        @Override
+        public GeoInfo parseIp(String ip) {
+            calls.merge(ip, 1, Integer::sum);
+            return results.getOrDefault(ip, new GeoInfo("未知", "未知", "未知"));
         }
     }
 }

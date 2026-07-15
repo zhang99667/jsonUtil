@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class Result<T> {
-    private Integer code; // 200: Success, 500: Error, 401: Unauthorized
+    private Integer code; // 常用状态码：200 成功、500 服务错误、401 未认证
     private String message;
     private T data;
 

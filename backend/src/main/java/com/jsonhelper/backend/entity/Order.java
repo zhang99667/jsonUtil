@@ -1,11 +1,14 @@
 package com.jsonhelper.backend.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -23,11 +26,13 @@ public class Order {
     @Column(nullable = false)
     private BigDecimal amount;
 
+    /** 支付渠道，可选值：WECHAT、ALIPAY */
     @Column(nullable = false)
-    private String channel; // WECHAT, ALIPAY
+    private String channel;
 
+    /** 订单状态，可选值：PENDING、PAID、FAILED */
     @Column(nullable = false)
-    private String status; // PENDING, PAID, FAILED
+    private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

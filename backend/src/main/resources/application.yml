@@ -20,6 +20,13 @@ spring:
     baseline-version: 0
     locations: classpath:db/migration
 
+  # 请求 JSON 使用严格契约，拒绝未知字段和标量类型强制转换。
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+    mapper:
+      allow-coercion-of-scalars: false
+
   # 文件上传大小限制
   servlet:
     multipart:
@@ -28,6 +35,12 @@ spring:
 
 server:
   port: 8080
+  # 由 Tomcat 仅对私网或回环代理解析转发头，业务代码只读取已校验的远端地址。
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
 
 # 文件上传目录配置
 file:
@@ -36,10 +49,11 @@ file:
   max-preview-size: ${FILE_MAX_PREVIEW_SIZE_BYTES:2097152}
   allowed-extensions: ${FILE_ALLOWED_EXTENSIONS:.conf,.config,.css,.csv,.env,.geojson,.har,.html,.ini,.java,.js,.json,.json5,.jsonc,.jsonl,.jsx,.log,.map,.md,.ndjson,.properties,.sql,.topojson,.toml,.ts,.tsx,.txt,.webmanifest,.xml,.yaml,.yml}
 
-# JWT Configuration
+# JWT 签名与有效期配置
 jwt:
   secret: ${JWT_SECRET:}
-  expiration: ${JWT_EXPIRATION:86400000} # 1 day
+  # 纯数字按毫秒解析，也支持 24h 等 Spring Boot 时长格式
+  expiration: ${JWT_EXPIRATION:86400000}
 
 # 管理员初始化默认关闭，避免生产环境出现固定默认账号
 admin:

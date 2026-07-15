@@ -5,24 +5,28 @@ import com.jsonhelper.backend.dto.UpdateUserRequest;
 import com.jsonhelper.backend.dto.response.Result;
 import com.jsonhelper.backend.entity.User;
 import com.jsonhelper.backend.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin")
+@RequiredArgsConstructor
 public class AdminController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * 添加用户
      */
     @PostMapping("/users/add")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<User> addUser(@RequestBody RegisterRequest registerRequest) {
+    public Result<User> addUser(@Valid @RequestBody RegisterRequest registerRequest) {
         return Result.success(userService.createUser(registerRequest));
     }
 
@@ -32,9 +36,16 @@ public class AdminController {
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Page<User>> listUsers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(defaultValue = "0")
+            @Min(value = 0, message = "页码不能小于 0")
+            int page,
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "每页条数不能小于 1")
+            @Max(value = 100, message = "每页条数不能超过 100")
+            int size,
+            @RequestParam(required = false)
+            @Size(max = 255, message = "搜索关键词不能超过 255 个字符")
+            String keyword) {
         return Result.success(userService.listUsers(page, size, keyword));
     }
 
@@ -43,7 +54,7 @@ public class AdminController {
      */
     @PutMapping("/users/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<User> updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
+    public Result<User> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
         return Result.success(userService.updateUser(id, request));
     }
 

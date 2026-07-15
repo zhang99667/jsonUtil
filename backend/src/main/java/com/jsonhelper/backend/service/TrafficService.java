@@ -5,6 +5,8 @@ import com.jsonhelper.backend.repository.VisitLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -13,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class TrafficService {
     private final VisitLogRepository visitLogRepository;
     private final GeoService geoService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final Duration SESSION_INACTIVITY_TIMEOUT = Duration.ofMinutes(30);
     private static final List<String> DURATION_BUCKET_NAMES = List.of(
             "0-10秒", "10-30秒", "30秒-1分钟", "1-3分钟", "3-10分钟", "10分钟以上"
     );
@@ -29,6 +33,7 @@ public class TrafficService {
      * 获取流量概览数据
      * @param days 统计天数 (7天/30天等)
      */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public TrafficOverviewDTO getOverview(int days) {
         TimeWindow timeWindow = currentTimeWindow(days);
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
@@ -56,18 +61,17 @@ public class TrafficService {
      * 获取每日趋势数据
      * @param days 统计天数
      */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public List<DailyTrendDTO> getDailyTrend(int days) {
         TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> pvData = visitLogRepository.countDailyPv(timeWindow.start(), timeWindow.end());
-        List<Object[]> uvData = visitLogRepository.countDailyUv(timeWindow.start(), timeWindow.end());
+        List<VisitLogRepository.DateCount> pvData = visitLogRepository.countDailyPv(timeWindow.start(), timeWindow.end());
+        List<VisitLogRepository.DateCount> uvData = visitLogRepository.countDailyUv(timeWindow.start(), timeWindow.end());
 
-        // 将UV数据转换为Map便于查找
+        // 将 UV 数据转换为映射，便于按日期查找。
         Map<String, Long> uvMap = new HashMap<>();
-        for (Object[] row : uvData) {
-            String date = formatDate(row[0]);
-            Long uv = rowCount(row);
-            uvMap.put(date, uv);
+        for (VisitLogRepository.DateCount row : uvData) {
+            uvMap.put(row.getDate().format(DATE_FORMATTER), row.getCount());
         }
 
         // 生成完整日期列表（填充无数据的日期）
@@ -81,16 +85,15 @@ public class TrafficService {
                     .build());
         }
 
-        // 填充PV数据
-        for (Object[] row : pvData) {
-            String date = formatDate(row[0]);
-            Long pv = rowCount(row);
+        // 填充 PV 数据。
+        for (VisitLogRepository.DateCount row : pvData) {
+            String date = row.getDate().format(DATE_FORMATTER);
             if (resultMap.containsKey(date)) {
-                resultMap.get(date).setPv(pv);
+                resultMap.get(date).setPv(row.getCount());
             }
         }
 
-        // 填充UV数据
+        // 填充 UV 数据。
         for (Map.Entry<String, Long> entry : uvMap.entrySet()) {
             if (resultMap.containsKey(entry.getKey())) {
                 resultMap.get(entry.getKey()).setUv(entry.getValue());
@@ -112,16 +115,18 @@ public class TrafficService {
 
         TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> data = visitLogRepository.countByIpTopN(timeWindow.start(), timeWindow.end(), PageRequest.of(0, limit));
+        List<VisitLogRepository.GroupCount> data = visitLogRepository.countByIpTopN(
+                timeWindow.start(), timeWindow.end(), PageRequest.of(0, limit)
+        );
 
         return data.stream()
                 .map(row -> {
-                    String ip = (String) row[0];
+                    String ip = row.getLabel();
                     GeoService.GeoInfo geoInfo = geoService.parseIp(ip);
 
                     return IpStatsDTO.builder()
                             .ip(ip)
-                            .count(rowCount(row))
+                            .count(row.getCount())
                             .region(geoInfo.getRegionForStats())
                             .build();
                 })
@@ -140,12 +145,14 @@ public class TrafficService {
 
         TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> data = visitLogRepository.countByPathTopN(timeWindow.start(), timeWindow.end(), PageRequest.of(0, limit));
+        List<VisitLogRepository.GroupCount> data = visitLogRepository.countByPathTopN(
+                timeWindow.start(), timeWindow.end(), PageRequest.of(0, limit)
+        );
 
         return data.stream()
                 .map(row -> PathStatsDTO.builder()
-                        .path((String) row[0])
-                        .count(rowCount(row))
+                        .path(row.getLabel())
+                        .count(row.getCount())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -157,14 +164,12 @@ public class TrafficService {
     public List<HourlyStatsDTO> getHourlyDistribution(int days) {
         TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> data = visitLogRepository.countByHour(timeWindow.start(), timeWindow.end());
+        List<VisitLogRepository.HourCount> data = visitLogRepository.countByHour(timeWindow.start(), timeWindow.end());
 
         // 创建24小时的完整列表
         Map<Integer, Long> hourMap = new HashMap<>();
-        for (Object[] row : data) {
-            Integer hour = ((Number) row[0]).intValue();
-            Long count = rowCount(row);
-            hourMap.put(hour, count);
+        for (VisitLogRepository.HourCount row : data) {
+            hourMap.put(row.getHour(), row.getCount());
         }
 
         List<HourlyStatsDTO> result = new ArrayList<>();
@@ -190,7 +195,9 @@ public class TrafficService {
 
         TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> ipCounts = visitLogRepository.countByIpInRange(timeWindow.start(), timeWindow.end());
+        List<VisitLogRepository.GroupCount> ipCounts = visitLogRepository.countByIpInRange(
+                timeWindow.start(), timeWindow.end()
+        );
 
         if (ipCounts.isEmpty()) {
             return Collections.emptyList();
@@ -221,7 +228,9 @@ public class TrafficService {
 
         TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> userAgentCounts = visitLogRepository.countByUserAgentInRange(timeWindow.start(), timeWindow.end());
+        List<VisitLogRepository.GroupCount> userAgentCounts = visitLogRepository.countByUserAgentInRange(
+                timeWindow.start(), timeWindow.end()
+        );
 
         if (userAgentCounts.isEmpty()) {
             return Collections.emptyList();
@@ -250,7 +259,9 @@ public class TrafficService {
 
         TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> userAgentCounts = visitLogRepository.countByUserAgentInRange(timeWindow.start(), timeWindow.end());
+        List<VisitLogRepository.GroupCount> userAgentCounts = visitLogRepository.countByUserAgentInRange(
+                timeWindow.start(), timeWindow.end()
+        );
 
         if (userAgentCounts.isEmpty()) {
             return Collections.emptyList();
@@ -279,14 +290,19 @@ public class TrafficService {
 
         TimeWindow timeWindow = currentTimeWindow(days);
 
-        List<Object[]> refererCounts = visitLogRepository.countByRefererInRange(timeWindow.start(), timeWindow.end());
+        List<VisitLogRepository.GroupCount> refererCounts = visitLogRepository.countByRefererInRange(
+                timeWindow.start(), timeWindow.end()
+        );
 
         if (refererCounts.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // 先按Referer在数据库聚合，再按访问次数累加来源分类
-        DistributionCounts sourceCounts = aggregateDistributionCounts(refererCounts, this::parseRefererSource);
+        // 先按来源地址在数据库聚合，再按访问次数累加来源分类
+        DistributionCounts sourceCounts = aggregateDistributionCounts(
+                refererCounts,
+                RefererSourceClassifier::classify
+        );
 
         return buildDistributionStats(sourceCounts, limit, (source, count, percentage) -> RefererStatsDTO.builder()
                 .source(source)
@@ -301,56 +317,55 @@ public class TrafficService {
      * 基于同一IP在时间窗口内的连续访问计算会话时长
      * @param days 统计天数
      */
+    @Transactional(readOnly = true)
     public List<SessionStatsDTO> getSessionDurationStats(int days) {
         TimeWindow timeWindow = currentTimeWindow(days);
+        try (Stream<VisitLogRepository.SessionVisitEvent> events = visitLogRepository.streamSessionVisitEvents(
+                timeWindow.start(), timeWindow.end()
+        )) {
+            Iterator<VisitLogRepository.SessionVisitEvent> eventIterator = events.iterator();
+            Map<String, Long> durationBuckets = createDurationBuckets();
+            int totalSessions = 0;
 
-        List<VisitLogRepository.SessionVisitEvent> events = visitLogRepository.findSessionVisitEvents(timeWindow.start(), timeWindow.end());
+            String currentIp = null;
+            LocalDateTime sessionStartTime = null;
+            LocalDateTime lastVisitTime = null;
+            int sessionVisitCount = 0;
 
-        if (events.isEmpty()) {
-            return getEmptyDurationStats();
-        }
+            while (eventIterator.hasNext()) {
+                VisitLogRepository.SessionVisitEvent event = eventIterator.next();
+                String ip = event.getIp();
+                LocalDateTime visitTime = event.getCreatedAt();
+                if (ip == null || visitTime == null) {
+                    continue;
+                }
 
-        // 时长统计桶
-        Map<String, Long> durationBuckets = createDurationBuckets();
+                boolean isNewIp = currentIp == null || !currentIp.equals(ip);
+                boolean isNewSession = isNewIp
+                        || Duration.between(lastVisitTime, visitTime).compareTo(SESSION_INACTIVITY_TIMEOUT) > 0;
 
-        int totalSessions = 0;
+                if (isNewSession && sessionStartTime != null && lastVisitTime != null) {
+                    addSessionDuration(durationBuckets, sessionStartTime, lastVisitTime, sessionVisitCount);
+                    totalSessions++;
+                }
 
-        String currentIp = null;
-        LocalDateTime sessionStartTime = null;
-        LocalDateTime lastVisitTime = null;
-        int sessionVisitCount = 0;
+                if (isNewSession) {
+                    currentIp = ip;
+                    sessionStartTime = visitTime;
+                    sessionVisitCount = 0;
+                }
 
-        for (VisitLogRepository.SessionVisitEvent event : events) {
-            String ip = event.getIp();
-            LocalDateTime visitTime = event.getCreatedAt();
-            if (ip == null || visitTime == null) {
-                continue;
+                lastVisitTime = visitTime;
+                sessionVisitCount++;
             }
 
-            boolean isNewIp = currentIp == null || !currentIp.equals(ip);
-            boolean isNewSession = isNewIp || Duration.between(lastVisitTime, visitTime).toMinutes() > 30;
-
-            if (isNewSession && sessionStartTime != null && lastVisitTime != null) {
+            if (sessionStartTime != null && lastVisitTime != null) {
                 addSessionDuration(durationBuckets, sessionStartTime, lastVisitTime, sessionVisitCount);
                 totalSessions++;
             }
 
-            if (isNewSession) {
-                currentIp = ip;
-                sessionStartTime = visitTime;
-                sessionVisitCount = 0;
-            }
-
-            lastVisitTime = visitTime;
-            sessionVisitCount++;
+            return buildSessionStats(durationBuckets, totalSessions);
         }
-
-        if (sessionStartTime != null && lastVisitTime != null) {
-            addSessionDuration(durationBuckets, sessionStartTime, lastVisitTime, sessionVisitCount);
-            totalSessions++;
-        }
-
-        return buildSessionStats(durationBuckets, totalSessions);
     }
 
     private TimeWindow currentTimeWindow(int days) {
@@ -363,13 +378,15 @@ public class TrafficService {
         return limit <= 0;
     }
 
-    private DistributionCounts aggregateDistributionCounts(List<Object[]> rows, Function<String, String> categoryResolver) {
+    private DistributionCounts aggregateDistributionCounts(
+            List<VisitLogRepository.GroupCount> rows,
+            Function<String, String> categoryResolver
+    ) {
         Map<String, Long> countMap = new HashMap<>();
         long total = 0;
-        for (Object[] row : rows) {
-            String rawValue = (String) row[0];
-            long count = rowCount(row);
-            String category = categoryResolver.apply(rawValue);
+        for (VisitLogRepository.GroupCount row : rows) {
+            long count = row.getCount();
+            String category = categoryResolver.apply(row.getLabel());
             countMap.merge(category, count, Long::sum);
             total += count;
         }
@@ -412,10 +429,6 @@ public class TrafficService {
                 .collect(Collectors.toList());
     }
 
-    private long rowCount(Object[] row) {
-        return ((Number) row[1]).longValue();
-    }
-
     private double calculatePercentage(long count, long total) {
         return Math.round(count * 10000.0 / total) / 100.0;
     }
@@ -446,58 +459,6 @@ public class TrafficService {
         if (seconds < 180) return "1-3分钟";
         if (seconds < 600) return "3-10分钟";
         return "10分钟以上";
-    }
-
-    /**
-     * 返回空的时长统计
-     */
-    private List<SessionStatsDTO> getEmptyDurationStats() {
-        return buildSessionStats(createDurationBuckets(), 0);
-    }
-
-    /**
-     * 解析来源分类
-     */
-    private String parseRefererSource(String referer) {
-        if (referer == null || referer.isEmpty()) {
-            return "直接访问";
-        }
-        
-        String lowerReferer = referer.toLowerCase();
-        
-        // 本站链接
-        if (lowerReferer.contains("jsonutils") || lowerReferer.contains("localhost") 
-            || lowerReferer.contains("127.0.0.1")) {
-            return "站内跳转";
-        }
-        
-        // 搜索引擎
-        if (lowerReferer.contains("google.") || lowerReferer.contains("bing.") 
-            || lowerReferer.contains("baidu.") || lowerReferer.contains("sogou.")
-            || lowerReferer.contains("so.com") || lowerReferer.contains("yahoo.")
-            || lowerReferer.contains("duckduckgo.")) {
-            return "搜索引擎";
-        }
-        
-        // 社交媒体
-        if (lowerReferer.contains("weibo.") || lowerReferer.contains("weixin.")
-            || lowerReferer.contains("wechat.") || lowerReferer.contains("qq.")
-            || lowerReferer.contains("zhihu.") || lowerReferer.contains("douyin.")
-            || lowerReferer.contains("tiktok.") || lowerReferer.contains("twitter.")
-            || lowerReferer.contains("facebook.") || lowerReferer.contains("linkedin.")
-            || lowerReferer.contains("instagram.") || lowerReferer.contains("reddit.")) {
-            return "社交媒体";
-        }
-        
-        // 技术社区
-        if (lowerReferer.contains("github.") || lowerReferer.contains("gitee.")
-            || lowerReferer.contains("csdn.") || lowerReferer.contains("juejin.")
-            || lowerReferer.contains("segmentfault.") || lowerReferer.contains("stackoverflow.")
-            || lowerReferer.contains("v2ex.")) {
-            return "技术社区";
-        }
-        
-        return "外部链接";
     }
 
     /**
@@ -569,20 +530,6 @@ public class TrafficService {
             return "其他爬虫";
         }
         return "其他";
-    }
-
-    /**
-     * 格式化日期对象为字符串
-     */
-    private String formatDate(Object dateObj) {
-        if (dateObj instanceof java.sql.Date) {
-            return ((java.sql.Date) dateObj).toLocalDate().format(DATE_FORMATTER);
-        } else if (dateObj instanceof LocalDate) {
-            return ((LocalDate) dateObj).format(DATE_FORMATTER);
-        } else if (dateObj instanceof String) {
-            return (String) dateObj;
-        }
-        return dateObj.toString();
     }
 
     private record TimeWindow(LocalDateTime start, LocalDateTime end) {

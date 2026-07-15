@@ -1,7 +1,8 @@
 package com.jsonhelper.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +12,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_tool_events_event_name", columnList = "event_name"),
         @Index(name = "idx_tool_events_status", columnList = "status")
 })
-@Data
+@Getter
+@Setter
 public class ToolEvent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
