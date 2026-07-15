@@ -46,7 +46,7 @@ describe('useAppSmartSuggestionCommands', () => {
     const callbacks = createCallbacks();
     const { handleSmartSuggestionAction } = useAppSmartSuggestionCommands({
       currentMode: TransformMode.NONE,
-      sourceText: '  baiduboxapp://v1/open  ',
+      sourceText: '  sampleapp://v1/open  ',
       ...callbacks,
     });
 
@@ -56,12 +56,12 @@ describe('useAppSmartSuggestionCommands', () => {
     expect(mocks.runAppSmartSuggestionCommand.mock.calls[0][0]).toEqual({
       actionId: 'scheme-panel',
       currentMode: TransformMode.NONE,
-      sourceText: '  baiduboxapp://v1/open  ',
+      sourceText: '  sampleapp://v1/open  ',
     });
 
     const effects = mocks.runAppSmartSuggestionCommand.mock.calls[0][1];
     effects.onClearHighlight();
-    effects.onOpenSchemeInput('baiduboxapp://v1/open');
+    effects.onOpenSchemeInput('sampleapp://v1/open');
     effects.onSetSchemePanelOpen(true);
     effects.onSetTransformReportOpen(false);
     effects.onSetJsonTreePanelOpen(true);
@@ -71,7 +71,7 @@ describe('useAppSmartSuggestionCommands', () => {
     effects.onTrackToolEvent('SMART_SUGGESTION_SCHEME_PANEL', 'smart_suggestion', 'success', 123);
 
     expect(callbacks.onSetHighlightRange).toHaveBeenCalledWith(null);
-    expect(callbacks.onOpenSchemeInput).toHaveBeenCalledWith('baiduboxapp://v1/open');
+    expect(callbacks.onOpenSchemeInput).toHaveBeenCalledWith('sampleapp://v1/open');
     expect(callbacks.onSetSchemePanelOpen).toHaveBeenCalledWith(true);
     expect(callbacks.onSetTransformReportOpen).toHaveBeenCalledWith(false);
     expect(callbacks.onSetJsonTreePanelOpen).toHaveBeenCalledWith(true);

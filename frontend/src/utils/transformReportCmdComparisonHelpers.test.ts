@@ -11,7 +11,7 @@ describe('transformReportCmdComparisonHelpers', () => {
   it('校验 cmdHandler expected 是否可识别', () => {
     expect(() => assertRecognizableCmdComparisonExpected({
       result: {
-        cmdSchema: 'baiduboxapp://v1/open',
+        cmdSchema: 'sampleapp://v1/open',
         cmdParams: {},
       },
     })).not.toThrow();

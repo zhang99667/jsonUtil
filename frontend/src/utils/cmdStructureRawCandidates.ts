@@ -1,12 +1,9 @@
-import type { JsonValue } from '../types';
+import type { JsonObject, JsonValue } from '../types';
 import {
   getRawCmdFieldPriority,
   looksLikeRawCmdSource,
 } from './cmdStructureRawSourceGuards';
-
-interface JsonObject {
-  [key: string]: JsonValue;
-}
+import { isJsonObject } from './jsonValueGuards';
 
 export interface RawCmdCandidate {
   source: string;
@@ -21,9 +18,9 @@ interface RawCmdCandidateOrderRef {
   value: number;
 }
 
-export const isRawCmdCandidateRecord = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
+export const isRawCmdCandidateRecord: (
+  value: JsonValue
+) => value is JsonObject = isJsonObject;
 
 export const appendRawCmdStringCandidate = (
   value: string,

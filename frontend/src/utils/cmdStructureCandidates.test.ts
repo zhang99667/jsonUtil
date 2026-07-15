@@ -3,8 +3,8 @@ import { collectActualCmdStructureCandidates } from './cmdStructureCandidates';
 
 describe('cmdStructureCandidates', () => {
   it('从原始 CMD 字符串中收集根候选和解码后的内层候选', () => {
-    const innerCmd = 'baiduboxapp://v1/deeplink?foo=bar';
-    const source = `baiduboxapp://v1/panel?panel_cmd=${encodeURIComponent(innerCmd)}`;
+    const innerCmd = 'sampleapp://v1/deeplink?foo=bar';
+    const source = `sampleapp://v1/panel?panel_cmd=${encodeURIComponent(innerCmd)}`;
 
     const candidates = collectActualCmdStructureCandidates({
       data: {
@@ -18,21 +18,21 @@ describe('cmdStructureCandidates', () => {
     ]);
     expect(candidates[0]).toMatchObject({
       sourceLabel: 'scheme',
-      commandSchema: 'baiduboxapp://v1/panel',
+      commandSchema: 'sampleapp://v1/panel',
     });
     expect(candidates[1]).toMatchObject({
       sourceLabel: 'panel_cmd',
-      commandSchema: 'baiduboxapp://v1/deeplink',
+      commandSchema: 'sampleapp://v1/deeplink',
     });
   });
 
   it('从已结构化对象中收集嵌套 CMD 候选并保留业务字段名', () => {
     const candidates = collectActualCmdStructureCandidates({
       result: {
-        cmdSchema: 'baiduboxapp://v1/root',
+        cmdSchema: 'sampleapp://v1/root',
         cmdParams: {
           nested_cmd: {
-            cmdSchema: 'baiduboxapp://v1/nested',
+            cmdSchema: 'sampleapp://v1/nested',
             cmdParams: {
               token: 'abc',
             },
@@ -47,7 +47,7 @@ describe('cmdStructureCandidates', () => {
     ]);
     expect(candidates[1]).toMatchObject({
       sourceLabel: 'nested_cmd',
-      commandSchema: 'baiduboxapp://v1/nested',
+      commandSchema: 'sampleapp://v1/nested',
     });
   });
 
@@ -56,15 +56,15 @@ describe('cmdStructureCandidates', () => {
       list: [
         {
           'cmd-key': {
-            cmdSchema: 'baiduboxapp://v1/special',
+            cmdSchema: 'sampleapp://v1/special',
             cmdParams: {
               token: 'abc',
             },
-            source: 'baiduboxapp://v1/special?token=abc',
+            source: 'sampleapp://v1/special?token=abc',
           },
         },
         {
-          cmdSchema: 'baiduboxapp://v1/missing-params',
+          cmdSchema: 'sampleapp://v1/missing-params',
         },
       ],
     });
@@ -74,13 +74,13 @@ describe('cmdStructureCandidates', () => {
       id: '$.list[0]["cmd-key"]',
       label: '$.list[0]["cmd-key"]',
       sourceLabel: 'cmd-key',
-      commandSchema: 'baiduboxapp://v1/special',
+      commandSchema: 'sampleapp://v1/special',
       actual: {
-        cmdSchema: 'baiduboxapp://v1/special',
+        cmdSchema: 'sampleapp://v1/special',
         cmdParams: {
           token: 'abc',
         },
-        source: 'baiduboxapp://v1/special?token=abc',
+        source: 'sampleapp://v1/special?token=abc',
       },
     });
   });

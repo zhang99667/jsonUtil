@@ -1,15 +1,23 @@
 export type IsDecodableQueryValue = (value: string) => boolean;
 
-export const urlDecode = (str: string): string => {
+export const tryDecodeURIComponent = (value: string): string | null => {
   try {
-    return decodeURIComponent(str);
+    return decodeURIComponent(value);
   } catch {
-    return str;
+    return null;
   }
+};
+
+export const urlDecode = (str: string): string => {
+  return tryDecodeURIComponent(str) ?? str;
 };
 
 export const decodeQueryComponent = (str: string): string => (
   urlDecode(str.replace(/\+/g, ' '))
+);
+
+export const decodeQueryComponentOrOriginal = (str: string): string => (
+  tryDecodeURIComponent(str.replace(/\+/g, ' ')) ?? str
 );
 
 export const decodeQueryValueComponent = (

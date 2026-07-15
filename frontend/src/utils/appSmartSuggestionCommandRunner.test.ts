@@ -43,10 +43,10 @@ describe('appSmartSuggestionCommandRunner', () => {
     runAppSmartSuggestionCommand({
       actionId: 'scheme-panel',
       currentMode: TransformMode.NONE,
-      sourceText: '  baiduboxapp://v1/open  ',
+      sourceText: '  sampleapp://v1/open  ',
     }, effects);
 
-    expect(effects.onOpenSchemeInput).toHaveBeenCalledWith('baiduboxapp://v1/open');
+    expect(effects.onOpenSchemeInput).toHaveBeenCalledWith('sampleapp://v1/open');
     expect(effects.onSetSchemePanelOpen).toHaveBeenCalledWith(true);
     expect(effects.onSetTransformReportOpen).toHaveBeenCalledWith(false);
     expect(effects.onShowSuccess).toHaveBeenCalledWith('已填入 Scheme 解析');

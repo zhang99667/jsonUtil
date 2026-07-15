@@ -21,13 +21,13 @@ const getFragmentParamSource = (hash: string): string | null => {
 describe('parseSchemeUrlInfo', () => {
   it('解析协议相对 URL 与 hash route 参数', () => {
     const result = parseSchemeUrlInfo(
-      '//m.baidu.com/s?word=json+schema#/detail?cmd=%7B%22a%22%3A1%7D',
+      '//m.example.com/s?word=json+schema#/detail?cmd=%7B%22a%22%3A1%7D',
       { rawParamOptions, getFragmentParamSource }
     );
 
     expect(result).toEqual({
       protocol: '//',
-      host: 'm.baidu.com',
+      host: 'm.example.com',
       path: '/s',
       hash: '/detail?cmd=%7B%22a%22%3A1%7D',
       params: { word: 'json schema' },

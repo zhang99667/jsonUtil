@@ -1,18 +1,9 @@
 import { formatUnknownError } from '../utils/errors';
-import { scanSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
-
-interface SchemeScanWorkerRequest {
-  id: number;
-  jsonString: string;
-}
-
-interface SchemeScanWorkerResponse {
-  id: number;
-  locations: SchemeLocation[];
-  isLimited: boolean;
-  limit: number;
-  error?: string;
-}
+import { scanSchemesInJson } from '../utils/schemeScanner';
+import type {
+  SchemeScanWorkerRequest,
+  SchemeScanWorkerResponse,
+} from '../utils/schemeScanWorker';
 
 self.onmessage = (event: MessageEvent<SchemeScanWorkerRequest>) => {
   const { id, jsonString } = event.data;

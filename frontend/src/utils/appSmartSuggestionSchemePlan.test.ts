@@ -21,13 +21,13 @@ describe('buildAppSmartSuggestionSchemePanelPlan', () => {
     expect(buildAppSmartSuggestionSchemePanelPlan({
       eventName: 'SMART_SUGGESTION_SCHEME_PANEL',
       nextMode: null,
-      sourceText: '  baiduboxapp://v1/open  ',
+      sourceText: '  sampleapp://v1/open  ',
     })).toEqual({
       eventName: 'SMART_SUGGESTION_SCHEME_PANEL',
       status: 'success',
       nextMode: null,
       effects: ['open-scheme-panel', 'close-transform-report'],
-      schemeInputValue: 'baiduboxapp://v1/open',
+      schemeInputValue: 'sampleapp://v1/open',
       successMessage: '已填入 Scheme 解析',
     });
   });

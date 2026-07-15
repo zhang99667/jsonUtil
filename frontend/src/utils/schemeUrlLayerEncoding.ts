@@ -7,18 +7,14 @@ import {
   createUrl,
   stringifyUrlForOriginalShape,
 } from './schemeUrlShapes';
+import { parseJsonWithFallback } from './storage';
 
 export interface SchemeUrlLayerEncodingOptions {
   getFragmentParamSource: (hash: string) => string | null;
 }
 
 const parseEditedQueryObject = (content: string): Record<string, unknown> | null => {
-  try {
-    const parsed: unknown = JSON.parse(content);
-    return isPlainObject(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
+  return parseJsonWithFallback<Record<string, unknown> | null>(content, null, isPlainObject);
 };
 
 export const encodeUrlLayerContent = (
@@ -36,7 +32,7 @@ export const encodeUrlLayerContent = (
     const hasHashParams = Boolean(hashParamSource);
 
     if (hasQueryParams && hasHashParams) {
-      // query 与 hash 同时存在时，解析结果用 _hash 承载 hash route 参数。
+      // 查询参数与片段同时存在时，解析结果用 `_hash` 承载片段路由参数。
       const { _hash: hashParams, ...queryParams } = editedParams;
       url.search = buildQueryStringFromObject(queryParams, url.search);
       url.hash = replaceHashParams(

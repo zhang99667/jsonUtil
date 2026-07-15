@@ -44,7 +44,7 @@ describe('scheme-corpus-promote', () => {
   it('保留运行时占位符并脱敏 base64 JSON 片段', () => {
     const encoded = Buffer.from(JSON.stringify({
       user_id: 'real-user-001',
-      cmatch: 1501,
+      segment: 1501,
       sign: '__SIGN__',
     })).toString('base64');
 
@@ -55,7 +55,7 @@ describe('scheme-corpus-promote', () => {
     expect(output).toContain('sign=__SIGN__');
     expect(decoded).toEqual({
       user_id: '__REDACTED_USERID__',
-      cmatch: 1501,
+      segment: 1501,
       sign: '__SIGN__',
     });
   });
@@ -71,10 +71,10 @@ describe('scheme-corpus-promote', () => {
   it('递归脱敏编码 JSON 和内层 Scheme 参数', () => {
     const extInfo = Buffer.from(JSON.stringify({
       user_id: 'real-user-001',
-      cmatch: 1501,
+      segment: 1501,
     })).toString('base64');
-    const inner = `baiduboxapp://v7/vendor/ad/deeplink?token=raw-token&extInfo=${extInfo}`;
-    const outer = `nadcorevendor://vendor/ad/rewardImpl?params=${encodeURIComponent(JSON.stringify({
+    const inner = `sampleapp://v7/vendor/ad/deeplink?token=raw-token&extInfo=${extInfo}`;
+    const outer = `samplevendor://vendor/ad/rewardImpl?params=${encodeURIComponent(JSON.stringify({
       token: 'raw-root-token',
       inner,
     }))}`;
@@ -100,7 +100,7 @@ describe('scheme-corpus-promote', () => {
         invoke_token: 'deep-invoke-token',
       }),
     })));
-    const scheme = `nadcorevendor://vendor/ad/reward?task_params=${taskParams}`;
+    const scheme = `samplevendor://vendor/ad/reward?task_params=${taskParams}`;
 
     const output = redactStringContent(scheme);
     const encodedTaskParams = output.match(/task_params=([^&]+)/)?.[1] || '';
@@ -136,13 +136,13 @@ describe('scheme-corpus-promote', () => {
 
   it('递归脱敏双层外层 CMD 中的内层 callbackUrl 参数', () => {
     const callbackUrl = 'https://callback.example.com/track?clickId=clk_raw_123&bd_vid=bdvid_raw_123&phoneNumber=13800138000&safe=ok';
-    const inner = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const inner = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       callbackUrl,
     }))}`;
     const outerParams = encodeURIComponent(encodeURIComponent(JSON.stringify({
       inner,
     })));
-    const scheme = `nadcorevendor://vendor/ad/reward?params=${outerParams}`;
+    const scheme = `samplevendor://vendor/ad/reward?params=${outerParams}`;
 
     const output = redactStringContent(scheme);
     const encodedParams = output.match(/params=([^&]+)/)?.[1] || '';
@@ -188,7 +188,7 @@ describe('scheme-corpus-promote', () => {
           material: [{
             info: [{
               ad_common: {
-                scheme: `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+                scheme: `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
                   vid: '1353102586669',
                   callbackUrl: 'https://callback.example.com/track?sign=abc&callbackUrl=ok',
                 }))}`,

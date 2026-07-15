@@ -5,11 +5,11 @@ import type { SchemeUrlInfo } from './schemeUrlInfo';
 export type { SchemeDecodeWarning } from './schemeStructuredDecodeTypes';
 
 export type SchemeType =
-  | 'url'           // 带协议的 URL (https://, myapp://, etc.)
+  | 'url'           // 带协议的 URL（例如 https://、myapp://）
   | 'query-string'  // 查询参数串 (key=value&key=value...)
   | 'url-encoded'   // URL 编码的内容
   | 'base64'        // Base64 编码
-  | 'jwt'           // JWT Token
+  | 'jwt'           // JWT 令牌
   | 'json'          // JSON 字符串
   | 'plain';        // 普通字符串
 
@@ -19,7 +19,7 @@ export interface DecodeLayer {
   type: DecodeLayerType;
   before: string;     // 解码前的内容
   after?: string;     // 解码后的内容，用于面板展示每层转换证据
-  description: string; // 描述，如 "URL Decode", "Base64 Decode"
+  description: string; // 描述，如“URL 解码”、“Base64 解码”
   reversible?: boolean; // 是否可按原格式重新编码
 }
 
@@ -27,12 +27,12 @@ export interface SchemeParamDecodeStage {
   path: string;        // 参数在解码结果中的路径
   key: string;         // 解码后的参数名
   source: 'query' | 'hash' | 'fragment' | 'log-field' | 'prefixed-query'; // 参数来源
-  raw: string;         // URL Decode 前的原始参数值
-  urlDecoded: string;  // URL Decode 后的参数值
+  raw: string;         // URL 解码前的原始参数值
+  urlDecoded: string;  // URL 解码后的参数值
   parsed: string;      // 继续递归解析后的展示文本
-  repairHint?: string; // loose JSON 等兜底修复说明
+  repairHint?: string; // 宽松 JSON 等兜底修复说明
   reencoded: string;   // 按当前解析值重新 URL 编码后的预览
-  reversible: boolean; // 是否可以按普通 query 参数重新编码
+  reversible: boolean; // 是否可以按普通查询参数重新编码
 }
 
 export interface SchemePlaceholder {
@@ -55,7 +55,7 @@ export interface SchemeDecodeResult {
   isJson: boolean;            // 最终结果是否为有效 JSON
   placeholders?: SchemePlaceholder[]; // 运行时占位符
   warnings?: SchemeDecodeWarning[]; // 解析过程中的性能护栏提示
-  paramStages?: SchemeParamDecodeStage[]; // Query 参数分层解析证据
+  paramStages?: SchemeParamDecodeStage[]; // 查询参数分层解析证据
   schemeInfo?: SchemeUrlInfo; // Scheme 信息（如果是 URL）
 }
 

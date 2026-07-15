@@ -18,10 +18,10 @@
     "maxCmdHandlerIgnoredExtraPaths": 80,
     "leadHotspotCommandSchema": "https://m.example.com/promo"
   },
-  "primaryCommandSchema": "baiduboxapp://v1/easybrowse/open",
+  "primaryCommandSchema": "sampleapp://v1/browser/open",
   "requiredCommandSchemas": [
-    "baiduboxapp://v1/easybrowse/open",
-    "baiduboxapp://v7/vendor/ad/deeplink",
+    "sampleapp://v1/browser/open",
+    "sampleapp://v7/vendor/ad/deeplink",
     "openapp.demo://virtual",
     "https://m.example.com/promo"
   ],

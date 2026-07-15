@@ -3,20 +3,20 @@ import { decodeRawCmdCandidate } from './cmdStructureRawSourceDecoder';
 
 describe('cmdStructureRawSourceDecoder', () => {
   it('解码 URL 编码的 JSON 参数并递归展开内层 CMD', () => {
-    const innerCmd = 'baiduboxapp://v1/deeplink?foo=bar';
+    const innerCmd = 'sampleapp://v1/deeplink?foo=bar';
     const params = {
       title: '奖励弹窗',
       convert_cmd: innerCmd,
     };
-    const source = `baiduboxapp://v1/panel?params=${encodeURIComponent(JSON.stringify(params))}`;
+    const source = `sampleapp://v1/panel?params=${encodeURIComponent(JSON.stringify(params))}`;
 
     expect(decodeRawCmdCandidate(source)).toEqual({
-      cmdSchema: 'baiduboxapp://v1/panel',
+      cmdSchema: 'sampleapp://v1/panel',
       cmdParams: {
         params: {
           title: '奖励弹窗',
           convert_cmd: {
-            cmdSchema: 'baiduboxapp://v1/deeplink',
+            cmdSchema: 'sampleapp://v1/deeplink',
             cmdParams: {
               foo: 'bar',
             },

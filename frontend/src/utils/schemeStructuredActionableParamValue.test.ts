@@ -9,7 +9,7 @@ const createOptions = (
 ): SchemeStructuredActionableParamValueOptions => ({
   base64Decode: value => value,
   hasUrlEncoding: value => /%[0-9A-Fa-f]{2}/.test(value),
-  isActionableUrl: value => value.startsWith('baiduboxapp://'),
+  isActionableUrl: value => value.startsWith('sampleapp://'),
   isBase64: () => false,
   isDecodableFragmentParamString: value => value.startsWith('#') && value.includes('cmd='),
   isDecodablePrefixedQueryString: value => value.includes(': cmd='),
@@ -26,13 +26,13 @@ const createOptions = (
   isRuntimePlaceholder: value => /^__.+__$/.test(value),
   isUrl: value => /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(value),
   looksLikeStructuredPayload: value => (
-    value.startsWith('baiduboxapp://') ||
+    value.startsWith('sampleapp://') ||
     value.startsWith('cmd=') ||
     value.startsWith('{')
   ),
   maxDepth: 5,
   shouldExposeNormalizedValue: value => (
-    value.startsWith('baiduboxapp://') ||
+    value.startsWith('sampleapp://') ||
     value.startsWith('cmd=')
   ),
   tryParseJsonStringPayload: value => {
@@ -56,7 +56,7 @@ const createOptions = (
 describe('schemeStructuredActionableParamValue', () => {
   it('识别 JSON 字符串包裹的可展开 Scheme', () => {
     expect(isStructuredActionableParamValue(
-      JSON.stringify('baiduboxapp://v1/open?cmd=%7B%7D'),
+      JSON.stringify('sampleapp://v1/open?cmd=%7B%7D'),
       0,
       createOptions()
     )).toBe(true);

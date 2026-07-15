@@ -16,11 +16,11 @@
     "maxUnresolved": 0,
     "maxWarnings": 0,
     "maxCmdHandlerIgnoredExtraPaths": 10,
-    "leadHotspotCommandSchema": "baiduboxapp://v7/vendor/ad/makePhoneCall"
+    "leadHotspotCommandSchema": "sampleapp://v7/vendor/ad/makePhoneCall"
   },
-  "primaryCommandSchema": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+  "primaryCommandSchema": "sampleapp://v7/vendor/ad/makePhoneCall",
   "requiredCommandSchemas": [
-    "baiduboxapp://v7/vendor/ad/makePhoneCall"
+    "sampleapp://v7/vendor/ad/makePhoneCall"
   ],
   "requiredRuntimePlaceholders": [
     "__SOLUTIONID__",

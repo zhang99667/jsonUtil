@@ -77,7 +77,7 @@ const base64MetaInfo: Base64MetaInfo = {
 describe('schemeViewerDiagnostics', () => {
   it('统计 query/hash 参数并过滤空参数来源', () => {
     const sections = buildSchemeViewerParamSections({
-      protocol: 'baiduboxapp:',
+      protocol: 'sampleapp:',
       host: 'v7',
       path: '/vendor/ad/prerender',
       params: {
@@ -100,7 +100,7 @@ describe('schemeViewerDiagnostics', () => {
     const decodeResult: SchemeDecodeResult = {
       ...baseDecodeResult,
       schemeInfo: {
-        protocol: 'baiduboxapp:',
+        protocol: 'sampleapp:',
         host: 'v7',
         path: '/vendor/ad/prerender',
         params: { params: '{"url":"https://example.com"}' },
@@ -132,7 +132,7 @@ describe('schemeViewerDiagnostics', () => {
       skippedDecodeCount,
       base64MetaInfo,
     })).toEqual([
-      { key: 'scheme', label: 'baiduboxapp: · v7 · /vendor/ad/prerender', title: '已识别 Scheme 信息' },
+      { key: 'scheme', label: 'sampleapp: · v7 · /vendor/ad/prerender', title: '已识别 Scheme 信息' },
       { key: 'cmd', label: 'CMD · 1', title: '已识别 CMD 结构' },
       { key: 'params', label: '参数 · 3', title: '已识别 URL 参数来源' },
       { key: 'param-stages', label: '参数层 · 1', title: '已识别参数递归解码链路' },

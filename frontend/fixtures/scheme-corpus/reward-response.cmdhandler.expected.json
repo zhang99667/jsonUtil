@@ -3,15 +3,15 @@
   "kind": "json-helper-cmdhandler-expected",
   "sample": "reward-response-redacted",
   "result": {
-    "cmdSchema": "nadcorevendor://vendor/ad/rewardImpl",
+    "cmdSchema": "samplevendor://vendor/ad/rewardImpl",
     "cmdParams": {
       "video_info": {
         "tail_frame": {
           "panel_scheme": {
-            "cmdSchema": "nadcorevendor://vendor/ad/rewardWebPanel",
+            "cmdSchema": "samplevendor://vendor/ad/rewardWebPanel",
             "cmdParams": {
               "panel_cmd": {
-                "cmdSchema": "baiduboxapp://v7/vendor/ad/deeplink",
+                "cmdSchema": "sampleapp://v7/vendor/ad/deeplink",
                 "cmdParams": {
                   "params": {
                     "appUrl": {
@@ -30,7 +30,7 @@
                       }
                     },
                     "webUrl": {
-                      "cmdSchema": "baiduboxapp://v1/easybrowse/open",
+                      "cmdSchema": "sampleapp://v1/browser/open",
                       "cmdParams": {
                         "url": {
                           "to": {
@@ -53,7 +53,7 @@
       },
       "convert": {
         "button_scheme": {
-          "cmdSchema": "baiduboxapp://v7/vendor/ad/deeplink"
+          "cmdSchema": "sampleapp://v7/vendor/ad/deeplink"
         }
       },
       "cmd_policy": {
@@ -70,7 +70,7 @@
         "ad_monitor_url": [
           {
             "click_url": {
-              "cmdSchema": "https://m.baidu.com/baidu.php",
+              "cmdSchema": "https://m.example.com/sample.php",
               "cmdParams": {
                 "clickId": "__CLICK_ID__",
                 "sign": "__SIGN__",

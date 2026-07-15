@@ -1,4 +1,5 @@
 import { isLikelyStructuredFieldName } from './structuredParamNames';
+import { decodeQueryComponentOrOriginal } from './schemeQueryDecoding';
 
 const RAW_CMD_FIELD_PRIORITIES = new Map<string, number>([
   ['$', 100],
@@ -29,11 +30,7 @@ export const URL_LIKE_RE = /^[A-Za-z][A-Za-z0-9+.-]*:\/\//;
 export const QUERY_PAIR_RE = /^\??[A-Za-z0-9_.\-[\]%]+=/;
 
 export const safeDecodeURIComponent = (value: string): string => {
-  try {
-    return decodeURIComponent(value.replace(/\+/g, ' '));
-  } catch {
-    return value;
-  }
+  return decodeQueryComponentOrOriginal(value);
 };
 
 export const normalizeRawSourceString = (value: string): string => value.trim().replace(/\\\//g, '/');

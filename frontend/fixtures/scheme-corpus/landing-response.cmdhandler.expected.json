@@ -3,7 +3,7 @@
   "kind": "json-helper-cmdhandler-expected",
   "sample": "landing-response-redacted",
   "result": {
-    "cmdSchema": "baiduboxapp://v1/easybrowse/open",
+    "cmdSchema": "sampleapp://v1/browser/open",
     "cmdParams": {
       "url": {
         "cmdSchema": "https://m.example.com/promo",
@@ -19,14 +19,14 @@
         }
       },
       "fallback_cmd": {
-        "cmdSchema": "baiduboxapp://v7/vendor/ad/deeplink",
+        "cmdSchema": "sampleapp://v7/vendor/ad/deeplink",
         "cmdParams": {
           "params": {
             "appUrl": {
               "cmdSchema": "openapp.demo://virtual"
             },
             "webUrl": {
-              "cmdSchema": "baiduboxapp://v1/easybrowse/open"
+              "cmdSchema": "sampleapp://v1/browser/open"
             },
             "source": "feedna"
           }

@@ -3,8 +3,8 @@ import { parseRawCmdUrlParts } from './cmdStructureRawUrl';
 
 describe('cmdStructureRawUrl', () => {
   it('提取 CMD URL 的 schema 和原始 query', () => {
-    expect(parseRawCmdUrlParts('baiduboxapp://v7/vendor/ad/prerender?params=%7B%7D')).toEqual({
-      schema: 'baiduboxapp://v7/vendor/ad/prerender',
+    expect(parseRawCmdUrlParts('sampleapp://v7/vendor/ad/prerender?params=%7B%7D')).toEqual({
+      schema: 'sampleapp://v7/vendor/ad/prerender',
       query: '?params=%7B%7D',
     });
   });

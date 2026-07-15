@@ -61,7 +61,7 @@ describe('schemeParamDecodeStages', () => {
 
   it('构建 URL query 与 hash 参数分层证据', () => {
     const stages = buildUrlParamDecodeStages(
-      'baiduboxapp://v1/open?url=https%3A%2F%2Fm.baidu.com#tab=feed',
+      'sampleapp://v1/open?url=https%3A%2F%2Fm.example.com#tab=feed',
       10,
       createOptions()
     );
@@ -71,7 +71,7 @@ describe('schemeParamDecodeStages', () => {
         path: '$.url',
         key: 'url',
         source: 'query',
-        urlDecoded: 'https://m.baidu.com',
+        urlDecoded: 'https://m.example.com',
       }),
       expect.objectContaining({
         path: '$._hash.tab',
@@ -85,7 +85,7 @@ describe('schemeParamDecodeStages', () => {
   it('query 达到上限前只补齐剩余 hash 参数容量', () => {
     const query = Array.from({ length: 23 }, (_, index) => `q${index}=v${index}`).join('&');
     const stages = buildUrlParamDecodeStages(
-      `baiduboxapp://v1/open?${query}#tab=feed&extra=ignored`,
+      `sampleapp://v1/open?${query}#tab=feed&extra=ignored`,
       10,
       createOptions()
     );

@@ -23,15 +23,15 @@ const createRecord = (
 
 describe('transformReportCmdStructureSource', () => {
   it('从 URL Scheme 记录提取 commandSchema 和结构源', () => {
-    const source = 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D';
+    const source = 'sampleapp://v7/vendor/ad/deeplink?params=%7B%7D';
     const record = createRecord(source, [
       { type: 'scheme_decode', originalSchemeType: 'url', originalScheme: source },
     ], { cmd: { nid: 123 }, from: 'feed' });
 
-    expect(getTransformRecordCommandSchema(record)).toBe('baiduboxapp://v7/vendor/ad/deeplink');
+    expect(getTransformRecordCommandSchema(record)).toBe('sampleapp://v7/vendor/ad/deeplink');
     expect(getTransformRecordCmdStructureSource(record)).toEqual({
       decodedValue: { cmd: { nid: 123 }, from: 'feed' },
-      commandSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+      commandSchema: 'sampleapp://v7/vendor/ad/deeplink',
       source,
     });
   });
@@ -76,27 +76,27 @@ describe('transformReportCmdStructureSource', () => {
         cmd: { nid: 123, title: '保留在全量复制中' },
         from: 'feed',
       },
-      commandSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
-      source: 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D',
+      commandSchema: 'sampleapp://v7/vendor/ad/deeplink',
+      source: 'sampleapp://v7/vendor/ad/deeplink?params=%7B%7D',
     }, '$.scheme');
 
     expect(JSON.parse(getter())).toEqual({
       result: {
-        cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+        cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
         cmdParams: {
           cmd: { nid: 123, title: '保留在全量复制中' },
           from: 'feed',
         },
-        source: 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D',
+        source: 'sampleapp://v7/vendor/ad/deeplink?params=%7B%7D',
       },
     });
     expect(JSON.parse(getter(['$.scheme.cmd.nid']))).toEqual({
       result: {
-        cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+        cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
         cmdParams: {
           cmd: { nid: 123 },
         },
-        source: 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D',
+        source: 'sampleapp://v7/vendor/ad/deeplink?params=%7B%7D',
       },
     });
   });

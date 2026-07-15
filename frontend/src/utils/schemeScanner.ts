@@ -1,5 +1,7 @@
 import { parse as parseJsonSourceMap } from 'json-source-map';
 import { getBusinessLabelForField } from './businessLabels';
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
+import { appendJsonPointerSegment } from './jsonPointer';
 import { detectSchemeType, shouldExposeSchemeValue } from './schemeUtils';
 import type { SchemeType } from './schemeTypes';
 
@@ -7,12 +9,12 @@ export interface SchemeLocation {
   path: string;           // JSON Path，如 "$.action_cmd" 或 `$["a.b"]`
   pointer: string;        // JSON Pointer，用于特殊 key 场景下精确回写
   label?: string;         // 业务标签，如 extra 数组里的 k/v 字段名
-  line: number;           // 行号（1-based）
-  column: number;         // 起始列号（1-based）
-  endLine: number;        // 结束行号（1-based）
-  endColumn: number;      // 结束列号（1-based，Monaco Range 右开）
+  line: number;           // 行号（从 1 开始）
+  column: number;         // 起始列号（从 1 开始）
+  endLine: number;        // 结束行号（从 1 开始）
+  endColumn: number;      // 结束列号（从 1 开始，Monaco Range 右开）
   value: string;          // 原始值
-  schemeType: SchemeType; // scheme 类型
+  schemeType: SchemeType; // 协议类型
 }
 
 export interface SchemeScanResult {
@@ -22,12 +24,6 @@ export interface SchemeScanResult {
 }
 
 export const DEFAULT_SCHEME_SCAN_RESULT_LIMIT = 1000;
-
-const appendJsonPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
 
 /**
  * 扫描 JSON 字符串，找出所有包含 scheme 的字符串值及其位置
@@ -56,10 +52,6 @@ export function scanSchemesInJson(
         endColumn: end.column + 1,
       };
     };
-
-    const escapePointerSegment = (segment: string): string => (
-      segment.replace(/~/g, '~0').replace(/\//g, '~1')
-    );
 
     const markLimited = (): false => {
       isLimited = true;
@@ -91,7 +83,11 @@ export function scanSchemesInJson(
         }
       } else if (Array.isArray(obj)) {
         for (let index = 0; index < obj.length; index++) {
-          if (!traverse(obj[index], `${currentPath}[${index}]`, `${currentPointer}/${index}`)) {
+          if (!traverse(
+            obj[index],
+            appendJsonPathIndex(currentPath, index),
+            appendJsonPointerSegment(currentPointer, String(index))
+          )) {
             return false;
           }
         }
@@ -101,7 +97,7 @@ export function scanSchemesInJson(
           if (!traverse(
             record[key],
             appendJsonPathKey(currentPath, key),
-            `${currentPointer}/${escapePointerSegment(key)}`,
+            appendJsonPointerSegment(currentPointer, key),
             getBusinessLabelForField(record, key)
           )) {
             return false;

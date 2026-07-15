@@ -13,7 +13,7 @@ describe('cmdStructureRawSource', () => {
 
     collectRawCmdCandidates({
       data: {
-        action_cmd: 'baiduboxapp://v1/panel?tab=reward',
+        action_cmd: 'sampleapp://v1/panel?tab=reward',
         landing: {
           url: 'https://example.com/landing?sku=101',
         },
@@ -36,7 +36,7 @@ describe('cmdStructureRawSource', () => {
 
     collectRawCmdCandidates({
       data: {
-        'action.cmd': 'baiduboxapp://v1/panel?tab=reward',
+        'action.cmd': 'sampleapp://v1/panel?tab=reward',
       },
     }, candidates);
 
@@ -50,10 +50,10 @@ describe('cmdStructureRawSource', () => {
       extInfo: 'AFDXXX',
       type: '1',
     };
-    const source = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify(params))}`;
+    const source = `sampleapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify(params))}`;
 
     expect(decodeRawCmdCandidate(source)).toEqual({
-      cmdSchema: 'baiduboxapp://v7/vendor/ad/makePhoneCall',
+      cmdSchema: 'sampleapp://v7/vendor/ad/makePhoneCall',
       cmdParams: {
         params,
       },
@@ -65,12 +65,12 @@ describe('cmdStructureRawSource', () => {
     const structure = findRawResponseCmdStructure({
       data: {
         url: 'https://example.com/landing?sku=101',
-        scheme: 'baiduboxapp://v1/panel?tab=reward',
+        scheme: 'sampleapp://v1/panel?tab=reward',
       },
     });
 
     expect(structure).toMatchObject({
-      cmdSchema: 'baiduboxapp://v1/panel',
+      cmdSchema: 'sampleapp://v1/panel',
       cmdParams: {
         tab: 'reward',
       },

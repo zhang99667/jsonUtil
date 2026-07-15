@@ -39,10 +39,10 @@ describe('appSmartSuggestionActions', () => {
     expect(buildAppSmartSuggestionActionPlan({
       actionId: 'scheme-panel',
       currentMode: TransformMode.NONE,
-      sourceText: '  baiduboxapp://v1/open  ',
+      sourceText: '  sampleapp://v1/open  ',
     })).toMatchObject({
       status: 'success',
-      schemeInputValue: 'baiduboxapp://v1/open',
+      schemeInputValue: 'sampleapp://v1/open',
       effects: ['open-scheme-panel', 'close-transform-report'],
       successMessage: '已填入 Scheme 解析',
     });

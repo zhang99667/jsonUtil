@@ -13,13 +13,13 @@ import {
 const buildCommandSummary = (
   overrides: Partial<SchemeCommandSummaryInfo> = {}
 ): SchemeCommandSummaryInfo => ({
-  commandSchema: 'baiduboxapp://v7/vendor/ad/prerender',
+  commandSchema: 'sampleapp://v7/vendor/ad/prerender',
   paramCount: 8,
   paramKeys: ['url', 'from', 'skuId', 'storeId', 'fid', 'extra', 'hidden'],
   commandSchemaCount: 2,
   topCommandSchemas: [
     {
-      schema: 'baiduboxapp://v7/vendor/ad/prerender',
+      schema: 'sampleapp://v7/vendor/ad/prerender',
       count: 2,
       paths: ['$', '$.nested'],
       hasMorePaths: false,

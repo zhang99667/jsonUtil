@@ -27,22 +27,21 @@
   },
   "replacements": {
     "__ROOT_SCHEME__": [
-      "baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%22400-805-8686%22%2C%22extInfo%22%3A%22eyJzZWFyY2hfaWQ",
-      "iOiJyZWRhY3RlZF9zZWFyY2hfaWQiLCJjbWF0Y2giOjIyMiwicmFuayI6Mn0%3D%22%2C%22numberUrl%22%3A%22https%3A%2F%2Fada.baidu.com%2F",
-      "phone-tracker%2FgetNumber%3Furl%3Dhttps%253A%252F%252Fada.baidu.com%252Fsite%252Fdemo%252Fagent%253Fimid%253D31%2526sour",
-      "ce%253Dbaidu%2523zzzaz1)%2526unit%253D%2525E7%2525A7%25258D%2525E6%2525A4%25258D%2525E7%252589%252599%2526keyword%253D%2",
+      "sampleapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%22400-805-8686%22%2C%22extInfo%22%3A%22eyJzZWFyY2hfaWQiOiJyZWRhY3RlZF9zZWFyY2hfaWQiLCJzZWdtZW50IjoyMjIsInJhbmsiOjJ9%22%2C%22numberUrl%22%3A%22https%3A%2F%2Fada.sample.com%2F",
+      "phone-tracker%2FgetNumber%3Furl%3Dhttps%253A%252F%252Fada.sample.com%252Fsite%252Fdemo%252Fagent%253Fimid%253D31%2526sour",
+      "ce%253Dsample%2523zzzaz1)%2526unit%253D%2525E7%2525A7%25258D%2525E6%2525A4%25258D%2525E7%252589%252599%2526keyword%253D%2",
       "525E6%252594%2525B6%2525E8%2525B4%2525B9%2525E8%2525A1%2525A8%2526e_creative%253D134%26query%3D%25E7%25A7%258D%25E6%25A4",
-      "%258D%25E7%2589%2599%26realPhone%3D400-805-8686%26solutionId%3D__SOLUTIONID__%22%2C%22logUrl%22%3A%22https%3A%2F%2Fada.b",
-      "aidu.com%2Fphone-tracker%2Fclicklog%3Fpageid%3D__TIMESTAMP__%26virtualPhone%3D__VIRTUALPHONE__%26realPhone%3D400-805-868",
+      "%258D%25E7%2589%2599%26realPhone%3D400-805-8686%26solutionId%3D__SOLUTIONID__%22%2C%22logUrl%22%3A%22https%3A%2F%2Fada.sample.",
+      "com%2Fphone-tracker%2Fclicklog%3Fpageid%3D__TIMESTAMP__%26virtualPhone%3D__VIRTUALPHONE__%26realPhone%3D400-805-868",
       "6%22%2C%22type%22%3A1%7D"
     ],
     "__NUMBER_URL__": [
-      "https://ada.baidu.com/phone-tracker/getNumber?url=https%3A%2F%2Fada.baidu.com%2Fsite%2Fdemo%2Fagent%3Fimid%3D31%26source",
-      "%3Dbaidu%23zzzaz1)%26unit%3D%25E7%25A7%258D%25E6%25A4%258D%25E7%2589%2599%26keyword%3D%25E6%2594%25B6%25E8%25B4%25B9%25E",
+      "https://ada.sample.com/phone-tracker/getNumber?url=https%3A%2F%2Fada.sample.com%2Fsite%2Fdemo%2Fagent%3Fimid%3D31%26source",
+      "%3Dsample%23zzzaz1)%26unit%3D%25E7%25A7%258D%25E6%25A4%258D%25E7%2589%2599%26keyword%3D%25E6%2594%25B6%25E8%25B4%25B9%25E",
       "8%25A1%25A8%26e_creative%3D134&query=%E7%A7%8D%E6%A4%8D%E7%89%99&realPhone=400-805-8686&solutionId=__SOLUTIONID__"
     ],
     "__LOG_URL__": [
-      "https://ada.baidu.com/phone-tracker/clicklog?pageid=__TIMESTAMP__&virtualPhone=__VIRTUALPHONE__&realPhone=400-805-8686"
+      "https://ada.sample.com/phone-tracker/clicklog?pageid=__TIMESTAMP__&virtualPhone=__VIRTUALPHONE__&realPhone=400-805-8686"
     ]
   }
 }

@@ -1,5 +1,6 @@
 import type { SchemeParamDecodeStage } from './schemeTypes';
 import type { JsonParseMeta, SchemeJsonPayloadValue } from './schemeJsonPayloads';
+import { formatJsonPathKeySegment } from './jsonPathSegments';
 
 const DEFAULT_SCHEME_PARAM_STAGE_VALUE_LIMIT = 100_000;
 
@@ -9,9 +10,7 @@ export interface SchemeParamDecodeStageBuilderOptions {
   urlEncode: (value: string) => string;
 }
 
-export const formatPlaceholderPathSegment = (key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key) ? `.${key}` : `[${JSON.stringify(key)}]`
-);
+export const formatPlaceholderPathSegment = formatJsonPathKeySegment;
 
 const formatStageStructuredValue = (value: SchemeJsonPayloadValue): string => (
   typeof value === 'string' ? value : JSON.stringify(value, null, 2)

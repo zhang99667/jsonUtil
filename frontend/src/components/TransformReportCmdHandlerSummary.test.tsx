@@ -5,7 +5,7 @@ import { TransformReportCmdHandlerSummary } from './TransformReportCmdHandlerSum
 
 const record = {
   path: '$.cmd',
-  commandSchema: 'baiduboxapp://v1/open',
+  commandSchema: 'sampleapp://v1/open',
   commandParamCount: 3,
   commandParamKeys: ['uid', 'source'],
 } as TransformReportRecord;
@@ -22,7 +22,7 @@ describe('TransformReportCmdHandlerSummary', () => {
     clickElement(findByTour(tree, 'transform-report-filter-command-schema')[0]);
     clickElement(findByTour(tree, 'transform-report-filter-command-param')[0]);
 
-    expect(onFilter).toHaveBeenCalledWith('baiduboxapp://v1/open');
+    expect(onFilter).toHaveBeenCalledWith('sampleapp://v1/open');
     expect(onFilter).toHaveBeenCalledWith('uid');
   });
 });

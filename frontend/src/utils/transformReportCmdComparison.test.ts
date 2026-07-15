@@ -16,12 +16,12 @@ const createCmdRecord = (
 ): TransformReportRecord => ({
   path,
   sourceLabel: 'scheme',
-  commandSchema: 'baiduboxapp://v1/open',
+  commandSchema: 'sampleapp://v1/open',
   hasCmdStructure: true,
   cmdStructureCopyText: JSON.stringify({
     result: {
-      cmdSchema: 'baiduboxapp://v1/open',
-      source: 'baiduboxapp://v1/open',
+      cmdSchema: 'sampleapp://v1/open',
+      source: 'sampleapp://v1/open',
       cmdParams,
     },
   }),
@@ -30,8 +30,8 @@ const createCmdRecord = (
 
 const expectedText = JSON.stringify({
   result: {
-    cmdSchema: 'baiduboxapp://v1/open',
-    source: 'baiduboxapp://v1/open',
+    cmdSchema: 'sampleapp://v1/open',
+    source: 'sampleapp://v1/open',
     cmdParams: {
       id: 2,
       nested: {

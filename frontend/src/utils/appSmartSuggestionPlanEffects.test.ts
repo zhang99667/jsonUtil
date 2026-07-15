@@ -28,12 +28,12 @@ describe('appSmartSuggestionPlanEffects', () => {
 
     runAppSmartSuggestionPlanEffects(createPlan({
       effects: ['close-transform-report', 'open-scheme-panel', 'clear-highlight'],
-      schemeInputValue: 'baiduboxapp://v1/open',
+      schemeInputValue: 'sampleapp://v1/open',
     }), effects);
 
     expect(calls).toEqual([
       'clear-highlight',
-      'scheme-input:baiduboxapp://v1/open',
+      'scheme-input:sampleapp://v1/open',
       'open-scheme-panel',
       'close-transform-report',
     ]);

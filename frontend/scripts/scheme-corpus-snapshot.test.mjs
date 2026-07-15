@@ -35,13 +35,13 @@ const createReport = () => ({
   nestedCommandFieldCount: 5,
   nestedResourceFieldCount: 1,
   records: [{
-    commandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+    commandSchema: 'samplevendor://vendor/ad/rewardImpl',
     getCmdStructureCopyText: () => JSON.stringify({
       result: {
-        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
         cmdParams: {
           panel_cmd: {
-            cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+            cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
           },
           extraParsedField: 'more-than-baseline',
         },
@@ -78,7 +78,7 @@ const createQualitySnapshot = () => ({
   },
   hotspots: {
     topCommandSchemas: [{
-      schema: 'nadcorevendor://vendor/ad/rewardImpl',
+      schema: 'samplevendor://vendor/ad/rewardImpl',
       count: 1,
       recordCount: 1,
       paths: ['$.scheme'],
@@ -125,9 +125,9 @@ const createScanLocations = () => [
 
 const createExpectedSnapshot = () => ({
   cmdHandlerExpected: 'reward-response.cmdhandler.expected.json',
-  primaryCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+  primaryCommandSchema: 'samplevendor://vendor/ad/rewardImpl',
   scanLocations: createScanLocations(),
-  requiredCommandSchemas: ['nadcorevendor://vendor/ad/rewardImpl'],
+  requiredCommandSchemas: ['samplevendor://vendor/ad/rewardImpl'],
   requiredRuntimePlaceholders: ['__CONVERT_CMD__'],
   quality: {
     minCoverageScore: 100,
@@ -136,7 +136,7 @@ const createExpectedSnapshot = () => ({
     minNestedResourceFields: 1,
     maxUnresolved: 0,
     maxWarnings: 0,
-    leadHotspotCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+    leadHotspotCommandSchema: 'samplevendor://vendor/ad/rewardImpl',
     leadHotspotResourceSchema: 'https://video.example.com/ad.mp4',
     leadHotspotResourceField: 'video_url',
   },
@@ -144,10 +144,10 @@ const createExpectedSnapshot = () => ({
 
 const createCmdHandlerExpected = () => ({
   result: {
-    cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+    cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
     cmdParams: {
       panel_cmd: {
-        cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+        cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
       },
     },
   },
@@ -192,7 +192,7 @@ describe('buildCorpusSnapshotFromResponseText', () => {
     const snapshot = await buildCorpusSnapshotFromResponseText({
       sampleName: 'memory-response',
       responseText: JSON.stringify({
-        scheme: 'nadcorevendor://vendor/ad/reward?task_params=%7B%22title%22%3A%22ok%22%7D',
+        scheme: 'samplevendor://vendor/ad/reward?task_params=%7B%22title%22%3A%22ok%22%7D',
       }),
     });
 
@@ -283,8 +283,8 @@ describe('buildRequiredResults', () => {
       scanLocations: createScanLocations(),
     })).toMatchObject({
       requiredCommandSchemas: {
-        actual: ['nadcorevendor://vendor/ad/rewardImpl'],
-        expected: ['nadcorevendor://vendor/ad/rewardImpl'],
+        actual: ['samplevendor://vendor/ad/rewardImpl'],
+        expected: ['samplevendor://vendor/ad/rewardImpl'],
         missing: [],
         pass: true,
       },
@@ -467,8 +467,8 @@ describe('buildCmdHandlerAlignment', () => {
     expect(alignment).toMatchObject({
       pass: true,
       expectedFile: 'reward-response.cmdhandler.expected.json',
-      actualCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
-      expectedCommandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      actualCommandSchema: 'samplevendor://vendor/ad/rewardImpl',
+      expectedCommandSchema: 'samplevendor://vendor/ad/rewardImpl',
       extraPaths: 0,
       ignoredExtraPaths: 1,
       diff: {
@@ -484,10 +484,10 @@ describe('buildCmdHandlerAlignment', () => {
       report: {
         ...createReport(),
         records: [{
-          commandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+          commandSchema: 'samplevendor://vendor/ad/rewardImpl',
           getCmdStructureCopyText: () => JSON.stringify({
             result: {
-              cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+              cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
               cmdParams: {},
             },
           }),

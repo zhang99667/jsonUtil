@@ -16,7 +16,7 @@
     "cmdHandler": {
       "total": 3,
       "failed": 0,
-      "ignoredExtraPaths": 442,
+      "ignoredExtraPaths": 426,
       "failures": []
     }
   },
@@ -29,8 +29,8 @@
         "cmdHandlerExpected": true,
         "cmdHandlerExpectedFile": "landing-response.cmdhandler.expected.json"
       },
-      "responseBytes": 1763,
-      "summaryText": "深度解析: 展开 4 处，Scheme 4 (URL 4)，占位符 6",
+      "responseBytes": 1751,
+      "summaryText": "深度解析: 展开 4 处，Scheme 4 (URL 4)，参数层 9，占位符 6",
       "coverage": {
         "score": 100,
         "label": "结构解析完成 · 占位符 6",
@@ -47,6 +47,9 @@
         "nestedCommandFields": 10,
         "nestedResourceFields": 0,
         "runtimePlaceholders": 6,
+        "schemeParamStages": 9,
+        "schemeParamStageRepairHints": 0,
+        "nonReversibleParamStages": 0,
         "unresolved": 0,
         "warnings": 0
       },
@@ -56,6 +59,9 @@
         "nestedCommandFields": 10,
         "nestedResourceFields": 0,
         "runtimePlaceholders": 6,
+        "schemeParamStages": 9,
+        "schemeParamStageRepairHints": 0,
+        "nonReversibleParamStages": 0,
         "unresolved": 0,
         "warnings": 0
       },
@@ -72,7 +78,7 @@
           "hasMorePaths": false
         },
         {
-          "schema": "baiduboxapp://v1/easybrowse/open",
+          "schema": "sampleapp://v1/browser/open",
           "count": 2,
           "recordCount": 1,
           "paths": [
@@ -82,20 +88,20 @@
           "hasMorePaths": false
         },
         {
-          "schema": "baiduboxapp://v7/vendor/ad/deeplink",
-          "count": 1,
-          "recordCount": 1,
-          "paths": [
-            "$.data.ads[0].common.scheme.fallback_cmd"
-          ],
-          "hasMorePaths": false
-        },
-        {
           "schema": "openapp.demo://virtual",
           "count": 1,
           "recordCount": 1,
           "paths": [
             "$.data.ads[0].common.scheme.fallback_cmd.params.appUrl"
+          ],
+          "hasMorePaths": false
+        },
+        {
+          "schema": "sampleapp://v7/vendor/ad/deeplink",
+          "count": 1,
+          "recordCount": 1,
+          "paths": [
+            "$.data.ads[0].common.scheme.fallback_cmd"
           ],
           "hasMorePaths": false
         }
@@ -190,8 +196,8 @@
         "expectedFile": "landing-response.cmdhandler.expected.json",
         "ignoreExtraPaths": true,
         "pass": true,
-        "actualCommandSchema": "baiduboxapp://v1/easybrowse/open",
-        "expectedCommandSchema": "baiduboxapp://v1/easybrowse/open",
+        "actualCommandSchema": "sampleapp://v1/browser/open",
+        "expectedCommandSchema": "sampleapp://v1/browser/open",
         "schemaDiff": false,
         "sourceDiff": false,
         "missingPaths": 0,
@@ -277,14 +283,14 @@
       "requiredChecks": {
         "requiredCommandSchemas": {
           "actual": [
-            "baiduboxapp://v1/easybrowse/open",
+            "sampleapp://v1/browser/open",
             "https://m.example.com/promo",
-            "baiduboxapp://v7/vendor/ad/deeplink",
+            "sampleapp://v7/vendor/ad/deeplink",
             "openapp.demo://virtual"
           ],
           "expected": [
-            "baiduboxapp://v1/easybrowse/open",
-            "baiduboxapp://v7/vendor/ad/deeplink",
+            "sampleapp://v1/browser/open",
+            "sampleapp://v7/vendor/ad/deeplink",
             "openapp.demo://virtual",
             "https://m.example.com/promo"
           ],
@@ -339,8 +345,8 @@
         "cmdHandlerExpected": true,
         "cmdHandlerExpectedFile": "phone-response.cmdhandler.expected.json"
       },
-      "responseBytes": 1560,
-      "summaryText": "深度解析: 展开 3 处，Scheme 3 (URL 3)，占位符 8",
+      "responseBytes": 1564,
+      "summaryText": "深度解析: 展开 3 处，Scheme 3 (URL 3)，参数层 8，占位符 8",
       "coverage": {
         "score": 100,
         "label": "结构解析完成 · 占位符 8",
@@ -357,6 +363,9 @@
         "nestedCommandFields": 4,
         "nestedResourceFields": 0,
         "runtimePlaceholders": 8,
+        "schemeParamStages": 8,
+        "schemeParamStageRepairHints": 0,
+        "nonReversibleParamStages": 0,
         "unresolved": 0,
         "warnings": 0
       },
@@ -366,12 +375,15 @@
         "nestedCommandFields": 4,
         "nestedResourceFields": 0,
         "runtimePlaceholders": 8,
+        "schemeParamStages": 8,
+        "schemeParamStageRepairHints": 0,
+        "nonReversibleParamStages": 0,
         "unresolved": 0,
         "warnings": 0
       },
       "topCommandSchemas": [
         {
-          "schema": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+          "schema": "sampleapp://v7/vendor/ad/makePhoneCall",
           "count": 1,
           "recordCount": 1,
           "paths": [
@@ -440,8 +452,8 @@
         "expectedFile": "phone-response.cmdhandler.expected.json",
         "ignoreExtraPaths": true,
         "pass": true,
-        "actualCommandSchema": "baiduboxapp://v7/vendor/ad/makePhoneCall",
-        "expectedCommandSchema": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+        "actualCommandSchema": "sampleapp://v7/vendor/ad/makePhoneCall",
+        "expectedCommandSchema": "sampleapp://v7/vendor/ad/makePhoneCall",
         "schemaDiff": false,
         "sourceDiff": false,
         "missingPaths": 0,
@@ -498,18 +510,18 @@
           "pass": true
         },
         "leadHotspotCommandSchema": {
-          "actual": "baiduboxapp://v7/vendor/ad/makePhoneCall",
-          "expected": "baiduboxapp://v7/vendor/ad/makePhoneCall",
+          "actual": "sampleapp://v7/vendor/ad/makePhoneCall",
+          "expected": "sampleapp://v7/vendor/ad/makePhoneCall",
           "pass": true
         }
       },
       "requiredChecks": {
         "requiredCommandSchemas": {
           "actual": [
-            "baiduboxapp://v7/vendor/ad/makePhoneCall"
+            "sampleapp://v7/vendor/ad/makePhoneCall"
           ],
           "expected": [
-            "baiduboxapp://v7/vendor/ad/makePhoneCall"
+            "sampleapp://v7/vendor/ad/makePhoneCall"
           ],
           "missing": [],
           "pass": true
@@ -562,8 +574,8 @@
         "cmdHandlerExpected": true,
         "cmdHandlerExpectedFile": "reward-response.cmdhandler.expected.json"
       },
-      "responseBytes": 18646,
-      "summaryText": "深度解析: 展开 2 处，Scheme 2 (URL 1 / Base64 1)，不可逆 1，占位符 30",
+      "responseBytes": 18627,
+      "summaryText": "深度解析: 展开 2 处，Scheme 2 (URL 1 / Base64 1)，不可逆 1，参数层 8，占位符 30",
       "coverage": {
         "score": 100,
         "label": "结构解析完成 · 占位符 30",
@@ -580,6 +592,9 @@
         "nestedCommandFields": 69,
         "nestedResourceFields": 1,
         "runtimePlaceholders": 30,
+        "schemeParamStages": 8,
+        "schemeParamStageRepairHints": 0,
+        "nonReversibleParamStages": 0,
         "unresolved": 0,
         "warnings": 0
       },
@@ -589,34 +604,13 @@
         "nestedCommandFields": 69,
         "nestedResourceFields": 1,
         "runtimePlaceholders": 30,
+        "schemeParamStages": 8,
+        "schemeParamStageRepairHints": 0,
+        "nonReversibleParamStages": 0,
         "unresolved": 0,
         "warnings": 0
       },
       "topCommandSchemas": [
-        {
-          "schema": "baiduboxapp://v1/easybrowse/open",
-          "count": 9,
-          "recordCount": 1,
-          "paths": [
-            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.webUrl",
-            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.webUrl",
-            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd.params.webUrl",
-            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd.params.webUrl"
-          ],
-          "hasMorePaths": true
-        },
-        {
-          "schema": "baiduboxapp://v7/vendor/ad/deeplink",
-          "count": 9,
-          "recordCount": 1,
-          "paths": [
-            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd",
-            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd",
-            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd",
-            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd"
-          ],
-          "hasMorePaths": true
-        },
         {
           "schema": "openapp.jdmobile://virtual",
           "count": 9,
@@ -630,7 +624,31 @@
           "hasMorePaths": true
         },
         {
-          "schema": "nadcorevendor://vendor/ad/reward",
+          "schema": "sampleapp://v1/browser/open",
+          "count": 9,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd.params.webUrl",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd.params.webUrl"
+          ],
+          "hasMorePaths": true
+        },
+        {
+          "schema": "sampleapp://v7/vendor/ad/deeplink",
+          "count": 9,
+          "recordCount": 1,
+          "paths": [
+            "$.data.video[0].material[0].info[0].ad_common.scheme.video_info.tail_frame.panel_scheme.panel_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.stay_cmd.convert_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.reward_cmd.convert_cmd",
+            "$.data.video[0].material[0].info[0].ad_common.scheme.reward.strong_guide_cmd.convert_cmd"
+          ],
+          "hasMorePaths": true
+        },
+        {
+          "schema": "samplevendor://vendor/ad/reward",
           "count": 4,
           "recordCount": 1,
           "paths": [
@@ -642,7 +660,7 @@
           "hasMorePaths": false
         },
         {
-          "schema": "nadcorevendor://vendor/ad/rewardDialog",
+          "schema": "samplevendor://vendor/ad/rewardDialog",
           "count": 3,
           "recordCount": 1,
           "paths": [
@@ -663,7 +681,7 @@
           "hasMorePaths": false
         },
         {
-          "schema": "https://m.baidu.com/baidu.php",
+          "schema": "https://m.example.com/sample.php",
           "count": 1,
           "recordCount": 1,
           "paths": [
@@ -672,7 +690,7 @@
           "hasMorePaths": false
         },
         {
-          "schema": "nadcorevendor://vendor/ad/rewardImpl",
+          "schema": "samplevendor://vendor/ad/rewardImpl",
           "count": 1,
           "recordCount": 1,
           "paths": [
@@ -865,20 +883,20 @@
         "expectedFile": "reward-response.cmdhandler.expected.json",
         "ignoreExtraPaths": true,
         "pass": true,
-        "actualCommandSchema": "nadcorevendor://vendor/ad/rewardImpl",
-        "expectedCommandSchema": "nadcorevendor://vendor/ad/rewardImpl",
+        "actualCommandSchema": "samplevendor://vendor/ad/rewardImpl",
+        "expectedCommandSchema": "samplevendor://vendor/ad/rewardImpl",
         "schemaDiff": false,
         "sourceDiff": false,
         "missingPaths": 0,
         "extraPaths": 0,
-        "ignoredExtraPaths": 412,
+        "ignoredExtraPaths": 396,
         "valueDiffs": 0,
         "diff": {
           "schemaDiff": null,
           "sourceDiff": null,
           "missingPathCount": 0,
           "extraPathCount": 0,
-          "ignoredExtraPathCount": 412,
+          "ignoredExtraPathCount": 396,
           "valueDiffCount": 0,
           "missingPaths": [],
           "extraPaths": [],
@@ -939,13 +957,13 @@
           "pass": true
         },
         "maxCmdHandlerIgnoredExtraPaths": {
-          "actual": 412,
+          "actual": 396,
           "expected": 474,
           "pass": true
         },
         "leadHotspotCommandSchema": {
-          "actual": "baiduboxapp://v1/easybrowse/open",
-          "expected": "baiduboxapp://v1/easybrowse/open",
+          "actual": "openapp.jdmobile://virtual",
+          "expected": "openapp.jdmobile://virtual",
           "pass": true
         },
         "leadHotspotResourceSchema": {
@@ -962,24 +980,24 @@
       "requiredChecks": {
         "requiredCommandSchemas": {
           "actual": [
-            "nadcorevendor://vendor/ad/rewardImpl",
-            "nadcorevendor://vendor/ad/reward",
-            "nadcorevendor://vendor/ad/rewardWebPanel",
-            "baiduboxapp://v7/vendor/ad/deeplink",
+            "samplevendor://vendor/ad/rewardImpl",
+            "samplevendor://vendor/ad/reward",
+            "samplevendor://vendor/ad/rewardWebPanel",
+            "sampleapp://v7/vendor/ad/deeplink",
             "openapp.jdmobile://virtual",
-            "baiduboxapp://v1/easybrowse/open",
-            "nadcorevendor://vendor/ad/rewardDialog",
+            "sampleapp://v1/browser/open",
+            "samplevendor://vendor/ad/rewardDialog",
             "https://callback.example.com/track",
-            "https://m.baidu.com/baidu.php"
+            "https://m.example.com/sample.php"
           ],
           "expected": [
-            "nadcorevendor://vendor/ad/rewardImpl",
-            "nadcorevendor://vendor/ad/rewardWebPanel",
-            "nadcorevendor://vendor/ad/rewardDialog",
-            "baiduboxapp://v7/vendor/ad/deeplink",
-            "baiduboxapp://v1/easybrowse/open",
+            "samplevendor://vendor/ad/rewardImpl",
+            "samplevendor://vendor/ad/rewardWebPanel",
+            "samplevendor://vendor/ad/rewardDialog",
+            "sampleapp://v7/vendor/ad/deeplink",
+            "sampleapp://v1/browser/open",
             "openapp.jdmobile://virtual",
-            "https://m.baidu.com/baidu.php",
+            "https://m.example.com/sample.php",
             "https://callback.example.com/track"
           ],
           "missing": [],

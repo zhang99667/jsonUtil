@@ -9,13 +9,13 @@ describe('getSmartInputSuggestion', () => {
 
   it.each([
     ['JSON', '\u200B{"id":1}\u200B', 'json-modeling'],
-    ['业务 Scheme', '\u200Bbaiduboxapp://v1/open\u200B', 'standalone-scheme'],
+    ['业务 Scheme', '\u200Bsampleapp://v1/open\u200B', 'standalone-scheme'],
   ])('清理不可见字符后识别%s', (_, sourceText, expectedId) => {
     expect(getSmartInputSuggestion(sourceText)?.id).toBe(expectedId);
   });
 
   it('合法 JSON 内含业务 Scheme 时推荐嵌套解析', () => {
-    const scheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
+    const scheme = 'sampleapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
     const suggestion = getSmartInputSuggestion(JSON.stringify({
       data: {
         action_cmd: scheme,
@@ -35,7 +35,7 @@ describe('getSmartInputSuggestion', () => {
 
   it('独立业务 Scheme 推荐打开 Scheme 面板', () => {
     const suggestion = getSmartInputSuggestion(
-      'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D'
+      'sampleapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D'
     );
 
     expect(suggestion).toMatchObject({
@@ -67,7 +67,7 @@ describe('getSmartInputSuggestion', () => {
   });
 
   it('可解码 HTTP URL 参数仍推荐 Scheme 面板', () => {
-    const nested = encodeURIComponent('baiduboxapp://v1/open?url=https%3A%2F%2Fexample.com');
+    const nested = encodeURIComponent('sampleapp://v1/open?url=https%3A%2F%2Fexample.com');
     const suggestion = getSmartInputSuggestion(`https://example.com/landing?scheme=${nested}`);
 
     expect(suggestion).toMatchObject({
@@ -103,7 +103,7 @@ describe('getSmartInputSuggestion', () => {
   });
 
   it('JSON Lines 内含业务 Scheme 时优先推荐嵌套解析', () => {
-    const scheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
+    const scheme = 'sampleapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2213718164578%22%7D';
     const suggestion = getSmartInputSuggestion([
       JSON.stringify({ level: 'info', action_cmd: scheme }),
       JSON.stringify({ level: 'debug', id: 2 }),

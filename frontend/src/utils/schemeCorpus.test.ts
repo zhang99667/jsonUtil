@@ -99,7 +99,7 @@ const phoneResponseCmdHandlerExpected = readCorpusJson<JsonValue>(phoneResponseB
 describe('CMD/Scheme 真实样本回归', () => {
   it('解析编码 URL 字段并保留外层来源参数', () => {
     expect(parseDecodedJson(
-      'baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson%2Bschema&from=feed'
+      'sampleapp://v1/browser/open?url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson%2Bschema&from=feed'
     )).toEqual({
       url: {
         word: 'json schema',
@@ -110,7 +110,7 @@ describe('CMD/Scheme 真实样本回归', () => {
 
   it('解析未编码 URL 字段中的内层 query 参数', () => {
     expect(parseDecodedJson(
-      'url=https://m.baidu.com/s?word=json&from=feed'
+      'url=https://m.example.com/s?word=json&from=feed'
     )).toEqual({
       url: {
         word: 'json',
@@ -120,7 +120,7 @@ describe('CMD/Scheme 真实样本回归', () => {
   });
 
   it('解析裸域名 URL 字段', () => {
-    expect(parseDecodedJson('h5Url=m.baidu.com/s?word=json+schema')).toEqual({
+    expect(parseDecodedJson('h5Url=m.example.com/s?word=json+schema')).toEqual({
       h5Url: {
         word: 'json schema',
       },
@@ -128,7 +128,7 @@ describe('CMD/Scheme 真实样本回归', () => {
   });
 
   it('解析跳转兜底 URL 字段', () => {
-    expect(parseDecodedJson('fallbackUrl=//m.baidu.com/s?word=json+schema')).toEqual({
+    expect(parseDecodedJson('fallbackUrl=//m.example.com/s?word=json+schema')).toEqual({
       fallbackUrl: {
         word: 'json schema',
       },
@@ -207,12 +207,12 @@ describe('CMD/Scheme 真实样本回归', () => {
       category: 'jump',
       url: landingUrl,
     }))}`;
-    const convertCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const convertCmd = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       appUrl,
       source: 'feedna',
     }))}`;
-    const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
-    const responseScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const rewardDialog = `samplevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
+    const responseScheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       reward: {
         stay_cmd: rewardDialog,
       },
@@ -264,12 +264,12 @@ describe('CMD/Scheme 真实样本回归', () => {
   it('解析电话拨打 Scheme 里的号码、监测 URL 与 extInfo', () => {
     const extInfo = base64Encode(JSON.stringify({
       search_id: 'a433862f59552397',
-      cmatch: 222,
+      segment: 222,
       rank: 2,
     }));
-    const numberUrl = `https://ada.baidu.com/phone-tracker/getNumber?query=${encodeURIComponent('种植')}&realPhone=400-805-8686&solutionId=__SOLUTIONID__`;
-    const logUrl = 'https://ada.baidu.com/phone-tracker/clicklog?pageid=__TIMESTAMP__&virtualPhone=__VIRTUALPHONE__&realPhone=400-805-8686';
-    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+    const numberUrl = `https://ada.sample.com/phone-tracker/getNumber?query=${encodeURIComponent('种植')}&realPhone=400-805-8686&solutionId=__SOLUTIONID__`;
+    const logUrl = 'https://ada.sample.com/phone-tracker/clicklog?pageid=__TIMESTAMP__&virtualPhone=__VIRTUALPHONE__&realPhone=400-805-8686';
+    const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
       phone: '400-805-8686',
       numberUrl,
       logUrl,
@@ -282,7 +282,7 @@ describe('CMD/Scheme 真实样本回归', () => {
 
     expect(decoded.isJson).toBe(true);
     expect(decoded.schemeInfo).toMatchObject({
-      protocol: 'baiduboxapp:',
+      protocol: 'sampleapp:',
       host: 'v7',
       path: '/vendor/ad/makePhoneCall',
     });
@@ -301,7 +301,7 @@ describe('CMD/Scheme 真实样本回归', () => {
         },
         extInfo: {
           search_id: 'a433862f59552397',
-          cmatch: 222,
+          segment: 222,
           rank: 2,
         },
         type: 1,
@@ -315,9 +315,9 @@ describe('CMD/Scheme 真实样本回归', () => {
   });
 
   it('解析电话 Scheme 内落地页 hash 后追加的追踪参数', () => {
-    const landingUrl = `https://ada.baidu.com/site/demo/agent?imid=31&source=baidu#zzzaz1)&unit=${encodeURIComponent('种植牙')}&keyword=${encodeURIComponent('收费表')}&e_creative=134`;
-    const numberUrl = `https://ada.baidu.com/phone-tracker/getNumber?url=${encodeURIComponent(landingUrl)}&query=${encodeURIComponent('种植牙')}`;
-    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+    const landingUrl = `https://ada.sample.com/site/demo/agent?imid=31&source=sample#zzzaz1)&unit=${encodeURIComponent('种植牙')}&keyword=${encodeURIComponent('收费表')}&e_creative=134`;
+    const numberUrl = `https://ada.sample.com/phone-tracker/getNumber?url=${encodeURIComponent(landingUrl)}&query=${encodeURIComponent('种植牙')}`;
+    const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
       phone: '400-805-8686',
       numberUrl,
       type: 1,
@@ -333,7 +333,7 @@ describe('CMD/Scheme 真实样本回归', () => {
         numberUrl: {
           url: {
             imid: '31',
-            source: 'baidu',
+            source: 'sample',
             _hash: {
               unit: '种植牙',
               keyword: '收费表',
@@ -351,11 +351,11 @@ describe('CMD/Scheme 真实样本回归', () => {
     const extInfo = base64Encode(JSON.stringify({ rank: 2 }));
     const rawParams = JSON.stringify({
       phone: '400-805-8686',
-      numberUrl: 'https://ada.baidu.com/phone-tracker/getNumber?a=1&b=2&solutionId=__SOLUTIONID__',
-      logUrl: 'https://ada.baidu.com/phone-tracker/clicklog?pageid=__TIMESTAMP__&realPhone=400-805-8686',
+      numberUrl: 'https://ada.sample.com/phone-tracker/getNumber?a=1&b=2&solutionId=__SOLUTIONID__',
+      logUrl: 'https://ada.sample.com/phone-tracker/clicklog?pageid=__TIMESTAMP__&realPhone=400-805-8686',
       extInfo,
     });
-    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${rawParams}`;
+    const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${rawParams}`;
 
     const decoded = deepDecodeScheme(scheme);
     const parsed = JSON.parse(decoded.decoded);
@@ -386,9 +386,9 @@ describe('CMD/Scheme 真实样本回归', () => {
   it('解析半解码电话拨打 Scheme 中 params 后续外层参数', () => {
     const rawParams = JSON.stringify({
       phone: '400-805-8686',
-      numberUrl: 'https://ada.baidu.com/phone-tracker/getNumber?a=1&b=2',
+      numberUrl: 'https://ada.sample.com/phone-tracker/getNumber?a=1&b=2',
     });
-    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${rawParams}&source=feed`;
+    const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${rawParams}&source=feed`;
 
     const decoded = deepDecodeScheme(scheme);
     const parsed = JSON.parse(decoded.decoded);
@@ -411,8 +411,8 @@ describe('CMD/Scheme 真实样本回归', () => {
   });
 
   it('解析半解码 loose JSON 中单引号字符串里的花括号', () => {
-    const rawParams = "{'title':'a}b','numberUrl':'https://ada.baidu.com/phone-tracker/getNumber?a=1&b=2'}";
-    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${rawParams}&source=feed`;
+    const rawParams = "{'title':'a}b','numberUrl':'https://ada.sample.com/phone-tracker/getNumber?a=1&b=2'}";
+    const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${rawParams}&source=feed`;
 
     const decoded = deepDecodeScheme(scheme);
     const parsed = JSON.parse(decoded.decoded);
@@ -461,7 +461,7 @@ describe('CMD/Scheme 真实样本回归', () => {
       category: 'jump',
       url: 'https://example.com/landing?sku=101&bd_vid=abc',
     }))}`;
-    const convertCmd = encodeURIComponent(`baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const convertCmd = encodeURIComponent(`sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       appUrl,
       source: 'feedna',
     }))}`);
@@ -526,7 +526,7 @@ describe('CMD/Scheme 真实样本回归', () => {
   });
 
   it('未编辑 raw URL 字段可按原形态回写', () => {
-    const original = 'url=https://m.baidu.com/s?word=json&from=feed';
+    const original = 'url=https://m.example.com/s?word=json&from=feed';
     const decoded = deepDecodeScheme(original);
 
     expect(encodeWithLayers(decoded.decoded, decoded.layers)).toBe(original);
@@ -538,12 +538,12 @@ describe('CMD/Scheme 真实样本回归', () => {
       category: 'jump',
       url: landingUrl,
     }))}`;
-    const convertCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const convertCmd = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       appUrl,
       source: 'feedna',
     }))}`;
-    const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
-    const bottomButtonScheme = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+    const rewardDialog = `samplevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
+    const bottomButtonScheme = `samplevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
       android_pid: '1683310188080',
       task_id: '602',
       ext_params: {
@@ -554,7 +554,7 @@ describe('CMD/Scheme 真实样本回归', () => {
         back_cmd: '',
       }),
     }))}`;
-    const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const scheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       reward: {
         stay_cmd: rewardDialog,
       },
@@ -643,7 +643,7 @@ describe('CMD/Scheme 真实样本回归', () => {
         apk_name: 'com.example.app',
       },
     })).replace(/=/g, '%3D');
-    const bottomButtonScheme = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+    const bottomButtonScheme = `samplevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
       android_pid: '1683310188080',
       task_id: '602',
       ext_params: {
@@ -654,11 +654,11 @@ describe('CMD/Scheme 真实样本回归', () => {
         complete_info: '',
       }),
     }))}`;
-    const stayCmd = `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
+    const stayCmd = `samplevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
       button_cmd: '__CONVERT_CMD__',
       button_text: '打开应用并体验',
     }))}`;
-    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const rootScheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       video_url: 'https://video.example.com/ad.mp4?pd=100&cm=1501',
       page_url: landingUrl,
       ext_log: {
@@ -723,7 +723,7 @@ describe('CMD/Scheme 真实样本回归', () => {
               k: 'ubsParam',
               v: {
                 ideaid: '1353104569522',
-                cmatch: 1501,
+                segment: 1501,
                 adload_related_tag: '',
               },
             },
@@ -776,7 +776,7 @@ describe('CMD/Scheme 真实样本回归', () => {
       ip: '127.0.0.1',
     });
     expect(parsed.data.video[0].extra[1].v.ad_brand).toBe('千问');
-    expect(parsed.data.video[0].extra[2].v.cmatch).toBe(1501);
+    expect(parsed.data.video[0].extra[2].v.segment).toBe(1501);
     expect(parsed.data.video[0].extra[3].v.client_params.reward_crius_download_charge).toBe('1');
     expect(report.summary.warningCount).toBe(0);
     expect(report.summary.unresolvedCount).toBe(0);
@@ -899,17 +899,17 @@ describe('CMD/Scheme 真实样本回归', () => {
           video_info: {
             tail_frame: {
               panel_scheme: {
-                cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+                cmdSchema: 'samplevendor://vendor/ad/rewardWebPanel',
                 cmdParams: {
                   panel_cmd: {
-                    cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+                    cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
                     cmdParams: {
                       params: {
                         appUrl: {
                           cmdSchema: 'openapp.jdmobile://virtual',
                         },
                         webUrl: {
-                          cmdSchema: 'baiduboxapp://v1/easybrowse/open',
+                          cmdSchema: 'sampleapp://v1/browser/open',
                         },
                       },
                     },
@@ -920,7 +920,7 @@ describe('CMD/Scheme 真实样本回归', () => {
           },
           convert: {
             button_scheme: {
-              cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+              cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
             },
           },
         },
@@ -1009,14 +1009,14 @@ describe('CMD/Scheme 真实样本回归', () => {
         cmdSchema: landingResponseBaseline.primaryCommandSchema,
         cmdParams: {
           fallback_cmd: {
-            cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+            cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
             cmdParams: {
               params: {
                 appUrl: {
                   cmdSchema: 'openapp.demo://virtual',
                 },
                 webUrl: {
-                  cmdSchema: 'baiduboxapp://v1/easybrowse/open',
+                  cmdSchema: 'sampleapp://v1/browser/open',
                 },
               },
             },
@@ -1072,7 +1072,7 @@ describe('CMD/Scheme 真实样本回归', () => {
     expect(decodedScheme.params.phone).toBe('400-805-8686');
     expect(decodedScheme.params.extInfo).toEqual({
       search_id: 'redacted_search_id',
-      cmatch: 222,
+      segment: 222,
       rank: 2,
     });
     expect(decodedScheme.params.numberUrl.url._hash).toEqual({
@@ -1145,12 +1145,12 @@ describe('CMD/Scheme 真实样本回归', () => {
       category: 'jump',
       url: landingUrl,
     }))}`;
-    const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const deeplinkCmd = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       appUrl,
       source: 'feedna',
     }))}`;
-    const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?panel_cmd=${encodeURIComponent(deeplinkCmd)}&url=${encodeURIComponent(landingUrl)}`;
-    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const panelScheme = `samplevendor://vendor/ad/rewardWebPanel?panel_cmd=${encodeURIComponent(deeplinkCmd)}&url=${encodeURIComponent(landingUrl)}`;
+    const rootScheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       tail_frame: {
         panel_scheme: panelScheme,
       },

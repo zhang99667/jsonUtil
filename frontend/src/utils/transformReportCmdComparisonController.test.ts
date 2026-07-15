@@ -23,7 +23,7 @@ const stateWithOpenRecord = (overrides: Partial<TransformReportCmdComparisonStat
     recordPath: '$.candidate',
     label: '$.candidate',
     sourceLabel: 'SOURCE[1]',
-    actual: { result: { cmdSchema: 'baiduboxapp://v1/open', cmdParams: {} } },
+    actual: { result: { cmdSchema: 'sampleapp://v1/open', cmdParams: {} } },
   },
   ...overrides,
 }) satisfies TransformReportCmdComparisonState;
@@ -36,7 +36,7 @@ const candidate = (
   label: '$.target',
   score: 1,
   sourceLabel: 'SOURCE[2]',
-  actual: { result: { cmdSchema: 'baiduboxapp://v1/open', cmdParams: { id: 1 } } },
+  actual: { result: { cmdSchema: 'sampleapp://v1/open', cmdParams: { id: 1 } } },
   ...overrides,
 } as RankedCmdComparisonCandidate);
 

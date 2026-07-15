@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "landing-response-redacted",
-  "description": "脱敏广告落地页 response，覆盖 easybrowse、deeplink、openapp、结构化 HTTPS 落地页、监测 URL 和运行时占位符。",
+  "description": "脱敏广告落地页 response，覆盖 browser、deeplink、openapp、结构化 HTTPS 落地页、监测 URL 和运行时占位符。",
   "responseTemplate": {
     "errno": 0,
     "errmsg": "",
@@ -30,13 +30,13 @@
   },
   "replacements": {
     "__ROOT_SCHEME__": [
-      "baiduboxapp://v1/easybrowse/open?url=https%3A%2F%2Fm.example.com%2Fpromo%3Fcampaign%3Dlanding%26bd_vid%3Dland_001%23%2Fd",
-      "etail%3Fcmd%3D%257B%2522nid%2522%253A%2522landing_001%2522%257D%26from%3Dad&fallback_cmd=baiduboxapp%3A%2F%2Fv7%2Fvendor",
+      "sampleapp://v1/browser/open?url=https%3A%2F%2Fm.example.com%2Fpromo%3Fcampaign%3Dlanding%26bd_vid%3Dland_001%23%2Fd",
+      "etail%3Fcmd%3D%257B%2522nid%2522%253A%2522landing_001%2522%257D%26from%3Dad&fallback_cmd=sampleapp%3A%2F%2Fv7%2Fvendor",
       "%2Fad%2Fdeeplink%3Fparams%3D%257B%2522appUrl%2522%253A%2522openapp.demo%253A%252F%252Fvirtual%253Fparams%253D%25257B%252",
       "522category%252522%25253A%252522jump%252522%25252C%252522url%252522%25253A%252522https%25253A%25252F%25252Fm.example.com",
       "%25252Fpromo%25253Fcampaign%25253Dlanding%252526bd_vid%25253Dland_001%252523%25252Fdetail%25253Fcmd%25253D%2525257B%2525",
       "2522nid%25252522%2525253A%25252522landing_001%25252522%2525257D%252526from%25253Dad%252522%25252C%252522source%252522%25",
-      "253A%252522landing%252522%25257D%2522%252C%2522webUrl%2522%253A%2522baiduboxapp%253A%252F%252Fv1%252Feasybrowse%252Fopen",
+      "253A%252522landing%252522%25257D%2522%252C%2522webUrl%2522%253A%2522sampleapp%253A%252F%252Fv1%252Fbrowser%252Fopen",
       "%253Furl%253Dhttps%25253A%25252F%25252Fm.example.com%25252Fpromo%25253Fcampaign%25253Dlanding%252526bd_vid%25253Dland_00",
       "1%252523%25252Fdetail%25253Fcmd%25253D%2525257B%25252522nid%25252522%2525253A%25252522landing_001%25252522%2525257D%2525",
       "26from%25253Dad%2526source%253Dinner%2522%252C%2522source%2522%253A%2522feedna%2522%257D&adFlag=%7B%22ext%22%3A%22__AD_E",

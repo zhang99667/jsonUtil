@@ -25,7 +25,7 @@ const createSample = (overrides = {}) => ({
   },
   topCommandSchemas: [
     {
-      schema: 'nadcorevendor://vendor/ad/rewardImpl',
+      schema: 'samplevendor://vendor/ad/rewardImpl',
       count: 1,
     },
   ],
@@ -54,8 +54,8 @@ const createSample = (overrides = {}) => ({
   },
   requiredChecks: {
     requiredCommandSchemas: {
-      actual: ['nadcorevendor://vendor/ad/rewardImpl'],
-      expected: ['nadcorevendor://vendor/ad/rewardImpl'],
+      actual: ['samplevendor://vendor/ad/rewardImpl'],
+      expected: ['samplevendor://vendor/ad/rewardImpl'],
       missing: [],
       pass: true,
     },
@@ -160,8 +160,8 @@ describe('buildSampleSnapshotDiff', () => {
       requiredChecks: {
         requiredCommandSchemas: {
           actual: [],
-          expected: ['nadcorevendor://vendor/ad/rewardImpl'],
-          missing: ['nadcorevendor://vendor/ad/rewardImpl'],
+          expected: ['samplevendor://vendor/ad/rewardImpl'],
+          missing: ['samplevendor://vendor/ad/rewardImpl'],
           pass: false,
         },
       },
@@ -178,12 +178,12 @@ describe('buildSampleSnapshotDiff', () => {
       key: 'requiredChecks',
       message: '新增必需项失败',
       before: undefined,
-      after: 'requiredCommandSchemas missing=["nadcorevendor://vendor/ad/rewardImpl"] extra=[]',
+      after: 'requiredCommandSchemas missing=["samplevendor://vendor/ad/rewardImpl"] extra=[]',
     });
     expect(recoveredDiff.improvements).toContainEqual({
       key: 'requiredChecks',
       message: '必需项失败恢复',
-      before: 'requiredCommandSchemas missing=["nadcorevendor://vendor/ad/rewardImpl"] extra=[]',
+      before: 'requiredCommandSchemas missing=["samplevendor://vendor/ad/rewardImpl"] extra=[]',
       after: undefined,
     });
   });
@@ -239,8 +239,8 @@ describe('buildSampleSnapshotDiff', () => {
       requiredChecks: {
         requiredCommandSchemas: {
           actual: [],
-          expected: ['nadcorevendor://vendor/ad/rewardImpl'],
-          missing: ['nadcorevendor://vendor/ad/rewardImpl'],
+          expected: ['samplevendor://vendor/ad/rewardImpl'],
+          missing: ['samplevendor://vendor/ad/rewardImpl'],
           pass: false,
         },
       },
@@ -269,7 +269,7 @@ describe('buildSampleSnapshotDiff', () => {
     expect(diff.improvements).toContainEqual({
       key: 'requiredChecks',
       message: '必需项失败恢复',
-      before: 'requiredCommandSchemas missing=["nadcorevendor://vendor/ad/rewardImpl"] extra=[]',
+      before: 'requiredCommandSchemas missing=["samplevendor://vendor/ad/rewardImpl"] extra=[]',
       after: undefined,
     });
   });

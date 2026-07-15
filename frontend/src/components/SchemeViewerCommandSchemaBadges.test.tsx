@@ -5,10 +5,10 @@ import { collectText, findByTourOrNull } from './schemeViewerElementTestHelpers'
 describe('SchemeViewerCommandSchemaBadges', () => {
   it('渲染主 Schema、Schema 数量和 Top Schema', () => {
     const tree = SchemeViewerCommandSchemaBadges({
-      commandSchema: 'baiduboxapp://v7/vendor/ad/prerender',
+      commandSchema: 'sampleapp://v7/vendor/ad/prerender',
       commandSchemaCount: 2,
       topCommandSchemas: [{
-        schema: 'baiduboxapp://v7/vendor/ad/prerender',
+        schema: 'sampleapp://v7/vendor/ad/prerender',
         count: 2,
         paths: ['$', '$.nested'],
         hasMorePaths: false,
@@ -18,13 +18,13 @@ describe('SchemeViewerCommandSchemaBadges', () => {
 
     expect(findByTourOrNull(tree, 'scheme-command-schema-count')).toBeTruthy();
     expect(findByTourOrNull(tree, 'scheme-top-command-schemas')).toBeTruthy();
-    expect(text).toContain('cmdSchema=baiduboxapp://v7/vendor/ad/prerender');
+    expect(text).toContain('cmdSchema=sampleapp://v7/vendor/ad/prerender');
     expect(text).toContain('Schema · 2');
-    expect(text).toContain('baiduboxapp://v7/vendor/ad/prerender ×2');
+    expect(text).toContain('sampleapp://v7/vendor/ad/prerender ×2');
   });
 
   it('截断过长 Top Schema 展示', () => {
-    const longSchema = `baiduboxapp://v7/${'x'.repeat(80)}`;
+    const longSchema = `sampleapp://v7/${'x'.repeat(80)}`;
     const tree = SchemeViewerCommandSchemaBadges({
       commandSchema: undefined,
       commandSchemaCount: 1,

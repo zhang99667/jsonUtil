@@ -33,11 +33,11 @@ describe('isUrl', () => {
   });
 
   it('检测协议相对 URL', () => {
-    expect(isUrl('//m.baidu.com/s?word=json')).toBe(true);
+    expect(isUrl('//m.example.com/s?word=json')).toBe(true);
   });
 
   it('检测裸域名 URL', () => {
-    expect(isUrl('m.baidu.com/s?word=json')).toBe(true);
+    expect(isUrl('m.example.com/s?word=json')).toBe(true);
     expect(isUrl('localhost:5173/app?tab=scheme')).toBe(true);
   });
 
@@ -62,14 +62,14 @@ describe('shouldExposeSchemeValue', () => {
   });
 
   it('自定义 Scheme 仍作为业务 Scheme 暴露', () => {
-    expect(isActionableSchemeUrl('baiduboxapp://v1/browser/open?from=feed')).toBe(true);
-    expect(shouldExposeSchemeValue('baiduboxapp://v1/browser/open?from=feed')).toBe(true);
+    expect(isActionableSchemeUrl('sampleapp://v1/browser/open?from=feed')).toBe(true);
+    expect(shouldExposeSchemeValue('sampleapp://v1/browser/open?from=feed')).toBe(true);
   });
 
   it('携带结构化 CMD 参数的 HTTP(S) URL 仍作为业务 Scheme 暴露', () => {
     const urlWithCmd = `https://example.com/callback?cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}`;
     const urlWithHashCmd = `https://example.com/app#/detail?cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}`;
-    const urlWithNestedScheme = `https://example.com/jump?url=${encodeURIComponent('baiduboxapp://v1/browser/open?from=feed')}`;
+    const urlWithNestedScheme = `https://example.com/jump?url=${encodeURIComponent('sampleapp://v1/browser/open?from=feed')}`;
 
     expect(isActionableSchemeUrl(urlWithCmd)).toBe(true);
     expect(isActionableSchemeUrl(urlWithHashCmd)).toBe(true);
@@ -77,7 +77,7 @@ describe('shouldExposeSchemeValue', () => {
   });
 
   it('只嵌套普通 HTTP(S) 落地页时不作为业务 Scheme 暴露', () => {
-    const landingUrl = 'https://m.baidu.com/s?word=json';
+    const landingUrl = 'https://m.example.com/s?word=json';
     const wrapperUrl = `https://example.com/jump?url=${encodeURIComponent(landingUrl)}`;
 
     expect(isActionableSchemeUrl(wrapperUrl)).toBe(false);
@@ -169,13 +169,13 @@ describe('isDecodableQueryString', () => {
   });
 
   it('检测 camelCase 的单参数 URL 字段', () => {
-    expect(isDecodableQueryString('h5Url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
-    expect(isDecodableQueryString('jumpUrl=//m.baidu.com/s?word=json')).toBe(true);
-    expect(isDecodableQueryString('landingUrl=m.baidu.com/s?word=json')).toBe(true);
+    expect(isDecodableQueryString('h5Url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson')).toBe(true);
+    expect(isDecodableQueryString('jumpUrl=//m.example.com/s?word=json')).toBe(true);
+    expect(isDecodableQueryString('landingUrl=m.example.com/s?word=json')).toBe(true);
   });
 
   it('检测常见 App 与下载单参数 URL 字段', () => {
-    expect(isDecodableQueryString('openAppUrl=https%3A%2F%2Fm.baidu.com%2Fapp%3Ffrom%3Dfeed')).toBe(true);
+    expect(isDecodableQueryString('openAppUrl=https%3A%2F%2Fm.example.com%2Fapp%3Ffrom%3Dfeed')).toBe(true);
     expect(isDecodableQueryString('downloadUrl=https%3A%2F%2Fexample.com%2Fapk%3Fpkg%3Ddemo')).toBe(true);
     expect(isDecodableQueryString('apkUrl=//example.com/app.apk?pkg=demo')).toBe(true);
     expect(isDecodableQueryString('downloadUrl=123')).toBe(false);
@@ -212,19 +212,19 @@ describe('isDecodableQueryString', () => {
   });
 
   it('检测常见跳转兜底单参数字段', () => {
-    expect(isDecodableQueryString('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson')).toBe(true);
-    expect(isDecodableQueryString('fallbackUrl=//m.baidu.com/s?word=json')).toBe(true);
+    expect(isDecodableQueryString('redirectUrl=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson')).toBe(true);
+    expect(isDecodableQueryString('fallbackUrl=//m.example.com/s?word=json')).toBe(true);
     expect(isDecodableQueryString('next=%23/detail%3Fcmd%3D%257B%2522a%2522%253A1%257D')).toBe(true);
   });
 
   it('检测真实链路里的结构化后缀单参数字段', () => {
-    expect(isDecodableQueryString(`m_param=${encodeURIComponent(JSON.stringify({ jdv: 'baidu-ys' }))}`))
+    expect(isDecodableQueryString(`m_param=${encodeURIComponent(JSON.stringify({ jdv: 'sample-ads' }))}`))
       .toBe(true);
     expect(isDecodableQueryString(`kepler_param=${encodeURIComponent(JSON.stringify({ source: 'kepler-open' }))}`))
       .toBe(true);
-    expect(isDecodableQueryString('ulkScheme=baiduboxapp%3A%2F%2Fv1%2Feasybrowse%2Fopen%3Furl%3Dhttps%253A%252F%252Fm.baidu.com'))
+    expect(isDecodableQueryString('ulkScheme=sampleapp%3A%2F%2Fv1%2Fbrowser%2Fopen%3Furl%3Dhttps%253A%252F%252Fm.example.com'))
       .toBe(true);
-    expect(isDecodableQueryString('activeUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson'))
+    expect(isDecodableQueryString('activeUrl=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson'))
       .toBe(true);
     expect(isDecodableQueryString('trackingInfo=plain')).toBe(false);
   });
@@ -305,7 +305,7 @@ describe('buildSchemePlaceholderGroups', () => {
 
 describe('isBase64', () => {
   it('有效的 Base64 字符串', () => {
-    // btoa('{"key":"value"}') = 'eyJrZXkiOiJ2YWx1ZSJ9'
+    // 下方值为 btoa 对对象文本的编码结果。
     const encoded = btoa('{"key":"value"}');
     expect(isBase64(encoded)).toBe(true);
   });
@@ -390,19 +390,19 @@ describe('detectSchemeType', () => {
   });
 
   it('检测日志中 JSON 斜杠转义的 URL', () => {
-    expect(detectSchemeType('baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22a%22%3A1%7D')).toBe('url');
+    expect(detectSchemeType('sampleapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22a%22%3A1%7D')).toBe('url');
   });
 
   it('检测日志中 JSON Unicode 转义的 URL', () => {
-    expect(detectSchemeType('baiduboxapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.baidu.com%252Fs%253Fword%253Djson')).toBe('url');
+    expect(detectSchemeType('sampleapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.example.com%252Fs%253Fword%253Djson')).toBe('url');
   });
 
   it('检测协议相对 URL', () => {
-    expect(detectSchemeType('//m.baidu.com/s?word=json')).toBe('url');
+    expect(detectSchemeType('//m.example.com/s?word=json')).toBe('url');
   });
 
   it('检测裸域名 URL', () => {
-    expect(detectSchemeType('m.baidu.com/s?word=json')).toBe('url');
+    expect(detectSchemeType('m.example.com/s?word=json')).toBe('url');
   });
 
   it('检测 URL 编码', () => {
@@ -411,7 +411,7 @@ describe('detectSchemeType', () => {
 
   it('完整 JSON 即使包含 URL 编码内容也优先识别为 JSON', () => {
     expect(detectSchemeType(JSON.stringify({
-      scheme: 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%22a%22%3A1%7D',
+      scheme: 'sampleapp://v7/vendor/ad/deeplink?params=%7B%22a%22%3A1%7D',
     }))).toBe('json');
   });
 
@@ -433,36 +433,36 @@ describe('detectSchemeType', () => {
   });
 
   it('检测日志复制出的冒号 CMD 字段行', () => {
-    expect(detectSchemeType('scheme: baiduboxapp://v1/browser/open?from=log')).toBe('query-string');
+    expect(detectSchemeType('scheme: sampleapp://v1/browser/open?from=log')).toBe('query-string');
     expect(detectSchemeType(`cmd：${encodeURIComponent(JSON.stringify({ a: 1 }))}`)).toBe('query-string');
   });
 
   it('检测 JSON 属性片段形态的 CMD 字段行', () => {
-    expect(detectSchemeType('"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?from=log"')).toBe('query-string');
+    expect(detectSchemeType('"scheme":"sampleapp:\\/\\/v1\\/browser\\/open?from=log"')).toBe('query-string');
   });
 
   it('检测带尾逗号的 JSON 属性片段 CMD 字段行', () => {
-    expect(detectSchemeType('"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?from=log",')).toBe('query-string');
+    expect(detectSchemeType('"scheme":"sampleapp:\\/\\/v1\\/browser\\/open?from=log",')).toBe('query-string');
   });
 
   it('检测日志复制出的等号赋值 CMD 字段行', () => {
-    expect(detectSchemeType('scheme = baiduboxapp://v1/browser/open?from=log')).toBe('query-string');
+    expect(detectSchemeType('scheme = sampleapp://v1/browser/open?from=log')).toBe('query-string');
     expect(detectSchemeType(`cmd= ${encodeURIComponent(JSON.stringify({ a: 1 }))}`)).toBe('query-string');
   });
 
   it('检测带日志前缀的 CMD 字段行', () => {
-    expect(detectSchemeType('I/NadRender: scheme = baiduboxapp://v1/browser/open?from=log')).toBe('query-string');
-    expect(detectSchemeType('[CMD] "scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?from=log",')).toBe('query-string');
+    expect(detectSchemeType('I/SampleRender: scheme = sampleapp://v1/browser/open?from=log')).toBe('query-string');
+    expect(detectSchemeType('[CMD] "scheme":"sampleapp:\\/\\/v1\\/browser\\/open?from=log",')).toBe('query-string');
   });
 
   it('检测带日志前缀的 CMD 参数串', () => {
-    expect(detectSchemeType(`I/NadRender: cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}&from=log`)).toBe('query-string');
-    expect(detectSchemeType('CMD => ?scheme=baiduboxapp://v1/browser/open?from=log')).toBe('query-string');
+    expect(detectSchemeType(`I/SampleRender: cmd=${encodeURIComponent(JSON.stringify({ a: 1 }))}&from=log`)).toBe('query-string');
+    expect(detectSchemeType('CMD => ?scheme=sampleapp://v1/browser/open?from=log')).toBe('query-string');
   });
 
   it('检测日志复制出的箭头 CMD 字段行', () => {
-    expect(detectSchemeType('scheme => baiduboxapp://v1/browser/open?from=log')).toBe('query-string');
-    expect(detectSchemeType(`I/NadRender: cmd -> ${encodeURIComponent(JSON.stringify({ a: 1 }))}`)).toBe('query-string');
+    expect(detectSchemeType('scheme => sampleapp://v1/browser/open?from=log')).toBe('query-string');
+    expect(detectSchemeType(`I/SampleRender: cmd -> ${encodeURIComponent(JSON.stringify({ a: 1 }))}`)).toBe('query-string');
   });
 
   it('普通冒号说明不误判为 CMD 字段行', () => {
@@ -547,19 +547,19 @@ describe('parseUrl', () => {
   });
 
   it('解析协议相对 URL', () => {
-    const result = parseUrl('//m.baidu.com/s?word=json+schema');
+    const result = parseUrl('//m.example.com/s?word=json+schema');
     expect(result).not.toBeNull();
     expect(result!.protocol).toBe('//');
-    expect(result!.host).toBe('m.baidu.com');
+    expect(result!.host).toBe('m.example.com');
     expect(result!.path).toBe('/s');
     expect(result!.params).toEqual({ word: 'json schema' });
   });
 
   it('解析裸域名 URL', () => {
-    const result = parseUrl('m.baidu.com/s?word=json+schema');
+    const result = parseUrl('m.example.com/s?word=json+schema');
     expect(result).not.toBeNull();
     expect(result!.protocol).toBe('无协议');
-    expect(result!.host).toBe('m.baidu.com');
+    expect(result!.host).toBe('m.example.com');
     expect(result!.path).toBe('/s');
     expect(result!.params).toEqual({ word: 'json schema' });
   });
@@ -755,10 +755,10 @@ describe('deepDecodeScheme', () => {
 
   it('JSON 斜杠转义的 URL 被还原后继续解析参数', () => {
     const params = encodeURIComponent(JSON.stringify({
-      url: 'https://m.baidu.com/s?word=json',
+      url: 'https://m.example.com/s?word=json',
       ext: '__AD_EXTRA_PARAM_ENCODE_1__',
     }));
-    const result = deepDecodeScheme(`baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`);
+    const result = deepDecodeScheme(`sampleapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`);
     const parsed = JSON.parse(result.decoded);
 
     expect(parsed).toEqual({
@@ -778,7 +778,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('JSON Unicode 转义的 URL 被还原后继续解析参数', () => {
-    const result = deepDecodeScheme('baiduboxapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.baidu.com%252Fs%253Fword%253Djson');
+    const result = deepDecodeScheme('sampleapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.example.com%252Fs%253Fword%253Djson');
     const parsed = JSON.parse(result.decoded);
 
     expect(parsed).toEqual({
@@ -790,7 +790,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('日志字段里的 JSON Unicode 转义 URL 被递归解析', () => {
-    const result = deepDecodeScheme('scheme=baiduboxapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.baidu.com%252Fs%253Fword%253Djson');
+    const result = deepDecodeScheme('scheme=sampleapp\\u003a\\u002f\\u002fv1\\u002fbrowser\\u002fopen\\u003furl\\u003dhttps%253A%252F%252Fm.example.com%252Fs%253Fword%253Djson');
     const parsed = JSON.parse(result.decoded);
 
     expect(parsed).toEqual({
@@ -804,7 +804,7 @@ describe('deepDecodeScheme', () => {
 
   it('URL 参数中的 JSON 被递归解析为对象', () => {
     const payload = encodeURIComponent(JSON.stringify({ name: '张三', page: 1 }));
-    const result = deepDecodeScheme(`baiduboxapp://v1/easybrowse/open?params=${payload}&source=test`);
+    const result = deepDecodeScheme(`sampleapp://v1/browser/open?params=${payload}&source=test`);
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       params: { name: '张三', page: 1 },
@@ -814,7 +814,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('URL 编码 params 中缺少起始引号的 JSON key 会被修复为对象', () => {
-    const scheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7b%22phone%22%3a%2213718164578%22%2c%22extInfo%22%3a%22AFDXXX%22%2c%22numberUrl%22%3a%22xxx%22%2c%22logUrl%22%3a%22xxxx%22%2ctype%22%3a%221%22%7d';
+    const scheme = 'sampleapp://v7/vendor/ad/makePhoneCall?params=%7b%22phone%22%3a%2213718164578%22%2c%22extInfo%22%3a%22AFDXXX%22%2c%22numberUrl%22%3a%22xxx%22%2c%22logUrl%22%3a%22xxxx%22%2ctype%22%3a%221%22%7d';
     const result = deepDecodeScheme(scheme);
     const parsed = JSON.parse(result.decoded);
 
@@ -851,7 +851,7 @@ describe('deepDecodeScheme', () => {
       phone: '13718164578',
       extInfo: 'AFDXXX',
     }));
-    const result = deepDecodeScheme(`baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(payload)}`);
+    const result = deepDecodeScheme(`sampleapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(payload)}`);
     const parsed = JSON.parse(result.decoded);
 
     expect(parsed).toEqual({
@@ -864,8 +864,8 @@ describe('deepDecodeScheme', () => {
   });
 
   it('URL 参数中的二级 URL 被继续解析', () => {
-    const nestedUrl = encodeURIComponent('https://m.baidu.com/s?word=%25E4%25BD%25A0%25E5%25A5%25BD');
-    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?url=${nestedUrl}`);
+    const nestedUrl = encodeURIComponent('https://m.example.com/s?word=%25E4%25BD%25A0%25E5%25A5%25BD');
+    const result = deepDecodeScheme(`sampleapp://v1/browser/open?url=${nestedUrl}`);
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       url: {
@@ -875,8 +875,8 @@ describe('deepDecodeScheme', () => {
   });
 
   it('URL 参数中的协议相对 URL 被继续解析', () => {
-    const nestedUrl = encodeURIComponent('//m.baidu.com/s?word=json+schema');
-    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?url=${nestedUrl}`);
+    const nestedUrl = encodeURIComponent('//m.example.com/s?word=json+schema');
+    const result = deepDecodeScheme(`sampleapp://v1/browser/open?url=${nestedUrl}`);
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       url: {
@@ -886,7 +886,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('协议相对 URL 可直接解析 query 参数', () => {
-    const result = deepDecodeScheme('//m.baidu.com/s?word=json+schema');
+    const result = deepDecodeScheme('//m.example.com/s?word=json+schema');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       word: 'json schema',
@@ -894,7 +894,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('裸域名 URL 可直接解析 query 参数', () => {
-    const result = deepDecodeScheme('m.baidu.com/s?word=json+schema');
+    const result = deepDecodeScheme('m.example.com/s?word=json+schema');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       word: 'json schema',
@@ -934,8 +934,8 @@ describe('deepDecodeScheme', () => {
   });
 
   it('日志复制出的冒号 Scheme 字段行被递归解析', () => {
-    const nestedUrl = encodeURIComponent('https://m.baidu.com/s?word=json+schema');
-    const result = deepDecodeScheme(`scheme: baiduboxapp://v1/browser/open?url=${nestedUrl}`);
+    const nestedUrl = encodeURIComponent('https://m.example.com/s?word=json+schema');
+    const result = deepDecodeScheme(`scheme: sampleapp://v1/browser/open?url=${nestedUrl}`);
     const parsed = JSON.parse(result.decoded);
 
     expect(parsed).toEqual({
@@ -964,7 +964,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('JSON 属性片段形态的 Scheme 字段行被递归解析', () => {
-    const original = '"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson"';
+    const original = '"scheme":"sampleapp:\\/\\/v1\\/browser\\/open?url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson"';
     const result = deepDecodeScheme(original);
     const parsed = JSON.parse(result.decoded);
 
@@ -979,7 +979,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('带尾逗号的 JSON 属性片段 Scheme 字段行被递归解析', () => {
-    const original = '"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson",';
+    const original = '"scheme":"sampleapp:\\/\\/v1\\/browser\\/open?url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson",';
     const result = deepDecodeScheme(original);
     const parsed = JSON.parse(result.decoded);
 
@@ -993,7 +993,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('日志复制出的等号赋值 Scheme 字段行被递归解析', () => {
-    const original = 'scheme = baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson';
+    const original = 'scheme = sampleapp://v1/browser/open?url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson';
     const result = deepDecodeScheme(original);
     const parsed = JSON.parse(result.decoded);
 
@@ -1011,7 +1011,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('带日志前缀的 Scheme 字段行被递归解析', () => {
-    const original = 'I/NadRender: scheme = baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson';
+    const original = 'I/SampleRender: scheme = sampleapp://v1/browser/open?url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson';
     const result = deepDecodeScheme(original);
     const parsed = JSON.parse(result.decoded);
 
@@ -1026,7 +1026,7 @@ describe('deepDecodeScheme', () => {
 
   it('带日志前缀的 CMD 参数串被递归解析', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
-    const result = deepDecodeScheme(`I/NadRender: cmd=${payload}&from=log`);
+    const result = deepDecodeScheme(`I/SampleRender: cmd=${payload}&from=log`);
     const parsed = JSON.parse(result.decoded);
 
     expect(parsed).toEqual({
@@ -1042,7 +1042,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('日志复制出的箭头 Scheme 字段行被递归解析', () => {
-    const original = 'I/NadRender: scheme -> baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson';
+    const original = 'I/SampleRender: scheme -> sampleapp://v1/browser/open?url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson';
     const result = deepDecodeScheme(original);
     const parsed = JSON.parse(result.decoded);
 
@@ -1241,7 +1241,7 @@ describe('deepDecodeScheme', () => {
 
   it('URL 中 ?& 开头的 CMD 参数被递归解析', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
-    const result = deepDecodeScheme(`baiduboxapp://v1/open?&cmd=${payload}&from=joined`);
+    const result = deepDecodeScheme(`sampleapp://v1/open?&cmd=${payload}&from=joined`);
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       cmd: { nid: 123 },
@@ -1259,7 +1259,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('常见 camelCase URL 字段可作为单参数解析', () => {
-    const result = deepDecodeScheme('h5Url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson%2Bschema');
+    const result = deepDecodeScheme('h5Url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson%2Bschema');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       h5Url: {
@@ -1269,7 +1269,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('常见 camelCase 协议相对 URL 字段可作为单参数解析', () => {
-    const result = deepDecodeScheme('jumpUrl=//m.baidu.com/s?word=json+schema');
+    const result = deepDecodeScheme('jumpUrl=//m.example.com/s?word=json+schema');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       jumpUrl: {
@@ -1279,7 +1279,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('常见 camelCase 裸域名 URL 字段可作为单参数解析', () => {
-    const result = deepDecodeScheme('h5Url=m.baidu.com/s?word=json+schema');
+    const result = deepDecodeScheme('h5Url=m.example.com/s?word=json+schema');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       h5Url: {
@@ -1289,7 +1289,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('常见跳转 URL 字段可作为单参数解析', () => {
-    const result = deepDecodeScheme('redirectUrl=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson%2Bschema');
+    const result = deepDecodeScheme('redirectUrl=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson%2Bschema');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       redirectUrl: {
@@ -1299,7 +1299,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('常见 App 与下载 URL 字段可作为单参数解析', () => {
-    const result = deepDecodeScheme('openAppUrl=https%3A%2F%2Fm.baidu.com%2Fapp%3Ffrom%3Dfeed');
+    const result = deepDecodeScheme('openAppUrl=https%3A%2F%2Fm.example.com%2Fapp%3Ffrom%3Dfeed');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       openAppUrl: {
@@ -1335,7 +1335,7 @@ describe('deepDecodeScheme', () => {
 
   it('真实广告日志里的激励字段可作为单参数解析并展开内层 CMD', () => {
     const rewardPayload = encodeURIComponent(JSON.stringify({
-      stay_cmd: `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
+      stay_cmd: `samplevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
         button_cmd: '__CONVERT_CMD__',
         button_text: '打开应用',
       }))}`,
@@ -1411,12 +1411,12 @@ describe('deepDecodeScheme', () => {
 
     const ubsResult = deepDecodeScheme(`ubsParam=${encodeURIComponent(JSON.stringify({
       ideaid: '1353104569522',
-      cmatch: 1501,
+      segment: 1501,
     }))}`);
     expect(JSON.parse(ubsResult.decoded)).toEqual({
       ubsParam: {
         ideaid: '1353104569522',
-        cmatch: 1501,
+        segment: 1501,
       },
     });
 
@@ -1438,16 +1438,16 @@ describe('deepDecodeScheme', () => {
 
   it('结构化后缀单参数可直接展开', () => {
     const mParamResult = deepDecodeScheme(`m_param=${encodeURIComponent(JSON.stringify({
-      jdv: 'null|baidu-ys|cpc',
+      jdv: 'null|sample-ads|cpc',
     }))}`);
     expect(JSON.parse(mParamResult.decoded)).toEqual({
       m_param: {
-        jdv: 'null|baidu-ys|cpc',
+        jdv: 'null|sample-ads|cpc',
       },
     });
 
     const ulkResult = deepDecodeScheme(
-      'ulkScheme=baiduboxapp%3A%2F%2Fv1%2Feasybrowse%2Fopen%3Furl%3Dhttps%253A%252F%252Fm.baidu.com%252Fs%253Fword%253Djson'
+      'ulkScheme=sampleapp%3A%2F%2Fv1%2Fbrowser%2Fopen%3Furl%3Dhttps%253A%252F%252Fm.example.com%252Fs%253Fword%253Djson'
     );
     expect(JSON.parse(ulkResult.decoded)).toEqual({
       ulkScheme: {
@@ -1504,7 +1504,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('未编码 URL 字段中的 & 保留为内层 query 参数', () => {
-    const result = deepDecodeScheme('url=https://m.baidu.com/s?word=json&from=feed');
+    const result = deepDecodeScheme('url=https://m.example.com/s?word=json&from=feed');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       url: {
@@ -1515,7 +1515,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('已编码 URL 字段后的 & 仍作为外层参数拆分', () => {
-    const result = deepDecodeScheme('url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson&from=feed');
+    const result = deepDecodeScheme('url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson&from=feed');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       url: {
@@ -1526,7 +1526,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('未编码裸域名 URL 字段中的 & 保留为内层 query 参数', () => {
-    const result = deepDecodeScheme('h5Url=m.baidu.com/s?word=json&from=feed');
+    const result = deepDecodeScheme('h5Url=m.example.com/s?word=json&from=feed');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       h5Url: {
@@ -1571,7 +1571,7 @@ describe('deepDecodeScheme', () => {
 
   it('URL 参数内 JSON-like 对象被递归解析', () => {
     const payload = encodeURIComponent("{nid:123,title:'标题'}");
-    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?cmd=${payload}`);
+    const result = deepDecodeScheme(`sampleapp://v1/browser/open?cmd=${payload}`);
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       cmd: { nid: 123, title: '标题' },
@@ -1580,7 +1580,7 @@ describe('deepDecodeScheme', () => {
 
   it('URL 参数内缺少 key 开引号的 JSON-like 对象被递归解析', () => {
     const result = deepDecodeScheme(
-      'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2218800001111%22%2C%22extInfo%22%3A%22AFDXXX%22%2C%22numberUrl%22%3A%22xxx%22%2C%22logUrl%22%3A%22xxxx%22%2Ctype%22%3A%221%22%7D'
+      'sampleapp://v7/vendor/ad/makePhoneCall?params=%7B%22phone%22%3A%2218800001111%22%2C%22extInfo%22%3A%22AFDXXX%22%2C%22numberUrl%22%3A%22xxx%22%2C%22logUrl%22%3A%22xxxx%22%2Ctype%22%3A%221%22%7D'
     );
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
@@ -1596,7 +1596,7 @@ describe('deepDecodeScheme', () => {
 
   it('URL hash route 参数被递归解析', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
-    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open#/detail?cmd=${payload}&from=hash`);
+    const result = deepDecodeScheme(`sampleapp://v1/browser/open#/detail?cmd=${payload}&from=hash`);
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       cmd: { nid: 123, title: '标题' },
@@ -1632,7 +1632,7 @@ describe('deepDecodeScheme', () => {
   it('URL 查询参数中的 hash route 片段被递归解析', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
     const hashRoute = encodeURIComponent(`#/detail?cmd=${payload}&from=hash`);
-    const result = deepDecodeScheme(`baiduboxapp://v1/browser/open?next=${hashRoute}`);
+    const result = deepDecodeScheme(`sampleapp://v1/browser/open?next=${hashRoute}`);
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       next: {
@@ -1644,7 +1644,7 @@ describe('deepDecodeScheme', () => {
 
   it('URL query 与 hash route 参数同时保留', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
-    const result = deepDecodeScheme(`https://example.com/page?url=${encodeURIComponent('https://m.baidu.com/s?word=%E4%BD%A0')}#/detail?cmd=${payload}`);
+    const result = deepDecodeScheme(`https://example.com/page?url=${encodeURIComponent('https://m.example.com/s?word=%E4%BD%A0')}#/detail?cmd=${payload}`);
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       url: { word: '你' },
@@ -1691,7 +1691,7 @@ describe('deepDecodeScheme', () => {
   });
 
   it('URL 参数名支持括号对象展开', () => {
-    const result = deepDecodeScheme('baiduboxapp://v1/open?ext%5Bscene%5D=feed&ext%5Bsource%5D=box');
+    const result = deepDecodeScheme('sampleapp://v1/open?ext%5Bscene%5D=feed&ext%5Bsource%5D=box');
     const parsed = JSON.parse(result.decoded);
     expect(parsed).toEqual({
       ext: {
@@ -1706,7 +1706,7 @@ describe('deepDecodeScheme', () => {
 
 describe('encodeWithLayers', () => {
   it('完整 URL Scheme 编辑后重建 query 参数', () => {
-    const original = 'baiduboxapp://v1/browser/open?cmd=%7B%22a%22%3A1%7D&from=feed';
+    const original = 'sampleapp://v1/browser/open?cmd=%7B%22a%22%3A1%7D&from=feed';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       cmd: { a: 2 },
@@ -1714,7 +1714,7 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('baiduboxapp://v1/browser/open?cmd=%7B%22a%22%3A2%7D&from=card');
+      .toBe('sampleapp://v1/browser/open?cmd=%7B%22a%22%3A2%7D&from=card');
   });
 
   it('hash route 参数编辑后保留 route 前缀', () => {
@@ -1782,7 +1782,7 @@ describe('encodeWithLayers', () => {
   });
 
   it('URL 结构化参数编辑后保留括号对象路径', () => {
-    const original = 'baiduboxapp://v1/open?ext%5Bscene%5D=feed&ext%5Bsource%5D=box';
+    const original = 'sampleapp://v1/open?ext%5Bscene%5D=feed&ext%5Bsource%5D=box';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       ext: {
@@ -1792,27 +1792,27 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('baiduboxapp://v1/open?ext%5Bscene%5D=detail&ext%5Bsource%5D=box');
+      .toBe('sampleapp://v1/open?ext%5Bscene%5D=detail&ext%5Bsource%5D=box');
   });
 
   it('协议相对 URL 编辑后保留双斜杠形态', () => {
-    const original = '//m.baidu.com/s?word=json';
+    const original = '//m.example.com/s?word=json';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({ word: 'schema' }, null, 2);
 
-    expect(encodeWithLayers(edited, decoded.layers)).toBe('//m.baidu.com/s?word=schema');
+    expect(encodeWithLayers(edited, decoded.layers)).toBe('//m.example.com/s?word=schema');
   });
 
   it('裸域名 URL 编辑后保留无协议形态', () => {
-    const original = 'm.baidu.com/s?word=json';
+    const original = 'm.example.com/s?word=json';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({ word: 'schema' }, null, 2);
 
-    expect(encodeWithLayers(edited, decoded.layers)).toBe('m.baidu.com/s?word=schema');
+    expect(encodeWithLayers(edited, decoded.layers)).toBe('m.example.com/s?word=schema');
   });
 
   it('未编码 URL 字段编辑后保留 raw URL 形态', () => {
-    const original = 'url=https://m.baidu.com/s?word=json&from=feed';
+    const original = 'url=https://m.example.com/s?word=json&from=feed';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       url: {
@@ -1822,7 +1822,7 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('url=https://m.baidu.com/s?word=schema&from=feed');
+      .toBe('url=https://m.example.com/s?word=schema&from=feed');
   });
 
   it('真实广告日志 URL 字段编辑后保留 raw URL 形态', () => {
@@ -1840,7 +1840,7 @@ describe('encodeWithLayers', () => {
   });
 
   it('日志冒号 Scheme 字段编辑后保留冒号形态', () => {
-    const original = 'scheme: baiduboxapp://v1/browser/open?from=feed';
+    const original = 'scheme: sampleapp://v1/browser/open?from=feed';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       scheme: {
@@ -1849,7 +1849,7 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('scheme: baiduboxapp://v1/browser/open?from=card');
+      .toBe('scheme: sampleapp://v1/browser/open?from=card');
   });
 
   it('带引号的日志冒号 CMD 字段编辑后保留引号形态', () => {
@@ -1866,7 +1866,7 @@ describe('encodeWithLayers', () => {
   });
 
   it('JSON 属性片段形态的 Scheme 字段编辑后保留属性片段形态', () => {
-    const original = '"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?from=feed"';
+    const original = '"scheme":"sampleapp:\\/\\/v1\\/browser\\/open?from=feed"';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       scheme: {
@@ -1875,11 +1875,11 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('"scheme": "baiduboxapp://v1/browser/open?from=card"');
+      .toBe('"scheme": "sampleapp://v1/browser/open?from=card"');
   });
 
   it('带尾逗号的 JSON 属性片段 Scheme 字段编辑后保留尾逗号', () => {
-    const original = '"scheme":"baiduboxapp:\\/\\/v1\\/browser\\/open?from=feed",';
+    const original = '"scheme":"sampleapp:\\/\\/v1\\/browser\\/open?from=feed",';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       scheme: {
@@ -1888,11 +1888,11 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('"scheme": "baiduboxapp://v1/browser/open?from=card",');
+      .toBe('"scheme": "sampleapp://v1/browser/open?from=card",');
   });
 
   it('日志等号赋值 Scheme 字段编辑后保留赋值形态', () => {
-    const original = 'scheme = baiduboxapp://v1/browser/open?from=feed';
+    const original = 'scheme = sampleapp://v1/browser/open?from=feed';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       scheme: {
@@ -1901,11 +1901,11 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('scheme = baiduboxapp://v1/browser/open?from=card');
+      .toBe('scheme = sampleapp://v1/browser/open?from=card');
   });
 
   it('带日志前缀的 Scheme 字段编辑后保留前缀', () => {
-    const original = 'I/NadRender: scheme = baiduboxapp://v1/browser/open?from=feed';
+    const original = 'I/SampleRender: scheme = sampleapp://v1/browser/open?from=feed';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       scheme: {
@@ -1914,12 +1914,12 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('I/NadRender: scheme = baiduboxapp://v1/browser/open?from=card');
+      .toBe('I/SampleRender: scheme = sampleapp://v1/browser/open?from=card');
   });
 
   it('带日志前缀的 CMD 参数串编辑后保留前缀', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123 }));
-    const original = `I/NadRender: cmd=${payload}&from=feed`;
+    const original = `I/SampleRender: cmd=${payload}&from=feed`;
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       cmd: {
@@ -1929,11 +1929,11 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe(`I/NadRender: cmd=${encodeURIComponent(JSON.stringify({ nid: 456 }))}&from=card`);
+      .toBe(`I/SampleRender: cmd=${encodeURIComponent(JSON.stringify({ nid: 456 }))}&from=card`);
   });
 
   it('带日志前缀的 raw URL 字段编辑后保留前缀和 raw URL', () => {
-    const original = 'I/NadRender: url=https://m.baidu.com/s?word=json&from=feed';
+    const original = 'I/SampleRender: url=https://m.example.com/s?word=json&from=feed';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       url: {
@@ -1943,11 +1943,11 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('I/NadRender: url=https://m.baidu.com/s?word=schema&from=feed');
+      .toBe('I/SampleRender: url=https://m.example.com/s?word=schema&from=feed');
   });
 
   it('日志箭头 Scheme 字段编辑后保留箭头形态', () => {
-    const original = 'I/NadRender: scheme -> baiduboxapp://v1/browser/open?from=feed';
+    const original = 'I/SampleRender: scheme -> sampleapp://v1/browser/open?from=feed';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       scheme: {
@@ -1956,7 +1956,7 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('I/NadRender: scheme -> baiduboxapp://v1/browser/open?from=card');
+      .toBe('I/SampleRender: scheme -> sampleapp://v1/browser/open?from=card');
   });
 
   it('JSON 字符串字面量包裹的 CMD 编辑后保留外层字面量', () => {
@@ -1982,7 +1982,7 @@ describe('encodeWithLayers', () => {
   });
 
   it('JSON 斜杠转义的 URL 编辑后保留斜杠转义形态', () => {
-    const original = 'baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22url%22%3A%22https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson%22%7D';
+    const original = 'sampleapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22url%22%3A%22https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson%22%7D';
     const decoded = deepDecodeScheme(original);
     const edited = JSON.stringify({
       params: {
@@ -1991,7 +1991,7 @@ describe('encodeWithLayers', () => {
     }, null, 2);
 
     expect(encodeWithLayers(edited, decoded.layers))
-      .toBe('baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22url%22%3A%7B%22word%22%3A%22schema%22%7D%7D');
+      .toBe('sampleapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=%7B%22url%22%3A%7B%22word%22%3A%22schema%22%7D%7D');
   });
 
   it('不可逆编码层编辑时保留原始值', () => {
@@ -2012,7 +2012,7 @@ describe('findSchemesInJson', () => {
   });
 
   it('找到 JSON 中的业务 Scheme', () => {
-    const json = JSON.stringify({ link: 'baiduboxapp://v1/browser/open?from=test', name: 'test' }, null, 2);
+    const json = JSON.stringify({ link: 'sampleapp://v1/browser/open?from=test', name: 'test' }, null, 2);
     const results = findSchemesInJson(json);
     expect(results.length).toBe(1);
     expect(results[0].schemeType).toBe('url');
@@ -2040,19 +2040,19 @@ describe('findSchemesInJson', () => {
       extra: [
         {
           k: 'extraParam',
-          v: 'baiduboxapp://v1/browser/open?from=extra',
+          v: 'sampleapp://v1/browser/open?from=extra',
         },
         {
           key: 'trackingParam',
-          v: 'baiduboxapp://v1/browser/open?from=tracking',
+          v: 'sampleapp://v1/browser/open?from=tracking',
         },
         {
           k: 'buttonParam',
-          value: 'baiduboxapp://v1/browser/open?from=button',
+          value: 'sampleapp://v1/browser/open?from=button',
         },
         {
           field: 'contentParam',
-          content: 'baiduboxapp://v1/browser/open?from=content',
+          content: 'sampleapp://v1/browser/open?from=content',
         },
       ],
     }, null, 2);
@@ -2091,7 +2091,7 @@ describe('findSchemesInJson', () => {
     const json = JSON.stringify({
       items: [
         { name: 'first' },
-        { url: 'baiduboxapp://v1/browser/open?from=list' },
+        { url: 'sampleapp://v1/browser/open?from=list' },
       ],
     }, null, 2);
 
@@ -2104,7 +2104,7 @@ describe('findSchemesInJson', () => {
   it('包含斜杠的 key 也能通过 JSON Pointer 定位', () => {
     const json = JSON.stringify({
       'a/b': {
-        schema: 'baiduboxapp://v1/browser/open?from=key',
+        schema: 'sampleapp://v1/browser/open?from=key',
       },
     }, null, 2);
 
@@ -2119,7 +2119,7 @@ describe('findSchemesInJson', () => {
     const json = JSON.stringify({
       'a.b': {
         'x/y': {
-          'tilde~key': 'baiduboxapp://v1/browser/open?from=key',
+          'tilde~key': 'sampleapp://v1/browser/open?from=key',
         },
       },
     }, null, 2);
@@ -2139,7 +2139,7 @@ describe('findSchemesInJson', () => {
 
 describe('scanSchemesInJson', () => {
   it('扫描时复用 source map 的解析结果，避免重复 JSON.parse', () => {
-    const json = JSON.stringify({ link: 'baiduboxapp://v1/browser/open?from=scan' });
+    const json = JSON.stringify({ link: 'sampleapp://v1/browser/open?from=scan' });
     const parseSpy = vi.spyOn(JSON, 'parse').mockImplementation(() => {
       throw new Error('不应调用额外 JSON.parse');
     });
@@ -2155,9 +2155,9 @@ describe('scanSchemesInJson', () => {
 
   it('超过结果上限时提前停止并标记截断', () => {
     const json = JSON.stringify({
-      first: 'baiduboxapp://v1/browser/open?from=first',
-      second: 'baiduboxapp://v1/browser/open?from=second',
-      third: 'baiduboxapp://v1/browser/open?from=third',
+      first: 'sampleapp://v1/browser/open?from=first',
+      second: 'sampleapp://v1/browser/open?from=second',
+      third: 'sampleapp://v1/browser/open?from=third',
     }, null, 2);
 
     const result = scanSchemesInJson(json, { resultLimit: 2 });
@@ -2170,8 +2170,8 @@ describe('scanSchemesInJson', () => {
 
   it('结果数量等于上限时不标记截断', () => {
     const json = JSON.stringify({
-      first: 'baiduboxapp://v1/browser/open?from=first',
-      second: 'baiduboxapp://v1/browser/open?from=second',
+      first: 'sampleapp://v1/browser/open?from=first',
+      second: 'sampleapp://v1/browser/open?from=second',
     }, null, 2);
 
     const result = scanSchemesInJson(json, { resultLimit: 2 });
@@ -2182,7 +2182,7 @@ describe('scanSchemesInJson', () => {
   });
 
   it('单行 JSON 中多个 Scheme 返回可区分的列范围', () => {
-    const json = '{"first":"baiduboxapp://v1/browser/open?from=first","second":"baiduboxapp://v1/browser/open?from=second"}';
+    const json = '{"first":"sampleapp://v1/browser/open?from=first","second":"sampleapp://v1/browser/open?from=second"}';
 
     const result = scanSchemesInJson(json);
 

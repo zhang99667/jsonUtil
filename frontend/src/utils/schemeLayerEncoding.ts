@@ -46,7 +46,7 @@ export const encodeWithSchemeLayers: SchemeLayerEncoder = (
         result = base64Encode(result);
         break;
       case 'jwt':
-        // JWT 不支持重新编码，因为需要签名；这里只保留修改后的 payload。
+        // JWT 不支持重新编码，因为需要签名；这里只保留修改后的载荷。
         break;
       case 'url':
         result = layer.before ? encodeUrlLayerContent(result, layer.before, options) : result;

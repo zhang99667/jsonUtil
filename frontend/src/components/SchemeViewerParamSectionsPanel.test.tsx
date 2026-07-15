@@ -6,7 +6,7 @@ import { collectText, findByTourOrNull } from './schemeViewerElementTestHelpers'
 const buildSections = (): SchemeViewerParamSection[] => [{
   title: 'Query 参数',
   params: {
-    url: 'https://jiankang.baidu.com/mall/pages/goods/detail-lite/index?skuId=243',
+    url: 'https://jiankang.sample.com/mall/pages/goods/detail-lite/index?skuId=243',
     from: 'ad',
     skuId: '243',
     storeId: '1763',
@@ -27,7 +27,7 @@ describe('SchemeViewerParamSectionsPanel', () => {
 
     expect(findByTourOrNull(tree, 'scheme-param-sections')).toBeTruthy();
     expect(text).toContain('Query 参数 · 8');
-    expect(text).toContain('url=https://jiankang.baidu.com/mall/pages/goods/deta...');
+    expect(text).toContain('url=https://jiankang.sample.com/mall/pages/goods/det...');
     expect(text).toContain('tags=one, two');
     expect(text).toContain('+1');
     expect(text).not.toContain('extra=hidden');

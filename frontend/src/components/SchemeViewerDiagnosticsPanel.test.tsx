@@ -66,7 +66,7 @@ describe('SchemeViewerDiagnosticsPanel', () => {
     });
     expect(warningsPanel?.props.decodeWarnings).toBe(decodeWarnings);
     expect(findByTypeOrNull(tree, SchemeViewerSchemeInfoRow)?.props.schemeInfo).toMatchObject({
-      protocol: 'baiduboxapp:',
+      protocol: 'sampleapp:',
       host: 'v7',
       path: '/vendor/ad/prerender',
     });

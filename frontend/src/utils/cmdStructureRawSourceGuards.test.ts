@@ -17,9 +17,9 @@ describe('cmdStructureRawSourceGuards', () => {
   });
 
   it('识别 URL 或 query 形态的 raw source 并排除占位符', () => {
-    expect(looksLikeRawCmdSource('baiduboxapp://v1/panel?tab=reward')).toBe(true);
+    expect(looksLikeRawCmdSource('sampleapp://v1/panel?tab=reward')).toBe(true);
     expect(looksLikeRawCmdSource('params=%7B%22id%22%3A%221%22%7D')).toBe(true);
-    expect(looksLikeRawCmdSource(encodeURIComponent('baiduboxapp://v1/panel?tab=reward'))).toBe(true);
+    expect(looksLikeRawCmdSource(encodeURIComponent('sampleapp://v1/panel?tab=reward'))).toBe(true);
     expect(looksLikeRawCmdSource('__CONVERT_CMD__')).toBe(false);
     expect(looksLikeRawCmdSource('普通标题')).toBe(false);
   });

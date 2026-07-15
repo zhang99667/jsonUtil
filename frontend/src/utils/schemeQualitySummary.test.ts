@@ -40,7 +40,7 @@ const buildCommandSummary = (patch: Partial<SchemeCommandSummaryInfo> = {}): Sch
 
 const buildSummary = (patch: Partial<Parameters<typeof buildSchemeQualitySummary>[0]> = {}) => (
   buildSchemeQualitySummary({
-    actualValue: 'baiduboxapp://v1/vendor/ad/demo',
+    actualValue: 'sampleapp://v1/vendor/ad/demo',
     isDecodePending: false,
     isDecodeCancelled: false,
     editedJsonError: '',
@@ -316,7 +316,7 @@ describe('schemeQualitySummary', () => {
       extFields: ['ext'],
       base64SuffixFields: ['extInfo'],
       topCommandSchemas: [{
-        schema: 'baiduboxapp://v7/vendor/ad/makePhoneCall',
+        schema: 'sampleapp://v7/vendor/ad/makePhoneCall',
         count: 1,
         paths: ['$.cmd'],
         hasMorePaths: false,
@@ -369,7 +369,7 @@ describe('schemeQualitySummary', () => {
       },
     });
     expect(snapshot.hotspots.topCommandSchemas).toEqual([{
-      schema: 'baiduboxapp://v7/vendor/ad/makePhoneCall',
+      schema: 'sampleapp://v7/vendor/ad/makePhoneCall',
       count: 1,
       paths: ['$.cmd'],
       hasMorePaths: false,

@@ -202,7 +202,7 @@ const isDecodableParamValue = (value: string): boolean => (
  */
 export function isUrl(str: string): boolean {
   const trimmed = normalizeJsonUrlEscapes(str.trim());
-  // 匹配 scheme://...、//host/path 和 host/path 这几类常见链接格式
+  // 匹配“协议://…”、“//主机/路径”和“主机/路径”这几类常见链接格式
   return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(trimmed) ||
     isProtocolRelativeUrl(trimmed) ||
     isBareHostUrl(trimmed);
@@ -245,23 +245,23 @@ export function hasUrlEncoding(str: string): boolean {
   if (!/%[0-9A-Fa-f]{2}/.test(str)) return false;
   
   // 排除纯粹的查询参数格式（如 key=value&key=value）
-  // 这种格式虽然可能包含 URL 编码，但不是我们要解析的 scheme
+  // 这种格式虽然可能包含 URL 编码，但不是需要解析的 Scheme
   if (isQueryStringFormat(str)) return false;
   
   return true;
 }
 
 /**
- * 检测字符串是否为 JWT Token
+ * 检测字符串是否为 JWT 令牌
  */
 export function isJwt(str: string): boolean {
   const trimmed = str.trim();
-  // JWT 格式: header.payload.signature
+  // JWT 格式：头部.载荷.签名
   const parts = trimmed.split('.');
   if (parts.length !== 3) return false;
   if (!parts.every(part => part && /^[A-Za-z0-9_-]+$/.test(part))) return false;
 
-  // header/payload 必须能解成 JSON 对象，避免把版本号 1.2.3 误判成 JWT。
+  // 头部和载荷必须能解成 JSON 对象，避免把版本号 1.2.3 误判成 JWT。
   return decodeJwt(trimmed) !== null;
 }
 
@@ -638,12 +638,12 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
 
     switch (type) {
       case 'url': {
-        // 解析 URL，提取 scheme 信息
+        // 解析 URL，提取协议信息
         const urlInfo = parseUrl(current);
         if (urlInfo) {
           schemeInfo = urlInfo;
           
-          // 如果有参数，将 query/hash 参数按 CMD 习惯逐项递归展开
+          // 如果有参数，将查询参数和片段参数按 CMD 习惯逐项递归展开
           const decodedParams = parseUrlParamsDeep(current, maxDepth - depth);
           if (decodedParams) {
             const decodedText = JSON.stringify(decodedParams, null, 2);
@@ -746,7 +746,7 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
     isJson = true;
     try {
       const parsed = JSON.parse(current) as StructuredValue;
-      // 独立 Scheme 面板也可能直接粘贴整段 response，这里复用参数递归解析能力展开内部 CMD/Scheme。
+      // 独立 Scheme 面板也可能直接粘贴整段响应，这里复用参数递归解析能力展开内部 CMD/Scheme。
       const structuredState = createSchemeStructuredDecodeState();
       const decodedParsed = decodeStructuredValue(parsed, maxDepth, structuredState);
       finalDecoded = JSON.stringify(decodedParsed, null, 2);

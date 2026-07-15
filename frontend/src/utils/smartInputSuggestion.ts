@@ -2,6 +2,7 @@ import { TransformMode } from '../types';
 import { parseJsonLinesDetailed } from './jsonLines';
 import { detectSchemeType, isActionableSchemeUrl, isUrl, shouldExposeSchemeValue } from './schemeUtils';
 import { normalizeSmartSuggestionText } from './smartSuggestionText';
+import { parseJsonWithFallback } from './storage';
 
 export type SmartSuggestionActionId =
   | 'response-inspection'
@@ -57,12 +58,11 @@ const isJsonContainer = (value: unknown): value is Record<string, unknown> | unk
 const tryParseJsonContainer = (source: string): unknown | null => {
   if (source.length > MAX_JSON_PARSE_LENGTH) return null;
 
-  try {
-    const parsed: unknown = JSON.parse(source);
-    return isJsonContainer(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
+  return parseJsonWithFallback<Record<string, unknown> | unknown[] | null>(
+    source,
+    null,
+    isJsonContainer
+  );
 };
 
 const createEmptyJsonSignal = (): JsonContentSignal => ({
@@ -144,7 +144,7 @@ const hasEncodedJsonHint = (source: string): boolean => (
 
 const hasActionableTextHint = (source: string): boolean => (
   ACTIONABLE_FIELD_RE.test(source) ||
-  /(?:baiduboxapp|nadcorevendor|wise|vendor|cmdHandler):\/\//i.test(source) ||
+  /(?:sampleapp|samplevendor|wise|vendor|cmdHandler):\/\//i.test(source) ||
   /(?:action_?cmd|panel_?cmd|button_?cmd|cmd|schema|scheme)=/i.test(source)
 );
 

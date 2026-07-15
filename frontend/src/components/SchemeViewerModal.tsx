@@ -1,16 +1,13 @@
-import React, { useDeferredValue, useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { SimpleEditor } from './SimpleEditor';
 import { DraggablePanel, PanelIcons } from './DraggablePanel';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
-import { 
+import { useSchemeViewerDecode } from '../hooks/useSchemeViewerDecode';
+import {
   buildSchemePlaceholderGroups,
-  deepDecodeScheme, 
-  encodeWithLayers, 
-  type SchemeDecodeResult,
-  type SchemeType
+  encodeWithLayers,
 } from '../utils/schemeUtils';
-import { QRCodeCanvas } from 'qrcode.react';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { formatUnknownError } from '../utils/errors';
 import { formatPrimaryCmdHandlerCompatibleResult } from '../utils/schemeMetadata';
@@ -33,50 +30,43 @@ import { buildSchemeViewerActionTitles } from '../utils/schemeViewerActionTitles
 import {
   formatSchemeCopySizeLabel,
 } from '../utils/schemeViewerFormatters';
-import {
-  buildSchemeViewerDecodeMetadata,
-  createEmptySchemeDecodeResult,
-  type SchemeViewerDecodeMetadata,
-} from '../utils/schemeViewerDecodeMetadata';
 import { SchemeViewerDiagnosticsPanel } from './SchemeViewerDiagnosticsPanel';
 import { SchemeViewerFooterActions } from './SchemeViewerFooterActions';
+import {
+  SchemeViewerQRCodePanel,
+  type SchemeViewerQRCodeType,
+} from './SchemeViewerQRCodePanel';
 
-const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
+interface SchemeCopyFeedback {
+  successMessage: string;
+  warningMessage: string;
+  fallbackErrorMessage?: string;
+}
+
+const copySchemeTextWithFeedback = async (
+  content: string,
+  feedback: SchemeCopyFeedback,
+): Promise<void> => {
+  try {
+    await copyText(content);
+    toast.success(feedback.successMessage, { duration: 2000 });
+  } catch (error) {
+    console.warn(feedback.warningMessage, error);
+    toast.error(getClipboardErrorMessage(error, feedback.fallbackErrorMessage), { duration: 2000 });
+  }
+};
 
 interface SchemeViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  path?: string;           // JSON Path，如 "$.action_cmd"（独立模式下可选）
-  value?: string;          // 原始 scheme 字符串（独立模式下可选）
-  sourceLabel?: string;    // 来源业务标签，如 extraParam
-  onApply?: (newValue: string) => void;  // 应用修改后的值
-  standalone?: boolean;    // 是否为独立模式（侧边栏打开，可手动输入）
+  path?: string; // JSON 路径，如 "$.action_cmd"（独立模式下可选）
+  value?: string; // 原始协议字符串（独立模式下可选）
+  sourceLabel?: string; // 来源业务标签，如 extraParam
+  onApply?: (newValue: string) => void; // 应用修改后的值
+  standalone?: boolean; // 是否为独立模式（侧边栏打开，可手动输入）
   initialStandaloneInput?: string; // 独立模式下从外部入口预填的内容
   initialStandaloneInputKey?: number; // 用于同一内容重复打开时触发重新预填
   onInspectOriginal?: (value: string) => void; // 将原始值送回主工作台排查
-}
-
-const schemeTypeLabels: Record<SchemeType, string> = {
-  'url': 'URL',
-  'query-string': 'CMD 参数',
-  'url-encoded': 'URL 编码',
-  'base64': 'Base64',
-  'jwt': 'JWT Token',
-  'json': 'JSON',
-  'plain': '纯文本',
-};
-
-interface SchemeDecodeWorkerResponse {
-  id: number;
-  result?: SchemeDecodeResult;
-  metadata?: SchemeViewerDecodeMetadata;
-  error?: string;
-}
-
-interface SchemeDecodeWorkerState {
-  source: string;
-  result: SchemeDecodeResult | null;
-  metadata: SchemeViewerDecodeMetadata | null;
 }
 
 export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
@@ -97,49 +87,25 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
   // 独立模式下的输入值
   const [standaloneInput, setStandaloneInput] = useState<string>('');
-  const [workerDecodeState, setWorkerDecodeState] = useState<SchemeDecodeWorkerState>({
-    source: '',
-    result: null,
-    metadata: null,
-  });
-  const [cancelledDecodeSource, setCancelledDecodeSource] = useState('');
-  const currentWorkerRef = useRef<Worker | null>(null);
-  const workerDecodeRequestIdRef = useRef(0);
 
   // 二维码状态
   const [showQRCode, setShowQRCode] = useState(false);
-  const [qrCodeType, setQRCodeType] = useState<'original' | 'decoded'>('original');
+  const [qrCodeType, setQRCodeType] = useState<SchemeViewerQRCodeType>('original');
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
   
-  // 实际使用的原始值：独立模式用输入值，否则用 prop 传入的值
+  // 实际使用的原始值：独立模式使用输入值，否则使用属性传入值
   const actualValue = standalone ? standaloneInput : (value || '');
-  const deferredActualValue = useDeferredValue(actualValue);
-  // 大 response 粘贴后先保证输入响应，解析结果用低优先级值追赶。
-  const decodeSourceValue = actualValue ? deferredActualValue : '';
-  const shouldDecodeInWorker = decodeSourceValue.length >= ASYNC_SCHEME_DECODE_THRESHOLD;
-  const isCurrentDecodeCancelled = Boolean(
-    shouldDecodeInWorker && cancelledDecodeSource === decodeSourceValue
-  );
-  const hasFreshWorkerDecodeResult = Boolean(
-    shouldDecodeInWorker &&
-    !isCurrentDecodeCancelled &&
-    workerDecodeState.source === decodeSourceValue &&
-    workerDecodeState.result
-  );
-  const freshWorkerDecodeMetadata = hasFreshWorkerDecodeResult
-    ? workerDecodeState.metadata
-    : null;
-  const isDecodePending = Boolean(
-    actualValue && deferredActualValue !== actualValue
-  ) || (shouldDecodeInWorker && !isCurrentDecodeCancelled && !hasFreshWorkerDecodeResult);
-  const canCancelDecode = Boolean(
-    shouldDecodeInWorker &&
-    !isCurrentDecodeCancelled &&
-    workerDecodeState.source === decodeSourceValue &&
-    !hasFreshWorkerDecodeResult
-  );
+  const {
+    decodeResult,
+    decodeMetadata: schemeDecodeMetadata,
+    isDecodePending,
+    isDecodeCancelled: isCurrentDecodeCancelled,
+    hasDecodeFailed,
+    canCancelDecode,
+    cancelDecode,
+  } = useSchemeViewerDecode(actualValue, { enabled: isOpen });
 
-  // 自定义滚动条 Hook
+  // 自定义滚动条钩子
   const {
     scrollContainerRef,
     handleScroll,
@@ -147,122 +113,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     thumbSize: thumbHeight,
     thumbOffset: thumbTop,
     showScrollbar,
-  } = useCustomScrollbar('vertical', actualValue);
-
-  // 解析 scheme（添加空值保护）
-  const decodeResult = useMemo<SchemeDecodeResult>(() => {
-    if (!decodeSourceValue) {
-      return createEmptySchemeDecodeResult();
-    }
-
-    if (shouldDecodeInWorker) {
-      if (isCurrentDecodeCancelled) {
-        return createEmptySchemeDecodeResult(decodeSourceValue);
-      }
-
-      return hasFreshWorkerDecodeResult && workerDecodeState.result
-        ? workerDecodeState.result
-        : createEmptySchemeDecodeResult(decodeSourceValue);
-    }
-
-    return deepDecodeScheme(decodeSourceValue);
-  }, [decodeSourceValue, hasFreshWorkerDecodeResult, isCurrentDecodeCancelled, shouldDecodeInWorker, workerDecodeState.result]);
-
-  useEffect(() => {
-    if (cancelledDecodeSource && cancelledDecodeSource !== decodeSourceValue) {
-      setCancelledDecodeSource('');
-    }
-  }, [cancelledDecodeSource, decodeSourceValue]);
-
-  useEffect(() => {
-    if (!decodeSourceValue || !shouldDecodeInWorker) {
-      setWorkerDecodeState(current => (
-        current.source || current.result || current.metadata ? { source: '', result: null, metadata: null } : current
-      ));
-      return;
-    }
-
-    if (isCurrentDecodeCancelled) {
-      setWorkerDecodeState(current => (
-        current.source === decodeSourceValue && !current.result && !current.metadata
-          ? current
-          : { source: decodeSourceValue, result: null, metadata: null }
-      ));
-      return;
-    }
-
-    let isCancelled = false;
-    const requestId = workerDecodeRequestIdRef.current + 1;
-    workerDecodeRequestIdRef.current = requestId;
-    const worker = new Worker(new URL('../workers/schemeDecode.worker.ts', import.meta.url), { type: 'module' });
-    currentWorkerRef.current?.terminate();
-    currentWorkerRef.current = worker;
-    setWorkerDecodeState({ source: decodeSourceValue, result: null, metadata: null });
-
-    worker.onmessage = (event: MessageEvent<SchemeDecodeWorkerResponse>) => {
-      worker.terminate();
-      if (currentWorkerRef.current === worker) {
-        currentWorkerRef.current = null;
-      }
-      if (isCancelled || requestId !== workerDecodeRequestIdRef.current) return;
-
-      if (event.data.error || !event.data.result) {
-        console.warn('大 Response Scheme 解码 Worker 处理失败:', event.data.error);
-        const fallbackResult = deepDecodeScheme(decodeSourceValue);
-        setWorkerDecodeState({
-          source: decodeSourceValue,
-          result: fallbackResult,
-          metadata: buildSchemeViewerDecodeMetadata(fallbackResult, {
-            includeCommandFieldRows: false,
-          }),
-        });
-        return;
-      }
-
-      setWorkerDecodeState({
-        source: decodeSourceValue,
-        result: event.data.result,
-        metadata: event.data.metadata || buildSchemeViewerDecodeMetadata(event.data.result, {
-          includeCommandFieldRows: false,
-        }),
-      });
-    };
-    worker.onerror = (event) => {
-      worker.terminate();
-      if (currentWorkerRef.current === worker) {
-        currentWorkerRef.current = null;
-      }
-      if (isCancelled || requestId !== workerDecodeRequestIdRef.current) return;
-
-      console.warn('大 Response Scheme 解码 Worker 运行失败:', event.message);
-      const fallbackResult = deepDecodeScheme(decodeSourceValue);
-      setWorkerDecodeState({
-        source: decodeSourceValue,
-        result: fallbackResult,
-        metadata: buildSchemeViewerDecodeMetadata(fallbackResult, {
-          includeCommandFieldRows: false,
-        }),
-      });
-    };
-    worker.postMessage({ id: 1, input: decodeSourceValue });
-
-    return () => {
-      isCancelled = true;
-      if (currentWorkerRef.current === worker) {
-        currentWorkerRef.current = null;
-      }
-      worker.terminate();
-    };
-  }, [decodeSourceValue, isCurrentDecodeCancelled, shouldDecodeInWorker]);
+  } = useCustomScrollbar('vertical', isOpen ? actualValue : null);
 
   const handleCancelDecode = () => {
-    if (!canCancelDecode) return;
-
-    currentWorkerRef.current?.terminate();
-    currentWorkerRef.current = null;
-    workerDecodeRequestIdRef.current += 1;
-    setCancelledDecodeSource(decodeSourceValue);
-    setWorkerDecodeState({ source: decodeSourceValue, result: null, metadata: null });
+    if (!cancelDecode()) return;
     toast.success('已取消解析', { duration: 1600 });
   };
 
@@ -286,13 +140,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   }, [isOpen]);
 
   const handleCopy = async () => {
-    try {
-      await copyText(editedContent);
-      toast.success(`已复制解码结果（${formatSchemeCopySizeLabel(editedContent)}）`, { duration: 2000 });
-    } catch (err) {
-      console.warn('复制 Scheme 解码结果失败:', err);
-      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
-    }
+    await copySchemeTextWithFeedback(editedContent, {
+      successMessage: `已复制解码结果（${formatSchemeCopySizeLabel(editedContent)}）`,
+      warningMessage: '复制 Scheme 解码结果失败:',
+    });
   };
 
   const handleCopyPathValues = async () => {
@@ -301,35 +152,26 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     const pathValueCopyResult = buildSchemePathValuesForCopy(editedContent);
     if (!pathValueCopyResult?.text) return;
 
-    try {
-      await copyText(pathValueCopyResult.text);
-      toast.success(`已复制路径和值（${formatSchemePathValueCountLabel(pathValueCopyResult.rowCount, pathValueCopyResult.isTruncated)}）`, { duration: 2000 });
-    } catch (err) {
-      console.warn('复制 Scheme 路径和值失败:', err);
-      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
-    }
+    await copySchemeTextWithFeedback(pathValueCopyResult.text, {
+      successMessage: `已复制路径和值（${formatSchemePathValueCountLabel(pathValueCopyResult.rowCount, pathValueCopyResult.isTruncated)}）`,
+      warningMessage: '复制 Scheme 路径和值失败:',
+    });
   };
 
   const handleCopyOriginal = async () => {
-    try {
-      await copyText(actualValue);
-      toast.success(`已复制原始值（${formatSchemeCopySizeLabel(actualValue)}）`, { duration: 2000 });
-    } catch (err) {
-      console.warn('复制 Scheme 原始值失败:', err);
-      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
-    }
+    await copySchemeTextWithFeedback(actualValue, {
+      successMessage: `已复制原始值（${formatSchemeCopySizeLabel(actualValue)}）`,
+      warningMessage: '复制 Scheme 原始值失败:',
+    });
   };
 
   const handleCopyPath = async () => {
     if (!path) return;
 
-    try {
-      await copyText(path);
-      toast.success('已复制路径', { duration: 2000 });
-    } catch (err) {
-      console.warn('复制 Scheme 来源路径失败:', err);
-      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
-    }
+    await copySchemeTextWithFeedback(path, {
+      successMessage: '已复制路径',
+      warningMessage: '复制 Scheme 来源路径失败:',
+    });
   };
 
   // JSON 解码结果被编辑后需要重新校验，避免非法内容写回原始字段。
@@ -350,16 +192,26 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const hasNonReversibleLayer = useMemo(() => (
     decodeResult.layers.some(layer => layer.reversible === false)
   ), [decodeResult.layers]);
-  const canApplyEdit = Boolean(onApply && isEditing && !isDecodePending && !editedJsonError && !hasNonReversibleLayer);
+  const canApplyEdit = Boolean(
+    onApply &&
+    isEditing &&
+    !isDecodePending &&
+    !hasDecodeFailed &&
+    !editedJsonError &&
+    !hasNonReversibleLayer,
+  );
   const canCopySerializedContent = Boolean(
     !isDecodePending &&
+    !hasDecodeFailed &&
     actualValue &&
     editedContent &&
     !editedJsonError &&
     !hasNonReversibleLayer &&
     decodeResult.layers.length > 0
   );
-  const canCopyPathValues = Boolean(decodeResult.isJson && !isDecodePending && !editedJsonError);
+  const canCopyPathValues = Boolean(
+    decodeResult.isJson && !isDecodePending && !hasDecodeFailed && !editedJsonError,
+  );
 
   const handleCopySerialized = async () => {
     if (!canCopySerializedContent) return;
@@ -367,13 +219,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     const serializedContent = encodeWithLayers(editedContent, decodeResult.layers);
     if (!serializedContent) return;
 
-    try {
-      await copyText(serializedContent);
-      toast.success(`已复制序列化结果（${formatSchemeCopySizeLabel(serializedContent)}）`, { duration: 2000 });
-    } catch (err) {
-      console.warn('复制 Scheme 序列化结果失败:', err);
-      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
-    }
+    await copySchemeTextWithFeedback(serializedContent, {
+      successMessage: `已复制序列化结果（${formatSchemeCopySizeLabel(serializedContent)}）`,
+      warningMessage: '复制 Scheme 序列化结果失败:',
+    });
   };
 
   const handleApply = () => {
@@ -412,17 +261,6 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     link.click();
   };
 
-  // 获取二维码内容
-  const qrCodeContent = useMemo(() => {
-    if (qrCodeType === 'decoded' && isDecodePending) return '';
-    return qrCodeType === 'original' ? actualValue : editedContent;
-  }, [actualValue, editedContent, isDecodePending, qrCodeType]);
-
-  // 检查内容是否适合生成二维码（不超过约2953字符）
-  const isQRCodeValid = useMemo(() => {
-    return qrCodeContent && qrCodeContent.length > 0 && qrCodeContent.length <= 2953;
-  }, [qrCodeContent]);
-  
   // 自动检测语言
   const editorLanguage = useMemo(() => {
     if (decodeResult.isJson) return 'json';
@@ -431,19 +269,19 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     if (trimmed.startsWith('<')) return 'xml';
     return 'plaintext';
   }, [decodeResult.isJson, editedContent]);
+  const editorLanguageLabel = editorLanguage === 'plaintext'
+    ? '纯文本'
+    : editorLanguage.toUpperCase();
 
   const paramSections = useMemo(() => (
     buildSchemeViewerParamSections(decodeResult.schemeInfo)
   ), [decodeResult.schemeInfo]);
-  const paramStages = decodeResult.paramStages || [];
-  const placeholders = decodeResult.placeholders || [];
-  const decodeWarnings = decodeResult.warnings || [];
+  const paramStages = useMemo(() => decodeResult.paramStages ?? [], [decodeResult.paramStages]);
+  const placeholders = useMemo(() => decodeResult.placeholders ?? [], [decodeResult.placeholders]);
+  const decodeWarnings = useMemo(() => decodeResult.warnings ?? [], [decodeResult.warnings]);
   const placeholderGroups = useMemo(() => (
     buildSchemePlaceholderGroups(placeholders)
   ), [placeholders]);
-  const schemeDecodeMetadata = useMemo(() => (
-    freshWorkerDecodeMetadata ?? buildSchemeViewerDecodeMetadata(decodeResult)
-  ), [decodeResult, freshWorkerDecodeMetadata]);
   const base64MetaInfo = schemeDecodeMetadata.base64MetaInfo;
   const commandSummaryInfo = schemeDecodeMetadata.commandSummaryInfo;
   const schemeQualitySummary = useMemo(() => (
@@ -549,26 +387,21 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     );
     if (!cmdHandlerCompatibleCopyText) return;
 
-    try {
-      await copyText(cmdHandlerCompatibleCopyText);
-      toast.success('已复制 CMD 结构', { duration: 2000 });
-    } catch (err) {
-      console.warn('复制 CMD 结构失败:', err);
-      toast.error(getClipboardErrorMessage(err), { duration: 2000 });
-    }
+    await copySchemeTextWithFeedback(cmdHandlerCompatibleCopyText, {
+      successMessage: '已复制 CMD 结构',
+      warningMessage: '复制 CMD 结构失败:',
+    });
   };
 
   const handleCopyQualitySummary = async () => {
     if (!schemeQualitySummary) return;
 
     const qualitySummaryText = formatSchemeQualitySummaryText(schemeQualitySummary);
-    try {
-      await copyText(qualitySummaryText);
-      toast.success(`已复制质量摘要（${formatSchemeCopySizeLabel(qualitySummaryText)}）`, { duration: 2000 });
-    } catch (err) {
-      console.warn('复制 Scheme 质量摘要失败:', err);
-      toast.error(getClipboardErrorMessage(err, '复制质量摘要失败'), { duration: 2000 });
-    }
+    await copySchemeTextWithFeedback(qualitySummaryText, {
+      successMessage: `已复制质量摘要（${formatSchemeCopySizeLabel(qualitySummaryText)}）`,
+      warningMessage: '复制 Scheme 质量摘要失败:',
+      fallbackErrorMessage: '复制质量摘要失败',
+    });
   };
 
   const handleCopyQualitySnapshot = async () => {
@@ -581,13 +414,11 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       placeholders,
       decodeWarnings,
     });
-    try {
-      await copyText(qualitySnapshotText);
-      toast.success(`已复制质量快照（${formatSchemeCopySizeLabel(qualitySnapshotText)}）`, { duration: 2000 });
-    } catch (err) {
-      console.warn('复制 Scheme 质量快照失败:', err);
-      toast.error(getClipboardErrorMessage(err, '复制质量快照失败'), { duration: 2000 });
-    }
+    await copySchemeTextWithFeedback(qualitySnapshotText, {
+      successMessage: `已复制质量快照（${formatSchemeCopySizeLabel(qualitySnapshotText)}）`,
+      warningMessage: '复制 Scheme 质量快照失败:',
+      fallbackErrorMessage: '复制质量快照失败',
+    });
   };
 
   const handleInspectOriginal = () => {
@@ -596,7 +427,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     onInspectOriginal(actualValue);
   };
 
-  // 头部额外内容：非独立模式显示 path 标签，并支持复制到 JSONPath 面板继续定位
+  // 头部额外内容：非独立模式显示来源路径标签，并支持复制到 JSONPath 面板继续定位
   const headerExtra = !standalone && path ? (
     <div className="flex min-w-0 items-center gap-1.5">
       {sourceLabel && (
@@ -630,6 +461,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const decodeStatusText = (() => {
     if (isCurrentDecodeCancelled) return '已取消解析';
     if (isDecodePending) return '解析中...';
+    if (hasDecodeFailed) return '解析失败';
     if (decodeResult.layers.length > 0) return `${decodeResult.layers.length} 层解码`;
     return actualValue ? '无需解码' : '请输入待解码内容';
   })();
@@ -649,7 +481,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       onToggleQRCode={handleToggleQRCode}
       canCopyOriginal={Boolean(actualValue)}
       onCopyOriginal={handleCopyOriginal}
-      canCopyDecoded={Boolean(editedContent && !isDecodePending)}
+      canCopyDecoded={Boolean(editedContent && !isDecodePending && !hasDecodeFailed)}
       onCopyDecoded={handleCopy}
       hasCommandSummary={Boolean(commandSummaryInfo)}
       canCopyCmdStructure={canCopyCmdHandlerCompatibleResult}
@@ -708,6 +540,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
               <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-gray-500">{standaloneInput.length} 字符</span>
                 <button
+                  type="button"
                   onClick={() => setStandaloneInput('')}
                   disabled={!standaloneInput}
                   className="text-xs text-gray-500 hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -760,95 +593,18 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             </details>
           )}
 
-          {/* 二维码区域 */}
-          {showQRCode && (
-            <div className="bg-editor-sidebar rounded p-3 border border-editor-border">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
-                  二维码
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* 类型切换 */}
-                  <div className="flex items-center bg-editor-bg rounded p-0.5 text-xs">
-                    <button
-                      onClick={() => setQRCodeType('original')}
-                      className={`px-2 py-1 rounded transition-colors ${
-                        qrCodeType === 'original' 
-                          ? 'bg-editor-active text-white' 
-                          : 'text-gray-400 hover:text-gray-200'
-                      }`}
-                    >
-                      原始值
-                    </button>
-                    <button
-                      onClick={() => setQRCodeType('decoded')}
-                      className={`px-2 py-1 rounded transition-colors ${
-                        qrCodeType === 'decoded' 
-                          ? 'bg-editor-active text-white' 
-                          : 'text-gray-400 hover:text-gray-200'
-                      }`}
-                    >
-                      解码结果
-                    </button>
-                  </div>
-                  {/* 下载按钮 */}
-                  <button
-                    onClick={handleDownloadQRCode}
-                    disabled={!isQRCodeValid}
-                    className="px-2 py-1 text-xs bg-editor-active text-gray-200 rounded hover:bg-editor-border transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="下载二维码"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    下载
-                  </button>
-                </div>
-              </div>
-              
-              {/* 二维码显示 */}
-              <div data-tour="scheme-qrcode-preview" className="flex flex-col items-center justify-center py-4 bg-white rounded">
-                {isQRCodeValid ? (
-                  <QRCodeCanvas
-                    ref={qrCodeRef}
-                    value={qrCodeContent}
-                    size={200}
-                    level="M"
-                    includeMargin={true}
-                    bgColor="#ffffff"
-                    fgColor="#000000"
-                  />
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <p className="text-sm">
-                      {!qrCodeContent 
-                        ? '无内容可生成二维码' 
-                        : '内容过长，无法生成二维码（最大约 2953 字符）'
-                      }
-                    </p>
-                    {qrCodeContent && (
-                      <p className="text-xs mt-1">当前长度: {qrCodeContent.length} 字符</p>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              {/* 内容长度提示 */}
-              {isQRCodeValid && (
-                <div className="text-xs text-gray-500 text-center mt-2">
-                  {qrCodeType === 'original' ? '原始值' : '解码结果'}: {qrCodeContent.length} 字符
-                </div>
-              )}
-            </div>
-          )}
+          <SchemeViewerQRCodePanel
+            isVisible={showQRCode}
+            qrCodeType={qrCodeType}
+            originalContent={actualValue}
+            decodedContent={editedContent}
+            isDecodePending={isDecodePending}
+            qrCodeRef={qrCodeRef}
+            onTypeChange={setQRCodeType}
+            onDownload={handleDownloadQRCode}
+          />
 
-          {/* 解码结果（可编辑，使用 SimpleEditor） */}
+          {/* 可编辑的解码结果 */}
           <div data-tour="scheme-result" className="bg-editor-sidebar rounded p-3 border border-editor-border flex-1 flex flex-col min-h-[200px]">
             <div className="flex items-center justify-between mb-2 flex-shrink-0">
               <div className="text-xs text-gray-500 font-medium flex items-center gap-1">
@@ -859,14 +615,14 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                 {isEditing && <span className="text-yellow-400 ml-2 font-normal">· 已修改</span>}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-mono uppercase bg-editor-bg px-1.5 py-0.5 rounded">{editorLanguage}</span>
+                <span className="text-xs text-gray-500 font-mono uppercase bg-editor-bg px-1.5 py-0.5 rounded">{editorLanguageLabel}</span>
                 {decodeResult.isJson && (
                   <span className={`text-xs px-2 py-0.5 rounded border ${
                     editedJsonError
                       ? 'text-status-error-text bg-status-error-bg border-status-error-border'
                       : 'text-status-success-text bg-status-success-bg border-status-success-border'
                   }`}>
-                    {editedJsonError ? 'Invalid JSON' : 'Valid JSON'}
+                    {editedJsonError ? 'JSON 无效' : 'JSON 有效'}
                   </span>
                 )}
               </div>

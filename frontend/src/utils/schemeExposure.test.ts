@@ -81,7 +81,7 @@ describe('schemeExposure', () => {
 
   it('非 HTTP(S) URL 仍作为业务 Scheme 暴露', () => {
     expect(isActionableSchemeUrlWithOptions(
-      'baiduboxapp://v1/open?url=https%3A%2F%2Fexample.com',
+      'sampleapp://v1/open?url=https%3A%2F%2Fexample.com',
       createOptions()
     )).toBe(true);
   });

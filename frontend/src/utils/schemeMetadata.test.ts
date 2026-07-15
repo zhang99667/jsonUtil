@@ -68,23 +68,23 @@ describe('schemeMetadata', () => {
         },
         ext_log: {
           ad_extra_param: {
-            cmatch: '1501',
+            segment: '1501',
           },
         },
       },
     });
 
     expect(extractSchemeCommandSummaryInfo(decoded, true, {
-      protocol: 'nadcorevendor:',
+      protocol: 'samplevendor:',
       host: 'vendor',
       path: '/ad/rewardImpl',
     })).toEqual({
-      commandSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      commandSchema: 'samplevendor://vendor/ad/rewardImpl',
       paramCount: 1,
       paramKeys: ['video_info'],
       commandSchemaCount: 1,
       topCommandSchemas: [{
-        schema: 'nadcorevendor://vendor/ad/rewardImpl',
+        schema: 'samplevendor://vendor/ad/rewardImpl',
         count: 1,
         paths: ['$'],
         hasMorePaths: false,
@@ -319,7 +319,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 cmdHandler 风格的 CMD 结构', () => {
-    const nestedSource = 'baiduboxapp://v1/panel?ext_info=%7B%22user_id%22%3A%22u1%22%7D';
+    const nestedSource = 'sampleapp://v1/panel?ext_info=%7B%22user_id%22%3A%22u1%22%7D';
     const decoded = JSON.stringify({
       params: {
         appUrl: {
@@ -335,11 +335,11 @@ describe('schemeMetadata', () => {
 
     expect(JSON.parse(formatCmdHandlerCompatibleResult(
       decoded,
-      'baiduboxapp://v7/vendor/ad/deeplink',
-      `baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D&panel_scheme=${encodeURIComponent(nestedSource)}`
+      'sampleapp://v7/vendor/ad/deeplink',
+      `sampleapp://v7/vendor/ad/deeplink?params=%7B%7D&panel_scheme=${encodeURIComponent(nestedSource)}`
     ))).toEqual({
       result: {
-        cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+        cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
         cmdParams: {
           params: {
             appUrl: {
@@ -347,7 +347,7 @@ describe('schemeMetadata', () => {
             },
           },
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               ext_info: {
                 user_id: 'u1',
@@ -356,16 +356,16 @@ describe('schemeMetadata', () => {
             source: nestedSource,
           },
         },
-        source: `baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D&panel_scheme=${encodeURIComponent(nestedSource)}`,
+        source: `sampleapp://v7/vendor/ad/deeplink?params=%7B%7D&panel_scheme=${encodeURIComponent(nestedSource)}`,
       },
     });
   });
 
   it('导出 CMD 结构时从 source 推断根 cmdSchema', () => {
-    const bottomButtonScheme = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+    const bottomButtonScheme = `samplevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
       title: 'ok',
     }))}`;
-    const source = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const source = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       vid: '123',
       tail_frame: {
         bottom_button_scheme: bottomButtonScheme,
@@ -376,9 +376,9 @@ describe('schemeMetadata', () => {
       formatPrimaryCmdHandlerCompatibleResult(decoded.decoded, undefined, source)
     );
 
-    expect(cmdStructure.result.cmdSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
+    expect(cmdStructure.result.cmdSchema).toBe('samplevendor://vendor/ad/rewardImpl');
     expect(cmdStructure.result.cmdParams.video_info.tail_frame.bottom_button_scheme).toMatchObject({
-      cmdSchema: 'nadcorevendor://vendor/ad/reward',
+      cmdSchema: 'samplevendor://vendor/ad/reward',
       cmdParams: {
         task_params: {
           title: 'ok',
@@ -412,7 +412,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时兼容 Unicode 转义等号参数', () => {
-    const nestedSource = 'baiduboxapp://v1/panel?from=unicode-equals';
+    const nestedSource = 'sampleapp://v1/panel?from=unicode-equals';
     const decoded = JSON.stringify({
       panel_scheme: {
         from: 'unicode-equals',
@@ -427,7 +427,7 @@ describe('schemeMetadata', () => {
       result: {
         cmdParams: {
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               from: 'unicode-equals',
             },
@@ -439,7 +439,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时兼容 HTML 转义等号参数', () => {
-    const nestedSource = 'baiduboxapp://v1/panel?from=html-equals';
+    const nestedSource = 'sampleapp://v1/panel?from=html-equals';
     const decoded = JSON.stringify({
       panel_scheme: {
         from: 'html-equals',
@@ -454,7 +454,7 @@ describe('schemeMetadata', () => {
       result: {
         cmdParams: {
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               from: 'html-equals',
             },
@@ -466,7 +466,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时兼容 HTML 十六进制实体参数', () => {
-    const nestedSource = 'baiduboxapp://v1/panel?from=html-hex';
+    const nestedSource = 'sampleapp://v1/panel?from=html-hex';
     const decoded = JSON.stringify({
       panel_scheme: {
         from: 'html-hex',
@@ -481,7 +481,7 @@ describe('schemeMetadata', () => {
       result: {
         cmdParams: {
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               from: 'html-hex',
             },
@@ -493,7 +493,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时兼容换行分隔参数', () => {
-    const nestedSource = 'baiduboxapp://v1/panel?from=line-source';
+    const nestedSource = 'sampleapp://v1/panel?from=line-source';
     const decoded = JSON.stringify({
       panel_scheme: {
         from: 'line-source',
@@ -509,7 +509,7 @@ describe('schemeMetadata', () => {
       result: {
         cmdParams: {
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               from: 'line-source',
             },
@@ -522,7 +522,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时兼容日志里的转义换行分隔参数', () => {
-    const nestedSource = 'baiduboxapp://v1/panel?from=escaped-line-source';
+    const nestedSource = 'sampleapp://v1/panel?from=escaped-line-source';
     const decoded = JSON.stringify({
       panel_scheme: {
         from: 'escaped-line-source',
@@ -538,7 +538,7 @@ describe('schemeMetadata', () => {
       result: {
         cmdParams: {
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               from: 'escaped-line-source',
             },
@@ -551,7 +551,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时兼容带日志前缀的参数串', () => {
-    const nestedSource = 'baiduboxapp://v1/panel?from=prefix-source';
+    const nestedSource = 'sampleapp://v1/panel?from=prefix-source';
     const decoded = JSON.stringify({
       panel_scheme: {
         from: 'prefix-source',
@@ -562,12 +562,12 @@ describe('schemeMetadata', () => {
     expect(JSON.parse(formatCmdHandlerCompatibleResult(
       decoded,
       undefined,
-      `I/NadRender: panel_scheme=${encodeURIComponent(nestedSource)}&from=log`
+      `I/SampleRender: panel_scheme=${encodeURIComponent(nestedSource)}&from=log`
     ))).toMatchObject({
       result: {
         cmdParams: {
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               from: 'prefix-source',
             },
@@ -580,7 +580,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时兼容带日志前缀的字段行', () => {
-    const nestedSource = 'baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com%2Fs%3Fword%3Djson';
+    const nestedSource = 'sampleapp://v1/browser/open?url=https%3A%2F%2Fm.example.com%2Fs%3Fword%3Djson';
     const decoded = JSON.stringify({
       scheme: {
         url: {
@@ -592,12 +592,12 @@ describe('schemeMetadata', () => {
     expect(JSON.parse(formatCmdHandlerCompatibleResult(
       decoded,
       undefined,
-      `I/NadRender: scheme = ${nestedSource}`
+      `I/SampleRender: scheme = ${nestedSource}`
     ))).toMatchObject({
       result: {
         cmdParams: {
           scheme: {
-            cmdSchema: 'baiduboxapp://v1/browser/open',
+            cmdSchema: 'sampleapp://v1/browser/open',
             cmdParams: {
               url: {
                 word: 'json',
@@ -611,7 +611,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时兼容 Base64 包裹的 Scheme 参数值', () => {
-    const nestedSource = 'baiduboxapp://v1/panel?from=base64-source';
+    const nestedSource = 'sampleapp://v1/panel?from=base64-source';
     const decoded = JSON.stringify({
       panel_scheme: {
         from: 'base64-source',
@@ -626,7 +626,7 @@ describe('schemeMetadata', () => {
       result: {
         cmdParams: {
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               from: 'base64-source',
             },
@@ -643,7 +643,7 @@ describe('schemeMetadata', () => {
       category: 'jump',
       url: landingUrl,
     }))}`;
-    const source = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const source = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       appUrl,
     }))}`;
     const decoded = JSON.stringify({
@@ -661,7 +661,7 @@ describe('schemeMetadata', () => {
 
     expect(JSON.parse(formatCmdHandlerCompatibleResult(
       decoded,
-      'baiduboxapp://v7/vendor/ad/deeplink',
+      'sampleapp://v7/vendor/ad/deeplink',
       source
     ))).toMatchObject({
       result: {
@@ -685,7 +685,7 @@ describe('schemeMetadata', () => {
   });
 
   it('导出 CMD 结构时包装 schema 字段', () => {
-    const schemaSource = 'baiduboxapp://v1/browser/open?url=https%3A%2F%2Fexample.com%2Fpage%3Fid%3D1';
+    const schemaSource = 'sampleapp://v1/browser/open?url=https%3A%2F%2Fexample.com%2Fpage%3Fid%3D1';
     const decoded = JSON.stringify({
       schema: {
         url: {
@@ -704,7 +704,7 @@ describe('schemeMetadata', () => {
       result: {
         cmdParams: {
           schema: {
-            cmdSchema: 'baiduboxapp://v1/browser/open',
+            cmdSchema: 'sampleapp://v1/browser/open',
             cmdParams: {
               url: {
                 id: '1',
@@ -720,8 +720,8 @@ describe('schemeMetadata', () => {
 
   it('整段 response 导出 CMD 结构时聚焦主入口 Scheme', () => {
     const landingUrl = 'https://example.com/landing?sku=101';
-    const nestedPanel = `baiduboxapp://v1/panel?url=${encodeURIComponent(landingUrl)}`;
-    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const nestedPanel = `sampleapp://v1/panel?url=${encodeURIComponent(landingUrl)}`;
+    const rootScheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       page_url: landingUrl,
       tail_frame: {
         panel_scheme: nestedPanel,
@@ -750,7 +750,7 @@ describe('schemeMetadata', () => {
 
     expect(result).toMatchObject({
       result: {
-        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
         cmdParams: {
           video_info: {
             page_url: {
@@ -758,7 +758,7 @@ describe('schemeMetadata', () => {
             },
             tail_frame: {
               panel_scheme: {
-                cmdSchema: 'baiduboxapp://v1/panel',
+                cmdSchema: 'sampleapp://v1/panel',
                 cmdParams: {
                   url: {
                     sku: '101',
@@ -777,18 +777,18 @@ describe('schemeMetadata', () => {
   });
 
   it('整段 response 可基于原始 source 汇总 Top CMD Schema', () => {
-    const landingUrl = 'https://union-click.jd.com/sem.php?source=baidu-ys&sku=101';
+    const landingUrl = 'https://union-click.jd.com/sem.php?source=sample-ads&sku=101';
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
       category: 'jump',
       url: landingUrl,
     }))}`;
-    const webUrl = `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}`;
-    const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const webUrl = `sampleapp://v1/browser/open?url=${encodeURIComponent(landingUrl)}`;
+    const deeplinkCmd = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       appUrl,
       webUrl,
       source: 'feedna',
     }))}`;
-    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?convert=${encodeURIComponent(JSON.stringify({
+    const rootScheme = `samplevendor://vendor/ad/rewardImpl?convert=${encodeURIComponent(JSON.stringify({
       button_scheme: deeplinkCmd,
     }))}`;
     const response = JSON.stringify({
@@ -811,12 +811,12 @@ describe('schemeMetadata', () => {
     expect(summary).not.toBeNull();
     expect(summary?.commandSchemaCount).toBeGreaterThanOrEqual(4);
     expect(summary?.topCommandSchemas.map(item => item.schema)).toEqual(expect.arrayContaining([
-      'nadcorevendor://vendor/ad/rewardImpl',
-      'baiduboxapp://v7/vendor/ad/deeplink',
-      'baiduboxapp://v1/easybrowse/open',
+      'samplevendor://vendor/ad/rewardImpl',
+      'sampleapp://v7/vendor/ad/deeplink',
+      'sampleapp://v1/browser/open',
       'openapp.jdmobile://virtual',
     ]));
-    expect(summary?.topCommandSchemas.find(item => item.schema === 'nadcorevendor://vendor/ad/rewardImpl')).toMatchObject({
+    expect(summary?.topCommandSchemas.find(item => item.schema === 'samplevendor://vendor/ad/rewardImpl')).toMatchObject({
       count: 1,
       paths: ['$.data.ad_common.scheme'],
     });
@@ -824,11 +824,11 @@ describe('schemeMetadata', () => {
     const cmdStructure = JSON.parse(
       formatPrimaryCmdHandlerCompatibleResult(decoded.decoded, summary?.commandSchema, response)
     );
-    expect(cmdStructure.result.cmdSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
-    expect(cmdStructure.result.cmdParams.convert.button_scheme.cmdSchema).toBe('baiduboxapp://v7/vendor/ad/deeplink');
+    expect(cmdStructure.result.cmdSchema).toBe('samplevendor://vendor/ad/rewardImpl');
+    expect(cmdStructure.result.cmdParams.convert.button_scheme.cmdSchema).toBe('sampleapp://v7/vendor/ad/deeplink');
   });
 
   it('非法 JSON 不导出 CMD 结构', () => {
-    expect(formatCmdHandlerCompatibleResult('{bad json}', 'baiduboxapp://v1/open')).toBe('');
+    expect(formatCmdHandlerCompatibleResult('{bad json}', 'sampleapp://v1/open')).toBe('');
   });
 });

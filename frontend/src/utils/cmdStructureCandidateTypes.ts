@@ -1,8 +1,6 @@
-import type { JsonValue } from '../types';
+import type { JsonObject, JsonValue } from '../types';
 
-export interface CmdStructureCandidateObject {
-  [key: string]: JsonValue;
-}
+export type CmdStructureCandidateObject = JsonObject;
 
 export interface CmdStructureCandidateInput {
   id: string;

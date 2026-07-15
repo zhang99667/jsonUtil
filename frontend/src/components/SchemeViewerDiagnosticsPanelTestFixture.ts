@@ -23,7 +23,7 @@ export const qualitySummary: SchemeQualitySummary = {
 };
 
 export const commandSummaryInfo: SchemeCommandSummaryInfo = {
-  commandSchema: 'baiduboxapp://v7/vendor/ad/prerender',
+  commandSchema: 'sampleapp://v7/vendor/ad/prerender',
   paramCount: 1,
   paramKeys: ['url'],
   commandSchemaCount: 1,
@@ -87,7 +87,7 @@ export const renderSchemeViewerDiagnosticsPanel = (
   onCopyQualitySummary: vi.fn(),
   onCopyQualitySnapshot: vi.fn(),
   copyQualitySnapshotTitle: '复制质量快照',
-  schemeInfo: { protocol: 'baiduboxapp:', host: 'v7', path: '/vendor/ad/prerender' },
+  schemeInfo: { protocol: 'sampleapp:', host: 'v7', path: '/vendor/ad/prerender' },
   commandSummaryInfo,
   placeholders,
   placeholderGroups,

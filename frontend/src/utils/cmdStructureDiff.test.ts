@@ -12,7 +12,7 @@ import {
 
 const createCmdStructure = () => ({
   result: {
-    cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+    cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
     cmdParams: {
       params: {
         appUrl: {
@@ -31,25 +31,25 @@ const createCmdStructure = () => ({
         },
       },
     },
-    source: 'baiduboxapp://v7/vendor/ad/deeplink?params=...',
+    source: 'sampleapp://v7/vendor/ad/deeplink?params=...',
   },
 });
 
 const createNestedRewardResponse = () => {
   const rootPath = '$.data.video[0].material[0].info[0].ad_common.scheme';
   const landingUrl = 'https://example.com/landing?sku=101';
-  const deeplink = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+  const deeplink = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
     appUrl: `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
       category: 'jump',
       url: landingUrl,
     }))}`,
-    webUrl: `baiduboxapp://v1/easybrowse/open?url=${encodeURIComponent(landingUrl)}`,
+    webUrl: `sampleapp://v1/browser/open?url=${encodeURIComponent(landingUrl)}`,
   }))}`;
-  const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?url=${encodeURIComponent(landingUrl)}`;
-  const stayCmd = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(deeplink)}&main_btn=${encodeURIComponent(JSON.stringify({
+  const panelScheme = `samplevendor://vendor/ad/rewardWebPanel?url=${encodeURIComponent(landingUrl)}`;
+  const stayCmd = `samplevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(deeplink)}&main_btn=${encodeURIComponent(JSON.stringify({
     button_cmd: '__CONVERT_CMD__',
   }))}`;
-  const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+  const rootScheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
     tail_frame: {
       panel_scheme: panelScheme,
     },
@@ -84,7 +84,7 @@ describe('cmdStructureDiff', () => {
   it('兼容 result 和 data 包裹的 cmdHandler 输出', () => {
     const structure = normalizeCmdStructure({
       data: {
-        cmdSchema: 'baiduboxapp://v1/open',
+        cmdSchema: 'sampleapp://v1/open',
         cmdParams: {
           url: 'https://example.com',
         },
@@ -92,7 +92,7 @@ describe('cmdStructureDiff', () => {
     });
 
     expect(structure).toEqual({
-      cmdSchema: 'baiduboxapp://v1/open',
+      cmdSchema: 'sampleapp://v1/open',
       cmdParams: {
         url: 'https://example.com',
       },
@@ -104,7 +104,7 @@ describe('cmdStructureDiff', () => {
     const structure = normalizeCmdStructure({
       解析结果: {
         result: {
-          cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+          cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
           cmdParams: {
             video_info: {
               vid: '123',
@@ -115,7 +115,7 @@ describe('cmdStructureDiff', () => {
     });
 
     expect(structure).toEqual({
-      cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
       cmdParams: {
         video_info: {
           vid: '123',
@@ -138,7 +138,7 @@ describe('cmdStructureDiff', () => {
     const actualParams = actual.result.cmdParams.params.appUrl.cmdParams.params as Record<string, unknown>;
     const expectedParams = expected.result.cmdParams.params.appUrl.cmdParams.params as Record<string, unknown>;
 
-    actual.result.cmdSchema = 'baiduboxapp://v7/vendor/ad/other';
+    actual.result.cmdSchema = 'sampleapp://v7/vendor/ad/other';
     delete actual.result.cmdParams.params.appUrl.cmdParams.params.url.cmdParams.sku;
     actualParams.category = 'open';
     actualParams.extra = { trace: 'debug' };
@@ -149,8 +149,8 @@ describe('cmdStructureDiff', () => {
 
     expect(diff.hasDifferences).toBe(true);
     expect(diff.schemaDiff).toEqual({
-      actual: 'baiduboxapp://v7/vendor/ad/other',
-      expected: 'baiduboxapp://v7/vendor/ad/deeplink',
+      actual: 'sampleapp://v7/vendor/ad/other',
+      expected: 'sampleapp://v7/vendor/ad/deeplink',
     });
     expect(diff.missingPaths).toEqual(expect.arrayContaining([
       '$.params.appUrl.cmdParams.params.channel',
@@ -208,7 +208,7 @@ describe('cmdStructureDiff', () => {
   it('差异报告会折叠同一额外分支下的子路径', () => {
     const diff = diffCmdStructures({
       result: {
-        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdSchema: 'sampleapp://v1/panel',
         cmdParams: {
           stable: 'ok',
           extra: {
@@ -221,7 +221,7 @@ describe('cmdStructureDiff', () => {
       },
     }, {
       result: {
-        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdSchema: 'sampleapp://v1/panel',
         cmdParams: {
           stable: 'ok',
         },
@@ -253,7 +253,7 @@ describe('cmdStructureDiff', () => {
   it('候选评分会按折叠后的缺失分支数量计算', () => {
     const expected = {
       result: {
-        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdSchema: 'sampleapp://v1/panel',
         cmdParams: {
           stable: 'ok',
           branch: {
@@ -271,7 +271,7 @@ describe('cmdStructureDiff', () => {
         label: '$.missing_branch',
         actual: {
           result: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               stable: 'ok',
             },
@@ -293,7 +293,7 @@ describe('cmdStructureDiff', () => {
     const source = 'https://example.com/landing?sku=101';
     const actual = {
       result: {
-        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdSchema: 'sampleapp://v1/browser/open',
         cmdParams: {
           url: {
             cmdSchema: 'https://example.com/landing',
@@ -307,7 +307,7 @@ describe('cmdStructureDiff', () => {
     };
     const expected = {
       result: {
-        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdSchema: 'sampleapp://v1/browser/open',
         cmdParams: {
           url: source,
         },
@@ -334,7 +334,7 @@ describe('cmdStructureDiff', () => {
     const source = 'https://example.com/landing?sku=101';
     const actual = {
       result: {
-        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdSchema: 'sampleapp://v1/browser/open',
         cmdParams: {
           url: source,
         },
@@ -342,7 +342,7 @@ describe('cmdStructureDiff', () => {
     };
     const expected = {
       result: {
-        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdSchema: 'sampleapp://v1/browser/open',
         cmdParams: {
           url: {
             cmdSchema: 'https://example.com/landing',
@@ -377,18 +377,18 @@ describe('cmdStructureDiff', () => {
 
     expect(diff.sourceDiff).toEqual({
       actual: undefined,
-      expected: 'baiduboxapp://v7/vendor/ad/deeplink?params=...',
+      expected: 'sampleapp://v7/vendor/ad/deeplink?params=...',
     });
     expect(report).toContain('source 不一致');
     expect(report).toContain('actual: (空)');
-    expect(report).toContain('expected: baiduboxapp://v7/vendor/ad/deeplink?params=...');
+    expect(report).toContain('expected: sampleapp://v7/vendor/ad/deeplink?params=...');
   });
 
   it('source 差异报告会截断超长来源串', () => {
     const actual = createCmdStructure();
     const expected = createCmdStructure();
-    const longActualSource = `baiduboxapp://v7/vendor/ad/deeplink?params=${'a'.repeat(260)}`;
-    const longExpectedSource = `baiduboxapp://v7/vendor/ad/deeplink?params=${'b'.repeat(260)}`;
+    const longActualSource = `sampleapp://v7/vendor/ad/deeplink?params=${'a'.repeat(260)}`;
+    const longExpectedSource = `sampleapp://v7/vendor/ad/deeplink?params=${'b'.repeat(260)}`;
 
     actual.result.source = longActualSource;
     expected.result.source = longExpectedSource;
@@ -416,7 +416,7 @@ describe('cmdStructureDiff', () => {
   it('按差异数量推荐最匹配的 actual CMD 候选', () => {
     const expected = {
       result: {
-        cmdSchema: 'baiduboxapp://v1/panel',
+        cmdSchema: 'sampleapp://v1/panel',
         cmdParams: {
           tab: 'reward',
         },
@@ -426,10 +426,10 @@ describe('cmdStructureDiff', () => {
       {
         id: '$.action_cmd',
         label: '$.action_cmd',
-        commandSchema: 'baiduboxapp://v1/action',
+        commandSchema: 'sampleapp://v1/action',
         actual: {
           result: {
-            cmdSchema: 'baiduboxapp://v1/action',
+            cmdSchema: 'sampleapp://v1/action',
             cmdParams: {
               from: 'feed',
             },
@@ -439,7 +439,7 @@ describe('cmdStructureDiff', () => {
       {
         id: '$.panel_cmd',
         label: '$.panel_cmd',
-        commandSchema: 'baiduboxapp://v1/panel',
+        commandSchema: 'sampleapp://v1/panel',
         actual: expected,
       },
     ], expected);
@@ -456,7 +456,7 @@ describe('cmdStructureDiff', () => {
     const source = 'https://example.com/landing?sku=101';
     const expected = {
       result: {
-        cmdSchema: 'baiduboxapp://v1/browser/open',
+        cmdSchema: 'sampleapp://v1/browser/open',
         cmdParams: {
           url: source,
         },
@@ -468,7 +468,7 @@ describe('cmdStructureDiff', () => {
         label: '$.browser_cmd',
         actual: {
           result: {
-            cmdSchema: 'baiduboxapp://v1/browser/open',
+            cmdSchema: 'sampleapp://v1/browser/open',
             cmdParams: {
               url: {
                 cmdSchema: 'https://example.com/landing',
@@ -536,7 +536,7 @@ done`, 'cmdHandler 输出');
 "解析结果":{1 item
 cmd解析
 "result":{2 items
-"cmdSchema":"nadcorevendor://vendor/ad/rewardImpl"
+"cmdSchema":"samplevendor://vendor/ad/rewardImpl"
 "cmdParams":{1 item
 "video_info":{1 item
 "vid":"123"
@@ -547,7 +547,7 @@ cmd解析
 iqoo13`, 'cmdHandler 输出');
 
     expect(normalizeCmdStructure(parsed)).toEqual({
-      cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
       cmdParams: {
         video_info: {
           vid: '123',
@@ -559,7 +559,7 @@ iqoo13`, 'cmdHandler 输出');
 
   it('解析只复制 result 内部的 cmdHandler 树形文本', () => {
     const parsed = parseCmdStructureJson(`cmd解析
-"cmdSchema":"nadcorevendor://vendor/ad/rewardImpl"
+"cmdSchema":"samplevendor://vendor/ad/rewardImpl"
 "cmdParams":{1 item
 "video_info":{1 item
 "vid":"123"
@@ -567,7 +567,7 @@ iqoo13`, 'cmdHandler 输出');
 }`, 'cmdHandler 输出');
 
     expect(normalizeCmdStructure(parsed)).toEqual({
-      cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+      cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
       cmdParams: {
         video_info: {
           vid: '123',
@@ -599,7 +599,7 @@ iqoo13`, 'cmdHandler 输出');
     expect(hasRecognizableCmdStructure({
       解析结果: {
         result: {
-          cmdSchema: 'baiduboxapp://v1/browser/open',
+          cmdSchema: 'sampleapp://v1/browser/open',
           cmdParams: {
             url: 'https://example.com',
           },
@@ -615,8 +615,8 @@ iqoo13`, 'cmdHandler 输出');
 
   it('整段 response 自动聚焦主 CMD 字段', () => {
     const landingUrl = 'https://example.com/landing?sku=101';
-    const panelScheme = `baiduboxapp://v1/panel?url=${encodeURIComponent(landingUrl)}`;
-    const rootScheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const panelScheme = `sampleapp://v1/panel?url=${encodeURIComponent(landingUrl)}`;
+    const rootScheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       page_url: landingUrl,
       tail_frame: {
         panel_scheme: panelScheme,
@@ -640,7 +640,7 @@ iqoo13`, 'cmdHandler 输出');
 
     const structure = normalizeCmdStructure(parsed);
 
-    expect(structure.cmdSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
+    expect(structure.cmdSchema).toBe('samplevendor://vendor/ad/rewardImpl');
     expect(structure.source).toBe(rootScheme);
     expect(structure.cmdParams).toMatchObject({
       video_info: {
@@ -653,7 +653,7 @@ iqoo13`, 'cmdHandler 输出');
         },
         tail_frame: {
           panel_scheme: {
-            cmdSchema: 'baiduboxapp://v1/panel',
+            cmdSchema: 'sampleapp://v1/panel',
             cmdParams: {
               url: {
                 cmdSchema: 'https://example.com/landing',
@@ -681,7 +681,7 @@ iqoo13`, 'cmdHandler 输出');
     ]));
     expect(candidates.find(candidate => candidate.id === `${rootPath}.cmdParams.panel.panel_cmd`)).toMatchObject({
       sourceLabel: 'panel_cmd',
-      commandSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+      commandSchema: 'sampleapp://v7/vendor/ad/deeplink',
     });
   });
 

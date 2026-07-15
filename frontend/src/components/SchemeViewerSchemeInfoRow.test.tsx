@@ -14,7 +14,7 @@ describe('SchemeViewerSchemeInfoRow', () => {
   it('渲染协议、host 和路径', () => {
     const tree = SchemeViewerSchemeInfoRow({
       schemeInfo: {
-        protocol: 'baiduboxapp:',
+        protocol: 'sampleapp:',
         host: 'v7',
         path: '/vendor/ad/prerender',
       },
@@ -22,7 +22,7 @@ describe('SchemeViewerSchemeInfoRow', () => {
 
     expect(findByTour(tree, 'scheme-info-row')).toHaveLength(1);
     expect(collectText(tree)).toContain('Scheme:');
-    expect(collectText(tree)).toContain('baiduboxapp:');
+    expect(collectText(tree)).toContain('sampleapp:');
     expect(collectText(tree)).toContain('v7');
     expect(collectText(tree)).toContain('/vendor/ad/prerender');
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getFirstSchemeStructuredPayloadNormalization } from './schemeStructuredPayloadNormalization';
 
 const looksLikeStructuredPayload = (value: string): boolean => (
-  value.startsWith('baiduboxapp://') ||
+  value.startsWith('sampleapp://') ||
   value.startsWith('cmd=') ||
   value.startsWith('{')
 );
@@ -37,9 +37,9 @@ describe('schemeStructuredPayloadNormalization', () => {
   });
 
   it('识别 JSON 斜杠转义和 Unicode ASCII 转义载荷', () => {
-    expect(normalize('baiduboxapp:\\/\\/v1\\/open?cmd=%7B%7D')).toMatchObject({
+    expect(normalize('sampleapp:\\/\\/v1\\/open?cmd=%7B%7D')).toMatchObject({
       source: 'json-escaped-slash',
-      value: 'baiduboxapp://v1/open?cmd=%7B%7D',
+      value: 'sampleapp://v1/open?cmd=%7B%7D',
       layer: {
         type: 'json-escaped-slash',
       },
@@ -74,9 +74,9 @@ describe('schemeStructuredPayloadNormalization', () => {
       source: 'json-string',
       value: 'cmd=%7B%22a%22%3A1%7D',
     });
-    expect(normalize('baiduboxapp:\\/\\/v1\\/open?cmd=%7B%7D', false)).toMatchObject({
+    expect(normalize('sampleapp:\\/\\/v1\\/open?cmd=%7B%7D', false)).toMatchObject({
       source: 'json-escaped-slash',
-      value: 'baiduboxapp://v1/open?cmd=%7B%7D',
+      value: 'sampleapp://v1/open?cmd=%7B%7D',
     });
   });
 });

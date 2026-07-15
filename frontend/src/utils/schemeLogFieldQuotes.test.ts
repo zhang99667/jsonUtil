@@ -6,8 +6,8 @@ import {
 
 describe('schemeLogFieldQuotes', () => {
   it('解包 JSON 双引号字段值和 key', () => {
-    expect(unwrapLogFieldValue('"baiduboxapp://v1/open?title=\\"hi\\""')).toEqual({
-      value: 'baiduboxapp://v1/open?title="hi"',
+    expect(unwrapLogFieldValue('"sampleapp://v1/open?title=\\"hi\\""')).toEqual({
+      value: 'sampleapp://v1/open?title="hi"',
       quote: '"',
     });
     expect(unwrapLogFieldKey('"action_cmd"', value => decodeURIComponent(value))).toBe('action_cmd');
