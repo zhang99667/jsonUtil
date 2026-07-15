@@ -13,12 +13,9 @@ const THIN_ENTRY_BASE_REFERENCES = [
   'node scripts/ci/check-maintainability-budgets.mjs',
 ];
 
-const buildCodexSkillMirrorPaths = codexSkillFiles => codexSkillFiles
-  .map(file => file.replace('.codex/', ''));
-
 const buildThinEntryExtraReferences = (file, codexSkillFiles) => ({
   '.claude/ai-tools-guide.md': codexSkillFiles,
-  '.codex/README.md': ['.claude/ai-tools-guide.md', ...buildCodexSkillMirrorPaths(codexSkillFiles)],
+  '.codex/README.md': ['.claude/ai-tools-guide.md', ...codexSkillFiles],
   '.cursorrules': ['.comate/rules/code-style.md'],
   '.comate/rules/code-style.md': ['.cursorrules'],
 }[file] ?? []);

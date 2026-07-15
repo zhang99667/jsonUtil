@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -67,7 +69,20 @@ jobs:
         working-directory: .
         run: node --test scripts/mcp/*.test.mjs
 
+      - name: Project plugin probe tests
+        working-directory: .
+        run: node --test plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/*.test.mjs
+
+      - name: Project plugin config auditor tests
+        working-directory: .
+        run: python3 -B -m unittest discover -s plugins/codex-mcp-config-auditor/scripts -p 'test_*.py'
+
+      - name: AI evolution evals
+        working-directory: .
+        run: node scripts/ci/check-ai-evolution-evals.mjs
+
       - name: AI governance artifacts
+        if: always()
         working-directory: .
         run: node scripts/ci/write-ai-governance-artifacts.mjs
 
@@ -204,6 +219,10 @@ jobs:
       - name: AI governance coverage
         working-directory: .
         run: node scripts/ci/check-ai-governance.mjs
+
+      - name: AI asset HEAD distribution
+        working-directory: .
+        run: node scripts/ci/check-ai-asset-distribution.mjs --head
 
       - name: Maven test
         run: mvn -B test

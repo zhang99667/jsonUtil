@@ -4,6 +4,7 @@ import { collectUnbudgetedAiGovernanceScriptFailures, collectUntrackedBudgetRule
 import {
   buildHighUsageItems,
   buildNearLimitUsageItems,
+  buildScorecardCandidateItems,
   toBudgetUsageItem,
 } from './maintainabilityBudgetUsageItems.mjs';
 import { buildHighUsageSummaries, buildNearLimitSummaries, formatBudgetUsage } from './maintainabilityBudgetUsageSummaries.mjs';
@@ -69,6 +70,8 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
   const usageItems = usages.map(toBudgetUsageItem);
   const nearLimitItems = buildNearLimitUsageItems(nearLimitUsages);
   const highUsageItems = buildHighUsageItems(usages, options);
+  const highUsageCandidateCount = buildHighUsageItems(usages, { ...options, highUsageLimit: Number.MAX_SAFE_INTEGER }).length;
+  const scorecardCandidateItems = buildScorecardCandidateItems(usages);
 
   return {
     failures,
@@ -78,5 +81,7 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
     usageItems,
     nearLimitItems,
     highUsageItems,
+    highUsageCandidateCount,
+    scorecardCandidateItems,
   };
 };

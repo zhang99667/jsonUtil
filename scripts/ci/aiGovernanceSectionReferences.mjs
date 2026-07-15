@@ -1,33 +1,63 @@
-const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const ATX_HEADING_PATTERN = /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$/;
+const FENCE_OPEN_PATTERN = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 
-const getMarkdownHeadingLevel = heading => heading.match(/^(#{1,6})\s+/)?.[1].length ?? null;
-
-const findMarkdownHeadingStart = (content, sectionTitle) => {
-  const pattern = new RegExp(`(^|\\n)${escapeRegExp(sectionTitle)}(?:\\n|$)`);
-  const match = content.match(pattern);
-  return match ? match.index + match[1].length : -1;
+const parseAtxHeading = (line) => {
+  const match = line.match(ATX_HEADING_PATTERN);
+  if (!match) return null;
+  return {
+    level: match[1].length,
+    text: (match[2] ?? '').replace(/[ \t]+#+[ \t]*$/, '').trimEnd(),
+  };
 };
 
+const parseFenceOpening = (line) => {
+  const match = line.match(FENCE_OPEN_PATTERN);
+  if (!match || (match[1][0] === '`' && match[2].includes('`'))) return null;
+  return { marker: match[1][0], length: match[1].length };
+};
+
+const isFenceClosing = (line, fence) => {
+  const match = line.match(/^ {0,3}(`+|~+)[ \t]*$/);
+  return Boolean(match && match[1][0] === fence.marker && match[1].length >= fence.length);
+};
+
+const sameHeading = (left, right) => left.level === right.level && left.text === right.text;
+
 export const getMarkdownSectionContent = (content, sectionTitle) => {
-  const sectionLevel = getMarkdownHeadingLevel(sectionTitle);
-  const sectionStart = findMarkdownHeadingStart(content, sectionTitle);
-  if (sectionLevel === null || sectionStart === -1) return null;
+  const target = parseAtxHeading(sectionTitle);
+  if (!target) return null;
 
-  const bodyStart = sectionStart + sectionTitle.length;
-  const remainingContent = content.slice(bodyStart);
-  const lines = remainingContent.split('\n');
-  let offset = 0;
-  let isInFence = false;
+  let fence = null;
+  let found = false;
+  let collecting = false;
+  const sectionLines = [];
 
-  for (const line of lines) {
-    if (/^\s*(```|~~~)/.test(line)) isInFence = !isInFence;
-
-    const headingMatch = !isInFence && line.match(/^(#{1,6})\s+/);
-    if (headingMatch && headingMatch[1].length <= sectionLevel) return remainingContent.slice(0, offset);
-    offset += line.length + 1;
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
+    if (fence) {
+      if (collecting) sectionLines.push(rawLine);
+      if (isFenceClosing(line, fence)) fence = null;
+      continue;
+    }
+    const opening = parseFenceOpening(line);
+    if (opening) {
+      if (collecting) sectionLines.push(rawLine);
+      fence = opening;
+      continue;
+    }
+    const heading = parseAtxHeading(line);
+    if (heading) {
+      if (!found && sameHeading(heading, target)) {
+        found = true;
+        collecting = true;
+        continue;
+      }
+      if (collecting && heading.level <= target.level) collecting = false;
+    }
+    if (collecting) sectionLines.push(rawLine);
   }
 
-  return remainingContent;
+  return found && fence === null ? sectionLines.join('\n') : null;
 };
 
 export const collectSectionReferenceFailures = (file, content, sectionRules = []) => (

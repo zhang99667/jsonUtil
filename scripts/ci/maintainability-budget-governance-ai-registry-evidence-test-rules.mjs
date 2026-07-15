@@ -1,3 +1,5 @@
+import { governanceAiDistributionTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-distribution-test-rules.mjs';
+
 const governanceAiRegistryEvidenceTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiRegistryEvidenceTestMaintainabilityBudgets = [
@@ -9,4 +11,5 @@ export const governanceAiRegistryEvidenceTestMaintainabilityBudgets = [
   governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceDiscoveredAssetTestFixtures.mjs', 35, 'AI 治理资产发现测试 fixture 应独立维护发现输入文件'),
   governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceDiscoveredAssets.test.mjs', 30, 'AI 治理资产发现测试应只验证发现结果和未治理资产报告'),
   governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceAssetRegistrySemanticEvidence.test.mjs', 65, 'AI 治理资产注册表语义证据测试应独立维护自动发现资产不能只靠发现规则的负例'),
+  ...governanceAiDistributionTestMaintainabilityBudgets,
 ];

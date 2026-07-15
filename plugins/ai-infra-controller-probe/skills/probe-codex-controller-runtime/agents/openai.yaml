@@ -1,0 +1,4 @@
+interface:
+  display_name: "Probe Codex Controller Runtime"
+  short_description: "Probe signed Codex and Seatbelt boundaries"
+  default_prompt: "Use $probe-codex-controller-runtime to run the signed zero-model macOS Seatbelt sentinel without mutating the sealed source snapshot."

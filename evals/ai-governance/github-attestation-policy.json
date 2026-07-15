@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "policyVersion": "1.0.0",
+  "authority": "repository-audit-copy-only",
+  "evidenceScope": "component-only",
+  "candidate": {
+    "repository": "zhang99667/jsonUtil",
+    "repositoryId": 1100971908,
+    "repositoryOwnerId": 60920673,
+    "sourceRef": "refs/heads/main",
+    "workflow": ".github/workflows/ai-governance.yml",
+    "environment": "ai-governance-attestation",
+    "runnerEnvironment": "github-hosted",
+    "oidcIssuer": "https://token.actions.githubusercontent.com",
+    "predicateType": "https://slsa.dev/provenance/v1",
+    "subjectName": "ai-governance-attestation-subject.json"
+  },
+  "productionRequirements": {
+    "enabledVariable": "AI_GOVERNANCE_ATTESTATION_ENABLED",
+    "externalIdentityPolicy": true,
+    "externalReusableWorkflow": true,
+    "immutableOidcSubject": true,
+    "protectedSourceRef": true,
+    "protectedEnvironment": true,
+    "requiredReviewer": true,
+    "preventSelfReview": true,
+    "preventAdminBypass": true,
+    "shaPinnedActions": true,
+    "signerRepository": true,
+    "signerWorkflow": true,
+    "signerDigest": true,
+    "sourceDigest": true,
+    "verifiedTimestamp": true,
+    "denySelfHostedRunners": true
+  }
+}

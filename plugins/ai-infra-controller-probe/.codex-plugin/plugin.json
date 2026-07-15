@@ -1,0 +1,20 @@
+{
+  "name": "ai-infra-controller-probe",
+  "version": "0.5.0",
+  "description": "Keyless Docker preflight and signed macOS Seatbelt sentinel for Codex controller boundaries.",
+  "author": {
+    "name": "JSONUtils project"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Infra Controller Probe",
+    "shortDescription": "Probe keyless controller isolation boundaries.",
+    "longDescription": "Runs a zero-model Docker preflight or a signed macOS Seatbelt sentinel with zero source mutation, disposable controls, and postflight bindings, while keeping controller, namespace, signer, model-absence, and outcome claims explicitly unverified.",
+    "developerName": "JSONUtils project",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Run the signed keyless macOS Seatbelt sentinel without mutating the source snapshot, then explain its component-only evidence boundary."
+    ]
+  }
+}

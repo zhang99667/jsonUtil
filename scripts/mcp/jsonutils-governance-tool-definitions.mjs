@@ -7,7 +7,11 @@ const boundedIntegerInputSchema = (property, max, defaultValue) => ({
 });
 
 const topInputSchema = (max, defaultValue) => boundedIntegerInputSchema('top', max, defaultValue);
-const defineTool = (name, description, inputSchema = emptyInputSchema) => ({ name, description, inputSchema });
+const jsonObjectOutputSchema = { type: 'object', additionalProperties: true };
+const readOnlyAnnotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+const defineTool = (name, description, inputSchema = emptyInputSchema) => ({
+  name, description, inputSchema, outputSchema: jsonObjectOutputSchema, annotations: readOnlyAnnotations,
+});
 
 const handoffInputSchema = {
   type: 'object',
@@ -24,6 +28,7 @@ export const governanceContextTool = defineTool('ai_governance_context', 'Build 
 export const governanceScorecardTool = defineTool('ai_governance_scorecard', 'Return the current AI governance maturity scorecard and next commands.', topInputSchema(50, 35));
 export const artifactFreshnessTool = defineTool('ai_governance_artifact_freshness', 'Check whether local AI governance artifacts match current live governance reports.');
 export const assetInventoryTool = defineTool('ai_asset_inventory', 'Return a bounded structured inventory of registered AI collaboration assets.', boundedIntegerInputSchema('limit', 100, 20));
+export const evaluationSummaryTool = defineTool('ai_evaluation_summary', 'Return bounded AI behavior eval, feedback, experiment, and outcome provenance.', boundedIntegerInputSchema('limit', 50, 10));
 export const worktreeSnapshotTool = defineTool('ai_worktree_snapshot', 'Return a bounded read-only git worktree snapshot for AI handoff safety.', boundedIntegerInputSchema('maxFiles', 200, 50));
 export const handoffBriefTool = defineTool('ai_handoff_brief', 'Return a compact AI handoff brief with governance focus and worktree risk.', handoffInputSchema);
 export const decisionSummaryTool = defineTool('ai_decision_summary', 'Return recent AI governance decisions as bounded structured JSON.', boundedIntegerInputSchema('limit', 20, 5));
@@ -36,6 +41,7 @@ export const jsonutilsGovernanceTools = [
   governanceScorecardTool,
   artifactFreshnessTool,
   assetInventoryTool,
+  evaluationSummaryTool,
   worktreeSnapshotTool,
   handoffBriefTool,
   decisionSummaryTool,

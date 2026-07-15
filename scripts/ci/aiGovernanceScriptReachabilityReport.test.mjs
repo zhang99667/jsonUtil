@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { buildAiGovernanceReport } from './aiGovernanceReport.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
-const orphanHelperFailure = 'scripts/ci/aiGovernanceLooseHelper.mjs: AI 治理脚本未被 check-ai-governance 或 scripts/ci/*.test.mjs import 图覆盖';
+const orphanHelperFailure = 'scripts/ci/aiGovernanceLooseHelper.mjs: AI 治理脚本未被生产入口或 scripts/ci/*.test.mjs import 图覆盖';
 
 test('AI 治理完整报告会包含脚本可达性失败', () => {
   withAiGovernanceTempRoot((rootDir) => {

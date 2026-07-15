@@ -1,0 +1,44 @@
+{
+  "name": "jsonutils-project",
+  "interface": {
+    "displayName": "JSONUtils Project"
+  },
+  "plugins": [
+    {
+      "name": "ai-infra-controller-probe",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ai-infra-controller-probe"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "jsonutils-governance-mcp",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jsonutils-governance-mcp"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "codex-mcp-config-auditor",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-mcp-config-auditor"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

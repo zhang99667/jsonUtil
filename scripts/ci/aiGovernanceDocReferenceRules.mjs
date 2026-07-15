@@ -1,7 +1,11 @@
 import { AI_CONFIG_INTEGRATION_REFERENCES, AI_TOOLS_SETUP_REFERENCES } from './aiGovernanceDocReferenceItems.mjs';
-import { AI_TOOLS_SETUP_SECTION_REFERENCE_RULES } from './aiGovernancePlaybookSectionRules.mjs';
+import {
+  AI_EVOLUTION_LEDGER_README_SECTION_REFERENCE_RULES,
+  AI_TOOLS_SETUP_SECTION_REFERENCE_RULES,
+} from './aiGovernancePlaybookSectionRules.mjs';
 
 export const AI_GOVERNANCE_DOC_REFERENCE_RULES = [
   { file: 'docs/AI-CONFIG-INTEGRATION.md', contains: AI_CONFIG_INTEGRATION_REFERENCES },
   { file: 'docs/AI-TOOLS-SETUP.md', contains: AI_TOOLS_SETUP_REFERENCES, sections: AI_TOOLS_SETUP_SECTION_REFERENCE_RULES },
+  { file: 'evals/ai-governance/README.md', sections: AI_EVOLUTION_LEDGER_README_SECTION_REFERENCE_RULES },
 ];

@@ -1,0 +1,23 @@
+{
+  "name": "codex-mcp-config-auditor",
+  "version": "0.2.1",
+  "description": "Audit Codex MCP static sensitive headers without returning configuration values.",
+  "author": {
+    "name": "JSONUtils project"
+  },
+  "interface": {
+    "displayName": "Codex MCP Config Auditor",
+    "shortDescription": "Value-free audit of sensitive static MCP headers.",
+    "longDescription": "Reads only the current user's fixed Codex config path and reports bounded server identifiers, field paths, risk codes, and fixed remediation text. It never returns configuration values, hashes, lengths, previews, raw parse errors, or environment values.",
+    "developerName": "JSONUtils project",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read"
+    ],
+    "defaultPrompt": [
+      "Audit my Codex MCP config for sensitive static headers.",
+      "Show value-free MCP credential remediation findings."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

@@ -6,13 +6,14 @@ import {
   buildCodexSkillFixtureContent,
   CODEX_SKILL_TEST_FILE,
   COMPLETE_CODEX_SKILL_SECTION_BODIES,
+  withCodexSkillTempRoot,
 } from './aiGovernanceSkillTestFixtures.mjs';
-import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
+import { writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const skillFile = CODEX_SKILL_TEST_FILE;
 
 test('AI 治理 skill 契约会报告缺失核心章节', () => {
-  withAiGovernanceTempRoot((rootDir) => {
+  withCodexSkillTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       sections: ['## 必读文件', '## 工作流', '## 重点边界'],
       sectionBodies: COMPLETE_CODEX_SKILL_SECTION_BODIES,
@@ -25,7 +26,7 @@ test('AI 治理 skill 契约会报告缺失核心章节', () => {
 });
 
 test('AI 治理 skill 契约会报告核心章节缺少关键内容', () => {
-  withAiGovernanceTempRoot((rootDir) => {
+  withCodexSkillTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       sectionBodies: {
         ...COMPLETE_CODEX_SKILL_SECTION_BODIES,

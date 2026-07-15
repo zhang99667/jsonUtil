@@ -1,0 +1,26 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+[mcp_servers.jsonutils-governance]
+command = "node"
+args = [
+  "--input-type=module",
+  "--eval",
+  'import{existsSync}from"node:fs";import{dirname,join}from"node:path";import{pathToFileURL}from"node:url";let d=process.cwd(),f;for(;;){const c=join(d,"scripts/mcp/jsonutils-governance-server.mjs");if(existsSync(c)&&existsSync(join(d,".codex/config.toml"))){f=c;break}const p=dirname(d);if(p===d)throw new Error("JSONUtils governance MCP root not found");d=p}process.chdir(d);const{startJsonutilsGovernanceServer}=await import(pathToFileURL(f).href);startJsonutilsGovernanceServer()',
+]
+enabled = true
+required = true
+startup_timeout_sec = 10
+tool_timeout_sec = 30
+enabled_tools = [
+  "ai_governance_report",
+  "maintainability_budget_report",
+  "ai_governance_context",
+  "ai_governance_scorecard",
+  "ai_governance_artifact_freshness",
+  "ai_asset_inventory",
+  "ai_evaluation_summary",
+  "ai_worktree_snapshot",
+  "ai_handoff_brief",
+  "ai_decision_summary",
+  "ai_validation_plan",
+]

@@ -1,0 +1,326 @@
+{
+  "schemaVersion": 1,
+  "calibrationId": "registration-canary-blind-result-grader",
+  "calibrationVersion": "1.1.0",
+  "dataClass": "synthetic",
+  "evidenceScope": "component-only",
+  "grader": {
+    "id": "mcp-registration-canary-result-ingestion",
+    "version": "1.0.0",
+    "implementationPath": "scripts/ci/aiGovernanceRegistrationCanaryResult.mjs",
+    "implementationSha256": "08132ae3adc8352db9c80f9a02b705665f4c1f85a5473212d1e63632be03e1f7"
+  },
+  "fixture": {
+    "factoryPath": "scripts/ci/aiGovernanceRegistrationCanaryCalibrationFixtures.mjs",
+    "factorySha256": "f6c9e5a06ecce1fa587807c35ca4c3e88f4089284ea8379ddadf40c769545891"
+  },
+  "componentCase": {
+    "id": "mcp-registration-canary-result-ingestion-boundary",
+    "caseVersion": 3,
+    "subjectVersion": "1.0.0",
+    "caseSha256": "f5aa00f814ffe20790905d7ef0dc71eb9e965ae0b58088898bdc2b5a262ba2a8"
+  },
+  "target": {
+    "caseRef": {
+      "id": "mcp-project-registration-discovery",
+      "caseVersion": 1,
+      "subjectVersion": "1.0.0"
+    },
+    "caseSha256": "7ce761463b3795f9e7eae827a499f2878063422729284b070193ad8a46bbcc13",
+    "policyRef": {
+      "id": "mcp-project-registration-discovery",
+      "version": "1.0.1"
+    },
+    "policySha256": "16397b51f20ee62b6fd388623dc834237d474aeb2c3c1e875648b46243018de4"
+  },
+  "rubric": {
+    "version": "registration-canary-blind-grade-v1",
+    "labels": [
+      "pass",
+      "behavior-fail",
+      "infrastructure-invalid",
+      "input-rejected"
+    ],
+    "failureTaxonomy": {
+      "pass": [
+        "registration-and-tool-discovered"
+      ],
+      "behavior-fail": [
+        "server-not-discovered",
+        "tool-not-discovered",
+        "trace-policy-not-satisfied"
+      ],
+      "infrastructure-invalid": [
+        "execution-not-complete",
+        "stdout-not-drained",
+        "capture-timeout",
+        "binary-unstable",
+        "output-limit-exceeded",
+        "observation-infrastructure-invalid",
+        "trace-incomplete",
+        "trace-terminal-not-passed",
+        "forbidden-fallback",
+        "registry-surface-unavailable",
+        "trace-policy-unavailable",
+        "trace-adapter-mismatch",
+        "discovery-unavailable"
+      ],
+      "input-rejected": [
+        "input-rejected"
+      ]
+    }
+  },
+  "thresholds": {
+    "exactAgreement": 1,
+    "macroF1": 1,
+    "classRecall": 1,
+    "reasonCodeAgreement": 1,
+    "determinism": 1,
+    "mutationSensitivity": 1,
+    "deterministicRuns": 3
+  },
+  "samples": [
+    {
+      "id": "gold-registration-discovered",
+      "split": "gold",
+      "difficulty": "low",
+      "risk": "high",
+      "mutation": "control-pass",
+      "oracle": {
+        "label": "pass",
+        "reasonCodes": [
+          "registration-and-tool-discovered"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "gold-registration-missing",
+      "split": "gold",
+      "difficulty": "medium",
+      "risk": "high",
+      "mutation": "behavior-missing-discovery",
+      "oracle": {
+        "label": "behavior-fail",
+        "reasonCodes": [
+          "server-not-discovered",
+          "tool-not-discovered",
+          "trace-policy-not-satisfied"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "gold-capture-timeout",
+      "split": "gold",
+      "difficulty": "medium",
+      "risk": "high",
+      "mutation": "infrastructure-timeout",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "execution-not-complete",
+          "capture-timeout"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "gold-stdout-not-drained",
+      "split": "gold",
+      "difficulty": "medium",
+      "risk": "high",
+      "mutation": "infrastructure-stdout-not-drained",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "stdout-not-drained"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "gold-binary-unstable",
+      "split": "gold",
+      "difficulty": "medium",
+      "risk": "high",
+      "mutation": "infrastructure-binary-unstable",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "binary-unstable"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "gold-output-limit",
+      "split": "gold",
+      "difficulty": "medium",
+      "risk": "high",
+      "mutation": "infrastructure-output-limit",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "output-limit-exceeded"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "near-miss-observation-invalid",
+      "split": "near-miss",
+      "difficulty": "medium",
+      "risk": "high",
+      "mutation": "infrastructure-observation-invalid",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "observation-infrastructure-invalid"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "near-miss-trace-incomplete",
+      "split": "near-miss",
+      "difficulty": "high",
+      "risk": "high",
+      "mutation": "infrastructure-trace-incomplete",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "trace-incomplete"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "near-miss-trace-terminal-failed",
+      "split": "near-miss",
+      "difficulty": "high",
+      "risk": "high",
+      "mutation": "infrastructure-trace-terminal-failed",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "trace-terminal-not-passed"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "near-miss-registry-unavailable",
+      "split": "near-miss",
+      "difficulty": "high",
+      "risk": "high",
+      "mutation": "infrastructure-registry-unavailable",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "observation-infrastructure-invalid",
+          "registry-surface-unavailable"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "adversarial-policy-unavailable",
+      "split": "adversarial",
+      "difficulty": "high",
+      "risk": "high",
+      "mutation": "infrastructure-policy-unavailable",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "trace-policy-unavailable"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "adversarial-adapter-mismatch",
+      "split": "adversarial",
+      "difficulty": "high",
+      "risk": "high",
+      "mutation": "infrastructure-adapter-mismatch",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "trace-adapter-mismatch"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "near-miss-forbidden-fallback",
+      "split": "near-miss",
+      "difficulty": "medium",
+      "risk": "high",
+      "mutation": "infrastructure-forbidden-fallback",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "forbidden-fallback"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "near-miss-trace-policy",
+      "split": "near-miss",
+      "difficulty": "high",
+      "risk": "high",
+      "mutation": "near-miss-trace-policy",
+      "oracle": {
+        "label": "behavior-fail",
+        "reasonCodes": [
+          "trace-policy-not-satisfied"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "near-miss-discovery-unavailable",
+      "split": "near-miss",
+      "difficulty": "medium",
+      "risk": "high",
+      "mutation": "infrastructure-discovery-unavailable",
+      "oracle": {
+        "label": "infrastructure-invalid",
+        "reasonCodes": [
+          "discovery-unavailable"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "adversarial-observation-digest",
+      "split": "adversarial",
+      "difficulty": "high",
+      "risk": "high",
+      "mutation": "adversarial-observation-digest",
+      "oracle": {
+        "label": "input-rejected",
+        "reasonCodes": [
+          "input-rejected"
+        ],
+        "source": "project-contract"
+      }
+    },
+    {
+      "id": "adversarial-caller-verdict",
+      "split": "adversarial",
+      "difficulty": "high",
+      "risk": "high",
+      "mutation": "adversarial-caller-verdict",
+      "oracle": {
+        "label": "input-rejected",
+        "reasonCodes": [
+          "input-rejected"
+        ],
+        "source": "project-contract"
+      }
+    }
+  ]
+}

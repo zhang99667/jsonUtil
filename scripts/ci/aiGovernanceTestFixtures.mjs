@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,6 +17,18 @@ export const writeFixtureFile = (rootDir, file, content) => {
   const filePath = path.join(rootDir, file);
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content);
+};
+
+export const syncTracePolicyFixture = (rootDir, sourceRoot, { copyRequiredReads = false } = {}) => {
+  const policyFile = 'evals/ai-governance/trace-policies.json';
+  const sourceFile = file => sourceRoot instanceof URL ? new URL(file, sourceRoot) : path.join(sourceRoot, file);
+  const corpus = JSON.parse(fs.readFileSync(sourceFile(policyFile), 'utf8'));
+  for (const read of corpus.policies.flatMap(policy => policy.requiredReads ?? [])) {
+    const target = path.join(rootDir, read.path);
+    if (copyRequiredReads) { fs.mkdirSync(path.dirname(target), { recursive: true }); fs.copyFileSync(sourceFile(read.path), target); }
+    read.sha256 = createHash('sha256').update(fs.readFileSync(target)).digest('hex');
+  }
+  writeFixtureFile(rootDir, policyFile, `${JSON.stringify(corpus, null, 2)}\n`);
 };
 
 export const registryRow = (file, fields = {}) => ({

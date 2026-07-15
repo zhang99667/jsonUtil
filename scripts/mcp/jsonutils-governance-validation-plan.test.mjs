@@ -1,49 +1,175 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildJsonutilsValidationPlan } from './jsonutils-governance-validation-plan.mjs';
+import {
+  buildJsonutilsValidationPlan,
+  buildJsonutilsValidationPlanFromWorktree,
+} from './jsonutils-governance-validation-plan.mjs';
+import { JSONUTILS_VALIDATION_COMMAND_IDENTITIES } from '../ci/aiGovernanceValidationCommandRegistry.mjs';
+import { AI_EVOLUTION_EXECUTABLE_CASES } from '../ci/aiGovernanceEvolutionCaseRunner.mjs';
 
-test('validation plan maps dirty AI and deploy files to bounded commands', async () => {
-	  const plan = await buildJsonutilsValidationPlan({
-	    maxFiles: 2,
-    runStatus: async () => ({
-      exitCode: 0,
-      stdout: [
-        '## main...origin/main [behind 3]',
-        ' M scripts/mcp/jsonutils-governance-tools.mjs',
-        ' M scripts/ci/aiGovernanceRequiredCheckFiles.mjs',
-        ' M frontend/nginx.conf',
-        ' M CHANGELOG.md',
-        '?? scratch.txt',
-      ].join('\n'),
-      stderr: '',
+const statusBytes = (...records) => Buffer.from(`${records.join('\0')}\0`);
+
+const fixedDomainPaths = [
+  'README.md', 'CONTRIBUTING.md', 'AGENTS.md', 'CLAUDE.md',
+  'evals/ai-governance/cases.json', 'scripts/ci/local-ci.sh', '.cursorrules',
+  '.gitignore', '.github/PULL_REQUEST_TEMPLATE.md', '.github/copilot-instructions.md', '.agents/plugins/plugin-lock.json',
+  '.github/instructions/review.instructions.md', '.github/prompts/review.prompt.md', '.github/agents/ai-infra-auditor.agent.md', '.github/chatmodes/legacy.chatmode.md', '.codex/rules/default.rules', '.codex/config.toml', '.cursor/mcp.json', '.vscode/mcp.json', 'rules/ai-review-rules.md',
+  'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json',
+  'docker-compose.yml', 'docker-compose.local.yml', 'docker-compose.preview.yml', 'docs/CICD.md',
+];
+
+test('validation plan maps every fixed domain while keeping catch-all hygiene non-classifying', async () => {
+  const paths = [
+    ...fixedDomainPaths, 'scripts/mcp/jsonutils-governance-tools.mjs',
+    'scripts/ci/aiGovernanceRequiredCheckFiles.mjs', 'frontend/nginx.conf', 'CHANGELOG.md', 'scratch.txt',
+  ];
+  const plan = await buildJsonutilsValidationPlan({
+    maxFiles: 2,
+    runStatus: async () => ({ exitCode: 0, stdout: statusBytes('## main', ...paths.map(path => ` M ${path}`)) }),
+  });
+
+  assert.equal(plan.changedFileCount, paths.length);
+  assert.deepEqual(plan.coverage, { sampledFileCount: 2, totalChangedFileCount: paths.length, truncated: true, commandMatchScope: 'all', unclassifiedFilesScope: 'all' });
+  assert.deepEqual(plan.unclassifiedFiles, ['scratch.txt']);
+  assert.equal(plan.matchedRules.find(rule => rule.name === 'worktree-hygiene')?.matchedFileCount, paths.length);
+  for (const [name, file] of [['evolution-evals', '.codex/rules/default.rules'], ['mcp-runtime', '.codex/config.toml'], ['mcp-runtime', '.cursor/mcp.json'], ['mcp-runtime', '.vscode/mcp.json']])
+    assert.ok(plan.matchedRules.find(rule => rule.name === name)?.files.includes(file));
+  const commands = plan.commands.map(item => item.command);
+  for (const expected of [
+    'node scripts/ci/check-ai-validation-whitespace.mjs', 'node scripts/ci/check-ai-governance.mjs',
+    'node scripts/ci/check-ai-evolution-evals.mjs --json', 'node scripts/ci/run-ai-evolution-cases.mjs --all',
+    'node scripts/ci/check-deploy-shell-syntax.mjs', 'node scripts/ci/check-frontend-static-retention.mjs',
+    'env POSTGRES_PASSWORD=ci-postgres-password SPRING_DATASOURCE_PASSWORD=ci-postgres-password JWT_SECRET=ci-jwt-secret-for-compose-validation docker compose -f docker-compose.yml config',
+    'docker compose -f docker-compose.local.yml config',
+  ]) assert.ok(commands.includes(expected));
+  assert.deepEqual(plan.manualChecks, [{
+    id: 'compose-doc-semantics',
+    reason: '人工核对 docs/CICD.md 与两个 Compose 文件、local-ci 和 CI workflow 的变量及命令语义一致',
+  }]);
+});
+
+test('validation plan never reports sampled or collapsed status data as all-file coverage', () => {
+  const snapshots = [
+    { files: [{ status: 'M', path: 'AGENTS.md' }], allFiles: [{ status: 'M', path: 'AGENTS.md' }], changedFileCount: 2, truncated: true },
+    { files: [{ status: '??', path: 'evals/' }], allFiles: [{ status: '??', path: 'evals/' }], changedFileCount: 1, truncated: false },
+  ];
+  for (const snapshot of snapshots) {
+    const plan = buildJsonutilsValidationPlanFromWorktree({ ok: true, ...snapshot });
+    assert.equal(plan.coverage.commandMatchScope, 'sample');
+    assert.equal(plan.coverage.unclassifiedFilesScope, 'sample');
+  }
+});
+
+test('production validation plan uses authoritative raw changed-set while keeping samples bounded', async () => {
+  const plan = await buildJsonutilsValidationPlan({
+    rootDir: '/fixture-root',
+    maxFiles: 1,
+    collectChangedSet: async rootDir => ({
+      schemaVersion: 1,
+      reportType: 'ai-governance-validation-changed-set',
+      ok: rootDir === '/fixture-root',
+      changedFileCount: 2,
+      counts: { staged: 1, worktree: 1, untracked: 0, blocked: 0 },
+      allFiles: [
+        { path: 'AGENTS.md', changes: ['worktree-content'] },
+        { path: 'scripts/ci/aiGovernanceValidationChangedSet.mjs', changes: ['staged-added'] },
+      ],
+      issues: [],
     }),
   });
 
-	  assert.equal(plan.reportType, 'jsonutils-validation-plan');
-	  assert.equal(plan.changedFileCount, 5);
-	  assert.equal(plan.coverage.sampledFileCount, 2);
-	  assert.equal(plan.coverage.commandMatchScope, 'all');
-	  assert.equal(plan.coverage.unclassifiedFilesScope, 'all');
-  const commands = plan.commands.map(item => item.command);
-  assert.ok(commands.includes('node scripts/ci/check-ai-governance.mjs'));
-  assert.ok(commands.includes('node scripts/ci/check-deploy-shell-syntax.mjs'));
-  assert.deepEqual(plan.matchedRules.map(rule => rule.name), [
-    'ai-governance-assets',
-    'mcp-runtime',
-    'ci-governance-tests',
-    'release-notes',
-    'deploy-routing',
-  ]);
-	  assert.deepEqual(plan.unclassifiedFiles, ['scratch.txt']);
+  assert.deepEqual(plan.authority, {
+    profile: 'raw-head-index-worktree-v1', authoritative: true, issueCount: 0,
+  });
+  assert.deepEqual(plan.coverage, {
+    sampledFileCount: 1, totalChangedFileCount: 2, truncated: true,
+    commandMatchScope: 'all', unclassifiedFilesScope: 'all',
+  });
+  assert.equal(plan.unclassifiedFileCount, 0);
 });
 
-test('validation plan returns errors without inventing commands', async () => {
+test('authoritative changed-set failure emits no commands or path-bearing error', async () => {
   const plan = await buildJsonutilsValidationPlan({
-    runStatus: async () => ({ exitCode: 1, stdout: '', stderr: 'not a git repository' }),
+    collectChangedSet: () => ({
+      ok: false,
+      changedFileCount: 0,
+      counts: { staged: 0, worktree: 0, untracked: 0, blocked: 1 },
+      allFiles: [],
+      issues: [{ code: 'assume-unchanged', path: 'secret-name', source: 'index' }],
+    }),
   });
 
   assert.equal(plan.ok, false);
   assert.deepEqual(plan.commands, []);
-  assert.match(plan.error, /not a git repository/);
+  assert.deepEqual(plan.manualChecks, []);
+  assert.equal(plan.error, '权威变更集不可用');
+  assert.equal(plan.error.includes('secret-name'), false);
+  assert.deepEqual(plan.authority, {
+    profile: 'raw-head-index-worktree-v1', authoritative: true, issueCount: 1,
+  });
+});
+
+test('project plugin lifecycle CLI routes to AI governance and synthetic CI tests only', () => {
+  const file = { status: 'M', path: 'scripts/ci/manage-project-plugins.mjs' };
+  const plan = buildJsonutilsValidationPlanFromWorktree({ ok: true, files: [file], allFiles: [file], changedFileCount: 1, truncated: false });
+  assert.deepEqual(plan.commands.map(item => item.command), [
+    'node scripts/ci/check-ai-governance.mjs',
+    'node scripts/ci/check-maintainability-budgets.mjs --top 35 --no-all',
+    'node scripts/ci/write-ai-governance-artifacts.mjs --check --json',
+    'node --test --test-reporter=dot scripts/ci/*.test.mjs',
+    'node scripts/ci/check-ai-validation-whitespace.mjs',
+  ]);
+});
+
+test('validation control assets route through governance without recursive executor registration', () => {
+  const expected = [
+    'node scripts/ci/check-ai-governance.mjs', 'node scripts/ci/check-maintainability-budgets.mjs --top 35 --no-all',
+    'node scripts/ci/write-ai-governance-artifacts.mjs --check --json', 'node --test --test-reporter=dot scripts/ci/*.test.mjs',
+    'node scripts/ci/check-ai-validation-whitespace.mjs',
+  ];
+  for (const path of ['scripts/ci/run-ai-validation-execution.mjs', 'scripts/ci/check-ai-validation-whitespace.mjs', 'scripts/ci/maintainability-budget-governance-ai-validation-rules.mjs', 'scripts/ci/maintainability-budget-governance-ai-validation-test-rules.mjs', 'scripts/ci/check-ai-governance.mjs']) {
+    const file = { status: 'M', path };
+    const plan = buildJsonutilsValidationPlanFromWorktree({ ok: true, files: [file], allFiles: [file], changedFileCount: 1, truncated: false });
+    assert.deepEqual(plan.commands.map(item => item.command), expected, path);
+  }
+  const forbidden = 'run-ai-validation-execution.mjs';
+  assert.equal(JSON.stringify(JSONUTILS_VALIDATION_COMMAND_IDENTITIES).includes(forbidden), false);
+  assert.equal(JSON.stringify(AI_EVOLUTION_EXECUTABLE_CASES['validation-change-matrix']).includes(forbidden), false);
+});
+
+test('outcome writers route to governance and eval checks without write mode', () => {
+  for (const writer of ['scripts/ci/record-ai-evolution-deterministic-outcomes.mjs', 'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs']) {
+    const file = { status: 'M', path: writer };
+    const plan = buildJsonutilsValidationPlanFromWorktree({
+      ok: true,
+      files: [file],
+      allFiles: [file],
+      changedFileCount: 1,
+      truncated: false,
+    });
+    const commands = plan.commands.map(item => item.command);
+    assert.ok(commands.includes('node scripts/ci/check-ai-governance.mjs'));
+    assert.ok(commands.includes('node scripts/ci/check-ai-evolution-evals.mjs --json'));
+    assert.ok(commands.includes('node scripts/ci/run-ai-evolution-cases.mjs --all'));
+    assert.equal(commands.some(command => command.includes(writer)), false);
+    assert.equal(commands.some(command => command.includes('--write')), false);
+    assert.deepEqual(plan.matchedRules.map(rule => rule.name), [
+      'ai-governance-assets',
+      'evolution-evals',
+      'ci-governance-tests',
+      'worktree-hygiene',
+    ]);
+  }
+});
+
+test('validation plan returns errors without inventing commands', async () => {
+  const plan = await buildJsonutilsValidationPlan({
+    runStatus: async () => ({ exitCode: 1, error: 'hermetic Git inventory 读取失败' }),
+  });
+
+  assert.equal(plan.ok, false);
+  assert.deepEqual(plan.commands, []);
+  assert.deepEqual(plan.manualChecks, []);
+  assert.match(plan.error, /hermetic Git inventory/);
 });

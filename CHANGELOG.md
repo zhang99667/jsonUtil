@@ -1,4 +1,256 @@
 # 更新日志 (Changelog)
+## v1.8.774 (2026-07-13) - 项目 Skill 发现面与 Git 分发门禁
+### 🏗️ 架构与基础设施
+- **唯一项目 Skill 源**: 将两个 JSONUtils skill 迁至官方 `.agents/skills/`，拒绝 `.codex/skills` 副本、symlink 和 canonical symlink，避免同名 skill 重复注入；历史决策路径通过精确 relocation map 校验而不改写账本
+- **官方元数据与界面契约**: 版本和标签进入 frontmatter `metadata`，并依 Agent Skills 规范锁为带引号的 string→string map，`tags` 使用非空逗号字符串；每个 skill 增加 `agents/openai.yaml`，用负例锁定空必需值、额外非字符串值、目录名、允许字段、短描述和显式 `$skill-name` 默认提示；frontmatter 编排与 metadata 值契约拆为单向生产 helper，复用已提取 block 并以组合顺序及额外 string metadata 正例保持公开 collector、失败文案与顺序不变
+  同一元数据条目还以代表红测证明项目 plugin Skill 对空 `license`、超长/多行 `compatibility` 与非法分隔 `allowed-tools` 曾静默通过；现将三个官方 optional frontmatter 字段的值语义抽为 canonical/plugin 共用叶子，保留 canonical 原失败文案与顺序，不把 metadata、中文章节或发布契约强加给插件。contract 升至 1.7.0、component case 升至 v8、corpus 升至 1.58.0，direct/integration tests、required、预算、资产注册与 fixed runner 同步；不改 plugin source/version/content lock，不写 ledger、不安装、不 stage/commit。
+  同一元数据条目还新增无外部依赖的受控 mapping/scalar 预检和共享 identity 契约，canonical 与 plugin Skill 统一要求顶层/metadata/interface 使用带合法 `: ` 分隔的 plain key、保持同层缩进且不重复，拒绝 quoted/anchored/explicit key、零空白伪 mapping、缩进 shadow、多 UI document、权威 plain scalar 多行 continuation、伪 closing delimiter、非法 block plain scalar、alias/null/core 数值伪字符串、空 optional 值、解码后换行/长度绕过和 `$skill-suffix` 假路由；只把列 0 marker 视为 UI 文档边界，并兼容缩进 block 中的 `---`、非换行 YAML 双引号转义、开放标准 `license`/`compatibility`/`allowed-tools`、注释、单/双引号 value 以及 OpenAI 的 optional interface、`policy` 和 `dependencies`。共享 helper/test 已进入 required 资产集合，最小合格仓库 fixture 同步真实 identity→authority import；项目插件主 collector 按 UTF-8 顺序校验固定 skills 根下的全部普通 Skill，`--write-lock` 在同步 content lock 后仍锁第二 Skill 负例并保持当前 lock 原字节和零 Git inventory 调用；代表 case 升至 v3/subject 1.2.0，corpus 升至 `1.43.0` 且仍为 37 cases/component-only，受影响 helper/test 预算按当前职责保留受控余量，Skill trace policy 同步刷新 Playbook 当前字节摘要与 descriptor 锁，不写账、不安装插件、不提升 task/runtime/Agent behavior 信任。
+  同一元数据条目还给项目 plugin manifest、skills 根、SKILL 与 UI/eval companion 统一增加读前 canonical 仓内路径和终点类型门禁，直接矩阵拒绝 directory/final/ancestor/dangling symlink；eval JSON 解析失败固定且不回显正文/parser message。完整插件树改为稳定有界的单次原始 bytes 快照，identity 与 content lock 共享同一份字节，身份 lint 覆盖未来第二 Skill 的 companion/reference/script 及 file URI/JSON/Unicode 转义用户路径；快照比较绑定 path/mode/原始 bytes 而不只信任摘要。
+  同一元数据条目还将 270/270 行的混合 YAML 测试按 frontmatter、UI authority、source text 三条职责拆分；canonical/plugin 共用稳定 descriptor reader，SKILL/UI 固定 64 KiB、eval 固定 256 KiB，拒绝目录、hardlink、祖先/final symlink、读取期漂移、cap+1 与非法 UTF-8。`openai.yaml` 仅对当前官方 authority 子树做有界解析：`policy.allow_implicit_invocation` 必须是唯一真实 boolean，`dependencies.tools` 必须是 1-32 项 block sequence，每项只接受唯一的 `type/value/description/transport/url` 引号字段并要求 `type=mcp`、`value` 必需；未知顶层扩展继续兼容，不自称完整 YAML loader。代表 component case 升至 v4/subject 1.3.0、corpus `1.46.0`，fixed runner 同时执行三份职责测试并修正 case 的本地 source 路径；仍不写 ledger、不安装插件、不提升安装/task/runtime/Agent behavior 信任。
+- **原始证据三视图分发门禁**: workspace/index/HEAD 覆盖必需/引用/自动发现资产、AI 治理实现/测试、完整 eval 数据和 CI/local-ci 控制面；index/HEAD 直接校验当前原始字节、blob 类型与执行位，用红队负例拒绝 assume-unchanged、symlink、clean filter、`core.filemode=false` 和 replace refs 绕过；新增单源 `distribution-readiness` 前后复读 source/Git inventory，并作为 scorecard schema v2 第六维同源投影到治理 JSON、MCP context/handoff 和 artifact，区分 workspace fail、Git 晋级 warn 与三层 pass，且不冒充安装/task/runtime trust；合法红态仍由 CLI exit 1 和 MCP `isError === !ok` 如实投影，`ai_governance_report.ok` 组合治理/预算状态并保留两条底层摘要，sealed component preflight 闭字段返回 `scorecardOk`/`isError` 反向绑定；macOS hermetic 重放优先直连 Xcode/CommandLineTools Git，避免 `/usr/bin/git` 的 `xcrun_db` 污染隔离 runtime home；缺实现目录转为 required/distribution failure 而非报告崩溃；validation 同源新增 raw changed-set `stateSha256`、staged/worktree/untracked whitespace、13 条只读 descriptor 与默认零执行 component executor，逐命令绑定独立 runtime/可执行摘要并保留启动尝试数，CLI 拒绝语义矛盾或路径型嵌套报告，Windows 在可信路径/ACL 未实现前 fail closed，且不冒充后代静默、主机隔离、零 ledger 写入或行为 outcome；CI 与定时 workflow 的诊断 writer 用 `if: always()` 保证前序门禁失败仍刷新 artifact，同时拒绝会吞掉 writer 失败的 `continue-on-error`；资产全集组成与 symlink/非普通文件发现边界拆为独立测试，原测试预算从 75 收紧到 55 行；治理主测试再按完整仓库集成与八个基础单元负例拆分，预算从 700 收紧到 620 行
+  同一分发条目还将精确 implementation namespace、完整 eval data 与 CI/local control plane discovery 从 machine-universe union 下沉为独立 helper；聚合层只维护 required/reference/collaboration discovery/implementation discovery 的排序去重，并从原路径同引用重导出兼容 API。直接、聚合和非普通节点测试分责锁定近负例、全部预算覆盖与 symlink fail-closed，required、预算、资产注册及 ownership v7 fixed descriptor 同步；case/subject/corpus 不变，不写 ledger、不安装、不 stage/commit。
+  同一治理条目还将连续的 Codex 项目原生契约 collector 从总聚合器下沉为单向生产 helper，用临时根负例锁定 profile→command rules→hook→项目 MCP→skill source 的失败全序，不改公开分组、文案或 eval 语义。
+  同一治理条目还将跨 workflow 的 command/job/step 解析、outcome writer 禁写、required command 可达性和 artifact fail-fast 从 scheduled-specific 模块下沉为单向生产契约；普通 CI 改为直接依赖，scheduled 原路径精确保留 7 个公开导出与失败全序。直接矩阵补锁 parser 源顺序、同引用重导出、三个 writer 参数边界，并修复显式 `continue-on-error: false` 因正则空白回溯被误判为吞错；30 行纯 registration required 聚合表保持单表，只校准约 20% 受控余量，不改 fixed case、ledger 或 component-only 信任边界。
+  同一治理条目还将 scorecard 的容量事实与维护动作分层：223 个 AI 候选及原阈值/全序保持不变，闭合预算表、required list 和 fixture/missing-case 只进入容量复核，真实职责候选按高风险实现→测试优先；结构化输出新增 158/65 分类计数与 `priority.file/action`，fresh 焦点从 9 行预算表切换到 `aiGovernanceCodexExecTraceProjection.mjs`，容量项明确校准余量且不机械拆分。
+  同一治理条目继续将 255/260 的 sealed worktree manifest 热点按真实责任分层：新纯 contract 单向维护紧凑 JSON、闭字段、entry/bounds 和 payload digest，原 verifier 只保留文件系统全量枚举、exact-set/mode/digest 与 source-state v2 重建；旧 hash/profile/primitives 导出从原路径同引用保留，sealed-snapshot case 只增直接契约测试，case/subject/corpus 与 component-only 边界不变，不写账、不安装、不 stage/commit。
+  同一治理条目还将 441/450 的 disclosure authorization 热点按协议责任分层：新纯 commitment 叶子单向维护六条 checkpoint/blind-grade 与 Agent/grader/host 投影深绑定、排序脱敏 ref、privacy 和确定性 digest；authorization 只消费 commitment 并维护 Statement/state/grant/DSSE/角色公钥，旧 builder/collector 从原路径同引用重导出。生产为 198/250 与 266/340，直接/集成测试为 45/60 与 178/225；代表 disclosure case 只增加直接测试路径，case v1、subject 1.0.0、corpus、component-only/`trustedSigners=0` 与三类 ledger 不变，不写账、不安装、不 stage/commit。
+  同一治理条目还修正 bounded report 的事实/展示分层：可维护性报告从未截断的 high-usage 候选集派生全局计数，`top` 仅裁剪 `summaries/items.highUsage`；跨 `top=1/35` 测试固定全局计数与 scorecard candidate 集不变。MCP eval 测试改为从当前权威 corpus 派生 case 计数，并在 `limit=1/50` 下锁定非样本全局事实不变；不改 report schema、case/outcome/receipt ledger 或前端版本。
+  同一治理条目继续将 evaluation MCP 的 corpus/双账本/suite source orchestration、schema v3 wire projection 与 verified outcome projection 按责任分层：公开键序、全局事实引用、learning limit、verified v2/v3 scope、链字段和脱敏语义由两份直接测试锁定，原聚合集成测试只保留跨层接线；生产分别为 42/55、34/45、42/55，测试分别为 106/135、67/85、26/35；新 production helper 接入 required 与资产注册，三份测试接入预算和 `outcome-ledger-chain-resolution` fixed descriptor。caseVersion/subjectVersion/corpus 及三类 ledger 不变，不写账、不安装、不 stage/commit。
+- **团队维护入口**: README、CONTRIBUTING、双入口、rules 与 Playbook 明确仓库不是 plugin、只有 `plugins/<name>/` 是插件包；repo marketplace 可由 Codex 读取，当前 `AVAILABLE` 只建立可发现性，不等于自动安装、启用或当前任务加载。Codex 另以 `.codex/config.toml` 作为 trusted project 的原生治理 MCP 主入口，固定 required server、超时、11 项工具白名单和无 shell 向上寻根 bootstrap，根目录及多级子目录 stdio 组件测试通过；项目配置不修改用户级 plugin selector，仓库内 MCP 插件只作显式安装的兼容分发包，同名 direct server 优先仍是源码推断，需新任务实际 registry 观察且不冒充 runtime/behavior 证据。两个 MCP 插件升至 `0.2.1`，区分 manifest `mcpServers` 指针与 companion direct server map，并用负例拒绝 `.mcp.json` 顶层 project-level `mcpServers`；Codex/Claude 薄入口的两个版本引用必须逐插件精确匹配 manifest，旧版残留、缺失或单边升级由治理门禁拒绝。项目源拒绝祖先 symlink 和 selector 路径穿越；CLI installed/available 必须是完整互斥闭集合，check 双 inspection 锁 state/cache，每次 mutation 前后复核并首错即停。本机 cache 每个插件只允许唯一 `local` 或 manifest-version leaf 且零额外项，canonical `installedPath` 必须立即匹配 content lock 并与最终重查绑定；唯一旧 semver leaf 仅形成 version/cache mismatch 与 `needs-apply`，多个/非版本/symlink 仍拒绝；命令运行时将损坏 binary 映射为固定无值诊断，POSIX 在成功、失败、超时和输出超限后整组回收后代，Windows 仅 parent best effort；项目不硬编码个人 Codex 路径，`--check` 不发出 lifecycle mutation，本轮未授权执行 `--apply`/`--write-lock`
+  同一治理条目还将项目 plugin content lock 与 Skill 语义分层：专属 manifest→全部 Skill frontmatter→UI→eval collector 同时接入普通项目插件检查与 `--write-lock` 前置拒绝。即使 manifest 版本递增且 content lock 已同步，也不能封存第二个语义非法 Skill，失败时不读取 Git inventory，且当前 lock 原字节不变；corpus 当前为 `1.43.0`/37 cases，该 component-only 代表 case 已升至 v3，不冒充安装、当前任务加载或 Agent behavior。
+  同一团队维护条目还将 `--write-lock` 改为先以同一全树 snapshot 完成身份/source-only 契约与 candidate 派生，再读 Git inventory；manifest 期望版本不再在预检前直读，inventory 前后任一 path/mode/原始 bytes 漂移均首错即停。已同步 content lock 的第二 Skill 个人 reference/script 和 symlink manifest 均在零 inventory 时拒绝，当前 lock 原字节不变。
+  同一团队维护条目还增加脱敏维护者纠偏入口：feedback schema v3 只允许绑定当前 behavior case，固定 `experimentId=null`、零模型/零自动写账/不可评分声明和物理 hash chain；profile 只按 own property 闭集解析，reader 对 event/signal 双唯一 fail closed，避免原型键或重复 signal 静默覆盖；`prepare-ai-evolution-feedback.mjs --profile maintainer-correction --case-id <behavior-case>` 只输出 preview candidate，learning report 只增 open signal，不虚构 experiment、planned trial 或 behavior coverage。现有 v1/v2/legacy 身份不变；本轮只预览“项目资产/插件边界”纠偏并验证 inbox 摘要不变，未追加 feedback/outcome/receipt、未安装插件、未 stage/commit。
+  同一 AI 演进上下文条目将 Evolution Playbook 从 39,306 bytes 收敛为 22,483 bytes，只保留 source of truth、component/behavior、证据时效、显式写账授权、外部 trust、标准闭环与必跑命令；grader/ledger/outcome/receipt/checker/trace/runner/controller 字段契约由章节级路由留在按任务读取的 Eval README，并用 11 组 authoring/ledger marker 防止机械刷新 digest 时丢失语义；章节抽取从文档头单遍识别非 fenced ATX heading，拒绝代码块伪标题、过短闭合与未闭合 fence。Skill 上下文门禁在 90 KiB hard cap 内强制预留 16 KiB，evolver 首读降至 74,758/92,160 bytes，hard-cap 余 17,402 bytes、effective-cap 余 1,018 bytes；通用 trace 不再强制读取 37,973-byte README，路径计费拒绝缺失/越界/dangling path-like 引用、symlink、realpath 逃逸、非普通节点与读取漂移，并以整个引用集合的前后 manifest 拒绝计费后回改早先引用的跨引用 TOCTOU。evolver skill 升至 0.1.32、policy 1.1.1、trigger case v6、corpus 1.55.0，paired experiment 精确迁移当前 tuple；legacy feedback ID 先锁登记 hash/原 tuple，registration v1 experiment 锁登记 ID/caseRef/完整 SHA-256，不再通过 current-tuple 快路或被迫随 corpus 改写。已有 feedback/outcome/receipt 与前端版本不变，未安装、未写账、未 stage/commit。
+- **Eval 与证据边界**: corpus `1.43.0` 包含 37 个 case（18 behavior + 19 component-boundary）；项目 plugin Skill 语义 case 已升至 v3/subject 1.2.0，共享锁定 canonical/plugin 解码后单行标量、官方 optional 字段、全部插件 Skill 发现和 UI/eval 边界；Claude 项目 skill adapter case 继锁普通文件、固定派生、canonical 路由与真实会话行为分层，静态通过仍不可入账。Agent profile boundary 与 SessionStart component/behavior case 保持 v2/subject 1.1.0，前者锁定 sandbox 只是角色默认值、父权限可能覆盖且零写入需完整 workspace manifest，后者只允许单一 event 的 `startup|resume|clear|compact` 四种 source，真实 fresh-task 观察前 behavior 仍为 unknown。ownership v7/subject 2026-07-14.3 继续以固定 binary 诊断和 POSIX CLI 后代回收锁定团队插件生命周期。fixed runner schema v2 以固定 descriptor 与 spawn 元数据闭字段区分 `behavior-fail`、`delivery-blocked`、`infrastructure-invalid`，拒绝自由 stderr 分类并把安全 reason/计数同源投影到 suite、scorecard 与 MCP；三类都阻断证据且不可入账，只有 behavior 进入行为失败统计，delivery 为 warn、infrastructure 为 unknown。registration result ingestion v3 的 grader calibration v1.1 精确绑定实际 import/fixture、固定 ID、无祖先 symlink 字节和完整 failure taxonomy，17 个 mutation 三次重放共 51 次生产 grader 调用，全指标 100% 且红队绕过在零调用时失败。MCP protocol case 为 v4/subject 0.6.0；`jsonutils-governance` 保留严格 UTF-8、new → initialized → ready 与 510-byte instructions，typed-ID cancellation 可抢占 fresh worker 进程组、抑制被取消请求响应，并在 stdin 断开时 abort-all；POSIX PGID 在 leader 先退出后仍保留 250ms 强杀，取消、超时及 stdout/stderr 超限均用忽略 `SIGTERM` 的 heartbeat 锁定后代零残留；unknown/completed/malformed、重复和迟到取消静默忽略，initialize 不可取消。配置审计 component case 从固定绝对候选绑定 Python 3.11+，不再因 hermetic PATH 偶然选中 macOS Python 3.9。以上回归都只证明 component/wire health，不写 receipt/outcome、不提升 runtime trust 或 behavior coverage；paired v4 仍为 12 planned / 0 executed、metrics unavailable、writer 零 suffix
+  同一治理条目还把 Feedback reader/hash/chain 与历史/schema 兼容矩阵分开；核心测试补 stale eventHash、紧凑/非法 JSON、第二事件 chain 和 privacy 负例，mutation/profile 均锁精确原因与顺序。新 compatibility 测试进入 required/资产/README，Skill policy 只刷新 README 字节摘要和 descriptor 锁，生产/schema/case/ledger 与 fixed case 不变。
+  同一治理条目继续把 Feedback 核心测试按 reader/hash 与 profile/builder 责任分开；新 profiles 测试原样承接重复 signal、v2/v3 profile 和多事件 chain，11 个测试名与断言不减，required、预算、资产注册和聚焦 README 同步。原文件 84/110、新文件 92/120、required 清单 22/30，均保留约 23–27% 余量且低于高使用率阈值；全局 near-limit/high-usage/scorecard candidate 从 261/567/320 降为 260/566/319。生产/schema/case/corpus/policy 与 feedback/outcome/receipt ledger 均不变，不写账、不安装、不 stage/commit。
+  同一治理条目还把 Experiment manifest 与 Learning focus 测试按生产责任分开，并将八个 mutation 从“任意失败”收紧为目标 reason；required、资产注册、聚焦 README 与 `rule-evolution-repeatable-writeback` runner 同步双测试，Skill trace policy 仅刷新 README 当前字节摘要和 descriptor 锁，生产/case/experiment/ledger 不变。
+  同一治理条目继续把 Learning focus 仲裁与 report 数据接线测试分层：新 focus 测试原样承接 external blocker、prepared channel 与 actionable 门槛两条用例，原 report 测试只保留无 experiment 的 maintainer correction；三个测试名与断言不减，required、预算、资产注册、聚焦 README 和 fixed descriptor 同步新路径，生产/case/subject/corpus/policy 与三类 ledger 不变。
+  同一治理条目还从 468/470 的可恢复事务下沉三个 writer 共用的 recovery-result 纯契约：原事务模块继续维护 owner-only lock/journal、receipt-first 追加与崩溃恢复，并保留既有 consumer 同引用导出路径；新 helper/test 独立锁闭字段、逐 ledger mutation、合法组合与 receipt-only 不可能状态，required、预算、资产注册和 outcome fixed descriptor 同步新路径。事务生产/测试降至 444/470 与 275/300，新 helper/test 为 33/55 与 51/65；case/subject/corpus、feedback/outcome/receipt ledger 均不变，不写账、不安装、不 stage/commit。
+  同一治理条目还把 Eval 基础报告分为验证编排与单向纯机器投影：公开入口、replay/trace gate、failure 顺序和数据源保持不变；直接契约锁 key 顺序、透传引用、Set/Map/历史插入顺序及 failure/freshness 分层，真实报告拆分前后 SHA-256 同为 `32ad1287e59a28362ec22d690391d15ecedf15aa7209220a034ffb14401229c9`。
+  同一治理条目还将 Eval nextFocus 的十一层策略保留为单文件可审阅全序，不按 scorecard 机械拆分；新增逆序冲突矩阵锁定 contract→current-run→freshness→verified/unverified outcome→ledger→coverage 的优先级、current-run 四类子序、去重裁剪与 trace-policy first，并把 60 行生产预算校准为 75 行受控余量。
+  同一治理条目还将 28 个 executable case 的静态 registry 从 fixed runner 执行边界下沉，原路径同引用重导出四项公开 API；新契约测试锁定未排序 ID、ownership delivery 原因、outcome-chain 顺序和动态目录 display，主回归继续覆盖版本绑定、eligibility、validation 与 Hermetic 环境，拆分前后 35 条 validation 的 descriptor、命令和 report 摘要不变。
+  同一 registry 条目继续把六个 Codex boundary leaf descriptor 与跨组组合职责分开，并用唯一 ID 合并器保持插入顺序、冻结结果且拒绝跨组重复 case ID，避免对象展开静默覆盖 caseVersion、evidence 或命令；37 个 case、28 个 executable ID、subject/version、component-only 边界和 ledger 均不变。
+  同一治理条目还将 LearningReport 的外部 blocked focus 与仓内 actionable/preparation 仲裁整体下沉为单向纯 helper，原入口只保留数据读取、integrity/cross-link 与机器投影；真实 report 拆分前后 SHA-256 同为 `76cee5cd167df5d1f3710161067556630a8fd6c9b9ff0b331a3f6a9d5572519d`，schema/key/数组顺序、case/experiment/ledger 与 behavior 证据均不变。
+  同一治理条目还保留 OutcomeReplay 的筛选→revision→runner→逐 outcome 精确核验单一状态机，生产 75 行和公开行为不变；新增直接矩阵锁定空交集、fresh/stale、异常脱敏、binding、六项 mismatch 与闭字段失败传播，目标 line/branch/function 覆盖均为 100%，既有 TraceOutcomes 集成断言和 fixed descriptor 不变。
+  同一治理条目还将 SuiteReport 的数据编排与最终 nextFocus 全序分层：新纯 helper 整体锁定 learning→grader→base failure→coverage preparation→base passthrough 的优先级、引用和 key/caseIds 顺序；真实机器报告拆分前后 SHA-256 同为 `f11ec9e89ce811251c39a9926b802084cc6ad95129526c26e8177da632c291b7`，既有 SuiteReport 集成测试、required、fixed descriptor、case/policy 与三类 ledger 均不变。
+  同一治理条目还给 TracePolicy 补齐 100% line/branch/function 直接契约矩阵，并修复 requiredReads 只检查终点导致的祖先 symlink 根外逃逸：规范相对路径与 canonical root/realpath/lstat/SHA-256 现按顺序 fail closed，原 5 条 fixed test、policy descriptor、caseVersion、README 和 ledger 不变，registry/Eval/Suite 三组机器摘要保持一致。
+  同一治理条目还将 snapshot preflight 的固定配置、scorecard/RPC 投影、域分离摘要与 stderr 上限抽为 v1.1 闭合 contract：`.mcp.json` 根/server map/server 只接受 exact set，stderr 默认 16 KiB，limit+1 立即请求 best-effort 进程组终止并只返回固定无正文错误；直接矩阵使新 contract line/branch/function 均为 100%，最小合格仓库 fixture 同步真实 preflight→contract import；原 sealed-snapshot fixed 入口、真实 stdio/retained-home/前后稳定断言、case descriptor 与 component-only/`outcomeEligible=false` 保持，不写 ledger、不升级 runtime/task/behavior 信任。
+  同一 Eval 条目还扩充既有 v3/subject 1.2.0 项目 plugin case，不新增 case/version：fixed descriptor 现同时执行 YAML、UI/eval、manifest/SKILL 路径、全树身份和原始 bytes 快照负例，仍为 component-only/`outcomeEligible=false`。全量治理测试还暴露 descriptor 拆分后最小合格仓库 fixture 漏写 registry/boundary 两个生产 import；fixture 已同步两模块，保留单向组合边界。
+  同一 Eval 条目还修复 `codex-exec-jsonl` 完整超长行带 LF 时绕过 1 MiB 限制：新增有界原始字节 framing 叶子，统一完整/跨 chunk/未终止行、严格 UTF-8、10,000 源事件、超限丢弃一次与下一行恢复；projection 保留 lifecycle、脱敏、200 trace 事件和完整性职责，adapter 完整生产闭包纯度测试覆盖 framing。adapter 升至 1.2.1，component case 升至 v3、corpus 1.44.0，三条 trace policy patch 及 fixed runner 1.3.1 同步绑定；component 回归不写 ledger、不安装插件、不提升 task/runtime/signer 或 behavior 信任。
+  同一 Eval 条目还将 140/140 行的混合测试按 corpus contract、基础 report 与 suite CLI 拆分；corpus reader 复用稳定快照原语，只接受不超过 1 MiB 的稳定普通文件和严格 UTF-8，read/parse 失败使用不含路径、正文或 parser message 的固定诊断。root/case/subject/input/expectedOutcome/graders 六层改为闭字段，未知 key/value 不再经敏感路径扫描回显；当前 37 cases、corpus/case/subject 版本、policy/grader digest 与 outcome/receipt 账本均不变。
+  同一 Registration canary 条目还将 Anchor 与 disclosure transcript 重复的 1–16 条 receipt observation 仲裁下沉为固定三类共享 helper，own-property kind 与 `Array.from` 让 prototype key、sparse hole 固定拒绝，并保留排除未签 keyid 的 proof identity、host signer 优选、紧凑 transport 确定性排序与原冲突诊断；协议字符串扫描改为 64 层/10000 节点的迭代无值检查，深嵌套不再抛 `RangeError`，未知字段路径和值不再进入异常；最小合格仓库 fixture 同步真实 production import。现有 report、1.0.0 协议、case/corpus 版本、component-only 信任与 ledger 均不变。
+  同一 Eval 条目还将 Outcome 单记录契约与账本 source/顺序编排分层：reader 复用稳定 descriptor 原语，固定 8 MiB 总量、64 KiB 单行、8192 物理行、4096 非空记录、fatal UTF-8 与全 schema 紧凑 JSON，拒绝 symlink/hardlink/非普通文件、重复 key、结构/chain fail-open、数组 regex 强转、物理 ordinal/invalid 计数漂移和路径/key/value 回显。共享隐私扫描下沉为 64 层/10000 节点迭代无值叶子；Outcome behavior case 升至 v3/subject 2.1.0、corpus 1.45.0，旧 outcome/receipt 原样保留为 stale history，本轮不写账、不安装插件、不提升文件稳定性为身份、时间或发布证明。
+  同一 Eval 条目还把 validation planner 组件与当前变更真实执行行为分开：corpus 1.47.0 现为 38 cases（18 behavior + 20 component-boundary），`validation-change-matrix` 升至 v3/subject 2026-07-15，只用 changed-set、命令注册表、planner 与 runner 四个目标测试锁 component-only 契约，不再被全局治理、artifact freshness 或 ledger 状态污染；新增 `validation-change-execution-observed` v1/subject 1.0.0，要求同一次当前完整 manifest、实际 plan、`unclassified=0`、全部必需命令状态和 manual check 可复核结论，组件 fixture、聚合红绿与旧记录均不得冒充行为证据；Skill trace policy 只刷新 Playbook 当前普通文件摘要与 descriptor lock，不改 policy/version/能力。本轮不写任何 ledger、不安装插件、不提升 fixed runner 为行为通过。
+  同一 Eval 条目随后以代表红测锁定 evidence-scope 失败分类：fixed runner、eval 与 MCP summary 升至 schema v3，普通 `component-only` 命令非零归为 `component-fail`、`deterministic-case` 归为 `behavior-fail`，显式 delivery 与 spawn/binding infrastructure 继续覆盖，聚合优先级为 infrastructure > behavior > component > delivery；component 独立计数并给出 `repair-current-component-run`，行为质量保持 unknown，不污染 behavior failure。`validation-change-matrix` 升至 v4，corpus 1.48.0 保持 38 cases 并固定执行第五个 failure-taxonomy 测试；三份 required-read 摘要与 descriptor lock 同步刷新，registration grader oracle 不变。本轮仍不写 ledger、不安装插件、不 stage/commit。
+  同一 Eval 条目还将 unverified observation 的 64 KiB/闭字段/隐私/紧凑 JSON 与 own-index 稠密连续 event 契约下沉为单向叶子；direct sparse hole 不再经 JSON roundtrip 静默变 `null`，独立测试达到 100% line、92.68% branch、100% function。代表竞态红测同时证明 `already-current` 曾跳过 live state 复核；现与 `ready` 共用 source-state revision、双 ledger endpoint/原始 bytes 二次检查。raw-byte 红测又证明 stdin 会把非法 UTF-8 替换成 U+FFFD，CLI 现改为 fatal 解码。writer 升至 1.1.0、`observable-trace-receipt-boundary` 升至 v2/subject 1.1.0、corpus 升至 1.49.0，并在同一 fixed descriptor 执行 observation contract 与 writer 测试；policy 版本和 confirmed coverage 不变，旧 v1 ledger 行原样保留为 stale history，当前可刷新 evidence 计数从 2 收敛为 1。不安装插件、不 stage/commit；共享 recovery mutation 报告语义保留为后续独立审计。
+  同一 Eval 条目的独立审计现已闭合该 recovery mutation 语义：双 ledger 事务返回闭字段顶层与 receipts/outcomes 逐 ledger 事实，只计本次真实追加；`recovered`/`recovered-stale` 不推断 mutation，postcheck 后仅清 journal 仍为 false，`already-current` 也不再硬编码零写入。deterministic/unverified/paired writer 分别升至 1.1.0/1.2.0/1.1.0，outcome case v4/subject 2.2.0、observable case v3/subject 1.2.0 与 corpus 1.53.0 同步；paired 受保护授权前的零 acquire/recover 边界不变。Playbook 等价压缩后 mandatory context 为 91,514/92,160 bytes，Skill trace requiredReads 与 descriptor digest 同步；四组定向测试 37/37、policy/context 契约 11/11 通过，未写真实 ledger、未安装插件、未 stage/commit。
+  同一 Eval 条目随后消除两个测试零余量热点：executable registry identity 与四组 descriptor 命令拆为 53/75、79/105；unverified writer 的七组 writer/事务测试、共享脱敏 observation fixture 与两组 CLI/raw-byte 测试拆为 225/250、33/60、63/90。observable v3/subject 1.2.0 fixed descriptor 显式加入新 CLI 测试，15 个测试名与断言不减；required files、最小仓库 reachability、workspace 分发、资产注册与预算同步，writer/case/corpus/policy/前端版本和 ledger 不变。
+  同一 Eval 条目还修复项目插件 Skill collector 的 strict UTF-8 声明与真实读取不一致：raw-byte 红测把非法字节放进 manifest description 后旧 collector 返回空失败集，SKILL 正文也会被替换字符掩盖。manifest/SKILL 现统一委托 source/path 叶子，限制 64 KiB、fatal UTF-8、单链接普通文件和 descriptor 前后稳定性；主 collector 只保留 manifest/frontmatter/UI/eval 编排。contract 升至 1.4.0、component case 升至 v5/subject 1.4.0、corpus 升至 1.50.0；不改真实 plugin source/version/content lock，不安装、不写账、不 stage/commit。
+  同一 Eval 条目继续将三份项目 plugin manifest 收敛为单一 authority：原始 bytes 统一拒绝顶层/嵌套/转义等价重复 JSON key，精确锁定 root/author/interface shape、semver、route、category、capabilities 和有界 prompt；完整树快照改为两次连续捕获相同，Skill 语义聚合再绑定调用方 baseline 与校验后完整树，未知畸形 frontmatter 子树 fail closed。重复 authority、聚合漂移与未知 frontmatter 均在 Git inventory 前拒绝 write-lock 并保持 lock 原字节。contract 升至 1.5.0、component case 升至 v6/subject 1.5.0、corpus 升至 1.51.0；marketplace/`.mcp.json` authority 仍是后续边界，本轮不改 plugin source/version/content lock，不安装、不写账、不 stage/commit。
+  同一 Eval 条目在独立复核再现五个 fail-open 后升至完整项目 JSON/version/source 边界：新通用 authority 叶子用 fatal UTF-8 拒绝任意层顶层/嵌套/转义等价重复 key，三 manifest、marketplace、MCP companion 和 Skill eval 共用；新 SemVer 叶子拒绝 core/numeric prerelease 前导零与空 identifier，用 BigInt 实现官方 precedence，build 变化不算递增。snapshot v2 精确绑定 directories+files，Skill baseline 前移到 discovery 前；write-lock 原子替换后重验 source/inventory/lock，竞态失败用同目录原子 replace 逐字节恢复调用前 lock，回滚失败单独报错。contract 升至 1.6.0、component case 升至 v7/subject 1.6.0、corpus 升至 1.52.0；这只是进程内 point-in-time component 闭环，不声称抵御持续恶意改写/崩溃断电，不改 plugin source/version/content lock，不安装、不写账、不 stage/commit。
+  同一 Validation 条目还将执行规划的分类面与治理发现面单源化：权威 559-file changed set 原有 `.github/agents/ai-infra-auditor.agent.md` 与 `.gitignore` 两个未分类项，扩展红测进一步暴露 GitHub instructions/prompts/agents/chatmodes、VS Code MCP 与 `rules/ai-*` 漏口。分类器现直接消费 `AI_GOVERNANCE_DISCOVERY_PATTERN_DIRS` 与 `AI_GOVERNANCE_MCP_CONFIG_FILES`，`.gitignore` 显式进入治理检查，三份跨工具 MCP 配置额外路由全量 MCP 测试；非分类 hygiene catch-all 保持不变，当前计划已为 `unclassified=0`。`validation-change-matrix` 保持 case v4/component-only，subject 升至 `2026-07-15.1`、corpus 升至 `1.57.0`；不写 ledger、不安装插件、不提升为真实命令已执行或 behavior 通过。
+  同一 Eval 条目还将 363/370 行的 registration grader calibration 静态绑定契约与真实执行/指标分层：新 contract 单向维护固定 JSON、identity/path/current bytes、case/policy、完整 taxonomy、阈值和 17 个 mutation，runner 保留 context binding、51 次生产 grader 调用、指标与 component-only 报告；原 reader 公开路径与新 contract 保持同引用重导出，直接/集成测试分别锁定静态与执行责任。required、预算、fixed descriptor、资产注册与决策追踪同步；case v3、subject 1.0.0、corpus 1.58.0、17 samples/51 invocations/全 1 阈值和零 ledger 写入不变，不安装、不 stage/commit。
+  同一可维护性条目还将 scorecard 容量候选与真实责职混合分开处置：45 行 registration descriptor 和 45 行 report-tool 集成测试经审计均为单一责任，只校准为 60 行受控容量；180 行 runtime freshness 测试则按 controller/source fingerprint 与 fresh worker/wire/POSIX process-group cleanup 分层为 90/120 和 110/145。原测试路径继续注册全部 11 个用例及四组 heartbeat 场景，fixed validation command、`mcp-newline-version-negotiation` case v4/subject 0.6.0、corpus 1.58.0 与 ledger 均不变；required、预算、资产注册和决策追踪同步，不安装、不 stage/commit。
+- **Deterministic outcome 安全写账**: 新增默认 preview 的项目 writer，从固定 runner、source-state v2 和账本尾部派生 receipt/outcome；本地显式 `--write` 才经 owner-only lock/journal、receipt-first 和精确前缀恢复成对追加，CI/hook 禁写且不宣称跨文件原子性或外部证明；CI 契约共享 fixture 外置到 `*TestFixtures.mjs`，原测试路径与五条断言保持不变，105 行预算收紧为测试 90 行、fixture 45 行，不改 fixed grader、生产 checker、eval 或 ledger
+- **Rule 与 Skill 回写**: `jsonutils-ai-infra-evolver 0.1.33`、`jsonutils-maintainer 0.1.36`、双入口、三端工具说明、资产注册表与决策账本同步“三个通用执行角色 + 跨客户端只读 ai-infra-auditor”边界；新增 Codex、Claude、GitHub Copilot 三个项目 Agent adapter，由单一 renderer 精确派生并路由 `.agents/skills/jsonutils-ai-infra-evolver/SKILL.md`，拒绝缺失、symlink、字节漂移、工具扩权、写入、MCP、网络与用户级上下文。静态 adapter 和 component case 不冒充真实发现、选择、加载或零写入；Agent case 升至 v3/subject 1.2.0、corpus 升至 1.56.0，evolver trigger 与 paired experiment 精确迁移 0.1.33，trace policy 升至 1.1.2。最小合格仓库 fixture 改为复用 canonical Agent adapter 与当前 Evolution Playbook/eval README，同时锁定 auditor 生产 import 可达性，不再让旧合成文本掩盖漂移。Claude 目标配置语义已纠正为可提交的项目 `settings.json` 与本机 `settings.local.json`，但后者当前仍在 Git index/HEAD；ignore 只防止未来重新加入，新契约不读取私有正文并对 index/HEAD inventory fail closed，维护者明确移出并提交前保持治理阻断。本轮不执行 `git rm --cached`、不安装插件、不写 outcome/receipt、不 stage/commit
+- **未验信 Trace 安全写账**: 新增闭字段脱敏 observation 的项目级 writer/CLI，默认 preview，仅本地显式 `--write` 才复用 receipt-first 可恢复双 ledger 事务派生 receipt v2/outcome v3；CI/GitHub Actions 禁写，结果固定 `trace-bound-unverified` 且不提升 scored/confirmed/coverage，`jsonutils-ai-infra-evolver 0.1.33` 继续保留该契约
+
+## v1.8.773 (2026-07-13) - 项目插件团队生命周期
+### 🏗️ 架构与基础设施
+- **仓库与插件边界**: 明确 JSONUtils 仓库仍是业务项目，只有 `plugins/<name>/` 是可分发插件包；项目 rules、skills、MCP 与 hooks 可直接集成，`marketplace.json` 不再被描述为 clone/open 自动安装器
+- **只读 Doctor 与显式 Apply**: 新增 `manage-project-plugins.mjs --check|--apply`，从未安装插件也可运行的项目根入口诊断 marketplace、版本、安装和启用状态；只有维护者明确同意后才通过 Codex CLI 注册/安装，完成后提示新建任务
+- **用户状态安全边界**: 使用无 shell参数数组兼容空格、非 ASCII 与 `&` 路径；同名异源、已启用个人 selector、用户禁用、CLI/JSON/schema 异常全部 fail closed，不直接编辑用户配置，也不删除或禁用个人插件
+- **版本化 Lock Writer**: 新增显式 `--write-lock` 原子更新入口，排除 Git ignore 垃圾；插件树变化但 manifest 版本未递增时拒绝写入，避免同版本缓存无法可靠对齐
+- **Ownership v3 Eval**: corpus `1.25.0` 保持 34 个 case，把项目资产 ownership 升级为 source/content lock + 合成团队生命周期确定性回归；真实用户安装、fresh-task registry、runtime 与 signer 仍是独立未观察事实
+- **Rule 与 Skill 回写**: `jsonutils-ai-infra-evolver 0.1.26`、`jsonutils-maintainer 0.1.31`、双入口、rules、双 Playbook、工具/配置说明与资产/决策账本同步项目目录、显式安装和个人状态边界
+
+## v1.8.772 (2026-07-13) - 项目插件内容锁与阻断感知演进
+### 🏗️ 架构与基础设施
+- **项目 Plugin Content Lock**: 新增 `.agents/plugins/plugin-lock.json`，对三个完整 `@jsonutils-project` selector 绑定 manifest 版本、完整文件集、Git mode、size、文件 SHA-256 与 tree digest；同版本内容漂移、增删文件和摘要篡改 fail closed
+- **安装副本诚实分层**: 新增显式本机缓存核验，只返回 `installed-copy-matched-unverified` 或 mismatch；仓库 content lock 与缓存匹配均不冒充 attestation、当前任务注册、runtime isolation 或 signer trust
+- **阻断感知演进焦点**: learning/suite/MCP/scorecard 将仓外受保护运行时前置独立为 `blocked/external-provisioning`，保留恢复条件，同时让顶层 `nextFocus` 继续选择不依赖它的仓内 behavior case
+- **行为覆盖校准**: corpus `1.24.0` 保持 34 个 case，调整为 18 behavior + 16 component-boundary；项目资产 ownership v2 接入 deterministic runner，配置审计合成测试移出 behavior 分母
+- **验证矩阵补齐**: `.agents/`、`plugins/`、`.cursorrules` 与 Copilot 入口进入项目 AI 变更分类，当前完整 worktree 的未分类文件从 24 降为 0；固定 validation case 升级 v2 且仍不冒充行为 outcome
+- **Rule 与 Skill 回写**: `jsonutils-ai-infra-evolver 0.1.25`、rules、双 Playbook、工具说明、资产/决策账本同步 content identity、双焦点仲裁与项目所有权/安装/runtime 信任边界
+
+## v1.8.771 (2026-07-13) - AI 基建项目资产化
+### 🏗️ 架构与基础设施
+- **项目 Marketplace**: 新增 `.agents/plugins/marketplace.json` 与 `plugins/` 权威目录，将 controller probe、只读治理 MCP、Codex MCP 配置审计器完整迁入仓库；用户 marketplace/cache 只作为派生安装状态
+- **项目所有权契约**: 所有 JSONUtils rules、skills、MCP、hooks、evals、plugins 与 probes 必须以项目为 source of truth；所有权与 runtime trust 分开，未受保护安装副本继续只算 component evidence
+- **可迁移插件运行链**: 三个 manifest 升级到项目版本 `0.4.0/0.2.0/0.2.0`，移除个人绝对路径；治理 MCP 通过项目 launcher 显式启动 stdio server，配置审计器保持 value-free，本地 probe 测试兼容非 ASCII 仓库路径
+- **治理与发现门禁**: `.agents`、`plugins` 接入必需文件、自动发现、项目插件闭字段契约、负例、资产注册表、生产 import 图和可维护性预算，拒绝 personal marketplace、越界 source、个人身份与可替换启动面
+- **Eval、Rule 与 Skill 接线**: corpus `1.23.0` 增至 34 个 case（19 behavior + 15 component-boundary）；`jsonutils-ai-infra-evolver 0.1.24` 与 `jsonutils-maintainer 0.1.30` 同步项目资产所有权触发、入口引用和运行时信任边界
+
+## v1.8.770 (2026-07-13) - Seatbelt v2 与 Attested Preflight 可信边界
+### 🏗️ 架构与基础设施
+- **Seatbelt Sentinel v2**: 个人插件 `ai-infra-controller-probe 0.3.0+codex.20260713015329` 在执行前锁 OpenAI Codex Team ID、identifier、hardened runtime 与 designated requirement，`--version`/`sandbox --help` 也经 Seatbelt；绑定 controller/child/Node/launcher/policy/sandbox/Codex postflight，真实 source snapshot 只读且零变更，write/chmod 控制组只攻击 disposable mirror
+- **独立 Report 值契约**: 仓内 verifier 将 producer 的 source-state 稳定摘要与 snapshot tree binding 分开，严格校验 observation/claim boolean、nullable SHA-256、固定 failure id 与非负有界 residual count；路径、对象、数组或类型伪装无法再以 rejected report 绕过闭字段与隐私边界
+- **精确 Deny 与输出边界**: baseline + 固定 helper exit 区分 Seatbelt 拒绝与 DAC/profile/普通失败；路径在创建临时状态前拒绝注入字符，output parent 要求当前 UID `0700`、无 ACL，report 使用新 `0600` inode、fsync 与 inode/parent 复核，仍诚实保持 same-UID component self-report
+- **Attested Host-record Component**: 新增 `codex-external-controller-attested-runtime-preflight@1.0.0`，闭字段验证 controller signer/witness 双 Ed25519 DSSE、七角色 UID/GID/空 supplementary groups/五类 namespace、实际 policy digest、只读 snapshot 与域分离 state key/challenge；签名数学与 report contract 分开报告
+- **Pre-runtime 注入 Fail Closed**: 真实 `NODE_OPTIONS --import=data:` 负例证明仓内 Node 可在正文前劫持 fs/stdout/exit；root-owned path 只标 candidate，`trustPolicyProtected`、verifier/runtime trust、`trustedSigners` 与 registration eligibility 固定 false。下一里程碑改为 checkout 外 root-owned/digest-pinned launcher/service 固定 clean env、Node/verifier bundle、policy、run nonce 与 non-caller bindings
+- **Eval、Rule 与 Skill 接线**: corpus `1.22.0` 为 33 个 case（18 behavior + 15 component-boundary）；`jsonutils-ai-infra-evolver 0.1.23` 同步代表 eval、rules、双 Playbook、工具入口、资产/决策账本、runtime trust required/预算与 import reachability，component case 不写 outcome
+- **Registration 继续阻断**: 当前 macOS 没有独立 UID/PID namespace、受保护 launcher、外部 signer/CAS 或可信 task registry observation；实验保持 6 planned / 0 executed、blocked/unavailable，本轮不调用模型、不读取真实凭据、不生成 candidate 或 behavior outcome
+
+## v1.8.769 (2026-07-12) - macOS Seatbelt Runtime Sentinel
+### 🏗️ 架构与基础设施
+- **真实 Seatbelt 子集执行**: 个人插件新增 checkout 外 zero-model/zero-credential sentinel，以 baseline 对照观测合成 secret、live checkout、sealed snapshot chmod/write、loopback 网络和 sibling process-info 的 Seatbelt 拒绝，并复核 snapshot 前后摘要与有界 child/temp cleanup；Codex 仅执行空认证根下的 `--version` 与 `sandbox --help`
+- **闭字段 Host Verification**: 新增 `codex-external-controller-seatbelt-sentinel-execution@1.0.0` verifier，精确绑定 snapshot revision/manifest/tree、controller/launcher/policy/nonce、Seatbelt 与 Codex binary/version/help；报告限 128 KiB 紧凑 JSON、固定 failure id、布尔与摘要，任一 binding、控制组、deny、cleanup 或声明漂移 fail closed
+- **诚实隔离边界**: 真实 policy observation 只算同 UID `component-only`；个人插件、controller、policy 与 verifier 仍可由同一用户修改，Seatbelt/chmod/hash 不等于 immutable mount、PID/user namespace、独立 controller/signer、模型 absence、当前 task registry 或可信 attestation
+- **Registration Gate 前移**: learning nextFocus 先要求仓外 Seatbelt report 与 host expected bindings 独立复核；独立 UID/namespace 和外部 signer 未落地前，registration experiment 继续 6 planned / 0 executed、blocked/unavailable，不调用模型、不写 candidate/receipt/outcome、不关闭 open signal
+- **Eval、Rule 与 Skill 接线**: corpus `1.21.0` 达到有界上限 32 个 case（18 behavior + 14 component-boundary）；`jsonutils-ai-infra-evolver 0.1.22` 同步 Seatbelt 触发 eval、rules、双 Playbook、工具索引、资产/决策账本、runtime required/预算子表和版本门禁
+
+## v1.8.768 (2026-07-12) - Registration Sealed Snapshot 与快照内 MCP 预检
+### 🏗️ 架构与基础设施
+- **内容寻址 Snapshot**: 新增 checkout 外 sibling staging + atomic rename producer，显式排除 ambient `GIT_*`/XDG 配置，稳定 descriptor 读取 Git index/未忽略 untracked，增量执行 5000 文件、16 MiB 单文件、64 MiB 总量上限；载荷固定 `repository-source-unreviewed`，拒绝真实 `.env`、全尺寸私钥 marker、未跟踪用户产物、symlink、特殊文件与 TOCTOU 漂移；因 Node 无原子 identity-bound 递归删除，失败采用 owner-only retention 并禁止自动 cleanup
+- **无 Git 全量验证**: sealed manifest verifier 重枚举除 manifest 外的 exact set，以稳定 descriptor 从实际 `0400 | executableBits` 文件、`0500` 目录和 `0400` manifest 重建原 `worktree-<sha256>`；owner-only mode 不扩大源码读取权限但仍不等于 immutable，live Git 始终优先且损坏时不回退自报 manifest
+- **真实 Snapshot MCP Preflight**: 用同一 nonce/environment 证明 live 与 snapshot 三视图完全一致；有界 newline client 锁 256 KiB stdout/16 消息、JSON-RPC/id、双轨输出和固定脱敏错误。私有临时根只接受末态空目录并 owner-only 保留；POSIX 进程组终止为 best-effort（Windows 回退父进程），stderr 只公开 byte count/nonEmpty，descendant/home cleanup 均未验证
+- **盲态与诚实执行边界**: snapshot CLI 只公开 domain-separated Agent/grader/host projection digests，不合并 rubric、expected outcome、arm/treatment 或 lease 正文；harness 固定 `modelInvocationRequested=false`、`ledgerWriteRequested=false`，但同 UID、可联网、无 sandbox 下两类 absence 均未验证。external/immutable/environment/runtime/current-registry/outcome claims 保持 false，experiment 仍为 6 planned / 0 executed、blocked/unavailable，旧 runtime probe 保持 not-run
+- **Eval、Rule 与 Skill 接线**: corpus `1.20.0` 增至 18 behavior + 13 component-boundary；`jsonutils-ai-infra-evolver 0.1.21` 同步 snapshot 触发 eval、rules、双 Playbook、工具索引、资产/决策账本、独立 required/预算和版本门禁
+
+## v1.8.767 (2026-07-12) - Registration Anchor 与单次披露验证边界
+### 🏗️ 架构与基础设施
+- **Anchor Receipt Verifier**: 新增闭字段 DSSE/in-toto anchor receipt，精确绑定 checkpoint UTF-8 字节、派生 batch key、外部 controller policy 与 `absent→anchored 0→1`；只验证签名数学和已观察分叉，不生成密钥或仓内状态
+- **Disclosure 状态链**: 从六条 blind grade、host packet/run-record 逐 alias 重建深绑 checkpoint result/grade digest 与 Agent/grader 投影、且只输出排序 alias/digest 的 commitment；authorization/redemption/consumption 固定 `anchored→authorized→consumed`，稳定 CAS state key 排除 caller grant/nonce，SPKI sender constraint 与三角色真实公钥指纹隔离
+- **并发、回滚与跨批负例**: 新增双 anchor、双 grant、双 consume、状态回滚/跳转、六条 Agent 投影一致重签嫁接、host fixture/environment/bindings 嫁接、host expected anchor 贯穿、proof 身份去重、redemption 漂移、同 key 改名、sender mismatch、凭据侧信道、非紧凑 envelope、自报信任/时间和零写入测试；两个固定 case 均保持 component-only
+- **诚实信任分层**: caller 公钥通过最多输出 `signature-verified-unwitnessed`，三签通过的消费最多为 `consumed-signature-bound-unwitnessed`，未验签降为 `claimed-consumed-signature-unchecked`；没有仓外 first-write-wins/CAS、固定 identity policy、真实 inclusion/consistency receipt 与 monitor/witness 时，`trustedSigners=0`、at-most-once/non-equivocation 均未验证，writeback/signal/behavior coverage 不变
+- **Eval、Rule 与 Skill 接线**: corpus `1.19.0` 增至 18 behavior + 12 component-boundary；`jsonutils-ai-infra-evolver 0.1.20` 同步 SCITT-informed 非合规边界、双 Playbook、工具索引、资产/决策账本、独立 required/descriptor/预算和版本门禁
+
+## v1.8.766 (2026-07-12) - Registration Grade Checkpoint Request
+### 🏗️ 架构与基础设施
+- **Detached Checkpoint Subject**: 新增 `mcp-registration-canary-grade-checkpoint-request@1.0.0`，精确绑定 grade-set 紧凑字节、六条 alias/result/grade digest、当前 case/experiment/policy、fixture/environment 与 rubric，供仓外 signer 或 transparency log 锚定
+- **四阶段 Review**: `review-ai-registration-canary-results.mjs` 升级为 `blind|seal|checkpoint|unblind`；unblind 必须从闭字段原始输入重建 review 并复核同一 checkpoint request，拒绝 caller review 注入，CLI 仍只读 stdin/stdout，不启动模型、不读取用户配置/密钥、不写 experiment 或 evidence ledger
+- **重算、嫁接与侧信道负例**: 新增 partial、重复、混合 fixture/environment/rubric、揭盲后整体 reseal、跨 grade-set/experiment 嫁接、伪造 pass/outcomeEligible/ready writeback、digest 漂移、host/arm/trial/plugin/lease、caller verified、自报 timestamp 与非紧凑 JSON 负例
+- **诚实外部信任边界**: request 固定 `external-anchor-required`、`component-only`、`trustedSigners=0`，identity/timestamp/inclusion/phase-order/non-replaceability 均未验证；没有仓外有状态单次 anchor receipt 时不关闭 signal、不解除 writeback、不增加 behavior coverage
+- **Eval 与 Skill 接线**: corpus `1.18.0` 增至 18 behavior + 10 component-boundary，`jsonutils-ai-infra-evolver 0.1.19` 同步 checkpoint trigger eval、rules、双 Playbook、资产/决策账本、独立 descriptor/预算和版本门禁
+
+## v1.8.765 (2026-07-12) - Registration Canary 盲态结果审阅
+### 🏗️ 架构与基础设施
+- **闭字段 Result Ingestion**: 新增 `mcp-registration-canary-result-ingestion@1.0.0`，blind result 只绑定当前 case、Agent/grader packet、fixture/environment、observable trace 和唯一 response digest；host/lease 留在揭盲侧，拒绝 caller verdict、arm/trial/plugin/trace 值侧信道、正文与敏感字段
+- **盲评分层与 Commitment**: 在不接触 host/lease/arm 的条件下区分 behavior pass/fail 与 infrastructure ungradable，并锁 verdict/score/reason；六条 grade 按 alias 计算 `gradeSetSha256` commitment，但无仓外锚时不声称先后或不可替换
+- **Host-only 揭盲预览**: 独立锁定 trial→pair/arm/order，校验跨 trial 唯一 single-use lease、fresh task、task instance、plugin 与 artifact/ledger binding；完整 reported-valid 三对只输出描述性 pass@1、均值、总体标准差和 paired delta
+- **诚实可信边界**: 输出固定 `component-only`、`external-json-unverified`、`trustedSigners=0` 和零自动写账；未版本化 `passPower3`（pass^3）与未可信采集的 timing/cost 保持 unavailable，不更新 experiment、signal、receipt、outcome 或 behavior coverage
+- **Eval 与治理接线**: corpus `1.17.0` 增至 18 behavior + 9 component-boundary，`jsonutils-ai-infra-evolver 0.1.18` 同步 result review 触发 eval、rules、双 Playbook、资产/决策账本、case runner、独立预算和版本门禁
+
+## v1.8.764 (2026-07-12) - Registration Canary 盲分启动包
+### 🏗️ 架构与基础设施
+- **三视图 Launch Packet**: 新增 `mcp-registration-canary-launch-packet@1.0.0`，把 Agent、grader、host 投影严格分离；Agent 只见 blind alias、request/context、fixture/environment 摘要和无答案输出契约，grader 不见 arm，host 才持有 unblind 映射
+- **Snapshot 与 Ledger 绑定**: producer 双重稳定读取当前 case、experiment、`.mcp.json`、hook、完整 worktree revision 与 outcome/receipt/feedback 端点；host 随机 nonce 只参与 domain-separated alias/lease hash，不进入 packet
+- **Arm 与重试隔离**: 固定交替执行顺序、baseline 个人插件 disabled/candidate enabled、fresh task、禁 resume/跨 arm 会话复用、external single-use lease 与同 trial 禁择优重试；任一前置条件仍需仓外验证
+- **诚实证据分层**: 新增 corpus `1.16.0` component case，当前为 18 behavior + 8 component-boundary；packet 只能 `prepared/external-preflight-required`，零模型、零自动写账且 `outcomeEligible=false`，不关闭 registration signal 或 hook behavior
+- **Skill 与治理接线**: `jsonutils-ai-infra-evolver 0.1.17` 增加 sealed packet 工作流与触发 eval；同步 rules、双 Playbook、工具说明、资产/决策账本、case runner、必需文件、独立预算和版本门禁
+
+## v1.8.763 (2026-07-12) - Codex SessionStart 治理 Handoff
+### 🏗️ 架构与基础设施
+- **只读 Project Hook**: 新增单一 `SessionStart` `startup|resume` advisory，固定 10 秒 timeout、POSIX/Windows Git 根定位与仓内 runtime；只校验三份治理入口并返回固定有界 context，不读 prompt/transcript/环境/用户配置、不联网、不写入、不阻断
+- **信任与能力边界**: 项目和当前 hook 定义都需显式审阅信任，禁止 bypass trust、其它 lifecycle 事件、自动批准和工具输入改写；hook 只补充 rules/CI/sandbox/admin policy，不冒充 enforcement
+- **Component 契约**: 新增 canonical 配置、普通文件与 runtime 摘要锁定，以及子目录、64 KiB 上限、非法事件、输入回显、缺失/symlink 入口和能力漂移负例；component case 通过仍 `outcomeEligible=false`
+- **Behavior 诚实分层**: corpus `1.15.0` 为 18 behavior + 7 component-boundary；新增真实新任务触发 case 和组件 case，当前任务不能热加载，未产生 hook behavior outcome
+- **Skill 与治理接线**: `jsonutils-ai-infra-evolver 0.1.16` 增加 hook 信任、隐私、非阻断与 component/behavior 边界；同步 rules、双 Playbook、双入口、工具说明、资产/决策账本、独立预算和 corpus 容量负例
+
+## v1.8.762 (2026-07-11) - Codex Specialist 与用户 MCP 凭据边界
+### 🏗️ 架构与基础设施
+- **项目 Agent Profiles**: 新增闭字段 explorer、worker、verifier；分别锁定只读调查、父任务写入白名单和只验证不修复，verifier 的可写 sandbox 仅服务临时/忽略产物，禁止未审计 profile/model/MCP/skills 扩权
+- **Profile 契约与代表 Case**: 新增精确文件集、canonical TOML、symlink、sandbox、职责、隐私、昵称和固定回传模板正反例；`codex-project-agent-profile-boundary@1.0.0` 始终 component-only，不把配置存在冒充真实角色选择
+- **Value-free 配置审计**: 新建并安装个人插件 `codex-mcp-config-auditor 0.1.0`（缓存版本 `0.1.0+codex.20260711160917`），只报告敏感静态 header 的 server/fieldPath/riskCode/remediation，禁止值、hash、长度、preview、原始错误、环境值和路径回显；静态 `$ENV` 仍告警
+- **个人文档能力**: 安装官方 OpenAI Developer Docs MCP；当前任务不能热加载新 MCP/插件，均需新任务发现，安装与缓存冒烟不产生 behavior outcome
+- **Eval Corpus 校准**: corpus `1.14.0` 为 17 behavior + 6 component-boundary；新增用户 MCP 静态 header 安全 behavior case 与项目 Agent profile 组件 case，本轮只记录后者组件证据，不伪造前者行为结果
+- **Skill 与规则接线**: `jsonutils-ai-infra-evolver 0.1.15`、`jsonutils-maintainer 0.1.29` 同步项目角色路由、verifier 写边界和用户 TOML 静态 header 语义，并回写 Playbook、入口、资产/决策账本与维护预算
+
+## v1.8.761 (2026-07-11) - MCP 注册反馈与配对实验
+### 🏗️ 架构与基础设施
+- **注册/选择分层**: corpus `1.13.0` 新增 `mcp-project-registration-discovery`，形成 16 behavior + 5 component-boundary；项目声明、当前任务注册发现与后续工具选择分别评分，unknown server 不再误写成 `mcp-fixed-tool-selection` outcome
+- **Feedback Inbox**: 新增 v1 闭字段 opened/open 事件链与固定 candidate producer，首条 live signal 仅记录 `self-observed-unverified` 注册缺口，绑定物理 sequence/hash 和 Git 前缀状态；不保存正文、不调用模型、不自动写 receipt/outcome/rule
+- **Paired Canary**: 新增独立 experiment manifest，train/validation/holdout 互斥，baseline/candidate 共用 task/fixture/base environment 并各规划 3 次；Agent/grader 字段隔离，未开新任务和未封存 snapshot 时全部 trial 保持 planned，pass@1/pass^3/均值/标准差/paired delta/timing/cost 保持 unavailable
+- **个人 MCP 插件**: 新建并安装 `jsonutils-governance-mcp 0.1.0`，从插件缓存可启动固定只读 server；当前任务不能热加载，安装/冒烟仍只算 component candidate，新任务实际发现工具前 signal 保持 open
+- **MCP 与 Skill 接线**: `jsonutils-governance 0.3.0` 的 `ai_evaluation_summary` 增加 bounded feedback/experiment 状态，artifact/scorecard 显示 open signal；`jsonutils-ai-infra-evolver 0.1.14` 锁定前置失败、paired repetitions、盲评与 unavailable 指标边界
+
+## v1.8.760 (2026-07-11) - 仓外 Controller 运行时子集探针
+### 🏗️ 架构与基础设施
+- **个人插件控制面**: 新建 ai-infra-controller-probe 0.1.0，从待测 checkout 外生成无密钥 preflight 与三 fake workload report 边界；未有独立审核的固定镜像政策前 `--run` fail closed 为 `runtime-execution-disabled`，插件仍是同用户可篡改 component producer而非 trust root
+- **闭字段 Runtime Report**: 新增 `codex-external-controller-runtime-probe@1.0.0` 与负例，仅验证三 workload `credential-snapshot-subset` 的独立 host binding、namespace/capability、只读 snapshot、canary、cleanup 和脱敏自报；所有 runtime/controller/user-namespace/signer/outcome 声明固定为 false
+- **代表 Case 与真实 Preflight**: corpus `1.12.0` 增至 20 个 case，仍为 15 behavior + 5 component-boundary；本机 Docker daemon 当前不可达、ECI/user namespace 未验证且 runtime gate 关闭，实际 0600 report 记为 `not-run`，未调用 Codex/模型、未读取密钥且未产生 candidate/receipt/outcome
+- **Skill 与治理接线**: `jsonutils-ai-infra-evolver 0.1.13` 锁定三 workload 子集不等于六角色 runtime；同步 required-files、case descriptor、资产注册表、权威 Playbook、双工具入口、可维护性预算与决策账本
+
+## v1.8.759 (2026-07-11) - External Controller 拓扑契约
+### 🏗️ 架构与基础设施
+- **不可执行拓扑验证器**: 新增 `codex-external-controller-topology@1.0.0`，只接受至多 64 KiB 的精确紧凑闭字段 dry-run JSON 与独立 host bindings；固定零模型、零重试、零 ledger 写入，不提供 command、env、token、callback 或 controller launcher
+- **六方隔离与最小能力面**: controller、Codex、MCP、validation、sanitizer、signer 必须分离 trust domain、UID 与 PID/user/IPC namespace，禁 privileged/host PID/network、Docker socket、host `/proc`、capabilities 和共享可写存储；Codex 不挂载 checkout，MCP/validation 只读 snapshot 且认证根为空
+- **代表 Case 与诚实证据**: corpus `1.11.0` 增至 19 个 case，仍为 15 behavior + 4 component-boundary；新 topology case 通过固定负例但始终 `runtimeIsolationVerified=false`、`trustedSigners=0`、`outcomeEligible=false`，未调用模型或新增 Agent outcome
+- **Skill 与治理接线**: `jsonutils-ai-infra-evolver 0.1.12` 回写 `plan-valid ≠ runtime-isolated`；Codex case descriptors 从满预算 runner 拆出，并同步 required-files、生产可达性、资产注册表、维护预算与决策账本
+
+## v1.8.758 (2026-07-11) - Behavior Coverage 与 Codex 凭据边界
+### 🏗️ 架构与基础设施
+- **行为分母去污染**: corpus `1.10.0` 为 18 个 case 显式标记 `coverageClass`，只用 15 个 behavior case 计算 5/15 覆盖，3 个 component-boundary 排除且禁止 active outcome；nextFocus 优先唯一已有 fixed policy 的 `mcp-fixed-tool-selection`
+- **撤销仓内 Live Capture**: `codex-exec-jsonl@1.2.0` 生产端改为纯 projector，不再 spawn Codex 或读取 HOME/CODEX_HOME；`codex-fixed-mcp-trial@1.3.0` CLI 只在 0700 空认证根做 binary/version preflight，profile 为 `executable=false` 且不含同 UID MCP/exec 计划
+- **闭字段 Artifact 与 Ledger 终点**: 离线 verifier 只接受至多 2 MiB 的未验信 JSON artifact，拒绝 callback、绑定漂移和版本/reason 正文注入；validation 使用空 HOME/CODEX_HOME，双 ledger 在成功/异常终点绑定身份、metadata 与精确 SHA-256，不把终点一致夸大为期间只读
+- **Skill 与外部信任边界**: `jsonutils-ai-infra-evolver 0.1.11`、`jsonutils-maintainer 0.1.28` 和 fixed boundary case v4 同步锁定；资产总账改为 bounded inventory 后按任务读取。真实 run 仍需仓外 controller、Codex/MCP 独立 UID/PID 信任域与外部 signer，本轮未调用模型、未生成真实 candidate/outcome，`trustedSigners=0`
+
+## v1.8.757 (2026-07-11) - GitHub/Sigstore Attestation 隔离层
+### 🏗️ 架构与基础设施
+- **Detached Evidence Subject**: 治理 artifact 入口新增单文件 component-only subject，精确绑定六份报告与 receipt/outcome ledger 字节；freshness 同时校验报告语义和 subject 对当前文件的 SHA-256 绑定
+- **最小特权 Signer Job**: AI governance workflow 顶层零权限，capture 无 OIDC/attestation 权限；可选 signer 无 checkout、shell 或模型凭据，只以完整 SHA 固定的 `actions/attest` 签固定 digest，并原样保存 Sigstore bundle
+- **外部信任 Fail Closed**: 仓内 policy 明确只是审计副本；仓外固定 reusable workflow、受保护 main/environment、外部 identity policy 与真实 bundle 未核验前保持 `trustedSigners=0`、`traceVerified=0`，启用变量不等于保护已生效
+- **Evolver Skill 与代表 Case**: `jsonutils-ai-infra-evolver 0.1.8`、corpus `1.7.0` 与第 18 个近负例锁定同 workflow job 隔离不等于仓外 signer、PR CI 无特权、action SHA、固定 subject 和 bundle 信任边界
+
+## v1.8.756 (2026-07-11) - 固定 MCP Trial 与外部 Proof 边界
+### 🏗️ 架构与基础设施
+- **隔离式 Codex MCP Trial**: 新增 `codex-fixed-mcp-trial@1.0.0`，以 0700 空 HOME/CODEX_HOME/cwd、host 单独注入凭据、唯一 required 治理 MCP/tool、read-only 和禁 shell/web/apps/multi-agent 固定真实 trial 能力面，只输出 component candidate 且不自动入账
+- **Policy-driven 脱敏与执行事实**: `codex-exec-jsonl@1.1.0` 对固定 scorecard 只保留 allowlisted `maturityScorecard.nextFocus.id`，绑定 CLI/binary/stdout/exec args/adapter bundle 及 host before/after revision，深层隐私剪枝不再被误判为丢数据
+- **Receipt V3 DSSE Proof**: 新增 Ed25519 DSSE + in-toto Statement 闭字段原语，v2 始终 unverified，v3 只有外部受信 signer、完整 trace、当前 case/revision 与固定 policy 全部验证才可评分；生产 trust registry 仍为 0，本轮未调用模型或伪造 outcome
+- **Evolver Skill 与代表 Case**: `jsonutils-ai-infra-evolver 0.1.7` 与 corpus `1.6.0` 新增第 17 个 fixed-runner/proof 近负例，并将 runner、proof、必需文件、资产、决策与维护预算统一锁定
+
+## v1.8.755 (2026-07-11) - Codex JSONL 可观察适配器
+### 🏗️ 架构与基础设施
+- **Host-owned Codex JSONL Adapter**: 锁定 `codex exec --json` 已核验版本，以 read-only、禁 shell 环境继承和 64 KiB prompt 上限直接掌握子进程并流式脱敏；terminal、EOF、exit、item 配对与 dropped 计数联合决定完整性，异常全部 fail closed
+- **可执行 Trace Policy**: 为 `mcp-fixed-tool-selection` 固定目标 MCP、结果结构键、禁用 command/file/web/collab 能力与 revision 不变断言；policy digest 不能替代实际 grader，报告在 trusted adapter 为空时只显示 `policy-ready`
+- **诚实证据与隐私边界**: command 与 web/collab 仅留下无正文能力标记，prompt、reasoning、命令、stdout、MCP 正文与 stderr 不落 trace；第 16 个 case 明确 fixture 只算 `component-only`，没有受保护 signer 不追加真实 Agent outcome
+- **Evolver Skill 升级**: `jsonutils-ai-infra-evolver 0.1.6` 同步 JSONL 完整性、固定 policy、版本漂移和 host identity 边界，并纳入必需文件、资产、预算与决策门禁
+
+## v1.8.754 (2026-07-11) - Observable Trace 与真实验证计划
+### 🏗️ 架构与基础设施
+- **Observable Trace Receipt V2**: 在既有 receipt 行内嵌单 trial 闭字段 trace，锁定事件序列、actor/MCP/validation 生命周期、case/policy/revision、capture completeness 与敏感正文拒绝，不增加第三个账本
+- **诚实证据三层状态**: fixed replay、agent-trace verified 与 trace-bound/unverified 分层；生产可信 adapter registry 默认空，自报 complete、fixture 或本地 hash 不进入 confirmed coverage，MCP/scorecard 只投影脱敏全局事实
+- **逐文件 Validation Plan**: Git 状态固定展开全部 untracked 文件，样本和折叠目录不再冒充 all；治理、eval、Compose、部署文档和 local-ci 获得固定命令/人工复核，catch-all hygiene 不伪造领域分类
+- **Evolver Skill 与代表 Case**: `jsonutils-ai-infra-evolver 0.1.5`、corpus 1.4.0 和第 15 个 case 锁定 observable trace 可信边界；trace 与 validation 预算/资产/决策账本同步纳入治理
+
+## v1.8.753 (2026-07-11) - AI Outcome 可追溯链
+### 🏗️ 架构与基础设施
+- **Outcome V3 顺序与前驱链**: 第 14 个代表 case 锁定物理非空行 sequence、完整 legacy 前缀锚点、领域分隔 SHA-256 直接前驱链、精确紧凑 JSON 和 v3 激活后的降级拒绝
+- **显式反馈闭环**: `supersession.previousOutcomeId` 只接受同 lineage 直接前序，`open`、`resolved`、`none` 机器可读地区分弱结果、已修复反馈与普通 pass；v3 同步复用 v2/v3 receipt、worktree manifest 和即时重放 fail-closed 门禁
+- **可信边界与读取入口**: CLI、scorecard 和只读 MCP 输出完整 ledger-chain 状态与脱敏 v3 投影，明确本地 Git/hash 仅提供仓库内篡改可见，不冒充 RFC 8785/JCS、透明日志、签名时间或可信 attestation
+- **Evolver Skill 链式账本契约**: `jsonutils-ai-infra-evolver 0.1.4` 将 v3 sequence、previousHash、direct supersession、反馈处置和外部可信边界写入工作流、Skill eval、权威 Playbook、资产与决策账本
+
+## v1.8.752 (2026-07-11) - AI 治理事实与账本完整性
+### 🏗️ 架构与基础设施
+- **全局事实与展示分层**: 可维护性预算新增不受 `top` 影响的完整 scorecard candidate 事实集，MCP context、scorecard 和 handoff 在不同展示上限下保持相同计数、清零状态与焦点
+- **追加账本 Git 前缀审计**: outcome 与 receipt 对已有 Git 基线只允许尾部追加，删除、改写或重排历史行直接失败；尚未进入基线时诚实返回 `unknown`，不把本地 hash 冒充透明日志或可信 attestation
+- **未验证负反馈可见**: model/human/hybrid 的 fail/partial 进入 `unverified*` 计数、ID 与复核焦点，但仍不计 replay-verified coverage，避免“不计分”等同于“没有问题”
+- **Evolver Skill 事实契约**: `jsonutils-ai-infra-evolver 0.1.3` 锁定追加账本、未验证弱反馈、top-independent 聚合和外部可信边界，并补对应 eval assertions
+
+## v1.8.751 (2026-07-10) - AI Outcome 证据防伪
+### 🏗️ 架构与基础设施
+- **V2 行为证据收据**: outcome 改为绑定 canonical 单 trial receipt、worktree 内容 manifest、corpus/case/subject/validation 与 SHA-256；旧 v1 记录只保留为 `legacy` 且不再计入行为覆盖
+- **确定性即时重放**: scorecard 只认可固定 runner 在同一 worktree manifest 按原顺序重放成功的 `deterministic-case` pass，阻断虚构 runner、十次自报 trial、未来 corpus、symlink writeback 逃逸和自报 hybrid pass
+- **诚实覆盖率校准**: validation matrix 降级为固定 fixture 的 `component-only`，当前可核验覆盖从旧口径 4/13 校准为 3/13；model/human/hybrid 在真实 trace verifier 落地前保持未验证
+- **Evolver Skill 证据契约**: `jsonutils-ai-infra-evolver 0.1.2` 同步 schema v2、trial receipt、worktree manifest、即时重放与 legacy 边界；MCP recent outcomes 只暴露 replay-verified v2，避免 legacy/无 trace 成绩混淆
+
+## v1.8.750 (2026-07-10) - AI 行为证据白名单
+### 🏗️ 架构与基础设施
+- **固定 Case Runner**: 新增绑定 case/subject 版本的 AI evolution 白名单执行入口，拒绝任意 case、shell 与路径，固定子进程 120 秒超时，并将 `jsonutils-ai-infra-evolver` 升级到 `0.1.1`
+- **证据充分性分层**: 区分可直接入账的 `deterministic-case` 与只能支撑模型/人工/hybrid trial 的 `component-only`，outcome ledger 按证据方法拒绝后者仅凭 deterministic evidence 记 pass，不再信任可伪造的 runner 名，阻止用工具存在性测试冒充 Agent 会主动选对工具
+- **Skill A/B 隔离契约**: maintainer 单 trial 对照暴露只读 dry-run 与实施断言冲突，新增同一任务、隔离可写工作区、脱敏 transcript、前后快照和缺失指标 `unavailable` 契约，不将本轮 44.45% 平局解读为 skill 增益或退化
+- **真实 Outcome 覆盖**: 实跑 MCP 只读 shell 拒绝、配置凭据安全与 changed-file 完整验证矩阵，统一 `jsonutils-governance` subject 版本为真实 server `0.2.0`，将当前有效 outcome 从 1/13 提升到 4/13；工具选择和规则回写仍保持 component-only 未入账
+
+## v1.8.749 (2026-07-10) - AI 协作基建演进闭环
+### 🏗️ 架构与基础设施
+- **AI 行为评测数据面**: 新增绑定 `caseVersion`/`subjectVersion`/trial 的版本化 eval corpus 与追加式脱敏 outcome 账本；无真实 validation 的 pass、未来版本和常见凭据值 fail closed，latest/superseded/stale/retired lineage 可追溯
+- **Scorecard 与治理产物升级**: 行为质量与静态契约分层，`nextFocus` 按严重度选择，缺失报告 fail closed；governance/context/scorecard/summary 复用同一份结合预算后的结论，AI 候选使用显式 85%/剩余 5 行阈值
+- **MCP 标准与类型契约**: stdio 改为官方 newline-delimited JSON-RPC 和版本协商，11 个固定工具增加只读 annotations、object output schema 与 structured content；新增脱敏 `ai_evaluation_summary`、input schema 实际校验、`-32602`、1 MiB 消息上限和 30 秒子进程超时
+- **AI 基建专用 Skill**: 新增 `jsonutils-ai-infra-evolver 0.1.0` 与对照评测，为 `jsonutils-maintainer 0.1.27` 补维护正反例 eval 并将完整决策账本改为按任务读取；显式 profile 自动派生必需 eval，未分类 skill 不再静默合入
+- **Skill 上下文与契约分层**: 新增 90 KiB 必读上下文预算，maintainer 必读从约 352 KB 降至约 79 KB；profile 分层让专用 skill 只继承委派、安全、演进和版本契约，并锁定 `.codex`、源码、JSON、目录递归、段落/粗体未加反引号路径与锚点路径等预算绕过
+- **双闭环 CI 门禁**: GitHub Actions、weekly AI governance 和 local-ci 固定运行行为评测契约、真实 MCP stdio 测试、静态治理、可维护性预算与版本一致性检查
+
 ## v1.8.748 (2026-07-10) - MCP 资产清单工具
 ### 🏗️ 架构与基础设施
 - **MCP 资产清单工具**: `jsonutils-governance` MCP server 新增固定 `ai_asset_inventory` 工具，bounded 返回 AI 资产注册表的结构化资产、类型/状态/责任人计数和治理证据，并将 `jsonutils-maintainer` skill 升级到 `0.1.26`

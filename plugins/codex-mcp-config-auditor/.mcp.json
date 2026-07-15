@@ -1,0 +1,8 @@
+{
+  "codex-mcp-config-auditor": {
+    "command": "python3",
+    "args": [
+      "plugins/codex-mcp-config-auditor/scripts/server.py"
+    ]
+  }
+}

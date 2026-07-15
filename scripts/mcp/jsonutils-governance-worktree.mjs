@@ -1,15 +1,27 @@
-import { execFile } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import {
+  decodeHermeticGitNulRecords,
+  isSafeHermeticGitPath,
+  runHermeticGitInventory,
+} from '../ci/aiGovernanceHermeticGitInventory.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const emptyCounts = () => ({ added: 0, copied: 0, deleted: 0, modified: 0, renamed: 0, untracked: 0, conflicted: 0 });
 
-const runGitStatus = () => new Promise(resolve => {
-  execFile('git', ['status', '--porcelain=v1', '--branch'], { cwd: rootDir, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
-    resolve({ exitCode: error?.code ?? 0, stdout, stderr });
-  });
-});
+const runGitStatus = (cwd) => {
+  try {
+    return {
+      exitCode: 0,
+      stdout: runHermeticGitInventory(cwd, [
+        'status', '--porcelain=v1', '-z', '--branch', '--untracked-files=all',
+      ]),
+    };
+  } catch (error) {
+    return { exitCode: 1, error: error.message };
+  }
+};
 
 const parseBranch = (line = '') => {
   const [head = 'unknown', meta = ''] = line.replace(/^##\s*/, '').split(' [');
@@ -36,16 +48,33 @@ const countStatus = (counts, code) => {
   };
 };
 
-const parseFile = (line) => {
-  const status = line.slice(0, 2);
-  const [from, to] = line.slice(3).split(' -> ');
-  return { status: status.trim() || status, path: to ?? from, ...(to ? { from } : {}) };
+const parseStatusRecord = (record) => {
+  if (record.length < 4 || record[2] !== ' ' || !/^[ MADRCUT?!]{2}$/.test(record.slice(0, 2))) {
+    throw new Error('Git status 含非法 porcelain record');
+  }
+  const status = record.slice(0, 2), file = record.slice(3);
+  if (!isSafeHermeticGitPath(file)) throw new Error('Git status 含非法路径');
+  return { status, file };
 };
 
 export const parseGitStatusSnapshot = (stdout, maxFiles = 50, { includeAllFiles = false } = {}) => {
-  const lines = stdout.split(/\r?\n/).filter(Boolean);
-  const branch = lines[0]?.startsWith('## ') ? parseBranch(lines.shift()) : parseBranch();
-  const files = lines.map(parseFile);
+  if (!Buffer.isBuffer(stdout)) throw new Error('Git status 必须使用 NUL 分帧字节');
+  const records = decodeHermeticGitNulRecords(stdout);
+  if (!records[0]?.startsWith('## ')) throw new Error('Git status 缺少 branch record');
+  const branch = parseBranch(records.shift());
+  const files = [];
+  for (let index = 0; index < records.length; index += 1) {
+    const { status, file } = parseStatusRecord(records[index]);
+    const normalizedStatus = status.trim() || status;
+    if (/[RC]/.test(status)) {
+      const from = records[index + 1];
+      if (!isSafeHermeticGitPath(from)) throw new Error('Git status rename 缺少合法原路径');
+      files.push({ status: normalizedStatus, path: file, from });
+      index += 1;
+    } else {
+      files.push({ status: normalizedStatus, path: file });
+    }
+  }
   return {
     branch,
     dirty: files.length > 0,
@@ -57,14 +86,22 @@ export const parseGitStatusSnapshot = (stdout, maxFiles = 50, { includeAllFiles 
   };
 };
 
-export const buildJsonutilsWorktreeSnapshot = async ({ maxFiles = 50, includeAllFiles = false, runStatus = runGitStatus } = {}) => {
-  const result = await runStatus();
-  const snapshot = result.exitCode === 0 ? parseGitStatusSnapshot(result.stdout, maxFiles, { includeAllFiles }) : {};
+export const buildJsonutilsWorktreeSnapshot = async ({ maxFiles = 50, includeAllFiles = false, cwd = rootDir, runStatus } = {}) => {
+  const result = await (runStatus ? runStatus() : runGitStatus(cwd));
+  let snapshot = {}, error = result.error;
+  if (result.exitCode === 0) {
+    try {
+      snapshot = parseGitStatusSnapshot(result.stdout, maxFiles, { includeAllFiles });
+    } catch (caught) {
+      error = caught.message;
+    }
+  }
+  const ok = result.exitCode === 0 && !error;
   return {
     schemaVersion: 1,
     reportType: 'jsonutils-worktree-snapshot',
-    ok: result.exitCode === 0,
+    ok,
     ...snapshot,
-    ...(result.exitCode === 0 ? {} : { error: [result.stdout, result.stderr].filter(Boolean).join('\n').trim() }),
+    ...(ok ? {} : { error: error || 'hermetic Git status 读取失败' }),
   };
 };

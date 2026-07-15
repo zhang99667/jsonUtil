@@ -16,6 +16,10 @@ run_in_frontend "Frontend: dependency security audit" env npm_config_registry=ht
 run_in_frontend "Frontend: unit tests" npm test
 run_in_root "Governance: Node script unit tests" node --test scripts/ci/*.test.mjs
 run_in_root "Governance: MCP server unit tests" node --test scripts/mcp/*.test.mjs
+run_in_root "Governance: project plugin probe tests" node --test plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/*.test.mjs
+run_in_root "Governance: project plugin config auditor tests" python3 -B -m unittest discover -s plugins/codex-mcp-config-auditor/scripts -p 'test_*.py'
+run_in_root "Governance: AI evolution evals" node scripts/ci/check-ai-evolution-evals.mjs
+run_in_root "Governance: AI asset workspace distribution" node scripts/ci/check-ai-asset-distribution.mjs --workspace
 run_in_root "Governance: AI governance artifacts" node scripts/ci/write-ai-governance-artifacts.mjs
 run_in_root "Governance: chunk load recovery catch audit" node scripts/ci/check-chunk-load-recovery-catches.mjs
 run_in_frontend "Frontend: scheme corpus baseline" npm run corpus:scheme

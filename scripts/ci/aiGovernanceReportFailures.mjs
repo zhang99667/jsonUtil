@@ -15,6 +15,11 @@ export const collectAiGovernanceSkillContractFailures = (rootDir, context) => (
   collectCodexSkillContractFailures(rootDir, context.codexSkillFiles)
 );
 
+export const collectAiGovernanceEvolutionEvidenceFailures = (_, context) => [
+  ...(context.evolutionEvalReport.currentRunFailures ?? []),
+  ...(context.evolutionEvalReport.evidenceFreshness?.failures ?? []),
+].map(failure => `AI evolution evidence: ${failure}`);
+
 export { collectAiGovernanceContractFailures };
 
 export const collectAiGovernanceReferenceFailures = (rootDir, context) => (
@@ -25,5 +30,6 @@ export const buildAiGovernanceFailureGroups = (rootDir, context) => ({
   missingFiles: collectAiGovernanceMissingFileFailures(rootDir, context),
   skillContractFailures: collectAiGovernanceSkillContractFailures(rootDir, context),
   contractFailures: collectAiGovernanceContractFailures(rootDir, context),
+  evolutionEvidenceFailures: collectAiGovernanceEvolutionEvidenceFailures(rootDir, context),
   missingReferences: collectAiGovernanceReferenceFailures(rootDir, context),
 });

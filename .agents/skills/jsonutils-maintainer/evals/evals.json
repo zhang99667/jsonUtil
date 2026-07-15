@@ -1,0 +1,50 @@
+{
+  "skill_name": "jsonutils-maintainer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "重构 JSON 转换热点并补齐测试、治理预算和版本收尾。",
+      "expected_output": "按项目规则完成最小重构，保护脏工作区，并给出实际测试与版本证据。",
+      "files": [],
+      "assertions": [
+        "先读取 AGENTS、code-style 和工程 Playbook",
+        "修改范围保持最小且不覆盖用户改动",
+        "复杂任务按 explorer、worker、verifier 的项目 profile 边界委派",
+        "同步测试、可维护性预算、CHANGELOG 和版本门禁"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "为 Scheme/CMD 解析补一个能力并完成前后端验证。",
+      "expected_output": "复用现有解析模型，补正反例并运行与改动匹配的验证矩阵。",
+      "files": [],
+      "assertions": [
+        "先定位现有解析入口和测试模式",
+        "新增正例、负例和边界用例",
+        "记录实际执行的 lint、typecheck、build 或目标测试"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "只解释 transformations.ts 中一个函数的作用，不修改代码。",
+      "expected_output": "识别为轻量只读问答，不启动完整维护、版本或发布闭环。",
+      "files": [],
+      "assertions": [
+        "不修改文件",
+        "不递增版本或 CHANGELOG",
+        "用简洁证据回答函数行为"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "升级 JSONUtils 的 rules、skills、MCP 和行为评测闭环。",
+      "expected_output": "识别为 jsonutils-ai-infra-evolver 主触发；只有普通项目维护流程同时变化时，jsonutils-maintainer 才作为协同技能。",
+      "files": [],
+      "assertions": [
+        "不把通用 maintainer 当作 AI 基建专用入口",
+        "明确 evolver 主触发与 maintainer 条件协同边界",
+        "不从两个项目目录重复加载同名 skill"
+      ]
+    }
+  ]
+}

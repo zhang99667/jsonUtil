@@ -2,6 +2,8 @@
 
 本文件是 Comate 的薄入口，完整规范以仓库主文档为准，避免 `.comate` 目录复制旧规则后和主规范漂移。
 
+JSONUtils AI 基建必须是项目资产；`.agents/plugins/marketplace.json` 和 `plugins/` 是项目插件的 source of truth，用户安装缓存不是权威源。
+
 ## 必读文件
 
 - `AGENTS.md`: Codex 和通用 coding agent 项目入口。

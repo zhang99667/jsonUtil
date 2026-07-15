@@ -15,7 +15,7 @@ const collectMissingSectionFailures = (file, content) => (
 );
 
 export const collectSkillStructureContractFailures = (file, content) => {
-  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   return [
     ...(frontmatterMatch
       ? collectSkillFrontmatterContractFailures(file, frontmatterMatch[1])

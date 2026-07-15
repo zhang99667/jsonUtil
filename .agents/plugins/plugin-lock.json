@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "lockVersion": "1.0.0",
+  "digestAlgorithm": "sha256",
+  "trustBoundary": "repository-content-locked",
+  "plugins": [
+    {
+      "selector": "ai-infra-controller-probe@jsonutils-project",
+      "manifestVersion": "0.5.0",
+      "source": "plugins/ai-infra-controller-probe",
+      "files": [
+        { "path": ".codex-plugin/plugin.json", "gitMode": "100644", "size": 940, "sha256": "6906da46d7abc359b88474c4e9c279b80954ac427d8bbdbcb2d117b762bf728b" },
+        { "path": "skills/probe-codex-controller-runtime/SKILL.md", "gitMode": "100644", "size": 9172, "sha256": "a7af7b0553fea9cc30ec525043c8a34057bad4e51407436e8ee6f3be05399742" },
+        { "path": "skills/probe-codex-controller-runtime/agents/openai.yaml", "gitMode": "100644", "size": 280, "sha256": "cf04ee53eabbb0686866d52c13f706f9b14423ccd496cae83b48e22debc46057" },
+        { "path": "skills/probe-codex-controller-runtime/evals/evals.json", "gitMode": "100644", "size": 1649, "sha256": "f2d4f2d1b71baf1b924fc644cd24ec8e4b25bdfa3107609277c2a578f3912bb0" },
+        { "path": "skills/probe-codex-controller-runtime/references/report-contract.md", "gitMode": "100644", "size": 13711, "sha256": "6cec6a5011e185e31f044a121c16c35da1fbf692a2ef1fac956b61bac8f7347a" },
+        { "path": "skills/probe-codex-controller-runtime/scripts/controller-probe.mjs", "gitMode": "100644", "size": 23261, "sha256": "57d4886f2901cc10e4276e7d0a47fcad5877f42529f9d5d3efec18f08e7b91d9" },
+        { "path": "skills/probe-codex-controller-runtime/scripts/controller-probe.test.mjs", "gitMode": "100644", "size": 5506, "sha256": "51a96a0ede699e24c297c634116c19aa45ee040142fd1ff2de164afc99114c9a" },
+        { "path": "skills/probe-codex-controller-runtime/scripts/run-controller-probe.mjs", "gitMode": "100644", "size": 814, "sha256": "362182a568fdce97a9727689af57339229fa62e4acc5cb2e3837c8b8f2cb3f96" },
+        { "path": "skills/probe-codex-controller-runtime/scripts/run-seatbelt-sentinel.mjs", "gitMode": "100644", "size": 771, "sha256": "8e3abd3bc257ba7979191bdeb2bdc3d5aeeb373c5d9ea3ed329a7dbc599c0c85" },
+        { "path": "skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel-child.mjs", "gitMode": "100644", "size": 5038, "sha256": "2a698f7cf932c23235f7e0b78c44a4d728f767fb91f34c9bdc4f297c897fc88f" },
+        { "path": "skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.mjs", "gitMode": "100644", "size": 68617, "sha256": "a7bea3197409c3b32fd1644dd66a7a5dece2bc90ff90a9f323ab2eec80c38fd9" },
+        { "path": "skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.test.mjs", "gitMode": "100644", "size": 28657, "sha256": "0f208ed6ecb373206ff4358d35861d0db8e26bf6151c7eed405c6705c5c1dc44" }
+      ],
+      "treeSha256": "5cf156e6558296beea9a1a2e7852b51a6482bad9db13a0e6445951fc6ce28cbf"
+    },
+    {
+      "selector": "jsonutils-governance-mcp@jsonutils-project",
+      "manifestVersion": "0.2.1",
+      "source": "plugins/jsonutils-governance-mcp",
+      "files": [
+        { "path": ".codex-plugin/plugin.json", "gitMode": "100644", "size": 925, "sha256": "fc16cb81c1c3b39b11e50eaca3aefc523c8d8075df1a763fa51fbd2a21b50fdb" },
+        { "path": ".mcp.json", "gitMode": "100644", "size": 139, "sha256": "9fd24e3d20e2fef57b5cce089a15213c73a855aba7bd2b577f8e498fe1d46e20" },
+        { "path": "README.md", "gitMode": "100644", "size": 823, "sha256": "a64fb658082d32744b04ced265d432db99fbfe7f33ed87c566561a5feaf3771c" },
+        { "path": "scripts/server.mjs", "gitMode": "100644", "size": 790, "sha256": "63339105a0f2672f8cfbfe7c755851813fa8556f17a4cdbf744460016fd84938" }
+      ],
+      "treeSha256": "469739c79962c1fc03c7cb5bbcd8c965413e54c7ed996300130b3028a7786421"
+    },
+    {
+      "selector": "codex-mcp-config-auditor@jsonutils-project",
+      "manifestVersion": "0.2.1",
+      "source": "plugins/codex-mcp-config-auditor",
+      "files": [
+        { "path": ".codex-plugin/plugin.json", "gitMode": "100644", "size": 946, "sha256": "8ff34dbe9f20570aa961a4aa432a004f6ed57e3255b97eaab91910a58446c213" },
+        { "path": ".mcp.json", "gitMode": "100644", "size": 145, "sha256": "f7a96d90dd4baa1643101a9cf21d2991dc1d42579e30a856b0c09332864de18e" },
+        { "path": "README.md", "gitMode": "100644", "size": 949, "sha256": "d349a94d971020e712fbebb66c4c8defd91cabd1032a3d129dd97bdf6c7b6e99" },
+        { "path": "scripts/server.py", "gitMode": "100644", "size": 9084, "sha256": "1014d11dcc2f5dc4e87c7a31f15424a9fe599a7f20bce951609cd284af25605c" },
+        { "path": "scripts/test_server.py", "gitMode": "100644", "size": 4907, "sha256": "15911b2eb41e01a9e19a662a2d19b802339cabe00235405002212de9754cd1e5" }
+      ],
+      "treeSha256": "c832a212e13a7bad9fc3a059280b02022b71631cc9cef5dd1b8ad103c8fbfb93"
+    }
+  ]
+}

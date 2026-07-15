@@ -1,3 +1,4 @@
+import { governanceAiProjectPluginMaintainabilityBudgets } from './maintainability-budget-governance-ai-project-plugin-rules.mjs';
 const projectContractBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiProjectContractMaintainabilityBudgets = [
@@ -9,4 +10,5 @@ export const governanceAiProjectContractMaintainabilityBudgets = [
   projectContractBudget('scripts/ci/aiGovernanceProjectVersionFactRules.mjs', 45, 'AI 治理项目版本事实规则应独立维护可反查依赖清单和不可验证版本片段'),
   projectContractBudget('scripts/ci/aiGovernanceProjectVersionFactSources.mjs', 35, 'AI 治理项目版本事实来源 helper 应独立维护 package、pom 和 lock 主版本解析'),
   projectContractBudget('scripts/ci/aiGovernanceProjectVersionFactTargets.mjs', 35, 'AI 治理项目版本事实目标 helper 应独立维护入口文档缺失、过期版本和不可验证说明扫描'),
+  ...governanceAiProjectPluginMaintainabilityBudgets,
 ];

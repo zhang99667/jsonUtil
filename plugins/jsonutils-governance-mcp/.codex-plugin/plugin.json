@@ -1,0 +1,22 @@
+{
+  "name": "jsonutils-governance-mcp",
+  "version": "0.2.1",
+  "description": "Expose JSONUtils' fixed read-only AI governance MCP tools in Codex.",
+  "author": {
+    "name": "JSONUtils project"
+  },
+  "interface": {
+    "displayName": "JSONUtils Governance MCP",
+    "shortDescription": "Read-only JSONUtils AI governance tools.",
+    "longDescription": "Registers the JSONUtils repository's fixed read-only governance MCP server for scorecards, eval coverage, assets, decisions, handoff, worktree state, and validation planning.",
+    "developerName": "JSONUtils project",
+    "category": "Productivity",
+    "capabilities": ["Read"],
+    "defaultPrompt": [
+      "Show the current JSONUtils AI governance maturity and next focus.",
+      "Summarize JSONUtils behavior-eval coverage and provenance.",
+      "Build a read-only validation plan for the current JSONUtils worktree."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

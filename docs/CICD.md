@@ -205,7 +205,7 @@ bash scripts/deploy/ssh-prune-dev-artifacts.sh
 - 可写的应用目录
 - 如果使用当前 `docker-compose.yml` 的 HTTPS 配置，需要证书目录存在：`/www/server/panel/vhost/cert/39.97.237.248`
 
-生产 `docker-compose.yml` 只暴露前端 Nginx 的 `80/443`，后端 `8080` 与数据库 `5432` 仅在 Docker 网络内访问。需要本地调试端口时使用 `docker-compose.local.yml`。
+生产 `docker-compose.yml` 不绑定宿主机公网端口；前端 Nginx 仅在 Docker 网络内暴露 `80`，由独立的 `markz-edge` 统一承接 `80/443` 和域名路由。后端 `8080` 与数据库 `5432` 同样仅在 Docker 网络内访问。需要本地调试端口时使用 `docker-compose.local.yml`。
 
 首次部署前必须在远程应用目录创建 `.env`，否则发布脚本会直接失败：
 

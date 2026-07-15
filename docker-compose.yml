@@ -32,10 +32,9 @@ services:
       dockerfile: ${FRONTEND_DOCKERFILE:-Dockerfile}
       args:
         VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID:-}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"  # QUIC/HTTP3 需要 UDP
+    # Public traffic is owned by the independent markz-edge project.
+    expose:
+      - "80"
     environment:
       - STATIC_ASSET_RETENTION_DAYS=${STATIC_ASSET_RETENTION_DAYS:-14}
     volumes:
