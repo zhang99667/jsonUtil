@@ -5,7 +5,7 @@ const resources = [
   ['jsonutils://ai-governance/playbook', 'AI Engineering Playbook', 'docs/AI-ENGINEERING-PLAYBOOK.md'],
   ['jsonutils://ai-governance/asset-registry', 'AI Asset Registry', 'docs/AI-ASSET-REGISTRY.md'],
   ['jsonutils://ai-governance/decisions', 'AI Governance Decisions', 'docs/AI-GOVERNANCE-DECISIONS.md'],
-  ['jsonutils://ai-governance/maintainer-skill', 'JSONUtils Maintainer Skill', '.codex/skills/jsonutils-maintainer/SKILL.md'],
+  ['jsonutils://ai-governance/maintainer-skill', 'JSONUtils Maintainer Skill', '.agents/skills/jsonutils-maintainer/SKILL.md'],
 ].map(([uri, name, file]) => ({
   uri,
   name,

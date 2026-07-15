@@ -3,6 +3,8 @@ import { test } from 'node:test';
 
 import { buildJsonutilsHandoffBrief } from './jsonutils-governance-handoff.mjs';
 
+const statusBytes = (...records) => Buffer.from(`${records.join('\0')}\0`);
+
 const fakeRunScript = async (script) => {
   const stdout = script.includes('check-ai-governance')
     ? JSON.stringify({
@@ -10,7 +12,14 @@ const fakeRunScript = async (script) => {
       counts: { requiredFiles: 1, referenceRules: 1 },
       failures: { missingFiles: [], skillContractFailures: [], contractFailures: [], missingReferences: [] },
     })
-    : JSON.stringify({ ok: true, items: { highUsage: [{ file: 'frontend/src/App.tsx', remainingLines: 2, usageRatio: 0.98 }] } });
+    : JSON.stringify({
+      ok: true,
+      items: {
+        highUsage: [{ file: 'frontend/src/App.tsx', remainingLines: 2, usageRatio: 0.98 }],
+        scorecardCandidates: [{ file: 'frontend/src/App.tsx', remainingLines: 2, usageRatio: 0.98 },
+          { file: 'scripts/ci/aiGovernanceTruth.mjs', remainingLines: 10, usageRatio: 0.9 }],
+      },
+    });
   return { exitCode: 0, stdout, stderr: '' };
 };
 
@@ -21,17 +30,16 @@ test('handoff brief combines governance focus and worktree risks', async () => {
     runScript: fakeRunScript,
     runStatus: async () => ({
       exitCode: 0,
-      stdout: '## main...origin/main [behind 3]\n M CHANGELOG.md\n?? scratch.md\n',
-      stderr: '',
+      stdout: statusBytes('## main...origin/main [behind 3]', ' M CHANGELOG.md', '?? scratch.md'),
     }),
   });
 
   assert.equal(brief.reportType, 'jsonutils-handoff-brief');
   assert.equal(brief.ok, true);
   assert.equal(brief.governance.status, 'warn');
-  assert.equal(brief.governance.aiInfraStatus.aiInfraCleared, true);
-  assert.equal(brief.governance.aiInfraStatus.aiCandidateCount, 0);
-  assert.match(brief.governance.aiInfraStatus.nextAction, /AI 基建候选已清零/);
+  assert.equal(brief.governance.aiInfraStatus.aiInfraCleared, false);
+  assert.equal(brief.governance.aiInfraStatus.aiCandidateCount, 1);
+  assert.match(brief.governance.aiInfraStatus.nextAction, /aiGovernanceTruth\.mjs/);
   assert.equal(brief.worktree.branch.behind, 3);
   assert.equal(brief.worktree.changedFileCount, 2);
   assert.equal(brief.worktree.files.length, 1);
