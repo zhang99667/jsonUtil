@@ -1,0 +1,17 @@
+export const AI_GOVERNANCE_REQUIRED_MCP_RUNTIME_FILES = [
+  'scripts/mcp/jsonutils-governance-server.mjs',
+  'scripts/mcp/jsonutils-governance-line-framing.mjs',
+  'scripts/mcp/jsonutils-governance-jsonrpc.mjs',
+  'scripts/mcp/jsonutils-governance-cancellation.mjs',
+  'scripts/mcp/jsonutils-governance-session.mjs',
+  'scripts/mcp/jsonutils-governance-runtime-freshness.mjs',
+  'scripts/mcp/jsonutils-governance-runtime-freshness.test.mjs',
+  'scripts/mcp/jsonutilsGovernanceToolWorkerFreshnessTestCases.mjs',
+  'scripts/mcp/jsonutils-governance-tool-definitions.mjs',
+  'scripts/mcp/jsonutils-governance-tool-input.mjs',
+  'scripts/mcp/jsonutils-governance-tools.mjs',
+  'scripts/mcp/jsonutils-governance-tool-worker-contract.mjs',
+  'scripts/mcp/jsonutils-governance-tool-worker-client.mjs',
+  'scripts/mcp/jsonutils-governance-tool-runtime.mjs',
+  'scripts/mcp/jsonutils-governance-tool-worker.mjs',
+];

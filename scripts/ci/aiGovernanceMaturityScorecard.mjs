@@ -1,10 +1,11 @@
 import {
   scoreScorecardDimensions,
+  selectScorecardNextFocus,
   summarizeScorecardStatus,
 } from './aiGovernanceMaturityScorecardScoring.mjs';
 import { buildAiGovernanceMaturityScorecardDimensions } from './aiGovernanceMaturityScorecardDimensions.mjs';
 
-const SCORECARD_SCHEMA_VERSION = 1;
+const SCORECARD_SCHEMA_VERSION = 2;
 
 export const buildAiGovernanceMaturityScorecard = reports => {
   const dimensions = buildAiGovernanceMaturityScorecardDimensions(reports);
@@ -13,7 +14,7 @@ export const buildAiGovernanceMaturityScorecard = reports => {
     reportType: 'ai-governance-maturity-scorecard',
     score: scoreScorecardDimensions(dimensions),
     status: summarizeScorecardStatus(dimensions),
-    nextFocus: dimensions.find(item => ['fail', 'warn', 'unknown'].includes(item.status)) ?? null,
+    nextFocus: selectScorecardNextFocus(dimensions),
     dimensions,
   };
 };

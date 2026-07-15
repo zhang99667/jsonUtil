@@ -4,6 +4,7 @@ const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const isLeapYear = year => year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
 
 export const isIsoCalendarDate = (text) => {
+  if (typeof text !== 'string') return false;
   const match = ISO_DATE_PATTERN.exec(text);
   if (!match) return false;
 

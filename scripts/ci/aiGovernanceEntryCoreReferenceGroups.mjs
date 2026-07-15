@@ -4,6 +4,10 @@ import {
   VERSION_CHANGELOG_REFERENCES,
 } from './aiGovernanceReferenceGroups.mjs';
 
+export const PROJECT_AI_ASSET_OWNERSHIP_REFERENCES = [
+  '.agents/plugins/marketplace.json', 'plugins/', 'source of truth',
+];
+
 export const CORE_ENTRY_REFERENCES = [
   'rules/code-style.md',
   'docs/AI-ENGINEERING-PLAYBOOK.md',
@@ -12,12 +16,14 @@ export const CORE_ENTRY_REFERENCES = [
 ];
 
 export const ENTRY_GOVERNANCE_REFERENCES = [
+  ...PROJECT_AI_ASSET_OWNERSHIP_REFERENCES,
   ...SUBAGENT_DELEGATION_REFERENCES,
   ...AI_EVOLUTION_LOOP_REFERENCES,
   ...VERSION_CHANGELOG_REFERENCES,
 ];
 
 export const CODE_STYLE_GOVERNANCE_REFERENCES = [
+  ...PROJECT_AI_ASSET_OWNERSHIP_REFERENCES,
   ...AI_EVOLUTION_LOOP_REFERENCES,
   ...VERSION_CHANGELOG_REFERENCES,
 ];

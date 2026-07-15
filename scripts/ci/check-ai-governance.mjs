@@ -8,10 +8,26 @@ import {
   hasAiGovernanceFailures,
   printAiGovernanceHumanReport,
 } from './aiGovernanceCliOutput.mjs';
+import { collectUntrackedAiGovernanceAssetFailures } from './aiGovernanceAssetDistribution.mjs';
+import { buildAiGovernanceDistributionAssetFiles } from './aiGovernanceAssetDistributionFiles.mjs';
 import { buildAiGovernanceReport } from './aiGovernanceReport.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const report = buildAiGovernanceReport(rootDir);
+const baseReport = buildAiGovernanceReport(rootDir);
+const distributionScope = process.argv.includes('--require-head-assets')
+  ? 'head'
+  : process.argv.includes('--require-tracked') ? 'index' : null;
+const distributionAssetFiles = buildAiGovernanceDistributionAssetFiles({
+  rootDir,
+  requiredFiles: baseReport.requiredFiles,
+  referenceRules: baseReport.referenceRules,
+});
+const distributionFailures = distributionScope
+  ? collectUntrackedAiGovernanceAssetFailures(rootDir, distributionAssetFiles, distributionScope)
+  : [];
+const report = distributionFailures.length > 0
+  ? { ...baseReport, contractFailures: [...baseReport.contractFailures, ...distributionFailures] }
+  : baseReport;
 const outputJson = process.argv.includes('--json');
 
 if (outputJson) process.stdout.write(formatAiGovernanceJsonReport(report));

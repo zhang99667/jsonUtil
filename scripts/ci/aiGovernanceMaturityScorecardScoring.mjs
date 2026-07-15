@@ -15,6 +15,10 @@ export const summarizeScorecardStatus = dimensions => dimensions.reduce(
   'pass'
 );
 
+export const selectScorecardNextFocus = dimensions => dimensions.reduce((focus, item) => (
+  STATUS_RANK[item.status] > STATUS_RANK[focus?.status ?? 'pass'] ? item : focus
+), null);
+
 export const scoreScorecardDimensions = (dimensions) => {
   const points = dimensions.reduce((sum, item) => sum + STATUS_POINTS[item.status], 0);
   return Math.round((points / dimensions.length) * 100);

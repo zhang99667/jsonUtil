@@ -6,13 +6,13 @@ import { collectSectionReferenceFailures } from './aiGovernanceSectionReferences
 export { collectCodexSkillContractFailures };
 
 export const discoverCodexSkillFiles = (rootDir) => {
-  const codexSkillsDir = path.join(rootDir, '.codex/skills');
+  const codexSkillsDir = path.join(rootDir, '.agents/skills');
   if (!fs.existsSync(codexSkillsDir)) return [];
 
   return fs
     .readdirSync(codexSkillsDir, { withFileTypes: true })
     .filter(entry => entry.isDirectory())
-    .map(entry => `.codex/skills/${entry.name}/SKILL.md`);
+    .map(entry => `.agents/skills/${entry.name}/SKILL.md`);
 };
 
 export const collectMissingAiGovernanceFiles = (rootDir, requiredFiles) => (
@@ -25,7 +25,7 @@ export const collectMissingAiGovernanceReferences = (
   codexSkillFiles
 ) => {
   const missingReferences = [];
-  if (codexSkillFiles.length === 0) missingReferences.push('.codex/skills: 缺少项目级 Codex skill');
+  if (codexSkillFiles.length === 0) missingReferences.push('.agents/skills: 缺少项目级 Codex skill');
 
   for (const rule of referenceRules) {
     const filePath = path.join(rootDir, rule.file);

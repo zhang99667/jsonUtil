@@ -51,6 +51,6 @@ export const buildRegistryEvidenceSourceSets = ({ discoveredFiles, expectedRegis
   releaseReferenceFiles: buildTargetReferenceFiles(referenceRules, RELEASE_REFERENCE_TARGETS),
   runtimeReferenceFiles: buildTargetReferenceFiles(referenceRules, RUNTIME_REFERENCE_TARGETS),
   sectionReferenceFiles: new Set(referenceRules.filter(rule => rule.sections?.length > 0).map(rule => rule.file)),
-  skillContractFiles: new Set(discoveredFiles.filter(file => file.startsWith('.codex/skills/') && file.endsWith('/SKILL.md'))),
+  skillContractFiles: new Set(discoveredFiles.filter(file => file.startsWith('.agents/skills/') && (file.endsWith('/SKILL.md') || file.endsWith('/agents/openai.yaml')))),
   versionConsistencyReferenceFiles: buildVersionConsistencyReferenceFiles(referenceRules),
 });

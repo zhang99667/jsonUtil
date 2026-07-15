@@ -8,7 +8,6 @@ import {
 import { EXPECTED_DISCOVERED_AI_GOVERNANCE_ASSETS } from './aiGovernanceDiscoveredAssetExpectedTestFixtures.mjs';
 import { writeDiscoveredAssetFixtureFiles } from './aiGovernanceDiscoveredAssetTestFixtures.mjs';
 import { withAiGovernanceTempRoot } from './aiGovernanceTestFixtures.mjs';
-
 test('AI 治理资产发现会跳过显式豁免并报告未治理资产', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeDiscoveredAssetFixtureFiles(rootDir);

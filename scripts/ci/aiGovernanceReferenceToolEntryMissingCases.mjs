@@ -36,18 +36,4 @@ export const AI_GOVERNANCE_REFERENCE_TOOL_ENTRY_MISSING_CASES = [
     contains: ['AGENTS.md', 'CLAUDE.md', 'rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', '.claude/ai-tools-guide.md', 'node scripts/ci/check-ai-governance.mjs'],
     expected: '.claude/README.md: 缺少 "docs/AI-ENGINEERING-PLAYBOOK.md"',
   },
-  {
-    name: 'AI 治理引用检查会报告 Cursor 入口缺失 Comate 同源入口',
-    file: '.cursorrules',
-    content: lines(['AGENTS.md', 'CLAUDE.md', 'rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'node scripts/ci/check-ai-governance.mjs']),
-    contains: ['.comate/rules/code-style.md'],
-    expected: '.cursorrules: 缺少 ".comate/rules/code-style.md"',
-  },
-  {
-    name: 'AI 治理引用检查会报告 Comate 入口缺失版本锁文件',
-    file: '.comate/rules/code-style.md',
-    content: lines(['frontend/package.json', 'CHANGELOG.md', 'node scripts/ci/check-version-consistency.mjs']),
-    contains: ['frontend/package.json', 'frontend/package-lock.json', 'CHANGELOG.md'],
-    expected: '.comate/rules/code-style.md: 缺少 "frontend/package-lock.json"',
-  },
 ];

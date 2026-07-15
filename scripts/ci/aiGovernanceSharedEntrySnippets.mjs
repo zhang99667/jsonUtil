@@ -28,5 +28,4 @@ export const AI_ENTRY_SHARED_SNIPPET_FILES = [
   '.codex/README.md',
   '.github/copilot-instructions.md',
   '.cursorrules',
-  '.comate/rules/code-style.md',
 ];

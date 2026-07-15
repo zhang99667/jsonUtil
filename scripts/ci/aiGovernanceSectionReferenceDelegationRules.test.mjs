@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { collectMissingAiGovernanceReferences } from './aiGovernanceChecks.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
-const codexSkillFiles = ['.codex/skills/jsonutils-maintainer/SKILL.md'];
+const codexSkillFiles = ['.agents/skills/jsonutils-maintainer/SKILL.md'];
 const playbookFile = 'docs/AI-ENGINEERING-PLAYBOOK.md';
 const delegationSectionRule = {
   sectionTitle: '### 0. 判断子 Agent 委派',

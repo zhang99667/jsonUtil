@@ -6,11 +6,12 @@ import {
   buildCodexSkillFixtureContent,
   CODEX_SKILL_TEST_FILE,
   COMPLETE_CODEX_SKILL_SECTION_BODIES,
+  withCodexSkillTempRoot,
 } from './aiGovernanceSkillTestFixtures.mjs';
-import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
+import { writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 test('AI 治理 skill 契约会忽略正文里的伪章节标题', () => {
-  withAiGovernanceTempRoot((rootDir) => {
+  withCodexSkillTempRoot((rootDir) => {
     writeFixtureFile(rootDir, CODEX_SKILL_TEST_FILE, buildCodexSkillFixtureContent({
       sections: ['## 必读文件', '## 常用验证命令', '## 重点边界'],
       sectionBodies: {

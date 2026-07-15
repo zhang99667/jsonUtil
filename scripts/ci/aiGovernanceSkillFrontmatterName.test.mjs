@@ -5,19 +5,21 @@ import { collectCodexSkillContractFailures } from './aiGovernanceCodexSkillContr
 import {
   buildCodexSkillFixtureContent,
   CODEX_SKILL_TEST_FILE,
+  withCodexSkillTempRoot,
 } from './aiGovernanceSkillTestFixtures.mjs';
-import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
+import { writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const skillFile = CODEX_SKILL_TEST_FILE;
 
 test('AI 治理 skill 契约会报告 frontmatter name 与目录不一致', () => {
-  withAiGovernanceTempRoot((rootDir) => {
+  withCodexSkillTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, buildCodexSkillFixtureContent({
       frontmatter: [
         'name: stale-skill',
         'description: JSONUtils 项目维护技能。',
-        'version: 0.1.0',
-        'tags: [jsonutils, governance, maintenance]',
+        'metadata:',
+        '  version: "0.1.0"',
+        '  tags: "jsonutils,governance,maintenance"',
       ].join('\n'),
     }));
 

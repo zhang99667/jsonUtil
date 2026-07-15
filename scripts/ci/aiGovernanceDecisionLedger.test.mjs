@@ -62,6 +62,17 @@ test('AI 治理决策账本会报告不存在的回写路径', () => {
   });
 });
 
+test('AI 治理决策账本只允许已登记的历史 skill 路径迁移', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    writeDecisionLedgerBackfillFiles(rootDir);
+    writeFixtureFile(rootDir, '.agents/skills/jsonutils-maintainer/SKILL.md', 'canonical');
+    writeFixtureFile(rootDir, 'docs/AI-GOVERNANCE-DECISIONS.md', buildDecisionLedgerFixtureContent({
+      backfill: '`.codex/skills/jsonutils-maintainer/SKILL.md`, `docs/AI-GOVERNANCE-DECISIONS.md`, `CHANGELOG.md`',
+    }));
+    assert.deepEqual(collectAiGovernanceDecisionLedgerFailures(rootDir), []);
+  });
+});
+
 test('AI 治理决策账本会报告回写追踪缺少 CHANGELOG', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeDecisionLedgerBackfillFiles(rootDir);
