@@ -20,24 +20,14 @@ import {
     FileItem,
 } from '../services/file';
 import { isAdminRequestError } from '../services/requestErrors';
-import { TEXT_FILE_ACCEPT_EXTENSIONS } from '../../utils/fileGuards';
+import { formatFileSize, TEXT_FILE_ACCEPT_EXTENSIONS } from '../../utils/fileGuards';
+import { AdminListQuery, resolveAvailableListQuery } from '../utils/listQuery';
 
 const { Title } = Typography;
 const { Search } = Input;
 
 /** 默认每页条数 */
 const DEFAULT_PAGE_SIZE = 10;
-
-/**
- * 格式化文件大小（字节 -> 可读字符串）
- */
-const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    const k = 1024;
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + units[i];
-};
 
 /**
  * 根据文件类型返回标签颜色
@@ -61,8 +51,6 @@ const FileManagement: React.FC = () => {
     const [loading, setLoading] = useState(false);
     // 分页信息
     const [pagination, setPagination] = useState({ current: 1, pageSize: DEFAULT_PAGE_SIZE, total: 0 });
-    // 搜索关键词
-    const [keyword, setKeyword] = useState('');
     // 预览弹窗是否显示
     const [previewVisible, setPreviewVisible] = useState(false);
     // 预览文件内容
@@ -74,14 +62,83 @@ const FileManagement: React.FC = () => {
     // 文件上传中状态
     const [uploading, setUploading] = useState(false);
     const fileListRequestIdRef = useRef(0);
+    const latestFileListQueryRef = useRef<AdminListQuery>({
+        page: 1,
+        pageSize: DEFAULT_PAGE_SIZE,
+        keyword: '',
+    });
+    const fileListMountedRef = useRef(false);
     const previewRequestIdRef = useRef(0);
 
     /** 允许上传的文件类型 */
     const ACCEPTED_FILE_TYPES = TEXT_FILE_ACCEPT_EXTENSIONS.join(',');
 
     /**
-     * 自定义上传处理
+     * 获取文件列表
      */
+    const fetchFiles = useCallback(async (query: AdminListQuery) => {
+        if (!fileListMountedRef.current) {
+            return;
+        }
+
+        latestFileListQueryRef.current = query;
+        const requestId = ++fileListRequestIdRef.current;
+        const isCurrentRequest = () => (
+            fileListMountedRef.current && requestId === fileListRequestIdRef.current
+        );
+        setLoading(true);
+        try {
+            let resolvedQuery = query;
+            let result: Awaited<ReturnType<typeof getFileList>>;
+            while (true) {
+                result = await getFileList(
+                    resolvedQuery.page,
+                    resolvedQuery.pageSize,
+                    resolvedQuery.keyword || undefined,
+                );
+                // 只允许最新一次列表请求更新表格，避免快速搜索/翻页时旧响应回写。
+                if (!isCurrentRequest()) {
+                    return;
+                }
+
+                const availableQuery = resolveAvailableListQuery(resolvedQuery, result.total);
+                if (availableQuery === resolvedQuery) {
+                    break;
+                }
+                // 页码只会向第一页收敛；并发删除继续缩小总数时会再次校正。
+                resolvedQuery = availableQuery;
+                latestFileListQueryRef.current = resolvedQuery;
+            }
+
+            latestFileListQueryRef.current = resolvedQuery;
+            setFileList(result.list);
+            setPagination((prev) => ({
+                ...prev,
+                current: resolvedQuery.page,
+                pageSize: resolvedQuery.pageSize,
+                total: result.total,
+            }));
+        } catch (error) {
+            if (!isCurrentRequest()) {
+                return;
+            }
+            console.error('获取文件列表失败:', error);
+        } finally {
+            if (isCurrentRequest()) {
+                setLoading(false);
+            }
+        }
+    }, []);
+
+    /** 使用操作完成时的最新查询条件刷新列表 */
+    const refreshLatestFiles = useCallback((
+        updateQuery?: (query: AdminListQuery) => AdminListQuery,
+    ) => {
+        const latestQuery = latestFileListQueryRef.current;
+        return fetchFiles(updateQuery ? updateQuery(latestQuery) : latestQuery);
+    }, [fetchFiles]);
+
+    /** 自定义上传处理 */
     const uploadProps: UploadProps = {
         accept: ACCEPTED_FILE_TYPES,
         capture: undefined,
@@ -95,8 +152,8 @@ const FileManagement: React.FC = () => {
             try {
                 await uploadFile(file);
                 message.success(`${file.name} 上传成功`);
-                // 上传成功后刷新列表，回到第一页
-                fetchFiles(1, pagination.pageSize, keyword);
+                // 保留操作完成时的最新搜索条件，并回到第一页查看上传结果。
+                void refreshLatestFiles((query) => ({ ...query, page: 1 }));
             } catch (error) {
                 if (!isAdminRequestError(error)) {
                     message.error('文件上传失败');
@@ -108,41 +165,12 @@ const FileManagement: React.FC = () => {
         },
     };
 
-    /**
-     * 获取文件列表
-     */
-    const fetchFiles = useCallback(async (page: number, pageSize: number, search?: string) => {
-        const requestId = ++fileListRequestIdRef.current;
-        setLoading(true);
-        try {
-            const result = await getFileList(page, pageSize, search);
-            // 只允许最新一次列表请求更新表格，避免快速搜索/翻页时旧响应回写。
-            if (requestId !== fileListRequestIdRef.current) {
-                return;
-            }
-            setFileList(result.list);
-            setPagination((prev) => ({
-                ...prev,
-                current: page,
-                pageSize,
-                total: result.total,
-            }));
-        } catch (error) {
-            if (requestId !== fileListRequestIdRef.current) {
-                return;
-            }
-            console.error('获取文件列表失败:', error);
-        } finally {
-            if (requestId === fileListRequestIdRef.current) {
-                setLoading(false);
-            }
-        }
-    }, []);
-
     // 初次加载
     useEffect(() => {
-        fetchFiles(1, DEFAULT_PAGE_SIZE);
+        fileListMountedRef.current = true;
+        void fetchFiles(latestFileListQueryRef.current);
         return () => {
+            fileListMountedRef.current = false;
             fileListRequestIdRef.current += 1;
             previewRequestIdRef.current += 1;
         };
@@ -152,22 +180,29 @@ const FileManagement: React.FC = () => {
      * 搜索文件
      */
     const handleSearch = (value: string) => {
-        setKeyword(value);
-        fetchFiles(1, pagination.pageSize, value);
+        void fetchFiles({
+            ...latestFileListQueryRef.current,
+            page: 1,
+            keyword: value,
+        });
     };
 
     /**
      * 刷新列表
      */
     const handleRefresh = () => {
-        fetchFiles(pagination.current, pagination.pageSize, keyword);
+        void refreshLatestFiles();
     };
 
     /**
      * 表格翻页
      */
     const handleTableChange = (paginationConfig: { current?: number; pageSize?: number }) => {
-        fetchFiles(paginationConfig.current ?? 1, paginationConfig.pageSize ?? pagination.pageSize, keyword);
+        void fetchFiles({
+            ...latestFileListQueryRef.current,
+            page: paginationConfig.current ?? 1,
+            pageSize: paginationConfig.pageSize ?? latestFileListQueryRef.current.pageSize,
+        });
     };
 
     /**
@@ -214,7 +249,7 @@ const FileManagement: React.FC = () => {
     const handleDownload = async (record: FileItem) => {
         try {
             await downloadFile(record.id, record.fileName);
-            message.success(`${record.fileName} 下载成功`);
+            message.success(`${record.fileName} 下载已开始`);
         } catch (error) {
             if (!isAdminRequestError(error)) {
                 message.error('文件下载失败');
@@ -230,11 +265,8 @@ const FileManagement: React.FC = () => {
         try {
             await deleteFile(record.id);
             message.success(`${record.fileName} 已删除`);
-            // 删除后刷新列表，如果当前页没有数据则回退到上一页
-            const newTotal = pagination.total - 1;
-            const maxPage = Math.ceil(newTotal / pagination.pageSize) || 1;
-            const targetPage = pagination.current > maxPage ? maxPage : pagination.current;
-            fetchFiles(targetPage, pagination.pageSize, keyword);
+            // 服务端最新总数会在列表请求中决定是否回退末页。
+            void refreshLatestFiles();
         } catch (error) {
             if (!isAdminRequestError(error)) {
                 message.error('文件删除失败');

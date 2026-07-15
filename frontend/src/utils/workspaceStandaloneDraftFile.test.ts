@@ -23,6 +23,7 @@ describe('workspaceStandaloneDraftFile', () => {
       files,
       activeFileId,
       input,
+      mode: TransformMode.NONE,
       createId,
     })).toBe(files);
     expect(createId).not.toHaveBeenCalled();
@@ -38,6 +39,7 @@ describe('workspaceStandaloneDraftFile', () => {
       files,
       activeFileId: null,
       input: '{"draft":true}',
+      mode: TransformMode.DEEP_FORMAT,
       createId: () => 'draft-id',
     });
 
@@ -48,7 +50,7 @@ describe('workspaceStandaloneDraftFile', () => {
       content: '{"draft":true}',
       savedContent: '',
       isDirty: true,
-      mode: TransformMode.NONE,
+      mode: TransformMode.DEEP_FORMAT,
     });
   });
 });

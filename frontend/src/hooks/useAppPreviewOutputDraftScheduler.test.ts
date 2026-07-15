@@ -33,16 +33,20 @@ describe('useAppPreviewOutputDraftScheduler', () => {
   it('将草稿清理函数交给 PREVIEW 同步 scheduler', () => {
     const isUpdatingFromOutput = { current: true };
     const pendingOutputValue = { current: '{"a":2}' };
+    const onBeforeSync = vi.fn();
 
     const result = useAppPreviewOutputDraftScheduler({
       isUpdatingFromOutput,
       pendingOutputValue,
+      onBeforeSync,
     });
 
-    const { clearOutputDraft } = vi.mocked(useAppPreviewOutputSyncScheduler).mock.calls[0][0];
+    const schedulerInput = vi.mocked(useAppPreviewOutputSyncScheduler).mock.calls[0][0];
+    const { clearOutputDraft } = schedulerInput;
     clearOutputDraft();
 
     expect(clearPreviewOutputDraft).toHaveBeenCalledWith(isUpdatingFromOutput, pendingOutputValue);
+    expect(schedulerInput.onBeforeSync).toBe(onBeforeSync);
     expect(result).toBe(schedulerResult);
   });
 });

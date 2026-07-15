@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   downloadSettingsBackupTextFile,
 } from './appSettingsBackupBrowserEffects';
@@ -25,7 +25,12 @@ const installDownloadDomStubs = (click = vi.fn()) => {
 };
 
 describe('appSettingsBackupBrowserEffects', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -45,6 +50,8 @@ describe('appSettingsBackupBrowserEffects', () => {
     expect(stubs.appendChild).toHaveBeenCalledWith(stubs.link);
     expect(stubs.link.click).toHaveBeenCalledTimes(1);
     expect(stubs.link.remove).toHaveBeenCalledTimes(1);
+    expect(stubs.revokeObjectURL).not.toHaveBeenCalled();
+    vi.runAllTimers();
     expect(stubs.revokeObjectURL).toHaveBeenCalledWith('blob:settings-backup');
   });
 
@@ -61,7 +68,7 @@ describe('appSettingsBackupBrowserEffects', () => {
     })).toThrow(error);
 
     expect(stubs.link.remove).toHaveBeenCalledTimes(1);
+    vi.runAllTimers();
     expect(stubs.revokeObjectURL).toHaveBeenCalledWith('blob:settings-backup');
   });
-
 });

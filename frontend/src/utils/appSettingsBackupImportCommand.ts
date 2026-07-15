@@ -1,5 +1,6 @@
 import type { AIConfig } from '../types';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
+import { getErrorMessage } from './errors';
 import type {
   AppSettingsBackupImportEffects,
   AppSettingsBackupReadableFile,
@@ -13,7 +14,7 @@ export const runAppImportSettingsBackupCommand = async (
   try {
     const { applyAppBackupContent, notifyAppBackupImported } = await effects.onLoadBackupModule();
     const content = await effects.onReadFileText(file);
-    const result = applyAppBackupContent(content, effects.storage, currentAIConfig);
+    const result = applyAppBackupContent(content, effects.onGetStorage(), currentAIConfig);
 
     effects.onSetGeneralSettings(result.generalSettings);
     effects.onSetAIConfig(result.aiConfig);
@@ -23,6 +24,6 @@ export const runAppImportSettingsBackupCommand = async (
   } catch (error) {
     if (dispatchChunkLoadRecoveryEvent(error)) return;
 
-    effects.onShowError(error instanceof Error ? error.message : '导入配置备份失败');
+    effects.onShowError(getErrorMessage(error, '导入配置备份失败'));
   }
 };

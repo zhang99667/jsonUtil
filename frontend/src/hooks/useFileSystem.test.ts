@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TransformMode, type FileTab } from '../types';
+import { createWorkspaceFileTabState } from './fileSystemTestState';
 import { useFileSystem } from './useFileSystem';
 
 const reactMocks = vi.hoisted(() => ({
@@ -13,6 +14,7 @@ vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
   useEffect: reactMocks.useEffect,
+  useLayoutEffect: reactMocks.useEffect,
   useRef: reactMocks.useRef,
   useState: reactMocks.useState,
 }));
@@ -35,26 +37,28 @@ const createFile = (id: string, content: string, mode = TransformMode.NONE): Fil
 const useFileSystemScenario = (files: FileTab[], activeFileId = 'file-1') => {
   const events: string[] = [];
   let stateIndex = 0;
+  const setFiles = vi.fn();
+  const workspaceState = createWorkspaceFileTabState(files, activeFileId);
   reactMocks.useState.mockImplementation(() => {
     const values = [
       [null, vi.fn()],
-      [files, vi.fn()],
-      [activeFileId, vi.fn()],
+      [workspaceState, setFiles],
       [false, vi.fn()],
     ];
     return values[stateIndex++] ?? [null, vi.fn()];
   });
 
+  const inputValue = files.find(file => file.id === activeFileId)?.content ?? '';
   const input = {
-    input: files.find(file => file.id === activeFileId)?.content ?? '',
+    input: inputValue,
     setInput: vi.fn(() => events.push('input')),
-    inputRef: { current: 'old' },
+    inputRef: { current: inputValue },
     mode: TransformMode.NONE,
     setMode: vi.fn(() => events.push('mode')),
     onBeforeSourceWorkspaceChange: vi.fn(() => events.push('before')),
   };
 
-  return { events, input, fileSystem: useFileSystem(input) };
+  return { events, input, setFiles, fileSystem: useFileSystem(input) };
 };
 
 type FileSystemScenario = ReturnType<typeof useFileSystemScenario>;
@@ -71,6 +75,11 @@ const expectSourceStateApplied = ({ input, events }: FileSystemScenario, content
 describe('useFileSystem', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('切换标签替换 SOURCE 和模式前先触发 before-change', () => {
@@ -107,4 +116,5 @@ describe('useFileSystem', () => {
     expect(writable.write).toHaveBeenCalledWith('{"preview":true}');
     expectSourceStateApplied(scenario, '{"preview":true}');
   });
+
 });

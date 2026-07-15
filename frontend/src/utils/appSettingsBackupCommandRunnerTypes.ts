@@ -8,7 +8,7 @@ export interface AppSettingsBackupCommandInput {
 }
 
 export interface AppSettingsBackupExportModule {
-  buildAppBackup: (input: AppSettingsBackupCommandInput) => AppBackupPayload;
+  buildAppBackup: (input: AppSettingsBackupCommandInput & { storage: Storage }) => AppBackupPayload;
   serializeAppBackup: (payload: AppBackupPayload) => string;
 }
 
@@ -33,6 +33,7 @@ export interface AppSettingsBackupReadableFile {
 
 export interface AppSettingsBackupExportEffects {
   onLoadBackupModule: () => Promise<AppSettingsBackupExportModule>;
+  onGetStorage: () => Storage;
   onDownloadTextFile: (file: AppSettingsBackupTextFile) => void;
   onShowSuccess: (message: string) => void;
   onShowError: (message: string) => void;
@@ -46,5 +47,5 @@ export interface AppSettingsBackupImportEffects {
   onReplaceShortcuts: (shortcuts: ShortcutConfig) => void;
   onShowSuccess: (message: string) => void;
   onShowError: (message: string) => void;
-  storage: Storage;
+  onGetStorage: () => Storage;
 }
