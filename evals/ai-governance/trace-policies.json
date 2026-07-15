@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "policies": [
+    {
+      "id": "mcp-project-registration-discovery",
+      "version": "1.0.1",
+      "caseId": "mcp-project-registration-discovery",
+      "adapter": {
+        "id": "codex-exec-jsonl",
+        "version": "1.2.1"
+      },
+      "requiredMcp": {
+        "name": "jsonutils-governance/ai_governance_scorecard",
+        "resultKeys": [
+          "maturityScorecard.nextFocus.id"
+        ]
+      },
+      "forbiddenEventTypes": [
+        "command.call",
+        "command.result",
+        "file.change",
+        "capability.use"
+      ],
+      "requireUnchangedRevision": true
+    },
+    {
+      "id": "mcp-fixed-tool-selection",
+      "version": "1.1.1",
+      "caseId": "mcp-fixed-tool-selection",
+      "adapter": {
+        "id": "codex-exec-jsonl",
+        "version": "1.2.1"
+      },
+      "requiredMcp": {
+        "name": "jsonutils-governance/ai_governance_scorecard",
+        "resultKeys": [
+          "maturityScorecard.nextFocus.id"
+        ]
+      },
+      "forbiddenEventTypes": [
+        "command.call",
+        "command.result",
+        "file.change",
+        "capability.use"
+      ],
+      "requireUnchangedRevision": true
+    },
+    {
+      "id": "skill-jsonutils-ai-infra-evolver-trigger",
+      "version": "1.1.2",
+      "caseId": "skill-jsonutils-ai-infra-evolver-trigger",
+      "adapter": {
+        "id": "codex-exec-jsonl",
+        "version": "1.2.1"
+      },
+      "requiredSkillDecision": {
+        "name": "jsonutils-ai-infra-evolver",
+        "status": "selected",
+        "exactCount": 1
+      },
+      "requiredReads": [
+        { "path": ".agents/skills/jsonutils-ai-infra-evolver/SKILL.md", "sha256": "9ec9e7ec8b9d9f49a7f55147b6a6762daa443eca179b4e76da2b73b2da1e1946" },
+        { "path": "AGENTS.md", "sha256": "9ca6568759b4a263dd707c37d6344235946fcd0cd3033943529ff0e80a2487fb" },
+        { "path": "rules/code-style.md", "sha256": "ca2d7f679b1c87bd78841f79bdc097e8b6b564c38cd1cb54542441e2ed19f813" },
+        { "path": "docs/AI-ENGINEERING-PLAYBOOK.md", "sha256": "6f67021948a75df10642f8948deab2d07bfa67d41a337c4868a0a01455e833d9" },
+        { "path": "docs/AI-EVOLUTION-PLAYBOOK.md", "sha256": "aca9f1eac1bb3952380e639e28848655f22c89d63d52c356aae5b900c09e5ac8" }
+      ],
+      "allowedMcp": [
+        "jsonutils-governance/ai_decision_summary",
+        "jsonutils-governance/ai_asset_inventory"
+      ],
+      "forbiddenEventTypes": ["file.change"],
+      "requireUnchangedRevision": true
+    }
+  ]
+}
