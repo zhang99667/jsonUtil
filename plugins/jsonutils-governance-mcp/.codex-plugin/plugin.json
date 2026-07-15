@@ -1,0 +1,22 @@
+{
+  "name": "jsonutils-governance-mcp",
+  "version": "0.2.2",
+  "description": "在 Codex 中暴露 JSONUtils 固定的只读 AI 治理 MCP 工具。",
+  "author": {
+    "name": "JSONUtils project"
+  },
+  "interface": {
+    "displayName": "JSONUtils 治理 MCP",
+    "shortDescription": "JSONUtils 只读 AI 治理工具。",
+    "longDescription": "注册 JSONUtils 仓库固定的只读治理 MCP 服务，用于读取评分卡、评测覆盖、资产、决策、交接、工作树状态和验证计划。",
+    "developerName": "JSONUtils project",
+    "category": "Productivity",
+    "capabilities": ["Read"],
+    "defaultPrompt": [
+      "显示当前 JSONUtils AI 治理成熟度和下一个焦点。",
+      "总结 JSONUtils 行为评测覆盖与来源。",
+      "为当前 JSONUtils 工作树生成只读验证计划。"
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

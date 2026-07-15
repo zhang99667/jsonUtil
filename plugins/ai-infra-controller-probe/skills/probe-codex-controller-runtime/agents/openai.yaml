@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex 控制器运行时探针"
+  short_description: "探测已签名 Codex 与 Seatbelt 边界"
+  default_prompt: "使用 $probe-codex-controller-runtime 运行已签名的零模型 macOS Seatbelt 哨兵，不修改已封存的源快照。"

@@ -1,0 +1,20 @@
+{
+  "name": "ai-infra-controller-probe",
+  "version": "0.5.1",
+  "description": "面向 Codex 控制器边界的无密钥 Docker 预检与已签名 macOS Seatbelt 哨兵。",
+  "author": {
+    "name": "JSONUtils project"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI 基建控制器探针",
+    "shortDescription": "探测无密钥控制器隔离边界。",
+    "longDescription": "运行零模型 Docker 预检或已签名 macOS Seatbelt 哨兵，保持源快照零修改，使用一次性控制并复核执行后绑定，同时明确保持控制器、命名空间、签名方、模型未调用及结果声明为未验证。",
+    "developerName": "JSONUtils project",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "运行已签名的无密钥 macOS Seatbelt 哨兵，不修改源快照，然后说明它只能提供组件证据的边界。"
+    ]
+  }
+}
