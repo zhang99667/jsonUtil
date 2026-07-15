@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { callGovernanceMcpTool } from '../ci/jsonutilsGovernanceMcpToolCallClient.mjs';
-import { startGovernanceMcpServer } from '../ci/jsonutilsGovernanceMcpStdioTestClient.mjs';
-import { request } from '../ci/mcpLineDelimitedStdioClient.mjs';
+import { initializeGovernanceMcpServer, startGovernanceMcpServer } from '../ci/jsonutilsGovernanceMcpStdioTestClient.mjs';
 
 test('MCP stdio serves handoff, decision and validation tools', async (t) => {
   const { child, readMessage } = startGovernanceMcpServer(t);
-  await request(child, readMessage, 1, 'initialize');
+  const initialized = await initializeGovernanceMcpServer(child, readMessage, 'stdio-handoff-tools-test');
+  assert.equal(initialized.result.serverInfo.name, 'jsonutils-governance');
 
   const handoff = await callGovernanceMcpTool(child, readMessage, 2, 'ai_handoff_brief', { top: 1, maxFiles: 3 }, 30000);
   assert.equal(handoff.reportType, 'jsonutils-handoff-brief');
@@ -25,5 +25,10 @@ test('MCP stdio serves handoff, decision and validation tools', async (t) => {
 
   const scorecard = await callGovernanceMcpTool(child, readMessage, 5, 'ai_governance_scorecard', { top: 35 }, 30000);
   const maintainability = scorecard.maturityScorecard.dimensions.find(item => item.id === 'maintainability-headroom');
+  const distribution = scorecard.maturityScorecard.dimensions.find(item => item.id === 'distribution-readiness').details.distributionReadiness;
+  const handoffDistribution = handoff.governance.distributionReadiness;
   assert.deepEqual(handoff.governance.aiInfraStatus, maintainability.details.maintainabilityHotspots);
+  assert.deepEqual([handoffDistribution.counts.assets, handoffDistribution.readiness.workspaceCandidate,
+    handoffDistribution.readiness.nextCommit, handoffDistribution.readiness.clone],
+    [distribution.assetCount, distribution.workspaceCandidate, distribution.nextCommit, distribution.clone]);
 });

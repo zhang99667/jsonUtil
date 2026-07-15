@@ -1,0 +1,15 @@
+export const AI_GOVERNANCE_REQUIRED_EVOLUTION_RUNNER_FILES = [
+  'scripts/ci/aiGovernanceRequiredEvolutionRunnerFiles.mjs',
+  'scripts/ci/aiGovernanceEvolutionCaseRunner.mjs',
+  'scripts/ci/aiGovernanceEvolutionExecutableCases.mjs',
+  'scripts/ci/aiGovernanceEvolutionCaseDescriptorRegistry.mjs',
+  'scripts/ci/aiGovernanceEvolutionCodexBoundaryCaseDescriptors.mjs',
+  'scripts/ci/aiGovernanceEvolutionCaseFailure.mjs',
+  'scripts/ci/run-ai-evolution-cases.mjs',
+  'scripts/ci/aiGovernanceEvolutionCaseRunner.test.mjs',
+  'scripts/ci/aiGovernanceEvolutionExecutableCases.test.mjs',
+  'scripts/ci/aiGovernanceEvolutionExecutableCaseDescriptors.test.mjs',
+  'scripts/ci/aiGovernanceEvolutionCaseFailure.test.mjs',
+  'scripts/ci/aiGovernanceEvolutionFailureProjection.test.mjs',
+  'scripts/ci/maintainability-budget-governance-ai-evolution-runner-rules.mjs',
+];

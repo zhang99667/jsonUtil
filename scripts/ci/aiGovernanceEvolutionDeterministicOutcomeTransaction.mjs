@@ -4,6 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { runHermeticGitInventory } from './aiGovernanceHermeticGitInventory.mjs';
+import { buildEvolutionOutcomeRecoveryResult } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
+export { getEvolutionOutcomeRecoveryMutationPerformed } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
 
 const CONTROL_RELATIVE_PATH = 'jsonutils-ai-governance/outcome-writer';
 const LOCK_FILE = 'writer.lock';
@@ -16,7 +18,6 @@ const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const ENDPOINT_FIELDS = ['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeNs', 'ctimeNs', 'sha256'];
 const ENTRY_FIELDS = ['path', 'baseEndpoint', 'baseBase64', 'suffixBase64', 'expectedSize', 'expectedSha256'];
 const JOURNAL_FIELDS = ['schemaVersion', 'transactionId', 'revision', 'receipts', 'outcomes', 'transactionSha256'];
-
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const exactFields = (value, fields) => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('\0') === [...fields].sort().join('\0');
@@ -349,7 +350,7 @@ export const recoverEvolutionOutcomeTransaction = ({
   rootDir, controlPaths, receiptsPath, outcomesPath, resolveRevision,
 }) => {
   assertControlLock(controlPaths);
-  if (!fs.existsSync(controlPaths.journalPath)) return { status: 'none' };
+  if (!fs.existsSync(controlPaths.journalPath)) return buildEvolutionOutcomeRecoveryResult({ status: 'none' });
   const decoded = readJournal(controlPaths.journalPath);
   const receipts = safeLedgerSnapshot(rootDir, receiptsPath);
   const outcomes = safeLedgerSnapshot(rootDir, outcomesPath);
@@ -373,19 +374,26 @@ export const recoverEvolutionOutcomeTransaction = ({
     }
     if (resolveRevision(rootDir) !== decoded.journal.revision) {
       removeJournal(controlPaths);
-      return { status: 'abandoned-source-drift', transactionId: decoded.journal.transactionId };
+      return buildEvolutionOutcomeRecoveryResult({
+        status: 'abandoned-source-drift', transactionId: decoded.journal.transactionId,
+      });
     }
   }
+  const receiptMutationPerformed = receiptState !== 'expected';
   if (receiptState !== 'expected') receiptState = appendRemaining(rootDir, receiptsPath, decoded.journal.receipts, decoded.receipts);
   if (receiptState !== 'expected') throw new Error('receipt ledger 未恢复到 expected');
   const refreshedOutcome = safeLedgerSnapshot(rootDir, outcomesPath);
   outcomeState = classifyBytes(refreshedOutcome.bytes, decoded.outcomes.base, decoded.outcomes.expected);
   if (!['base', 'prefix', 'expected'].includes(outcomeState)) throw new Error('outcome ledger 恢复状态非法');
+  const outcomeMutationPerformed = outcomeState !== 'expected';
   if (outcomeState !== 'expected') outcomeState = appendRemaining(rootDir, outcomesPath, decoded.journal.outcomes, decoded.outcomes);
   if (outcomeState !== 'expected') throw new Error('outcome ledger 未恢复到 expected');
   const stale = resolveRevision(rootDir) !== decoded.journal.revision;
   removeJournal(controlPaths);
-  return { status: stale ? 'recovered-stale' : 'recovered', transactionId: decoded.journal.transactionId };
+  return buildEvolutionOutcomeRecoveryResult({
+    status: stale ? 'recovered-stale' : 'recovered', transactionId: decoded.journal.transactionId,
+    receipts: receiptMutationPerformed, outcomes: outcomeMutationPerformed,
+  });
 };
 
 export const commitEvolutionOutcomeTransaction = ({

@@ -7,14 +7,11 @@ import { validateEvolutionDeterministicOutcomeCandidate } from './aiGovernanceEv
 import {
   acquireEvolutionOutcomeWriterLock,
   commitEvolutionOutcomeTransaction,
+  getEvolutionOutcomeRecoveryMutationPerformed,
   readEvolutionOutcomeLedgerSnapshot,
   recoverEvolutionOutcomeTransaction,
 } from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';
-import {
-  collectEvolutionSensitiveFieldFailures,
-  isEvolutionRecord,
-  readEvolutionEvalCorpus,
-} from './aiGovernanceEvolutionEvalContract.mjs';
+import { readEvolutionEvalCorpus } from './aiGovernanceEvolutionEvalContract.mjs';
 import { buildAiGovernanceEvolutionEvalReport } from './aiGovernanceEvolutionEvalReport.mjs';
 import {
   hashEvolutionOutcomeLegacyPrefix,
@@ -30,79 +27,17 @@ import {
   hashEvolutionTrialReceiptLine,
   readEvolutionTrialReceiptLedger,
 } from './aiGovernanceEvolutionTrialReceipts.mjs';
+import { normalizeEvolutionUnverifiedTraceObservation } from './aiGovernanceEvolutionUnverifiedTraceObservationContract.mjs';
 import { resolveEvolutionWorktreeRevision } from './aiGovernanceEvolutionWorktreeRevision.mjs';
 
-export const AI_EVOLUTION_UNVERIFIED_TRACE_OUTCOME_WRITER_VERSION = '1.0.0';
-export const AI_EVOLUTION_UNVERIFIED_TRACE_OBSERVATION_MAX_BYTES = 64 * 1024;
+export const AI_EVOLUTION_UNVERIFIED_TRACE_OUTCOME_WRITER_VERSION = '1.2.0';
+export {
+  AI_EVOLUTION_UNVERIFIED_TRACE_OBSERVATION_MAX_BYTES,
+  parseEvolutionUnverifiedTraceObservation,
+} from './aiGovernanceEvolutionUnverifiedTraceObservationContract.mjs';
 const RECEIPTS_RELATIVE_PATH = 'evals/ai-governance/trial-receipts.jsonl';
 const OUTCOMES_RELATIVE_PATH = 'evals/ai-governance/outcomes.jsonl';
 const VALIDATION_COMMAND = 'internal:verify-unverified-trace-candidate@1';
-const OBSERVATION_FIELDS = ['schemaVersion', 'artifactType', 'dataClass', 'caseId', 'method', 'trace'];
-const TRACE_INPUT_FIELDS = ['adapter', 'capture', 'events'];
-const ADAPTER_INPUT_FIELDS = ['id', 'version'];
-const CAPTURE_INPUT_FIELDS = ['status', 'sampling', 'droppedEvents', 'droppedAttributes', 'droppedLinks', 'flushStatus'];
-const EVENT_INPUT_FIELDS = new Set(['sequence', 'type', 'actorId', 'childActorId', 'operationId', 'name', 'status', 'path', 'sha256', 'beforeSha256', 'afterSha256', 'validationIndex', 'keys']);
-const METHODS = new Set(['model', 'human', 'hybrid']);
-const CASE_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
-const MAX_INPUT_EVENTS = 198;
-
-const exactFields = (value, fields, label) => {
-  if (!isEvolutionRecord(value)) throw new TypeError(`${label} 必须是对象`);
-  const actual = Object.keys(value).sort();
-  const expected = [...fields].sort();
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new TypeError(`${label} 必须是闭字段对象`);
-};
-
-const rejectUnexpectedFields = (value, fields, label) => {
-  if (!isEvolutionRecord(value)) throw new TypeError(`${label} 必须是对象`);
-  if (Object.keys(value).some(field => !fields.has(field))) throw new TypeError(`${label} 包含非法字段`);
-};
-
-const normalizeObservation = (observation) => {
-  exactFields(observation, OBSERVATION_FIELDS, 'trace observation');
-  exactFields(observation.trace, TRACE_INPUT_FIELDS, 'trace observation.trace');
-  const sensitive = collectEvolutionSensitiveFieldFailures(observation, 'trace observation');
-  if (sensitive.length > 0) throw new TypeError(sensitive[0]);
-  exactFields(observation.trace.adapter, ADAPTER_INPUT_FIELDS, 'trace observation.trace.adapter');
-  exactFields(observation.trace.capture, CAPTURE_INPUT_FIELDS, 'trace observation.trace.capture');
-  if (observation.schemaVersion !== 1
-    || observation.artifactType !== 'ai-evolution-unverified-trace-observation'
-    || observation.dataClass !== 'redacted'
-    || !CASE_ID_PATTERN.test(observation.caseId ?? '')
-    || !METHODS.has(observation.method)) {
-    throw new TypeError('trace observation 基础字段非法');
-  }
-  const events = observation.trace.events;
-  if (!Array.isArray(events) || events.length < 3 || events.length > MAX_INPUT_EVENTS) {
-    throw new TypeError(`trace observation.events 数量必须在 3 到 ${MAX_INPUT_EVENTS} 之间`);
-  }
-  events.forEach((event, index) => {
-    rejectUnexpectedFields(event, EVENT_INPUT_FIELDS, `trace observation.trace.events[${index}]`);
-    if (!isEvolutionRecord(event) || event.sequence !== index + 1) {
-      throw new TypeError('trace observation event 必须从 1 连续递增');
-    }
-    if (['validation.start', 'validation.finish'].includes(event.type)) {
-      throw new TypeError('trace observation 不接受调用方提供 validation 事件');
-    }
-  });
-  let compact;
-  try { compact = JSON.stringify(observation); } catch { throw new TypeError('trace observation 不是合法 JSON 值'); }
-  if (!compact || Buffer.byteLength(compact, 'utf8') > AI_EVOLUTION_UNVERIFIED_TRACE_OBSERVATION_MAX_BYTES) {
-    throw new TypeError('trace observation 超过 64 KiB 上限');
-  }
-  return JSON.parse(compact);
-};
-
-export const parseEvolutionUnverifiedTraceObservation = (text) => {
-  if (typeof text !== 'string' || text.length === 0
-    || Buffer.byteLength(text, 'utf8') > AI_EVOLUTION_UNVERIFIED_TRACE_OBSERVATION_MAX_BYTES) {
-    throw new TypeError('trace observation stdin 为空或超过 64 KiB 上限');
-  }
-  let observation;
-  try { observation = JSON.parse(text); } catch { throw new TypeError('trace observation stdin 不是合法 JSON'); }
-  if (text !== JSON.stringify(observation)) throw new TypeError('trace observation stdin 必须是精确紧凑 JSON');
-  return normalizeObservation(observation);
-};
 
 const appendJsonLine = (base, line) => {
   const separator = base.length > 0 && base.at(-1) !== 0x0a ? '\n' : '';
@@ -157,6 +92,17 @@ const assertSnapshotUnchanged = (before, after, label) => {
   if (before.absolute !== after.absolute || !sameEndpoint || !before.bytes.equals(after.bytes)) {
     throw new Error(`${label} 在 preview 期间发生漂移`);
   }
+};
+
+const assertPreviewInputsUnchanged = ({
+  realRoot, revision, resolveRevision, receiptsPath, outcomesPath, receiptsBefore, outcomesBefore,
+}) => {
+  if (resolveRevision(realRoot) !== revision) throw new Error('candidate replay 期间 source-state v2 revision 发生漂移');
+  const receiptsAfter = readEvolutionOutcomeLedgerSnapshot(realRoot, receiptsPath);
+  const outcomesAfter = readEvolutionOutcomeLedgerSnapshot(realRoot, outcomesPath);
+  assertDistinctSnapshots(receiptsAfter, outcomesAfter);
+  assertSnapshotUnchanged(receiptsBefore, receiptsAfter, 'receipt ledger');
+  assertSnapshotUnchanged(outcomesBefore, outcomesAfter, 'outcome ledger');
 };
 
 const buildTrace = ({ observation, caseItem, policyEntry, revision }) => {
@@ -253,7 +199,7 @@ export const prepareEvolutionUnverifiedTraceOutcome = ({
   resolveRevision = resolveEvolutionWorktreeRevision,
   validateCandidate = validateEvolutionDeterministicOutcomeCandidate,
 } = {}) => {
-  const normalized = normalizeObservation(observation);
+  const normalized = normalizeEvolutionUnverifiedTraceObservation(observation);
   const realRoot = fs.realpathSync(rootDir);
   const receiptsPath = path.join(realRoot, RECEIPTS_RELATIVE_PATH);
   const outcomesPath = path.join(realRoot, OUTCOMES_RELATIVE_PATH);
@@ -297,6 +243,9 @@ export const prepareEvolutionUnverifiedTraceOutcome = ({
     throw new Error(`trace observation 未通过固定验证：${traceVerification.failures[0] ?? policyVerification.failures[0] ?? 'capture 不完整'}`);
   }
   if (currentTraceIsReusable({ previous, receiptResult: state.receiptResult, observation: normalized, trace, baseReport })) {
+    assertPreviewInputsUnchanged({
+      realRoot, revision, resolveRevision, receiptsPath, outcomesPath, receiptsBefore, outcomesBefore,
+    });
     return {
       report: {
         schemaVersion: 1, reportType: 'ai-evolution-unverified-trace-outcome-writer',
@@ -367,12 +316,9 @@ export const prepareEvolutionUnverifiedTraceOutcome = ({
     evaluatedAt, revision,
   });
   assertCandidateSafety({ base: baseReport, candidate: candidateReport, outcome, outcomeLine, previous });
-  if (resolveRevision(realRoot) !== revision) throw new Error('candidate replay 期间 source-state v2 revision 发生漂移');
-  const receiptsAfter = readEvolutionOutcomeLedgerSnapshot(realRoot, receiptsPath);
-  const outcomesAfter = readEvolutionOutcomeLedgerSnapshot(realRoot, outcomesPath);
-  assertDistinctSnapshots(receiptsAfter, outcomesAfter);
-  assertSnapshotUnchanged(receiptsBefore, receiptsAfter, 'receipt ledger');
-  assertSnapshotUnchanged(outcomesBefore, outcomesAfter, 'outcome ledger');
+  assertPreviewInputsUnchanged({
+    realRoot, revision, resolveRevision, receiptsPath, outcomesPath, receiptsBefore, outcomesBefore,
+  });
   return {
     report: {
       schemaVersion: 1, reportType: 'ai-evolution-unverified-trace-outcome-writer',
@@ -441,12 +387,13 @@ export const recordEvolutionUnverifiedTraceOutcome = ({
       receiptsPath: path.join(realRoot, RECEIPTS_RELATIVE_PATH),
       outcomesPath: path.join(realRoot, OUTCOMES_RELATIVE_PATH), resolveRevision,
     });
+    const recoveryMutationPerformed = getEvolutionOutcomeRecoveryMutationPerformed(recovery);
     const prepared = prepareEvolutionUnverifiedTraceOutcome({
       rootDir: realRoot, observation, evaluatedAt, resolveRevision, validateCandidate,
     });
     if (prepared.report.counts.candidates === 0) return {
       ...prepared.report, mode: 'write', status: 'already-current', recovery,
-      ledgerMutationRequested: true, ledgerMutationPerformed: false,
+      ledgerMutationRequested: true, ledgerMutationPerformed: recoveryMutationPerformed,
     };
     const transaction = prepared.transaction;
     const result = transactionApi.commit({

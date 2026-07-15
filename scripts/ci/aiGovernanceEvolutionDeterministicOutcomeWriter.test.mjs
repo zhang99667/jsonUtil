@@ -28,11 +28,13 @@ import { runDeterministicOutcomeWriterCli } from './record-ai-evolution-determin
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CASE_ID = 'mcp-readonly-shell-rejection';
-const EVALUATED_AT = '2026-07-13';
+const EVALUATED_AT = '2026-07-15';
 const REVISION_A = `worktree-${'a'.repeat(64)}`;
 const REVISION_B = `worktree-${'b'.repeat(64)}`;
 const RECEIPTS = 'evals/ai-governance/trial-receipts.jsonl';
 const OUTCOMES = 'evals/ai-governance/outcomes.jsonl';
+const noRecovery = () => ({ status: 'none', transactionId: null, ledgerMutationPerformed: false, ledgerMutations: { receipts: false, outcomes: false } });
+const recoveredPair = () => ({ status: 'recovered', transactionId: `txn-${'a'.repeat(32)}`, ledgerMutationPerformed: true, ledgerMutations: { receipts: true, outcomes: true } });
 
 const createFixture = (t) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-outcome-writer-'));
@@ -50,7 +52,7 @@ const createFixture = (t) => {
 };
 
 const passedRunner = ({ rootDir, caseIds }) => ({
-  schemaVersion: 1,
+  schemaVersion: 3,
   reportType: 'ai-governance-evolution-case-run',
   ok: true,
   results: caseIds.map((caseId) => {
@@ -236,35 +238,23 @@ test('write API 在 CI 先于 lock 拒绝，本地则传递 Buffer 事务并释�
   const fixture = createFixture(t);
   let acquireCalls = 0;
   assert.throws(() => recordEvolutionDeterministicOutcomes({
-    rootDir: fixture.rootDir,
-    caseIds: [CASE_ID],
-    write: true,
-    env: { CI: '1' },
+    rootDir: fixture.rootDir, caseIds: [CASE_ID], write: true, env: { CI: '1' },
     transactionApi: {
-      acquire: () => { acquireCalls += 1; },
-      recover: () => ({ status: 'none' }),
-      commit: () => ({ status: 'committed' }),
+      acquire: () => { acquireCalls += 1; }, recover: noRecovery, commit: () => ({ status: 'committed' }),
     },
   }), /CI\/GitHub Actions/);
   assert.equal(acquireCalls, 0);
-
   let released = false;
   const lock = { controlDir: '/control', lockPath: '/control/lock', journalPath: '/control/journal', token: 'token',
     release: () => { released = true; } };
   const report = recordEvolutionDeterministicOutcomes({
-    rootDir: fixture.rootDir,
-    caseIds: [CASE_ID],
-    write: true,
-    evaluatedAt: EVALUATED_AT,
-    env: {},
-    runCases: passedRunner,
-    resolveRevision: () => REVISION_A,
-    validateCandidate: candidateValidator(),
+    rootDir: fixture.rootDir, caseIds: [CASE_ID], write: true, evaluatedAt: EVALUATED_AT, env: {},
+    runCases: passedRunner, resolveRevision: () => REVISION_A, validateCandidate: candidateValidator(),
     transactionApi: {
       acquire: () => lock,
       recover: ({ controlPaths }) => {
         assert.equal(controlPaths, lock);
-        return { status: 'none' };
+        return noRecovery();
       },
       commit: ({ controlPaths, receiptsBase, outcomesBase, receiptSuffix, outcomeSuffix }) => {
         assert.equal(controlPaths, lock);
@@ -277,6 +267,28 @@ test('write API 在 CI 先于 lock 拒绝，本地则传递 Buffer 事务并释�
   assert.equal(report.ledgerMutationRequested, true);
   assert.equal(report.ledgerMutationPerformed, true);
   assert.equal(released, true);
+});
+
+test('recovery 补写 ledger 后的 already-current 报告保留本次 mutation 事实', (t) => {
+  const fixture = createFixture(t);
+  const pending = prepare(fixture);
+  const lock = { release: () => {} };
+  const report = recordEvolutionDeterministicOutcomes({
+    rootDir: fixture.rootDir, caseIds: [CASE_ID], write: true, evaluatedAt: EVALUATED_AT, env: {},
+    runCases: passedRunner, resolveRevision: () => REVISION_A, validateCandidate: candidateValidator(),
+    transactionApi: {
+      acquire: () => lock,
+      recover: () => {
+        fs.writeFileSync(fixture.receiptsPath, Buffer.concat([pending.transaction.receiptsBase, pending.transaction.receiptSuffix]));
+        fs.writeFileSync(fixture.outcomesPath, Buffer.concat([pending.transaction.outcomesBase, pending.transaction.outcomeSuffix]));
+        return recoveredPair();
+      },
+      commit: () => { throw new Error('already-current 不应再提交'); },
+    },
+  });
+  assert.equal(report.status, 'already-current');
+  assert.equal(report.recovery.ledgerMutationPerformed, true);
+  assert.equal(report.ledgerMutationPerformed, true);
 });
 
 test('真实本地事务接线使用 Git control dir 完成 pair 且清理 journal', (t) => {

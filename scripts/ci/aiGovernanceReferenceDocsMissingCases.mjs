@@ -9,6 +9,13 @@ export const AI_GOVERNANCE_REFERENCE_DOCS_MISSING_CASES = [
     expected: 'docs/AI-CONFIG-INTEGRATION.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
   },
   {
+    name: 'AI 治理引用检查会报告配置分层说明缺失 Codex 原生 MCP 入口',
+    file: 'docs/AI-CONFIG-INTEGRATION.md',
+    content: lines(['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-EVOLUTION-PLAYBOOK.md', 'docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', 'MCP 配置', 'trusted project', '新建任务', '兼容/可分发包']),
+    contains: ['.codex/config.toml'],
+    expected: 'docs/AI-CONFIG-INTEGRATION.md: 缺少 ".codex/config.toml"',
+  },
+  {
     name: 'AI 治理引用检查会报告配置分层说明缺失 Copilot 根入口',
     file: 'docs/AI-CONFIG-INTEGRATION.md',
     content: lines(['rules/code-style.md', 'docs/AI-ENGINEERING-PLAYBOOK.md', 'docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', '.cursor/rules', '显式豁免']),
@@ -21,6 +28,13 @@ export const AI_GOVERNANCE_REFERENCE_DOCS_MISSING_CASES = [
     content: lines(['docs/AI-CONFIG-INTEGRATION.md', 'docs/AI-ASSET-REGISTRY.md', 'node scripts/ci/check-ai-governance.mjs']),
     contains: ['docs/AI-GOVERNANCE-DECISIONS.md'],
     expected: 'docs/AI-TOOLS-SETUP.md: 缺少 "docs/AI-GOVERNANCE-DECISIONS.md"',
+  },
+  {
+    name: 'AI 治理引用检查会报告工具索引缺失 Codex 原生 MCP 入口',
+    file: 'docs/AI-TOOLS-SETUP.md',
+    content: lines(['AGENTS.md', 'CLAUDE.md', 'docs/AI-CONFIG-INTEGRATION.md', 'docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', 'MCP 配置', 'trusted project', '新建任务', '兼容/可分发包']),
+    contains: ['.codex/config.toml'],
+    expected: 'docs/AI-TOOLS-SETUP.md: 缺少 ".codex/config.toml"',
   },
   {
     name: 'AI 治理引用检查会报告工具索引缺失治理 JSON 输出',

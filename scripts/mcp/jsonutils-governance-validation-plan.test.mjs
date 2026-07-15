@@ -5,13 +5,16 @@ import {
   buildJsonutilsValidationPlan,
   buildJsonutilsValidationPlanFromWorktree,
 } from './jsonutils-governance-validation-plan.mjs';
+import { JSONUTILS_VALIDATION_COMMAND_IDENTITIES } from '../ci/aiGovernanceValidationCommandRegistry.mjs';
+import { AI_EVOLUTION_EXECUTABLE_CASES } from '../ci/aiGovernanceEvolutionCaseRunner.mjs';
 
 const statusBytes = (...records) => Buffer.from(`${records.join('\0')}\0`);
 
 const fixedDomainPaths = [
   'README.md', 'CONTRIBUTING.md', 'AGENTS.md', 'CLAUDE.md',
   'evals/ai-governance/cases.json', 'scripts/ci/local-ci.sh', '.cursorrules',
-  '.github/PULL_REQUEST_TEMPLATE.md', '.github/copilot-instructions.md', '.agents/plugins/plugin-lock.json',
+  '.gitignore', '.github/PULL_REQUEST_TEMPLATE.md', '.github/copilot-instructions.md', '.agents/plugins/plugin-lock.json',
+  '.github/instructions/review.instructions.md', '.github/prompts/review.prompt.md', '.github/agents/ai-infra-auditor.agent.md', '.github/chatmodes/legacy.chatmode.md', '.codex/rules/default.rules', '.codex/config.toml', '.cursor/mcp.json', '.vscode/mcp.json', 'rules/ai-review-rules.md',
   'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json',
   'docker-compose.yml', 'docker-compose.local.yml', 'docker-compose.preview.yml', 'docs/CICD.md',
 ];
@@ -30,6 +33,8 @@ test('validation plan maps every fixed domain while keeping catch-all hygiene no
   assert.deepEqual(plan.coverage, { sampledFileCount: 2, totalChangedFileCount: paths.length, truncated: true, commandMatchScope: 'all', unclassifiedFilesScope: 'all' });
   assert.deepEqual(plan.unclassifiedFiles, ['scratch.txt']);
   assert.equal(plan.matchedRules.find(rule => rule.name === 'worktree-hygiene')?.matchedFileCount, paths.length);
+  for (const [name, file] of [['evolution-evals', '.codex/rules/default.rules'], ['mcp-runtime', '.codex/config.toml'], ['mcp-runtime', '.cursor/mcp.json'], ['mcp-runtime', '.vscode/mcp.json']])
+    assert.ok(plan.matchedRules.find(rule => rule.name === name)?.files.includes(file));
   const commands = plan.commands.map(item => item.command);
   for (const expected of [
     'node scripts/ci/check-ai-validation-whitespace.mjs', 'node scripts/ci/check-ai-governance.mjs',
@@ -111,11 +116,26 @@ test('project plugin lifecycle CLI routes to AI governance and synthetic CI test
   assert.deepEqual(plan.commands.map(item => item.command), [
     'node scripts/ci/check-ai-governance.mjs',
     'node scripts/ci/check-maintainability-budgets.mjs --top 35 --no-all',
-    'node scripts/ci/write-ai-governance-artifacts.mjs --json',
     'node scripts/ci/write-ai-governance-artifacts.mjs --check --json',
     'node --test --test-reporter=dot scripts/ci/*.test.mjs',
     'node scripts/ci/check-ai-validation-whitespace.mjs',
   ]);
+});
+
+test('validation control assets route through governance without recursive executor registration', () => {
+  const expected = [
+    'node scripts/ci/check-ai-governance.mjs', 'node scripts/ci/check-maintainability-budgets.mjs --top 35 --no-all',
+    'node scripts/ci/write-ai-governance-artifacts.mjs --check --json', 'node --test --test-reporter=dot scripts/ci/*.test.mjs',
+    'node scripts/ci/check-ai-validation-whitespace.mjs',
+  ];
+  for (const path of ['scripts/ci/run-ai-validation-execution.mjs', 'scripts/ci/check-ai-validation-whitespace.mjs', 'scripts/ci/maintainability-budget-governance-ai-validation-rules.mjs', 'scripts/ci/maintainability-budget-governance-ai-validation-test-rules.mjs', 'scripts/ci/check-ai-governance.mjs']) {
+    const file = { status: 'M', path };
+    const plan = buildJsonutilsValidationPlanFromWorktree({ ok: true, files: [file], allFiles: [file], changedFileCount: 1, truncated: false });
+    assert.deepEqual(plan.commands.map(item => item.command), expected, path);
+  }
+  const forbidden = 'run-ai-validation-execution.mjs';
+  assert.equal(JSON.stringify(JSONUTILS_VALIDATION_COMMAND_IDENTITIES).includes(forbidden), false);
+  assert.equal(JSON.stringify(AI_EVOLUTION_EXECUTABLE_CASES['validation-change-matrix']).includes(forbidden), false);
 });
 
 test('outcome writers route to governance and eval checks without write mode', () => {

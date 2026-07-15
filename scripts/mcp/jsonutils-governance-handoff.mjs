@@ -8,6 +8,16 @@ const worktreeRisks = (worktree) => [
   ...(worktree?.counts?.conflicted > 0 ? [`存在 ${worktree.counts.conflicted} 个冲突文件，先解决冲突再继续`] : []),
 ];
 
+const distributionRisks = (report) => {
+  if (!report) return [];
+  if (report.stability?.status !== 'stable') return [`AI 资产分发取证状态为 ${report.stability?.status ?? 'unknown'}，不得宣称已就绪`];
+  return [
+    ...(!report.readiness?.workspaceCandidate ? [`workspace 尚有 ${report.scopes?.workspace?.counts?.failures ?? 'unknown'} 个 AI 资产未成为 Git 提交候选`] : []),
+    ...(!report.readiness?.nextCommit ? [`Git index 尚有 ${report.scopes?.index?.counts?.failures ?? 'unknown'} 个 AI 资产未进入下一提交`] : []),
+    ...(!report.readiness?.clone ? [`HEAD 尚有 ${report.scopes?.head?.counts?.failures ?? 'unknown'} 个 AI 资产当前版本不可由其他维护者 clone`] : []),
+  ];
+};
+
 export const buildJsonutilsHandoffBrief = async ({
   top = 5,
   maxFiles = 20,
@@ -35,10 +45,11 @@ export const buildJsonutilsHandoffBrief = async ({
       status: scorecard?.status,
       nextFocus: scorecard?.nextFocus,
       ...(aiInfraStatus ? { aiInfraStatus } : {}),
+      ...(context.distributionReadiness ? { distributionReadiness: context.distributionReadiness } : {}),
     },
     worktree: publicWorktree,
     validationPlan,
-    risks: worktreeRisks(worktree),
+    risks: [...worktreeRisks(worktree), ...distributionRisks(context.distributionReadiness)],
     nextCommands: context.nextCommands,
   };
 };

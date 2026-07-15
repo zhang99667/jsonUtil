@@ -6,7 +6,7 @@ import path from 'node:path';
 import { hashCodexExecFile } from './aiGovernanceCodexExecCaptureRuntime.mjs';
 
 export const CODEX_FIXED_MCP_TRIAL_RUNNER = Object.freeze({
-  id: 'codex-fixed-mcp-trial', version: '1.3.0', caseId: 'mcp-fixed-tool-selection',
+  id: 'codex-fixed-mcp-trial', version: '1.3.1', caseId: 'mcp-fixed-tool-selection',
 });
 export const CODEX_FIXED_MCP_RESULT_PATHS = Object.freeze({
   'jsonutils-governance/ai_governance_scorecard': Object.freeze(['maturityScorecard.nextFocus.id']),

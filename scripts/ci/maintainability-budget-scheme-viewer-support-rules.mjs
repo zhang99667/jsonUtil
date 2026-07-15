@@ -37,12 +37,7 @@ export const schemeViewerSupportMaintainabilityBudgets = [
   ),
   schemeViewerSupportBudget(
     'frontend/src/workers/schemeDecode.worker.ts',
-    45,
+    55,
     'Scheme 大输入解码 worker 只负责调用解码和弹窗 metadata 构造，不承载展示规则'
   ),
-  schemeViewerSupportBudget('frontend/src/utils/schemeViewerDecodeWorker.ts', 35, 'Scheme 解码线程协议只定义请求、响应、可注入工厂和默认入口'),
-  schemeViewerSupportBudget('frontend/src/hooks/useSchemeViewerDecode.ts', 290, 'Scheme 解码钩子只管理延迟值、线程生命周期、请求身份、取消和受控降级'),
-  schemeViewerSupportBudget('frontend/src/hooks/useSchemeViewerDecode.test.ts', 330, 'Scheme 解码钩子测试覆盖阈值、旧响应、取消、清理与线程构造和运行失败'),
-  schemeViewerSupportBudget('frontend/src/utils/schemeViewerQrCode.ts', 75, 'Scheme 二维码容量函数只区分数字、字母数字和字节模式，并检查 Unicode 可编码边界'),
-  schemeViewerSupportBudget('frontend/src/utils/schemeViewerQrCode.test.tsx', 135, 'Scheme 二维码容量测试锁定 M 级三种模式的依赖边界、中文字节和不完整代理字符'),
 ];

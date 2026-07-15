@@ -1,0 +1,97 @@
+# JSONUtils project command policy.
+# Rules are experimental, trust-gated, and only apply to commands requested outside the sandbox.
+# They do not prove that Codex loaded this file or replace repository, sandbox, CI, or admin controls.
+
+prefix_rule(
+    pattern = ["git", ["add", "commit", "push", "reset", "checkout", "restore", "clean"]],
+    decision = "prompt",
+    justification = "Git writes or destructive operations require explicit maintainer approval; inspect git status and git diff first.",
+    match = [
+        "git add CHANGELOG.md",
+        "git commit -m 'Chore: update AI infrastructure'",
+        "git push origin HEAD",
+        "git reset --hard HEAD",
+        "git checkout -- CHANGELOG.md",
+        "git restore CHANGELOG.md",
+        "git clean -fd",
+    ],
+    not_match = [
+        "git status --short --branch",
+        "git diff --check",
+        "git log -1 --oneline",
+    ],
+)
+
+prefix_rule(
+    pattern = ["node", "scripts/ci/manage-project-plugins.mjs", ["--apply", "--write-lock"]],
+    decision = "prompt",
+    justification = "Plugin lifecycle and content-lock updates require explicit maintainer approval; run --check first.",
+    match = [
+        "node scripts/ci/manage-project-plugins.mjs --apply",
+        "node scripts/ci/manage-project-plugins.mjs --write-lock",
+    ],
+    not_match = [
+        "node scripts/ci/manage-project-plugins.mjs",
+        "node scripts/ci/manage-project-plugins.mjs --check",
+        "node scripts/ci/manage-project-plugins.mjs --help",
+    ],
+)
+
+prefix_rule(
+    pattern = ["node", ["scripts/ci/record-ai-evolution-deterministic-outcomes.mjs", "scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs", "scripts/ci/record-ai-evolution-paired-outcome.mjs", "scripts/ci/write-ai-governance-artifacts.mjs"]],
+    decision = "prompt",
+    justification = "These writer entrypoints can mutate governance ledgers or artifacts; review preview or check output before escalation.",
+    match = [
+        "node scripts/ci/record-ai-evolution-deterministic-outcomes.mjs --case mcp-readonly-shell-rejection --write",
+        "node scripts/ci/record-ai-evolution-deterministic-outcomes.mjs --case mcp-readonly-shell-rejection --json",
+        "node scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs --write --json",
+        "node scripts/ci/record-ai-evolution-paired-outcome.mjs --json --write",
+        "node scripts/ci/write-ai-governance-artifacts.mjs",
+        "node scripts/ci/write-ai-governance-artifacts.mjs --check",
+    ],
+    not_match = [
+        "node scripts/ci/check-ai-evolution-evals.mjs",
+        "node scripts/ci/run-ai-evolution-cases.mjs --all --json",
+    ],
+)
+
+prefix_rule(
+    pattern = ["node", "scripts/ci/run-ai-validation-execution.mjs", "--run"],
+    decision = "prompt",
+    justification = "Validation execution starts the fixed command registry; inspect the zero-execution preview first.",
+    match = [
+        "node scripts/ci/run-ai-validation-execution.mjs --run",
+        "node scripts/ci/run-ai-validation-execution.mjs --run --json",
+    ],
+    not_match = [
+        "node scripts/ci/run-ai-validation-execution.mjs",
+        "node scripts/ci/run-ai-validation-execution.mjs --json",
+        "node scripts/ci/run-ai-validation-execution.mjs --json --run",
+    ],
+)
+
+prefix_rule(
+    pattern = ["node", "scripts/ci/run-ai-validation-execution.mjs", "--json", "--run"],
+    decision = "prompt",
+    justification = "Validation --run requires approval regardless of valid flag order.",
+    match = [
+        "node scripts/ci/run-ai-validation-execution.mjs --json --run",
+    ],
+    not_match = [
+        "node scripts/ci/run-ai-validation-execution.mjs --json",
+    ],
+)
+
+prefix_rule(
+    pattern = [["bash", "zsh", "sh"], ["-lc", "-c"]],
+    decision = "prompt",
+    justification = "Advanced shell syntax may become an opaque wrapper; review the entire wrapper before escalation.",
+    match = [
+        "bash -lc 'echo $HOME'",
+        "zsh -c 'node scripts/ci/manage-project-plugins.mjs --apply > plugin.log'",
+    ],
+    not_match = [
+        "bash --version",
+        "git status --short --branch",
+    ],
+)

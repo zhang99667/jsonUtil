@@ -14,6 +14,8 @@ const FORBIDDEN_VALUE_PATTERN = /(?:^|[^a-z])(baseline|candidate|arm|trial|pair|
 const ENVELOPE_FIELDS = ['payloadType', 'payload', 'signatures'];
 const SIGNATURE_FIELDS = ['keyid', 'sig'];
 const MAX_PAYLOAD_BYTES = 64 * 1024;
+const MAX_PROTOCOL_SCAN_DEPTH = 64;
+const MAX_PROTOCOL_SCAN_NODES = 10_000;
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
 export const isRegistrationCanaryProtocolRecord = value => (
@@ -36,17 +38,31 @@ export const hashRegistrationCanaryEd25519PublicKey = (publicKey) => {
   return hashRegistrationCanaryExactBytes(publicKey.export({ type: 'spki', format: 'der' }));
 };
 
-const containsRegistrationCanarySideChannel = value => (
-  typeof value === 'string' ? FORBIDDEN_VALUE_PATTERN.test(value)
-    : Array.isArray(value) ? value.some(containsRegistrationCanarySideChannel)
-      : isRegistrationCanaryProtocolRecord(value)
-        ? Object.values(value).some(containsRegistrationCanarySideChannel) : false
-);
-
-export const collectRegistrationCanaryProtocolStringFailures = (value, label) => [
-  ...collectEvolutionSensitiveValueFailures(value, label),
-  ...(containsRegistrationCanarySideChannel(value) ? [`${label}: 禁止 arm/trial/plugin/lease 字符串侧信道`] : []),
-];
+export const collectRegistrationCanaryProtocolStringFailures = (value, label) => {
+  const pending = [{ value, depth: 0 }];
+  let nodes = 0;
+  let sensitive = false;
+  let sideChannel = false;
+  while (pending.length > 0) {
+    const current = pending.pop();
+    nodes += 1;
+    if (nodes > MAX_PROTOCOL_SCAN_NODES || current.depth > MAX_PROTOCOL_SCAN_DEPTH) {
+      return [`${label}: 协议字符串扫描超过深度或节点上限`];
+    }
+    if (typeof current.value === 'string') {
+      sensitive ||= collectEvolutionSensitiveValueFailures(current.value, label).length > 0;
+      sideChannel ||= FORBIDDEN_VALUE_PATTERN.test(current.value);
+      continue;
+    }
+    const children = Array.isArray(current.value) ? current.value
+      : isRegistrationCanaryProtocolRecord(current.value) ? Object.values(current.value) : [];
+    for (const child of children) pending.push({ value: child, depth: current.depth + 1 });
+  }
+  return [
+    ...(sensitive ? [`${label}: 禁止疑似凭据值`] : []),
+    ...(sideChannel ? [`${label}: 禁止 arm/trial/plugin/lease 字符串侧信道`] : []),
+  ];
+};
 
 export const collectRegistrationCanaryExactFieldFailures = (value, fields, label) => {
   if (!isRegistrationCanaryProtocolRecord(value)) return [`${label} 必须是对象`];

@@ -93,7 +93,7 @@
       "files": [],
       "assertions": [
         "项目和当前 hook 定义都需要显式信任，不使用 bypass trust",
-        "首版只允许 SessionStart startup 或 resume，不新增其它 lifecycle 事件",
+        "只允许单一 SessionStart event 的 startup、resume、clear、compact 四个 source，不新增其它 lifecycle 事件",
         "runtime 不读取 prompt、transcript、环境值或用户配置，不联网、不写文件、不阻断",
         "配置、/hooks 可见、脚本直跑和单测都只算 component evidence",
         "真实新任务触发前 behavior outcome 保持 unknown"
@@ -212,11 +212,12 @@
     {
       "id": 14,
       "prompt": "为 JSONUtils 新建一个 AI 基建插件。脚手架默认会写到个人 marketplace，团队成员还误以为仓库里的 marketplace 会在 clone/open 后自动安装；请决定权威源码、团队安装流程与可信 runtime 分别放在哪里。",
-      "expected_output": "说明仓库只包含插件子包而不是整体变成插件；把 marketplace、插件源码、manifest、skill、MCP、测试和版本作为项目资产入库，以只读 doctor 和显式 apply 交付团队安装，同时不把项目所有权或安装冒充 registration/runtime trust。",
+      "expected_output": "说明仓库只包含插件子包而不是整体变成插件；把 marketplace、插件源码、manifest、skill、MCP、测试和版本作为项目资产入库，区分 manifest `mcpServers` 指针与 direct map/`mcp_servers` companion，以只读 doctor 和显式 apply 交付团队安装，同时不把项目所有权或安装冒充 registration/runtime trust。",
       "files": [],
       "assertions": [
         "项目专属 AI 基建不得只存在个人目录",
         "项目 marketplace 使用仓内相对 source 并纳入治理",
+        "plugin manifest 的 mcpServers 只引用 companion，companion 不得使用 project-level mcpServers 包装",
         "不得把 marketplace 目录描述为 clone/open 自动安装或自动同步",
         "团队安装先只读诊断，只有显式授权才修改用户状态，且不得覆盖异源或删除个人 selector",
         "个人 marketplace 或 cache 不得成为 source of truth",

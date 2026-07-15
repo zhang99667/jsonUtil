@@ -7,9 +7,13 @@ import {
   AI_GOVERNANCE_CODEX_AGENT_PROFILE_FILES,
   collectCodexAgentProfileFailures,
 } from './aiGovernanceCodexAgentProfiles.mjs';
+import { PROJECT_AI_INFRA_AUDITOR_ADAPTERS } from './aiGovernanceProjectAiInfraAuditor.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
-const copyProfiles = (rootDir) => AI_GOVERNANCE_CODEX_AGENT_PROFILE_FILES.forEach((file) => {
+const copyProfiles = (rootDir) => new Set([
+  ...AI_GOVERNANCE_CODEX_AGENT_PROFILE_FILES,
+  ...PROJECT_AI_INFRA_AUDITOR_ADAPTERS.map(item => item.file),
+]).forEach((file) => {
   writeFixtureFile(rootDir, file, fs.readFileSync(file, 'utf8'));
 });
 
@@ -18,7 +22,7 @@ const withProfiles = (run) => withAiGovernanceTempRoot((rootDir) => {
   run(rootDir);
 });
 
-test('Codex agent profiles 固定 explorer、worker、verifier 的角色与 sandbox 边界', () => {
+test('Codex agent profiles 固定三个通用角色与跨客户端 ai-infra-auditor 边界', () => {
   assert.deepEqual(collectCodexAgentProfileFailures(process.cwd()), []);
 });
 
@@ -72,5 +76,20 @@ test('Codex agent profile 契约拒绝职责与固定回传模板缺口', () => 
     const source = fs.readFileSync(file, 'utf8');
     fs.writeFileSync(file, source.replace('下一步建议：', '后续：'));
     assert.match(collectCodexAgentProfileFailures(rootDir).join('\n'), /缺少 下一步建议：/);
+  });
+});
+
+test('Codex agent profile 将 sandbox 视为可被父权限覆盖的默认值，并要求完整 manifest 才能证明零写入', () => {
+  withProfiles((rootDir) => {
+    const file = path.join(rootDir, '.codex/agents/explorer.toml');
+    const source = fs.readFileSync(file, 'utf8');
+    fs.writeFileSync(file, source.replace('角色默认值', '强制隔离值'));
+    assert.match(collectCodexAgentProfileFailures(rootDir).join('\n'), /缺少 sandbox_mode 只是角色默认值/);
+  });
+  withProfiles((rootDir) => {
+    const file = path.join(rootDir, '.codex/agents/explorer.toml');
+    const source = fs.readFileSync(file, 'utf8');
+    fs.writeFileSync(file, source.replace('完整 workspace manifest', '有界 git status'));
+    assert.match(collectCodexAgentProfileFailures(rootDir).join('\n'), /缺少 完整 workspace manifest/);
   });
 });

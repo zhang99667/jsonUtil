@@ -47,6 +47,19 @@ test('AI 治理 scorecard 在只有 stale history 时保持 unknown', () => {
   assert.equal(dimension.status, 'unknown');
 });
 
+test('AI 治理 scorecard 将 current runner 通过但 evidence stale 标为 warn', () => {
+  const dimension = behaviorDimension({
+    ok: false, contractFailures: [], currentRunFailures: [],
+    evidenceFreshness: { status: 'stale', staleCaseIds: ['mcp-readonly-shell-rejection'], failures: ['revision stale'] },
+    counts: { cases: 18, behaviorCases: 18, outcomes: 0, coveredCases: 0,
+      currentRunVerifiedOutcomes: 1, evidenceFreshnessFailures: 1 },
+    coverage: { outcomes: { percent: 0 } },
+    nextFocus: { nextAction: '冻结 source 后由维护者刷新 deterministic evidence' },
+  });
+  assert.equal(dimension.status, 'warn');
+  assert.match(dimension.evidence, /1 个当前重放通过但待刷新/);
+});
+
 test('AI 治理 scorecard 只有在覆盖充分且无弱 outcome 时通过', () => {
   const passing = behaviorDimension({
     ok: true,

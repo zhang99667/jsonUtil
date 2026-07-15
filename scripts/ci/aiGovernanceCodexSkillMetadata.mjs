@@ -1,20 +1,32 @@
-const ALLOWED_SKILL_FRONTMATTER_FIELDS = new Set(['name', 'description', 'license', 'allowed-tools', 'metadata']);
+import {
+  decodeYamlStringScalar,
+  extractYamlMappingBlock,
+  listYamlMappingEntries,
+  readFirstYamlMappingRawValue,
+} from './aiGovernanceSkillYamlAuthority.mjs';
+
+const ALLOWED_SKILL_FRONTMATTER_FIELDS = new Set([
+  'name', 'description', 'license', 'compatibility', 'allowed-tools', 'metadata',
+]);
 export const extractSkillMetadataBlock = frontmatter => (
-  frontmatter.match(/^metadata:\s*\r?\n((?:^[ \t]+.*(?:\r?\n|$))*)/m)?.[1] ?? ''
+  extractYamlMappingBlock(frontmatter, 'metadata')
+);
+
+export const extractSkillMetadataFieldFromBlock = (metadata, field) => (
+  readFirstYamlMappingRawValue(metadata, field, 2)?.trim()
 );
 
 export const extractSkillMetadataField = (frontmatter, field) => (
-  extractSkillMetadataBlock(frontmatter)
-    .match(new RegExp(`^[ \\t]+${field}:\\s*(.+)$`, 'm'))?.[1]?.trim()
+  extractSkillMetadataFieldFromBlock(extractSkillMetadataBlock(frontmatter), field)
 );
 
 export const unquoteSkillMetadataValue = value => (
-  value?.replace(/^(?:"([^"]*)"|'([^']*)')$/, '$1$2')
+  decodeYamlStringScalar(value).valid ? decodeYamlStringScalar(value).value : value
 );
 
 export const collectUnexpectedSkillFrontmatterFailures = (file, frontmatter) => (
-  [...frontmatter.matchAll(/^([A-Za-z][\w-]*):/gm)]
-    .map(([, field]) => field)
+  listYamlMappingEntries(frontmatter)
+    .map(({ key }) => key)
     .filter(field => !ALLOWED_SKILL_FRONTMATTER_FIELDS.has(field))
     .map(field => `${file}: frontmatter 不支持顶层字段 ${field}`)
 );

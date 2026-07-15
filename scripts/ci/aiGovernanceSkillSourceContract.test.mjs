@@ -43,6 +43,7 @@ test('Codex skill source 契约拒绝 canonical source 指向 symlink', () => {
     fs.writeFileSync(target, 'outside');
     fs.mkdirSync(path.dirname(link), { recursive: true });
     fs.symlinkSync(target, link);
+    fs.mkdirSync(path.join(rootDir, '.claude/skills'), { recursive: true });
     assert.deepEqual(collectCodexSkillSourceContractFailures(rootDir), [
       '.agents/skills/example/SKILL.md: canonical skill source 必须是仓库内普通文件或目录',
     ]);

@@ -1,4 +1,14 @@
 # 更新日志 (Changelog)
+## v1.8.864 (2026-07-15) - 双 Worktree AI 基建集成
+### 🏗️ 架构与基础设施
+- **项目级 AI 资产归一**: 以仓库为 source of truth，合并官方 `.agents/skills/` 发现面、Codex/Claude/Copilot 项目 Agent adapter、只读 SessionStart advisory、治理 MCP 与跨工具入口；`jsonutils-ai-infra-evolver 0.1.33`、`jsonutils-maintainer 0.1.37` 同步升级并保持可发现、可评分、可迁移
+- **行为评测与证据闭环**: 合并 38 个 behavior/component case、paired experiment、trace policy、反馈学习与 preview-first writer；保留较完整的 outcome/receipt 追加链，仅追加另一工作树独有的脱敏 feedback，不重写历史账本
+- **Git 分发与插件生命周期**: workspace/index/HEAD 三视图直接绑定项目 AI 资产原始字节、Git blob/mode/type 和控制面；继续明确仓库不是插件、只有 `plugins/<name>/` 是插件包，marketplace 不自动安装，`--apply` 仍需用户明确授权
+- **项目插件稳定交付**: 保留中文项目插件 `ai-infra-controller-probe 0.5.1`；`jsonutils-governance-mcp` 与 `codex-mcp-config-auditor` 采用官方 direct server map 并升至 `0.2.2`，以项目 manifest 与 content lock 约束源码身份，不把本机安装副本冒充任务注册或 runtime trust
+- **治理实现纵向合并**: 纳入更完整的 Skill/YAML/JSON authority、MCP framing/cancellation/runtime freshness、sealed snapshot、registration canary、可维护性 scorecard、required-file 清单及负向测试，并保留现有前后端业务演进
+- **依赖与发布版本统一**: 在现有 `fast-deep-equal` 依赖图上补入治理测试所需 `@types/diff`，统一前端 package、lock 与发布记录为 `1.8.864`，版本号表示最终交付而不是两个并行 worktree 的提交数相加
+- **并行 Worktree 合并规则**: 将“先推送两侧源快照、再按业务/治理/生成锁/追加式账本分组集成”的流程回写到工程 Playbook、`jsonutils-maintainer 0.1.37` 与 skill eval，避免把迭代次数相加、整仓选边或手工拼接治理账本
+
 ## v1.8.863 (2026-07-15) - JSON 模板处理分层
 ### 🚀 优化与改进
 - **模板职责抽取**: 对象深度合并、占位符回填和字符串入口从 `transformations` 抽到独立 `jsonTemplate` 模块，生产调用方直接依赖新模块，原导出路径继续兼容

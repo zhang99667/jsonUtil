@@ -18,6 +18,7 @@ import {
 
 const PROFILE = 'raw-head-index-worktree-whitespace-v1';
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
+const MAX_RAW_FILE_BYTES = 16 * 1024 * 1024;
 const ALLOWED_CHANGES = new Set([
   'staged-added', 'staged-deleted', 'staged-content', 'staged-mode',
   'worktree-deleted', 'worktree-content', 'worktree-mode', 'untracked',
@@ -54,6 +55,7 @@ const renderReport = ({
     applicableRawComparisonsCompleted: comparisonsCompleted,
     launcherShellUsed: false,
     repositoryFiltersExecuted: false,
+    repositoryAttributeDriversExecuted: false,
     commandOutputReported: false,
     behaviorValidated: false,
   },
@@ -202,6 +204,9 @@ const readStableFile = (rootDir, file) => {
   const pathStat = fs.lstatSync(absolute, { bigint: true });
   if (!pathStat.isFile() || pathStat.isSymbolicLink() || pathStat.nlink !== 1n
     || fs.realpathSync(absolute) !== absolute) throw new WhitespaceCheckError('RAW_VIEW_READ_FAILED');
+  if (pathStat.size > BigInt(MAX_RAW_FILE_BYTES)) {
+    throw new WhitespaceCheckError('RAW_VIEW_SIZE_LIMIT_EXCEEDED');
+  }
   const descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
   try {
     const before = fs.fstatSync(descriptor, { bigint: true });

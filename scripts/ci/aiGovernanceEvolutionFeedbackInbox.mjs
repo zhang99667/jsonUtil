@@ -21,12 +21,32 @@ const EVIDENCE_FIELDS = new Set(['code', 'surface', 'scope']);
 const CLAIM_FIELDS = new Set(['modelInvoked', 'automaticLedgerWrites', 'outcomeEligible']);
 const PRIVACY_FIELDS = new Set(['promptStored', 'reasoningStored', 'toolPayloadStored', 'authMaterialStored']);
 const EVENT_TYPES = new Set(['opened']);
+const EVIDENCE_PROFILES = new Map([
+  ['unknown-mcp-server', { schemaVersion: 1, surface: 'codex-task-registry', scope: 'self-observed-unverified' }],
+  ['behavior-evidence-channel-missing', { schemaVersion: 2, surface: 'skill-trigger-eval', scope: 'repository-audit' }],
+  ['project-maintainer-correction', { schemaVersion: 3, surface: 'project-collaboration', scope: 'case-bound-redacted' }],
+]);
+const LEGACY_EVENT_CASE_REFS = new Map([
+  ['feedback-skill-evolver-behavior-channel-missing-20260713-opened', {
+    eventHash: 'e8d9e8c728cd048e19c60615650548551a1508970e603a0c63446748dd179a75',
+    caseRef: { id: 'skill-jsonutils-ai-infra-evolver-trigger', caseVersion: 4, subjectVersion: '0.1.29' },
+  }],
+]);
 
 const unexpectedFields = (value, allowed, label) => (
   isEvolutionRecord(value)
     ? Object.keys(value).filter(key => !allowed.has(key)).map(key => `${label}: 不允许字段 \`${key}\``)
     : []
 );
+const sameCaseRef = (left, right) => left?.id === right?.id
+  && left?.caseVersion === right?.caseVersion && left?.subjectVersion === right?.subjectVersion;
+const isCurrentOrRegisteredHistoricalCaseRef = (event, caseItem) => {
+  const legacy = LEGACY_EVENT_CASE_REFS.get(event.id);
+  if (legacy) return legacy.eventHash === event.eventHash && sameCaseRef(event.caseRef, legacy.caseRef);
+  return Boolean(caseItem && sameCaseRef(event.caseRef, {
+    id: caseItem.id, caseVersion: caseItem.caseVersion, subjectVersion: caseItem.subject?.version,
+  }));
+};
 
 export const computeEvolutionFeedbackEventHash = (event) => {
   const { eventHash: _eventHash, ...payload } = event;
@@ -44,7 +64,7 @@ const collectFeedbackEventFailures = ({ event, index, previous, casesById, maxDa
   const label = `feedback-inbox.jsonl: 第 ${index + 1} 行`;
   if (!isEvolutionRecord(event)) return [`${label} 必须是对象`];
   const failures = unexpectedFields(event, EVENT_FIELDS, label);
-  if (event.schemaVersion !== 1) failures.push(`${label}.schemaVersion 必须为 1`);
+  if (![1, 2, 3].includes(event.schemaVersion)) failures.push(`${label}.schemaVersion 必须为 1、2 或 3`);
   if (event.artifactType !== 'ai-evolution-feedback-event') failures.push(`${label}.artifactType 非法`);
   if (event.dataClass !== 'redacted') failures.push(`${label}.dataClass 必须为 redacted`);
   if (!ID_PATTERN.test(event.id ?? '') || !ID_PATTERN.test(event.signalId ?? '')) failures.push(`${label} id/signalId 必须是 kebab-case`);
@@ -56,14 +76,19 @@ const collectFeedbackEventFailures = ({ event, index, previous, casesById, maxDa
   if (event.source !== 'live-agent-observation') failures.push(`${label}.source 当前只允许 live-agent-observation`);
   failures.push(...unexpectedFields(event.caseRef, CASE_FIELDS, `${label}.caseRef`));
   const caseItem = casesById.get(event.caseRef?.id);
-  if (!caseItem || event.caseRef?.caseVersion !== caseItem.caseVersion || event.caseRef?.subjectVersion !== caseItem.subject?.version) {
-    failures.push(`${label}.caseRef 必须绑定当前 case/subject 版本`);
+  if (!isCurrentOrRegisteredHistoricalCaseRef(event, caseItem)) {
+    failures.push(`${label}.caseRef 必须绑定当前版本或 event hash 登记的精确历史版本`);
   }
-  if (!isEvolutionString(event.experimentId)) failures.push(`${label}.experimentId 不能为空`);
+  if (event.schemaVersion === 3) {
+    if (event.experimentId !== null) failures.push(`${label}.experimentId 必须为 null`);
+    if (caseItem && caseItem.coverageClass !== 'behavior') failures.push(`${label}.caseRef v3 必须绑定 behavior case`);
+  } else if (!isEvolutionString(event.experimentId)) failures.push(`${label}.experimentId 不能为空`);
   failures.push(...unexpectedFields(event.evidence, EVIDENCE_FIELDS, `${label}.evidence`));
-  if (event.evidence?.code !== 'unknown-mcp-server' || event.evidence?.surface !== 'codex-task-registry'
-    || event.evidence?.scope !== 'self-observed-unverified') failures.push(`${label}.evidence 必须使用固定脱敏观察码`);
-  if (event.disposition !== 'open') failures.push(`${label} v1 只接受 open disposition；关闭需后续显式 schema`);
+  const evidenceProfile = EVIDENCE_PROFILES.get(event.evidence?.code);
+  if (!evidenceProfile || event.schemaVersion !== evidenceProfile.schemaVersion
+    || event.evidence?.surface !== evidenceProfile.surface
+    || event.evidence?.scope !== evidenceProfile.scope) failures.push(`${label}.evidence 必须使用版本允许的固定脱敏观察码`);
+  if (event.disposition !== 'open') failures.push(`${label} 当前 schema 只接受 open disposition；关闭需后续显式 schema`);
   failures.push(...falseOnly(event.claims, CLAIM_FIELDS, `${label}.claims`));
   failures.push(...falseOnly(event.privacy, PRIVACY_FIELDS, `${label}.privacy`));
   if (!HASH_PATTERN.test(event.eventHash ?? '') || event.eventHash !== computeEvolutionFeedbackEventHash(event)) {
@@ -95,6 +120,8 @@ export const readEvolutionFeedbackInbox = (filePath, { casesById, maxDate }) => 
   });
   const ids = events.map(event => event.id);
   if (new Set(ids).size !== ids.length) failures.push('feedback-inbox.jsonl: event id 必须唯一');
+  const signalIds = events.map(event => event.signalId);
+  if (new Set(signalIds).size !== signalIds.length) failures.push('feedback-inbox.jsonl: signalId 必须唯一');
   const states = new Map();
   events.forEach(event => states.set(event.signalId, event));
   const validEvents = failures.length === 0 ? events : [];
@@ -112,11 +139,18 @@ export const readEvolutionFeedbackInbox = (filePath, { casesById, maxDate }) => 
   };
 };
 
-export const buildMcpRegistrationFeedbackCandidate = ({ existingEvents, observedAt, caseItem, experimentId }) => {
-  const signalId = `mcp-project-registration-unavailable-${observedAt.replaceAll('-', '')}`;
+const buildFeedbackCandidate = ({
+  existingEvents, observedAt, caseItem, experimentId, evidenceCode, signalPrefix,
+}) => {
+  const evidenceProfile = EVIDENCE_PROFILES.get(evidenceCode);
+  if (!evidenceProfile) throw new Error(`feedback evidence profile \`${evidenceCode}\` 不存在`);
+  if (evidenceProfile.schemaVersion === 3 && caseItem?.coverageClass !== 'behavior') {
+    throw new Error('maintainer correction 只允许绑定 behavior case');
+  }
+  const signalId = `${signalPrefix}-${observedAt.replaceAll('-', '')}`;
   if (existingEvents.some(event => event.signalId === signalId)) throw new Error(`feedback signal \`${signalId}\` 已存在`);
   const event = {
-    schemaVersion: 1,
+    schemaVersion: evidenceProfile.schemaVersion,
     id: `feedback-${signalId}-opened`,
     artifactType: 'ai-evolution-feedback-event',
     dataClass: 'redacted',
@@ -128,10 +162,23 @@ export const buildMcpRegistrationFeedbackCandidate = ({ existingEvents, observed
     source: 'live-agent-observation',
     caseRef: { id: caseItem.id, caseVersion: caseItem.caseVersion, subjectVersion: caseItem.subject.version },
     experimentId,
-    evidence: { code: 'unknown-mcp-server', surface: 'codex-task-registry', scope: 'self-observed-unverified' },
+    evidence: { code: evidenceCode, surface: evidenceProfile.surface, scope: evidenceProfile.scope },
     disposition: 'open',
     claims: { modelInvoked: false, automaticLedgerWrites: false, outcomeEligible: false },
     privacy: { promptStored: false, reasoningStored: false, toolPayloadStored: false, authMaterialStored: false },
   };
   return { ...event, eventHash: computeEvolutionFeedbackEventHash(event) };
 };
+
+export const buildMcpRegistrationFeedbackCandidate = input => buildFeedbackCandidate({
+  ...input, evidenceCode: 'unknown-mcp-server', signalPrefix: 'mcp-project-registration-unavailable',
+});
+
+export const buildBehaviorEvidenceFeedbackCandidate = input => buildFeedbackCandidate({
+  ...input, evidenceCode: 'behavior-evidence-channel-missing', signalPrefix: 'skill-evolver-behavior-channel-missing',
+});
+
+export const buildMaintainerCorrectionFeedbackCandidate = input => buildFeedbackCandidate({
+  ...input, experimentId: null, evidenceCode: 'project-maintainer-correction',
+  signalPrefix: `maintainer-correction-${input.caseItem?.id ?? 'missing-case'}`,
+});

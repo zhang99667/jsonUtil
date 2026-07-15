@@ -21,13 +21,13 @@ const withCorpusSize = (size, run) => {
     }
     const file = path.join(rootDir, 'cases.json');
     fs.writeFileSync(file, JSON.stringify(corpus));
-    run(readEvolutionEvalCorpus(file, { maxDate: '2026-07-13' }));
+    run(readEvolutionEvalCorpus(file, { maxDate: '2026-07-15' }));
   } finally {
     fs.rmSync(rootDir, { recursive: true, force: true });
   }
 };
 
-test('AI evolution corpus 容量允许 34 个代表 case 并拒绝第 35 个', () => {
-  withCorpusSize(34, report => assert.doesNotMatch(report.failures.join('\n'), /cases 数量/));
-  withCorpusSize(35, report => assert.match(report.failures.join('\n'), /cases 数量必须在 10 到 34 之间/));
+test('AI evolution corpus 容量允许 38 个代表 case 并拒绝第 39 个', () => {
+  withCorpusSize(38, report => assert.doesNotMatch(report.failures.join('\n'), /cases 数量/));
+  withCorpusSize(39, report => assert.match(report.failures.join('\n'), /cases 数量必须在 10 到 38 之间/));
 });

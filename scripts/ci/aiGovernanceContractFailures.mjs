@@ -1,9 +1,7 @@
 import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
 import { collectAiGovernanceAiSafetyEvidenceFailures } from './aiGovernanceAiSafetyEvidence.mjs';
 import { collectAiGovernanceCiContractFailures } from './aiGovernanceCiContract.mjs';
-import { collectCodexAgentProfileFailures } from './aiGovernanceCodexAgentProfiles.mjs';
-import { collectCodexHookFailures } from './aiGovernanceCodexHooks.mjs';
-import { collectCodexSkillSourceContractFailures } from './aiGovernanceCodexSkillSourceContract.mjs';
+import { collectCodexProjectContractFailures } from './aiGovernanceCodexProjectContractFailures.mjs';
 import { collectAiGovernanceDecisionLedgerFailures } from './aiGovernanceDecisionLedger.mjs';
 import { collectAiGovernanceExemptAssetContractFailures } from './aiGovernanceExemptAssetContract.mjs';
 import { collectMirroredEntryContractFailures } from './aiGovernanceMirroredEntryContracts.mjs';
@@ -14,18 +12,13 @@ import { collectAiGovernanceScheduledWorkflowFailures } from './aiGovernanceSche
 import { collectAiGovernanceScriptReachabilityFailures } from './aiGovernanceScriptReachability.mjs';
 import { collectFrontendLintScriptFailures } from './aiGovernanceChecks.mjs';
 
-const collectAssetRegistryContractFailures = (rootDir, context) => (
-  collectAiGovernanceAssetRegistryFailures(rootDir, context.requiredFiles, context.referenceRules)
-);
-const collectEvolutionEvalContractFailures = (_, context) => context.evolutionEvalReport.failures
-  .map(failure => `AI evolution eval: ${failure}`);
+const collectAssetRegistryContractFailures = (rootDir, context) => collectAiGovernanceAssetRegistryFailures(rootDir, context.requiredFiles, context.referenceRules);
+const collectEvolutionEvalContractFailures = (_, context) => (context.evolutionEvalReport.contractFailures ?? context.evolutionEvalReport.failures).map(failure => `AI evolution eval: ${failure}`);
 
 const CONTRACT_FAILURE_COLLECTORS = [
   collectAssetRegistryContractFailures,
   collectAiGovernanceCiContractFailures,
-  collectCodexAgentProfileFailures,
-  collectCodexHookFailures,
-  collectCodexSkillSourceContractFailures,
+  collectCodexProjectContractFailures,
   collectAiGovernanceDecisionLedgerFailures,
   collectEvolutionEvalContractFailures,
   collectAiGovernanceExemptAssetContractFailures,

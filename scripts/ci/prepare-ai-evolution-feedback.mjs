@@ -5,36 +5,49 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { collectEvolutionIsoDateFailures, readEvolutionEvalCorpus } from './aiGovernanceEvolutionEvalContract.mjs';
-import { buildMcpRegistrationFeedbackCandidate, readEvolutionFeedbackInbox } from './aiGovernanceEvolutionFeedbackInbox.mjs';
+import { buildBehaviorEvidenceFeedbackCandidate, buildMaintainerCorrectionFeedbackCandidate, buildMcpRegistrationFeedbackCandidate, readEvolutionFeedbackInbox } from './aiGovernanceEvolutionFeedbackInbox.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const PROFILE = 'mcp-server-unregistered';
-const CASE_ID = 'mcp-project-registration-discovery';
-const EXPERIMENT_ID = 'mcp-project-registration-canary';
+const PROFILES = {
+  'mcp-server-unregistered': { caseId: 'mcp-project-registration-discovery', experimentId: 'mcp-project-registration-canary', build: buildMcpRegistrationFeedbackCandidate },
+  'skill-behavior-channel-missing': { caseId: 'skill-jsonutils-ai-infra-evolver-trigger', experimentId: 'skill-evolver-fresh-context-paired', build: buildBehaviorEvidenceFeedbackCandidate },
+  'maintainer-correction': { caseId: null, experimentId: null, build: buildMaintainerCorrectionFeedbackCandidate },
+};
+const getProfile = profile => (Object.hasOwn(PROFILES, profile) ? PROFILES[profile] : null);
 
 const parseArgs = (argv) => {
   const args = {};
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
-    if (!['--profile', '--observed-at'].includes(token) || args[token]) throw new Error(`不支持或重复参数：${token}`);
+    if (!['--profile', '--observed-at', '--case-id'].includes(token) || args[token]) throw new Error(`不支持或重复参数：${token}`);
     const value = argv[index + 1];
     if (!value || value.startsWith('--')) throw new Error(`${token} 缺少值`);
     args[token] = value;
     index += 1;
   }
-  if (args['--profile'] !== PROFILE) throw new Error(`--profile 只允许 ${PROFILE}`);
+  const descriptor = getProfile(args['--profile']);
+  if (!descriptor) throw new Error(`--profile 只允许 ${Object.keys(PROFILES).join('、')}`);
+  if (descriptor.caseId === null && !args['--case-id']) throw new Error('--case-id 在 maintainer-correction profile 中必填');
+  if (descriptor.caseId !== null && args['--case-id']) throw new Error('--case-id 只适用于 maintainer-correction profile');
   if (collectEvolutionIsoDateFailures('--observed-at', args['--observed-at']).length > 0) throw new Error('--observed-at 必须是有效且不晚于今天的 YYYY-MM-DD');
-  return { profile: args['--profile'], observedAt: args['--observed-at'] };
+  return { profile: args['--profile'], observedAt: args['--observed-at'], caseId: args['--case-id'] ?? null };
 };
 
-export const buildFeedbackCandidateFromProfile = ({ existingEvents, observedAt, cases }) => {
-  const caseItem = cases.find(item => item.id === CASE_ID);
-  if (!caseItem) throw new Error(`缺少 case \`${CASE_ID}\``);
-  return buildMcpRegistrationFeedbackCandidate({ existingEvents, observedAt, caseItem, experimentId: EXPERIMENT_ID });
+export const buildFeedbackCandidateFromProfile = ({ existingEvents, observedAt, cases, profile = 'mcp-server-unregistered', caseId = null }) => {
+  const descriptor = getProfile(profile);
+  if (!descriptor) throw new Error(`未知 feedback profile \`${profile}\``);
+  if (descriptor.caseId === null && !caseId) throw new Error('--case-id 在 maintainer-correction profile 中必填');
+  const targetCaseId = descriptor.caseId ?? caseId;
+  const caseItem = cases.find(item => item.id === targetCaseId);
+  if (!caseItem) throw new Error(`缺少 case \`${targetCaseId}\``);
+  if (descriptor.caseId === null && caseItem.coverageClass !== 'behavior') {
+    throw new Error('maintainer correction 只允许绑定 behavior case');
+  }
+  return descriptor.build({ existingEvents, observedAt, caseItem, experimentId: descriptor.experimentId });
 };
 
 export const prepareFeedbackCandidate = ({ argv = process.argv.slice(2) } = {}) => {
-  const { observedAt } = parseArgs(argv);
+  const { observedAt, profile, caseId } = parseArgs(argv);
   const corpus = readEvolutionEvalCorpus(path.join(rootDir, 'evals/ai-governance/cases.json'));
   if (corpus.failures.length > 0) throw new Error(corpus.failures.join('; '));
   const inbox = readEvolutionFeedbackInbox(path.join(rootDir, 'evals/ai-governance/feedback-inbox.jsonl'), {
@@ -42,7 +55,7 @@ export const prepareFeedbackCandidate = ({ argv = process.argv.slice(2) } = {}) 
     maxDate: observedAt,
   });
   if (inbox.failures.length > 0) throw new Error(inbox.failures.join('; '));
-  return buildFeedbackCandidateFromProfile({ existingEvents: inbox.validEvents, observedAt, cases: corpus.cases });
+  return buildFeedbackCandidateFromProfile({ existingEvents: inbox.validEvents, observedAt, cases: corpus.cases, profile, caseId });
 };
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

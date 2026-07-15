@@ -18,8 +18,11 @@ test('AI 治理成熟度 scorecard 结构化标记 AI 基建候选清零状态',
   assert.deepEqual(scorecard.nextFocus.details.maintainabilityHotspots, {
     riskyCount: 1,
     aiCandidateCount: 0,
+    responsibilityCandidateCount: 0,
+    capacityReviewCandidateCount: 0,
     aiInfraCleared: true,
     ordinaryRiskyCount: 1,
+    priority: { file: 'frontend/src/tight.ts', action: 'domain-budget-review' },
     nextAction: 'AI 基建候选已清零；普通热点交给对应领域预算处理',
   });
 });

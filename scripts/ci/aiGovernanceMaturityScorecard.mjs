@@ -5,7 +5,7 @@ import {
 } from './aiGovernanceMaturityScorecardScoring.mjs';
 import { buildAiGovernanceMaturityScorecardDimensions } from './aiGovernanceMaturityScorecardDimensions.mjs';
 
-const SCORECARD_SCHEMA_VERSION = 1;
+const SCORECARD_SCHEMA_VERSION = 2;
 
 export const buildAiGovernanceMaturityScorecard = reports => {
   const dimensions = buildAiGovernanceMaturityScorecardDimensions(reports);

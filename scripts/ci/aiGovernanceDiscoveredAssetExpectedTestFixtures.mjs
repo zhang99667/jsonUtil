@@ -4,6 +4,7 @@ export const EXPECTED_DISCOVERED_AI_GOVERNANCE_ASSETS = [
   '.codex/agents/reviewer.toml',
   '.codex/hooks.json',
   '.codex/hooks/session-start.mjs',
+  '.codex/rules/review.rules',
   '.cursor/mcp.json',
   '.cursor/rules/review.mdc',
   '.github/agents/planner.agent.md',

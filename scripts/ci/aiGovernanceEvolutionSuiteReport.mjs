@@ -1,49 +1,52 @@
 import { buildAiGovernanceEvolutionEvalReport } from './aiGovernanceEvolutionEvalReport.mjs';
 import { buildEvolutionLearningReport } from './aiGovernanceEvolutionLearningReport.mjs';
-
-const buildActionableFocus = (base, blockedFocus) => {
-  if (base.nextFocus?.id !== 'increase-outcome-coverage' || !blockedFocus) return base.nextFocus;
-  const blockedCaseIds = new Set(blockedFocus.blockedCaseIds ?? []);
-  const candidates = [
-    ...(base.nextFocus.caseIds ?? []),
-    ...(base.coverage?.outcomes?.uncoveredCaseIds ?? []),
-  ];
-  return {
-    ...base.nextFocus,
-    caseIds: [...new Set(candidates.filter(caseId => !blockedCaseIds.has(caseId)))].slice(0, 3),
-  };
-};
+import { buildAiGovernanceEvolutionSuiteFocus } from './aiGovernanceEvolutionSuiteFocus.mjs';
+import { buildRegistrationCanaryGraderCalibrationReport } from './aiGovernanceRegistrationCanaryGraderCalibration.mjs';
 
 export const buildAiGovernanceEvolutionSuiteReport = (options = {}) => {
-  const { feedbackPath, experimentsPath, ...baseOptions } = options;
+  const { feedbackPath, experimentsPath, graderCalibrationPath, graderCalibrationRootDir, ...baseOptions } = options;
   const base = buildAiGovernanceEvolutionEvalReport(baseOptions);
   const learning = buildEvolutionLearningReport({
     rootDir: options.rootDir,
     actionableCaseIds: base.coverage?.outcomes?.uncoveredCaseIds ?? [],
+    tracePolicyCaseIds: base.traceVerification?.policyCaseIds ?? [],
     ...(options.casesPath ? { casesPath: options.casesPath } : {}),
     ...(feedbackPath ? { feedbackPath } : {}),
     ...(experimentsPath ? { experimentsPath } : {}),
     ...(options.maxDate ? { maxDate: options.maxDate } : {}),
   });
-  const failures = [...base.failures, ...learning.failures];
+  const graderHealth = buildRegistrationCanaryGraderCalibrationReport({
+    rootDir: graderCalibrationRootDir ?? options.rootDir,
+    ...(graderCalibrationPath ? { calibrationPath: graderCalibrationPath } : {}),
+  });
+  const graderFailures = graderHealth.failures.map(failure => `grader calibration: ${failure}`);
+  const contractFailures = [...(base.contractFailures ?? base.failures), ...learning.failures, ...graderFailures];
+  const currentRunFailures = base.currentRunFailures ?? [];
+  const currentRunIssues = base.currentRunIssues ?? [];
+  const failures = [...contractFailures, ...currentRunFailures];
   const blockedFocus = learning.ok ? learning.blockedFocus : null;
-  const actionableFocus = buildActionableFocus(base, blockedFocus);
+  const nextFocus = buildAiGovernanceEvolutionSuiteFocus({ base, learning, graderHealth });
   return {
     ...base,
-    ok: failures.length === 0,
+    ok: failures.length === 0 && base.evidenceFreshness.failures.length === 0,
     counts: {
       ...base.counts,
       feedbackSignals: learning.counts.feedbackSignals,
       openFeedbackSignals: learning.counts.openFeedbackSignals,
       experiments: learning.counts.experiments,
       plannedExperimentTrials: learning.counts.plannedTrials,
+      graderCalibrationSamples: graderHealth.counts.samples,
+      graderCalibrationFailures: graderHealth.counts.failures,
       failures: failures.length,
+      evidenceFreshnessFailures: base.evidenceFreshness.failures.length,
     },
     failures,
+    contractFailures,
+    currentRunFailures,
+    currentRunIssues,
     learning,
+    graderHealth,
     blockedFocus,
-    nextFocus: learning.failures.length > 0 ? {
-      id: 'fix-learning-contract', nextAction: '修复 feedback/experiment 数据契约', caseIds: [],
-    } : base.failures.length > 0 ? base.nextFocus : actionableFocus,
+    nextFocus,
   };
 };

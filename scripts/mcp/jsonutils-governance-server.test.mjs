@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { listJsonutilsGovernanceTools } from './jsonutils-governance-server.mjs';
+import { JSONUTILS_GOVERNANCE_INSTRUCTIONS, listJsonutilsGovernanceTools } from './jsonutils-governance-server.mjs';
 import { createMessageReader, request } from '../ci/mcpLineDelimitedStdioClient.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -45,5 +45,6 @@ test('project plugin launcher starts governance server over stdio', async (t) =>
   });
 
   assert.equal(response.result.serverInfo.name, 'jsonutils-governance');
-  assert.equal(response.result.serverInfo.version, '0.3.0');
+  assert.equal(response.result.serverInfo.version, '0.6.0');
+  assert.equal(response.result.instructions, JSONUTILS_GOVERNANCE_INSTRUCTIONS);
 });

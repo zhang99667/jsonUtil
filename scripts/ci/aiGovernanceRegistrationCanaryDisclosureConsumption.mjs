@@ -16,6 +16,7 @@ import {
   verifyRegistrationCanaryDisclosureAuthorization,
 } from './aiGovernanceRegistrationCanaryDisclosureAuthorization.mjs';
 import { hashRegistrationCanaryPacketValue } from './aiGovernanceRegistrationCanaryPacket.mjs';
+import { selectRegistrationCanaryObservedReceiptJson } from './aiGovernanceRegistrationCanaryReceiptObservation.mjs';
 
 export const REGISTRATION_CANARY_CONSUMPTION_PREDICATE_TYPE = 'https://github.com/zhang99667/jsonUtil/attestations/registration-canary-disclosure-consumption/v1';
 const PROTOCOL_VERSION = '1.0.0';
@@ -366,22 +367,6 @@ export const verifyRegistrationCanaryDisclosureConsumption = ({
   };
 };
 
-const singleObservedReceipt = (jsons, label, preferredSignerKeyId) => {
-  if (!Array.isArray(jsons) || jsons.length < 1 || jsons.length > 16) throw new TypeError(`${label} observation set 必须包含 1 到 16 条记录`);
-  const observed = jsons.map(json => ({
-    json,
-    ...parseRegistrationCanaryDsseEnvelope(json, label),
-  }));
-  if (new Set(observed.map(item => item.proofSha256)).size !== 1) {
-    throw new TypeError(`检测到 ${label} 的本地可观察分叉、双授权或双消费`);
-  }
-  const candidates = preferredSignerKeyId === undefined
-    ? observed : observed.filter(item => item.signerKeyId === preferredSignerKeyId);
-  return [...(candidates.length > 0 ? candidates : observed)].sort((left, right) => (
-    left.json < right.json ? -1 : left.json > right.json ? 1 : 0
-  ))[0].json;
-};
-
 export const verifyRegistrationCanaryDisclosureTranscript = ({
   anchorReceiptJsons,
   authorizationReceiptJsons,
@@ -389,9 +374,15 @@ export const verifyRegistrationCanaryDisclosureTranscript = ({
   ...input
 }) => verifyRegistrationCanaryDisclosureConsumption({
   ...input,
-  anchorReceiptJson: singleObservedReceipt(
-    anchorReceiptJsons, 'anchor receipt', input.anchorExpectedBindings?.signerKeyId,
-  ),
-  authorizationReceiptJson: singleObservedReceipt(authorizationReceiptJsons, 'authorization receipt'),
-  consumptionReceiptJson: singleObservedReceipt(consumptionReceiptJsons, 'consumption receipt'),
+  anchorReceiptJson: selectRegistrationCanaryObservedReceiptJson({
+    receiptJsons: anchorReceiptJsons,
+    receiptKind: 'anchor',
+    preferredSignerKeyId: input.anchorExpectedBindings?.signerKeyId,
+  }),
+  authorizationReceiptJson: selectRegistrationCanaryObservedReceiptJson({
+    receiptJsons: authorizationReceiptJsons, receiptKind: 'authorization',
+  }),
+  consumptionReceiptJson: selectRegistrationCanaryObservedReceiptJson({
+    receiptJsons: consumptionReceiptJsons, receiptKind: 'consumption',
+  }),
 });

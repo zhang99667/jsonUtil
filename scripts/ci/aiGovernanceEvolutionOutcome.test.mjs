@@ -47,7 +47,7 @@ const reportForOutcomes = (outcomes, corpus = defaultCorpus) => {
     fs.writeFileSync(path.join(evalDir, 'cases.json'), `${JSON.stringify(corpus, null, 2)}\n`);
     fs.writeFileSync(path.join(evalDir, 'outcomes.jsonl'), outcomes.map(JSON.stringify).join('\n'));
     fs.writeFileSync(path.join(evalDir, 'trial-receipts.jsonl'), '');
-    return buildAiGovernanceEvolutionEvalReport({ rootDir, maxDate: '2026-07-13' });
+    return buildAiGovernanceEvolutionEvalReport({ rootDir, maxDate: '2026-07-15' });
   } finally {
     fs.rmSync(rootDir, { recursive: true, force: true });
   }
@@ -79,7 +79,8 @@ test('outcome ledger 拒绝重复 outcome id 与未知 case', () => {
   const report = reportForOutcomes([duplicate, duplicate]);
 
   assert.equal(report.ok, false);
-  assert.match(report.failures.join('\n'), /未知 case `missing-case`/);
+  assert.match(report.failures.join('\n'), /引用了未知 case/);
+  assert.equal(report.failures.join('\n').includes('missing-case'), false);
   assert.match(report.failures.join('\n'), /outcome id 必须唯一/);
 });
 
@@ -101,7 +102,8 @@ test('outcome ledger 拒绝敏感值与未声明字段', () => {
     },
   })]);
   assert.match(report.failures.join('\n'), /禁止疑似凭据值/);
-  assert.match(report.failures.join('\n'), /extra 不在允许字段中/);
+  assert.match(report.failures.join('\n'), /provenance 必须是闭字段对象/);
+  assert.equal(report.failures.join('\n').includes('extra'), false);
 });
 
 test('outcome ledger 要求 fail 或 partial 提供 feedback', () => {

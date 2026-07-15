@@ -169,7 +169,7 @@ test('部署 Shell 语法检查会报告缺失 workflow 文件', () => {
   });
 });
 
-test('部署 Shell 语法检查拒绝 run 直接插入 Actions 表达式', () => {
+test('部署 Shell 语法检查会在 orchestrator 层归一化 workflow 表达式', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.github/workflows/ci.yml', [
       'steps:',
@@ -188,32 +188,10 @@ test('部署 Shell 语法检查拒绝 run 直接插入 Actions 表达式', () =>
       },
     });
 
-    assert.deepEqual(report.failures, [
-      '.github/workflows/ci.yml:run:3: run 脚本不得直接包含 GitHub Actions 表达式，请通过步骤 env 传入',
-    ]);
-  });
-});
-
-test('部署 Shell 语法检查允许通过 env 向 run 传值', () => {
-  withTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, '.github/workflows/ci.yml', [
-      'steps:',
-      '  - name: Test',
-      '    env:',
-      '      SSH_HOST: ${{ inputs.host }}',
-      '    run: echo "$SSH_HOST"',
-    ].join('\n'));
-
-    const report = checkDeployShellSyntax(rootDir, {
-      files: [],
-      workflowFiles: ['.github/workflows/ci.yml'],
-      runner: fixtureRunner,
-    });
-
     assert.deepEqual(report, {
       checkedFiles: [],
       checkedHeredocs: [],
-      checkedWorkflowRuns: ['.github/workflows/ci.yml:run:5'],
+      checkedWorkflowRuns: ['.github/workflows/ci.yml:run:3'],
       failures: [],
     });
   });

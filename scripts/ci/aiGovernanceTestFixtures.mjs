@@ -1,18 +1,8 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { collectAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistry.mjs';
-
-const PRODUCTION_IMPORT_FIXTURES = Object.freeze({
-  'scripts/ci/check-ai-asset-distribution.mjs': "import './aiGovernanceAssetDistribution.mjs';",
-  'scripts/ci/aiGovernanceAssetDistribution.mjs': "import './aiGovernanceAssetDistributionFiles.mjs';\nimport './aiGovernanceAssetDistributionGitEvidence.mjs';",
-  'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs': "import './aiGovernanceEvolutionDeterministicOutcomeWriter.mjs';",
-  'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeWriter.mjs': "import './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';",
-  'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs': "import './aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.mjs';",
-  'scripts/ci/aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.mjs': "import './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';",
-  'scripts/ci/check-ai-validation-whitespace.mjs': "import './aiGovernanceValidationWhitespace.mjs';",
-  'scripts/ci/aiGovernanceValidationWhitespace.mjs': "import './aiGovernanceValidationChangedSet.mjs';",
-});
 
 export const withAiGovernanceTempRoot = (run) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-ai-governance-'));
@@ -29,8 +19,16 @@ export const writeFixtureFile = (rootDir, file, content) => {
   fs.writeFileSync(filePath, content);
 };
 
-export const writeGovernanceProductionImportFixtures = (rootDir, files, fallback) => {
-  files.forEach(file => writeFixtureFile(rootDir, file, PRODUCTION_IMPORT_FIXTURES[file] ?? fallback));
+export const syncTracePolicyFixture = (rootDir, sourceRoot, { copyRequiredReads = false } = {}) => {
+  const policyFile = 'evals/ai-governance/trace-policies.json';
+  const sourceFile = file => sourceRoot instanceof URL ? new URL(file, sourceRoot) : path.join(sourceRoot, file);
+  const corpus = JSON.parse(fs.readFileSync(sourceFile(policyFile), 'utf8'));
+  for (const read of corpus.policies.flatMap(policy => policy.requiredReads ?? [])) {
+    const target = path.join(rootDir, read.path);
+    if (copyRequiredReads) { fs.mkdirSync(path.dirname(target), { recursive: true }); fs.copyFileSync(sourceFile(read.path), target); }
+    read.sha256 = createHash('sha256').update(fs.readFileSync(target)).digest('hex');
+  }
+  writeFixtureFile(rootDir, policyFile, `${JSON.stringify(corpus, null, 2)}\n`);
 };
 
 export const registryRow = (file, fields = {}) => ({

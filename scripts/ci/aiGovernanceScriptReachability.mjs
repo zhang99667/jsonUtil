@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AI_GOVERNANCE_CI_COMMAND_FILES } from './aiGovernanceCiCommandDescriptors.mjs';
 import { collectReachableFiles, listCiFiles } from './aiGovernanceLocalImportGraph.mjs';
 
 const SCRIPT_DIR = 'scripts/ci';
@@ -8,7 +7,6 @@ const AI_GOVERNANCE_SCRIPT_PATTERN = /^aiGovernance.*\.mjs$/;
 const AI_GOVERNANCE_TEST_PATTERN = /^aiGovernance.*\.test\.mjs$/;
 const AI_GOVERNANCE_TEST_SUPPORT_PATTERN = /(?:TestFixtures|MissingCases)\.mjs$/;
 const AI_GOVERNANCE_PRODUCTION_ROOTS = [
-  ...AI_GOVERNANCE_CI_COMMAND_FILES,
   'scripts/ci/check-ai-governance.mjs',
   'scripts/ci/run-ai-evolution-cases.mjs',
   'scripts/ci/run-ai-codex-fixed-mcp-trial.mjs',
@@ -16,6 +14,9 @@ const AI_GOVERNANCE_PRODUCTION_ROOTS = [
   'scripts/ci/manage-project-plugins.mjs',
   'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs',
   'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs',
+  'scripts/ci/record-ai-evolution-paired-outcome.mjs',
+  'scripts/ci/check-ai-validation-whitespace.mjs',
+  'scripts/ci/run-ai-validation-execution.mjs',
 ];
 
 export const collectAiGovernanceScriptReachabilityFailures = (rootDir) => {

@@ -19,6 +19,9 @@ const buildNextCommands = (governanceReport, budgetReport) => [
   ...(!budgetReport.ok ? ['node scripts/ci/check-maintainability-budgets.mjs --top 35 --no-all'] : []),
   'node --test scripts/mcp/*.test.mjs',
   'node scripts/ci/check-ai-evolution-evals.mjs',
+  'node scripts/ci/check-ai-asset-distribution.mjs --workspace',
+  'node scripts/ci/check-ai-asset-distribution.mjs --index',
+  'node scripts/ci/check-ai-asset-distribution.mjs --head',
   'node scripts/ci/check-ai-governance.mjs',
   'node scripts/ci/check-maintainability-budgets.mjs --top 35 --no-all',
   'node scripts/ci/check-version-consistency.mjs',
@@ -36,6 +39,7 @@ export const buildJsonutilsGovernanceReportSummary = ({ governanceReport, budget
     coverage: { outcomes: { percent: 0 } },
     nextFocus: { id: 'missing-evolution-report', nextAction: '运行 AI evolution eval 检查' },
   },
+  distributionReadiness: governanceReport.distributionReadiness ?? null,
   maintainability: {
     ok: budgetReport.ok === true,
     counts: budgetReport.counts || {},

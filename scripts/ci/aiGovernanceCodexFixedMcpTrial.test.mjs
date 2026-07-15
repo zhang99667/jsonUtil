@@ -47,7 +47,7 @@ test('固定 profile 只是不可执行 component descriptor，不包含同 UID 
     assert.equal(serialized.includes('mcp_servers.'), false);
     assert.equal(serialized.includes('execArgs'), false);
     assert.equal(profile.binarySha256, expectedBinarySha256);
-    assert.equal(profile.version, '1.3.0');
+    assert.equal(profile.version, '1.3.1');
   });
 });
 

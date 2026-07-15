@@ -2,7 +2,7 @@
   "name": "json-helper-ai-fix",
   "productName": "JSONUtils - 专业版",
   "private": true,
-  "version": "1.8.863",
+  "version": "1.8.864",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -129,6 +129,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.60.0",
+    "@types/diff": "^7.0.2",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.23",

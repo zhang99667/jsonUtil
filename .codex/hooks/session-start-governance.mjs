@@ -54,7 +54,7 @@ const main = async () => {
     const payload = JSON.parse(input);
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)
       || payload.hook_event_name !== 'SessionStart'
-      || !['startup', 'resume'].includes(payload.source)) return writeUnavailable();
+      || !['startup', 'resume', 'clear', 'compact'].includes(payload.source)) return writeUnavailable();
     const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
     if (!hasRequiredEntrypoints(rootDir)) return writeUnavailable();
     return writeContext({ additionalContext: HEALTHY_CONTEXT });

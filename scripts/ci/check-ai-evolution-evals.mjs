@@ -18,12 +18,14 @@ if (process.argv.includes('--json')) {
   if (report.ok) {
     console.log(`AI 治理进化 eval 校验通过：${counts.cases} cases，${counts.outcomes} outcomes，behavior outcome 覆盖 ${counts.coveredCases}/${behaviorCases}；${excludedBoundaries} 个 component-boundary cases 已排除。`);
   } else {
-    console.error(`AI 治理进化 eval 校验失败，共 ${counts.failures} 项：`);
+    console.error(`AI 治理进化 eval 校验失败：${counts.failures} 个执行/契约失败，${counts.evidenceFreshnessFailures} 个证据时效问题。`);
     report.failures.forEach(failure => console.error(`- ${failure}`));
+    report.evidenceFreshness.failures.forEach(failure => console.error(`- ${failure}`));
   }
   console.log(`账本追加性：${report.ledgerIntegrity.status}（Git 基线 ${report.ledgerIntegrity.baseRef}）`);
   console.log(`账本链：${report.ledgerChain.status}（v3 ${report.ledgerChain.chainedOutcomes} 条，head ${report.ledgerChain.headSequence ?? 'none'}）`);
   console.log(`Trace：bound ${counts.traceBoundOutcomes}，verified ${counts.traceVerifiedOutcomes}，unverified ${counts.traceBoundUnverifiedOutcomes}`);
+  console.log(`Grader calibration：${report.graderHealth.ok ? 'pass' : 'fail'}（${counts.graderCalibrationSamples} samples，${counts.graderCalibrationFailures} failures）`);
   console.log(`Learning：open signals ${counts.openFeedbackSignals}，experiments ${counts.experiments}，planned trials ${counts.plannedExperimentTrials}`);
   console.log(`下一焦点：${nextFocus.id} - ${nextFocus.nextAction}`);
   if (nextFocus.caseIds.length > 0) console.log(`建议 cases：${nextFocus.caseIds.join(', ')}`);

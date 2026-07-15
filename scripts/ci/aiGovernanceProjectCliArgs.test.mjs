@@ -11,6 +11,9 @@ const scripts = [
   'scripts/ci/check-ai-asset-distribution.mjs',
   'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs',
   'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs',
+  'scripts/ci/record-ai-evolution-paired-outcome.mjs',
+  'scripts/ci/check-ai-validation-whitespace.mjs',
+  'scripts/ci/run-ai-validation-execution.mjs',
 ];
 
 const run = (script, args) => spawnSync(process.execPath, [script, ...args], {
@@ -26,6 +29,14 @@ test('项目 AI CLI 的 --help 不读取安装状态并以 0 退出', () => {
     assert.match(result.stdout, /^Usage:/);
     assert.equal(result.stderr, '');
   }
+});
+
+test('安装副本报告固定保持 component-only 信任边界', () => {
+  const result = run('scripts/ci/check-project-plugin-installation.mjs', []);
+  assert.equal(result.status, 1);
+  const report = JSON.parse(result.stdout);
+  for (const field of ['taskRegistrationVerified', 'runtimeTrustVerified',
+    'signerTrustVerified', 'attestationVerified', 'outcomeEligible']) assert.equal(report[field], false);
 });
 
 test('项目 AI CLI 对未知或冲突参数以 2 fail closed', () => {

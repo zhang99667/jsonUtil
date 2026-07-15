@@ -18,6 +18,8 @@ export class JsonRpcInvalidParamsError extends Error {
 
 const isRecord = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 const hasString = (value, key) => typeof value?.[key] === 'string' && value[key].length > 0;
+const isCancellationRequestId = value => typeof value === 'string'
+  || (typeof value === 'number' && Number.isFinite(value));
 
 export const assertJsonutilsGovernanceMethodParams = (method, params) => {
   const invalid = () => { throw new JsonRpcInvalidParamsError(); };
@@ -28,6 +30,13 @@ export const assertJsonutilsGovernanceMethodParams = (method, params) => {
   )) invalid();
   if (method === 'resources/read' && (!isRecord(params) || !hasString(params, 'uri'))) invalid();
   if (method === 'tools/call' && !isRecord(params)) invalid();
+  if (method === 'notifications/initialized' && params !== undefined && !isRecord(params)) invalid();
+  if (method === 'notifications/cancelled' && (
+    !isRecord(params)
+    || !isCancellationRequestId(params.requestId)
+    || (Object.hasOwn(params, 'reason') && typeof params.reason !== 'string')
+    || Object.keys(params).some(field => !['requestId', 'reason'].includes(field))
+  )) invalid();
   if (['ping', 'resources/list', 'tools/list'].includes(method) && params !== undefined && !isRecord(params)) invalid();
 };
 
@@ -52,3 +61,4 @@ export const jsonRpcParseError = () => errorResponse(null, -32700, 'Parse error'
 export const jsonRpcInvalidRequest = message => errorResponse(inspectJsonRpcRequest(message).id, -32600, 'Invalid Request');
 export const jsonRpcInvalidParams = id => errorResponse(id, -32602, 'Invalid params');
 export const jsonRpcInternalError = id => errorResponse(id, -32603, 'Internal error');
+export const jsonRpcServerNotInitialized = id => errorResponse(id, -32002, 'Server not initialized');

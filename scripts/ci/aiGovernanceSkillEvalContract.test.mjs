@@ -35,8 +35,8 @@ test('Codex skill eval 契约为所有显式 profile 派生必需 eval 文件', 
 
 test('Codex skill eval 契约拒绝无效 JSON', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    writeFixtureFile(rootDir, evalFile, '{');
-    assert.match(collectSkillEvalContractFailures(rootDir, skillFile).join('\n'), /无法解析 JSON/);
+    writeFixtureFile(rootDir, evalFile, '{"secret-token":}');
+    assert.deepEqual(collectSkillEvalContractFailures(rootDir, skillFile), [`${evalFile}: 无法解析 JSON`]);
   });
 });
 

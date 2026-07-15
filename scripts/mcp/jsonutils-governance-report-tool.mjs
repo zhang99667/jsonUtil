@@ -14,8 +14,16 @@ export const buildJsonutilsGovernanceReportToolPayload = async ({ top = 35, runS
   const governanceReport = parseScriptJson(governanceResult, 'check-ai-governance');
   const budgetReport = parseScriptJson(budgetResult, 'check-maintainability-budgets');
   const context = buildJsonutilsGovernanceContextFromReports({ governanceReport, budgetReport, top });
+  const ok = context.ok;
   return {
-    ok: governanceResult.exitCode === 0 && budgetResult.exitCode === 0,
-    report: { ...governanceReport, maturityScorecard: context.maturityScorecard, nextCommands: context.nextCommands },
+    ok,
+    report: {
+      ...governanceReport,
+      ok,
+      governance: context.governance,
+      maintainability: context.maintainability,
+      maturityScorecard: context.maturityScorecard,
+      nextCommands: context.nextCommands,
+    },
   };
 };

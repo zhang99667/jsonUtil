@@ -1,3 +1,5 @@
+import { governanceAiDistributionTestMaintainabilityBudgets } from './maintainability-budget-governance-ai-distribution-test-rules.mjs';
+
 const governanceAiRegistryEvidenceTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiRegistryEvidenceTestMaintainabilityBudgets = [
@@ -8,8 +10,6 @@ export const governanceAiRegistryEvidenceTestMaintainabilityBudgets = [
   governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceDiscoveredAssetExpectedTestFixtures.mjs', 25, 'AI 治理资产发现期望 fixture 应独立维护期望资产清单'),
   governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceDiscoveredAssetTestFixtures.mjs', 35, 'AI 治理资产发现测试 fixture 应独立维护发现输入文件'),
   governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceDiscoveredAssets.test.mjs', 30, 'AI 治理资产发现测试应只验证发现结果和未治理资产报告'),
-  governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceAssetDistribution.test.mjs', 60, 'AI 资产分发测试应区分 workspace、index 与 HEAD 证据边界'),
-  governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceAssetDistributionFiles.test.mjs', 75, 'AI 资产全集测试应锁实现 namespace、eval data、预算覆盖、控制面与近负例'),
-  governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceAssetDistributionRedteam.test.mjs', 145, 'AI 资产 Git 红队测试应锁 assume-unchanged、symlink、mode、clean filter、replace refs 与 Unicode quotePath'),
   governanceAiRegistryEvidenceTestBudget('scripts/ci/aiGovernanceAssetRegistrySemanticEvidence.test.mjs', 65, 'AI 治理资产注册表语义证据测试应独立维护自动发现资产不能只靠发现规则的负例'),
+  ...governanceAiDistributionTestMaintainabilityBudgets,
 ];

@@ -13,7 +13,7 @@ const usage = [
   'Usage: node scripts/ci/check-project-plugin-installation.mjs',
   '',
   '比较 CODEX_HOME 中的 jsonutils-project 安装副本与项目 content lock。',
-  '该 component 检查不证明当前任务注册、runtime trust 或 attestation。',
+  '该 component 检查不证明当前任务注册、runtime/signer trust、attestation 或 outcome。',
   '  --help  显示帮助',
 ].join('\n');
 
@@ -23,15 +23,17 @@ else if (args.length > 0) {
   process.exitCode = 2;
 } else {
   const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
-  const cacheRoot = path.join(codexHome, 'plugins/cache/jsonutils-project');
-  const failures = collectInstalledProjectPluginFailures({ rootDir, cacheRoot });
+  const failures = collectInstalledProjectPluginFailures({ rootDir, codexHome });
   const report = {
     schemaVersion: 1,
     reportType: 'jsonutils-project-plugin-installation-check',
     status: failures.length === 0 ? 'installed-copy-matched-unverified' : 'mismatch',
     trustBoundary: 'local-cache-component-only',
+    taskRegistrationVerified: false,
     runtimeTrustVerified: false,
+    signerTrustVerified: false,
     attestationVerified: false,
+    outcomeEligible: false,
     failures,
   };
   console.log(JSON.stringify(report, null, 2));

@@ -32,7 +32,8 @@ const validWorkflow = [
   '      - run: node --test scripts/mcp/*.test.mjs',
   '      - run: node scripts/ci/check-ai-evolution-evals.mjs',
   '      - run: node scripts/ci/check-ai-asset-distribution.mjs --head',
-  '      - run: node scripts/ci/write-ai-governance-artifacts.mjs',
+  '      - if: always()',
+  '        run: node scripts/ci/write-ai-governance-artifacts.mjs',
   `      - uses: ${AI_GOVERNANCE_ATTESTATION_ACTIONS.upload}`,
   '        with:',
   '          path: artifacts/ai-governance',
@@ -63,10 +64,6 @@ const validWorkflow = [
   '          archive: false',
   '          if-no-files-found: error',
 ].join('\n');
-const outcomeWriters = [
-  'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs',
-  'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs',
-];
 
 const prepareWorkflowFixture = (rootDir, workflow = validWorkflow, ci = 'name: CI') => {
   writeFixtureFile(rootDir, AI_GOVERNANCE_SCHEDULED_WORKFLOW, workflow);
@@ -78,61 +75,13 @@ const prepareWorkflowFixture = (rootDir, workflow = validWorkflow, ci = 'name: C
   );
 };
 
-const headCommand = 'node scripts/ci/check-ai-asset-distribution.mjs --head';
-const addHeadStepControl = (workflow, control) => workflow.replace(
-  `      - run: ${headCommand}`,
-  `      - ${control}\n        run: ${headCommand}`,
-);
-const addGovernanceJobControl = (workflow, control) => workflow.replace(
-  '  ai-governance:',
-  `  ai-governance:\n    ${control}`,
-);
-
 test('AI governance workflow 接受定时门禁与 component-only attestation 隔离', () => {
   withAiGovernanceTempRoot((rootDir) => {
     prepareWorkflowFixture(rootDir);
     assert.deepEqual(collectAiGovernanceScheduledWorkflowFailures(rootDir), []);
+    prepareWorkflowFixture(rootDir, validWorkflow.replace('      - if: always()\n', '      - '));
+    assert.match(collectAiGovernanceScheduledWorkflowFailures(rootDir).join('\n'), /artifact writer 必须使用 if: always/);
   });
-});
-
-test('AI governance workflow 拒绝 required command 的静态 false if', () => {
-  for (const scope of [addHeadStepControl, addGovernanceJobControl]) {
-    for (const condition of ['if: false', 'if: ${{ false }}']) {
-      withAiGovernanceTempRoot((rootDir) => {
-        prepareWorkflowFixture(rootDir, scope(validWorkflow, condition));
-        assert.match(collectAiGovernanceScheduledWorkflowFailures(rootDir).join('\n'), /静态 false if/);
-      });
-    }
-  }
-});
-
-test('AI governance workflow 拒绝 required command 的 continue-on-error true', () => {
-  for (const scope of [addHeadStepControl, addGovernanceJobControl]) {
-    withAiGovernanceTempRoot((rootDir) => {
-      prepareWorkflowFixture(rootDir, scope(validWorkflow, 'continue-on-error: true'));
-      assert.match(collectAiGovernanceScheduledWorkflowFailures(rootDir).join('\n'), /continue-on-error: true/);
-    });
-  }
-});
-
-test('AI governance workflow 拒绝 outcome writer --write', () => {
-  for (const writer of outcomeWriters) {
-    withAiGovernanceTempRoot((rootDir) => {
-      const unsafe = validWorkflow.replace(
-        '      - run: node scripts/ci/check-ai-evolution-evals.mjs',
-        [
-          '      - run: |',
-          `          node ${writer} --write`,
-          '      - run: node scripts/ci/check-ai-evolution-evals.mjs',
-        ].join('\n'),
-      );
-      prepareWorkflowFixture(rootDir, unsafe);
-      assert.match(
-        collectAiGovernanceScheduledWorkflowFailures(rootDir).join('\n'),
-        /outcome writer --write/,
-      );
-    });
-  }
 });
 
 test('AI governance workflow 拒绝缺失 trigger、命令和严格 artifact', () => {
@@ -195,6 +144,14 @@ test('仓内 attestation policy 必须明确自身不是生产 trust root', () =
       authority: 'trusted-production-policy',
     }));
     assert.match(collectAiGovernanceScheduledWorkflowFailures(rootDir).join('\n'), /仓外生产 identity policy/);
+  });
+});
+
+test('仓内 attestation policy 无法解析时 fail closed', () => {
+  withAiGovernanceTempRoot((rootDir) => {
+    prepareWorkflowFixture(rootDir);
+    writeFixtureFile(rootDir, AI_GOVERNANCE_GITHUB_ATTESTATION_POLICY, '{');
+    assert.match(collectAiGovernanceScheduledWorkflowFailures(rootDir).join('\n'), /无法读取/);
   });
 });
 

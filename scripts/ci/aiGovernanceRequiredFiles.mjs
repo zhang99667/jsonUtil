@@ -1,6 +1,8 @@
 import { AI_ENTRY_SHARED_SNIPPET_FILES } from './aiGovernanceSharedEntrySnippets.mjs';
 import { AI_GOVERNANCE_CODEX_AGENT_REQUIRED_FILES } from './aiGovernanceCodexAgentProfiles.mjs';
+import { AI_GOVERNANCE_CODEX_COMMAND_RULE_REQUIRED_FILES } from './aiGovernanceCodexCommandRules.mjs';
 import { AI_GOVERNANCE_CODEX_HOOK_REQUIRED_FILES } from './aiGovernanceCodexHooks.mjs';
+import { CLAUDE_SKILL_ADAPTER_FILES } from './aiGovernanceClaudeSkillAdapters.mjs';
 import { AI_GOVERNANCE_CHECK_FILES } from './aiGovernanceRequiredCheckFiles.mjs';
 import { AI_GOVERNANCE_REQUIRED_EVOLUTION_FILES } from './aiGovernanceRequiredEvolutionFiles.mjs';
 import { AI_GOVERNANCE_REQUIRED_PROJECT_PLUGIN_FILES } from './aiGovernanceRequiredProjectPluginFiles.mjs';
@@ -25,8 +27,9 @@ const AI_GOVERNANCE_CORE_ENTRY_FILES = [
   '.github/workflows/ai-governance.yml',
   'scripts/ci/local-ci.sh',
   'scripts/ci/local-ci-lib.sh',
-  '.claude/README.md',
+  '.claude/README.md', ...CLAUDE_SKILL_ADAPTER_FILES,
   ...AI_GOVERNANCE_CODEX_AGENT_REQUIRED_FILES,
+  ...AI_GOVERNANCE_CODEX_COMMAND_RULE_REQUIRED_FILES,
   ...AI_GOVERNANCE_CODEX_HOOK_REQUIRED_FILES,
   ...REQUIRED_CODEX_SKILL_EVAL_FILES,
   ...REQUIRED_CODEX_SKILL_UI_FILES,
@@ -38,9 +41,7 @@ const AI_GOVERNANCE_CORE_ENTRY_FILES = [
   'evals/ai-governance/github-attestation-policy.json',
   ...AI_GOVERNANCE_REQUIRED_EVOLUTION_FILES,
   ...AI_GOVERNANCE_REQUIRED_PROJECT_PLUGIN_FILES,
-];
-export const AI_GOVERNANCE_ENTRY_FILES = [...AI_GOVERNANCE_CORE_ENTRY_FILES, ...AI_ENTRY_SHARED_SNIPPET_FILES];
-
+]; export const AI_GOVERNANCE_ENTRY_FILES = [...AI_GOVERNANCE_CORE_ENTRY_FILES, ...AI_ENTRY_SHARED_SNIPPET_FILES];
 export const buildAiGovernanceRequiredFiles = (codexSkillFiles) => [
   ...AI_GOVERNANCE_ENTRY_FILES,
   ...codexSkillFiles,

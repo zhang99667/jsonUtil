@@ -18,7 +18,7 @@ test('AI 治理成熟度 scorecard 会优先暴露治理失败', () => {
   });
 
   assert.equal(scorecard.status, 'fail');
-  assert.equal(scorecard.score, 60);
+  assert.equal(scorecard.score, 58);
   assert.equal(scorecard.nextFocus.id, 'asset-coverage');
 });
 
@@ -58,5 +58,10 @@ test('AI 治理成熟度 scorecard 对无法解析的治理报告 fail closed', 
     budgetReport: { ok: true, items: { highUsage: [] } },
   });
   assert.equal(scorecard.status, 'fail');
-  assert.deepEqual(scorecard.dimensions.slice(0, 3).map(item => item.status), ['fail', 'fail', 'fail']);
+  assert.deepEqual(
+    scorecard.dimensions.filter(item => ['asset-coverage', 'reference-drift', 'contract-locks'].includes(item.id))
+      .map(item => item.status),
+    ['fail', 'fail', 'fail'],
+  );
+  assert.equal(scorecard.dimensions.find(item => item.id === 'distribution-readiness').status, 'unknown');
 });

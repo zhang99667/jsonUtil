@@ -6,11 +6,11 @@ const CONFIG_FILE = '.codex/hooks.json';
 const RUNTIME_FILE = '.codex/hooks/session-start-governance.mjs';
 const MAX_CONFIG_BYTES = 8 * 1024;
 const MAX_RUNTIME_BYTES = 8 * 1024;
-const EXPECTED_RUNTIME_SHA256 = 'b8f45fdfbc579381adea56ca08bf3953950b38927ad9d8d95b687f08e21f3f98';
+const EXPECTED_RUNTIME_SHA256 = '5a7de41ece43d7067b2c5e5efd09b86d8c461299f76a7bd1c94282164ccb4c50';
 const REQUIRED_RUNTIME_SNIPPETS = [
   'MAX_INPUT_BYTES = 64 * 1024',
   "payload.hook_event_name !== 'SessionStart'",
-  "!['startup', 'resume'].includes(payload.source)",
+  "!['startup', 'resume', 'clear', 'compact'].includes(payload.source)",
   "path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')",
   'metadata.isFile() && !metadata.isSymbolicLink()',
   'hookSpecificOutput',
@@ -29,7 +29,7 @@ const FORBIDDEN_RUNTIME_PATTERNS = [
 export const CODEX_SESSION_START_HOOK_CONTRACT = Object.freeze({
   caseId: 'codex-project-session-start-hook-boundary',
   behaviorCaseId: 'codex-project-session-start-hook-observed',
-  version: '1.0.0',
+  version: '1.1.0',
 });
 
 export const CODEX_SESSION_START_HOOK_FILES = Object.freeze([CONFIG_FILE, RUNTIME_FILE]);
@@ -46,7 +46,7 @@ export const AI_GOVERNANCE_CODEX_HOOK_REQUIRED_FILES = Object.freeze([
 export const CANONICAL_CODEX_HOOK_CONFIG = `${JSON.stringify({
   hooks: {
     SessionStart: [{
-      matcher: 'startup|resume',
+      matcher: 'startup|resume|clear|compact',
       hooks: [{
         type: 'command',
         command: 'node "$(git rev-parse --show-toplevel)/.codex/hooks/session-start-governance.mjs"',

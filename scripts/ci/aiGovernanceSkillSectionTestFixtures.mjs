@@ -1,8 +1,8 @@
 export const COMPLETE_CODEX_SKILL_SECTION_BODIES = {
   '## 必读文件': [
-    'AGENTS.md',
-    'rules/code-style.md',
-    'docs/AI-ENGINEERING-PLAYBOOK.md',
+    '`AGENTS.md`',
+    '`rules/code-style.md`',
+    '`docs/AI-ENGINEERING-PLAYBOOK.md`',
   ].join('\n'),
   '## 按任务读取': [
     'ai_decision_summary',

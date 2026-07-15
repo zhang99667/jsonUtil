@@ -8,6 +8,7 @@ export const governanceAiSkillContractTestCoreMaintainabilityBudgets = [
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillCommandContract.test.mjs', 80, 'AI 治理 skill 命令契约测试应独立维护 fenced cd 和 npm run 可达性负例'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillContract.test.mjs', 75, 'AI 治理 skill 契约测试应独立维护 skill 发现和引用可达性负例'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillContextBudgetContract.test.mjs', 100, 'AI 治理 skill 上下文预算测试应锁定必读、.codex、源码、JSON、目录与超预算边界'),
+  skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillContextReferenceSet.test.mjs', 75, 'AI 治理 skill 上下文集合测试应拒绝 path-like 无效引用、跨引用漂移且忽略普通术语'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillEvalContract.test.mjs', 70, 'AI 治理 skill eval 测试应锁定合法语料、解析失败、路由与可评分契约'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillSectionContract.test.mjs', 75, 'AI 治理 skill 章节契约测试应独立维护核心章节和关键内容负例'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceAiInfraSkillSectionContract.test.mjs', 45, 'AI 基建 skill 章节契约测试应锁定 A/B 隔离、可审计快照和 evidence scope 负例'),
@@ -15,5 +16,8 @@ export const governanceAiSkillContractTestCoreMaintainabilityBudgets = [
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillSectionPseudoTitle.test.mjs', 35, 'AI 治理 skill 章节伪标题测试应独立维护正文伪章节标题边界负例'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillReleaseContract.test.mjs', 45, 'AI 治理 skill 发布契约测试应独立维护 CHANGELOG 追踪负例'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillUiContract.test.mjs', 75, 'AI 治理 skill UI 测试应锁定缺失、长度和默认提示 skill 引用负例'),
+  skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillUiYamlAmbiguity.test.mjs', 185, 'Skill UI YAML 歧义测试应锁 interface、policy boolean 与 documented dependencies 的受控子树正反例'),
+  skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillSourceTextContract.test.mjs', 165, 'Skill source 文本测试应锁 cap/cap+1、hardlink/祖先 symlink、非普通节点与 fatal UTF-8 读取边界'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillSourceContract.test.mjs', 60, 'AI 治理 skill source 测试应锁定 canonical source、legacy 副本与 symlink 负例'),
+  skillContractTestCoreBudget('scripts/ci/aiGovernanceClaudeSkillAdapters.test.mjs', 85, 'Claude skill adapter 测试应锁定派生映射、缺失、正文漂移与 symlink 负例'),
 ];

@@ -2,8 +2,8 @@
 name: jsonutils-maintainer
 description: JSONUtils 项目维护技能。用于优化性能、重构可维护性较差的模块、补充 Scheme/CMD 解析能力、维护前后端测试门禁、更新 AI 协作规范和部署排查流程。
 metadata:
-  version: "0.1.34"
-  tags: [jsonutils, governance, ai-infra, maintenance]
+  version: "0.1.37"
+  tags: "jsonutils,governance,ai-infra,maintenance"
 ---
 
 # JSONUtils Maintainer
@@ -26,16 +26,17 @@ metadata:
 ## 工作流
 
 1. 先执行 `git status --short --branch`，确认工作树是否干净。
-2. 对跨模块排查、复杂重构或多条验证链路先做子 Agent 委派判断；Codex 只读调查路由项目 explorer、白名单实现路由 worker、验证复核路由 verifier。委派任务说明读写范围、排除项、期望输出和未覆盖风险，worker 额外要求写入白名单；子 Agent 输出使用 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`固定模板，主线程负责拆分边界、整合证据和最终验证；不可委派时收窄 `rg`、测试和日志输出。
+2. 对跨模块排查、复杂重构或多条验证链路先做子 Agent 委派判断；Codex 只读调查路由项目 explorer、白名单实现路由 worker、验证复核路由 verifier，AI 基建审计切换 evolver 并可路由 ai-infra-auditor。委派任务说明读写范围、排除项、期望输出和未覆盖风险，worker 额外要求写入白名单；子 Agent 输出使用 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`固定模板，主线程负责拆分边界、整合证据和最终验证；不可委派时收窄 `rg`、测试和日志输出。
 3. 用 `rg` 或 `rg --files` 定位相关实现和测试。
 4. 明确成功标准：性能预算、解析 corpus、类型检查、构建门禁或交互测试。
 5. 做最小可验证改动，不做无关大重构。
 6. JSONUtils AI 基建的 source of truth 必须入库；workspace/index/HEAD 只分别证明未 ignore、下一次提交候选和当前提交可 clone。仓库不是 plugin，只有 `plugins/<name>/` 是插件包；`.agents/plugins/marketplace.json` 只交付目录和源码，不会自动安装，先只读 `--check`，只有用户明确同意才 `--apply`，安装缓存不是权威源。
 7. 用户可见或准备上线的改动先递增 `frontend/package.json` patch 版本，同步 `frontend/package-lock.json`，并在 `CHANGELOG.md` 顶部新开版本区块，避免一个版本堆积几十条提交。
-8. 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，完成复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，并把稳定经验做规则/skill 回写。deterministic outcome 只能用项目 writer 默认 preview，本地维护者显式 `--write`；不手改双 JSONL，不让 CI/hook 自动写账。
-9. 决策账本记录不能用弱占位冒充触发条件、反例或适用边界；回写追踪同时包含 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`；锁定测试同时写入 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`，且引用的测试文件必须保留普通可执行 `test(...)` 或 `it(...)` 用例，不能只剩 `skip`、`todo`、`.only` 或空文件。
-10. 修改 `.agents/skills/*/SKILL.md` 时保留 frontmatter `name`/`description` 与 `metadata.version`/`metadata.tags`（`name` 必须等于 skill 目录名，`version` 使用 `x.y.z`，`tags` 使用非空数组），当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，并保留四个核心章节，确保 skill 仍可发现、可迁移、可版本化、可验证。
-11. 运行匹配范围的验证命令，并在最终回复中说明结果。
+8. 多 worktree 并行时版本号表示最终交付，不按迭代次数相加。先分别推送源快照，再从业务完整侧集成；按业务、AI 治理、生成锁和账本分组，不整仓选边。outcome/receipt 按包含关系保留，版本、CHANGELOG 和锁仅在最终树统一。
+9. 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，完成复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，并把稳定经验做规则/skill 回写。deterministic outcome 只能用项目 writer 默认 preview，本地维护者显式 `--write`；不手改双 JSONL，不让 CI/hook 自动写账。
+10. 决策账本记录不能用弱占位冒充触发条件、反例或适用边界；回写追踪同时包含 `docs/AI-GOVERNANCE-DECISIONS.md` 和 `CHANGELOG.md`；锁定测试同时写入 `node --test ...test.mjs` 和 `node scripts/ci/check-ai-governance.mjs`，且引用的测试文件必须保留普通可执行 `test(...)` 或 `it(...)` 用例，不能只剩 `skip`、`todo`、`.only` 或空文件。
+11. 修改 `.agents/skills/*/SKILL.md` 时保留 frontmatter `name`/`description` 与 `metadata.version`/`metadata.tags`（`name` 必须等于 skill 目录名，`version` 使用 `x.y.z`，`metadata` 所有值使用带引号字符串，`tags` 使用非空逗号分隔字符串），当前 `name` 与 `version` 必须在 `CHANGELOG.md` 同一条记录中可追踪，并保留四个核心章节，确保 skill 仍可发现、可迁移、可版本化、可验证。
+12. 运行匹配范围的验证命令，并在最终回复中说明结果。
 
 ## 常用验证命令
 
@@ -80,10 +81,9 @@ mvn test
 - 同机外部业务域名的 Nginx 改动不能只验证 HTTP 200；`/admin.html` 这类历史后台路径要用本域 `/index.html` 承接、清理本域缓存，并用一次性裸域 query 绕过浏览器对 `/` 的旧 301 精确缓存，再把地址栏归位到裸域，部署 smoke 需要锁住可执行证据。
 - 部署 shell、GitHub shell helper、本地 CI 入口或 `.github/workflows/*.yml` 的 `workflow run` 块改动后先跑 `node scripts/ci/check-deploy-shell-syntax.mjs`，避免外层脚本、内联 run 和 `REMOTE_SCRIPT heredoc` 远端片段语法错误进入上线链路。
 - 大输入处理优先走 worker、采样、预算和降级提示。
-- 登录、用户管理等请求边界优先复用 Jakarta Bean Validation 等框架校验，并用控制器测试证明非法输入不会进入服务；前端认证状态只能在运行时令牌有效且安全存储写入成功后推进。密码摘要使用版本化 `DelegatingPasswordEncoder` 并以真实编码器测试锁定长密码完整性和历史摘要兼容，不能用字符数限制冒充 BCrypt 字节边界；角色等大小写归一使用固定区域设置，同时保留空白更新密码不修改的既有契约。
 - AI 修复能力必须明确本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
 - AI 协作规则自身也要可进化：新增或修正流程后同步 Playbook、入口文档和本 skill，并通过 `node scripts/ci/check-ai-governance.mjs` 做治理校验，避免只靠人工记忆传递。
-- 项目 Codex specialist 只允许 `.codex/agents/` 的 explorer、worker、verifier；explorer 只读，worker 只写父任务白名单，verifier 的可写 sandbox 只服务测试临时/忽略产物且失败时不修复源码。
+- 项目通用执行角色固定 explorer、worker、verifier，AI 基建专项只读审计另允许跨 Codex/Claude/Copilot 的 ai-infra-auditor；客户端权限配置只是默认值，父任务覆盖不放宽职责。静态 adapter 只算 component evidence，真实选择、强隔离和零写入保持 unknown，零写入需完整 workspace manifest。
 - AI 治理、版本一致性、脚本单测和可维护性预算命令必须留在 GitHub Actions `run:` 与 `scripts/ci/local-ci.sh` 的 `run_in_root` 可执行入口，由 `check-ai-governance` 反查，不能只放在注释或 `echo` 里。
 - `.github/workflows/ai-governance.yml` 必须保留 weekly schedule、workflow_dispatch、治理脚本单测、MCP 测试和 artifact 上传，用定时巡检覆盖长期不改文件时的 AI 资产漂移风险。
 - 新增 `scripts/ci/aiGovernance*.mjs` 或 `scripts/ci/aiGovernance*.test.mjs` 时同步登记可维护性预算，治理 helper 和锁定测试都不能游离在预算所有权之外。

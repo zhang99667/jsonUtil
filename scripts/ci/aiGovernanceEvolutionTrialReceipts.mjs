@@ -15,6 +15,11 @@ import {
   AI_EVOLUTION_EXECUTABLE_CASES,
   getAiGovernanceEvolutionCaseCommands,
 } from './aiGovernanceEvolutionCaseRunner.mjs';
+import {
+  AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES,
+  aggregateEvolutionPairedCandidateResults,
+  verifyEvolutionPairedReceiptV4,
+} from './aiGovernanceEvolutionPairedReceiptV4.mjs';
 import { verifyEvolutionTraceReceipt } from './aiGovernanceEvolutionTrace.mjs';
 import { verifyEvolutionTraceProof } from './aiGovernanceEvolutionTraceProof.mjs';
 
@@ -33,6 +38,10 @@ const RECEIPT_FIELDS = [
 const RECEIPT_V1_FIELDS = new Set(RECEIPT_FIELDS);
 const RECEIPT_V2_FIELDS = new Set([...RECEIPT_FIELDS, 'trace']);
 const RECEIPT_V3_FIELDS = new Set([...RECEIPT_FIELDS, 'trace', 'proof']);
+const RECEIPT_V4_FIELDS = new Set([
+  ...RECEIPT_FIELDS, 'experimentRef', 'caseRef', 'fixtureRef', 'environmentRef',
+  'policyRef', 'rubricSha256', 'assignment', 'checkpoint', 'proof',
+]);
 const TRIAL_FIELDS = new Set(['trial', 'verdict', 'score', 'gradeTarget', 'evidence']);
 const VALIDATION_FIELDS = new Set(['command', 'status', 'evidence', 'checkedAt']);
 const MAX_LINE_BYTES = 64 * 1024;
@@ -52,6 +61,12 @@ export const aggregateEvolutionTrialResults = (trialResults) => {
   const score = Math.round(trialResults.reduce((sum, item) => sum + item.score, 0) / trialResults.length);
   return { verdict, score };
 };
+
+export const aggregateEvolutionReceiptTrialResults = receipt => (
+  receipt.schemaVersion === 4
+    ? aggregateEvolutionPairedCandidateResults(receipt.trialResults)
+    : aggregateEvolutionTrialResults(receipt.trialResults)
+);
 
 const collectTrialFailures = (trial, index, label) => {
   const trialLabel = `${label}.trialResults[${index}]`;
@@ -105,15 +120,18 @@ const collectDeterministicFailures = (receipt, label, rootDir) => {
   return failures;
 };
 
-const collectReceiptFailures = (receipt, index, rootDir, maxDate, trustedSigners) => {
+const collectReceiptFailures = (
+  receipt, index, rootDir, maxDate, trustedSigners, pairedTrustPolicy,
+) => {
   const label = `trial-receipts.jsonl: 第 ${index + 1} 条 receipt`;
   if (!isEvolutionRecord(receipt)) {
     return { failures: [`${label} 必须是对象`], traceVerification: undefined, proofVerification: undefined };
   }
-  const allowedFields = receipt.schemaVersion === 3
-    ? RECEIPT_V3_FIELDS : receipt.schemaVersion === 2 ? RECEIPT_V2_FIELDS : RECEIPT_V1_FIELDS;
+  const allowedFields = receipt.schemaVersion === 4
+    ? RECEIPT_V4_FIELDS : receipt.schemaVersion === 3
+      ? RECEIPT_V3_FIELDS : receipt.schemaVersion === 2 ? RECEIPT_V2_FIELDS : RECEIPT_V1_FIELDS;
   const failures = unexpectedFields(receipt, allowedFields, label);
-  if (![1, 2, 3].includes(receipt.schemaVersion)) failures.push(`${label}.schemaVersion 必须为 1、2 或 3`);
+  if (![1, 2, 3, 4].includes(receipt.schemaVersion)) failures.push(`${label}.schemaVersion 必须为 1、2、3 或 4`);
   if (!RECEIPT_ID_PATTERN.test(receipt.id ?? '')) failures.push(`${label}.id 必须是稳定的 kebab-case`);
   if (receipt.artifactType !== 'ai-evolution-trial-receipt') failures.push(`${label}.artifactType 非法`);
   if (receipt.dataClass !== 'redacted') failures.push(`${label}.dataClass 必须为 redacted`);
@@ -126,24 +144,30 @@ const collectReceiptFailures = (receipt, index, rootDir, maxDate, trustedSigners
   if (!SOURCES.has(receipt.source)) failures.push(`${label}.source 枚举值非法`);
   if (!isBoundedString(receipt.runner, 100)) failures.push(`${label}.runner 必须是 1 到 100 字符`);
   if (!REVISION_PATTERN.test(receipt.revision ?? '')) failures.push(`${label}.revision 必须绑定完整 Git 或 worktree revision`);
-  if (receipt.aggregation !== 'all-pass') failures.push(`${label}.aggregation 当前只允许 all-pass`);
+  const expectedAggregation = receipt.schemaVersion === 4 ? 'candidate-only-v1' : 'all-pass';
+  if (receipt.aggregation !== expectedAggregation) failures.push(`${label}.aggregation 必须为 ${expectedAggregation}`);
   const trials = Array.isArray(receipt.trialResults) ? receipt.trialResults : [];
-  if (trials.length === 0 || trials.length > 10) failures.push(`${label}.trialResults 数量必须在 1 到 10 之间`);
-  trials.forEach((trial, trialIndex) => failures.push(...collectTrialFailures(trial, trialIndex, label)));
-  if (trials.some((trial, trialIndex) => trial?.trial !== trialIndex + 1)) {
-    failures.push(`${label}.trialResults trial 必须从 1 连续递增`);
+  if (receipt.schemaVersion === 4) {
+    if (trials.length !== 6) failures.push(`${label}.trialResults 必须精确包含 6 条 paired trial`);
+  } else {
+    if (trials.length === 0 || trials.length > 10) failures.push(`${label}.trialResults 数量必须在 1 到 10 之间`);
+    trials.forEach((trial, trialIndex) => failures.push(...collectTrialFailures(trial, trialIndex, label)));
+    if (trials.some((trial, trialIndex) => trial?.trial !== trialIndex + 1)) {
+      failures.push(`${label}.trialResults trial 必须从 1 连续递增`);
+    }
   }
   const validations = Array.isArray(receipt.validations) ? receipt.validations : [];
   if (validations.length === 0 || validations.length > 20) failures.push(`${label}.validations 数量必须在 1 到 20 之间`);
   validations.forEach((item, itemIndex) => failures.push(
     ...collectValidationFailures(item, itemIndex, label, maxDate, receipt.evaluatedAt)
   ));
-  if (trials.length > 0 && aggregateEvolutionTrialResults(trials).verdict === 'pass'
+  if (receipt.schemaVersion !== 4 && trials.length > 0 && aggregateEvolutionTrialResults(trials).verdict === 'pass'
     && validations.some(item => item?.status !== 'passed')) {
     failures.push(`${label} 聚合 verdict 为 pass 时所有 validations 必须 passed`);
   }
   let traceVerification;
   let proofVerification;
+  let pairedVerification;
   if ([2, 3].includes(receipt.schemaVersion)) {
     if (trials.length !== 1) failures.push(`${label} v${receipt.schemaVersion} 必须精确记录 1 次 trial`);
     if (trials.some(trial => !['trace', 'both'].includes(trial?.gradeTarget))) {
@@ -158,14 +182,23 @@ const collectReceiptFailures = (receipt, index, rootDir, maxDate, trustedSigners
       }
     }
   }
+  if (receipt.schemaVersion === 4) {
+    pairedVerification = verifyEvolutionPairedReceiptV4(receipt, {
+      rootDir, maxDate, pairedTrustPolicy,
+    });
+    failures.push(...pairedVerification.failures.map(failure => `${label}.${failure}`));
+    proofVerification = pairedVerification.proofVerification;
+  }
   failures.push(...collectDeterministicFailures(receipt, label, rootDir));
   failures.push(...collectEvolutionSensitiveFieldFailures(receipt, label));
-  return { failures, traceVerification, proofVerification };
+  return { failures, traceVerification, proofVerification, pairedVerification };
 };
 
 export const readEvolutionTrialReceiptLedger = (
   filePath,
-  { rootDir, maxDate = getLocalIsoDate(), trustedSigners = new Map() } = {}
+  {
+    rootDir, maxDate = getLocalIsoDate(), trustedSigners = new Map(), pairedTrustPolicy = {},
+  } = {}
 ) => {
   let text;
   try {
@@ -177,16 +210,20 @@ export const readEvolutionTrialReceiptLedger = (
   const failures = [];
   text.split(/\r?\n/).forEach((line, lineIndex) => {
     if (!line.trim()) return;
-    if (Buffer.byteLength(line, 'utf8') > MAX_LINE_BYTES) failures.push(`trial-receipts.jsonl: 第 ${lineIndex + 1} 行超过 64 KiB`);
     try {
       const receipt = JSON.parse(line);
-      const { failures: itemFailures, traceVerification, proofVerification } = collectReceiptFailures(
-        receipt, lineIndex, rootDir, maxDate, trustedSigners
+      const lineLimit = receipt?.schemaVersion === 4
+        ? AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES : MAX_LINE_BYTES;
+      const { failures: itemFailures, traceVerification, proofVerification, pairedVerification } = collectReceiptFailures(
+        receipt, lineIndex, rootDir, maxDate, trustedSigners, pairedTrustPolicy,
       );
+      if (Buffer.byteLength(line, 'utf8') > lineLimit) {
+        itemFailures.push(`trial-receipts.jsonl: 第 ${lineIndex + 1} 行超过 ${lineLimit / 1024} KiB`);
+      }
       if (line !== JSON.stringify(receipt)) itemFailures.push(`trial-receipts.jsonl: 第 ${lineIndex + 1} 行必须使用精确紧凑 JSON`);
       parsed.push({
         receipt, line, sha256: hashEvolutionTrialReceiptLine(line), failures: itemFailures,
-        traceVerification, proofVerification,
+        traceVerification, proofVerification, pairedVerification,
       });
       failures.push(...itemFailures);
     } catch {
@@ -196,7 +233,35 @@ export const readEvolutionTrialReceiptLedger = (
   const idCounts = new Map();
   parsed.forEach(({ receipt }) => idCounts.set(receipt.id, (idCounts.get(receipt.id) ?? 0) + 1));
   if ([...idCounts.values()].some(count => count > 1)) failures.push('trial-receipts.jsonl: receipt id 必须唯一');
-  const validEntries = parsed.filter(item => item.failures.length === 0 && idCounts.get(item.receipt.id) === 1);
+  const replayFields = [
+    ['assignment batchNonce', item => item.receipt.assignment?.batchNonce],
+    ['semantic execution facts', item => JSON.stringify([
+      item.receipt.experimentRef?.sha256, item.receipt.caseRef?.sha256,
+      item.receipt.trialResults?.map(trial => [trial.trialId, trial.execution?.leaseKeySha256,
+        trial.execution?.taskInstanceSha256, trial.resultSha256]),
+    ])],
+    ['assignment proof', item => item.receipt.proof?.assignmentEnvelope],
+    ['checkpoint proof', item => item.receipt.proof?.checkpointEnvelope],
+    ['batch proof', item => item.receipt.proof?.batchEnvelope],
+  ];
+  const replayed = new Set();
+  for (const [label, select] of replayFields) {
+    const groups = new Map();
+    parsed.filter(item => item.receipt.schemaVersion === 4).forEach((item) => {
+      const value = select(item);
+      if (typeof value !== 'string' || value.length === 0) return;
+      const entries = groups.get(value) ?? [];
+      entries.push(item);
+      groups.set(value, entries);
+    });
+    for (const entries of groups.values()) {
+      if (entries.length < 2) continue;
+      entries.forEach(item => replayed.add(item));
+      failures.push(`trial-receipts.jsonl: paired v4 ${label} 不得跨 receipt 重放`);
+    }
+  }
+  const validEntries = parsed.filter(item => item.failures.length === 0
+    && idCounts.get(item.receipt.id) === 1 && !replayed.has(item));
   const receiptsById = new Map(validEntries.map(item => [item.receipt.id, item]));
   return {
     receipts: parsed.map(item => item.receipt),

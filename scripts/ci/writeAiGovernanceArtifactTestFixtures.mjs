@@ -1,6 +1,14 @@
 import { writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 export const AI_GOVERNANCE_ARTIFACT_GENERATED_AT = '2026-07-10T01:02:03.000Z';
+const READY_SCOPE = { ok: true, counts: { assets: 3, failures: 0 }, failureSample: [], truncated: false };
+export const AI_GOVERNANCE_ARTIFACT_DISTRIBUTION_READINESS = {
+  schemaVersion: 1, reportType: 'ai-asset-distribution-readiness', ok: true,
+  stability: { status: 'stable', sourceDrift: 0, gitInventoryDrift: 0, sourceReadErrors: 0, gitInventoryErrors: 0 },
+  counts: { assets: 3, failedScopes: 0 },
+  readiness: { workspaceCandidate: true, nextCommit: true, clone: true },
+  scopes: { workspace: READY_SCOPE, index: READY_SCOPE, head: READY_SCOPE },
+};
 
 export const prepareAiGovernanceArtifactProject = (
   rootDir,
@@ -27,6 +35,7 @@ export const createAiGovernanceArtifactRunReport = (calls = []) => (script, args
         ok: true,
         counts: { requiredFiles: 3, referenceRules: 2 },
         failures: {},
+        distributionReadiness: AI_GOVERNANCE_ARTIFACT_DISTRIBUTION_READINESS,
         evolutionEvals: {
           reportType: 'ai-governance-evolution-evals',
           ok: true,

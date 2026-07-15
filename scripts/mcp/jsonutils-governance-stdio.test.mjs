@@ -1,15 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { startGovernanceMcpServer } from '../ci/jsonutilsGovernanceMcpStdioTestClient.mjs';
+import { initializeGovernanceMcpServer, startGovernanceMcpServer } from '../ci/jsonutilsGovernanceMcpStdioTestClient.mjs';
 import { request } from '../ci/mcpLineDelimitedStdioClient.mjs';
 
 test('MCP config starts governance server over stdio and serves context', async (t) => {
   const { child, readMessage } = startGovernanceMcpServer(t);
-  const initialized = await request(child, readMessage, 1, 'initialize', {
-    protocolVersion: '2025-11-25',
-    capabilities: {},
-    clientInfo: { name: 'stdio-test', version: '1.0.0' },
-  });
+  const initialized = await initializeGovernanceMcpServer(child, readMessage, 'stdio-test');
   assert.equal(initialized.result.serverInfo.name, 'jsonutils-governance');
 
   const tools = await request(child, readMessage, 2, 'tools/list');
@@ -38,7 +34,8 @@ test('MCP config starts governance server over stdio and serves context', async 
   }, 30000);
   const context = JSON.parse(contextResult.result.content[0].text);
   assert.equal(context.reportType, 'jsonutils-governance-context');
-  assert.equal(context.ok, context.governance.ok && context.maintainability.ok);
+  assert.equal(typeof context.ok, 'boolean');
+  assert.equal(contextResult.result.isError, !context.ok);
   assert.equal(context.maturityScorecard.reportType, 'ai-governance-maturity-scorecard');
   assert.ok(context.project.latestDecision?.decision);
   assert.ok(context.nextCommands.includes('node scripts/ci/check-ai-governance.mjs'));

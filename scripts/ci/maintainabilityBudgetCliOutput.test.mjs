@@ -54,6 +54,7 @@ test('可维护性预算全局候选事实不随 top 展示参数变化', () => 
   const topThirtyFive = run(35);
 
   assert.equal(topOne.items.highUsage.length, 1);
+  assert.equal(topOne.counts.highUsageSummaries, topThirtyFive.counts.highUsageSummaries);
   assert.deepEqual(topOne.items.scorecardCandidates, topThirtyFive.items.scorecardCandidates);
   assert.equal(topOne.counts.scorecardCandidates, topThirtyFive.counts.scorecardCandidates);
 });

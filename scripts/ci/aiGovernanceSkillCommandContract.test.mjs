@@ -6,8 +6,9 @@ import {
   buildCodexSkillFixtureContent,
   CODEX_SKILL_TEST_FILE,
   COMPLETE_CODEX_SKILL_SECTION_BODIES,
+  withCodexSkillTempRoot,
 } from './aiGovernanceSkillTestFixtures.mjs';
-import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
+import { writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const fenced = lines => ['```bash', ...lines, '```'].join('\n');
 const skillFile = CODEX_SKILL_TEST_FILE;
@@ -23,7 +24,7 @@ const skillFixture = commandBlock => buildCodexSkillFixtureContent({
 });
 
 test('AI 治理 skill 命令契约接受存在的 fenced cd 目录和 npm run 脚本', () => {
-  withAiGovernanceTempRoot((rootDir) => {
+  withCodexSkillTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({
       scripts: { build: 'vite build', test: 'vitest run' },
     }));
@@ -38,7 +39,7 @@ test('AI 治理 skill 命令契约接受存在的 fenced cd 目录和 npm run �
 });
 
 test('AI 治理 skill 命令契约会报告不存在的 fenced cd 目录', () => {
-  withAiGovernanceTempRoot((rootDir) => {
+  withCodexSkillTempRoot((rootDir) => {
     writeFixtureFile(rootDir, skillFile, skillFixture(fenced([
       'cd missing-dir',
     ])));
@@ -50,7 +51,7 @@ test('AI 治理 skill 命令契约会报告不存在的 fenced cd 目录', () =>
 });
 
 test('AI 治理 skill 命令契约会报告不存在的 fenced npm run 脚本', () => {
-  withAiGovernanceTempRoot((rootDir) => {
+  withCodexSkillTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({
       scripts: { build: 'vite build' },
     }));

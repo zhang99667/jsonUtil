@@ -7,6 +7,14 @@ import {
 } from '../ci/jsonutilsGovernanceMcpTestFixtures.mjs';
 import { buildJsonutilsGovernanceContext } from './jsonutils-governance-context.mjs';
 
+const READY_SCOPE = { ok: true, counts: { assets: 2, failures: 0 }, failureSample: [], truncated: false };
+const DISTRIBUTION_READINESS = {
+  schemaVersion: 1, reportType: 'ai-asset-distribution-readiness', ok: true,
+  stability: { status: 'stable', sourceDrift: 0, gitInventoryDrift: 0, sourceReadErrors: 0, gitInventoryErrors: 0 },
+  counts: { assets: 2, failedScopes: 0 }, readiness: { workspaceCandidate: true, nextCommit: true, clone: true },
+  scopes: { workspace: READY_SCOPE, index: READY_SCOPE, head: READY_SCOPE },
+};
+
 test('governance context combines reports, project version and latest decision', async () => {
   await withJsonutilsGovernanceMcpTempRoot(async (rootDir) => {
     writeJsonutilsGovernanceMcpFixtureFile(rootDir, 'frontend/package.json', JSON.stringify({ name: 'json-helper-ai-fix', version: '1.2.3' }));
@@ -26,6 +34,7 @@ test('governance context combines reports, project version and latest decision',
           ok: true,
           counts: { requiredFiles: 2, referenceRules: 1 },
           failures: { missingFiles: [], skillContractFailures: [], contractFailures: [], missingReferences: [] },
+          distributionReadiness: DISTRIBUTION_READINESS,
         })
         : JSON.stringify({
           ok: true,
@@ -48,6 +57,8 @@ test('governance context combines reports, project version and latest decision',
     assert.deepEqual(context.project.latestDecision, { date: '2026-07-10', decision: '建立上下文快照' });
     assert.equal(context.maturityScorecard.nextFocus.id, 'maintainability-headroom');
     assert.equal(context.maturityScorecard.nextFocus.status, 'warn');
+    assert.deepEqual(context.distributionReadiness, DISTRIBUTION_READINESS);
+    assert.equal(context.maturityScorecard.dimensions.find(item => item.id === 'distribution-readiness').status, 'pass');
     assert.deepEqual(context.maintainability.highUsage.map(item => item.file), ['frontend/src/App.tsx']);
     assert.equal(context.maturityScorecard.dimensions.at(-1).details.maintainabilityHotspots.aiCandidateCount, 1);
     assert.deepEqual(calls.map(([script]) => script), [

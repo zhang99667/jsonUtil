@@ -13,7 +13,7 @@ export const printAiGovernanceHumanReport = (report, output = console) => {
   }
 
   AI_GOVERNANCE_FAILURE_GROUPS.forEach(([key, title]) => {
-    if (report[key].length === 0) return;
+    if ((report[key]?.length ?? 0) === 0) return;
     output.error(title);
     report[key].forEach(message => output.error(`- ${message}`));
   });

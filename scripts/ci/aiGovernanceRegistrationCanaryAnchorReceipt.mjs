@@ -12,6 +12,7 @@ import {
   parseRegistrationCanaryDsseEnvelope,
   verifyRegistrationCanaryDsseSignature,
 } from './aiGovernanceRegistrationCanaryDsseEnvelope.mjs';
+import { selectRegistrationCanaryObservedReceiptJson } from './aiGovernanceRegistrationCanaryReceiptObservation.mjs';
 
 export const REGISTRATION_CANARY_ANCHOR_PREDICATE_TYPE = 'https://github.com/zhang99667/jsonUtil/attestations/registration-canary-anchor/v1';
 const PROTOCOL_VERSION = '1.0.0';
@@ -194,21 +195,10 @@ export const verifyRegistrationCanaryAnchorReceipt = ({
 };
 
 export const verifyRegistrationCanaryAnchorReceiptSet = ({ anchorReceiptJsons, ...input }) => {
-  if (!Array.isArray(anchorReceiptJsons) || anchorReceiptJsons.length < 1 || anchorReceiptJsons.length > 16) {
-    throw new TypeError('anchor receipt observation set 必须包含 1 到 16 条记录');
-  }
-  const observed = anchorReceiptJsons.map(anchorReceiptJson => ({
-    anchorReceiptJson,
-    ...parseRegistrationCanaryDsseEnvelope(anchorReceiptJson, 'anchor receipt'),
-  }));
-  if (new Set(observed.map(item => item.proofSha256)).size !== 1) {
-    throw new TypeError('检测到同一 checkpoint 的本地可观察 anchor 分叉或非幂等重签');
-  }
-  const preferred = input.expectedBindings?.signerKeyId;
-  const candidates = preferred === undefined
-    ? observed : observed.filter(item => item.signerKeyId === preferred);
-  const selected = [...(candidates.length > 0 ? candidates : observed)].sort((left, right) => (
-    left.anchorReceiptJson < right.anchorReceiptJson ? -1 : left.anchorReceiptJson > right.anchorReceiptJson ? 1 : 0
-  ))[0];
-  return verifyRegistrationCanaryAnchorReceipt({ ...input, anchorReceiptJson: selected.anchorReceiptJson });
+  const anchorReceiptJson = selectRegistrationCanaryObservedReceiptJson({
+    receiptJsons: anchorReceiptJsons,
+    receiptKind: 'anchor',
+    preferredSignerKeyId: input.expectedBindings?.signerKeyId,
+  });
+  return verifyRegistrationCanaryAnchorReceipt({ ...input, anchorReceiptJson });
 };

@@ -131,3 +131,18 @@ test('deterministic trace receipt 不会误入 fixed runner replay', () => {
   assert.deepEqual(result.failures, []);
   assert.deepEqual([...result.verifiedOutcomeIds], []);
 });
+test('deterministic revision drift 仍重放当前 runner，但不冒充已刷新 outcome', () => {
+  const fixed = { schemaVersion: 1, validations: [{ command: 'node --test fixture.test.mjs', status: 'passed' }] };
+  const stale = { schemaVersion: 3, id: 'stale-fixed', caseId: caseItem.id, caseVersion: 1,
+    subjectVersion: '0.3.0', verdict: 'pass', provenance: { method: 'deterministic', revision: 'worktree-old' },
+    evidence: { receiptId: 'fixed-receipt' } };
+  const result = replayEvolutionDeterministicOutcomes({ rootDir: '/unused', outcomes: [stale],
+    receiptsById: new Map([['fixed-receipt', { receipt: fixed }]]), resolveRevision: () => 'worktree-current',
+    runCases: () => ({ results: [{ caseId: caseItem.id, caseVersion: 1, subjectVersion: '0.3.0',
+      status: 'passed', outcomeEligible: true, validations: fixed.validations }] }) });
+  assert.deepEqual(result.failures, []);
+  assert.deepEqual([...result.verifiedOutcomeIds], []);
+  assert.deepEqual([...result.currentRunVerifiedOutcomeIds], ['stale-fixed']);
+  assert.deepEqual(result.evidenceFreshness.staleCaseIds, [caseItem.id]);
+  assert.equal(result.evidenceFreshness.status, 'stale');
+});

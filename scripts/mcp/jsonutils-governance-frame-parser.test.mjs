@@ -4,7 +4,18 @@ import {
   createMcpLineParser,
   MAX_MCP_MESSAGE_BYTES,
   serializeMcpMessage,
+} from './jsonutils-governance-line-framing.mjs';
+import {
+  createMcpLineParser as createLegacyMcpLineParser,
+  MAX_MCP_MESSAGE_BYTES as LEGACY_MAX_MCP_MESSAGE_BYTES,
+  serializeMcpMessage as serializeLegacyMcpMessage,
 } from './jsonutils-governance-server.mjs';
+
+test('MCP server 旧 framing 导出保持新叶子同引用兼容', () => {
+  assert.strictEqual(createLegacyMcpLineParser, createMcpLineParser);
+  assert.strictEqual(serializeLegacyMcpMessage, serializeMcpMessage);
+  assert.equal(LEGACY_MAX_MCP_MESSAGE_BYTES, MAX_MCP_MESSAGE_BYTES);
+});
 
 test('MCP line parser preserves UTF-8 split across byte chunks', () => {
   const messages = [];

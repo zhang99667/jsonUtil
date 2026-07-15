@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,40 +5,37 @@ import path from 'node:path';
 
 import { readEvolutionEvalCorpus } from './aiGovernanceEvolutionEvalContract.mjs';
 import { readEvolutionExperiments } from './aiGovernanceEvolutionExperiments.mjs';
-import { resolveHermeticGitExecutable } from './aiGovernanceHermeticGitInventory.mjs';
 import {
   collectRegistrationCanaryPacketFailures,
   REGISTRATION_CANARY_PACKET,
 } from './aiGovernanceRegistrationCanaryPacket.mjs';
 import {
-  readStableSnapshotFile,
+  assertRegistrationCanarySnapshotJsonRpcResult,
+  createRegistrationCanarySnapshotStderrObserver,
+  hashRegistrationCanarySnapshotValue,
+  projectRegistrationCanarySnapshotScorecard,
+  readRegistrationCanarySnapshotMcpConfig,
+  REGISTRATION_CANARY_SNAPSHOT_PREFLIGHT,
+  registrationCanarySnapshotValuesEqual,
+} from './aiGovernanceRegistrationCanarySnapshotContract.mjs';
+import {
   verifyEvolutionSealedWorktreeSnapshot,
 } from './aiGovernanceEvolutionSealedWorktreeManifest.mjs';
 import { snapshotRegistrationCanaryBoundFiles } from './prepare-ai-registration-canary.mjs';
 import { createMessageReader, request, serializeMessage } from './mcpLineDelimitedStdioClient.mjs';
 
-export const REGISTRATION_CANARY_SNAPSHOT_PREFLIGHT = Object.freeze({
-  id: 'mcp-registration-canary-snapshot-preflight',
-  version: '1.0.0',
-});
+export {
+  projectRegistrationCanarySnapshotScorecard,
+  REGISTRATION_CANARY_SNAPSHOT_PREFLIGHT,
+};
 
-const hashValue = (domain, value) => createHash('sha256').update(JSON.stringify({ domain, value })).digest('hex');
-const stableValue = value => Array.isArray(value) ? value.map(stableValue)
-  : value && typeof value === 'object'
-    ? Object.fromEntries(Object.keys(value).sort().map(key => [key, stableValue(value[key])]))
-    : value;
-const safeRuntimeEnvironment = (home, temporaryDirectory, gitExecutable) => ({
-  PATH: [...new Set([path.dirname(process.execPath), path.dirname(gitExecutable)])].join(path.delimiter),
+const safeRuntimeEnvironment = (home, temporaryDirectory) => ({
+  PATH: path.dirname(process.execPath),
   HOME: home,
   CODEX_HOME: path.join(home, '.codex'),
   TMPDIR: temporaryDirectory,
   TMP: temporaryDirectory,
   TEMP: temporaryDirectory,
-  GIT_CONFIG_NOSYSTEM: '1',
-  GIT_CONFIG_GLOBAL: os.devNull,
-  GIT_NO_LAZY_FETCH: '1',
-  GIT_NO_REPLACE_OBJECTS: '1',
-  GIT_OPTIONAL_LOCKS: '0',
   LANG: 'C',
   LC_ALL: 'C',
   ...(process.platform === 'win32' && process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
@@ -58,24 +54,6 @@ const readExpectedBindings = (snapshotRoot, fixtureRevision, environmentSha256) 
     environmentSha256,
     ...snapshotRegistrationCanaryBoundFiles(snapshotRoot, caseItem, experiment),
   };
-};
-
-const readMcpConfig = (snapshotRoot) => {
-  const config = JSON.parse(readStableSnapshotFile(snapshotRoot, '.mcp.json', 1024 * 1024).bytes.toString('utf8'));
-  const server = config.mcpServers?.['jsonutils-governance'];
-  if (!server || server.command !== 'node'
-    || JSON.stringify(server.args) !== JSON.stringify(['scripts/mcp/jsonutils-governance-server.mjs'])
-    || Object.keys(server).some(field => !['command', 'args'].includes(field))) {
-    throw new Error('snapshot preflight 只接受仓内固定 keyless stdio MCP 配置');
-  }
-  return server;
-};
-
-const assertJsonRpcResult = (response, label) => {
-  if (!response || response.error || !Object.hasOwn(response, 'result')) {
-    throw new Error(`${label} 返回 JSON-RPC error`);
-  }
-  return response.result;
 };
 
 const signalChildTree = (child, signal) => {
@@ -131,8 +109,7 @@ const verifyRetainedRuntimeHome = (home, expectedIdentity) => {
 };
 
 const callSnapshotScorecard = async (snapshotRoot) => {
-  const server = readMcpConfig(snapshotRoot);
-  const gitExecutable = resolveHermeticGitExecutable(snapshotRoot);
+  const server = readRegistrationCanarySnapshotMcpConfig(snapshotRoot);
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-snapshot-preflight-home-'));
   fs.chmodSync(home, 0o700);
   fs.mkdirSync(path.join(home, '.codex'), { mode: 0o700 });
@@ -141,16 +118,15 @@ const callSnapshotScorecard = async (snapshotRoot) => {
   const expectedHomeIdentity = runtimeHomeIdentity(home);
   const child = spawn(process.execPath, server.args, {
     cwd: snapshotRoot,
-    env: safeRuntimeEnvironment(home, temporaryDirectory, gitExecutable),
+    env: safeRuntimeEnvironment(home, temporaryDirectory),
     stdio: ['pipe', 'pipe', 'pipe'],
     detached: process.platform !== 'win32',
   });
   child.stdin.on('error', () => {});
-  let stderrByteCount = 0;
-  child.stderr.on('data', (chunk) => {
-    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-    stderrByteCount += bytes.length;
+  const stderrObserver = createRegistrationCanarySnapshotStderrObserver({
+    onLimitExceeded: () => signalChildTree(child, 'SIGTERM'),
   });
+  child.stderr.on('data', chunk => stderrObserver.observe(chunk));
   child.stderr.on('error', () => {});
   const readMessage = createMessageReader(child.stdout, undefined, {
     maxBufferedBytes: 256 * 1024,
@@ -158,8 +134,9 @@ const callSnapshotScorecard = async (snapshotRoot) => {
   });
   let result;
   let runtimeHome;
+  let callFailure;
   try {
-    const initialized = assertJsonRpcResult(await request(child, readMessage, 1, 'initialize', {
+    const initialized = assertRegistrationCanarySnapshotJsonRpcResult(await request(child, readMessage, 1, 'initialize', {
       protocolVersion: '2025-11-25',
       capabilities: {},
       clientInfo: { name: 'jsonutils-snapshot-preflight', version: REGISTRATION_CANARY_SNAPSHOT_PREFLIGHT.version },
@@ -168,42 +145,32 @@ const callSnapshotScorecard = async (snapshotRoot) => {
       throw new Error('snapshot MCP initialize 身份或协议漂移');
     }
     child.stdin.write(serializeMessage({ jsonrpc: '2.0', method: 'notifications/initialized' }));
-    const listed = assertJsonRpcResult(await request(child, readMessage, 2, 'tools/list', {}, 30_000), 'snapshot MCP tools/list');
+    const listed = assertRegistrationCanarySnapshotJsonRpcResult(
+      await request(child, readMessage, 2, 'tools/list', {}, 30_000), 'snapshot MCP tools/list',
+    );
     if (!listed.tools?.some(tool => tool.name === 'ai_governance_scorecard')) throw new Error('snapshot MCP 未列出 ai_governance_scorecard');
-    const called = assertJsonRpcResult(await request(child, readMessage, 3, 'tools/call', {
+    const called = assertRegistrationCanarySnapshotJsonRpcResult(await request(child, readMessage, 3, 'tools/call', {
       name: 'ai_governance_scorecard', arguments: { top: 35 },
     }, 120_000), 'snapshot MCP tools/call');
-    if (called.isError === true || !Array.isArray(called.content) || called.content.length !== 1
-      || called.content[0]?.type !== 'text') throw new Error('snapshot scorecard 返回错误或非闭合 text result');
-    let scorecard;
-    try { scorecard = JSON.parse(called.content[0].text); } catch { throw new Error('snapshot scorecard text 不是合法 JSON'); }
-    if (!called.structuredContent
-      || JSON.stringify(stableValue(called.structuredContent)) !== JSON.stringify(stableValue(scorecard))) {
-      throw new Error('snapshot scorecard text 与 structuredContent 不一致');
-    }
-    if (scorecard.reportType !== 'jsonutils-governance-scorecard' || scorecard.ok !== true
-      || scorecard.maturityScorecard?.reportType !== 'ai-governance-maturity-scorecard'
-      || typeof scorecard.maturityScorecard?.nextFocus?.id !== 'string') {
-      throw new Error('snapshot scorecard 未通过或结果契约漂移');
-    }
     result = {
       protocolVersion: initialized.protocolVersion,
       terminationStrategy: process.platform === 'win32'
         ? 'parent-process-best-effort'
         : 'posix-process-group-best-effort',
-      reportType: scorecard.reportType,
-      maturityReportType: scorecard.maturityScorecard.reportType,
-      nextFocusIdSha256: hashValue('jsonutils.registration-snapshot.next-focus/v1', scorecard.maturityScorecard.nextFocus.id),
-      resultSha256: hashValue('jsonutils.registration-snapshot.scorecard-result/v1', scorecard),
+      ...projectRegistrationCanarySnapshotScorecard(called),
     };
+  } catch (error) {
+    callFailure = error;
   } finally {
     child.stdin.end();
     await stopChild(child);
     runtimeHome = verifyRetainedRuntimeHome(home, expectedHomeIdentity);
   }
+  const stderr = stderrObserver.result();
+  if (callFailure) throw callFailure;
   return {
     ...result,
-    stderr: Object.freeze({ byteCount: stderrByteCount, nonEmpty: stderrByteCount > 0 }),
+    stderr,
     runtimeHome,
   };
 };
@@ -215,7 +182,7 @@ export const preflightRegistrationCanarySnapshot = async ({ snapshotRoot, packet
   const packetFailures = collectRegistrationCanaryPacketFailures(packetBundle);
   if (packetFailures.length > 0) throw new Error(packetFailures.join('; '));
   const expectedBindings = readExpectedBindings(root, before.fixtureRevision, before.environmentSha256);
-  if (JSON.stringify(stableValue(packetBundle.host.bindings)) !== JSON.stringify(stableValue(expectedBindings))) {
+  if (!registrationCanarySnapshotValuesEqual(packetBundle.host.bindings, expectedBindings)) {
     throw new Error('snapshot preflight packet 与 fixture/environment/ledger bindings 不匹配');
   }
   const mcp = await callSnapshotScorecard(root);
@@ -233,8 +200,12 @@ export const preflightRegistrationCanarySnapshot = async ({ snapshotRoot, packet
       manifestFileSha256: before.manifestFileSha256,
       fixtureRevision: before.fixtureRevision,
       environmentSha256: before.environmentSha256,
-      packetBundleSha256: hashValue('jsonutils.registration-snapshot.packet-bundle/v1', packetBundle),
-      ledgerBindingsSha256: hashValue('jsonutils.registration-snapshot.ledger-bindings/v1', packetBundle.host.bindings.ledgers),
+      packetBundleSha256: hashRegistrationCanarySnapshotValue(
+        'jsonutils.registration-snapshot.packet-bundle/v1', packetBundle,
+      ),
+      ledgerBindingsSha256: hashRegistrationCanarySnapshotValue(
+        'jsonutils.registration-snapshot.ledger-bindings/v1', packetBundle.host.bindings.ledgers,
+      ),
     }),
     mcp: Object.freeze({
       server: 'jsonutils-governance',

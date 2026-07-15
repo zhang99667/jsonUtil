@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { collectClaudeSkillAdapterFailures } from './aiGovernanceClaudeSkillAdapters.mjs';
+
 const CANONICAL_SKILLS_DIR = '.agents/skills';
 const LEGACY_SKILLS_DIR = '.codex/skills';
 
@@ -23,9 +25,14 @@ const collectSkillSourceEntries = (rootDir, relativePath, legacy) => {
     .flatMap(entry => collectSkillSourceEntries(rootDir, path.posix.join(relativePath, entry), legacy));
 };
 
-export const collectCodexSkillSourceContractFailures = rootDir => (
-  [
+export const collectCodexSkillSourceContractFailures = (rootDir) => {
+  const sourceFailures = [
     ...collectSkillSourceEntries(rootDir, LEGACY_SKILLS_DIR, true),
     ...collectSkillSourceEntries(rootDir, CANONICAL_SKILLS_DIR, false),
-  ]
-);
+  ];
+  return [
+    ...sourceFailures,
+    ...(sourceFailures.length === 0 && fs.existsSync(path.join(rootDir, '.claude/skills'))
+      ? collectClaudeSkillAdapterFailures(rootDir) : []),
+  ];
+};

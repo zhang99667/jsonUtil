@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { TextDecoder } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 import {
   AI_EVOLUTION_UNVERIFIED_TRACE_OBSERVATION_MAX_BYTES,
   parseEvolutionUnverifiedTraceObservation,
-  recordEvolutionUnverifiedTraceOutcome,
-} from './aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.mjs';
+} from './aiGovernanceEvolutionUnverifiedTraceObservationContract.mjs';
+import { recordEvolutionUnverifiedTraceOutcome } from './aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.mjs';
 
 const ARGUMENT_ERROR_CODE = 'UNVERIFIED_TRACE_OUTCOME_WRITER_ARGUMENTS_INVALID';
+const strictUtf8 = new TextDecoder('utf-8', { fatal: true });
 const USAGE = `Usage:
   node scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs [--write] [--json] < observation.json
 
@@ -49,7 +51,11 @@ export const readUnverifiedTraceObservationStdin = () => {
     }
     chunks.push(Buffer.from(buffer.subarray(0, bytes)));
   }
-  return Buffer.concat(chunks, total).toString('utf8');
+  try {
+    return strictUtf8.decode(Buffer.concat(chunks, total));
+  } catch {
+    throw new TypeError('trace observation stdin 必须是合法 UTF-8');
+  }
 };
 
 const renderHuman = report => [

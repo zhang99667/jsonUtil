@@ -5,7 +5,7 @@ import { buildFixedMcpCapture } from './aiGovernanceCodexFixedMcpCaptureTestFixt
 import { parseCodexFixedMcpCaptureArtifact } from './aiGovernanceCodexFixedMcpTrialCapture.mjs';
 
 const profile = Object.freeze({
-  id: 'codex-fixed-mcp-trial', version: '1.3.0', caseId: 'mcp-fixed-tool-selection',
+  id: 'codex-fixed-mcp-trial', version: '1.3.1', caseId: 'mcp-fixed-tool-selection',
   modelId: 'gpt-5.4', binarySha256: 'a'.repeat(64), componentDescriptorSha256: 'b'.repeat(64),
 });
 const parse = artifact => parseCodexFixedMcpCaptureArtifact({

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
+import { createCodexExecJsonlFramer } from './aiGovernanceCodexExecJsonlFraming.mjs';
 
-export const CODEX_EXEC_TRACE_ADAPTER = Object.freeze({ id: 'codex-exec-jsonl', version: '1.2.0' });
+export const CODEX_EXEC_TRACE_ADAPTER = Object.freeze({ id: 'codex-exec-jsonl', version: '1.2.1' });
 
 const SUPPORTED_CLI_VERSIONS = new Set(['0.132.0', '0.144.0-alpha.4']);
 const TOP_LEVEL_TYPES = new Set([
@@ -20,8 +21,6 @@ const SAFE_KEY_SEGMENT = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 const STREAM_LAG = /^in-process app-server event stream lagged; dropped ([1-9]\d*) events$/;
 const MAX_KEYS = 20;
 const MAX_KEY_DEPTH = 3;
-const MAX_JSONL_LINE_BYTES = 1024 * 1024;
-const MAX_JSONL_EVENTS = 10_000;
 const MAX_TRACE_EVENTS = 200;
 
 const sha256 = value => createHash('sha256').update(value).digest('hex');
@@ -37,9 +36,6 @@ export const createCodexExecJsonlProjector = (cliVersion, {
   const events = [];
   const reasons = new Set();
   const items = new Map();
-  let pending = Buffer.alloc(0);
-  let discardingOversizedLine = false;
-  let parsedLines = 0;
   let sourceEvents = 0;
   let threadStarts = 0;
   let turnStarts = 0;
@@ -277,43 +273,10 @@ export const createCodexExecJsonlProjector = (cliVersion, {
     reason('codex-error-event');
   };
 
-  const processLine = (line) => {
-    parsedLines += 1;
-    if (parsedLines > MAX_JSONL_EVENTS) return dropEvent('dropped-events');
-    const content = line.at(-1) === 13 ? line.subarray(0, -1) : line;
-    if (content.length === 0) return dropEvent('malformed-jsonl');
-    const text = content.toString('utf8');
-    if (!Buffer.from(text, 'utf8').equals(content)) return dropEvent('malformed-jsonl');
-    try {
-      processEvent(JSON.parse(text));
-    } catch {
-      dropEvent('malformed-jsonl');
-    }
-  };
-
-  const push = (chunk) => {
-    const data = pending.length > 0 ? Buffer.concat([pending, chunk]) : Buffer.from(chunk);
-    pending = Buffer.alloc(0);
-    let offset = 0;
-    for (;;) {
-      const newline = data.indexOf(10, offset);
-      if (newline < 0) break;
-      if (discardingOversizedLine) discardingOversizedLine = false;
-      else processLine(data.subarray(offset, newline));
-      offset = newline + 1;
-    }
-    const remainder = data.subarray(offset);
-    if (discardingOversizedLine) return;
-    if (remainder.length > MAX_JSONL_LINE_BYTES) {
-      discardingOversizedLine = true;
-      dropEvent('dropped-events');
-      return;
-    }
-    pending = Buffer.from(remainder);
-  };
+  const framer = createCodexExecJsonlFramer({ onValue: processEvent, onDropEvent: dropEvent });
 
   const finalize = ({ exitCode, stdoutDrained, timedOut, binaryStable, outputLimitExceeded = false }) => {
-    if (pending.length > 0 || discardingOversizedLine) dropEvent('truncated-jsonl');
+    framer.finalize();
     if (!SUPPORTED_CLI_VERSIONS.has(cliVersion)) reason('unsupported-cli-version');
     if (threadStarts === 0) reason('missing-thread-started');
     if (turnStarts === 0) reason('missing-turn-started');
@@ -355,5 +318,5 @@ export const createCodexExecJsonlProjector = (cliVersion, {
       completeness: { status: completenessStatus, reasons: [...reasons] },
     };
   };
-  return { push, finalize };
+  return { push: framer.push, finalize };
 };

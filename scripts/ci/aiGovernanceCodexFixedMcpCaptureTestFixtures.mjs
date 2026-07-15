@@ -1,7 +1,7 @@
 export const buildFixedMcpCapture = (profile, { includeRequiredPath = true } = {}) => ({
   schemaVersion: 1,
   trace: {
-    adapter: { id: 'codex-exec-jsonl', version: '1.2.0' },
+    adapter: { id: 'codex-exec-jsonl', version: '1.2.1' },
     capture: {
       status: 'complete', sampling: 'all', droppedEvents: 0,
       droppedAttributes: 0, droppedLinks: 0, flushStatus: 'succeeded',

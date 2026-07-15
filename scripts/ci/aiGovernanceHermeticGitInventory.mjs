@@ -8,29 +8,23 @@ import { TextDecoder } from 'node:util';
 
 const strictUtf8 = new TextDecoder('utf-8', { fatal: true });
 const failure = code => Object.assign(new Error(code), { code });
+const assertSupportedPlatform = () => {
+  if (process.platform === 'win32') throw failure('HERMETIC_GIT_WINDOWS_UNSUPPORTED');
+};
 
 const isWithin = (root, target) => {
   const relative = path.relative(root, target);
   return relative === '' || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`));
 };
 
-const fixedGitCandidates = () => {
-  if (process.platform !== 'win32') return ['/usr/bin/git', '/bin/git', '/usr/local/bin/git', '/opt/homebrew/bin/git'];
-  const candidates = [];
-  if (path.isAbsolute(process.env.SystemRoot ?? '')) {
-    candidates.push(path.join(process.env.SystemRoot, 'System32', 'git.exe'));
-  }
-  if (path.isAbsolute(process.env.ProgramFiles ?? '')) {
-    candidates.push(
-      path.join(process.env.ProgramFiles, 'Git', 'cmd', 'git.exe'),
-      path.join(process.env.ProgramFiles, 'Git', 'bin', 'git.exe'),
-    );
-  }
-  return candidates;
-};
+const fixedGitCandidates = () => [
+  '/Applications/Xcode.app/Contents/Developer/usr/bin/git',
+  '/Library/Developer/CommandLineTools/usr/bin/git',
+  '/usr/bin/git', '/bin/git', '/usr/local/bin/git', '/opt/homebrew/bin/git',
+];
 
 const assertProtectedExecutablePath = (absolute) => {
-  if (process.platform === 'win32') return;
+  assertSupportedPlatform();
   const allowedOwners = new Set([0, typeof process.getuid === 'function' ? process.getuid() : -1]);
   let current = absolute;
   for (;;) {
@@ -45,6 +39,7 @@ const assertProtectedExecutablePath = (absolute) => {
 };
 
 export const resolveHermeticGitExecutable = (rootDir = process.cwd()) => {
+  assertSupportedPlatform();
   let root;
   try { root = fs.realpathSync(path.resolve(rootDir)); } catch { throw failure('HERMETIC_GIT_ROOT_INVALID'); }
   for (const candidate of fixedGitCandidates()) {
@@ -60,18 +55,15 @@ export const resolveHermeticGitExecutable = (rootDir = process.cwd()) => {
   throw failure('HERMETIC_GIT_EXECUTABLE_UNAVAILABLE');
 };
 
-export const buildHermeticGitEnvironment = gitExecutable => ({
-  PATH: [...new Set([path.dirname(gitExecutable), '/usr/bin', '/bin'])].join(path.delimiter),
-  HOME: path.parse(os.devNull).root || os.tmpdir(),
-  GIT_CONFIG_NOSYSTEM: '1',
-  GIT_CONFIG_GLOBAL: os.devNull,
-  GIT_NO_LAZY_FETCH: '1',
-  GIT_NO_REPLACE_OBJECTS: '1',
-  GIT_OPTIONAL_LOCKS: '0',
-  LANG: 'C',
-  LC_ALL: 'C',
-  ...(process.platform === 'win32' && process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
-});
+export const buildHermeticGitEnvironment = (gitExecutable) => {
+  assertSupportedPlatform();
+  return {
+    PATH: [...new Set([path.dirname(gitExecutable), '/usr/bin', '/bin'])].join(path.delimiter),
+    HOME: path.parse(os.devNull).root || os.tmpdir(),
+    GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: os.devNull, GIT_NO_LAZY_FETCH: '1',
+    GIT_NO_REPLACE_OBJECTS: '1', GIT_OPTIONAL_LOCKS: '0', LANG: 'C', LC_ALL: 'C',
+  };
+};
 
 export const runHermeticGitInventory = (rootDir, args) => {
   const gitExecutable = resolveHermeticGitExecutable(rootDir);

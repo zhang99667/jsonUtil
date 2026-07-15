@@ -1,5 +1,6 @@
 import { AI_GOVERNANCE_FAILURE_KEYS } from './aiGovernanceFailureGroupDescriptors.mjs';
 import { buildMaintainabilityHotspotSummary } from './aiGovernanceMaturityScorecardHotspots.mjs';
+import { buildDistributionReadinessDimension } from './aiGovernanceMaturityScorecardDistribution.mjs';
 import { scorecardDimension } from './aiGovernanceMaturityScorecardScoring.mjs';
 
 const listFailures = (report, key) => report?.failures?.[key] ?? report?.[key] ?? [];
@@ -20,6 +21,13 @@ const staticStatus = (report, failureCount) => (
 );
 const evolutionStatus = (report) => {
   if (!report) return 'unknown';
+  if ((report.contractFailures?.length ?? 0) > 0) return 'unknown';
+  if ((report.counts?.currentRunBehaviorFailures ?? 0) > 0) return 'fail';
+  if ((report.counts?.currentRunInfrastructureInvalid ?? 0) > 0) return 'unknown';
+  if ((report.counts?.currentRunComponentFailures ?? 0) > 0) return 'unknown';
+  if ((report.counts?.currentRunDeliveryBlocked ?? 0) > 0) return 'warn';
+  if ((report.currentRunFailures?.length ?? 0) > 0) return 'unknown';
+  if (report.evidenceFreshness?.status === 'stale') return 'warn';
   if (!report.ok) return 'fail';
   if (['fail', 'partial', 'unverifiedFail', 'unverifiedPartial', 'openFeedbackSignals']
     .some(key => (report.counts?.[key] ?? 0) > 0)) return 'warn';
@@ -30,8 +38,13 @@ const evolutionStatus = (report) => {
   return (report.coverage?.outcomes?.percent ?? 0) >= 60 ? 'pass' : 'warn';
 };
 
-export const buildAiGovernanceMaturityScorecardDimensions = ({ governanceReport, budgetReport } = {}) => {
-  const failureTotal = AI_GOVERNANCE_FAILURE_KEYS.reduce((sum, key) => sum + countFailures(governanceReport, key), 0);
+export const buildAiGovernanceMaturityScorecardDimensions = ({
+  governanceReport,
+  budgetReport,
+  distributionReport,
+} = {}) => {
+  const contractFailureTotal = countFailures(governanceReport, 'skillContractFailures')
+    + countFailures(governanceReport, 'contractFailures');
   const hotspotSummary = buildMaintainabilityHotspotSummary(budgetReport);
   const evolutionReport = evolutionReportFrom(governanceReport);
   return [
@@ -41,6 +54,9 @@ export const buildAiGovernanceMaturityScorecardDimensions = ({ governanceReport,
       staticStatus(governanceReport, countFailures(governanceReport, 'missingFiles')),
       `${reportCount(governanceReport, 'requiredFiles')} 个关键文件纳入治理`,
       '补齐缺失的 AI 协作资产文件或显式豁免'
+    ),
+    buildDistributionReadinessDimension(
+      distributionReport ?? governanceReport?.distributionReadiness,
     ),
     scorecardDimension(
       'reference-drift',
@@ -56,7 +72,7 @@ export const buildAiGovernanceMaturityScorecardDimensions = ({ governanceReport,
         governanceReport,
         countFailures(governanceReport, 'skillContractFailures') + countFailures(governanceReport, 'contractFailures')
       ),
-      `${failureTotal} 个治理失败项`,
+      `${contractFailureTotal} 个契约失败项`,
       '先处理 skill、MCP、CI、决策账本或项目事实契约失败'
     ),
     scorecardDimension(
@@ -64,7 +80,7 @@ export const buildAiGovernanceMaturityScorecardDimensions = ({ governanceReport,
       '行为评测质量',
       evolutionStatus(evolutionReport),
       evolutionReport
-        ? `${evolutionReport.counts?.coveredCases ?? 0}/${evolutionBehaviorCaseCount(evolutionReport)} 个 behavior case 有已验证 outcome，${evolutionReport.counts?.componentBoundaryCases ?? 0} 个 component-boundary case 已排除，${evolutionReport.counts?.unverifiedOutcomes ?? 0} 个待验证，${evolutionReport.counts?.openFeedbackSignals ?? 0} 个 open signal`
+        ? `${evolutionReport.counts?.coveredCases ?? 0}/${evolutionBehaviorCaseCount(evolutionReport)} 个 behavior case 有已验证 outcome，${evolutionReport.counts?.componentBoundaryCases ?? 0} 个 component-boundary case 已排除，${evolutionReport.counts?.unverifiedOutcomes ?? 0} 个待验证，${evolutionReport.counts?.currentRunBehaviorFailures ?? 0} 个行为失败，${evolutionReport.counts?.currentRunComponentFailures ?? 0} 个组件失败，${evolutionReport.counts?.currentRunDeliveryBlocked ?? 0} 个交付阻断，${evolutionReport.counts?.currentRunInfrastructureInvalid ?? 0} 个基础设施无效，${evolutionReport.counts?.currentRunVerifiedOutcomes ?? 0} 个当前重放通过但待刷新，${evolutionReport.counts?.openFeedbackSignals ?? 0} 个 open signal`
         : '未提供 AI evolution eval 报告',
       evolutionReport?.nextFocus?.nextAction ?? '运行代表 case 并记录脱敏 outcome',
       evolutionReport ? { evolutionEvals: {
@@ -72,6 +88,7 @@ export const buildAiGovernanceMaturityScorecardDimensions = ({ governanceReport,
         coverage: evolutionReport.coverage?.outcomes,
         ledgerIntegrity: evolutionReport.ledgerIntegrity,
         ledgerChain: evolutionReport.ledgerChain,
+        evidenceFreshness: evolutionReport.evidenceFreshness ?? null,
         blockedFocus: evolutionReport.blockedFocus ?? null,
       } } : undefined
     ),

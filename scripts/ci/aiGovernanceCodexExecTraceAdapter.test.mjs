@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   CODEX_EXEC_TRACE_ADAPTER,
   projectCodexExecJsonlTrace,
 } from './aiGovernanceCodexExecTraceAdapter.mjs';
+import { collectReachableFiles } from './aiGovernanceLocalImportGraph.mjs';
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const baseEvents = ({ responseText = 'component reply' } = {}) => [
   { type: 'thread.started', thread_id: 'thread-component-only' },
@@ -33,10 +38,17 @@ const capture = (fixture, overrides = {}) => projectCodexExecJsonlTrace({
   ...overrides,
 });
 
-test('生产 adapter 只投影外部 JSONL，不导入进程执行或用户认证路径', async () => {
-  const source = await readFile(new URL('./aiGovernanceCodexExecTraceAdapter.mjs', import.meta.url), 'utf8');
-  for (const forbidden of ['node:child_process', 'captureCodexExecTrace', 'runCodexExecJsonlCapture', 'CODEX_HOME']) {
-    assert.equal(source.includes(forbidden), false, forbidden);
+test('生产 adapter 的完整投影闭包不导入进程执行或用户认证路径', async () => {
+  const files = [...collectReachableFiles(rootDir, [
+    'scripts/ci/aiGovernanceCodexExecTraceAdapter.mjs',
+  ])].sort();
+  assert.ok(files.includes('scripts/ci/aiGovernanceCodexExecJsonlFraming.mjs'));
+  assert.ok(files.includes('scripts/ci/aiGovernanceCodexExecTraceProjection.mjs'));
+  for (const file of files) {
+    const source = await readFile(path.join(rootDir, file), 'utf8');
+    for (const forbidden of [
+      'node:child_process', 'captureCodexExecTrace', 'runCodexExecJsonlCapture', 'CODEX_HOME',
+    ]) assert.equal(source.includes(forbidden), false, `${file}: ${forbidden}`);
   }
 });
 

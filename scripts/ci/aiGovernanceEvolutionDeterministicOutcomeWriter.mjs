@@ -22,11 +22,12 @@ import { resolveEvolutionWorktreeRevision } from './aiGovernanceEvolutionWorktre
 import {
   acquireEvolutionOutcomeWriterLock,
   commitEvolutionOutcomeTransaction,
+  getEvolutionOutcomeRecoveryMutationPerformed,
   readEvolutionOutcomeLedgerSnapshot,
   recoverEvolutionOutcomeTransaction,
 } from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';
 
-export const AI_EVOLUTION_DETERMINISTIC_OUTCOME_WRITER_VERSION = '1.0.0';
+export const AI_EVOLUTION_DETERMINISTIC_OUTCOME_WRITER_VERSION = '1.1.0';
 const RUNNER_ID = 'ai-evolution-case-runner';
 const OWNERSHIP_CASE_ID = 'rule-project-ai-asset-ownership';
 const RECEIPTS_RELATIVE_PATH = 'evals/ai-governance/trial-receipts.jsonl';
@@ -281,6 +282,7 @@ export const validateEvolutionDeterministicOutcomeCandidate = ({
   outcomesBytes,
   evaluatedAt,
   revision,
+  pairedTrustPolicy,
 }) => withPrivateLedgerCopies({ receiptsBytes, outcomesBytes }, ({ receiptsPath, outcomesPath }) => {
     const report = buildAiGovernanceEvolutionEvalReport({
       rootDir,
@@ -288,6 +290,7 @@ export const validateEvolutionDeterministicOutcomeCandidate = ({
       outcomesPath,
       maxDate: evaluatedAt,
       resolveRevision: () => revision,
+      pairedTrustPolicy,
     });
     if (!report.ok) throw new Error(`候选 ledger 全量校验失败：${report.failures[0]}`);
     return report;
@@ -441,6 +444,7 @@ export const recordEvolutionDeterministicOutcomes = ({
       resolveRevision,
       ...transactionDependencies.recovery,
     });
+    const recoveryMutationPerformed = getEvolutionOutcomeRecoveryMutationPerformed(recovery);
     const prepared = prepareEvolutionDeterministicOutcomeBatch({
       rootDir: realRoot,
       caseIds,
@@ -455,7 +459,7 @@ export const recordEvolutionDeterministicOutcomes = ({
       status: 'already-current',
       recovery,
       ledgerMutationRequested: true,
-      ledgerMutationPerformed: false,
+      ledgerMutationPerformed: recoveryMutationPerformed,
     };
     const transactionResult = transactionApi.commit({
       rootDir: realRoot,

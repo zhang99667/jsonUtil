@@ -70,6 +70,7 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
   const usageItems = usages.map(toBudgetUsageItem);
   const nearLimitItems = buildNearLimitUsageItems(nearLimitUsages);
   const highUsageItems = buildHighUsageItems(usages, options);
+  const highUsageCandidateCount = buildHighUsageItems(usages, { ...options, highUsageLimit: Number.MAX_SAFE_INTEGER }).length;
   const scorecardCandidateItems = buildScorecardCandidateItems(usages);
 
   return {
@@ -80,6 +81,7 @@ export const buildMaintainabilityBudgetReport = (rootDir, budgets, options = {})
     usageItems,
     nearLimitItems,
     highUsageItems,
+    highUsageCandidateCount,
     scorecardCandidateItems,
   };
 };

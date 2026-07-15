@@ -7,6 +7,7 @@ const DISCOVERED_ASSET_FIXTURE_FILES = [
   ['.codex/agents/reviewer.toml', 'name = "reviewer"'],
   ['.codex/hooks.json', '{"hooks":{}}'],
   ['.codex/hooks/session-start.mjs', 'process.stdout.write("{}\\n");'],
+  ['.codex/rules/review.rules', 'prefix_rule(pattern = ["git"], decision = "prompt")'],
   ['.cursor/mcp.json', '{}'],
   ['.cursor/settings.json', '{}'],
   ['.cursor/rules/review.mdc', '新 Cursor 项目规则'],

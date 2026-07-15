@@ -10,20 +10,21 @@ import { hashEvolutionTrialReceiptLine } from './aiGovernanceEvolutionTrialRecei
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const defaultCorpus = JSON.parse(fs.readFileSync(path.join(projectRoot, 'evals/ai-governance/cases.json'), 'utf8'));
+const MCP_PROTOCOL_COMMAND = 'node --test scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs scripts/mcp/jsonutils-governance-runtime-freshness.test.mjs scripts/mcp/jsonutils-governance-cancellation.test.mjs scripts/mcp/jsonutils-governance-cancellation-stdio.test.mjs';
 const validOutcome = overrides => ({
   schemaVersion: 2,
   id: 'outcome-lineage-one',
   caseId: 'mcp-newline-version-negotiation',
   corpusVersion: '1.0.0',
-  caseVersion: 1,
-  subjectVersion: '0.3.0',
+  caseVersion: 4,
+  subjectVersion: '0.6.0',
   evaluatedAt: '2026-07-10',
   verdict: 'pass',
   score: 100,
   provenance: { method: 'deterministic', source: 'local', runner: 'ai-evolution-case-runner', revision: `worktree-${'a'.repeat(40)}`, trials: 1 },
   writeback: {
     files: [],
-    validationResults: [{ command: 'node --test scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs', status: 'passed', evidence: 'fixture passed', checkedAt: '2026-07-10' }],
+    validationResults: [{ command: MCP_PROTOCOL_COMMAND, status: 'passed', evidence: 'fixture passed', checkedAt: '2026-07-10' }],
   },
   ...overrides,
 });
@@ -61,7 +62,7 @@ const reportFor = (outcomes, corpus = defaultCorpus) => {
     fs.writeFileSync(path.join(evalDir, 'trial-receipts.jsonl'), withEvidence.map(item => item.line).join('\n'));
     return buildAiGovernanceEvolutionEvalReport({
       rootDir,
-      maxDate: '2026-07-13',
+      maxDate: '2026-07-15',
       replayDeterministic: ({ outcomes: active }) => ({
         verifiedOutcomeIds: new Set(active
           .filter(item => item.provenance.method === 'deterministic').map(item => item.id)), failures: [],
@@ -120,7 +121,7 @@ test('human、model 与 hybrid 弱结果保留为待验证反馈而不冒充已�
 
 test('caseVersion 变化后旧 outcome 仅计入 stale history', () => {
   const corpus = structuredClone(defaultCorpus);
-  corpus.cases.find(item => item.id === 'mcp-newline-version-negotiation').caseVersion = 2;
+  corpus.cases.find(item => item.id === 'mcp-newline-version-negotiation').caseVersion = 5;
   corpus.corpusVersion = '1.1.0';
   const report = reportFor([validOutcome({ verdict: 'fail', score: 10, feedback: '旧版 case 的历史失败' })], corpus);
   assert.deepEqual(
@@ -151,7 +152,7 @@ test('subjectVersion 变化会让旧实现 outcome 进入 stale history', () => 
 });
 
 test('未来 caseVersion outcome 会失败而不是伪装成 stale', () => {
-  const report = reportFor([validOutcome({ caseVersion: 2 })]);
+  const report = reportFor([validOutcome({ caseVersion: 5 })]);
   assert.equal(report.ok, false);
   assert.equal(report.counts.invalidOutcomes, 1);
   assert.equal(report.counts.staleOutcomes, 0);
@@ -167,7 +168,7 @@ test('较早 evaluatedAt 的追加记录不能覆盖较新失败', () => {
       writeback: {
         files: [],
         validationResults: [{
-          command: 'node --test scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs',
+          command: MCP_PROTOCOL_COMMAND,
           status: 'passed', evidence: 'backdated fixture', checkedAt: '2026-07-09',
         }],
       },

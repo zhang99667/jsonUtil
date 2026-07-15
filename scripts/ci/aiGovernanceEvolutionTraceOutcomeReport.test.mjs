@@ -14,7 +14,13 @@ const corpus = JSON.parse(fs.readFileSync(path.join(projectRoot, 'evals/ai-gover
 const caseItem = corpus.cases.find(item => item.id === 'mcp-newline-version-negotiation');
 const componentBoundaryCaseItem = corpus.cases.find(item => item.id === 'codex-exec-jsonl-adapter-boundary');
 const REVISION = 'a'.repeat(40);
-const COMMAND = 'node --test scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs';
+const COMMAND_FILES = [
+  'scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs',
+  'scripts/mcp/jsonutils-governance-runtime-freshness.test.mjs',
+  'scripts/mcp/jsonutils-governance-cancellation.test.mjs',
+  'scripts/mcp/jsonutils-governance-cancellation-stdio.test.mjs',
+];
+const COMMAND = `node --test ${COMMAND_FILES.join(' ')}`;
 
 const buildReceipt = (method, selectedCase = caseItem) => ({
   schemaVersion: 2,
@@ -76,7 +82,7 @@ const buildOutcome = receipt => ({
     sha256: createHash('sha256').update(JSON.stringify(receipt), 'utf8').digest('hex'),
   },
   writeback: {
-    files: ['scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs'],
+    files: COMMAND_FILES,
     validationResults: structuredClone(receipt.validations),
   },
 });
@@ -85,10 +91,12 @@ const withReport = (method, options, run) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-trace-report-'));
   try {
     const evalDir = path.join(rootDir, 'evals/ai-governance');
-    const evidenceFile = path.join(rootDir, 'scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs');
     fs.mkdirSync(evalDir, { recursive: true });
-    fs.mkdirSync(path.dirname(evidenceFile), { recursive: true });
-    fs.writeFileSync(evidenceFile, "import { test } from 'node:test';\ntest('fixture', () => {});\n");
+    for (const relativePath of COMMAND_FILES) {
+      const evidenceFile = path.join(rootDir, relativePath);
+      fs.mkdirSync(path.dirname(evidenceFile), { recursive: true });
+      fs.writeFileSync(evidenceFile, "import { test } from 'node:test';\ntest('fixture', () => {});\n");
+    }
     const selectedCase = options.selectedCase ?? caseItem;
     let receipt = buildReceipt(method, selectedCase);
     let trustedSigners = new Map();
@@ -112,7 +120,7 @@ const withReport = (method, options, run) => {
     fs.writeFileSync(path.join(evalDir, 'outcomes.jsonl'), `${JSON.stringify(outcome)}\n`);
     const { signed: _signed, selectedCase: _selectedCase, ...reportOptions } = options;
     return run(buildAiGovernanceEvolutionEvalReport({
-      rootDir, maxDate: '2026-07-13', trustedSigners, ...reportOptions,
+      rootDir, maxDate: '2026-07-15', trustedSigners, ...reportOptions,
     }), { receipt, outcome });
   } finally {
     fs.rmSync(rootDir, { recursive: true, force: true });
@@ -129,7 +137,8 @@ test('trace-bound model/human/hybrid pass 默认 valid-but-unverified 且零覆�
     assert.deepEqual(report.unverifiedOutcomeIds, [outcome.id]);
     assert.equal(report.nextFocus.id, 'verify-agent-trace');
     assert.deepEqual(report.traceVerification, {
-      status: 'unavailable', trustedSigners: 0, trustedAdapters: 0, policies: 0,
+      status: 'unavailable', trustedSigners: 0, signatureVerificationKeys: 0,
+      trustedAdapters: 0, policies: 0, policyCaseIds: [],
     });
   });
 });
@@ -151,7 +160,9 @@ test('只有外部受信 signer 的 v3 proof 通过后才合并进入 confirmed 
     assert.equal(report.counts.coveredCases, 1);
     assert.deepEqual(report.traceVerifiedOutcomeIds, [outcome.id]);
     assert.deepEqual(report.traceVerification, {
-      status: 'configured', trustedSigners: 1, trustedAdapters: 1, policies: 1,
+      status: 'configured', trustedSigners: 1, signatureVerificationKeys: 1,
+      trustedAdapters: 1, policies: 1,
+      policyCaseIds: [caseItem.id],
     });
   });
 });
@@ -169,7 +180,9 @@ test('只有固定 policy 时报告为 policy-ready，仍不提升覆盖', () =>
     assert.equal(report.counts.traceVerifiedOutcomes, 0);
     assert.equal(report.counts.coveredCases, 0);
     assert.deepEqual(report.traceVerification, {
-      status: 'policy-ready', trustedSigners: 0, trustedAdapters: 0, policies: 1,
+      status: 'policy-ready', trustedSigners: 0, signatureVerificationKeys: 0,
+      trustedAdapters: 0, policies: 1,
+      policyCaseIds: [caseItem.id],
     });
   });
 });

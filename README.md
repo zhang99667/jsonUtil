@@ -127,7 +127,7 @@ npm run cmd:diff -- actual-response.json cmdhandler-expected.json --actual-path 
 
 ## 项目级 AI 协作环境
 
-本仓库本身是 JSONUtils 项目，不是一个插件。项目 rules、MCP、hooks、evals 和 `.agents/skills/` 随 Git 提交共同维护；只有 `plugins/<name>/` 是可独立安装的 Codex 插件包，`.agents/plugins/marketplace.json` 只是项目内插件目录清单（marketplace 索引文件），不会因 clone 或打开项目自动安装。
+本仓库本身是 JSONUtils 项目，不是一个插件。项目 rules、MCP、hooks、evals 和 `.agents/skills/` 随 Git 提交共同维护；只有 `plugins/<name>/` 是可独立安装的 Codex 插件包。Codex 在维护者信任项目后从 `.codex/config.toml` 直接注册固定治理 MCP，因此它不依赖个人插件安装；需新建任务才能观察实际注册。`.agents/plugins/marketplace.json` 只提供插件目录发现；`AVAILABLE` 条目可发现，但不会因 clone 或打开项目自动安装、启用或加载插件。
 
 ```bash
 # 工作树候选检查：要求当前普通文件存在且未被 ignore
@@ -143,7 +143,7 @@ node scripts/ci/check-ai-asset-distribution.mjs --head
 node scripts/ci/manage-project-plugins.mjs --check
 ```
 
-其他维护者 clone 到包含这些资产的提交后，可以直接在新任务中发现项目 skills；插件源码和版本也会随仓库到达，但每位维护者的安装/启用状态仍是本机状态。只有维护者明确同意时才运行 `node scripts/ci/manage-project-plugins.mjs --apply`，完成后新建任务；CI、hook 和 postinstall 都不得静默安装。完整边界见 [AI 工具设置](docs/AI-TOOLS-SETUP.md) 与 [AI 工程协作 Playbook](docs/AI-ENGINEERING-PLAYBOOK.md)。
+其他维护者 clone 到包含这些资产的提交后，可以在 trusted project 的新任务中发现项目 skills 和直接注册的治理 MCP。插件源码和版本也会随仓库到达，但每位维护者的安装/启用状态仍是本机状态。只有维护者明确同意时才运行 `node scripts/ci/manage-project-plugins.mjs --apply`；CI、hook 和 postinstall 都不得静默安装。完整边界见 [AI 工具设置](docs/AI-TOOLS-SETUP.md) 与 [AI 工程协作 Playbook](docs/AI-ENGINEERING-PLAYBOOK.md)。
 
 ## CI/CD 与部署
 

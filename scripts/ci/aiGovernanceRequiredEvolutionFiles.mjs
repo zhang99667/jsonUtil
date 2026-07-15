@@ -1,17 +1,17 @@
 import { AI_GOVERNANCE_REQUIRED_CODEX_RUNTIME_FILES } from './aiGovernanceRequiredCodexRuntimeFiles.mjs';
 import { AI_GOVERNANCE_REQUIRED_EVOLUTION_LEARNING_FILES } from './aiGovernanceRequiredEvolutionLearningFiles.mjs';
+import { AI_GOVERNANCE_REQUIRED_EVOLUTION_RUNNER_FILES } from './aiGovernanceRequiredEvolutionRunnerFiles.mjs';
 export { preflightCodexFixedMcpTrial } from './aiGovernanceCodexFixedMcpTrialPreflight.mjs';
 export { verifyCodexFixedMcpTrialCapture } from './aiGovernanceCodexFixedMcpTrial.mjs';
 export {
-  verifyCodexExternalControllerRuntimeProbeReport,
-  verifyCodexExternalControllerAttestedPreflight,
-  verifyCodexExternalControllerSeatbeltSentinelReport,
-  verifyCodexExternalControllerTopologyPlan,
+  verifyCodexExternalControllerRuntimeProbeReport, verifyCodexExternalControllerAttestedPreflight,
+  verifyCodexExternalControllerSeatbeltSentinelReport, verifyCodexExternalControllerTopologyPlan,
 } from './aiGovernanceRequiredCodexRuntimeFiles.mjs';
 export const AI_GOVERNANCE_REQUIRED_EVOLUTION_FILES = [
   'scripts/ci/aiGovernanceRequiredEvolutionFiles.mjs',
   'scripts/ci/aiGovernanceCodexExecCaptureRuntime.mjs',
   'scripts/ci/aiGovernanceCodexExecTraceAdapter.mjs',
+  'scripts/ci/aiGovernanceCodexExecJsonlFraming.mjs',
   'scripts/ci/aiGovernanceCodexExecTraceProjection.mjs',
   'scripts/ci/aiGovernanceCodexFixedMcpTrialProfile.mjs',
   'scripts/ci/aiGovernanceCodexFixedMcpTrialPreflight.mjs',
@@ -24,6 +24,8 @@ export const AI_GOVERNANCE_REQUIRED_EVOLUTION_FILES = [
   'scripts/ci/run-ai-codex-fixed-mcp-trial.mjs',
   'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeWriter.mjs',
   'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs',
+  'scripts/ci/aiGovernanceEvolutionOutcomeRecoveryResult.mjs',
+  'scripts/ci/aiGovernanceEvolutionUnverifiedTraceObservationContract.mjs',
   'scripts/ci/aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.mjs',
   'scripts/ci/aiGovernanceEvolutionOutcomeChain.mjs',
   'scripts/ci/aiGovernanceEvolutionTrace.mjs',
@@ -31,6 +33,8 @@ export const AI_GOVERNANCE_REQUIRED_EVOLUTION_FILES = [
   'scripts/ci/aiGovernanceEvolutionTracePolicies.mjs',
   'scripts/ci/aiGovernanceEvolutionTraceProof.mjs',
   'scripts/ci/writeAiGovernanceAttestationSubject.mjs',
+  'scripts/ci/aiGovernanceCodexExecJsonlFraming.test.mjs',
+  'scripts/ci/aiGovernanceCodexExecTraceProjection.test.mjs',
   'scripts/ci/aiGovernanceCodexExecTraceAdapter.test.mjs',
   'scripts/ci/aiGovernanceCodexFixedMcpTrial.test.mjs',
   'scripts/ci/aiGovernanceCodexFixedMcpTrialCapture.test.mjs',
@@ -40,9 +44,13 @@ export const AI_GOVERNANCE_REQUIRED_EVOLUTION_FILES = [
   'scripts/ci/aiGovernanceEvolutionTraceProof.test.mjs',
   'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeWriter.test.mjs',
   'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeTransaction.test.mjs',
+  'scripts/ci/aiGovernanceEvolutionOutcomeRecoveryResult.test.mjs',
+  'scripts/ci/aiGovernanceEvolutionUnverifiedTraceObservationContract.test.mjs',
   'scripts/ci/aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.test.mjs',
+  'scripts/ci/aiGovernanceEvolutionUnverifiedTraceOutcomeWriterTestFixtures.mjs',
   'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs',
   'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs',
-  'scripts/ci/run-ai-evolution-cases.mjs',
+  'scripts/ci/record-ai-evolution-unverified-trace-outcome.test.mjs',
+  ...AI_GOVERNANCE_REQUIRED_EVOLUTION_RUNNER_FILES,
   ...AI_GOVERNANCE_REQUIRED_EVOLUTION_LEARNING_FILES,
 ];

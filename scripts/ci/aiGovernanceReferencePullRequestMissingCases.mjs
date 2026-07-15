@@ -23,10 +23,10 @@ export const AI_GOVERNANCE_REFERENCE_PULL_REQUEST_MISSING_CASES = [
     expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 "node scripts/ci/check-maintainability-budgets.mjs"',
   },
   {
-    name: 'AI 治理引用检查会报告 PR 模板缺失 MCP 配置提醒',
+    name: 'AI 治理引用检查会报告 PR 模板缺失 Codex 原生 MCP 配置提醒',
     file: '.github/PULL_REQUEST_TEMPLATE.md',
-    content: lines(['docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', 'CHANGELOG.md', 'node scripts/ci/check-ai-governance.mjs', '.cursor/mcp.json', '.vscode/mcp.json', '负向测试', '显式豁免']),
-    contains: ['.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json'],
-    expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 ".mcp.json"',
+    content: lines(['docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md', 'CHANGELOG.md', 'node scripts/ci/check-ai-governance.mjs', '.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json', '负向测试', '显式豁免']),
+    contains: ['.codex/config.toml', '.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json'],
+    expected: '.github/PULL_REQUEST_TEMPLATE.md: 缺少 ".codex/config.toml"',
   },
 ];

@@ -5,9 +5,7 @@ import { test } from 'node:test';
 
 import {
   buildRegistrationCanaryAuthorizationStatement,
-  buildRegistrationCanaryDisclosureCommitment,
   collectRegistrationCanaryAuthorizationStatementFailures,
-  collectRegistrationCanaryDisclosureCommitmentFailures,
   verifyRegistrationCanaryDisclosureAuthorization,
 } from './aiGovernanceRegistrationCanaryDisclosureAuthorization.mjs';
 import {
@@ -29,25 +27,6 @@ const verifiedInputs = fixture => ({
   anchorPublicKey: fixture.signers.anchor.publicKey,
   authorizationPublicKey: fixture.signers.authorization.publicKey,
   anchorExpectedBindings: fixture.anchorExpectedBindings,
-});
-
-test('disclosure commitment 只保留排序 alias 与 host digest，并绑定 checkpoint', () => {
-  const fixture = createRegistrationCanaryAnchorProtocolFixture();
-  const commitment = buildRegistrationCanaryDisclosureCommitment(fixture);
-  assert.deepEqual(collectRegistrationCanaryDisclosureCommitmentFailures(commitment), []);
-  assert.equal(commitment.count, 6);
-  assert.deepEqual(commitment.refs.map(ref => ref.blindTrialAlias), [...commitment.refs.map(ref => ref.blindTrialAlias)].sort());
-  assert.match(commitment.commitmentSha256, /^[0-9a-f]{64}$/);
-  assert.doesNotMatch(JSON.stringify(commitment), /"(?:arm|trial|pair|treatment|pluginStateObserved|leaseKeySha256)"\s*:/);
-  assert.equal(commitment.privacy.hostBodyStored, false);
-  const changedRecords = [...fixture.hostRunRecordJsons];
-  const changed = JSON.parse(changedRecords[0]);
-  changed.taskInstanceSha256 = 'f'.repeat(64);
-  changedRecords[0] = JSON.stringify(changed);
-  assert.notEqual(
-    buildRegistrationCanaryDisclosureCommitment({ ...fixture, hostRunRecordJsons: changedRecords }).commitmentSha256,
-    commitment.commitmentSha256,
-  );
 });
 
 test('authorization 精确绑定 anchor、host commitment、audience/action 与角色 key', () => {

@@ -7,6 +7,7 @@ export const verifyEvolutionTraceOutcomes = ({
   casesById,
   policiesByCaseId = new Map(),
   trustedSigners = new Map(),
+  pairedTrustPolicy = {},
 }) => {
   const traceBoundOutcomeIds = new Set(), verifiedOutcomeIds = new Set(), unverifiedOutcomeIds = new Set();
   const failures = [];
@@ -15,8 +16,25 @@ export const verifyEvolutionTraceOutcomes = ({
   for (const outcome of outcomes) {
     const entry = receiptsById.get(outcome.evidence?.receiptId);
     const receipt = entry?.receipt;
-    if (outcome.schemaVersion < 2 || ![2, 3].includes(receipt?.schemaVersion)) continue;
+    if (outcome.schemaVersion < 2 || ![2, 3, 4].includes(receipt?.schemaVersion)) continue;
     traceBoundOutcomeIds.add(outcome.id);
+    if (receipt.schemaVersion === 4) {
+      const pairedVerification = entry.pairedVerification;
+      const verification = {
+        pairedVerification,
+        failures: pairedVerification?.failures ?? ['paired receipt v4 缺少验证结果'],
+        scoringEligible: pairedVerification?.scoringEligible === true,
+      };
+      verificationByOutcomeId.set(outcome.id, verification);
+      if (verification.failures.length > 0) {
+        failures.push(...verification.failures.map(failure => (
+          `outcomes.jsonl: outcome \`${outcome.id}\` paired receipt v4 验证失败：${failure}`
+        )));
+      }
+      if (verification.scoringEligible) verifiedOutcomeIds.add(outcome.id);
+      else unverifiedOutcomeIds.add(outcome.id);
+      continue;
+    }
     const caseItem = casesById.get(outcome.caseId);
     if (!caseItem) {
       failures.push(`outcomes.jsonl: outcome \`${outcome.id}\` 的 trace 缺少当前 case`);
@@ -62,13 +80,23 @@ export const verifyEvolutionTraceOutcomes = ({
     if (verification.scoringEligible) verifiedOutcomeIds.add(outcome.id);
     else unverifiedOutcomeIds.add(outcome.id);
   }
+  const trustedSignerCount = trustedSigners instanceof Map ? trustedSigners.size : 0;
+  const pairedVerificationKeyCount = [
+    pairedTrustPolicy.assignmentTrustedSigners,
+    pairedTrustPolicy.checkpointTrustedSigners,
+    pairedTrustPolicy.batchTrustedSigners,
+  ].reduce((count, keys) => count + (keys instanceof Map ? keys.size : 0), 0);
   return {
     traceBoundOutcomeIds,
     verifiedOutcomeIds,
     unverifiedOutcomeIds,
     verificationByOutcomeId,
-    registry: { trustedSigners: trustedSigners instanceof Map ? trustedSigners.size : 0,
-      trustedAdapters: trustedSigners instanceof Map ? trustedSigners.size : 0, policies: policiesByCaseId.size },
+    registry: {
+      trustedSigners: trustedSignerCount,
+      signatureVerificationKeys: trustedSignerCount + pairedVerificationKeyCount,
+      trustedAdapters: trustedSignerCount,
+      policies: policiesByCaseId.size,
+    },
     failures,
   };
 };

@@ -1,5 +1,9 @@
-import fs from 'node:fs';
 import path from 'node:path';
+
+import { parseUniqueJsonAuthority } from './aiGovernanceJsonAuthority.mjs';
+import { readStableUtf8File } from './aiGovernanceStableUtf8File.mjs';
+
+export const CODEX_SKILL_EVAL_MAX_BYTES = 256 * 1024;
 
 const isRecord = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 const isString = value => typeof value === 'string' && value.trim().length > 0;
@@ -26,14 +30,16 @@ const collectEvalFailures = (item, index) => {
 
 export const collectSkillEvalContractFailures = (rootDir, skillFile, { required = false } = {}) => {
   const evalFile = path.posix.join(path.posix.dirname(skillFile), 'evals/evals.json');
-  const absoluteEvalFile = path.join(rootDir, evalFile);
-  if (!fs.existsSync(absoluteEvalFile)) return required ? [`${evalFile}: 缺少必需 evals/evals.json`] : [];
-
+  const source = readStableUtf8File(rootDir, evalFile, CODEX_SKILL_EVAL_MAX_BYTES);
+  if (source.status === 'missing') return required ? [`${evalFile}: 缺少必需 evals/evals.json`] : [];
+  if (source.status === 'too-large') return [`${evalFile}: 不能超过 ${CODEX_SKILL_EVAL_MAX_BYTES} bytes`];
+  if (source.status === 'invalid-utf8') return [`${evalFile}: 必须是严格 UTF-8`];
+  if (source.status !== 'ok') return [`${evalFile}: 必须是可读的非 symlink 普通文件`];
   let document;
   try {
-    document = JSON.parse(fs.readFileSync(absoluteEvalFile, 'utf8'));
-  } catch (error) {
-    return [`${evalFile}: 无法解析 JSON（${error.message}）`];
+    document = parseUniqueJsonAuthority(source.content);
+  } catch {
+    return [`${evalFile}: 无法解析 JSON`];
   }
 
   const failures = [];

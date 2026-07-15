@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const LOCAL_MODULE_PATTERNS = [
-  /(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"](\.\/[^'"]+\.mjs)['"]/g,
-  /\bimport\s*\(\s*['"](\.\/[^'"]+\.mjs)['"]\s*\)/g,
+  /(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+\.mjs)['"]/g,
+  /\bimport\s*\(\s*['"](\.{1,2}\/[^'"]+\.mjs)['"]\s*\)/g,
 ];
 const COMMENT_PATTERN = /\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm;
 

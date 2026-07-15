@@ -42,7 +42,7 @@ export const resolveEvolutionWorktreeRevision = (rootDir) => {
   return hasher.digest();
 };
 
-export const collectEvolutionWorktreeRevisionFailures = ({
+export const auditEvolutionWorktreeRevision = ({
   rootDir,
   outcomes,
   resolveRevision = resolveEvolutionWorktreeRevision,
@@ -51,9 +51,20 @@ export const collectEvolutionWorktreeRevisionFailures = ({
   try {
     currentRevision = resolveRevision(rootDir);
   } catch (error) {
-    return [`deterministic outcome revision 校验失败：${error.message}`];
+    return { status: 'unavailable', staleOutcomeIds: [], staleCaseIds: [], issues: [],
+      failures: [`deterministic outcome revision 校验失败：${error.message}`] };
   }
-  return outcomes
-    .filter(outcome => outcome.provenance?.revision !== currentRevision)
-    .map(outcome => `outcomes.jsonl: outcome \`${outcome.id}\` revision 未绑定当前 worktree manifest`);
+  const staleOutcomes = outcomes.filter(outcome => outcome.provenance?.revision !== currentRevision);
+  return {
+    status: staleOutcomes.length > 0 ? 'stale' : 'current',
+    staleOutcomeIds: staleOutcomes.map(outcome => outcome.id),
+    staleCaseIds: [...new Set(staleOutcomes.map(outcome => outcome.caseId))],
+    issues: staleOutcomes.map(outcome => `outcomes.jsonl: outcome \`${outcome.id}\` revision 未绑定当前 worktree manifest`),
+    failures: [],
+  };
+};
+
+export const collectEvolutionWorktreeRevisionFailures = options => {
+  const report = auditEvolutionWorktreeRevision(options);
+  return [...report.failures, ...report.issues];
 };

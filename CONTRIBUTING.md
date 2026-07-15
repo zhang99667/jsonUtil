@@ -38,9 +38,9 @@
 
 ### AI 协作资产与项目插件
 
-- `.agents/skills/`、rules、MCP、hooks、evals、`.agents/plugins/` 和 `plugins/` 都是项目资产，必须进入 Git；仓库不是插件，只有 `plugins/<name>/` 是插件包。
+- `.agents/skills/`、rules、MCP、hooks、evals、`.agents/plugins/` 和 `plugins/` 都是项目资产，必须进入 Git；仓库不是插件，只有 `plugins/<name>/` 是插件包。受信任项目的 `.codex/config.toml` 直接注册固定治理 MCP，不依赖个人插件安装，但必须在新任务中验证实际注册。
 - 修改 AI 资产后先运行 `node scripts/ci/check-ai-asset-distribution.mjs --workspace`。门禁覆盖项目资产、AI 治理实现/测试、eval 数据及 CI/local-ci 控制面；准备提交时暂存目标文件，再运行 `node scripts/ci/check-ai-asset-distribution.mjs --index`，PR 与定时 CI 使用 `--head`（完整命令：`node scripts/ci/check-ai-asset-distribution.mjs --head`）。index/HEAD 直接比较当前普通文件的原始字节、Git blob 类型和执行位；只有 HEAD 视图能证明其他维护者从所测提交 clone 后可获得当前版本。
-- `node scripts/ci/manage-project-plugins.mjs --check` 是诊断模式，不执行 marketplace/plugin add/remove/enable/disable 或 lock 写入。`.agents/plugins/marketplace.json` 只是项目内插件目录清单/索引文件，不会自动安装；只有维护者明确同意时才运行 `--apply`，并在完成后新建任务。
+- `node scripts/ci/manage-project-plugins.mjs --check` 是诊断模式，不执行 marketplace/plugin add/remove/enable/disable 或 lock 写入。`.agents/plugins/marketplace.json` 是 repo marketplace catalog；当前 `AVAILABLE` 条目可被插件目录发现，但不会自动安装、启用或热加载。只有维护者明确同意时才运行 `--apply`，并在完成后新建任务。
 - 用户级 Codex cache、marketplace 注册和启用状态不是项目权威源，也不能作为 CI 成功条件。具体流程见 `docs/AI-TOOLS-SETUP.md` 和 `docs/AI-ENGINEERING-PLAYBOOK.md`。
 
 ---

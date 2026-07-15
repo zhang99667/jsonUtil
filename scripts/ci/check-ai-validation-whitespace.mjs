@@ -16,6 +16,12 @@ const REPORT_KEYS = [
   'blockers', 'changedSet', 'checks', 'claims', 'evidenceScope', 'ok', 'outcomeEligible',
   'profile', 'reportType', 'schemaVersion', 'status',
 ].sort().join('\0');
+const CHECK_KEYS = ['affectedComparisons', 'binarySkipped', 'checked'];
+const CLAIM_KEYS = [
+  'applicableRawComparisonsCompleted', 'launcherShellUsed', 'repositoryFiltersExecuted',
+  'repositoryAttributeDriversExecuted', 'commandOutputReported', 'behaviorValidated',
+];
+const SHA256 = /^[0-9a-f]{64}$/;
 const failedReport = {
   schemaVersion: 1,
   reportType: 'ai-governance-validation-whitespace',
@@ -26,15 +32,39 @@ const failedReport = {
   blockers: [{ code: 'WHITESPACE_CHECK_FAILED', count: 1 }],
 };
 
-const isClosedReport = report => Boolean(report)
-  && report.schemaVersion === 1
-  && report.reportType === 'ai-governance-validation-whitespace'
-  && report.profile === PROFILE
-  && typeof report.ok === 'boolean'
-  && report.status === (report.ok ? 'passed' : 'failed')
-  && report.evidenceScope === 'component-only'
-  && report.outcomeEligible === false
-  && Object.keys(report).sort().join('\0') === REPORT_KEYS;
+const isPlainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value)
+  && Object.getPrototypeOf(value) === Object.prototype;
+const hasExactKeys = (value, keys) => isPlainObject(value)
+  && Object.keys(value).sort().join('\0') === [...keys].sort().join('\0');
+const isCount = value => Number.isSafeInteger(value) && value >= 0;
+const isClosedCheck = value => hasExactKeys(value, CHECK_KEYS)
+  && CHECK_KEYS.every(key => isCount(value[key]))
+  && value.affectedComparisons + value.binarySkipped <= value.checked;
+const isClosedReport = report => {
+  if (!hasExactKeys(report, REPORT_KEYS.split('\0')) || report.schemaVersion !== 1
+    || report.reportType !== 'ai-governance-validation-whitespace' || report.profile !== PROFILE
+    || typeof report.ok !== 'boolean' || report.status !== (report.ok ? 'passed' : 'failed')
+    || report.evidenceScope !== 'component-only' || report.outcomeEligible !== false
+    || !hasExactKeys(report.changedSet, ['stateSha256', 'changedFileCount'])
+    || !(report.changedSet.stateSha256 === null || SHA256.test(report.changedSet.stateSha256))
+    || !isCount(report.changedSet.changedFileCount)
+    || !hasExactKeys(report.checks, ['staged', 'untracked', 'worktree'])
+    || !Object.values(report.checks).every(isClosedCheck)
+    || !Array.isArray(report.blockers) || report.blockers.some(item => !hasExactKeys(item, ['code', 'count'])
+      || !/^[A-Z0-9_]+$/.test(item.code) || !Number.isSafeInteger(item.count) || item.count < 1)
+    || new Set(report.blockers.map(item => item.code)).size !== report.blockers.length
+    || !hasExactKeys(report.claims, CLAIM_KEYS)
+    || typeof report.claims.applicableRawComparisonsCompleted !== 'boolean'
+    || CLAIM_KEYS.slice(1).some(key => report.claims[key] !== false)) return false;
+  const affected = Object.values(report.checks).reduce((total, item) => total + item.affectedComparisons, 0);
+  if (report.ok) return report.blockers.length === 0 && affected === 0
+    && report.claims.applicableRawComparisonsCompleted && report.changedSet.stateSha256 !== null;
+  if (report.blockers.length === 0) return false;
+  if (report.changedSet.stateSha256 === null) return report.changedSet.changedFileCount === 0
+    && Object.values(report.checks).every(item => item.checked === 0)
+    && report.claims.applicableRawComparisonsCompleted === false;
+  return true;
+};
 
 export const parseAiValidationWhitespaceArgs = (args) => {
   const allowed = new Set(['--json', '--help']);

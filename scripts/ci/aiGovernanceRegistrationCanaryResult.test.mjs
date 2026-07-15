@@ -5,13 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { buildEvolutionTracePolicyRegistry } from './aiGovernanceEvolutionTracePolicies.mjs';
-import { hashEvolutionTraceValue } from './aiGovernanceEvolutionTrace.mjs';
-import { resolveEvolutionWorktreeRevision } from './aiGovernanceEvolutionWorktreeRevision.mjs';
-import {
-  buildRegistrationCanaryPacketBundle,
-  hashRegistrationCanaryPacketValue,
-} from './aiGovernanceRegistrationCanaryPacket.mjs';
+import { buildRegistrationCanaryCalibrationFixtureContext } from './aiGovernanceRegistrationCanaryCalibrationFixtures.mjs';
 import {
   collectRegistrationCanaryBlindResultFailures,
   gradeRegistrationCanaryResultBlind,
@@ -27,135 +21,13 @@ import {
 } from './aiGovernanceRegistrationCanaryReview.mjs';
 
 const rootDir = path.resolve(import.meta.dirname, '../..');
-const corpus = JSON.parse(fs.readFileSync(path.join(rootDir, 'evals/ai-governance/cases.json'), 'utf8'));
-const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, 'evals/ai-governance/experiments.json'), 'utf8'));
-const caseItem = corpus.cases.find(item => item.id === 'mcp-project-registration-discovery');
-const experiment = manifest.experiments.find(item => item.id === 'mcp-project-registration-canary');
-const policies = buildEvolutionTracePolicyRegistry({ rootDir });
-const policyEntry = policies.policiesByCaseId.get(caseItem.id);
-const fixtureRevision = resolveEvolutionWorktreeRevision(rootDir);
-const digest = character => character.repeat(64);
 const sha256 = value => createHash('sha256').update(value).digest('hex');
-const packetHash = hashRegistrationCanaryPacketValue;
-const executionOrder = [
-  'mcp-registration-p1-baseline', 'mcp-registration-p1-candidate',
-  'mcp-registration-p2-candidate', 'mcp-registration-p2-baseline',
-  'mcp-registration-p3-baseline', 'mcp-registration-p3-candidate',
-];
-const packetPrivacy = {
-  sourceUserContentStored: false, reasoningStored: false, toolPayloadStored: false,
-  authMaterialStored: false, userConfigStored: false, absoluteUserPathStored: false,
-};
-const resultPrivacy = {
-  ...packetPrivacy, responseBodyStored: false, traceBodyStored: false,
-  armStored: false, rubricStored: false,
-};
+const {
+  manifest, caseItem, experiment, policies, policyEntry, fixtureRevision,
+  packetBundles, buildTrace, refreshResultDigests, buildResult, digest, packetHash, packetPrivacy,
+} = buildRegistrationCanaryCalibrationFixtureContext({ rootDir });
 const reviewPrivacy = {
   ...packetPrivacy, responseBodyStored: false, traceBodyStored: false,
-};
-const ledger = (name, character) => ({
-  path: `evals/ai-governance/${name}`,
-  records: 1,
-  headSequence: 1,
-  headSha256: digest(character),
-  fileSha256: digest(character),
-});
-const bindings = {
-  fixtureRevision,
-  artifacts: {
-    caseDescriptor: { path: 'evals/ai-governance/cases.json', sha256: digest('a') },
-    experimentDescriptor: { path: 'evals/ai-governance/experiments.json', sha256: digest('b') },
-    projectMcp: { path: '.mcp.json', sha256: digest('c') },
-    projectHooks: { path: '.codex/hooks.json', sha256: digest('d') },
-  },
-  ledgers: {
-    outcomes: ledger('outcomes.jsonl', 'e'),
-    receipts: ledger('trial-receipts.jsonl', 'f'),
-    feedback: ledger('feedback-inbox.jsonl', '1'),
-  },
-};
-const environmentSha256 = digest('2');
-const buildPacket = trialId => buildRegistrationCanaryPacketBundle({
-  corpusVersion: corpus.corpusVersion,
-  manifestVersion: manifest.manifestVersion,
-  caseItem,
-  experiment,
-  trialId,
-  runNonce: digest('3'),
-  environmentSha256,
-  bindings,
-});
-const packetBundles = executionOrder.map(buildPacket);
-
-const buildTrace = (bundle, { discovered = true } = {}) => {
-  const events = [{ sequence: 1, type: 'session.start', actorId: 'root' }];
-  if (discovered) events.push(
-    { sequence: 2, type: 'mcp.call', actorId: 'root', operationId: `op-${packetHash('jsonutils.registration-canary.blind-trace-operation/v1', bundle.agent.blindTrialAlias).slice(0, 24)}`, name: 'jsonutils-governance/ai_governance_scorecard', status: 'started', keys: [] },
-    { sequence: 3, type: 'mcp.result', actorId: 'root', operationId: `op-${packetHash('jsonutils.registration-canary.blind-trace-operation/v1', bundle.agent.blindTrialAlias).slice(0, 24)}`, name: 'jsonutils-governance/ai_governance_scorecard', status: 'passed', keys: ['maturityScorecard.nextFocus.id'] },
-  );
-  events.push(
-    { sequence: events.length + 1, type: 'response.finish', actorId: 'root', sha256: digest('4'), status: 'passed' },
-    { sequence: events.length + 2, type: 'session.finish', actorId: 'root', status: 'passed' },
-  );
-  return {
-    schemaVersion: 1,
-    adapter: { id: 'codex-exec-jsonl', version: '1.2.0' },
-    capture: {
-      status: 'complete', sampling: 'all', droppedEvents: 0,
-      droppedAttributes: 0, droppedLinks: 0, flushStatus: 'succeeded',
-    },
-    caseSha256: hashEvolutionTraceValue(caseItem),
-    policy: structuredClone(policyEntry.descriptor),
-    beforeRevision: bundle.host.bindings.fixtureRevision,
-    afterRevision: bundle.host.bindings.fixtureRevision,
-    events,
-  };
-};
-
-const refreshResultDigests = (result) => {
-  result.outputSha256 = result.trace.events.find(event => event.type === 'response.finish').sha256;
-  result.bindings.observationSha256 = packetHash('jsonutils.registration-canary.observation/v1', result.observation);
-  result.bindings.traceSha256 = packetHash('jsonutils.registration-canary.trace/v1', result.trace);
-  return result;
-};
-
-const buildResult = (bundle, options = {}) => {
-  const observation = options.observation ?? {
-    registrySurface: 'codex-task-registry',
-    serverDiscovery: 'discovered',
-    toolDiscovery: 'discovered',
-    fallback: 'none',
-    infrastructure: 'reported-valid',
-  };
-  const trace = options.trace ?? buildTrace(bundle);
-  return refreshResultDigests({
-    schemaVersion: 1,
-    artifactType: 'ai-registration-canary-blind-result',
-    dataClass: 'redacted',
-    resultVersion: '1.0.0',
-    blindTrialAlias: bundle.agent.blindTrialAlias,
-    bindings: {
-      agentPacketSha256: bundle.host.projectionDigests.agentSha256,
-      graderPacketSha256: bundle.host.projectionDigests.graderSha256,
-      fixtureRevision: bundle.host.bindings.fixtureRevision,
-      environmentSha256: bundle.host.bindings.environmentSha256,
-      observationSha256: digest('0'),
-      traceSha256: digest('0'),
-    },
-    execution: {
-      terminalStatus: 'completed', exitCode: 0, stdoutDrained: true,
-      timedOut: false, binaryStable: true, outputLimitExceeded: false,
-      ...(options.execution ?? {}),
-    },
-    observation,
-    outputSha256: digest('0'),
-    trace,
-    claims: {
-      executionReported: true, executionVerified: false,
-      automaticLedgerWrites: false, outcomeEligible: false,
-    },
-    privacy: { ...resultPrivacy },
-  });
 };
 const gradeResult = (bundle, result) => gradeRegistrationCanaryResultBlind({
   resultJson: JSON.stringify(result),

@@ -5,7 +5,7 @@ import { REQUIRED_AI_GOVERNANCE_CI_COMMANDS, REQUIRED_AI_GOVERNANCE_LOCAL_COMMAN
 import {
   collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
-} from './aiGovernanceScheduledWorkflowContract.mjs';
+} from './aiGovernanceAutomationCommandContract.mjs';
 import { collectGithubWorkflowRunBlocks } from './githubWorkflowRunBlocks.mjs';
 
 export const collectAiGovernanceCiContractFailures = rootDir => Object.entries(CI_COMMAND_COLLECTORS)

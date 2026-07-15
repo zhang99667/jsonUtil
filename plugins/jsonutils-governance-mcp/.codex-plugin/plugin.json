@@ -1,6 +1,6 @@
 {
   "name": "jsonutils-governance-mcp",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "在 Codex 中暴露 JSONUtils 固定的只读 AI 治理 MCP 工具。",
   "author": {
     "name": "JSONUtils project"

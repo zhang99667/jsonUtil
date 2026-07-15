@@ -1,3 +1,4 @@
+import { buildEvolutionCurrentRunFocus } from './aiGovernanceEvolutionCaseFailure.mjs';
 const uniqueCaseIds = outcomes => [...new Set(outcomes.map(item => item.caseId).filter(Boolean))];
 const prioritizeUncoveredCases = (caseIds, tracePolicyCaseIds) => {
   const policyCaseIds = new Set(tracePolicyCaseIds);
@@ -12,11 +13,18 @@ export const countEvolutionVerdicts = (outcomes, verdict) => (
 );
 
 export const buildEvolutionNextFocus = ({
-  failures, outcomes, unverifiedOutcomes, traceBoundUnverifiedOutcomes = [], uncoveredCaseIds,
-  tracePolicyCaseIds = [], ledgerChain,
+  failures = [], contractFailures = failures, currentRunFailures = [], currentRunIssues = [], evidenceFreshness,
+  currentRunVerifiedCaseIds = [], outcomes, unverifiedOutcomes, traceBoundUnverifiedOutcomes = [],
+  uncoveredCaseIds, tracePolicyCaseIds = [], ledgerChain,
 }) => {
   const prioritizedUncoveredCaseIds = prioritizeUncoveredCases(uncoveredCaseIds, tracePolicyCaseIds);
-  if (failures.length > 0) return { id: 'repair-eval-contract', nextAction: failures[0], caseIds: [] };
+  if (contractFailures.length > 0) return { id: 'repair-eval-contract', nextAction: contractFailures[0], caseIds: [] };
+  const currentRunFocus = buildEvolutionCurrentRunFocus(currentRunIssues);
+  if (currentRunFocus) return currentRunFocus;
+  if (currentRunFailures.length > 0) return { id: 'repair-current-deterministic-run', nextAction: currentRunFailures[0], caseIds: [] };
+  if (evidenceFreshness?.status === 'stale') return { id: 'refresh-stale-deterministic-evidence',
+    nextAction: '当前 fixed runner 已通过，但 confirmed outcome 仍绑定旧 source；冻结 source 后先 preview，再由维护者显式刷新账本',
+    caseIds: currentRunVerifiedCaseIds.slice(0, 3) };
   const weakOutcomes = outcomes.filter(item => ['fail', 'partial'].includes(item.verdict));
   if (weakOutcomes.length > 0) return {
     id: 'address-outcome-feedback',

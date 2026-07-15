@@ -8,7 +8,5 @@ export const schemeCoreHelperMaintainabilityBudgets = [
   { file: 'frontend/src/utils/schemeQueryLayerEncoding.ts', maxLines: 75, reason: 'Scheme query-string layer 回写入口应只编排 JSON 解析、单参数策略、前缀 query 和兜底 query 序列化' },
   { file: 'frontend/src/utils/schemeQueryLayerSingleParamEncoding.ts', maxLines: 90, reason: 'Scheme query-string 单参数回写应独立承接 raw URL 和日志字段编码策略' },
   { file: 'frontend/src/utils/schemeUrlLayerEncoding.ts', maxLines: 80, reason: 'Scheme URL layer 回写应独立承接 query/hash 合并，避免反向编码主入口继续贴边' },
-  { file: 'frontend/src/utils/schemeDisplayHeader.ts', maxLines: 80, reason: '根 Scheme 协议头展示与反向剥离应保持纯函数，避免预览元数据污染业务参数' },
-  { file: 'frontend/src/utils/schemeDisplayHeader.test.ts', maxLines: 100, reason: '根 Scheme 协议头测试只锁展示、字段冲突、编辑回写和非法值回退' },
   { file: 'frontend/src/utils/schemeHashEncoding.ts', maxLines: 60, reason: 'Scheme hash route 与锚点参数回写应保持独立纯函数，避免反向编码 helper 继续贴边' },
 ];

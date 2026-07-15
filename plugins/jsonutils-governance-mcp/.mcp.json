@@ -1,10 +1,8 @@
 {
-  "mcpServers": {
-    "jsonutils-governance": {
-      "command": "node",
-      "args": [
-        "plugins/jsonutils-governance-mcp/scripts/server.mjs"
-      ]
-    }
+  "jsonutils-governance": {
+    "command": "node",
+    "args": [
+      "plugins/jsonutils-governance-mcp/scripts/server.mjs"
+    ]
   }
 }

@@ -26,7 +26,7 @@ const componentReport = {
   confirmedCoverageEligible: false,
   toolManifestCoverage: 'not-captured',
   automaticLedgerWrites: false,
-  runner: { id: 'codex-fixed-mcp-trial', version: '1.3.0', caseId: 'mcp-fixed-tool-selection' },
+  runner: { id: 'codex-fixed-mcp-trial', version: '1.3.1', caseId: 'mcp-fixed-tool-selection' },
 };
 
 test('CLI 只接受固定 root 的无密钥 preflight', async () => {
@@ -79,7 +79,7 @@ test('直接入口在无 key 环境完成真实 binary/version preflight', async
   assert.equal(result.status, 0, result.stderr);
   const report = JSON.parse(result.stdout);
   assert.equal(report.ok, true);
-  assert.equal(report.runner.version, '1.3.0');
+  assert.equal(report.runner.version, '1.3.1');
   assert.equal(report.evidenceScope, 'component-only');
   assert.equal(report.automaticLedgerWrites, false);
 });

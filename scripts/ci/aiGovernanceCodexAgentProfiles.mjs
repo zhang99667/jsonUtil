@@ -1,22 +1,33 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import {
+  AI_GOVERNANCE_PROJECT_AI_INFRA_AUDITOR_REQUIRED_FILES,
+  PROJECT_AI_INFRA_AUDITOR_CONTRACT,
+  collectProjectAiInfraAuditorFailures,
+} from './aiGovernanceProjectAiInfraAuditor.mjs';
+
 const PROFILE_DIR = '.codex/agents';
 const MAX_PROFILE_BYTES = 8 * 1024;
 const PROFILE_PATTERN = /^name = "([^"\n]+)"\ndescription = "([^"\n]+)"\nsandbox_mode = "([^"\n]+)"\nnickname_candidates = \[([^\n]*)\]\n\ndeveloper_instructions = """\n([\s\S]+)\n"""\n$/;
 const SAFE_NICKNAME = /^[A-Za-z0-9 _-]{1,32}$/;
-const COMMON_SNIPPETS = ['读写范围', '排除项', '未覆盖风险', '主线程', '任务：', '结论：', '证据：', '修改文件：', '验证：', '未覆盖：', '下一步建议：'];
+const COMMON_SNIPPETS = ['读写范围', '排除项', '未覆盖风险', '主线程', 'sandbox_mode 只是角色默认值', 'permission override', '无论实际 permission mode', '不能把 profile 当成隔离证明', '任务：', '结论：', '证据：', '修改文件：', '验证：', '未覆盖：', '下一步建议：'];
 
 export const CODEX_AGENT_PROFILE_CONTRACT = Object.freeze({
   caseId: 'codex-project-agent-profile-boundary',
-  version: '1.0.0',
+  version: PROJECT_AI_INFRA_AUDITOR_CONTRACT.version,
 });
 
 export const CODEX_AGENT_PROFILES = Object.freeze({
+  [PROJECT_AI_INFRA_AUDITOR_CONTRACT.name]: {
+    file: PROJECT_AI_INFRA_AUDITOR_CONTRACT.codexFile,
+    sandboxMode: 'read-only',
+    requiredSnippets: ['AI 协作基建专项只读审计', 'jsonutils-ai-infra-evolver/SKILL.md', '普通业务功能', '只使用读取与搜索能力', 'behavior outcome 保持 unknown'],
+  },
   explorer: {
     file: `${PROFILE_DIR}/explorer.toml`,
     sandboxMode: 'read-only',
-    requiredSnippets: ['只读调查', '禁止编辑', 'codex-mcp-config-auditor', 'unavailable'],
+    requiredSnippets: ['只读调查', '禁止编辑', '完整 workspace manifest', '有界状态样本不能证明零写入', 'codex-mcp-config-auditor', 'unavailable'],
   },
   worker: {
     file: `${PROFILE_DIR}/worker.toml`,
@@ -39,6 +50,7 @@ export const AI_GOVERNANCE_CODEX_AGENT_REQUIRED_FILES = Object.freeze([
   'scripts/ci/aiGovernanceCodexAgentProfiles.mjs',
   'scripts/ci/aiGovernanceCodexAgentCaseDescriptors.mjs',
   'scripts/ci/aiGovernanceCodexAgentProfiles.test.mjs',
+  ...AI_GOVERNANCE_PROJECT_AI_INFRA_AUDITOR_REQUIRED_FILES,
   'scripts/ci/maintainability-budget-governance-ai-agent-profile-rules.mjs',
 ]);
 
@@ -94,10 +106,11 @@ const collectProfileFailures = (rootDir, name, contract, allNicknames) => {
 
 export const collectCodexAgentProfileFailures = (rootDir) => {
   const expectedFiles = AI_GOVERNANCE_CODEX_AGENT_PROFILE_FILES.map(file => path.basename(file)).sort();
+  const auditorFile = path.basename(PROJECT_AI_INFRA_AUDITOR_CONTRACT.codexFile);
   let actualFiles = [];
   try { actualFiles = fs.readdirSync(path.join(rootDir, PROFILE_DIR)).sort(); } catch { /* 逐文件错误给出稳定诊断 */ }
-  const failures = [];
-  expectedFiles.filter(file => !actualFiles.includes(file)).forEach(file => failures.push(`${PROFILE_DIR}/${file}: 缺少固定 Codex agent profile`));
+  const failures = collectProjectAiInfraAuditorFailures(rootDir);
+  expectedFiles.filter(file => file !== auditorFile && !actualFiles.includes(file)).forEach(file => failures.push(`${PROFILE_DIR}/${file}: 缺少固定 Codex agent profile`));
   actualFiles.filter(file => !expectedFiles.includes(file)).forEach(file => failures.push(`${PROFILE_DIR}/${file}: 未审计的 Codex agent profile`));
   const allNicknames = new Set();
   for (const [name, contract] of Object.entries(CODEX_AGENT_PROFILES)) {

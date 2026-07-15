@@ -46,7 +46,7 @@ target/
 docker-compose.override.yml
 
 # AI Tools - Claude Code / Ducc
-.claude/settings.json
+.claude/settings.local.json
 .claude/session-history/
 .claude/tmp/
 .claude/*.log

@@ -17,6 +17,7 @@ export const AI_EVOLUTION_REGISTRATION_CANARY_ANCHOR_CASES = Object.freeze({
     evidenceScope: 'component-only',
     evidence: ['脱敏 host commitment、anchor→authorized→consumed、角色 key 隔离、双授权/双消费与跨批负例'],
     argsList: [nodeTest(
+      'scripts/ci/aiGovernanceRegistrationCanaryDisclosureCommitment.test.mjs',
       'scripts/ci/aiGovernanceRegistrationCanaryDisclosureAuthorization.test.mjs',
       'scripts/ci/aiGovernanceRegistrationCanaryDisclosureRedteam.test.mjs',
     )],

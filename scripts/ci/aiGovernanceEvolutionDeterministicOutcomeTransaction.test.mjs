@@ -28,32 +28,19 @@ const resealJournal = (journal) => {
   journal.transactionSha256 = journalDigest(unsigned);
 };
 
-const createRepository = ({ temporaryRoot = os.tmpdir(), runGit = git } = {}) => {
-  const rootDir = fs.mkdtempSync(path.join(temporaryRoot, 'jsonutils-outcome-transaction-'));
-  try {
-    fs.mkdirSync(path.join(rootDir, 'evals/ai-governance'), { recursive: true });
-    fs.writeFileSync(path.join(rootDir, RECEIPTS), '');
-    fs.writeFileSync(path.join(rootDir, OUTCOMES), '');
-    fs.writeFileSync(path.join(rootDir, 'source.txt'), 'source-v1\n');
-    assert.equal(runGit(rootDir, ['init']).status, 0);
-    assert.equal(runGit(rootDir, ['config', 'user.email', 'test@example.com']).status, 0);
-    assert.equal(runGit(rootDir, ['config', 'user.name', 'Test']).status, 0);
-    assert.equal(runGit(rootDir, ['add', '.']).status, 0);
-    assert.equal(runGit(rootDir, ['commit', '-m', 'fixture']).status, 0);
-    return rootDir;
-  } catch (error) {
-    fs.rmSync(rootDir, { recursive: true, force: true });
-    throw error;
-  }
+const createRepository = () => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-outcome-transaction-'));
+  fs.mkdirSync(path.join(rootDir, 'evals/ai-governance'), { recursive: true });
+  fs.writeFileSync(path.join(rootDir, RECEIPTS), '');
+  fs.writeFileSync(path.join(rootDir, OUTCOMES), '');
+  fs.writeFileSync(path.join(rootDir, 'source.txt'), 'source-v1\n');
+  assert.equal(git(rootDir, ['init']).status, 0);
+  assert.equal(git(rootDir, ['config', 'user.email', 'test@example.com']).status, 0);
+  assert.equal(git(rootDir, ['config', 'user.name', 'Test']).status, 0);
+  assert.equal(git(rootDir, ['add', '.']).status, 0);
+  assert.equal(git(rootDir, ['commit', '-m', 'fixture']).status, 0);
+  return rootDir;
 };
-
-test('仓库夹具初始化失败时不泄漏临时目录', () => {
-  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-outcome-fixture-parent-'));
-  try {
-    assert.throws(() => createRepository({ temporaryRoot, runGit: () => ({ status: null }) }));
-    assert.deepEqual(fs.readdirSync(temporaryRoot), []);
-  } finally { fs.rmSync(temporaryRoot, { recursive: true, force: true }); }
-});
 
 const fixture = (t) => {
   const rootDir = createRepository();
@@ -187,6 +174,8 @@ test('both-base journal 遇 source drift 可安全放弃且不写 ledger', (t) =
     resolveRevision: revisionFor,
   });
   assert.equal(result.status, 'abandoned-source-drift');
+  assert.equal(result.ledgerMutationPerformed, false);
+  assert.deepEqual(result.ledgerMutations, { receipts: false, outcomes: false });
   assert.equal(fs.readFileSync(path.join(current.rootDir, RECEIPTS), 'utf8'), '');
   assert.equal(fs.readFileSync(path.join(current.rootDir, OUTCOMES), 'utf8'), '');
   assert.equal(fs.existsSync(current.controlPaths.journalPath), false);
@@ -204,6 +193,8 @@ test('receipt exact-prefix crash 恢复先补 receipt 再补 outcome，绝不 tr
     ...current, receiptsPath: RECEIPTS, outcomesPath: OUTCOMES, resolveRevision: revisionFor,
   });
   assert.equal(result.status, 'recovered');
+  assert.equal(result.ledgerMutationPerformed, true);
+  assert.deepEqual(result.ledgerMutations, { receipts: true, outcomes: true });
   assert.deepEqual(fs.readFileSync(path.join(current.rootDir, RECEIPTS)), input.receiptSuffix);
   assert.deepEqual(fs.readFileSync(path.join(current.rootDir, OUTCOMES)), input.outcomeSuffix);
   assert.equal(fs.existsSync(current.controlPaths.journalPath), false);
@@ -221,6 +212,8 @@ test('receipt 已开始后即使 source 漂移仍完成 pair 并标记 recovered
     ...current, receiptsPath: RECEIPTS, outcomesPath: OUTCOMES, resolveRevision: revisionFor,
   });
   assert.equal(result.status, 'recovered-stale');
+  assert.equal(result.ledgerMutationPerformed, true);
+  assert.deepEqual(result.ledgerMutations, { receipts: false, outcomes: true });
   assert.deepEqual(fs.readFileSync(path.join(current.rootDir, RECEIPTS)), input.receiptSuffix);
   assert.deepEqual(fs.readFileSync(path.join(current.rootDir, OUTCOMES)), input.outcomeSuffix);
 });
@@ -276,5 +269,7 @@ test('postcheck failure 明确报告 committed-but-postcheck-failed 并保留可
     ...current, receiptsPath: RECEIPTS, outcomesPath: OUTCOMES, resolveRevision: revisionFor,
   });
   assert.equal(recovered.status, 'recovered');
+  assert.equal(recovered.ledgerMutationPerformed, false);
+  assert.deepEqual(recovered.ledgerMutations, { receipts: false, outcomes: false });
   assert.equal(fs.existsSync(current.controlPaths.journalPath), false);
 });

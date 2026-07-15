@@ -3,11 +3,11 @@
   "policies": [
     {
       "id": "mcp-project-registration-discovery",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "caseId": "mcp-project-registration-discovery",
       "adapter": {
         "id": "codex-exec-jsonl",
-        "version": "1.2.0"
+        "version": "1.2.1"
       },
       "requiredMcp": {
         "name": "jsonutils-governance/ai_governance_scorecard",
@@ -25,11 +25,11 @@
     },
     {
       "id": "mcp-fixed-tool-selection",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "caseId": "mcp-fixed-tool-selection",
       "adapter": {
         "id": "codex-exec-jsonl",
-        "version": "1.2.0"
+        "version": "1.2.1"
       },
       "requiredMcp": {
         "name": "jsonutils-governance/ai_governance_scorecard",
@@ -43,6 +43,33 @@
         "file.change",
         "capability.use"
       ],
+      "requireUnchangedRevision": true
+    },
+    {
+      "id": "skill-jsonutils-ai-infra-evolver-trigger",
+      "version": "1.1.2",
+      "caseId": "skill-jsonutils-ai-infra-evolver-trigger",
+      "adapter": {
+        "id": "codex-exec-jsonl",
+        "version": "1.2.1"
+      },
+      "requiredSkillDecision": {
+        "name": "jsonutils-ai-infra-evolver",
+        "status": "selected",
+        "exactCount": 1
+      },
+      "requiredReads": [
+        { "path": ".agents/skills/jsonutils-ai-infra-evolver/SKILL.md", "sha256": "9ec9e7ec8b9d9f49a7f55147b6a6762daa443eca179b4e76da2b73b2da1e1946" },
+        { "path": "AGENTS.md", "sha256": "eb067a5e75401dc0cfe1b1676a2893f3b3140de661da0c412abdfc641a73c2df" },
+        { "path": "rules/code-style.md", "sha256": "ce537ca0cf7bfc1ceb64b3364359e169304b816532ce1a7b01d0338811f1d0a2" },
+        { "path": "docs/AI-ENGINEERING-PLAYBOOK.md", "sha256": "586388c89508b1f8ede925e0eb1cf8c9db19421727fa7fe1b4a49e1c0b778f28" },
+        { "path": "docs/AI-EVOLUTION-PLAYBOOK.md", "sha256": "aca9f1eac1bb3952380e639e28848655f22c89d63d52c356aae5b900c09e5ac8" }
+      ],
+      "allowedMcp": [
+        "jsonutils-governance/ai_decision_summary",
+        "jsonutils-governance/ai_asset_inventory"
+      ],
+      "forbiddenEventTypes": ["file.change"],
       "requireUnchangedRevision": true
     }
   ]

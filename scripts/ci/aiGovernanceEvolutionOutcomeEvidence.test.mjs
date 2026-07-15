@@ -13,9 +13,15 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const defaultCorpus = JSON.parse(fs.readFileSync(path.join(projectRoot, 'evals/ai-governance/cases.json'), 'utf8'));
 const CASE_ID = 'mcp-newline-version-negotiation';
 const EVALUATED_AT = '2026-07-10';
-const MAX_DATE = '2026-07-13';
-const RUNNER_TEST_FILE = 'scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs';
-const CANONICAL_COMMAND = `node --test ${RUNNER_TEST_FILE}`;
+const MAX_DATE = '2026-07-15';
+const RUNNER_TEST_FILES = [
+  'scripts/mcp/jsonutils-governance-protocol-stdio.test.mjs',
+  'scripts/mcp/jsonutils-governance-runtime-freshness.test.mjs',
+  'scripts/mcp/jsonutils-governance-cancellation.test.mjs',
+  'scripts/mcp/jsonutils-governance-cancellation-stdio.test.mjs',
+];
+const RUNNER_TEST_FILE = RUNNER_TEST_FILES[0];
+const CANONICAL_COMMAND = `node --test ${RUNNER_TEST_FILES.join(' ')}`;
 const REVISION_A = 'a'.repeat(40);
 const REVISION_B = 'b'.repeat(40);
 
@@ -82,7 +88,7 @@ const createOutcome = (receipt, options = {}) => ({
     sha256: options.sha256 ?? receiptHash(receipt),
   },
   writeback: {
-    files: options.files ?? [RUNNER_TEST_FILE],
+    files: options.files ?? RUNNER_TEST_FILES,
     validationResults: options.validationResults ?? structuredClone(receipt.validations),
   },
 });
@@ -107,7 +113,7 @@ const createLegacyOutcome = (corpus = defaultCorpus) => {
       trials: 1,
     },
     writeback: {
-      files: [RUNNER_TEST_FILE],
+      files: RUNNER_TEST_FILES,
       validationResults: [createValidation('旧格式自报通过')],
     },
   };
@@ -124,13 +130,15 @@ const withTempEvalRoot = ({
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-evolution-evidence-'));
   try {
     const evalDir = path.join(rootDir, 'evals/ai-governance');
-    const runnerTestPath = path.join(rootDir, RUNNER_TEST_FILE);
     fs.mkdirSync(evalDir, { recursive: true });
-    fs.mkdirSync(path.dirname(runnerTestPath), { recursive: true });
-    const testBody = runnerStatus === 'passed'
-      ? "test('fixture runner passes', () => {});"
-      : "test('fixture runner rejects forged pass', () => { throw new Error('expected replay failure'); });";
-    fs.writeFileSync(runnerTestPath, `import { test } from 'node:test';\n${testBody}\n`);
+    for (const [index, relativePath] of RUNNER_TEST_FILES.entries()) {
+      const runnerTestPath = path.join(rootDir, relativePath);
+      fs.mkdirSync(path.dirname(runnerTestPath), { recursive: true });
+      const testBody = runnerStatus === 'passed' || index > 0
+        ? "test('fixture runner passes', () => {});"
+        : "test('fixture runner rejects forged pass', () => { throw new Error('expected replay failure'); });";
+      fs.writeFileSync(runnerTestPath, `import { test } from 'node:test';\n${testBody}\n`);
+    }
     fs.writeFileSync(path.join(evalDir, 'cases.json'), `${JSON.stringify(corpus)}\n`);
     fs.writeFileSync(path.join(evalDir, 'outcomes.jsonl'), writeJsonLines(outcomes));
     fs.writeFileSync(path.join(evalDir, 'trial-receipts.jsonl'), writeJsonLines(receipts));

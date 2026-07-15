@@ -1,6 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  collectGithubWorkflowCommands,
+  collectGithubWorkflowJobBlocks,
+  collectGithubWorkflowStepBlocks,
+  collectOutcomeWriterAutomationWriteFailures,
+  collectRequiredWorkflowCommandReachabilityFailures,
+} from './aiGovernanceAutomationCommandContract.mjs';
 import { collectGithubWorkflowRunBlocks } from './githubWorkflowRunBlocks.mjs';
+
+export {
+  collectOutcomeWriterAutomationWriteFailures,
+  collectRequiredWorkflowCommandReachabilityFailures,
+};
 
 export const AI_GOVERNANCE_SCHEDULED_WORKFLOW = '.github/workflows/ai-governance.yml';
 export const AI_GOVERNANCE_GITHUB_ATTESTATION_POLICY = 'evals/ai-governance/github-attestation-policy.json';
@@ -58,73 +70,16 @@ const REQUIRED_COMMANDS = [
   'node scripts/ci/write-ai-governance-artifacts.mjs',
 ];
 
-const collectWorkflowCommands = content => collectGithubWorkflowRunBlocks(content)
-  .flatMap(block => block.content.split(/\r?\n/).map(line => line.trim()).filter(Boolean));
-
-const OUTCOME_WRITERS = [
-  'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs',
-  'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs',
-];
-const OUTCOME_WRITE_ARGUMENT = /(?:^|[\s"'`;&|()])--write(?=$|[\s"'`\\;&|()])/m;
-
-export const collectOutcomeWriterAutomationWriteFailures = (commandBlocks, file) => (
-  commandBlocks.some(block => (
-    OUTCOME_WRITERS.some(writer => block.includes(writer)) && OUTCOME_WRITE_ARGUMENT.test(block)
-  ))
-    ? [`${file}: CI/workflow/local-ci 禁止 outcome writer --write`]
-    : []
-);
-
-const collectJobBlocks = (content) => {
-  const jobsMatch = /^jobs:\s*$/m.exec(content);
-  if (!jobsMatch) return new Map();
-  const jobs = content.slice(jobsMatch.index + jobsMatch[0].length);
-  const headers = [...jobs.matchAll(/^  ([A-Za-z0-9_-]+):\s*$/gm)];
-  return new Map(headers.map((header, index) => [
-    header[1],
-    jobs.slice(header.index, headers[index + 1]?.index ?? jobs.length),
-  ]));
-};
-
 const collectUses = block => [...block.matchAll(/^\s*(?:-\s*)?uses:\s*([^\s#]+)/gm)].map(match => match[1]);
-const collectStepBlocks = block => {
-  const headers = [...block.matchAll(/^      -[^\n]*$/gm)];
-  return headers.map((header, index) => block.slice(header.index, headers[index + 1]?.index ?? block.length));
-};
-const REQUIRED_COMMAND_CONTROL_RULES = [
-  {
-    label: '静态 false if',
-    job: /^ {4}if:\s*(?:false|\$\{\{\s*false\s*\}\})\s*(?:#.*)?$/im,
-    step: /^(?: {6}-\s*| {8})if:\s*(?:false|\$\{\{\s*false\s*\}\})\s*(?:#.*)?$/im,
-  },
-  {
-    label: 'continue-on-error: true',
-    job: /^ {4}continue-on-error:\s*true\s*(?:#.*)?$/im,
-    step: /^(?: {6}-\s*| {8})continue-on-error:\s*true\s*(?:#.*)?$/im,
-  },
-];
-
-export const collectRequiredWorkflowCommandReachabilityFailures = (content, requiredCommands, file) => (
-  [...collectJobBlocks(content).values()].flatMap(job => collectStepBlocks(job).flatMap((step) => {
-    const commands = new Set(collectWorkflowCommands(step));
-    const violations = REQUIRED_COMMAND_CONTROL_RULES
-      .filter(rule => rule.job.test(job) || rule.step.test(step));
-    return requiredCommands
-      .filter(command => commands.has(command))
-      .flatMap(command => violations.map(({ label }) => (
-        `${file}: 必需治理命令 "${command}" 所在 job/step 禁止 ${label}`
-      )));
-  }))
-);
 const missing = (block, fragments, label) => fragments
   .filter(fragment => !block.includes(fragment))
   .map(fragment => `${AI_GOVERNANCE_SCHEDULED_WORKFLOW}: ${label} 缺少 "${fragment.trim()}"`);
 
 const collectAttestationJobFailures = (content) => {
-  const jobs = collectJobBlocks(content);
+  const jobs = collectGithubWorkflowJobBlocks(content);
   const capture = jobs.get('ai-governance') ?? '';
   const signer = jobs.get('attest-ai-governance-evidence') ?? '';
-  const subjectUpload = collectStepBlocks(capture)
+  const subjectUpload = collectGithubWorkflowStepBlocks(capture)
     .find(step => /\bid:\s*upload-attestation-subject\b/.test(step)) ?? '';
   const failures = [];
   failures.push(...missing(capture, [
@@ -184,7 +139,7 @@ export const collectAiGovernanceScheduledWorkflowFailures = (rootDir) => {
   if (!fs.existsSync(workflowPath)) return [`${AI_GOVERNANCE_SCHEDULED_WORKFLOW}: 缺少定时 AI 治理 workflow`];
 
   const content = fs.readFileSync(workflowPath, 'utf8');
-  const commands = new Set(collectWorkflowCommands(content));
+  const commands = new Set(collectGithubWorkflowCommands(content));
   return [
     ...(!/^permissions:\s*\{\}\s*$/m.test(content)
       ? [`${AI_GOVERNANCE_SCHEDULED_WORKFLOW}: 顶层 permissions 必须为空并逐 job 最小授权`] : []),

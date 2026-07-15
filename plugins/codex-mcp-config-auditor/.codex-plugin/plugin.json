@@ -1,6 +1,6 @@
 {
   "name": "codex-mcp-config-auditor",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "审计 Codex MCP 静态敏感头，不返回配置值。",
   "author": {
     "name": "JSONUtils project"

@@ -47,6 +47,9 @@ test('write AI governance JSON artifacts from fixed reports', () => {
     ]);
     assert.equal(JSON.parse(fs.readFileSync(result.files.maintainability, 'utf8')).counts.budgets, 2);
     assert.deepEqual(governanceArtifact.maturityScorecard, scorecardWithoutGeneratedAt);
+    assert.deepEqual(contextArtifact.distributionReadiness, governanceArtifact.distributionReadiness);
+    assert.equal(scorecardArtifact.schemaVersion, 2);
+    assert.match(result.artifacts.summary, /Distribution failures: workspace=0; index=0; HEAD=0; clone-ready=yes/);
     const attestationSubject = JSON.parse(fs.readFileSync(result.files.attestationSubject, 'utf8'));
     const governanceBytes = fs.readFileSync(result.files.governance);
     assert.deepEqual({

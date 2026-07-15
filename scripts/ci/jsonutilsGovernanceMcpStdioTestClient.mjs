@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { createMessageReader } from './mcpLineDelimitedStdioClient.mjs';
+import { createMessageReader, request, serializeMessage } from './mcpLineDelimitedStdioClient.mjs';
 
 export const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -32,4 +32,12 @@ export const startGovernanceMcpServer = (t) => {
     readMessage: createMessageReader(child.stdout, () => stderr),
     getStdout: () => Buffer.concat(stdoutChunks).toString('utf8'),
   };
+};
+
+export const initializeGovernanceMcpServer = async (child, readMessage, clientName) => {
+  const response = await request(child, readMessage, 1, 'initialize', {
+    protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: clientName, version: '1.0.0' },
+  });
+  child.stdin.write(serializeMessage({ jsonrpc: '2.0', method: 'notifications/initialized' }));
+  return response;
 };

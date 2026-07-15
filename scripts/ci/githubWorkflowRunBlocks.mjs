@@ -6,10 +6,7 @@ import {
 
 const RUN_LINE_PATTERN = /^(\s*)(?:-\s*)?run:\s*(.*)$/;
 
-export {
-  containsGithubActionsExpression,
-  normalizeGithubWorkflowShell,
-} from './githubWorkflowRunBlockText.mjs';
+export { normalizeGithubWorkflowShell } from './githubWorkflowRunBlockText.mjs';
 
 export const collectGithubWorkflowRunBlocks = (content) => {
   const lines = content.split(/\r?\n/);

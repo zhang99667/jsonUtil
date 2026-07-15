@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { isEvolutionRecord, isEvolutionString } from './aiGovernanceEvolutionEvalContract.mjs';
 import { AI_EVOLUTION_EXECUTABLE_CASES } from './aiGovernanceEvolutionCaseRunner.mjs';
-import { aggregateEvolutionTrialResults } from './aiGovernanceEvolutionTrialReceipts.mjs';
+import { aggregateEvolutionReceiptTrialResults } from './aiGovernanceEvolutionTrialReceipts.mjs';
 
 const REVISION_PATTERN = /^(?:[0-9a-f]{40}|(?:worktree|commit|ci)-[0-9a-f]{40}|worktree-[0-9a-f]{64})$/;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
@@ -18,7 +18,7 @@ export const compareEvolutionVersions = (left, right) => {
   return 0;
 };
 
-export const isEvolutionV2Revision = value => REVISION_PATTERN.test(value ?? '');
+export const isEvolutionV2Revision = value => typeof value === 'string' && REVISION_PATTERN.test(value);
 
 export const isSafeExistingEvolutionFile = (rootDir, file) => {
   if (!isEvolutionString(file) || path.isAbsolute(file) || file.includes('\\')) return false;
@@ -41,7 +41,7 @@ export const collectEvolutionEvidenceEligibilityFailures = (outcome, label, rece
   if (outcome.schemaVersion === 1) return [];
   const descriptor = AI_EVOLUTION_EXECUTABLE_CASES[outcome.caseId];
   const receipt = receiptsById.get(outcome.evidence?.receiptId)?.receipt;
-  const isTraceBound = [2, 3].includes(receipt?.schemaVersion);
+  const isTraceBound = [2, 3, 4].includes(receipt?.schemaVersion);
   const failures = [];
   if (receipt && outcome.verdict === 'pass' && outcome.provenance?.method !== 'deterministic' && !isTraceBound) {
     failures.push(`${label} model/human/hybrid pass 在真实 trace verifier 建成前不可评分`);
@@ -69,7 +69,10 @@ export const collectEvolutionReceiptBindingFailures = (outcome, label, receiptsB
     return failures;
   }
   const receipt = entry.receipt;
-  const aggregate = aggregateEvolutionTrialResults(receipt.trialResults);
+  const aggregate = aggregateEvolutionReceiptTrialResults(receipt);
+  if (receipt.schemaVersion === 4 && entry.pairedVerification?.scoringEligible !== true) {
+    failures.push(`${label} paired receipt v4 缺少仓外受保护 trust/environment 授权，不能生成 behavior outcome`);
+  }
   const expected = {
     caseId: outcome.caseId,
     corpusVersion: outcome.corpusVersion,
@@ -84,8 +87,10 @@ export const collectEvolutionReceiptBindingFailures = (outcome, label, receiptsB
   for (const [field, value] of Object.entries(expected)) {
     if (receipt[field] !== value) failures.push(`${label}.evidence 与 receipt.${field} 不一致`);
   }
-  if (receipt.trialResults.length !== outcome.provenance?.trials) failures.push(`${label}.provenance.trials 与 receipt 不一致`);
-  if (aggregate.verdict !== outcome.verdict || aggregate.score !== outcome.score) failures.push(`${label} verdict/score 与 receipt 聚合结果不一致`);
+  const expectedTrials = receipt.schemaVersion === 4 ? 3 : receipt.trialResults.length;
+  if (expectedTrials !== outcome.provenance?.trials) failures.push(`${label}.provenance.trials 与 receipt 不一致`);
+  if (!aggregate) failures.push(`${label} receipt 基础设施无效，不能生成 behavior outcome`);
+  else if (aggregate.verdict !== outcome.verdict || aggregate.score !== outcome.score) failures.push(`${label} verdict/score 与 receipt 聚合结果不一致`);
   if (entry.sha256 !== outcome.evidence.sha256) failures.push(`${label}.evidence.sha256 与 receipt 精确 JSON 行不一致`);
   if (JSON.stringify(receipt.validations) !== JSON.stringify(outcome.writeback?.validationResults)) {
     failures.push(`${label}.writeback.validationResults 必须与 receipt 完全一致`);

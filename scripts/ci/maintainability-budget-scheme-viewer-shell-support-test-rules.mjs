@@ -10,5 +10,4 @@ export const schemeViewerShellSupportTestMaintainabilityBudgets = [
   schemeViewerShellSupportTestBudget('schemeViewerRenderedElementTestHelpers.ts', 45, 'Scheme Viewer rendered 测试 helper 只负责显式渲染无 Hook 函数组件后的文本收集和 data-tour 查找'),
   schemeViewerShellSupportTestBudget('SchemeViewerBase64MetaPanel.test.tsx', 75, 'Scheme 内部 Base64 元信息面板测试只覆盖展示截断、数量和空态'),
   schemeViewerShellSupportTestBudget('SchemeViewerRuntimePlaceholdersPanel.test.tsx', 95, 'Scheme 运行时占位符面板测试只覆盖空态、分组、明细上限和预览截断'),
-  schemeViewerShellSupportTestBudget('SchemeViewerQRCodePanel.test.tsx', 95, 'Scheme 二维码面板测试只覆盖空态、容量、Unicode 异常、类型切换和下载回调'),
 ];
