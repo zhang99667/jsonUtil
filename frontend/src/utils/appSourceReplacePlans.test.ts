@@ -89,13 +89,13 @@ describe('appSourceReplacePlans', () => {
       feedback: 'success',
       message: 'Scheme 原始值已在 SOURCE 中，可手动查看深度解析报告',
     });
-    expect(buildSchemeInspectSourcePlan('source', 'baiduboxapp://v1/open')).toEqual({
+    expect(buildSchemeInspectSourcePlan('source', 'sampleapp://v1/open')).toEqual({
       action: 'confirm',
-      pendingText: 'baiduboxapp://v1/open',
+      pendingText: 'sampleapp://v1/open',
     });
-    expect(buildSchemeInspectSourcePlan('   ', 'baiduboxapp://v1/open')).toEqual({
+    expect(buildSchemeInspectSourcePlan('   ', 'sampleapp://v1/open')).toEqual({
       action: 'apply',
-      text: 'baiduboxapp://v1/open',
+      text: 'sampleapp://v1/open',
       successMessage: '已用 Scheme 原始值开始排查',
     });
   });

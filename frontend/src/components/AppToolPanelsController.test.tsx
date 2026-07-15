@@ -32,7 +32,7 @@ const buildProps = (overrides: Partial<AppToolPanelsControllerProps> = {}): AppT
   inputRef: { current: '{"source":true}' },
   jsonPathQueryRequest: { id: 1, query: '$.a' },
   jsonTreeFocusRequest: { id: 2, path: '$.a', pointer: '/a' },
-  schemeInputRequest: { id: 3, value: 'baiduboxapp://v7/test' },
+  schemeInputRequest: { id: 3, value: 'sampleapp://v7/test' },
   templateFillRequest: { id: 4, template: '{"name":"{{name}}"}' },
   isJsonPathPanelOpen: true,
   isJsonTreePanelOpen: true,
@@ -119,12 +119,12 @@ describe('AppToolPanelsController', () => {
     const props = buildProps();
     const lazyPanels = renderLazyPanels(props);
 
-    (lazyPanels.props.schemePanel as { onApply: (value: string) => void }).onApply('baiduboxapp://v7/new');
-    expect(props.onSetSourceText).toHaveBeenCalledWith('baiduboxapp://v7/new');
-    expect(props.inputRef.current).toBe('baiduboxapp://v7/new');
-    expect(props.onUpdateActiveFileContent).toHaveBeenCalledWith('baiduboxapp://v7/new');
+    (lazyPanels.props.schemePanel as { onApply: (value: string) => void }).onApply('sampleapp://v7/new');
+    expect(props.onSetSourceText).toHaveBeenCalledWith('sampleapp://v7/new');
+    expect(props.inputRef.current).toBe('sampleapp://v7/new');
+    expect(props.onUpdateActiveFileContent).toHaveBeenCalledWith('sampleapp://v7/new');
     expect(lazyPanels.props.schemePanel).toMatchObject({
-      initialStandaloneInput: 'baiduboxapp://v7/test',
+      initialStandaloneInput: 'sampleapp://v7/test',
       initialStandaloneInputKey: 3,
       onInspectOriginal: props.onInspectSourceFromScheme,
     });

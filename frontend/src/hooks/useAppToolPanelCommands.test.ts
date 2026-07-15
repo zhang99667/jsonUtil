@@ -96,21 +96,21 @@ describe('useAppToolPanelCommands', () => {
   it('Scheme 请求统一在 hook 内递增 ID', () => {
     const { commands, onTrackToolEvent } = useToolPanelCommandsFixture();
 
-    commands.handleOpenSchemeFromReport('baiduboxapp://v1/open');
-    commands.requestSchemeInput('baiduboxapp://v2/open');
+    commands.handleOpenSchemeFromReport('sampleapp://v1/open');
+    commands.requestSchemeInput('sampleapp://v2/open');
 
-    expect(stateSetters.schemeInputRequest).toHaveBeenNthCalledWith(1, { id: 1, value: 'baiduboxapp://v1/open' });
-    expect(stateSetters.schemeInputRequest).toHaveBeenNthCalledWith(2, { id: 2, value: 'baiduboxapp://v2/open' });
+    expect(stateSetters.schemeInputRequest).toHaveBeenNthCalledWith(1, { id: 1, value: 'sampleapp://v1/open' });
+    expect(stateSetters.schemeInputRequest).toHaveBeenNthCalledWith(2, { id: 2, value: 'sampleapp://v2/open' });
     expect(stateSetters.isSchemeDecodeOpen).toHaveBeenCalledWith(true);
     expect(stateSetters.isTransformReportOpen).toHaveBeenCalledWith(false);
     expect(onTrackToolEvent).toHaveBeenCalledWith('SCHEME_OPEN_FROM_REPORT', 'panel');
   });
 
   it('状态栏只在 SOURCE 是可独立解析输入时打开 Scheme 面板', () => {
-    const valid = useToolPanelCommandsFixture({ sourceText: ' baiduboxapp://v1/open ' });
+    const valid = useToolPanelCommandsFixture({ sourceText: ' sampleapp://v1/open ' });
     valid.commands.handleOpenSourceSchemeInput();
 
-    expect(valid.stateSetters.schemeInputRequest).toHaveBeenCalledWith({ id: 1, value: 'baiduboxapp://v1/open' });
+    expect(valid.stateSetters.schemeInputRequest).toHaveBeenCalledWith({ id: 1, value: 'sampleapp://v1/open' });
 
     const invalid = useToolPanelCommandsFixture({ sourceText: 'plain text' });
     invalid.commands.handleOpenSourceSchemeInput();

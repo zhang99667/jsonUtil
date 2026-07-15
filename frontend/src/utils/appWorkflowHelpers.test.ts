@@ -45,8 +45,8 @@ describe('appWorkflowHelpers', () => {
 
   it('生成 Scheme 原始值排查确认文案', () => {
     expect(getSchemeInspectConfirmMessage('abc', null)).toBe('');
-    expect(getSchemeInspectConfirmMessage('abc', 'baiduboxapp://v1')).toBe(
-      '这会用 Scheme 面板原始值替换 SOURCE，并切换到嵌套解析、打开深度解析报告。\n当前 SOURCE: 3 字符 / 3 B\nScheme 原始值: 16 字符 / 16 B'
+    expect(getSchemeInspectConfirmMessage('abc', 'sampleapp://v1')).toBe(
+      '这会用 Scheme 面板原始值替换 SOURCE，并切换到嵌套解析、打开深度解析报告。\n当前 SOURCE: 3 字符 / 3 B\nScheme 原始值: 14 字符 / 14 B'
     );
   });
 

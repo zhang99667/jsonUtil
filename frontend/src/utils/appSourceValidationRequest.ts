@@ -31,11 +31,14 @@ export const runAppSourceValidationRequest = ({
     requireContainer: true,
   });
 
-  validationTask.promise.then(result => {
-    if (requestId === requestIdRef.current) {
-      onSetValidation(result);
-    }
-  });
+  void validationTask.promise.then(
+    result => {
+      if (requestId === requestIdRef.current) {
+        onSetValidation(result);
+      }
+    },
+    () => undefined
+  );
 
   return validationTask;
 };

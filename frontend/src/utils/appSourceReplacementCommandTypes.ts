@@ -1,6 +1,11 @@
 import type { AppSourceReplacePlan } from './appSourceReplacePlans';
 import type { ToolEventStatus } from './productTelemetry';
 
+export interface AppSourceReplacementTarget {
+  activeFileId: string | null;
+  sourceText: string;
+}
+
 export type AppSourceReplacementTrackEvent = (
   eventName: string,
   category: string,

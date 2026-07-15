@@ -1,9 +1,18 @@
 import { showError, showSuccess } from './toast';
 import type {
+  AppSourceReplacementTarget,
   AppSourceReplacementTrackEvent,
   ConfirmPendingSourceReplacementInput,
   RunSourceReplacePlanInput,
 } from './appSourceReplacementCommandTypes';
+
+export const SOURCE_REPLACEMENT_STALE_MESSAGE = 'SOURCE 已变化，请重新操作';
+
+export const isSameSourceReplacementTarget = (
+  current: AppSourceReplacementTarget,
+  expected: AppSourceReplacementTarget,
+): boolean => current.activeFileId === expected.activeFileId
+  && current.sourceText === expected.sourceText;
 
 export const runSourceReplacePlan = ({
   plan,

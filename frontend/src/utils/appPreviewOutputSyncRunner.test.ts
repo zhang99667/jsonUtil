@@ -31,14 +31,16 @@ describe('appPreviewOutputSyncRunner', () => {
 
   it('格式化类 PREVIEW 校验通过后生成 SOURCE 回写值', async () => {
     const validateJsonMaybeAsync = vi.fn(async () => validResult);
+    const signal = new AbortController().signal;
 
     const result = await runPreviewOutputSync({
       previewText: '{\n  "a": 2\n}',
       originalInput: 'while(1);{"a":1}',
+      signal,
       validateJsonMaybeAsync,
     });
 
-    expect(validateJsonMaybeAsync).toHaveBeenCalledWith('{\n  "a": 2\n}');
+    expect(validateJsonMaybeAsync).toHaveBeenCalledWith('{\n  "a": 2\n}', { signal });
     expect(result).toEqual({ status: 'synced', nextSource: 'while(1);{"a":2}' });
   });
 

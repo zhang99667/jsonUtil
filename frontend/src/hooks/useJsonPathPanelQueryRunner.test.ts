@@ -98,32 +98,81 @@ describe('useJsonPathPanelQueryRunner', () => {
     }));
   });
 
+  it('当前 Worker 返回错误响应 ID 时终止查询并报告协议错误', () => {
+    const { dispatch, input, runner, workers } = renderRunner();
+    runner.handleQuery();
+    const worker = workers()[0];
+    const request = worker.postMessage.mock.calls[0][0];
+
+    emitJsonPathWorkerSuccess(worker, request.id + 1);
+
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'failed',
+      error: 'JSONPath 查询错误: Worker 响应标识不匹配',
+    });
+    expect(input.onAddHistoryItem).not.toHaveBeenCalled();
+    expect(trackToolEvent).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
+  });
+
+  it('卸载后忽略当前 Worker 已排队的消息和错误', () => {
+    const { cleanups, dispatch, input, runner, workers } = renderRunner();
+    runner.handleQuery();
+    const worker = workers()[0];
+    const request = worker.postMessage.mock.calls[0][0];
+    cleanups[0]();
+    dispatch.mockClear();
+    vi.mocked(input.onHighlightRange).mockClear();
+    vi.mocked(trackToolEvent).mockClear();
+
+    emitJsonPathWorkerSuccess(worker, request.id);
+    worker.emitError('迟到错误');
+
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
+    expect(input.onHighlightRange).not.toHaveBeenCalled();
+    expect(input.onAddHistoryItem).not.toHaveBeenCalled();
+    expect(trackToolEvent).not.toHaveBeenCalled();
+  });
+
+  it('查询完成后忽略同一 Worker 的重复消息和错误', () => {
+    const { dispatch, input, runner, workers } = renderRunner();
+    runner.handleQuery();
+    const worker = workers()[0];
+    const request = worker.postMessage.mock.calls[0][0];
+    emitJsonPathWorkerSuccess(worker, request.id);
+    dispatch.mockClear();
+    vi.mocked(input.onAddHistoryItem).mockClear();
+    vi.mocked(input.onHighlightRange).mockClear();
+    vi.mocked(trackToolEvent).mockClear();
+
+    emitJsonPathWorkerSuccess(worker, request.id);
+    worker.emitError('重复错误');
+
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(input.onAddHistoryItem).not.toHaveBeenCalled();
+    expect(input.onHighlightRange).not.toHaveBeenCalled();
+    expect(trackToolEvent).not.toHaveBeenCalled();
+  });
+
   it('取消查询时终止当前 worker 并让旧消息失效', () => {
     const { dispatch, input, runner, workers } = renderRunner({}, { isQuerying: true });
     runner.handleQuery('$.slow');
+    const worker = workers()[0];
+    const request = worker.postMessage.mock.calls[0][0];
 
     runner.handleCancelQuery();
-    emitJsonPathWorkerSuccess(workers()[0], 1, {
+    emitJsonPathWorkerSuccess(worker, request.id, {
       values: ['late'],
       items: [],
     });
 
-    expect(workers()[0].terminate).toHaveBeenCalledTimes(1);
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledWith({ type: 'cancelled', query: '$.slow' });
     expect(input.onHighlightRange).toHaveBeenCalledWith(null);
     expect(showSuccess).toHaveBeenCalledWith('已取消查询', 1600);
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
-  });
-
-  it('worker 错误时写入失败状态', () => {
-    const { dispatch, input, runner, workers } = renderRunner();
-    runner.handleQuery();
-
-    workers()[0].emitError('worker failed');
-
-    expect(dispatch).toHaveBeenCalledWith({ type: 'failed', error: 'JSONPath 查询错误: worker failed' });
-    expect(input.onHighlightRange).toHaveBeenLastCalledWith(null);
-    expect(trackToolEvent).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
   });
 
   it('卸载时终止当前 worker', () => {

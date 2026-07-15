@@ -5,11 +5,25 @@ import {
   useHookInput,
 } from './useAppPreviewOutputSyncTestFixture';
 import { invalidResult, validResult } from './useAppPreviewOutputSyncTestData';
+import type { ValidateJsonMaybeAsync } from '../utils/jsonValidation';
+import { advancePreviewSyncDebounce } from './useAppPreviewOutputSyncTestAssertions';
 
 const longJson = `{"value":"${'x'.repeat(200_000)}"}`;
 const flushValidationPromises = async () => {
   await Promise.resolve();
   await Promise.resolve();
+};
+
+const getPreviewValidationCleanup = (): (() => void) => {
+  const cleanup = previewSyncMocks.useEffect.mock.results
+    .find(({ value }) => typeof value === 'function')
+    ?.value;
+
+  if (typeof cleanup !== 'function') {
+    throw new Error('未找到 PREVIEW 校验 cleanup');
+  }
+
+  return cleanup;
 };
 
 describe('useAppPreviewValidation', () => {
@@ -47,5 +61,33 @@ describe('useAppPreviewValidation', () => {
     await flushValidationPromises();
 
     expect(previewSyncMocks.setPreviewValidation).toHaveBeenLastCalledWith(validResult);
+  });
+
+  it('连续大文本校验及回写启动时中止上一项任务', async () => {
+    const validateJsonMaybeAsync = vi.fn<ValidateJsonMaybeAsync>(
+      () => new Promise(() => undefined)
+    );
+    const result = useHookInput(validateJsonMaybeAsync, longJson);
+
+    const firstSignal = validateJsonMaybeAsync.mock.calls[0]?.[1]?.signal;
+    result.handleOutputChange(`${longJson} `);
+    const secondSignal = validateJsonMaybeAsync.mock.calls[1]?.[1]?.signal;
+
+    expect(firstSignal?.aborted).toBe(true);
+    expect(secondSignal?.aborted).toBe(false);
+    await advancePreviewSyncDebounce();
+    expect(secondSignal?.aborted).toBe(true);
+  });
+
+  it('卸载时中止当前大文本校验', () => {
+    const validateJsonMaybeAsync = vi.fn<ValidateJsonMaybeAsync>(
+      () => new Promise(() => undefined)
+    );
+
+    useHookInput(validateJsonMaybeAsync, longJson);
+    const signal = validateJsonMaybeAsync.mock.calls[0]?.[1]?.signal;
+    getPreviewValidationCleanup()();
+
+    expect(signal?.aborted).toBe(true);
   });
 });

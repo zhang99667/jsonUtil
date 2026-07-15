@@ -91,4 +91,20 @@ describe('appSourceValidationRequest', () => {
     await secondValidation.task.promise;
     expect(onSetValidation).toHaveBeenCalledWith(validSourceValidationResult);
   });
+
+  it('消费已取消请求的拒绝且不写回状态', async () => {
+    const cancellation = new DOMException('JSON 校验已取消', 'AbortError');
+    const validationTask = {
+      promise: Promise.reject<never>(cancellation),
+      cancel: vi.fn(),
+    };
+    const onSetValidation = vi.fn();
+    vi.mocked(startJsonValidation).mockReturnValue(validationTask);
+
+    const task = runAppSourceValidationRequest(createSourceValidationRequestInput({ onSetValidation }));
+
+    await expect(task?.promise).rejects.toBe(cancellation);
+    await Promise.resolve();
+    expect(onSetValidation).not.toHaveBeenCalled();
+  });
 });

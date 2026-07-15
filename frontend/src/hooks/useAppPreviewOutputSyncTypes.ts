@@ -3,8 +3,8 @@ import type {
   FileTab,
   TransformContext,
   TransformMode,
-  ValidationResult,
 } from '../types';
+import type { ValidateJsonMaybeAsync } from '../utils/jsonValidation';
 
 export interface UseAppPreviewOutputSyncInput {
   previewText: string;
@@ -15,10 +15,7 @@ export interface UseAppPreviewOutputSyncInput {
   fallbackContextRef: MutableRefObject<TransformContext | null>;
   isUpdatingFromOutput: MutableRefObject<boolean>;
   pendingOutputValue: MutableRefObject<string>;
-  validateJsonMaybeAsync: (
-    value: string,
-    options?: { requireContainer?: boolean }
-  ) => Promise<ValidationResult>;
+  validateJsonMaybeAsync: ValidateJsonMaybeAsync;
   onSetInput: (value: string) => void;
   onUpdateActiveFileContent: (value: string) => void;
 }

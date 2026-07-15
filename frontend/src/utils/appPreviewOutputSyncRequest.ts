@@ -1,4 +1,5 @@
-import { TransformMode, type FileTab, type TransformContext, type ValidationResult } from '../types';
+import { TransformMode, type FileTab, type TransformContext } from '../types';
+import type { ValidateJsonMaybeAsync } from './jsonValidation';
 import {
   createPreviewOutputSyncFailedResult,
   executeAppPreviewOutputSync,
@@ -12,7 +13,8 @@ export interface AppPreviewOutputSyncRequestInput {
   mode: TransformMode;
   originalInput: string;
   fallbackContext: TransformContext | null;
-  validateJsonMaybeAsync: (value: string) => Promise<ValidationResult>;
+  signal?: AbortSignal;
+  validateJsonMaybeAsync: ValidateJsonMaybeAsync;
 }
 
 export const resolveAppPreviewOutputSyncContext = (
@@ -30,6 +32,7 @@ export const runAppPreviewOutputSyncRequest = async ({
   mode,
   originalInput,
   fallbackContext,
+  signal,
   validateJsonMaybeAsync,
 }: AppPreviewOutputSyncRequestInput): Promise<AppPreviewOutputSyncRunnerResult> => {
   try {
@@ -38,6 +41,7 @@ export const runAppPreviewOutputSyncRequest = async ({
       mode,
       originalInput,
       context: resolveAppPreviewOutputSyncContext(files, activeFileId, fallbackContext),
+      signal,
       validateJsonMaybeAsync,
     });
   } catch {

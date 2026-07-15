@@ -1,4 +1,5 @@
 import { TransformMode, type TransformContext, type ValidationResult } from '../types';
+import type { ValidateJsonMaybeAsync } from './jsonValidation';
 import {
   resolveAppPreviewOutputSource,
   shouldValidatePreviewOutputBeforeSync,
@@ -9,7 +10,8 @@ export interface AppPreviewOutputSyncRunnerInput {
   mode: TransformMode;
   originalInput: string;
   context: TransformContext | null;
-  validateJsonMaybeAsync: (value: string) => Promise<ValidationResult>;
+  signal?: AbortSignal;
+  validateJsonMaybeAsync: ValidateJsonMaybeAsync;
 }
 
 export const PREVIEW_OUTPUT_SYNC_FAILED: ValidationResult = {
@@ -31,11 +33,14 @@ export const executeAppPreviewOutputSync = async ({
   mode,
   originalInput,
   context,
+  signal,
   validateJsonMaybeAsync,
 }: AppPreviewOutputSyncRunnerInput): Promise<AppPreviewOutputSyncRunnerResult> => {
   try {
     if (shouldValidatePreviewOutputBeforeSync(mode)) {
-      const validation = await validateJsonMaybeAsync(previewText);
+      const validation = signal
+        ? await validateJsonMaybeAsync(previewText, { signal })
+        : await validateJsonMaybeAsync(previewText);
       if (!validation.isValid) {
         return { status: 'invalid', validation };
       }

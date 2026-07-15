@@ -81,15 +81,15 @@ describe('useAppSourceInputCommands', () => {
     const input = createHookInput();
     const { handleInputChange } = useAppSourceInputCommands(input);
 
-    handleInputChange('  baiduboxapp://v7/test  ');
+    handleInputChange('  sampleapp://v7/test  ');
 
-    expect(cleanJsonInput).toHaveBeenCalledWith('  baiduboxapp://v7/test  ');
+    expect(cleanJsonInput).toHaveBeenCalledWith('  sampleapp://v7/test  ');
     expect(input.onSetSmartSuggestionOrigin).toHaveBeenCalledWith(null);
     expect(setAiRepairSummary).toHaveBeenCalledWith(null);
-    expect(input.onSetSourceText).toHaveBeenCalledWith('baiduboxapp://v7/test');
+    expect(input.onSetSourceText).toHaveBeenCalledWith('sampleapp://v7/test');
     expect(input.onSetMode).toHaveBeenCalledWith(TransformMode.DEEP_FORMAT);
-    expect(input.inputRef.current).toBe('baiduboxapp://v7/test');
-    expect(input.onUpdateActiveFileContent).toHaveBeenCalledWith('baiduboxapp://v7/test');
+    expect(input.inputRef.current).toBe('sampleapp://v7/test');
+    expect(input.onUpdateActiveFileContent).toHaveBeenCalledWith('sampleapp://v7/test');
   });
 
   it('非 NONE 模式下保持当前模式', () => {

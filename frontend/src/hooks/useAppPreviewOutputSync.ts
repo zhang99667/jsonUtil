@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useAppPreviewValidation } from './useAppPreviewValidation';
 import { useAppPreviewOutputDraftScheduler } from './useAppPreviewOutputDraftScheduler';
 import { useAppPreviewOutputChangeHandler } from './useAppPreviewOutputChangeHandler';
@@ -18,6 +18,7 @@ export const useAppPreviewOutputSync = ({
   onUpdateActiveFileContent,
 }: UseAppPreviewOutputSyncInput) => {
   const {
+    cancelPreviewValidation,
     previewValidation,
     setPreviewValidation,
     updatePreviewValidation,
@@ -26,7 +27,13 @@ export const useAppPreviewOutputSync = ({
   const { cancelOutputDraft, scheduleOutputSync } = useAppPreviewOutputDraftScheduler({
     isUpdatingFromOutput,
     pendingOutputValue,
+    onBeforeSync: cancelPreviewValidation,
   });
+
+  const cancelOutputDraftAndValidation = useCallback(() => {
+    cancelPreviewValidation();
+    cancelOutputDraft();
+  }, [cancelOutputDraft, cancelPreviewValidation]);
 
   useEffect(() => {
     if (isUpdatingFromOutput.current) return;
@@ -44,7 +51,7 @@ export const useAppPreviewOutputSync = ({
   });
 
   return {
-    cancelOutputDraft,
+    cancelOutputDraft: cancelOutputDraftAndValidation,
     previewValidation,
     handleOutputChange,
   };

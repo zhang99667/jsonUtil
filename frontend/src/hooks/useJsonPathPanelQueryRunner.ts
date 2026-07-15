@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import type { HighlightRange } from '../types';
+import { formatUnknownError } from '../utils/errors';
 import { buildJsonPathPanelQueryRunDecision } from '../utils/jsonPathPanelQueryRunDecision';
 import { trackJsonPathQueryEvent } from '../utils/jsonPathPanelQueryTelemetry';
 import {
   buildJsonPathQuerySuccessPayload,
   buildJsonPathWorkerRequest,
   createJsonPathQueryWorker,
-  isStaleJsonPathWorkerMessage,
   type JsonPathQueryWorker,
 } from '../utils/jsonPathPanelQueryWorker';
 import {
@@ -63,18 +63,19 @@ export const useJsonPathPanelQueryRunner = ({
   }, []);
 
   const terminateActiveWorker = useCallback(() => {
-    workerRef.current?.terminate();
+    const worker = workerRef.current;
     workerRef.current = null;
+    worker?.terminate();
   }, []);
 
   const finishWorkerRequest = useCallback((worker: JsonPathQueryWorker, startedAt: number) => {
-    worker.terminate();
+    const queryStartedAt = activeQueryStartedAtRef.current ?? startedAt;
     if (workerRef.current === worker) {
       workerRef.current = null;
     }
     activeQueryRef.current = '';
-    const queryStartedAt = activeQueryStartedAtRef.current ?? startedAt;
     activeQueryStartedAtRef.current = null;
+    worker.terminate();
     return queryStartedAt;
   }, []);
 
@@ -121,17 +122,42 @@ export const useJsonPathPanelQueryRunner = ({
       return;
     }
 
+    const failQuery = (error: unknown, queryStartedAt: number) => {
+      dispatchQueryState({
+        type: 'failed',
+        error: `JSONPath 查询错误: ${formatUnknownError(error)}`,
+      });
+      onHighlightRange(null);
+      trackQueryEvent('error', queryStartedAt);
+    };
+
     terminateActiveWorker();
     const requestId = ++requestIdRef.current;
-    const worker = createWorker();
+    let worker: JsonPathQueryWorker;
+    try {
+      worker = createWorker();
+    } catch (error) {
+      clearActiveQuery();
+      failQuery(error, startedAt);
+      return;
+    }
     workerRef.current = worker;
     activeQueryRef.current = queryPath;
     activeQueryStartedAtRef.current = startedAt;
     dispatchQueryState({ type: 'start' });
     onHighlightRange(null);
 
+    const ownsWorkerRequest = () => (
+      workerRef.current === worker && requestIdRef.current === requestId
+    );
+
     worker.onmessage = (event) => {
-      if (isStaleJsonPathWorkerMessage(event.data.id, requestId, requestIdRef.current)) return;
+      if (!ownsWorkerRequest()) return;
+      if (event.data.id !== requestId) {
+        const queryStartedAt = finishWorkerRequest(worker, startedAt);
+        failQuery('Worker 响应标识不匹配', queryStartedAt);
+        return;
+      }
       const queryStartedAt = finishWorkerRequest(worker, startedAt);
 
       if (event.data.error) {
@@ -158,22 +184,27 @@ export const useJsonPathPanelQueryRunner = ({
     };
 
     worker.onerror = (event) => {
-      if (requestIdRef.current !== requestId) return;
+      if (!ownsWorkerRequest()) return;
       const queryStartedAt = finishWorkerRequest(worker, startedAt);
-      dispatchQueryState({ type: 'failed', error: `JSONPath 查询错误: ${event.message}` });
-      onHighlightRange(null);
-      trackQueryEvent('error', queryStartedAt);
+      failQuery(event.message, queryStartedAt);
     };
 
-    worker.postMessage(buildJsonPathWorkerRequest({
-      id: requestId,
-      jsonData,
-      queryPath,
-      deepFormat,
-      autoExpandScheme,
-    }));
+    try {
+      worker.postMessage(buildJsonPathWorkerRequest({
+        id: requestId,
+        jsonData,
+        queryPath,
+        deepFormat,
+        autoExpandScheme,
+      }));
+    } catch (error) {
+      if (!ownsWorkerRequest()) return;
+      const queryStartedAt = finishWorkerRequest(worker, startedAt);
+      failQuery(error, queryStartedAt);
+    }
   }, [
     autoExpandScheme,
+    clearActiveQuery,
     createWorker,
     deepFormat,
     finishWorkerRequest,

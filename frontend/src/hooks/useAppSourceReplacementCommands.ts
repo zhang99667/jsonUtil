@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react';
+import { useRef, type MutableRefObject } from 'react';
 import { TransformMode, type HighlightRange } from '../types';
 import { useAppApplySourceReplacementCommands } from './useAppApplySourceReplacementCommands';
 import { useAppClearSourceCommands } from './useAppClearSourceCommands';
@@ -8,11 +8,15 @@ import {
   useAppSourceApplyEffects,
   type AppSmartSuggestionOrigin,
 } from './useAppSourceApplyEffects';
-import type { AppSourceReplacementTrackEvent } from '../utils/appSourceReplacementCommandTypes';
+import type {
+  AppSourceReplacementTarget,
+  AppSourceReplacementTrackEvent,
+} from '../utils/appSourceReplacementCommandTypes';
 import { buildAppSourceReplacementCommands } from '../utils/appSourceReplacementCommandBundle';
 
 export type { AppSmartSuggestionOrigin } from './useAppSourceApplyEffects';
 interface AppSourceReplacementCommandsInput {
+  activeFileId: string | null;
   input: string;
   output: string;
   isOutputTransforming: boolean;
@@ -28,6 +32,7 @@ interface AppSourceReplacementCommandsInput {
 }
 
 export const useAppSourceReplacementCommands = ({
+  activeFileId,
   input,
   output,
   isOutputTransforming,
@@ -41,8 +46,11 @@ export const useAppSourceReplacementCommands = ({
   onSetSmartSuggestionOrigin,
   onTrackToolEvent,
 }: AppSourceReplacementCommandsInput) => {
+  const sourceTargetRef = useRef<AppSourceReplacementTarget>({ activeFileId, sourceText: input });
+  sourceTargetRef.current = { activeFileId, sourceText: input };
+
   const clearSourceCommands = useAppClearSourceCommands({
-    sourceText: input,
+    sourceTargetRef,
     onInputChange,
     onSetHighlightRange,
     onTrackToolEvent,
@@ -65,20 +73,20 @@ export const useAppSourceReplacementCommands = ({
   });
 
   const schemeInspectCommands = useAppSchemeInspectSourceCommand({
-    sourceText: input,
+    sourceTargetRef,
     onApply: applySchemeInspectSourceText,
     onSuccessSkip: handleSchemeInspectSuccessSkip,
     onTrackToolEvent,
   });
 
   const pasteCommands = useAppPasteSourceCommand({
-    sourceText: input,
+    sourceTargetRef,
     onApply: applySourceTextFromClipboard,
     onTrackToolEvent,
   });
 
   const applyCommands = useAppApplySourceReplacementCommands({
-    sourceText: input,
+    sourceTargetRef,
     previewText: output,
     isOutputTransforming,
     onApply: applySourceText,

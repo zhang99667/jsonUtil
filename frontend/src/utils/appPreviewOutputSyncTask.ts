@@ -6,13 +6,17 @@ export const createAppPreviewOutputSyncTask = ({
   request,
   refs,
   applyEffects,
-}: AppPreviewOutputSyncTaskInput) => async (isCurrent: () => boolean): Promise<boolean> => {
+}: AppPreviewOutputSyncTaskInput) => async (
+  isCurrent: () => boolean,
+  signal: AbortSignal
+): Promise<boolean> => {
   const { inputRef, fallbackContextRef, pendingOutputValue } = refs;
 
   const syncResult = await runAppPreviewOutputSyncRequest({
     ...request,
     originalInput: inputRef.current,
     fallbackContext: fallbackContextRef.current,
+    signal,
   });
 
   if (!isCurrent()) return false;

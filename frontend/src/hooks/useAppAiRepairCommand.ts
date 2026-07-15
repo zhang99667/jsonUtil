@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { AIConfig, TransformMode } from '../types';
 import type { AiRepairSummary } from '../utils/aiRepairSummary';
 import { showError, showSuccess } from '../utils/toast';
-import type { ToolEventStatus } from '../utils/productTelemetry';
 import { loadAppAiRepairRuntime, runAppAiRepairCommand } from '../utils/appAiRepairCommandRunner';
-
-type AppAiRepairTrackEvent = (eventName: string, category: string, status?: ToolEventStatus, startedAt?: number) => void;
+import type { AppAiRepairTrackEvent } from '../utils/appAiRepairCommandRunnerTypes';
 
 interface UseAppAiRepairCommandInput {
+  activeFileId: string | null;
   sourceText: string;
   aiConfig: AIConfig;
   onApplyFixedJson: (fixedJson: string, summary: AiRepairSummary) => void;
@@ -18,6 +17,7 @@ interface UseAppAiRepairCommandInput {
 }
 
 export const useAppAiRepairCommand = ({
+  activeFileId,
   sourceText,
   aiConfig,
   onApplyFixedJson,
@@ -27,40 +27,44 @@ export const useAppAiRepairCommand = ({
   onTrackToolEvent,
 }: UseAppAiRepairCommandInput) => {
   const [isAiRepairing, setIsAiRepairing] = useState(false);
-  const isMountedRef = useRef(true);
   const aiRepairAbortControllerRef = useRef<AbortController | null>(null);
-  const latestSourceTextRef = useRef(sourceText);
-  latestSourceTextRef.current = sourceText;
+  const latestSourceRef = useRef({ activeFileId, sourceText });
+  // 只在提交阶段更新请求身份，避免未提交渲染污染当前请求
+  useLayoutEffect(() => {
+    latestSourceRef.current = { activeFileId, sourceText };
+  }, [activeFileId, sourceText]);
 
   useEffect(() => () => {
-    isMountedRef.current = false;
-    aiRepairAbortControllerRef.current?.abort();
+    const activeRequest = aiRepairAbortControllerRef.current;
     aiRepairAbortControllerRef.current = null;
+    activeRequest?.abort();
   }, []);
 
-  useEffect(() => { aiRepairAbortControllerRef.current?.abort(); aiRepairAbortControllerRef.current = null; }, [sourceText]);
-
-  const setAiRepairingIfMounted = useCallback((nextIsAiRepairing: boolean) => {
-    if (isMountedRef.current) setIsAiRepairing(nextIsAiRepairing);
-  }, []);
+  useEffect(() => {
+    const activeRequest = aiRepairAbortControllerRef.current;
+    if (!activeRequest) return;
+    aiRepairAbortControllerRef.current = null;
+    activeRequest.abort();
+    setIsAiRepairing(false);
+  }, [activeFileId, sourceText]);
 
   const handleAiRepair = useCallback(async () => {
-    if (aiRepairAbortControllerRef.current && !aiRepairAbortControllerRef.current.signal.aborted) {
-      return;
-    }
+    if (aiRepairAbortControllerRef.current) return;
 
     const startedAt = performance.now();
     const abortController = new AbortController();
     aiRepairAbortControllerRef.current = abortController;
     onTriggerFeatureFirstUse();
-
+    // 回调同时绑定请求控制器、源内容和活动文件，避免迟到结果跨标签生效。
     const shouldApplyAiRepairEffect = () => (
-      isMountedRef.current && !abortController.signal.aborted && latestSourceTextRef.current === sourceText
+      aiRepairAbortControllerRef.current === abortController && !abortController.signal.aborted
+      && latestSourceRef.current.sourceText === sourceText && latestSourceRef.current.activeFileId === activeFileId
     );
-    const runIfActive = <Args extends unknown[]>(effect: (...args: Args) => void) => (
-      ...args: Args
-    ) => {
+    const runIfActive = <Args extends unknown[]>(effect: (...args: Args) => void) => (...args: Args) => {
       if (shouldApplyAiRepairEffect()) effect(...args);
+    };
+    const setRepairingIfCurrent = (nextIsRepairing: boolean) => {
+      if (aiRepairAbortControllerRef.current === abortController) setIsAiRepairing(nextIsRepairing);
     };
 
     try {
@@ -71,7 +75,7 @@ export const useAppAiRepairCommand = ({
         signal: abortController.signal,
       }, {
         onLoadRuntime: loadAppAiRepairRuntime,
-        onSetRepairing: setAiRepairingIfMounted,
+        onSetRepairing: setRepairingIfCurrent,
         onApplyFixedJson: runIfActive(onApplyFixedJson),
         onSetMode: runIfActive(onSetMode),
         onOpenAiSettings: runIfActive(onOpenAiSettings),
@@ -84,7 +88,7 @@ export const useAppAiRepairCommand = ({
         aiRepairAbortControllerRef.current = null;
       }
     }
-  }, [aiConfig, onApplyFixedJson, onOpenAiSettings, onSetMode, onTrackToolEvent, onTriggerFeatureFirstUse, setAiRepairingIfMounted, sourceText]);
+  }, [activeFileId, aiConfig, onApplyFixedJson, onOpenAiSettings, onSetMode, onTrackToolEvent, onTriggerFeatureFirstUse, sourceText]);
 
   return { isAiRepairing, handleAiRepair };
 };

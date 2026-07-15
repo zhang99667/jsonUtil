@@ -18,8 +18,8 @@ vi.mock('./chunkLoadRecoveryDispatch', () => ({
   dispatchChunkLoadRecoveryEvent: mocks.dispatchChunkLoadRecoveryEvent,
 }));
 
-vi.mock('./transformations', async importOriginal => ({
-  ...await importOriginal<typeof import('./transformations')>(),
+vi.mock('./jsonTemplate', async importOriginal => ({
+  ...await importOriginal<typeof import('./jsonTemplate')>(),
   applyTemplate: mocks.applyTemplate,
 }));
 

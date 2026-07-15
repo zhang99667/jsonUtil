@@ -33,14 +33,14 @@ describe('appToolPanelCommandPlans', () => {
       nextId: 3,
       request: { id: 3, path: '$.data[0].url', pointer: '/data/0/url' },
     });
-    expect(buildSchemeInputRequest(7, 'baiduboxapp://v1/open')).toEqual({
+    expect(buildSchemeInputRequest(7, 'sampleapp://v1/open')).toEqual({
       nextId: 8,
-      request: { id: 8, value: 'baiduboxapp://v1/open' },
+      request: { id: 8, value: 'sampleapp://v1/open' },
     });
   });
 
   it('只允许 SOURCE 中可独立解析的输入打开 Scheme 面板', () => {
-    expect(getStandaloneSourceSchemeValue(' baiduboxapp://v1/open ')).toBe('baiduboxapp://v1/open');
+    expect(getStandaloneSourceSchemeValue(' sampleapp://v1/open ')).toBe('sampleapp://v1/open');
     expect(getStandaloneSourceSchemeValue('plain text')).toBe('');
   });
 

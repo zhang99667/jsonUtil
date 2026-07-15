@@ -8,6 +8,7 @@ import type {
 import { abortTemplateFillIfSourceChanged } from './appTemplateFillCommandSourceGuard';
 import { loadAppTemplateFillQualitySummaryModule } from './appTemplateFillQualitySummary';
 import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
+import { getErrorMessage } from './errors';
 
 export const runAppTemplateFillCommand = async (
   input: AppTemplateFillCommandInput,
@@ -39,7 +40,6 @@ export const runAppTemplateFillCommand = async (
     if (dispatchChunkLoadRecoveryEvent(error)) return;
 
     effects.onSetTemplateApplyQualityDelta('');
-    const message = error instanceof Error ? error.message : '模板应用失败';
-    effects.onShowError(message);
+    effects.onShowError(getErrorMessage(error, '模板应用失败'));
   }
 };

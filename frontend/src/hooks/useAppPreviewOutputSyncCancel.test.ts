@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   executeAppPreviewOutputSyncMock,
   previewSyncMocks,
@@ -8,6 +8,7 @@ import {
 import {
   advancePreviewSyncDebounce,
   expectOutputDraft,
+  expectSourceUnchanged,
 } from './useAppPreviewOutputSyncTestAssertions';
 
 const getPreviewSyncCleanup = (): (() => void) => {
@@ -23,6 +24,27 @@ const getPreviewSyncCleanup = (): (() => void) => {
   return cleanup;
 };
 
+const createPendingOutputSync = () => {
+  let resolveSync: (() => void) | null = null;
+  let signal: AbortSignal | undefined;
+  vi.mocked(executeAppPreviewOutputSyncMock).mockImplementationOnce(input => (
+    new Promise(resolve => {
+      signal = input.signal;
+      resolveSync = () => resolve({ status: 'synced', nextSource: 'late-source' });
+    })
+  ));
+  return {
+    getSignal: () => signal,
+    resolve: () => resolveSync?.(),
+  };
+};
+
+const flushSyncResult = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+};
+
 describe('useAppPreviewOutputSync cancel', () => {
   beforeEach(() => {
     resetPreviewOutputSyncTestFixture();
@@ -30,7 +52,6 @@ describe('useAppPreviewOutputSync cancel', () => {
 
   it('取消 PREVIEW 草稿时清理防抖同步，避免晚到任务覆盖 SOURCE', async () => {
     const result = useHookInput();
-
     result.handleOutputChange('{"a":2}');
     result.cancelOutputDraft();
     await advancePreviewSyncDebounce();
@@ -49,5 +70,31 @@ describe('useAppPreviewOutputSync cancel', () => {
 
     expect(executeAppPreviewOutputSyncMock).not.toHaveBeenCalled();
     expect(result.onSetInput).not.toHaveBeenCalled();
+  });
+
+  it('同步校验启动后取消草稿时中止当前任务', async () => {
+    const pendingSync = createPendingOutputSync();
+    const result = useHookInput();
+    result.handleOutputChange('{"a":2}');
+    await advancePreviewSyncDebounce();
+    expect(pendingSync.getSignal()?.aborted).toBe(false);
+    result.cancelOutputDraft();
+    expect(pendingSync.getSignal()?.aborted).toBe(true);
+    pendingSync.resolve();
+    await flushSyncResult();
+    expectSourceUnchanged(result);
+  });
+
+  it('同步校验启动后卸载时中止任务并隔离晚到结果', async () => {
+    const pendingSync = createPendingOutputSync();
+    const result = useHookInput();
+    result.handleOutputChange('{"a":2}');
+    await advancePreviewSyncDebounce();
+
+    getPreviewSyncCleanup()();
+    expect(pendingSync.getSignal()?.aborted).toBe(true);
+    pendingSync.resolve();
+    await flushSyncResult();
+    expectSourceUnchanged(result);
   });
 });

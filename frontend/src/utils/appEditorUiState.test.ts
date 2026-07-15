@@ -44,7 +44,7 @@ describe('appEditorUiState', () => {
       pendingPasteSourceText: '中文',
       pendingApplyPreviewText: '{}',
       pendingSchemaExampleText: '[]',
-      pendingSchemeInspectSourceText: 'baiduboxapp://v1',
+      pendingSchemeInspectSourceText: 'sampleapp://v1',
     });
 
     expect(state.hasSourceContent).toBe(false);
@@ -56,12 +56,12 @@ describe('appEditorUiState', () => {
     expect(state.pasteSourceConfirmMessage).toContain('剪贴板文本: 2 字符 / 6 B');
     expect(state.applyPreviewConfirmMessage).toContain('PREVIEW: 2 字符 / 2 B');
     expect(state.applySchemaExampleConfirmMessage).toContain('Schema 示例: 2 字符 / 2 B');
-    expect(state.schemeInspectConfirmMessage).toContain('Scheme 原始值: 16 字符 / 16 B');
+    expect(state.schemeInspectConfirmMessage).toContain('Scheme 原始值: 14 字符 / 14 B');
   });
 
   it('识别可独立嵌套解析的 Scheme 输入', () => {
     const state = buildAppEditorUiState({
-      sourceText: 'baiduboxapp://v1/open?params=%7B%7D',
+      sourceText: 'sampleapp://v1/open?params=%7B%7D',
       previewText: '',
       isProcessing: false,
       isOutputTransforming: false,

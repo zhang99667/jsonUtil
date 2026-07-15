@@ -39,10 +39,10 @@ describe('useAppSourceApplyEffects', () => {
     const input = createInput();
     const effects = useAppSourceApplyEffects(input);
 
-    effects.applySourceTextFromClipboard(' \uFEFFbaiduboxapp://v1/open\u200B\n', '已粘贴');
+    effects.applySourceTextFromClipboard(' \uFEFFsampleapp://v1/open\u200B\n', '已粘贴');
 
-    expect(input.onInputChange).toHaveBeenCalledWith(' \uFEFFbaiduboxapp://v1/open\u200B\n');
-    expect(input.smartSuggestionOriginTextRef.current).toBe('baiduboxapp://v1/open');
+    expect(input.onInputChange).toHaveBeenCalledWith(' \uFEFFsampleapp://v1/open\u200B\n');
+    expect(input.smartSuggestionOriginTextRef.current).toBe('sampleapp://v1/open');
     expect(input.onSetSmartSuggestionOrigin).toHaveBeenCalledWith('clipboard');
   });
 });

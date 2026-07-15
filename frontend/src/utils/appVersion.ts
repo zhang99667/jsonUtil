@@ -1,3 +1,5 @@
+import { isRecord } from './storage';
+
 export interface AppVersionMetadata {
   name: 'JSONUtils';
   version: string;
@@ -58,10 +60,6 @@ export const compareAppVersions = (leftVersion: string, rightVersion: string): n
 
 export const isRemoteAppVersionNewer = (currentVersion: string, remoteVersion: string): boolean => (
   compareAppVersions(remoteVersion, currentVersion) > 0
-);
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
 
 export const parseAppVersionManifest = (value: unknown): AppVersionManifest | null => {

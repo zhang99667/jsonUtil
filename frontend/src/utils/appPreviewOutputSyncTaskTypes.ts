@@ -2,10 +2,16 @@ import type { TransformContext, ValidationResult } from '../types';
 import type { AppPreviewOutputSyncRequestInput } from './appPreviewOutputSyncRequest';
 import type { MutableValueRef } from './mutableValueRef';
 
-export type PreviewOutputSyncTask = (isCurrent: () => boolean) => Promise<boolean>;
+export type PreviewOutputSyncTask = (
+  isCurrent: () => boolean,
+  signal: AbortSignal
+) => Promise<boolean>;
 export type SchedulePreviewOutputSync = (task: PreviewOutputSyncTask) => void;
 
-export type AppPreviewOutputSyncTaskRequest = Omit<AppPreviewOutputSyncRequestInput, 'originalInput' | 'fallbackContext'>;
+export type AppPreviewOutputSyncTaskRequest = Omit<
+  AppPreviewOutputSyncRequestInput,
+  'originalInput' | 'fallbackContext' | 'signal'
+>;
 
 export interface AppPreviewOutputSyncTaskInput {
   request: AppPreviewOutputSyncTaskRequest;
