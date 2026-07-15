@@ -6,7 +6,7 @@ import { collectText, findByType } from './componentElementTestHelpers';
 
 const record = {
   path: '$.cmd',
-  originalPreview: 'baiduboxapp://v1/open?...',
+  originalPreview: 'sampleapp://v1/open?...',
   decodedPreview: '{"uid":1}',
   decodedPaths: [{
     path: '$.cmd.uid',
@@ -19,8 +19,8 @@ const record = {
   hasMoreDecodedPaths: true,
   nestedCommandFields: [{
     path: '$.cmd.jump_url',
-    preview: 'baiduboxapp://v1/jump',
-    value: 'baiduboxapp://v1/jump',
+    preview: 'sampleapp://v1/jump',
+    value: 'sampleapp://v1/jump',
   }],
   nestedCommandFieldCount: 2,
   indexedNestedCommandFieldCount: 3,
@@ -50,7 +50,7 @@ describe('TransformReportRecordPathSections', () => {
     const pathRows = findByType(tree, TransformReportRecordPathRows);
 
     expect(collectText(tree)).toContain('解析结果: {"uid":1}');
-    expect(collectText(tree)).toContain('原始值: baiduboxapp://v1/open?...');
+    expect(collectText(tree)).toContain('原始值: sampleapp://v1/open?...');
     expect(pathRows.map(row => row.props.title)).toEqual([
       '内部CMD字段',
       '静态资源字段',
@@ -85,6 +85,6 @@ describe('TransformReportRecordPathSections', () => {
     });
 
     expect(findByType(tree, TransformReportRecordPathRows)).toHaveLength(0);
-    expect(collectText(tree)).toContain('原始值: baiduboxapp://v1/open?...');
+    expect(collectText(tree)).toContain('原始值: sampleapp://v1/open?...');
   });
 });

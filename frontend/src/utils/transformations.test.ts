@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TransformMode } from '../types';
+import { TransformMode, type TransformContext } from '../types';
 import {
   validateJson,
   detectLanguage,
@@ -8,8 +8,6 @@ import {
   performTransformAsync,
   deepParseWithContext,
   inverseWithContext,
-  deepMergeTemplate,
-  applyTemplate,
   getStandaloneDeepFormatInputKind,
   isStandaloneDeepFormatInput,
 } from './transformations';
@@ -510,13 +508,13 @@ describe('deepParseWithContext', () => {
   });
 
   it('根输入为电话 Scheme 时可直接展开', () => {
-    const numberUrl = `https://ada.baidu.com/phone-tracker/getNumber?query=${encodeURIComponent('种植牙')}&pageid=__TIMESTAMP__`;
-    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+    const numberUrl = `https://ada.sample.com/phone-tracker/getNumber?query=${encodeURIComponent('种植牙')}&pageid=__TIMESTAMP__`;
+    const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
       phone: '400-805-8686',
       numberUrl,
       extInfo: base64Encode(JSON.stringify({
         search_id: 'a433862f59552397',
-        cmatch: 222,
+        segment: 222,
         rank: 2,
       })),
       type: 1,
@@ -529,6 +527,7 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$')?.steps[0]).toMatchObject({
       type: 'scheme_decode',
       originalSchemeType: 'url',
+      schemeHeaderDisplayKey: '__scheme__',
     });
     expect(result.context.records.get('$')?.steps[0].schemeParamStageSummary).toMatchObject({
       total: 1,
@@ -552,21 +551,58 @@ describe('deepParseWithContext', () => {
       },
       extInfo: {
         search_id: 'a433862f59552397',
-        cmatch: 222,
+        segment: 222,
         rank: 2,
       },
       type: 1,
     });
+    expect(parsed.__scheme__).toBe('sampleapp://v7/vendor/ad/makePhoneCall');
     expect(result.context.runtimePlaceholders?.[0]).toMatchObject({
       value: '__TIMESTAMP__',
     });
     expect(inverseWithContext(result.output, result.context)).toBe(scheme);
   });
 
+  it('根广告 Scheme 展开后保留可编辑协议头', () => {
+    const scheme = `sampleapp://v7/vendor/ad/immersiveVideo?params=${encodeURIComponent(JSON.stringify({
+      lp_params: {
+        popover: { show_time: 8 },
+      },
+    }))}&style=${encodeURIComponent(JSON.stringify({ menumode: '2' }))}`;
+
+    const result = deepParseWithContext(scheme, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed).toMatchObject({
+      __scheme__: 'sampleapp://v7/vendor/ad/immersiveVideo',
+      params: {
+        lp_params: {
+          popover: { show_time: 8 },
+        },
+      },
+      style: { menumode: '2' },
+    });
+
+    parsed.__scheme__ = 'sampleapp://v7/vendor/ad/immersiveVideoV2';
+    parsed.params.lp_params.popover.show_time = 9;
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
+    const restoredResult = deepParseWithContext(restored, { autoExpandScheme: true });
+
+    expect(restored.startsWith('sampleapp://v7/vendor/ad/immersiveVideoV2?')).toBe(true);
+    expect(JSON.parse(restoredResult.output)).toMatchObject({
+      __scheme__: 'sampleapp://v7/vendor/ad/immersiveVideoV2',
+      params: {
+        lp_params: {
+          popover: { show_time: 9 },
+        },
+      },
+    });
+  });
+
   it('根输入为 Scheme 时不受自动展开设置关闭影响', () => {
-    const scheme = `baiduboxapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
+    const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({
       phone: '400-805-8686',
-      extInfo: base64Encode(JSON.stringify({ cmatch: 222, rank: 2 })),
+      extInfo: base64Encode(JSON.stringify({ segment: 222, rank: 2 })),
     }))}`;
     const nestedInput = JSON.stringify({ action_cmd: scheme });
 
@@ -582,7 +618,7 @@ describe('deepParseWithContext', () => {
     });
     expect(rootParsed.params).toMatchObject({
       phone: '400-805-8686',
-      extInfo: { cmatch: 222, rank: 2 },
+      extInfo: { segment: 222, rank: 2 },
     });
     expect(nestedParsed.action_cmd).toBe(scheme);
     expect(nestedResult.context.records.has('$.action_cmd')).toBe(false);
@@ -717,7 +753,7 @@ describe('deepParseWithContext', () => {
   it('自动展开 URL Scheme 参数', () => {
     const payload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
     const input = JSON.stringify({
-      schema: `baiduboxapp://v1/browser/open?cmd=${payload}&from=feed`,
+      schema: `sampleapp://v1/browser/open?cmd=${payload}&from=feed`,
     });
 
     const result = deepParseWithContext(input, { autoExpandScheme: true });
@@ -732,11 +768,11 @@ describe('deepParseWithContext', () => {
 
   it('自动展开 JSON 斜杠转义的 URL Scheme 参数', () => {
     const params = encodeURIComponent(JSON.stringify({
-      url: 'https://m.baidu.com/s?word=json',
+      url: 'https://m.example.com/s?word=json',
       ext: '__AD_EXTRA_PARAM_ENCODE_1__',
     }));
     const input = JSON.stringify({
-      schema: `baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
+      schema: `sampleapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
     });
 
     const result = deepParseWithContext(input, { autoExpandScheme: true });
@@ -840,14 +876,14 @@ describe('deepParseWithContext', () => {
       category: 'jump',
       url: landingUrl,
     }))}`;
-    const convertCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const convertCmd = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       appUrl,
       source: 'feedna',
     }))}`;
-    const rewardDialog = `nadcorevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
+    const rewardDialog = `samplevendor://vendor/ad/rewardDialog?convert_cmd=${encodeURIComponent(convertCmd)}`;
     const input = JSON.stringify({
       ad_common: {
-        scheme: `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+        scheme: `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
           reward: {
             stay_cmd: rewardDialog,
           },
@@ -1034,13 +1070,13 @@ describe('deepParseWithContext', () => {
 
   it('未启用自动展开时保留 URL Scheme', () => {
     const input = JSON.stringify({
-      schema: 'baiduboxapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed',
+      schema: 'sampleapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed',
     });
 
     const result = deepParseWithContext(input);
     const parsed = JSON.parse(result.output);
 
-    expect(parsed.schema).toBe('baiduboxapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed');
+    expect(parsed.schema).toBe('sampleapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed');
     expect(result.context.records.has('$.schema')).toBe(false);
   });
 
@@ -1084,6 +1120,22 @@ describe('deepParseWithContext', () => {
 });
 
 describe('inverseWithContext 精确还原', () => {
+  it('兼容历史 Base64 解码记录中的 UTF-8 文本', () => {
+    const context: TransformContext = {
+      mode: TransformMode.DEEP_FORMAT,
+      records: new Map([['$', {
+        path: '$',
+        originalValue: base64Encode('你好'),
+        steps: [{ type: 'base64_decode' }],
+      }]]),
+      timestamp: 0,
+      originalIndentation: 2,
+      sourceFormat: 'scheme',
+    };
+
+    expect(inverseWithContext(JSON.stringify('你好'), context)).toBe(base64Encode('你好'));
+  });
+
   it('嵌套 JSON 可还原', () => {
     const inner = JSON.stringify({ nested: true });
     const input = JSON.stringify({ data: inner });
@@ -1101,6 +1153,21 @@ describe('inverseWithContext 精确还原', () => {
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
 
     const restored = inverseWithContext(output, context);
+    expect(JSON.parse(restored)).toEqual(JSON.parse(input));
+  });
+
+  it('仅调整已展开 CMD 对象的键顺序时仍恢复原始字符串', () => {
+    const input = JSON.stringify({
+      action_cmd: 'cmd=%7B%22nid%22%3A123%7D&from=feed',
+    });
+    const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(output);
+    parsed.action_cmd = {
+      from: parsed.action_cmd.from,
+      cmd: parsed.action_cmd.cmd,
+    };
+
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), context);
     expect(JSON.parse(restored)).toEqual(JSON.parse(input));
   });
 
@@ -1162,7 +1229,7 @@ describe('inverseWithContext 精确还原', () => {
 
   it('未编辑的 URL Scheme 自动展开后可精确还原', () => {
     const input = JSON.stringify({
-      schema: 'baiduboxapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed',
+      schema: 'sampleapp://v1/browser/open?cmd=%7B%22nid%22%3A123%7D&from=feed',
     });
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
 
@@ -1172,11 +1239,11 @@ describe('inverseWithContext 精确还原', () => {
 
   it('未编辑的 JSON 斜杠转义 URL Scheme 自动展开后可精确还原', () => {
     const params = encodeURIComponent(JSON.stringify({
-      url: 'https://m.baidu.com/s?word=json',
+      url: 'https://m.example.com/s?word=json',
       ext: '__AD_EXTRA_PARAM_ENCODE_1__',
     }));
     const input = JSON.stringify({
-      schema: `baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
+      schema: `sampleapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
     });
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
 
@@ -1186,11 +1253,11 @@ describe('inverseWithContext 精确还原', () => {
 
   it('已编辑的 JSON 斜杠转义 URL Scheme 保留斜杠转义形态', () => {
     const params = encodeURIComponent(JSON.stringify({
-      url: 'https://m.baidu.com/s?word=json',
+      url: 'https://m.example.com/s?word=json',
       ext: '__AD_EXTRA_PARAM_ENCODE_1__',
     }));
     const input = JSON.stringify({
-      schema: `baiduboxapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
+      schema: `sampleapp:\\/\\/v7\\/vendor\\/ad\\/webPanel?params=${params}`,
     });
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
     const parsed = JSON.parse(output);
@@ -1199,7 +1266,7 @@ describe('inverseWithContext 精确还原', () => {
     const restored = inverseWithContext(JSON.stringify(parsed, null, 2), context);
     const restoredSchema = JSON.parse(restored).schema;
 
-    expect(restoredSchema).toMatch(/^baiduboxapp:\\\/\\\/v7\\\/vendor\\\/ad\\\/webPanel\?/);
+    expect(restoredSchema).toMatch(/^sampleapp:\\\/\\\/v7\\\/vendor\\\/ad\\\/webPanel\?/);
     expect(restoredSchema).toContain('%22word%22%3A%22schema%22');
   });
 
@@ -1240,7 +1307,7 @@ describe('inverseWithContext 精确还原', () => {
   it('未编辑的嵌套 URL Scheme 自动展开后可精确还原父级字符串', () => {
     const nestedUrl = encodeURIComponent('https://example.com/path?from=box');
     const input = JSON.stringify({
-      schema: `baiduboxapp://v1/browser/open?url=${nestedUrl}&from=feed`,
+      schema: `sampleapp://v1/browser/open?url=${nestedUrl}&from=feed`,
     });
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
     const parsed = JSON.parse(output);
@@ -1268,147 +1335,5 @@ describe('inverseWithContext 精确还原', () => {
 
     const restored = inverseWithContext(output, context);
     expect(restored).toBe(input);
-  });
-});
-
-// ============ deepMergeTemplate 测试 ============
-
-describe('deepMergeTemplate', () => {
-  it('标量覆盖：模板的标量值覆盖目标同名字段', () => {
-    const target = { name: '旧值', age: 20 };
-    const template = { name: '新值' };
-    const result = deepMergeTemplate(target, template);
-    expect(result).toEqual({ name: '新值', age: 20 });
-  });
-
-  it('嵌套递归合并：深层对象递归合并', () => {
-    const target = {
-      user: {
-        name: '张三',
-        address: {
-          city: '北京',
-          zip: '100000',
-        },
-      },
-    };
-    const template = {
-      user: {
-        address: {
-          city: '上海',
-        },
-      },
-    };
-    const result = deepMergeTemplate(target, template);
-    // 深层字段被覆盖，同层级其他字段保留
-    expect(result).toEqual({
-      user: {
-        name: '张三',
-        address: {
-          city: '上海',
-          zip: '100000',
-        },
-      },
-    });
-  });
-
-  it('数组整体替换：模板数组替换目标数组', () => {
-    const target = { tags: [1, 2, 3] };
-    const template = { tags: ['a', 'b'] };
-    const result = deepMergeTemplate(target, template);
-    // 数组不逐项合并，直接用模板数组覆盖
-    expect(result).toEqual({ tags: ['a', 'b'] });
-  });
-
-  it('目标独有字段保留', () => {
-    const target = { a: 1, b: 2, c: 3 };
-    const template = { a: 10 };
-    const result = deepMergeTemplate(target, template);
-    // 模板未涉及的字段 b、c 保留不变
-    expect(result).toEqual({ a: 10, b: 2, c: 3 });
-  });
-
-  it('模板独有字段添加', () => {
-    const target = { a: 1 };
-    const template = { b: 2, c: 3 };
-    const result = deepMergeTemplate(target, template);
-    // 模板中独有的 b、c 被添加到结果中
-    expect(result).toEqual({ a: 1, b: 2, c: 3 });
-  });
-});
-
-// ============ applyTemplate 测试 ============
-
-describe('applyTemplate', () => {
-  it('正常流程：合并后返回格式化 JSON', () => {
-    const input = JSON.stringify({ name: '旧值', keep: true });
-    const template = JSON.stringify({ name: '新值', extra: 42 });
-    const result = applyTemplate(input, template);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual({ name: '新值', keep: true, extra: 42 });
-    // 输出应为格式化的 JSON（包含换行缩进）
-    expect(result).toContain('\n');
-  });
-
-  it('支持占位符回填模板替换当前 JSON 字符串内容', () => {
-    const input = JSON.stringify({
-      button_cmd: '__CONVERT_CMD__',
-      nested: {
-        panel_cmd: 'prefix-__WEBPANEL_CMD__-suffix',
-        keep: '__EMPTY__',
-      },
-      list: ['__CONVERT_CMD__'],
-    });
-    const template = JSON.stringify({
-      schemaVersion: 1,
-      kind: 'json-helper-runtime-placeholder-fill-template',
-      placeholders: {
-        __CONVERT_CMD__: 'baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"',
-        __WEBPANEL_CMD__: 'nadcorevendor://vendor/ad/rewardWebPanel',
-        __EMPTY__: '',
-      },
-      placeholderDetails: [],
-    });
-    const result = applyTemplate(input, template);
-    const parsed = JSON.parse(result);
-
-    expect(parsed).toEqual({
-      button_cmd: 'baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"',
-      nested: {
-        panel_cmd: 'prefix-nadcorevendor://vendor/ad/rewardWebPanel-suffix',
-        keep: '__EMPTY__',
-      },
-      list: ['baiduboxapp://v1/easybrowse/open?url=https://example.com?a="b"'],
-    });
-  });
-
-  it('占位符回填模板没有填写 replacement 时抛错', () => {
-    const template = JSON.stringify({
-      schemaVersion: 1,
-      kind: 'json-helper-runtime-placeholder-fill-template',
-      placeholders: {
-        __CONVERT_CMD__: '',
-      },
-      placeholderDetails: [],
-    });
-
-    expect(() => applyTemplate('{"button_cmd":"__CONVERT_CMD__"}', template)).toThrow(
-      '占位符回填模板缺少 replacement'
-    );
-  });
-
-  it('空输入抛错', () => {
-    expect(() => applyTemplate('   ', '{"a":1}')).toThrow('当前编辑器内容为空');
-  });
-
-  it('空模板抛错', () => {
-    expect(() => applyTemplate('{"a":1}', '   ')).toThrow('模板内容为空');
-  });
-
-  it('非法 JSON 输入抛错', () => {
-    expect(() => applyTemplate('{invalid}', '{"a":1}')).toThrow('当前编辑器内容不是合法的 JSON');
-  });
-
-  it('非法 JSON 模板抛错', () => {
-    expect(() => applyTemplate('{"a":1}', '{invalid}')).toThrow('模板内容不是合法的 JSON');
   });
 });

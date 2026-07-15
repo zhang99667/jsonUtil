@@ -13,8 +13,8 @@ describe('TransformReportRecordPathRows', () => {
       title: '内部CMD字段',
       rows: [{
         path: '$.cmd.jump_url',
-        preview: 'baiduboxapp://v1/jump',
-        value: 'baiduboxapp://v1/jump',
+        preview: 'sampleapp://v1/jump',
+        value: 'sampleapp://v1/jump',
       }],
       countLabel: '2 个',
       rowKeyPrefix: '$.cmd:cmd-field',
@@ -41,8 +41,8 @@ describe('TransformReportRecordPathRows', () => {
     expect(rowComponents).toHaveLength(1);
     expect(rowComponents[0].props.row).toEqual({
       path: '$.cmd.jump_url',
-      preview: 'baiduboxapp://v1/jump',
-      value: 'baiduboxapp://v1/jump',
+      preview: 'sampleapp://v1/jump',
+      value: 'sampleapp://v1/jump',
     });
     expect(rowComponents[0].props.copyPathDataTour).toBe('copy-path');
     expect(rowComponents[0].props.onCopyPath).toBe(onCopyPath);

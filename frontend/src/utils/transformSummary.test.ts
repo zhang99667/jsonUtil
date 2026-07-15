@@ -356,9 +356,9 @@ describe('transformSummary', () => {
   });
 
   it('报告展示 CMD Schema、嵌套 CMD 和 ext 解析线索', () => {
-    const extInfo = btoa(JSON.stringify({ user_id: 'u1', cmatch: '1501' }));
-    const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}`;
-    const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const extInfo = btoa(JSON.stringify({ user_id: 'u1', segment: '1501' }));
+    const panelScheme = `samplevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}`;
+    const scheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       ext_log: {
         ad_extra_param: extInfo,
       },
@@ -370,24 +370,24 @@ describe('transformSummary', () => {
     const report = buildTransformContextReport(result.context);
 
     expect(report.nestedCommandFieldCount).toBe(1);
-    expect(report.records[0].commandSchema).toBe('nadcorevendor://vendor/ad/rewardImpl');
+    expect(report.records[0].commandSchema).toBe('samplevendor://vendor/ad/rewardImpl');
     expect(report.records[0].commandParamCount).toBe(1);
     expect(report.records[0].commandParamKeys).toEqual(['video_info']);
     expect(report.records[0].insights).toEqual([
-      'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
+      'cmdSchema: samplevendor://vendor/ad/rewardImpl',
       'cmd解析: panel_scheme',
       'ext解析: ad_extra_param, ext_info',
     ]);
     expect(report.topCommandSchemas).toEqual([
       {
-        schema: 'nadcorevendor://vendor/ad/rewardImpl',
+        schema: 'samplevendor://vendor/ad/rewardImpl',
         count: 1,
         recordCount: 1,
         paths: ['$.scheme'],
         hasMorePaths: false,
       },
       {
-        schema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+        schema: 'samplevendor://vendor/ad/rewardWebPanel',
         count: 1,
         recordCount: 1,
         paths: ['$.scheme.video_info.tail_frame.panel_scheme'],
@@ -396,29 +396,29 @@ describe('transformSummary', () => {
     ]);
     expect(report.topCommandSchemaOrigins).toEqual([
       {
-        origin: 'nadcorevendor://vendor',
+        origin: 'samplevendor://vendor',
         count: 2,
         schemaCount: 2,
         recordCount: 1,
         schemas: [
-          'nadcorevendor://vendor/ad/rewardImpl',
-          'nadcorevendor://vendor/ad/rewardWebPanel',
+          'samplevendor://vendor/ad/rewardImpl',
+          'samplevendor://vendor/ad/rewardWebPanel',
         ],
         hasMoreSchemas: false,
       },
     ]);
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(report.records[0]))).toMatchObject({
       result: {
-        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
         cmdParams: {
           video_info: {
             tail_frame: {
               panel_scheme: {
-                cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+                cmdSchema: 'samplevendor://vendor/ad/rewardWebPanel',
                 cmdParams: {
                   ext_info: {
                     user_id: 'u1',
-                    cmatch: '1501',
+                    segment: '1501',
                   },
                 },
                 source: panelScheme,
@@ -430,17 +430,17 @@ describe('transformSummary', () => {
     });
     expect(formatTransformContextReportText(result.context)).toContain('CMD 来源分布:');
     expect(formatTransformContextReportText(result.context)).toContain(
-      '- nadcorevendor://vendor ×2（Schema 2 / 来源记录 1）'
+      '- samplevendor://vendor ×2（Schema 2 / 来源记录 1）'
     );
     expect(formatTransformContextReportText(result.context)).toContain('CMD Schema 分布:');
     expect(formatTransformContextReportText(result.context)).toContain(
-      '- nadcorevendor://vendor/ad/rewardImpl ×1（来源记录 1）'
+      '- samplevendor://vendor/ad/rewardImpl ×1（来源记录 1）'
     );
     expect(formatTransformContextReportText(result.context)).toContain(
-      'CMD Schema路径: $.scheme.video_info.tail_frame.panel_scheme=nadcorevendor://vendor/ad/rewardWebPanel'
+      'CMD Schema路径: $.scheme.video_info.tail_frame.panel_scheme=samplevendor://vendor/ad/rewardWebPanel'
     );
     expect(formatTransformContextReportText(result.context)).toContain(
-      '解析线索: cmdSchema: nadcorevendor://vendor/ad/rewardImpl；cmd解析: panel_scheme；ext解析: ad_extra_param, ext_info'
+      '解析线索: cmdSchema: samplevendor://vendor/ad/rewardImpl；cmd解析: panel_scheme；ext解析: ad_extra_param, ext_info'
     );
     expect(buildTransformReportView(report, 'URL Scheme').records.map(record => record.path)).toEqual(['$.scheme']);
     expect(buildTransformReportView(report, 'rewardImpl').filteredRecordCount).toBe(1);
@@ -448,7 +448,7 @@ describe('transformSummary', () => {
     expect(nestedSchemaView.filteredRecordCount).toBe(1);
     expect(nestedSchemaView.records[0].commandSchemaRows).toEqual([
       {
-        schema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+        schema: 'samplevendor://vendor/ad/rewardWebPanel',
         path: '$.scheme.video_info.tail_frame.panel_scheme',
         source: panelScheme,
       },
@@ -456,9 +456,9 @@ describe('transformSummary', () => {
     expect(nestedSchemaView.cmdStructureRecords[0].cmdStructureFocusLabel).toBe('CMD Schema');
     expect(nestedSchemaView.cmdStructureRecords[0].cmdStructureFocusCount).toBe(1);
     expect(formatTransformReportViewText(report, nestedSchemaView, 'rewardWebPanel')).toContain(
-      'CMD Schema路径: $.scheme.video_info.tail_frame.panel_scheme=nadcorevendor://vendor/ad/rewardWebPanel'
+      'CMD Schema路径: $.scheme.video_info.tail_frame.panel_scheme=samplevendor://vendor/ad/rewardWebPanel'
     );
-    expect(buildTransformReportView(report, 'nadcorevendor://vendor').filteredRecordCount).toBe(1);
+    expect(buildTransformReportView(report, 'samplevendor://vendor').filteredRecordCount).toBe(1);
     expect(buildTransformReportView(report, 'ext解析').filteredRecordCount).toBe(1);
     expect(buildTransformReportView(report, '内部CMD字段').filteredNestedCommandFieldCount).toBe(1);
   });
@@ -466,7 +466,7 @@ describe('transformSummary', () => {
   it('CMD Schema Top 不混入普通 HTTPS URL，静态资源 URL 单独分组', () => {
     const mediaUrl = 'https://static.example.com/video/ad.mp4?pd=100&cm=1501';
     const landingUrl = 'https://example.com/landing?sku=101&bd_vid=abc';
-    const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const scheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       video_url: mediaUrl,
       page_url: landingUrl,
       button_icon: 'https://static.example.com/assets/open.png',
@@ -484,11 +484,11 @@ describe('transformSummary', () => {
     const record = report.records[0];
 
     expect(report.topCommandSchemas?.map(group => group.schema)).toEqual(expect.arrayContaining([
-      'nadcorevendor://vendor/ad/rewardImpl',
+      'samplevendor://vendor/ad/rewardImpl',
     ]));
     expect(report.topCommandSchemas?.map(group => group.schema)).not.toContain('https://example.com/landing');
     expect(record.insights).toEqual([
-      'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
+      'cmdSchema: samplevendor://vendor/ad/rewardImpl',
       'cmd解析: page_url',
       '资源URL: video_url, button_icon, swipe_up_lottie, imageUrl +2',
     ]);
@@ -715,25 +715,25 @@ describe('transformSummary', () => {
   });
 
   it('报告覆盖真实广告 response 中的多层 CMD 与运行时占位符', () => {
-    const extInfo = btoa(JSON.stringify({ user_id: 'u1', cmatch: '1501' }));
+    const extInfo = btoa(JSON.stringify({ user_id: 'u1', segment: '1501' }));
     const appUrl = `openapp.jdmobile://virtual?params=${encodeURIComponent(JSON.stringify({
       category: 'jump',
       url: 'https://pro.m.jd.com/mall/active/page.html?sku=101',
     }))}`;
-    const deeplinkCmd = `baiduboxapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
+    const deeplinkCmd = `sampleapp://v7/vendor/ad/deeplink?params=${encodeURIComponent(JSON.stringify({
       appUrl,
       source: 'feedna',
       extInfo,
     }))}`;
-    const bottomButtonScheme = `nadcorevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
+    const bottomButtonScheme = `samplevendor://vendor/ad/reward?task_params=${encodeURIComponent(JSON.stringify({
       task_id: '602',
       ext_policy: JSON.stringify({ sdk_switch: '1' }),
     }))}`;
-    const panelScheme = `nadcorevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}&panel_cmd=${encodeURIComponent(deeplinkCmd)}`;
-    const stayCmd = `nadcorevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
+    const panelScheme = `samplevendor://vendor/ad/rewardWebPanel?ext_info=${encodeURIComponent(extInfo)}&panel_cmd=${encodeURIComponent(deeplinkCmd)}`;
+    const stayCmd = `samplevendor://vendor/ad/rewardDialog?convert_btn=${encodeURIComponent(JSON.stringify({
       button_cmd: '__CONVERT_CMD__',
     }))}&convert_cmd=${encodeURIComponent(deeplinkCmd)}`;
-    const scheme = `nadcorevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
+    const scheme = `samplevendor://vendor/ad/rewardImpl?video_info=${encodeURIComponent(JSON.stringify({
       ext_log: {
         ad_extra_param: extInfo,
       },
@@ -775,7 +775,7 @@ describe('transformSummary', () => {
       labels: ['URL Scheme · 可回写'],
     });
     expect(record.insights).toEqual([
-      'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
+      'cmdSchema: samplevendor://vendor/ad/rewardImpl',
       'cmd解析: bottom_button_scheme, panel_scheme, panel_cmd, appUrl +4',
       'ext解析: ad_extra_param, ext_info, extInfo',
     ]);
@@ -871,10 +871,10 @@ describe('transformSummary', () => {
     );
     expect(focusedAppUrlCmdStructure.result.cmdParams.video_info.tail_frame).not.toHaveProperty('bottom_button_scheme');
     expect(focusedAppUrlCmdStructure.result.cmdParams.video_info.tail_frame.panel_scheme).toMatchObject({
-      cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+      cmdSchema: 'samplevendor://vendor/ad/rewardWebPanel',
       cmdParams: {
         panel_cmd: {
-          cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+          cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
           cmdParams: {
             params: {
               appUrl: {
@@ -886,10 +886,10 @@ describe('transformSummary', () => {
       },
     });
     expect(focusedAppUrlCmdStructure.result.cmdParams.reward.stay_cmd).toMatchObject({
-      cmdSchema: 'nadcorevendor://vendor/ad/rewardDialog',
+      cmdSchema: 'samplevendor://vendor/ad/rewardDialog',
       cmdParams: {
         convert_cmd: {
-          cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+          cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
           cmdParams: {
             params: {
               appUrl: {
@@ -958,12 +958,12 @@ describe('transformSummary', () => {
     expect(focusedCategoryCmdStructure.result.cmdParams.reward.stay_cmd.cmdParams).not.toHaveProperty('convert_btn');
     expect(JSON.parse(getTransformRecordCmdStructureCopyText(record))).toMatchObject({
       result: {
-        cmdSchema: 'nadcorevendor://vendor/ad/rewardImpl',
+        cmdSchema: 'samplevendor://vendor/ad/rewardImpl',
         cmdParams: {
           video_info: {
             tail_frame: {
               bottom_button_scheme: {
-                cmdSchema: 'nadcorevendor://vendor/ad/reward',
+                cmdSchema: 'samplevendor://vendor/ad/reward',
                 cmdParams: {
                   task_params: {
                     task_id: '602',
@@ -975,10 +975,10 @@ describe('transformSummary', () => {
                 source: bottomButtonScheme,
               },
               panel_scheme: {
-                cmdSchema: 'nadcorevendor://vendor/ad/rewardWebPanel',
+                cmdSchema: 'samplevendor://vendor/ad/rewardWebPanel',
                 cmdParams: {
                   panel_cmd: {
-                    cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+                    cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
                     cmdParams: {
                       params: {
                         appUrl: {
@@ -996,7 +996,7 @@ describe('transformSummary', () => {
                         source: 'feedna',
                         extInfo: {
                           user_id: 'u1',
-                          cmatch: '1501',
+                          segment: '1501',
                         },
                       },
                     },
@@ -1009,13 +1009,13 @@ describe('transformSummary', () => {
           },
           reward: {
             stay_cmd: {
-              cmdSchema: 'nadcorevendor://vendor/ad/rewardDialog',
+              cmdSchema: 'samplevendor://vendor/ad/rewardDialog',
               cmdParams: {
                 convert_btn: {
                   button_cmd: '__CONVERT_CMD__',
                 },
                 convert_cmd: {
-                  cmdSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+                  cmdSchema: 'sampleapp://v7/vendor/ad/deeplink',
                   cmdParams: {
                     params: {
                       appUrl: {
@@ -1033,7 +1033,7 @@ describe('transformSummary', () => {
                       source: 'feedna',
                       extInfo: {
                         user_id: 'u1',
-                        cmatch: '1501',
+                        segment: '1501',
                       },
                     },
                   },
@@ -2080,7 +2080,7 @@ describe('transformSummary', () => {
       nestedCommandFieldCount: 0,
       topCommandSchemas: [
         {
-          schema: 'baiduboxapp://v7/vendor/ad/deeplink',
+          schema: 'sampleapp://v7/vendor/ad/deeplink',
           count: 3,
           recordCount: 2,
           paths: ['$.scheme.convert_cmd'],
@@ -2144,7 +2144,7 @@ describe('transformSummary', () => {
     expect(summaryText).toContain(`工具版本: ${APP_VERSION_LABEL}`);
     expect(summaryText).toContain('覆盖: 解析覆盖 50%，还有疑似结构化内容未完全展开。');
     expect(summaryText).toContain('规模: 展开 0/0，CMD结构 0/0，内部CMD字段 0/0，资源字段 0/0，占位符 1/1，参数层 0/0，参数修复 0/0，待检查 1/1，跳过 1/1');
-    expect(summaryText).toContain('- baiduboxapp://v7/vendor/ad/deeplink ×3（来源记录 2）');
+    expect(summaryText).toContain('- sampleapp://v7/vendor/ad/deeplink ×3（来源记录 2）');
     expect(summaryText).toContain('- panel_cmd ×2（来源记录 1）');
     expect(summaryText).toContain('- __CONVERT_CMD__ ×1（来源 1）');
     expect(summaryText).toContain('- $.tracking · trackingParam · url-encoded: 已解码但未结构化');
@@ -2181,7 +2181,7 @@ describe('transformSummary', () => {
       },
     });
     expect(qualitySnapshot.hotspots.topCommandSchemas[0]).toMatchObject({
-      schema: 'baiduboxapp://v7/vendor/ad/deeplink',
+      schema: 'sampleapp://v7/vendor/ad/deeplink',
       count: 3,
     });
     expect(qualitySnapshot.hotspots.unresolvedReasons).toEqual([
@@ -2203,7 +2203,7 @@ describe('transformSummary', () => {
   });
 
   it('深度解析质量快照汇总参数分层修复且不暴露参数原值', () => {
-    const brokenParamsScheme = 'baiduboxapp://v7/vendor/ad/makePhoneCall?params=%7b%22phone%22%3a%2213718164578%22%2c%22extInfo%22%3a%22AFDXXX%22%2c%22numberUrl%22%3a%22SECRET_NUMBER_URL%22%2c%22logUrl%22%3a%22SECRET_LOG_URL%22%2ctype%22%3a%221%22%7d';
+    const brokenParamsScheme = 'sampleapp://v7/vendor/ad/makePhoneCall?params=%7b%22phone%22%3a%2213718164578%22%2c%22extInfo%22%3a%22AFDXXX%22%2c%22numberUrl%22%3a%22SECRET_NUMBER_URL%22%2c%22logUrl%22%3a%22SECRET_LOG_URL%22%2ctype%22%3a%221%22%7d';
     const result = deepParseWithContext(JSON.stringify({
       scheme: brokenParamsScheme,
     }), { autoExpandScheme: true });

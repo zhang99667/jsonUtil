@@ -24,11 +24,11 @@ const createSchemeRecord = (
 
 describe('transformReportRecordInsights', () => {
   it('非对象解码值只保留 commandSchema 洞察', () => {
-    const source = 'baiduboxapp://v7/vendor/ad/deeplink?params=%7B%7D';
+    const source = 'sampleapp://v7/vendor/ad/deeplink?params=%7B%7D';
     const result = buildTransformRecordInsightData(createSchemeRecord(source, 'plain'));
 
     expect(result).toMatchObject({
-      insights: ['cmdSchema: baiduboxapp://v7/vendor/ad/deeplink'],
+      insights: ['cmdSchema: sampleapp://v7/vendor/ad/deeplink'],
       nestedCommandFields: [],
       indexedNestedCommandFieldCount: 0,
       hasMoreNestedCommandFields: false,
@@ -45,7 +45,7 @@ describe('transformReportRecordInsights', () => {
   });
 
   it('构建内部 CMD、资源 URL、ext 和 Base64 后缀洞察', () => {
-    const source = 'nadcorevendor://vendor/ad/rewardImpl?video_info=%7B%7D';
+    const source = 'samplevendor://vendor/ad/rewardImpl?video_info=%7B%7D';
     const result = buildTransformRecordInsightData(createSchemeRecord(source, {
       video_info: {
         page_url: { params: { sku: '101' } },
@@ -57,7 +57,7 @@ describe('transformReportRecordInsights', () => {
     }));
 
     expect(result.insights).toEqual([
-      'cmdSchema: nadcorevendor://vendor/ad/rewardImpl',
+      'cmdSchema: samplevendor://vendor/ad/rewardImpl',
       'cmd解析: page_url',
       '资源URL: video_url, button_icon',
       'ext解析: ext_info',

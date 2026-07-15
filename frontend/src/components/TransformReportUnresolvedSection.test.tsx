@@ -6,10 +6,10 @@ import { TransformReportUnresolvedSection } from './TransformReportUnresolvedSec
 const candidate: TransformReportUnresolvedCandidate = {
   path: '$.maybeCmd',
   sourceLabel: 'scheme',
-  originalValue: 'baiduboxapp://v1/open?cmd=1',
+  originalValue: 'sampleapp://v1/open?cmd=1',
   message: '疑似可展开字段',
   length: 64,
-  preview: 'baiduboxapp://v1/open?...',
+  preview: 'sampleapp://v1/open?...',
   detectedType: 'url',
   reasonLabel: '待检查',
   reasonLevel: 'info',
@@ -44,8 +44,8 @@ describe('TransformReportUnresolvedSection', () => {
     clickElement(findByTour(tree, 'transform-report-open-unresolved-scheme')[0]);
 
     expect(onCopyPath).toHaveBeenCalledWith('$.maybeCmd');
-    expect(onCopyOriginalValue).toHaveBeenCalledWith('baiduboxapp://v1/open?cmd=1');
+    expect(onCopyOriginalValue).toHaveBeenCalledWith('sampleapp://v1/open?cmd=1');
     expect(onLocatePath).toHaveBeenCalledWith('$.maybeCmd');
-    expect(onOpenSchemeValue).toHaveBeenCalledWith('baiduboxapp://v1/open?cmd=1');
+    expect(onOpenSchemeValue).toHaveBeenCalledWith('sampleapp://v1/open?cmd=1');
   });
 });

@@ -12,7 +12,7 @@ const createRecord = (
   overrides: Partial<TransformReportRecord> = {}
 ): TransformReportRecord => ({
   path: '$.action_cmd',
-  commandSchema: 'baiduboxapp://v7/vendor/ad/deeplink',
+  commandSchema: 'sampleapp://v7/vendor/ad/deeplink',
   labels: ['CMD 参数 · 可回写'],
   insights: [],
   originalValue: '',
@@ -75,13 +75,13 @@ describe('transformCollaborationArchive', () => {
     expect(reportText).toContain('筛选: action');
     expect(reportText).toContain('三、cmdHandler 对齐');
     expect(reportText).toContain('待对比: 当前筛选有 1/1 条可复制 CMD 结构');
-    expect(reportText).toContain('$.action_cmd: baiduboxapp://v7/vendor/ad/deeplink');
+    expect(reportText).toContain('$.action_cmd: sampleapp://v7/vendor/ad/deeplink');
   });
 
   it('协作报告的 CMD 结构列表超过展示上限时给出正确剩余数', () => {
     const records = Array.from({ length: 7 }, (_, index) => createRecord({
       path: `$.action_cmd_${index}`,
-      commandSchema: `baiduboxapp://v${index}/vendor/ad/deeplink`,
+      commandSchema: `sampleapp://v${index}/vendor/ad/deeplink`,
     }));
 
     const reportText = formatTransformCollaborationReportText(createReport({
@@ -97,8 +97,8 @@ describe('transformCollaborationArchive', () => {
       isCmdStructureTruncated: true,
     }), '');
 
-    expect(reportText).toContain('$.action_cmd_4: baiduboxapp://v4/vendor/ad/deeplink');
-    expect(reportText).not.toContain('$.action_cmd_5: baiduboxapp://v5/vendor/ad/deeplink');
+    expect(reportText).toContain('$.action_cmd_4: sampleapp://v4/vendor/ad/deeplink');
+    expect(reportText).not.toContain('$.action_cmd_5: sampleapp://v5/vendor/ad/deeplink');
     expect(reportText).toContain('还有 2 条 CMD 结构未列出');
   });
 

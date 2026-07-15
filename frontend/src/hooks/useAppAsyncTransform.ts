@@ -5,7 +5,7 @@ import { buildAppAsyncTransformSnapshot } from '../utils/appAsyncTransformSnapsh
 import { startAppAsyncTransformPromiseTask } from '../utils/appAsyncTransformPromiseTask';
 import {
   buildAppAsyncTransformWorkerRequest,
-  type AppAsyncTransformWorkerResponse,
+  isAppAsyncTransformWorkerResponse,
 } from '../utils/appAsyncTransformWorkerMessages';
 import {
   buildAppAsyncTransformFallbackResult,
@@ -20,6 +20,8 @@ interface UseAppAsyncTransformOptions {
   autoExpandScheme: boolean;
   isUpdatingFromOutput: boolean;
 }
+
+const APP_ASYNC_TRANSFORM_TIMEOUT_MS = 10_000;
 
 export const useAppAsyncTransform = ({
   input,
@@ -63,44 +65,92 @@ export const useAppAsyncTransform = ({
       });
     }
 
-    const worker = new Worker(new URL('../workers/transform.worker.ts', import.meta.url), { type: 'module' });
+    let disposed = false;
+    let settled = false;
+    let workerTimeout: ReturnType<typeof setTimeout> | undefined;
+    const finishWorker = (worker: Worker): boolean => {
+      if (settled) return false;
+      settled = true;
+      if (workerTimeout !== undefined) clearTimeout(workerTimeout);
+      workerTimeout = undefined;
+      worker.onmessage = null;
+      worker.onerror = null;
+      worker.terminate();
+      return true;
+    };
+    const applyFallback = (worker: Worker | null, message: string, error: unknown) => {
+      if (worker && !finishWorker(worker)) return;
+      if (disposed || transformRequestIdRef.current !== requestId) return;
 
-    worker.onmessage = (event: MessageEvent<AppAsyncTransformWorkerResponse>) => {
-      if (event.data.id !== requestId || transformRequestIdRef.current !== requestId) return;
-      if (event.data.error) {
-        console.warn('大文件转换 Worker 处理失败:', event.data.error);
+      console.warn(message, error);
+      setAsyncTransformResult(buildAppAsyncTransformFallbackResult(transformSnapshot));
+      setIsOutputTransforming(false);
+    };
+
+    let worker: Worker;
+    try {
+      worker = new Worker(new URL('../workers/transform.worker.ts', import.meta.url), { type: 'module' });
+    } catch (error) {
+      applyFallback(null, '大文件转换 Worker 创建失败:', error);
+      return;
+    }
+
+    worker.onmessage = (event: MessageEvent<unknown>) => {
+      const response = event.data;
+      if (!isAppAsyncTransformWorkerResponse(response, transformSnapshot.mode)) {
+        applyFallback(worker, '大文件转换 Worker 响应格式无效:', '响应格式无效');
+        return;
       }
+      if (response.id !== requestId) {
+        applyFallback(worker, '大文件转换 Worker 响应标识不匹配:', '响应标识不匹配');
+        return;
+      }
+      if (response.error !== undefined) {
+        applyFallback(worker, '大文件转换 Worker 处理失败:', response.error);
+        return;
+      }
+      if (!finishWorker(worker)) return;
+      if (disposed || transformRequestIdRef.current !== requestId) return;
 
       setAsyncTransformResult(buildAppAsyncTransformResult({
         snapshot: transformSnapshot,
-        output: event.data.output,
-        context: event.data.context,
+        output: response.output,
+        context: response.context,
       }));
       setIsOutputTransforming(false);
     };
 
     worker.onerror = (event) => {
-      if (transformRequestIdRef.current !== requestId) return;
-      console.warn('大文件转换 Worker 运行失败:', event.message);
-      setAsyncTransformResult(buildAppAsyncTransformFallbackResult(transformSnapshot));
-      setIsOutputTransforming(false);
+      applyFallback(worker, '大文件转换 Worker 运行失败:', event.message);
     };
 
-    worker.postMessage(buildAppAsyncTransformWorkerRequest(requestId, transformSnapshot));
+    try {
+      worker.postMessage(buildAppAsyncTransformWorkerRequest(requestId, transformSnapshot));
+      if (!settled) {
+        workerTimeout = setTimeout(() => {
+          applyFallback(worker, '大文件转换 Worker 响应超时:', '十秒内未响应');
+        }, APP_ASYNC_TRANSFORM_TIMEOUT_MS);
+      }
+    } catch (error) {
+      applyFallback(worker, '大文件转换 Worker 请求发送失败:', error);
+    }
 
     return () => {
-      worker.terminate();
+      disposed = true;
+      finishWorker(worker);
     };
   }, [transformSnapshot, shouldUseAsyncTransform, shouldUseTransformWorker]);
 
   const currentAsyncTransformResult = useMemo(() => (
     getFreshAppAsyncTransformResult(asyncTransformResult, transformSnapshot)
   ), [asyncTransformResult, transformSnapshot]);
+  const isCurrentOutputTransforming = shouldUseAsyncTransform
+    && (isOutputTransforming || currentAsyncTransformResult === null);
 
   return {
     asyncTransformPolicy,
     currentAsyncTransformResult,
-    isOutputTransforming,
+    isOutputTransforming: isCurrentOutputTransforming,
     shouldUseAsyncTransform,
   };
 };

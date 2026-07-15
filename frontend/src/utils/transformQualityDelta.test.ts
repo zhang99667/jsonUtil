@@ -79,7 +79,7 @@ describe('transformQualityDelta', () => {
       runtimePlaceholders: 0,
     }, ['继续对比 cmdHandler']);
     afterSnapshot.hotspots.topCommandSchemas = [{
-      schema: 'baiduboxapp://v1/open',
+      schema: 'sampleapp://v1/open',
       count: 1,
       recordCount: 1,
       paths: ['$.cmd'],
@@ -91,7 +91,7 @@ describe('transformQualityDelta', () => {
     expect(deltaText).toContain('深度解析质量对比');
     expect(deltaText).toContain('CMD结构: 0 -> 1 (+1)');
     expect(deltaText).toContain('占位符: 1 -> 0 (-1)');
-    expect(deltaText).toContain('Top CMD Schema: (无) -> baiduboxapp://v1/open');
+    expect(deltaText).toContain('Top CMD Schema: (无) -> sampleapp://v1/open');
     expect(deltaText).toContain('- 继续对比 cmdHandler');
   });
 });

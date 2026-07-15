@@ -10,7 +10,7 @@ describe('TransformReportCommandSchemaRows', () => {
     const onLocatePath = vi.fn();
     const rows = Array.from({ length: COMMAND_SCHEMA_ROW_DISPLAY_LIMIT + 1 }, (_, index) => ({
       path: `$.cmd.cmdSchema${index}`,
-      schema: `baiduboxapp://v1/open${index}`,
+      schema: `sampleapp://v1/open${index}`,
     }));
     const tree = TransformReportCommandSchemaRows({
       recordPath: '$.cmd',
@@ -31,7 +31,7 @@ describe('TransformReportCommandSchemaRows', () => {
     clickElement(findByTour(tree, 'transform-report-locate-command-schema-path')[0]);
 
     expect(onCopyPath).toHaveBeenCalledWith('$.cmd.cmdSchema0');
-    expect(onCopyDecodedPathValue).toHaveBeenCalledWith('$.cmd.cmdSchema0 = "baiduboxapp://v1/open0"');
+    expect(onCopyDecodedPathValue).toHaveBeenCalledWith('$.cmd.cmdSchema0 = "sampleapp://v1/open0"');
     expect(onLocatePath).toHaveBeenCalledWith('$.cmd.cmdSchema0');
   });
 });

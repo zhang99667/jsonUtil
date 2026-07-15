@@ -14,15 +14,15 @@ describe('transformReportTextDistributionSections', () => {
     const lines: string[] = [];
 
     appendCommandSchemaOriginSummarySection(lines, [{
-      origin: 'baiduboxapp://feed',
+      origin: 'sampleapp://feed',
       count: 2,
       schemaCount: 2,
       recordCount: 1,
-      schemas: ['baiduboxapp://feed/detail'],
+      schemas: ['sampleapp://feed/detail'],
       hasMoreSchemas: true,
     }]);
     appendCommandSchemaSummarySection(lines, [{
-      schema: 'baiduboxapp://feed/detail',
+      schema: 'sampleapp://feed/detail',
       count: 2,
       recordCount: 1,
       paths: ['$.cmd'],
@@ -65,11 +65,11 @@ describe('transformReportTextDistributionSections', () => {
 
     expect(lines).toEqual([
       'CMD 来源分布:',
-      '- baiduboxapp://feed ×2（Schema 2 / 来源记录 1）',
-      '  示例Schema: baiduboxapp://feed/detail；...',
+      '- sampleapp://feed ×2（Schema 2 / 来源记录 1）',
+      '  示例Schema: sampleapp://feed/detail；...',
       '',
       'CMD Schema 分布:',
-      '- baiduboxapp://feed/detail ×2（来源记录 1）',
+      '- sampleapp://feed/detail ×2（来源记录 1）',
       '  示例路径: $.cmd；...',
       '',
       '静态资源类型分布:',

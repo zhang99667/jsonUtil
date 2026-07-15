@@ -65,7 +65,7 @@ describe('transformReportResourceTypeGroups', () => {
     const records = [
       {
         path: '$.landing',
-        commandSchema: 'baiduboxapp://feed/detail',
+        commandSchema: 'sampleapp://feed/detail',
         commandSchemaRows: [
           { schema: 'https://example.com/page?from=feed', path: '$.landing.url', source: 'page' },
         ],

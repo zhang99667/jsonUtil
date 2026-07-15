@@ -37,7 +37,7 @@ describe('transformReportPlaceholderTextSections', () => {
         value: 'AFDXXX',
         sourcePath: '$.ad',
         sourceLabel: '$.ad',
-        sourceOriginalPreview: 'baiduboxapp://v1/vendor/ad',
+        sourceOriginalPreview: 'sampleapp://v1/vendor/ad',
         description: 'AFD 渲染扩展信息占位符',
       },
     ] as TransformReportRuntimePlaceholder[];
@@ -52,7 +52,7 @@ describe('transformReportPlaceholderTextSections', () => {
     expect(lines).toContain('- $.ad.extInfo: AFDXXX');
     expect(lines).toContain('  来源: $.ad');
     expect(lines).toContain('  业务字段: $.ad');
-    expect(lines).toContain('  来源预览: baiduboxapp://v1/vendor/ad');
+    expect(lines).toContain('  来源预览: sampleapp://v1/vendor/ad');
     expect(lines).toContain('  说明: AFD 渲染扩展信息占位符');
   });
 });

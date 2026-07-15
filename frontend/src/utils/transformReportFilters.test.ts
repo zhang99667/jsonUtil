@@ -45,7 +45,7 @@ const createRecord = (overrides: Partial<TransformReportRecord> = {}): Transform
 describe('transformReportFilters', () => {
   it('通过 schema origin 和参数层 key 匹配展开记录', () => {
     const record = createRecord({
-      commandSchema: 'baiduboxapp://v1/browser/open?url=https%3A%2F%2Fm.baidu.com',
+      commandSchema: 'sampleapp://v1/browser/open?url=https%3A%2F%2Fm.example.com',
       schemeParamStageSummary: {
         total: 1,
         repairHints: 0,
@@ -57,7 +57,7 @@ describe('transformReportFilters', () => {
       },
     });
 
-    expect(matchesReportRecord(record, 'baiduboxapp://v1', filterOptions)).toBe(true);
+    expect(matchesReportRecord(record, 'sampleapp://v1', filterOptions)).toBe(true);
     expect(matchesReportRecord(record, 'extraparam', filterOptions)).toBe(true);
   });
 
@@ -65,8 +65,8 @@ describe('transformReportFilters', () => {
     const record = createRecord({
       nestedResourceFieldCount: 2,
       nestedResourceSearchFields: [
-        { path: '$.video_url', preview: 'https://cdn.baidu.com/a.mp4', resourceType: 'video' },
-        { path: '$.image_url', preview: 'https://cdn.baidu.com/a.png', resourceType: 'image' },
+        { path: '$.video_url', preview: 'https://cdn.sample.com/a.mp4', resourceType: 'video' },
+        { path: '$.image_url', preview: 'https://cdn.sample.com/a.png', resourceType: 'image' },
       ],
     });
 
@@ -74,7 +74,7 @@ describe('transformReportFilters', () => {
 
     const filtered = buildFilteredRecordView(record, '资源类型:视频', filterOptions);
     expect(filtered.nestedResourceFields).toEqual([
-      { path: '$.video_url', preview: 'https://cdn.baidu.com/a.mp4', resourceType: 'video' },
+      { path: '$.video_url', preview: 'https://cdn.sample.com/a.mp4', resourceType: 'video' },
     ]);
     expect(filtered.nestedResourceFieldCount).toBe(1);
   });
@@ -136,14 +136,14 @@ describe('transformReportFilters', () => {
   it('通过 CMD Schema 行筛选时提供结构聚焦路径', () => {
     const record = createRecord({
       commandSchemaRows: [
-        { path: '$.cmd.primary', schema: 'baiduboxapp://v1/open' },
-        { path: '$.cmd.secondary', schema: 'baiduboxapp://v2/open' },
+        { path: '$.cmd.primary', schema: 'sampleapp://v1/open' },
+        { path: '$.cmd.secondary', schema: 'sampleapp://v2/open' },
       ],
     });
 
     const filtered = buildFilteredRecordView(record, 'v2/open', filterOptions);
     expect(filtered.commandSchemaRows).toEqual([
-      { path: '$.cmd.secondary', schema: 'baiduboxapp://v2/open' },
+      { path: '$.cmd.secondary', schema: 'sampleapp://v2/open' },
     ]);
     expect(filtered.cmdStructureFocusPaths).toEqual(['$.cmd.secondary']);
     expect(filtered.cmdStructureFocusLabel).toBe('CMD Schema');
@@ -158,7 +158,7 @@ describe('transformReportFilters', () => {
         { path: '$.cmd.nested', preview: 'shared target' },
       ],
       commandSchemaRows: [
-        { path: '$.cmd.schema', schema: 'baiduboxapp://shared/target' },
+        { path: '$.cmd.schema', schema: 'sampleapp://shared/target' },
       ],
     });
 
@@ -169,7 +169,7 @@ describe('transformReportFilters', () => {
 
   it('短字段名不扫描整段原始 CMD，明显 URL/编码片段允许兜底', () => {
     expect(shouldSearchLongSourceValue('url')).toBe(false);
-    expect(shouldSearchLongSourceValue('https://m.baidu.com')).toBe(true);
+    expect(shouldSearchLongSourceValue('https://m.example.com')).toBe(true);
     expect(shouldSearchLongSourceValue('%7B%22cmd')).toBe(true);
   });
 });

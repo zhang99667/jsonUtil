@@ -101,7 +101,7 @@ describe('transformReportDiagnosticText', () => {
   it('格式化诊断摘要中的 Top、样例和建议', () => {
     const report = createReport({
       topCommandSchemas: [{
-        schema: 'baiduboxapp://v7/vendor/ad/deeplink',
+        schema: 'sampleapp://v7/vendor/ad/deeplink',
         count: 3,
         recordCount: 2,
         paths: [],
@@ -206,7 +206,7 @@ describe('transformReportDiagnosticText', () => {
     expect(text).toContain('深度解析诊断摘要');
     expect(text).toContain('筛选: schema');
     expect(text).toContain('全量 CMD Schema Top:');
-    expect(text).toContain('- baiduboxapp://v7/vendor/ad/deeplink ×3（来源记录 2）');
+    expect(text).toContain('- sampleapp://v7/vendor/ad/deeplink ×3（来源记录 2）');
     expect(text).toContain('- [HTTPS] https://example.com/a ×2（来源记录 1）');
     expect(text).toContain('全量静态资源类型 Top:');
     expect(text).toContain('- 图片 50% ×4（URL 3 / 来源记录 2）');
@@ -233,7 +233,7 @@ describe('transformReportDiagnosticText', () => {
   it('限制诊断摘要 Top 和样例输出数量', () => {
     const report = createReport({
       topCommandSchemas: Array.from({ length: 9 }, (_, index) => ({
-        schema: `baiduboxapp://schema/${index}`,
+        schema: `sampleapp://schema/${index}`,
         count: index + 1,
         recordCount: 1,
         paths: [],
@@ -270,8 +270,8 @@ describe('transformReportDiagnosticText', () => {
       totalWarningCount: 6,
     }), '');
 
-    expect(text).toContain('- baiduboxapp://schema/7 ×8（来源记录 1）');
-    expect(text).not.toContain('baiduboxapp://schema/8');
+    expect(text).toContain('- sampleapp://schema/7 ×8（来源记录 1）');
+    expect(text).not.toContain('sampleapp://schema/8');
     expect(text).toContain('- $.raw4: 疑似值4');
     expect(text).not.toContain('$.raw5');
     expect(text).toContain('- $.big4: 超长字段4 (2052/1024)');

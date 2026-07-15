@@ -14,7 +14,7 @@ const renderHeaderActions = (tree: unknown): unknown => {
 const record = {
   path: '$.cmd',
   sourceLabel: 'scheme',
-  originalValue: 'baiduboxapp://v1/open?uid=1',
+  originalValue: 'sampleapp://v1/open?uid=1',
   hasNonReversibleScheme: true,
   hasCmdStructure: true,
   cmdStructureFocusPaths: ['$.cmd.uid'],
@@ -57,12 +57,12 @@ describe('TransformReportRecordHeader', () => {
     clickElement(findByTour(actionTree, 'transform-report-open-scheme')[0]);
 
     expect(actions.onCopyPath).toHaveBeenCalledWith('$.cmd');
-    expect(actions.onCopyOriginalValue).toHaveBeenCalledWith('baiduboxapp://v1/open?uid=1');
+    expect(actions.onCopyOriginalValue).toHaveBeenCalledWith('sampleapp://v1/open?uid=1');
     expect(actions.onCopyCmdStructure).toHaveBeenCalledWith(record);
     expect(actions.onCopyCmdComparisonPackage).toHaveBeenCalledWith(record);
     expect(actions.onToggleCmdComparison).toHaveBeenCalledWith(record);
     expect(actions.onLocatePath).toHaveBeenCalledWith('$.cmd');
-    expect(actions.onOpenSchemeValue).toHaveBeenCalledWith('baiduboxapp://v1/open?uid=1');
+    expect(actions.onOpenSchemeValue).toHaveBeenCalledWith('sampleapp://v1/open?uid=1');
   });
 
   it('没有 cmdHandler 结构时隐藏 cmdHandler 操作', () => {

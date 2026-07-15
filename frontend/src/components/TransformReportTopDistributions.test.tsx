@@ -16,15 +16,15 @@ describe('TransformReportTopDistributions', () => {
     const onFilter = vi.fn();
     const report = {
       topCommandSchemaOrigins: [{
-        origin: 'baiduboxapp',
+        origin: 'sampleapp',
         count: 2,
         schemaCount: 1,
         recordCount: 2,
-        schemas: ['baiduboxapp://v1/open'],
+        schemas: ['sampleapp://v1/open'],
         hasMoreSchemas: false,
       }],
       topCommandSchemas: [{
-        schema: 'baiduboxapp://v1/open',
+        schema: 'sampleapp://v1/open',
         count: 2,
         recordCount: 2,
         paths: ['$.cmd'],
@@ -74,7 +74,7 @@ describe('TransformReportTopDistributions', () => {
     expect(buttons).toHaveLength(6);
     (buttons[0].props.onClick as () => void)();
     (buttons[2].props.onClick as () => void)();
-    expect(onFilter).toHaveBeenNthCalledWith(1, 'baiduboxapp');
+    expect(onFilter).toHaveBeenNthCalledWith(1, 'sampleapp');
     expect(onFilter).toHaveBeenNthCalledWith(2, '资源类型:图片');
   });
 });

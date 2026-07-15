@@ -43,8 +43,8 @@ describe('buildTransformReportRecordSectionBindings', () => {
       id: '$.cmd.inner',
       label: '$.cmd.inner',
       sourceLabel: 'SOURCE[1]',
-      commandSchema: 'baiduboxapp://v1/open',
-      actual: { result: { cmdSchema: 'baiduboxapp://v1/open', cmdParams: {} } },
+      commandSchema: 'sampleapp://v1/open',
+      actual: { result: { cmdSchema: 'sampleapp://v1/open', cmdParams: {} } },
       recordPath: '$.cmd',
       diff: { hasDifferences: false },
       score: 0,
@@ -59,7 +59,7 @@ describe('buildTransformReportRecordSectionBindings', () => {
       actualCandidate: {
         id: '$.cmd.inner',
         recordPath: '$.cmd',
-        commandSchema: 'baiduboxapp://v1/open',
+        commandSchema: 'sampleapp://v1/open',
       },
     });
   });
@@ -104,10 +104,10 @@ describe('buildTransformReportRecordSectionBindings', () => {
     expect(getCandidateRecords).toHaveBeenCalledTimes(1);
 
     bindings.recordActions.onLocatePath?.('$.cmd');
-    bindings.recordActions.onOpenSchemeValue?.('baiduboxapp://v1/open');
+    bindings.recordActions.onOpenSchemeValue?.('sampleapp://v1/open');
 
     expect(onLocatePath).toHaveBeenCalledWith('$.cmd');
-    expect(onOpenSchemeValue).toHaveBeenCalledWith('baiduboxapp://v1/open');
+    expect(onOpenSchemeValue).toHaveBeenCalledWith('sampleapp://v1/open');
     expect(toast.success).toHaveBeenCalledWith('已填入 JSONPath 查询', { duration: 1600 });
     expect(toast.success).toHaveBeenCalledWith('已填入 Scheme 解析', { duration: 1600 });
   });

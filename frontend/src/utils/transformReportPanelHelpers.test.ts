@@ -25,9 +25,9 @@ describe('transformReportPanelHelpers', () => {
   it('把内部字段值转换为可打开 Scheme 的输入', () => {
     expect(getDecodedPathSchemeInput({
       path: '$.cmd',
-      preview: 'baiduboxapp://v1/open',
-      value: 'baiduboxapp://v1/open',
-    })).toBe('baiduboxapp://v1/open');
+      preview: 'sampleapp://v1/open',
+      value: 'sampleapp://v1/open',
+    })).toBe('sampleapp://v1/open');
     expect(getDecodedPathSchemeInput({
       path: '$.cmd',
       preview: '对象: a',

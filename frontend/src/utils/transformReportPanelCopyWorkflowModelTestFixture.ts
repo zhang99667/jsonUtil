@@ -19,7 +19,7 @@ vi.mock('./transformReportPanelCopyWorkflow', () => ({
   buildTransformReportPanelCopyWorkflow: workflowMock.build,
 }));
 
-const CMD_SCHEMA = 'baiduboxapp://v1/open';
+const CMD_SCHEMA = 'sampleapp://v1/open';
 
 const createCmdJson = (id: number): string => JSON.stringify({
   result: { cmdSchema: CMD_SCHEMA, source: CMD_SCHEMA, cmdParams: { id } },

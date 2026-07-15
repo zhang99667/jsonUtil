@@ -1,5 +1,5 @@
 
-
+import deepEqual from 'fast-deep-equal';
 import {
   TransformMode,
   ValidationResult,
@@ -15,7 +15,10 @@ import {
 import type { DecodeLayer, SchemeParamDecodeStage, SchemePlaceholder, SchemeType } from './schemeTypes.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
 import { formatUnknownError } from './errors.ts';
-import { PLACEHOLDER_FILL_TEMPLATE_KIND } from './placeholderFillTemplateContract.ts';
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments.ts';
+import { isJsonObject } from './jsonValueGuards.ts';
+import { base64Encode, decodeBase64Text } from './schemeBase64Codec.ts';
+import { addSchemeDisplayHeader, removeSchemeDisplayHeader } from './schemeDisplayHeader.ts';
 import { formatHarSourceLabel, trimSourceLabel, HAR_SOURCE_LABEL_PREFIX } from './sourceLabels.ts';
 
 import {
@@ -29,12 +32,22 @@ import {
 } from './schemeUtils.ts';
 import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
+export {
+  applyPlaceholderFillTemplate,
+  applyTemplate,
+  deepMergeTemplate,
+} from './jsonTemplate.ts';
+
 export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
 const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
 const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
 const SCHEME_PARAM_STAGE_SUMMARY_LIMIT = 8;
 const SCHEME_PARAM_STAGE_LABEL_LIMIT = 80;
+
+const areJsonValuesSemanticallyEqual = (left: JsonValue, right: JsonValue): boolean => (
+  deepEqual(left, right)
+);
 
 const normalizeParamStageLabel = (value: string, fallback: string): string => {
   const trimmed = value.trim();
@@ -449,68 +462,9 @@ const tryUnicodeDecode = (str: string): string => {
   return unicodeDecode(str);
 };
 
-const safeDecodeURIComponent = (input: string): string => {
-  try { return decodeURIComponent(input); } catch { return input; }
-};
-
-// ============ Base64 编解码工具函数 ============
-
-const bytesToBinaryString = (bytes: Uint8Array): string => {
-  const chunkSize = 0x8000;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-  }
-  return binary;
-};
-
-const binaryStringToBytes = (binary: string): Uint8Array => {
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-};
-
-const normalizeBase64Input = (input: string): string | null => {
-  const compact = input.trim().replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
-  if (!compact || compact.length % 4 === 1 || !/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) {
-    return null;
-  }
-  const firstPaddingIndex = compact.indexOf('=');
-  if (firstPaddingIndex !== -1 && /[^=]/.test(compact.slice(firstPaddingIndex))) {
-    return null;
-  }
-  const paddingLength = (4 - (compact.length % 4)) % 4;
-  return compact + '='.repeat(paddingLength);
-};
-
-const base64Encode = (input: string): string => {
-  const bytes = new TextEncoder().encode(input);
-  return btoa(bytesToBinaryString(bytes));
-};
-
 const base64Decode = (input: string): string => {
-  const normalized = normalizeBase64Input(input);
-  if (!normalized) return input;
-
-  try {
-    const bytes = binaryStringToBytes(atob(normalized));
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    return input;
-  }
+  return decodeBase64Text(input) ?? input;
 };
-
-const appendJsonPathKey = (path: string, key: string): string => (
-  /^[A-Za-z_$][\w$]*$/.test(key)
-    ? `${path}.${key}`
-    : `${path}[${JSON.stringify(key)}]`
-);
-
-const appendJsonPathIndex = (path: string, index: number): string => (
-  `${path}[${index}]`
-);
 
 const formatStringPreview = (value: string, maxLength = 120): string => (
   value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
@@ -765,6 +719,12 @@ export function deepParseWithContext(
                 if (typeof schemeParsed === 'object' && schemeParsed !== null) {
                   addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders, sourceLabel, value);
                   const processedSchemeValue = processParsedValue(schemeParsed);
+                  const displayValue = (
+                    context.sourceFormat === 'scheme' && currentPath === '$' && schemeType === 'url'
+                  )
+                    ? addSchemeDisplayHeader(processedSchemeValue, current)
+                    : null;
+                  const decodedSchemeValue = displayValue?.value || processedSchemeValue;
                   const isSchemeReversible = decodedScheme.layers.every(layer => layer.reversible !== false);
                   const schemeParamStageSummary = buildSchemeParamStageSummary(decodedScheme.paramStages);
                   steps.push({
@@ -774,12 +734,13 @@ export function deepParseWithContext(
                     originalSchemeReversible: isSchemeReversible,
                     originalSchemeStringLiteral: decodedScheme.layers.some(layer => layer.type === 'json'),
                     originalSchemeEscapedSlash: decodedScheme.layers.some(layer => layer.type === 'json-escaped-slash'),
-                    decodedSchemeValue: processedSchemeValue,
+                    decodedSchemeValue,
+                    ...(displayValue ? { schemeHeaderDisplayKey: displayValue.headerKey } : {}),
                     ...(schemeParamStageSummary ? { schemeParamStageSummary } : {}),
                   });
 
                   recordSteps(steps);
-                  return processedSchemeValue;
+                  return decodedSchemeValue;
                 }
               } catch {
                 unresolvedCandidate = unresolvedCandidate || {
@@ -865,8 +826,8 @@ export function deepParseWithContext(
         );
       }
 
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        const objValue = value as JsonObject;
+      if (isJsonObject(value)) {
+        const objValue = value;
         const result: JsonObject = {};
         for (const key in objValue) {
           result[key] = processValue(
@@ -909,7 +870,7 @@ export function inverseWithContext(
         const schemeDecodeStep = record.steps.find(step => step.type === 'scheme_decode');
         if (
           schemeDecodeStep?.decodedSchemeValue !== undefined &&
-          isSameJsonValue(value, schemeDecodeStep.decodedSchemeValue)
+          areJsonValuesSemanticallyEqual(value, schemeDecodeStep.decodedSchemeValue)
         ) {
           return record.originalValue;
         }
@@ -949,8 +910,8 @@ export function inverseWithContext(
         );
       }
 
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        const objValue = value as JsonObject;
+      if (isJsonObject(value)) {
+        const objValue = value;
         const result: JsonObject = {};
         for (const key in objValue) {
           result[key] = restoreValue(objValue[key], appendJsonPathKey(currentPath, key));
@@ -1004,12 +965,15 @@ const encodeSchemeStringValue = (
   step: TransformStep,
   layerType: 'query-string' | 'url'
 ): string => {
-  const content = stringifyQueryParamValue(value);
-  if (!step.originalScheme) return content;
+  if (!step.originalScheme) return stringifyQueryParamValue(value);
 
   const schemeBefore = step.originalSchemeEscapedSlash
     ? normalizeJsonEscapedSlashes(step.originalScheme)
     : step.originalScheme;
+  const schemeEncoding = layerType === 'url'
+    ? removeSchemeDisplayHeader(value, schemeBefore, step.schemeHeaderDisplayKey)
+    : { source: schemeBefore, value };
+  const content = stringifyQueryParamValue(schemeEncoding.value);
   const layers: DecodeLayer[] = [
     ...(step.originalSchemeEscapedSlash
       ? [{
@@ -1020,7 +984,7 @@ const encodeSchemeStringValue = (
       : []),
     {
       type: layerType,
-      before: schemeBefore,
+      before: schemeEncoding.source,
       description: layerType === 'url' ? 'URL 参数递归解析' : 'CMD 参数递归解析',
     },
   ];
@@ -1028,24 +992,16 @@ const encodeSchemeStringValue = (
   return encodeWithLayers(content, layers);
 };
 
-const isSameJsonValue = (left: JsonValue, right: JsonValue): boolean => {
-  try {
-    return JSON.stringify(left) === JSON.stringify(right);
-  } catch {
-    return false;
-  }
-};
-
 function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
   switch (step.type) {
     case 'json_parse':
-      // 逆操作：stringify（不带缩进，保持紧凑）
+      // 逆操作：字符串化（不带缩进，保持紧凑）
       return JSON.stringify(value);
     case 'scheme_decode':
       if (
         step.originalScheme &&
         step.decodedSchemeValue !== undefined &&
-        isSameJsonValue(value, step.decodedSchemeValue)
+        areJsonValuesSemanticallyEqual(value, step.decodedSchemeValue)
       ) {
         return step.originalScheme;
       }
@@ -1068,7 +1024,7 @@ function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
           : encodedValue;
       }
     case 'unicode_decode':
-      // 逆操作：encode
+      // 逆操作：编码
       if (typeof value === 'string') {
         return unicodeEncode(value);
       }
@@ -1080,11 +1036,7 @@ function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
       return value;
     case 'base64_decode':
       if (typeof value === 'string') {
-        try {
-          return btoa(value);
-        } catch {
-          return value;
-        }
+        return base64Encode(value);
       }
       return value;
     case 'unescape':
@@ -1148,7 +1100,7 @@ const sortJsonInput = (input: string): string => stringifyJsonOrLinesInput(
 
 // --- 双向转换逻辑 ---
 
-// 正向转换 (Input -> Output)
+// 正向转换（输入 → 输出）
 export const performTransform = (input: string, mode: TransformMode): string => {
   if (!input) return '';
   try {
@@ -1163,7 +1115,7 @@ export const performTransform = (input: string, mode: TransformMode): string => 
       case TransformMode.UNICODE_TO_CN: return unicodeDecode(input);
       case TransformMode.CN_TO_UNICODE: return unicodeEncode(input);
       case TransformMode.URL_ENCODE: return encodeURIComponent(input);
-      case TransformMode.URL_DECODE: return safeDecodeURIComponent(input);
+      case TransformMode.URL_DECODE: return urlDecode(input);
       case TransformMode.BASE64_ENCODE: return base64Encode(input);
       case TransformMode.BASE64_DECODE: return base64Decode(input);
       case TransformMode.SORT_KEYS: return sortJsonInput(input);
@@ -1174,141 +1126,7 @@ export const performTransform = (input: string, mode: TransformMode): string => 
   }
 };
 
-// ============ 模板填充（深度合并 / 占位符回填） ============
-
-const isJsonObject = (value: JsonValue): value is JsonObject => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-const isPlaceholderFillTemplate = (
-  template: JsonValue
-): template is JsonObject & { placeholders: Record<string, JsonValue> } => (
-  isJsonObject(template) &&
-  template.kind === PLACEHOLDER_FILL_TEMPLATE_KIND &&
-  isJsonObject(template.placeholders)
-);
-
-const buildPlaceholderReplacementMap = (
-  template: JsonObject & { placeholders: Record<string, JsonValue> }
-): Record<string, string> => (
-  Object.fromEntries(
-    Object.entries(template.placeholders).filter((entry): entry is [string, string] => (
-      typeof entry[1] === 'string' && entry[1].length > 0
-    ))
-  )
-);
-
-const replaceRuntimePlaceholders = (
-  value: JsonValue,
-  replacements: Record<string, string>
-): JsonValue => {
-  if (typeof value === 'string') {
-    return Object.entries(replacements).reduce(
-      (current, [placeholder, replacement]) => current.split(placeholder).join(replacement),
-      value
-    );
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(item => replaceRuntimePlaceholders(item, replacements));
-  }
-
-  if (isJsonObject(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [
-        key,
-        replaceRuntimePlaceholders(item, replacements),
-      ])
-    );
-  }
-
-  return value;
-};
-
-export const applyPlaceholderFillTemplate = (
-  target: JsonValue,
-  template: JsonObject & { placeholders: Record<string, JsonValue> }
-): JsonValue => {
-  const replacements = buildPlaceholderReplacementMap(template);
-  if (Object.keys(replacements).length === 0) {
-    throw new Error('占位符回填模板缺少 replacement');
-  }
-
-  return replaceRuntimePlaceholders(target, replacements);
-};
-
-/**
- * 深度合并模板到目标 JSON 对象
- * - 两边都是对象 → 递归合并
- * - 模板中的标量值覆盖目标同名字段
- * - 目标独有字段保留，模板独有字段添加
- * - 数组不逐项合并，模板数组直接覆盖
- */
-export const deepMergeTemplate = (target: JsonValue, template: JsonValue): JsonValue => {
-  // 模板为 null 或非对象类型 → 直接用模板值覆盖
-  if (template === null || typeof template !== 'object') {
-    return template;
-  }
-
-  // 模板是数组 → 直接覆盖（不逐项合并）
-  if (Array.isArray(template)) {
-    return template;
-  }
-
-  // 目标不是普通对象 → 直接用模板覆盖
-  if (target === null || typeof target !== 'object' || Array.isArray(target)) {
-    return template;
-  }
-
-  // 两边都是普通对象 → 递归合并
-  const result: JsonObject = { ...target as JsonObject };
-  const tmpl = template as JsonObject;
-  for (const key of Object.keys(tmpl)) {
-    if (key in result) {
-      result[key] = deepMergeTemplate(result[key], tmpl[key]);
-    } else {
-      result[key] = tmpl[key];
-    }
-  }
-  return result;
-};
-
-/**
- * 字符串级封装：解析输入 JSON + 模板 JSON，深度合并后格式化输出
- * @param inputJson - 当前编辑器中的 JSON 字符串
- * @param templateJson - 模板 JSON 字符串
- * @returns 合并后的格式化 JSON 字符串
- * @throws 输入或模板不是合法 JSON 时抛出错误
- */
-export const applyTemplate = (inputJson: string, templateJson: string): string => {
-  if (!inputJson.trim()) {
-    throw new Error('当前编辑器内容为空');
-  }
-  if (!templateJson.trim()) {
-    throw new Error('模板内容为空');
-  }
-
-  let target: JsonValue;
-  try {
-    target = JSON.parse(inputJson);
-  } catch {
-    throw new Error('当前编辑器内容不是合法的 JSON');
-  }
-
-  let template: JsonValue;
-  try {
-    template = JSON.parse(templateJson);
-  } catch {
-    throw new Error('模板内容不是合法的 JSON');
-  }
-
-  const merged = isPlaceholderFillTemplate(template)
-    ? applyPlaceholderFillTemplate(target, template)
-    : deepMergeTemplate(target, template);
-  return JSON.stringify(merged, null, 2);
-};
-
-// 反向转换 (Output -> Input)
+// 反向转换（输出 → 输入）
 export const performInverseTransform = (output: string, mode: TransformMode, originalInput?: string): string => {
   if (!output) return '';
   try {
@@ -1325,7 +1143,7 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
 
       case TransformMode.UNICODE_TO_CN: return unicodeEncode(output);
       case TransformMode.CN_TO_UNICODE: return unicodeDecode(output);
-      case TransformMode.URL_ENCODE: return safeDecodeURIComponent(output);
+      case TransformMode.URL_ENCODE: return urlDecode(output);
       case TransformMode.URL_DECODE: return encodeURIComponent(output);
       case TransformMode.BASE64_ENCODE: return base64Decode(output);
       case TransformMode.BASE64_DECODE: return base64Encode(output);

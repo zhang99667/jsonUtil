@@ -12,7 +12,7 @@ export const getTransformDecodedPathCopyText = (
 ): string => {
   if (row.copyText !== undefined) return row.copyText;
 
-  const value = Object.prototype.hasOwnProperty.call(row, 'value')
+  const value = Object.hasOwn(row, 'value')
     ? row.value as JsonValue
     : row.preview;
   return `${row.path} = ${formatDecodedPathCopyValue(value)}`;

@@ -79,7 +79,7 @@ describe('transformReportCopyTexts', () => {
     const record = createRecord({
       cmdStructureFocusLabel: '内部 CMD 字段',
       nestedCommandSearchFields: [
-        { path: '$.cmd.params.panel_cmd', preview: 'baiduboxapp://x' },
+        { path: '$.cmd.params.panel_cmd', preview: 'sampleapp://x' },
       ],
       decodedPaths: [
         { path: '$.cmd.params.id', preview: '1' },
@@ -91,7 +91,7 @@ describe('transformReportCopyTexts', () => {
     expect(formatTransformPathValueReportText(createTransformReportView({
       records: [record],
       filteredRecordCount: 1,
-    }))).toBe('$.cmd.params.panel_cmd = "baiduboxapp://x"');
+    }))).toBe('$.cmd.params.panel_cmd = "sampleapp://x"');
   });
 
   it('格式化 CMD 结构复制文本中的筛选、聚焦和内部字段摘要', () => {
@@ -174,7 +174,7 @@ describe('transformReportCopyTexts', () => {
         path: '$.params.cmd',
         sourcePath: '$.cmd',
         sourceLabel: 'SOURCE[1]',
-        sourceOriginalPreview: 'baiduboxapp://x',
+        sourceOriginalPreview: 'sampleapp://x',
         value: '__CONVERT_CMD__',
         description: '运行时转换 CMD',
       }],
@@ -187,7 +187,7 @@ describe('transformReportCopyTexts', () => {
     expect(text).toContain('- __CONVERT_CMD__ ×3: 运行时转换 CMD');
     expect(text).toContain('主要来源: SOURCE[1] $.cmd ×3');
     expect(text).toContain('- $.params.cmd: __CONVERT_CMD__');
-    expect(text).toContain('来源预览: baiduboxapp://x');
+    expect(text).toContain('来源预览: sampleapp://x');
     expect(text).toContain('- 还有 2 个运行时占位符未复制');
   });
 });

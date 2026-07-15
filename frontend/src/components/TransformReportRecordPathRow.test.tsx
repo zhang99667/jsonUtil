@@ -12,8 +12,8 @@ describe('TransformReportRecordPathRow', () => {
     const tree = TransformReportRecordPathRow({
       row: {
         path: '$.cmd.jump_url',
-        preview: 'baiduboxapp://v1/jump',
-        value: 'baiduboxapp://v1/jump',
+        preview: 'sampleapp://v1/jump',
+        value: 'sampleapp://v1/jump',
       },
       rowDataTour: 'row',
       copyPathDataTour: 'copy-path',
@@ -31,7 +31,7 @@ describe('TransformReportRecordPathRow', () => {
 
     const text = collectText(tree);
     expect(text).toContain('$.cmd.jump_url');
-    expect(text).toContain('baiduboxapp://v1/jump');
+    expect(text).toContain('sampleapp://v1/jump');
 
     const actions = findByType(tree, TransformReportRecordPathRowActions);
     expect(actions).toHaveLength(1);

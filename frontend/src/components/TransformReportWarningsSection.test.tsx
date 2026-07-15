@@ -10,7 +10,7 @@ const warning: TransformReportWarning = {
   message: '内容过长，已跳过',
   reasonLabel: '性能保护',
   nextAction: '缩小样本后重试',
-  originalValue: 'baiduboxapp://v1/open?cmd=1',
+  originalValue: 'sampleapp://v1/open?cmd=1',
   length: 120000,
   limit: 100000,
 };
@@ -43,8 +43,8 @@ describe('TransformReportWarningsSection', () => {
     clickElement(findByTour(tree, 'transform-report-open-warning-scheme')[0]);
 
     expect(onCopyPath).toHaveBeenCalledWith('$.large');
-    expect(onCopyOriginalValue).toHaveBeenCalledWith('baiduboxapp://v1/open?cmd=1');
+    expect(onCopyOriginalValue).toHaveBeenCalledWith('sampleapp://v1/open?cmd=1');
     expect(onLocatePath).toHaveBeenCalledWith('$.large');
-    expect(onOpenSchemeValue).toHaveBeenCalledWith('baiduboxapp://v1/open?cmd=1');
+    expect(onOpenSchemeValue).toHaveBeenCalledWith('sampleapp://v1/open?cmd=1');
   });
 });

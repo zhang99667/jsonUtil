@@ -17,7 +17,7 @@ describe('transformReportFilterMatchers', () => {
     expect(matchesResourceType('video', '资源类型:视频')).toBe(true);
     expect(matchesDecodedPath({
       path: '$.payload.media',
-      preview: 'https://cdn.baidu.com/a.mp4',
+      preview: 'https://cdn.sample.com/a.mp4',
       resourceType: 'video',
     }, '资源类型:视频')).toBe(true);
   });
@@ -30,13 +30,13 @@ describe('transformReportFilterMatchers', () => {
   it('CMD Schema 行支持 origin 匹配', () => {
     expect(matchesCommandSchemaRow({
       path: '$.cmd.primary',
-      schema: 'baiduboxapp://v1/open?url=https%3A%2F%2Fm.baidu.com',
-    }, 'baiduboxapp://v1', getCommandSchemaOrigin)).toBe(true);
+      schema: 'sampleapp://v1/open?url=https%3A%2F%2Fm.example.com',
+    }, 'sampleapp://v1', getCommandSchemaOrigin)).toBe(true);
   });
 
   it('短字段名不扫描整段原始 CMD，明显 URL/编码片段允许兜底', () => {
     expect(shouldSearchLongSourceValue('url')).toBe(false);
-    expect(shouldSearchLongSourceValue('https://m.baidu.com')).toBe(true);
+    expect(shouldSearchLongSourceValue('https://m.example.com')).toBe(true);
     expect(shouldSearchLongSourceValue('%7B%22cmd')).toBe(true);
   });
 });

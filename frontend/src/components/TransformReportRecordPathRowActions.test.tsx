@@ -11,8 +11,8 @@ describe('TransformReportRecordPathRowActions', () => {
     const tree = TransformReportRecordPathRowActions({
       row: {
         path: '$.cmd.jump_url',
-        preview: 'baiduboxapp://v1/jump',
-        value: 'baiduboxapp://v1/jump',
+        preview: 'sampleapp://v1/jump',
+        value: 'sampleapp://v1/jump',
       },
       copyPathDataTour: 'copy-path',
       copyValueDataTour: 'copy-value',
@@ -30,9 +30,9 @@ describe('TransformReportRecordPathRowActions', () => {
     clickElement(findByTour(tree, 'open-scheme')[0]);
 
     expect(onCopyPath).toHaveBeenCalledWith('$.cmd.jump_url');
-    expect(onCopyDecodedPathValue).toHaveBeenCalledWith('$.cmd.jump_url = "baiduboxapp://v1/jump"');
+    expect(onCopyDecodedPathValue).toHaveBeenCalledWith('$.cmd.jump_url = "sampleapp://v1/jump"');
     expect(onLocatePath).toHaveBeenCalledWith('$.cmd.jump_url');
-    expect(onOpenSchemeValue).toHaveBeenCalledWith('baiduboxapp://v1/jump');
+    expect(onOpenSchemeValue).toHaveBeenCalledWith('sampleapp://v1/jump');
   });
 
   it('没有可选动作入口时隐藏对应按钮', () => {

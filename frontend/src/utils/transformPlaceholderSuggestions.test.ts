@@ -72,11 +72,11 @@ describe('transformPlaceholderSuggestions', () => {
     const filteredView = buildView(['__CALLBACK_URL__'], []);
     const fullSourceView = buildView(
       ['__CALLBACK_URL__'],
-      [{ path: '$.config.callback', sourceLabel: 'callback_url', originalValue: 'baiduboxapp://callback' }]
+      [{ path: '$.config.callback', sourceLabel: 'callback_url', originalValue: 'sampleapp://callback' }]
     );
 
     expect(buildPlaceholderReplacementSuggestions(filteredView, fullSourceView).get('__CALLBACK_URL__')).toMatchObject({
-      replacement: 'baiduboxapp://callback',
+      replacement: 'sampleapp://callback',
       sourcePath: '$.config.callback',
       sourceLabel: 'callback_url',
     });
