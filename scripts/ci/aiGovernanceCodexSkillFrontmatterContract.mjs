@@ -1,32 +1,36 @@
-const CODEX_SKILL_FRONTMATTER_FIELDS = ['name', 'description', 'version', 'tags'];
+import { collectSkillMetadataContractFailures } from './aiGovernanceCodexSkillMetadataContract.mjs';
+import {
+  collectUnexpectedSkillFrontmatterFailures,
+  extractSkillMetadataBlock,
+} from './aiGovernanceCodexSkillMetadata.mjs';
+import {
+  collectSkillOptionalFieldFailures,
+} from './aiGovernanceSkillOptionalFieldsContract.mjs';
+import {
+  collectSkillFrontmatterAmbiguityFailures,
+  collectSkillIdentityValueFailures,
+  collectSkillMetadataAmbiguityFailures,
+  readSkillIdentity,
+} from './aiGovernanceSkillIdentityContract.mjs';
 
-const hasFrontmatterField = (frontmatter, field) => (
-  new RegExp(`^${field}:\\s*\\S`, 'm').test(frontmatter)
-);
+const CODEX_SKILL_FRONTMATTER_FIELDS = ['name', 'description', 'metadata'];
 
-const extractFrontmatterField = (frontmatter, field) => (
-  frontmatter.match(new RegExp(`^${field}:\\s*(.+)$`, 'm'))?.[1]?.trim()
-);
-
-const getSkillDirectoryName = file => file.split('/').at(-2);
+const hasFrontmatterField = (frontmatter, field) => new RegExp(`^${field}:[ \\t]*\\S`, 'm').test(frontmatter);
 
 export const collectSkillFrontmatterContractFailures = (file, frontmatter) => {
-  const skillName = extractFrontmatterField(frontmatter, 'name');
-  const skillVersion = extractFrontmatterField(frontmatter, 'version');
-  const skillTags = extractFrontmatterField(frontmatter, 'tags');
-  const directoryName = getSkillDirectoryName(file);
+  const identity = readSkillIdentity(frontmatter);
+  const metadata = extractSkillMetadataBlock(frontmatter);
+  const metadataFailures = collectSkillMetadataContractFailures(file, metadata);
   return [
     ...CODEX_SKILL_FRONTMATTER_FIELDS
-      .filter(field => !hasFrontmatterField(frontmatter, field))
+      .filter(field => field === 'metadata' ? !metadata : !hasFrontmatterField(frontmatter, field))
       .map(field => `${file}: frontmatter 缺少 ${field}`),
-    ...(skillName && skillName !== directoryName
-      ? [`${file}: frontmatter name 必须等于 skill 目录名 ${directoryName}`]
-      : []),
-    ...(skillVersion && !/^\d+\.\d+\.\d+$/.test(skillVersion)
-      ? [`${file}: frontmatter version 必须使用 x.y.z 格式`]
-      : []),
-    ...(skillTags && !/^\[\s*[^,\]\s][^\]]*\]$/.test(skillTags)
-      ? [`${file}: frontmatter tags 必须是非空数组`]
-      : []),
+    ...collectSkillFrontmatterAmbiguityFailures(file, frontmatter),
+    ...collectUnexpectedSkillFrontmatterFailures(file, frontmatter),
+    ...collectSkillMetadataAmbiguityFailures(file, frontmatter),
+    ...metadataFailures.missingFieldFailures,
+    ...collectSkillIdentityValueFailures(file, identity),
+    ...collectSkillOptionalFieldFailures(file, frontmatter),
+    ...metadataFailures.valueFailures,
   ];
 };
