@@ -93,7 +93,6 @@ for item in \
   "$APP_DIR/.vscode" \
   "$APP_DIR/.idea" \
   "$APP_DIR/.cursor" \
-  "$APP_DIR/.comate" \
   "$APP_DIR/.cursorrules" \
   "$APP_DIR/AGENTS.md" \
   "$APP_DIR/CLAUDE.md"
@@ -110,7 +109,7 @@ else
   cat <<SUGGESTIONS
 这些文件已被后续部署同步排除。确认不需要保留后，可在远端应用目录执行：
   find "$APP_DIR" -name .DS_Store -delete
-  rm -rf "$APP_DIR/.vscode" "$APP_DIR/.idea" "$APP_DIR/.cursor" "$APP_DIR/.comate"
+  rm -rf "$APP_DIR/.vscode" "$APP_DIR/.idea" "$APP_DIR/.cursor"
   rm -f "$APP_DIR/.cursorrules" "$APP_DIR/AGENTS.md" "$APP_DIR/CLAUDE.md"
 SUGGESTIONS
 fi

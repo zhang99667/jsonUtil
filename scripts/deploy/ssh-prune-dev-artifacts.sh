@@ -66,7 +66,6 @@ for item in \
   "$APP_DIR/.vscode" \
   "$APP_DIR/.idea" \
   "$APP_DIR/.cursor" \
-  "$APP_DIR/.comate" \
   "$APP_DIR/.cursorrules" \
   "$APP_DIR/AGENTS.md" \
   "$APP_DIR/CLAUDE.md"
@@ -115,7 +114,6 @@ for item in \
   "$APP_DIR/.vscode" \
   "$APP_DIR/.idea" \
   "$APP_DIR/.cursor" \
-  "$APP_DIR/.comate" \
   "$APP_DIR/.cursorrules" \
   "$APP_DIR/AGENTS.md" \
   "$APP_DIR/CLAUDE.md"

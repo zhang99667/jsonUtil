@@ -39,9 +39,11 @@ export const writeAiGovernanceArtifacts = ({
   const result = buildAiGovernanceArtifactPayloads({ rootDir, outDir, top, contextTop, now, runReport });
   fs.mkdirSync(result.outputDir, { recursive: true });
   writeJson(result.files.governance, result.artifacts.governance);
+  writeJson(result.files.evolution, result.artifacts.evolution);
   writeJson(result.files.maintainability, result.artifacts.maintainability);
   writeJson(result.files.context, result.artifacts.context);
   writeJson(result.files.scorecard, result.artifacts.scorecard);
+  writeJson(result.files.attestationSubject, result.artifacts.attestationSubject);
   fs.writeFileSync(result.files.summary, result.artifacts.summary);
   if (summaryFile) fs.appendFileSync(summaryFile, result.artifacts.summary);
 
