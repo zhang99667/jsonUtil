@@ -14,24 +14,24 @@
 关键检查：
 
 - `frontend`: `npm ci`、`npm run typecheck`、`npm run lint`、`npm run audit:security`、`npm test`、`npm run corpus:scheme`、`npm run corpus:snapshot:check`、`npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after <current-snapshot.json> --strict`、`npm run perf:scheme -- --iterations 3 --strict`、`npm run perf:jsonpath -- --iterations 3 --strict`、`npm run build`、`npm run check:preloads`、`node scripts/ci/check-frontend-static-retention.mjs`、`npm run perf:e2e`、`npm run test:e2e`
-  - `npm run lint` 使用 ESLint flat config 执行错误级静态门禁；需要查看历史 warning 时可运行 `npm run lint:report`
-  - `npm run audit:security` 使用 npm audit 拦截 moderate 及以上依赖漏洞；低危漏洞可在依赖治理批次中评估，不阻塞普通功能迭代
-  - `npm run corpus:scheme` 独立校验脱敏 response corpus，当前覆盖激励广告、落地页与电话拨打三类样本，固定主 CMD Schema、Top 热点 Schema、占位符、扫描位置和质量指标
-  - `npm run corpus:snapshot:check` 输出 corpus 质量快照，并在 expected 阈值不通过、cmdHandler ignored extra 路径数量超过基线、必需 CMD Schema/运行时占位符/扫描位置缺失、样本缺失 expected snapshot、缺失 cmdHandler expected 或 cmdHandler 关键子集不对齐时让 CI 失败；ignored extra 超限会在 strict 日志中带出路径样例，方便直接定位样本质量变化
-  - `Scheme corpus quality snapshot` 会把覆盖率、资源/CMD 热点、必需项失败、cmdHandler 对齐结果和 ignored extra 路径样例写入 GitHub Step Summary，并上传 `scheme-corpus-quality-snapshot` artifact 供评审下载
-  - `npm run perf:scheme -- --iterations 3 --strict` 会通过复制真实 `data.video` 条目构造 50KB / 250KB 脱敏 response，校验核心解析耗时、展开记录、CMD 结构、CMD 字段、资源字段、待检查和跳过数量，并上传 `scheme-performance-budget` artifact
-  - `npm run perf:jsonpath -- --iterations 3 --strict` 会复用脱敏 response 和大量命中列表，校验 JSONPath 大查询耗时、命中数、高亮范围和结果上限保护，并上传 `jsonpath-performance-budget` artifact
-  - `npm run perf:e2e` 会通过独立 Playwright performance 配置校验浏览器 Worker 端到端响应，覆盖 JSONPath 取消、Scheme 取消、连续大 response 解析和已加载面板关闭态大输入切换，并上传 `browser-worker-performance-budget` artifact
-  - `Scheme corpus quality trend` 会用 `frontend/fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json` 对比本次生成的快照，strict 模式会把 requiredChecks 必需项失败数量增加、cmdHandler ignored extra 路径数量上升等变化视为解析质量退化，并在摘要中展示 ignored extra 路径新增/消失样例；当前 CI 还通过 `--resource-type-drop video=20`、`--resource-type-rise lottie=20` 把视频占比骤降或 Lottie 占比异常上升纳入门禁，并上传 `scheme-corpus-quality-trend` artifact
+  - `npm run lint` 使用 ESLint 扁平配置执行错误级静态门禁；需要查看历史警告时可运行 `npm run lint:report`
+  - `npm run audit:security` 使用 npm audit 拦截中危及以上依赖漏洞；低危漏洞可在依赖治理批次中评估，不阻塞普通功能迭代
+  - `npm run corpus:scheme` 独立校验脱敏响应语料，当前覆盖激励广告、落地页与电话拨打三类样本，固定主 CMD Schema、Top 热点 Schema、占位符、扫描位置和质量指标
+  - `npm run corpus:snapshot:check` 输出语料质量快照，并在预期阈值不通过、cmdHandler 忽略额外路径数量超过基线、必需 CMD Schema/运行时占位符/扫描位置缺失、样本缺失预期快照、缺失 cmdHandler 预期结果或 cmdHandler 关键子集不对齐时让 CI 失败；忽略额外路径超限会在严格检查日志中带出路径样例，方便直接定位样本质量变化
+  - `Scheme corpus quality snapshot` 会把覆盖率、资源/CMD 热点、必需项失败、cmdHandler 对齐结果和忽略额外路径样例写入 GitHub 步骤摘要，并上传 `scheme-corpus-quality-snapshot` 构建产物供评审下载
+  - `npm run perf:scheme -- --iterations 3 --strict` 会通过复制真实 `data.video` 条目构造 50KB / 250KB 脱敏响应，校验核心解析耗时、展开记录、CMD 结构、CMD 字段、资源字段、待检查和跳过数量，并上传 `scheme-performance-budget` 构建产物
+  - `npm run perf:jsonpath -- --iterations 3 --strict` 会复用脱敏响应和大量命中列表，校验 JSONPath 大查询耗时、命中数、高亮范围和结果上限保护，并上传 `jsonpath-performance-budget` 构建产物
+  - `npm run perf:e2e` 会通过独立 Playwright 性能配置校验浏览器 Worker 端到端响应，覆盖 JSONPath 取消、Scheme 取消、连续大响应解析和已加载面板关闭态大输入切换，并上传 `browser-worker-performance-budget` 构建产物
+  - `Scheme corpus quality trend` 会用 `frontend/fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json` 对比本次生成的快照，严格模式会把 `requiredChecks` 必需项失败数量增加、cmdHandler 忽略额外路径数量上升等变化视为解析质量退化，并在摘要中展示忽略额外路径的新增/消失样例；当前 CI 还通过 `--resource-type-drop video=20`、`--resource-type-rise lottie=20` 把视频占比骤降或 Lottie 占比异常上升纳入门禁，并上传 `scheme-corpus-quality-trend` 构建产物
   - `node scripts/ci/check-frontend-static-retention.mjs` 会校验前端 Dockerfile、Compose volume 和容器启动脚本保持一致，并实际验证新静态产物覆盖、近期旧 hash assets 保留和过期旧 assets 清理，避免上线后长时间打开的旧页面无法加载懒加载 chunk
 - `backend`: `mvn -B test`、`node scripts/ci/check-backend-api-matrix.mjs`、`mvn -B package -DskipTests`
 - `docker`: `docker build ./backend`、`docker build ./frontend`、带测试环境变量执行 `docker compose config`
 
 #### 质量趋势基线更新
 
-当解析逻辑或 corpus 样本发生预期变化时，先运行 `npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after <new-snapshot.json> --strict --resource-type-drop video=20 --resource-type-rise lottie=20` 查看趋势。只有在变化能解释为解析覆盖提升、样本脱敏更新或业务素材结构预期变化时，才运行 `npm run corpus:snapshot:baseline` 更新 `corpus-quality.baseline.snapshot.json`。
+当解析逻辑或语料样本发生预期变化时，先运行 `npm run corpus:snapshot:diff -- --before fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json --after <new-snapshot.json> --strict --resource-type-drop video=20 --resource-type-rise lottie=20` 查看趋势。只有在变化能解释为解析覆盖提升、样本脱敏更新或业务素材结构预期变化时，才运行 `npm run corpus:snapshot:baseline` 更新 `corpus-quality.baseline.snapshot.json`。
 
-如果 diff 出现覆盖率下降、CMD/资源热点消失、requiredChecks 失败、cmdHandler ignored extra 上升，或视频/Lottie 占比漂移无法由样本变化解释，应优先回退实现或修复解析逻辑，不应直接更新 baseline。
+如果差异结果出现覆盖率下降、CMD/资源热点消失、`requiredChecks` 失败、cmdHandler 忽略额外路径数量上升，或视频/Lottie 占比漂移无法由样本变化解释，应优先回退实现或修复解析逻辑，不应直接更新基线。
 
 ### CD
 
@@ -54,6 +54,8 @@
 - `public_verify_insecure_tls`: 公网验证是否允许证书不匹配，默认 `false`；只有临时用 IP 或证书域名不匹配地址验证时才建议设为 `true`
 
 CD 不依赖远程 `git pull`，而是同步当前 workflow checkout 的源码到服务器，适合服务器没有 GitHub 凭据的场景。
+
+Deploy 工作流会先通过步骤环境变量接收手动输入和 Secret，再调用仓库内共享的 SSH 部署脚本；禁止把动态值直接插入 `run` 脚本或远端命令文本。共享脚本会在连接部署目标或同步前校验主机、用户、端口与远端应用目录，并通过标准输入向固定的远端 Bash 脚本传递动态值；远端目录必须是非根目录、无连续斜杠和点路径段的安全绝对路径。
 
 Deploy 工作流会在同步前运行 `node scripts/ci/check-frontend-static-retention.mjs`，避免手动发布绕过旧 hash assets 保留配置门禁；启用公网验证时还会在部署前记录当前公网入口引用的 `/assets/*`，部署后通过 `scripts/deploy/verify-public-deploy.sh` 同时复查新版本入口、后端 `pong`、当前构建深层 chunk，以及部署前记录的旧 hash 资源。
 
@@ -119,7 +121,7 @@ bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
 
 前端容器会把镜像内 `/opt/jsonutils-dist` 覆盖同步到持久化卷 `frontend-static:/usr/share/nginx/html`，入口 HTML 和 `version.json` 每次启动更新，近期旧 `assets/*` hash 文件默认保留 14 天，降低用户长时间打开旧页面后点击懒加载面板时请求旧 chunk 失败的概率。保留天数可通过 `STATIC_ASSET_RETENTION_DAYS` 调整，设置为 `0` 可关闭自动清理。
 
-本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://jsonutils.markz.fun`，确保按主站域名记录首页和后台入口的静态资源；同时默认 smoke `zhangjihao.markz.fun/`、HTTPS `/admin.html` 和恢复用裸域 query，确认同机外部业务域名没有落回 JSONUtils 后台，且 HTTPS 后台历史路径会清缓存、用一次性 query 绕过浏览器旧 301 后把地址栏归位到裸域。Nginx 路由门禁会额外要求 HTTP 后台历史路径回到 HTTPS 裸域。可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
+本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://jsonutils.markz.fun`，确保按主站域名记录首页和后台入口的静态资源；同时默认冒烟验证 `zhangjihao.markz.fun/`、HTTPS `/admin.html` 和恢复用裸域查询参数，确认同机外部业务域名没有落回 JSONUtils 后台，且 HTTPS 后台历史路径会清缓存、用一次性查询参数绕过浏览器旧 301 后把地址栏归位到裸域。Nginx 路由门禁会额外要求 HTTP 后台历史路径回到 HTTPS 裸域。可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
 
 ```bash
 PUBLIC_BASE_URL=https://jsonutils.markz.fun \
@@ -168,7 +170,7 @@ bash scripts/deploy/ssh-docker-prune.sh
 
 该脚本不会执行 `docker volume prune`，避免误删 `db-data`、`upload-data` 等业务 volume。
 
-同步脚本会读取 `scripts/deploy/rsync-excludes.txt`，统一排除 `.DS_Store`、`.vscode`、`.idea`、`.cursor`、`.comate`、`.cursorrules`、`AGENTS.md`、`CLAUDE.md` 等非运行时开发文件。本机部署和 GitHub Actions 共用同一份清单；磁盘健康检查会列出远端历史残留，并只输出人工确认后的清理建议，不会自动删除。
+同步脚本会读取 `scripts/deploy/rsync-excludes.txt`，统一排除 `.DS_Store`、`.vscode`、`.idea`、`.cursor`、`.cursorrules`、`AGENTS.md`、`CLAUDE.md` 等非运行时开发文件。本机部署和 GitHub Actions 共用同一份清单；磁盘健康检查会列出远端历史残留，并只输出人工确认后的清理建议，不会自动删除。
 
 远端历史残留可以用独立脚本清理；脚本默认 dry-run，只列候选项，不删除文件：
 
@@ -205,7 +207,7 @@ bash scripts/deploy/ssh-prune-dev-artifacts.sh
 - 可写的应用目录
 - 如果使用当前 `docker-compose.yml` 的 HTTPS 配置，需要证书目录存在：`/www/server/panel/vhost/cert/39.97.237.248`
 
-生产 `docker-compose.yml` 只暴露前端 Nginx 的 `80/443`，后端 `8080` 与数据库 `5432` 仅在 Docker 网络内访问。需要本地调试端口时使用 `docker-compose.local.yml`。
+生产 `docker-compose.yml` 不绑定宿主机公网端口；前端 Nginx 仅在 Docker 网络内暴露 `80`，由独立的 `markz-edge` 统一承接 `80/443` 和域名路由。后端 `8080` 与数据库 `5432` 同样仅在 Docker 网络内访问。需要本地调试端口时使用 `docker-compose.local.yml`。
 
 首次部署前必须在远程应用目录创建 `.env`，否则发布脚本会直接失败：
 
