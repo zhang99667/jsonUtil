@@ -1,401 +1,50 @@
 # JSONUtils 专业版 - AI 助手指引
 
-这是一个现代化的 JSON 处理工具项目，集成了 AI 智能修复功能。本文档为 Codex/Ducc 等 AI 编程助手提供项目上下文和开发指引。
+本文件是 Codex 的项目入口，只保留任务开始时必须知道的地图和不变量；详细协议不在入口重复展开。
 
-## 📖 重要：完整编码规范
+## 必读顺序
 
-**项目的详细编码规范请参考**: `rules/code-style.md` ⭐
-**AI 工程闭环请参考**: `docs/AI-ENGINEERING-PLAYBOOK.md`
-**AI 协作资产账本请参考**: `docs/AI-ASSET-REGISTRY.md`
+1. `AGENTS.md`：项目地图与不可违反的协作边界。
+2. `rules/code-style.md`：编码、提交、发布和 CHANGELOG 规范。
+3. `docs/AI-ENGINEERING-PLAYBOOK.md`：按改动类型选择执行与验证闭环。
+4. 涉及 rules、skills、MCP、plugins、hooks、evals 或治理成熟度时，再读 `docs/AI-EVOLUTION-PLAYBOOK.md`。
+5. 变更 AI 协作资产时，按需查询 `docs/AI-ASSET-REGISTRY.md` 和 `docs/AI-GOVERNANCE-DECISIONS.md`；不要把两个历史账本全量注入普通任务。
+6. 涉及架构、部署或数据流时读 `ARCHITECTURE.md` 和相关源码/测试。
 
-该文件包含：
-- 详细的代码风格规范
-- Git 提交格式要求
-- CHANGELOG 更新规范
-- 中文注释要求
-- 文件组织规范
+## 项目地图
 
-AI Playbook 包含：
-- Claude Code / Codex / Ducc 的统一读文件顺序
-- 性能、重构、部署和解析能力的验证门禁
-- 子 Agent 委派判断、主线程整合和并行验证边界
-- 复盘沉淀、规则/skill 回写和治理校验的规则进化闭环
-- 修改代码后的测试、lint、CHANGELOG 收尾要求
-
-本文档 (AGENTS.md) 侧重于项目整体理解和开发指引。
-
----
+- 前端：`frontend/`，React 19、Vite 6、TypeScript 5、Tailwind CSS 3；管理后台使用 Ant Design 6，编辑器封装为 @monaco-editor/react 4，Electron 入口位于 `frontend/electron/`。
+- 后端：`backend/`，Spring Boot 3、Java 17、Spring Data JPA + PostgreSQL、Spring Security。
+- 业务核心：`frontend/src/components/`、`frontend/src/utils/transformations.ts`、`frontend/src/services/aiService.ts`、`frontend/src/admin/`。
+- AI 协作资产：`.agents/skills/`、`.codex/`、`.claude/agents/`、`.github/agents/`、`.mcp.json`、`plugins/`、`evals/ai-governance/`、`rules/`、`docs/AI-*.md` 与 `scripts/ci/aiGovernance*.mjs`。
 
 ## AI 协作与子 Agent 委派
 
-- 跨模块排查、影响面分析、复杂重构或多条验证链路并行时，先判断是否需要子 Agent 委派；委派任务说明读写范围、排除项、期望输出和未覆盖风险，只读调查交给 explorer，限定写入交给 worker，构建/测试复核交给 verifier。
-- 主线程负责拆分边界、保护上下文、整合证据和最终验证；子 Agent 输出使用 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`固定模板，不回传大段中间日志。
-- 如果当前工具不可委派，主线程应收窄 `rg`、测试和日志输出，继续按 `docs/AI-ENGINEERING-PLAYBOOK.md` 完成本地闭环。
-- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，写入 `docs/AI-GOVERNANCE-DECISIONS.md` 决策记录、回写追踪和锁定测试，再按 Playbook 做规则/skill 回写，并运行 `node scripts/ci/check-ai-governance.mjs` 锁定关键引用和 skill 契约。
+- 跨模块排查、影响面分析、复杂重构或多条验证链路并行时，先判断是否需要子 Agent 委派；委派任务说明读写范围、排除项、期望输出和未覆盖风险，只读调查优先交给默认 `read-only` 的 explorer，限定写入交给 worker，构建/测试复核交给 verifier。profile 的 `sandbox_mode` 只是角色默认值，父任务实时 permission override 可能重新应用；无论实际权限如何都必须遵守角色职责。主线程负责拆分边界、保护上下文、整合证据和最终验证；不可委派时收窄 `rg`、测试和日志输出。
+- AI 基建专项只读审计可路由项目 `ai-infra-auditor`：Codex、Claude 和 GitHub Copilot 分别使用 `.codex/agents/`、`.claude/agents/`、`.github/agents/` 中的同名 adapter，统一读取 `.agents/skills/jsonutils-ai-infra-evolver/SKILL.md`。它不编辑文件、不调用 MCP 或网络，也不读用户配置、环境、prompt 或 transcript。
+- 静态 profile/adapter、角色选择或有界状态样本都不证明强隔离或零写入；需要声称子 Agent 零写入时，主线程必须比较委派前后完整 `path/type/mode/content` workspace manifest。
+- 子 Agent 只回传 `任务：`、`结论：`、`证据：`、`修改文件：`、`验证：`、`未覆盖：`、`下一步建议：`，不堆大段中间日志；worker 只写父任务白名单，verifier 不修改源码。
+- 遇到重复踩坑、用户纠偏、验证缺口或可复用实践时，先做复盘沉淀，写清触发条件、反例、验证方式和适用边界，更新 `docs/AI-GOVERNANCE-DECISIONS.md` 的决策记录、回写追踪和锁定测试，再完成规则/skill 回写与治理校验；一次性偏好和未验证猜测不固化。
+- 提交拆分与语料中立性遵守 `rules/code-style.md`。
+- JSONUtils AI 基建必须入库并以项目为 source of truth。仓库不是 plugin，只有 `plugins/<name>/` 是插件包。受信任项目的 `.codex/config.toml` 直接注册固定治理 MCP；维护者 clone 后需信任项目并新建任务，但不需先安装治理 MCP 插件。`.agents/plugins/marketplace.json` 只是 repo catalog；`AVAILABLE` 不会自动安装、启用或加载插件。`.agents/skills/` 是唯一可编辑 skill 语义源码，`.claude/skills/*/SKILL.md` 只是由它逐字节派生的项目发现适配器，静态存在不证明 Claude 已真实选择或加载。先运行 `node scripts/ci/manage-project-plugins.mjs --check`，维护者明确同意后才 `--apply`；个人 cache/config 只是派生状态。
+- 项目源码、trusted project config 加载、marketplace 可发现、插件安装/启用、新任务实际注册、受保护 runtime/signer 是六层独立证据；配置存在或安装成功都不证明 task/runtime/signer trust。不得从 hook、CI 或 postinstall 静默安装、覆盖异源或删除个人 selector。
+- AI 基建先建代表 case；只有脱敏、可追溯且与当前版本匹配的真实 outcome 才能评分。component evidence、未验信 trace 或静态契约不得冒充 behavior 通过；没有 outcome 时保持 `unknown`。
+- Codex 项目 lifecycle 只允许 `.codex/hooks.json` 的单一只读 `SessionStart` advisory，source 限 `startup|resume|clear|compact`；项目与定义都需显式信任，不得读取 prompt/transcript/环境、联网、写入、阻断或绕过 trust，组件回归不证明真实 lifecycle 触发。
+- 用户可见、准备上线或会触发前端构建的改动需要递增 `frontend/package.json`，同步 `frontend/package-lock.json`，更新 `CHANGELOG.md` 顶部版本区块，并运行 `node scripts/ci/check-version-consistency.mjs`。
 
----
+## 实现与收尾不变量
 
-## 项目概览
-
-**项目类型**: 前后端分离的 Web 应用 + Electron 桌面应用
-**核心功能**: JSON 格式化、验证、转换、AI 智能修复、JSONPath 查询
-**目标用户**: 开发人员
-
-### 技术栈
-
-**前端**:
-- React 19 + TypeScript 5
-- Vite 6 (构建工具)
-- Tailwind CSS 3 (主应用样式)
-- Ant Design 6 (管理后台 UI)
-- @monaco-editor/react 4 (Monaco Editor 代码编辑器)
-- Electron 桌面封装入口（当前未固定 Electron 依赖版本）
-
-**后端**:
-- Spring Boot 3.x + Java 17+
-- Spring Data JPA + PostgreSQL
-- Spring Security + JWT 认证
-
-**AI 服务**:
-- Google Gemini API (JSON 智能修复)
-
-## 项目结构
-
-```
-json-助手-&-ai-修复/
-├── frontend/              # React 前端应用
-│   ├── src/
-│   │   ├── admin/        # 管理后台模块 (独立入口)
-│   │   ├── components/   # 主应用组件
-│   │   ├── hooks/        # 自定义 React Hooks
-│   │   ├── services/     # API 服务层
-│   │   └── utils/        # 工具函数
-│   ├── electron/         # Electron 主进程代码
-│   ├── index.html        # 主应用入口
-│   └── admin.html        # 管理后台入口
-├── backend/              # Spring Boot 后端
-│   └── src/main/java/com/jsonhelper/backend/
-│       ├── controller/   # REST API 控制器
-│       ├── service/      # 业务逻辑层
-│       ├── repository/   # 数据访问层
-│       ├── entity/       # JPA 实体
-│       └── dto/          # 数据传输对象
-├── docs/                 # 项目文档
-├── rules/                # 代码规范和规则
-├── ARCHITECTURE.md       # 架构详细说明
-└── CHANGELOG.md          # 版本更新日志
-```
-
-## 核心功能模块
-
-### 1. JSON 编辑器 (主应用)
-- **文件**: `frontend/src/components/Editor.tsx`
-- **功能**: 基于 Monaco Editor 的双栏实时编辑器
-- **特性**: 语法高亮、错误提示、双向同步
-
-### 2. JSON 转换工具
-- **文件**: `frontend/src/utils/transformations.ts`
-- **功能**: 格式化、压缩、转义、Unicode 转换等
-- **模式**: 格式化、深度格式化、压缩、转义/反转义、Unicode/中文互转
-
-### 3. AI 智能修复
-- **文件**: `frontend/src/services/aiService.ts`
-- **功能**: 使用 Gemini API 修复损坏的 JSON
-- **配置**: 需要在设置中配置 API Key
-
-### 4. JSONPath 查询
-- **文件**: `frontend/src/components/JsonPathPanel.tsx`
-- **功能**: JSONPath 表达式查询和结果高亮
-
-### 5. 管理后台
-- **入口**: `frontend/src/admin/App.tsx`
-- **功能**:
-  - 流量统计和分析
-  - 用户管理
-  - 数据可视化 (ECharts)
-- **路由**: 基于状态的条件渲染 (非 React Router)
-
-## 开发规范
-
-⚠️ **重要提示**: 详细的编码规范请查看 `rules/code-style.md`
-
-以下是快速参考：
-
-### 代码风格要点
-
-1. **TypeScript/React**
-   - 使用函数组件 + Hooks
-   - 避免使用 `any` 类型
-   - 组件文件: PascalCase，工具文件: camelCase
-   - **注释必须使用中文** (详见 `rules/code-style.md`)
-
-2. **Java/Spring Boot**
-   - 分层架构: Controller → Service → Repository
-   - RESTful API 设计
-   - 使用 Lombok 简化代码
-
-3. **文件命名**
-   - 组件文件: PascalCase (e.g., `Editor.tsx`)
-   - 工具函数: camelCase (e.g., `transformations.ts`)
-   - 常量文件: UPPER_CASE (e.g., `CONSTANTS.ts`)
-
-### Git 提交规范
-
-使用约定式提交格式 (详见 `rules/code-style.md`):
-
-```
-[类型]简短描述
-```
-
-**类型标签**:
-- `[Feature]`: 新功能
-- `[FIXBUG]`: Bug 修复
-- `[Refactor]`: 重构
-- `[Docs]`: 文档更新
-- `[Style]`: 代码格式调整
-- `[Chore]`: 构建/工具链更新
-- `[LOG]`: 更新日志
-
-**重要**: 每次代码修改必须同步更新 `CHANGELOG.md`。用户可见、准备上线或会触发前端构建的改动需要同步递增 `frontend/package.json` 和 `frontend/package-lock.json`，并运行 `node scripts/ci/check-version-consistency.mjs`。
-
-**示例**:
-```bash
-git commit -m "[Feature]添加流量统计页面"
-git commit -m "[FIXBUG]修复预览同步问题"
-```
-
-### API 设计规范
-
-1. **RESTful 风格**
-   - GET: 查询数据
-   - POST: 创建资源
-   - PUT: 更新资源
-   - DELETE: 删除资源
-
-2. **响应格式统一**
-   ```json
-   {
-     "code": 200,
-     "message": "success",
-     "data": {...}
-   }
-   ```
-
-3. **错误处理**
-   - 前端统一使用 `react-hot-toast` 提示用户
-   - 后端异常统一在全局异常处理器处理
-
-## 常见任务指引
-
-### 添加新的 JSON 转换功能
-
-1. 在 `frontend/src/utils/transformations.ts` 添加转换函数
-2. 在 `frontend/src/components/ActionPanel.tsx` 添加按钮
-3. 更新快捷键配置 (如需要)
-4. 更新 `CHANGELOG.md`
-
-### 添加新的管理后台页面
-
-1. 创建页面组件: `frontend/src/admin/pages/NewPage.tsx`
-2. 创建 API 服务: `frontend/src/admin/services/newService.ts`
-3. 在 `frontend/src/admin/App.tsx` 中:
-   - 添加菜单项到 `items` 数组
-   - 在 `renderContent()` 添加对应的 case
-   - import 新组件
-4. 后端添加对应 Controller 和 Service
-
-### 修复 Bug 的流程
-
-1. **定位问题**
-   - 检查控制台错误信息
-   - 使用浏览器 DevTools 断点调试
-   - 查看 Network 面板检查 API 请求
-
-2. **修复代码**
-   - 优先查找单元测试覆盖
-   - 修复后本地验证
-   - 确保不引入新的问题
-
-3. **提交代码**
-   - 使用 `[FIXBUG]` 标签提交
-   - 在 commit message 中说明问题和解决方案
-
-### 性能优化建议
-
-1. **前端优化**
-   - Monaco Editor 按需加载语言支持
-   - 使用 `React.lazy()` 代码分割
-   - 大列表使用虚拟滚动
-   - 合理使用 `useMemo`/`useCallback`
-
-2. **后端优化**
-   - 数据库查询添加索引
-   - 使用分页避免大量数据返回
-   - 缓存频繁查询的数据
-
-## 测试指引
-
-### 本地开发测试
-
-**前端 Web 版本**:
-```bash
-cd frontend
-npm install
-npm run dev
-# 访问 http://localhost:5173
-```
-
-**前端 Electron 版本**:
-```bash
-cd frontend
-npm run electron:dev
-```
-
-**后端**:
-```bash
-cd backend
-mvn spring-boot:run
-# 访问 http://localhost:8080
-```
-
-**管理后台**:
-```bash
-# 访问 http://localhost:5173/admin.html
-```
-
-### 部署测试
-
-**Docker 本地部署**:
-```bash
-docker-compose -f docker-compose.local.yml up
-```
-
-**生产环境部署**:
-```bash
-# 前端
-cd frontend
-npm run build
-
-# 后端
-cd backend
-mvn clean package
-
-# Docker 部署
-docker-compose up -d
-```
-
-## 环境变量配置
-
-### 前端 `.env.local`
-
-```env
-# Gemini AI API Configuration
-VITE_GEMINI_API_KEY=your_api_key_here
-VITE_GEMINI_MODEL=gemini-2.0-flash-exp
-```
-
-### 后端 `application.yml`
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/jsonhelper
-    username: postgres
-    password: your_password
-  jpa:
-    hibernate:
-      ddl-auto: update
-```
-
-## 依赖管理
-
-### 添加前端依赖
+- 修改前先看 `git status --short --branch`、相关约束、同类实现和测试；保护用户及其它 Agent 的现有改动，只做任务范围内的最小变更。
+- TypeScript/React 使用函数组件与 Hooks，避免 `any`；Java 保持 Controller → Service → Repository 分层；代码注释使用中文。
+- API 统一返回 `code`、`message`、`data`；前端错误使用现有 toast，后端异常走统一处理器。
+- 每次代码修改同步更新 `CHANGELOG.md`；内部 AI 基建若不影响前端产物，不递增前端版本。
+- 验证强度与风险相称：优先跑相关单测，再跑类型/lint/构建或专项门禁；失败、跳过和未覆盖风险必须如实报告。
+- AI 资产修改至少运行：
 
 ```bash
-cd frontend
-npm install package-name
-# 或开发依赖
-npm install -D package-name
+node scripts/ci/check-ai-governance.mjs
+node scripts/ci/check-maintainability-budgets.mjs --top 35 --no-all
+node scripts/ci/check-ai-asset-distribution.mjs --workspace
 ```
 
-### 添加后端依赖
-
-在 `backend/pom.xml` 中添加 Maven 依赖:
-```xml
-<dependency>
-    <groupId>com.example</groupId>
-    <artifactId>example-package</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-
-## 故障排查
-
-### 常见问题
-
-1. **Monaco Editor 加载失败**
-   - 检查网络连接
-   - 清除浏览器缓存
-   - 确认 CDN 资源可访问
-
-2. **AI 修复不工作**
-   - 检查 Gemini API Key 是否正确配置
-   - 查看浏览器控制台网络请求
-   - 确认 API 配额是否用尽
-
-3. **后端启动失败**
-   - 检查数据库连接配置
-   - 确认端口 8080 未被占用
-   - 查看日志文件定位错误
-
-4. **Electron 打包失败**
-   - 检查 Node.js 版本 (建议 LTS)
-   - 清理 `node_modules` 重新安装
-   - 查看 `electron-builder` 日志
-
-## 相关文档
-
-- [完整架构说明](./ARCHITECTURE.md) - 详细的架构设计和数据流
-- [更新日志](./CHANGELOG.md) - 版本历史和功能变更
-- [贡献指南](./CONTRIBUTING.md) - 如何参与项目开发
-
-## AI 助手使用建议
-
-1. **代码修改前先阅读**
-   - 先用 Read 工具查看相关文件
-   - 理解现有代码结构和模式
-   - 避免破坏现有功能
-
-2. **保持代码风格一致**
-   - 遵循项目现有的命名规范
-   - 使用项目中已有的工具函数和组件
-   - 保持与周围代码相同的缩进和格式
-
-3. **测试验证**
-   - 修改后建议使用 `npm run dev` 本地测试
-   - 确保不引入 TypeScript 类型错误
-   - 验证功能是否符合预期
-
-4. **文档更新**
-   - 重要功能修改后更新 CHANGELOG.md
-   - 新增 API 需要更新 ARCHITECTURE.md
-   - 复杂逻辑添加必要的代码注释
-
-## 项目目标和路线图
-
-**当前版本**: 基础功能完善阶段
-**近期目标**:
-- [ ] 增强 AI 修复准确性
-- [ ] 添加更多 JSON 转换模式
-- [ ] 优化大文件处理性能
-- [ ] 完善用户引导体验
-
-**长期愿景**:
-- 成为开发者首选的 JSON 处理工具
-- 支持更多数据格式 (YAML, XML, etc.)
-- 提供浏览器扩展版本
-- 团队协作功能
-
----
-
-💡 **提示**: 本文档持续更新中，如有疑问请查阅源码或相关文档。
+- 准备提交时由维护者暂存目标文件后运行 `--index`；PR/定时 CI 用 `--head`。未经明确授权，不 stage、commit、push、安装插件或写 outcome/receipt ledger。
