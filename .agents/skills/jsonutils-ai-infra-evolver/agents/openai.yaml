@@ -1,0 +1,4 @@
+interface:
+  display_name: "JSONUtils AI Infra Evolver"
+  short_description: "演进 JSONUtils rules、skills、MCP 与治理证据闭环"
+  default_prompt: "Use $jsonutils-ai-infra-evolver to audit and evolve this repository's AI infrastructure."

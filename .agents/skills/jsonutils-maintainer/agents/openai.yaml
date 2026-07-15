@@ -1,0 +1,4 @@
+interface:
+  display_name: "JSONUtils Maintainer"
+  short_description: "执行 JSONUtils 代码、测试、发布、部署与治理闭环"
+  default_prompt: "Use $jsonutils-maintainer to implement and validate this JSONUtils change."
