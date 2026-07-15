@@ -8,5 +8,5 @@ export const governanceAiEntryContractMaintainabilityBudgets = [
   entryContractBudget('scripts/ci/aiGovernanceMirroredToolEntrySnippetFailures.mjs', 15, 'AI 治理工具薄入口片段漂移 helper 应独立维护共享片段缺失检查'),
   entryContractBudget('scripts/ci/aiGovernanceSharedEntryAuthorityContract.mjs', 30, 'AI 治理共享薄入口片段权威来源契约应独立维护来源文件和锚点反查'),
   entryContractBudget('scripts/ci/aiGovernanceSharedEntrySnippets.mjs', 45, 'AI 治理工具入口共享片段应独立维护跨工具核心规则、权威来源和覆盖文件清单'),
-  entryContractBudget('scripts/ci/aiGovernanceSectionReferences.mjs', 50, 'AI 治理章节引用检查应独立维护 Markdown 章节抽取和章节内关键词校验'),
+  entryContractBudget('scripts/ci/aiGovernanceSectionReferences.mjs', 90, 'AI 治理章节引用检查应单遍识别非 fenced ATX heading 并校验章节内关键词'),
 ];

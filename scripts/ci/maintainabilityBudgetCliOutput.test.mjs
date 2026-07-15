@@ -6,13 +6,8 @@ import { toMaintainabilityBudgetJsonReport } from './maintainabilityBudgetJsonRe
 
 test('可维护性预算 CLI 支持 JSON 摘要输出', () => {
   const output = execFileSync(process.execPath, [
-    'scripts/ci/check-maintainability-budgets.mjs',
-    '--json',
-    '--top=3',
-  ], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-  });
+    'scripts/ci/check-maintainability-budgets.mjs', '--json', '--top=3',
+  ], { cwd: process.cwd(), encoding: 'utf8' });
   const report = JSON.parse(output);
 
   assert.equal(report.ok, true);
@@ -25,6 +20,8 @@ test('可维护性预算 CLI 支持 JSON 摘要输出', () => {
   assert.equal(report.summaries.highUsage.length <= 3, true);
   assert.equal(report.items.all.length, 0);
   assert.equal(report.items.highUsage.length <= 3, true);
+  assert.equal(report.items.scorecardCandidates.length >= report.items.highUsage.length, true);
+  assert.equal(report.counts.scorecardCandidates, report.items.scorecardCandidates.length);
   assert.equal(typeof report.items.highUsage[0].file, 'string');
   assert.equal(typeof report.items.highUsage[0].usageRatio, 'number');
   assert.equal(Array.isArray(report.summaries.nearLimit), true);
@@ -47,4 +44,17 @@ test('可维护性预算 JSON 摘要会保留失败和分组计数', () => {
   assert.equal(report.counts.failures, 1);
   assert.equal(report.counts.highUsageSummaries, 1);
   assert.deepEqual(report.failures, ['src/over.js: 6/5 行，too large']);
+});
+
+test('可维护性预算全局候选事实不随 top 展示参数变化', () => {
+  const run = top => JSON.parse(execFileSync(process.execPath, [
+    'scripts/ci/check-maintainability-budgets.mjs', '--json', `--top=${top}`,
+  ], { cwd: process.cwd(), encoding: 'utf8' }));
+  const topOne = run(1);
+  const topThirtyFive = run(35);
+
+  assert.equal(topOne.items.highUsage.length, 1);
+  assert.equal(topOne.counts.highUsageSummaries, topThirtyFive.counts.highUsageSummaries);
+  assert.deepEqual(topOne.items.scorecardCandidates, topThirtyFive.items.scorecardCandidates);
+  assert.equal(topOne.counts.scorecardCandidates, topThirtyFive.counts.scorecardCandidates);
 });

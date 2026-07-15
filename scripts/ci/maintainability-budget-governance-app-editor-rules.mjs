@@ -15,6 +15,11 @@ export const governanceAppEditorMaintainabilityBudgets = [
     reason: 'App SOURCE 编辑区预算规则应只维护 SOURCE pane 及错误动作预算',
   },
   {
+    file: 'scripts/ci/maintainability-budget-app-editor-scheme-rules.mjs',
+    maxLines: 55,
+    reason: 'App Scheme 编辑器预算规则应只维护扫描、弹窗和 Worker 生命周期预算',
+  },
+  {
     file: 'scripts/ci/maintainability-budget-governance-app-editor-rules.mjs',
     maxLines: 30,
     reason: 'App editor 治理预算规则应只维护 editor 子表自身预算',

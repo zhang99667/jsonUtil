@@ -5,6 +5,8 @@ const checkerBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 export const governanceCheckerMaintainabilityBudgets = [
   ...governanceAiMaintainabilityBudgets,
   checkerBudget('scripts/ci/check-chunk-load-recovery-catches.mjs', 35, 'chunk 恢复 catch 检查 CLI 应只负责报告输出，AST 扫描逻辑放在独立 helper'),
+  checkerBudget('scripts/ci/check-ai-evolution-evals.mjs', 40, 'AI 治理行为 eval 检查 CLI 应只负责人读与 JSON 输出'),
+  checkerBudget('scripts/ci/run-ai-evolution-cases.mjs', 50, 'AI 治理行为 case 执行 CLI 应只负责白名单选择、输出和退出码'),
   checkerBudget('scripts/ci/chunkLoadRecoveryCatchAudit.mjs', 170, 'chunk 恢复 catch AST 检查应只维护动态 import 识别和 dispatch 缺失报告'),
   checkerBudget('scripts/ci/chunkLoadRecoveryCatchAst.mjs', 55, 'chunk 恢复 catch AST 基础 helper 应只封装 TypeScript AST 通用访问和节点命名'),
   checkerBudget('scripts/ci/chunkLoadRecoverySourceFiles.mjs', 40, 'chunk 恢复源码收集 helper 应只维护前端源码遍历和测试文件排除规则'),

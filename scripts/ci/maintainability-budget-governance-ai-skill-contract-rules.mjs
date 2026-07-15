@@ -1,16 +1,31 @@
 import { governanceAiSkillCommandMaintainabilityBudgets } from './maintainability-budget-governance-ai-skill-command-rules.mjs';
-
 const governanceAiSkillContractBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
-
 export const governanceAiSkillContractMaintainabilityBudgets = [
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContract.mjs', 25, 'AI 治理 Codex skill 契约入口应只读取 skill 并执行契约收集器列表'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContractCollectors.mjs', 25, 'AI 治理 Codex skill 契约收集器列表应独立维护结构、章节、引用、目录、命令和发布契约顺序'),
-  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContent.mjs', 15, 'AI 治理 Codex skill 内容读取 helper 应独立维护存在性检查和 UTF-8 读取'),
-  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillFrontmatterContract.mjs', 40, 'AI 治理 Codex skill frontmatter 契约应独立维护 name、description、version 和 tags 元数据校验'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceStableUtf8File.mjs', 75, 'AI 治理稳定文本读取 helper 应统一锁定仓内普通单链接文件、64/256 KiB 上限、descriptor 稳定性与 fatal UTF-8'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContent.mjs', 20, 'AI 治理 Codex skill 内容读取 helper 应只将稳定文本读取状态映射为固定无值诊断'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContextBudgetContract.mjs', 55, 'AI 治理 Codex skill 上下文预算契约应只统计必读章节引用和 skill 本体字节数'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContextPaths.mjs', 55, 'AI 治理 Codex skill 上下文路径 helper 应保守识别项目路径并委托稳定集合计费'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContextPathMeasurement.mjs', 120, 'AI 治理 Codex skill 上下文计费叶子 helper 应拒绝 symlink、realpath 逃逸、非普通节点与读取漂移'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContextReferenceSet.mjs', 35, 'AI 治理 Codex skill 上下文引用集合应复核全部路径前后 manifest 并拒绝跨引用漂移'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillEvalContract.mjs', 80, 'AI 治理 Codex skill eval 契约应校验路由、样例 schema、唯一性和可评分 assertions'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceSkillYamlAuthority.mjs', 150, 'Skill YAML authority helper 应只维护受控 mapping、标量解码、重复键和单文档预检'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceSkillUiAuthorityContract.mjs', 145, 'Skill UI authority helper 应有界校验 policy 布尔开关与 documented dependencies tools sequence，不扩成通用 YAML loader'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceSkillIdentityContract.mjs', 80, 'Skill identity 契约应在 canonical 与 plugin 之间共享 name/description、可选 metadata 歧义和目录语义'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceSkillOptionalFieldsContract.mjs', 45, 'Skill optional 字段契约应在 canonical 与 plugin 之间共享 license、compatibility 与 allowed-tools 值语义'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillFrontmatterContract.mjs', 60, 'AI 治理 Codex skill frontmatter 契约应只编排官方顶层字段、共享 identity 与 metadata 失败顺序'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillMetadata.mjs', 40, 'AI 治理 Codex skill metadata helper 应统一解析 metadata block、字段和值'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillMetadataContract.mjs', 50, 'AI 治理 Codex skill metadata 契约应独立维护重复键、必需字段、string-map、版本和标签格式'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillReleaseContract.mjs', 35, 'AI 治理 Codex skill 发布契约应独立维护 name 与 version 的 CHANGELOG 追踪校验'),
-  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillReleaseTrace.mjs', 30, 'AI 治理 Codex skill 发布追踪 helper 应独立维护 CHANGELOG 读取和 name/version 同行匹配'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillReleaseTrace.mjs', 45, 'AI 治理 Codex skill 发布追踪 helper 应复用受控标量解码并维护 CHANGELOG name/version 同行匹配'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillStructureContract.mjs', 30, 'AI 治理 Codex skill 结构契约应独立维护 frontmatter 边界和核心章节存在性校验'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillUiContract.mjs', 90, 'AI 治理 Codex skill UI 契约应组合稳定读取、openai.yaml 单文档、interface 与 policy/dependencies authority 失败'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillReferenceContract.mjs', 35, 'AI 治理 Codex skill 引用契约应独立维护项目路径和验证脚本存在性校验'),
-  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillSectionContract.mjs', 50, 'AI 治理 Codex skill 章节内容契约应独立维护每个核心章节的最小关键引用'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillProfiles.mjs', 60, 'AI 治理 Codex skill profile 应显式路由已知 skill、派生必需 eval，并为未知 skill 保留安全 core 但阻止静默合入'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillSectionContract.mjs', 65, 'AI 治理 Codex skill 章节契约应分离通用 core、maintainer 运行时与 AI 基建演进要求'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillSourceContract.mjs', 40, 'AI 治理 skill source 契约应在读取 Claude adapter 前拒绝 legacy 副本及 canonical/legacy symlink'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceClaudeSkillAdapters.mjs', 65, 'Claude skill adapter 契约应只维护 canonical 映射、固定模板与普通文件防漂移校验'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceClaudeSkillAdapterCaseDescriptors.mjs', 15, 'Claude skill adapter component case descriptor 应只绑定版本、证据边界与固定测试'),
   ...governanceAiSkillCommandMaintainabilityBudgets,
 ];
