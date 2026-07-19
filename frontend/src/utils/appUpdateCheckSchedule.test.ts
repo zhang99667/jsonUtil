@@ -128,6 +128,49 @@ describe('appUpdateCheckSchedule', () => {
     expect(checkForUpdate).toHaveBeenCalledTimes(3);
   });
 
+  it('监听安装失败时尽力回滚全部资源并保留原始异常', () => {
+    const installError = new Error('焦点监听安装失败');
+    const rollbackError = new Error('回滚失败');
+    const {
+      documentTarget,
+      windowTarget,
+    } = createTargets();
+    windowTarget.addEventListener.mockImplementation(() => {
+      throw installError;
+    });
+    windowTarget.clearTimeout.mockImplementation(() => {
+      throw rollbackError;
+    });
+    documentTarget.removeEventListener.mockImplementation(() => {
+      throw rollbackError;
+    });
+
+    let caughtError: unknown;
+    try {
+      installAppUpdateCheckSchedule({
+        checkForUpdate: vi.fn(),
+        windowTarget,
+        documentTarget,
+        initialDelayMs: 5000,
+        intervalMs: 60000,
+      });
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toBe(installError);
+    expect(windowTarget.clearTimeout).toHaveBeenCalledWith(11);
+    expect(windowTarget.clearInterval).toHaveBeenCalledWith(22);
+    expect(documentTarget.removeEventListener).toHaveBeenCalledWith(
+      'visibilitychange',
+      documentTarget.addEventListener.mock.calls[0][1]
+    );
+    expect(windowTarget.removeEventListener).toHaveBeenCalledWith(
+      'focus',
+      windowTarget.addEventListener.mock.calls[0][1]
+    );
+  });
+
   it('清理定时器并移除同一组监听函数', () => {
     const {
       documentTarget,
