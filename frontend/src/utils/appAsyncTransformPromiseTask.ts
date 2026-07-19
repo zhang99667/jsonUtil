@@ -9,6 +9,8 @@ import { performTransformAsync } from './transformations';
 
 export type AppAsyncTransformTaskCleanup = () => void;
 
+const APP_ASYNC_TRANSFORM_TIMEOUT_MS = 10_000;
+
 export interface AppAsyncTransformPromiseTaskOptions {
   requestId: number;
   snapshot: AppAsyncTransformSnapshot;
@@ -27,10 +29,22 @@ export const startAppAsyncTransformPromiseTask = ({
   onWarn = console.warn,
 }: AppAsyncTransformPromiseTaskOptions): AppAsyncTransformTaskCleanup => {
   let isCancelled = false;
+  let transformTimeout: ReturnType<typeof setTimeout> | undefined;
   const isActiveRequest = () => !isCancelled && isCurrentRequest(requestId);
+  const clearTransformTimeout = () => {
+    if (transformTimeout !== undefined) clearTimeout(transformTimeout);
+    transformTimeout = undefined;
+  };
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    transformTimeout = setTimeout(() => {
+      transformTimeout = undefined;
+      reject(new Error('十秒内未完成'));
+    }, APP_ASYNC_TRANSFORM_TIMEOUT_MS);
+  });
 
-  performTransformAsync(snapshot.input, snapshot.mode)
+  Promise.race([performTransformAsync(snapshot.input, snapshot.mode), timeoutPromise])
     .then(output => {
+      clearTransformTimeout();
       if (!isActiveRequest()) return;
       onSetAsyncTransformResult(buildAppAsyncTransformResult({
         snapshot,
@@ -39,6 +53,7 @@ export const startAppAsyncTransformPromiseTask = ({
       onSetOutputTransforming(false);
     })
     .catch(error => {
+      clearTransformTimeout();
       if (!isActiveRequest()) return;
       const isRecoveryDispatched = dispatchChunkLoadRecoveryEvent(error);
       if (!isRecoveryDispatched) {
@@ -51,5 +66,6 @@ export const startAppAsyncTransformPromiseTask = ({
 
   return () => {
     isCancelled = true;
+    clearTransformTimeout();
   };
 };
