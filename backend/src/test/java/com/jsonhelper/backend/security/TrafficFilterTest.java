@@ -96,6 +96,14 @@ class TrafficFilterTest {
     }
 
     @Test
+    void 超长请求路径按数据库码点上限截断() throws Exception {
+        trafficFilter.doFilter(new MockHttpServletRequest("GET", "/api/" + "p".repeat(251)), new MockHttpServletResponse(), new MockFilterChain());
+        ArgumentCaptor<VisitLog> logCaptor = ArgumentCaptor.forClass(VisitLog.class);
+        verify(visitLogRepository).save(logCaptor.capture());
+        assertEquals("/api/" + "p".repeat(250), logCaptor.getValue().getPath());
+    }
+
+    @Test
     void 截断不会将完整补充平面字符拆成孤立代理项() throws Exception {
         String emoji = "😀";
         String expectedUserAgent = "u".repeat(511) + emoji;
