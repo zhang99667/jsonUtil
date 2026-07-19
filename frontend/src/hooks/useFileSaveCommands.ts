@@ -1,7 +1,7 @@
 import { useCallback, useRef, type Dispatch, type SetStateAction } from 'react';
 import toast from 'react-hot-toast';
 import type { FileTab, TransformMode } from '../types';
-import { writeTextToFileHandleQueued } from '../utils/browserFileHandleWrite';
+import { areFileHandlesSameEntry, writeTextToFileHandleQueued } from '../utils/browserFileHandleWrite';
 import { triggerTextDownload } from '../utils/browserFileSave';
 import { getDetailedErrorMessage, isAbortError } from '../utils/errors';
 import { TEXT_FILE_ACCEPT_EXTENSIONS } from '../utils/fileGuards';
@@ -171,10 +171,18 @@ export const useFileSaveCommands = ({
     try {
       await writeTextToFileHandleQueued(handle, contentToSave);
 
-      const currentWorkspace = getWorkspaceState();
-      const handleIsCurrent = currentWorkspace.files.some(file => (
-        file.id === activeFile.id && file.handle === handle
-      ));
+      let currentWorkspace = getWorkspaceState();
+      const currentHandle = currentWorkspace.files.find(file => file.id === activeFile.id)?.handle;
+      let handleIsCurrent = currentHandle === handle;
+      if (!handleIsCurrent && currentHandle) {
+        try {
+          handleIsCurrent = await areFileHandlesSameEntry(handle, currentHandle);
+        } catch { handleIsCurrent = false; }
+        if (handleIsCurrent) {
+          currentWorkspace = getWorkspaceState();
+          handleIsCurrent = currentWorkspace.files.some(file => file.id === activeFile.id && file.handle === currentHandle);
+        }
+      }
       const shouldReplaceSource = content !== undefined
         && handleIsCurrent
         && currentWorkspace.activeFileId === activeFile.id
@@ -184,7 +192,7 @@ export const useFileSaveCommands = ({
         applySourceState(content);
       }
       setFiles(previousFiles => previousFiles.map(file => (
-        file.id === activeFile.id && file.handle === handle
+        file.id === activeFile.id && handleIsCurrent && file.handle === currentHandle
           ? markWorkspaceFileSnapshotSaved(
               file,
               contentToSave,

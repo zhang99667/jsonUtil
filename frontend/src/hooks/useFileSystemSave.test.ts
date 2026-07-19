@@ -10,6 +10,7 @@ const reactMocks = vi.hoisted(() => ({
 }));
 
 const fileSaveMocks = vi.hoisted(() => ({
+  areFileHandlesSameEntry: vi.fn(),
   triggerTextDownload: vi.fn(),
   writeTextToFileHandleQueued: vi.fn(),
 }));
@@ -27,6 +28,7 @@ vi.mock('react', async importOriginal => ({
   useState: reactMocks.useState,
 }));
 vi.mock('../utils/browserFileHandleWrite', () => ({
+  areFileHandlesSameEntry: fileSaveMocks.areFileHandlesSameEntry,
   writeTextToFileHandleQueued: fileSaveMocks.writeTextToFileHandleQueued,
 }));
 vi.mock('../utils/browserFileSave', () => ({
@@ -96,6 +98,7 @@ const preparePendingWrite = () => {
 describe('useFileSystem 保存边界', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fileSaveMocks.areFileHandlesSameEntry.mockReset().mockResolvedValue(false);
     fileSaveMocks.triggerTextDownload.mockReset();
     fileSaveMocks.writeTextToFileHandleQueued.mockReset().mockResolvedValue(undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -237,43 +240,56 @@ describe('useFileSystem 保存边界', () => {
     );
   });
 
+  it('同一磁盘入口的别名句柄串行保存后收敛最新快照', async () => {
+    const handle2 = { name: 'same.json' } as FileSystemFileHandle;
+    const handle1 = { name: 'same.json', isSameEntry: vi.fn(async candidate => candidate === handle2) } as unknown as FileSystemFileHandle;
+    const finishWrites = new Map<FileSystemFileHandle, () => void>();
+    vi.stubGlobal('window', { showSaveFilePicker: vi.fn().mockResolvedValue(handle2) });
+    fileSaveMocks.areFileHandlesSameEntry.mockImplementation((handle, candidate) => handle.isSameEntry(candidate));
+    fileSaveMocks.writeTextToFileHandleQueued.mockImplementation(handle => new Promise<void>(resolve => { finishWrites.set(handle, resolve); }));
+    const scenario = useFileSystemScenario(createFile('A', handle1));
+    const saveAs = scenario.fileSystem.saveSourceAs();
+    await vi.waitFor(() => expect(fileSaveMocks.writeTextToFileHandleQueued).toHaveBeenCalledWith(handle2, 'A'));
+    scenario.inputRef.current = 'B';
+    scenario.fileSystem.updateActiveFileContent('B');
+    const save = scenario.fileSystem.saveFile();
+    await vi.waitFor(() => expect(fileSaveMocks.writeTextToFileHandleQueued).toHaveBeenCalledWith(handle1, 'B'));
+    finishWrites.get(handle2)!();
+    await expect(saveAs).resolves.toBe(true);
+    expect(scenario.getWorkspaceState().files[0]).toMatchObject({ handle: handle2, savedContent: 'A', isDirty: true });
+    finishWrites.get(handle1)!();
+    await expect(save).resolves.toBe(true);
+    expect(handle1).not.toBe(handle2);
+    expect(scenario.getWorkspaceState().files[0]).toMatchObject({
+      handle: handle2,
+      content: 'B',
+      savedContent: 'B',
+      isDirty: false,
+    });
+    expect(fileSaveMocks.areFileHandlesSameEntry).toHaveBeenCalledWith(handle1, handle2);
+  });
   it('同一标签两次另存乱序完成时只绑定后选句柄', async () => {
     const firstHandle = { name: 'first.json' } as FileSystemFileHandle;
     const secondHandle = { name: 'second.json' } as FileSystemFileHandle;
     let finishFirstWrite = () => undefined;
     let finishSecondWrite = () => undefined;
     vi.stubGlobal('window', {
-      showSaveFilePicker: vi.fn()
-        .mockResolvedValueOnce(firstHandle)
-        .mockResolvedValueOnce(secondHandle),
+      showSaveFilePicker: vi.fn().mockResolvedValueOnce(firstHandle).mockResolvedValueOnce(secondHandle),
     });
     fileSaveMocks.writeTextToFileHandleQueued.mockImplementation(handle => new Promise<void>(resolve => {
       if (handle === firstHandle) finishFirstWrite = resolve;
       if (handle === secondHandle) finishSecondWrite = resolve;
     }));
-    const file = createFile('{"draft":1}');
-    const scenario = useFileSystemScenario(file);
-
+    const scenario = useFileSystemScenario(createFile('{"draft":1}'));
     const firstSave = scenario.fileSystem.saveSourceAs();
-    await vi.waitFor(() => expect(fileSaveMocks.writeTextToFileHandleQueued).toHaveBeenCalledWith(
-      firstHandle,
-      file.content,
-    ));
+    await vi.waitFor(() => expect(fileSaveMocks.writeTextToFileHandleQueued).toHaveBeenCalledWith(firstHandle, '{"draft":1}'));
     const secondSave = scenario.fileSystem.saveSourceAs();
-    await vi.waitFor(() => expect(fileSaveMocks.writeTextToFileHandleQueued).toHaveBeenCalledWith(
-      secondHandle,
-      file.content,
-    ));
-
+    await vi.waitFor(() => expect(fileSaveMocks.writeTextToFileHandleQueued).toHaveBeenCalledWith(secondHandle, '{"draft":1}'));
     finishSecondWrite();
     await expect(secondSave).resolves.toBe(true);
     finishFirstWrite();
     await expect(firstSave).resolves.toBe(true);
-
     expect(scenario.setFiles).toHaveBeenCalledTimes(1);
-    expect(scenario.getWorkspaceState().files[0]).toMatchObject({
-      name: 'second.json',
-      handle: secondHandle,
-    });
+    expect(scenario.getWorkspaceState().files[0]).toMatchObject({ name: 'second.json', handle: secondHandle });
   });
 });
