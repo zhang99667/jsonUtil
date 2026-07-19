@@ -72,12 +72,16 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
-            JwtAuthenticationFilter jwtAuthenticationFilter
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            SecurityErrorResponseHandler securityErrorResponseHandler
     ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(securityErrorResponseHandler)
+                        .accessDeniedHandler(securityErrorResponseHandler))
                 .authorizeHttpRequests(auth -> auth
                         // 允许所有跨域预检请求
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
