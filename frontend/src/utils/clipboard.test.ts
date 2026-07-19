@@ -44,6 +44,37 @@ describe('copyText', () => {
     expect(textarea.remove).toHaveBeenCalled();
   });
 
+  it.each([
+    ['聚焦', 'focus'],
+    ['选择', 'select'],
+  ] as const)('textarea %s阶段异常时清理临时节点并保留原始错误', async (_stage, failingMethod) => {
+    const originalError = new Error(`${failingMethod} failed`);
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    const textarea = {
+      value: '',
+      style: {} as CSSStyleDeclaration,
+      setAttribute: vi.fn(),
+      focus: vi.fn(),
+      select: vi.fn(),
+      remove: vi.fn(),
+    };
+    const execCommand = vi.fn();
+    textarea[failingMethod].mockImplementation(() => {
+      throw originalError;
+    });
+
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    vi.stubGlobal('document', {
+      body: { appendChild: vi.fn() },
+      createElement: vi.fn().mockReturnValue(textarea),
+      execCommand,
+    });
+
+    await expect(copyText('fallback')).rejects.toBe(originalError);
+    expect(execCommand).not.toHaveBeenCalled();
+    expect(textarea.remove).toHaveBeenCalledTimes(1);
+  });
+
   it('所有复制方式都不可用时抛出错误', async () => {
     vi.stubGlobal('navigator', {});
     vi.stubGlobal('document', {
