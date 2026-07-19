@@ -16,6 +16,7 @@ describe('chunkStrategy', () => {
   it('保持首屏关键依赖的稳定分包名称', () => {
     expect(getManualChunkName('/repo/node_modules/monaco-editor/esm/vs/editor/editor.api.js')).toBe('vendor-monaco');
     expect(getManualChunkName('/repo/node_modules/@google/genai/dist/index.js')).toBe('vendor-ai');
+    expect(getManualChunkName('/repo/node_modules/jsonrepair/lib/esm/jsonrepair.js')).toBe('vendor-ai');
     expect(getManualChunkName('/repo/node_modules/react-dom/client.js')).toBe('vendor-react');
     expect(getManualChunkName('/repo/node_modules/antd/es/button/index.js')).toBe('vendor-antd');
   });

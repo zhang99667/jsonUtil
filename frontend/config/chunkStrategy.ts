@@ -88,7 +88,7 @@ export const getManualChunkName = (id: string): string | undefined => {
   const packageName = getNodeModulePackageName(normalizedId);
 
   if (packageName === 'monaco-editor') return 'vendor-monaco';
-  if (packageName === '@google/genai') return 'vendor-ai';
+  if (packageName === '@google/genai' || packageName === 'jsonrepair') return 'vendor-ai';
   if (['react', 'react-dom', 'scheduler'].includes(packageName || '')) return 'vendor-react';
   if (packageName === '@ant-design/icons') return 'vendor-antd-icons';
   if (ANT_DESIGN_CHART_PACKAGES.has(packageName || '')) return 'vendor-ant-design-charts';
