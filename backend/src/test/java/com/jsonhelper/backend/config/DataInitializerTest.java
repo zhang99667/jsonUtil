@@ -9,7 +9,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -37,26 +36,14 @@ class DataInitializerTest {
 
     @BeforeEach
     void setUp() {
-        dataInitializer = new DataInitializer(userRepository, passwordEncoder);
-        ReflectionTestUtils.setField(dataInitializer, "bootstrapEmail", "admin@example.com");
+        dataInitializer = createInitializer(false, "", "");
     }
 
     @Test
     void runSkipsBootstrapByDefault() throws Exception {
-        ReflectionTestUtils.setField(dataInitializer, "bootstrapEnabled", false);
-
         dataInitializer.run();
 
         verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
-    void runRejectsMissingBootstrapPassword() {
-        ReflectionTestUtils.setField(dataInitializer, "bootstrapEnabled", true);
-        ReflectionTestUtils.setField(dataInitializer, "bootstrapUsername", "admin");
-        ReflectionTestUtils.setField(dataInitializer, "bootstrapPassword", "");
-
-        assertThrows(IllegalStateException.class, () -> dataInitializer.run());
     }
 
     @Test
@@ -71,6 +58,7 @@ class DataInitializerTest {
         verify(userRepository).saveAndFlush(argThat(user ->
                 "admin".equals(user.getUsername())
                         && "encoded-password".equals(user.getPasswordHash())
+                        && "admin@example.com".equals(user.getEmail())
                         && "ADMIN".equals(user.getRole())
                         && Boolean.TRUE.equals(user.getEnabled())
         ));
@@ -158,9 +146,17 @@ class DataInitializerTest {
     }
 
     private void configureBootstrap(String password) {
-        ReflectionTestUtils.setField(dataInitializer, "bootstrapEnabled", true);
-        ReflectionTestUtils.setField(dataInitializer, "bootstrapUsername", "admin");
-        ReflectionTestUtils.setField(dataInitializer, "bootstrapPassword", password);
+        dataInitializer = createInitializer(true, "admin", password);
+    }
+
+    private DataInitializer createInitializer(boolean enabled, String username, String password) {
+        AdminBootstrapProperties properties = new AdminBootstrapProperties(
+                enabled,
+                username,
+                password,
+                "admin@example.com"
+        );
+        return new DataInitializer(userRepository, passwordEncoder, properties);
     }
 
     private User user(String role, boolean enabled) {

@@ -4,7 +4,6 @@ import com.jsonhelper.backend.entity.User;
 import com.jsonhelper.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,38 +21,17 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    /** 是否允许通过环境变量创建首个管理员账号 */
-    @Value("${admin.bootstrap.enabled:false}")
-    private boolean bootstrapEnabled;
-
-    @Value("${admin.bootstrap.username:}")
-    private String bootstrapUsername;
-
-    @Value("${admin.bootstrap.password:}")
-    private String bootstrapPassword;
-
-    @Value("${admin.bootstrap.email:admin@example.com}")
-    private String bootstrapEmail;
+    private final AdminBootstrapProperties bootstrapProperties;
 
     @Override
     public void run(String... args) throws Exception {
-        if (!bootstrapEnabled) {
+        if (!bootstrapProperties.isEnabled()) {
             log.info("管理员初始化未启用");
             return;
         }
 
-        String username = bootstrapUsername == null ? "" : bootstrapUsername.trim();
-        String password = bootstrapPassword == null ? "" : bootstrapPassword;
-        String passwordForValidation = password.strip();
-
-        if (username.isEmpty() || passwordForValidation.isEmpty()) {
-            throw new IllegalStateException("已启用管理员初始化，但 ADMIN_BOOTSTRAP_USERNAME 或 ADMIN_BOOTSTRAP_PASSWORD 未配置");
-        }
-
-        if (password.length() < 8 || passwordForValidation.startsWith("change-me")) {
-            throw new IllegalStateException("管理员初始化密码不符合要求，请配置至少 8 位且非示例值的 ADMIN_BOOTSTRAP_PASSWORD");
-        }
+        String username = bootstrapProperties.getUsername();
+        String password = bootstrapProperties.getPassword();
 
         Optional<User> existingUser = userRepository.findByUsername(username);
         if (existingUser.isPresent()) {
@@ -66,7 +44,7 @@ public class DataInitializer implements CommandLineRunner {
         User user = new User();
         user.setUsername(username);
         user.setPasswordHash(passwordEncoder.encode(password));
-        user.setEmail(bootstrapEmail);
+        user.setEmail(bootstrapProperties.getEmail());
         user.setRole(ADMIN_ROLE);
         user.setEnabled(true);
         try {
