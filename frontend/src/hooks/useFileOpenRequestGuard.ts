@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { TransformMode } from '../types';
 
 export interface FileOpenRequest {
@@ -14,47 +14,46 @@ interface UseFileOpenRequestGuardOptions {
 }
 
 export const useFileOpenRequestGuard = ({ inputRef, mode }: UseFileOpenRequestGuardOptions) => {
-  const modeRef = useRef(mode);
-  const workspaceRevisionRef = useRef(0);
-  const requestSequenceRef = useRef(0);
-  // 在提交阶段同步模式，避免旧文件读取在被动副作用前误激活
+  const stateRef = useRef({ mode, requestSequence: 0, workspaceRevision: 0 });
+  // 提交时同步模式，卸载时单独使未完成请求失效。
   useLayoutEffect(() => {
-    if (modeRef.current === mode) return;
-    modeRef.current = mode;
-    workspaceRevisionRef.current += 1;
+    const state = stateRef.current;
+    if (state.mode === mode) return;
+    state.mode = mode;
+    state.workspaceRevision += 1;
   }, [mode]);
+  useEffect(() => () => { stateRef.current.workspaceRevision += 1; }, []);
 
   const markWorkspaceIntent = useCallback((nextMode?: TransformMode) => {
-    workspaceRevisionRef.current += 1;
-    if (nextMode !== undefined) modeRef.current = nextMode;
+    const state = stateRef.current;
+    state.workspaceRevision += 1;
+    if (nextMode !== undefined) state.mode = nextMode;
   }, []);
 
-  const captureWorkspaceRevision = useCallback(() => workspaceRevisionRef.current, []);
-  const captureWorkspaceMode = useCallback(() => modeRef.current, []);
-  const isWorkspaceRevisionCurrent = useCallback((revision: number) => revision === workspaceRevisionRef.current, []);
-
+  const captureWorkspaceRevision = useCallback(() => stateRef.current.workspaceRevision, []);
+  const captureWorkspaceMode = useCallback(() => stateRef.current.mode, []);
+  const isWorkspaceRevisionCurrent = useCallback((revision: number) => revision === stateRef.current.workspaceRevision, []);
   const beginRequest = useCallback((): FileOpenRequest => ({
-    id: ++requestSequenceRef.current,
-    workspaceRevision: workspaceRevisionRef.current,
+    id: ++stateRef.current.requestSequence,
+    workspaceRevision: stateRef.current.workspaceRevision,
     input: inputRef.current,
-    mode: modeRef.current,
+    mode: stateRef.current.mode,
   }), [inputRef]);
 
   const inspectRequest = useCallback((request: FileOpenRequest) => {
+    const state = stateRef.current;
     const currentInput = inputRef.current;
-    const currentMode = modeRef.current;
+    const currentMode = state.mode;
     return {
       currentInput,
       currentMode,
-      shouldActivate: request.id === requestSequenceRef.current
-        && request.workspaceRevision === workspaceRevisionRef.current
+      shouldActivate: request.id === state.requestSequence
+        && request.workspaceRevision === state.workspaceRevision
         && request.input === currentInput
         && request.mode === currentMode,
     };
   }, [inputRef]);
 
-  return {
-    beginRequest, captureWorkspaceMode, captureWorkspaceRevision, inspectRequest, isWorkspaceRevisionCurrent,
-    markWorkspaceIntent,
-  };
+  return { beginRequest, captureWorkspaceMode, captureWorkspaceRevision, inspectRequest,
+    isWorkspaceRevisionCurrent, markWorkspaceIntent };
 };
