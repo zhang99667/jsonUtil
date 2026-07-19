@@ -18,6 +18,9 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class TrafficFilter extends OncePerRequestFilter {
 
+    private static final int USER_AGENT_MAX_CODE_POINTS = 512;
+    private static final int REFERER_MAX_CODE_POINTS = 1024;
+
     private final VisitLogRepository visitLogRepository;
 
     @Override
@@ -33,8 +36,8 @@ public class TrafficFilter extends OncePerRequestFilter {
                 visitLog.setIp(request.getRemoteAddr());
                 visitLog.setPath(path);
                 visitLog.setMethod(request.getMethod());
-                visitLog.setUserAgent(getUserAgent(request));
-                visitLog.setReferer(getReferer(request));
+                visitLog.setUserAgent(truncateByCodePoints(request.getHeader("User-Agent"), USER_AGENT_MAX_CODE_POINTS));
+                visitLog.setReferer(truncateByCodePoints(request.getHeader("Referer"), REFERER_MAX_CODE_POINTS));
                 visitLogRepository.save(visitLog);
             } catch (Exception e) {
                 // 流量统计是旁路能力，持久化失败不能阻断正常请求。
@@ -58,19 +61,10 @@ public class TrafficFilter extends OncePerRequestFilter {
                 && !path.startsWith("/api/visitor/events");
     }
 
-    private String getUserAgent(HttpServletRequest request) {
-        String ua = request.getHeader("User-Agent");
-        if (ua != null && ua.length() > 512) {
-            ua = ua.substring(0, 512);
+    private String truncateByCodePoints(String value, int maxCodePoints) {
+        if (value == null || value.codePointCount(0, value.length()) <= maxCodePoints) {
+            return value;
         }
-        return ua;
-    }
-
-    private String getReferer(HttpServletRequest request) {
-        String referer = request.getHeader("Referer");
-        if (referer != null && referer.length() > 1024) {
-            referer = referer.substring(0, 1024);
-        }
-        return referer;
+        return value.substring(0, value.offsetByCodePoints(0, maxCodePoints));
     }
 }
