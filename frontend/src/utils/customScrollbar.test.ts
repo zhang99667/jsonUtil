@@ -31,18 +31,27 @@ describe('customScrollbar', () => {
     }).thumbOffset).toBe(50);
   });
 
-  it('拖拽计算在容器尺寸缺失时保持起点', () => {
+  it('容器尺寸缺失时保持拖拽起点', () => {
     expect(getCustomScrollbarDragScrollPos({
       startScrollPos: 20,
       delta: 10,
       scrollSize: 100,
       clientSize: 0,
     })).toBe(20);
+  });
+
+  it('按实际滚动块可移动轨道换算拖拽距离', () => {
     expect(getCustomScrollbarDragScrollPos({
       startScrollPos: 20,
       delta: 10,
       scrollSize: 200,
       clientSize: 100,
     })).toBe(40);
+    expect(getCustomScrollbarDragScrollPos({
+      startScrollPos: 0,
+      delta: 95,
+      scrollSize: 10000,
+      clientSize: 100,
+    })).toBe(9900);
   });
 });
