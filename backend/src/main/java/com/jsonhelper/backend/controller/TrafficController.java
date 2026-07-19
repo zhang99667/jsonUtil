@@ -22,10 +22,6 @@ public class TrafficController {
     private final TrafficService trafficService;
     private final ToolEventService toolEventService;
 
-    /**
-     * 获取流量概览数据
-     * @param days 统计天数，默认7天
-     */
     @GetMapping("/overview")
     public Result<TrafficOverviewDTO> getOverview(
             @RequestParam(name = "days", defaultValue = "7")
@@ -36,10 +32,6 @@ public class TrafficController {
         return Result.success(overview);
     }
 
-    /**
-     * 获取每日趋势数据
-     * @param days 统计天数，默认30天
-     */
     @GetMapping("/trend")
     public Result<List<DailyTrendDTO>> getDailyTrend(
             @RequestParam(name = "days", defaultValue = "30")
@@ -50,11 +42,6 @@ public class TrafficController {
         return Result.success(trend);
     }
 
-    /**
-     * 获取IP访问排行
-     * @param days 统计天数，默认7天
-     * @param limit 返回条数，默认10条
-     */
     @GetMapping("/top-ips")
     public Result<List<IpStatsDTO>> getTopIps(
             @RequestParam(name = "days", defaultValue = "7")
@@ -69,11 +56,6 @@ public class TrafficController {
         return Result.success(topIps);
     }
 
-    /**
-     * 获取路径访问排行
-     * @param days 统计天数，默认7天
-     * @param limit 返回条数，默认10条
-     */
     @GetMapping("/top-paths")
     public Result<List<PathStatsDTO>> getTopPaths(
             @RequestParam(name = "days", defaultValue = "7")
@@ -102,11 +84,6 @@ public class TrafficController {
         return Result.success(hourly);
     }
 
-    /**
-     * 获取地理位置分布统计
-     * @param days 统计天数，默认7天
-     * @param limit 返回条数，默认15条
-     */
     @GetMapping("/geo-distribution")
     public Result<List<GeoStatsDTO>> getGeoDistribution(
             @RequestParam(name = "days", defaultValue = "7")
@@ -121,11 +98,6 @@ public class TrafficController {
         return Result.success(geoStats);
     }
 
-    /**
-     * 获取设备类型分布统计
-     * @param days 统计天数，默认7天
-     * @param limit 返回条数，默认10条
-     */
     @GetMapping("/device-distribution")
     public Result<List<DeviceStatsDTO>> getDeviceDistribution(
             @RequestParam(name = "days", defaultValue = "7")
@@ -140,11 +112,6 @@ public class TrafficController {
         return Result.success(deviceStats);
     }
 
-    /**
-     * 获取浏览器分布统计
-     * @param days 统计天数，默认7天
-     * @param limit 返回条数，默认10条
-     */
     @GetMapping("/browser-distribution")
     public Result<List<DeviceStatsDTO>> getBrowserDistribution(
             @RequestParam(name = "days", defaultValue = "7")
@@ -159,11 +126,6 @@ public class TrafficController {
         return Result.success(browserStats);
     }
 
-    /**
-     * 获取来源分布统计
-     * @param days 统计天数，默认7天
-     * @param limit 返回条数，默认10条
-     */
     @GetMapping("/referer-distribution")
     public Result<List<RefererStatsDTO>> getRefererDistribution(
             @RequestParam(name = "days", defaultValue = "7")
@@ -178,10 +140,6 @@ public class TrafficController {
         return Result.success(refererStats);
     }
 
-    /**
-     * 获取停留时长分布统计
-     * @param days 统计天数，默认7天
-     */
     @GetMapping("/session-duration")
     public Result<List<SessionStatsDTO>> getSessionDuration(
             @RequestParam(name = "days", defaultValue = "7")
