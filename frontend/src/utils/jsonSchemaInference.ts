@@ -1,3 +1,5 @@
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import { formatUnknownError } from './errors';
 import { getJsonArraySampleEntries } from './jsonArraySampling';
 import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
@@ -69,6 +71,17 @@ type ParsedSchemaSource = {
 };
 
 const MAX_SCHEMA_INFERENCE_DEPTH = 8;
+const STRING_FORMATS = ['email', 'date-time', 'uuid', 'uri'] as const;
+const stringFormatValidator = addFormats(new Ajv({ strict: false }), [...STRING_FORMATS]).compile({
+  type: 'object',
+  minProperties: 1,
+  maxProperties: 1,
+  propertyNames: { enum: STRING_FORMATS },
+  properties: Object.fromEntries(STRING_FORMATS.map(format => [
+    format,
+    { type: 'string', format },
+  ])),
+});
 
 const shouldIncludeRequired = (options: JsonSchemaInferenceOptions): boolean => (
   options.requiredMode !== 'loose'
@@ -104,22 +117,7 @@ const inferStringFormat = (value: string): InferredSchema['format'] | undefined 
   const text = value.trim();
   if (!text || text !== value) return undefined;
 
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return 'email';
-
-  if (
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(text) &&
-    !Number.isNaN(Date.parse(text))
-  ) {
-    return 'date-time';
-  }
-
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)) {
-    return 'uuid';
-  }
-
-  if (/^[A-Za-z][A-Za-z0-9+.-]*:[^\s]+$/.test(text)) return 'uri';
-
-  return undefined;
+  return STRING_FORMATS.find(format => stringFormatValidator({ [format]: text }));
 };
 
 const mergeStringSchemas = (schemas: InferredSchema[]): InferredSchema => {

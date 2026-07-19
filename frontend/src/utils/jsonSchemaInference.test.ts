@@ -174,6 +174,40 @@ describe('jsonSchemaInference', () => {
     expect(result.trustSummary?.formatFieldCount).toBe(4);
   });
 
+  it('非法公历日期不推断为日期时间格式', () => {
+    const result = inferJsonSchemaFromText(JSON.stringify({
+      createdAt: '2026-02-30T10:11:12Z',
+    }));
+    const schema = JSON.parse(result.schemaText || '{}');
+
+    expect(schema.properties.createdAt).toEqual({ type: 'string' });
+    expect(result.trustSummary?.formatFieldCount).toBe(0);
+  });
+
+  it('合法闰日继续推断为日期时间格式', () => {
+    const result = inferJsonSchemaFromText(JSON.stringify({
+      createdAt: '2024-02-29T10:11:12Z',
+    }));
+    const schema = JSON.parse(result.schemaText || '{}');
+
+    expect(schema.properties.createdAt).toEqual({
+      type: 'string',
+      format: 'date-time',
+    });
+  });
+
+  it('第七版 UUID 推断为标准 UUID 格式', () => {
+    const result = inferJsonSchemaFromText(JSON.stringify({
+      traceId: '019535d9-3df7-7a2a-8d34-9d87b086c341',
+    }));
+    const schema = JSON.parse(result.schemaText || '{}');
+
+    expect(schema.properties.traceId).toEqual({
+      type: 'string',
+      format: 'uuid',
+    });
+  });
+
   it('数组字符串仅在所有样本 format 一致时保留 format', () => {
     const emailResult = inferJsonSchemaFromText(JSON.stringify({
       contacts: ['a@example.com', 'b@example.com'],

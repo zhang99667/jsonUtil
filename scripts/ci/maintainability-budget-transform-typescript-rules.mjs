@@ -6,8 +6,13 @@ export const transformTypeScriptMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/utils/jsonSchemaInference.ts',
-    maxLines: 410,
-    reason: 'JSON Schema 推断入口已复用数组采样，后续增长应继续拆分模型合并与摘要职责',
+    maxLines: 400,
+    reason: 'JSON Schema 推断入口复用数组采样与 Ajv 标准格式验证，后续增长应继续拆分模型合并与摘要职责',
+  },
+  {
+    file: 'frontend/src/utils/jsonSchemaInference.test.ts',
+    maxLines: 320,
+    reason: 'JSON Schema 推断测试锁定结构合并、数组采样、可信摘要与标准格式边界',
   },
   {
     file: 'frontend/src/utils/jsonToTypeScriptInference.ts',
