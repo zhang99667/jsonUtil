@@ -10,6 +10,7 @@ const clipboardMocks = vi.hoisted(() => ({
 const reactMocks = vi.hoisted(() => ({
   setPendingRequest: vi.fn(),
   useCallback: vi.fn((callback: unknown) => callback),
+  useRef: vi.fn(() => ({ current: 0 })),
   useState: vi.fn(),
 }));
 
@@ -21,6 +22,7 @@ const toastMocks = vi.hoisted(() => ({
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
   useCallback: reactMocks.useCallback,
+  useRef: reactMocks.useRef,
   useState: reactMocks.useState,
 }));
 
