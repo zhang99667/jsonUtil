@@ -116,7 +116,7 @@
 | `POSTGRES_PASSWORD` | 是 | 强密码，不能使用 `change-me` 示例值 |
 | `SPRING_DATASOURCE_PASSWORD` | 是 | 与数据库账号匹配，不能使用 `change-me` 示例值 |
 | `JWT_SECRET` | 是 | 足够长的随机值，建议使用 Base64；后端会拒绝过短 secret |
-| `JWT_EXPIRATION` | 否 | 默认 `86400000` 毫秒；支持 `24h` 等 Spring Boot 时长格式，且必须大于零 |
+| `JWT_EXPIRATION` | 否 | 默认 `86400000` 毫秒；支持 `24h` 等 Spring Boot 时长格式，且至少为 1 毫秒 |
 | `ADMIN_BOOTSTRAP_ENABLED` | 否 | 默认 `false`；首次创建管理员后应关闭 |
 | `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD` / `ADMIN_BOOTSTRAP_EMAIL` | 条件必填 | 仅在 `ADMIN_BOOTSTRAP_ENABLED=true` 时使用；密码按配置原值编码；同名账号必须是已启用管理员，否则启动失败 |
 | `SPRING_JPA_HIBERNATE_DDL_AUTO` | 否 | 生产默认 `validate`，数据库结构由 Flyway 管理 |
