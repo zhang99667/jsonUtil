@@ -6,6 +6,7 @@ import com.jsonhelper.backend.repository.VisitLogRepository;
 import com.jsonhelper.backend.service.GeoService;
 import com.jsonhelper.backend.service.ToolEventService;
 import com.jsonhelper.backend.service.TrafficService;
+import com.jsonhelper.backend.service.UserAgentClassifier;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.junit.jupiter.api.AfterEach;
@@ -50,12 +51,15 @@ class TrafficControllerTest {
     @Mock
     private ToolEventRepository toolEventRepository;
 
+    @Mock
+    private UserAgentClassifier userAgentClassifier;
+
     private LocalValidatorFactoryBean validator;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        TrafficService trafficService = new TrafficService(visitLogRepository, new GeoService());
+        TrafficService trafficService = new TrafficService(visitLogRepository, new GeoService(), userAgentClassifier);
         ToolEventService toolEventService = new ToolEventService(toolEventRepository);
         validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();

@@ -23,6 +23,7 @@ public class TrafficService {
 
     private final VisitLogRepository visitLogRepository;
     private final GeoService geoService;
+    private final UserAgentClassifier userAgentClassifier;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final Duration SESSION_INACTIVITY_TIMEOUT = Duration.ofMinutes(30);
     private static final List<String> DURATION_BUCKET_NAMES = List.of(
@@ -237,7 +238,7 @@ public class TrafficService {
         }
 
         // 先按UA在数据库聚合，再按访问次数累加设备类型
-        DistributionCounts deviceCounts = aggregateDistributionCounts(userAgentCounts, this::parseDeviceType);
+        DistributionCounts deviceCounts = aggregateDistributionCounts(userAgentCounts, userAgentClassifier::classifyDevice);
 
         return buildDistributionStats(deviceCounts, limit, (device, count, percentage) -> DeviceStatsDTO.builder()
                 .device(device)
@@ -268,7 +269,7 @@ public class TrafficService {
         }
 
         // 先按UA在数据库聚合，再按访问次数累加浏览器类型
-        DistributionCounts browserCounts = aggregateDistributionCounts(userAgentCounts, this::parseBrowser);
+        DistributionCounts browserCounts = aggregateDistributionCounts(userAgentCounts, userAgentClassifier::classifyBrowser);
 
         return buildDistributionStats(browserCounts, limit, (browser, count, percentage) -> DeviceStatsDTO.builder()
                 .device(null)
@@ -459,77 +460,6 @@ public class TrafficService {
         if (seconds < 180) return "1-3分钟";
         if (seconds < 600) return "3-10分钟";
         return "10分钟以上";
-    }
-
-    /**
-     * 解析设备类型
-     */
-    private String parseDeviceType(String ua) {
-        if (ua == null || ua.isEmpty()) {
-            return "未知";
-        }
-        String lowerUa = ua.toLowerCase();
-        
-        // 检测爬虫/机器人
-        if (lowerUa.contains("bot") || lowerUa.contains("spider") || lowerUa.contains("crawler") 
-            || lowerUa.contains("slurp") || lowerUa.contains("googlebot") || lowerUa.contains("bingbot")) {
-            return "爬虫";
-        }
-        // 检测移动设备
-        if (lowerUa.contains("mobile") || lowerUa.contains("android") && !lowerUa.contains("tablet")
-            || lowerUa.contains("iphone") || lowerUa.contains("ipod")) {
-            return "手机";
-        }
-        // 检测平板
-        if (lowerUa.contains("tablet") || lowerUa.contains("ipad")) {
-            return "平板";
-        }
-        // 默认为PC
-        if (lowerUa.contains("windows") || lowerUa.contains("macintosh") || lowerUa.contains("linux")) {
-            return "电脑";
-        }
-        return "其他";
-    }
-
-    /**
-     * 解析浏览器类型
-     */
-    private String parseBrowser(String ua) {
-        if (ua == null || ua.isEmpty()) {
-            return "未知";
-        }
-        String lowerUa = ua.toLowerCase();
-        
-        // 按检测优先级排序（有些UA包含多个浏览器标识）
-        if (lowerUa.contains("edg/") || lowerUa.contains("edge/")) {
-            return "Edge";
-        }
-        if (lowerUa.contains("opr/") || lowerUa.contains("opera")) {
-            return "Opera";
-        }
-        if (lowerUa.contains("chrome") && !lowerUa.contains("chromium")) {
-            return "Chrome";
-        }
-        if (lowerUa.contains("firefox")) {
-            return "Firefox";
-        }
-        if (lowerUa.contains("safari") && !lowerUa.contains("chrome")) {
-            return "Safari";
-        }
-        if (lowerUa.contains("msie") || lowerUa.contains("trident")) {
-            return "IE";
-        }
-        // 检测常见爬虫
-        if (lowerUa.contains("googlebot")) {
-            return "Googlebot";
-        }
-        if (lowerUa.contains("bingbot")) {
-            return "Bingbot";
-        }
-        if (lowerUa.contains("bot") || lowerUa.contains("spider")) {
-            return "其他爬虫";
-        }
-        return "其他";
     }
 
     private record TimeWindow(LocalDateTime start, LocalDateTime end) {

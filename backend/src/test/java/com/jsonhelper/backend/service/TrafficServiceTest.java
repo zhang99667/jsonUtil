@@ -35,6 +35,9 @@ class TrafficServiceTest {
     @Mock
     private VisitLogRepository visitLogRepository;
 
+    @Mock
+    private UserAgentClassifier userAgentClassifier;
+
     private StubGeoService geoService;
 
     private TrafficService trafficService;
@@ -62,7 +65,7 @@ class TrafficServiceTest {
     @BeforeEach
     void setUp() {
         geoService = new StubGeoService();
-        trafficService = new TrafficService(visitLogRepository, geoService);
+        trafficService = new TrafficService(visitLogRepository, geoService, userAgentClassifier);
     }
 
     @Test
@@ -145,6 +148,7 @@ class TrafficServiceTest {
 
     @Test
     void getDeviceDistributionAggregatesByUserAgentCountBeforeParsingDevice() {
+        when(userAgentClassifier.classifyDevice(any())).thenReturn("电脑", "手机");
         when(visitLogRepository.countByUserAgentInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of(
                         valueCount("Mozilla/5.0 (Windows NT 10.0; Win64; x64)", 3L),
@@ -164,6 +168,7 @@ class TrafficServiceTest {
 
     @Test
     void getBrowserDistributionAggregatesByUserAgentCountBeforeParsingBrowser() {
+        when(userAgentClassifier.classifyBrowser(any())).thenReturn("Chrome", "Firefox");
         when(visitLogRepository.countByUserAgentInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of(
                         valueCount(
