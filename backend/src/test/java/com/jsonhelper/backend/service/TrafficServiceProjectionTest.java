@@ -26,11 +26,14 @@ class TrafficServiceProjectionTest {
     @Mock
     private GeoService geoService;
 
+    @Mock
+    private UserAgentClassifier userAgentClassifier;
+
     private TrafficService trafficService;
 
     @BeforeEach
     void setUp() {
-        trafficService = new TrafficService(visitLogRepository, geoService);
+        trafficService = new TrafficService(visitLogRepository, geoService, userAgentClassifier);
     }
 
     @Test
