@@ -16,12 +16,7 @@ describe('aiLocalJsonRepair', () => {
       {items:[1,2,], note:"line
       break"}`)).toEqual({
       fixedJson: '{"items":[1,2],"note":"line\\n      break"}',
-      ruleLabels: [
-        '移除 JSON 注释',
-        '修正常见 JS 对象写法',
-        '移除尾随逗号',
-        '转义字符串内换行/控制字符',
-      ],
+      ruleLabels: ['修正非标准 JSON 语法'],
     });
   });
 
@@ -55,6 +50,38 @@ describe('aiLocalJsonRepair', () => {
     expect(repairJsonLocally(
       "{text:'it\\'s ok', ok:true}"
     )).toBe('{"text":"it\'s ok","ok":true}');
+  });
+
+  it('成熟修复器支持缺少分隔符、截断结构和脚本语言常量', () => {
+    expect(repairJsonLocally(
+      '{items:[1 2 3], active:True'
+    )).toBe('{"items":[1,2,3],"active":true}');
+  });
+
+  it('成熟修复器支持提取代码围栏中的 JSON', () => {
+    expect(repairJsonLocally('```json\n{ok:true}\n```')).toBe('{"ok":true}');
+    expect(repairJsonLocally('```\n{ok:true}\n```')).toBe('{"ok":true}');
+  });
+
+  it('缺失属性值、数组空槽和普通文字不由本地修复器猜测', () => {
+    expect(repairJsonLocally('{ok:}')).toBeNull();
+    expect(repairJsonLocally('这不是 JSON')).toBeNull();
+    expect(repairJsonLocally('{ok: /* 注释 */ next:1}')).toBeNull();
+    expect(repairJsonLocally('{ok: // 注释\nnext:1}')).toBeNull();
+    expect(repairJsonLocally('[1,,2]')).toBeNull();
+  });
+
+  it('缺失值守卫不会误判字符串和注释中的分隔符', () => {
+    expect(repairJsonLocally(
+      '{text:": }", /* 示例: } */ ok:true}'
+    )).toBe('{"text":": }","ok":true}');
+  });
+
+  it('日期、版本文本和非 JSON 代码围栏不会被包装成字符串', () => {
+    expect(repairJsonLocally('2026-07-19')).toBeNull();
+    expect(repairJsonLocally('1.2.3')).toBeNull();
+    expect(repairJsonLocally('-not-json')).toBeNull();
+    expect(repairJsonLocally('```text\nhello\n```')).toBeNull();
   });
 
   it('空输入不会生成修复结果', () => {

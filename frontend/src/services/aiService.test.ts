@@ -47,7 +47,7 @@ describe('fixJsonWithAI', () => {
       .resolves.toEqual({
         fixedJson: '{"token":"real-token","ok":true}',
         repairMethod: 'local',
-        localRuleLabels: ['修正常见 JS 对象写法'],
+        localRuleLabels: ['修正非标准 JSON 语法'],
       });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
@@ -103,7 +103,7 @@ describe('fixJsonWithAI', () => {
 
   it('本地不可修复的大输入会阻止发送原文', async () => {
     const fetchImpl = vi.fn();
-    const largeBrokenJson = '{bad:' + 'x'.repeat(AI_REMOTE_REPAIR_MAX_INPUT_LENGTH) + '}';
+    const largeBrokenJson = '{bad:}' + 'x'.repeat(AI_REMOTE_REPAIR_MAX_INPUT_LENGTH);
 
     await expect(fixJsonWithAI(largeBrokenJson, customConfig, { fetchImpl }))
       .rejects.toThrow(AI_INPUT_TOO_LARGE_MESSAGE);
