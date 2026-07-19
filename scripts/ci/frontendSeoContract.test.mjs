@@ -48,6 +48,7 @@ test('JSONUtils SEO 契约拦截旧标题和博客域名串入', () => {
   try {
     for (const file of [
       'frontend/index.html',
+      'frontend/admin.html',
       'frontend/metadata.json',
       'frontend/nginx.conf',
       'frontend/public/robots.txt',
@@ -63,10 +64,15 @@ test('JSONUtils SEO 契约拦截旧标题和博客域名串入', () => {
         .replace('JSONUtils - 在线 JSON 格式化、校验与智能修复工具', 'JSONUtils - 专业版')
         .replace('https://jsonutils.markz.fun/', 'https://markz.fun/'),
     );
+    fs.writeFileSync(
+      path.join(fixture, 'frontend/admin.html'),
+      fs.readFileSync(path.join(fixture, 'frontend/admin.html'), 'utf8').replace('<meta name="robots" content="noindex, nofollow" />', ''),
+    );
 
     const failures = collectFrontendSeoFailures(fixture);
     assert.equal(failures.some(failure => failure.includes('缺少 SEO 契约')), true);
     assert.equal(failures.some(failure => failure.includes('不能声明博客域名')), true);
+    assert.equal(failures.some(failure => failure.includes('后台必须声明 noindex')), true);
   } finally {
     fs.rmSync(fixture, { recursive: true, force: true });
   }

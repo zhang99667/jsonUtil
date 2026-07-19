@@ -11,6 +11,9 @@ export const jsonutilsSeo = {
 const frontendLabel = file => `frontend/${file}`;
 const read = (frontendDir, file) => fs.readFileSync(path.join(frontendDir, file), 'utf8');
 const exists = (frontendDir, file) => fs.existsSync(path.join(frontendDir, file));
+const adminNoindex = '<meta name="robots" content="noindex, nofollow" />';
+const collectAdminFailures = (file, source) => source.includes(adminNoindex)
+  ? [] : [`${file}: 后台必须声明 noindex, nofollow`];
 
 const indexRequirements = () => [
   `<title>${jsonutilsSeo.title}</title>`,
@@ -80,6 +83,8 @@ export function collectFrontendSeoFailures(frontendDir) {
   const sourceLabel = frontendLabel(sourceIndex);
   if (!exists(frontendDir, sourceIndex)) failures.push(`${sourceLabel}: 缺少入口文件`);
   else failures.push(...collectIndexFailures(sourceLabel, read(frontendDir, sourceIndex)));
+  if (!exists(frontendDir, 'admin.html')) failures.push('frontend/admin.html: 缺少后台入口文件');
+  else failures.push(...collectAdminFailures('frontend/admin.html', read(frontendDir, 'admin.html')));
 
   failures.push(...collectDiscoveryFailures(frontendDir));
 
@@ -92,6 +97,7 @@ export function collectFrontendSeoFailures(frontendDir) {
   if (exists(frontendDir, distIndex)) {
     failures.push(...collectIndexFailures(frontendLabel(distIndex), read(frontendDir, distIndex)));
     failures.push(...collectDiscoveryFailures(frontendDir, 'dist'));
+    failures.push(...collectAdminFailures('frontend/dist/admin.html', read(frontendDir, 'dist/admin.html')));
   }
   return failures;
 }

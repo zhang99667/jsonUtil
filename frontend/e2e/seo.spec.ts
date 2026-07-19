@@ -78,6 +78,7 @@ for (const viewport of [
 test('robots 与 sitemap 只声明 JSONUtils 域名', async ({ request }) => {
   const robots = await request.get('/robots.txt');
   const sitemap = await request.get('/sitemap.xml');
+  const admin = await request.get('/admin.html');
 
   await expect(robots).toBeOK();
   await expect(sitemap).toBeOK();
@@ -88,4 +89,7 @@ test('robots 与 sitemap 只声明 JSONUtils 域名', async ({ request }) => {
     '<loc>https://jsonutils.markz.fun/</loc>'
   );
   expect(await sitemap.text()).not.toContain('https://markz.fun/');
+  expect(await admin.text()).toContain(
+    '<meta name="robots" content="noindex, nofollow" />'
+  );
 });
