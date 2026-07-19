@@ -1,6 +1,8 @@
 package com.jsonhelper.backend.service;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Set;
 
@@ -74,10 +76,15 @@ final class RefererSourceClassifier {
                 return null;
             }
             String normalizedHost = host.toLowerCase(Locale.ROOT);
+            if (normalizedHost.startsWith("[") && normalizedHost.endsWith("]")
+                    && InetAddress.getByName(normalizedHost.substring(1, normalizedHost.length() - 1))
+                    .isLoopbackAddress()) {
+                return "localhost";
+            }
             return normalizedHost.endsWith(".")
                     ? normalizedHost.substring(0, normalizedHost.length() - 1)
                     : normalizedHost;
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException | UnknownHostException ignored) {
             return null;
         }
     }
