@@ -18,6 +18,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class TrafficFilter extends OncePerRequestFilter {
 
+    private static final int PATH_MAX_CODE_POINTS = 255;
     private static final int USER_AGENT_MAX_CODE_POINTS = 512;
     private static final int REFERER_MAX_CODE_POINTS = 1024;
 
@@ -34,7 +35,7 @@ public class TrafficFilter extends OncePerRequestFilter {
             try {
                 VisitLog visitLog = new VisitLog();
                 visitLog.setIp(request.getRemoteAddr());
-                visitLog.setPath(path);
+                visitLog.setPath(truncateByCodePoints(path, PATH_MAX_CODE_POINTS));
                 visitLog.setMethod(request.getMethod());
                 visitLog.setUserAgent(truncateByCodePoints(request.getHeader("User-Agent"), USER_AGENT_MAX_CODE_POINTS));
                 visitLog.setReferer(truncateByCodePoints(request.getHeader("Referer"), REFERER_MAX_CODE_POINTS));
