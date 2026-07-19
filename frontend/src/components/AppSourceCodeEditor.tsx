@@ -1,5 +1,5 @@
 import React from 'react';
-import { CodeEditor } from './Editor';
+import { DeferredCodeEditor } from './DeferredCodeEditor';
 import { SourceEditorHeaderActions } from './EditorHeaderActions';
 import { AppSourceErrorActionsSlot } from './AppSourceErrorActionsSlot';
 import { buildAppSourceCodeEditorProps } from './appSourceCodeEditorProps';
@@ -21,7 +21,7 @@ export const AppSourceCodeEditor: React.FC<AppSourceCodeEditorProps> = (props) =
   } = props;
 
   return (
-    <CodeEditor
+    <DeferredCodeEditor
       {...buildAppSourceCodeEditorProps(props)}
       errorActions={
         <AppSourceErrorActionsSlot

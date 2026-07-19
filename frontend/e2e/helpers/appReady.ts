@@ -37,7 +37,7 @@ export const waitForMainAppReady = async (
     waitForSourceEditor = true,
     waitForPreviewEditor = true,
   } = options;
-  await expect(page.getByText('JSON 工具箱')).toBeVisible({ timeout: APP_SHELL_TIMEOUT_MS });
+  await expect(page.locator('#action-panel-content').getByText('JSONUtils', { exact: true })).toBeVisible({ timeout: APP_SHELL_TIMEOUT_MS });
   if (waitForSourceEditor) {
     await waitForEditorReady(page, '[data-tour="source-editor"]');
   }
@@ -71,6 +71,10 @@ export const waitForEditorReady = async (
 ) => {
   const container = page.locator(containerSelector);
   await expect(container).toBeVisible({ timeout: APP_SHELL_TIMEOUT_MS });
+  const fallback = container.locator('[data-editor-fallback]');
+  if (await fallback.isVisible().catch(() => false)) {
+    await fallback.focus();
+  }
   await expect(container.locator('.monaco-editor')).toBeVisible({ timeout: EDITOR_READY_TIMEOUT_MS });
   await expect(container.locator('.view-lines')).toBeVisible({ timeout: EDITOR_READY_TIMEOUT_MS });
 };

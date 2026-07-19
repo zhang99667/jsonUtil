@@ -1,5 +1,7 @@
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import './index.css';
+import './styles/buttonStateOverrides.css';
 import { showSuccess, showError } from './utils/toast';
 import { AppActionSidebar } from './components/AppActionSidebar';
 import { AppEditorWorkspace } from './components/AppEditorWorkspace';
@@ -545,7 +547,7 @@ const App: React.FC = () => {
   });
   return (
     <ErrorBoundary onBeforeReload={flushWorkspaceDraft}>
-    <div ref={appRef} className="flex flex-col h-screen bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
+    <div ref={appRef} className="flex flex-col h-full bg-editor-bg text-editor-fg font-sans overflow-hidden select-none">
 
       <AppLazyShellModals
         lazyPanelsLoaded={lazyPanelsLoaded}

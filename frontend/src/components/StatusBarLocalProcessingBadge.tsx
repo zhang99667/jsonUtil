@@ -6,7 +6,7 @@ interface StatusBarLocalProcessingBadgeProps {
 }
 
 const LOCAL_PROCESSING_STATUS_CLASS_NAMES: Record<LocalProcessingStatusTone, string> = {
-  local: 'bg-white/15 text-white',
+  local: 'bg-sky-950 text-white',
   large: 'bg-amber-100 text-amber-900',
   worker: 'bg-cyan-100 text-cyan-900',
   repairing: 'bg-violet-100 text-violet-900',

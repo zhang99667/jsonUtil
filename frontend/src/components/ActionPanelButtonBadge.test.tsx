@@ -13,7 +13,8 @@ describe('ActionPanelButtonBadge', () => {
     const badge = assertElementLike(tree, 'ActionPanelButtonBadge 应返回 React 元素');
     expect(badge.props['data-tour']).toBe('panel-open-badge');
     expect(badge.props['aria-hidden']).toBe(true);
-    expect(badge.props.className).toContain('bg-brand-primary/20');
+    expect(badge.props.className).toContain('bg-blue-950/90');
+    expect(badge.props.className).toContain('text-blue-100');
     expect(badge.props.children).toBe('打开');
   });
 });

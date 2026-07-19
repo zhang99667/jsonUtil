@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const seoOrigin = 'https://jsonutils.markz.fun';
-export const seoLastModified = '2026-07-19';
+export const seoLastModified = '2026-07-20';
 
 export const seoGuides = [
   {
@@ -27,6 +27,18 @@ export const seoGuides = [
       '格式化不会改变键和值的语义；数组顺序保持不变。',
       '深度格式化会尝试解析字符串中的 JSON，提交前应复核类型变化。',
       '常规格式化在浏览器本地完成，页面不会要求先上传文件。',
+    ],
+    example: {
+      intro: '下面的 profile 是被转义成字符串的 JSON。普通格式化只整理外层；深度格式化会继续识别并展开这层字符串。',
+      inputLabel: '输入：紧凑且包含嵌套 JSON 字符串',
+      input: '{"user":{"id":7,"profile":"{\\"city\\":\\"杭州\\",\\"active\\":true}"}}',
+      outputLabel: '预期：深度格式化后的可读结构',
+      output: '{\n  "user": {\n    "id": 7,\n    "profile": {\n      "city": "杭州",\n      "active": true\n    }\n  }\n}',
+    },
+    troubleshooting: [
+      ['点击格式化后仍是一行', '先查看校验状态。输入不是合法 JSON 时，格式化不会掩盖原始语法错误。'],
+      ['字符串字段没有被展开', '改用“深度格式化”；普通格式化会按 JSON 语义保留字符串类型。'],
+      ['结果里的反斜杠变少了', '检查是否启用了深度格式化，并确认该字段是否应该从字符串转换为对象。'],
     ],
     related: ['json-validator', 'json-repair', 'jsonpath'],
   },
@@ -52,6 +64,18 @@ export const seoGuides = [
       '数字、布尔值和 null 与字符串不同，修复时不要只追求通过。',
       '业务约束请继续使用 JSON Schema 或服务端校验规则。',
     ],
+    example: {
+      intro: '对象属性之间缺少逗号是接口联调中最常见的解析错误之一。校验器应先指出问题位置，而不是直接猜测业务值。',
+      inputLabel: '输入：name 字段后缺少逗号',
+      input: '{\n  "name": "JSONUtils"\n  "enabled": true\n}',
+      outputLabel: '预期：定位到第二个属性附近',
+      output: '校验失败：在 "enabled" 前需要逗号。\n修正为：\n{\n  "name": "JSONUtils",\n  "enabled": true\n}',
+    },
+    troubleshooting: [
+      ['错误位置看起来偏后一位', '解析器通常在遇到下一个非法 token 时才确认错误，请同时检查提示位置的前一个字段。'],
+      ['校验通过但接口仍报错', '语法有效不等于字段符合业务契约，继续使用 JSON Schema 或服务端规则检查类型与必填项。'],
+      ['复制内容后突然无法解析', '检查全角标点、不可见空格和智能引号；它们常来自文档或聊天工具。'],
+    ],
     related: ['json-repair', 'json-formatter', 'json-schema'],
   },
   {
@@ -75,6 +99,18 @@ export const seoGuides = [
       '修复器会补全语法，但无法知道缺失字段的真实业务值。',
       '截断严重的数据可能只能恢复外层结构，不能还原遗失内容。',
       '任何自动结果都应在写回生产配置或数据库前人工确认。',
+    ],
+    example: {
+      intro: '近似 JSON 常来自手写配置或大模型输出。修复器可以补齐标准语法，但不会替你判断字段值是否真实。',
+      inputLabel: '输入：单引号、未加引号的键与尾随逗号',
+      input: "{name: 'JSONUtils', enabled: true,}",
+      outputLabel: '预期：可解析的标准 JSON',
+      output: '{\n  "name": "JSONUtils",\n  "enabled": true\n}',
+    },
+    troubleshooting: [
+      ['修复后字段数量变少', '回到原始副本检查截断位置；严重缺失的内容无法通过语法推断恢复。'],
+      ['数字被修成了字符串', '不要直接写回生产数据，按接口契约逐字段核对类型。'],
+      ['修复结果仍不通过', '先缩小到最外层可解析片段，再逐段补回内容，定位无法自动恢复的位置。'],
     ],
     related: ['json-validator', 'json-formatter', 'json-diff'],
   },
@@ -100,6 +136,18 @@ export const seoGuides = [
       '空结果不一定是错误，也可能是路径、大小写或类型不匹配。',
       '查询只用于定位和读取；修改数据前仍要确认目标范围。',
     ],
+    example: {
+      intro: '用数组通配符可以一次提取所有用户名称，先从简单路径验证层级，再增加过滤条件。',
+      inputLabel: '输入 JSON 与查询表达式 $.users[*].name',
+      input: '{\n  "users": [\n    {"name": "Ada", "active": true},\n    {"name": "Lin", "active": false}\n  ]\n}',
+      outputLabel: '预期匹配结果',
+      output: '[\n  "Ada",\n  "Lin"\n]',
+    },
+    troubleshooting: [
+      ['表达式没有结果', '先确认键名大小写和数组层级，再用 $.users 验证上一级路径是否存在。'],
+      ['过滤表达式在别处可用、这里不可用', '不同实现支持的 JSONPath 方言不同，优先使用基础路径、通配符和明确的数组下标。'],
+      ['结果类型与预期不同', '单个匹配和多个匹配可能返回不同形态，接入脚本前先固定调用方需要的结果结构。'],
+    ],
     related: ['json-formatter', 'json-validator', 'json-schema'],
   },
   {
@@ -123,6 +171,18 @@ export const seoGuides = [
       '数组顺序变化可能产生大量差异，需要结合业务语义判断。',
       '格式化空格不属于数据差异，先解析后比较更准确。',
       '敏感生产数据应先脱敏，常规比较过程在浏览器本地完成。',
+    ],
+    example: {
+      intro: '下面两份接口响应只有状态和值不同。结构化 Diff 会忽略缩进，把变化聚焦到具体路径。',
+      inputLabel: '输入：基准 JSON → 新 JSON',
+      input: '基准：{"status":"pending","count":2}\n新值：{"status":"done","count":3,"cached":true}',
+      outputLabel: '预期差异摘要',
+      output: '~ $.status: "pending" → "done"\n~ $.count: 2 → 3\n+ $.cached: true',
+    },
+    troubleshooting: [
+      ['数组出现大量变化', '先确认数组顺序是否有业务含义；仅排序变化也可能表现为多条元素差异。'],
+      ['两边格式不同但没有差异', '这是正常结果：结构化对比关注解析后的键和值，不比较空格和换行。'],
+      ['无法开始对比', '分别校验左右两份输入，任一侧语法无效都会阻止可靠的结构比较。'],
     ],
     related: ['json-repair', 'json-validator', 'json-schema'],
   },
@@ -148,6 +208,18 @@ export const seoGuides = [
       '语法有效的 Schema 仍可能遗漏业务规则，需要评审约束完整性。',
       '生成的示例用于起步，不代表真实或完整的生产数据。',
     ],
+    example: {
+      intro: 'Schema 可以把“id 必须是整数、name 必须存在”变成可重复执行的检查，而不仅是口头约定。',
+      inputLabel: '输入：数据与最小 Schema',
+      input: '数据：{"id":"7"}\nSchema：{"type":"object","required":["id","name"],"properties":{"id":{"type":"integer"},"name":{"type":"string"}}}',
+      outputLabel: '预期：两条结构约束错误',
+      output: '$.id 应为 integer，实际为 string\n$ 缺少必填字段 name',
+    },
+    troubleshooting: [
+      ['合法数据被判失败', '核对 Schema 草案版本、format 支持和数字/字符串类型，避免把 "7" 当成整数 7。'],
+      ['错误信息太多', '从最外层 type 和 required 开始修复；上层结构错误常会连带产生多条子字段错误。'],
+      ['生成示例缺少真实值', '示例只根据约束构造占位数据，业务 ID、枚举语义和关联关系仍需人工补充。'],
+    ],
     related: ['json-validator', 'json-to-typescript', 'jsonpath'],
   },
   {
@@ -171,6 +243,18 @@ export const seoGuides = [
       '单个样例无法证明字段是否可选，也可能漏掉 null 或其他类型。',
       '生成结果是类型起点，不替代 OpenAPI、Schema 或后端契约。',
       '接入前应执行项目自身的 TypeScript 检查和接口回归测试。',
+    ],
+    example: {
+      intro: '生成器会从样例值推断基础类型和嵌套结构；样例没有覆盖的可选性必须回到接口契约确认。',
+      inputLabel: '输入：包含对象数组的响应样例',
+      input: '{\n  "requestId": "req_7",\n  "users": [{"id": 1, "name": "Ada"}]\n}',
+      outputLabel: '预期 TypeScript 类型骨架',
+      output: 'interface Root {\n  requestId: string;\n  users: User[];\n}\n\ninterface User {\n  id: number;\n  name: string;\n}',
+    },
+    troubleshooting: [
+      ['字段被生成成必填', '单个样例无法证明可选性，请根据 OpenAPI、Schema 或多份响应手工添加 ?。'],
+      ['数组元素类型不完整', '提供包含不同合法形态的代表样例，再复核是否应使用联合类型。'],
+      ['类型名不符合项目规范', '生成后统一重命名根类型和公共模型；工具输出是起点，不替代项目代码规范。'],
     ],
     related: ['json-schema', 'json-validator', 'json-formatter'],
   },
@@ -198,6 +282,15 @@ const relatedMarkup = (slugs) => slugs
     const guide = guideBySlug.get(slug);
     return '          <a class="related-link" href="/guides/' + guide.slug + '/"><span>' + escapeHtml(guide.shortTitle) + '</span><span aria-hidden="true">→</span></a>';
   })
+  .join('\n');
+
+const troubleshootingMarkup = (items) => items
+  .map(([issue, solution]) => [
+    '          <div class="troubleshooting-item">',
+    '            <dt>' + escapeHtml(issue) + '</dt>',
+    '            <dd>' + escapeHtml(solution) + '</dd>',
+    '          </div>',
+  ].join('\n'))
   .join('\n');
 
 const cardMarkup = () => seoGuides
@@ -390,6 +483,37 @@ function renderGuide(guide) {
     '          </ul>',
     '        </section>',
     '      </div>',
+    '      <section class="worked-example" aria-labelledby="example-title">',
+    '        <div class="section-heading">',
+    '          <div>',
+    '            <p class="section-number">04</p>',
+    '            <h2 id="example-title">输入与预期结果</h2>',
+    '          </div>',
+    '          <p>' + escapeHtml(guide.example.intro) + '</p>',
+    '        </div>',
+    '        <div class="example-grid">',
+    '          <figure>',
+    '            <figcaption>' + escapeHtml(guide.example.inputLabel) + '</figcaption>',
+    '            <pre><code>' + escapeHtml(guide.example.input) + '</code></pre>',
+    '          </figure>',
+    '          <figure>',
+    '            <figcaption>' + escapeHtml(guide.example.outputLabel) + '</figcaption>',
+    '            <pre><code>' + escapeHtml(guide.example.output) + '</code></pre>',
+    '          </figure>',
+    '        </div>',
+    '      </section>',
+    '      <section class="troubleshooting" aria-labelledby="troubleshooting-title">',
+    '        <div class="section-heading">',
+    '          <div>',
+    '            <p class="section-number">05</p>',
+    '            <h2 id="troubleshooting-title">常见问题排查</h2>',
+    '          </div>',
+    '          <p>先确认输入、所选工具和预期结果，再按下面的任务边界逐项排查。</p>',
+    '        </div>',
+    '        <dl>',
+    troubleshootingMarkup(guide.troubleshooting),
+    '        </dl>',
+    '      </section>',
     '      <aside class="cta-panel">',
     '        <div>',
     '          <p class="eyebrow">READY TO WORK</p>',

@@ -5,7 +5,7 @@ interface StatusBarVersionBadgeProps {
   onOpenChangelog?: () => void;
 }
 
-const VERSION_BADGE_CLASS_NAME = 'rounded bg-white/15 px-1.5 py-0.5 font-mono text-[10px] leading-none text-blue-100';
+const VERSION_BADGE_CLASS_NAME = 'rounded bg-sky-950 px-1.5 py-0.5 font-mono text-[10px] leading-none text-white';
 
 export const StatusBarVersionBadge: React.FC<StatusBarVersionBadgeProps> = ({
   onOpenChangelog,

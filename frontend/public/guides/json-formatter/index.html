@@ -29,7 +29,7 @@
       "name": "在线 JSON 格式化工具：美化、压缩与深度展开",
       "description": "使用 JSONUtils 在线格式化 JSON：一键美化或压缩数据，校验语法，并可深度展开嵌套在字符串中的 JSON。常规处理在浏览器本地完成。",
       "inLanguage": "zh-CN",
-      "dateModified": "2026-07-19",
+      "dateModified": "2026-07-20",
       "isPartOf": {
         "@id": "https://jsonutils.markz.fun/#website"
       },
@@ -124,6 +124,56 @@
           </ul>
         </section>
       </div>
+      <section class="worked-example" aria-labelledby="example-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">04</p>
+            <h2 id="example-title">输入与预期结果</h2>
+          </div>
+          <p>下面的 profile 是被转义成字符串的 JSON。普通格式化只整理外层；深度格式化会继续识别并展开这层字符串。</p>
+        </div>
+        <div class="example-grid">
+          <figure>
+            <figcaption>输入：紧凑且包含嵌套 JSON 字符串</figcaption>
+            <pre><code>{&quot;user&quot;:{&quot;id&quot;:7,&quot;profile&quot;:&quot;{\&quot;city\&quot;:\&quot;杭州\&quot;,\&quot;active\&quot;:true}&quot;}}</code></pre>
+          </figure>
+          <figure>
+            <figcaption>预期：深度格式化后的可读结构</figcaption>
+            <pre><code>{
+  &quot;user&quot;: {
+    &quot;id&quot;: 7,
+    &quot;profile&quot;: {
+      &quot;city&quot;: &quot;杭州&quot;,
+      &quot;active&quot;: true
+    }
+  }
+}</code></pre>
+          </figure>
+        </div>
+      </section>
+      <section class="troubleshooting" aria-labelledby="troubleshooting-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">05</p>
+            <h2 id="troubleshooting-title">常见问题排查</h2>
+          </div>
+          <p>先确认输入、所选工具和预期结果，再按下面的任务边界逐项排查。</p>
+        </div>
+        <dl>
+          <div class="troubleshooting-item">
+            <dt>点击格式化后仍是一行</dt>
+            <dd>先查看校验状态。输入不是合法 JSON 时，格式化不会掩盖原始语法错误。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>字符串字段没有被展开</dt>
+            <dd>改用“深度格式化”；普通格式化会按 JSON 语义保留字符串类型。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>结果里的反斜杠变少了</dt>
+            <dd>检查是否启用了深度格式化，并确认该字段是否应该从字符串转换为对象。</dd>
+          </div>
+        </dl>
+      </section>
       <aside class="cta-panel">
         <div>
           <p class="eyebrow">READY TO WORK</p>

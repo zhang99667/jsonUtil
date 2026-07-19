@@ -29,7 +29,7 @@
       "name": "在线 JSON Schema 校验与示例生成工具",
       "description": "使用 JSONUtils 通过 JSON Schema 校验字段类型、必填项和结构约束，也可从 Schema 生成示例 JSON，辅助接口联调与测试数据准备。",
       "inLanguage": "zh-CN",
-      "dateModified": "2026-07-19",
+      "dateModified": "2026-07-20",
       "isPartOf": {
         "@id": "https://jsonutils.markz.fun/#website"
       },
@@ -124,6 +124,50 @@
           </ul>
         </section>
       </div>
+      <section class="worked-example" aria-labelledby="example-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">04</p>
+            <h2 id="example-title">输入与预期结果</h2>
+          </div>
+          <p>Schema 可以把“id 必须是整数、name 必须存在”变成可重复执行的检查，而不仅是口头约定。</p>
+        </div>
+        <div class="example-grid">
+          <figure>
+            <figcaption>输入：数据与最小 Schema</figcaption>
+            <pre><code>数据：{&quot;id&quot;:&quot;7&quot;}
+Schema：{&quot;type&quot;:&quot;object&quot;,&quot;required&quot;:[&quot;id&quot;,&quot;name&quot;],&quot;properties&quot;:{&quot;id&quot;:{&quot;type&quot;:&quot;integer&quot;},&quot;name&quot;:{&quot;type&quot;:&quot;string&quot;}}}</code></pre>
+          </figure>
+          <figure>
+            <figcaption>预期：两条结构约束错误</figcaption>
+            <pre><code>$.id 应为 integer，实际为 string
+$ 缺少必填字段 name</code></pre>
+          </figure>
+        </div>
+      </section>
+      <section class="troubleshooting" aria-labelledby="troubleshooting-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">05</p>
+            <h2 id="troubleshooting-title">常见问题排查</h2>
+          </div>
+          <p>先确认输入、所选工具和预期结果，再按下面的任务边界逐项排查。</p>
+        </div>
+        <dl>
+          <div class="troubleshooting-item">
+            <dt>合法数据被判失败</dt>
+            <dd>核对 Schema 草案版本、format 支持和数字/字符串类型，避免把 &quot;7&quot; 当成整数 7。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>错误信息太多</dt>
+            <dd>从最外层 type 和 required 开始修复；上层结构错误常会连带产生多条子字段错误。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>生成示例缺少真实值</dt>
+            <dd>示例只根据约束构造占位数据，业务 ID、枚举语义和关联关系仍需人工补充。</dd>
+          </div>
+        </dl>
+      </section>
       <aside class="cta-panel">
         <div>
           <p class="eyebrow">READY TO WORK</p>

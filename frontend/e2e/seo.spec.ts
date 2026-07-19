@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const title = 'JSONUtils - 在线 JSON 格式化、校验与智能修复工具';
 const description =
-  'JSONUtils 是面向开发者的在线 JSON 格式化与校验工具，可定位语法错误、智能修复异常 JSON，并支持 JSONPath 查询、差异对比、JSON Schema 校验和 TypeScript 类型生成；常规处理在浏览器本地完成。';
+  '免费在线 JSON 格式化、校验与修复工具：粘贴或导入数据即可美化、压缩、定位语法错误，并支持 JSONPath、Diff、JSON Schema 和 TypeScript 类型生成。常规处理仅在浏览器本地完成。';
 
 test('页面声明独立且清晰的 JSONUtils 搜索身份', async ({ page }) => {
   await page.route('**/api/visitor/ping', (route) =>
@@ -53,11 +53,16 @@ test('页面声明独立且清晰的 JSONUtils 搜索身份', async ({ page }) =
     price: 0,
     priceCurrency: 'CNY',
   });
-  await expect(page.getByRole('heading', { level: 1, name: 'JSON 工具箱' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'JSON 工具箱' })).toHaveAttribute(
+  await expect(page.getByRole('heading', { level: 1, name: /JSONUtils.*格式化.*校验.*修复/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: '使用指南', exact: true })).toHaveAttribute(
     'href',
     '/guides/'
   );
+  const sourcePane = page.locator('[data-tour="source-editor"]');
+  await expect(sourcePane.locator('[data-editor-fallback]')).toBeVisible();
+  await expect(sourcePane.locator('.monaco-editor')).toHaveCount(0);
+  await sourcePane.locator('[data-editor-fallback]').focus();
+  await expect(sourcePane.locator('.monaco-editor')).toBeVisible();
 });
 
 for (const viewport of [
@@ -75,12 +80,13 @@ for (const viewport of [
 
     await page.goto('/');
     await expect(
-      page.getByRole('heading', { name: 'JSONUtils 在线 JSON 工具' })
+      page.getByRole('heading', { level: 1, name: /JSONUtils.*格式化.*校验.*修复/ })
     ).toBeVisible();
     await expect(page.getByText(description)).toBeVisible();
-    await expect(page.getByRole('link', { name: 'JSON 格式化' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'JSON 格式化', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: '全部使用指南' })).toBeVisible();
-    await expect(page.locator('main img')).toHaveJSProperty('complete', true);
+    await expect(page.getByRole('heading', { name: '从粘贴数据到定位问题，一页完成' })).toBeVisible();
+    await expect(page.locator('.jsonutils-fallback img')).toHaveJSProperty('complete', true);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth)
     ).toBeLessThanOrEqual(viewport.width);

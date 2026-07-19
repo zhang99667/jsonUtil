@@ -29,7 +29,7 @@
       "name": "在线 JSON 校验工具：定位语法错误与结构问题",
       "description": "使用 JSONUtils 在线校验 JSON，快速发现缺少逗号、引号、括号不匹配等语法错误，并在编辑器中定位问题后继续修复或格式化。",
       "inLanguage": "zh-CN",
-      "dateModified": "2026-07-19",
+      "dateModified": "2026-07-20",
       "isPartOf": {
         "@id": "https://jsonutils.markz.fun/#website"
       },
@@ -124,6 +124,56 @@
           </ul>
         </section>
       </div>
+      <section class="worked-example" aria-labelledby="example-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">04</p>
+            <h2 id="example-title">输入与预期结果</h2>
+          </div>
+          <p>对象属性之间缺少逗号是接口联调中最常见的解析错误之一。校验器应先指出问题位置，而不是直接猜测业务值。</p>
+        </div>
+        <div class="example-grid">
+          <figure>
+            <figcaption>输入：name 字段后缺少逗号</figcaption>
+            <pre><code>{
+  &quot;name&quot;: &quot;JSONUtils&quot;
+  &quot;enabled&quot;: true
+}</code></pre>
+          </figure>
+          <figure>
+            <figcaption>预期：定位到第二个属性附近</figcaption>
+            <pre><code>校验失败：在 &quot;enabled&quot; 前需要逗号。
+修正为：
+{
+  &quot;name&quot;: &quot;JSONUtils&quot;,
+  &quot;enabled&quot;: true
+}</code></pre>
+          </figure>
+        </div>
+      </section>
+      <section class="troubleshooting" aria-labelledby="troubleshooting-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">05</p>
+            <h2 id="troubleshooting-title">常见问题排查</h2>
+          </div>
+          <p>先确认输入、所选工具和预期结果，再按下面的任务边界逐项排查。</p>
+        </div>
+        <dl>
+          <div class="troubleshooting-item">
+            <dt>错误位置看起来偏后一位</dt>
+            <dd>解析器通常在遇到下一个非法 token 时才确认错误，请同时检查提示位置的前一个字段。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>校验通过但接口仍报错</dt>
+            <dd>语法有效不等于字段符合业务契约，继续使用 JSON Schema 或服务端规则检查类型与必填项。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>复制内容后突然无法解析</dt>
+            <dd>检查全角标点、不可见空格和智能引号；它们常来自文档或聊天工具。</dd>
+          </div>
+        </dl>
+      </section>
       <aside class="cta-panel">
         <div>
           <p class="eyebrow">READY TO WORK</p>

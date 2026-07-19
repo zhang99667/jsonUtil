@@ -1,5 +1,5 @@
 import React from 'react';
-import { CodeEditor } from './Editor';
+import { DeferredCodeEditor } from './DeferredCodeEditor';
 import { PreviewEditorHeaderActions } from './EditorHeaderActions';
 import type { AppEditorUiState } from '../utils/appEditorUiState';
 import type {
@@ -45,7 +45,7 @@ export const AppPreviewCodeEditor: React.FC<AppPreviewCodeEditorProps> = ({
   onCopyPreview,
   onSchemeEdit,
 }) => (
-  <CodeEditor
+  <DeferredCodeEditor
     label="PREVIEW"
     value={output}
     onChange={onOutputChange}

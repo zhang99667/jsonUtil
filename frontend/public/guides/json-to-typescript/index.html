@@ -29,7 +29,7 @@
       "name": "在线 JSON 转 TypeScript 类型工具",
       "description": "使用 JSONUtils 从示例 JSON 生成 TypeScript 类型定义，识别对象、数组和常见字段类型，减少接口模型手写工作，并在接入前复核可选性与联合类型。",
       "inLanguage": "zh-CN",
-      "dateModified": "2026-07-19",
+      "dateModified": "2026-07-20",
       "isPartOf": {
         "@id": "https://jsonutils.markz.fun/#website"
       },
@@ -124,6 +124,59 @@
           </ul>
         </section>
       </div>
+      <section class="worked-example" aria-labelledby="example-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">04</p>
+            <h2 id="example-title">输入与预期结果</h2>
+          </div>
+          <p>生成器会从样例值推断基础类型和嵌套结构；样例没有覆盖的可选性必须回到接口契约确认。</p>
+        </div>
+        <div class="example-grid">
+          <figure>
+            <figcaption>输入：包含对象数组的响应样例</figcaption>
+            <pre><code>{
+  &quot;requestId&quot;: &quot;req_7&quot;,
+  &quot;users&quot;: [{&quot;id&quot;: 1, &quot;name&quot;: &quot;Ada&quot;}]
+}</code></pre>
+          </figure>
+          <figure>
+            <figcaption>预期 TypeScript 类型骨架</figcaption>
+            <pre><code>interface Root {
+  requestId: string;
+  users: User[];
+}
+
+interface User {
+  id: number;
+  name: string;
+}</code></pre>
+          </figure>
+        </div>
+      </section>
+      <section class="troubleshooting" aria-labelledby="troubleshooting-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">05</p>
+            <h2 id="troubleshooting-title">常见问题排查</h2>
+          </div>
+          <p>先确认输入、所选工具和预期结果，再按下面的任务边界逐项排查。</p>
+        </div>
+        <dl>
+          <div class="troubleshooting-item">
+            <dt>字段被生成成必填</dt>
+            <dd>单个样例无法证明可选性，请根据 OpenAPI、Schema 或多份响应手工添加 ?。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>数组元素类型不完整</dt>
+            <dd>提供包含不同合法形态的代表样例，再复核是否应使用联合类型。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>类型名不符合项目规范</dt>
+            <dd>生成后统一重命名根类型和公共模型；工具输出是起点，不替代项目代码规范。</dd>
+          </div>
+        </dl>
+      </section>
       <aside class="cta-panel">
         <div>
           <p class="eyebrow">READY TO WORK</p>

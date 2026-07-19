@@ -62,10 +62,11 @@ type MonacoJsonDefaults = {
 };
 
 // 扩展 EditorProps 以支持 Scheme 修改回调
-interface ExtendedEditorProps extends EditorProps {
+export interface ExtendedEditorProps extends EditorProps {
   enableSchemeScan?: boolean;
   errorActions?: React.ReactNode;
   onSchemeEdit?: (path: string, newValue: string, pointer?: string) => void;
+  focusOnMount?: boolean;
 }
 
 export const CodeEditor: React.FC<ExtendedEditorProps> = ({
@@ -95,7 +96,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   onSaveViewState,
   restoreViewState,
   enableSchemeScan = false,
-  onSchemeEdit
+  onSchemeEdit,
+  focusOnMount = false,
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('off');
@@ -697,6 +699,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           value={value}
           onMount={(editor, monacoApi) => {
             editorRef.current = editor;
+            if (focusOnMount) editor.focus();
 
             // 监听光标位置变化
             editor.onDidChangeCursorPosition((e) => {

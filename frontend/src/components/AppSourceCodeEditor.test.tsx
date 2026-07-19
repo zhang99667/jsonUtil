@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CodeEditor } from './Editor';
+import { DeferredCodeEditor } from './DeferredCodeEditor';
 import { SourceEditorHeaderActions } from './EditorHeaderActions';
 import { AppSourceErrorActionsSlot } from './AppSourceErrorActionsSlot';
 import { AppSourceCodeEditor } from './AppSourceCodeEditor';
@@ -14,7 +14,7 @@ describe('AppSourceCodeEditor', () => {
       'AppSourceCodeEditor 应返回 React 元素'
     );
 
-    expect(tree.type).toBe(CodeEditor);
+    expect(tree.type).toBe(DeferredCodeEditor);
     expect(tree.props.value).toBe('{"a":1}');
     expect(tree.props.originalValue).toBe('{"a":0}');
     expect(tree.props.path).toBe('tab-1');

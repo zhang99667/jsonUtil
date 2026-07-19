@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CodeEditor } from './Editor';
+import { DeferredCodeEditor } from './DeferredCodeEditor';
 import { PreviewEditorHeaderActions } from './EditorHeaderActions';
 import { AppPreviewCodeEditor } from './AppPreviewCodeEditor';
 import { buildAppPreviewCodeEditorTestProps } from './AppPreviewCodeEditorTestFixture';
@@ -13,7 +13,7 @@ describe('AppPreviewCodeEditor', () => {
       'AppPreviewCodeEditor 应返回 React 元素'
     );
 
-    expect(tree.type).toBe(CodeEditor);
+    expect(tree.type).toBe(DeferredCodeEditor);
     expect(tree.props.label).toBe('PREVIEW');
     expect(tree.props.value).toBe('{"a":1}');
     expect(tree.props.onChange).toBe(props.onOutputChange);

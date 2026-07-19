@@ -11,12 +11,15 @@ export const ActionPanelHeader: React.FC<ActionPanelHeaderProps> = ({
 }) => (
   <div className={`px-2 mb-6 mt-1 pb-4 border-b border-editor-border flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
     {!isCollapsed && (
-      <h1 className="m-0 text-sm font-bold text-gray-200 tracking-wide flex items-center gap-2">
+      <p className="m-0 text-sm font-bold text-gray-200 tracking-wide flex items-center gap-2">
         <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
         </div>
-        <a className="hover:text-blue-300 transition-colors" href="/guides/" title="查看 JSONUtils 使用指南">JSON 工具箱</a>
-      </h1>
+        <a className="hover:text-blue-300 transition-colors leading-tight" href="/guides/" title="查看 JSONUtils 使用指南">
+          <span className="block">JSONUtils</span>
+          <span className="block text-[10px] font-medium tracking-normal text-gray-400">格式化 · 校验 · 修复</span>
+        </a>
+      </p>
     )}
     <button
       onClick={onToggleCollapse}

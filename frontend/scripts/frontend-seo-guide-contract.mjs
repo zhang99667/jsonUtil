@@ -92,6 +92,19 @@ export function collectSeoGuideFailures(frontendDir, origin, prefix = 'public') 
     if (!source.includes('href="/"') || !source.includes('href="/guides/"')) {
       failures.push(`${fileLabel}: 必须提供工具首页与指南中心的可抓取链接`);
     }
+    if (route !== '/guides/') {
+      if ([...source.matchAll(/<pre><code>/g)].length !== 2) {
+        failures.push(`${fileLabel}: 每个任务指南必须提供输入与预期结果代码示例`);
+      }
+      if ([...source.matchAll(/class="troubleshooting-item"/g)].length !== 3) {
+        failures.push(`${fileLabel}: 每个任务指南必须提供 3 条独立故障排查说明`);
+      }
+      for (const heading of ['输入与预期结果', '常见问题排查']) {
+        if (!source.includes(`>${heading}</h2>`)) {
+          failures.push(`${fileLabel}: 缺少实用正文模块 ${heading}`);
+        }
+      }
+    }
     if (source.includes('<meta name="keywords"') || /aggregateRating|"review"/.test(source)) {
       failures.push(`${fileLabel}: 不得使用关键词标签或虚构评价结构化数据`);
     }

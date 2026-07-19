@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const appCss = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
-const indexEntrySource = readFileSync(new URL('../index.tsx', import.meta.url), 'utf8');
+const appEntrySource = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 const indexHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const finalButtonStateCss = readFileSync(new URL('../styles/buttonStateOverrides.css', import.meta.url), 'utf8');
 const releaseToastCss = readFileSync(new URL('./AppReleaseToast.css', import.meta.url), 'utf8');
@@ -24,13 +24,13 @@ const getRuleBody = (css: string, selector: string): string => {
 };
 
 describe('App button focus styles', () => {
-  it('主应用只从入口脚本加载样式，并最后导入按钮状态覆盖层', () => {
+  it('主应用随延迟加载的 App 一起加载样式，并最后导入按钮状态覆盖层', () => {
     const indexCssImport = "import './index.css';";
     const buttonStateImport = "import './styles/buttonStateOverrides.css';";
 
     expect(indexHtml).not.toContain('/src/index.css');
-    expect(indexEntrySource.indexOf(indexCssImport)).toBeGreaterThanOrEqual(0);
-    expect(indexEntrySource.indexOf(buttonStateImport)).toBeGreaterThan(indexEntrySource.indexOf(indexCssImport));
+    expect(appEntrySource.indexOf(indexCssImport)).toBeGreaterThanOrEqual(0);
+    expect(appEntrySource.indexOf(buttonStateImport)).toBeGreaterThan(appEntrySource.indexOf(indexCssImport));
   });
 
   it('全局按钮键盘焦点会压掉 Tailwind ring 选中框', () => {

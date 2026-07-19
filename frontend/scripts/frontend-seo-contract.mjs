@@ -9,7 +9,7 @@ import {
 export const jsonutilsSeo = {
   origin: 'https://jsonutils.markz.fun/',
   title: 'JSONUtils - 在线 JSON 格式化、校验与智能修复工具',
-  description: 'JSONUtils 是面向开发者的在线 JSON 格式化与校验工具，可定位语法错误、智能修复异常 JSON，并支持 JSONPath 查询、差异对比、JSON Schema 校验和 TypeScript 类型生成；常规处理在浏览器本地完成。',
+  description: '免费在线 JSON 格式化、校验与修复工具：粘贴或导入数据即可美化、压缩、定位语法错误，并支持 JSONPath、Diff、JSON Schema 和 TypeScript 类型生成。常规处理仅在浏览器本地完成。',
 };
 
 const frontendLabel = file => `frontend/${file}`;
@@ -26,7 +26,10 @@ const indexRequirements = () => [
   `<link rel="canonical" href="${jsonutilsSeo.origin}" />`,
   '<meta property="og:site_name" content="JSONUtils" />',
   `<meta property="og:url" content="${jsonutilsSeo.origin}" />`,
-  '<h1 id="jsonutils-title" class="mb-4 text-3xl font-semibold">JSONUtils 在线 JSON 工具</h1>',
+  '<a href="/" aria-label="JSONUtils 在线 JSON 格式化、校验与修复工具">',
+  '<span class="jsonutils-app-bar__task">在线 JSON 格式化、校验与修复工具</span>',
+  '<section class="jsonutils-learn" aria-labelledby="jsonutils-learn-title">',
+  '<h2 id="jsonutils-learn-title">从粘贴数据到定位问题，一页完成</h2>',
 ];
 
 function collectIndexFailures(file, source) {
@@ -35,6 +38,17 @@ function collectIndexFailures(file, source) {
     .map(snippet => `${file}: 缺少 SEO 契约 ${snippet}`);
   if (/https:\/\/(?:www\.)?markz\.fun\//.test(source)) {
     failures.push(`${file}: 不能声明博客域名`);
+  }
+  if ([...source.matchAll(/<h1(?:\s|>)/g)].length !== 1) {
+    failures.push(`${file}: 工具首页必须有且只有一个稳定可见 H1`);
+  }
+  const learnSection = source.match(/<section class="jsonutils-learn"[\s\S]*?<\/section>/)?.[0] || '';
+  const guideLinks = [...learnSection.matchAll(/href="\/guides\//g)];
+  if (guideLinks.length < 8) {
+    failures.push(`${file}: 工具首页必须保留至少 8 个可见任务指南链接`);
+  }
+  for (const phrase of ['格式化与压缩 JSON', '校验并定位语法错误', '预览并修复异常 JSON', '普通格式化、校验与查询在当前浏览器内完成']) {
+    if (!learnSection.includes(phrase)) failures.push(`${file}: 工具首页缺少可见任务说明 ${phrase}`);
   }
 
   const jsonLdBlocks = [...source.matchAll(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/g)];

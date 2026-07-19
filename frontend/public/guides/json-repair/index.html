@@ -29,7 +29,7 @@
       "name": "在线 JSON 修复工具：修正常见语法错误",
       "description": "使用 JSONUtils 修复缺少引号、逗号、括号不完整等常见 JSON 语法问题，先预览修复结果，再校验、格式化并人工确认数据语义。",
       "inLanguage": "zh-CN",
-      "dateModified": "2026-07-19",
+      "dateModified": "2026-07-20",
       "isPartOf": {
         "@id": "https://jsonutils.markz.fun/#website"
       },
@@ -124,6 +124,51 @@
           </ul>
         </section>
       </div>
+      <section class="worked-example" aria-labelledby="example-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">04</p>
+            <h2 id="example-title">输入与预期结果</h2>
+          </div>
+          <p>近似 JSON 常来自手写配置或大模型输出。修复器可以补齐标准语法，但不会替你判断字段值是否真实。</p>
+        </div>
+        <div class="example-grid">
+          <figure>
+            <figcaption>输入：单引号、未加引号的键与尾随逗号</figcaption>
+            <pre><code>{name: 'JSONUtils', enabled: true,}</code></pre>
+          </figure>
+          <figure>
+            <figcaption>预期：可解析的标准 JSON</figcaption>
+            <pre><code>{
+  &quot;name&quot;: &quot;JSONUtils&quot;,
+  &quot;enabled&quot;: true
+}</code></pre>
+          </figure>
+        </div>
+      </section>
+      <section class="troubleshooting" aria-labelledby="troubleshooting-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">05</p>
+            <h2 id="troubleshooting-title">常见问题排查</h2>
+          </div>
+          <p>先确认输入、所选工具和预期结果，再按下面的任务边界逐项排查。</p>
+        </div>
+        <dl>
+          <div class="troubleshooting-item">
+            <dt>修复后字段数量变少</dt>
+            <dd>回到原始副本检查截断位置；严重缺失的内容无法通过语法推断恢复。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>数字被修成了字符串</dt>
+            <dd>不要直接写回生产数据，按接口契约逐字段核对类型。</dd>
+          </div>
+          <div class="troubleshooting-item">
+            <dt>修复结果仍不通过</dt>
+            <dd>先缩小到最外层可解析片段，再逐段补回内容，定位无法自动恢复的位置。</dd>
+          </div>
+        </dl>
+      </section>
       <aside class="cta-panel">
         <div>
           <p class="eyebrow">READY TO WORK</p>
