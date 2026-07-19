@@ -45,6 +45,10 @@ public class FileService {
 
     private static final String DEFAULT_ALLOWED_EXTENSIONS = ".conf,.config,.css,.csv,.env,.geojson,.har,.html,.ini,.java,.js,.json,.json5,.jsonc,.jsonl,.jsx,.log,.map,.md,.ndjson,.properties,.sql,.topojson,.toml,.ts,.tsx,.txt,.webmanifest,.xml,.yaml,.yml";
     private static final int MAX_ORIGINAL_FILE_NAME_CODE_POINTS = 500;
+    private static final Sort FILE_LIST_SORT = Sort.by(
+            Sort.Order.desc("createdAt"),
+            Sort.Order.desc("id")
+    );
 
     private final UploadFileRepository uploadFileRepository;
 
@@ -85,7 +89,7 @@ public class FileService {
     public Page<UploadFile> listFiles(int page, int pageSize, String keyword) {
         int safePage = Math.max(page, 0);
         int safePageSize = Math.min(Math.max(pageSize, 1), 100);
-        Pageable pageable = PageRequest.of(safePage, safePageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(safePage, safePageSize, FILE_LIST_SORT);
         if (keyword != null && !keyword.trim().isEmpty()) {
             return uploadFileRepository.findByFileNameContainingIgnoreCase(keyword.trim(), pageable);
         }
