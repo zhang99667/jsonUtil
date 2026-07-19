@@ -38,6 +38,7 @@ class RefererSourceClassifierTest {
                 Arguments.of("https://www.zhihu.com/question/1", "社交媒体"),
                 Arguments.of("https://weixin.qq.com/path", "社交媒体"),
                 Arguments.of("https://github.com/openai", "技术社区"),
+                Arguments.of("https://bücher.github.com/openai", "技术社区"),
                 Arguments.of("https://gist.github.com/example", "技术社区"),
                 Arguments.of("HTTPS://GITHUB.COM./openai", "技术社区"),
                 Arguments.of("https://evil.example/path?next=https://jsonutils.markz.fun", "外部链接"),
