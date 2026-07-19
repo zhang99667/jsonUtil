@@ -29,19 +29,27 @@ export const installAppUpdateCheckSchedule = ({
   const initialTimer = windowTarget.setTimeout(triggerCheck, initialDelayMs);
   const intervalTimer = windowTarget.setInterval(triggerCheck, intervalMs);
   const handleVisibilityChange = () => {
-    if (documentTarget.visibilityState === 'visible') {
-      triggerCheck();
-    }
+    if (documentTarget.visibilityState === 'visible') triggerCheck();
   };
   const handleFocus = triggerCheck;
+  const cleanupSteps = [
+    () => windowTarget.clearTimeout(initialTimer),
+    () => windowTarget.clearInterval(intervalTimer),
+    () => documentTarget.removeEventListener('visibilitychange', handleVisibilityChange),
+    () => windowTarget.removeEventListener('focus', handleFocus),
+  ];
 
-  documentTarget.addEventListener('visibilitychange', handleVisibilityChange);
-  windowTarget.addEventListener('focus', handleFocus);
+  try {
+    documentTarget.addEventListener('visibilitychange', handleVisibilityChange);
+    windowTarget.addEventListener('focus', handleFocus);
+  } catch (error) {
+    for (const cleanup of cleanupSteps) {
+      try { cleanup(); } catch {
+        // 继续回滚剩余资源，保留原始安装异常。
+      }
+    }
+    throw error;
+  }
 
-  return () => {
-    windowTarget.clearTimeout(initialTimer);
-    windowTarget.clearInterval(intervalTimer);
-    documentTarget.removeEventListener('visibilitychange', handleVisibilityChange);
-    windowTarget.removeEventListener('focus', handleFocus);
-  };
+  return () => cleanupSteps.forEach((cleanup) => cleanup());
 };
