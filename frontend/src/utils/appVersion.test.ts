@@ -19,7 +19,19 @@ describe('appVersion', () => {
     expect(compareAppVersions('1.10.0', '1.9.9')).toBe(1);
     expect(compareAppVersions('1.8.70', '1.8.70')).toBe(0);
     expect(compareAppVersions('1.8.69', '1.8.70')).toBe(-1);
-    expect(compareAppVersions('v2', '1.99.99')).toBe(1);
+    expect(compareAppVersions('v2.0.0', '1.99.99')).toBe(1);
+  });
+
+  it('按语义版本规则比较预发布与构建元数据', () => {
+    expect(compareAppVersions('1.8.874-beta.2', '1.8.874-beta.1')).toBe(1);
+    expect(compareAppVersions('1.8.874', '1.8.874-beta.2')).toBe(1);
+    expect(compareAppVersions('1.8.874+build.2', '1.8.874+build.1')).toBe(0);
+  });
+
+  it('拒绝不完整或非法版本', () => {
+    expect(normalizeAppVersion('v2')).toBe('0.0.0');
+    expect(normalizeAppVersion('1.8.874.1')).toBe('0.0.0');
+    expect(normalizeAppVersion('release-1.8.874')).toBe('0.0.0');
   });
 
   it('只在远端版本更新时提示', () => {
@@ -43,6 +55,8 @@ describe('appVersion', () => {
     });
 
     expect(parseAppVersionManifest({ version: '' })).toBeNull();
+    expect(parseAppVersionManifest({ version: '1.8.874.1' })).toBeNull();
+    expect(parseAppVersionManifest({ version: 'release-1.8.874' })).toBeNull();
     expect(parseAppVersionManifest({})).toBeNull();
   });
 

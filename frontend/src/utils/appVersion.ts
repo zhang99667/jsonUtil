@@ -1,3 +1,4 @@
+import { compareVersions, validateStrict } from 'compare-versions';
 import { isRecord } from './storage';
 
 export interface AppVersionMetadata {
@@ -20,43 +21,15 @@ export const normalizeAppVersion = (version?: string): string => {
   const trimmedVersion = version?.trim();
   if (!trimmedVersion) return '0.0.0';
 
-  if (!trimmedVersion.startsWith('v')) return trimmedVersion;
-
-  const withoutPrefix = trimmedVersion.slice(1).trim();
-  return withoutPrefix || '0.0.0';
+  const normalizedVersion = trimmedVersion.startsWith('v')
+    ? trimmedVersion.slice(1)
+    : trimmedVersion;
+  return validateStrict(normalizedVersion) ? normalizedVersion : '0.0.0';
 };
 
-const getVersionCore = (version: string): string => (
-  normalizeAppVersion(version).split(/[+-]/)[0]
+export const compareAppVersions = (leftVersion: string, rightVersion: string): number => (
+  compareVersions(normalizeAppVersion(leftVersion), normalizeAppVersion(rightVersion))
 );
-
-const parseVersionSegments = (version: string): number[] | null => {
-  const core = getVersionCore(version);
-  if (!/^\d+(?:\.\d+)*$/.test(core)) return null;
-
-  return core.split('.').map(segment => Number(segment));
-};
-
-export const compareAppVersions = (leftVersion: string, rightVersion: string): number => {
-  const leftSegments = parseVersionSegments(leftVersion);
-  const rightSegments = parseVersionSegments(rightVersion);
-
-  if (!leftSegments || !rightSegments) {
-    const left = normalizeAppVersion(leftVersion);
-    const right = normalizeAppVersion(rightVersion);
-    if (left === right) return 0;
-    return left > right ? 1 : -1;
-  }
-
-  const maxLength = Math.max(leftSegments.length, rightSegments.length);
-  for (let index = 0; index < maxLength; index++) {
-    const left = leftSegments[index] || 0;
-    const right = rightSegments[index] || 0;
-    if (left !== right) return left > right ? 1 : -1;
-  }
-
-  return 0;
-};
 
 export const isRemoteAppVersionNewer = (currentVersion: string, remoteVersion: string): boolean => (
   compareAppVersions(remoteVersion, currentVersion) > 0
