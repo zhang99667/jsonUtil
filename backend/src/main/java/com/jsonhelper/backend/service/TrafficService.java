@@ -341,7 +341,7 @@ public class TrafficService {
                 VisitLogRepository.SessionVisitEvent event = eventIterator.next();
                 String ip = event.getIp();
                 LocalDateTime visitTime = event.getCreatedAt();
-                if (ip == null || visitTime == null) {
+                if (ip == null || ip.isBlank() || visitTime == null) {
                     continue;
                 }
 

@@ -24,9 +24,6 @@ class TrafficServiceSessionStatsTest {
     @Mock
     private VisitLogRepository visitLogRepository;
 
-    @Mock
-    private UserAgentClassifier userAgentClassifier;
-
     private TrafficService trafficService;
 
     private static VisitLogRepository.SessionVisitEvent sessionEvent(String ip, LocalDateTime createdAt) {
@@ -35,7 +32,17 @@ class TrafficServiceSessionStatsTest {
 
     @BeforeEach
     void setUp() {
-        trafficService = new TrafficService(visitLogRepository, new GeoService(), userAgentClassifier);
+        trafficService = new TrafficService(visitLogRepository, new GeoService(), new UserAgentClassifier());
+    }
+
+    @Test
+    void getSessionDurationStatsIgnoresBlankIp() {
+        when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Stream.of(sessionEvent("   ", LocalDateTime.of(2026, 6, 5, 10, 0))));
+
+        List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
+        assertEquals(6, result.size());
+        assertTrue(result.stream().allMatch(item -> item.getCount() == 0L && item.getPercentage() == 0.0));
     }
 
     @Test
