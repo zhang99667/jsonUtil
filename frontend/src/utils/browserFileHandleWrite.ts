@@ -40,7 +40,7 @@ const enqueueFileWriteRegistration = <Result>(
   return result;
 };
 
-const isSameFileEntry = async (
+export const areFileHandlesSameEntry = async (
   handle: FileSystemFileHandle,
   candidate: FileSystemFileHandle,
 ): Promise<boolean> => {
@@ -69,7 +69,7 @@ const findActiveFileWriteQueue = async (
     if (queue.handle === handle) return queue;
   }
   for (const queue of activeFileWriteQueues) {
-    if (await isSameFileEntry(handle, queue.handle)) return queue;
+    if (await areFileHandlesSameEntry(handle, queue.handle)) return queue;
   }
   return undefined;
 };
