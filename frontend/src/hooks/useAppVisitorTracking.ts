@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { initGoogleAnalytics } from '../utils/analytics';
 
 type VisitorPing = (url: string) => Promise<unknown>;
@@ -14,7 +14,11 @@ export const useAppVisitorTracking = ({
   measurementId,
   ping = sendVisitorPing,
 }: UseAppVisitorTrackingInput): void => {
+  const hasTrackedVisitorRef = useRef(false);
+
   useEffect(() => {
+    if (hasTrackedVisitorRef.current) return;
+    hasTrackedVisitorRef.current = true;
     initGoogleAnalytics(measurementId);
 
     void ping('/api/visitor/ping').catch(() => {
