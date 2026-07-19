@@ -187,6 +187,16 @@ describe('aiRepairOpenAiTransport', () => {
       .rejects.toThrow(AI_INVALID_RESPONSE_JSON_MESSAGE);
   });
 
+  it('正文读取取消时原样透传 AbortError', async () => {
+    const abortError = new DOMException('响应体读取已取消', 'AbortError');
+    const response = new Response('{}', { status: 200 });
+    Object.defineProperty(response, 'json', {
+      value: () => Promise.reject(abortError),
+    });
+
+    await expect(readOpenAICompatibleRepairText(response)).rejects.toBe(abortError);
+  });
+
   it('HTTP 错误会提取服务端详情', async () => {
     const response = new Response(JSON.stringify({
       error: {

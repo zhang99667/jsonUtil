@@ -3,6 +3,7 @@ import {
   getAIProviderDefaultModel,
   getOpenAICompatibleDefaultBaseUrl,
 } from '../utils/aiProviderDefaults';
+import { isAbortError } from '../utils/errors';
 import { AiRepairErrorCode, createAiRepairError } from '../utils/aiRepairErrors';
 import { isRecord } from '../utils/storage';
 import {
@@ -85,7 +86,8 @@ export const readOpenAICompatibleRepairText = async (response: Response): Promis
 
   try {
     data = await response.json() as OpenAICompatibleRepairResponseBody;
-  } catch {
+  } catch (error: unknown) {
+    if (isAbortError(error)) throw error;
     throw createAiRepairError(AiRepairErrorCode.InvalidResponse, AI_INVALID_RESPONSE_JSON_MESSAGE);
   }
 
