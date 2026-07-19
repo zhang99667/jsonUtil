@@ -85,7 +85,7 @@ class UserServiceTest {
         request.setPassword("secret");
         request.setRole("admin");
         when(passwordEncoder.encode("secret")).thenReturn("密码摘要");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User created = userService.createUser(request);
 
