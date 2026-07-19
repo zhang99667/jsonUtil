@@ -1,4 +1,5 @@
 import { adminAuthMaintainabilityBudgets } from './maintainability-budget-admin-auth-rules.mjs';
+import { adminFileManagementMaintainabilityBudgets } from './maintainability-budget-admin-file-management-rules.mjs';
 import { backendFileManagementMaintainabilityBudgets } from './maintainability-budget-backend-file-management-rules.mjs';
 import { backendReportingMaintainabilityBudgets } from './maintainability-budget-backend-reporting-rules.mjs';
 import { backendRequestBoundaryMaintainabilityBudgets } from './maintainability-budget-backend-request-boundary-rules.mjs';
@@ -10,6 +11,7 @@ import { transformMaintainabilityBudgets } from './maintainability-budget-transf
 
 export const maintainabilityBudgets = [
   ...adminAuthMaintainabilityBudgets,
+  ...adminFileManagementMaintainabilityBudgets,
   ...backendFileManagementMaintainabilityBudgets,
   ...backendReportingMaintainabilityBudgets,
   ...backendRequestBoundaryMaintainabilityBudgets,
