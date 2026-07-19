@@ -29,6 +29,10 @@ public class TrafficService {
     private static final List<String> DURATION_BUCKET_NAMES = List.of(
             "0-10秒", "10-30秒", "30秒-1分钟", "1-3分钟", "3-10分钟", "10分钟以上"
     );
+    private static final Comparator<Map.Entry<String, Long>> DISTRIBUTION_COUNT_ORDER =
+            Comparator.<Map.Entry<String, Long>>comparingLong(Map.Entry::getValue)
+                    .reversed()
+                    .thenComparing(Map.Entry::getKey, Comparator.nullsLast(Comparator.naturalOrder()));
 
     /**
      * 获取流量概览数据
@@ -401,7 +405,7 @@ public class TrafficService {
     ) {
         long total = Math.max(distributionCounts.total(), 1);
         return distributionCounts.counts().entrySet().stream()
-                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .sorted(DISTRIBUTION_COUNT_ORDER)
                 .limit(limit)
                 .map(entry -> factory.create(
                         entry.getKey(),

@@ -167,6 +167,14 @@ class TrafficServiceTest {
     }
 
     @Test
+    void distributionCountTiesUseCategoryAsStableOrder() {
+        when(userAgentClassifier.classifyDevice(any())).thenReturn("Aa", "BB");
+        when(visitLogRepository.countByUserAgentInRange(any(), any()))
+                .thenReturn(List.of(valueCount("BB", 1L), valueCount("Aa", 1L)));
+        assertEquals("Aa", trafficService.getDeviceDistribution(7, 1).get(0).getDevice());
+    }
+
+    @Test
     void getBrowserDistributionAggregatesByUserAgentCountBeforeParsingBrowser() {
         when(userAgentClassifier.classifyBrowser(any())).thenReturn("Chrome", "Firefox");
         when(visitLogRepository.countByUserAgentInRange(any(LocalDateTime.class), any(LocalDateTime.class)))
@@ -293,15 +301,8 @@ class TrafficServiceTest {
         assertEquals(100.0, result.get(5).getPercentage());
     }
 
-    private static class TestSessionVisitEvent implements VisitLogRepository.SessionVisitEvent {
-        private final String ip;
-        private final LocalDateTime createdAt;
-
-        private TestSessionVisitEvent(String ip, LocalDateTime createdAt) {
-            this.ip = ip;
-            this.createdAt = createdAt;
-        }
-
+    private record TestSessionVisitEvent(String ip, LocalDateTime createdAt)
+            implements VisitLogRepository.SessionVisitEvent {
         @Override
         public String getIp() {
             return ip;
