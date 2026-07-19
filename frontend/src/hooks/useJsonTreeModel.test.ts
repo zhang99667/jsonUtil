@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import type { JsonTreeModel } from '../utils/jsonTreeModel';
-import type {
-  JsonTreeWorker,
-  JsonTreeWorkerResponse,
-} from '../utils/jsonTreeWorker';
+import type { JsonTreeWorker } from '../utils/jsonTreeWorker';
 import { useJsonTreeModel, type JsonTreeModelState } from './useJsonTreeModel';
 
 const reactMocks = vi.hoisted(() => ({
@@ -20,7 +17,7 @@ vi.mock('react', async importOriginal => ({
 interface FakeJsonTreeWorker extends JsonTreeWorker {
   postMessage: Mock<JsonTreeWorker['postMessage']>;
   terminate: Mock<JsonTreeWorker['terminate']>;
-  emitMessage(response: JsonTreeWorkerResponse): void;
+  emitMessage(response: unknown): void;
   emitError(message: string): void;
 }
 
@@ -53,7 +50,7 @@ const createFakeWorker = (): FakeJsonTreeWorker => {
     postMessage: vi.fn(),
     terminate: vi.fn(),
     emitMessage: response => {
-      worker.onmessage?.({ data: response } as MessageEvent<JsonTreeWorkerResponse>);
+      worker.onmessage?.({ data: response } as MessageEvent<unknown>);
     },
     emitError: message => {
       worker.onerror?.({ message } as ErrorEvent);
@@ -166,6 +163,23 @@ describe('useJsonTreeModel', () => {
     expect(harness.setModelState).toHaveBeenLastCalledWith({
       model: null,
       error: `JSON 结构解析失败: ${message}`,
+      isLoading: false,
+    });
+  });
+
+  it.each([
+    ['空值', null],
+    ['未定义值', undefined],
+    ['数组', []],
+  ] as const)('%s响应外壳会安全结束加载并释放线程', (_name, response) => {
+    const harness = useJsonTreeModelForTest();
+    harness.effects[0]();
+
+    expect(() => harness.workers[0].emitMessage(response)).not.toThrow();
+    expect(harness.workers[0].terminate).toHaveBeenCalledTimes(1);
+    expect(harness.setModelState).toHaveBeenLastCalledWith({
+      model: null,
+      error: 'JSON 结构解析失败: 后台线程响应格式无效',
       isLoading: false,
     });
   });

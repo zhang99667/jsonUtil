@@ -13,7 +13,7 @@ export interface JsonTreeWorkerResponse {
 }
 
 export interface JsonTreeWorker {
-  onmessage: ((event: MessageEvent<JsonTreeWorkerResponse>) => void) | null;
+  onmessage: ((event: MessageEvent<unknown>) => void) | null;
   onerror: ((event: ErrorEvent) => void) | null;
   postMessage(message: JsonTreeWorkerRequest): void;
   terminate(): void;
