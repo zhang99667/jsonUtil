@@ -5,6 +5,7 @@ const commandCoreBudget = (file, maxLines, reason) => ({ file, maxLines, reason 
 export const appWorkflowCommandCoreMaintainabilityBudgets = [
   ...appWorkflowCommandAutoSaveMaintainabilityBudgets,
   commandCoreBudget('frontend/src/hooks/useAppCopyCommands.ts', 65, '复制命令 hook 只接 SOURCE/PREVIEW 文本和复制 runner，副作用分支留在可测 helper'),
+  commandCoreBudget('frontend/src/hooks/useAppCopyCommandsConcurrency.test.ts', 85, '连续复制测试只锁定最新复制请求对提示和埋点副作用的所有权'),
   commandCoreBudget('frontend/src/utils/appCopyCommandRunner.ts', 85, '复制命令 runner 只维护空态、处理中、复制、toast 和打点语义'),
   commandCoreBudget('frontend/src/hooks/useAppPrimaryActionCommand.ts', 47, '主动作命令 hook 只装配 AI 修复、保存、打开和新建标签 runner'),
   commandCoreBudget('frontend/src/hooks/useAppPrimaryActionCommand.test.ts', 60, '主动作命令 hook 测试只锁定动作和当前 effects 委托给 runner'),
