@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatUnknownError } from '../utils/errors';
 import type { JsonTreeModel } from '../utils/jsonTreeModel';
+import { isRecord } from '../utils/storage';
 import {
   createJsonTreeWorker,
   type JsonTreeWorker,
@@ -91,23 +92,28 @@ export const useJsonTreeModel = (
       });
     };
 
-    worker.onmessage = event => {
-      if (event.data.id !== requestId) {
+    worker.onmessage = (event: MessageEvent<unknown>) => {
+      const response = event.data;
+      if (!isRecord(response)) {
+        failWorker('后台线程响应格式无效', '后台线程响应格式无效');
+        return;
+      }
+      if (response.id !== requestId) {
         failWorker('后台线程响应标识不匹配', '后台线程响应标识不匹配');
         return;
       }
-      if (event.data.error) {
-        failWorker(event.data.error, '后台线程解析失败');
+      if (response.error) {
+        failWorker(response.error, '后台线程解析失败');
         return;
       }
-      if (!event.data.model) {
+      if (!response.model) {
         failWorker('后台线程未返回结构数据', '后台线程未返回结构数据');
         return;
       }
       if (!finishWorker()) return;
       if (disposed || requestIdRef.current !== requestId) return;
       setModelState({
-        model: event.data.model,
+        model: response.model as JsonTreeModel,
         error: '',
         isLoading: false,
       });
