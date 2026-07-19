@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const title = 'JSONUtils - 在线 JSON 格式化、校验与智能修复工具';
 const description =
-  'JSONUtils 是面向开发者的在线 JSON 工具，支持格式化、语法校验与错误定位、智能修复、JSONPath 查询、差异对比和 TypeScript 类型生成。';
+  'JSONUtils 是面向开发者的在线 JSON 格式化与校验工具，可定位语法错误、智能修复异常 JSON，并支持 JSONPath 查询、差异对比、JSON Schema 校验和 TypeScript 类型生成；常规处理在浏览器本地完成。';
 
 test('页面声明独立且清晰的 JSONUtils 搜索身份', async ({ page }) => {
   await page.route('**/api/visitor/ping', (route) =>
