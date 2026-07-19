@@ -23,10 +23,10 @@ class JwtPropertiesTest {
             .withUserConfiguration(JwtPropertiesConfiguration.class);
 
     @Test
-    void bindsLegacyMillisecondExpiration() {
-        validContext("86400000").run(context -> {
+    void bindsMinimumLegacyMillisecondExpiration() {
+        validContext("1").run(context -> {
             assertNull(context.getStartupFailure());
-            assertEquals(Duration.ofDays(1), context.getBean(JwtProperties.class).getExpiration());
+            assertEquals(Duration.ofMillis(1), context.getBean(JwtProperties.class).getExpiration());
         });
     }
 
@@ -47,8 +47,10 @@ class JwtPropertiesTest {
     }
 
     @Test
-    void rejectsZeroExpirationWithoutLeakingSecret() {
-        validContext("0").run(context -> assertInvalidContext(context.getStartupFailure()));
+    void rejectsExpirationBelowOneMillisecondWithoutLeakingSecret() {
+        for (String expiration : new String[] {"0", "1ns"}) {
+            validContext(expiration).run(context -> assertInvalidContext(context.getStartupFailure()));
+        }
     }
 
     @Test

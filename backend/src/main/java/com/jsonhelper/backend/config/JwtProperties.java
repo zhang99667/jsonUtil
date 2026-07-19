@@ -1,9 +1,9 @@
 package com.jsonhelper.backend.config;
 
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 import org.springframework.validation.annotation.Validated;
@@ -20,6 +20,7 @@ public final class JwtProperties {
     private final String secret;
 
     @NotNull(message = "JWT 有效期不能为空")
+    @DurationMin(millis = 1, message = "JWT 有效期不能小于 1 毫秒")
     @DurationUnit(ChronoUnit.MILLIS)
     private final Duration expiration;
 
@@ -29,10 +30,5 @@ public final class JwtProperties {
     ) {
         this.secret = secret;
         this.expiration = expiration;
-    }
-
-    @AssertTrue(message = "JWT 有效期必须大于零")
-    public boolean isExpirationPositive() {
-        return expiration == null || (!expiration.isZero() && !expiration.isNegative());
     }
 }
