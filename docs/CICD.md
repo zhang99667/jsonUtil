@@ -121,12 +121,22 @@ bash scripts/deploy/ssh-prebuilt-frontend-deploy.sh
 
 前端容器会把镜像内 `/opt/jsonutils-dist` 覆盖同步到持久化卷 `frontend-static:/usr/share/nginx/html`，入口 HTML 和 `version.json` 每次启动更新，近期旧 `assets/*` hash 文件默认保留 14 天，降低用户长时间打开旧页面后点击懒加载面板时请求旧 chunk 失败的概率。保留天数可通过 `STATIC_ASSET_RETENTION_DAYS` 调整，设置为 `0` 可关闭自动清理。
 
-本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://jsonutils.markz.fun`，确保按主站域名记录首页和后台入口的静态资源；同时默认冒烟验证 `zhangjihao.markz.fun/`、HTTPS `/admin.html` 和恢复用裸域查询参数，确认同机外部业务域名没有落回 JSONUtils 后台，且 HTTPS 后台历史路径会清缓存、用一次性查询参数绕过浏览器旧 301 后把地址栏归位到裸域。Nginx 路由门禁会额外要求 HTTP 后台历史路径回到 HTTPS 裸域。可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
+本机 SSH 部署完成后会默认执行公网部署验证，检查 `PUBLIC_BASE_URL/version.json` 的版本是否等于当前 `frontend/package.json`，并确认 `PUBLIC_BASE_URL/api/health` 返回 `pong`。默认 `PUBLIC_BASE_URL=https://jsonutils.markz.fun`，确保按主站域名记录首页和后台入口的静态资源。普通 JSONUtils 发布不依赖仓库外站点；维护同机外部业务域名时，仍需保留现有 Nginx 隔离规则，并通过 `PUBLIC_EXTERNAL_ROUTE_CHECKS` 显式传入逗号分隔的 `地址|期望文本|禁止文本` 检查。可用 `PUBLIC_VERIFY_ENABLED=false` 跳过，或单独运行：
 
 ```bash
 PUBLIC_BASE_URL=https://jsonutils.markz.fun \
 bash scripts/deploy/verify-public-deploy.sh
 ```
+
+需要联动验证外部域名时，可显式执行：
+
+```bash
+PUBLIC_BASE_URL=https://jsonutils.markz.fun \
+PUBLIC_EXTERNAL_ROUTE_CHECKS='https://example.net/|业务页面标题|JSON Utils - 后台管理,https://example.net/admin.html|业务页面标题|JSON Utils - 后台管理' \
+bash scripts/deploy/verify-public-deploy.sh
+```
+
+显式外部检查仍要求响应为 2xx、不得重定向、包含期望文本且不包含禁止文本；任一条件失败都会让公网部署验证退出非零。
 
 公网部署验证还会默认执行 `node scripts/ci/check-production-frontend-assets.mjs "$PUBLIC_BASE_URL"`，从首页和后台入口提取当前构建的 `/assets/*`，再递归扫描已发现 JS chunk 内的懒加载、worker、二级资源引用、CSS `url(...)` 中的字体和图片资源以及 CSS `@import` 链路，并逐个确认返回成功，同时校验 JS/CSS 的 `Content-Type`，避免发布后入口 HTML 已更新但深层 chunk 缺失，或缺失资源 fallback 成 HTML 仍返回 200。SSH 部署会在替换容器前记录当前公网 asset 列表，并通过 `FRONTEND_ASSET_VERIFY_EXTRA_PATHS` 在部署后一起复查旧 hash 资源，防止已打开页面持有的懒加载 chunk 被新版本清理。排查用户反馈的旧 chunk URL 时，可追加 `--extra-asset "https://jsonutils.markz.fun/assets/xxx.js"` 直接纳入巡检。可用 `PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED=false` 临时跳过；如果临时改用 IP 探活且证书域名不匹配，需要显式设置 `PUBLIC_VERIFY_INSECURE_TLS=true`，让版本/健康检查和 Node 静态资源巡检都按 `curl -k` 方式容错。直接运行 `check-production-frontend-assets.mjs` 时，也兼容 `PUBLIC_VERIFY_INSECURE_TLS=true`、`PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS=true` 和 `FRONTEND_ASSET_VERIFY_INSECURE_TLS=true`。
 
