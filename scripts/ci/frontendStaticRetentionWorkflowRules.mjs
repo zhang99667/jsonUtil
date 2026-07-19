@@ -7,6 +7,16 @@ export const workflowStaticRetentionSnippets = [
     'run: node scripts/ci/check-ai-governance.mjs',
   ] },
   { file: '.github/workflows/deploy.yml', snippets: [
+    `      - name: Build frontend dist
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm run check:preloads`,
+    "SYNC_FRONTEND_DIST: 'true'",
+    'FRONTEND_DOCKERFILE: Dockerfile.prebuilt',
+    "COMPOSE_SERVICES: ${{ inputs.deploy_mode == 'prebuilt-frontend' && 'app-frontend' || '' }}",
+    "COMPOSE_NO_DEPS: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}",
     'public_verify_insecure_tls:',
     "DEFAULT_PUBLIC_BASE_URL: 'https://jsonutils.markz.fun'",
     'run: node scripts/ci/check-frontend-static-retention.mjs',

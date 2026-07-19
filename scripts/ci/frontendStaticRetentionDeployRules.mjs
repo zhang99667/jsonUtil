@@ -11,6 +11,9 @@ export const deployStaticRetentionSnippets = [
     'restore_frontend_legacy_assets',
   ] },
   { file: 'scripts/deploy/ssh-docker-compose-deploy.sh', snippets: [
+    `if [ "$SYNC_FRONTEND_DIST" != "true" ]; then
+  RSYNC_EXCLUDES+=(--exclude='frontend/dist/')
+fi`,
     'DEFAULT_PUBLIC_BASE_URL="${DEFAULT_PUBLIC_BASE_URL:-https://jsonutils.markz.fun}"',
     'PUBLIC_VERIFY_INSECURE_TLS="${PUBLIC_VERIFY_INSECURE_TLS:-false}"',
     'PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="${PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS:-$PUBLIC_VERIFY_INSECURE_TLS}"',

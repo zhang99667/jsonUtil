@@ -9,4 +9,5 @@ export const infraDeployCheckerMaintainabilityBudgets = [
   { file: 'scripts/ci/deployShellHeredocBody.mjs', maxLines: 25, reason: '部署脚本 heredoc body helper 应只负责正文边界读取和未闭合片段返回' },
   { file: 'scripts/ci/githubWorkflowRunBlockText.mjs', maxLines: 35, reason: 'GitHub workflow run 文本 helper 应只维护缩进、inline quote 和 Actions 表达式归一化' },
   { file: 'scripts/ci/githubWorkflowRunBlocks.mjs', maxLines: 55, reason: 'GitHub workflow run 提取入口应只处理 inline run、块状 run 和 startLine 记录' },
+  { file: 'scripts/ci/deployWorkflowPrebuiltContract.test.mjs', maxLines: 75, reason: '部署工作流预构建契约测试只锁定步骤条件、固定命令与解析边界' },
 ];
