@@ -2,7 +2,8 @@ const adminAuthBudget = (file, maxLines, reason) => ({ file, maxLines, reason })
 
 export const adminAuthMaintainabilityBudgets = [
   adminAuthBudget('scripts/ci/maintainability-budget-admin-auth-rules.mjs', 35, '后台认证预算表只维护登录、JWT 配置、用户输入契约及其测试预算'),
-  adminAuthBudget('backend/src/main/java/com/jsonhelper/backend/config/DataInitializer.java', 110, '管理员初始化器只维护启动配置校验、账号身份确认和并发唯一冲突收敛'),
+  adminAuthBudget('backend/src/main/java/com/jsonhelper/backend/config/AdminBootstrapProperties.java', 55, '管理员启动配置只维护条件校验、兼容默认值和密码原值边界'),
+  adminAuthBudget('backend/src/main/java/com/jsonhelper/backend/config/DataInitializer.java', 90, '管理员初始化器只维护账号身份确认和并发唯一冲突收敛'),
   adminAuthBudget('backend/src/main/java/com/jsonhelper/backend/config/JwtProperties.java', 55, 'JWT 配置只维护标准绑定、时长单位和启动期字段约束'),
   adminAuthBudget('backend/src/main/java/com/jsonhelper/backend/controller/AdminController.java', 90, '用户管理控制器只负责标准校验、权限声明和服务调用'),
   adminAuthBudget('backend/src/main/java/com/jsonhelper/backend/controller/AuthController.java', 30, '认证控制器只负责校验登录请求并调用认证服务'),
@@ -19,7 +20,8 @@ export const adminAuthMaintainabilityBudgets = [
   adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/service/UserServiceAdminInvariantTest.java', 180, '管理员存续测试只锁定唯一管理员拒绝和多管理员放行业务语义'),
   adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/service/UserServicePaginationTest.java', 70, '用户分页测试只锁定创建时间与唯一标识组成的稳定排序契约'),
   adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/service/UserServiceTest.java', 130, '用户服务测试只锁定冲突、缺失、密码和角色归一语义'),
-  adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/config/DataInitializerTest.java', 180, '管理员初始化测试只锁定配置、身份碰撞、密码原值和并发唯一冲突语义'),
+  adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/config/AdminBootstrapPropertiesTest.java', 150, '管理员启动配置测试只锁定默认值、条件必填、规范化和密码脱敏'),
+  adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/config/DataInitializerTest.java', 170, '管理员初始化测试只锁定身份碰撞、密码原值和并发唯一冲突语义'),
   adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/config/JwtPropertiesTest.java', 120, 'JWT 配置测试只锁定单位兼容、正时长约束和密钥脱敏'),
   adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/security/JwtTokenProviderTest.java', 70, 'JWT 提供者测试只锁定原值、Base64、示例值和 HS512 密钥边界'),
   adminAuthBudget('backend/src/test/java/com/jsonhelper/backend/security/AccountStatusAuthenticationTest.java', 180, '账号状态认证测试只锁定禁用账号的登录与令牌认证边界'),
