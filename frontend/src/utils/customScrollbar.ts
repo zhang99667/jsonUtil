@@ -52,6 +52,15 @@ export const getCustomScrollbarDragScrollPos = ({
   scrollSize,
   clientSize,
 }: CustomScrollbarDragInput): number => {
-  if (clientSize <= 0) return startScrollPos;
-  return startScrollPos + delta * (scrollSize / clientSize);
+  const { thumbSize, showScrollbar } = getCustomScrollbarThumbMetrics({
+    scrollPos: startScrollPos,
+    scrollSize,
+    clientSize,
+  });
+  if (!showScrollbar) return startScrollPos;
+
+  const scrollRange = scrollSize - clientSize;
+  const thumbTravelPixels = clientSize * (1 - thumbSize / 100);
+  if (thumbTravelPixels <= 0) return startScrollPos;
+  return startScrollPos + delta * (scrollRange / thumbTravelPixels);
 };
