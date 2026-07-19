@@ -2,12 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { collectExternalFrontendRouteFailures } from './frontendNginxExternalRouteFailures.mjs';
 import { buildNginxRoutingClassifications } from './frontendNginxRoutingClassifications.mjs';
-import { extractNginxServerBlocks } from './frontendNginxRoutingBlocks.mjs';
+import { extractNginxServerBlocks, unionNginxServerNames } from './frontendNginxRoutingBlocks.mjs';
 
 export { extractNginxServerBlocks } from './frontendNginxRoutingBlocks.mjs';
 
 export const nginxRoutingConfigFile = 'frontend/nginx.conf';
-export const publicFrontendHosts = ['jsonutils.markz.fun', 'markz.fun', 'www.markz.fun'];
+export const publicFrontendHosts = ['jsonutils.markz.fun'];
+export const forbiddenJsonutilsHosts = ['markz.fun', 'www.markz.fun'];
 export const localHealthHosts = ['localhost', '127.0.0.1'];
 export const externalFrontendRoutes = [{ host: 'zhangjihao.markz.fun', root: '/usr/share/nginx/zhangjihao' }];
 
@@ -26,6 +27,7 @@ export const collectNginxPublicRoutingFailures = (
   if (!fs.existsSync(filePath)) return [`${file}: 缺少配置文件`];
 
   const blocks = extractNginxServerBlocks(fs.readFileSync(filePath, 'utf8'));
+  const allNames = unionNginxServerNames(blocks);
   const {
     publicHttpNames,
     publicHttpsNames,
@@ -38,6 +40,9 @@ export const collectNginxPublicRoutingFailures = (
   const adminHostFailures = hosts
     .filter(host => adminNames.has(host))
     .map(host => `${file}: 公开域名 ${host} 不能绑定到后台 server_name`);
+  const identityBoundaryFailures = forbiddenJsonutilsHosts
+    .filter(host => allNames.has(host))
+    .map(host => `${file}: 博客域名 ${host} 不能绑定到 JSONUtils Nginx server_name`);
   const localHealthFailures = localHealthHosts
     .filter(host => !publicHttpsNames.has(host))
     .map(host => `${file}: 本机健康检查域名 ${host} 未绑定到主站 HTTPS server_name`);
@@ -55,6 +60,7 @@ export const collectNginxPublicRoutingFailures = (
     ...collectMissingHostFailures(file, hosts, publicHttpNames, '主站 HTTP 跳转 server_name'),
     ...collectMissingHostFailures(file, hosts, publicHttpsNames, '主站 HTTPS server_name'),
     ...adminHostFailures,
+    ...identityBoundaryFailures,
     ...localHealthFailures,
     ...externalHostFailures,
   ];

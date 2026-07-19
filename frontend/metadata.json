@@ -1,5 +1,5 @@
 {
-  "name": "JSONUtils - 专业版",
-  "description": "一个全能的 JSON 工具：支持格式化、校验、压缩、转义/去转义、Unicode/中文互转。内置 Gemini AI 智能修复功能，可一键修复损坏的 JSON 数据。",
+  "name": "JSONUtils",
+  "description": "JSONUtils 是面向开发者的在线 JSON 工具，支持格式化、语法校验与错误定位、智能修复、JSONPath 查询、差异对比和 TypeScript 类型生成。",
   "requestFramePermissions": []
 }

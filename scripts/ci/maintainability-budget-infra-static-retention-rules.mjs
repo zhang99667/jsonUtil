@@ -7,6 +7,7 @@ export const infraStaticRetentionMaintainabilityBudgets = [
   staticRetentionBudget('scripts/ci/frontendNginxExternalRouteFailures.mjs', 35, 'Nginx 外部业务域名失败 helper 应只维护外部静态目录、根路径和后台入口隔离检查'),
   staticRetentionBudget('scripts/ci/frontendNginxRoutingBlocks.mjs', 55, 'Nginx server block helper 应只维护 server_name/listen 解析和入口保护谓词'),
   staticRetentionBudget('scripts/ci/frontendNginxRoutingClassifications.mjs', 30, 'Nginx 路由分类 helper 应只维护 server blocks 到主站、后台和外部域名集合的归类'),
+  staticRetentionBudget('scripts/ci/frontendSeoContract.mjs', 125, 'SEO 契约应只维护 JSONUtils 元数据、发现文件、结构化能力与域名隔离检查'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionRules.mjs', 25, '静态资源保留规则入口应只聚合 Docker、Compose、部署和 workflow 子规则表'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionDockerRules.mjs', 25, '静态资源保留 Docker 规则表应只维护镜像入口片段'),
   staticRetentionBudget('scripts/ci/frontendStaticRetentionComposeRules.mjs', 25, '静态资源保留 Compose 规则表应只维护环境变量和 volume 片段'),
