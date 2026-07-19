@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class UserService {
 
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String LAST_ENABLED_ADMIN_MESSAGE = "至少需要保留一个已启用的管理员";
+    private static final String USERNAME_OCCUPIED_MESSAGE = "用户名已被占用";
     private static final Sort USER_LIST_SORT = Sort.by(
             Sort.Order.desc("createdAt"),
             Sort.Order.desc("id")
@@ -37,7 +39,7 @@ public class UserService {
      */
     public User createUser(RegisterRequest registerRequest) {
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被占用");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, USERNAME_OCCUPIED_MESSAGE);
         }
 
         User user = new User();
@@ -48,7 +50,7 @@ public class UserService {
                 : "USER");
         user.setEnabled(true);
 
-        return userRepository.save(user);
+        return saveWithUsernameConflict(user);
     }
 
     /**
@@ -78,11 +80,14 @@ public class UserService {
                 : user.getEnabled();
         ensureEnabledAdminRemains(user, isEnabledAdmin(nextRole, nextEnabled), enabledAdmins);
 
-        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+        boolean usernameChanged = request.getUsername() != null
+                && !request.getUsername().trim().isEmpty()
+                && !request.getUsername().equals(user.getUsername());
+        if (usernameChanged) {
             // 检查用户名是否被其他人占用
             userRepository.findByUsername(request.getUsername()).ifPresent(existing -> {
                 if (!existing.getId().equals(id)) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被占用");
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, USERNAME_OCCUPIED_MESSAGE);
                 }
             });
             user.setUsername(request.getUsername());
@@ -104,7 +109,7 @@ public class UserService {
             user.setEnabled(request.getEnabled());
         }
 
-        return userRepository.save(user);
+        return usernameChanged ? saveWithUsernameConflict(user) : userRepository.save(user);
     }
 
     /**
@@ -136,6 +141,14 @@ public class UserService {
     private List<User> lockEnabledAdmins() {
         // 固定锁顺序使并发降权、禁用或删除共享同一个串行化边界。
         return userRepository.findByRoleAndEnabledTrueOrderById(ADMIN_ROLE);
+    }
+
+    private User saveWithUsernameConflict(User user) {
+        try {
+            return userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException conflict) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, USERNAME_OCCUPIED_MESSAGE, conflict);
+        }
     }
 
     private void ensureEnabledAdminRemains(
