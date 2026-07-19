@@ -261,12 +261,12 @@ describe('useFileSystem 打开文件', () => {
   });
 
   it('模式提交后在被动副作用前使旧打开请求失效', () => {
-    const refs = [{ current: TransformMode.NONE }, { current: 0 }, { current: 0 }];
-    let refIndex = 0;
-    reactMocks.useRef.mockImplementation(() => refs[refIndex++]);
+    const stateRef = {
+      current: { mode: TransformMode.NONE, requestSequence: 0, workspaceRevision: 0 },
+    };
+    reactMocks.useRef.mockReturnValue(stateRef);
     const inputRef = { current: '{"before":true}' };
     const request = useFileOpenRequestGuard({ inputRef, mode: TransformMode.NONE }).beginRequest();
-    refIndex = 0;
     const currentGuard = useFileOpenRequestGuard({ inputRef, mode: TransformMode.FORMAT });
     reactMocks.useLayoutEffect.mock.calls.at(-1)?.[0]();
     expect(currentGuard.captureWorkspaceMode()).toBe(TransformMode.FORMAT);
