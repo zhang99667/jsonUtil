@@ -10,4 +10,6 @@ export const appJsonPathHelperSavedQueryMaintainabilityBudgets = [
   appJsonPathHelperSavedQueryBudget('frontend/src/utils/jsonPathSavedQueryListActions.test.ts', 65, 'JSONPath 保存查询列表 action 测试只锁定历史收藏增删和切换'),
   appJsonPathHelperSavedQueryBudget('frontend/src/utils/jsonPathSavedQueryStorage.ts', 55, 'JSONPath 保存查询 storage helper 只维护历史收藏读写、清理和导入归一化'),
   appJsonPathHelperSavedQueryBudget('frontend/src/utils/jsonPathSavedQueryStorage.test.ts', 90, 'JSONPath 保存查询 storage 测试只锁定 storage key、数组格式和导入归一化'),
+  appJsonPathHelperSavedQueryBudget('frontend/src/utils/recentStringLists.ts', 50, '最近字符串列表工具只维护上限归一、清洗去重与增删规则'),
+  appJsonPathHelperSavedQueryBudget('frontend/src/utils/recentStringLists.test.ts', 105, '最近字符串列表测试只锁定默认上限、异常上限、顺序、大小写、尾部读取和损坏存储'),
 ];
