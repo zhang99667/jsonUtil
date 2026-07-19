@@ -11,6 +11,7 @@ export const appWorkflowSourceMaintainabilityBudgets = [
   { file: 'frontend/src/hooks/usePendingSourceReplacementCommand.test.ts', maxLines: 245, reason: 'SOURCE pending 替换测试只锁定目标未变化、跨标签失效、编辑后失效和打点语义' },
   { file: 'frontend/src/hooks/useAppPasteSourceCommand.ts', maxLines: 90, reason: '粘贴 SOURCE hook 只维护剪贴板读取、pending 替换确认、错误提示和打点' },
   { file: 'frontend/src/hooks/useAppPasteSourceCommand.test.ts', maxLines: 125, reason: '粘贴 SOURCE 测试只锁定异步返回目标隔离、正常确认和读取失败语义' },
+  { file: 'frontend/src/hooks/useAppPasteSourceCommandConcurrency.test.ts', maxLines: 90, reason: '连续粘贴测试只锁定最新请求覆盖旧成功和旧失败结果' },
   { file: 'frontend/src/hooks/useAppSchemeInspectSourceCommand.ts', maxLines: 80, reason: 'Scheme 排查 SOURCE hook 只维护 Scheme 原始值替换、面板复位回调接入和打点语义' },
   { file: 'frontend/src/hooks/useAppClearSourceCommands.ts', maxLines: 90, reason: '清空 SOURCE hook 只维护目标快照确认、清空写入、提示和打点' },
   { file: 'frontend/src/hooks/useAppClearSourceCommands.test.ts', maxLines: 135, reason: '清空 SOURCE 测试只锁定空态、目标失效、正常确认和打点语义' },
