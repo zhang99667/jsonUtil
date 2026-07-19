@@ -13,6 +13,7 @@ import {
 import type { SchemeDecodeResult } from '../utils/schemeTypes';
 
 const ASYNC_SCHEME_DECODE_THRESHOLD = 50_000;
+const SCHEME_DECODE_WORKER_TIMEOUT_MS = 10_000;
 
 interface SchemeDecodeWorkerState {
   source: string;
@@ -143,6 +144,7 @@ export const useSchemeViewerDecode = (
 
     let disposed = false;
     let settled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
     workerRef.current?.terminate();
@@ -152,6 +154,10 @@ export const useSchemeViewerDecode = (
     const finishWorker = (worker: SchemeDecodeWorker): boolean => {
       if (settled) return false;
       settled = true;
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
       if (workerRef.current === worker) {
         workerRef.current = null;
         worker.terminate();
@@ -210,6 +216,15 @@ export const useSchemeViewerDecode = (
 
     try {
       worker.postMessage({ id: requestId, input: decodeSource });
+      if (!settled) {
+        timeoutId = setTimeout(() => {
+          applyFallback(
+            worker,
+            'Scheme 后台解码线程响应超时:',
+            '十秒内未响应',
+          );
+        }, SCHEME_DECODE_WORKER_TIMEOUT_MS);
+      }
     } catch (error) {
       applyFallback(worker, 'Scheme 后台解码请求发送失败:', error);
     }

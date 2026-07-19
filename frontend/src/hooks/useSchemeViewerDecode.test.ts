@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import type { SchemeDecodeResult } from '../utils/schemeTypes';
 import type {
   SchemeDecodeWorker,
@@ -130,12 +130,16 @@ describe('useSchemeViewerDecode', () => {
     decodeMocks.deepDecodeScheme.mockImplementation(createDecodedResult);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('小输入同步解码，达到阈值后改用后台线程', () => {
     const sync = useSchemeViewerDecodeForTest({ source: 'x'.repeat(49_999) });
     const async = useSchemeViewerDecodeForTest({ source: 'x'.repeat(50_000) });
 
     sync.effects[1]();
-    async.effects[1]();
+    const cleanup = async.effects[1]();
 
     expect(sync.result.decodeResult.decoded).toBe('已解码:49999');
     expect(sync.workers).toHaveLength(0);
@@ -144,6 +148,36 @@ describe('useSchemeViewerDecode', () => {
       id: 1,
       input: 'x'.repeat(50_000),
     });
+    if (typeof cleanup === 'function') cleanup();
+  });
+
+  it('后台线程十秒无响应时终止线程并同步降级，忽略迟到结果', () => {
+    vi.useFakeTimers();
+    const source = 'x'.repeat(50_000);
+    const harness = useSchemeViewerDecodeForTest({ source });
+    harness.effects[1]();
+    const lateMessage = harness.workers[0].onmessage;
+
+    vi.advanceTimersByTime(10_000);
+
+    expect(harness.workers[0].terminate).toHaveBeenCalledTimes(1);
+    expect(decodeMocks.deepDecodeScheme).toHaveBeenLastCalledWith(source);
+    const terminalState = harness.setWorkerState.mock.lastCall?.[0] as WorkerState;
+    expect(terminalState).toEqual(expect.objectContaining({
+      source,
+      result: expect.objectContaining({ decoded: '已解码:50000' }),
+      failed: false,
+    }));
+    expect(useSchemeViewerDecodeForTest({ source, workerState: terminalState }).result.isDecodePending)
+      .toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+
+    expect(lateMessage).toBeTypeOf('function');
+    const stateWriteCount = harness.setWorkerState.mock.calls.length;
+    lateMessage!({
+      data: { id: 1, result: createDecodedResult('late') },
+    } as MessageEvent<SchemeDecodeWorkerResponse>);
+    expect(harness.setWorkerState).toHaveBeenCalledTimes(stateWriteCount);
   });
 
   it('只接收请求标识匹配的成功结果并补齐元信息', () => {
