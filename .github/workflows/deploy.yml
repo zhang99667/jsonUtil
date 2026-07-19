@@ -84,7 +84,6 @@ jobs:
         run: node scripts/ci/check-frontend-static-retention.mjs
 
       - name: Build frontend dist
-        if: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
         working-directory: frontend
         run: |
           npm ci
@@ -151,8 +150,8 @@ jobs:
           SSH_KEY: ${{ runner.temp }}/deploy_key
           REMOTE_APP_DIR: ${{ inputs.app_dir }}
           HEALTH_CHECK_URLS: ${{ inputs.health_check_urls }}
-          SYNC_FRONTEND_DIST: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
-          FRONTEND_DOCKERFILE: ${{ inputs.deploy_mode == 'prebuilt-frontend' && 'Dockerfile.prebuilt' || 'Dockerfile' }}
+          SYNC_FRONTEND_DIST: 'true'
+          FRONTEND_DOCKERFILE: Dockerfile.prebuilt
           COMPOSE_SERVICES: ${{ inputs.deploy_mode == 'prebuilt-frontend' && 'app-frontend' || '' }}
           COMPOSE_NO_DEPS: ${{ inputs.deploy_mode == 'prebuilt-frontend' }}
           PUBLIC_VERIFY_ENABLED: 'false'
