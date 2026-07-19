@@ -1,8 +1,9 @@
 package com.jsonhelper.backend.service;
 
+import java.io.IOException;
+import java.net.IDN;
 import java.net.InetAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Set;
 
@@ -70,12 +71,12 @@ final class RefererSourceClassifier {
         try {
             URI uri = URI.create(referer.trim());
             String scheme = uri.getScheme();
-            String host = uri.getHost();
-            if (scheme == null || host == null
-                    || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+            if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
                 return null;
             }
-            String normalizedHost = host.toLowerCase(Locale.ROOT);
+            String host = uri.toURL().getHost();
+            String normalizedHost = (host.startsWith("[") ? host : IDN.toASCII(host, IDN.USE_STD3_ASCII_RULES))
+                    .toLowerCase(Locale.ROOT);
             if (normalizedHost.startsWith("[") && normalizedHost.endsWith("]")
                     && InetAddress.getByName(normalizedHost.substring(1, normalizedHost.length() - 1))
                     .isLoopbackAddress()) {
@@ -84,7 +85,7 @@ final class RefererSourceClassifier {
             return normalizedHost.endsWith(".")
                     ? normalizedHost.substring(0, normalizedHost.length() - 1)
                     : normalizedHost;
-        } catch (IllegalArgumentException | UnknownHostException ignored) {
+        } catch (IOException | IllegalArgumentException ignored) {
             return null;
         }
     }
