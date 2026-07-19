@@ -14,7 +14,7 @@ PUBLIC_VERIFY_TIMEOUT="${PUBLIC_VERIFY_TIMEOUT:-10}"
 PUBLIC_VERIFY_INSECURE_TLS="${PUBLIC_VERIFY_INSECURE_TLS:-false}"
 PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED="${PUBLIC_FRONTEND_ASSET_VERIFY_ENABLED:-true}"
 PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS="${PUBLIC_FRONTEND_ASSET_VERIFY_INSECURE_TLS:-$PUBLIC_VERIFY_INSECURE_TLS}"
-PUBLIC_EXTERNAL_ROUTE_CHECKS="${PUBLIC_EXTERNAL_ROUTE_CHECKS-https://zhangjihao.markz.fun/|智能装箱单生成器|JSON Utils - 后台管理,https://zhangjihao.markz.fun/admin.html|__jsonutils_route_recovered=1|JSON Utils - 后台管理,https://zhangjihao.markz.fun/?__jsonutils_route_recovered=1|location.search.indexOf(\"__jsonutils_route_recovered=1\")|JSON Utils - 后台管理}"
+PUBLIC_EXTERNAL_ROUTE_CHECKS="${PUBLIC_EXTERNAL_ROUTE_CHECKS-}"
 EXPECTED_APP_VERSION="${EXPECTED_APP_VERSION:-}"
 
 log() {
