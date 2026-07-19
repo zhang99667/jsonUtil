@@ -44,7 +44,6 @@ const isSameFileEntry = async (
   handle: FileSystemFileHandle,
   candidate: FileSystemFileHandle,
 ): Promise<boolean> => {
-  if (handle === candidate) return true;
   if (typeof handle.isSameEntry !== 'function') return false;
 
   const comparison = handle.isSameEntry(candidate);
@@ -66,6 +65,9 @@ const isSameFileEntry = async (
 const findActiveFileWriteQueue = async (
   handle: FileSystemFileHandle,
 ): Promise<ActiveFileWriteQueue | undefined> => {
+  for (const queue of activeFileWriteQueues) {
+    if (queue.handle === handle) return queue;
+  }
   for (const queue of activeFileWriteQueues) {
     if (await isSameFileEntry(handle, queue.handle)) return queue;
   }
