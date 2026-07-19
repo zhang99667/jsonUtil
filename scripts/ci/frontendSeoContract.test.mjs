@@ -7,6 +7,37 @@ import { fileURLToPath } from 'node:url';
 import { collectFrontendSeoFailures } from './frontendSeoContract.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const frontendDir = path.join(rootDir, 'frontend');
+
+const assertFrontendNodeEntry = (scriptName, command) => {
+  const [runtime, entry, ...extraArguments] = command.trim().split(/\s+/);
+  assert.equal(runtime, 'node', `${scriptName} 必须使用 Node 单入口`);
+  assert.equal(typeof entry, 'string', `${scriptName} 必须声明入口文件`);
+  assert.deepEqual(extraArguments, [], `${scriptName} 不应携带额外参数`);
+
+  const entryPath = path.resolve(frontendDir, entry);
+  const relativeEntry = path.relative(frontendDir, entryPath);
+  assert.deepEqual({
+    withinFrontend: relativeEntry !== ''
+      && !relativeEntry.startsWith(`..${path.sep}`)
+      && !path.isAbsolute(relativeEntry),
+    exists: fs.existsSync(entryPath),
+  }, {
+    withinFrontend: true,
+    exists: true,
+  }, `${scriptName} 入口必须位于前端构建上下文且真实存在`);
+};
+
+test('前端 Docker 构建闭包持续执行 SEO 与预加载检查', () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(frontendDir, 'package.json'), 'utf8'));
+  const dockerfile = fs.readFileSync(path.join(frontendDir, 'Dockerfile'), 'utf8');
+
+  assert.equal(dockerfile.includes('RUN npm run build'), true);
+  assert.equal(dockerfile.includes('RUN npm run check:preloads'), true);
+  assert.equal(packageJson.scripts.build.includes('npm run check:seo'), true);
+  assertFrontendNodeEntry('check:seo', packageJson.scripts['check:seo']);
+  assertFrontendNodeEntry('check:preloads', packageJson.scripts['check:preloads']);
+});
 
 test('JSONUtils SEO 契约锁定独立工具身份与发现文件', () => {
   assert.deepEqual(collectFrontendSeoFailures(rootDir), []);
