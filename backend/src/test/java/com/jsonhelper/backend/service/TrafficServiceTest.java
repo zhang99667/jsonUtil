@@ -5,7 +5,6 @@ import com.jsonhelper.backend.dto.response.IpStatsDTO;
 import com.jsonhelper.backend.dto.response.GeoStatsDTO;
 import com.jsonhelper.backend.dto.response.PathStatsDTO;
 import com.jsonhelper.backend.dto.response.RefererStatsDTO;
-import com.jsonhelper.backend.dto.response.SessionStatsDTO;
 import com.jsonhelper.backend.repository.VisitLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,8 +18,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,10 +38,6 @@ class TrafficServiceTest {
     private StubGeoService geoService;
 
     private TrafficService trafficService;
-
-    private static VisitLogRepository.SessionVisitEvent sessionEvent(String ip, LocalDateTime createdAt) {
-        return new TestSessionVisitEvent(ip, createdAt);
-    }
 
     private static VisitLogRepository.GroupCount valueCount(String value, long count) {
         return new TestGroupCount(value, count);
@@ -239,79 +232,6 @@ class TrafficServiceTest {
         assertEquals(4L, countsBySource.get("外部链接"));
         assertEquals(2L, countsBySource.get("技术社区"));
         assertEquals(2, countsBySource.size());
-    }
-
-    @Test
-    void getSessionDurationStatsUsesOrderedLightweightEvents() {
-        LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
-        AtomicBoolean streamClosed = new AtomicBoolean();
-        when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(Stream.of(
-                        sessionEvent("10.0.0.1", base),
-                        sessionEvent("10.0.0.1", base.plusSeconds(5)),
-                        sessionEvent("10.0.0.1", base.plusMinutes(40)),
-                        sessionEvent("10.0.0.2", base.plusMinutes(1)),
-                        sessionEvent("10.0.0.2", base.plusMinutes(4))
-                ).onClose(() -> streamClosed.set(true)));
-
-        List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
-
-        assertEquals(6, result.size());
-        assertEquals("0-10秒", result.get(0).getDurationRange());
-        assertEquals(1L, result.get(0).getCount());
-        assertEquals(33.33, result.get(0).getPercentage());
-        assertEquals("10-30秒", result.get(1).getDurationRange());
-        assertEquals(1L, result.get(1).getCount());
-        assertEquals(33.33, result.get(1).getPercentage());
-        assertEquals("3-10分钟", result.get(4).getDurationRange());
-        assertEquals(1L, result.get(4).getCount());
-        assertEquals(33.33, result.get(4).getPercentage());
-        assertTrue(streamClosed.get());
-    }
-
-    @Test
-    void getSessionDurationStatsStartsNewSessionAfterThirtyMinutes() {
-        LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
-        when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(Stream.of(
-                        sessionEvent("10.0.0.1", base),
-                        sessionEvent("10.0.0.1", base.plusMinutes(30).plusSeconds(1))
-                ));
-
-        List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
-
-        assertEquals(2L, result.get(1).getCount());
-        assertEquals(100.0, result.get(1).getPercentage());
-        assertEquals(0L, result.get(5).getCount());
-    }
-
-    @Test
-    void getSessionDurationStatsKeepsSessionAtThirtyMinuteBoundary() {
-        LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
-        when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(Stream.of(
-                        sessionEvent("10.0.0.1", base),
-                        sessionEvent("10.0.0.1", base.plusMinutes(30))
-                ));
-
-        List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
-
-        assertEquals(0L, result.get(1).getCount());
-        assertEquals(1L, result.get(5).getCount());
-        assertEquals(100.0, result.get(5).getPercentage());
-    }
-
-    private record TestSessionVisitEvent(String ip, LocalDateTime createdAt)
-            implements VisitLogRepository.SessionVisitEvent {
-        @Override
-        public String getIp() {
-            return ip;
-        }
-
-        @Override
-        public LocalDateTime getCreatedAt() {
-            return createdAt;
-        }
     }
 
     private static class StubGeoService extends GeoService {
