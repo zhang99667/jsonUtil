@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { copyText } from '../utils/clipboard';
 import type { ToolEventStatus } from '../utils/productTelemetry';
 import { showError, showSuccess } from '../utils/toast';
@@ -27,6 +27,7 @@ export const useAppCopyCommands = ({
   isOutputTransforming,
   onTrackToolEvent,
 }: UseAppCopyCommandsInput) => {
+  const copyIntentRef = useRef(0);
   const effects = useMemo(() => ({
     onCopyText: copyText,
     onShowError: showError,
@@ -34,16 +35,29 @@ export const useAppCopyCommands = ({
     onTrackToolEvent,
   }), [onTrackToolEvent]);
 
-  const handleCopySource = useCallback(() => runAppCopySourceCommand(sourceText, effects), [
-    effects,
+  const createGuardedEffects = useCallback(() => {
+    const copyIntent = ++copyIntentRef.current;
+    const guard = <Arguments extends unknown[]>(effect: (...args: Arguments) => void) => (...args: Arguments) => {
+      if (copyIntentRef.current === copyIntent) effect(...args);
+    };
+    return {
+      ...effects,
+      onShowError: guard(effects.onShowError),
+      onShowSuccess: guard(effects.onShowSuccess),
+      onTrackToolEvent: guard(effects.onTrackToolEvent),
+    };
+  }, [effects]);
+
+  const handleCopySource = useCallback(() => runAppCopySourceCommand(sourceText, createGuardedEffects()), [
+    createGuardedEffects,
     sourceText,
   ]);
 
   const handleCopyPreview = useCallback(() => runAppCopyPreviewCommand(
     previewText,
     isOutputTransforming,
-    effects,
-  ), [effects, isOutputTransforming, previewText]);
+    createGuardedEffects(),
+  ), [createGuardedEffects, isOutputTransforming, previewText]);
 
   return { handleCopySource, handleCopyPreview };
 };
