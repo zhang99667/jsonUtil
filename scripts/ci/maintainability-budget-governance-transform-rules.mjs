@@ -12,6 +12,11 @@ export const governanceTransformMaintainabilityBudgets = [
     maxLines: 70,
     reason: '深度解析核心预算规则过多时应继续按子领域拆分',
   },
+  {
+    file: 'scripts/ci/maintainability-budget-transform-typescript-rules.mjs',
+    maxLines: 35,
+    reason: 'JSON 类型推断预算规则应保持短表，避免回流到深度解析聚合入口',
+  },
   ...governanceTransformSummaryMaintainabilityBudgets,
   {
     file: 'scripts/ci/maintainability-budget-transform-filter-rules.mjs',
