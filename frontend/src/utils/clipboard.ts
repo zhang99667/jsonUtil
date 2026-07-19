@@ -26,10 +26,10 @@ export const copyText = async (text: string): Promise<void> => {
   textarea.style.left = '-9999px';
 
   document.body.appendChild(textarea);
-  textarea.focus();
-  textarea.select();
 
   try {
+    textarea.focus();
+    textarea.select();
     const copied = document.execCommand('copy');
     if (!copied) {
       throw new Error('浏览器拒绝复制操作');
