@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="使用 JSONUtils 在线格式化 JSON：一键美化或压缩数据，校验语法，并可深度展开嵌套在字符串中的 JSON。常规处理在浏览器本地完成。" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <link rel="canonical" href="https://jsonutils.markz.fun/guides/json-formatter/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/guides.css" />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="zh_CN" />
+  <meta property="og:site_name" content="JSONUtils" />
+  <meta property="og:title" content="在线 JSON 格式化工具：美化、压缩与深度展开" />
+  <meta property="og:description" content="使用 JSONUtils 在线格式化 JSON：一键美化或压缩数据，校验语法，并可深度展开嵌套在字符串中的 JSON。常规处理在浏览器本地完成。" />
+  <meta property="og:url" content="https://jsonutils.markz.fun/guides/json-formatter/" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="在线 JSON 格式化工具：美化、压缩与深度展开" />
+  <meta name="twitter:description" content="使用 JSONUtils 在线格式化 JSON：一键美化或压缩数据，校验语法，并可深度展开嵌套在字符串中的 JSON。常规处理在浏览器本地完成。" />
+  <title>在线 JSON 格式化工具：美化、压缩与深度展开 | JSONUtils</title>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://jsonutils.markz.fun/guides/json-formatter/#webpage",
+      "url": "https://jsonutils.markz.fun/guides/json-formatter/",
+      "name": "在线 JSON 格式化工具：美化、压缩与深度展开",
+      "description": "使用 JSONUtils 在线格式化 JSON：一键美化或压缩数据，校验语法，并可深度展开嵌套在字符串中的 JSON。常规处理在浏览器本地完成。",
+      "inLanguage": "zh-CN",
+      "dateModified": "2026-07-19",
+      "isPartOf": {
+        "@id": "https://jsonutils.markz.fun/#website"
+      },
+      "breadcrumb": {
+        "@id": "https://jsonutils.markz.fun/guides/json-formatter/#breadcrumb"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://jsonutils.markz.fun/guides/json-formatter/#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "JSONUtils",
+          "item": "https://jsonutils.markz.fun/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "使用指南",
+          "item": "https://jsonutils.markz.fun/guides/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "JSON 格式化",
+          "item": "https://jsonutils.markz.fun/guides/json-formatter/"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="打开 JSONUtils 在线工具">
+      <img src="/logo.svg" alt="" width="34" height="34" />
+      <span>JSONUtils</span>
+    </a>
+    <nav aria-label="主要导航">
+      <a href="/">在线工具</a>
+      <a href="/guides/">使用指南</a>
+    </nav>
+  </header>
+  <main id="main">
+    <nav class="breadcrumbs" aria-label="面包屑">
+      <ol>
+          <li><a href="/">JSONUtils</a></li>
+          <li><a href="/guides/">使用指南</a></li>
+          <li><span aria-current="page">JSON 格式化</span></li>
+      </ol>
+    </nav>
+    <article>
+      <header class="hero article-hero">
+        <p class="eyebrow">FORMAT · MINIFY · DEEP FORMAT</p>
+        <h1>在线 JSON 格式化工具：美化、压缩与深度展开</h1>
+        <p class="lead">把紧凑、转义或层层嵌套的 JSON 转成可读结构，并在同一个工作区继续校验、修复和查询。</p>
+        <div class="hero-actions">
+          <a class="button" href="/">打开 JSONUtils</a>
+          <a class="button button-secondary" href="/guides/">查看全部指南</a>
+        </div>
+      </header>
+      <div class="article-grid">
+        <section>
+          <p class="section-number">01</p>
+          <h2>什么时候使用</h2>
+          <ul>
+          <li>美化接口响应、日志片段和配置文件，统一缩进层级</li>
+          <li>压缩 JSON，便于复制到请求参数或测试数据中</li>
+          <li>深度展开字符串字段内再次编码的 JSON，减少手工反转义</li>
+          </ul>
+        </section>
+        <section>
+          <p class="section-number">02</p>
+          <h2>操作步骤</h2>
+          <ol>
+          <li>粘贴 JSON、拖入文件，或从已有标签页选择内容。</li>
+          <li>选择“格式化”“深度格式化”或“压缩”，预览结构变化。</li>
+          <li>确认校验状态后复制结果；重要数据建议先保留原始副本。</li>
+          </ol>
+        </section>
+        <section class="review-section">
+          <p class="section-number">03</p>
+          <h2>结果检查</h2>
+          <ul class="check-list">
+          <li>格式化不会改变键和值的语义；数组顺序保持不变。</li>
+          <li>深度格式化会尝试解析字符串中的 JSON，提交前应复核类型变化。</li>
+          <li>常规格式化在浏览器本地完成，页面不会要求先上传文件。</li>
+          </ul>
+        </section>
+      </div>
+      <aside class="cta-panel">
+        <div>
+          <p class="eyebrow">READY TO WORK</p>
+          <h2>在浏览器里处理这份 JSON</h2>
+          <p>无需注册。打开工具后粘贴内容或导入文件，按指南完成处理。</p>
+        </div>
+        <a class="button" href="/">打开在线工具</a>
+      </aside>
+      <section class="related" aria-labelledby="related-title">
+        <div class="section-heading">
+          <p class="eyebrow">NEXT TASK</p>
+          <h2 id="related-title">继续处理</h2>
+        </div>
+        <div class="related-grid">
+          <a class="related-link" href="/guides/json-validator/"><span>JSON 校验</span><span aria-hidden="true">→</span></a>
+          <a class="related-link" href="/guides/json-repair/"><span>JSON 修复</span><span aria-hidden="true">→</span></a>
+          <a class="related-link" href="/guides/jsonpath/"><span>JSONPath 查询</span><span aria-hidden="true">→</span></a>
+        </div>
+      </section>
+    </article>
+  </main>
+  <footer>
+    <p><strong>JSONUtils</strong> · 格式化、校验、修复与分析 JSON</p>
+    <a href="/">打开在线工具 <span aria-hidden="true">→</span></a>
+  </footer>
+</body>
+</html>

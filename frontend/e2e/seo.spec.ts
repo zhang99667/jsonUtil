@@ -46,6 +46,18 @@ test('页面声明独立且清晰的 JSONUtils 搜索身份', async ({ page }) =
       'JSONPath 查询与结构导航',
     ])
   );
+  expect(
+    graph.find((node) => node['@type'] === 'WebApplication')?.offers
+  ).toEqual({
+    '@type': 'Offer',
+    price: 0,
+    priceCurrency: 'CNY',
+  });
+  await expect(page.getByRole('heading', { level: 1, name: 'JSON 工具箱' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'JSON 工具箱' })).toHaveAttribute(
+    'href',
+    '/guides/'
+  );
 });
 
 for (const viewport of [
@@ -66,12 +78,51 @@ for (const viewport of [
       page.getByRole('heading', { name: 'JSONUtils 在线 JSON 工具' })
     ).toBeVisible();
     await expect(page.getByText(description)).toBeVisible();
+    await expect(page.getByRole('link', { name: 'JSON 格式化' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '全部使用指南' })).toBeVisible();
     await expect(page.locator('main img')).toHaveJSProperty('complete', true);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth)
     ).toBeLessThanOrEqual(viewport.width);
 
     await context.close();
+  });
+}
+
+for (const viewport of [
+  { name: '320px', width: 320, height: 720 },
+  { name: 'desktop', width: 1440, height: 900 },
+]) {
+  test(`${viewport.name} 指南中心与任务页可读且可内部导航`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto('/guides/');
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: '从原始 JSON 到可交付结果' })
+    ).toBeVisible();
+    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.getByRole('link', { name: 'JSON 格式化', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'JSON 校验', exact: true })).toBeVisible();
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      'https://jsonutils.markz.fun/guides/'
+    );
+    expect(await page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(viewport.width);
+
+    await page.goto('/guides/json-validator/');
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: '在线 JSON 校验工具：定位语法错误与结构问题',
+      })
+    ).toBeVisible();
+    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: '什么时候使用' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '结果检查' })).toBeVisible();
+    await expect(page.locator('.cta-panel .button')).toHaveAttribute('href', '/');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(viewport.width);
   });
 }
 
@@ -88,6 +139,10 @@ test('robots 与 sitemap 只声明 JSONUtils 域名', async ({ request }) => {
   expect(await sitemap.text()).toContain(
     '<loc>https://jsonutils.markz.fun/</loc>'
   );
+  expect(await sitemap.text()).toContain(
+    '<loc>https://jsonutils.markz.fun/guides/json-formatter/</loc>'
+  );
+  expect((await sitemap.text()).match(/<loc>/g)).toHaveLength(9);
   expect(await sitemap.text()).not.toContain('https://markz.fun/');
   expect(await admin.text()).toContain(
     '<meta name="robots" content="noindex, nofollow" />'

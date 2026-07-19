@@ -8,6 +8,11 @@ describe('ActionPanelHeader', () => {
     const tree = ActionPanelHeader({ isCollapsed: false, onToggleCollapse });
 
     expect(collectText(tree)).toContain('JSON 工具箱');
+    const heading = findByType(tree, 'h1')[0];
+    expect(heading).toBeDefined();
+    const guideLink = findByType(tree, 'a')[0];
+    expect(guideLink.props.href).toBe('/guides/');
+    expect(guideLink.props.title).toBe('查看 JSONUtils 使用指南');
     const button = findByType(tree, 'button')[0];
     expect(button.props['aria-label']).toBe('折叠工具栏');
     expect(button.props['aria-expanded']).toBe(true);

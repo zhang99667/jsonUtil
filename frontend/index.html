@@ -44,6 +44,11 @@
           "operatingSystem": "Any",
           "browserRequirements": "Requires JavaScript and HTML5 support.",
           "isAccessibleForFree": true,
+          "offers": {
+            "@type": "Offer",
+            "price": 0,
+            "priceCurrency": "CNY"
+          },
           "inLanguage": "zh-CN",
           "featureList": [
             "JSON 格式化与语法校验",
@@ -68,6 +73,16 @@
       <img class="mx-auto mb-5 h-16 w-16" src="/logo.svg" alt="" width="64" height="64" />
       <h1 id="jsonutils-title" class="mb-4 text-3xl font-semibold">JSONUtils 在线 JSON 工具</h1>
       <p class="text-base leading-7">JSONUtils 是面向开发者的在线 JSON 格式化与校验工具，可定位语法错误、智能修复异常 JSON，并支持 JSONPath 查询、差异对比、JSON Schema 校验和 TypeScript 类型生成；常规处理在浏览器本地完成。</p>
+      <nav class="mt-8" aria-label="JSONUtils 使用指南">
+        <p class="mb-3 text-sm font-semibold">按任务开始</p>
+        <ul class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+          <li><a class="text-blue-400 underline" href="/guides/json-formatter/">JSON 格式化</a></li>
+          <li><a class="text-blue-400 underline" href="/guides/json-validator/">JSON 校验</a></li>
+          <li><a class="text-blue-400 underline" href="/guides/json-repair/">JSON 修复</a></li>
+          <li><a class="text-blue-400 underline" href="/guides/jsonpath/">JSONPath</a></li>
+          <li><a class="text-blue-400 underline" href="/guides/">全部使用指南</a></li>
+        </ul>
+      </nav>
     </main>
   </div>
   <script type="module" src="/src/index.tsx"></script>

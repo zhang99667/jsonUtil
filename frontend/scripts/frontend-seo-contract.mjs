@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  collectSeoDiscoveryFailures,
+  collectSeoGuideFailures,
+} from './frontend-seo-guide-contract.mjs';
 
 export const jsonutilsSeo = {
   origin: 'https://jsonutils.markz.fun/',
@@ -45,34 +49,14 @@ function collectIndexFailures(file, source) {
     if (!Array.isArray(application?.featureList) || application.featureList.length < 5) {
       failures.push(`${file}: WebApplication 必须声明清晰的能力列表`);
     }
+    if (application?.offers?.price !== 0 || application?.offers?.priceCurrency !== 'CNY') {
+      failures.push(`${file}: 免费 WebApplication 必须声明真实的零价格`);
+    }
+    if (graph.some(node => node?.aggregateRating || node?.review)) {
+      failures.push(`${file}: 没有真实评价时不能声明评分或评论`);
+    }
   } catch {
     failures.push(`${file}: JSON-LD 不是合法 JSON`);
-  }
-  return failures;
-}
-
-function collectDiscoveryFailures(frontendDir, prefix = 'public') {
-  const failures = [];
-  const robotsFile = `${prefix}/robots.txt`;
-  const sitemapFile = `${prefix}/sitemap.xml`;
-  const robotsLabel = frontendLabel(robotsFile);
-  const sitemapLabel = frontendLabel(sitemapFile);
-  for (const [file, label] of [[robotsFile, robotsLabel], [sitemapFile, sitemapLabel]]) {
-    if (!exists(frontendDir, file)) failures.push(`${label}: 缺少发现文件`);
-  }
-  if (failures.length > 0) return failures;
-
-  const robots = read(frontendDir, robotsFile);
-  const sitemap = read(frontendDir, sitemapFile);
-  if (!robots.includes(`Sitemap: ${jsonutilsSeo.origin}sitemap.xml`)) {
-    failures.push(`${robotsLabel}: 必须指向 JSONUtils sitemap`);
-  }
-  const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
-  if (locations.length !== 1 || locations[0] !== jsonutilsSeo.origin) {
-    failures.push(`${sitemapLabel}: 只能收录 JSONUtils 根页面`);
-  }
-  if (/https:\/\/(?:www\.)?markz\.fun\//.test(`${robots}\n${sitemap}`)) {
-    failures.push(`${frontendLabel(prefix)}: 发现文件不能声明博客域名`);
   }
   return failures;
 }
@@ -86,7 +70,8 @@ export function collectFrontendSeoFailures(frontendDir) {
   if (!exists(frontendDir, 'admin.html')) failures.push('frontend/admin.html: 缺少后台入口文件');
   else failures.push(...collectAdminFailures('frontend/admin.html', read(frontendDir, 'admin.html')));
 
-  failures.push(...collectDiscoveryFailures(frontendDir));
+  failures.push(...collectSeoDiscoveryFailures(frontendDir, jsonutilsSeo.origin));
+  failures.push(...collectSeoGuideFailures(frontendDir, jsonutilsSeo.origin));
 
   const metadata = JSON.parse(read(frontendDir, 'metadata.json'));
   if (metadata.name !== 'JSONUtils' || metadata.description !== jsonutilsSeo.description) {
@@ -96,7 +81,8 @@ export function collectFrontendSeoFailures(frontendDir) {
   const distIndex = 'dist/index.html';
   if (exists(frontendDir, distIndex)) {
     failures.push(...collectIndexFailures(frontendLabel(distIndex), read(frontendDir, distIndex)));
-    failures.push(...collectDiscoveryFailures(frontendDir, 'dist'));
+    failures.push(...collectSeoDiscoveryFailures(frontendDir, jsonutilsSeo.origin, 'dist'));
+    failures.push(...collectSeoGuideFailures(frontendDir, jsonutilsSeo.origin, 'dist'));
     failures.push(...collectAdminFailures('frontend/dist/admin.html', read(frontendDir, 'dist/admin.html')));
   }
   return failures;
