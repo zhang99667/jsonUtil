@@ -55,19 +55,19 @@ export const requestAiRepairProviderText = async (
       );
     }
 
-    const response = await runAiRepairProviderRequest(
+    return await runAiRepairProviderRequest(
       { signal: options.signal, timeoutMs },
-      signal => {
+      async signal => {
         const { requestUrl, requestInit } = buildOpenAICompatibleRepairRequest(
           config,
           brokenJson,
           signal
         );
         aiRequestUrl = requestUrl;
-        return fetchImpl(requestUrl, requestInit);
+        const response = await fetchImpl(requestUrl, requestInit);
+        return await readOpenAICompatibleRepairText(response);
       }
     );
-    return await readOpenAICompatibleRepairText(response);
   } catch (error: unknown) {
     const rawErrorMessage = formatUnknownError(error);
     const errorSummary = formatAiErrorDetailSummary(rawErrorMessage);

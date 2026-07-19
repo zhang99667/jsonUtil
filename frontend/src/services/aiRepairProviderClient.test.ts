@@ -280,6 +280,73 @@ describe('aiRepairProviderClient', () => {
     expect(signal?.aborted).toBe(true);
   });
 
+  it('OpenAI-compatible 响应体读取超时时终止完整请求', async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    let caughtError: unknown;
+    const response = new Response('{}');
+    vi.spyOn(response, 'json').mockReturnValue(new Promise(() => undefined));
+    const fetchImpl = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      signal = init?.signal;
+      return Promise.resolve(response);
+    });
+
+    void requestAiRepairProviderText('{bad:}', {
+      provider: AIProvider.CUSTOM,
+      apiKey: 'mock-key',
+      model: 'mock-model',
+      baseUrl: 'https://mock-ai.test/v1',
+    }, { fetchImpl, timeoutMs: 1000 }).catch(error => {
+      caughtError = error;
+    });
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect.soft(signal?.aborted).toBe(true);
+    expect.soft(getAiRepairErrorCode(caughtError)).toBe(AiRepairErrorCode.Timeout);
+  });
+
+  it('兼容接口响应正文读取开始后父级取消会终止请求并归一为超时', async () => {
+    const abortController = new AbortController();
+    let signal: AbortSignal | undefined;
+    let markBodyStarted!: () => void;
+    const bodyStarted = new Promise<void>(resolve => {
+      markBodyStarted = resolve;
+    });
+    const bodyAbortError = new DOMException('响应体读取已取消', 'AbortError');
+    const response = new Response('{}');
+    vi.spyOn(response, 'json').mockImplementation(() => {
+      markBodyStarted();
+      const bodySignal = signal;
+      if (!bodySignal) throw new Error('缺少请求取消信号');
+      return new Promise((_resolve, reject) => {
+        bodySignal.addEventListener('abort', () => reject(bodyAbortError), { once: true });
+      });
+    });
+    const fetchImpl = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      signal = init?.signal;
+      return Promise.resolve(response);
+    });
+    const request = requestAiRepairProviderText('{bad:}', {
+      provider: AIProvider.CUSTOM,
+      apiKey: 'mock-key',
+      model: 'mock-model',
+      baseUrl: 'https://mock-ai.test/v1',
+    }, {
+      fetchImpl,
+      signal: abortController.signal,
+    });
+    const expectation = expect(request).rejects.toMatchObject({
+      code: AiRepairErrorCode.Timeout,
+      message: AI_REPAIR_TIMEOUT_MESSAGE,
+    });
+
+    await bodyStarted;
+    abortController.abort();
+    expect(signal?.aborted).toBe(true);
+    await expectation;
+  });
+
   it('OpenAI-compatible 会响应外部 AbortSignal', async () => {
     const abortController = new AbortController();
     let signal: AbortSignal | undefined;
