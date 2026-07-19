@@ -1,5 +1,4 @@
 import request from './request';
-import { triggerBlobDownload } from '../../utils/browserFileSave';
 
 /**
  * 文件管理相关类型定义
@@ -46,15 +45,11 @@ export const getFileContent = async (fileId: number): Promise<string> => {
     return request.get(`/admin/files/${fileId}/content`);
 };
 
-/**
- * 下载文件
- */
-export const downloadFile = async (fileId: number, fileName: string): Promise<void> => {
-    const response = await request.get(`/admin/files/${fileId}/download`, {
+/** 下载文件 */
+export const downloadFile = (fileId: number): Promise<Blob> => {
+    return request.get<unknown, Blob>(`/admin/files/${fileId}/download`, {
         responseType: 'blob',
     });
-    const blob = new Blob([response as unknown as BlobPart]);
-    triggerBlobDownload(blob, fileName);
 };
 
 /**
@@ -70,9 +65,5 @@ export const deleteFile = async (fileId: number): Promise<void> => {
 export const uploadFile = async (file: File): Promise<FileItem> => {
     const formData = new FormData();
     formData.append('file', file);
-    return request.post('/admin/files/upload', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    return request.post('/admin/files/upload', formData);
 };

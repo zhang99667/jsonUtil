@@ -20,6 +20,7 @@ import {
     FileItem,
 } from '../services/file';
 import { isAdminRequestError } from '../services/requestErrors';
+import { triggerBlobDownload } from '../../utils/browserFileSave';
 import { formatFileSize, TEXT_FILE_ACCEPT_EXTENSIONS } from '../../utils/fileGuards';
 import { AdminListQuery, resolveAvailableListQuery } from '../utils/listQuery';
 
@@ -248,7 +249,8 @@ const FileManagement: React.FC = () => {
      */
     const handleDownload = async (record: FileItem) => {
         try {
-            await downloadFile(record.id, record.fileName);
+            const blob = await downloadFile(record.id);
+            triggerBlobDownload(blob, record.fileName);
             message.success(`${record.fileName} 下载已开始`);
         } catch (error) {
             if (!isAdminRequestError(error)) {
