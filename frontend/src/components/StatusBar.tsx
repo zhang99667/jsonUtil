@@ -49,7 +49,7 @@ export const StatusBar: React.FC<StatusBarProps> = (props) => {
   return (
     <div
       data-tour="statusbar"
-      className="h-6 bg-[#075985] flex items-center justify-between gap-2 overflow-hidden px-3 text-[11px] text-white select-none z-20 flex-shrink-0"
+      className="h-6 bg-brand-primary flex items-center justify-between gap-2 overflow-hidden px-3 text-[11px] text-white select-none z-20 flex-shrink-0"
     >
       <StatusBarLeftInfo
         activeContentLength={activeContentLength}

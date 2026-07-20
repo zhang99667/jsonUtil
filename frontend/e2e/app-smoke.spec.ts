@@ -850,7 +850,9 @@ test('JSON Lines 可格式化为可读数组预览', async ({ page }) => {
 
 test('状态栏展示当前焦点内容的 UTF-8 字节体积', async ({ page }) => {
   await fillSourceEditor(page, '{"text":"中文"}');
-  await expect(page.locator('[data-tour="statusbar"]')).toContainText('Length: 13');
+  const statusBar = page.locator('[data-tour="statusbar"]');
+  await expect(statusBar).toHaveCSS('background-color', 'rgb(0, 122, 204)');
+  await expect(statusBar).toContainText('Length: 13');
   await expect(page.locator('[data-tour="statusbar-byte-size"]')).toContainText('Size: 17 B');
 
   await page.getByRole('button', { name: '格式化' }).click();
