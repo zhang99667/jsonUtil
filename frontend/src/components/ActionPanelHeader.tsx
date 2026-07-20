@@ -10,17 +10,21 @@ export const ActionPanelHeader: React.FC<ActionPanelHeaderProps> = ({
   onToggleCollapse,
 }) => (
   <div className={`px-2 mb-6 mt-1 pb-4 border-b border-editor-border flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
-    {!isCollapsed && (
-      <p className="m-0 text-sm font-bold text-gray-200 tracking-wide flex items-center gap-2">
-        <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-        </div>
-        <a className="hover:text-blue-300 transition-colors leading-tight" href="/guides/" title="查看 JSONUtils 使用指南">
-          <span className="block">JSONUtils</span>
-          <span className="block text-[10px] font-medium tracking-normal text-gray-400">格式化 · 校验 · 修复</span>
-        </a>
-      </p>
-    )}
+    <h1 className="m-0 text-sm font-bold text-gray-200 tracking-wide">
+      <a className="flex items-center gap-2 rounded-md transition-colors leading-tight hover:text-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-editor-bg" href="/guides/" title="查看 JSONUtils 使用指南">
+        <span className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+        </span>
+        {isCollapsed ? (
+          <span className="sr-only">JSONUtils 使用指南</span>
+        ) : (
+          <span>
+            <span className="block">JSONUtils</span>
+            <span className="block text-[10px] font-medium tracking-normal text-gray-400">格式化 · 校验 · 修复</span>
+          </span>
+        )}
+      </a>
+    </h1>
     <button
       onClick={onToggleCollapse}
       aria-label={isCollapsed ? '展开工具栏' : '折叠工具栏'}

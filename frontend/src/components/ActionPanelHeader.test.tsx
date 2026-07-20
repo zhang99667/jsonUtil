@@ -9,10 +9,12 @@ describe('ActionPanelHeader', () => {
 
     expect(collectText(tree)).toContain('JSONUtils');
     expect(collectText(tree)).toContain('格式化 · 校验 · 修复');
-    expect(findByType(tree, 'h1')).toHaveLength(0);
+    expect(findByType(tree, 'h1')).toHaveLength(1);
     const guideLink = findByType(tree, 'a')[0];
     expect(guideLink.props.href).toBe('/guides/');
     expect(guideLink.props.title).toBe('查看 JSONUtils 使用指南');
+    expect(guideLink.props.className).toContain('focus-visible:');
+    expect(findByType(guideLink, 'svg')).toHaveLength(1);
     const button = findByType(tree, 'button')[0];
     expect(button.props['aria-label']).toBe('折叠工具栏');
     expect(button.props['aria-expanded']).toBe(true);
@@ -26,9 +28,14 @@ describe('ActionPanelHeader', () => {
 
   it('折叠态隐藏标题并切换展开语义', () => {
     const tree = ActionPanelHeader({ isCollapsed: true, onToggleCollapse: vi.fn() });
+    const guideLink = findByType(tree, 'a')[0];
     const button = findByType(tree, 'button')[0];
 
-    expect(collectText(tree)).not.toContain('JSONUtils');
+    expect(findByType(tree, 'h1')).toHaveLength(1);
+    expect(guideLink.props.href).toBe('/guides/');
+    expect(findByType(guideLink, 'svg')).toHaveLength(1);
+    expect(collectText(guideLink)).toContain('JSONUtils 使用指南');
+    expect(collectText(tree)).not.toContain('格式化 · 校验 · 修复');
     expect(button.props['aria-label']).toBe('展开工具栏');
     expect(button.props.title).toBe('展开');
     expect(button.props['aria-expanded']).toBe(false);

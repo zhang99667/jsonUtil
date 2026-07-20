@@ -53,16 +53,23 @@ test('页面声明独立且清晰的 JSONUtils 搜索身份', async ({ page }) =
     price: 0,
     priceCurrency: 'CNY',
   });
+  await expect(page.locator('body > header')).toHaveCount(0);
+  const workbench = page.locator('#root');
+  expect(await workbench.evaluate((element) => element.getBoundingClientRect().top)).toBe(0);
+  expect(await workbench.evaluate((element) => element.getBoundingClientRect().height))
+    .toBe(await page.evaluate(() => window.innerHeight));
+  const brandLink = page.getByRole('link', { name: /JSONUtils.*格式化.*校验.*修复/ });
   await expect(page.getByRole('heading', { level: 1, name: /JSONUtils.*格式化.*校验.*修复/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: '使用指南', exact: true })).toHaveAttribute(
-    'href',
-    '/guides/'
-  );
+  await expect(brandLink).toHaveAttribute('href', '/guides/');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth))
+    .toBeLessThanOrEqual(await page.evaluate(() => window.innerWidth));
   const sourcePane = page.locator('[data-tour="source-editor"]');
   await expect(sourcePane.locator('[data-editor-fallback]')).toBeVisible();
   await expect(sourcePane.locator('.monaco-editor')).toHaveCount(0);
   await sourcePane.locator('[data-editor-fallback]').focus();
   await expect(sourcePane.locator('.monaco-editor')).toBeVisible();
+  await brandLink.click();
+  await expect(page).toHaveURL(/\/guides\/$/);
 });
 
 for (const viewport of [
