@@ -41,30 +41,40 @@ describe('异步转换任务超时', () => {
       onWarn,
     });
     await vi.advanceTimersByTimeAsync(10_000);
-    const stateAtTimeout = {
-      results: onSetAsyncTransformResult.mock.calls.map(([result]) => [result]),
-      loading: onSetOutputTransforming.mock.calls.map(([isLoading]) => [isLoading]),
-      warnings: onWarn.mock.calls.map(([message]) => message),
-      timers: vi.getTimerCount(),
-    };
-
+    const fallbackResult = { ...snapshot, output: snapshot.input };
+    expect(onSetAsyncTransformResult).toHaveBeenCalledWith(fallbackResult);
+    expect(onSetOutputTransforming).toHaveBeenCalledWith(false);
+    expect(onWarn).toHaveBeenCalledWith('异步转换处理失败:', expect.any(Error));
+    expect(onWarn).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
     resolveTransform('迟到结果');
     await Promise.resolve();
+    expect(onSetAsyncTransformResult).toHaveBeenCalledOnce();
+    expect(onSetOutputTransforming).toHaveBeenCalledOnce();
+  });
 
-    const fallbackResult = { ...snapshot, output: snapshot.input };
-    expect({
-      stateAtTimeout,
-      finalResults: onSetAsyncTransformResult.mock.calls,
-      finalLoading: onSetOutputTransforming.mock.calls,
-    }).toEqual({
-      stateAtTimeout: {
-        results: [[fallbackResult]],
-        loading: [[false]],
-        warnings: ['异步转换处理失败:'],
-        timers: 0,
-      },
-      finalResults: [[fallbackResult]],
-      finalLoading: [[false]],
-    });
+  it('同步抛错时异步降级并清理计时器', async () => {
+    vi.useFakeTimers();
+    const error = new Error('同步转换失败');
+    vi.mocked(performTransformAsync).mockImplementation(() => { throw error; });
+    const snapshot = buildAppAsyncTransformSnapshot('raw', TransformMode.JSON_TO_TYPESCRIPT, false);
+    const onSetAsyncTransformResult = vi.fn();
+    const onSetOutputTransforming = vi.fn();
+    const onWarn = vi.fn();
+
+    expect(() => startAppAsyncTransformPromiseTask({
+      requestId: 12,
+      snapshot,
+      isCurrentRequest: requestId => requestId === 12,
+      onSetAsyncTransformResult,
+      onSetOutputTransforming,
+      onWarn,
+    })).not.toThrow();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(onSetAsyncTransformResult).toHaveBeenCalledWith({ ...snapshot, output: snapshot.input });
+    expect(onSetOutputTransforming).toHaveBeenCalledWith(false);
+    expect(onWarn).toHaveBeenCalledWith('异步转换处理失败:', error);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
