@@ -197,4 +197,44 @@ describe('appUpdateCheckSchedule', () => {
       windowTarget.addEventListener.mock.calls[0][1]
     );
   });
+
+  it('卸载清理异常时继续清理剩余资源并重抛首个异常', () => {
+    const firstCleanupError = new Error('初始定时器清理失败');
+    const laterCleanupError = new Error('可见态监听清理失败');
+    const {
+      documentTarget,
+      windowTarget,
+    } = createTargets();
+    windowTarget.clearTimeout.mockImplementation(() => {
+      throw firstCleanupError;
+    });
+    documentTarget.removeEventListener.mockImplementation(() => {
+      throw laterCleanupError;
+    });
+    const cleanup = installAppUpdateCheckSchedule({
+      checkForUpdate: vi.fn(),
+      windowTarget,
+      documentTarget,
+      initialDelayMs: 5000,
+      intervalMs: 60000,
+    });
+
+    let caughtError: unknown;
+    try {
+      cleanup();
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toBe(firstCleanupError);
+    expect(windowTarget.clearInterval).toHaveBeenCalledWith(22);
+    expect(documentTarget.removeEventListener).toHaveBeenCalledWith(
+      'visibilitychange',
+      documentTarget.addEventListener.mock.calls[0][1]
+    );
+    expect(windowTarget.removeEventListener).toHaveBeenCalledWith(
+      'focus',
+      windowTarget.addEventListener.mock.calls[0][1]
+    );
+  });
 });

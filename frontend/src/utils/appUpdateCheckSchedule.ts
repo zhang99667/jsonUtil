@@ -38,18 +38,28 @@ export const installAppUpdateCheckSchedule = ({
     () => documentTarget.removeEventListener('visibilitychange', handleVisibilityChange),
     () => windowTarget.removeEventListener('focus', handleFocus),
   ];
-
+  const cleanup = () => {
+    const cleanupErrors: unknown[] = [];
+    for (const step of cleanupSteps) {
+      try {
+        step();
+      } catch (error) {
+        cleanupErrors.push(error);
+      }
+    }
+    if (cleanupErrors.length) throw cleanupErrors[0];
+  };
   try {
     documentTarget.addEventListener('visibilitychange', handleVisibilityChange);
     windowTarget.addEventListener('focus', handleFocus);
   } catch (error) {
-    for (const cleanup of cleanupSteps) {
-      try { cleanup(); } catch {
-        // 继续回滚剩余资源，保留原始安装异常。
-      }
+    try {
+      cleanup();
+    } catch {
+      // 清理异常不能覆盖原始安装异常。
     }
     throw error;
   }
 
-  return () => cleanupSteps.forEach((cleanup) => cleanup());
+  return cleanup;
 };
