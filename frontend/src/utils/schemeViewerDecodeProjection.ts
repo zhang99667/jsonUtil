@@ -1,11 +1,7 @@
 import type { JsonObject } from '../types';
 import { isJsonObject, isJsonValue } from './jsonValueGuards';
-import { removeSchemeDisplayHeader } from './schemeDisplayHeader';
-import { getUrlResourceSchemaFromUrl } from './schemeMetadata';
+import { addSchemeDisplayHeader, removeSchemeDisplayHeader } from './schemeDisplayHeader';
 import type { DecodeLayer } from './schemeTypes';
-
-const URL_HEADER_KEYS = ['__url__', '__url_header__'] as const;
-const SCHEME_HEADER_KEYS = ['__scheme__', '__scheme_header__'] as const;
 
 export interface SchemeViewerDecodeProjection {
   content: string;
@@ -21,18 +17,6 @@ export interface SchemeViewerEncodingInput {
   content: string;
   layers: DecodeLayer[];
 }
-
-const getHeaderKeys = (
-  source: string,
-): typeof URL_HEADER_KEYS | typeof SCHEME_HEADER_KEYS | null => {
-  const normalized = source.trim().replace(/\\\//g, '/');
-  const protocol = /^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//.exec(normalized)?.[1].toLowerCase();
-  if (!protocol) return null;
-
-  return protocol === 'http' || protocol === 'https'
-    ? URL_HEADER_KEYS
-    : SCHEME_HEADER_KEYS;
-};
 
 const parseJsonObject = (content: string): JsonObject | null => {
   try {
@@ -60,16 +44,12 @@ export const createSchemeViewerDecodeProjection = (
   source: string,
 ): SchemeViewerDecodeProjection => {
   const value = parseJsonObject(content);
-  const header = getUrlResourceSchemaFromUrl(source);
-  const headerKeys = getHeaderKeys(source);
-  if (!value || !header || !headerKeys) return { content };
-
-  const headerKey = headerKeys.find(key => !Object.hasOwn(value, key));
-  if (!headerKey) return { content };
+  const displayValue = value ? addSchemeDisplayHeader(value, source) : null;
+  if (!displayValue) return { content };
 
   return {
-    content: JSON.stringify({ [headerKey]: header, ...value }, null, 2),
-    headerKey,
+    content: JSON.stringify(displayValue.value, null, 2),
+    headerKey: displayValue.headerKey,
   };
 };
 
