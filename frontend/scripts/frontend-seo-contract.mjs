@@ -26,8 +26,7 @@ const indexRequirements = () => [
   `<link rel="canonical" href="${jsonutilsSeo.origin}" />`,
   '<meta property="og:site_name" content="JSONUtils" />',
   `<meta property="og:url" content="${jsonutilsSeo.origin}" />`,
-  '<a href="/" aria-label="JSONUtils 在线 JSON 格式化、校验与修复工具">',
-  '<span class="jsonutils-app-bar__task">在线 JSON 格式化、校验与修复工具</span>',
+  '<h1 id="jsonutils-fallback-title">JSONUtils 在线 JSON 格式化、校验与修复工具</h1>',
   '<section class="jsonutils-learn" aria-labelledby="jsonutils-learn-title">',
   '<h2 id="jsonutils-learn-title">从粘贴数据到定位问题，一页完成</h2>',
 ];
@@ -39,6 +38,8 @@ function collectIndexFailures(file, source) {
   if (/https:\/\/(?:www\.)?markz\.fun\//.test(source)) {
     failures.push(`${file}: 不能声明博客域名`);
   }
+  if (source.includes('jsonutils-app-bar')) failures.push(`${file}: 工具首页不能保留全局顶部栏`);
+  if (!/\.jsonutils-workbench\s*\{[^}]*height:\s*100vh;/.test(source)) failures.push(`${file}: 工具工作区必须从页面顶部占满视口`);
   if ([...source.matchAll(/<h1(?:\s|>)/g)].length !== 1) {
     failures.push(`${file}: 工具首页必须有且只有一个稳定可见 H1`);
   }

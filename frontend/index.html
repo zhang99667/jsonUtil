@@ -25,21 +25,14 @@
     :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #1e1e1e; color: #ccc; }
     * { box-sizing: border-box; }
     body { min-width: 280px; min-height: 100vh; margin: 0; background: #1e1e1e; color: #ccc; }
-    .jsonutils-app-bar { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #333; padding: 0 max(16px, calc((100% - 1120px) / 2)); background: #181818; }
-    .jsonutils-app-bar h1 { min-width: 0; margin: 0; font-size: 17px; line-height: 1.2; }
-    .jsonutils-app-bar h1 a { display: flex; min-width: 0; align-items: center; gap: 10px; color: #f3f4f6; text-decoration: none; }
-    .jsonutils-app-bar img { width: 30px; height: 30px; }
-    .jsonutils-app-bar__task { color: #9ca3af; font-size: 12px; font-weight: 500; }
-    .jsonutils-app-bar__guide { flex: none; color: #93c5fd; font-size: 13px; text-underline-offset: 3px; }
-    .jsonutils-workbench { display: flex; height: calc(100vh - 58px); flex-direction: column; }
+    .jsonutils-workbench { display: flex; height: 100vh; flex-direction: column; }
     .jsonutils-fallback { width: min(100% - 32px, 760px); margin: auto; padding: 40px 0; text-align: center; }
     .jsonutils-fallback img { width: 64px; height: 64px; margin: 0 auto 20px; }
-    .jsonutils-fallback h2 { margin: 0 0 16px; color: #f3f4f6; font-size: clamp(24px, 5vw, 32px); }
+    .jsonutils-fallback h1 { margin: 0 0 16px; color: #f3f4f6; font-size: clamp(24px, 5vw, 32px); }
     .jsonutils-fallback p { margin: 0; line-height: 1.75; }
     .jsonutils-fallback nav { margin-top: 28px; }
     .jsonutils-fallback ul { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; padding: 0; list-style: none; }
     .jsonutils-fallback a { color: #60a5fa; }
-    @media (max-width: 640px) { .jsonutils-app-bar { min-height: 62px; } .jsonutils-app-bar h1 a { align-items: flex-start; flex-direction: column; gap: 2px; } .jsonutils-app-bar img { display: none; } .jsonutils-workbench { height: calc(100vh - 62px); } }
   </style>
   <script type="application/ld+json">
     {
@@ -88,20 +81,10 @@
 </head>
 
 <body class="bg-editor-bg text-editor-fg min-h-screen">
-  <header class="jsonutils-app-bar">
-    <h1 id="jsonutils-title">
-      <a href="/" aria-label="JSONUtils 在线 JSON 格式化、校验与修复工具">
-        <img src="/logo.svg" alt="" width="30" height="30" />
-        <span>JSONUtils</span>
-        <span class="jsonutils-app-bar__task">在线 JSON 格式化、校验与修复工具</span>
-      </a>
-    </h1>
-    <a class="jsonutils-app-bar__guide" href="/guides/">使用指南</a>
-  </header>
   <div id="root" class="jsonutils-workbench">
     <main class="jsonutils-fallback" aria-labelledby="jsonutils-fallback-title">
       <img class="mx-auto mb-5 h-16 w-16" src="/logo.svg" alt="" width="64" height="64" />
-      <h2 id="jsonutils-fallback-title">粘贴 JSON，立即开始处理</h2>
+      <h1 id="jsonutils-fallback-title">JSONUtils 在线 JSON 格式化、校验与修复工具</h1>
       <p class="text-base leading-7">免费在线 JSON 格式化、校验与修复工具：粘贴或导入数据即可美化、压缩、定位语法错误，并支持 JSONPath、Diff、JSON Schema 和 TypeScript 类型生成。常规处理仅在浏览器本地完成。</p>
       <nav class="mt-8" aria-label="JSONUtils 使用指南">
         <p class="mb-3 text-sm font-semibold">按任务开始</p>
