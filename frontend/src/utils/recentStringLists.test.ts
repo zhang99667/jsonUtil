@@ -95,4 +95,10 @@ describe('removeRecentStringListItem', () => {
   it('移除指定内容', () => {
     expect(removeRecentStringListItem(['trace.id', 'phone'], 'trace.id')).toEqual(['phone']);
   });
+
+  it('删除首项后由第十一项补足默认上限', () => {
+    const items = Array.from({ length: 11 }, (_, index) => `item-${index}`);
+
+    expect(removeRecentStringListItem(items, items[0])).toEqual(items.slice(1));
+  });
 });
