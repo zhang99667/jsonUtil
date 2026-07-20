@@ -68,6 +68,15 @@ test('页面声明独立且清晰的 JSONUtils 搜索身份', async ({ page }) =
   await expect(sourcePane.locator('.monaco-editor')).toHaveCount(0);
   await sourcePane.locator('[data-editor-fallback]').focus();
   await expect(sourcePane.locator('.monaco-editor')).toBeVisible();
+  expect(await page.evaluate(() => ({
+    clientHeight: document.documentElement.clientHeight,
+    scrollHeight: document.documentElement.scrollHeight,
+    scrollY: window.scrollY,
+  }))).toEqual({
+    clientHeight: await page.evaluate(() => window.innerHeight),
+    scrollHeight: await page.evaluate(() => window.innerHeight),
+    scrollY: 0,
+  });
   await brandLink.click();
   await expect(page).toHaveURL(/\/guides\/$/);
 });
@@ -86,17 +95,28 @@ for (const viewport of [
     const page = await context.newPage();
 
     await page.goto('/');
-    await expect(
-      page.getByRole('heading', { level: 1, name: /JSONUtils.*格式化.*校验.*修复/ })
-    ).toBeVisible();
+    await expect(page.getByRole('heading', {
+      level: 1,
+      name: 'JSONUtils 在线 JSON 格式化、校验与修复工具',
+    })).toBeVisible();
     await expect(page.getByText(description)).toBeVisible();
     await expect(page.getByRole('link', { name: 'JSON 格式化', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: '全部使用指南' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: '从粘贴数据到定位问题，一页完成' })).toBeVisible();
     await expect(page.locator('.jsonutils-fallback img')).toHaveJSProperty('complete', true);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth)
     ).toBeLessThanOrEqual(viewport.width);
+    expect(await page.evaluate(() => ({
+      clientHeight: document.documentElement.clientHeight,
+      overflowY: getComputedStyle(document.body).overflowY,
+      scrollHeight: document.documentElement.scrollHeight,
+      scrollY: window.scrollY,
+    }))).toEqual({
+      clientHeight: viewport.height,
+      overflowY: 'hidden',
+      scrollHeight: viewport.height,
+      scrollY: 0,
+    });
 
     await context.close();
   });

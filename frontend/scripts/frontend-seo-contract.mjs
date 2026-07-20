@@ -26,9 +26,10 @@ const indexRequirements = () => [
   `<link rel="canonical" href="${jsonutilsSeo.origin}" />`,
   '<meta property="og:site_name" content="JSONUtils" />',
   `<meta property="og:url" content="${jsonutilsSeo.origin}" />`,
+  '<body class="bg-editor-bg text-editor-fg h-screen overflow-hidden">',
+  '<div id="root" class="jsonutils-workbench">',
   '<h1 id="jsonutils-fallback-title">JSONUtils 在线 JSON 格式化、校验与修复工具</h1>',
-  '<section class="jsonutils-learn" aria-labelledby="jsonutils-learn-title">',
-  '<h2 id="jsonutils-learn-title">从粘贴数据到定位问题，一页完成</h2>',
+  '<nav class="mt-8" aria-label="JSONUtils 使用指南">',
 ];
 
 function collectIndexFailures(file, source) {
@@ -43,13 +44,16 @@ function collectIndexFailures(file, source) {
   if ([...source.matchAll(/<h1(?:\s|>)/g)].length !== 1) {
     failures.push(`${file}: 工具首页必须有且只有一个稳定可见 H1`);
   }
-  const learnSection = source.match(/<section class="jsonutils-learn"[\s\S]*?<\/section>/)?.[0] || '';
-  const guideLinks = [...learnSection.matchAll(/href="\/guides\//g)];
-  if (guideLinks.length < 8) {
-    failures.push(`${file}: 工具首页必须保留至少 8 个可见任务指南链接`);
+  if (source.includes('jsonutils-learn') || source.includes('jsonutils-app-bar')) {
+    failures.push(`${file}: 工具首页必须保持单屏工作台，不能在工作区外追加落地页内容或产品栏`);
   }
-  for (const phrase of ['格式化与压缩 JSON', '校验并定位语法错误', '预览并修复异常 JSON', '普通格式化、校验与查询在当前浏览器内完成']) {
-    if (!learnSection.includes(phrase)) failures.push(`${file}: 工具首页缺少可见任务说明 ${phrase}`);
+  const rootSection = source.match(/<div id="root"[\s\S]*?<\/div>/)?.[0] || '';
+  const guideLinks = [...rootSection.matchAll(/href="\/guides\//g)];
+  if (guideLinks.length < 5) {
+    failures.push(`${file}: 无脚本产品说明必须保留至少 5 个任务指南链接`);
+  }
+  if (!rootSection.includes(jsonutilsSeo.description)) {
+    failures.push(`${file}: 无脚本产品说明必须保留清晰的工具摘要`);
   }
 
   const jsonLdBlocks = [...source.matchAll(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/g)];

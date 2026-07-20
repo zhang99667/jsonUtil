@@ -28,10 +28,10 @@
 | `rules/code-style.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-14 | 权威规则 | 保留编码、提交、发布和 AI 资产稳定不变量，并固定 `.agents/skills` 唯一语义源与 Claude 派生 adapter 边界；eval/runtime 细节委托权威 Playbook | 必需文件、入口引用规则、版本一致性检查引用 |
 | `docs/AI-ENGINEERING-PLAYBOOK.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-15 | 权威流程 | 子 Agent 委派、三个通用执行角色与跨客户端只读 auditor、验证矩阵和治理校验闭环 | 必需文件、入口引用规则、章节级引用检查 |
 | `docs/AI-EVOLUTION-PLAYBOOK.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-15 | 行为评测流程 | 保留 source of truth、component/behavior、证据时效、写账授权、外部 trust 和跨客户端 Agent/skill 路由边界；字段协议按任务读 eval README | 必需文件、自动发现规则、资产注册表结构化校验 |
-| `docs/AI-GOVERNANCE-DECISIONS.md` | 决策账本 | 项目维护者 | 变更时复核 | 2026-07-15 | 决策账本 | 记录 AI rules、skills 和治理脚本变更的触发条件、反例、回写追踪和锁定测试，并要求回写追踪包含账本自身 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-GOVERNANCE-DECISIONS.md` | 决策账本 | 项目维护者 | 变更时复核 | 2026-07-20 | 决策账本 | 记录 AI rules、skills 和治理脚本变更的触发条件、反例、回写追踪和锁定测试，并要求回写追踪包含账本自身 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-CONFIG-INTEGRATION.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-15 | 分层说明 | 说明 canonical skills、三端 Agent adapter、Claude 共享/本机设置、repo marketplace、权限与 component/behavior 证据分层 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-TOOLS-SETUP.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-15 | 工具索引 | 区分跨客户端 skill/Agent discovery、repo catalog、显式安装、fresh task 与 runtime trust，并登记三端 auditor 只读能力边界 | 必需文件、docs/AI 引用规则、资产发现规则 |
-| `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-15 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
+| `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-20 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
 | `.github/PULL_REQUEST_TEMPLATE.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Copilot 根入口、Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
 | `.github/workflows/ci.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-13 | PR/push CI 控制面 | 使用完整 Git 历史运行 HEAD 分发与治理命令，required command 不得静态禁用、忽略失败或获得 attestation 特权 | 必需文件、资产注册表结构化校验 |
 | `.github/workflows/ai-governance.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-13 | 定时治理 | 使用完整 Git 历史运行 HEAD 分发和定时治理，拒绝 required command 的静态 false/continue-on-error，并隔离 component-only subject 与可选 signer | 必需文件、资产注册表结构化校验 |

@@ -77,3 +77,40 @@ test('JSONUtils SEO 契约拦截旧标题和博客域名串入', () => {
     fs.rmSync(fixture, { recursive: true, force: true });
   }
 });
+
+test('JSONUtils SEO 契约拒绝把单屏工具页改成可滚动落地页', () => {
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-seo-layout-'));
+  try {
+    for (const file of [
+      'frontend/index.html',
+      'frontend/admin.html',
+      'frontend/metadata.json',
+      'frontend/nginx.conf',
+      'frontend/public/robots.txt',
+      'frontend/public/sitemap.xml',
+    ]) {
+      const target = path.join(fixture, file);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(path.join(rootDir, file), target);
+    }
+    const indexPath = path.join(fixture, 'frontend/index.html');
+    fs.writeFileSync(
+      indexPath,
+      fs.readFileSync(indexPath, 'utf8')
+        .replace('h-screen overflow-hidden', 'min-h-screen')
+        .replace(
+          '  <script type="module" src="/src/index.tsx"></script>',
+          '  <section class="jsonutils-learn">SEO landing content</section>\n  <script type="module" src="/src/index.tsx"></script>',
+        ),
+    );
+
+    const failures = collectFrontendSeoFailures(fixture);
+    assert.equal(failures.some(failure => failure.includes('缺少 SEO 契约')), true);
+    assert.equal(
+      failures.some(failure => failure.includes('必须保持单屏工作台')),
+      true,
+    );
+  } finally {
+    fs.rmSync(fixture, { recursive: true, force: true });
+  }
+});
