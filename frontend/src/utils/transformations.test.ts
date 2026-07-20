@@ -527,15 +527,25 @@ describe('deepParseWithContext', () => {
     const result = deepParseWithContext(input, { autoExpandScheme: true });
     const parsed = JSON.parse(result.output);
 
-    expect(parsed).toMatchObject({ cmd: { nid: 123 }, from: 'hash' });
+    expect(parsed).toMatchObject({
+      __url__: 'https://example.com/app',
+      cmd: { nid: 123 },
+      from: 'hash',
+    });
     expect(parsed).not.toHaveProperty('__scheme__');
-    expect(parsed).not.toHaveProperty('__url__');
-    expect(result.context.records.get('$')?.steps[0]?.type).toBe('scheme_decode');
+    expect(result.context.records.get('$')?.steps[0]).toMatchObject({
+      type: 'scheme_decode',
+      schemeHeaderDisplayKey: '__url__',
+    });
 
     parsed.cmd.nid = 456;
     const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
     expect(restored.startsWith('https://example.com/app#/route?')).toBe(true);
-    expect(JSON.parse(deepParseWithContext(restored, { autoExpandScheme: true }).output).cmd.nid).toBe(456);
+    expect(restored).not.toContain('__url__');
+    expect(JSON.parse(deepParseWithContext(restored, { autoExpandScheme: true }).output)).toMatchObject({
+      __url__: 'https://example.com/app',
+      cmd: { nid: 456 },
+    });
   });
 
   it('含结构化 data 参数的 HTTP hash route 可展开且逆变换保留路由', () => {
@@ -544,19 +554,74 @@ describe('deepParseWithContext', () => {
     const parsed = JSON.parse(result.output);
 
     expect(parsed).toEqual({
+      __url__: 'http://example.com/app',
       itemId: '123',
       sync_data: { cursor: 456, enabled: true },
       mode: 'preview',
     });
-    expect(result.context.records.get('$')?.steps[0]?.type).toBe('scheme_decode');
+    expect(result.context.records.get('$')?.steps[0]).toMatchObject({
+      type: 'scheme_decode',
+      schemeHeaderDisplayKey: '__url__',
+    });
 
     parsed.sync_data.cursor = 789;
     const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
     expect(restored.startsWith('http://example.com/app#/route?')).toBe(true);
+    expect(restored).not.toContain('__url__');
     expect(JSON.parse(deepParseWithContext(restored).output)).toEqual({
+      __url__: 'http://example.com/app',
       itemId: '123',
       sync_data: { cursor: 789, enabled: true },
       mode: 'preview',
+    });
+  });
+
+  it('URL 展示字段与业务参数冲突时使用备用字段并精确还原', () => {
+    const input = `http://example.com/app#/route?__url__=${encodeURIComponent('业务参数')}&sync_data=${encodeURIComponent(JSON.stringify({ cursor: 456 }))}`;
+    const result = deepParseWithContext(input);
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed).toEqual({
+      __url_header__: 'http://example.com/app',
+      __url__: '业务参数',
+      sync_data: { cursor: 456 },
+    });
+    expect(result.context.records.get('$')?.steps[0]).toMatchObject({
+      type: 'scheme_decode',
+      schemeHeaderDisplayKey: '__url_header__',
+    });
+
+    parsed.sync_data.cursor = 789;
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
+    const restoredParsed = JSON.parse(deepParseWithContext(restored).output);
+
+    expect(restored).not.toContain('__url_header__');
+    expect(restoredParsed).toEqual({
+      __url_header__: 'http://example.com/app',
+      __url__: '业务参数',
+      sync_data: { cursor: 789 },
+    });
+  });
+
+  it('URL 两个展示候选均为业务参数时不注入或移除字段', () => {
+    const input = `http://example.com/app#/route?__url__=${encodeURIComponent('业务参数')}&__url_header__=${encodeURIComponent('备用业务参数')}&sync_data=${encodeURIComponent(JSON.stringify({ cursor: 456 }))}`;
+    const result = deepParseWithContext(input);
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed).toEqual({
+      __url__: '业务参数',
+      __url_header__: '备用业务参数',
+      sync_data: { cursor: 456 },
+    });
+    expect(result.context.records.get('$')?.steps[0]).not.toHaveProperty('schemeHeaderDisplayKey');
+
+    parsed.sync_data.cursor = 789;
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
+
+    expect(JSON.parse(deepParseWithContext(restored).output)).toEqual({
+      __url__: '业务参数',
+      __url_header__: '备用业务参数',
+      sync_data: { cursor: 789 },
     });
   });
 

@@ -31,7 +31,6 @@ import {
   shouldExposeSchemeValue,
   urlDecode,
 } from './schemeUtils.ts';
-import { createUrl, isHttpSchemeProtocol } from './schemeUrlShapes.ts';
 import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
 export {
@@ -731,8 +730,7 @@ export function deepParseWithContext(
                   const displayValue = (
                     context.sourceFormat === 'scheme' &&
                     currentPath === '$' &&
-                    schemeType === 'url' &&
-                    !isHttpSchemeProtocol(createUrl(current).protocol)
+                    schemeType === 'url'
                   )
                     ? addSchemeDisplayHeader(processedSchemeValue, current)
                     : null;
