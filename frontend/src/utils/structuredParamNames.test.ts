@@ -18,6 +18,8 @@ describe('structuredParamNames', () => {
     expect(isLikelyStructuredFieldName('landingUrl')).toBe(true);
     expect(isLikelyStructuredFieldName('trackingInfo')).toBe(true);
     expect(isLikelyStructuredFieldName('task-policy')).toBe(true);
+    expect(isLikelyStructuredFieldName('sync_data')).toBe(true);
+    expect(isLikelyStructuredFieldName('sessionData')).toBe(true);
   });
 
   it('避免普通字段误判为可解码参数', () => {
@@ -25,5 +27,6 @@ describe('structuredParamNames', () => {
     expect(isKnownDecodableParamName('status')).toBe(false);
     expect(isLikelyStructuredFieldName('urlish')).toBe(false);
     expect(isLikelyStructuredFieldName('information')).toBe(false);
+    expect(isLikelyStructuredFieldName('metadata')).toBe(false);
   });
 });

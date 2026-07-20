@@ -538,6 +538,28 @@ describe('deepParseWithContext', () => {
     expect(JSON.parse(deepParseWithContext(restored, { autoExpandScheme: true }).output).cmd.nid).toBe(456);
   });
 
+  it('含结构化 data 参数的 HTTP hash route 可展开且逆变换保留路由', () => {
+    const input = `http://example.com/app#/route?itemId=123&sync_data=${encodeURIComponent(JSON.stringify({ cursor: 456, enabled: true }))}&mode=preview`;
+    const result = deepParseWithContext(input);
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed).toEqual({
+      itemId: '123',
+      sync_data: { cursor: 456, enabled: true },
+      mode: 'preview',
+    });
+    expect(result.context.records.get('$')?.steps[0]?.type).toBe('scheme_decode');
+
+    parsed.sync_data.cursor = 789;
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
+    expect(restored.startsWith('http://example.com/app#/route?')).toBe(true);
+    expect(JSON.parse(deepParseWithContext(restored).output)).toEqual({
+      itemId: '123',
+      sync_data: { cursor: 789, enabled: true },
+      mode: 'preview',
+    });
+  });
+
   it('根输入为电话 Scheme 时可直接展开', () => {
     const numberUrl = `https://ada.sample.com/phone-tracker/getNumber?query=${encodeURIComponent('种植牙')}&pageid=__TIMESTAMP__`;
     const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({

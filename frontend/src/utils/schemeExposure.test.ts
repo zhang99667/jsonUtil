@@ -103,6 +103,20 @@ describe('schemeExposure', () => {
     )).toBe(true);
   });
 
+  it('HTTP(S) hash route 内的结构化 data 参数按内容决定是否暴露', () => {
+    const nestedPayload = encodeURIComponent(JSON.stringify({ cursor: 123 }));
+    const options = createOptions();
+
+    expect(isActionableSchemeUrlWithOptions(
+      `https://example.com/page#/detail?sync_data=${nestedPayload}`,
+      options
+    )).toBe(true);
+    expect(isActionableSchemeUrlWithOptions(
+      'https://example.com/page#/detail?sync_data=plain',
+      options
+    )).toBe(false);
+  });
+
   it('未知参数即使包含 JSON 也不触发嵌套 Scheme 暴露', () => {
     const nestedPayload = encodeURIComponent(JSON.stringify({ nid: 123 }));
 
