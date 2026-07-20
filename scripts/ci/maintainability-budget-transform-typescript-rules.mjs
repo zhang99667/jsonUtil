@@ -4,11 +4,8 @@ export const transformTypeScriptMaintainabilityBudgets = [
     maxLines: 110,
     reason: 'JSON 数组代表采样应保持为可复用纯函数，避免不同推断链路重复实现',
   },
-  {
-    file: 'frontend/src/utils/jsonSchemaInference.ts',
-    maxLines: 400,
-    reason: 'JSON Schema 推断入口复用数组采样与 Ajv 标准格式验证，后续增长应继续拆分模型合并与摘要职责',
-  },
+  { file: 'frontend/src/utils/jsonSchemaInference.ts', maxLines: 200, reason: 'JSON Schema 推断入口只维护输入解析、根样本统计、可信摘要和结果序列化' },
+  { file: 'frontend/src/utils/jsonSchemaInferenceModel.ts', maxLines: 275, reason: 'JSON Schema 推断模型只维护 Ajv 格式验证、数组采样、递归推断与结构合并' },
   {
     file: 'frontend/src/utils/jsonSchemaInference.test.ts',
     maxLines: 320,
