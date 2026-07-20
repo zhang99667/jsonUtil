@@ -51,6 +51,15 @@ describe('StatusBarViewStatus', () => {
 });
 
 describe('StatusBarLocalProcessingBadge', () => {
+  it('本地处理状态使用状态栏上的半透明白色徽标', () => {
+    const tree = StatusBarLocalProcessingBadge({
+      localProcessingStatus: { label: '本地处理', title: '本地执行', tone: 'local' },
+    });
+
+    expect(tree.props.className).toContain('bg-white/15');
+    expect(tree.props.className).not.toContain('bg-sky-950');
+  });
+
   it('按本地处理 tone 展示状态样式和 title', () => {
     const tree = StatusBarLocalProcessingBadge({ localProcessingStatus });
 
