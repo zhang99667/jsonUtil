@@ -53,7 +53,7 @@ const normalizeDraftFile = (value: unknown): WorkspaceDraftFile | null => {
 };
 
 export const parseWorkspaceDraftSnapshot = (stored: string | null): WorkspaceDraftSnapshot | null => {
-  if (!stored) return null;
+  if (!stored || stored.length > WORKSPACE_DRAFT_MAX_STORAGE_CHARS) return null;
 
   try {
     const parsed: unknown = JSON.parse(stored);

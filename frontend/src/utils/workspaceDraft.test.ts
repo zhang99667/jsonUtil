@@ -4,6 +4,7 @@ import {
   buildWorkspaceDraftSnapshot,
   parseWorkspaceDraftSnapshot,
   saveWorkspaceDraftSnapshot,
+  WORKSPACE_DRAFT_MAX_STORAGE_CHARS,
   WORKSPACE_DRAFT_STORAGE_KEY,
 } from './workspaceDraft';
 
@@ -120,10 +121,13 @@ describe('workspaceDraft', () => {
     });
   });
 
-  it('空快照和损坏内容返回 null', () => {
+  it('空快照、损坏内容和超长内容返回 null', () => {
     expect(parseWorkspaceDraftSnapshot(null)).toBeNull();
     expect(parseWorkspaceDraftSnapshot('{bad')).toBeNull();
     expect(parseWorkspaceDraftSnapshot(JSON.stringify({ version: 1, files: [] }))).toBeNull();
+    expect(parseWorkspaceDraftSnapshot(JSON.stringify({
+      version: 1, updatedAt: 1, files: [], activeFileId: null, standaloneInput: 'x'.repeat(WORKSPACE_DRAFT_MAX_STORAGE_CHARS), standaloneMode: TransformMode.NONE,
+    }))).toBeNull();
   });
 
   it('保存 null 时会清理本地快照', () => {
