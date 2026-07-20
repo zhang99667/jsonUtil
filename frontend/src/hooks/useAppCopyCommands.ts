@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { copyText } from '../utils/clipboard';
 import type { ToolEventStatus } from '../utils/productTelemetry';
 import { showError, showSuccess } from '../utils/toast';
@@ -28,6 +28,9 @@ export const useAppCopyCommands = ({
   onTrackToolEvent,
 }: UseAppCopyCommandsInput) => {
   const copyIntentRef = useRef(0);
+  useEffect(() => () => {
+    copyIntentRef.current += 1;
+  }, []);
   const effects = useMemo(() => ({
     onCopyText: copyText,
     onShowError: showError,
