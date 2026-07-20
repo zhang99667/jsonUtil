@@ -43,5 +43,6 @@ export const addRecentStringListItem = (
 };
 
 export const removeRecentStringListItem = (items: string[], value: string): string[] => {
-  return normalizeRecentStringList(items).filter(item => item !== value.trim());
+  const target = value.trim();
+  return normalizeRecentStringList(items.filter(item => item.trim() !== target));
 };
