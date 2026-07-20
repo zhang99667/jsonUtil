@@ -42,7 +42,10 @@ export const startAppAsyncTransformPromiseTask = ({
     }, APP_ASYNC_TRANSFORM_TIMEOUT_MS);
   });
 
-  Promise.race([performTransformAsync(snapshot.input, snapshot.mode), timeoutPromise])
+  Promise.race([
+    Promise.resolve().then(() => performTransformAsync(snapshot.input, snapshot.mode)),
+    timeoutPromise,
+  ])
     .then(output => {
       clearTransformTimeout();
       if (!isActiveRequest()) return;
