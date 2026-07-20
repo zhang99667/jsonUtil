@@ -3,11 +3,19 @@ import { useAppCopyCommands } from './useAppCopyCommands';
 
 const clipboardMocks = vi.hoisted(() => ({ copyText: vi.fn() }));
 const copyIntentRef = vi.hoisted(() => ({ current: 0 }));
-const reactMocks = vi.hoisted(() => ({
-  useCallback: vi.fn((callback: unknown) => callback),
-  useMemo: vi.fn((factory: () => unknown) => factory()),
-  useRef: vi.fn(() => copyIntentRef),
-}));
+const reactMocks = vi.hoisted(() => {
+  let cleanup: (() => void) | undefined;
+  return {
+    runCleanup: () => cleanup?.(),
+    useCallback: vi.fn((callback: unknown) => callback),
+    useEffect: vi.fn((effect: () => void | (() => void)) => {
+      const result = effect();
+      cleanup = typeof result === 'function' ? result : undefined;
+    }),
+    useMemo: vi.fn((factory: () => unknown) => factory()),
+    useRef: vi.fn(() => copyIntentRef),
+  };
+});
 const toastMocks = vi.hoisted(() => ({ showError: vi.fn(), showSuccess: vi.fn() }));
 const commandInput = {
   previewText: '',
@@ -15,10 +23,7 @@ const commandInput = {
   onTrackToolEvent: vi.fn(),
 };
 
-vi.mock('react', async importOriginal => ({
-  ...await importOriginal<typeof import('react')>(),
-  ...reactMocks,
-}));
+vi.mock('react', () => reactMocks);
 vi.mock('../utils/clipboard', async importOriginal => ({
   ...await importOriginal<typeof import('../utils/clipboard')>(),
   copyText: clipboardMocks.copyText,
@@ -80,5 +85,21 @@ describe('useAppCopyCommands 连续复制', () => {
     expect(commandInput.onTrackToolEvent).toHaveBeenCalledWith(
       'SOURCE_COPY', 'editor', 'skipped', expect.any(Number),
     );
+  });
+
+  it('组件卸载后忽略当前请求迟到失败的副作用', async () => {
+    const pending = createCopyDeferred();
+    clipboardMocks.copyText.mockReturnValueOnce(pending.promise);
+    const command = useAppCopyCommands({ ...commandInput, sourceText: 'A' });
+    const copy = command.handleCopySource();
+    reactMocks.runCleanup();
+    pending.reject(new Error('卸载后复制失败'));
+    await copy;
+
+    expect(clipboardMocks.copyText).toHaveBeenCalledOnce();
+    expect(clipboardMocks.copyText).toHaveBeenCalledWith('A');
+    expect(toastMocks.showError).not.toHaveBeenCalled();
+    expect(toastMocks.showSuccess).not.toHaveBeenCalled();
+    expect(commandInput.onTrackToolEvent).not.toHaveBeenCalled();
   });
 });
