@@ -507,6 +507,37 @@ describe('deepParseWithContext', () => {
     expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
   });
 
+  it.each([
+    ['HTTP URL', 'http://example.com/path?from=doc'],
+    ['HTTPS hash route URL', 'https://example.com/screenshot#/route?tab=preview&from=share'],
+    ['URL 编码的 HTTP URL', encodeURIComponent('http://example.com/path?from=doc')],
+    ['URL 编码的 HTTPS URL', encodeURIComponent('https://example.com/path?from=doc')],
+  ])('%s 深度格式化时保持原文', (_scenario, input) => {
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+
+    expect(result.output).toBe(input);
+    expect(result.context.sourceFormat).toBeUndefined();
+    expect(result.context.records.size).toBe(0);
+    expect(result.output).not.toContain('__scheme__');
+    expect(result.output).not.toContain('__url__');
+  });
+
+  it('含 CMD 的 HTTPS hash route 可展开且逆变换保留路由', () => {
+    const input = `https://example.com/app#/route?cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=hash`;
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed).toMatchObject({ cmd: { nid: 123 }, from: 'hash' });
+    expect(parsed).not.toHaveProperty('__scheme__');
+    expect(parsed).not.toHaveProperty('__url__');
+    expect(result.context.records.get('$')?.steps[0]?.type).toBe('scheme_decode');
+
+    parsed.cmd.nid = 456;
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
+    expect(restored.startsWith('https://example.com/app#/route?')).toBe(true);
+    expect(JSON.parse(deepParseWithContext(restored, { autoExpandScheme: true }).output).cmd.nid).toBe(456);
+  });
+
   it('根输入为电话 Scheme 时可直接展开', () => {
     const numberUrl = `https://ada.sample.com/phone-tracker/getNumber?query=${encodeURIComponent('种植牙')}&pageid=__TIMESTAMP__`;
     const scheme = `sampleapp://v7/vendor/ad/makePhoneCall?params=${encodeURIComponent(JSON.stringify({

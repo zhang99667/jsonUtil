@@ -28,8 +28,10 @@ import {
   encodeWithLayers,
   hasUrlEncoding,
   isRuntimePlaceholder,
+  shouldExposeSchemeValue,
   urlDecode,
 } from './schemeUtils.ts';
+import { createUrl, isHttpSchemeProtocol } from './schemeUrlShapes.ts';
 import { parseJsonLines, parseJsonLinesDetailed, stringifyJsonLines } from './jsonLines.ts';
 
 export {
@@ -256,9 +258,16 @@ const isRootUrlEncodedJsonInput = (input: string): boolean => {
   return parsed ? isJsonContainerValue(parsed.value) : false;
 };
 
+const isRootSchemeInput = (input: string): boolean => {
+  const schemeType = detectSchemeType(input);
+  return ROOT_SCHEME_TYPES.has(schemeType) && (
+    schemeType !== 'url' || shouldExposeSchemeValue(input)
+  );
+};
+
 const isRootUrlEncodedSchemeInput = (input: string): boolean => {
   const decoded = getDecodedRootUrlEncodedInput(input);
-  return decoded ? ROOT_SCHEME_TYPES.has(detectSchemeType(decoded)) : false;
+  return decoded ? isRootSchemeInput(decoded) : false;
 };
 
 export const getStandaloneDeepFormatInputKind = (value: string): StandaloneDeepFormatInputKind | null => {
@@ -266,7 +275,7 @@ export const getStandaloneDeepFormatInputKind = (value: string): StandaloneDeepF
   if (!trimmed) return null;
 
   const rootSchemeType = detectSchemeType(trimmed);
-  if (ROOT_SCHEME_TYPES.has(rootSchemeType)) return 'scheme';
+  if (isRootSchemeInput(trimmed)) return 'scheme';
   if (rootSchemeType === 'url-encoded' && isRootUrlEncodedJsonInput(trimmed)) return 'url-encoded-json';
   if (rootSchemeType === 'url-encoded' && isRootUrlEncodedSchemeInput(trimmed)) return 'url-encoded-scheme';
   return null;
@@ -720,7 +729,10 @@ export function deepParseWithContext(
                   addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders, sourceLabel, value);
                   const processedSchemeValue = processParsedValue(schemeParsed);
                   const displayValue = (
-                    context.sourceFormat === 'scheme' && currentPath === '$' && schemeType === 'url'
+                    context.sourceFormat === 'scheme' &&
+                    currentPath === '$' &&
+                    schemeType === 'url' &&
+                    !isHttpSchemeProtocol(createUrl(current).protocol)
                   )
                     ? addSchemeDisplayHeader(processedSchemeValue, current)
                     : null;
