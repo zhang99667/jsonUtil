@@ -51,15 +51,19 @@ public class TrafficFilter extends OncePerRequestFilter {
     }
 
     private boolean shouldLogTraffic(String path) {
-        if (!path.startsWith("/api")) {
+        if (!isPathOrDescendant(path, "/api")) {
             return false;
         }
 
-        // 健康检查和工具事件都有独立用途，避免部署/监控请求抬高普通 PV。
-        return !path.startsWith("/api/admin")
-                && !path.startsWith("/api/stats")
+        // 管理接口、健康检查和工具事件都有独立用途，避免部署/监控请求抬高普通 PV。
+        return !isPathOrDescendant(path, "/api/admin")
+                && !isPathOrDescendant(path, "/api/stats")
                 && !path.equals("/api/health")
-                && !path.startsWith("/api/visitor/events");
+                && !isPathOrDescendant(path, "/api/visitor/events");
+    }
+
+    private boolean isPathOrDescendant(String path, String prefix) {
+        return path.equals(prefix) || path.startsWith(prefix + "/");
     }
 
     private String truncateByCodePoints(String value, int maxCodePoints) {
