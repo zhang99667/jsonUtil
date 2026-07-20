@@ -30,6 +30,11 @@ import { buildSchemeViewerActionTitles } from '../utils/schemeViewerActionTitles
 import {
   formatSchemeCopySizeLabel,
 } from '../utils/schemeViewerFormatters';
+import {
+  createSchemeViewerDecodeProjection,
+  createSchemeViewerEncodingInput,
+  restoreSchemeViewerDecodeProjection,
+} from '../utils/schemeViewerDecodeProjection';
 import { SchemeViewerDiagnosticsPanel } from './SchemeViewerDiagnosticsPanel';
 import { SchemeViewerFooterActions } from './SchemeViewerFooterActions';
 import {
@@ -104,6 +109,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     canCancelDecode,
     cancelDecode,
   } = useSchemeViewerDecode(actualValue, { enabled: isOpen });
+  const decodeProjection = useMemo(() => (
+    createSchemeViewerDecodeProjection(decodeResult.decoded, decodeResult.original)
+  ), [decodeResult.decoded, decodeResult.original]);
 
   // 自定义滚动条钩子
   const {
@@ -122,9 +130,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
   // 初始化编辑内容
   useEffect(() => {
-    setEditedContent(decodeResult.decoded);
+    setEditedContent(decodeProjection.content);
     setIsEditing(false);
-  }, [decodeResult.decoded]);
+  }, [decodeProjection.content, decodeResult.original]);
 
   // 独立模式从外部入口打开时，预填待排查内容。
   useEffect(() => {
@@ -175,7 +183,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   };
 
   // JSON 解码结果被编辑后需要重新校验，避免非法内容写回原始字段。
-  const isPristineDecodedContent = !isEditing && editedContent === decodeResult.decoded;
+  const isPristineDecodedContent = !isEditing && editedContent === decodeProjection.content;
   const editedJsonError = useMemo(() => {
     if (!decodeResult.isJson) return '';
     if (!editedContent.trim()) return 'JSON 内容不能为空';
@@ -216,7 +224,13 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopySerialized = async () => {
     if (!canCopySerializedContent) return;
 
-    const serializedContent = encodeWithLayers(editedContent, decodeResult.layers);
+    const encodingInput = createSchemeViewerEncodingInput(
+      editedContent,
+      decodeResult.original,
+      decodeResult.layers,
+      decodeProjection.headerKey,
+    );
+    const serializedContent = encodeWithLayers(encodingInput.content, encodingInput.layers);
     if (!serializedContent) return;
 
     await copySchemeTextWithFeedback(serializedContent, {
@@ -238,7 +252,13 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
     if (onApply) {
       // 将编辑后的内容按原编码层级重新编码
-      const encoded = encodeWithLayers(editedContent, decodeResult.layers);
+      const encodingInput = createSchemeViewerEncodingInput(
+        editedContent,
+        decodeResult.original,
+        decodeResult.layers,
+        decodeProjection.headerKey,
+      );
+      const encoded = encodeWithLayers(encodingInput.content, encodingInput.layers);
       onApply(encoded);
     }
     onClose();
@@ -380,10 +400,15 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopyCmdHandlerCompatibleResult = async () => {
     if (!canCopyCmdHandlerCompatibleResult) return;
 
-    const cmdHandlerCompatibleCopyText = formatPrimaryCmdHandlerCompatibleResult(
+    const restoredContent = restoreSchemeViewerDecodeProjection(
       editedContent,
+      decodeResult.original,
+      decodeProjection.headerKey,
+    );
+    const cmdHandlerCompatibleCopyText = formatPrimaryCmdHandlerCompatibleResult(
+      restoredContent.content,
       commandSummaryInfo?.commandSchema,
-      actualValue
+      restoredContent.source
     );
     if (!cmdHandlerCompatibleCopyText) return;
 
