@@ -57,14 +57,15 @@ describe('usePendingSourceReplacementCommand', () => {
   });
 
   it('请求 confirm 计划时复用命令配置设置 pending 文本', () => {
-    const { command, onTrackToolEvent } = useCommandFixture(null);
+    const { command, onTrackToolEvent } = useCommandFixture('old replacement');
 
     command.handleRequest(
       { action: 'confirm', pendingText: 'next source' },
       { startedAt: 123 },
     );
 
-    expect(reactMocks.setPendingText).toHaveBeenCalledWith({
+    expect(reactMocks.setPendingText).toHaveBeenNthCalledWith(1, null);
+    expect(reactMocks.setPendingText).toHaveBeenNthCalledWith(2, {
       text: 'next source',
       target: DEFAULT_TARGET,
     });
@@ -72,13 +73,14 @@ describe('usePendingSourceReplacementCommand', () => {
   });
 
   it('请求 apply 计划时保留调用方传入的开始时间和直接应用文案', () => {
-    const { command, onApply, onTrackToolEvent } = useCommandFixture(null);
+    const { command, onApply, onTrackToolEvent } = useCommandFixture('old replacement');
 
     command.handleRequest(
       { action: 'apply', text: 'next source', successMessage: '已直接应用' },
       { startedAt: 123 },
     );
 
+    expect(reactMocks.setPendingText).toHaveBeenCalledWith(null);
     expect(onApply).toHaveBeenCalledWith('next source', '已直接应用');
     expect(onTrackToolEvent).toHaveBeenCalledWith(
       'PREVIEW_APPLY_TO_SOURCE',
@@ -90,7 +92,7 @@ describe('usePendingSourceReplacementCommand', () => {
 
   it('异步请求返回时目标已变化则拒绝应用', () => {
     const currentTarget = { activeFileId: 'file-b', sourceText: 'source-b' };
-    const { command, onApply, onTrackToolEvent } = useCommandFixture(null, currentTarget);
+    const { command, onApply, onTrackToolEvent } = useCommandFixture('old replacement', currentTarget);
 
     command.handleRequest(
       { action: 'apply', text: 'next source', successMessage: '已直接应用' },
@@ -98,6 +100,7 @@ describe('usePendingSourceReplacementCommand', () => {
     );
 
     expect(onApply).not.toHaveBeenCalled();
+    expect(reactMocks.setPendingText).not.toHaveBeenCalled();
     expect(toastMocks.showError).toHaveBeenCalledWith('SOURCE 已变化，请重新操作');
     expect(onTrackToolEvent).toHaveBeenCalledWith(
       'PREVIEW_APPLY_TO_SOURCE',
@@ -128,7 +131,7 @@ describe('usePendingSourceReplacementCommand', () => {
   });
 
   it('请求成功跳过计划时透传成功副作用', () => {
-    const { command, onApply, onTrackToolEvent } = useCommandFixture(null);
+    const { command, onApply, onTrackToolEvent } = useCommandFixture('old replacement');
     const onSuccessSkip = vi.fn();
 
     command.handleRequest(
@@ -139,7 +142,7 @@ describe('usePendingSourceReplacementCommand', () => {
     expect(toastMocks.showSuccess).toHaveBeenCalledWith('内容已相同');
     expect(toastMocks.showError).not.toHaveBeenCalled();
     expect(onApply).not.toHaveBeenCalled();
-    expect(reactMocks.setPendingText).not.toHaveBeenCalled();
+    expect(reactMocks.setPendingText).toHaveBeenCalledWith(null);
     expect(onSuccessSkip).toHaveBeenCalledTimes(1);
     expect(onTrackToolEvent).toHaveBeenCalledWith(
       'PREVIEW_APPLY_TO_SOURCE',

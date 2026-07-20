@@ -60,6 +60,7 @@ export const usePendingSourceReplacementCommand = ({
       return;
     }
 
+    if (pendingRequest !== null) setPendingRequest(null);
     runSourceReplacePlan({
       plan,
       eventName,
@@ -71,7 +72,7 @@ export const usePendingSourceReplacementCommand = ({
       onSuccessSkip: options.onSuccessSkip,
       shouldTrackConfirmAsSkipped: options.shouldTrackConfirmAsSkipped,
     });
-  }, [category, eventName, onApply, onTrackToolEvent, reportStaleTarget, sourceTargetRef]);
+  }, [category, eventName, onApply, onTrackToolEvent, pendingRequest, reportStaleTarget, sourceTargetRef]);
 
   const handleConfirm = useCallback(() => {
     if (pendingRequest === null) return;
