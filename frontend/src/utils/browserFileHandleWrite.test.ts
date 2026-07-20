@@ -91,27 +91,28 @@ describe('browserFileHandleWrite', () => {
   it('不同句柄指向同一磁盘入口时串行写入', async () => {
     const events: string[] = [];
     let finishFirstWrite = () => undefined;
+    let registrationChecked = () => undefined;
+    const registrationCheck = new Promise<void>(resolve => { registrationChecked = resolve; });
     const firstWritable = createWritable(
       () => new Promise<void>(resolve => { finishFirstWrite = resolve; }),
       events,
       '首个',
     );
     const secondWritable = createWritable(async () => undefined, events, '第二个');
+    const secondHandle = {
+      createWritable: vi.fn(async () => { registrationChecked(); return secondWritable; }),
+    } as unknown as FileSystemFileHandle;
     const firstHandle = {
       createWritable: vi.fn(async () => firstWritable),
-      isSameEntry: vi.fn(async () => false),
-    } as unknown as FileSystemFileHandle;
-    const secondHandle = {
-      createWritable: vi.fn(async () => secondWritable),
-      isSameEntry: vi.fn(async candidate => candidate === firstHandle),
+      isSameEntry: vi.fn(async candidate => { registrationChecked(); return candidate === secondHandle; }),
     } as unknown as FileSystemFileHandle;
 
     const firstWrite = writeTextToFileHandleQueued(firstHandle, 'first');
     const secondWrite = writeTextToFileHandleQueued(secondHandle, 'second');
-    await vi.waitFor(() => expect(secondHandle.isSameEntry).toHaveBeenCalledWith(firstHandle));
-    await vi.waitFor(() => expect(firstHandle.createWritable).toHaveBeenCalledOnce());
+    await registrationCheck;
 
     expect(secondHandle.createWritable).not.toHaveBeenCalled();
+    expect(firstHandle.isSameEntry).toHaveBeenCalledWith(secondHandle);
     finishFirstWrite();
     await Promise.all([firstWrite, secondWrite]);
 

@@ -44,9 +44,9 @@ export const areFileHandlesSameEntry = async (
   handle: FileSystemFileHandle,
   candidate: FileSystemFileHandle,
 ): Promise<boolean> => {
-  if (typeof handle.isSameEntry !== 'function') return false;
-
-  const comparison = handle.isSameEntry(candidate);
+  const comparisonHandle = typeof handle.isSameEntry === 'function' ? handle : candidate;
+  if (typeof comparisonHandle.isSameEntry !== 'function') return false;
+  const comparison = comparisonHandle.isSameEntry(comparisonHandle === handle ? candidate : handle);
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
