@@ -89,8 +89,8 @@ const COMMON_CMD_PARAM_NAMES = new Set([
   'open_url',
 ]);
 
-const STRUCTURED_PARAM_SUFFIX_RE = /(?:^|[_-])(?:cmd|command|schema|scheme|url|uri|link|params?|policy|info)$/i;
-const STRUCTURED_CAMEL_PARAM_SUFFIX_RE = /[a-z0-9](?:Cmd|Command|Schema|Scheme|URL|Url|URI|Uri|Link|Params?|Policy|Info)$/;
+const STRUCTURED_PARAM_SUFFIX_RE = /(?:^|[_-])(?:cmd|command|schema|scheme|url|uri|link|params?|policy|info|data)$/i;
+const STRUCTURED_CAMEL_PARAM_SUFFIX_RE = /[a-z0-9](?:Cmd|Command|Schema|Scheme|URL|Url|URI|Uri|Link|Params?|Policy|Info|Data)$/;
 
 export const normalizeCmdParamName = (key: string): string => (
   key.toLowerCase().replace(/[_-]/g, '')
