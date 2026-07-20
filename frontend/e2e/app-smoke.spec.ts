@@ -3222,6 +3222,21 @@ test('Scheme 面板展示 URL 参数来源', async ({ page }) => {
 
   await page.locator('[data-tour="scheme-button"]').click();
   await page.locator('[data-tour="scheme-standalone-input"]').fill(`https://example.com/page?from=feed#/detail?cmd=${cmdPayload}`);
+
+  const schemeResult = page.locator('[data-tour="scheme-result"] .view-lines');
+  await expect(schemeResult).toContainText('"__url__": "https://example.com/page"');
+  await page.locator('[data-tour="scheme-copy-decoded"]').click();
+  const copiedDecodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
+  expect(JSON.parse(copiedDecodedResult || '')).toEqual({
+    __url__: 'https://example.com/page',
+    from: 'feed',
+    _hash: {
+      cmd: {
+        nid: 123,
+      },
+    },
+  });
+
   await expandSchemeDetails(page);
 
   const paramSections = page.locator('[data-tour="scheme-param-sections"]');
