@@ -1089,7 +1089,7 @@ test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预�
   const sourceLabel = previewEditor.locator('.scheme-display-header-label').first();
   await expect(sourceLabel.locator('.scheme-display-header-kind')).toHaveText('Scheme 来源');
   await expect(sourceLabel.locator('.scheme-display-header-value')).toHaveText(
-    'sampleapp://v7/vendor/ad/makePhoneCall',
+    ': "sampleapp://v7/vendor/ad/makePhoneCall"',
   );
   await expect(sourceLabel).toHaveAttribute(
     'data-source-header',
@@ -1170,7 +1170,7 @@ test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预�
   await expect(schemePanel.locator('[data-tour="scheme-param-stage"]').first()).toContainText('params');
 });
 
-test('自动展开的嵌套 Scheme 与 URL 使用独立来源信息行', async ({ page }) => {
+test('自动展开的嵌套 Scheme 与 URL 使用统一来源标签', async ({ page }) => {
   await page.evaluate(() => {
     window.localStorage.setItem('json-helper-general-settings', JSON.stringify({
       autoExpandSchemeInDeepFormat: true,
@@ -1191,16 +1191,48 @@ test('自动展开的嵌套 Scheme 与 URL 使用独立来源信息行', async (
 
   const schemeLabel = previewEditor.locator('.scheme-display-header-label[data-source-kind="scheme"]');
   await expect(schemeLabel.locator('.scheme-display-header-kind')).toHaveText('Scheme 来源');
-  await expect(schemeLabel.locator('.scheme-display-header-value')).toHaveText('sampleapp://v1/open');
+  await expect(schemeLabel.locator('.scheme-display-header-value')).toHaveText(': "sampleapp://v1/open"');
 
   const urlLabel = previewEditor.locator('.scheme-display-header-label[data-source-kind="url"]');
   await expect(urlLabel.locator('.scheme-display-header-kind')).toHaveText('URL 来源');
-  await expect(urlLabel.locator('.scheme-display-header-value')).toHaveText('https://example.com/page');
+  await expect(urlLabel.locator('.scheme-display-header-value')).toHaveText(': "https://example.com/page"');
   await urlLabel.click();
 
   const sourceViewer = page.locator('[data-tour="scheme-panel"]');
   await expect(sourceViewer.locator('[data-tour="scheme-source-path"]')).toContainText('$.action_cmd.landing');
   await expect(sourceViewer.locator('[data-tour="scheme-apply-edit"]')).toHaveCount(0);
+  const panelSourceTag = sourceViewer.locator('.scheme-display-header-inline-label').first();
+  await expect(panelSourceTag).toBeVisible();
+  const outerSourceTagStyle = await urlLabel.locator('.scheme-display-header-kind').evaluate(element => {
+    const style = window.getComputedStyle(element);
+    return {
+      height: style.height,
+      minWidth: style.minWidth,
+      padding: style.padding,
+      border: style.border,
+      borderRadius: style.borderRadius,
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+    };
+  });
+  const panelSourceTagStyle = await panelSourceTag.evaluate(element => {
+    const style = window.getComputedStyle(element);
+    return {
+      height: style.height,
+      minWidth: style.minWidth,
+      padding: style.padding,
+      border: style.border,
+      borderRadius: style.borderRadius,
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+    };
+  });
+  expect(outerSourceTagStyle).toEqual(panelSourceTagStyle);
+  await expect(urlLabel).toHaveCSS('border-top-width', '0px');
   await sourceViewer.locator('[data-tour="scheme-copy-original"]').click();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
     .toBe(landing);

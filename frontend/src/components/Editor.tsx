@@ -265,7 +265,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
       const headerNode = document.createElement('span');
       headerNode.className = 'scheme-display-header-value';
-      headerNode.textContent = marker.header;
+      headerNode.textContent = `: ${JSON.stringify(marker.header)}`;
 
       label.append(kindNode, headerNode);
       domNode.append(label);
