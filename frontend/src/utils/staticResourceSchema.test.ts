@@ -10,6 +10,7 @@ import {
 describe('staticResourceSchema', () => {
   it('按 URL 后缀和字段路径识别静态资源类型', () => {
     expect(getStaticResourceType('https://static.example.com/ad.mp4?pd=1', '$.video_url')).toBe('video');
+    expect(getStaticResourceType('https://static.example.com/BANNER.PNG?width=100', '$.asset')).toBe('image');
     expect(getStaticResourceType('https://static.example.com/banner.jpg?w=100', '$.imageUrl')).toBe('image');
     expect(getStaticResourceType('https://static.example.com/swipe.zip', '$.swipe_up_lottie')).toBe('lottie');
     expect(getStaticResourceType('https://static.example.com/voice.m4a', '$.audio_url')).toBe('audio');

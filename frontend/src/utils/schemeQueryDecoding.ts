@@ -12,6 +12,8 @@ export const urlDecode = (str: string): string => {
   return tryDecodeURIComponent(str) ?? str;
 };
 
+export const urlEncode = (str: string): string => encodeURIComponent(str);
+
 export const decodeQueryComponent = (str: string): string => (
   urlDecode(str.replace(/\+/g, ' '))
 );

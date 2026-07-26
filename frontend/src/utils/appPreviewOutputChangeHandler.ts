@@ -1,4 +1,5 @@
 import { beginPreviewOutputDraft } from './appPreviewOutputDraft';
+import { ASYNC_TRANSFORM_PLACEHOLDER } from './appAsyncPolicy';
 import { scheduleAppPreviewOutputChangeTask } from './appPreviewOutputChangeTask';
 import type {
   AppPreviewOutputSyncTaskInput,
@@ -26,6 +27,8 @@ export const runAppPreviewOutputChange = ({
   scheduleOutputSync,
 }: RunAppPreviewOutputChangeInput) => {
   const { previewText } = request;
+  if (previewText === ASYNC_TRANSFORM_PLACEHOLDER) return;
+
   beginPreviewOutputDraft(isUpdatingFromOutput, refs.pendingOutputValue, previewText);
   updatePreviewValidation(previewText);
   scheduleAppPreviewOutputChangeTask({

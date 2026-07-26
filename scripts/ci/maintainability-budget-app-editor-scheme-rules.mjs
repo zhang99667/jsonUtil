@@ -4,7 +4,17 @@ export const appEditorSchemeMaintainabilityBudgets = [
   editorSchemeBudget(
     'frontend/src/components/Editor.tsx',
     830,
-    '通用编辑器应继续下沉 Scheme 扫描、弹窗状态和其它独立生命周期，避免恢复为单文件状态中心',
+    '通用编辑器应继续下沉 Scheme 扫描、只读提示调度和其它独立生命周期，避免恢复为单文件状态中心',
+  ),
+  editorSchemeBudget(
+    'frontend/src/components/editorReadOnlyUnlockPromptTasks.ts',
+    60,
+    '只读解锁提示调度器只维护定位延时、动画帧、自动隐藏和旧任务失效',
+  ),
+  editorSchemeBudget(
+    'frontend/src/components/EditorReadOnlyUnlockPrompt.test.ts',
+    115,
+    '只读解锁提示测试只锁定卸载清理、重复触发、状态失效和自动隐藏时序',
   ),
   editorSchemeBudget(
     'frontend/src/components/editorSchemeModalState.ts',
@@ -23,8 +33,8 @@ export const appEditorSchemeMaintainabilityBudgets = [
   ),
   editorSchemeBudget(
     'frontend/src/hooks/useEditorSchemeScan.test.ts',
-    325,
-    'Editor Scheme 扫描测试只覆盖输入失效、Worker 异常与超时、协议负例和迟到回调',
+    340,
+    'Editor Scheme 扫描测试只覆盖输入失效、同步与 Worker 异常、超时、协议负例和迟到回调',
   ),
   editorSchemeBudget(
     'frontend/src/utils/schemeScanWorker.ts',

@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Driver } from 'driver.js';
+import type { Config, Driver } from 'driver.js';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { loadDriverTour } from '../utils/driverTourLoader';
+import { driverTourRuntime } from '../utils/driverTourRuntime';
+import { safeReadStorageItem, safeSetStorageItem } from '../utils/storage';
 import { FeatureId, useFeatureTour } from './useFeatureTour';
+import { useOnboardingTour } from './useOnboardingTour';
 
 const reactMocks = vi.hoisted(() => ({
   useCallback: vi.fn(),
@@ -25,6 +28,12 @@ vi.mock('../utils/chunkLoadRecoveryDispatch', () => ({
   dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
 }));
 
+vi.mock('../utils/storage', () => ({
+  safeReadStorageItem: vi.fn(),
+  safeRemoveStorageItem: vi.fn(),
+  safeSetStorageItem: vi.fn(() => true),
+}));
+
 type DriverFactory = Awaited<ReturnType<typeof loadDriverTour>>;
 
 const createDeferred = <T,>() => {
@@ -43,7 +52,13 @@ const createDriverDouble = () => ({
   refresh: vi.fn(),
 } as unknown as Driver);
 
-const createDriverFactory = (driver: Driver) => vi.fn(() => driver) as unknown as DriverFactory;
+const createDriverFactory = (
+  driver: Driver,
+  onConfig?: (config: Config) => void,
+) => vi.fn((config: Config) => {
+  onConfig?.(config);
+  return driver;
+}) as unknown as DriverFactory;
 
 describe('useFeatureTour', () => {
   let effectCleanup: (() => void) | undefined;
@@ -56,6 +71,7 @@ describe('useFeatureTour', () => {
     effectCleanup = undefined;
     latestEffect = undefined;
     replayEffectInStrictMode = false;
+    driverTourRuntime.dispose();
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
     reactMocks.useRef.mockImplementation((initialValue: unknown) => {
       return { current: initialValue };
@@ -71,10 +87,14 @@ describe('useFeatureTour', () => {
       }
       return effectCleanup;
     });
+    vi.mocked(safeReadStorageItem).mockReturnValue({ ok: true, value: null });
+    vi.stubGlobal('document', { querySelector: vi.fn(() => ({})) });
   });
 
   afterEach(() => {
+    driverTourRuntime.dispose();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -102,10 +122,11 @@ describe('useFeatureTour', () => {
     vi.mocked(loadDriverTour)
       .mockReturnValueOnce(firstLoad.promise)
       .mockReturnValueOnce(secondLoad.promise);
-    const { startFeatureTour } = useFeatureTourForTest();
+    const firstTour = useFeatureTourForTest();
+    const secondTour = useFeatureTourForTest();
 
-    const firstStart = startFeatureTour(FeatureId.AI_FIX, true);
-    const secondStart = startFeatureTour(FeatureId.DEEP_FORMAT, true);
+    const firstStart = firstTour.startFeatureTour(FeatureId.AI_FIX, true);
+    const secondStart = secondTour.startFeatureTour(FeatureId.DEEP_FORMAT, true);
     secondLoad.resolve(secondFactory);
     await secondStart;
     firstLoad.resolve(firstFactory);
@@ -117,6 +138,18 @@ describe('useFeatureTour', () => {
     expect(secondFactory).toHaveBeenCalledTimes(1);
     expect(secondDriver.destroy).not.toHaveBeenCalled();
     expect(secondDriver.drive).toHaveBeenCalledTimes(1);
+  });
+
+  it('首秒内功能引导后发启动会取消待加载的新手引导', async () => {
+    const featureDriver = createDriverDouble();
+    vi.mocked(loadDriverTour).mockResolvedValue(createDriverFactory(featureDriver));
+
+    useOnboardingTour();
+    await useFeatureTourForTest().startFeatureTour(FeatureId.AI_FIX, true);
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(loadDriverTour).toHaveBeenCalledTimes(1);
+    expect(featureDriver.drive).toHaveBeenCalledTimes(1);
   });
 
   it('StrictMode 清理使第一代尚未完成的加载永久失效', async () => {
@@ -185,5 +218,55 @@ describe('useFeatureTour', () => {
 
     expect(createDriver).not.toHaveBeenCalled();
     expect(driver.drive).not.toHaveBeenCalled();
+  });
+
+  it('实例创建失败时执行恢复判定并记录中文警告', async () => {
+    const error = new Error('创建失败');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.mocked(loadDriverTour).mockResolvedValue(vi.fn(() => {
+      throw error;
+    }) as unknown as DriverFactory);
+
+    await useFeatureTourForTest().startFeatureTour(FeatureId.AI_FIX, true);
+
+    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
+    expect(warn).toHaveBeenCalledWith('启动功能引导失败:', error);
+  });
+
+  it('延迟驱动失败时清理实例并记录原始错误', async () => {
+    const error = new Error('驱动失败');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const driver = createDriverDouble();
+    vi.mocked(driver.drive).mockImplementation(() => {
+      throw error;
+    });
+    vi.mocked(loadDriverTour).mockResolvedValue(createDriverFactory(driver));
+
+    await useFeatureTourForTest().startFeatureTour(FeatureId.AI_FIX, true);
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(driver.destroy).toHaveBeenCalledTimes(1);
+    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(error);
+    expect(warn).toHaveBeenCalledWith('启动功能引导失败:', error);
+  });
+
+  it('用户关闭功能引导时只记录一次完成状态', async () => {
+    const driver = createDriverDouble();
+    let receivedConfig: Config | undefined;
+    vi.mocked(loadDriverTour).mockResolvedValue(createDriverFactory(driver, config => {
+      receivedConfig = config;
+    }));
+
+    await useFeatureTourForTest().startFeatureTour(FeatureId.AI_FIX, true);
+    const onDestroyStarted = receivedConfig?.onDestroyStarted as (() => void) | undefined;
+    onDestroyStarted?.();
+    onDestroyStarted?.();
+
+    expect(safeSetStorageItem).toHaveBeenCalledTimes(1);
+    expect(safeSetStorageItem).toHaveBeenCalledWith(
+      'json-helper-feature-tour-ai-fix',
+      'completed',
+    );
+    expect(driver.destroy).toHaveBeenCalledTimes(1);
   });
 });

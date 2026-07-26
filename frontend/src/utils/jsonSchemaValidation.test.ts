@@ -173,6 +173,31 @@ describe('jsonSchemaValidation', () => {
     });
   });
 
+  it.each([
+    ['', '', 'empty', '请先输入 JSON 和 JSON Schema'],
+    ['', '{}', 'input-error', '请先在 SOURCE 输入 JSON'],
+    ['{}', '', 'schema-error', '请先粘贴 JSON Schema'],
+    ['{bad}', '{}', 'input-error', 'SOURCE 不是合法 JSON'],
+    ['{"value":1e400}', '{}', 'input-error', 'SOURCE 不是合法 JSON'],
+    ['{}', '{bad}', 'schema-error', 'Schema 不是合法 JSON'],
+    ['{}', '{"maximum":1e400}', 'schema-error', 'Schema 不是合法 JSON'],
+    ['{}', '{"type":"unknown"}', 'schema-error', 'Schema 无法编译'],
+    ['{}', '{}', 'valid', '当前 JSON 符合 Schema'],
+  ])('无问题结果保持完整空集合: %s / %s', (jsonText, schemaText, status, summary) => {
+    const result = validateJsonAgainstSchema(jsonText, schemaText);
+
+    expect(result).toMatchObject({
+      status,
+      isValid: status === 'valid',
+      issues: [],
+      issueCount: 0,
+      shownIssueCount: 0,
+      issueKeywordGroups: [],
+      issuePathList: [],
+    });
+    expect(result.summary).toContain(summary);
+  });
+
   it('支持 2020-12 Schema', () => {
     const result = validateJsonAgainstSchema(
       JSON.stringify({ type: 'book', title: 'JSON' }),

@@ -9,6 +9,7 @@ import { TemplateFillStatusAlerts } from './TemplateFillStatusAlerts';
 import { APP_BACKUP_IMPORTED_EVENT } from '../utils/appBackup';
 import { TEMPLATE_FILL_STORAGE_KEY, loadTemplateFillConfig } from '../utils/appSettings';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
+import { parseJsonValue } from '../utils/jsonValueGuards';
 import { safeSetStorageItem } from '../utils/storage';
 import {
   buildPlaceholderTemplateSummary,
@@ -89,7 +90,7 @@ export const TemplateFillPanel: React.FC<TemplateFillPanelProps> = ({
   const handleFormatTemplate = () => {
     if (!template.trim() || !validation.isValid) return;
 
-    const formattedTemplate = JSON.stringify(JSON.parse(template), null, 2);
+    const formattedTemplate = JSON.stringify(parseJsonValue(template), null, 2);
     setTemplate(formattedTemplate);
     toast.success(`模板已格式化（${formatTemplateSizeLabel(formattedTemplate)}）`, { duration: 1600 });
   };

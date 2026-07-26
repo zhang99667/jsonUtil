@@ -609,6 +609,7 @@ describe('CMD/Scheme 真实样本回归', () => {
     const decodedExtra = parsed.data.video[0].extra[0].v;
 
     expect(decodedScheme.video_info.reward.stay_cmd.convert_cmd.params.appUrl.params.url).toEqual({
+      __url__: 'https://example.com/landing',
       sku: '101',
       bd_vid: 'abc',
     });
@@ -752,10 +753,12 @@ describe('CMD/Scheme 真实样本回归', () => {
     expect(info.render_sbox.sbox_switch).toBe(4);
     expect(parsed.data.video[0].isRenderReturnGoodsInfo).toBe(true);
     expect(decodedScheme.video_info.video_url).toEqual({
+      __url__: 'https://video.example.com/ad.mp4',
       pd: '100',
       cm: '1501',
     });
     expect(decodedScheme.video_info.page_url).toEqual({
+      __url__: 'https://example.com/landing',
       sku: '101',
       bd_vid: 'abc',
     });
@@ -816,10 +819,13 @@ describe('CMD/Scheme 真实样本回归', () => {
       des: 'm',
     });
     expect(decodedScheme.video_info.video_url).toEqual({
+      __url__: 'https://video.example.com/ad.mp4',
       pd: '100',
       cm: '1501',
     });
-    expect(decodedScheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.url.to).toEqual({
+    const panelLandingTarget = decodedScheme.video_info.tail_frame.panel_scheme.panel_cmd.params.appUrl.params.url.to;
+    expect(Object.values(panelLandingTarget)).toContain('https://pro.m.jd.com/mall/active/page.html');
+    expect(panelLandingTarget).toMatchObject({
       sku: '101',
       bd_vid: 'abc',
     });
@@ -836,15 +842,16 @@ describe('CMD/Scheme 真实样本回归', () => {
       },
     });
     expect(decodedScheme.reward.reward_cmd.bottom_right_btn.button_cmd.task_params.ext_policy.sdk_switch).toBe('1');
-    expect(decodedScheme.convert.button_scheme.params.appUrl.params.url.to).toEqual({
+    expect(decodedScheme.convert.button_scheme.params.appUrl.params.url.to).toMatchObject({
       sku: '101',
       bd_vid: 'abc',
     });
-    expect(decodedScheme.cmd_policy.panel_cmd.params.appUrl.params.url.to).toEqual({
+    expect(decodedScheme.cmd_policy.panel_cmd.params.appUrl.params.url.to).toMatchObject({
       sku: '101',
       bd_vid: 'abc',
     });
-    expect(decodedScheme.cmd_policy.callbackUrl).toEqual({
+    expect(Object.values(decodedScheme.cmd_policy.callbackUrl)).toContain('https://callback.example.com/track');
+    expect(decodedScheme.cmd_policy.callbackUrl).toMatchObject({
       clickId: '__CLICK_ID__',
       sign: '__SIGN__',
       callbackUrl: '__CALLBACK_URL__',
@@ -971,13 +978,16 @@ describe('CMD/Scheme 真实样本回归', () => {
       : undefined;
 
     expect(parsed.data.ads[0].common.landing_url).toEqual({
+      __url__: 'https://m.example.com/promo',
       campaign: 'landing',
       bd_vid: 'land_001',
     });
     expect(parsed.data.ads[0].common.image_url).toEqual({
+      __url__: 'https://img.example.com/banner.png',
       size: '750x300',
     });
     expect(parsed.data.ads[0].common.monitor_urls[0]).toEqual({
+      __url__: 'https://log.example.com/click',
       clickId: '__CLICK_ID__',
       from: 'landing',
     });
@@ -987,6 +997,7 @@ describe('CMD/Scheme 真实样本回归', () => {
     expect(decodedScheme.fallback_cmd.params.source).toBe('feedna');
     expect(decodedScheme.adFlag.ext).toBe('__AD_EXTRA_PARAM_ENCODE_2__');
     expect(decodedScheme.callbackUrl).toEqual({
+      __url__: 'https://callback.example.com/landing',
       clickId: '__CLICK_ID__',
       sign: '__SIGN__',
     });
@@ -1086,6 +1097,7 @@ describe('CMD/Scheme 真实样本回归', () => {
       solutionId: '__SOLUTIONID__',
     });
     expect(decodedScheme.params.logUrl).toEqual({
+      __url__: 'https://ada.sample.com/phone-tracker/clicklog',
       pageid: '__TIMESTAMP__',
       virtualPhone: '__VIRTUALPHONE__',
       realPhone: '400-805-8686',

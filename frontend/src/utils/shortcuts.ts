@@ -17,15 +17,18 @@ export const SHORTCUT_ACTIONS = Object.keys(DEFAULT_SHORTCUTS) as ShortcutAction
 
 type ShortcutHandlers = Record<ShortcutAction, () => void>;
 
-const matchesShortcut = (event: KeyboardEvent, shortcut: ShortcutKey): boolean => {
-  if (!shortcut.key) return false;
+export const areShortcutKeysEquivalent = (
+  left: ShortcutKey,
+  right: ShortcutKey,
+): boolean => {
+  if (!left.key || !right.key) return false;
 
   return (
-    event.key.toLowerCase() === shortcut.key.toLowerCase() &&
-    event.metaKey === shortcut.meta &&
-    event.ctrlKey === shortcut.ctrl &&
-    event.shiftKey === shortcut.shift &&
-    event.altKey === shortcut.alt
+    left.key.toLowerCase() === right.key.toLowerCase() &&
+    left.meta === right.meta &&
+    left.ctrl === right.ctrl &&
+    left.shift === right.shift &&
+    left.alt === right.alt
   );
 };
 
@@ -34,8 +37,15 @@ export const handleShortcutKeyDown = (
   shortcuts: ShortcutConfig,
   handlers: ShortcutHandlers
 ): void => {
+  const pressedShortcut: ShortcutKey = {
+    key: event.key,
+    meta: event.metaKey,
+    ctrl: event.ctrlKey,
+    shift: event.shiftKey,
+    alt: event.altKey,
+  };
   for (const action of SHORTCUT_ACTIONS) {
-    if (!matchesShortcut(event, shortcuts[action])) continue;
+    if (!areShortcutKeysEquivalent(pressedShortcut, shortcuts[action])) continue;
 
     event.preventDefault();
     if (!event.repeat) handlers[action]();

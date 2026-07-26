@@ -5,7 +5,8 @@ import {
 } from '../utils/aiProviderDefaults';
 import { isAbortError } from '../utils/errors';
 import { AiRepairErrorCode, createAiRepairError } from '../utils/aiRepairErrors';
-import { isRecord } from '../utils/storage';
+import { parseJsonValue } from '../utils/jsonValueGuards';
+import { isRecord, readObjectPropertySafely } from '../utils/storage';
 import {
   formatAiErrorDetailSummary,
   redactAiErrorDetail,
@@ -24,17 +25,6 @@ export const AI_INVALID_RESPONSE_JSON_MESSAGE = 'AI 返回内容格式不是 JSO
 interface OpenAICompatibleRepairRequest {
   requestUrl: string;
   requestInit: RequestInit;
-}
-
-interface OpenAICompatibleRepairResponseBody {
-  choices?: OpenAICompatibleChoice[];
-}
-
-type OpenAICompatibleMessageContent = string | Array<{ text?: unknown; type?: unknown }>;
-
-interface OpenAICompatibleChoice {
-  finish_reason?: unknown;
-  message?: { content?: OpenAICompatibleMessageContent };
 }
 
 const OPENAI_INCOMPLETE_FINISH_REASONS = new Set(['length', 'content_filter']);
@@ -82,34 +72,32 @@ export const readOpenAICompatibleRepairText = async (response: Response): Promis
     );
   }
 
-  let data: OpenAICompatibleRepairResponseBody;
+  let data: unknown;
 
   try {
-    data = await response.json() as OpenAICompatibleRepairResponseBody;
+    data = await response.json();
   } catch (error: unknown) {
     if (isAbortError(error)) throw error;
     throw createAiRepairError(AiRepairErrorCode.InvalidResponse, AI_INVALID_RESPONSE_JSON_MESSAGE);
   }
 
-  const text = isOpenAICompatibleRepairResponseBody(data)
-    ? readFirstOpenAICompatibleChoiceText(data)
-    : undefined;
+  const text = readFirstOpenAICompatibleChoiceText(data);
   return assertNonEmptyAiResponseText(text);
 };
 
-const isOpenAICompatibleRepairResponseBody = (
-  value: unknown
-): value is OpenAICompatibleRepairResponseBody => isRecord(value);
-
 const readFirstOpenAICompatibleChoiceText = (
-  data: OpenAICompatibleRepairResponseBody
+  data: unknown
 ): string | undefined => {
-  const choices = Array.isArray(data.choices) ? data.choices : [];
+  const choicesValue = readObjectPropertySafely(data, 'choices');
+  const choices = Array.isArray(choicesValue) ? choicesValue : [];
   let blockedFinishReason = '';
 
   for (const choice of choices) {
     const finishReason = readOpenAICompatibleFinishReason(choice);
-    const text = readOpenAICompatibleMessageText(choice?.message?.content);
+    const message = readObjectPropertySafely(choice, 'message');
+    const text = readOpenAICompatibleMessageText(
+      readObjectPropertySafely(message, 'content')
+    );
     if (text) {
       assertOpenAICompatibleFinishReason(finishReason);
       return text;
@@ -127,10 +115,11 @@ const readFirstOpenAICompatibleChoiceText = (
 };
 
 const readOpenAICompatibleFinishReason = (
-  choice: OpenAICompatibleChoice | undefined
-): string => (
-  typeof choice?.finish_reason === 'string' ? choice.finish_reason.trim().toLowerCase() : ''
-);
+  choice: unknown
+): string => {
+  const finishReason = readObjectPropertySafely(choice, 'finish_reason');
+  return typeof finishReason === 'string' ? finishReason.trim().toLowerCase() : '';
+};
 
 const assertOpenAICompatibleFinishReason = (finishReason: string): void => {
   if (isOpenAICompatibleIncompleteFinishReason(finishReason)) {
@@ -143,13 +132,16 @@ const isOpenAICompatibleIncompleteFinishReason = (finishReason: string): boolean
 );
 
 const readOpenAICompatibleMessageText = (
-  content: OpenAICompatibleMessageContent | undefined
+  content: unknown
 ): string | undefined => {
   if (typeof content === 'string') return content.trim() ? content : undefined;
   if (!Array.isArray(content)) return undefined;
 
   const text = content
-    .map(part => typeof part.text === 'string' ? part.text : '')
+    .map(part => {
+      const partText = readObjectPropertySafely(part, 'text');
+      return typeof partText === 'string' ? partText : '';
+    })
     .filter(partText => partText.trim())
     .join('\n');
   return text || undefined;
@@ -203,10 +195,11 @@ const extractAiErrorDetail = (errorText: string): string => {
   if (!trimmed) return '';
 
   try {
-    const data = JSON.parse(trimmed) as { error?: { message?: unknown } | string; message?: unknown };
-    const message = typeof data.error === 'object' && data.error
-      ? data.error.message
-      : data.message ?? data.error;
+    const data = parseJsonValue(trimmed);
+    const error = isRecord(data) ? data.error : undefined;
+    const message = isRecord(error)
+      ? error.message
+      : isRecord(data) ? data.message ?? error : undefined;
     if (typeof message === 'string' && message.trim()) return formatAiErrorDetailSummary(message);
   } catch {
     // 非 JSON 错误体继续使用原始文本摘要。

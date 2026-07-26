@@ -2146,8 +2146,19 @@ test('设置弹窗支持键盘关闭并恢复焦点', async ({ page }) => {
   await settingsButton.click();
 
   const settingsDialog = page.getByRole('dialog', { name: '设置' });
+  const closeButton = settingsDialog.getByRole('button', { name: '关闭设置' });
+  const finishButton = settingsDialog.getByRole('button', { name: '完成' });
   await expect(settingsDialog).toBeVisible();
-  await expect(settingsDialog.getByRole('button', { name: '关闭设置' })).toBeFocused();
+  await expect(settingsDialog).toHaveJSProperty('open', true);
+  await expect(closeButton).toBeFocused();
+
+  await page.keyboard.press('Shift+Tab');
+  await expect(finishButton).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(closeButton).toBeFocused();
+
+  await page.mouse.click(1, 1);
+  await expect(settingsDialog).toBeVisible();
 
   await page.keyboard.press('Escape');
   await expect(settingsDialog).toBeHidden();
@@ -2212,6 +2223,76 @@ test('快捷键冲突会提示被解除的动作', async ({ page }) => {
   await expect(formatShortcut).toContainText('Ctrl');
   await expect(formatShortcut).toContainText('Shift');
   await expect(formatShortcut).toContainText('K');
+});
+
+test('快捷键录制期间 Escape 会被记录且不会关闭设置', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+
+  const settingsDialog = page.getByRole('dialog', { name: '设置' });
+  const saveShortcut = settingsDialog.locator('[data-tour="shortcut-card-SAVE"]');
+  await saveShortcut.click();
+  await expect(saveShortcut).toContainText('按下按键...');
+
+  await page.keyboard.press('Escape');
+  await expect(settingsDialog).toBeVisible();
+  await expect(saveShortcut).toContainText('Escape');
+  await expect(saveShortcut).not.toContainText('按下按键...');
+
+  await page.keyboard.press('Escape');
+  await expect(settingsDialog).toBeHidden();
+});
+
+test('快捷键录制忽略长按产生的重复事件', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+
+  const settingsDialog = page.getByRole('dialog', { name: '设置' });
+  const saveShortcut = settingsDialog.locator('[data-tour="shortcut-card-SAVE"]');
+  await saveShortcut.click();
+
+  await saveShortcut.dispatchEvent('keydown', {
+    key: 'k',
+    code: 'KeyK',
+    ctrlKey: true,
+    repeat: true,
+    bubbles: true,
+    cancelable: true,
+  });
+  await expect(saveShortcut).toContainText('按下按键...');
+
+  await page.keyboard.press('Control+K');
+  await expect(saveShortcut).toContainText('Ctrl');
+  await expect(saveShortcut).toContainText('K');
+  await expect(saveShortcut).not.toContainText('按下按键...');
+});
+
+test('鼠标关闭设置后快捷键录制不会在主界面继续生效', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+
+  const settingsDialog = page.getByRole('dialog', { name: '设置' });
+  await settingsDialog.locator('[data-tour="shortcut-card-SAVE"]').click();
+  await settingsDialog.getByRole('button', { name: '关闭设置' }).click();
+  await expect(settingsDialog).toBeHidden();
+
+  await page.keyboard.press('Control+K');
+  await page.locator('[data-tour="settings"]').click();
+
+  const saveShortcut = page.locator('[data-tour="shortcut-card-SAVE"]');
+  await expect(saveShortcut.locator('kbd')).toHaveText(['Cmd', 'S']);
+  await expect(saveShortcut).not.toContainText('按下按键...');
+});
+
+test('离开快捷键页签会取消录制且不会改写快捷键', async ({ page }) => {
+  await page.locator('[data-tour="settings"]').click();
+
+  const settingsDialog = page.getByRole('dialog', { name: '设置' });
+  const saveShortcut = settingsDialog.locator('[data-tour="shortcut-card-SAVE"]');
+  await saveShortcut.click();
+  await settingsDialog.getByRole('tab', { name: 'AI 配置' }).click();
+  await page.keyboard.press('Control+K');
+  await settingsDialog.getByRole('tab', { name: '快捷键' }).click();
+
+  await expect(saveShortcut.locator('kbd')).toHaveText(['Cmd', 'S']);
+  await expect(saveShortcut).not.toContainText('按下按键...');
 });
 
 test('本地存储读取异常不会阻止应用启动', async ({ page }) => {
@@ -2316,8 +2397,28 @@ test('设置中可恢复浮动面板默认布局', async ({ page }) => {
   await waitForMainAppReady(page);
   await page.locator('[data-tour="settings"]').click();
   await page.getByRole('tab', { name: '通用设置' }).click();
+  const settingsDialog = page.getByRole('dialog', { name: '设置' });
   await page.getByRole('button', { name: '恢复默认布局' }).click();
-  await expect(page.getByText('浮动面板布局已恢复默认')).toBeVisible();
+  const resetToast = settingsDialog.getByRole('status').filter({ hasText: '浮动面板布局已恢复默认' });
+  await expect(resetToast).toBeVisible();
+  const resetToastCard = resetToast.locator('..');
+  const resetToastHitResult = await resetToastCard.evaluate((toastCard) => {
+    const bounds = toastCard.getBoundingClientRect();
+    const hitTarget = document.elementFromPoint(
+      bounds.left + bounds.width / 2,
+      bounds.top + bounds.height / 2
+    );
+    return {
+      hitsToast: hitTarget === toastCard || toastCard.contains(hitTarget),
+      hitsDialog: hitTarget === toastCard.closest('dialog'),
+      hitClassName: hitTarget instanceof HTMLElement ? hitTarget.className : '',
+      hitText: hitTarget?.textContent || '',
+      toastCardClassName: toastCard instanceof HTMLElement ? toastCard.className : '',
+    };
+  });
+  if (!resetToastHitResult.hitsToast || resetToastHitResult.hitsDialog) {
+    throw new Error(JSON.stringify(resetToastHitResult));
+  }
   await page.getByRole('button', { name: '取消' }).click();
 
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
@@ -2412,7 +2513,8 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
     buffer: Buffer.from(JSON.stringify(importedBackup)),
   });
 
-  await expect(page.getByText('配置备份已导入，AI Key 已保留')).toBeVisible();
+  const settingsDialog = page.getByRole('dialog', { name: '设置' });
+  await expect(settingsDialog.getByRole('status').filter({ hasText: '配置备份已导入，AI Key 已保留' })).toBeVisible();
   const importedAIConfig = await page.evaluate(() => {
     return JSON.parse(window.localStorage.getItem('json-helper-ai-config') || '{}') as {
       apiKey?: string;
@@ -2833,6 +2935,54 @@ test('Scheme 面板可展开 CMD 参数串', async ({ page }) => {
   await expect(page.locator('[data-tour="scheme-apply-edit"]')).toHaveAttribute('aria-label', '应用修改，请先修正解码结果中的 JSON 错误');
 });
 
+test('Scheme 面板展示根与嵌套业务协议头', async ({ page }) => {
+  const commandKeys = ['default', '__CMD_1__', '__CMD_2__', '__CMD_3__', '__CMD_4__'] as const;
+  const commandHeader = 'sampleapp:///v1/browser/open';
+  const landingHeader = 'https://m.example.com/detail';
+  const source = {
+    area_cmd: {
+      pop_button: '__CMD_2__',
+      pop_hotarea: '__CMD_1__',
+      nested: { primary: '__CMD_4__', fallback: '__CMD_3__', unmapped: '__CMD_9__' },
+    },
+    cmd_map: Object.fromEntries(commandKeys.map((key, index) => {
+      const landingUrl = [
+        `${landingHeader}?fid=${key}`,
+        'ch=3',
+        `bd_vid=video-${index}-a`,
+        `bd_vid=video-${index}-b`,
+      ].join('&');
+      return [key, `${commandHeader}?url=${encodeURIComponent(landingUrl)}`];
+    })),
+  };
+
+  await page.evaluate(() => {
+    window.localStorage.setItem('scheme-panel-size', JSON.stringify({ width: 760, height: 780 }));
+  });
+
+  await page.locator('[data-tour="scheme-button"]').click();
+  await page.locator('[data-tour="scheme-standalone-input"]').fill(JSON.stringify(source));
+
+  const schemeResult = page.locator('[data-tour="scheme-result"] .view-lines');
+  await expect(schemeResult).toContainText('__CMD_2__');
+  await expect(schemeResult).toContainText(commandHeader);
+  await expect(schemeResult).toContainText(landingHeader);
+  await expect(schemeResult).toContainText('bd_vid');
+
+  await page.locator('[data-tour="scheme-copy-decoded"]').click();
+  const copied = JSON.parse(
+    await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}')
+  ) as typeof source;
+  expect(copied.area_cmd).toEqual(source.area_cmd);
+  commandKeys.forEach((key, index) => {
+    const command = copied.cmd_map[key] as unknown as Record<string, unknown>;
+    const landing = command.url as Record<string, unknown>;
+    expect(Object.values(command)).toContain(commandHeader);
+    expect(Object.values(landing)).toContain(landingHeader);
+    expect(landing.bd_vid).toEqual([`video-${index}-a`, `video-${index}-b`]);
+  });
+});
+
 test('Scheme 面板可用原始值替换 SOURCE 并打开深度解析报告', async ({ page }) => {
   const cmdPayload = encodeURIComponent(JSON.stringify({ nid: 123, title: '标题' }));
   const schemeInput = `cmd=${cmdPayload}&from=feed`;
@@ -3153,11 +3303,19 @@ test('Scheme 面板可复制特殊 key 来源路径', async ({ page }) => {
 });
 
 test('SOURCE 编辑器可只读打开内嵌 Scheme', async ({ page }) => {
-  const scheme = 'sampleapp://v1/browser/open?url=https%3A%2F%2Fexample.com%2Fpage&source=feed';
+  const commandHeader = 'sampleapp://v1/browser/open';
+  const landingHeader = 'https://example.com/page';
+  const landingUrl = `${landingHeader}?fid=feed-token&ch=3&bd_vid=video-a&bd_vid=video-b`;
+  const scheme = `${commandHeader}?url=${encodeURIComponent(landingUrl)}&source=feed&backgroundColor=${encodeURIComponent('#FFFFFF')}`;
 
-  await fillSourceEditor(page, JSON.stringify({ scheme }));
+  await fillSourceEditor(page, JSON.stringify({
+    cmd_map: {
+      default: scheme,
+    },
+  }));
 
   const sourceEditor = page.locator('[data-tour="source-editor"]');
+  await sourceEditor.locator('[data-tour="editor-wrap"]').click();
   const schemeHighlight = sourceEditor.locator('.scheme-inline-highlight').first();
   await expect(schemeHighlight).toBeVisible({ timeout: 15_000 });
   await expect(sourceEditor.locator('[data-tour="editor-scheme-count"]')).toHaveText('Scheme 1', { timeout: 15_000 });
@@ -3166,9 +3324,17 @@ test('SOURCE 编辑器可只读打开内嵌 Scheme', async ({ page }) => {
 
   const schemePanel = page.locator('[data-tour="scheme-panel"]');
   await expect(schemePanel).toContainText('Scheme 解析');
-  await expect(schemePanel.locator('[data-tour="scheme-source-path"]')).toContainText('$.scheme');
+  await expect(schemePanel.locator('[data-tour="scheme-source-path"]')).toContainText('$.cmd_map.default');
   await expect(schemePanel.locator('[data-tour="scheme-copy-original"]')).toBeVisible();
   await expect(schemePanel.locator('[data-tour="scheme-apply-edit"]')).toHaveCount(0);
+
+  const schemeResult = schemePanel.locator('[data-tour="scheme-result"] .view-lines');
+  await expect(schemeResult).toContainText(`"__scheme__": "${commandHeader}"`);
+  await expect(schemeResult).toContainText(`"__scheme__": "${landingHeader}"`);
+  await expect(schemeResult).toContainText('"bd_vid": [');
+  await expect(schemeResult).toContainText('"backgroundColor":');
+  await expect(schemeResult).toContainText('#FFFFFF');
+  await expect(schemePanel.locator('[data-tour="scheme-result"] .colorpicker-color-decoration')).toBeVisible();
 });
 
 test('Scheme 面板可解析 JSON-like CMD 参数', async ({ page }) => {

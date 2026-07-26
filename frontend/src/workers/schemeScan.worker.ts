@@ -6,10 +6,10 @@ import type {
 } from '../utils/schemeScanWorker';
 
 self.onmessage = (event: MessageEvent<SchemeScanWorkerRequest>) => {
-  const { id, jsonString } = event.data;
+  const { id, jsonString, forcedPaths } = event.data;
 
   try {
-    const result = scanSchemesInJson(jsonString);
+    const result = scanSchemesInJson(jsonString, { forcedPaths });
     const response: SchemeScanWorkerResponse = {
       id,
       locations: result.locations,

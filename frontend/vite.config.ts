@@ -30,8 +30,29 @@ const createMonacoStaticAssetsPlugin = () => ({
 type VitestCompatibleUserConfig = UserConfig & {
   test?: {
     exclude?: string[];
+    projects?: Array<{
+      extends: true;
+      test: {
+        name: string;
+        environment?: 'node' | 'jsdom';
+        include?: string[];
+        exclude?: string[];
+      };
+    }>;
   };
 };
+
+const TEST_EXCLUDES = [
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/e2e/**',
+  '**/e2e-performance/**',
+];
+const DOM_TEST_FILES = [
+  'src/components/DraggablePanel.test.ts',
+  'src/components/UnifiedSettingsModal.test.tsx',
+  'src/hooks/useAppAiRepairCommand.test.ts',
+];
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
@@ -79,11 +100,23 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
-      exclude: [
-        '**/node_modules/**',
-        '**/dist/**',
-        '**/e2e/**',
-        '**/e2e-performance/**',
+      exclude: TEST_EXCLUDES,
+      projects: [
+        {
+          extends: true,
+          test: {
+            name: 'node',
+            exclude: [...TEST_EXCLUDES, ...DOM_TEST_FILES],
+          },
+        },
+        {
+          extends: true,
+          test: {
+            name: 'dom',
+            environment: 'jsdom',
+            include: DOM_TEST_FILES,
+          },
+        },
       ],
     }
   };

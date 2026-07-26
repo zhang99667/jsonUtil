@@ -9,6 +9,10 @@ import {
   parseJsonTreeSource,
 } from './jsonTreeTraversal';
 import { isJsonObject } from './jsonValueGuards';
+import {
+  getJsonPointerDisplayValue,
+  JSON_TREE_KIND_LABELS,
+} from './jsonTreePresentation';
 import type {
   BuildJsonTreeModelOptions,
   JsonTreeModel,
@@ -261,15 +265,15 @@ export const formatJsonTreeSearchResultsMarkdownText = (
   nodes: JsonTreeNode[]
 ): string => {
   const lines = [
-    '| Path | Pointer | Kind | Children | Preview |',
+    '| 路径 | JSON 指针 | 类型 | 子节点数 | 预览 |',
     '| --- | --- | --- | ---: | --- |',
   ];
 
   nodes.forEach(node => {
     lines.push([
       node.path,
-      node.jsonPointer || '(root)',
-      node.kind,
+      getJsonPointerDisplayValue(node.jsonPointer),
+      JSON_TREE_KIND_LABELS[node.kind],
       String(node.childCount),
       node.valuePreview,
     ].map(escapeMarkdownTableCell).join(' | ').replace(/^/, '| ').replace(/$/, ' |'));

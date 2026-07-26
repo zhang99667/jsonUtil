@@ -1,5 +1,6 @@
 import { TransformMode, type JsonValue } from '../types';
 import { formatUnknownError } from './errors';
+import { parseJsonValue } from './jsonValueGuards';
 import { isRecord, parseJsonWithFallback } from './storage';
 
 export interface ImportedTextFile {
@@ -330,7 +331,7 @@ const toPayloadBody = (
     try {
       return {
         kind: 'json',
-        value: JSON.parse(text) as JsonValue,
+        value: parseJsonValue(text),
         ...(encoding ? { encoding } : {}),
         ...(truncated.truncated ? { truncated: true } : {}),
       };

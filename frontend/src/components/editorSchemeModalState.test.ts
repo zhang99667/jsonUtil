@@ -26,7 +26,21 @@ describe('editorSchemeModalState', () => {
       pointer: '/url',
       value: 'app://detail',
       source: '{"url":"app://detail"}',
+      readOnly: false,
     });
+  });
+
+  it('来源头小眼睛使用完整原始地址并禁止回写', () => {
+    const source = 'https://example.com/page?cmd=%7B%22id%22%3A1%7D';
+    const modal = createOpenEditorSchemeModal(location, '{"__url__":"https://example.com/page"}', {
+      path: '$.__url__',
+      kind: 'url',
+      source,
+    });
+
+    expect(modal.value).toBe(source);
+    expect(modal.readOnly).toBe(true);
+    expect(canApplyEditorSchemeModal(modal, modal.source)).toBe(false);
   });
 
   it('输入变化后关闭旧弹窗并拒绝旧指针回写', () => {

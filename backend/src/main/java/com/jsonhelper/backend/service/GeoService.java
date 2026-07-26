@@ -2,6 +2,8 @@ package com.jsonhelper.backend.service;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.core.io.ClassPathResource;
@@ -18,9 +20,10 @@ public class GeoService {
     private static final Pattern IPV4_LITERAL = Pattern.compile("[0-9]{1,3}(?:\\.[0-9]{1,3}){3}");
     private static final Pattern IPV6_LITERAL = Pattern.compile("[0-9A-Fa-f:][0-9A-Fa-f:.]*");
     private static final Pattern IPV6_ZONE = Pattern.compile("[A-Za-z0-9_.-]{1,64}");
+    private static final GeoInfo LOCAL_INFO = new GeoInfo("本地/内网", "本地/内网", "本地/内网");
+    private static final GeoInfo UNKNOWN_INFO = new GeoInfo("未知", "未知", "未知");
 
     private Searcher searcher;
-    private byte[] cBuff;
 
     @PostConstruct
     public void init() {
@@ -28,8 +31,7 @@ public class GeoService {
             // 从类路径加载 ip2region_v4.xdb 数据文件
             ClassPathResource resource = new ClassPathResource("ip2region_v4.xdb");
             try (InputStream is = resource.getInputStream()) {
-                cBuff = is.readAllBytes();
-                searcher = Searcher.newWithBuffer(cBuff);
+                searcher = Searcher.newWithBuffer(is.readAllBytes());
                 log.info("ip2region 数据库加载成功");
             }
         } catch (Exception e) {
@@ -39,12 +41,13 @@ public class GeoService {
 
     @PreDestroy
     public void destroy() {
-        if (searcher != null) {
-            try {
-                searcher.close();
-            } catch (Exception e) {
-                log.warn("关闭 ip2region searcher 失败", e);
-            }
+        Searcher activeSearcher = searcher;
+        searcher = null;
+        if (activeSearcher == null) return;
+        try {
+            activeSearcher.close();
+        } catch (Exception e) {
+            log.warn("关闭 ip2region searcher 失败", e);
         }
     }
 
@@ -56,21 +59,20 @@ public class GeoService {
     public GeoInfo parseIp(String ip) {
         // 处理本地/内网IP
         if (isLocalOrPrivateIp(ip)) {
-            return new GeoInfo("本地/内网", "本地/内网", "本地/内网");
+            return LOCAL_INFO;
         }
 
-        if (searcher == null) {
-            return new GeoInfo("未知", "未知", "未知");
-        }
+        Searcher activeSearcher = searcher;
+        if (activeSearcher == null) return UNKNOWN_INFO;
 
         try {
-            String region = searcher.search(ip);
+            String region = activeSearcher.search(ip);
             // ip2region 返回格式: 国家|区域|省份|城市|ISP
             // 例如: 中国|0|北京|北京市|联通
             return parseRegionString(region);
         } catch (Exception e) {
             log.debug("解析IP {} 失败: {}", ip, e.getMessage());
-            return new GeoInfo("未知", "未知", "未知");
+            return UNKNOWN_INFO;
         }
     }
 
@@ -142,54 +144,38 @@ public class GeoService {
      */
     private GeoInfo parseRegionString(String region) {
         if (region == null || region.isEmpty()) {
-            return new GeoInfo("未知", "未知", "未知");
+            return UNKNOWN_INFO;
         }
-        
+
         // 格式: 国家|区域|省份|城市|ISP
         String[] parts = region.split("\\|");
-        
+
         String country = parts.length > 0 && !"0".equals(parts[0]) ? parts[0] : "未知";
         String province = parts.length > 2 && !"0".equals(parts[2]) ? parts[2] : "";
         String city = parts.length > 3 && !"0".equals(parts[3]) ? parts[3] : "";
-        
+
         // 如果省份为空，尝试使用国家
         if (province.isEmpty()) {
             province = country;
         }
-        
+
         // 如果城市为空，使用省份
         if (city.isEmpty()) {
             city = province;
         }
-        
+
         return new GeoInfo(country, province, city);
     }
 
     /**
      * 地理位置信息
      */
+    @Getter
+    @RequiredArgsConstructor
     public static class GeoInfo {
         private final String country;
         private final String province;
         private final String city;
-
-        public GeoInfo(String country, String province, String city) {
-            this.country = country;
-            this.province = province;
-            this.city = city;
-        }
-
-        public String getCountry() {
-            return country;
-        }
-
-        public String getProvince() {
-            return province;
-        }
-
-        public String getCity() {
-            return city;
-        }
 
         /**
          * 获取用于统计的地区名称（优先显示省份）

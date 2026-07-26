@@ -11,7 +11,7 @@ export const useAppSchemeEditCommand = ({
   onPreviewChange,
 }: UseAppSchemeEditCommandInput) => {
   const handleSchemeEdit = useCallback((jsonPath: string, newValue: string, pointer?: string) => {
-    runAppSchemeEditCommand({ previewText, jsonPath, newValue, pointer, onPreviewChange });
+    void runAppSchemeEditCommand({ previewText, jsonPath, newValue, pointer, onPreviewChange });
   }, [onPreviewChange, previewText]);
 
   return { handleSchemeEdit };

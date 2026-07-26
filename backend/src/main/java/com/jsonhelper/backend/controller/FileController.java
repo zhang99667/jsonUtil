@@ -1,5 +1,7 @@
 package com.jsonhelper.backend.controller;
 
+import com.jsonhelper.backend.dto.response.FileItemDTO;
+import com.jsonhelper.backend.dto.response.FileListDTO;
 import com.jsonhelper.backend.dto.response.Result;
 import com.jsonhelper.backend.entity.UploadFile;
 import com.jsonhelper.backend.service.FileService;
@@ -17,16 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-/**
- * 文件管理控制器
- * 提供文件列表查询、预览、上传、下载和删除接口
- */
 @RestController
 @RequestMapping("/api/admin/files")
 @RequiredArgsConstructor
@@ -34,38 +27,21 @@ public class FileController {
 
     private final FileService fileService;
 
-    /** 日期格式化器，用于将 LocalDateTime 格式化为前端期望的字符串 */
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    /**
-     * 获取文件列表（分页 + 搜索）
-     * 前端传入的页码从 1 开始，需要转换为 Spring 使用的从 0 开始页码
-     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Map<String, Object>> listFiles(
+    public Result<FileListDTO> listFiles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) String keyword) {
 
-        // 前端页码从1开始，Spring Data 从0开始
+        // 前端页码从 1 开始，Spring Data 页码从 0 开始。
         Page<UploadFile> filePage = fileService.listFiles(page - 1, pageSize, keyword);
-
-        // 转换为前端期望的 FileItem 格式
-        List<Map<String, Object>> list = filePage.getContent().stream()
-                .map(this::toFileItemMap)
-                .collect(Collectors.toList());
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("list", list);
-        result.put("total", filePage.getTotalElements());
-
-        return Result.success(result);
+        return Result.success(new FileListDTO(
+                filePage.getContent().stream().map(FileItemDTO::from).toList(),
+                filePage.getTotalElements()
+        ));
     }
 
-    /**
-     * 获取文件内容（用于预览）
-     */
     @GetMapping("/{id}/content")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<String> getFileContent(@PathVariable Long id) {
@@ -73,9 +49,6 @@ public class FileController {
         return Result.success(content);
     }
 
-    /**
-     * 下载文件
-     */
     @GetMapping("/{id}/download")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long id) {
@@ -93,24 +66,18 @@ public class FileController {
                 .body(download.resource());
     }
 
-    /**
-     * 上传文件
-     */
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Map<String, Object>> uploadFile(
+    public Result<FileItemDTO> uploadFile(
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
 
         String uploader = authentication.getName();
         UploadFile savedFile = fileService.saveFile(file, uploader);
 
-        return Result.success(toFileItemMap(savedFile));
+        return Result.success(FileItemDTO.from(savedFile));
     }
 
-    /**
-     * 删除文件
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> deleteFile(@PathVariable Long id) {
@@ -118,18 +85,4 @@ public class FileController {
         return Result.success();
     }
 
-    /**
-     * 将 UploadFile 实体转换为前端期望的 FileItem Map
-     * 字段映射: createdAt -> uploadTime
-     */
-    private Map<String, Object> toFileItemMap(UploadFile file) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", file.getId());
-        map.put("fileName", file.getFileName());
-        map.put("fileSize", file.getFileSize());
-        map.put("fileType", file.getFileType());
-        map.put("uploadTime", file.getCreatedAt() != null ? file.getCreatedAt().format(DATE_FORMATTER) : "");
-        map.put("uploader", file.getUploader());
-        return map;
-    }
 }

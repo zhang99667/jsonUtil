@@ -1,3 +1,5 @@
+import Ajv, { type AnySchema } from 'ajv';
+import { parseJsonValue } from './jsonValueGuards';
 import { isFiniteNumber, isRecord } from './storage';
 
 export const APP_BACKUP_APP_ID = 'jsonutils-pro';
@@ -30,69 +32,66 @@ const KNOWN_PANEL_KEYS = [
   'template-fill-panel',
 ] as const;
 
-const hasValidPanelLayout = (value: unknown): value is Record<string, unknown> => {
-  if (!isRecord(value)) return false;
+const RECORD_SCHEMA: AnySchema = { type: 'object' };
+const ARRAY_SCHEMA: AnySchema = { type: 'array' };
+const createObjectSchema = (
+  required: string[],
+  properties: Record<string, AnySchema>
+): AnySchema => ({ type: 'object', required, properties });
+const createNumberRecordSchema = (keys: string[]): AnySchema => createObjectSchema(
+  keys,
+  Object.fromEntries(keys.map(key => [key, { type: 'number' }]))
+);
 
-  return KNOWN_PANEL_KEYS.every(key => {
-    if (!Object.hasOwn(value, key)) return true;
-    const item = value[key];
-    return isRecord(item)
-      && (!Object.hasOwn(item, 'position') || isPanelPosition(item.position))
-      && (!Object.hasOwn(item, 'size') || isPanelSize(item.size));
-  });
+const PANEL_LAYOUT_ITEM_SCHEMA = {
+  type: 'object',
+  properties: {
+    position: createNumberRecordSchema(['x', 'y']),
+    size: createNumberRecordSchema(['width', 'height']),
+  },
 };
 
-const hasCoreV1Fields = (payload: Record<string, unknown>): boolean => {
-  const settings = payload.settings;
-  const jsonPath = payload.jsonPath;
-  const templateFill = payload.templateFill;
-
-  return typeof payload.exportedAt === 'string'
-    && isRecord(settings)
-    && isRecord(settings.general)
-    && isRecord(settings.ai)
-    && isRecord(settings.shortcuts)
-    && isRecord(jsonPath)
-    && Array.isArray(jsonPath.history)
-    && Array.isArray(jsonPath.favorites)
-    && isRecord(templateFill)
-    && typeof templateFill.template === 'string'
-    && isFiniteNumber(templateFill.lastUpdated)
-    && hasValidPanelLayout(payload.panelLayout);
+const APP_BACKUP_V1_SCHEMA: AnySchema = {
+  type: 'object',
+  required: ['exportedAt', 'settings', 'jsonPath', 'templateFill', 'panelLayout'],
+  properties: {
+    exportedAt: { type: 'string' },
+    settings: createObjectSchema(
+      ['general', 'ai', 'shortcuts'],
+      { general: RECORD_SCHEMA, ai: RECORD_SCHEMA, shortcuts: RECORD_SCHEMA }
+    ),
+    jsonPath: createObjectSchema(
+      ['history', 'favorites'],
+      { history: ARRAY_SCHEMA, favorites: ARRAY_SCHEMA }
+    ),
+    jsonSchema: createObjectSchema(['library'], { library: ARRAY_SCHEMA }),
+    structureNav: createObjectSchema(['searchHistory'], { searchHistory: ARRAY_SCHEMA }),
+    templateFill: createObjectSchema(
+      ['template', 'lastUpdated'],
+      { template: { type: 'string' }, lastUpdated: { type: 'number' } }
+    ),
+    panelLayout: {
+      type: 'object',
+      properties: Object.fromEntries(KNOWN_PANEL_KEYS.map(key => [key, PANEL_LAYOUT_ITEM_SCHEMA])),
+    },
+  },
+  if: { required: ['structureNav'] },
+  then: { required: ['jsonSchema'] },
 };
 
-const resolveCapabilities = (
-  payload: Record<string, unknown>
-): AppBackupFormatCapabilities => {
-  const jsonSchema = Object.hasOwn(payload, 'jsonSchema');
-  const structureNav = Object.hasOwn(payload, 'structureNav');
+const validateAppBackupV1 = new Ajv({ strict: false })
+  .compile<Record<string, unknown>>(APP_BACKUP_V1_SCHEMA);
 
-  if (structureNav && !jsonSchema) {
-    throw new Error('备份文件缺少必要配置');
-  }
-
-  if (jsonSchema) {
-    const section = payload.jsonSchema;
-    if (!isRecord(section) || !Array.isArray(section.library)) {
-      throw new Error('备份文件缺少必要配置');
-    }
-  }
-
-  if (structureNav) {
-    const section = payload.structureNav;
-    if (!isRecord(section) || !Array.isArray(section.searchHistory)) {
-      throw new Error('备份文件缺少必要配置');
-    }
-  }
-
-  return { jsonSchema, structureNav };
-};
+const resolveCapabilities = (payload: Record<string, unknown>): AppBackupFormatCapabilities => ({
+  jsonSchema: Object.hasOwn(payload, 'jsonSchema'),
+  structureNav: Object.hasOwn(payload, 'structureNav'),
+});
 
 export const parseAppBackupPayload = (content: string): ParsedAppBackupPayload => {
   let parsed: unknown;
 
   try {
-    parsed = JSON.parse(content);
+    parsed = parseJsonValue(content);
   } catch {
     throw new Error('备份文件不是合法 JSON');
   }
@@ -101,7 +100,7 @@ export const parseAppBackupPayload = (content: string): ParsedAppBackupPayload =
     throw new Error('备份文件不是 JSONUtils 配置备份');
   }
 
-  if (!hasCoreV1Fields(parsed)) {
+  if (!validateAppBackupV1(parsed)) {
     throw new Error('备份文件缺少必要配置');
   }
 

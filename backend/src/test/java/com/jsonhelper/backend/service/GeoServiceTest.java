@@ -1,10 +1,12 @@
 package com.jsonhelper.backend.service;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class GeoServiceTest {
 
@@ -39,5 +41,14 @@ class GeoServiceTest {
     })
     void publicAndInvalidAddressesAreNotClassifiedAsInternal(String ip) {
         assertEquals("未知", geoService.parseIp(ip).getRegionForStats());
+    }
+
+    @Test
+    void destroyReleasesSearcherAndRemainsIdempotent() {
+        geoService.init();
+        assertNotEquals("未知", geoService.parseIp("8.8.8.8").getRegionForStats());
+        geoService.destroy();
+        geoService.destroy();
+        assertEquals("未知", geoService.parseIp("8.8.8.8").getRegionForStats());
     }
 }

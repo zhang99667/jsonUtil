@@ -268,18 +268,18 @@ describe('jsonTreeModel', () => {
     ));
 
     expect(formatJsonTreeSearchResultsMarkdownText(matchedNodes)).toBe([
-      '| Path | Pointer | Kind | Children | Preview |',
+      '| 路径 | JSON 指针 | 类型 | 子节点数 | 预览 |',
       '| --- | --- | --- | ---: | --- |',
-      '| $.user["trace.id"] | /user/trace.id | string | 0 | "trace-001" |',
-      '| $.user.note | /user/note | string | 0 | "A\\|B\\\\\\\\C" |',
+      '| $.user["trace.id"] | /user/trace.id | 字符串 | 0 | "trace-001" |',
+      '| $.user.note | /user/note | 字符串 | 0 | "A\\|B\\\\\\\\C" |',
     ].join('\n'));
     expect(formatJsonTreeSearchResultsMarkdownText([model.nodes[0]])).toBe([
-      '| Path | Pointer | Kind | Children | Preview |',
+      '| 路径 | JSON 指针 | 类型 | 子节点数 | 预览 |',
       '| --- | --- | --- | ---: | --- |',
-      '| $ | (root) | object | 1 | 对象 1 个键 |',
+      '| $ | 根节点 | 对象 | 1 | 对象 1 个键 |',
     ].join('\n'));
     expect(formatJsonTreeSearchResultsMarkdownText([])).toBe([
-      '| Path | Pointer | Kind | Children | Preview |',
+      '| 路径 | JSON 指针 | 类型 | 子节点数 | 预览 |',
       '| --- | --- | --- | ---: | --- |',
     ].join('\n'));
   });

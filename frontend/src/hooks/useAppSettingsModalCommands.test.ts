@@ -18,18 +18,18 @@ describe('useAppSettingsModalCommands', () => {
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
   });
 
-  it('打开设置面板时切到快捷键页并记录事件', () => {
+  it('打开设置面板时切到通用设置页并记录事件', () => {
     const setIsSettingsModalOpen = vi.fn();
     const setSettingsInitialTab = vi.fn();
     const onTrackToolEvent = vi.fn();
     reactMocks.useState
       .mockReturnValueOnce([false, setIsSettingsModalOpen])
-      .mockReturnValueOnce(['shortcuts', setSettingsInitialTab]);
+      .mockReturnValueOnce(['general', setSettingsInitialTab]);
 
     const commands = useAppSettingsModalCommands({ onTrackToolEvent });
     commands.handleOpenSettingsPanel();
 
-    expect(setSettingsInitialTab).toHaveBeenCalledWith('shortcuts');
+    expect(setSettingsInitialTab).toHaveBeenCalledWith('general');
     expect(setIsSettingsModalOpen).toHaveBeenCalledWith(true);
     expect(onTrackToolEvent).toHaveBeenCalledWith('SETTINGS_OPEN', 'panel');
   });
@@ -40,7 +40,7 @@ describe('useAppSettingsModalCommands', () => {
     const onTrackToolEvent = vi.fn();
     reactMocks.useState
       .mockReturnValueOnce([false, setIsSettingsModalOpen])
-      .mockReturnValueOnce(['shortcuts', setSettingsInitialTab]);
+      .mockReturnValueOnce(['general', setSettingsInitialTab]);
 
     const commands = useAppSettingsModalCommands({ onTrackToolEvent });
     commands.handleOpenAiSettings();

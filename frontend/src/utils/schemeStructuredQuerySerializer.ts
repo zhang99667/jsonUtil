@@ -12,28 +12,39 @@ const appendStructuredQueryValue = (
   key: string,
   value: unknown,
   style: StructuredQueryRootStyle
-) => {
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      const childKey = style.useEmptyArray && !isPlainObject(item) && !Array.isArray(item)
-        ? `${key}[]`
-        : `${key}[${index}]`;
-      appendStructuredQueryValue(params, childKey, item, style);
-    });
-    return;
-  }
+): void => {
+  const pending: Array<{ key: string; value: unknown }> = [{ key, value }];
 
-  if (isPlainObject(value)) {
-    Object.entries(value).forEach(([childKey, childValue]) => {
-      const nextKey = style.objectStyle === 'dot'
-        ? `${key}.${childKey}`
-        : `${key}[${childKey}]`;
-      appendStructuredQueryValue(params, nextKey, childValue, style);
-    });
-    return;
-  }
+  while (pending.length > 0) {
+    const task = pending.pop();
+    if (!task) continue;
 
-  params.append(key, stringifyParamValue(value));
+    if (Array.isArray(task.value)) {
+      for (let index = task.value.length - 1; index >= 0; index -= 1) {
+        if (!Object.hasOwn(task.value, index)) continue;
+        const item = task.value[index];
+        const childKey = style.useEmptyArray && !isPlainObject(item) && !Array.isArray(item)
+          ? `${task.key}[]`
+          : `${task.key}[${index}]`;
+        pending.push({ key: childKey, value: item });
+      }
+      continue;
+    }
+
+    if (isPlainObject(task.value)) {
+      const entries = Object.entries(task.value);
+      for (let index = entries.length - 1; index >= 0; index -= 1) {
+        const [childKey, childValue] = entries[index];
+        const nextKey = style.objectStyle === 'dot'
+          ? `${task.key}.${childKey}`
+          : `${task.key}[${childKey}]`;
+        pending.push({ key: nextKey, value: childValue });
+      }
+      continue;
+    }
+
+    params.append(task.key, stringifyParamValue(task.value));
+  }
 };
 
 export const buildQueryStringFromObject = (

@@ -42,9 +42,7 @@ class UserServiceUsernameConflictTest {
 
     @Test
     void createPreservesUsernameConstraintConflict() {
-        RegisterRequest request = new RegisterRequest();
-        request.setUsername("race-user");
-        request.setPassword("secret");
+        RegisterRequest request = new RegisterRequest("race-user", "secret", null);
         DataIntegrityViolationException conflict = usernameConflict();
         when(userRepository.existsByUsername("race-user")).thenReturn(false);
         when(passwordEncoder.encode("secret")).thenReturn("密码摘要");
@@ -57,8 +55,7 @@ class UserServiceUsernameConflictTest {
         User user = new User();
         user.setId(1L);
         user.setUsername("old");
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setUsername("race-user");
+        UpdateUserRequest request = new UpdateUserRequest("race-user", null, null, null, null);
         DataIntegrityViolationException conflict = usernameConflict();
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findByUsername("race-user")).thenReturn(Optional.empty());

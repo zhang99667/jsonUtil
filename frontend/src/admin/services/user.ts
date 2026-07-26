@@ -1,20 +1,16 @@
 import request from './request';
 
-/**
- * 用户数据接口
- */
+export type UserRole = 'USER' | 'ADMIN';
+
 export interface UserRecord {
     id: number;
     username: string;
     email: string | null;
-    role: string;
+    role: UserRole;
     enabled: boolean;
-    createdAt: string;
+    createdAt: string | null;
 }
 
-/**
- * 分页响应接口
- */
 export interface PageResult<T> {
     content: T[];
     totalElements: number;
@@ -23,29 +19,20 @@ export interface PageResult<T> {
     size: number;
 }
 
-/**
- * 添加用户参数
- */
 export interface AddUserParams {
     username: string;
     password: string;
-    role: string;
+    role: UserRole;
 }
 
-/**
- * 更新用户参数
- */
 export interface UpdateUserParams {
     username?: string;
     email?: string;
     password?: string;
-    role?: string;
+    role?: UserRole;
     enabled?: boolean;
 }
 
-/**
- * 添加用户
- */
 export const addUser = async (data: AddUserParams) => {
     return request.post('/admin/users/add', data);
 };
@@ -64,16 +51,10 @@ export const getUserList = async (page: number, size: number, keyword?: string):
     return request.get('/admin/users', { params });
 };
 
-/**
- * 更新用户信息
- */
 export const updateUser = async (id: number, data: UpdateUserParams) => {
     return request.put(`/admin/users/${id}`, data);
 };
 
-/**
- * 删除用户
- */
 export const deleteUser = async (id: number) => {
     return request.delete(`/admin/users/${id}`);
 };

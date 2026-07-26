@@ -1,5 +1,6 @@
 package com.jsonhelper.backend.service;
 
+import com.jsonhelper.backend.config.FileProperties;
 import com.jsonhelper.backend.entity.UploadFile;
 import com.jsonhelper.backend.repository.UploadFileRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,9 +46,10 @@ class FileServicePreviewReadTest {
 
     @BeforeEach
     void setUp() {
-        fileService = new FileService(uploadFileRepository);
-        ReflectionTestUtils.setField(fileService, "uploadDir", uploadDir.toString());
-        ReflectionTestUtils.setField(fileService, "maxPreviewSize", 10L);
+        fileService = new FileService(
+                uploadFileRepository,
+                new FileProperties(uploadDir.toString(), 20L, 10L, ".json")
+        );
         ReflectionTestUtils.setField(fileService, "uploadPaths", uploadPaths);
     }
 
@@ -96,7 +98,10 @@ class FileServicePreviewReadTest {
     @ParameterizedTest
     @ValueSource(longs = {-1L, 2147483647L})
     void initRejectsPreviewLimitOutsideJdkReadRange(long invalidLimit) {
-        ReflectionTestUtils.setField(fileService, "maxPreviewSize", invalidLimit);
+        fileService = new FileService(
+                uploadFileRepository,
+                new FileProperties(uploadDir.toString(), 20L, invalidLimit, ".json")
+        );
 
         IllegalStateException error = assertThrows(IllegalStateException.class, fileService::init);
 

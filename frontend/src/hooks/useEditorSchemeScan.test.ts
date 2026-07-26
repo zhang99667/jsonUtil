@@ -170,6 +170,22 @@ describe('useEditorSchemeScan', () => {
     });
   });
 
+  it('同步扫描异常时提交可见失败终态', () => {
+    scanMocks.scanSchemesInJson.mockImplementation(() => {
+      throw new RangeError('输入结构过深');
+    });
+    const harness = useEditorSchemeScanForTest();
+
+    harness.effects[0]();
+    vi.advanceTimersByTime(500);
+
+    expect(harness.setScanState).toHaveBeenCalledWith({
+      source: CURRENT_VALUE,
+      locations: [],
+      warning: FAILURE_WARNING,
+    });
+  });
+
   it.each(['构造', '发送'] as const)('Worker %s异常时进入当前输入的受控空终态', failureType => {
     const worker = createFakeWorker();
     if (failureType === '发送') {

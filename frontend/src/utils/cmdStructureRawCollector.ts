@@ -6,6 +6,13 @@ import {
   type RawCmdCandidate,
 } from './cmdStructureRawCandidates';
 
+interface RawCmdCollectionTask {
+  value: JsonValue;
+  key: string;
+  depth: number;
+  path: string;
+}
+
 export const collectRawCmdCandidates = (
   value: JsonValue,
   candidates: RawCmdCandidate[],
@@ -13,34 +20,52 @@ export const collectRawCmdCandidates = (
   depth = 0,
   orderRef = { value: 0 },
   path = '$'
-) => {
-  if (typeof value === 'string') {
-    appendRawCmdStringCandidate(value, candidates, key, depth, orderRef, path);
-    return;
+): void => {
+  const tasks: RawCmdCollectionTask[] = [{ value, key, depth, path }];
+
+  while (tasks.length > 0) {
+    const task = tasks.pop();
+    if (!task) break;
+
+    if (typeof task.value === 'string') {
+      appendRawCmdStringCandidate(
+        task.value,
+        candidates,
+        task.key,
+        task.depth,
+        orderRef,
+        task.path
+      );
+      continue;
+    }
+
+    if (Array.isArray(task.value)) {
+      // 子项逆序入栈，保持原有从左到右的深度优先收集顺序。
+      for (let index = task.value.length - 1; index >= 0; index -= 1) {
+        if (!(index in task.value)) continue;
+        tasks.push({
+          value: task.value[index],
+          key: task.key,
+          depth: task.depth + 1,
+          path: `${task.path}[${index}]`,
+        });
+      }
+      continue;
+    }
+
+    if (!isRawCmdCandidateRecord(task.value)) continue;
+
+    const entries = Object.entries(task.value);
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const entry = entries[index];
+      if (!entry) continue;
+      const [childKey, item] = entry;
+      tasks.push({
+        value: item,
+        key: childKey,
+        depth: task.depth + 1,
+        path: appendCmdStructureCandidatePathKey(task.path, childKey),
+      });
+    }
   }
-
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectRawCmdCandidates(
-      item,
-      candidates,
-      key,
-      depth + 1,
-      orderRef,
-      `${path}[${index}]`
-    ));
-    return;
-  }
-
-  if (!isRawCmdCandidateRecord(value)) return;
-
-  Object.entries(value).forEach(([childKey, item]) => {
-    collectRawCmdCandidates(
-      item,
-      candidates,
-      childKey,
-      depth + 1,
-      orderRef,
-      appendCmdStructureCandidatePathKey(path, childKey)
-    );
-  });
 };

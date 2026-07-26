@@ -135,6 +135,13 @@ describe('jsonValueSemantics', () => {
         detail: 'banner.jpg',
       },
     ]);
+    expect(getJsonStringSemanticHints('https://static.example.com/BANNER.PNG?width=100')).toEqual(expect.arrayContaining([
+      {
+        kind: 'resource-image',
+        label: '图片资源',
+        detail: 'BANNER.PNG',
+      },
+    ]));
     expect(getJsonStringSemanticHints('https://static.example.com/ad.mp4', { path: '$.video_url', keyLabel: 'video_url' })).toEqual(expect.arrayContaining([
       {
         kind: 'resource-video',
@@ -234,6 +241,11 @@ describe('jsonValueSemantics', () => {
         detail: '文本 44 字符',
       },
     ]);
+    expect(getJsonStringSemanticHints(base64Encode('{"value":1e400}'))).toEqual([{
+      kind: 'base64',
+      label: 'Base64',
+      detail: '文本 15 字符',
+    }]);
   });
 
   it('忽略非字符串、空字符串和非法日期', () => {

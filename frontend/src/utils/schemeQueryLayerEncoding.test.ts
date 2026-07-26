@@ -110,4 +110,14 @@ describe('schemeQueryLayerEncoding', () => {
       encodeWithLayers
     )).toBeNull();
   });
+
+  it('包含非有限数值的对象不参与 query-string 回写', () => {
+    expect(encodeQueryStringLayerContent(
+      '{"value":1e400}',
+      'value=old',
+      getPrefixedQueryString,
+      createOptions(),
+      encodeWithLayers
+    )).toBeNull();
+  });
 });

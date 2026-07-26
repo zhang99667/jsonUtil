@@ -8,6 +8,12 @@ import type { CmdStructureCandidateInput } from './cmdStructureCandidateTypes';
 
 export type { CmdStructureCandidateInput } from './cmdStructureCandidateTypes';
 
+interface DecodedCmdCandidateTask {
+  value: JsonValue;
+  path: string;
+  sourceLabel?: string;
+}
+
 const appendCmdStructureCandidate = (
   candidates: CmdStructureCandidateInput[],
   seenIds: Set<string>,
@@ -26,36 +32,43 @@ export const collectDecodedCmdStructureCandidates = (
   seenIds: Set<string>,
   sourceLabel?: string
 ) => {
-  const cmdStructureActual = getCmdStructureCandidateActual(value);
-  if (cmdStructureActual) {
-    appendCmdStructureCandidate(candidates, seenIds, {
-      id: path,
-      label: path,
-      sourceLabel,
-      commandSchema: typeof cmdStructureActual.cmdSchema === 'string' ? cmdStructureActual.cmdSchema : undefined,
-      actual: cmdStructureActual,
-    });
+  const tasks: DecodedCmdCandidateTask[] = [{ value, path, sourceLabel }];
+
+  while (tasks.length > 0) {
+    const task = tasks.pop();
+    if (!task) break;
+
+    const cmdStructureActual = getCmdStructureCandidateActual(task.value);
+    if (cmdStructureActual) {
+      appendCmdStructureCandidate(candidates, seenIds, {
+        id: task.path,
+        label: task.path,
+        sourceLabel: task.sourceLabel,
+        commandSchema: typeof cmdStructureActual.cmdSchema === 'string'
+          ? cmdStructureActual.cmdSchema
+          : undefined,
+        actual: cmdStructureActual,
+      });
+    }
+
+    if (Array.isArray(task.value)) {
+      for (let index = task.value.length - 1; index >= 0; index -= 1) {
+        if (!(index in task.value)) continue;
+        tasks.push({ value: task.value[index], path: `${task.path}[${index}]` });
+      }
+      continue;
+    }
+
+    if (!isCmdStructureCandidateObject(task.value)) continue;
+
+    const entries = Object.entries(task.value);
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const [childKey, item] = entries[index];
+      tasks.push({
+        value: item,
+        path: appendCmdStructureCandidatePathKey(task.path, childKey),
+        sourceLabel: childKey,
+      });
+    }
   }
-
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectDecodedCmdStructureCandidates(
-      item,
-      `${path}[${index}]`,
-      candidates,
-      seenIds
-    ));
-    return;
-  }
-
-  if (!isCmdStructureCandidateObject(value)) return;
-
-  Object.entries(value).forEach(([childKey, item]) => {
-    collectDecodedCmdStructureCandidates(
-      item,
-      appendCmdStructureCandidatePathKey(path, childKey),
-      candidates,
-      seenIds,
-      childKey
-    );
-  });
 };

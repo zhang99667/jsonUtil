@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDocumentStats } from './documentStats';
+import { formatDocumentSize, getDocumentStats } from './documentStats';
 
 describe('getDocumentStats', () => {
   it('空内容按单行统计', () => {
@@ -61,5 +61,9 @@ describe('getDocumentStats', () => {
       maxColumns: 4,
       isLimited: true,
     });
+  });
+
+  it('统一格式化字符数和 UTF-8 大小', () => {
+    expect(formatDocumentSize('中🙂')).toBe('3 字符 / 7 B');
   });
 });

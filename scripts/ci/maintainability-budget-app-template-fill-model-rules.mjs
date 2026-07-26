@@ -2,8 +2,8 @@ const appTemplateFillModelBudget = (file, maxLines, reason) => ({ file, maxLines
 
 export const appTemplateFillModelMaintainabilityBudgets = [
   appTemplateFillModelBudget('frontend/src/utils/templateFillPanelModel.ts', 35, '模板填充面板模型门面只维护严格 JSON 校验、模板大小文案和占位符回填模型兼容导出'),
-  appTemplateFillModelBudget('frontend/src/utils/jsonTemplate.ts', 120, 'JSON 模板应用只维护对象深度合并、占位符回填和字符串入口'),
-  appTemplateFillModelBudget('frontend/src/utils/jsonTemplate.test.ts', 130, 'JSON 模板测试只锁定合并规则、占位符回填与输入错误语义'),
+  appTemplateFillModelBudget('frontend/src/utils/jsonTemplate.ts', 150, 'JSON 模板应用只维护迭代式对象合并、迭代式占位符回填和字符串入口'),
+  appTemplateFillModelBudget('frontend/src/utils/jsonTemplate.test.ts', 180, 'JSON 模板测试只锁定合并规则、特殊键、深层对象、占位符回填与输入错误语义'),
   appTemplateFillModelBudget('frontend/src/utils/placeholderFillTemplateContract.ts', 45, '模板填充占位符回填模板契约只维护模板 kind 常量、草稿摘要、来源、候选和详情类型'),
   appTemplateFillModelBudget('frontend/src/utils/placeholderFillTemplateRecord.ts', 15, '模板填充占位符回填 record guard 只维护 JSON 对象窄化判断'),
   appTemplateFillModelBudget('frontend/src/utils/placeholderFillTemplateFieldReaders.ts', 70, '模板填充占位符回填字段 readers 只维护字符串、候选和来源字段的容错读取'),

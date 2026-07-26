@@ -1,12 +1,17 @@
 import { useEffect } from 'react';
-import type { Driver } from 'driver.js';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { loadDriverTour } from '../utils/driverTourLoader';
-import { safeReadStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
+import {
+    driverTourRuntime,
+    type DriverTourRun,
+} from '../utils/driverTourRuntime';
+import {
+    safeReadStorageItem,
+    safeSetStorageItem,
+} from '../utils/storage';
 
 export const useOnboardingTour = () => {
     useEffect(() => {
-        // 检查用户是否已完成引导
         const onboardingStatus = safeReadStorageItem('json-helper-onboarding-completed');
 
         // 本地存储被浏览器阻止时跳过自动引导，避免每次启动都弹出且无法记住关闭状态。
@@ -14,149 +19,63 @@ export const useOnboardingTour = () => {
             return;
         }
 
-        let driverObj: Driver | null = null;
         let disposed = false;
-
-        // 延迟启动引导，确保 DOM 已完全加载
-        const timer = setTimeout(async () => {
-            let createDriver: Awaited<ReturnType<typeof loadDriverTour>>;
-            try {
-                createDriver = await loadDriverTour();
-            } catch (error) {
+        const run: DriverTourRun = driverTourRuntime.begin({
+            onDestroyError: error => {
+                if (!disposed) console.warn('清理新手引导实例失败:', error);
+            },
+            onDriveError: error => {
                 if (dispatchChunkLoadRecoveryEvent(error)) return;
+                console.warn('启动新手引导失败:', error);
+            },
+        });
 
-                console.warn('加载新手引导组件失败:', error);
-                return;
-            }
+        // 延迟到主界面完成首轮渲染后再筛选可见目标。
+        const timer = setTimeout(async () => {
+            if (!run.isCurrent()) return;
+            try {
+                const [createDriver, { ONBOARDING_TOUR_STEPS }] = await Promise.all([
+                    loadDriverTour(),
+                    import('../utils/onboardingTourSteps'),
+                ]);
+                if (!run.isCurrent()) return;
 
-            if (disposed) return;
+                // 引导组件会把缺失目标降级为页面中央虚拟元素，启动前过滤可避免误导用户。
+                const availableSteps = ONBOARDING_TOUR_STEPS.filter(step => (
+                    step.element === 'body'
+                    || typeof step.element !== 'string'
+                    || document.querySelector(step.element) !== null
+                ));
 
-            driverObj = createDriver({
-                showProgress: true,
-                showButtons: ['next', 'previous', 'close'],
-                // 使用驱动器自带的平滑滚动，避免手动滚动导致的高亮错位
-                smoothScroll: true,
-                // 小控件引导不再贴着按钮画大框，减少“被选中”的压迫感
-                stagePadding: 4,
-                stageRadius: 7,
-                // 自定义样式类
-                popoverClass: 'json-helper-tour-popover',
-                steps: [
-                    {
-                        element: 'body',
-                        popover: {
-                            title: '欢迎使用 JSON 助手 👋',
-                            description: '让我们快速了解一下主要功能，帮助您更高效地处理 JSON 数据。',
-                            side: 'over',
-                            align: 'center'
-                        }
-                    },
-                    {
-                        element: '[data-tour="source-editor"]',
-                        popover: {
-                            title: '源编辑器 📝',
-                            description: '在此输入或粘贴需要处理的 JSON 数据。支持语法高亮和错误提示。',
-                            side: 'right',
-                            align: 'center'
-                        }
-                    },
-                    {
-                        element: '[data-tour="preview-editor"]',
-                        popover: {
-                            title: '预览与结果',
-                            description: '实时显示处理后的结果。支持只读预览和编辑模式。',
-                            side: 'left',
-                            align: 'center'
-                        }
-                    },
-                    {
-                        element: '[data-tour="toolbar"]',
-                        popover: {
-                            title: '功能工具栏',
-                            description: '集成了格式化、转义、编码转换、智能修复等核心工具。点击对应按钮即可使用。',
-                            side: 'right',
-                            align: 'start'
-                        }
-                    },
-                    {
-                        element: '[data-tour="statusbar"]',
-                        popover: {
-                            title: '状态信息栏',
-                            description: '显示文件编码、长度、行列信息及当前文件路径。',
-                            side: 'top',
-                            align: 'center'
-                        }
-                    },
-                    {
-                        element: '[data-tour="source-editor"] [data-tour="auto-save"]',
-                        popover: {
-                            title: '自动保存',
-                            description: '打开文件后可启用自动保存功能，确保您的修改不会丢失。',
-                            side: 'bottom',
-                            align: 'start'
-                        }
-                    },
-                    {
-                        element: '[data-tour="source-editor"] [data-tour="editor-tabs"]',
-                        popover: {
-                            title: '多标签页管理',
-                            description: '支持同时打开多个文件进行处理。点击标签切换，点击 + 号新建。',
-                            side: 'bottom',
-                            align: 'start'
-                        }
-                    },
-                    {
-                        element: '[data-tour="preview-editor"] [data-tour="editor-lock"]',
-                        popover: {
-                            title: '编辑锁定',
-                            description: '锁定编辑器以防止意外修改，点击可切换锁定/编辑状态。',
-                            side: 'bottom',
-                            align: 'end'
-                        }
-                    },
-                    {
-                        element: '[data-tour="source-editor"] [data-tour="editor-wrap"]',
-                        popover: {
-                            title: '自动换行',
-                            description: '切换代码的自动换行显示模式，方便查看长文本。',
-                            side: 'bottom',
-                            align: 'end'
-                        }
-                    },
-                    {
-                        element: '[data-tour="statusbar-view"]',
-                        popover: {
-                            title: '当前视图模式',
-                            description: '显示当前的数据转换视图，例如：格式化、压缩、转义等。',
-                            side: 'top',
-                            align: 'end'
-                        }
+                const driver = createDriver({
+                    showProgress: true,
+                    showButtons: ['next', 'previous', 'close'],
+                    smoothScroll: true,
+                    stagePadding: 4,
+                    stageRadius: 7,
+                    popoverClass: 'json-helper-tour-popover',
+                    steps: availableSteps,
+                    onDestroyStarted: () => {
+                        // 只有用户完成或跳过引导时才记录完成状态，组件卸载不触发该回调。
+                        run.complete(() => {
+                            safeSetStorageItem('json-helper-onboarding-completed', 'true');
+                        });
                     }
-                ],
-                onDestroyStarted: () => {
-                    // 用户完成或跳过引导时，标记为已完成
-                    safeSetStorageItem('json-helper-onboarding-completed', 'true');
-                    driverObj?.destroy();
-                    driverObj = null;
-                }
-            });
-
-            driverObj.drive();
-        }, 1000); // 延迟 1 秒启动
+                });
+                if (!run.adopt(driver)) return;
+                run.drive();
+            } catch (error) {
+                if (!run.isCurrent()) return;
+                run.cancel();
+                if (dispatchChunkLoadRecoveryEvent(error)) return;
+                console.warn('启动新手引导失败:', error);
+            }
+        }, 1000);
 
         return () => {
             disposed = true;
             clearTimeout(timer);
-            driverObj?.destroy();
-            driverObj = null;
+            run.cancel();
         };
     }, []);
-
-    // 提供手动重启引导的方法
-    const restartTour = () => {
-        safeRemoveStorageItem('json-helper-onboarding-completed');
-        window.location.reload();
-    };
-
-    return { restartTour };
 };

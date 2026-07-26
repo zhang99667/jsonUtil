@@ -55,6 +55,18 @@ describe('ErrorBoundary', () => {
     expect(text).not.toContain('/assets/SchemeViewerModal-old.js');
   });
 
+  it('错误消息属性异常时仍能渲染兜底页', () => {
+    const error = new Error('不可见');
+    Object.defineProperty(error, 'message', {
+      get: () => { throw new Error('读取失败'); },
+    });
+    const boundary = createErrorBoundary('正常内容');
+    boundary.state = ErrorBoundary.getDerivedStateFromError(error);
+
+    expect(() => boundary.render()).not.toThrow();
+    expect(collectText(boundary.render())).toContain('应用遇到了一个意外错误');
+  });
+
   it('刷新恢复前先执行草稿保存回调', () => {
     const onBeforeReload = vi.fn();
     const reload = vi.fn();

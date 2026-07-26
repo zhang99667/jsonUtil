@@ -33,13 +33,16 @@ const createFile = (handle?: FileSystemFileHandle): FileTab => ({
 });
 
 describe('useFileAutoSave', () => {
-  let previousDependencies: readonly unknown[] | undefined;
-  let cleanup: (() => void) | undefined;
+  let previousDependencies: Array<readonly unknown[] | undefined>;
+  let cleanups: Array<(() => void) | undefined>;
+  let effectIndex: number;
   let memoizedCallback: (() => void) | undefined;
-  let timerRef: { current: ReturnType<typeof setTimeout> | null };
+  let refs: Array<{ current: unknown }>;
+  let refIndex: number;
   let setFiles: ReturnType<typeof vi.fn>;
-
   const useAutoSaveScenario = (activeFile: FileTab | undefined, input: string, isEnabled = true) => {
+    effectIndex = 0;
+    refIndex = 0;
     return useFileAutoSave({
       activeFile,
       input,
@@ -47,36 +50,48 @@ describe('useFileAutoSave', () => {
       setFiles: setFiles as Parameters<typeof useFileAutoSave>[0]['setFiles'],
     });
   };
-
+  const unmount = () => cleanups.splice(0).forEach(currentCleanup => currentCleanup?.());
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
-    previousDependencies = undefined;
-    cleanup = undefined;
+    previousDependencies = [];
+    cleanups = [];
+    effectIndex = 0;
     memoizedCallback = undefined;
-    timerRef = { current: null };
+    refs = [];
+    refIndex = 0;
     setFiles = vi.fn();
     fileSaveMocks.writeTextToFileHandleQueued.mockReset().mockResolvedValue(undefined);
     reactMocks.useCallback.mockImplementation(callback => {
       memoizedCallback ??= callback;
       return memoizedCallback;
     });
-    reactMocks.useRef.mockImplementation(() => timerRef);
+    reactMocks.useRef.mockImplementation(initialValue => {
+      const index = refIndex;
+      refIndex += 1;
+      refs[index] ??= { current: initialValue };
+      return refs[index];
+    });
     reactMocks.useEffect.mockImplementation((effect, dependencies) => {
+      const index = effectIndex;
+      effectIndex += 1;
       const nextDependencies = dependencies as readonly unknown[];
-      const unchanged = previousDependencies?.length === nextDependencies.length
-        && previousDependencies.every((dependency, index) => Object.is(dependency, nextDependencies[index]));
+      const currentDependencies = previousDependencies[index];
+      const unchanged = currentDependencies?.length === nextDependencies.length
+        && currentDependencies.every((dependency, dependencyIndex) => (
+          Object.is(dependency, nextDependencies[dependencyIndex])
+        ));
       if (unchanged) return;
 
-      cleanup?.();
-      previousDependencies = nextDependencies;
+      cleanups[index]?.();
+      previousDependencies[index] = nextDependencies;
       const nextCleanup = effect();
-      cleanup = typeof nextCleanup === 'function' ? nextCleanup : undefined;
+      cleanups[index] = typeof nextCleanup === 'function' ? nextCleanup : undefined;
     });
   });
 
   afterEach(() => {
-    cleanup?.();
+    unmount();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -159,6 +174,36 @@ describe('useFileAutoSave', () => {
     const updateFiles = setFiles.mock.calls[0][0] as (files: FileTab[]) => FileTab[];
     const reboundFile = { ...file, handle: nextHandle };
     expect(updateFiles([reboundFile])[0]).toBe(reboundFile);
+  });
+
+  it('卸载后晚到的写入成功不再更新文件状态', async () => {
+    let finishWrite = () => undefined;
+    fileSaveMocks.writeTextToFileHandleQueued.mockImplementation(() => (
+      new Promise<void>(resolve => { finishWrite = resolve; })
+    ));
+    const file = createFile({} as FileSystemFileHandle);
+    useAutoSaveScenario(file, file.content);
+    await vi.advanceTimersByTimeAsync(FILE_AUTO_SAVE_DEBOUNCE_MS);
+    unmount();
+    finishWrite();
+    await Promise.resolve();
+    expect(setFiles).not.toHaveBeenCalled();
+  });
+
+  it('卸载后晚到的写入失败不再记录错误或弹出提示', async () => {
+    let failWrite = (_error: Error) => undefined;
+    fileSaveMocks.writeTextToFileHandleQueued.mockImplementation(() => (
+      new Promise<void>((_, reject) => { failWrite = reject; })
+    ));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const file = createFile({} as FileSystemFileHandle);
+    useAutoSaveScenario(file, file.content);
+    await vi.advanceTimersByTimeAsync(FILE_AUTO_SAVE_DEBOUNCE_MS);
+    unmount();
+    failWrite(new Error('晚到失败'));
+    await Promise.resolve();
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(toastMocks.toast.error).not.toHaveBeenCalled();
   });
 
   it('写入失败时保留状态并显示详细错误', async () => {

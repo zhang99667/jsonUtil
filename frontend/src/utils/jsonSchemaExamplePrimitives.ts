@@ -106,8 +106,6 @@ export const getPatternMatcher = (pattern: string): ((value: string) => boolean)
   }
 };
 
-export const serializeExampleValue = (value: unknown): string => JSON.stringify(value);
-
 export const getEnumValueAt = (
   schema: Record<string, unknown>,
   index: number,

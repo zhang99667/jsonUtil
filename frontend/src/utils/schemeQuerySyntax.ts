@@ -11,5 +11,6 @@ export {
 } from './schemeQueryNormalization';
 
 export {
+  iterateDecodedQueryPairs,
   splitQueryPairs,
 } from './schemeQueryPairs';

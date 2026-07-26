@@ -81,4 +81,10 @@ describe('transformReportCopyPayloads', () => {
       expected: {},
     });
   });
+
+  it('内部结构包含非有限数值时不生成对比包', () => {
+    expect(formatTransformCmdStructureComparisonPackageText(createRecord({
+      cmdStructureCopyText: '{"value":1e400}',
+    }))).toBe('');
+  });
 });

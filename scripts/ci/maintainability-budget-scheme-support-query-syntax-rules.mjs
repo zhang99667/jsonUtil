@@ -16,8 +16,8 @@ export const schemeSupportQuerySyntaxMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/utils/schemeQueryPairs.ts',
-    maxLines: 80,
-    reason: 'Query pair 拆分应只负责分隔符扫描，原始 JSON 值边界留在专用模块',
+    maxLines: 90,
+    reason: 'Query pair 模块应统一负责分隔符扫描和已解码 pair 惰性迭代，原始 JSON 值边界留在专用模块',
   },
   {
     file: 'frontend/src/utils/schemeQueryRawJson.ts',

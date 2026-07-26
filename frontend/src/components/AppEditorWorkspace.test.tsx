@@ -29,6 +29,13 @@ describe('AppEditorWorkspace', () => {
     const previewPane = splitPanesProps.previewPane;
     const sourceElement = assertElementLike(sourcePane, '编辑区应装配 SOURCE Pane');
     const previewElement = assertElementLike(previewPane, '编辑区应装配 PREVIEW Pane');
+    expect(previewElement.props.schemeDisplayHeaderMarkers).toEqual([
+      {
+        path: '$.landing.__url__',
+        kind: 'url',
+        source: 'https://example.com/page?from=workspace',
+      },
+    ]);
 
     (previewElement.props.onCursorPositionChange as (line: number, column: number) => void)(99, 1);
     expect(onCursorPositionChange).not.toHaveBeenCalled();

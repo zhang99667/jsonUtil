@@ -1,4 +1,4 @@
-import { collectChunkLoadErrorMessages } from './chunkLoadRecoveryMessages';
+import { someChunkLoadErrorMessage } from './chunkLoadRecoveryMessages';
 
 const DYNAMIC_IMPORT_ERROR_PATTERNS = [
   'failed to fetch dynamically imported module',
@@ -10,13 +10,11 @@ const DYNAMIC_IMPORT_ERROR_PATTERNS = [
   'chunkloaderror',
 ];
 
-const collectChunkLoadErrorMessageText = (error: unknown): string => {
-  return collectChunkLoadErrorMessages(error).join('\n');
-};
-
 export const isDynamicImportLoadError = (error: unknown): boolean => {
-  const message = collectChunkLoadErrorMessageText(error).toLowerCase();
-  return DYNAMIC_IMPORT_ERROR_PATTERNS.some(pattern => message.includes(pattern));
+  return someChunkLoadErrorMessage(error, message => {
+    const normalizedMessage = message.toLowerCase();
+    return DYNAMIC_IMPORT_ERROR_PATTERNS.some(pattern => normalizedMessage.includes(pattern));
+  });
 };
 
 export type ChunkLoadRecoverySource = 'vite-preload' | 'promise-rejection' | 'global-error' | 'manual-catch';

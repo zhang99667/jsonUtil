@@ -1,6 +1,8 @@
+import type { JsonValue } from '../types';
 import type { JsonPathQueryItem } from './jsonPathQuery';
+import { formatDecodedPathCopyValue } from './transformValuePreview';
 
-export const formatJsonPathValuesForCopy = (values: unknown[]): string => {
+export const formatJsonPathValuesForCopy = (values: JsonValue[]): string => {
   if (values.length === 1) {
     const [value] = values;
     return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -9,12 +11,8 @@ export const formatJsonPathValuesForCopy = (values: unknown[]): string => {
   return JSON.stringify(values, null, 2);
 };
 
-const formatJsonPathValueForLineCopy = (value: unknown): string => (
-  typeof value === 'string' ? JSON.stringify(value) : JSON.stringify(value) ?? String(value)
-);
-
 export const formatJsonPathItemsForCopy = (items: JsonPathQueryItem[]): string => (
-  items.map(item => `${item.path} = ${formatJsonPathValueForLineCopy(item.value)}`).join('\n')
+  items.map(item => `${item.path} = ${formatDecodedPathCopyValue(item.value)}`).join('\n')
 );
 
 export const getJsonPathCopyCountLabel = (count: number, isLimited: boolean): string => (

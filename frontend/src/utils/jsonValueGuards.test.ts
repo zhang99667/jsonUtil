@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { JsonValue } from '../types';
-import { isJsonObject, isJsonValue } from './jsonValueGuards';
+import { isJsonObject, isJsonValue, parseJsonValue, tryParseJsonValue } from './jsonValueGuards';
 
 describe('jsonValueGuards', () => {
   it('只接受 JSON 对象节点', () => {
@@ -41,5 +41,14 @@ describe('jsonValueGuards', () => {
     }
 
     expect(isJsonValue(root)).toBe(true);
+  });
+
+  it('解析合法 JSON 并拒绝非有限数值和语法错误', () => {
+    expect(parseJsonValue('{"value":1}')).toEqual({ value: 1 });
+    expect(() => parseJsonValue('{"value":1e400}')).toThrow('JSON 包含不支持的值');
+    expect(tryParseJsonValue('null')).toBeNull();
+    expect(tryParseJsonValue('{"value":1}')).toEqual({ value: 1 });
+    expect(tryParseJsonValue('{"value":1e400}')).toBeUndefined();
+    expect(tryParseJsonValue('{invalid}')).toBeUndefined();
   });
 });

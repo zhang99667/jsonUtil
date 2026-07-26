@@ -100,9 +100,7 @@ class AccountStatusAuthenticationTest {
                 new ProviderManager(authenticationProvider),
                 tokenProvider
         );
-        LoginRequest request = new LoginRequest();
-        request.setUsername("disabled-user");
-        request.setPassword(password);
+        LoginRequest request = new LoginRequest("disabled-user", password);
 
         assertThrows(DisabledException.class, () -> authService.login(request));
         assertNull(SecurityContextHolder.getContext().getAuthentication());

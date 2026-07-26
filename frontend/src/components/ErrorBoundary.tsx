@@ -1,10 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { isDynamicImportLoadError } from '../utils/chunkLoadRecovery';
+import { getErrorMessage } from '../utils/errors';
 
-/**
- * 错误边界组件
- * 捕获子组件树中的 JS 错误，展示友好的错误回退界面
- */
+/** 捕获子组件树错误并展示回退界面。 */
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -13,7 +11,7 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   hasError: boolean;
-  error: Error | null;
+  error: unknown;
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -22,13 +20,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   state: ErrorBoundaryState = { hasError: false, error: null };
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // 输出错误信息到控制台
-    console.error('ErrorBoundary 捕获到错误:', error);
+    console.error('错误边界捕获到错误:', error);
     console.error('组件栈:', errorInfo.componentStack);
   }
 
@@ -52,7 +49,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render(): ReactNode {
     if (this.state.hasError) {
       const isChunkLoadError = isDynamicImportLoadError(this.state.error);
-      const shouldShowErrorMessage = Boolean(this.state.error && !isChunkLoadError);
+      const errorMessage = isChunkLoadError ? '' : getErrorMessage(this.state.error, '');
 
       return (
         <div className="flex items-center justify-center min-h-screen bg-gray-900">
@@ -64,9 +61,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                 ? '当前打开的旧页面无法加载新版资源，刷新后即可恢复。'
                 : '应用遇到了一个意外错误，请尝试重新加载。'}
             </p>
-            {shouldShowErrorMessage && (
+            {errorMessage && (
               <pre className="text-red-400 text-xs bg-gray-900 p-3 rounded mb-4 overflow-auto max-h-32 text-left">
-                {this.state.error?.message}
+                {errorMessage}
               </pre>
             )}
             <button

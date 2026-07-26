@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 
 export const useAppBeforeUnloadGuard = (hasUnsavedChanges: boolean) => {
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!hasUnsavedChanges) return;
+    if (!hasUnsavedChanges) return;
 
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = '';
     };

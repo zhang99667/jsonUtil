@@ -11,18 +11,29 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class VisitLog {
+    public static final int IP_MAX_LENGTH = 255;
+    public static final int PATH_MAX_LENGTH = 255;
+    public static final int METHOD_MAX_LENGTH = 255;
+    public static final int USER_AGENT_MAX_LENGTH = 512;
+    public static final int REFERER_MAX_LENGTH = 1024;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "ip", length = IP_MAX_LENGTH)
     private String ip;
+
+    @Column(name = "path", length = PATH_MAX_LENGTH)
     private String path;
+
+    @Column(name = "method", length = METHOD_MAX_LENGTH)
     private String method;
-    
-    @Column(name = "user_agent", length = 512)
+
+    @Column(name = "user_agent", length = USER_AGENT_MAX_LENGTH)
     private String userAgent;
-    
-    @Column(name = "referer", length = 1024)
+
+    @Column(name = "referer", length = REFERER_MAX_LENGTH)
     private String referer;
 
     @Column(name = "created_at")

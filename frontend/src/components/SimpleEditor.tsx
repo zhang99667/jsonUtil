@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
+import { tryParseJsonValue } from '../utils/jsonValueGuards';
 
 export interface SimpleEditorProps {
   value: string;
@@ -9,6 +10,7 @@ export interface SimpleEditorProps {
   height?: string | number;
   className?: string;
   placeholder?: string;
+  showColorPreview?: boolean;
 }
 
 /**
@@ -23,6 +25,7 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
   height = '100%',
   className = '',
   placeholder,
+  showColorPreview = false,
 }) => {
   // 自动检测语言
   const detectedLanguage = useMemo(() => {
@@ -30,13 +33,11 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
     if (!value) return 'plaintext';
 
     const trimmed = value.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-      try {
-        JSON.parse(trimmed);
-        return 'json';
-      } catch {
-        // 不是有效 JSON
-      }
+    if (
+      (trimmed.startsWith('{') || trimmed.startsWith('['))
+      && tryParseJsonValue(trimmed) !== undefined
+    ) {
+      return 'json';
     }
     if (trimmed.startsWith('<')) return 'xml';
     if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) return 'html';
@@ -80,6 +81,12 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
           },
           overviewRulerBorder: false,
           renderLineHighlight: 'line',
+          ...(showColorPreview && detectedLanguage === 'json'
+            ? {
+                colorDecorators: true,
+                defaultColorDecorators: 'always' as const,
+              }
+            : {}),
         }}
         loading={
           <div className="h-full w-full flex items-center justify-center text-gray-500 text-xs bg-editor-bg">

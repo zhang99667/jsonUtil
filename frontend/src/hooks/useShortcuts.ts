@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import type { ShortcutAction, ShortcutConfig, ShortcutKey } from '../types';
 import { parseJsonWithFallback, safeGetStorageItem, safeSetStorageItem } from '../utils/storage';
 import {
@@ -11,6 +11,7 @@ import {
 export { DEFAULT_SHORTCUTS, normalizeShortcutConfig } from '../utils/shortcuts';
 
 interface UseShortcutsProps {
+    enabled?: boolean;
     onSave: () => void;
     onFormat: () => void;
     onDeepFormat: () => void;
@@ -21,6 +22,7 @@ interface UseShortcutsProps {
 }
 
 export const useShortcuts = ({
+    enabled = true,
     onSave,
     onFormat,
     onDeepFormat,
@@ -53,7 +55,9 @@ export const useShortcuts = ({
         setShortcuts(normalizeShortcutConfig(nextShortcuts));
     };
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        if (!enabled) return;
+
         const handlers = {
             SAVE: onSave,
             FORMAT: onFormat,
@@ -69,7 +73,7 @@ export const useShortcuts = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [shortcuts, onSave, onFormat, onDeepFormat, onMinify, onCloseTab, onToggleJsonPath, onNewTab]);
+    }, [enabled, shortcuts, onSave, onFormat, onDeepFormat, onMinify, onCloseTab, onToggleJsonPath, onNewTab]);
 
     return {
         shortcuts,

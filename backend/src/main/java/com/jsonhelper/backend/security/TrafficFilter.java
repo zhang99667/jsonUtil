@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -17,10 +18,6 @@ import java.io.IOException;
 @Slf4j
 @RequiredArgsConstructor
 public class TrafficFilter extends OncePerRequestFilter {
-
-    private static final int PATH_MAX_CODE_POINTS = 255;
-    private static final int USER_AGENT_MAX_CODE_POINTS = 512;
-    private static final int REFERER_MAX_CODE_POINTS = 1024;
 
     private final VisitLogRepository visitLogRepository;
 
@@ -34,13 +31,15 @@ public class TrafficFilter extends OncePerRequestFilter {
         if (shouldLogTraffic(path)) {
             try {
                 VisitLog visitLog = new VisitLog();
-                visitLog.setIp(request.getRemoteAddr());
-                visitLog.setPath(truncateByCodePoints(path, PATH_MAX_CODE_POINTS));
-                visitLog.setMethod(request.getMethod());
-                visitLog.setUserAgent(truncateByCodePoints(request.getHeader("User-Agent"), USER_AGENT_MAX_CODE_POINTS));
-                visitLog.setReferer(truncateByCodePoints(request.getHeader("Referer"), REFERER_MAX_CODE_POINTS));
+                visitLog.setIp(truncateByCodePoints(request.getRemoteAddr(), VisitLog.IP_MAX_LENGTH));
+                visitLog.setPath(truncateByCodePoints(path, VisitLog.PATH_MAX_LENGTH));
+                visitLog.setMethod(truncateByCodePoints(request.getMethod(), VisitLog.METHOD_MAX_LENGTH));
+                visitLog.setUserAgent(truncateByCodePoints(
+                        request.getHeader("User-Agent"), VisitLog.USER_AGENT_MAX_LENGTH));
+                visitLog.setReferer(truncateByCodePoints(
+                        request.getHeader("Referer"), VisitLog.REFERER_MAX_LENGTH));
                 visitLogRepository.save(visitLog);
-            } catch (Exception e) {
+            } catch (DataAccessException e) {
                 // 流量统计是旁路能力，持久化失败不能阻断正常请求。
                 log.warn("流量记录失败，请求继续处理，异常类型: {}", e.getClass().getSimpleName());
                 log.debug("流量记录失败详情", e);

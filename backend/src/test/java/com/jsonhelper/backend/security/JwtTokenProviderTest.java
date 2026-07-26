@@ -37,7 +37,8 @@ class JwtTokenProviderTest {
 
     @Test
     void initRejectsExampleSecret() {
-        JwtTokenProvider provider = createProvider("change-me-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789AB");
+        JwtTokenProvider provider = createProvider(
+                "change-me-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789AB");
 
         assertThrows(IllegalStateException.class, provider::init);
     }

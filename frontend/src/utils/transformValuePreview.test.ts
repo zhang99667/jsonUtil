@@ -34,4 +34,12 @@ describe('transformValuePreview', () => {
     expect(formatDecodedPathCopyValue({ a: 1 })).toBe('{"a":1}');
     expect(formatDecodedPathCopyValue('abcdef', 5)).toBe('"abcd...');
   });
+
+  it('异常值安全降级而不打断复制流程', () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    expect(formatDecodedPathCopyValue(42n)).toBe('42');
+    expect(formatDecodedPathCopyValue(circular)).toBe('无法序列化');
+  });
 });

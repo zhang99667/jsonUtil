@@ -7,15 +7,16 @@ import {
 const installDownloadStubs = ({
   append = vi.fn(),
   click = vi.fn(),
+  remove = vi.fn(),
+  revokeObjectURL = vi.fn(),
 } = {}) => {
   const link = {
     href: '',
     download: '',
     click,
-    remove: vi.fn(),
+    remove,
   };
   const createObjectURL = vi.fn(() => 'blob:download');
-  const revokeObjectURL = vi.fn();
 
   vi.stubGlobal('document', {
     createElement: vi.fn(() => link),
@@ -76,6 +77,40 @@ describe('browserFileSave', () => {
     expect(stubs.link.remove).toHaveBeenCalledTimes(1);
     vi.runAllTimers();
     expect(stubs.revokeObjectURL).toHaveBeenCalledWith('blob:download');
+  });
+
+  it('链接移除失败时不覆盖主流程异常且仍回收 URL', () => {
+    const downloadError = new Error('点击失败');
+    const cleanupError = new Error('移除失败');
+    const stubs = installDownloadStubs({
+      click: vi.fn(() => { throw downloadError; }),
+      remove: vi.fn(() => { throw cleanupError; }),
+    });
+
+    expect(() => triggerTextDownload({
+      text: '{}',
+      fileName: 'result.json',
+      mimeType: 'application/json',
+    })).toThrow(downloadError);
+    vi.runAllTimers();
+
+    expect(stubs.revokeObjectURL).toHaveBeenCalledWith('blob:download');
+    expect(console.warn).toHaveBeenCalledWith('移除临时下载链接失败:', cleanupError);
+  });
+
+  it('对象 URL 回收失败时只记录告警', () => {
+    const cleanupError = new Error('回收失败');
+    installDownloadStubs({
+      revokeObjectURL: vi.fn(() => { throw cleanupError; }),
+    });
+
+    expect(() => triggerTextDownload({
+      text: '{}',
+      fileName: 'result.json',
+      mimeType: 'application/json',
+    })).not.toThrow();
+    expect(() => vi.runAllTimers()).not.toThrow();
+    expect(console.warn).toHaveBeenCalledWith('回收临时下载地址失败:', cleanupError);
   });
 
 });

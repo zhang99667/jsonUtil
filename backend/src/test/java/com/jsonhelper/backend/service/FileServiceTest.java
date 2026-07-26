@@ -1,5 +1,6 @@
 package com.jsonhelper.backend.service;
 
+import com.jsonhelper.backend.config.FileProperties;
 import com.jsonhelper.backend.entity.UploadFile;
 import com.jsonhelper.backend.repository.UploadFileRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,7 +12,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,12 +53,7 @@ class FileServiceTest {
 
     @BeforeEach
     void setUp() {
-        fileService = new FileService(uploadFileRepository);
-        ReflectionTestUtils.setField(fileService, "uploadDir", uploadDir.toString());
-        ReflectionTestUtils.setField(fileService, "maxUploadSize", 20L);
-        ReflectionTestUtils.setField(fileService, "maxPreviewSize", 10L);
-        ReflectionTestUtils.setField(fileService, "allowedExtensions", ".json,.txt");
-        fileService.init();
+        fileService = createFileService(uploadDir, 20L, 10L, ".json,.txt");
         lenient().when(uploadFileRepository.save(any(UploadFile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -81,9 +76,12 @@ class FileServiceTest {
 
     @Test
     void initRejectsBlankUploadDirectory() {
-        ReflectionTestUtils.setField(fileService, "uploadDir", "  ");
+        FileService invalidService = new FileService(
+                uploadFileRepository,
+                new FileProperties("  ", 20L, 10L, ".json,.txt")
+        );
 
-        RuntimeException error = assertThrows(RuntimeException.class, fileService::init);
+        RuntimeException error = assertThrows(RuntimeException.class, invalidService::init);
 
         assertTrue(error.getMessage().startsWith("无法创建文件上传目录"));
     }
@@ -120,7 +118,7 @@ class FileServiceTest {
 
     @Test
     void saveFileAcceptsExtensionConfigWithoutLeadingDot() throws IOException {
-        ReflectionTestUtils.setField(fileService, "allowedExtensions", "json,sql");
+        fileService = createFileService(uploadDir, 20L, 10L, "json,sql");
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "query.sql",
@@ -135,9 +133,10 @@ class FileServiceTest {
 
     @Test
     void saveFileAcceptsCommonJsonFamilyDebugFiles() throws IOException {
-        ReflectionTestUtils.setField(
-                fileService,
-                "allowedExtensions",
+        fileService = createFileService(
+                uploadDir,
+                20L,
+                10L,
                 ".json,.jsonl,.ndjson,.har,.geojson,.webmanifest,.map,.jsonc,.json5,.topojson"
         );
 
@@ -482,8 +481,7 @@ class FileServiceTest {
 
     private Path configureNestedUploadRoot() throws IOException {
         Path uploadRoot = Files.createDirectory(uploadDir.resolve("uploads"));
-        ReflectionTestUtils.setField(fileService, "uploadDir", uploadRoot.toString());
-        fileService.init();
+        fileService = createFileService(uploadRoot, 20L, 10L, ".json,.txt");
         return uploadRoot;
     }
 
@@ -504,6 +502,16 @@ class FileServiceTest {
         when(file.getContentType()).thenReturn("application/json");
         when(file.getInputStream()).thenReturn(inputStream);
         return file;
+    }
+
+    private FileService createFileService(
+            Path root, long maxUploadSize, long maxPreviewSize, String allowedExtensions) {
+        FileService service = new FileService(
+                uploadFileRepository,
+                new FileProperties(root.toString(), maxUploadSize, maxPreviewSize, allowedExtensions)
+        );
+        service.init();
+        return service;
     }
 
     private void assertStoredInsideUploadRoot(UploadFile uploadFile) throws IOException {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Table, Input, Button, Modal, Popconfirm, message, Space, Tag, Typography, Tooltip, Upload } from 'antd';
 import {
     FileOutlined,
@@ -21,8 +21,9 @@ import {
 } from '../services/file';
 import { isAdminRequestError } from '../services/requestErrors';
 import { triggerBlobDownload } from '../../utils/browserFileSave';
+import { getErrorMessage } from '../../utils/errors';
 import { formatFileSize, TEXT_FILE_ACCEPT_EXTENSIONS } from '../../utils/fileGuards';
-import { AdminListQuery, resolveAvailableListQuery } from '../utils/listQuery';
+import { createAdminListRequestController } from '../utils/listRequestController';
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -30,9 +31,20 @@ const { Search } = Input;
 /** 默认每页条数 */
 const DEFAULT_PAGE_SIZE = 10;
 
-/**
- * 根据文件类型返回标签颜色
- */
+export const uploadFileWithState = async (
+    file: File,
+    upload: (selectedFile: File) => Promise<unknown>,
+    setUploading: (uploading: boolean) => void,
+): Promise<void> => {
+    setUploading(true);
+    try {
+        await upload(file);
+    } finally {
+        setUploading(false);
+    }
+};
+
+/** 根据文件类型返回标签颜色 */
 const getFileTypeColor = (fileType: string): string => {
     if (fileType.includes('json')) return 'blue';
     if (fileType.includes('xml')) return 'orange';
@@ -41,174 +53,98 @@ const getFileTypeColor = (fileType: string): string => {
     return 'default';
 };
 
-/**
- * 文件管理页面
- * 提供文件列表展示、搜索、预览、下载和删除功能
- */
 const FileManagement: React.FC = () => {
-    // 文件列表数据
     const [fileList, setFileList] = useState<FileItem[]>([]);
-    // 加载状态
     const [loading, setLoading] = useState(false);
-    // 分页信息
     const [pagination, setPagination] = useState({ current: 1, pageSize: DEFAULT_PAGE_SIZE, total: 0 });
-    // 预览弹窗是否显示
     const [previewVisible, setPreviewVisible] = useState(false);
-    // 预览文件内容
     const [previewContent, setPreviewContent] = useState('');
-    // 预览文件名
     const [previewFileName, setPreviewFileName] = useState('');
-    // 预览内容加载状态
     const [previewLoading, setPreviewLoading] = useState(false);
-    // 文件上传中状态
     const [uploading, setUploading] = useState(false);
-    const fileListRequestIdRef = useRef(0);
-    const latestFileListQueryRef = useRef<AdminListQuery>({
-        page: 1,
-        pageSize: DEFAULT_PAGE_SIZE,
-        keyword: '',
-    });
-    const fileListMountedRef = useRef(false);
     const previewRequestIdRef = useRef(0);
-
-    /** 允许上传的文件类型 */
-    const ACCEPTED_FILE_TYPES = TEXT_FILE_ACCEPT_EXTENSIONS.join(',');
-
-    /**
-     * 获取文件列表
-     */
-    const fetchFiles = useCallback(async (query: AdminListQuery) => {
-        if (!fileListMountedRef.current) {
-            return;
-        }
-
-        latestFileListQueryRef.current = query;
-        const requestId = ++fileListRequestIdRef.current;
-        const isCurrentRequest = () => (
-            fileListMountedRef.current && requestId === fileListRequestIdRef.current
-        );
-        setLoading(true);
-        try {
-            let resolvedQuery = query;
-            let result: Awaited<ReturnType<typeof getFileList>>;
-            while (true) {
-                result = await getFileList(
-                    resolvedQuery.page,
-                    resolvedQuery.pageSize,
-                    resolvedQuery.keyword || undefined,
-                );
-                // 只允许最新一次列表请求更新表格，避免快速搜索/翻页时旧响应回写。
-                if (!isCurrentRequest()) {
-                    return;
-                }
-
-                const availableQuery = resolveAvailableListQuery(resolvedQuery, result.total);
-                if (availableQuery === resolvedQuery) {
-                    break;
-                }
-                // 页码只会向第一页收敛；并发删除继续缩小总数时会再次校正。
-                resolvedQuery = availableQuery;
-                latestFileListQueryRef.current = resolvedQuery;
-            }
-
-            latestFileListQueryRef.current = resolvedQuery;
-            setFileList(result.list);
-            setPagination((prev) => ({
-                ...prev,
-                current: resolvedQuery.page,
-                pageSize: resolvedQuery.pageSize,
+    const [fileListController] = useState(() => createAdminListRequestController({
+        initialQuery: {
+            page: 1,
+            pageSize: DEFAULT_PAGE_SIZE,
+            keyword: '',
+        },
+        loadPage: async (query) => {
+            const result = await getFileList(
+                query.page,
+                query.pageSize,
+                query.keyword || undefined,
+            );
+            return {
+                items: result.list,
                 total: result.total,
-            }));
-        } catch (error) {
-            if (!isCurrentRequest()) {
-                return;
-            }
+                query,
+            };
+        },
+        onCommit: ({ items, total, query }) => {
+            setFileList(items);
+            setPagination({
+                current: query.page,
+                pageSize: query.pageSize,
+                total,
+            });
+        },
+        onLoadingChange: setLoading,
+        onError: (error) => {
             console.error('获取文件列表失败:', error);
-        } finally {
-            if (isCurrentRequest()) {
-                setLoading(false);
+            if (!isAdminRequestError(error)) {
+                message.error('文件列表加载失败');
             }
-        }
-    }, []);
+        },
+    }));
 
-    /** 使用操作完成时的最新查询条件刷新列表 */
-    const refreshLatestFiles = useCallback((
-        updateQuery?: (query: AdminListQuery) => AdminListQuery,
-    ) => {
-        const latestQuery = latestFileListQueryRef.current;
-        return fetchFiles(updateQuery ? updateQuery(latestQuery) : latestQuery);
-    }, [fetchFiles]);
+    const ACCEPTED_FILE_TYPES = TEXT_FILE_ACCEPT_EXTENSIONS.join(',');
 
     /** 自定义上传处理 */
     const uploadProps: UploadProps = {
         accept: ACCEPTED_FILE_TYPES,
         capture: undefined,
         showUploadList: false,
-        beforeUpload: () => false, // 阻止自动上传，使用自定义逻辑
-        onChange: async (info) => {
-            const file = info.file as unknown as File;
-            if (!file) return;
-
-            setUploading(true);
+        beforeUpload: async (file) => {
             try {
-                await uploadFile(file);
+                await uploadFileWithState(file, uploadFile, setUploading);
                 message.success(`${file.name} 上传成功`);
                 // 保留操作完成时的最新搜索条件，并回到第一页查看上传结果。
-                void refreshLatestFiles((query) => ({ ...query, page: 1 }));
+                void fileListController.refresh((query) => ({ ...query, page: 1 }));
             } catch (error) {
                 if (!isAdminRequestError(error)) {
                     message.error('文件上传失败');
                 }
                 console.error('上传文件失败:', error);
-            } finally {
-                setUploading(false);
             }
+            // 阻止上传组件自动发送同一文件。
+            return false;
         },
     };
 
-    // 初次加载
     useEffect(() => {
-        fileListMountedRef.current = true;
-        void fetchFiles(latestFileListQueryRef.current);
+        void fileListController.mount();
         return () => {
-            fileListMountedRef.current = false;
-            fileListRequestIdRef.current += 1;
+            fileListController.dispose();
             previewRequestIdRef.current += 1;
         };
-    }, [fetchFiles]);
+    }, [fileListController]);
 
-    /**
-     * 搜索文件
-     */
     const handleSearch = (value: string) => {
-        void fetchFiles({
-            ...latestFileListQueryRef.current,
-            page: 1,
-            keyword: value,
-        });
+        void fileListController.search(value);
     };
 
-    /**
-     * 刷新列表
-     */
     const handleRefresh = () => {
-        void refreshLatestFiles();
+        void fileListController.refresh();
     };
 
-    /**
-     * 表格翻页
-     */
     const handleTableChange = (paginationConfig: { current?: number; pageSize?: number }) => {
-        void fetchFiles({
-            ...latestFileListQueryRef.current,
-            page: paginationConfig.current ?? 1,
-            pageSize: paginationConfig.pageSize ?? latestFileListQueryRef.current.pageSize,
-        });
+        void fileListController.changePage(
+            paginationConfig.current ?? 1,
+            paginationConfig.pageSize ?? fileListController.getLatestQuery().pageSize,
+        );
     };
 
-    /**
-     * 预览文件内容
-     */
     const handlePreview = async (record: FileItem) => {
         const requestId = ++previewRequestIdRef.current;
         setPreviewFileName(record.fileName);
@@ -226,7 +162,9 @@ const FileManagement: React.FC = () => {
             if (requestId !== previewRequestIdRef.current) {
                 return;
             }
-            setPreviewContent(isAdminRequestError(error) ? error.message : '文件内容加载失败');
+            setPreviewContent(isAdminRequestError(error)
+                ? getErrorMessage(error, '文件内容加载失败')
+                : '文件内容加载失败');
             console.error('预览文件失败:', error);
         } finally {
             if (requestId === previewRequestIdRef.current) {
@@ -235,18 +173,12 @@ const FileManagement: React.FC = () => {
         }
     };
 
-    /**
-     * 关闭预览弹窗
-     */
     const handleClosePreview = () => {
         previewRequestIdRef.current += 1;
         setPreviewVisible(false);
         setPreviewLoading(false);
     };
 
-    /**
-     * 下载文件
-     */
     const handleDownload = async (record: FileItem) => {
         try {
             const blob = await downloadFile(record.id);
@@ -260,15 +192,12 @@ const FileManagement: React.FC = () => {
         }
     };
 
-    /**
-     * 删除文件
-     */
     const handleDelete = async (record: FileItem) => {
         try {
             await deleteFile(record.id);
             message.success(`${record.fileName} 已删除`);
-            // 服务端最新总数会在列表请求中决定是否回退末页。
-            void refreshLatestFiles();
+            // 刷新后根据最新总数自动校正越界页码。
+            void fileListController.refresh();
         } catch (error) {
             if (!isAdminRequestError(error)) {
                 message.error('文件删除失败');
@@ -277,7 +206,6 @@ const FileManagement: React.FC = () => {
         }
     };
 
-    // 表格列定义
     const columns: ColumnsType<FileItem> = [
         {
             title: '文件名',
@@ -308,7 +236,6 @@ const FileManagement: React.FC = () => {
             key: 'fileType',
             width: 150,
             render: (type: string) => {
-                // 提取简短类型名
                 const shortType = type.split('/').pop() || type;
                 return <Tag color={getFileTypeColor(type)}>{shortType.toUpperCase()}</Tag>;
             },
@@ -372,7 +299,6 @@ const FileManagement: React.FC = () => {
 
     return (
         <div>
-            {/* 页面标题 */}
             <div style={{ marginBottom: 24 }}>
                 <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <FileOutlined style={{ color: '#5B6EF5' }} />
@@ -380,7 +306,6 @@ const FileManagement: React.FC = () => {
                 </Title>
             </div>
 
-            {/* 搜索栏和操作按钮 */}
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <Search
                     placeholder="搜索文件名..."
@@ -408,7 +333,6 @@ const FileManagement: React.FC = () => {
                 </Space>
             </div>
 
-            {/* 文件列表表格 — 白底圆角容器 */}
             <div
                 style={{
                     background: '#fff',
@@ -437,7 +361,6 @@ const FileManagement: React.FC = () => {
                 />
             </div>
 
-            {/* 文件预览弹窗 */}
             <Modal
                 title={
                     <span>

@@ -703,5 +703,6 @@ iqoo13`, 'cmdHandler 输出');
 
   it('解析非法 expected JSON 时给出明确错误', () => {
     expect(() => parseCmdStructureJson('{broken', 'cmdHandler 输出')).toThrow('cmdHandler 输出不是有效 JSON');
+    expect(() => parseCmdStructureJson('{"value":1e400}', 'cmdHandler 输出')).toThrow('cmdHandler 输出不是有效 JSON');
   });
 });

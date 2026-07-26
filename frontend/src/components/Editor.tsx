@@ -1,6 +1,6 @@
 
 
-import React, { Suspense, useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
+import React, { Suspense, useEffect, useLayoutEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Editor, { useMonaco } from "@monaco-editor/react";
 import type { editor } from 'monaco-editor';
 import { EditorProps, HighlightRange } from '../types';
@@ -8,6 +8,7 @@ import { detectLanguage } from '../utils/transformations';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { computeLineDiff, shouldSkipLineDiff } from '../utils/diffUtils';
 import type { SchemeLocation } from '../utils/schemeScanner';
+import type { SchemeDisplayHeaderMarker } from '../utils/schemeDisplayHeader';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { showError, showSuccess } from '../utils/toast';
 import { useEditorSchemeScan } from '../hooks/useEditorSchemeScan';
@@ -66,8 +67,21 @@ export interface ExtendedEditorProps extends EditorProps {
   enableSchemeScan?: boolean;
   errorActions?: React.ReactNode;
   onSchemeEdit?: (path: string, newValue: string, pointer?: string) => void;
+  schemeDisplayHeaderMarkers?: readonly SchemeDisplayHeaderMarker[];
   focusOnMount?: boolean;
 }
+
+const getSchemeLocationHoverText = (location: SchemeLocation): string => {
+  return location.label
+    ? `点击解析 Scheme (${location.schemeType})\n\n业务字段: \`${location.label}\``
+    : `点击解析 Scheme (${location.schemeType})`;
+};
+
+const getSchemeDisplayHeaderHoverText = (marker: SchemeDisplayHeaderMarker): string => (
+  marker.kind === 'url'
+    ? '查看解析前完整 URL'
+    : '查看解析前完整 Scheme'
+);
 
 export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   value,
@@ -97,6 +111,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   restoreViewState,
   enableSchemeScan = false,
   onSchemeEdit,
+  schemeDisplayHeaderMarkers,
   focusOnMount = false,
 }) => {
   const [language, setLanguage] = useState<string>('plaintext');
@@ -110,6 +125,18 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const readOnlyUnlockPromptTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const effectiveReadOnlyRef = useRef<boolean>(false);
   const canToggleReadOnlyRef = useRef<boolean>(canToggleReadOnly);
+  const schemeDisplayHeaderMarkerMap = useMemo(() => new Map(
+    (schemeDisplayHeaderMarkers || []).map(marker => [marker.path, marker]),
+  ), [schemeDisplayHeaderMarkers]);
+  const schemeDisplayHeaderMarkerMapRef = useRef(schemeDisplayHeaderMarkerMap);
+  const forcedSchemeScanPaths = useMemo(
+    () => (schemeDisplayHeaderMarkers || []).map(marker => marker.path),
+    [schemeDisplayHeaderMarkers],
+  );
+
+  useLayoutEffect(() => {
+    schemeDisplayHeaderMarkerMapRef.current = schemeDisplayHeaderMarkerMap;
+  }, [schemeDisplayHeaderMarkerMap]);
 
   // Scheme 检测状态
   const {
@@ -119,6 +146,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     schemeLocationsSourceRef,
   } = useEditorSchemeScan(value, {
     enabled: Boolean((enableSchemeScan || onSchemeEdit) && language === 'json'),
+    forcedPaths: forcedSchemeScanPaths,
   });
   const schemeDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const [schemeModal, setSchemeModal] = useState(createClosedEditorSchemeModal);
@@ -167,9 +195,10 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
 
     const decorations = schemeLocations.map(loc => {
-      const hoverText = loc.label
-        ? `🔗 点击解析 Scheme (${loc.schemeType})\n\n业务字段: \`${loc.label}\``
-        : `🔗 点击解析 Scheme (${loc.schemeType})`;
+      const displayHeaderMarker = schemeDisplayHeaderMarkerMap.get(loc.path);
+      const hoverText = displayHeaderMarker
+        ? getSchemeDisplayHeaderHoverText(displayHeaderMarker)
+        : getSchemeLocationHoverText(loc);
 
       return {
         range: new monaco.Range(loc.line, loc.column, loc.endLine, loc.endColumn),
@@ -177,7 +206,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           glyphMarginClassName: 'scheme-glyph-icon',
           glyphMarginHoverMessage: { value: hoverText },
           inlineClassName: 'scheme-inline-highlight',
-          hoverMessage: { value: hoverText },
+          hoverMessage: displayHeaderMarker ? undefined : { value: hoverText },
         }
       };
     });
@@ -186,12 +215,16 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
       schemeDecorationsRef.current.clear();
     }
     schemeDecorationsRef.current = editorRef.current.createDecorationsCollection(decorations);
-  }, [schemeLocations, monaco]);
+  }, [schemeDisplayHeaderMarkerMap, schemeLocations, monaco]);
 
   const openSchemeLocation = useCallback((location: SchemeLocation) => {
     const source = schemeLocationsSourceRef.current;
     if (!source) return;
-    setSchemeModal(createOpenEditorSchemeModal(location, source));
+    setSchemeModal(createOpenEditorSchemeModal(
+      location,
+      source,
+      schemeDisplayHeaderMarkerMapRef.current.get(location.path),
+    ));
   }, [schemeLocationsSourceRef]);
 
   const findSchemeLocationAtPosition = useCallback((lineNumber: number, column: number) => (
@@ -573,8 +606,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
               tabsContainerRef={tabsContainerRef}
               onScroll={handleScroll}
               showScrollbar={showScrollbar}
-              thumbWidth={thumbWidth}
-              thumbLeft={thumbLeft}
+              thumbSize={thumbWidth}
+              thumbOffset={thumbLeft}
               onScrollbarMouseDown={handleMouseDown}
             />
           )}
@@ -815,7 +848,8 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             path={schemeModal.path}
             value={schemeModal.value}
             sourceLabel={schemeModal.label}
-            onApply={onSchemeEdit ? handleSchemeApply : undefined}
+            readOnly={schemeModal.readOnly}
+            onApply={onSchemeEdit && !schemeModal.readOnly ? handleSchemeApply : undefined}
           />
         </Suspense>
       )}

@@ -14,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -34,87 +35,79 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * 创建新用户
-     */
     public User createUser(RegisterRequest registerRequest) {
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
+        String normalizedUsername = normalizeText(registerRequest.username());
+        if (normalizedUsername == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "用户名不能为空");
+        }
+        if (userRepository.existsByUsername(normalizedUsername)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, USERNAME_OCCUPIED_MESSAGE);
         }
 
         User user = new User();
-        user.setUsername(registerRequest.getUsername());
-        user.setPasswordHash(passwordEncoder.encode(registerRequest.getPassword()));
-        user.setRole(registerRequest.getRole() != null
-                ? registerRequest.getRole().toUpperCase(Locale.ROOT)
+        user.setUsername(normalizedUsername);
+        user.setPasswordHash(passwordEncoder.encode(registerRequest.password()));
+        user.setRole(registerRequest.role() != null
+                ? registerRequest.role().toUpperCase(Locale.ROOT)
                 : "USER");
         user.setEnabled(true);
 
         return saveWithUsernameConflict(user);
     }
 
-    /**
-     * 分页查询用户列表，支持按用户名模糊搜索
-     */
     public Page<User> listUsers(int page, int size, String keyword) {
         Pageable pageable = PageRequest.of(page, size, USER_LIST_SORT);
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            return userRepository.findByUsernameContaining(keyword.trim(), pageable);
+        String normalizedKeyword = normalizeText(keyword);
+        if (normalizedKeyword != null) {
+            return userRepository.findByUsernameContaining(normalizedKeyword, pageable);
         }
         return userRepository.findAll(pageable);
     }
 
-    /**
-     * 更新用户信息
-     */
     @Transactional
     public User updateUser(Long id, UpdateUserRequest request) {
         List<User> enabledAdmins = lockEnabledAdmins();
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "用户不存在"));
-        String nextRole = request.getRole() != null
-                ? request.getRole().toUpperCase(Locale.ROOT)
+        String nextRole = request.role() != null
+                ? request.role().toUpperCase(Locale.ROOT)
                 : user.getRole();
-        Boolean nextEnabled = request.getEnabled() != null
-                ? request.getEnabled()
+        Boolean nextEnabled = request.enabled() != null
+                ? request.enabled()
                 : user.getEnabled();
         ensureEnabledAdminRemains(user, isEnabledAdmin(nextRole, nextEnabled), enabledAdmins);
 
-        boolean usernameChanged = request.getUsername() != null
-                && !request.getUsername().trim().isEmpty()
-                && !request.getUsername().equals(user.getUsername());
+        String normalizedUsername = normalizeText(request.username());
+        boolean usernameChanged = normalizedUsername != null && !normalizedUsername.equals(user.getUsername());
         if (usernameChanged) {
             // 检查用户名是否被其他人占用
-            userRepository.findByUsername(request.getUsername()).ifPresent(existing -> {
+            userRepository.findByUsername(normalizedUsername).ifPresent(existing -> {
                 if (!existing.getId().equals(id)) {
                     throw new ResponseStatusException(HttpStatus.CONFLICT, USERNAME_OCCUPIED_MESSAGE);
                 }
             });
-            user.setUsername(request.getUsername());
+            user.setUsername(normalizedUsername);
         }
 
-        if (request.getEmail() != null) {
-            user.setEmail(request.getEmail());
+        if (request.email() != null) {
+            user.setEmail(request.email());
         }
 
-        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
-            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        if (StringUtils.hasText(request.password())) {
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
         }
 
-        if (request.getRole() != null) {
+        if (request.role() != null) {
             user.setRole(nextRole);
         }
 
-        if (request.getEnabled() != null) {
-            user.setEnabled(request.getEnabled());
+        if (request.enabled() != null) {
+            user.setEnabled(request.enabled());
         }
 
         return usernameChanged ? saveWithUsernameConflict(user) : userRepository.save(user);
     }
 
-    /**
-     * 删除用户
-     */
     @Transactional
     public void deleteUser(Long id) {
         List<User> enabledAdmins = lockEnabledAdmins();
@@ -124,9 +117,6 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    /**
-     * 切换用户启用/禁用状态
-     */
     @Transactional
     public User toggleUserEnabled(Long id) {
         List<User> enabledAdmins = lockEnabledAdmins();
@@ -165,5 +155,9 @@ public class UserService {
 
     private boolean isEnabledAdmin(String role, Boolean enabled) {
         return ADMIN_ROLE.equals(role) && Boolean.TRUE.equals(enabled);
+    }
+
+    private static String normalizeText(String value) {
+        return StringUtils.hasText(value) ? value.strip() : null;
     }
 }

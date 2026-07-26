@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,7 +24,7 @@ public class TrafficService {
     private final VisitLogRepository visitLogRepository;
     private final GeoService geoService;
     private final UserAgentClassifier userAgentClassifier;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final Clock clock;
     private static final Duration SESSION_INACTIVITY_TIMEOUT = Duration.ofMinutes(30);
     private static final List<String> DURATION_BUCKET_NAMES = List.of(
             "0-10秒", "10-30秒", "30秒-1分钟", "1-3分钟", "3-10分钟", "10分钟以上"
@@ -41,7 +41,7 @@ public class TrafficService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public TrafficOverviewDTO getOverview(int days) {
         TimeWindow timeWindow = currentTimeWindow(days);
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime todayStart = timeWindow.end().toLocalDate().atStartOfDay();
 
         long totalPv = visitLogRepository.countTotalPv(timeWindow.start(), timeWindow.end());
         long totalUv = visitLogRepository.countTotalUv(timeWindow.start(), timeWindow.end());
@@ -69,43 +69,21 @@ public class TrafficService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public List<DailyTrendDTO> getDailyTrend(int days) {
         TimeWindow timeWindow = currentTimeWindow(days);
+        Map<LocalDate, Long> pvCounts = indexDailyCounts(
+                visitLogRepository.countDailyPv(timeWindow.start(), timeWindow.end())
+        );
+        Map<LocalDate, Long> uvCounts = indexDailyCounts(
+                visitLogRepository.countDailyUv(timeWindow.start(), timeWindow.end())
+        );
 
-        List<VisitLogRepository.DateCount> pvData = visitLogRepository.countDailyPv(timeWindow.start(), timeWindow.end());
-        List<VisitLogRepository.DateCount> uvData = visitLogRepository.countDailyUv(timeWindow.start(), timeWindow.end());
-
-        // 将 UV 数据转换为映射，便于按日期查找。
-        Map<String, Long> uvMap = new HashMap<>();
-        for (VisitLogRepository.DateCount row : uvData) {
-            uvMap.put(row.getDate().format(DATE_FORMATTER), row.getCount());
-        }
-
-        // 生成完整日期列表（填充无数据的日期）
-        Map<String, DailyTrendDTO> resultMap = new LinkedHashMap<>();
-        for (int i = days - 1; i >= 0; i--) {
-            String date = LocalDate.now().minusDays(i).format(DATE_FORMATTER);
-            resultMap.put(date, DailyTrendDTO.builder()
-                    .date(date)
-                    .pv(0)
-                    .uv(0)
-                    .build());
-        }
-
-        // 填充 PV 数据。
-        for (VisitLogRepository.DateCount row : pvData) {
-            String date = row.getDate().format(DATE_FORMATTER);
-            if (resultMap.containsKey(date)) {
-                resultMap.get(date).setPv(row.getCount());
-            }
-        }
-
-        // 填充 UV 数据。
-        for (Map.Entry<String, Long> entry : uvMap.entrySet()) {
-            if (resultMap.containsKey(entry.getKey())) {
-                resultMap.get(entry.getKey()).setUv(entry.getValue());
-            }
-        }
-
-        return new ArrayList<>(resultMap.values());
+        return Stream.iterate(timeWindow.start().toLocalDate(), date -> date.plusDays(1))
+                .limit(days)
+                .map(date -> DailyTrendDTO.builder()
+                        .date(date.toString())
+                        .pv(pvCounts.getOrDefault(date, 0L))
+                        .uv(uvCounts.getOrDefault(date, 0L))
+                        .build())
+                .toList();
     }
 
     /**
@@ -374,13 +352,19 @@ public class TrafficService {
     }
 
     private TimeWindow currentTimeWindow(int days) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = LocalDate.now().minusDays(days - 1).atStartOfDay();
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime start = now.toLocalDate().minusDays(days - 1).atStartOfDay();
         return new TimeWindow(start, now);
     }
 
     private boolean hasNoLimit(int limit) {
         return limit <= 0;
+    }
+
+    private static Map<LocalDate, Long> indexDailyCounts(List<VisitLogRepository.DateCount> rows) {
+        return rows.stream().collect(Collectors.toMap(
+                VisitLogRepository.DateCount::getDate, VisitLogRepository.DateCount::getCount, Long::sum
+        ));
     }
 
     private DistributionCounts aggregateDistributionCounts(

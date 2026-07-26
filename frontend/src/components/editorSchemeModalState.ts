@@ -1,4 +1,5 @@
 import type { SchemeLocation } from '../utils/schemeScanner';
+import type { SchemeDisplayHeaderMarker } from '../utils/schemeDisplayHeader';
 
 export interface EditorSchemeModalState {
   isOpen: boolean;
@@ -6,6 +7,7 @@ export interface EditorSchemeModalState {
   pointer: string;
   value: string;
   source: string;
+  readOnly: boolean;
   label?: string;
 }
 
@@ -15,17 +17,20 @@ export const createClosedEditorSchemeModal = (): EditorSchemeModalState => ({
   pointer: '',
   value: '',
   source: '',
+  readOnly: false,
 });
 
 export const createOpenEditorSchemeModal = (
   location: SchemeLocation,
   source: string,
+  displayHeaderMarker?: SchemeDisplayHeaderMarker,
 ): EditorSchemeModalState => ({
   isOpen: true,
   path: location.path,
   pointer: location.pointer,
-  value: location.value,
+  value: displayHeaderMarker?.source ?? location.value,
   source,
+  readOnly: Boolean(displayHeaderMarker),
   ...(location.label ? { label: location.label } : {}),
 });
 
@@ -37,4 +42,9 @@ export const shouldCloseEditorSchemeModal = (
 export const canApplyEditorSchemeModal = (
   modal: EditorSchemeModalState,
   currentSource: string,
-): boolean => modal.isOpen && Boolean(modal.path) && modal.source === currentSource;
+): boolean => (
+  modal.isOpen
+  && !modal.readOnly
+  && Boolean(modal.path)
+  && modal.source === currentSource
+);

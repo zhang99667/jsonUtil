@@ -296,6 +296,7 @@ describe('jsonSchemaInference', () => {
       error: '请先在 SOURCE 输入 JSON',
     });
     expect(inferJsonSchemaFromText('{bad}').error).toContain('SOURCE 不是合法 JSON');
+    expect(inferJsonSchemaFromText('{"value":1e400}').error).toContain('SOURCE 不是合法 JSON');
     expect(inferJsonSchemaFromText('{"ok":true}\n{bad}').error).toContain('JSON Lines 第 2 行解析错误');
   });
 });

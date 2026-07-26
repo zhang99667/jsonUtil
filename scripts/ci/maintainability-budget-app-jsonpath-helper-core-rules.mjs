@@ -10,4 +10,6 @@ export const appJsonPathHelperCoreMaintainabilityBudgets = [
   appJsonPathHelperCoreBudget('frontend/src/hooks/useJsonPathPanelTour.ts', 35, 'JSONPath 面板引导 hook 只维护首次打开引导和打开后刷新位置'),
   appJsonPathHelperCoreBudget('frontend/src/hooks/useJsonPathPanelTour.test.ts', 65, 'JSONPath 面板引导 hook 测试只锁定首次打开、重复打开和关闭态'),
   appJsonPathHelperCoreBudget('frontend/src/utils/jsonPathPanelPresets.ts', 25, 'JSONPath 面板 preset 常量只维护默认示例和 Response 常用查询'),
+  appJsonPathHelperCoreBudget('frontend/src/utils/jsonPathPreview.ts', 145, 'JSONPath 结果预览只维护有界明细、结构摘要和不可序列化值降级'),
+  appJsonPathHelperCoreBudget('frontend/src/utils/jsonPathPreview.test.ts', 95, 'JSONPath 结果预览测试锁定大小预算、紧凑摘要和序列化异常边界'),
 ];

@@ -1,5 +1,7 @@
 import type { JsonValue } from '../types';
 import { formatUnknownError } from './errors';
+import { parseJsonValue } from './jsonValueGuards';
+import { stringifyJsonValue } from './jsonValueStringify';
 
 const JSON_LINE_PREFIX_RE = /^[{\["tfn\-\d]/;
 const JSON_LINE_STRUCTURAL_FRAGMENT_RE = /^(?:[\[{]|[\]}],?)$/;
@@ -16,9 +18,6 @@ export interface JsonLinesDiagnostic {
   error?: string;
 }
 
-/**
- * 解析一行一个 JSON 的 JSON Lines 内容，并保留原始行位置用于高亮回填。
- */
 export const parseJsonLinesDetailed = (input: string): JsonLinesDiagnostic => {
   if (!input.includes('\n')) return { records: null };
 
@@ -32,8 +31,9 @@ export const parseJsonLinesDetailed = (input: string): JsonLinesDiagnostic => {
     if (!JSON_LINE_PREFIX_RE.test(trimmed)) return { records: null };
 
     try {
+      const value = parseJsonValue(trimmed);
       records.push({
-        value: JSON.parse(trimmed) as JsonValue,
+        value,
         source: trimmed,
         lineIndex,
         columnOffset: line.search(/\S/),
@@ -71,5 +71,5 @@ export const parseJsonLines = (input: string): JsonValue[] | null => {
 };
 
 export const stringifyJsonLines = (records: JsonValue[]): string => (
-  records.map(record => JSON.stringify(record)).join('\n')
+  records.map(record => stringifyJsonValue(record)).join('\n')
 );

@@ -1,3 +1,5 @@
+import { tryParseJsonStringLiteral } from './schemeJsonPayloadParser';
+
 export interface UnwrappedLogFieldValue {
   value: string;
   quote?: '"' | "'";
@@ -9,14 +11,8 @@ export const unwrapLogFieldValue = (value: string): UnwrappedLogFieldValue => {
   if ((quote === '"' || quote === "'") && trimmed.endsWith(quote)) {
     const inner = trimmed.slice(1, -1);
     if (quote === '"') {
-      try {
-        const parsed: unknown = JSON.parse(trimmed);
-        if (typeof parsed === 'string') {
-          return { value: parsed, quote };
-        }
-      } catch {
-        return { value: inner, quote };
-      }
+      const parsed = tryParseJsonStringLiteral(trimmed);
+      return { value: parsed ?? inner, quote };
     }
 
     return { value: inner.replace(/\\'/g, "'"), quote };
@@ -33,12 +29,7 @@ export const unwrapLogFieldKey = (
   const quote = trimmed[0];
   if ((quote === '"' || quote === "'") && trimmed.endsWith(quote)) {
     if (quote === '"') {
-      try {
-        const parsed: unknown = JSON.parse(trimmed);
-        return typeof parsed === 'string' ? parsed : null;
-      } catch {
-        return trimmed.slice(1, -1);
-      }
+      return tryParseJsonStringLiteral(trimmed) ?? trimmed.slice(1, -1);
     }
 
     return trimmed.slice(1, -1).replace(/\\'/g, "'");

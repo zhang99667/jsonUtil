@@ -35,6 +35,11 @@ export const buildAppPreviewCodeEditorTestProps = (
   deepFormatWarning: 'deep warning',
   deepFormatInfo: 'deep info',
   hasTransformReportContext: true,
+  schemeDisplayHeaderMarkers: [{
+    path: '$.landing.__url__',
+    kind: 'url',
+    source: 'https://example.com/page?from=preview',
+  }],
   highlightRange: {
     startLine: 1,
     startColumn: 1,

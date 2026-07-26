@@ -135,6 +135,19 @@ describe('aiRepairOpenAiTransport', () => {
       .resolves.toBe(' {"ok":true} ');
   });
 
+  it('跳过 text parts 中的非对象值并保留后续文本', async () => {
+    const response = new Response(JSON.stringify({
+      choices: [{
+        message: {
+          content: [null, 42, '非对象文本', { type: 'text', text: '{"ok":true}' }],
+        },
+      }],
+    }), { status: 200 });
+
+    await expect(readOpenAICompatibleRepairText(response))
+      .resolves.toBe('{"ok":true}');
+  });
+
   it('模型明确返回空对象时保留响应文本', async () => {
     const response = new Response(JSON.stringify({
       choices: [{ message: { content: '{}' } }],
@@ -251,6 +264,15 @@ describe('aiRepairOpenAiTransport', () => {
     expect(message).toContain('...');
     expect(message).not.toContain('sk-live-secret123');
     expect(message.length).toBeLessThan(300);
+  });
+
+  it('错误字段不是对象时回退到顶层 message', () => {
+    expect(formatAiHttpErrorMessage(500, JSON.stringify({
+      error: [],
+      message: 'upstream unavailable',
+    }))).toBe('AI 服务暂时不可用，请稍后重试：upstream unavailable');
+    expect(formatAiHttpErrorMessage(500, '{"message":"upstream","value":1e400}'))
+      .toBe('AI 服务暂时不可用，请稍后重试：{"message":"upstream","value":1e400}');
   });
 
   it('格式化非 JSON 错误体和网络错误时会隐藏敏感详情', () => {

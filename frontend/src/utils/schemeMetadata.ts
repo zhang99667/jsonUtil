@@ -1,16 +1,38 @@
+import type { JsonValue } from '../types';
 import type { SchemeDecodeResult } from './schemeTypes';
 import {
-  base64Decode,
   detectSchemeType,
-  hasUrlEncoding,
   isActionableSchemeUrl,
-  parseUrl,
-  urlDecode,
 } from './schemeUtils';
 import { appendJsonPathKey } from './jsonPathSegments';
-import { findSchemePrefixedQueryString } from './schemePrefixedQuery';
-import { decodeQueryComponentOrOriginal as decodeQueryComponent } from './schemeQueryDecoding';
-import { isRecord as isPlainObject, parseJsonWithFallback } from './storage';
+import { isJsonObject } from './jsonValueGuards';
+import {
+  getPrimaryCommandFieldPriority,
+  isCommandInsightField,
+  isExtInsightField,
+  isResourceInsightField,
+} from './schemeMetadataFieldRules';
+import {
+  getSchemeCommandSchemaFromSource,
+  getSchemeCommandSourceInfo,
+  getSchemeMetadataSourceObjectChild,
+  parseSchemeMetadataSourceShape,
+  type SchemeMetadataSourceShape,
+} from './schemeMetadataSourceShape';
+import {
+  parseSchemeMetadataContext,
+  type SchemeMetadataContext,
+} from './schemeMetadataContext';
+import { wrapNestedCmdHandlerParams } from './schemeMetadataCmdHandlerWrapper';
+import { getUrlResourceSchemaFromUrl } from './schemeUrlResourceSchema';
+import { isRecord as isPlainObject } from './storage';
+import {
+  formatDecodedPathCopyValue,
+  stringifyUnknownValue,
+} from './transformValuePreview';
+
+export { getUrlResourceSchemaFromUrl } from './schemeUrlResourceSchema';
+export { getSchemeCommandSchemaFromUrl } from './schemeMetadataSourceShape';
 
 export interface Base64MetaEntry {
   key: string;
@@ -82,8 +104,20 @@ interface SchemeInsightCollectOptions {
   source?: string;
 }
 
+interface SchemeMetadataTraversalTask {
+  value: unknown;
+  sourceShape: SchemeMetadataSourceShape | null;
+  sourceValue?: SchemeMetadataSourceShape;
+  path: string;
+  key?: string;
+}
+
+export interface SchemeCommandSummaryContextOptions {
+  includeCommandFieldRows?: boolean;
+}
+
 interface PrimaryCommandCandidate {
-  decodedValue: unknown;
+  decodedValue: JsonValue;
   source: string;
   commandSchema?: string;
   priority: number;
@@ -91,239 +125,20 @@ interface PrimaryCommandCandidate {
   order: number;
 }
 
-type SourceShape =
-  | string
-  | number
-  | boolean
-  | null
-  | SourceShape[]
-  | { [key: string]: SourceShape };
+interface PrimaryCommandCollectTask {
+  decodedValue: JsonValue;
+  rawSource: unknown;
+  depth: number;
+  key?: string;
+  candidateDepth?: number;
+}
 
 const DEFAULT_DISPLAY_LIMIT = 64;
-const QUERY_KEY_PATTERN = '[A-Za-z0-9_.\\-[\\]%]+';
-const QUERY_PAIR_START_RE = new RegExp(`^${QUERY_KEY_PATTERN}=`);
-const QUERY_PAIR_DELIMITER_RE = new RegExp(`[&;](?=${QUERY_KEY_PATTERN}=)`);
-const COMMA_QUERY_DELIMITER_RE = new RegExp(`,\\s*(?=${QUERY_KEY_PATTERN}=)`, 'g');
-const LOG_FIELD_KEY_PATTERN = `(?:"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|${QUERY_KEY_PATTERN})`;
-const LOG_FIELD_SEPARATOR_PATTERN = '(?:\\s*(?:=>|->)\\s*|\\s*[:：]\\s*|\\s+=\\s*|=\\s+)';
-const LOG_FIELD_RE = new RegExp(`^\\s*(${LOG_FIELD_KEY_PATTERN})${LOG_FIELD_SEPARATOR_PATTERN}(.+?)\\s*$`);
-const LOG_FIELD_WITH_PREFIX_RE = new RegExp(`^(.*?[\\s[{,(|])(${LOG_FIELD_KEY_PATTERN})${LOG_FIELD_SEPARATOR_PATTERN}(.+?)\\s*$`);
-const HTML_EQUALS_RE = /&(?:equals|#61|#x3d);/gi;
-const HTML_QUERY_DELIMITER_RE = new RegExp(`&(?:amp|#38|#x26);(?=${QUERY_KEY_PATTERN}=)`, 'gi');
-const UNICODE_EQUALS_RE = /\\u003d/gi;
-const UNICODE_AMP_QUERY_DELIMITER_RE = new RegExp(`\\\\u0026(?=${QUERY_KEY_PATTERN}=)`, 'gi');
-const ESCAPED_LINE_QUERY_DELIMITER_RE = new RegExp(`(?:\\\\r\\\\n|\\\\n)[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
-const LINE_QUERY_DELIMITER_RE = new RegExp(`\\r?\\n[ \\t]*(?=${QUERY_KEY_PATTERN}=)`, 'g');
-const CMD_FIELD_NAMES = new Set([
-  'cmd',
-  'action_cmd',
-  'actioncmd',
-  'actioncommand',
-  'action-command',
-  'command',
-  'cmd_param',
-  'cmd_params',
-  'command_param',
-  'command_params',
-  'schema',
-  'scheme',
-  'schema_url',
-  'schemaurl',
-  'scheme_url',
-  'schemeurl',
-  'convert_cmd',
-  'panel_cmd',
-  'webpanel_cmd',
-  'stay_cmd',
-  'reward_cmd',
-  'strong_guide_cmd',
-  'button_cmd',
-  'convert_btn',
-  'main_btn',
-  'bottom_left_btn',
-  'bottom_right_btn',
-  'button_scheme',
-  'bottom_button_scheme',
-  'panel_scheme',
-  'click_event_cmd',
-  'webpanel_event_cmd',
-]);
-const CMD_FIELD_SUFFIXES = ['_cmd', 'cmd', '_scheme', 'scheme'];
-const URL_FIELD_NAMES = new Set([
-  'url',
-  'uri',
-  'link',
-  'target',
-  'target_url',
-  'redirect',
-  'redirect_url',
-  'next',
-  'next_url',
-  'fallback_url',
-  'deep_link',
-  'deeplink',
-  'jump_url',
-  'landing_url',
-  'landing_page_url',
-  'h5_url',
-  'page_url',
-  'web_url',
-  'detail_url',
-  'lp_real_url',
-  'app_url',
-  'appurl',
-  'open_app_url',
-  'download_url',
-  'apk_url',
-  'deeplink_url',
-  'deep_link_url',
-  'callback_url',
-  'callback',
-  'open_url',
-  'ad_monitor_url',
-  'monitor_url',
-  'click_url',
-  'weburl',
-  'appUrl',
-  'webUrl',
-  'openUrl',
-]);
-const URL_FIELD_SUFFIXES = ['_url', 'url'];
-const RESOURCE_FIELD_NAMES = new Set([
-  'avatar',
-  'avatarUrl',
-  'avatarurl',
-  'audio_url',
-  'audioUrl',
-  'audiourl',
-  'bg_lottie_url',
-  'bottom_button_icon',
-  'button_icon',
-  'button_image',
-  'close_image',
-  'cover',
-  'coverUrl',
-  'coverurl',
-  'fail_lottie',
-  'icon',
-  'image',
-  'imageUrl',
-  'imageurl',
-  'image_url',
-  'icon_url',
-  'iconUrl',
-  'iconurl',
-  'logo',
-  'logo_url',
-  'logoUrl',
-  'logourl',
-  'lottie',
-  'lottieUrl',
-  'lottieurl',
-  'media_url',
-  'mediaUrl',
-  'mediaurl',
-  'poster',
-  'poster_image',
-  'poster_url',
-  'posterUrl',
-  'posterurl',
-  'portrait',
-  'portrait_url',
-  'portraitUrl',
-  'portraiturl',
-  'success_lottie',
-  'swipe_up_lottie',
-  'time_complete_lottie_url',
-  'timer_front_icon',
-  'top_image',
-  'user_portrait',
-  'video_url',
-  'videoUrl',
-  'videourl',
-]);
-const RESOURCE_FIELD_SUFFIXES = [
-  '_avatar',
-  '_avatar_url',
-  '_cover',
-  '_cover_url',
-  '_icon',
-  '_icon_url',
-  '_image',
-  '_image_url',
-  '_lottie',
-  '_lottie_url',
-  '_logo',
-  '_logo_url',
-  '_poster',
-  '_poster_url',
-  '_portrait',
-  '_portrait_url',
-];
-const EXT_FIELD_NAMES = new Set([
-  'ad_extra_param',
-  'extInfo',
-  'ext_info',
-  'adFlag',
-]);
-const PRIMARY_COMMAND_FIELD_PRIORITIES = new Map<string, number>([
-  ['scheme', 100],
-  ['cmd', 100],
-  ['schema', 98],
-  ['action_cmd', 96],
-  ['actioncmd', 96],
-  ['command', 94],
-  ['convert_cmd', 92],
-  ['panel_cmd', 90],
-  ['webpanel_cmd', 90],
-  ['panel_scheme', 88],
-  ['stay_cmd', 86],
-  ['reward_cmd', 86],
-  ['strong_guide_cmd', 86],
-  ['button_scheme', 82],
-  ['bottom_button_scheme', 82],
-  ['button_cmd', 78],
-  ['callbackUrl', 40],
-  ['callback_url', 40],
-  ['url', 30],
-  ['page_url', 28],
-  ['lp_real_url', 28],
-  ['click_url', 24],
-  ['video_url', 10],
-]);
 const COMMAND_SCHEMA_SUMMARY_LIMIT = 6;
 const COMMAND_SCHEMA_SUMMARY_PATH_LIMIT = 3;
 
 const dedupe = (values: string[]): string[] => (
   Array.from(new Set(values)).filter(Boolean)
-);
-
-const isCmdInsightField = (key: string): boolean => {
-  const normalizedKey = key.trim();
-  const lowerKey = normalizedKey.toLowerCase();
-  return CMD_FIELD_NAMES.has(normalizedKey) ||
-    CMD_FIELD_NAMES.has(lowerKey) ||
-    CMD_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
-};
-
-const isUrlInsightField = (key: string): boolean => {
-  const normalizedKey = key.trim();
-  const lowerKey = normalizedKey.toLowerCase();
-  return URL_FIELD_NAMES.has(normalizedKey) ||
-    URL_FIELD_NAMES.has(lowerKey) ||
-    URL_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
-};
-
-const isResourceInsightField = (key: string): boolean => {
-  const normalizedKey = key.trim();
-  const lowerKey = normalizedKey.toLowerCase();
-  return RESOURCE_FIELD_NAMES.has(normalizedKey) ||
-    RESOURCE_FIELD_NAMES.has(lowerKey) ||
-    RESOURCE_FIELD_SUFFIXES.some(suffix => lowerKey.endsWith(suffix));
-};
-
-const isCommandInsightField = (key: string): boolean => (
-  isCmdInsightField(key) || isUrlInsightField(key)
 );
 
 const isResourceInsightValue = (value: unknown): boolean => {
@@ -332,14 +147,6 @@ const isResourceInsightValue = (value: unknown): boolean => {
 
   const trimmed = value.trim();
   return Boolean(trimmed) && detectSchemeType(trimmed) === 'url';
-};
-
-const formatInsightFieldCopyText = (value: unknown, maxLength = 8_000): string => {
-  const text = typeof value === 'string'
-    ? JSON.stringify(value)
-    : JSON.stringify(value) ?? String(value);
-
-  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 };
 
 const formatInsightFieldPreview = (value: unknown, maxLength = DEFAULT_DISPLAY_LIMIT): string => {
@@ -374,7 +181,7 @@ const createInsightFieldRow = (
   key: string,
   path: string,
   value: unknown,
-  sourceValue?: SourceShape
+  sourceValue?: SchemeMetadataSourceShape
 ): SchemeInsightFieldRow => ({
   key,
   path,
@@ -391,84 +198,13 @@ export const getSchemeInsightFieldCopyText = (
   const value = Object.hasOwn(row, 'value')
     ? row.value
     : row.preview;
-  return `${row.path} = ${formatInsightFieldCopyText(value)}`;
+  return `${row.path} = ${formatDecodedPathCopyValue(value)}`;
 };
 
-const collectSchemeInsightFieldsInner = (
+const collectSchemeInsightFieldsFromSourceShape = (
   value: unknown,
-  sourceShape: SourceShape | null,
-  currentPath: string,
-  commandFields: string[],
-  commandFieldRows: SchemeInsightFieldRow[],
-  resourceFields: string[],
-  resourceFieldRows: SchemeInsightFieldRow[],
-  extFields: string[],
-  base64SuffixFields: string[],
-  options: SchemeInsightCollectOptions
-) => {
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectSchemeInsightFieldsInner(
-      item,
-      Array.isArray(sourceShape) ? sourceShape[index] ?? null : null,
-      `${currentPath}[${index}]`,
-      commandFields,
-      commandFieldRows,
-      resourceFields,
-      resourceFieldRows,
-      extFields,
-      base64SuffixFields,
-      options
-    ));
-    return;
-  }
-
-  if (!isPlainObject(value)) return;
-
-  Object.entries(value).forEach(([key, item]) => {
-    const childPath = appendJsonPathKey(currentPath, key);
-    const isObjectItem = Boolean(item) && typeof item === 'object';
-    const childSourceShape = isPlainObject(sourceShape) ? sourceShape[key] : undefined;
-    if (isResourceInsightField(key) && isResourceInsightValue(item)) {
-      resourceFields.push(key);
-      if (options.includeCommandFieldRows !== false) {
-        resourceFieldRows.push(createInsightFieldRow(key, childPath, item, childSourceShape));
-      }
-    } else if (isObjectItem && isCommandInsightField(key)) {
-      commandFields.push(key);
-      if (options.includeCommandFieldRows !== false) {
-        commandFieldRows.push(createInsightFieldRow(key, childPath, item));
-      }
-    }
-
-    if (isPlainObject(item)) {
-      if (EXT_FIELD_NAMES.has(key)) {
-        extFields.push(key);
-      }
-      if (key === '_base64_suffix_decoded') {
-        base64SuffixFields.push(...Object.keys(item));
-      }
-    }
-
-    if (isObjectItem) {
-      collectSchemeInsightFieldsInner(
-        item,
-        childSourceShape ?? null,
-        childPath,
-        commandFields,
-        commandFieldRows,
-        resourceFields,
-        resourceFieldRows,
-        extFields,
-        base64SuffixFields,
-        options
-      );
-    }
-  });
-};
-
-export const collectSchemeInsightFields = (
-  value: unknown,
-  options: SchemeInsightCollectOptions = {}
+  sourceShape: SchemeMetadataSourceShape | null,
+  options: SchemeCommandSummaryContextOptions = {},
 ): SchemeInsightFields => {
   const commandFields: string[] = [];
   const commandFieldRows: SchemeInsightFieldRow[] = [];
@@ -476,20 +212,65 @@ export const collectSchemeInsightFields = (
   const resourceFieldRows: SchemeInsightFieldRow[] = [];
   const extFields: string[] = [];
   const base64SuffixFields: string[] = [];
-  const sourceShape = parseSourceShape(options.source?.trim());
+  const tasks: SchemeMetadataTraversalTask[] = [{ value, sourceShape, path: '$' }];
 
-  collectSchemeInsightFieldsInner(
-    value,
-    sourceShape,
-    '$',
-    commandFields,
-    commandFieldRows,
-    resourceFields,
-    resourceFieldRows,
-    extFields,
-    base64SuffixFields,
-    options
-  );
+  while (tasks.length > 0) {
+    const task = tasks.pop();
+    if (!task) break;
+
+    const isObjectItem = Boolean(task.value) && typeof task.value === 'object';
+    if (task.key !== undefined) {
+      if (isResourceInsightField(task.key) && isResourceInsightValue(task.value)) {
+        resourceFields.push(task.key);
+        if (options.includeCommandFieldRows !== false) {
+          resourceFieldRows.push(createInsightFieldRow(
+            task.key,
+            task.path,
+            task.value,
+            task.sourceValue
+          ));
+        }
+      } else if (isObjectItem && isCommandInsightField(task.key)) {
+        commandFields.push(task.key);
+        if (options.includeCommandFieldRows !== false) {
+          commandFieldRows.push(createInsightFieldRow(task.key, task.path, task.value));
+        }
+      }
+
+      if (isPlainObject(task.value)) {
+        if (isExtInsightField(task.key)) extFields.push(task.key);
+        if (task.key === '_base64_suffix_decoded') {
+          base64SuffixFields.push(...Object.keys(task.value));
+        }
+      }
+    }
+
+    if (Array.isArray(task.value)) {
+      for (let index = task.value.length - 1; index >= 0; index -= 1) {
+        if (!(index in task.value)) continue;
+        tasks.push({
+          value: task.value[index],
+          sourceShape: Array.isArray(task.sourceShape) ? task.sourceShape[index] ?? null : null,
+          path: `${task.path}[${index}]`,
+        });
+      }
+      continue;
+    }
+
+    if (!isPlainObject(task.value)) continue;
+    const entries = Object.entries(task.value);
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const [key, item] = entries[index];
+      const childSourceValue = isPlainObject(task.sourceShape) ? task.sourceShape[key] : undefined;
+      tasks.push({
+        value: item,
+        sourceShape: childSourceValue ?? null,
+        sourceValue: childSourceValue,
+        path: appendJsonPathKey(task.path, key),
+        key,
+      });
+    }
+  }
 
   return {
     commandFields: dedupe(commandFields),
@@ -505,6 +286,17 @@ export const collectSchemeInsightFields = (
   };
 };
 
+export const collectSchemeInsightFields = (
+  value: unknown,
+  options: SchemeInsightCollectOptions = {},
+): SchemeInsightFields => (
+  collectSchemeInsightFieldsFromSourceShape(
+    value,
+    parseSchemeMetadataSourceShape(options.source?.trim()),
+    options,
+  )
+);
+
 export const formatSchemeInsightItems = (
   title: string,
   items: string[],
@@ -519,279 +311,6 @@ export const formatSchemeInsightItems = (
     : `${title}: ${visibleItems}`;
 };
 
-export const getUrlResourceSchemaFromUrl = (value: string): string | undefined => {
-  const trimmed = value.trim().replace(/\\\//g, '/');
-  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return undefined;
-
-  try {
-    const url = new URL(trimmed);
-    return `${url.protocol}//${url.host}${url.pathname}`;
-  } catch {
-    return trimmed.split(/[?#]/)[0] || undefined;
-  }
-};
-
-export const getSchemeCommandSchemaFromUrl = (value: string): string | undefined => {
-  const trimmed = value.trim().replace(/\\\//g, '/');
-  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return undefined;
-  if (!isActionableSchemeUrl(trimmed)) return undefined;
-
-  return getUrlResourceSchemaFromUrl(trimmed);
-};
-
-const normalizeSourceString = (value: string): string => {
-  let current = value.trim().replace(/\\\//g, '/');
-
-  for (let depth = 0; depth < 3 && hasUrlEncoding(current); depth++) {
-    if (detectSchemeType(current) !== 'url-encoded') break;
-
-    const decoded = urlDecode(current);
-    if (decoded === current) break;
-    current = decoded;
-  }
-
-  return current;
-};
-
-const mergeSourceValue = (
-  existing: SourceShape | undefined,
-  value: SourceShape
-): SourceShape => {
-  if (existing === undefined) return value;
-  if (Array.isArray(existing)) return [...existing, value];
-  return [existing, value];
-};
-
-const tryParseJsonSource = (value: string): SourceShape | null => {
-  const trimmed = value.trim();
-  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
-
-  return normalizeSourceShape(parseJsonWithFallback<unknown>(trimmed, null));
-};
-
-const tryParseJsonStringSource = (value: string): string | null => {
-  const trimmed = value.trim();
-  if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) return null;
-
-  const parsed = parseJsonWithFallback<unknown>(trimmed, null);
-  return typeof parsed === 'string' ? parsed : null;
-};
-
-const normalizeSourceShape = (value: unknown): SourceShape => {
-  if (typeof value === 'string') {
-    return parseSourceValue(value);
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(item => normalizeSourceShape(item));
-  }
-
-  if (isPlainObject(value)) {
-    const result: { [key: string]: SourceShape } = {};
-    Object.entries(value).forEach(([key, item]) => {
-      result[key] = normalizeSourceShape(item);
-    });
-    return result;
-  }
-
-  if (typeof value === 'number') return value;
-  if (typeof value === 'boolean') return value;
-  if (value === null) return null;
-
-  return String(value);
-};
-
-const parseSourceValue = (value: string): SourceShape => {
-  const jsonStringPayload = tryParseJsonStringSource(value);
-  if (jsonStringPayload !== null) {
-    return parseSourceValue(jsonStringPayload);
-  }
-
-  const directJsonValue = tryParseJsonSource(value);
-  if (directJsonValue !== null) return directJsonValue;
-
-  const normalized = normalizeSourceString(value);
-  if (detectSchemeType(normalized) === 'base64') {
-    const decoded = base64Decode(normalized);
-    if (decoded && decoded !== normalized) {
-      return parseSourceValue(decoded);
-    }
-  }
-
-  const jsonValue = tryParseJsonSource(normalized);
-  return jsonValue ?? normalized;
-};
-
-const parseSourceFieldKey = (rawKey: string): string | null => {
-  const trimmed = rawKey.trim();
-  const quote = trimmed[0];
-  if ((quote === '"' || quote === "'") && trimmed.endsWith(quote)) {
-    if (quote === '"') {
-      try {
-        const parsed = JSON.parse(trimmed) as unknown;
-        return typeof parsed === 'string' ? parsed : null;
-      } catch {
-        return trimmed.slice(1, -1);
-      }
-    }
-
-    return trimmed.slice(1, -1).replace(/\\'/g, "'");
-  }
-
-  return decodeQueryComponent(trimmed);
-};
-
-const parseSourceFieldValue = (rawValue: string): string => {
-  const trimmed = rawValue.trim();
-  const withoutTrailingComma = trimmed.endsWith(',') ? trimmed.slice(0, -1).trim() : trimmed;
-  const quote = withoutTrailingComma[0];
-  if ((quote === '"' || quote === "'") && withoutTrailingComma.endsWith(quote)) {
-    if (quote === '"') {
-      const parsed = tryParseJsonStringSource(withoutTrailingComma);
-      return parsed ?? withoutTrailingComma.slice(1, -1);
-    }
-
-    return withoutTrailingComma.slice(1, -1).replace(/\\'/g, "'");
-  }
-
-  return withoutTrailingComma;
-};
-
-const normalizeQuerySourceString = (source: string): string => (
-  source.trim()
-    .replace(/^\?/, '')
-    .replace(/^&+/, '')
-    .replace(HTML_EQUALS_RE, '=')
-    .replace(HTML_QUERY_DELIMITER_RE, '&')
-    .replace(UNICODE_EQUALS_RE, '=')
-    .replace(UNICODE_AMP_QUERY_DELIMITER_RE, '&')
-    .replace(ESCAPED_LINE_QUERY_DELIMITER_RE, '&')
-    .replace(LINE_QUERY_DELIMITER_RE, '&')
-    .replace(COMMA_QUERY_DELIMITER_RE, '&')
-);
-
-const getQuerySourceShapeString = (source: string): string | null => {
-  const normalizedSource = normalizeQuerySourceString(source);
-  if (QUERY_PAIR_START_RE.test(normalizedSource)) return normalizedSource;
-
-  const prefixedQuery = findSchemePrefixedQueryString(normalizedSource);
-  if (!prefixedQuery) return null;
-
-  const prefixedSource = normalizeQuerySourceString(prefixedQuery.queryString);
-  return QUERY_PAIR_START_RE.test(prefixedSource) ? prefixedSource : null;
-};
-
-const parseLogFieldSourceShape = (source: string): SourceShape | null => {
-  const trimmed = source.trim();
-  if (/[\r\n]/.test(trimmed)) return null;
-
-  const directMatch = trimmed.match(LOG_FIELD_RE);
-  const prefixedMatch = directMatch ? null : trimmed.match(LOG_FIELD_WITH_PREFIX_RE);
-  const rawKey = directMatch?.[1] ?? prefixedMatch?.[2];
-  const rawValue = directMatch?.[2] ?? prefixedMatch?.[3];
-  if (!rawKey || rawValue === undefined) return null;
-
-  const key = parseSourceFieldKey(rawKey);
-  if (!key) return null;
-
-  return {
-    [key]: parseSourceValue(parseSourceFieldValue(rawValue)),
-  };
-};
-
-const parseQuerySourceShape = (source: string): SourceShape | null => {
-  const normalizedSource = getQuerySourceShapeString(source);
-  if (!normalizedSource) return parseLogFieldSourceShape(source);
-  if (!QUERY_PAIR_START_RE.test(normalizedSource)) return null;
-
-  const result: { [key: string]: SourceShape } = {};
-  normalizedSource.split(QUERY_PAIR_DELIMITER_RE).forEach(pair => {
-    const equalIndex = pair.indexOf('=');
-    if (equalIndex <= 0) return;
-
-    const key = decodeQueryComponent(pair.slice(0, equalIndex));
-    if (!key) return;
-
-    const value = parseSourceValue(decodeQueryComponent(pair.slice(equalIndex + 1)));
-    result[key] = mergeSourceValue(result[key], value);
-  });
-
-  return Object.keys(result).length > 0 ? result : null;
-};
-
-const parseSourceShape = (source?: string): SourceShape | null => {
-  if (!source?.trim()) return null;
-
-  const normalized = normalizeSourceString(source);
-  const sourceType = detectSchemeType(normalized);
-  if (sourceType === 'url') {
-    const schemeInfo = parseUrl(normalized);
-    const queryShape = schemeInfo?.params ? normalizeSourceShape(schemeInfo.params) : null;
-    const hashShape = schemeInfo?.hashParams ? normalizeSourceShape(schemeInfo.hashParams) : null;
-
-    if (queryShape && hashShape && isPlainObject(queryShape)) {
-      return {
-        ...queryShape,
-        _hash: hashShape,
-      };
-    }
-
-    return queryShape || hashShape;
-  }
-  if (sourceType === 'query-string') {
-    return parseQuerySourceShape(normalized);
-  }
-
-  const jsonValue = tryParseJsonSource(normalized);
-  return jsonValue;
-};
-
-const getSourceObjectChild = (
-  sourceShape: SourceShape | null,
-  key: string
-): SourceShape | undefined => (
-  isPlainObject(sourceShape) ? sourceShape[key] : undefined
-);
-
-const getCommandSourceInfo = (
-  sourceShape: SourceShape | undefined
-): { cmdSchema?: string; source: string } | null => {
-  if (typeof sourceShape !== 'string') return null;
-
-  const source = normalizeSourceString(sourceShape);
-  const sourceType = detectSchemeType(source);
-  if (sourceType === 'url') {
-    if (!isActionableSchemeUrl(source)) return null;
-
-    const cmdSchema = getSchemeCommandSchemaFromUrl(source);
-    return {
-      ...(cmdSchema ? { cmdSchema } : {}),
-      source,
-    };
-  }
-
-  if (sourceType === 'query-string') {
-    return { source };
-  }
-
-  return null;
-};
-
-const getCommandSchemaFromSource = (source?: string): string | undefined => {
-  if (!source) return undefined;
-  const normalized = normalizeSourceString(source);
-  return detectSchemeType(normalized) === 'url'
-    ? getSchemeCommandSchemaFromUrl(normalized)
-    : undefined;
-};
-
-const tryParseRawJsonSource = (source?: string): unknown | null => {
-  const trimmed = source?.trim();
-  if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) return null;
-
-  return parseJsonWithFallback<unknown>(trimmed, null);
-};
-
 const getRawSourceChild = (source: unknown, key: string, index?: number): unknown => {
   if (Array.isArray(source)) {
     return index === undefined ? undefined : source[index];
@@ -799,67 +318,61 @@ const getRawSourceChild = (source: unknown, key: string, index?: number): unknow
   return isPlainObject(source) ? source[key] : undefined;
 };
 
-const getPrimaryCommandFieldPriority = (key: string): number => {
-  const normalizedKey = key.trim();
-  const lowerKey = normalizedKey.toLowerCase();
-  return PRIMARY_COMMAND_FIELD_PRIORITIES.get(normalizedKey) ??
-    PRIMARY_COMMAND_FIELD_PRIORITIES.get(lowerKey) ??
-    (isCmdInsightField(key) ? 70 : isUrlInsightField(key) ? 20 : 0);
-};
-
-const collectPrimaryCommandCandidates = (
-  decodedValue: unknown,
-  rawSource: unknown,
-  candidates: PrimaryCommandCandidate[],
-  depth = 0,
-  orderRef = { value: 0 }
-) => {
-  if (Array.isArray(decodedValue)) {
-    decodedValue.forEach((item, index) => {
-      collectPrimaryCommandCandidates(
-        item,
-        getRawSourceChild(rawSource, String(index), index),
-        candidates,
-        depth + 1,
-        orderRef
-      );
-    });
-    return;
-  }
-
-  if (!isPlainObject(decodedValue)) return;
-
-  Object.entries(decodedValue).forEach(([key, item]) => {
-    const rawChild = getRawSourceChild(rawSource, key);
-    const commandSourceInfo = isPlainObject(item) && isCommandInsightField(key) && typeof rawChild === 'string'
-      ? getCommandSourceInfo(rawChild)
-      : null;
-
-    if (commandSourceInfo) {
-      candidates.push({
-        decodedValue: item,
-        source: commandSourceInfo.source,
-        ...(commandSourceInfo.cmdSchema ? { commandSchema: commandSourceInfo.cmdSchema } : {}),
-        priority: getPrimaryCommandFieldPriority(key),
-        depth,
-        order: orderRef.value,
-      });
-      orderRef.value += 1;
-    }
-
-    collectPrimaryCommandCandidates(item, rawChild, candidates, depth + 1, orderRef);
-  });
-};
-
 const findPrimaryCommandCandidate = (
-  cmdParams: unknown,
-  source?: string
+  cmdParams: JsonValue,
+  rawSource: unknown,
 ): PrimaryCommandCandidate | null => {
-  const rawSource = tryParseRawJsonSource(source);
   if (!rawSource) return null;
 
   const candidates: PrimaryCommandCandidate[] = [];
-  collectPrimaryCommandCandidates(cmdParams, rawSource, candidates);
+  const tasks: PrimaryCommandCollectTask[] = [{ decodedValue: cmdParams, rawSource, depth: 0 }];
+  let order = 0;
+
+  while (tasks.length > 0) {
+    const task = tasks.pop()!;
+    const commandSourceInfo = task.key !== undefined
+      && isJsonObject(task.decodedValue)
+      && isCommandInsightField(task.key)
+      && typeof task.rawSource === 'string'
+      ? getSchemeCommandSourceInfo(task.rawSource)
+      : null;
+    if (commandSourceInfo && task.key !== undefined && task.candidateDepth !== undefined) {
+      candidates.push({
+        decodedValue: task.decodedValue,
+        source: commandSourceInfo.source,
+        ...(commandSourceInfo.cmdSchema ? { commandSchema: commandSourceInfo.cmdSchema } : {}),
+        priority: getPrimaryCommandFieldPriority(task.key),
+        depth: task.candidateDepth,
+        order,
+      });
+      order += 1;
+    }
+
+    if (Array.isArray(task.decodedValue)) {
+      for (let index = task.decodedValue.length - 1; index >= 0; index -= 1) {
+        if (!Object.hasOwn(task.decodedValue, index)) continue;
+        tasks.push({
+          decodedValue: task.decodedValue[index],
+          rawSource: getRawSourceChild(task.rawSource, String(index), index),
+          depth: task.depth + 1,
+        });
+      }
+      continue;
+    }
+    if (!isJsonObject(task.decodedValue)) continue;
+
+    const entries = Object.entries(task.decodedValue);
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const [key, item] = entries[index];
+      tasks.push({
+        decodedValue: item,
+        rawSource: getRawSourceChild(task.rawSource, key),
+        depth: task.depth + 1,
+        key,
+        candidateDepth: task.depth,
+      });
+    }
+  }
   if (candidates.length === 0) return null;
 
   return candidates.sort((left, right) => (
@@ -869,88 +382,69 @@ const findPrimaryCommandCandidate = (
   ))[0];
 };
 
-const wrapNestedCmdHandlerParams = (
-  value: unknown,
-  sourceShape: SourceShape | null
-): unknown => {
-  if (Array.isArray(value)) {
-    const sourceItems = Array.isArray(sourceShape) ? sourceShape : [];
-    return value.map((item, index) => (
-      wrapNestedCmdHandlerParams(item, sourceItems[index] ?? null)
-    ));
-  }
+const collectCmdHandlerCommandSchemaRowsFromSourceShape = (
+  decodedValue: unknown,
+  sourceShape: SchemeMetadataSourceShape | null,
+): CmdHandlerCommandSchemaRow[] => {
+  const rows: CmdHandlerCommandSchemaRow[] = [];
+  const tasks: SchemeMetadataTraversalTask[] = [{ value: decodedValue, sourceShape, path: '$' }];
 
-  if (!isPlainObject(value)) return value;
-
-  const result: Record<string, unknown> = {};
-  Object.entries(value).forEach(([key, item]) => {
-    const childSource = getSourceObjectChild(sourceShape, key);
-    const childSourceShape = typeof childSource === 'string'
-      ? parseSourceShape(childSource)
-      : childSource ?? null;
-    const wrappedItem = wrapNestedCmdHandlerParams(item, childSourceShape);
-    const commandSourceInfo = isCommandInsightField(key) && isPlainObject(wrappedItem)
-      ? getCommandSourceInfo(childSource)
+  while (tasks.length > 0) {
+    const task = tasks.pop()!;
+    const commandSourceInfo = task.key !== undefined
+      && isCommandInsightField(task.key)
+      && isPlainObject(task.value)
+      ? getSchemeCommandSourceInfo(task.sourceValue)
       : null;
-
-    result[key] = commandSourceInfo
-      ? {
-          ...(commandSourceInfo.cmdSchema ? { cmdSchema: commandSourceInfo.cmdSchema } : {}),
-          cmdParams: wrappedItem,
-          source: commandSourceInfo.source,
-        }
-      : wrappedItem;
-  });
-
-  return result;
-};
-
-const collectNestedCommandSchemaRowsInner = (
-  value: unknown,
-  sourceShape: SourceShape | null,
-  currentPath: string,
-  rows: CmdHandlerCommandSchemaRow[]
-) => {
-  if (Array.isArray(value)) {
-    const sourceItems = Array.isArray(sourceShape) ? sourceShape : [];
-    value.forEach((item, index) => {
-      collectNestedCommandSchemaRowsInner(item, sourceItems[index] ?? null, `${currentPath}[${index}]`, rows);
-    });
-    return;
-  }
-
-  if (!isPlainObject(value)) return;
-
-  Object.entries(value).forEach(([key, item]) => {
-    const childPath = appendJsonPathKey(currentPath, key);
-    const childSource = getSourceObjectChild(sourceShape, key);
-    const childSourceShape = typeof childSource === 'string'
-      ? parseSourceShape(childSource)
-      : childSource ?? null;
-    const commandSourceInfo = isCommandInsightField(key) && isPlainObject(item)
-      ? getCommandSourceInfo(childSource)
-      : null;
-
     if (commandSourceInfo?.cmdSchema) {
       rows.push({
         schema: commandSourceInfo.cmdSchema,
-        path: childPath,
+        path: task.path,
         source: commandSourceInfo.source,
       });
     }
 
-    collectNestedCommandSchemaRowsInner(item, childSourceShape, childPath, rows);
-  });
+    if (Array.isArray(task.value)) {
+      const sourceItems = Array.isArray(task.sourceShape) ? task.sourceShape : [];
+      for (let index = task.value.length - 1; index >= 0; index -= 1) {
+        if (!Object.hasOwn(task.value, index)) continue;
+        tasks.push({
+          value: task.value[index],
+          sourceShape: sourceItems[index] ?? null,
+          path: `${task.path}[${index}]`,
+        });
+      }
+      continue;
+    }
+    if (!isPlainObject(task.value)) continue;
+
+    const entries = Object.entries(task.value);
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const [key, item] = entries[index];
+      const childSource = getSchemeMetadataSourceObjectChild(task.sourceShape, key);
+      tasks.push({
+        value: item,
+        sourceShape: typeof childSource === 'string'
+          ? parseSchemeMetadataSourceShape(childSource)
+          : childSource ?? null,
+        sourceValue: childSource,
+        path: appendJsonPathKey(task.path, key),
+        key,
+      });
+    }
+  }
+  return rows;
 };
 
 export const collectCmdHandlerCommandSchemaRows = (
   decodedValue: unknown,
-  source?: string
-): CmdHandlerCommandSchemaRow[] => {
-  const rows: CmdHandlerCommandSchemaRow[] = [];
-  collectNestedCommandSchemaRowsInner(decodedValue, parseSourceShape(source?.trim()), '$', rows);
-  return rows;
-};
+  source?: string,
+): CmdHandlerCommandSchemaRow[] => (
+  collectCmdHandlerCommandSchemaRowsFromSourceShape(
+    decodedValue,
+    parseSchemeMetadataSourceShape(source?.trim()),
+  )
+);
 
 const buildCommandSchemaSummaries = (
   rows: CmdHandlerCommandSchemaRow[],
@@ -1028,21 +522,106 @@ export const formatBase64MetaDisplayValue = (
   value: unknown,
   maxLength = DEFAULT_DISPLAY_LIMIT
 ): string => {
-  let text: string;
+  const text = typeof value === 'string' ? value : stringifyUnknownValue(value);
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+};
 
-  if (typeof value === 'string') {
-    text = value;
-  } else if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
-    text = String(value);
-  } else {
-    try {
-      text = JSON.stringify(value);
-    } catch {
-      text = String(value);
-    }
+const extractNonJsonSchemeCommandSummaryInfo = (
+  decoded: string,
+  schemeInfo?: SchemeDecodeResult['schemeInfo'],
+  source?: string,
+): SchemeCommandSummaryInfo | null => {
+  const commandSchema = schemeInfo
+    ? getCommandSchemaFromInfo(schemeInfo, source?.trim() || decoded)
+    : undefined;
+  const topCommandSchemas = commandSchema
+    ? [{
+        schema: commandSchema,
+        count: 1,
+        paths: ['$'],
+        hasMorePaths: false,
+      }]
+    : [];
+  return commandSchema
+    ? {
+        commandSchema,
+        paramCount: 0,
+        paramKeys: [],
+        commandSchemaCount: topCommandSchemas.length,
+        topCommandSchemas,
+        commandFields: [],
+        commandFieldRows: [],
+        commandFieldCount: 0,
+        resourceFields: [],
+        resourceFieldRows: [],
+        resourceFieldCount: 0,
+        extFields: [],
+        extFieldCount: 0,
+        base64SuffixFields: [],
+        base64SuffixFieldCount: 0,
+      }
+    : null;
+};
+
+export const extractSchemeCommandSummaryInfoFromContext = (
+  context: SchemeMetadataContext,
+  schemeInfo?: SchemeDecodeResult['schemeInfo'],
+  options: SchemeCommandSummaryContextOptions = {},
+): SchemeCommandSummaryInfo | null => {
+  const rootObject = isPlainObject(context.decodedValue)
+    ? context.decodedValue
+    : null;
+  const paramKeys = rootObject ? Object.keys(rootObject) : [];
+  const fields = collectSchemeInsightFieldsFromSourceShape(
+    context.decodedValue,
+    context.sourceShape,
+    options,
+  );
+  const commandSchema = schemeInfo
+    ? getCommandSchemaFromInfo(schemeInfo, context.source)
+    : undefined;
+  const commandSchemaRows = [
+    ...(commandSchema
+      ? [{
+          schema: commandSchema,
+          path: '$',
+          source: context.source || context.decoded,
+        }]
+      : []),
+    ...collectCmdHandlerCommandSchemaRowsFromSourceShape(
+      context.decodedValue,
+      context.sourceShape,
+    ),
+  ];
+  const primaryCommand = findPrimaryCommandCandidate(
+    context.decodedValue,
+    context.rawJsonSource,
+  );
+  const topCommandSchemas = buildCommandSchemaSummaries(
+    commandSchemaRows,
+    commandSchema || primaryCommand?.commandSchema
+  );
+
+  if (
+    !commandSchema &&
+    paramKeys.length === 0 &&
+    commandSchemaRows.length === 0 &&
+    fields.commandFields.length === 0 &&
+    fields.resourceFields.length === 0 &&
+    fields.extFields.length === 0 &&
+    fields.base64SuffixFields.length === 0
+  ) {
+    return null;
   }
 
-  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+  return {
+    commandSchema,
+    paramCount: paramKeys.length,
+    paramKeys,
+    commandSchemaCount: commandSchemaRows.length,
+    topCommandSchemas,
+    ...fields,
+  };
 };
 
 export const extractSchemeCommandSummaryInfo = (
@@ -1052,81 +631,55 @@ export const extractSchemeCommandSummaryInfo = (
   options: SchemeInsightCollectOptions = {}
 ): SchemeCommandSummaryInfo | null => {
   if (!isJson) {
-    const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo, options.source?.trim() || decoded) : undefined;
-    const topCommandSchemas = commandSchema
-      ? [{
-          schema: commandSchema,
-          count: 1,
-          paths: ['$'],
-          hasMorePaths: false,
-        }]
-      : [];
-    return commandSchema
-      ? {
-          commandSchema,
-          paramCount: 0,
-          paramKeys: [],
-          commandSchemaCount: topCommandSchemas.length,
-          topCommandSchemas,
-          commandFields: [],
-          commandFieldRows: [],
-          commandFieldCount: 0,
-          resourceFields: [],
-          resourceFieldRows: [],
-          resourceFieldCount: 0,
-          extFields: [],
-          extFieldCount: 0,
-          base64SuffixFields: [],
-          base64SuffixFieldCount: 0,
-        }
-      : null;
+    return extractNonJsonSchemeCommandSummaryInfo(
+      decoded,
+      schemeInfo,
+      options.source,
+    );
   }
 
-  try {
-    const parsed: unknown = JSON.parse(decoded);
-    const rootObject = isPlainObject(parsed) ? parsed : null;
-    const paramKeys = rootObject ? Object.keys(rootObject) : [];
-    const fields = collectSchemeInsightFields(parsed, options);
-    const commandSchema = schemeInfo ? getCommandSchemaFromInfo(schemeInfo, options.source?.trim() || decoded) : undefined;
-    const commandSchemaRows = [
-      ...(commandSchema
-        ? [{
-            schema: commandSchema,
-            path: '$',
-            source: options.source?.trim() || decoded,
-          }]
-        : []),
-      ...collectCmdHandlerCommandSchemaRows(parsed, options.source),
-    ];
-    const primaryCommand = findPrimaryCommandCandidate(parsed, options.source);
-    const topCommandSchemas = buildCommandSchemaSummaries(
-      commandSchemaRows,
-      commandSchema || primaryCommand?.commandSchema
-    );
+  const context = parseSchemeMetadataContext(decoded, options.source);
+  return context
+    ? extractSchemeCommandSummaryInfoFromContext(context, schemeInfo, options)
+    : null;
+};
 
-    if (
-      !commandSchema &&
-      paramKeys.length === 0 &&
-      commandSchemaRows.length === 0 &&
-      fields.commandFields.length === 0 &&
-      fields.resourceFields.length === 0 &&
-      fields.extFields.length === 0 &&
-      fields.base64SuffixFields.length === 0
-    ) {
-      return null;
-    }
+export const extractBase64MetaInfoFromContext = (
+  context: SchemeMetadataContext,
+): Base64MetaInfo | null => {
+  if (!isPlainObject(context.decodedValue)) return null;
 
-    return {
-      commandSchema,
-      paramCount: paramKeys.length,
-      paramKeys,
-      commandSchemaCount: commandSchemaRows.length,
-      topCommandSchemas,
-      ...fields,
-    };
-  } catch {
+  const prefix = typeof context.decodedValue._base64_prefix === 'string'
+    ? context.decodedValue._base64_prefix
+    : '';
+  const suffix = typeof context.decodedValue._base64_suffix === 'string'
+    ? context.decodedValue._base64_suffix
+    : '';
+  const suffixDecodePrefix = typeof context.decodedValue._base64_suffix_decode_prefix === 'string'
+    ? context.decodedValue._base64_suffix_decode_prefix
+    : '';
+  const suffixDecodedObject = isPlainObject(context.decodedValue._base64_suffix_decoded)
+    ? context.decodedValue._base64_suffix_decoded
+    : null;
+  const suffixDecodedEntries = suffixDecodedObject
+    ? Object.entries(suffixDecodedObject).map(([key, value]) => ({
+      key,
+      displayValue: formatBase64MetaDisplayValue(value),
+    }))
+    : [];
+
+  if (!prefix && !suffix && !suffixDecodePrefix && suffixDecodedEntries.length === 0) {
     return null;
   }
+
+  return {
+    prefix,
+    suffix,
+    suffixDecodePrefix,
+    suffixLength: suffix.length,
+    suffixDecodedCount: suffixDecodedEntries.length,
+    suffixDecodedEntries,
+  };
 };
 
 export const extractBase64MetaInfo = (
@@ -1135,40 +688,8 @@ export const extractBase64MetaInfo = (
 ): Base64MetaInfo | null => {
   if (!isJson) return null;
 
-  try {
-    const parsed: unknown = JSON.parse(decoded);
-    if (!isPlainObject(parsed)) return null;
-
-    const prefix = typeof parsed._base64_prefix === 'string' ? parsed._base64_prefix : '';
-    const suffix = typeof parsed._base64_suffix === 'string' ? parsed._base64_suffix : '';
-    const suffixDecodePrefix = typeof parsed._base64_suffix_decode_prefix === 'string'
-      ? parsed._base64_suffix_decode_prefix
-      : '';
-    const suffixDecodedObject = isPlainObject(parsed._base64_suffix_decoded)
-      ? parsed._base64_suffix_decoded
-      : null;
-    const suffixDecodedEntries = suffixDecodedObject
-      ? Object.entries(suffixDecodedObject).map(([key, value]) => ({
-        key,
-        displayValue: formatBase64MetaDisplayValue(value),
-      }))
-      : [];
-
-    if (!prefix && !suffix && !suffixDecodePrefix && suffixDecodedEntries.length === 0) {
-      return null;
-    }
-
-    return {
-      prefix,
-      suffix,
-      suffixDecodePrefix,
-      suffixLength: suffix.length,
-      suffixDecodedCount: suffixDecodedEntries.length,
-      suffixDecodedEntries,
-    };
-  } catch {
-    return null;
-  }
+  const context = parseSchemeMetadataContext(decoded);
+  return context ? extractBase64MetaInfoFromContext(context) : null;
 };
 
 export const formatCmdHandlerCompatibleResult = (
@@ -1176,23 +697,30 @@ export const formatCmdHandlerCompatibleResult = (
   commandSchema?: string,
   source?: string
 ): string => {
-  try {
-    const cmdParams: unknown = JSON.parse(decoded);
-    const sourceValue = source?.trim();
-    const sourceShape = parseSourceShape(sourceValue);
-    const inferredCommandSchema = commandSchema || getCommandSchemaFromSource(sourceValue);
-    const result: CmdHandlerCompatibleResult = {
-      result: {
-        ...(inferredCommandSchema ? { cmdSchema: inferredCommandSchema } : {}),
-        cmdParams: wrapNestedCmdHandlerParams(cmdParams, sourceShape),
-        ...(sourceValue ? { source: sourceValue } : {}),
-      },
-    };
+  const context = parseSchemeMetadataContext(decoded, source);
+  return context
+    ? formatCmdHandlerCompatibleResultFromContext(context, commandSchema)
+    : '';
+};
 
-    return JSON.stringify(result, null, 2);
-  } catch {
-    return '';
-  }
+const formatCmdHandlerCompatibleResultFromContext = (
+  context: SchemeMetadataContext,
+  commandSchema?: string,
+): string => {
+  const inferredCommandSchema = commandSchema
+    || getSchemeCommandSchemaFromSource(context.source);
+  const result: CmdHandlerCompatibleResult = {
+    result: {
+      ...(inferredCommandSchema ? { cmdSchema: inferredCommandSchema } : {}),
+      cmdParams: wrapNestedCmdHandlerParams(
+        context.decodedValue,
+        context.sourceShape,
+      ),
+      ...(context.source ? { source: context.source } : {}),
+    },
+  };
+
+  return JSON.stringify(result, null, 2);
 };
 
 export const formatPrimaryCmdHandlerCompatibleResult = (
@@ -1200,32 +728,32 @@ export const formatPrimaryCmdHandlerCompatibleResult = (
   commandSchema?: string,
   source?: string
 ): string => {
-  try {
-    const cmdParams: unknown = JSON.parse(decoded);
-    if (commandSchema) {
-      return formatCmdHandlerCompatibleResult(decoded, commandSchema, source);
-    }
-
-    const primaryCommand = findPrimaryCommandCandidate(cmdParams, source);
-    if (!primaryCommand) {
-      return formatCmdHandlerCompatibleResult(decoded, commandSchema, source);
-    }
-
-    const inferredPrimaryCommandSchema = primaryCommand.commandSchema ||
-      getCommandSchemaFromSource(primaryCommand.source);
-    const result: CmdHandlerCompatibleResult = {
-      result: {
-        ...(inferredPrimaryCommandSchema ? { cmdSchema: inferredPrimaryCommandSchema } : {}),
-        cmdParams: wrapNestedCmdHandlerParams(
-          primaryCommand.decodedValue,
-          parseSourceShape(primaryCommand.source)
-        ),
-        source: primaryCommand.source,
-      },
-    };
-
-    return JSON.stringify(result, null, 2);
-  } catch {
-    return '';
+  const context = parseSchemeMetadataContext(decoded, source);
+  if (!context) return '';
+  if (commandSchema) {
+    return formatCmdHandlerCompatibleResultFromContext(context, commandSchema);
   }
+
+  const primaryCommand = findPrimaryCommandCandidate(
+    context.decodedValue,
+    context.rawJsonSource,
+  );
+  if (!primaryCommand) {
+    return formatCmdHandlerCompatibleResultFromContext(context);
+  }
+
+  const inferredPrimaryCommandSchema = primaryCommand.commandSchema ||
+    getSchemeCommandSchemaFromSource(primaryCommand.source);
+  const result: CmdHandlerCompatibleResult = {
+    result: {
+      ...(inferredPrimaryCommandSchema ? { cmdSchema: inferredPrimaryCommandSchema } : {}),
+      cmdParams: wrapNestedCmdHandlerParams(
+        primaryCommand.decodedValue,
+        parseSchemeMetadataSourceShape(primaryCommand.source)
+      ),
+      source: primaryCommand.source,
+    },
+  };
+
+  return JSON.stringify(result, null, 2);
 };

@@ -7,13 +7,18 @@ const schemeViewerSupportBudget = (file, maxLines, reason) => ({
 export const schemeViewerSupportMaintainabilityBudgets = [
   schemeViewerSupportBudget(
     'frontend/src/utils/schemeViewerDecodeMetadata.ts',
-    55,
-    'Scheme 弹窗 metadata helper 只负责复用 Base64 与 CMD 摘要提取规则'
+    70,
+    'Scheme 弹窗 metadata helper 只负责构造共享解析上下文并复用 Base64 与 CMD 摘要规则'
   ),
   schemeViewerSupportBudget(
     'frontend/src/utils/schemeViewerDecodeMetadata.test.ts',
     90,
     'Scheme 弹窗 metadata 测试应覆盖空结果、worker 精简行和 Base64 摘要边界'
+  ),
+  schemeViewerSupportBudget(
+    'frontend/src/utils/schemeViewerDecodeMetadataParsing.test.ts',
+    80,
+    'Scheme 弹窗 metadata 解析测试应锁定旧 API 等价性与 decoded、source 单次解析'
   ),
   schemeViewerSupportBudget(
     'frontend/src/utils/schemeViewerQualityStyles.ts',
@@ -39,5 +44,15 @@ export const schemeViewerSupportMaintainabilityBudgets = [
     'frontend/src/workers/schemeDecode.worker.ts',
     55,
     'Scheme 大输入解码 worker 只负责调用解码和弹窗 metadata 构造，不承载展示规则'
+  ),
+  schemeViewerSupportBudget(
+    'frontend/src/utils/schemePathValues.ts',
+    150,
+    'Scheme 路径值复制只负责迭代展开、空容器保留、行数截断和文案组装'
+  ),
+  schemeViewerSupportBudget(
+    'frontend/src/utils/schemePathValues.test.ts',
+    100,
+    'Scheme 路径值复制测试只锁定路径语法、顺序、空容器、截断和深链边界'
   ),
 ];

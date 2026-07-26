@@ -67,6 +67,16 @@ describe('jsonValidation', () => {
     expect(location).toEqual({ line: 2, column: 8 });
   });
 
+  it.each([
+    'Expected value in JSON at position 9007199254740992',
+    'Expected value in JSON at position 1 (line 9007199254740992 column 1)',
+    'Expected value in JSON at position 1 (line 1 column 9007199254740992)',
+    'JSON Lines 第 9007199254740992 行解析错误: position 1',
+    'JSON Lines 第 2 行解析错误: position 9007199254740992',
+  ])('拒绝错误文案中的非安全坐标: %s', error => {
+    expect(getJsonValidationErrorLocation('{}\n{}', error)).toBeNull();
+  });
+
   it('Worker 创建失败时返回可控的校验结果', async () => {
     class FailingWorker {
       constructor() {

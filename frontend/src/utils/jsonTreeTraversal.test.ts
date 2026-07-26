@@ -1,18 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { JsonValue } from '../types';
 import { buildJsonTreeModel } from './jsonTreeModel';
+import { buildJsonTreeModelFromValue } from './jsonTreeTraversal';
 
 interface AccessCounter {
   count: number;
 }
 
 const buildWithParsedValue = (value: JsonValue, maxNodes: number) => {
-  const parseSpy = vi.spyOn(JSON, 'parse').mockReturnValue(value);
-  try {
-    return buildJsonTreeModel('[]', { maxNodes });
-  } finally {
-    parseSpy.mockRestore();
-  }
+  return buildJsonTreeModelFromValue(value, { maxNodes });
 };
 
 const createWideArray = (length: number, counter: AccessCounter): JsonValue[] => {

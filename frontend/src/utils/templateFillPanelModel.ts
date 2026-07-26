@@ -1,6 +1,7 @@
 import type { ValidationResult } from '../types';
-import { formatByteSize, getDocumentStats } from './documentStats';
+import { formatDocumentSize } from './documentStats';
 import { formatUnknownError } from './errors';
+import { parseJsonValue } from './jsonValueGuards';
 
 export {
   buildPlaceholderTemplateSummary,
@@ -14,16 +15,13 @@ export {
   type PlaceholderTemplateSummary,
 } from './templateFillPlaceholderDraftModel';
 
-export const formatTemplateSizeLabel = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
+export const formatTemplateSizeLabel = formatDocumentSize;
 
 export const validateTemplateJson = (content: string): ValidationResult => {
   if (!content.trim()) return { isValid: true };
 
   try {
-    JSON.parse(content);
+    parseJsonValue(content);
     return { isValid: true };
   } catch (error: unknown) {
     return { isValid: false, error: formatUnknownError(error) };

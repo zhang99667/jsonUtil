@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { ShortcutConfig, ShortcutKey, ShortcutAction, AIConfig, AIProvider, GeneralSettings } from '../types';
-import { buildAIConfigForProviderChange } from '../utils/appSettings';
-import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
-import { getErrorMessage } from '../utils/errors';
+import { useUnifiedSettingsAIConfig } from '../hooks/useUnifiedSettingsAIConfig';
 import { getAIProviderBaseUrlPlaceholder, getAIProviderDefaultModel } from '../utils/aiProviderDefaults';
+import { SHORTCUT_ACTIONS } from '../utils/shortcuts';
+import { SETTINGS_DIALOG_TOASTER_ID } from '../utils/toast';
+import { AppToastHost } from './AppToastHost';
+import { NativeDialog } from './NativeDialog';
 import {
-    getAIProviderConfigValidationError,
-    getAIProviderRequestValidationError,
-} from '../utils/aiProviderConfigValidation';
+    getShortcutDisplayLabels,
+    resolveShortcutRecordingInput,
+} from './UnifiedSettingsShortcutModel';
 
 interface UnifiedSettingsModalProps {
     isOpen: boolean;
@@ -38,9 +40,9 @@ const ACTION_LABELS: Record<ShortcutAction, string> = {
 type TabType = 'shortcuts' | 'ai' | 'general';
 
 const SETTINGS_TABS: Array<{ type: TabType; label: string; tabId: string; panelId: string }> = [
-    { type: 'shortcuts', label: '快捷键', tabId: 'settings-tab-shortcuts', panelId: 'settings-panel-shortcuts' },
-    { type: 'ai', label: 'AI 配置', tabId: 'settings-tab-ai', panelId: 'settings-panel-ai' },
     { type: 'general', label: '通用设置', tabId: 'settings-tab-general', panelId: 'settings-panel-general' },
+    { type: 'ai', label: 'AI 配置', tabId: 'settings-tab-ai', panelId: 'settings-panel-ai' },
+    { type: 'shortcuts', label: '快捷键', tabId: 'settings-tab-shortcuts', panelId: 'settings-panel-shortcuts' },
 ];
 
 const getActionName = (action: ShortcutAction): string => (
@@ -49,7 +51,7 @@ const getActionName = (action: ShortcutAction): string => (
 
 export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     isOpen,
-    initialTab = 'shortcuts',
+    initialTab = 'general',
     onClose,
     shortcuts,
     onUpdateShortcut,
@@ -62,125 +64,42 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     onExportSettingsBackup,
     onImportSettingsBackup,
 }) => {
-    const [activeTab, setActiveTab] = useState<TabType>('shortcuts');
+    const [activeTab, setActiveTab] = useState<TabType>('general');
     const [recordingAction, setRecordingAction] = useState<ShortcutAction | null>(null);
     const [shortcutConflictNotice, setShortcutConflictNotice] = useState('');
-    const [localAIConfig, setLocalAIConfig] = useState<AIConfig>(aiConfig);
     const [localGeneralSettings, setLocalGeneralSettings] = useState<GeneralSettings>(generalSettings);
-    const [isTestingAI, setIsTestingAI] = useState(false);
-    const [aiTestResult, setAiTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-    const modalPanelRef = useRef<HTMLDivElement | null>(null);
-    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
     const tabButtonRefs = useRef<Record<TabType, HTMLButtonElement | null>>({
         shortcuts: null,
         ai: null,
         general: null,
     });
-    const previousActiveElementRef = useRef<HTMLElement | null>(null);
-    const wasOpenRef = useRef(false);
     const importBackupInputRef = useRef<HTMLInputElement | null>(null);
-    const aiConfigVersionRef = useRef(0);
-    const aiTestAbortControllerRef = useRef<AbortController | null>(null);
+    const {
+        config: localAIConfig,
+        isTesting: isTestingAI,
+        testResult: aiTestResult,
+        updateConfig: updateLocalAIConfig,
+        changeProvider: handleAIProviderChange,
+        saveConfig: handleSaveAI,
+        testConnection: handleTestAIConnection,
+    } = useUnifiedSettingsAIConfig({
+        isOpen,
+        initialConfig: aiConfig,
+        onSave: onSaveAIConfig,
+        onClose,
+    });
 
-    const abortAIConnectionTest = useCallback(() => {
-        aiTestAbortControllerRef.current?.abort();
-        aiTestAbortControllerRef.current = null;
-        setIsTestingAI(false);
-    }, []);
+    useEffect(() => {
+        if (isOpen) return;
+        setRecordingAction(null);
+    }, [isOpen]);
 
     useEffect(() => {
         if (isOpen) {
-            abortAIConnectionTest();
-            wasOpenRef.current = true;
-            previousActiveElementRef.current = document.activeElement instanceof HTMLElement
-                ? document.activeElement
-                : null;
-
-            const focusTimer = window.setTimeout(() => {
-                closeButtonRef.current?.focus();
-            }, 0);
-
-            return () => window.clearTimeout(focusTimer);
-        }
-
-        if (!wasOpenRef.current) return;
-
-        aiConfigVersionRef.current++;
-        abortAIConnectionTest();
-        wasOpenRef.current = false;
-        const previousActiveElement = previousActiveElementRef.current;
-        previousActiveElementRef.current = null;
-
-        if (!previousActiveElement?.isConnected) return;
-
-        const restoreTimer = window.setTimeout(() => {
-            previousActiveElement.focus();
-        }, 0);
-
-        return () => window.clearTimeout(restoreTimer);
-    }, [isOpen, abortAIConnectionTest]);
-
-    useEffect(() => {
-        if (!isOpen || recordingAction) return;
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                onClose();
-                return;
-            }
-
-            if (event.key !== 'Tab') return;
-
-            const focusableElements: HTMLElement[] = modalPanelRef.current
-                ? Array.from(modalPanelRef.current.querySelectorAll(
-                    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-                )).filter((element): element is HTMLElement => (
-                    element instanceof HTMLElement && element.offsetParent !== null
-                ))
-                : [];
-
-            if (focusableElements.length === 0) {
-                event.preventDefault();
-                return;
-            }
-
-            const firstElement = focusableElements[0];
-            const lastElement = focusableElements[focusableElements.length - 1];
-            if (!firstElement || !lastElement) return;
-
-            if (!modalPanelRef.current?.contains(document.activeElement)) {
-                event.preventDefault();
-                firstElement.focus();
-                return;
-            }
-
-            if (event.shiftKey && document.activeElement === firstElement) {
-                event.preventDefault();
-                lastElement.focus();
-                return;
-            }
-
-            if (!event.shiftKey && document.activeElement === lastElement) {
-                event.preventDefault();
-                firstElement.focus();
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose, recordingAction]);
-
-    useEffect(() => {
-        if (isOpen) {
-            abortAIConnectionTest();
-            aiConfigVersionRef.current++;
-            setLocalAIConfig(aiConfig);
             setLocalGeneralSettings(generalSettings);
-            setAiTestResult(null);
             setShortcutConflictNotice('');
         }
-    }, [isOpen, aiConfig, generalSettings, abortAIConnectionTest]);
+    }, [isOpen, generalSettings]);
 
     useEffect(() => {
         if (isOpen) {
@@ -188,131 +107,55 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         }
     }, [isOpen, initialTab]);
 
-    useEffect(() => {
-        if (!recordingAction) return;
+    useLayoutEffect(() => {
+        if (!isOpen || activeTab !== 'shortcuts' || !recordingAction) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
             e.preventDefault();
             e.stopPropagation();
 
-            // Backspace 键清除快捷键
-            if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-                const emptyShortcut: ShortcutKey = { key: '', meta: false, ctrl: false, shift: false, alt: false };
-                onUpdateShortcut(recordingAction, emptyShortcut);
-                setShortcutConflictNotice('');
-                setRecordingAction(null);
-                return;
-            }
-
-            // 忽略单独的修饰键按压
-            if (['Meta', 'Control', 'Shift', 'Alt'].includes(e.key)) return;
-
-            const newShortcut: ShortcutKey = {
+            const result = resolveShortcutRecordingInput({
                 key: e.key,
                 meta: e.metaKey,
                 ctrl: e.ctrlKey,
                 shift: e.shiftKey,
                 alt: e.altKey,
-            };
+                repeat: e.repeat,
+            }, recordingAction, shortcuts);
+            if (result.type === 'ignored') {
+                return;
+            }
 
-            // 检测快捷键冲突
-            const conflictingAction = (Object.keys(shortcuts) as ShortcutAction[]).find(action => {
-                if (action === recordingAction) return false;
-                const s = shortcuts[action];
-                return (
-                    s.key.toLowerCase() === newShortcut.key.toLowerCase() &&
-                    s.meta === newShortcut.meta &&
-                    s.ctrl === newShortcut.ctrl &&
-                    s.shift === newShortcut.shift &&
-                    s.alt === newShortcut.alt
-                );
-            });
-
-            if (conflictingAction) {
-                // 解除冲突绑定
-                const emptyShortcut: ShortcutKey = { key: '', meta: false, ctrl: false, shift: false, alt: false };
-                onUpdateShortcut(conflictingAction, emptyShortcut);
+            if (result.type === 'bind' && result.conflictingActions.length > 0) {
+                const conflictingNames = result.conflictingActions
+                    .map(action => `「${getActionName(action)}」`)
+                    .join('、');
                 setShortcutConflictNotice(
-                    `已解除「${getActionName(conflictingAction)}」的快捷键，避免与「${getActionName(recordingAction)}」冲突`
+                    `已解除${conflictingNames}的快捷键，避免与「${getActionName(recordingAction)}」冲突`
                 );
             } else {
                 setShortcutConflictNotice('');
             }
 
-            onUpdateShortcut(recordingAction, newShortcut);
+            result.updates.forEach(update => {
+                onUpdateShortcut(update.action, update.shortcut);
+            });
             setRecordingAction(null);
         };
 
         window.addEventListener('keydown', handleKeyDown, { capture: true });
         return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
-    }, [recordingAction, onUpdateShortcut, shortcuts]);
+    }, [isOpen, activeTab, recordingAction, onUpdateShortcut, shortcuts]);
 
     if (!isOpen) return null;
 
-    const handleSaveAI = () => {
-        const validationError = getAIProviderConfigValidationError(localAIConfig);
-        if (validationError) {
-            setAiTestResult({ type: 'error', message: validationError });
-            return;
-        }
-
-        onSaveAIConfig(localAIConfig);
-        onClose();
-    };
-
-    const updateLocalAIConfig = (patch: Partial<AIConfig>) => {
-        aiConfigVersionRef.current++;
-        abortAIConnectionTest();
-        setAiTestResult(null);
-        setLocalAIConfig(prev => ({ ...prev, ...patch }));
-    };
-
-    const handleAIProviderChange = (provider: AIProvider) => {
-        aiConfigVersionRef.current++;
-        abortAIConnectionTest();
-        setAiTestResult(null);
-        setLocalAIConfig(prev => buildAIConfigForProviderChange(prev, provider));
-    };
-
-    const handleTestAIConnection = async () => {
-        const validationError = getAIProviderRequestValidationError(localAIConfig);
-        if (validationError) {
-            setAiTestResult({ type: 'error', message: validationError });
-            return;
-        }
-
-        abortAIConnectionTest();
-        aiConfigVersionRef.current++;
-        const testVersion = aiConfigVersionRef.current;
-        const abortController = new AbortController();
-        aiTestAbortControllerRef.current = abortController;
-        setIsTestingAI(true);
-        setAiTestResult(null);
-
-        try {
-            const { testAIConnection } = await import('../services/aiService');
-            await testAIConnection(localAIConfig, { signal: abortController.signal });
-            if (testVersion === aiConfigVersionRef.current) {
-                setAiTestResult({ type: 'success', message: '连接测试通过' });
-            }
-        } catch (error: unknown) {
-            if (dispatchChunkLoadRecoveryEvent(error)) return;
-
-            const message = getErrorMessage(error, '连接测试失败');
-            if (testVersion === aiConfigVersionRef.current) {
-                setAiTestResult({ type: 'error', message });
-            }
-        } finally {
-            if (testVersion === aiConfigVersionRef.current) {
-                aiTestAbortControllerRef.current = null;
-                setIsTestingAI(false);
-            }
-        }
-    };
-
-    const handleSaveGeneral = () => {
-        onSaveGeneralSettings(localGeneralSettings);
-        onClose();
+    const handleToggleAutoExpandScheme = () => {
+        const nextSettings = {
+            ...localGeneralSettings,
+            autoExpandSchemeInDeepFormat: !localGeneralSettings.autoExpandSchemeInDeepFormat,
+        };
+        setLocalGeneralSettings(nextSettings);
+        onSaveGeneralSettings(nextSettings);
     };
 
     const aiTestButtonLabel = isTestingAI ? 'AI 连接测试中，请稍候' : '测试连接';
@@ -333,20 +176,16 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     );
 
     const formatShortcut = (shortcut: ShortcutKey) => {
-        if (!shortcut.key) return <span className="text-gray-500 italic text-xs">未设置</span>;
+        const labels = getShortcutDisplayLabels(shortcut);
+        if (labels.length === 0) return <span className="text-gray-500 italic text-xs">未设置</span>;
 
-        const parts = [];
-        if (shortcut.meta) parts.push(renderKey('Cmd'));
-        if (shortcut.ctrl) parts.push(renderKey('Ctrl'));
-        if (shortcut.alt) parts.push(renderKey('Alt'));
-        if (shortcut.shift) parts.push(renderKey('Shift'));
-
-        let key = shortcut.key;
-        if (key === ' ') key = 'Space';
-        if (key.length === 1) key = key.toUpperCase();
-        parts.push(renderKey(key));
-
-        return <div className="flex items-center flex-wrap justify-end">{parts}</div>;
+        return (
+            <div className="flex items-center flex-wrap justify-end">
+                {labels.map((label, index) => (
+                    <React.Fragment key={`${label}-${index}`}>{renderKey(label)}</React.Fragment>
+                ))}
+            </div>
+        );
     };
 
     const startRecordingShortcut = (action: ShortcutAction) => {
@@ -356,6 +195,9 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
 
     const selectSettingsTab = (tab: TabType, shouldFocus = false) => {
         setActiveTab(tab);
+        if (tab !== 'shortcuts') {
+            setRecordingAction(null);
+        }
 
         if (shouldFocus) {
             window.setTimeout(() => {
@@ -391,23 +233,28 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
+        <NativeDialog
+            isOpen={isOpen}
+            onRequestClose={() => {
+                if (!recordingAction) {
+                    onClose();
+                }
+            }}
+            closeOnBackdrop={false}
+            aria-labelledby="settings-modal-title"
+            className="w-[calc(100%-2rem)] max-w-2xl overflow-visible border-0 bg-transparent p-0 text-left backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+        >
             <div
-                ref={modalPanelRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="settings-modal-title"
                 className="bg-editor-sidebar border border-editor-border rounded-lg shadow-2xl w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]"
             >
-                {/* 模态框头部 */}
                 <div className="flex justify-between items-center px-4 py-2 border-b border-editor-border bg-editor-header rounded-t-lg">
                     <div className="flex items-center gap-2">
                         <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         <span id="settings-modal-title" className="text-sm font-semibold text-gray-200">设置</span>
                     </div>
                     <button
-                        ref={closeButtonRef}
                         type="button"
+                        autoFocus
                         aria-label="关闭设置"
                         onClick={onClose}
                         className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-editor-hover"
@@ -416,30 +263,29 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     </button>
                 </div>
 
-                {/* 选项卡切换 */}
                 <div
                     role="tablist"
                     aria-label="设置分类"
                     className="flex border-b border-editor-border bg-editor-header"
                 >
                     <button
-                        ref={(element) => { tabButtonRefs.current.shortcuts = element; }}
+                        ref={(element) => { tabButtonRefs.current.general = element; }}
                         type="button"
                         role="tab"
-                        id="settings-tab-shortcuts"
-                        aria-selected={activeTab === 'shortcuts'}
-                        aria-controls="settings-panel-shortcuts"
-                        tabIndex={activeTab === 'shortcuts' ? 0 : -1}
-                        onClick={() => selectSettingsTab('shortcuts')}
+                        id="settings-tab-general"
+                        aria-selected={activeTab === 'general'}
+                        aria-controls="settings-panel-general"
+                        tabIndex={activeTab === 'general' ? 0 : -1}
+                        onClick={() => selectSettingsTab('general')}
                         onKeyDown={handleSettingsTabKeyDown}
-                        className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'shortcuts'
+                        className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'general'
                             ? 'text-white border-b-2 border-emerald-500 bg-editor-sidebar'
                             : 'text-gray-400 hover:text-gray-200 hover:bg-editor-hover'
                             }`}
                     >
                         <div className="flex items-center justify-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-                            快捷键
+                            通用设置
                         </div>
                     </button>
                     <button
@@ -463,30 +309,29 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         </div>
                     </button>
                     <button
-                        ref={(element) => { tabButtonRefs.current.general = element; }}
+                        ref={(element) => { tabButtonRefs.current.shortcuts = element; }}
                         type="button"
                         role="tab"
-                        id="settings-tab-general"
-                        aria-selected={activeTab === 'general'}
-                        aria-controls="settings-panel-general"
-                        tabIndex={activeTab === 'general' ? 0 : -1}
-                        onClick={() => selectSettingsTab('general')}
+                        id="settings-tab-shortcuts"
+                        aria-selected={activeTab === 'shortcuts'}
+                        aria-controls="settings-panel-shortcuts"
+                        tabIndex={activeTab === 'shortcuts' ? 0 : -1}
+                        onClick={() => selectSettingsTab('shortcuts')}
                         onKeyDown={handleSettingsTabKeyDown}
-                        className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'general'
+                        className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${activeTab === 'shortcuts'
                             ? 'text-white border-b-2 border-emerald-500 bg-editor-sidebar'
                             : 'text-gray-400 hover:text-gray-200 hover:bg-editor-hover'
                             }`}
                     >
                         <div className="flex items-center justify-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-                            通用设置
+                            快捷键
                         </div>
                     </button>
                 </div>
 
-                {/* 内容区域（保留挂载以维持状态） */}
+                {/* 各设置页保持挂载，切换时保留未保存状态。 */}
                 <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                    {/* 快捷键设置 */}
                     <div
                         id="settings-panel-shortcuts"
                         role="tabpanel"
@@ -504,7 +349,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </div>
                         )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {(Object.keys(shortcuts) as ShortcutAction[]).map((action) => (
+                            {SHORTCUT_ACTIONS.map((action) => (
                                 <button
                                     type="button"
                                     key={action}
@@ -538,7 +383,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         </div>
                     </div>
 
-                    {/* AI 参数配置 */}
                     <div
                         id="settings-panel-ai"
                         role="tabpanel"
@@ -546,7 +390,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         hidden={activeTab !== 'ai'}
                         className="space-y-4"
                     >
-                        {/* AI 提供商选择 */}
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">AI 提供商</label>
                             <select
@@ -563,7 +406,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </select>
                         </div>
 
-                        {/* API Key 配置 */}
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">API Key</label>
                             <input
@@ -575,7 +417,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             />
                         </div>
 
-                        {/* 模型名称配置 */}
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5">模型名称 (Model Name)</label>
                             <input
@@ -587,7 +428,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             />
                         </div>
 
-                        {/* Base URL 配置（可选） */}
                         {localAIConfig.provider !== AIProvider.GEMINI && (
                             <div>
                                 <label className="block text-xs font-medium text-gray-400 mb-1.5">
@@ -603,7 +443,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </div>
                         )}
 
-                        {/* 提供商配置说明 */}
                         {localAIConfig.provider !== AIProvider.GEMINI && localAIConfig.provider !== AIProvider.OPENAI && localAIConfig.provider !== AIProvider.CUSTOM && (
                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded p-3">
                                 <p className="text-xs text-emerald-300 leading-relaxed">
@@ -628,7 +467,6 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                         )}
                     </div>
 
-                    {/* 通用设置 */}
                     <div
                         id="settings-panel-general"
                         role="tabpanel"
@@ -652,10 +490,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                                     aria-checked={localGeneralSettings.autoExpandSchemeInDeepFormat}
                                     aria-labelledby="general-auto-expand-label"
                                     aria-describedby="general-auto-expand-description"
-                                    onClick={() => setLocalGeneralSettings({
-                                        ...localGeneralSettings,
-                                        autoExpandSchemeInDeepFormat: !localGeneralSettings.autoExpandSchemeInDeepFormat,
-                                    })}
+                                    onClick={handleToggleAutoExpandScheme}
                                     className={`app-switch relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
                                         localGeneralSettings.autoExpandSchemeInDeepFormat ? 'bg-emerald-500' : 'bg-gray-600'
                                     }`}
@@ -722,8 +557,9 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                     </div>
                 </div>
 
-                {/* 底部操作栏 */}
-                <div className="p-4 border-t border-editor-border bg-editor-header flex justify-between items-center">
+                <div className={`p-4 border-t border-editor-border bg-editor-header flex items-center ${
+                    activeTab === 'general' ? 'justify-end' : 'justify-between'
+                }`}>
                     {activeTab === 'shortcuts' ? (
                         <>
                             <button
@@ -771,23 +607,16 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
                             </div>
                         </>
                     ) : (
-                        <>
-                            <button
-                                onClick={onClose}
-                                className="app-button app-button--ghost px-4 py-2 text-sm"
-                            >
-                                取消
-                            </button>
-                            <button
-                                onClick={handleSaveGeneral}
-                                className="app-button app-button--primary px-6 py-2 text-sm"
-                            >
-                                保存设置
-                            </button>
-                        </>
+                        <button
+                            onClick={onClose}
+                            className="app-button app-button--primary px-6 py-2 text-sm"
+                        >
+                            完成
+                        </button>
                     )}
                 </div>
             </div>
-        </div>
+            <AppToastHost toasterId={SETTINGS_DIALOG_TOASTER_ID} dismissOnUnmount />
+        </NativeDialog>
     );
 };

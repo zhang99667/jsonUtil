@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { SchemeRawParamOptions } from './schemeRawParams';
-import { parseSchemeUrlInfo } from './schemeUrlInfo';
+import {
+  parseSchemeUrlInfo,
+  parseSchemeUrlInfoFromContext,
+} from './schemeUrlInfo';
+import { createSchemeUrlContext } from './schemeUrlShapes';
 
 const decode = (value: string): string => decodeURIComponent(value.replace(/\+/g, ' '));
 
@@ -37,5 +41,14 @@ describe('parseSchemeUrlInfo', () => {
 
   it('无效 URL 返回 null', () => {
     expect(parseSchemeUrlInfo('not a url', { rawParamOptions, getFragmentParamSource })).toBeNull();
+  });
+
+  it('复用解析上下文时保持 URL 信息结果一致', () => {
+    const source = 'sampleapp://v1/open?word=json+schema#/detail?tab=feed';
+    const options = { rawParamOptions, getFragmentParamSource };
+
+    expect(parseSchemeUrlInfoFromContext(createSchemeUrlContext(source), options)).toEqual(
+      parseSchemeUrlInfo(source, options),
+    );
   });
 });

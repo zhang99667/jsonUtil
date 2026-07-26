@@ -48,4 +48,11 @@ describe('placeholderFillTemplateReplacement', () => {
 
     expect(updatePlaceholderReplacement(templateText, '__UID__', '10086')).toBe(templateText);
   });
+
+  it.each([
+    '{invalid}',
+    `{"kind":"${PLACEHOLDER_FILL_TEMPLATE_KIND}","placeholders":{"__UID__":""},"extra":1e400}`,
+  ])('非法模板 replacement 更新保持原文不变', templateText => {
+    expect(updatePlaceholderReplacement(templateText, '__UID__', '10086')).toBe(templateText);
+  });
 });

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { JsonValue } from '../types';
 import { compareCmdStructureValues } from './cmdStructureValueDiff';
 
 describe('cmdStructureValueDiff', () => {
@@ -68,5 +69,25 @@ describe('cmdStructureValueDiff', () => {
         source: 'https://example.com/landing?sku=202',
       },
     }]);
+  });
+
+  it('五千层 CMD 参数仍能定位叶子差异', () => {
+    const depth = 5_000;
+    let actual: JsonValue = 'actual';
+    let expected: JsonValue = 'expected';
+    for (let index = 0; index < depth; index += 1) {
+      actual = { child: actual };
+      expected = { child: expected };
+    }
+
+    const diff = compareCmdStructureValues(actual, expected);
+
+    expect(diff.valueDiffs).toEqual([{
+      path: `$${'.child'.repeat(depth)}`,
+      actual: 'actual',
+      expected: 'expected',
+    }]);
+    expect(diff.missingPaths).toEqual([]);
+    expect(diff.extraPaths).toEqual([]);
   });
 });

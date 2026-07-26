@@ -1,12 +1,13 @@
 import { PLACEHOLDER_FILL_TEMPLATE_KIND } from './placeholderFillTemplateContract';
 import { isRecord } from './placeholderFillTemplateRecord';
+import { tryParseJsonValue } from './jsonValueGuards';
 
 export const updatePlaceholderReplacement = (
   templateText: string,
   placeholderValue: string,
   replacement: string
 ): string => {
-  const parsed = JSON.parse(templateText) as unknown;
+  const parsed = tryParseJsonValue(templateText);
   if (!isRecord(parsed) || parsed.kind !== PLACEHOLDER_FILL_TEMPLATE_KIND) return templateText;
   if (!isRecord(parsed.placeholders)) return templateText;
 

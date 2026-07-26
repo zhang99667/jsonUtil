@@ -60,7 +60,6 @@ const UTILITY_PACKAGES = new Set([
   'async-validator',
   'classnames',
   'compute-scroll-into-view',
-  'copy-to-clipboard',
   'dayjs',
   'lodash',
   'lodash-es',
@@ -72,6 +71,36 @@ const TOOL_PACKAGES = new Set([
   'diff',
   'json-source-map',
   'jsonpath-plus',
+]);
+
+const DRAGGABLE_PANEL_PACKAGES = new Set([
+  'react-draggable',
+  'react-rnd',
+  're-resizable',
+]);
+
+const FOCUS_MANAGEMENT_PACKAGES = new Set([
+  'focus-trap',
+  'tabbable',
+]);
+
+const ANTV_SHARED_PACKAGES = new Set([
+  'color-name',
+  'color-string',
+  'comlink',
+  'eventemitter3',
+  'fecha',
+  'flru',
+  'is-any-array',
+  'is-arrayish',
+  'simple-swizzle',
+]);
+
+const LAZY_UI_COMPAT_PACKAGES = new Set([
+  'clsx',
+  'is-mobile',
+  'prop-types',
+  'react-is',
 ]);
 
 export const getManualChunkName = (id: string): string | undefined => {
@@ -111,7 +140,12 @@ export const getManualChunkName = (id: string): string | undefined => {
   if (packageName === 'axios') return 'vendor-http';
   if (packageName === 'html2canvas') return 'vendor-html2canvas';
   if (packageName === 'driver.js') return 'vendor-driver';
+  if (packageName === 'copy-to-clipboard') return 'vendor-clipboard';
   if (packageName === 'qrcode.react') return 'vendor-qrcode';
+  if (DRAGGABLE_PANEL_PACKAGES.has(packageName)) return 'vendor-draggable-panel';
+  if (FOCUS_MANAGEMENT_PACKAGES.has(packageName)) return 'vendor-focus-management';
+  if (ANTV_SHARED_PACKAGES.has(packageName)) return 'vendor-antv-shared';
+  if (LAZY_UI_COMPAT_PACKAGES.has(packageName)) return 'vendor-lazy-ui-compat';
   if (packageName.startsWith('d3-')) return 'vendor-d3';
   if (packageName.startsWith('ml-')) return 'vendor-ml';
   if (packageName.startsWith('@emotion/') || STYLE_RUNTIME_PACKAGES.has(packageName)) {

@@ -16,6 +16,11 @@ export const formatByteSize = (bytes: number): string => {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 };
 
+export const formatDocumentSize = (content: string): string => {
+  const stats = getDocumentStats(content);
+  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
+};
+
 /**
  * 单次扫描计算文档行列统计，避免大文件 split 产生额外数组和内存峰值。
  * 大文件只扫描前半段，避免辅助状态栏统计拖慢编辑输入。

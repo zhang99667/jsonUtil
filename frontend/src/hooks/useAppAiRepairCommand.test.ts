@@ -1,24 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AIProvider, TransformMode } from '../types';
 import { runAppAiRepairCommand } from '../utils/appAiRepairCommandRunner';
 import { useAppAiRepairCommand } from './useAppAiRepairCommand';
-
-const reactMocks = vi.hoisted(() => ({
-  useCallback: vi.fn(),
-  useEffect: vi.fn(),
-  useLayoutEffect: vi.fn(),
-  useRef: vi.fn(),
-  useState: vi.fn(),
-}));
-
-vi.mock('react', async importOriginal => ({
-  ...await importOriginal<typeof import('react')>(),
-  useCallback: reactMocks.useCallback,
-  useEffect: reactMocks.useEffect,
-  useLayoutEffect: reactMocks.useLayoutEffect,
-  useRef: reactMocks.useRef,
-  useState: reactMocks.useState,
-}));
 
 vi.mock('../utils/appAiRepairCommandRunner', () => ({
   loadAppAiRepairRuntime: vi.fn(),
@@ -27,108 +11,95 @@ vi.mock('../utils/appAiRepairCommandRunner', () => ({
 vi.mock('../utils/toast', () => ({ showError: vi.fn(), showSuccess: vi.fn() }));
 
 const aiConfig = { provider: AIProvider.GEMINI, apiKey: 'key', model: 'gemini-2.0-flash' };
-
 const repairSummary = {
-  changed: true,
-  repairMethod: 'local' as const,
+  changed: true, repairMethod: 'local' as const,
   localRuleLabels: [],
-  beforeLength: 6,
-  afterLength: 11,
-  beforeLines: 1,
-  afterLines: 1,
-  addedChars: 5,
-  removedChars: 0,
-  changedChunks: 1,
+  beforeLength: 6, afterLength: 11,
+  beforeLines: 1, afterLines: 1,
+  addedChars: 5, removedChars: 0, changedChunks: 1,
   rootDescription: '对象',
-  previewItems: [],
-  isPreviewTruncated: false,
-  isDiffSkipped: false,
+  previewItems: [], isPreviewTruncated: false, isDiffSkipped: false,
 };
 
-const createHookInput = (sourceText: string, activeFileId: string | null = null) => ({
-  activeFileId,
-  sourceText,
-  aiConfig,
-  onApplyFixedJson: vi.fn(),
-  onSetMode: vi.fn(),
-  onOpenAiSettings: vi.fn(),
-  onTriggerFeatureFirstUse: vi.fn(),
-  onTrackToolEvent: vi.fn(),
-});
+interface HookProps {
+  sourceText: string;
+  activeFileId: string | null;
+}
 
-describe('useAppAiRepairCommand', () => {
-  let refIndex = 0;
-  let abortControllerRef: { current: AbortController | null };
-  let latestSourceRef: { current: { activeFileId: string | null; sourceText: string } };
-  let setIsAiRepairing: ReturnType<typeof vi.fn>;
-  let runEffectsInStrictMode = false;
+const createDeferred = () => {
+  let resolve!: () => void;
+  const promise = new Promise<void>(currentResolve => { resolve = currentResolve; });
+  return { promise, resolve };
+};
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    refIndex = 0;
-    runEffectsInStrictMode = false;
-    abortControllerRef = { current: null };
-    latestSourceRef = { current: { activeFileId: null, sourceText: '' } };
-    setIsAiRepairing = vi.fn();
-    reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
-    reactMocks.useLayoutEffect.mockImplementation((effect: () => void) => effect());
-    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
-      const cleanup = effect();
-      if (runEffectsInStrictMode && cleanup) {
-        cleanup();
-        effect();
-      }
-      return cleanup;
-    });
-    reactMocks.useState.mockReturnValue([false, setIsAiRepairing]);
-    reactMocks.useRef.mockImplementation((initialValue: unknown) => {
-      const refs = [abortControllerRef, latestSourceRef];
-      return refs[refIndex++] ?? { current: initialValue };
-    });
+const createHookScenario = (
+  sourceText: string,
+  activeFileId: string | null = null,
+  reactStrictMode = false
+) => {
+  const callbacks = {
+    onApplyFixedJson: vi.fn(),
+    onSetMode: vi.fn(),
+    onOpenAiSettings: vi.fn(),
+    onTriggerFeatureFirstUse: vi.fn(),
+    onTrackToolEvent: vi.fn(),
+  };
+  const hook = renderHook(({ sourceText: currentSource, activeFileId: currentFileId }: HookProps) => (
+    useAppAiRepairCommand({
+      ...callbacks,
+      activeFileId: currentFileId,
+      sourceText: currentSource,
+      aiConfig,
+    })
+  ), {
+    initialProps: { sourceText, activeFileId },
+    reactStrictMode,
   });
 
-  const useAiRepairHookForTest = (sourceText: string, activeFileId: string | null = null) => {
-    refIndex = 0;
-    return useAppAiRepairCommand(createHookInput(sourceText, activeFileId));
-  };
+  return { ...hook, callbacks };
+};
+
+describe('useAppAiRepairCommand', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(cleanup);
 
   it('SOURCE 内容变化时取消进行中的 AI 修复请求', async () => {
-    let resolveRun: (() => void) | undefined;
+    const deferred = createDeferred();
     let repairSignal: AbortSignal | undefined;
     vi.mocked(runAppAiRepairCommand).mockImplementation(async input => {
       repairSignal = input.signal;
-      await new Promise<void>(resolve => { resolveRun = resolve; });
+      await deferred.promise;
     });
+    const scenario = createHookScenario('{bad:}', 'file-a');
+    let repairPromise!: Promise<void>;
 
-    const { handleAiRepair } = useAiRepairHookForTest('{bad:}', 'file-a');
-    const repairPromise = handleAiRepair();
-
+    act(() => { repairPromise = scenario.result.current.handleAiRepair(); });
     expect(repairSignal?.aborted).toBe(false);
-    useAiRepairHookForTest('{edited:true}', 'file-a');
+    scenario.rerender({ sourceText: '{edited:true}', activeFileId: 'file-a' });
     expect(repairSignal?.aborted).toBe(true);
 
-    resolveRun?.();
-    await repairPromise;
+    await act(async () => { deferred.resolve(); await repairPromise; });
   });
 
-  it('相同 SOURCE 切换活动文件后忽略旧修复回调', async () => {
+  it('相同 SOURCE 切换活动文件后取消旧修复并忽略回调', async () => {
+    const deferred = createDeferred();
     let capturedEffects: Parameters<typeof runAppAiRepairCommand>[1] | undefined;
-    let releaseRun: (() => void) | undefined;
-    vi.mocked(runAppAiRepairCommand).mockImplementation(async (_input, effects) => {
+    let repairSignal: AbortSignal | undefined;
+    vi.mocked(runAppAiRepairCommand).mockImplementation(async (input, effects) => {
+      repairSignal = input.signal;
       capturedEffects = effects;
-      await new Promise<void>(resolve => { releaseRun = resolve; });
+      await deferred.promise;
     });
-    const firstInput = createHookInput('{bad:}', 'file-a');
-    refIndex = 0;
-    const repairPromise = useAppAiRepairCommand(firstInput).handleAiRepair();
+    const scenario = createHookScenario('{bad:}', 'file-a');
+    let repairPromise!: Promise<void>;
 
-    reactMocks.useEffect.mockImplementation(() => undefined);
-    useAiRepairHookForTest('{bad:}', 'file-b');
+    act(() => { repairPromise = scenario.result.current.handleAiRepair(); });
+    scenario.rerender({ sourceText: '{bad:}', activeFileId: 'file-b' });
     capturedEffects?.onApplyFixedJson('{"ok":true}', repairSummary);
 
-    expect(firstInput.onApplyFixedJson).not.toHaveBeenCalled();
-    releaseRun?.();
-    await repairPromise;
+    expect(repairSignal?.aborted).toBe(true);
+    expect(scenario.callbacks.onApplyFixedJson).not.toHaveBeenCalled();
+    await act(async () => { deferred.resolve(); await repairPromise; });
   });
 
   it('SOURCE 变化后忽略晚到的修复界面回调', async () => {
@@ -136,79 +107,112 @@ describe('useAppAiRepairCommand', () => {
     vi.mocked(runAppAiRepairCommand).mockImplementation(async (_input, effects) => {
       capturedEffects = effects;
     });
-    const hookInput = createHookInput('{bad:}');
-    refIndex = 0;
-    const { handleAiRepair } = useAppAiRepairCommand(hookInput);
+    const scenario = createHookScenario('{bad:}');
 
-    await handleAiRepair();
-    useAiRepairHookForTest('{edited:true}');
+    await act(async () => { await scenario.result.current.handleAiRepair(); });
+    scenario.rerender({ sourceText: '{edited:true}', activeFileId: null });
     capturedEffects?.onApplyFixedJson('{"ok":true}', repairSummary);
     capturedEffects?.onSetMode(TransformMode.FORMAT);
     capturedEffects?.onOpenAiSettings();
 
-    expect(hookInput.onApplyFixedJson).not.toHaveBeenCalled();
-    expect(hookInput.onSetMode).not.toHaveBeenCalled();
-    expect(hookInput.onOpenAiSettings).not.toHaveBeenCalled();
+    expect(scenario.callbacks.onApplyFixedJson).not.toHaveBeenCalled();
+    expect(scenario.callbacks.onSetMode).not.toHaveBeenCalled();
+    expect(scenario.callbacks.onOpenAiSettings).not.toHaveBeenCalled();
   });
 
-  it('StrictMode 重放 effect 后仍应处理当前修复回调', async () => {
-    runEffectsInStrictMode = true;
-    const hookInput = createHookInput('{bad:}', 'file-a');
+  it('StrictMode 重放生命周期后仍处理当前修复回调和加载状态', async () => {
+    const deferred = createDeferred();
     vi.mocked(runAppAiRepairCommand).mockImplementation(async (_input, effects) => {
       effects.onSetRepairing(true);
+      await deferred.promise;
       effects.onApplyFixedJson('{"ok":true}', repairSummary);
       effects.onSetRepairing(false);
     });
+    const scenario = createHookScenario('{bad:}', 'file-a', true);
+    let repairPromise!: Promise<void>;
 
-    refIndex = 0;
-    await useAppAiRepairCommand(hookInput).handleAiRepair();
+    act(() => { repairPromise = scenario.result.current.handleAiRepair(); });
+    expect(scenario.result.current.isAiRepairing).toBe(true);
+    await act(async () => { deferred.resolve(); await repairPromise; });
 
-    expect(setIsAiRepairing).toHaveBeenNthCalledWith(1, true);
-    expect(setIsAiRepairing).toHaveBeenLastCalledWith(false);
-    expect(hookInput.onApplyFixedJson).toHaveBeenCalledWith('{"ok":true}', repairSummary);
+    expect(scenario.result.current.isAiRepairing).toBe(false);
+    expect(scenario.callbacks.onApplyFixedJson).toHaveBeenCalledWith('{"ok":true}', repairSummary);
   });
 
-  it('切换 SOURCE 后立即结束旧加载且不让旧请求覆盖新加载状态', async () => {
-    const releaseRuns: Array<() => void> = [];
-    vi.mocked(runAppAiRepairCommand).mockImplementation(async (_input, effects) => {
+  it('首次使用回调异常后释放请求并允许重试', async () => {
+    const scenario = createHookScenario('{bad:}');
+    scenario.callbacks.onTriggerFeatureFirstUse.mockImplementationOnce(() => {
+      throw new Error('引导失败');
+    });
+    vi.mocked(runAppAiRepairCommand).mockResolvedValue(undefined);
+
+    await act(async () => {
+      await expect(scenario.result.current.handleAiRepair()).rejects.toThrow('引导失败');
+    });
+    await act(async () => { await scenario.result.current.handleAiRepair(); });
+
+    expect(runAppAiRepairCommand).toHaveBeenCalledOnce();
+  });
+
+  it('执行器异常后结束加载并允许重试', async () => {
+    vi.mocked(runAppAiRepairCommand).mockImplementationOnce(async (_input, effects) => {
       effects.onSetRepairing(true);
-      await new Promise<void>(resolve => { releaseRuns.push(resolve); });
+      throw new Error('执行失败');
+    }).mockResolvedValue(undefined);
+    const scenario = createHookScenario('{bad:}');
+
+    await act(async () => {
+      await expect(scenario.result.current.handleAiRepair()).rejects.toThrow('执行失败');
+    });
+    expect(scenario.result.current.isAiRepairing).toBe(false);
+    await act(async () => { await scenario.result.current.handleAiRepair(); });
+    expect(runAppAiRepairCommand).toHaveBeenCalledTimes(2);
+  });
+
+  it('切换 SOURCE 后不让旧请求覆盖新加载状态', async () => {
+    const deferredRuns = [createDeferred(), createDeferred()];
+    let runIndex = 0;
+    vi.mocked(runAppAiRepairCommand).mockImplementation(async (_input, effects) => {
+      const deferred = deferredRuns[runIndex++];
+      effects.onSetRepairing(true);
+      await deferred.promise;
       effects.onSetRepairing(false);
     });
+    const scenario = createHookScenario('{bad:}');
+    let firstRepair!: Promise<void>;
+    let secondRepair!: Promise<void>;
 
-    const firstRepair = useAiRepairHookForTest('{bad:}').handleAiRepair();
-    expect(setIsAiRepairing).toHaveBeenLastCalledWith(true);
+    act(() => { firstRepair = scenario.result.current.handleAiRepair(); });
+    expect(scenario.result.current.isAiRepairing).toBe(true);
+    scenario.rerender({ sourceText: '{edited:true}', activeFileId: null });
+    expect(scenario.result.current.isAiRepairing).toBe(false);
+    act(() => { secondRepair = scenario.result.current.handleAiRepair(); });
+    expect(scenario.result.current.isAiRepairing).toBe(true);
 
-    const secondHook = useAiRepairHookForTest('{edited:true}');
-    expect(setIsAiRepairing).toHaveBeenLastCalledWith(false);
-
-    const secondRepair = secondHook.handleAiRepair();
-    expect(setIsAiRepairing).toHaveBeenLastCalledWith(true);
-
-    releaseRuns[0]?.();
-    await firstRepair;
-    expect(setIsAiRepairing).toHaveBeenLastCalledWith(true);
-
-    releaseRuns[1]?.();
-    await secondRepair;
-    expect(setIsAiRepairing).toHaveBeenLastCalledWith(false);
+    await act(async () => { deferredRuns[0].resolve(); await firstRepair; });
+    expect(scenario.result.current.isAiRepairing).toBe(true);
+    await act(async () => { deferredRuns[1].resolve(); await secondRepair; });
+    expect(scenario.result.current.isAiRepairing).toBe(false);
   });
 
-  it('未提交的 SOURCE 渲染不应使当前修复结果失效', async () => {
+  it('卸载时取消请求并忽略晚到回调', async () => {
+    const deferred = createDeferred();
     let capturedEffects: Parameters<typeof runAppAiRepairCommand>[1] | undefined;
-    let releaseRun: (() => void) | undefined;
-    vi.mocked(runAppAiRepairCommand).mockImplementation(async (_input, effects) => {
+    let repairSignal: AbortSignal | undefined;
+    vi.mocked(runAppAiRepairCommand).mockImplementation(async (input, effects) => {
+      repairSignal = input.signal;
       capturedEffects = effects;
-      await new Promise<void>(resolve => { releaseRun = resolve; });
+      await deferred.promise;
     });
-    const hookInput = createHookInput('{bad:}', 'file-a');
-    const repairPromise = useAppAiRepairCommand(hookInput).handleAiRepair();
-    reactMocks.useEffect.mockImplementation(() => undefined);
-    reactMocks.useLayoutEffect.mockImplementation(() => undefined);
-    useAiRepairHookForTest('{draft:true}', 'file-a');
+    const scenario = createHookScenario('{bad:}');
+    let repairPromise!: Promise<void>;
+
+    act(() => { repairPromise = scenario.result.current.handleAiRepair(); });
+    scenario.unmount();
     capturedEffects?.onApplyFixedJson('{"ok":true}', repairSummary);
-    expect(hookInput.onApplyFixedJson).toHaveBeenCalledWith('{"ok":true}', repairSummary);
-    releaseRun?.();
-    await repairPromise;
+
+    expect(repairSignal?.aborted).toBe(true);
+    expect(scenario.callbacks.onApplyFixedJson).not.toHaveBeenCalled();
+    await act(async () => { deferred.resolve(); await repairPromise; });
   });
 });

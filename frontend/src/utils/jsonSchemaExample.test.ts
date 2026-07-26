@@ -668,6 +668,9 @@ describe('jsonSchemaExample', () => {
 
   it('处理非法或永假 Schema 时返回可读错误', () => {
     expect(generateJsonSchemaExampleText('{bad}').error).toContain('Schema 不是合法 JSON');
+    expect(generateJsonSchemaExampleText('{"maximum":1e400}')).toEqual({
+      error: 'Schema 不是合法 JSON: JSON 包含不支持的值',
+    });
     expect(generateJsonSchemaExampleText('false')).toMatchObject({
       error: '当前 Schema 不允许任何 JSON 值，无法生成示例',
     });

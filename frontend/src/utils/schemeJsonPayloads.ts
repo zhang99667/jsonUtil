@@ -1,4 +1,8 @@
-export { tryParseJson, tryParseJsonWithMeta } from './schemeJsonPayloadParser';
+export {
+  tryParseJson,
+  tryParseJsonStringLiteral,
+  tryParseJsonWithMeta,
+} from './schemeJsonPayloadParser';
 export {
   isJsonString,
   normalizeHtmlJsonQuoteCandidate,

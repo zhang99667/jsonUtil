@@ -1,4 +1,4 @@
-import type { JsonTreeNodeKind } from './jsonTreeModel';
+import type { JsonTreeNodeKind } from './jsonTreeTraversal';
 import type { JsonStringSemanticHint } from './jsonValueSemantics';
 
 export const JSON_TREE_KIND_LABELS: Record<JsonTreeNodeKind, string> = {
@@ -20,7 +20,7 @@ export const getJsonTreeKindClassName = (kind: JsonTreeNodeKind): string => {
 };
 
 export const getJsonPointerDisplayValue = (jsonPointer: string): string => (
-  jsonPointer || '(root)'
+  jsonPointer || '根节点'
 );
 
 export const getJsonTreeSemanticHintClassName = (kind: JsonStringSemanticHint['kind']): string => {

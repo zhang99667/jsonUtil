@@ -4,6 +4,10 @@ interface TextDownloadInput {
   mimeType: string;
 }
 
+const runDownloadCleanup = (cleanup: () => void, failureMessage: string): void => {
+  try { cleanup(); } catch (error) { console.warn(failureMessage, error); }
+};
+
 export const triggerBlobDownload = (blob: Blob, fileName: string): void => {
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -14,11 +18,10 @@ export const triggerBlobDownload = (blob: Blob, fileName: string): void => {
     document.body.appendChild(link);
     link.click();
   } finally {
-    try {
-      link.remove();
-    } finally {
-      globalThis.setTimeout(() => URL.revokeObjectURL(url), 0);
-    }
+    runDownloadCleanup(() => link.remove(), '移除临时下载链接失败:');
+    globalThis.setTimeout(() => {
+      runDownloadCleanup(() => URL.revokeObjectURL(url), '回收临时下载地址失败:');
+    }, 0);
   }
 };
 

@@ -1,23 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSchemeDisplayHeader,
+  getSchemeDisplayHeader,
+  getSchemeDisplayHeaderKey,
+  isSchemeDisplayHeaderKey,
   removeSchemeDisplayHeader,
 } from './schemeDisplayHeader';
+import {
+  addSchemeDisplayProjectionHeader,
+  buildSchemeDisplayProjection,
+  createSchemeDecodeDisplayContext,
+} from './schemeDisplayProjection';
+import { isSchemeDisplayHeaderRecord } from './transformSchemeDisplayHeaderValidation';
 
 const SOURCE = 'sampleapp://v7/vendor/ad/immersiveVideo?params=%7B%7D&style=dark';
 const HTTP_SOURCE = 'http://example.com/harmony/#/nativePhone?solutionId=2830284';
 
 describe('schemeDisplayHeader', () => {
   it('将根 Scheme 协议头放在展开参数之前', () => {
-    const result = addSchemeDisplayHeader({ params: {}, style: 'dark' }, SOURCE);
+    const context = createSchemeDecodeDisplayContext();
+    const value = addSchemeDisplayProjectionHeader(
+      { params: {}, style: 'dark' },
+      SOURCE,
+      [],
+      context,
+    );
+    const projection = buildSchemeDisplayProjection(JSON.stringify(value), context);
 
-    expect(result).toEqual({
+    expect(projection?.headers).toEqual([expect.objectContaining({
       headerKey: '__scheme__',
-      value: {
-        __scheme__: 'sampleapp://v7/vendor/ad/immersiveVideo',
-        params: {},
-        style: 'dark',
-      },
+      header: 'sampleapp://v7/vendor/ad/immersiveVideo',
+    })]);
+    expect(JSON.parse(projection?.displayDecoded ?? 'null')).toEqual({
+      __scheme__: 'sampleapp://v7/vendor/ad/immersiveVideo',
+      params: {},
+      style: 'dark',
     });
   });
 
@@ -34,13 +51,34 @@ describe('schemeDisplayHeader', () => {
   });
 
   it('真实参数占用默认字段名时使用备用字段名', () => {
-    const result = addSchemeDisplayHeader({ __scheme__: '业务参数' }, SOURCE);
+    expect(getSchemeDisplayHeaderKey(
+      { __scheme__: '业务参数' },
+      undefined,
+    )).toBe('__scheme_header__');
+  });
 
-    expect(result?.headerKey).toBe('__scheme_header__');
-    expect(result?.value).toEqual({
-      __scheme_header__: 'sampleapp://v7/vendor/ad/immersiveVideo',
-      __scheme__: '业务参数',
-    });
+  it('展示字段名被真实参数占用时继续递增', () => {
+    expect(getSchemeDisplayHeaderKey({
+      __scheme__: '业务参数一',
+      __scheme_header__: '业务参数二',
+      __scheme_header_2__: '业务参数三',
+    }, undefined)).toBe('__scheme_header_3__');
+  });
+
+  it('相同协议头事件使用组内唯一展示字段名', () => {
+    expect(getSchemeDisplayHeaderKey(
+      { id: 3 },
+      new Set(['__scheme_header__']),
+    )).toBe('__scheme_header_2__');
+  });
+
+  it('HTTP 和 HTTPS 地址展开后保留协议头与资源路径', () => {
+    expect(getSchemeDisplayHeader('http://example.com/page?from=feed')).toBe(
+      'http://example.com/page',
+    );
+    expect(getSchemeDisplayHeader('https://example.com/page?from=feed')).toBe(
+      'https://example.com/page',
+    );
   });
 
   it('真实 URL 参数占用默认字段名时使用备用字段名', () => {
@@ -77,12 +115,60 @@ describe('schemeDisplayHeader', () => {
   });
 
   it('非法协议头不会覆盖原 Scheme', () => {
-    const result = removeSchemeDisplayHeader({
-      __scheme__: 'not-a-scheme',
-      params: {},
-    }, SOURCE, '__scheme__');
+    for (const invalidHeader of ['not-a-scheme', 'sampleapp://[']) {
+      const result = removeSchemeDisplayHeader({
+        __scheme__: invalidHeader,
+        params: {},
+      }, SOURCE, '__scheme__');
 
-    expect(result.source).toBe(SOURCE);
-    expect(result.value).toEqual({ params: {} });
+      expect(result.source).toBe(SOURCE);
+      expect(result.value).toEqual({ params: {} });
+    }
   });
+
+  it('展示字段校验仅接受受限命名', () => {
+    for (const key of [
+      '__url__',
+      '__url_header__',
+      '__url_header_2__',
+      '__url_header_12__',
+      '__scheme__',
+      '__scheme_header__',
+      '__scheme_header_2__',
+      '__scheme_header_12__',
+    ]) {
+      expect(isSchemeDisplayHeaderKey(key)).toBe(true);
+      expect(isSchemeDisplayHeaderRecord({
+        path: '',
+        headerKey: key,
+        header: 'sampleapp://v1/item/open',
+        source: 'sampleapp://v1/item/open?id=1',
+        layers: [],
+      })).toBe(true);
+    }
+
+    for (const key of [
+      '__url_header_0__',
+      '__url_header_1__',
+      '__url_header_01__',
+      '__url_header_any__',
+      '__scheme_header_0__',
+      '__scheme_header_1__',
+      '__scheme_header_01__',
+      '__scheme_header_-1__',
+      '__scheme_header_any__',
+      '__scheme_other__',
+      'scheme_header_2',
+    ]) {
+      expect(isSchemeDisplayHeaderKey(key)).toBe(false);
+      expect(isSchemeDisplayHeaderRecord({
+        path: '',
+        headerKey: key,
+        header: 'sampleapp://v1/item/open',
+        source: 'sampleapp://v1/item/open?id=1',
+        layers: [],
+      })).toBe(false);
+    }
+  });
+
 });

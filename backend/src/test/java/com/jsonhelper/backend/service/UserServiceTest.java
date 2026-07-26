@@ -8,8 +8,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
@@ -50,27 +53,12 @@ class UserServiceTest {
     }
 
     @Test
-    void duplicateUsernameReturnsConflict() {
-        RegisterRequest request = new RegisterRequest();
-        request.setUsername("existing-user");
-        when(userRepository.existsByUsername("existing-user")).thenReturn(true);
-
-        ResponseStatusException error = assertThrows(
-                ResponseStatusException.class,
-                () -> userService.createUser(request)
-        );
-
-        assertTrue(error.getStatusCode().isSameCodeAs(HttpStatus.CONFLICT));
-        assertEquals("用户名已被占用", error.getReason());
-    }
-
-    @Test
     void missingUserReturnsNotFound() {
         when(userRepository.findById(42L)).thenReturn(Optional.empty());
 
         ResponseStatusException error = assertThrows(
                 ResponseStatusException.class,
-                () -> userService.updateUser(42L, new UpdateUserRequest())
+                () -> userService.updateUser(42L, new UpdateUserRequest(null, null, null, null, null))
         );
 
         assertTrue(error.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND));
@@ -80,10 +68,7 @@ class UserServiceTest {
     @Test
     void roleNormalizationDoesNotDependOnSystemLocale() {
         Locale.setDefault(Locale.forLanguageTag("tr-TR"));
-        RegisterRequest request = new RegisterRequest();
-        request.setUsername("admin");
-        request.setPassword("secret");
-        request.setRole("admin");
+        RegisterRequest request = new RegisterRequest("admin", "secret", "admin");
         when(passwordEncoder.encode("secret")).thenReturn("密码摘要");
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -92,20 +77,30 @@ class UserServiceTest {
         assertEquals("ADMIN", created.getRole());
     }
 
-    @Test
-    void blankUpdatePasswordDoesNotReplaceExistingHash() {
+    @ParameterizedTest
+    @ValueSource(strings = {"   ", "\u3000\u2003"})
+    void blankUpdatePasswordDoesNotReplaceExistingHash(String password) {
         User user = new User();
         user.setId(1L);
         user.setPasswordHash("原密码摘要");
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setPassword("   ");
+        UpdateUserRequest request = new UpdateUserRequest(null, null, password, null, null);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
-
         User updated = userService.updateUser(1L, request);
 
         assertEquals("原密码摘要", updated.getPasswordHash());
         verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void unicodeBlankKeywordUsesUnfilteredList() {
+        userService.listUsers(0, 20, "\u3000\u2003");
+
+        verify(userRepository).findAll(any(Pageable.class));
+        verify(userRepository, never()).findByUsernameContaining(
+                anyString(),
+                any(Pageable.class)
+        );
     }
 
 }

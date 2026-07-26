@@ -26,6 +26,7 @@ describe('AppPreviewCodeEditor', () => {
     expect(tree.props.errorLocation).toEqual({ line: 1, column: 6 });
     expect(tree.props.warning).toBe('deep warning');
     expect(tree.props.info).toBe('deep info');
+    expect(tree.props.schemeDisplayHeaderMarkers).toBe(props.schemeDisplayHeaderMarkers);
     expect(tree.props.highlightRange).toEqual(props.highlightRange);
     expect(tree.props.onSchemeEdit).toBe(props.onSchemeEdit);
 

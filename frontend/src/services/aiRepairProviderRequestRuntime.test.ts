@@ -59,6 +59,23 @@ describe('aiRepairProviderRequestRuntime', () => {
     expect(removeListener).toHaveBeenCalledWith('abort', expect.any(Function));
   });
 
+  it.each([Number.NaN, Number.POSITIVE_INFINITY])('非有限超时值 %s 不会被定时器转换为立即超时', async timeoutMs => {
+    vi.useFakeTimers();
+    const parentAbortController = new AbortController();
+    const promise = runAiRepairProviderRequest({
+      signal: parentAbortController.signal,
+      timeoutMs,
+    }, signal => new Promise<string>((_resolve, reject) => {
+      signal.addEventListener('abort', () => reject(new Error('请求已取消')), { once: true });
+    }));
+    const expectation = expect(promise).rejects.toThrow('请求已取消');
+
+    await vi.advanceTimersByTimeAsync(1);
+    parentAbortController.abort();
+
+    await expectation;
+  });
+
   it('父级信号已取消时直接传递已取消的请求信号', async () => {
     const parentAbortController = new AbortController();
     const addListener = vi.spyOn(parentAbortController.signal, 'addEventListener');

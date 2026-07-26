@@ -30,6 +30,7 @@ describe('buildAiRepairSummary', () => {
 
     expect(summary.rootDescription).toBe('对象 2 个键');
     expect(formatAiRepairSummary(summary)).toContain('结构: 对象 2 个键');
+    expect(buildAiRepairSummary('{}', '{"value":1e400}').rootDescription).toBe('未知 JSON 结构');
   });
 
   it('可标记本地规则修复来源和规则列表', () => {

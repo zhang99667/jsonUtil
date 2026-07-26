@@ -1,5 +1,5 @@
 import {
-  splitQueryPairs,
+  iterateDecodedQueryPairs,
 } from './schemeQuerySyntax';
 import {
   getSingleRawStructuredParam,
@@ -32,16 +32,13 @@ export const parseFlatQueryParams = (
 
   const params: Record<string, string | string[]> = {};
 
-  splitQueryPairs(queryString).forEach(pair => {
-    const equalIndex = pair.indexOf('=');
-    if (equalIndex <= 0) return;
-
-    const key = options.decodeKey(pair.slice(0, equalIndex));
-    const value = options.decodeValue(pair.slice(equalIndex + 1));
-    if (key) {
-      assignFlatQueryParam(params, key, value);
-    }
-  });
+  for (const { key, value } of iterateDecodedQueryPairs(
+    queryString,
+    options.decodeKey,
+    options.decodeValue,
+  )) {
+    assignFlatQueryParam(params, key, value);
+  }
 
   return Object.keys(params).length > 0 ? params : undefined;
 };

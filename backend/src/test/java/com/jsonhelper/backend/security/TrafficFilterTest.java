@@ -134,7 +134,7 @@ class TrafficFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
         when(visitLogRepository.save(any(VisitLog.class)))
-                .thenThrow(new RuntimeException("测试用持久化异常"));
+                .thenThrow(new org.springframework.dao.DataAccessResourceFailureException("测试用持久化异常"));
 
         trafficFilter.doFilter(request, response, filterChain);
 

@@ -1,5 +1,6 @@
 package com.jsonhelper.backend.common.exception;
 
+import com.jsonhelper.backend.config.FileProperties;
 import com.jsonhelper.backend.controller.FileController;
 import com.jsonhelper.backend.dto.response.Result;
 import com.jsonhelper.backend.entity.UploadFile;
@@ -92,7 +93,7 @@ class GlobalExceptionHandlerMvcTest {
     private static final class UploadLimitFileService extends FileService {
 
         private UploadLimitFileService() {
-            super(null);
+            super(null, new FileProperties("./uploads", 1L, 0L, ".json"));
         }
 
         @Override

@@ -1,4 +1,5 @@
 import type { JsonValue } from '../types';
+import { parseJsonValue } from './jsonValueGuards';
 
 export type JsonPathSegment = string | number;
 
@@ -31,7 +32,7 @@ export const parseGeneratedJsonPath = (path: string): JsonPathSegment[] | null =
         segments.push(Number(rawSegment));
       } else {
         try {
-          const parsed = JSON.parse(rawSegment) as unknown;
+          const parsed = parseJsonValue(rawSegment);
           if (typeof parsed !== 'string') return null;
           segments.push(parsed);
         } catch {

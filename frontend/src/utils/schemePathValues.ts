@@ -1,4 +1,6 @@
 import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
+import { parseJsonValue } from './jsonValueGuards';
+import { formatDecodedPathCopyValue } from './transformValuePreview';
 
 export const DEFAULT_SCHEME_PATH_VALUE_COPY_ROW_LIMIT = 500;
 
@@ -18,10 +20,16 @@ export interface SchemePathValueCopyOptions {
   limit?: number;
 }
 
-const formatJsonPathValue = (value: unknown): string => {
-  if (typeof value === 'string') return JSON.stringify(value);
-  return JSON.stringify(value) ?? String(value);
-};
+type SchemePathValueCollectTask =
+  | { kind: 'value'; path: string; value: unknown }
+  | { kind: 'array'; index: number; path: string; value: unknown[] }
+  | {
+      kind: 'object';
+      index: number;
+      keys: string[];
+      path: string;
+      value: Record<string, unknown>;
+    };
 
 const pushSchemePathValueRow = (
   state: SchemePathValueCollectState,
@@ -33,7 +41,7 @@ const pushSchemePathValueRow = (
     return;
   }
 
-  state.rows.push(`${path} = ${formatJsonPathValue(value)}`);
+  state.rows.push(`${path} = ${formatDecodedPathCopyValue(value)}`);
 };
 
 const collectSchemePathValues = (
@@ -41,36 +49,60 @@ const collectSchemePathValues = (
   path: string,
   state: SchemePathValueCollectState
 ) => {
-  if (state.isTruncated) return;
+  const pending: SchemePathValueCollectTask[] = [{ kind: 'value', path, value }];
+  while (pending.length > 0 && !state.isTruncated) {
+    const task = pending.pop();
+    if (!task) break;
 
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      pushSchemePathValueRow(state, path, value);
-      return;
+    if (task.kind === 'array') {
+      const nextIndex = task.index + 1;
+      if (nextIndex < task.value.length) {
+        pending.push({ ...task, index: nextIndex });
+      }
+      pending.push({
+        kind: 'value',
+        path: appendJsonPathIndex(task.path, task.index),
+        value: task.value[task.index],
+      });
+      continue;
     }
 
-    for (let index = 0; index < value.length; index++) {
-      collectSchemePathValues(value[index], appendJsonPathIndex(path, index), state);
-      if (state.isTruncated) return;
+    if (task.kind === 'object') {
+      const key = task.keys[task.index];
+      const nextIndex = task.index + 1;
+      if (nextIndex < task.keys.length) {
+        pending.push({ ...task, index: nextIndex });
+      }
+      pending.push({
+        kind: 'value',
+        path: appendJsonPathKey(task.path, key),
+        value: task.value[key],
+      });
+      continue;
     }
-    return;
+
+    if (Array.isArray(task.value)) {
+      if (task.value.length === 0) {
+        pushSchemePathValueRow(state, task.path, task.value);
+      } else {
+        pending.push({ kind: 'array', index: 0, path: task.path, value: task.value });
+      }
+      continue;
+    }
+
+    if (task.value && typeof task.value === 'object') {
+      const record = task.value as Record<string, unknown>;
+      const keys = Object.keys(record);
+      if (keys.length === 0) {
+        pushSchemePathValueRow(state, task.path, task.value);
+      } else {
+        pending.push({ kind: 'object', index: 0, keys, path: task.path, value: record });
+      }
+      continue;
+    }
+
+    pushSchemePathValueRow(state, task.path, task.value);
   }
-
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) {
-      pushSchemePathValueRow(state, path, value);
-      return;
-    }
-
-    for (const [key, item] of entries) {
-      collectSchemePathValues(item, appendJsonPathKey(path, key), state);
-      if (state.isTruncated) return;
-    }
-    return;
-  }
-
-  pushSchemePathValueRow(state, path, value);
 };
 
 export const buildSchemePathValuesForCopy = (
@@ -78,7 +110,7 @@ export const buildSchemePathValuesForCopy = (
   options: SchemePathValueCopyOptions = {}
 ): SchemePathValueCopyResult | null => {
   try {
-    const parsed: unknown = JSON.parse(content);
+    const parsed = parseJsonValue(content);
     const state: SchemePathValueCollectState = {
       rows: [],
       limit: options.limit ?? DEFAULT_SCHEME_PATH_VALUE_COPY_ROW_LIMIT,

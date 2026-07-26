@@ -1,9 +1,8 @@
 import { AIConfig } from "../types";
-import { formatUnknownError } from "../utils/errors";
 import {
   AiRepairErrorCode,
   createAiRepairError,
-  isAiRepairError,
+  getAiRepairErrorCode,
 } from "../utils/aiRepairErrors";
 import {
   assertAiRepairInputCanUseExternalModel,
@@ -114,8 +113,7 @@ export const testAIConnection = async (
     });
     assertAiConnectionTestResult(fixedJson);
   } catch (error: unknown) {
-    const errorMessage = formatUnknownError(error);
-    if (isAiRepairError(error) && error.code === AiRepairErrorCode.Timeout) {
+    if (getAiRepairErrorCode(error) === AiRepairErrorCode.Timeout) {
       throw createAiRepairError(
         AiRepairErrorCode.ConnectionTestTimeout,
         AI_CONNECTION_TEST_TIMEOUT_MESSAGE

@@ -1,3 +1,4 @@
+import { AxiosHeaders } from 'axios';
 import { describe, expect, it } from 'vitest';
 import {
     AdminRequestError,
@@ -12,6 +13,11 @@ import {
 describe('getAdminResultErrorMessage', () => {
     it('优先读取后端标准 Result 的 message', () => {
         expect(getAdminResultErrorMessage({ code: 500, message: '文件不存在' })).toBe('文件不存在');
+    });
+
+    it('忽略数组和空值等非错误记录', () => {
+        expect(getAdminResultErrorMessage([{ message: '数组内错误' }], '操作失败')).toBe('操作失败');
+        expect(getAdminResultErrorMessage(null, '操作失败')).toBe('操作失败');
     });
 
     it('没有可读错误时使用业务兜底文案', () => {
@@ -29,15 +35,23 @@ describe('readAdminResponseMessage', () => {
     });
 
     it('读取 blob 错误体中的 message', async () => {
-        const blob = new Blob([JSON.stringify({ message: '下载文件不存在' })], {
-            type: 'application/json',
-        });
+        const blob = Object.assign(
+            new Blob([JSON.stringify({ message: '下载文件不存在' })], {
+                type: 'application/json',
+            }),
+            { message: '不应读取的附加属性' }
+        );
 
         await expect(readAdminResponseMessage(blob)).resolves.toBe('下载文件不存在');
     });
 
     it('纯文本错误体直接返回文本内容', async () => {
         await expect(readAdminResponseMessage('service unavailable')).resolves.toBe('service unavailable');
+    });
+
+    it('数组和空值不会被当作对象错误体', async () => {
+        await expect(readAdminResponseMessage([{ message: '数组内错误' }])).resolves.toBeNull();
+        await expect(readAdminResponseMessage(null)).resolves.toBeNull();
     });
 });
 
@@ -72,6 +86,11 @@ describe('resolveAdminRequestErrorMessage', () => {
             message: 'Network Error',
         })).resolves.toBe('网络错误，请检查网络连接或后端服务状态');
     });
+
+    it('未知拒绝值使用稳定网络错误提示', async () => {
+        await expect(resolveAdminRequestErrorMessage(null)).resolves.toBe('网络错误，请检查网络连接');
+        await expect(resolveAdminRequestErrorMessage(undefined)).resolves.toBe('网络错误，请检查网络连接');
+    });
 });
 
 describe('AdminRequestError', () => {
@@ -80,6 +99,17 @@ describe('AdminRequestError', () => {
 
         expect(isAdminRequestError(error)).toBe(true);
         expect(error.status).toBe(500);
+    });
+
+    it('拒绝数组、空值和伪装成请求错误的 Blob', () => {
+        const blob = Object.assign(new Blob(['请求失败']), {
+            name: 'AdminRequestError',
+            handledByRequestInterceptor: true,
+        });
+
+        expect(isAdminRequestError([])).toBe(false);
+        expect(isAdminRequestError(null)).toBe(false);
+        expect(isAdminRequestError(blob)).toBe(false);
     });
 });
 
@@ -111,16 +141,13 @@ describe('shouldInvalidateAdminSession', () => {
         )).toBe(false);
     });
 
-    it('兼容请求头读取接口并忽略非字符串值', () => {
-        expect(shouldInvalidateAdminSession(
-            401,
-            { get: () => 'Bearer current-token' },
-            'current-token'
-        )).toBe(true);
-        expect(shouldInvalidateAdminSession(
-            401,
-            { get: () => ['Bearer current-token'] },
-            'current-token'
-        )).toBe(false);
+    it('复用 Axios 请求头模型处理实例、大小写并忽略非字符串值', () => {
+        const axiosHeaders = new AxiosHeaders({ authorization: 'Bearer current-token' });
+        const uppercaseHeaders = { AUTHORIZATION: 'Bearer current-token' };
+        const multiValueHeaders = { Authorization: ['Bearer current-token'] };
+
+        expect(shouldInvalidateAdminSession(401, axiosHeaders, 'current-token')).toBe(true);
+        expect(shouldInvalidateAdminSession(401, uppercaseHeaders, 'current-token')).toBe(true);
+        expect(shouldInvalidateAdminSession(401, multiValueHeaders, 'current-token')).toBe(false);
     });
 });

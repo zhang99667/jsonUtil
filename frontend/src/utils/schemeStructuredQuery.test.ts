@@ -109,4 +109,28 @@ describe('schemeStructuredQuery', () => {
       unused: undefined,
     }, 'tags[]=feed&tags[]=old')).toBe('tags%5B%5D=feed&tags%5B%5D=news');
   });
+
+  it('深层结构化查询回写不依赖 JavaScript 调用栈', () => {
+    const depth = 5_000;
+    let value: Record<string, unknown> = { leaf: 'done' };
+    for (let index = 0; index < depth; index += 1) value = { child: value };
+    const key = `root.${'child.'.repeat(depth)}leaf`;
+
+    const query = buildQueryStringFromObject({ root: value }, 'root.child=old');
+
+    expect(new URLSearchParams(query).get(key)).toBe('done');
+  });
+
+  it('异常叶子值回写为稳定文本', () => {
+    const unstringifiable = Object.assign(() => undefined, {
+      toString: () => {
+        throw new Error('字符串转换失败');
+      },
+    });
+
+    expect(buildQueryStringFromObject({
+      large: 42n,
+      invalid: unstringifiable,
+    })).toBe('large=42&invalid=%E6%97%A0%E6%B3%95%E5%BA%8F%E5%88%97%E5%8C%96');
+  });
 });

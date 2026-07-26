@@ -7,6 +7,7 @@ import {
   formatPlaceholderPathSegment,
 } from './schemeParamDecodeStages';
 import { buildParamDecodeStagesFromPairs } from './schemeParamDecodeStagePairs';
+import { createSchemeUrlContext } from './schemeUrlShapes';
 
 const createOptions = () => ({
   decodeKey: decodeQueryComponent,
@@ -60,8 +61,9 @@ describe('schemeParamDecodeStages', () => {
   });
 
   it('构建 URL query 与 hash 参数分层证据', () => {
+    const source = 'sampleapp://v1/open?url=https%3A%2F%2Fm.example.com#tab=feed';
     const stages = buildUrlParamDecodeStages(
-      'sampleapp://v1/open?url=https%3A%2F%2Fm.example.com#tab=feed',
+      source,
       10,
       createOptions()
     );
@@ -80,6 +82,19 @@ describe('schemeParamDecodeStages', () => {
         urlDecoded: 'feed',
       }),
     ]);
+    expect(buildUrlParamDecodeStages(
+      createSchemeUrlContext(source),
+      10,
+      createOptions(),
+    )).toEqual(stages);
+  });
+
+  it('非法 URL 安全返回空诊断阶段', () => {
+    expect(buildUrlParamDecodeStages(
+      'sampleapp://[',
+      10,
+      createOptions(),
+    )).toEqual([]);
   });
 
   it('query 达到上限前只补齐剩余 hash 参数容量', () => {

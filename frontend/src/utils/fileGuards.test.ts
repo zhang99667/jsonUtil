@@ -41,6 +41,22 @@ describe('getTextFileOpenError', () => {
     })).toBeNull();
   });
 
+  it('允许环境变量文件和带参数的文本 MIME', () => {
+    for (const name of ['.env', '.env.local']) {
+      expect(getTextFileOpenError({
+        name,
+        size: 1024,
+        type: 'application/octet-stream',
+      })).toBeNull();
+    }
+
+    expect(getTextFileOpenError({
+      name: 'response.payload',
+      size: 1024,
+      type: 'application/vnd.api+json; charset=utf-8',
+    })).toBeNull();
+  });
+
   it('允许常见 JSON 家族调试文件', () => {
     for (const name of [
       'network.har',

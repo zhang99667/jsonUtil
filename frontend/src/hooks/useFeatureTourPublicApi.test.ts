@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Driver } from 'driver.js';
 import { loadDriverTour } from '../utils/driverTourLoader';
+import { driverTourRuntime } from '../utils/driverTourRuntime';
 import { safeReadStorageItem } from '../utils/storage';
 import { FeatureId, useFeatureTour } from './useFeatureTour';
 
@@ -32,10 +33,16 @@ type DriverFactory = Awaited<ReturnType<typeof loadDriverTour>>;
 describe('useFeatureTour 公开接口', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    driverTourRuntime.dispose();
     reactMocks.useCallback.mockImplementation((callback: unknown) => callback);
     reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => effect());
     reactMocks.useRef.mockImplementation((initialValue: unknown) => ({ current: initialValue }));
     vi.mocked(safeReadStorageItem).mockReturnValue({ ok: true, value: null });
+  });
+
+  afterEach(() => {
+    driverTourRuntime.dispose();
+    vi.restoreAllMocks();
   });
 
   it('完成状态只由实际存储值决定', () => {
@@ -70,11 +77,12 @@ describe('useFeatureTour 公开接口', () => {
   });
 
   it('刷新位置只调用 Driver 刷新接口', () => {
-    const driver = { drive: vi.fn(), refresh: vi.fn() } as unknown as Driver;
-    let refIndex = 0;
-    reactMocks.useRef.mockImplementation((initialValue: unknown) => (
-      refIndex++ === 0 ? { current: driver } : { current: initialValue }
-    ));
+    const driver = {
+      destroy: vi.fn(),
+      drive: vi.fn(),
+      refresh: vi.fn(),
+    } as unknown as Driver;
+    driverTourRuntime.begin().adopt(driver);
 
     useFeatureTour().refreshTour();
 

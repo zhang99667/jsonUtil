@@ -1,36 +1,20 @@
-import React from 'react';
-import { FileTab } from '../types';
+import type { KeyboardEvent, MouseEvent, RefObject } from 'react';
+import type { FileTab } from '../types';
 
-/** TabBar 组件 Props 定义 */
 interface TabBarProps {
-  /** 文件标签列表 */
   files: FileTab[];
-  /** 当前激活的文件 ID */
   activeFileId: string | null;
-  /** 点击标签切换文件 */
   onTabClick: (id: string) => void;
-  /** 关闭文件标签 */
   onCloseFile: (id: string) => void;
-  /** 新建标签 */
   onNewTab: () => void;
-  /** 标签容器 ref（用于滚动控制） */
-  tabsContainerRef: React.RefObject<HTMLDivElement | null>;
-  /** 滚动事件处理 */
+  tabsContainerRef: RefObject<HTMLDivElement | null>;
   onScroll: () => void;
-  /** 自定义滚动条：是否显示 */
   showScrollbar: boolean;
-  /** 自定义滚动条：滑块宽度百分比 */
-  thumbWidth: number;
-  /** 自定义滚动条：滑块偏移百分比 */
-  thumbLeft: number;
-  /** 自定义滚动条：鼠标按下事件 */
-  onScrollbarMouseDown: (e: React.MouseEvent) => void;
+  thumbSize: number;
+  thumbOffset: number;
+  onScrollbarMouseDown: (event: MouseEvent) => void;
 }
 
-/**
- * 获取文件类型图标
- * 根据文件扩展名返回对应的图标元素
- */
 const getFileIcon = (filename: string) => {
   if (!filename) {
     return (
@@ -73,11 +57,7 @@ const getCloseAriaLabel = (file: FileTab): string => (
   file.isDirty ? `关闭未保存标签 ${file.name}` : `关闭标签 ${file.name}`
 );
 
-/**
- * 标签栏组件
- * 展示已打开的文件标签，支持切换、关闭、新建标签和横向滚动
- */
-export const TabBar: React.FC<TabBarProps> = ({
+export const TabBar = ({
   files,
   activeFileId,
   onTabClick,
@@ -86,10 +66,10 @@ export const TabBar: React.FC<TabBarProps> = ({
   tabsContainerRef,
   onScroll,
   showScrollbar,
-  thumbWidth,
-  thumbLeft,
+  thumbSize,
+  thumbOffset,
   onScrollbarMouseDown,
-}) => {
+}: TabBarProps) => {
   const focusTabByIndex = (index: number) => {
     const tabElements = tabsContainerRef.current?.querySelectorAll('[data-file-tab="true"]');
     (tabElements?.[index] as HTMLElement | undefined)?.focus();
@@ -114,14 +94,15 @@ export const TabBar: React.FC<TabBarProps> = ({
     }
   };
 
-  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, index: number) => {
-    if (files.length === 0) return;
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>, index: number) => {
+    const currentFile = files[index];
+    if (!currentFile) return;
 
     switch (event.key) {
       case 'Enter':
       case ' ':
         event.preventDefault();
-        onTabClick(files[index].id);
+        onTabClick(currentFile.id);
         break;
       case 'ArrowLeft':
         event.preventDefault();
@@ -154,13 +135,13 @@ export const TabBar: React.FC<TabBarProps> = ({
         data-tour="editor-tabs"
         ref={tabsContainerRef}
         onScroll={onScroll}
-        onWheel={(e) => {
-          if (tabsContainerRef.current) {
-            // 将垂直滚动转换为水平滚动
-            const delta = e.deltaY || e.deltaX;
-            if (delta !== 0) {
-              tabsContainerRef.current.scrollLeft += delta;
-            }
+        onWheel={(event) => {
+          const container = tabsContainerRef.current;
+          if (!container) return;
+
+          const delta = event.deltaY || event.deltaX;
+          if (delta !== 0) {
+            container.scrollLeft += delta;
           }
         }}
         className="flex items-center h-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden scrollbar-hide"
@@ -178,10 +159,10 @@ export const TabBar: React.FC<TabBarProps> = ({
                 onClick={() => onTabClick(file.id)}
                 onKeyDown={(e) => handleTabKeyDown(e, index)}
                 onAuxClick={(e) => {
-                  // 鼠标中键 (button 1) 关闭标签
                   if (e.button === 1) {
                     e.stopPropagation();
-                    e.preventDefault(); // 阻止部分浏览器的自动滚动行为
+                    // 阻止部分浏览器启动自动滚动。
+                    e.preventDefault();
                     onCloseFile(file.id);
                   }
                 }}
@@ -206,7 +187,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                 >
                   {file.isDirty ? (
                     <>
-                      <div className="w-2 h-2 bg-green-400 rounded-full group-hover/close:hidden"></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full group-hover/close:hidden" />
                       <svg className="w-3.5 h-3.5 text-gray-400 hidden group-hover/close:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </>
                   ) : (
@@ -218,11 +199,10 @@ export const TabBar: React.FC<TabBarProps> = ({
           </div>
         )}
 
-        {/* 新建标签按钮 */}
         <div className="flex items-center justify-center h-full px-1">
           <button
             type="button"
-            onClick={() => onNewTab()}
+            onClick={onNewTab}
             className="flex items-center justify-center w-6 h-6 rounded-md text-editor-fg-sub hover:text-white hover:bg-editor-active transition-all cursor-pointer flex-shrink-0"
             title="新建标签 (Cmd+N)"
             aria-label="新建标签 (Cmd+N)"
@@ -232,14 +212,13 @@ export const TabBar: React.FC<TabBarProps> = ({
         </div>
       </div>
 
-      {/* 自定义滚动条 */}
       {showScrollbar && (
         <div className="absolute bottom-0 left-0 w-full h-[3px] z-10 opacity-0 group-hover/header:opacity-100 transition-opacity duration-200">
           <div
             className="h-full bg-scrollbar-bg hover:bg-scrollbar-hover rounded-full cursor-pointer relative"
             style={{
-              width: `${thumbWidth}%`,
-              left: `${thumbLeft}%`
+              width: `${thumbSize}%`,
+              left: `${thumbOffset}%`,
             }}
             onMouseDown={onScrollbarMouseDown}
           />

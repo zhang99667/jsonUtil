@@ -77,7 +77,7 @@ export const DistributionListCard: React.FC<DistributionListCardProps> = ({
 }) => (
   <Card
     title={title}
-    bordered={false}
+    variant="borderless"
     style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
   >
     <DistributionList

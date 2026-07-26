@@ -56,7 +56,8 @@ const withAiRepairTimeout = <T>(
   timeoutMs: number,
   onTimeout: () => void
 ): Promise<T> => {
-  if (timeoutMs <= 0) return promise;
+  // 非有限值会被定时器钳制为近零延迟，不能让无效配置变成立即超时。
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
 
   return new Promise<T>((resolve, reject) => {
     let settled = false;

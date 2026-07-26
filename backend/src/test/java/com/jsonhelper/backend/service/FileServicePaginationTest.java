@@ -1,5 +1,6 @@
 package com.jsonhelper.backend.service;
 
+import com.jsonhelper.backend.config.FileProperties;
 import com.jsonhelper.backend.repository.UploadFileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,10 @@ class FileServicePaginationTest {
 
     @BeforeEach
     void setUp() {
-        fileService = new FileService(uploadFileRepository);
+        fileService = new FileService(
+                uploadFileRepository,
+                new FileProperties("./uploads", 1024L, 1024L, ".json")
+        );
     }
 
     @Test

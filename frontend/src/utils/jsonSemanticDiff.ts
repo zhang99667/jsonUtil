@@ -3,7 +3,8 @@ import { formatUnknownError } from './errors';
 import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 import { parseJsonLines } from './jsonLines';
 import { appendJsonPointerSegment } from './jsonPointer';
-import { isJsonObject } from './jsonValueGuards';
+import { formatJsonValuePreview } from './transformValuePreview';
+import { isJsonObject, parseJsonValue } from './jsonValueGuards';
 
 export type JsonSemanticDiffKind = 'added' | 'removed' | 'changed';
 
@@ -33,13 +34,22 @@ export interface CompareJsonSemanticOptions {
   ignoredPaths?: string[];
 }
 
+interface JsonSemanticDiffTask {
+  before: JsonValue | undefined;
+  after: JsonValue | undefined;
+  path: string;
+  pointer: string;
+}
+
 const DEFAULT_MAX_DIFFS = 500;
 const PREVIEW_MAX_LENGTH = 120;
 
 const getValuePreview = (value: JsonValue | undefined): string | undefined => {
   if (value === undefined) return undefined;
 
-  const text = JSON.stringify(value);
+  const text = value !== null && typeof value === 'object'
+    ? formatJsonValuePreview(value, PREVIEW_MAX_LENGTH)
+    : JSON.stringify(value);
   if (text === undefined) return String(value);
   return text.length <= PREVIEW_MAX_LENGTH
     ? text
@@ -73,7 +83,7 @@ const isIgnoredDiffPath = (path: string, ignoredPaths: string[]): boolean => (
 
 export const parseJsonForSemanticDiff = (source: string): JsonValue => {
   try {
-    return JSON.parse(source) as JsonValue;
+    return parseJsonValue(source);
   } catch (error) {
     const jsonLines = parseJsonLines(source);
     if (jsonLines) return jsonLines;
@@ -131,65 +141,77 @@ export const compareJsonSemanticValues = (
     });
   };
 
-  // 深度优先对比，保留稳定路径，方便复制给接口维护者。
-  const visit = (left: JsonValue, right: JsonValue, path: string, pointer: string) => {
-    if (isLimited) return;
-    if (isIgnoredDiffPath(path, ignoredPaths)) return;
+  const pending: JsonSemanticDiffTask[] = [{
+    before,
+    after,
+    path: '$',
+    pointer: '',
+  }];
+
+  // 倒序入栈保持原有深度优先顺序，同时避开深层 JSON 的调用栈上限。
+  while (pending.length > 0 && !isLimited) {
+    const task = pending.pop();
+    if (!task || isIgnoredDiffPath(task.path, ignoredPaths)) continue;
+
+    if (task.before === undefined || task.after === undefined) {
+      if (task.before === undefined && task.after === undefined) continue;
+      pushDiff(
+        task.before === undefined ? 'added' : 'removed',
+        task.path,
+        task.pointer,
+        task.before,
+        task.after
+      );
+      continue;
+    }
+
+    const { before: left, after: right, path, pointer } = task;
 
     if (Array.isArray(left) || Array.isArray(right)) {
       if (!Array.isArray(left) || !Array.isArray(right)) {
         pushDiff('changed', path, pointer, left, right);
-        return;
+        continue;
       }
 
       const maxLength = Math.max(left.length, right.length);
-      for (let index = 0; index < maxLength; index += 1) {
-        if (isLimited) return;
+      for (let index = maxLength - 1; index >= 0; index -= 1) {
         const childPath = appendJsonPathIndex(path, index);
         const childPointer = appendJsonPointerSegment(pointer, String(index));
-        if (isIgnoredDiffPath(childPath, ignoredPaths)) continue;
-        if (index >= left.length) {
-          pushDiff('added', childPath, childPointer, undefined, right[index]);
-        } else if (index >= right.length) {
-          pushDiff('removed', childPath, childPointer, left[index], undefined);
-        } else {
-          visit(left[index] as JsonValue, right[index] as JsonValue, childPath, childPointer);
-        }
+        pending.push({
+          before: left[index],
+          after: right[index],
+          path: childPath,
+          pointer: childPointer,
+        });
       }
-      return;
+      continue;
     }
 
     if (isJsonObject(left) || isJsonObject(right)) {
       if (!isJsonObject(left) || !isJsonObject(right)) {
         pushDiff('changed', path, pointer, left, right);
-        return;
+        continue;
       }
 
       const keys = Array.from(new Set([...Object.keys(left), ...Object.keys(right)])).sort();
-      for (const key of keys) {
-        if (isLimited) return;
+      for (let index = keys.length - 1; index >= 0; index -= 1) {
+        const key = keys[index];
         const childPath = appendJsonPathKey(path, key);
         const childPointer = appendJsonPointerSegment(pointer, key);
-        if (isIgnoredDiffPath(childPath, ignoredPaths)) continue;
-        const hasLeft = Object.hasOwn(left, key);
-        const hasRight = Object.hasOwn(right, key);
-        if (!hasLeft) {
-          pushDiff('added', childPath, childPointer, undefined, right[key]);
-        } else if (!hasRight) {
-          pushDiff('removed', childPath, childPointer, left[key], undefined);
-        } else {
-          visit(left[key], right[key], childPath, childPointer);
-        }
+        pending.push({
+          before: Object.hasOwn(left, key) ? left[key] : undefined,
+          after: Object.hasOwn(right, key) ? right[key] : undefined,
+          path: childPath,
+          pointer: childPointer,
+        });
       }
-      return;
+      continue;
     }
 
     if (!areSamePrimitiveValue(left, right)) {
       pushDiff('changed', path, pointer, left, right);
     }
-  };
-
-  visit(before, after, '$', '');
+  }
 
   return {
     items,
@@ -233,7 +255,7 @@ export const formatJsonSemanticDiffMarkdown = (result: JsonSemanticDiffResult): 
     `汇总: 新增 ${result.added} / 删除 ${result.removed} / 修改 ${result.changed}${result.isLimited ? `（已截断前 ${result.maxDiffs} 条）` : ''}`,
     ...(result.ignoredPaths.length > 0 ? ['', `忽略路径: ${result.ignoredPaths.map(path => `\`${path}\``).join('、')}`] : []),
     '',
-    '| 类型 | 路径 | SOURCE | 对比值 |',
+    '| 类型 | 路径 | 原始值 | 对比值 |',
     '| --- | --- | --- | --- |',
     ...rows,
   ].join('\n');

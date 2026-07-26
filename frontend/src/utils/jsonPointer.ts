@@ -60,6 +60,17 @@ export const getJsonPointerValue = (
   return current;
 };
 
+export const tryGetJsonPointerValue = <Value = unknown>(
+  root: unknown,
+  pointer: string
+): Value | undefined => {
+  try {
+    return getJsonPointerValue(root, pointer) as Value;
+  } catch {
+    return undefined;
+  }
+};
+
 export const stringifyJsonPointerValue = (
   root: unknown,
   pointer: string,
@@ -96,7 +107,7 @@ export const setJsonPointerValue = (
       continue;
     }
 
-    if (isRecord(current)) {
+    if (isRecord(current) && Object.hasOwn(current, segment)) {
       current = current[segment];
       continue;
     }
@@ -110,7 +121,7 @@ export const setJsonPointerValue = (
     return root;
   }
 
-  if (isRecord(current)) {
+  if (isRecord(current) && Object.hasOwn(current, lastSegment)) {
     current[lastSegment] = value;
     return root;
   }

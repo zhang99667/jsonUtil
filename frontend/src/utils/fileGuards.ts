@@ -98,9 +98,6 @@ const BINARY_MIME_TYPES = new Set([
 
 const BINARY_MIME_PREFIXES = ['audio/', 'image/', 'video/'];
 
-/**
- * 将字节数格式化为用户可读的文件大小
- */
 export const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -120,6 +117,10 @@ export const formatFileSize = (bytes: number): string => {
 
 const getFileExtension = (fileName: string): string => {
   const normalizedName = fileName.trim().toLowerCase();
+  if (normalizedName === '.env' || normalizedName.startsWith('.env.')) {
+    return 'env';
+  }
+
   const dotIndex = normalizedName.lastIndexOf('.');
 
   if (dotIndex <= 0 || dotIndex === normalizedName.length - 1) {
@@ -131,7 +132,7 @@ const getFileExtension = (fileName: string): string => {
 
 const isLikelyTextFile = (file: Pick<File, 'name'> & { type?: string }): boolean => {
   const extension = getFileExtension(file.name || '');
-  const mimeType = (file.type || '').toLowerCase();
+  const mimeType = (file.type || '').split(';', 1)[0].trim().toLowerCase();
 
   if (BINARY_MIME_PREFIXES.some(prefix => mimeType.startsWith(prefix))) {
     return false;
@@ -160,9 +161,6 @@ const isLikelyTextFile = (file: Pick<File, 'name'> & { type?: string }): boolean
   return false;
 };
 
-/**
- * 校验文本文件是否适合直接读入编辑器
- */
 export const getTextFileOpenError = (
   file: Pick<File, 'name' | 'size'> & { type?: string },
   maxSize = MAX_TEXT_FILE_SIZE_BYTES

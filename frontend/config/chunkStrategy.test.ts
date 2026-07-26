@@ -26,6 +26,16 @@ describe('chunkStrategy', () => {
     expect(getManualChunkName('/repo/node_modules/@antv/g2/esm/index.js')).toBe('vendor-antv-g2');
     expect(getManualChunkName('/repo/node_modules/qrcode.react/lib/index.js')).toBe('vendor-qrcode');
     expect(getManualChunkName('/repo/node_modules/jsonpath-plus/dist/index.js')).toBe('vendor-tools');
+    expect(getManualChunkName('/repo/node_modules/copy-to-clipboard/dist/index.mjs')).toBe('vendor-clipboard');
+    expect(getManualChunkName('/repo/node_modules/react-rnd/lib/index.js')).toBe('vendor-draggable-panel');
+    expect(getManualChunkName('/repo/node_modules/react-draggable/build/cjs.js')).toBe('vendor-draggable-panel');
+    expect(getManualChunkName('/repo/node_modules/re-resizable/lib/index.js')).toBe('vendor-draggable-panel');
+    expect(getManualChunkName('/repo/node_modules/focus-trap/index.js')).toBe('vendor-focus-management');
+    expect(getManualChunkName('/repo/node_modules/tabbable/dist/index.esm.js')).toBe('vendor-focus-management');
+    expect(getManualChunkName('/repo/node_modules/fecha/lib/fecha.js')).toBe('vendor-antv-shared');
+    expect(getManualChunkName('/repo/node_modules/comlink/dist/esm/comlink.mjs')).toBe('vendor-antv-shared');
+    expect(getManualChunkName('/repo/node_modules/react-is/index.js')).toBe('vendor-lazy-ui-compat');
+    expect(getManualChunkName('/repo/node_modules/prop-types/index.js')).toBe('vendor-lazy-ui-compat');
   });
 
   it('识别运行时、样式、工具和兜底 chunk', () => {

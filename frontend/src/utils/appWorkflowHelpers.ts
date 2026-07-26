@@ -1,15 +1,12 @@
-import { formatByteSize, getDocumentStats } from './documentStats';
+import { formatDocumentSize } from './documentStats';
+import { tryParseJsonValue } from './jsonValueGuards';
 import { PLACEHOLDER_FILL_TEMPLATE_KIND } from './placeholderFillTemplateContract';
 import { isRecord } from './storage';
 
-export const getContentSizeSummary = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
+export const getContentSizeSummary = formatDocumentSize;
 
 export const getCopySuccessMessage = (label: string, content: string): string => {
-  const stats = getDocumentStats(content);
-  return `已复制${label}（${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}）`;
+  return `已复制${label}（${formatDocumentSize(content)}）`;
 };
 
 export const getSourceUpdateSuccessMessage = (message: string, content: string): string => (
@@ -47,10 +44,6 @@ export const getSchemeInspectConfirmMessage = (sourceContent: string, schemeSour
 );
 
 export const isPlaceholderFillTemplateJson = (templateJson: string): boolean => {
-  try {
-    const parsed = JSON.parse(templateJson) as unknown;
-    return isRecord(parsed) && parsed.kind === PLACEHOLDER_FILL_TEMPLATE_KIND;
-  } catch {
-    return false;
-  }
+  const parsed = tryParseJsonValue(templateJson);
+  return isRecord(parsed) && parsed.kind === PLACEHOLDER_FILL_TEMPLATE_KIND;
 };

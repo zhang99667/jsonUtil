@@ -1,25 +1,22 @@
-/**
- * 判断浏览器文件选择、保存选择等用户取消操作。
- */
-export const isAbortError = (error: unknown): boolean => {
-  if (error instanceof Error && error.name === 'AbortError') {
-    return true;
-  }
+import { readObjectPropertySafely } from './storage';
 
-  return typeof DOMException !== 'undefined'
-    && error instanceof DOMException
-    && error.name === 'AbortError';
+const readErrorMessage = (error: unknown): string | null => {
+  const message = readObjectPropertySafely(error, 'message');
+  return typeof message === 'string' ? message : null;
 };
 
-/**
- * 提取可展示给用户的错误原因。
- */
+export const isAbortError = (error: unknown): boolean => {
+  // 跨窗口错误无法可靠使用 instanceof，只读取标准错误名称。
+  return readObjectPropertySafely(error, 'name') === 'AbortError';
+};
+
 export const getErrorMessage = (
   error: unknown,
   fallbackMessage: string
 ): string => {
-  if (error instanceof Error) {
-    const message = error.message.trim();
+  const errorMessage = readErrorMessage(error);
+  if (errorMessage !== null) {
+    const message = errorMessage.trim();
     if (message.length > 0) {
       return message;
     }
@@ -28,16 +25,17 @@ export const getErrorMessage = (
   return fallbackMessage;
 };
 
-/**
- * 保留底层错误原文，适合 worker 或日志通道直接回传异常信息。
- */
-export const formatUnknownError = (error: unknown): string => (
-  error instanceof Error ? error.message : String(error)
-);
+export const formatUnknownError = (error: unknown): string => {
+  const errorMessage = readErrorMessage(error);
+  if (errorMessage !== null) return errorMessage;
 
-/**
- * 将操作上下文和底层错误原因组合成更可操作的提示。
- */
+  try {
+    return String(error);
+  } catch {
+    return '未知错误';
+  }
+};
+
 export const getDetailedErrorMessage = (
   error: unknown,
   fallbackMessage: string

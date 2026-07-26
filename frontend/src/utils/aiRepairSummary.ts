@@ -1,4 +1,5 @@
 import * as Diff from 'diff';
+import { parseJsonValue } from './jsonValueGuards';
 
 export type AiRepairDiffType = 'add' | 'delete';
 
@@ -161,7 +162,7 @@ const countLines = (value: string): number => {
 
 const describeJsonRoot = (jsonText: string): string => {
   try {
-    const parsed: unknown = JSON.parse(jsonText);
+    const parsed = parseJsonValue(jsonText);
     if (Array.isArray(parsed)) {
       return `数组 ${parsed.length} 项`;
     }

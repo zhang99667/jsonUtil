@@ -174,6 +174,13 @@ frontend/
    - 面向管理员
    - 使用 Ant Design UI
 
+### 搜索发现边界
+
+- `frontend/index.html` 是 JSONUtils 首页标题、自然语言简介、canonical、Open Graph 与 `WebSite` / `WebApplication` 结构化数据的权威源；原始 HTML 必须在 JavaScript 执行前就能说明工具用途，React 工作台渲染后继续保留可见的 JSONUtils 一级标题。
+- `frontend/public/robots.txt` 和 `frontend/public/sitemap.xml` 只提交 `jsonutils.markz.fun` 的正式入口，不能包含博客裸域、公开笔记或管理后台。
+- `frontend/admin.html` 使用页面级 `noindex, nofollow`，生产边缘同时发送 `X-Robots-Tag`；robots 不能阻止抓取后台，否则爬虫无法读取 noindex 响应。
+- JSONUtils 不声明 `markz.fun` 的 canonical、站点名或 sitemap。博客的发现元数据归博客仓库，跨站一致性由两边的 SEO 契约测试和生产 smoke 共同锁定。
+
 ### 前端版本感知
 
 - `vite.config.ts` 构建时读取根目录 `CHANGELOG.md`，将完整内容注入 `import.meta.env.VITE_APP_CHANGELOG`，供主应用懒加载的 `ChangelogModal` 解析展示。

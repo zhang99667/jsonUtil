@@ -57,5 +57,6 @@ describe('appWorkflowHelpers', () => {
     }))).toBe(true);
     expect(isPlaceholderFillTemplateJson(JSON.stringify({ kind: 'other-template' }))).toBe(false);
     expect(isPlaceholderFillTemplateJson('not json')).toBe(false);
+    expect(isPlaceholderFillTemplateJson('{"kind":"json-helper-runtime-placeholder-fill-template","extra":1e400}')).toBe(false);
   });
 });

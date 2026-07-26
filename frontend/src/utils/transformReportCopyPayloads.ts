@@ -1,5 +1,5 @@
-import type { JsonValue } from '../types';
 import { APP_VERSION_METADATA } from './appVersion';
+import { parseJsonValue } from './jsonValueGuards';
 import { buildCmdComparisonSuggestedCommands } from './transformSuggestedCommands';
 import { formatDecodedPathCopyValue } from './transformValuePreview';
 import type {
@@ -13,7 +13,7 @@ export const getTransformDecodedPathCopyText = (
   if (row.copyText !== undefined) return row.copyText;
 
   const value = Object.hasOwn(row, 'value')
-    ? row.value as JsonValue
+    ? row.value
     : row.preview;
   return `${row.path} = ${formatDecodedPathCopyValue(value)}`;
 };
@@ -50,7 +50,7 @@ export const formatTransformCmdStructureComparisonPackageText = (
       path: record.path,
       ...(record.sourceLabel ? { sourceLabel: record.sourceLabel } : {}),
       suggestedCommands: buildCmdComparisonSuggestedCommands(),
-      actual: JSON.parse(cmdStructureCopyText) as unknown,
+      actual: parseJsonValue(cmdStructureCopyText),
       expected: {},
     }, null, 2);
   } catch {

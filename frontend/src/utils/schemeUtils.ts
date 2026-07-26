@@ -9,33 +9,24 @@ import {
   isRuntimePlaceholder,
 } from './schemePlaceholders';
 import {
-  createUrl,
-  isBareHostUrl,
-  isProtocolRelativeUrl,
+  createSchemeUrlContext,
+  isUrl,
   normalizeJsonUrlEscapes,
 } from './schemeUrlShapes';
-import {
-  QUERY_PAIR_START_RE,
-  looksLikeQueryString,
-  normalizeQueryString,
-  splitQueryPairs,
-  stripQueryPrefix,
-} from './schemeQuerySyntax';
+import { looksLikeQueryString } from './schemeQuerySyntax';
 import {
   getSchemePrefixedQueryString,
   isDecodableSchemePrefixedQueryString,
   isDecodableSchemeQueryString,
+  hasUrlEncoding,
   isSchemeQueryStringFormat,
   type SchemeQueryDetectionOptions,
 } from './schemeQueryDetection';
 import {
-  assignQueryParam,
-  type StructuredQueryParamContainer,
-} from './schemeStructuredQuery';
-import {
   decodeQueryComponent,
   decodeQueryValueComponent as decodeSchemeQueryValueComponent,
   urlDecode,
+  urlEncode,
 } from './schemeQueryDecoding';
 import {
   isDecodableSchemeLogFieldParamString,
@@ -51,14 +42,13 @@ import {
   isJsonString,
   tryNormalizeHtmlJsonQuotePayload,
   tryParseJson,
+  tryParseJsonStringLiteral,
   tryParseJsonWithMeta,
 } from './schemeJsonPayloads';
 import { getFirstSchemeStructuredPayloadNormalization } from './schemeStructuredPayloadNormalization';
 import {
   buildSchemeStructuredDecodeWarnings,
   createSchemeStructuredDecodeState,
-  shouldSkipSchemeStructuredStringDecode,
-  type SchemeStructuredDecodeState,
 } from './schemeStructuredDecodeGuards';
 import {
   base64Decode as decodeSchemeBase64,
@@ -69,8 +59,6 @@ import {
   type SchemeBase64DecodeOptions,
 } from './schemeBase64';
 import {
-  getSingleRawStructuredParam,
-  getSingleRawUrlParam,
   type SchemeRawParamOptions,
 } from './schemeRawParams';
 import {
@@ -82,22 +70,34 @@ import {
   shouldExposeSchemeValueWithOptions,
   type SchemeExposureOptions,
 } from './schemeExposure';
-import { parseSchemeUrlInfo } from './schemeUrlInfo';
+import {
+  parseSchemeUrlInfo,
+  parseSchemeUrlInfoFromContext,
+} from './schemeUrlInfo';
 import {
   buildQueryStringParamDecodeStages,
   buildUrlParamDecodeStages,
-  formatPlaceholderPathSegment,
 } from './schemeParamDecodeStages';
 import {
   DEFAULT_SCHEME_DECODE_MAX_DEPTH,
   type DecodeLayer,
   type SchemeDecodeResult,
+  type SchemeDisplayHeaderRecord,
   type SchemeDecodeWarning,
   type SchemeParamDecodeStage,
   type SchemePlaceholder,
   type SchemeType,
-  type StructuredValue,
 } from './schemeTypes';
+import {
+  addSchemeDisplayProjectionHeader,
+  buildSchemeDisplayProjection,
+  createSchemeDecodeDisplayContext,
+  type SchemeDecodeDisplayContext,
+} from './schemeDisplayProjection';
+import { prepareSchemeDisplayEncoding } from './schemeDisplayEncoding';
+import { createSchemeNestedDecoder } from './schemeNestedDecoding';
+import { isJwt } from './schemeJwt';
+import { tryParseJsonValue } from './jsonValueGuards';
 
 export {
   buildSchemePlaceholderGroups,
@@ -115,6 +115,14 @@ export {
 
 export {
   urlDecode,
+  urlEncode,
+};
+
+export {
+  hasUrlEncoding,
+  isJwt,
+  isSchemeQueryStringFormat as isQueryStringFormat,
+  isUrl,
 };
 
 export {
@@ -132,8 +140,6 @@ export type {
   SchemePlaceholderGroup,
   SchemeType,
 } from './schemeTypes';
-
-// ============ 类型契约兼容导出 ============
 
 const looksLikeStructuredPayload = (value: string): boolean => {
   const trimmed = value.trim();
@@ -157,16 +163,15 @@ const looksLikeStructuredPayload = (value: string): boolean => {
 const createSchemeBase64DecodeOptions = (): SchemeBase64DecodeOptions => ({
   isJsonString,
   looksLikeStructuredPayload,
-  decodeNestedParamValue: (value) => decodeNestedParamValue(value, DEFAULT_SCHEME_DECODE_MAX_DEPTH),
+  decodeNestedParamValue: value => (
+    nestedDecoder.decodeNestedParamValue(value, DEFAULT_SCHEME_DECODE_MAX_DEPTH)
+  ),
 });
 
 const decodeBase64WithMeta = (input: string) => (
   decodeSchemeBase64WithMeta(input, createSchemeBase64DecodeOptions())
 );
 
-/**
- * Base64 解码
- */
 export function base64Decode(str: string): string {
   return decodeSchemeBase64(str, createSchemeBase64DecodeOptions());
 }
@@ -195,27 +200,6 @@ const isDecodableParamValue = (value: string): boolean => (
   isStructuredBase64Value(value)
 );
 
-// ============ 检测函数 ============
-
-/**
- * 检测字符串是否为 URL（包含协议）
- */
-export function isUrl(str: string): boolean {
-  const trimmed = normalizeJsonUrlEscapes(str.trim());
-  // 匹配“协议://…”、“//主机/路径”和“主机/路径”这几类常见链接格式
-  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(trimmed) ||
-    isProtocolRelativeUrl(trimmed) ||
-    isBareHostUrl(trimmed);
-}
-
-/**
- * 检测字符串是否为 URL 查询参数格式 (key=value&key=value...)
- * 这种格式不应该被识别为需要解析的 scheme
- */
-export function isQueryStringFormat(str: string): boolean {
-  return isSchemeQueryStringFormat(str);
-}
-
 /**
  * 检测字符串是否像需要解析的 CMD 参数串
  * 单个 key=value 只有在 key 常见且 value 可继续解析时才命中，避免普通文本误判
@@ -237,37 +221,6 @@ const isDecodablePrefixedQueryString = (source: string): boolean => (
   isDecodableSchemePrefixedQueryString(source, createSchemeQueryDetectionOptions())
 );
 
-/**
- * 检测字符串是否包含 URL 编码
- */
-export function hasUrlEncoding(str: string): boolean {
-  // 必须包含 %XX 格式的编码
-  if (!/%[0-9A-Fa-f]{2}/.test(str)) return false;
-  
-  // 排除纯粹的查询参数格式（如 key=value&key=value）
-  // 这种格式虽然可能包含 URL 编码，但不是需要解析的 Scheme
-  if (isQueryStringFormat(str)) return false;
-  
-  return true;
-}
-
-/**
- * 检测字符串是否为 JWT 令牌
- */
-export function isJwt(str: string): boolean {
-  const trimmed = str.trim();
-  // JWT 格式：头部.载荷.签名
-  const parts = trimmed.split('.');
-  if (parts.length !== 3) return false;
-  if (!parts.every(part => part && /^[A-Za-z0-9_-]+$/.test(part))) return false;
-
-  // 头部和载荷必须能解成 JSON 对象，避免把版本号 1.2.3 误判成 JWT。
-  return decodeJwt(trimmed) !== null;
-}
-
-/**
- * 检测字符串的 scheme 类型
- */
 export function detectSchemeType(str: string): SchemeType {
   if (!str || typeof str !== 'string') return 'plain';
 
@@ -280,7 +233,7 @@ export function detectSchemeType(str: string): SchemeType {
     return detectSchemeType(normalizedPayload.value);
   }
 
-  // 优先级顺序很重要
+  // 先识别结构化内容和明确协议，再判断宽松编码，避免 URL 编码或 Base64 抢先误判。
   if (isJsonString(trimmed)) return 'json';
   if (isJwt(trimmed)) return 'jwt';
   if (isUrl(trimmed)) return 'url';
@@ -294,14 +247,9 @@ export function detectSchemeType(str: string): SchemeType {
   return 'plain';
 }
 
-/**
- * 检测字符串是否包含需要解析的 scheme
- */
 export function hasScheme(str: string): boolean {
   return shouldExposeSchemeValue(str);
 }
-
-// ============ 解码函数 ============
 
 const decodeQueryValueComponent = (str: string): string => (
   decodeSchemeQueryValueComponent(str, isDecodableParamValue)
@@ -320,13 +268,6 @@ const isDecodableLogFieldParamString = (source: string): boolean => (
     isDecodableValue: isDecodableParamValue,
   })
 );
-
-/**
- * URL 编码
- */
-export function urlEncode(str: string): string {
-  return encodeURIComponent(str);
-}
 
 const createRawParamOptions = (): SchemeRawParamOptions => ({
   decodeKey: decodeQueryComponent,
@@ -388,7 +329,9 @@ export function shouldExposeSchemeValue(str: string): boolean {
 
 const createSchemeLayerEncodingOptions = (): SchemeLayerEncodingOptions => ({
   createRawParamOptions,
-  decodeLayersForValue: value => deepDecodeScheme(value).layers,
+  decodeLayersForValue: value => (
+    deepDecodeSchemeInternal(value, DEFAULT_SCHEME_DECODE_MAX_DEPTH).layers
+  ),
   getFragmentParamSource,
   parseLogFieldParamString,
   urlEncode,
@@ -397,7 +340,7 @@ const createSchemeLayerEncodingOptions = (): SchemeLayerEncodingOptions => ({
 const createParamDecodeStagesOptions = () => ({
   decodeKey: decodeQueryComponent,
   decodeValue: decodeQueryValueComponent,
-  decodeNestedValue: decodeNestedParamValue,
+  decodeNestedValue: nestedDecoder.decodeNestedParamValue,
   getFragmentParamSource,
   getPrefixedQueryString,
   parseLogFieldParamString,
@@ -405,9 +348,6 @@ const createParamDecodeStagesOptions = () => ({
   urlEncode,
 });
 
-/**
- * 解析 URL，提取参数
- */
 export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | null {
   return parseSchemeUrlInfo(urlString, {
     rawParamOptions: createRawParamOptions(),
@@ -416,188 +356,30 @@ export function parseUrl(urlString: string): SchemeDecodeResult['schemeInfo'] | 
 }
 
 const tryParseJsonStringPayload = (value: string): string | null => {
-  const trimmed = value.trim();
-  if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) return null;
-
-  try {
-    const parsed: unknown = JSON.parse(trimmed);
-    return typeof parsed === 'string' && looksLikeStructuredPayload(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
+  const parsed = tryParseJsonStringLiteral(value);
+  return parsed !== null && looksLikeStructuredPayload(parsed) ? parsed : null;
 };
 
-const decodeStructuredValue = (
-  value: StructuredValue,
+const nestedDecoder = createSchemeNestedDecoder({
+  base64Decode,
+  createRawParamOptions,
+  decodeQueryComponent,
+  decodeQueryValueComponent,
+  decodeScheme: deepDecodeSchemeInternal,
+  detectSchemeType,
+  getFragmentParamSource,
+  getPrefixedQueryString,
+  isDecodableQueryString,
+  looksLikeStructuredPayload,
+  parseLogFieldParamString,
+  tryParseJsonStringPayload,
+});
+
+function deepDecodeSchemeInternal(
+  input: string,
   maxDepth: number,
-  state?: SchemeStructuredDecodeState,
-  path: string = '$'
-): StructuredValue => {
-  if (maxDepth <= 0) return value;
-
-  if (typeof value === 'string') {
-    if (detectSchemeType(value) === 'plain') return value;
-    if (shouldSkipSchemeStructuredStringDecode(value, path, state)) return value;
-    return decodeNestedParamValue(value, maxDepth - 1);
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item, index) => decodeStructuredValue(item, maxDepth, state, `${path}[${index}]`));
-  }
-
-  if (value && typeof value === 'object') {
-    const result: { [key: string]: StructuredValue } = {};
-    for (const [key, item] of Object.entries(value)) {
-      result[key] = decodeStructuredValue(item, maxDepth, state, `${path}${formatPlaceholderPathSegment(key)}`);
-    }
-    return result;
-  }
-
-  return value;
-};
-
-const parseQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
-  const logFieldParam = parseLogFieldParamString(queryString);
-  if (logFieldParam) {
-    return {
-      [logFieldParam.key]: decodeNestedParamValue(logFieldParam.value, maxDepth - 1),
-    };
-  }
-
-  const source = normalizeQueryString(stripQueryPrefix(queryString));
-  if (source && isDecodableQueryString(source)) {
-    return parseQueryPairsDeep(source, maxDepth);
-  }
-
-  const prefixedQueryString = getPrefixedQueryString(queryString);
-  if (prefixedQueryString) {
-    return parseQueryPairsDeep(prefixedQueryString.queryString, maxDepth);
-  }
-
-  const fragmentParamSource = getFragmentParamSource(queryString);
-  if (!fragmentParamSource || !isDecodableQueryString(fragmentParamSource)) return null;
-
-  return parseQueryPairsDeep(fragmentParamSource, maxDepth);
-};
-
-const parseUrlQueryStringDeep = (queryString: string, maxDepth: number): StructuredValue | null => {
-  const source = normalizeQueryString(stripQueryPrefix(queryString));
-  if (!source || !QUERY_PAIR_START_RE.test(source)) return null;
-
-  return parseQueryPairsDeep(source, maxDepth);
-};
-
-const parseFragmentValueDeep = (value: string, maxDepth: number): StructuredValue | null => {
-  const trimmed = value.trim();
-  if (!trimmed.startsWith('#') && !trimmed.startsWith('/') && !trimmed.startsWith('?')) {
-    return null;
-  }
-
-  const fragmentParamSource = getFragmentParamSource(trimmed);
-  return fragmentParamSource ? parseUrlQueryStringDeep(fragmentParamSource, maxDepth) : null;
-};
-
-const parseQueryPairsDeep = (queryString: string, maxDepth: number): StructuredValue => {
-  const singleRawStructuredParam = getSingleRawStructuredParam(queryString, createRawParamOptions());
-  if (singleRawStructuredParam) {
-    return {
-      [singleRawStructuredParam.key]: decodeNestedParamValue(singleRawStructuredParam.value, maxDepth - 1),
-    };
-  }
-
-  const singleRawUrlParam = getSingleRawUrlParam(queryString, createRawParamOptions());
-  if (singleRawUrlParam) {
-    return {
-      [singleRawUrlParam.key]: decodeNestedParamValue(singleRawUrlParam.value, maxDepth - 1),
-    };
-  }
-
-  const result: StructuredQueryParamContainer = {};
-  splitQueryPairs(queryString).forEach(pair => {
-    const equalIndex = pair.indexOf('=');
-    if (equalIndex <= 0) return;
-
-    const key = decodeQueryComponent(pair.slice(0, equalIndex));
-    const value = decodeQueryValueComponent(pair.slice(equalIndex + 1));
-    if (!key) return;
-
-    assignQueryParam(result, key, decodeNestedParamValue(value, maxDepth - 1));
-  });
-  return result as StructuredValue;
-};
-
-const mergeUrlDecodedParams = (
-  queryParams: StructuredValue | null,
-  hashParams: StructuredValue | null
-): StructuredValue | null => {
-  if (queryParams && hashParams && !Array.isArray(queryParams) && typeof queryParams === 'object') {
-    return {
-      ...queryParams,
-      _hash: hashParams,
-    } as StructuredValue;
-  }
-
-  return queryParams || hashParams;
-};
-
-const parseUrlParamsDeep = (urlString: string, maxDepth: number): StructuredValue | null => {
-  try {
-    const url = createUrl(urlString);
-    const queryParams = url.search ? parseUrlQueryStringDeep(url.search, maxDepth) : null;
-    const fragmentParamSource = getFragmentParamSource(url.hash);
-    const hashParams = fragmentParamSource ? parseUrlQueryStringDeep(fragmentParamSource, maxDepth) : null;
-
-    return mergeUrlDecodedParams(queryParams, hashParams);
-  } catch {
-    return null;
-  }
-};
-
-const decodeNestedParamValue = (value: string, maxDepth: number): StructuredValue => {
-  if (maxDepth <= 0) return value;
-
-  const jsonValue = tryParseJson(value);
-  if (jsonValue !== null) {
-    return decodeStructuredValue(jsonValue, maxDepth - 1);
-  }
-
-  const jsonStringPayload = tryParseJsonStringPayload(value);
-  if (jsonStringPayload !== null) {
-    return decodeNestedParamValue(jsonStringPayload, maxDepth);
-  }
-
-  const fragmentValue = parseFragmentValueDeep(value, maxDepth - 1);
-  if (fragmentValue !== null) {
-    return fragmentValue;
-  }
-
-  const base64Value = decodeBase64StructuredParam(value, maxDepth - 1);
-  if (base64Value !== null) {
-    return base64Value;
-  }
-
-  const nested = deepDecodeScheme(value, maxDepth);
-  if (nested.isJson) {
-    const parsed = tryParseJson(nested.decoded);
-    return parsed === null ? nested.decoded : decodeStructuredValue(parsed, maxDepth - 1);
-  }
-
-  return nested.layers.length > 0 ? nested.decoded : value;
-};
-
-const decodeBase64StructuredParam = (value: string, maxDepth: number): StructuredValue | null => {
-  const decoded = base64Decode(value);
-  if (decoded === value || !looksLikeStructuredPayload(decoded)) return null;
-
-  return decodeNestedParamValue(decoded, maxDepth);
-};
-
-// ============ 递归解码 ============
-
-/**
- * 递归解码 scheme 字符串，直到无法继续解码
- */
-export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEME_DECODE_MAX_DEPTH): SchemeDecodeResult {
+  context?: SchemeDecodeDisplayContext,
+): SchemeDecodeResult {
   const layers: DecodeLayer[] = [];
   let current = input;
   let depth = 0;
@@ -638,32 +420,56 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
 
     switch (type) {
       case 'url': {
-        // 解析 URL，提取协议信息
-        const urlInfo = parseUrl(current);
-        if (urlInfo) {
-          schemeInfo = urlInfo;
-          
-          // 如果有参数，将查询参数和片段参数按 CMD 习惯逐项递归展开
-          const decodedParams = parseUrlParamsDeep(current, maxDepth - depth);
+        try {
+          const urlContext = createSchemeUrlContext(current);
+          schemeInfo = parseSchemeUrlInfoFromContext(urlContext, {
+            rawParamOptions: createRawParamOptions(),
+            getFragmentParamSource,
+          });
+          const decodedParams = nestedDecoder.parseUrlParamsDeep(
+            urlContext,
+            maxDepth - depth,
+            context,
+          );
           if (decodedParams) {
             const decodedText = JSON.stringify(decodedParams, null, 2);
-            paramStages = buildUrlParamDecodeStages(current, maxDepth - depth, createParamDecodeStagesOptions());
-            layers.push({
+            paramStages = buildUrlParamDecodeStages(
+              urlContext,
+              maxDepth - depth,
+              createParamDecodeStagesOptions(),
+            );
+            const urlLayer: DecodeLayer = {
               type: 'url',
               before,
               after: decodedText,
               description: 'URL 参数递归解析',
-            });
-            current = decodedText;
+            };
+            layers.push(urlLayer);
+            current = JSON.stringify(
+              addSchemeDisplayProjectionHeader(
+                decodedParams,
+                current,
+                layers,
+                context,
+                urlContext,
+              ),
+              null,
+              2,
+            );
           }
+        } catch {
+          // URL 形态检测与原生解析边界不一致时保持原值，不让单条异常中断整段解码。
         }
-        // URL 解析完成后停止；参数值已在 parseUrlParamsDeep 中递归处理
         depth = maxDepth;
         break;
       }
 
       case 'query-string': {
-        const decodedParams = parseQueryStringDeep(current, maxDepth - depth);
+        const decodedParams = nestedDecoder.parseQueryStringDeep(
+          current,
+          maxDepth - depth,
+          context,
+        );
         if (decodedParams) {
           const decodedText = JSON.stringify(decodedParams, null, 2);
           paramStages = buildQueryStringParamDecodeStages(current, maxDepth - depth, createParamDecodeStagesOptions());
@@ -742,13 +548,19 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
   let isJson = false;
   let finalDecoded = current;
   
-  if (isJsonString(current)) {
+  const parsedJsonValue = isJsonString(current) ? tryParseJsonValue(current) : undefined;
+  if (parsedJsonValue !== undefined) {
     isJson = true;
     try {
-      const parsed = JSON.parse(current) as StructuredValue;
       // 独立 Scheme 面板也可能直接粘贴整段响应，这里复用参数递归解析能力展开内部 CMD/Scheme。
       const structuredState = createSchemeStructuredDecodeState();
-      const decodedParsed = decodeStructuredValue(parsed, maxDepth, structuredState);
+      const decodedParsed = nestedDecoder.decodeStructuredValue(
+        parsedJsonValue,
+        maxDepth,
+        structuredState,
+        '$',
+        context,
+      );
       finalDecoded = JSON.stringify(decodedParsed, null, 2);
       placeholders = collectRuntimePlaceholders(decodedParsed);
       warnings = buildSchemeStructuredDecodeWarnings(structuredState);
@@ -775,11 +587,72 @@ export function deepDecodeScheme(input: string, maxDepth: number = DEFAULT_SCHEM
   };
 }
 
-export function encodeWithLayers(content: string, layers: DecodeLayer[]): string {
-  return encodeWithSchemeLayers(
-    content,
-    layers,
-    getPrefixedQueryString,
-    createSchemeLayerEncodingOptions()
-  );
+export function deepDecodeScheme(
+  input: string,
+  maxDepth: number = DEFAULT_SCHEME_DECODE_MAX_DEPTH,
+): SchemeDecodeResult {
+  const context = createSchemeDecodeDisplayContext();
+  const result = deepDecodeSchemeInternal(input, maxDepth, context);
+  if (!result.isJson || context.displayHeaderEvents.length === 0) return result;
+
+  const projection = buildSchemeDisplayProjection(result.decoded, context);
+  if (!projection) {
+    return deepDecodeSchemeInternal(input, maxDepth);
+  }
+
+  return {
+    ...result,
+    decoded: projection.businessDecoded,
+    displayDecoded: projection.displayDecoded,
+    displayHeaders: projection.headers,
+  };
+}
+
+export function encodeWithLayers(
+  content: string,
+  layers: DecodeLayer[],
+  displayHeaders: SchemeDisplayHeaderRecord[] = [],
+): string {
+  const result = encodeWithLayersResult(content, layers, displayHeaders);
+  return 'value' in result ? result.value : result.fallback;
+}
+
+export type SchemeLayerEncodingResult =
+  | { success: true; value: string }
+  | { success: false; fallback: string };
+
+export function encodeWithLayersResult(
+  content: string,
+  layers: DecodeLayer[],
+  displayHeaders: SchemeDisplayHeaderRecord[] = [],
+): SchemeLayerEncodingResult {
+  const encoding = displayHeaders.length > 0
+    ? prepareSchemeDisplayEncoding(
+        content,
+        layers,
+        displayHeaders,
+        (value, nestedLayers) => encodeWithSchemeLayers(
+          JSON.stringify(value),
+          nestedLayers,
+          getPrefixedQueryString,
+          createSchemeLayerEncodingOptions(),
+        ),
+      )
+    : { content, layers, safe: true };
+  if (!encoding.safe) {
+    return {
+      success: false,
+      fallback: layers[0]?.before || content,
+    };
+  }
+
+  return {
+    success: true,
+    value: encodeWithSchemeLayers(
+      encoding.content,
+      encoding.layers,
+      getPrefixedQueryString,
+      createSchemeLayerEncodingOptions(),
+    ),
+  };
 }

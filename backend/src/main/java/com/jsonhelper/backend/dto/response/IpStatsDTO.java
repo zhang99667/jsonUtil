@@ -1,16 +1,12 @@
 package com.jsonhelper.backend.dto.response;
 
-import lombok.Data;
 import lombok.Builder;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.Value;
 
-@Data
+@Value
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class IpStatsDTO {
-    private String ip;      // IP地址
-    private long count;     // 访问次数
-    private String region;  // 地区信息（省份/国家）
+    String ip;
+    long count;
+    String region;
 }

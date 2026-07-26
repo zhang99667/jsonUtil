@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { runAppSchemeEditCommand } from './appSchemeEditCommandRunner';
 import { showError, showSuccess } from './toast';
 
 vi.mock('./toast', () => ({
   showError: vi.fn(),
   showSuccess: vi.fn(),
+}));
+
+vi.mock('./chunkLoadRecoveryDispatch', () => ({
+  dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
 }));
 
 describe('appSchemeEditCommandRunner', () => {
@@ -19,10 +24,10 @@ describe('appSchemeEditCommandRunner', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('应用 Scheme 修改后写回 PREVIEW 并提示成功', () => {
+  it('应用 Scheme 修改后写回 PREVIEW 并提示成功', async () => {
     const onPreviewChange = vi.fn();
 
-    runAppSchemeEditCommand({
+    await runAppSchemeEditCommand({
       previewText: '{"data":{"url":"old"}}',
       jsonPath: '$.data.url',
       newValue: 'new',
@@ -35,10 +40,10 @@ describe('appSchemeEditCommandRunner', () => {
     expect(showError).not.toHaveBeenCalled();
   });
 
-  it('应用失败时保留原内容并提示错误', () => {
+  it('应用失败时保留原内容并提示错误', async () => {
     const onPreviewChange = vi.fn();
 
-    runAppSchemeEditCommand({
+    await runAppSchemeEditCommand({
       previewText: '{bad json',
       jsonPath: '$.data.url',
       newValue: 'new',
@@ -48,7 +53,8 @@ describe('appSchemeEditCommandRunner', () => {
 
     expect(onPreviewChange).not.toHaveBeenCalled();
     expect(showSuccess).not.toHaveBeenCalled();
+    expect(dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(expect.any(SyntaxError));
     expect(showError).toHaveBeenCalledWith(expect.stringContaining('应用修改失败'));
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to apply scheme edit:', expect.any(SyntaxError));
+    expect(consoleErrorSpy).toHaveBeenCalledWith('应用 Scheme 修改失败:', expect.any(SyntaxError));
   });
 });

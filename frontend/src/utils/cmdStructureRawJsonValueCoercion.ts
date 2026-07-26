@@ -1,20 +1,47 @@
 import type { JsonObject, JsonValue } from '../types';
+import { defineJsonProperty } from './jsonObjectProperty';
+
+type JsonValueCoercionFrame =
+  | { kind: 'array'; source: unknown[]; result: JsonValue[] }
+  | { kind: 'object'; source: Record<string, unknown>; result: JsonObject };
 
 export const toCmdStructureJsonValue = (value: unknown): JsonValue => {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'boolean') return value;
-  if (value === null) return null;
+  const pending: JsonValueCoercionFrame[] = [];
+  const coerceValue = (item: unknown): JsonValue => {
+    if (typeof item === 'string') return item;
+    if (typeof item === 'number') return item;
+    if (typeof item === 'boolean') return item;
+    if (item === null) return null;
+    if (Array.isArray(item)) {
+      const result = new Array<JsonValue>(item.length);
+      pending.push({ kind: 'array', source: item, result });
+      return result;
+    }
+    if (typeof item === 'object') {
+      const result: JsonObject = {};
+      pending.push({ kind: 'object', source: item as Record<string, unknown>, result });
+      return result;
+    }
+    return String(item);
+  };
 
-  if (Array.isArray(value)) return value.map(toCmdStructureJsonValue);
+  const result = coerceValue(value);
+  while (pending.length > 0) {
+    const frame = pending.pop();
+    if (!frame) continue;
 
-  if (Boolean(value) && typeof value === 'object') {
-    const result: JsonObject = {};
-    Object.entries(value as Record<string, unknown>).forEach(([key, item]) => {
-      result[key] = toCmdStructureJsonValue(item);
-    });
-    return result;
+    if (frame.kind === 'array') {
+      for (let index = 0; index < frame.source.length; index += 1) {
+        if (index in frame.source) {
+          frame.result[index] = coerceValue(frame.source[index]);
+        }
+      }
+      continue;
+    }
+
+    for (const [key, item] of Object.entries(frame.source)) {
+      defineJsonProperty(frame.result, key, coerceValue(item));
+    }
   }
-
-  return String(value);
+  return result;
 };

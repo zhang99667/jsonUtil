@@ -14,6 +14,7 @@ const SCHEME_SCAN_TIMEOUT_MS = 10_000;
 interface UseEditorSchemeScanOptions {
   createWorker?: SchemeScanWorkerFactory;
   enabled?: boolean;
+  forcedPaths?: readonly string[];
 }
 
 interface EditorSchemeScanState {
@@ -28,6 +29,7 @@ const EMPTY_SCHEME_SCAN_STATE: EditorSchemeScanState = {
   warning: '',
 };
 const EMPTY_SCHEME_LOCATIONS: SchemeLocation[] = [];
+const EMPTY_SCHEME_PATHS: readonly string[] = [];
 const SCHEME_SCAN_FAILURE_WARNING = 'Scheme 扫描失败，已跳过本次结果';
 
 const buildScanState = (
@@ -52,6 +54,7 @@ export const useEditorSchemeScan = (
   {
     createWorker = createSchemeScanWorker,
     enabled = true,
+    forcedPaths = EMPTY_SCHEME_PATHS,
   }: UseEditorSchemeScanOptions = {},
 ) => {
   const [scanState, setScanState] = useState<EditorSchemeScanState>(EMPTY_SCHEME_SCAN_STATE);
@@ -111,7 +114,7 @@ export const useEditorSchemeScan = (
     const timer = setTimeout(() => {
       if (value.length < ASYNC_SCHEME_SCAN_THRESHOLD) {
         try {
-          const result = scanSchemesInJson(value);
+          const result = scanSchemesInJson(value, { forcedPaths });
           commitState(buildScanState(value, result.locations, result.isLimited, result.limit));
         } catch (error) {
           failScan('Scheme 同步扫描失败:', error);
@@ -152,7 +155,7 @@ export const useEditorSchemeScan = (
       };
 
       try {
-        worker.postMessage({ id: requestId, jsonString: value });
+        worker.postMessage({ id: requestId, jsonString: value, forcedPaths });
         if (!settled) {
           workerTimeout = setTimeout(() => {
             failScan('Scheme 扫描 Worker 响应超时:', '十秒内未响应');
@@ -171,7 +174,7 @@ export const useEditorSchemeScan = (
       }
       finishWorker();
     };
-  }, [createWorker, enabled, value]);
+  }, [createWorker, enabled, forcedPaths, value]);
 
   return {
     schemeLocations,

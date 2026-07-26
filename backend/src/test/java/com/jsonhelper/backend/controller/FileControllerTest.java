@@ -1,6 +1,7 @@
 package com.jsonhelper.backend.controller;
 
 import com.jsonhelper.backend.common.exception.GlobalExceptionHandler;
+import com.jsonhelper.backend.config.FileProperties;
 import com.jsonhelper.backend.entity.UploadFile;
 import com.jsonhelper.backend.service.FileService;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -138,8 +138,7 @@ class FileControllerTest {
         private UploadFile uploadFile;
 
         StubFileService(Path uploadRoot) {
-            super(null);
-            ReflectionTestUtils.setField(this, "uploadDir", uploadRoot.toString());
+            super(null, new FileProperties(uploadRoot.toString(), 1L, 0L, ".json"));
             init();
         }
 

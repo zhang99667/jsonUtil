@@ -10,7 +10,7 @@ import {
   loadAppBackupModule,
   readSettingsBackupFileText,
 } from '../utils/appSettingsBackupBrowserEffects';
-import { showError, showSuccess } from '../utils/toast';
+import { showSettingsDialogError, showSettingsDialogSuccess } from '../utils/toast';
 
 interface UseAppSettingsBackupCommandsInput {
   generalSettings: GeneralSettings;
@@ -37,8 +37,8 @@ export const useAppSettingsBackupCommands = ({
     onLoadBackupModule: loadAppBackupModule,
     onGetStorage: getSettingsBackupStorage,
     onDownloadTextFile: downloadSettingsBackupTextFile,
-    onShowSuccess: showSuccess,
-    onShowError: showError,
+    onShowSuccess: showSettingsDialogSuccess,
+    onShowError: showSettingsDialogError,
   }), [aiConfig, generalSettings, shortcuts]);
 
   const handleImportSettingsBackup = useCallback((file: File) => runAppImportSettingsBackupCommand(
@@ -50,8 +50,8 @@ export const useAppSettingsBackupCommands = ({
       onSetGeneralSettings,
       onSetAIConfig,
       onReplaceShortcuts,
-      onShowSuccess: showSuccess,
-      onShowError: showError,
+      onShowSuccess: showSettingsDialogSuccess,
+      onShowError: showSettingsDialogError,
       onGetStorage: getSettingsBackupStorage,
     },
   ), [aiConfig, onReplaceShortcuts, onSetAIConfig, onSetGeneralSettings]);

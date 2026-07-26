@@ -6,13 +6,13 @@ import { detectSchemeType, shouldExposeSchemeValue } from './schemeUtils';
 import type { SchemeType } from './schemeTypes';
 
 export interface SchemeLocation {
-  path: string;           // JSON Path，如 "$.action_cmd" 或 `$["a.b"]`
-  pointer: string;        // JSON Pointer，用于特殊 key 场景下精确回写
-  label?: string;         // 业务标签，如 extra 数组里的 k/v 字段名
+  path: string;           // JSON 路径，例如 $.action_cmd 或 $["a.b"]
+  pointer: string;        // JSON 指针，用于特殊键场景下精确回写
+  label?: string;         // 业务标签，如参数数组里的键值字段名
   line: number;           // 行号（从 1 开始）
   column: number;         // 起始列号（从 1 开始）
   endLine: number;        // 结束行号（从 1 开始）
-  endColumn: number;      // 结束列号（从 1 开始，Monaco Range 右开）
+  endColumn: number;      // 结束列号（从 1 开始，编辑器范围右开）
   value: string;          // 原始值
   schemeType: SchemeType; // 协议类型
 }
@@ -25,15 +25,20 @@ export interface SchemeScanResult {
 
 export const DEFAULT_SCHEME_SCAN_RESULT_LIMIT = 1000;
 
-/**
- * 扫描 JSON 字符串，找出所有包含 scheme 的字符串值及其位置
- */
+interface SchemeScanTask {
+  label?: string;
+  path: string;
+  pointer: string;
+  value: unknown;
+}
+
 export function scanSchemesInJson(
   jsonString: string,
-  options?: { resultLimit?: number }
+  options?: { resultLimit?: number; forcedPaths?: readonly string[] }
 ): SchemeScanResult {
   const results: SchemeLocation[] = [];
   const limit = Math.max(1, options?.resultLimit ?? DEFAULT_SCHEME_SCAN_RESULT_LIMIT);
+  const forcedPaths = new Set(options?.forcedPaths || []);
   let isLimited = false;
 
   try {
@@ -53,64 +58,59 @@ export function scanSchemesInJson(
       };
     };
 
-    const markLimited = (): false => {
-      isLimited = true;
-      return false;
-    };
+    const pending: SchemeScanTask[] = [{ path: '$', pointer: '', value: parsed }];
+    while (pending.length > 0) {
+      const current = pending.pop();
+      if (!current) continue;
 
-    const traverse = (
-      obj: unknown,
-      currentPath: string,
-      currentPointer: string,
-      label?: string
-    ): boolean => {
-      if (typeof obj === 'string') {
-        const schemeType = detectSchemeType(obj);
-        if (shouldExposeSchemeValue(obj)) {
+      if (typeof current.value === 'string') {
+        const schemeType = detectSchemeType(current.value);
+        if (shouldExposeSchemeValue(current.value) || forcedPaths.has(current.path)) {
           if (results.length >= limit) {
-            return markLimited();
+            isLimited = true;
+            break;
           }
 
-          const range = getValueRange(currentPointer);
+          const range = getValueRange(current.pointer);
           results.push({
-            path: currentPath,
-            pointer: currentPointer,
-            label,
+            path: current.path,
+            pointer: current.pointer,
+            label: current.label,
             ...range,
-            value: obj,
+            value: current.value,
             schemeType,
           });
         }
-      } else if (Array.isArray(obj)) {
-        for (let index = 0; index < obj.length; index++) {
-          if (!traverse(
-            obj[index],
-            appendJsonPathIndex(currentPath, index),
-            appendJsonPointerSegment(currentPointer, String(index))
-          )) {
-            return false;
-          }
-        }
-      } else if (typeof obj === 'object' && obj !== null) {
-        const record = obj as Record<string, unknown>;
-        for (const key in record) {
-          if (!traverse(
-            record[key],
-            appendJsonPathKey(currentPath, key),
-            appendJsonPointerSegment(currentPointer, key),
-            getBusinessLabelForField(record, key)
-          )) {
-            return false;
-          }
-        }
+        continue;
       }
 
-      return true;
-    };
+      if (Array.isArray(current.value)) {
+        for (let index = current.value.length - 1; index >= 0; index -= 1) {
+          pending.push({
+            path: appendJsonPathIndex(current.path, index),
+            pointer: appendJsonPointerSegment(current.pointer, String(index)),
+            value: current.value[index],
+          });
+        }
+        continue;
+      }
 
-    traverse(parsed, '$', '');
-  } catch {
-    // JSON 解析失败，返回空数组
+      if (typeof current.value === 'object' && current.value !== null) {
+        const record = current.value as Record<string, unknown>;
+        const keys = Object.keys(record);
+        for (let index = keys.length - 1; index >= 0; index -= 1) {
+          const key = keys[index];
+          pending.push({
+            path: appendJsonPathKey(current.path, key),
+            pointer: appendJsonPointerSegment(current.pointer, key),
+            label: getBusinessLabelForField(record, key),
+            value: record[key],
+          });
+        }
+      }
+    }
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
   }
 
   return {
@@ -121,5 +121,9 @@ export function scanSchemesInJson(
 }
 
 export function findSchemesInJson(jsonString: string): SchemeLocation[] {
-  return scanSchemesInJson(jsonString).locations;
+  try {
+    return scanSchemesInJson(jsonString).locations;
+  } catch {
+    return [];
+  }
 }

@@ -28,6 +28,9 @@ describe('applySchemeEditToPreviewText', () => {
       newValue: 'new',
       pointer: '/data/url',
     })).toThrow(SyntaxError);
+    expect(() => applySchemeEditToPreviewText({
+      previewText: '{"value":1e400}', jsonPath: '$.value', newValue: 'new',
+    })).toThrow('JSON 包含不支持的值');
   });
 
   it('JSON Pointer 写入失败时不回退旧 JSONPath', () => {

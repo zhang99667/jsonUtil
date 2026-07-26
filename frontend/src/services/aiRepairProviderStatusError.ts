@@ -1,5 +1,6 @@
 import type { AiRepairError } from '../utils/aiRepairErrors';
 import { AiRepairErrorCode, createAiRepairError } from '../utils/aiRepairErrors';
+import { readObjectPropertySafely } from '../utils/storage';
 
 export const normalizeAiProviderStatusError = (
   error: unknown,
@@ -25,8 +26,7 @@ const readAiProviderErrorStatus = (error: unknown, rawErrorMessage: string): num
 };
 
 const readNumericProperty = (value: unknown, property: string): number | null => {
-  if (typeof value !== 'object' || value === null) return null;
-  const rawValue = (value as Record<string, unknown>)[property];
+  const rawValue = readObjectPropertySafely(value, property);
   if (typeof rawValue === 'number' && Number.isInteger(rawValue)) return rawValue;
   if (typeof rawValue === 'string' && /^[1-5]\d{2}$/.test(rawValue.trim())) return Number(rawValue);
   return null;

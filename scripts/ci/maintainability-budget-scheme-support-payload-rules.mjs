@@ -14,12 +14,17 @@ export const schemeSupportPayloadMaintainabilityBudgets = [
   },
   {
     file: 'frontend/src/utils/schemeJsonPayloadTypes.ts',
-    maxLines: 40,
-    reason: 'JSON payload 类型和 parse strategy 应保持稳定、集中导出',
+    maxLines: 15,
+    reason: 'JSON payload 类型应复用公共 JsonValue，只保留领域别名、解析策略和元信息',
+  },
+  {
+    file: 'frontend/src/utils/schemeJsonPayloads.test.ts',
+    maxLines: 75,
+    reason: 'JSON payload 测试应锁定严格、宽松、转义修复和非有限数值拒绝边界',
   },
   {
     file: 'frontend/src/utils/schemeUrlShapes.ts',
-    maxLines: 100,
-    reason: 'URL 形态识别与原形状序列化应保持纯函数小模块',
+    maxLines: 110,
+    reason: 'URL 形态识别、共享解析上下文与原形状序列化应保持纯函数小模块',
   },
 ];

@@ -1,16 +1,16 @@
 package com.jsonhelper.backend.dto.response;
 
-import lombok.Data;
 import lombok.Builder;
+import lombok.Value;
 
 import java.math.BigDecimal;
 
-@Data
+@Value
 @Builder
 public class StatisticsDTO {
-    private long totalUsers;
-    private long activeSubscriptions;
-    private BigDecimal totalRevenue;
-    private long todayPv;
-    private long todayUv;
+    long totalUsers;
+    long activeSubscriptions;
+    BigDecimal totalRevenue;
+    long todayPv;
+    long todayUv;
 }

@@ -3,7 +3,7 @@ import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 import { appendJsonPointerSegment } from './jsonPointer';
 import { parseJsonLinesWithMetadata } from './jsonLines';
 import { formatUnknownError } from './errors';
-import { isJsonObject } from './jsonValueGuards';
+import { isJsonObject, parseJsonValue } from './jsonValueGuards';
 
 export type JsonTreeNodeKind = 'object' | 'array' | 'string' | 'number' | 'boolean' | 'null';
 
@@ -102,7 +102,7 @@ const getValuePreview = (value: JsonValue, childCount: number, maxLength: number
 
 export const parseJsonTreeSource = (source: string): JsonValue => {
   try {
-    return JSON.parse(source) as JsonValue;
+    return parseJsonValue(source);
   } catch (error) {
     const jsonLines = parseJsonLinesWithMetadata(source);
     if (jsonLines) {
@@ -162,25 +162,13 @@ const pushNextChild = (
   }
 };
 
-export const buildJsonTreeModel = (
-  jsonText: string,
+export const buildJsonTreeModelFromValue = (
+  rootValue: JsonValue,
   options: BuildJsonTreeModelOptions = {}
 ): JsonTreeModel => {
-  const source = jsonText.trim();
-  if (!source) {
-    return {
-      nodes: [],
-      totalNodes: 0,
-      isLimited: false,
-      maxNodes: options.maxNodes ?? DEFAULT_MAX_TREE_NODES,
-      maxDepth: options.maxDepth ?? DEFAULT_MAX_TREE_DEPTH,
-    };
-  }
-
   const maxNodes = Math.max(1, options.maxNodes ?? DEFAULT_MAX_TREE_NODES);
   const maxDepth = Math.max(1, options.maxDepth ?? DEFAULT_MAX_TREE_DEPTH);
   const previewMaxLength = Math.max(16, options.previewMaxLength ?? DEFAULT_PREVIEW_MAX_LENGTH);
-  const rootValue = parseJsonTreeSource(source);
   const nodes: JsonTreeNode[] = [];
   const stack: PendingTreeFrame[] = [{
     type: 'node',
@@ -254,5 +242,21 @@ export const buildJsonTreeModel = (
     isLimited,
     maxNodes,
     maxDepth,
+  };
+};
+
+export const buildJsonTreeModel = (
+  jsonText: string,
+  options: BuildJsonTreeModelOptions = {}
+): JsonTreeModel => {
+  const source = jsonText.trim();
+  if (source) return buildJsonTreeModelFromValue(parseJsonTreeSource(source), options);
+
+  return {
+    nodes: [],
+    totalNodes: 0,
+    isLimited: false,
+    maxNodes: options.maxNodes ?? DEFAULT_MAX_TREE_NODES,
+    maxDepth: options.maxDepth ?? DEFAULT_MAX_TREE_DEPTH,
   };
 };

@@ -1,16 +1,20 @@
 import React, { useLayoutEffect, useRef } from 'react';
+import type { FocusTrap } from 'focus-trap';
+import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 
 interface NativeDialogProps extends Omit<
   React.DialogHTMLAttributes<HTMLDialogElement>,
-  'onCancel' | 'onKeyDown' | 'onMouseDown' | 'open'
+  'onCancel' | 'onMouseDown' | 'open'
 > {
   isOpen: boolean;
   onRequestClose: () => void;
+  closeOnBackdrop?: boolean;
 }
 
 export const NativeDialog: React.FC<NativeDialogProps> = ({
   isOpen,
   onRequestClose,
+  closeOnBackdrop = true,
   children,
   ...dialogProps
 }) => {
@@ -19,21 +23,30 @@ export const NativeDialog: React.FC<NativeDialogProps> = ({
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!isOpen || !dialog) return;
-    const previousActiveElement = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    if (!dialog.open) {
-      dialog.showModal();
-    }
+    if (!dialog.open) dialog.showModal();
+    let disposed = false;
+    let focusTrap: FocusTrap | undefined;
+    void import('focus-trap').then(({ createFocusTrap }) => {
+      if (disposed || !dialog.open) return;
+      focusTrap = createFocusTrap(dialog, {
+        escapeDeactivates: false,
+        fallbackFocus: dialog,
+        initialFocus: false,
+        returnFocusOnDeactivate: false,
+      });
+      focusTrap.activate();
+    }).catch((error: unknown) => {
+      if (disposed || dispatchChunkLoadRecoveryEvent(error)) return;
+      console.warn('焦点管理组件加载失败，已退回原生对话框行为', error);
+    });
 
     return () => {
-      if (dialog.open) {
-        dialog.close();
-      }
-      if (previousActiveElement?.isConnected) {
-        previousActiveElement.focus();
-      }
+      disposed = true;
+      focusTrap?.deactivate();
+      if (dialog.open) dialog.close();
+      if (previousActiveElement?.isConnected) previousActiveElement.focus();
     };
   }, [isOpen]);
 
@@ -47,31 +60,6 @@ export const NativeDialog: React.FC<NativeDialogProps> = ({
         event.preventDefault();
         onRequestClose();
       }}
-      onKeyDown={(event: React.KeyboardEvent<HTMLDialogElement>) => {
-        if (event.key !== 'Tab') return;
-
-        const focusableElements = Array.from(event.currentTarget.querySelectorAll(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        )).filter((element): element is HTMLElement => (
-          element instanceof HTMLElement && element.getClientRects().length > 0
-        ));
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-        if (!firstElement || !lastElement) {
-          event.preventDefault();
-          return;
-        }
-
-        const activeElement = document.activeElement;
-        const shouldWrapBackward = event.shiftKey
-          && (activeElement === firstElement || activeElement === event.currentTarget);
-        const shouldWrapForward = !event.shiftKey && activeElement === lastElement;
-
-        if (shouldWrapBackward || shouldWrapForward) {
-          event.preventDefault();
-          (shouldWrapBackward ? lastElement : firstElement).focus();
-        }
-      }}
       onMouseDown={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect();
         const isBackdrop = event.clientX < bounds.left
@@ -79,10 +67,10 @@ export const NativeDialog: React.FC<NativeDialogProps> = ({
           || event.clientY < bounds.top
           || event.clientY > bounds.bottom;
 
-        if (isBackdrop) {
-          event.preventDefault();
-          onRequestClose();
-        }
+        if (!isBackdrop) return;
+
+        event.preventDefault();
+        if (closeOnBackdrop) onRequestClose();
       }}
     >
       {children}

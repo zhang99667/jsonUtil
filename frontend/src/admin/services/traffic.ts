@@ -1,6 +1,5 @@
 import request from './request';
 
-// 概览数据接口
 export interface TrafficOverview {
     totalPv: number;
     totalUv: number;
@@ -11,40 +10,34 @@ export interface TrafficOverview {
     days: number;
 }
 
-// 趋势数据接口
 export interface TrendItem {
     date: string;
     pv: number;
     uv: number;
 }
 
-// IP排行接口
 export interface TopIpItem {
     ip: string;
     count: number;
     region: string;
 }
 
-// 路径排行接口
 export interface TopPathItem {
     path: string;
     count: number;
 }
 
-// 小时分布接口
 export interface HourlyItem {
     hour: number;
     count: number;
 }
 
-// 地区分布接口
 export interface GeoStatsItem {
     region: string;
     count: number;
     percentage: number;
 }
 
-// 设备/浏览器统计接口
 export interface DeviceStatsItem {
     device: string | null;
     browser: string | null;
@@ -52,7 +45,6 @@ export interface DeviceStatsItem {
     percentage: number;
 }
 
-// 来源统计接口
 export interface RefererStatsItem {
     source: string;
     domain: string | null;
@@ -60,21 +52,18 @@ export interface RefererStatsItem {
     percentage: number;
 }
 
-// 会话时长统计接口
 export interface SessionStatsItem {
     durationRange: string;
     count: number;
     percentage: number;
 }
 
-// 工具事件聚合项
 export interface ToolEventGroupItem {
     label: string;
     count: number;
     percentage: number;
 }
 
-// 工具使用事件统计
 export interface ToolEventStats {
     totalEvents: number;
     successEvents: number;
@@ -86,57 +75,43 @@ export interface ToolEventStats {
     durationDistribution: ToolEventGroupItem[];
 }
 
-// 获取流量概览
-export const getTrafficOverview = async (days: number): Promise<TrafficOverview> => {
-    return request.get('/admin/traffic/overview', { params: { days } });
-};
+interface TrafficQueryParams {
+    days: number;
+    limit?: number;
+}
 
-// 获取流量趋势
-export const getTrafficTrend = async (days: number): Promise<TrendItem[]> => {
-    return request.get('/admin/traffic/trend', { params: { days } });
-};
+const getTrafficData = async <T>(path: string, params: TrafficQueryParams): Promise<T> =>
+    request.get<unknown, T>(path, { params });
 
-// 获取IP访问排行
-export const getTopIps = async (days: number, limit: number): Promise<TopIpItem[]> => {
-    return request.get('/admin/traffic/top-ips', { params: { days, limit } });
-};
+export const getTrafficOverview = (days: number) =>
+    getTrafficData<TrafficOverview>('/admin/traffic/overview', { days });
 
-// 获取路径访问排行
-export const getTopPaths = async (days: number, limit: number): Promise<TopPathItem[]> => {
-    return request.get('/admin/traffic/top-paths', { params: { days, limit } });
-};
+export const getTrafficTrend = (days: number) =>
+    getTrafficData<TrendItem[]>('/admin/traffic/trend', { days });
 
-// 获取24小时分布
-export const getHourlyStats = async (days: number): Promise<HourlyItem[]> => {
-    return request.get('/admin/traffic/hourly', { params: { days } });
-};
+export const getTopIps = (days: number, limit: number) =>
+    getTrafficData<TopIpItem[]>('/admin/traffic/top-ips', { days, limit });
 
-// 获取地区分布
-export const getGeoDistribution = async (days: number, limit: number = 15): Promise<GeoStatsItem[]> => {
-    return request.get('/admin/traffic/geo-distribution', { params: { days, limit } });
-};
+export const getTopPaths = (days: number, limit: number) =>
+    getTrafficData<TopPathItem[]>('/admin/traffic/top-paths', { days, limit });
 
-// 获取设备分布
-export const getDeviceDistribution = async (days: number, limit: number = 10): Promise<DeviceStatsItem[]> => {
-    return request.get('/admin/traffic/device-distribution', { params: { days, limit } });
-};
+export const getHourlyStats = (days: number) =>
+    getTrafficData<HourlyItem[]>('/admin/traffic/hourly', { days });
 
-// 获取浏览器分布
-export const getBrowserDistribution = async (days: number, limit: number = 10): Promise<DeviceStatsItem[]> => {
-    return request.get('/admin/traffic/browser-distribution', { params: { days, limit } });
-};
+export const getGeoDistribution = (days: number, limit = 15) =>
+    getTrafficData<GeoStatsItem[]>('/admin/traffic/geo-distribution', { days, limit });
 
-// 获取来源分布
-export const getRefererDistribution = async (days: number, limit: number = 10): Promise<RefererStatsItem[]> => {
-    return request.get('/admin/traffic/referer-distribution', { params: { days, limit } });
-};
+export const getDeviceDistribution = (days: number, limit = 10) =>
+    getTrafficData<DeviceStatsItem[]>('/admin/traffic/device-distribution', { days, limit });
 
-// 获取停留时长分布
-export const getSessionDuration = async (days: number): Promise<SessionStatsItem[]> => {
-    return request.get('/admin/traffic/session-duration', { params: { days } });
-};
+export const getBrowserDistribution = (days: number, limit = 10) =>
+    getTrafficData<DeviceStatsItem[]>('/admin/traffic/browser-distribution', { days, limit });
 
-// 获取工具使用事件统计
-export const getToolEventStats = async (days: number, limit: number = 10): Promise<ToolEventStats> => {
-    return request.get('/admin/traffic/tool-events', { params: { days, limit } });
-};
+export const getRefererDistribution = (days: number, limit = 10) =>
+    getTrafficData<RefererStatsItem[]>('/admin/traffic/referer-distribution', { days, limit });
+
+export const getSessionDuration = (days: number) =>
+    getTrafficData<SessionStatsItem[]>('/admin/traffic/session-duration', { days });
+
+export const getToolEventStats = (days: number, limit = 10) =>
+    getTrafficData<ToolEventStats>('/admin/traffic/tool-events', { days, limit });

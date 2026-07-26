@@ -3,7 +3,7 @@ import {
   createParamDecodeStage,
   type SchemeParamDecodeStageBuilderOptions,
 } from './schemeParamDecodeStageBuilder';
-import { normalizeQueryString, splitQueryPairs, stripQueryPrefix } from './schemeQuerySyntax';
+import { iterateDecodedQueryPairs } from './schemeQuerySyntax';
 
 export const DEFAULT_SCHEME_PARAM_STAGE_LIMIT = 24;
 
@@ -20,22 +20,17 @@ export const buildParamDecodeStagesFromPairs = (
   options: SchemeParamDecodeStagePairsOptions
 ): SchemeParamDecodeStage[] => {
   const stages: SchemeParamDecodeStage[] = [];
-  const normalized = normalizeQueryString(stripQueryPrefix(queryString));
 
-  for (const pair of splitQueryPairs(normalized)) {
-    if (stages.length >= DEFAULT_SCHEME_PARAM_STAGE_LIMIT) break;
-
-    const equalIndex = pair.indexOf('=');
-    if (equalIndex <= 0) continue;
-
-    const key = options.decodeKey(pair.slice(0, equalIndex));
-    if (!key) continue;
-
-    const rawValue = pair.slice(equalIndex + 1);
+  for (const { key, rawValue, value } of iterateDecodedQueryPairs(
+    queryString,
+    options.decodeKey,
+    options.decodeValue,
+    DEFAULT_SCHEME_PARAM_STAGE_LIMIT,
+  )) {
     stages.push(createParamDecodeStage(
       key,
       rawValue,
-      options.decodeValue(rawValue),
+      value,
       source,
       pathPrefix,
       maxDepth,

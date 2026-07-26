@@ -1,14 +1,44 @@
-import type { JsonObject, JsonValue } from '../types';
+import type { JsonObject, JsonValue, TransformContext } from '../types';
 import { isJsonObject } from './jsonValueGuards';
-import { getUrlResourceSchemaFromUrl } from './schemeMetadata';
+import { decodeJsonPointerSegment } from './jsonPointer';
+import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
+import { normalizeJsonEscapedSlashes } from './schemeEscapedPayloads';
+import {
+  createSchemeUrlContext,
+  type SchemeUrlContext,
+} from './schemeUrlShapes';
+import {
+  getUrlResourceSchemaFromContext,
+  getUrlResourceSchemaFromUrl,
+} from './schemeUrlResourceSchema';
 
-const URL_HEADER_KEYS = ['__url__', '__url_header__'] as const;
-const SCHEME_HEADER_KEYS = ['__scheme__', '__scheme_header__'] as const;
+export type SchemeDisplayHeaderKind = 'url' | 'scheme';
+
+export interface SchemeDisplayHeaderMarker {
+  path: string;
+  kind: SchemeDisplayHeaderKind;
+  source: string;
+}
 
 export interface SchemeDisplayValue {
   headerKey: string;
   value: JsonObject;
 }
+
+const HEADER_KEY_CONFIG = {
+  url: {
+    primary: '__url__',
+    fallback: '__url_header__',
+    numbered: (suffix: number) => `__url_header_${suffix}__`,
+  },
+  scheme: {
+    primary: '__scheme__',
+    fallback: '__scheme_header__',
+    numbered: (suffix: number) => `__scheme_header_${suffix}__`,
+  },
+} as const;
+
+const DISPLAY_HEADER_KEY_PATTERN = /^__(url|scheme)(?:_header(?:_(?:[2-9]|[1-9]\d+))?)?__$/;
 
 export interface SchemeEncodingValue {
   source: string;
@@ -16,19 +46,95 @@ export interface SchemeEncodingValue {
 }
 
 const normalizeSchemeHeader = (value: string): string => (
-  value.trim().replace(/\\\//g, '/')
+  normalizeJsonEscapedSlashes(value.trim())
 );
 
-const getDisplayHeaderKeys = (
-  source: string,
-): typeof URL_HEADER_KEYS | typeof SCHEME_HEADER_KEYS | null => {
-  const normalized = normalizeSchemeHeader(source);
-  const protocol = /^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//.exec(normalized)?.[1].toLowerCase();
+const getSchemeDisplayHeaderKind = (source: string): SchemeDisplayHeaderKind | null => {
+  const protocol = /^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//.exec(
+    normalizeSchemeHeader(source),
+  )?.[1].toLowerCase();
   if (!protocol) return null;
+  return protocol === 'http' || protocol === 'https' ? 'url' : 'scheme';
+};
 
-  return protocol === 'http' || protocol === 'https'
-    ? URL_HEADER_KEYS
-    : SCHEME_HEADER_KEYS;
+const getSchemeDisplayHeaderKindFromKey = (
+  value: unknown,
+): SchemeDisplayHeaderKind | null => {
+  if (typeof value !== 'string') return null;
+  const match = DISPLAY_HEADER_KEY_PATTERN.exec(value);
+  return match?.[1] === 'url' || match?.[1] === 'scheme' ? match[1] : null;
+};
+
+export const isSchemeDisplayHeaderKey = (value: unknown): value is string => (
+  getSchemeDisplayHeaderKindFromKey(value) !== null
+);
+
+export const getSchemeDisplayHeaderKey = (
+  value: JsonObject,
+  reservedKeys: ReadonlySet<string> | undefined,
+  source?: string,
+): string => {
+  const kind = source ? getSchemeDisplayHeaderKind(source) : 'scheme';
+  const config = HEADER_KEY_CONFIG[kind || 'scheme'];
+  let suffix = 0;
+  reservedKeys?.forEach(key => {
+    if (key === config.primary) {
+      suffix = Math.max(suffix, 1);
+      return;
+    }
+    if (key === config.fallback) {
+      suffix = Math.max(suffix, 2);
+      return;
+    }
+    const match = new RegExp(`^__${kind || 'scheme'}_header_([2-9]|[1-9]\\d+)__$`).exec(key);
+    if (match) suffix = Math.max(suffix, Number(match[1]) + 1);
+  });
+  while (true) {
+    const key = suffix === 0
+      ? config.primary
+      : suffix === 1
+        ? config.fallback
+        : config.numbered(suffix);
+    if (!Object.hasOwn(value, key) && !reservedKeys?.has(key)) return key;
+    suffix += 1;
+  }
+};
+
+export const getSchemeDisplayHeader = (
+  source: string,
+  parsedContext?: SchemeUrlContext,
+): string | null => {
+  try {
+    const context = parsedContext ?? createSchemeUrlContext(source);
+    return getUrlResourceSchemaFromContext(context) || null;
+  } catch {
+    return null;
+  }
+};
+
+export const addSchemeDisplayHeader = (
+  value: JsonValue,
+  source: string,
+): SchemeDisplayValue | null => {
+  if (!isJsonObject(value)) return null;
+
+  const header = getSchemeDisplayHeader(source);
+  const kind = getSchemeDisplayHeaderKind(source);
+  if (!header || !kind) return null;
+
+  const config = HEADER_KEY_CONFIG[kind];
+  const headerKey = [config.primary, config.fallback].find(
+    key => !Object.hasOwn(value, key),
+  );
+  if (!headerKey) return null;
+
+  return {
+    headerKey,
+    value: {
+      [headerKey]: header,
+      ...value,
+    },
+  };
 };
 
 const getEditedSchemeSource = (
@@ -44,26 +150,6 @@ const getEditedSchemeSource = (
   return suffixIndex < 0
     ? normalizedHeader
     : `${normalizedHeader}${source.slice(suffixIndex)}`;
-};
-
-export const addSchemeDisplayHeader = (
-  value: JsonValue,
-  source: string,
-): SchemeDisplayValue | null => {
-  if (!isJsonObject(value)) return null;
-
-  const header = getUrlResourceSchemaFromUrl(source);
-  const headerKeys = getDisplayHeaderKeys(source);
-  const headerKey = headerKeys?.find(key => !Object.hasOwn(value, key));
-  if (!header || !headerKey) return null;
-
-  return {
-    headerKey,
-    value: {
-      [headerKey]: header,
-      ...value,
-    },
-  };
 };
 
 export const removeSchemeDisplayHeader = (
@@ -84,4 +170,43 @@ export const removeSchemeDisplayHeader = (
     source: getEditedSchemeSource(source, editedHeader),
     value: params,
   };
+};
+
+const appendJsonPointerToJsonPath = (path: string, pointer: string): string => {
+  if (!pointer) return path;
+  return pointer.slice(1).split('/').map(decodeJsonPointerSegment).reduce(
+    (currentPath, segment) => /^\d+$/.test(segment)
+      ? appendJsonPathIndex(currentPath, Number(segment))
+      : appendJsonPathKey(currentPath, segment),
+    path,
+  );
+};
+
+export const collectSchemeDisplayHeaderMarkers = (
+  context: TransformContext | null | undefined,
+): SchemeDisplayHeaderMarker[] => {
+  if (!context) return [];
+
+  const markers = new Map<string, SchemeDisplayHeaderMarker>();
+  context.records.forEach(record => {
+    record.steps.forEach(step => {
+      if (step.type !== 'scheme_decode') return;
+
+      step.schemeDisplayHeaders?.forEach(header => {
+        const kind = getSchemeDisplayHeaderKindFromKey(header.headerKey);
+        if (!kind) return;
+        const objectPath = appendJsonPointerToJsonPath(record.path, header.path);
+        const path = appendJsonPathKey(objectPath, header.headerKey);
+        markers.set(path, { path, kind, source: header.source });
+      });
+
+      if (!step.schemeHeaderDisplayKey) return;
+      const kind = getSchemeDisplayHeaderKindFromKey(step.schemeHeaderDisplayKey);
+      if (!kind || !step.originalScheme) return;
+      const path = appendJsonPathKey(record.path, step.schemeHeaderDisplayKey);
+      markers.set(path, { path, kind, source: step.originalScheme });
+    });
+  });
+
+  return [...markers.values()];
 };

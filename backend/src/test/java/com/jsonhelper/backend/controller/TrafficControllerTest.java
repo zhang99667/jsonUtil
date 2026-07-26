@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.lang.reflect.Parameter;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -59,7 +60,9 @@ class TrafficControllerTest {
 
     @BeforeEach
     void setUp() {
-        TrafficService trafficService = new TrafficService(visitLogRepository, new GeoService(), userAgentClassifier);
+        TrafficService trafficService = new TrafficService(
+                visitLogRepository, new GeoService(), userAgentClassifier, Clock.systemDefaultZone()
+        );
         ToolEventService toolEventService = new ToolEventService(toolEventRepository);
         validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();

@@ -1,8 +1,18 @@
 package com.jsonhelper.backend.controller;
 
-import com.jsonhelper.backend.dto.response.*;
-import com.jsonhelper.backend.service.TrafficService;
+import com.jsonhelper.backend.dto.response.DailyTrendDTO;
+import com.jsonhelper.backend.dto.response.DeviceStatsDTO;
+import com.jsonhelper.backend.dto.response.GeoStatsDTO;
+import com.jsonhelper.backend.dto.response.HourlyStatsDTO;
+import com.jsonhelper.backend.dto.response.IpStatsDTO;
+import com.jsonhelper.backend.dto.response.PathStatsDTO;
+import com.jsonhelper.backend.dto.response.RefererStatsDTO;
+import com.jsonhelper.backend.dto.response.Result;
+import com.jsonhelper.backend.dto.response.SessionStatsDTO;
+import com.jsonhelper.backend.dto.response.ToolEventStatsDTO;
+import com.jsonhelper.backend.dto.response.TrafficOverviewDTO;
 import com.jsonhelper.backend.service.ToolEventService;
+import com.jsonhelper.backend.service.TrafficService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +38,7 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "统计天数不能小于 1")
             @Max(value = MAX_STATISTICS_DAYS, message = "统计天数不能超过 365")
             int days) {
-        TrafficOverviewDTO overview = trafficService.getOverview(days);
-        return Result.success(overview);
+        return Result.success(trafficService.getOverview(days));
     }
 
     @GetMapping("/trend")
@@ -38,8 +47,7 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "统计天数不能小于 1")
             @Max(value = MAX_STATISTICS_DAYS, message = "统计天数不能超过 365")
             int days) {
-        List<DailyTrendDTO> trend = trafficService.getDailyTrend(days);
-        return Result.success(trend);
+        return Result.success(trafficService.getDailyTrend(days));
     }
 
     @GetMapping("/top-ips")
@@ -52,8 +60,7 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "返回条数不能小于 1")
             @Max(value = MAX_RESULT_LIMIT, message = "返回条数不能超过 100")
             int limit) {
-        List<IpStatsDTO> topIps = trafficService.getTopIps(days, limit);
-        return Result.success(topIps);
+        return Result.success(trafficService.getTopIps(days, limit));
     }
 
     @GetMapping("/top-paths")
@@ -66,22 +73,16 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "返回条数不能小于 1")
             @Max(value = MAX_RESULT_LIMIT, message = "返回条数不能超过 100")
             int limit) {
-        List<PathStatsDTO> topPaths = trafficService.getTopPaths(days, limit);
-        return Result.success(topPaths);
+        return Result.success(trafficService.getTopPaths(days, limit));
     }
 
-    /**
-     * 获取时段分布（24小时）
-     * @param days 统计天数，默认7天
-     */
     @GetMapping("/hourly")
     public Result<List<HourlyStatsDTO>> getHourlyDistribution(
             @RequestParam(name = "days", defaultValue = "7")
             @Min(value = MIN_QUERY_VALUE, message = "统计天数不能小于 1")
             @Max(value = MAX_STATISTICS_DAYS, message = "统计天数不能超过 365")
             int days) {
-        List<HourlyStatsDTO> hourly = trafficService.getHourlyDistribution(days);
-        return Result.success(hourly);
+        return Result.success(trafficService.getHourlyDistribution(days));
     }
 
     @GetMapping("/geo-distribution")
@@ -94,8 +95,7 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "返回条数不能小于 1")
             @Max(value = MAX_RESULT_LIMIT, message = "返回条数不能超过 100")
             int limit) {
-        List<GeoStatsDTO> geoStats = trafficService.getGeoDistribution(days, limit);
-        return Result.success(geoStats);
+        return Result.success(trafficService.getGeoDistribution(days, limit));
     }
 
     @GetMapping("/device-distribution")
@@ -108,8 +108,7 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "返回条数不能小于 1")
             @Max(value = MAX_RESULT_LIMIT, message = "返回条数不能超过 100")
             int limit) {
-        List<DeviceStatsDTO> deviceStats = trafficService.getDeviceDistribution(days, limit);
-        return Result.success(deviceStats);
+        return Result.success(trafficService.getDeviceDistribution(days, limit));
     }
 
     @GetMapping("/browser-distribution")
@@ -122,8 +121,7 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "返回条数不能小于 1")
             @Max(value = MAX_RESULT_LIMIT, message = "返回条数不能超过 100")
             int limit) {
-        List<DeviceStatsDTO> browserStats = trafficService.getBrowserDistribution(days, limit);
-        return Result.success(browserStats);
+        return Result.success(trafficService.getBrowserDistribution(days, limit));
     }
 
     @GetMapping("/referer-distribution")
@@ -136,8 +134,7 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "返回条数不能小于 1")
             @Max(value = MAX_RESULT_LIMIT, message = "返回条数不能超过 100")
             int limit) {
-        List<RefererStatsDTO> refererStats = trafficService.getRefererDistribution(days, limit);
-        return Result.success(refererStats);
+        return Result.success(trafficService.getRefererDistribution(days, limit));
     }
 
     @GetMapping("/session-duration")
@@ -146,15 +143,9 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "统计天数不能小于 1")
             @Max(value = MAX_STATISTICS_DAYS, message = "统计天数不能超过 365")
             int days) {
-        List<SessionStatsDTO> sessionStats = trafficService.getSessionDurationStats(days);
-        return Result.success(sessionStats);
+        return Result.success(trafficService.getSessionDurationStats(days));
     }
 
-    /**
-     * 获取工具使用事件统计
-     * @param days 统计天数，默认7天
-     * @param limit 高频功能返回条数，默认10条
-     */
     @GetMapping("/tool-events")
     public Result<ToolEventStatsDTO> getToolEvents(
             @RequestParam(name = "days", defaultValue = "7")
@@ -165,7 +156,6 @@ public class TrafficController {
             @Min(value = MIN_QUERY_VALUE, message = "返回条数不能小于 1")
             @Max(value = MAX_RESULT_LIMIT, message = "返回条数不能超过 100")
             int limit) {
-        ToolEventStatsDTO stats = toolEventService.getStats(days, limit);
-        return Result.success(stats);
+        return Result.success(toolEventService.getStats(days, limit));
     }
 }

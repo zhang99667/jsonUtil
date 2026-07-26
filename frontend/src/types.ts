@@ -1,24 +1,11 @@
 import React from 'react';
+import type { SchemeDisplayHeaderRecord } from './utils/schemeTypes';
 
-// ============ JSON 值类型 ============
-
-/**
- * JSON 基本值类型（递归定义）
- * 用于替代 JSON.parse 返回值中的 any
- */
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
-/**
- * JSON 对象类型
- */
 export type JsonObject = { [key: string]: JsonValue };
 
-/**
- * JSON 数组类型
- */
 export type JsonArray = JsonValue[];
-
-// ============ 管理后台表单类型 ============
 
 /** 登录表单字段 */
 export interface LoginFormValues {
@@ -96,7 +83,7 @@ export interface ValidationResult {
 
 export interface ShortcutKey {
   key: string;
-  meta: boolean; // Meta 键 (Mac: Cmd, Win: Win)
+  meta: boolean; // Meta 键（macOS 对应 Command，Windows 对应 Windows 键）
   ctrl: boolean;
   shift: boolean;
   alt: boolean;
@@ -106,12 +93,10 @@ export type ShortcutAction = 'SAVE' | 'FORMAT' | 'DEEP_FORMAT' | 'MINIFY' | 'CLO
 
 export type ShortcutConfig = Record<ShortcutAction, ShortcutKey>;
 
-// ============ 转换路径记录机制 ============
-
 // 单步转换操作类型
 export type TransformStepType =
-  | 'json_parse'      // JSON.parse
-  | 'json_stringify'  // JSON.stringify
+  | 'json_parse'
+  | 'json_stringify'
   | 'scheme_decode'   // CMD/Scheme 参数串展开
   | 'unicode_decode'  // \uXXXX → 中文
   | 'unicode_encode'  // 中文 → \uXXXX
@@ -163,7 +148,8 @@ export interface TransformStep {
   originalSchemeReversible?: boolean; // 当前编码层是否支持安全反向还原
   originalSchemeStringLiteral?: boolean; // 原始 Scheme 外层是否为 JSON 字符串字面量
   originalSchemeEscapedSlash?: boolean; // 原始 Scheme 是否包含 JSON 风格的斜杠转义
-  schemeHeaderDisplayKey?: string; // 根 Scheme 在预览中承载协议头的展示字段
+  schemeHeaderDisplayKey?: string; // 当前 Scheme 根对象承载协议头的展示字段
+  schemeDisplayHeaders?: SchemeDisplayHeaderRecord[]; // 根与嵌套 Scheme 的协议头展示和反向编码信息
   decodedSchemeValue?: JsonValue; // 原始串对应的展开结果，用于无编辑时精确还原
   schemeParamStageSummary?: TransformSchemeParamStageSummary; // 查询参数分层的脱敏摘要，不能包含原始参数值
 }
@@ -229,14 +215,10 @@ export interface TransformResult {
   context: TransformContext; // 转换上下文（用于反向还原）
 }
 
-// ============ 模板填充配置 ============
-
 export interface TemplateFillConfig {
   template: string;
   lastUpdated: number;
 }
-
-// ============ 文件标签 ============
 
 export interface FileTab {
   id: string;

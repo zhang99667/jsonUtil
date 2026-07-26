@@ -62,4 +62,19 @@ describe('aiRepairProviderStatusError', () => {
       'Gemini SDK rejected'
     )).toBeNull();
   });
+
+  it('属性读取失败时继续使用消息中的状态码', () => {
+    const hostileError = new Proxy({}, {
+      get: () => { throw new Error('读取失败'); },
+    });
+
+    expect(normalizeAiProviderStatusError(
+      hostileError,
+      'upstream failed with status: 503',
+      '上游服务异常'
+    )).toMatchObject({
+      code: AiRepairErrorCode.ProviderUnavailable,
+      message: 'AI 服务暂时不可用，请稍后重试：上游服务异常',
+    });
+  });
 });

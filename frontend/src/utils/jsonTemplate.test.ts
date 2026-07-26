@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import type { JsonObject } from '../types.ts';
 import { applyTemplate, deepMergeTemplate } from './jsonTemplate.ts';
 import { applyTemplate as applyTemplateFromTransformations } from './transformations.ts';
+
+const createDeepMergeObject = (leaf: JsonObject, depth: number): JsonObject => {
+  let value = leaf;
+  for (let index = 0; index < depth; index += 1) {
+    value = { child: value };
+  }
+  return value;
+};
 
 it('原变换模块导出路径继续兼容', () => {
   expect(applyTemplateFromTransformations).toBe(applyTemplate);
@@ -51,6 +60,29 @@ describe('deepMergeTemplate', () => {
       { b: 2, c: 3 }
     )).toEqual({ a: 1, b: 2, c: 3 });
   });
+
+  it('万级嵌套对象合并不依赖 JavaScript 调用栈', () => {
+    const depth = 10_000;
+    const result = deepMergeTemplate(
+      createDeepMergeObject({ keep: true, changed: 'old' }, depth),
+      createDeepMergeObject({ changed: 'new' }, depth)
+    );
+    let cursor = result as JsonObject;
+    for (let index = 0; index < depth; index += 1) {
+      cursor = cursor.child as JsonObject;
+    }
+
+    expect(cursor).toEqual({ keep: true, changed: 'new' });
+  });
+
+  it('模板特殊键保留为普通自有属性', () => {
+    const template = JSON.parse('{"__proto__":{"polluted":true}}') as JsonObject;
+    const result = deepMergeTemplate({}, template) as JsonObject;
+
+    expect(Object.hasOwn(result, '__proto__')).toBe(true);
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(result['__proto__']).toEqual({ polluted: true });
+  });
 });
 
 describe('applyTemplate', () => {
@@ -94,16 +126,35 @@ describe('applyTemplate', () => {
     });
   });
 
-  it('占位符回填模板没有有效替换值时报错', () => {
+  it('五千层对象占位符回填不依赖自定义递归调用栈', () => {
+    const depth = 5_000;
+    const input = JSON.stringify(createDeepMergeObject({ value: '__TOKEN__' }, depth));
+    const template = JSON.stringify({
+      kind: 'json-helper-runtime-placeholder-fill-template',
+      placeholders: { __TOKEN__: 'done' },
+    });
+    let cursor = JSON.parse(applyTemplate(input, template)) as JsonObject;
+    for (let index = 0; index < depth; index += 1) {
+      cursor = cursor.child as JsonObject;
+    }
+
+    expect(cursor).toEqual({ value: 'done' });
+  });
+
+  it.each([
+    ['空替换值', { __CONVERT_CMD__: '' }],
+    ['空占位符名称', { '': 'sampleapp://open' }],
+    ['空白占位符名称', { '   ': 'sampleapp://open' }],
+  ])('占位符回填模板包含%s时报错', (_label, placeholders) => {
     const template = JSON.stringify({
       schemaVersion: 1,
       kind: 'json-helper-runtime-placeholder-fill-template',
-      placeholders: { __CONVERT_CMD__: '' },
+      placeholders,
       placeholderDetails: [],
     });
 
     expect(() => applyTemplate('{"button_cmd":"__CONVERT_CMD__"}', template)).toThrow(
-      '占位符回填模板缺少 replacement'
+      '占位符回填模板缺少有效替换项'
     );
   });
 
@@ -112,6 +163,8 @@ describe('applyTemplate', () => {
     ['{"a":1}', '   ', '模板内容为空'],
     ['{invalid}', '{"a":1}', '当前编辑器内容不是合法的 JSON'],
     ['{"a":1}', '{invalid}', '模板内容不是合法的 JSON'],
+    ['{"value":1e400}', '{"a":1}', '当前编辑器内容不是合法的 JSON'],
+    ['{"a":1}', '{"value":1e400}', '模板内容不是合法的 JSON'],
   ])('%s 与模板输入组合报错稳定', (input, template, message) => {
     expect(() => applyTemplate(input, template)).toThrow(message);
   });

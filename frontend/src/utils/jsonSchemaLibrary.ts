@@ -1,3 +1,4 @@
+import { parseJsonValue } from './jsonValueGuards';
 import { isRecord, parseJsonWithFallback } from './storage';
 
 export interface JsonSchemaLibraryItem {
@@ -48,7 +49,7 @@ const getNameFromSchemaId = (schemaId: string): string => {
 
 const getSchemaName = (schemaText: string): string => {
   try {
-    const parsed: unknown = JSON.parse(schemaText);
+    const parsed = parseJsonValue(schemaText);
     if (!isRecord(parsed)) return '未命名 Schema';
 
     if (typeof parsed.title === 'string' && parsed.title.trim()) {
@@ -101,10 +102,15 @@ export const parseJsonSchemaLibrary = (stored: string | null): JsonSchemaLibrary
   if (!stored) return [];
 
   try {
-    const parsed: unknown = JSON.parse(stored);
+    const parsed = parseJsonValue(stored);
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .filter(isValidLibraryItem)
+      .flatMap(value => isValidLibraryItem(value) ? [{
+        id: value.id,
+        name: value.name,
+        schemaText: value.schemaText,
+        updatedAt: value.updatedAt,
+      }] : [])
       .slice(0, MAX_JSON_SCHEMA_LIBRARY_ITEMS);
   } catch {
     return [];
@@ -185,7 +191,7 @@ const createImportableJsonSchemaLibraryItem = (
   return createJsonSchemaLibraryItem(normalizedSchemaText, now);
 };
 
-const stringifySchemaObject = (value: unknown): string | null => {
+const stringifySchemaObject = (value: Record<string, unknown>): string | null => {
   try {
     return JSON.stringify(value, null, 2);
   } catch {
@@ -194,39 +200,49 @@ const stringifySchemaObject = (value: unknown): string | null => {
 };
 
 const collectImportSchemaTexts = (value: unknown): string[] => {
-  if (typeof value === 'boolean') {
-    return [JSON.stringify(value)];
+  const schemaTexts: string[] = [];
+  const pending: unknown[] = [value];
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (typeof current === 'boolean') {
+      schemaTexts.push(JSON.stringify(current));
+      continue;
+    }
+    if (typeof current === 'string') {
+      const normalized = current.trim();
+      if (normalized) schemaTexts.push(normalized);
+      continue;
+    }
+    if (Array.isArray(current)) {
+      for (let index = current.length - 1; index >= 0; index -= 1) {
+        pending.push(current[index]);
+      }
+      continue;
+    }
+    if (!isRecord(current)) continue;
+
+    if (current.source === JSON_SCHEMA_LIBRARY_EXPORT_SOURCE && Array.isArray(current.items)) {
+      for (let index = current.items.length - 1; index >= 0; index -= 1) {
+        pending.push(current.items[index]);
+      }
+      continue;
+    }
+    if (typeof current.schemaText === 'string') {
+      pending.push(current.schemaText);
+      continue;
+    }
+    if ('schema' in current) {
+      pending.push(current.schema);
+      continue;
+    }
+    if (looksLikeJsonSchemaObject(current)) {
+      const schemaText = stringifySchemaObject(current);
+      if (schemaText) schemaTexts.push(schemaText);
+    }
   }
 
-  if (typeof value === 'string') {
-    const normalized = value.trim();
-    return normalized ? [normalized] : [];
-  }
-
-  if (Array.isArray(value)) {
-    return value.flatMap(collectImportSchemaTexts);
-  }
-
-  if (!isRecord(value)) return [];
-
-  if (value.source === JSON_SCHEMA_LIBRARY_EXPORT_SOURCE && Array.isArray(value.items)) {
-    return value.items.flatMap(collectImportSchemaTexts);
-  }
-
-  if (typeof value.schemaText === 'string') {
-    return collectImportSchemaTexts(value.schemaText);
-  }
-
-  if ('schema' in value) {
-    return collectImportSchemaTexts(value.schema);
-  }
-
-  if (looksLikeJsonSchemaObject(value)) {
-    const schemaText = stringifySchemaObject(value);
-    return schemaText ? [schemaText] : [];
-  }
-
-  return [];
+  return schemaTexts;
 };
 
 export const importJsonSchemaLibrary = (

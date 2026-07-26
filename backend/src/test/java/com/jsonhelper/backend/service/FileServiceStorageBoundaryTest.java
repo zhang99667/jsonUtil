@@ -1,5 +1,6 @@
 package com.jsonhelper.backend.service;
 
+import com.jsonhelper.backend.config.FileProperties;
 import com.jsonhelper.backend.entity.UploadFile;
 import com.jsonhelper.backend.repository.UploadFileRepository;
 import org.junit.jupiter.api.Assumptions;
@@ -51,11 +52,10 @@ class FileServiceStorageBoundaryTest {
     @BeforeEach
     void setUp() throws IOException {
         uploadRoot = Files.createDirectory(tempDir.resolve("uploads"));
-        fileService = new FileService(uploadFileRepository);
-        ReflectionTestUtils.setField(fileService, "uploadDir", uploadRoot.toString());
-        ReflectionTestUtils.setField(fileService, "maxUploadSize", 1024L);
-        ReflectionTestUtils.setField(fileService, "maxPreviewSize", 1024L);
-        ReflectionTestUtils.setField(fileService, "allowedExtensions", ".json");
+        fileService = new FileService(
+                uploadFileRepository,
+                new FileProperties(uploadRoot.toString(), 1024L, 1024L, ".json")
+        );
         fileService.init();
         lenient().when(uploadFileRepository.save(any(UploadFile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -64,11 +64,11 @@ class FileServiceStorageBoundaryTest {
     @Test
     void saveFileDecouplesLongOriginalNameFromPhysicalName() throws IOException {
         String originalName = "a".repeat(214) + ".json";
-
-        UploadFile savedFile = fileService.saveFile(jsonFile(originalName), "admin");
-
+        MockMultipartFile file = jsonFile(originalName);
+        UploadFile savedFile = fileService.saveFile(file, "admin");
         Path storedPath = Path.of(savedFile.getStoragePath());
         assertEquals(originalName, savedFile.getFileName());
+        assertEquals(Files.size(storedPath), savedFile.getFileSize());
         assertTrue(Files.isRegularFile(storedPath));
         assertFalse(storedPath.getFileName().toString().endsWith(originalName));
         assertTrue(storedPath.getFileName().toString().getBytes(StandardCharsets.UTF_8).length < 255);
@@ -77,9 +77,7 @@ class FileServiceStorageBoundaryTest {
     @Test
     void saveFilePreservesFiveHundredCodePointOriginalName() throws IOException {
         String originalName = "😀".repeat(495) + ".json";
-
         UploadFile savedFile = fileService.saveFile(jsonFile(originalName), "admin");
-
         assertEquals(500, savedFile.getFileName().codePointCount(0, savedFile.getFileName().length()));
         assertEquals(originalName, savedFile.getFileName());
         assertTrue(Files.isRegularFile(Path.of(savedFile.getStoragePath())));

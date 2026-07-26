@@ -5,7 +5,6 @@ import {
   getEnumValueAt,
   getPatternMatcher,
   getUniqueStringExample,
-  serializeExampleValue,
 } from './jsonSchemaExamplePrimitives';
 
 describe('JSON Schema 原始值示例约束', () => {
@@ -32,13 +31,12 @@ describe('JSON Schema 原始值示例约束', () => {
     expect(getUniqueStringExample('A', { pattern: '^A$', maxLength: 1 }, 1)).toBeUndefined();
   });
 
-  it('枚举读取返回独立副本并复用 JSON 序列化', () => {
+  it('枚举读取返回独立副本', () => {
     const schema = { enum: [{ id: 1 }] };
     const value = getEnumValueAt(schema, 0);
 
     expect(value).toEqual({ id: 1 });
     expect(value).not.toBe(schema.enum[0]);
     expect(getEnumValueAt(schema, 1)).toBeUndefined();
-    expect(serializeExampleValue(value)).toBe('{"id":1}');
   });
 });

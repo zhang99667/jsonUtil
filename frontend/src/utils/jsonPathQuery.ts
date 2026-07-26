@@ -6,6 +6,7 @@ import { formatUnknownError } from './errors';
 import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 import { decodeJsonPointerSegment, encodeJsonPointerSegment } from './jsonPointer';
 import { parseJsonLinesWithMetadata, type JsonLineRecord } from './jsonLines';
+import { isJsonValue } from './jsonValueGuards';
 import { deepParseWithContext } from './transformations';
 
 export interface JsonPathQueryOptions {
@@ -16,7 +17,7 @@ export interface JsonPathQueryOptions {
 
 export interface JsonPathQueryItem {
   range: HighlightRange;
-  value: unknown;
+  value: JsonValue;
   path: string;
   pointer: string;
   sourceLabel?: string;
@@ -24,7 +25,7 @@ export interface JsonPathQueryItem {
 
 export interface JsonPathQueryResult {
   ranges: HighlightRange[];
-  values: unknown[];
+  values: JsonValue[];
   items: JsonPathQueryItem[];
   totalResults: number;
   isLimited: boolean;
@@ -33,7 +34,7 @@ export interface JsonPathQueryResult {
 
 interface JsonPathMatch {
   pointer: string;
-  value: unknown;
+  value: JsonValue;
 }
 
 export const DEFAULT_JSONPATH_RESULT_LIMIT = 1000;
@@ -66,9 +67,10 @@ const parseJsonPathSource = (
 
   try {
     const sourceMap = parseJsonSourceMap(source);
+    if (!isJsonValue(sourceMap.data)) throw new RangeError('JSON 包含不支持的值');
     return {
       source,
-      parsedData: sourceMap.data as JsonValue,
+      parsedData: sourceMap.data,
       pointers: sourceMap.pointers,
     };
   } catch (error) {
@@ -192,13 +194,18 @@ const toJsonLineHighlightRange = (
   return lineRange ? offsetLineRange(lineRange, record) : null;
 };
 
-const isJsonPathMatch = (value: unknown): value is JsonPathMatch => (
-  Boolean(value) &&
-  typeof value === 'object' &&
-  'pointer' in value &&
-  typeof (value as { pointer?: unknown }).pointer === 'string' &&
-  'value' in value
-);
+const isJsonPathMatch = (value: unknown): value is JsonPathMatch => {
+  if (!value || typeof value !== 'object') return false;
+
+  try {
+    if (!Reflect.has(value, 'pointer') || !Reflect.has(value, 'value')) return false;
+    const pointer = Reflect.get(value, 'pointer');
+    const matchValue = Reflect.get(value, 'value');
+    return typeof pointer === 'string' && isJsonValue(matchValue);
+  } catch {
+    return false;
+  }
+};
 
 /**
  * 查询 JSONPath 并返回可直接用于 Monaco 高亮的范围

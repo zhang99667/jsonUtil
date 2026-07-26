@@ -88,7 +88,7 @@ describe('aiRepairProviderClient', () => {
     })).rejects.toThrow(`AI 修复失败: Gemini SDK rejected api_key=${AI_ERROR_DETAIL_REDACTION_PLACEHOLDER}`);
 
     expect(consoleError).toHaveBeenCalledWith(
-      'Error calling AI API:',
+      '调用 AI 接口失败:',
       `Gemini SDK rejected api_key=${AI_ERROR_DETAIL_REDACTION_PLACEHOLDER}`
     );
     expect(JSON.stringify(consoleError.mock.calls)).not.toContain('sk-live-secret123');
@@ -141,10 +141,10 @@ describe('aiRepairProviderClient', () => {
     consoleError.mockRestore();
   });
 
-  it('Gemini SDK 鉴权状态错误会归一为 ProviderAuth 且不重复输出 console.error', async () => {
+  it('Gemini SDK 鉴权状态错误会归一为 ProviderAuth，且优先于网络关键词并不重复输出日志', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.mocked(requestGeminiRepairText).mockRejectedValue(
-      Object.assign(new Error('Gemini rejected api_key=sk-live-secret123'), { status: 401 })
+      Object.assign(new Error('Network request failed; Gemini rejected api_key=sk-live-secret123'), { status: 401 })
     );
     let error: unknown;
 

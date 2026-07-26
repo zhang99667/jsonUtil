@@ -105,6 +105,7 @@ describe('templateFillPanelModel', () => {
   it('忽略非回填模板、空模板和无有效占位符模板', () => {
     expect(parsePlaceholderTemplateDraft('')).toBeNull();
     expect(parsePlaceholderTemplateDraft('{bad json')).toBeNull();
+    expect(parsePlaceholderTemplateDraft(`{"kind":"${PLACEHOLDER_FILL_TEMPLATE_KIND}","placeholders":{"a":""},"extra":1e400}`)).toBeNull();
     expect(parsePlaceholderTemplateDraft(JSON.stringify({ kind: 'other', placeholders: { a: '' } }))).toBeNull();
     expect(parsePlaceholderTemplateDraft(JSON.stringify({
       kind: PLACEHOLDER_FILL_TEMPLATE_KIND,
@@ -127,6 +128,7 @@ describe('templateFillPanelModel', () => {
       '```json\n{"code":0}\n```',
       '{\n  // 标准 JSON 不允许注释\n  "code": 0\n}',
       "{name:'JSONUtils',}",
+      '{"value":1e400}',
     ]) {
       const result = validateTemplateJson(input);
       expect(result.isValid).toBe(false);

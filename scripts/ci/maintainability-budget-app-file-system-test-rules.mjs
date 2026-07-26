@@ -4,7 +4,7 @@ const fileSystemTestBudget = (file, maxLines, reason) => ({ file, maxLines, reas
 
 export const appFileSystemTestMaintainabilityBudgets = [
   ...appFileSystemHookTestMaintainabilityBudgets,
-  fileSystemTestBudget('frontend/src/utils/browserFileSave.test.ts', 90, '浏览器下载测试只锁定临时链接和对象 URL 回收'),
+  fileSystemTestBudget('frontend/src/utils/browserFileSave.test.ts', 120, '浏览器下载测试只锁定临时链接、对象 URL 回收和清理失败隔离'),
   fileSystemTestBudget('frontend/src/utils/browserFileHandleWrite.test.ts', 150, '文件句柄写入测试锁定事务清理、同入口顺序及入口比较失败恢复'),
   fileSystemTestBudget('frontend/src/utils/browserFileHandleWriteTimeout.test.ts', 70, '文件句柄入口比较超时测试只锁定本次拒绝和无关文件登记恢复'),
   fileSystemTestBudget('frontend/src/utils/secureUuid.test.ts', 55, '安全随机标识测试只覆盖原生方法、安全随机字节回退和能力缺失'),

@@ -1,8 +1,6 @@
 import { AiRepairErrorCode, createAiRepairError } from '../utils/aiRepairErrors';
+import { tryParseJsonValue } from '../utils/jsonValueGuards';
 
-/**
- * 将 AI 返回内容规范化为有效的压缩 JSON，避免解释文本或 Markdown 写回编辑器
- */
 const AI_INVALID_JSON_RESPONSE_MESSAGE = 'AI 返回内容不是有效 JSON，请重试或调整模型配置';
 const AI_RESPONSE_SNIPPET_SCAN_TEXT_MAX_LENGTH = 240_000;
 const AI_RESPONSE_SNIPPET_SCAN_CHAR_BUDGET = 2_000_000;
@@ -17,21 +15,18 @@ export const normalizeAiJsonResponse = (rawText: string): string => {
   const fenced = normalizeFirstValidCandidate(extractMarkdownFences(trimmed));
   if (fenced) return fenced;
 
-  const snippet = normalizeLastValidCandidate(extractBalancedJsonSnippets(trimmed));
+  const snippet = normalizeLastValidBalancedSnippet(trimmed);
   if (snippet) return snippet;
 
   throw createAiRepairError(AiRepairErrorCode.InvalidResponse, AI_INVALID_JSON_RESPONSE_MESSAGE);
 };
 
 export const tryNormalizeJson = (candidate: string): string | null => {
-  try {
-    return JSON.stringify(JSON.parse(candidate));
-  } catch {
-    return null;
-  }
+  const parsed = tryParseJsonValue(candidate);
+  return parsed === undefined ? null : JSON.stringify(parsed);
 };
 
-const normalizeFirstValidCandidate = (candidates: string[]): string | null => {
+const normalizeFirstValidCandidate = (candidates: Iterable<string>): string | null => {
   for (const candidate of candidates) {
     const normalized = tryNormalizeJson(candidate);
     if (normalized) return normalized;
@@ -40,23 +35,16 @@ const normalizeFirstValidCandidate = (candidates: string[]): string | null => {
   return null;
 };
 
-const normalizeLastValidCandidate = (candidates: string[]): string | null => {
-  for (let index = candidates.length - 1; index >= 0; index--) {
-    const normalized = tryNormalizeJson(candidates[index]);
-    if (normalized) return normalized;
+function* extractMarkdownFences(text: string): Generator<string> {
+  for (const match of text.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)) {
+    const candidate = match[1]?.trim();
+    if (candidate) yield candidate;
   }
+}
 
-  return null;
-};
-
-const extractMarkdownFences = (text: string): string[] => {
-  const matches = text.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi);
-  return Array.from(matches, match => match[1].trim()).filter(Boolean);
-};
-
-const extractBalancedJsonSnippets = (text: string): string[] => {
+const normalizeLastValidBalancedSnippet = (text: string): string | null => {
   const scanText = getAiResponseSnippetScanText(text);
-  const snippets: string[] = [];
+  let lastNormalizedSnippet: string | null = null;
   let remainingScanChars = AI_RESPONSE_SNIPPET_SCAN_CHAR_BUDGET;
 
   for (let i = 0; i < scanText.length && remainingScanChars > 0; i++) {
@@ -94,7 +82,8 @@ const extractBalancedJsonSnippets = (text: string): string[] => {
       } else if (char === endStack[endStack.length - 1]) {
         endStack.pop();
         if (endStack.length === 0) {
-          snippets.push(scanText.slice(i, j + 1));
+          const normalized = tryNormalizeJson(scanText.slice(i, j + 1));
+          if (normalized) lastNormalizedSnippet = normalized;
           i = j;
           break;
         }
@@ -102,7 +91,7 @@ const extractBalancedJsonSnippets = (text: string): string[] => {
     }
   }
 
-  return snippets;
+  return lastNormalizedSnippet;
 };
 
 const getAiResponseSnippetScanText = (text: string): string => (

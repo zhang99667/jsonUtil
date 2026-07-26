@@ -265,6 +265,31 @@ describe('harImport', () => {
     });
   });
 
+  it('HAR JSON body 中的指数溢出数值降级为带错误的文本', () => {
+    const result = extractHarPayloads(JSON.stringify({
+      log: {
+        entries: [{
+          request: {
+            method: 'POST',
+            url: 'https://api.example.com/overflow',
+            postData: {
+              mimeType: 'application/json',
+              text: '{"value":1e400}',
+            },
+          },
+          response: { status: 200 },
+        }],
+      },
+    }));
+
+    expect(result?.entries[0].request.body).toMatchObject({
+      kind: 'text',
+      text: '{"value":1e400}',
+      parseError: 'JSON 包含不支持的值',
+    });
+    expect(result?.issueSummary.jsonParseErrorBodyCount).toBe(1);
+  });
+
   it('打开 HAR 文件时转换为派生 JSON 且不保留原文件句柄', () => {
     const imported = importTextFileContent('network.har', harText);
 

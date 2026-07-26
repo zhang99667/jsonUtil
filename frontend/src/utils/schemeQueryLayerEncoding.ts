@@ -6,6 +6,7 @@ import {
   encodeSingleLogFieldParamContent,
   encodeSingleRawUrlParamContent,
 } from './schemeQueryLayerSingleParamEncoding';
+import { parseJsonValue } from './jsonValueGuards';
 import type {
   SchemeLayerEncodingOptions,
   SchemeLayerEncoder,
@@ -36,7 +37,7 @@ export const encodeQueryStringLayerContent = (
   encodeWithLayers: SchemeLayerEncoder
 ): string | null => {
   try {
-    const parsed = JSON.parse(content) as unknown;
+    const parsed = parseJsonValue(content);
     if (!isPlainObject(parsed)) return null;
 
     return encodeSingleLogFieldParamContent(parsed, originalQueryString, getPrefixedQueryString, options, encodeWithLayers) ||

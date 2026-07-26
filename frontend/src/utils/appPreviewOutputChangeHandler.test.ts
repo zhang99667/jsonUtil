@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { beginPreviewOutputDraft } from './appPreviewOutputDraft';
+import { ASYNC_TRANSFORM_PLACEHOLDER } from './appAsyncPolicy';
 import { scheduleAppPreviewOutputChangeTask } from './appPreviewOutputChangeTask';
 import { runAppPreviewOutputChange } from './appPreviewOutputChangeHandler';
 import { createPreviewOutputChangeTaskInput, PREVIEW_OUTPUT_SYNC_PREVIEW_TEXT } from './appPreviewOutputSyncTestFixture';
@@ -15,6 +16,10 @@ vi.mock('./appPreviewOutputChangeTask', async importOriginal => ({
 }));
 
 describe('appPreviewOutputChangeHandler', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('开始草稿、即时校验并调度同步任务', () => {
     const input = { ...createPreviewOutputChangeTaskInput(), isUpdatingFromOutput: { current: false }, updatePreviewValidation: vi.fn() };
 
@@ -32,5 +37,24 @@ describe('appPreviewOutputChangeHandler', () => {
       applyEffects: input.applyEffects,
       scheduleOutputSync: input.scheduleOutputSync,
     });
+  });
+
+  it('忽略异步转换占位文本，避免回写 SOURCE', () => {
+    const baseInput = createPreviewOutputChangeTaskInput();
+    const input = {
+      ...baseInput,
+      request: {
+        ...baseInput.request,
+        previewText: ASYNC_TRANSFORM_PLACEHOLDER,
+      },
+      isUpdatingFromOutput: { current: false },
+      updatePreviewValidation: vi.fn(),
+    };
+
+    runAppPreviewOutputChange(input);
+
+    expect(beginPreviewOutputDraft).not.toHaveBeenCalled();
+    expect(input.updatePreviewValidation).not.toHaveBeenCalled();
+    expect(scheduleAppPreviewOutputChangeTask).not.toHaveBeenCalled();
   });
 });

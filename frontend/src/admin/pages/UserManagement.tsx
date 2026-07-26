@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Form, Input, Button, Select, message, Card as AntCard, Typography,
     Table, Modal, Popconfirm, Switch, Tag, Space
@@ -12,9 +12,22 @@ import type { CardProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
     addUser, getUserList, updateUser, deleteUser,
-    UserRecord, AddUserParams, UpdateUserParams
 } from '../services/user';
-import { AdminListQuery, resolveAvailableListQuery } from '../utils/listQuery';
+import type {
+    AddUserParams,
+    UserRecord,
+    UserRole,
+} from '../services/user';
+import { createAdminListRequestController } from '../utils/listRequestController';
+import {
+    buildUpdateUserParams,
+    formatUserCreatedAt,
+} from './UserManagementModel';
+import type { EditUserFormValues } from './UserManagementModel';
+import {
+    handleUserManagementRequestError,
+    isUserFormValidationError,
+} from './UserManagementErrors';
 
 const Card = AntCard as React.ComponentType<React.PropsWithChildren<CardProps>>;
 const { Title } = Typography;
@@ -22,136 +35,68 @@ const { Title } = Typography;
 const ROLE_OPTIONS = [
     { value: 'USER', label: '普通用户' },
     { value: 'ADMIN', label: '管理员' },
-];
+] satisfies ReadonlyArray<{ value: UserRole; label: string }>;
 
-/** 默认每页条数 */
 const DEFAULT_PAGE_SIZE = 10;
 
 const UserManagement: React.FC = () => {
-    // ==================== 状态定义 ====================
-
-    /** 添加用户表单 */
-    const [addForm] = Form.useForm();
-    /** 编辑用户表单 */
-    const [editForm] = Form.useForm();
-
-    /** 用户列表数据 */
+    const [addForm] = Form.useForm<AddUserParams>();
+    const [editForm] = Form.useForm<EditUserFormValues>();
     const [userList, setUserList] = useState<UserRecord[]>([]);
-    /** 列表加载状态 */
     const [loading, setLoading] = useState(false);
-    /** 分页信息 */
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: DEFAULT_PAGE_SIZE,
         total: 0,
     });
-    /** 编辑弹窗是否可见 */
     const [editModalVisible, setEditModalVisible] = useState(false);
-    /** 当前编辑的用户 */
     const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
-    /** 编辑提交中 */
     const [editLoading, setEditLoading] = useState(false);
-    /** 添加用户折叠状态 */
     const [showAddForm, setShowAddForm] = useState(false);
-    const userListRequestIdRef = useRef(0);
-    const latestUserListQueryRef = useRef<AdminListQuery>({
-        page: 1,
-        pageSize: DEFAULT_PAGE_SIZE,
-        keyword: '',
-    });
-    const userListMountedRef = useRef(false);
     const pendingEnabledUserIdsRef = useRef(new Set<number>());
     const [pendingEnabledUserIds, setPendingEnabledUserIds] = useState<ReadonlySet<number>>(() => new Set());
-
-    // ==================== 数据获取 ====================
-
-    /**
-     * 获取用户列表
-     */
-    const fetchUserList = useCallback(async (query: AdminListQuery) => {
-        if (!userListMountedRef.current) {
-            return;
-        }
-
-        latestUserListQueryRef.current = query;
-        const requestId = ++userListRequestIdRef.current;
-        const isCurrentRequest = () => (
-            userListMountedRef.current && requestId === userListRequestIdRef.current
-        );
-        setLoading(true);
-        try {
-            let resolvedQuery = query;
-            let result: Awaited<ReturnType<typeof getUserList>>;
-            while (true) {
-                // 后端分页从 0 开始，前端从 1 开始。
-                result = await getUserList(
-                    resolvedQuery.page - 1,
-                    resolvedQuery.pageSize,
-                    resolvedQuery.keyword || undefined,
-                );
-                // 只允许最新一次列表请求更新页面，避免快速搜索/翻页时旧响应回写。
-                if (!isCurrentRequest()) {
-                    return;
-                }
-
-                const availableQuery = resolveAvailableListQuery(
-                    resolvedQuery,
-                    result.totalElements,
-                );
-                if (availableQuery === resolvedQuery) {
-                    break;
-                }
-                // 页码只会向第一页收敛；并发删除继续缩小总数时会再次校正。
-                resolvedQuery = availableQuery;
-                latestUserListQueryRef.current = resolvedQuery;
-            }
-
-            latestUserListQueryRef.current = {
-                ...resolvedQuery,
-                page: result.number + 1,
-                pageSize: result.size,
-            };
-            setUserList(result.content);
-            setPagination({
-                current: result.number + 1,
-                pageSize: result.size,
+    const [userListController] = useState(() => createAdminListRequestController({
+        initialQuery: {
+            page: 1,
+            pageSize: DEFAULT_PAGE_SIZE,
+            keyword: '',
+        },
+        loadPage: async (query) => {
+            // 用户接口页码从零开始，控制器统一使用从一开始的页码。
+            const result = await getUserList(
+                query.page - 1,
+                query.pageSize,
+                query.keyword || undefined,
+            );
+            return {
+                items: result.content,
                 total: result.totalElements,
+                query: {
+                    ...query,
+                    page: result.number + 1,
+                    pageSize: result.size,
+                },
+            };
+        },
+        onCommit: ({ items, total, query }) => {
+            setUserList(items);
+            setPagination({
+                current: query.page,
+                pageSize: query.pageSize,
+                total,
             });
-        } catch {
-            if (!isCurrentRequest()) {
-                return;
-            }
-            // 错误已由请求拦截器统一处理
-        } finally {
-            if (isCurrentRequest()) {
-                setLoading(false);
-            }
-        }
-    }, []);
+        },
+        onLoadingChange: setLoading,
+        onError: (error) => {
+            handleUserManagementRequestError(error, '用户列表加载失败', '获取用户列表');
+        },
+    }));
 
-    /** 使用操作完成时的最新查询条件刷新列表 */
-    const refreshLatestUserList = useCallback((
-        updateQuery?: (query: AdminListQuery) => AdminListQuery,
-    ) => {
-        const latestQuery = latestUserListQueryRef.current;
-        return fetchUserList(updateQuery ? updateQuery(latestQuery) : latestQuery);
-    }, [fetchUserList]);
-
-    /** 组件挂载时加载数据 */
     useEffect(() => {
-        userListMountedRef.current = true;
-        void fetchUserList(latestUserListQueryRef.current);
-        return () => {
-            userListMountedRef.current = false;
-            userListRequestIdRef.current += 1;
-        };
-    }, [fetchUserList]);
+        void userListController.mount();
+        return () => userListController.dispose();
+    }, [userListController]);
 
-    // ==================== 事件处理 ====================
-
-    /**
-     * 添加用户提交
-     */
     const handleAddUser = async (values: AddUserParams) => {
         try {
             await addUser(values);
@@ -159,96 +104,70 @@ const UserManagement: React.FC = () => {
             addForm.resetFields();
             setShowAddForm(false);
             // 新用户可能改变排序首项，保留最新搜索条件并回到第一页。
-            void refreshLatestUserList((query) => ({ ...query, page: 1 }));
-        } catch {
-            // 错误已由拦截器处理
+            void userListController.refresh((query) => ({ ...query, page: 1 }));
+        } catch (error) {
+            handleUserManagementRequestError(error, '用户添加失败', '添加用户');
         }
     };
 
-    /**
-     * 搜索用户
-     */
     const handleSearch = (value: string) => {
-        void fetchUserList({
-            ...latestUserListQueryRef.current,
-            page: 1,
-            keyword: value,
-        });
+        void userListController.search(value);
     };
 
-    /**
-     * 表格分页变化
-     */
     const handleTableChange = (page: number, pageSize: number) => {
-        void fetchUserList({
-            ...latestUserListQueryRef.current,
-            page,
-            pageSize,
-        });
+        void userListController.changePage(page, pageSize);
     };
 
-    /**
-     * 打开编辑弹窗
-     */
     const handleEdit = (record: UserRecord) => {
         setEditingUser(record);
         editForm.setFieldsValue({
             username: record.username,
             email: record.email || '',
             role: record.role,
-            password: '', // 密码字段默认为空，不回显
+            // 密码不回显，留空时更新请求也不会提交该字段。
+            password: '',
         });
         setEditModalVisible(true);
     };
 
-    /**
-     * 编辑提交
-     */
     const handleEditSubmit = async () => {
+        let values: EditUserFormValues;
         try {
-            const values = await editForm.validateFields();
-            if (!editingUser) return;
-
-            setEditLoading(true);
-            const params: UpdateUserParams = {
-                username: values.username,
-                email: values.email || undefined,
-                role: values.role,
-            };
-            // 仅当输入了密码才传递
-            if (values.password && values.password.trim()) {
-                params.password = values.password;
+            values = await editForm.validateFields();
+        } catch (error) {
+            if (!isUserFormValidationError(error)) {
+                handleUserManagementRequestError(error, '用户信息校验失败', '校验用户信息');
             }
-            await updateUser(editingUser.id, params);
+            return;
+        }
+        if (!editingUser) return;
+
+        setEditLoading(true);
+        try {
+            await updateUser(editingUser.id, buildUpdateUserParams(values));
             message.success('用户信息更新成功');
             setEditModalVisible(false);
             setEditingUser(null);
             editForm.resetFields();
-            void refreshLatestUserList();
-        } catch {
-            // 表单验证失败或接口错误
+            void userListController.refresh();
+        } catch (error) {
+            handleUserManagementRequestError(error, '用户信息更新失败', '更新用户');
         } finally {
             setEditLoading(false);
         }
     };
 
-    /**
-     * 删除用户
-     */
     const handleDelete = async (id: number) => {
         try {
             await deleteUser(id);
             message.success('用户已删除');
             // 服务端最新总数会在列表请求中决定是否回退末页。
-            void refreshLatestUserList();
-        } catch {
-            // 错误已由拦截器处理
+            void userListController.refresh();
+        } catch (error) {
+            handleUserManagementRequestError(error, '用户删除失败', '删除用户');
         }
     };
 
-    /**
-     * 设置用户启用/禁用状态
-     */
     const handleSetEnabled = async (id: number, enabled: boolean) => {
         if (pendingEnabledUserIdsRef.current.has(id)) return;
 
@@ -257,18 +176,20 @@ const UserManagement: React.FC = () => {
         try {
             await updateUser(id, { enabled });
             message.success(enabled ? '用户已启用' : '用户已禁用');
-            await refreshLatestUserList();
-        } catch {
-            // 错误已由拦截器处理
+            await userListController.refresh();
+        } catch (error) {
+            handleUserManagementRequestError(
+                error,
+                enabled ? '启用用户失败' : '禁用用户失败',
+                '更新用户状态',
+            );
         } finally {
             pendingEnabledUserIdsRef.current.delete(id);
-            if (userListMountedRef.current) {
+            if (userListController.isMounted()) {
                 setPendingEnabledUserIds(new Set(pendingEnabledUserIdsRef.current));
             }
         }
     };
-
-    // ==================== 表格列配置 ====================
 
     const columns: ColumnsType<UserRecord> = [
         {
@@ -296,7 +217,7 @@ const UserManagement: React.FC = () => {
             key: 'role',
             width: 100,
             align: 'center',
-            render: (role: string) => {
+            render: (role: UserRole) => {
                 const isAdmin = role === 'ADMIN';
                 return (
                     <Tag color={isAdmin ? 'purple' : 'blue'}>
@@ -326,18 +247,7 @@ const UserManagement: React.FC = () => {
             dataIndex: 'createdAt',
             key: 'createdAt',
             width: 180,
-            render: (text: string) => {
-                if (!text) return '-';
-                // 后端返回 LocalDateTime 格式，例如 "2025-01-15T10:30:00"
-                const date = new Date(text);
-                return date.toLocaleString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                });
-            },
+            render: formatUserCreatedAt,
         },
         {
             title: '操作',
@@ -376,11 +286,8 @@ const UserManagement: React.FC = () => {
         },
     ];
 
-    // ==================== 渲染 ====================
-
     return (
         <div>
-            {/* 页面标题 */}
             <div style={{ marginBottom: 24 }}>
                 <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <TeamOutlined style={{ color: '#5B6EF5' }} />
@@ -388,7 +295,6 @@ const UserManagement: React.FC = () => {
                 </Title>
             </div>
 
-            {/* 搜索栏和操作按钮 — flex 行布局，无 Card 包裹 */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                 <Input.Search
                     placeholder="搜索用户名"
@@ -396,7 +302,6 @@ const UserManagement: React.FC = () => {
                     enterButton={<><SearchOutlined /> 搜索</>}
                     onSearch={handleSearch}
                     onChange={(e) => {
-                        // 清空输入框时自动重新加载
                         if (!e.target.value) {
                             handleSearch('');
                         }
@@ -406,7 +311,7 @@ const UserManagement: React.FC = () => {
                 <div style={{ display: 'flex', gap: 8 }}>
                     <Button
                         icon={<ReloadOutlined />}
-                        onClick={() => { void refreshLatestUserList(); }}
+                        onClick={() => { void userListController.refresh(); }}
                     >
                         刷新
                     </Button>
@@ -420,14 +325,13 @@ const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* 添加用户表单（可折叠） */}
             {showAddForm && (
                 <Card
                     title={<><UserAddOutlined style={{ marginRight: 8 }} />添加新用户</>}
                     bordered={false}
                     style={{ marginBottom: 16, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                 >
-                    <Form
+                    <Form<AddUserParams>
                         form={addForm}
                         layout="inline"
                         onFinish={handleAddUser}
@@ -469,7 +373,6 @@ const UserManagement: React.FC = () => {
                 </Card>
             )}
 
-            {/* 用户列表表格 */}
             <Card bordered={false} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <Table<UserRecord>
                     columns={columns}
@@ -492,7 +395,6 @@ const UserManagement: React.FC = () => {
                 />
             </Card>
 
-            {/* 编辑用户弹窗 */}
             <Modal
                 title="编辑用户"
                 open={editModalVisible}
@@ -507,7 +409,7 @@ const UserManagement: React.FC = () => {
                 cancelText="取消"
                 destroyOnClose
             >
-                <Form
+                <Form<EditUserFormValues>
                     form={editForm}
                     layout="vertical"
                     style={{ marginTop: 16 }}

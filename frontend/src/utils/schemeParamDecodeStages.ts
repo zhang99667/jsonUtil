@@ -1,5 +1,8 @@
 import type { SchemeParamDecodeStage } from './schemeTypes';
-import { createUrl } from './schemeUrlShapes';
+import {
+  createSchemeUrlContext,
+  type SchemeUrlContext,
+} from './schemeUrlShapes';
 import { createParamDecodeStage } from './schemeParamDecodeStageBuilder';
 import {
   buildParamDecodeStagesFromPairs,
@@ -47,12 +50,14 @@ export const buildQueryStringParamDecodeStages = (
 };
 
 export const buildUrlParamDecodeStages = (
-  urlString: string,
+  source: string | SchemeUrlContext,
   maxDepth: number,
   options: SchemeParamDecodeStagesOptions
 ): SchemeParamDecodeStage[] => {
   try {
-    const url = createUrl(urlString);
+    const url = typeof source === 'string'
+      ? createSchemeUrlContext(source).url
+      : source.url;
     const stages: SchemeParamDecodeStage[] = [];
     const hasQueryParams = Boolean(url.search);
     const fragmentParamSource = options.getFragmentParamSource(url.hash);

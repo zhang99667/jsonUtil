@@ -48,9 +48,20 @@ export interface SchemePlaceholderGroup {
   paths: string[];     // 出现路径
 }
 
+export interface SchemeDisplayHeaderRecord {
+  path: string;                 // 协议头展示字段的 JSON Pointer，空字符串表示根对象
+  headerKey: string;            // 实际使用的展示字段名
+  header: string;               // 注入时的原始协议头，用于防止路径错绑
+  source: string;               // 用于编辑后重建的原始完整 Scheme
+  layers: DecodeLayer[];        // 嵌套值自身的可逆编码层
+  displayValueSnapshot?: string; // 数组路径中的对象快照，用于识别重排错位
+}
+
 export interface SchemeDecodeResult {
   original: string;           // 原始字符串
   decoded: string;            // 最终解码结果
+  displayDecoded?: string;    // 包含业务 Scheme 协议头的展示结果
+  displayHeaders?: SchemeDisplayHeaderRecord[]; // 展示字段的路径与反向编码信息
   layers: DecodeLayer[];      // 解码层级
   isJson: boolean;            // 最终结果是否为有效 JSON
   placeholders?: SchemePlaceholder[]; // 运行时占位符

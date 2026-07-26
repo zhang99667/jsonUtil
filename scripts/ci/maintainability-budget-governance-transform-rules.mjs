@@ -1,4 +1,5 @@
 import { governanceTransformPanelMaintainabilityBudgets } from './maintainability-budget-governance-transform-panel-rules.mjs';
+import { governanceTransformJsonMaintainabilityBudgets } from './maintainability-budget-governance-transform-json-rules.mjs';
 import { governanceTransformSummaryMaintainabilityBudgets } from './maintainability-budget-governance-transform-summary-rules.mjs';
 
 export const governanceTransformMaintainabilityBudgets = [
@@ -23,6 +24,7 @@ export const governanceTransformMaintainabilityBudgets = [
     maxLines: 40,
     reason: '深度解析筛选预算规则应保持短表，新增筛选 helper 先按 matcher/view 分层',
   },
+  ...governanceTransformJsonMaintainabilityBudgets,
   {
     file: 'scripts/ci/maintainability-budget-transform-placeholder-rules.mjs',
     maxLines: 40,

@@ -6,6 +6,7 @@ import {
   getJsonPointerValue,
   setJsonPointerValue,
   stringifyJsonPointerValue,
+  tryGetJsonPointerValue,
 } from './jsonPointer';
 
 describe('jsonPointer helpers', () => {
@@ -32,12 +33,14 @@ describe('jsonPointer helpers', () => {
     expect(stringifyJsonPointerValue(root, '/items/0', { pretty: true })).toBe(JSON.stringify({
       id: 1,
     }, null, 2));
+    expect(tryGetJsonPointerValue<number>(root, '/items/0/id')).toBe(1);
   });
 
   it('非法读取路径抛出错误', () => {
     expect(() => getJsonPointerValue({ items: [] }, 'items')).toThrow('非法 JSON Pointer');
     expect(() => getJsonPointerValue({ items: [] }, '/items/0')).toThrow('数组下标越界');
     expect(() => getJsonPointerValue({ user: {} }, '/user/name')).toThrow('无法继续访问');
+    expect(tryGetJsonPointerValue({ items: [] }, '/items/0')).toBeUndefined();
   });
 });
 
@@ -83,5 +86,15 @@ describe('setJsonPointerValue', () => {
   it('非法路径抛出错误', () => {
     expect(() => setJsonPointerValue(['old'], '/a', 'new')).toThrow('非法数组下标');
     expect(() => setJsonPointerValue('old', '/url', 'new')).toThrow('无法写入');
+    expect(() => setJsonPointerValue({}, '/missing', 'new')).toThrow('无法写入');
+    expect(() => setJsonPointerValue({}, '/constructor/prototype/polluted', 'new'))
+      .toThrow('无法继续访问');
+  });
+
+  it('允许替换对象自有的特殊字段', () => {
+    const root = JSON.parse('{"__proto__":{"safe":"old"}}') as unknown;
+
+    expect(setJsonPointerValue(root, '/__proto__/safe', 'new'))
+      .toEqual(JSON.parse('{"__proto__":{"safe":"new"}}'));
   });
 });

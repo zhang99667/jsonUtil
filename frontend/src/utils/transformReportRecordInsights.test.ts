@@ -92,6 +92,19 @@ describe('transformReportRecordInsights', () => {
     expect(result.nestedBase64SuffixFieldCount).toBe(2);
   });
 
+  it('未知字段值不污染报告的 JSON 值契约', () => {
+    const decodedSchemeValue = {
+      page_cmd: { amount: 1n },
+    } as unknown as JsonValue;
+    const result = buildTransformRecordInsightData(createSchemeRecord('cmd://open', decodedSchemeValue));
+
+    expect(result.nestedCommandFields).toEqual([{
+      path: '$.scheme.page_cmd',
+      preview: '对象: amount',
+      copyText: '$.scheme.page_cmd = 无法序列化',
+    }]);
+  });
+
   it('搜索字段保留 200 条索引并按展示上限截断', () => {
     const decodedSchemeValue = {
       payload: Object.fromEntries(Array.from({ length: 210 }, (_, index) => [

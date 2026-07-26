@@ -1,4 +1,4 @@
-import { formatByteSize, getDocumentStats } from './documentStats';
+import { formatDocumentSize } from './documentStats';
 import type {
   DecodeLayer,
   SchemeParamDecodeStage,
@@ -62,8 +62,7 @@ export const schemeParamStageSourceLabels: Record<SchemeParamDecodeStage['source
 
 export const formatSchemeLayerSizeLabel = (value?: string): string => {
   if (value === undefined) return '未知';
-  const stats = getDocumentStats(value);
-  return `${stats.characterCount} 字符`;
+  return `${value.length} 字符`;
 };
 
 export const getSchemeLayerAfterContent = (
@@ -88,7 +87,4 @@ export const formatSchemeParamTooltipValue = (value: string | string[]): string 
     : formatSchemeTooltipValue(value)
 );
 
-export const formatSchemeCopySizeLabel = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
+export const formatSchemeCopySizeLabel = formatDocumentSize;

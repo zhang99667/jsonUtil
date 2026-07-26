@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  iterateDecodedQueryPairs,
   looksLikeQueryString,
   normalizeQueryString,
   splitQueryPairs,
@@ -13,6 +14,45 @@ describe('schemeQuerySyntax', () => {
     expect(normalizeQueryString('cmd=1;from=log')).toBe('cmd=1&from=log');
     expect(normalizeQueryString('cmd=1, from=log')).toBe('cmd=1&from=log');
     expect(normalizeQueryString('cmd=1\\n  from=log')).toBe('cmd=1&from=log');
+  });
+
+  it('统一迭代已解码参数并保留原始键值', () => {
+    expect([...iterateDecodedQueryPairs(
+      '?word=json+schema&empty=&next=1',
+      value => decodeURIComponent(value),
+      value => decodeURIComponent(value.replace(/\+/g, ' ')),
+    )]).toEqual([
+      {
+        rawKey: 'word',
+        key: 'word',
+        rawValue: 'json+schema',
+        value: 'json schema',
+      },
+      {
+        rawKey: 'empty',
+        key: 'empty',
+        rawValue: '',
+        value: '',
+      },
+      {
+        rawKey: 'next',
+        key: 'next',
+        rawValue: '1',
+        value: '1',
+      },
+    ]);
+  });
+
+  it('达到上限后不再解码后续参数', () => {
+    const decodeValue = vi.fn((value: string) => value);
+
+    expect([...iterateDecodedQueryPairs(
+      'first=1&second=2',
+      value => value,
+      decodeValue,
+      1,
+    )]).toHaveLength(1);
+    expect(decodeValue).toHaveBeenCalledTimes(1);
   });
 
   it('剥离 query 前缀并识别参数串形态', () => {

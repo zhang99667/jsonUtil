@@ -4,6 +4,7 @@ import { isRecord as isUnknownRecord } from './storage';
 export interface SchemeScanWorkerRequest {
   id: number;
   jsonString: string;
+  forcedPaths?: readonly string[];
 }
 
 export interface SchemeScanWorkerResponse {

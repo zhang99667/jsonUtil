@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,19 +27,18 @@ class TrafficServiceSessionStatsTest {
 
     private TrafficService trafficService;
 
-    private static VisitLogRepository.SessionVisitEvent sessionEvent(String ip, LocalDateTime createdAt) {
-        return new TestSessionVisitEvent(ip, createdAt);
-    }
-
     @BeforeEach
     void setUp() {
-        trafficService = new TrafficService(visitLogRepository, new GeoService(), new UserAgentClassifier());
+        trafficService = new TrafficService(
+                visitLogRepository, new GeoService(), new UserAgentClassifier(), Clock.systemDefaultZone()
+        );
     }
 
     @Test
     void getSessionDurationStatsIgnoresBlankIp() {
         when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(Stream.of(sessionEvent("   ", LocalDateTime.of(2026, 6, 5, 10, 0))));
+                .thenReturn(Stream.<VisitLogRepository.SessionVisitEvent>of(
+                        new TestSessionVisitEvent("   ", LocalDateTime.of(2026, 6, 5, 10, 0))));
 
         List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
         assertEquals(6, result.size());
@@ -50,12 +50,12 @@ class TrafficServiceSessionStatsTest {
         LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
         AtomicBoolean streamClosed = new AtomicBoolean();
         when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(Stream.of(
-                        sessionEvent("10.0.0.1", base),
-                        sessionEvent("10.0.0.1", base.plusSeconds(5)),
-                        sessionEvent("10.0.0.1", base.plusMinutes(40)),
-                        sessionEvent("10.0.0.2", base.plusMinutes(1)),
-                        sessionEvent("10.0.0.2", base.plusMinutes(4))
+                .thenReturn(Stream.<VisitLogRepository.SessionVisitEvent>of(
+                        new TestSessionVisitEvent("10.0.0.1", base),
+                        new TestSessionVisitEvent("10.0.0.1", base.plusSeconds(5)),
+                        new TestSessionVisitEvent("10.0.0.1", base.plusMinutes(40)),
+                        new TestSessionVisitEvent("10.0.0.2", base.plusMinutes(1)),
+                        new TestSessionVisitEvent("10.0.0.2", base.plusMinutes(4))
                 ).onClose(() -> streamClosed.set(true)));
 
         List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
@@ -77,9 +77,9 @@ class TrafficServiceSessionStatsTest {
     void getSessionDurationStatsStartsNewSessionAfterThirtyMinutes() {
         LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
         when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(Stream.of(
-                        sessionEvent("10.0.0.1", base),
-                        sessionEvent("10.0.0.1", base.plusMinutes(30).plusSeconds(1))
+                .thenReturn(Stream.<VisitLogRepository.SessionVisitEvent>of(
+                        new TestSessionVisitEvent("10.0.0.1", base),
+                        new TestSessionVisitEvent("10.0.0.1", base.plusMinutes(30).plusSeconds(1))
                 ));
 
         List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);
@@ -93,9 +93,9 @@ class TrafficServiceSessionStatsTest {
     void getSessionDurationStatsKeepsSessionAtThirtyMinuteBoundary() {
         LocalDateTime base = LocalDateTime.of(2026, 6, 5, 10, 0);
         when(visitLogRepository.streamSessionVisitEvents(any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(Stream.of(
-                        sessionEvent("10.0.0.1", base),
-                        sessionEvent("10.0.0.1", base.plusMinutes(30))
+                .thenReturn(Stream.<VisitLogRepository.SessionVisitEvent>of(
+                        new TestSessionVisitEvent("10.0.0.1", base),
+                        new TestSessionVisitEvent("10.0.0.1", base.plusMinutes(30))
                 ));
 
         List<SessionStatsDTO> result = trafficService.getSessionDurationStats(7);

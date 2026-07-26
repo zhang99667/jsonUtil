@@ -14,5 +14,7 @@ describe('aiRepairConnectionTest', () => {
       .toThrow(AI_CONNECTION_TEST_INVALID_MESSAGE);
     expect(() => assertAiConnectionTestResult('{"connection":false}'))
       .toThrow(AI_CONNECTION_TEST_INVALID_MESSAGE);
+    expect(() => assertAiConnectionTestResult('{"connection":true,"value":1e400}'))
+      .toThrow(AI_CONNECTION_TEST_INVALID_MESSAGE);
   });
 });

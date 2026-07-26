@@ -1,5 +1,8 @@
 import { schemeSupportBase64MaintainabilityBudgets } from './maintainability-budget-scheme-support-base64-rules.mjs';
 import { schemeSupportLogMaintainabilityBudgets } from './maintainability-budget-scheme-support-log-rules.mjs';
+import { schemeSupportMetadataContextMaintainabilityBudgets } from './maintainability-budget-scheme-support-metadata-context-rules.mjs';
+import { schemeSupportMetadataDeepTestMaintainabilityBudgets } from './maintainability-budget-scheme-support-metadata-deep-test-rules.mjs';
+import { schemeSupportMetadataMaintainabilityBudgets } from './maintainability-budget-scheme-support-metadata-rules.mjs';
 import { schemeSupportPayloadMaintainabilityBudgets } from './maintainability-budget-scheme-support-payload-rules.mjs';
 import { schemeSupportQueryMaintainabilityBudgets } from './maintainability-budget-scheme-support-query-rules.mjs';
 import { schemeSupportQuerySyntaxMaintainabilityBudgets } from './maintainability-budget-scheme-support-query-syntax-rules.mjs';
@@ -11,6 +14,9 @@ import { schemeSupportViewerMaintainabilityBudgets } from './maintainability-bud
 export const schemeSupportMaintainabilityBudgets = [
   ...schemeSupportBase64MaintainabilityBudgets,
   ...schemeSupportLogMaintainabilityBudgets,
+  ...schemeSupportMetadataContextMaintainabilityBudgets,
+  ...schemeSupportMetadataDeepTestMaintainabilityBudgets,
+  ...schemeSupportMetadataMaintainabilityBudgets,
   ...schemeSupportPayloadMaintainabilityBudgets,
   ...schemeSupportQueryMaintainabilityBudgets,
   ...schemeSupportQuerySyntaxMaintainabilityBudgets,

@@ -45,7 +45,12 @@ describe('schemeMetadata', () => {
   });
 
   it('长值会被裁剪成适合徽标展示的预览', () => {
+    const unstringifiable = Object.assign(() => undefined, {
+      toString: () => { throw new Error('字符串转换失败'); },
+    });
+
     expect(formatBase64MetaDisplayValue('x'.repeat(70))).toBe(`${'x'.repeat(64)}...`);
+    expect(formatBase64MetaDisplayValue(unstringifiable)).toBe('无法序列化');
   });
 
   it('普通 HTTPS URL 不生成 cmdSchema', () => {
@@ -830,5 +835,14 @@ describe('schemeMetadata', () => {
 
   it('非法 JSON 不导出 CMD 结构', () => {
     expect(formatCmdHandlerCompatibleResult('{bad json}', 'sampleapp://v1/open')).toBe('');
+  });
+
+  it('洞察字段复制遇到循环对象时安全降级', () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    expect(getSchemeInsightFieldCopyText({
+      key: 'value', path: '$.value', preview: '对象', value: circular,
+    })).toBe('$.value = 无法序列化');
   });
 });

@@ -23,10 +23,23 @@ export const formatJsonValuePreview = (value: JsonValue, maxLength = 120): strin
   return String(value);
 };
 
-export const formatDecodedPathCopyValue = (value: JsonValue, maxLength = 8_000): string => {
-  const text = typeof value === 'string'
-    ? JSON.stringify(value)
-    : JSON.stringify(value) ?? String(value);
+export const stringifyUnknownValue = (value: unknown, pretty = false): string => {
+  let text: string | undefined;
+  try {
+    text = JSON.stringify(value, null, pretty ? 2 : 0);
+  } catch {
+    if (value !== null && typeof value === 'object') return '无法序列化';
+  }
 
+  if (text !== undefined) return text;
+  try {
+    return String(value);
+  } catch {
+    return '无法序列化';
+  }
+};
+
+export const formatDecodedPathCopyValue = (value: unknown, maxLength = 8_000): string => {
+  const text = stringifyUnknownValue(value);
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 };

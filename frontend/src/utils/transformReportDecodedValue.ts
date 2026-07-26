@@ -1,4 +1,5 @@
 import type { JsonValue, PathTransformRecord, TransformStep } from '../types';
+import { stripSchemeDisplayHeadersFromValue } from './schemeDisplayProjection';
 import { parseJsonWithFallback } from './storage';
 import { formatJsonValuePreview } from './transformValuePreview';
 
@@ -7,7 +8,12 @@ export const getTransformSchemeDecodedValue = (steps: TransformStep[]): JsonValu
     step.type === 'scheme_decode' && step.decodedSchemeValue !== undefined
   ));
 
-  return schemeStep?.decodedSchemeValue;
+  if (schemeStep?.decodedSchemeValue === undefined) return undefined;
+
+  return stripSchemeDisplayHeadersFromValue(
+    schemeStep.decodedSchemeValue,
+    schemeStep.schemeDisplayHeaders,
+  );
 };
 
 export const getTransformSchemeDecodedPreview = (steps: TransformStep[]): string | undefined => {

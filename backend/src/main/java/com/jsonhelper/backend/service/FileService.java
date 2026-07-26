@@ -1,10 +1,10 @@
 package com.jsonhelper.backend.service;
 
+import com.jsonhelper.backend.config.FileProperties;
 import com.jsonhelper.backend.entity.UploadFile;
 import com.jsonhelper.backend.repository.UploadFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -20,8 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,10 +31,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 文件管理服务
@@ -43,7 +42,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class FileService {
 
-    private static final String DEFAULT_ALLOWED_EXTENSIONS = ".conf,.config,.css,.csv,.env,.geojson,.har,.html,.ini,.java,.js,.json,.json5,.jsonc,.jsonl,.jsx,.log,.map,.md,.ndjson,.properties,.sql,.topojson,.toml,.ts,.tsx,.txt,.webmanifest,.xml,.yaml,.yml";
     private static final int MAX_ORIGINAL_FILE_NAME_CODE_POINTS = 500;
     private static final Sort FILE_LIST_SORT = Sort.by(
             Sort.Order.desc("createdAt"),
@@ -51,22 +49,7 @@ public class FileService {
     );
 
     private final UploadFileRepository uploadFileRepository;
-
-    /** 文件上传目录，可通过配置文件修改 */
-    @Value("${file.upload-dir:./uploads}")
-    private String uploadDir;
-
-    /** 单文件上传大小上限，默认与 Spring Multipart 限制保持一致 */
-    @Value("${file.max-upload-size:52428800}")
-    private long maxUploadSize;
-
-    /** 预览读取大小上限，避免大文件一次性读入内存 */
-    @Value("${file.max-preview-size:2097152}")
-    private long maxPreviewSize;
-
-    /** 允许上传的文本类文件扩展名 */
-    @Value("${file.allowed-extensions:" + DEFAULT_ALLOWED_EXTENSIONS + "}")
-    private String allowedExtensions;
+    private final FileProperties fileProperties;
 
     private ManagedUploadPathResolver uploadPaths;
 
@@ -77,9 +60,9 @@ public class FileService {
     public void init() {
         previewReadLimit();
         try {
-            uploadPaths = ManagedUploadPathResolver.initialize(uploadDir);
+            uploadPaths = ManagedUploadPathResolver.initialize(fileProperties.getUploadDir());
         } catch (IOException | InvalidPathException | SecurityException e) {
-            throw new RuntimeException("无法创建文件上传目录: " + uploadDir, e);
+            throw new IllegalStateException("无法创建文件上传目录: " + fileProperties.getUploadDir(), e);
         }
     }
 
@@ -140,8 +123,7 @@ public class FileService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "上传文件不能为空");
         }
 
-        long fileSize = file.getSize();
-        if (fileSize > maxUploadSize) {
+        if (file.getSize() > fileProperties.getMaxUploadSize()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "上传文件超过大小限制");
         }
 
@@ -155,12 +137,15 @@ public class FileService {
         try {
             UploadFile uploadFile = new UploadFile();
             uploadFile.setFileName(originalFileName);
-            uploadFile.setFileSize(fileSize);
             uploadFile.setFileType(contentType != null ? contentType : "application/octet-stream");
             uploadFile.setStoragePath(targetPath.toString());
             uploadFile.setUploader(uploader);
 
-            writeFileToDisk(file, targetPath);
+            long actualFileSize = writeFileToDisk(file, targetPath);
+            if (actualFileSize > fileProperties.getMaxUploadSize()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "上传文件超过大小限制");
+            }
+            uploadFile.setFileSize(actualFileSize);
             savedFile = uploadFileRepository.save(uploadFile);
         } catch (RuntimeException e) {
             rollbackStoredFile(targetPath, e);
@@ -171,27 +156,45 @@ public class FileService {
     }
 
     /**
-     * 写入当前调用预创建的临时文件，异常交由上层所有权范围统一回滚
+     * 在实际上传大小边界内写入预创建文件，返回真实写入字节数
      */
-    private void writeFileToDisk(MultipartFile file, Path targetPath) {
-        try (OutputStream outputStream = Files.newOutputStream(
+    private long writeFileToDisk(MultipartFile file, Path targetPath) {
+        try (InputStream inputStream = file.getInputStream();
+             ReadableByteChannel inputChannel = Channels.newChannel(inputStream);
+             FileChannel outputChannel = FileChannel.open(
                 targetPath,
                 StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING,
                 LinkOption.NOFOLLOW_LINKS
         )) {
-            try (InputStream inputStream = file.getInputStream()) {
-                inputStream.transferTo(outputStream);
+            long writtenBytes = 0;
+            long readLimit = uploadReadLimit();
+            while (writtenBytes < readLimit) {
+                long transferredBytes = outputChannel.transferFrom(
+                        inputChannel,
+                        writtenBytes,
+                        readLimit - writtenBytes
+                );
+                if (transferredBytes == 0) {
+                    break;
+                }
+                writtenBytes += transferredBytes;
             }
+            return writtenBytes;
         } catch (IOException e) {
             throw new RuntimeException("保存文件到磁盘失败", e);
         }
     }
 
+    private long uploadReadLimit() {
+        long maxUploadSize = fileProperties.getMaxUploadSize();
+        return maxUploadSize == Long.MAX_VALUE ? Long.MAX_VALUE : maxUploadSize + 1;
+    }
+
     /** 使用 JDK 有界读取已打开的预览流，避免文件并发增长时突破内存边界。 */
     private byte[] readPreviewBytes(InputStream inputStream) throws IOException {
         byte[] content = inputStream.readNBytes(previewReadLimit());
-        if (content.length > maxPreviewSize) {
+        if (content.length > fileProperties.getMaxPreviewSize()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "文件过大，暂不支持在线预览，请下载后查看"
@@ -201,6 +204,7 @@ public class FileService {
     }
 
     private int previewReadLimit() {
+        long maxPreviewSize = fileProperties.getMaxPreviewSize();
         if (maxPreviewSize < 0 || maxPreviewSize >= Integer.MAX_VALUE) {
             throw new IllegalStateException("文件预览大小上限必须在 0 到 2147483646 字节之间");
         }
@@ -290,24 +294,8 @@ public class FileService {
         int dotIndex = fileName.lastIndexOf('.');
         String extension = dotIndex >= 0 ? fileName.substring(dotIndex).toLowerCase(Locale.ROOT) : "";
 
-        Set<String> allowed = Arrays.stream(allowedExtensions.split(","))
-                .map(this::normalizeExtension)
-                .filter(item -> !item.isEmpty())
-                .collect(Collectors.toSet());
-
-        if (allowed.isEmpty() || !allowed.contains(extension)) {
+        if (!fileProperties.getAllowedExtensions().contains(extension)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不支持的文件类型: " + extension);
         }
-    }
-
-    /**
-     * 兼容 ".json" 和 "json" 两种配置写法，降低环境变量配置出错概率
-     */
-    private String normalizeExtension(String extension) {
-        String normalized = extension.trim().toLowerCase(Locale.ROOT);
-        if (normalized.isEmpty() || normalized.startsWith(".")) {
-            return normalized;
-        }
-        return "." + normalized;
     }
 }

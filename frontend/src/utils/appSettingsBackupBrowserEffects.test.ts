@@ -1,74 +1,38 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  downloadSettingsBackupTextFile,
-} from './appSettingsBackupBrowserEffects';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const installDownloadDomStubs = (click = vi.fn()) => {
-  const link = {
-    href: '',
-    download: '',
-    click,
-    remove: vi.fn(),
-  };
-  const createElement = vi.fn(() => link);
-  const appendChild = vi.fn();
-  const createObjectURL = vi.fn(() => 'blob:settings-backup');
-  const revokeObjectURL = vi.fn();
+const browserFileSaveMocks = vi.hoisted(() => ({
+  triggerTextDownload: vi.fn(),
+}));
 
-  vi.stubGlobal('document', {
-    createElement,
-    body: { appendChild },
-  });
-  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+vi.mock('./browserFileSave', () => browserFileSaveMocks);
 
-  return { appendChild, createElement, createObjectURL, link, revokeObjectURL };
-};
+import { downloadSettingsBackupTextFile } from './appSettingsBackupBrowserEffects';
 
 describe('appSettingsBackupBrowserEffects', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    browserFileSaveMocks.triggerTextDownload.mockReset();
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-  });
-
-  it('下载备份文本时创建临时链接并释放 Blob URL', () => {
-    const stubs = installDownloadDomStubs();
-
-    downloadSettingsBackupTextFile({
+  it('将备份文件参数交给公共文本下载工具', () => {
+    const input = {
       text: '{"app":"jsonutils-pro"}',
       fileName: 'backup.json',
       mimeType: 'application/json',
-    });
+    };
 
-    expect(stubs.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
-    expect(stubs.createElement).toHaveBeenCalledWith('a');
-    expect(stubs.link.href).toBe('blob:settings-backup');
-    expect(stubs.link.download).toBe('backup.json');
-    expect(stubs.appendChild).toHaveBeenCalledWith(stubs.link);
-    expect(stubs.link.click).toHaveBeenCalledTimes(1);
-    expect(stubs.link.remove).toHaveBeenCalledTimes(1);
-    expect(stubs.revokeObjectURL).not.toHaveBeenCalled();
-    vi.runAllTimers();
-    expect(stubs.revokeObjectURL).toHaveBeenCalledWith('blob:settings-backup');
+    downloadSettingsBackupTextFile(input);
+
+    expect(browserFileSaveMocks.triggerTextDownload).toHaveBeenCalledWith(input);
   });
 
-  it('触发下载失败时仍清理临时链接和 Blob URL', () => {
-    const error = new Error('download blocked');
-    const stubs = installDownloadDomStubs(vi.fn(() => {
-      throw error;
-    }));
+  it('保留公共下载工具抛出的异常', () => {
+    const error = new Error('下载被阻止');
+    browserFileSaveMocks.triggerTextDownload.mockImplementation(() => { throw error; });
 
     expect(() => downloadSettingsBackupTextFile({
       text: '{}',
       fileName: 'backup.json',
       mimeType: 'application/json',
     })).toThrow(error);
-
-    expect(stubs.link.remove).toHaveBeenCalledTimes(1);
-    vi.runAllTimers();
-    expect(stubs.revokeObjectURL).toHaveBeenCalledWith('blob:settings-backup');
   });
 });

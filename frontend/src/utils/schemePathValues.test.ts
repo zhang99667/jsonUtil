@@ -65,8 +65,28 @@ describe('schemePathValues', () => {
     });
   });
 
+  it('五千层单叶子输入仍能复制完整路径', () => {
+    const depth = 5_000;
+    const source = `${'{"child":'.repeat(depth)}"done"${'}'.repeat(depth)}`;
+    const result = buildSchemePathValuesForCopy(source);
+
+    expect(result).toEqual({
+      text: `$${'.child'.repeat(depth)} = "done"`,
+      rowCount: 1,
+      isTruncated: false,
+    });
+  });
+
   it('非法 JSON 返回 null', () => {
     expect(buildSchemePathValuesForCopy('{"cmd":')).toBeNull();
+    expect(buildSchemePathValuesForCopy('{"value":1e400}')).toBeNull();
+  });
+
+  it('单个超长值按复制预算截断', () => {
+    const result = buildSchemePathValuesForCopy(JSON.stringify({ value: 'a'.repeat(9_000) }));
+
+    expect(result?.text).toHaveLength(8_013);
+    expect(result?.text.endsWith('...')).toBe(true);
   });
 
   it('格式化复制数量文案', () => {

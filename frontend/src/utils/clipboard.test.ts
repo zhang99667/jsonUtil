@@ -1,96 +1,56 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { copyText, getClipboardErrorMessage, readClipboardText } from './clipboard';
 
+const clipboardMocks = vi.hoisted(() => ({
+  copyToClipboard: vi.fn(),
+  dispatchChunkLoadRecoveryEvent: vi.fn(() => false),
+}));
+
+vi.mock('copy-to-clipboard', () => ({ default: clipboardMocks.copyToClipboard }));
+vi.mock('./chunkLoadRecoveryDispatch', () => ({
+  dispatchChunkLoadRecoveryEvent: clipboardMocks.dispatchChunkLoadRecoveryEvent,
+}));
+
 describe('copyText', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.clearAllMocks();
+    clipboardMocks.dispatchChunkLoadRecoveryEvent.mockReturnValue(false);
   });
 
-  it('优先使用 Clipboard API', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('navigator', { clipboard: { writeText } });
+  it('委托成熟剪贴板工具完成复制', async () => {
+    clipboardMocks.copyToClipboard.mockResolvedValue(true);
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('document', {});
 
     await copyText('hello');
 
-    expect(writeText).toHaveBeenCalledWith('hello');
+    expect(clipboardMocks.copyToClipboard).toHaveBeenCalledWith('hello');
   });
 
-  it('Clipboard API 失败时回退到 textarea 复制', async () => {
-    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
-    const textarea = {
-      value: '',
-      style: {} as CSSStyleDeclaration,
-      setAttribute: vi.fn(),
-      focus: vi.fn(),
-      select: vi.fn(),
-      remove: vi.fn(),
-    };
-    const appendChild = vi.fn();
-    const execCommand = vi.fn().mockReturnValue(true);
-
-    vi.stubGlobal('navigator', { clipboard: { writeText } });
-    vi.stubGlobal('document', {
-      body: { appendChild },
-      createElement: vi.fn().mockReturnValue(textarea),
-      execCommand,
-    });
-
-    await copyText('fallback');
-
-    expect(textarea.value).toBe('fallback');
-    expect(appendChild).toHaveBeenCalledWith(textarea);
-    expect(textarea.select).toHaveBeenCalled();
-    expect(execCommand).toHaveBeenCalledWith('copy');
-    expect(textarea.remove).toHaveBeenCalled();
-  });
-
-  it.each([
-    ['聚焦', 'focus'],
-    ['选择', 'select'],
-  ] as const)('textarea %s阶段异常时清理临时节点并保留原始错误', async (_stage, failingMethod) => {
-    const originalError = new Error(`${failingMethod} failed`);
-    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
-    const textarea = {
-      value: '',
-      style: {} as CSSStyleDeclaration,
-      setAttribute: vi.fn(),
-      focus: vi.fn(),
-      select: vi.fn(),
-      remove: vi.fn(),
-    };
-    const execCommand = vi.fn();
-    textarea[failingMethod].mockImplementation(() => {
-      throw originalError;
-    });
-
-    vi.stubGlobal('navigator', { clipboard: { writeText } });
-    vi.stubGlobal('document', {
-      body: { appendChild: vi.fn() },
-      createElement: vi.fn().mockReturnValue(textarea),
-      execCommand,
-    });
-
-    await expect(copyText('fallback')).rejects.toBe(originalError);
-    expect(execCommand).not.toHaveBeenCalled();
-    expect(textarea.remove).toHaveBeenCalledTimes(1);
-  });
-
-  it('所有复制方式都不可用时抛出错误', async () => {
-    vi.stubGlobal('navigator', {});
-    vi.stubGlobal('document', {
-      execCommand: vi.fn().mockReturnValue(false),
-      body: { appendChild: vi.fn() },
-      createElement: vi.fn().mockReturnValue({
-        value: '',
-        style: {},
-        setAttribute: vi.fn(),
-        focus: vi.fn(),
-        select: vi.fn(),
-        remove: vi.fn(),
-      }),
-    });
+  it('所有复制路径失败时抛出稳定错误', async () => {
+    clipboardMocks.copyToClipboard.mockResolvedValue(false);
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('document', {});
 
     await expect(copyText('blocked')).rejects.toThrow('浏览器拒绝复制操作');
+  });
+
+  it('旧 chunk 失效时请求统一刷新恢复', async () => {
+    const chunkError = new Error('Failed to fetch dynamically imported module');
+    clipboardMocks.copyToClipboard.mockRejectedValue(chunkError);
+    clipboardMocks.dispatchChunkLoadRecoveryEvent.mockReturnValue(true);
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('document', {});
+
+    await expect(copyText('待复制内容')).rejects.toThrow('复制能力加载失败，请刷新页面后重试');
+
+    expect(clipboardMocks.dispatchChunkLoadRecoveryEvent).toHaveBeenCalledWith(chunkError);
+  });
+
+  it('非浏览器环境不加载剪贴板工具', async () => {
+    await expect(copyText('blocked')).rejects.toThrow('当前环境不支持剪贴板复制');
+    expect(clipboardMocks.copyToClipboard).not.toHaveBeenCalled();
   });
 });
 

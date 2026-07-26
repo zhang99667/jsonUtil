@@ -2,7 +2,7 @@ import React from 'react';
 import type { AiRepairSummary } from '../utils/aiRepairSummary';
 import { formatAiRepairSummary } from '../utils/aiRepairSummary';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
-import { formatByteSize, getDocumentStats } from '../utils/documentStats';
+import { formatDocumentSize } from '../utils/documentStats';
 
 interface AiRepairSummaryBannerProps {
   summary: AiRepairSummary;
@@ -10,11 +10,6 @@ interface AiRepairSummaryBannerProps {
   onCopySuccess: (message: string) => void;
   onCopyError: (errorMessage: string) => void;
 }
-
-const formatSummarySizeLabel = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
 
 export const AiRepairSummaryBanner: React.FC<AiRepairSummaryBannerProps> = ({
   summary,
@@ -26,7 +21,7 @@ export const AiRepairSummaryBanner: React.FC<AiRepairSummaryBannerProps> = ({
     try {
       const summaryText = formatAiRepairSummary(summary);
       await copyText(summaryText);
-      onCopySuccess(`已复制智能修复摘要（${formatSummarySizeLabel(summaryText)}）`);
+      onCopySuccess(`已复制智能修复摘要（${formatDocumentSize(summaryText)}）`);
     } catch (error) {
       onCopyError(getClipboardErrorMessage(error, '复制智能修复摘要失败'));
     }

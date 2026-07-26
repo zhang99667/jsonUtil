@@ -1,3 +1,5 @@
+import { stringifyUnknownValue } from './transformValuePreview';
+
 const MAX_RESULT_PREVIEW_LENGTH = 240;
 const MAX_COMPACT_RESULT_PREVIEW_LENGTH = 96;
 const MAX_TOKEN_PREVIEW_LENGTH = 32;
@@ -10,11 +12,6 @@ const MAX_DETAILED_PREVIEW_DEPTH = 3;
 const compactText = (text: string, maxLength = MAX_RESULT_PREVIEW_LENGTH): string => (
   text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
 );
-
-const stringifyJsonValue = (value: unknown, pretty = false): string => {
-  const text = JSON.stringify(value, null, pretty ? 2 : 0);
-  return text ?? String(value);
-};
 
 interface PreviewBudget {
   remaining: number;
@@ -31,7 +28,7 @@ const canUseDetailedPreviewWithBudget = (
   }
 
   if (value === null || typeof value !== 'object') {
-    budget.remaining -= stringifyJsonValue(value).length;
+    budget.remaining -= stringifyUnknownValue(value).length;
     return budget.remaining >= 0;
   }
 
@@ -64,11 +61,11 @@ const canUseDetailedPreview = (value: unknown): boolean => (
 
 const formatPreviewToken = (value: unknown): string => {
   if (typeof value === 'string') {
-    return stringifyJsonValue(compactText(value, MAX_TOKEN_PREVIEW_LENGTH));
+    return stringifyUnknownValue(compactText(value, MAX_TOKEN_PREVIEW_LENGTH));
   }
 
   if (value === null || typeof value !== 'object') {
-    return stringifyJsonValue(value);
+    return stringifyUnknownValue(value);
   }
 
   if (Array.isArray(value)) {
@@ -103,9 +100,7 @@ const formatStructuredPreview = (value: unknown): string => {
   return compactText(`对象(${keys.length}): ${visiblePairs}${suffix}`);
 };
 
-/**
- * 小结果保留 JSON 明细，大对象/大数组只展示结构摘要，避免结果面板为根节点字符串化整段响应。
- */
+// 小结果保留 JSON 明细，大结构只展示摘要，避免为根节点生成整段响应文本。
 export const formatJsonPathValueForPreview = (value: unknown): string => {
   if (typeof value === 'string') {
     return compactText(value);
@@ -115,12 +110,10 @@ export const formatJsonPathValueForPreview = (value: unknown): string => {
     return formatStructuredPreview(value);
   }
 
-  return compactText(stringifyJsonValue(value, true));
+  return compactText(stringifyUnknownValue(value, true));
 };
 
-/**
- * 查询面板结果列表只保留轻量预览，避免对象结构摘要抢占垂直空间。
- */
+// 查询结果列表只保留轻量预览，避免结构摘要抢占垂直空间。
 export const formatJsonPathValueForCompactPreview = (value: unknown): string => {
   if (typeof value === 'string') {
     return compactText(value, MAX_COMPACT_RESULT_PREVIEW_LENGTH);
@@ -134,5 +127,5 @@ export const formatJsonPathValueForCompactPreview = (value: unknown): string => 
     return `对象(${Object.keys(value as Record<string, unknown>).length})`;
   }
 
-  return compactText(stringifyJsonValue(value), MAX_COMPACT_RESULT_PREVIEW_LENGTH);
+  return compactText(stringifyUnknownValue(value), MAX_COMPACT_RESULT_PREVIEW_LENGTH);
 };

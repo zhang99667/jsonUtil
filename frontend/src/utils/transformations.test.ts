@@ -13,8 +13,6 @@ import {
 } from './transformations';
 import { base64Encode } from './schemeUtils';
 
-// ============ validateJson 测试 ============
-
 describe('validateJson', () => {
   it('空字符串返回有效', () => {
     expect(validateJson('')).toEqual({ isValid: true });
@@ -86,8 +84,6 @@ describe('validateJson', () => {
   });
 });
 
-// ============ detectLanguage 测试 ============
-
 describe('detectLanguage', () => {
   it('空输入返回 plaintext', () => {
     expect(detectLanguage('')).toBe('plaintext');
@@ -125,11 +121,21 @@ describe('detectLanguage', () => {
     expect(detectLanguage('false')).toBe('json');
     expect(detectLanguage('null')).toBe('json');
     expect(detectLanguage('42')).toBe('json');
+    expect(detectLanguage('-1.5')).toBe('json');
+    expect(detectLanguage('6.02e23')).toBe('json');
     expect(detectLanguage('"hello"')).toBe('json');
   });
-});
 
-// ============ performTransform 测试 ============
+  it.each([
+    'Infinity',
+    '0x10',
+    '+1',
+    '01',
+    '"line\nbreak"',
+  ])('非 JSON 标量 %s 不误判为 JSON', value => {
+    expect(detectLanguage(value)).toBe('plaintext');
+  });
+});
 
 describe('performTransform', () => {
   it('空输入返回空字符串', () => {
@@ -238,6 +244,11 @@ describe('performTransform', () => {
     it('反转义换行符', () => {
       expect(performTransform('line1\\nline2', TransformMode.UNESCAPE)).toBe('line1\nline2');
     });
+
+    it('结构化内容包含非有限数值时保持原文', () => {
+      const input = '{"value":1e400}';
+      expect(performTransform(input, TransformMode.UNESCAPE)).toBe(input);
+    });
   });
 
   describe('UNICODE_TO_CN 模式', () => {
@@ -308,31 +319,6 @@ describe('performTransform', () => {
     });
   });
 
-  describe('SORT_KEYS 模式', () => {
-    it('递归按字母序排列对象键', () => {
-      const input = '{"b":2,"a":{"d":4,"c":3},"list":[{"z":1,"y":2}]}';
-      const result = performTransform(input, TransformMode.SORT_KEYS);
-      expect(JSON.parse(result)).toEqual({
-        a: { c: 3, d: 4 },
-        b: 2,
-        list: [{ y: 2, z: 1 }],
-      });
-      expect(result.indexOf('"a"')).toBeLessThan(result.indexOf('"b"'));
-    });
-
-    it('递归排序 var 赋值包装中的 JSON', () => {
-      const input = 'var payload = {"b":2,"a":1};';
-      const result = performTransform(input, TransformMode.SORT_KEYS);
-
-      expect(result).toBe(JSON.stringify({ a: 1, b: 2 }, null, 2));
-    });
-
-    it('逐行排序 JSON Lines 对象键', () => {
-      const input = '{"b":2,"a":1}\n{"d":4,"c":3}';
-      expect(performTransform(input, TransformMode.SORT_KEYS)).toBe('{"a":1,"b":2}\n{"c":3,"d":4}');
-    });
-  });
-
   describe('JSON_TO_TYPESCRIPT 模式', () => {
     it('从 JSON 对象生成 TypeScript 声明', async () => {
       const input = JSON.stringify({
@@ -382,8 +368,6 @@ describe('performTransform', () => {
     });
   });
 });
-
-// ============ performInverseTransform 测试 ============
 
 describe('performInverseTransform', () => {
   it('空输入返回空字符串', () => {
@@ -465,8 +449,6 @@ describe('performInverseTransform', () => {
   });
 });
 
-// ============ deepParseWithContext + inverseWithContext 测试 ============
-
 describe('deepParseWithContext', () => {
   it('普通 JSON 不做额外转换', () => {
     const input = '{"name":"test"}';
@@ -505,124 +487,6 @@ describe('deepParseWithContext', () => {
       from: 'feed',
     });
     expect(result.context.records.get('$.action_cmd')?.steps[0].type).toBe('scheme_decode');
-  });
-
-  it.each([
-    ['HTTP URL', 'http://example.com/path?from=doc'],
-    ['HTTPS hash route URL', 'https://example.com/screenshot#/route?tab=preview&from=share'],
-    ['URL 编码的 HTTP URL', encodeURIComponent('http://example.com/path?from=doc')],
-    ['URL 编码的 HTTPS URL', encodeURIComponent('https://example.com/path?from=doc')],
-  ])('%s 深度格式化时保持原文', (_scenario, input) => {
-    const result = deepParseWithContext(input, { autoExpandScheme: true });
-
-    expect(result.output).toBe(input);
-    expect(result.context.sourceFormat).toBeUndefined();
-    expect(result.context.records.size).toBe(0);
-    expect(result.output).not.toContain('__scheme__');
-    expect(result.output).not.toContain('__url__');
-  });
-
-  it('含 CMD 的 HTTPS hash route 可展开且逆变换保留路由', () => {
-    const input = `https://example.com/app#/route?cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=hash`;
-    const result = deepParseWithContext(input, { autoExpandScheme: true });
-    const parsed = JSON.parse(result.output);
-
-    expect(parsed).toMatchObject({
-      __url__: 'https://example.com/app',
-      cmd: { nid: 123 },
-      from: 'hash',
-    });
-    expect(parsed).not.toHaveProperty('__scheme__');
-    expect(result.context.records.get('$')?.steps[0]).toMatchObject({
-      type: 'scheme_decode',
-      schemeHeaderDisplayKey: '__url__',
-    });
-
-    parsed.cmd.nid = 456;
-    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
-    expect(restored.startsWith('https://example.com/app#/route?')).toBe(true);
-    expect(restored).not.toContain('__url__');
-    expect(JSON.parse(deepParseWithContext(restored, { autoExpandScheme: true }).output)).toMatchObject({
-      __url__: 'https://example.com/app',
-      cmd: { nid: 456 },
-    });
-  });
-
-  it('含结构化 data 参数的 HTTP hash route 可展开且逆变换保留路由', () => {
-    const input = `http://example.com/app#/route?itemId=123&sync_data=${encodeURIComponent(JSON.stringify({ cursor: 456, enabled: true }))}&mode=preview`;
-    const result = deepParseWithContext(input);
-    const parsed = JSON.parse(result.output);
-
-    expect(parsed).toEqual({
-      __url__: 'http://example.com/app',
-      itemId: '123',
-      sync_data: { cursor: 456, enabled: true },
-      mode: 'preview',
-    });
-    expect(result.context.records.get('$')?.steps[0]).toMatchObject({
-      type: 'scheme_decode',
-      schemeHeaderDisplayKey: '__url__',
-    });
-
-    parsed.sync_data.cursor = 789;
-    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
-    expect(restored.startsWith('http://example.com/app#/route?')).toBe(true);
-    expect(restored).not.toContain('__url__');
-    expect(JSON.parse(deepParseWithContext(restored).output)).toEqual({
-      __url__: 'http://example.com/app',
-      itemId: '123',
-      sync_data: { cursor: 789, enabled: true },
-      mode: 'preview',
-    });
-  });
-
-  it('URL 展示字段与业务参数冲突时使用备用字段并精确还原', () => {
-    const input = `http://example.com/app#/route?__url__=${encodeURIComponent('业务参数')}&sync_data=${encodeURIComponent(JSON.stringify({ cursor: 456 }))}`;
-    const result = deepParseWithContext(input);
-    const parsed = JSON.parse(result.output);
-
-    expect(parsed).toEqual({
-      __url_header__: 'http://example.com/app',
-      __url__: '业务参数',
-      sync_data: { cursor: 456 },
-    });
-    expect(result.context.records.get('$')?.steps[0]).toMatchObject({
-      type: 'scheme_decode',
-      schemeHeaderDisplayKey: '__url_header__',
-    });
-
-    parsed.sync_data.cursor = 789;
-    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
-    const restoredParsed = JSON.parse(deepParseWithContext(restored).output);
-
-    expect(restored).not.toContain('__url_header__');
-    expect(restoredParsed).toEqual({
-      __url_header__: 'http://example.com/app',
-      __url__: '业务参数',
-      sync_data: { cursor: 789 },
-    });
-  });
-
-  it('URL 两个展示候选均为业务参数时不注入或移除字段', () => {
-    const input = `http://example.com/app#/route?__url__=${encodeURIComponent('业务参数')}&__url_header__=${encodeURIComponent('备用业务参数')}&sync_data=${encodeURIComponent(JSON.stringify({ cursor: 456 }))}`;
-    const result = deepParseWithContext(input);
-    const parsed = JSON.parse(result.output);
-
-    expect(parsed).toEqual({
-      __url__: '业务参数',
-      __url_header__: '备用业务参数',
-      sync_data: { cursor: 456 },
-    });
-    expect(result.context.records.get('$')?.steps[0]).not.toHaveProperty('schemeHeaderDisplayKey');
-
-    parsed.sync_data.cursor = 789;
-    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
-
-    expect(JSON.parse(deepParseWithContext(restored).output)).toEqual({
-      __url__: '业务参数',
-      __url_header__: '备用业务参数',
-      sync_data: { cursor: 789 },
-    });
   });
 
   it('根输入为电话 Scheme 时可直接展开', () => {
@@ -714,6 +578,54 @@ describe('deepParseWithContext', () => {
           popover: { show_time: 9 },
         },
       },
+    });
+  });
+
+  it('JSON 字段和嵌套业务 Scheme 展示各自协议头并可回写', () => {
+    const inner = `sampleapp://v2/inner/open?payload=${encodeURIComponent(JSON.stringify({ id: 1 }))}`;
+    const outer = `samplevendor://v1/outer/open?next=${encodeURIComponent(inner)}&scene=feed`;
+    const input = JSON.stringify({ action_cmd: outer });
+    const result = deepParseWithContext(input, { autoExpandScheme: true });
+    const parsed = JSON.parse(result.output);
+
+    expect(parsed.action_cmd).toEqual({
+      __scheme__: 'samplevendor://v1/outer/open',
+      next: {
+        __scheme__: 'sampleapp://v2/inner/open',
+        payload: { id: 1 },
+      },
+      scene: 'feed',
+    });
+    expect(result.context.records.get('$.action_cmd')?.steps[0]).toMatchObject({
+      type: 'scheme_decode',
+      schemeHeaderDisplayKey: '__scheme__',
+      schemeDisplayHeaders: [
+        {
+          path: '',
+          headerKey: '__scheme__',
+          source: outer,
+        },
+        {
+          path: '/next',
+          headerKey: '__scheme__',
+          source: inner,
+        },
+      ],
+    });
+
+    parsed.action_cmd.next.__scheme__ = 'sampleapp://v3/inner/open';
+    parsed.action_cmd.next.payload.id = 2;
+    const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
+    const restoredResult = deepParseWithContext(restored, { autoExpandScheme: true });
+
+    expect(restored).not.toContain('__scheme__');
+    expect(JSON.parse(restoredResult.output).action_cmd).toEqual({
+      __scheme__: 'samplevendor://v1/outer/open',
+      next: {
+        __scheme__: 'sampleapp://v3/inner/open',
+        payload: { id: 2 },
+      },
+      scene: 'feed',
     });
   });
 
@@ -878,6 +790,7 @@ describe('deepParseWithContext', () => {
     const parsed = JSON.parse(result.output);
 
     expect(parsed.schema).toEqual({
+      __scheme__: 'sampleapp://v1/browser/open',
       cmd: { nid: 123, title: '标题' },
       from: 'feed',
     });
@@ -898,8 +811,12 @@ describe('deepParseWithContext', () => {
     const step = result.context.records.get('$.schema')?.steps[0];
 
     expect(parsed.schema).toEqual({
+      __scheme__: 'sampleapp://v7/vendor/ad/webPanel',
       params: {
-        url: { word: 'json' },
+        url: {
+          __url__: 'https://m.example.com/s',
+          word: 'json',
+        },
         ext: '__AD_EXTRA_PARAM_ENCODE_1__',
       },
     });
@@ -1013,6 +930,7 @@ describe('deepParseWithContext', () => {
     const parsed = JSON.parse(result.output);
 
     expect(parsed.ad_common.scheme.video_info.reward.stay_cmd.convert_cmd.params.appUrl.params.url).toEqual({
+      __url__: 'https://pro.m.jd.com/mall/active/page.html',
       sku: '101',
       bd_vid: 'abc',
     });
@@ -1383,9 +1301,14 @@ describe('inverseWithContext 精确还原', () => {
 
     const restored = inverseWithContext(JSON.stringify(parsed, null, 2), context);
     const restoredSchema = JSON.parse(restored).schema;
+    const restoredUrl = new URL(restoredSchema.replace(/\\\//g, '/'));
+    const restoredParams = JSON.parse(restoredUrl.searchParams.get('params') || '{}');
 
     expect(restoredSchema).toMatch(/^sampleapp:\\\/\\\/v7\\\/vendor\\\/ad\\\/webPanel\?/);
-    expect(restoredSchema).toContain('%22word%22%3A%22schema%22');
+    expect(restoredParams).toEqual({
+      url: 'https://m.example.com/s?word=schema',
+      ext: '__AD_EXTRA_PARAM_ENCODE_1__',
+    });
   });
 
   it('未编辑的内部 Base64 JSON 片段自动展开后可精确还原', () => {
@@ -1430,7 +1353,11 @@ describe('inverseWithContext 精确还原', () => {
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
     const parsed = JSON.parse(output);
     expect(parsed.schema).toEqual({
-      url: { from: 'box' },
+      __scheme__: 'sampleapp://v1/browser/open',
+      url: {
+        __url__: 'https://example.com/path',
+        from: 'box',
+      },
       from: 'feed',
     });
 

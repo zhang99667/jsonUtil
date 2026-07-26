@@ -12,7 +12,9 @@ import {
   type TransformWarning,
 } from '../types';
 import { isJsonValue } from './jsonValueGuards';
+import { isSchemeDisplayHeaderKey } from './schemeDisplayHeader';
 import { isFiniteNumber, isRecord as isUnknownRecord } from './storage';
+import { isSchemeDisplayHeaderRecord } from './transformSchemeDisplayHeaderValidation';
 
 const isNonNegativeInteger = (value: unknown): value is number => (
   isFiniteNumber(value) && Number.isInteger(value) && value >= 0
@@ -104,7 +106,14 @@ const isTransformStep = (value: unknown): value is TransformStep => (
   && isOptionalBoolean(value.originalSchemeReversible)
   && isOptionalBoolean(value.originalSchemeStringLiteral)
   && isOptionalBoolean(value.originalSchemeEscapedSlash)
-  && isOptionalString(value.schemeHeaderDisplayKey)
+  && (
+    value.schemeHeaderDisplayKey === undefined
+    || isSchemeDisplayHeaderKey(value.schemeHeaderDisplayKey)
+  )
+  && (
+    value.schemeDisplayHeaders === undefined
+    || isArrayOf(value.schemeDisplayHeaders, isSchemeDisplayHeaderRecord)
+  )
   && (value.decodedSchemeValue === undefined || isJsonValue(value.decodedSchemeValue))
   && (value.schemeParamStageSummary === undefined || isSummary(value.schemeParamStageSummary))
 );

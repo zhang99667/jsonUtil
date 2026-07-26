@@ -63,5 +63,6 @@ describe('aiRepairResponseNormalizer', () => {
 
   it('tryNormalizeJson 对非法 JSON 返回 null', () => {
     expect(tryNormalizeJson('{bad')).toBeNull();
+    expect(tryNormalizeJson('{"value":1e400}')).toBeNull();
   });
 });

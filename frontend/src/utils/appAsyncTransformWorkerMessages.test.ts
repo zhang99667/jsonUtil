@@ -72,6 +72,9 @@ describe('appAsyncTransformWorkerMessages', () => {
     expect(Array.from(schemeContext.records.values()).some(record => (
       record.steps.some(step => step.schemeParamStageSummary !== undefined)
     ))).toBe(true);
+    expect(Array.from(schemeContext.records.values()).some(record => (
+      record.steps.some(step => step.schemeDisplayHeaders?.length)
+    ))).toBe(true);
 
     for (const [index, context] of [
       nestedContext,

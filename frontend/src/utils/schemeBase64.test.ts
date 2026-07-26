@@ -7,6 +7,7 @@ import {
   type SchemeBase64DecodeOptions,
   type SchemeBase64StructuredValue,
 } from './schemeBase64';
+import { appendPrefixedBase64Meta } from './schemeBase64SuffixMeta';
 
 const isJsonString = (value: string): boolean => {
   try {
@@ -83,6 +84,11 @@ describe('schemeBase64', () => {
         ip: '127.0.0.1',
       },
     });
+  });
+
+  it('JSON 片段包含非有限数值时不追加元信息', () => {
+    const jsonFragment = '{"value":1e400}';
+    expect(appendPrefixedBase64Meta(jsonFragment, 'AFD', 'suffix', decodeOptions)).toBe(jsonFragment);
   });
 
 });

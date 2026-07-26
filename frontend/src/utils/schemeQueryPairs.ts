@@ -47,3 +47,38 @@ export const splitQueryPairs = (queryString: string): string[] => {
 
   return pairs.filter(Boolean);
 };
+
+export interface DecodedQueryPair {
+  rawKey: string;
+  key: string;
+  rawValue: string;
+  value: string;
+}
+
+export function* iterateDecodedQueryPairs(
+  queryString: string,
+  decodeKey: (value: string) => string,
+  decodeValue: (value: string) => string,
+  maxPairs = Number.POSITIVE_INFINITY,
+): Generator<DecodedQueryPair> {
+  let yieldedPairs = 0;
+  for (const pair of splitQueryPairs(queryString)) {
+    if (yieldedPairs >= maxPairs) return;
+
+    const equalIndex = pair.indexOf('=');
+    if (equalIndex <= 0) continue;
+
+    const rawKey = pair.slice(0, equalIndex);
+    const rawValue = pair.slice(equalIndex + 1);
+    const key = decodeKey(rawKey);
+    if (!key) continue;
+
+    yield {
+      rawKey,
+      key,
+      rawValue,
+      value: decodeValue(rawValue),
+    };
+    yieldedPairs++;
+  }
+}

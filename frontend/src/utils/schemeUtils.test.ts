@@ -15,6 +15,7 @@ import {
   deepDecodeScheme,
   DEFAULT_SCHEME_JSON_STRING_DECODE_LIMIT,
   encodeWithLayers,
+  encodeWithLayersResult,
   isQueryStringFormat,
   isDecodableQueryString,
   isRuntimePlaceholder,
@@ -23,8 +24,6 @@ import {
   shouldExposeSchemeValue,
 } from './schemeUtils';
 import { findSchemesInJson, scanSchemesInJson } from './schemeScanner';
-
-// ============ 检测函数测试 ============
 
 describe('isUrl', () => {
   it('检测标准 URL', () => {
@@ -481,8 +480,6 @@ describe('detectSchemeType', () => {
   });
 });
 
-// ============ 编解码函数测试 ============
-
 describe('urlDecode / urlEncode', () => {
   it('URL 编解码互逆', () => {
     const original = '你好世界';
@@ -619,8 +616,6 @@ describe('parseUrl', () => {
     expect(parseUrl('not a url')).toBeNull();
   });
 });
-
-// ============ deepDecodeScheme 测试 ============
 
 describe('deepDecodeScheme', () => {
   it('URL 编码内容被解码', () => {
@@ -811,6 +806,51 @@ describe('deepDecodeScheme', () => {
       source: 'test',
     });
     expect(result.layers[0].description).toBe('URL 参数递归解析');
+    expect(result.schemeInfo).toMatchObject({
+      protocol: 'sampleapp:',
+      host: 'v1',
+      path: '/browser/open',
+      params: {
+        params: JSON.stringify({ name: '张三', page: 1 }),
+        source: 'test',
+      },
+    });
+    expect(result.paramStages?.map(stage => stage.key)).toEqual(['params', 'source']);
+  });
+
+  it('单层 Scheme URL 解码只构造一次原生 URL', () => {
+    const NativeUrl = globalThis.URL;
+    let constructorCount = 0;
+    class CountingUrl extends NativeUrl {
+      constructor(url: string | URL, base?: string | URL) {
+        constructorCount++;
+        super(url, base);
+      }
+    }
+    vi.stubGlobal('URL', CountingUrl);
+
+    try {
+      expect(JSON.parse(
+        deepDecodeScheme('sampleapp://v1/open?from=feed').decoded,
+      )).toEqual({ from: 'feed' });
+      expect(constructorCount).toBe(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('URL 形态命中但原生解析失败时安全保留原值', () => {
+    const source = 'sampleapp://[';
+    const result = deepDecodeScheme(source);
+
+    expect(result).toMatchObject({
+      original: source,
+      decoded: source,
+      layers: [],
+      isJson: false,
+      paramStages: [],
+    });
+    expect(result.schemeInfo).toBeUndefined();
   });
 
   it('URL 编码 params 中缺少起始引号的 JSON key 会被修复为对象', () => {
@@ -867,11 +907,232 @@ describe('deepDecodeScheme', () => {
     const nestedUrl = encodeURIComponent('https://m.example.com/s?word=%25E4%25BD%25A0%25E5%25A5%25BD');
     const result = deepDecodeScheme(`sampleapp://v1/browser/open?url=${nestedUrl}`);
     const parsed = JSON.parse(result.decoded);
+    const displayParsed = JSON.parse(result.displayDecoded || result.decoded);
     expect(parsed).toEqual({
       url: {
         word: '你好',
       },
     });
+    expect(displayParsed).toEqual({
+      __scheme__: 'sampleapp://v1/browser/open',
+      url: {
+        __url__: 'https://m.example.com/s',
+        word: '你好',
+      },
+    });
+  });
+
+  it('业务 Scheme 预览保留根与嵌套协议头并支持编辑后回写', () => {
+    const inner = `sampleapp://v2/inner/open?payload=${encodeURIComponent(JSON.stringify({ id: 1 }))}`;
+    const source = `samplevendor://v1/outer/open?next=${encodeURIComponent(inner)}&scene=feed`;
+    const result = deepDecodeScheme(source);
+    const displayParsed = JSON.parse(result.displayDecoded || result.decoded);
+
+    expect(JSON.parse(result.decoded)).toEqual({
+      next: {
+        payload: { id: 1 },
+      },
+      scene: 'feed',
+    });
+    expect(displayParsed).toEqual({
+      __scheme__: 'samplevendor://v1/outer/open',
+      next: {
+        __scheme__: 'sampleapp://v2/inner/open',
+        payload: { id: 1 },
+      },
+      scene: 'feed',
+    });
+    expect(result.displayHeaders).toMatchObject([
+      {
+        path: '',
+        headerKey: '__scheme__',
+        source,
+      },
+      {
+        path: '/next',
+        headerKey: '__scheme__',
+        source: inner,
+      },
+    ]);
+
+    displayParsed.next.__scheme__ = 'sampleapp://v3/inner/open';
+    displayParsed.next.payload.id = 2;
+    const restored = encodeWithLayers(
+      JSON.stringify(displayParsed),
+      result.layers,
+      result.displayHeaders,
+    );
+    const restoredResult = deepDecodeScheme(restored);
+
+    expect(restored).not.toContain('__scheme__');
+    expect(JSON.parse(restoredResult.displayDecoded || restoredResult.decoded)).toEqual({
+      __scheme__: 'samplevendor://v1/outer/open',
+      next: {
+        __scheme__: 'sampleapp://v3/inner/open',
+        payload: { id: 2 },
+      },
+      scene: 'feed',
+    });
+  });
+
+  it('嵌套业务 Scheme 保留自身的多重编码层', () => {
+    const inner = `sampleapp://v2/inner/open?payload=${encodeURIComponent(JSON.stringify({ id: 1 }))}`;
+    const source = `samplevendor://v1/outer/open?next=${encodeURIComponent(encodeURIComponent(inner))}`;
+    const result = deepDecodeScheme(source);
+    const displayParsed = JSON.parse(result.displayDecoded || result.decoded);
+    const nestedHeader = result.displayHeaders?.find(header => header.path === '/next');
+
+    expect(nestedHeader?.layers.map(layer => layer.type)).toEqual(['url-encoded', 'url']);
+
+    displayParsed.next.payload.id = 2;
+    const restored = encodeWithLayers(
+      JSON.stringify(displayParsed),
+      result.layers,
+      result.displayHeaders,
+    );
+    const restoredResult = deepDecodeScheme(restored);
+
+    expect(JSON.parse(restoredResult.displayDecoded || restoredResult.decoded).next).toEqual({
+      __scheme__: 'sampleapp://v2/inner/open',
+      payload: { id: 2 },
+    });
+    expect(decodeURIComponent(new URL(restored).searchParams.get('next') || '')).toBe(
+      `sampleapp://v2/inner/open?payload=${encodeURIComponent(JSON.stringify({ id: 2 }))}`,
+    );
+  });
+
+  it('非法协议头不会被序列化成业务 JSON', () => {
+    const source = 'sampleapp://v1/item/open?id=1';
+    const result = deepDecodeScheme(source);
+    const displayParsed = JSON.parse(result.displayDecoded || result.decoded);
+
+    displayParsed.__scheme__ = 'sampleapp://[';
+    expect(encodeWithLayersResult(
+      JSON.stringify(displayParsed),
+      result.layers,
+      result.displayHeaders,
+    )).toEqual({
+      success: false,
+      fallback: source,
+    });
+  });
+
+  it('相同协议头数组不重排时可同时编辑并保留各自编码层', () => {
+    const first = 'sampleapp://v1/item/open?id=1';
+    const second = 'sampleapp://v1/item/open?id=2';
+    const source = [
+      'samplevendor://v1/list/open',
+      `?next=${encodeURIComponent(first)}`,
+      `&next=${encodeURIComponent(encodeURIComponent(second))}`,
+    ].join('');
+    const result = deepDecodeScheme(source);
+    const displayParsed = JSON.parse(result.displayDecoded || result.decoded);
+    const nestedHeaders = result.displayHeaders?.filter(header => header.path !== '');
+
+    expect(nestedHeaders?.map(header => ({
+      path: header.path,
+      headerKey: header.headerKey,
+      layers: header.layers.map(layer => layer.type),
+    }))).toEqual([
+      {
+        path: '/next/0',
+        headerKey: '__scheme__',
+        layers: ['url'],
+      },
+      {
+        path: '/next/1',
+        headerKey: '__scheme_header__',
+        layers: ['url-encoded', 'url'],
+      },
+    ]);
+    expect(result.decoded).not.toMatch(/__scheme(?:_header(?:_\d+)?)?__/);
+    expect(result.decoded).not.toContain('__scheme_display_event_');
+    expect(result.displayDecoded).not.toContain('__scheme_display_event_');
+
+    displayParsed.next[0].__scheme__ = 'sampleapp://v2/item/open';
+    displayParsed.next[0].id = '10';
+    displayParsed.next[1].__scheme_header__ = 'sampleapp://v3/item/open';
+    displayParsed.next[1].id = '20';
+    const encodingResult = encodeWithLayersResult(
+      JSON.stringify(displayParsed),
+      result.layers,
+      result.displayHeaders,
+    );
+
+    expect(encodingResult.success).toBe(true);
+    if (!encodingResult.success) return;
+    expect(encodingResult.value).not.toMatch(/__scheme(?:_header(?:_\d+)?)?__/);
+
+    const encodedValues = new URL(encodingResult.value).searchParams.getAll('next');
+    expect(encodedValues[0]).toBe('sampleapp://v2/item/open?id=10');
+    expect(decodeURIComponent(encodedValues[1])).toBe(
+      'sampleapp://v3/item/open?id=20',
+    );
+  });
+
+  it('根与嵌套协议头相同时按最终树先序分配展示字段', () => {
+    const nested = 'sampleapp://v1/item/open?id=2';
+    const source = (
+      `sampleapp://v1/item/open?next=${encodeURIComponent(nested)}&id=1`
+    );
+    const result = deepDecodeScheme(source);
+    const displayParsed = JSON.parse(result.displayDecoded || result.decoded);
+
+    expect(result.displayHeaders?.map(header => ({
+      path: header.path,
+      headerKey: header.headerKey,
+    }))).toEqual([
+      {
+        path: '',
+        headerKey: '__scheme__',
+      },
+      {
+        path: '/next',
+        headerKey: '__scheme_header__',
+      },
+    ]);
+    expect(displayParsed).toEqual({
+      __scheme__: 'sampleapp://v1/item/open',
+      next: {
+        __scheme_header__: 'sampleapp://v1/item/open',
+        id: '2',
+      },
+      id: '1',
+    });
+    expect(result.decoded).not.toContain('__scheme_display_event_');
+    expect(result.displayDecoded).not.toContain('__scheme_display_event_');
+  });
+
+  it('相同协议头数组重排并同时编辑时安全回退原值', () => {
+    const first = 'sampleapp://v1/item/open?id=1';
+    const second = 'sampleapp://v1/item/open?id=2';
+    const source = [
+      'samplevendor://v1/list/open',
+      `?next=${encodeURIComponent(first)}`,
+      `&next=${encodeURIComponent(encodeURIComponent(second))}`,
+    ].join('');
+    const result = deepDecodeScheme(source);
+    const displayParsed = JSON.parse(result.displayDecoded || result.decoded);
+
+    displayParsed.next.reverse();
+    displayParsed.next[0].__scheme_header__ = 'sampleapp://v3/item/open';
+    displayParsed.next[0].id = '20';
+    displayParsed.next[1].__scheme__ = 'sampleapp://v2/item/open';
+    displayParsed.next[1].id = '10';
+
+    expect(encodeWithLayersResult(
+      JSON.stringify(displayParsed),
+      result.layers,
+      result.displayHeaders,
+    )).toEqual({
+      success: false,
+      fallback: source,
+    });
+    expect(encodeWithLayers(
+      JSON.stringify(displayParsed),
+      result.layers,
+      result.displayHeaders,
+    )).toBe(source);
   });
 
   it('URL 参数中的协议相对 URL 被继续解析', () => {
@@ -1702,8 +1963,6 @@ describe('deepDecodeScheme', () => {
   });
 });
 
-// ============ encodeWithLayers 测试 ============
-
 describe('encodeWithLayers', () => {
   it('完整 URL Scheme 编辑后重建 query 参数', () => {
     const original = 'sampleapp://v1/browser/open?cmd=%7B%22a%22%3A1%7D&from=feed';
@@ -2003,8 +2262,6 @@ describe('encodeWithLayers', () => {
   });
 });
 
-// ============ findSchemesInJson 测试 ============
-
 describe('findSchemesInJson', () => {
   it('普通 HTTPS URL 不作为 Scheme 入口返回', () => {
     const json = JSON.stringify({ link: 'https://example.com', name: 'test' }, null, 2);
@@ -2134,8 +2391,6 @@ describe('findSchemesInJson', () => {
     expect(findSchemesInJson('{invalid}')).toEqual([]);
   });
 });
-
-// ============ scanSchemesInJson 测试 ============
 
 describe('scanSchemesInJson', () => {
   it('扫描时复用 source map 的解析结果，避免重复 JSON.parse', () => {

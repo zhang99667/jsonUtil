@@ -289,6 +289,11 @@ describe('queryJsonPathRanges', () => {
       .toThrow('JSON 解析错误');
   });
 
+  it('拒绝超出 JSON 值域的非有限数值', () => {
+    expect(() => queryJsonPathRanges('{"value":1e400}', '$.value'))
+      .toThrow('JSON 解析错误: JSON 包含不支持的值');
+  });
+
   it('非法 JSONPath 抛出可展示错误', () => {
     expect(() => queryJsonPathRanges('{"users":[{"age":18}]}', '$.users[?(@.age >)]'))
       .toThrow('JSONPath 查询错误');

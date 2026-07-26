@@ -62,33 +62,33 @@ import type { JsonSchemaValidationResult } from './utils/jsonSchemaValidation';
 import { buildAppJsonSchemaEditorFeedback } from './utils/appJsonSchemaEditorFeedback';
 import { getSmartInputSuggestion } from './utils/smartInputSuggestion';
 import { buildAppEditorUiState } from './utils/appEditorUiState';
-import { getContentSizeSummary } from './utils/appWorkflowHelpers';
 import {
   ASYNC_VALIDATION_THRESHOLD,
 } from './utils/appAsyncPolicy';
 import { buildAppTransformOutputState } from './utils/appTransformOutput';
+import { collectSchemeDisplayHeaderMarkers } from './utils/schemeDisplayHeader';
 
 const App: React.FC = () => {
   // 核心状态：输入源
   const [input, setInput] = useState<string>('');
 
-  // 使用 Ref 存储最新输入值，避免预览编辑时的竞态条件
+  // 使用引用存储最新输入值，避免预览编辑时的竞态条件
   const inputRef = useRef<string>('');
 
-  // 使用 Ref 阻断输出更新引发的循环更新
+  // 使用引用阻断输出更新引发的循环更新
   const isUpdatingFromOutput = useRef<boolean>(false);
 
-  // 使用 Ref 暂存待处理的输出值
+  // 使用引用暂存待处理的输出值
   const pendingOutputValue = useRef<string>('');
   const cancelOutputDraftRef = useRef<(() => void) | null>(null);
 
   // 当前转换模式
   const [mode, setMode] = useState<TransformMode>(TransformMode.NONE);
 
-  // 当没有打开文件时，使用 Ref 存储转换上下文（避免无标签页场景下丢失上下文）
+  // 没有打开文件时使用引用保存转换上下文，避免无标签页场景下丢失
   const fallbackContextRef = useRef<TransformContext | null>(null);
 
-  // 界面布局状态 (Hook) - 移到前面避免依赖问题
+  // 界面布局状态提前初始化，避免后续依赖顺序错乱
   const appRef = useRef<HTMLDivElement>(null);
   const {
     sidebarWidth,
@@ -103,7 +103,7 @@ const App: React.FC = () => {
     cancelOutputDraftRef.current?.();
   }, []);
 
-  // 文件系统状态 (Hook)
+  // 文件系统状态
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
     createNewTab, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
@@ -181,6 +181,10 @@ const App: React.FC = () => {
     transformReportContext,
     output,
   } = transformOutputState;
+  const schemeDisplayHeaderMarkers = useMemo(
+    () => collectSchemeDisplayHeaderMarkers(transformReportContext),
+    [transformReportContext],
+  );
 
   useAppTransformContextPersistence({
     activeDeepFormatResult,
@@ -370,8 +374,8 @@ const App: React.FC = () => {
     onSetAutoSaveEnabled: setIsAutoSaveEnabled,
   });
 
-  // 快捷键状态 (Hook)
   const { shortcuts, updateShortcut, resetShortcuts, replaceShortcuts } = useShortcuts({
+    enabled: !isSettingsModalOpen,
     onSave: handleSaveShortcut,
     onFormat: () => handleModeChange(TransformMode.FORMAT),
     onDeepFormat: () => handleModeChange(TransformMode.DEEP_FORMAT),
@@ -393,7 +397,7 @@ const App: React.FC = () => {
     onReplaceShortcuts: replaceShortcuts,
   });
 
-  // 用户引导 (Hook)
+  // 用户引导
   useOnboardingTour();
 
   // 生产环境检测新版本，避免长时间打开的页面停留在旧包
@@ -401,7 +405,7 @@ const App: React.FC = () => {
   useAppChunkLoadRecovery({ onBeforeReload: flushWorkspaceDraft });
   useAppLazyPanelWarmup();
 
-  // 功能级引导 (Hook)
+  // 功能级引导
   const { triggerFeatureFirstUse } = useFeatureTour();
 
   useAppActiveFileModeSync({
@@ -656,6 +660,7 @@ const App: React.FC = () => {
           deepFormatWarning={deepFormatWarning}
           deepFormatInfo={deepFormatInfo}
           hasTransformReportContext={Boolean(transformReportContext)}
+          schemeDisplayHeaderMarkers={schemeDisplayHeaderMarkers}
           highlightRange={highlightRange}
           editorUiState={editorUiState}
           onInputChange={handleInputChange}

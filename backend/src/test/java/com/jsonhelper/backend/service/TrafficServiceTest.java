@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +59,9 @@ class TrafficServiceTest {
     @BeforeEach
     void setUp() {
         geoService = new StubGeoService();
-        trafficService = new TrafficService(visitLogRepository, geoService, userAgentClassifier);
+        trafficService = new TrafficService(
+                visitLogRepository, geoService, userAgentClassifier, Clock.systemDefaultZone()
+        );
     }
 
     @Test

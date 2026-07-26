@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest';
+import type { JsonValue } from '../types';
 import {
   compareJsonSemanticText,
   compareJsonSemanticValues,
   formatJsonSemanticDiffMarkdown,
   parseJsonSemanticDiffIgnoredPaths,
 } from './jsonSemanticDiff';
+
+const createDeepJsonValue = (leaf: JsonValue, depth: number): JsonValue => {
+  let value = leaf;
+  for (let index = 0; index < depth; index += 1) {
+    value = { child: value };
+  }
+  return value;
+};
 
 describe('jsonSemanticDiff', () => {
   it('对比对象新增、删除和修改路径', () => {
@@ -63,6 +72,43 @@ describe('jsonSemanticDiff', () => {
     expect(result.items.map(item => item.pointer)).toEqual(['/1/id', '/2']);
   });
 
+  it('深层对象对比不依赖 JavaScript 调用栈', () => {
+    const depth = 10_000;
+    const result = compareJsonSemanticValues(
+      createDeepJsonValue({ value: 'old' }, depth),
+      createDeepJsonValue({ value: 'new' }, depth)
+    );
+
+    expect(result).toMatchObject({ changed: 1, total: 1, isLimited: false });
+    expect(result.items[0]?.path.endsWith('.value')).toBe(true);
+    expect(result.items[0]?.pointer.endsWith('/value')).toBe(true);
+  });
+
+  it('深层对象类型变化时有界生成差异预览', () => {
+    const result = compareJsonSemanticValues(
+      createDeepJsonValue({ value: 'old' }, 10_000),
+      false
+    );
+
+    expect(result).toMatchObject({ changed: 1, total: 1 });
+    expect(result.items[0]).toMatchObject({
+      beforePreview: '对象: child',
+      afterPreview: 'false',
+    });
+  });
+
+  it('大型容器差异预览保持长度上限', () => {
+    const longKey = 'x'.repeat(200);
+    const result = compareJsonSemanticValues(
+      {},
+      { added: { [longKey]: true } }
+    );
+    const preview = result.items[0]?.afterPreview;
+
+    expect(preview).toHaveLength(120);
+    expect(preview?.endsWith('...')).toBe(true);
+  });
+
   it('差异项生成可复制 JSON Pointer 并转义特殊 key', () => {
     const result = compareJsonSemanticValues(
       {
@@ -101,6 +147,13 @@ describe('jsonSemanticDiff', () => {
       beforePreview: '"old"',
       afterPreview: '"new"',
     });
+  });
+
+  it('拒绝指数溢出的 JSON 数值', () => {
+    expect(() => compareJsonSemanticText(
+      '{"value":1e400}',
+      '{"value":1}'
+    )).toThrow('JSON 包含不支持的值');
   });
 
   it('超过差异上限时标记截断', () => {
@@ -154,6 +207,7 @@ describe('jsonSemanticDiff', () => {
     expect(report).toContain('# JSON 对比报告');
     expect(report).toContain('汇总: 新增 0 / 删除 0 / 修改 1');
     expect(report).toContain('忽略路径: `$.traceId`');
+    expect(report).toContain('| 类型 | 路径 | 原始值 | 对比值 |');
     expect(report).toContain('| 修改 | `$.id` | `1` | `2` |');
     expect(report).not.toContain('`$.traceId` | `"old"`');
   });

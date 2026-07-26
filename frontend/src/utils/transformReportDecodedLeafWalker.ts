@@ -13,49 +13,57 @@ export interface TransformDecodedLeaf {
 
 type TransformDecodedLeafVisitor = (leaf: TransformDecodedLeaf) => boolean | void;
 
-const visitDecodedLeaf = (
-  value: JsonValue,
-  currentPath: string,
-  visitor: TransformDecodedLeafVisitor
-): boolean => {
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      return visitor({ path: currentPath, preview: '数组 0 项', value }) !== false;
-    }
-
-    for (let index = 0; index < value.length; index++) {
-      if (!visitDecodedLeaf(value[index], appendTransformJsonPathIndex(currentPath, index), visitor)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value);
-    if (entries.length === 0) {
-      return visitor({ path: currentPath, preview: '对象: 空', value }) !== false;
-    }
-
-    for (const [key, item] of entries) {
-      if (!visitDecodedLeaf(item, appendTransformJsonPathKey(currentPath, key), visitor)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  return visitor({
-    path: currentPath,
-    preview: formatJsonValuePreview(value, 80),
-    value,
-  }) !== false;
-};
+interface DecodedLeafTask {
+  path: string;
+  value: JsonValue;
+}
 
 export const walkTransformDecodedLeaves = (
   value: JsonValue,
   startPath: string,
   visitor: TransformDecodedLeafVisitor
 ) => {
-  visitDecodedLeaf(value, startPath, visitor);
+  const pending: DecodedLeafTask[] = [{ path: startPath, value }];
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current) continue;
+
+    if (Array.isArray(current.value)) {
+      if (current.value.length === 0) {
+        if (visitor({ ...current, preview: '数组 0 项' }) === false) return;
+        continue;
+      }
+
+      for (let index = current.value.length - 1; index >= 0; index -= 1) {
+        pending.push({
+          path: appendTransformJsonPathIndex(current.path, index),
+          value: current.value[index],
+        });
+      }
+      continue;
+    }
+
+    if (current.value && typeof current.value === 'object') {
+      const entries = Object.entries(current.value);
+      if (entries.length === 0) {
+        if (visitor({ ...current, preview: '对象: 空' }) === false) return;
+        continue;
+      }
+
+      for (let index = entries.length - 1; index >= 0; index -= 1) {
+        const [key, item] = entries[index];
+        pending.push({
+          path: appendTransformJsonPathKey(current.path, key),
+          value: item,
+        });
+      }
+      continue;
+    }
+
+    if (visitor({
+      ...current,
+      preview: formatJsonValuePreview(current.value, 80),
+    }) === false) return;
+  }
 };

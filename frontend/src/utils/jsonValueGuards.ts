@@ -47,3 +47,17 @@ export const isJsonValue = (value: unknown): value is JsonValue => {
 
   return true;
 };
+
+export const parseJsonValue = (source: string): JsonValue => {
+  const parsed: unknown = JSON.parse(source);
+  if (!isJsonValue(parsed)) throw new RangeError('JSON 包含不支持的值');
+  return parsed;
+};
+
+export const tryParseJsonValue = (source: string): JsonValue | undefined => {
+  try {
+    return parseJsonValue(source);
+  } catch {
+    return undefined;
+  }
+};

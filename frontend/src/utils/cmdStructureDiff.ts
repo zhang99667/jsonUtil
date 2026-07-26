@@ -10,8 +10,8 @@ import {
   compareCmdStructureValues,
   type CmdStructureValueDiff,
 } from './cmdStructureValueDiff';
-import { isJsonObject } from './jsonValueGuards';
-import { parseJsonWithFallback } from './storage';
+import { formatUnknownError } from './errors';
+import { isJsonObject, parseJsonValue, tryParseJsonValue } from './jsonValueGuards';
 
 export {
   collectActualCmdStructureCandidates,
@@ -62,7 +62,7 @@ export interface RankCmdStructureCandidatesOptions extends CmdStructureDiffOptio
 }
 
 const parseJsonCandidate = (candidate: string): JsonValue | undefined => (
-  parseJsonWithFallback<JsonValue | undefined>(candidate, undefined)
+  tryParseJsonValue(candidate)
 );
 
 const normalizeCmdHandlerTreeLine = (line: string): string => (
@@ -213,10 +213,9 @@ export const parseCmdStructureJson = (text: string, label = '输入'): JsonValue
   if (parsed !== undefined) return parsed;
 
   try {
-    JSON.parse(text);
+    parseJsonValue(text);
   } catch (error) {
-    const detail = error instanceof SyntaxError ? error.message : String(error);
-    throw new Error(`${label}不是有效 JSON: ${detail}`);
+    throw new Error(`${label}不是有效 JSON: ${formatUnknownError(error)}`);
   }
 
   throw new Error(`${label}不是有效 JSON`);

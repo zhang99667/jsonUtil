@@ -4,6 +4,7 @@ import { appCoreMaintainabilityBudgets } from './maintainability-budget-app-core
 import { appEditorMaintainabilityBudgets } from './maintainability-budget-app-editor-rules.mjs';
 import { appEditorPreviewMaintainabilityBudgets } from './maintainability-budget-app-editor-preview-rules.mjs';
 import { appEditorSourceMaintainabilityBudgets } from './maintainability-budget-app-editor-source-rules.mjs';
+import { appJsonCompareMaintainabilityBudgets } from './maintainability-budget-app-json-compare-rules.mjs';
 import { appJsonPathMaintainabilityBudgets } from './maintainability-budget-app-jsonpath-rules.mjs';
 import { appRecoveryMaintainabilityBudgets } from './maintainability-budget-app-recovery-rules.mjs';
 import { appShellMaintainabilityBudgets } from './maintainability-budget-app-shell-rules.mjs';
@@ -19,6 +20,7 @@ export const appMaintainabilityBudgets = [
   ...appEditorMaintainabilityBudgets,
   ...appEditorPreviewMaintainabilityBudgets,
   ...appEditorSourceMaintainabilityBudgets,
+  ...appJsonCompareMaintainabilityBudgets,
   ...appJsonPathMaintainabilityBudgets,
   ...appRecoveryMaintainabilityBudgets,
   ...appShellMaintainabilityBudgets,

@@ -1,10 +1,8 @@
 import { parseFlatQueryParams } from './schemeFlatQueryParams';
 import type { SchemeRawParamOptions } from './schemeRawParams';
 import {
-  createUrl,
-  isBareHostUrl,
-  isProtocolRelativeUrl,
-  normalizeJsonUrlEscapes,
+  createSchemeUrlContext,
+  type SchemeUrlContext,
 } from './schemeUrlShapes';
 
 export interface SchemeUrlInfo {
@@ -21,29 +19,36 @@ interface ParseSchemeUrlInfoOptions {
   getFragmentParamSource: (hash: string) => string | null;
 }
 
+export const parseSchemeUrlInfoFromContext = (
+  context: SchemeUrlContext,
+  options: ParseSchemeUrlInfoOptions,
+): SchemeUrlInfo => {
+  const params = parseFlatQueryParams(context.url.search, options.rawParamOptions);
+  const fragmentParamSource = options.getFragmentParamSource(context.url.hash);
+  const hashParams = fragmentParamSource
+    ? parseFlatQueryParams(fragmentParamSource, options.rawParamOptions)
+    : undefined;
+
+  return {
+    protocol: context.isBareHost
+      ? '无协议'
+      : context.isProtocolRelative
+        ? '//'
+        : context.url.protocol,
+    host: context.url.host || undefined,
+    path: context.url.pathname || undefined,
+    hash: context.url.hash ? context.url.hash.slice(1) : undefined,
+    params,
+    hashParams,
+  };
+};
+
 export const parseSchemeUrlInfo = (
   urlString: string,
-  options: ParseSchemeUrlInfoOptions
+  options: ParseSchemeUrlInfoOptions,
 ): SchemeUrlInfo | null => {
   try {
-    const normalizedUrlString = normalizeJsonUrlEscapes(urlString.trim());
-    const url = createUrl(normalizedUrlString);
-    const isBareUrl = isBareHostUrl(normalizedUrlString);
-    const isProtocolRelative = isProtocolRelativeUrl(normalizedUrlString);
-    const params = parseFlatQueryParams(url.search, options.rawParamOptions);
-    const fragmentParamSource = options.getFragmentParamSource(url.hash);
-    const hashParams = fragmentParamSource
-      ? parseFlatQueryParams(fragmentParamSource, options.rawParamOptions)
-      : undefined;
-
-    return {
-      protocol: isBareUrl ? '无协议' : isProtocolRelative ? '//' : url.protocol,
-      host: url.host || undefined,
-      path: url.pathname || undefined,
-      hash: url.hash ? url.hash.slice(1) : undefined,
-      params,
-      hashParams,
-    };
+    return parseSchemeUrlInfoFromContext(createSchemeUrlContext(urlString), options);
   } catch {
     return null;
   }

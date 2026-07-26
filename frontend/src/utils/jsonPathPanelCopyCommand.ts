@@ -1,3 +1,4 @@
+import type { JsonValue } from '../types';
 import { getClipboardErrorMessage } from './clipboard';
 import type { JsonPathQueryItem } from './jsonPathQuery';
 import {
@@ -14,7 +15,7 @@ interface JsonPathPanelCopyCommandEffects {
 }
 
 interface JsonPathPanelCopyValuesInput {
-  values: unknown[];
+  values: JsonValue[];
   isResultLimited: boolean;
 }
 

@@ -9,6 +9,7 @@ import {
   notifyAppBackupImported,
   serializeAppBackup,
 } from './appBackup';
+import { parseAppBackupPayload } from './appBackupFormat';
 import {
   JSON_SCHEMA_LIBRARY_STORAGE_KEY,
   createJsonSchemaLibraryItem,
@@ -151,6 +152,15 @@ describe('app backup', () => {
 
     expect(serialized).toContain('\n  "app": "jsonutils-pro"');
     expect(serialized.endsWith('\n')).toBe(true);
+  });
+
+  it('备份包含非有限数值时拒绝导入', () => {
+    const base = { app: APP_BACKUP_APP_ID, version: APP_BACKUP_VERSION, exportedAt: '',
+      settings: { general: {}, ai: {}, shortcuts: {} }, jsonPath: { history: [], favorites: [] },
+      templateFill: { template: '', lastUpdated: 0 }, panelLayout: {}, overflow: 'marker' };
+    const content = JSON.stringify(base).replace('"marker"', '1e400');
+
+    expect(() => parseAppBackupPayload(content)).toThrow('备份文件不是合法 JSON');
   });
 
   it('广播导入事件', () => {

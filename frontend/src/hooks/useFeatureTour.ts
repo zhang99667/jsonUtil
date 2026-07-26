@@ -1,31 +1,31 @@
 import { useEffect, useCallback, useRef } from 'react';
-import type { DriveStep, Driver } from 'driver.js';
+import type { DriveStep } from 'driver.js';
 import { dispatchChunkLoadRecoveryEvent } from '../utils/chunkLoadRecoveryDispatch';
 import { loadDriverTour } from '../utils/driverTourLoader';
+import {
+    driverTourRuntime,
+    type DriverTourRun,
+} from '../utils/driverTourRuntime';
 import { safeReadStorageItem, safeRemoveStorageItem, safeSetStorageItem } from '../utils/storage';
 
-// 定义所有支持引导的功能
 export enum FeatureId {
     JSONPATH = 'jsonpath',
     AI_FIX = 'ai-fix',
     DEEP_FORMAT = 'deep-format',
     ESCAPE = 'escape',
     UNICODE_CONVERT = 'unicode-convert',
-    // 滚动发现式引导
     DISCOVERY_JSONPATH = 'discovery-jsonpath',
     DISCOVERY_FILE_OPS = 'discovery-file-ops',
     DISCOVERY_AI_FIX = 'discovery-ai-fix',
     DISCOVERY_SETTINGS = 'discovery-settings',
 }
 
-// 功能引导配置
 interface FeatureTourConfig {
     id: FeatureId;
     steps: DriveStep[];
-    showOnFirstUse?: boolean; // 是否在首次使用时自动显示
+    showOnFirstUse?: boolean;
 }
 
-// 功能引导配置映射
 const FEATURE_TOURS: Record<FeatureId, FeatureTourConfig> = {
     [FeatureId.JSONPATH]: {
         id: FeatureId.JSONPATH,
@@ -129,7 +129,6 @@ const FEATURE_TOURS: Record<FeatureId, FeatureTourConfig> = {
             }
         ]
     },
-    // 滚动发现式引导
     [FeatureId.DISCOVERY_JSONPATH]: {
         id: FeatureId.DISCOVERY_JSONPATH,
         showOnFirstUse: true,
@@ -195,34 +194,32 @@ const FEATURE_TOURS: Record<FeatureId, FeatureTourConfig> = {
 const STORAGE_KEY_PREFIX = 'json-helper-feature-tour-';
 const getTourStorageKey = (featureId: FeatureId) => `${STORAGE_KEY_PREFIX}${featureId}`;
 
-export const useFeatureTour = () => {
-    const driverInstanceRef = useRef<Driver | null>(null);
-    const isMountedRef = useRef(true);
-    const startRequestIdRef = useRef(0);
+const reportFeatureTourStartError = (message: string, error: unknown) => {
+    if (dispatchChunkLoadRecoveryEvent(error)) return;
+    console.warn(message, error);
+};
 
-    // 检查功能是否已完成引导
+export const useFeatureTour = () => {
+    const activeRunRef = useRef<DriverTourRun | null>(null);
+
     const hasCompletedTour = useCallback((featureId: FeatureId): boolean => {
         return safeReadStorageItem(getTourStorageKey(featureId)).value === 'completed';
     }, []);
 
-    // 标记功能引导为已完成
     const markTourCompleted = useCallback((featureId: FeatureId) => {
         safeSetStorageItem(getTourStorageKey(featureId), 'completed');
     }, []);
 
-    // 重置功能引导状态
     const resetTour = useCallback((featureId: FeatureId) => {
         safeRemoveStorageItem(getTourStorageKey(featureId));
     }, []);
 
-    // 重置所有功能引导
     const resetAllTours = useCallback(() => {
         Object.values(FeatureId).forEach(featureId => {
             resetTour(featureId);
         });
     }, [resetTour]);
 
-    // 启动功能引导
     const startFeatureTour = useCallback(async (featureId: FeatureId, force: boolean = false) => {
         const config = FEATURE_TOURS[featureId];
         if (!config) {
@@ -235,61 +232,48 @@ export const useFeatureTour = () => {
             if (!completion.ok || completion.value === 'completed') return;
         }
 
-        const requestId = ++startRequestIdRef.current;
-
-        // 销毁之前的实例
-        if (driverInstanceRef.current) {
-            driverInstanceRef.current.destroy();
-            driverInstanceRef.current = null;
-        }
+        const run = driverTourRuntime.begin({
+            onDestroyError: error => console.warn('清理功能引导实例失败:', error),
+            onDriveError: error => reportFeatureTourStartError('启动功能引导失败:', error),
+            onRefreshError: error => console.warn('刷新功能引导位置失败:', error),
+        });
+        activeRunRef.current = run;
 
         let createDriver: Awaited<ReturnType<typeof loadDriverTour>>;
         try {
             createDriver = await loadDriverTour();
         } catch (error) {
-            if (!isMountedRef.current || startRequestIdRef.current !== requestId) return;
-            if (dispatchChunkLoadRecoveryEvent(error)) return;
-
-            console.warn('加载功能引导组件失败:', error);
+            if (!run.isCurrent()) return;
+            run.cancel();
+            reportFeatureTourStartError('加载功能引导组件失败:', error);
             return;
         }
 
-        if (!isMountedRef.current || startRequestIdRef.current !== requestId) return;
+        if (!run.isCurrent()) return;
 
-        // 创建新的引导器实例
-        const newDriver = createDriver({
-            showProgress: config.steps.length > 1,
-            showButtons: ['next', 'previous', 'close'],
-            smoothScroll: false, // 禁用平滑滚动以避免定位问题
-            animate: false,      // 禁用动画以提高稳定性
-            stagePadding: 3,     // 小按钮目标只保留轻量留白，避免像被套上选中框
-            stageRadius: 7,
-            popoverClass: 'json-helper-feature-tour-popover',
-            steps: config.steps,
-            onDestroyStarted: () => {
-                // 用户完成或跳过引导时，标记为已完成
-                markTourCompleted(featureId);
-                newDriver.destroy();
-                if (driverInstanceRef.current === newDriver) {
-                    driverInstanceRef.current = null;
+        try {
+            const newDriver = createDriver({
+                showProgress: config.steps.length > 1,
+                showButtons: ['next', 'previous', 'close'],
+                smoothScroll: false,
+                animate: false,
+                stagePadding: 3,
+                stageRadius: 7,
+                popoverClass: 'json-helper-feature-tour-popover',
+                steps: config.steps,
+                onDestroyStarted: () => {
+                    run.complete(() => markTourCompleted(featureId));
                 }
-            }
-        });
-
-        driverInstanceRef.current = newDriver;
-
-        // 延迟启动，确保页面元素已渲染且布局稳定
-        setTimeout(() => {
-            if (
-                !isMountedRef.current
-                || startRequestIdRef.current !== requestId
-                || driverInstanceRef.current !== newDriver
-            ) return;
-            newDriver.drive();
-        }, 500);
+            });
+            if (!run.adopt(newDriver)) return;
+            run.driveAfter(500);
+        } catch (error) {
+            if (!run.isCurrent()) return;
+            run.cancel();
+            reportFeatureTourStartError('启动功能引导失败:', error);
+        }
     }, [markTourCompleted]);
 
-    // 触发功能首次使用检查
     const triggerFeatureFirstUse = useCallback((featureId: FeatureId) => {
         const config = FEATURE_TOURS[featureId];
         if (config?.showOnFirstUse) {
@@ -297,23 +281,15 @@ export const useFeatureTour = () => {
         }
     }, [startFeatureTour]);
 
-    // 清理
     useEffect(() => {
-        isMountedRef.current = true;
-
         return () => {
-            isMountedRef.current = false;
-            startRequestIdRef.current += 1;
-            if (driverInstanceRef.current) {
-                driverInstanceRef.current.destroy();
-                driverInstanceRef.current = null;
-            }
+            activeRunRef.current?.cancel();
+            activeRunRef.current = null;
         };
     }, []);
 
-    // 刷新引导位置，用于元素位置变化时
     const refreshTour = useCallback(() => {
-        driverInstanceRef.current?.refresh();
+        driverTourRuntime.refresh();
     }, []);
 
     return {

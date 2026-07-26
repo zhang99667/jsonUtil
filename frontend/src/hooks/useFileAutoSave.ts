@@ -19,7 +19,7 @@ export const useFileAutoSave = ({ activeFile, input, isEnabled, setFiles }: UseF
   const handle = activeFile?.handle;
   const savedContent = activeFile?.savedContent ?? '';
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+  const lifecycleGenerationRef = useRef(0);
   const cancelPendingAutoSave = useCallback(() => {
     if (pendingTimerRef.current === null) return;
     clearTimeout(pendingTimerRef.current);
@@ -27,20 +27,26 @@ export const useFileAutoSave = ({ activeFile, input, isEnabled, setFiles }: UseF
   }, []);
 
   useEffect(() => {
+    const lifecycleGeneration = ++lifecycleGenerationRef.current;
+    return () => { lifecycleGenerationRef.current = lifecycleGeneration + 1; };
+  }, []);
+  useEffect(() => {
     cancelPendingAutoSave();
     if (!isEnabled || !fileId || !handle || input === savedContent) return;
-
+    const lifecycleGeneration = lifecycleGenerationRef.current;
     const timer = setTimeout(async () => {
       pendingTimerRef.current = null;
       const snapshot = input;
       try {
         await writeTextToFileHandleQueued(handle, snapshot);
+        if (lifecycleGenerationRef.current !== lifecycleGeneration) return;
         setFiles(files => files.map(file => (
           file.id === fileId && file.handle === handle
             ? markWorkspaceFileSnapshotSaved(file, snapshot)
             : file
         )));
       } catch (error) {
+        if (lifecycleGenerationRef.current !== lifecycleGeneration) return;
         console.error('自动保存失败:', error);
         toast.error(getDetailedErrorMessage(error, '自动保存失败'), { duration: 3000 });
       }

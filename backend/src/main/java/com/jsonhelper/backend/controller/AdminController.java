@@ -21,18 +21,12 @@ public class AdminController {
 
     private final UserService userService;
 
-    /**
-     * 添加用户
-     */
     @PostMapping("/users/add")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<User> addUser(@Valid @RequestBody RegisterRequest registerRequest) {
         return Result.success(userService.createUser(registerRequest));
     }
 
-    /**
-     * 分页获取用户列表，支持按用户名搜索
-     */
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Page<User>> listUsers(
@@ -49,18 +43,12 @@ public class AdminController {
         return Result.success(userService.listUsers(page, size, keyword));
     }
 
-    /**
-     * 更新用户信息
-     */
     @PutMapping("/users/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<User> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
         return Result.success(userService.updateUser(id, request));
     }
 
-    /**
-     * 删除用户
-     */
     @DeleteMapping("/users/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> deleteUser(@PathVariable Long id) {
@@ -68,9 +56,6 @@ public class AdminController {
         return Result.success();
     }
 
-    /**
-     * 切换用户启用/禁用状态
-     */
     @PutMapping("/users/{id}/toggle-enabled")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<User> toggleUserEnabled(@PathVariable Long id) {

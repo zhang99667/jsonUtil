@@ -40,15 +40,11 @@ describe('useAppBeforeUnloadGuard', () => {
     expect(event.returnValue).toBe('');
   });
 
-  it('无未保存内容时不拦截离开页面', () => {
-    const preventDefault = vi.fn();
-    const event = { preventDefault, returnValue: undefined } as unknown as BeforeUnloadEvent;
-
+  it('无未保存内容时不注册离开监听', () => {
     useAppBeforeUnloadGuard(false);
-    listeners.get('beforeunload')?.(event);
 
-    expect(preventDefault).not.toHaveBeenCalled();
-    expect(event.returnValue).toBeUndefined();
+    expect(window.addEventListener).not.toHaveBeenCalled();
+    expect(listeners.has('beforeunload')).toBe(false);
   });
 
   it('effect 清理时移除 beforeunload 监听', () => {

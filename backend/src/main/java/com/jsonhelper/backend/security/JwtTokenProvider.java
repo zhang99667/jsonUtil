@@ -7,8 +7,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -67,14 +67,17 @@ public class JwtTokenProvider {
     }
 
     public String generateToken(Authentication authentication) {
-        UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
+        String username = authentication.getName();
+        if (!StringUtils.hasText(username)) {
+            throw new IllegalArgumentException("无法为缺少用户标识的认证信息签发 JWT");
+        }
 
         Instant now = Instant.now();
         Date issuedAt = Date.from(now);
         Date expiryDate = Date.from(now.plus(jwtProperties.getExpiration()));
 
         return Jwts.builder()
-                .setSubject(userPrincipal.getUsername())
+                .setSubject(username)
                 .setIssuedAt(issuedAt)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS512)

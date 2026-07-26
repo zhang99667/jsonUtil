@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { JsonValue } from '../types';
 import { buildJsonPathResultPreviewItems } from './jsonPathPanelPreviewItems';
 import type { JsonPathQueryItem } from './jsonPathQuery';
 
 const createItem = (
   path: string,
-  value: unknown,
+  value: JsonValue,
   sourceLabel?: string
 ): JsonPathQueryItem => ({
   path,

@@ -1,10 +1,21 @@
 import type { JsonObject, JsonValue } from '../types.ts';
-import { isJsonObject } from './jsonValueGuards.ts';
+import { defineJsonProperty } from './jsonObjectProperty.ts';
+import { isJsonObject, parseJsonValue } from './jsonValueGuards.ts';
 import { PLACEHOLDER_FILL_TEMPLATE_KIND } from './placeholderFillTemplateContract.ts';
 
 type PlaceholderFillTemplate = JsonObject & {
   placeholders: Record<string, JsonValue>;
 };
+
+interface DeepMergeFrame {
+  result: JsonObject;
+  target: JsonObject;
+  template: JsonObject;
+}
+
+type PlaceholderReplacementFrame =
+  | { kind: 'array'; source: JsonValue[]; result: JsonValue[] }
+  | { kind: 'object'; source: JsonObject; result: JsonObject };
 
 const isPlaceholderFillTemplate = (
   template: JsonValue
@@ -19,7 +30,7 @@ const buildPlaceholderReplacementMap = (
 ): Record<string, string> => (
   Object.fromEntries(
     Object.entries(template.placeholders).filter((entry): entry is [string, string] => (
-      typeof entry[1] === 'string' && entry[1].length > 0
+      entry[0].trim().length > 0 && typeof entry[1] === 'string' && entry[1].length > 0
     ))
   )
 );
@@ -28,27 +39,45 @@ const replaceRuntimePlaceholders = (
   value: JsonValue,
   replacements: Record<string, string>
 ): JsonValue => {
-  if (typeof value === 'string') {
-    return Object.entries(replacements).reduce(
-      (current, [placeholder, replacement]) => current.split(placeholder).join(replacement),
-      value
-    );
-  }
+  const replacementEntries = Object.entries(replacements);
+  const pending: PlaceholderReplacementFrame[] = [];
+  const cloneValue = (item: JsonValue): JsonValue => {
+    if (typeof item === 'string') {
+      return replacementEntries.reduce(
+        (current, [placeholder, replacement]) => current.split(placeholder).join(replacement),
+        item
+      );
+    }
+    if (Array.isArray(item)) {
+      const result = new Array<JsonValue>(item.length);
+      pending.push({ kind: 'array', source: item, result });
+      return result;
+    }
+    if (isJsonObject(item)) {
+      const result: JsonObject = {};
+      pending.push({ kind: 'object', source: item, result });
+      return result;
+    }
+    return item;
+  };
 
-  if (Array.isArray(value)) {
-    return value.map(item => replaceRuntimePlaceholders(item, replacements));
-  }
+  const result = cloneValue(value);
+  while (pending.length > 0) {
+    const frame = pending.pop();
+    if (!frame) continue;
 
-  if (isJsonObject(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [
-        key,
-        replaceRuntimePlaceholders(item, replacements),
-      ])
-    );
-  }
+    if (frame.kind === 'array') {
+      for (let index = 0; index < frame.source.length; index += 1) {
+        frame.result[index] = cloneValue(frame.source[index]);
+      }
+      continue;
+    }
 
-  return value;
+    for (const [key, item] of Object.entries(frame.source)) {
+      defineJsonProperty(frame.result, key, cloneValue(item));
+    }
+  }
+  return result;
 };
 
 export const applyPlaceholderFillTemplate = (
@@ -57,44 +86,50 @@ export const applyPlaceholderFillTemplate = (
 ): JsonValue => {
   const replacements = buildPlaceholderReplacementMap(template);
   if (Object.keys(replacements).length === 0) {
-    throw new Error('占位符回填模板缺少 replacement');
+    throw new Error('占位符回填模板缺少有效替换项');
   }
 
   return replaceRuntimePlaceholders(target, replacements);
 };
 
-/**
- * 将模板深度合并到目标 JSON 值。
- * 普通对象递归合并，标量和数组直接使用模板值。
- */
 export const deepMergeTemplate = (target: JsonValue, template: JsonValue): JsonValue => {
   if (!isJsonObject(template)) return template;
   if (!isJsonObject(target)) return template;
 
   const result: JsonObject = { ...target };
-  Object.entries(template).forEach(([key, value]) => {
-    result[key] = Object.hasOwn(result, key)
-      ? deepMergeTemplate(result[key], value)
-      : value;
-  });
+  const pending: DeepMergeFrame[] = [{ result, target, template }];
+  while (pending.length > 0) {
+    const frame = pending.pop();
+    if (!frame) continue;
+
+    for (const [key, templateValue] of Object.entries(frame.template)) {
+      const targetValue = frame.target[key];
+      if (Object.hasOwn(frame.target, key) && isJsonObject(targetValue) && isJsonObject(templateValue)) {
+        const childResult: JsonObject = { ...targetValue };
+        defineJsonProperty(frame.result, key, childResult);
+        pending.push({ result: childResult, target: targetValue, template: templateValue });
+      } else {
+        defineJsonProperty(frame.result, key, templateValue);
+      }
+    }
+  }
   return result;
 };
 
-/** 解析当前内容和模板，执行合并或占位符回填。 */
 export const applyTemplate = (inputJson: string, templateJson: string): string => {
   if (!inputJson.trim()) throw new Error('当前编辑器内容为空');
   if (!templateJson.trim()) throw new Error('模板内容为空');
 
   let target: JsonValue;
   try {
-    target = JSON.parse(inputJson) as JsonValue;
+    target = parseJsonValue(inputJson);
   } catch {
     throw new Error('当前编辑器内容不是合法的 JSON');
   }
 
   let template: JsonValue;
   try {
-    template = JSON.parse(templateJson) as JsonValue;
+    template = parseJsonValue(templateJson);
   } catch {
     throw new Error('模板内容不是合法的 JSON');
   }

@@ -1,12 +1,9 @@
+import { tryParseJsonValue } from './jsonValueGuards';
+
 export const isJsonString = (str: string): boolean => {
   const trimmed = str.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return false;
-  try {
-    JSON.parse(trimmed);
-    return true;
-  } catch {
-    return false;
-  }
+  return tryParseJsonValue(trimmed) !== undefined;
 };
 
 export const normalizeLooseJsonCandidate = (value: string): string | null => {

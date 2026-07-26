@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { JsonValue } from '../types';
 import {
   formatJsonPathItemsForCopy,
   formatJsonPathValuesForCopy,
@@ -29,7 +30,8 @@ describe('jsonPathPanelCopy', () => {
       { path: '$.name', value: 'Ada', range: null, pointer: '/name' },
       { path: '$.age', value: 42, range: null, pointer: '/age' },
       { path: '$.missing', value: undefined, range: null, pointer: '/missing' },
-    ])).toBe('$.name = "Ada"\n$.age = 42\n$.missing = undefined');
+      { path: '$.large', value: 42n as unknown as JsonValue, range: null, pointer: '/large' },
+    ])).toBe('$.name = "Ada"\n$.age = 42\n$.missing = undefined\n$.large = 42');
   });
 
   it('复制数量文案区分完整结果和性能截断结果', () => {

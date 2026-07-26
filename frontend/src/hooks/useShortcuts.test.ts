@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_SHORTCUTS,
+  areShortcutKeysEquivalent,
   handleShortcutKeyDown,
   normalizeShortcutConfig,
 } from '../utils/shortcuts';
@@ -93,5 +94,40 @@ describe('shortcuts', () => {
     expect(event.preventDefault).toHaveBeenCalledOnce();
     expect(handlers.SAVE).toHaveBeenCalledOnce();
     expect(handlers.FORMAT).not.toHaveBeenCalled();
+  });
+
+  it('全局处理器与录制模型共享大小写和修饰键等价语义', () => {
+    expect(areShortcutKeysEquivalent(
+      { ...DEFAULT_SHORTCUTS.SAVE, key: 'S' },
+      DEFAULT_SHORTCUTS.SAVE,
+    )).toBe(true);
+    expect(areShortcutKeysEquivalent(
+      { ...DEFAULT_SHORTCUTS.SAVE, key: 'S', ctrl: true },
+      DEFAULT_SHORTCUTS.SAVE,
+    )).toBe(false);
+
+    const handlers = {
+      SAVE: vi.fn(),
+      FORMAT: vi.fn(),
+      DEEP_FORMAT: vi.fn(),
+      MINIFY: vi.fn(),
+      CLOSE_TAB: vi.fn(),
+      TOGGLE_JSONPATH: vi.fn(),
+      NEW_TAB: vi.fn(),
+    };
+    const event = {
+      key: 'S',
+      metaKey: true,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      repeat: false,
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent;
+
+    handleShortcutKeyDown(event, DEFAULT_SHORTCUTS, handlers);
+
+    expect(event.preventDefault).toHaveBeenCalledOnce();
+    expect(handlers.SAVE).toHaveBeenCalledOnce();
   });
 });

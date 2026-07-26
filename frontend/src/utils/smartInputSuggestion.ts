@@ -1,5 +1,6 @@
 import { TransformMode } from '../types';
 import { parseJsonLinesDetailed } from './jsonLines';
+import { tryParseJsonValue } from './jsonValueGuards';
 import { detectSchemeType, isActionableSchemeUrl, isUrl, shouldExposeSchemeValue } from './schemeUtils';
 import { normalizeSmartSuggestionText } from './smartSuggestionText';
 import { parseJsonWithFallback } from './storage';
@@ -208,12 +209,7 @@ const hasParsableJsonLineBefore = (source: string, lineNumber: number): boolean 
     .some(line => {
       const trimmed = line.trim();
       if (!trimmed) return false;
-      try {
-        JSON.parse(trimmed);
-        return true;
-      } catch {
-        return false;
-      }
+      return tryParseJsonValue(trimmed) !== undefined;
     })
 );
 

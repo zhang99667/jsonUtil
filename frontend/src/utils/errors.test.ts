@@ -10,6 +10,23 @@ describe('getErrorMessage', () => {
     expect(getErrorMessage(new Error('   '), '操作失败')).toBe('操作失败');
     expect(getErrorMessage('blocked', '操作失败')).toBe('操作失败');
   });
+
+  it('读取跨上下文错误对象的消息', () => {
+    const error = { name: 'Error', message: '权限已失效' };
+
+    expect(getErrorMessage(error, '操作失败')).toBe('权限已失效');
+    expect(formatUnknownError(error)).toBe('权限已失效');
+  });
+
+  it('错误消息属性读取失败时使用兜底文案', () => {
+    const error = new Error('不可见');
+    Object.defineProperty(error, 'message', {
+      get: () => { throw new Error('读取失败'); },
+    });
+
+    expect(getErrorMessage(error, '操作失败')).toBe('操作失败');
+    expect(formatUnknownError(error)).toBe('未知错误');
+  });
 });
 
 describe('getDetailedErrorMessage', () => {
@@ -38,6 +55,10 @@ describe('formatUnknownError', () => {
     expect(formatUnknownError(undefined)).toBe('undefined');
     expect(formatUnknownError({ code: 500 })).toBe('[object Object]');
   });
+
+  it('无法转换为字符串的异常值使用中文兜底', () => {
+    expect(formatUnknownError(Object.create(null))).toBe('未知错误');
+  });
 });
 
 describe('isAbortError', () => {
@@ -46,6 +67,18 @@ describe('isAbortError', () => {
     error.name = 'AbortError';
 
     expect(isAbortError(error)).toBe(true);
+  });
+
+  it('识别跨上下文传入的 AbortError 结构', () => {
+    expect(isAbortError({ name: 'AbortError' })).toBe(true);
+  });
+
+  it('错误名称读取失败时安全返回 false', () => {
+    const error = new Proxy({}, {
+      has: () => { throw new Error('读取失败'); },
+    });
+
+    expect(isAbortError(error)).toBe(false);
   });
 
   it('非取消错误返回 false', () => {

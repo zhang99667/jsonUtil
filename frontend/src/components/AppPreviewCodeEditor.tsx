@@ -7,6 +7,7 @@ import type {
   HighlightRange,
   ValidationResult,
 } from '../types';
+import type { SchemeDisplayHeaderMarker } from '../utils/schemeDisplayHeader';
 
 export interface AppPreviewCodeEditorProps {
   output: string;
@@ -16,6 +17,7 @@ export interface AppPreviewCodeEditorProps {
   deepFormatWarning?: string;
   deepFormatInfo?: string;
   hasTransformReportContext: boolean;
+  schemeDisplayHeaderMarkers: readonly SchemeDisplayHeaderMarker[];
   highlightRange: HighlightRange | null;
   editorUiState: AppEditorUiState;
   onOutputChange: (value: string) => void;
@@ -35,6 +37,7 @@ export const AppPreviewCodeEditor: React.FC<AppPreviewCodeEditorProps> = ({
   deepFormatWarning,
   deepFormatInfo,
   hasTransformReportContext,
+  schemeDisplayHeaderMarkers,
   highlightRange,
   editorUiState,
   onOutputChange,
@@ -58,6 +61,7 @@ export const AppPreviewCodeEditor: React.FC<AppPreviewCodeEditorProps> = ({
     errorLocation={previewErrorLocation}
     warning={deepFormatWarning}
     info={deepFormatInfo}
+    schemeDisplayHeaderMarkers={schemeDisplayHeaderMarkers}
     highlightRange={highlightRange}
     onSchemeEdit={onSchemeEdit}
     headerActions={

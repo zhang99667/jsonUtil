@@ -3,6 +3,7 @@ import {
   isFiniteNumber,
   isRecord,
   parseJsonWithFallback,
+  readObjectPropertySafely,
   safeGetStorageItem,
   safeReadStorageItem,
   safeRemoveStorageItem,
@@ -19,6 +20,7 @@ describe('parseJsonWithFallback', () => {
 
     expect(parseJsonWithFallback(null, fallback)).toBe(fallback);
     expect(parseJsonWithFallback('{bad', fallback)).toBe(fallback);
+    expect(parseJsonWithFallback('{"value":1e400}', fallback)).toBe(fallback);
   });
 
   it('结构校验失败时返回默认值', () => {
@@ -34,14 +36,27 @@ describe('parseJsonWithFallback', () => {
 
 describe('storage guards', () => {
   it('识别普通对象', () => {
+    const revoked = Proxy.revocable({}, {});
+    revoked.revoke();
+
     expect(isRecord({ a: 1 })).toBe(true);
     expect(isRecord(null)).toBe(false);
     expect(isRecord([])).toBe(false);
+    expect(isRecord(revoked.proxy)).toBe(false);
   });
 
   it('识别有限数字', () => {
     expect(isFiniteNumber(1)).toBe(true);
     expect(isFiniteNumber(Number.NaN)).toBe(false);
+  });
+
+  it('对象属性读取失败时返回 undefined', () => {
+    const value = new Proxy({}, {
+      get: () => { throw new Error('读取失败'); },
+    });
+
+    expect(readObjectPropertySafely(value, 'message')).toBeUndefined();
+    expect(readObjectPropertySafely(null, 'message')).toBeUndefined();
   });
 });
 

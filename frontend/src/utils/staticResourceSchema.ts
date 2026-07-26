@@ -1,7 +1,9 @@
+import { getResourcePathType } from './resourcePathType';
+
 export type StaticResourceType = 'image' | 'video' | 'lottie' | 'audio' | 'package' | 'other';
 
-const STATIC_RESOURCE_SCHEMA_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp|mp4|m4v|mov|webm|avi|m3u8|mp3|wav|aac|ogg|flac|m4a|lottie|apk|ipa|zip|rar|7z|tar|gz|tgz)$/i;
 const STATIC_RESOURCE_PATH_RE = /(?:^|[.[\]"])(?:image|img|icon|logo|avatar|portrait|poster|cover|lottie|video_url|audio_url|media_url|swipe_up_lottie)(?:$|[.[\]"])/i;
+const LOTTIE_RESOURCE_EXTENSION_RE = /\.lottie$/i;
 
 const RESOURCE_TYPE_LABELS: Record<StaticResourceType, string> = {
   image: '图片',
@@ -11,11 +13,6 @@ const RESOURCE_TYPE_LABELS: Record<StaticResourceType, string> = {
   package: '包/压缩',
   other: '其他',
 };
-
-const VIDEO_RESOURCE_EXTENSION_RE = /\.(?:mp4|m4v|mov|webm|avi|m3u8)$/i;
-const IMAGE_RESOURCE_EXTENSION_RE = /\.(?:apng|avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i;
-const AUDIO_RESOURCE_EXTENSION_RE = /\.(?:mp3|wav|aac|ogg|flac|m4a)$/i;
-const PACKAGE_RESOURCE_EXTENSION_RE = /\.(?:apk|ipa|zip|rar|7z|tar|gz|tgz)$/i;
 
 const getStaticResourcePathname = (schema: string): string => {
   const normalizedSchema = schema.trim().replace(/\\\//g, '/');
@@ -34,21 +31,22 @@ export const getStaticResourceType = (
   const normalizedPath = path.toLowerCase();
   const compactPath = normalizedPath.replace(/[^a-z0-9]/g, '');
   const haystack = `${pathname} ${normalizedPath}`.toLowerCase();
+  const resourcePathType = getResourcePathType(pathname);
 
   if (pathname.toLowerCase().endsWith('.lottie') || haystack.includes('lottie')) return 'lottie';
-  if (VIDEO_RESOURCE_EXTENSION_RE.test(pathname) || compactPath.includes('videourl') || compactPath.includes('mediaurl')) {
+  if (resourcePathType === 'video' || compactPath.includes('videourl') || compactPath.includes('mediaurl')) {
     return 'video';
   }
   if (
-    IMAGE_RESOURCE_EXTENSION_RE.test(pathname) ||
+    resourcePathType === 'image' ||
     ['image', 'img', 'icon', 'logo', 'avatar', 'portrait', 'poster', 'cover'].some(keyword => compactPath.includes(keyword))
   ) {
     return 'image';
   }
-  if (AUDIO_RESOURCE_EXTENSION_RE.test(pathname) || compactPath.includes('audiourl') || compactPath.includes('audio')) {
+  if (resourcePathType === 'audio' || compactPath.includes('audiourl') || compactPath.includes('audio')) {
     return 'audio';
   }
-  if (PACKAGE_RESOURCE_EXTENSION_RE.test(pathname)) return 'package';
+  if (resourcePathType === 'package') return 'package';
 
   return 'other';
 };
@@ -72,13 +70,8 @@ export const getResourceTypeSearchTokens = (resourceType: StaticResourceType): s
 };
 
 export const isStaticResourceSchema = (schema: string, path: string): boolean => {
-  const normalizedSchema = schema.trim().replace(/\\\//g, '/');
-  try {
-    const url = new URL(normalizedSchema);
-    if (STATIC_RESOURCE_SCHEMA_EXTENSION_RE.test(url.pathname)) return true;
-  } catch {
-    if (STATIC_RESOURCE_SCHEMA_EXTENSION_RE.test(normalizedSchema.split(/[?#]/)[0] || '')) return true;
-  }
+  const pathname = getStaticResourcePathname(schema);
+  if (getResourcePathType(pathname) || LOTTIE_RESOURCE_EXTENSION_RE.test(pathname)) return true;
 
   return STATIC_RESOURCE_PATH_RE.test(path);
 };

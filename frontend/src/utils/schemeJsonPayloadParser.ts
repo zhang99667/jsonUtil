@@ -3,6 +3,7 @@ import {
   normalizeJsonEscapedQuoteCandidate,
   normalizeLooseJsonCandidate,
 } from './schemeJsonPayloadNormalizers';
+import { tryParseJsonValue } from './jsonValueGuards';
 import type {
   JsonParseMeta,
   JsonParseStrategy,
@@ -10,15 +11,16 @@ import type {
 } from './schemeJsonPayloadTypes';
 
 const parseJsonCandidateWithMeta = (candidate: string, strategy: JsonParseStrategy): JsonParseMeta | null => {
-  try {
-    return {
-      value: JSON.parse(candidate) as SchemeJsonPayloadValue,
-      strategy,
-      normalized: candidate,
-    };
-  } catch {
-    return null;
-  }
+  const value = tryParseJsonValue(candidate);
+  return value === undefined ? null : { value, strategy, normalized: candidate };
+};
+
+export const tryParseJsonStringLiteral = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) return null;
+
+  const parsed = tryParseJsonValue(trimmed);
+  return typeof parsed === 'string' ? parsed : null;
 };
 
 export const tryParseJsonWithMeta = (value: string): JsonParseMeta | null => {

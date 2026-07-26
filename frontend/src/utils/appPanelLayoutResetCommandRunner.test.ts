@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { notifyFloatingPanelLayoutReset, resetFloatingPanelLayoutStorage } from './panelLayout';
 import { runAppPanelLayoutResetCommand } from './appPanelLayoutResetCommandRunner';
-import { showSuccess } from './toast';
+import { showSettingsDialogSuccess } from './toast';
 
 vi.mock('./panelLayout', () => ({
   notifyFloatingPanelLayoutReset: vi.fn(),
@@ -9,7 +9,7 @@ vi.mock('./panelLayout', () => ({
 }));
 
 vi.mock('./toast', () => ({
-  showSuccess: vi.fn(),
+  showSettingsDialogSuccess: vi.fn(),
 }));
 
 describe('appPanelLayoutResetCommandRunner', () => {
@@ -24,6 +24,6 @@ describe('appPanelLayoutResetCommandRunner', () => {
     expect(notifyFloatingPanelLayoutReset).toHaveBeenCalledTimes(1);
     expect(vi.mocked(resetFloatingPanelLayoutStorage).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(notifyFloatingPanelLayoutReset).mock.invocationCallOrder[0]);
-    expect(showSuccess).toHaveBeenCalledWith('浮动面板布局已恢复默认');
+    expect(showSettingsDialogSuccess).toHaveBeenCalledWith('浮动面板布局已恢复默认');
   });
 });

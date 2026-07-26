@@ -10,5 +10,7 @@ export const appWorkflowStateAsyncMaintainabilityBudgets = [
   stateAsyncBudget('frontend/src/utils/appAsyncTransformWorkerMessages.ts', 60, '主应用异步转换 Worker 消息 helper 只维护请求构造与上下文守卫接线'),
   stateAsyncBudget('frontend/src/utils/appAsyncTransformWorkerMessages.test.ts', 180, '异步转换 Worker 协议测试锁定真实上下文、错误响应、畸形元素和循环值边界'),
   stateAsyncBudget('frontend/src/utils/transformContextValidation.ts', 245, '转换上下文运行时守卫集中校验路径记录、转换步骤、摘要和诊断元素，避免未验形状进入状态'),
+  stateAsyncBudget('frontend/src/utils/transformSchemeDisplayHeaderValidation.ts', 80, 'Scheme 协议头展示元数据守卫应独立校验路径、编码层和展示字段契约'),
+  stateAsyncBudget('frontend/src/utils/transformContextValidation.test.ts', 100, '转换上下文守卫测试只锁定协议头展示元数据的合法与畸形输入边界'),
   stateAsyncBudget('frontend/src/utils/appAsyncTransformState.ts', 145, '主应用异步转换结果构造、freshness 和输出选择应保持纯函数，副作用留在 App 主入口'),
 ];

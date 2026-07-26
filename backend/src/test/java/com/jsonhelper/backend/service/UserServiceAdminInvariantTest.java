@@ -45,8 +45,7 @@ class UserServiceAdminInvariantTest {
     @Test
     void demotingOnlyEnabledAdminReturnsConflict() {
         User admin = enabledAdmin(1L);
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setRole("USER");
+        UpdateUserRequest request = new UpdateUserRequest(null, null, null, "USER", null);
         prepareEnabledAdmins(admin);
 
         ResponseStatusException error = assertThrows(
@@ -62,8 +61,7 @@ class UserServiceAdminInvariantTest {
     @Test
     void disablingOnlyEnabledAdminReturnsConflict() {
         User admin = enabledAdmin(1L);
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setEnabled(false);
+        UpdateUserRequest request = new UpdateUserRequest(null, null, null, null, false);
         prepareEnabledAdmins(admin);
 
         ResponseStatusException error = assertThrows(
@@ -109,8 +107,7 @@ class UserServiceAdminInvariantTest {
     void demotingAdminSucceedsWhenAnotherEnabledAdminRemains() {
         User admin = enabledAdmin(1L);
         User otherAdmin = enabledAdmin(2L);
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setRole("USER");
+        UpdateUserRequest request = new UpdateUserRequest(null, null, null, "USER", null);
         prepareEnabledAdmins(admin, otherAdmin);
         when(userRepository.save(admin)).thenReturn(admin);
 

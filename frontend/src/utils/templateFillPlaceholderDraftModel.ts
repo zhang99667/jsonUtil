@@ -6,6 +6,7 @@ import {
 } from './placeholderFillTemplateContract';
 import { parsePlaceholderTemplateDetails } from './placeholderFillTemplateDraftReaders';
 import { isRecord } from './placeholderFillTemplateRecord';
+import { parseJsonValue } from './jsonValueGuards';
 
 export {
   PLACEHOLDER_FILL_TEMPLATE_KIND,
@@ -21,7 +22,7 @@ export const parsePlaceholderTemplateDraft = (templateText: string): Placeholder
   if (!templateText.trim()) return null;
 
   try {
-    const parsed = JSON.parse(templateText) as unknown;
+    const parsed = parseJsonValue(templateText);
     if (!isRecord(parsed) || parsed.kind !== PLACEHOLDER_FILL_TEMPLATE_KIND) return null;
     if (!isRecord(parsed.placeholders)) return null;
 

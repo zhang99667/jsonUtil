@@ -1,13 +1,11 @@
+import type { JsonValue } from '../types';
 import type { SchemePlaceholder, SchemePlaceholderGroup } from './schemeTypes';
 import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 
-type PlaceholderValue =
-  | string
-  | number
-  | boolean
-  | null
-  | PlaceholderValue[]
-  | { [key: string]: PlaceholderValue };
+interface PlaceholderCollectTask {
+  value: JsonValue;
+  path: string;
+}
 
 const RUNTIME_PLACEHOLDER_RE = /^__[A-Z][A-Z0-9_]*__$/;
 const RUNTIME_PLACEHOLDER_DESCRIPTIONS: Record<string, string> = {
@@ -34,28 +32,47 @@ export const getRuntimePlaceholderDescription = (value: string): string => (
 );
 
 export const collectRuntimePlaceholders = (
-  value: PlaceholderValue,
+  value: JsonValue,
   path: string = '$'
 ): SchemePlaceholder[] => {
-  if (typeof value === 'string') {
-    return isRuntimePlaceholder(value)
-      ? [{ path, value, description: getRuntimePlaceholderDescription(value) }]
-      : [];
+  const placeholders: SchemePlaceholder[] = [];
+  const tasks: PlaceholderCollectTask[] = [{ value, path }];
+
+  while (tasks.length > 0) {
+    const task = tasks.pop();
+    if (!task) break;
+
+    if (typeof task.value === 'string') {
+      if (isRuntimePlaceholder(task.value)) {
+        placeholders.push({
+          path: task.path,
+          value: task.value,
+          description: getRuntimePlaceholderDescription(task.value),
+        });
+      }
+      continue;
+    }
+
+    if (Array.isArray(task.value)) {
+      for (let index = task.value.length - 1; index >= 0; index -= 1) {
+        if (!(index in task.value)) continue;
+        tasks.push({
+          value: task.value[index],
+          path: appendJsonPathIndex(task.path, index),
+        });
+      }
+      continue;
+    }
+
+    if (!task.value || typeof task.value !== 'object') continue;
+    const entries = Object.entries(task.value);
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const [key, item] = entries[index];
+      tasks.push({ value: item, path: appendJsonPathKey(task.path, key) });
+    }
   }
 
-  if (Array.isArray(value)) {
-    return value.flatMap((item, index) => (
-      collectRuntimePlaceholders(item, appendJsonPathIndex(path, index))
-    ));
-  }
-
-  if (value && typeof value === 'object') {
-    return Object.entries(value).flatMap(([key, item]) => (
-      collectRuntimePlaceholders(item, appendJsonPathKey(path, key))
-    ));
-  }
-
-  return [];
+  return placeholders;
 };
 
 export const buildSchemePlaceholderGroups = (

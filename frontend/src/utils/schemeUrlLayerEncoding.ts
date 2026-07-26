@@ -32,7 +32,7 @@ export const encodeUrlLayerContent = (
     const hasHashParams = Boolean(hashParamSource);
 
     if (hasQueryParams && hasHashParams) {
-      // 查询参数与片段同时存在时，解析结果用 `_hash` 承载片段路由参数。
+      // 查询参数与片段同时存在时，解析结果用 _hash 承载片段路由参数。
       const { _hash: hashParams, ...queryParams } = editedParams;
       url.search = buildQueryStringFromObject(queryParams, url.search);
       url.hash = replaceHashParams(

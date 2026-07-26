@@ -8,6 +8,7 @@ import {
   type JsonSchemaInferenceSamplingSummary,
 } from './jsonSchemaInferenceModel';
 import { isLikelyJsonLinesInput, parseJsonLinesDetailed } from './jsonLines';
+import { parseJsonValue } from './jsonValueGuards';
 
 export type {
   JsonSchemaInferenceOptions,
@@ -120,7 +121,7 @@ const getRootSampleSummary = (
 const parseSchemaSource = (jsonText: string): ParsedSchemaSource | { error: string } => {
   try {
     return {
-      value: JSON.parse(jsonText),
+      value: parseJsonValue(jsonText),
       sourceKind: 'json',
     };
   } catch (error) {

@@ -12,10 +12,10 @@ export const useAppSettingsModalCommands = ({
   onTrackToolEvent,
 }: UseAppSettingsModalCommandsInput) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('shortcuts');
+  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>('general');
 
   const handleOpenSettingsPanel = useCallback(() => {
-    setSettingsInitialTab('shortcuts');
+    setSettingsInitialTab('general');
     setIsSettingsModalOpen(true);
     onTrackToolEvent('SETTINGS_OPEN', 'panel');
   }, [onTrackToolEvent]);

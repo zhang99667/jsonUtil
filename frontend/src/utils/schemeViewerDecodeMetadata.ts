@@ -1,9 +1,11 @@
 import {
-  extractBase64MetaInfo,
+  extractBase64MetaInfoFromContext,
   extractSchemeCommandSummaryInfo,
+  extractSchemeCommandSummaryInfoFromContext,
   type Base64MetaInfo,
   type SchemeCommandSummaryInfo,
 } from './schemeMetadata';
+import { parseSchemeMetadataContext } from './schemeMetadataContext';
 import type { SchemeDecodeResult } from './schemeTypes';
 
 export interface SchemeViewerDecodeMetadata {
@@ -25,15 +27,38 @@ export const createEmptySchemeDecodeResult = (original = ''): SchemeDecodeResult
 export const buildSchemeViewerDecodeMetadata = (
   result: SchemeDecodeResult,
   options: BuildSchemeViewerDecodeMetadataOptions = {}
-): SchemeViewerDecodeMetadata => ({
-  base64MetaInfo: extractBase64MetaInfo(result.decoded, result.isJson),
-  commandSummaryInfo: extractSchemeCommandSummaryInfo(
-    result.decoded,
-    result.isJson,
-    result.schemeInfo,
-    {
-      includeCommandFieldRows: options.includeCommandFieldRows,
-      source: result.original,
-    }
-  ),
-});
+): SchemeViewerDecodeMetadata => {
+  if (!result.isJson) {
+    return {
+      base64MetaInfo: null,
+      commandSummaryInfo: extractSchemeCommandSummaryInfo(
+        result.decoded,
+        false,
+        result.schemeInfo,
+        {
+          includeCommandFieldRows: options.includeCommandFieldRows,
+          source: result.original,
+        },
+      ),
+    };
+  }
+
+  const context = parseSchemeMetadataContext(result.decoded, result.original);
+  if (!context) {
+    return {
+      base64MetaInfo: null,
+      commandSummaryInfo: null,
+    };
+  }
+
+  return {
+    base64MetaInfo: extractBase64MetaInfoFromContext(context),
+    commandSummaryInfo: extractSchemeCommandSummaryInfoFromContext(
+      context,
+      result.schemeInfo,
+      {
+        includeCommandFieldRows: options.includeCommandFieldRows,
+      },
+    ),
+  };
+};

@@ -1,17 +1,11 @@
+import {
+  normalizeJsonEscapedSlashes,
+  normalizeJsonUnicodeAsciiEscapes,
+} from './schemeEscapedPayloads';
+
 const PROTOCOL_RELATIVE_URL_BASE = 'https:';
 const BARE_HOST_URL_BASE = 'https://';
 const HTTP_SCHEME_PROTOCOLS = new Set(['http:', 'https:']);
-
-const normalizeJsonEscapedSlashes = (source: string): string => (
-  source.replace(/\\\//g, '/')
-);
-
-const normalizeJsonUnicodeAsciiEscapes = (source: string): string => (
-  source.replace(/\\u00([2-7][0-9a-f])/gi, (match, hex: string) => {
-    const code = Number.parseInt(hex, 16);
-    return code >= 0x20 && code <= 0x7e ? String.fromCharCode(code) : match;
-  })
-);
 
 export const normalizeJsonUrlEscapes = (source: string): string => (
   normalizeJsonUnicodeAsciiEscapes(normalizeJsonEscapedSlashes(source))
@@ -46,13 +40,42 @@ export const isBareHostUrl = (value: string): boolean => {
   return /^[A-Za-z0-9.-]+(?::\d+)?$/.test(host) && isDomainLikeHost(host);
 };
 
-export const createUrl = (urlString: string): URL => {
-  const trimmed = normalizeJsonUrlEscapes(urlString.trim());
-  if (isBareHostUrl(trimmed)) {
-    return new URL(`${BARE_HOST_URL_BASE}${trimmed}`);
-  }
-  return new URL(isProtocolRelativeUrl(trimmed) ? `${PROTOCOL_RELATIVE_URL_BASE}${trimmed}` : trimmed);
+export interface SchemeUrlContext {
+  normalizedSource: string;
+  url: URL;
+  isBareHost: boolean;
+  isProtocolRelative: boolean;
+}
+
+export const createSchemeUrlContext = (urlString: string): SchemeUrlContext => {
+  const normalizedSource = normalizeJsonUrlEscapes(urlString.trim());
+  const isBareHost = isBareHostUrl(normalizedSource);
+  const isProtocolRelative = isProtocolRelativeUrl(normalizedSource);
+  // 原生 URL 不接受裸域名和协议相对地址；临时补齐 HTTPS，形态标记负责后续恢复。
+  const url = new URL(
+    isBareHost
+      ? `${BARE_HOST_URL_BASE}${normalizedSource}`
+      : isProtocolRelative
+        ? `${PROTOCOL_RELATIVE_URL_BASE}${normalizedSource}`
+        : normalizedSource,
+  );
+
+  return {
+    normalizedSource,
+    url,
+    isBareHost,
+    isProtocolRelative,
+  };
 };
+
+export const isUrl = (value: string): boolean => {
+  const normalized = normalizeJsonUrlEscapes(value.trim());
+  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/.test(normalized)
+    || isProtocolRelativeUrl(normalized)
+    || isBareHostUrl(normalized);
+};
+
+export const createUrl = (urlString: string): URL => createSchemeUrlContext(urlString).url;
 
 export const stringifyUrlForOriginalShape = (url: URL, originalUrl: string): string => {
   const serialized = url.toString();

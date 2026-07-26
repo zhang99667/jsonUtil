@@ -6,32 +6,24 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 public class CorsConfig {
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        
-        // 允许的来源
-        configuration.setAllowedOrigins(Arrays.asList(
+    private static final List<String> ALLOWED_ORIGINS = List.of(
             "http://localhost",
             "http://localhost:80",
-            "http://localhost:5173",  // Vite 开发服务器
+            "http://localhost:5173",
             "https://jsonutils.markz.fun",
             "https://markz.fun",
             "https://www.markz.fun",
             "https://admin.markz.fun"
-        ));
-        
-        // 允许的 HTTP 方法
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        
-        // 允许的请求头
-        configuration.setAllowedHeaders(Arrays.asList(
+    );
+    private static final List<String> ALLOWED_METHODS = List.of(
+            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+    );
+    private static final List<String> ALLOWED_HEADERS = List.of(
             "Authorization",
             "Content-Type",
             "X-Requested-With",
@@ -39,15 +31,16 @@ public class CorsConfig {
             "Origin",
             "Access-Control-Request-Method",
             "Access-Control-Request-Headers"
-        ));
-        
-        // 允许发送凭证（Cookie、授权请求头）
+    );
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(ALLOWED_ORIGINS);
+        configuration.setAllowedMethods(ALLOWED_METHODS);
+        configuration.setAllowedHeaders(ALLOWED_HEADERS);
         configuration.setAllowCredentials(true);
-        
-        // 预检请求缓存时间
         configuration.setMaxAge(3600L);
-        
-        // 暴露的响应头
         configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

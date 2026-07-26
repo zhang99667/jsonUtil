@@ -1,3 +1,5 @@
+import { readObjectPropertySafely } from './storage';
+
 export enum AiRepairErrorCode {
   ApiKeyRequired = 'api_key_required',
   CustomBaseUrlRequired = 'custom_base_url_required',
@@ -35,14 +37,17 @@ export const createAiRepairError = (
   message: string
 ): AiRepairError => new AiRepairError(code, message);
 
-export const isAiRepairError = (error: unknown): error is AiRepairError => (
-  error instanceof Error && isAiRepairErrorCode((error as { code?: unknown }).code)
-);
-
-export const getAiRepairErrorCode = (error: unknown): AiRepairErrorCode | null => (
-  isAiRepairError(error) ? error.code : null
-);
-
 const isAiRepairErrorCode = (code: unknown): code is AiRepairErrorCode => (
   typeof code === 'string' && AI_REPAIR_ERROR_CODES.has(code)
+);
+
+export const getAiRepairErrorCode = (error: unknown): AiRepairErrorCode | null => {
+  if (readObjectPropertySafely(error, 'name') !== 'AiRepairError') return null;
+  if (typeof readObjectPropertySafely(error, 'message') !== 'string') return null;
+  const code = readObjectPropertySafely(error, 'code');
+  return isAiRepairErrorCode(code) ? code : null;
+};
+
+export const isAiRepairError = (error: unknown): error is AiRepairError => (
+  getAiRepairErrorCode(error) !== null
 );

@@ -183,7 +183,11 @@ describe('useSchemeViewerDecode', () => {
   it('只接收请求标识匹配的成功结果并补齐元信息', () => {
     const harness = useSchemeViewerDecodeForTest();
     harness.effects[1]();
-    const result = createDecodedResult('worker-result');
+    const result = {
+      ...createDecodedResult('worker-result'),
+      displayDecoded: '{"__scheme__":"sampleapp://v1/browser/open"}',
+      displayHeaders: [],
+    };
 
     harness.workers[0].emitMessage({ id: 1, result });
 

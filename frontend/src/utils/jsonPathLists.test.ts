@@ -5,6 +5,19 @@ import {
   parseStoredJsonPathList,
   removeJsonPathListItem,
 } from './jsonPathLists';
+import {
+  addRecentStringListItem,
+  normalizeRecentStringList,
+  parseStoredRecentStringList,
+  removeRecentStringListItem,
+} from './recentStringLists';
+
+it('领域接口直接复用最近字符串列表实现', () => {
+  expect(normalizeJsonPathList).toBe(normalizeRecentStringList);
+  expect(parseStoredJsonPathList).toBe(parseStoredRecentStringList);
+  expect(addJsonPathListItem).toBe(addRecentStringListItem);
+  expect(removeJsonPathListItem).toBe(removeRecentStringListItem);
+});
 
 describe('normalizeJsonPathList', () => {
   it('过滤非法项、空白项并去重', () => {

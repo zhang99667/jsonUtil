@@ -6,6 +6,7 @@ import { formatUnknownError } from './errors';
 import { appendJsonPathIndex, appendJsonPathKey } from './jsonPathSegments';
 import { isLikelyJsonLinesInput, parseJsonLinesDetailed } from './jsonLines';
 import { appendJsonPointerSegment, decodeJsonPointerSegment } from './jsonPointer';
+import { parseJsonValue } from './jsonValueGuards';
 import { isRecord } from './storage';
 
 export type JsonSchemaValidationStatus = 'empty' | 'valid' | 'invalid' | 'input-error' | 'schema-error';
@@ -38,14 +39,17 @@ export interface JsonSchemaValidationResult {
 const MAX_VISIBLE_SCHEMA_ISSUES = 20;
 
 type ParsedJsonSourceKind = 'json' | 'json-lines';
+type ParsedJsonResult =
+  | { value: unknown; sourceKind: ParsedJsonSourceKind }
+  | { error: string };
 
 const parseJson = (
   value: string,
   label: string,
   options: { allowJsonLines?: boolean } = {}
-): { value?: unknown; sourceKind?: ParsedJsonSourceKind; error?: string } => {
+): ParsedJsonResult => {
   try {
-    return { value: JSON.parse(value), sourceKind: 'json' };
+    return { value: parseJsonValue(value), sourceKind: 'json' };
   } catch (error) {
     const message = formatUnknownError(error);
 
@@ -202,7 +206,18 @@ const toIssue = (error: ErrorObject): JsonSchemaIssue => {
   };
 };
 
-const createEmptyIssueInsights = () => ({
+type IssueFreeValidationStatus = Exclude<JsonSchemaValidationStatus, 'invalid'>;
+
+const createIssueFreeValidationResult = (
+  status: IssueFreeValidationStatus,
+  summary: string,
+): JsonSchemaValidationResult => ({
+  status,
+  isValid: status === 'valid',
+  summary,
+  issues: [],
+  issueCount: 0,
+  shownIssueCount: 0,
   issueKeywordGroups: [],
   issuePathList: [],
 });
@@ -230,65 +245,25 @@ export const validateJsonAgainstSchema = (
   schemaText: string
 ): JsonSchemaValidationResult => {
   if (!jsonText.trim() && !schemaText.trim()) {
-    return {
-      status: 'empty',
-      isValid: false,
-      summary: '请先输入 JSON 和 JSON Schema',
-      issues: [],
-      issueCount: 0,
-      shownIssueCount: 0,
-      ...createEmptyIssueInsights(),
-    };
+    return createIssueFreeValidationResult('empty', '请先输入 JSON 和 JSON Schema');
   }
 
   if (!jsonText.trim()) {
-    return {
-      status: 'input-error',
-      isValid: false,
-      summary: '请先在 SOURCE 输入 JSON',
-      issues: [],
-      issueCount: 0,
-      shownIssueCount: 0,
-      ...createEmptyIssueInsights(),
-    };
+    return createIssueFreeValidationResult('input-error', '请先在 SOURCE 输入 JSON');
   }
 
   if (!schemaText.trim()) {
-    return {
-      status: 'schema-error',
-      isValid: false,
-      summary: '请先粘贴 JSON Schema',
-      issues: [],
-      issueCount: 0,
-      shownIssueCount: 0,
-      ...createEmptyIssueInsights(),
-    };
+    return createIssueFreeValidationResult('schema-error', '请先粘贴 JSON Schema');
   }
 
   const parsedData = parseJson(jsonText, 'SOURCE', { allowJsonLines: true });
-  if (parsedData.error) {
-    return {
-      status: 'input-error',
-      isValid: false,
-      summary: parsedData.error,
-      issues: [],
-      issueCount: 0,
-      shownIssueCount: 0,
-      ...createEmptyIssueInsights(),
-    };
+  if ('error' in parsedData) {
+    return createIssueFreeValidationResult('input-error', parsedData.error);
   }
 
   const parsedSchema = parseJson(schemaText, 'Schema');
-  if (parsedSchema.error) {
-    return {
-      status: 'schema-error',
-      isValid: false,
-      summary: parsedSchema.error,
-      issues: [],
-      issueCount: 0,
-      shownIssueCount: 0,
-      ...createEmptyIssueInsights(),
-    };
+  if ('error' in parsedSchema) {
+    return createIssueFreeValidationResult('schema-error', parsedSchema.error);
   }
 
   try {
@@ -298,15 +273,7 @@ export const validateJsonAgainstSchema = (
     const sourceLabel = parsedData.sourceKind === 'json-lines' ? 'JSON Lines' : 'JSON';
 
     if (isValid) {
-      return {
-        status: 'valid',
-        isValid: true,
-        summary: `当前 ${sourceLabel} 符合 Schema`,
-        issues: [],
-        issueCount: 0,
-        shownIssueCount: 0,
-        ...createEmptyIssueInsights(),
-      };
+      return createIssueFreeValidationResult('valid', `当前 ${sourceLabel} 符合 Schema`);
     }
 
     const allIssues = (validate.errors || []).map(toIssue);
@@ -324,15 +291,7 @@ export const validateJsonAgainstSchema = (
     };
   } catch (error) {
     const message = formatUnknownError(error);
-    return {
-      status: 'schema-error',
-      isValid: false,
-      summary: `Schema 无法编译: ${message}`,
-      issues: [],
-      issueCount: 0,
-      shownIssueCount: 0,
-      ...createEmptyIssueInsights(),
-    };
+    return createIssueFreeValidationResult('schema-error', `Schema 无法编译: ${message}`);
   }
 };
 

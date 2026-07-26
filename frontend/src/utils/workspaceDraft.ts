@@ -1,4 +1,5 @@
 import { FileTab, TransformMode } from '../types';
+import { parseJsonValue } from './jsonValueGuards';
 import { isRecord, safeGetStorageItem, safeRemoveStorageItem, safeSetStorageItem } from './storage';
 
 export const WORKSPACE_DRAFT_STORAGE_KEY = 'json-helper-workspace-draft';
@@ -56,7 +57,7 @@ export const parseWorkspaceDraftSnapshot = (stored: string | null): WorkspaceDra
   if (!stored || stored.length > WORKSPACE_DRAFT_MAX_STORAGE_CHARS) return null;
 
   try {
-    const parsed: unknown = JSON.parse(stored);
+    const parsed = parseJsonValue(stored);
     if (!isRecord(parsed)) return null;
     if (parsed.version !== WORKSPACE_DRAFT_VERSION) return null;
 

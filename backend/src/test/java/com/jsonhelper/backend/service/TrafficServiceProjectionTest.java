@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,7 +34,9 @@ class TrafficServiceProjectionTest {
 
     @BeforeEach
     void setUp() {
-        trafficService = new TrafficService(visitLogRepository, geoService, userAgentClassifier);
+        trafficService = new TrafficService(
+                visitLogRepository, geoService, userAgentClassifier, Clock.systemDefaultZone()
+        );
     }
 
     @Test

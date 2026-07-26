@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createSchemeUrlContext,
   createUrl,
   isBareHostUrl,
   isHttpSchemeProtocol,
@@ -26,6 +27,26 @@ describe('schemeUrlShapes', () => {
     expect(createUrl('//m.example.com/s?word=json').host).toBe('m.example.com');
     expect(createUrl('m.example.com/s?word=json').protocol).toBe('https:');
     expect(createUrl('sampleapp://v1/open').protocol).toBe('sampleapp:');
+  });
+
+  it('共享解析上下文保留原始 URL 形态', () => {
+    const absolute = createSchemeUrlContext('sampleapp:\\/\\/v1\\/open?from=feed');
+    expect(absolute.normalizedSource).toBe('sampleapp://v1/open?from=feed');
+    expect(absolute.url.protocol).toBe('sampleapp:');
+    expect(absolute.isBareHost).toBe(false);
+    expect(absolute.isProtocolRelative).toBe(false);
+
+    const bare = createSchemeUrlContext('m.example.com/s?word=json');
+    expect(bare.url.protocol).toBe('https:');
+    expect(bare.isBareHost).toBe(true);
+
+    const protocolRelative = createSchemeUrlContext('//m.example.com/s?word=json');
+    expect(protocolRelative.url.host).toBe('m.example.com');
+    expect(protocolRelative.isProtocolRelative).toBe(true);
+  });
+
+  it('共享解析上下文对非法 URL 保持原生异常', () => {
+    expect(() => createSchemeUrlContext('sampleapp://[')).toThrow();
   });
 
   it('按原始 URL 形态序列化', () => {

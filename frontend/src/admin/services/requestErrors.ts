@@ -1,26 +1,5 @@
-import { parseJsonWithFallback } from '../../utils/storage';
-
-interface AdminResultLike {
-    code?: unknown;
-    message?: unknown;
-    msg?: unknown;
-    error?: unknown;
-}
-
-interface AdminResponseLike {
-    status?: number;
-    data?: unknown;
-}
-
-interface AdminRequestErrorLike {
-    response?: AdminResponseLike;
-    code?: string;
-    message?: string;
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-    Boolean(value) && typeof value === 'object'
-);
+import { AxiosHeaders, type RawAxiosHeaders } from 'axios';
+import { isRecord, parseJsonWithFallback, readObjectPropertySafely } from '../../utils/storage';
 
 const normalizeMessage = (value: unknown): string | null => {
     if (typeof value !== 'string') return null;
@@ -28,40 +7,39 @@ const normalizeMessage = (value: unknown): string | null => {
     return message ? message : null;
 };
 
-const getRecordMessage = (data: unknown): string | null => {
-    if (!isRecord(data)) return null;
-
-    const result = data as AdminResultLike;
-    return normalizeMessage(result.message)
-        || normalizeMessage(result.msg)
-        || normalizeMessage(result.error);
-};
-
-const parseJsonText = (text: string): unknown | null => (
-    parseJsonWithFallback<unknown>(text, null)
-);
-
-const getStatusFallbackMessage = (status?: number): string => {
-    switch (status) {
-        case 400:
-            return '请求参数不正确，请检查后重试';
-        case 401:
-        case 403:
-            return '登录已过期，请重新登录';
-        case 404:
-            return '请求的资源不存在';
-        case 413:
-            return '请求内容过大，请缩小文件或数据后重试';
-        case 500:
-            return '服务器内部错误，请稍后重试';
-        case 502:
-        case 503:
-        case 504:
-            return '服务暂不可用，请稍后重试';
-        default:
-            return status ? `请求失败 (${status})` : '请求错误';
+const isBlob = (value: unknown): value is Blob => {
+    try {
+        return typeof Blob !== 'undefined' && value instanceof Blob;
+    } catch {
+        return false;
     }
 };
+
+const getRecordMessage = (data: unknown): string | null => {
+    if (isBlob(data) || !isRecord(data)) return null;
+
+    return normalizeMessage(readObjectPropertySafely(data, 'message'))
+        || normalizeMessage(readObjectPropertySafely(data, 'msg'))
+        || normalizeMessage(readObjectPropertySafely(data, 'error'));
+};
+
+const parseJsonText = (text: string): unknown | null => parseJsonWithFallback<unknown>(text, null);
+
+const STATUS_FALLBACK_MESSAGES = new Map<number, string>([
+    [400, '请求参数不正确，请检查后重试'],
+    [401, '登录已过期，请重新登录'],
+    [403, '登录已过期，请重新登录'],
+    [404, '请求的资源不存在'],
+    [413, '请求内容过大，请缩小文件或数据后重试'],
+    [500, '服务器内部错误，请稍后重试'],
+    [502, '服务暂不可用，请稍后重试'],
+    [503, '服务暂不可用，请稍后重试'],
+    [504, '服务暂不可用，请稍后重试'],
+]);
+
+const getStatusFallbackMessage = (status?: number): string => (
+    status ? STATUS_FALLBACK_MESSAGES.get(status) || `请求失败 (${status})` : '请求错误'
+);
 
 export class AdminRequestError extends Error {
     readonly status?: number;
@@ -77,27 +55,23 @@ export class AdminRequestError extends Error {
 }
 
 export const isAdminRequestError = (error: unknown): error is AdminRequestError => (
-    error instanceof AdminRequestError
-    || (
-        isRecord(error)
-        && error.name === 'AdminRequestError'
-        && error.handledByRequestInterceptor === true
-    )
+    !isBlob(error)
+    && isRecord(error)
+    && readObjectPropertySafely(error, 'name') === 'AdminRequestError'
+    && readObjectPropertySafely(error, 'handledByRequestInterceptor') === true
 );
 
-export const isAuthExpiredStatus = (status?: number): boolean => (
-    status === 401 || status === 403
-);
+export const isAuthExpiredStatus = (status?: number): boolean => status === 401 || status === 403;
 
 const readAuthorizationHeader = (headers: unknown): string | null => {
     if (!isRecord(headers)) return null;
 
-    if (typeof headers.get === 'function') {
-        return normalizeMessage(headers.get.call(headers, 'Authorization'));
+    try {
+        // 使用 Axios 的标准请求头模型统一处理实例、原始对象和键名大小写。
+        return normalizeMessage(AxiosHeaders.from(headers as RawAxiosHeaders).get('Authorization'));
+    } catch {
+        return null;
     }
-
-    return normalizeMessage(headers.Authorization)
-        || normalizeMessage(headers.authorization);
 };
 
 export const shouldInvalidateAdminSession = (
@@ -118,15 +92,20 @@ export const getAdminResultErrorMessage = (
 );
 
 export const readAdminResponseMessage = async (data: unknown): Promise<string | null> => {
-    const recordMessage = getRecordMessage(data);
-    if (recordMessage) return recordMessage;
-
-    if (typeof Blob !== 'undefined' && data instanceof Blob) {
-        const text = (await data.text()).trim();
+    if (isBlob(data)) {
+        let text: string;
+        try {
+            text = (await data.text()).trim();
+        } catch {
+            return null;
+        }
         if (!text) return null;
 
         return getRecordMessage(parseJsonText(text)) || text;
     }
+
+    const recordMessage = getRecordMessage(data);
+    if (recordMessage) return recordMessage;
 
     if (typeof data === 'string') {
         const text = data.trim();
@@ -141,21 +120,26 @@ export const readAdminResponseMessage = async (data: unknown): Promise<string | 
 export const resolveAdminRequestErrorMessage = async (
     error: unknown
 ): Promise<string> => {
-    const requestError = error as AdminRequestErrorLike;
-    const status = requestError.response?.status;
+    const requestError = isRecord(error) ? error : null;
+    const responseValue = readObjectPropertySafely(requestError, 'response');
+    const response = isRecord(responseValue) ? responseValue : null;
+    const statusValue = readObjectPropertySafely(response, 'status');
+    const status = typeof statusValue === 'number' ? statusValue : undefined;
 
-    if (requestError.response) {
-        const responseMessage = await readAdminResponseMessage(requestError.response.data);
+    if (response) {
+        const responseMessage = await readAdminResponseMessage(readObjectPropertySafely(response, 'data'));
         return responseMessage || getStatusFallbackMessage(status);
     }
 
-    if (requestError.code === 'ECONNABORTED' || requestError.message?.toLowerCase().includes('timeout')) {
+    const errorMessage = normalizeMessage(readObjectPropertySafely(requestError, 'message'));
+    if (readObjectPropertySafely(requestError, 'code') === 'ECONNABORTED'
+        || errorMessage?.toLowerCase().includes('timeout')) {
         return '请求超时，请稍后重试或检查后端服务状态';
     }
 
-    if (requestError.message === 'Network Error') {
+    if (errorMessage === 'Network Error') {
         return '网络错误，请检查网络连接或后端服务状态';
     }
 
-    return normalizeMessage(requestError.message) || '网络错误，请检查网络连接';
+    return errorMessage || '网络错误，请检查网络连接';
 };

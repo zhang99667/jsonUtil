@@ -68,4 +68,27 @@ describe('formatJsonPathValueForPreview', () => {
     expect(formatJsonPathValueForCompactPreview(12)).toBe('12');
     expect(formatJsonPathValueForCompactPreview(null)).toBe('null');
   });
+
+  it('不可直接序列化的基础值降级为稳定文本', () => {
+    const unstringifiable = Object.assign(() => undefined, {
+      toString: () => { throw new Error('字符串转换失败'); },
+    });
+
+    expect(formatJsonPathValueForPreview(BigInt(42))).toBe('42');
+    expect(formatJsonPathValueForCompactPreview(BigInt(42))).toBe('42');
+    expect(formatJsonPathValueForPreview(unstringifiable)).toBe('无法序列化');
+    expect(formatJsonPathValueForCompactPreview(unstringifiable)).toBe('无法序列化');
+  });
+
+  it('自定义序列化异常不会中断预览', () => {
+    const value = {
+      label: '异常对象',
+      toJSON: () => {
+        throw new Error('序列化失败');
+      },
+    };
+
+    expect(formatJsonPathValueForPreview(value)).toBe('无法序列化');
+    expect(formatJsonPathValueForCompactPreview(value)).toBe('对象(2)');
+  });
 });

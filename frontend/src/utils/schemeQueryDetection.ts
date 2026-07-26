@@ -24,6 +24,10 @@ export const isSchemeQueryStringFormat = (value: string): boolean => {
   return QUERY_PAIR_DELIMITER_RE.test(source);
 };
 
+export const hasUrlEncoding = (value: string): boolean => (
+  /%[0-9A-Fa-f]{2}/.test(value) && !isSchemeQueryStringFormat(value)
+);
+
 export const isDecodableSchemeQueryString = (
   value: string,
   options: SchemeQueryDetectionOptions

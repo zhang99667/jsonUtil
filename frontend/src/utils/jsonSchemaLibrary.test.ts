@@ -60,6 +60,7 @@ describe('jsonSchemaLibrary', () => {
     expect(parsed).toEqual([item]);
     expect(removeJsonSchemaLibraryItem(parsed, item.id)).toEqual([]);
     expect(parseJsonSchemaLibrary(serializeJsonSchemaLibrary(parsed))).toEqual(parsed);
+    expect(parseJsonSchemaLibrary('[{"id":"x","name":"x","schemaText":"{}","updatedAt":1,"overflow":1e400}]')).toEqual([]);
   });
 
   it('导出 Schema 收藏为可共享包', () => {
@@ -176,5 +177,14 @@ describe('jsonSchemaLibrary', () => {
   it('拒绝无法识别的导入内容', () => {
     expect(importJsonSchemaLibrary([], 'not json')).toBeNull();
     expect(importJsonSchemaLibrary([], '{"foo":"bar"}')).toBeNull();
+  });
+
+  it('深层导入容器不依赖 JavaScript 调用栈', () => {
+    const depth = 5_000;
+    const importText = `${'['.repeat(depth)}{"title":"深层 Schema","type":"string"}${']'.repeat(depth)}`;
+    const result = importJsonSchemaLibrary([], importText, 1);
+
+    expect(result?.importedCount).toBe(1);
+    expect(result?.items[0].name).toBe('深层 Schema');
   });
 });

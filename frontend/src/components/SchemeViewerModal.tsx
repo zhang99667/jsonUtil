@@ -6,10 +6,12 @@ import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useSchemeViewerDecode } from '../hooks/useSchemeViewerDecode';
 import {
   buildSchemePlaceholderGroups,
-  encodeWithLayers,
+  encodeWithLayersResult,
 } from '../utils/schemeUtils';
+import { stripSchemeDisplayHeaders } from '../utils/schemeDisplayProjection';
 import { copyText, getClipboardErrorMessage } from '../utils/clipboard';
 import { formatUnknownError } from '../utils/errors';
+import { parseJsonValue } from '../utils/jsonValueGuards';
 import { formatPrimaryCmdHandlerCompatibleResult } from '../utils/schemeMetadata';
 import {
   buildSchemeQualitySummary,
@@ -30,11 +32,6 @@ import { buildSchemeViewerActionTitles } from '../utils/schemeViewerActionTitles
 import {
   formatSchemeCopySizeLabel,
 } from '../utils/schemeViewerFormatters';
-import {
-  createSchemeViewerDecodeProjection,
-  createSchemeViewerEncodingInput,
-  restoreSchemeViewerDecodeProjection,
-} from '../utils/schemeViewerDecodeProjection';
 import { SchemeViewerDiagnosticsPanel } from './SchemeViewerDiagnosticsPanel';
 import { SchemeViewerFooterActions } from './SchemeViewerFooterActions';
 import {
@@ -67,6 +64,7 @@ interface SchemeViewerModalProps {
   path?: string; // JSON 路径，如 "$.action_cmd"（独立模式下可选）
   value?: string; // 原始协议字符串（独立模式下可选）
   sourceLabel?: string; // 来源业务标签，如 extraParam
+  readOnly?: boolean; // 仅查看完整原始地址，不允许编辑或回写
   onApply?: (newValue: string) => void; // 应用修改后的值
   standalone?: boolean; // 是否为独立模式（侧边栏打开，可手动输入）
   initialStandaloneInput?: string; // 独立模式下从外部入口预填的内容
@@ -80,6 +78,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   path,
   value,
   sourceLabel,
+  readOnly = false,
   onApply,
   standalone = false,
   initialStandaloneInput,
@@ -109,9 +108,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     canCancelDecode,
     cancelDecode,
   } = useSchemeViewerDecode(actualValue, { enabled: isOpen });
-  const decodeProjection = useMemo(() => (
-    createSchemeViewerDecodeProjection(decodeResult.decoded, decodeResult.original)
-  ), [decodeResult.decoded, decodeResult.original]);
+  const displayDecodedContent = decodeResult.displayDecoded || decodeResult.decoded;
 
   // 自定义滚动条钩子
   const {
@@ -130,9 +127,9 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
 
   // 初始化编辑内容
   useEffect(() => {
-    setEditedContent(decodeProjection.content);
+    setEditedContent(displayDecodedContent);
     setIsEditing(false);
-  }, [decodeProjection.content, decodeResult.original]);
+  }, [displayDecodedContent]);
 
   // 独立模式从外部入口打开时，预填待排查内容。
   useEffect(() => {
@@ -183,14 +180,14 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   };
 
   // JSON 解码结果被编辑后需要重新校验，避免非法内容写回原始字段。
-  const isPristineDecodedContent = !isEditing && editedContent === decodeProjection.content;
+  const isPristineDecodedContent = !isEditing && editedContent === displayDecodedContent;
   const editedJsonError = useMemo(() => {
     if (!decodeResult.isJson) return '';
     if (!editedContent.trim()) return 'JSON 内容不能为空';
     if (isPristineDecodedContent) return '';
 
     try {
-      JSON.parse(editedContent);
+      parseJsonValue(editedContent);
       return '';
     } catch (error) {
       const message = formatUnknownError(error);
@@ -199,8 +196,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   }, [decodeResult.isJson, editedContent, isPristineDecodedContent]);
   const hasNonReversibleLayer = useMemo(() => (
     decodeResult.layers.some(layer => layer.reversible === false)
-  ), [decodeResult.layers]);
+    || decodeResult.displayHeaders?.some(header => (
+      header.layers.some(layer => layer.reversible === false)
+    ))
+  ), [decodeResult.displayHeaders, decodeResult.layers]);
   const canApplyEdit = Boolean(
+    !readOnly &&
     onApply &&
     isEditing &&
     !isDecodePending &&
@@ -224,17 +225,18 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopySerialized = async () => {
     if (!canCopySerializedContent) return;
 
-    const encodingInput = createSchemeViewerEncodingInput(
+    const encodingResult = encodeWithLayersResult(
       editedContent,
-      decodeResult.original,
       decodeResult.layers,
-      decodeProjection.headerKey,
+      decodeResult.displayHeaders,
     );
-    const serializedContent = encodeWithLayers(encodingInput.content, encodingInput.layers);
-    if (!serializedContent) return;
+    if (!encodingResult.success) {
+      toast.error('当前结构变化无法安全序列化，请恢复协议头或数组顺序', { duration: 2400 });
+      return;
+    }
 
-    await copySchemeTextWithFeedback(serializedContent, {
-      successMessage: `已复制序列化结果（${formatSchemeCopySizeLabel(serializedContent)}）`,
+    await copySchemeTextWithFeedback(encodingResult.value, {
+      successMessage: `已复制序列化结果（${formatSchemeCopySizeLabel(encodingResult.value)}）`,
       warningMessage: '复制 Scheme 序列化结果失败:',
     });
   };
@@ -251,15 +253,16 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
     }
 
     if (onApply) {
-      // 将编辑后的内容按原编码层级重新编码
-      const encodingInput = createSchemeViewerEncodingInput(
+      const encodingResult = encodeWithLayersResult(
         editedContent,
-        decodeResult.original,
         decodeResult.layers,
-        decodeProjection.headerKey,
+        decodeResult.displayHeaders,
       );
-      const encoded = encodeWithLayers(encodingInput.content, encodingInput.layers);
-      onApply(encoded);
+      if (!encodingResult.success) {
+        toast.error('当前结构变化无法安全回写，请恢复协议头或数组顺序', { duration: 2400 });
+        return;
+      }
+      onApply(encodingResult.value);
     }
     onClose();
   };
@@ -400,15 +403,10 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
   const handleCopyCmdHandlerCompatibleResult = async () => {
     if (!canCopyCmdHandlerCompatibleResult) return;
 
-    const restoredContent = restoreSchemeViewerDecodeProjection(
-      editedContent,
-      decodeResult.original,
-      decodeProjection.headerKey,
-    );
     const cmdHandlerCompatibleCopyText = formatPrimaryCmdHandlerCompatibleResult(
-      restoredContent.content,
+      stripSchemeDisplayHeaders(editedContent, decodeResult.displayHeaders),
       commandSummaryInfo?.commandSchema,
-      restoredContent.source
+      actualValue
     );
     if (!cmdHandlerCompatibleCopyText) return;
 
@@ -518,7 +516,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
       hasDecodeLayers={decodeResult.layers.length > 0}
       canCopySerializedContent={canCopySerializedContent}
       onCopySerialized={handleCopySerialized}
-      canShowApplyEdit={Boolean(onApply && isEditing)}
+      canShowApplyEdit={Boolean(!readOnly && onApply && isEditing)}
       canApplyEdit={canApplyEdit}
       onApplyEdit={handleApply}
       actionTitles={actionTitles}
@@ -596,7 +594,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
             paramStages={paramStages}
             base64MetaInfo={base64MetaInfo}
             layers={decodeResult.layers}
-            decodedContent={decodeResult.decoded}
+            decodedContent={displayDecodedContent}
             isJson={decodeResult.isJson}
           />
 
@@ -656,10 +654,12 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
               {actualValue ? (
                 <SimpleEditor
                   value={editedContent}
-                  onChange={handleContentChange}
+                  onChange={readOnly ? undefined : handleContentChange}
+                  readOnly={readOnly}
                   language={editorLanguage}
                   height="100%"
                   className="border border-editor-border rounded h-full"
+                  showColorPreview
                 />
               ) : (
                 <div className="h-full flex items-center justify-center text-gray-500 text-xs border border-editor-border rounded bg-editor-bg">

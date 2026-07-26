@@ -17,8 +17,10 @@ describe('schemeJwt', () => {
   it('拒绝非对象 JWT header 或 payload', () => {
     const header = base64Encode(JSON.stringify(1)).replace(/=+$/g, '');
     const payload = base64Encode(JSON.stringify({ sub: '123' })).replace(/=+$/g, '');
+    const overflowPayload = base64Encode('{"value":1e400}').replace(/=+$/g, '');
 
     expect(decodeJwt(`${header}.${payload}.signature`)).toBeNull();
+    expect(decodeJwt(`${payload}.${overflowPayload}.signature`)).toBeNull();
     expect(decodeJwt(`foo.${payload}.signature`)).toBeNull();
     expect(decodeJwt(`${payload}.${payload}`)).toBeNull();
   });

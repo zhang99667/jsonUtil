@@ -1,9 +1,29 @@
+import { parseJsonValue } from './jsonValueGuards';
+
 export const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  if (typeof value !== 'object' || value === null) return false;
+  try {
+    return !Array.isArray(value);
+  } catch {
+    return false;
+  }
 };
 
 export const isFiniteNumber = (value: unknown): value is number => {
   return typeof value === 'number' && Number.isFinite(value);
+};
+
+export const readObjectPropertySafely = (
+  value: unknown,
+  property: PropertyKey
+): unknown => {
+  if (typeof value !== 'object' || value === null) return undefined;
+
+  try {
+    return Reflect.get(value, property);
+  } catch {
+    return undefined;
+  }
 };
 
 export const parseJsonWithFallback = <T>(
@@ -14,7 +34,7 @@ export const parseJsonWithFallback = <T>(
   if (!source) return fallback;
 
   try {
-    const parsed: unknown = JSON.parse(source);
+    const parsed = parseJsonValue(source);
     if (isValid && !isValid(parsed)) {
       return fallback;
     }

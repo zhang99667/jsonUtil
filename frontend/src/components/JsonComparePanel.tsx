@@ -10,7 +10,7 @@ import {
   type JsonSemanticDiffResult,
 } from '../utils/jsonSemanticDiff';
 import { copyText, getClipboardErrorMessage, readClipboardText } from '../utils/clipboard';
-import { formatByteSize, getDocumentStats } from '../utils/documentStats';
+import { formatDocumentSize } from '../utils/documentStats';
 import { formatUnknownError } from '../utils/errors';
 import { showError, showSuccess } from '../utils/toast';
 
@@ -34,11 +34,6 @@ const DIFF_KIND_CLASS_NAMES: Record<JsonSemanticDiffItem['kind'], string> = {
 };
 
 const DIFF_ACTION_BUTTON_CLASS_NAME = 'rounded border border-editor-border bg-editor-bg px-1.5 py-0.5 text-[10px] leading-none text-gray-300 transition-colors hover:border-emerald-500/60 hover:text-emerald-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-editor-border disabled:hover:text-gray-300';
-
-const formatSizeLabel = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
 
 const buildResultSummary = (result: JsonSemanticDiffResult | null): string => {
   if (!result) return '等待对比';
@@ -84,7 +79,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
     try {
       const text = await readClipboardText();
       setCompareText(text);
-      showSuccess(`已粘贴对比 JSON（${formatSizeLabel(text)}）`);
+      showSuccess(`已粘贴对比 JSON（${formatDocumentSize(text)}）`);
     } catch (error) {
       showError(getClipboardErrorMessage(error, '读取剪贴板失败'));
     }
@@ -97,7 +92,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
       const parsed = parseJsonForSemanticDiff(compareText);
       const formatted = JSON.stringify(parsed, null, 2);
       setCompareText(formatted);
-      showSuccess(`对比 JSON 已格式化（${formatSizeLabel(formatted)}）`);
+      showSuccess(`对比 JSON 已格式化（${formatDocumentSize(formatted)}）`);
     } catch (error) {
       showError(formatUnknownError(error));
     }
@@ -109,7 +104,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
     try {
       const report = formatJsonSemanticDiffMarkdown(diffState.result);
       await copyText(report);
-      showSuccess(`已复制对比报告（${formatSizeLabel(report)}）`);
+      showSuccess(`已复制对比报告（${formatDocumentSize(report)}）`);
     } catch (error) {
       showError(getClipboardErrorMessage(error, '复制对比报告失败'));
     }
@@ -282,7 +277,7 @@ export const JsonComparePanel: React.FC<JsonComparePanelProps> = ({
           <div className="flex min-w-0 flex-col border-r border-editor-border">
             <div className="flex items-center justify-between gap-2 border-b border-editor-border px-3 py-2 text-xs text-gray-400">
               <span className="font-semibold text-gray-300">SOURCE 基线</span>
-              <span>{formatSizeLabel(sourceText)}</span>
+              <span>{formatDocumentSize(sourceText)}</span>
             </div>
             <SimpleEditor
               value={sourceText}

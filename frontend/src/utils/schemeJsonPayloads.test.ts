@@ -7,6 +7,7 @@ import {
   tryNormalizeHtmlJsonQuotePayload,
   tryNormalizeJsonEscapedQuotePayload,
   tryParseJson,
+  tryParseJsonStringLiteral,
   tryParseJsonWithMeta,
 } from './schemeJsonPayloads';
 
@@ -16,6 +17,12 @@ describe('schemeJsonPayloads', () => {
     expect(isJsonString('[1,2,3]')).toBe(true);
     expect(isJsonString('{invalid}')).toBe(false);
     expect(isJsonString('"plain"')).toBe(false);
+  });
+
+  it('拒绝包含非有限数值的严格和宽松 JSON', () => {
+    expect(isJsonString('{"value":1e400}')).toBe(false);
+    expect(tryParseJson('{"value":1e400}')).toBeNull();
+    expect(tryParseJsonWithMeta('{value:1e400}')).toBeNull();
   });
 
   it('归一化 loose JSON 字段引号、单引号和尾逗号', () => {
@@ -49,5 +56,13 @@ describe('schemeJsonPayloads', () => {
       strategy: 'loose-json',
       normalized: '{"a":"1"}',
     });
+  });
+
+  it('只解析严格 JSON 字符串字面量', () => {
+    expect(tryParseJsonStringLiteral('  "sampleapp:\\/\\/v1\\/open?title=\\u6807\\u9898"  '))
+      .toBe('sampleapp://v1/open?title=标题');
+    expect(tryParseJsonStringLiteral('"invalid\\qescape"')).toBeNull();
+    expect(tryParseJsonStringLiteral('{"value":"text"}')).toBeNull();
+    expect(tryParseJsonStringLiteral('null')).toBeNull();
   });
 });

@@ -42,16 +42,6 @@ public interface VisitLogRepository extends JpaRepository<VisitLog, Long> {
         LocalDateTime getCreatedAt();
     }
 
-    @Query("SELECT COUNT(v) FROM VisitLog v WHERE v.createdAt >= :start AND v.path = :path")
-    long countPvByPathSince(@Param("start") LocalDateTime start, @Param("path") String path);
-
-    @Query("SELECT COUNT(DISTINCT v.ip) FROM VisitLog v WHERE v.createdAt >= :start AND v.path = :path")
-    long countUvByPathSince(@Param("start") LocalDateTime start, @Param("path") String path);
-
-    long countByCreatedAtAfter(LocalDateTime start);
-
-    // ============ 流量统计查询方法 ============
-
     /**
      * 统计指定日期范围内的总PV
      */

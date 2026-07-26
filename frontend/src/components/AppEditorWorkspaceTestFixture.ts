@@ -49,6 +49,11 @@ export const buildAppEditorWorkspaceProps = (
   deepFormatWarning: undefined,
   deepFormatInfo: undefined,
   hasTransformReportContext: false,
+  schemeDisplayHeaderMarkers: [{
+    path: '$.landing.__url__',
+    kind: 'url',
+    source: 'https://example.com/page?from=workspace',
+  }],
   highlightRange: null,
   editorUiState: appEditorWorkspaceUiState,
   onInputChange: vi.fn(),

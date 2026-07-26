@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Service
@@ -21,10 +22,11 @@ public class StatisticsService {
     private final SubscriptionRepository subscriptionRepository;
     private final OrderRepository orderRepository;
     private final VisitLogRepository visitLogRepository;
+    private final Clock clock;
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public StatisticsDTO getStatistics() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         long totalUsers = userRepository.count();
         long activeSubscriptions = subscriptionRepository.countActiveAt(now);
         BigDecimal totalRevenue = orderRepository.sumPaidAmount();
@@ -34,7 +36,6 @@ public class StatisticsService {
         }
 
         LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
-        // 统计全站流量，与 TrafficService 保持一致。
         long todayPv = visitLogRepository.countTotalPv(todayStart, now);
         long todayUv = visitLogRepository.countTotalUv(todayStart, now);
 

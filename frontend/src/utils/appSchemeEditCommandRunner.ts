@@ -1,4 +1,4 @@
-import { applySchemeEditToPreviewText } from './appSchemeEditPreview';
+import { dispatchChunkLoadRecoveryEvent } from './chunkLoadRecoveryDispatch';
 import { getDetailedErrorMessage } from './errors';
 import { showError, showSuccess } from './toast';
 
@@ -10,18 +10,21 @@ interface RunAppSchemeEditCommandInput {
   onPreviewChange: (nextPreviewText: string) => void;
 }
 
-export const runAppSchemeEditCommand = ({
+export const runAppSchemeEditCommand = async ({
   previewText,
   jsonPath,
   newValue,
   pointer,
   onPreviewChange,
-}: RunAppSchemeEditCommandInput) => {
+}: RunAppSchemeEditCommandInput): Promise<void> => {
   try {
+    const { applySchemeEditToPreviewText } = await import('./appSchemeEditPreview');
     onPreviewChange(applySchemeEditToPreviewText({ previewText, jsonPath, newValue, pointer }));
     showSuccess('Scheme 修改已应用');
-  } catch (err) {
-    console.error('Failed to apply scheme edit:', err);
-    showError(getDetailedErrorMessage(err, '应用修改失败'));
+  } catch (error) {
+    if (dispatchChunkLoadRecoveryEvent(error)) return;
+
+    console.error('应用 Scheme 修改失败:', error);
+    showError(getDetailedErrorMessage(error, '应用修改失败'));
   }
 };

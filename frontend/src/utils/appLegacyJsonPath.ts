@@ -1,25 +1,15 @@
+import { JSONPath } from 'jsonpath-plus';
+import { appendJsonPointerSegment, setJsonPointerValue } from './jsonPointer';
+
 export const setLegacyJsonPathValue = (root: unknown, jsonPath: string, value: string): unknown => {
-  const pathParts = jsonPath
-    .replace(/^\$\.?/, '')
-    .split(/\.|\[|\]/)
-    .filter(p => p !== '');
-
-  let current = root as Record<string, unknown> | unknown[];
-  for (let i = 0; i < pathParts.length - 1; i++) {
-    const part = pathParts[i];
-    const index = Number.parseInt(part, 10);
-    current = (Number.isNaN(index)
-      ? (current as Record<string, unknown>)[part]
-      : (current as unknown[])[index]) as Record<string, unknown> | unknown[];
+  const segments = JSONPath.toPathArray(jsonPath);
+  if (segments[0] !== '$') {
+    throw new Error(`非法 JSONPath: ${jsonPath}`);
   }
 
-  const lastPart = pathParts[pathParts.length - 1];
-  const lastIndex = Number.parseInt(lastPart, 10);
-  if (Number.isNaN(lastIndex)) {
-    (current as Record<string, unknown>)[lastPart] = value;
-  } else {
-    (current as unknown[])[lastIndex] = value;
-  }
+  const pointer = segments
+    .slice(1)
+    .reduce(appendJsonPointerSegment, '');
 
-  return root;
+  return setJsonPointerValue(root, pointer, value);
 };

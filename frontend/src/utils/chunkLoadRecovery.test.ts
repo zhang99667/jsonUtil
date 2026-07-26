@@ -48,6 +48,65 @@ describe('chunkLoadRecovery', () => {
     expect(isDynamicImportLoadError(errorLike)).toBe(false);
   });
 
+  it('八千层错误包装不耗尽调用栈', () => {
+    const errorLike: { message: string; cause?: unknown } = {
+      message: '顶层错误',
+    };
+    let current = errorLike;
+    for (let depth = 0; depth < 8_000; depth += 1) {
+      const cause = {
+        message: depth === 7_999
+          ? 'Failed to fetch dynamically imported module: /assets/panel-old.js'
+          : `外层错误 ${depth}`,
+      };
+      current.cause = cause;
+      current = cause;
+    }
+
+    expect(isDynamicImportLoadError(errorLike)).toBe(true);
+  });
+
+  it('超过遍历预算后停止读取后续错误', () => {
+    const nodes: Array<{ cause?: unknown }> = Array.from({ length: 20_001 }, () => ({}));
+    let readCount = 0;
+    for (let index = 0; index < nodes.length - 1; index += 1) {
+      Object.defineProperty(nodes[index], 'cause', {
+        get: () => {
+          readCount += 1;
+          return nodes[index + 1];
+        },
+      });
+    }
+
+    expect(isDynamicImportLoadError(nodes[0])).toBe(false);
+    expect(readCount).toBeLessThan(nodes.length - 1);
+  });
+
+  it('超宽子错误列表与深链共用遍历预算', () => {
+    let readCount = 0;
+    const errors = new Proxy(Array.from({ length: 20_000 }, () => ({ message: '普通错误' })), {
+      get: (target, property, receiver) => {
+        if (typeof property === 'string' && /^\d+$/.test(property)) readCount += 1;
+        return Reflect.get(target, property, receiver);
+      },
+    });
+
+    expect(isDynamicImportLoadError({ errors })).toBe(false);
+    expect(readCount).toBeLessThan(errors.length);
+  });
+
+  it('抛错字段访问器不遮蔽其他可识别错误', () => {
+    const errorLike = {
+      reason: new Error('ChunkLoadError: Loading chunk settings failed.'),
+    };
+    Object.defineProperties(errorLike, {
+      message: { get: () => { throw new Error('消息读取失败'); } },
+      errors: { get: () => { throw new Error('错误列表读取失败'); } },
+    });
+
+    expect(isDynamicImportLoadError(errorLike)).toBe(true);
+  });
+
   it('Vite preloadError 无 payload 时仍提示刷新', () => {
     expect(shouldPromptChunkLoadRecovery('vite-preload', undefined)).toBe(true);
   });

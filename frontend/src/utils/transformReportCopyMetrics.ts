@@ -1,13 +1,10 @@
-import { formatByteSize, getDocumentStats } from './documentStats';
+import { formatDocumentSize } from './documentStats';
 import {
   getTransformPathValueCopyRows,
   type TransformReportRecord,
 } from './transformSummary';
 
-export const formatCopySizeLabel = (content: string): string => {
-  const stats = getDocumentStats(content);
-  return `${stats.characterCount} 字符 / ${formatByteSize(stats.utf8ByteLength)}`;
-};
+export const formatCopySizeLabel = formatDocumentSize;
 
 export const formatCopySuccessMessage = (label: string, content: string): string => (
   `已复制${label}（${formatCopySizeLabel(content)}）`

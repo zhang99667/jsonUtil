@@ -1,12 +1,12 @@
 package com.jsonhelper.backend.dto.response;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Value;
 
-@Data
+@Value
 @Builder
 public class ToolEventGroupDTO {
-    private String label;
-    private long count;
-    private double percentage;
+    String label;
+    long count;
+    double percentage;
 }

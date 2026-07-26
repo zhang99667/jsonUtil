@@ -1,5 +1,6 @@
 import { appInteractionScrollbarMaintainabilityBudgets } from './maintainability-budget-app-interaction-scrollbar-rules.mjs';
 import { appTelemetryHookMaintainabilityBudgets } from './maintainability-budget-app-telemetry-hook-rules.mjs';
+import { appTourMaintainabilityBudgets } from './maintainability-budget-app-tour-rules.mjs';
 
 const interactionHookBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
@@ -9,5 +10,6 @@ export const appInteractionHookMaintainabilityBudgets = [
   ...appTelemetryHookMaintainabilityBudgets,
   interactionHookBudget('frontend/src/hooks/useRafCallback.ts', 35, 'RAF 回调 hook 只维护单帧合并调度和 cleanup 取消，不承载具体业务回调'),
   interactionHookBudget('frontend/src/hooks/useRafCallback.test.ts', 85, 'RAF 回调测试只锁定同帧去重、执行后可重排和 cleanup 取消'),
+  ...appTourMaintainabilityBudgets,
   ...appInteractionScrollbarMaintainabilityBudgets,
 ];

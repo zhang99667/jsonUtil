@@ -1,8 +1,8 @@
 import type {
   SchemeBase64DecodeOptions,
-  SchemeBase64StructuredValue,
 } from './schemeBase64Types';
 import { parsePrefixedBase64Suffix } from './schemeBase64SuffixQuery';
+import { parseJsonValue } from './jsonValueGuards';
 
 export const appendPrefixedBase64Meta = (
   jsonFragment: string,
@@ -13,7 +13,7 @@ export const appendPrefixedBase64Meta = (
   if (!suffix) return jsonFragment;
 
   try {
-    const parsed = JSON.parse(jsonFragment) as SchemeBase64StructuredValue;
+    const parsed = parseJsonValue(jsonFragment);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return jsonFragment;
     }

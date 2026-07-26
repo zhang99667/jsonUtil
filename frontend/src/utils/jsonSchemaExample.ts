@@ -1,3 +1,4 @@
+import deepEqual from 'fast-deep-equal';
 import { formatUnknownError } from './errors';
 import { getJsonPointerValue } from './jsonPointer';
 import {
@@ -12,7 +13,6 @@ import {
   getEnumValueAt,
   getPatternMatcher,
   getUniqueStringExample,
-  serializeExampleValue,
   type JsonSchemaNode,
 } from './jsonSchemaExamplePrimitives';
 import {
@@ -22,6 +22,7 @@ import {
   isPropertyNameAllowed,
 } from './jsonSchemaExamplePropertyNames';
 import { validateJsonAgainstSchema, type JsonSchemaValidationResult } from './jsonSchemaValidation';
+import { parseJsonValue } from './jsonValueGuards';
 import { isRecord } from './storage';
 
 export interface JsonSchemaExampleResult {
@@ -255,7 +256,7 @@ const getUniqueObjectExample = (
       context,
       index
     );
-    if (serializeExampleValue(nextChildValue) !== serializeExampleValue(value[key])) {
+    if (!deepEqual(nextChildValue, value[key])) {
       return {
         ...value,
         [key]: nextChildValue,
@@ -332,25 +333,23 @@ const ensureUniqueArrayValues = (
   valueSchemas: unknown[],
   context: ExampleContext
 ): unknown[] => {
-  const seenValues = new Set<string>();
+  const seenValues: unknown[] = [];
 
   return values.map((value, index) => {
-    const serializedValue = serializeExampleValue(value);
-    if (!seenValues.has(serializedValue)) {
-      seenValues.add(serializedValue);
+    if (!seenValues.some(seenValue => deepEqual(seenValue, value))) {
+      seenValues.push(value);
       return value;
     }
 
     for (let attemptIndex = index; attemptIndex < index + MAX_ARRAY_CONSTRAINT_EXAMPLE_ITEMS + 1; attemptIndex++) {
       const uniqueValue = getUniqueExampleValue(value, valueSchemas[index], context, attemptIndex);
-      const serializedUniqueValue = serializeExampleValue(uniqueValue);
-      if (!seenValues.has(serializedUniqueValue)) {
-        seenValues.add(serializedUniqueValue);
+      if (!seenValues.some(seenValue => deepEqual(seenValue, uniqueValue))) {
+        seenValues.push(uniqueValue);
         return uniqueValue;
       }
     }
 
-    seenValues.add(serializedValue);
+    seenValues.push(value);
     return value;
   });
 };
@@ -648,7 +647,7 @@ export const generateJsonSchemaExampleText = (schemaText: string): JsonSchemaExa
 
   let schema: unknown;
   try {
-    schema = JSON.parse(schemaText);
+    schema = parseJsonValue(schemaText);
   } catch (error) {
     const message = formatUnknownError(error);
     return { error: `Schema 不是合法 JSON: ${message}` };
