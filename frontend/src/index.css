@@ -293,9 +293,14 @@
   cursor: pointer;
 }
 
+[data-tour="preview-editor"] {
+  container-type: inline-size;
+}
+
 .scheme-display-header-label {
   display: inline-block;
-  max-width: min(28vw, 240px);
+  box-sizing: border-box;
+  max-width: min(360px, calc(100cqw - 152px)) !important;
   margin-left: 6px;
   padding: 1px 7px;
   overflow: hidden;
@@ -303,9 +308,12 @@
   border-radius: 3px;
   background: rgba(8, 145, 178, 0.14);
   color: #b6edf5;
+  font-family: inherit;
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0;
   line-height: 16px;
+  text-align: left;
   text-overflow: ellipsis;
   vertical-align: middle;
   white-space: nowrap;
@@ -315,6 +323,11 @@
 .scheme-display-header-label:hover {
   border-color: rgba(34, 211, 238, 0.78);
   background: rgba(8, 145, 178, 0.24);
+}
+
+.scheme-display-header-label:focus-visible {
+  outline: 1px solid rgba(103, 232, 249, 0.9);
+  outline-offset: 1px;
 }
 
 /* 编辑器头部操作默认图标化，把横向宽度优先留给文件标签 */

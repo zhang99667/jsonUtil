@@ -1085,7 +1085,10 @@ test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预�
   const previewEditor = page.locator('[data-tour="preview-editor"]');
   await expect(previewEditor.locator('.view-lines')).not.toContainText('__scheme__');
   const sourceLabel = previewEditor.locator('.scheme-display-header-label').first();
-  await expect(sourceLabel).toHaveText(/Scheme\s+来源/, { timeout: 15_000 });
+  await expect(sourceLabel).toContainText(
+    'Scheme 来源 · sampleapp://v7/vendor/ad/makePhoneCall',
+    { timeout: 15_000 },
+  );
 
   await sourceLabel.click({ force: true });
   const sourceViewer = page.locator('[data-tour="scheme-panel"]');

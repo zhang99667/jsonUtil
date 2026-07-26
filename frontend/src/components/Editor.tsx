@@ -78,13 +78,14 @@ const getSchemeLocationHoverText = (location: SchemeLocation): string => {
 };
 
 const getSchemeDisplayHeaderHoverText = (marker: SchemeDisplayHeaderMarker): string => (
-  marker.kind === 'url'
+  `${marker.kind === 'url'
     ? '查看解析前完整 URL'
-    : '查看解析前完整 Scheme'
+    : '查看解析前完整 Scheme'}\n\n协议头: ${marker.header}`
 );
 
 const getSchemeDisplayHeaderLabel = (marker: SchemeDisplayHeaderMarker): string => {
-  return marker.kind === 'url' ? 'URL 来源' : 'Scheme 来源';
+  const sourceType = marker.kind === 'url' ? 'URL 来源' : 'Scheme 来源';
+  return `${sourceType} · ${marker.header}`;
 };
 
 export const CodeEditor: React.FC<ExtendedEditorProps> = ({
@@ -188,6 +189,16 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     ));
   }, [value]);
 
+  const openSchemeLocation = useCallback((location: SchemeLocation) => {
+    const source = schemeLocationsSourceRef.current;
+    if (!source) return;
+    setSchemeModal(createOpenEditorSchemeModal(
+      location,
+      source,
+      schemeDisplayHeaderMarkerMapRef.current.get(location.path),
+    ));
+  }, [schemeLocationsSourceRef]);
+
   // 渲染 Scheme 图标装饰器
   useLayoutEffect(() => {
     if (!editorRef.current || !monaco || schemeLocations.length === 0) {
@@ -209,11 +220,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
         options: displayHeaderMarker ? {
           glyphMarginClassName: 'scheme-glyph-icon',
           glyphMarginHoverMessage: { value: hoverText },
-          after: {
-            content: `  ${getSchemeDisplayHeaderLabel(displayHeaderMarker)}`,
-            inlineClassName: 'scheme-display-header-label',
-            cursorStops: monaco.editor.InjectedTextCursorStops.None,
-          },
+          hoverMessage: { value: hoverText },
         } : {
           glyphMarginClassName: 'scheme-glyph-icon',
           glyphMarginHoverMessage: { value: hoverText },
@@ -229,15 +236,52 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     schemeDecorationsRef.current = editorRef.current.createDecorationsCollection(decorations);
   }, [schemeDisplayHeaderMarkerMap, schemeLocations, monaco]);
 
-  const openSchemeLocation = useCallback((location: SchemeLocation) => {
-    const source = schemeLocationsSourceRef.current;
-    if (!source) return;
-    setSchemeModal(createOpenEditorSchemeModal(
-      location,
-      source,
-      schemeDisplayHeaderMarkerMapRef.current.get(location.path),
-    ));
-  }, [schemeLocationsSourceRef]);
+  useLayoutEffect(() => {
+    const editorInstance = editorRef.current;
+    if (!editorInstance || !monaco) return;
+
+    const widgets = schemeLocations.flatMap((location, index) => {
+      const marker = schemeDisplayHeaderMarkerMap.get(location.path);
+      if (!marker) return [];
+
+      const label = getSchemeDisplayHeaderLabel(marker);
+      const domNode = document.createElement('button');
+      domNode.type = 'button';
+      domNode.className = 'scheme-display-header-label';
+      domNode.textContent = label;
+      domNode.title = getSchemeDisplayHeaderHoverText(marker);
+      domNode.setAttribute('aria-label', `${label}，点击查看完整原始地址`);
+      const handleClick = (event: MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openSchemeLocation(location);
+      };
+      domNode.addEventListener('click', handleClick);
+
+      const widget: editor.IContentWidget = {
+        allowEditorOverflow: false,
+        suppressMouseDown: true,
+        getId: () => `scheme-display-header-${index}-${location.pointer}`,
+        getDomNode: () => domNode,
+        getPosition: () => ({
+          position: {
+            lineNumber: location.line,
+            column: location.endColumn,
+          },
+          preference: [monaco.editor.ContentWidgetPositionPreference.EXACT],
+        }),
+      };
+      editorInstance.addContentWidget(widget);
+      return [{ domNode, handleClick, widget }];
+    });
+
+    return () => {
+      widgets.forEach(({ domNode, handleClick, widget }) => {
+        domNode.removeEventListener('click', handleClick);
+        editorInstance.removeContentWidget(widget);
+      });
+    };
+  }, [monaco, openSchemeLocation, schemeDisplayHeaderMarkerMap, schemeLocations]);
 
   const findSchemeLocationAtPosition = useCallback((lineNumber: number, column: number) => (
     schemeLocationsRef.current.find(loc => {
