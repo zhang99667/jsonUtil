@@ -83,10 +83,9 @@ const getSchemeDisplayHeaderHoverText = (marker: SchemeDisplayHeaderMarker): str
     : '查看解析前完整 Scheme'}\n\n协议头: ${marker.header}`
 );
 
-const getSchemeDisplayHeaderLabel = (marker: SchemeDisplayHeaderMarker): string => {
-  const sourceType = marker.kind === 'url' ? 'URL 来源' : 'Scheme 来源';
-  return `${sourceType} · ${marker.header}`;
-};
+const getSchemeDisplayHeaderSourceType = (marker: SchemeDisplayHeaderMarker): string => (
+  marker.kind === 'url' ? 'URL 来源' : 'Scheme 来源'
+);
 
 export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   value,
@@ -240,46 +239,106 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     const editorInstance = editorRef.current;
     if (!editorInstance || !monaco) return;
 
-    const widgets = schemeLocations.flatMap((location, index) => {
+    const model = editorInstance.getModel();
+    if (!model) return;
+
+    const zones = schemeLocations.flatMap(location => {
       const marker = schemeDisplayHeaderMarkerMap.get(location.path);
       if (!marker) return [];
 
-      const label = getSchemeDisplayHeaderLabel(marker);
-      const domNode = document.createElement('button');
-      domNode.type = 'button';
-      domNode.className = 'scheme-display-header-label';
-      domNode.textContent = label;
-      domNode.title = getSchemeDisplayHeaderHoverText(marker);
-      domNode.setAttribute('aria-label', `${label}，点击查看完整原始地址`);
+      const sourceType = getSchemeDisplayHeaderSourceType(marker);
+      const domNode = document.createElement('div');
+      domNode.className = 'scheme-display-header-zone';
+      domNode.setAttribute('data-source-path', marker.path);
+
+      const label = document.createElement('button');
+      label.type = 'button';
+      label.className = 'scheme-display-header-label';
+      label.title = getSchemeDisplayHeaderHoverText(marker);
+      label.setAttribute('aria-label', `${sourceType}：${marker.header}，点击查看完整原始地址`);
+      label.setAttribute('data-source-kind', marker.kind);
+      label.setAttribute('data-source-header', marker.header);
+
+      const kindNode = document.createElement('span');
+      kindNode.className = 'scheme-display-header-kind';
+      kindNode.textContent = sourceType;
+
+      const headerNode = document.createElement('span');
+      headerNode.className = 'scheme-display-header-value';
+      headerNode.textContent = marker.header;
+
+      label.append(kindNode, headerNode);
+      domNode.append(label);
+
       const handleClick = (event: MouseEvent) => {
         event.preventDefault();
         event.stopPropagation();
         openSchemeLocation(location);
       };
-      domNode.addEventListener('click', handleClick);
+      label.addEventListener('click', handleClick);
 
-      const widget: editor.IContentWidget = {
-        allowEditorOverflow: false,
-        suppressMouseDown: true,
-        getId: () => `scheme-display-header-${index}-${location.pointer}`,
-        getDomNode: () => domNode,
-        getPosition: () => ({
-          position: {
-            lineNumber: location.line,
-            column: location.endColumn,
-          },
-          preference: [monaco.editor.ContentWidgetPositionPreference.EXACT],
-        }),
-      };
-      editorInstance.addContentWidget(widget);
-      return [{ domNode, handleClick, widget }];
+      const nextLineNumber = Math.min(location.line + 1, model.getLineCount());
+      const nextLineColumn = model.getLineFirstNonWhitespaceColumn(nextLineNumber);
+      const currentLineColumn = model.getLineFirstNonWhitespaceColumn(location.line);
+      const indentationColumns = Math.max(
+        0,
+        (nextLineColumn || currentLineColumn || 1) - 1,
+      );
+
+      return [{
+        id: '',
+        domNode,
+        label,
+        handleClick,
+        indentationColumns,
+        line: location.line,
+      }];
     });
 
-    return () => {
-      widgets.forEach(({ domNode, handleClick, widget }) => {
-        domNode.removeEventListener('click', handleClick);
-        editorInstance.removeContentWidget(widget);
+    editorInstance.changeViewZones(accessor => {
+      zones.forEach(zone => {
+        zone.id = accessor.addZone({
+          afterLineNumber: zone.line,
+          domNode: zone.domNode,
+          heightInPx: 24,
+          ordinal: 10_000,
+        });
       });
+    });
+    const viewZonesNode = zones[0]?.domNode.parentElement;
+    const previousAriaHidden = viewZonesNode?.getAttribute('aria-hidden');
+    viewZonesNode?.classList.add('scheme-display-header-zones');
+    viewZonesNode?.setAttribute('aria-hidden', 'false');
+
+    const updateZoneLayout = () => {
+      const layoutInfo = editorInstance.getLayoutInfo();
+      const fontInfo = editorInstance.getOption(monaco.editor.EditorOption.fontInfo);
+      zones.forEach(zone => {
+        const indentation = zone.indentationColumns * fontInfo.typicalHalfwidthCharacterWidth;
+        const availableWidth = Math.max(0, layoutInfo.contentWidth - indentation - 16);
+        zone.domNode.style.paddingLeft = `${indentation}px`;
+        zone.label.style.maxWidth = `${availableWidth}px`;
+      });
+    };
+    updateZoneLayout();
+    const layoutDisposable = editorInstance.onDidLayoutChange(updateZoneLayout);
+
+    return () => {
+      layoutDisposable.dispose();
+      zones.forEach(({ label, handleClick }) => {
+        label.removeEventListener('click', handleClick);
+      });
+      editorInstance.changeViewZones(accessor => {
+        zones.forEach(({ id }) => {
+          if (id) accessor.removeZone(id);
+        });
+      });
+      viewZonesNode?.classList.remove('scheme-display-header-zones');
+      if (previousAriaHidden === null) {
+        viewZonesNode?.removeAttribute('aria-hidden');
+      } else {
+        viewZonesNode?.setAttribute('aria-hidden', previousAriaHidden);
+      }
     };
   }, [monaco, openSchemeLocation, schemeDisplayHeaderMarkerMap, schemeLocations]);
 

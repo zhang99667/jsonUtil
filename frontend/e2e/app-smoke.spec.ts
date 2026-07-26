@@ -1084,14 +1084,52 @@ test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预�
   await expectPreviewText(page, '"segment": 222');
   const previewEditor = page.locator('[data-tour="preview-editor"]');
   await expect(previewEditor.locator('.view-lines')).not.toContainText('__scheme__');
+  const sourceZone = previewEditor.locator('.scheme-display-header-zone').first();
+  await expect(sourceZone).toBeVisible({ timeout: 15_000 });
   const sourceLabel = previewEditor.locator('.scheme-display-header-label').first();
-  await expect(sourceLabel).toContainText(
-    'Scheme 来源 · sampleapp://v7/vendor/ad/makePhoneCall',
-    { timeout: 15_000 },
+  await expect(sourceLabel.locator('.scheme-display-header-kind')).toHaveText('Scheme 来源');
+  await expect(sourceLabel.locator('.scheme-display-header-value')).toHaveText(
+    'sampleapp://v7/vendor/ad/makePhoneCall',
+  );
+  await expect(sourceLabel).toHaveAttribute(
+    'data-source-header',
+    'sampleapp://v7/vendor/ad/makePhoneCall',
   );
 
-  await sourceLabel.click({ force: true });
+  const sourceZonePosition = await previewEditor.evaluate(editorRoot => {
+    const lines = [...editorRoot.querySelectorAll<HTMLElement>('.view-line')];
+    const openingLine = lines.find(line => line.textContent?.trim() === '{');
+    const firstBusinessLine = lines.find(line => line.textContent?.includes('"params"'));
+    const zone = editorRoot.querySelector<HTMLElement>('.scheme-display-header-zone');
+    if (!openingLine || !firstBusinessLine || !zone) {
+      throw new Error('未找到 Scheme 来源信息行或相邻 JSON 行');
+    }
+
+    const openingRect = openingLine.getBoundingClientRect();
+    const businessRect = firstBusinessLine.getBoundingClientRect();
+    const zoneRect = zone.getBoundingClientRect();
+    return {
+      openingTop: openingRect.top,
+      businessTop: businessRect.top,
+      zoneTop: zoneRect.top,
+      zoneBottom: zoneRect.bottom,
+    };
+  });
+  expect(sourceZonePosition.zoneTop).toBeGreaterThan(sourceZonePosition.openingTop);
+  expect(sourceZonePosition.zoneBottom).toBeLessThanOrEqual(sourceZonePosition.businessTop + 1);
+
+  await sourceLabel.click();
   const sourceViewer = page.locator('[data-tour="scheme-panel"]');
+  await expect(sourceViewer.locator('[data-tour="scheme-source-path"]')).toContainText('$');
+  await expect(sourceViewer.locator('[data-tour="scheme-apply-edit"]')).toHaveCount(0);
+  await sourceViewer.locator('[data-tour="scheme-copy-original"]').click();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe(scheme);
+  await page.keyboard.press('Escape');
+  await expect(sourceViewer).toBeHidden();
+
+  await previewEditor.locator('.scheme-glyph-icon').first().click({ force: true });
+  await expect(sourceViewer).toBeVisible();
   await expect(sourceViewer.locator('[data-tour="scheme-source-path"]')).toContainText('$');
   await expect(sourceViewer.locator('[data-tour="scheme-apply-edit"]')).toHaveCount(0);
   await sourceViewer.locator('[data-tour="scheme-copy-original"]').click();
@@ -1130,6 +1168,42 @@ test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预�
   await expect(schemePanel.locator('[data-tour="scheme-decode-layer"]').first()).toContainText('URL 参数递归解析');
   await expect(schemePanel.locator('[data-tour="scheme-param-stages"]')).toContainText('参数分层');
   await expect(schemePanel.locator('[data-tour="scheme-param-stage"]').first()).toContainText('params');
+});
+
+test('自动展开的嵌套 Scheme 与 URL 使用独立来源信息行', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('json-helper-general-settings', JSON.stringify({
+      autoExpandSchemeInDeepFormat: true,
+    }));
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForMainAppReady(page);
+
+  const landing = `https://example.com/page?cmd=${encodeURIComponent(JSON.stringify({ id: 1 }))}`;
+  const scheme = `sampleapp://v1/open?landing=${encodeURIComponent(landing)}`;
+  await fillSourceEditor(page, JSON.stringify({ action_cmd: scheme }));
+  await page.locator('[data-tour="deep-format-btn"]').click();
+
+  const previewEditor = page.locator('[data-tour="preview-editor"]');
+  await expectPreviewText(page, '"landing": {');
+  await expect(previewEditor.locator('.view-lines')).not.toContainText('__scheme__');
+  await expect(previewEditor.locator('.view-lines')).not.toContainText('__url__');
+
+  const schemeLabel = previewEditor.locator('.scheme-display-header-label[data-source-kind="scheme"]');
+  await expect(schemeLabel.locator('.scheme-display-header-kind')).toHaveText('Scheme 来源');
+  await expect(schemeLabel.locator('.scheme-display-header-value')).toHaveText('sampleapp://v1/open');
+
+  const urlLabel = previewEditor.locator('.scheme-display-header-label[data-source-kind="url"]');
+  await expect(urlLabel.locator('.scheme-display-header-kind')).toHaveText('URL 来源');
+  await expect(urlLabel.locator('.scheme-display-header-value')).toHaveText('https://example.com/page');
+  await urlLabel.click();
+
+  const sourceViewer = page.locator('[data-tour="scheme-panel"]');
+  await expect(sourceViewer.locator('[data-tour="scheme-source-path"]')).toContainText('$.action_cmd.landing');
+  await expect(sourceViewer.locator('[data-tour="scheme-apply-edit"]')).toHaveCount(0);
+  await sourceViewer.locator('[data-tour="scheme-copy-original"]').click();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe(landing);
 });
 
 test('SOURCE 直接粘贴 Unicode 转义 Scheme 时自动结构化预览', async ({ page }) => {

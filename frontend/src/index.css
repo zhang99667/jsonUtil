@@ -293,41 +293,76 @@
   cursor: pointer;
 }
 
-[data-tour="preview-editor"] {
-  container-type: inline-size;
+.monaco-editor .scheme-display-header-zones {
+  z-index: 2;
+}
+
+.scheme-display-header-zone {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding-right: 16px;
+  overflow: hidden;
+  font-family: "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+  pointer-events: auto;
 }
 
 .scheme-display-header-label {
-  display: inline-block;
+  display: inline-flex;
+  align-items: stretch;
   box-sizing: border-box;
-  max-width: min(360px, calc(100cqw - 152px)) !important;
-  margin-left: 6px;
-  padding: 1px 7px;
+  min-width: 0;
+  height: 20px;
+  padding: 0;
   overflow: hidden;
-  border: 1px solid rgba(34, 211, 238, 0.48);
+  border: 1px solid rgba(45, 212, 191, 0.42);
   border-radius: 3px;
-  background: rgba(8, 145, 178, 0.14);
-  color: #b6edf5;
+  background: rgba(15, 118, 110, 0.09);
+  color: #d2f4ef;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
   letter-spacing: 0;
-  line-height: 16px;
+  line-height: 18px;
   text-align: left;
-  text-overflow: ellipsis;
-  vertical-align: middle;
-  white-space: nowrap;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .scheme-display-header-label:hover {
-  border-color: rgba(34, 211, 238, 0.78);
-  background: rgba(8, 145, 178, 0.24);
+  border-color: rgba(45, 212, 191, 0.72);
+  background: rgba(15, 118, 110, 0.18);
 }
 
 .scheme-display-header-label:focus-visible {
-  outline: 1px solid rgba(103, 232, 249, 0.9);
-  outline-offset: 1px;
+  border-color: rgba(45, 212, 191, 0.72);
+  background: rgba(15, 118, 110, 0.18);
+  filter: brightness(1.06);
+}
+
+.scheme-display-header-kind {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 0 7px;
+  background: rgba(13, 148, 136, 0.18);
+  color: #99f6e4;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.scheme-display-header-value {
+  min-width: 0;
+  padding: 0 7px;
+  overflow: hidden;
+  border-left: 1px solid rgba(45, 212, 191, 0.26);
+  color: #ccfbf1;
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 编辑器头部操作默认图标化，把横向宽度优先留给文件标签 */
