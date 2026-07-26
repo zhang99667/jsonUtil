@@ -293,6 +293,30 @@
   cursor: pointer;
 }
 
+.scheme-display-header-label {
+  display: inline-block;
+  max-width: min(28vw, 240px);
+  margin-left: 6px;
+  padding: 1px 7px;
+  overflow: hidden;
+  border: 1px solid rgba(34, 211, 238, 0.48);
+  border-radius: 3px;
+  background: rgba(8, 145, 178, 0.14);
+  color: #b6edf5;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.scheme-display-header-label:hover {
+  border-color: rgba(34, 211, 238, 0.78);
+  background: rgba(8, 145, 178, 0.24);
+}
+
 /* 编辑器头部操作默认图标化，把横向宽度优先留给文件标签 */
 .editor-header {
   container-type: inline-size;

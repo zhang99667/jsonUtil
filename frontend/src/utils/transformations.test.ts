@@ -538,14 +538,14 @@ describe('deepParseWithContext', () => {
       },
       type: 1,
     });
-    expect(parsed.__scheme__).toBe('sampleapp://v7/vendor/ad/makePhoneCall');
+    expect(parsed).not.toHaveProperty('__scheme__');
     expect(result.context.runtimePlaceholders?.[0]).toMatchObject({
       value: '__TIMESTAMP__',
     });
     expect(inverseWithContext(result.output, result.context)).toBe(scheme);
   });
 
-  it('根广告 Scheme 展开后保留可编辑协议头', () => {
+  it('根广告 Scheme 展开后以元数据保留协议头并可回写业务参数', () => {
     const scheme = `sampleapp://v7/vendor/ad/immersiveVideo?params=${encodeURIComponent(JSON.stringify({
       lp_params: {
         popover: { show_time: 8 },
@@ -556,7 +556,6 @@ describe('deepParseWithContext', () => {
     const parsed = JSON.parse(result.output);
 
     expect(parsed).toMatchObject({
-      __scheme__: 'sampleapp://v7/vendor/ad/immersiveVideo',
       params: {
         lp_params: {
           popover: { show_time: 8 },
@@ -565,14 +564,13 @@ describe('deepParseWithContext', () => {
       style: { menumode: '2' },
     });
 
-    parsed.__scheme__ = 'sampleapp://v7/vendor/ad/immersiveVideoV2';
+    expect(parsed).not.toHaveProperty('__scheme__');
     parsed.params.lp_params.popover.show_time = 9;
     const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
     const restoredResult = deepParseWithContext(restored, { autoExpandScheme: true });
 
-    expect(restored.startsWith('sampleapp://v7/vendor/ad/immersiveVideoV2?')).toBe(true);
+    expect(restored.startsWith('sampleapp://v7/vendor/ad/immersiveVideo?')).toBe(true);
     expect(JSON.parse(restoredResult.output)).toMatchObject({
-      __scheme__: 'sampleapp://v7/vendor/ad/immersiveVideoV2',
       params: {
         lp_params: {
           popover: { show_time: 9 },
@@ -581,7 +579,7 @@ describe('deepParseWithContext', () => {
     });
   });
 
-  it('JSON 字段和嵌套业务 Scheme 展示各自协议头并可回写', () => {
+  it('JSON 字段和嵌套业务 Scheme 使用对象标签元数据并可回写', () => {
     const inner = `sampleapp://v2/inner/open?payload=${encodeURIComponent(JSON.stringify({ id: 1 }))}`;
     const outer = `samplevendor://v1/outer/open?next=${encodeURIComponent(inner)}&scene=feed`;
     const input = JSON.stringify({ action_cmd: outer });
@@ -589,9 +587,7 @@ describe('deepParseWithContext', () => {
     const parsed = JSON.parse(result.output);
 
     expect(parsed.action_cmd).toEqual({
-      __scheme__: 'samplevendor://v1/outer/open',
       next: {
-        __scheme__: 'sampleapp://v2/inner/open',
         payload: { id: 1 },
       },
       scene: 'feed',
@@ -613,16 +609,13 @@ describe('deepParseWithContext', () => {
       ],
     });
 
-    parsed.action_cmd.next.__scheme__ = 'sampleapp://v3/inner/open';
     parsed.action_cmd.next.payload.id = 2;
     const restored = inverseWithContext(JSON.stringify(parsed, null, 2), result.context);
     const restoredResult = deepParseWithContext(restored, { autoExpandScheme: true });
 
     expect(restored).not.toContain('__scheme__');
     expect(JSON.parse(restoredResult.output).action_cmd).toEqual({
-      __scheme__: 'samplevendor://v1/outer/open',
       next: {
-        __scheme__: 'sampleapp://v3/inner/open',
         payload: { id: 2 },
       },
       scene: 'feed',
@@ -790,7 +783,6 @@ describe('deepParseWithContext', () => {
     const parsed = JSON.parse(result.output);
 
     expect(parsed.schema).toEqual({
-      __scheme__: 'sampleapp://v1/browser/open',
       cmd: { nid: 123, title: '标题' },
       from: 'feed',
     });
@@ -811,10 +803,8 @@ describe('deepParseWithContext', () => {
     const step = result.context.records.get('$.schema')?.steps[0];
 
     expect(parsed.schema).toEqual({
-      __scheme__: 'sampleapp://v7/vendor/ad/webPanel',
       params: {
         url: {
-          __url__: 'https://m.example.com/s',
           word: 'json',
         },
         ext: '__AD_EXTRA_PARAM_ENCODE_1__',
@@ -930,7 +920,6 @@ describe('deepParseWithContext', () => {
     const parsed = JSON.parse(result.output);
 
     expect(parsed.ad_common.scheme.video_info.reward.stay_cmd.convert_cmd.params.appUrl.params.url).toEqual({
-      __url__: 'https://pro.m.jd.com/mall/active/page.html',
       sku: '101',
       bd_vid: 'abc',
     });
@@ -1353,9 +1342,7 @@ describe('inverseWithContext 精确还原', () => {
     const { output, context } = deepParseWithContext(input, { autoExpandScheme: true });
     const parsed = JSON.parse(output);
     expect(parsed.schema).toEqual({
-      __scheme__: 'sampleapp://v1/browser/open',
       url: {
-        __url__: 'https://example.com/path',
         from: 'box',
       },
       from: 'feed',

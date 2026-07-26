@@ -51,6 +51,7 @@ export const prepareSchemeDisplayEncoding = (
   layers: DecodeLayer[],
   displayHeaders: SchemeDisplayHeaderRecord[],
   encodeValue: EncodeSchemeDisplayValue,
+  displayHeadersInContent = true,
 ): SchemeDisplayEncoding => {
   let root = tryParseJsonValue(content);
   if (root === undefined) return { safe: false };
@@ -66,7 +67,10 @@ export const prepareSchemeDisplayEncoding = (
       return { safe: false };
     }
 
-    const editedHeader = currentValue[header.headerKey];
+    const hasDisplayHeader = Object.hasOwn(currentValue, header.headerKey);
+    const editedHeader = hasDisplayHeader
+      ? currentValue[header.headerKey]
+      : header.header;
     if (
       typeof editedHeader !== 'string'
       || getUrlResourceSchemaFromUrl(editedHeader) !== normalizeJsonUrlEscapes(editedHeader.trim())
@@ -74,7 +78,12 @@ export const prepareSchemeDisplayEncoding = (
       return { safe: false };
     }
 
-    const currentSnapshot = JSON.stringify(currentValue);
+    if (displayHeadersInContent && !hasDisplayHeader) return { safe: false };
+    const currentSnapshot = JSON.stringify(
+      hasDisplayHeader
+        ? currentValue
+        : { [header.headerKey]: header.header, ...currentValue },
+    );
     const belongsToOtherHeader = (
       editedHeader !== header.header
       && displayHeaders.some(other => other !== header && other.header === editedHeader)
@@ -92,11 +101,9 @@ export const prepareSchemeDisplayEncoding = (
       return { safe: false };
     }
 
-    const schemeEncoding = removeSchemeDisplayHeader(
-      currentValue,
-      header.source,
-      header.headerKey,
-    );
+    const schemeEncoding = hasDisplayHeader
+      ? removeSchemeDisplayHeader(currentValue, header.source, header.headerKey)
+      : { source: header.source, value: currentValue };
     if (header.path === '') {
       root = schemeEncoding.value;
       encodingLayers = replaceRootSchemeLayerSource(

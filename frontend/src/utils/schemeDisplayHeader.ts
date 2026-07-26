@@ -17,6 +17,7 @@ export type SchemeDisplayHeaderKind = 'url' | 'scheme';
 export interface SchemeDisplayHeaderMarker {
   path: string;
   kind: SchemeDisplayHeaderKind;
+  header: string;
   source: string;
 }
 
@@ -196,15 +197,25 @@ export const collectSchemeDisplayHeaderMarkers = (
         const kind = getSchemeDisplayHeaderKindFromKey(header.headerKey);
         if (!kind) return;
         const objectPath = appendJsonPointerToJsonPath(record.path, header.path);
-        const path = appendJsonPathKey(objectPath, header.headerKey);
-        markers.set(path, { path, kind, source: header.source });
+        markers.set(objectPath, {
+          path: objectPath,
+          kind,
+          header: header.header,
+          source: header.source,
+        });
       });
 
-      if (!step.schemeHeaderDisplayKey) return;
+      if (step.schemeDisplayHeaders?.length || !step.schemeHeaderDisplayKey) return;
       const kind = getSchemeDisplayHeaderKindFromKey(step.schemeHeaderDisplayKey);
       if (!kind || !step.originalScheme) return;
-      const path = appendJsonPathKey(record.path, step.schemeHeaderDisplayKey);
-      markers.set(path, { path, kind, source: step.originalScheme });
+      const header = getSchemeDisplayHeader(step.originalScheme);
+      if (!header) return;
+      markers.set(record.path, {
+        path: record.path,
+        kind,
+        header,
+        source: step.originalScheme,
+      });
     });
   });
 

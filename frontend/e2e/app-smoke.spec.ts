@@ -1082,9 +1082,41 @@ test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预�
   await expectPreviewText(page, '"phone": "400-805-8686"');
   await expectPreviewText(page, '"extInfo": {');
   await expectPreviewText(page, '"segment": 222');
-  await expect(page.locator('[data-tour="preview-editor"] .view-lines')).toContainText(
-    '"__scheme__": "sampleapp://v7/vendor/ad/makePhoneCall"'
-  );
+  const previewEditor = page.locator('[data-tour="preview-editor"]');
+  await expect(previewEditor.locator('.view-lines')).not.toContainText('__scheme__');
+  const sourceLabel = previewEditor.locator('.scheme-display-header-label').first();
+  await expect(sourceLabel).toHaveText(/Scheme\s+来源/, { timeout: 15_000 });
+
+  await sourceLabel.click({ force: true });
+  const sourceViewer = page.locator('[data-tour="scheme-panel"]');
+  await expect(sourceViewer.locator('[data-tour="scheme-source-path"]')).toContainText('$');
+  await expect(sourceViewer.locator('[data-tour="scheme-apply-edit"]')).toHaveCount(0);
+  await sourceViewer.locator('[data-tour="scheme-copy-original"]').click();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toBe(scheme);
+  await page.keyboard.press('Escape');
+  await expect(sourceViewer).toBeHidden();
+
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+    document.execCommand = (command: string) => {
+      if (command !== 'copy') return false;
+      const activeElement = document.activeElement as HTMLTextAreaElement | null;
+      const copiedText = activeElement?.value || window.getSelection()?.toString() || '';
+      window.localStorage.setItem('mock-clipboard', copiedText);
+      return true;
+    };
+  });
+  await previewEditor.locator('[data-tour="copy-preview"]').click();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard')))
+    .toContain('"params"');
+  const copiedPreview = JSON.parse(
+    await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}'),
+  ) as Record<string, unknown>;
+  expect(copiedPreview).not.toHaveProperty('__scheme__');
 
   await page.locator('[data-tour="source-validation-status"]').click();
   const schemePanel = page.locator('[data-tour="scheme-panel"]');

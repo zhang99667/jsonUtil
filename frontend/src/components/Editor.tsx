@@ -83,6 +83,10 @@ const getSchemeDisplayHeaderHoverText = (marker: SchemeDisplayHeaderMarker): str
     : '查看解析前完整 Scheme'
 );
 
+const getSchemeDisplayHeaderLabel = (marker: SchemeDisplayHeaderMarker): string => {
+  return marker.kind === 'url' ? 'URL 来源' : 'Scheme 来源';
+};
+
 export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   value,
   originalValue,
@@ -202,11 +206,19 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
       return {
         range: new monaco.Range(loc.line, loc.column, loc.endLine, loc.endColumn),
-        options: {
+        options: displayHeaderMarker ? {
+          glyphMarginClassName: 'scheme-glyph-icon',
+          glyphMarginHoverMessage: { value: hoverText },
+          after: {
+            content: `  ${getSchemeDisplayHeaderLabel(displayHeaderMarker)}`,
+            inlineClassName: 'scheme-display-header-label',
+            cursorStops: monaco.editor.InjectedTextCursorStops.None,
+          },
+        } : {
           glyphMarginClassName: 'scheme-glyph-icon',
           glyphMarginHoverMessage: { value: hoverText },
           inlineClassName: 'scheme-inline-highlight',
-          hoverMessage: displayHeaderMarker ? undefined : { value: hoverText },
+          hoverMessage: { value: hoverText },
         }
       };
     });

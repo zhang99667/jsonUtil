@@ -33,8 +33,9 @@ describe('editorSchemeModalState', () => {
   it('来源头小眼睛使用完整原始地址并禁止回写', () => {
     const source = 'https://example.com/page?cmd=%7B%22id%22%3A1%7D';
     const modal = createOpenEditorSchemeModal(location, '{"__url__":"https://example.com/page"}', {
-      path: '$.__url__',
+      path: '$',
       kind: 'url',
+      header: 'https://example.com/page',
       source,
     });
 

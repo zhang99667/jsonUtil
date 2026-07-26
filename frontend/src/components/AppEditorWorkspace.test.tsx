@@ -31,8 +31,9 @@ describe('AppEditorWorkspace', () => {
     const previewElement = assertElementLike(previewPane, '编辑区应装配 PREVIEW Pane');
     expect(previewElement.props.schemeDisplayHeaderMarkers).toEqual([
       {
-        path: '$.landing.__url__',
+        path: '$.landing',
         kind: 'url',
+        header: 'https://example.com/page',
         source: 'https://example.com/page?from=workspace',
       },
     ]);

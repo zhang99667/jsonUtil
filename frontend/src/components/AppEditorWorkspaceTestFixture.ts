@@ -50,8 +50,9 @@ export const buildAppEditorWorkspaceProps = (
   deepFormatInfo: undefined,
   hasTransformReportContext: false,
   schemeDisplayHeaderMarkers: [{
-    path: '$.landing.__url__',
+    path: '$.landing',
     kind: 'url',
+    header: 'https://example.com/page',
     source: 'https://example.com/page?from=workspace',
   }],
   highlightRange: null,

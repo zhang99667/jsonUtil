@@ -16,13 +16,12 @@ describe('深度解析 URL 来源展示', () => {
     expect(result.context.records.size).toBe(0);
   });
 
-  it('可展开的 HTTPS hash route 使用 URL 来源字段并可逆', () => {
+  it('可展开的 HTTPS hash route 使用 URL 来源标签元数据并可逆', () => {
     const input = `https://example.com/app#/route?cmd=${encodeURIComponent(JSON.stringify({ nid: 123 }))}&from=hash`;
     const result = deepParseWithContext(input, { autoExpandScheme: true });
     const parsed = JSON.parse(result.output);
 
-    expect(parsed).toMatchObject({
-      __url__: 'https://example.com/app',
+    expect(parsed).toEqual({
       cmd: { nid: 123 },
       from: 'hash',
     });
@@ -30,7 +29,12 @@ describe('深度解析 URL 来源展示', () => {
       schemeHeaderDisplayKey: '__url__',
     });
     expect(collectSchemeDisplayHeaderMarkers(result.context)).toEqual([
-      { path: '$.__url__', kind: 'url', source: input },
+      {
+        path: '$',
+        kind: 'url',
+        header: 'https://example.com/app',
+        source: input,
+      },
     ]);
 
     parsed.cmd.nid = 456;
@@ -39,17 +43,17 @@ describe('深度解析 URL 来源展示', () => {
     expect(restored).toContain('nid%22%3A456');
   });
 
-  it('URL 展示字段冲突时使用递增备用字段', () => {
+  it('URL 来源标签不覆盖真实同名业务字段', () => {
     const input = `http://example.com/app#/route?__url__=${encodeURIComponent('业务参数')}&__url_header__=${encodeURIComponent('备用参数')}&sync_data=${encodeURIComponent(JSON.stringify({ cursor: 1 }))}`;
     const result = deepParseWithContext(input, { autoExpandScheme: true });
     const parsed = JSON.parse(result.output);
 
     expect(parsed).toMatchObject({
-      __url_header_2__: 'http://example.com/app',
       __url__: '业务参数',
       __url_header__: '备用参数',
       sync_data: { cursor: 1 },
     });
+    expect(parsed).not.toHaveProperty('__url_header_2__');
     expect(result.context.records.get('$')?.steps[0]).toMatchObject({
       schemeHeaderDisplayKey: '__url_header_2__',
     });
@@ -65,16 +69,24 @@ describe('深度解析 URL 来源展示', () => {
       autoExpandScheme: true,
     });
 
-    expect(JSON.parse(result.output).action_cmd).toMatchObject({
-      __scheme__: 'sampleapp://v1/open',
+    expect(JSON.parse(result.output).action_cmd).toEqual({
       landing: {
-        __url__: 'https://example.com/page',
         cmd: { id: 1 },
       },
     });
     expect(collectSchemeDisplayHeaderMarkers(result.context)).toEqual([
-      { path: '$.action_cmd.__scheme__', kind: 'scheme', source: scheme },
-      { path: '$.action_cmd.landing.__url__', kind: 'url', source: landing },
+      {
+        path: '$.action_cmd',
+        kind: 'scheme',
+        header: 'sampleapp://v1/open',
+        source: scheme,
+      },
+      {
+        path: '$.action_cmd.landing',
+        kind: 'url',
+        header: 'https://example.com/page',
+        source: landing,
+      },
     ]);
   });
 });

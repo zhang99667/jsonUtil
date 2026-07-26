@@ -63,6 +63,28 @@ export function scanSchemesInJson(
       const current = pending.pop();
       if (!current) continue;
 
+      if (
+        forcedPaths.has(current.path)
+        && typeof current.value === 'object'
+        && current.value !== null
+      ) {
+        if (results.length >= limit) {
+          isLimited = true;
+          break;
+        }
+
+        const range = getValueRange(current.pointer);
+        results.push({
+          path: current.path,
+          pointer: current.pointer,
+          ...range,
+          endLine: range.line,
+          endColumn: range.column + 1,
+          value: '',
+          schemeType: 'plain',
+        });
+      }
+
       if (typeof current.value === 'string') {
         const schemeType = detectSchemeType(current.value);
         if (shouldExposeSchemeValue(current.value) || forcedPaths.has(current.path)) {

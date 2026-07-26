@@ -612,8 +612,14 @@ export function encodeWithLayers(
   content: string,
   layers: DecodeLayer[],
   displayHeaders: SchemeDisplayHeaderRecord[] = [],
+  displayHeadersInContent = true,
 ): string {
-  const result = encodeWithLayersResult(content, layers, displayHeaders);
+  const result = encodeWithLayersResult(
+    content,
+    layers,
+    displayHeaders,
+    displayHeadersInContent,
+  );
   return 'value' in result ? result.value : result.fallback;
 }
 
@@ -625,6 +631,7 @@ export function encodeWithLayersResult(
   content: string,
   layers: DecodeLayer[],
   displayHeaders: SchemeDisplayHeaderRecord[] = [],
+  displayHeadersInContent = true,
 ): SchemeLayerEncodingResult {
   const encoding = displayHeaders.length > 0
     ? prepareSchemeDisplayEncoding(
@@ -637,6 +644,7 @@ export function encodeWithLayersResult(
           getPrefixedQueryString,
           createSchemeLayerEncodingOptions(),
         ),
+        displayHeadersInContent,
       )
     : { content, layers, safe: true };
   if (!encoding.safe) {

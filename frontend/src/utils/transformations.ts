@@ -606,7 +606,7 @@ export function deepParseWithContext(
         if (decodedScheme.isJson) {
           try {
             const schemeParsed = parseJsonValue(
-              decodedScheme.displayDecoded || decodedScheme.decoded
+              decodedScheme.decoded
             );
             if (typeof schemeParsed === 'object' && schemeParsed !== null) {
               addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders, sourceLabel, value);
@@ -799,7 +799,7 @@ const encodeSchemeStringValue = (
     },
   ];
 
-  return encodeWithLayers(content, layers, step.schemeDisplayHeaders);
+  return encodeWithLayers(content, layers, step.schemeDisplayHeaders, false);
 };
 
 function applyInverseStep(value: JsonValue, step: TransformStep): JsonValue {
