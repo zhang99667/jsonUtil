@@ -660,6 +660,7 @@ export const SchemeViewerModal: React.FC<SchemeViewerModalProps> = ({
                   height="100%"
                   className="border border-editor-border rounded h-full"
                   showColorPreview
+                  displayHeaders={decodeResult.displayHeaders}
                 />
               ) : (
                 <div className="h-full flex items-center justify-center text-gray-500 text-xs border border-editor-border rounded bg-editor-bg">

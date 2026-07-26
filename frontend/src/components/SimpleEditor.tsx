@@ -1,6 +1,13 @@
-import React, { useMemo, useCallback } from 'react';
-import Editor from '@monaco-editor/react';
+import React, { useMemo, useCallback, useLayoutEffect, useState } from 'react';
+import Editor, { useMonaco } from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 import { tryParseJsonValue } from '../utils/jsonValueGuards';
+import type { SchemeDisplayHeaderRecord } from '../utils/schemeTypes';
+
+export type SimpleEditorDisplayHeader = Pick<
+  SchemeDisplayHeaderRecord,
+  'headerKey' | 'header' | 'source'
+>;
 
 export interface SimpleEditorProps {
   value: string;
@@ -11,7 +18,18 @@ export interface SimpleEditorProps {
   className?: string;
   placeholder?: string;
   showColorPreview?: boolean;
+  displayHeaders?: readonly SimpleEditorDisplayHeader[];
 }
+
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getDisplayHeaderKind = (headerKey: string): 'url' | 'scheme' => (
+  headerKey.startsWith('__url') ? 'url' : 'scheme'
+);
+
+const getDisplayHeaderLabel = (headerKey: string): string => (
+  getDisplayHeaderKind(headerKey) === 'url' ? 'URL 来源' : 'Scheme 来源'
+);
 
 /**
  * 轻量级编辑器组件
@@ -26,7 +44,9 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
   className = '',
   placeholder,
   showColorPreview = false,
+  displayHeaders = [],
 }) => {
+  const monaco = useMonaco();
   // 自动检测语言
   const detectedLanguage = useMemo(() => {
     if (language) return language;
@@ -45,6 +65,83 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
     return 'plaintext';
   }, [value, language]);
 
+  const [mountedEditor, setMountedEditor] = useState<editor.IStandaloneCodeEditor | null>(null);
+
+  useLayoutEffect(() => {
+    if (!mountedEditor || !monaco || detectedLanguage !== 'json' || displayHeaders.length === 0) return;
+
+    const model = mountedEditor.getModel();
+    if (!model) return;
+
+    const pendingHeaders = new Map<string, SimpleEditorDisplayHeader[]>();
+    displayHeaders.forEach(header => {
+      const entries = pendingHeaders.get(header.headerKey) || [];
+      entries.push(header);
+      pendingHeaders.set(header.headerKey, entries);
+    });
+
+    const decorations: editor.IModelDeltaDecoration[] = [];
+    const widgets: Array<{
+      label: HTMLElement;
+      widget: editor.IContentWidget;
+    }> = [];
+
+    for (let lineNumber = 1; lineNumber <= model.getLineCount(); lineNumber += 1) {
+      const lineContent = model.getLineContent(lineNumber);
+      pendingHeaders.forEach((headers, headerKey) => {
+        if (headers.length === 0) return;
+
+        const keyMatch = new RegExp(`("${escapeRegExp(headerKey)}")\\s*:`).exec(lineContent);
+        if (!keyMatch) return;
+
+        const header = headers.shift();
+        if (!header) return;
+
+        const startColumn = keyMatch.index + 1;
+        const keyLength = keyMatch[1].length;
+        decorations.push({
+          range: {
+            startLineNumber: lineNumber,
+            startColumn,
+            endLineNumber: lineNumber,
+            endColumn: startColumn + keyLength,
+          },
+          options: {
+            inlineClassName: 'scheme-display-header-inline-hidden',
+          },
+        });
+
+        const label = document.createElement('span');
+        const labelText = getDisplayHeaderLabel(header.headerKey);
+        label.className = 'scheme-display-header-inline-label';
+        label.textContent = labelText;
+        label.title = `协议头: ${header.header}\n点击左侧小眼睛查看完整原始地址`;
+        label.setAttribute('aria-label', `${labelText}，协议头：${header.header}`);
+        label.setAttribute('data-source-kind', getDisplayHeaderKind(header.headerKey));
+        label.setAttribute('data-source-header', header.header);
+
+        const widget: editor.IContentWidget = {
+          allowEditorOverflow: false,
+          suppressMouseDown: true,
+          getId: () => `scheme-display-header-inline-${lineNumber}-${header.headerKey}`,
+          getDomNode: () => label,
+          getPosition: () => ({
+            position: { lineNumber, column: startColumn },
+            preference: [monaco.editor.ContentWidgetPositionPreference.EXACT],
+          }),
+        };
+        mountedEditor.addContentWidget(widget);
+        widgets.push({ label, widget });
+      });
+    }
+
+    const decorationCollection = mountedEditor.createDecorationsCollection(decorations);
+    return () => {
+      decorationCollection.clear();
+      widgets.forEach(({ widget }) => mountedEditor.removeContentWidget(widget));
+    };
+  }, [detectedLanguage, displayHeaders, monaco, mountedEditor, value]);
+
   const handleChange = useCallback((val: string | undefined) => {
     onChange?.(val || '');
   }, [onChange]);
@@ -57,6 +154,7 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
         theme="vs-dark"
         value={value}
         onChange={handleChange}
+        onMount={instance => setMountedEditor(instance)}
         options={{
           readOnly,
           minimap: { enabled: false },

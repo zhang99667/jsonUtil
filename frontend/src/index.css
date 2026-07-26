@@ -365,6 +365,32 @@
   white-space: nowrap;
 }
 
+.scheme-display-header-inline-hidden {
+  color: transparent !important;
+  text-shadow: none !important;
+}
+
+.scheme-display-header-inline-label {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 19px;
+  min-width: 56px;
+  margin-left: -1px;
+  padding: 0 5px;
+  overflow: hidden;
+  border: 1px solid rgba(45, 212, 191, 0.42);
+  border-radius: 3px;
+  background: rgba(15, 118, 110, 0.18);
+  color: #99f6e4;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 17px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* 编辑器头部操作默认图标化，把横向宽度优先留给文件标签 */
 .editor-header {
   container-type: inline-size;

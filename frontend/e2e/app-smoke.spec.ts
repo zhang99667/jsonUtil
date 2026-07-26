@@ -3439,7 +3439,13 @@ test('SOURCE 编辑器可只读打开内嵌 Scheme', async ({ page }) => {
 
   const schemeResult = schemePanel.locator('[data-tour="scheme-result"] .view-lines');
   await expect(schemeResult).toContainText(`"__scheme__": "${commandHeader}"`);
-  await expect(schemeResult).toContainText(`"__scheme__": "${landingHeader}"`);
+  await expect(schemeResult).toContainText(`"__url__": "${landingHeader}"`);
+  const sourceHeaderLabels = schemePanel.locator('.scheme-display-header-inline-label');
+  await expect(sourceHeaderLabels).toHaveCount(2);
+  await expect(sourceHeaderLabels.nth(0)).toHaveText('Scheme 来源');
+  await expect(sourceHeaderLabels.nth(0)).toHaveAttribute('data-source-header', commandHeader);
+  await expect(sourceHeaderLabels.nth(1)).toHaveText('URL 来源');
+  await expect(sourceHeaderLabels.nth(1)).toHaveAttribute('data-source-header', landingHeader);
   await expect(schemeResult).toContainText('"bd_vid": [');
   await expect(schemeResult).toContainText('"backgroundColor":');
   await expect(schemeResult).toContainText('#FFFFFF');
