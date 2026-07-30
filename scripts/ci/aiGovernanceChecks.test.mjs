@@ -276,7 +276,7 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     "import './aiGovernanceRequiredRegistrationSnapshotFiles.mjs';");
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryAnchorReceipt.test.mjs',
     "import './aiGovernanceRegistrationCanaryAnchorTestFixtures.mjs';\ntest('fixture', () => {});");
-  ['aiGovernanceEvolutionSuiteReport.mjs', 'aiGovernanceRegistrationCanaryCalibrationFixtures.mjs', 'aiGovernanceRegistrationCanaryGraderCalibration.mjs', 'aiGovernanceRegistrationCanaryResult.mjs', 'aiGovernanceRequiredEvolutionCalibrationFiles.mjs'].forEach(file => fs.copyFileSync(new URL(`../../scripts/ci/${file}`, import.meta.url), `${rootDir}/scripts/ci/${file}`));
+  ['aiGovernanceEvolutionSuiteReport.mjs', 'aiGovernanceRegistrationCanaryCalibrationFixtures.mjs', 'aiGovernanceRegistrationCanaryCalibrationMutations.mjs', 'aiGovernanceRegistrationCanaryGraderCalibration.mjs', 'aiGovernanceRegistrationCanaryResult.mjs', 'aiGovernanceRequiredEvolutionCalibrationFiles.mjs'].forEach(file => fs.copyFileSync(new URL(`../../scripts/ci/${file}`, import.meta.url), `${rootDir}/scripts/ci/${file}`));
   CODEX_SESSION_START_HOOK_FILES.forEach((file) => {
     writeFixtureFile(rootDir, file, fs.readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8'));
   });

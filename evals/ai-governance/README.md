@@ -11,7 +11,7 @@
 
 ## Grader calibration
 
-- `grader-calibration.json` 是独立的 synthetic project-contract gold corpus，不是 outcome/receipt/feedback ledger。v1.1 固定 registration blind-result grader 的 identity/version、实际 import 与 fixture 的精确仓库路径、无祖先 symlink 的当前字节摘要、固定 component/target/policy ID 与对象摘要、rubric/完整 failure taxonomy、17 个 gold/near-miss/adversarial mutation 与三次重放阈值；生产 grader 禁止导入该文件，fixture factory 禁止保存 oracle、调用 grader 或复用生产 result 的 operation-ID helper。
+- `grader-calibration.json` 是独立的 synthetic project-contract gold corpus，不是 outcome/receipt/feedback ledger。v1.2 固定 registration blind-result grader 的 identity/version、实际 import、context factory 与 mutation factory 三条精确仓库路径、无祖先 symlink 的当前字节摘要、固定 component/target/policy ID 与对象摘要、rubric/完整 failure taxonomy、17 个 gold/near-miss/adversarial mutation 与三次重放阈值；生产 grader 禁止导入该文件，两个 fixture 源都禁止保存 oracle、调用 grader 或复用 production result 的 operation-ID helper。
 - 四类 oracle 为 `pass`、`behavior-fail`、`infrastructure-invalid`、`input-rejected`。17 个 mutation 必须一一出现，oracle reason 的并集必须精确覆盖完整 taxonomy；确定性门槛固定 exact agreement、macro-F1、各类 recall、reason-code agreement、determinism 和 mutation sensitivity 全部为 1。路径、ID、taxonomy、mutation、实现、fixture、case 或 policy 摘要任一替换、删减、symlink 或漂移，都必须在调用 grader 前 fail closed。
 - `aiGovernanceRegistrationCanaryGraderCalibration.mjs` 实际调用当前 `gradeRegistrationCanaryResultBlind` 51 次；fixture 以独立实现生成 operation ID，并由生产与 calibration 两侧分别命中硬编码参考向量。报告只输出有界 label/reason 与指标，不回显 result/packet/trace 正文，固定 `component-only`、`behaviorCoverageDelta=0`、零自动写账、`outcomeEligible=false`、`trusted=false`。
 - 校准失败进入 suite `contractFailures` 和 `fix-grader-calibration`；通过也不增加 behavior 分母、outcome、executed trial 或 trusted signer。模型/人工 grader 没有独立专家 gold 与实际 agreement 时仍为 `unknown`。

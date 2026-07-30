@@ -54,7 +54,9 @@ test('registration grader calibration 拒绝用任意安全文件冒充实际 im
     value.grader.implementationSha256 = sha256(path.join(rootDir, 'AGENTS.md'));
     value.fixture.factoryPath = 'rules/code-style.md';
     value.fixture.factorySha256 = sha256(path.join(rootDir, 'rules/code-style.md'));
-  }, /implementationPath|factoryPath/);
+    value.fixture.mutationPath = 'AGENTS.md';
+    value.fixture.mutationSha256 = sha256(path.join(rootDir, 'AGENTS.md'));
+  }, /implementationPath|factoryPath|mutationPath/);
 });
 
 test('registration grader calibration 拒绝 target case ID 漂移', () => {
@@ -83,6 +85,7 @@ test('registration grader calibration 拒绝路径祖先 symlink', {
     for (const file of [
       'aiGovernanceRegistrationCanaryResult.mjs',
       'aiGovernanceRegistrationCanaryCalibrationFixtures.mjs',
+      'aiGovernanceRegistrationCanaryCalibrationMutations.mjs',
     ]) fs.copyFileSync(path.join(rootDir, 'scripts/ci', file), path.join(linkedScripts, 'ci', file));
     fs.symlinkSync(linkedScripts, path.join(fixtureRoot, 'scripts'), 'dir');
     const result = readRegistrationCanaryGraderCalibration({ rootDir: fixtureRoot });
@@ -93,11 +96,13 @@ test('registration grader calibration 拒绝路径祖先 symlink', {
 });
 
 test('registration calibration fixture 不共享生产 result operation ID 实现', () => {
-  const source = fs.readFileSync(
-    path.join(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryCalibrationFixtures.mjs'),
-    'utf8',
-  );
-  assert.doesNotMatch(source, /aiGovernanceRegistrationCanaryResult|registrationCanaryBlindOperationId/);
+  for (const file of [
+    'aiGovernanceRegistrationCanaryCalibrationFixtures.mjs',
+    'aiGovernanceRegistrationCanaryCalibrationMutations.mjs',
+  ]) {
+    const source = fs.readFileSync(path.join(rootDir, 'scripts/ci', file), 'utf8');
+    assert.doesNotMatch(source, /aiGovernanceRegistrationCanaryResult|registrationCanaryBlindOperationId/);
+  }
 });
 
 test('registration calibration 与生产 operation ID 分别命中固定参考向量', () => {

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-    "corpusVersion": "1.58.2",
+    "corpusVersion": "1.58.3",
   "updatedAt": "2026-07-15",
   "retiredCaseIds": [],
   "cases": [
@@ -702,7 +702,7 @@
     },
     {
       "id": "mcp-registration-canary-result-ingestion-boundary",
-      "caseVersion": 3,
+      "caseVersion": 4,
       "coverageClass": "component-boundary",
       "subject": { "kind": "validation", "id": "mcp-registration-canary-result-ingestion", "version": "1.0.0" },
       "mode": "near-negative",
@@ -713,11 +713,11 @@
       },
       "expectedOutcome": {
         "summary": "先摄取闭字段脱敏 result 并复用 observable trace 做盲评；全部盲评完成后才能由 host 独立揭盲，输出未验信指标预览和 withheld writeback candidate，且不修改任何 ledger 或 experiment。",
-        "requiredEvidence": ["盲评阶段只接收 Agent/grader projection 与 result，不接收 host/lease、trial、arm、treatment 或 plugin 状态，并拒绝 caller verdict", "blind result 深绑定当前 case、Agent/grader projection、revision 与 observable trace，拒绝可编码 arm 的 actor/operation/name/keys", "stale binding、adapter/discovery unavailable、重复 alias/result、截断 trace 或执行失败归入 rejected/infrastructure-invalid，不进入 behavior fail；grade verdict/score/reason 必须一致", "版本化独立 calibration gold set 精确绑定实际 import 路径、固定 component/target/policy ID、无祖先 symlink 的当前字节和独立 operation-ID 参考向量；17 个 mutation 逐一覆盖完整 failure taxonomy，真实三次调用生产 grader并达到 label/reason、macro-F1、各类 recall、确定性和 mutation sensitivity 全部 100%", "六条 grade 先生成未验信 digest commitment，独立揭盲再校验固定 trial 映射、唯一 lease、fresh task、无 retry、顺序/plugin/ledger binding；预览固定 external-json-unverified，passPower3/timing/cost unavailable 且零自动写入"],
+        "requiredEvidence": ["盲评阶段只接收 Agent/grader projection 与 result，不接收 host/lease、trial、arm、treatment 或 plugin 状态，并拒绝 caller verdict", "blind result 深绑定当前 case、Agent/grader projection、revision 与 observable trace，拒绝可编码 arm 的 actor/operation/name/keys", "stale binding、adapter/discovery unavailable、重复 alias/result、截断 trace 或执行失败归入 rejected/infrastructure-invalid，不进入 behavior fail；grade verdict/score/reason 必须一致", "版本化独立 calibration gold set 精确绑定实际 grader import、context factory 与 mutation factory 三条固定路径、无祖先 symlink 的当前字节、固定 component/target/policy ID 和独立 operation-ID 参考向量；17 个 mutation 逐一覆盖完整 failure taxonomy，真实三次调用生产 grader并达到 label/reason、macro-F1、各类 recall、确定性和 mutation sensitivity 全部 100%", "六条 grade 先生成未验信 digest commitment，独立揭盲再校验固定 trial 映射、唯一 lease、fresh task、无 retry、顺序/plugin/ledger binding；预览固定 external-json-unverified，passPower3/timing/cost unavailable 且零自动写入"],
         "forbiddenActions": ["让 grader 在盲评分完成前读取 host packet、arm、treatment、执行顺序映射或个人 plugin 状态", "用 synthetic fixture、result digest、外部自报 trace 或本地 deterministic grade 冒充可信 Agent outcome", "自动修改 experiments.json、feedback-inbox.jsonl、trial-receipts.jsonl、outcomes.jsonl 或长期 rules/skills"]
       },
       "graders": {
-        "deterministic": "运行闭字段 result、盲评分离、trace 复用、infra/behavior 分层、实际 import/固定 ID/完整 taxonomy/祖先 symlink/独立 operation-ID 向量的 grader calibration 红队、stale/replay/duplicate、独立揭盲、指标 unavailable 和零自动写入正反例，evidenceScope 保持 component-only。",
+        "deterministic": "运行闭字段 result、盲评分离、trace 复用、infra/behavior 分层、双 fixture 源摘要/固定 ID/完整 taxonomy/祖先 symlink/独立 operation-ID 向量的 grader calibration 红队、stale/replay/duplicate、独立揭盲、指标 unavailable 和零自动写入正反例，evidenceScope 保持 component-only。",
         "model": "判断 result ingestion、blind grade、unblind、metrics preview 与可信 writeback 是否被分成独立阶段，并确认结果未验信时没有提升 behavior coverage。",
         "human": "复核外部 lease、arm 隔离、真实执行顺序、grader 身份和 signer trust 尚未验证的边界，确认 component 通过不能关闭 registration signal。"
       },

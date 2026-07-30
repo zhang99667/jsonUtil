@@ -4,12 +4,13 @@ import path from 'node:path';
 
 import { isEvolutionRecord } from './aiGovernanceEvolutionEvalContract.mjs';
 import { hashEvolutionTraceValue } from './aiGovernanceEvolutionTrace.mjs';
-import { REGISTRATION_CANARY_CALIBRATION_MUTATIONS } from './aiGovernanceRegistrationCanaryCalibrationFixtures.mjs';
+import { REGISTRATION_CANARY_CALIBRATION_MUTATIONS } from './aiGovernanceRegistrationCanaryCalibrationMutations.mjs';
 import { REGISTRATION_CANARY_RESULT } from './aiGovernanceRegistrationCanaryResult.mjs';
 
 export const REGISTRATION_CANARY_GRADER_CALIBRATION_PATH = 'evals/ai-governance/grader-calibration.json';
 const GRADER_IMPLEMENTATION_PATH = 'scripts/ci/aiGovernanceRegistrationCanaryResult.mjs';
 const FIXTURE_FACTORY_PATH = 'scripts/ci/aiGovernanceRegistrationCanaryCalibrationFixtures.mjs';
+const FIXTURE_MUTATION_PATH = 'scripts/ci/aiGovernanceRegistrationCanaryCalibrationMutations.mjs';
 const COMPONENT_CASE_ID = 'mcp-registration-canary-result-ingestion-boundary';
 const TARGET_CASE_ID = 'mcp-project-registration-discovery';
 const ROOT_FIELDS = [
@@ -101,7 +102,7 @@ export const readRegistrationCanaryGraderCalibration = ({
   failures.push(...exactFields(calibration, ROOT_FIELDS, 'grader calibration'));
   if (calibration.schemaVersion !== 1
     || calibration.calibrationId !== 'registration-canary-blind-result-grader'
-    || calibration.calibrationVersion !== '1.1.0'
+    || calibration.calibrationVersion !== '1.2.0'
     || calibration.dataClass !== 'synthetic'
     || calibration.evidenceScope !== 'component-only') failures.push('grader calibration 基础字段非法');
 
@@ -117,14 +118,28 @@ export const readRegistrationCanaryGraderCalibration = ({
     failures.push('grader implementationSha256 与当前生产实现不一致');
   }
 
-  failures.push(...exactFields(calibration.fixture, ['factoryPath', 'factorySha256'], 'grader calibration.fixture'));
-  if (!SHA256_PATTERN.test(calibration.fixture?.factorySha256 ?? '')) failures.push('grader fixture digest 非法');
+  failures.push(...exactFields(
+    calibration.fixture,
+    ['factoryPath', 'factorySha256', 'mutationPath', 'mutationSha256'],
+    'grader calibration.fixture',
+  ));
+  if (!SHA256_PATTERN.test(calibration.fixture?.factorySha256 ?? '')
+    || !SHA256_PATTERN.test(calibration.fixture?.mutationSha256 ?? '')) {
+    failures.push('grader fixture digest 非法');
+  }
   if (calibration.fixture?.factoryPath !== FIXTURE_FACTORY_PATH) {
     failures.push('grader fixture.factoryPath 必须精确绑定实际 import');
   }
   const factoryPath = resolveBoundFile(rootDir, FIXTURE_FACTORY_PATH, 'grader fixture.factoryPath', failures);
   if (factoryPath && sha256(fs.readFileSync(factoryPath)) !== calibration.fixture.factorySha256) {
     failures.push('grader fixture.factorySha256 与当前 fixture factory 不一致');
+  }
+  if (calibration.fixture?.mutationPath !== FIXTURE_MUTATION_PATH) {
+    failures.push('grader fixture.mutationPath 必须精确绑定实际 import');
+  }
+  const mutationPath = resolveBoundFile(rootDir, FIXTURE_MUTATION_PATH, 'grader fixture.mutationPath', failures);
+  if (mutationPath && sha256(fs.readFileSync(mutationPath)) !== calibration.fixture.mutationSha256) {
+    failures.push('grader fixture.mutationSha256 与当前 mutation factory 不一致');
   }
 
   failures.push(...exactFields(calibration.componentCase, ['id', 'caseVersion', 'subjectVersion', 'caseSha256'], 'grader calibration.componentCase'));

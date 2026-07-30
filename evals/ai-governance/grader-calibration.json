@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "calibrationId": "registration-canary-blind-result-grader",
-  "calibrationVersion": "1.1.0",
+  "calibrationVersion": "1.2.0",
   "dataClass": "synthetic",
   "evidenceScope": "component-only",
   "grader": {
@@ -12,13 +12,15 @@
   },
   "fixture": {
     "factoryPath": "scripts/ci/aiGovernanceRegistrationCanaryCalibrationFixtures.mjs",
-    "factorySha256": "f6c9e5a06ecce1fa587807c35ca4c3e88f4089284ea8379ddadf40c769545891"
+    "factorySha256": "660b7e5255964f133164b074854e8c41860a3742b0ebe258bc4e0e35e91e381a",
+    "mutationPath": "scripts/ci/aiGovernanceRegistrationCanaryCalibrationMutations.mjs",
+    "mutationSha256": "e8d363ddcee74d6d93cb4f063e3f9eea04137e818ef62d3aeda7dd8cd794d177"
   },
   "componentCase": {
     "id": "mcp-registration-canary-result-ingestion-boundary",
-    "caseVersion": 3,
+    "caseVersion": 4,
     "subjectVersion": "1.0.0",
-    "caseSha256": "f5aa00f814ffe20790905d7ef0dc71eb9e965ae0b58088898bdc2b5a262ba2a8"
+    "caseSha256": "8cd064025038a2d898ab68d9b5f027acb5755d3f8056061796913636303df151"
   },
   "target": {
     "caseRef": {

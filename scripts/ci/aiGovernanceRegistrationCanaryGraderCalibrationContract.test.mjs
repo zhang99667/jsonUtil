@@ -47,8 +47,10 @@ test('registration grader calibration contract 对非法 JSON 返回固定零摘
 test('registration grader calibration 的 oracle 与 fixture 不被生产 grader 反向导入', () => {
   const productionSource = fs.readFileSync(path.join(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryResult.mjs'), 'utf8');
   const fixtureSource = fs.readFileSync(path.join(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryCalibrationFixtures.mjs'), 'utf8');
+  const mutationSource = fs.readFileSync(path.join(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryCalibrationMutations.mjs'), 'utf8');
   assert.doesNotMatch(productionSource, /grader-calibration|GraderCalibration|CalibrationFixtures/);
   assert.doesNotMatch(fixtureSource, /gradeRegistrationCanaryResultBlind/);
+  assert.doesNotMatch(mutationSource, /gradeRegistrationCanaryResultBlind|grader-calibration/);
 });
 
 test('registration grader calibration contract 拒绝弱化阈值、重复 mutation 与缺失类别', () => {

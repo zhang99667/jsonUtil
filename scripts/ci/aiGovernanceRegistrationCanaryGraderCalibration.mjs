@@ -4,8 +4,8 @@ import { isEvolutionRecord } from './aiGovernanceEvolutionEvalContract.mjs';
 import { hashEvolutionTraceValue } from './aiGovernanceEvolutionTrace.mjs';
 import {
   buildRegistrationCanaryCalibrationFixtureContext,
-  buildRegistrationCanaryCalibrationInput,
 } from './aiGovernanceRegistrationCanaryCalibrationFixtures.mjs';
+import { buildRegistrationCanaryCalibrationInput } from './aiGovernanceRegistrationCanaryCalibrationMutations.mjs';
 import {
   REGISTRATION_CANARY_GRADER_CALIBRATION_LABELS,
   REGISTRATION_CANARY_GRADER_CALIBRATION_PATH,
@@ -155,6 +155,7 @@ export const buildRegistrationCanaryGraderCalibrationReport = ({
     bindings: {
       calibrationSha256: readResult.calibrationSha256,
       fixtureFactorySha256: readResult.calibration?.fixture?.factorySha256 ?? null,
+      fixtureMutationSha256: readResult.calibration?.fixture?.mutationSha256 ?? null,
       componentCase: readResult.calibration?.componentCase ?? null,
       target: readResult.calibration?.target ?? null,
     },

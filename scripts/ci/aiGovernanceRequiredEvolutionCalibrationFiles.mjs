@@ -2,6 +2,8 @@ export const AI_GOVERNANCE_REQUIRED_EVOLUTION_CALIBRATION_FILES = [
   'evals/ai-governance/grader-calibration.json',
   'scripts/ci/aiGovernanceRequiredEvolutionCalibrationFiles.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryCalibrationFixtures.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryCalibrationMutations.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryCalibrationMutations.test.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryGraderCalibrationContract.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryGraderCalibrationContract.test.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryGraderCalibration.mjs',
