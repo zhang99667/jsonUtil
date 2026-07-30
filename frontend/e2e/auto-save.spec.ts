@@ -154,9 +154,50 @@ test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', asy
 
   await page.locator('[data-tour="preview-editor"] .monaco-editor').first().click();
   await expect(page.locator('[data-tour="statusbar"]')).toContainText('Length: 16');
+  await page.evaluate(() => {
+    const nativeSetTimeout = window.setTimeout.bind(window);
+    const nativeClearTimeout = window.clearTimeout.bind(window);
+    const controlledTimerIds = new Set<number>();
+    let nextControlledTimerId = 0;
+    window.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+      if (timeout === 1000) {
+        const timerId = --nextControlledTimerId;
+        controlledTimerIds.add(timerId);
+        return timerId;
+      }
+      return nativeSetTimeout(handler, timeout, ...args);
+    }) as typeof window.setTimeout;
+    window.clearTimeout = ((timerId?: number) => {
+      if (timerId !== undefined && controlledTimerIds.delete(timerId)) return;
+      nativeClearTimeout(timerId);
+    }) as typeof window.clearTimeout;
+    Object.defineProperties(window, {
+      __jsonHelperPendingAutoSaveTimerCount: {
+        configurable: true,
+        value: () => controlledTimerIds.size,
+      },
+      __restoreJsonHelperTimerControl: {
+        configurable: true,
+        value: () => {
+          window.setTimeout = nativeSetTimeout;
+          window.clearTimeout = nativeClearTimeout;
+        },
+      },
+    });
+  });
   await page.locator('[data-tour="auto-save"]').click();
   await expect(page.locator('[data-tour="save-status"]')).toHaveText('等待自动保存');
+  await expect.poll(async () => page.evaluate(() => (
+    (window as unknown as {
+      __jsonHelperPendingAutoSaveTimerCount: () => number;
+    }).__jsonHelperPendingAutoSaveTimerCount()
+  ))).toBe(1);
   await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+S`);
+  await expect.poll(async () => page.evaluate(() => (
+    (window as unknown as {
+      __jsonHelperPendingAutoSaveTimerCount: () => number;
+    }).__jsonHelperPendingAutoSaveTimerCount()
+  ))).toBe(0);
   await expect.poll(async () => page.evaluate(() => {
     const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
     return writes.filter(write => write.startsWith('开始:')).length;
@@ -166,11 +207,11 @@ test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', asy
     return writes.find(write => write.startsWith('开始:')) ?? '';
   })).toContain('"saved": 2');
 
-  await page.waitForTimeout(1200);
-  await expect.poll(async () => page.evaluate(() => {
-    const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
-    return writes.filter(write => write.startsWith('开始:')).length;
-  })).toBe(1);
+  await page.evaluate(() => {
+    (window as unknown as {
+      __restoreJsonHelperTimerControl: () => void;
+    }).__restoreJsonHelperTimerControl();
+  });
   await page.evaluate(() => {
     (window as unknown as { __releasePreviewWrite: () => void }).__releasePreviewWrite();
   });
