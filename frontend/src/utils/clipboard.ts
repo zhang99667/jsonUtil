@@ -11,7 +11,7 @@ export const copyText = async (text: string): Promise<void> => {
     if (await copyToClipboard(text)) return;
   } catch (error) {
     if (dispatchChunkLoadRecoveryEvent(error)) {
-      throw new Error('复制能力加载失败，请刷新页面后重试');
+      throw new Error('复制能力加载失败，请刷新页面后重试', { cause: error });
     }
   }
 

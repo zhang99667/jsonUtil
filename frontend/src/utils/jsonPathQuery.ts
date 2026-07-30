@@ -84,7 +84,7 @@ const parseJsonPathSource = (
     }
 
     const message = formatUnknownError(error);
-    throw new Error(`JSON 解析错误: ${message}`);
+    throw new Error(`JSON 解析错误: ${message}`, { cause: error });
   }
 };
 
@@ -241,7 +241,7 @@ export const queryJsonPathRanges = (
       isLimited = true;
     } else {
       const message = formatUnknownError(error);
-      throw new Error(`JSONPath 查询错误: ${message}`);
+      throw new Error(`JSONPath 查询错误: ${message}`, { cause: error });
     }
   }
 

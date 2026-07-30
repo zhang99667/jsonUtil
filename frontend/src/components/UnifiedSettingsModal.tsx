@@ -211,7 +211,7 @@ export const UnifiedSettingsModal: React.FC<UnifiedSettingsModalProps> = ({
         if (currentIndex < 0) return;
 
         const lastIndex = SETTINGS_TABS.length - 1;
-        let nextIndex = currentIndex;
+        let nextIndex: number;
 
         if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
             nextIndex = currentIndex === lastIndex ? 0 : currentIndex + 1;

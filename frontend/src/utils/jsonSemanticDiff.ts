@@ -89,7 +89,7 @@ export const parseJsonForSemanticDiff = (source: string): JsonValue => {
     if (jsonLines) return jsonLines;
 
     const message = formatUnknownError(error);
-    throw new Error(`JSON 解析失败: ${message}`);
+    throw new Error(`JSON 解析失败: ${message}`, { cause: error });
   }
 };
 

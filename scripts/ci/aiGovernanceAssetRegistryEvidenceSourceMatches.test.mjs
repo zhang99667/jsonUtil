@@ -9,10 +9,9 @@ import {
 } from './aiGovernanceTestFixtures.mjs';
 import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReferenceGroups.mjs';
 
-test('AI 治理资产注册表接受来源匹配的治理证据', () => {
+test('AI 治理资产注册表接受来源匹配和未创建的本机豁免声明', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, 'docs/AI-NEW-WORKFLOW.md', '新 AI 协作流程');
-    writeFixtureFile(rootDir, '.claude/settings.local.json', '{}');
     const failures = collectRegistryFailuresForRows(rootDir, [
       registryRow('AGENTS.md', { evidence: '必需文件、入口引用规则', type: '项目入口' }),
       registryRow('rules/code-style.md', { evidence: '必需文件、版本一致性检查引用', type: '权威规则' }),

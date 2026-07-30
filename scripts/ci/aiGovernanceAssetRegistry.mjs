@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { discoverAiGovernanceAssetFiles } from './aiGovernanceDiscoveredAssets.mjs';
-import { AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES } from './aiGovernanceDiscoverySources.mjs';
+import { AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES, AI_GOVERNANCE_LOCAL_ONLY_EXEMPT_FILES } from './aiGovernanceDiscoverySources.mjs';
 import { AI_GOVERNANCE_ASSET_REGISTRY_FILE } from './aiGovernanceAssetRegistryConstants.mjs';
 import { buildAiGovernanceAssetRegistryFailures } from './aiGovernanceAssetRegistryFailures.mjs';
 import { buildRegistryEvidenceSourceSets } from './aiGovernanceAssetRegistryEvidenceSources.mjs';
@@ -11,9 +11,12 @@ const hasFile = (rootDir, file) => fs.existsSync(path.join(rootDir, file));
 
 const uniqueSorted = files => [...new Set(files)].sort();
 
-export const buildRegistryEvidenceContext = (rootDir, requiredFiles, referenceRules) => {
+export const buildRegistryEvidenceContext = (rootDir, requiredFiles, referenceRules, registryRows = new Map()) => {
   const discoveredFiles = discoverAiGovernanceAssetFiles(rootDir);
-  const exemptFiles = AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES.filter(file => hasFile(rootDir, file));
+  const localOnlyExemptFiles = new Set(AI_GOVERNANCE_LOCAL_ONLY_EXEMPT_FILES);
+  const exemptFiles = AI_GOVERNANCE_DISCOVERY_EXEMPT_FILES.filter(
+    file => hasFile(rootDir, file) || (localOnlyExemptFiles.has(file) && registryRows.has(file))
+  );
   const expectedRegistryFiles = uniqueSorted([...requiredFiles, ...discoveredFiles, ...exemptFiles]);
   return {
     discoveredFiles: new Set(discoveredFiles),
@@ -34,7 +37,12 @@ export const collectAiGovernanceAssetRegistryFailures = (rootDir, requiredFiles,
   const { rows: registryRows, duplicateFiles } = parseAiGovernanceAssetRegistryRows(
     fs.readFileSync(registryPath, 'utf8')
   );
-  const evidenceContext = buildRegistryEvidenceContext(rootDir, requiredFiles, referenceRules);
+  const evidenceContext = buildRegistryEvidenceContext(
+    rootDir,
+    requiredFiles,
+    referenceRules,
+    registryRows
+  );
 
   return buildAiGovernanceAssetRegistryFailures({
     duplicateFiles,

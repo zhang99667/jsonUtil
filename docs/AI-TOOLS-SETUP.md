@@ -50,7 +50,7 @@ AI 助手开始修改代码前，应优先读取：
 5. 更新 `docs/AI-GOVERNANCE-DECISIONS.md`、`CHANGELOG.md` 和 `docs/AI-ASSET-REGISTRY.md`，并按阶段运行 `check-ai-asset-distribution.mjs --workspace|--index`；CI 再以 `--head` 锁定提交分发。不得用 workspace 就绪替代 index/HEAD，或为得到绿色报告自动 stage/commit。
 6. 再补 `check-ai-governance` 引用规则或负向测试，让漂移可被发现。
 
-本机私有配置不承载协作规则。`.claude/settings.local.json` 这类文件若存在，只能作为本机配置或显式豁免；需要共享的流程必须迁移到入口文档、Playbook、rules 或 skill。当前该路径仍在 Git index/HEAD，ignore 已准备但迁移未完成；维护者明确移出 index 并提交前保持 blocked。项目治理只核对 Git 路径元数据，不读取该本机私有文件正文。
+本机私有配置不承载协作规则。`.claude/settings.local.json` 这类文件若存在，只能作为本机配置或显式豁免；需要共享的流程必须迁移到入口文档、Playbook、rules 或 skill。当前该路径已从 Git index/HEAD 缺席；资产账本仍常驻登记声明式豁免，文件未来创建时继续由 ignore 和 hermetic Git 元数据检查保护，项目治理不读取其正文。
 
 Codex 中的 `jsonutils-governance` 首选 `.codex/config.toml` 这个项目原生入口，本仓库维护者不需先安装同名插件。配置使用无 shell Node bootstrap 向上定位仓库根，固定 `required=true`、超时与 11 工具 allowlist；clone/open 本身不执行，必须信任项目并新建任务。当前 upstream 源码表明同名 direct config 优先于 plugin server，但这仅是 component inference；在 fresh task 真实观察前不声称已注册。项目配置绝不写入、禁用或覆盖用户 plugin 状态。
 

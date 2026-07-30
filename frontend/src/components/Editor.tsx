@@ -406,7 +406,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
         const layoutInfo = latestEditor.getLayoutInfo();
         const editorDomNode = latestEditor.getDomNode();
         const readOnlyMessageNode = editorDomNode?.querySelector<HTMLElement>('.monaco-editor-overlaymessage');
-        let anchorPosition: { top: number; left: number } | null = null;
+        let anchorPosition: { top: number; left: number } | null;
 
         if (editorDomNode && readOnlyMessageNode) {
           const editorRect = editorDomNode.getBoundingClientRect();

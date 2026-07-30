@@ -215,7 +215,7 @@ export const parseCmdStructureJson = (text: string, label = '输入'): JsonValue
   try {
     parseJsonValue(text);
   } catch (error) {
-    throw new Error(`${label}不是有效 JSON: ${formatUnknownError(error)}`);
+    throw new Error(`${label}不是有效 JSON: ${formatUnknownError(error)}`, { cause: error });
   }
 
   throw new Error(`${label}不是有效 JSON`);

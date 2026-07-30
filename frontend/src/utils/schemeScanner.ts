@@ -43,7 +43,6 @@ export function scanSchemesInJson(
 
   try {
     const sourceMap = parseJsonSourceMap(jsonString);
-    const parsed: unknown = sourceMap.data;
 
     const getValueRange = (pointer: string) => {
       const pointerInfo = sourceMap.pointers[pointer];
@@ -58,16 +57,19 @@ export function scanSchemesInJson(
       };
     };
 
-    const pending: SchemeScanTask[] = [{ path: '$', pointer: '', value: parsed }];
+    const pending: SchemeScanTask[] = [{ path: '$', pointer: '', value: sourceMap.data }];
     while (pending.length > 0) {
       const current = pending.pop();
       if (!current) continue;
 
-      if (
-        forcedPaths.has(current.path)
+      const isForcedObject = forcedPaths.has(current.path)
         && typeof current.value === 'object'
-        && current.value !== null
-      ) {
+        && current.value !== null;
+      const stringValue = typeof current.value === 'string' ? current.value : undefined;
+      const isStringLocation = stringValue !== undefined
+        && (shouldExposeSchemeValue(stringValue) || forcedPaths.has(current.path));
+
+      if (isForcedObject || isStringLocation) {
         if (results.length >= limit) {
           isLimited = true;
           break;
@@ -77,34 +79,16 @@ export function scanSchemesInJson(
         results.push({
           path: current.path,
           pointer: current.pointer,
+          ...(isStringLocation ? { label: current.label } : {}),
           ...range,
-          endLine: range.line,
-          endColumn: range.column + 1,
-          value: '',
-          schemeType: 'plain',
+          endLine: isStringLocation ? range.endLine : range.line,
+          endColumn: isStringLocation ? range.endColumn : range.column + 1,
+          value: stringValue ?? '',
+          schemeType: isStringLocation ? detectSchemeType(stringValue) : 'plain',
         });
       }
 
-      if (typeof current.value === 'string') {
-        const schemeType = detectSchemeType(current.value);
-        if (shouldExposeSchemeValue(current.value) || forcedPaths.has(current.path)) {
-          if (results.length >= limit) {
-            isLimited = true;
-            break;
-          }
-
-          const range = getValueRange(current.pointer);
-          results.push({
-            path: current.path,
-            pointer: current.pointer,
-            label: current.label,
-            ...range,
-            value: current.value,
-            schemeType,
-          });
-        }
-        continue;
-      }
+      if (stringValue !== undefined) continue;
 
       if (Array.isArray(current.value)) {
         for (let index = current.value.length - 1; index >= 0; index -= 1) {
@@ -135,11 +119,7 @@ export function scanSchemesInJson(
     if (!(error instanceof SyntaxError)) throw error;
   }
 
-  return {
-    locations: results,
-    isLimited,
-    limit,
-  };
+  return { locations: results, isLimited, limit };
 }
 
 export function findSchemesInJson(jsonString: string): SchemeLocation[] {

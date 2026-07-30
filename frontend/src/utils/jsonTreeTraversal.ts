@@ -110,7 +110,7 @@ export const parseJsonTreeSource = (source: string): JsonValue => {
     }
 
     const message = formatUnknownError(error);
-    throw new Error(`JSON 结构解析失败: ${message}`);
+    throw new Error(`JSON 结构解析失败: ${message}`, { cause: error });
   }
 };
 

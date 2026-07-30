@@ -34,7 +34,7 @@ AI 工具使用指南，包含:
 - ❌ **忽略**: 会话历史 (session-history/)
 - ❌ **忽略**: 临时文件 (tmp/, *.log)
 
-迁移尚未完成：当前历史 Git index 与 HEAD 仍跟踪 `.claude/settings.local.json`。ignore 只影响未跟踪文件，不会取消已跟踪状态；在维护者备份/复核本机配置、明确授权执行 `git rm --cached -- .claude/settings.local.json` 并提交该删除前，治理门禁保持阻断。项目治理只读取该路径的 Git 元数据，不读取本机私有正文。
+迁移已完成：Git index 与 HEAD 均不跟踪 `.claude/settings.local.json`。该文件即使尚未创建，也继续作为声明式本机豁免登记；未来创建时仍由 ignore 和 hermetic Git 元数据检查保护，项目治理不读取其正文。
 
 ## 相关文件
 

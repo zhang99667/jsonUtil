@@ -1,12 +1,12 @@
 # AI 协作资产注册表
 
-本文是 AI 协作资产的人工账本。`node scripts/ci/check-ai-governance.mjs` 会校验必需文件、自动发现资产和已存在的显式豁免文件是否都在本文登记，避免 rules、skills、工具入口或本机配置边界变成无人维护的隐性资产。
+本文是 AI 协作资产的人工账本。`node scripts/ci/check-ai-governance.mjs` 会校验必需文件、自动发现资产、已存在的公开豁免文件和已登记的固定本机私有豁免路径是否都在本文登记，避免 rules、skills、工具入口或本机配置边界变成无人维护的隐性资产。
 
 ## 登记规则
 
 - 每个协作资产在下方主表且只登记一次；路径用反引号，八列均非空，正文提及不算登记。
 - `治理证据` 只使用 `scripts/ci/aiGovernanceAssetRegistryEvidence.mjs` 认可的 required/discovery/exempt/budget、引用或结构契约标记；文件引用须有 `referenceRules.file`，证据须能反查真实集合或脚本。
-- 资产必须属于必需文件、自动发现或已存在的显式豁免；移出治理面时同步删除登记。
+- 资产必须属于必需文件、自动发现、已存在的公开豁免或固定本机私有豁免清单；已登记的固定本机私有豁免允许在文件缺席时保留登记，未启用且未登记的可选路径不进入期望集合，公开豁免仅在真实存在时允许登记，移出治理面时同步删除登记。
 - 工程规则写入 `rules/code-style.md` 或工程 Playbook，AI 基建效果规则写入 evolution Playbook/skill；工具入口保持薄，历史只写决策账本与 CHANGELOG。
 - 本机私有配置只作显式豁免，不承载共享 rules、skills 或验证流程。新增 AI 入口、`.agents/skills/`、`.claude/`、`.codex/`、Cursor、MCP 配置、GitHub instructions/prompts/agents/chatmodes、`docs/AI-*.md` 或 `rules/ai-*.md` 时先更新本文。
 
@@ -28,10 +28,10 @@
 | `rules/code-style.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-14 | 权威规则 | 保留编码、提交、发布和 AI 资产稳定不变量，并固定 `.agents/skills` 唯一语义源与 Claude 派生 adapter 边界；eval/runtime 细节委托权威 Playbook | 必需文件、入口引用规则、版本一致性检查引用 |
 | `docs/AI-ENGINEERING-PLAYBOOK.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-15 | 权威流程 | 子 Agent 委派、三个通用执行角色与跨客户端只读 auditor、验证矩阵和治理校验闭环 | 必需文件、入口引用规则、章节级引用检查 |
 | `docs/AI-EVOLUTION-PLAYBOOK.md` | 权威流程 | 项目维护者 | 变更时复核 | 2026-07-15 | 行为评测流程 | 保留 source of truth、component/behavior、证据时效、写账授权、外部 trust 和跨客户端 Agent/skill 路由边界；字段协议按任务读 eval README | 必需文件、自动发现规则、资产注册表结构化校验 |
-| `docs/AI-GOVERNANCE-DECISIONS.md` | 决策账本 | 项目维护者 | 变更时复核 | 2026-07-20 | 决策账本 | 记录 AI rules、skills 和治理脚本变更的触发条件、反例、回写追踪和锁定测试，并要求回写追踪包含账本自身 | 必需文件、docs/AI 引用规则、资产发现规则 |
-| `docs/AI-CONFIG-INTEGRATION.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-15 | 分层说明 | 说明 canonical skills、三端 Agent adapter、Claude 共享/本机设置、repo marketplace、权限与 component/behavior 证据分层 | 必需文件、docs/AI 引用规则、资产发现规则 |
-| `docs/AI-TOOLS-SETUP.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-15 | 工具索引 | 区分跨客户端 skill/Agent discovery、repo catalog、显式安装、fresh task 与 runtime trust，并登记三端 auditor 只读能力边界 | 必需文件、docs/AI 引用规则、资产发现规则 |
-| `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-20 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
+| `docs/AI-GOVERNANCE-DECISIONS.md` | 决策账本 | 项目维护者 | 变更时复核 | 2026-07-29 | 决策账本 | 记录 AI rules、skills 和治理脚本变更的触发条件、反例、回写追踪和锁定测试，并要求回写追踪包含账本自身 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-CONFIG-INTEGRATION.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-29 | 分层说明 | 说明 canonical skills、三端 Agent adapter、Claude 共享/本机设置、repo marketplace、权限与 component/behavior 证据分层 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-TOOLS-SETUP.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-29 | 工具索引 | 区分跨客户端 skill/Agent discovery、repo catalog、显式安装、fresh task 与 runtime trust，并登记三端 auditor 只读能力边界 | 必需文件、docs/AI 引用规则、资产发现规则 |
+| `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-30 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
 | `.github/PULL_REQUEST_TEMPLATE.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Copilot 根入口、Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
 | `.github/workflows/ci.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-13 | PR/push CI 控制面 | 使用完整 Git 历史运行 HEAD 分发与治理命令，required command 不得静态禁用、忽略失败或获得 attestation 特权 | 必需文件、资产注册表结构化校验 |
 | `.github/workflows/ai-governance.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-13 | 定时治理 | 使用完整 Git 历史运行 HEAD 分发和定时治理，拒绝 required command 的静态 false/continue-on-error，并隔离 component-only subject 与可选 signer | 必需文件、资产注册表结构化校验 |
@@ -42,7 +42,7 @@
 
 | 资产 | 状态 | 责任人 | 复核节奏 | 最近复核 | 类型 | 维护契约 | 治理证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `.claude/README.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-15 | 目录索引 | 说明 Claude 项目 skill/Agent、可提交的 `settings.json`、本机 `settings.local.json` 和 component/behavior 证据边界 | 必需文件、Claude README 引用规则、自动发现规则 |
+| `.claude/README.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-29 | 目录索引 | 说明 Claude 项目 skill/Agent、可提交的 `settings.json`、本机 `settings.local.json` 和 component/behavior 证据边界 | 必需文件、Claude README 引用规则、自动发现规则 |
 | `.claude/ai-tools-guide.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-15 | 工具说明 | 说明跨工具同源规则、Claude skill/Agent adapter 路由，并分层静态发现、真实选择与零写入证据 | 必需文件、入口引用规则、同源片段漂移检查、自动发现规则 |
 | `.claude/skills/jsonutils-maintainer/SKILL.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-14 | Claude skill adapter | 从 canonical maintainer skill 的 name/description 与固定读取模板逐字节派生；普通文件跨平台分发，不独立维护规则或版本 | 必需文件、自动发现规则、资产注册表结构化校验 |
 | `.claude/skills/jsonutils-ai-infra-evolver/SKILL.md` | 工具薄入口 | 项目维护者 | 变更时复核 | 2026-07-14 | Claude skill adapter | 从 canonical evolver skill 的 name/description 与固定读取模板逐字节派生；普通文件跨平台分发，不独立维护规则或版本 | 必需文件、自动发现规则、资产注册表结构化校验 |
@@ -384,7 +384,7 @@
 | 资产 | 状态 | 责任人 | 复核节奏 | 最近复核 | 类型 | 维护契约 | 治理证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.claude/.gitignore` | 显式豁免 | 本机用户 | 季度复核 | 2026-07-15 | 显式豁免 | 只忽略 `settings.local.json`、session history 和临时产物；不忽略可提交的项目 `settings.json`，作为可公开豁免文件参与共享内容 marker 检查 | 显式豁免列表、资产注册表结构化校验 |
-| `.claude/settings.local.json` | 显式豁免 | 本机用户 | 季度复核 | 2026-07-15 | 显式豁免 | 本机私有配置，项目治理不读取正文且该路径必须从 Git index 与 HEAD 缺席；当前历史跟踪仍存在，ignore 不取消已跟踪状态，迁移完成前保持治理阻断 | 显式豁免列表、资产注册表结构化校验 |
+| `.claude/settings.local.json` | 显式豁免 | 本机用户 | 季度复核 | 2026-07-29 | 显式豁免 | 声明式本机私有配置豁免，不依赖文件预先存在；项目治理不读取正文，该路径必须持续从 Git index 与 HEAD 缺席，真实创建时继续由 ignore 和 hermetic Git 元数据检查保护 | 显式豁免列表、资产注册表结构化校验 |
 
 ## 治理门禁
 

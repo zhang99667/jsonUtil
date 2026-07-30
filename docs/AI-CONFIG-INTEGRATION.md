@@ -55,7 +55,7 @@ AI 协作资产按职责分层维护：
 
 不要把项目级 rules、skills、验证流程或长期协作约定写入 `.claude/settings.local.json`。需要共享的内容应迁移到 `AGENTS.md`、`CLAUDE.md`、`rules/code-style.md`、`docs/AI-ENGINEERING-PLAYBOOK.md`、`.claude/ai-tools-guide.md` 或 `.agents/skills/jsonutils-maintainer/SKILL.md`。
 
-当前仓库中该路径仍是历史已跟踪文件；`.gitignore` 不能取消 Git index/HEAD 跟踪。只有维护者备份/复核本机配置、明确移出 index 并提交，使 index 与 HEAD 都不再包含该路径，迁移才完成；此前治理门禁保持阻断。通用治理只检查脱敏路径元数据，不读取 `settings.local.json` 正文；可公开读取的 `.claude/.gitignore` 才参与共享内容 marker 检查。
+当前 Git index 与 HEAD 均不包含该路径，迁移已经完成。声明式豁免不依赖本机文件预先存在：资产账本始终保留固定路径边界，文件未来创建时仍必须被 ignore 且不得进入 index/HEAD。通用治理只检查脱敏路径元数据，不读取 `settings.local.json` 正文；可公开读取的 `.claude/.gitignore` 才参与共享内容 marker 检查。
 
 新增本机私有配置时，必须明确它是否进入 Git、是否属于协作资产、是否需要显式豁免。没有明确边界的 AI 配置文件不应默认提交。
 

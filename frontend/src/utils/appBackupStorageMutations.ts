@@ -69,7 +69,8 @@ export const applyAppBackupStorageMutations = (
     if (rollbackErrors.length > 0) {
       throw new AggregateError(
         [applyError, ...rollbackErrors],
-        '配置备份导入失败，部分设置可能已变更，请重新加载页面后检查配置'
+        '配置备份导入失败，部分设置可能已变更，请重新加载页面后检查配置',
+        { cause: applyError }
       );
     }
 
