@@ -154,6 +154,7 @@ test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', asy
   await expect(page.locator('[data-tour="preview-editor"] .view-lines')).toContainText('"saved": 2');
 
   await page.locator('[data-tour="preview-editor"] .monaco-editor').first().click();
+  await expect(page.locator('[data-tour="statusbar"]')).toContainText('Length: 16');
   await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+S`);
   await expect.poll(async () => page.evaluate(() => {
     const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;

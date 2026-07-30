@@ -1124,8 +1124,10 @@ test('SOURCE 直接粘贴 Scheme 时即使关闭递归展开也会结构化预�
   await page.keyboard.press('Escape');
   await expect(sourceViewer).toBeHidden();
 
-  await previewEditor.locator('.scheme-glyph-icon').first().click({ force: true });
-  await expect(sourceViewer).toBeVisible();
+  const sourceGlyph = previewEditor.locator('.scheme-glyph-icon').first();
+  await expect(sourceGlyph).toBeVisible();
+  await sourceGlyph.click();
+  await expect(sourceViewer).toBeVisible({ timeout: 15_000 });
   await expect(sourceViewer.locator('[data-tour="scheme-source-path"]')).toContainText('$');
   await expect(sourceViewer.locator('[data-tour="scheme-apply-edit"]')).toHaveCount(0);
   await sourceViewer.locator('[data-tour="scheme-copy-original"]').click();
