@@ -1,5 +1,13 @@
 # 更新日志 (Changelog)
 
+## v1.8.1010 (2026-07-31) - 分层 registration checkpoint 职责
+
+### 🏗️ 架构与基础设施
+
+- **Checkpoint request 叶子**: 将 detached grade-set subject 的构造、紧凑解析、闭字段验证与当前 case/policy/fixture/environment 绑定下沉为独立请求契约
+- **Review binding 叶子**: 将闭字段原始输入到内部 review 重建、checkpoint/experiment/trial refs 复核与 writeback blocked 投影拆为单向 binding；原入口保持全部公开 API 同引用重导出
+- **治理边界不升级**: 代表红测、最小治理仓库 import 图、required-files、维护预算、资产注册表与决策账本同步锁定，协议 1.0.0、case/corpus/subject、component-only、trustedSigners=0 与仓外 anchor 要求不变
+
 ## v1.8.1009 (2026-07-30) - 分层 calibration fixture 与多源绑定
 
 ### 🏗️ 架构与基础设施

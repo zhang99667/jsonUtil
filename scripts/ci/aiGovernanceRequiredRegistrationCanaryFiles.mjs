@@ -8,6 +8,8 @@ export const AI_GOVERNANCE_REQUIRED_REGISTRATION_CANARY_FILES = [
   'scripts/ci/aiGovernanceRegistrationCanaryResult.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryReview.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpoint.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpointRequest.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpointBinding.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryDsseEnvelope.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryReceiptObservation.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryAnchorReceipt.mjs',

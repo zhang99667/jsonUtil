@@ -8,11 +8,21 @@ import { test } from 'node:test';
 import { buildEvolutionTracePolicyRegistry } from './aiGovernanceEvolutionTracePolicies.mjs';
 import { resolveEvolutionWorktreeRevision } from './aiGovernanceEvolutionWorktreeRevision.mjs';
 import {
+  bindRegistrationCanaryReviewToCheckpoint as bindFromFacade,
   buildRegistrationCanaryGradeCheckpointRequest,
   collectRegistrationCanaryGradeCheckpointFailures,
   parseRegistrationCanaryGradeCheckpointRequest,
   verifyRegistrationCanaryGradeCheckpointRequest,
 } from './aiGovernanceRegistrationCanaryGradeCheckpoint.mjs';
+import {
+  bindRegistrationCanaryReviewToCheckpoint,
+} from './aiGovernanceRegistrationCanaryGradeCheckpointBinding.mjs';
+import {
+  buildRegistrationCanaryGradeCheckpointRequest as buildFromRequest,
+  collectRegistrationCanaryGradeCheckpointFailures as collectFromRequest,
+  parseRegistrationCanaryGradeCheckpointRequest as parseFromRequest,
+  verifyRegistrationCanaryGradeCheckpointRequest as verifyFromRequest,
+} from './aiGovernanceRegistrationCanaryGradeCheckpointRequest.mjs';
 import { sealRegistrationCanaryBlindGradeSet } from './aiGovernanceRegistrationCanaryReview.mjs';
 import { hashRegistrationCanaryPacketValue } from './aiGovernanceRegistrationCanaryPacket.mjs';
 
@@ -69,6 +79,14 @@ const buildInput = (overrides = {}) => ({
   policyEntry,
   expectedFixtureRevision: fixtureRevision,
   ...overrides,
+});
+
+test('checkpoint façade 保持 request 与 binding 叶子导出同引用', () => {
+  assert.equal(buildRegistrationCanaryGradeCheckpointRequest, buildFromRequest);
+  assert.equal(collectRegistrationCanaryGradeCheckpointFailures, collectFromRequest);
+  assert.equal(parseRegistrationCanaryGradeCheckpointRequest, parseFromRequest);
+  assert.equal(verifyRegistrationCanaryGradeCheckpointRequest, verifyFromRequest);
+  assert.equal(bindFromFacade, bindRegistrationCanaryReviewToCheckpoint);
 });
 
 test('checkpoint request 精确绑定 grade set、case/policy、fixture/environment 与 rubric', () => {

@@ -264,6 +264,8 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     "import './aiGovernanceCodexExternalControllerSeatbeltReportShape.mjs';");
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryCaseDescriptors.mjs',
     "import './aiGovernanceRegistrationCanaryGradeCheckpoint.mjs';\nimport './aiGovernanceRegistrationCanaryAnchorCaseDescriptors.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpoint.mjs',
+    "import './aiGovernanceRegistrationCanaryGradeCheckpointRequest.mjs';\nimport './aiGovernanceRegistrationCanaryGradeCheckpointBinding.mjs';");
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryAnchorCaseDescriptors.mjs',
     "import './aiGovernanceRegistrationCanaryAnchorReceipt.mjs';\nimport './aiGovernanceRegistrationCanaryDisclosureConsumption.mjs';");
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRegistrationCanaryDisclosureConsumption.mjs',
