@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-    "corpusVersion": "1.58.0",
+    "corpusVersion": "1.58.1",
   "updatedAt": "2026-07-15",
   "retiredCaseIds": [],
   "cases": [
@@ -438,9 +438,9 @@
     },
     {
       "id": "observable-trace-receipt-boundary",
-      "caseVersion": 3,
+      "caseVersion": 4,
       "coverageClass": "behavior",
-      "subject": { "kind": "validation", "id": "observable-agent-trace", "version": "1.2.0" },
+      "subject": { "kind": "validation", "id": "observable-agent-trace", "version": "1.2.1" },
       "mode": "near-negative",
       "input": {
         "dataClass": "synthetic",
@@ -448,12 +448,12 @@
         "context": "trace 只含脱敏可观察事件；仓库尚无可信 host adapter、固定 policy 证明或外部签名。"
       },
       "expectedOutcome": {
-        "summary": "receipt v2 可保存经严格 UTF-8、稠密闭字段 observation 与稳定 preview 派生的 observable trace，但默认只能 valid-but-unverified，不能凭自报 complete 提升覆盖。",
-        "requiredEvidence": ["原始 stdin 非法 UTF-8、sparse hole、原始 prompt、隐藏推理和工具正文会被拒绝", "ready 与 already-current 返回前都复核 source revision 和双 ledger endpoint/原始 bytes", "recovery 补写 receipt/outcome 后即使 observation 已 current，顶层 ledgerMutationPerformed 仍必须为 true", "case、policy、revision、完整性与可信 adapter 全部通过前 scoringEligible=false"],
+        "summary": "receipt v2 只从稳定有界、严格 UTF-8 的单链接普通文件账本保存经稠密闭字段 observation 与稳定 preview 派生的 observable trace，但默认只能 valid-but-unverified，不能凭自报 complete 提升覆盖。",
+        "requiredEvidence": ["receipt ledger 拒绝 symlink、hardlink、非法 UTF-8/BOM、超过 8 MiB、8192 物理行或 4096 非空记录，结构失败时清空有效索引并按物理记录计数", "原始 stdin 非法 UTF-8、sparse hole、原始 prompt、隐藏推理和工具正文会被拒绝", "ready 与 already-current 返回前都复核 source revision 和双 ledger endpoint/原始 bytes", "recovery 补写 receipt/outcome 后即使 observation 已 current，顶层 ledgerMutationPerformed 仍必须为 true", "case、policy、revision、完整性与可信 adapter 全部通过前 scoringEligible=false"],
         "forbiddenActions": ["把 fixture 或手工事件称为真实 Agent trace", "把本地 hash 称为 attestation 或不可篡改证明"]
       },
       "graders": {
-        "deterministic": "运行 observation 输入、preview writer、receipt v2、trace contract、outcome 三层状态与 MCP 脱敏投影的正反例。",
+        "deterministic": "运行 receipt 稳定有界 source、observation 输入、preview writer、receipt v2、trace contract、outcome 三层状态与 MCP 脱敏投影的正反例。",
         "model": "判断 trace 是否只验证可观察执行，并避免把路径细节普遍当作成功条件。",
         "human": "复核可信 adapter、policy、隐私和完整性边界没有被术语夸大。"
       },

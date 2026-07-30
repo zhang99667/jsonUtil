@@ -59,14 +59,14 @@ test('registry 锁定 outcome chain 顺序与 validation 组件命令 display', 
   ]);
 });
 
-test('observable trace v3 descriptor 锁定输入、CLI 与 recovery mutation 回归', () => {
+test('observable trace v4 descriptor 锁定 receipt source、输入、CLI 与 recovery mutation 回归', () => {
   const descriptor = AI_EVOLUTION_EXECUTABLE_CASES['observable-trace-receipt-boundary'];
-  assert.deepEqual([descriptor.caseVersion, descriptor.subjectVersion], [3, '1.2.0']);
+  assert.deepEqual([descriptor.caseVersion, descriptor.subjectVersion], [4, '1.2.1']);
   assert.deepEqual(descriptor.argsList[0].slice(0, 4), [
     '--test',
+    'scripts/ci/aiGovernanceEvolutionTrialReceiptSource.test.mjs',
     'scripts/ci/aiGovernanceEvolutionUnverifiedTraceObservationContract.test.mjs',
     'scripts/ci/aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.test.mjs',
-    'scripts/ci/record-ai-evolution-unverified-trace-outcome.test.mjs',
   ]);
 });
 

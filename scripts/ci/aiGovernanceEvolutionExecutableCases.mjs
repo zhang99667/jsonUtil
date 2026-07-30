@@ -89,11 +89,12 @@ export const AI_EVOLUTION_EXECUTABLE_CASES = Object.freeze({
     )],
   },
   'observable-trace-receipt-boundary': {
-    caseVersion: 3,
-    subjectVersion: '1.2.0',
+    caseVersion: 4,
+    subjectVersion: '1.2.1',
     evidenceScope: 'deterministic-case',
-    evidence: ['严格 UTF-8、稠密闭字段 observation、preview 稳定性、recovery mutation 如实投影、receipt v2 完整性与 valid/verified 分层正反例'],
+    evidence: ['稳定有界 receipt source、严格 UTF-8、稠密闭字段 observation、preview 稳定性、recovery mutation 如实投影、receipt v2 完整性与 valid/verified 分层正反例'],
     argsList: [nodeTest(
+      'scripts/ci/aiGovernanceEvolutionTrialReceiptSource.test.mjs',
       'scripts/ci/aiGovernanceEvolutionUnverifiedTraceObservationContract.test.mjs',
       'scripts/ci/aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.test.mjs',
       'scripts/ci/record-ai-evolution-unverified-trace-outcome.test.mjs',

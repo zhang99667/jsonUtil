@@ -82,6 +82,7 @@ lineage key 为 `(caseId, caseVersion, subjectVersion)`：
 
 ## Receipt、重放与隐私
 
+- receipt ledger 只从不超过 8 MiB 的稳定单链接普通文件读取，使用 fatal UTF-8 并拒绝 BOM；物理行不超过 8192、非空记录不超过 4096，v1-v3 单行不超过 64 KiB、v4 不超过 512 KiB。symlink、hardlink、读取漂移、超限或结构失败均以固定无值诊断 fail closed，且结构失败清空有效索引并按物理记录计入 invalid。
 - receipt v1 保留 fixed-runner 兼容；v2 内嵌无签名单 trial observable trace；v3 在同一精确 JSON 行内再嵌单 trace DSSE/in-toto proof；v4 是至多 512 KiB 的 3 对 6 次 paired batch、pre-execution assignment 与三角色 proof、`candidate-only-v1` reducer，不新建第三个 ledger。每个 v2/v3/v4 outcome 精确引用一个 receipt ID 和它的 JSON 行 SHA-256，receipt 不得复用、重放或成为孤儿。
 - receipt 与 outcome 必须精确匹配 case/corpus/subject、method、runner、revision、trial、verdict/score 和有序 validations。
 - v1 deterministic receipt 只有在 caseVersion 与 subjectVersion 同当前 descriptor 一致时才按当前 runner 重放；历史版本保持追加式 stale/superseded history，不用新命令追溯改写，也不参与当前 behavior coverage。

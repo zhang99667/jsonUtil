@@ -6,7 +6,7 @@ import { governanceAiValidationTestMaintainabilityBudgets } from './maintainabil
 const evolutionTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiEvolutionTestMaintainabilityBudgets = [
-  evolutionTestBudget('scripts/ci/maintainability-budget-governance-ai-evolution-test-rules.mjs', 45, 'AI evolution 测试预算子表应只编排 corpus、learning、receipt、trace、outcome 与 replay 测试预算'),
+  evolutionTestBudget('scripts/ci/maintainability-budget-governance-ai-evolution-test-rules.mjs', 55, 'AI evolution 测试预算子表应只编排 corpus、learning、receipt、trace、outcome 与 replay 测试预算'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionEval.test.mjs', 90, 'AI evolution 基础 eval 集成测试应锁定报告 schema、覆盖计数与 component-boundary 黄金顺序'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionEvalContract.test.mjs', 150, 'AI evolution corpus 契约测试应锁定稳定有界读取、六层闭字段、无值诊断、版本和隐私边界'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionSuiteCli.test.mjs', 40, 'AI evolution suite CLI 测试应只锁定人读/JSON 退出码、账本链与 focus 投影'),
@@ -29,6 +29,7 @@ export const governanceAiEvolutionTestMaintainabilityBudgets = [
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionLedgerIntegrity.test.mjs', 90, 'AI evolution ledger 测试应锁定追加通过、删改重排失败和缺基线 unknown'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionWorktreeRevision.test.mjs', 70, 'AI evolution revision 测试应锁定 source-state v2、ledger-only HEAD/Git 阶段稳定性与 active 绑定'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcomeReplay.test.mjs', 210, 'AI evolution replay 测试应锁定筛选、时效分层、runner 四类闭字段异常、binding 与精确 mismatch taxonomy'),
+  evolutionTestBudget('scripts/ci/aiGovernanceEvolutionTrialReceiptSource.test.mjs', 160, 'AI evolution receipt source 测试应锁稳定普通文件、严格 UTF-8/BOM、资源上限、物理计数与无值诊断'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionTrialReceipts.test.mjs', 310, 'AI evolution receipt 测试应锁定 v1/v2/v3、紧凑 JSONL、trace proof、敏感值与 trial 边界'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionTrace.test.mjs', 180, 'AI evolution trace 测试应锁定闭字段、事件图、隐私、完整性与 adapter 信任'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionTraceOutcomes.test.mjs', 150, 'AI evolution trace outcome 测试应锁定外部 proof、执行事实、policy 与 digest 漂移'),

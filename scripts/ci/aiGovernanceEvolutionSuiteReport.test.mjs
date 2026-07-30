@@ -40,7 +40,9 @@ test('suite report 将 current runner 通过但 revision drift 单列为证据�
   const report = buildAiGovernanceEvolutionSuiteReport({ rootDir, replayDeterministic });
   assert.equal(report.ok, false); assert.deepEqual(report.contractFailures, []);
   assert.deepEqual(report.currentRunFailures, []); assert.equal(report.nextFocus.id, 'refresh-stale-deterministic-evidence');
-  assert.equal(report.counts.currentRunVerifiedOutcomes, 1); assert.equal(report.counts.evidenceFreshnessFailures, 1);
+  assert.ok(report.counts.recordedActiveOutcomes > 0);
+  assert.equal(report.counts.currentRunVerifiedOutcomes, report.counts.recordedActiveOutcomes);
+  assert.equal(report.counts.evidenceFreshnessFailures, report.counts.recordedActiveOutcomes);
 });
 
 test('suite report 对缺失 learning 资产 fail closed', () => {

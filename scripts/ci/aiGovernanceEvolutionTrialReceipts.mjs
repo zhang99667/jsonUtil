@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import fs from 'node:fs';
 
 import { getLocalIsoDate } from './aiGovernanceDateBounds.mjs';
 import {
@@ -20,6 +19,7 @@ import {
   aggregateEvolutionPairedCandidateResults,
   verifyEvolutionPairedReceiptV4,
 } from './aiGovernanceEvolutionPairedReceiptV4.mjs';
+import { readEvolutionTrialReceiptSource } from './aiGovernanceEvolutionTrialReceiptSource.mjs';
 import { verifyEvolutionTraceReceipt } from './aiGovernanceEvolutionTrace.mjs';
 import { verifyEvolutionTraceProof } from './aiGovernanceEvolutionTraceProof.mjs';
 
@@ -200,35 +200,33 @@ export const readEvolutionTrialReceiptLedger = (
     rootDir, maxDate = getLocalIsoDate(), trustedSigners = new Map(), pairedTrustPolicy = {},
   } = {}
 ) => {
-  let text;
-  try {
-    text = fs.readFileSync(filePath, 'utf8');
-  } catch (error) {
-    return { receipts: [], validReceipts: [], receiptsById: new Map(), failures: [`trial-receipts.jsonl: 无法读取（${error.message}）`], invalidReceiptCount: 0 };
+  const source = readEvolutionTrialReceiptSource(filePath, {
+    maxLineBytes: AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES,
+  });
+  if (source.fatal) {
+    return {
+      receipts: [], validReceipts: [], receiptsById: new Map(),
+      failures: source.failures, invalidReceiptCount: 0,
+    };
   }
   const parsed = [];
-  const failures = [];
-  text.split(/\r?\n/).forEach((line, lineIndex) => {
-    if (!line.trim()) return;
-    try {
-      const receipt = JSON.parse(line);
-      const lineLimit = receipt?.schemaVersion === 4
-        ? AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES : MAX_LINE_BYTES;
-      const { failures: itemFailures, traceVerification, proofVerification, pairedVerification } = collectReceiptFailures(
-        receipt, lineIndex, rootDir, maxDate, trustedSigners, pairedTrustPolicy,
-      );
-      if (Buffer.byteLength(line, 'utf8') > lineLimit) {
-        itemFailures.push(`trial-receipts.jsonl: 第 ${lineIndex + 1} 行超过 ${lineLimit / 1024} KiB`);
-      }
-      if (line !== JSON.stringify(receipt)) itemFailures.push(`trial-receipts.jsonl: 第 ${lineIndex + 1} 行必须使用精确紧凑 JSON`);
-      parsed.push({
-        receipt, line, sha256: hashEvolutionTrialReceiptLine(line), failures: itemFailures,
-        traceVerification, proofVerification, pairedVerification,
-      });
-      failures.push(...itemFailures);
-    } catch {
-      failures.push(`trial-receipts.jsonl: 第 ${lineIndex + 1} 行不是合法 JSON`);
+  const failures = [...source.failures];
+  source.entries.filter(entry => entry.receipt !== null).forEach(({
+    receipt, line, lineNumber,
+  }) => {
+    const lineLimit = receipt?.schemaVersion === 4
+      ? AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES : MAX_LINE_BYTES;
+    const { failures: itemFailures, traceVerification, proofVerification, pairedVerification } = collectReceiptFailures(
+      receipt, lineNumber - 1, rootDir, maxDate, trustedSigners, pairedTrustPolicy,
+    );
+    if (Buffer.byteLength(line, 'utf8') > lineLimit) {
+      itemFailures.push(`trial-receipts.jsonl: 第 ${lineNumber} 行超过 ${lineLimit / 1024} KiB`);
     }
+    parsed.push({
+      receipt, line, sha256: hashEvolutionTrialReceiptLine(line), failures: itemFailures,
+      traceVerification, proofVerification, pairedVerification,
+    });
+    failures.push(...itemFailures);
   });
   const idCounts = new Map();
   parsed.forEach(({ receipt }) => idCounts.set(receipt.id, (idCounts.get(receipt.id) ?? 0) + 1));
@@ -260,7 +258,8 @@ export const readEvolutionTrialReceiptLedger = (
       failures.push(`trial-receipts.jsonl: paired v4 ${label} 不得跨 receipt 重放`);
     }
   }
-  const validEntries = parsed.filter(item => item.failures.length === 0
+  const structuralFailure = source.failures.length > 0;
+  const validEntries = structuralFailure ? [] : parsed.filter(item => item.failures.length === 0
     && idCounts.get(item.receipt.id) === 1 && !replayed.has(item));
   const receiptsById = new Map(validEntries.map(item => [item.receipt.id, item]));
   return {
@@ -268,6 +267,6 @@ export const readEvolutionTrialReceiptLedger = (
     validReceipts: validEntries.map(item => item.receipt),
     receiptsById,
     failures,
-    invalidReceiptCount: parsed.length - validEntries.length,
+    invalidReceiptCount: source.entries.length - validEntries.length,
   };
 };
