@@ -315,12 +315,12 @@
 | 资产 | 状态 | 责任人 | 复核节奏 | 最近复核 | 类型 | 维护契约 | 治理证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.agents/plugins/marketplace.json` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | 项目 plugin marketplace | 固定 `jsonutils-project` 与三个项目插件的仓内相对 source；个人 marketplace 不是权威源 | 必需文件、自动发现规则、可维护性预算 |
-| `.agents/plugins/plugin-lock.json` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-30 | 项目 plugin content lock | 绑定 `0.5.2/0.2.2/0.2.2` 三个完整 selector 的 manifest、文件集、Git mode/size/SHA-256/tree digest；由 identity 共享的单次原始 bytes 快照派生，仍不冒充 attestation | 必需文件、自动发现规则、可维护性预算 |
-| `plugins/ai-infra-controller-probe/.codex-plugin/plugin.json` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-30 | 项目 plugin manifest | v0.5.2 补充跨平台测试临时目录，继续保持 source-state v2/strict snapshot 2.0 互操作与 component-only controller probe 边界 | 必需文件、可维护性预算 |
+| `.agents/plugins/plugin-lock.json` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-30 | 项目 plugin content lock | 绑定 `0.5.3/0.2.2/0.2.2` 三个完整 selector 的 manifest、文件集、Git mode/size/SHA-256/tree digest；由 identity 共享的单次原始 bytes 快照派生，仍不冒充 attestation | 必需文件、自动发现规则、可维护性预算 |
+| `plugins/ai-infra-controller-probe/.codex-plugin/plugin.json` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-30 | 项目 plugin manifest | v0.5.3 补充跨平台测试临时目录并只在 Darwin 执行 Seatbelt 运行时用例，继续保持 source-state v2/strict snapshot 2.0 互操作与 component-only 边界 | 必需文件、可维护性预算 |
 | `plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/SKILL.md` | 可迁移技能 | 项目维护者 | 变更时复核 | 2026-07-13 | 项目 plugin skill | 区分 source-state revision/HEAD 审计元数据、项目所有权、本机副本和受保护 runtime，禁止模型/凭据 | 必需文件、可维护性预算 |
 | `plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/agents/openai.yaml` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | skill UI metadata | 与 probe skill 的 component-only 安全边界保持一致 | 必需文件、可维护性预算 |
 | `plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/evals/evals.json` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-13 | plugin skill eval | 锁定触发正例、Docker 近负例和项目所有权不等于 runtime trust | 必需文件、可维护性预算 |
-| `plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/references/report-contract.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-30 | probe report contract | 精确记录 plugin 0.5.2 / Seatbelt 2.2 / snapshot 2.0 及 project-plugin-installed-copy-unverified 证据边界 | 必需文件、可维护性预算 |
+| `plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/references/report-contract.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-30 | probe report contract | 精确记录 plugin 0.5.3 / Seatbelt 2.2 / snapshot 2.0 及 project-plugin-installed-copy-unverified 证据边界 | 必需文件、可维护性预算 |
 | `plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/controller-probe.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | Docker probe producer | v1.1.0 保持零密钥、零模型、零写账和 runtime-execution-disabled | 必需文件、可维护性预算 |
 | `plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/controller-probe.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-13 | Docker probe 负例 | 锁定 preflight、绑定、隐私与过度声明拒绝 | 必需文件、可维护性预算 |
 | `plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/run-controller-probe.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | Docker probe CLI | 只返回有界脱敏摘要 | 必需文件、可维护性预算 |

@@ -449,63 +449,67 @@ test('caller expected binding 不匹配在启动 Seatbelt 前输出 rejected rep
     } finally { fixture.cleanup(); }
   });
 
-test('恶意 Codex 路径在签名或执行前被边界拒绝且不会创建 marker', async () => {
-  const fixture = createFixture();
-  const malicious = path.join(fixture.root, 'malicious-codex');
-  const marker = path.join(fixture.root, 'malicious-executed');
-  try {
-    fs.writeFileSync(malicious,
-      `#!/bin/sh\n/usr/bin/touch ${JSON.stringify(marker)}\n`, { mode: 0o700 });
-    fixture.trackFile(malicious);
-    fixture.trackFile(marker);
-    const expected = {
-      codexBinary: malicious,
-      codexBinarySha256: hash(fs.readFileSync(malicious)),
-      codexCodeIdentitySha256: digest('a'),
-      codexVersion: 'codex-cli malicious',
-      codexSandboxHelpSha256: digest('b'),
-    };
-    await assert.rejects(() => runSeatbeltSentinel({
-      argv: baseArgs({ fixture, expected }), env: {},
-    }), /codex-binary-boundary-rejected/);
-    assert.equal(fs.existsSync(marker), false);
-    assert.equal(fs.existsSync(fixture.output), false);
-  } finally { fixture.cleanup(); }
-});
-
-test('output parent 必须是当前 owner 的 canonical 0700 目录', async () => {
-  const fixture = createFixture();
-  const unsafeParent = path.join(fixture.root, 'unsafe-output');
-  const aclParent = path.join(fixture.root, 'acl-output');
-  try {
-    fs.mkdirSync(unsafeParent, { mode: 0o755 });
-    fixture.trackDirectory(unsafeParent);
-    fs.mkdirSync(aclParent, { mode: 0o700 });
-    fixture.trackDirectory(aclParent);
-    const expected = {
-      codexBinary: process.execPath,
-      codexBinarySha256: hash(fs.readFileSync(process.execPath)),
-      codexCodeIdentitySha256: digest('c'),
-      codexVersion: 'codex-cli synthetic',
-      codexSandboxHelpSha256: digest('d'),
-    };
-    await assert.rejects(() => runSeatbeltSentinel({
-      argv: baseArgs({ fixture, expected, output: path.join(unsafeParent, 'report.json') }), env: {},
-    }), /output-parent-security-invalid/);
-    if (process.platform === 'darwin') {
-      const addAcl = spawnSync('/bin/chmod', ['+a', 'everyone deny delete', aclParent], {
-        stdio: 'ignore', timeout: 2_000,
-      });
-      assert.equal(addAcl.status, 0);
+test('恶意 Codex 路径在签名或执行前被边界拒绝且不会创建 marker',
+  { skip: process.platform !== 'darwin' }, async () => {
+    const fixture = createFixture();
+    const malicious = path.join(fixture.root, 'malicious-codex');
+    const marker = path.join(fixture.root, 'malicious-executed');
+    try {
+      fs.writeFileSync(malicious,
+        `#!/bin/sh\n/usr/bin/touch ${JSON.stringify(marker)}\n`, { mode: 0o700 });
+      fixture.trackFile(malicious);
+      fixture.trackFile(marker);
+      const expected = {
+        codexBinary: malicious,
+        codexBinarySha256: hash(fs.readFileSync(malicious)),
+        codexCodeIdentitySha256: digest('a'),
+        codexVersion: 'codex-cli malicious',
+        codexSandboxHelpSha256: digest('b'),
+      };
       await assert.rejects(() => runSeatbeltSentinel({
-        argv: baseArgs({ fixture, expected, output: path.join(aclParent, 'report.json') }), env: {},
-      }), /output-parent-acl-invalid/);
+        argv: baseArgs({ fixture, expected }), env: {},
+      }), /codex-binary-boundary-rejected/);
+      assert.equal(fs.existsSync(marker), false);
+      assert.equal(fs.existsSync(fixture.output), false);
+    } finally { fixture.cleanup(); }
+  });
+
+test('output parent 必须是当前 owner 的 canonical 0700 目录',
+  { skip: process.platform !== 'darwin' }, async () => {
+    const fixture = createFixture();
+    const unsafeParent = path.join(fixture.root, 'unsafe-output');
+    const aclParent = path.join(fixture.root, 'acl-output');
+    try {
+      fs.mkdirSync(unsafeParent, { mode: 0o755 });
+      fixture.trackDirectory(unsafeParent);
+      fs.mkdirSync(aclParent, { mode: 0o700 });
+      fixture.trackDirectory(aclParent);
+      const expected = {
+        codexBinary: process.execPath,
+        codexBinarySha256: hash(fs.readFileSync(process.execPath)),
+        codexCodeIdentitySha256: digest('c'),
+        codexVersion: 'codex-cli synthetic',
+        codexSandboxHelpSha256: digest('d'),
+      };
+      await assert.rejects(() => runSeatbeltSentinel({
+        argv: baseArgs({ fixture, expected, output: path.join(unsafeParent, 'report.json') }), env: {},
+      }), /output-parent-security-invalid/);
+      if (process.platform === 'darwin') {
+        const addAcl = spawnSync('/bin/chmod', ['+a', 'everyone deny delete', aclParent], {
+          stdio: 'ignore', timeout: 2_000,
+        });
+        assert.equal(addAcl.status, 0);
+        await assert.rejects(() => runSeatbeltSentinel({
+          argv: baseArgs({ fixture, expected, output: path.join(aclParent, 'report.json') }), env: {},
+        }), /output-parent-acl-invalid/);
+      }
+    } finally {
+      if (process.platform === 'darwin') {
+        spawnSync('/bin/chmod', ['-N', aclParent], { stdio: 'ignore' });
+      }
+      fixture.cleanup();
     }
-  } finally {
-    if (process.platform === 'darwin') spawnSync('/bin/chmod', ['-N', aclParent], { stdio: 'ignore' });
-    fixture.cleanup();
-  }
-});
+  });
 
 test('外部 snapshot 元数据漂移被 postflight 拒绝，sentinel 不对 source 发起 mutation',
   { skip: process.platform !== 'darwin' }, async (t) => {
@@ -529,26 +533,27 @@ test('外部 snapshot 元数据漂移被 postflight 拒绝，sentinel 不对 sou
     } finally { fixture.cleanup(); }
   });
 
-test('敏感环境与 output/live overlap 在任何执行前 fail closed', async () => {
-  const fixture = createFixture();
-  try {
-    const expected = {
-      codexBinary: process.execPath,
-      codexBinarySha256: hash(fs.readFileSync(process.execPath)),
-      codexCodeIdentitySha256: digest('c'),
-      codexVersion: 'codex-cli synthetic',
-      codexSandboxHelpSha256: digest('d'),
-    };
-    const args = baseArgs({ fixture, expected });
-    await assert.rejects(() => runSeatbeltSentinel({ argv: args,
-      env: { OPENAI_API_KEY: 'FAKE-ONLY-NOT-READ' } }), /credential-environment-rejected/);
-    assert.equal(fs.existsSync(fixture.output), false);
-    const overlapped = baseArgs({ fixture, expected,
-      output: path.join(fixture.live, 'report.json') });
-    await assert.rejects(() => runSeatbeltSentinel({ argv: overlapped, env: {} }),
-      /output-boundary-rejected/);
-  } finally { fixture.cleanup(); }
-});
+test('敏感环境与 output/live overlap 在任何执行前 fail closed',
+  { skip: process.platform !== 'darwin' }, async () => {
+    const fixture = createFixture();
+    try {
+      const expected = {
+        codexBinary: process.execPath,
+        codexBinarySha256: hash(fs.readFileSync(process.execPath)),
+        codexCodeIdentitySha256: digest('c'),
+        codexVersion: 'codex-cli synthetic',
+        codexSandboxHelpSha256: digest('d'),
+      };
+      const args = baseArgs({ fixture, expected });
+      await assert.rejects(() => runSeatbeltSentinel({ argv: args,
+        env: { OPENAI_API_KEY: 'FAKE-ONLY-NOT-READ' } }), /credential-environment-rejected/);
+      assert.equal(fs.existsSync(fixture.output), false);
+      const overlapped = baseArgs({ fixture, expected,
+        output: path.join(fixture.live, 'report.json') });
+      await assert.rejects(() => runSeatbeltSentinel({ argv: overlapped, env: {} }),
+        /output-boundary-rejected/);
+    } finally { fixture.cleanup(); }
+  });
 
 test('CLI 错误固定脱敏且不回显参数或绝对路径', () => {
   const launcher = path.join(scriptDirectory, 'run-seatbelt-sentinel.mjs');
