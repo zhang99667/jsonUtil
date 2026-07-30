@@ -5,7 +5,7 @@
 ### 🐛 Bug 修复
 
 - **深层模板跨环境稳定性**: 模板回填复用迭代 JSON 序列化器，避免 5000 层输入在 Node 20 构造或输出阶段触发调用栈溢出
-- **治理测试跨环境稳定性**: pre-runtime 注入改用 Node 20 稳定支持的临时 CJS `--require`，可执行绑定回归使用受保护的系统 Git；`ai-infra-controller-probe 0.5.3` 的测试 fixture 按平台选择临时目录，Seatbelt 运行时用例仅在 Darwin 执行
+- **治理测试跨环境稳定性**: pre-runtime 注入改用 Node 20 稳定支持的临时 CJS `--require`，可执行绑定回归使用受保护的系统 Git；`ai-infra-controller-probe 0.5.3` 的测试 fixture 按平台选择临时目录，Seatbelt 运行时用例仅在 Darwin 执行，MCP 后代清理超时用例允许受载 runner 完成冷启动
 
 ## v1.8.993 (2026-07-30) - 收敛治理豁免与扫描职责
 

@@ -77,7 +77,7 @@ export const registerJsonutilsGovernanceToolWorkerFreshnessTestCases = () => {
   }, async (t) => {
     for (const scenario of [
       { name: 'abort', mode: 'idle', timeoutMs: 2_000, errorName: 'AbortError' },
-      { name: 'timeout', mode: 'idle', timeoutMs: 120, errorName: 'JsonutilsGovernanceToolWorkerError' },
+      { name: 'timeout', mode: 'idle', timeoutMs: 2_000, errorName: 'JsonutilsGovernanceToolWorkerError' },
       { name: 'stdout limit', mode: 'stdout', timeoutMs: 2_000, errorName: 'JsonutilsGovernanceToolWorkerError' },
       { name: 'stderr limit', mode: 'stderr', timeoutMs: 2_000, errorName: 'JsonutilsGovernanceToolWorkerError' },
     ]) await t.test(scenario.name, async (t) => {
