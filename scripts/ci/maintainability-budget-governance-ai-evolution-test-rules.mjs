@@ -18,6 +18,7 @@ export const governanceAiEvolutionTestMaintainabilityBudgets = [
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcomeChain.test.mjs', 125, 'AI evolution chain 测试应锁定 legacy 锚、sequence/hash、降级、supersession 与反馈关闭'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionDeterministicOutcomeWriter.test.mjs', 350, 'AI evolution deterministic writer 测试应锁定 preview、派生字段、漂移拒绝、幂等与真实本地事务'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionDeterministicOutcomeTransaction.test.mjs', 300, 'AI evolution deterministic transaction 测试应锁定 lock/journal 所有权、恢复状态机与 fail-closed 边界'),
+  evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcomeTransactionFailure.test.mjs', 45, 'AI evolution transaction failure 测试应锁定闭字段 mutation、固定原因与 cause 正文不外泄'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcomeRecoveryResult.test.mjs', 65, 'AI evolution recovery result 测试应锁闭字段、逐 ledger mutation、合法组合与不可能状态拒绝'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionUnverifiedTraceObservationContract.test.mjs', 100, 'AI evolution unverified trace observation 测试应锁定闭字段、隐私、event 稠密连续、紧凑 JSON 与双层字节上限'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionUnverifiedTraceOutcomeWriter.test.mjs', 250, 'AI evolution unverified trace writer 测试应锁定零 confirmed 污染、幂等、preview 稳定性、supersession、CI 禁写与共享事务'),

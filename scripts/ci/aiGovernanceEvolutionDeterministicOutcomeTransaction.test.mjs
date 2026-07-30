@@ -11,6 +11,9 @@ import {
   commitEvolutionOutcomeTransaction,
   recoverEvolutionOutcomeTransaction,
 } from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';
+import {
+  EvolutionOutcomeTransactionCommittedPostcheckError,
+} from './aiGovernanceEvolutionOutcomeTransactionFailure.mjs';
 
 const RECEIPTS = 'evals/ai-governance/trial-receipts.jsonl';
 const OUTCOMES = 'evals/ai-governance/outcomes.jsonl';
@@ -260,8 +263,23 @@ test('journal 额外字段、非 canonical base64 或 digest 漂移 fail closed'
 
 test('postcheck failure 明确报告 committed-but-postcheck-failed 并保留可恢复 journal', (t) => {
   const current = fixture(t);
-  const input = transactionInput({ ...current, overrides: { postcheck: () => false } });
-  assert.throws(() => commitEvolutionOutcomeTransaction(input), /committed-but-postcheck-failed/);
+  const sensitiveMarker = 'sensitive-postcheck-detail-must-not-leak';
+  const input = transactionInput({
+    ...current,
+    overrides: { postcheck: () => { throw new Error(sensitiveMarker); } },
+  });
+  let failure;
+  assert.throws(() => commitEvolutionOutcomeTransaction(input), (error) => {
+    failure = error;
+    return error instanceof EvolutionOutcomeTransactionCommittedPostcheckError;
+  });
+  const journal = JSON.parse(fs.readFileSync(current.controlPaths.journalPath, 'utf8'));
+  assert.equal(failure.reasonCode, 'committed-but-postcheck-failed');
+  assert.equal(failure.transactionId, journal.transactionId);
+  assert.equal(failure.ledgerMutationPerformed, true);
+  assert.deepEqual(failure.ledgerMutations, { receipts: true, outcomes: true });
+  assert.doesNotMatch(`${failure.message}\n${failure.stack}`, new RegExp(sensitiveMarker));
+  assert.equal(Object.hasOwn(failure, 'cause'), false);
   assert.equal(fs.existsSync(current.controlPaths.journalPath), true);
   assert.deepEqual(fs.readFileSync(path.join(current.rootDir, RECEIPTS)), input.receiptSuffix);
   assert.deepEqual(fs.readFileSync(path.join(current.rootDir, OUTCOMES)), input.outcomeSuffix);

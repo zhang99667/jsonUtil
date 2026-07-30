@@ -16,6 +16,7 @@ export const governanceAiEvolutionMaintainabilityBudgets = [
   evolutionBudget('scripts/ci/aiGovernanceEvolutionOutcomeReplay.mjs', 95, 'AI evolution fixed replay 应保留单一顺序状态机，只重放 receipt v1 deterministic-case 并精确比较结果'),
   evolutionBudget('scripts/ci/aiGovernanceEvolutionDeterministicOutcomeWriter.mjs', 510, 'AI evolution deterministic writer 应只编排固定 runner、安全 ledger snapshot、候选重放与事务提交'),
   evolutionBudget('scripts/ci/aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs', 470, 'AI evolution deterministic transaction 应只维护协作锁、journal、持久追加与崩溃恢复'),
+  evolutionBudget('scripts/ci/aiGovernanceEvolutionOutcomeTransactionFailure.mjs', 35, 'AI evolution transaction failure 应只维护 committed postcheck 的闭字段安全错误契约'),
   evolutionBudget('scripts/ci/aiGovernanceEvolutionOutcomeRecoveryResult.mjs', 55, 'AI evolution recovery result helper 应只维护闭字段 mutation 投影与跨 writer 语义校验'),
   evolutionBudget('scripts/ci/record-ai-evolution-deterministic-outcomes.mjs', 120, 'AI evolution deterministic outcome CLI 应只维护 preview-first 参数与稳定输出契约'),
   evolutionBudget('scripts/ci/aiGovernanceEvolutionUnverifiedTraceObservationContract.mjs', 110, 'AI evolution unverified trace observation contract 应只维护有界紧凑输入、闭字段、隐私与标准化'),

@@ -1,5 +1,12 @@
 # 更新日志 (Changelog)
 
+## v1.8.1003 (2026-07-30) - 加固双账本失败事实与治理描述符分层
+
+### 🏗️ 架构与基础设施
+
+- **双账本失败事实闭合**: receipt 与 outcome 已提交但 postcheck 失败时改抛闭字段 typed error，固定安全原因码、transaction ID 与两本账的真实 mutation，拒绝下游错误正文泄漏
+- **Codex boundary 职责分层**: 将 trial、external controller 与项目 plugin Skill 的六个 component descriptor 拆到三个独立叶子，原入口只经唯一 ID registry 保持同引用、冻结与既有顺序
+
 ## v1.8.1002 (2026-07-30) - 对齐保存快捷键测试修饰键
 
 ### 🐛 Bug 修复

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { AI_EVOLUTION_CODEX_BOUNDARY_CASES } from './aiGovernanceEvolutionCodexBoundaryCaseDescriptors.mjs';
+import { AI_EVOLUTION_CODEX_CONTROLLER_BOUNDARY_CASES } from './aiGovernanceEvolutionCodexControllerBoundaryCaseDescriptors.mjs';
 import { AI_EVOLUTION_CODEX_CASES } from './aiGovernanceEvolutionCodexCaseDescriptors.mjs';
+import { AI_EVOLUTION_CODEX_TRIAL_BOUNDARY_CASES } from './aiGovernanceEvolutionCodexTrialBoundaryCaseDescriptors.mjs';
+import { AI_EVOLUTION_PROJECT_PLUGIN_BOUNDARY_CASES } from './aiGovernanceEvolutionProjectPluginBoundaryCaseDescriptors.mjs';
 import {
   AI_EVOLUTION_EXECUTABLE_CASE_IDS,
   AI_EVOLUTION_EXECUTABLE_CASES,
@@ -22,6 +26,16 @@ test('descriptor group 合并保持顺序并拒绝重复 case id', () => {
     () => mergeUniqueEvolutionCaseDescriptorGroups(first, { alpha: { caseVersion: 3 } }),
     /重复 case id `alpha`/
   );
+});
+
+test('Codex boundary 聚合保持三类叶子 descriptor 的同引用与顺序', () => {
+  const expectedEntries = [AI_EVOLUTION_CODEX_TRIAL_BOUNDARY_CASES,
+    AI_EVOLUTION_CODEX_CONTROLLER_BOUNDARY_CASES,
+    AI_EVOLUTION_PROJECT_PLUGIN_BOUNDARY_CASES].flatMap(Object.entries);
+  assert.deepEqual(Object.keys(AI_EVOLUTION_CODEX_BOUNDARY_CASES), expectedEntries.map(([caseId]) => caseId));
+  expectedEntries.forEach(([caseId, descriptor]) =>
+    assert.equal(AI_EVOLUTION_CODEX_BOUNDARY_CASES[caseId], descriptor));
+  assert.equal(Object.isFrozen(AI_EVOLUTION_CODEX_BOUNDARY_CASES), true);
 });
 
 test('executable case registry 保持 runner 公开导出、冻结 ID 与插入顺序', () => {

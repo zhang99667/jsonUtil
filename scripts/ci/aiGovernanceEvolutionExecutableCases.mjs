@@ -76,6 +76,7 @@ export const AI_EVOLUTION_EXECUTABLE_CASES = Object.freeze({
       'scripts/ci/aiGovernanceEvolutionOutcomeLedgerSource.test.mjs',
       'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeWriter.test.mjs',
       'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeTransaction.test.mjs',
+      'scripts/ci/aiGovernanceEvolutionOutcomeTransactionFailure.test.mjs',
       'scripts/ci/aiGovernanceEvolutionOutcomeRecoveryResult.test.mjs',
       'scripts/ci/aiGovernanceEvolutionOutcomeChain.test.mjs',
       'scripts/ci/aiGovernanceEvolutionOutcomeLineage.test.mjs',

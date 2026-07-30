@@ -5,6 +5,9 @@ import path from 'node:path';
 
 import { runHermeticGitInventory } from './aiGovernanceHermeticGitInventory.mjs';
 import { buildEvolutionOutcomeRecoveryResult } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
+import {
+  EvolutionOutcomeTransactionCommittedPostcheckError,
+} from './aiGovernanceEvolutionOutcomeTransactionFailure.mjs';
 export { getEvolutionOutcomeRecoveryMutationPerformed } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
 
 const CONTROL_RELATIVE_PATH = 'jsonutils-ai-governance/outcome-writer';
@@ -436,8 +439,8 @@ export const commitEvolutionOutcomeTransaction = ({
   try {
     const result = postcheck();
     if (result === false || result?.ok === false) throw new Error('postcheck 返回失败');
-  } catch (error) {
-    throw new Error(`committed-but-postcheck-failed: ${error.message}`);
+  } catch {
+    throw new EvolutionOutcomeTransactionCommittedPostcheckError(journal.transactionId);
   }
   removeJournal(controlPaths);
   return { status: 'committed', transactionId: journal.transactionId };

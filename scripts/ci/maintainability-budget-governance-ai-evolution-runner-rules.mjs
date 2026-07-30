@@ -2,11 +2,14 @@ const runnerBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiEvolutionRunnerMaintainabilityBudgets = [
   runnerBudget('scripts/ci/maintainability-budget-governance-ai-evolution-runner-rules.mjs', 20, 'AI evolution runner 预算子表应只维护 registry、执行、失败分类与投影负例'),
-  runnerBudget('scripts/ci/aiGovernanceRequiredEvolutionRunnerFiles.mjs', 18, 'AI evolution runner 必需清单应登记 registry、执行、分类、CLI 与投影测试'),
+  runnerBudget('scripts/ci/aiGovernanceRequiredEvolutionRunnerFiles.mjs', 22, 'AI evolution runner 必需清单应登记 registry、分域 descriptor、执行、分类、CLI 与投影测试'),
   runnerBudget('scripts/ci/aiGovernanceEvolutionCaseRunner.mjs', 125, 'AI evolution case runner 应只维护公开兼容导出、版本绑定、Hermetic 环境与有界执行报告'),
   runnerBudget('scripts/ci/aiGovernanceEvolutionExecutableCases.mjs', 180, 'AI evolution executable registry 应只维护固定 case 顺序、证据范围与命令 descriptor'),
   runnerBudget('scripts/ci/aiGovernanceEvolutionCaseDescriptorRegistry.mjs', 15, 'AI evolution descriptor registry 应只保持跨组插入顺序、冻结结果并拒绝重复 case id'),
-  runnerBudget('scripts/ci/aiGovernanceEvolutionCodexBoundaryCaseDescriptors.mjs', 85, 'Codex boundary descriptors 应只维护 trace、fixed trial、controller 与项目 plugin Skill 的 component case 定义'),
+  runnerBudget('scripts/ci/aiGovernanceEvolutionCodexBoundaryCaseDescriptors.mjs', 20, 'Codex boundary descriptor 入口应只按固定顺序唯一合并三类叶子'),
+  runnerBudget('scripts/ci/aiGovernanceEvolutionCodexTrialBoundaryCaseDescriptors.mjs', 45, 'Codex trial boundary descriptors 应只维护 trace adapter 与 fixed MCP trial'),
+  runnerBudget('scripts/ci/aiGovernanceEvolutionCodexControllerBoundaryCaseDescriptors.mjs', 45, 'Codex controller boundary descriptors 应只维护 topology、runtime probe 与 Seatbelt sentinel'),
+  runnerBudget('scripts/ci/aiGovernanceEvolutionProjectPluginBoundaryCaseDescriptors.mjs', 40, '项目 plugin boundary descriptor 应只维护 Skill 语义契约 component case'),
   runnerBudget('scripts/ci/aiGovernanceEvolutionCaseFailure.mjs', 140, 'AI evolution failure helper 应只维护闭字段分类、脱敏诊断、计数与焦点投影'),
   runnerBudget('scripts/ci/aiGovernanceEvolutionCaseRunner.test.mjs', 225, 'AI evolution case runner 测试应锁定公开执行、版本绑定、证据范围和变更矩阵边界'),
   runnerBudget('scripts/ci/aiGovernanceEvolutionExecutableCases.test.mjs', 75, 'AI evolution executable registry 测试应只锁定唯一合并、公开重导出、冻结与 ID 顺序'),
