@@ -340,9 +340,10 @@ test('pre-runtime fs 注入能伪造 path candidate，但仓内 Node gate 永不
   const preload = [
     "const fs=require('node:fs')", `const p=${JSON.stringify(fakePath)}`,
     `const j=${JSON.stringify(fixture.policyJson)}`, `const s=${fakeStat}`,
+    'const d={...s,mode:0o40555n,size:0n,isFile:()=>false,isDirectory:()=>true}',
     "const chain=new Set([p,'/usr/share','/usr','/'])",
     'const rr=fs.realpathSync,ls=fs.lstatSync,ac=fs.accessSync,rf=fs.readFileSync',
-    'fs.realpathSync=x=>x===p?p:rr(x)', 'fs.lstatSync=(x,o)=>x===p?s:ls(x,o)',
+    'fs.realpathSync=x=>x===p?p:rr(x)', 'fs.lstatSync=(x,o)=>x===p?s:chain.has(x)?d:ls(x,o)',
     "fs.accessSync=(x,m)=>{if(chain.has(x)){const e=new Error('denied');e.code='EACCES';throw e}return ac(x,m)}",
     'fs.readFileSync=(x,o)=>x===p?j:rf(x,o)',
   ].join(';');
