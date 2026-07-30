@@ -134,7 +134,7 @@ Git 基线前缀加 v3 hash chain 只提供仓库内 tamper-evident（篡改可�
 ```bash
 node --test scripts/ci/aiGovernanceEvolutionFeedbackInbox.test.mjs scripts/ci/aiGovernanceEvolutionFeedbackProfiles.test.mjs scripts/ci/aiGovernanceEvolutionFeedbackCompatibility.test.mjs scripts/ci/aiGovernanceEvolutionExperiments.test.mjs scripts/ci/aiGovernanceEvolutionLearningFocus.test.mjs scripts/ci/aiGovernanceEvolutionLearningReport.test.mjs scripts/ci/prepare-ai-evolution-feedback.test.mjs
 node --test scripts/ci/aiGovernanceEvolutionOutcomeChain.test.mjs scripts/ci/aiGovernanceEvolutionOutcomeEvidence.test.mjs scripts/ci/aiGovernanceEvolutionOutcomeLineage.test.mjs
-node --test scripts/ci/aiGovernanceEvolutionPairedReceiptV4.test.mjs scripts/ci/aiGovernanceEvolutionPairedOutcomeWriter.test.mjs scripts/ci/aiGovernanceEvolutionPairedOutcomeCli.test.mjs
+node --test scripts/ci/aiGovernanceEvolutionPairedReceiptV4.test.mjs scripts/ci/aiGovernanceEvolutionPairedOutcomeCandidate.test.mjs scripts/ci/aiGovernanceEvolutionPairedOutcomeWriter.test.mjs scripts/ci/aiGovernanceEvolutionPairedOutcomeCli.test.mjs
 node scripts/ci/check-ai-evolution-evals.mjs
 node scripts/ci/check-ai-governance.mjs
 ```

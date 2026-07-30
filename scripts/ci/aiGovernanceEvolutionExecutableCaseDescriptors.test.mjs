@@ -32,7 +32,7 @@ test('ownership v7 descriptor 锁定完整命令与 index/HEAD 交付原因', ()
   }]);
 });
 
-test('registry 锁定 outcome chain 顺序与 validation 组件命令 display', () => {
+test('registry 锁定 outcome/paired writer 顺序与 validation 组件命令 display', () => {
   const outcomeDescriptor = AI_EVOLUTION_EXECUTABLE_CASES['outcome-ledger-chain-resolution'];
   assert.deepEqual([outcomeDescriptor.caseVersion, outcomeDescriptor.subjectVersion], [4, '2.2.0']);
   assert.deepEqual(outcomeDescriptor.argsList, [[
@@ -42,6 +42,8 @@ test('registry 锁定 outcome chain 顺序与 validation 组件命令 display', 
     'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeTransaction.test.mjs',
     'scripts/ci/aiGovernanceEvolutionOutcomeTransactionFailure.test.mjs',
     'scripts/ci/aiGovernanceEvolutionOutcomeRecoveryResult.test.mjs',
+  ], [
+    '--test',
     'scripts/ci/aiGovernanceEvolutionOutcomeChain.test.mjs',
     'scripts/ci/aiGovernanceEvolutionOutcomeLineage.test.mjs',
     'scripts/mcp/jsonutils-governance-evaluations.test.mjs',
@@ -50,6 +52,10 @@ test('registry 锁定 outcome chain 顺序与 validation 组件命令 display', 
     'scripts/ci/aiGovernanceCiContract.test.mjs',
     'scripts/ci/aiGovernanceScheduledWorkflowContract.test.mjs',
     'scripts/ci/aiGovernanceProjectCliArgs.test.mjs',
+  ], [
+    '--test',
+    'scripts/ci/aiGovernanceEvolutionPairedOutcomeCandidate.test.mjs',
+    'scripts/ci/aiGovernanceEvolutionPairedOutcomeWriter.test.mjs',
   ]]);
   assert.deepEqual(runnerModule.getAiGovernanceEvolutionCaseCommands({
     rootDir: process.cwd(),

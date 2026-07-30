@@ -78,6 +78,7 @@ export const AI_EVOLUTION_EXECUTABLE_CASES = Object.freeze({
       'scripts/ci/aiGovernanceEvolutionDeterministicOutcomeTransaction.test.mjs',
       'scripts/ci/aiGovernanceEvolutionOutcomeTransactionFailure.test.mjs',
       'scripts/ci/aiGovernanceEvolutionOutcomeRecoveryResult.test.mjs',
+    ), nodeTest(
       'scripts/ci/aiGovernanceEvolutionOutcomeChain.test.mjs',
       'scripts/ci/aiGovernanceEvolutionOutcomeLineage.test.mjs',
       'scripts/mcp/jsonutils-governance-evaluations.test.mjs',
@@ -86,6 +87,9 @@ export const AI_EVOLUTION_EXECUTABLE_CASES = Object.freeze({
       'scripts/ci/aiGovernanceCiContract.test.mjs',
       'scripts/ci/aiGovernanceScheduledWorkflowContract.test.mjs',
       'scripts/ci/aiGovernanceProjectCliArgs.test.mjs',
+    ), nodeTest(
+      'scripts/ci/aiGovernanceEvolutionPairedOutcomeCandidate.test.mjs',
+      'scripts/ci/aiGovernanceEvolutionPairedOutcomeWriter.test.mjs',
     )],
   },
   'observable-trace-receipt-boundary': {

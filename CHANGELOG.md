@@ -1,5 +1,12 @@
 # 更新日志 (Changelog)
 
+## v1.8.1005 (2026-07-30) - 分离 paired outcome 候选构造职责
+
+### 🏗️ 架构与基础设施
+
+- **Paired candidate 单向派生**: 将 verified batch 到 receipt v4/outcome v3、chain、supersession 与双 suffix 的纯构造下沉为独立叶子，writer 只保留 live ledger、preview 稳定性、候选验证和可恢复事务编排
+- **治理所有权闭环**: 新 helper 与直接红测同步接入 required-files、生产 import、维护预算、固定 case 回归、资产注册表和治理决策账本；固定回归按 receipt 字段上限拆成三条有界命令，保持 case/corpus/behavior coverage 不变
+
 ## v1.8.1004 (2026-07-30) - 加固 trial receipt 账本原始读取边界
 
 ### 🏗️ 架构与基础设施
