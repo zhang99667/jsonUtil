@@ -1,5 +1,12 @@
 # 更新日志 (Changelog)
 
+## v1.8.1006 (2026-07-30) - 拆分 registration result 摄取职责
+
+### 🏗️ 架构与基础设施
+
+- **Blind result 单向契约**: 将闭字段、紧凑 JSON、trace/digest、隐私与 arm 侧信道拒绝下沉为独立叶子，grader façade 只保留当前 case projection、reason taxonomy 和确定性评分
+- **兼容与治理闭环**: 原摄取 API 保持同引用重导出，production grader 路径、case/corpus/behavior coverage 不变；新 helper 与直接红测同步接入 required-files、维护预算、固定 component case、资产注册表和决策账本
+
 ## v1.8.1005 (2026-07-30) - 分离 paired outcome 候选构造职责
 
 ### 🏗️ 架构与基础设施

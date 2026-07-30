@@ -4,6 +4,7 @@ import { AI_GOVERNANCE_REQUIRED_REGISTRATION_SNAPSHOT_FILES } from './aiGovernan
 export const AI_GOVERNANCE_REQUIRED_REGISTRATION_CANARY_FILES = [
   'scripts/ci/aiGovernanceRequiredRegistrationCanaryFiles.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryPacket.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryBlindResult.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryResult.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryReview.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpoint.mjs',
@@ -18,6 +19,7 @@ export const AI_GOVERNANCE_REQUIRED_REGISTRATION_CANARY_FILES = [
   'scripts/ci/review-ai-registration-canary-results.mjs',
   'scripts/ci/prepare-ai-registration-canary.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryPacket.test.mjs',
+  'scripts/ci/aiGovernanceRegistrationCanaryBlindResult.test.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryResult.test.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryGradeCheckpoint.test.mjs',
   'scripts/ci/aiGovernanceRegistrationCanaryAnchorTestFixtures.mjs',
