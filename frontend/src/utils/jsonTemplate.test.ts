@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { JsonObject } from '../types.ts';
 import { applyTemplate, deepMergeTemplate } from './jsonTemplate.ts';
+import { stringifyJsonValue } from './jsonValueStringify.ts';
 import { applyTemplate as applyTemplateFromTransformations } from './transformations.ts';
 
 const createDeepMergeObject = (leaf: JsonObject, depth: number): JsonObject => {
@@ -128,7 +129,7 @@ describe('applyTemplate', () => {
 
   it('五千层对象占位符回填不依赖自定义递归调用栈', () => {
     const depth = 5_000;
-    const input = JSON.stringify(createDeepMergeObject({ value: '__TOKEN__' }, depth));
+    const input = stringifyJsonValue(createDeepMergeObject({ value: '__TOKEN__' }, depth));
     const template = JSON.stringify({
       kind: 'json-helper-runtime-placeholder-fill-template',
       placeholders: { __TOKEN__: 'done' },

@@ -1,6 +1,7 @@
 import type { JsonObject, JsonValue } from '../types.ts';
 import { defineJsonProperty } from './jsonObjectProperty.ts';
 import { isJsonObject, parseJsonValue } from './jsonValueGuards.ts';
+import { stringifyJsonValue } from './jsonValueStringify.ts';
 import { PLACEHOLDER_FILL_TEMPLATE_KIND } from './placeholderFillTemplateContract.ts';
 
 type PlaceholderFillTemplate = JsonObject & {
@@ -137,5 +138,5 @@ export const applyTemplate = (inputJson: string, templateJson: string): string =
   const merged = isPlaceholderFillTemplate(template)
     ? applyPlaceholderFillTemplate(target, template)
     : deepMergeTemplate(target, template);
-  return JSON.stringify(merged, null, 2);
+  return stringifyJsonValue(merged, 2);
 };
