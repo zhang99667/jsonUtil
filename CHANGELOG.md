@@ -5,7 +5,7 @@
 ### 🐛 Bug 修复
 
 - **深层模板跨环境稳定性**: 模板回填复用迭代 JSON 序列化器，避免 5000 层输入在 Node 20 构造或输出阶段触发调用栈溢出
-- **治理测试跨环境稳定性**: pre-runtime 注入改用 Node 20 支持的临时 ESM `--import`，可执行绑定回归使用受保护的系统 Git，不再把 GitHub 可变 toolcache 误判为可信 Node 路径
+- **治理测试跨环境稳定性**: pre-runtime 注入改用 Node 20 稳定支持的临时 CJS `--require`，可执行绑定回归使用受保护的系统 Git，不再把 GitHub 可变 toolcache 误判为可信 Node 路径
 
 ## v1.8.993 (2026-07-30) - 收敛治理豁免与扫描职责
 

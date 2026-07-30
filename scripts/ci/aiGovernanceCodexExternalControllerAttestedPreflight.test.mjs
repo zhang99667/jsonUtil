@@ -338,7 +338,7 @@ test('pre-runtime fs 注入能伪造 path candidate，但仓内 Node gate 永不
   const policySha256 = hash(Buffer.from(fixture.policyJson));
   const fakeStat = `{dev:1n,ino:2n,mode:0o100400n,size:${Buffer.byteLength(fixture.policyJson)}n,mtimeNs:3n,ctimeNs:4n,uid:0n,nlink:1n,isFile:()=>true,isDirectory:()=>false,isSymbolicLink:()=>false}`;
   const preload = [
-    "import fs from'node:fs'", `const p=${JSON.stringify(fakePath)}`,
+    "const fs=require('node:fs')", `const p=${JSON.stringify(fakePath)}`,
     `const j=${JSON.stringify(fixture.policyJson)}`, `const s=${fakeStat}`,
     "const chain=new Set([p,'/usr/share','/usr','/'])",
     'const rr=fs.realpathSync,ls=fs.lstatSync,ac=fs.accessSync,rf=fs.readFileSync',
@@ -347,14 +347,14 @@ test('pre-runtime fs 注入能伪造 path candidate，但仓内 Node gate 永不
     'fs.readFileSync=(x,o)=>x===p?j:rf(x,o)',
   ].join(';');
   const preloadRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-preload-'));
-  const preloadPath = path.join(preloadRoot, 'preload.mjs');
+  const preloadPath = path.join(preloadRoot, 'preload.cjs');
   fs.writeFileSync(preloadPath, preload); t.after(() => fs.rmSync(preloadRoot, { recursive: true, force: true }));
   const artifacts = fixture.signArtifacts();
   const request = JSON.stringify({ schemaVersion: 1,
     requestType: 'jsonutils-external-controller-attested-preflight-verification',
     ...artifacts, expectedBindings: fixture.expectedBindings });
   const result = spawnSync(process.execPath, [
-    `--import=${preloadPath}`,
+    `--require=${preloadPath}`,
     'scripts/ci/check-ai-external-controller-preflight.mjs', '--policy', fakePath,
     '--policy-sha256', policySha256,
   ], { cwd: process.cwd(), input: request, encoding: 'utf8', timeout: 3_000,
