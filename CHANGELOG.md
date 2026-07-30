@@ -1,5 +1,12 @@
 # 更新日志 (Changelog)
 
+## v1.8.1008 (2026-07-30) - 分层 trial receipt 契约与账本编排
+
+### 🏗️ 架构与基础设施
+
+- **Receipt 单条契约叶子**: 将 v1-v4 闭字段、trial/validation、trace/proof 与 deterministic runner 校验下沉为独立纯契约，JSONL ledger 只保留稳定读取、精确行哈希、ID 唯一索引和跨 receipt 重放拒绝
+- **兼容与治理闭环**: 原聚合 API 保持同引用重导出；直接红测、required-files、维护预算、fixed case 双命令、描述符断言、资产注册表和决策账本同步锁定，observable case 升至 v5、corpus 升至 1.58.2，subject、评分、behavior coverage 与外部信任边界不变
+
 ## v1.8.1007 (2026-07-30) - 补齐 registration descriptor 聚合回归
 
 ### 🐛 Bug 修复

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-    "corpusVersion": "1.58.1",
+    "corpusVersion": "1.58.2",
   "updatedAt": "2026-07-15",
   "retiredCaseIds": [],
   "cases": [
@@ -438,7 +438,7 @@
     },
     {
       "id": "observable-trace-receipt-boundary",
-      "caseVersion": 4,
+      "caseVersion": 5,
       "coverageClass": "behavior",
       "subject": { "kind": "validation", "id": "observable-agent-trace", "version": "1.2.1" },
       "mode": "near-negative",

@@ -65,10 +65,14 @@ test('registry 锁定 outcome/paired writer 顺序与 validation 组件命令 di
   ]);
 });
 
-test('observable trace v4 descriptor 锁定 receipt source、输入、CLI 与 recovery mutation 回归', () => {
+test('observable trace v5 descriptor 锁定 receipt contract、source、输入与 recovery 回归', () => {
   const descriptor = AI_EVOLUTION_EXECUTABLE_CASES['observable-trace-receipt-boundary'];
-  assert.deepEqual([descriptor.caseVersion, descriptor.subjectVersion], [4, '1.2.1']);
-  assert.deepEqual(descriptor.argsList[0].slice(0, 4), [
+  assert.deepEqual([descriptor.caseVersion, descriptor.subjectVersion], [5, '1.2.1']);
+  assert.deepEqual(descriptor.argsList[0], [
+    '--test',
+    'scripts/ci/aiGovernanceEvolutionTrialReceiptContract.test.mjs',
+  ]);
+  assert.deepEqual(descriptor.argsList[1].slice(0, 4), [
     '--test',
     'scripts/ci/aiGovernanceEvolutionTrialReceiptSource.test.mjs',
     'scripts/ci/aiGovernanceEvolutionUnverifiedTraceObservationContract.test.mjs',

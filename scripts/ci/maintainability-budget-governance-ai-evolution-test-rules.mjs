@@ -29,6 +29,7 @@ export const governanceAiEvolutionTestMaintainabilityBudgets = [
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionLedgerIntegrity.test.mjs', 90, 'AI evolution ledger 测试应锁定追加通过、删改重排失败和缺基线 unknown'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionWorktreeRevision.test.mjs', 70, 'AI evolution revision 测试应锁定 source-state v2、ledger-only HEAD/Git 阶段稳定性与 active 绑定'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcomeReplay.test.mjs', 210, 'AI evolution replay 测试应锁定筛选、时效分层、runner 四类闭字段异常、binding 与精确 mismatch taxonomy'),
+  evolutionTestBudget('scripts/ci/aiGovernanceEvolutionTrialReceiptContract.test.mjs', 100, 'AI evolution receipt contract 直接测试应锁定闭字段、trial 聚合、低分 pass 与 validation 日期绑定'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionTrialReceiptSource.test.mjs', 160, 'AI evolution receipt source 测试应锁稳定普通文件、严格 UTF-8/BOM、资源上限、物理计数与无值诊断'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionTrialReceipts.test.mjs', 310, 'AI evolution receipt 测试应锁定 v1/v2/v3、紧凑 JSONL、trace proof、敏感值与 trial 边界'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionTrace.test.mjs', 180, 'AI evolution trace 测试应锁定闭字段、事件图、隐私、完整性与 adapter 信任'),
