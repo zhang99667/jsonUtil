@@ -154,7 +154,7 @@ test('手动保存 PREVIEW 时写入格式化内容', async ({ page }) => {
 
   await page.locator('[data-tour="preview-editor"] .monaco-editor').first().click();
   await expect(page.locator('[data-tour="statusbar"]')).toContainText('Length: 16');
-  await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+S`);
+  await page.keyboard.press('Meta+S');
   await expect.poll(async () => page.evaluate(() => {
     const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
     return writes.filter(write => write.startsWith('开始:')).length;
