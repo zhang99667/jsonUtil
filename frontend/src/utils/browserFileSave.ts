@@ -15,7 +15,7 @@ export const triggerBlobDownload = (blob: Blob, fileName: string): void => {
   try {
     link.href = url;
     link.download = fileName;
-    document.body.appendChild(link);
+    (document.querySelector('dialog[open]') ?? document.body).appendChild(link);
     link.click();
   } finally {
     runDownloadCleanup(() => link.remove(), '移除临时下载链接失败:');

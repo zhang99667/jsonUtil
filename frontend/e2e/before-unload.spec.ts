@@ -1,17 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { FEATURE_TOUR_IDS, openMainApp, waitForMainAppReady } from './helpers/appReady';
+import { openMainApp, waitForMainAppReady } from './helpers/appReady';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/visitor/ping', async route => {
     await route.fulfill({ status: 204, body: '' });
   });
-
-  await page.addInitScript((featureTourIds: string[]) => {
-    window.localStorage.setItem('json-helper-onboarding-completed', 'true');
-    featureTourIds.forEach(featureId => {
-      window.localStorage.setItem(`json-helper-feature-tour-${featureId}`, 'completed');
-    });
-  }, FEATURE_TOUR_IDS);
 
   await openMainApp(page, { waitForPreviewEditor: false });
 });

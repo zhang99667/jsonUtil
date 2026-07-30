@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { suppressAppTours } from './helpers/appReady';
 
 const title = 'JSONUtils - 在线 JSON 格式化、校验与智能修复工具';
 const description =
@@ -8,6 +9,7 @@ test('页面声明独立且清晰的 JSONUtils 搜索身份', async ({ page }) =
   await page.route('**/api/visitor/ping', (route) =>
     route.fulfill({ status: 204, body: '' })
   );
+  await suppressAppTours(page);
   await page.goto('/');
 
   await expect(page).toHaveTitle(title);

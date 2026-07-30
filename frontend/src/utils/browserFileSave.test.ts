@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  triggerBlobDownload,
-  triggerTextDownload,
-} from './browserFileSave';
+import { triggerBlobDownload, triggerTextDownload } from './browserFileSave';
 
 const installDownloadStubs = ({
   append = vi.fn(),
@@ -17,13 +14,12 @@ const installDownloadStubs = ({
     remove,
   };
   const createObjectURL = vi.fn(() => 'blob:download');
-
   vi.stubGlobal('document', {
     createElement: vi.fn(() => link),
     body: { appendChild: append },
+    querySelector: vi.fn(() => null),
   });
   vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
-
   return { append, createObjectURL, link, revokeObjectURL };
 };
 
@@ -55,6 +51,15 @@ describe('browserFileSave', () => {
 
     vi.runAllTimers();
     expect(stubs.revokeObjectURL).toHaveBeenCalledWith('blob:download');
+  });
+
+  it('原生对话框打开时把临时链接挂载到对话框内', () => {
+    const stubs = installDownloadStubs();
+    const dialog = { appendChild: vi.fn() };
+    vi.mocked(document.querySelector).mockReturnValue(dialog as unknown as Element);
+    triggerBlobDownload(new Blob(['{}']), 'result.json');
+    expect(dialog.appendChild).toHaveBeenCalledWith(stubs.link);
+    expect(stubs.append).not.toHaveBeenCalled();
   });
 
   it.each(['append', 'click'] as const)('%s 失败时仍移除链接并回收 URL', failureStage => {
@@ -112,5 +117,4 @@ describe('browserFileSave', () => {
     expect(() => vi.runAllTimers()).not.toThrow();
     expect(console.warn).toHaveBeenCalledWith('回收临时下载地址失败:', cleanupError);
   });
-
 });

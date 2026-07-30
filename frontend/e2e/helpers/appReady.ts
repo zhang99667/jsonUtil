@@ -12,6 +12,15 @@ export const FEATURE_TOUR_IDS = [
   'discovery-settings',
 ];
 
+export const suppressAppTours = async (page: Page) => {
+  await page.addInitScript((featureTourIds: string[]) => {
+    window.localStorage.setItem('json-helper-onboarding-completed', 'true');
+    featureTourIds.forEach(featureId => {
+      window.localStorage.setItem(`json-helper-feature-tour-${featureId}`, 'completed');
+    });
+  }, FEATURE_TOUR_IDS);
+};
+
 export interface MainAppReadyOptions {
   waitForSourceEditor?: boolean;
   waitForPreviewEditor?: boolean;
@@ -51,6 +60,8 @@ export const openMainApp = async (
   options: MainAppReadyOptions = {}
 ) => {
   let lastError: unknown;
+
+  await suppressAppTours(page);
 
   for (let attempt = 1; attempt <= APP_READY_ATTEMPTS; attempt++) {
     await gotoMainApp(page, attempt === 1 ? undefined : `app-ready-${attempt}`);

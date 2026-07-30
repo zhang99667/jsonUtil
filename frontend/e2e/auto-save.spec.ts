@@ -1,17 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { FEATURE_TOUR_IDS, openMainApp } from './helpers/appReady';
+import { openMainApp } from './helpers/appReady';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/visitor/ping', async route => {
     await route.fulfill({ status: 204, body: '' });
   });
 
-  await page.addInitScript((featureTourIds: string[]) => {
-    window.localStorage.setItem('json-helper-onboarding-completed', 'true');
-    featureTourIds.forEach(featureId => {
-      window.localStorage.setItem(`json-helper-feature-tour-${featureId}`, 'completed');
-    });
-
+  await page.addInitScript(() => {
     const savedWrites: string[] = [];
     Object.defineProperty(window, '__jsonHelperSavedWrites', {
       value: savedWrites,
@@ -33,7 +28,7 @@ test.beforeEach(async ({ page }) => {
         },
       ],
     });
-  }, FEATURE_TOUR_IDS);
+  });
 
   await openMainApp(page, { waitForPreviewEditor: false });
 });
@@ -156,6 +151,7 @@ test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', asy
   await page.getByRole('button', { name: '格式化' }).click();
   await page.locator('[data-tour="auto-save"]').click();
   await fillSourceEditor(page, '{"saved":2}');
+  await expect(page.locator('[data-tour="preview-editor"] .view-lines')).toContainText('"saved": 2');
 
   await page.locator('[data-tour="preview-editor"] .monaco-editor').first().click();
   await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+S`);

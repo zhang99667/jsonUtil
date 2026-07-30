@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { FEATURE_TOUR_IDS, gotoMainApp, openMainApp, waitForEditorReady, waitForMainAppReady } from './helpers/appReady';
+import { gotoMainApp, openMainApp, waitForEditorReady, waitForMainAppReady } from './helpers/appReady';
 
 const encodeBase64 = (value: string): string => (
   Buffer.from(value, 'utf8').toString('base64')
@@ -54,7 +54,7 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
-  await page.addInitScript((featureTourIds: string[]) => {
+  await page.addInitScript(() => {
     Object.defineProperty(window, 'showOpenFilePicker', { value: undefined, configurable: true });
     Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true });
     Object.defineProperty(navigator, 'clipboard', {
@@ -67,7 +67,6 @@ test.beforeEach(async ({ page }) => {
       configurable: true,
     });
 
-    window.localStorage.setItem('json-helper-onboarding-completed', 'true');
     window.localStorage.setItem('json-helper-ai-config', JSON.stringify({
       provider: 'custom',
       apiKey: 'mock-api-key',
@@ -75,10 +74,7 @@ test.beforeEach(async ({ page }) => {
       baseUrl: `${window.location.origin}/mock-ai`,
     }));
 
-    featureTourIds.forEach(featureId => {
-      window.localStorage.setItem(`json-helper-feature-tour-${featureId}`, 'completed');
-    });
-  }, FEATURE_TOUR_IDS);
+  });
 
   await openMainApp(page, { waitForSourceEditor: false, waitForPreviewEditor: false });
 });
@@ -534,9 +530,9 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results-markdown"]').click();
   await expect(page.getByText('已复制 Markdown 摘要').last()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe([
-    '| Path | Pointer | Kind | Children | Preview |',
+    '| 路径 | JSON 指针 | 类型 | 子节点数 | 预览 |',
     '| --- | --- | --- | ---: | --- |',
-    '| $.user["trace.id"] | /user/trace.id | string | 0 | "t-1" |',
+    '| $.user["trace.id"] | /user/trace.id | 字符串 | 0 | "t-1" |',
   ].join('\n'));
 
   await structurePanel.locator('[data-tour="structure-nav-copy-search-results-menu"]').click();
@@ -2080,6 +2076,9 @@ test('占位符筛选后回填模板保留候选值', async ({ page }) => {
   await reportPanel.locator('[data-tour="transform-report-placeholder-count"]').click();
   await expect(reportPanel.locator('[data-tour="transform-report-filter"]')).toHaveValue('占位符');
   await reportPanel.locator('[data-tour="transform-report-copy-placeholder-fill-template"]').click();
+  await expect.poll(
+    async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')
+  ).toContain('__AD_EXTRA_PARAM_ENCODE_1__');
   const copiedTemplate = JSON.parse(await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}')) as {
     placeholders: Record<string, string>;
     placeholderDetails: Array<{ value: string; suggestion?: { sourcePath?: string; sourceLabel?: string } }>;
@@ -2138,8 +2137,7 @@ test('预览复制在 Clipboard API 不可用时可回退复制', async ({ page 
     });
     document.execCommand = (command: string) => {
       if (command !== 'copy') return false;
-      const activeElement = document.activeElement as HTMLTextAreaElement | null;
-      window.localStorage.setItem('mock-clipboard', activeElement?.value || '');
+      window.localStorage.setItem('mock-clipboard', document.getSelection()?.toString() || '');
       return true;
     };
   });
@@ -2326,26 +2324,27 @@ test('设置页签支持方向键切换并同步选中状态', async ({ page }) 
   const aiTab = settingsDialog.getByRole('tab', { name: 'AI 配置' });
   const generalTab = settingsDialog.getByRole('tab', { name: '通用设置' });
 
-  await expect(shortcutsTab).toHaveAttribute('aria-selected', 'true');
+  await expect(generalTab).toHaveAttribute('aria-selected', 'true');
 
-  await shortcutsTab.focus();
+  await generalTab.focus();
   await page.keyboard.press('ArrowRight');
   await expect(aiTab).toBeFocused();
   await expect(aiTab).toHaveAttribute('aria-selected', 'true');
   await expect(settingsDialog.getByRole('tabpanel', { name: 'AI 配置' })).toBeVisible();
 
   await page.keyboard.press('End');
-  await expect(generalTab).toBeFocused();
-  await expect(generalTab).toHaveAttribute('aria-selected', 'true');
-  await expect(settingsDialog.getByRole('tabpanel', { name: '通用设置' })).toBeVisible();
-
-  await page.keyboard.press('Home');
   await expect(shortcutsTab).toBeFocused();
   await expect(shortcutsTab).toHaveAttribute('aria-selected', 'true');
+  await expect(settingsDialog.getByRole('tabpanel', { name: '快捷键' })).toBeVisible();
+
+  await page.keyboard.press('Home');
+  await expect(generalTab).toBeFocused();
+  await expect(generalTab).toHaveAttribute('aria-selected', 'true');
 });
 
 test('快捷键冲突会提示被解除的动作', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('tab', { name: '快捷键' }).click();
 
   const saveShortcut = page.locator('[data-tour="shortcut-card-SAVE"]');
   const formatShortcut = page.locator('[data-tour="shortcut-card-FORMAT"]');
@@ -2368,6 +2367,7 @@ test('快捷键冲突会提示被解除的动作', async ({ page }) => {
 
 test('快捷键录制期间 Escape 会被记录且不会关闭设置', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('tab', { name: '快捷键' }).click();
 
   const settingsDialog = page.getByRole('dialog', { name: '设置' });
   const saveShortcut = settingsDialog.locator('[data-tour="shortcut-card-SAVE"]');
@@ -2385,6 +2385,7 @@ test('快捷键录制期间 Escape 会被记录且不会关闭设置', async ({ 
 
 test('快捷键录制忽略长按产生的重复事件', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('tab', { name: '快捷键' }).click();
 
   const settingsDialog = page.getByRole('dialog', { name: '设置' });
   const saveShortcut = settingsDialog.locator('[data-tour="shortcut-card-SAVE"]');
@@ -2408,6 +2409,7 @@ test('快捷键录制忽略长按产生的重复事件', async ({ page }) => {
 
 test('鼠标关闭设置后快捷键录制不会在主界面继续生效', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('tab', { name: '快捷键' }).click();
 
   const settingsDialog = page.getByRole('dialog', { name: '设置' });
   await settingsDialog.locator('[data-tour="shortcut-card-SAVE"]').click();
@@ -2424,6 +2426,7 @@ test('鼠标关闭设置后快捷键录制不会在主界面继续生效', async
 
 test('离开快捷键页签会取消录制且不会改写快捷键', async ({ page }) => {
   await page.locator('[data-tour="settings"]').click();
+  await page.getByRole('tab', { name: '快捷键' }).click();
 
   const settingsDialog = page.getByRole('dialog', { name: '设置' });
   const saveShortcut = settingsDialog.locator('[data-tour="shortcut-card-SAVE"]');
@@ -2476,7 +2479,7 @@ test('本地存储写入异常不会打断主路径', async ({ page }) => {
     .getByText('嵌套解析时自动展开 CMD/Scheme 字符串')
     .locator('xpath=ancestor::div[contains(@class, "bg-editor-bg")][1]');
   await generalSettingCard.locator('button').click();
-  await page.getByRole('button', { name: '保存设置' }).click();
+  await page.getByRole('button', { name: '完成' }).click();
   await expect(page.locator('#action-panel-content').getByText('JSONUtils', { exact: true })).toBeVisible();
 
   await fillSourceEditor(page, '{"users":[{"name":"Ada"}]}');
@@ -2543,24 +2546,18 @@ test('设置中可恢复浮动面板默认布局', async ({ page }) => {
   const resetToast = settingsDialog.getByRole('status').filter({ hasText: '浮动面板布局已恢复默认' });
   await expect(resetToast).toBeVisible();
   const resetToastCard = resetToast.locator('..');
-  const resetToastHitResult = await resetToastCard.evaluate((toastCard) => {
+  await expect.poll(() => resetToastCard.evaluate((toastCard) => {
     const bounds = toastCard.getBoundingClientRect();
     const hitTarget = document.elementFromPoint(
       bounds.left + bounds.width / 2,
       bounds.top + bounds.height / 2
     );
-    return {
-      hitsToast: hitTarget === toastCard || toastCard.contains(hitTarget),
-      hitsDialog: hitTarget === toastCard.closest('dialog'),
-      hitClassName: hitTarget instanceof HTMLElement ? hitTarget.className : '',
-      hitText: hitTarget?.textContent || '',
-      toastCardClassName: toastCard instanceof HTMLElement ? toastCard.className : '',
-    };
-  });
-  if (!resetToastHitResult.hitsToast || resetToastHitResult.hitsDialog) {
-    throw new Error(JSON.stringify(resetToastHitResult));
-  }
-  await page.getByRole('button', { name: '取消' }).click();
+    return (
+      (hitTarget === toastCard || Boolean(hitTarget && toastCard.contains(hitTarget)))
+      && hitTarget !== toastCard.closest('dialog')
+    );
+  })).toBe(true);
+  await page.getByRole('button', { name: '完成' }).click();
 
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
   const jsonPathPanel = page.locator('[data-tour="jsonpath-panel"]');
@@ -2671,7 +2668,7 @@ test('设置中可导出并导入配置备份', async ({ page }) => {
   });
   expect(importedTemplate.template).toBe('{"after":2}');
 
-  await page.getByRole('button', { name: '取消' }).click();
+  await page.getByRole('button', { name: '完成' }).click();
   await page.getByRole('button', { name: 'JSONPath 查询' }).click();
   await expect(page.locator('[data-tour="jsonpath-favorites"]')).toContainText('$.importedFavorite');
 
@@ -3111,6 +3108,9 @@ test('Scheme 面板展示根与嵌套业务协议头', async ({ page }) => {
   await expect(schemeResult).toContainText('bd_vid');
 
   await page.locator('[data-tour="scheme-copy-decoded"]').click();
+  await expect.poll(
+    async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')
+  ).toContain('"area_cmd"');
   const copied = JSON.parse(
     await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '{}')
   ) as typeof source;
@@ -3284,6 +3284,9 @@ test('Scheme 面板可展开整段真实 Response 抽取链路', async ({ page }
   await expandSchemeDetails(page);
 
   await page.locator('[data-tour="scheme-copy-decoded"]').click();
+  await expect.poll(
+    async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')
+  ).toContain('"panel_scheme"');
   const decodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
   expect(decodedResult).toContain('"panel_scheme"');
   expect(decodedResult).toContain('"panel_cmd"');
@@ -3353,6 +3356,9 @@ test('Scheme 面板整段 Response 超长字段展示性能保护提示', async 
   await expect(commandSummary).toContainText('CMD 结构');
   await expect(commandSummary).toContainText('small_cmd');
   await page.locator('[data-tour="scheme-copy-decoded"]').click();
+  await expect.poll(
+    async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')
+  ).toContain('"ok": true');
   const decodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '');
   expect(decodedResult).toContain('"ok": true');
 });
@@ -3541,6 +3547,9 @@ test('Scheme 面板展示 URL 参数来源', async ({ page }) => {
   const schemeResult = page.locator('[data-tour="scheme-result"] .view-lines');
   await expect(schemeResult).toContainText('"__url__": "https://example.com/page"');
   await page.locator('[data-tour="scheme-copy-decoded"]').click();
+  await expect.poll(
+    async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')
+  ).toContain('"__url__"');
   const copiedDecodedResult = await page.evaluate(() => window.localStorage.getItem('mock-clipboard'));
   expect(JSON.parse(copiedDecodedResult || '')).toEqual({
     __url__: 'https://example.com/page',
