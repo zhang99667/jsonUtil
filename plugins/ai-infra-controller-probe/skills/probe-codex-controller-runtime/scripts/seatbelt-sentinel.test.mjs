@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +24,7 @@ const hash = value => createHash('sha256').update(value).digest('hex');
 const digest = character => character.repeat(64);
 const exactKeys = (value, keys) => assert.deepEqual(Object.keys(value), keys);
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const testTempRoot = process.platform === 'darwin' ? '/private/tmp' : fs.realpathSync(os.tmpdir());
 const snapshotState = (root) => {
   const records = [];
   const visit = (absolute, relative = '') => {
@@ -42,7 +44,7 @@ const snapshotState = (root) => {
 };
 
 const createFixture = ({ ledgerCopies = true } = {}) => {
-  const root = fs.realpathSync(fs.mkdtempSync(path.join('/private/tmp', 'seatbelt-test-')));
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(testTempRoot, 'seatbelt-test-')));
   const files = [];
   const directories = [root];
   const makeDirectory = (target, mode = 0o700) => {
@@ -178,7 +180,7 @@ const codexCandidate = () => [
 });
 
 test('seatbelt sentinel 参数拒绝未知、重复、相对路径与非法 binding', () => {
-  const tempBefore = fs.readdirSync('/private/tmp')
+  const tempBefore = fs.readdirSync(testTempRoot)
     .filter(name => name.startsWith('codex-seatbelt-sentinel-')).sort();
   const values = Object.fromEntries([
     ['--snapshot', '/private/tmp/snapshot'], ['--live-checkout', '/private/tmp/live'],
@@ -209,7 +211,7 @@ test('seatbelt sentinel 参数拒绝未知、重复、相对路径与非法 bind
     unsafe[unsafe.indexOf('--snapshot') + 1] = injected;
     assert.throws(() => parseSeatbeltSentinelArgs(unsafe), /argument-path-invalid/);
   }
-  assert.deepEqual(fs.readdirSync('/private/tmp')
+  assert.deepEqual(fs.readdirSync(testTempRoot)
     .filter(name => name.startsWith('codex-seatbelt-sentinel-')).sort(), tempBefore);
 });
 
