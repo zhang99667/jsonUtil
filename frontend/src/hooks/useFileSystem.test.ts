@@ -9,6 +9,7 @@ const reactMocks = vi.hoisted(() => ({
   useRef: vi.fn((value: unknown) => ({ current: value })),
   useState: vi.fn(),
 }));
+const cancelPendingAutoSave = vi.hoisted(() => vi.fn());
 
 vi.mock('react', async importOriginal => ({
   ...await importOriginal<typeof import('react')>(),
@@ -18,6 +19,7 @@ vi.mock('react', async importOriginal => ({
   useRef: reactMocks.useRef,
   useState: reactMocks.useState,
 }));
+vi.mock('./useFileAutoSave', () => ({ useFileAutoSave: () => cancelPendingAutoSave }));
 
 const toastMocks = vi.hoisted(() => ({
   toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }),
@@ -113,6 +115,8 @@ describe('useFileSystem', () => {
     const result = await scenario.fileSystem.saveFile('{"preview":true}');
 
     expect(result).toBe(true);
+    expect(cancelPendingAutoSave).toHaveBeenCalledOnce();
+    expect(cancelPendingAutoSave.mock.invocationCallOrder[0]).toBeLessThan(writable.write.mock.invocationCallOrder[0]);
     expect(writable.write).toHaveBeenCalledWith('{"preview":true}');
     expectSourceStateApplied(scenario, '{"preview":true}');
   });
