@@ -23,7 +23,7 @@ test('MCP stdio serves handoff, decision and validation tools', async (t) => {
   assert.equal(validation.reportType, 'jsonutils-validation-plan');
   assert.ok(Array.isArray(validation.commands));
 
-  const scorecard = await callGovernanceMcpTool(child, readMessage, 5, 'ai_governance_scorecard', { top: 35 }, 30000);
+  const scorecard = await callGovernanceMcpTool(child, readMessage, 5, 'ai_governance_scorecard', { top: 35 }, 45_000);
   const maintainability = scorecard.maturityScorecard.dimensions.find(item => item.id === 'maintainability-headroom');
   const distribution = scorecard.maturityScorecard.dimensions.find(item => item.id === 'distribution-readiness').details.distributionReadiness;
   const handoffDistribution = handoff.governance.distributionReadiness;

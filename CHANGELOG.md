@@ -6,6 +6,7 @@
 
 - **Paired candidate 单向派生**: 将 verified batch 到 receipt v4/outcome v3、chain、supersession 与双 suffix 的纯构造下沉为独立叶子，writer 只保留 live ledger、preview 稳定性、候选验证和可恢复事务编排
 - **治理所有权闭环**: 新 helper 与直接红测同步接入 required-files、生产 import、维护预算、固定 case 回归、资产注册表和治理决策账本；固定回归按 receipt 字段上限拆成三条有界命令，保持 case/corpus/behavior coverage 不变
+- **MCP 慢速 CI 竞态**: scorecard stdio 集成测试的客户端观察窗改为 45 秒并继续保留生产 worker 30 秒硬超时，避免两层同刻计时在受载 runner 上由客户端抢先失败，同时不掩盖真实 worker 超时
 
 ## v1.8.1004 (2026-07-30) - 加固 trial receipt 账本原始读取边界
 

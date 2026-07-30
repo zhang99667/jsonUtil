@@ -8,7 +8,7 @@ test('MCP stdio serves focused scorecard and worktree tools', async (t) => {
   const initialized = await initializeGovernanceMcpServer(child, readMessage, 'stdio-tools-test');
   assert.equal(initialized.result.serverInfo.name, 'jsonutils-governance');
 
-  const scorecard = await callGovernanceMcpTool(child, readMessage, 2, 'ai_governance_scorecard', { top: 35 }, 30000);
+  const scorecard = await callGovernanceMcpTool(child, readMessage, 2, 'ai_governance_scorecard', { top: 35 }, 45_000);
   assert.equal(scorecard.reportType, 'jsonutils-governance-scorecard');
   assert.equal(scorecard.maturityScorecard.reportType, 'ai-governance-maturity-scorecard');
   assert.equal(typeof scorecard.maturityScorecard.nextFocus.id, 'string');
