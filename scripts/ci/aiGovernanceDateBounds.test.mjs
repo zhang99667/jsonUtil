@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { collectFutureIsoDateFailures, getLocalIsoDate } from './aiGovernanceDateBounds.mjs';
+import {
+  collectFutureIsoDateFailures,
+  getLatestGlobalIsoDate,
+  getLocalIsoDate,
+} from './aiGovernanceDateBounds.mjs';
 import { collectAiGovernanceDecisionLedgerFailures } from './aiGovernanceDecisionLedger.mjs';
 import { collectRegistryFailuresForRows, registryRow, withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
@@ -12,6 +16,17 @@ test('AI 治理日期边界 helper 会拒绝未来日期', () => {
     '记录 日期不能晚于当前日期，实际 `2026-07-10`',
   ]);
   assert.deepEqual(collectFutureIsoDateFailures('记录', '日期', '2026-02-31', '2026-07-09'), []);
+});
+
+test('AI 治理日期边界允许全球当前民用日期但拒绝更晚日期', () => {
+  const utcRunnerTime = new Date('2026-07-30T16:30:00.000Z');
+  const maxDate = getLatestGlobalIsoDate(utcRunnerTime);
+
+  assert.equal(maxDate, '2026-07-31');
+  assert.deepEqual(collectFutureIsoDateFailures('记录', '日期', '2026-07-31', maxDate), []);
+  assert.deepEqual(collectFutureIsoDateFailures('记录', '日期', '2026-08-01', maxDate), [
+    '记录 日期不能晚于当前日期，实际 `2026-08-01`',
+  ]);
 });
 
 test('AI 资产注册表会报告未来复核日期', () => {

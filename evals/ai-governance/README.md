@@ -35,6 +35,7 @@
 - outcome v1 只作 legacy history，不计行为分数；既有 v2 保留为可评分历史。
 - 首个 v3 写入后，后续只能追加 v3；v1/v2 降级、删除、改写、插入或重排均失败。
 - `chain.sequence` 等于 outcome 文件中从 1 开始的物理非空行序号，是同日与跨日尝试的唯一显式顺序。
+- 日期型治理字段以当前时刻 UTC+14 对应的全球最晚民用日期为未来上界，writer 仍按维护者本地日期生成；合法跨时区日期不会因 CI runner 时区不同而失败，超过全球当前日期的记录仍会被拒绝。
 - 每行 v3 必须精确等于 `JSON.stringify(outcome)`。这是项目内紧凑字节契约，不是 RFC 8785/JCS canonicalization。
 
 ### Deterministic authoring

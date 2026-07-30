@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { getLocalIsoDate } from './aiGovernanceDateBounds.mjs';
+import { getLatestGlobalIsoDate } from './aiGovernanceDateBounds.mjs';
 import { readEvolutionEvalCorpus } from './aiGovernanceEvolutionEvalContract.mjs';
 import { readEvolutionExperiments } from './aiGovernanceEvolutionExperiments.mjs';
 import { readEvolutionFeedbackInbox } from './aiGovernanceEvolutionFeedbackInbox.mjs';
@@ -11,7 +11,7 @@ export const buildEvolutionLearningReport = ({
   casesPath = path.join(rootDir, 'evals/ai-governance/cases.json'),
   feedbackPath = path.join(rootDir, 'evals/ai-governance/feedback-inbox.jsonl'),
   experimentsPath = path.join(rootDir, 'evals/ai-governance/experiments.json'),
-  maxDate = getLocalIsoDate(),
+  maxDate = getLatestGlobalIsoDate(),
   actionableCaseIds,
   tracePolicyCaseIds = [],
   trialReadyCaseIds,

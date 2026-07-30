@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { getLocalIsoDate } from './aiGovernanceDateBounds.mjs';
+import { getLatestGlobalIsoDate } from './aiGovernanceDateBounds.mjs';
 import { collectEvolutionOutcomeFailures } from './aiGovernanceEvolutionOutcomeContract.mjs';
 import { buildEvolutionOutcomeChainReport } from './aiGovernanceEvolutionOutcomeChain.mjs';
 import { readStableEvolutionSnapshotFile } from './aiGovernanceEvolutionSnapshotPrimitives.mjs';
@@ -98,7 +98,7 @@ export const readEvolutionOutcomeLedger = (
   filePath,
   {
     caseIds = new Set(),
-    maxDate = getLocalIsoDate(),
+    maxDate = getLatestGlobalIsoDate(),
     rootDir = path.resolve(path.dirname(filePath), '../..'),
     receiptsById = new Map(),
     currentCorpusVersion,

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { getLocalIsoDate } from './aiGovernanceDateBounds.mjs';
+import { getLatestGlobalIsoDate } from './aiGovernanceDateBounds.mjs';
 import { readEvolutionEvalCorpus } from './aiGovernanceEvolutionEvalContract.mjs';
 import { buildEvolutionEvalProjection } from './aiGovernanceEvolutionEvalProjection.mjs';
 import { auditEvolutionLedgerIntegrity } from './aiGovernanceEvolutionLedgerIntegrity.mjs';
@@ -18,7 +18,7 @@ export const buildAiGovernanceEvolutionEvalReport = ({
   casesPath = path.join(rootDir, 'evals/ai-governance/cases.json'),
   outcomesPath = path.join(rootDir, 'evals/ai-governance/outcomes.jsonl'),
   receiptsPath = path.join(rootDir, 'evals/ai-governance/trial-receipts.jsonl'),
-  maxDate = getLocalIsoDate(),
+  maxDate = getLatestGlobalIsoDate(),
   replayDeterministic = replayEvolutionDeterministicOutcomes,
   trustedSigners = new Map(),
   pairedTrustPolicy = {},

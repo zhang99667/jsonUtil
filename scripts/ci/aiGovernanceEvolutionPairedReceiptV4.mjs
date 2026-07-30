@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { getLocalIsoDate } from './aiGovernanceDateBounds.mjs';
+import { getLatestGlobalIsoDate } from './aiGovernanceDateBounds.mjs';
 import {
   collectEvolutionSensitiveFieldFailures,
   isEvolutionRecord,
@@ -375,7 +375,7 @@ const assessEnvironmentBinding = ({ batch, experiment }) => {
 export const verifyEvolutionPairedBatchArtifact = (input, {
   rootDir,
   expectedRevision,
-  maxDate = getLocalIsoDate(),
+  maxDate = getLatestGlobalIsoDate(),
   pairedTrustPolicy = {},
 } = {}) => {
   const batch = normalizedBatch(input);

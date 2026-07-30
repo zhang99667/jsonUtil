@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { collectFutureIsoDateFailures, getLocalIsoDate } from './aiGovernanceDateBounds.mjs';
+import { collectFutureIsoDateFailures, getLatestGlobalIsoDate } from './aiGovernanceDateBounds.mjs';
 import {
   collectEvolutionSensitiveFieldFailures,
   collectEvolutionSensitiveValueFailures,
@@ -150,7 +150,7 @@ const buildEmptyCorpusResult = failure => ({
   corpus: {}, cases: [], retiredCaseIds: [], coverage: buildCoverage([]), failures: [failure],
 });
 
-export const readEvolutionEvalCorpus = (filePath, { maxDate = getLocalIsoDate() } = {}) => {
+export const readEvolutionEvalCorpus = (filePath, { maxDate = getLatestGlobalIsoDate() } = {}) => {
   let bytes;
   try {
     const absolutePath = path.resolve(filePath);

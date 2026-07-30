@@ -8,6 +8,10 @@
 - **多源摘要闭环**: Grader calibration v1.2 分别绑定 production grader、context factory 与 mutation factory 当前字节；直接红测、required-files、预算、fixed component case、资产注册表和决策账本同步锁定，case 升至 v4、corpus 升至 1.58.3，评分与外部信任边界不变
 - **最小治理仓库回归**: 合成仓库同步复制 mutation factory 的真实字节，避免全量 Node 门禁因新摘要绑定仍读取旧占位 fixture 而失败
 
+### 🐛 Bug 修复
+
+- **跨时区治理日期**: 日期型治理字段按 UTC+14 的全球最晚民用日期校验，避免北京时间已跨日而 GitHub UTC runner 尚未跨日时误判合法双账本记录，同时继续拒绝真正的未来日期
+
 ## v1.8.1008 (2026-07-30) - 分层 trial receipt 契约与账本编排
 
 ### 🏗️ 架构与基础设施

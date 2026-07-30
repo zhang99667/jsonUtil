@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { getLocalIsoDate } from './aiGovernanceDateBounds.mjs';
+import { getLatestGlobalIsoDate } from './aiGovernanceDateBounds.mjs';
 import {
   AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES,
 } from './aiGovernanceEvolutionPairedReceiptV4.mjs';
@@ -18,7 +18,7 @@ export {
 export const readEvolutionTrialReceiptLedger = (
   filePath,
   {
-    rootDir, maxDate = getLocalIsoDate(), trustedSigners = new Map(), pairedTrustPolicy = {},
+    rootDir, maxDate = getLatestGlobalIsoDate(), trustedSigners = new Map(), pairedTrustPolicy = {},
   } = {}
 ) => {
   const source = readEvolutionTrialReceiptSource(filePath, {
