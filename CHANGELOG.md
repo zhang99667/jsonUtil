@@ -1,5 +1,13 @@
 # 更新日志 (Changelog)
 
+## v1.8.1011 (2026-07-31) - 加固 feedback source 与 profile 身份
+
+### 🏗️ 架构与基础设施
+
+- **稳定有界 source**: feedback inbox 只接受 4 MiB 内的稳定单链接普通文件，使用 fatal UTF-8 解码并拒绝 BOM、64 KiB 单行、4096 物理行和 2048 非空记录超限；读取与 JSON 诊断不再反射本机路径或解析正文
+- **Profile 单一事实源**: v1 MCP、v2 Skill 与 v3 维护者纠偏的 schema、evidence、固定 case/experiment 和 signal 身份集中到单一 descriptor，reader、candidate builder 与 producer 共用，阻断跨 profile 混搭后重算 hash
+- **失败状态闭合**: source/framing/parse 或事件语义任一失败都会清空 `validEvents` 与 `states`，合法 JSON 的非对象根也稳定返回失败而不抛异常；历史 event hash/原 tuple、既有 case/corpus、behavior coverage 和仓外 runtime/signer trust 边界不变
+
 ## v1.8.1010 (2026-07-31) - 分层 registration checkpoint 职责
 
 ### 🏗️ 架构与基础设施

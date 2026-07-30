@@ -77,8 +77,12 @@ test('feedback inbox 对 eventHash、紧凑 JSON 与 JSON 解析 fail closed', (
     readEvolutionFeedbackInbox(filePath, { casesById, maxDate: '2026-07-15' }).failures,
     ['feedback-inbox.jsonl: 第 1 行必须是精确紧凑 JSON'],
   ));
-  withInboxText('{\n', filePath => assert.match(
-    readEvolutionFeedbackInbox(filePath, { casesById, maxDate: '2026-07-15' }).failures.join('\n'),
-    /第 1 行无法解析 JSON/u,
+  withInboxText('{\n', filePath => assert.deepEqual(
+    readEvolutionFeedbackInbox(filePath, { casesById, maxDate: '2026-07-15' }).failures,
+    ['feedback-inbox.jsonl: 第 1 行不是合法 JSON'],
+  ));
+  withInboxText('null\n', filePath => assert.deepEqual(
+    readEvolutionFeedbackInbox(filePath, { casesById, maxDate: '2026-07-15' }).failures,
+    ['feedback-inbox.jsonl: 第 1 行 必须是对象'],
   ));
 });

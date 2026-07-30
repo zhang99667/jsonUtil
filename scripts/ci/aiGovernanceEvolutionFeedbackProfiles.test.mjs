@@ -90,3 +90,47 @@ test('feedback inbox v3 接受 case-bound maintainer correction 且不伪造 exp
     ['feedback-inbox.jsonl: 第 3 行.experimentId 必须为 null'],
   ));
 });
+
+test('feedback profile 固定绑定各自 case 与 experiment', () => {
+  assert.throws(() => buildMcpRegistrationFeedbackCandidate({
+    existingEvents: [], observedAt: '2026-07-15', caseItem: skillCaseItem,
+    experimentId: 'skill-evolver-fresh-context-paired',
+  }), /profile 必须绑定固定 case 和 experiment/);
+  assert.throws(() => buildBehaviorEvidenceFeedbackCandidate({
+    existingEvents: [], observedAt: '2026-07-15', caseItem,
+    experimentId: 'mcp-project-registration-canary',
+  }), /profile 必须绑定固定 case 和 experiment/);
+
+  for (const [build, expectedLine] of [
+    [() => {
+      const event = candidate();
+      event.caseRef = {
+        id: skillCaseItem.id,
+        caseVersion: skillCaseItem.caseVersion,
+        subjectVersion: skillCaseItem.subject.version,
+      };
+      event.experimentId = 'skill-evolver-fresh-context-paired';
+      return event;
+    }, 1],
+    [() => {
+      const event = buildBehaviorEvidenceFeedbackCandidate({
+        existingEvents: [], observedAt: '2026-07-15', caseItem: skillCaseItem,
+        experimentId: 'skill-evolver-fresh-context-paired',
+      });
+      event.caseRef = {
+        id: caseItem.id,
+        caseVersion: caseItem.caseVersion,
+        subjectVersion: caseItem.subject.version,
+      };
+      event.experimentId = 'mcp-project-registration-canary';
+      return event;
+    }, 1],
+  ]) {
+    const event = build();
+    event.eventHash = computeEvolutionFeedbackEventHash(event);
+    withInbox([event], filePath => assert.deepEqual(
+      readEvolutionFeedbackInbox(filePath, { casesById, maxDate: '2026-07-15' }).failures,
+      [`feedback-inbox.jsonl: 第 ${expectedLine} 行.profile 必须绑定固定 case 和 experiment`],
+    ));
+  }
+});
