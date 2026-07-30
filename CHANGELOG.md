@@ -1,5 +1,11 @@
 # 更新日志 (Changelog)
 
+## v1.8.1007 (2026-07-30) - 补齐 registration descriptor 聚合回归
+
+### 🐛 Bug 修复
+
+- **固定 case 描述符断言**: 将 registration result component case 的聚合测试同步到新增 blind-result 直接测试，避免全量 Node 测试仍按旧数组切片失败并阻断部署
+
 ## v1.8.1006 (2026-07-30) - 拆分 registration result 摄取职责
 
 ### 🏗️ 架构与基础设施

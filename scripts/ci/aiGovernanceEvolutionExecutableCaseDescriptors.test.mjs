@@ -88,7 +88,8 @@ test('project plugin Skill v8 descriptor 锁定共享 optional 字段两层回�
 test('registration grader descriptor 同时重放静态 contract 与执行 runner', () => {
   const descriptor = AI_EVOLUTION_EXECUTABLE_CASES['mcp-registration-canary-result-ingestion-boundary'];
   assert.deepEqual([descriptor.caseVersion, descriptor.subjectVersion], [3, '1.0.0']);
-  assert.deepEqual(descriptor.argsList[0].slice(0, 5), ['--test',
+  assert.deepEqual(descriptor.argsList[0].slice(0, 6), ['--test',
+    'scripts/ci/aiGovernanceRegistrationCanaryBlindResult.test.mjs',
     'scripts/ci/aiGovernanceRegistrationCanaryResult.test.mjs',
     'scripts/ci/aiGovernanceRegistrationCanaryGraderCalibrationContract.test.mjs',
     'scripts/ci/aiGovernanceRegistrationCanaryGraderCalibration.test.mjs',
