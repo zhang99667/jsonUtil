@@ -118,6 +118,7 @@ test('自动保存挂起时手动保存排队并最终落盘最新内容', async
 });
 
 test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', async ({ page }) => {
+  await page.clock.install();
   await page.evaluate(() => {
     const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
     let releasePreviewWrite = () => undefined;
@@ -151,6 +152,7 @@ test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', asy
   await page.getByRole('button', { name: '格式化' }).click();
   await page.locator('[data-tour="auto-save"]').click();
   await fillSourceEditor(page, '{"saved":2}');
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 500);
   await expect(page.locator('[data-tour="preview-editor"] .view-lines')).toContainText('"saved": 2');
 
   await page.locator('[data-tour="preview-editor"] .monaco-editor').first().click();
@@ -165,7 +167,7 @@ test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', asy
     return writes.find(write => write.startsWith('开始:')) ?? '';
   })).toContain('"saved": 2');
 
-  await page.waitForTimeout(1200);
+  await page.clock.runFor(1200);
   await expect.poll(async () => page.evaluate(() => {
     const writes = (window as unknown as { __jsonHelperSavedWrites: string[] }).__jsonHelperSavedWrites;
     return writes.filter(write => write.startsWith('开始:')).length;
