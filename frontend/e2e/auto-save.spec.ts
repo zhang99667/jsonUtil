@@ -159,8 +159,10 @@ test('手动保存 PREVIEW 时取消尚未入队的旧 SOURCE 自动保存', asy
     const nativeClearTimeout = window.clearTimeout.bind(window);
     const controlledTimerIds = new Set<number>();
     let nextControlledTimerId = 0;
+    let hasControlledAutoSaveTimer = false;
     window.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
-      if (timeout === 1000) {
+      if (timeout === 1000 && !hasControlledAutoSaveTimer) {
+        hasControlledAutoSaveTimer = true;
         const timerId = --nextControlledTimerId;
         controlledTimerIds.add(timerId);
         return timerId;
