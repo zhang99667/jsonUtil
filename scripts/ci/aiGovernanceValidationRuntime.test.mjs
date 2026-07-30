@@ -51,7 +51,7 @@ const isWithin = (root, target) => {
   return relative === '' || (!path.isAbsolute(relative)
     && relative !== '..' && !relative.startsWith(`..${path.sep}`));
 };
-const nodeCommands = [{ descriptor: { executable: 'node' } }];
+const gitCommands = [{ descriptor: { executable: 'git' } }];
 const withPlatform = (platform, run) => {
   const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
   Object.defineProperty(process, 'platform', { ...descriptor, value: platform });
@@ -64,7 +64,7 @@ test('Windows fails closed before ambient executable and runtime paths are consi
   assert.throws(() => resolveHermeticGitExecutable(process.cwd()), hasCode('HERMETIC_GIT_WINDOWS_UNSUPPORTED'));
   assert.throws(() => buildHermeticGitEnvironment('C:\\untrusted\\git.exe'), hasCode('HERMETIC_GIT_WINDOWS_UNSUPPORTED'));
   assert.throws(() => resolveJsonutilsValidationRoot(process.cwd()), unsupported);
-  assert.throws(() => bindJsonutilsValidationExecutables({ rootBinding: {}, commands: nodeCommands, ambientEnv }), unsupported);
+  assert.throws(() => bindJsonutilsValidationExecutables({ rootBinding: {}, commands: gitCommands, ambientEnv }), unsupported);
   assert.throws(() => createJsonutilsValidationRuntime({ realPath: process.cwd() }), unsupported);
   assert.throws(() => validateJsonutilsValidationRuntime({}, {}), unsupported);
   assert.throws(() => buildJsonutilsValidationCommandEnvironment({ descriptor: {}, runtime: {}, safePath: '', ambientEnv }), unsupported);
@@ -93,29 +93,28 @@ test('root binding only accepts the exact non-symlink Git top-level', () => {
   } finally { fs.rmSync(parent, { recursive: true, force: true }); }
 });
 
-test('ambient PATH and TMPDIR cannot select Git, Node or the runtime location', () => {
+test('ambient PATH and TMPDIR cannot select Git or the runtime location', () => {
   const { parent, rootDir } = createRepository();
   const previousPath = process.env.PATH, previousTmpdir = process.env.TMPDIR;
   let binding, runtime;
   try {
     const maliciousBin = path.join(rootDir, 'ambient-bin');
     fs.mkdirSync(maliciousBin);
-    fs.writeFileSync(path.join(maliciousBin, 'node'), '#!/bin/sh\nexit 99\n', { mode: 0o755 });
+    fs.writeFileSync(path.join(maliciousBin, 'git'), '#!/bin/sh\nexit 99\n', { mode: 0o755 });
     process.env.PATH = maliciousBin;
     process.env.TMPDIR = rootDir;
 
     binding = resolveJsonutilsValidationRoot(rootDir);
     const executables = bindJsonutilsValidationExecutables({
       rootBinding: binding,
-      commands: nodeCommands,
+      commands: gitCommands,
       ambientEnv: { PATH: maliciousBin, TMPDIR: rootDir },
     });
-    const node = executables.byExecutable.node;
-    assert.equal(node.realPath, fs.realpathSync(process.execPath));
-    assert.equal(path.isAbsolute(node.realPath), true);
-    assert.equal(isWithin(binding.realPath, node.realPath), false);
-    assert.match(node.pathSha256, /^[a-f0-9]{64}$/);
-    assert.match(node.sha256, /^[a-f0-9]{64}$/);
+    const git = executables.byExecutable.git;
+    assert.equal(path.isAbsolute(git.realPath), true);
+    assert.equal(isWithin(binding.realPath, git.realPath), false);
+    assert.match(git.pathSha256, /^[a-f0-9]{64}$/);
+    assert.match(git.sha256, /^[a-f0-9]{64}$/);
     assert.match(executables.setSha256, /^[a-f0-9]{64}$/);
     assert.equal(executables.safePath.includes(maliciousBin), false);
     assert.equal(validateJsonutilsValidationExecutableBindings(executables, binding), true);
@@ -249,11 +248,11 @@ test('executable binding validation rejects content digest and stat drift', () =
   const { parent, rootDir } = createRepository();
   try {
     const rootBinding = resolveJsonutilsValidationRoot(rootDir);
-    const bindings = bindJsonutilsValidationExecutables({ rootBinding, commands: nodeCommands });
-    const node = bindings.byExecutable.node;
+    const bindings = bindJsonutilsValidationExecutables({ rootBinding, commands: gitCommands });
+    const git = bindings.byExecutable.git;
     const tamper = patch => ({
       ...bindings,
-      byExecutable: { ...bindings.byExecutable, node: { ...node, ...patch } },
+      byExecutable: { ...bindings.byExecutable, git: { ...git, ...patch } },
     });
     assert.equal(validateJsonutilsValidationExecutableBindings(bindings, rootBinding), true);
     assert.throws(
@@ -262,7 +261,7 @@ test('executable binding validation rejects content digest and stat drift', () =
     );
     assert.throws(
       () => validateJsonutilsValidationExecutableBindings(tamper({
-        stat: { ...node.stat, size: (BigInt(node.stat.size) + 1n).toString() },
+        stat: { ...git.stat, size: (BigInt(git.stat.size) + 1n).toString() },
       }), rootBinding),
       hasCode('VALIDATION_EXECUTABLE_DRIFT'),
     );

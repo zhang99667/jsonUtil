@@ -351,11 +351,11 @@ test('pre-runtime fs 注入能伪造 path candidate，但仓内 Node gate 永不
     requestType: 'jsonutils-external-controller-attested-preflight-verification',
     ...artifacts, expectedBindings: fixture.expectedBindings });
   const result = spawnSync(process.execPath, [
+    `--import=data:text/javascript,${encodeURIComponent(preload)}`,
     'scripts/ci/check-ai-external-controller-preflight.mjs', '--policy', fakePath,
     '--policy-sha256', policySha256,
   ], { cwd: process.cwd(), input: request, encoding: 'utf8', timeout: 3_000,
-    maxBuffer: 256 * 1024, env: { ...process.env,
-      NODE_OPTIONS: `--import=data:text/javascript,${encodeURIComponent(preload)}` } });
+    maxBuffer: 256 * 1024, env: process.env });
   assert.equal(result.status, 2, result.stderr);
   const verification = JSON.parse(result.stdout);
   assert.equal(verification.policyPathProtectionCandidateObserved, true);
