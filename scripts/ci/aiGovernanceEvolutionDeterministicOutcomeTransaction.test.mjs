@@ -19,6 +19,9 @@ const RECEIPTS = 'evals/ai-governance/trial-receipts.jsonl';
 const OUTCOMES = 'evals/ai-governance/outcomes.jsonl';
 
 const git = (rootDir, args) => spawnSync('git', ['-C', rootDir, ...args], { encoding: 'utf8' });
+const removeFixtureTree = rootDir => fs.rmSync(rootDir, {
+  recursive: true, force: true, maxRetries: 5, retryDelay: 100,
+});
 const revisionFor = rootDir => `worktree-${createHash('sha256').update(fs.readFileSync(path.join(rootDir, 'source.txt'))).digest('hex')}`;
 const journalDigest = value => createHash('sha256')
   .update(`jsonutils.ai-evolution.outcome-transaction/v1\0${JSON.stringify(value)}`).digest('hex');
@@ -47,7 +50,7 @@ const createRepository = () => {
 
 const fixture = (t) => {
   const rootDir = createRepository();
-  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  t.after(() => removeFixtureTree(rootDir));
   const controlPaths = acquireEvolutionOutcomeWriterLock({ rootDir });
   t.after(() => {
     try { controlPaths.release(); } catch { /* 测试可能故意破坏 lock。 */ }
@@ -90,8 +93,8 @@ test('control dir 由 hermetic git-path 解析并支持 linked worktree', (t) =>
   fs.rmdirSync(linked);
   t.after(() => {
     git(primary, ['worktree', 'remove', '--force', linked]);
-    fs.rmSync(primary, { recursive: true, force: true });
-    fs.rmSync(linked, { recursive: true, force: true });
+    removeFixtureTree(primary);
+    removeFixtureTree(linked);
   });
   assert.equal(git(primary, ['worktree', 'add', '-b', 'linked-fixture', linked]).status, 0);
   const lock = acquireEvolutionOutcomeWriterLock({ rootDir: linked });
@@ -103,7 +106,7 @@ test('control dir 由 hermetic git-path 解析并支持 linked worktree', (t) =>
 
 test('lock 拒绝 live、跨 host 和半写 metadata，并可原子接管 dead PID', (t) => {
   const rootDir = createRepository();
-  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  t.after(() => removeFixtureTree(rootDir));
   const first = acquireEvolutionOutcomeWriterLock({ rootDir });
   assert.throws(() => acquireEvolutionOutcomeWriterLock({ rootDir }), /live outcome writer/);
   const lockPath = first.lockPath;

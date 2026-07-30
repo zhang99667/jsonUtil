@@ -11,6 +11,7 @@
 ### 🐛 Bug 修复
 
 - **跨时区治理日期**: 日期型治理字段按 UTC+14 的全球最晚民用日期校验，避免北京时间已跨日而 GitHub UTC runner 尚未跨日时误判合法双账本记录，同时继续拒绝真正的未来日期
+- **治理测试临时仓库清理**: 双账本事务测试使用 Node 原生有界重试清理 `mkdtemp` Git fixture，避免受载 GitHub runner 上短暂 `.git/info` 写入触发 `ENOTEMPTY` teardown 误报，同时保留最终清理失败可见性
 
 ## v1.8.1008 (2026-07-30) - 分层 trial receipt 契约与账本编排
 
