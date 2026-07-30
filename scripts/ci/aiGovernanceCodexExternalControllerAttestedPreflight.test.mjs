@@ -332,7 +332,7 @@ test('stdin gate 对未保护 policy 固定脱敏失败且不回显路径或输�
   }
 });
 
-test('pre-runtime fs 注入能伪造 path candidate，但仓内 Node gate 永不升级 trust', () => {
+test('pre-runtime fs 注入能伪造 path candidate，但仓内 Node gate 永不升级 trust', t => {
   const fixture = createFixture();
   const fakePath = '/usr/share/jsonutils-runtime-policy-not-installed.json';
   const policySha256 = hash(Buffer.from(fixture.policyJson));
@@ -346,12 +346,15 @@ test('pre-runtime fs 注入能伪造 path candidate，但仓内 Node gate 永不
     "fs.accessSync=(x,m)=>{if(chain.has(x)){const e=new Error('denied');e.code='EACCES';throw e}return ac(x,m)}",
     'fs.readFileSync=(x,o)=>x===p?j:rf(x,o)',
   ].join(';');
+  const preloadRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-preload-'));
+  const preloadPath = path.join(preloadRoot, 'preload.mjs');
+  fs.writeFileSync(preloadPath, preload); t.after(() => fs.rmSync(preloadRoot, { recursive: true, force: true }));
   const artifacts = fixture.signArtifacts();
   const request = JSON.stringify({ schemaVersion: 1,
     requestType: 'jsonutils-external-controller-attested-preflight-verification',
     ...artifacts, expectedBindings: fixture.expectedBindings });
   const result = spawnSync(process.execPath, [
-    `--import=data:text/javascript,${encodeURIComponent(preload)}`,
+    `--import=${preloadPath}`,
     'scripts/ci/check-ai-external-controller-preflight.mjs', '--policy', fakePath,
     '--policy-sha256', policySha256,
   ], { cwd: process.cwd(), input: request, encoding: 'utf8', timeout: 3_000,
