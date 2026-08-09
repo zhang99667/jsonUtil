@@ -4,7 +4,7 @@ import {
   DEPLOY_SHELL_SYNTAX_REFERENCES,
   PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
   VERSION_CHANGELOG_REFERENCES,
-} from './aiGovernanceReferenceGroups.mjs';
+} from './aiGovernanceReleaseReferenceGroups.mjs';
 import {
   MIRRORED_AGENT_SECTION_FILES,
   MIRRORED_TOOL_ENTRY_SNIPPET_FILES,

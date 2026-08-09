@@ -19,7 +19,7 @@ import {
   AI_GOVERNANCE_GITHUB_ATTESTATION_POLICY,
   AI_GOVERNANCE_SCHEDULED_WORKFLOW,
 } from './aiGovernanceScheduledWorkflowContract.mjs';
-import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReferenceGroups.mjs';
+import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReleaseReferenceGroups.mjs';
 import {
   AI_ENTRY_SHARED_SNIPPET_FILES,
   AI_ENTRY_SHARED_SNIPPETS,

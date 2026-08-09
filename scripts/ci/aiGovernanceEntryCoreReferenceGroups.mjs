@@ -1,8 +1,6 @@
-import {
-  AI_EVOLUTION_LOOP_REFERENCES,
-  SUBAGENT_DELEGATION_REFERENCES,
-  VERSION_CHANGELOG_REFERENCES,
-} from './aiGovernanceReferenceGroups.mjs';
+import { SUBAGENT_DELEGATION_REFERENCES } from './aiGovernanceDelegationReferenceGroup.mjs';
+import { AI_EVOLUTION_LOOP_REFERENCES } from './aiGovernanceEvolutionReferenceGroup.mjs';
+import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReleaseReferenceGroups.mjs';
 
 export const PROJECT_AI_ASSET_OWNERSHIP_REFERENCES = [
   '.agents/plugins/marketplace.json', 'plugins/', 'source of truth',

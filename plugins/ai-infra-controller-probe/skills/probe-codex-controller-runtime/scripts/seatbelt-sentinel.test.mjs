@@ -14,6 +14,7 @@ import {
   collectCodexPreflightExpectations,
   collectSeatbeltSentinelStaticExpectations,
   hashSealedSnapshotPayload,
+  isAclFreeDirectoryListing,
   parseSeatbeltSentinelArgs,
   reproduceWorktreeRevision,
   runSeatbeltSentinel,
@@ -42,6 +43,13 @@ const snapshotState = (root) => {
   visit(root);
   return records;
 };
+
+test('output parent ACL 解析允许扩展属性标记并继续拒绝真实 ACL', () => {
+  assert.equal(isAclFreeDirectoryListing('drwx------  2 owner  group  64 Jan  1 00:00 output\n'), true);
+  assert.equal(isAclFreeDirectoryListing('drwx------@ 2 owner  group  64 Jan  1 00:00 output\n'), true);
+  assert.equal(isAclFreeDirectoryListing(
+    'drwx------+ 2 owner  group  64 Jan  1 00:00 output\n 0: everyone deny delete\n'), false);
+});
 
 const createFixture = ({ ledgerCopies = true } = {}) => {
   const root = fs.realpathSync(fs.mkdtempSync(path.join(testTempRoot, 'seatbelt-test-')));

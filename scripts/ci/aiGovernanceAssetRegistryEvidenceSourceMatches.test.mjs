@@ -7,7 +7,7 @@ import {
   withAiGovernanceTempRoot,
   writeFixtureFile,
 } from './aiGovernanceTestFixtures.mjs';
-import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReferenceGroups.mjs';
+import { VERSION_CHANGELOG_REFERENCES } from './aiGovernanceReleaseReferenceGroups.mjs';
 
 test('AI 治理资产注册表接受来源匹配和未创建的本机豁免声明', () => {
   withAiGovernanceTempRoot((rootDir) => {

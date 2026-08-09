@@ -1,5 +1,6 @@
-import { AI_EVOLUTION_LOOP_REFERENCES, SUBAGENT_DELEGATION_REFERENCES } from './aiGovernanceCollaborationReferenceGroups.mjs';
-import { AI_SAFETY_BOUNDARY_REFERENCES } from './aiGovernanceAiBoundaryReferenceGroups.mjs';
+import { SUBAGENT_DELEGATION_REFERENCES } from './aiGovernanceDelegationReferenceGroup.mjs';
+import { AI_EVOLUTION_LOOP_REFERENCES } from './aiGovernanceEvolutionReferenceGroup.mjs';
+import { AI_SAFETY_BOUNDARY_REFERENCES } from './aiGovernanceSafetyReferenceGroup.mjs';
 const REQUIRED_LEDGER_READING_REFERENCES = ['docs/AI-ASSET-REGISTRY.md', 'docs/AI-GOVERNANCE-DECISIONS.md'];
 const sectionRule = (sectionTitle, contains) => ({ sectionTitle, contains });
 export const PLAYBOOK_SECTION_REFERENCE_RULES = [

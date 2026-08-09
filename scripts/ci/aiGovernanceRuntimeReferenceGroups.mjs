@@ -1,12 +1,12 @@
 import {
-  AI_EVOLUTION_LOOP_REFERENCES,
   DEPLOY_SHELL_SYNTAX_REFERENCES,
-  AI_SAFETY_BOUNDARY_REFERENCES,
   CHUNK_LOAD_RECOVERY_CATCH_REFERENCES,
   PUBLIC_FRONTEND_ASSET_AUDIT_REFERENCES,
-  SUBAGENT_DELEGATION_REFERENCES,
   VERSION_CHANGELOG_REFERENCES,
-} from './aiGovernanceReferenceGroups.mjs';
+} from './aiGovernanceReleaseReferenceGroups.mjs';
+import { SUBAGENT_DELEGATION_REFERENCES } from './aiGovernanceDelegationReferenceGroup.mjs';
+import { AI_EVOLUTION_LOOP_REFERENCES } from './aiGovernanceEvolutionReferenceGroup.mjs';
+import { AI_SAFETY_BOUNDARY_REFERENCES } from './aiGovernanceSafetyReferenceGroup.mjs';
 import { PROJECT_AI_ASSET_OWNERSHIP_REFERENCES } from './aiGovernanceEntryCoreReferenceGroups.mjs';
 
 export const CORE_SKILL_GOVERNANCE_REFERENCES = [

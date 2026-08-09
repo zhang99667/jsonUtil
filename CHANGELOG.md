@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1014 (2026-08-09) - 移除引用组兼容聚合层
+
+### 🏗️ 架构与基础设施
+
+- **领域清单直连**: 入口、运行时、Playbook 章节与注册表证据规则直接依赖委派、安全、进化和发布权威清单，移除 3 个仅做 re-export 的聚合模块
+- **依赖方向回归**: 引用规则测试直接锁定生产消费方不得重新引入兼容代理层；词表内容、展开顺序与失败语义不变
+- **冗余与预算同步收缩**: 删除公共、协作和 AI 边界三层空转入口及其预算登记，不拆分职责单一的入口核心清单，也不提高预算
+- **证据边界不升级**: 重构不修改 case、corpus、behavior coverage 或仓外 runtime/signer blocker；源码冻结后仅由受控 writer 刷新既有 deterministic source-state 时效
+
+### 🐛 Bug 修复
+
+- **macOS ACL 误判**: Seatbelt sentinel 的输出目录校验允许 `ls -lde` 权限位中的 `@` 扩展属性标记，同时继续拒绝 `+` ACL 与 ACL 明细行，避免 `com.apple.provenance` 让合法 0700 临时目录误报 `output-parent-acl-invalid`；控制器探针插件升至 0.5.4 并同步 content lock
+
 ## v1.8.1013 (2026-08-09) - 移除入口引用兼容导出
 
 ### 🏗️ 架构与基础设施

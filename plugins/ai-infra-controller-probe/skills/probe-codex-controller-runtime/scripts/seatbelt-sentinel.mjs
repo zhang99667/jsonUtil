@@ -92,6 +92,11 @@ const sameDirectoryIdentity = (left, right) => left.dev === right.dev && left.in
   && left.mode === right.mode && left.uid === right.uid
   && left.gid === right.gid;
 
+export const isAclFreeDirectoryListing = value => {
+  const lines = value.split('\n').filter(Boolean);
+  return lines.length === 1 && /^d[-rwx]{9}@? /.test(lines[0]);
+};
+
 const assertNoDirectoryAcl = (directory, code) => {
   const result = spawnSync(LS_BINARY, ['-lde', directory], {
     encoding: 'buffer', timeout: COMMAND_TIMEOUT_MS, maxBuffer: 64 * 1024,
@@ -99,8 +104,7 @@ const assertNoDirectoryAcl = (directory, code) => {
   });
   const text = Buffer.isBuffer(result.stdout) ? result.stdout.toString('utf8') : '';
   if (result.status !== 0 || result.signal !== null || result.stderr?.length !== 0
-    || text.split('\n').filter(Boolean).length !== 1
-    || !/^d[-rwx]{9} /.test(text)) throw safeError(code);
+    || !isAclFreeDirectoryListing(text)) throw safeError(code);
 };
 
 const hashStableAbsoluteFile = (file, maxBytes = 512 * 1024 * 1024) => {

@@ -6,10 +6,10 @@
   "plugins": [
     {
       "selector": "ai-infra-controller-probe@jsonutils-project",
-      "manifestVersion": "0.5.3",
+      "manifestVersion": "0.5.4",
       "source": "plugins/ai-infra-controller-probe",
       "files": [
-        { "path": ".codex-plugin/plugin.json", "gitMode": "100644", "size": 918, "sha256": "c49b74998e143b23ba60da109e74c874a2f011a03f172bf8a5ea6f5b298689cb" },
+        { "path": ".codex-plugin/plugin.json", "gitMode": "100644", "size": 918, "sha256": "690d8bc9774782cab7607e2e0a72e7841635295f93cfc62dcf08012d6cbf817a" },
         { "path": "skills/probe-codex-controller-runtime/SKILL.md", "gitMode": "100644", "size": 8690, "sha256": "23088ec651ef0614b20d2e7bc84ed1229b6b188f3933bbc665fcdfcb07b614c7" },
         { "path": "skills/probe-codex-controller-runtime/agents/openai.yaml", "gitMode": "100644", "size": 270, "sha256": "98eb557c5cc424f1f29cbff0ad23443e3bafbe00a0eec2e65d5eea328c64c501" },
         { "path": "skills/probe-codex-controller-runtime/evals/evals.json", "gitMode": "100644", "size": 1649, "sha256": "f2d4f2d1b71baf1b924fc644cd24ec8e4b25bdfa3107609277c2a578f3912bb0" },
@@ -19,10 +19,10 @@
         { "path": "skills/probe-codex-controller-runtime/scripts/run-controller-probe.mjs", "gitMode": "100644", "size": 814, "sha256": "362182a568fdce97a9727689af57339229fa62e4acc5cb2e3837c8b8f2cb3f96" },
         { "path": "skills/probe-codex-controller-runtime/scripts/run-seatbelt-sentinel.mjs", "gitMode": "100644", "size": 771, "sha256": "8e3abd3bc257ba7979191bdeb2bdc3d5aeeb373c5d9ea3ed329a7dbc599c0c85" },
         { "path": "skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel-child.mjs", "gitMode": "100644", "size": 5038, "sha256": "2a698f7cf932c23235f7e0b78c44a4d728f767fb91f34c9bdc4f297c897fc88f" },
-        { "path": "skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.mjs", "gitMode": "100644", "size": 68617, "sha256": "a7bea3197409c3b32fd1644dd66a7a5dece2bc90ff90a9f323ab2eec80c38fd9" },
-        { "path": "skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.test.mjs", "gitMode": "100644", "size": 29070, "sha256": "7fe12c16000e02434336ffb4fd0be9fda0cdec749fcea80a6265d59d605a9ce8" }
+        { "path": "skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.mjs", "gitMode": "100644", "size": 68741, "sha256": "ea2599a3b93fbd2884e55df5e610e7ef73349ba9abe3cec27cc63b296292431e" },
+        { "path": "skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.test.mjs", "gitMode": "100644", "size": 29541, "sha256": "d6f7d9b84507fa054c4202d42ba685855ec581a2427b30d472788a5913cf51e8" }
       ],
-      "treeSha256": "24e7dafa5883d0bcfd280a504db1c227a05359fffdfcfcedb961445998f4a751"
+      "treeSha256": "87839ed0bdc35a994081974cfda2099dd9a6d16eb5f6aec09d09a00e02ba2d5e"
     },
     {
       "selector": "jsonutils-governance-mcp@jsonutils-project",
