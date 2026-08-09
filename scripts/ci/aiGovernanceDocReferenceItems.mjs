@@ -2,8 +2,6 @@ import {
   AI_GOVERNANCE_CUSTOM_AI_ENTRY_FILES,
 } from './aiGovernanceDiscoveryEntries.mjs';
 
-export { AI_TOOLS_SETUP_REFERENCES } from './aiGovernanceToolsSetupReferenceItems.mjs';
-
 export const AI_CONFIG_INTEGRATION_REFERENCES = [
   'rules/code-style.md',
   'docs/AI-ENGINEERING-PLAYBOOK.md',
