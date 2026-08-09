@@ -163,7 +163,7 @@
     "@rollup/rollup-linux-x64-gnu": "^4.53.3"
   },
   "overrides": {
-    "dompurify": "^3.4.12",
+    "dompurify": "^3.4.13",
     "shell-quote": "1.10.0"
   }
 }

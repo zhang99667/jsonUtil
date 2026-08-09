@@ -9,6 +9,10 @@
 - **维护余量恢复**: 配置引用项从 29/30 降至 27/30，测试在不提高预算的前提下保留余量，并将下一职责审计焦点推进到后续热点
 - **证据时效刷新**: 源码冻结后通过 preview-first 的受控 writer 刷新 3 条既有 deterministic case，只恢复当前 source-state 覆盖，不扩大行为分母或外部信任声明
 
+### 🐛 Bug 修复
+
+- **依赖漏洞修补**: 将 DOMPurify、brace-expansion、fast-uri 与 nanoid 锁定到现有兼容范围内的安全补丁版本，DOMPurify override 同步抬高最低版本；避免按审计建议强制降级 Monaco，`npm audit` 恢复为 0 漏洞
+
 ## v1.8.1011 (2026-07-31) - 加固 feedback source 与 profile 身份
 
 ### 🏗️ 架构与基础设施
