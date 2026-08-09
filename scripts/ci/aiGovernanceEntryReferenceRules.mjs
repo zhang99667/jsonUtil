@@ -2,9 +2,9 @@ import {
   CODE_STYLE_GOVERNANCE_REFERENCES,
   CORE_ENTRY_REFERENCES,
   ENTRY_GOVERNANCE_REFERENCES,
-  RUNTIME_GOVERNANCE_REFERENCES,
   PROJECT_AI_ASSET_OWNERSHIP_REFERENCES,
-} from './aiGovernanceRuntimeReferenceGroups.mjs';
+} from './aiGovernanceEntryCoreReferenceGroups.mjs';
+import { RUNTIME_GOVERNANCE_REFERENCES } from './aiGovernanceRuntimeReferenceGroups.mjs';
 import { CLAUDE_README_REFERENCE_RULE } from './aiGovernanceClaudeReadmeReferenceRule.mjs';
 import {
   AI_EVOLUTION_PLAYBOOK_SECTION_REFERENCE_RULES,

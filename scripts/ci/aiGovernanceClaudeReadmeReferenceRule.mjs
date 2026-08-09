@@ -1,4 +1,4 @@
-import { CORE_ENTRY_REFERENCES } from './aiGovernanceRuntimeReferenceGroups.mjs';
+import { CORE_ENTRY_REFERENCES } from './aiGovernanceEntryCoreReferenceGroups.mjs';
 
 export const CLAUDE_README_REFERENCE_RULE = {
   file: '.claude/README.md',

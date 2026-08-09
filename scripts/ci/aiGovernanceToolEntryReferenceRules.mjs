@@ -1,7 +1,5 @@
-import {
-  CORE_ENTRY_REFERENCES,
-  RUNTIME_GOVERNANCE_REFERENCES,
-} from './aiGovernanceRuntimeReferenceGroups.mjs';
+import { CORE_ENTRY_REFERENCES } from './aiGovernanceEntryCoreReferenceGroups.mjs';
+import { RUNTIME_GOVERNANCE_REFERENCES } from './aiGovernanceRuntimeReferenceGroups.mjs';
 import { AI_ENTRY_SHARED_SNIPPET_FILES } from './aiGovernanceSharedEntrySnippets.mjs';
 
 const THIN_ENTRY_BASE_REFERENCES = [
