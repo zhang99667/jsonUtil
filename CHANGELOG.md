@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1015 (2026-08-09) - 分层 Validation runtime 责职
+
+### 🏗️ 架构与基础设施
+
+- **Workspace runtime 分层**: 将精确 Git 根绑定、仓外 0700 私有目录校验与只删未漂移空目录的生命周期拆为独立权威模块
+- **Executable binding 分层**: 将 docker/git/node 固定目录发现、仓外路径保护、稳定字节摘要与 TOCTOU 漂移复核拆为独立叶子
+- **单源安全原语**: 平台 fail-closed、路径包含、stat 身份与 SHA-256 收敛到共享原语，executor 直连三个职责模块，不保留无消费者的兼容 façade
+- **预算与证据边界**: 原热点由 347/360 收缩为 56/75，新模块各自绑定收紧预算；case、corpus、behavior coverage 与仓外 runtime/signer blocker 不变
+
 ## v1.8.1014 (2026-08-09) - 移除引用组兼容聚合层
 
 ### 🏗️ 架构与基础设施

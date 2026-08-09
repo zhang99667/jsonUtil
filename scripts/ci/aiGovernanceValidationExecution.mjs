@@ -12,15 +12,19 @@ import {
 } from './aiGovernanceValidationCommandRegistry.mjs';
 import {
   bindJsonutilsValidationExecutables,
+  validateJsonutilsValidationExecutableBindings,
+} from './aiGovernanceValidationExecutables.mjs';
+import {
   buildJsonutilsValidationCommandEnvironment,
+  spawnJsonutilsValidationCommand,
+} from './aiGovernanceValidationRuntime.mjs';
+import {
   cleanupJsonutilsValidationRuntime,
   createJsonutilsValidationRuntime,
   resolveJsonutilsValidationRoot,
-  spawnJsonutilsValidationCommand,
-  validateJsonutilsValidationExecutableBindings,
   validateJsonutilsValidationRoot,
   validateJsonutilsValidationRuntime,
-} from './aiGovernanceValidationRuntime.mjs';
+} from './aiGovernanceValidationWorkspaceRuntime.mjs';
 
 const PROFILE = 'jsonutils-validation-execution-v1';
 const HASH_DOMAIN = 'jsonutils-validation-execution-state-v1\0';

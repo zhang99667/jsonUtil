@@ -8,15 +8,19 @@ import { test } from 'node:test';
 import { buildHermeticGitEnvironment, resolveHermeticGitExecutable } from './aiGovernanceHermeticGitInventory.mjs';
 import {
   bindJsonutilsValidationExecutables,
+  validateJsonutilsValidationExecutableBindings,
+} from './aiGovernanceValidationExecutables.mjs';
+import {
   buildJsonutilsValidationCommandEnvironment,
+  spawnJsonutilsValidationCommand,
+} from './aiGovernanceValidationRuntime.mjs';
+import {
   cleanupJsonutilsValidationRuntime,
   createJsonutilsValidationRuntime,
   resolveJsonutilsValidationRoot,
-  spawnJsonutilsValidationCommand,
-  validateJsonutilsValidationExecutableBindings,
   validateJsonutilsValidationRoot,
   validateJsonutilsValidationRuntime,
-} from './aiGovernanceValidationRuntime.mjs';
+} from './aiGovernanceValidationWorkspaceRuntime.mjs';
 
 const gitEnvironment = {
   ...process.env,
