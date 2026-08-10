@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { getLatestGlobalIsoDate } from './aiGovernanceDateBounds.mjs';
 import {
   AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES,
-} from './aiGovernanceEvolutionPairedReceiptV4.mjs';
+} from './aiGovernanceEvolutionPairedReceiptV4BatchContract.mjs';
 import { collectEvolutionTrialReceiptFailures } from './aiGovernanceEvolutionTrialReceiptContract.mjs';
 import { readEvolutionTrialReceiptSource } from './aiGovernanceEvolutionTrialReceiptSource.mjs';
 const MAX_LINE_BYTES = 64 * 1024;

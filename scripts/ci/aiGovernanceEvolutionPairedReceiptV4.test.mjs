@@ -6,7 +6,6 @@ import { fileURLToPath } from 'node:url';
 
 import {
   aggregateEvolutionPairedCandidateResults,
-  parseEvolutionPairedBatchArtifact,
   verifyEvolutionPairedBatchArtifact,
 } from './aiGovernanceEvolutionPairedReceiptV4.mjs';
 import { hashEvolutionPairedGrade } from './aiGovernanceEvolutionPairedReceiptV4Commitments.mjs';
@@ -19,8 +18,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.
 
 test('paired v4 精确绑定六次执行、三角色 proof 与 candidate-only 聚合', () => {
   const fixture = buildEvolutionPairedBatchFixture({ rootDir });
-  const parsed = parseEvolutionPairedBatchArtifact(JSON.stringify(fixture.batch));
-  const verified = verifyEvolutionPairedBatchArtifact(parsed, {
+  const verified = verifyEvolutionPairedBatchArtifact(fixture.batch, {
     rootDir,
     expectedRevision: fixture.context.revision,
     pairedTrustPolicy: fixture.pairedTrustPolicy,
@@ -33,7 +31,7 @@ test('paired v4 精确绑定六次执行、三角色 proof 与 candidate-only �
   assert.equal(verified.scoringEligible, false);
   assert.deepEqual(verified.aggregate, { verdict: 'pass', score: 100, trials: 3 });
 
-  const withoutTrust = verifyEvolutionPairedBatchArtifact(parsed, {
+  const withoutTrust = verifyEvolutionPairedBatchArtifact(fixture.batch, {
     rootDir, expectedRevision: fixture.context.revision,
   });
   assert.deepEqual(withoutTrust.failures, []);
@@ -141,15 +139,4 @@ test('assignment、checkpoint 与 batch signer 必须 keyid 和真实 SPKI 都�
   });
   assert.equal(verified.scoringEligible, false);
   assert.match(verified.failures.join('\n'), /不同 keyid|不同 Ed25519 SPKI/);
-});
-
-test('stdin 拒绝 pretty JSON、额外 caller verdict 与超限输入', () => {
-  const fixture = buildEvolutionPairedBatchFixture({ rootDir });
-  assert.throws(() => parseEvolutionPairedBatchArtifact(
-    JSON.stringify(fixture.batch, null, 2),
-  ), /精确紧凑 JSON/);
-  assert.throws(() => parseEvolutionPairedBatchArtifact(JSON.stringify({
-    ...fixture.batch, verdict: 'pass',
-  })), /闭字段/);
-  assert.throws(() => parseEvolutionPairedBatchArtifact(' '.repeat(512 * 1024 + 1)), /至多/);
 });

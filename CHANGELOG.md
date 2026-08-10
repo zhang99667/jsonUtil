@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1021 (2026-08-11) - 分层 Paired v4 batch contract
+
+### 🏗️ 架构与基础设施
+
+- **Wire contract 权威叶子**: 512 KiB 精确紧凑 JSON、batch/reference/trial/execution 闭字段、敏感数据拒绝与对象归一化下沉到独立模块，CLI、candidate、ledger reader 与 verifier 直接消费各自权威 API
+- **Verifier 职责收缩**: live verifier 只保留当前 corpus/experiment/policy/rubric 绑定、六次 trace/基础设施/grade、proof 与 candidate-only reducer，不保留 parser 或字节上限兼容导出
+- **直接契约与预算校准**: 新测试锁定紧凑输入、额外字段、疑似凭据、循环对象与超限拒绝；原 verifier 从 478/500 收缩到 327/390，DateBounds 保持本地日期、UTC+14 上界与未来失败收集的单一职责并校准为 24/30
+- **证据边界不升级**: paired v4 协议、case/corpus、`3/18` behavior coverage、`12/0` planned/executed 和仓外 protected runtime/signer blocker 不变，源码与交付 index 冻结后仅由 preview-first writer 刷新既有 deterministic source-state
+
 ## v1.8.1020 (2026-08-10) - 分层 Deterministic outcome candidate
 
 ### 🏗️ 架构与基础设施

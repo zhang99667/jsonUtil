@@ -3,11 +3,13 @@ import {
   hashEvolutionOutcomeV3Line,
 } from './aiGovernanceEvolutionOutcomeChain.mjs';
 import {
-  AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES,
   AI_EVOLUTION_PAIRED_RUNNER,
   AI_EVOLUTION_PAIRED_VALIDATION_COMMAND,
   AI_EVOLUTION_PAIRED_VALIDATION_EVIDENCE,
 } from './aiGovernanceEvolutionPairedReceiptV4.mjs';
+import {
+  AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES,
+} from './aiGovernanceEvolutionPairedReceiptV4BatchContract.mjs';
 import { hashEvolutionPairedValue } from './aiGovernanceEvolutionPairedReceiptV4Commitments.mjs';
 import { hashEvolutionTrialReceiptLine } from './aiGovernanceEvolutionTrialReceipts.mjs';
 

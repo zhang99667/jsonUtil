@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   AI_EVOLUTION_PAIRED_RECEIPT_V4_MAX_BYTES,
   parseEvolutionPairedBatchArtifact,
-} from './aiGovernanceEvolutionPairedReceiptV4.mjs';
+} from './aiGovernanceEvolutionPairedReceiptV4BatchContract.mjs';
 import { recordEvolutionPairedOutcome } from './aiGovernanceEvolutionPairedOutcomeWriter.mjs';
 
 const ARGUMENT_ERROR_CODE = 'PAIRED_OUTCOME_WRITER_ARGUMENTS_INVALID';
