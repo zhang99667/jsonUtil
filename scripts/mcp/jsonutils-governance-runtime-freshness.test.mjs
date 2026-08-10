@@ -42,6 +42,8 @@ test('long-lived controller import closure excludes the tool implementation data
     entryFiles: [path.join(projectRoot, 'scripts/mcp/jsonutils-governance-server.mjs')],
   });
   assert.ok(state.files.includes('scripts/mcp/jsonutils-governance-tools.mjs'));
+  assert.ok(state.files.includes('scripts/mcp/jsonutils-governance-jsonrpc.mjs'));
+  assert.ok(state.files.includes('scripts/mcp/jsonutils-governance-method-params.mjs'));
   assert.ok(state.files.includes('scripts/mcp/jsonutils-governance-tool-worker-client.mjs'));
   assert.equal(state.files.includes('scripts/mcp/jsonutils-governance-tool-runtime.mjs'), false);
   assert.equal(state.files.includes('scripts/mcp/jsonutils-governance-evaluations.mjs'), false);

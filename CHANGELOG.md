@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1023 (2026-08-11) - 分层 MCP 方法参数契约
+
+### 🏗️ 架构与基础设施
+
+- **JSON-RPC core 收缩**: 通用 request envelope、safe ID、notification 与标准错误载荷留在 core，固定 MCP 方法参数 schema 迁入独立权威叶子，不保留兼容 re-export
+- **参数契约直接锁定**: 新单测覆盖 initialize、资源、工具、控制消息与 typed cancellation 的正负 shape，真实 stdio 错误优先级、初始化顺序和 runtime closure 保持不变
+- **职责预算校准**: JSON-RPC 从 64/70 收缩为 33/45，method params 为 32/45；session 经三路审计确认内聚，保持实现不变并按完整 admission 职责校准为 62/80
+- **证据边界不升级**: MCP server `0.6.0`、case/corpus、`3/18` behavior coverage 与仓外 protected runtime/signer blocker 不变，只刷新既有 deterministic source-state
+
 ## v1.8.1022 (2026-08-11) - 分层 AI 治理 CI 测试夹具
 
 ### 🏗️ 架构与基础设施

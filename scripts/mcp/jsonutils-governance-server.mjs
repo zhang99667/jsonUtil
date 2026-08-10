@@ -16,7 +16,8 @@ import {
   buildJsonutilsGovernanceStaleRuntimeToolResult,
   createJsonutilsGovernanceRuntimeFreshnessGuard,
 } from './jsonutils-governance-runtime-freshness.mjs';
-import { assertJsonutilsGovernanceMethodParams, jsonRpcParseError } from './jsonutils-governance-jsonrpc.mjs';
+import { jsonRpcParseError } from './jsonutils-governance-jsonrpc.mjs';
+import { assertJsonutilsGovernanceMethodParams } from './jsonutils-governance-method-params.mjs';
 import {
   createMcpLineParser,
   serializeMcpMessage,

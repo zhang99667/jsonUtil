@@ -1,11 +1,11 @@
 // 单源维护 MCP 初始化状态、请求顺序和标准错误映射。
 
 import {
-  assertJsonutilsGovernanceMethodParams,
   inspectJsonRpcRequest,
   jsonRpcInvalidRequest,
   jsonRpcServerNotInitialized,
 } from './jsonutils-governance-jsonrpc.mjs';
+import { assertJsonutilsGovernanceMethodParams } from './jsonutils-governance-method-params.mjs';
 import { createJsonutilsGovernanceRequestLifecycle } from './jsonutils-governance-cancellation.mjs';
 
 export const createJsonutilsGovernanceMessageHandler = ({ handleRequest, writeMessage }) => {

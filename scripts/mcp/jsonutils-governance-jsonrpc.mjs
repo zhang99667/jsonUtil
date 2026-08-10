@@ -1,4 +1,4 @@
-// 统一维护 JSON-RPC 请求边界与标准错误载荷。
+// 统一维护通用 JSON-RPC 请求 envelope 与标准错误载荷。
 
 const isRequestObject = message => message !== null
   && typeof message === 'object'
@@ -8,37 +8,6 @@ const isSafeRequestId = id => id === null
   || (typeof id === 'number' && Number.isFinite(id));
 const hasStructuredParams = message => !Object.hasOwn(message, 'params')
   || (message.params !== null && typeof message.params === 'object');
-
-export class JsonRpcInvalidParamsError extends Error {
-  constructor() {
-    super('Invalid params');
-    this.name = 'JsonRpcInvalidParamsError';
-  }
-}
-
-const isRecord = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-const hasString = (value, key) => typeof value?.[key] === 'string' && value[key].length > 0;
-const isCancellationRequestId = value => typeof value === 'string'
-  || (typeof value === 'number' && Number.isFinite(value));
-
-export const assertJsonutilsGovernanceMethodParams = (method, params) => {
-  const invalid = () => { throw new JsonRpcInvalidParamsError(); };
-  if (method === 'initialize' && (
-    !isRecord(params) || !hasString(params, 'protocolVersion')
-    || !isRecord(params.capabilities) || !isRecord(params.clientInfo)
-    || !hasString(params.clientInfo, 'name') || !hasString(params.clientInfo, 'version')
-  )) invalid();
-  if (method === 'resources/read' && (!isRecord(params) || !hasString(params, 'uri'))) invalid();
-  if (method === 'tools/call' && !isRecord(params)) invalid();
-  if (method === 'notifications/initialized' && params !== undefined && !isRecord(params)) invalid();
-  if (method === 'notifications/cancelled' && (
-    !isRecord(params)
-    || !isCancellationRequestId(params.requestId)
-    || (Object.hasOwn(params, 'reason') && typeof params.reason !== 'string')
-    || Object.keys(params).some(field => !['requestId', 'reason'].includes(field))
-  )) invalid();
-  if (['ping', 'resources/list', 'tools/list'].includes(method) && params !== undefined && !isRecord(params)) invalid();
-};
 
 export const inspectJsonRpcRequest = (message) => {
   const requestObject = isRequestObject(message);

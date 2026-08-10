@@ -2,6 +2,7 @@ export const AI_GOVERNANCE_REQUIRED_MCP_RUNTIME_FILES = [
   'scripts/mcp/jsonutils-governance-server.mjs',
   'scripts/mcp/jsonutils-governance-line-framing.mjs',
   'scripts/mcp/jsonutils-governance-jsonrpc.mjs',
+  'scripts/mcp/jsonutils-governance-method-params.mjs',
   'scripts/mcp/jsonutils-governance-cancellation.mjs',
   'scripts/mcp/jsonutils-governance-session.mjs',
   'scripts/mcp/jsonutils-governance-runtime-freshness.mjs',

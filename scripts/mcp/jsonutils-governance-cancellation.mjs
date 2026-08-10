@@ -1,11 +1,11 @@
 // 单源管理 MCP in-flight request、取消竞态与连接关闭回收。
 
 import {
-  JsonRpcInvalidParamsError,
   jsonRpcInternalError,
   jsonRpcInvalidParams,
   jsonRpcInvalidRequest,
 } from './jsonutils-governance-jsonrpc.mjs';
+import { JsonRpcInvalidParamsError } from './jsonutils-governance-method-params.mjs';
 import { JsonutilsGovernanceToolInputError } from './jsonutils-governance-tool-input.mjs';
 
 export const createJsonutilsGovernanceRequestLifecycle = ({ handleRequest, writeMessage }) => {
