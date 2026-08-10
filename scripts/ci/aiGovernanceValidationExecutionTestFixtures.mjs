@@ -2,6 +2,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { hashJsonutilsValidationCommandDescriptor } from './aiGovernanceValidationCommandRegistry.mjs';
+import {
+  captureAiGovernanceValidationExecutionState,
+  observeAiGovernanceValidationExecutionState,
+} from './aiGovernanceValidationExecutionState.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const revision = `worktree-${'a'.repeat(64)}`;
@@ -87,19 +91,35 @@ export const fakeRuntime = () => {
   return { root, home: `${root}/home`, codex: `${root}/codex`, docker: `${root}/docker`, tmp: `${root}/tmp` };
 };
 
-export const dependencies = (collectChangedSet, overrides = {}) => ({
-  rootDir,
-  collectChangedSet,
-  buildPlan: input => plan(input, overrides.planOptions),
-  resolveCommands: () => [fixtureCommand],
-  resolveRevision: () => revision,
-  snapshotLedgers: async () => ledgerSnapshot,
-  resolveRoot: () => rootBinding,
-  validateRoot: () => true,
-  bindExecutables: ({ commands }) => fakeBindings(commands),
-  validateBindings: () => true,
-  createRuntime: fakeRuntime,
-  validateRuntime: () => true,
-  cleanupRuntime: () => true,
-  ...overrides.dependencies,
-});
+export const dependencies = (collectChangedSet, overrides = {}) => {
+  const stateKeys = new Set([
+    'collectChangedSet', 'buildPlan', 'resolveCommands', 'resolveRevision', 'snapshotLedgers', 'validateRoot',
+  ]);
+  const stateOverrides = Object.fromEntries(Object.entries(overrides.dependencies ?? {})
+    .filter(([key]) => stateKeys.has(key)));
+  const executionOverrides = Object.fromEntries(Object.entries(overrides.dependencies ?? {})
+    .filter(([key]) => !stateKeys.has(key)));
+  const stateProviders = {
+    collectChangedSet,
+    buildPlan: input => plan(input, overrides.planOptions),
+    resolveCommands: () => [fixtureCommand],
+    resolveRevision: () => revision,
+    snapshotLedgers: async () => ledgerSnapshot,
+    validateRoot: () => true,
+    ...stateOverrides,
+  };
+  return {
+    rootDir,
+    stateProviders,
+    captureState: options => captureAiGovernanceValidationExecutionState({ ...stateProviders, ...options }),
+    observeState: options => observeAiGovernanceValidationExecutionState({ ...stateProviders, ...options }),
+    resolveRoot: () => rootBinding,
+    validateRoot: () => true,
+    bindExecutables: ({ commands }) => fakeBindings(commands),
+    validateBindings: () => true,
+    createRuntime: fakeRuntime,
+    validateRuntime: () => true,
+    cleanupRuntime: () => true,
+    ...executionOverrides,
+  };
+};

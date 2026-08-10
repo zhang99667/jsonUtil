@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1025 (2026-08-11) - 分层 Validation 权威状态观察
+
+### 🏗️ 架构与基础设施
+
+- **State authority 单源**: changed-set、plan、registry、revision 与 ledger 的闭合校验、域分离摘要、blocker 和单调漂移比较迁入独立权威叶子，executor 只消费 capture/observe 高层 API，不保留兼容 re-export
+- **Executor 生命周期收缩**: executable/runtime 边界、逐命令 `validate → checkpoint → spawn → checkpoint → cleanup` 与 launch count 保持内聚，原两个公开入口、receipt/CLI schema 和状态语义不变
+- **直接契约与预算锁定**: 新测试锁定固定摘要向量、ledger 反序、逐轴 drift、integrity 不可恢复、path-free failure 与 executor 导出面；executor 从 495/520 收缩为 323/360，state 为 195/220
+- **证据边界不升级**: command descriptor、case/corpus、`3/18` behavior coverage 与仓外 protected runtime/signer blocker 不变，源码与交付 index 冻结后仅由 preview-first writer 刷新既有 deterministic source-state
+
 ## v1.8.1024 (2026-08-11) - 分层 MCP Worktree 解析职责
 
 ### 🏗️ 架构与基础设施
