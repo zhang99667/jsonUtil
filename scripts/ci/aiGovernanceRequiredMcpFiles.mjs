@@ -23,4 +23,6 @@ export const AI_GOVERNANCE_MCP_FILES = [
   'scripts/mcp/jsonutils-governance-validation-plan.mjs',
   'scripts/mcp/jsonutils-governance-validation-rules.mjs',
   'scripts/mcp/jsonutils-governance-worktree.mjs',
+  'scripts/mcp/jsonutils-governance-worktree-parser.mjs',
+  'scripts/mcp/jsonutils-governance-worktree-parser.test.mjs',
 ];

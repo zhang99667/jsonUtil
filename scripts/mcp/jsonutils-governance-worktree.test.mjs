@@ -5,31 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { buildJsonutilsWorktreeSnapshot, parseGitStatusSnapshot } from './jsonutils-governance-worktree.mjs';
-
-const statusBytes = (...records) => Buffer.from(`${records.join('\0')}\0`);
-
-test('worktree snapshot parses NUL-framed branch metadata, rename and bounded files', () => {
-  const snapshot = parseGitStatusSnapshot(statusBytes(
-    '## main...origin/main [ahead 2, behind 1]',
-    ' M docs/AI-TOOLS-SETUP.md',
-    'A  scripts/mcp/new-tool.mjs',
-    'R  new\nname.mjs',
-    'old -> name.mjs',
-    '?? scratch.md',
-  ), 2, { includeAllFiles: true });
-
-  assert.deepEqual(snapshot.branch, { current: 'main', upstream: 'origin/main', ahead: 2, behind: 1 });
-  assert.equal(snapshot.dirty, true);
-  assert.equal(snapshot.changedFileCount, 4);
-  assert.equal(snapshot.truncated, true);
-  assert.deepEqual(snapshot.counts, { added: 1, copied: 0, deleted: 0, modified: 1, renamed: 1, untracked: 1, conflicted: 0 });
-  assert.deepEqual(snapshot.files, [
-    { status: 'M', path: 'docs/AI-TOOLS-SETUP.md' },
-    { status: 'A', path: 'scripts/mcp/new-tool.mjs' },
-  ]);
-  assert.deepEqual(snapshot.allFiles[2], { status: 'R', path: 'new\nname.mjs', from: 'old -> name.mjs' });
-});
+import { buildJsonutilsWorktreeSnapshot } from './jsonutils-governance-worktree.mjs';
 
 test('worktree snapshot reports fixed git status failures as structured errors', async () => {
   const snapshot = await buildJsonutilsWorktreeSnapshot({
@@ -41,10 +17,7 @@ test('worktree snapshot reports fixed git status failures as structured errors',
   assert.match(snapshot.error, /hermetic Git inventory/);
 });
 
-test('worktree snapshot fails closed on text framing, invalid UTF-8 and missing rename origin', async () => {
-  assert.throws(() => parseGitStatusSnapshot('## main\n M file.md\n'), /NUL 分帧/);
-  assert.throws(() => parseGitStatusSnapshot(Buffer.from([0xff, 0x00])), /UTF-8|utf-8/i);
-  assert.throws(() => parseGitStatusSnapshot(statusBytes('## main', 'R  renamed.md')), /rename/);
+test('worktree snapshot converts parser failures to structured errors', async () => {
   const snapshot = await buildJsonutilsWorktreeSnapshot({
     runStatus: async () => ({ exitCode: 0, stdout: Buffer.from('## main') }),
   });

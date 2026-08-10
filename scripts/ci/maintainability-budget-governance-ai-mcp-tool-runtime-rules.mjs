@@ -10,6 +10,7 @@ export const governanceAiMcpToolRuntimeMaintainabilityBudgets = [
   mcpToolRuntimeBudget('scripts/mcp/jsonutils-governance-tool-worker-contract.mjs', 85, 'JSONUtils 治理 MCP worker contract 应单源维护闭字段 request/result 与 768 KiB 输出上限'),
   mcpToolRuntimeBudget('scripts/mcp/jsonutils-governance-tool-runtime.mjs', 115, 'JSONUtils 治理 MCP tool runtime 应在 fresh worker 内独立维护固定命令、上下文调用和工具分发'),
   mcpToolRuntimeBudget('scripts/mcp/jsonutils-governance-handoff.mjs', 60, 'JSONUtils 治理 MCP handoff helper 应只组合治理焦点、worktree snapshot 和交接风险'),
-  mcpToolRuntimeBudget('scripts/mcp/jsonutils-governance-worktree.mjs', 120, 'JSONUtils 治理 MCP worktree helper 应只维护 hermetic NUL-framed git status snapshot、路径校验和结构化解析'),
+  mcpToolRuntimeBudget('scripts/mcp/jsonutils-governance-worktree.mjs', 55, 'JSONUtils 治理 MCP worktree orchestration 应只维护固定 hermetic Git 调用、错误捕获和 snapshot schema'),
+  mcpToolRuntimeBudget('scripts/mcp/jsonutils-governance-worktree-parser.mjs', 85, 'JSONUtils 治理 MCP worktree parser 应只维护 NUL porcelain branch/status/rename 解析、计数和 bounded 样本'),
   ...governanceAiMcpInfoToolRuntimeMaintainabilityBudgets,
 ];

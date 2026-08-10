@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1024 (2026-08-11) - 分层 MCP Worktree 解析职责
+
+### 🏗️ 架构与基础设施
+
+- **Worktree 编排收缩**: 固定 hermetic Git 调用、错误捕获与 snapshot schema 留在 orchestration，NUL porcelain branch/status/rename 解析、路径校验、计数与 bounded 样本迁入独立 parser，不保留兼容 re-export
+- **Parser 契约直接锁定**: 新单测覆盖 copy/conflict、Unicode/rename、非法 UTF-8、缺 branch、缺 rename source 与越界路径；runtime freshness 证明 parser 只进入 fresh worker closure
+- **职责预算校准**: worktree orchestration 从 103/120 收缩为 40/55，parser 为 69/85；对应测试分别为 63/80 与 51/65，required MCP 清单继续维持单一声明职责
+- **证据边界不升级**: 同步 Playbook required-read 字节绑定；MCP server `0.6.0`、case/corpus、`3/18` behavior coverage 与仓外 protected runtime/signer blocker 不变，只刷新既有 deterministic source-state
+
 ## v1.8.1023 (2026-08-11) - 分层 MCP 方法参数契约
 
 ### 🏗️ 架构与基础设施

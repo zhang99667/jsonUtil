@@ -166,7 +166,7 @@ AI 基建的项目 source of truth、插件包边界、workspace/index/HEAD 分�
 - `scripts/mcp/jsonutils-governance-decisions.mjs`: JSONUtils 治理 MCP decisions helper，bounded 输出最近治理决策和锁定命令。
 - `scripts/mcp/jsonutils-governance-handoff.mjs`: JSONUtils 治理 MCP handoff helper，组合治理焦点、AI 基建清零状态、最新决策、worktree snapshot 和交接风险。
 - `scripts/mcp/jsonutils-governance-validation-plan.mjs` 与 `jsonutils-governance-validation-rules.mjs`: 以逐文件完整 changed set 单源推导命令、人工复核和未分类摘要；bounded 样本不改全局事实。
-- `scripts/mcp/jsonutils-governance-worktree.mjs`: JSONUtils 治理 MCP worktree helper，固定维护 `git status --porcelain=v1 --branch` 的结构化 snapshot。
+- `scripts/mcp/jsonutils-governance-worktree.mjs` / `jsonutils-governance-worktree-parser.mjs`: 分别维护 Git/error/schema 与 NUL porcelain 解析/计数/样本。
 - `scripts/mcp/jsonutils-governance-resources.mjs`: JSONUtils 治理 MCP 资源目录 helper，固定维护只读资源 URI、文件映射和读取边界。
 - `scripts/mcp/jsonutils-governance-context.mjs`: JSONUtils 治理上下文 helper，组合固定治理/预算 JSON 报告、版本、最新决策和下一步命令。
 - `.github/copilot-instructions.md`: GitHub Copilot 仓库级薄入口，必须转发到主规范、Playbook 和治理命令。

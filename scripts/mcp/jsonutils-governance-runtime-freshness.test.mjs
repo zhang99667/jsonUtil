@@ -47,6 +47,19 @@ test('long-lived controller import closure excludes the tool implementation data
   assert.ok(state.files.includes('scripts/mcp/jsonutils-governance-tool-worker-client.mjs'));
   assert.equal(state.files.includes('scripts/mcp/jsonutils-governance-tool-runtime.mjs'), false);
   assert.equal(state.files.includes('scripts/mcp/jsonutils-governance-evaluations.mjs'), false);
+  assert.equal(state.files.includes('scripts/mcp/jsonutils-governance-worktree-parser.mjs'), false);
+});
+
+test('fresh worker import closure includes worktree orchestration and parser', () => {
+  const state = captureJsonutilsGovernanceRuntimeSourceState({
+    rootDir: projectRoot,
+    entryFiles: [
+      path.join(projectRoot, 'scripts/mcp/jsonutils-governance-tool-worker.mjs'),
+      path.join(projectRoot, 'scripts/mcp/jsonutils-governance-tool-runtime.mjs'),
+    ],
+  });
+  assert.ok(state.files.includes('scripts/mcp/jsonutils-governance-worktree.mjs'));
+  assert.ok(state.files.includes('scripts/mcp/jsonutils-governance-worktree-parser.mjs'));
 });
 
 test('runtime fingerprint rejects a local import that escapes its declared root', (t) => {
