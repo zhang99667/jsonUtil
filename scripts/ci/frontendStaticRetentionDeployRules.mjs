@@ -8,7 +8,11 @@ export const deployStaticRetentionSnippets = [
     '. "$APP_DIR/scripts/deploy/frontend-legacy-assets.sh"',
     'trap cleanup_frontend_legacy_assets EXIT',
     'backup_frontend_legacy_assets',
-    'restore_frontend_legacy_assets',
+    `for url in $HEALTH_CHECK_URLS; do
+  health_check_url "$url"
+done
+
+restore_frontend_legacy_assets`,
   ] },
   { file: 'scripts/deploy/ssh-docker-compose-deploy.sh', snippets: [
     `if [ "$SYNC_FRONTEND_DIST" != "true" ]; then

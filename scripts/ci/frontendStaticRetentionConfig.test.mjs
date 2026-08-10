@@ -145,6 +145,37 @@ test('静态资源保留配置检查会保护本机 SSH 部署旧资源捕获失
   });
 });
 
+test('静态资源保留配置检查会阻止在健康检查前回填旧资源', () => {
+  withTempRoot((rootDir) => {
+    writeFixtureFile(
+      rootDir,
+      'scripts/deploy/remote-docker-compose-deploy.sh',
+      [
+        'restore_frontend_legacy_assets',
+        'for url in $HEALTH_CHECK_URLS; do',
+        '  health_check_url "$url"',
+        'done',
+      ].join('\n')
+    );
+
+    const orderedRestore = `for url in $HEALTH_CHECK_URLS; do
+  health_check_url "$url"
+done
+
+restore_frontend_legacy_assets`;
+    const failures = collectStaticRetentionConfigFailures(rootDir, [
+      {
+        file: 'scripts/deploy/remote-docker-compose-deploy.sh',
+        snippets: [orderedRestore],
+      },
+    ]);
+
+    assert.deepEqual(failures, [
+      `scripts/deploy/remote-docker-compose-deploy.sh: 缺少 "${orderedRestore}"`,
+    ]);
+  });
+});
+
 test('静态资源保留配置检查会保护 GitHub workflow 发布复查链路', () => {
   withTempRoot((rootDir) => {
     writeFixtureFile(

@@ -132,7 +132,6 @@ if [ -n "$COMPOSE_SERVICES" ]; then
   UP_ARGS+=("${SERVICE_ARGS[@]}")
 fi
 compose "${UP_ARGS[@]}"
-restore_frontend_legacy_assets
 
 log "当前服务状态"
 compose ps
@@ -140,5 +139,7 @@ compose ps
 for url in $HEALTH_CHECK_URLS; do
   health_check_url "$url"
 done
+
+restore_frontend_legacy_assets
 
 log "部署完成"
