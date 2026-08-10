@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { collectMissingAiGovernanceReferences } from './aiGovernanceChecks.mjs';
 import { AI_GOVERNANCE_DOC_REFERENCE_RULES } from './aiGovernanceDocReferenceRules.mjs';
-import { buildAiGovernanceEntryReferenceRules } from './aiGovernanceEntryReferenceRules.mjs';
+import { buildAiGovernancePlaybookReferenceRules } from './aiGovernancePlaybookReferenceRules.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 const skillFiles = ['.agents/skills/jsonutils-maintainer/SKILL.md'];
 const collect = (rootDir, rule, content) => {
@@ -15,7 +15,7 @@ const assertMarkerScoped = (rootDir, rule, content, sectionTitle, marker) => {
 };
 test('AI evolution Playbook 必须保留按需路由与 Skill 评测契约', () => {
   withAiGovernanceTempRoot((rootDir) => {
-    const rule = buildAiGovernanceEntryReferenceRules([]).find(item => item.file === 'docs/AI-EVOLUTION-PLAYBOOK.md');
+    const rule = buildAiGovernancePlaybookReferenceRules([]).find(item => item.file === 'docs/AI-EVOLUTION-PLAYBOOK.md');
     const content = [...rule.contains, ...rule.sections.flatMap(section => [section.sectionTitle, ...section.contains])].join('\n');
     assert.deepEqual(collect(rootDir, rule, content), []);
     assertMarkerScoped(rootDir, rule, content, '## 按需字段协议', 'evals/ai-governance/README.md');

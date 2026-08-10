@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1017 (2026-08-10) - 分层入口与 Playbook 引用职责
+
+### 🏗️ 架构与基础设施
+
+- **固定入口规则单责**: README、CONTRIBUTING、AGENTS、CLAUDE、code-style 与 Claude 目录 README 的六条固定规则收敛到独立常量模块
+- **动态 Playbook 单责**: 工程与演进 Playbook 的 skill、runtime 和章节契约由独立 builder 维护，聚合入口按原顺序直连两个权威模块
+- **移除混合 façade**: 删除同时维护两条变化轴的旧入口，不保留兼容 re-export；历史决策追踪同步迁到当前权威路径，规则关键词、展开顺序、section 与失败语义不变
+- **预算与证据边界**: 两个生产模块分别为 27/40 与 29/40，代表红测和聚合回归锁定职责边界；源码与交付 index 冻结后仅由 preview-first writer 刷新既有 deterministic source-state，不扩大 `3/18` behavior coverage 或仓外信任声明
+
 ## v1.8.1016 (2026-08-10) - 串行化旧资源回填
 
 ### 🐛 Bug 修复

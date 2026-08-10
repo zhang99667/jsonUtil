@@ -6,6 +6,7 @@ import * as configModule from './aiGovernanceDocReferenceItems.mjs';
 import { collectMissingAiGovernanceReferences } from './aiGovernanceChecks.mjs';
 import { buildCodexSkillReferenceRules } from './aiGovernanceCodexSkillReferenceRules.mjs';
 import { AI_GOVERNANCE_DOC_REFERENCE_RULES } from './aiGovernanceDocReferenceRules.mjs';
+import { AI_GOVERNANCE_PROJECT_ENTRY_REFERENCE_RULES } from './aiGovernanceProjectEntryReferenceRules.mjs';
 import { AI_GOVERNANCE_REFERENCE_CORE_MISSING_CASES } from './aiGovernanceReferenceCoreMissingCases.mjs';
 import { AI_GOVERNANCE_REFERENCE_ENTRY_MISSING_CASES } from './aiGovernanceReferenceEntryMissingCases.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
@@ -20,10 +21,7 @@ missingReferenceCases.forEach(({ name, file, content, contains, expected }) => {
       writeFixtureFile(rootDir, file, content);
 
       assert.deepEqual(collectMissingAiGovernanceReferences(
-        rootDir,
-        [{ file, contains }],
-        codexSkillFiles
-      ), [expected]);
+        rootDir, [{ file, contains }], codexSkillFiles), [expected]);
     });
   });
 });
@@ -43,8 +41,8 @@ test('skill 引用契约按显式 profile 分层，未知 skill 使用安全 cor
   assert.equal(unknownRule.contains.includes('读写范围'), true);
   assert.equal(unknownRule.contains.includes('复盘沉淀'), false);
 });
-
 test('文档引用规则直连权威清单且不经过兼容代理层', () => {
+  assert.deepEqual(AI_GOVERNANCE_PROJECT_ENTRY_REFERENCE_RULES.map(rule => rule.file), ['README.md', 'CONTRIBUTING.md', 'AGENTS.md', 'CLAUDE.md', 'rules/code-style.md', '.claude/README.md']);
   assert.strictEqual(AI_GOVERNANCE_DOC_REFERENCE_RULES[0].contains, configModule.AI_CONFIG_INTEGRATION_REFERENCES);
   assert.strictEqual(AI_GOVERNANCE_DOC_REFERENCE_RULES[1].contains, AI_TOOLS_SETUP_REFERENCES);
   assert.equal(Object.hasOwn(configModule, 'AI_TOOLS_SETUP_REFERENCES'), false);
