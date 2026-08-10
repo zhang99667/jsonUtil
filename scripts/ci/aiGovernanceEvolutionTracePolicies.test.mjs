@@ -34,7 +34,7 @@ test('固定 trace policy 绑定 case、adapter 与稳定 digest', () => {
   const skillEntry = registry.policiesByCaseId.get('skill-jsonutils-ai-infra-evolver-trigger');
   assert.deepEqual(skillEntry.descriptor, {
     id: 'skill-jsonutils-ai-infra-evolver-trigger', version: '1.1.2',
-    sha256: '9fd214153bbeb4106623e92cbe680bf87c1ef90bce786f6c35c021e09258b981',
+    sha256: 'e8658d078b3ab5b7065da239ab9da79d9c0e44edf0d1a640b53fb0076cab4d1b',
   });
   assert.deepEqual(skillEntry.policy.requiredReads.map(read => read.path), [
     '.agents/skills/jsonutils-ai-infra-evolver/SKILL.md', 'AGENTS.md', 'rules/code-style.md',
