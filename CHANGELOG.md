@@ -1,5 +1,13 @@
 # 更新日志 (Changelog)
 
+## v1.8.1020 (2026-08-10) - 分层 Deterministic outcome candidate
+
+### 🏗️ 架构与基础设施
+
+- **Candidate 权威叶子**: receipt v1/outcome v3、chain、supersession 与双 suffix 精确字节派生下沉到独立纯模块，不读 live ledger 或执行事务
+- **Writer 职责收缩**: deterministic writer 只保留固定 runner、source-state/双 ledger 稳定性、全量候选重放与可恢复提交，原生产热点从 489/510 收缩到 344/390
+- **直接契约与边界**: 新测试锁定 ID/revision、receipt hash、chain/supersession、双 suffix 与幂等复用；协议、case/corpus、`3/18` behavior coverage 和仓外 protected runtime/signer blocker 不变
+
 ## v1.8.1019 (2026-08-10) - 分层 Paired v4 commitment 与 proof
 
 ### 🏗️ 架构与基础设施

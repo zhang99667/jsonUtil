@@ -21,7 +21,6 @@ import {
 } from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';
 import {
   hashEvolutionOutcomeLegacyPrefix,
-  hashEvolutionOutcomeV3Line,
 } from './aiGovernanceEvolutionOutcomeChain.mjs';
 import { hashEvolutionTrialReceiptLine } from './aiGovernanceEvolutionTrialReceipts.mjs';
 import { runDeterministicOutcomeWriterCli } from './record-ai-evolution-deterministic-outcomes.mjs';
@@ -200,38 +199,6 @@ test('同 revision 已有有效 pass 时幂等 no-op，不再执行 runner', (t)
   assert.deepEqual(result.report.counts, { selected: 1, candidates: 0, alreadyCurrent: 1 });
   assert.equal(result.transaction.receiptSuffix.length, 0);
   assert.equal(result.transaction.outcomeSuffix.length, 0);
-});
-
-test('前序 fail 的新 pass 使用 direct supersession 并标记 resolved', (t) => {
-  const fixture = createFixture(t);
-  const initial = {};
-  prepare(fixture, { validateCandidate: candidateValidator(initial) });
-  const receipt = lastRecord(initial.value.receiptsBytes);
-  receipt.id = `${receipt.id}-fail`;
-  receipt.trialResults[0].verdict = 'fail';
-  receipt.trialResults[0].score = 0;
-  const outcome = lastRecord(initial.value.outcomesBytes);
-  outcome.id = `${outcome.id}-fail`;
-  outcome.verdict = 'fail';
-  outcome.score = 0;
-  outcome.feedback = '固定负例失败，等待下一次真实重放';
-  outcome.evidence = {
-    receiptId: receipt.id,
-    sha256: hashEvolutionTrialReceiptLine(JSON.stringify(receipt)),
-  };
-  outcome.supersession.feedbackDisposition = 'open';
-  outcome.supersession.summary = '保留当前失败作为 lineage 前序';
-  const failOutcomeLine = JSON.stringify(outcome);
-  fs.writeFileSync(fixture.receiptsPath, `${JSON.stringify(receipt)}\n`);
-  fs.writeFileSync(fixture.outcomesPath, `${failOutcomeLine}\n`);
-
-  const capture = {};
-  prepare(fixture, { validateCandidate: candidateValidator(capture) });
-  const resolved = lastRecord(capture.value.outcomesBytes);
-  assert.equal(resolved.supersession.previousOutcomeId, outcome.id);
-  assert.equal(resolved.supersession.feedbackDisposition, 'resolved');
-  assert.equal(resolved.chain.sequence, 2);
-  assert.equal(resolved.chain.previousHash, hashEvolutionOutcomeV3Line(failOutcomeLine));
 });
 
 test('write API 在 CI 先于 lock 拒绝，本地则传递 Buffer 事务并释放 lock', (t) => {
