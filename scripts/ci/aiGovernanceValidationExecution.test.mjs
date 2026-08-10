@@ -1,114 +1,22 @@
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
 import {
   buildAiGovernanceValidationExecutionPreflight,
   runAiGovernanceValidationExecution,
 } from './aiGovernanceValidationExecution.mjs';
-import { hashJsonutilsValidationCommandDescriptor } from './aiGovernanceValidationCommandRegistry.mjs';
+import { isClosedAiGovernanceValidationExecutionReport } from './aiGovernanceValidationExecutionReceipt.mjs';
+import {
+  changedSet,
+  dependencies,
+  fakeRuntime,
+  fixtureCommand,
+  ledgerSnapshot,
+  plan,
+  stateA,
+  stateB,
+} from './aiGovernanceValidationExecutionTestFixtures.mjs';
 import { runAiValidationExecutionCli } from './run-ai-validation-execution.mjs';
-
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const revision = `worktree-${'a'.repeat(64)}`;
-const stateA = 'b'.repeat(64), stateB = 'c'.repeat(64);
-const ledgerSnapshot = [
-  'evals/ai-governance/outcomes.jsonl',
-  'evals/ai-governance/trial-receipts.jsonl',
-].map((ledgerPath, index) => ({
-  path: ledgerPath,
-  dev: '1', ino: String(index + 1), mode: '33188', size: '10', mtimeNs: '20', ctimeNs: '30',
-  sha256: String(index + 1).repeat(64),
-}));
-const descriptor = Object.freeze({
-  executable: 'node',
-  argv: Object.freeze(['scripts/ci/check-ai-governance.mjs']),
-  envProfile: 'jsonutils-validation-node-v1',
-  timeout: 60_000,
-});
-const fixtureCommand = Object.freeze({
-  id: 'fixture-command',
-  displayCommand: 'fixture command',
-  descriptor,
-  descriptorSha256: hashJsonutilsValidationCommandDescriptor(descriptor),
-});
-
-const changedSet = (paths = ['AGENTS.md'], stateSha256 = stateA) => ({
-  schemaVersion: 1,
-  reportType: 'ai-governance-validation-changed-set',
-  ok: true,
-  changedFileCount: paths.length,
-  counts: { staged: 0, worktree: paths.length, untracked: 0, blocked: 0 },
-  allFiles: paths.map(file => ({ path: file, changes: ['worktree-content'] })),
-  issues: [],
-  ...(stateSha256 === null ? {} : { stateSha256 }),
-});
-
-const plan = ({ changedSet: current }, { manual = false, unclassified = 0 } = {}) => ({
-  schemaVersion: 1,
-  reportType: 'jsonutils-validation-plan',
-  ok: true,
-  authority: { profile: 'raw-head-index-worktree-v1', authoritative: true, issueCount: 0 },
-  changedFileCount: current.changedFileCount,
-  truncated: false,
-  coverage: {
-    sampledFileCount: current.changedFileCount,
-    totalChangedFileCount: current.changedFileCount,
-    truncated: false,
-    commandMatchScope: 'all',
-    unclassifiedFilesScope: 'all',
-  },
-  commands: [{ command: fixtureCommand.displayCommand, reason: 'fixture' }],
-  manualChecks: manual ? [{ id: 'fixture-manual', reason: 'fixture' }] : [],
-  matchedRules: [],
-  unclassifiedFiles: [],
-  unclassifiedFileCount: unclassified,
-  unclassifiedFilesTruncated: false,
-});
-
-const rootBinding = {
-  realPath: rootDir,
-  identity: { dev: '1', ino: '2', mode: '40755', uid: '1', gid: '1' },
-  identitySha256: 'd'.repeat(64),
-};
-const fakeBindings = commands => ({
-  byExecutable: Object.fromEntries([...new Set(commands.map(item => item.descriptor.executable))].map(logicalName => [
-    logicalName,
-    {
-      logicalName,
-      realPath: `/trusted/${logicalName}`,
-      pathSha256: 'e'.repeat(64),
-      sha256: 'f'.repeat(64),
-      stat: { dev: '1', ino: '2', mode: '100755' },
-    },
-  ])),
-  safePath: '/usr/bin:/bin',
-  setSha256: '1'.repeat(64),
-});
-let runtimeSequence = 0;
-const fakeRuntime = () => {
-  runtimeSequence += 1;
-  const root = `/runtime/${runtimeSequence}`;
-  return { root, home: `${root}/home`, codex: `${root}/codex`, docker: `${root}/docker`, tmp: `${root}/tmp` };
-};
-
-const dependencies = (collectChangedSet, overrides = {}) => ({
-  rootDir,
-  collectChangedSet,
-  buildPlan: input => plan(input, overrides.planOptions),
-  resolveCommands: () => [fixtureCommand],
-  resolveRevision: () => revision,
-  snapshotLedgers: async () => ledgerSnapshot,
-  resolveRoot: () => rootBinding,
-  validateRoot: () => true,
-  bindExecutables: ({ commands }) => fakeBindings(commands),
-  validateBindings: () => true,
-  createRuntime: fakeRuntime,
-  validateRuntime: () => true,
-  cleanupRuntime: () => true,
-  ...overrides.dependencies,
-});
 
 test('manual checks block before executable binding, runtime creation, or spawn', async () => {
   let bindCount = 0, runtimeCount = 0, spawnCount = 0;
@@ -151,6 +59,7 @@ test('preview returns a component receipt without executable or runtime activity
   assert.equal(report.execution.descendantProcessQuiescenceVerified, false);
   assert.equal(report.claims.behaviorValidated, false);
   assert.equal(report.claims.ledgerWriteAbsenceVerified, false);
+  assert.equal(isClosedAiGovernanceValidationExecutionReport(report, false), true);
   assert.equal(spawnCount, 0);
 });
 
@@ -182,6 +91,7 @@ test('run uses per-command clean env and emits only direct component exit facts'
   assert.equal(report.execution.launchAttemptCount, 1);
   assert.equal(report.commands[0].status, 'exited-zero');
   assert.equal(report.commands[0].executableSha256, 'f'.repeat(64));
+  assert.equal(isClosedAiGovernanceValidationExecutionReport(report, true), true);
   assert.equal(observed.length, 1);
   for (const key of ['NODE_OPTIONS', 'OPENAI_API_KEY', 'GITHUB_STEP_SUMMARY', 'GITHUB_ENV', 'GITHUB_OUTPUT']) {
     assert.equal(observed[0][key], undefined);
@@ -208,6 +118,108 @@ test('synchronous launcher failure records only a launch attempt', async () => {
   assert.equal(report.commands[0].status, 'launch-error');
   assert.ok(report.blockers.some(item => item.code === 'VALIDATION_COMMAND_FAILED'));
   assert.equal(JSON.stringify(report).includes('childCreated'), false);
+});
+
+test('invalid executable bindings block before runtime creation or spawn', async () => {
+  let runtimeCount = 0, spawnCount = 0;
+  const report = await runAiGovernanceValidationExecution({
+    ...dependencies(() => changedSet(), { dependencies: {
+      bindExecutables: () => ({ malformed: true }),
+      createRuntime: () => { runtimeCount += 1; return fakeRuntime(); },
+      spawnCommand: () => { spawnCount += 1; return { status: 0, signal: null }; },
+    } }),
+    execute: true,
+  });
+
+  assert.deepEqual(report.blockers, [{ code: 'VALIDATION_EXECUTABLE_BINDING_FAILED', count: 1 }]);
+  assert.equal(runtimeCount, 0);
+  assert.equal(spawnCount, 0);
+  assert.equal(report.commands[0].status, 'not-run');
+});
+
+test('executable binding integrity cannot recover from observed drift', async () => {
+  let validationCount = 0;
+  const report = await runAiGovernanceValidationExecution({
+    ...dependencies(() => changedSet(), { dependencies: {
+      validateBindings: () => { if ((validationCount += 1) === 3) throw new Error('drift'); },
+    } }),
+    execute: true,
+  });
+
+  assert.equal(report.status, 'failed');
+  assert.equal(report.integrity.executableBindingsStable, false);
+});
+
+test('registry display commands remain ordered and bound to the plan', async () => {
+  let spawnCount = 0;
+  const report = await runAiGovernanceValidationExecution({
+    ...dependencies(() => changedSet(), { dependencies: {
+      resolveCommands: () => [{ ...fixtureCommand, displayCommand: 'different command' }],
+      spawnCommand: () => { spawnCount += 1; return { status: 0, signal: null }; },
+    } }),
+    execute: true,
+  });
+
+  assert.ok(report.blockers.some(item => item.code === 'COMMAND_REGISTRY_INVALID'));
+  assert.equal(spawnCount, 0);
+});
+
+test('plan counts must bind the same authoritative changed set', async () => {
+  let spawnCount = 0;
+  const report = await runAiGovernanceValidationExecution({
+    ...dependencies(() => changedSet(), { dependencies: {
+      buildPlan: input => ({ ...plan(input), changedFileCount: input.changedSet.changedFileCount + 1 }),
+      spawnCommand: () => { spawnCount += 1; return { status: 0, signal: null }; },
+    } }),
+    execute: true,
+  });
+
+  assert.ok(report.blockers.some(item => item.code === 'VALIDATION_PLAN_INVALID'));
+  assert.equal(spawnCount, 0);
+});
+
+test('ledger endpoint digest is independent of snapshot order', async () => {
+  let snapshotCount = 0;
+  const report = await buildAiGovernanceValidationExecutionPreflight({
+    ...dependencies(() => changedSet(), { dependencies: {
+      snapshotLedgers: async () => (snapshotCount++ === 0 ? ledgerSnapshot : [...ledgerSnapshot].reverse()),
+    } }),
+  });
+
+  assert.equal(report.status, 'ready');
+  assert.equal(report.blockers.some(item => item.code === 'LEDGER_ENDPOINT_DRIFT'), false);
+});
+
+test('runtime validation failure cleans created state and remains a closed blocked receipt', async () => {
+  let cleanupCount = 0, spawnCount = 0;
+  const report = await runAiGovernanceValidationExecution({
+    ...dependencies(() => changedSet(), { dependencies: {
+      validateRuntime: () => { throw new Error('invalid runtime'); },
+      cleanupRuntime: () => { cleanupCount += 1; return true; },
+      spawnCommand: () => { spawnCount += 1; return { status: 0, signal: null }; },
+    } }),
+    execute: true,
+  });
+
+  assert.equal(report.status, 'blocked');
+  assert.equal(cleanupCount, 1);
+  assert.equal(spawnCount, 0);
+  assert.equal(isClosedAiGovernanceValidationExecutionReport(report, true), true);
+});
+
+test('command environment failure is not counted as a launch attempt', async () => {
+  const report = await runAiGovernanceValidationExecution({
+    ...dependencies(() => changedSet(), { dependencies: {
+      buildEnvironment: () => { throw new Error('environment unavailable'); },
+    } }),
+    execute: true,
+  });
+
+  assert.equal(report.status, 'failed');
+  assert.equal(report.execution.launchAttemptCount, 0);
+  assert.equal(report.commands[0].status, 'skipped');
+  assert.equal(report.commands[0].failureCode, 'command-preparation-failed');
+  assert.equal(isClosedAiGovernanceValidationExecutionReport(report, true), true);
 });
 
 test('missing changed-set state digest blocks with zero spawn', async () => {

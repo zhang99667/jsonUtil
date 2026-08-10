@@ -6,6 +6,8 @@ export const governanceAiValidationTestMaintainabilityBudgets = [
   validationTestBudget('scripts/ci/aiGovernanceValidationCommandRegistry.test.mjs', 250, 'Validation registry 测试应锁定固定命令、descriptor digest 与测试文件 ignore/symlink/hardlink 边界'),
   validationTestBudget('scripts/ci/aiGovernanceValidationRuntime.test.mjs', 290, 'Validation runtime 测试应锁定平台 fail-closed、根、环境、可执行摘要、0700 runtime、漂移与非递归清理'),
   validationTestBudget('scripts/ci/aiGovernanceValidationExecution.test.mjs', 430, 'Validation executor 测试应锁定零执行 blocker、逐启动漂移、尝试计数、integrity、CLI 状态机与 component 声明'),
+  validationTestBudget('scripts/ci/aiGovernanceValidationExecutionReceipt.test.mjs', 40, 'Validation receipt 测试应直连共享失败报告与闭字段校验'),
+  validationTestBudget('scripts/ci/aiGovernanceValidationExecutionTestFixtures.mjs', 120, 'Validation executor 测试 fixture 应单源维护 changed-set、plan、registry、binding 与 runtime 夹具'),
   validationTestBudget('scripts/ci/aiGovernanceValidationWhitespace.test.mjs', 300, 'Validation whitespace 测试应锁定三视图、filter/attribute 隔离、ambient 劫持、大文件与嵌套闭 CLI'),
   validationTestBudget('scripts/mcp/jsonutils-governance-validation-plan.test.mjs', 175, 'Validation plan 测试应锁定领域分类、全量边界、只读命令、人工复核与 hygiene 非分类语义'),
 ];

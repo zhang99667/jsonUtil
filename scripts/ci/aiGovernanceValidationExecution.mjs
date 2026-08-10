@@ -19,6 +19,14 @@ import {
   spawnJsonutilsValidationCommand,
 } from './aiGovernanceValidationRuntime.mjs';
 import {
+  buildAiGovernanceValidationCommandReceipt,
+  buildAiGovernanceValidationDirectResultReceipt,
+  buildAiGovernanceValidationExecutionFailureReport,
+  buildAiGovernanceValidationExecutionReport,
+  buildAiGovernanceValidationNotRunCommands,
+  buildAiGovernanceValidationSkippedCommands,
+} from './aiGovernanceValidationExecutionReceipt.mjs';
+import {
   cleanupJsonutilsValidationRuntime,
   createJsonutilsValidationRuntime,
   resolveJsonutilsValidationRoot,
@@ -26,12 +34,10 @@ import {
   validateJsonutilsValidationRuntime,
 } from './aiGovernanceValidationWorkspaceRuntime.mjs';
 
-const PROFILE = 'jsonutils-validation-execution-v1';
 const HASH_DOMAIN = 'jsonutils-validation-execution-state-v1\0';
 const SHA256 = /^[0-9a-f]{64}$/;
 const REVISION = /^worktree-[0-9a-f]{64}$/;
 const COMMAND_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
-const SAFE_SIGNAL = /^[A-Z0-9]+$/;
 const LEDGER_PATHS = ['evals/ai-governance/outcomes.jsonl', 'evals/ai-governance/trial-receipts.jsonl'];
 const stableSort = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 const isPlainObject = value => value !== null && typeof value === 'object'
@@ -84,14 +90,18 @@ const validatePlan = (plan) => {
   }
 };
 
-const validateCommands = (commands) => {
-  if (!Array.isArray(commands) || commands.length > 128) throw failure('VALIDATION_COMMAND_SET_INVALID');
+const validateCommands = (commands, displayCommands) => {
+  if (!Array.isArray(commands) || commands.length > 128 || commands.length !== displayCommands.length) {
+    throw failure('VALIDATION_COMMAND_SET_INVALID');
+  }
   const seen = new Set();
-  for (const item of commands) {
+  for (let index = 0; index < commands.length; index += 1) {
+    const item = commands[index];
     let descriptorSha256;
     try { descriptorSha256 = hashJsonutilsValidationCommandDescriptor(item?.descriptor); }
     catch { throw failure('VALIDATION_COMMAND_SET_INVALID'); }
     if (!isPlainObject(item) || !COMMAND_ID.test(item.id ?? '') || seen.has(item.id)
+      || item.displayCommand !== displayCommands[index]
       || !SHA256.test(item.descriptorSha256 ?? '') || item.descriptorSha256 !== descriptorSha256) {
       throw failure('VALIDATION_COMMAND_SET_INVALID');
     }
@@ -126,6 +136,11 @@ const collectStateBlockers = ({ changedSet, plan, commands }) => {
   if (!SHA256.test(changedSet.stateSha256 ?? '')) blockers.push({ code: 'RAW_CHANGED_SET_STATE_REQUIRED', count: 1 });
   if (!changedSet.ok) blockers.push({ code: 'AUTHORITATIVE_CHANGED_SET_INVALID', count: Math.max(1, changedSet.issues.length) });
   if (!plan.ok) blockers.push({ code: 'VALIDATION_PLAN_INVALID', count: 1 });
+  if (plan.changedFileCount !== changedSet.changedFileCount
+    || plan.coverage.totalChangedFileCount !== changedSet.changedFileCount
+    || plan.authority.issueCount !== changedSet.issues.length) {
+    blockers.push({ code: 'VALIDATION_PLAN_INVALID', count: 1 });
+  }
   if (plan.authority.profile !== 'raw-head-index-worktree-v1' || plan.authority.authoritative !== true) {
     blockers.push({ code: 'AUTHORITATIVE_CHANGED_SET_REQUIRED', count: 1 });
   }
@@ -157,8 +172,9 @@ const captureValidationState = async ({
 }) => {
   validateRoot(rootBinding);
   const rootDir = rootBinding.realPath;
-  const ledgers = await snapshotLedgers(rootDir);
-  validateLedgerSnapshots(ledgers);
+  const ledgerSnapshots = await snapshotLedgers(rootDir);
+  validateLedgerSnapshots(ledgerSnapshots);
+  const ledgers = [...ledgerSnapshots].sort((left, right) => stableSort(left.path, right.path));
   const revision = await resolveRevision(rootDir);
   if (!REVISION.test(revision ?? '')) throw failure('VALIDATION_REVISION_INVALID');
   const changedSet = await collectChangedSet(rootDir);
@@ -167,8 +183,9 @@ const captureValidationState = async ({
   validatePlan(plan);
   let commands = [], registryFailure = false;
   try {
-    commands = await resolveCommands({ rootDir, displayCommands: plan.commands.map(item => item.command) });
-    validateCommands(commands);
+    const displayCommands = plan.commands.map(item => item.command);
+    commands = await resolveCommands({ rootDir, displayCommands });
+    validateCommands(commands, displayCommands);
   } catch {
     registryFailure = true;
   }
@@ -232,36 +249,6 @@ const validateCommandBoundary = ({ rootBinding, runtime, bindings, validateRoot,
   return null;
 };
 
-const commandReceipt = (item, ordinal, bindings, values = {}) => ({
-  ordinal,
-  id: item.id,
-  descriptorSha256: item.descriptorSha256,
-  executableSha256: bindings?.byExecutable?.[item.descriptor.executable]?.sha256 ?? null,
-  status: values.status ?? 'not-run',
-  exitCode: values.exitCode ?? null,
-  signal: values.signal ?? null,
-  failureCode: values.failureCode ?? null,
-});
-
-const notRunCommands = (commands, bindings) => commands.map((item, index) => commandReceipt(item, index + 1, bindings));
-const skippedCommands = (commands, start, bindings, failureCode) => commands.slice(start)
-  .map((item, offset) => commandReceipt(item, start + offset + 1, bindings, { status: 'skipped', failureCode }));
-
-const directResultReceipt = (item, ordinal, bindings, result, launchAttempted) => {
-  if (!launchAttempted || result?.error) return commandReceipt(item, ordinal, bindings, {
-    status: 'launch-error', failureCode: 'launch-error',
-  });
-  const signal = typeof result.signal === 'string' && SAFE_SIGNAL.test(result.signal) ? result.signal : null;
-  if (signal) return commandReceipt(item, ordinal, bindings, {
-    status: 'signaled', signal, failureCode: 'signal-or-timeout',
-  });
-  if (result.status === 0) return commandReceipt(item, ordinal, bindings, { status: 'exited-zero', exitCode: 0 });
-  if (Number.isSafeInteger(result.status)) return commandReceipt(item, ordinal, bindings, {
-    status: 'exited-nonzero', exitCode: result.status, failureCode: 'nonzero-exit',
-  });
-  return commandReceipt(item, ordinal, bindings, { status: 'launch-error', failureCode: 'launch-error' });
-};
-
 const failedIntegrity = () => ({
   rootIdentityStable: false,
   sourceRevisionStable: false,
@@ -272,74 +259,6 @@ const failedIntegrity = () => ({
   executableBindingsStable: false,
   runtimeBoundaryStable: false,
   runtimeCleanupSucceeded: false,
-});
-
-const renderReport = ({
-  before, rootBinding, bindings, status, execute, blockers, results, integrity, launchAttemptCount,
-}) => ({
-  schemaVersion: 1,
-  reportType: 'ai-governance-validation-execution',
-  profile: PROFILE,
-  status,
-  ok: status === 'ready' || status === 'completed-component',
-  evidenceScope: 'component-only',
-  outcomeEligible: false,
-  source: {
-    revision: before.revision,
-    rootIdentitySha256: rootBinding.identitySha256,
-    ...before.digests,
-    executableSetSha256: bindings?.setSha256 ?? null,
-  },
-  plan: {
-    authorityProfile: before.plan.authority.profile ?? null,
-    changedFileCount: before.plan.changedFileCount,
-    commandCount: before.commands.length,
-    manualCheckCount: before.plan.manualChecks.length,
-    unclassifiedFileCount: before.plan.unclassifiedFileCount ?? null,
-    commandMatchScope: before.plan.coverage.commandMatchScope ?? null,
-  },
-  blockers,
-  cycle: { caseRunnerIntegration: 'deferred', recursiveExecution: false },
-  commands: results,
-  execution: { requested: execute, launchAttemptCount, descendantProcessQuiescenceVerified: false },
-  integrity,
-  claims: {
-    launcherShellUsed: false,
-    nestedShellAbsenceVerified: false,
-    commandOutputCaptured: false,
-    parentCredentialIsolationVerified: false,
-    hostFilesystemIsolationVerified: false,
-    ledgerWriteAbsenceVerified: false,
-    ignoredWorkspaceMutationAbsenceVerified: false,
-    behaviorValidated: false,
-  },
-});
-
-const failedReport = execute => ({
-  schemaVersion: 1,
-  reportType: 'ai-governance-validation-execution',
-  profile: PROFILE,
-  status: 'failed',
-  ok: false,
-  evidenceScope: 'component-only',
-  outcomeEligible: false,
-  source: null,
-  plan: null,
-  blockers: [{ code: 'VALIDATION_PREFLIGHT_FAILED', count: 1 }],
-  cycle: { caseRunnerIntegration: 'deferred', recursiveExecution: false },
-  commands: [],
-  execution: { requested: execute, launchAttemptCount: 0, descendantProcessQuiescenceVerified: false },
-  integrity: null,
-  claims: {
-    launcherShellUsed: false,
-    nestedShellAbsenceVerified: false,
-    commandOutputCaptured: false,
-    parentCredentialIsolationVerified: false,
-    hostFilesystemIsolationVerified: false,
-    ledgerWriteAbsenceVerified: false,
-    ignoredWorkspaceMutationAbsenceVerified: false,
-    behaviorValidated: false,
-  },
 });
 
 export const runAiGovernanceValidationExecution = async ({
@@ -370,11 +289,14 @@ export const runAiGovernanceValidationExecution = async ({
       rootBinding, validateRoot, collectChangedSet, buildPlan, resolveCommands, resolveRevision, snapshotLedgers,
     });
   } catch {
-    return failedReport(execute);
+    return buildAiGovernanceValidationExecutionFailureReport({
+      requested: execute,
+      blockerCode: 'VALIDATION_PREFLIGHT_FAILED',
+    });
   }
 
   let blockers = before.blockers;
-  let results = notRunCommands(before.commands);
+  let results = buildAiGovernanceValidationNotRunCommands(before.commands);
   let launchAttemptCount = 0, bindings = null;
   let executionFailure = false, capabilityBlocked = false;
   let executableBindingsStable = null, runtimeBoundaryStable = null, runtimeCleanupSucceeded = null;
@@ -389,9 +311,10 @@ export const runAiGovernanceValidationExecution = async ({
 
   if (execute && blockers.length === 0) {
     try {
-      bindings = bindExecutables({ rootBinding, commands: before.commands, ambientEnv });
-      validateExecutableBindingShape(bindings, before.commands);
-      validateBindings(bindings, rootBinding);
+      const candidate = bindExecutables({ rootBinding, commands: before.commands, ambientEnv });
+      validateExecutableBindingShape(candidate, before.commands);
+      validateBindings(candidate, rootBinding);
+      bindings = candidate;
       executableBindingsStable = true;
       results = [];
     } catch {
@@ -410,7 +333,14 @@ export const runAiGovernanceValidationExecution = async ({
           runtimeCleanupSucceeded = runtimeCleanupSucceeded !== false;
         } catch {
           blockers = mergeBlockers(blockers, [{ code: 'VALIDATION_RUNTIME_CREATION_FAILED', count: 1 }]);
-          results.push(...skippedCommands(before.commands, index, bindings, 'runtime-unavailable'));
+          if (runtime) {
+            const cleaned = (() => { try { return cleanupRuntime(runtime, rootBinding) === true; } catch { return false; } })();
+            runtimeCleanupSucceeded = cleaned;
+            if (!cleaned) blockers = mergeBlockers(blockers, [{ code: 'RUNTIME_CLEANUP_FAILED', count: 1 }]);
+          }
+          results.push(...buildAiGovernanceValidationSkippedCommands(
+            before.commands, index, bindings, 'runtime-unavailable',
+          ));
           runtimeBoundaryStable = false;
           capabilityBlocked = launchAttemptCount === 0;
           executionFailure = launchAttemptCount > 0;
@@ -433,14 +363,16 @@ export const runAiGovernanceValidationExecution = async ({
           observedIntegrity = mergeIntegrity(observedIntegrity, comparison.integrity);
           if (comparison.blockers.length > 0) {
             blockers = mergeBlockers(blockers, comparison.blockers);
-            results.push(...skippedCommands(before.commands, index, bindings, 'state-drift'));
+            results.push(...buildAiGovernanceValidationSkippedCommands(before.commands, index, bindings, 'state-drift'));
             executionFailure = true;
             launchAllowed = false;
           }
         } catch {
           observedIntegrity = mergeIntegrity(observedIntegrity, unknownSourceIntegrity);
           blockers = mergeBlockers(blockers, [{ code: 'PRE_COMMAND_STATE_CAPTURE_FAILED', count: 1 }]);
-          results.push(...skippedCommands(before.commands, index, bindings, 'pre-command-state-unavailable'));
+          results.push(...buildAiGovernanceValidationSkippedCommands(
+            before.commands, index, bindings, 'pre-command-state-unavailable',
+          ));
           executionFailure = true;
           launchAllowed = false;
         }
@@ -453,20 +385,27 @@ export const runAiGovernanceValidationExecution = async ({
           break;
         }
 
-        let rawResult, launchAttempted = false;
+        let rawResult, preparationFailed = false;
         try {
           const descriptor = item.descriptor;
           const env = buildEnvironment({ descriptor, runtime, safePath: bindings.safePath, ambientEnv });
           const binding = bindings.byExecutable[descriptor.executable];
           launchAttemptCount += 1;
-          launchAttempted = true;
-          rawResult = spawnCommand({ rootBinding, descriptor, binding, env });
+          try { rawResult = spawnCommand({ rootBinding, descriptor, binding, env }); }
+          catch { rawResult = { error: true, status: null, signal: null }; }
         } catch {
-          rawResult = { error: true, status: null, signal: null };
+          preparationFailed = true;
+          executionFailure = true;
+          blockers = mergeBlockers(blockers, [{ code: 'VALIDATION_COMMAND_PREPARATION_FAILED', count: 1 }]);
+          results.push(buildAiGovernanceValidationCommandReceipt(item, index + 1, bindings, {
+            status: 'skipped', failureCode: 'command-preparation-failed',
+          }));
         }
-        results.push(directResultReceipt(item, index + 1, bindings, rawResult, launchAttempted));
+        if (!preparationFailed) {
+          results.push(buildAiGovernanceValidationDirectResultReceipt(item, index + 1, bindings, rawResult));
+        }
 
-        let stopAfterCommand = false;
+        let stopAfterCommand = preparationFailed;
         try {
           const boundaryFailure = validateCommandBoundary({
             rootBinding, runtime, bindings, validateRoot, validateRuntime, validateBindings,
@@ -501,7 +440,9 @@ export const runAiGovernanceValidationExecution = async ({
           stopAfterCommand = true;
         }
         if (stopAfterCommand) {
-          results.push(...skippedCommands(before.commands, index + 1, bindings, 'execution-boundary-failed'));
+          results.push(...buildAiGovernanceValidationSkippedCommands(
+            before.commands, index + 1, bindings, 'execution-boundary-failed',
+          ));
           break;
         }
       }
@@ -512,7 +453,7 @@ export const runAiGovernanceValidationExecution = async ({
   try {
     if (bindings) {
       validateBindings(bindings, rootBinding);
-      executableBindingsStable = true;
+      executableBindingsStable = executableBindingsStable !== false;
     }
     const after = await captureValidationState({
       rootBinding, validateRoot, collectChangedSet, buildPlan, resolveCommands, resolveRevision, snapshotLedgers,
@@ -543,8 +484,8 @@ export const runAiGovernanceValidationExecution = async ({
   const status = executionFailure ? 'failed'
     : blockers.length > 0 || capabilityBlocked ? 'blocked'
       : !execute ? 'ready' : 'completed-component';
-  return renderReport({
-    before, rootBinding, bindings, status, execute, blockers, results, integrity, launchAttemptCount,
+  return buildAiGovernanceValidationExecutionReport({
+    before, rootBinding, bindings, status, requested: execute, blockers, results, integrity, launchAttemptCount,
   });
 };
 

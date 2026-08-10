@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1018 (2026-08-10) - 闭合 Validation execution receipt
+
+### 🏗️ 架构与基础设施
+
+- **Receipt 协议单源**: 命令结果、完整/失败 component 报告和 CLI 闭字段状态机收敛到独立权威模块，executor 与 CLI 直连且不保留兼容 façade
+- **Executor 职责收缩**: 主执行器只保留 blocker、state/runtime/binary 前后绑定和逐命令生命周期；共享脱敏 fixture 避免红队重复维护 changed-set、plan、registry 与 runtime 样本
+- **预算与证据边界**: executor 从 554/575 收缩到 495/520、CLI 从 181/210 收缩到 57/75，共享 receipt 为 214/235；报告仍固定 `component-only`、`outcomeEligible=false`，不扩大 `3/18` behavior coverage 或仓外信任声明
+
+### 🐛 Bug 修复
+
+- **启动前 fail closed**: malformed executable binding 不再进入 runtime/spawn，命令 environment 准备失败保持 `launchAttempt=0`，runtime 创建后验证失败会尝试安全 cleanup，并由共享 CLI 契约保留 blocked/failed 诊断
+- **证据单调与确定性**: executable integrity 一旦观测漂移不再被 final 成功覆盖；plan/changed-set 数量与 issue、registry display/order 逐项绑定，ledger 端点摘要先按路径 canonicalize，避免同状态反序误报漂移
+
 ## v1.8.1017 (2026-08-10) - 分层入口与 Playbook 引用职责
 
 ### 🏗️ 架构与基础设施
