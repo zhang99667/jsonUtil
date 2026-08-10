@@ -9,7 +9,7 @@ import {
   parseEvolutionPairedBatchArtifact,
   verifyEvolutionPairedBatchArtifact,
 } from './aiGovernanceEvolutionPairedReceiptV4.mjs';
-import { hashEvolutionPairedGrade } from './aiGovernanceEvolutionPairedReceiptV4Proof.mjs';
+import { hashEvolutionPairedGrade } from './aiGovernanceEvolutionPairedReceiptV4Commitments.mjs';
 import {
   buildEvolutionPairedBatchFixture,
   resignEvolutionPairedBatchFixture,

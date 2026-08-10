@@ -8,7 +8,7 @@ import {
   AI_EVOLUTION_PAIRED_VALIDATION_COMMAND,
   AI_EVOLUTION_PAIRED_VALIDATION_EVIDENCE,
 } from './aiGovernanceEvolutionPairedReceiptV4.mjs';
-import { hashEvolutionPairedValue } from './aiGovernanceEvolutionPairedReceiptV4Proof.mjs';
+import { hashEvolutionPairedValue } from './aiGovernanceEvolutionPairedReceiptV4Commitments.mjs';
 import { hashEvolutionTrialReceiptLine } from './aiGovernanceEvolutionTrialReceipts.mjs';
 
 const BATCH_REUSE_DOMAIN = 'jsonutils.ai-evolution.paired-batch-reuse/v1';

@@ -1,5 +1,6 @@
 export const AI_GOVERNANCE_REQUIRED_EVOLUTION_PAIRED_FILES = [
   'scripts/ci/aiGovernanceRequiredEvolutionPairedFiles.mjs',
+  'scripts/ci/aiGovernanceEvolutionPairedReceiptV4Commitments.mjs',
   'scripts/ci/aiGovernanceEvolutionPairedReceiptV4Proof.mjs',
   'scripts/ci/aiGovernanceEvolutionPairedReceiptV4Assignment.mjs',
   'scripts/ci/aiGovernanceEvolutionPairedReceiptV4.mjs',
@@ -9,6 +10,7 @@ export const AI_GOVERNANCE_REQUIRED_EVOLUTION_PAIRED_FILES = [
   'scripts/ci/maintainability-budget-governance-ai-evolution-paired-rules.mjs',
   'scripts/ci/maintainability-budget-governance-ai-evolution-paired-test-rules.mjs',
   'scripts/ci/aiGovernanceEvolutionPairedReceiptV4TestFixtures.mjs',
+  'scripts/ci/aiGovernanceEvolutionPairedReceiptV4Commitments.test.mjs',
   'scripts/ci/aiGovernanceEvolutionPairedReceiptV4.test.mjs',
   'scripts/ci/aiGovernanceEvolutionPairedReceiptV4Redteam.test.mjs',
   'scripts/ci/aiGovernanceEvolutionPairedReceiptV4Integration.test.mjs',

@@ -16,8 +16,8 @@ import {
   hashEvolutionPairedGrade,
   hashEvolutionPairedGradeSet,
   hashEvolutionPairedValue,
-  verifyEvolutionPairedProofs,
-} from './aiGovernanceEvolutionPairedReceiptV4Proof.mjs';
+} from './aiGovernanceEvolutionPairedReceiptV4Commitments.mjs';
+import { verifyEvolutionPairedProofs } from './aiGovernanceEvolutionPairedReceiptV4Proof.mjs';
 import { hashEvolutionTraceValue, verifyEvolutionTraceReceipt } from './aiGovernanceEvolutionTrace.mjs';
 import {
   buildEvolutionTracePolicyRegistry,

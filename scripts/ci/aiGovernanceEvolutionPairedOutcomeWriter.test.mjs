@@ -10,7 +10,7 @@ import {
   prepareEvolutionPairedOutcome,
   recordEvolutionPairedOutcome,
 } from './aiGovernanceEvolutionPairedOutcomeWriter.mjs';
-import { hashEvolutionPairedGrade } from './aiGovernanceEvolutionPairedReceiptV4Proof.mjs';
+import { hashEvolutionPairedGrade } from './aiGovernanceEvolutionPairedReceiptV4Commitments.mjs';
 import {
   buildEvolutionPairedBatchFixture,
   resignEvolutionPairedBatchFixture,

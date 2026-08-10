@@ -15,7 +15,7 @@ import {
   buildEvolutionPairedCheckpointStatement,
   hashEvolutionPairedGrade,
   hashEvolutionPairedGradeSet,
-} from './aiGovernanceEvolutionPairedReceiptV4Proof.mjs';
+} from './aiGovernanceEvolutionPairedReceiptV4Commitments.mjs';
 import { buildEvolutionTracePolicyRegistry } from './aiGovernanceEvolutionTracePolicies.mjs';
 import { createDssePreAuthEncoding } from './aiGovernanceEvolutionTraceProof.mjs';
 import {

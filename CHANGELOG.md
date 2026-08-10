@@ -1,5 +1,13 @@
 # 更新日志 (Changelog)
 
+## v1.8.1019 (2026-08-10) - 分层 Paired v4 commitment 与 proof
+
+### 🏗️ 架构与基础设施
+
+- **Commitment 权威叶子**: 域分离 hash、grade/grade-set projection 与 assignment/checkpoint/final Statement 构造下沉到独立模块，固定向量与三类精确绑定由直接测试锁定
+- **Proof 职责收缩**: proof 模块只消费权威 Statement 并维护三角色 DSSE 验证、keyid/SPKI 隔离和 unwitnessed 投影；生产与测试消费者直连 commitments，不保留兼容 re-export façade
+- **预算与证据边界**: 原混合热点从 250/260 收缩为 commitment 141/160 与 proof 108/120；case、corpus、`3/18` behavior coverage 和仓外 protected signer/runtime blocker 不变，源码冻结后仅由 preview-first writer 刷新既有 deterministic source-state
+
 ## v1.8.1018 (2026-08-10) - 闭合 Validation execution receipt
 
 ### 🏗️ 架构与基础设施

@@ -1,7 +1,8 @@
 const pairedTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiEvolutionPairedTestMaintainabilityBudgets = [
-  pairedTestBudget('scripts/ci/maintainability-budget-governance-ai-evolution-paired-test-rules.mjs', 16, 'Paired evolution 测试预算子表只维护 fixture、verifier、candidate、writer 与 CLI 测试'),
+  pairedTestBudget('scripts/ci/maintainability-budget-governance-ai-evolution-paired-test-rules.mjs', 16, 'Paired evolution 测试预算子表只维护 commitment、fixture、verifier、candidate、writer 与 CLI 测试'),
+  pairedTestBudget('scripts/ci/aiGovernanceEvolutionPairedReceiptV4Commitments.test.mjs', 135, 'Paired v4 commitment 直接测试锁域分离、三类 Statement 精确绑定与 proof 非代理边界'),
   pairedTestBudget('scripts/ci/aiGovernanceEvolutionPairedReceiptV4TestFixtures.mjs', 210, 'Paired v4 测试 fixture 只构造当前实验、六 trace 与临时三角色 Ed25519 proof'),
   pairedTestBudget('scripts/ci/aiGovernanceEvolutionPairedReceiptV4.test.mjs', 180, 'Paired v4 测试应锁 candidate-only、infra 分层、proof 隔离、篡改与输入边界'),
   pairedTestBudget('scripts/ci/aiGovernanceEvolutionPairedReceiptV4Redteam.test.mjs', 180, 'Paired v4 红队锁 arm relabel、共享必读、baseline contamination、caller trust 过度声明与 batch replay'),
