@@ -8,16 +8,22 @@ import {
 } from './aiGovernanceChecks.mjs';
 import { buildGovernedAiGovernanceAssetFiles } from './aiGovernanceDiscoveredAssets.mjs';
 import { collectAiGovernanceCiContractFailures } from './aiGovernanceCiContract.mjs';
+import { REQUIRED_AI_GOVERNANCE_CI_COMMANDS } from './aiGovernanceCiCommandDescriptors.mjs';
+import * as aiGovernanceCiCommandDescriptors from './aiGovernanceCiCommandDescriptors.mjs';
 import {
-  REQUIRED_AI_GOVERNANCE_CI_COMMANDS,
   buildAiGovernanceCiWorkflowFixture,
   buildAiGovernanceLocalCiFixture,
-} from './aiGovernanceCiCommandDescriptors.mjs';
+} from './aiGovernanceCiContractTestFixtures.mjs';
 import { withAiGovernanceTempRoot, writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
 
 const aiGovernanceCiCommand = REQUIRED_AI_GOVERNANCE_CI_COMMANDS
   .find(command => command.includes('check-ai-governance.mjs'));
 const ciGovernanceLocalCi = buildAiGovernanceLocalCiFixture();
+
+test('AI 治理 CI 生产描述符不暴露测试夹具构造 API', () => {
+  assert.equal('buildAiGovernanceCiWorkflowFixture' in aiGovernanceCiCommandDescriptors, false);
+  assert.equal('buildAiGovernanceLocalCiFixture' in aiGovernanceCiCommandDescriptors, false);
+});
 
 test('AI 治理文件检查会报告缺失文件', () => {
   withAiGovernanceTempRoot((rootDir) => {

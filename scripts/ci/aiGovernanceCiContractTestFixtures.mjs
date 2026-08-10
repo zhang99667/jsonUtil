@@ -1,8 +1,23 @@
-import {
-  buildAiGovernanceCiWorkflowFixture,
-  buildAiGovernanceLocalCiFixture,
-} from './aiGovernanceCiCommandDescriptors.mjs';
+import { AI_GOVERNANCE_CI_COMMAND_DESCRIPTORS } from './aiGovernanceCiCommandDescriptors.mjs';
 import { writeFixtureFile } from './aiGovernanceTestFixtures.mjs';
+
+const activeDescriptors = excludedCommand => AI_GOVERNANCE_CI_COMMAND_DESCRIPTORS
+  .filter(({ command }) => command !== excludedCommand);
+
+export const buildAiGovernanceCiWorkflowFixture = (excludedCommand) => [
+  'steps:',
+  '  - uses: actions/checkout@v6',
+  '    with:',
+  '      fetch-depth: 0',
+  ...activeDescriptors(excludedCommand).flatMap(({ command, workflowName }) => [
+    `  - name: ${workflowName}`,
+    `    run: ${command}`,
+  ]),
+].join('\n');
+
+export const buildAiGovernanceLocalCiFixture = (excludedCommand) => activeDescriptors(excludedCommand)
+  .map(({ localCommand, localCiLabel }) => `run_in_root "${localCiLabel}" ${localCommand}`)
+  .join('\n');
 
 export const validWorkflow = [
   'jobs:',

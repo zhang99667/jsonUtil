@@ -24,11 +24,11 @@ import {
   AI_ENTRY_SHARED_SNIPPET_FILES,
   AI_ENTRY_SHARED_SNIPPETS,
 } from './aiGovernanceSharedEntrySnippets.mjs';
+import { AI_GOVERNANCE_CI_COMMAND_FILES } from './aiGovernanceCiCommandDescriptors.mjs';
 import {
-  AI_GOVERNANCE_CI_COMMAND_FILES,
   buildAiGovernanceCiWorkflowFixture,
   buildAiGovernanceLocalCiFixture,
-} from './aiGovernanceCiCommandDescriptors.mjs';
+} from './aiGovernanceCiContractTestFixtures.mjs';
 import {
   buildRegistryTableFixture,
   registryRow,

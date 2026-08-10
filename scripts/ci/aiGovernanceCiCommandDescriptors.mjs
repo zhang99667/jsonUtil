@@ -23,21 +23,3 @@ export const AI_GOVERNANCE_CI_COMMAND_FILES = [...new Set(
   .map(command => /^node (scripts\/ci\/[^ ]+\.mjs)(?:\s|$)/.exec(command)?.[1])
   .filter(Boolean)
 )];
-
-const activeDescriptors = excludedCommand => AI_GOVERNANCE_CI_COMMAND_DESCRIPTORS
-  .filter(({ command }) => command !== excludedCommand);
-
-export const buildAiGovernanceCiWorkflowFixture = (excludedCommand) => [
-  'steps:',
-  '  - uses: actions/checkout@v6',
-  '    with:',
-  '      fetch-depth: 0',
-  ...activeDescriptors(excludedCommand).flatMap(({ command, workflowName }) => [
-    `  - name: ${workflowName}`,
-    `    run: ${command}`,
-  ]),
-].join('\n');
-
-export const buildAiGovernanceLocalCiFixture = (excludedCommand) => activeDescriptors(excludedCommand)
-  .map(({ localCommand, localCiLabel }) => `run_in_root "${localCiLabel}" ${localCommand}`)
-  .join('\n');

@@ -1,5 +1,13 @@
 # 更新日志 (Changelog)
 
+## v1.8.1022 (2026-08-11) - 分层 AI 治理 CI 测试夹具
+
+### 🏗️ 架构与基础设施
+
+- **命令 authority 收缩**: 十条 CI/local 必跑命令、标签与生产派生清单继续由唯一 descriptor 表维护，生产模块不再暴露测试 fixture builder
+- **测试渲染单向依赖**: workflow/local-ci fixture 构造迁入现有测试夹具模块并直接消费权威 descriptor，不保留兼容 re-export，真实 CI 命令、顺序和 required-files 集合不变
+- **模块边界与预算锁定**: 新增生产导出面负例，descriptor 从 43/45 收缩到 25/35，fixture 校准为 47/60；本轮只形成 component evidence，不扩大 `3/18` behavior coverage 或仓外 runtime/signer 信任声明
+
 ## v1.8.1021 (2026-08-11) - 分层 Paired v4 batch contract
 
 ### 🏗️ 架构与基础设施
