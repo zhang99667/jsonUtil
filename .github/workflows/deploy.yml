@@ -7,6 +7,7 @@ env:
   DEPLOY_DISK_CHECK_ENABLED: 'true'
   DEPLOY_DISK_WARN_USED_PERCENT: '90'
   DEPLOY_DISK_MAX_USED_PERCENT: '95'
+  REMOTE_FRONTEND_BUILD_MIN_AVAILABLE_MIB: '4096'
 
 on:
   workflow_dispatch:
@@ -28,7 +29,7 @@ on:
         required: true
         default: '/home/markz/apps/jsonUtil'
       deploy_mode:
-        description: 'Deploy mode'
+        description: 'Deploy scope; frontend is always prebuilt on the runner'
         required: true
         default: 'full'
         type: choice

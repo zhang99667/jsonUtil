@@ -14,6 +14,7 @@ COMPOSE_NO_DEPS="${COMPOSE_NO_DEPS:-false}"
 DEPLOY_DISK_CHECK_ENABLED="${DEPLOY_DISK_CHECK_ENABLED:-true}"
 DEPLOY_DISK_WARN_USED_PERCENT="${DEPLOY_DISK_WARN_USED_PERCENT:-90}"
 DEPLOY_DISK_MAX_USED_PERCENT="${DEPLOY_DISK_MAX_USED_PERCENT:-95}"
+REMOTE_FRONTEND_BUILD_MIN_AVAILABLE_MIB="${REMOTE_FRONTEND_BUILD_MIN_AVAILABLE_MIB:-4096}"
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
@@ -105,6 +106,7 @@ require_cmd curl
 
 # shellcheck source=scripts/deploy/frontend-legacy-assets.sh
 . "$APP_DIR/scripts/deploy/frontend-legacy-assets.sh"
+. "$APP_DIR/scripts/deploy/remote-frontend-build-memory.sh"
 trap cleanup_frontend_legacy_assets EXIT
 
 [ -f "$COMPOSE_FILE" ] || fail "未找到 compose 文件: $APP_DIR/$COMPOSE_FILE"
@@ -117,6 +119,7 @@ if grep -Eq '^ADMIN_BOOTSTRAP_ENABLED=true$' .env && grep -Eq '^ADMIN_BOOTSTRAP_
 fi
 
 check_disk_watermark "$APP_DIR"
+check_remote_frontend_build_memory
 
 log "校验 Docker Compose 配置"
 compose config >/dev/null

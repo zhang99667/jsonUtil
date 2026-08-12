@@ -16,7 +16,7 @@ const fixedDomainPaths = [
   '.gitignore', '.github/PULL_REQUEST_TEMPLATE.md', '.github/copilot-instructions.md', '.agents/plugins/plugin-lock.json',
   '.github/instructions/review.instructions.md', '.github/prompts/review.prompt.md', '.github/agents/ai-infra-auditor.agent.md', '.github/chatmodes/legacy.chatmode.md', '.codex/rules/default.rules', '.codex/config.toml', '.cursor/mcp.json', '.vscode/mcp.json', 'rules/ai-review-rules.md',
   'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json',
-  'docker-compose.yml', 'docker-compose.local.yml', 'docker-compose.preview.yml', 'docs/CICD.md',
+  'docker-compose.yml', 'docker-compose.local.yml', 'docker-compose.preview.yml', 'docs/CICD.md', 'ARCHITECTURE.md',
 ];
 
 test('validation plan maps every fixed domain while keeping catch-all hygiene non-classifying', async () => {
@@ -45,7 +45,7 @@ test('validation plan maps every fixed domain while keeping catch-all hygiene no
   ]) assert.ok(commands.includes(expected));
   assert.deepEqual(plan.manualChecks, [{
     id: 'compose-doc-semantics',
-    reason: '人工核对 docs/CICD.md 与两个 Compose 文件、local-ci 和 CI workflow 的变量及命令语义一致',
+    reason: '人工核对部署架构文档与两个 Compose 文件、local-ci 和 CI workflow 的变量及命令语义一致',
   }]);
 });
 

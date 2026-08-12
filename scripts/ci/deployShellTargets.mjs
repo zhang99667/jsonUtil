@@ -4,6 +4,7 @@ export const DEFAULT_DEPLOY_SHELL_FILES = [
   'scripts/ci/local-ci-lib.sh',
   'scripts/ci/local-ci.sh',
   'scripts/deploy/frontend-legacy-assets.sh',
+  'scripts/deploy/remote-frontend-build-memory.sh',
   'scripts/deploy/remote-docker-compose-deploy.sh',
   'scripts/deploy/ssh-common.sh',
   'scripts/deploy/ssh-disk-health.sh',

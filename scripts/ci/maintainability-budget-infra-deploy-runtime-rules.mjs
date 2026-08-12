@@ -4,6 +4,7 @@ export const infraDeployRuntimeMaintainabilityBudgets = [
   { file: 'scripts/ci/local-ci-lib.sh', maxLines: 70, reason: '本地 CI helper 应只承载日志、目录切换和 Maven fallback 机制' },
   { file: 'scripts/ci/local-ci.sh', maxLines: 90, reason: '本地 CI 入口应只串联关键门禁，继续增长时拆分阶段脚本' },
   { file: 'scripts/deploy/frontend-legacy-assets.sh', maxLines: 100, reason: '前端旧 assets 迁移 helper 应只负责备份、回填和临时目录清理' },
+  { file: 'scripts/deploy/remote-frontend-build-memory.sh', maxLines: 60, reason: '远端前端源码构建内存守卫应只负责读取可用内存并在 Compose 前失败' },
   { file: 'scripts/deploy/remote-docker-compose-deploy.sh', maxLines: 180, reason: '远端 Compose 部署脚本应只负责配置校验、构建启动和健康检查' },
   { file: 'scripts/deploy/ssh-disk-health.sh', maxLines: 190, reason: '磁盘巡检脚本应聚焦空间诊断和清理建议' },
   { file: 'scripts/deploy/ssh-docker-compose-deploy.sh', maxLines: 170, reason: '本机 SSH 部署脚本应只负责编排同步、远端执行和公网复查' },
@@ -12,4 +13,5 @@ export const infraDeployRuntimeMaintainabilityBudgets = [
   { file: 'scripts/deploy/ssh-prune-dev-artifacts.sh', maxLines: 160, reason: '开发产物清理脚本应聚焦候选识别和交互确认' },
   { file: 'scripts/deploy/verify-public-deploy.sh', maxLines: 135, reason: '公网部署验证脚本应只校验版本、健康检查、外部域名无跳转和前端静态资源可达性' },
   { file: 'scripts/ci/publicDeployVerification.test.mjs', maxLines: 140, reason: '公网部署行为测试应聚焦主站验证与显式外部路由检查边界' },
+  { file: 'scripts/ci/remoteFrontendBuildMemory.test.mjs', maxLines: 110, reason: '远端前端源码构建内存测试应锁定低内存、预构建、足量与不可读边界' },
 ];

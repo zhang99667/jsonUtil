@@ -2,7 +2,7 @@
 name: jsonutils-maintainer
 description: JSONUtils 项目维护技能。用于优化性能、重构可维护性较差的模块、补充 Scheme/CMD 解析能力、维护前后端测试门禁、更新 AI 协作规范和部署排查流程。
 metadata:
-  version: "0.1.39"
+  version: "0.1.40"
   tags: "jsonutils,governance,ai-infra,maintenance"
 ---
 
@@ -45,6 +45,7 @@ metadata:
 node scripts/ci/check-version-consistency.mjs
 node scripts/ci/check-repository-neutrality.mjs
 node scripts/ci/check-deploy-shell-syntax.mjs
+node --test scripts/ci/remoteFrontendBuildMemory.test.mjs
 node scripts/ci/check-ai-governance.mjs
 node scripts/ci/check-ai-evolution-evals.mjs
 node scripts/ci/manage-project-plugins.mjs --check
@@ -82,6 +83,7 @@ mvn test
 - 前端 Docker/Compose/Nginx 发布改动要保护旧 hash assets，并用公网资源巡检校验 JS/CSS `Content-Type`、CSS `url(...)` 二级资源和 CSS `@import` 链路，避免长时间打开页面后懒加载 chunk 404 或缺失 chunk fallback 成 HTML。
 - 同机外部业务域名的 Nginx 改动不能只验证 HTTP 200；`/admin.html` 这类历史后台路径要用本域 `/index.html` 承接、清理本域缓存，并用一次性裸域 query 绕过浏览器对 `/` 的旧 301 精确缓存，再把地址栏归位到裸域，部署 smoke 需要锁住可执行证据。
 - 部署 shell、GitHub shell helper、本地 CI 入口或 `.github/workflows/*.yml` 的 `workflow run` 块改动后先跑 `node scripts/ci/check-deploy-shell-syntax.mjs`，避免外层脚本、内联 run 和 `REMOTE_SCRIPT heredoc` 远端片段语法错误进入上线链路。
+- 远端前端源码构建只在 `MemAvailable + SwapFree` 达到默认 4096 MiB 门槛时进入 Compose；低内存或内存事实不可读必须 fail closed，并复用 `scripts/deploy/ssh-prebuilt-frontend-deploy.sh` 在本机构建 dist，不能靠再次尝试 full 构建或重启同机服务碰运气。GitHub `full` 只表示全服务部署范围，前端仍固定使用 runner 预构建产物。
 - 大输入处理优先走 worker、采样、预算和降级提示。
 - AI 修复能力必须明确本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
 - AI 协作规则自身也要可进化：新增或修正流程后同步 Playbook、入口文档和本 skill，并通过 `node scripts/ci/check-ai-governance.mjs` 做治理校验，避免只靠人工记忆传递。

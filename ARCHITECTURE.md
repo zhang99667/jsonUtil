@@ -357,6 +357,11 @@ services:
     ports: ["80:80"]
 ```
 
+发布前端有两条共享同一 Compose 编排的路径：
+
+- GitHub Deploy workflow 无论选择 `full` 还是 `prebuilt-frontend`，都先在 runner 执行 `npm ci`、`npm run build` 和 preload 检查，再用 `Dockerfile.prebuilt` 同步产物；`full` 只表示更新全部 Compose 服务，`prebuilt-frontend` 只替换前端服务。
+- 本机低内存发布使用 `scripts/deploy/ssh-prebuilt-frontend-deploy.sh`。直接使用默认 `Dockerfile` 的远端源码构建时，`remote-docker-compose-deploy.sh` 会在旧资源备份和 Compose 前检查 `/proc/meminfo` 的 `MemAvailable + SwapFree`；低于 `REMOTE_FRONTEND_BUILD_MIN_AVAILABLE_MIB`（默认 4096 MiB）或无法可信读取时停止。该门槛只是避免已知低内存 OOM 的下限，不构成构建一定成功的资源保证。
+
 ### 环境配置
 
 - **开发环境**: Vite Dev Server + PostgreSQL（可通过 `docker-compose.local.yml` 启动）

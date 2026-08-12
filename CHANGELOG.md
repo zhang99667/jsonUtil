@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1027 (2026-08-13) - 远端源码构建内存保护
+
+### 🏗️ 架构与基础设施
+
+- **Compose 前 fail-closed**: 远端前端源码构建先读取 `MemAvailable + SwapFree`，低于 4096 MiB、字段非法或 `/proc/meminfo` 不可读时在旧资源备份和 `docker compose up` 前停止，避免 Vite OOM 连带重启同机服务
+- **复用预构建通道**: `Dockerfile.prebuilt` 明确跳过远端源码构建门槛，失败诊断直接引导既有 `ssh-prebuilt-frontend-deploy.sh`；GitHub `full` 继续表示全服务范围，前端始终在 runner 预构建
+- **直接回归与验证归属**: 新增资源边界和生产接线测试，将独立内存守卫纳入部署 Shell 语法目标与可维护性预算；`ARCHITECTURE.md` 复用现有 deploy-routing/deploy-docs 规则，真实 validation plan 保持零未分类
+- **维护规则回写**: `jsonutils-maintainer 0.1.40`、架构说明和治理决策同步低内存生产事故边界；component 回归不扩大 `3/18` behavior coverage，也不关闭仓外 protected runtime/signer blocker
+
 ## v1.8.1026 (2026-08-12) - 分层双账本事务契约
 
 ### 🏗️ 架构与基础设施

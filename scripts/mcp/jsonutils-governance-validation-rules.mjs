@@ -9,6 +9,7 @@ const rule = (name, matcher, commands, { classifies = true, manualChecks = [] } 
 const hasPrefix = (file, prefixes) => prefixes.some(prefix => file.startsWith(prefix));
 const hasSuffix = (file, suffixes) => suffixes.some(suffix => file.endsWith(suffix));
 const isComposeFile = file => /^docker-compose[^/]*\.ya?ml$/.test(file);
+const isDeployDoc = file => ['ARCHITECTURE.md', 'docs/CICD.md'].includes(file);
 const isDiscoveredAiAsset = file => AI_GOVERNANCE_DISCOVERY_PATTERN_DIRS.some(({ pattern }) => pattern.test(file));
 const sampled = (items, limit = 20) => ({ items: items.slice(0, limit), count: items.length, truncated: items.length > limit });
 const isAiGovernanceCiAsset = file => hasPrefix(file, [
@@ -43,7 +44,7 @@ const validationRules = [
     command('node scripts/ci/check-version-consistency.mjs', '版本、lockfile 和 CHANGELOG 顶部发布说明必须一致'),
   ]),
   rule('deploy-routing', file => (
-    file === 'frontend/nginx.conf' || file === 'scripts/ci/local-ci.sh' || file === 'docs/CICD.md' ||
+    file === 'frontend/nginx.conf' || file === 'scripts/ci/local-ci.sh' || isDeployDoc(file) ||
     isComposeFile(file) || hasPrefix(file, ['scripts/deploy/', '.github/workflows/'])
   ), [
     command('node scripts/ci/check-deploy-shell-syntax.mjs', '部署 shell 或 workflow run 块变更后先做语法门禁'),
@@ -53,8 +54,8 @@ const validationRules = [
     command('env POSTGRES_PASSWORD=ci-postgres-password SPRING_DATASOURCE_PASSWORD=ci-postgres-password JWT_SECRET=ci-jwt-secret-for-compose-validation docker compose -f docker-compose.yml config', '使用固定假值解析生产 Compose，避免依赖本机生产凭据'),
     command('docker compose -f docker-compose.local.yml config', '同时解析本地 Compose，锁定两个部署入口的结构'),
   ]),
-  rule('deploy-docs', file => file === 'docs/CICD.md', [], {
-    manualChecks: [manualCheck('compose-doc-semantics', '人工核对 docs/CICD.md 与两个 Compose 文件、local-ci 和 CI workflow 的变量及命令语义一致')],
+  rule('deploy-docs', isDeployDoc, [], {
+    manualChecks: [manualCheck('compose-doc-semantics', '人工核对部署架构文档与两个 Compose 文件、local-ci 和 CI workflow 的变量及命令语义一致')],
   }),
   rule('worktree-hygiene', () => true, [command('node scripts/ci/check-ai-validation-whitespace.mjs', '所有工作区变更都需要检查 HEAD、index、worktree 与 untracked 原始字节的空白错误')], { classifies: false }),
 ];
