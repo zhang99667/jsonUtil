@@ -23,16 +23,6 @@ const removeFixtureTree = rootDir => fs.rmSync(rootDir, {
   recursive: true, force: true, maxRetries: 5, retryDelay: 100,
 });
 const revisionFor = rootDir => `worktree-${createHash('sha256').update(fs.readFileSync(path.join(rootDir, 'source.txt'))).digest('hex')}`;
-const journalDigest = value => createHash('sha256')
-  .update(`jsonutils.ai-evolution.outcome-transaction/v1\0${JSON.stringify(value)}`).digest('hex');
-const resealJournal = (journal) => {
-  const seed = { schemaVersion: journal.schemaVersion, revision: journal.revision,
-    receipts: journal.receipts, outcomes: journal.outcomes };
-  journal.transactionId = `txn-${journalDigest(seed).slice(0, 32)}`;
-  const unsigned = { schemaVersion: journal.schemaVersion, transactionId: journal.transactionId,
-    revision: journal.revision, receipts: journal.receipts, outcomes: journal.outcomes };
-  journal.transactionSha256 = journalDigest(unsigned);
-};
 
 const createRepository = () => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-outcome-transaction-'));
@@ -238,30 +228,6 @@ test('journal/ledger tamper 或 expected 外额外字节 fail closed 且不 trun
   }), /实际字节冲突/);
   assert.deepEqual(fs.readFileSync(path.join(current.rootDir, RECEIPTS)), before);
   assert.equal(fs.readFileSync(path.join(current.rootDir, OUTCOMES), 'utf8'), '');
-});
-
-test('journal 额外字段、非 canonical base64 或 digest 漂移 fail closed', (t) => {
-  const variants = [
-    { mutate: journal => { journal.unexpected = true; }, expected: /字段非法/ },
-    { mutate: journal => { journal.receipts.suffixBase64 = ` ${journal.receipts.suffixBase64}`; resealJournal(journal); }, expected: /canonical base64/ },
-    { mutate: journal => { journal.receipts.expectedSha256 = '0'.repeat(64); resealJournal(journal); }, expected: /digest\/size 绑定失败/ },
-  ];
-  for (const variant of variants) {
-    const current = fixture(t);
-    const input = transactionInput({
-      ...current,
-      overrides: { faultInjector: phase => { if (phase === 'after-journal') throw new Error('simulated crash'); } },
-    });
-    assert.throws(() => commitEvolutionOutcomeTransaction(input), /simulated crash/);
-    const journal = JSON.parse(fs.readFileSync(current.controlPaths.journalPath, 'utf8'));
-    variant.mutate(journal);
-    fs.writeFileSync(current.controlPaths.journalPath, JSON.stringify(journal), { mode: 0o600 });
-    assert.throws(() => recoverEvolutionOutcomeTransaction({
-      ...current, receiptsPath: RECEIPTS, outcomesPath: OUTCOMES, resolveRevision: revisionFor,
-    }), variant.expected);
-    assert.equal(fs.readFileSync(path.join(current.rootDir, RECEIPTS), 'utf8'), '');
-    assert.equal(fs.readFileSync(path.join(current.rootDir, OUTCOMES), 'utf8'), '');
-  }
 });
 
 test('postcheck failure 明确报告 committed-but-postcheck-failed 并保留可恢复 journal', (t) => {

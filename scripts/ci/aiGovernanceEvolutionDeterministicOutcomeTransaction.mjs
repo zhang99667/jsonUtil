@@ -4,23 +4,23 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { runHermeticGitInventory } from './aiGovernanceHermeticGitInventory.mjs';
+import {
+  AI_EVOLUTION_OUTCOME_TRANSACTION_MAX_JOURNAL_BYTES,
+  AI_EVOLUTION_OUTCOME_TRANSACTION_MAX_LEDGER_BYTES,
+  buildEvolutionOutcomeTransactionJournal,
+  buildEvolutionOutcomeTransactionJournalEntry,
+  decodeEvolutionOutcomeTransactionJournal,
+  isEvolutionOutcomeTransactionRevision,
+} from './aiGovernanceEvolutionOutcomeTransactionContract.mjs';
 import { buildEvolutionOutcomeRecoveryResult } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
 import {
   EvolutionOutcomeTransactionCommittedPostcheckError,
 } from './aiGovernanceEvolutionOutcomeTransactionFailure.mjs';
-export { getEvolutionOutcomeRecoveryMutationPerformed } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
 
 const CONTROL_RELATIVE_PATH = 'jsonutils-ai-governance/outcome-writer';
 const LOCK_FILE = 'writer.lock';
 const JOURNAL_FILE = 'transaction.json';
-const MAX_LEDGER_BYTES = 8 * 1024 * 1024;
-const MAX_SUFFIX_BYTES = 2 * 1024 * 1024;
-const MAX_JOURNAL_BYTES = 24 * 1024 * 1024;
-const REVISION_PATTERN = /^(?:[0-9a-f]{40}|(?:worktree|commit|ci)-[0-9a-f]{40}|worktree-[0-9a-f]{64})$/;
-const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const ENDPOINT_FIELDS = ['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeNs', 'ctimeNs', 'sha256'];
-const ENTRY_FIELDS = ['path', 'baseEndpoint', 'baseBase64', 'suffixBase64', 'expectedSize', 'expectedSha256'];
-const JOURNAL_FIELDS = ['schemaVersion', 'transactionId', 'revision', 'receipts', 'outcomes', 'transactionSha256'];
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const exactFields = (value, fields) => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('\0') === [...fields].sort().join('\0');
@@ -175,7 +175,9 @@ export const readEvolutionOutcomeLedgerSnapshot = (rootDir, filePath) => {
   if (before.isSymbolicLink() || !before.isFile() || before.nlink !== 1n) {
     throw new Error('ledger 必须是普通单链接非 symlink 文件');
   }
-  if (before.size > BigInt(MAX_LEDGER_BYTES)) throw new Error('ledger 超过大小上限');
+  if (before.size > BigInt(AI_EVOLUTION_OUTCOME_TRANSACTION_MAX_LEDGER_BYTES)) {
+    throw new Error('ledger 超过大小上限');
+  }
   const descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
   try {
     const opened = fs.fstatSync(descriptor, { bigint: true });
@@ -210,85 +212,20 @@ const assertDistinctLedgers = (receipts, outcomes) => {
   }
 };
 
-const canonicalBase64 = (value, label) => {
-  if (typeof value !== 'string' || Buffer.from(value, 'base64').toString('base64') !== value) {
-    throw new Error(`${label} 必须是 canonical base64`);
-  }
-  return Buffer.from(value, 'base64');
-};
-
-const buildJournalEntry = (snapshot, suffix) => {
-  if (!Buffer.isBuffer(suffix) || suffix.length === 0 || suffix.length > MAX_SUFFIX_BYTES) {
-    throw new Error('ledger suffix 必须是有界非空 Buffer');
-  }
-  const expected = Buffer.concat([snapshot.bytes, suffix]);
-  if (expected.length > MAX_LEDGER_BYTES) throw new Error('ledger transaction 超过大小上限');
-  return {
-    path: snapshot.relative,
-    baseEndpoint: snapshot.endpoint,
-    baseBase64: snapshot.bytes.toString('base64'),
-    suffixBase64: suffix.toString('base64'),
-    expectedSize: String(expected.length),
-    expectedSha256: sha256(expected),
-  };
-};
-
-const journalDigest = value => sha256(Buffer.from(`jsonutils.ai-evolution.outcome-transaction/v1\0${JSON.stringify(value)}`));
-
-const buildJournal = ({ revision, receipts, outcomes }) => {
-  const seed = { schemaVersion: 1, revision, receipts, outcomes };
-  const transactionId = `txn-${journalDigest(seed).slice(0, 32)}`;
-  const unsigned = { schemaVersion: 1, transactionId, revision, receipts, outcomes };
-  return { ...unsigned, transactionSha256: journalDigest(unsigned) };
-};
-
-const validateEndpoint = (endpoint, label) => {
-  if (!exactFields(endpoint, ENDPOINT_FIELDS) || !ENDPOINT_FIELDS.slice(0, -1).every(field => /^\d+$/.test(endpoint[field] ?? ''))
-    || !SHA256_PATTERN.test(endpoint.sha256 ?? '') || endpoint.nlink !== '1') {
-    throw new Error(`${label}.baseEndpoint 非法`);
-  }
-};
-
-const validateJournalEntry = (entry, label) => {
-  if (!exactFields(entry, ENTRY_FIELDS) || typeof entry.path !== 'string' || path.posix.normalize(entry.path) !== entry.path
-    || path.posix.isAbsolute(entry.path) || entry.path.startsWith('../')) throw new Error(`${label} 字段或路径非法`);
-  validateEndpoint(entry.baseEndpoint, label);
-  const base = canonicalBase64(entry.baseBase64, `${label}.baseBase64`);
-  const suffix = canonicalBase64(entry.suffixBase64, `${label}.suffixBase64`);
-  if (base.length > MAX_LEDGER_BYTES || suffix.length === 0 || suffix.length > MAX_SUFFIX_BYTES) throw new Error(`${label} 字节越界`);
-  const expected = Buffer.concat([base, suffix]);
-  if (entry.baseEndpoint.size !== String(base.length) || entry.baseEndpoint.sha256 !== sha256(base)
-    || entry.expectedSize !== String(expected.length) || entry.expectedSha256 !== sha256(expected)) {
-    throw new Error(`${label} digest/size 绑定失败`);
-  }
-  return { base, suffix, expected };
-};
-
 const readJournal = (journalPath) => {
-  const journal = readPrivateCompactJson(journalPath, MAX_JOURNAL_BYTES, 'outcome transaction journal');
-  if (!exactFields(journal, JOURNAL_FIELDS) || journal.schemaVersion !== 1
-    || !/^txn-[0-9a-f]{32}$/.test(journal.transactionId ?? '') || !REVISION_PATTERN.test(journal.revision ?? '')
-    || !SHA256_PATTERN.test(journal.transactionSha256 ?? '')) throw new Error('outcome transaction journal 字段非法');
-  const unsigned = { schemaVersion: journal.schemaVersion, transactionId: journal.transactionId, revision: journal.revision,
-    receipts: journal.receipts, outcomes: journal.outcomes };
-  if (journal.transactionSha256 !== journalDigest(unsigned)) throw new Error('outcome transaction journal digest 不匹配');
-  const seed = { schemaVersion: journal.schemaVersion, revision: journal.revision,
-    receipts: journal.receipts, outcomes: journal.outcomes };
-  if (journal.transactionId !== `txn-${journalDigest(seed).slice(0, 32)}`) {
-    throw new Error('outcome transaction journal transactionId 不匹配');
-  }
-  return {
-    journal,
-    receipts: validateJournalEntry(journal.receipts, 'journal.receipts'),
-    outcomes: validateJournalEntry(journal.outcomes, 'journal.outcomes'),
-  };
+  const journal = readPrivateCompactJson(
+    journalPath, AI_EVOLUTION_OUTCOME_TRANSACTION_MAX_JOURNAL_BYTES, 'outcome transaction journal',
+  );
+  return decodeEvolutionOutcomeTransactionJournal(journal);
 };
 
 const writeJournal = (controlPaths, journal) => {
   if (fs.existsSync(controlPaths.journalPath)) throw new Error('存在未恢复的 outcome transaction journal');
   const temporary = path.join(controlPaths.controlDir, `transaction-${randomBytes(16).toString('hex')}.tmp`);
   const bytes = Buffer.from(JSON.stringify(journal));
-  if (bytes.length > MAX_JOURNAL_BYTES) throw new Error('outcome transaction journal 超过大小上限');
+  if (bytes.length > AI_EVOLUTION_OUTCOME_TRANSACTION_MAX_JOURNAL_BYTES) {
+    throw new Error('outcome transaction journal 超过大小上限');
+  }
   writeExclusiveFile(temporary, bytes, 0o600);
   try {
     fs.renameSync(temporary, controlPaths.journalPath);
@@ -404,7 +341,8 @@ export const commitEvolutionOutcomeTransaction = ({
   receiptSuffix, outcomeSuffix, resolveRevision, postcheck, faultInjector = () => {},
 }) => {
   assertControlLock(controlPaths);
-  if (!REVISION_PATTERN.test(revision ?? '') || typeof resolveRevision !== 'function' || typeof postcheck !== 'function') {
+  if (!isEvolutionOutcomeTransactionRevision(revision)
+    || typeof resolveRevision !== 'function' || typeof postcheck !== 'function') {
     throw new Error('outcome transaction revision/回调非法');
   }
   if (fs.existsSync(controlPaths.journalPath)) throw new Error('存在未恢复的 outcome transaction journal');
@@ -416,10 +354,10 @@ export const commitEvolutionOutcomeTransaction = ({
     throw new Error('outcome transaction ledger base bytes 已漂移');
   }
   if (resolveRevision(rootDir) !== revision) throw new Error('outcome transaction source revision 已漂移');
-  const journal = buildJournal({
+  const journal = buildEvolutionOutcomeTransactionJournal({
     revision,
-    receipts: buildJournalEntry(receipts, receiptSuffix),
-    outcomes: buildJournalEntry(outcomes, outcomeSuffix),
+    receipts: buildEvolutionOutcomeTransactionJournalEntry(receipts, receiptSuffix),
+    outcomes: buildEvolutionOutcomeTransactionJournalEntry(outcomes, outcomeSuffix),
   });
   writeJournal(controlPaths, journal);
   faultInjector('after-journal');

@@ -15,12 +15,12 @@ import {
   isEvolutionDeterministicPassReusable,
 } from './aiGovernanceEvolutionDeterministicOutcomeCandidate.mjs';
 import { readEvolutionOutcomeLedger } from './aiGovernanceEvolutionOutcomeLedger.mjs';
+import { getEvolutionOutcomeRecoveryMutationPerformed } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
 import { readEvolutionTrialReceiptLedger } from './aiGovernanceEvolutionTrialReceipts.mjs';
 import { resolveEvolutionWorktreeRevision } from './aiGovernanceEvolutionWorktreeRevision.mjs';
 import {
   acquireEvolutionOutcomeWriterLock,
   commitEvolutionOutcomeTransaction,
-  getEvolutionOutcomeRecoveryMutationPerformed,
   readEvolutionOutcomeLedgerSnapshot,
   recoverEvolutionOutcomeTransaction,
 } from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';

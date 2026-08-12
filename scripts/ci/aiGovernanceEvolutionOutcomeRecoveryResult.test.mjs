@@ -5,14 +5,12 @@ import {
   buildEvolutionOutcomeRecoveryResult,
   getEvolutionOutcomeRecoveryMutationPerformed,
 } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
-import {
-  getEvolutionOutcomeRecoveryMutationPerformed as getMutationFromTransaction,
-} from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';
+import * as transactionModule from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';
 
 const transactionId = `txn-${'a'.repeat(32)}`;
 
 test('recovery result 逐 ledger 投影本次 mutation 并保持闭字段', () => {
-  assert.equal(getMutationFromTransaction, getEvolutionOutcomeRecoveryMutationPerformed);
+  assert.equal(Object.hasOwn(transactionModule, 'getEvolutionOutcomeRecoveryMutationPerformed'), false);
   const cases = [
     [{ status: 'none' }, false, { receipts: false, outcomes: false }],
     [{ status: 'abandoned-source-drift', transactionId }, false, { receipts: false, outcomes: false }],

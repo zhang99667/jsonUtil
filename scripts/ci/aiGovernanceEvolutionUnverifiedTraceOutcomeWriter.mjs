@@ -7,7 +7,6 @@ import { validateEvolutionDeterministicOutcomeCandidate } from './aiGovernanceEv
 import {
   acquireEvolutionOutcomeWriterLock,
   commitEvolutionOutcomeTransaction,
-  getEvolutionOutcomeRecoveryMutationPerformed,
   readEvolutionOutcomeLedgerSnapshot,
   recoverEvolutionOutcomeTransaction,
 } from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';
@@ -18,6 +17,7 @@ import {
   hashEvolutionOutcomeV3Line,
 } from './aiGovernanceEvolutionOutcomeChain.mjs';
 import { readEvolutionOutcomeLedger } from './aiGovernanceEvolutionOutcomeLedger.mjs';
+import { getEvolutionOutcomeRecoveryMutationPerformed } from './aiGovernanceEvolutionOutcomeRecoveryResult.mjs';
 import { hashEvolutionTraceValue, verifyEvolutionTraceReceipt } from './aiGovernanceEvolutionTrace.mjs';
 import {
   buildEvolutionTracePolicyRegistry,

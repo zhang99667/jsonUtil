@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1026 (2026-08-12) - 分层双账本事务契约
+
+### 🏗️ 架构与基础设施
+
+- **Journal 协议权威叶子**: 闭字段、revision、endpoint、canonical base64、8/2/24 MiB 字节边界、transaction ID 与 digest 绑定迁入独立纯契约，固定 transaction 向量和负例由直接测试锁定
+- **崩溃恢复执行收缩**: transaction 只保留 Git control dir、owner-only lock/journal、ledger snapshot、receipt-first append/fsync、恢复状态机与 postcheck，生产热点从 447/470 收缩为 385/410，contract 为 119/145
+- **直接依赖与测试分层**: 三个 writer 直接消费 recovery-result 权威模块，不保留 transaction 兼容 re-export；原 transaction 测试从 296/300 收缩为 262/280，contract 直测为 97/120
+- **证据边界不升级**: journal 协议字节、writer 版本、case/corpus、`3/18` behavior coverage 与仓外 protected runtime/signer blocker 不变，源码与交付 index 冻结后仅由 preview-first writer 刷新既有 deterministic source-state
+
 ## v1.8.1025 (2026-08-11) - 分层 Validation 权威状态观察
 
 ### 🏗️ 架构与基础设施
