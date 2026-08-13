@@ -4,7 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import { PROJECT_PLUGIN_LOCK_PATH } from './aiGovernanceProjectPluginLock.mjs';
-import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLockWriter.mjs';
 import {
   parseProjectPluginJsonAuthority,
   PROJECT_PLUGIN_MANIFEST_MAX_BYTES,

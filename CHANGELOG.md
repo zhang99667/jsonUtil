@@ -1,5 +1,15 @@
 # 更新日志 (Changelog)
 
+## v1.8.1031 (2026-08-13) - 分层 Plugin Lifecycle 与并发安全 Lock
+
+### 🏗️ 架构与基础设施
+
+- **Lifecycle 变化轴分层**: component-only 报告、失败归一化和固定插件投影迁入纯 contract；doctor/apply 只保留 Codex state/cache 双检与逐 mutation 编排，content-lock writer 改为 direct consumer，不保留兼容转发层
+- **稳定 lock endpoint**: write-lock 以单链接、4 MiB 上限、descriptor 前后 stat 与原始 bytes 绑定当前 lock；inventory/source 复核后再次 CAS，拒绝静默覆盖并发改写
+- **事务持久性与回滚所有权**: 同目录合作式 writer lock 阻断并发维护者，temp file 与 parent directory 均 fsync；source race 只在 lock 仍是本次 candidate 时恢复原始 bytes，第三方接管后拒绝危险回滚；control lock 被接管时保留主失败优先级并追加清理诊断
+- **账本 preview 诊断闭合**: deterministic writer 在聚合失败为空但 evidence freshness 独立失败时保留真实 stale outcome 诊断，postcheck 复用同一投影，不再输出 `undefined`
+- **代表红测与边界**: 红测复现缺失 lock 误报、inventory 窗口覆盖和 candidate 后并发字节被回滚覆盖；新增非法 root 脱敏报告与 direct ownership 契约，component 证据不扩大 `3/18` behavior coverage 或仓外 runtime/signer trust
+
 ## v1.8.1030 (2026-08-13) - 单源 Workflow 完整历史契约
 
 ### 🏗️ 架构与基础设施

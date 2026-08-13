@@ -14,7 +14,7 @@ import {
   collectProjectPluginLockFailures,
   PROJECT_PLUGIN_LOCK_PATH,
 } from './aiGovernanceProjectPluginLock.mjs';
-import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLockWriter.mjs';
 import {
   projectPluginEvalFile as evalFile,
   projectPluginManifestFile as manifestFile,

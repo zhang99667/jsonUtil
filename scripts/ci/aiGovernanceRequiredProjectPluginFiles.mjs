@@ -4,7 +4,7 @@ import {
 } from './aiGovernanceRequiredProjectPluginLifecycleFiles.mjs';
 
 export { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES };
-export { PROJECT_PLUGIN_LIFECYCLE_REPORT_TYPE } from './aiGovernanceProjectPluginLifecycle.mjs';
+export { PROJECT_PLUGIN_LIFECYCLE_REPORT_TYPE } from './aiGovernanceProjectPluginLifecycleContract.mjs';
 
 export const AI_GOVERNANCE_PROJECT_PLUGIN_SOURCE_FILES = Object.freeze([
   '.agents/plugins/marketplace.json',

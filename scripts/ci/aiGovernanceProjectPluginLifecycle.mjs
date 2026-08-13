@@ -1,34 +1,27 @@
-import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
 import { captureProjectPluginCommand } from './aiGovernanceProjectPluginCommand.mjs';
 import { buildProjectPluginLock } from './aiGovernanceProjectPluginLock.mjs';
-import { resolveProjectPluginRepositoryPath } from './aiGovernanceProjectPluginRepositoryPath.mjs';
-import { isStrictSemver, isStrictSemverIncrement } from './aiGovernanceSemver.mjs';
+import {
+  buildProjectPluginLifecycleReport as report,
+  emptyProjectPluginDescriptors,
+  PROJECT_PLUGIN_LIFECYCLE_REPORT_TYPE,
+  PROJECT_PLUGIN_MARKETPLACE,
+  projectPluginLifecycleFailure as failure,
+  projectPluginLifecycleFailureCode as failureCode,
+  projectPluginLifecycleReportRoot,
+  readExpectedProjectPlugins,
+} from './aiGovernanceProjectPluginLifecycleContract.mjs';
+import { isStrictSemver } from './aiGovernanceSemver.mjs';
 import {
   captureProjectPluginTree,
   sameProjectPluginTreeSnapshots,
 } from './aiGovernanceProjectPluginTreeSnapshot.mjs';
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginLifecycleFiles.mjs';
 
-export const PROJECT_PLUGIN_LIFECYCLE_REPORT_TYPE = 'jsonutils-project-plugin-lifecycle';
-export const PROJECT_PLUGIN_MARKETPLACE = 'jsonutils-project';
-
-const MAX_FAILURES = 8;
-
-class LifecycleFailure extends Error {
-  constructor(code) {
-    super(code);
-    this.code = code;
-  }
-}
-
-const failure = code => new LifecycleFailure(code);
-const failureCode = error => error instanceof LifecycleFailure ? error.code : 'LIFECYCLE_INTERNAL_ERROR';
-const posixPath = value => value.split(path.sep).join('/');
+export { PROJECT_PLUGIN_LIFECYCLE_REPORT_TYPE, PROJECT_PLUGIN_MARKETPLACE };
 const lstatIfExists = (target) => {
   try { return fs.lstatSync(target); }
   catch (error) {
@@ -67,16 +60,6 @@ const projectRoot = (rootDir) => {
   } catch { throw failure('PROJECT_ROOT_INVALID'); }
 };
 
-const readExpectedPlugins = (sourceSnapshot) => AI_GOVERNANCE_PROJECT_PLUGIN_NAMES.map((name) => {
-  const plugin = sourceSnapshot.plugins.find(candidate => candidate.name === name);
-  if (!plugin || plugin.manifestName !== name || !isStrictSemver(plugin.manifestVersion)) {
-    throw failure(`PROJECT_PLUGIN_MANIFEST_INVALID:${name}`);
-  }
-  return Object.freeze({
-    name, selector: `${name}@${PROJECT_PLUGIN_MARKETPLACE}`, expectedVersion: plugin.manifestVersion,
-  });
-});
-
 const isPluginListEntry = (item, installed) => item && typeof item === 'object' && !Array.isArray(item)
   && typeof item.name === 'string' && item.name.length > 0
   && typeof item.marketplaceName === 'string' && item.marketplaceName.length > 0
@@ -100,7 +83,7 @@ const projectPluginSourceSnapshot = async (root, validateSource) => {
     await validateSource(root, { sourceSnapshot });
     return Object.freeze({ sourceSnapshot, lock: JSON.stringify(buildProjectPluginLock(root, sourceSnapshot)) });
   } catch (error) {
-    if (error instanceof LifecycleFailure) throw error;
+    if (failureCode(error) !== 'LIFECYCLE_INTERNAL_ERROR') throw error;
     throw failure('PROJECT_PLUGIN_SOURCE_CONTRACT_INVALID');
   }
 };
@@ -253,40 +236,6 @@ const inspectState = async ({ root, expected, binary, runCommand, inspectCache, 
   };
 };
 
-const report = ({ root, mode, status, inspection, expected, attempted = 0, succeeded = 0,
-  newTaskRequired = false, failures = [] }) => ({
-  schemaVersion: 1,
-  reportType: PROJECT_PLUGIN_LIFECYCLE_REPORT_TYPE,
-  mode,
-  status,
-  ok: ['ready', 'applied', 'lock-written'].includes(status),
-  trustBoundary: 'local-installation-component-only',
-  taskRegistrationVerified: false,
-  runtimeTrustVerified: false,
-  signerTrustVerified: false,
-  attestationVerified: false,
-  outcomeEligible: false,
-  marketplace: {
-    name: PROJECT_PLUGIN_MARKETPLACE,
-    expectedRoot: root,
-    state: inspection?.marketplaceState ?? (mode === 'write-lock' ? 'not-queried' : 'unknown'),
-  },
-  plugins: (inspection?.pluginStates ?? expected.map(plugin => ({
-    ...plugin, installedVersion: null, enabled: null, cacheState: 'unknown', state: 'unknown', action: 'none',
-  }))).map(plugin => ({
-    selector: plugin.selector,
-    expectedVersion: plugin.expectedVersion,
-    installedVersion: plugin.installedVersion,
-    enabled: plugin.enabled,
-    cacheState: plugin.cacheState,
-    state: plugin.state,
-    action: plugin.action,
-  })),
-  mutations: { attempted, succeeded },
-  newTaskRequired,
-  failures: failures.slice(0, MAX_FAILURES),
-});
-
 const runMutation = async ({ command, validate, before, after, attempted, succeeded }) => {
   await before();
   attempted.count += 1;
@@ -339,9 +288,7 @@ export const runProjectPluginLifecycle = async ({
   validateSource = validateProjectPluginSource,
 }) => {
   let root;
-  let expected = AI_GOVERNANCE_PROJECT_PLUGIN_NAMES.map(name => ({
-    name, selector: `${name}@${PROJECT_PLUGIN_MARKETPLACE}`, expectedVersion: null,
-  }));
+  let expected = emptyProjectPluginDescriptors();
   let inspection;
   let sourceSnapshot;
   const attempted = { count: 0 };
@@ -351,7 +298,7 @@ export const runProjectPluginLifecycle = async ({
     root = projectRoot(rootDir);
     if (!['check', 'apply'].includes(mode)) throw failure('LIFECYCLE_MODE_INVALID');
     sourceSnapshot = await projectPluginSourceSnapshot(root, validateSource);
-    expected = readExpectedPlugins(sourceSnapshot.sourceSnapshot);
+    expected = readExpectedProjectPlugins(sourceSnapshot.sourceSnapshot);
     const inspectNow = () => inspectState({
       root, expected, binary: codexBinary, runCommand, inspectCache, codexHome,
     });
@@ -436,177 +383,8 @@ export const runProjectPluginLifecycle = async ({
     return report({ root, mode, status: 'applied', inspection, expected,
       attempted: attempted.count, succeeded: succeeded.count, newTaskRequired: attempted.count > 0 });
   } catch (error) {
-    return report({ root: root ?? path.resolve(rootDir), mode, status: 'blocked', inspection, expected,
+    return report({ root: projectPluginLifecycleReportRoot(root, rootDir), mode, status: 'blocked', inspection, expected,
       attempted: attempted.count, succeeded: succeeded.count, newTaskRequired: attempted.count > 0,
-      failures: [failureCode(error)] });
-  }
-};
-
-export const listGitProjectPluginFiles = async ({ rootDir, spawnImpl = spawn }) => {
-  let output;
-  try {
-    output = await captureProjectPluginCommand({
-      binary: 'git',
-      args: ['ls-files', '--cached', '--others', '--exclude-standard', '-z', '--',
-        ...AI_GOVERNANCE_PROJECT_PLUGIN_NAMES.map(name => `plugins/${name}`)],
-      cwd: rootDir,
-      spawnImpl,
-    });
-  } catch { throw failure('GIT_PLUGIN_INVENTORY_FAILED'); }
-  return new Set(output.toString('utf8').split('\0').filter(Boolean).map(posixPath));
-};
-
-const atomicReplaceBytes = (file, bytes) => {
-  const temporary = path.join(path.dirname(file), `.${path.basename(file)}.tmp-${process.pid}-${randomUUID()}`);
-  let descriptor;
-  try {
-    descriptor = fs.openSync(temporary, 'wx', 0o644);
-    fs.writeFileSync(descriptor, bytes);
-    fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
-    descriptor = undefined;
-    fs.renameSync(temporary, file);
-  } catch {
-    if (descriptor !== undefined) try { fs.closeSync(descriptor); } catch {}
-    try { fs.rmSync(temporary, { force: true }); } catch {}
-    throw failure('PROJECT_PLUGIN_LOCK_ATOMIC_WRITE_FAILED');
-  }
-};
-const atomicWriteJson = (file, value) => atomicReplaceBytes(file, serializeProjectPluginLock(value));
-
-const inlineRecord = value => `{ ${Object.entries(value).map(([key, item]) => (
-  `${JSON.stringify(key)}: ${JSON.stringify(item)}`
-)).join(', ')} }`;
-
-const serializeProjectPluginLock = lock => [
-  '{',
-  `  "schemaVersion": ${JSON.stringify(lock.schemaVersion)},`,
-  `  "lockVersion": ${JSON.stringify(lock.lockVersion)},`,
-  `  "digestAlgorithm": ${JSON.stringify(lock.digestAlgorithm)},`,
-  `  "trustBoundary": ${JSON.stringify(lock.trustBoundary)},`,
-  '  "plugins": [',
-  ...lock.plugins.flatMap((plugin, pluginIndex) => [
-    '    {',
-    `      "selector": ${JSON.stringify(plugin.selector)},`,
-    `      "manifestVersion": ${JSON.stringify(plugin.manifestVersion)},`,
-    `      "source": ${JSON.stringify(plugin.source)},`,
-    '      "files": [',
-    ...plugin.files.map((fileRecord, fileIndex) => (
-      `        ${inlineRecord(fileRecord)}${fileIndex === plugin.files.length - 1 ? '' : ','}`
-    )),
-    '      ],',
-    `      "treeSha256": ${JSON.stringify(plugin.treeSha256)}`,
-    `    }${pluginIndex === lock.plugins.length - 1 ? '' : ','}`,
-  ]),
-  '  ]',
-  '}',
-  '',
-].join('\n');
-
-export const writeProjectPluginLockLifecycle = async ({
-  rootDir,
-  listInventory = listGitProjectPluginFiles,
-}) => {
-  let root;
-  let expected = AI_GOVERNANCE_PROJECT_PLUGIN_NAMES.map(name => ({
-    name, selector: `${name}@${PROJECT_PLUGIN_MARKETPLACE}`, expectedVersion: null,
-  }));
-  try {
-    root = projectRoot(rootDir);
-    let sourceSnapshot;
-    try { sourceSnapshot = captureProjectPluginTree(root); }
-    catch { throw failure('PROJECT_PLUGIN_SOURCE_CONTRACT_INVALID'); }
-    expected = readExpectedPlugins(sourceSnapshot);
-    const { collectProjectPluginSourceFailures } = await import('./aiGovernanceProjectPlugins.mjs');
-    if (collectProjectPluginSourceFailures(root, {
-      checkEntryVersions: false, sourceSnapshot,
-    }).length > 0) {
-      throw failure('PROJECT_PLUGIN_SOURCE_CONTRACT_INVALID');
-    }
-    const { collectProjectPluginLockShapeFailures, PROJECT_PLUGIN_LOCK_PATH } = await import(
-      './aiGovernanceProjectPluginLock.mjs'
-    );
-    const lockFile = resolveProjectPluginRepositoryPath(root, PROJECT_PLUGIN_LOCK_PATH);
-    const stat = fs.lstatSync(lockFile);
-    if (!stat.isFile() || stat.isSymbolicLink()) throw failure('PROJECT_PLUGIN_LOCK_INVALID');
-    let previous, previousBytes;
-    try {
-      previousBytes = fs.readFileSync(lockFile);
-      previous = JSON.parse(previousBytes.toString('utf8'));
-    }
-    catch { throw failure('PROJECT_PLUGIN_LOCK_INVALID'); }
-    if (collectProjectPluginLockShapeFailures(previous).length > 0) throw failure('PROJECT_PLUGIN_LOCK_INVALID');
-    const candidate = buildProjectPluginLock(root, sourceSnapshot);
-    const selectors = candidate.plugins.map(plugin => plugin.selector);
-    if (JSON.stringify(previous.plugins.map(plugin => plugin.selector)) !== JSON.stringify(selectors)) {
-      throw failure('PROJECT_PLUGIN_LOCK_INVALID');
-    }
-    const inventory = await listInventory({ rootDir: root });
-    if (!(inventory instanceof Set)) throw failure('GIT_PLUGIN_INVENTORY_INVALID');
-    const candidateFiles = new Set(candidate.plugins.flatMap(plugin => (
-      plugin.files.map(file => `${plugin.source}/${file.path}`)
-    )));
-    if (candidateFiles.size !== inventory.size || [...candidateFiles].some(file => !inventory.has(file))) {
-      throw failure('PROJECT_PLUGIN_LOCK_SOURCE_NOT_IN_GIT_INVENTORY');
-    }
-    const stableSnapshot = captureProjectPluginTree(root);
-    if (collectProjectPluginSourceFailures(root, {
-      checkEntryVersions: false, sourceSnapshot: stableSnapshot,
-    }).length > 0) throw failure('PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE');
-    const stableCandidate = buildProjectPluginLock(root, stableSnapshot);
-    if (!sameProjectPluginTreeSnapshots(sourceSnapshot, stableSnapshot)
-      || JSON.stringify(stableCandidate) !== JSON.stringify(candidate)) {
-      throw failure('PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE');
-    }
-    if (JSON.stringify(previous) === JSON.stringify(candidate)) {
-      const inspection = { marketplaceState: 'not-queried', pluginStates: expected.map(plugin => ({
-        ...plugin, installedVersion: null, enabled: null, cacheState: 'not-queried', state: 'lock-unchanged', action: 'none',
-      })) };
-      return report({ root, mode: 'write-lock', status: 'ready', inspection, expected });
-    }
-    const previousBySelector = new Map(previous.plugins.map(plugin => [plugin.selector, plugin]));
-    const invalidVersion = candidate.plugins.find((plugin) => {
-      const previousPlugin = previousBySelector.get(plugin.selector);
-      return JSON.stringify(previousPlugin) !== JSON.stringify(plugin)
-        && !isStrictSemverIncrement(previousPlugin?.manifestVersion, plugin.manifestVersion);
-    });
-    if (invalidVersion) throw failure(`PROJECT_PLUGIN_VERSION_CHANGE_REQUIRED:${invalidVersion.selector}`);
-    atomicWriteJson(lockFile, candidate);
-    let postWriteFailure = null;
-    try {
-      const postWriteSnapshot = captureProjectPluginTree(root);
-      if (!sameProjectPluginTreeSnapshots(stableSnapshot, postWriteSnapshot)
-        || collectProjectPluginSourceFailures(root, {
-          checkEntryVersions: false, sourceSnapshot: postWriteSnapshot,
-        }).length > 0) postWriteFailure = 'PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE';
-    } catch { postWriteFailure = 'PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE'; }
-    try {
-      const postWriteInventory = await listInventory({ rootDir: root });
-      if (!(postWriteInventory instanceof Set)
-        || candidateFiles.size !== postWriteInventory.size
-        || [...candidateFiles].some(file => !postWriteInventory.has(file))) {
-        postWriteFailure ??= 'PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE';
-      }
-    } catch { postWriteFailure ??= 'GIT_PLUGIN_INVENTORY_FAILED'; }
-    try {
-      if (JSON.stringify(JSON.parse(fs.readFileSync(lockFile, 'utf8'))) !== JSON.stringify(candidate)) {
-        postWriteFailure ??= 'PROJECT_PLUGIN_LOCK_POSTCHECK_FAILED';
-      }
-    } catch { postWriteFailure ??= 'PROJECT_PLUGIN_LOCK_POSTCHECK_FAILED'; }
-    if (postWriteFailure) {
-      try {
-        atomicReplaceBytes(lockFile, previousBytes);
-        if (!fs.readFileSync(lockFile).equals(previousBytes)) throw new Error();
-      } catch { throw failure('PROJECT_PLUGIN_LOCK_ROLLBACK_FAILED'); }
-      throw failure(postWriteFailure);
-    }
-    const inspection = { marketplaceState: 'not-queried', pluginStates: expected.map(plugin => ({
-      ...plugin, installedVersion: null, enabled: null, cacheState: 'not-queried', state: 'lock-written', action: 'none',
-    })) };
-    return report({ root, mode: 'write-lock', status: 'lock-written', inspection, expected,
-      attempted: 1, succeeded: 1 });
-  } catch (error) {
-    return report({ root: root ?? path.resolve(rootDir), mode: 'write-lock', status: 'blocked', expected,
       failures: [failureCode(error)] });
   }
 };

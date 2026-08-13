@@ -131,6 +131,11 @@ const validateRunnerReport = ({ report, pending }) => {
   return resultsById;
 };
 
+const evaluationReportFailures = report => [...new Set([
+  ...(Array.isArray(report?.failures) ? report.failures : []),
+  ...(Array.isArray(report?.evidenceFreshness?.failures) ? report.evidenceFreshness.failures : []),
+])];
+
 export const validateEvolutionDeterministicOutcomeCandidate = ({
   rootDir,
   receiptsBytes,
@@ -138,8 +143,9 @@ export const validateEvolutionDeterministicOutcomeCandidate = ({
   evaluatedAt,
   revision,
   pairedTrustPolicy,
+  buildReport = buildAiGovernanceEvolutionEvalReport,
 }) => withPrivateLedgerCopies({ receiptsBytes, outcomesBytes }, ({ receiptsPath, outcomesPath }) => {
-    const report = buildAiGovernanceEvolutionEvalReport({
+    const report = buildReport({
       rootDir,
       receiptsPath,
       outcomesPath,
@@ -147,7 +153,8 @@ export const validateEvolutionDeterministicOutcomeCandidate = ({
       resolveRevision: () => revision,
       pairedTrustPolicy,
     });
-    if (!report.ok) throw new Error(`候选 ledger 全量校验失败：${report.failures[0]}`);
+    const reportFailures = evaluationReportFailures(report);
+    if (!report?.ok) throw new Error(`候选 ledger 全量校验失败：${reportFailures[0] ?? '报告不完整'}`);
     return report;
   });
 
@@ -262,7 +269,7 @@ const buildPostcheck = ({ rootDir, evaluatedAt, revision, resolveRevision }) => 
     failures: ['ledger commit 后 source-state v2 revision 发生漂移'],
   };
   const report = buildAiGovernanceEvolutionEvalReport({ rootDir, maxDate: evaluatedAt });
-  return { ok: report.ok, failures: report.failures };
+  return { ok: report.ok, failures: evaluationReportFailures(report) };
 };
 
 export const recordEvolutionDeterministicOutcomes = ({

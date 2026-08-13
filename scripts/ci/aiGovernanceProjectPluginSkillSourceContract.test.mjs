@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { captureProjectPluginTree } from './aiGovernanceProjectPluginTreeSnapshot.mjs';
 import { collectProjectPluginSkillContractFailures } from './aiGovernanceProjectPluginSkillContract.mjs';
 import { PROJECT_PLUGIN_LOCK_PATH } from './aiGovernanceProjectPluginLock.mjs';
-import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLockWriter.mjs';
 import {
   projectPluginManifestFile as manifestFile,
   projectPluginSkillFile as skillFile,

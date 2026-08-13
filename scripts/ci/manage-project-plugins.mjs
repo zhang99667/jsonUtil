@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 import {
   resolveCodexBinary,
   runProjectPluginLifecycle,
-  writeProjectPluginLockLifecycle,
 } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLockWriter.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const args = process.argv.slice(2);

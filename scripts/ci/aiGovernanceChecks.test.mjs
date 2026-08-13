@@ -227,6 +227,8 @@ const writeMinimalGovernanceFixture = (rootDir) => {
   };
 
   governanceFixtureFiles.forEach(file => writeFixtureFile(rootDir, file, CODEX_PROJECT_COMMAND_RULE_FILES.includes(file) || file === '.codex/config.toml' ? fs.readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8') : sharedReferences));
+  writeFixtureFile(rootDir, 'scripts/ci/manage-project-plugins.mjs',
+    "import './aiGovernanceProjectPluginLifecycle.mjs';\nimport './aiGovernanceProjectPluginLockWriter.mjs';");
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRequiredMcpFiles.mjs', "import './aiGovernanceRequiredMcpRuntimeFiles.mjs';");
   fs.cpSync(new URL('../../.agents', import.meta.url), `${rootDir}/.agents`, { recursive: true });
   fs.cpSync(new URL('../../plugins', import.meta.url), `${rootDir}/plugins`, { recursive: true });

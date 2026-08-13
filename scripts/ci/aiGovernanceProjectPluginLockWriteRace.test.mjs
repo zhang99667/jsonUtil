@@ -4,7 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import { buildProjectPluginLock, PROJECT_PLUGIN_LOCK_PATH } from './aiGovernanceProjectPluginLock.mjs';
-import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLockWriter.mjs';
 import {
   rewriteProjectPluginJson as rewriteJson,
   rewriteProjectPluginText as rewriteText,
@@ -41,6 +41,36 @@ test('write-lock 原子替换后的 source race 必须回滚原 lock', () => wit
     assert.equal(injected, true);
     assert.deepEqual(report.failures, ['PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE']);
     assert.deepEqual(fs.readFileSync(lockFile), before);
+  } finally {
+    fs.renameSync = renameSync;
+  }
+}));
+
+test('write-lock 不得用回滚覆盖 candidate 后的并发 lock 字节', () => withCopy(async (root) => {
+  const manifestFile = 'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json';
+  const sourceFile = 'plugins/jsonutils-governance-mcp/README.md';
+  rewriteJson(root, manifestFile, value => { value.version = '0.2.3'; });
+  rewriteText(root, sourceFile, content => `${content}\nversioned change\n`);
+  const inventory = inventoryFor(root);
+  const lockFile = path.join(root, PROJECT_PLUGIN_LOCK_PATH);
+  const concurrentBytes = Buffer.from('{"concurrent":true}\n');
+  const canonicalLockFile = fs.realpathSync(lockFile);
+  const renameSync = fs.renameSync;
+  let injected = false;
+  fs.renameSync = (source, destination) => {
+    renameSync(source, destination);
+    if (!injected && fs.realpathSync(destination) === canonicalLockFile) {
+      injected = true;
+      fs.writeFileSync(destination, concurrentBytes);
+    }
+  };
+  try {
+    const report = await writeProjectPluginLockLifecycle({
+      rootDir: root, listInventory: async () => inventory,
+    });
+    assert.equal(injected, true);
+    assert.deepEqual(report.failures, ['PROJECT_PLUGIN_LOCK_ROLLBACK_FAILED']);
+    assert.deepEqual(fs.readFileSync(lockFile), concurrentBytes);
   } finally {
     fs.renameSync = renameSync;
   }

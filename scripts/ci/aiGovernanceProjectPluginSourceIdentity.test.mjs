@@ -12,7 +12,7 @@ import {
 import { collectProjectPluginSkillContractFailures } from './aiGovernanceProjectPluginSkillContract.mjs';
 import { collectProjectPluginSourceIdentityFailures } from './aiGovernanceProjectPluginSourceIdentity.mjs';
 import { collectProjectPluginFailures } from './aiGovernanceProjectPlugins.mjs';
-import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { writeProjectPluginLockLifecycle } from './aiGovernanceProjectPluginLockWriter.mjs';
 
 const projectRoot = path.resolve(import.meta.dirname, '../..');
 const pluginRoot = 'plugins/ai-infra-controller-probe';

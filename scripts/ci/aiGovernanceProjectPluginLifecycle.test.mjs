@@ -9,13 +9,8 @@ import {
   inspectProjectPluginCache,
   runCodexJsonCommand,
   runProjectPluginLifecycle,
-  writeProjectPluginLockLifecycle,
 } from './aiGovernanceProjectPluginLifecycle.mjs';
-import {
-  buildProjectPluginLock,
-  collectProjectPluginLockFailures,
-  PROJECT_PLUGIN_LOCK_PATH,
-} from './aiGovernanceProjectPluginLock.mjs';
+import { buildProjectPluginLock } from './aiGovernanceProjectPluginLock.mjs';
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginFiles.mjs';
 
 const sourceRoot = path.resolve(import.meta.dirname, '../..');
@@ -42,9 +37,6 @@ const expectedVersions = root => Object.fromEntries(AI_GOVERNANCE_PROJECT_PLUGIN
   const manifest = JSON.parse(fs.readFileSync(path.join(root, `plugins/${name}/.codex-plugin/plugin.json`), 'utf8'));
   return [name, manifest.version];
 }));
-const inventoryFor = root => new Set(buildProjectPluginLock(root).plugins.flatMap(plugin => (
-  plugin.files.map(file => `${plugin.source}/${file.path}`)
-)));
 const installCache = (root, codexHome, layout = 'local') => {
   for (const plugin of buildProjectPluginLock(root).plugins) {
     const name = plugin.selector.split('@')[0];
@@ -422,80 +414,14 @@ test('spawn 始终使用 argv 与 shell:false，特殊路径保持单一参数',
   assert.equal(observed.args.length, 5);
 });
 
-test('lock writer no-op、同版本漂移拒绝且 ignored 文件不能进入 lock', () => withProject(async ({ root }) => {
-  const lockFile = path.join(root, PROJECT_PLUGIN_LOCK_PATH);
-  const original = fs.readFileSync(lockFile, 'utf8');
-  const ready = await writeProjectPluginLockLifecycle({ rootDir: root,
-    listInventory: async () => inventoryFor(root) });
-  assert.equal(ready.status, 'ready');
-  assert.equal(fs.readFileSync(lockFile, 'utf8'), original);
-  fs.appendFileSync(path.join(root, 'plugins/jsonutils-governance-mcp/README.md'), '\ndrift\n');
-  const drift = await writeProjectPluginLockLifecycle({ rootDir: root,
-    listInventory: async () => inventoryFor(root) });
-  assert.match(drift.failures[0], /PROJECT_PLUGIN_VERSION_CHANGE_REQUIRED/);
-  assert.equal(fs.readFileSync(lockFile, 'utf8'), original);
-  fs.writeFileSync(path.join(root, 'plugins/codex-mcp-config-auditor/.DS_Store'), 'ignored');
-  const ignored = await writeProjectPluginLockLifecycle({ rootDir: root,
-    listInventory: async () => new Set(JSON.parse(original).plugins.flatMap(plugin => (
-      plugin.files.map(file => `${plugin.source}/${file.path}`)
-    ))) });
-  assert.deepEqual(ignored.failures, ['PROJECT_PLUGIN_LOCK_SOURCE_NOT_IN_GIT_INVENTORY']);
-}));
-
-test('lock no-op 也复核 TOCTOU，manifest 版本只允许严格递增', () => withProject(async ({ root }) => {
-  const lockFile = path.join(root, PROJECT_PLUGIN_LOCK_PATH);
-  const original = fs.readFileSync(lockFile, 'utf8');
-  const raced = await writeProjectPluginLockLifecycle({ rootDir: root, listInventory: async () => {
-    const inventory = inventoryFor(root);
-    fs.appendFileSync(path.join(root, 'plugins/jsonutils-governance-mcp/README.md'), '\nno-op race\n');
-    return inventory;
-  } });
-  assert.deepEqual(raced.failures, ['PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE']);
-  assert.equal(fs.readFileSync(lockFile, 'utf8'), original);
-
-  const manifestFile = path.join(root, 'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json');
-  const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-  manifest.version = '0.1.9';
-  fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
-  const downgraded = await writeProjectPluginLockLifecycle({ rootDir: root,
-    listInventory: async () => inventoryFor(root) });
-  assert.match(downgraded.failures[0], /PROJECT_PLUGIN_VERSION_CHANGE_REQUIRED/);
-  assert.equal(fs.readFileSync(lockFile, 'utf8'), original);
-}));
-
-test('manifest 版本递增后原子写 canonical lock，并拒绝写入中的 TOCTOU 漂移', () => withProject(async ({ root }) => {
-  const manifestFile = path.join(root, 'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json');
-  const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-  manifest.version = '0.2.3';
-  fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
-  fs.appendFileSync(path.join(root, 'plugins/jsonutils-governance-mcp/README.md'), '\nversioned change\n');
-  const written = await writeProjectPluginLockLifecycle({ rootDir: root,
-    listInventory: async () => inventoryFor(root) });
-  assert.equal(written.status, 'lock-written');
-  assert.deepEqual(collectProjectPluginLockFailures(root), []);
-  assert.ok(fs.readFileSync(path.join(root, PROJECT_PLUGIN_LOCK_PATH), 'utf8').split('\n').length <= 110);
-
-  const nextManifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-  nextManifest.version = '0.2.4';
-  fs.writeFileSync(manifestFile, `${JSON.stringify(nextManifest, null, 2)}\n`);
-  const before = fs.readFileSync(path.join(root, PROJECT_PLUGIN_LOCK_PATH), 'utf8');
-  const raced = await writeProjectPluginLockLifecycle({ rootDir: root, listInventory: async () => {
-    const inventory = inventoryFor(root);
-    fs.appendFileSync(path.join(root, 'plugins/jsonutils-governance-mcp/README.md'), '\nrace\n');
-    return inventory;
-  } });
-  assert.deepEqual(raced.failures, ['PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE']);
-  assert.equal(fs.readFileSync(path.join(root, PROJECT_PLUGIN_LOCK_PATH), 'utf8'), before);
-}));
-
-test('lock writer 在 Git inventory 前拒绝 symlink manifest', () => withProject(async ({ root }) => {
-  const manifest = path.join(root, 'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json');
-  fs.renameSync(manifest, `${manifest}.real`);
-  fs.symlinkSync('plugin.json.real', manifest);
-  let inventoryCalls = 0;
-  const result = await writeProjectPluginLockLifecycle({
-    rootDir: root, listInventory: async () => (inventoryCalls += 1, new Set()),
+test('非法 rootDir 返回脱敏 blocked 报告且不调用 Codex', async () => {
+  let commandCalls = 0;
+  const result = await runProjectPluginLifecycle({
+    rootDir: undefined,
+    runCommand: async () => (commandCalls += 1, {}),
   });
-  assert.deepEqual(result.failures, ['PROJECT_PLUGIN_SOURCE_CONTRACT_INVALID']);
-  assert.equal(inventoryCalls, 0);
-}));
+  assert.equal(result.status, 'blocked');
+  assert.equal(result.marketplace.expectedRoot, '<invalid-project-root>');
+  assert.deepEqual(result.failures, ['PROJECT_ROOT_INVALID']);
+  assert.equal(commandCalls, 0);
+});

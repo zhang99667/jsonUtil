@@ -13,6 +13,7 @@ import {
 import {
   prepareEvolutionDeterministicOutcomeBatch,
   recordEvolutionDeterministicOutcomes,
+  validateEvolutionDeterministicOutcomeCandidate,
 } from './aiGovernanceEvolutionDeterministicOutcomeWriter.mjs';
 import {
   acquireEvolutionOutcomeWriterLock,
@@ -184,6 +185,22 @@ test('runner、candidate replay 和 source-state 漂移均 fail closed', (t) => 
   assert.throws(() => prepare(fixture, {
     validateCandidate: () => { throw new Error('candidate rejected'); },
   }), /candidate rejected/);
+});
+
+test('candidate 全量校验在仅 freshness 失败时保留真实诊断', (t) => {
+  const fixture = createFixture(t);
+  assert.throws(() => validateEvolutionDeterministicOutcomeCandidate({
+    rootDir: fixture.rootDir,
+    receiptsBytes: Buffer.from(''),
+    outcomesBytes: Buffer.from(''),
+    evaluatedAt: EVALUATED_AT,
+    revision: REVISION_A,
+    buildReport: () => ({
+      ok: false,
+      failures: [],
+      evidenceFreshness: { failures: ['fixture freshness failure'] },
+    }),
+  }), /fixture freshness failure/);
 });
 
 test('同 revision 已有有效 pass 时幂等 no-op，不再执行 runner', (t) => {
