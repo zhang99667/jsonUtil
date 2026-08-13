@@ -115,12 +115,14 @@
 | `scripts/ci/aiGovernanceAssetDistributionReadiness.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-14 | 就绪度负例 | 锁定三层单次聚合、全量失败计数不受样本裁剪影响、source/Git inventory 漂移与 Git 证据不可读 fail closed | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceMaturityScorecardDistribution.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-14 | scorecard 分发维度 | 将稳定的三层报告投影为成熟度 scorecard schema v2 的第六个维度；缺失 unknown，非法/漂移/不可读/workspace 失败为 fail，仅 index/HEAD 缺口为 warn，全通过为 pass | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceMaturityScorecardDistribution.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-14 | scorecard 分发负例 | 锁定六维顺序与 schema v2，拒绝伪造计数/就绪状态，并区分 workspace fail、Git 晋级 warn 与三层 pass | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/aiGovernanceRequiredValidationFiles.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-11 | Validation 必需资产 | 登记 validation changed-set、registry、runtime 分层、executor/state/receipt、CLI、测试与预算 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/aiGovernanceValidationChangedSet.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | 权威变更集 | 从精确根三视图重建完整变更集，拒绝特殊 Git 状态并绑定 `stateSha256` | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/aiGovernanceValidationChangedSet.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-13 | Changed-set 红队 | 锁 Git flag/entry、路径、filter/ignore、mode 与 raw digest 负例 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/aiGovernanceValidationCommandRegistry.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | Validation 命令注册表 | 将 display 映射为无 shell 只读 descriptor，并安全展开测试文件 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceRequiredValidationFiles.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Validation 必需资产 | 登记 validation changed-set/Git inventory、registry、runtime 分层、executor/state/receipt、CLI、测试与预算 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceValidationChangedSet.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | 权威变更集 | 将稳定 Git 控制面与 worktree 原始字节分类为完整变更报告，并保持既有 `stateSha256` 契约 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceValidationChangedSet.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-13 | Changed-set 集成红队 | 锁 Git flag/entry、路径、filter/ignore、mode、raw digest、精确根与报告 schema 负例 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceValidationChangedSetGitInventory.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Changed-set Git authority | 单源维护精确根、HEAD/index/flag/untracked 原始 inventory、index 身份与双遍漂移复核 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceValidationChangedSetGitInventory.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-13 | Git authority 直测 | 锁专职导出面、NUL/UTF-8 parser、异常路径保真与脱敏失败 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceValidationCommandRegistry.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Validation 命令注册表 | 将 display 映射为无 shell 只读 descriptor，安全展开测试文件并复用统一稳定 stat 身份 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationCommandRegistry.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-13 | 命令注册表红队 | 锁 13 条命令、descriptor digest 与 test 文件边界 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/aiGovernanceValidationRuntimePrimitives.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-09 | Runtime 安全原语 | 单源维护平台 fail-closed、路径包含、稳定 stat 记录与 SHA-256，不承担领域流程 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceValidationRuntimePrimitives.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Runtime 安全原语 | 单源维护平台 fail-closed、路径包含、稳定 stat 记录/比较与 SHA-256，不承担领域流程 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationWorkspaceRuntime.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-09 | Workspace runtime | 绑定精确 Git 根，验证受信临时基座/owner/0700，逐命令隔离且只删未漂移空目录；Windows 暂 fail closed | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationExecutables.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-09 | Executable binding | 从固定目录发现 docker/git/node，绑定仓外路径保护、原始字节摘要、stat 与 TOCTOU 漂移复核 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationRuntime.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-09 | Command runtime | 只生成两种闭合命令环境并以固定 cwd、无 shell、超时与 SIGKILL 边界启动 | 必需文件、资产注册表结构化校验、可维护性预算 |
@@ -132,12 +134,12 @@
 | `scripts/ci/aiGovernanceValidationExecutionState.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-11 | State authority 直测 | 锁固定摘要、ledger 顺序、逐轴漂移、integrity 单调、路径脱敏与 executor 稳定导出面 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationExecutionReceipt.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-10 | Receipt 直测 | 锁共享失败报告、固定 blocker 与全 false claims 能通过唯一闭字段校验 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationExecutionTestFixtures.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-11 | Executor 测试夹具 | 单源维护 state providers、changed-set、plan、registry、ledger、binding 与 runtime 脱敏 fixture，避免红队重复协议样本 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/aiGovernanceValidationWhitespace.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | 三视图 whitespace | 固定 Git 比较三视图 raw bytes，隔离 filter/attribute 并绑定 state | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceValidationWhitespace.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | 三视图 whitespace | 直连 Git authority parser 比较三视图 raw bytes，隔离 filter/attribute、复用稳定 stat 并绑定 state | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationWhitespace.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-13 | Whitespace 红队 | 锁三视图、binary/CRLF、ambient/filter、大文件、漂移与脱敏 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/check-ai-validation-whitespace.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-13 | Whitespace CLI | 严格参数与完整嵌套闭字段 component receipt，拒绝路径/正文，退出码固定 0/1/2 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/run-ai-validation-execution.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-13 | Validation execution CLI | 默认零执行；仅显式 `--run` 启动只读 registry，校验闭合状态机并拒绝语义矛盾或路径型报告 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/maintainability-budget-governance-ai-validation-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-11 | Validation 预算 | 独立维护 validation 生产预算，收紧 executor/CLI 并为 state 与 receipt 权威叶子设置单责阈值 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/maintainability-budget-governance-ai-validation-test-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-11 | Validation 测试预算 | 独立维护 validation 测试、state/receipt 直测与共享 fixture 预算 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/maintainability-budget-governance-ai-validation-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Validation 预算 | 独立维护 validation 生产预算，为 changed-set 分类、Git authority、runtime、state 与 receipt 设置单责阈值 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/maintainability-budget-governance-ai-validation-test-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Validation 测试预算 | 独立维护 changed-set/Git authority、runtime、state/receipt 直测与共享 fixture 预算 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceCiContract.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-11 | CI 契约负例 | 拒绝 required command 的静态禁用、artifact writer 失败旁路及 workflow/local-ci 自动写 outcome；fixture 单向消费权威 descriptor，fixed case 命令和五条断言保持不变 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceProjectCliArgs.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-14 | 项目 AI CLI 参数负例 | 锁定插件、分发、writer 与 validation CLI 的 help=0、未知/冲突参数=2，且安装副本报告固定 registration/runtime/signer/attestation/outcome 全部为 false | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/check-ai-asset-distribution.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | Git 分发 CLI | 从完整 machine universe 输出 workspace/index/HEAD 结构化报告，`--help`=0、未知/冲突参数=2、分发失败=1 | 必需文件、资产注册表结构化校验、可维护性预算 |

@@ -7,6 +7,7 @@ import {
   decodeHermeticGitPathList,
   runHermeticGitInventory,
 } from './aiGovernanceHermeticGitInventory.mjs';
+import { sameJsonutilsValidationStat } from './aiGovernanceValidationRuntimePrimitives.mjs';
 
 const failure = code => Object.assign(new Error(code), { code });
 const stableSort = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
@@ -66,11 +67,6 @@ const isWithin = (root, target) => {
   return relative === '' || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`));
 };
 
-const sameStableStat = (left, right) => left.dev === right.dev && left.ino === right.ino
-  && left.mode === right.mode && left.size === right.size && left.nlink === right.nlink
-  && left.uid === right.uid && left.gid === right.gid
-  && left.mtimeNs === right.mtimeNs && left.ctimeNs === right.ctimeNs;
-
 const assertStableTestFile = (root, absolute, directoryEntry) => {
   let descriptor;
   try {
@@ -81,8 +77,8 @@ const assertStableTestFile = (root, absolute, directoryEntry) => {
     descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
     const opened = fs.fstatSync(descriptor, { bigint: true });
     const finalPathStat = fs.lstatSync(absolute, { bigint: true });
-    if (!opened.isFile() || opened.nlink !== 1n || !sameStableStat(pathStat, opened)
-      || !sameStableStat(opened, finalPathStat) || fs.realpathSync(absolute) !== absolute) {
+    if (!opened.isFile() || opened.nlink !== 1n || !sameJsonutilsValidationStat(pathStat, opened)
+      || !sameJsonutilsValidationStat(opened, finalPathStat) || fs.realpathSync(absolute) !== absolute) {
       throw new Error('unstable');
     }
   } catch {

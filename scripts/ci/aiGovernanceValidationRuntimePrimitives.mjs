@@ -27,6 +27,10 @@ export const sameJsonutilsValidationRecord = (left, right) => (
   JSON.stringify(left) === JSON.stringify(right)
 );
 
+export const sameJsonutilsValidationStat = (left, right) => sameJsonutilsValidationRecord(
+  stableJsonutilsValidationStat(left), stableJsonutilsValidationStat(right),
+);
+
 export const sha256JsonutilsValidationValue = value => (
   createHash('sha256').update(value).digest('hex')
 );

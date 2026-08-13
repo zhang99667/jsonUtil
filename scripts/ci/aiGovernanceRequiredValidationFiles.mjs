@@ -4,6 +4,8 @@ export const AI_GOVERNANCE_REQUIRED_VALIDATION_FILES = [
   'scripts/ci/aiGovernanceRequiredValidationFiles.mjs',
   'scripts/ci/aiGovernanceValidationChangedSet.mjs',
   'scripts/ci/aiGovernanceValidationChangedSet.test.mjs',
+  'scripts/ci/aiGovernanceValidationChangedSetGitInventory.mjs',
+  'scripts/ci/aiGovernanceValidationChangedSetGitInventory.test.mjs',
   'scripts/ci/aiGovernanceValidationCommandRegistry.mjs',
   'scripts/ci/aiGovernanceValidationCommandRegistry.test.mjs',
   'scripts/ci/aiGovernanceValidationRuntimePrimitives.mjs',

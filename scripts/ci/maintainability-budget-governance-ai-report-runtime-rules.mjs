@@ -11,6 +11,6 @@ export const governanceAiReportRuntimeMaintainabilityBudgets = [
   governanceAiReportRuntimeBudget('scripts/ci/writeAiGovernanceArtifactFreshness.mjs', 85, 'AI 治理 artifact freshness helper 应维护语义比较、generatedAt 剥离和 artifact/ledger subject 字节绑定'),
   governanceAiReportRuntimeBudget('scripts/ci/writeAiGovernanceArtifactPayloads.mjs', 80, 'AI 治理 artifact payload helper 应组装报告、context、scorecard、summary 和 detached attestation subject'),
   governanceAiReportRuntimeBudget('scripts/ci/writeAiGovernanceAttestationSubject.mjs', 60, 'AI 治理 attestation subject helper 应只维护固定报告/账本字节摘要与 component-only 信任边界'),
-  governanceAiReportRuntimeBudget('scripts/ci/writeAiGovernanceArtifactSummary.mjs', 20, 'AI 治理 artifact summary helper 应独立维护 Step Summary 文本和生成时间证据'),
+  governanceAiReportRuntimeBudget('scripts/ci/writeAiGovernanceArtifactSummary.mjs', 25, 'AI 治理 artifact summary helper 应独立维护 Step Summary 文本和生成时间证据'),
   governanceAiReportRuntimeBudget('scripts/ci/write-ai-governance-artifacts.mjs', 115, 'AI 治理产物脚本应只写固定 JSON 报告、context 快照、summary 和 freshness JSON'),
 ];

@@ -2,10 +2,11 @@ const validationBudget = (file, maxLines, reason) => ({ file, maxLines, reason }
 
 export const governanceAiValidationMaintainabilityBudgets = [
   validationBudget('scripts/ci/maintainability-budget-governance-ai-validation-rules.mjs', 28, 'Validation 预算子表应只维护权威变更集、固定命令、runtime 与 component executor'),
-  validationBudget('scripts/ci/aiGovernanceRequiredValidationFiles.mjs', 32, 'Validation 必需资产子表应只登记 changed-set、registry、runtime、executor/state/receipt、whitespace 与对应测试和 CLI'),
-  validationBudget('scripts/ci/aiGovernanceValidationChangedSet.mjs', 460, 'Validation changed-set 应只维护 HEAD、index、worktree 原始字节、Git mode/flag 与稳定 state digest'),
+  validationBudget('scripts/ci/aiGovernanceRequiredValidationFiles.mjs', 40, 'Validation 必需资产子表应只登记 changed-set/Git inventory、registry、runtime、executor/state/receipt、whitespace 与对应测试和 CLI'),
+  validationBudget('scripts/ci/aiGovernanceValidationChangedSet.mjs', 280, 'Validation changed-set 应只将稳定 Git 控制面与 worktree 原始字节分类为闭合报告和 state digest'),
+  validationBudget('scripts/ci/aiGovernanceValidationChangedSetGitInventory.mjs', 290, 'Validation changed-set Git inventory 应只维护精确根、HEAD/index/flag/untracked 解析、index 身份与双遍漂移复核'),
   validationBudget('scripts/ci/aiGovernanceValidationCommandRegistry.mjs', 210, 'Validation command registry 应只维护只读固定 descriptor、测试展开与 descriptor digest'),
-  validationBudget('scripts/ci/aiGovernanceValidationRuntimePrimitives.mjs', 45, 'Validation runtime primitives 应只维护平台、路径、身份与摘要单源原语'),
+  validationBudget('scripts/ci/aiGovernanceValidationRuntimePrimitives.mjs', 45, 'Validation runtime primitives 应只维护平台、路径、稳定 stat/记录身份与摘要单源原语'),
   validationBudget('scripts/ci/aiGovernanceValidationWorkspaceRuntime.mjs', 210, 'Validation workspace runtime 应只维护精确根、仓外 0700 私有目录与安全空目录清理'),
   validationBudget('scripts/ci/aiGovernanceValidationExecutables.mjs', 185, 'Validation executables 应只维护固定发现、路径保护、稳定字节摘要与漂移复核'),
   validationBudget('scripts/ci/aiGovernanceValidationRuntime.mjs', 75, 'Validation command runtime 应只维护闭环境与固定无 shell 启动边界'),

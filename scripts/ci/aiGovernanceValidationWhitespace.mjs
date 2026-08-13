@@ -4,17 +4,18 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { collectAuthoritativeValidationChangedSet } from './aiGovernanceValidationChangedSet.mjs';
 import {
-  collectAuthoritativeValidationChangedSet,
   parseValidationHeadEntries,
   parseValidationIndexEntries,
-} from './aiGovernanceValidationChangedSet.mjs';
+} from './aiGovernanceValidationChangedSetGitInventory.mjs';
 import {
   buildHermeticGitEnvironment,
   isSafeHermeticGitPath,
   resolveHermeticGitExecutable,
   runHermeticGitInventory,
 } from './aiGovernanceHermeticGitInventory.mjs';
+import { sameJsonutilsValidationStat } from './aiGovernanceValidationRuntimePrimitives.mjs';
 
 const PROFILE = 'raw-head-index-worktree-whitespace-v1';
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
@@ -194,11 +195,6 @@ const mapIndexEntries = (rootDir) => {
   return result;
 };
 
-const sameStableStat = (left, right) => left.dev === right.dev && left.ino === right.ino
-  && left.mode === right.mode && left.size === right.size && left.nlink === right.nlink
-  && left.uid === right.uid && left.gid === right.gid
-  && left.mtimeNs === right.mtimeNs && left.ctimeNs === right.ctimeNs;
-
 const readStableFile = (rootDir, file) => {
   const absolute = path.join(rootDir, ...file.split('/'));
   const pathStat = fs.lstatSync(absolute, { bigint: true });
@@ -210,11 +206,14 @@ const readStableFile = (rootDir, file) => {
   const descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
   try {
     const before = fs.fstatSync(descriptor, { bigint: true });
-    if (!before.isFile() || !sameStableStat(pathStat, before)) throw new WhitespaceCheckError('RAW_VIEW_READ_FAILED');
+    if (!before.isFile() || !sameJsonutilsValidationStat(pathStat, before)) {
+      throw new WhitespaceCheckError('RAW_VIEW_READ_FAILED');
+    }
     const bytes = fs.readFileSync(descriptor);
     const after = fs.fstatSync(descriptor, { bigint: true });
     const finalPathStat = fs.lstatSync(absolute, { bigint: true });
-    if (!sameStableStat(before, after) || !sameStableStat(after, finalPathStat)
+    if (!sameJsonutilsValidationStat(before, after)
+      || !sameJsonutilsValidationStat(after, finalPathStat)
       || BigInt(bytes.length) !== after.size || fs.realpathSync(absolute) !== absolute) {
       throw new WhitespaceCheckError('RAW_VIEW_READ_FAILED');
     }

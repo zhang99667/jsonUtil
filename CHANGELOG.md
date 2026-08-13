@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1028 (2026-08-13) - 分层 Validation Git 控制面
+
+### 🏗️ 架构与基础设施
+
+- **Git authority 单源**: 精确仓库根、HEAD/index/flag/untracked 原始 inventory、index 文件身份和双遍漂移复核迁入专职模块，changed-set 只保留 worktree 原始字节分类与报告摘要
+- **直接依赖与鲁棒性**: Whitespace 直接消费专职 HEAD/index parser，不保留旧模块兼容重导出；changed-set、whitespace 和 command registry 复用统一稳定 stat 身份比较，删除三份重复字段判断
+- **代表红测与预算**: 新直测先以缺失模块建立 `ERR_MODULE_NOT_FOUND` 红线，再锁定导出面、NUL/UTF-8、异常路径与脱敏失败；原 437/460 热点收缩为 227/280 与 237/290，并将 19 行内聚 summary 的误报预算校准到 25
+- **证据边界不升级**: changed-set report/schema、`stateSha256` 字节域、13 条命令、case/corpus、`3/18` behavior coverage 与仓外 protected runtime/signer blocker 不变，源码与交付 index 冻结后仅由 preview-first writer 刷新既有 deterministic source-state
+
 ## v1.8.1027 (2026-08-13) - 远端源码构建内存保护
 
 ### 🏗️ 架构与基础设施
