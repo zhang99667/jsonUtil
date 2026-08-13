@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1030 (2026-08-13) - 单源 Workflow 完整历史契约
+
+### 🏗️ 架构与基础设施
+
+- **完整历史检查单源**: CI 与定时治理 workflow 共用自动化安全模块中的 checkout `fetch-depth: 0` collector，删除重复正则和诊断文本
+- **消费边界收缩**: 两个编排模块直接消费权威 collector，不新增兼容重导出，并保持原失败顺序与固定诊断不变
+- **代表红测与预算**: 先以缺少共享导出建立红线，再锁定正负 workflow；CI contract 从 33/35 收缩为 32/32，共享模块保持 80 行预算
+- **证据边界不升级**: case/corpus、`3/18` behavior coverage 与仓外 protected runtime/signer blocker 不变，只在源码与交付 index 冻结后由 preview-first writer 刷新既有 deterministic source-state
+
 ## v1.8.1029 (2026-08-13) - 分层 Runtime Probe 协议权威
 
 ### 🏗️ 架构与基础设施

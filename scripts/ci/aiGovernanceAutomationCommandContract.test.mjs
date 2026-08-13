@@ -7,6 +7,7 @@ import {
   collectGithubWorkflowStepBlocks,
   collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
+  collectWorkflowFullHistoryCheckoutFailures,
 } from './aiGovernanceAutomationCommandContract.mjs';
 import {
   collectOutcomeWriterAutomationWriteFailures as collectLegacyOutcomeWriterFailures,
@@ -49,6 +50,20 @@ test('workflow parser 保持 job、step 与 command 的源码顺序', () => {
   ]);
   assert.equal(collectGithubWorkflowStepBlocks(jobs.get('beta')).length, 1);
   assert.deepEqual([...collectGithubWorkflowJobBlocks('name: no-jobs')], []);
+});
+
+test('workflow 完整 Git 历史契约保持固定诊断', () => {
+  const workflow = [
+    'steps:',
+    '  - uses: actions/checkout@v6',
+    '    with:',
+    '      fetch-depth: 0',
+  ].join('\n');
+  assert.deepEqual(collectWorkflowFullHistoryCheckoutFailures(workflow, WORKFLOW_FILE), []);
+  assert.deepEqual(
+    collectWorkflowFullHistoryCheckoutFailures(workflow.replace('fetch-depth: 0', 'fetch-depth: 1'), WORKFLOW_FILE),
+    [`${WORKFLOW_FILE}: checkout 必须保留完整 Git 历史`],
+  );
 });
 
 test('required command 安全失败保持 job、step、command 与规则全序', () => {

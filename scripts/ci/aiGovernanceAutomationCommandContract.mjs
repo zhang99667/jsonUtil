@@ -39,6 +39,12 @@ export const collectGithubWorkflowStepBlocks = (block) => {
   return headers.map((header, index) => block.slice(header.index, headers[index + 1]?.index ?? block.length));
 };
 
+export const collectWorkflowFullHistoryCheckoutFailures = (content, file) => (
+  /uses:\s*actions\/checkout@[^\n]+[\s\S]{0,160}fetch-depth:\s*0/.test(content)
+    ? []
+    : [`${file}: checkout 必须保留完整 Git 历史`]
+);
+
 export const collectOutcomeWriterAutomationWriteFailures = (commandBlocks, file) => (
   commandBlocks.some(block => (
     OUTCOME_WRITERS.some(writer => block.includes(writer)) && OUTCOME_WRITE_ARGUMENT.test(block)

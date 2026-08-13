@@ -5,6 +5,7 @@ import { REQUIRED_AI_GOVERNANCE_CI_COMMANDS, REQUIRED_AI_GOVERNANCE_LOCAL_COMMAN
 import {
   collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
+  collectWorkflowFullHistoryCheckoutFailures,
 } from './aiGovernanceAutomationCommandContract.mjs';
 import { collectGithubWorkflowRunBlocks } from './githubWorkflowRunBlocks.mjs';
 
@@ -25,9 +26,7 @@ export const collectAiGovernanceCiContractFailures = rootDir => Object.entries(C
     failures.push(...collectOutcomeWriterAutomationWriteFailures(commandBlocks, file));
     if (file === '.github/workflows/ci.yml') {
       failures.push(...collectRequiredWorkflowCommandReachabilityFailures(content, requiredCommands, file));
-      if (!/uses:\s*actions\/checkout@[^\n]+[\s\S]{0,160}fetch-depth:\s*0/.test(content)) {
-        failures.push(`${file}: checkout 必须保留完整 Git 历史`);
-      }
+      failures.push(...collectWorkflowFullHistoryCheckoutFailures(content, file));
     }
     return failures;
   });

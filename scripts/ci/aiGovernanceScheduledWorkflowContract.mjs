@@ -6,6 +6,7 @@ import {
   collectGithubWorkflowStepBlocks,
   collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
+  collectWorkflowFullHistoryCheckoutFailures,
 } from './aiGovernanceAutomationCommandContract.mjs';
 import { collectGithubWorkflowRunBlocks } from './githubWorkflowRunBlocks.mjs';
 
@@ -147,8 +148,7 @@ export const collectAiGovernanceScheduledWorkflowFailures = (rootDir) => {
       ? [`${AI_GOVERNANCE_SCHEDULED_WORKFLOW}: 必须配置 cron schedule`] : []),
     ...(!/^\s*workflow_dispatch:\s*$/m.test(content)
       ? [`${AI_GOVERNANCE_SCHEDULED_WORKFLOW}: 必须保留 workflow_dispatch 手动触发`] : []),
-    ...(!/uses:\s*actions\/checkout@[^\n]+[\s\S]{0,160}fetch-depth:\s*0/.test(content)
-      ? [`${AI_GOVERNANCE_SCHEDULED_WORKFLOW}: checkout 必须保留完整 Git 历史`] : []),
+    ...collectWorkflowFullHistoryCheckoutFailures(content, AI_GOVERNANCE_SCHEDULED_WORKFLOW),
     ...REQUIRED_COMMANDS
       .filter(command => !commands.has(command))
       .map(command => `${AI_GOVERNANCE_SCHEDULED_WORKFLOW}: 缺少定时治理命令 "${command}"`),
