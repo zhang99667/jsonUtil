@@ -5,6 +5,7 @@ import {
   CODEX_EXTERNAL_CONTROLLER_RUNTIME_PROBE,
   verifyCodexExternalControllerRuntimeProbeReport,
 } from './aiGovernanceCodexExternalControllerRuntimeProbe.mjs';
+import { parseCodexExternalControllerRuntimeProbeReport } from './aiGovernanceCodexExternalControllerRuntimeProbeContract.mjs';
 
 const digest = character => character.repeat(64);
 const workloadImages = {
@@ -107,6 +108,14 @@ const buildReport = (attempted = false) => ({
 const verify = report => verifyCodexExternalControllerRuntimeProbeReport({
   reportJson: JSON.stringify(report),
   expectedBindings: bindings,
+});
+
+test('runtime probe contract 叶子直接锁定紧凑闭字段与 host binding', () => {
+  const report = buildReport();
+  assert.deepEqual(parseCodexExternalControllerRuntimeProbeReport({
+    reportJson: JSON.stringify(report),
+    expectedBindings: bindings,
+  }), report);
 });
 
 test('runtime probe 接受诚实的 daemon unavailable 报告但不产生运行时证明', () => {

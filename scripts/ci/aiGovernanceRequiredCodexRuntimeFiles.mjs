@@ -5,6 +5,7 @@ export { loadExternalControllerRuntimePolicyPathCandidate, verifyCodexExternalCo
 export const AI_GOVERNANCE_REQUIRED_CODEX_RUNTIME_FILES = [
   'scripts/ci/aiGovernanceRequiredCodexRuntimeFiles.mjs',
   'scripts/ci/aiGovernanceCodexExternalControllerTopology.mjs',
+  'scripts/ci/aiGovernanceCodexExternalControllerRuntimeProbeContract.mjs',
   'scripts/ci/aiGovernanceCodexExternalControllerRuntimeProbe.mjs',
   'scripts/ci/aiGovernanceCodexExternalControllerTopology.test.mjs',
   'scripts/ci/aiGovernanceCodexExternalControllerRuntimeProbe.test.mjs',

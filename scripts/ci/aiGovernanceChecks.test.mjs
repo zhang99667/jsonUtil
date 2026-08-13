@@ -258,6 +258,8 @@ const writeMinimalGovernanceFixture = (rootDir) => {
     "import './aiGovernanceEvolutionCaseDescriptorRegistry.mjs';\nimport './aiGovernanceEvolutionCodexTrialBoundaryCaseDescriptors.mjs';\nimport './aiGovernanceEvolutionCodexControllerBoundaryCaseDescriptors.mjs';\nimport './aiGovernanceEvolutionProjectPluginBoundaryCaseDescriptors.mjs';");
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRequiredCodexRuntimeFiles.mjs',
     "import './aiGovernanceRequiredCodexRuntimeTrustFiles.mjs';\nimport './aiGovernanceCodexExternalControllerTopology.mjs';\nimport './aiGovernanceCodexExternalControllerRuntimeProbe.mjs';");
+  writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceCodexExternalControllerRuntimeProbe.mjs',
+    "import './aiGovernanceCodexExternalControllerRuntimeProbeContract.mjs';");
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceRequiredCodexRuntimeTrustFiles.mjs',
     "import './aiGovernanceCodexExternalControllerSeatbeltSentinel.mjs';\nimport './aiGovernanceCodexExternalControllerAttestedPreflight.mjs';\nimport './aiGovernanceCodexExternalControllerRuntimePolicy.mjs';");
   writeFixtureFile(rootDir, 'scripts/ci/aiGovernanceCodexExternalControllerSeatbeltSentinel.mjs',

@@ -1,5 +1,15 @@
 # 更新日志 (Changelog)
 
+## v1.8.1029 (2026-08-13) - 分层 Runtime Probe 协议权威
+
+### 🏗️ 架构与基础设施
+
+- **Probe contract 单源**: 128 KiB 紧凑 JSON、闭字段、三 workload 角色/基础值、SHA-256 与 host expected bindings 迁入独立纯协议叶子
+- **Verifier 职责收缩**: 运行观察、namespace/capability/snapshot 隔离判定、cleanup 与过度声明留在 verifier，原公开入口、诊断顺序和 report SHA-256 字节域不变
+- **代表红测与预算**: 现有直测先以缺少 contract 模块建立 `ERR_MODULE_NOT_FOUND` 红线，再直接锁定 parser；verifier 从 228/240 收缩为 117/140，contract 为 127/150
+- **拒绝机械拆分**: 38 行的 skill source 契约与 script reachability 均保持单一职责，分别按最小退出阈值校准为 45 行预算
+- **证据边界不升级**: runtime probe `1.1.0`、schema/report/hash、case/corpus、`3/18` behavior coverage 与仓外 protected runtime/signer blocker 不变，只在源码与交付 index 冻结后由 preview-first writer 刷新既有 deterministic source-state
+
 ## v1.8.1028 (2026-08-13) - 分层 Validation Git 控制面
 
 ### 🏗️ 架构与基础设施

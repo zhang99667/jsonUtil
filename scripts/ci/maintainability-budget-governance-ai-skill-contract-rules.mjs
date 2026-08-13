@@ -24,7 +24,7 @@ export const governanceAiSkillContractMaintainabilityBudgets = [
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillReferenceContract.mjs', 35, 'AI 治理 Codex skill 引用契约应独立维护项目路径和验证脚本存在性校验'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillProfiles.mjs', 60, 'AI 治理 Codex skill profile 应显式路由已知 skill、派生必需 eval，并为未知 skill 保留安全 core 但阻止静默合入'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillSectionContract.mjs', 65, 'AI 治理 Codex skill 章节契约应分离通用 core、maintainer 运行时与 AI 基建演进要求'),
-  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillSourceContract.mjs', 40, 'AI 治理 skill source 契约应在读取 Claude adapter 前拒绝 legacy 副本及 canonical/legacy symlink'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillSourceContract.mjs', 45, 'AI 治理 skill source 契约应在读取 Claude adapter 前拒绝 legacy 副本及 canonical/legacy symlink'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceClaudeSkillAdapters.mjs', 65, 'Claude skill adapter 契约应只维护 canonical 映射、固定模板与普通文件防漂移校验'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceClaudeSkillAdapterCaseDescriptors.mjs', 15, 'Claude skill adapter component case descriptor 应只绑定版本、证据边界与固定测试'),
   ...governanceAiSkillCommandMaintainabilityBudgets,

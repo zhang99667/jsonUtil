@@ -14,7 +14,7 @@ export const governanceAiCoreMaintainabilityBudgets = [
   governanceAiCoreBudget('scripts/ci/aiGovernanceJsonAuthority.test.mjs', 35, 'JSON authority 直接测试应锁重复 key、字符串语法、BOM 与非法 UTF-8'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceSemver.mjs', 55, 'AI 治理 SemVer 叶子应精确实现解析、大数字和 precedence'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceSemver.test.mjs', 50, 'SemVer 直接测试应锁官方 precedence、前导零、空 identifier 与 build 语义'),
-  governanceAiCoreBudget('scripts/ci/aiGovernanceScriptReachability.mjs', 40, 'AI 治理脚本可达性 helper 应独立维护生产链路和测试支撑失败判定'),
+  governanceAiCoreBudget('scripts/ci/aiGovernanceScriptReachability.mjs', 45, 'AI 治理脚本可达性 helper 应独立维护生产链路和测试支撑失败判定'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceLocalImportGraph.mjs', 40, 'AI 治理本地 import 图 helper 应独立维护 CI 文件枚举、本地 import 解析和可达文件收集'),
   ...governanceAiEvolutionMaintainabilityBudgets,
   ...governanceAiDiscoveryMaintainabilityBudgets,
