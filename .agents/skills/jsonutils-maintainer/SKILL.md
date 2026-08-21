@@ -2,7 +2,7 @@
 name: jsonutils-maintainer
 description: JSONUtils 项目维护技能。用于优化性能、重构可维护性较差的模块、补充 Scheme/CMD 解析能力、维护前后端测试门禁、更新 AI 协作规范和部署排查流程。
 metadata:
-  version: "0.1.41"
+  version: "0.1.42"
   tags: "jsonutils,governance,ai-infra,maintenance"
 ---
 
@@ -85,7 +85,7 @@ mvn test
 - 部署 shell、GitHub shell helper、本地 CI 入口或 `.github/workflows/*.yml` 的 `workflow run` 块改动后先跑 `node scripts/ci/check-deploy-shell-syntax.mjs`，避免外层脚本、内联 run 和 `REMOTE_SCRIPT heredoc` 远端片段语法错误进入上线链路。
 - 远端前端源码构建只在 `MemAvailable + SwapFree` 达到默认 4096 MiB 门槛时进入 Compose；低内存或内存事实不可读必须 fail closed，并复用 `scripts/deploy/ssh-prebuilt-frontend-deploy.sh` 在本机构建 dist，不能靠再次尝试 full 构建或重启同机服务碰运气。GitHub `full` 只表示全服务部署范围，前端仍固定使用 runner 预构建产物。
 - 大输入处理优先走 worker、采样、预算和降级提示。
-- Monaco 按 Tab 隔离滚动、光标或折叠状态的回归不能用空白或短目标 Tab 验收；至少使用两个可独立滚动、可折叠的长内容 Tab，并覆盖标签栏之外会切换模型的入口，分别断言目标 Tab 不继承状态和原 Tab 往返后完整恢复。
+- Monaco 按 Tab 隔离滚动、光标或折叠状态时必须分别验收 SOURCE 和 PREVIEW：两侧都以活动文件 ID 的独立命名空间切换 Monaco 模型，折叠状态需在目标模型的 folding contribution 就绪后恢复；回归不能用空白或短目标 Tab，至少使用两个可独立滚动、可折叠的长内容 Tab，并覆盖标签栏之外会切换模型的入口，分别断言目标 Tab 不继承状态和原 Tab 往返后完整恢复。
 - AI 修复能力必须明确本地规则优先、用户手动触发、敏感内容不外泄，并通过测试、脚本或可复核日志形成可验证闭环。
 - AI 协作规则自身也要可进化：新增或修正流程后同步 Playbook、入口文档和本 skill，并通过 `node scripts/ci/check-ai-governance.mjs` 做治理校验，避免只靠人工记忆传递。
 - 项目通用执行角色固定 explorer、worker、verifier，AI 基建专项只读审计另允许跨 Codex/Claude/Copilot 的 ai-infra-auditor；客户端权限配置只是默认值，父任务覆盖不放宽职责。静态 adapter 只算 component evidence，真实选择、强隔离和零写入保持 unknown，零写入需完整 workspace manifest。

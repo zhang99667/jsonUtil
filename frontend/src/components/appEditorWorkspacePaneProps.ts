@@ -59,6 +59,7 @@ export const buildAppEditorWorkspaceSourcePaneProps = (
 export const buildAppEditorWorkspacePreviewPaneProps = (
   {
     output,
+    activeFileId,
     isOutputTransforming,
     previewValidation,
     previewErrorLocation,
@@ -78,6 +79,7 @@ export const buildAppEditorWorkspacePreviewPaneProps = (
   onCursorPositionChange: CursorPositionHandler
 ): AppPreviewEditorPaneProps => ({
   output,
+  activeFileId,
   isOutputTransforming,
   previewValidation,
   previewErrorLocation,

@@ -29,6 +29,7 @@ export const buildAppPreviewCodeEditorTestProps = (
   overrides: Partial<AppPreviewCodeEditorProps> = {}
 ): AppPreviewCodeEditorProps => ({
   output: '{"a":1}',
+  activeFileId: 'tab-1',
   isOutputTransforming: false,
   previewValidation: { isValid: false, error: 'Preview error' },
   previewErrorLocation: { line: 1, column: 6 },

@@ -15,6 +15,7 @@ describe('AppPreviewCodeEditor', () => {
 
     expect(tree.type).toBe(DeferredCodeEditor);
     expect(tree.props.label).toBe('PREVIEW');
+    expect(tree.props.path).toBe('preview-tab-1');
     expect(tree.props.value).toBe('{"a":1}');
     expect(tree.props.onChange).toBe(props.onOutputChange);
     expect(tree.props.onFocus).toBe(props.onPreviewFocus);
@@ -63,5 +64,14 @@ describe('AppPreviewCodeEditor', () => {
     );
     expect(headerActions.props.isOutputTransforming).toBe(true);
     expect(headerActions.props.showTransformReportButton).toBe(false);
+  });
+
+  it('为无文件预览保留独立的 Monaco 模型路径', () => {
+    const tree = assertElementLike(
+      AppPreviewCodeEditor(buildAppPreviewCodeEditorTestProps({ activeFileId: null })),
+      'AppPreviewCodeEditor 应返回 React 元素'
+    );
+
+    expect(tree.props.path).toBe('preview-standalone');
   });
 });

@@ -11,6 +11,7 @@ import type { SchemeDisplayHeaderMarker } from '../utils/schemeDisplayHeader';
 
 export interface AppPreviewCodeEditorProps {
   output: string;
+  activeFileId: string | null;
   isOutputTransforming: boolean;
   previewValidation: ValidationResult;
   previewErrorLocation: EditorLocation | null;
@@ -31,6 +32,7 @@ export interface AppPreviewCodeEditorProps {
 
 export const AppPreviewCodeEditor: React.FC<AppPreviewCodeEditorProps> = ({
   output,
+  activeFileId,
   isOutputTransforming,
   previewValidation,
   previewErrorLocation,
@@ -50,6 +52,7 @@ export const AppPreviewCodeEditor: React.FC<AppPreviewCodeEditorProps> = ({
 }) => (
   <DeferredCodeEditor
     label="PREVIEW"
+    path={`preview-${activeFileId || 'standalone'}`}
     value={output}
     onChange={onOutputChange}
     onFocus={onPreviewFocus}

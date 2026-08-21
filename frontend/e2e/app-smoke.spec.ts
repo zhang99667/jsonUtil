@@ -4132,6 +4132,70 @@ test('两个长文件标签分别保留滚动与折叠状态', async ({ page }) 
   await expect(sourceLines).not.toContainText('tab-1-expanded-marker');
 });
 
+test('两个长文件标签分别保留 PREVIEW 滚动与折叠状态', async ({ page }) => {
+  await ensureSourceEditorReady(page);
+  const newTabButton = page.getByRole('button', { name: '新建标签 (Cmd+N)' });
+  const buildLongJson = (tab: string) => JSON.stringify({
+    foldTarget: {
+      hiddenMarker: `${tab}-preview-marker`,
+      enabled: true,
+    },
+    items: Array.from({ length: 220 }, (_, index) => ({ tab, index })),
+  });
+  const getFirstVisiblePreviewLine = async () => Number(await page
+    .locator('[data-tour="preview-editor"] .margin-view-overlays .line-numbers')
+    .first()
+    .textContent());
+
+  await newTabButton.click();
+  await pasteSourceEditor(page, buildLongJson('tab-1'));
+  await page.getByRole('button', { name: '格式化' }).click();
+  await expectPreviewText(page, 'tab-1-preview-marker');
+  await newTabButton.click();
+  await pasteSourceEditor(page, buildLongJson('tab-2'));
+  await page.getByRole('button', { name: '格式化' }).click();
+  await expectPreviewText(page, 'tab-2-preview-marker');
+
+  const tabList = page.getByRole('tablist', { name: '已打开文件标签' });
+  const firstTab = tabList.getByRole('tab', { name: /Untitled-1/ });
+  const secondTab = tabList.getByRole('tab', { name: /Untitled-2/ });
+  const previewEditor = page.locator('[data-tour="preview-editor"] .monaco-editor').first();
+  const previewLines = page.locator('[data-tour="preview-editor"] .view-lines');
+
+  await firstTab.click();
+  await expect(previewLines).toContainText('tab-1-preview-marker');
+  const foldTargetControl = previewEditor
+    .locator('.line-numbers')
+    .filter({ hasText: /^2$/ })
+    .locator('..')
+    .locator('.codicon-folding-expanded');
+  await expect(foldTargetControl).toBeVisible();
+  await foldTargetControl.hover();
+  await foldTargetControl.click();
+  await expect(previewLines).not.toContainText('tab-1-preview-marker');
+
+  await secondTab.click();
+  await expect.poll(getFirstVisiblePreviewLine).toBe(1);
+  await expect(previewLines).toContainText('tab-2-preview-marker');
+
+  await firstTab.click();
+  await expect.poll(getFirstVisiblePreviewLine).toBe(1);
+  await expect(previewLines).not.toContainText('tab-1-preview-marker');
+
+  await previewEditor.getByRole('textbox', { name: 'Editor content' }).focus();
+  for (let pageDownIndex = 0; pageDownIndex < 10; pageDownIndex += 1) {
+    await page.keyboard.press('PageDown');
+  }
+  await expect.poll(getFirstVisiblePreviewLine).toBeGreaterThan(100);
+
+  await secondTab.click();
+  await expect.poll(getFirstVisiblePreviewLine).toBe(1);
+  await expect(previewLines).toContainText('tab-2-preview-marker');
+
+  await firstTab.click();
+  await expect.poll(getFirstVisiblePreviewLine).toBeGreaterThan(100);
+});
+
 test('文件打开后可修改并保存下载', async ({ page }) => {
   const fileChooserPromise = page.waitForEvent('filechooser');
   await page.locator('[data-tour="open-file-button"]').click();

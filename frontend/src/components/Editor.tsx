@@ -62,6 +62,10 @@ type MonacoJsonDefaults = {
   };
 };
 
+interface MonacoFoldingContribution extends editor.IEditorContribution {
+  getFoldingModel?: () => Promise<unknown> | null;
+}
+
 // 扩展 EditorProps 以支持 Scheme 修改回调
 export interface ExtendedEditorProps extends EditorProps {
   enableSchemeScan?: boolean;
@@ -122,6 +126,13 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   const [readOnlyUnlockPrompt, setReadOnlyUnlockPrompt] = useState<ReadOnlyUnlockPromptPosition | null>(null);
   const monaco = useMonaco();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const modelViewStatesRef = useRef(new Map<string, editor.ICodeEditorViewState>());
+  const pendingModelViewStateRef = useRef<{
+    modelUri: string;
+    viewState: editor.ICodeEditorViewState;
+  } | null>(null);
+  const modelViewStateRestoreFrameRef = useRef<number | null>(null);
+  const modelViewStateDisposablesRef = useRef<Array<{ dispose: () => void }>>([]);
   const decorationsCollectionRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const diagnosticDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const readOnlyUnlockPromptTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
@@ -478,6 +489,13 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
   useEffect(() => hideReadOnlyUnlockPrompt, [hideReadOnlyUnlockPrompt]);
 
+  useEffect(() => () => {
+    if (modelViewStateRestoreFrameRef.current !== null) {
+      cancelAnimationFrame(modelViewStateRestoreFrameRef.current);
+    }
+    modelViewStateDisposablesRef.current.forEach(disposable => disposable.dispose());
+  }, []);
+
   // 变更处理（含只读保护）
   const handleEditorChange = (val: string | undefined) => {
     // 注意：只读模式下拦截变更事件
@@ -829,7 +847,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
       {/* Monaco 编辑器实例 */}
       <div className="flex-1 relative overflow-hidden">
-        {/* Monaco 在 path 切换时同步隔离滚动、光标和折叠状态。 */}
+        {/* Monaco 按 path 隔离模型，并在折叠模型就绪后补恢复完整视图状态。 */}
         <Editor
           height="100%"
           path={path}
@@ -840,6 +858,52 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           onMount={(editor, monacoApi) => {
             editorRef.current = editor;
             if (focusOnMount) editor.focus();
+
+            modelViewStateDisposablesRef.current.forEach(disposable => disposable.dispose());
+            modelViewStateDisposablesRef.current = [
+              editor.onWillChangeModel(({ oldModelUrl }) => {
+                const modelUri = oldModelUrl?.toString();
+                const viewState = editor.saveViewState();
+                if (modelUri && viewState) modelViewStatesRef.current.set(modelUri, viewState);
+              }),
+              editor.onDidChangeModel(({ newModelUrl }) => {
+                if (modelViewStateRestoreFrameRef.current !== null) {
+                  cancelAnimationFrame(modelViewStateRestoreFrameRef.current);
+                  modelViewStateRestoreFrameRef.current = null;
+                }
+
+                const modelUri = newModelUrl?.toString();
+                const viewState = modelUri ? modelViewStatesRef.current.get(modelUri) : undefined;
+                const pending = modelUri && viewState ? { modelUri, viewState } : null;
+                pendingModelViewStateRef.current = pending;
+                if (!pending) return;
+
+                const restorePendingModelViewState = () => {
+                  if (
+                    pendingModelViewStateRef.current !== pending
+                    || pending.modelUri !== editor.getModel()?.uri.toString()
+                  ) return;
+
+                  pendingModelViewStateRef.current = null;
+                  editor.restoreViewState(pending.viewState);
+                };
+                const foldingContribution = editor
+                  .getContribution('editor.contrib.folding') as MonacoFoldingContribution | null;
+                const foldingModelPromise = foldingContribution?.getFoldingModel?.();
+                if (foldingModelPromise) {
+                  void foldingModelPromise.then(
+                    restorePendingModelViewState,
+                    restorePendingModelViewState,
+                  );
+                  return;
+                }
+
+                modelViewStateRestoreFrameRef.current = requestAnimationFrame(() => {
+                  modelViewStateRestoreFrameRef.current = null;
+                  restorePendingModelViewState();
+                });
+              }),
+            ];
 
             // 监听光标位置变化
             editor.onDidChangeCursorPosition((e) => {

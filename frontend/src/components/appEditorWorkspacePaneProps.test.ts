@@ -19,6 +19,7 @@ describe('appEditorWorkspacePaneProps', () => {
     const props = buildAppEditorWorkspacePreviewPaneProps(buildAppEditorWorkspaceProps(), vi.fn());
 
     expect(props.output).toBe('{\n  "a": 1\n}');
+    expect(props.activeFileId).toBeNull();
     expect(props.previewValidation).toEqual({ isValid: true });
     expect('input' in props).toBe(false);
     expect('sourceValidation' in props).toBe(false);

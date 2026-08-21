@@ -1,5 +1,17 @@
 # 更新日志 (Changelog)
 
+## v1.8.1037 (2026-08-21) - 完整隔离 SOURCE/PREVIEW 标签视图
+
+### 🐛 Bug 修复
+
+- **PREVIEW 独立模型**: 右侧 PREVIEW 按每个文件 Tab 分配与 SOURCE 不冲突的 Monaco 模型路径，避免不同 Tab 共用滚动和折叠状态
+- **折叠就绪恢复**: 在目标 Monaco folding model 完成计算后再恢复完整 view state，并丢弃快速切换中已过期的恢复候选，解决滚动已恢复但折叠节点仍自动展开
+- **PREVIEW 双长 Tab 回归**: 新增右侧预览专项端到端用例，分别断言 Tab2 保持顶部展开、Tab1 恢复深处滚动与折叠状态
+
+### 🏗️ 架构与基础设施
+
+- **维护规则纠偏**: `jsonutils-maintainer` 升级到 `0.1.42`，将 Monaco Tab 隔离验收从单侧 SOURCE 扩展为 SOURCE/PREVIEW 分别验收，并锁定折叠模型就绪后恢复的竞态边界
+
 ## v1.8.1036 (2026-08-21) - 彻底隔离标签编辑视图状态
 
 ### 🐛 Bug 修复
