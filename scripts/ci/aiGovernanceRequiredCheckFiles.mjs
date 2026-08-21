@@ -20,6 +20,8 @@ export const AI_GOVERNANCE_CHECK_FILES = [
   'scripts/ci/aiGovernanceClaudeSkillAdapters.test.mjs',
   'scripts/ci/aiGovernanceClaudeSkillAdapterCaseDescriptors.mjs',
   'scripts/ci/aiGovernanceChecksUnit.test.mjs',
+  'scripts/ci/aiGovernanceCiEntrySource.mjs',
+  'scripts/ci/aiGovernanceCiEntrySource.test.mjs',
   'scripts/ci/aiGovernanceCiContract.test.mjs',
   'scripts/ci/aiGovernanceProjectCliArgs.test.mjs',
   'scripts/ci/aiGovernanceSkillYamlAuthority.mjs',

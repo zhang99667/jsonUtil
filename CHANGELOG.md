@@ -1,5 +1,14 @@
 # 更新日志 (Changelog)
 
+## v1.8.1032 (2026-08-21) - 稳定有界的 CI 治理入口
+
+### 🏗️ 架构与基础设施
+
+- **自动化 source 边界**: CI workflow 与 local-ci 在命令语义检查前共用 1 MiB 稳定读取，拒绝目录、symlink、hardlink、非法 UTF-8、超限与读取漂移
+- **固定 fail-closed 诊断**: 缺文件保留原文案，超限、编码和其余异常只返回固定无值原因，不再因 `EISDIR` 中断整条治理检查
+- **变化轴分层**: 新 source helper 复用现有 strict UTF-8 原语，CI contract 只保留必需命令集合与 workflow 语义，不保留兼容转发层
+- **代表红测与证据边界**: 目录终点红测首先复现 `EISDIR`，再锁定 1 MiB/cap+1、非法 UTF-8 和链接节点；component 加固不扩大 `3/18` behavior coverage 或仓外 runtime/signer trust
+
 ## v1.8.1031 (2026-08-13) - 分层 Plugin Lifecycle 与并发安全 Lock
 
 ### 🏗️ 架构与基础设施

@@ -1,7 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { CI_COMMAND_COLLECTORS } from './aiGovernanceCiCommandCollectors.mjs';
 import { REQUIRED_AI_GOVERNANCE_CI_COMMANDS, REQUIRED_AI_GOVERNANCE_LOCAL_COMMANDS } from './aiGovernanceCiCommandDescriptors.mjs';
+import { readAiGovernanceCiEntrySource } from './aiGovernanceCiEntrySource.mjs';
 import {
   collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
@@ -11,9 +10,9 @@ import { collectGithubWorkflowRunBlocks } from './githubWorkflowRunBlocks.mjs';
 
 export const collectAiGovernanceCiContractFailures = rootDir => Object.entries(CI_COMMAND_COLLECTORS)
   .flatMap(([file, collectCommands]) => {
-    const filePath = path.join(rootDir, file);
-    if (!fs.existsSync(filePath)) return [`${file}: 缺少 AI 治理自动化入口`];
-    const content = fs.readFileSync(filePath, 'utf8');
+    const source = readAiGovernanceCiEntrySource(rootDir, file);
+    if (source.failures.length > 0) return source.failures;
+    const content = source.content;
     const commands = new Set(collectCommands(content));
     const requiredCommands = file === 'scripts/ci/local-ci.sh'
       ? REQUIRED_AI_GOVERNANCE_LOCAL_COMMANDS : REQUIRED_AI_GOVERNANCE_CI_COMMANDS;

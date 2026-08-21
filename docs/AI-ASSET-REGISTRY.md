@@ -140,6 +140,8 @@
 | `scripts/ci/run-ai-validation-execution.mjs` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-13 | Validation execution CLI | 默认零执行；仅显式 `--run` 启动只读 registry，校验闭合状态机并拒绝语义矛盾或路径型报告 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/maintainability-budget-governance-ai-validation-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Validation 预算 | 独立维护 validation 生产预算，为 changed-set 分类、Git authority、runtime、state 与 receipt 设置单责阈值 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/maintainability-budget-governance-ai-validation-test-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Validation 测试预算 | 独立维护 changed-set/Git authority、runtime、state/receipt 直测与共享 fixture 预算 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceCiEntrySource.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-21 | CI 入口 source | 复用稳定文本原语，单源维护 1 MiB、严格 UTF-8、单链接普通文件与固定无值诊断 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceCiEntrySource.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-21 | CI 入口 source 红队 | 锁定目录、非法 UTF-8、symlink、hardlink 和 1 MiB/cap+1 边界，证明异常节点返回固定诊断 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceCiContract.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-13 | CI 契约负例 | 拒绝缺失完整历史、required command 静态禁用、artifact writer 失败旁路及 workflow/local-ci 自动写 outcome；共享 collector 直测锁定固定诊断，fixture 单向消费权威 descriptor | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceProjectCliArgs.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-14 | 项目 AI CLI 参数负例 | 锁定插件、分发、writer 与 validation CLI 的 help=0、未知/冲突参数=2，且安装副本报告固定 registration/runtime/signer/attestation/outcome 全部为 false | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/check-ai-asset-distribution.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | Git 分发 CLI | 从完整 machine universe 输出 workspace/index/HEAD 结构化报告，`--help`=0、未知/冲突参数=2、分发失败=1 | 必需文件、资产注册表结构化校验、可维护性预算 |
