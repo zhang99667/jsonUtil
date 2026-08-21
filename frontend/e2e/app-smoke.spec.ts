@@ -4175,6 +4175,7 @@ const fillSourceEditor = async (page: Page, value: string) => {
 };
 
 const pasteSourceEditor = async (page: Page, value: string, confirmReplacement = false) => {
+  await ensureSourceEditorReady(page);
   await page.evaluate(text => {
     window.localStorage.setItem('mock-clipboard', text);
   }, value);
