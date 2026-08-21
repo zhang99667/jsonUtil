@@ -15,6 +15,8 @@ import { useEditorSchemeScan } from '../hooks/useEditorSchemeScan';
 import { TabBar } from './TabBar';
 import { LazySchemeViewerModal } from './appLazyPanels';
 import { buildEditorTabViewStateHandlers } from './editorTabViewStateHandlers';
+import { scheduleEditorTabViewStateRestore } from './editorTabViewStateRestore';
+import { buildEditorArrayCountDecorationSpecs } from './editorArrayCountDecorations';
 import {
   canApplyEditorSchemeModal,
   createClosedEditorSchemeModal,
@@ -145,6 +147,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   // Scheme 检测状态
   const {
     schemeLocations,
+    arrayLocations,
     schemeScanWarning,
     schemeLocationsRef,
     schemeLocationsSourceRef,
@@ -153,6 +156,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     forcedPaths: forcedSchemeScanPaths,
   });
   const schemeDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
+  const arrayCountDecorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const [schemeModal, setSchemeModal] = useState(createClosedEditorSchemeModal);
   const [hasLoadedSchemeModal, setHasLoadedSchemeModal] = useState(false);
 
@@ -234,6 +238,31 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
     }
     schemeDecorationsRef.current = editorRef.current.createDecorationsCollection(decorations);
   }, [schemeDisplayHeaderMarkerMap, schemeLocations, monaco]);
+
+  // 在长数组的左括号后显示项数，避免占用 Scheme 的 glyph margin。
+  useLayoutEffect(() => {
+    const editorInstance = editorRef.current;
+    if (!editorInstance || !monaco || arrayLocations.length === 0) {
+      arrayCountDecorationsRef.current?.clear();
+      return;
+    }
+
+    const decorations: editor.IModelDeltaDecoration[] = buildEditorArrayCountDecorationSpecs(arrayLocations)
+      .map(spec => ({
+        range: new monaco.Range(spec.line, spec.column, spec.line, spec.column + 1),
+        options: {
+          after: {
+            content: spec.content,
+            inlineClassName: 'json-array-count-hint',
+            cursorStops: monaco.editor.InjectedTextCursorStops.None,
+          },
+          hoverMessage: { value: spec.hoverText },
+        },
+      }));
+
+    arrayCountDecorationsRef.current?.clear();
+    arrayCountDecorationsRef.current = editorInstance.createDecorationsCollection(decorations);
+  }, [arrayLocations, monaco]);
 
   useLayoutEffect(() => {
     const editorInstance = editorRef.current;
@@ -665,23 +694,28 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
   // 记录上一个 activeFileId，用于切换标签时恢复新标签的视图状态
   const prevActiveFileIdRef = useRef<string | null | undefined>(activeFileId);
+  const activeFileIdRef = useRef<string | null | undefined>(activeFileId);
+
+  useLayoutEffect(() => {
+    activeFileIdRef.current = activeFileId;
+  }, [activeFileId]);
 
   // 标签切换前已同步保存旧标签的 `viewState`，这里只负责恢复新标签，避免保存到错误标签页。
   useEffect(() => {
     const editor = editorRef.current;
-    if (!editor) return;
-
     const prevId = prevActiveFileIdRef.current;
-
-    // 恢复新标签的视图状态
-    if (activeFileId && activeFileId !== prevId && restoreViewState) {
-      // 延迟恢复，确保 Monaco 已完成 model 切换
-      requestAnimationFrame(() => {
-        editor.restoreViewState(restoreViewState as import('monaco-editor').editor.ICodeEditorViewState);
-      });
-    }
-
     prevActiveFileIdRef.current = activeFileId;
+
+    if (!editor || !activeFileId || activeFileId === prevId || !restoreViewState) return;
+
+    return scheduleEditorTabViewStateRestore({
+      targetFileId: activeFileId,
+      viewState: restoreViewState,
+      getActiveFileId: () => activeFileIdRef.current,
+      restoreViewState: viewState => {
+        editor.restoreViewState(viewState as import('monaco-editor').editor.ICodeEditorViewState);
+      },
+    });
   }, [activeFileId, restoreViewState]);
 
 
@@ -842,6 +876,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
         <Editor
           height="100%"
           path={path}
+          saveViewState={false}
           language={language}
           theme="vs-dark"
           value={value}

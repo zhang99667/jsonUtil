@@ -13,16 +13,22 @@ self.onmessage = (event: MessageEvent<SchemeScanWorkerRequest>) => {
     const response: SchemeScanWorkerResponse = {
       id,
       locations: result.locations,
+      arrayLocations: result.arrayLocations,
       isLimited: result.isLimited,
       limit: result.limit,
+      isArrayLimited: result.isArrayLimited,
+      arrayLimit: result.arrayLimit,
     };
     self.postMessage(response);
   } catch (error) {
     const response: SchemeScanWorkerResponse = {
       id,
       locations: [],
+      arrayLocations: [],
       isLimited: false,
       limit: 0,
+      isArrayLimited: false,
+      arrayLimit: 0,
       error: formatUnknownError(error),
     };
     self.postMessage(response);

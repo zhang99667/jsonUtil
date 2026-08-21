@@ -4,7 +4,10 @@ import {
   saveActiveEditorViewState,
 } from './editorTabViewStateHandlers';
 
-const viewState = { cursorState: [{ position: { lineNumber: 8, column: 3 } }] };
+const viewState = {
+  cursorState: [{ position: { lineNumber: 8, column: 3 } }],
+  viewState: { scrollTop: 420, scrollLeft: 36 },
+};
 
 describe('editorTabViewStateHandlers', () => {
   it('切换到其他 Tab 前保存当前 Tab 的 Monaco viewState', () => {

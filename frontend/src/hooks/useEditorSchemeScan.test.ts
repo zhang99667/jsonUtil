@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import type { SchemeLocation, SchemeScanResult } from '../utils/schemeScanner';
+import type { ArrayLocation, SchemeLocation, SchemeScanResult } from '../utils/schemeScanner';
 import type {
   SchemeScanWorker,
   SchemeScanWorkerResponse,
@@ -35,6 +35,7 @@ interface FakeSchemeScanWorker extends SchemeScanWorker {
 interface ScanState {
   source: string;
   locations: SchemeLocation[];
+  arrayLocations: ArrayLocation[];
   warning: string;
 }
 
@@ -61,10 +62,21 @@ const createLocation = (value = 'app://current'): SchemeLocation => ({
   schemeType: 'url',
 });
 
+const createArrayLocation = (): ArrayLocation => ({
+  path: '$.items',
+  pointer: '/items',
+  line: 1,
+  column: 8,
+  itemCount: 2,
+});
+
 const createScanResult = (locations = [createLocation()]): SchemeScanResult => ({
   locations,
+  arrayLocations: [createArrayLocation()],
   isLimited: false,
   limit: 1000,
+  isArrayLimited: false,
+  arrayLimit: 1000,
 });
 
 const createFakeWorker = (): FakeSchemeScanWorker => ({
@@ -77,7 +89,7 @@ const createFakeWorker = (): FakeSchemeScanWorker => ({
 const useEditorSchemeScanForTest = ({
   value = CURRENT_VALUE,
   enabled = true,
-  scanState = { source: '', locations: [], warning: '' },
+  scanState = { source: '', locations: [], arrayLocations: [], warning: '' },
   locationsRefValue = [],
   requestId = 0,
   createWorker,
@@ -140,17 +152,33 @@ describe('useEditorSchemeScan', () => {
       scanState: {
         source: '{"old":"app://old"}',
         locations: [oldLocation],
+        arrayLocations: [createArrayLocation()],
         warning: '旧结果已截断',
       },
       locationsRefValue: [oldLocation],
     });
 
     expect(harness.result.schemeLocations).toEqual([]);
+    expect(harness.result.arrayLocations).toEqual([]);
     expect(harness.result.schemeScanWarning).toBe('');
     harness.layoutEffects[0]?.();
     expect(harness.locationsRef.current).toEqual([]);
     expect(harness.sourceRef.current).toBe('');
     expect(scanMocks.scanSchemesInJson).not.toHaveBeenCalled();
+  });
+
+  it('当前输入只返回与 source 绑定的数组位置', () => {
+    const currentArrayLocation = createArrayLocation();
+    const harness = useEditorSchemeScanForTest({
+      scanState: {
+        source: CURRENT_VALUE,
+        locations: [],
+        arrayLocations: [currentArrayLocation],
+        warning: '',
+      },
+    });
+
+    expect(harness.result.arrayLocations).toEqual([currentArrayLocation]);
   });
 
   it('防抖结束后提交与当前输入绑定的同步扫描结果', () => {
@@ -166,6 +194,7 @@ describe('useEditorSchemeScan', () => {
     expect(harness.setScanState).toHaveBeenCalledWith({
       source: CURRENT_VALUE,
       locations: result.locations,
+      arrayLocations: result.arrayLocations,
       warning: '',
     });
   });
@@ -182,6 +211,7 @@ describe('useEditorSchemeScan', () => {
     expect(harness.setScanState).toHaveBeenCalledWith({
       source: CURRENT_VALUE,
       locations: [],
+      arrayLocations: [],
       warning: FAILURE_WARNING,
     });
   });
@@ -205,6 +235,7 @@ describe('useEditorSchemeScan', () => {
     expect(harness.setScanState).toHaveBeenLastCalledWith({
       source: 'x'.repeat(200_000),
       locations: [],
+      arrayLocations: [],
       warning: FAILURE_WARNING,
     });
     expect(worker.terminate).toHaveBeenCalledTimes(failureType === '发送' ? 1 : 0);
@@ -270,6 +301,7 @@ describe('useEditorSchemeScan', () => {
     expect(harness.setScanState).toHaveBeenCalledTimes(1);
     expect(harness.setScanState).toHaveBeenCalledWith(expect.objectContaining({
       locations: firstResult.locations,
+      arrayLocations: firstResult.arrayLocations,
       warning: '',
     }));
   });

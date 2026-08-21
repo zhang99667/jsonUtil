@@ -12,6 +12,8 @@ export type SimpleEditorDisplayHeader = Pick<
 export interface SimpleEditorProps {
   value: string;
   onChange?: (value: string) => void;
+  path?: string;
+  ariaLabel?: string;
   language?: string;           // 指定语言，不指定则自动检测
   readOnly?: boolean;
   height?: string | number;
@@ -38,6 +40,8 @@ const getDisplayHeaderLabel = (headerKey: string): string => (
 export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
   value,
   onChange,
+  path,
+  ariaLabel,
   language,
   readOnly = false,
   height = '100%',
@@ -150,6 +154,7 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
     <div className={`overflow-hidden ${className}`} style={{ height }}>
       <Editor
         height="100%"
+        path={path}
         language={detectedLanguage}
         theme="vs-dark"
         value={value}
@@ -157,6 +162,7 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
         onMount={instance => setMountedEditor(instance)}
         options={{
           readOnly,
+          ariaLabel,
           minimap: { enabled: false },
           fontSize: 13,
           fontFamily: '"Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace',
@@ -179,6 +185,7 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = React.memo(({
           },
           overviewRulerBorder: false,
           renderLineHighlight: 'line',
+          ...(placeholder ? { placeholder } : {}),
           ...(showColorPreview && detectedLanguage === 'json'
             ? {
                 colorDecorators: true,

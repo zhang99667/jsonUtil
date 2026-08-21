@@ -1,5 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { scanSchemesInJson, type SchemeLocation } from '../utils/schemeScanner';
+import {
+  scanSchemesInJson,
+  type ArrayLocation,
+  type SchemeLocation,
+} from '../utils/schemeScanner';
 import {
   createSchemeScanWorker,
   isSchemeScanWorkerResponse,
@@ -20,32 +24,38 @@ interface UseEditorSchemeScanOptions {
 interface EditorSchemeScanState {
   source: string;
   locations: SchemeLocation[];
+  arrayLocations: ArrayLocation[];
   warning: string;
 }
 
 const EMPTY_SCHEME_SCAN_STATE: EditorSchemeScanState = {
   source: '',
   locations: [],
+  arrayLocations: [],
   warning: '',
 };
 const EMPTY_SCHEME_LOCATIONS: SchemeLocation[] = [];
+const EMPTY_ARRAY_LOCATIONS: ArrayLocation[] = [];
 const EMPTY_SCHEME_PATHS: readonly string[] = [];
 const SCHEME_SCAN_FAILURE_WARNING = 'Scheme 扫描失败，已跳过本次结果';
 
 const buildScanState = (
   source: string,
   locations: SchemeLocation[],
+  arrayLocations: ArrayLocation[],
   isLimited = false,
   limit = 0,
 ): EditorSchemeScanState => ({
   source,
   locations,
+  arrayLocations,
   warning: isLimited ? `Scheme 图标已显示前 ${limit} 个，后续结果已跳过` : '',
 });
 
 const buildFailureState = (source: string): EditorSchemeScanState => ({
   source,
   locations: [],
+  arrayLocations: [],
   warning: SCHEME_SCAN_FAILURE_WARNING,
 });
 
@@ -63,6 +73,7 @@ export const useEditorSchemeScan = (
   const schemeLocationsSourceRef = useRef('');
   const hasFreshResult = Boolean(enabled && value && scanState.source === value);
   const schemeLocations = hasFreshResult ? scanState.locations : EMPTY_SCHEME_LOCATIONS;
+  const arrayLocations = hasFreshResult ? scanState.arrayLocations : EMPTY_ARRAY_LOCATIONS;
   const schemeScanWarning = hasFreshResult ? scanState.warning : '';
 
   useLayoutEffect(() => {
@@ -115,7 +126,13 @@ export const useEditorSchemeScan = (
       if (value.length < ASYNC_SCHEME_SCAN_THRESHOLD) {
         try {
           const result = scanSchemesInJson(value, { forcedPaths });
-          commitState(buildScanState(value, result.locations, result.isLimited, result.limit));
+          commitState(buildScanState(
+            value,
+            result.locations,
+            result.arrayLocations,
+            result.isLimited,
+            result.limit,
+          ));
         } catch (error) {
           failScan('Scheme 同步扫描失败:', error);
         }
@@ -146,6 +163,7 @@ export const useEditorSchemeScan = (
         commitState(buildScanState(
           value,
           response.locations,
+          response.arrayLocations,
           response.isLimited,
           response.limit,
         ));
@@ -178,6 +196,7 @@ export const useEditorSchemeScan = (
 
   return {
     schemeLocations,
+    arrayLocations,
     schemeScanWarning,
     schemeLocationsRef,
     schemeLocationsSourceRef,

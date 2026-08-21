@@ -50,6 +50,7 @@ const TEST_EXCLUDES = [
 ];
 const DOM_TEST_FILES = [
   'src/components/DraggablePanel.test.ts',
+  'src/components/JsonComparePanel.test.tsx',
   'src/components/UnifiedSettingsModal.test.tsx',
   'src/hooks/useAppAiRepairCommand.test.ts',
 ];

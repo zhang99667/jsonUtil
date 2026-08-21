@@ -293,6 +293,21 @@
   cursor: pointer;
 }
 
+/* 长数组项数：放在 `[` 后面，不与 Scheme 边栏图标抢位置。 */
+.monaco-editor .json-array-count-hint {
+  box-sizing: border-box;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid rgba(52, 211, 153, 0.32);
+  border-radius: 999px;
+  background: rgba(6, 78, 59, 0.28);
+  color: rgba(167, 243, 208, 0.86);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
 .monaco-editor .scheme-display-header-zones {
   z-index: 2;
 }

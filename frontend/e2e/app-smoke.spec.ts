@@ -96,7 +96,7 @@ test('格式化与压缩主路径可用', async ({ page }) => {
 });
 
 test('JSON 转 TS 可生成接口声明', async ({ page }) => {
-  await fillSourceEditor(page, JSON.stringify({
+  await pasteSourceEditor(page, JSON.stringify({
     user: {
       id: 1,
       name: 'Ada',
@@ -198,7 +198,18 @@ test('JSON 对比面板可输出路径级语义差异并复制报告', async ({ 
   const comparePanel = page.getByRole('dialog', { name: 'JSON 对比' });
   await expect(comparePanel).toBeVisible();
 
-  await comparePanel.locator('[data-tour="json-compare-target-input"]').fill(JSON.stringify({
+  const leftEditor = comparePanel.locator('[data-tour="json-compare-left-editor"] .monaco-editor');
+  const rightEditor = comparePanel.locator('[data-tour="json-compare-right-editor"] .monaco-editor');
+  await expect(leftEditor).toBeVisible();
+  await expect(rightEditor).toBeVisible();
+  await expect(comparePanel.locator('[data-tour="json-compare-left-editor"] .view-lines')).toContainText('"name":"old"');
+
+  const separator = comparePanel.locator('[data-tour="json-compare-input-resizer"]');
+  await expect(separator).toHaveAttribute('aria-valuenow', '58');
+  await separator.press('ArrowDown');
+  await expect(separator).toHaveAttribute('aria-valuenow', '62');
+
+  await fillMonacoEditor(page, rightEditor, JSON.stringify({
     id: 1,
     name: 'new',
     extra: 2,
@@ -235,6 +246,29 @@ test('JSON 对比面板可输出路径级语义差异并复制报告', async ({ 
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('# JSON 对比报告');
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('忽略路径: `$.traceId`、`$.meta`');
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mock-clipboard') || '')).toContain('$.name');
+});
+
+test('长数组在源码左括号后显示实时项数', async ({ page }) => {
+  await pasteSourceEditor(page, JSON.stringify({
+    cross_session_context: [
+      { pos: 0 },
+      { pos: 1 },
+      { pos: 2 },
+      { pos: 3 },
+    ],
+  }, null, 2));
+
+  const arrayCountHint = page.locator('[data-tour="source-editor"] .json-array-count-hint');
+  await expect(arrayCountHint).toContainText('4 项');
+
+  await pasteSourceEditor(page, JSON.stringify({
+    cross_session_context: [
+      { pos: 0 },
+      { pos: 1 },
+      { pos: 2 },
+    ],
+  }, null, 2), true);
+  await expect(arrayCountHint).toContainText('3 项');
 });
 
 test('查询解析工具入口展示浮动面板打开态', async ({ page }) => {
@@ -3907,10 +3941,25 @@ test('自动保存按钮展示开关语义和不可用原因', async ({ page }) 
 });
 
 test('文件标签支持键盘切换和关闭语义', async ({ page }) => {
-  await fillSourceEditor(page, '{"first":true}');
+  await ensureSourceEditorReady(page);
   const newTabButton = page.getByRole('button', { name: '新建标签 (Cmd+N)' });
   await expect(newTabButton).toHaveAttribute('title', '新建标签 (Cmd+N)');
   await newTabButton.click();
+
+  const longFirstTabSource = `{"first":true,\n"items":[\n${Array.from({ length: 180 }, (_, index) => index).join(',\n')}\n]}`;
+  await pasteSourceEditor(page, longFirstTabSource);
+  const getFirstVisibleSourceLine = async () => Number(await page
+    .locator('[data-tour="source-editor"] .margin-view-overlays .line-numbers')
+    .first()
+    .textContent());
+  await page.locator('[data-tour="source-editor"] .monaco-editor').first().click();
+  for (let pageDownIndex = 0; pageDownIndex < 8; pageDownIndex += 1) {
+    await page.keyboard.press('PageDown');
+  }
+  await expect.poll(getFirstVisibleSourceLine).toBeGreaterThan(100);
+
+  await newTabButton.click();
+  await expect.poll(getFirstVisibleSourceLine).toBe(1);
 
   const tabList = page.getByRole('tablist', { name: '已打开文件标签' });
   const firstTab = tabList.getByRole('tab', { name: /Untitled-1/ });
@@ -3924,15 +3973,17 @@ test('文件标签支持键盘切换和关闭语义', async ({ page }) => {
 
   await secondTab.press('ArrowLeft');
   await expect(firstTab).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"first":true');
+  await expect.poll(getFirstVisibleSourceLine).toBeGreaterThan(100);
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('179');
 
   await firstTab.press('End');
   await expect(secondTab).toHaveAttribute('aria-selected', 'true');
+  await expect.poll(getFirstVisibleSourceLine).toBe(1);
 
   await secondTab.press('Delete');
   await expect(secondTab).toHaveCount(0);
   await expect(firstTab).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"first":true');
+  await expect.poll(getFirstVisibleSourceLine).toBeGreaterThan(100);
 
   await firstTab.press('Enter');
   await expect(firstTab).toHaveAttribute('aria-selected', 'true');
@@ -4121,6 +4172,19 @@ const fillSourceEditor = async (page: Page, value: string) => {
   await ensureSourceEditorReady(page);
   const sourceEditor = page.locator('[data-tour="source-editor"] .monaco-editor').first();
   await fillMonacoEditor(page, sourceEditor, value);
+};
+
+const pasteSourceEditor = async (page: Page, value: string, confirmReplacement = false) => {
+  await page.evaluate(text => {
+    window.localStorage.setItem('mock-clipboard', text);
+  }, value);
+  await page.locator('[data-tour="paste-source"]').click();
+  if (confirmReplacement) {
+    const confirmDialog = page.locator('[data-tour="confirm-dialog"]');
+    await expect(confirmDialog).toBeVisible();
+    await confirmDialog.getByRole('button', { name: '替换' }).click();
+  }
+  await waitForEditorReady(page, '[data-tour="source-editor"]');
 };
 
 const ensureSourceEditorReady = async (page: Page) => {
