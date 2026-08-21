@@ -52,6 +52,7 @@ export interface AppToolPanelsControllerProps {
   onLocateJsonPathResultInStructure: JsonPathPanelConfig['onLocateStructure'];
   onJsonPathHighlight: JsonPathPanelConfig['onHighlightRange'];
   onOpenSchemeFromStructure: JsonTreePanelConfig['onOpenSchemeValue'];
+  onOpenStructureInNewTab: JsonTreePanelConfig['onOpenValueInNewTab'];
   onOpenSchemeFromReport: TransformReportPanelConfig['onOpenSchemeValue'];
   onOpenTemplateFillFromReport: TransformReportPanelConfig['onOpenTemplateFill'];
   onApplySchemaExampleToSource: JsonSchemaPanelConfig['onApplyExampleToSource'];
@@ -94,6 +95,7 @@ export const AppToolPanelsController: React.FC<AppToolPanelsControllerProps> = (
   onLocateJsonPathResultInStructure,
   onJsonPathHighlight,
   onOpenSchemeFromStructure,
+  onOpenStructureInNewTab,
   onOpenSchemeFromReport,
   onOpenTemplateFillFromReport,
   onApplySchemaExampleToSource,
@@ -119,6 +121,7 @@ export const AppToolPanelsController: React.FC<AppToolPanelsControllerProps> = (
       onClose: () => onSetJsonTreePanelOpen(false),
       onLocatePath: onLocateJsonPath,
       onOpenSchemeValue: onOpenSchemeFromStructure,
+      onOpenValueInNewTab: onOpenStructureInNewTab,
     }}
     jsonComparePanel={{
       sourceText: input,

@@ -40,6 +40,7 @@ const baseProps = {
   onCopyPointer: vi.fn(),
   onCopyNodeValue: vi.fn(),
   onCopyNodeSubtree: vi.fn(),
+  onCopyNodeToNewTab: vi.fn(),
   onCopyNodeTypeScript: vi.fn(),
   onQuerySelectedField: vi.fn(),
   onOpenSelectedSemanticValue: vi.fn(),
@@ -110,6 +111,7 @@ describe('JsonTreeSelectedNodeDetailsPanel', () => {
       visibleArrayTablePreview: preview,
       tableColumnFilter: 'name',
       onCopyNodeSubtree: vi.fn(),
+      onCopyNodeToNewTab: vi.fn(),
       onCopyNodeTypeScript: vi.fn(),
       onTableColumnFilterChange: vi.fn(),
       onCopyTableJson: vi.fn(),
@@ -119,6 +121,7 @@ describe('JsonTreeSelectedNodeDetailsPanel', () => {
     const tablePreviewPanel = findByType(tree, JsonTreeArrayTablePreviewPanel)[0];
 
     clickElement(findByTour(tree, 'structure-nav-copy-subtree')[0]);
+    clickElement(findByTour(tree, 'structure-nav-copy-new-tab')[0]);
     clickElement(findByTour(tree, 'structure-nav-copy-typescript')[0]);
     (tablePreviewPanel.props.onTableColumnFilterChange as (value: string) => void)('id');
     (tablePreviewPanel.props.onCopyTableJson as (value: typeof preview) => void)(preview);
@@ -131,6 +134,7 @@ describe('JsonTreeSelectedNodeDetailsPanel', () => {
       tableColumnFilter: 'name',
     });
     expect(props.onCopyNodeSubtree).toHaveBeenCalledWith(selectedNode);
+    expect(props.onCopyNodeToNewTab).toHaveBeenCalledWith(selectedNode);
     expect(props.onCopyNodeTypeScript).toHaveBeenCalledWith(selectedNode);
     expect(props.onTableColumnFilterChange).toHaveBeenCalledWith('id');
     expect(props.onCopyTableJson).toHaveBeenCalledWith(preview);

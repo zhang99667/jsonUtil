@@ -120,7 +120,7 @@ export const useFileSystem = ({
         }
     }, [activeFileIdRef, markWorkspaceIntent, setFiles]);
 
-    const createNewTab = () => {
+    const createUntitledTab = (content: string) => {
         const currentActiveFileId = activeFileIdRef.current;
         const currentInput = inputRef.current;
         const standaloneDraftId = !currentActiveFileId && currentInput.length > 0
@@ -139,16 +139,20 @@ export const useFileSystem = ({
             return [...nextFiles, {
                 id: newFileId,
                 name: getNextUntitledName(nextFiles),
-                content: '',
+                content,
                 savedContent: '',
                 handle: undefined,
-                isDirty: false,
+                isDirty: content.length > 0,
                 mode: TransformMode.NONE,
             }];
         });
         setCurrentActiveFileId(newFileId);
-        applySourceState('', TransformMode.NONE);
+        applySourceState(content, TransformMode.NONE);
     };
+
+    const createNewTab = () => createUntitledTab('');
+
+    const createTabWithContent = (content: string) => createUntitledTab(content);
 
     const closeFile = (id: string) => {
         const { closed, nextActiveFile } = closeWorkspaceFile(id);
@@ -176,6 +180,7 @@ export const useFileSystem = ({
         isAutoSaveEnabled,
         setIsAutoSaveEnabled,
         createNewTab,
+        createTabWithContent,
         openFile,
         openDroppedFiles,
         saveFile,

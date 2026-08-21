@@ -57,6 +57,7 @@ const buildProps = (overrides: Partial<AppToolPanelsControllerProps> = {}): AppT
   onLocateJsonPathResultInStructure: vi.fn(),
   onJsonPathHighlight: vi.fn(),
   onOpenSchemeFromStructure: vi.fn(),
+  onOpenStructureInNewTab: vi.fn(),
   onOpenSchemeFromReport: vi.fn(),
   onOpenTemplateFillFromReport: vi.fn(),
   onApplySchemaExampleToSource: vi.fn(),
@@ -90,6 +91,7 @@ describe('AppToolPanelsController', () => {
       externalFocusRequest: props.jsonTreeFocusRequest,
       onLocatePath: props.onLocateJsonPath,
       onOpenSchemeValue: props.onOpenSchemeFromStructure,
+      onOpenValueInNewTab: props.onOpenStructureInNewTab,
     });
     expect(lazyPanels.props.transformReportPanel).toMatchObject({
       context: transformContext,

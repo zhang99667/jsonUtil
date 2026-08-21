@@ -22,6 +22,7 @@ interface JsonTreeSelectedNodeDetailsPanelProps {
   onCopyPointer: (node: JsonTreeNode) => void;
   onCopyNodeValue: (node: JsonTreeNode, pretty: boolean) => void;
   onCopyNodeSubtree: (node: JsonTreeNode) => void;
+  onCopyNodeToNewTab: (node: JsonTreeNode) => void;
   onCopyNodeTypeScript: (node: JsonTreeNode) => void;
   onQuerySelectedField: (node: JsonTreeNode) => void;
   onOpenSelectedSemanticValue: () => void;
@@ -42,6 +43,7 @@ export const JsonTreeSelectedNodeDetailsPanel: React.FC<JsonTreeSelectedNodeDeta
   onCopyPointer,
   onCopyNodeValue,
   onCopyNodeSubtree,
+  onCopyNodeToNewTab,
   onCopyNodeTypeScript,
   onQuerySelectedField,
   onOpenSelectedSemanticValue,
@@ -149,6 +151,17 @@ export const JsonTreeSelectedNodeDetailsPanel: React.FC<JsonTreeSelectedNodeDeta
           className="rounded border border-editor-border px-2 py-1 text-[11px] text-gray-300 transition-colors hover:bg-editor-hover hover:text-amber-100"
         >
           子树
+        </button>
+      )}
+      {selectedNode.isContainer && (
+        <button
+          type="button"
+          data-tour="structure-nav-copy-new-tab"
+          onClick={() => onCopyNodeToNewTab(selectedNode)}
+          className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-100 transition-colors hover:border-emerald-400/60 hover:bg-emerald-500/20"
+          title="复制当前结构并在新标签页打开"
+        >
+          复制并新建 Tab
         </button>
       )}
       {selectedNode.isContainer && (

@@ -49,6 +49,7 @@ interface JsonTreePanelProps {
   onClose: () => void;
   onLocatePath: (path: string) => void;
   onOpenSchemeValue: (value: string) => void;
+  onOpenValueInNewTab: (value: string) => void;
 }
 
 const getVisibleNodes = (
@@ -79,6 +80,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
   onClose,
   onLocatePath,
   onOpenSchemeValue,
+  onOpenValueInNewTab,
 }) => {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const copyResultsMenuRef = useRef<HTMLDetailsElement | null>(null);
@@ -273,6 +275,17 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
     }
   };
 
+  const handleCopyNodeToNewTab = async (node: JsonTreeNode) => {
+    try {
+      const copyTextValue = getJsonTreeNodeValueCopyText(jsonData, node.jsonPointer, { pretty: true });
+      await copyText(copyTextValue);
+      onOpenValueInNewTab(copyTextValue);
+      showSuccess('已复制并在新标签页打开');
+    } catch (error) {
+      showError(getClipboardErrorMessage(error, '复制并打开节点失败'));
+    }
+  };
+
   const handleCopyNodeTypeScript = async (node: JsonTreeNode) => {
     try {
       const nodeValue = getJsonTreeNodeValue(jsonData, node.jsonPointer);
@@ -424,6 +437,7 @@ export const JsonTreePanel: React.FC<JsonTreePanelProps> = ({
         onCopyPointer={(node) => void handleCopyPointer(node)}
         onCopyNodeValue={(node, pretty) => void handleCopyNodeValue(node, pretty)}
         onCopyNodeSubtree={(node) => void handleCopyNodeSubtree(node)}
+        onCopyNodeToNewTab={(node) => void handleCopyNodeToNewTab(node)}
         onCopyNodeTypeScript={(node) => void handleCopyNodeTypeScript(node)}
         onQuerySelectedField={handleQuerySelectedField}
         onOpenSelectedSemanticValue={handleOpenSelectedSemanticValue}

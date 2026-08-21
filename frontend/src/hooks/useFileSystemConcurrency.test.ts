@@ -103,6 +103,25 @@ describe('useFileSystem 并发标签更新', () => {
     ]);
   });
 
+  it('从结构创建内容标签时保留原标签并标记新标签未保存', () => {
+    const scenario = useQueuedFileSystemScenario([
+      createFileSystemTestTab('file-1', '{"before":true}'),
+    ], 'file-1');
+
+    scenario.fileSystem.createTabWithContent('[\n  {"id": 1}\n]');
+
+    const finalState = scenario.flushWorkspaceUpdates();
+    expect(finalState.files).toHaveLength(2);
+    expect(finalState.files[1]).toMatchObject({
+      name: 'Untitled-1',
+      content: '[\n  {"id": 1}\n]',
+      savedContent: '',
+      isDirty: true,
+      mode: TransformMode.NONE,
+    });
+    expect(finalState.activeFileId).toBe(finalState.files[1].id);
+  });
+
   it('同批新建后关闭新标签会回到原标签', () => {
     const newFileId = '00000000-0000-4000-8000-000000000001';
     vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue(newFileId);

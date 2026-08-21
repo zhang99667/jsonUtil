@@ -106,7 +106,7 @@ const App: React.FC = () => {
   // 文件系统状态
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
-    createNewTab, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
+    createNewTab, createTabWithContent, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
     saveViewState, flushWorkspaceDraft
   } = useFileSystem({
     input,
@@ -723,6 +723,11 @@ const App: React.FC = () => {
           onLocateJsonPathResultInStructure={handleLocateJsonPathResultInStructure}
           onJsonPathHighlight={setHighlightRange}
           onOpenSchemeFromStructure={handleOpenSchemeFromStructure}
+          onOpenStructureInNewTab={(value) => {
+            createTabWithContent(value);
+            setIsJsonTreePanelOpen(false);
+            trackCurrentToolEvent('STRUCTURE_NAV_OPEN_NEW_TAB', 'file');
+          }}
           onOpenSchemeFromReport={handleOpenSchemeFromReport}
           onOpenTemplateFillFromReport={handleOpenTemplateFillFromReport}
           onApplySchemaExampleToSource={handleRequestApplySchemaExampleToSource}

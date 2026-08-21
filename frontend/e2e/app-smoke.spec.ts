@@ -770,6 +770,46 @@ test('结构导航可搜索路径并联动 JSONPath 定位', async ({ page }) =>
   await expect(structurePanel.locator('[data-tour="structure-nav-search-history"]')).toHaveCount(0);
 });
 
+test('结构节点可一键复制并在独立新标签打开', async ({ page }) => {
+  const selectedStructure = {
+    entries: [
+      { id: 1, title: 'first' },
+      { id: 2, title: 'second' },
+    ],
+    enabled: true,
+  };
+  await fillSourceEditor(page, JSON.stringify({
+    untouched: 'original tab',
+    selectedStructure,
+  }));
+
+  await page.locator('[data-tour="structure-nav-button"]').click();
+  const structurePanel = page.getByRole('dialog', { name: 'JSON 结构导航' });
+  await expect(structurePanel).toBeVisible();
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('selectedStructure');
+  await structurePanel.getByTitle('选中并定位 $.selectedStructure', { exact: true }).click();
+
+  const copyToNewTabButton = structurePanel.locator('[data-tour="structure-nav-copy-new-tab"]');
+  await expect(copyToNewTabButton).toHaveAttribute('title', '复制当前结构并在新标签页打开');
+  await copyToNewTabButton.click();
+
+  const expectedContent = JSON.stringify(selectedStructure, null, 2);
+  await expect(page.getByText('已复制并在新标签页打开')).toBeVisible();
+  await expect(structurePanel).toBeHidden();
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('mock-clipboard'))).toBe(expectedContent);
+
+  const tabList = page.getByRole('tablist', { name: '已打开文件标签' });
+  const originalTab = tabList.getByRole('tab', { name: /Untitled-1/ });
+  const structureTab = tabList.getByRole('tab', { name: /Untitled-2/ });
+  await expect(originalTab).toHaveAttribute('aria-selected', 'false');
+  await expect(structureTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('"title": "second"');
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).not.toContainText('original tab');
+
+  await originalTab.click();
+  await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('original tab');
+});
+
 test('结构导航语义字符串可继续打开 Scheme 解析', async ({ page }) => {
   await page.evaluate(() => {
     window.localStorage.setItem('json-helper-general-settings', JSON.stringify({
