@@ -14,8 +14,6 @@ import { showError, showSuccess } from '../utils/toast';
 import { useEditorSchemeScan } from '../hooks/useEditorSchemeScan';
 import { TabBar } from './TabBar';
 import { LazySchemeViewerModal } from './appLazyPanels';
-import { buildEditorTabViewStateHandlers } from './editorTabViewStateHandlers';
-import { scheduleEditorTabViewStateRestore } from './editorTabViewStateRestore';
 import { buildEditorArrayCountDecorationSpecs } from './editorArrayCountDecorations';
 import {
   canApplyEditorSchemeModal,
@@ -113,8 +111,6 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   diagnosticHighlights,
   onFocus,
   onCursorPositionChange,
-  onSaveViewState,
-  restoreViewState,
   enableSchemeScan = false,
   onSchemeEdit,
   schemeDisplayHeaderMarkers,
@@ -519,19 +515,6 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   };
   const isWordWrapEnabled = wordWrap === 'on';
 
-  const {
-    handleTabClick,
-    handleCloseFile,
-    handleNewTab,
-  } = buildEditorTabViewStateHandlers({
-    activeFileId,
-    saveEditorViewState: () => editorRef.current?.saveViewState(),
-    onSaveViewState,
-    onTabClick,
-    onCloseFile,
-    onNewTab,
-  });
-
   const handleLocateError = useCallback(() => {
     if (!editorRef.current || !monaco || !errorLocation) return;
 
@@ -692,33 +675,6 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
   }, [value, originalValue, monaco]);
 
-  // 记录上一个 activeFileId，用于切换标签时恢复新标签的视图状态
-  const prevActiveFileIdRef = useRef<string | null | undefined>(activeFileId);
-  const activeFileIdRef = useRef<string | null | undefined>(activeFileId);
-
-  useLayoutEffect(() => {
-    activeFileIdRef.current = activeFileId;
-  }, [activeFileId]);
-
-  // 标签切换前已同步保存旧标签的 `viewState`，这里只负责恢复新标签，避免保存到错误标签页。
-  useEffect(() => {
-    const editor = editorRef.current;
-    const prevId = prevActiveFileIdRef.current;
-    prevActiveFileIdRef.current = activeFileId;
-
-    if (!editor || !activeFileId || activeFileId === prevId || !restoreViewState) return;
-
-    return scheduleEditorTabViewStateRestore({
-      targetFileId: activeFileId,
-      viewState: restoreViewState,
-      getActiveFileId: () => activeFileIdRef.current,
-      restoreViewState: viewState => {
-        editor.restoreViewState(viewState as import('monaco-editor').editor.ICodeEditorViewState);
-      },
-    });
-  }, [activeFileId, restoreViewState]);
-
-
   // 新文件打开时自动滚动标签栏
   useEffect(() => {
     if (tabsContainerRef.current && files && files.length > 0) {
@@ -749,9 +705,9 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
             <TabBar
               files={files}
               activeFileId={activeFileId || null}
-              onTabClick={handleTabClick}
-              onCloseFile={handleCloseFile}
-              onNewTab={handleNewTab}
+              onTabClick={onTabClick}
+              onCloseFile={onCloseFile}
+              onNewTab={onNewTab}
               tabsContainerRef={tabsContainerRef}
               onScroll={handleScroll}
               showScrollbar={showScrollbar}
@@ -873,10 +829,11 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
 
       {/* Monaco 编辑器实例 */}
       <div className="flex-1 relative overflow-hidden">
+        {/* Monaco 在 path 切换时同步隔离滚动、光标和折叠状态。 */}
         <Editor
           height="100%"
           path={path}
-          saveViewState={false}
+          saveViewState
           language={language}
           theme="vs-dark"
           value={value}

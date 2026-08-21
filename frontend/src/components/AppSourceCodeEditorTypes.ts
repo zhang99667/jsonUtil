@@ -24,7 +24,6 @@ export interface AppSourceCodeEditorProps {
   onTabClick: (fileId: string) => void;
   onCloseFile: (fileId: string) => void;
   onNewTab: () => void;
-  onSaveViewState: (fileId: string, viewState: unknown) => void;
   onSourceAiFix: () => void;
   onPasteSource: () => void;
   onCopySource: () => void;

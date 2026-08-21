@@ -230,7 +230,6 @@ export interface FileTab {
   mode?: TransformMode; // 保存每个标签的转换模式
   path?: string; // 文件完整路径
   transformContext?: TransformContext; // 该 Tab 的转换上下文（避免窜台）
-  viewState?: unknown; // Monaco Editor 的视图状态（光标位置、滚动位置等）
 }
 
 export interface HighlightRange {
@@ -277,6 +276,4 @@ export interface EditorProps {
   diagnosticHighlights?: EditorDiagnosticHighlight[];
   onFocus?: () => void;
   onCursorPositionChange?: (line: number, column: number) => void;
-  onSaveViewState?: (fileId: string, viewState: unknown) => void; // 保存标签页的编辑器视图状态
-  restoreViewState?: unknown; // 切换标签页时需要恢复的视图状态
 }

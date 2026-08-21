@@ -5,7 +5,7 @@ type AppSourceCodeEditorMappedProps = Pick<
   EditorProps,
   | 'value' | 'originalValue' | 'path' | 'onChange' | 'onFocus' | 'onCursorPositionChange'
   | 'label' | 'files' | 'activeFileId' | 'onTabClick' | 'onCloseFile' | 'onNewTab'
-  | 'onSaveViewState' | 'restoreViewState' | 'placeholder' | 'error' | 'errorLocation'
+  | 'placeholder' | 'error' | 'errorLocation'
   | 'warning' | 'diagnosticHighlights' | 'locateErrorSignal'
 > & {
   enableSchemeScan: true;
@@ -27,7 +27,6 @@ export const buildAppSourceCodeEditorProps = ({
   onTabClick,
   onCloseFile,
   onNewTab,
-  onSaveViewState,
 }: AppSourceCodeEditorProps): AppSourceCodeEditorMappedProps => ({
   value: input,
   originalValue: activeFile?.savedContent,
@@ -41,8 +40,6 @@ export const buildAppSourceCodeEditorProps = ({
   onTabClick,
   onCloseFile,
   onNewTab,
-  onSaveViewState,
-  restoreViewState: activeFile?.viewState,
   enableSchemeScan: true,
   placeholder: '// 在此输入 JSON 或文本...',
   error: sourceValidation.isValid ? undefined : sourceValidation.error,

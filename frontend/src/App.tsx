@@ -107,7 +107,7 @@ const App: React.FC = () => {
   const {
     files, setFiles, activeFileId, isAutoSaveEnabled, setIsAutoSaveEnabled,
     createNewTab, createTabWithContent, openFile, openDroppedFiles, saveFile, saveSourceAs, closeFile, switchTab, updateActiveFileContent,
-    saveViewState, flushWorkspaceDraft
+    flushWorkspaceDraft
   } = useFileSystem({
     input,
     setInput,
@@ -671,7 +671,6 @@ const App: React.FC = () => {
           onTabClick={switchTab}
           onCloseFile={requestCloseFile}
           onNewTab={createNewTab}
-          onSaveViewState={saveViewState}
           onSourceAiFix={() => void handleAction(ActionType.AI_FIX)}
           onPasteSource={handlePasteSource}
           onCopySource={handleCopySource}

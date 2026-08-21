@@ -10,7 +10,6 @@ describe('buildAppSourceCodeEditorProps', () => {
     expect(editorProps.value).toBe('{"a":1}');
     expect(editorProps.originalValue).toBe('{"a":0}');
     expect(editorProps.path).toBe('tab-1');
-    expect(editorProps.restoreViewState).toEqual({ cursor: 1 });
     expect(editorProps.label).toBe('SOURCE');
     expect(editorProps.enableSchemeScan).toBe(true);
     expect(editorProps.error).toBe('Unexpected token');
@@ -28,7 +27,6 @@ describe('buildAppSourceCodeEditorProps', () => {
 
     expect(editorProps.path).toBeUndefined();
     expect(editorProps.originalValue).toBeUndefined();
-    expect(editorProps.restoreViewState).toBeUndefined();
     expect(editorProps.error).toBeUndefined();
   });
 });

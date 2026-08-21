@@ -810,6 +810,58 @@ test('结构节点可一键复制并在独立新标签打开', async ({ page }) 
   await expect(page.locator('[data-tour="source-editor"] .view-lines')).toContainText('original tab');
 });
 
+test('结构节点打开新标签时保留原标签滚动与折叠状态', async ({ page }) => {
+  await ensureSourceEditorReady(page);
+  await page.getByRole('button', { name: '新建标签 (Cmd+N)' }).click();
+  const selectedStructure = {
+    entries: Array.from({ length: 220 }, (_, index) => ({ id: index, title: `item-${index}` })),
+    enabled: true,
+  };
+  await pasteSourceEditor(page, JSON.stringify({
+    foldTarget: {
+      hiddenMarker: 'original-expanded-marker',
+      enabled: true,
+    },
+    selectedStructure,
+  }, null, 2));
+
+  const sourceEditor = page.locator('[data-tour="source-editor"] .monaco-editor').first();
+  const sourceLines = page.locator('[data-tour="source-editor"] .view-lines');
+  const getFirstVisibleSourceLine = async () => Number(await page
+    .locator('[data-tour="source-editor"] .margin-view-overlays .line-numbers')
+    .first()
+    .textContent());
+  const foldTargetControl = sourceEditor.locator('.codicon-folding-expanded').nth(1);
+  await expect(foldTargetControl).toBeAttached();
+  await foldTargetControl.click({ force: true });
+  await expect(sourceLines).not.toContainText('original-expanded-marker');
+
+  await sourceEditor.click();
+  for (let pageDownIndex = 0; pageDownIndex < 10; pageDownIndex += 1) {
+    await page.keyboard.press('PageDown');
+  }
+  await expect.poll(getFirstVisibleSourceLine).toBeGreaterThan(100);
+
+  await page.locator('[data-tour="structure-nav-button"]').click();
+  const structurePanel = page.getByRole('dialog', { name: 'JSON 结构导航' });
+  await structurePanel.locator('[data-tour="structure-nav-search"]').fill('selectedStructure');
+  await structurePanel.getByTitle('选中并定位 $.selectedStructure', { exact: true }).click();
+  await structurePanel.locator('[data-tour="structure-nav-copy-new-tab"]').click();
+
+  const tabList = page.getByRole('tablist', { name: '已打开文件标签' });
+  const originalTab = tabList.getByRole('tab', { name: /Untitled-1/ });
+  await expect.poll(getFirstVisibleSourceLine).toBe(1);
+  await expect(sourceLines).toContainText('"entries"');
+
+  await originalTab.click();
+  await expect.poll(getFirstVisibleSourceLine).toBeGreaterThan(100);
+  await page.keyboard.press('Escape');
+  await sourceEditor.getByRole('textbox', { name: 'Editor content' }).focus();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowUp' : 'Control+Home');
+  await expect.poll(getFirstVisibleSourceLine).toBe(1);
+  await expect(sourceLines).not.toContainText('original-expanded-marker');
+});
+
 test('结构导航语义字符串可继续打开 Scheme 解析', async ({ page }) => {
   await page.evaluate(() => {
     window.localStorage.setItem('json-helper-general-settings', JSON.stringify({
@@ -4027,6 +4079,57 @@ test('文件标签支持键盘切换和关闭语义', async ({ page }) => {
 
   await firstTab.press('Enter');
   await expect(firstTab).toHaveAttribute('aria-selected', 'true');
+});
+
+test('两个长文件标签分别保留滚动与折叠状态', async ({ page }) => {
+  await ensureSourceEditorReady(page);
+  const newTabButton = page.getByRole('button', { name: '新建标签 (Cmd+N)' });
+  const buildLongJson = (tab: string) => JSON.stringify({
+    foldTarget: {
+      hiddenMarker: `${tab}-expanded-marker`,
+      enabled: true,
+    },
+    items: Array.from({ length: 220 }, (_, index) => ({ tab, index })),
+  }, null, 2);
+  const getFirstVisibleSourceLine = async () => Number(await page
+    .locator('[data-tour="source-editor"] .margin-view-overlays .line-numbers')
+    .first()
+    .textContent());
+
+  await newTabButton.click();
+  await pasteSourceEditor(page, buildLongJson('tab-1'));
+  await newTabButton.click();
+  await pasteSourceEditor(page, buildLongJson('tab-2'));
+
+  const tabList = page.getByRole('tablist', { name: '已打开文件标签' });
+  const firstTab = tabList.getByRole('tab', { name: /Untitled-1/ });
+  const secondTab = tabList.getByRole('tab', { name: /Untitled-2/ });
+  const sourceEditor = page.locator('[data-tour="source-editor"] .monaco-editor').first();
+  const sourceLines = page.locator('[data-tour="source-editor"] .view-lines');
+
+  await firstTab.click();
+  await expect(sourceLines).toContainText('tab-1-expanded-marker');
+  const foldTargetControl = sourceEditor.locator('.codicon-folding-expanded').nth(1);
+  await expect(foldTargetControl).toBeAttached();
+  await foldTargetControl.click({ force: true });
+  await expect(sourceLines).not.toContainText('tab-1-expanded-marker');
+
+  await sourceEditor.click();
+  for (let pageDownIndex = 0; pageDownIndex < 10; pageDownIndex += 1) {
+    await page.keyboard.press('PageDown');
+  }
+  await expect.poll(getFirstVisibleSourceLine).toBeGreaterThan(100);
+
+  await secondTab.click();
+  await expect.poll(getFirstVisibleSourceLine).toBe(1);
+  await expect(sourceLines).toContainText('tab-2-expanded-marker');
+
+  await firstTab.click();
+  await expect.poll(getFirstVisibleSourceLine).toBeGreaterThan(100);
+  await sourceEditor.getByRole('textbox', { name: 'Editor content' }).focus();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowUp' : 'Control+Home');
+  await expect.poll(getFirstVisibleSourceLine).toBe(1);
+  await expect(sourceLines).not.toContainText('tab-1-expanded-marker');
 });
 
 test('文件打开后可修改并保存下载', async ({ page }) => {

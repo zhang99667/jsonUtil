@@ -31,7 +31,6 @@ export const appSourceActiveFile: FileTab = {
   name: 'demo.json',
   content: '{"a":1}',
   savedContent: '{"a":0}',
-  viewState: { cursor: 1 },
 };
 
 export const buildAppSourceCodeEditorTestProps = (
@@ -54,7 +53,6 @@ export const buildAppSourceCodeEditorTestProps = (
   onTabClick: vi.fn(),
   onCloseFile: vi.fn(),
   onNewTab: vi.fn(),
-  onSaveViewState: vi.fn(),
   onSourceAiFix: vi.fn(),
   onPasteSource: vi.fn(),
   onCopySource: vi.fn(),

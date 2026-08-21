@@ -135,7 +135,7 @@ describe('useFileAutoSave', () => {
     const file = createFile(handle);
     useAutoSaveScenario(file, file.content);
     await vi.advanceTimersByTimeAsync(600);
-    useAutoSaveScenario({ ...file, viewState: { lineNumber: 2 } }, file.content);
+    useAutoSaveScenario({ ...file, path: '/tmp/draft.json' }, file.content);
     await vi.advanceTimersByTimeAsync(400);
 
     expect(fileSaveMocks.writeTextToFileHandleQueued).toHaveBeenCalledWith(handle, file.content);

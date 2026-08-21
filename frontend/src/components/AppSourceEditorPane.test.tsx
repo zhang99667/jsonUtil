@@ -23,7 +23,6 @@ const buildProps = (): AppSourceEditorPaneProps => ({
   onTabClick: vi.fn(),
   onCloseFile: vi.fn(),
   onNewTab: vi.fn(),
-  onSaveViewState: vi.fn(),
   onSourceAiFix: vi.fn(),
   onPasteSource: vi.fn(),
   onCopySource: vi.fn(),

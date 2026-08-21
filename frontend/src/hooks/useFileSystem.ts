@@ -166,13 +166,6 @@ export const useFileSystem = ({
         if (file) applyActiveFileSource(file);
     };
 
-    // 保存指定标签页的编辑器视图状态（光标位置、滚动位置）
-    const saveViewState = useCallback((fileId: string, viewState: unknown) => {
-        setFiles(prev => prev.map(f =>
-            f.id === fileId ? { ...f, viewState } : f
-        ));
-    }, []);
-
     return {
         files,
         setFiles,
@@ -188,7 +181,6 @@ export const useFileSystem = ({
         closeFile,
         switchTab,
         updateActiveFileContent,
-        saveViewState,
         flushWorkspaceDraft
     };
 };
