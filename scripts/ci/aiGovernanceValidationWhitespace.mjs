@@ -4,6 +4,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
+
 import { collectAuthoritativeValidationChangedSet } from './aiGovernanceValidationChangedSet.mjs';
 import {
   parseValidationHeadEntries,
@@ -70,12 +72,6 @@ const failedReport = code => renderReport({
   blockers: [{ code, count: 1 }],
 });
 
-const isWithin = (root, target) => {
-  const relative = path.relative(root, target);
-  return relative === '' || (!path.isAbsolute(relative)
-    && relative !== '..' && !relative.startsWith(`..${path.sep}`));
-};
-
 const createPrivateTempRoot = (rootDir) => {
   const candidate = process.platform === 'win32'
     ? path.join(path.parse(process.execPath).root, 'Windows', 'Temp')
@@ -93,7 +89,7 @@ const createPrivateTempRoot = (rootDir) => {
     fs.chmodSync(tempRoot, 0o700);
     const stat = fs.lstatSync(tempRoot);
     if (!stat.isDirectory() || stat.isSymbolicLink() || fs.realpathSync(tempRoot) !== tempRoot
-      || isWithin(rootDir, tempRoot)
+      || isPathWithin(rootDir, tempRoot)
       || (process.platform !== 'win32'
         && ((stat.mode & 0o777) !== 0o700
           || (typeof process.getuid === 'function' && stat.uid !== process.getuid())))) {

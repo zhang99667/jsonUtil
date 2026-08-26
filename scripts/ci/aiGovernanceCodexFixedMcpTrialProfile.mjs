@@ -3,6 +3,7 @@ import { chmod, mkdir, mkdtemp, realpath, rm, stat, lstat } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
 import { hashCodexExecFile } from './aiGovernanceCodexExecCaptureRuntime.mjs';
 
 export const CODEX_FIXED_MCP_TRIAL_RUNNER = Object.freeze({
@@ -24,10 +25,6 @@ const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const SUPPORTED_CLI_VERSIONS = new Set(['0.144.0-alpha.4']);
 const sha256 = value => createHash('sha256').update(value).digest('hex');
-const isWithin = (parent, child) => {
-  const relative = path.relative(parent, child);
-  return relative === '' || !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative);
-};
 const resolvePlainFile = async (filePath, label) => {
   if (typeof filePath !== 'string' || !path.isAbsolute(filePath)) throw new TypeError(`${label} 必须是绝对路径`);
   if ((await lstat(filePath)).isSymbolicLink()) throw new TypeError(`${label} 不能是 symlink`);
@@ -97,9 +94,9 @@ export const buildCodexFixedMcpTrialProfile = async ({
     resolvePrivateDirectory(isolation?.tmpDir, 'isolation.tmpDir'),
   ]);
   for (const [label, directory] of Object.entries({ home, codexHome, cwd, tmpDir })) {
-    if (isWithin(resolvedRoot, directory)) throw new TypeError(`isolation.${label} 必须位于待测 worktree 之外`);
+    if (isPathWithin(resolvedRoot, directory)) throw new TypeError(`isolation.${label} 必须位于待测 worktree 之外`);
   }
-  if (isWithin(resolvedRoot, codexBinary)) throw new TypeError('binaryPath 必须位于待测 worktree 之外');
+  if (isPathWithin(resolvedRoot, codexBinary)) throw new TypeError('binaryPath 必须位于待测 worktree 之外');
   const binarySha256 = await hashCodexExecFile(codexBinary);
   if (binarySha256 !== expectedBinarySha256) throw new TypeError('Codex CLI binary SHA-256 与 host 绑定不匹配');
   const componentDescriptorSha256 = sha256(JSON.stringify({

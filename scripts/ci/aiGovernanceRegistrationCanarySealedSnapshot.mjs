@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
 
 import {
   EVOLUTION_WORKTREE_REVISION_PROFILE,
@@ -25,11 +26,6 @@ export const REGISTRATION_CANARY_SEALED_SNAPSHOT = Object.freeze({
 });
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
-const isWithin = (parent, child) => {
-  const relative = path.relative(parent, child);
-  return relative === '' || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`));
-};
-
 const readDirectoryIdentity = (target) => {
   const stat = fs.lstatSync(target, { bigint: true });
   if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('sealed snapshot root identity 不是普通目录');
@@ -41,7 +37,7 @@ const createOutputPaths = (sourceRoot, outputRoot) => {
   const requested = path.resolve(outputRoot);
   const parent = fs.realpathSync(path.dirname(requested));
   const output = path.join(parent, path.basename(requested));
-  if (isWithin(sourceRoot, output)) throw new Error('sealed snapshot 输出必须位于 source checkout 外');
+  if (isPathWithin(sourceRoot, output)) throw new Error('sealed snapshot 输出必须位于 source checkout 外');
   try { fs.lstatSync(output); throw new Error('sealed snapshot 输出路径必须不存在'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
   const staging = path.join(parent, `.${path.basename(output)}.tmp-${randomUUID()}`);
@@ -53,7 +49,7 @@ const writeSnapshotEntry = ({ staging, entry, directories }) => {
     const target = path.join(staging, ...entry.publicEntry.path.split('/'));
     fs.mkdirSync(path.dirname(target), { recursive: true, mode: 0o700 });
     let current = path.dirname(target);
-    while (isWithin(staging, current)) {
+    while (isPathWithin(staging, current)) {
       directories.add(current);
       if (current === staging) break;
       current = path.dirname(current);

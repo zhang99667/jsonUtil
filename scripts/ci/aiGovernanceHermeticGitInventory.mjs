@@ -5,16 +5,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { TextDecoder } from 'node:util';
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
 
 const strictUtf8 = new TextDecoder('utf-8', { fatal: true });
 const failure = code => Object.assign(new Error(code), { code });
 const assertSupportedPlatform = () => {
   if (process.platform === 'win32') throw failure('HERMETIC_GIT_WINDOWS_UNSUPPORTED');
-};
-
-const isWithin = (root, target) => {
-  const relative = path.relative(root, target);
-  return relative === '' || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`));
 };
 
 const fixedGitCandidates = () => [
@@ -46,7 +42,7 @@ export const resolveHermeticGitExecutable = (rootDir = process.cwd()) => {
     try {
       const realPath = fs.realpathSync(candidate);
       const stat = fs.lstatSync(realPath);
-      if (!stat.isFile() || stat.isSymbolicLink() || isWithin(root, realPath)
+      if (!stat.isFile() || stat.isSymbolicLink() || isPathWithin(root, realPath)
         || (process.platform !== 'win32' && (stat.mode & 0o111) === 0)) continue;
       assertProtectedExecutablePath(realPath);
       return realPath;

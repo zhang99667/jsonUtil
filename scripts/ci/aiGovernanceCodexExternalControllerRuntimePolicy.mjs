@@ -1,6 +1,7 @@
 import { createHash, createPublicKey } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
 
 const MAX_POLICY_BYTES = 64 * 1024;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
@@ -76,19 +77,13 @@ export const parseExternalControllerRuntimeTrustPolicy = (policyJson) => {
   });
 };
 
-const isWithin = (root, candidate) => {
-  const relative = path.relative(root, candidate);
-  return relative === '' || (!path.isAbsolute(relative) && relative !== '..'
-    && !relative.startsWith(`..${path.sep}`));
-};
-
 const assertProtectedPath = (requestedPath, repositoryRoot) => {
   if (!path.isAbsolute(requestedPath ?? '') || !path.isAbsolute(repositoryRoot ?? '')) {
     throw new TypeError('runtime trust policy path 必须是绝对路径');
   }
   const realPolicy = fs.realpathSync(requestedPath);
   const realRepository = fs.realpathSync(repositoryRoot);
-  if (realPolicy !== requestedPath || isWithin(realRepository, realPolicy)) {
+  if (realPolicy !== requestedPath || isPathWithin(realRepository, realPolicy)) {
     throw new TypeError('runtime trust policy 必须位于 checkout 外且不能经过 symlink');
   }
   let current = realPolicy;

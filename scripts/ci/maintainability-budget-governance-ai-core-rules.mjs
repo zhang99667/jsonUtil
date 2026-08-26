@@ -12,6 +12,8 @@ export const governanceAiCoreMaintainabilityBudgets = [
   governanceAiCoreBudget('scripts/ci/aiGovernanceDateBounds.mjs', 30, 'AI 治理日期边界 helper 只维护本地日期、UTC+14 全球上界与未来日期失败文案'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceJsonAuthority.mjs', 50, 'AI 治理 JSON authority 叶子应只负责 fatal UTF-8 与任意层唯一解码 key'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceJsonAuthority.test.mjs', 35, 'JSON authority 直接测试应锁重复 key、字符串语法、BOM 与非法 UTF-8'),
+  governanceAiCoreBudget('scripts/ci/aiGovernancePathWithin.mjs', 10, 'AI 治理路径包含原语应单源维护 parent/child 包含语义'),
+  governanceAiCoreBudget('scripts/ci/aiGovernancePathWithin.test.mjs', 20, '路径包含原语测试应锁相同路径、内部路径和父/兄弟逃逸负例'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceSemver.mjs', 55, 'AI 治理 SemVer 叶子应精确实现解析、大数字和 precedence'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceSemver.test.mjs', 50, 'SemVer 直接测试应锁官方 precedence、前导零、空 identifier 与 build 语义'),
   governanceAiCoreBudget('scripts/ci/aiGovernanceScriptReachability.mjs', 45, 'AI 治理脚本可达性 helper 应独立维护生产链路和测试支撑失败判定'),

@@ -3,6 +3,8 @@ import { constants } from 'node:fs';
 import { lstat, open, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
+
 const LEDGER_PATHS = Object.freeze([
   'evals/ai-governance/outcomes.jsonl',
   'evals/ai-governance/trial-receipts.jsonl',
@@ -11,16 +13,11 @@ const sameIdentity = (left, right) => left.dev === right.dev && left.ino === rig
 const sameSnapshotStat = (left, right) => sameIdentity(left, right)
   && left.size === right.size && left.mtimeNs === right.mtimeNs
   && left.ctimeNs === right.ctimeNs && left.mode === right.mode;
-const isWithin = (parent, child) => {
-  const relative = path.relative(parent, child);
-  return relative === '' || !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative);
-};
-
 const snapshotLedger = async (rootDir, relativePath) => {
   const resolvedRoot = await realpath(rootDir);
   const absolutePath = path.join(resolvedRoot, relativePath);
   const resolvedPath = await realpath(absolutePath);
-  if (!isWithin(resolvedRoot, resolvedPath) || resolvedPath !== absolutePath) {
+  if (!isPathWithin(resolvedRoot, resolvedPath) || resolvedPath !== absolutePath) {
     throw new Error(`${relativePath}: ledger 不得通过 ancestor symlink 逃离 worktree`);
   }
   const pathStat = await lstat(absolutePath, { bigint: true });

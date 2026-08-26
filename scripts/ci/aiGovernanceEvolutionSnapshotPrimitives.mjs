@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
 
 const updateField = (digest, label, value) => {
   const bytes = Buffer.isBuffer(value) ? value : Buffer.from(String(value), 'utf8');
@@ -76,11 +77,6 @@ export const readExactBoundedDescriptor = (descriptor, size, label) => {
   return bytes;
 };
 
-const isWithin = (parent, child) => {
-  const relative = path.relative(parent, child);
-  return relative === '' || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`));
-};
-
 export const readStableEvolutionSnapshotFile = (snapshotRoot, relativePath, maxBytes, expectedStat = null) => {
   if (!isSafeEvolutionSnapshotPath(relativePath) || !Number.isSafeInteger(maxBytes) || maxBytes < 0) {
     throw new TypeError('sealed snapshot 稳定读取参数非法');
@@ -92,7 +88,7 @@ export const readStableEvolutionSnapshotFile = (snapshotRoot, relativePath, maxB
     throw new Error(`sealed snapshot 必须是稳定有界普通文件: ${relativePath}`);
   }
   const resolvedPath = fs.realpathSync(absolutePath);
-  if (resolvedPath !== absolutePath || !isWithin(snapshotRoot, resolvedPath)) {
+  if (resolvedPath !== absolutePath || !isPathWithin(snapshotRoot, resolvedPath)) {
     throw new Error(`sealed snapshot 禁止 symlink 祖先: ${relativePath}`);
   }
   const descriptor = fs.openSync(absolutePath, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));

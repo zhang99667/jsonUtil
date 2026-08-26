@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
 import {
   decodeHermeticGitPathList,
   runHermeticGitInventory,
@@ -62,18 +63,13 @@ export const JSONUTILS_VALIDATION_COMMAND_IDENTITIES = Object.freeze(COMMAND_SPE
   Object.freeze({ id, displayCommand })
 )));
 
-const isWithin = (root, target) => {
-  const relative = path.relative(root, target);
-  return relative === '' || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`));
-};
-
 const assertStableTestFile = (root, absolute, directoryEntry) => {
   let descriptor;
   try {
     const pathStat = fs.lstatSync(absolute, { bigint: true });
     if (!directoryEntry.isFile() || directoryEntry.isSymbolicLink() || !pathStat.isFile()
       || pathStat.isSymbolicLink() || pathStat.nlink !== 1n || fs.realpathSync(absolute) !== absolute
-      || !isWithin(root, absolute)) throw new Error('unsafe');
+      || !isPathWithin(root, absolute)) throw new Error('unsafe');
     descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
     const opened = fs.fstatSync(descriptor, { bigint: true });
     const finalPathStat = fs.lstatSync(absolute, { bigint: true });
@@ -94,7 +90,7 @@ const expandTestFiles = (rootDir, relativeDirectory) => {
   const directory = path.join(root, ...relativeDirectory.split('/'));
   const directoryStat = fs.lstatSync(directory);
   if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink() || fs.realpathSync(directory) !== directory
-    || !isWithin(root, directory)) throw failure('VALIDATION_TEST_DIRECTORY_UNSAFE');
+    || !isPathWithin(root, directory)) throw failure('VALIDATION_TEST_DIRECTORY_UNSAFE');
 
   const names = fs.readdirSync(directory, { withFileTypes: true })
     .filter(entry => entry.name.endsWith('.test.mjs'))

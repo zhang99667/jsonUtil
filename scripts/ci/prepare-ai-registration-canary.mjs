@@ -6,6 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
+
 import { readEvolutionEvalCorpus } from './aiGovernanceEvolutionEvalContract.mjs';
 import { readEvolutionExperiments } from './aiGovernanceEvolutionExperiments.mjs';
 import { hashEvolutionOutcomeV3Line } from './aiGovernanceEvolutionOutcomeChain.mjs';
@@ -24,10 +26,6 @@ const FILES = Object.freeze({
 });
 
 const sha256 = value => createHash('sha256').update(value).digest('hex');
-const isWithin = (parent, child) => {
-  const relative = path.relative(parent, child);
-  return relative === '' || !path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`);
-};
 const sameStat = (left, right) => left.dev === right.dev && left.ino === right.ino
   && left.mode === right.mode && left.size === right.size
   && left.mtimeNs === right.mtimeNs && left.ctimeNs === right.ctimeNs;
@@ -36,7 +34,7 @@ const readStableFile = (projectRoot, relativePath) => {
   const realRoot = fs.realpathSync(projectRoot);
   const absolutePath = path.join(realRoot, relativePath);
   const resolvedPath = fs.realpathSync(absolutePath);
-  if (!isWithin(realRoot, resolvedPath) || resolvedPath !== absolutePath) throw new Error(`${relativePath}: 必须是仓库内普通非 symlink 文件`);
+  if (!isPathWithin(realRoot, resolvedPath) || resolvedPath !== absolutePath) throw new Error(`${relativePath}: 必须是仓库内普通非 symlink 文件`);
   const pathStat = fs.lstatSync(absolutePath, { bigint: true });
   if (pathStat.isSymbolicLink() || !pathStat.isFile() || pathStat.size > BigInt(MAX_FILE_BYTES)) throw new Error(`${relativePath}: 文件类型或大小非法`);
   const descriptor = fs.openSync(absolutePath, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));

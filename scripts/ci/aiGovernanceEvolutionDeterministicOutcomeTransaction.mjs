@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { isPathWithin } from './aiGovernancePathWithin.mjs';
 import { runHermeticGitInventory } from './aiGovernanceHermeticGitInventory.mjs';
 import {
   AI_EVOLUTION_OUTCOME_TRANSACTION_MAX_JOURNAL_BYTES,
@@ -24,10 +25,6 @@ const ENDPOINT_FIELDS = ['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeNs', 'ctim
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const exactFields = (value, fields) => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('\0') === [...fields].sort().join('\0');
-const isWithin = (parent, child) => {
-  const relative = path.relative(parent, child);
-  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
-};
 const fsyncDirectory = directory => {
   const descriptor = fs.openSync(directory, fs.constants.O_RDONLY);
   try { fs.fsyncSync(descriptor); } finally { fs.closeSync(descriptor); }
@@ -168,7 +165,7 @@ export const acquireEvolutionOutcomeWriterLock = ({ rootDir, hostname = os.hostn
 export const readEvolutionOutcomeLedgerSnapshot = (rootDir, filePath) => {
   const realRoot = fs.realpathSync(rootDir);
   const absolute = path.isAbsolute(filePath) ? path.normalize(filePath) : path.join(realRoot, filePath);
-  if (!isWithin(realRoot, absolute)) throw new Error('ledger 必须位于 worktree 内');
+  if (!isPathWithin(realRoot, absolute)) throw new Error('ledger 必须位于 worktree 内');
   const resolved = fs.realpathSync(absolute);
   if (resolved !== absolute) throw new Error('ledger ancestor/direct symlink 被拒绝');
   const before = fs.lstatSync(absolute, { bigint: true });
