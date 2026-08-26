@@ -65,6 +65,7 @@ describe('EditorHeaderActions', () => {
   });
 
   it('PREVIEW 动作保留报告按钮开关和转换中禁用态', () => {
+    const onToggleScrollSync = vi.fn();
     const tree = PreviewEditorHeaderActions({
       editorUiState: buildEditorUiState({
         isPreviewSameAsSource: true,
@@ -72,11 +73,17 @@ describe('EditorHeaderActions', () => {
       isOutputTransforming: true,
       showTransformReportButton: true,
       hasTransformReportContext: true,
+      isScrollSyncEnabled: false,
       onOpenTransformReport: vi.fn(),
       onApplyPreviewToSource: vi.fn(),
       onCopyPreview: vi.fn(),
+      onToggleScrollSync,
     });
 
+    const scrollSyncButton = getByActionTour(tree, 'sync-editor-scroll');
+    expect(scrollSyncButton.props.ariaPressed).toBe(false);
+    expect(scrollSyncButton.props.ariaLabel).toBe('开启 SOURCE 与 PREVIEW 同步滚动');
+    expect(scrollSyncButton.props.onClick).toBe(onToggleScrollSync);
     expect(getByActionTour(tree, 'transform-report-button').props.disabled).toBe(true);
     expect(getByActionTour(tree, 'apply-preview-to-source').props.disabled).toBe(true);
     expect(getByActionTour(tree, 'copy-preview').props.disabled).toBe(true);
@@ -88,13 +95,17 @@ describe('EditorHeaderActions', () => {
       isOutputTransforming: false,
       showTransformReportButton: false,
       hasTransformReportContext: true,
+      isScrollSyncEnabled: true,
       onOpenTransformReport: vi.fn(),
       onApplyPreviewToSource: vi.fn(),
       onCopyPreview: vi.fn(),
+      onToggleScrollSync: vi.fn(),
     });
     const html = renderToStaticMarkup(tree);
 
     expect(findByTour(tree, 'transform-report-button')).toHaveLength(0);
+    expect(getByActionTour(tree, 'sync-editor-scroll').props.ariaPressed).toBe(true);
+    expect(html).toContain('aria-label="关闭 SOURCE 与 PREVIEW 同步滚动"');
     expect(html).not.toContain('data-tour="transform-report-button"');
     expect(html).toContain('title="复制 PREVIEW"');
   });

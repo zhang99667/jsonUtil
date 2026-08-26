@@ -12,9 +12,11 @@ interface PreviewEditorHeaderActionsProps {
   isOutputTransforming: boolean;
   showTransformReportButton: boolean;
   hasTransformReportContext: boolean;
+  isScrollSyncEnabled: boolean;
   onOpenTransformReport: () => void;
   onApplyPreviewToSource: () => void;
   onCopyPreview: () => void;
+  onToggleScrollSync: () => void;
 }
 
 export const PreviewEditorHeaderActions: React.FC<PreviewEditorHeaderActionsProps> = ({
@@ -22,11 +24,29 @@ export const PreviewEditorHeaderActions: React.FC<PreviewEditorHeaderActionsProp
   isOutputTransforming,
   showTransformReportButton,
   hasTransformReportContext,
+  isScrollSyncEnabled,
   onOpenTransformReport,
   onApplyPreviewToSource,
   onCopyPreview,
+  onToggleScrollSync,
 }) => (
   <>
+    <EditorHeaderActionButton
+      dataTour="sync-editor-scroll"
+      ariaLabel={isScrollSyncEnabled
+        ? '关闭 SOURCE 与 PREVIEW 同步滚动'
+        : '开启 SOURCE 与 PREVIEW 同步滚动'}
+      ariaPressed={isScrollSyncEnabled}
+      onClick={onToggleScrollSync}
+      className={`${editorHeaderBaseButtonClassName} border ${isScrollSyncEnabled
+        ? 'border-sky-400/60 bg-sky-500/15 text-sky-200'
+        : 'border-transparent text-gray-400 hover:bg-editor-active hover:text-gray-200'}`}
+      title={isScrollSyncEnabled
+        ? '关闭 SOURCE 与 PREVIEW 同步滚动'
+        : '开启 SOURCE 与 PREVIEW 同步滚动'}
+      iconId="syncScroll"
+      label="同步滚动"
+    />
     {showTransformReportButton && (
       <EditorHeaderActionButton
         dataTour="transform-report-button"

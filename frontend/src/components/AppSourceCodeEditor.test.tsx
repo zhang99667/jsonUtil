@@ -18,6 +18,7 @@ describe('AppSourceCodeEditor', () => {
     expect(tree.props.value).toBe('{"a":1}');
     expect(tree.props.originalValue).toBe('{"a":0}');
     expect(tree.props.path).toBe('tab-1');
+    expect(tree.props.onEditorMount).toBe(props.onSourceEditorMount);
     expect(tree.props.label).toBe('SOURCE');
     expect(tree.props.enableSchemeScan).toBe(true);
     expect(tree.props.error).toBe('Unexpected token');

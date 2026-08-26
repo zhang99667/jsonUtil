@@ -20,6 +20,8 @@ export interface AppToolPanelsControllerProps {
   transformReportContext: TransformContext | null;
   inputRef: MutableRefObject<string>;
   jsonPathQueryRequest: JsonPathPanelConfig['externalQueryRequest'];
+  jsonPathWorkspaceId: JsonPathPanelConfig['workspaceId'];
+  jsonPathRetainedWorkspaceIds: JsonPathPanelConfig['retainedWorkspaceIds'];
   jsonTreeFocusRequest: JsonTreePanelConfig['externalFocusRequest'];
   schemeInputRequest: {
     id: number;
@@ -69,6 +71,8 @@ export const AppToolPanelsController: React.FC<AppToolPanelsControllerProps> = (
   transformReportContext,
   inputRef,
   jsonPathQueryRequest,
+  jsonPathWorkspaceId,
+  jsonPathRetainedWorkspaceIds,
   jsonTreeFocusRequest,
   schemeInputRequest,
   templateFillRequest,
@@ -108,6 +112,8 @@ export const AppToolPanelsController: React.FC<AppToolPanelsControllerProps> = (
       jsonData: jsonPathDataSource,
       isDataPreparing: mode === TransformMode.DEEP_FORMAT && isOutputTransforming,
       externalQueryRequest: jsonPathQueryRequest,
+      workspaceId: jsonPathWorkspaceId,
+      retainedWorkspaceIds: jsonPathRetainedWorkspaceIds,
       isOpen: isJsonPathPanelOpen,
       onClose: onCloseJsonPathPanel,
       onHighlightRange: onJsonPathHighlight,

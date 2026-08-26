@@ -65,13 +65,19 @@ describe('useAppToolPanelCommands', () => {
   });
 
   it('JSONPath 定位会生成递增请求并收起报告面板', () => {
-    const { commands, onSetHighlightRange, onSetMode, onTrackToolEvent } = useToolPanelCommandsFixture();
+    const { commands, onSetHighlightRange, onSetMode, onTrackToolEvent } = useToolPanelCommandsFixture({
+      workspaceId: 'file-a',
+    });
 
     commands.handleLocateJsonPath(' $.data[0] ');
 
     expect(onSetMode).toHaveBeenCalledWith(TransformMode.DEEP_FORMAT);
     expect(onSetHighlightRange).toHaveBeenCalledWith(null);
-    expect(stateSetters.jsonPathQueryRequest).toHaveBeenCalledWith({ id: 1, query: '$.data[0]' });
+    expect(stateSetters.jsonPathQueryRequest).toHaveBeenCalledWith({
+      id: 1,
+      query: '$.data[0]',
+      workspaceId: 'file-a',
+    });
     expect(stateSetters.isJsonPathPanelOpen).toHaveBeenCalledWith(true);
     expect(stateSetters.isTransformReportOpen).toHaveBeenCalledWith(false);
     expect(onTrackToolEvent).toHaveBeenCalledWith('JSONPATH_LOCATE', 'panel');

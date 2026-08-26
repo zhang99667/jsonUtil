@@ -1,6 +1,7 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useCustomScrollbar } from '../hooks/useCustomScrollbar';
 import { useJsonPathPanelTour } from '../hooks/useJsonPathPanelTour';
+import { useJsonPathPanelWorkspaceState } from '../hooks/useJsonPathPanelWorkspaceState';
 import {
     useJsonPathPanelQueryRunner,
     type JsonPathPanelExternalQueryRequest,
@@ -48,6 +49,8 @@ interface JsonPathPanelProps {
     autoExpandScheme?: boolean;
     isDataPreparing?: boolean;
     externalQueryRequest?: JsonPathPanelExternalQueryRequest | null;
+    workspaceId?: string | null;
+    retainedWorkspaceIds?: readonly string[];
     isOpen: boolean;
     onClose: () => void;
     onHighlightRange: (range: HighlightRange | null) => void;
@@ -60,12 +63,26 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     autoExpandScheme = false,
     isDataPreparing = false,
     externalQueryRequest = null,
+    workspaceId = null,
+    retainedWorkspaceIds = [],
     isOpen,
     onClose,
     onHighlightRange,
     onLocateStructure
 }) => {
-    const [query, setQuery] = useState<string>('$');
+    const {
+        query,
+        queryState,
+        setQuery,
+        dispatchQueryState,
+    } = useJsonPathPanelWorkspaceState({
+        workspaceId,
+        retainedWorkspaceIds,
+        jsonData,
+        deepFormat,
+        autoExpandScheme,
+        isOpen,
+    });
     const normalizedQuery = query.trim();
     const {
         history,
@@ -79,7 +96,6 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
     } = useJsonPathSavedQueryLists(normalizedQuery);
 
     const {
-        queryState,
         clearCancelledQuery,
         focusResult: applyFocusedResult,
         handleCancelQuery,
@@ -92,7 +108,10 @@ export const JsonPathPanel: React.FC<JsonPathPanelProps> = ({
         autoExpandScheme,
         isDataPreparing,
         externalQueryRequest,
+        workspaceId,
         isOpen,
+        queryState,
+        onQueryStateAction: dispatchQueryState,
         onSetQuery: setQuery,
         onAddHistoryItem: addHistoryItem,
         onHighlightRange,

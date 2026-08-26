@@ -47,6 +47,7 @@ export const buildAppSourceCodeEditorTestProps = (
   jsonSchemaWarning: 'schema warning',
   jsonSchemaDiagnosticHighlights: [],
   editorUiState: appSourceEditorUiState,
+  onSourceEditorMount: vi.fn(),
   onInputChange: vi.fn(),
   onSourceFocus: vi.fn(),
   onCursorPositionChange: vi.fn(),

@@ -1,5 +1,6 @@
 import type { AppEditorUiState } from '../utils/appEditorUiState';
 import type {
+  EditorProps,
   EditorDiagnosticHighlight,
   EditorLocation,
   FileTab,
@@ -18,6 +19,7 @@ export interface AppSourceCodeEditorProps {
   jsonSchemaWarning: string;
   jsonSchemaDiagnosticHighlights: EditorDiagnosticHighlight[];
   editorUiState: AppEditorUiState;
+  onSourceEditorMount: NonNullable<EditorProps['onEditorMount']>;
   onInputChange: (value: string) => void;
   onSourceFocus: () => void;
   onCursorPositionChange: (line: number, column: number) => void;

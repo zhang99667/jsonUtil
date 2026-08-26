@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef, type Dispatch } from 'react';
 import type { HighlightRange } from '../types';
 import { formatUnknownError } from '../utils/errors';
 import { buildJsonPathPanelQueryRunDecision } from '../utils/jsonPathPanelQueryRunDecision';
@@ -12,12 +12,16 @@ import {
 import {
   initialJsonPathPanelQueryState,
   jsonPathPanelQueryStateReducer,
+  type JsonPathPanelQueryAction,
+  type JsonPathPanelQueryState,
 } from '../utils/jsonPathPanelQueryState';
 import { showSuccess } from '../utils/toast';
+import { useJsonPathPanelQueryContextSync } from './useJsonPathPanelQueryContextSync';
 
 export interface JsonPathPanelExternalQueryRequest {
   id: number;
   query: string;
+  workspaceId?: string | null;
 }
 
 interface UseJsonPathPanelQueryRunnerInput {
@@ -27,7 +31,10 @@ interface UseJsonPathPanelQueryRunnerInput {
   autoExpandScheme: boolean;
   isDataPreparing: boolean;
   externalQueryRequest: JsonPathPanelExternalQueryRequest | null;
+  workspaceId?: string | null;
   isOpen: boolean;
+  queryState?: JsonPathPanelQueryState;
+  onQueryStateAction?: Dispatch<JsonPathPanelQueryAction>;
   onSetQuery: (query: string) => void;
   onAddHistoryItem: (query: string) => void;
   onHighlightRange: (range: HighlightRange | null) => void;
@@ -41,33 +48,36 @@ export const useJsonPathPanelQueryRunner = ({
   autoExpandScheme,
   isDataPreparing,
   externalQueryRequest,
+  workspaceId = null,
   isOpen,
+  queryState: controlledQueryState,
+  onQueryStateAction,
   onSetQuery,
   onAddHistoryItem,
   onHighlightRange,
   createWorker = createJsonPathQueryWorker,
 }: UseJsonPathPanelQueryRunnerInput) => {
-  const [queryState, dispatchQueryState] = useReducer(
+  const [internalQueryState, dispatchInternalQueryState] = useReducer(
     jsonPathPanelQueryStateReducer,
     initialJsonPathPanelQueryState
   );
+  const isQueryStateControlled = controlledQueryState !== undefined && onQueryStateAction !== undefined;
+  const queryState = controlledQueryState ?? internalQueryState;
+  const dispatchQueryState = onQueryStateAction ?? dispatchInternalQueryState;
   const workerRef = useRef<JsonPathQueryWorker | null>(null);
   const requestIdRef = useRef(0);
   const activeQueryRef = useRef('');
   const activeQueryStartedAtRef = useRef<number | null>(null);
   const externalQueryIdRef = useRef<number | null>(null);
-
   const clearActiveQuery = useCallback(() => {
     activeQueryRef.current = '';
     activeQueryStartedAtRef.current = null;
   }, []);
-
   const terminateActiveWorker = useCallback(() => {
     const worker = workerRef.current;
     workerRef.current = null;
     worker?.terminate();
   }, []);
-
   const finishWorkerRequest = useCallback((worker: JsonPathQueryWorker, startedAt: number) => {
     const queryStartedAt = activeQueryStartedAtRef.current ?? startedAt;
     if (workerRef.current === worker) {
@@ -78,7 +88,6 @@ export const useJsonPathPanelQueryRunner = ({
     worker.terminate();
     return queryStartedAt;
   }, []);
-
   const trackQueryEvent = useCallback((status: Parameters<typeof trackJsonPathQueryEvent>[0]['status'], startedAt: number) => {
     trackJsonPathQueryEvent({ jsonData, status, startedAt });
   }, [jsonData]);
@@ -87,6 +96,24 @@ export const useJsonPathPanelQueryRunner = ({
     terminateActiveWorker();
     clearActiveQuery();
   }, [clearActiveQuery, terminateActiveWorker]);
+  const resetRequestContext = useCallback(() => {
+    terminateActiveWorker();
+    requestIdRef.current++;
+    clearActiveQuery();
+  }, [clearActiveQuery, terminateActiveWorker]);
+
+  const activeWorkspaceIdRef = useJsonPathPanelQueryContextSync({
+    workspaceId,
+    jsonData,
+    deepFormat,
+    autoExpandScheme,
+    isOpen,
+    queryState,
+    isQueryStateControlled,
+    onQueryStateAction: dispatchQueryState,
+    onHighlightRange,
+    onResetRequestContext: resetRequestContext,
+  });
 
   const resetQueryState = useCallback(() => {
     terminateActiveWorker();
@@ -94,11 +121,7 @@ export const useJsonPathPanelQueryRunner = ({
     clearActiveQuery();
     dispatchQueryState({ type: 'reset' });
     onHighlightRange(null);
-  }, [clearActiveQuery, onHighlightRange, terminateActiveWorker]);
-
-  useEffect(() => {
-    resetQueryState();
-  }, [jsonData, deepFormat, autoExpandScheme, isOpen, resetQueryState]);
+  }, [clearActiveQuery, dispatchQueryState, onHighlightRange, terminateActiveWorker]);
 
   const handleQuery = useCallback((overrideQuery?: string) => {
     const startedAt = performance.now();
@@ -148,7 +171,9 @@ export const useJsonPathPanelQueryRunner = ({
     onHighlightRange(null);
 
     const ownsWorkerRequest = () => (
-      workerRef.current === worker && requestIdRef.current === requestId
+      workerRef.current === worker
+      && requestIdRef.current === requestId
+      && activeWorkspaceIdRef.current === workspaceId
     );
 
     worker.onmessage = (event) => {
@@ -207,6 +232,7 @@ export const useJsonPathPanelQueryRunner = ({
     clearActiveQuery,
     createWorker,
     deepFormat,
+    dispatchQueryState,
     finishWorkerRequest,
     isDataPreparing,
     jsonData,
@@ -216,6 +242,7 @@ export const useJsonPathPanelQueryRunner = ({
     query,
     terminateActiveWorker,
     trackQueryEvent,
+    workspaceId,
   ]);
 
   const handleCancelQuery = useCallback(() => {
@@ -232,6 +259,7 @@ export const useJsonPathPanelQueryRunner = ({
     showSuccess('已取消查询', 1600);
   }, [
     clearActiveQuery,
+    dispatchQueryState,
     onHighlightRange,
     query,
     queryState.isQuerying,
@@ -241,21 +269,25 @@ export const useJsonPathPanelQueryRunner = ({
 
   useEffect(() => {
     if (!externalQueryRequest || !isOpen || isDataPreparing) return;
+    if (
+      externalQueryRequest.workspaceId !== undefined
+      && externalQueryRequest.workspaceId !== workspaceId
+    ) return;
     if (externalQueryIdRef.current === externalQueryRequest.id) return;
 
     externalQueryIdRef.current = externalQueryRequest.id;
     onSetQuery(externalQueryRequest.query);
     handleQuery(externalQueryRequest.query);
-  }, [externalQueryRequest, handleQuery, isDataPreparing, isOpen, onSetQuery]);
+  }, [externalQueryRequest, handleQuery, isDataPreparing, isOpen, onSetQuery, workspaceId]);
 
   const clearCancelledQuery = useCallback(() => {
     dispatchQueryState({ type: 'clearCancelled' });
-  }, []);
+  }, [dispatchQueryState]);
 
   const focusResult = useCallback((index: number) => {
     dispatchQueryState({ type: 'focus', index });
     onHighlightRange(queryState.queryRanges[index] || null);
-  }, [onHighlightRange, queryState.queryRanges]);
+  }, [dispatchQueryState, onHighlightRange, queryState.queryRanges]);
 
   return {
     queryState,

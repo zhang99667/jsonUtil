@@ -11,6 +11,7 @@ describe('appEditorWorkspacePaneProps', () => {
 
     expect(props.input).toBe('{"a":1}');
     expect(props.leftPaneWidthPercent).toBe(50);
+    expect(props.onSourceEditorMount).toBeTypeOf('function');
     expect('output' in props).toBe(false);
     expect('previewValidation' in props).toBe(false);
   });
@@ -21,6 +22,9 @@ describe('appEditorWorkspacePaneProps', () => {
     expect(props.output).toBe('{\n  "a": 1\n}');
     expect(props.activeFileId).toBeNull();
     expect(props.previewValidation).toEqual({ isValid: true });
+    expect(props.isScrollSyncEnabled).toBe(false);
+    expect(props.onPreviewEditorMount).toBeTypeOf('function');
+    expect(props.onToggleScrollSync).toBeTypeOf('function');
     expect('input' in props).toBe(false);
     expect('sourceValidation' in props).toBe(false);
   });

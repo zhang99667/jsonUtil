@@ -11,7 +11,7 @@ import {
   type TemplateFillRequest,
 } from '../utils/appToolPanelCommandPlans';
 
-export const useAppToolPanelRequestCommands = () => {
+export const useAppToolPanelRequestCommands = (jsonPathWorkspaceId: string | null) => {
   const [jsonPathQueryRequest, setJsonPathQueryRequest] = useState<JsonPathQueryRequest | null>(null);
   const [jsonTreeFocusRequest, setJsonTreeFocusRequest] = useState<JsonTreeFocusRequest | null>(null);
   const [schemeInputRequest, setSchemeInputRequest] = useState<SchemeInputRequest | null>(null);
@@ -22,13 +22,17 @@ export const useAppToolPanelRequestCommands = () => {
   const templateFillRequestIdRef = useRef(0);
 
   const requestJsonPathQuery = useCallback((query: string): JsonPathQueryRequest | null => {
-    const plan = buildJsonPathQueryRequest(jsonPathQueryRequestIdRef.current, query);
+    const plan = buildJsonPathQueryRequest(
+      jsonPathQueryRequestIdRef.current,
+      query,
+      jsonPathWorkspaceId,
+    );
     if (!plan) return null;
 
     jsonPathQueryRequestIdRef.current = plan.nextId;
     setJsonPathQueryRequest(plan.request);
     return plan.request;
-  }, []);
+  }, [jsonPathWorkspaceId]);
 
   const requestJsonTreeFocus = useCallback((item: JsonPathQueryItem): JsonTreeFocusRequest => {
     const plan = buildJsonTreeFocusRequest(jsonTreeFocusRequestIdRef.current, item);

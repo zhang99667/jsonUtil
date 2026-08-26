@@ -11,6 +11,7 @@ type TrackPanelEvent = (eventName: string, category: string) => void;
 interface UseAppToolPanelCommandsInput {
   mode: TransformMode;
   sourceText: string;
+  workspaceId: string | null;
   onSetMode: (mode: TransformMode) => void;
   onSetHighlightRange: (range: HighlightRange | null) => void;
   onTrackToolEvent: TrackPanelEvent;
@@ -19,6 +20,7 @@ interface UseAppToolPanelCommandsInput {
 export const useAppToolPanelCommands = ({
   mode,
   sourceText,
+  workspaceId,
   onSetMode,
   onSetHighlightRange,
   onTrackToolEvent,
@@ -27,7 +29,7 @@ export const useAppToolPanelCommands = ({
   const [isJsonTreePanelOpen, setIsJsonTreePanelOpen] = useState(false);
   const [isJsonComparePanelOpen, setIsJsonComparePanelOpen] = useState(false);
   const [isJsonSchemaPanelOpen, setIsJsonSchemaPanelOpen] = useState(false);
-  const panelRequests = useAppToolPanelRequestCommands();
+  const panelRequests = useAppToolPanelRequestCommands(workspaceId);
   const settingsCommands = useAppSettingsModalCommands({ onTrackToolEvent });
   const changelogCommands = useAppChangelogCommands();
   const [isSchemeDecodeOpen, setIsSchemeDecodeOpen] = useState(false);

@@ -17,6 +17,7 @@ describe('AppPreviewCodeEditor', () => {
     expect(tree.props.label).toBe('PREVIEW');
     expect(tree.props.path).toBe('preview-tab-1');
     expect(tree.props.value).toBe('{"a":1}');
+    expect(tree.props.onEditorMount).toBe(props.onPreviewEditorMount);
     expect(tree.props.onChange).toBe(props.onOutputChange);
     expect(tree.props.onFocus).toBe(props.onPreviewFocus);
     expect(tree.props.onCursorPositionChange).toBe(props.onCursorPositionChange);
@@ -40,9 +41,11 @@ describe('AppPreviewCodeEditor', () => {
     expect(headerActions.props.isOutputTransforming).toBe(false);
     expect(headerActions.props.showTransformReportButton).toBe(true);
     expect(headerActions.props.hasTransformReportContext).toBe(true);
+    expect(headerActions.props.isScrollSyncEnabled).toBe(false);
     expect(headerActions.props.onOpenTransformReport).toBe(props.onOpenTransformReport);
     expect(headerActions.props.onApplyPreviewToSource).toBe(props.onApplyPreviewToSource);
     expect(headerActions.props.onCopyPreview).toBe(props.onCopyPreview);
+    expect(headerActions.props.onToggleScrollSync).toBe(props.onToggleScrollSync);
   });
 
   it('在预览有效或转换中时同步只读切换和错误状态', () => {

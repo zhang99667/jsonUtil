@@ -41,6 +41,7 @@ export const useToolPanelCommandsFixture = (
   const commands = useAppToolPanelCommands({
     mode: TransformMode.NONE,
     sourceText: '',
+    workspaceId: null,
     onSetMode,
     onSetHighlightRange,
     onTrackToolEvent,

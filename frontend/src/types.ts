@@ -1,4 +1,5 @@
 import React from 'react';
+import type { editor } from 'monaco-editor';
 import type { SchemeDisplayHeaderRecord } from './utils/schemeTypes';
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -274,6 +275,7 @@ export interface EditorProps {
   onNewTab?: () => void;
   highlightRange?: HighlightRange | null;
   diagnosticHighlights?: EditorDiagnosticHighlight[];
+  onEditorMount?: (instance: editor.IStandaloneCodeEditor) => void;
   onFocus?: () => void;
   onCursorPositionChange?: (line: number, column: number) => void;
 }

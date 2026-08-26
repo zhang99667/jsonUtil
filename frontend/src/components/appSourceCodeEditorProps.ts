@@ -4,6 +4,7 @@ import type { EditorProps } from '../types';
 type AppSourceCodeEditorMappedProps = Pick<
   EditorProps,
   | 'value' | 'originalValue' | 'path' | 'onChange' | 'onFocus' | 'onCursorPositionChange'
+  | 'onEditorMount'
   | 'label' | 'files' | 'activeFileId' | 'onTabClick' | 'onCloseFile' | 'onNewTab'
   | 'placeholder' | 'error' | 'errorLocation'
   | 'warning' | 'diagnosticHighlights' | 'locateErrorSignal'
@@ -21,6 +22,7 @@ export const buildAppSourceCodeEditorProps = ({
   sourceErrorLocateSignal,
   jsonSchemaWarning,
   jsonSchemaDiagnosticHighlights,
+  onSourceEditorMount,
   onInputChange,
   onSourceFocus,
   onCursorPositionChange,
@@ -31,6 +33,7 @@ export const buildAppSourceCodeEditorProps = ({
   value: input,
   originalValue: activeFile?.savedContent,
   path: activeFileId || undefined,
+  onEditorMount: onSourceEditorMount,
   onChange: onInputChange,
   onFocus: onSourceFocus,
   onCursorPositionChange,

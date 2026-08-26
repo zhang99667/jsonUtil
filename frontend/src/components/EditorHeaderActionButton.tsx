@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type EditorHeaderActionIconId = 'copy' | 'paste' | 'trash' | 'report' | 'applyToSource';
+export type EditorHeaderActionIconId = 'copy' | 'paste' | 'trash' | 'report' | 'applyToSource' | 'syncScroll';
 
 interface EditorHeaderActionButtonProps {
   dataTour: string;
@@ -23,6 +23,7 @@ const headerActionIconPaths: Record<EditorHeaderActionIconId, string> = {
   trash: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-8 0h10',
   report: 'M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
   applyToSource: 'M11 17l-5-5m0 0l5-5m-5 5h12',
+  syncScroll: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71m2.25 5.82a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71',
 };
 
 const EditorHeaderActionIcon: React.FC<{ iconId: EditorHeaderActionIconId }> = ({ iconId }) => (

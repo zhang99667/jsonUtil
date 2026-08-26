@@ -16,11 +16,11 @@ describe('appToolPanelCommandPlans', () => {
   });
 
   it('构造 JSONPath 查询请求并忽略空查询', () => {
-    expect(buildJsonPathQueryRequest(4, ' $.data[0] ')).toEqual({
+    expect(buildJsonPathQueryRequest(4, ' $.data[0] ', 'file-a')).toEqual({
       nextId: 5,
-      request: { id: 5, query: '$.data[0]' },
+      request: { id: 5, query: '$.data[0]', workspaceId: 'file-a' },
     });
-    expect(buildJsonPathQueryRequest(4, '   ')).toBeNull();
+    expect(buildJsonPathQueryRequest(4, '   ', null)).toBeNull();
   });
 
   it('构造结构树定位和 Scheme 输入请求', () => {

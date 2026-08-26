@@ -2,11 +2,7 @@ import React from 'react';
 import { DeferredCodeEditor } from './DeferredCodeEditor';
 import { PreviewEditorHeaderActions } from './EditorHeaderActions';
 import type { AppEditorUiState } from '../utils/appEditorUiState';
-import type {
-  EditorLocation,
-  HighlightRange,
-  ValidationResult,
-} from '../types';
+import type { EditorLocation, EditorProps, HighlightRange, ValidationResult } from '../types';
 import type { SchemeDisplayHeaderMarker } from '../utils/schemeDisplayHeader';
 
 export interface AppPreviewCodeEditorProps {
@@ -21,12 +17,15 @@ export interface AppPreviewCodeEditorProps {
   schemeDisplayHeaderMarkers: readonly SchemeDisplayHeaderMarker[];
   highlightRange: HighlightRange | null;
   editorUiState: AppEditorUiState;
+  isScrollSyncEnabled: boolean;
+  onPreviewEditorMount: NonNullable<EditorProps['onEditorMount']>;
   onOutputChange: (value: string) => void;
   onPreviewFocus: () => void;
   onCursorPositionChange: (line: number, column: number) => void;
   onOpenTransformReport: () => void;
   onApplyPreviewToSource: () => void;
   onCopyPreview: () => void;
+  onToggleScrollSync: () => void;
   onSchemeEdit: (jsonPath: string, newValue: string, pointer?: string) => void;
 }
 
@@ -42,18 +41,22 @@ export const AppPreviewCodeEditor: React.FC<AppPreviewCodeEditorProps> = ({
   schemeDisplayHeaderMarkers,
   highlightRange,
   editorUiState,
+  isScrollSyncEnabled,
+  onPreviewEditorMount,
   onOutputChange,
   onPreviewFocus,
   onCursorPositionChange,
   onOpenTransformReport,
   onApplyPreviewToSource,
   onCopyPreview,
+  onToggleScrollSync,
   onSchemeEdit,
 }) => (
   <DeferredCodeEditor
     label="PREVIEW"
     path={`preview-${activeFileId || 'standalone'}`}
     value={output}
+    onEditorMount={onPreviewEditorMount}
     onChange={onOutputChange}
     onFocus={onPreviewFocus}
     onCursorPositionChange={onCursorPositionChange}
@@ -73,9 +76,11 @@ export const AppPreviewCodeEditor: React.FC<AppPreviewCodeEditorProps> = ({
         isOutputTransforming={isOutputTransforming}
         showTransformReportButton={Boolean(deepFormatInfo)}
         hasTransformReportContext={hasTransformReportContext}
+        isScrollSyncEnabled={isScrollSyncEnabled}
         onOpenTransformReport={onOpenTransformReport}
         onApplyPreviewToSource={onApplyPreviewToSource}
         onCopyPreview={onCopyPreview}
+        onToggleScrollSync={onToggleScrollSync}
       />
     }
   />

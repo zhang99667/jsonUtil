@@ -10,6 +10,7 @@ interface ToolPanelRequestPlan<TRequest> {
 export interface JsonPathQueryRequest {
   id: number;
   query: string;
+  workspaceId: string | null;
 }
 
 export interface JsonTreeFocusRequest {
@@ -36,7 +37,8 @@ export const getPanelToggleEventName = (
 
 export const buildJsonPathQueryRequest = (
   currentId: number,
-  query: string
+  query: string,
+  workspaceId: string | null,
 ): ToolPanelRequestPlan<JsonPathQueryRequest> | null => {
   const normalizedQuery = query.trim();
   if (!normalizedQuery) return null;
@@ -44,7 +46,7 @@ export const buildJsonPathQueryRequest = (
   const nextId = currentId + 1;
   return {
     nextId,
-    request: { id: nextId, query: normalizedQuery },
+    request: { id: nextId, query: normalizedQuery, workspaceId },
   };
 };
 

@@ -113,6 +113,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
   onNewTab,
   highlightRange,
   diagnosticHighlights,
+  onEditorMount,
   onFocus,
   onCursorPositionChange,
   enableSchemeScan = false,
@@ -857,6 +858,7 @@ export const CodeEditor: React.FC<ExtendedEditorProps> = ({
           value={value}
           onMount={(editor, monacoApi) => {
             editorRef.current = editor;
+            onEditorMount?.(editor);
             if (focusOnMount) editor.focus();
 
             modelViewStateDisposablesRef.current.forEach(disposable => disposable.dispose());

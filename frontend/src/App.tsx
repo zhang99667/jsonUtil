@@ -47,6 +47,7 @@ import {
   type AppSmartSuggestionOrigin,
 } from './hooks/useAppSourceReplacementCommands';
 import { useAppLayoutController } from './hooks/useAppLayoutController';
+import { useEditorScrollSync } from './hooks/useEditorScrollSync';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
 import { useFeatureTour, FeatureId } from './hooks/useFeatureTour';
 import { AppConfirmDialogs } from './components/AppConfirmDialogs';
@@ -116,6 +117,12 @@ const App: React.FC = () => {
     setMode,
     onBeforeSourceWorkspaceChange: handleBeforeFileSystemSourceChange,
   });
+  const {
+    isScrollSyncEnabled,
+    toggleScrollSync,
+    onSourceEditorMount,
+    onPreviewEditorMount,
+  } = useEditorScrollSync();
 
   const {
     generalSettings,
@@ -127,6 +134,10 @@ const App: React.FC = () => {
   const activeFile = useMemo(
     () => activeFileId ? files.find(file => file.id === activeFileId) || null : null,
     [activeFileId, files]
+  );
+  const jsonPathRetainedWorkspaceIds = useMemo(
+    () => files.map(file => file.id),
+    [files]
   );
   const {
     cancelPendingCloseFile,
@@ -325,6 +336,7 @@ const App: React.FC = () => {
   } = useAppToolPanelCommands({
     mode,
     sourceText: input,
+    workspaceId: activeFileId,
     onSetMode: setModeWithPreviewDraftCancel,
     onSetHighlightRange: setHighlightRange,
     onTrackToolEvent: trackCurrentToolEvent,
@@ -663,6 +675,9 @@ const App: React.FC = () => {
           schemeDisplayHeaderMarkers={schemeDisplayHeaderMarkers}
           highlightRange={highlightRange}
           editorUiState={editorUiState}
+          isScrollSyncEnabled={isScrollSyncEnabled}
+          onSourceEditorMount={onSourceEditorMount}
+          onPreviewEditorMount={onPreviewEditorMount}
           onInputChange={handleInputChange}
           onOutputChange={handleOutputChange}
           onSourceFocus={() => setActiveEditor('SOURCE')}
@@ -679,6 +694,7 @@ const App: React.FC = () => {
           onOpenTransformReport={() => setIsTransformReportOpen(true)}
           onApplyPreviewToSource={handleRequestApplyPreviewToSource}
           onCopyPreview={handleCopyPreview}
+          onToggleScrollSync={toggleScrollSync}
           onSchemeEdit={handleSchemeEdit}
           onPaneResizeMouseDown={startResizingPane}
           onPaneResizeKeyDown={handlePaneResizeKeyDown}
@@ -696,6 +712,8 @@ const App: React.FC = () => {
           transformReportContext={transformReportContext}
           inputRef={inputRef}
           jsonPathQueryRequest={jsonPathQueryRequest}
+          jsonPathWorkspaceId={activeFileId}
+          jsonPathRetainedWorkspaceIds={jsonPathRetainedWorkspaceIds}
           jsonTreeFocusRequest={jsonTreeFocusRequest}
           schemeInputRequest={schemeInputRequest}
           templateFillRequest={templateFillRequest}

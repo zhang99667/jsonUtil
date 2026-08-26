@@ -17,6 +17,7 @@ const buildProps = (): AppSourceEditorPaneProps => ({
   jsonSchemaWarning: '',
   jsonSchemaDiagnosticHighlights: [],
   editorUiState: appSourceEditorUiState,
+  onSourceEditorMount: vi.fn(),
   onInputChange: vi.fn(),
   onSourceFocus: vi.fn(),
   onCursorPositionChange: vi.fn(),
