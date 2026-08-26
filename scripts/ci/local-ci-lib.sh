@@ -42,7 +42,7 @@ run_backend_maven() {
   log "$message"
   cd "$ROOT_DIR/backend"
   if command -v mvn >/dev/null 2>&1; then
-    mvn -B "$@"
+    mvn -B -Dmockito.mock.maker=mock-maker-subclass "$@"
     return
   fi
 
@@ -52,5 +52,5 @@ run_backend_maven() {
     -v "$HOME/.m2:/root/.m2" \
     -w /workspace \
     maven:3.9-eclipse-temurin-17 \
-    mvn -B "$@"
+    mvn -B -Dmockito.mock.maker=mock-maker-subclass "$@"
 }

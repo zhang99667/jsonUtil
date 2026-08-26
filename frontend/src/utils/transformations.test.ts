@@ -444,8 +444,18 @@ describe('performInverseTransform', () => {
   it('Base64 编解码互逆', () => {
     const original = 'hello 你好';
     const encoded = performTransform(original, TransformMode.BASE64_ENCODE);
-    const decoded = performInverseTransform(encoded, TransformMode.BASE64_ENCODE);
+    const decoded = performInverseTransform(encoded, TransformMode.BASE64_DECODE);
     expect(decoded).toBe(original);
+  });
+
+  it('JSON 转 TS 没有可逆输出时反向保持原文', () => {
+    const source = '{"id":1}';
+    expect(performInverseTransform(source, TransformMode.JSON_TO_TYPESCRIPT)).toBe(source);
+  });
+
+  it('SORT_KEYS 反向保持原文', () => {
+    const source = '{"id":1}';
+    expect(performInverseTransform(source, TransformMode.SORT_KEYS)).toBe(source);
   });
 });
 
@@ -511,6 +521,7 @@ describe('deepParseWithContext', () => {
       originalSchemeType: 'url',
       schemeHeaderDisplayKey: '__scheme__',
     });
+    expect(result.context.records.get('$')?.steps[0].schemeParamStageSummary).toBeDefined();
     expect(result.context.records.get('$')?.steps[0].schemeParamStageSummary).toMatchObject({
       total: 1,
       repairHints: 0,

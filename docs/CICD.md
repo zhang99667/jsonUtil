@@ -24,7 +24,7 @@
   - `npm run perf:e2e` 会通过独立 Playwright 性能配置校验浏览器 Worker 端到端响应，覆盖 JSONPath 取消、Scheme 取消、连续大响应解析和已加载面板关闭态大输入切换，并上传 `browser-worker-performance-budget` 构建产物
   - `Scheme corpus quality trend` 会用 `frontend/fixtures/scheme-corpus/corpus-quality.baseline.snapshot.json` 对比本次生成的快照，严格模式会把 `requiredChecks` 必需项失败数量增加、cmdHandler 忽略额外路径数量上升等变化视为解析质量退化，并在摘要中展示忽略额外路径的新增/消失样例；当前 CI 还通过 `--resource-type-drop video=20`、`--resource-type-rise lottie=20` 把视频占比骤降或 Lottie 占比异常上升纳入门禁，并上传 `scheme-corpus-quality-trend` 构建产物
   - `node scripts/ci/check-frontend-static-retention.mjs` 会校验前端 Dockerfile、Compose volume 和容器启动脚本保持一致，并实际验证新静态产物覆盖、近期旧 hash assets 保留和过期旧 assets 清理，避免上线后长时间打开的旧页面无法加载懒加载 chunk
-- `backend`: `mvn -B test`、`node scripts/ci/check-backend-api-matrix.mjs`、`mvn -B package -DskipTests`
+- `backend`: `mvn -B -Dmockito.mock.maker=mock-maker-subclass test`、`node scripts/ci/check-backend-api-matrix.mjs`、`mvn -B package -DskipTests`
 - `docker`: `docker build ./backend`、`docker build ./frontend`、带测试环境变量执行 `docker compose config`
 
 #### 质量趋势基线更新

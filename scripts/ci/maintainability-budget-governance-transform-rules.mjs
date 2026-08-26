@@ -10,8 +10,18 @@ export const governanceTransformMaintainabilityBudgets = [
   },
   {
     file: 'scripts/ci/maintainability-budget-transform-core-rules.mjs',
-    maxLines: 70,
+    maxLines: 75,
     reason: '深度解析核心预算规则过多时应继续按子领域拆分',
+  },
+  {
+    file: 'scripts/ci/maintainability-budget-transform-core-support-rules.mjs',
+    maxLines: 25,
+    reason: '深度解析核心支持模块预算规则应独立收口，避免核心治理表继续膨胀',
+  },
+  {
+    file: 'scripts/ci/maintainability-budget-transform-core-runtime-rules.mjs',
+    maxLines: 30,
+    reason: '深度解析核心运行时与主测试预算规则应独立收口，避免核心治理表继续膨胀',
   },
   {
     file: 'scripts/ci/maintainability-budget-transform-typescript-rules.mjs',

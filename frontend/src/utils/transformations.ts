@@ -1,5 +1,4 @@
 
-import deepEqual from 'fast-deep-equal';
 import {
   TransformMode,
   ValidationResult,
@@ -7,11 +6,10 @@ import {
   TransformContext,
   TransformResult,
   JsonValue,
-  JsonObject,
-  TransformSchemeParamStageSummary,
 } from '../types.ts';
-import type { DecodeLayer, SchemeParamDecodeStage, SchemePlaceholder, SchemeType } from './schemeTypes.ts';
+import type { DecodeLayer, SchemeType } from './schemeTypes.ts';
 import { getBusinessLabelForField } from './businessLabels.ts';
+import deepEqual from 'fast-deep-equal';
 import { formatUnknownError } from './errors.ts';
 import { base64Encode, decodeBase64Text } from './schemeBase64Codec.ts';
 import { removeSchemeDisplayHeader } from './schemeDisplayHeader.ts';
@@ -43,6 +41,8 @@ import {
   type ExpansionStringResult,
 } from './transformContextExpansion.ts';
 import { restoreJsonWithRecords } from './transformContextRestoration.ts';
+import { createContextCollectors } from './transformContextCollectors.ts';
+import { decodeSchemeJsonStepFromDecoded } from './transformSchemeSteps.ts';
 
 export {
   applyPlaceholderFillTemplate,
@@ -54,76 +54,9 @@ export type { ParsedJsonInput } from './jsonInputParser.ts';
 
 export const DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT = 256_000;
 export const DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT = 1_500_000;
-const MAX_UNRESOLVED_CANDIDATE_COUNT = 100;
-const MAX_RUNTIME_PLACEHOLDER_COUNT = 100;
-const SCHEME_PARAM_STAGE_SUMMARY_LIMIT = 8;
-const SCHEME_PARAM_STAGE_LABEL_LIMIT = 80;
-
 const areJsonValuesSemanticallyEqual = (left: JsonValue, right: JsonValue): boolean => (
   deepEqual(left, right)
 );
-
-const normalizeParamStageLabel = (value: string, fallback: string): string => {
-  const trimmed = value.trim();
-  const label = trimmed || fallback;
-  return label.length > SCHEME_PARAM_STAGE_LABEL_LIMIT
-    ? `${label.slice(0, SCHEME_PARAM_STAGE_LABEL_LIMIT)}...`
-    : label;
-};
-
-const buildParamStageBuckets = (
-  stages: SchemeParamDecodeStage[],
-  getKey: (stage: SchemeParamDecodeStage) => string | undefined
-): TransformSchemeParamStageSummary['keys'] => {
-  const bucketMap = new Map<string, number>();
-
-  stages.forEach(stage => {
-    const key = getKey(stage);
-    if (!key) return;
-    bucketMap.set(key, (bucketMap.get(key) || 0) + 1);
-  });
-
-  return Array.from(bucketMap.entries())
-    .map(([key, count]) => ({ key, count }))
-    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key))
-    .slice(0, SCHEME_PARAM_STAGE_SUMMARY_LIMIT);
-};
-
-const buildSchemeParamStageSummary = (
-  stages?: SchemeParamDecodeStage[]
-): TransformSchemeParamStageSummary | undefined => {
-  if (!stages?.length) return undefined;
-
-  return {
-    total: stages.length,
-    repairHints: stages.filter(stage => Boolean(stage.repairHint)).length,
-    nonReversible: stages.filter(stage => !stage.reversible).length,
-    sources: buildParamStageBuckets(stages, stage => stage.source),
-    keys: buildParamStageBuckets(stages, stage => normalizeParamStageLabel(stage.key, '(empty key)')),
-    repairHintLabels: buildParamStageBuckets(
-      stages,
-      stage => stage.repairHint
-        ? normalizeParamStageLabel(stage.repairHint, '参数分层需要人工复核')
-        : undefined
-    ),
-    samples: stages.slice(0, SCHEME_PARAM_STAGE_SUMMARY_LIMIT).map(stage => ({
-      path: stage.path,
-      key: normalizeParamStageLabel(stage.key, '(empty key)'),
-      source: stage.source,
-      lengths: {
-        encodedInput: stage.raw.length,
-        decodedInput: stage.urlDecoded.length,
-        expandedOutput: stage.parsed.length,
-        encodedOutput: stage.reencoded.length,
-      },
-      reversible: stage.reversible,
-      hasRepairHint: Boolean(stage.repairHint),
-      ...(stage.repairHint
-        ? { repairHint: normalizeParamStageLabel(stage.repairHint, '参数分层需要人工复核') }
-        : {}),
-    })),
-  };
-};
 
 const getHarEntrySourceLabelForField = (
   container: Record<string, unknown>,
@@ -389,16 +322,6 @@ const base64Decode = (input: string): string => {
   return decodeBase64Text(input) ?? input;
 };
 
-const formatStringPreview = (value: string, maxLength = 120): string => (
-  value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
-);
-
-const joinDecodedJsonPath = (basePath: string, relativePath: string): string => (
-  relativePath === '$'
-    ? basePath
-    : `${basePath}${relativePath.slice(1)}`
-);
-
 export function deepParseWithContext(
   input: string,
   options?: {
@@ -447,89 +370,7 @@ export function deepParseWithContext(
   const maxStringDecodeLength = options?.maxStringDecodeLength ?? DEFAULT_DEEP_PARSE_STRING_DECODE_LIMIT;
   const maxTotalStringDecodeLength = options?.maxTotalStringDecodeLength ?? DEFAULT_DEEP_PARSE_TOTAL_STRING_DECODE_LIMIT;
   let totalStringDecodeLength = 0;
-
-  const addUnresolvedCandidate = (
-    path: string,
-    value: string,
-    detectedType: string,
-    message: string,
-    sourceLabel?: string
-  ) => {
-    const candidates = context.unresolvedCandidates || [];
-    if (candidates.length >= MAX_UNRESOLVED_CANDIDATE_COUNT) return;
-
-    context.unresolvedCandidates = candidates;
-    context.unresolvedCandidates.push({
-      path,
-      sourceLabel,
-      originalValue: value,
-      message,
-      length: value.length,
-      preview: formatStringPreview(value),
-      detectedType,
-    });
-  };
-
-  const addRuntimePlaceholder = (
-    path: string,
-    sourcePath: string,
-    value: string,
-    description: string,
-    sourceLabel?: string,
-    sourceOriginalValue?: string
-  ) => {
-    const placeholders = context.runtimePlaceholders || [];
-    if (placeholders.some(item => item.path === path && item.value === value)) return;
-    if (placeholders.length >= MAX_RUNTIME_PLACEHOLDER_COUNT) return;
-
-    context.runtimePlaceholders = placeholders;
-    context.runtimePlaceholders.push({
-      path,
-      sourcePath,
-      sourceLabel,
-      sourceOriginalValue,
-      value,
-      description,
-    });
-  };
-
-  const addSchemeRuntimePlaceholders = (
-    sourcePath: string,
-    placeholders?: SchemePlaceholder[],
-    sourceLabel?: string,
-    sourceOriginalValue?: string
-  ) => {
-    placeholders?.forEach(placeholder => {
-      addRuntimePlaceholder(
-        joinDecodedJsonPath(sourcePath, placeholder.path),
-        sourcePath,
-        placeholder.value,
-        placeholder.description,
-        sourceLabel,
-        sourceOriginalValue
-      );
-    });
-  };
-
-  const addStringDecodeWarning = (
-    type: 'string_decode_skipped' | 'string_decode_budget_exceeded',
-    path: string,
-    value: string,
-    message: string,
-    limit: number,
-    sourceLabel?: string
-  ) => {
-    context.warnings = context.warnings || [];
-    context.warnings.push({
-      type,
-      path,
-      sourceLabel,
-      originalValue: value,
-      message,
-      length: value.length,
-      limit,
-    });
-  };
+  const collectors = createContextCollectors({ context });
 
   const processStringValue = (
     value: string,
@@ -540,7 +381,7 @@ export function deepParseWithContext(
     if (depth > maxDepth) return { value };
 
     if (value.length > maxStringDecodeLength) {
-      addStringDecodeWarning(
+      collectors.addStringDecodeWarning(
         'string_decode_skipped',
         currentPath,
         value,
@@ -553,7 +394,7 @@ export function deepParseWithContext(
 
     totalStringDecodeLength += value.length;
     if (totalStringDecodeLength > maxTotalStringDecodeLength) {
-      addStringDecodeWarning(
+      collectors.addStringDecodeWarning(
         'string_decode_budget_exceeded',
         currentPath,
         value,
@@ -581,7 +422,12 @@ export function deepParseWithContext(
     };
 
     if (shouldDecodeSchemeAtPath && isRuntimePlaceholder(current)) {
-      addSchemeRuntimePlaceholders(currentPath, deepDecodeScheme(current).placeholders, sourceLabel, value);
+      collectors.addSchemeRuntimePlaceholders(
+        currentPath,
+        deepDecodeScheme(current).placeholders,
+        sourceLabel,
+        value,
+      );
     }
 
     while (iterDepth < maxDepth) {
@@ -603,49 +449,24 @@ export function deepParseWithContext(
         (schemeType === 'query-string' || schemeType === 'url' || schemeType === 'base64')
       ) {
         const decodedScheme = deepDecodeScheme(current, maxDepth - depth);
-        if (decodedScheme.isJson) {
-          try {
-            const schemeParsed = parseJsonValue(
-              decodedScheme.decoded
-            );
-            if (typeof schemeParsed === 'object' && schemeParsed !== null) {
-              addSchemeRuntimePlaceholders(currentPath, decodedScheme.placeholders, sourceLabel, value);
-              const rootDisplayHeader = decodedScheme.displayHeaders?.find(header => (
-                header.path === ''
-              ));
-              const decodedSchemeValue = schemeParsed;
-              const isSchemeReversible = decodedScheme.layers.every(layer => layer.reversible !== false);
-              const schemeParamStageSummary = buildSchemeParamStageSummary(decodedScheme.paramStages);
-              steps.push({
-                type: 'scheme_decode',
-                originalScheme: current,
-                originalSchemeType: schemeType,
-                originalSchemeReversible: isSchemeReversible,
-                originalSchemeStringLiteral: decodedScheme.layers.some(layer => layer.type === 'json'),
-                originalSchemeEscapedSlash: decodedScheme.layers.some(layer => layer.type === 'json-escaped-slash'),
-                decodedSchemeValue,
-                ...(rootDisplayHeader
-                  ? { schemeHeaderDisplayKey: rootDisplayHeader.headerKey }
-                  : {}),
-                ...(decodedScheme.displayHeaders
-                  ? { schemeDisplayHeaders: decodedScheme.displayHeaders }
-                  : {}),
-                ...(schemeParamStageSummary ? { schemeParamStageSummary } : {}),
-              });
+        const schemeStep = decodedScheme.isJson
+          ? decodeSchemeJsonStepFromDecoded(decodedScheme, current)
+          : null;
+        if (schemeStep) {
+          collectors.addSchemeRuntimePlaceholders(
+            currentPath,
+            decodedScheme.placeholders,
+            sourceLabel,
+            value,
+          );
+          steps.push(schemeStep.step);
+          return {
+            value: schemeStep.value,
+            afterChildren: () => recordSteps(steps),
+          };
+        }
 
-              return {
-                value: decodedSchemeValue,
-                afterChildren: () => recordSteps(steps),
-              };
-            }
-          } catch {
-            unresolvedCandidate = unresolvedCandidate || {
-              detectedType: schemeType,
-              message: '疑似 CMD/Scheme 字符串解析结果不是有效 JSON',
-            };
-            // 结构化解析失败，继续走后续普通解析逻辑。
-          }
-        } else if (decodedScheme.layers.length > 0) {
+        if (decodedScheme.layers.length > 0) {
           unresolvedCandidate = unresolvedCandidate || {
             detectedType: schemeType,
             message: '疑似 CMD/Scheme 字符串未展开为结构化对象',
@@ -700,7 +521,7 @@ export function deepParseWithContext(
     }
 
     if (shouldDecodeSchemeAtPath && unresolvedCandidate) {
-      addUnresolvedCandidate(
+      collectors.addUnresolvedCandidate(
         currentPath,
         value,
         unresolvedCandidate.detectedType,
@@ -926,8 +747,8 @@ export const performInverseTransform = (output: string, mode: TransformMode, ori
       case TransformMode.CN_TO_UNICODE: return unicodeDecode(output);
       case TransformMode.URL_ENCODE: return urlDecode(output);
       case TransformMode.URL_DECODE: return encodeURIComponent(output);
-      case TransformMode.BASE64_ENCODE: return base64Decode(output);
-      case TransformMode.BASE64_DECODE: return base64Encode(output);
+      case TransformMode.BASE64_DECODE: return base64Decode(output);
+      case TransformMode.BASE64_ENCODE: return base64Encode(output);
       case TransformMode.SORT_KEYS: return output;
       case TransformMode.JSON_TO_TYPESCRIPT: return output;
       default: return output;

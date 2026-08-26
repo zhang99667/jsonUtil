@@ -72,7 +72,7 @@ npm run check:preloads
 
 ```bash
 cd backend
-mvn test
+mvn -Dmockito.mock.maker=mock-maker-subclass test
 ```
 
 ## 重点边界

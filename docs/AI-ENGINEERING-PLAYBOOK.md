@@ -61,7 +61,7 @@ AI 基建的项目 source of truth、插件包边界、workspace/index/HEAD 分�
 | 构建配置 / Vite 分包 | `npm run lint`、`npm run test -- config/xxx.test.ts`、`npm run build`、`npm run check:preloads` |
 | 版本 / CHANGELOG | `node scripts/ci/check-version-consistency.mjs` |
 | 前端组件交互 | 相关 Vitest 单测，必要时跑 `npm run test:e2e` |
-| 后端 API | `mvn test`，并检查 `docs/BACKEND-API-MATRIX.md` |
+| 后端 API | `mvn -Dmockito.mock.maker=mock-maker-subclass test` |
 | 部署脚本 | `node scripts/ci/check-deploy-shell-syntax.mjs`、`node scripts/ci/check-frontend-static-retention.mjs`；公网发布后运行 `node scripts/ci/check-production-frontend-assets.mjs <baseUrl>` 或远端健康检查脚本，确认深层 chunk、CSS `url(...)` 二级资源、CSS `@import` 链路可达且 JS/CSS `Content-Type` 正确 |
 | AI 协作资产 | `node scripts/ci/check-ai-governance.mjs`；本地 `node scripts/ci/check-ai-asset-distribution.mjs --workspace|--index`，CI `--head` |
 | Codex 项目 MCP 配置 | `node --test scripts/ci/aiGovernanceCodexProjectMcpConfig.test.mjs`；只锁定 `.codex/config.toml` 无 shell 根/子目录 bootstrap、`required=true`、超时和 11 工具 allowlist，fresh-task 注册仍需单独观察 |

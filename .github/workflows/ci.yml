@@ -229,7 +229,7 @@ jobs:
         run: node scripts/ci/check-ai-asset-distribution.mjs --head
 
       - name: Maven test
-        run: mvn -B test
+        run: mvn -B -Dmockito.mock.maker=mock-maker-subclass test
 
       - name: Backend API matrix coverage
         working-directory: .
