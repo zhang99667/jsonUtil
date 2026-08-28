@@ -1,5 +1,19 @@
 # 更新日志 (Changelog)
 
+## v1.8.1044 (2026-08-28) - Registration Canary 非法输入 Fail Closed
+
+### 🐛 Bug 修复
+
+- **稳定领域诊断**: Registration Canary 揭盲在 packet、blind grade 或 host run record 校验失败后立即终止，不再让非法输入进入跨对象绑定与唯一性计算并泄露原生空指针
+- **嵌套结构收口**: packet collector 对缺失 Agent/grader/host 子视图直接返回领域失败，blind grade collector 先确认 `reasonCodes` 为合法数组再做语义归类，阻断 `undefined.includes/every` 原生异常
+- **封存语义保留**: 封存后改分负例改用内部语义仍合法的 blind grade，继续独立锁定 grade-set commitment 漂移，不与输入 schema 失败混淆
+
+### 🏗️ 架构与基础设施
+
+- **代表负例锁定**: 新增 null packet、缺失 packet 子视图和缺失 grade `reasonCodes` 回归，固定输出领域诊断且不得泄露 `Cannot read properties`；合法揭盲、绑定漂移、retry/replay 和只读 CLI 契约保持不变
+- **Calibration 重新封存**: 将 grader calibration 的 `implementationSha256` 同步到加固后的真实 production grader 字节，固定 taxonomy、mutation corpus、阈值和 component-only 边界不变
+- **职责与证据边界**: `aiGovernanceRegistrationCanaryReview.mjs` 保持单一揭盲职责和既有预算余量，本次只形成 component 鲁棒性证据，不增加 behavior coverage，不改变仓外 protected runtime/signer blocker 或写账权限
+
 ## v1.8.1043 (2026-08-28) - 单源化 Workflow 结构解析
 
 ### 🚀 优化与改进

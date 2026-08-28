@@ -8,7 +8,7 @@
     "id": "mcp-registration-canary-result-ingestion",
     "version": "1.0.0",
     "implementationPath": "scripts/ci/aiGovernanceRegistrationCanaryResult.mjs",
-    "implementationSha256": "49f8ba9eb7bbccd2fffe568acd1608ae9455353cbd5d207bc8d3f4c2ebad4cce"
+    "implementationSha256": "131277462dd5cc3be62730b24627a271871721641d16c8bb8098cedd65411921"
   },
   "fixture": {
     "factoryPath": "scripts/ci/aiGovernanceRegistrationCanaryCalibrationFixtures.mjs",

@@ -75,6 +75,12 @@ test('registration canary packet 对 grader 泄漏、arm 污染和过度声明 f
   }
 });
 
+test('registration canary packet collector 对缺失子视图返回领域失败', () => {
+  for (const bundle of [{}, { grader: {}, host: {} }, { agent: {}, grader: {}, host: {} }]) {
+    assert.notDeepEqual(collectRegistrationCanaryPacketFailures(bundle), []);
+  }
+});
+
 test('registration canary packet 只接受 planned 白名单 trial 和 blocked experiment', () => {
   assert.throws(() => build('../../custom'), /planned 白名单项/);
   const executedTrial = structuredClone(experiment);

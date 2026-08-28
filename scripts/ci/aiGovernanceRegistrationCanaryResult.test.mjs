@@ -7,6 +7,7 @@ import { test } from 'node:test';
 
 import { buildRegistrationCanaryCalibrationFixtureContext } from './aiGovernanceRegistrationCanaryCalibrationFixtures.mjs';
 import {
+  collectRegistrationCanaryBlindGradeFailures,
   collectRegistrationCanaryBlindResultFailures,
   gradeRegistrationCanaryResultBlind,
 } from './aiGovernanceRegistrationCanaryResult.mjs';
@@ -99,6 +100,10 @@ test('registration canary blind grade 区分 behavior fail 与 infrastructure-in
   const infrastructureGrade = gradeResult(packetBundles[0], timeout);
   assert.deepEqual(infrastructureGrade.grade, { status: 'ungradable', verdict: null, score: null });
   assert.ok(infrastructureGrade.reasonCodes.includes('capture-timeout'));
+
+  const missingReasonCodes = structuredClone(failedGrade);
+  delete missingReasonCodes.reasonCodes;
+  assert.match(collectRegistrationCanaryBlindGradeFailures(missingReasonCodes).join('\n'), /reasonCodes 非法/);
 
   const fallback = buildResult(packetBundles[0]);
   fallback.observation.fallback = 'shell';
@@ -258,6 +263,17 @@ test('registration canary host-only retry、task reuse、plugin 与 order 漂移
 
 test('registration canary 揭盲拒绝 packet/grade/run record 绑定漂移和封存后改分', () => {
   const gradeSet = sealRegistrationCanaryBlindGradeSet(passingGrades);
+  const invalidPackets = structuredClone(packetBundles);
+  invalidPackets[0] = null;
+  assert.throws(() => unblindRegistrationCanaryGradeSet({
+    packetBundles: invalidPackets, blindGrades: passingGrades, gradeSet, hostRunRecords: passingRecords,
+  }), (error) => {
+    assert.equal(error instanceof TypeError, true);
+    assert.match(error.message, /packetBundles\[0\]/);
+    assert.doesNotMatch(error.message, /Cannot read properties/);
+    return true;
+  });
+
   const staleRecord = structuredClone(passingRecords);
   staleRecord[0].hostPacketSha256 = digest('7');
   assert.throws(() => unblindRegistrationCanaryGradeSet({
@@ -267,6 +283,7 @@ test('registration canary 揭盲拒绝 packet/grade/run record 绑定漂移和�
   const changedGrades = structuredClone(passingGrades);
   changedGrades[0].grade.verdict = 'fail';
   changedGrades[0].grade.score = 0;
+  changedGrades[0].reasonCodes = ['server-not-discovered'];
   assert.throws(() => unblindRegistrationCanaryGradeSet({
     packetBundles, blindGrades: changedGrades, gradeSet, hostRunRecords: passingRecords,
   }), /未封存或已改变/);

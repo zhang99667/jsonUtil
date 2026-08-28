@@ -259,6 +259,7 @@ export const unblindRegistrationCanaryGradeSet = ({
   packetBundles.forEach((bundle, index) => failures.push(...collectRegistrationCanaryPacketFailures(bundle).map(failure => `packetBundles[${index}]: ${failure}`)));
   blindGrades.forEach((grade, index) => failures.push(...collectRegistrationCanaryBlindGradeFailures(grade).map(failure => `blindGrades[${index}]: ${failure}`)));
   hostRunRecords.forEach((record, index) => failures.push(...collectRegistrationCanaryHostRunRecordFailures(record).map(failure => `hostRunRecords[${index}]: ${failure}`)));
+  if (failures.length > 0) throw new TypeError(failures.join('；'));
   const bundleByAlias = new Map(packetBundles.map(bundle => [bundle?.host?.blindTrialAlias, bundle]));
   const gradeByAlias = new Map(blindGrades.map(grade => [grade?.blindTrialAlias, grade]));
   const recordByAlias = new Map(hostRunRecords.map(record => [record?.blindTrialAlias, record]));

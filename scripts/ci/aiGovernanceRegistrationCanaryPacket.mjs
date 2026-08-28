@@ -148,6 +148,7 @@ export const collectRegistrationCanaryPacketFailures = (bundle) => {
   failures.push(...exactFields(agent, ['schemaVersion', 'artifactType', 'dataClass', 'packetVersion', 'blindTrialAlias', 'state', 'bindings', 'input', 'outputContract', 'claims', 'privacy'], 'agent packet'));
   failures.push(...exactFields(grader, ['schemaVersion', 'artifactType', 'dataClass', 'packetVersion', 'blindTrialAlias', 'state', 'caseRef', 'expectedOutcome', 'graders', 'rubricSha256', 'claims', 'privacy'], 'grader packet'));
   failures.push(...exactFields(host, ['schemaVersion', 'artifactType', 'dataClass', 'packetVersion', 'blindTrialAlias', 'state', 'experimentRef', 'trial', 'treatment', 'bindings', 'lease', 'preflight', 'projectionDigests', 'claims', 'privacy'], 'host packet'));
+  if (![agent, grader, host].every(isEvolutionRecord)) return failures;
   for (const [label, packet] of [['agent', agent], ['grader', grader], ['host', host]]) {
     if (!isEvolutionRecord(packet)) continue;
     if (packet.schemaVersion !== 1 || packet.dataClass !== 'redacted' || packet.packetVersion !== PACKET_VERSION

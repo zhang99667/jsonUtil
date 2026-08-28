@@ -166,12 +166,15 @@ export const collectRegistrationCanaryBlindGradeFailures = (grade) => {
   if (grade.grade?.status === 'graded') {
     if (!['pass', 'fail'].includes(grade.grade.verdict) || ![0, 100].includes(grade.grade.score)) failures.push('graded blind grade 必须给出 0/100 verdict');
   } else if (grade.grade?.status !== 'ungradable' || grade.grade.verdict !== null || grade.grade.score !== null) failures.push('ungradable blind grade 必须使用 null verdict/score');
-  if (!Array.isArray(grade.reasonCodes) || grade.reasonCodes.length === 0
-    || grade.reasonCodes.some(code => !REASON_CODES.has(code)) || new Set(grade.reasonCodes).size !== grade.reasonCodes.length) failures.push('blind grade reasonCodes 非法');
-  if (grade.grade?.status === 'graded' && (grade.grade.verdict === 'pass'
+  const reasonCodesValid = Array.isArray(grade.reasonCodes) && grade.reasonCodes.length > 0
+    && grade.reasonCodes.every(code => REASON_CODES.has(code))
+    && new Set(grade.reasonCodes).size === grade.reasonCodes.length;
+  if (!reasonCodesValid) failures.push('blind grade reasonCodes 非法');
+  if (reasonCodesValid && grade.grade?.status === 'graded' && (grade.grade.verdict === 'pass'
     ? grade.grade.score !== 100 || JSON.stringify(grade.reasonCodes) !== JSON.stringify([SUCCESS_REASON])
     : grade.grade.score !== 0 || !grade.reasonCodes.every(code => BEHAVIOR_REASON_CODES.has(code)))) failures.push('blind grade verdict/score/reason 语义不一致');
-  if (grade.grade?.status === 'ungradable' && !grade.reasonCodes.every(code => INFRASTRUCTURE_REASON_CODES.has(code))) failures.push('ungradable 只能使用 infrastructure reason');
+  if (reasonCodesValid && grade.grade?.status === 'ungradable'
+    && !grade.reasonCodes.every(code => INFRASTRUCTURE_REASON_CODES.has(code))) failures.push('ungradable 只能使用 infrastructure reason');
   failures.push(...exactFields(grade.traceReview, TRACE_REVIEW_FIELDS, 'blind grade.traceReview'));
   if (grade.traceReview?.structureStatus !== 'accepted'
     || !['complete', 'partial', 'unknown'].includes(grade.traceReview?.completenessStatus)
