@@ -3,8 +3,6 @@ import { test } from 'node:test';
 
 import {
   collectGithubWorkflowCommands,
-  collectGithubWorkflowJobBlocks,
-  collectGithubWorkflowStepBlocks,
   collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
   collectWorkflowFullHistoryCheckoutFailures,
@@ -28,7 +26,7 @@ test('scheduled workflow 模块保持通用自动化安全 API 的同引用重�
   assert.equal(collectLegacyReachabilityFailures, collectRequiredWorkflowCommandReachabilityFailures);
 });
 
-test('workflow parser 保持 job、step 与 command 的源码顺序', () => {
+test('workflow command parser 保持源码顺序', () => {
   const workflow = [
     'jobs:',
     '  beta:',
@@ -40,16 +38,11 @@ test('workflow parser 保持 job、step 与 command 的源码顺序', () => {
     '    steps:',
     '      - run: node command-a',
   ].join('\n');
-  const jobs = collectGithubWorkflowJobBlocks(workflow);
-
-  assert.deepEqual([...jobs.keys()], ['beta', 'alpha']);
   assert.deepEqual(collectGithubWorkflowCommands(workflow), [
     'node command-b',
     'node command-c',
     'node command-a',
   ]);
-  assert.equal(collectGithubWorkflowStepBlocks(jobs.get('beta')).length, 1);
-  assert.deepEqual([...collectGithubWorkflowJobBlocks('name: no-jobs')], []);
 });
 
 test('workflow 完整 Git 历史契约保持固定诊断', () => {

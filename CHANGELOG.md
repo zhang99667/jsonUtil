@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1043 (2026-08-28) - 单源化 Workflow 结构解析
+
+### 🚀 优化与改进
+
+- **结构解析单源**: 将 GitHub Workflow 的 job/step 源码顺序解析从 AI 自动化安全模块下沉到通用叶子，治理契约、定时巡检和部署预构建测试统一直连该结构原语
+- **安全职责收敛**: AI 自动化命令契约只保留完整 Git 历史、required command 可达性、artifact fail-fast 与 outcome writer 禁写语义，不保留无消费者兼容转发
+
+### 🏗️ 架构与基础设施
+
+- **直接边界锁定**: 新增多 job、多 step 顺序及缺失 jobs 的直接测试，原集成测试继续锁定 command 顺序、固定诊断和失败全序
+- **预算余量恢复**: 自动化安全模块从 78 行降至 66 行并将预算从 80 收紧至 70；通用结构 helper 与测试各自建立单责预算
+- **证据边界不变**: 本次为 component 等价重构，不改诊断、case/corpus/subject、写账权限或仓外 runtime/signer trust；刷新只恢复既有 `3/18` deterministic coverage
+
 ## v1.8.1042 (2026-08-28) - 加固治理焦点与自动化安全
 
 ### 🐛 Bug 修复

@@ -23,6 +23,8 @@ export const AI_GOVERNANCE_CHECK_FILES = [
   'scripts/ci/aiGovernanceCiEntrySource.mjs',
   'scripts/ci/aiGovernanceCiEntrySource.test.mjs',
   'scripts/ci/aiGovernanceCiContract.test.mjs',
+  'scripts/ci/githubWorkflowStructureBlocks.mjs',
+  'scripts/ci/githubWorkflowStructureBlocks.test.mjs',
   'scripts/ci/aiGovernanceProjectCliArgs.test.mjs',
   'scripts/ci/aiGovernanceSkillYamlAuthority.mjs',
   'scripts/ci/aiGovernanceSkillIdentityContract.mjs',

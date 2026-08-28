@@ -4,11 +4,11 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { collectGithubWorkflowCommands } from './aiGovernanceAutomationCommandContract.mjs';
 import {
-  collectGithubWorkflowCommands,
   collectGithubWorkflowJobBlocks,
   collectGithubWorkflowStepBlocks,
-} from './aiGovernanceAutomationCommandContract.mjs';
+} from './githubWorkflowStructureBlocks.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const frontendBuildCommands = ['npm ci', 'npm run build', 'npm run check:preloads'];

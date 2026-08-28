@@ -2,13 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   collectGithubWorkflowCommands,
-  collectGithubWorkflowJobBlocks,
-  collectGithubWorkflowStepBlocks,
   collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
   collectWorkflowFullHistoryCheckoutFailures,
 } from './aiGovernanceAutomationCommandContract.mjs';
 import { collectGithubWorkflowRunBlocks } from './githubWorkflowRunBlocks.mjs';
+import {
+  collectGithubWorkflowJobBlocks,
+  collectGithubWorkflowStepBlocks,
+} from './githubWorkflowStructureBlocks.mjs';
 
 export {
   collectOutcomeWriterAutomationWriteFailures,

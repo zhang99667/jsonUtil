@@ -1,4 +1,8 @@
 import { collectGithubWorkflowRunBlocks } from './githubWorkflowRunBlocks.mjs';
+import {
+  collectGithubWorkflowJobBlocks,
+  collectGithubWorkflowStepBlocks,
+} from './githubWorkflowStructureBlocks.mjs';
 
 const ARTIFACT_WRITER_COMMAND = 'node scripts/ci/write-ai-governance-artifacts.mjs';
 const OUTCOME_WRITERS = [
@@ -23,22 +27,6 @@ const REQUIRED_COMMAND_CONTROL_RULES = [
 
 export const collectGithubWorkflowCommands = content => collectGithubWorkflowRunBlocks(content)
   .flatMap(block => block.content.split(/\r?\n/).map(line => line.trim()).filter(Boolean));
-
-export const collectGithubWorkflowJobBlocks = (content) => {
-  const jobsMatch = /^jobs:\s*$/m.exec(content);
-  if (!jobsMatch) return new Map();
-  const jobs = content.slice(jobsMatch.index + jobsMatch[0].length);
-  const headers = [...jobs.matchAll(/^  ([A-Za-z0-9_-]+):\s*$/gm)];
-  return new Map(headers.map((header, index) => [
-    header[1],
-    jobs.slice(header.index, headers[index + 1]?.index ?? jobs.length),
-  ]));
-};
-
-export const collectGithubWorkflowStepBlocks = (block) => {
-  const headers = [...block.matchAll(/^      -[^\n]*$/gm)];
-  return headers.map((header, index) => block.slice(header.index, headers[index + 1]?.index ?? block.length));
-};
 
 export const collectWorkflowFullHistoryCheckoutFailures = (content, file) => (
   [...collectGithubWorkflowJobBlocks(content).values()]
