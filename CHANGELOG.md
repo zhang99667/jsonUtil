@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1045 (2026-08-28) - 逐 Job 绑定治理完整历史
+
+### 🐛 Bug 修复
+
+- **治理 Job 深历史**: 每个执行治理或 HEAD 分发 required command 的 GitHub Actions job 都必须在自身 checkout step 使用 `fetch-depth: 0`，不再允许无关深 checkout job 冒充交付前置
+- **Backend 交付补齐**: backend job 在运行 `check-ai-governance` 与 HEAD 分发前显式拉取完整历史，避免浅 clone 下 Git 基线证据不可用
+
+### 🏗️ 架构与基础设施
+
+- **代表负例锁定**: 新增“decoy job 深 checkout、governance job 浅 checkout”回归，并保留没有 required-command job 时至少一个深 checkout 的兼容 fallback
+- **职责与预算校准**: 完整历史 collector 复用既有 job/step/command 结构原语；31 行 CI 编排器保持内聚，预算从 32 校准到 40，避免为单行接线机械拆分
+- **证据边界不变**: 本次只形成 component 自动化契约证据，不改 case/corpus/subject、写账权限或仓外 protected runtime/signer blocker；账本刷新只恢复既有 `3/18` deterministic coverage
+
 ## v1.8.1044 (2026-08-28) - Registration Canary 非法输入 Fail Closed
 
 ### 🐛 Bug 修复

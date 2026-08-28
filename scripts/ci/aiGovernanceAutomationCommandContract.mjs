@@ -28,16 +28,19 @@ const REQUIRED_COMMAND_CONTROL_RULES = [
 export const collectGithubWorkflowCommands = content => collectGithubWorkflowRunBlocks(content)
   .flatMap(block => block.content.split(/\r?\n/).map(line => line.trim()).filter(Boolean));
 
-export const collectWorkflowFullHistoryCheckoutFailures = (content, file) => (
-  [...collectGithubWorkflowJobBlocks(content).values()]
-    .flatMap(collectGithubWorkflowStepBlocks)
-    .some(step => (
-      /^(?: {6}-\s*| {8})uses:\s*actions\/checkout@[^\s#]+\s*(?:#.*)?$/m.test(step)
-      && /^ {10}fetch-depth:\s*0\s*(?:#.*)?$/m.test(step)
-    ))
-    ? []
-    : [`${file}: checkout 必须保留完整 Git 历史`]
-);
+const hasFullHistoryCheckout = job => collectGithubWorkflowStepBlocks(job).some(step => (
+  /^(?: {6}-\s*| {8})uses:\s*actions\/checkout@[^\s#]+\s*(?:#.*)?$/m.test(step)
+  && /^ {10}fetch-depth:\s*0\s*(?:#.*)?$/m.test(step)
+));
+
+export const collectWorkflowFullHistoryCheckoutFailures = (content, requiredCommands, file) => {
+  const jobs = [...collectGithubWorkflowJobBlocks(content).values()];
+  const requiredJobs = jobs.filter(job => collectGithubWorkflowCommands(job)
+    .some(command => requiredCommands.includes(command)));
+  const valid = requiredJobs.length > 0
+    ? requiredJobs.every(hasFullHistoryCheckout) : jobs.some(hasFullHistoryCheckout);
+  return valid ? [] : [`${file}: checkout 必须保留完整 Git 历史`];
+};
 
 export const collectOutcomeWriterAutomationWriteFailures = (commandBlocks, file) => (
   commandBlocks.some((block) => {

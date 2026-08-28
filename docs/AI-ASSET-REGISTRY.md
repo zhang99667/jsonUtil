@@ -33,7 +33,7 @@
 | `docs/AI-TOOLS-SETUP.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-29 | 工具索引 | 区分跨客户端 skill/Agent discovery、repo catalog、显式安装、fresh task 与 runtime trust，并登记三端 auditor 只读能力边界 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-31 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
 | `.github/PULL_REQUEST_TEMPLATE.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Copilot 根入口、Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
-| `.github/workflows/ci.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-28 | PR/push CI 控制面 | 使用完整 Git 历史运行 HEAD 分发与治理命令；只有同一 checkout step 的 `fetch-depth: 0` 才满足完整历史，required command 不得静态禁用、忽略失败、获得 attestation 特权或用 shell 分片自动写 outcome | 必需文件、资产注册表结构化校验 |
+| `.github/workflows/ci.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-28 | PR/push CI 控制面 | 每个执行 required command 的 job 都使用完整 Git 历史；只有该 job 同一 checkout step 的 `fetch-depth: 0` 才满足契约，required command 不得静态禁用、忽略失败、获得 attestation 特权或用 shell 分片自动写 outcome | 必需文件、资产注册表结构化校验 |
 | `.github/workflows/ai-governance.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-28 | 定时治理 | 使用完整 Git 历史运行 HEAD 分发和定时治理；同 step 绑定 checkout 与 `fetch-depth: 0`，拒绝 required command 的静态 false/continue-on-error 和 shell 分片 outcome 写账，并隔离 component-only subject 与可选 signer | 必需文件、资产注册表结构化校验 |
 | `scripts/ci/local-ci.sh` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-07-13 | 本地 CI 入口 | 与 GitHub CI 命令契约对齐，fail-fast 运行 workspace 分发、治理、预算和项目验证 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/local-ci-lib.sh` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | 本地 CI helper | 只维护有界日志、工作目录切换与 Java/Maven fallback，不吞掉子命令失败 | 必需文件、资产注册表结构化校验、可维护性预算 |
@@ -142,7 +142,7 @@
 | `scripts/ci/maintainability-budget-governance-ai-validation-test-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Validation 测试预算 | 独立维护 changed-set/Git authority、runtime、state/receipt 直测与共享 fixture 预算 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceCiEntrySource.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-21 | CI 入口 source | 复用稳定文本原语，单源维护 1 MiB、严格 UTF-8、单链接普通文件与固定无值诊断 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceCiEntrySource.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-21 | CI 入口 source 红队 | 锁定目录、非法 UTF-8、symlink、hardlink 和 1 MiB/cap+1 边界，证明异常节点返回固定诊断 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/aiGovernanceCiContract.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-28 | CI 契约负例 | 拒绝缺失或跨 step 冒充的完整历史、required command 静态禁用、artifact writer 失败旁路及 workflow/local-ci 通过静态 shell 分片自动写 outcome；共享 collector 直测锁定固定诊断 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceCiContract.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-28 | CI 契约负例 | 拒绝缺失、跨 step 或由 decoy job 冒充的完整历史，逐个绑定 required-command job，并继续锁定 required command 静态禁用、artifact writer 失败旁路及 workflow/local-ci 静态 shell 分片自动写 outcome | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/githubWorkflowStructureBlocks.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-28 | Workflow 结构原语 | 按源码顺序单源提取 GitHub Workflow 的 job 与 step 块，不承载治理或部署安全语义 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/githubWorkflowStructureBlocks.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-28 | Workflow 结构直测 | 锁定多 job、多 step 的源码顺序和缺失 jobs 的空集合边界 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceProjectCliArgs.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-07-14 | 项目 AI CLI 参数负例 | 锁定插件、分发、writer 与 validation CLI 的 help=0、未知/冲突参数=2，且安装副本报告固定 registration/runtime/signer/attestation/outcome 全部为 false | 必需文件、资产注册表结构化校验、可维护性预算 |

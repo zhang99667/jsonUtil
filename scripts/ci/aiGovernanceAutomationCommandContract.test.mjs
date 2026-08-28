@@ -45,24 +45,28 @@ test('workflow command parser 保持源码顺序', () => {
   ]);
 });
 
-test('workflow 完整 Git 历史契约保持固定诊断', () => {
-  const workflow = [
-    'jobs:',
-    '  governance:',
-    '    steps:',
+test('workflow 完整 Git 历史保留 fallback 并绑定 required command job', () => {
+  const fallback = 'jobs:\n  governance:\n    steps:\n      - uses: actions/checkout@v6\n        with:\n          fetch-depth: 0';
+  const requiredJob = [
+    'jobs:\n  decoy:\n    steps:',
     '      - uses: actions/checkout@v6',
-    '        with:',
-    '          fetch-depth: 0',
+    '        with:\n          fetch-depth: 0',
+    '  governance:\n    steps:',
+    '      - uses: actions/checkout@v6',
+    `      - run: ${VERSION_COMMAND}`,
   ].join('\n');
-  assert.deepEqual(collectWorkflowFullHistoryCheckoutFailures(workflow, WORKFLOW_FILE), []);
-  assert.deepEqual(
-    collectWorkflowFullHistoryCheckoutFailures(workflow.replace('fetch-depth: 0', 'fetch-depth: 1'), WORKFLOW_FILE),
-    [`${WORKFLOW_FILE}: checkout 必须保留完整 Git 历史`],
-  );
-  const splitSteps = workflow.replace('        with:\n          fetch-depth: 0',
-    '      - run: echo noop\n        env:\n          fetch-depth: 0');
-  assert.deepEqual(collectWorkflowFullHistoryCheckoutFailures(splitSteps, WORKFLOW_FILE),
-    [`${WORKFLOW_FILE}: checkout 必须保留完整 Git 历史`]);
+  const collectFailures = workflow => collectWorkflowFullHistoryCheckoutFailures(workflow, [VERSION_COMMAND], WORKFLOW_FILE);
+  const failure = [`${WORKFLOW_FILE}: checkout 必须保留完整 Git 历史`];
+  for (const invalid of [
+    fallback.replace('fetch-depth: 0', 'fetch-depth: 1'),
+    fallback.replace('        with:\n          fetch-depth: 0', '      - run: echo noop\n        env:\n          fetch-depth: 0'),
+    requiredJob,
+  ]) assert.deepEqual(collectFailures(invalid), failure);
+  assert.deepEqual(collectFailures(fallback), []);
+  assert.deepEqual(collectFailures(requiredJob.replace(
+    '  governance:\n    steps:\n      - uses: actions/checkout@v6',
+    '  governance:\n    steps:\n      - uses: actions/checkout@v6\n        with:\n          fetch-depth: 0',
+  )), []);
 });
 
 test('required command 安全失败保持 job、step、command 与规则全序', () => {

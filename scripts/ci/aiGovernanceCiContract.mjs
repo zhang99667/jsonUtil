@@ -25,7 +25,7 @@ export const collectAiGovernanceCiContractFailures = rootDir => Object.entries(C
     failures.push(...collectOutcomeWriterAutomationWriteFailures(commandBlocks, file));
     if (file === '.github/workflows/ci.yml') {
       failures.push(...collectRequiredWorkflowCommandReachabilityFailures(content, requiredCommands, file));
-      failures.push(...collectWorkflowFullHistoryCheckoutFailures(content, file));
+      failures.push(...collectWorkflowFullHistoryCheckoutFailures(content, requiredCommands, file));
     }
     return failures;
   });
