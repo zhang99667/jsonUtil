@@ -24,7 +24,7 @@ stderr、提示词、转录、PID 或模型输出。每份报告都必须位于�
 
 ## macOS Seatbelt 哨兵
 
-插件 0.5.3 运行真实 Darwin `/usr/bin/sandbox-exec` 哨兵。它只执行合成 Node
+插件 0.5.5 运行真实 Darwin `/usr/bin/sandbox-exec` 哨兵。它只执行合成 Node
 工作负载和两个 Codex 能力探针：
 
 - `<codex-binary> --version`;
@@ -224,7 +224,7 @@ bounded-cleanup-not-observed
 ## Docker 预检
 
 旧契约为 `codex-external-controller-runtime-probe@1.1.0`，覆盖范围为
-`credential-snapshot-subset`。插件 0.5.3 仍禁止创建容器。Docker `--run`
+`credential-snapshot-subset`。插件 0.5.5 仍禁止创建容器。Docker `--run`
 请求产生带 `runtime-execution-disabled` 的 `not-run`；它绝不启动或拉取容器。
 
 未来 Docker 契约描述三个虚拟工作负载：

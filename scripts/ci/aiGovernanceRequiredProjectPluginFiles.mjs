@@ -18,6 +18,8 @@ export const AI_GOVERNANCE_PROJECT_PLUGIN_SOURCE_FILES = Object.freeze([
   'plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/run-controller-probe.mjs',
   'plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/run-seatbelt-sentinel.mjs',
   'plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel-child.mjs',
+  'plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel-test-host.mjs',
+  'plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel-test-host.test.mjs',
   'plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.mjs',
   'plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.test.mjs',
   'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json',

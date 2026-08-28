@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1046 (2026-08-28) - Seatbelt 宿主能力分层
+
+### 🐛 Bug 修复
+
+- **嵌套 sandbox 分类**: Seatbelt 运行时测试只在 status 71、空 stdout 与固定 `sandbox_apply: Operation not permitted` 完整匹配时显式跳过，不再把 Codex 外层 sandbox 禁止嵌套误报为 Seatbelt policy 失败
+- **签名候选收紧**: Darwin 集成用例只选择通过 `codesign --verify --strict` 的固定 Codex 候选；其他 codesign、parser 或真实 child code 异常继续 fail closed
+
+### 🏗️ 架构与基础设施
+
+- **测试宿主单责**: 拆出 33 行 Seatbelt 宿主能力 helper 与独立负例，主测试从 592 行收缩到 578/610；新资产接入 required-files 与 45/25 单责预算，预算子表因两条所有权记录从 55 校准到 60
+- **版本与代表用例**: 控制器探针插件升至 0.5.5 并刷新 content lock；Seatbelt component case 升至 v5、corpus 升至 1.58.4，把宿主门控直接纳入 fixed runner
+- **证据边界不变**: 生产 `EXIT_DENIED=73`、Seatbelt 2.2.0 报告与 OpenAI code identity 规则保持严格；本机结果仍只是 component evidence，`trustedSigners=0`，不增加 behavior coverage 或解除仓外 runtime/signer blocker
+
 ## v1.8.1045 (2026-08-28) - 逐 Job 绑定治理完整历史
 
 ### 🐛 Bug 修复

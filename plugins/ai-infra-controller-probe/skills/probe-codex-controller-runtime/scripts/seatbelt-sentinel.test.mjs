@@ -20,6 +20,11 @@ import {
   runSeatbeltSentinel,
   verifySealedSnapshot,
 } from './seatbelt-sentinel.mjs';
+import {
+  SEATBELT_TEST_SYSTEM_ENV,
+  codexCandidate,
+  requireSeatbeltRuntime,
+} from './seatbelt-sentinel-test-host.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const digest = character => character.repeat(64);
@@ -179,14 +184,6 @@ const baseArgs = ({ fixture, expected, output = fixture.output }) => {
   ];
 };
 
-const codexCandidate = () => [
-  '/Applications/ChatGPT.app/Contents/Resources/codex',
-  '/Applications/Codex.app/Contents/Resources/codex',
-].find(candidate => {
-  try { return fs.realpathSync(candidate) === candidate && fs.statSync(candidate).isFile(); }
-  catch { return false; }
-});
-
 test('seatbelt sentinel 参数拒绝未知、重复、相对路径与非法 binding', () => {
   const tempBefore = fs.readdirSync(testTempRoot)
     .filter(name => name.startsWith('codex-seatbelt-sentinel-')).sort();
@@ -285,7 +282,8 @@ test('sealed snapshot 拒绝 .git、symlink、hardlink 与特殊文件', () => {
 });
 
 test('helper 仅把精确 EXIT_DENIED 与成功 baseline 组合解释为 Seatbelt deny',
-  { skip: process.platform !== 'darwin' }, async () => {
+  { skip: process.platform !== 'darwin' }, async (t) => {
+  if (!requireSeatbeltRuntime(t)) return;
   const root = fs.realpathSync(fs.mkdtempSync(path.join('/private/tmp', 'seatbelt-deny-test-')));
   const target = path.join(root, 'target');
   const child = path.join(scriptDirectory, 'seatbelt-sentinel-child.mjs');
@@ -347,6 +345,7 @@ test('helper 仅把精确 EXIT_DENIED 与成功 baseline 组合解释为 Seatbel
 
 test('Seatbelt Darwin 集成输出闭字段 0600 passed-subset 且不泄漏路径正文',
   { skip: process.platform !== 'darwin' }, async (t) => {
+    if (!requireSeatbeltRuntime(t)) return;
     const codexBinary = codexCandidate();
     if (!codexBinary) { t.skip('Codex CLI unavailable'); return; }
     const fixture = createFixture();
@@ -360,7 +359,7 @@ test('Seatbelt Darwin 集成输出闭字段 0600 passed-subset 且不泄漏路�
       const cli = spawnSync(process.execPath,
         [launcher, ...baseArgs({ fixture, expected })], {
           encoding: 'utf8', timeout: 15_000, maxBuffer: 1024 * 1024,
-          env: { PATH: '/usr/bin:/bin:/usr/sbin:/sbin', LANG: 'C', LC_ALL: 'C' },
+          env: SEATBELT_TEST_SYSTEM_ENV,
         });
       const summary = JSON.parse(cli.stdout);
       const result = { exitCode: cli.status, report: JSON.parse(fs.readFileSync(fixture.output)),
@@ -437,6 +436,7 @@ test('Seatbelt Darwin 集成输出闭字段 0600 passed-subset 且不泄漏路�
 
 test('caller expected binding 不匹配在启动 Seatbelt 前输出 rejected report',
   { skip: process.platform !== 'darwin' }, async (t) => {
+    if (!requireSeatbeltRuntime(t)) return;
     const codexBinary = codexCandidate();
     if (!codexBinary) { t.skip('Codex CLI unavailable'); return; }
     const fixture = createFixture();
@@ -521,6 +521,7 @@ test('output parent 必须是当前 owner 的 canonical 0700 目录',
 
 test('外部 snapshot 元数据漂移被 postflight 拒绝，sentinel 不对 source 发起 mutation',
   { skip: process.platform !== 'darwin' }, async (t) => {
+    if (!requireSeatbeltRuntime(t)) return;
     const codexBinary = codexCandidate();
     if (!codexBinary) { t.skip('Codex CLI unavailable'); return; }
     const fixture = createFixture();

@@ -3,7 +3,7 @@ import { governanceAiProjectPluginSkillMaintainabilityBudgets } from './maintain
 const projectPluginBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiProjectPluginMaintainabilityBudgets = [
-  projectPluginBudget('scripts/ci/maintainability-budget-governance-ai-project-plugin-rules.mjs', 55, '项目插件预算子表应只维护 marketplace、plugin 与其治理契约'),
+  projectPluginBudget('scripts/ci/maintainability-budget-governance-ai-project-plugin-rules.mjs', 60, '项目插件预算子表应只维护 marketplace、plugin 与其治理契约'),
   projectPluginBudget('scripts/ci/aiGovernanceRequiredProjectPluginFiles.mjs', 75, '项目插件必需清单应精确登记三个插件、authority 叶子及团队生命周期资产'),
   projectPluginBudget('scripts/ci/aiGovernanceRequiredProjectPluginLifecycleFiles.mjs', 25, '项目插件生命周期清单应只登记固定插件名、共享报告、doctor/apply 与 lock writer'),
   projectPluginBudget('scripts/ci/aiGovernanceProjectPluginCommand.mjs', 90, '项目插件命令运行时应固定 argv、输出与超时边界，并在 POSIX 回收完整进程组'),
@@ -39,6 +39,8 @@ export const governanceAiProjectPluginMaintainabilityBudgets = [
   projectPluginBudget('plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/run-controller-probe.mjs', 35, 'Docker probe CLI 应保持有界脱敏'),
   projectPluginBudget('plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/run-seatbelt-sentinel.mjs', 30, 'Seatbelt CLI 应保持有界脱敏'),
   projectPluginBudget('plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel-child.mjs', 135, 'Seatbelt child 应只执行固定 capability 探针'),
+  projectPluginBudget('plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel-test-host.mjs', 45, 'Seatbelt 测试宿主只识别精确外层 sandbox 能力并筛选有效签名 Codex'),
+  projectPluginBudget('plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel-test-host.test.mjs', 25, 'Seatbelt 宿主门控测试应锁住精确基础设施阻断分类'),
   projectPluginBudget('plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.mjs', 1350, 'Seatbelt producer 迁移基线暂锁现有大小，后续应拆分静态绑定、probe 与 cleanup'),
   projectPluginBudget('plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/seatbelt-sentinel.test.mjs', 610, 'Seatbelt 测试迁移基线暂锁现有大小，后续应按安全边界拆分'),
   projectPluginBudget('plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json', 30, 'governance MCP manifest 应保持最小项目声明'),

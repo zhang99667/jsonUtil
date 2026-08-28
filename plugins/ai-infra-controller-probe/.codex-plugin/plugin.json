@@ -1,6 +1,6 @@
 {
   "name": "ai-infra-controller-probe",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "面向 Codex 控制器边界的无密钥 Docker 预检与已签名 macOS Seatbelt 哨兵。",
   "author": {
     "name": "JSONUtils project"
