@@ -57,6 +57,8 @@ export const AI_GOVERNANCE_REQUIRED_PROJECT_PLUGIN_FILES = Object.freeze([
   'scripts/ci/aiGovernanceProjectPluginTestFixtures.mjs',
   'scripts/ci/aiGovernanceProjectPluginRepositoryPath.mjs',
   'scripts/ci/aiGovernanceProjectPluginTreeSnapshot.mjs',
+  'scripts/ci/aiGovernanceProjectPluginLockSource.mjs',
+  'scripts/ci/aiGovernanceProjectPluginLockSource.test.mjs',
   'scripts/ci/aiGovernanceProjectPluginLock.mjs',
   'scripts/ci/aiGovernanceProjectPluginLock.test.mjs',
   'scripts/ci/aiGovernanceCodexMcpConfigAuditor.test.mjs',

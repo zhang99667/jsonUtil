@@ -12,6 +12,8 @@ export const AI_GOVERNANCE_REQUIRED_PROJECT_PLUGIN_LIFECYCLE_FILES = Object.free
   'scripts/ci/aiGovernanceProjectPluginLifecycleContract.test.mjs',
   'scripts/ci/aiGovernanceProjectPluginLifecycle.mjs',
   'scripts/ci/aiGovernanceProjectPluginLifecycle.test.mjs',
+  'scripts/ci/aiGovernanceProjectPluginLockTransaction.mjs',
+  'scripts/ci/aiGovernanceProjectPluginLockTransaction.test.mjs',
   'scripts/ci/aiGovernanceProjectPluginLockWriter.mjs',
   'scripts/ci/aiGovernanceProjectPluginLockLifecycle.test.mjs',
   'scripts/ci/aiGovernanceProjectPluginLockWriteRace.test.mjs',

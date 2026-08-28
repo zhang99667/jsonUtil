@@ -15,12 +15,16 @@ const inventoryFor = root => new Set(buildProjectPluginLock(root).plugins.flatMa
   plugin.files.map(file => `${plugin.source}/${file.path}`)
 )));
 
-test('write-lock 原子替换后的 source race 必须回滚原 lock', () => withCopy(async (root) => {
+const prepareVersionedChange = (root) => {
   const manifestFile = 'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json';
   const sourceFile = 'plugins/jsonutils-governance-mcp/README.md';
   rewriteJson(root, manifestFile, value => { value.version = '0.2.3'; });
   rewriteText(root, sourceFile, content => `${content}\nversioned change\n`);
-  const inventory = inventoryFor(root);
+  return { sourceFile, inventory: inventoryFor(root) };
+};
+
+test('write-lock 原子替换后的 source race 必须回滚原 lock', () => withCopy(async (root) => {
+  const { sourceFile, inventory } = prepareVersionedChange(root);
   const lockFile = path.join(root, PROJECT_PLUGIN_LOCK_PATH);
   fs.writeFileSync(lockFile, JSON.stringify(JSON.parse(fs.readFileSync(lockFile, 'utf8'))));
   const before = fs.readFileSync(lockFile);
@@ -47,11 +51,7 @@ test('write-lock 原子替换后的 source race 必须回滚原 lock', () => wit
 }));
 
 test('write-lock 不得用回滚覆盖 candidate 后的并发 lock 字节', () => withCopy(async (root) => {
-  const manifestFile = 'plugins/jsonutils-governance-mcp/.codex-plugin/plugin.json';
-  const sourceFile = 'plugins/jsonutils-governance-mcp/README.md';
-  rewriteJson(root, manifestFile, value => { value.version = '0.2.3'; });
-  rewriteText(root, sourceFile, content => `${content}\nversioned change\n`);
-  const inventory = inventoryFor(root);
+  const { inventory } = prepareVersionedChange(root);
   const lockFile = path.join(root, PROJECT_PLUGIN_LOCK_PATH);
   const concurrentBytes = Buffer.from('{"concurrent":true}\n');
   const canonicalLockFile = fs.realpathSync(lockFile);

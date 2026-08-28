@@ -19,7 +19,7 @@ import { collectSkillOptionalFieldFailures } from './aiGovernanceSkillOptionalFi
 const MANIFEST_FILE = 'plugins/ai-infra-controller-probe/.codex-plugin/plugin.json';
 
 export const PROJECT_PLUGIN_SKILL_CONTRACT = Object.freeze({
-  caseId: 'project-plugin-skill-semantic-contract-boundary', version: '1.7.0',
+  caseId: 'project-plugin-skill-semantic-contract-boundary', version: '1.8.0',
 });
 
 const collectFrontmatterFailures = (rootDir, skillFile) => {

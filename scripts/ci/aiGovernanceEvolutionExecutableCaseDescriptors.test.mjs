@@ -80,13 +80,17 @@ test('observable trace v5 descriptor 锁定 receipt contract、source、输入�
   ]);
 });
 
-test('project plugin Skill v8 descriptor 锁定共享 optional 字段两层回归', () => {
+test('project plugin Skill v9 descriptor 锁定共享 optional 字段与 lock 事务回归', () => {
   const descriptor = AI_EVOLUTION_EXECUTABLE_CASES['project-plugin-skill-semantic-contract-boundary'];
-  assert.deepEqual([descriptor.caseVersion, descriptor.subjectVersion], [8, '1.7.0']);
+  assert.deepEqual([descriptor.caseVersion, descriptor.subjectVersion], [9, '1.8.0']);
   assert.equal(descriptor.argsList[0].includes(
     'scripts/ci/aiGovernanceSkillOptionalFieldsContract.test.mjs'), true);
   assert.equal(descriptor.argsList[0].includes(
     'scripts/ci/aiGovernanceProjectPluginSkillOptionalFields.test.mjs'), true);
+  assert.equal(descriptor.argsList[0].includes(
+    'scripts/ci/aiGovernanceProjectPluginLockSource.test.mjs'), true);
+  assert.equal(descriptor.argsList[0].includes(
+    'scripts/ci/aiGovernanceProjectPluginLockTransaction.test.mjs'), true);
 });
 
 test('registration grader descriptor 同时重放静态 contract 与执行 runner', () => {

@@ -1,7 +1,6 @@
-// 独立维护项目 plugin-lock 的 Git inventory、稳定 endpoint 与原子写入/回滚事务。
+// 编排项目 plugin-lock 的 source、SemVer、Git inventory、endpoint 事务与报告。
 
 import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -20,6 +19,17 @@ import {
   readExpectedProjectPlugins,
 } from './aiGovernanceProjectPluginLifecycleContract.mjs';
 import { resolveProjectPluginRepositoryPath } from './aiGovernanceProjectPluginRepositoryPath.mjs';
+import {
+  parseProjectPluginLockSnapshot,
+  readStableProjectPluginLockSnapshot,
+  sameProjectPluginLockSnapshots,
+  serializeProjectPluginLock,
+} from './aiGovernanceProjectPluginLockSource.mjs';
+import {
+  acquireProjectPluginLockControl,
+  releaseProjectPluginLockControl,
+  replaceProjectPluginLockBytes,
+} from './aiGovernanceProjectPluginLockTransaction.mjs';
 import { isStrictSemverIncrement } from './aiGovernanceSemver.mjs';
 import {
   captureProjectPluginTree,
@@ -27,11 +37,7 @@ import {
 } from './aiGovernanceProjectPluginTreeSnapshot.mjs';
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginLifecycleFiles.mjs';
 
-const LOCK_STAT_FIELDS = ['dev', 'ino', 'mode', 'nlink', 'size', 'uid', 'gid', 'mtimeNs', 'ctimeNs'];
-const MAX_LOCK_BYTES = 4 * 1024 * 1024;
 const posixPath = value => value.split(path.sep).join('/');
-const sameLockStat = (left, right) => LOCK_STAT_FIELDS.every(field => left[field] === right[field]);
-const sameLockSnapshot = (left, right) => sameLockStat(left.stat, right.stat) && left.bytes.equals(right.bytes);
 
 const projectRoot = (rootDir) => {
   try {
@@ -40,76 +46,6 @@ const projectRoot = (rootDir) => {
     if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error();
     return root;
   } catch { throw failure('PROJECT_ROOT_INVALID'); }
-};
-
-const fsyncDirectory = (directory) => {
-  const descriptor = fs.openSync(directory, fs.constants.O_RDONLY);
-  try { fs.fsyncSync(descriptor); } finally { fs.closeSync(descriptor); }
-};
-
-const readStableLockSnapshot = (file, code) => {
-  try {
-    const pathStat = fs.lstatSync(file, { bigint: true });
-    if (!pathStat.isFile() || pathStat.isSymbolicLink() || pathStat.nlink !== 1n
-      || pathStat.size < 1n || pathStat.size > BigInt(MAX_LOCK_BYTES)
-      || fs.realpathSync(file) !== file) throw new Error();
-    const descriptor = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
-    try {
-      const opened = fs.fstatSync(descriptor, { bigint: true });
-      if (!opened.isFile() || opened.nlink !== 1n || !sameLockStat(pathStat, opened)) throw new Error();
-      const bytes = Buffer.alloc(Number(opened.size));
-      let offset = 0;
-      while (offset < bytes.length) {
-        const count = fs.readSync(descriptor, bytes, offset, bytes.length - offset, offset);
-        if (count === 0) throw new Error();
-        offset += count;
-      }
-      if (fs.readSync(descriptor, Buffer.alloc(1), 0, 1, bytes.length) !== 0) throw new Error();
-      const after = fs.fstatSync(descriptor, { bigint: true });
-      const finalPath = fs.lstatSync(file, { bigint: true });
-      if (!sameLockStat(opened, after) || !sameLockStat(after, finalPath) || fs.realpathSync(file) !== file) {
-        throw new Error();
-      }
-      return { bytes, stat: after };
-    } finally { fs.closeSync(descriptor); }
-  } catch { throw failure(code); }
-};
-
-const parseLock = (snapshot) => {
-  try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(snapshot.bytes)); }
-  catch { throw failure('PROJECT_PLUGIN_LOCK_INVALID'); }
-};
-
-const writerControlPath = lockFile => `${lockFile}.writer-lock`;
-const acquireWriterControl = (lockFile) => {
-  const file = writerControlPath(lockFile);
-  const bytes = Buffer.from(`${process.pid}:${randomUUID()}\n`);
-  let descriptor;
-  try {
-    descriptor = fs.openSync(file, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY, 0o600);
-    fs.writeFileSync(descriptor, bytes);
-    fs.fsyncSync(descriptor);
-    const stat = fs.fstatSync(descriptor, { bigint: true });
-    fs.closeSync(descriptor);
-    descriptor = undefined;
-    fsyncDirectory(path.dirname(file));
-    return { file, stat };
-  } catch (error) {
-    if (descriptor !== undefined) try { fs.closeSync(descriptor); } catch {}
-    if (error?.code === 'EEXIST') throw failure('PROJECT_PLUGIN_LOCK_BUSY');
-    try { fs.rmSync(file, { force: true }); } catch {}
-    throw failure('PROJECT_PLUGIN_LOCK_CONTROL_FAILED');
-  }
-};
-
-const releaseWriterControl = (control) => {
-  try {
-    const current = fs.lstatSync(control.file, { bigint: true });
-    if (!current.isFile() || current.isSymbolicLink() || current.nlink !== 1n
-      || !sameLockStat(control.stat, current)) throw new Error();
-    fs.unlinkSync(control.file);
-    fsyncDirectory(path.dirname(control.file));
-  } catch { throw failure('PROJECT_PLUGIN_LOCK_CONTROL_FAILED'); }
 };
 
 export const listGitProjectPluginFiles = async ({ rootDir, spawnImpl = spawn }) => {
@@ -125,53 +61,6 @@ export const listGitProjectPluginFiles = async ({ rootDir, spawnImpl = spawn }) 
   } catch { throw failure('GIT_PLUGIN_INVENTORY_FAILED'); }
   return new Set(output.toString('utf8').split('\0').filter(Boolean).map(posixPath));
 };
-
-const atomicReplaceBytes = (file, bytes) => {
-  const temporary = path.join(path.dirname(file), `.${path.basename(file)}.tmp-${process.pid}-${randomUUID()}`);
-  let descriptor;
-  try {
-    descriptor = fs.openSync(temporary, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY, 0o644);
-    fs.writeFileSync(descriptor, bytes);
-    fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
-    descriptor = undefined;
-    fs.renameSync(temporary, file);
-    fsyncDirectory(path.dirname(file));
-  } catch {
-    if (descriptor !== undefined) try { fs.closeSync(descriptor); } catch {}
-    try { fs.rmSync(temporary, { force: true }); } catch {}
-    throw failure('PROJECT_PLUGIN_LOCK_ATOMIC_WRITE_FAILED');
-  }
-};
-
-const inlineRecord = value => `{ ${Object.entries(value).map(([key, item]) => (
-  `${JSON.stringify(key)}: ${JSON.stringify(item)}`
-)).join(', ')} }`;
-
-const serializeProjectPluginLock = lock => Buffer.from([
-  '{',
-  `  "schemaVersion": ${JSON.stringify(lock.schemaVersion)},`,
-  `  "lockVersion": ${JSON.stringify(lock.lockVersion)},`,
-  `  "digestAlgorithm": ${JSON.stringify(lock.digestAlgorithm)},`,
-  `  "trustBoundary": ${JSON.stringify(lock.trustBoundary)},`,
-  '  "plugins": [',
-  ...lock.plugins.flatMap((plugin, pluginIndex) => [
-    '    {',
-    `      "selector": ${JSON.stringify(plugin.selector)},`,
-    `      "manifestVersion": ${JSON.stringify(plugin.manifestVersion)},`,
-    `      "source": ${JSON.stringify(plugin.source)},`,
-    '      "files": [',
-    ...plugin.files.map((fileRecord, fileIndex) => (
-      `        ${inlineRecord(fileRecord)}${fileIndex === plugin.files.length - 1 ? '' : ','}`
-    )),
-    '      ],',
-    `      "treeSha256": ${JSON.stringify(plugin.treeSha256)}`,
-    `    }${pluginIndex === lock.plugins.length - 1 ? '' : ','}`,
-  ]),
-  '  ]',
-  '}',
-  '',
-].join('\n'));
 
 const lockInspection = (expected, state) => ({
   marketplaceState: 'not-queried',
@@ -208,11 +97,15 @@ export const writeProjectPluginLockLifecycle = async ({
     let lockFile;
     try { lockFile = resolveProjectPluginRepositoryPath(root, PROJECT_PLUGIN_LOCK_PATH); }
     catch { throw failure('PROJECT_PLUGIN_LOCK_INVALID'); }
-    const control = acquireWriterControl(lockFile);
+    const control = acquireProjectPluginLockControl(lockFile);
     let operationFailed = false;
     try {
-      const previousSnapshot = readStableLockSnapshot(lockFile, 'PROJECT_PLUGIN_LOCK_INVALID');
-      const previous = parseLock(previousSnapshot);
+      let previousSnapshot;
+      let previous;
+      try {
+        previousSnapshot = readStableProjectPluginLockSnapshot(root);
+        previous = parseProjectPluginLockSnapshot(previousSnapshot);
+      } catch { throw failure('PROJECT_PLUGIN_LOCK_INVALID'); }
       if (collectProjectPluginLockShapeFailures(previous).length > 0) throw failure('PROJECT_PLUGIN_LOCK_INVALID');
       const candidate = buildProjectPluginLock(root, sourceSnapshot);
       const candidateBytes = serializeProjectPluginLock(candidate);
@@ -237,8 +130,10 @@ export const writeProjectPluginLockLifecycle = async ({
         || JSON.stringify(stableCandidate) !== JSON.stringify(candidate)) {
         throw failure('PROJECT_PLUGIN_LOCK_SOURCE_CHANGED_DURING_WRITE');
       }
-      const currentLock = readStableLockSnapshot(lockFile, 'PROJECT_PLUGIN_LOCK_CHANGED_DURING_WRITE');
-      if (!sameLockSnapshot(previousSnapshot, currentLock)) {
+      let currentLock;
+      try { currentLock = readStableProjectPluginLockSnapshot(root); }
+      catch { throw failure('PROJECT_PLUGIN_LOCK_CHANGED_DURING_WRITE'); }
+      if (!sameProjectPluginLockSnapshots(previousSnapshot, currentLock)) {
         throw failure('PROJECT_PLUGIN_LOCK_CHANGED_DURING_WRITE');
       }
       if (JSON.stringify(previous) === JSON.stringify(candidate)) {
@@ -254,12 +149,13 @@ export const writeProjectPluginLockLifecycle = async ({
       if (invalidVersion) throw failure(`PROJECT_PLUGIN_VERSION_CHANGE_REQUIRED:${invalidVersion.selector}`);
 
       attempted = 1;
-      atomicReplaceBytes(lockFile, candidateBytes);
+      const replaceState = replaceProjectPluginLockBytes(lockFile, candidateBytes);
       let candidateSnapshot;
       let lockPostcheckFailure = null;
-      let postWriteFailure = null;
+      let postWriteFailure = replaceState === 'durable'
+        ? null : 'PROJECT_PLUGIN_LOCK_ATOMIC_WRITE_FAILED';
       try {
-        candidateSnapshot = readStableLockSnapshot(lockFile, 'PROJECT_PLUGIN_LOCK_POSTCHECK_FAILED');
+        candidateSnapshot = readStableProjectPluginLockSnapshot(root);
         if (!candidateSnapshot.bytes.equals(candidateBytes)) lockPostcheckFailure = 'PROJECT_PLUGIN_LOCK_POSTCHECK_FAILED';
       } catch { lockPostcheckFailure = 'PROJECT_PLUGIN_LOCK_POSTCHECK_FAILED'; }
       try {
@@ -280,11 +176,11 @@ export const writeProjectPluginLockLifecycle = async ({
       postWriteFailure ??= lockPostcheckFailure;
       if (postWriteFailure) {
         try {
-          const rollbackBase = readStableLockSnapshot(lockFile, 'PROJECT_PLUGIN_LOCK_ROLLBACK_FAILED');
+          const rollbackBase = readStableProjectPluginLockSnapshot(root);
           if (!candidateSnapshot || !candidateSnapshot.bytes.equals(candidateBytes)
-            || !sameLockSnapshot(candidateSnapshot, rollbackBase)) throw new Error();
-          atomicReplaceBytes(lockFile, previousSnapshot.bytes);
-          const restored = readStableLockSnapshot(lockFile, 'PROJECT_PLUGIN_LOCK_ROLLBACK_FAILED');
+            || !sameProjectPluginLockSnapshots(candidateSnapshot, rollbackBase)) throw new Error();
+          if (replaceProjectPluginLockBytes(lockFile, previousSnapshot.bytes) !== 'durable') throw new Error();
+          const restored = readStableProjectPluginLockSnapshot(root);
           if (!restored.bytes.equals(previousSnapshot.bytes)) throw new Error();
         } catch { throw failure('PROJECT_PLUGIN_LOCK_ROLLBACK_FAILED'); }
         throw failure(postWriteFailure);
@@ -296,7 +192,7 @@ export const writeProjectPluginLockLifecycle = async ({
       operationFailed = true;
       throw error;
     } finally {
-      try { releaseWriterControl(control); }
+      try { releaseProjectPluginLockControl(control); }
       catch (error) {
         controlFailureCode = failureCode(error);
         if (!operationFailed) throw error;

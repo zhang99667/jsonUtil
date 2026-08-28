@@ -2,14 +2,18 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { resolveProjectPluginRepositoryPath } from './aiGovernanceProjectPluginRepositoryPath.mjs';
 import {
   capturePluginSourceTree,
   captureProjectPluginTree,
 } from './aiGovernanceProjectPluginTreeSnapshot.mjs';
+import {
+  parseProjectPluginLockSnapshot,
+  PROJECT_PLUGIN_LOCK_PATH,
+  readStableProjectPluginLockSnapshot,
+} from './aiGovernanceProjectPluginLockSource.mjs';
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginLifecycleFiles.mjs';
 
-export const PROJECT_PLUGIN_LOCK_PATH = '.agents/plugins/plugin-lock.json';
+export { PROJECT_PLUGIN_LOCK_PATH };
 
 const LOCK_FIELDS = ['schemaVersion', 'lockVersion', 'digestAlgorithm', 'trustBoundary', 'plugins'];
 const PLUGIN_FIELDS = ['selector', 'manifestVersion', 'source', 'files', 'treeSha256'];
@@ -39,7 +43,7 @@ export const buildProjectPluginLock = (rootDir, snapshot = captureProjectPluginT
 });
 
 export const readProjectPluginLock = (rootDir, lockPath = PROJECT_PLUGIN_LOCK_PATH) => (
-  JSON.parse(fs.readFileSync(resolveProjectPluginRepositoryPath(rootDir, lockPath), 'utf8'))
+  parseProjectPluginLockSnapshot(readStableProjectPluginLockSnapshot(rootDir, lockPath))
 );
 
 export const collectProjectPluginLockShapeFailures = (lock) => {

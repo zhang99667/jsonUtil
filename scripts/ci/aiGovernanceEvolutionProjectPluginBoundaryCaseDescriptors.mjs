@@ -4,10 +4,10 @@ const nodeTest = (...files) => ['--test', ...files];
 
 export const AI_EVOLUTION_PROJECT_PLUGIN_BOUNDARY_CASES = Object.freeze({
   [PROJECT_PLUGIN_SKILL_CONTRACT.caseId]: {
-    caseVersion: 8,
+    caseVersion: 9,
     subjectVersion: PROJECT_PLUGIN_SKILL_CONTRACT.version,
     evidenceScope: 'component-only',
-    evidence: ['canonical/plugin Skill 稳定有界 source、共享官方 optional 字段值语义、项目 JSON 唯一 authority、严格 SemVer、文件+目录聚合快照与 write-lock 写后回滚'],
+    evidence: ['canonical/plugin Skill 稳定有界 source、共享官方 optional 字段值语义、项目 JSON 唯一 authority、严格 SemVer、文件+目录聚合快照、plugin-lock 内容 authority 与 candidate-owned 事务回滚'],
     argsList: [nodeTest(
       'scripts/ci/aiGovernanceJsonAuthority.test.mjs',
       'scripts/ci/aiGovernanceSemver.test.mjs',
@@ -22,6 +22,8 @@ export const AI_EVOLUTION_PROJECT_PLUGIN_BOUNDARY_CASES = Object.freeze({
       'scripts/ci/aiGovernanceProjectPluginSkillContract.test.mjs',
       'scripts/ci/aiGovernanceProjectPluginSourceIdentity.test.mjs',
       'scripts/ci/aiGovernanceProjectPluginLock.test.mjs',
+      'scripts/ci/aiGovernanceProjectPluginLockSource.test.mjs',
+      'scripts/ci/aiGovernanceProjectPluginLockTransaction.test.mjs',
       'scripts/ci/aiGovernanceProjectPluginLockWriteRace.test.mjs',
     )],
   },

@@ -34,7 +34,7 @@ const rewriteLock = (root) => fs.writeFileSync(
 test('项目插件 skill 语义契约接受当前正例并暴露闭合 case identity', () => {
   assert.deepEqual(PROJECT_PLUGIN_SKILL_CONTRACT, {
     caseId: 'project-plugin-skill-semantic-contract-boundary',
-    version: '1.7.0',
+    version: '1.8.0',
   });
   assert.equal(Object.isFrozen(PROJECT_PLUGIN_SKILL_CONTRACT), true);
   assert.deepEqual(collectProjectPluginSkillContractFailures(projectRoot), []);

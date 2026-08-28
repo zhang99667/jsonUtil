@@ -1,5 +1,19 @@
 # 更新日志 (Changelog)
 
+## v1.8.1049 (2026-08-28) - 收紧项目插件内容锁事务
+
+### 🐛 Bug 修复
+
+- **Lock Authority Fail Closed**: checker 与 writer 统一以 fatal UTF-8 和解码后唯一 JSON authority 解析 plugin-lock，拒绝顶层、嵌套、转义等价重复 key、超过 4 MiB 和 hardlink endpoint，不再让 last-wins 解析覆盖 trust boundary
+- **持久化失败回滚**: candidate rename 已成功但父目录 fsync 失败时，不再留下新 lock 却报告未写入；仅在 endpoint 仍归本次 candidate 时恢复原始字节
+- **Control Ownership**: control lock 获取失败时只清理仍由本 writer 拥有的 inode，保留已接管 endpoint 及其字节
+
+### 🏗️ 架构与基础设施
+
+- **内容/事务分责**: 拆出 86 行 lock source 与 85 行 transaction 叶子，writer 从 311 行收缩到 207 行，只保留 source、SemVer、Git inventory 和报告编排
+- **代表负例锁定**: 新增 lock source/transaction 直接负例、最小合格仓库 import 图回归与单责预算，plugin component case 升至 v9/1.8.0，corpus 升至 1.58.5
+- **证据边界不变**: 本次只形成 component 内容锁/事务证据，不执行真实插件 apply 或模型 trial，不增加 behavior coverage，`trustedSigners=0` 和仓外 protected runtime/signer blocker 保持不变
+
 ## v1.8.1048 (2026-08-28) - 收紧决策账本回写路径边界
 
 ### 🐛 Bug 修复

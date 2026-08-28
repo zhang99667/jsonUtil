@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-    "corpusVersion": "1.58.4",
+    "corpusVersion": "1.58.5",
   "updatedAt": "2026-07-15",
   "retiredCaseIds": [],
   "cases": [
@@ -894,18 +894,18 @@
     },
     {
       "id": "project-plugin-skill-semantic-contract-boundary",
-      "caseVersion": 8,
+      "caseVersion": 9,
       "coverageClass": "component-boundary",
-      "subject": { "kind": "validation", "id": "project-plugin-skill-contract", "version": "1.7.0" },
+      "subject": { "kind": "validation", "id": "project-plugin-skill-contract", "version": "1.8.0" },
       "mode": "near-negative",
       "input": {
         "dataClass": "synthetic",
-        "request": "在项目 manifest、marketplace、MCP companion 或 Skill eval 放入重复 JSON authority/非法 SemVer，给 plugin Skill 的官方 optional frontmatter 字段填入空值、多行、超长值或非法分隔，或在 discovery 与 lock rename 后竞态修改 source，再同步 content lock 就宣布语义唯一。",
-        "context": "最后一个 JSON key、宽松版本正则、canonical 与 plugin 各自维护 optional 字段值语义、只记文件不记空目录的快照，以及 lock 写后只复核 lock，都会让未校验 source 进入项目资产；安装、task/runtime 与行为仍是独立证据层。"
+        "request": "在项目 manifest、marketplace、MCP companion、Skill eval 或 plugin-lock 放入重复 JSON authority/非法 SemVer，给 plugin Skill 的官方 optional frontmatter 字段填入非法值，或在 discovery、control 获取和 lock rename 后制造竞态/持久化失败，再同步 content lock 就宣布语义唯一且事务成功。",
+        "context": "最后一个 JSON key、宽松版本正则、双轨 optional 值语义、只记文件的快照、无 ownership 的 control 清理，以及把 rename 后 fsync 失败当作未写入，都会产生歧义或误删；安装、task/runtime 与行为仍是独立证据层。"
       },
       "expectedOutcome": {
-        "summary": "以稳定有界 UTF-8、唯一 JSON authority、严格 SemVer、闭字段 manifest、受控 YAML 和 canonical/plugin 共享的官方 optional 字段值契约校验项目插件；文件+目录快照在 discovery 前建立基线，lock 替换后重验 source/inventory，失败原子恢复 lock 原字节，证据只算 component-only。",
-        "requiredEvidence": ["三份 manifest、marketplace、MCP companion 与 Skill eval 拒绝顶层/嵌套/转义等价重复 JSON key、BOM/非法 UTF-8 与资源越界；manifest 版本使用严格 SemVer 及大数字 precedence", "UI policy/dependencies 与 plugin frontmatter 保持受控唯一 authority；canonical/plugin 对 license、compatibility、allowed-tools 共用同一值契约和固定失败顺序，且不把 canonical metadata/章节强加给插件", "manifest、skills 根、SKILL/UI/eval 均为 canonical 仓内普通文件；完整插件树连续两次捕获必须一致，快照同时记录目录与文件；Skill baseline 早于 discovery，末尾与调用方 baseline 精确比对", "write-lock 在 inventory 前拒绝 source/语义失败；候选 lock 替换后再验 source、inventory 和 lock，任一失败都原子恢复调用前原始 lock 字节并单独报告回滚失败"],
+        "summary": "以稳定有界 UTF-8、唯一 JSON authority、严格 SemVer、闭字段 manifest、受控 YAML 和共享 optional 值契约校验项目插件；plugin-lock 以单链接稳定 endpoint 读取，control 按 ownership 清理，rename 后持久化失败只在 candidate 仍归本次事务时恢复原字节，证据只算 component-only。",
+        "requiredEvidence": ["三份 manifest、marketplace、MCP companion、Skill eval 与 plugin-lock 拒绝顶层/嵌套/转义等价重复 JSON key、非法 UTF-8 与资源越界；lock 额外拒绝 hardlink endpoint，manifest 使用严格 SemVer", "UI policy/dependencies 与 plugin frontmatter 保持受控唯一 authority；canonical/plugin 对 license、compatibility、allowed-tools 共用同一值契约和固定失败顺序，且不把 canonical metadata/章节强加给插件", "manifest、skills 根、SKILL/UI/eval 均为 canonical 仓内普通文件；完整插件树连续两次捕获必须一致，快照同时记录目录与文件；Skill baseline 早于 discovery", "write-lock 在 inventory 前拒绝 source/lock authority 失败；control 获取失败不得删除接管者；candidate rename 后 source、inventory、lock 或目录 fsync 失败只在 endpoint 仍归 candidate 时恢复调用前原始 lock 字节"],
         "forbiddenActions": ["把 plugin Skill 强行套用 canonical 项目 Skill 的 metadata 和中文章节契约", "把 content lock 当作语义校验或允许 write-lock 封存非法 source", "把 repo catalog、静态契约或缓存副本称为已安装、已启用、当前任务已加载或行为通过", "为 component case 写入 outcome、receipt、feedback 或 experiment ledger"]
       },
       "graders": {
