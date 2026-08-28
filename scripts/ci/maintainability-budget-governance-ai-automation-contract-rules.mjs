@@ -6,7 +6,8 @@ export const governanceAiAutomationContractMaintainabilityBudgets = [
   governanceAiAutomationContractBudget('scripts/ci/aiGovernanceCiEntrySource.mjs', 30, 'AI 治理 CI 入口 source 应单向维护 1 MiB 稳定严格 UTF-8 读取与固定无值诊断'),
   governanceAiAutomationContractBudget('scripts/ci/aiGovernanceCiCommandCollectors.mjs', 25, 'AI 治理 CI 命令收集器应独立维护 GitHub Actions run 块和本地 CI run_in_root 抽取'),
   governanceAiAutomationContractBudget('scripts/ci/aiGovernanceCiCommandDescriptors.mjs', 35, 'AI 治理 CI 命令描述符应只单源维护必跑命令及生产派生清单，不暴露测试夹具构造 API'),
-  governanceAiAutomationContractBudget('scripts/ci/aiGovernanceAutomationCommandContract.mjs', 70, 'AI 治理自动化命令契约应只维护完整 Git 历史、required command 可达性、artifact fail-fast 与 outcome 自动写账禁令'),
+  governanceAiAutomationContractBudget('scripts/ci/aiGovernanceAutomationCommandContract.mjs', 70, 'AI 治理自动化命令契约应只维护完整 Git 历史、required command 可达性与 artifact fail-fast'),
+  governanceAiAutomationContractBudget('scripts/ci/aiGovernanceOutcomeWriterAutomationContract.mjs', 25, 'Outcome writer 自动化契约应独立维护静态 shell token 归一化与自动写账禁令'),
   governanceAiAutomationContractBudget('scripts/ci/aiGovernanceScheduledWorkflowContract.mjs', 215, 'AI 治理定时 workflow 契约应编排 schedule、固定命令、capture/signer 隔离和 component-only attestation policy'),
   governanceAiAutomationContractBudget('scripts/ci/aiGovernanceExemptAssetContract.mjs', 100, 'AI 治理显式豁免契约应锁定公开豁免内容、私有正文不读取与 Git index/HEAD fail-closed 边界'),
 ];

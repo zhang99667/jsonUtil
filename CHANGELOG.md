@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1047 (2026-08-28) - 收紧治理 Checkout 配置归属
+
+### 🐛 Bug 修复
+
+- **完整历史 Fail Closed**: 治理 workflow 只接受同一 checkout step 的 `with.fetch-depth: 0`，不再让 `env.fetch-depth: 0` 或退出 `with` mapping 后的同名字段冒充完整 Git 历史配置
+- **代表负例锁定**: 先用同 step `env` 与后续同级 mapping 两类 fixture 复现漏报，再保留逐 required-command job、跨 step 和浅 checkout 的既有失败顺序与固定诊断
+
+### 🏗️ 架构与基础设施
+
+- **写账禁令单责**: 将 outcome writer 路径、静态 shell token 归一化和 `--write` 禁令抽成 17 行纯契约叶子，CI 与定时治理直接消费，定时模块继续保留同引用兼容导出
+- **维护余量恢复**: 自动化命令契约从 69 行收缩到 58/70，直接测试从 124 行收缩到 105/125；新生产与测试叶子分别建立 25/45 行单责预算并接入必需资产和注册表
+- **证据边界不变**: 本次只形成 component 自动化契约证据，不改 case/corpus/subject、写账权限、behavior 分母或仓外 protected runtime/signer blocker；账本刷新只恢复既有 `3/18` deterministic coverage
+
 ## v1.8.1046 (2026-08-28) - Seatbelt 宿主能力分层
 
 ### 🐛 Bug 修复

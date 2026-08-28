@@ -5,13 +5,6 @@ import {
 } from './githubWorkflowStructureBlocks.mjs';
 
 const ARTIFACT_WRITER_COMMAND = 'node scripts/ci/write-ai-governance-artifacts.mjs';
-const OUTCOME_WRITERS = [
-  'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs',
-  'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs',
-  'scripts/ci/record-ai-evolution-paired-outcome.mjs',
-];
-const OUTCOME_WRITE_ARGUMENT = /(?:^|[\s"'`;&|()])--write(?=$|[\s"'`\\;&|()])/m;
-const normalizeStaticShellFragments = command => command.replace(/\\([^\r\n])/g, '$1').replace(/["']/g, '');
 const REQUIRED_COMMAND_CONTROL_RULES = [
   {
     label: '静态 false if',
@@ -28,10 +21,16 @@ const REQUIRED_COMMAND_CONTROL_RULES = [
 export const collectGithubWorkflowCommands = content => collectGithubWorkflowRunBlocks(content)
   .flatMap(block => block.content.split(/\r?\n/).map(line => line.trim()).filter(Boolean));
 
-const hasFullHistoryCheckout = job => collectGithubWorkflowStepBlocks(job).some(step => (
-  /^(?: {6}-\s*| {8})uses:\s*actions\/checkout@[^\s#]+\s*(?:#.*)?$/m.test(step)
-  && /^ {10}fetch-depth:\s*0\s*(?:#.*)?$/m.test(step)
-));
+const hasFullHistoryCheckout = job => collectGithubWorkflowStepBlocks(job).some((step) => {
+  if (!/^(?: {6}-\s*| {8})uses:\s*actions\/checkout@[^\s#]+\s*(?:#.*)?$/m.test(step)) return false;
+  let insideWith = false;
+  for (const line of step.split(/\r?\n/)) {
+    if (/^ {8}with:\s*(?:#.*)?$/.test(line)) insideWith = true;
+    else if (insideWith && /^ {8}(?![\s#])/.test(line)) insideWith = false;
+    else if (insideWith && /^ {10}fetch-depth:\s*0\s*(?:#.*)?$/.test(line)) return true;
+  }
+  return false;
+});
 
 export const collectWorkflowFullHistoryCheckoutFailures = (content, requiredCommands, file) => {
   const jobs = [...collectGithubWorkflowJobBlocks(content).values()];
@@ -41,16 +40,6 @@ export const collectWorkflowFullHistoryCheckoutFailures = (content, requiredComm
     ? requiredJobs.every(hasFullHistoryCheckout) : jobs.some(hasFullHistoryCheckout);
   return valid ? [] : [`${file}: checkout 必须保留完整 Git 历史`];
 };
-
-export const collectOutcomeWriterAutomationWriteFailures = (commandBlocks, file) => (
-  commandBlocks.some((block) => {
-    const normalized = normalizeStaticShellFragments(block);
-    return OUTCOME_WRITERS.some(writer => normalized.includes(writer))
-      && OUTCOME_WRITE_ARGUMENT.test(normalized);
-  })
-    ? [`${file}: CI/workflow/local-ci 禁止 outcome writer --write`]
-    : []
-);
 
 export const collectRequiredWorkflowCommandReachabilityFailures = (content, requiredCommands, file) => (
   [...collectGithubWorkflowJobBlocks(content).values()]

@@ -5,7 +5,8 @@ import { governanceAiSkillContractTestMaintainabilityBudgets } from './maintaina
 const governanceAiContractTestBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 
 export const governanceAiContractTestMaintainabilityBudgets = [
-  governanceAiContractTestBudget('scripts/ci/aiGovernanceAutomationCommandContract.test.mjs', 125, 'AI 治理自动化命令契约测试应锁 command 源顺序、公开安全 API 重导出、完整失败全序和 writer 参数边界'),
+  governanceAiContractTestBudget('scripts/ci/aiGovernanceAutomationCommandContract.test.mjs', 125, 'AI 治理自动化命令契约测试应锁 command 源顺序、公开安全 API 重导出、完整历史 mapping 归属与失败全序'),
+  governanceAiContractTestBudget('scripts/ci/aiGovernanceOutcomeWriterAutomationContract.test.mjs', 45, 'Outcome writer 自动化契约测试应锁兼容重导出、三类 writer 与静态 shell 参数边界'),
   governanceAiContractTestBudget('scripts/ci/aiGovernanceCiContract.test.mjs', 90, 'AI 治理 CI 契约测试应锁 required command 可达性、失败旁路与自动 outcome 写账禁令'),
   governanceAiContractTestBudget('scripts/ci/aiGovernanceCiEntrySource.test.mjs', 90, 'AI 治理 CI 入口 source 测试应锁目录、非法 UTF-8、symlink、hardlink 与 1 MiB 字节边界'),
   governanceAiContractTestBudget('scripts/ci/aiGovernanceCiContractTestFixtures.mjs', 60, 'AI 治理 CI 契约 fixture 应直接消费权威 descriptor 并单源维护 workflow/local-ci、writer 与 job/step 控制脚手架'),

@@ -2,10 +2,10 @@ import { CI_COMMAND_COLLECTORS } from './aiGovernanceCiCommandCollectors.mjs';
 import { REQUIRED_AI_GOVERNANCE_CI_COMMANDS, REQUIRED_AI_GOVERNANCE_LOCAL_COMMANDS } from './aiGovernanceCiCommandDescriptors.mjs';
 import { readAiGovernanceCiEntrySource } from './aiGovernanceCiEntrySource.mjs';
 import {
-  collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
   collectWorkflowFullHistoryCheckoutFailures,
 } from './aiGovernanceAutomationCommandContract.mjs';
+import { collectOutcomeWriterAutomationWriteFailures } from './aiGovernanceOutcomeWriterAutomationContract.mjs';
 import { collectGithubWorkflowRunBlocks } from './githubWorkflowRunBlocks.mjs';
 
 export const collectAiGovernanceCiContractFailures = rootDir => Object.entries(CI_COMMAND_COLLECTORS)

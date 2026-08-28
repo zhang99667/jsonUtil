@@ -3,26 +3,18 @@ import { test } from 'node:test';
 
 import {
   collectGithubWorkflowCommands,
-  collectOutcomeWriterAutomationWriteFailures,
   collectRequiredWorkflowCommandReachabilityFailures,
   collectWorkflowFullHistoryCheckoutFailures,
 } from './aiGovernanceAutomationCommandContract.mjs';
 import {
-  collectOutcomeWriterAutomationWriteFailures as collectLegacyOutcomeWriterFailures,
   collectRequiredWorkflowCommandReachabilityFailures as collectLegacyReachabilityFailures,
 } from './aiGovernanceScheduledWorkflowContract.mjs';
 
 const VERSION_COMMAND = 'node scripts/ci/check-version-consistency.mjs';
 const ARTIFACT_COMMAND = 'node scripts/ci/write-ai-governance-artifacts.mjs';
 const WORKFLOW_FILE = '.github/workflows/fixture.yml';
-const OUTCOME_WRITERS = [
-  'scripts/ci/record-ai-evolution-deterministic-outcomes.mjs',
-  'scripts/ci/record-ai-evolution-unverified-trace-outcome.mjs',
-  'scripts/ci/record-ai-evolution-paired-outcome.mjs',
-];
 
-test('scheduled workflow 模块保持通用自动化安全 API 的同引用重导出', () => {
-  assert.equal(collectLegacyOutcomeWriterFailures, collectOutcomeWriterAutomationWriteFailures);
+test('scheduled workflow 模块保持 required command 安全 API 的同引用重导出', () => {
   assert.equal(collectLegacyReachabilityFailures, collectRequiredWorkflowCommandReachabilityFailures);
 });
 
@@ -59,6 +51,11 @@ test('workflow 完整 Git 历史保留 fallback 并绑定 required command job',
   const failure = [`${WORKFLOW_FILE}: checkout 必须保留完整 Git 历史`];
   for (const invalid of [
     fallback.replace('fetch-depth: 0', 'fetch-depth: 1'),
+    fallback.replace('        with:', '        env:'),
+    fallback.replace(
+      '          fetch-depth: 0',
+      '          persist-credentials: false\n        env:\n          fetch-depth: 0',
+    ),
     fallback.replace('        with:\n          fetch-depth: 0', '      - run: echo noop\n        env:\n          fetch-depth: 0'),
     requiredJob,
   ]) assert.deepEqual(collectFailures(invalid), failure);
@@ -105,20 +102,4 @@ test('required command 安全失败保持 job、step、command 与规则全序',
       `        run: ${ARTIFACT_COMMAND}`,
     ].join('\n'), [ARTIFACT_COMMAND], WORKFLOW_FILE), []);
   }
-});
-
-test('outcome writer 只拒绝 writer command block 内的独立 --write 参数', () => {
-  for (const writer of OUTCOME_WRITERS) {
-    for (const argument of ['--write', '--wri""te', '--wri\\te']) assert.deepEqual(
-      collectOutcomeWriterAutomationWriteFailures([`node ${writer} ${argument}`], WORKFLOW_FILE),
-      [`${WORKFLOW_FILE}: CI/workflow/local-ci 禁止 outcome writer --write`]);
-    assert.deepEqual(
-      collectOutcomeWriterAutomationWriteFailures([`node ${writer} --writeback`], WORKFLOW_FILE),
-      [],
-    );
-  }
-  assert.deepEqual(
-    collectOutcomeWriterAutomationWriteFailures(['node scripts/ci/other-command.mjs --write'], WORKFLOW_FILE),
-    [],
-  );
 });
