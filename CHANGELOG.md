@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1048 (2026-08-28) - 收紧决策账本回写路径边界
+
+### 🐛 Bug 修复
+
+- **回写路径 Fail Closed**: 决策账本回写追踪只接受仓库内 canonical 相对普通文件，拒绝 `..`、归一化逃逸、绝对路径、目录、直接 symlink 与 ancestor symlink，不再让“存在性”冒充安全路径证据
+- **诊断语义保留**: 非安全节点统一返回“必须是仓库内 canonical 普通文件”，真正不存在的路径继续返回原有“路径不存在”诊断
+
+### 🏗️ 架构与基础设施
+
+- **路径契约单责**: 将 legacy skill relocation、路径归一化、realpath containment 与前后稳定身份复核抽成 41 行叶子，主回写契约收缩到 13 行
+- **代表负例锁定**: 新增合法嵌套文件、越界、非 canonical、绝对路径、目录、直接/祖先 symlink 和真实缺失回归，并为生产与测试叶子建立 50/70 行预算及必需资产登记
+- **证据边界不变**: 本次只形成 component 决策账本契约证据，不改 case/corpus/subject、写账权限、behavior 分母或仓外 protected runtime/signer blocker；账本刷新只恢复既有 `3/18` deterministic coverage
+
 ## v1.8.1047 (2026-08-28) - 收紧治理 Checkout 配置归属
 
 ### 🐛 Bug 修复
