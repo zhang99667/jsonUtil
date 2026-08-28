@@ -8,7 +8,7 @@ export const governanceAiEvolutionLearningMaintainabilityBudgets = [
   learningBudget('scripts/ci/aiGovernanceEvolutionEvalReport.mjs', 150, 'AI evolution 基础报告入口应只编排 corpus、ledger、fixed replay、trace verification 与机器投影'),
   learningBudget('scripts/ci/aiGovernanceEvolutionEvalProjection.mjs', 165, 'AI evolution eval 投影应整体维护机器 schema、counts、coverage、失败分层、focus 与稳定 ID 顺序'),
   learningBudget('scripts/ci/aiGovernanceEvolutionFeedbackProfiles.mjs', 80, 'Feedback profile 单源应整体维护 schema、evidence、固定 case/experiment 与 signal 身份'),
-  learningBudget('scripts/ci/aiGovernanceEvolutionFeedbackSource.mjs', 130, 'Feedback source 应只维护稳定有界普通文件、严格 UTF-8、JSONL framing 与物理记录解析'),
+  learningBudget('scripts/ci/aiGovernanceEvolutionFeedbackSource.mjs', 60, 'Feedback source 应只消费共享 JSONL framing 并维护 feedback 物理记录解析'),
   learningBudget('scripts/ci/aiGovernanceEvolutionFeedbackInbox.mjs', 210, 'Feedback inbox 应只维护闭字段事件语义、物理 hash chain、历史身份与兼容 candidate API'),
   learningBudget('scripts/ci/aiGovernanceEvolutionExperiments.mjs', 190, 'Experiment 契约应只维护 split、paired repetitions、blinding、trial plan 与 unavailable metrics'),
   learningBudget('scripts/ci/aiGovernanceEvolutionLearningFocus.mjs', 65, 'Learning focus helper 应整体维护外部 blocked focus 与仓内 actionable/preparation focus 的仲裁'),

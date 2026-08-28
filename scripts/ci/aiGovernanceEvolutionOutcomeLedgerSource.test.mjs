@@ -79,6 +79,15 @@ test('outcome ledger source 拒绝非法 UTF-8、超限文件与超限行', () =
     ['outcomes.jsonl: 必须是合法 UTF-8'],
   );
 
+  const bom = writeLedger(
+    tempDir,
+    Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(`${JSON.stringify(validOutcome())}\n`)]),
+  );
+  assert.deepEqual(
+    readEvolutionOutcomeLedger(bom, options).failures,
+    ['outcomes.jsonl: 禁止 UTF-8 BOM'],
+  );
+
   const oversizedFile = writeLedger(tempDir, Buffer.alloc(MAX_LEDGER_BYTES + 1, 0x20));
   assert.deepEqual(
     readEvolutionOutcomeLedger(oversizedFile, options).failures,

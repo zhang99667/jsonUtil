@@ -1,5 +1,19 @@
 # 更新日志 (Changelog)
 
+## v1.8.1041 (2026-08-27) - 单源化 AI Evolution JSONL 边界
+
+### 🐛 Bug 修复
+
+- **Outcome BOM 拒绝**: `outcomes.jsonl` 不再被默认 UTF-8 解码器静默剥离 BOM，三类治理 JSONL 输入统一使用固定无值诊断拒绝 BOM
+- **Receipt 诊断收敛**: `trial-receipts.jsonl` 的 BOM 从模糊“第 1 行不是合法 JSON”收敛为明确 source 边界错误
+
+### 🏗️ 架构与基础设施
+
+- **JSONL source 单源**: outcome、trial receipt 与 feedback 共用稳定单链接普通文件读取、fatal UTF-8、CRLF/空行 framing 和总量/单行/物理行/记录上限，领域 schema、chain 与 trust 语义继续独立
+- **冗余与预算收敛**: 三套 reader 删除约 180 行重复 source/framing 代码，引入共享层后生产净减少 82 行，并按拆分后的真实职责收紧可维护性预算
+- **Policy 摘要锁定**: trace policy 五份必读文件的登记摘要保持精确一致，并同步修正固定测试中过期的聚合 descriptor 黄金值
+- **证据边界不变**: 本次 component 加固不改 ledger schema、case/corpus/subject 版本、写账权限或仓外 runtime/signer trust；源码变化使原 3 条 deterministic outcome 暂时 stale，维护者显式刷新前当前 coverage 为 `0/18`，本轮不新增 behavior coverage
+
 ## v1.8.1040 (2026-08-26) - 合并线上 JSONPath Tab 隔离与治理重构
 
 ### ✨ 新特性

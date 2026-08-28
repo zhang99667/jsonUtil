@@ -91,7 +91,10 @@ test('trial receipt source 拒绝非法 UTF-8、BOM 与超限文件', () => with
     tempDir,
     Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(`${JSON.stringify(validReceipt())}\n`)]),
   );
-  assert.match(readEvolutionTrialReceiptLedger(bom, options).failures.join('\n'), /第 1 行不是合法 JSON/);
+  assert.deepEqual(
+    readEvolutionTrialReceiptLedger(bom, options).failures,
+    ['trial-receipts.jsonl: 禁止 UTF-8 BOM'],
+  );
 
   const oversized = writeLedger(tempDir, Buffer.alloc(MAX_LEDGER_BYTES + 1, 0x20));
   assert.deepEqual(

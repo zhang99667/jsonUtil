@@ -1,69 +1,13 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
-import { readStableEvolutionSnapshotFile } from './aiGovernanceEvolutionSnapshotPrimitives.mjs';
+import { readEvolutionJsonlSource } from './aiGovernanceEvolutionJsonlSource.mjs';
 
 export const AI_EVOLUTION_FEEDBACK_INBOX_MAX_BYTES = 4 * 1024 * 1024;
 export const AI_EVOLUTION_FEEDBACK_MAX_LINE_BYTES = 64 * 1024;
 export const AI_EVOLUTION_FEEDBACK_MAX_PHYSICAL_LINES = 4096;
 export const AI_EVOLUTION_FEEDBACK_MAX_RECORDS = 2048;
 
-const strictUtf8 = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
-const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
-
 const failedSource = failure => ({
   entries: [], failures: [failure], fatal: true,
 });
-
-const readSourceBytes = (filePath) => {
-  try {
-    const absolutePath = path.resolve(filePath);
-    const canonicalParent = fs.realpathSync(path.dirname(absolutePath));
-    return readStableEvolutionSnapshotFile(
-      canonicalParent,
-      path.basename(absolutePath),
-      AI_EVOLUTION_FEEDBACK_INBOX_MAX_BYTES,
-    ).bytes;
-  } catch {
-    return null;
-  }
-};
-
-const frameSourceLines = (source) => {
-  const lines = [];
-  let lineNumber = 1;
-  let ordinal = 0;
-  let offset = 0;
-  while (true) {
-    if (lineNumber > AI_EVOLUTION_FEEDBACK_MAX_PHYSICAL_LINES) {
-      return {
-        failure: `feedback-inbox.jsonl: 物理行数不能超过 ${AI_EVOLUTION_FEEDBACK_MAX_PHYSICAL_LINES}`,
-      };
-    }
-    const newline = source.indexOf('\n', offset);
-    const end = newline === -1 ? source.length : newline;
-    const rawLine = source.slice(offset, end);
-    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
-    if (Buffer.byteLength(line, 'utf8') > AI_EVOLUTION_FEEDBACK_MAX_LINE_BYTES) {
-      return {
-        failure: `feedback-inbox.jsonl: 第 ${lineNumber} 行超过 ${AI_EVOLUTION_FEEDBACK_MAX_LINE_BYTES / 1024} KiB`,
-      };
-    }
-    if (line.trim()) {
-      ordinal += 1;
-      if (ordinal > AI_EVOLUTION_FEEDBACK_MAX_RECORDS) {
-        return {
-          failure: `feedback-inbox.jsonl: 非空记录数不能超过 ${AI_EVOLUTION_FEEDBACK_MAX_RECORDS}`,
-        };
-      }
-      lines.push({ line, lineNumber, ordinal });
-    }
-    if (newline === -1) break;
-    offset = newline + 1;
-    lineNumber += 1;
-  }
-  return { lines };
-};
 
 const parseSourceLines = (lines) => {
   const entries = [];
@@ -89,14 +33,12 @@ const parseSourceLines = (lines) => {
 };
 
 export const readEvolutionFeedbackSource = (filePath) => {
-  const bytes = readSourceBytes(filePath);
-  if (bytes === null) return failedSource('feedback-inbox.jsonl: 无法读取稳定的有界普通文件');
-  if (bytes.subarray(0, UTF8_BOM.length).equals(UTF8_BOM)) {
-    return failedSource('feedback-inbox.jsonl: 禁止 UTF-8 BOM');
-  }
-  let source;
-  try { source = strictUtf8.decode(bytes); }
-  catch { return failedSource('feedback-inbox.jsonl: 必须是合法 UTF-8'); }
-  const framed = frameSourceLines(source);
-  return framed.failure ? failedSource(framed.failure) : parseSourceLines(framed.lines);
+  const source = readEvolutionJsonlSource(filePath, {
+    label: 'feedback-inbox.jsonl',
+    maxBytes: AI_EVOLUTION_FEEDBACK_INBOX_MAX_BYTES,
+    maxLineBytes: AI_EVOLUTION_FEEDBACK_MAX_LINE_BYTES,
+    maxPhysicalLines: AI_EVOLUTION_FEEDBACK_MAX_PHYSICAL_LINES,
+    maxRecords: AI_EVOLUTION_FEEDBACK_MAX_RECORDS,
+  });
+  return source.failure ? failedSource(source.failure) : parseSourceLines(source.lines);
 };

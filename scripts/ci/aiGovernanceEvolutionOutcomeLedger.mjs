@@ -1,17 +1,15 @@
-import fs from 'node:fs';
 import path from 'node:path';
 
 import { getLatestGlobalIsoDate } from './aiGovernanceDateBounds.mjs';
 import { collectEvolutionOutcomeFailures } from './aiGovernanceEvolutionOutcomeContract.mjs';
 import { buildEvolutionOutcomeChainReport } from './aiGovernanceEvolutionOutcomeChain.mjs';
-import { readStableEvolutionSnapshotFile } from './aiGovernanceEvolutionSnapshotPrimitives.mjs';
+import { readEvolutionJsonlSource } from './aiGovernanceEvolutionJsonlSource.mjs';
 
 export const AI_EVOLUTION_OUTCOME_LEDGER_MAX_BYTES = 8 * 1024 * 1024;
 export const AI_EVOLUTION_OUTCOME_MAX_LINE_BYTES = 64 * 1024;
 export const AI_EVOLUTION_OUTCOME_MAX_PHYSICAL_LINES = 8192;
 export const AI_EVOLUTION_OUTCOME_MAX_RECORDS = 4096;
 
-const strictUtf8 = new TextDecoder('utf-8', { fatal: true });
 const emptyChain = () => buildEvolutionOutcomeChainReport([]).summary;
 
 const failedLedger = (failure, ledgerChain = emptyChain()) => ({
@@ -21,53 +19,6 @@ const failedLedger = (failure, ledgerChain = emptyChain()) => ({
   invalidOutcomeCount: 0,
   ledgerChain: { ...ledgerChain, status: 'fail' },
 });
-
-const readOutcomeLedgerSource = (filePath) => {
-  let bytes;
-  try {
-    const absolutePath = path.resolve(filePath);
-    const canonicalParent = fs.realpathSync(path.dirname(absolutePath));
-    ({ bytes } = readStableEvolutionSnapshotFile(
-      canonicalParent,
-      path.basename(absolutePath),
-      AI_EVOLUTION_OUTCOME_LEDGER_MAX_BYTES,
-    ));
-  } catch {
-    return { source: '', failure: 'outcomes.jsonl: 无法读取稳定的有界普通文件' };
-  }
-  try { return { source: strictUtf8.decode(bytes) }; }
-  catch { return { source: '', failure: 'outcomes.jsonl: 必须是合法 UTF-8' }; }
-};
-
-const frameOutcomeLines = (source) => {
-  const lines = [];
-  let lineNumber = 1;
-  let ordinal = 0;
-  let offset = 0;
-  while (true) {
-    if (lineNumber > AI_EVOLUTION_OUTCOME_MAX_PHYSICAL_LINES) {
-      return { lines: [], failure: `outcomes.jsonl: 物理行数不能超过 ${AI_EVOLUTION_OUTCOME_MAX_PHYSICAL_LINES}` };
-    }
-    const newline = source.indexOf('\n', offset);
-    const end = newline === -1 ? source.length : newline;
-    const rawLine = source.slice(offset, end);
-    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
-    if (Buffer.byteLength(line, 'utf8') > AI_EVOLUTION_OUTCOME_MAX_LINE_BYTES) {
-      return { lines: [], failure: `outcomes.jsonl: 第 ${lineNumber} 行超过 64 KiB` };
-    }
-    if (line.trim()) {
-      ordinal += 1;
-      if (ordinal > AI_EVOLUTION_OUTCOME_MAX_RECORDS) {
-        return { lines: [], failure: `outcomes.jsonl: 非空记录数不能超过 ${AI_EVOLUTION_OUTCOME_MAX_RECORDS}` };
-      }
-      lines.push({ line, lineNumber, ordinal });
-    }
-    if (newline === -1) break;
-    offset = newline + 1;
-    lineNumber += 1;
-  }
-  return { lines };
-};
 
 const parseOutcomeLines = (lines) => {
   const outcomes = [];
@@ -104,12 +55,16 @@ export const readEvolutionOutcomeLedger = (
     currentCorpusVersion,
   } = {},
 ) => {
-  const source = readOutcomeLedgerSource(filePath);
+  const source = readEvolutionJsonlSource(filePath, {
+    label: 'outcomes.jsonl',
+    maxBytes: AI_EVOLUTION_OUTCOME_LEDGER_MAX_BYTES,
+    maxLineBytes: AI_EVOLUTION_OUTCOME_MAX_LINE_BYTES,
+    maxPhysicalLines: AI_EVOLUTION_OUTCOME_MAX_PHYSICAL_LINES,
+    maxRecords: AI_EVOLUTION_OUTCOME_MAX_RECORDS,
+  });
   if (source.failure) return failedLedger(source.failure);
-  const framed = frameOutcomeLines(source.source);
-  if (framed.failure) return failedLedger(framed.failure);
 
-  const parsed = parseOutcomeLines(framed.lines);
+  const parsed = parseOutcomeLines(source.lines);
   const chainReport = buildEvolutionOutcomeChainReport(parsed.entries);
   const structuralFailures = [...parsed.failures, ...chainReport.failures];
   const failures = [...structuralFailures];

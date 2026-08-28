@@ -13,6 +13,7 @@ export const governanceAiEvolutionTestMaintainabilityBudgets = [
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionEvalProjection.test.mjs', 210, 'AI evolution eval 投影测试应锁定机器 schema、引用身份、插入顺序与 failure/freshness 分层'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionCorpusSize.test.mjs', 60, 'AI evolution corpus 容量测试应锁定可增长上限与超限失败'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcome.test.mjs', 190, 'AI evolution outcome 测试应锁定 provenance、feedback、证据和 validation 一致性'),
+  evolutionTestBudget('scripts/ci/aiGovernanceEvolutionJsonlSource.test.mjs', 110, 'AI evolution JSONL source 直接测试应锁定稳定普通文件、fatal UTF-8/BOM、CRLF/空行与四类资源上限'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcomeLedgerSource.test.mjs', 190, 'AI evolution outcome source 测试应锁定稳定普通文件、严格 UTF-8、资源上限、紧凑 JSON、物理 ordinal 与无值诊断'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcomeLineage.test.mjs', 215, 'AI evolution lineage 测试应锁定 latest、stale、future、retired 与 corpus 语义'),
   evolutionTestBudget('scripts/ci/aiGovernanceEvolutionOutcomeChain.test.mjs', 125, 'AI evolution chain 测试应锁定 legacy 锚、sequence/hash、降级、supersession 与反馈关闭'),
