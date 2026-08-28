@@ -10,7 +10,7 @@
 
 ### 🏗️ 架构与基础设施
 
-- **代表负例锁定**: 新增仓外 behavior 与仓内维护同为 warn、跨 step `fetch-depth: 0`、三类 writer 静态 shell 分片的直接回归
+- **代表负例锁定**: 新增仓外 behavior 与仓内维护同为 warn、跨 step `fetch-depth: 0`、三类 writer 静态 shell 分片的直接回归，并让共享 CI fixture 一次生成完整 `jobs → steps` 与 artifact `if: always()` 契约
 - **证据边界不变**: 本次只调整 scorecard 焦点提示和 component 自动化契约，不改 ledger schema、case/corpus/subject、写账权限或仓外 runtime/signer trust；刷新只恢复既有 `3/18` deterministic coverage
 
 ## v1.8.1041 (2026-08-27) - 单源化 AI Evolution JSONL 边界

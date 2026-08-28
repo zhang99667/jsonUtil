@@ -46,8 +46,8 @@ test('AI 治理 CI 契约不接受注释或 echo 里的治理命令', () => {
   withAiGovernanceTempRoot((rootDir) => {
     writeFixtureFile(rootDir, '.github/workflows/ci.yml', [
       buildAiGovernanceCiWorkflowFixture(aiGovernanceCiCommand),
-      '  - name: Fake AI governance',
-      `    run: echo "${aiGovernanceCiCommand}"`,
+      '      - name: Fake AI governance',
+      `        run: echo "${aiGovernanceCiCommand}"`,
     ].join('\n'));
     writeFixtureFile(rootDir, 'scripts/ci/local-ci.sh', [
       buildAiGovernanceLocalCiFixture(aiGovernanceCiCommand),
