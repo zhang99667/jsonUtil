@@ -7,6 +7,7 @@ const OUTCOME_WRITERS = [
   'scripts/ci/record-ai-evolution-paired-outcome.mjs',
 ];
 const OUTCOME_WRITE_ARGUMENT = /(?:^|[\s"'`;&|()])--write(?=$|[\s"'`\\;&|()])/m;
+const normalizeStaticShellFragments = command => command.replace(/\\([^\r\n])/g, '$1').replace(/["']/g, '');
 const REQUIRED_COMMAND_CONTROL_RULES = [
   {
     label: '静态 false if',
@@ -40,15 +41,22 @@ export const collectGithubWorkflowStepBlocks = (block) => {
 };
 
 export const collectWorkflowFullHistoryCheckoutFailures = (content, file) => (
-  /uses:\s*actions\/checkout@[^\n]+[\s\S]{0,160}fetch-depth:\s*0/.test(content)
+  [...collectGithubWorkflowJobBlocks(content).values()]
+    .flatMap(collectGithubWorkflowStepBlocks)
+    .some(step => (
+      /^(?: {6}-\s*| {8})uses:\s*actions\/checkout@[^\s#]+\s*(?:#.*)?$/m.test(step)
+      && /^ {10}fetch-depth:\s*0\s*(?:#.*)?$/m.test(step)
+    ))
     ? []
     : [`${file}: checkout 必须保留完整 Git 历史`]
 );
 
 export const collectOutcomeWriterAutomationWriteFailures = (commandBlocks, file) => (
-  commandBlocks.some(block => (
-    OUTCOME_WRITERS.some(writer => block.includes(writer)) && OUTCOME_WRITE_ARGUMENT.test(block)
-  ))
+  commandBlocks.some((block) => {
+    const normalized = normalizeStaticShellFragments(block);
+    return OUTCOME_WRITERS.some(writer => normalized.includes(writer))
+      && OUTCOME_WRITE_ARGUMENT.test(normalized);
+  })
     ? [`${file}: CI/workflow/local-ci 禁止 outcome writer --write`]
     : []
 );

@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1042 (2026-08-28) - 加固治理焦点与自动化安全
+
+### 🐛 Bug 修复
+
+- **仓内焦点优先**: 当 behavior-quality 仅因必须仓外执行的 paired trial 保持 warn 时，同级可在仓内完成的维护余量不再被遮住；fail 严重度、评分、维度状态和 coverage 语义保持不变
+- **完整历史绑定**: workflow 只有在同一个 checkout step 内同时声明 `actions/checkout` 与 `fetch-depth: 0` 才满足完整 Git 历史契约，阻断跨 step 配置冒充
+- **写账绕过拦截**: outcome writer 禁写检查会先归一化静态引号分片与反斜杠转义，拒绝 `--wri""te`、`--wri\te` 等可被 shell 还原为 `--write` 的参数
+
+### 🏗️ 架构与基础设施
+
+- **代表负例锁定**: 新增仓外 behavior 与仓内维护同为 warn、跨 step `fetch-depth: 0`、三类 writer 静态 shell 分片的直接回归
+- **证据边界不变**: 本次只调整 scorecard 焦点提示和 component 自动化契约，不改 ledger schema、case/corpus/subject、写账权限或仓外 runtime/signer trust；刷新只恢复既有 `3/18` deterministic coverage
+
 ## v1.8.1041 (2026-08-27) - 单源化 AI Evolution JSONL 边界
 
 ### 🐛 Bug 修复

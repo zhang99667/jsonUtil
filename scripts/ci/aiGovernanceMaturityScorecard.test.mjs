@@ -10,11 +10,11 @@ const PASS_DISTRIBUTION = {
   scopes: { workspace: READY_SCOPE, index: READY_SCOPE, head: READY_SCOPE },
 };
 
-test('AI 治理成熟度 scorecard 会区分职责审计与容量复核', () => {
+test('AI 治理成熟度 scorecard 会让仓内可执行的维护工作优先于仓外行为观测', () => {
   const governanceReport = {
     ok: true, counts: { requiredFiles: 28, referenceRules: 16 },
     failures: { missingFiles: [], skillContractFailures: [], contractFailures: [], missingReferences: [] },
-    evolutionEvals: { ok: true, counts: { cases: 13, outcomes: 13, pass: 13, partial: 0, fail: 0, coveredCases: 13 }, coverage: { outcomes: { percent: 100 } }, ledgerChain: { status: 'pass' }, nextFocus: { nextAction: '保持真实 outcome 记录' } },
+    evolutionEvals: { ok: true, counts: { cases: 18, outcomes: 3, pass: 3, partial: 0, fail: 0, coveredCases: 3 }, coverage: { outcomes: { percent: 17 } }, ledgerChain: { status: 'pass' }, nextFocus: { reasonCode: 'external-execution-required', nextAction: '在仓外受保护环境执行 paired trial' } },
     distributionReadiness: PASS_DISTRIBUTION,
   };
   const highUsage = [
@@ -32,7 +32,7 @@ test('AI 治理成熟度 scorecard 会区分职责审计与容量复核', () => 
   assert.equal(scorecard.reportType, 'ai-governance-maturity-scorecard');
   assert.equal(scorecard.schemaVersion, 2);
   assert.equal(scorecard.status, 'warn');
-  assert.equal(scorecard.score, 92);
+  assert.equal(scorecard.score, 83);
   assert.equal(scorecard.nextFocus.id, 'maintainability-headroom');
   assert.match(scorecard.nextFocus.nextAction, /write-ai-governance-artifacts\.test\.mjs/);
   assert.equal(scorecard.nextFocus.details.maintainabilityHotspots.priority.action, 'responsibility-review');

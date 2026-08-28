@@ -54,16 +54,22 @@ test('workflow parser 保持 job、step 与 command 的源码顺序', () => {
 
 test('workflow 完整 Git 历史契约保持固定诊断', () => {
   const workflow = [
-    'steps:',
-    '  - uses: actions/checkout@v6',
-    '    with:',
-    '      fetch-depth: 0',
+    'jobs:',
+    '  governance:',
+    '    steps:',
+    '      - uses: actions/checkout@v6',
+    '        with:',
+    '          fetch-depth: 0',
   ].join('\n');
   assert.deepEqual(collectWorkflowFullHistoryCheckoutFailures(workflow, WORKFLOW_FILE), []);
   assert.deepEqual(
     collectWorkflowFullHistoryCheckoutFailures(workflow.replace('fetch-depth: 0', 'fetch-depth: 1'), WORKFLOW_FILE),
     [`${WORKFLOW_FILE}: checkout 必须保留完整 Git 历史`],
   );
+  const splitSteps = workflow.replace('        with:\n          fetch-depth: 0',
+    '      - run: echo noop\n        env:\n          fetch-depth: 0');
+  assert.deepEqual(collectWorkflowFullHistoryCheckoutFailures(splitSteps, WORKFLOW_FILE),
+    [`${WORKFLOW_FILE}: checkout 必须保留完整 Git 历史`]);
 });
 
 test('required command 安全失败保持 job、step、command 与规则全序', () => {
@@ -106,10 +112,9 @@ test('required command 安全失败保持 job、step、command 与规则全序',
 
 test('outcome writer 只拒绝 writer command block 内的独立 --write 参数', () => {
   for (const writer of OUTCOME_WRITERS) {
-    assert.deepEqual(
-      collectOutcomeWriterAutomationWriteFailures([`node ${writer} --write`], WORKFLOW_FILE),
-      [`${WORKFLOW_FILE}: CI/workflow/local-ci 禁止 outcome writer --write`],
-    );
+    for (const argument of ['--write', '--wri""te', '--wri\\te']) assert.deepEqual(
+      collectOutcomeWriterAutomationWriteFailures([`node ${writer} ${argument}`], WORKFLOW_FILE),
+      [`${WORKFLOW_FILE}: CI/workflow/local-ci 禁止 outcome writer --write`]);
     assert.deepEqual(
       collectOutcomeWriterAutomationWriteFailures([`node ${writer} --writeback`], WORKFLOW_FILE),
       [],
